@@ -65,7 +65,7 @@ elseif 0
          F(i,j) =  -Dx_plus_target(i,j) * grad_x - Dy_plus_target(i,j) * grad_y;
       end
    end  
-elseif 0
+elseif 1
     % Distance driven flow
     if 0
         % Calculate the velocity at the front, thus at the zero level set

@@ -15,7 +15,7 @@ function lsLineMatching
 % Matthias Machacek 6/10/04
 
 test = 0;
-TEST_CASE = 3;
+TEST_CASE = 5;
 
 [mask_img_t0, mask_img_t1,x_spline_t0, y_spline_t0, x_spline_t1,y_spline_t1,...  
     known_zero_level_points_t0, known_zero_level_points_t1, grid_coordinates, domain] = lsLoadData(TEST_CASE);
@@ -155,6 +155,7 @@ if 1
             i_end, j_end, grad_x, grad_y, domain);
     end
 
+    % Show the curvature of the last distance function
     kappa = lsCurvature(phi(:,:,end), delta_x, delta_y, i_end, j_end);
     figure
     surface(kappa);

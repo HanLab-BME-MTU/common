@@ -35,6 +35,8 @@ track_points(:,:,1) = lsGetZeroLevel(dist_matrix(:,:,1), domain);
 % number of time points 
 num_time_steps = size(dist_matrix,3)-1;
 
+
+
 for i = 1:num_time_steps
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%% Velocity interpolation  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -104,9 +106,9 @@ for i = 1:num_time_steps
         track_points_grad_x_u = grad_x_s ./ grad;
         track_points_grad_y_u = grad_y_s ./ grad;
     else
-         
-        [grad_x, grad_y] = gradient(dist_matrix(:,:,i), delta_x, delta_y); 
-        
+        % Use the matlab build-in gradient function
+        [grad_x, grad_y] = gradient(dist_matrix(:,:,i), delta_x, delta_y);
+
         % Find a B-spline interpolation of the gradient field
         grad_x_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_x');
         grad_y_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_y');
@@ -114,12 +116,12 @@ for i = 1:num_time_steps
         % Get the gradient at the track points
         track_points_grad_x = fnval(grad_x_spline, track_points(:,:,i));
         track_points_grad_y = fnval(grad_y_spline, track_points(:,:,i));
-        
+
         grad = sqrt(track_points_grad_x.^2 + track_points_grad_y.^2);
-    
+
         track_points_grad_x_u =  track_points_grad_x./ grad;
-        track_points_grad_y_u =  track_points_grad_y./ grad;       
-    end   
+        track_points_grad_y_u =  track_points_grad_y./ grad;
+    end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
