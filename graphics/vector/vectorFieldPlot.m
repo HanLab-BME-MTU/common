@@ -47,6 +47,9 @@ end
 
 if size(F,2)==4
     
+    % Remove all incomplete lines
+    F=F(find(F(:,1)~=0 & F(:,3)~=0),:);
+    
     % Use manual scaling instead of quiver scaling which is field-dependent
     if scale~=1
         F(:,3:4)=[F(:,1:2)+scale*(F(:,3:4)-F(:,1:2))];
