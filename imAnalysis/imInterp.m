@@ -3,29 +3,33 @@ function varargout = imInterp(varargin)
 %         intensity as double values.
 %
 % SYNOPSIS :
-%    outI = imInterp(img,YX,[],method,par1,...,parm)
-%    outI = imInterp(img,y,x,method,par1,...,parm)
+%    outI = imInterp(img,YX)
+%    outI = imInterp(img,{y x})
 %    The function interpolates the intensity of an image to points specified
 %    in 'YX' (or 'y' and 'x'). The output of the interpolated values are of 
-%    class double and are linearly scaled to values from 0 to 1.
-%
-%    [sp,outI] = imInterp(img,YX,[],method,par1,...,parm)
-%    When 'method' is the B-Spline interpolation, the B-form of the
-%    interpolation, can also be output in the variable, 'sp'. 
+%    class double and are linearly scaled to values from 0 to 1. 
 %
 %    outI = imInterp(img)
-%    outI = imInterp(img,YX)
-%    outI = imInterp(img,y,x)
-%    outI = imInterp(img,[],[],'Gaussian',...)
-%    By default, the 'Gaussian' convolution method is used and if the
-%    interpolation points are not specified and 'method' is 'Gaussian', the
-%    interpolation is carried on all the pixels in 'img'. The effect is a
-%    smoothed double value intensity image. 
+%    If the interpolation points are not specified the interpolation is 
+%    carried on all the pixels in 'img'.
 %
-%    sp = imInterp(img,[],[],'spap2',...)
+%    outI = imInterp(img,[],'Gaussian',...)
+%    outI = imInterp(img,YX,method,par1,...,parm)
+%    outI = imInterp(img,{y x},method,par1,...,parm)
+%    An interpolation method can also be used. See INPUT below for available
+%    interpolation methods. By default, the 'Gaussian' convolution method is 
+%    used.
+%
+%    [sp,outI] = imInterp(img,YX,method,par1,...,parm)
+%    When 'method' is the spline interpolation is used, the pp- or B-form of 
+%    the interpolation, can also be output in the variable, 'sp'. 
+%
+%    outI = imInterp(img,YX,'spap2',...)
+%    sp   = imInterp(img,[],'spap2',...)
 %    When no interpolation point is specified and 'method' is one of the 
-%    B-Spline interpolation methods, the output is the B-form or pp-form of
-%    the spline interpolation.
+%    spline interpolation methods, the output is the B-form or pp-form of
+%    the spline interpolation. When the interpolation points are specified,
+%    the output is the value itself.
 %
 % INPUT :
 %    img : The image intensity matrix. It can be of class uint8, uint16, or
@@ -36,7 +40,7 @@ function varargout = imInterp(varargin)
 %       [y x] where 'x' is the x coordinates and 'y' is the y coordinates. The
 %       unit of the coordinates are in pixels. For points that are outside of
 %       the image, the output is NaN.
-%    y, x : The interpolated points in this case are the grid points generated
+%    {y x} : The interpolated points in this case are the grid points generated
 %       by '[Y,X] = ndgrid(y,x)'.
 %    method : A string that specifies the interpolation method to use.
 %       'spap2'   : Least square B-Spline.
@@ -46,9 +50,12 @@ function varargout = imInterp(varargin)
 %       methods.
 %        method        (par1,...,parm)
 %       ------------------------------------
-%       'spap2'   : ({knots1,knots2}, [k1 k2])
+%       'spap2'   : ({knotsY,knotsX}, [kY kX])
+%                   ([dY dX], [kY kX])
+%                   (dd, k) %In this case, dY=dX=dd, kY=kX=k.
 %       'spaps;   : (tol)
-%       'Gausian' : (corLen)
+%       'Gausian' : (corLen) %In this case, corLenY=corLenX=corLen.
+%                   ([corLenY corLenX])
 %
 % OUTPUT :
 %    outI : The scaled intensities at the points given in 'YX' (or 'y' and
@@ -85,41 +92,40 @@ end
 numPixelsX = size(imI,2);
 numPixelsY = size(imI,1);
 
-if nargin >= 4 & ~isempty(varargin{4})
-   method = varargin{4};
+if nargin >= 3 & ~isempty(varargin{3})
+   method = varargin{3};
 else
+   %Default interpolation method.
    method = 'Gaussian';
 end
 
 YX = []; y = []; x = [];
-if nargin >= 3 
-   if ~isempty(varargin{3})
-      x = varargin{3};
-      y = varargin{2};
-
-      %Check if the interpolation points are in the ranage of the image.
-      if min(y) < 1 | max(y) > numPixelsY | min(x) < 1 | max(x) > numPixelsX
-         error('The interpolation points are out of the image range.');
+if nargin >= 2 
+   if ~isempty(varargin{2})
+      if iscell(varargin{2})
+         y = varargin{2}{1};
+         x = varargin{2}{2};
+         %Check if the interpolation points are in the ranage of the image.
+         if min(y) < 1 | max(y) > numPixelsY | min(x) < 1 | max(x) > numPixelsX
+            error('The interpolation points are out of the image range.');
+         end
+      else
+         YX = varargin{2}; 
       end
-   else
-      YX = varargin{2};
-   end
-else
-   if nargin == 2
-      YX  = varargin{2};
    end
 end
 
 %Check if 'YX' or 'y' and 'x' are correctly defined.
-if ~isempty(YX)
-   if ~isnumeric(YX) | ndims(YX) > 2 | size(YX,2) ~= 2
-      error('The interpolation points is not correctly defined.');
-   end
-elseif ~isempty(x)
-   if isempty(y) | ~isnumeric(y) | ~isnumeric(x) | ...
-      ndims(y) > 2 | ndims(x) > 2 | min(size(y)) > 1 | min(size(x)) >1
-      error('The interpolation points is not correctly defined.');
-   end
+if ~isempty(YX) & (~isnumeric(YX) | ndims(YX) > 2 | size(YX,2) ~= 2)
+   error(['The interpolation points is not correctly defined. ' ...
+      'See help imInterp.']);
+elseif (~isempty(x) & isempty(y)) | (~isempty(y) & isempty(x)) 
+   error(['The interpolation points is not correctly defined. ' ...
+      'See help imInterp.']);
+elseif ~isnumeric(y) | ~isnumeric(x) | ...
+   ndims(y) > 2 | ndims(x) > 2 | min(size(y)) > 1 | min(size(x)) >1
+   error(['The interpolation points is not correctly defined. ' ...
+      'See help imInterp.']);
 end
 
 %Parse the rest of the arguments according to 'method'.
@@ -131,13 +137,13 @@ if strcmp(method,'Gaussian') == 1
    %Default correlation length.
    corLen = 0.1; 
 
-   if nargin > 5
+   if nargin > 4
       error(['Too many input arguments for the specified ' ...
          'interpolation method.']);
    end
 
-   if nargin == 5 & ~isempty(varargin{5})
-      corLen = varargin{5};
+   if nargin == 4 & ~isempty(varargin{4})
+      corLen = varargin{4};
    end
 
    %Check if 'corLen' is set correctly.
@@ -149,11 +155,11 @@ if strcmp(method,'Gaussian') == 1
    end
 
    if length(corLen) == 1
-      corLenX = corLen;
       corLenY = corLen;
+      corLenX = corLen;
    else
-      corLenX = corLen(1);
-      corLenY = corLen(2);
+      corLenY = corLen(1);
+      corLenX = corLen(2);
    end
 elseif strcmp(method,'spap2') == 1
    if nargout > 2
@@ -162,13 +168,13 @@ elseif strcmp(method,'spap2') == 1
 
    order = 4; %Default order of spline interpolation.
 
-   if nargin > 6 
+   if nargin > 5 
       error(['Too many input arguments for the specified ' ...
          'interpolation method.']);
    end
 
-   if nargin == 6 & ~isempty(varargin{6})
-      order = varargin{6};
+   if nargin == 5 & ~isempty(varargin{5})
+      order = varargin{5};
    end
 
    %Check if 'order' is correctly defined.
@@ -180,25 +186,33 @@ elseif strcmp(method,'spap2') == 1
    end
 
    if length(order) == 1
-      orderX = order;
       orderY = order;
+      orderX = order;
    else
-      orderX = order(1);
-      orderY = order(2);
+      orderY = order(1);
+      orderX = order(2);
    end
 
    if floor(orderX) ~= orderX | floor(orderY) ~= orderY
       error('The order of the spline interpolation has to be integer.');
    end
 
-   if nargin >= 5 & ~isempty(varargin{5})
-      if iscell(varargin{5}) & length(varargin{5}) == 2
-         knotsY = varargin{5}{1};
-         knotsX = varargin{5}{2};
-      elseif isnumeric(varargin{5}) & length(varargin{5}) == 2
+   if nargin >= 4 & ~isempty(varargin{4})
+      if iscell(varargin{4}) & length(varargin{4}) == 2
+         knotsY = varargin{4}{1};
+         knotsX = varargin{4}{2};
+      elseif isnumeric(varargin{4}) 
          %Get distance between breaks for constructing knot sequence.
-         dY = varargin{5}(1);
-         dX = varargin{5}(2);
+         if length(varargin{4}) == 2
+            dY = varargin{4}(1);
+            dX = varargin{4}(2);
+         elseif length(varargin{4}) == 1
+            dY = varargin{4};
+            dX = dY;
+         else
+            error(['The arguments for the method, ''spap2'' ' ...
+               'are not correctly given.']);
+         end
 
          numBrksY = max(3,ceil(numPixelsY/dY));
          numBrksX = max(3,ceil(numPixelsX/dX));
@@ -225,13 +239,13 @@ elseif strcmp(method,'spaps') == 1
    %Default correlation length.
    tol = 0.01; 
 
-   if nargin > 5
+   if nargin > 4
       error(['Too many input arguments for the specified ' ...
          'interpolation method.']);
    end
 
-   if nargin == 5 & ~isempty(varargin{5})
-      tol = varargin{5};
+   if nargin == 4 & ~isempty(varargin{4})
+      tol = varargin{4};
    end
 
    %Check if 'corLen' is set correctly.
@@ -320,8 +334,8 @@ elseif strcmp(method,'spaps') == 1
    sp = spaps({[1:numPixelsY],[1:numPixelsX]},imI,tol);
 end
 
-varargout{1} = sp;
 if nargout == 2
+   varargout{1} = sp;
    if ~isempty(YX)
       varargout{2} = fnval(sp,YX.');
    elseif ~isempty(x)
@@ -329,5 +343,14 @@ if nargout == 2
    else
       varargout{2} = fnval(sp,{[1:numPixelsY],[1:numPixelsX]});
    end
+else
+   if isempty(YX) & isempty(x)
+      varargout{1} = sp;
+   elseif ~isempty(YX)
+      varargout{1} = fnval(sp,YX.');
+   elseif ~isempty(x)
+      varargout{1} = fnval(sp,{y,x});
+   end
+
 end
 
