@@ -29,6 +29,12 @@ function [delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(phi, delta_x, 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %%%%%%%%%%%%%%% Difference operators %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Dy_minus          =  zeros(i_end, j_end);
+Dy_plus           =  zeros(i_end, j_end);
+Dy_minus_y_minus  =  zeros(i_end, j_end);
+Dy_plus_y_plus    =  zeros(i_end, j_end);
+Dy_plus_y_minus   =  zeros(i_end, j_end);
+
 for i=1:i_end
    for j=1:j_end
       if i < 3
@@ -76,6 +82,14 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
+A =             zeros(i_end, j_end);
+B =             zeros(i_end, j_end);
+C =             zeros(i_end, j_end);
+D =             zeros(i_end, j_end);
+grad_x =        zeros(i_end, j_end);
+grad_y =        zeros(i_end, j_end);
+delta_plus  =   zeros(i_end, j_end);
+delta_minus =   zeros(i_end, j_end);
 
 for i=1:i_end
    for j=1:j_end
