@@ -3,7 +3,7 @@ function out = repeatEntries(val,kTimes)
 %
 % SYNOPSIS out = repeatEntries(val,kTimes)
 %
-% INPUT    val    : matrix (or vectors) containing the rows to repeat
+% INPUT    val    : matrix (or vectors) containing the rows to repeat (works for strings, too)
 %          kTimes : number of repeats of each row (scalar or vector of size(vlaues,1))
 %
 % OUTPUT   out    : matrix of size [sum(kTimes) size(values,2)] containing
@@ -96,6 +96,11 @@ else
         end % for i=1:valSize(1)
         out = val(idxMat,:);
         
+    end
+    
+    % check for strings and transform if necessary
+    if isstr(val)
+        out = char(out);
     end
     
 end % if doScalar
