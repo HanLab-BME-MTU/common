@@ -42,7 +42,7 @@ if nargin>2
         directory = pwd;
     elseif strcmp(directory,'ask')
         directory = uigetdir(pwd,'select a directory to search');
-        if isempty(directory)
+        if directory == 0
             error('searchFiles aborted by user')
         end
     elseif ~isdir(directory)
