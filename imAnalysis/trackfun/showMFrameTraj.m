@@ -1,5 +1,15 @@
-function showMFrameTraj(MFT,color,scale)
+function showMFrameTraj(MFT,color)
 %showMFrameTraj Display the trajectories of speckles over multiframes.
+%
+% SYNOPSIS :
+%    showMFrameTraj(MFT,color)
+%
+% INPUT :
+%    MFT : An m-by-2*n matrix where 'm' is the number of starting points
+%       of all the trajectories and 'n' is the number of frames. The '2*n'
+%       columns have the form [y1 x1 ... yi xi ...] where (yi,xi) is the
+%       position of the points in the i-th frame.
+%    color : Matlab color : 'r', 'b', 'y' etc.
 
 figure(gcf);
 
