@@ -77,7 +77,7 @@ dfltCMap=[   0         0         1.0000; % Blue
 if nargin<4 | nargin>5
     error('The function expects 4 or 5 parameters.');
 end
-if nargin==4
+if nargin==4 | (nargin==5 & isempty(convFactor))
     convFactor=dfltConvFactor;
 end
 
