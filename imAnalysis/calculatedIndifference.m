@@ -60,16 +60,16 @@ init=[nonzeros(mpm(:,1)) nonzeros(mpm(:,2))];
 %[pv1]=clusterQuantRipley(mpm,ms(1),ms(2));
 
 %plot results
-figure 
-plot(simav,'b.');
+%figure 
+%plot(simav,'b.');
 
-hold
+%hold
 %plot(pv1,'r.');
-plot(simmin);
-plot(simmax);
-hold
+%plot(simmin);
+%plot(simmax);
+%hold
 
-end
+end  % Function calculatedIndifference
 
 
 
@@ -347,7 +347,7 @@ for k=1:nx
     %initialize distance rr to high value
     rr=min(matsizx,matsizy);
     %change rr to smallest available nearest neighbour distance
-    [xynn,rr]=nearnei_2mat(xycor,xycor,xynn,rr,k);
+    [xynn,rr]=nearnei_twomat(xycor,xycor,xynn,rr,k);
     
     %if point is close to any edge, check over the edge for closer nearest 
     %neighbour candidates; more than one edge criterion may apply!

@@ -75,6 +75,9 @@ function MakeQTMovie(cmd,arg, arg2)
 %    Fixed sound format problems.
 % April 10, 2000 - by Malcolm. Fixed problem with SGI (at least) and B&W
 %    addmatrix.
+% October 15, 2004 - by Andre Kerstens (kerstens@scripps.edu), implemented
+% a fix for two known bugs in Matlab 7 (R14) basically turning the
+% accelerator and javafigures off
 
 if nargin < 1
 	fprintf('Syntax: MakeQTMovie cmd [arg]\n')
