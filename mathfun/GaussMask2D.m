@@ -1,21 +1,21 @@
 function gauss=GaussMask2D(sigma,fSze,cent,cnorm,absCenter)
-% GaussMask3D	create a gaussian 2D mask
+% GaussMask2D	create a gaussian 2D mask
 %
-%    SZNOPSIS gauss =GaussMask3D(sigma,fSze,cent,cnorm,absCenter);
+%    SYNOPSIS gauss =GaussMask3D(sigma,fSze,cent,cnorm,absCenter);
 %
 %    INPUT: sigma  of gauss mask [sigmaX sigmaY] or [sigma]. 
 %                  If scalar, sigma will be the same for all dimensions
 %           fSze   size of the gauss mask [sizeX sizeY] or [size]
 %                  If scalar, size will be the same for all dimensions.
 %                  (odd size required for symmetric mask!)
-%           cent   (optional)3D vector with center position [0 0] is
+%           cent   (optional)2D vector with center position [0 0] is
 %                  center of fSze (default=[0 0])
 %                  if absCenter = 1, center position is measured from
 %                  [0,0] in matrix coordinates (which is outside of the
 %                  array by half a pixel!)
 %           cnorm  (optional) select normalization method:
 %                  =0 (default) no normalization - max of gauss will be 1
-%                  =1 norm so that integral will be exactly 1
+%                  =1 norm so that integral over pixels will be exactly 1
 %                  =2 norm so that integral of an infinite Gauss would be 1
 %           absCenter (optional) select the type of center vector
 %                  =0 (default). Zero is at center of array
@@ -81,21 +81,21 @@ ey = diff(0.5 * erfc(-y./sqrt(2)));
 
 
 % construct the 2D matrix 
-exy=ex'*ey;
+gauss(:)=ex'*ey;
 
 
 % norm Gauss
 switch cnorm
     case 0 % maximum of Gauss has to be 1
-        gauss(:) = exy(:)*((2*pi)*sigma(1)*sigma(2));
+        gauss = gauss*((2*pi)*sigma(1)*sigma(2));
 
     case 1
-        gauss(:) = exy(:)/sum(exy(:));
+        gauss = gauss/sum(gauss(:));
     case 2 % the whole erfc thing is already normed for infinite Gauss
         % so nothing to do here.
-        gauss(:) = exy(:);
+        %gauss(:) = exy(:);
 
     otherwise
-        gauss(:) = exy(:);
+        %gauss(:) = exy(:);
 
 end
