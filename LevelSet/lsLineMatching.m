@@ -67,7 +67,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 CONTROL = 1; 
 MOVIE = 0;
-INT_VELOCITY = 1;
+INT_VELOCITY = 0;
 global residual_last;
 global residual;
 global residual_i;
@@ -227,24 +227,25 @@ j_end   = size(phi_t1,2);
 
 
 % Put into vector
-phi_t0_vec = reshape(phi_t0, prod(size(phi_t0)),1);  
-if INT_VELOCITY
-    %track_points_0 = phi_zero_t0';
-    
-    if ~exist('r_t0','var')
-        r_t0=1:sp_spacing:x_spline_t0.knots(end);
-    end
-    % pixel based
+phi_t0_vec = reshape(phi_t0, prod(size(phi_t0)),1);
+%track_points_0 = phi_zero_t0';
+
+if ~exist('r_t0','var')
+    r_t0=1:sp_spacing:x_spline_t0.knots(end);
+end
+% pixel based
 %     for i=1:floor(size(known_zero_level_points_t0,1)/2)
 %         track_points_0(i,1) = known_zero_level_points_t0(2*i-1,1);
 %         track_points_0(i,2) = known_zero_level_points_t0(2*i-1,2);
 %     end
-    
-    % spline based
-    track_points_0(:,1) = fnval(x_spline_t0, r_t0)';
-    track_points_0(:,2) = fnval(y_spline_t0, r_t0)';
-    
-    num_track_points = size(track_points_0, 1);
+
+% spline based
+track_points_0(:,1) = fnval(x_spline_t0, r_t0)';
+track_points_0(:,2) = fnval(y_spline_t0, r_t0)';
+
+num_track_points = size(track_points_0, 1);
+
+if INT_VELOCITY    
     phi_t0_vec = cat(1, phi_t0_vec,track_points_0(:,1));
     phi_t0_vec = cat(1, phi_t0_vec,track_points_0(:,2));
 end
@@ -260,10 +261,10 @@ hold on
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%% Integrate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if 1
-tcpu1 = clock;
-[t_steps, Y, TE,YE,IE] = ode45(@lsH,[0 200],phi_t0_vec, options,...
-    phi_t1, i_end, j_end, delta_x, delta_y, domain);
-cpu_time = etime(clock,tcpu1)
+    tcpu1 = clock;
+    [t_steps, Y, TE,YE,IE] = ode45(@lsH,[0 200],phi_t0_vec, options,...
+        phi_t1, i_end, j_end, delta_x, delta_y, domain);
+    cpu_time = etime(clock,tcpu1)
 else
     tcpu1 = clock;
     dt = 0.1;
@@ -278,6 +279,19 @@ else
     display(['Solution converged at time step  ' num2str(TE(end))]);
 end
 Y=Y';
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%              Display results                  %%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 axis([0 domain.x_size 0 domain.y_size]);
 h_level_sets = figure(gcf);
@@ -295,6 +309,28 @@ for t=1:num_time_steps
         phi(:,:,t) = reshape(Y(:,t),i_end, j_end);
     end
 end
+
+
+% get the particle tracks
+track_points(1,:,:) = track_points_0;
+for t=2:num_time_steps
+        zero_level_set_t = lsGetZeroLevel(phi(:,:,t),domain);
+        % get spline 
+        % parameter
+        s_p = 1:length(zero_level_set_t);
+        sp_x = spap2(10, 4, s_p, zero_level_set_t(1,:)');
+        sp_y = spap2(10, 4, s_p, zero_level_set_t(2,:)');
+        
+        for i =1:size(track_points_0,1)
+            % get spline
+
+            track_points(t,i,:) = getClosestPt(track_points(t-1,i,:),sp_x, sp_y);
+        end
+end
+%%%
+
+
+
 
 if CONTROL
     h_f = figure(gcf);
@@ -408,7 +444,7 @@ if CONTROL
     hold on
     plot(x_spline_points_t1, y_spline_points_t1,'r');
     for p = 1:size(track_points,1)
-        plot(squeeze(track_points(p,1,:)), squeeze(track_points(p,2,:)), '-');
+        plot(squeeze(track_points(p,1,:)), squeeze(track_points(p,1,:)), '-');
     end
     axis equal
     axis([0 domain.x_size 0 domain.y_size]);

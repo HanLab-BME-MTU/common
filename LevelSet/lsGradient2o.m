@@ -244,6 +244,9 @@ delta_minus =  sqrt((Bmax.*B).^2 + (Amin.*A).^2 + (Dmax.*D).^2 + (Cmin.*C).^2);
 % Dx_plus_x_plus    =  Dx_plus_x_minus; %  add last element!!! 
 % Dx_plus_x_plus(:,1)=[];
 % Dx_plus_x_plus(:,end+1) = Dx_plus_x_plus(:,end);
+%
+%
+%
 % function m = switch_m(D1, D2)
 % 
 % if (D1 * D2) < 0

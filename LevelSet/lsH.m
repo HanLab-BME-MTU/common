@@ -1,6 +1,8 @@
 function dy_vec = lsH(t, y, val_matrix_t1, i_end, j_end, delta_x, delta_y, domain)
 
-if 1
+INT_VELOCITY = 0;
+
+if INT_VELOCITY
     phi_vec = y(1:i_end*j_end);
     phi_t = reshape(phi_vec , i_end, j_end);
     x_vec = y(i_end*j_end+1 : end);
@@ -31,7 +33,7 @@ elseif spatial_op == 2
     H_vec = reshape(H, numel(H),1);
 end
 
-if 1
+if INT_VELOCITY
     % Integrate the velocity 
     %%%% Velocity interpolation  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % find a B-spline interpolation of the velocity field
@@ -42,6 +44,10 @@ if 1
     x_velocity = fnval(velocity_fct_spline, x');    
     %x_velocity = interp2(domain.x_grid_lines,domain.y_grid_lines, F ,x(:,1), x(:,2),'cubic');
     %x_velocity = x_velocity';
+    
+    % a new try. Take into account any possible discontiuities!!
+    x_velocity = ls_dis_interpolate(F, x, domain); 
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -71,6 +77,8 @@ if 1
     
     dy_vec = cat(1, H_vec, dx_x');
     dy_vec = cat(1, dy_vec, dx_y');
+else
+    dy_vec = H_vec;
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
