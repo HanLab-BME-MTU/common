@@ -2,11 +2,31 @@ function [xi,yi] = roicurve(varargin)
 %roicurve: Interactively insert a curve in the current figure without 
 %          acturally drawing it.
 %
-% SYNTAX: [xi,yi]= roicurve
-%    The coordinates of the curve is returned in 'xi' and 'yi'.
+%    Draw a curve on the current axes by clicking points in the figure. 
+%    Exit when you hit the return key.
+%
+% SYNTAX: 
+%    [xi,yi] = roicurve
+%       The coordinates of the curve is returned in 'xi' and 'yi'.
+%    [xi,yi] = roicurve(maxNumPoints)
+%       Specify the maximum number of break points on the curve. When this
+%       number is reached by mouse clicking, the program exits and return the
+%       curve. 'maxNumPoints' has to be 0 or positive. When it is zero, you
+%       can click as many points as possible and the program exits when you
+%       hit the return key. 
 
-if nargin > 0
-   error('No input argument is implemented yet.');
+if nargin > 1
+   error('Too many input arguments.');
+end
+
+if nargin == 1
+   if varargin{1} < 0
+      error(['The maximum number of specified break points has to ' ...
+         'be zero or positive.']);
+   end
+   handles.maxNumPoints = varargin{1};
+else
+   handles.maxNumPoints = 0;
 end
 
 %Get the current figure.
@@ -38,13 +58,16 @@ set(h,'KeyPressFcn',@keyPress_Callback);
 %Set it to be modal.
 %set(h,'WindowStyle','modal','MenuBar','figure');
 
-w    = waitforbuttonpress;
-ckey = get(h,'CurrentCharacter');
-while w ~= 1 | (w == 1 & double(ckey) ~= 13)
+w       = waitforbuttonpress;
+ckey    = get(h,'CurrentCharacter');
+handles = guidata(h);
+while (w == 0 & (handles.maxNumPoints == 0 | handles.numPoints < ...
+   handles.maxNumPoints)) | (w == 1 & double(ckey) ~= 13)
    %When there is no key stroke from the key board or the key stroke is not
    % return, keep waiting.
-   w = waitforbuttonpress;
-   ckey = get(h,'CurrentCharacter');
+   w       = waitforbuttonpress;
+   ckey    = get(h,'CurrentCharacter');
+   handles = guidata(h);
 end
 
 %Set it back to normal.

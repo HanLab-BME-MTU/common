@@ -317,13 +317,15 @@ function manVelocityTrack_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-whatIsShown = handles.whatIsShown;
-if strcmp(whatIsShown,'kymo') == 0
-   %When what is shown in the figure window is not the kymograph.
+numKymoCurves = handles.numKymoCurves;
+if numKymoCurves == 0
    return;
 end
 
-[x,y] = roicurve;
+showKymograph_Callback(hObject,eventdata,handles);
+handles = guidata(hObject);
+
+[x,y] = roicurve(2);
 
 selKymoCurve = handles.selKymoCurve;
 numVLines = handles.numVLines(selKymoCurve)+1;
@@ -355,6 +357,28 @@ handles.selVLine(selKymoCurve)             = numVLines;
 redrawAllKymo(handles);
 guidata(hObject,handles);
 
+% --- Executes on button press of 'calVelocity'.
+function calVelocity_Callback(hObject, eventdata, handles)
+% hObject    handle to calVelocity (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+numKymoCurves = handles.numKymoCurves;
+if numKymoCurves == 0
+   return;
+end
+
+showKymograph_Callback(hObject,eventdata,handles);
+handles = guidata(hObject);
+
+selKymoCurve = handles.selKymoCurve;
+kym          = handles.kym{selKymoCurve};
+bw           = handles.width(selKymoCurve);
+
+handles.calV(selKymoCurve) = calKymoSpeed(kym,bw);
+
+set(handles.calVFieldH,'String',num2str(handles.calV(selKymoCurve)));
+guidata(hObject,handles);
 
 % --- Executes on button press in showKymograph.
 function showKymograph_Callback(hObject, eventdata, handles)
