@@ -1,14 +1,15 @@
-function [cpar,pvr,dpvr] = ClusterQuantRipley (mpm,imsizex,imsizey)
+function[cpar,pvr,dpvr]=ClusterQuantRipley(mpm,imsizex,imsizey);
 % ClusterQuantRipley calculates a quantitative clustering parameter based on
 % fractal theory
 %
-% SYNOPSIS   [cpar,pvr,dpvr] = ClusterQuantRipley (mpm,imsizex,imsizey)
+% SYNOPSIS   [dfr,resvec]=ClusterQuantRipley(mpm,imsizex,imsizey);
 %       
 % INPUT      mpm:   mpm file containing (x,y) coordinates of points in the
 %                   image in succesive columns for different time points
 %            imsizex:   x-size of the image (maximum possible value for x-coordinate)
 %            imsizey:   y-size of the image (maximum possible value for
 %                       y-coordinate)
+%            
 %            NOTE: in Johan's mpm-files, the image size is 1344 x 1024
 %               pixels
 %
@@ -29,17 +30,14 @@ function [cpar,pvr,dpvr] = ClusterQuantRipley (mpm,imsizex,imsizey)
 %                   function corresponding to a Poisson random clustering
 %                   is corrected for (corr. to zero line)
 %
-% DEPENDENCES   FractClusterQuant uses {pointsincircle,clusterpara}
-%               FractClusterQuant is used by { }
+% DEPENDENCES   ClusterQuantRipley uses {pointsincircle,clusterpara}
+%               ClusterQuantRipley is used by { }
 %
-% Revision History
-% Name                  Date            Comment
-% --------------------- --------        --------------------------------------------------------
-% Dinah Loerke          Sep 04          Initial version
-% Andre Kerstens        Oct 04          Fixed some typos in the comment header
+% Dinah Loerke, October 6th, 2004
 
 %create vector containing x- and y-image size
 matsiz=[imsizex imsizey];
+rs=round(min(matsiz)/2);
 
 %determine size of mpm-file
 [nx,ny]=size(mpm);
@@ -47,8 +45,8 @@ matsiz=[imsizex imsizey];
 %initialize results matrix pvr; x-dimension equals the employed number of
 %values for the circle radius, y-dimension equals number of planes of the
 %input mpm-file
-pvr=zeros(min(matsiz),(ny/2));
-dpvr=zeros(min(matsiz),(ny/2));
+pvr=zeros(rs,(ny/2));
+dpvr=zeros(rs,(ny/2));
 cpar=[1:(ny/2)];
 
 %initialize temporary coordinate matrix matt, which contains the object 
@@ -67,12 +65,14 @@ for k=1:(round(ny/2))
     %only the nonzero points of matt, smatt
     smatt=[nonzeros(matt(:,1)), nonzeros(matt(:,2)) ];
     
-    %uncomment the next five lines if you want to monitor progress
-    [smx,smy]=size(smatt);
-    tempnp=max([smx,smy]);
-    disp('  plane  number of objects');
-    tempi=[k, tempnp];
-    disp(tempi);
+    %comment/uncomment the next five lines if you want to monitor progress
+    if(mod(k,10)==0)
+        [smx,smy]=size(smatt);
+        tempnp=max([smx,smy]);
+        disp('  plane  number of objects');
+        tempi=[k, tempnp];
+        disp(tempi);
+    end
     
     %now determine number of objects in circle of increasing radius,
     %averaged over all objects in smatt, and normalized with point density
@@ -177,27 +177,24 @@ function[m2]=pointsincircle(m1,ms)
 %                   radius default values are 1,2,3,....,min(ms)
 %                   function is averaged over all objects in the
 %
-% DEPENDENCES   pointsincircle uses {area_snippedcircleG, distanceMatrix, threshold}
-%                   (distanceMatrix, threshold added to this file)
+% DEPENDENCES   pointsincircle uses {distanceMatrix, circumferenceCorrectionFactor}
+%                   (distanceMatrix, circumferenceCorrectionFactor added to this file)
 %               pointsincircle is used by {FractClusterQuant }
 %
-% Dinah Loerke, September 13th, 2004
+% Dinah Loerke, October 4th, 2004
 
 
 [lm,wm]=size(m1);
 
 %for points at the edges (where the circle of increasing size is cut off by
 %the edges of the image), this function corrects for the reduced size of 
-%the circle
-%actual circle size (area of the snipped circle) is calculated using the 
-%function
-
-%for each point, determine area of circle with function 
-%[aa]=area_snippedcircle(rr,x,y,msx,msy)
+%the circle using the 
+%function circumferenceCorrectionFactor
 
 msx=ms(1);
 msy=ms(2);
 minms=min(ms);
+rs=round(minms/2);
 
 %create neighbour matrix m3
 %matrix m3 contains the distance of all points in m1 from all points
@@ -207,11 +204,13 @@ minms=min(ms);
 %create numpoints vector (number of points in circle of corresponding radius)
 %loop over all radius values between 1 and minms
 %initialize m2 vector
-m2=1:minms;
+m2=1:rs;
 
-for r=1:minms
-    %for given radius, set all values of m3 higher than the radius value to zero
-    [thresh_mdist]=threshold(mdist,r);
+for r=1:rs
+    %for given radius, set all values of mdist higher than the radius value to zero
+    %the original values are not retained
+    thresh_mdist=mdist.*max((r+1-mdist),0);
+
         
     %average over all points in the image, i.e. loop over all rows 
     %(or all columns) in thresh_mdist
@@ -231,16 +230,17 @@ for r=1:minms
         %possibly cut of cut off by a rectangle, i.e. the edges of the 
         %image), whereas npvt/corrfac is the projected number of objects
         %found in unsnipped circle of radius r
-        x=m1(n,1);
-        y=m1(n,2);
-        carea=area_snippedcircleG(r,x,y,msx,msy);
-        corrfac=carea/(pi*r^2);
-        if(corrfac==0)
-            disp('carea=0 Check if you have msx, msy entered in the correct order!!');
+        xx=m1(n,1);
+        yy=m1(n,2);
+        corfac=1;
+        if( (min(xx,(msx-xx))<r)|(min(yy,(msy-yy))<r) )
+            corfac=areaCorrectionFactor(xx,yy,r,msx,msy);
         end
-        %add number of points npvt weighted by the correction factor
-        %corrfac to the sum of points
-        npv=npv+(npvt/corrfac);
+        if(corfac==0)
+            dp=[r n];
+            disp(dp);
+        end
+        npv=npv+(npvt/corfac);
     end
     
     %to average, divide sum by number of points
@@ -254,7 +254,7 @@ for r=1:minms
     %it is a perfect square function for a perfectly random distribution of
     %points
     m2(r)=npv/(pi*lm/(msx*msy));
-    end
+end
 
 
   
@@ -275,27 +275,8 @@ for k=1:ncx1
     end
 end
 
-    
 
-function[m2]=threshold(m1,t)
-%this subfunction thresholds matrix m1 to value t (sets all values 
-%exceeding t to zero)
-%input: m1 (n x m) matrix containing distance values
-%output: m2 (n x m) matrix containing all distance values
-%below threshold value t, others are set to zero
-
-[n,m]=size(m1);
-m2=m1;
-for k=1:n
-    for n=1:m
-        if(m1(k,n)>t)
-            m2(k,n)=0;
-        end
-    end
-end
-
-
-function[aa]=area_snippedcircleG(rr,x,y,msx,msy)
+function[corfac]=areaCorrectionFactor(xx,yy,r,msx,msy)
 %function[a]=area_snippedcircle(r,x,y)
 %calculates the are of a snipped circle
 %i.e. circle center is placed into rectangle (of size msx,msy)
@@ -304,67 +285,28 @@ function[aa]=area_snippedcircleG(rr,x,y,msx,msy)
 %position of cricle center = x,y
 %size of rectangle msx,msy
 %GEOMETRIC SOLUTION
-%DEPENDENCES   area_snippedcircleG is used by pointsincircle 
 
-rsiz=size(rr);
-aa=rr;
-for ii=1:rsiz
-%geometrical:
-    r=rr(ii);
-    %loop over four quadrants
-    %for each quadrant, we consider the intersection area of: 
-    %A the circle of radius r around the origin (here at x,y), and 
-    %B the rectangle representing the image size in this quadrant
-    %The rectangle is defined by two points: the origin at (x,y) 
-    %and the corresponding corner of the field of view (0,0), (msx,0),
-    %(msx,msy), and (0,msy) for the respective quadrant
-    %thus, the side lenghths of the rectangle are calculated below
-    avector=[1:4];
-    for q=1:4
-        if(q==1)
-            X=x;
-            Y=y;
-        elseif(q==2)
-            X=msx-x;
-            Y=y;
-        elseif(q==3)
-            X=msx-x;
-            Y=msy-y;
-        elseif(q==4)
-            X=x;
-            Y=msy-y;
-        end
-        %if the circle is fully inside the rectangle, the area of the
-        %quadrant is a simple quarter circle
-        aq=(1/4)*(pi*r^2);
-        %if the quadrant's corner is inside the circle, then the quadrant 
-        %area is the area of the rectangle
-        if(sqrt(X^2+Y^2)<=r)
-            aq=X*Y;
-        %else the quadrant's corner is outside the circle, but not far enough
-        %for the circle to be "undamaged"; thus, the quadrant area is a 
-        %quarter circle with a chunk snipped away
-        %the chunk is calculated geometrically as below
-        else
-            if(X<r)
-                xchunk=pi*r^2*( 0.25-(asin(X/r))/(2*pi) )-0.5*X*sqrt(r^2-X^2);
-                aq=aq-xchunk;
-            end
-            if(Y<r)
-                ychunk=pi*r^2*( 0.25-(asin(Y/r))/(2*pi) )-0.5*Y*sqrt(r^2-Y^2);
-                aq=aq-ychunk;
-            end
-        end
-        avector(q)=aq;            
+
+x=min(xx,(msx-xx));
+y=min(yy,(msy-yy));
+
+corfac=1;
+if((x<r)&(y<r))
+    if( (x<r) & (y<r) & (sqrt(x^2+y^2)>r) )
+         wfac=(2*asin(x/r)+2*asin(y/r))/(2*pi);
+         a=wfac*pi*r^2+ x*sqrt(r^2-x^2) + y*sqrt(r^2-y^2);
+         corfac=a/(pi*r^2);
+    else
+         wfac=(0.5*pi+asin(x/r)+asin(y/r))/(2*pi);
+         a=wfac*pi*r^2+ x*y + 0.5*x*sqrt(r^2-x^2)+ 0.5*y*sqrt(r^2-y^2);
+         corfac=a/(pi*r^2);
     end
-    %for each radius, the total area is the sum over the four quadrants
-    aa(ii)=sum(avector);
+else
+    z=min(x,y);
+    wfac=(pi+2*asin(z/r))/(2*pi);
+    a=wfac*pi*r^2 + z*sqrt(r^2-z^2);
+    corfac=a/(pi*r^2);
 end
-    
-    
 
-        
-    
-    
-    
+
     
