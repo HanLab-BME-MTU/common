@@ -1,34 +1,64 @@
-function [grad_x, grad_y]  = lsGradient(phi, order, delta_x, delta_y, i_end, j_end)
+function [grad_x, grad_y]  = lsGradient(phi, order, support, delta_x, delta_y, i_end, j_end)
+% LSGRADIENT calculates the gradient of order "order"
+%    
+%
+% SYNOPSIS    [grad_x, grad_y]  = lsGradient(phi, order, support, delta_x, delta_y, i_end, j_end)
+%
+% INPUT         phi     :
+%               order   :                                                       
+%               support :    
+%               delta_x : 
+%               delta_y :
+%               i_end   :
+%               j_end   :
+%                         
+% 
+% OUTPUT        grad_x  :
+%               grad_y  :
+%        
+%                           
+% DEPENDENCES   lsIntersectSplineLine uses {                            
+%                                       }
+%
+%               lsIntersectSplineLine is used by { 
+%                                           }
+%
+% Matthias Machacek 07/12/04
+
 
 %%%%%%%%%%%%%%% Difference operators %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if order == 1
-    %%%%%%%%%%%%%%% First order operators %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Dy_minus =  zeros(i_end, j_end);
-    Dy_plus  =  zeros(i_end, j_end);
+    if support == -1
+        %%%%%%%%%%%%%%% First order operators %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        Dy_minus =  zeros(i_end, j_end);
+        Dx_minus =  zeros(i_end, j_end);
 
-    Dx_minus =  zeros(i_end, j_end);
-    Dx_plus  =  zeros(i_end, j_end);
+        Dx_minus(:,2:j_end) = diff(phi,order,2);
+        Dx_minus(:,1) = Dx_minus(:,2);
+        Dx_minus = Dx_minus ./ delta_x;
 
+        Dy_minus(2:i_end,:) = diff(phi,order,1);
+        Dy_minus(1,:) = Dy_minus(1,:);
+        Dy_minus = Dy_minus ./ delta_y;
 
-    Dx_plus = diff(phi,order,2);
-    Dx_plus(:,j_end) = Dx_plus(:,j_end-1);
-    Dx_plus = Dx_plus ./ delta_x;
+        grad_x = Dx_minus;
+        grad_y = Dy_minus;
+    elseif support == 1
+        Dx_plus  =  zeros(i_end, j_end);
+        Dy_plus  =  zeros(i_end, j_end);
 
-    Dy_plus = diff(phi,order,1);
-    Dy_plus(i_end,:) = Dy_plus(i_end-1,:);
-    Dy_plus = Dy_plus ./ delta_y;
+        Dx_plus = diff(phi,order,2);
+        Dx_plus(:,j_end) = Dx_plus(:,j_end-1);
+        Dx_plus = Dx_plus ./ delta_x;
 
-    Dx_minus(:,2:j_end) = diff(phi,order,2);
-    Dx_minus(:,1) = Dx_plus(:,2);
-    Dx_minus = Dx_minus ./ delta_x;
+        Dy_plus = diff(phi,order,1);
+        Dy_plus(i_end,:) = Dy_plus(i_end-1,:);
+        Dy_plus = Dy_plus ./ delta_y;
 
-    Dy_minus(2:i_end,:) = diff(phi,order,1);
-    Dy_minus(1,:) = Dy_plus(1,:);
-    Dy_minus = Dy_minus ./ delta_y;    
-    
-    grad_x = Dx_plus;
-    grad_y = Dy_plus;
+        grad_x = Dx_plus;
+        grad_y = Dy_plus;
+    end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 elseif order == 2
@@ -39,8 +69,6 @@ elseif order == 2
     delta_y_2  = 2  * delta_y;
     
     %%%%%%%%%%%%%%% Second order central operators %%%%%%%%%%%%%%%%%%%%
-    Dx_minus          =  zeros(i_end, j_end);
-    Dx_plus           =  zeros(i_end, j_end);
     for i=1:i_end
         for j=1:j_end
             if i < 2

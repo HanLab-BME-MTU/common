@@ -65,7 +65,7 @@ elseif 0
          F(i,j) =  -Dx_plus_target(i,j) * grad_x - Dy_plus_target(i,j) * grad_y;
       end
    end  
-else
+elseif 0
     % Distance driven flow
     if 0
         % Calculate the velocity at the front, thus at the zero level set
@@ -86,6 +86,11 @@ else
             F(i,j) = phi(i,j) - phi_target(i,j);
         end
     end
+else
+    % Curvature driven flow
+    F = lsCurvature(phi, domain.x_spacing, domain.y_spacing, i_end, j_end);
+    %F = 1 - 0.35 .* F;
+    F = - F;
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -49,20 +49,78 @@ for i = 1:num_time_steps
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%% Gradient field interpolation  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % get the gradient at these points (grad phi)
-    %[delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(dist_matrix(:,:,i), delta_x, delta_y, i_end, j_end);    
-    [grad_x, grad_y] = lsGradient(dist_matrix(:,:,i), 2, delta_x, delta_y, i_end, j_end);
+    if 0
+        [grad_x, grad_y] = lsGradient(dist_matrix(:,:,i), 2, 0, delta_x, delta_y, i_end, j_end);
+        
+        % Find a B-spline interpolation of the gradient field
+        grad_x_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_x');
+        grad_y_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_y');
+
+        % Get the gradient at the track points
+        track_points_grad_x = fnval(grad_x_spline, track_points(:,:,i));
+        track_points_grad_y = fnval(grad_y_spline, track_points(:,:,i));
+
+        grad = sqrt(track_points_grad_x.^2 + track_points_grad_y.^2);
+        
+        track_points_grad_x_u = track_points_grad_x ./ grad;
+        track_points_grad_y_u = track_points_grad_y ./ grad;      
+        
+    elseif 0
+        [grad_x_l, grad_y_l] = lsGradient(dist_matrix(:,:,i), 1,  -1, delta_x, delta_y, i_end, j_end);
+        [grad_x_r, grad_y_r] = lsGradient(dist_matrix(:,:,i), 1,  1, delta_x, delta_y, i_end, j_end);
+        
+        % Find a B-spline interpolation of the gradient field
+        grad_x_l_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_x_l');
+        grad_y_l_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_y_l');
+        grad_x_r_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_x_r');
+        grad_y_r_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_y_r');
+        
+        % Get the gradient at the track points
+        track_points_grad_x_l = fnval(grad_x_l_spline, track_points(:,:,i));
+        track_points_grad_y_l = fnval(grad_y_l_spline, track_points(:,:,i));
+        track_points_grad_x_r = fnval(grad_x_r_spline, track_points(:,:,i));
+        track_points_grad_y_r = fnval(grad_y_r_spline, track_points(:,:,i));
+        
+        % Sumation
+        grad_n_rr = sqrt(track_points_grad_x_r.^2 + track_points_grad_y_r.^2); 
+        grad_n_rl = sqrt(track_points_grad_x_r.^2 + track_points_grad_y_l.^2);        
+        grad_n_lr = sqrt(track_points_grad_x_l.^2 + track_points_grad_y_r.^2);     
+        grad_n_ll = sqrt(track_points_grad_x_l.^2 + track_points_grad_y_l.^2);    
+        
+        grad_x_s = track_points_grad_x_r ./ grad_n_rr +...
+                   track_points_grad_x_r ./ grad_n_rl +...
+                   track_points_grad_x_l ./ grad_n_lr +...
+                   track_points_grad_x_l ./ grad_n_ll; 
+               
+        grad_y_s = track_points_grad_y_r ./ grad_n_rr +...
+                   track_points_grad_y_l ./ grad_n_rl +...
+                   track_points_grad_y_r ./ grad_n_lr +...
+                   track_points_grad_y_l ./ grad_n_ll; 
+               
+
     
-    % Find a B-spline interpolation of the gradient field
-    grad_x_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_x');
-    grad_y_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_y');
+        grad = sqrt(grad_x_s.^2 + grad_y_s.^2);
     
-    % Get the gradient at the track points
-    track_points_grad_x = fnval(grad_x_spline, track_points(:,:,i));
-    track_points_grad_y = fnval(grad_y_spline, track_points(:,:,i));
-   
-    grad = sqrt(track_points_grad_x.^2 + track_points_grad_y.^2);
-    track_points_grad_x_u = track_points_grad_x ./ grad;
-    track_points_grad_y_u = track_points_grad_y ./ grad;
+        track_points_grad_x_u = grad_x_s ./ grad;
+        track_points_grad_y_u = grad_y_s ./ grad;
+    else
+         
+        [grad_x, grad_y] = gradient(dist_matrix(:,:,i), delta_x, delta_y); 
+        
+        % Find a B-spline interpolation of the gradient field
+        grad_x_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_x');
+        grad_y_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_y');
+
+        % Get the gradient at the track points
+        track_points_grad_x = fnval(grad_x_spline, track_points(:,:,i));
+        track_points_grad_y = fnval(grad_y_spline, track_points(:,:,i));
+        
+        grad = sqrt(track_points_grad_x.^2 + track_points_grad_y.^2);
+    
+        track_points_grad_x_u =  track_points_grad_x./ grad;
+        track_points_grad_y_u =  track_points_grad_y./ grad;       
+    end   
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     

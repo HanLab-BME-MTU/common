@@ -15,7 +15,7 @@ function lsLineMatching
 % Matthias Machacek 6/10/04
 
 test = 0;
-TEST_CASE = 2;
+TEST_CASE = 3;
 
 [mask_img_t0, mask_img_t1,x_spline_t0, y_spline_t0, x_spline_t1,y_spline_t1,...  
     known_zero_level_points_t0, known_zero_level_points_t1, grid_coordinates, domain] = lsLoadData(TEST_CASE);
@@ -131,7 +131,7 @@ if 1
     odeset;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%% Integrate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [t_steps, Y, TE,YE,IE] = ode45(@dy_fct,[0 20],val_matrix_t0_vec, options,...
+    [t_steps, Y, TE,YE,IE] = ode45(@dy_fct,[0 200],val_matrix_t0_vec, options,...
         val_matrix_t1, i_end, j_end, delta_x, delta_y, domain);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
@@ -155,7 +155,9 @@ if 1
             i_end, j_end, grad_x, grad_y, domain);
     end
 
-
+    kappa = lsCurvature(phi(:,:,end), delta_x, delta_y, i_end, j_end);
+    figure
+    surface(kappa);
 
     % Extract the zero level
     phi_zero = lsGetZeroLevel(phi(:,:,end), domain);
@@ -265,10 +267,10 @@ plot(phi_zero(1,:), phi_zero(2,:),'r');
 for t = 1:size(track_points,3)
     plot(track_points(1,:,t), track_points(2,:,t), '-');   
 end
-if TEST_CASE == 3
-    plot(fnval(x_spline_tb,1: x_spline_tb.knots(end)),...
-         fnval(y_spline_tb,1: y_spline_tb.knots(end)) ,'y');   
-end
+% if TEST_CASE == 3
+%     plot(fnval(x_spline_tb,1: x_spline_tb.knots(end)),...
+%          fnval(y_spline_tb,1: y_spline_tb.knots(end)) ,'y');   
+% end
 axis equal
 title('Time lines');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
