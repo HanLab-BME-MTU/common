@@ -3,7 +3,9 @@ function [x,dx,mse] = myLscov(A,b,V)
 %   X = MYLSCOV(A,B,V) returns the vector X that solves A*X = B + E
 %   where E is normally distributed with zero mean and coVARIANCE V.
 %   A must be M-by-N where M > N.  This is the over-determined
-%   least squares problem with covariance V of the data.  
+%   least squares problem with covariance V of the data. If V is diagonal,
+%   the vector containing the diagonal only can be supplied instead of the
+%   full matrix.
 %   The solution is found without inverting V.
 %   
 %   Fitting a noise-free constant leads to imaginary values returned for dx
@@ -45,12 +47,18 @@ function [x,dx,mse] = myLscov(A,b,V)
 [m,n] = size(A);
 
 % Error checking
-if m <= n, error('Problem must be over-determined so that M > N.'); end
+if m < n, error('Problem must be over-determined so that M > N.'); end
+if m == n, warning('MYLSCOV:NOFIT','There are as many equations as unknowns. There will be no fitting.'), end
 if size(b,1)~=m, 
   error(sprintf('B must be a column vector of size %d-by-1.',m));
 end
-if ~isequal(size(V),[m m]), 
+sv = size(V);
+if ~isequal(sv,[m m]), 
+    if any((sv == m))
+        V = diag(V);
+    else
   error(sprintf('V must be a %d-by-%d matrix.',m,m));
+    end
 end
 
 [qnull,r] = qr(A);
