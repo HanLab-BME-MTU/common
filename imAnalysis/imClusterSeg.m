@@ -1,4 +1,4 @@
-function [seg_img, obj_val, varargout]=imClusterSeg(img_in, CONTR, varargin)
+function [seg_img, varargout]=imClusterSeg(img_in, CONTR, varargin)
 % IMKMEANSSEG image segmentation with clustering (kmeans or EM)
 % 
 %             This function does a segmentation of the image using the 
@@ -40,12 +40,14 @@ function [seg_img, obj_val, varargout]=imClusterSeg(img_in, CONTR, varargin)
 %
 % SYNOPSIS    [seg_img, obj_val, varargout]=imClusterSeg(img_in, CONTR, varargin)
 %
-% INPUT       img       : the image
-%             DEPTH     : depth of the image
+% INPUT       img_in    : the image
 %             CONTR     : flag for control image display
 % 
 % OUTPUT      seg_img    : segmented image, intensities equal cluster #
-%             obj_val    : mean values of the segmented objects
+%             optional   
+%             p          : expectation of each cluster (only for EM)
+%             mu         : the mean intensity of each cluster (sorted)
+%             
 %
 %                           
 % DEPENDENCES   imFindThresh uses { kmeans,
@@ -160,8 +162,6 @@ if strcmp(METHOD,'kmeans')
        cluster_index_sort = cluster_index_sort + (i * (cluster_index == cluster_c_index(i)));
     end
     
-    %index corresponding to minimal intensity
-    obj_val = cluster_c;
     %put vector back into matrix
     seg_img = reshape(cluster_index_sort, n_img, m_img);
     
@@ -171,7 +171,7 @@ if strcmp(METHOD,'kmeans')
     end
     
     varargout{1} = [];
-    varargout{2} = obj_val;    
+    varargout{2} = cluster_c;    
     
 elseif strcmp(METHOD,'em')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -229,9 +229,12 @@ elseif strcmp(METHOD,'em')
     %put vector into matrix shape
     seg_img = reshape(cluster_index_sort, n_img_org, m_img_org);
 
-    obj_val = sort(bestmu);
-    varargout{1} = bestpp;
-    varargout{2} = bestmu;
+    %sort also the cluster expectation pp in the same way as the intensities 
+    for j = 1:bestk
+        bestpp_sort(j) = bestpp(cluster_c_index(j)); 
+    end
+    varargout{1} = bestpp_sort;
+    varargout{2} = cluster_c;
 end
 
 if CONTR
