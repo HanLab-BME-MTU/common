@@ -1,4 +1,4 @@
-function[cpar,pvr,dpvr]=clusterQuantRipley(mpm,imsizex,imsizey);
+function[cpar,pvr,dpvr, cpar2]=clusterQuantRipley(mpm,imsizex,imsizey);
 % clusterQuantRipley calculates a quantitative clustering parameter based on
 % Ripley's K-function (a spatial statistics function for point patterns)
 %
@@ -29,10 +29,8 @@ function[cpar,pvr,dpvr]=clusterQuantRipley(mpm,imsizex,imsizey);
 %                   pvr function is [1,2,3...,minimsize] where minimsize is the
 %                   smalller dimension of imsizex,imsizey
 %                   This function corresponds to Ripley's K-function (/pi)
-%            dpvr:  pvr difference function; this function corresponds to 
-%                   the L-function (or more precisely ld-d); the x^2
-%                   function corresponding to a Poisson random clustering
-%                   is corrected for (corr. to zero line)
+%            dpvr:  H(r) function
+%            cpar2: additional parameters
 %
 % DEPENDENCES   ClusterQuantRipley uses {pointsincircle,clusterpara}
 %               ClusterQuantRipley is used by { }
@@ -52,6 +50,8 @@ rs=round(min(matsiz)/2);
 pvr=zeros(rs,(ny/2));
 dpvr=zeros(rs,(ny/2));
 cpar=[1:(ny/2)];
+cpar2=[1:(ny/2)];
+
 
 %initialize temporary coordinate matrix matt, which contains the object 
 %coordinates for one plane of the mpm
@@ -95,7 +95,7 @@ for k=1:(round(ny/2))
     %from the calculated function pvrt (number of points versus circle
     %radius), calculate a quantitative clustering parameter, cpar
     %somewhat arbitrarily defined as positive integral
-    [cpar(k),dpvr(:,k)]=clusterpara(pvrt);
+    [cpar(k),dpvr(:,k), cpar2(k)]=clusterpara(pvrt);
         
 end
 %normalize cpar with initial value
@@ -104,12 +104,12 @@ cpar=cpar/ini;
 end
 
 
-function[cpar,dpvrt]=clusterpara(pvrt);
+function[cpar1, dpvrt, cpar2]=clusterpara(pvrt);
 %clusterpara calculates a quantitative cluster parameter from the input
 %function (points in circle) vs (circle radius)
 % SYNOPSIS   [cpar]=clusterpara(pvrt);
 %       
-% INPUT      pvrt:   function containing normalized point denisty in 
+% INPUT      pvrt:   function containing normalized point density in 
 %                   circle around object
 %                   spacing of points implicitly assumes radii of 1,2,3...
 %   
@@ -124,18 +124,18 @@ function[cpar,dpvrt]=clusterpara(pvrt);
 %calculate difference L(d)-d function, using L(d)=sqrt(K(d))
 %since K(d) is already divided by pi
 len=max(size(pvrt));
-de=(1:1:len);
-diff=sqrt(abs(pvrt))-de;
-dpvrt=diff;
+de=(1:len);
+%diff=sqrt(abs(pvrt))-de;
+% H(r) funtcion from poission clustering
+Hr=pvrt-de.^2;
+dpvrt=Hr;
 %extract parameters from diff
-[cpar1,cpar2]=DiffFuncParas(diff);
-%the following can be changed to accomodate additional parameters as 
-%measure of the clustering
-cpar=cpar1;
+[cpar1,cpar2]=DiffFuncParas(Hr);
+
 end    
 
     
-function[p1,p2]=DiffFuncParas(diff);
+function[p1,p2]=DiffFuncParas(Hr);
 %DiffFuncParas calculates a number of quantitative cluster parameter 
 %from the input function, the difference function
 % SYNOPSIS   DiffFuncParas(diff);
@@ -144,28 +144,53 @@ function[p1,p2]=DiffFuncParas(diff);
 %                   vector with len number of points
 %%   
 % OUTPUT     p1,p2:  cluster parameters
-%                    currently: p1=integrated positive intensity (measure
+%                    currently: p1=inclination of the first rise of the
+%                                   H(t) function (clustering) 
 %                               of total clustering)
-%                               p2=maximum of difference function (measure
-%                               of mean distance between objects)
+%                               p2= position of first rise
 %
 % DEPENDENCES   DiffFuncParas uses {}
 %               DiffFuncParas is used by {clusterpara}
 %
 % Dinah Loerke, September 13th, 2004
 
-len=max(size(diff));
-p1=0;
-p2=0;
-for i=1:len
-    if(diff(i)>0)
-        p1=p1+diff(i);
-        if(diff(i)==max(diff))
-            p2=diff(i);
-        end
-    end
+%% firstpoint: point where diff function systematically rises above zero 
+%% definition: diff>0 AND (diff)'>0 to exlude noisy one-point rises above
+%% zero
+vec=Hr;
+dvec=diff(vec);
+detvec=vec;
+detvec(vec<0)=0;
+detvec(dvec<0)=0;
+    
+firstpoint=min(find(detvec));
+
+% beginning point begp and end point endp for calculating inclination of the
+% function diff
+begp=round(firstpoint+3);
+endp=begp+10;
+%% these values can be refined to include variable lengths according to end of first
+%% steep rise (considering point where inbclination starts to drop)
+%% this will be done in next version
+
+inclination=sum(dvec(begp:endp))/(endp-begp);
+p1=inclination;
+p2=firstpoint;
+
+% OLD VERSION
+% len=max(size(diff));
+% p1=0;
+% p2=0;
+% for i=1:len
+%     if(diff(i)>0)
+%         p1=p1+diff(i);
+%         if(diff(i)==max(diff))
+%             p2=diff(i);
+%         end
+%     end
+% end
 end
-end
+
 
 
 function[m2]=pointsincircle(m1,ms)
