@@ -1,13 +1,13 @@
 function loadFiles(includeString,excludeString,directory,includeSubDirectories,selectionMode)
 %LOADFILES is a utility to load a list of files. mat-files are loaded into the workspace, figures are displayed, and the rest is opened in the editor
 %
-%loadfiles is heavily based on searchFiles - hence the identical syntax
+%loadFiles is heavily based on searchFiles - hence the identical syntax
 %
-%SYNOPSIS loadfiles(includeString,excludeString,directory,includeSubDirectories,selectionMode)
+%SYNOPSIS loadFiles(includeString,excludeString,directory,includeSubDirectories,selectionMode)
 %
 %INPUT    includeString: string contained in the filenames you are looking for
 %         excludeString (opt): string not contained in the filenames you are looking for
-%         directory (opt): directory to search. if empty, current directory is searched
+%         directory (opt): directory to search. if zero or 'pwd', current directory is searched
 %                               if 'ask' (default), program asks for directory
 %         includeSubDirectories (opt): whether to search subdirectories or not (0/{1})
 %         selectionMode (opt): which file(s) to select if there are several files matching the
@@ -40,20 +40,16 @@ end
 
 %directory (ask if necessary)
 if nargin>2
-    if isempty(directory)
-        directory = 'ask';
+    switch directory
+        case {0,'pwd'}
+            directory = pwd;
+        case {[],'ask'}
+            directory = 'ask';
+        otherwise
+            if ~isdir(directory)
+                error([directory,' is not a valid directory!'])
+            end
     end
-    if strcmp(directory,'ask')
-        directory = uigetdir(pwd,'select a directory to search');
-        if isempty(directory)
-            error('searchFiles aborted by user')
-        end
-    elseif ~isdir(directory)
-        error([directory,' is not a valid directory!'])
-    end
-end
-if nargin<3|isempty(directory)
-    directory = pwd;
 end
 
 %includeSubDirectories
