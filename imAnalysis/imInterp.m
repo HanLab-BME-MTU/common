@@ -54,7 +54,7 @@ function varargout = imInterp(varargin)
 %                   ([dY dX], [kY kX])
 %                   (dd, k) %In this case, dY=dX=dd, kY=kX=k.
 %       'spaps;   : (tol)
-%       'Gausian' : (corLen) %In this case, corLenY=corLenX=corLen.
+%       'Gaussian' : (corLen) %In this case, corLenY=corLenX=corLen.
 %                   ([corLenY corLenX])
 %
 % OUTPUT :
