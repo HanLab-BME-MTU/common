@@ -3,7 +3,9 @@ function d0=updateD0FromDiv(divM,d0in,alpha,nPi,nPg)
 %
 % SYNOPSIS   d0=updateD0FromDiv(divM,d0,alpha,nPi,nPg)
 %
-% INPUT      divM : divergence as calculated by vectorFieldDiv.
+% INPUT      divM : divergence as calculated by vectorFieldDiv; alternatively,
+%                   the Frobenius norm of the strain tensor can be used as well 
+%                   (see vectorFieldAdaptInterp).
 %            d0in : initial d0. It can be a scalar or a (nPg x 1) vector 
 %                   (as returned by this function).
 %            alpha: see OUTPUT. alpha SHOULD be 0 < alpha <= 1, but may also 

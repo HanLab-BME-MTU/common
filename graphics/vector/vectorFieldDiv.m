@@ -17,7 +17,7 @@ function [divM,d0]=vectorFieldDiv(M,Pg,d0,polygon)
 %
 % div(<v>)) = (Ky*Vy + Kx*Vx)/sG
 %
-% SYNOPSIS   [Mi,d0]=vectorFieldDiv(M,Pg,d0,polygon)
+% SYNOPSIS   [divM,d0]=vectorFieldDiv(M,Pg,d0,polygon)
 %
 % INPUT      M       : vector field, stored in a (nx4)-matrix of the form [y0 x0 y x]n
 %                      (where (y0,x0) is the base and (y,x) is the tip of

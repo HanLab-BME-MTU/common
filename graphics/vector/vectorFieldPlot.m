@@ -59,7 +59,7 @@ if size(F,2)==4
     ylabel('y');
     
     % Get handles of all plots present in the figure
-    plotHandles=get(get(h,'Children'),'Children');
+    plotHandles=findall(h,'Type','Line');
     nPlots=length(plotHandles);
     
     % Remove figure handle (if it exists)
@@ -93,7 +93,6 @@ if size(F,2)==4
         set(plotHandles(i),'Color',char(colorTable(counter)));
         set(plotHandles(i+1),'Color',char(colorTable(counter)));
     end
-    
     
 elseif size(F,2)==3
     
