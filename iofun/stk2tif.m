@@ -34,7 +34,7 @@ L=length(num2str(n));
 strg=sprintf('%%.%dd',L); % Creates the format string for the numerical indexes
 
 % Select a directory where the output .tif files will be written
-path=uigetdir('','Select output directory')
+path=uigetdir('','Select output directory');
 if path==0
     disp('Aborting...');
     return
