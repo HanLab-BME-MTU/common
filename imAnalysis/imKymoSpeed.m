@@ -104,6 +104,21 @@ end
 locMax(inSigI)  = [];
 locMaxS(inSigI) = [];
 
+inSigI       = [];
+for k = 1:length(locMax)
+   %We also require that the average of 'score' on [locMax(k) 0] is
+   % significantly greater than the average on [0 locMax(k)].
+   numSmps = 20;
+   smpL = linspace(locMax(k),0,numSmps);
+   smpR = linspace(0,-locMax(k),numSmps);
+   avgL = sum(fnval(sp,smpL))/numSmps;
+   avgR = sum(fnval(sp,smpR))/numSmps;
+
+   if avgL-avgR < dev*abs(locMax(k))/abs(vv(1));
+   %   inSigI = [inSigI k];
+   end
+end
+
 %Refinement and Consistence test. In this step, we interpolate the kymograph
 % to 0.1 pixels around each local maximum (2 pixels to the left and right) 
 % and calculate the score function of

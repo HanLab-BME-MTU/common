@@ -129,7 +129,7 @@ for k = 1:numPoints
       v(j) = imKymoSpeed(kym,width);
 
       if strcmp(verbose,'on') == 1
-         waitbar(j/numTotalDir);
+         waitbar(j/numTotalDir,wbH);
       end
    end
 
@@ -140,9 +140,17 @@ for k = 1:numPoints
    % not realistic. Unrealistic means that the speed is 3 times the average.
    avgV = sum(abs(vExt))/length(vExt);
    goodVI = find(abs(vExt)<3*avgV);
+   badVI  = find(abs(vExt)>=3*avgV);
    goodTheta = thetaExt(goodVI);
    goodVel   = vExt(goodVI);
-   sp        = spap2(knot,4,goodTheta,goodVel);
+
+   if ~isempty(badVI)
+      %We don't really get rid of them but interpolate to avoid undersampling
+      % when using 'spap2'.
+      pp = csape(goodTheta,goodVel);
+      vExt(badVI) = fnval(pp,thetaExt(badVI));
+   end
+   sp = spap2(knot,4,thetaExt,vExt);
    [locThetaM,locSpeedM] = calLocMax(sp,[thetaExt(3:3:end-4) thetaExt(end-2)]);
 
    [maxSpeed,ind] = max(locSpeedM);
@@ -158,7 +166,7 @@ for k = 1:numPoints
 
    %Fine tune by adding more sampling directions around the current max speed 
    % direction.
-   leftI = max(1,maxInd-3);
+   leftI  = max(1,maxInd-3);
    rightI = min(length(thetaExt),maxInd+3);
    thetaF = (thetaExt(leftI:rightI-1)+thetaExt(leftI+1:rightI))/2;
    for j = 1:length(thetaF)
@@ -170,7 +178,7 @@ for k = 1:numPoints
       vF(j) = imKymoSpeed(kym,width);
 
       if strcmp(verbose,'on') == 1
-         waitbar((j+numCoarseDir)/numTotalDir);
+         waitbar((j+numCoarseDir)/numTotalDir,wbH);
       end
    end
 
@@ -178,13 +186,14 @@ for k = 1:numPoints
    goodVFI = find(vF<3*avgV);
    goodThetaF = thetaF(goodVFI);
    goodVF     = vF(goodVFI);
-   brk  = thetaExt(leftI:rightI);
-   knot = augknt(brk,4);
-   sp   = spap2(knot,4,[goodTheta goodThetaF],[goodVel goodVF]);
-   [locThetaM,locSpeedM] = calLocMax(sp,brk);
+   brkF  = thetaExt(leftI:rightI);
+   knotF = augknt(brkF,4);
+   sp    = spap2(knotF,4,[brkF goodThetaF],[vExt(leftI:rightI) goodVF]);
+   [locThetaM,locSpeedM] = calLocMax(sp,brkF);
 
    [maxSpeed,ind] = max(locSpeedM);
    thetaMax       = locThetaM(ind);
+   maxSpeed       = fnval(sp,thetaMax);
 
    %[tmp,ind] = min(abs(thetaExt-thetaMax));
    %thetaF    = [(thetaExt(ind-2)+thetaExt(ind-1))/2 ...
