@@ -7,7 +7,7 @@ function outImgDir = dirPC2Unix(inImgDir,imgDrive)
 %
 % See also: dirUnix2PC.
 
-if ~strcmp(imDrive(1),'/')
+if ~strcmp(imgDrive(1),'/')
    imgDrive = ['/' imgDrive];
 end
 
