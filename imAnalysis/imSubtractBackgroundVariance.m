@@ -1,16 +1,19 @@
-function [backgroundlessImage, avgBackLevel] = imSubtractBackground (varargin)
+function [outImage, backgroundLevel] = imSubtractBackgroundVariance(varargin)
 % imSubtractBackground takes an input image and subtracts the background from it. The
-% image without background is returned as output. This function uses the robustfit
-% algorithm to estimate a background plane and subtract it from the original image.
+% image without background is returned as output. This function filters
+% the image with a variance filter to detect the background region. The background
+% is approximated with a second order polynomial plane. 
 % This works particularly well for images with an uneven background intensity like
 % phase-contrast images.
 %
-% SYNOPSIS       [backgroundlessImage, avgBackLevel] = imSubtractBackground (varargin)
+% SYNOPSIS       [outImage, backgroundLevel] = imSubtractBackgroundVariance(varargin)
 %
 % INPUT          inputImage: the original greylevel image including background
+%                greyMax   : bitdepth of the image
+%                kernelSize: variance filter kernel size
 %
-% OUTPUT         backgroundlessImage: the original image with the estimated background subtracted
-%                avgBackLevel: the average level of the background plane
+% OUTPUT         outImage: the original image with the estimated background subtracted
+%                backgroundLevel: the average level of the background plane
 %
 % DEPENDENCIES   imSubtractBackground uses { nothing }
 %                                  
