@@ -27,7 +27,7 @@ function varargout = imKymoVelocity(stack,x,y,len,width,varargin)
 %    'output'  : 'vector' (default) or 'angle'.
 %                Specify if the velocity is output as components of a vector
 %                or as a magnitude plus the angle between x-axis and the
-%                vector (counter clockwise). 
+%                vector (going from positive x-axis to postitive y-axis). 
 %
 % OUTPUT :
 %    vx    : x-component of the velocity vector.
@@ -40,8 +40,8 @@ if mod(nargin,2) == 0
    error('The optional parameter/value has to appear in pair.');
 end
 
-numFineDir   = 6;
-numCoarseDir = 40;
+numFineDir   = 8;
+numCoarseDir = 20;
 numTotalDir  = numFineDir+numCoarseDir;
 
 verbose = 'on';
@@ -100,18 +100,20 @@ varargout{1} = zeros(size(x));
 varargout{2} = zeros(size(x));
 
 %Sampling angles.
-theta    = linspace(0,pi,numCoarseDir);
-smplStep = theta(2)-theta(1);
-thetaExt = [theta(end-4:end-1)-pi theta(1:end-1) theta(1:5)+pi];
+theta = linspace(0,pi,numCoarseDir);
+thetaExt = [theta(end-8:end-1)-pi theta(1:end-1) theta(1:9)+pi];
 
 %Set up knots sequence for least-square interpolation.
-numBreaks = max(8,ceil(length(thetaExt)/4));
+numBreaks = max(5,ceil(length(thetaExt)/4));
 brk       = linspace(thetaExt(1),thetaExt(end),numBreaks);
 knot      = augknt(brk,4);
 brkI      = brk(2)-brk(1);
+brkF      = linspace(thetaExt(1),thetaExt(end),2*numBreaks);
+knotF     = augknt(brkF,4);
 
-sigThreshold = 1.2;
-numPoints = length(x);
+sigThreshold  = 1.2;
+osciThreshold = 1;
+numPoints     = length(x);
 for k = 1:numPoints
    v     = zeros(numCoarseDir,1);
 
@@ -135,7 +137,7 @@ for k = 1:numPoints
    end
 
    %Use least-square interpolation.
-   vExt     = [-v(end-4:end-1);v(1:end-1);-v(1:5)].';
+   vExt     = [-v(end-8:end-1);v(1:end-1);-v(1:9)].';
 
    %Get rid of some bad direction where the calculated speed from kymograph is
    % not realistic. Unrealistic means that the speed is 3 times the average.
@@ -161,7 +163,7 @@ for k = 1:numPoints
    hvInd   = find(vInterp>=avg);
    dev     = sum(abs(vInterp(hvInd)-avg))/length(hvInd);
 
-   [locThetaM,locSpeedM] = calLocMax(sp,[thetaExt(3:3:end-4) thetaExt(end-2)]);
+   [locThetaM,locSpeedM] = calLocMax(sp,[thetaExt(7:2:end-8) thetaExt(end-6)]);
    %Significance test.
    inSigI       = [];
    for j = 1:length(locThetaM)
@@ -172,25 +174,52 @@ for k = 1:numPoints
    locThetaM(inSigI)  = [];
    locSpeedM(inSigI) = [];
 
-   if isempty(locThetaM)
-      maxSpeed = 0;
-      thetaMax = 0;
-   else
-      [maxSpeed,ind] = max(locSpeedM);
-      thetaMax       = locThetaM(ind);
+   %Oscillatory test: we calculate the difference between the sample speeds
+   % and the spline. If the difference is not significantly less than the 
+   % difference between the maximum speed and the mean, the quality of the 
+   % kymograph is not good enough and zero speed is returned.
+   inSigI = [];
+   for j = 1:length(locThetaM)
+      %First, find the sampling point that is closest to locThetaM(j).
+      [tmp,ind] = min(abs(thetaExt-locThetaM(j)));
 
-      %Oscillatory test: we calculate the difference betwee the sample speeds
-      % and the spline. If the difference is not significantly less than the 
-      % difference between the maximum speed and the mean, the quality of the 
-      % kymograph is not good enough and zero speed is returned.
-      intDiff = sum(abs(vExt)-vInterp)/length(vExt);
-      if maxSpeed < intDiff*sigThreshold;
-         maxSpeed == 0;
-         thetaMax = 0;
+      %Then look to the right and left of 'ind' for indices where speeds
+      % are local minimum or are less than the average speed. The sampling
+      % points between the two (left and right) indices are used for
+      % oscillator test.
+      %To right:
+      jj = ind+1;
+      while jj < length(vInterp) & vInterp(jj) > avg & ...
+         (vInterp(jj) > vInterp(jj-1) | vInterp(jj) > vInterp(jj+1))
+         jj = jj+1;
+      end
+      rightI = jj-1;
+      %To Left:
+      jj = ind-1;
+      while jj > 1 & vInterp(jj) > avg & ...
+         (vInterp(jj) > vInterp(jj-1) | vInterp(jj) > vInterp(jj+1))
+         jj = jj-1;
+      end
+      leftI   = jj+1;
+
+      %Difference between samples and interpolation.
+      intDiff = sum(abs(abs(vExt(leftI:rightI))-vInterp(leftI:rightI)))/ ...
+         (rightI-leftI+1);
+      if intDiff > osciThreshold*dev;
+         inSigI = [inSigI j];
       end
    end
+   if ~isempty(inSigI)
+      locThetaM(inSigI)  = [];
+      locSpeedM(inSigI) = [];
+   end
 
-   if maxSpeed ~= 0
+   maxSpeed = 0;
+   thetaMax = 0;
+   while maxSpeed == 0 & ~isempty(locThetaM)
+      [maxSpeed,maxI] = max(locSpeedM);
+      thetaMax        = locThetaM(maxI);
+
       %Since 'maxSpeed' is from least-square B-spline interpolation, it might be
       % biased from the sampled highest speed. We check in the interval
       % [thetaM-brkI,thetaM+brkI] to get the highest sampling speed.
@@ -201,9 +230,13 @@ for k = 1:numPoints
 
       %Fine tune by adding more sampling directions around the current max
       % speed direction.
-      leftI  = max(1,maxInd-3);
-      rightI = min(length(thetaExt),maxInd+3);
-      thetaF = (thetaExt(leftI:rightI-1)+thetaExt(leftI+1:rightI))/2;
+      leftI  = max(1,maxInd-2);
+      rightI = min(length(thetaExt),maxInd+2);
+      thetaF1 = (thetaExt(leftI:rightI-1)+2*thetaExt(leftI+1:rightI))/3;
+      thetaF2 = (2*thetaExt(leftI:rightI-1)+thetaExt(leftI+1:rightI))/3;
+      thetaF  = zeros(1,length(thetaF1)+length(thetaF2));
+      thetaF(1:2:end) = thetaF1;
+      thetaF(2:2:end) = thetaF2;
       vF     = zeros(size(thetaF));
       for j = 1:length(thetaF)
          lineX = x(k)+ len*cos(thetaF(j))/2*[-1 1]; 
@@ -218,18 +251,30 @@ for k = 1:numPoints
          end
       end
 
-      %Get rid of bad directions.
-      goodVFI = find(vF<3*avgV);
-      goodThetaF = thetaF(goodVFI);
-      goodVF     = vF(goodVFI);
-      brkF  = thetaExt(leftI:rightI);
-      knotF = augknt(brkF,4);
-      sp    = spap2(knotF,4,[brkF goodThetaF],[vExt(leftI:rightI) goodVF]);
-      [locThetaM,locSpeedM] = calLocMax(sp,brkF);
+      %Oscillatory test.
+      intVF   = fnval(sp,thetaF);
+      intDiff = sum(abs(vF-intVF))/length(thetaF);
+      if intDiff <= osciThreshold*dev;
+         %Get rid of bad directions.
+         goodVFI    = find(vF<3*avgV);
+         goodThetaF = thetaF(goodVFI);
+         goodVF     = vF(goodVFI);
+         spF        = spap2(knotF,4,[thetaExt goodThetaF],[vExt goodVF]);
+         [locThetaMF,locSpeedMF] = calLocMax(spF,thetaExt(leftI-1:rightI+1));
 
-      [maxSpeed,ind] = max(locSpeedM);
-      thetaMax       = locThetaM(ind);
-      maxSpeed       = fnval(sp,thetaMax);
+         [maxSpeedF,ind] = max(locSpeedMF);
+         if abs(maxSpeedF-maxSpeed) <= osciThreshold*dev
+            thetaMax  = locThetaMF(ind);
+            maxSpeed  = fnval(spF,thetaMax);
+         else
+            maxSpeed = fnval(sp,thetaMax);
+         end
+      else
+         maxSpeed = 0;
+         thetaMax = 0;
+         locThetaM(maxI) = [];
+         locSpeedM(maxI) = [];
+      end
    end
 
    if strcmp(verbose,'on') == 1
@@ -250,16 +295,33 @@ function [locThetaM,locSpeedM] = calLocMax(sp,theta)
 %Calculate local maximum for each interval given in 'theta'. To qualify for a
 % local maximum, both the left and right near neighbor has to be less.
 
-dTheta = min(diff(theta))/5;
-jj = 0;
+dTheta = min(diff(theta))/10;
+
+thetaM = zeros(1,length(theta)-1);
+speedM = zeros(1,length(theta)-1);
+lmCount = 0; %Local maximum count.
 for j = 1:length(theta)-1
-   [thetaM,speedM] = fminbnd(@vFun,theta(j),theta(j+1),[],sp);
-   if abs(fnval(sp,thetaM-dTheta)) < abs(speedM) & ...
-      abs(fnval(sp,thetaM+dTheta)) < abs(speedM)
-      jj = jj+1;
-      locThetaM(jj) = thetaM;
-      locSpeedM(jj) = -speedM;
+   [thetaM(j),speedM(j)] = fminbnd(@vFun,theta(j),theta(j+1),[],sp);
+   if abs(fnval(sp,thetaM(j)-dTheta)) < abs(speedM(j)) & ...
+      abs(fnval(sp,thetaM(j)+dTheta)) < abs(speedM(j))
+      if lmCount == 0 | ...
+         (lmCount > 0 & abs(thetaM(j)-locThetaM(lmCount)) > dTheta)
+         lmCount            = lmCount+1;
+         locThetaM(lmCount) = thetaM(j);
+         locSpeedM(lmCount) = -speedM(j);
+      else
+         if abs(speedM(j)) > abs(locSpeedM(lmCount))
+            locThetaM(lmCount) = thetaM(j);
+            locSpeedM(lmCount) = -speedM(j);
+         end
+      end
    end
+end
+
+if lmCount == 0
+   [locSpeedM,ind] = min(speedM);
+   locThetaM       = thetaM(ind);
+   locSpeedM       = -locSpeedM;
 end
 
 

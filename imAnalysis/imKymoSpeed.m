@@ -37,13 +37,14 @@ if maxKymI-minKymI ~= 0
    kym = (kym-minKymI)/(maxKymI-minKymI)*1 + 0.1;
 end
 
-%We choose the maximum speed so that at this speed, a speckle will 
-% flow 1/3 (if lineSeg = 3) the whole length of the selected curve for
-% kymograph analysis.
-speedLimit  = floor(kymHLen/2);
+%We choose the maximum speed that can be detected so that at this speed, 
+% a speckle will flow 1/3 the whole length of the selected curve for
+% kymograph analysis. But, we calculate the score function for speed upto half
+% the length of the kymograph line.
+maxScoreSpd = floor(kymHLen/2);
 
 %Calculate the score function of speed.
-[score,vv] = calScore(kym,numFrames,[-speedLimit,speedLimit],0.5);
+[score,vv] = calScore(kym,numFrames,[-maxScoreSpd,maxScoreSpd],0.5);
 
 %We use least-square B-spline to interpolate the score samples with coarser
 % breaks and test the quality of the kymograph.
@@ -60,19 +61,16 @@ else
 end
 
 %Compute mean and standard deviation of the B-spline to be used for quality
-% test. When we compute the deviation, we only consider scores higher than 
+% test. When we compute the deviation, we only consider speeds that are less
+% than 1/3 the length of the kymograph line and scores higher than 
 % the mean.
-scoreInterp = fnval(sp,vv).';
+ind      = 4; %ceil(length(vv)/6);
+validSpdI = [ind:length(vv)-ind+1];
+maxSpd    = max(abs(vv(validSpdI)));
+scoreInterp = fnval(sp,vv(validSpdI)).';
 avg   = sum(scoreInterp)/length(scoreInterp);
 hsInd = find(scoreInterp>=avg);
 dev   = sum(abs(scoreInterp(hsInd)-avg))/length(hsInd);
-
-%When the deviation is too small (the threshold is an empirical value)
-%smDevThreshold = 1e-3;
-%if dev < smDevThreshold
-%   v = 0;
-%   return;
-%end
 
 %find all local maximum. We then do a significance test where the
 % difference between the local maximum and the mean has to be significantly 
@@ -83,7 +81,9 @@ dev   = sum(abs(scoreInterp(hsInd)-avg))/length(hsInd);
 sigThreshold = 1.5;
 inSigI       = [];
 for k = 1:length(locMax)
-   if locMaxS(k)-avg < sigThreshold*dev
+   if abs(locMax(k)) > maxSpd | locMaxS(k)-avg < sigThreshold*dev
+      %We only consider speeds that are less than 1/3 the length of the
+      % kymograph line.
       inSigI = [inSigI k];
    end
 end
@@ -127,11 +127,16 @@ end
 locMax(inSigI)  = [];
 locMaxS(inSigI) = [];
 
+if isempty(locMax)
+   v = 0;
+   return;
+end
+
 %Oscillatory test: we calculate the difference betwee the sample scores and
 % the spline. If the difference is not significantly less than the difference
 % between the maximum score and the mean, the quality of the kymograph is not
 % good enough and zero speed is returned.
-intDiff = sum(score-scoreInterp)/length(vv);
+intDiff = sum(score(validSpdI)-scoreInterp)/length(validSpdI);
 if max(locMaxS) < intDiff*sigThreshold
    v = 0;
    return;
@@ -177,16 +182,23 @@ f = -fnval(pp,v);
 function [locMax,locMaxS] = calLocMax(sp,vv)
 %Calculate local maximum for each interval given in 'vv'. To qualify for a
 % local maximum, both the left and right near neighbor has to be less.
-dv = min(diff(vv))/5;
+dv = min(diff(vv))/10;
 
 lmCount = 0; %local maximum count.
 for k = 1:length(vv)-1
    [v,mVal] = fminbnd(@scoreFun,vv(k),vv(k+1),[],sp);
    if abs(fnval(sp,v-dv)) < abs(mVal) & abs(fnval(sp,v+dv)) < abs(mVal)
-      %True local maximum
-      lmCount          = lmCount+1;
-      locMax(lmCount)  = v;
-      locMaxS(lmCount) = abs(mVal);
+      if lmCount == 0 | (lmCount > 0 & abs(v-locMax(lmCount)) > dv)
+         %True local maximum
+         lmCount          = lmCount+1;
+         locMax(lmCount)  = v;
+         locMaxS(lmCount) = abs(mVal);
+      else
+         if abs(mVal) > locMaxS(lmCount)
+            locMax(lmCount)  = v;
+            locMaxS(lmCount) = abs(mVal);
+         end
+      end
    end
 end
 
@@ -247,7 +259,7 @@ for v = lowSpd:min(-1,highSpd)
    %We calculate correlation scores every two consecutive frames in the 
    % direction of slope, v., then normalize, sum and average.
    % 
-   %The maximum width of the correlating intensity bands (number of pixels in
+   %The maximum length of the correlating intensity bands (number of pixels in
    % the horizontal direction) that fall into the
    % scope of the kymograph depends on the slope, v.
    corrW = kymHLen+v; %'v' is negative.
