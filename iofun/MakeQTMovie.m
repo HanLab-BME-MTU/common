@@ -98,8 +98,16 @@ if nargin < 1
 	return;
 end
 
-% Workaround for bug with global parameters in matlab 7
-feature accel off
+% Since matlab 7 handles figures different from 6 (using java), we have to
+% set this feature to 0 when 7 is used. Also implements a workaround for
+% a known bug with global variables
+matlabVersion = version;
+if (matlabVersion(1) == '7')
+    oldJFValue = feature('javafigures');
+    feature('javafigures',0);
+    oldAccelValue = feature('accel');
+    feature('accel',0);
+end
 
 global MakeQTMovieStatus
 MakeDefaultQTMovieStatus;		% Needed first time, ignored otherwise
@@ -366,8 +374,12 @@ otherwise
 	fprintf('MakeQTMovie: Unknown method %s.\n', cmd);
 end
 
-% Workaround for bug with global parameters in matlab 7
-feature accel on
+% Set the values back for the figuresize
+matlabVersion = version;
+if (matlabVersion(1) == '7')
+    feature('javafigures',oldJFValue);
+    feature('accel',oldAccelValue);
+end
 
 %%%%%%%%%%%%%%%  MakeDefaultQTMovieStatus %%%%%%%%%%%%%%%%%
 % Make the default movie status structure.
