@@ -47,6 +47,34 @@ else
     diagInvV = diag(invV);
 end
 
+% --- remove NaNs
+
+% find them
+[badRowA,c] = find(isnan(A));
+[badRowB,c] = find(isnan(B));
+[badRowV,c] = find(isnan(V));
+badRows = [badRowA; badRowB; badRowV];
+
+% remove bad rows if there are any
+if ~isempty(badRows)
+    
+    badRows = unique(badRows);
+    
+    % make a list of old rows, so that we return the correct goodRows!
+    oldRows = [1:sizA(1)];
+    oldRows(badRows) = [];
+    
+    % remove bad rows
+    A(badRows,:) = [];
+    B(badRows,:) = [];
+    V = V(oldRows, oldRows);    
+    invV = invV(oldRows, oldRows);
+    diagInvV(badRows) = [];
+    
+    % update size of A
+    sizA = size(A);
+end
+
 
 % x0: default: ones
 if nargin < 4 | isempty(x0)
@@ -99,3 +127,14 @@ sigmaB=sqrt(sum(res2(goodRows))/(length(goodRows)-4));
 
 % call myLscov
 [x,Qxx,mse] = myLscov(A(goodRows,:),B(goodRows,:),V(goodRows,goodRows));
+
+%=== END LSQ ========
+
+%====================
+% OUTPUT
+%====================
+
+%set the correct goodRows
+if ~isempty(badRows)
+    goodRows = oldRows(goodRows);
+end
