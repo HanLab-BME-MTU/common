@@ -275,7 +275,7 @@ case 'debug'
 
 
 case 'demo'
-	clf
+    clf
 	fps = 10;
 	movieLength = 10;
 	sr = 22050;

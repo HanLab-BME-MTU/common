@@ -1,8 +1,8 @@
-function[cpar,pvr,dpvr]=ClusterQuantRipley(mpm,imsizex,imsizey);
-% FractClusterQuant calculates a quantitative clustering parameter based on
+function [cpar,pvr,dpvr] = ClusterQuantRipley (mpm,imsizex,imsizey)
+% ClusterQuantRipley calculates a quantitative clustering parameter based on
 % fractal theory
 %
-% SYNOPSIS   [dfr,resvec]=FractClusterQuant(mpm,imsizex,imsizey);
+% SYNOPSIS   [cpar,pvr,dpvr] = ClusterQuantRipley (mpm,imsizex,imsizey)
 %       
 % INPUT      mpm:   mpm file containing (x,y) coordinates of points in the
 %                   image in succesive columns for different time points
@@ -32,7 +32,11 @@ function[cpar,pvr,dpvr]=ClusterQuantRipley(mpm,imsizex,imsizey);
 % DEPENDENCES   FractClusterQuant uses {pointsincircle,clusterpara}
 %               FractClusterQuant is used by { }
 %
-% Dinah Loerke, September 13th, 2004
+% Revision History
+% Name                  Date            Comment
+% --------------------- --------        --------------------------------------------------------
+% Dinah Loerke          Sep 04          Initial version
+% Andre Kerstens        Oct 04          Fixed some typos in the comment header
 
 %create vector containing x- and y-image size
 matsiz=[imsizex imsizey];
