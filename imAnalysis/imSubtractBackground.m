@@ -1,16 +1,16 @@
-function [backgroundlessImage, realBgPlane] = imSubtractBackground (varargin)
+function [backgroundlessImage, avgBackLevel] = imSubtractBackground (varargin)
 % imSubtractBackground takes an input image and subtracts the background from it. The
 % image without background is returned as output. This function uses the robustfit
 % algorithm to estimate a background plane and subtract it from the original image.
 % This works particularly well for images with an uneven background intensity like
 % phase-contrast images.
 %
-% SYNOPSIS       [backgroundlessImage, background] = imSubtractBackground (varargin)
+% SYNOPSIS       [backgroundlessImage, avgBackLevel] = imSubtractBackground (varargin)
 %
 % INPUT          inputImage: the original greylevel image including background
 %
 % OUTPUT         backgroundlessImage: the original image with the estimated background subtracted
-%                       realBgPlane: the subtracted background plane
+%                avgBackLevel: the average level of the background plane
 %
 % DEPENDENCIES   imSubtractBackground uses { nothing }
 %                                  
@@ -78,6 +78,9 @@ c4 = (y4Est(1) + y1Est(end)) / 2;
 
 % And create the plane itself (in matrix form)
 bgPlane = [c1, c2 ; c4, c3];
+
+% Calculate average background level
+avgBackLevel = c1 + c2 + c3 + c4 / 4;
 
 % Ofcourse the real plane has to be subtracted from the image so we resize it
 realBgPlane = imresize (bgPlane, size (inputImage), 'bilinear');
