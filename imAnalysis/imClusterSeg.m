@@ -12,6 +12,10 @@ function [seg_img, obj_val, varargout]=imClusterSeg(img_in, CONTR, varargin)
 %             results (pp, mu) as innitial results for the next image!
 %             Watch out, if initial (pp, mu) are given their dimension must
 %             match k_max!
+%             The format of the segment image is as following:
+%             I=[1..k_clusters] where I=1 corresponds to the class with the
+%             lowes intensity and I=k_cluster to the class with the highest
+%             intensity.
 %
 %             If there is an error seg_img = -99 is returned
 %  
@@ -40,27 +44,6 @@ function [seg_img, obj_val, varargout]=imClusterSeg(img_in, CONTR, varargin)
 % Matthias Machacek 02/10/04
 
 %%%%%%%%%%%%%%%%%%% Parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% if DEPTH == 8 | DEPTH == 10 | DEPTH == 12 | DEPTH == 14 | DEPTH == 16 | DEPTH == 255 ...
-%       | DEPTH == 1023 | DEPTH == 4095 | DEPTH == 16383 | DEPTH == 65535 
-% else 
-%    error('unsuported image depth, only images of 8,10,12,14,16 bit are accepted.');
-% end
-% 
-% %convert
-% switch DEPTH
-%    case 8
-%       DEPTH=2^8-1;
-%    case 10
-%       DEPTH=2^10-1;
-%    case 12
-%       DEPTH=2^12-1;
-%     case 14
-%       DEPTH=2^14-1;  
-%     case 16
-%       DEPTH=2^16-1;
-% end
-
-
 l=length(varargin);
 for i=1:l
     if strcmp(varargin{i},'method')
@@ -146,8 +129,17 @@ img_in_vec = reshape(img_bin, n_img*m_img, 1);
 if strcmp(METHOD,'kmeans')
     [cluster_index, cluster_c, cluster_d_sum]  = kmeans(img_in_vec, K_CLUSTER, 'Distance', DISTANCE);
     
-    obj_val = sort(cluster_c);
-    seg_img = reshape(cluster_index, n_img, m_img);
+    %sort the index according to the intensity
+    [cluster_c  cluster_c_index]= sort(cluster_c, 1);
+    cluster_index_sort = zeros(length(cluster_index),1);
+    for i=1:K_CLUSTER
+       cluster_index_sort = cluster_index_sort + (i * (cluster_index == cluster_c_index(i)));
+    end
+    
+    %index corresponding to minimal intensity
+    obj_val = cluster_c;
+    %put vector back into matrix
+    seg_img = reshape(cluster_index_sort, n_img, m_img);
     
     %resize image to original size
     if BINNING > 0
@@ -186,8 +178,7 @@ elseif strcmp(METHOD,'em')
     [bestk,bestpp,bestmu,bestcov,dl,countf] = mixtures4(img_in_vec', K_MIN, K_MAX,...
                                                          regularize, th, covoption, P0, MU0, verbose);
    
-    
-                                                     
+                                     
     %reshape image into vector
     img_in_vec = reshape(img_in, n_img_org*m_img_org, 1);                                                  
     %calculate the probability of each data point
@@ -199,10 +190,17 @@ elseif strcmp(METHOD,'em')
     end
     
     %find the highest probability for each data point
-    [val, index] = max(y,[],2);     
+    [val, cluster_index] = max(y,[],2);     
+    
+    %sort the index according to the intensity
+    [cluster_c  cluster_c_index]= sort(bestmu', 1);
+    cluster_index_sort = zeros(length(cluster_index),1);
+    for i=1:bestk
+       cluster_index_sort = cluster_index_sort + (i * (cluster_index == cluster_c_index(i)));
+    end
     
     %put vector into matrix shape
-    seg_img = reshape(index, n_img_org, m_img_org);
+    seg_img = reshape(cluster_index_sort, n_img_org, m_img_org);
 
     obj_val = sort(bestmu);
     varargout{1} = bestpp;
@@ -210,11 +208,6 @@ elseif strcmp(METHOD,'em')
 end
 
 if CONTR
-    %         fig_hist_h = figure;
-    %         plot(hist_val, img_hist);
-    %         hold on
-    %         plot(cluster_c(1), 100, '.r');
-    %         plot(cluster_c(2), 100, '.r');
     figure
     imshow(seg_img,[]);
 end
