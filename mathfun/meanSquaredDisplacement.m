@@ -142,7 +142,7 @@ positions(1).covariances = covariances;
 
 positions(3).coordinates = referenceCoordinates;
 if all(referenceCovariances == 0)
-    referenceCovariances = repmat(eye(covSize(1)),1,1,covSize(3));
+    referenceCovariances = repmat(eye(covSize(1)),[1,1,covSize(3)]);
 end
 positions(3).covariances = referenceCovariances;
 

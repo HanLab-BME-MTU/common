@@ -131,6 +131,13 @@ numberOfLevels = length(levelBreaks);
 topLevelName = structName(1:levelBreaks(1)-1);
 eval([topLevelName '= evalin(''caller'',''' topLevelName ''');'])
 
+% make sure the top level is not called 'out'!
+if strmatch(topLevelName,'out')
+    topLevelName = 'input';
+    input = out;
+    clear out
+end
+
 % decide whether we can go easy or not
 if numberOfLevels == 1 & isempty(separator) & isempty(rangeString)
     % string check

@@ -79,15 +79,14 @@ for fh = figureHandles
         
         % change color
         if recolor
-            switch oldTag
-                case 'errorBar'
+            if ~isempty(findstr(oldTag,'errorBar'))
                     % set line color
                     set(newH(lineCt),'Color',extendedColors(colorCt-1));
                     
-                case 'TAfit'
+            elseif ~isempty(findstr(oldTag, 'TAfit'))
                     % don't change color
                     
-                otherwise
+            else
                     % set new color
                     set(newH(lineCt),'Color',extendedColors(colorCt));
                     colorCt = colorCt+1;
@@ -116,7 +115,11 @@ end
 %---------------------
 % now show the legend. 
 if showLegend
-    legend(legendLineH,legendCell);
+    lh=legend(legendLineH,legendCell);
+    lHandles = get(lh);
+    if isfield(lHandles,'Interpreter')
+        set(lh,'Interpreter','none')
+    end
 end
 
 %-----------------------
