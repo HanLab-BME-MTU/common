@@ -58,7 +58,7 @@ end;
 % convert img to the data structure required for imLineDetect()
 img.data = img;
 img.perm = 'M';
-[resp,ori,dummy,dummy,maxMap] = imLineDetect(img,opt.scales,opt.linetype,0);
+[resp,ori,dummy,dummy,maxMap] = imLineDetect(img,opt.scales,opt.linetype,1);
 binMask = repmat(logical(uint8(0)),size(img.data,1),size(img.data,2));
 
 
