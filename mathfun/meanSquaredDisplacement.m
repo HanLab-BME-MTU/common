@@ -136,7 +136,7 @@ mSqDisp = repmat(NaN,[maxTimeLag,3]);
 positions(1:3) = struct('coordinates',[],'covariances',[]);
 positions(1).coordinates = coordinates;
 if all(covariances == 0)
-    covariances = repmat(eye(covSize(1)),1,1,covSize(3));
+    covariances = repmat(eye(covSize(1)),[1,1,covSize(3)]);
 end
 positions(1).covariances = covariances;
 
