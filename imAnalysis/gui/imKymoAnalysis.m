@@ -76,8 +76,19 @@ function varargout = imKymoAnalysis(varargin)
 %      gridPts
 %      speckles
 %      initFlow  : For each field, we can add grid points (fieldGridPts), 
-%                    speckles (fieldSpeckles) and initial flow field
-%                    (fieldInitFlow).
+%                  speckles (fieldSpeckles) and initial flow field
+%                  (fieldInitFlow).
+%      gridKymDV : A kymograph line can be set manually for each point in
+%                  stead of searching for the flow direction. This variable
+%                  gives the direction of the kymograph line.
+%      kymDirCrv : This variable defines a curve whose normal direction sets 
+%                  the kymgraph line direction.
+%      kymLineOn : 'yes' (default) or 'no'. It specifies wether a kymograph
+%                  line will be used to calculate the velocity.
+%      gridSpd   : The calculated speed using the manually set kymograph line
+%                  direction 'gridKymDV'.
+%      gridVel   : The calculated flow velocity where the flow direction is
+%                  automatically searched.
 %
 % IMKYMOANALYSIS M-file for imKymoAnalysis.fig
 %      IMKYMOANALYSIS, by itself, creates a new IMKYMOANALYSIS or raises the existing
@@ -142,7 +153,7 @@ handles.startImage    = 1;
 handles.endImage      = 0;
 handles.imgFileList   = {};
 handles.whatIsShown   = [];
-handles.selImgObj   = '';
+handles.selImgObj     = 'none';
 
 % GUI data for Kymograph lines or curves.
 handles.numKymoCurves = 0;
@@ -208,7 +219,7 @@ set(handles.curWidthFH,'string',num2str(handles.currentWidth));
 
 %Caculate axes postion of the image.
 axesWin = findobj('tag','axesWin');
-handles.imgAxesP  = get(axesWin,'Position');
+handles.axesWinP = get(axesWin,'Position');
 
 %The text message of the location of the pointer.
 handles.pLocText = [];
@@ -256,12 +267,31 @@ handles.endImage   = handles.numImages;
 %Display the first image
 image = imread(imgFileList{1});
 imshow(image,[]);
-set(gca(handles.figH),'Units','pixels','Position',handles.imgAxesP);
 
 handles.imgFileList = imgFileList;
 handles.image       = image;
-handles.imgWidth    = size(image,2);
-handles.imgHeight   = size(image,1);
+
+%Scale the image with the same horizontal and vertical ratio so that it fit
+% into the axes window.
+imgWidth  = size(image,2);
+imgHeight = size(image,1);
+axesWinP  = handles.axesWinP;
+axesWinW  = axesWinP(3);
+axesWinH  = axesWinP(4);
+
+%Scale according to smaller one;
+xScale = axesWinW/imgWidth;
+yScale = axesWinH/imgHeight;
+scale  = min(xScale,yScale);
+imgAxesW = imgWidth*scale;
+imgAxesH = imgHeight*scale;
+imgAxesP = [axesWinP(1:2) + ...
+   [(axesWinW-imgAxesW)/2 (axesWinH-imgAxesH)/2] imgAxesW imgAxesH];
+set(gca(handles.figH),'Units','pixels','Position',imgAxesP);
+
+handles.imgAxesP  = imgAxesP;
+handles.imgWidth  = imgWidth;
+handles.imgHeight = imgHeight;
 
 %numImages   = inputdlg('Number of images:','Enter Number of Images', ...
 %   1,{num2str(length(imgFileList))});
@@ -276,7 +306,7 @@ handles.yBand         = {};
 handles.kCurveMP      = [];
 handles.width         = [];
 handles.selKymoCurve  = 0;
-handles.selImgObj     = '';
+handles.selImgObj     = 'none';
 handles.whatIsShown   = 'image';
 handles.numVLines     = 0;
 handles.kymo          = {};
@@ -501,11 +531,16 @@ handles.field{numFields}.bndY  = fieldBndY;
 handles.field{numFields}.gridDx    = [];
 handles.field{numFields}.gridDy    = [];
 handles.field{numFields}.gridPts   = [];
+handles.field{numFields}.gridKymDV = [];
+handles.field{numFields}.gridSpd   = [];
+handles.field{numFields}.gridVel   = [];
 handles.field{numFields}.speckles  = [];
 handles.field{numFields}.initFlow  = [];
 handles.field{numFields}.selObj    = 'none';
 handles.field{numFields}.kymDirCrv = [];
 handles.field{numFields}.kymLineOn = 'no';
+handles.field{numFields}.kymLen    = handles.defKymFTLen;
+handles.field{numFields}.kymWidth  = handles.defKymFTWidth;
 
 handles.selField  = numFields;
 handles.numFields = numFields;
@@ -528,10 +563,18 @@ end
 
 menuItem = get(hObject,'Value');
 
+selField = handles.selField;
 if menuItem == 1
-   handles.field{handles.selField}.selObj = 'none';
+   handles.field{selField}.selObj = 'none';
+   return;
 elseif menuItem == 2
-   handles = addGridPoints(handles);
+   handles.field{selField}.selObj = 'grid';
+   if ~isempty(handles.field{selField}.gridPts)
+      return;
+   end
+
+   handles.field{selField} = addGridPoints(handles.field{selField}, ...
+      handles.defGridDx,handles.defGridDy);
 elseif menuItem == 3
    %handles = addSpeckles(handles);
 elseif menuItem == 4
@@ -542,35 +585,37 @@ redrawAllImg(handles);
 guidata(hObject,handles);
 
 
-function handles = addGridPoints(handles)
+function field = addGridPoints(field,defGridDx,defGridDy)
 %subfunction called by 'addFieldPoints_Callback' to add grid points.
 
-selField = handles.selField;
-
-handles.field{selField}.selObj = 'grid';
-
-if ~isempty(handles.field{selField}.gridPts)
-   return;
-end
+%Polygon that defines the boundary of the field.
+fieldBndX = field.bndX;
+fieldBndY = field.bndY;
 
 ans = inputdlg({'Enter the horizontal step size or coordinates:' ...
    'Enter the vertical step size or coordinates:'}, ...
-   'Grid Points',1,{num2str(handles.defGridDx) ...
-   num2str(handles.defGridDy)});
+   'Grid Points',1,{num2str(defGridDx) ...
+   num2str(defGridDy)});
 
 ans1 = str2num(ans{1});
 ans2 = str2num(ans{2});
 
 if length(ans1) == 1
-   handles.field{selField}.gridDx = ans1;
-   x = [1:ans1:handles.imgWidth];
+   field.gridDx = ans1;
+
+   %Generate grid points in x-axis from the left to the right bound of the 
+   % polygon.
+   x = [min(fieldBndX):ans1:max(fieldBndX)];
 else
    x = ans1;
 end
 
 if length(ans2) == 1
-   handles.field{selField}.gridDy = ans2;
-   y = [1:ans2:handles.imgHeight];
+   field.gridDy = ans2;
+
+   %Generate grid points in y-axis from the top to the bottom bound of the 
+   % polygon.
+   y = [min(fieldBndY):ans2:max(fieldBndY)];
 else
    y = ans2;
 end
@@ -580,14 +625,12 @@ gridX = reshape(gridX,1,length(gridX(:)));
 gridY = reshape(gridY,1,length(gridY(:)));
 
 %Select points that are inside the polygon.
-fieldBndX = handles.field{selField}.bndX;
-fieldBndY = handles.field{selField}.bndY;
 in = inpolygon(gridX,gridY,fieldBndX,fieldBndY);
 outI = find(in==0 | in==0.5);
 gridX(outI) = [];
 gridY(outI) = [];
 
-handles.field{selField}.gridPts = [gridX.' gridY.'];
+field.gridPts = [gridX.' gridY.'];
 
 
 % --- Executes on button press in addFTrackKymLine.
@@ -614,6 +657,16 @@ end
 if isempty(handles.field{selField}.kymDirCrv)
    [xi,yi] = imSelCurve;
    handles.field{selField}.kymDirCrv = [xi;yi];
+
+   ans = inputdlg({'Enter the length:' 'Enter the width:'}, ...
+      'Kymograph Line',1,{num2str(handles.defKymFTLen) ...
+      num2str(handles.defKymFTWidth)});
+
+   len   = str2num(ans{1});
+   width = str2num(ans{2});
+
+   handles.field{selField}.kymLen   = len;
+   handles.field{selField}.kymWidth = width;
 end
 handles.field{selField}.kymLineOn = 'yes';
 
@@ -685,32 +738,108 @@ if strcmp(handles.whatIsShown,'image') == 0 | handles.numImages == 0
    return;
 end
 
-ans = inputdlg({'Enter the length:' 'Enter the width:'}, ...
-   'Kymograph Line',1,{num2str(handles.defKymFTLen) ...
-   num2str(handles.defKymFTWidth)});
+if strcmp(handles.selImgObj,'kymoCurve') == 1 | ...
+   strcmp(handles.selImgObj,'none') == 1
+   return;
+end
 
-len   = str2num(ans{1});
-width = str2num(ans{2});
+if strcmp(handles.selImgObj,'FTrackPt') == 1
+   ans = inputdlg({'Enter the length:' 'Enter the width:'}, ...
+      'Kymograph Line',1,{num2str(handles.defKymFTLen) ...
+      num2str(handles.defKymFTWidth)});
 
-selFTrackP = handles.selFTrackP;
-x          = handles.flowV(selFTrackP,2);
-y          = handles.flowV(selFTrackP,1);
-stack      = handles.imgFileList(handles.startImage:handles.endImage);
-[v,theta]  = imKymoVelocity(stack,x,y,len,width,'output','angle');
-vx         = v*cos(theta);
-vy         = v*sin(theta);
-kymoX      = x + len*cos(theta)/2*[-1 1];
-kymoY      = y + len*sin(theta)/2*[-1 1];
+   len   = str2num(ans{1});
+   width = str2num(ans{2});
 
-handles.flowV(selFTrackP,4)    = vx;
-handles.flowV(selFTrackP,3)    = vy;
-handles.FTkymo{selFTrackP}     = [];
-handles.FTxBand{selFTrackP}    = [];
-handles.FTyBand{selFTrackP}    = [];
-handles.kymFTLen(selFTrackP)   = len;
-handles.kymFTWidth(selFTrackP) = width;
-handles.FTkymoX(selFTrackP,:)  = kymoX;
-handles.FTkymoY(selFTrackP,:)  = kymoY;
+   selFTrackP = handles.selFTrackP;
+   x          = handles.flowV(selFTrackP,2);
+   y          = handles.flowV(selFTrackP,1);
+   stack      = handles.imgFileList(handles.startImage:handles.endImage);
+   [v,theta]  = imKymoVelocity(stack,x,y,len,width,'output','angle');
+   vx         = v*cos(theta);
+   vy         = v*sin(theta);
+   kymoX      = x + len*cos(theta)/2*[-1 1];
+   kymoY      = y + len*sin(theta)/2*[-1 1];
+
+   handles.flowV(selFTrackP,4)    = vx;
+   handles.flowV(selFTrackP,3)    = vy;
+   handles.FTkymo{selFTrackP}     = [];
+   handles.FTxBand{selFTrackP}    = [];
+   handles.FTyBand{selFTrackP}    = [];
+   handles.kymFTLen(selFTrackP)   = len;
+   handles.kymFTWidth(selFTrackP) = width;
+   handles.FTkymoX(selFTrackP,:)  = kymoX;
+   handles.FTkymoY(selFTrackP,:)  = kymoY;
+elseif strcmp(handles.selImgObj,'FTrackField') == 1
+   selField = handles.selField;
+
+   field = handles.field{selField};
+   if (strcmp(field.selObj,'grid') == 1 & isempty(field.gridPts)) | ...
+      (strcmp(field.selObj,'speckle') == 1 & isempty(field.speckles)) | ...
+      (strcmp(field.selObj,'initFlow') == 1 & isempty(field.initFlow))
+      return;
+   end
+
+   if strcmp(field.kymLineOn,'yes') == 1
+      if strcmp(field.selObj,'grid') == 1
+         len   = handles.field{selField}.kymLen;
+         width = handles.field{selField}.kymWidth;
+
+         gridX  = field.gridPts(:,1);
+         gridY  = field.gridPts(:,2);
+         numPts = length(gridX);
+
+         if isempty(field.gridKymDV)
+            handles.field{selField}.gridKymDV = zeros(numPts,2);
+            dirCrvX     = field.kymDirCrv(1,:);
+            dirCrvY     = field.kymDirCrv(2,:);
+            numLineSegs = length(dirCrvX)-1;
+
+            %Distance to the middle point of line segments of 
+            % 'field.kymDirCrv'. The normal direction of the line segement 
+            % with the shortest distance is used as the direction of the 
+            % kymograph line.
+            dist = zeros(numPts,numLineSegs);
+
+            %First calculate the distance from each point to the middle point
+            %of the line segments of the curve 'field.kymDirCrv'.
+            lineSegMPx = (dirCrvX(2:end)+dirCrvX(1:end-1))/2;
+            lineSegMPy = (dirCrvY(2:end)+dirCrvY(1:end-1))/2;
+            for k = 1:numLineSegs
+               dist(:,k) = sqrt((lineSegMPx(k)-gridX).^2 + ...
+                  (lineSegMPy(k)-gridY).^2);
+            end
+
+            lineSegLen = sqrt((dirCrvX(2:end)-dirCrvX(1:end-1)).^2 + ...
+               (dirCrvY(2:end)-dirCrvY(1:end-1)).^2);
+            for k = 1:numPts
+               %Assign a kymograph line to each point.
+               [minD,ind] = min(dist(k,:));
+               handles.field{selField}.gridKymDV(k,:) = ...
+                  [-(dirCrvY(ind+1)-dirCrvY(ind)), ...
+                  dirCrvX(ind+1)-dirCrvX(ind)]/lineSegLen(ind);
+            end
+         end
+
+         handles.field{selField}.gridSpd = zeros(numPts,1);
+         stack = handles.imgFileList(handles.startImage:handles.endImage);
+         wbH = waitbar(0,'Calculate flow speed along kymograph line ... ');
+         for k = 1:numPts
+            waitbar(k/numPts,wbH);
+
+            %Assign a kymograph line to each point.
+            kymDirV = handles.field{selField}.gridKymDV(k,:);
+
+            kymoX = gridX(k) + (len/2)*kymDirV(1)*[-1 1]; 
+            kymoY = gridY(k) + (len/2)*kymDirV(2)*[-1 1]; 
+            [kymo, xBand, yBand] = imKymograph(stack,kymoX,kymoY,width, ...
+               'verbose','off','interp','none');
+            handles.field{selField}.gridSpd(k) = imKymoSpeed(kymo,width);
+         end
+         close(wbH);
+      end
+   end
+end
 
 redrawAllImg(handles);
 guidata(hObject,handles)
@@ -1014,14 +1143,21 @@ if isempty(kymo)
       'verbose','off','interp','none');
 
    %Calculate the position of the axis for kymograph.
-   imgAxesP = handles.imgAxesP;
-   imgW  = imgAxesP(3); %Width of the image.
-   imgH  = imgAxesP(4); %Height of the image.
-   kymSz = size(kymo);
-   kymW  = min(imgW,kymSz(2)); %Width of the kymograph image.
-   kymH  = min(imgH,kymSz(1)); %Height of the kymograph image.
+   axesWinP = handles.axesWinP;
+   axesWinW = axesWinP(3); %Width of the image.
+   axesWinH = axesWinP(4); %Height of the image.
 
-   kymAxesP = [imgAxesP(1:2)+[(imgW-kymW)/2 (imgH-kymH)/2] kymW kymH];
+   %Scale if the kmyograph is bigger than the axes window.
+   kymW   = size(kymo,2);
+   kymH   = size(kymo,1);
+   xScale = axesWinW/kymW;
+   yScale = axesWinH/kymH;
+   scale  = min(xScale,yScale);
+
+   kymAxesW = kymW*min(1,scale);
+   kymAxesH = kymH*min(1,scale);
+   kymAxesP = [axesWinP(1:2) + ...
+      [(axesWinW-kymAxesW)/2 (axesWinH-kymAxesH)/2] kymAxesW kymAxesH];
 
    if strcmp(handles.selImgObj,'kymoCurve') == 1
       handles.kymo{selKymoCurve}  = kymo;
@@ -1235,7 +1371,7 @@ if strcmp(whatIsShown,'image') == 1
    selLine    = handles.selKymoCurve;
    lineMP     = handles.kCurveMP;
    selFTrackP = handles.selFTrackP;
-   selField   = handles.selFTrackP;
+   selField   = handles.selField;
 
    if numFTrackPts > 0
       FTrackP = handles.flowV(:,2:-1:1);
@@ -1322,7 +1458,7 @@ elseif minD == minD2
    index = index2;
 elseif minD == minD3
    selImgObj = 'FTrackField';
-   index = index2;
+   index = index3;
 end
 
 if minD <= 10
@@ -1342,7 +1478,7 @@ if minD <= 10
                handles.selFTrackP  = index;
             end
          elseif minD == minD3
-            if index ~= selFTrackP
+            if index ~= selField
                handles.selField = index;
             end
          end
@@ -1423,6 +1559,19 @@ if minD <= 10
             elseif selFTrackP == numFTrackPts
                handles.selFTrackP = handles.numFTrackPts;
             end
+         elseif minD == minD3
+            %In this case, it is one of the flow tracking fields that has been
+            % clicked.
+            handles.numFields    = numFields-1;
+            handles.field(index) = [];
+
+            if numFields == 1
+               handles.selField = 0;
+            elseif index < selField
+               handles.selField = selField-1;
+            elseif selField == numFields
+               handles.selField = handles.numFields;
+            end
          end
 
          redrawAllImg(handles);
@@ -1471,11 +1620,12 @@ function redrawAllImg(handles)
 
 figH = handles.figH;
 imgAxesP = handles.imgAxesP;
-delete(gca(figH));
 figure(figH);
-imshow(handles.image,[]); 
-aH = gca(figH);
-set(aH,'Units','pixels','Position',imgAxesP);
+delete(gca(figH));
+aH = axes('Units','pixels','Position',imgAxesP);
+imshow(handles.image,[]); axis equal;
+%aH = gca(figH);
+%set(aH,'Units','pixels','Position',imgAxesP);
 
 %To figure out an appropriate distance to the mark point for labeling, 
 % we need to scale the x and y range of the image to units in pixels.
@@ -1510,7 +1660,7 @@ end
 %Draw the boundary of the flow field and points in it if selected and flow
 % velocity vectors if calculated.
 for k = 1:handles.numFields;
-   drawField(aH,handles.field{k},labelShift,'off');
+   drawField(aH,handles.field{k},handles.flowVScale,labelShift,'off');
 end
 
 %Highlight the selected point or curve.
@@ -1545,7 +1695,9 @@ elseif strcmp(handles.selImgObj,'FTrackPt') == 1
    end
 elseif strcmp(handles.selImgObj,'FTrackField') == 1
    selField = handles.selField;
-   drawField(aH,handles.field{selField},labelShift,'on');
+   if selField > 0
+      drawField(aH,handles.field{selField},handles.flowVScale,labelShift,'on');
+   end
 end
 
 updateCurWidthF(handles);
@@ -1614,7 +1766,7 @@ set(tH,'color','g');
 
 
 %%%%%%%%%%%%%%%%%%%%%%% subfunction %%%%%%%%%%%%%%%%%%%%%%%
-function drawField(aH,field,labelShift,highLight)
+function drawField(aH,field,scale,labelShift,highLight)
 
 plot(field.bndX,field.bndY,'g-.');
 
@@ -1634,8 +1786,22 @@ if strcmp(highLight,'on') == 1
    end
 
    %Draw the selected points in the field.
-   if strcmp(field.selObj,'grid') == 1 & ~isempty(field.gridPts)
-      plot(field.gridPts(:,1),field.gridPts(:,2),'y.','MarkerSize',3);
+   if strcmp(field.selObj,'grid') == 1
+      if strcmp(field.kymLineOn,'yes') == 1
+         if ~isempty(field.gridSpd) 
+            vx = field.gridSpd.*field.gridKymDV(:,1);
+            vy = field.gridSpd.*field.gridKymDV(:,2);
+            quiver(field.gridPts(:,1),field.gridPts(:,2), ...
+               vx*scale,vy*scale,0,'g');
+         end
+      else
+         if ~isempty(field.gridVel) 
+         end
+      end
+
+      if ~isempty(field.gridPts)
+         plot(field.gridPts(:,1),field.gridPts(:,2),'y.','MarkerSize',4);
+      end
    end
 elseif strcmp(highLight,'off') == 1
    plot(field.MP(1),field.MP(2),'go','MarkerSize',5);
