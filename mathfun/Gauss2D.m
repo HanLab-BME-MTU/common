@@ -20,6 +20,9 @@ for i = -R:R,
 end
 M = M/sum(M(:));   % normalize the gaussian mask so that the sum is
                    % equal to 1
+                   
+% more correct version - and probably a bit faster
+% M = GaussMask2D(sigma,2*R+1,[],1);
 
 % Convolute matrices
 out=filter2(M,x);

@@ -1,17 +1,17 @@
-function gauss=GaussMask3D(sigma,fSze,cent,cnorm,absCenter)
-% GaussMask3D	create a gaussian 3D mask
+function gauss=GaussMask2D(sigma,fSze,cent,cnorm,absCenter)
+% GaussMask3D	create a gaussian 2D mask
 %
 %    SZNOPSIS gauss =GaussMask3D(sigma,fSze,cent,cnorm,absCenter);
 %
-%    INPUT: sigma  of gauss mask [sigmaX sigmaY sigmaZ] or [sigma]. 
+%    INPUT: sigma  of gauss mask [sigmaX sigmaY] or [sigma]. 
 %                  If scalar, sigma will be the same for all dimensions
-%           fSze   size of the gauss mask [sizeX sizeY sizeZ] or [size]
+%           fSze   size of the gauss mask [sizeX sizeY] or [size]
 %                  If scalar, size will be the same for all dimensions.
 %                  (odd size required for symmetric mask!)
-%           cent   (optional)3D vector with center position [0 0 0] is
-%                  center of fSze (default=[0 0 0])
+%           cent   (optional)3D vector with center position [0 0] is
+%                  center of fSze (default=[0 0])
 %                  if absCenter = 1, center position is measured from
-%                  [0,0,0] in matrix coordinates (which is outside of the
+%                  [0,0] in matrix coordinates (which is outside of the
 %                  array by half a pixel!)
 %           cnorm  (optional) select normalization method:
 %                  =0 (default) no normalization - max of gauss will be 1
@@ -19,40 +19,40 @@ function gauss=GaussMask3D(sigma,fSze,cent,cnorm,absCenter)
 %                  =2 norm so that integral of an infinite Gauss would be 1
 %           absCenter (optional) select the type of center vector
 %                  =0 (default). Zero is at center of array
-%                  =1 Zero is at [0,0,0] in matrix coordinates, which is
+%                  =1 Zero is at [0,0] in matrix coordinates, which is
 %                  outside of the array by half a pixel!
 %                      (center of top left pixel of 2-D matrix = [1,1])
 %
 %
-%    OUTPUT: gauss   3D gaussian intensity distribution with voxel values
+%    OUTPUT: gauss   2D gaussian intensity distribution with pixel values
 %                    equal to the integral of the gauss over the area of
-%                    the voxel
+%                    the pixel
 %
-% c: 8/05/01 dT
-% corrected integral by jonas
+% c: 02/05 jonas
 
 % test input
 ls = length(sigma);
 switch ls
-    case 3
+    case 2
         % all is good
     case 1
-        sigma = [sigma,sigma,sigma];
+        sigma = [sigma,sigma];
     otherwise
-        error('sigma has to be either a 1-by-3 vector or a scalar!')
+        error('sigma has to be either a 1-by-2 vector or a scalar!')
 end
 
 lf = length(fSze);
 switch lf
-    case 3
+    case 2
         % all is good
     case 1
-        fSze = [fSze,fSze,fSze];
+        fSze = [fSze,fSze];
     otherwise
-        error('fSze has to be either a 1-by-3 vector or a scalar!')
+        error('fSze has to be either a 1-by-2 vector or a scalar!')
 end
+
 if nargin < 3 || isempty(cent)
-    cent=[0 0 0];
+    cent=[0 0];
 end;
 if nargin<4 || isempty(cnorm)
     cnorm=0;
@@ -75,27 +75,27 @@ end
 gauss=zeros(fSze);
 x=([-fSze(1)/2:fSze(1)/2]-cent(1))./sigma(1);
 y=([-fSze(2)/2:fSze(2)/2]-cent(2))./sigma(2);
-z=([-fSze(3)/2:fSze(3)/2]-cent(3))./sigma(3);
+
 ex = diff(0.5 * erfc(-x./sqrt(2)));
 ey = diff(0.5 * erfc(-y./sqrt(2)));
-ez = diff(0.5 * erfc(-z./sqrt(2)));
 
-% construct the 3D matrix (nice work by Dom!)
+
+% construct the 2D matrix 
 exy=ex'*ey;
-exyz=exy(:)*ez;
+
 
 % norm Gauss
 switch cnorm
     case 0 % maximum of Gauss has to be 1
-        gauss(:) = exyz(:)*((2*pi)^1.5*sigma(1)*sigma(2)*sigma(3));
+        gauss(:) = exy(:)*((2*pi)*sigma(1)*sigma(2));
 
     case 1
-        gauss(:) = exyz(:)/sum(exyz(:));
+        gauss(:) = exy(:)/sum(exy(:));
     case 2 % the whole erfc thing is already normed for infinite Gauss
         % so nothing to do here.
-        gauss(:) = exyz(:);
+        gauss(:) = exy(:);
 
     otherwise
-        gauss(:) = exyz(:);
+        gauss(:) = exy(:);
 
 end
