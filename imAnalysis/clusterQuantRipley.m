@@ -67,12 +67,17 @@ for k=1:(round(ny/2))
     %since the original mpm file contains a lot of zeros, these zeros are 
     %deleted in the temporary coordinate matrix to yield a matrix containing
     %only the nonzero points of matt, smatt
-    nz1=size(nonzeros(matt(:,1)));
-    nz2=size(nonzeros(matt(:,2)));
-    if(nz1==nz2)
+    [nz1,e]=size(nonzeros(matt(:,1)));
+    [nz2,e]=size(nonzeros(matt(:,2)));
+    % dovar is do-variable to determine whether function is performed on
+    % this plane or not (due to missing objects or non-matching coordinates)
+    dovar=1;
+    if( (nz1==nz2) && (nz1>0) )
         smatt=[nonzeros(matt(:,1)), nonzeros(matt(:,2)) ];
     else
-        disp(['different number of point entries for x and y in plane ',num2str(k)]);
+        dovar=0;
+        disp(['Error in plane ',num2str(2*k), ' of input mpm']);
+        disp(['no objects (nonzero points) or non-matching number of x and y-coordinates']);
     end
     
     %comment/uncomment the next five lines if you want to monitor progress
@@ -80,22 +85,22 @@ for k=1:(round(ny/2))
     if(mod(k,10)==0)
         [smx,smy]=size(smatt);
         tempnp=max([smx,smy]);
-        disp('  plane  number of objects');
-        tempi=[k, tempnp];
-        disp(tempi);
-    end
-    
+        disp(['plane ',num2str(k),'   number of objects ', num2str(tempnp)]);
+    end  % of if
+
+    if (dovar>0)
     %now determine number of objects in circle of increasing radius,
     %averaged over all objects in smatt, and normalized with point density
     %tempnp/(msx*msy)
-    [pvrt]=pointsincircle(smatt,matsiz);
+        [pvrt]=pointsincircle(smatt,matsiz);
     %result is already normalized with point density tempnp/(msx*msy)
-    pvr(:,k)=pvrt(:);
+        pvr(:,k)=pvrt(:);
     
     %from the calculated function pvrt (number of points versus circle
     %radius), calculate a quantitative clustering parameter, cpar
     %somewhat arbitrarily defined as positive integral
-    [cpar(k),dpvr(:,k), cpar2(k)]=clusterpara(pvrt);
+        [cpar(k),dpvr(:,k), cpar2(k)]=clusterpara(pvrt);
+    end  % of if
         
 end
 %normalize cpar with initial value
@@ -156,24 +161,30 @@ function[p1,p2]=DiffFuncParas(Hr);
 
 %% firstpoint: point where diff function systematically rises above zero 
 %% definition: diff>0 AND (diff)'>0 to exlude noisy one-point rises above
-%% zero
+%% zero. if there exists no such point (for completely scattered
+%% distributions), firstpoint is set to nan and incl is set to zero
 vec=Hr;
 dvec=diff(vec);
 detvec=vec;
 detvec(vec<0)=0;
 detvec(dvec<0)=0;
-    
-firstpoint=min(find(detvec));
 
-% beginning point begp and end point endp for calculating inclination of the
-% function diff
-begp=round(firstpoint+3);
-endp=begp+10;
-%% these values can be refined to include variable lengths according to end of first
-%% steep rise (considering point where inbclination starts to drop)
-%% this will be done in next version
+if (nonzeros(detvec)>1)
+    firstpoint=min(find(detvec));
+    % beginning point begp and end point endp for calculating inclination of the
+    % function diff
+    begp=round(firstpoint+3);
+    endp=begp+10;
+    %% these values can be refined to include variable lengths according to end of first
+    %% steep rise (considering point where inbclination starts to drop)
+    %% this will be done in next version
+    inclination=sum(dvec(begp:endp))/(endp-begp);
+else
+    firstpoint=NaN;
+    inclination=0;
+end
 
-inclination=sum(dvec(begp:endp))/(endp-begp);
+%disp(['firstpoint ',num2str(firstpoint)]);
 p1=inclination;
 p2=firstpoint;
 
