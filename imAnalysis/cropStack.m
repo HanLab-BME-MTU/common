@@ -149,7 +149,7 @@ for i=1:n
     imgC=img(y0:y,x0:x);
    
     % Prepare filename with path
-    filename=[path,filesep,'cut_',fName,fno,fext];
+    filename=[path,filesep,'crop_',fName,fno,fext];
    
     % Write file to disk
     imwrite(imgC,filename);
