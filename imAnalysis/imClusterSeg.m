@@ -86,7 +86,7 @@ end
 if ~exist('METHOD','var')
     METHOD = 'em';
 end
-if ~exist('BINING','var')
+if ~exist('BINNING','var')
     BINNING = 0;
 end
 
@@ -205,8 +205,8 @@ elseif strcmp(METHOD,'em')
     seg_img = reshape(index, n_img, m_img);
 
     
-    varargout(:,1) = bestpp;
-    varargout(:,2) = bestmu;
+    %varargout(:,1) = bestpp;
+    %varargout(:,2) = bestmu;
 end
 
 if CONTR
