@@ -37,7 +37,7 @@ else
 end
 
 % sigma
-ls = length(sigma)
+ls = length(sigma);
 switch ls
     case nDims
         % make as long as coords
@@ -55,9 +55,9 @@ else
     lc = length(center);
     switch lc
         case nDims
-            % all ok
-        case 1
             center = repmat(center, [nCoords,1]);
+        case 1
+            center = repmat(center, [nCoords,3]);
         otherwise
             error('center has to be a scalar or a 1-by-n vector!')
     end
