@@ -60,7 +60,9 @@ function interField=vecFldInterpAnisoB(M, tgtPoints, sigmaU, sigmaV, maxIteratio
 % CHANGES
 %                             ver 0.3: The code is reorganized for better
 %                             readability and initial release.
-%                               
+%
+%
+%                             ver 0.4: use MEX function to compute distance                                 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -77,12 +79,18 @@ r = 9 * (sigmaU^2 + sigmaV^2); % choose a relatively large one for strong smooth
 sigma = sigmaU^2 + sigmaV^2;     % still need a Gauss kernel, though isotropic in this case.
 
 % Step 1: Generate the initial flow field using an isotropic filter. 
+
+% First, call the MEX function to compute distance. This will save
+% computation time.
+
+D = createDistanceMatrix(srcPoints, tgtPoints);
+
 prevFlowVecList = zeros(tgtLength, 2);
 for i = 1 : tgtLength
     weight_sum = 0;
     vecsum = [0 0];
     for j = 1 : srcLength
-        temp = sum((tgtPoints(i,:) - tgtPoints(j,:)).^2);  % the Euclidean distance
+        temp = D(j, i);  % the Euclidean distance
         if temp <= r  % actually comparing distance square
             weight = exp(-0.5 * temp / sigma); % will normalize later. So no need to compute leading coefficient
             vecsum = vecsum + weight * V(j, :);
@@ -91,7 +99,7 @@ for i = 1 : tgtLength
     end
     prevFlowVecList(i, :) = vecsum / weight_sum;   % This is our initial vector field
 end
-
+clear D;
 % Step 2: Call vecFldInterpAnisoA iterative to compute the vector field
 
 error = 10^6; % just give a large number. value not meaningful
