@@ -4,12 +4,18 @@ function B=nrm(A,d)
 % SYNOPSIS B=nrm(A,d)
 %
 % INPUT    A : matrix (image)
-%          d : bit depth (1, 8 or 16)
-%               1 - [0..1]     - output class: double
-%               8 - [0..255]   - output class: uint8
-%              16 - [0..65535] - output class: uint16
+%          d : (optional: default = 1) 
+%               bit depth (1, 8 or 16)
+%                  1 - [0..1]     - output class: double
+%                  8 - [0..255]   - output class: uint8
+%                 16 - [0..65535] - output class: uint16
 %
 % OUTPUT   B : normalized A (with class change)
+
+% By default, return a [0..1] double matrix
+if nargin==1
+    d=1;
+end
 
 % Normalize image to [0..1]
 switch class(A)
