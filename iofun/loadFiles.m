@@ -50,6 +50,8 @@ if nargin>2
                 error([directory,' is not a valid directory!'])
             end
     end
+else
+    directory = 'ask';
 end
 
 %includeSubDirectories

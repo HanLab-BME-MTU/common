@@ -1,20 +1,47 @@
-function patch=stamp3d(data,patchSize,center)
+function patch=stamp3d(data,patchSize,center,symmetric)
 %STAMP3D copy 3D sub-patch out of larger 3D data set
 %
 % SYNOPSIS patch=stamp3d(data,patchSize,center)
 %
 % INPUT data   : 3D data
 %       patchSize  : size of patch
-%       center : center of patch
+%       center : position of center pixel of patch in 3D data
+%       symmetric : (opt) if part of the patch would fall outside of the 
+%                    img: whether to cut accordingly on the other side 
+%                    [0/{1}] (default for fears of incompatibility)
 %
 % OUTPUT patch : 3D patch 
 
 % c: 18/6/01	dT
 
+% test input, assign defaults
+if nargin < 4 || isempty(symmetric)
+    symmetric = 0;
+end
+
+% find patch in data
 ds=size(data);
 hl=floor(patchSize/2);
-hx=min([center(1)-1,hl(1),ds(1)-center(1)]);
-hy=min([center(2)-1,hl(2),ds(2)-center(2)]);
-hz=min([center(3)-1,hl(3),ds(3)-center(3)]);
-patch=data(center(1)-hx:center(1)+hx,center(2)-hy:center(2)+hy,center(3)-hz:center(3)+hz);
+
+% find extension towards 0
+hx1=min([center(1)-1,hl(1)]);
+hy1=min([center(2)-1,hl(2)]);
+hz1=min([center(3)-1,hl(3)]);
+
+% find extension towards inf
+hx2 = min([hl(1),ds(1)-center(1)]);
+hy2 = min([hl(2),ds(2)-center(2)]);
+hz2 = min([hl(3),ds(3)-center(3)]);
+
+% make symmetric, if necessary
+if symmetric
+   [hx1,hx2] = deal(min(hx1,hx2));
+   [hy1,hy2] = deal(min(hy1,hy2));
+   [hz1,hz2] = deal(min(hz1,hz2));
+end
+
+% take patch aout of img.
+patch=data(center(1)-hx1:center(1)+hx2,...
+    center(2)-hy1:center(2)+hy2,...
+    center(3)-hz1:center(3)+hz2);
 
