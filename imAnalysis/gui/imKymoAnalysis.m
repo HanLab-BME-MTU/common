@@ -82,7 +82,7 @@ function varargout = imKymoAnalysis(varargin)
 %                  speckles (speckles) and initial flow field
 %                  (initFlow).
 %      selGridPt
-%      selSpeckle
+%      selSpeck
 %      selInitFV : For each field, a grid point, a speckle or an initial flow
 %                  vector can be selected for individual kymograph analysis.
 %      gridKymDV : A kymograph line can be set manually for each point in
@@ -551,10 +551,16 @@ handles.field{numFields}.gridDx    = [];
 handles.field{numFields}.gridDy    = [];
 handles.field{numFields}.gridPts   = [];
 handles.field{numFields}.gridKymDV = [];
+handles.field{numFields}.gdTheta   = [];
 handles.field{numFields}.gridSpd   = [];
-handles.field{numFields}.avgGSpd   = [];
+handles.field{numFields}.avgGdSpd  = [];
 handles.field{numFields}.gridVel   = [];
+handles.field{numFields}.avgGdVel  = [];
 handles.field{numFields}.speckles  = [];
+handles.field{numFields}.spcSpd    = [];
+handles.field{numFields}.avgSpcSpd = [];
+handles.field{numFields}.spcVel    = [];
+handles.field{numFields}.spcTheta  = [];
 handles.field{numFields}.initFlow  = [];
 handles.field{numFields}.selObj    = 'none';
 handles.field{numFields}.kymDirCrv = [];
@@ -562,6 +568,7 @@ handles.field{numFields}.kymLineOn = 'no';
 handles.field{numFields}.kymLen    = handles.defKymFTLen;
 handles.field{numFields}.kymWidth  = handles.defKymFTWidth;
 handles.field{numFields}.selGridPt = 0;
+handles.field{numFields}.selSpeck  = 0;
 handles.field{numFields}.kymo      = [];
 handles.field{numFields}.kymoX     = [];
 handles.field{numFields}.kymoY     = [];
@@ -612,7 +619,11 @@ elseif menuItem == 2
    handles.field{selField} = addGridPoints(handles.field{selField}, ...
       handles.defGridDx,handles.defGridDy);
 elseif menuItem == 3
-   %handles = addSpeckles(handles);
+   %handles.field{selField}.selObj = 'speckle';
+   %if ~isempty(handles.field{selField}.speckles)
+   %   return;
+   %end
+   %handles.field{selField} = addSpeckles(handles.field{selField});
 elseif menuItem == 4
    %handles = addInitFlow(handles);
 end
@@ -828,6 +839,7 @@ if strcmp(handles.selImgObj,'kymoCurve') == 1 | ...
    return;
 end
 
+stack = handles.imgFileList(handles.startImage:handles.endImage);
 if strcmp(handles.selImgObj,'FTrackPt') == 1
    ans = inputdlg({'Enter the length:' 'Enter the width:'}, ...
       'Kymograph Line',1,{num2str(handles.defKymFTLen) ...
@@ -839,7 +851,6 @@ if strcmp(handles.selImgObj,'FTrackPt') == 1
    selFTrackP = handles.selFTrackP;
    x          = handles.flowV(selFTrackP,2);
    y          = handles.flowV(selFTrackP,1);
-   stack      = handles.imgFileList(handles.startImage:handles.endImage);
    [v,theta]  = imKymoVelocity(stack,x,y,len,width,'output','angle');
    vx         = v*cos(theta);
    vy         = v*sin(theta);
@@ -859,74 +870,115 @@ elseif strcmp(handles.selImgObj,'FTrackField') == 1
    selField = handles.selField;
 
    field = handles.field{selField};
-   if (strcmp(field.selObj,'grid') == 1 & isempty(field.gridPts)) | ...
-      (strcmp(field.selObj,'speckle') == 1 & isempty(field.speckles)) | ...
-      (strcmp(field.selObj,'initFlow') == 1 & isempty(field.initFlow))
+   if strcmp(field.selObj,'grid') == 1 
+      fieldPts = field.gridPts;
+      selPt    = field.selGridPt;
+   elseif strcmp(field.selObj,'speckle') == 1
+      fieldPts = field.speckles;
+      selPt    = field.selSpeck;
+   elseif strcmp(field.selObj,'initFlow') == 1
+   end
+
+   if isempty(fieldPts) 
       return;
    end
 
+   fieldX  = fieldPts(:,1);
+   fieldY  = fieldPts(:,2);
+   len     = field.kymLen;
+   width   = field.kymWidth;
+   numPts  = length(fieldX);
    if strcmp(field.kymLineOn,'yes') == 1
-      len   = handles.field{selField}.kymLen;
-      width = handles.field{selField}.kymWidth;
-      if strcmp(field.selObj,'grid') == 1
+      if strcmp(field.selObj,'grid') == 1 
+         kymDV  = field.gridKymDV;
+      elseif strcmp(field.selObj,'speckle') == 1 
+         kymDV  = field.spcKymDV;
+      end
 
-         gridX  = field.gridPts(:,1);
-         gridY  = field.gridPts(:,2);
-         numPts = length(gridX);
+      dirCrvX = field.kymDirCrv(1,:);
+      dirCrvY = field.kymDirCrv(2,:);
+      if isempty(kymDV)
+         kymDV       = zeros(numPts,2);
+         numLineSegs = length(dirCrvX)-1;
 
-         if isempty(field.gridKymDV)
-            handles.field{selField}.gridKymDV = zeros(numPts,2);
-            dirCrvX     = field.kymDirCrv(1,:);
-            dirCrvY     = field.kymDirCrv(2,:);
-            numLineSegs = length(dirCrvX)-1;
+         %Distance to the middle point of line segments of 
+         % 'field.kymDirCrv'. The normal direction of the line segement 
+         % with the shortest distance is used as the direction of the 
+         % kymograph line.
+         dist = zeros(numPts,numLineSegs);
 
-            %Distance to the middle point of line segments of 
-            % 'field.kymDirCrv'. The normal direction of the line segement 
-            % with the shortest distance is used as the direction of the 
-            % kymograph line.
-            dist = zeros(numPts,numLineSegs);
-
-            %First calculate the distance from each point to the middle point
-            %of the line segments of the curve 'field.kymDirCrv'.
-            lineSegMPx = (dirCrvX(2:end)+dirCrvX(1:end-1))/2;
-            lineSegMPy = (dirCrvY(2:end)+dirCrvY(1:end-1))/2;
-            for k = 1:numLineSegs
-               dist(:,k) = sqrt((lineSegMPx(k)-gridX).^2 + ...
-                  (lineSegMPy(k)-gridY).^2);
-            end
-
-            lineSegLen = sqrt((dirCrvX(2:end)-dirCrvX(1:end-1)).^2 + ...
-               (dirCrvY(2:end)-dirCrvY(1:end-1)).^2);
-            for k = 1:numPts
-               %Assign a kymograph line to each point.
-               [minD,ind] = min(dist(k,:));
-               handles.field{selField}.gridKymDV(k,:) = ...
-                  [-(dirCrvY(ind+1)-dirCrvY(ind)), ...
-                  dirCrvX(ind+1)-dirCrvX(ind)]/lineSegLen(ind);
-            end
+         %First calculate the distance from each point to the middle point
+         %of the line segments of the curve 'field.kymDirCrv'.
+         lineSegMPx = (dirCrvX(2:end)+dirCrvX(1:end-1))/2;
+         lineSegMPy = (dirCrvY(2:end)+dirCrvY(1:end-1))/2;
+         for k = 1:numLineSegs
+            dist(:,k) = sqrt((lineSegMPx(k)-fieldX).^2 + ...
+            (lineSegMPy(k)-fieldY).^2);
          end
 
-         handles.field{selField}.gridSpd = zeros(numPts,1);
-         stack = handles.imgFileList(handles.startImage:handles.endImage);
-         wbH = waitbar(0,'Calculate flow speed along kymograph line ... ');
+         lineSegLen = sqrt((dirCrvX(2:end)-dirCrvX(1:end-1)).^2 + ...
+            (dirCrvY(2:end)-dirCrvY(1:end-1)).^2);
          for k = 1:numPts
-            waitbar(k/numPts,wbH);
-
             %Assign a kymograph line to each point.
-            kymDirV = handles.field{selField}.gridKymDV(k,:);
-
-            kymoX = gridX(k) + (len/2)*kymDirV(1)*[-1 1]; 
-            kymoY = gridY(k) + (len/2)*kymDirV(2)*[-1 1]; 
-            [kymo, xBand, yBand] = imKymograph(stack,kymoX,kymoY,width, ...
-               'verbose','off','interp','none');
-            handles.field{selField}.gridSpd(k) = imKymoSpeed(kymo,width);
+            [minD,ind] = min(dist(k,:));
+            kymDV(k,:) = [-(dirCrvY(ind+1)-dirCrvY(ind)), ...
+               dirCrvX(ind+1)-dirCrvX(ind)]/lineSegLen(ind);
          end
-         if numPts > 0
-            handles.field{selField}.avgGSpd = ...
-               sum(abs(handles.field{selField}.gridSpd))/numPts;
+      end
+
+      speed = zeros(numPts,1);
+      wbH   = waitbar(0,'Calculate flow speed along kymograph line ... ');
+      for k = 1:numPts
+         waitbar(k/numPts,wbH);
+
+         kymoX = fieldX(k) + (len/2)*kymDV(k,1)*[-1 1]; 
+         kymoY = fieldY(k) + (len/2)*kymDV(k,2)*[-1 1]; 
+         [kymo, xBand, yBand] = imKymograph(stack,kymoX,kymoY,width, ...
+            'verbose','off','interp','none');
+         speed(k) = imKymoSpeed(kymo,width);
+      end
+      if numPts > 0
+         avgSpd = sum(abs(speed))/numPts;
+      end
+
+      close(wbH);
+
+      if strcmp(field.selObj,'grid') == 1 
+         handles.field{selField}.gridKymDV = kymDV;
+         handles.field{selField}.gridSpd   = speed;
+         handles.field{selField}.avgGdSpd = avgSpd;
+      elseif strcmp(field.selObj,'speckle') == 1
+         handles.field{selField}.spcKymDV = kymDV;
+         handles.field{selField}.spcSpd   = speed;
+      end
+   elseif strcmp(field.kymLineOn,'no') == 1 
+      %In this case flow direction will be automatically searched.
+      if isempty(field.gridVel)
+         [v,theta] = imKymoVelocity(stack,fieldX,fieldY,len,width, ...
+            'output','angle');
+
+         vx = v.*cos(theta);
+         vy = v.*sin(theta);
+
+         if strcmp(field.selObj,'grid') == 1 
+            handles.field{selField}.gridVel = [vx vy];
+            handles.field{selField}.gdTheta = theta;
+         elseif strcmp(field.selObj,'speckle') == 1
          end
 
-         close(wbH);
+         handles.field{selField}.avgGdVel = [sum(vx) sum(vy)]/length(vx);
+      elseif selPt ~= 0
+         [v,theta] = imKymoVelocity(stack,fieldX(selPt),fieldY(selPt), ...
+            len,width, 'output','angle');
+
+         vx = v.*cos(theta);
+         vy = v.*sin(theta);
+
+         if strcmp(field.selObj,'grid') == 1 
+            handles.field{selField}.gridVel(selPt,:) = [vx vy];
+            handles.field{selField}.gdTheta(selPt) = theta;
+         elseif strcmp(field.selObj,'speckle') == 1
+         end
       end
    end
 end
@@ -1256,34 +1308,49 @@ elseif strcmp(handles.selImgObj,'FTrackField') == 1
       return;
    end
 
-   if strcmp(handles.field{selField}.kymLineOn,'no') == 1
-      return;
-   end
-
    if strcmp(handles.field{selField}.selObj,'grid') == 1
       if isempty(handles.field{selField}.gridPts)
          return;
       end
-      selGridPt = handles.field{selField}.selGridPt;
 
-      %kymo  = handles.field{selField}.kymo;
-      kymo  = [];
+      selPt  = handles.field{selField}.selGridPt;
+      fieldX = handles.field{selField}.gridPts(selPt,1);
+      fieldY = handles.field{selField}.gridPts(selPt,2);
 
-      %Assign a kymograph line to each point.
-      len   = handles.field{selField}.kymLen;
-      width = handles.field{selField}.kymWidth;
-
-      gridX   = handles.field{selField}.gridPts(selGridPt,1);
-      gridY   = handles.field{selField}.gridPts(selGridPt,2);
-      kymDirV = handles.field{selField}.gridKymDV(selGridPt,:);
-
-      kymoX = gridX + (len/2)*kymDirV(1)*[-1 1]; 
-      kymoY = gridY + (len/2)*kymDirV(2)*[-1 1]; 
-      handles.field{selField}.kymoX = kymoX ;
-      handles.field{selField}.kymoY = kymoY;
-      %kymoX = handles.field{selField}.kymoX;
-      %kymoY = handles.field{selField}.kymoY;
+      if strcmp(handles.field{selField}.kymLineOn,'yes') == 1
+         kymDirV = handles.field{selField}.gridKymDV(selPt,:);
+      else
+         kymDirV = [cos(handles.field{selField}.gdTheta(selPt)) ...
+            sin(handles.field{selField}.gdTheta(selPt))];
+      end
+   elseif strcmp(handles.field{selField}.selObj,'speckle') == 1
+      if isempty(handles.field{selField}.speckles)
+         return;
+      end
+      selPt  = handles.field{selField}.selSpeck;
+      fieldX = handles.field{selField}.speckles(selPt,1);
+      fieldY = handles.field{selField}.speckles(selPt,2);
+      if strcmp(handles.field{selField}.kymLineOn,'yes') == 1
+         kymDirV = handles.field{selField}.spcKymDV(selPt,:);
+      else
+         kymDirV = [cos(handles.field{selField}.spcTheta(selPt)) ...
+            sin(handles.field{selField}.spcTheta(selPt))];
+      end
    end
+
+   %kymo  = handles.field{selField}.kymo;
+   kymo  = [];
+
+   %Assign a kymograph line to each point.
+   len   = handles.field{selField}.kymLen;
+   width = handles.field{selField}.kymWidth;
+
+   kymoX = fieldX + (len/2)*kymDirV(1)*[-1 1]; 
+   kymoY = fieldY + (len/2)*kymDirV(2)*[-1 1]; 
+   handles.field{selField}.kymoX = kymoX ;
+   handles.field{selField}.kymoY = kymoY;
+   %kymoX = handles.field{selField}.kymoX;
+   %kymoY = handles.field{selField}.kymoY;
 else
    return;
 end
@@ -1713,7 +1780,7 @@ if strcmp(mouseAction,'normal') == 1 | strcmp(mouseAction,'open') == 1
             if strcmp(handles.field{selField}.selObj,'grid') == 1
                handles.field{selField}.selGridPt = index;
             elseif strcmp(handles.field{selField}.selObj,'speckle') == 1
-               handles.field{selField}.selSpeckle = index;
+               handles.field{selField}.selSpeck = index;
             elseif strcmp(handles.field{selField}.selObj,'initFlow') == 1
                handles.field{selField}.selInitFV = index;
             end
@@ -2041,28 +2108,51 @@ if strcmp(highLight,'on') == 1
    end
 
    %Draw the selected points in the field.
+   fieldPts = [];
+   vx       = [];
+   vx       = [];
+   selPt    = 0;
    if strcmp(field.selObj,'grid') == 1
+      fieldPts = field.gridPts;
       if strcmp(field.kymLineOn,'yes') == 1
          if ~isempty(field.gridSpd) 
             vx = field.gridSpd.*field.gridKymDV(:,1);
             vy = field.gridSpd.*field.gridKymDV(:,2);
-            quiver(field.gridPts(:,1),field.gridPts(:,2), ...
-               vx*scale,vy*scale,0,'g');
          end
       else
          if ~isempty(field.gridVel) 
+            vx = field.gridVel(:,1);
+            vy = field.gridVel(:,2);
          end
       end
-
-      if ~isempty(field.gridPts)
-         plot(field.gridPts(:,1),field.gridPts(:,2),'y.','MarkerSize',3);
-
-         selGridPt = field.selGridPt;
-         if selGridPt > 0
-            plot(field.gridPts(selGridPt,1),field.gridPts(selGridPt,2), ...
-               'r.','MarkerSize',5);
+      selPt = field.selGridPt;
+   elseif strcmp(field.selObj,'speckle') == 1
+      fieldPts = field.speckles;
+      if strcmp(field.kymLineOn,'yes') == 1
+         if ~isempty(field.spcSpd) 
+            vx = field.spcSpd.*field.spcKymDV(:,1);
+            vy = field.spcSpd.*field.spcKymDV(:,2);
+         end
+      else
+         if ~isempty(field.spcVel) 
+            vx = field.spcVel(:,1);
+            vy = field.spcVel(:,2);
          end
       end
+      selPt = field.selSpeck;
+   end
+
+   if ~isempty(fieldPts) 
+      plot(fieldPts(:,1),fieldPts(:,2),'y.','MarkerSize',3);
+   end
+
+   if ~isempty(vx)
+      quiver(fieldPts(:,1),fieldPts(:,2),vx*scale,vy*scale,0,'g');
+   end
+
+   if selPt > 0
+      plot(fieldPts(selPt,1),fieldPts(selPt,2), ...
+         'r.','MarkerSize',5);
    end
 elseif strcmp(highLight,'off') == 1
    plot(field.MP(1),field.MP(2),'go','MarkerSize',5);
@@ -2309,19 +2399,47 @@ elseif strcmp(handles.selImgObj,'FTrackField') == 1
       return;
    end
 
-   if strcmp(handles.field{selField}.kymLineOn,'yes') == 1
-      if isempty(handles.field{selField}.gridSpd)
+   field = handles.field{selField};
+   if strcmp(field.kymLineOn,'yes') == 1
+      if strcmp(field.selObj,'grid') == 1
+         fieldSpd = field.gridSpd;
+         selPt    = field.selGridPt;
+      elseif strcmp(field.selObj,'speckle') == 1
+         fieldSpd = field.spcSpd;
+      else
+         fieldSpd = []
+      end
+
+      if isempty(fieldSpd)
          return;
       end
 
-      selGridPt = handles.field{selField}.selGridPt;
-      if selGridPt > 0
-         gridSpd = abs(handles.field{selField}.gridSpd(selGridPt));
+      if selPt > 0
+         spd = abs(fieldSpd(selPt));
       else
-         gridSpd = handles.field{selField}.avgGSpd;
+         spd = field.avgGdSpd;
       end
-      set(handles.flowVFH,'String',num2str(gridSpd));
+   elseif strcmp(field.kymLineOn,'no') == 1
+      if strcmp(field.selObj,'grid') == 1
+         fieldVel = field.gridVel;
+         selPt    = field.selGridPt;
+      elseif strcmp(field.selObj,'speckle') == 1
+         fieldVel = field.spcVel;
+      else
+         fieldVel = [];
+      end
+
+      if isempty(fieldVel)
+         return;
+      end
+
+      if selPt > 0
+         spd = norm(fieldVel(selPt,:));
+      else
+         spd = norm(field.avgGdVel);
+      end
    end
 
+   set(handles.flowVFH,'String',num2str(spd));
 end
 

@@ -108,13 +108,16 @@ thetaExt = [theta(end-4:end-1)-pi theta(1:end-1) theta(1:5)+pi];
 numBreaks = max(8,ceil(length(thetaExt)/4));
 brk       = linspace(thetaExt(1),thetaExt(end),numBreaks);
 knot      = augknt(brk,4);
+brkI      = brk(2)-brk(1);
 
 numPoints = length(x);
 for k = 1:numPoints
    v     = zeros(numCoarseDir,1);
 
-   wbH = waitbar(0,['Processing point ' num2str(k) ' out of ' ...
-      num2str(numPoints) ' ...']);
+   if strcmp(verbose,'on') == 1
+      wbH = waitbar(0,['Processing point ' num2str(k) ' out of ' ...
+         num2str(numPoints) ' ...']);
+   end
    for j = 1:numCoarseDir
       %Coordinates of the two end points of the line throught point
       % (x(k),y(k)).
@@ -137,35 +140,28 @@ for k = 1:numPoints
    % not realistic. Unrealistic means that the speed is 3 times the average.
    avgV = sum(abs(vExt))/length(vExt);
    goodVI = find(abs(vExt)<3*avgV);
-   sp        = spap2(knot,4,thetaExt(goodVI),vExt(goodVI));
-   locThetaM = zeros(floor((numCoarseDir+1)/2),1);
-   locSpeedM = locThetaM;
-   [locThetaM(1),locSpeedM(1)] = fminbnd(@vFun,theta(end-1)-pi, ...
-      theta(2),[],sp);
-   jj = 1;
-   for j = 3:2:numCoarseDir-1
-      jj = jj+1;
-      [locThetaM(jj),locSpeedM(jj)] = fminbnd(@vFun,theta(j-1), ...
-         theta(j+1),[],sp);
-   end
-   [locThetaM(end),locSpeedM(end)] = fminbnd(@vFun,theta(j-1), ...
-      theta(2)+pi,[],sp);
-   [maxSpeed,ind] = min(locSpeedM);
-   thetaMax = locThetaM(ind);
-   maxSpeed = fnval(sp,thetaMax);
+   goodTheta = thetaExt(goodVI);
+   goodVel   = vExt(goodVI);
+   sp        = spap2(knot,4,goodTheta,goodVel);
+   [locThetaM,locSpeedM] = calLocMax(sp,[thetaExt(3:3:end-4) thetaExt(end-2)]);
+
+   [maxSpeed,ind] = max(locSpeedM);
+   thetaMax       = locThetaM(ind);
+
+   %Since 'maxSpeed' is from least-square B-spline interpolation, it might be
+   % biased from the sampled highest speed. We check in the interval
+   % [thetaM-brkI,thetaM+brkI] to get the highest sampling speed.
+   ind = find(abs(goodTheta-thetaMax)<brkI);
+   [tmp,locInd] = max(abs(goodVel(ind)));
+   maxInd       = goodVI(ind(locInd));
    %[maxSpeed,ind] = max(abs(v));
 
    %Fine tune by adding more sampling directions around the current max speed 
    % direction.
-   [tmp,ind] = min(abs(thetaExt-thetaMax));
-   thetaF    = [(thetaExt(ind-2)+thetaExt(ind-1))/2 ...
-                thetaExt(ind-1)+smplStep/3 ...
-                thetaExt(ind)-smplStep/3 thetaExt(ind)+smplStep/3 ...
-                thetaExt(ind+1)-smplStep/3 (thetaExt(ind+2)+thetaExt(ind+1))/2];
-   vF        = zeros(size(thetaF));
-   for j = 1:numFineDir
-      %Coordinates of the two end points of the line throught point
-      % (x(k),y(k)).
+   leftI = max(1,maxInd-3);
+   rightI = min(length(thetaExt),maxInd+3);
+   thetaF = (thetaExt(leftI:rightI-1)+thetaExt(leftI+1:rightI))/2;
+   for j = 1:length(thetaF)
       lineX = x(k)+ len*cos(thetaF(j))/2*[-1 1]; 
       lineY = y(k)+ len*sin(thetaF(j))/2*[-1 1]; 
 
@@ -177,6 +173,39 @@ for k = 1:numPoints
          waitbar((j+numCoarseDir)/numTotalDir);
       end
    end
+
+   %Get rid of bad directions.
+   goodVFI = find(vF<3*avgV);
+   goodThetaF = thetaF(goodVFI);
+   goodVF     = vF(goodVFI);
+   brk  = thetaExt(leftI:rightI);
+   knot = augknt(brk,4);
+   sp   = spap2(knot,4,[goodTheta goodThetaF],[goodVel goodVF]);
+   [locThetaM,locSpeedM] = calLocMax(sp,brk);
+
+   [maxSpeed,ind] = max(locSpeedM);
+   thetaMax       = locThetaM(ind);
+
+   %[tmp,ind] = min(abs(thetaExt-thetaMax));
+   %thetaF    = [(thetaExt(ind-2)+thetaExt(ind-1))/2 ...
+   %             thetaExt(ind-1)+smplStep/3 ...
+   %             thetaExt(ind)-smplStep/3 thetaExt(ind)+smplStep/3 ...
+   %             thetaExt(ind+1)-smplStep/3 (thetaExt(ind+2)+thetaExt(ind+1))/2];
+   %vF        = zeros(size(thetaF));
+   %for j = 1:numFineDir
+   %   %Coordinates of the two end points of the line throught point
+   %   % (x(k),y(k)).
+   %   lineX = x(k)+ len*cos(thetaF(j))/2*[-1 1]; 
+   %   lineY = y(k)+ len*sin(thetaF(j))/2*[-1 1]; 
+
+   %   %Generate the kymograph along the line given by 'lineX' and 'lineY'.
+   %   kym   = imKymograph(stack,lineX,lineY,width,'verbose','off');
+   %   vF(j) = imKymoSpeed(kym,width);
+
+   %   if strcmp(verbose,'on') == 1
+   %      waitbar((j+numCoarseDir)/numTotalDir);
+   %   end
+   %end
 
    %Fine tune by interpolation.
    %Get rid of bad directions.
@@ -196,18 +225,36 @@ for k = 1:numPoints
    %   thetaMax = pi + thetaF(ind);
    %end
 
+   if strcmp(verbose,'on') == 1
+      close(wbH);
+   end
+
    if strcmp(output,'vector') == 1
       varargout{1}(k) = maxSpeed*cos(thetaMax);
       varargout{2}(k) = maxSpeed*sin(thetaMax);
-   else strcmp(output,'angle') == 1
+   elseif strcmp(output,'angle') == 1
       varargout{1}(k) = maxSpeed;
       varargout{2}(k) = thetaMax;
    end
 end
 
-if strcmp(verbose,'on') == 1
-   close(wbH);
+%%%%%%%%%%%% subfunction %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [locThetaM,locSpeedM] = calLocMax(sp,theta)
+%Calculate local maximum for each interval given in theta. To qualify for a
+% local maximum, the derivative has to be zero.
+
+dTheta = min(diff(theta))/5;
+jj = 0;
+for j = 1:length(theta)-1
+   [thetaM,speedM] = fminbnd(@vFun,theta(j),theta(j+1),[],sp);
+   if fnval(sp,thetaM-dTheta) > speedM & fnval(sp,thetaM+dTheta) > speedM
+      jj = jj+1;
+      locThetaM(jj) = thetaM;
+      locSpeedM(jj) = -speedM;
+   end
 end
+
+
 
 function f = vFun(theta,pp)
 
