@@ -13,6 +13,9 @@ if ~isempty(y)
         phi_zero = lsGetZeroLevel(phi, domain);
 
         plot(phi_zero(1,:), phi_zero(2,:),'k');  
+        
+        % plot the tracking points 
+        plot(x_vec(1,:),x_vec(2,:),'.r');
     else
         phi = reshape(y, i_end, j_end);
         % Extract the zero level

@@ -84,6 +84,7 @@ elseif 1
         F_prot = asinh(d_level.*d_l);
         % retraction
         F_ret = d_level.*(~d_l) .* (0.3 + kappa);
+        %F_ret = d_level.*(~d_l) .* (10.3 + kappa);
         F= F_prot + F_ret;
     end
 else
