@@ -20,9 +20,9 @@ end
 
 for k = 1:length(outImgDir)
    fileSepInd = findstr('/',outImgDir{k});
+   mntInd = findstr('/mnt/',outImgDir{k});
    outImgDir{k}(fileSepInd) = '\';
 
-   mntInd = findstr('/mnt/',outImgDir{k});
    if isempty(mntInd)
       outImgDir{k} = [imgDrive outImgDir{k}(fileSepInd(2):end)];
    else
