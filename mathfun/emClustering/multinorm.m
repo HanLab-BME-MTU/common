@@ -4,8 +4,8 @@ function y = multinorm(x,m,covar)
 % at the array of points x
 %
 [dim npoints] = size(x);
-dd = det(covar+ realmin*eye(dim));
-in = inv(covar+ realmin*eye(dim));
+dd = det(covar+ 100*realmin*eye(dim)); % you can not invert realmin!
+in = inv(covar+ 100*realmin*eye(dim)); % therefore multiply by 100
 ff = ((2*pi)^(-dim/2))*((dd)^(-0.5));
 quadform = zeros(1,npoints);
 centered = (x-m*ones(1,npoints));

@@ -5,8 +5,11 @@ function [x,dx,mse] = myLscov(A,b,V)
 %   A must be M-by-N where M > N.  This is the over-determined
 %   least squares problem with covariance V of the data.  
 %   The solution is found without inverting V.
-%   The error is forced to be >= eps -> no imaginary solutions with Re=0
-%   are possible right now
+%   
+%   Fitting a noise-free constant leads to imaginary values returned for dx
+%   and mse. To avoid this, the function returns only the real part of dx
+%   and mse. It will return a warning (that can be turned off), if there is
+%   a perfect fit.
 %
 %   The vector X minimizes (A*X-B)'*inv(V)*(A*X-B). The classical
 %   linear algebra solution to this problem is:
@@ -75,8 +78,13 @@ if nargout > 1
     ri = (R\eye(n))';
     dx = (sqrt(sum(ri.*ri)*mse))';
     
-    %make sure we do not get strange values when all B are equal
-    mse = max(real(mse),eps);
-    dx  = max(real(dx),eps);
+    % if all B are equal, there could be imaginary parts of the solution.
+    % set real.
+    mse = (real(mse));
+    dx  = (real(dx));
+    
+    if mse == 0 | dx == 0
+        warning('MYLSCOV:perfectFit','MYLSCOV returned an error-free fit. Subsequent statistical analyses might be wrong')
+    end
 
 end
