@@ -36,7 +36,7 @@ else
    %check if it is in the matlab search path
    tempName=which(firstfilename);
    if(~isempty(tempName))
-      [fpath,fname,fno,fext]=getfilenamebody(tempName);
+      [fpath,fname,fno,fext]=getFilenameBody(tempName);
       oldDir = cd(fpath);
 	end;
 end;
