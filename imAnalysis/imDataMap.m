@@ -1,15 +1,15 @@
-function spdM = imSpeedMap(imgD,x,y,spd,varargin)
-%spdM: Create an image speed map (pixel wise) from sampled speed data.
+function dataM = imDataMap(imgDim,x,y,data,varargin)
+%dataM: Create an image speed map (pixel wise) from sampled speed data.
 %
 % SYNOPSIS : 
-%    spdM = imSpeedMap(imgD,x,y,spd)
-%    spdM = imSpeedMap(imgD,x,y,spd,bnd)
-%    spdM = imSpeedMap(imgD,x,y,spd,bnd,method)
+%    dataM = imSpeedMap(imgDim,x,y,data)
+%    dataM = imSpeedMap(imgDim,x,y,data,bnd)
+%    dataM = imSpeedMap(imgDim,x,y,data,bnd,method)
 % INPUT :
-%    imgD : The dimension of the image in the form of [m,n] where m and n is 
-%           the vertical and horizontal dimension respectively.
-%    x, y : The x and y coordinates of sampled points.
-%    spd  : The speed at sampled points.
+%    imgDim : The dimension of the image in the form of [m,n] where m and n is 
+%             the vertical and horizontal dimension respectively.
+%    x, y   : The x and y coordinates of sampled points.
+%    data   : The speed at sampled points.
 %
 %    Optional inputs:
 %    bnd    : An Nx2 matrix that specifies a polygon bondary for the sampling
@@ -25,7 +25,7 @@ function spdM = imSpeedMap(imgD,x,y,spd,varargin)
 %       The default is 'nearest'.
 %
 % OUTPUT :
-%    spdM : A pixel wise speed map of dimension 'imgD'.
+%    dataM : A pixel wise map of the data of dimension 'imgDim'.
 
 %The defaults.
 bnd    = [];
@@ -40,13 +40,13 @@ elseif nargin > 5
 end
 
 %Create grids for pixels.
-[gridX,gridY] = meshgrid(1:imgD(2),1:imgD(1));
-spdM = griddata(x,y,spd,gridX,gridY,method);
+[gridX,gridY] = meshgrid(1:imgDim(2),1:imgDim(1));
+dataM = griddata(x,y,data,gridX,gridY,method);
 
 %Set speed at pixels out of 'bnd' to be NaN.
 if ~isempty(bnd)
    [in on] = inpolygon(gridX(:),gridY(:),bnd(:,1),bnd(:,2));
    outI = find(in==0 | on==1);
-   spdM(outI) = NaN;
+   dataM(outI) = NaN;
 end
 
