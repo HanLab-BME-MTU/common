@@ -1,4 +1,4 @@
-function[simav,simmax,simmin]=calculatedIndifference(mpm, sp, mdist, ms)
+function[simav,simmax,simmin]=calculatedIndifference(mpm, sp, mdist, ms, ci)
 %calculates "indifference function", i.e. the development of the Ripley 
 %clustering parameter over time in a distribution of dividing cells with 
 %adhesion indifference - as a comparison with given distribution  
@@ -16,6 +16,7 @@ function[simav,simmax,simmin]=calculatedIndifference(mpm, sp, mdist, ms)
 %       mdist: appr. minimum distance between object centers (corresponding
 %               to cell diameter)
 %       ms: matrix size= image size in pixels; e.g. [1344 1024];
+%       ci: desired confidence interval in percent, e.g. 90
 %OUTPUT simav: average simulated clustering parameter for indifferent
 %               function
 %       simmax: appr. 90% confidence int. upper margin (second highest of 20)
@@ -53,7 +54,7 @@ end
 init=[nonzeros(mpm(:,1)) nonzeros(mpm(:,2))];
 
 %calculate simulation
-[simav,simmin,simmax]=avRipleySimSpec(init,3,mdist,nof,nov,sp,ms);
+[simav,simmin,simmax]=avRipleySimSpec(init,3,mdist,nof,nov,sp,ms,ci);
 
 
 %calculate original cluster function - if desired, uncomment 
@@ -73,13 +74,16 @@ end  % Function calculatedIndifference
 
 
 
-function[p,minp,maxp]=avRipleySimSpec(init,bh,cs,np,nov,sd,matsiz)
-%avRipleyRand makes average Ripley function of 20 simulations
+function[p,minp,maxp]=avRipleySimSpec(init,bh,cs,np,nov,sd,matsiz,ci)
+%avRipleyRand makes average Ripley function of spec. number of simulations
 %Spec meands specific: number of divisions is specified in wave nov
 %(alternatively, it is possible to have the cells divide randomly)
+%ci=confidence interval; determines number of simulations
+ns=round(2/(1-(ci/100)));
+disp(['confidence interval ',num2str(ci),'% requires ',num2str(ns),' simulation runs']);
 ms=matsiz;
-for i=1:20
-    disp(['simulation run ',num2str(i)]);
+for i=1:ns
+    disp(['simulation run ',num2str(i),' of ',num2str(ns)]);
     %makes simulation mpm
     [mv1]=SimulateClusterMpmSpec(init,bh,cs,np,nov,sd,ms);
     %calculates corresponding ripley clustering
