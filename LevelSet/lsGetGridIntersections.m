@@ -1,4 +1,4 @@
-function [x_X_i, y_X_i, x_Y_i, y_Y_i] = lsGetGridIntersections(x_spline, y_spline, domain)
+function [x_X_i, y_X_i, x_Y_i, y_Y_i] = lsGetGridIntersections(x_spline, y_spline, domain, CONTROL)
 
 if 0
    % Get the intersection of the x-gridlines 
@@ -52,20 +52,24 @@ if 1
    % all intersection points
    x_intersection = cat(2, x_X_i, x_Y_i);
    y_intersection = cat(2, y_X_i, y_Y_i);
-
-   figure,plot(x_X_i, y_X_i,'.');
-   hold on
-   plot(x_Y_i,y_Y_i,'.g');
-   p=1:x_spline.knots(end);
-   x_spline_points = fnval(x_spline, p);
-   y_spline_points = fnval(y_spline, p);
-   plot(x_spline_points, y_spline_points,'r');
+   
+   if CONTROL
+       figure,plot(x_X_i, y_X_i,'.');
+       hold on
+       plot(x_Y_i,y_Y_i,'.g');
+       p=1:x_spline.knots(end);
+       x_spline_points = fnval(x_spline, p);
+       y_spline_points = fnval(y_spline, p);
+       plot(x_spline_points, y_spline_points,'r');
+   end
 end
 
-% plot the grid lines
-for i=1:length(domain.x_grid_lines)
-   line([domain.x_grid_lines(i) domain.x_grid_lines(i)],[0 domain.y_size]);
-end
-for i=1:length(domain.y_grid_lines)
-   line([0 domain.x_size], [domain.y_grid_lines(i) domain.y_grid_lines(i)],'Color','c');
+if CONTROL
+    % plot the grid lines
+    for i=1:length(domain.x_grid_lines)
+        line([domain.x_grid_lines(i) domain.x_grid_lines(i)],[0 domain.y_size]);
+    end
+    for i=1:length(domain.y_grid_lines)
+        line([0 domain.x_size], [domain.y_grid_lines(i) domain.y_grid_lines(i)],'Color','c');
+    end
 end

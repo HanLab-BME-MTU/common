@@ -79,10 +79,13 @@ elseif 1
         % get the extended velocity
     end
 
-    % level set difference driven flow
+    % level set difference driven flow 
     for i=1:i_end
         for j=1:j_end
             %F(i,j) = - sign(phi_target(i,j))*2;
+            
+            %sign_vel = sign(phi(i,j) - phi_target(i,j));
+            %F(i,j) = sign_vel *( phi(i,j) - phi_target(i,j))^2;
             F(i,j) = phi(i,j) - phi_target(i,j);
         end
     end

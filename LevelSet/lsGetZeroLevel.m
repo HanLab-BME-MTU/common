@@ -21,14 +21,9 @@ function phi_zero = lsGetZeroLevel(phi, domain)
 % matrix
 
 phi_zero = contourc(domain.x_grid_lines, domain.y_grid_lines, phi,[0 0]);
-phi_zero(:,1)=[];
-
-
-% figure,
-% plot(phi_zero(1,:), phi_zero(2,:), '.');
-% axis equal
-
-
+if ~isempty(phi_zero)
+    phi_zero(:,1)=[];
+end
 
 
 

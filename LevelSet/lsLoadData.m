@@ -1,8 +1,8 @@
 function [mask_img_t0, mask_img_t1,x_spline_t0, y_spline_t0, x_spline_t1,y_spline_t1,...  
-    known_zero_level_points_t0, known_zero_level_points_t1, grid_coordinates, domain] = lsLoadData(TEST_CASE)
+    known_zero_level_points_t0, known_zero_level_points_t1, grid_coordinates, domain] = lsLoadData(TEST_CASE, CONTROL)
 
 
-if TEST_CASE == 1
+if TEST_CASE == 1 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
@@ -47,14 +47,14 @@ if TEST_CASE == 1
    
    [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
 
-    % fill the grid_line field in structure domain
-    domain = lsGenerateGridLines(domain);
+   % fill the grid_line field in structure domain
+   domain = lsGenerateGridLines(domain);
    
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
    % (find the known points)
-   [x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0] = lsGetGridIntersections(x_spline_t0, y_spline_t0, domain);
+   [x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0] = lsGetGridIntersections(x_spline_t0, y_spline_t0, domain, CONTROL);
    known_zero_level_points_t0(:,1) = [x_X_i_t0'; x_Y_i_t0'];
    known_zero_level_points_t0(:,2) = [y_X_i_t0'; y_Y_i_t0'];
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,11 +62,77 @@ if TEST_CASE == 1
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
-   [x_X_i_t1, y_X_i_t1, x_Y_i_t1, y_Y_i_t1] = lsGetGridIntersections(x_spline_t1, y_spline_t1, domain);
+   [x_X_i_t1, y_X_i_t1, x_Y_i_t1, y_Y_i_t1] = lsGetGridIntersections(x_spline_t1, y_spline_t1, domain, CONTROL);
    known_zero_level_points_t1(:,1) = [x_X_i_t1'; x_Y_i_t1'];
    known_zero_level_points_t1(:,2) = [y_X_i_t1'; y_Y_i_t1'];
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-elseif TEST_CASE == 2
+elseif TEST_CASE == 2 
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   domain.x_size = 200;
+   domain.y_size = 200;
+   
+   domain.x_spacing = 1; 
+   domain.y_spacing = 1;
+   
+   %create circle
+   circle1   = rsmak('circle',50,[0, 0]);
+   circle2   = rsmak('circle',50,[0, 0]);   
+
+   circle1   = fncmb(circle1,'+', 75);
+   circle2   = fncmb(circle2,'+', 175);
+   
+   fnplt(circle1);
+   hold on
+   fnplt(circle2);
+   axis equal
+   
+   % Create mask
+   p = 0:0.05:circle1.pieces;
+   circle1_points = fnval(circle1,p);
+   p = 0:0.05:circle2.pieces;
+   circle2_points = fnval(circle2,p);
+   
+   mask_img_t0 = roipoly(domain.y_size, domain.x_size, circle1_points(1,:)', circle1_points(2,:)');
+   mask_img_t1 = roipoly(domain.y_size, domain.x_size, circle2_points(1,:)', circle2_points(2,:)');
+
+   % create x,y splines
+   s_p = 1:length(p);
+   x_spline_t0 = fn2fm(spline(s_p, circle1_points(1,:)),'B-');
+   y_spline_t0 = fn2fm(spline(s_p, circle1_points(2,:)),'B-');
+   
+   x_spline_t1 = fn2fm(spline(s_p, circle2_points(1,:)),'B-');
+   y_spline_t1 = fn2fm(spline(s_p, circle2_points(2,:)),'B-');
+   
+   % End test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   
+   [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
+
+    % fill the grid_line field in structure domain
+    domain = lsGenerateGridLines(domain);
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
+   % (find the known points)
+   [x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0] = lsGetGridIntersections(x_spline_t0, y_spline_t0, domain, CONTROL);
+   known_zero_level_points_t0(:,1) = [x_X_i_t0'; x_Y_i_t0'];
+   known_zero_level_points_t0(:,2) = [y_X_i_t0'; y_Y_i_t0'];
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
+   [x_X_i_t1, y_X_i_t1, x_Y_i_t1, y_Y_i_t1] = lsGetGridIntersections(x_spline_t1, y_spline_t1, domain, CONTROL);
+   known_zero_level_points_t1(:,1) = [x_X_i_t1'; x_Y_i_t1'];
+   known_zero_level_points_t1(:,2) = [y_X_i_t1'; y_Y_i_t1'];
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+   
+   
+elseif TEST_CASE == 3
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
@@ -133,8 +199,8 @@ elseif TEST_CASE == 2
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
    % (find the known points)
-   [x_X_i_t01, y_X_i_t01, x_Y_i_t01, y_Y_i_t01] = lsGetGridIntersections(x_spline_t01, y_spline_t01, domain);
-   [x_X_i_t02, y_X_i_t02, x_Y_i_t02, y_Y_i_t02] = lsGetGridIntersections(x_spline_t02, y_spline_t02, domain);
+   [x_X_i_t01, y_X_i_t01, x_Y_i_t01, y_Y_i_t01] = lsGetGridIntersections(x_spline_t01, y_spline_t01, domain, CONTROL);
+   [x_X_i_t02, y_X_i_t02, x_Y_i_t02, y_Y_i_t02] = lsGetGridIntersections(x_spline_t02, y_spline_t02, domain, CONTROL);
    x_X_i_t0 = cat(2,x_X_i_t01, x_X_i_t02);
    y_X_i_t0 = cat(2,y_X_i_t01, y_X_i_t02);
    x_Y_i_t0 = cat(2,x_Y_i_t01, x_Y_i_t02);
@@ -147,11 +213,11 @@ elseif TEST_CASE == 2
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
-   [x_X_i_t1, y_X_i_t1, x_Y_i_t1, y_Y_i_t1] = lsGetGridIntersections(x_spline_t1, y_spline_t1, domain);
+   [x_X_i_t1, y_X_i_t1, x_Y_i_t1, y_Y_i_t1] = lsGetGridIntersections(x_spline_t1, y_spline_t1, domain, CONTROL);
    known_zero_level_points_t1(:,1) = [x_X_i_t1'; x_Y_i_t1'];
    known_zero_level_points_t1(:,2) = [y_X_i_t1'; y_Y_i_t1'];
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
-elseif TEST_CASE == 3
+elseif TEST_CASE == 4
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
@@ -230,15 +296,15 @@ elseif TEST_CASE == 3
     
     
     
-elseif TEST_CASE == 4
+elseif TEST_CASE == 5
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
    domain.x_size = 439;
    domain.y_size = 345;
    
-   domain.x_spacing = 5; 
-   domain.y_spacing = 5;
+   domain.x_spacing = 1; 
+   domain.y_spacing = 1;
    
    cd /lccb/projects/alpha/W512r_smaller/protrusion_01-90_s30_p20
    load edge_spline
@@ -260,7 +326,7 @@ elseif TEST_CASE == 4
    [filelist_mask]=getFileStackNames(firstfilename_mask);
    
    time = 4;
-   time_increment = 10;
+   time_increment = 15;
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%% read the pixel edge %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    for i = 1 : time
@@ -301,16 +367,14 @@ elseif TEST_CASE == 4
    y_spline_t1 = edge_sp_array_y(time+time_increment);
    
    
-    [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
+   [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
 
-    % fill the grid_line field in structure domain
-    domain = lsGenerateGridLines(domain);
+   % fill the grid_line field in structure domain
+   domain = lsGenerateGridLines(domain);
     
-elseif TEST_CASE == 5
+elseif TEST_CASE == 6
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
-
    
    cd /lccb/projects/alpha/PtK1_control/cut_s399/protrusion_1-243_s40_p20
    load edge_spline
@@ -343,7 +407,7 @@ elseif TEST_CASE == 5
    [filelist_mask]=getFileStackNames(firstfilename_mask);
    
    time = 4;
-   time_increment = 10;
+   time_increment = 1;
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%% read the pixel edge %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    for i = 1 : time

@@ -44,6 +44,48 @@ Dx_plus_x_minus   =  zeros(i_end, j_end);
 delta_x_sq = delta_x^2;
 delta_y_sq = delta_y^2;
 
+% w1=[1 -1];
+% w2=[1 -2 1];
+% 
+% Dy_minus          = filter(w1,delta_y,phi,[],1); % you have to define first element
+% Dy_minus(1,:)     = Dy_minus(2,:);
+% 
+% Dy_plus           = Dy_minus; % add last element!!! 
+% Dy_plus(1,:)      = [];
+% Dy_plus(end+1,:)  = Dy_plus(end,:);
+% 
+% Dy_minus_y_minus  =  filter(w2,delta_y*delta_y,phi,[],1); % you have to define first two element
+% Dy_minus_y_minus(1,:) = Dy_minus_y_minus(3,:);
+% Dy_minus_y_minus(2,:) = Dy_minus_y_minus(3,:);
+% 
+% Dy_plus_y_minus   =  Dy_minus_y_minus; % add last element!!! 
+% Dy_plus_y_minus(1,:)=[];
+% Dy_plus_y_minus(end+1,:) = Dy_plus_y_minus(end,:);
+% 
+% Dy_plus_y_plus    =  Dy_plus_y_minus; %  add last element!!! 
+% Dy_plus_y_plus(1,:)=[]; 
+% Dy_plus_y_plus(end+1,:) = Dy_plus_y_plus(end,:);
+% 
+% 
+% 
+% Dx_minus          =  filter(w1,delta_x,phi,[],2); % xou have to define first element
+% Dx_minus(:,1) = Dx_minus(:,2);
+% 
+% Dx_plus           =  Dx_minus; % add last element!!! 
+% Dx_plus(:,1)=[];
+% Dx_plus(:,end+1)=Dx_plus(:,end);
+% Dx_minus_x_minus  =  filter(w2,delta_x*delta_x,phi,[],2); % xou have to define first two element
+% Dx_minus_x_minus(:,1) = Dx_minus_x_minus(:,3);
+% Dx_minus_x_minus(:,2) = Dx_minus_x_minus(:,3);
+% 
+% Dx_plus_x_minus   =  Dx_minus_x_minus; % add last element!!! 
+% Dx_plus_x_minus(:,1)=[]; 
+% Dx_plus_x_minus(:,end+1) = Dx_plus_x_minus(:,end);
+% 
+% Dx_plus_x_plus    =  Dx_plus_x_minus; %  add last element!!! 
+% Dx_plus_x_plus(:,1)=[];
+% Dx_plus_x_plus(:,end+1) = Dx_plus_x_plus(:,end);
+
 for i=1:i_end
    for j=1:j_end
       if i < 3
@@ -66,6 +108,7 @@ for i=1:i_end
          Dy_plus_y_plus(i,j)    =  (phi(i+2,j)-2*phi(i+1,j)+phi(i  ,j)  )  / delta_y_sq;
          Dy_plus_y_minus(i,j)   =  (phi(i+1,j)-2*phi(i  ,j)+phi(i-1,j)  )  / delta_y_sq;      
       end
+       
       
       if j < 3
          Dx_minus(i,j)          =  (phi(i,j+1)-  phi(i,j  )             )  / delta_x;
@@ -99,13 +142,46 @@ delta_minus =   zeros(i_end, j_end);
 delta_x_half = delta_x/2;
 delta_y_half = delta_y/2;
 
+
+% A1  = (Dx_minus_x_minus .* Dx_plus_x_minus) >= 0;
+% A2  = abs(Dx_minus_x_minus) <= abs(Dx_plus_x_minus);
+% A = Dx_minus + delta_x_half * (A1.*A2 .* Dx_minus_x_minus + (A1&~A2) .* Dx_plus_x_minus);
+% 
+% B1 = (Dx_plus_x_plus .* Dx_plus_x_minus) >= 0;
+% B2 = abs(Dx_plus_x_plus) <= abs(Dx_plus_x_minus);
+% B = Dx_plus - delta_x_half * (B1.*B2 .* Dx_plus_x_plus   + (B1&~B2) .* Dx_plus_x_minus);
+% 
+% C1 = (Dy_minus_y_minus .* Dy_plus_y_minus) >= 0;
+% C2 = abs(Dy_minus_y_minus) <= abs(Dy_plus_y_minus);
+% C = Dy_minus + delta_y_half * (C1.*C2 .* Dy_minus_y_minus+ (C1&~C2) .* Dy_plus_y_minus);
+% 
+% D1 = (Dy_plus_y_plus .*  Dy_plus_y_minus) >= 0;
+% D2 = abs(Dy_plus_y_plus) <= abs(Dy_plus_y_minus);
+% D = Dy_plus  - delta_y_half * (D1.*D2 .* Dy_plus_y_plus  + (D1&~D2) .* Dy_plus_y_minus);
+%         
+% Amax = A > 0;
+% Amin = A < 0; 
+% Bmax = B > 0;
+% Bmin = B < 0;
+% Cmax = C > 0;
+% Cmin = C < 0;
+% Dmax = D > 0;
+% Dmin = D < 0;
+% 
+% grad_x = Amax .* A + Bmin .* B;  
+% grad_y = Cmax .* A + Dmin .* B; 
+% 
+% delta_plus  =  sqrt((Amax.*A).^2 + (Bmin.*B).^2 + (Cmax.*C).^2 + (Dmin.*D).^2);
+% delta_minus =  sqrt((Bmax.*B).^2 + (Amin.*A).^2 + (Dmax.*D).^2 + (Cmin.*C).^2);
+
+
 for i=1:i_end
     for j=1:j_end
       A = Dx_minus(i,j) + delta_x_half * switch_m(Dx_minus_x_minus(i,j), Dx_plus_x_minus(i,j));
       B = Dx_plus(i,j)  - delta_x_half * switch_m(Dx_plus_x_plus(i,j),   Dx_plus_x_minus(i,j));
       C = Dy_minus(i,j) + delta_y_half * switch_m(Dy_minus_y_minus(i,j), Dy_plus_y_minus(i,j));
       D = Dy_plus(i,j)  - delta_y_half * switch_m(Dy_plus_y_plus(i,j),   Dy_plus_y_minus(i,j));
-      
+  
       grad_x(i,j) = max(A,0) + min(B,0);
       grad_y(i,j) = max(C,0) + min(D,0);
       
@@ -113,9 +189,26 @@ for i=1:i_end
                                max(C,0)^2 + min(D,0)^2);
       
       delta_minus(i,j) =  sqrt(max(B,0)^2 + min(A,0)^2+...
-                               max(D,0)^2 + min(C,0)^2);      
+                               max(D,0)^2 + min(C,0)^2);  
+
+
+
+%       grad_x(i,j) = max(A(i,j),0) + min(B(i,j),0);
+%       grad_y(i,j) = max(C(i,j),0) + min(D(i,j),0);
+%       
+%       delta_plus(i,j)  =  sqrt(max(A(i,j),0)^2 + min(B(i,j),0)^2+...
+%                                max(C(i,j),0)^2 + min(D(i,j),0)^2);
+%       
+%       delta_minus(i,j) =  sqrt(max(B(i,j),0)^2 + min(A(i,j),0)^2+...
+%                                max(D(i,j),0)^2 + min(C(i,j),0)^2);    
+
+
    end
 end
+
+% diff = sum(sum(delta_plus_r - delta_plus));
+% diff2 = sum(sum(delta_minus_r - delta_minus));
+% p=1;
 
 
 

@@ -138,4 +138,46 @@ elseif order == 4
     grad_x = Dx_central;
     grad_y = Dy_central;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
+elseif  order == 10
+    
+
+    Dy_minus  =  zeros(i_end, j_end);
+    Dx_minus  =  zeros(i_end, j_end);
+
+    Dx_plus   =  zeros(i_end, j_end);
+    Dy_plus   =  zeros(i_end, j_end);
+
+
+
+    Dx_minus(:,2:j_end) = diff(phi,1,2);
+    Dx_minus(:,1) = Dx_minus(:,2);
+    Dx_minus = Dx_minus ./ delta_x;
+
+    Dy_minus(2:i_end,:) = diff(phi,1,1);
+    Dy_minus(1,:) = Dy_minus(1,:);
+    Dy_minus = Dy_minus ./ delta_y;
+
+    Dx_plus = diff(phi,1,2);
+    Dx_plus(:,j_end) = Dx_plus(:,j_end-1);
+    Dx_plus = Dx_plus ./ delta_x;
+
+    Dy_plus = diff(phi,1,1);
+    Dy_plus(i_end,:) = Dy_plus(i_end-1,:);
+    Dy_plus = Dy_plus ./ delta_y;
+
+    
+    n_x = Dx_plus ./ sqrt(Dx_plus.^2 + Dy_plus.^2) +...
+          Dx_minus ./ sqrt(Dx_minus.^2 + Dy_plus.^2) +...
+          Dx_plus ./ sqrt(Dx_plus.^2 + Dy_minus.^2) +...
+          Dx_minus ./ sqrt(Dx_minus.^2 + Dy_minus.^2);
+
+
+    n_y = Dy_plus ./ sqrt(Dx_plus.^2 + Dy_plus.^2) +...
+          Dy_minus ./ sqrt(Dx_minus.^2 + Dy_plus.^2) +...
+          Dy_plus ./ sqrt(Dx_plus.^2 + Dy_minus.^2) +...
+          Dy_minus ./ sqrt(Dx_minus.^2 + Dy_minus.^2);
+    
+          
+    grad_x = n_x ./ sqrt(n_x.^2 + n_y.^2);
+    grad_y = n_y ./ sqrt(n_x.^2 + n_y.^2);   
 end

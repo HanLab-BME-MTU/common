@@ -43,7 +43,7 @@ for j = 1:num_grid_coordinates
     end
     dist_fct(j) = level_set_sign * min(dist);
 end
-
+close(h_waitbar);
 
 % put the minimal distances from vetor into matrix form
 dist_fct_matrix = reshape(dist_fct,size(domain.y_grid_lines,2),size(domain.x_grid_lines,2));
