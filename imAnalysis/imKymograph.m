@@ -12,7 +12,8 @@ function [kym,xBand,yBand] = imKymograph(stack,x,y,width);
 %                  The tracjectory is supposed to have no loops
 %                  if length(x) = length(y) = 2 then a traditional line 
 %                  kymograph is produced
-%          width : width of the graph (must be odd integer number)
+%          width : width of the graph (must be odd integer number). If the
+%                  input width is even, it will be added by 1.
 %
 % OUPUT    kym   : image with kymograph with the dimensions 
 %                  n * width x stretch(x,y)

@@ -16,15 +16,17 @@ function varargout = imKymoAnalysis(varargin)
 %                    left-most point of the curve.
 %    width         : A cell array each element of which is the width of the
 %                    tube around each curve (or line) for kymograph analysis.
+%                    It has to be an odd number. If the input is even, it is
+%                    added by 1.
 %    selKymoCurve  : The index of the selected curve whose kymograph is to be
 %                    shown and analyzed.
 %    kymo          : A cell array of length 'numKymoCurves'. It stores the 
 %                    kymograph images.
 %    vLineX 
-%    vLineY        : Coordinates of the lines drawn on the currently shown
-%                    kymograph to estimate the velocity of flow.
-%    numVLines     : The number of lines drawn on the currently shown
-%                    kymograph for the estimation of velocity.
+%    vLineY        : Coordinates of the lines drawn on the shown kymograph
+%                    to estimate the velocity of flow.
+%    numVLines     : The number of lines drawn on the shown kymograph
+%                    for the estimation of velocity.
 %    selVLine      : The selected velocity line on the kymograph.
 %    whatIsShown   : A string that indicates what is shown in the figure
 %                    window. Possible values: 'image' (default) and 'kymo'.
@@ -206,6 +208,10 @@ x = str2num(ans{1});
 y = str2num(ans{2});
 w = str2num(ans{3});
 
+if mod(w,2) == 0
+   w = w+1;
+end
+
 %Find the mark point which is the left-most end of the line.
 if x(end) > x(1)
    kCurveMP = [x(1) y(1)];
@@ -247,13 +253,16 @@ if strcmp(handles.whatIsShown,'image') == 0 | handles.numImages == 0
    return;
 end
 
-[x,y] = roicurve;
+[x,y] = imSelCurve;
 
 numKymoCurves = handles.numKymoCurves+1;
 
 ans = inputdlg({'Width of the new line:'}, ...
    'Enter the Width',1,{num2str(handles.defaultWidth)});
 w = str2num(ans{1});
+if mod(w,2) == 0
+   w = w+1;
+end
 
 %Find the mark point which is the left-most end of the line.
 if x(end) > x(1)
@@ -325,7 +334,7 @@ end
 showKymograph_Callback(hObject,eventdata,handles);
 handles = guidata(hObject);
 
-[x,y] = roicurve(2);
+[x,y] = imSelCurve(2);
 
 selKymoCurve = handles.selKymoCurve;
 numVLines = handles.numVLines(selKymoCurve)+1;
@@ -372,10 +381,10 @@ showKymograph_Callback(hObject,eventdata,handles);
 handles = guidata(hObject);
 
 selKymoCurve = handles.selKymoCurve;
-kym          = handles.kym{selKymoCurve};
+kymo         = handles.kymo{selKymoCurve};
 bw           = handles.width(selKymoCurve);
 
-handles.calV(selKymoCurve) = calKymoSpeed(kym,bw);
+handles.calV(selKymoCurve) = imKymoSpeed(kymo,bw);
 
 set(handles.calVFieldH,'String',num2str(handles.calV(selKymoCurve)));
 guidata(hObject,handles);
@@ -621,7 +630,7 @@ set(gca,'Units','pixels','Position',imgAP);
 axis on; hold on;
 
 for k = 1:handles.numKymoCurves
-   drawCurve(handles.kymoX{k},handles.kymoY{k},handles.width(k), ...
+   drawCurve(handles.kymoX{k},handles.kymoY{k},floor(handles.width(k)/2), ...
       handles.kCurveMP(k,:),num2str(k));
 end
 

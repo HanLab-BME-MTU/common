@@ -1,14 +1,13 @@
-function [xi,yi] = roicurve(varargin)
-%roicurve: Interactively insert a curve in the current figure without 
-%          acturally drawing it.
+function [xi,yi] = imSelCurve(varargin)
+%imSelCurve: Interactively select a curve in the current figure.
 %
-%    Draw a curve on the current axes by clicking points in the figure. 
+%    Select a curve on the current axes by clicking points in the figure. 
 %    Exit when you hit the return key.
 %
 % SYNTAX: 
-%    [xi,yi] = roicurve
+%    [xi,yi] = imSelCurve
 %       The coordinates of the curve is returned in 'xi' and 'yi'.
-%    [xi,yi] = roicurve(maxNumPoints)
+%    [xi,yi] = imSelCurve(maxNumPoints)
 %       Specify the maximum number of break points on the curve. When this
 %       number is reached by mouse clicking, the program exits and return the
 %       curve. 'maxNumPoints' has to be 0 or positive. When it is zero, you
