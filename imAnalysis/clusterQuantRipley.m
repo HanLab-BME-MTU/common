@@ -217,45 +217,33 @@ rs=round(minms/2);
 %create numpoints vector (number of points in circle of corresponding radius)
 %loop over all radius values between 1 and minms
 %initialize m2 vector
-m2=1:rs;
+%m2=1:rs;
 
-%create corrections factor matrix
-cfm=ones(lm,rs);
+%create corrections factor matrix (same dimension as mdist)
+%contains correction factor for precise radii (point distances) around each
+%point; for the zero entry at identity (p11,p22,p33), cfm equals one
+corrFacMat=ones(lm);
 for n=1:lm
-    cfm(n,:)=circumferenceCorrectionFactor(m1(n,1),m1(n,2),m2,msx,msy);
+    corrFacMat(n,:) = circumferenceCorrectionFactor(m1(n,1),m1(n,2),mdist(n,:),msx,msy);
 end
 thresh_mdist = mdist;
 
 for r=rs:-1:1
     %for given radius, set all values of mdist higher than the radius value
     %to zero
-    %first step: thresh_mdistones is a matrix where all the places where
-    %the original value is <= r are set to one, all the places where the
-    %original value is either zero OR larger than the radius r are set to
-    %zero - first multiplication term takes care of setting stuff to zero,
-    %the second one does the scaling to 0-1
-    %thresh_mdistones=ceil( (mdist.*max((r+1-mdist),0))/((r+1)*max(max(mdist))) );
-    %second step: by multiplying with original matrix, we get zero in all
-    %places where the value exceeds r, all other values are retained
+    
     thresh_mdist(thresh_mdist > r) = 0;
+    
+    %count all leftover points equally => set to one
+    %to zero
     thresh_mdistones = thresh_mdist;
     thresh_mdistones(thresh_mdist > 0) = 1;
     
-    %round off to nearest integer value to make an index matrix
-    tempindex=max(floor(thresh_mdist),1);
-    %initialize tempweight
-    tempweight=thresh_mdistones; 
-    %the value of tempweight at a position in column n (corresponding to 
-    %point number n) with distance D of this point in mdist (rounded to 
-    %tempindex) is the value of the circumferenceCorrectionFactor matrix at
-    %distance (column) D for this point (line)
-    %loop over all points n
-    for n=1:lm
-        tempweight(:,n)=1./(cfm(n,tempindex(:,n)));
-    end
-    tempfinal=thresh_mdistones.*tempweight;    
+    %weigt every counted point with the circumference correction factor
+    %calculated previously in corrFacMat
+    tempfinal=thresh_mdistones./corrFacMat;    
     %sum over entire matrix to get number of points
-    npv=sum(sum(tempfinal));
+    npv=sum(tempfinal(:));
         
     %to average, divide sum by number of points (=columns)
     npv=(npv/lm);
@@ -310,21 +298,25 @@ function[corfac]=circumferenceCorrectionFactor(xx,yy,rr,msx,msy)
 x=min(xx,(msx-xx));
 y=min(yy,(msy-yy));
 
-dim=max(size(rr));
-corfac=ones(dim,1);
-for i=1:dim
+rmax=max(size(rr));
+corfac=ones(rmax,1);
+
+for i=1:rmax
     r=rr(i);
     %if both x and y are smaller than r
-    if((x<r)&&(y<r))
-       if( (x<r) && (y<r) && (sqrt(x^2+y^2)>r) )
-           corfac(i)=(2*asin(x/r)+2*asin(y/r))/(2*pi);
-       else
-           corfac(i)=(0.5*pi+asin(x/r)+asin(y/r))/(2*pi);
-       end
-    %if either x OR y OR neither is smaller than r 
-    else
-       z=min( min(x,y),r );
-       corfac(i)=(pi+2*asin(z./r))/(2*pi);
+    if(r>0)
+        
+        if((x<r)&&(y<r))
+            if( (x<r) && (y<r) && (sqrt(x^2+y^2)>r) )
+                corfac(i)=(2*asin(x/r)+2*asin(y/r))/(2*pi);
+            else
+                corfac(i)=(0.5*pi+asin(x/r)+asin(y/r))/(2*pi);
+            end
+         %if either x OR y OR neither is smaller than r 
+        else
+             z=min( min(x,y),r );
+            corfac(i)=(pi+2*asin(z./r))/(2*pi);
+        end
     end
 end
 
