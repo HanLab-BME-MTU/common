@@ -22,8 +22,8 @@ if 1
    domain.x_size = 200;
    domain.y_size = 200;
    
-   domain.x_spacing = 15; 
-   domain.y_spacing = 15;
+   domain.x_spacing = 25; 
+   domain.y_spacing = 25;
    
    %create circle
    circle   = rsmak('circle',50,[0, 0]);
@@ -123,11 +123,21 @@ end
 % fill the grid_line field in structure domain
 domain = lsGenerateGridLines(domain);
 
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
+[x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0] = lsGetGridIntersections(x_spline_t0, y_spline_t0, domain);
+known_zero_level_points_t0(:,1) = [x_X_i_t0'; x_Y_i_t0'];
+known_zero_level_points_t0(:,2) = [y_X_i_t0'; y_Y_i_t0'];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Get edge at former time step %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 signed_t0 = 1;
-[val_t0, val_matrix_t0] = lsGetDistanceFct(mask_img_t0, grid_coordinates, domain, x_spline_t0, y_spline_t0, signed_t0);
+[val_t0, val_matrix_t0] = lsGetDistanceFct(mask_img_t0, grid_coordinates,...
+                            known_zero_level_points_t0, domain, signed_t0);
 
 % test the ddistance function and the zero level set finding
 if test
@@ -138,14 +148,26 @@ if test
     title('Original front, red, and extracted front, blue');
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% get the trail points
+trial_grid_points = lsFindTrailPoints(x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0, domain);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-% Get edge at present time step %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
+[x_X_i, y_X_i, x_Y_i, y_Y_i] = lsGetGridIntersections(x_spline_t1, y_spline_t1, domain);
+known_zero_level_points_t1(:,1) = [x_X_i'; x_Y_i'];
+known_zero_level_points_t1(:,2) = [y_X_i'; y_Y_i'];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% Get distance function for all grid points at present time step %%
 signed_t1 = 1;
-[val_t1, val_matrix_t1] = lsGetDistanceFct(mask_img_t1, grid_coordinates, domain, x_spline_t1, y_spline_t1, signed_t1);
+[val_t1, val_matrix_t1] = lsGetDistanceFct(mask_img_t1, grid_coordinates,...
+                             known_zero_level_points_t1, domain, signed_t1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
@@ -186,12 +208,12 @@ h_waitbar = waitbar(0,'Processing');
 figure
 hold on
 plot(x_spline_points_t1, y_spline_points_t1,'r');
-num_time_steps = 200;
+num_time_steps = 500;
 for t=1:num_time_steps
    waitbar(t/num_time_steps, h_waitbar, num2str(t));
    [phi_next, delta_t_opt(t)] = lsSolveConvection(phi_next, delta_t, delta_x, delta_y, i_end, j_end, val_matrix_t1, domain);
    if mod(t,20) == 0 || t == 1
-      phi_zero = lsGetZeroLevelSet(phi_next, domain);
+      phi_zero = lsGetZeroLevel(phi_next, domain);
       plot(phi_zero(1,:),phi_zero(2,:));
    end
 end

@@ -1,7 +1,14 @@
 function phi_zero = lsGetZeroLevelSet(phi, domain)
 
+
+% this function gets the level at the grid lines ->
+% x-levels, y-levels.
+% it finds them by linear interpolation of the level set 
+% matrix
+
 phi_zero = contourc(domain.x_grid_lines, domain.y_grid_lines, phi,[0 0]);
 phi_zero(:,1)=[];
+
 
 % figure,
 % plot(phi_zero(1,:), phi_zero(2,:), '.');

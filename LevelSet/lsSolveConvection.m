@@ -44,7 +44,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Calculate the speed function F  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-F = lsGetSpeedFct(phi, phi_target, i_end, j_end, grad_x, grad_y, domain);
+F = lsGetVelocityFct(phi, phi_target, i_end, j_end, grad_x, grad_y, domain);
 
 
 % get the maximal time step based on the CLF number 
@@ -86,7 +86,7 @@ elseif strcmp(method,'Heun')
    [delta_plus_p, delta_minus_p, grad_x_p, grad_y_p] = lsFirstSecondDifferences(phi_p,...
                                                                      delta_x, delta_y, i_end, j_end);
    
-   F_p = lsGetSpeedFct(phi, phi_target, i_end, j_end, grad_x_p, grad_y_p, domain);
+   F_p = lsGetVelocityFct(phi, phi_target, i_end, j_end, grad_x_p, grad_y_p, domain);
    
    % Correctror step
    for i=1:i_end
