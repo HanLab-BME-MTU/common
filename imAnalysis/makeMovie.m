@@ -54,7 +54,7 @@ end
 fps = 10; %Default frame rate.
 
 if nargin > 3
-   if rem(nargin,2) ~= 0
+   if rem(nargin-3,2) ~= 0
       error('The parameters and values should appear in pair.');
    else
       for k = 4:2:nargin
@@ -77,7 +77,7 @@ h   = figure(gcf); hold off;
 set(h,'Position',pos);
 
 if strcmp(format,'mov') == 1 | strcmp(format,'MOV')
-   makeQTMovie('start','outFileName');
+   makeQTMovie('start',outFileName);
    makeQTMovie('framerate',fps);
 end
 

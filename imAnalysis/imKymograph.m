@@ -3,7 +3,8 @@ function [kym,xBand,yBand] = imKymograph(stack,x,y,width);
 % 
 % SYNOPSIS kym = imKymograph(stack,x,y,width);
 % 
-% INPUT    stack : image stack or filename of the first image
+% INPUT    stack : image stack or filename of the first image or a cell array
+%                  of the list of files to be analyzed.
 %                  (image stack not yet implemented)
 %                  if [] a gui pops up to define the first filename  
 %          x     : x-coordinates of the kymographed trajectory
@@ -82,34 +83,16 @@ yBand = ones(width,1)*yInt(2:end-1) - pos' * (dx ./ dn);
 
 kym = [];
 
-if(ischar(stack))
-   % read image by image and do the interpolation along the band
-   [fpath,fname,fno,fext]=getfilenamebody(stack);
-   if(isempty(fname) | isempty(fno) | isempty(fext) )
-      error('invalid first filename specified');
-   end;
-   
-   if(~isempty(fpath))
-      % change to stack directory
-      oldDir = cd(fpath);
-   end;
-   
-   dirListing = dir;
-   % get all relevant filenames
-   iEntry = 1;
-   fileList = {};
-   for( i = 1:length(dirListing))
-      if(~dirListing(i).isdir)
-         fileList(iEntry) = {dirListing(i).name};
-         iEntry = iEntry + 1;
-      end;
-   end;
-   
-   nEntries = 0;
-   imIndx = str2num(fno);
-   searchName= [fname,int2str(imIndx),fext];
-   while(~isempty(strmatch(searchName,fileList)))
-      auxI = imread(searchName);
+if ischar(stack) | iscell(stack)
+   if ischar(stack)
+      fileList = getFileStackNames(stack);
+   elseif iscell(stack)
+      fileList = stack;
+   end
+
+   for k = 1:length(fileList)
+      % read image by image and do the interpolation along the band
+      auxI = imread(fileList{k});
       % convert eventual color images to gray
       if(size(auxI,3) == 3)
          auxI = rgb2gray(auxI);
@@ -122,16 +105,7 @@ if(ischar(stack))
          bandI = cat(1,bandI,interp2(double(auxI),xBand(i,:),yBand(i,:)));
       end;
       kym = cat(1,kym,bandI);
-      disp(['completed file: ',searchName]);
-
-      imIndx = imIndx + 1;
-      searchName= [fname,int2str(imIndx),fext];
-      
-   end;
-   
-   % change back to original directory
-   if(~isempty(oldDir))
-      cd(oldDir);
+      disp(['completed file: ',fileList{k}]);
    end;
 else
    error('input via image stack not yet implemented');
