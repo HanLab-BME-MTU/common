@@ -23,9 +23,10 @@ function mSqDisp = meanSquaredDisplacement(positions, sigmaZero, doOneD)
 %               and non-perfect observations!)
 %
 % OUTPUT   mSqDisp              x-by-3 array with
-%                                   r^2=<[r(t+dt)-r(t)]^2>
-%                                   sigma(r^2)
-%                                   nDataPoints
+%                                   - r^2=<[r(t+dt)-r(t)]^2>
+%                                   - sigma(r^2) - for SEM divide by 
+%                                         sqrt(nDataPoints!)
+%                                   - nDataPoints
 %
 %                               dt is max 1/4 of the
 %                               available timepoints. 
@@ -163,7 +164,7 @@ for timeLag = 1:maxTimeLag
     % if more than 20 data points, we average
     if length(goodData) >= defaultMinNumData
         % use sigma of distances, not squared distances, for weight
-         [r2,sigmaR2] = weightedStats(displacement(goodData).^2,sigma(goodData),'s');
+         [r2,dummy,sigmaR2] = weightedStats(displacement(goodData).^2,sigma(goodData),'s');
          mSqDisp(timeLag,:) = [r2,sigmaR2,length(goodData)];
     end
     
