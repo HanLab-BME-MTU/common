@@ -12,8 +12,9 @@ function[simav,simmax,simmin]=calculatedIndifference(mpm, sp, mdist, ms)
 %       sp: average displacement of cells frame-to-frame in pixels per frame
 %           (appr. diffusion speed in the absence of adhesion or repulsion);
 %           this value can be calculated e.g. in Polytrack
+%           sp is a vector of length n-1 (if n is number of frames)
 %       mdist: appr. minimum distance between object centers (corresponding
-%               to cell radius)
+%               to cell diameter)
 %       ms: matrix size= image size in pixels; e.g. [1344 1024];
 %OUTPUT simav: average simulated clustering parameter for indifferent
 %               function
@@ -21,8 +22,8 @@ function[simav,simmax,simmin]=calculatedIndifference(mpm, sp, mdist, ms)
 %       simmin: appr. 90% confidence int. lower margin (second lowest of 20)
 %
 %DEPENDENCIES: calculatedIndifference uses
-%{avRipleySimSpec, SimulateClusterMpmSpec, DeterNearNeigh}
-%
+%{avRipleySimSpec, SimulateClusterMpmSpec, DeterNearNeigh, MovingSingPoint}
+%all appended as nested functions to this file
 %Dinah Loerke, October 21, 2004
 
 %determine nof=number of frames
@@ -188,6 +189,8 @@ for inp=1:(np-1)
     divdet=nov(inp);
     celldivp=zeros(nx,1);
     %decide which cells divide or disappear
+    %for divding cell, vector celldiv is set to 1 at the corr. point, for a
+    %disappearing cell, celldiv is set to -1; else 0
     rnum=0;
     if(divdet>0)
         %pick cell to divide
@@ -211,18 +214,16 @@ for inp=1:(np-1)
         miny=min(yv,ryv);
         %miny contains minumum of y or matsizx-y
         minmat=[minx miny];
-        %minmat is duplicate of mtemp containing resp minimna of diatnce to
-        %left or right, upper or lower edge
+        %minmat is duplicate of mtemp containing respective minima of each
+        %point's distances to left or right, upper or lower edge
         aa=find(minmat==min(min(minmat)));
         rnum=aa(1);
         if(aa(1)>nx)
             rnum=aa(1)-nx;
         end
-        %disp(['aa=',num2str(aa(1)),' rnum=',num2str(rnum),' nx=',num2str(nx)])
-        %minmat
+        
         celldivp(rnum)=(-1); 
     end
-    %disp(['plane ',num2str(inp+1),', no.cells ',num2str(nx),', no. cells div ',num2str(divdet),', cell no. ', num2str(rnum)]);
     
     %mtemp now contains original coordinates, nn contains nearest neighbours
     %celldivp contains the information whether a given cell divides or not
@@ -235,8 +236,8 @@ for inp=1:(np-1)
         %Normalized x and y difference vector components
         dvx=(nn(k,1)-mtemp(k,1))/d;
         dvy=(nn(k,2)-mtemp(k,2))/d;
-        %now decide for each point whether to move or divide
-        %generate random variable, compare to division probability
+        %now decide for each point whether to move or divide or disappear
+        %by checking the value of celldivp at this location
         if(celldivp(k)==1)
             %cell divides: create duplicate point approximately at right 
             %angles from the direction of nearest neighbour, at distance 
@@ -260,25 +261,29 @@ for inp=1:(np-1)
             %add newpoint coordinates to bottom of matrix
             mtemp=[mtemp; newpoint];
         elseif(celldivp(k)==-1)
-            %remove point => set point coordinates to zero
+            %cell disappears; remove point by setting coordinates to zero
+            %point will be removed from mtemp by a nonzeros selection
+            %further down
             mtemp(k,1:2)=[0 0];
         else
             %cell moves, according to the parameters specified in the
             %input, with cs=cell size (repulsion for distances smaller
             %than this parameter) and bh=behaviour, which may include
             %attraction, repulsion, or indifference
-            [newcoord]=MovSingPoint(mtemp(k,:),nn(k,:),matsiz,cs,bh,sd);
+            %sd is diffusion speed vector of length np-1; appropriate speed
+            %in this plane is sd(inp)
+            [newcoord]=MovingSingPoint(mtemp(k,:),nn(k,:),matsiz,cs,bh,sd(inp));
+            %makes sure the moved points are within matrix
+            %if beyond boundaries, they flip accros the other border
             mtemp(k,:)=newcoord;
         end
-        %makes sure the moved points are within matrix
-         %if beyond boundaries, they flip accros the other border
-         
     end
-    %plot new plane
     
+    %plot new plane by uncommenting the following lines
     %plot(mtemp(:,1),mtemp(:,2),'r.');
     %axis([1 matsiz(1) 1 matsiz(2)]);
     %pause(0.1);
+    
     %add mtemp, the new plane, to mpm; account for the fact that the number
     %of points may have changed due to cell division; thus, add zeros to
     %the bottom of the existing mpm columns if necessary
@@ -286,19 +291,22 @@ for inp=1:(np-1)
     [xmt,ymt]=size(mtemp);
     difx=xmt-xm2;
     if(difx>0)
-        %add zeros to mpm to bring to same length
+        %if cells divided, add zeros to mpm to bring to same length
         addv=zeros(difx,ym2);
         mpm=[mpm; addv];
     elseif(difx<0)
-        %add zeros to mtemp to bring to same dim as mpm
+        %if cells disappeared, add zeros to mtemp to bring to same dim as mpm
         addv=zeros(abs(difx),2);
         mtemp=[mtemp; addv];
     end
     mpm=[mpm, mtemp];
-    %remove zeros disappeared points for next round
+    %remove zeros of disappeared points for next round
     mtemp=[nonzeros(mtemp(:,1)),nonzeros(mtemp(:,2))];
 end
 end
+
+
+
 
 
 function[xynn]=DeterNearNeigh(xycor,temp)
@@ -381,6 +389,9 @@ for k=1:nx
 end
 end
 
+
+
+
 function[m3,rr]=nearnei_twomat(m1,m2,m3,rr,k)
 %makes nearest neighbor matrix
 %between two different matrizes of same size
@@ -400,4 +411,91 @@ for s=1:nx
             m3(k,3)=rr;
         end
 end 
+end
+
+
+
+
+
+function[xy2]=MovingSingPoint(xy1,nn,matsiz,de,bh,sd)
+%makes duplicate of vector xy1, where the points undergo specified random 
+%movement 
+%SYNOPSIS: [xy2]=MovSingPoint(xy1,nn,matsiz,de,bh,sd)
+%INPUT: xy1: original coordinates
+%       nn: nearest neighbour coordinates specified in the vector nn
+%       matsiz: matrix sixe e.g. [1344 1024]
+%       de: is something like object size; during clustering, neighbours cannot
+%           approach closer than de (~cell diameter)
+%       bh: specified behaviour of cells, determining whether they move 
+%           closer to or away from or indifferent to the nearest neighbour
+%           1=attraction, 2=repulsion, 3=indifference
+%       sd: speed of diffusion (pixels per plane)
+%OUTPUT: xy2: new coordinates
+%NOTE: xy1 is a 2x1 vector containing the x- and y-coordinate of a single
+%point!!
+
+xy2=xy1;
+d=sqrt((nn(1)-xy1(1))^2+(nn(2)-xy1(2))^2);
+%Normalized x and y difference vector components
+dvx=(nn(1)-xy1(1))/d;
+dvy=(nn(2)-xy1(2))/d;
+    
+%comparing the distance to the cluster radius decides on
+%whether the points are approaching or repulsing or immobile
+%approaching: in=1, repulsing: in=-1, immobile: in=0
+%this approach may be extended to vary the length of the movement
+%step (in>1) depending on the distance to the nearest neighbour
+    
+%for all bh cases: objects repulse if they're under the critical
+%distance; minimum repulsion is one pixel
+if(d<de)
+   in=-10*(de-d)/de;
+   if(in>-1)
+       in=-1;
+   end
+
+%they also repulse (a bit less strongly) if they're in hate mode   
+elseif(bh==2)
+   in=-1;
+
+%in love mode, they attract for larger distances    
+elseif((d>de)&(bh==1))
+    in=1;
+    
+%in all other cases - i.e. for indifferent mode, or in love mode for distance=de
+%the points are indifferent and just have the random component
+else
+    in=0;
+end
+    
+    
+%moves the points, first x, then y-coordinate
+%movement is a superposition of diffusive movement vector and directed 
+%movement vector; directed movement (direction dvx and magnitude in) were 
+%determined above; diffusive movement is isotropic (direction zx,zy); 
+%magnitude is determined from sd (average speed or frame-to-frame
+%displacement)
+%c is single dimension factor derived from expectancy value of
+%d=sqrt(x^2+y^2)
+c=sd*sqrt(3)/2;
+%zx and zy random variables between -1 and 1
+zx=2*rand(1)-1;
+zy=2*rand(1)-1;
+    
+xy2(1)=xy1(1)+round(c*zx+in*dvx);
+xy2(2)=xy1(2)+round(c*zy+in*dvy);
+        
+%makes sure the moved points are within matrix
+%if beyond boundaries, they flip accros the other border
+if(xy2(1)>matsiz(1))
+    xy2(1)=mod(xy2(1),matsiz(1));
+elseif(xy2(1)<=0)
+    xy2(1)=matsiz(1)+xy2(1);
+end
+if(xy2(2)>matsiz(2))
+    xy2(2)=mod(xy2(2),matsiz(2));
+elseif(xy2(2)<=0)
+    xy2(2)=matsiz(2)+xy2(2);
+end
+    
 end
