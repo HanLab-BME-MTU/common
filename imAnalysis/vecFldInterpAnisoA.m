@@ -84,6 +84,12 @@ D = createDistanceMatrix(srcPoints, tgtPoints);
 % Set dimension to 2 to allow computation of distance along and perpendicular to flow vector
 searchRadius = 3 * max(sigmaU, sigmaV);
 
+
+percentMarker = 1;
+
+totalTime = 0;
+tic;
+
 % Step 2: Computer the flow vector for each point
 for i = 1 : tgtLength
     % Generate the list of points within the given radius
@@ -124,6 +130,17 @@ for i = 1 : tgtLength
         interField(i, 1:2) = [0 0];
     else
         interField(i, 1 : 2) = vecsum / weightsum;  % Normalization
+    end
+    
+    
+    if (i > (0.1 * percentMarker * tgtLength))  
+        fprintf('------------------------------------------------------\n');
+        fprintf('Approximately %d percent of the computation is done\n', percentMarker * 10);
+        tempt = toc;
+        totalTime = totalTime + tempt;
+        fprintf('Total computation time up to this moment is %f seconds.\n', totalTime);
+        tic;
+        percentMarker = percentMarker + 1;
     end
 end
 
