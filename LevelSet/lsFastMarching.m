@@ -1,4 +1,18 @@
 function dist_fct_matrix = lsFastMarching(dist_fct_matrix, trial_grid_points, domain, LARGE_NUMBER)
+% LSFASTMARCHING solves |grad F|=1 on a grid given "trial_grid_points" 
+%
+%
+%
+%      Input:  dist_fct_matrix:     memory for solution F  
+%              trial_grid_points:   initial values for of "dist_fct_matrix"
+%              domain:              structure to describe computational grid
+%              LARGE_NUMBER:        large number (1000000)
+%
+%      Output: dist_fct_matrix:     solution F (distance transformation)
+%
+%
+%   Matthias Machacek Oct. 25 2004
+
 
 h = domain.x_spacing;
 

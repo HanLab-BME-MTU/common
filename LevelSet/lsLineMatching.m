@@ -79,7 +79,7 @@ if  ~exist('RESULT_DIR','var')
 end
 if ~exist('mask_img_t0','var')
     
-    % TEST_CASE = 1; % two ellipses
+     TEST_CASE = 1; % two ellipses
     % TEST_CASE = 2; % two offset non-intersecting circles
     % TEST_CASE = 3; % two lines    
     % TEST_CASE = 4; % line and protrusion
@@ -90,8 +90,8 @@ if ~exist('mask_img_t0','var')
     % TEST_CASE = 9; % 
     % TEST_CASE = 10; % part cell cut_s399
     
-    x_s = 3;
-    y_s = 3;
+    x_s = 1;
+    y_s = 1;
     
     sp_spacing = 2;
     
@@ -102,14 +102,29 @@ if ~exist('mask_img_t0','var')
 
 
     if 0
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%% Uses the Fast Marching Method to get the Distance Fct.  %%%%
+        [img_h, img_w] = size(mask_img_t0);
+
+        domain.x_size = img_w;
+        domain.y_size = img_h;
+
+        domain.x_spacing = 1;
+        domain.y_spacing = 1; 
         % get the trail points
+        % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
+        % (find the known points)
+        [x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0] = lsGetGridIntersections(x_spline_t0, y_spline_t0, domain, CONTROL);
+        known_zero_level_points_t0(:,1) = [x_X_i_t0'; x_Y_i_t0'];
+        known_zero_level_points_t0(:,2) = [y_X_i_t0'; y_Y_i_t0'];
+   
         trial_grid_points = lsFindTrailPoints(x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0, domain);
 
         % get the distance fct values of the trail points
         trial_grid_points(:,3) = lsGetDistanceFctVec(mask_img_t0,...
             trial_grid_points, known_zero_level_points_t0, domain, 1);
 
-        % get dist_fct_tmp (Fast Marching Method)
+        % Inizialize the distance matrix
         num_x_grid_lines = length(domain.x_grid_lines);
         num_y_grid_lines = length(domain.y_grid_lines);
         LARGE_NUMBER = 100000;
