@@ -294,5 +294,77 @@ for k=1:n
     end
 end
 
-      
+
+function[aa]=area_snippedcircleG(rr,x,y,msx,msy)
+%function[a]=area_snippedcircle(r,x,y)
+%calculates the are of a snipped circle
+%i.e. circle center is placed into rectangle (of size msx,msy)
+%depending on radius, area of circle is limited by rectangle
+%radius of circle = r
+%position of cricle center = x,y
+%size of rectangle msx,msy
+%GEOMETRIC SOLUTION
+%DEPENDENCES   area_snippedcircleG is used by pointsincircle 
+
+rsiz=size(rr);
+aa=rr;
+for ii=1:rsiz
+%geometrical:
+    r=rr(ii);
+    %loop over four quadrants
+    %for each quadrant, we consider the intersection area of: 
+    %A the circle of radius r around the origin (here at x,y), and 
+    %B the rectangle representing the image size in this quadrant
+    %The rectangle is defined by two points: the origin at (x,y) 
+    %and the corresponding corner of the field of view (0,0), (msx,0),
+    %(msx,msy), and (0,msy) for the respective quadrant
+    %thus, the side lenghths of the rectangle are calculated below
+    avector=[1:4];
+    for q=1:4
+        if(q==1)
+            X=x;
+            Y=y;
+        elseif(q==2)
+            X=msx-x;
+            Y=y;
+        elseif(q==3)
+            X=msx-x;
+            Y=msy-y;
+        elseif(q==4)
+            X=x;
+            Y=msy-y;
+        end
+        %if the circle is fully inside the rectangle, the area of the
+        %quadrant is a simple quarter circle
+        aq=(1/4)*(pi*r^2);
+        %if the quadrant's corner is inside the circle, then the quadrant 
+        %area is the area of the rectangle
+        if(sqrt(X^2+Y^2)<=r)
+            aq=X*Y;
+        %else the quadrant's corner is outside the circle, but not far enough
+        %for the circle to be "undamaged"; thus, the quadrant area is a 
+        %quarter circle with a chunk snipped away
+        %the chunk is calculated geometrically as below
+        else
+            if(X<r)
+                xchunk=pi*r^2*( 0.25-(asin(X/r))/(2*pi) )-0.5*X*sqrt(r^2-X^2);
+                aq=aq-xchunk;
+            end
+            if(Y<r)
+                ychunk=pi*r^2*( 0.25-(asin(Y/r))/(2*pi) )-0.5*Y*sqrt(r^2-Y^2);
+                aq=aq-ychunk;
+            end
+        end
+        avector(q)=aq;            
+    end
+    %for each radius, the total area is the sum over the four quadrants
+    aa(ii)=sum(avector);
+end
+    
+    
+
+        
+    
+    
+    
     
