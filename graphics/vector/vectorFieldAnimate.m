@@ -21,6 +21,15 @@ function M = vectorFieldAnimate(varargin)
 %    The following properties can also be specified as optional inputs.
 %    'bgImg' : It can be either one image or a cell array of
 %       images whose length equals the number of time steps.
+%    'aviMovie' : A string or a cell array with 2 elements. In the case of a
+%       cell array, the first element is a string that specifies the name of 
+%       an AVI movie for output and the second element is itself a cell array 
+%       of parameters to be passed to MATLAB function 'movie2avi'. If there is
+%       no parameter, a string can be passed for the name of the AVI movie.
+%       See help movie2avi.
+%    'imgOutDir' : A string that pecifies a directory where the image of each 
+%       frame can be saved so that a movie (e.g. QuickTime movie) can be made 
+%       afterwards. (Not yet available)
 %    'vColor' : The color of the vector. It can be one of the following 
 %       values:
 %          Color names : such as 'r', 'g' or 'cyan' etc.
@@ -82,9 +91,12 @@ if nargin >= 3 & isnumeric(varargin{3})
 end
 
 %Default property values.
-bgImg    = [];
-vColor   = [];
-colorMap = [];
+bgImg        = [];
+aviMovieName = [];
+movie2aviPar = [];
+imgOutDir    = [];
+vColor       = [];
+colorMap     = [];
 
 if nargin >= pStart
    if rem(nargin-pStart+1,2) ~= 0
@@ -121,6 +133,19 @@ if nargin >= pStart
                bgImg{1} = inValue{k};
             end
          end
+      case 'aviMovie'
+         if ischar(inValue{k})
+            aviMovieName = inValue{k};
+         elseif ~iscell(inValue{k}) | length(inValue{k}) ~= 2 | ...
+            ~ischar(inValue{k}{1}) | ~iscell(inValue{k}{2})
+            error(['The value for Property ''aviMovie'' is not ' ...
+               'correctly defined.']);
+         else
+            aviMovieName = inValue{k}{1};
+            movie2aviPar = inValue{k}{2};
+         end
+      case 'imgOutDir'
+         imgOutDir = inValue{k};
       case 'vColor'
          vColor = inValue{k};
       case 'colorMap'
@@ -191,4 +216,12 @@ for k = 1:numFrames
    title(sprintf('Scale : %5.2f, Number of Frames : %d',scale,numFrames));
    hold off;
    M(k) = getframe;
+end
+
+if ~isempty(aviMovieName)
+   if isempty(movie2aviPar)
+      movie2avi(M,aviMovieName);
+   else
+      movie2avi(M,aviMovieName,movie2aviPar{:});
+   end
 end
