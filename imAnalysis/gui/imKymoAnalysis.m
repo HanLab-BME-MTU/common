@@ -883,10 +883,17 @@ elseif strcmp(handles.selImgObj,'FTrackField') == 1
       return;
    end
 
+   ans = inputdlg({'Enter the length:' 'Enter the width:'}, ...
+      'Kymograph Line',1,{num2str(field.kymLen) ...
+      num2str(field.kymWidth)});
+
+   len   = str2num(ans{1});
+   width = str2num(ans{2});
+
    fieldX  = fieldPts(:,1);
    fieldY  = fieldPts(:,2);
-   len     = field.kymLen;
-   width   = field.kymWidth;
+   field.kymLen = len;
+   field.kymWidth = width;
    numPts  = length(fieldX);
    if strcmp(field.kymLineOn,'yes') == 1
       if strcmp(field.selObj,'grid') == 1 
