@@ -46,8 +46,12 @@ D=createDistanceMatrix(Pg,Pi);
 
 % Correlation matrix (d0 may be a scalar or a vector)
 G=zeros(size(D));
-for i=1:size(D,1)  
-    G(i,:)=exp(-D(i,:).^2./d0(i,1).^2);
+if size(d0)==[1 1]
+    G=exp(-D.^2./d0^2);
+else
+    for i=1:size(D,1)  
+        G(i,:)=exp(-D(i,:).^2./d0(i,1).^2);
+    end
 end
 clear D % Not needed any more
 
