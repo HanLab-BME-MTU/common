@@ -34,13 +34,13 @@ L=length(num2str(n));
 strg=sprintf('%%.%dd',L); % Creates the format string for the numerical indexes
 
 % Select a directory where the output .tif files will be written
-[file,path]=uiputfile('Click on SAVE','Select output directory');
+path=uigetdir('','Select output directory')
 if path==0
     disp('Aborting...');
     return
 end    
 
-h=waitbar(0,'Please wait! Converting .STK to .TIF');
+h=waitbar(0,'Please wait! Writing .tif files');
 for i=1:n
     indxStr=sprintf(strg,i);
     imwrite(S(i).data,[path,filesep,filename,indxStr,'.tif']);
