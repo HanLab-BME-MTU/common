@@ -1,4 +1,4 @@
-function area=cropStack(area,path)
+function area=cropStackNoCompression(area,path)
 % cropStack lets the user crop a region of interest from an image stack
 %
 % SYNOPSIS   area=cropStack(area,path)
@@ -152,7 +152,7 @@ for i=1:n
     filename=[path,filesep,'crop_',fName,fno,fext];
    
     % Write file to disk
-    imwrite(imgC,filename);
+    imwrite(imgC,filename, 'Compression', 'none');
    
     % Update waitbar
     waitbar(i/n,h);
