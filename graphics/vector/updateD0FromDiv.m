@@ -43,10 +43,18 @@ d0=zeros(nPg,1);
 % Fill d0 to be used in the correlation matrix for the interpolator
 if size(d0in,1)==1
     for i=1:nPg
-        d0(i)=d0in/(1+alpha/max(divM(:,3))*abs(divM(i,3)));
+        if divM(i,3)==0
+            d0(i)=d0in;
+        else
+            d0(i)=d0in/(1+alpha/max(divM(:,3))*abs(divM(i,3)));
+        end
     end
 else
     for i=1:nPg
-        d0(i)=d0in(i)/(1+alpha/max(divM(:,3))*abs(divM(i,3)));
+        if divM(i,3)==0
+            d0(i)=d0in(i);
+        else
+            d0(i)=d0in(i)/(1+alpha/max(divM(:,3))*abs(divM(i,3)));
+        end
     end
 end    
