@@ -6,17 +6,18 @@ function [sigmaSquare] = imVarianceImage (varargin)
 % INPUT          inputImage: the original greylevel image including background
 %                W : odd integer denoting the width of the neighbourhood
 %
-% OUTPUT         sigmaSquare: an image where every pixel is represented by the variance
+% OUTPUT         sigmaSquare: a normalized image where every pixel is represented by the variance
 %                             of the intensity of the corresponding input image pixel
 %
 % DEPENDENCIES   imVarianceImage uses { nothing }
 %                                  
-%                imVarianceImage is used by { ptTrackCells }
+%                imVarianceImage is used by { ptGetProcessedImage }
 %
 % Revision History
 % Name                  Date            Comment
 % --------------------- --------        --------------------------------------------------------
 % Andre Kerstens        Apr 04          Initial release
+% Andre Kerstens        May 04          Normalized the output image  
 
 % Do some error checking on the input
 if nargin < 2
@@ -41,3 +42,8 @@ inputSquareConv = conv2 (inputSquare, mask, 'same');
 % Subtract the convolution of the squared input from the squared convolution of the input
 % to get the variance
 sigmaSquare = inputSquareConv - inputImageConv.^2;
+
+% As a last step normalize the variance matrix
+minSigmaSquare = min (min (sigmaSquare));
+maxSigmaSquare = max (max (sigmaSquare));
+sigmaSquare = (sigmaSquare - minSigmaSquare) / (maxSigmaSquare - minSigmaSquare);
