@@ -24,6 +24,13 @@ function h=vectorFieldPlot(F,handle,polygon,scale)
 %
 % OUTPUT     h     : handle of the figure
 %
+% REMARK     Up to 5 vector fields can bo plotted on top of each other (by passing the handle 'h' returned by
+%            the previous call to h=vectorFieldPlot(F,h,...) as input) and will be colored in the following order:
+%            black,red,blue,magenta,cyan.
+%            If they are overlaid onto a figure (e.g. FSM image), the order will be the following:
+%            yellow,red,blue,magenta,cyan.
+%            Additional vector fields will be blue.
+%
 % Aaron Ponti 11/28/2002
 
 % If no scale factor is specified, set it to 1
@@ -62,23 +69,19 @@ if size(F,2)==4
     plotHandles=findall(h,'Type','Line');
     nPlots=length(plotHandles);
     
-    % Remove figure handle (if it exists)
-    if mod(nPlots,2)
-        plotHandles(nPlots)=[];
-        nPlots=nPlots-1;
-        
+    % Check is an image exists in the current axis
+    imgHandle=findall(h,'Type','Image');
+    
+    if isempty(imgHandle)
         % Prepare up to five different colors for multiple overlapping
         % plots (this color table is best suited for simple vector field
-        % plots)
-        colorTable={'yellow','red','blue','magenta','cyan'};
-
+        % plots; plotted on white background)
+        colorTable={'black','red','blue','magenta','cyan'};
     else
-        
         % Prepare up to five different colors for multiple overlapping
         % plots (this color table is best suited if the vector fields
-        % are to be overlaid on top of an image
-        colorTable={'black','red','blue','magenta','cyan'};
-
+        % are to be overlaid on top of an (FSM) image)
+        colorTable={'yellow','red','blue','magenta','cyan'};
     end
     
     % Only up two five plots can be colored

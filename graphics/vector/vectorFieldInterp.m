@@ -35,6 +35,18 @@ if nargin~=4
     error('4 input parameters expected.');
 end
 
+if prod(size(d0))~=1 & prod(size(d0))~=size(Pg,1)
+    error('The input parameter d0 must be a scalar or a (nx1) vector.');
+end
+
+if size(M,2)~=4
+    error('The vector field M must be (nx4)');
+end
+
+if size(Pg,2)~=2
+    error('The grid Pg must be (nx2)');
+end
+
 % Vector base positions
 Pi=M(:,1:2);
 

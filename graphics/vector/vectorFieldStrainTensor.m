@@ -1,9 +1,8 @@
-function [divM,d0]=vectorFieldDiv(M,Pg,d0,polygon)
-% vectorFieldDiv interpolates a vector field and calculates its divergence
+function [R,S]=vectorFieldStrainTensor(M,Pg,d0,polygon)
+% vectorFieldTensor calculates the rotation and strain tensors of an averaged vector field
 %
 % For a vector field v:  
 %    Interpolation with a correlation matrix K : <v>      = K * v      (convolution)
-%    Divergence of the interpolated field <v>  : div(<v>) = div(K) * v (convolution)                       
 %
 %      K = sG*exp(-(dx^2+dy^2)/d0^2) (see vectorFieldInterp)
 %
@@ -15,9 +14,11 @@ function [divM,d0]=vectorFieldDiv(M,Pg,d0,polygon)
 %        Pi (yi xi)n : coordinated of n vector bases;
 %        Pg (yg xg)m : coordinated of m grid points.
 %
-% div(<v>)) = (Ky*Vy + Kx*Vx)/sG
+%            | -Ky*vy  -Kx*vy |
+% Tensor T = |                | = 0.5*(T-T') + 0.5*(T+T')
+%            | -Ky*vx  -Kx*vx |    rotation     strain
 %
-% SYNOPSIS   [divM,d0]=vectorFieldDiv(M,Pg,d0,polygon)
+% SYNOPSIS   [R,S]=vectorFieldStrainTensor(M,Pg,d0,polygon)
 %
 % INPUT      M       : vector field, stored in a (nx4)-matrix of the form [y0 x0 y x]n
 %                      (where (y0,x0) is the base and (y,x) is the tip of
@@ -35,19 +36,20 @@ function [divM,d0]=vectorFieldDiv(M,Pg,d0,polygon)
 %                      To create the polygon use the functions ROIPOLY or
 %                      GETLINE. These functions return the polygon vertices
 %                      stored in two vectors y and x. Set polygon=[y x] to
-%                      use with vectorFieldDiv.
+%                      use with vectorFieldStrainTensor.
 %
-% OUTPUT     divM    : divergence of the interpolated vector field.
-%            d0      : returned in the case that it was calculated by the software.
+% OUTPUT     R       : rotation tensor of the interpolated vector field.
+%            S       : strain tensor of the interpolated vector field.
+% 
+% REMARK: the tensor T (not returned) can be calculated as T=R+S.
 %
-% DEPENDENCES          vectorFieldDiv uses { createDistanceMatrix (C-MEX function)
-%                                               createDiffMatrix (C-MEX function)
-%                                             } 
-%                      vectorFieldDiv is used by { }
+% DEPENDENCES          vectorFieldStrainTensor uses { createDistanceMatrix (C-MEX function)
+%                                                     createDiffMatrix (C-MEX function)
+%                                                   } 
+%                      vectorFieldStrainTensor is used by { }
 %
 % Aaron Ponti, 11/18/2002
 
-% Check inputs
 if nargin~=4
     error('4 input parameters expected.');
 end
@@ -100,14 +102,25 @@ Kx=-2./d0.^2.*dx.*G;
 Ky=-2./d0.^2.*dy.*G;
 clear G dx dy
 
-% Calculate divergence
-divM=-((Ky*V(:,1))+(Kx*V(:,2)))./sG;
+% Build tensor T (since MATLAB takes the first coordinate as y,
+%                         | vy  vx |
+% express the tensor as T=|        |.
+%                         | uy  ux |
+T=zeros(2,2,length(sG));
+T(1,1,1:length(sG))=(-Ky*V(:,1))./sG; % vy
+T(1,2,1:length(sG))=(-Kx*V(:,1))./sG; % vx
+T(2,1,1:length(sG))=(-Ky*V(:,2))./sG; % uy
+T(2,2,1:length(sG))=(-Kx*V(:,2))./sG; % ux
 
-% Store the value of the divergence at each position from Pg
-divM=[Pg divM];
-
-% Set the divergence of all vectors outside the passed polygon to 0
+% Set the tensor of all vectors outside the passed polygon to [0 0;0 0]
 if ~isempty(polygon)
-    index=inpolygon(divM(:,1),divM(:,2),polygon(:,2),polygon(:,1));
-    divM(find(~index),3)=0;
+    index=inpolygon(Pg(:,1),Pg(:,2),polygon(:,2),polygon(:,1));
+    T(:,:,find(~index),3)=0*T(:,:,find(~index),3);
 end
+
+% Rotation tensor
+R=0.5*(T-permute(T,[2 1 3])); % 0.5*(T-T')
+
+% Strain tensor
+S=0.5*(T+permute(T,[2 1 3])); % 0.5*(T+T')
+
