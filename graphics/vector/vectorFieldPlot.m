@@ -95,7 +95,7 @@ if size(F,2)==4
         % Prepare up to five different colors for multiple overlapping
         % plots (this color table is best suited if the vector fields
         % are to be overlaid on top of an (FSM) image)
-        colorTable={'yellow','red','blue','magenta','cyan'};
+        colorTable={'yellow','red','green','magenta','blue'};
     end
     
     % Only up two five plots can be colored
