@@ -10,7 +10,8 @@ function varargout = imStackTDFilter(stkIn,freqThreshold,varargin)
 % INPUT :
 %    stkIn : The stack of images to be filtered. It can be a cell array of
 %            images, or image file names, or the file name of the first image
-%            in a directory.
+%            in a directory. When it is [], a window will pop up to select the
+%            first image.
 %    freqThreshold : Specify the cut-off frequency in term of the ratio of
 %            frequencies (>0 & <1) to be kept in the whole range.
 %
@@ -38,7 +39,7 @@ if freqThreshold <= 0 | freqThreshold >= 1
       '''of frequencies to be kept is between 0 and 1.']);
 end
 if isempty(stkIn)
-   [fName,dirName] = uigetfile('*.tif','imStackTDFilter ...');
+   [fName,dirName] = uigetfile('*.tif','Select the first image file ...');
    stkIn = [dirName,filesep,fName];
 end
 
@@ -69,7 +70,7 @@ outFile = [];
 %Check and pass optional parameters.
 par = [];
 j   = 1;
-for k = 1:2:nargin-1
+for k = 1:2:nargin-2
    par{j}   = varargin{k};
    value{j} = varargin{k+1};
    j = j+1;
@@ -92,14 +93,27 @@ if numImages < 2
    error(['There have to be at least two images in the stack.']);
 end
 
+%Scale the image value range to [0 1];
+minI  = min(img3D(:));
+maxI  = max(img3D(:));
+img3D = (img3D-minI)/(maxI-minI);
+
 nt2 = 2^ceil(log2(numImages));
 imgF = fft(img3D,nt2,3);
 
 %Filtering by cutting off high frequencies.
-cutOffIndex = ceil(nt2*freqThreshold);
-imgF(cutOffIndex+1:nt2-cutOffIndex+1) = 0; 
+cutOffIndex = ceil(nt2/2*freqThreshold);
+imgF(:,:,cutOffIndex+1:nt2-cutOffIndex+1) = 0; 
 
 img3D = real(ifft(imgF,nt2,3));
+
+%Scale the image value range to [0 1];
+minI  = min(img3D(:));
+maxI  = max(img3D(:));
+img3D = (img3D-minI)/(maxI-minI);
+
+%Convert it to uint16 image.
+img3D = uint16(round(img3D*65535));
 
 if nargout == 1
    for k = 1:numImages
@@ -121,7 +135,7 @@ end
 fprintf(1,'Saving ...');
 indexFormat = sprintf('%%.%dd',length(num2str(numImages)));
 for k = 1:numImages
-   indexStr = sprintf(indexFomat,k);
+   indexStr = sprintf(indexFormat,k);
    imwrite(img3D(:,:,k),[outDir,filesep,outFile,indexStr,'.tif']);
 end
 

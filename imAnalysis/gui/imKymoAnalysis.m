@@ -5,6 +5,13 @@ function varargout = imKymoAnalysis(varargin)
 % Fields of 'handles' that contain user input data through the gui.
 %    numImages     : The number of images to be analyzed.
 %    imgFileList   : A cell array of the list of image files to be analyzed.
+%    whatIsShown   : A string that indicates what is shown in the figure
+%                    window. Possible values: 'image' (default) and 'kymo'.
+%    selImgObj     : Specify whether it is the kymograph curve, the single
+%                    flow tracking point or the field of flow tracking that 
+%                    has been selected by mouse clicking on the mark point.
+%                    Possible values: 'kymoCurve', 'FTrackPt' and
+%                    'FTrackField'. 
 %    numKymoCurves : The number of curves or lines where the kymograph analysis
 %                    is performed.
 %    kymoX 
@@ -52,8 +59,25 @@ function varargout = imKymoAnalysis(varargin)
 %                    point where the flow velocity is to be calculated.
 %    defKymFTWidth : The default width of the kymograph line drawn through a
 %                    point where the flow velocity is to be calculated.
-%    whatIsShown   : A string that indicates what is shown in the figure
-%                    window. Possible values: 'image' (default) and 'kymo'.
+%    numFields     : Number of flow tracking fields.
+%    selField      : The selected field for display.
+%    defGridDx
+%    defGridDy     : The default grid size in x and y direction.
+%    field         : A structure by itself that boundles flow field related
+%                    data. It contains the following fields.
+%      selObj    : The selected object (point type) in the current displayed 
+%                  field. Allowed types: 'grid', 'speckle' or 'initFlow'. 
+%      MP        : The mark point of the field. It is the point with the
+%                  smallest x and y coordinates (upper-left).
+%      bndX
+%      bndY      : x and y-coordinates of the field boundary. 
+%      gridDx
+%      gridDy    : The grid size in x and y direction.
+%      gridPts
+%      speckles
+%      initFlow  : For each field, we can add grid points (fieldGridPts), 
+%                    speckles (fieldSpeckles) and initial flow field
+%                    (fieldInitFlow).
 %
 % IMKYMOANALYSIS M-file for imKymoAnalysis.fig
 %      IMKYMOANALYSIS, by itself, creates a new IMKYMOANALYSIS or raises the existing
@@ -117,6 +141,10 @@ handles.numImages     = 0;
 handles.startImage    = 1;
 handles.endImage      = 0;
 handles.imgFileList   = {};
+handles.whatIsShown   = [];
+handles.selImgObj   = '';
+
+% GUI data for Kymograph lines or curves.
 handles.numKymoCurves = 0;
 handles.kymo          = {};
 handles.kymAxesP      = [];
@@ -127,9 +155,9 @@ handles.yBand         = {};
 handles.kCurveMP      = [];
 handles.width         = [];
 handles.selKymoCurve  = 0;
-handles.selGraphObj   = '';
-handles.defaultWidth  = 5;
-handles.whatIsShown   = 'image';
+handles.currentWidth  = 5;
+
+% GUI data for kymograph
 handles.numVLines     = 0;
 handles.vLineX        = {};
 handles.vLineY        = {};
@@ -137,6 +165,8 @@ handles.vLineMP       = [];
 handles.selVLine      = 0;
 handles.manSpeed      = [];
 handles.calSpeed      = [];
+
+% GUI data for single point flow tracking.
 handles.numFTrackPts  = 0;
 handles.selFTrackP    = 0;
 handles.flowV         = [];
@@ -158,16 +188,23 @@ handles.FTselVLine    = 0;
 handles.FTmanSpeed    = [];
 handles.FTcalSpeed    = [];
 
+% GUI data for field flow tracking.
+handles.numFields      = 0;
+handles.selField       = 0;
+handles.defGridDx      = 20;
+handles.defGridDy      = 20;
+handles.field          = {};
+
 %Get the handles to some GUI objects.
 handles.figH       = gcf;
 handles.numImgsH   = findobj('tag','numImages');
 handles.startImgH  = findobj('tag','startImage');
 handles.endImgH    = findobj('tag','endImage');
-handles.defWidthH  = findobj('tag','defaultWidth');
+handles.curWidthFH  = findobj('tag','currentWidth');
 handles.manSpeedFH = findobj('tag','manSpeedF');
 handles.calSpeedFH = findobj('tag','calSpeedF');
 handles.flowVFH    = findobj('tag','velocityField');
-set(handles.defWidthH,'string',num2str(handles.defaultWidth));
+set(handles.curWidthFH,'string',num2str(handles.currentWidth));
 
 %Caculate axes postion of the image.
 axesWin = findobj('tag','axesWin');
@@ -239,7 +276,7 @@ handles.yBand         = {};
 handles.kCurveMP      = [];
 handles.width         = [];
 handles.selKymoCurve  = 0;
-handles.selGraphObj   = '';
+handles.selImgObj     = '';
 handles.whatIsShown   = 'image';
 handles.numVLines     = 0;
 handles.kymo          = {};
@@ -271,6 +308,11 @@ handles.FTselVLine    = 0;
 handles.FTmanSpeed    = [];
 handles.FTcalSpeed    = [];
 
+% GUI data for field flow tracking.
+handles.numFields = 0;
+handles.selField  = 0;
+handles.field     = {};
+
 set(handles.startImgH,'enable','on','string',num2str(handles.startImage));
 set(handles.endImgH,'enable','on','string',num2str(handles.endImage));
 set(handles.numImgsH,'string',num2str(handles.numImages+1));
@@ -291,8 +333,10 @@ if strcmp(handles.whatIsShown,'image') == 0 | handles.numImages == 0
    return;
 end
 
-ans = inputdlg({'Enter the x-coordinates:','Enter the y-coordinates:', ...
-   'Enter the width:'}, 'New Line',1,{'' '' num2str(handles.defaultWidth)});
+%ans = inputdlg({'Enter the x-coordinates:','Enter the y-coordinates:', ...
+%   'Enter the width:'}, 'New Line',1,{'' '' num2str(handles.defaultWidth)});
+ans = inputdlg({'Enter the x-coordinates:','Enter the y-coordinates:'}, ...
+   'New Line',1,{'' ''});
 
 numKymoCurves = handles.numKymoCurves+1;
 
@@ -318,7 +362,7 @@ handles.width(numKymoCurves)      = w;
 handles.kCurveMP(numKymoCurves,:) = kCurveMP;
 handles.numKymoCurves             = numKymoCurves;
 handles.selKymoCurve              = numKymoCurves;
-handles.selGraphObj               = 'kymoCurve';
+handles.selImgObj               = 'kymoCurve';
 
 handles.numVLines(numKymoCurves)  = 0;
 handles.kymo{numKymoCurves}       = [];
@@ -351,12 +395,12 @@ end
 
 numKymoCurves = handles.numKymoCurves+1;
 
-ans = inputdlg({'Enter the width:'}, ...
-   'New Line Width',1,{num2str(handles.defaultWidth)});
-w = str2num(ans{1});
-if mod(w,2) == 0
-   w = w+1;
-end
+%ans = inputdlg({'Enter the width:'}, ...
+%   'New Line Width',1,{num2str(handles.defaultWidth)});
+%w = str2num(ans{1});
+%if mod(w,2) == 0
+%   w = w+1;
+%end
 
 %Find the mark point which is the left-most end of the line.
 if x(end) > x(1)
@@ -371,11 +415,11 @@ handles.kymoY{numKymoCurves}      = y;
 handles.kymo{numKymoCurves}       = [];
 handles.xBand{numKymoCurves}      = [];
 handles.yBand{numKymoCurves}      = [];
-handles.width(numKymoCurves)      = w;
+handles.width(numKymoCurves)      = handles.currentWidth;
 handles.kCurveMP(numKymoCurves,:) = kCurveMP;
 handles.numKymoCurves             = numKymoCurves;
 handles.selKymoCurve              = numKymoCurves;
-handles.selGraphObj               = 'kymoCurve';
+handles.selImgObj               = 'kymoCurve';
 
 handles.numVLines(numKymoCurves)  = 0;
 handles.kymAxesP(numKymoCurves,:) = zeros(1,4);
@@ -424,13 +468,54 @@ handles.FTcalSpeed(numFTrackPts)   = Inf;
 
 handles.numFTrackPts = numFTrackPts;
 handles.selFTrackP   = numFTrackPts;
-handles.selGraphObj  = 'FTrackPt';
+handles.selImgObj  = 'FTrackPt';
 
 redrawAllImg(handles);
 guidata(hObject,handles);
 
-% --- Executes on button press in gridPoints.
-function gridPoints_Callback(hObject, eventdata, handles)
+% --- Executes on button press in drawFieldBnd.
+function drawFieldBnd_Callback(hObject, eventdata, handles)
+% hObject    handle to drawFieldBnd (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if strcmp(handles.whatIsShown,'image') == 0 | handles.numImages == 0
+   %When what is shown in the figure window is not the image or when no image
+   % is input yet.
+   return;
+end
+
+[bw,fieldBndX,fieldBndY] = roipoly;
+numFields = handles.numFields+1;
+
+%Idenitify the mark point.
+[leftX,ind] = min(fieldBndX);
+leftI = find(fieldBndX==leftX);
+[leftY,ind] = max(fieldBndY(leftI));
+
+handles.field{numFields}.MP    = [leftX, leftY];
+handles.field{numFields}.label = ['F' num2str(numFields)];
+handles.field{numFields}.bndX  = fieldBndX;
+handles.field{numFields}.bndY  = fieldBndY;
+
+handles.field{numFields}.gridDx    = [];
+handles.field{numFields}.gridDy    = [];
+handles.field{numFields}.gridPts   = [];
+handles.field{numFields}.speckles  = [];
+handles.field{numFields}.initFlow  = [];
+handles.field{numFields}.selObj    = 'none';
+handles.field{numFields}.kymDirCrv = [];
+handles.field{numFields}.kymLineOn = 'no';
+
+handles.selField  = numFields;
+handles.numFields = numFields;
+handles.selImgObj = 'FTrackField';
+
+redrawAllImg(handles);
+guidata(hObject,handles);
+
+% --- Executes on button press in addFieldPoints.
+function addFieldPoints_Callback(hObject, eventdata, handles)
 % hObject    handle to gridPoints (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -441,13 +526,35 @@ if strcmp(handles.whatIsShown,'image') == 0 | handles.numImages == 0
    return;
 end
 
-[bw,setBndX,setBndY] = roipoly;
-numPtSets = handles.PtSets+1;
-handles.setBndX{numPtSets} = setBndX;
-handles.setBndY{numPtSets} = setBndY;
+menuItem = get(hObject,'Value');
 
-ans = inputdlg({'Enter the x-step size or x-coordinates:' ...
-   'Enter the y-step size or y-coordinates:'}, ...
+if menuItem == 1
+   handles.field{handles.selField}.selObj = 'none';
+elseif menuItem == 2
+   handles = addGridPoints(handles);
+elseif menuItem == 3
+   %handles = addSpeckles(handles);
+elseif menuItem == 4
+   %handles = addInitFlow(handles);
+end
+
+redrawAllImg(handles);
+guidata(hObject,handles);
+
+
+function handles = addGridPoints(handles)
+%subfunction called by 'addFieldPoints_Callback' to add grid points.
+
+selField = handles.selField;
+
+handles.field{selField}.selObj = 'grid';
+
+if ~isempty(handles.field{selField}.gridPts)
+   return;
+end
+
+ans = inputdlg({'Enter the horizontal step size or coordinates:' ...
+   'Enter the vertical step size or coordinates:'}, ...
    'Grid Points',1,{num2str(handles.defGridDx) ...
    num2str(handles.defGridDy)});
 
@@ -455,14 +562,14 @@ ans1 = str2num(ans{1});
 ans2 = str2num(ans{2});
 
 if length(ans1) == 1
-   handles.gridDx{numPtSets} = ans1;
+   handles.field{selField}.gridDx = ans1;
    x = [1:ans1:handles.imgWidth];
 else
    x = ans1;
 end
 
 if length(ans2) == 1
-   handles.gridDy{numPtSets} = ans2;
+   handles.field{selField}.gridDy = ans2;
    y = [1:ans2:handles.imgHeight];
 else
    y = ans2;
@@ -473,20 +580,73 @@ gridX = reshape(gridX,1,length(gridX(:)));
 gridY = reshape(gridY,1,length(gridY(:)));
 
 %Select points that are inside the polygon.
-in = inpolygon(gridX,gridY,setBndX,setBndY);
+fieldBndX = handles.field{selField}.bndX;
+fieldBndY = handles.field{selField}.bndY;
+in = inpolygon(gridX,gridY,fieldBndX,fieldBndY);
 outI = find(in==0 | in==0.5);
 gridX(outI) = [];
 gridY(outI) = [];
 
-handles.setPtsX{numPtSets} = gridX;
-handles.setPtsY{numPtSets} = gridY;
+handles.field{selField}.gridPts = [gridX.' gridY.'];
 
-handles.numPtSets = numPtSets;
-handles.selPtSet  = numPtSets;
 
-% --- Executes on the text field 'defaultWidth'.
-function defaultWidth_Callback(hObject, eventdata, handles)
-% hObject    handle to defaultWidth (see GCBO)
+% --- Executes on button press in addFTrackKymLine.
+function addFTrackKymLine_Callback(hObject, eventdata, handles)
+% hObject    handle to addFTrackKymLine (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if strcmp(handles.whatIsShown,'image') == 0 | handles.numImages == 0 | ...
+   strcmp(handles.selImgObj,'FTrackField') == 0
+   %When what is shown in the figure window is not the image or when no image
+   % is input yet.
+   return;
+end
+
+selField = handles.selField;
+
+if strcmp(handles.field{selField}.kymLineOn,'yes') == 1
+   return;
+end
+
+%The way we add kymograph lines to each point is to first draw a curve and use
+% the normal direction of the curve as the direction for the kymograph lines.
+if isempty(handles.field{selField}.kymDirCrv)
+   [xi,yi] = imSelCurve;
+   handles.field{selField}.kymDirCrv = [xi;yi];
+end
+handles.field{selField}.kymLineOn = 'yes';
+
+redrawAllImg(handles);
+guidata(hObject,handles);
+
+% --- Executes on button press in FTrackKymLineOff.
+function FTrackKymLineOff_Callback(hObject, eventdata, handles)
+% hObject    handle to FTrackKymLineOff (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if strcmp(handles.whatIsShown,'image') == 0 | handles.numImages == 0 | ...
+   strcmp(handles.selImgObj,'FTrackField') == 0
+   %When what is shown in the figure window is not the image or when no image
+   % is input yet.
+   return;
+end
+
+selField = handles.selField;
+
+if strcmp(handles.field{selField}.kymLineOn,'no') == 1
+   return;
+end
+
+handles.field{selField}.kymLineOn = 'no';
+
+redrawAllImg(handles);
+guidata(hObject,handles);
+
+% --- Executes on the text field 'currentWidth'.
+function currentWidth_Callback(hObject, eventdata, handles)
+% hObject    handle to currentWidth (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 entry = get(hObject,'string');
@@ -494,7 +654,7 @@ if isnan(str2double(entry))
    errordlg('You must enter a numeric value','Bad Input','modal');
 end
 
-handles.defaultWidth = str2double(entry);
+handles.currentWidth = str2double(entry);
 guidata(hObject,handles);
 
 % --- Executes on the text field 'vectorScale'.
@@ -698,7 +858,7 @@ function manSpeedTrack_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-if strcmp(handles.selGraphObj,'kymoCurve') == 1
+if strcmp(handles.selImgObj,'kymoCurve') == 1
    if handles.numKymoCurves == 0
       return;
    end
@@ -706,7 +866,7 @@ if strcmp(handles.selGraphObj,'kymoCurve') == 1
    selKymoCurve = handles.selKymoCurve;
    numVLines    = handles.numVLines(selKymoCurve)+1;
    width        = handles.width(selKymoCurve);
-elseif strcmp(handles.selGraphObj,'FTrackPt') == 1
+elseif strcmp(handles.selImgObj,'FTrackPt') == 1
    if handles.numFTrackPts == 0
       return;
    end
@@ -735,7 +895,7 @@ else
    manSpeed = (x(end)-x(1))/(y(end)-y(1))*width;
 end
 
-if strcmp(handles.selGraphObj,'kymoCurve') == 1
+if strcmp(handles.selImgObj,'kymoCurve') == 1
    handles.manSpeed{selKymoCurve}(numVLines) = manSpeed;
 
    %Update GUI data.
@@ -744,7 +904,7 @@ if strcmp(handles.selGraphObj,'kymoCurve') == 1
    handles.vLineMP{selKymoCurve}(numVLines,:) = vLineMP;
    handles.numVLines(selKymoCurve)            = numVLines;
    handles.selVLine(selKymoCurve)             = numVLines;
-elseif strcmp(handles.selGraphObj,'FTrackPt') == 1
+elseif strcmp(handles.selImgObj,'FTrackPt') == 1
    handles.FTmanSpeed{selFTrackP}(numVLines) = manSpeed;
 
    %Update GUI data.
@@ -764,7 +924,7 @@ function calSpeed_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-if strcmp(handles.selGraphObj,'kymoCurve') == 1
+if strcmp(handles.selImgObj,'kymoCurve') == 1
    if handles.numKymoCurves == 0
       return;
    end
@@ -775,7 +935,7 @@ if strcmp(handles.selGraphObj,'kymoCurve') == 1
    selKymoCurve = handles.selKymoCurve;
    kymo         = handles.kymo{selKymoCurve};
    width        = handles.width(selKymoCurve);
-elseif strcmp(handles.selGraphObj,'FTrackPt') == 1
+elseif strcmp(handles.selImgObj,'FTrackPt') == 1
    if handles.numFTrackPts == 0
       return;
    end
@@ -795,9 +955,9 @@ end
 calSpeed = imKymoSpeed(kymo,width);
 set(handles.calSpeedFH,'String',num2str(calSpeed));
 
-if strcmp(handles.selGraphObj,'kymoCurve') == 1
+if strcmp(handles.selImgObj,'kymoCurve') == 1
    handles.calSpeed(selKymoCurve) = calSpeed;
-elseif strcmp(handles.selGraphObj,'FTrackPt') == 1
+elseif strcmp(handles.selImgObj,'FTrackPt') == 1
    handles.FTcalSpeed(selFTrackP) = calSpeed;
 end
 %if isinf(handles.calSpeed(selKymoCurve))
@@ -818,7 +978,7 @@ end
 
 startImage   = handles.startImage;
 endImage     = handles.endImage;
-if strcmp(handles.selGraphObj,'kymoCurve') == 1
+if strcmp(handles.selImgObj,'kymoCurve') == 1
    if handles.numKymoCurves == 0
       return;
    end
@@ -828,7 +988,7 @@ if strcmp(handles.selGraphObj,'kymoCurve') == 1
    kymoX        = handles.kymoX{selKymoCurve}; 
    kymoY        = handles.kymoY{selKymoCurve}; 
    width        = handles.width(selKymoCurve); 
-elseif strcmp(handles.selGraphObj,'FTrackPt') == 1
+elseif strcmp(handles.selImgObj,'FTrackPt') == 1
    if handles.numFTrackPts == 0
       return;
    end
@@ -863,7 +1023,7 @@ if isempty(kymo)
 
    kymAxesP = [imgAxesP(1:2)+[(imgW-kymW)/2 (imgH-kymH)/2] kymW kymH];
 
-   if strcmp(handles.selGraphObj,'kymoCurve') == 1
+   if strcmp(handles.selImgObj,'kymoCurve') == 1
       handles.kymo{selKymoCurve}  = kymo;
       handles.xBand{selKymoCurve} = xBand;
       handles.yBand{selKymoCurve} = yBand;
@@ -876,7 +1036,7 @@ if isempty(kymo)
       handles.selVLine(selKymoCurve)  = 0;
       handles.manSpeed{selKymoCurve}  = [];
       handles.calSpeed(selKymoCurve)  = Inf;
-   elseif strcmp(handles.selGraphObj,'FTrackPt') == 1
+   elseif strcmp(handles.selImgObj,'FTrackPt') == 1
       handles.FTkymo{selFTrackP}       = kymo;
       handles.FTxBand{selFTrackP}      = xBand;
       handles.FTyBand{selFTrackP}      = yBand;
@@ -908,14 +1068,22 @@ function winButtonMotion_Callback(hObject, eventdata, handles)
 figH = handles.figH;
 aH   = gca(figH);
 
+%Get the current pointer location.
+p = get(aH,'CurrentPoint');
+
+set(aH,'Units','pixels');
+xlim = get(aH,'XLim');
+ylim = get(aH,'YLim');
+axesP = get(aH,'Position');
+axesW = xlim(2)-xlim(1)+1; %The width of the axes in plotting units.
+axesH = ylim(2)-ylim(1)+1;
+axesWPix = axesP(3); %The width of the axes in pixels.
+axesHPix = axesP(4); %The height of the axes in pixels.
+
 if strcmp(handles.whatIsShown,'image') == 1
    numLines     = handles.numKymoCurves;
    numFTrackPts = handles.numFTrackPts;
-
-   if numLines == 0 & numFTrackPts == 0
-      set(figH,'Pointer','arrow');
-      return;
-   end
+   numFields    = handles.numFields;
 
    selKymoCurve = handles.selKymoCurve;
    lineMP       = handles.kCurveMP;
@@ -927,51 +1095,22 @@ if strcmp(handles.whatIsShown,'image') == 1
       FTrackP = [];
    end
 elseif strcmp(handles.whatIsShown,'kymo') == 1
-   if strcmp(handles.selGraphObj,'kymoCurve') == 1
+   if strcmp(handles.selImgObj,'kymoCurve') == 1
       selKymoCurve = handles.selKymoCurve;
       numLines     = handles.numVLines(selKymoCurve);
       lineMP       = handles.vLineMP{selKymoCurve};
-   elseif strcmp(handles.selGraphObj,'FTrackPt') == 1
+   elseif strcmp(handles.selImgObj,'FTrackPt') == 1
       selFTrackP = handles.selFTrackP;
       numLines   = handles.FTnumVLines(selFTrackP);
       lineMP     = handles.FTvLineMP{selFTrackP};
    end
 
-   if numLines == 0
-      set(figH,'Pointer','arrow');
-      return;
-   end
-   FTrackP = [];
+   numFTrackPts = 0;
+   numFields    = 0;
 else
-   set(figH,'Pointer','arrow');
-   return;
-end
-
-%Get the current pointer location.
-p = get(aH,'CurrentPoint');
-
-%Display the current pointer position.
-% First, delete the old position text message.
-pLocText = findobj('Tag','pLocText');
-if ishandle(pLocText)
-   delete(pLocText);
-end
-
-set(aH,'Units','pixels');
-xlim = get(aH,'XLim');
-ylim = get(aH,'YLim');
-axesP = get(aH,'Position');
-axesW = xlim(2)-xlim(1)+1; %The width of the axes in plotting units.
-axesH = ylim(2)-ylim(1)+1;
-axesWPix = axesP(3); %The width of the axes in pixels.
-axesHPix = axesP(4); %The height of the axes in pixels.
-if p(1,1) >= 1 & p(1,1) <= axesW & p(1,2) >= 1 & p(1,2) <= axesH
-   pLocText = text((axesWPix/2-10)*axesW/axesWPix, ...
-      -10*axesH/axesHPix, ['(' num2str(p(1,1)) ',' num2str(p(1,2)),')']);
-   tExtent = get(pLocText,'Extent');
-   tW      = tExtent(3);
-   tH      = tExtent(4);
-   set(pLocText,'Position',[(axesW-tW)/2 -tH/2 0],'Tag','pLocText');
+   numLines     = 0;
+   numFTrackPts = 0;
+   numFields    = 0;
 end
 
 %Calculate the distance between the current pointer 'p' and the mark points
@@ -985,16 +1124,32 @@ else
       ((p(1,2)-lineMP(:,2))*axesH/axesHPix).^2);
 end
 
-if isempty(FTrackP)
+if numFTrackPts == 0
    dist2 = inf;
 else
    dist2 = sqrt(((p(1,1)-FTrackP(:,1))*axesW/axesWPix).^2+ ...
       ((p(1,2)-FTrackP(:,2))*axesW/axesWPix).^2);
 end
 
+if numFields == 0
+   dist3 = inf;
+else
+   fieldMP = zeros(numFields,2);
+   for k = 1:numFields
+      fieldMP(k,:) = handles.field{k}.MP;
+   end
+   dist3 = sqrt(((p(1,1)-fieldMP(:,1))*axesW/axesWPix).^2+ ...
+      ((p(1,2)-fieldMP(:,2))*axesW/axesWPix).^2);
+end
+
 [minD1,index1] = min(dist1);
 [minD2,index2] = min(dist2);
-if minD1 < minD2
+[minD3,index3] = min(dist3);
+
+minD = min([minD1 minD2 minD3]);
+if isempty(handles.whatIsShown) | isinf(minD)
+   set(figH,'Pointer','arrow');
+elseif minD == minD1
    if minD1 <= 10
       %Change the mouse shape.
       set(figH,'Pointer','circle');
@@ -1003,7 +1158,7 @@ if minD1 < minD2
    else
       set(figH,'Pointer','arrow');
    end
-else
+elseif minD == minD2
    if minD2 <= 10
       %Change the mouse shape.
       set(figH,'Pointer','circle');
@@ -1011,6 +1166,46 @@ else
       p(1,2) = FTrackP(index2,2);
    else
       set(figH,'Pointer','arrow');
+   end
+elseif minD == minD3
+   if minD3 <= 10
+      %Change the mouse shape.
+      set(figH,'Pointer','circle');
+      p(1,1) = fieldMP(index1,1);
+      p(1,2) = fieldMP(index1,2);
+   else
+      set(figH,'Pointer','arrow');
+   end
+end
+
+%Display the current pointer position.
+% First, delete the old position text message.
+pLocText = findobj('Tag','pLocText');
+if ishandle(pLocText)
+   delete(pLocText);
+end
+
+if p(1,1) >= 1 & p(1,1) <= axesW & p(1,2) >= 1 & p(1,2) <= axesH
+   if strcmp(handles.whatIsShown,'image') == 1
+      imgW     = handles.imgWidth;
+      pLocText = text(0,0,['(' num2str(p(1,1)) ',' num2str(p(1,2)),')']);
+      tExtent  = get(pLocText,'Extent');
+      tW       = tExtent(3);
+      tH       = tExtent(4);
+      set(pLocText,'Position',[(imgW-tW)/2 -tH 0],'Tag','pLocText');
+   elseif strcmp(handles.whatIsShown,'kymo') == 1
+      if strcmp(handles.selImgObj,'kymoCurve') == 1
+         kymLineW = handles.width(selKymoCurve);
+      elseif strcmp(handles.selImgObj,'FTrackPt') == 1
+         kymLineW = handles.kymFTWidth(selFTrackP);
+      end
+      pLocText = text(0,0,['(' num2str(p(1,1)) ',' ...
+         num2str(ceil(p(1,2)/kymLineW)),')']);
+      tExtent = get(pLocText,'Extent');
+      tW      = tExtent(3);
+      tH      = tExtent(4);
+      set(pLocText,'Position',[axesW+10*axesW/axesWPix axesH/2 0], ...
+         'Tag','pLocText');
    end
 end
 
@@ -1032,13 +1227,15 @@ whatIsShown = handles.whatIsShown;
 if strcmp(whatIsShown,'image') == 1
    numLines     = handles.numKymoCurves;
    numFTrackPts = handles.numFTrackPts;
-   if numLines == 0 & numFTrackPts == 0
+   numFields    = handles.numFields;
+   if numLines == 0 & numFTrackPts == 0 & numFields == 0
       return;
    end
 
-   selLine  = handles.selKymoCurve;
-   lineMP   = handles.kCurveMP;
-   selFTrackP   = handles.selFTrackP;
+   selLine    = handles.selKymoCurve;
+   lineMP     = handles.kCurveMP;
+   selFTrackP = handles.selFTrackP;
+   selField   = handles.selFTrackP;
 
    if numFTrackPts > 0
       FTrackP = handles.flowV(:,2:-1:1);
@@ -1046,12 +1243,12 @@ if strcmp(whatIsShown,'image') == 1
       FTrackP = [];
    end
 elseif strcmp(whatIsShown,'kymo') == 1
-   if strcmp(handles.selGraphObj,'kymoCurve') == 1
+   if strcmp(handles.selImgObj,'kymoCurve') == 1
       selKymoCurve = handles.selKymoCurve;
       selLine      = handles.selVLine(selKymoCurve);
       numLines     = handles.numVLines(selKymoCurve);
       lineMP       = handles.vLineMP{selKymoCurve};
-   elseif strcmp(handles.selGraphObj,'FTrackPt') == 1
+   elseif strcmp(handles.selImgObj,'FTrackPt') == 1
       selFTrackP = handles.selFTrackP;
       selLine    = handles.FTselVLine(selFTrackP);
       numLines   = handles.FTnumVLines(selFTrackP);
@@ -1063,6 +1260,8 @@ elseif strcmp(whatIsShown,'kymo') == 1
    end
 
    FTrackP = [];
+   numFTrackPts = 0;
+   numFields    = 0;
 else
    return;
 end
@@ -1083,29 +1282,46 @@ axesW = xlim(2)-xlim(1)+1; %The width of the axes in plotting units.
 aH = ylim(2)-ylim(1)+1;
 axesWPix = axesP(3); %The width of the axes in pixels.
 aHPix = axesP(4); %The height of the axes in pixels.
-if isempty(lineMP)
+if numLines == 0
    dist1 = inf;
 else
    dist1 = sqrt(((p(1,1)-lineMP(:,1))*axesWPix/axesW).^2+ ...
            ((p(1,2)-lineMP(:,2))*aHPix/aH).^2);
 end
 
-if isempty(FTrackP)
+if numFTrackPts == 0
    dist2 = inf;
 else
    dist2 = sqrt(((p(1,1)-FTrackP(:,1))*axesWPix/axesW).^2+ ...
            ((p(1,2)-FTrackP(:,2))*aHPix/aH).^2);
 end
 
+if numFields == 0
+   dist3 = inf;
+else
+   fieldMP = zeros(numFields,2);
+   for k = 1:numFields
+      fieldMP(k,:) = handles.field{k}.MP;
+   end
+   dist3 = sqrt(((p(1,1)-fieldMP(:,1))*axesW/axesWPix).^2+ ...
+      ((p(1,2)-fieldMP(:,2))*axesW/axesWPix).^2);
+end
+
 [minD1,index1] = min(dist1);
 [minD2,index2] = min(dist2);
-if minD1 < minD2
-   selGraphObj = 'kymoCurve';
-   minD  = minD1;
+[minD3,index3] = min(dist3);
+
+minD = min([minD1 minD2 minD3]);
+if isempty(handles.whatIsShown) | isinf(minD)
+   return;
+elseif minD == minD1
+   selImgObj = 'kymoCurve';
    index = index1;
-else
-   selGraphObj = 'FTrackPt';
-   minD  = minD2;
+elseif minD == minD2
+   selImgObj = 'FTrackPt';
+   index = index2;
+elseif minD == minD3
+   selImgObj = 'FTrackField';
    index = index2;
 end
 
@@ -1115,14 +1331,19 @@ if minD <= 10
       %We have a left-mouse button click or double click. 
       % Select this line and hightlight it.
       if strcmp(whatIsShown,'image') == 1
-         handles.selGraphObj = selGraphObj;
-         if minD1 < minD2
+         handles.selImgObj = selImgObj;
+         if minD == minD1
             if index ~= selLine
                handles.selKymoCurve = index;
+               handles.currentWidth = handles.width(index);
             end
-         else
+         elseif minD == minD2
             if index ~= selFTrackP
                handles.selFTrackP  = index;
+            end
+         elseif minD == minD3
+            if index ~= selFTrackP
+               handles.selField = index;
             end
          end
 
@@ -1133,9 +1354,9 @@ if minD <= 10
          redrawAllImg(handles);
       elseif strcmp(whatIsShown,'kymo') == 1
          if index ~= selLine
-            if strcmp(handles.selGraphObj,'kymoCurve') == 1
+            if strcmp(handles.selImgObj,'kymoCurve') == 1
                handles.selVLine(selKymoCurve) = index;
-            elseif strcmp(handles.selGraphObj,'FTrackPt') == 1
+            elseif strcmp(handles.selImgObj,'FTrackPt') == 1
                handles.FTselVLine(selFTrackP) = index;
             end
             redrawAllKymo(handles);
@@ -1145,7 +1366,7 @@ if minD <= 10
       %We have a right click. Delete the corresponding line in focus and
       % redraw everything.
       if strcmp(whatIsShown,'image') == 1
-         if minD1 < minD2
+         if minD == minD1
             %In this case, it is one of the kymograph curves that has been 
             % clicked.
             handles.numKymoCurves     = numLines-1;
@@ -1173,7 +1394,7 @@ if minD <= 10
             elseif selLine == numLines
                handles.selKymoCurve = handles.numKymoCurves;
             end
-         else
+         elseif minD == minD2
             %In this case, it is one of the flow tracking points that has been
             % clicked.
             handles.numFTrackPts      = numFTrackPts-1;
@@ -1206,7 +1427,7 @@ if minD <= 10
 
          redrawAllImg(handles);
       elseif strcmp(handles.whatIsShown,'kymo') == 1
-         if strcmp(handles.selGraphObj,'kymoCurve') == 1
+         if strcmp(handles.selImgObj,'kymoCurve') == 1
             handles.numVLines(selKymoCurve)        = numLines-1;
             handles.vLineX{selKymoCurve}(index)    = [];
             handles.vLineY{selKymoCurve}(index)    = [];
@@ -1220,7 +1441,7 @@ if minD <= 10
             elseif selLine == numLines
                handles.selVLine(selKymoCurve) = numLines-1;
             end
-         else strcmp(handles.selGraphObj,'FTrackPt') == 1
+         elseif strcmp(handles.selImgObj,'FTrackPt') == 1
             handles.FTnumVLines(selFTrackP)       = numLines-1;
             handles.FTvLineX{selFTrackP}(index)    = [];
             handles.FTvLineY{selFTrackP}(index)    = [];
@@ -1255,12 +1476,25 @@ figure(figH);
 imshow(handles.image,[]); 
 aH = gca(figH);
 set(aH,'Units','pixels','Position',imgAxesP);
+
+%To figure out an appropriate distance to the mark point for labeling, 
+% we need to scale the x and y range of the image to units in pixels.
+xlim = get(aH,'XLim');
+ylim = get(aH,'YLim');
+axesP = get(aH,'Position');
+axesW = xlim(2)-xlim(1); %The width of the axes in plotting units.
+axesH = ylim(2)-ylim(1);
+axesWPix = axesP(3); %The width of the axes in pixels.
+axesHPix = axesP(4); %The height of the axes in pixels.
+labelShift = -[20*axesW/axesWPix,5*aH/axesHPix];
+
 axis on; hold on;
 
 %Draw all the kymograph curves.
 for k = 1:handles.numKymoCurves
    drawCurve(aH,handles.kymoX{k},handles.kymoY{k}, ...
-      floor(handles.width(k)/2), handles.kCurveMP(k,:),['L' num2str(k)]);
+      floor(handles.width(k)/2), handles.kCurveMP(k,:)+labelShift, ...
+      ['L' num2str(k)]);
 end
 
 %Draw all the points and the flow velocity vectors calculated.
@@ -1270,41 +1504,61 @@ for k = 1:handles.numFTrackPts
    kymoX = handles.FTkymoX(k,:);
    kymoY = handles.FTkymoY(k,:);
    width = handles.kymFTWidth(k);
-   drawFTrackP(aH,flowV,scale,kymoX,kymoY,width,['P' num2str(k)]);
+   drawFTrackP(aH,flowV,scale,kymoX,kymoY,width,['P' num2str(k)],labelShift);
+end
+
+%Draw the boundary of the flow field and points in it if selected and flow
+% velocity vectors if calculated.
+for k = 1:handles.numFields;
+   drawField(aH,handles.field{k},labelShift,'off');
 end
 
 %Highlight the selected point or curve.
-if strcmp(handles.selGraphObj,'kymoCurve') == 1
+if strcmp(handles.selImgObj,'kymoCurve') == 1
    selKymCurve = handles.selKymoCurve;
    if selKymCurve ~= 0
-      h = plot(handles.kymoX{selKymCurve},handles.kymoY{selKymCurve},'r');
-         set(h,'LineWidth',1);
+      kCurveMP = handles.kCurveMP(selKymCurve,:);
+      labelMP  = kCurveMP+labelShift;
+      tH = text(labelMP(1),labelMP(2),['L' num2str(selKymCurve)]);
+      set(tH,'color','r');
+      plot(kCurveMP(1),kCurveMP(2),'ro');
+
+      %h = plot(handles.kymoX{selKymCurve},handles.kymoY{selKymCurve},'r');
+      %   set(h,'LineWidth',1);
    end
-elseif strcmp(handles.selGraphObj,'FTrackPt') == 1
+elseif strcmp(handles.selImgObj,'FTrackPt') == 1
    selFTrackP = handles.selFTrackP;
    if selFTrackP > 0
       x = handles.flowV(selFTrackP,2);
       y = handles.flowV(selFTrackP,1);
       plot(x,y,'r.','MarkerSize',10);
 
-      vx = handles.flowV(selFTrackP,4);
-      vy = handles.flowV(selFTrackP,3);
-      if ~isinf(vx)
-         quiver(x,y,vx*scale,vy*scale,0,'r');
-      end
+      labelMP = [x,y]+labelShift;
+      tH = text(labelMP(1),labelMP(2),['P' num2str(selFTrackP)]);
+      set(tH,'color','r');
+
+      %vx = handles.flowV(selFTrackP,4);
+      %vy = handles.flowV(selFTrackP,3);
+      %if ~isinf(vx)
+      %   quiver(x,y,vx*scale,vy*scale,0,'r');
+      %end
    end
+elseif strcmp(handles.selImgObj,'FTrackField') == 1
+   selField = handles.selField;
+   drawField(aH,handles.field{selField},labelShift,'on');
 end
 
+updateCurWidthF(handles);
 updateCalSpeedF(handles);
 updateManSpeedF(handles);
 updateFlowVF(handles);
 
 % --- Some user defined subfunctions.
 %%%%%%%%%%%%%%%%%%%%%%% subfunction %%%%%%%%%%%%%%%%%%%%%%%
-function drawCurve(aH,x,y,w,kCurveMP,label)
+function drawCurve(aH,x,y,w,labelMP,label)
 %This function draws a curve though points defined in (x,y) and draw two bars
 % that are perpendicular to the curve at the beginning and end points with
-% width '2*w'. It also put a label at 'kCurveMP'. The function returns a column
+% width '2*w'. It also put a label at 'labelMP'. The function returns a column
 % vector of handles to all the drawn objects.
 
 plot(x,y,'g');
@@ -1326,24 +1580,14 @@ yR  = y(end) + w*(x(end)-x(end-1))/len;
 plot([xL xR],[yL yR],'y');
 plot(x,y,'bo');
 
-%Label the number of the line at 'kCurveMP'. To figure out an appropriate
-% distance to label, we need to scale the x and y range of the image to units
-% in pixels.
-set(aH,'Units','pixels');
-xlim = get(aH,'XLim');
-ylim = get(aH,'YLim');
-axesP = get(aH,'Position');
-axesW = xlim(2)-xlim(1); %The width of the axes in plotting units.
-aH = ylim(2)-ylim(1);
-axesWPix = axesP(3); %The width of the axes in pixels.
-aHPix = axesP(4); %The height of the axes in pixels.
-tH = text(kCurveMP(1)-20*axesW/axesWPix,kCurveMP(2)-5*aH/aHPix,label);
+%Label the number of the line at 'labelMP'.
+tH = text(labelMP(1),labelMP(2),label);
 set(tH,'color','g');
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%% subfunction %%%%%%%%%%%%%%%%%%%%%%%
-function drawFTrackP(aH,flowV,scale,kymX,kymY,width,label)
+function drawFTrackP(aH,flowV,scale,kymX,kymY,width,label,labelShift)
 %Draw the point where the flow velocity is tracked. If the velocity has
 %already been identified, a vector will be drawn.
 
@@ -1360,44 +1604,59 @@ vy = flowV(3);
 if ~isinf(vx)
    %The velocity vector has been calculated.
    quiver(x,y,vx*scale,vy*scale,0,'g');
+else
+   plot(x,y,'g.','MarkerSize',10);
 end
 
-%Label the number of the point. To figure out an appropriate
-% distance to label, we need to scale the x and y range of the image to units
-% in pixels.
-set(aH,'Units','pixels');
-xlim = get(aH,'XLim');
-ylim = get(aH,'YLim');
-axesP = get(aH,'Position');
-axesW = xlim(2)-xlim(1); %The width of the axes in plotting units.
-aH = ylim(2)-ylim(1);
-axesWPix = axesP(3); %The width of the axes in pixels.
-aHPix = axesP(4); %The height of the axes in pixels.
-tH = text(x-20*axesW/axesWPix,y-5*aH/aHPix,label);
+%Label the number of the point.
+tH = text(x+labelShift(1),y+labelShift(2),label);
 set(tH,'color','g');
 
 
+%%%%%%%%%%%%%%%%%%%%%%% subfunction %%%%%%%%%%%%%%%%%%%%%%%
+function drawField(aH,field,labelShift,highLight)
+
+plot(field.bndX,field.bndY,'g-.');
+
+label   = field.label;
+labelMP = field.MP + labelShift;
+
+if strcmp(highLight,'on') == 1
+   plot(field.MP(1),field.MP(2),'ro','MarkerSize',5);
+
+   %Label the number of the line at 'labelMP'.
+   tH = text(labelMP(1),labelMP(2),label);
+      set(tH,'color','r');
+
+   %Draw the curve whose normal direction is used for preset kymgraph lines.
+   if strcmp(field.kymLineOn,'yes')
+      plot(field.kymDirCrv(1,:),field.kymDirCrv(2,:),'g--');
+   end
+
+   %Draw the selected points in the field.
+   if strcmp(field.selObj,'grid') == 1 & ~isempty(field.gridPts)
+      plot(field.gridPts(:,1),field.gridPts(:,2),'y.','MarkerSize',3);
+   end
+elseif strcmp(highLight,'off') == 1
+   plot(field.MP(1),field.MP(2),'go','MarkerSize',5);
+
+   %Label the number of the line at 'labelMP'.
+   tH = text(labelMP(1),labelMP(2),label);
+      set(tH,'color','g');
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%% subfunction %%%%%%%%%%%%%%%%%%%%%%%
-function drawKymoLine(aH,x,y,lineMP,label)
+function drawKymoLine(aH,x,y,labelMP,label)
 %Draw a line on the kymograph image so that the Speed can be estimated.
 
 h = line(x,y);
 set(h,'color','g');
 
 plot(x,y,'b.');
-%Label the number of the line at 'lineMP'. To figure out an appropriate
-% distance to label, we need to scale the x and y range of the image to units
-% in pixels.
-set(aH,'Units','pixels');
-xlim = get(aH,'XLim');
-ylim = get(aH,'YLim');
-axesP = get(aH,'Position');
-axesW = xlim(2)-xlim(1); %The width of the axes in plotting units.
-aH = ylim(2)-ylim(1);
-axesWPix = axesP(3); %The width of the axes in pixels.
-aHPix = axesP(4); %The height of the axes in pixels.
-tH = text(lineMP(1)-10*axesW/axesWPix,lineMP(2)-5*aH/aHPix,label);
+
+%Label the number of the line at 'labelMP'.
+tH = text(labelMP(1),labelMP(2),label);
 set(tH,'color','g');
 
 
@@ -1406,7 +1665,7 @@ function redrawAllKymo(handles)
 %Redraw the kymograph for the selected curve and any line for manual speed 
 % tracking.
 
-if strcmp(handles.selGraphObj,'kymoCurve') == 1
+if strcmp(handles.selImgObj,'kymoCurve') == 1
    selKymoCurve = handles.selKymoCurve;
    kymo         = handles.kymo{selKymoCurve}; 
    kymoTitle  = ['Kymograph Curve ' num2str(selKymoCurve)];
@@ -1425,7 +1684,7 @@ if strcmp(handles.selGraphObj,'kymoCurve') == 1
       selVLineX = handles.vLineX{selKymoCurve}{index};
       selVLineY = handles.vLineY{selKymoCurve}{index};
    end
-elseif strcmp(handles.selGraphObj,'FTrackPt') == 1
+elseif strcmp(handles.selImgObj,'FTrackPt') == 1
    selFTrackP = handles.selFTrackP;
    kymo       = handles.FTkymo{selFTrackP}; 
    kymoTitle  = ['Flow Tracking Point ' num2str(selFTrackP)];
@@ -1453,6 +1712,17 @@ axes('Units','pixels','Position',kymAxesP);
 imshow(kymo,[]); hold on;
 aH = gca;
 
+%To figure out an appropriate distance to the mark point for labeling, 
+% we need to scale the x and y range of the image to units in pixels.
+xlim = get(aH,'XLim');
+ylim = get(aH,'YLim');
+axesP = get(aH,'Position');
+axesW = xlim(2)-xlim(1); %The width of the axes in plotting units.
+axesH = ylim(2)-ylim(1);
+axesWPix = axesP(3); %The width of the axes in pixels.
+axesHPix = axesP(4); %The height of the axes in pixels.
+labelShift = -[10*axesW/axesWPix,5*aH/axesHPix];
+
 numFrames = handles.endImage-handles.startImage+1;
 if numFrames > 3
    ytickL = [1 ceil(numFrames/2) numFrames];
@@ -1467,7 +1737,7 @@ xlabel('pixel');
 ylabel('frame');
 
 for j = 1:numVLines
-   drawKymoLine(aH,vLineX{j}, vLineY{j}, vLineMP(j,:), num2str(j));
+   drawKymoLine(aH,vLineX{j}, vLineY{j}, vLineMP(j,:)+labelShift, num2str(j));
 end
 
 if index ~= 0
@@ -1481,17 +1751,29 @@ updateFlowVF(handles);
 
 
 %%%%%%%%%%%%%%%%%%%%%%% subfunction %%%%%%%%%%%%%%%%%%%%%%%
+%Update information in the text field, 'curWidthF' of the GUI.
+function updateCurWidthF(handles);
+
+if handles.selKymoCurve ~= 0
+   set(handles.curWidthFH,'String', ...
+      num2str(handles.width(handles.selKymoCurve)));
+else
+   set(handles.curWidthFH,'String', ...
+      num2str(handles.currentWidth));
+end
+
+%%%%%%%%%%%%%%%%%%%%%%% subfunction %%%%%%%%%%%%%%%%%%%%%%%
 %Update information in the text field, 'calSpeedF' of the GUI.
 function updateCalSpeedF(handles);
 
-if strcmp(handles.selGraphObj,'kymoCurve') == 1
+if strcmp(handles.selImgObj,'kymoCurve') == 1
    selKymoCurve = handles.selKymoCurve;
    if selKymoCurve == 0
       return;
    end
 
    calSpeed = handles.calSpeed(selKymoCurve); 
-elseif strcmp(handles.selGraphObj,'FTrackPt') == 1
+elseif strcmp(handles.selImgObj,'FTrackPt') == 1
    selFTrackP = handles.selFTrackP;
    if selFTrackP == 0
       return;
@@ -1513,7 +1795,7 @@ end
 %Update information in the text field, 'manSpeedF' of the GUI.
 function updateManSpeedF(handles);
 
-if strcmp(handles.selGraphObj,'kymoCurve') == 1
+if strcmp(handles.selImgObj,'kymoCurve') == 1
    selKymoCurve = handles.selKymoCurve;
    if selKymoCurve == 0
       return;
@@ -1523,7 +1805,7 @@ if strcmp(handles.selGraphObj,'kymoCurve') == 1
    if index ~= 0
       manSpeed = handles.manSpeed{selKymoCurve}(index);
    end
-elseif strcmp(handles.selGraphObj,'FTrackPt') == 1
+elseif strcmp(handles.selImgObj,'FTrackPt') == 1
    selFTrackP = handles.selFTrackP;
    if selFTrackP == 0
       return;
@@ -1547,7 +1829,7 @@ end
 %Update information in the text field, 'velocityField' of the GUI.
 function updateFlowVF(handles);
 
-if strcmp(handles.selGraphObj,'FTrackPt') == 1
+if strcmp(handles.selImgObj,'FTrackPt') == 1
    selFTrackP = handles.selFTrackP;
    if selFTrackP > 0
       if isinf(handles.flowV(selFTrackP,3))
