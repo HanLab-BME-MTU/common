@@ -7,7 +7,7 @@ function [minThresh, J] = imMinimumThreshold (image, maxlevel)
 % SYNOPSIS [J] = imMinimumThreshold (image, maxlevel)
 %
 % INPUT  image:     The input image in normalized form (0..1)
-%        maxlevel:  The maximum grey level value in the image (depending on bitdepth)
+%        maxlevel:  True bit depth of the image (eg 255 for 8 bit images)
 %
 % OUTPUT J:         the values of the criterium function in vector form
 %        minThresh: the minimum threshold value found
