@@ -1,6 +1,6 @@
 function hh = myErrorbar(x, y, l, u)
 %MYERRORBAR Adds errorbars to existing plot (unlike errorbar.m, which creates a new plot, and allows only bars for y values)
-%   ERRORBAR(X,Y,L,U) adds error bars to the graph of vector X vs. vector Y with
+%   MYERRORBAR(X,Y,L,U) adds error bars to the graph of vector X vs. vector Y with
 %   error bars specified by the vectors L and U.  L and U contain the
 %   lower and upper error ranges for each point in Y.  Each error bar
 %   is L(i) + U(i) long and is drawn a distance of U(i) above and L(i)
@@ -11,9 +11,9 @@ function hh = myErrorbar(x, y, l, u)
 %   matrices), the first half of L, U specifies error bar lengths for X and the
 %   second half specifies error bars for Y
 %
-%   ERRORBAR(X,Y,E) or ERRORBAR(Y,E) plots error bars [Y-E Y+E].
+%   MYERRORBAR(X,Y,E) or MYERRORBAR(Y,E) plots error bars [Y-E Y+E].
 %
-%   H = ERRORBAR(...) returns a vector of line handles.
+%   H = MYERRORBAR(...) returns a vector of line handles.
 %
 %   The tag of the errorbar-lines is: errorBar
 %
@@ -21,9 +21,12 @@ function hh = myErrorbar(x, y, l, u)
 %      x = 1:10;
 %      y = sin(x);
 %      e = std(y)*ones(size(x));
-%      errorbar(x,y,e)
-%   draws symmetric error bars of unit standard deviation.
-
+%      myErrorbar(x,y,e)
+%   draws symmetric error bars of unit standard deviation for y values.
+%      myErrorbar(x,y,[e,e])
+%   draws symmetric error bars of unit standard deviation for x and y
+%   values.
+%
 %   Based on the matlab-function errorbar as revised by Claude Berney
 %   c: jonas, 06-03
 
@@ -97,7 +100,8 @@ next = lower(get(cax,'NextPlot'));
 
 %find color of current plot
 dataH = get(cax,'Children');
-latestColor = get(dataH(1),'Color'); %new children are added on top!
+myLineH = dataH(1);
+latestColor = get(myLineH,'Color'); %new children are added on top!
 
 tee=0;
 if ~strcmp('log',get(gca,'XScale'))

@@ -1,4 +1,4 @@
-function collectCurves(figureHandles, recolor, showLegend)
+function collectionFigure = collectCurves(figureHandles, recolor, showLegend)
 %COLLECTCURVES will copy curves from several figures into one figure
 %
 % SYNOPSIS collectCurves(figureHandles, recolor)
@@ -6,6 +6,8 @@ function collectCurves(figureHandles, recolor, showLegend)
 % INPUT    figureHandles : vector of figure handles
 %          recolor       : (opt) [0/{1}] whether or not to recolor the curves
 %          showLegend    : (opt) [0/{1}] whether or not to show legend
+%
+% OUTPUT   collectionFigure : handle to the figure with the collected curves
 %
 % REMARKS  To better identify curves, it might be helpful to tag them
 %           first, e.g. by using plot(x,y,'Tag','myDescription'). After
@@ -40,6 +42,7 @@ figureHandles = figureHandles(:)';
 
 lineCt = 1;
 colorCt = 1;
+legendCt = 1;
 %----------------------
 
 
@@ -71,16 +74,33 @@ for fh = figureHandles
         
         % change tag
         oldTag = get(newH(lineCt),'Tag');
-        set(newH(lineCt),'Tag',['fig-' num2str(fh) ' ' oldTag]);
+        newTag = ['fig-' num2str(fh) ' ' oldTag];
+        set(newH(lineCt),'Tag',newTag);
         
         % change color
         if recolor
-            if strcmp(oldTag,'errorBar')
-                set(newH(lineCt),'Color',extendedColors(colorCt-1));
-            else
-                set(newH(lineCt),'Color',extendedColors(colorCt));
-                colorCt = colorCt+1;
+            switch oldTag
+                case 'errorBar'
+                    % set line color
+                    set(newH(lineCt),'Color',extendedColors(colorCt-1));
+                    
+                case 'TAfit'
+                    % don't change color
+                    
+                otherwise
+                    % set new color
+                    set(newH(lineCt),'Color',extendedColors(colorCt));
+                    colorCt = colorCt+1;
             end
+        end
+        
+        % collect tags for legend
+        if ~isempty(findstr(oldTag,'errorBar')) | ~isempty(findstr(oldTag,'TAfit'))
+            % do not add to legend
+        else
+            legendCell{legendCt,1} = newTag;
+            legendLineH(legendCt,1) = newH(lineCt);
+            legendCt = legendCt + 1;
         end
         
         lineCt = lineCt + 1;
@@ -94,8 +114,14 @@ for fh = figureHandles
 end
     
 %---------------------
-% now show the legend. first we need to collect all the tags, then we can
-% launch it
+% now show the legend. 
 if showLegend
-    legend(newAxH,get(newH,'Tag'));
+    legend(legendLineH,legendCell);
+end
+
+%-----------------------
+% nargout if asked for
+
+if nargout > 0
+    collectionFigure = newFH;
 end

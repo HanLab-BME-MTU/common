@@ -22,9 +22,13 @@ function mSqDisp = meanSquaredDisplacement(positions, sigmaZero, doOneD)
 %               matrices of 0. (it will not turn out well if you mix perfect
 %               and non-perfect observations!)
 %
-% OUTPUT   mSqDisp              <[r(t+dt)-r(t)]^2>. dt is max 1/4 of the
+% OUTPUT   mSqDisp              x-by-3 array with
+%                                   r^2=<[r(t+dt)-r(t)]^2>
+%                                   sigma(r^2)
+%                                   nDataPoints
+%
+%                               dt is max 1/4 of the
 %                               available timepoints. 
-%                               x-by-2 array with r^2,sigma(r^2)
 %                               See Saxton, Biophys.J.,1997
 %
 %c: 05/04 jonas
@@ -123,7 +127,7 @@ end
 maxTimeLag = floor(defaultFracTimepoints * length(find(isfinite(coordinates(:,1)))));
 
 % preassign output
-mSqDisp = repmat(NaN,[maxTimeLag,2]);
+mSqDisp = repmat(NaN,[maxTimeLag,3]);
 
 % calculate Input for deltaCoordinates. If all covariance matrices are
 % zero, use unit matrices instead - we do not want to screw up our further
@@ -160,7 +164,7 @@ for timeLag = 1:maxTimeLag
     if length(goodData) >= defaultMinNumData
         % use sigma of distances, not squared distances, for weight
          [r2,sigmaR2] = weightedStats(displacement(goodData).^2,sigma(goodData),'s');
-         mSqDisp(timeLag,:) = [r2,sigmaR2];
+         mSqDisp(timeLag,:) = [r2,sigmaR2,length(goodData)];
     end
     
 end % for timeLag = 1:maxTimeLag
