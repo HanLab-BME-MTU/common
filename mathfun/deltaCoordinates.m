@@ -109,6 +109,8 @@ end
 % What we will be doing: sigmaD = sqrt(sigma0*Qdd), Qdd = HQH',
 % H=[-e,e,e,-e], Q=blkdiag(cov1,cov2,cov3,cov4)
 
+if nargout > 1 % speed up stuff
+
 % assign Q
 nDims = coordSize(2);
 Q = zeros(4*nDims);
@@ -135,6 +137,7 @@ for iSigma = 1:nSigmas
     
 end % for iSigma = 1:nSigmas
 
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
