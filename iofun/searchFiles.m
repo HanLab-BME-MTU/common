@@ -140,8 +140,8 @@ while ~isempty(dirs2check{topDir2check})
         if listOfFilesCt > listOfFilesLength
             tmpListOfFiles = listOfFiles;
             newListOfFilesLength = listOfFilesLength + listOfFilesInitLength;
-            listOfFiles = cell(newListOfFilesLength,1);
-            listOfFiles(1:listOfFilesLength) = tmpListOfFiles;
+            listOfFiles = cell(newListOfFilesLength,2);
+            listOfFiles(1:listOfFilesLength,:) = tmpListOfFiles;
             listOfFilesLength = newListOfFilesLength;
         end
         
