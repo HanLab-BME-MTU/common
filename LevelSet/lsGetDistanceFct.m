@@ -27,7 +27,7 @@ num_grid_coordinates = size(grid_coordinates,1);
 num_p = size(known_zero_level_points,1);
 dist_fct = zeros(num_grid_coordinates,1);
 for j = 1:num_grid_coordinates
-    if mod(j,100) == 0
+    if mod(j,300) == 0
         waitbar(j/num_grid_coordinates, h_waitbar, num2str(j));
     end
     

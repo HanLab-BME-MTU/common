@@ -26,21 +26,21 @@ end
 
 if 1
    % get the intersection of the x-gridlines with the edge
-   x1(1:length(domain.x_grid_lines)) = 1;
+   x1(1:length(domain.x_grid_lines)) = x_spline.knots(1);
    x2(1:length(domain.x_grid_lines)) = x_spline.knots(end);
-   [x_approx_intersection_parameter, x_intersecting_lines] = lsIntersectApproxSplineLine(domain.x_grid_lines, x_spline, x1, x2);
+   [x_approx_intersection_parameter, x_intersecting_lines, ds] = lsIntersectApproxSplineLine(domain.x_grid_lines, x_spline, x1, x2);
    
-   x1 = x_approx_intersection_parameter - 1;
-   x2 = x_approx_intersection_parameter + 1;
+   x1 = x_approx_intersection_parameter - ds;
+   x2 = x_approx_intersection_parameter + ds;
    x_intersection_parameter = lsIntersectSplineLine(x_intersecting_lines, x_spline, x1, x2);
 
    % get the intersection of the y-gridlines with the edge
-   y1(1:length(domain.y_grid_lines)) = 1;
+   y1(1:length(domain.y_grid_lines)) = y_spline.knots(1);
    y2(1:length(domain.y_grid_lines)) = y_spline.knots(end);
-   [y_approx_intersection_parameter, y_intersecting_lines] = lsIntersectApproxSplineLine(domain.y_grid_lines, y_spline, y1, y2);
+   [y_approx_intersection_parameter, y_intersecting_lines, ds] = lsIntersectApproxSplineLine(domain.y_grid_lines, y_spline, y1, y2);
    
-   y1 = y_approx_intersection_parameter - 1;
-   y2 = y_approx_intersection_parameter + 1;
+   y1 = y_approx_intersection_parameter - ds;
+   y2 = y_approx_intersection_parameter + ds;
    y_intersection_parameter = lsIntersectSplineLine(y_intersecting_lines, y_spline, y1, y2);
 
    x_X_i = fnval(x_spline,x_intersection_parameter);
@@ -57,7 +57,7 @@ if 1
        figure,plot(x_X_i, y_X_i,'.');
        hold on
        plot(x_Y_i,y_Y_i,'.g');
-       p=1:x_spline.knots(end);
+       p=x_spline.knots(1) :ds :x_spline.knots(end);
        x_spline_points = fnval(x_spline, p);
        y_spline_points = fnval(y_spline, p);
        plot(x_spline_points, y_spline_points,'r');

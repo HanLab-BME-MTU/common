@@ -80,13 +80,24 @@ elseif 1
     end
 
     % level set difference driven flow 
+    kappa = lsCurvature(phi, domain.x_spacing, domain.y_spacing, i_end, j_end);
     for i=1:i_end
         for j=1:j_end
             %F(i,j) = - sign(phi_target(i,j))*2;
             
             %sign_vel = sign(phi(i,j) - phi_target(i,j));
             %F(i,j) = sign_vel *( phi(i,j) - phi_target(i,j))^2;
-            F(i,j) = phi(i,j) - phi_target(i,j);
+            %F(i,j) = sign( phi(i,j) - phi_target(i,j)) * log(phi(i,j) - phi_target(i,j));
+            % this works
+            %F(i,j) = atan(phi(i,j) - phi_target(i,j));
+            d_level = phi(i,j) - phi_target(i,j);
+            if d_level >= 0
+                % protrusion
+                F(i,j) = 0.05 * d_level + atan(d_level);
+            else
+                % retraction
+                F(i,j) = d_level * (0.5 + kappa(i,j));
+            end
         end
     end
 else

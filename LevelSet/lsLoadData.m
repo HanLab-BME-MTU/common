@@ -5,7 +5,7 @@ function [mask_img_t0, mask_img_t1,x_spline_t0, y_spline_t0, x_spline_t1,y_splin
 if TEST_CASE == 1 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
+   %  two ellipses
    domain.x_size = 200;
    domain.y_size = 200;
    
@@ -13,33 +13,33 @@ if TEST_CASE == 1
    domain.y_spacing = 5;
    
    %create circle
-   circle   = rsmak('circle',50,[0, 0]);
-   ellipse  = fncmb(circle,[1.5 0;0 0.6]);
-   circle   = fncmb(circle,[0.6 0;0 1.5]);
-   %ellipse  = fncmb(circle,[1.5 0;0 1.5]);
-   circle   = fncmb(circle,'+', 100);
-   ellipse  = fncmb(ellipse,'+',100);
-   fnplt(circle);
+   circle       = rsmak('circle',50,[0, 0]);
+   ellipse_t0   = fncmb(circle,[1.5 0;0 0.6]);
+   ellipse_t1   = fncmb(circle,[0.6 0;0 1.5]);
+   
+   ellipse_t0   = fncmb(ellipse_t0,'+', 100);
+   ellipse_t1   = fncmb(ellipse_t1,'+', 100);
+   fnplt(ellipse_t0);
    hold on
-   fnplt(ellipse);
+   fnplt(ellipse_t1);
    axis equal
    
    % Create mask
-   p = 0:0.05:circle.pieces;
-   circle_points = fnval(circle,p);
-   p = 0:0.05:ellipse.pieces;
-   ellipse_points = fnval(ellipse,p);
+   p = 0:0.05:ellipse_t0.pieces;
+   ellipse_points_t0 = fnval(ellipse_t0,p);
+   p = 0:0.05:ellipse_t1.pieces;
+   ellipse_points_t1 = fnval(ellipse_t1,p);
    
-   mask_img_t0 = roipoly(domain.y_size, domain.x_size, circle_points(1,:)', circle_points(2,:)');
-   mask_img_t1 = roipoly(domain.y_size, domain.x_size, ellipse_points(1,:)', ellipse_points(2,:)');
+   mask_img_t0 = roipoly(domain.y_size, domain.x_size, ellipse_points_t0(1,:)', ellipse_points_t0(2,:)');
+   mask_img_t1 = roipoly(domain.y_size, domain.x_size, ellipse_points_t1(1,:)', ellipse_points_t1(2,:)');
 
    % create x,y splines
    s_p = 1:length(p);
-   x_spline_t0 = fn2fm(spline(s_p, circle_points(1,:)),'B-');
-   y_spline_t0 = fn2fm(spline(s_p, circle_points(2,:)),'B-');
+   x_spline_t0 = fn2fm(spline(s_p, ellipse_points_t0(1,:)),'B-');
+   y_spline_t0 = fn2fm(spline(s_p, ellipse_points_t0(2,:)),'B-');
    
-   x_spline_t1 = fn2fm(spline(s_p, ellipse_points(1,:)),'B-');
-   y_spline_t1 = fn2fm(spline(s_p, ellipse_points(2,:)),'B-');
+   x_spline_t1 = fn2fm(spline(s_p, ellipse_points_t1(1,:)),'B-');
+   y_spline_t1 = fn2fm(spline(s_p, ellipse_points_t1(2,:)),'B-');
    
    % End test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,12 +69,13 @@ if TEST_CASE == 1
 elseif TEST_CASE == 2 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % two offset circles
    
    domain.x_size = 200;
    domain.y_size = 200;
    
-   domain.x_spacing = 1; 
-   domain.y_spacing = 1;
+   domain.x_spacing = 5; 
+   domain.y_spacing = 5;
    
    %create circle
    circle1   = rsmak('circle',50,[0, 0]);
@@ -131,61 +132,232 @@ elseif TEST_CASE == 2
    known_zero_level_points_t1(:,2) = [y_X_i_t1'; y_Y_i_t1'];
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
    
-   
-elseif TEST_CASE == 3
+elseif TEST_CASE == 3 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
+   %  two lines
    domain.x_size = 200;
    domain.y_size = 200;
    
    domain.x_spacing = 5; 
    domain.y_spacing = 5;
    
-   %create circle
-   circle   = rsmak('circle',62,[0, 0]);
-   ellipse  = fncmb(circle,[1.5 0;0 0.6]);
-   ellipse  = fncmb(ellipse,'+', [100]);
+   %create first line
+   line1(:,1) = 1:200;
+   line1(:,2) = 40 .* ones(1,200);  
    
-   circle1   = rsmak('circle',30,[0, 0]);
-   circle2   = rsmak('circle',30,[0, 0]);
-   circle1   = fncmb(circle1,'+', [65 100]);
-   circle2   = fncmb(circle2,'+', [135 100]);
+   %create second line
+   line2(:,1) = 1:200;
+   line2(:,2) = 70 .* ones(1,200);   
    
-   fnplt(circle1);
+   mask_img_t0 = roipoly(domain.y_size, domain.x_size, [0; line1(:,1); domain.x_size;0], [line1(1,2); line1(:,2); 0; 0]);
+   mask_img_t1 = roipoly(domain.y_size, domain.x_size, [0; line2(:,1); domain.x_size;0], [line2(1,2); line2(:,2); 0; 0]);
+   
+   % create x,y interpolating splines
+   s_p = 1:200;
+
+   x_spline_t0 = fn2fm(spline(s_p, line1(:,1)),'B-');
+   y_spline_t0 = fn2fm(spline(s_p, line1(:,2)),'B-');
+   
+   x_spline_t1 = fn2fm(spline(s_p, line2(:,1)),'B-');
+   y_spline_t1 = fn2fm(spline(s_p, line2(:,2)),'B-');
+   
+   % End test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   
+   [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
+
+   % fill the grid_line field in structure domain
+   domain = lsGenerateGridLines(domain);
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
+   % (find the known points)
+   [x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0] = lsGetGridIntersections(x_spline_t0, y_spline_t0, domain, CONTROL);
+   known_zero_level_points_t0(:,1) = [x_X_i_t0'; x_Y_i_t0'];
+   known_zero_level_points_t0(:,2) = [y_X_i_t0'; y_Y_i_t0'];
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
+   [x_X_i_t1, y_X_i_t1, x_Y_i_t1, y_Y_i_t1] = lsGetGridIntersections(x_spline_t1, y_spline_t1, domain, CONTROL);
+   known_zero_level_points_t1(:,1) = [x_X_i_t1'; x_Y_i_t1'];
+   known_zero_level_points_t1(:,2) = [y_X_i_t1'; y_Y_i_t1'];
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
+elseif TEST_CASE == 4
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %  line protrusion
+   domain.x_size = 200;
+   domain.y_size = 200;
+   
+   domain.x_spacing = 5; 
+   domain.y_spacing = 5;
+   
+   line_level1 = 105;
+   line_level2 = 100;
+   
+   %create first line + halfcircle
+   line1(:,1) = 1:200;   
+   line1(1:44,2) = line_level1 .* ones(1,44);  
+   line1(156:200,2) = line_level1 .* ones(1,45);
+   xc=-55:55;
+   %y_half_circle = line_level1 - sqrt(25^2-xc.^2);
+   % gauss curve
+   y_half_circle = line_level1 + 50 .* exp(-xc.^2./(2*160));
+   line1(45:155,2)  = y_half_circle';
+   
+   %create second line
+   line2(:,1) = 1:200;
+   line2(:,2) = line_level2 .* ones(1,200);   
+   
+   mask_img_t1 = roipoly(domain.y_size, domain.x_size, [0; line1(:,1); domain.x_size;0], [line1(1,2); line1(:,2); 0; 0]);
+   mask_img_t0 = roipoly(domain.y_size, domain.x_size, [0; line2(:,1); domain.x_size;0], [line2(1,2); line2(:,2); 0; 0]);
+   
+   % create x,y interpolating splines
+   s_p = 1:200;
+
+   x_spline_t1 = fn2fm(spline(s_p, line1(:,1)),'B-');
+   y_spline_t1 = fn2fm(spline(s_p, line1(:,2)),'B-');
+   
+   x_spline_t0 = fn2fm(spline(s_p, line2(:,1)),'B-');
+   y_spline_t0 = fn2fm(spline(s_p, line2(:,2)),'B-');
+   
+   % End test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   
+   [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
+
+   % fill the grid_line field in structure domain
+   domain = lsGenerateGridLines(domain);
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
+   % (find the known points)
+   [x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0] = lsGetGridIntersections(x_spline_t0, y_spline_t0, domain, CONTROL);
+   known_zero_level_points_t0(:,1) = [x_X_i_t0'; x_Y_i_t0'];
+   known_zero_level_points_t0(:,2) = [y_X_i_t0'; y_Y_i_t0'];
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
+   [x_X_i_t1, y_X_i_t1, x_Y_i_t1, y_Y_i_t1] = lsGetGridIntersections(x_spline_t1, y_spline_t1, domain, CONTROL);
+   known_zero_level_points_t1(:,1) = [x_X_i_t1'; x_Y_i_t1'];
+   known_zero_level_points_t1(:,2) = [y_X_i_t1'; y_Y_i_t1'];
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%      
+elseif TEST_CASE == 5
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %  lines and spike
+   domain.x_size = 200;
+   domain.y_size = 200;
+   
+   domain.x_spacing = 3; 
+   domain.y_spacing = 3;
+   
+   line_level1 = 105.5;
+   line_level2 = 110.5;
+   
+   %create first line + halfcircle
+   line1(:,1) = 1:200;   
+   line1(:,2) = line_level1 .* ones(1,200);  
+   xc=0:80;
+   %y_half_circle = line_level1 - sqrt(25^2-xc.^2);
+   % gauss curve
+   y_spike = line_level1 - exp(-xc./15) ./0.014;
+   line1(20:100,2)  = fliplr(y_spike)';
+   line1(101:180,2)  = y_spike(2:end)';
+   figure,plot(line1(:,1),line1(:,2));
+   
+   %create second line
+   line2(:,1) = 1:200;
+   line2(:,2) = line_level2 .* ones(1,200);   
+   
+   mask_img_t0 = roipoly(domain.y_size, domain.x_size, [0; line1(:,1); domain.x_size;0], [line1(1,2); line1(:,2); 0; 0]);
+   mask_img_t1 = roipoly(domain.y_size, domain.x_size, [0; line2(:,1); domain.x_size;0], [line2(1,2); line2(:,2); 0; 0]);
+   
+   % create x,y interpolating splines
+   s_p = 1:200;
+
+   x_spline_t0 = fn2fm(spline(s_p, line1(:,1)),'B-');
+   y_spline_t0 = fn2fm(spline(s_p, line1(:,2)),'B-');
+   
+   x_spline_t1 = fn2fm(spline(s_p, line2(:,1)),'B-');
+   y_spline_t1 = fn2fm(spline(s_p, line2(:,2)),'B-');
+   
+   % End test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   
+   [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
+
+   % fill the grid_line field in structure domain
+   domain = lsGenerateGridLines(domain);
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
+   % (find the known points)
+   [x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0] = lsGetGridIntersections(x_spline_t0, y_spline_t0, domain, CONTROL);
+   known_zero_level_points_t0(:,1) = [x_X_i_t0'; x_Y_i_t0'];
+   known_zero_level_points_t0(:,2) = [y_X_i_t0'; y_Y_i_t0'];
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
+   [x_X_i_t1, y_X_i_t1, x_Y_i_t1, y_Y_i_t1] = lsGetGridIntersections(x_spline_t1, y_spline_t1, domain, CONTROL);
+   known_zero_level_points_t1(:,1) = [x_X_i_t1'; x_Y_i_t1'];
+   known_zero_level_points_t1(:,2) = [y_X_i_t1'; y_Y_i_t1'];
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%         
+   
+   
+elseif TEST_CASE == 6
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Seven-point star
+   domain.x_size = 200;
+   domain.y_size = 200;
+   
+   domain.x_spacing = 3; 
+   domain.y_spacing = 3;
+   
+   %create star
+   s_scale = 25;
+   s=0:0.01:1;
+   x=(100+s_scale.*((2+sin(7.*2.*pi.*s)).*cos(2.*pi.*s)));
+   y=(100+s_scale.*((2+sin(7.*2.*pi.*s)).*sin(2.*pi.*s)));
+   
+   circle   = rsmak('circle',22,[0, 0]);
+   circle   = fncmb(circle,'+', [100 100]);
+   
+   figure
+   fnplt(circle);
    hold on
-   fnplt(circle2);   
-   fnplt(ellipse);
+   plot(x,y);
    axis equal
    
    % Create mask
-   p = 0:0.05:circle1.pieces;
-   circle_points1 = fnval(circle1,p);
-   p = 0:0.05:circle2.pieces;
-   circle_points2 = fnval(circle2,p);   
-   circle_points = cat(2, circle_points1,circle_points2); 
-   p = 0:0.05:ellipse.pieces;
-   ellipse_points = fnval(ellipse,p);
-   
+   p = 0:0.05:circle.pieces;
+   circle_points = fnval(circle,p);
    
    mask_img_t0 = roipoly(domain.y_size, domain.x_size, circle_points(1,:)', circle_points(2,:)');
-   mask_img_t1 = roipoly(domain.y_size, domain.x_size, ellipse_points(1,:)', ellipse_points(2,:)');
+   mask_img_t1 = roipoly(domain.y_size, domain.x_size, x, y);
 
    % create x,y splines
    s_p = 1:length(p);
-   x_spline_t01 = fn2fm(spline(s_p, circle_points1(1,:)),'B-');
-   y_spline_t01 = fn2fm(spline(s_p, circle_points1(2,:)),'B-');
+   x_spline_t0 = fn2fm(spline(s_p, circle_points(1,:)),'B-');
+   y_spline_t0 = fn2fm(spline(s_p, circle_points(2,:)),'B-');
+     
+   x_spline_t1 = fn2fm(spline(1:length(s), x),'B-');
+   y_spline_t1 = fn2fm(spline(1:length(s), y),'B-');
    
-   x_spline_t02 = fn2fm(spline(s_p, circle_points2(1,:)),'B-');
-   y_spline_t02 = fn2fm(spline(s_p, circle_points2(2,:)),'B-');   
-   
-   x_spline_t1 = fn2fm(spline(s_p, ellipse_points(1,:)),'B-');
-   y_spline_t1 = fn2fm(spline(s_p, ellipse_points(2,:)),'B-');
-   
-   x_spline_t0 = fncmb(x_spline_t01,'+',x_spline_t02);
-   y_spline_t0 = fncmb(y_spline_t01,'+',y_spline_t02);
-   x_spline_t0 = fn2fm(x_spline_t0,'B-');
-   y_spline_t0 = fn2fm(y_spline_t0,'B-');
    % End test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
@@ -199,13 +371,8 @@ elseif TEST_CASE == 3
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
    % (find the known points)
-   [x_X_i_t01, y_X_i_t01, x_Y_i_t01, y_Y_i_t01] = lsGetGridIntersections(x_spline_t01, y_spline_t01, domain, CONTROL);
-   [x_X_i_t02, y_X_i_t02, x_Y_i_t02, y_Y_i_t02] = lsGetGridIntersections(x_spline_t02, y_spline_t02, domain, CONTROL);
-   x_X_i_t0 = cat(2,x_X_i_t01, x_X_i_t02);
-   y_X_i_t0 = cat(2,y_X_i_t01, y_X_i_t02);
-   x_Y_i_t0 = cat(2,x_Y_i_t01, x_Y_i_t02);
-   y_Y_i_t0 = cat(2,y_Y_i_t01, y_Y_i_t02);
-   
+   [x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0] = lsGetGridIntersections(x_spline_t0, y_spline_t0, domain, CONTROL);
+
    known_zero_level_points_t0(:,1) = [x_X_i_t0'; x_Y_i_t0'];
    known_zero_level_points_t0(:,2) = [y_X_i_t0'; y_Y_i_t0'];
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -217,15 +384,15 @@ elseif TEST_CASE == 3
    known_zero_level_points_t1(:,1) = [x_X_i_t1'; x_Y_i_t1'];
    known_zero_level_points_t1(:,2) = [y_X_i_t1'; y_Y_i_t1'];
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
-elseif TEST_CASE == 4
+elseif TEST_CASE == 7
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
    domain.x_size = 439;
    domain.y_size = 345;
    
-   domain.x_spacing = 5; 
-   domain.y_spacing = 5;
+   domain.x_spacing = 1; 
+   domain.y_spacing = 1;
    
    %cd L:\projects\rho_protrusion\cell1\protrusion
    cd /lccb/projects/rho_protrusion/cell1/protrusion_1-30_ps2_s40
@@ -296,7 +463,7 @@ elseif TEST_CASE == 4
     
     
     
-elseif TEST_CASE == 5
+elseif TEST_CASE == 8
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
@@ -372,7 +539,7 @@ elseif TEST_CASE == 5
    % fill the grid_line field in structure domain
    domain = lsGenerateGridLines(domain);
     
-elseif TEST_CASE == 6
+elseif TEST_CASE == 9
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
@@ -390,8 +557,8 @@ elseif TEST_CASE == 6
    domain.x_size = img_w;
    domain.y_size = img_h;
    
-   domain.x_spacing = 5; 
-   domain.y_spacing = 5;
+   domain.x_spacing = 4; 
+   domain.y_spacing = 4;
    
    
    % file name containing the edge pixels
@@ -407,7 +574,7 @@ elseif TEST_CASE == 6
    [filelist_mask]=getFileStackNames(firstfilename_mask);
    
    time = 4;
-   time_increment = 1;
+   time_increment = 10;
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%% read the pixel edge %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    for i = 1 : time
