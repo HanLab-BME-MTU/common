@@ -1,7 +1,7 @@
 function [bestk,bestpp,bestmu,bestcov,dl,countf] = mixtures4(y,kmin,kmax,regularize,th,covoption,pp,mu,verbose)
 %
 % Syntax:
-% [bestk,bestpp,bestmu,bestcov,dl,countf] = mixtures4(y,kmin,kmax,regularize,th,verbose)
+% [bestk,bestpp,bestmu,bestcov,dl,countf] = mixtures4(y,kmin,kmax,regularize,th,covoption,pp,mu,verbose)
 %
 % Inputs:
 %
