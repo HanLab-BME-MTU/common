@@ -146,12 +146,12 @@ img_in_vec = reshape(img_bin, n_img*m_img, 1);
 if strcmp(METHOD,'kmeans')
     [cluster_index, cluster_c, cluster_d_sum]  = kmeans(img_in_vec, K_CLUSTER, 'Distance', DISTANCE);
     
-    obj_val = cluster_c;
+    obj_val = sort(cluster_c);
     seg_img = reshape(cluster_index, n_img, m_img);
     
     %resize image to original size
     if BINNING > 0
-        seg_img = imresize(seg_img, [n_img_org, m_img_org], 'bicubic')   
+        seg_img = imresize(seg_img, [n_img_org, m_img_org], 'bicubic');   
     end
     
 elseif strcmp(METHOD,'em')
@@ -202,11 +202,11 @@ elseif strcmp(METHOD,'em')
     [val, index] = max(y,[],2);     
     
     %put vector into matrix shape
-    seg_img = reshape(index, n_img, m_img);
+    seg_img = reshape(index, n_img_org, m_img_org);
 
-    
-    %varargout(:,1) = bestpp;
-    %varargout(:,2) = bestmu;
+    obj_val = sort(bestmu);
+    varargout{1} = bestpp;
+    varargout{2} = bestmu;
 end
 
 if CONTR
