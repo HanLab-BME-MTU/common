@@ -5,6 +5,8 @@ function  dataOut = imResample(dataIn, stepIn, stepOut)
 %  do not allow for an array of the same 'size' (e.g. in um for an image),
 %  the output image will be smaller, and aligned at [0,0] in matlab
 %  coordinates. Transpose the image first, if you measured in image coords.
+%  Be careful: Resampling changes the zero position of your image (it lies
+%  at -0.5 pixels, and this changes with resampling)
 %
 %  SYNOPSIS dataOut = imResample(dataIn, stepIn, stepOut)
 %
