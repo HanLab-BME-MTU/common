@@ -113,6 +113,11 @@ if(norm>length(cpar))
 end
 normfac=mean(cpar(1:norm));
 cpar=cpar/normfac;
+
+fpnormval=mean(cpar2(1:norm));
+cpar2(cpar2>(2*fpnormval))=nan;
+
+
 end
 
 
