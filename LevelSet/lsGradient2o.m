@@ -101,44 +101,6 @@ delta_y_half = delta_y/2;
 
 for i=1:i_end
     for j=1:j_end
-%         if  (Dx_minus_x_minus(i,j) *  Dx_plus_x_minus(i,j)) < 0
-%             m = 0;
-%         elseif abs(Dx_minus_x_minus(i,j)) <= abs(Dx_plus_x_minus(i,j) < 0)
-%             m = Dx_minus_x_minus(i,j);
-%         else
-%             m = Dx_plus_x_minus(i,j);
-%         end
-%         A = Dx_minus(i,j) + delta_x_half * m;
-%         
-%         if  (Dx_plus_x_plus(i,j) * Dx_plus_x_minus(i,j)) < 0
-%             m = 0;
-%         elseif abs(Dx_plus_x_plus(i,j)) <= abs(Dx_plus_x_minus(i,j))
-%             m = Dx_plus_x_plus(i,j);
-%         else
-%             m = Dx_plus_x_minus(i,j);
-%         end
-%         B = Dx_plus(i,j)  - delta_x_half * m;
-%         
-%         if  (Dy_minus_y_minus(i,j) *  Dy_plus_y_minus(i,j)) < 0
-%             m = 0;
-%         elseif abs(Dy_minus_y_minus(i,j)) <= abs(Dy_plus_y_minus(i,j))
-%             m = Dy_minus_y_minus(i,j);
-%         else
-%             m = Dy_plus_y_minus(i,j);
-%         end      
-%         C = Dy_minus(i,j) + delta_y_half * m;
-%         
-%         if  (Dy_plus_y_plus(i,j) * Dy_plus_y_minus(i,j)) < 0
-%             m = 0;
-%         elseif abs(Dy_plus_y_plus(i,j)) <= abs(Dy_plus_y_minus(i,j))
-%             m = Dy_plus_y_plus(i,j);
-%         else
-%             m = Dy_plus_y_minus(i,j);
-%         end         
-%         D = Dy_plus(i,j)  - delta_y_half * m;
-       
-       
-       
       A = Dx_minus(i,j) + delta_x_half * switch_m(Dx_minus_x_minus(i,j), Dx_plus_x_minus(i,j));
       B = Dx_plus(i,j)  - delta_x_half * switch_m(Dx_plus_x_plus(i,j),   Dx_plus_x_minus(i,j));
       C = Dy_minus(i,j) + delta_y_half * switch_m(Dy_minus_y_minus(i,j), Dy_plus_y_minus(i,j));

@@ -15,151 +15,10 @@ function lsLineMatching
 % Matthias Machacek 6/10/04
 
 test = 0;
-TEST_CASE_1 = 0;
+TEST_CASE = 2;
 
-if TEST_CASE_1
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   % Test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
-   domain.x_size = 200;
-   domain.y_size = 200;
-   
-   domain.x_spacing = 5; 
-   domain.y_spacing = 5;
-   
-   %create circle
-   circle   = rsmak('circle',50,[0, 0]);
-   ellipse  = fncmb(circle,[1.5 0;0 0.6]);
-   circle   = fncmb(circle,[0.6 0;0 1.5]);
-   %ellipse  = fncmb(circle,[1.5 0;0 1.5]);
-   circle   = fncmb(circle,'+', 100);
-   ellipse  = fncmb(ellipse,'+',100);
-   fnplt(circle);
-   hold on
-   fnplt(ellipse);
-   axis equal
-   
-   % Create mask
-   p = 0:0.05:circle.pieces;
-   circle_points = fnval(circle,p);
-   p = 0:0.05:ellipse.pieces;
-   ellipse_points = fnval(ellipse,p);
-   
-   mask_img_t0 = roipoly(domain.y_size, domain.x_size, circle_points(1,:)', circle_points(2,:)');
-   mask_img_t1 = roipoly(domain.y_size, domain.x_size, ellipse_points(1,:)', ellipse_points(2,:)');
-
-   % create x,y splines
-   s_p = 1:length(p);
-   x_spline_t0 = fn2fm(spline(s_p, circle_points(1,:)),'B-');
-   y_spline_t0 = fn2fm(spline(s_p, circle_points(2,:)),'B-');
-   
-   x_spline_t1 = fn2fm(spline(s_p, ellipse_points(1,:)),'B-');
-   y_spline_t1 = fn2fm(spline(s_p, ellipse_points(2,:)),'B-');
-   
-   % End test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
-   
-   [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
-
-    % fill the grid_line field in structure domain
-    domain = lsGenerateGridLines(domain);
-   
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
-   % (find the known points)
-   [x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0] = lsGetGridIntersections(x_spline_t0, y_spline_t0, domain);
-   known_zero_level_points_t0(:,1) = [x_X_i_t0'; x_Y_i_t0'];
-   known_zero_level_points_t0(:,2) = [y_X_i_t0'; y_Y_i_t0'];
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
-   [x_X_i_t1, y_X_i_t1, x_Y_i_t1, y_Y_i_t1] = lsGetGridIntersections(x_spline_t1, y_spline_t1, domain);
-   known_zero_level_points_t1(:,1) = [x_X_i_t1'; x_Y_i_t1'];
-   known_zero_level_points_t1(:,2) = [y_X_i_t1'; y_Y_i_t1'];
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-else
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   % Data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
-   domain.x_size = 439;
-   domain.y_size = 345;
-   
-   domain.x_spacing = 5; 
-   domain.y_spacing = 5;
-   
-   %cd L:\projects\rho_protrusion\cell1\protrusion
-   cd /lccb/projects/rho_protrusion/cell1/protrusion_1-30_ps2_s40
-   load edge_spline
-   
-   PROJECT_DIR = '/lccb/projects/rho_protrusion/cell1/';
-   PROT_DIR = 'protrusion_1-30_ps2_s40/';
-   IMG_NAME = 'plane01';
-   
-   % file name containing the edge pixels
-   file_pixel_edge=[PROJECT_DIR  PROT_DIR 'pixel_edge.dat'];
-   
-   fid_pixel_edge= fopen(file_pixel_edge,'r');
-   if fid_pixel_edge == -1
-      error('Could not open file pixel edge');
-   end
-   
-   % mask file names
-   firstfilename_mask=([PROJECT_DIR PROT_DIR 'mask_' IMG_NAME '.tif']);
-   [filelist_mask]=getFileStackNames(firstfilename_mask);
-   
-   time = 4;
-   time_increment = 1;
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %%%%%%%%%%%%%%%% read the pixel edge %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   for i = 1 : time
-       n_pix_t0     = fscanf(fid_pixel_edge,'%g  ', [1 1]);
-       x_p_edge_t0  = fscanf(fid_pixel_edge,'%g  ', [1 n_pix_t0]);
-       y_p_edge_t0  = fscanf(fid_pixel_edge,'%g  ', [1 n_pix_t0]);
-       known_zero_level_points_t0 = [x_p_edge_t0', y_p_edge_t0'];
-   end
-   for i = 1 : time_increment
-       n_pix_t1     = fscanf(fid_pixel_edge,'%g  ', [1 1]);
-       x_p_edge_t1  = fscanf(fid_pixel_edge,'%g  ', [1 n_pix_t1]);
-       y_p_edge_t1  = fscanf(fid_pixel_edge,'%g  ', [1 n_pix_t1]);
-       known_zero_level_points_t1 = [x_p_edge_t1', y_p_edge_t1'];
-   end
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-   
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %%%%%%%%%%%%%%%% read the mask %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
-   fileName_mask=char(filelist_mask(time));
-   mask_img_t0=imread(fileName_mask);
-   
-   fileName_mask=char(filelist_mask(time+time_increment));
-   mask_img_t1=imread(fileName_mask);   
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
-   % End data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
-   x_spline_t0 = edge_sp_array_x(time);
-   y_spline_t0 = edge_sp_array_y(time);
-  
-   x_spline_tb = edge_sp_array_x(time+round(time_increment/2));
-   y_spline_tb = edge_sp_array_y(time+round(time_increment/2));
-   
-   x_spline_t1 = edge_sp_array_x(time+time_increment);
-   y_spline_t1 = edge_sp_array_y(time+time_increment);
-   
-   
-    [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
-
-    % fill the grid_line field in structure domain
-    domain = lsGenerateGridLines(domain);
-end
-
-
+[mask_img_t0, mask_img_t1,x_spline_t0, y_spline_t0, x_spline_t1,y_spline_t1,...  
+    known_zero_level_points_t0, known_zero_level_points_t1, grid_coordinates, domain] = lsLoadData(TEST_CASE);
 
 
 if 0
@@ -183,8 +42,6 @@ if 0
 end
 
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Get edge at former time step %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 signed_t0 = 1;
@@ -206,9 +63,22 @@ phi_zero_t1 = lsGetZeroLevel(val_matrix_t1, domain);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 % plot results at previous time step
-p_t0=1:x_spline_t0.knots(end);
-x_spline_points_t0 = fnval(x_spline_t0, p_t0);
-y_spline_points_t0 = fnval(y_spline_t0, p_t0);
+%if TEST_CASE ~= 2
+    p_t0=1:x_spline_t0.knots(end);
+    x_spline_points_t0 = fnval(x_spline_t0, p_t0);
+    y_spline_points_t0 = fnval(y_spline_t0, p_t0);
+
+% else
+%     p_t01=1:x_spline_t01.knots(end);
+%     x_spline_points_t01 = fnval(x_spline_t01, p_t01);
+%     y_spline_points_t01 = fnval(y_spline_t01, p_t01);
+%     p_t02=1:x_spline_t02.knots(end);
+%     x_spline_points_t02 = fnval(x_spline_t02, p_t01);
+%     y_spline_points_t02 = fnval(y_spline_t02, p_t01);
+% 
+%     x_spline_points_t0 = cat(2, x_spline_points_t01, x_spline_points_t02);
+%     y_spline_points_t0 = cat(2, y_spline_points_t01, y_spline_points_t02);
+% end
 
 figure,surface(domain.x_grid_lines,domain.y_grid_lines,val_matrix_t0);
 hold on
@@ -256,15 +126,15 @@ if 1
     % matlab time solver
     % Put into vector
     val_matrix_t0_vec = reshape(val_matrix_t0, prod(size(val_matrix_t0)),1);
-    %options = odeset('OutputFcn',@odeplot, 'Events',@events);
-    options = odeset('Events',@events);
+    options = odeset('OutputFcn',@outputfcn, 'Events',@events);
+    %options = odeset('Events',@events);
     odeset;
-    % 
-    % ode45
-    % stiff:
-    % ode15s
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%% Integrate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [t_steps, Y, TE,YE,IE] = ode45(@dy_fct,[0 20],val_matrix_t0_vec, options,...
         val_matrix_t1, i_end, j_end, delta_x, delta_y, domain);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     if isempty(TE)
         display('Solution did not converge in given time limit');
     else
@@ -376,12 +246,16 @@ figure
 plot(phi_zero_t0(1,:), phi_zero_t0(2,:),'g');
 hold on
 plot(phi_zero(1,:), phi_zero(2,:),'r');
-plot(phi_zero_t1(1,:), phi_zero_t1(2,:),'m');
+plot(phi_zero_t1(1,:), phi_zero_t1(2,:),'--m');
+plot(x_spline_points_t0, y_spline_points_t0,'r+', 'MarkerSize',3);
+plot(x_spline_points_t1, y_spline_points_t1,'r+', 'MarkerSize',3);
 for p = 1:size(track_points,2)
     plot(squeeze(track_points(1,p,:)), squeeze(track_points(2,p,:)), '-');   
 end
 axis equal
 title('Tracked points');
+legend('Zero level t0', 'Zero level t1 solution', 'Zero level t1 given',...
+    'org. curve t0','org. curve t1')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 figure
@@ -391,7 +265,7 @@ plot(phi_zero(1,:), phi_zero(2,:),'r');
 for t = 1:size(track_points,3)
     plot(track_points(1,:,t), track_points(2,:,t), '-');   
 end
-if ~TEST_CASE_1
+if TEST_CASE == 3
     plot(fnval(x_spline_tb,1: x_spline_tb.knots(end)),...
          fnval(y_spline_tb,1: y_spline_tb.knots(end)) ,'y');   
 end
@@ -437,7 +311,7 @@ function [value,isterminal,direction] = events(t,y, phi_t1, i_end, j_end, delta_
 
 phi_t = reshape(y, i_end, j_end);
 residual = norm(phi_t - phi_t1, 'fro');
-if residual < 0.5
+if residual < 1
     value = 0;
 else
     value = residual;
@@ -451,6 +325,15 @@ direction = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function status = outputfcn(t,y, flag, phi_t1, i_end, j_end, delta_x, delta_y, domain)
+f = figure(gcf);
+
+if ~isempty(y)
+    phi = reshape(y(:,end), i_end, j_end);
+    % Extract the zero level
+    phi_zero = lsGetZeroLevel(phi(:,:,end), domain);
+    plot(phi_zero(1,:), phi_zero(2,:),'g');
+end
+
 status = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

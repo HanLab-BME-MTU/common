@@ -75,18 +75,17 @@ else
         for i = 1:size(phi_zero,2)
             F(phi_zero(1,i), phi_zero(2,i)) = 0;
         end
-   
+
         % get the extended velocity
     end
-   
-   % level set difference driven flow
-   for i=1:i_end
-      for j=1:j_end
-         %F(i,j) = - sign(phi_target(i,j))*2;
-         F(i,j) = phi(i,j) - phi_target(i,j);
-      end
-   end    
-   
+
+    % level set difference driven flow
+    for i=1:i_end
+        for j=1:j_end
+            %F(i,j) = - sign(phi_target(i,j))*2;
+            F(i,j) = phi(i,j) - phi_target(i,j);
+        end
+    end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
