@@ -41,12 +41,15 @@ end
 d0=zeros(nPg,1);
 
 % Fill d0 to be used in the correlation matrix for the interpolator
+
+divMax=max(abs(divM(:,3))); % Maximum (absolute) vector field divergence
+
 if size(d0in,1)==1
     for i=1:nPg
         if divM(i,3)==0
             d0(i)=d0in;
         else
-            d0(i)=d0in/(1+alpha/max(divM(:,3))*abs(divM(i,3)));
+            d0(i)=d0in/(1+alpha*(abs(divM(i,3))/divMax));
         end
     end
 else
@@ -54,7 +57,7 @@ else
         if divM(i,3)==0
             d0(i)=d0in(i);
         else
-            d0(i)=d0in(i)/(1+alpha/max(divM(:,3))*abs(divM(i,3)));
+            d0(i)=doin(i)/(1+alpha*(abs(divM(i,3))/divMax));
         end
     end
 end    
