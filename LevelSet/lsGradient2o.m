@@ -35,6 +35,12 @@ Dy_minus_y_minus  =  zeros(i_end, j_end);
 Dy_plus_y_plus    =  zeros(i_end, j_end);
 Dy_plus_y_minus   =  zeros(i_end, j_end);
 
+Dx_minus          =  zeros(i_end, j_end);
+Dx_plus           =  zeros(i_end, j_end);
+Dx_minus_x_minus  =  zeros(i_end, j_end);
+Dx_plus_x_plus    =  zeros(i_end, j_end);
+Dx_plus_x_minus   =  zeros(i_end, j_end);
+
 for i=1:i_end
    for j=1:j_end
       if i < 3
@@ -113,8 +119,9 @@ end
 
 function m = switch_m(D1, D2)
 
-if (D1 * D2) < 0
-   m=0; 
+%if (D1 * D2) < 0
+if D1 < 0 || D2 < 0
+   m = 0; 
 elseif abs(D1) <= abs(D2)
    m = D1;
 else
