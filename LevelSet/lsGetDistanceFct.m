@@ -24,13 +24,19 @@ function [dist_fct, dist_fct_matrix] = lsGetDistanceFct(mask_img, grid_coordinat
 % calculate the minimal distance for each grid point
 h_waitbar = waitbar(0,'Processing');
 num_grid_coordinates = size(grid_coordinates,1);
+num_p = size(known_zero_level_points,1);
+dist_fct = zeros(num_grid_coordinates,1);
 for j = 1:num_grid_coordinates
-    waitbar(j/num_grid_coordinates, h_waitbar, num2str(j));
-    for i = 1:size(known_zero_level_points,1)
+    if mod(j,100) == 0
+        waitbar(j/num_grid_coordinates, h_waitbar, num2str(j));
+    end
+    
+    dist = zeros(num_p,1);
+    for i = 1:num_p
         dist(i) = sqrt((grid_coordinates(j,1) - known_zero_level_points(i,1))^2 +...
                        (grid_coordinates(j,2) - known_zero_level_points(i,2))^2);
     end
-    if mask_img(grid_coordinates(j,2), grid_coordinates(j,1)) > 0 & signed
+    if mask_img(grid_coordinates(j,2), grid_coordinates(j,1)) > 0 && signed
        level_set_sign = -1; 
     else
        level_set_sign = 1;
@@ -40,7 +46,7 @@ end
 
 
 % put the minimal distances from vetor into matrix form
-dist_fct_matrix = reshape(dist_fct',size(domain.y_grid_lines,2),size(domain.x_grid_lines,2));
+dist_fct_matrix = reshape(dist_fct,size(domain.y_grid_lines,2),size(domain.x_grid_lines,2));
 
 
 

@@ -53,15 +53,15 @@ function [phi_next, F, delta_plus, delta_minus, dt] = lsSolveConvection(phi, phi
 for i=1:i_end
    for j=1:j_end
       if i > i_end-1  
-         Dx_plus_target(i,j)           =  (phi_target(i  ,j)-phi_target(i-1,j)) / delta_x;  
+         Dx_plus_target(i,j) = (phi_target(i  ,j)-phi_target(i-1,j)) / delta_x;  
       else
-         Dx_plus_target(i,j)           =  (phi_target(i+1,j)-phi_target(i  ,j)) / delta_x;
+         Dx_plus_target(i,j) = (phi_target(i+1,j)-phi_target(i  ,j)) / delta_x;
       end
       
       if j > j_end-1
-         Dy_plus_target(i,j)           =  (phi_target(i,j  )-phi_target(i,j-1)) / delta_y;
+         Dy_plus_target(i,j) = (phi_target(i,j  )-phi_target(i,j-1)) / delta_y;
       else
-         Dy_plus_target(i,j)           =  (phi_target(i,j+1)-phi_target(i,j  )) / delta_y;
+         Dy_plus_target(i,j) = (phi_target(i,j+1)-phi_target(i,j  )) / delta_y;
       end
    end
 end

@@ -43,30 +43,32 @@ for i = 1:num_time_steps
     
     % Get velocity at these points 
     track_points_velocity = fnval(velocity_fct_spline, track_points(:,:,i));
-    
-	if contr
-        figure 
-        fnplt(velocity_fct_spline), axis equal
-        hold on
-        plot3(track_points(1,:,i), track_points(2,:,i), track_points_velocity, 'ro');
-    end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     
-    % get the velocity direction at these points (grad phi)
-    [delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(dist_matrix(:,:,i), delta_x, delta_y, i_end, j_end);
+
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%% Gradient field interpolation  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % get the gradient at these points (grad phi)
+    [delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(dist_matrix(:,:,i), delta_x, delta_y, i_end, j_end);    
+    
     % Find a B-spline interpolation of the gradient field
     grad_x_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_x');
     grad_y_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_y');
     
     % Get the gradient at the track points
     track_points_grad_x = fnval(grad_x_spline, track_points(:,:,i));
-    track_points_grad_y = fnval(grad_y_spline, track_points(:,:,i));
     
+    
+    track_points_grad_y = fnval(grad_y_spline, track_points(:,:,i));
+    	if contr
+        figure 
+        fnplt(velocity_fct_spline), axis equal
+        hold on
+        plot3(track_points(1,:,i), track_points(2,:,i), track_points_velocity, 'ro');
+    end
     if contr
         [m_grad_x, m_grad_y] = gradient(dist_matrix(:,:,i), delta_x, delta_y);
         
@@ -85,8 +87,8 @@ for i = 1:num_time_steps
         
         for ii=1:size(grad_x,1)
             for jj=1:size(grad_x,2)
-                grad_x_vec((ii-1)*size(grad_x,2)+jj) = grad_x(ii,j);
-                grad_y_vec((ii-1)*size(grad_y,2)+jj) = grad_y(ii,j);
+                grad_x_vec((ii-1)*size(grad_x,2)+jj) = grad_x(ii,jj);
+                grad_y_vec((ii-1)*size(grad_y,2)+jj) = grad_y(ii,jj);
                 x_cord((ii-1)*size(grad_x,2)+jj) = domain.x_grid_lines(ii);
                 y_cord((ii-1)*size(grad_x,2)+jj) = domain.y_grid_lines(jj); 
             end

@@ -15,15 +15,17 @@ function lsLineMatching
 % Matthias Machacek 6/10/04
 
 test = 0;
-if 1
+TEST_CASE_1 = 0;
+
+if TEST_CASE_1
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
    domain.x_size = 200;
    domain.y_size = 200;
    
-   domain.x_spacing = 15; 
-   domain.y_spacing = 15;
+   domain.x_spacing = 5; 
+   domain.y_spacing = 5;
    
    %create circle
    circle   = rsmak('circle',50,[0, 0]);
@@ -110,7 +112,7 @@ else
    [filelist_mask]=getFileStackNames(firstfilename_mask);
    
    time = 4;
-   time_increment = 14;
+   time_increment = 1;
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%% read the pixel edge %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    for i = 1 : time
@@ -143,6 +145,9 @@ else
    
    x_spline_t0 = edge_sp_array_x(time);
    y_spline_t0 = edge_sp_array_y(time);
+  
+   x_spline_tb = edge_sp_array_x(time+round(time_increment/2));
+   y_spline_tb = edge_sp_array_y(time+round(time_increment/2));
    
    x_spline_t1 = edge_sp_array_x(time+time_increment);
    y_spline_t1 = edge_sp_array_y(time+time_increment);
@@ -229,7 +234,7 @@ contour(domain.x_grid_lines,domain.y_grid_lines,val_matrix_t1, 40);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Advance in time             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-delta_t = 0.1
+delta_t = 0.05
 delta_x = domain.x_spacing;
 delta_y = domain.x_spacing;
 i_end   = size(val_matrix_t1,1);
@@ -247,96 +252,151 @@ residual(time_step) = 100;
 solution_difference(time_step) = 100;
 c=jet(max_time_steps);
 
+if 1
+    % matlab time solver
+    % Put into vector
+    val_matrix_t0_vec = reshape(val_matrix_t0, prod(size(val_matrix_t0)),1);
+    %options = odeset('OutputFcn',@odeplot, 'Events',@events);
+    options = odeset('Events',@events);
+    odeset;
+    % 
+    % ode45
+    % stiff:
+    % ode15s
+    [t_steps, Y, TE,YE,IE] = ode45(@dy_fct,[0 20],val_matrix_t0_vec, options,...
+        val_matrix_t1, i_end, j_end, delta_x, delta_y, domain);
+    if isempty(TE)
+        display('Solution did not converge in given time limit');
+    else
+        display(['Solution converged at time step  ' num2str(TE)]);
+    end
+    Y=Y';
+    
+    % Number of time steps
+    num_time_steps = length(t_steps);
+    for t=1:num_time_steps
+        phi(:,:,t) = reshape(Y(:,t),i_end, j_end);
 
-% Put into vector
-val_matrix_t0_vec = reshape(val_matrix_t0, prod(size(val_matrix_t0)),1);
-options = [];
-figure
-hold on
-[t_steps,Y] = ode15s(@dy_fct,[0 10],val_matrix_t0_vec, options);
-Y=Y';
-for t=1:length(t_steps)
-    phi_m(:,:,t) = reshape(Y(:,t),i_end, j_end);
+        % Re-calculate the velocities
+        [delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(phi(:,:,t),...
+                delta_x, delta_y, i_end, j_end);
+            
+        velocity_fct(:,:,t) = lsGetVelocityFct(phi(:,:,t), val_matrix_t1,...
+            i_end, j_end, grad_x, grad_y, domain);
+    end
+
+
+
+    % Extract the zero level
+    phi_zero = lsGetZeroLevel(phi(:,:,end), domain);
+    figure
+    plot(phi_zero(1,:), phi_zero(2,:),'g');
+
+    delta_t_opt = diff(t_steps);
+    figure
+    plot(delta_t_opt);
+    title('Time steps');
+else
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    while time_step <= max_time_steps & solution_difference(time_step) > 0.1
+        waitbar(time_step/max_time_steps, h_waitbar, num2str(time_step));
+
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        if time_step == 1
+            [delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(val_matrix_t0,...
+                delta_x, delta_y, i_end, j_end);
+            velocity_fct_0 = lsGetVelocityFct(val_matrix_t0, val_matrix_t1,...
+                i_end, j_end, grad_x, grad_y, domain);
+
+            [phi(:,:,time_step+1), velocity_fct(:,:,time_step), delta_plus, delta_minus, delta_t_opt(time_step)] = lsSolveConvection(phi(:,:,time_step),...
+                phi(:,:,time_step), velocity_fct_0,...
+                delta_plus, delta_minus,...
+                delta_t, delta_x, delta_y, i_end, j_end, val_matrix_t1, domain);
+        else
+            [phi(:,:,time_step+1), velocity_fct(:,:,time_step), delta_plus, delta_minus, delta_t_opt(time_step)] = lsSolveConvection(phi(:,:,time_step),...
+                phi(:,:,time_step-1), velocity_fct(:,:,time_step-1),...
+                delta_plus, delta_minus,...
+                delta_t, delta_x, delta_y, i_end, j_end, val_matrix_t1, domain);
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        % extract the zero level
+        phi_zero = lsGetZeroLevel(phi(:,:,time_step+1), domain);
+
+        if mod(time_step,1) == 0 || time_step == 1
+            plot(phi_zero(1,:),phi_zero(2,:),'Color',[c(time_step,1) c(time_step,2) c(time_step,3)]);
+        end
+        time_step = time_step+1;
+        residual(time_step)            = norm(phi(:,:,time_step) - val_matrix_t1, 'fro');
+        solution_difference(time_step) = norm(phi(:,:,time_step) - phi(:,:,time_step-1), 'fro');
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    figure
+    residual(1) = residual(2);
+    plot(residual)
+    title('Residual');
+
+    figure
+    solution_difference(1) = solution_difference(2);
+    plot(solution_difference);
+    title('Solution difference');
+    
+    figure
+    plot(delta_t_opt);
+    title('Optimal time step based on CFL number');  
 end
-phi_zero_m = lsGetZeroLevel(phi_m(:,:,end), domain);
-figure
-plot(phi_zero_m(1,:), phi_zero_m(2,:),'g');
-
-
-if 0
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-while time_step <= max_time_steps & solution_difference(time_step) > 0.1
-   waitbar(time_step/max_time_steps, h_waitbar, num2str(time_step));
-   
-  
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   if time_step == 1
-       [delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(val_matrix_t0,...
-                                        delta_x, delta_y, i_end, j_end);
-       velocity_fct_0 = lsGetVelocityFct(val_matrix_t0, val_matrix_t1,...
-                                    i_end, j_end, grad_x, grad_y, domain);
-
-       [phi(:,:,time_step+1), velocity_fct(:,:,time_step), delta_plus, delta_minus, delta_t_opt(time_step)] = lsSolveConvection(phi(:,:,time_step),...
-           phi(:,:,time_step), velocity_fct_0,...
-           delta_plus, delta_minus,...
-           delta_t, delta_x, delta_y, i_end, j_end, val_matrix_t1, domain);
-   else
-       [phi(:,:,time_step+1), velocity_fct(:,:,time_step), delta_plus, delta_minus, delta_t_opt(time_step)] = lsSolveConvection(phi(:,:,time_step),...
-           phi(:,:,time_step-1), velocity_fct(:,:,time_step-1),...
-           delta_plus, delta_minus,... 
-           delta_t, delta_x, delta_y, i_end, j_end, val_matrix_t1, domain);
-   end
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-   
-   % extract the zero level
-   phi_zero = lsGetZeroLevel(phi(:,:,time_step+1), domain);
-
-   if mod(time_step,1) == 0 || time_step == 1
-      plot(phi_zero(1,:),phi_zero(2,:),'Color',[c(time_step,1) c(time_step,2) c(time_step,3)]);
-   end
-   time_step = time_step+1;   
-   residual(time_step)            = norm(phi(:,:,time_step) - val_matrix_t1, 'fro');
-   solution_difference(time_step) = norm(phi(:,:,time_step) - phi(:,:,time_step-1), 'fro');
-end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 time_step
 
 
-figure
-plot(delta_t_opt);
-title('Optimal time step based on CFL number');
+
 figure
 contour(domain.x_grid_lines, domain.y_grid_lines, val_matrix_t0, 40);
 hold on
 contour(domain.x_grid_lines, domain.y_grid_lines, phi(:,:,end), 40);
 
-figure
-residual(1) = residual(2);
-plot(residual)
-title('Residual');
 
-figure
-solution_difference(1) = solution_difference(2);
-plot(solution_difference);
-title('Solution difference');
-end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%% Integrate the velocity  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+track_points = lsIntegrateVelocity(phi, velocity_fct, grid_coordinates,...
+                      delta_t_opt, delta_x, delta_y, i_end, j_end, domain);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% integrate the velocity
-track_points = lsIntegrateVelocity(phi_m, velocity_fct, grid_coordinates, delta_t_opt, delta_x, delta_y, i_end, j_end, domain);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 figure
 plot(phi_zero_t0(1,:), phi_zero_t0(2,:),'g');
 hold on
 plot(phi_zero(1,:), phi_zero(2,:),'r');
-
-for i= 1:size(track_points,3)
-    plot(track_points(1,:,i), track_points(2,:,i), '.');
+plot(phi_zero_t1(1,:), phi_zero_t1(2,:),'m');
+for p = 1:size(track_points,2)
+    plot(squeeze(track_points(1,p,:)), squeeze(track_points(2,p,:)), '-');   
 end
 axis equal
+title('Tracked points');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+figure
+plot(phi_zero_t0(1,:), phi_zero_t0(2,:),'g');
+hold on
+plot(phi_zero(1,:), phi_zero(2,:),'r');
+for t = 1:size(track_points,3)
+    plot(track_points(1,:,t), track_points(2,:,t), '-');   
+end
+if ~TEST_CASE_1
+    plot(fnval(x_spline_tb,1: x_spline_tb.knots(end)),...
+         fnval(y_spline_tb,1: y_spline_tb.knots(end)) ,'y');   
+end
+axis equal
+title('Time lines');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
@@ -344,28 +404,54 @@ axis equal
 
 
 
-    %function dy_vec = dy_fct(phi,  phi_target, delta_x, delta_y, i_end, j_end, domain)
-    function dy_vec = dy_fct(t,y)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function dy_vec = dy_fct(t, y, val_matrix_t1, i_end, j_end, delta_x, delta_y, domain)
 
-        phi_t = reshape(y, i_end, j_end);
-        phi_zero_t = lsGetZeroLevel(phi_t, domain);
+phi_t = reshape(y, i_end, j_end);
+[delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(phi_t, delta_x, delta_y, i_end, j_end);
+F = lsGetVelocityFct(phi_t, val_matrix_t1, i_end, j_end, grad_x, grad_y, domain);
 
-        plot(phi_zero_t(1,:), phi_zero_t(2,:),'g');
-  
-        
-        [delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(phi_t, delta_x, delta_y, i_end, j_end);
-
-        F = lsGetVelocityFct(phi_t, val_matrix_t1, i_end, j_end, grad_x, grad_y, domain);
-
-        for i=1:i_end
-            for j=1:j_end
-                dy(i,j) = -max(F(i,j), 0)*delta_plus(i,j) - min(F(i,j), 0) * delta_minus(i,j);
-            end
-        end
-
-        dy_vec = reshape(dy, prod(size(dy)),1);
-
+dy = zeros(i_end, j_end);
+for i=1:i_end
+    for j=1:j_end
+        dy(i,j) = -max(F(i,j), 0) * delta_plus(i,j) -...
+                   min(F(i,j), 0) * delta_minus(i,j);
     end
 end
+dy_vec = reshape(dy, numel(dy),1);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [value,isterminal,direction] = events(t,y, phi_t1, i_end, j_end, delta_x, delta_y, domain)
+% value(i) is the value of the function. 
+% isterminal(i) = 1 if the integration is to terminate at a zero of this event 
+%     function and 0 otherwise.
+% direction(i) = 0 if all zeros are to be computed (the default), +1 if only 
+%        the zeros where the event function increases, and -1 if only the 
+%        zeros where the event function decreases.   
+
+phi_t = reshape(y, i_end, j_end);
+residual = norm(phi_t - phi_t1, 'fro');
+if residual < 0.5
+    value = 0;
+else
+    value = residual;
+end
+isterminal = 1;
+
+direction = 0;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function status = outputfcn(t,y, flag, phi_t1, i_end, j_end, delta_x, delta_y, domain)
+status = 0;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
