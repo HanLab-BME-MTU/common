@@ -85,7 +85,7 @@ if(~isempty(fileList))
       end;
       %check color type
       if(nargout>=5)
-      	if(isrgb(auxI))
+      	if(isImgRGB(auxI))
             origColor = 'rgb';
          else
             origColor = 'gray';
@@ -98,13 +98,13 @@ if(~isempty(fileList))
       auxI = imread(searchName);
       % handle color images
       if(nargout>=5)
-         if(isrgb(auxI))
+         if(isImgRGB(auxI))
             stack(:,:,:,nEntries) = imcrop(auxI,outSubFrm);
 			else
             stack(:,:,nEntries) = imcrop(auxI,outSubFrm);
          end;
       else
-         if(isrgb(auxI))
+         if(isImgRGB(auxI))
             %Check if it is really a rgb or just a single channel rgb
             singleRGB=double(any(any(auxI(:,:,1)))) + double(any(any(auxI(:,:,2))))...
                + double(any(any(auxI(:,:,3))));
