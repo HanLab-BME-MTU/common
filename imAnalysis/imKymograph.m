@@ -44,6 +44,7 @@ end
 interpM = 'none';
 verbose = 'on';
 
+%Check optional parameters.
 par = [];
 j   = 1;
 for k = 1:2:nargin-4
