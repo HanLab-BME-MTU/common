@@ -60,26 +60,41 @@ function [seg_img, varargout]=imClusterSeg(img_in, CONTR, varargin)
 
 %%%%%%%%%%%%%%%%%%% Parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 l=length(varargin);
-for i=1:l
+for i=1:2:l
+    in_found=0; 
     if strcmp(varargin{i},'method')
         METHOD=varargin{i+1};
+        in_found=1;      
     elseif strcmp(varargin{i},'k_cluster')
         K_CLUSTER=varargin{i+1};
+        in_found=1; 
     elseif strcmp(varargin(i),'k_min')
         K_MIN=varargin{i+1};
+        in_found=1; 
     elseif strcmp(varargin(i),'k_max')
         K_MAX=varargin{i+1};  
+        in_found=1; 
     elseif strcmp(varargin(i),'p0')
         P0=varargin{i+1};  
+        in_found=1; 
     elseif strcmp(varargin(i),'mu0')
-        MU0=varargin{i+1};          
+        MU0=varargin{i+1};      
+        in_found=1; 
     elseif strcmp(varargin(i),'distance')
         DISTANCE=varargin{i+1};  
+        in_found=1; 
     elseif strcmp(varargin(i),'binning')
         BINNING=varargin{i+1};       
+        in_found=1; 
     elseif strcmp(varargin(i),'emptyaction')
         EMPTYACTION=varargin{i+1};  
+        in_found=1; 
     end
+    
+    if in_found == 0
+        error_string = char(varargin(i));
+        error(['Unknown input:   ' , error_string]);
+    end       
 end
 
 %%%%%%%%%  general parameter %%%%%%%%%%%%%%
@@ -131,7 +146,7 @@ end
 if BINNING > 0
     img_bin = img_in(1:BINNING:n_img_org, 1:BINNING:m_img_org);
 else 
-   img_bin =  img_in;
+    img_bin =  img_in;
 end
 
 %size of the image 
@@ -168,7 +183,20 @@ if strcmp(METHOD,'kmeans')
     %resize image to original size
     if BINNING > 0
         seg_img = imresize(seg_img, [n_img_org, m_img_org], 'bicubic');   
+%       for some reason this did not work
+%         %determine the separating intensities
+%         thresh_cluster_val(1) = 0;
+%         for i=2:K_CLUSTER
+%             thresh_cluster_val(i) = (cluster_c(i)+cluster_c(i-1))/2;
+%         end
+%         seg_img = zeros(n_img_org, m_img_org);
+%         for i=1:K_CLUSTER-1
+%             seg_img =  seg_img + i * ((img_in > thresh_cluster_val(i)) & (img_in < thresh_cluster_val(i+1)));
+%         end
+%         seg_img = seg_img + K_CLUSTER * (img_in > thresh_cluster_val(K_CLUSTER));
     end
+    
+
     
     varargout{1} = [];
     varargout{2} = cluster_c;    
