@@ -22,8 +22,8 @@ if 1
    domain.x_size = 200;
    domain.y_size = 200;
    
-   domain.x_spacing = 5; 
-   domain.y_spacing = 5;
+   domain.x_spacing = 15; 
+   domain.y_spacing = 15;
    
    %create circle
    circle   = rsmak('circle',50,[0, 0]);
@@ -86,8 +86,8 @@ else
    domain.x_size = 439;
    domain.y_size = 345;
    
-   domain.x_spacing = 3; 
-   domain.y_spacing = 3;
+   domain.x_spacing = 5; 
+   domain.y_spacing = 5;
    
    %cd L:\projects\rho_protrusion\cell1\protrusion
    cd /lccb/projects/rho_protrusion/cell1/protrusion_1-30_ps2_s40
@@ -229,7 +229,7 @@ contour(domain.x_grid_lines,domain.y_grid_lines,val_matrix_t1, 40);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Advance in time             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-delta_t = 0.05
+delta_t = 0.1
 delta_x = domain.x_spacing;
 delta_y = domain.x_spacing;
 i_end   = size(val_matrix_t1,1);
@@ -241,29 +241,60 @@ h_waitbar = waitbar(0,'Processing');
 figure
 hold on
 plot(x_spline_points_t1, y_spline_points_t1,'r');
-max_time_steps = 150;
+max_time_steps = 100;
 time_step = 1;
 residual(time_step) = 100;
 solution_difference(time_step) = 100;
 c=jet(max_time_steps);
 
+
+% Put into vector
+val_matrix_t0_vec = reshape(val_matrix_t0, prod(size(val_matrix_t0)),1);
+options = [];
+figure
+hold on
+[t_steps,Y] = ode15s(@dy_fct,[0 10],val_matrix_t0_vec, options);
+Y=Y';
+for t=1:length(t_steps)
+    phi_m(:,:,t) = reshape(Y(:,t),i_end, j_end);
+end
+phi_zero_m = lsGetZeroLevel(phi_m(:,:,end), domain);
+figure
+plot(phi_zero_m(1,:), phi_zero_m(2,:),'g');
+
+
+if 0
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-while time_step < max_time_steps & solution_difference(time_step) > 0.1
+while time_step <= max_time_steps & solution_difference(time_step) > 0.1
    waitbar(time_step/max_time_steps, h_waitbar, num2str(time_step));
    
   
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   [phi(:,:,time_step+1), velocity_fct(:,:,time_step), delta_t_opt(time_step)] = lsSolveConvection(phi(:,:,time_step),...
-                           delta_t, delta_x, delta_y, i_end, j_end, val_matrix_t1, domain);
+   if time_step == 1
+       [delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(val_matrix_t0,...
+                                        delta_x, delta_y, i_end, j_end);
+       velocity_fct_0 = lsGetVelocityFct(val_matrix_t0, val_matrix_t1,...
+                                    i_end, j_end, grad_x, grad_y, domain);
+
+       [phi(:,:,time_step+1), velocity_fct(:,:,time_step), delta_plus, delta_minus, delta_t_opt(time_step)] = lsSolveConvection(phi(:,:,time_step),...
+           phi(:,:,time_step), velocity_fct_0,...
+           delta_plus, delta_minus,...
+           delta_t, delta_x, delta_y, i_end, j_end, val_matrix_t1, domain);
+   else
+       [phi(:,:,time_step+1), velocity_fct(:,:,time_step), delta_plus, delta_minus, delta_t_opt(time_step)] = lsSolveConvection(phi(:,:,time_step),...
+           phi(:,:,time_step-1), velocity_fct(:,:,time_step-1),...
+           delta_plus, delta_minus,... 
+           delta_t, delta_x, delta_y, i_end, j_end, val_matrix_t1, domain);
+   end
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
    
    % extract the zero level
    phi_zero = lsGetZeroLevel(phi(:,:,time_step+1), domain);
 
-   if mod(time_step,15) == 0 || time_step == 1
+   if mod(time_step,1) == 0 || time_step == 1
       plot(phi_zero(1,:),phi_zero(2,:),'Color',[c(time_step,1) c(time_step,2) c(time_step,3)]);
    end
    time_step = time_step+1;   
@@ -273,6 +304,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 time_step
+
 
 figure
 plot(delta_t_opt);
@@ -291,10 +323,10 @@ figure
 solution_difference(1) = solution_difference(2);
 plot(solution_difference);
 title('Solution difference');
-
+end
 
 % integrate the velocity
-track_points = lsIntegrateVelocity(phi, velocity_fct, grid_coordinates, delta_t_opt, delta_x, delta_y, i_end, j_end, domain);
+track_points = lsIntegrateVelocity(phi_m, velocity_fct, grid_coordinates, delta_t_opt, delta_x, delta_y, i_end, j_end, domain);
 
 figure
 plot(phi_zero_t0(1,:), phi_zero_t0(2,:),'g');
@@ -312,9 +344,28 @@ axis equal
 
 
 
+    %function dy_vec = dy_fct(phi,  phi_target, delta_x, delta_y, i_end, j_end, domain)
+    function dy_vec = dy_fct(t,y)
 
+        phi_t = reshape(y, i_end, j_end);
+        phi_zero_t = lsGetZeroLevel(phi_t, domain);
 
+        plot(phi_zero_t(1,:), phi_zero_t(2,:),'g');
+  
+        
+        [delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(phi_t, delta_x, delta_y, i_end, j_end);
 
+        F = lsGetVelocityFct(phi_t, val_matrix_t1, i_end, j_end, grad_x, grad_y, domain);
 
+        for i=1:i_end
+            for j=1:j_end
+                dy(i,j) = -max(F(i,j), 0)*delta_plus(i,j) - min(F(i,j), 0) * delta_minus(i,j);
+            end
+        end
+
+        dy_vec = reshape(dy, prod(size(dy)),1);
+
+    end
+end
 
 

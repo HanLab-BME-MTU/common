@@ -35,12 +35,22 @@ if 0
          F(i,j) = 1;
       end
    end
-elseif 1
+elseif 0
    % Flow in x-direction, y- direction, circular velocity field
    for i=1:i_end
       for j=1:j_end
          grad_l = sqrt(grad_x(i,j)^2 + grad_y(i,j)^2);
+         if grad_l == 0
+             grad_l = 0.000001;
+         end
          
+         % x-translation
+         %F(i,j) =  grad_x(i,j) / grad_l;
+         
+         % y-translation
+         % F(i,j) =  grad_y(i,j) / grad_l;
+         
+         % rotation
          F(i,j) =  -j/2*grad_x(i,j) / grad_l + i/2*grad_y(i,j) / grad_l;
       end
    end
@@ -67,8 +77,9 @@ else
         end
    
         % get the extended velocity
-   end
+    end
    
+   % level set difference drifen flow
    for i=1:i_end
       for j=1:j_end
          %F(i,j) = - sign(phi_target(i,j))*2;

@@ -1,4 +1,4 @@
-function [phi_next, F, dt] = lsSolveConvection(phi, delta_t, delta_x, delta_y, i_end, j_end, phi_target, domain)
+function [phi_next, F, delta_plus, delta_minus, dt] = lsSolveConvection(phi, phi_p, F_p, delta_plus_p, delta_minus_p, delta_t, delta_x, delta_y, i_end, j_end, phi_target, domain)
 % LSSOLVECONVECTION solves the equation d phi/ dt + F|grad phi| = 0 
 %    
 %           Second order spatial
@@ -10,9 +10,11 @@ function [phi_next, F, dt] = lsSolveConvection(phi, delta_t, delta_x, delta_y, i
 % SYNOPSIS   [phi_next, velocity_fct, delta_t_optimal] = lsSolveConvection(phi, delta_t, delta_x, delta_y, i_end, j_end, phi_target, domain)
 %
 %
-% INPUT      phi        :
+% INPUT      phi        :   function value at current time step t
+%            phi_p      :   function value at previous time step t-1
+%            F_p        :   velocity at previous time step
 %            delta_t    :
-%            delta_x    :
+%            delta_x    :   
 %            delta_y    :
 %            i_end      :
 %            j_end      :
@@ -20,7 +22,7 @@ function [phi_next, F, dt] = lsSolveConvection(phi, delta_t, delta_x, delta_y, i
 %            domain     :
 %                          
 % 
-% OUTPUT     phi_next       :
+% OUTPUT     phi_next       : function value at next time step t+1
 %            velocity_fct   : used velocity fct
 %            dt             : used time step 
 %              
@@ -92,30 +94,33 @@ dt = delta_t;
 % Update the level-sets   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % methods Euler, Adams, Heun
 
-method = 'Euler';  
+method = 'Heun';  
 
 if strcmp(method,'Euler')
-   % First order acccurate: Euler method
-   for i=1:i_end
-      for j=1:j_end
-         phi_next(i,j) = phi(i,j) - dt*(max(F(i,j), 0)*delta_plus(i,j) + min(F(i,j), 0) * delta_minus(i,j));
-      end
-   end
-elseif strcmp(method,'Adams')
-   % Adams_Bashforth method: second order
+    % First order acccurate: Euler method
     for i=1:i_end
-      for j=1:j_end
-         phi_next(i,j) = phi(i,j) - dt*(max(F(i,j), 0)*delta_plus(i,j) + min(F(i,j), 0) * delta_minus(i,j));
-      end
-   end  
+        for j=1:j_end
+            phi_next(i,j) = phi(i,j) - dt*(max(F(i,j), 0)*delta_plus(i,j) + min(F(i,j), 0) * delta_minus(i,j));
+        end
+    end
+elseif strcmp(method,'Adams')
+    % Adams_Bashforth method: second order
+    for i=1:i_end
+        for j=1:j_end
+            a = max(F(i,j), 0)*delta_plus(i,j) + min(F(i,j), 0) * delta_minus(i,j);
+            b = max(F_p(i,j), 0)*delta_plus_p(i,j) + min(F_p(i,j), 0) * delta_minus_p(i,j);
+
+            phi_next(i,j) = phi(i,j) - dt*(3/2  * a - 0.5 * b);
+        end
+    end
 elseif strcmp(method,'Heun')
-   % Heun method: second order. A predictor-corrector schema
-   % Predictor step
-   for i=1:i_end
-      for j=1:j_end
-         phi_p(i,j) = phi(i,j) - dt*(max(F(i,j), 0)*delta_plus(i,j) + min(F(i,j), 0) * delta_minus(i,j));
-      end
-   end
+    % Heun method: second order. A predictor-corrector schema
+    % Predictor step
+    for i=1:i_end
+        for j=1:j_end
+            phi_p(i,j) = phi(i,j) - dt*(max(F(i,j), 0)*delta_plus(i,j) + min(F(i,j), 0) * delta_minus(i,j));
+        end
+    end
    
    [delta_plus_p, delta_minus_p, grad_x_p, grad_y_p] = lsGradient2o(phi_p,...
                                            delta_x, delta_y, i_end, j_end);
