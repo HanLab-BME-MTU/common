@@ -45,3 +45,5 @@ c(128-overlap:256-r_t-1,2)=fliplr(y);
 % Constant green value
 c(256-r_t:256,2)=1;
 
+c = flipdim(c,1);
+
