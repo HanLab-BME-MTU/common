@@ -87,7 +87,7 @@ exyz=exy(:)*ez;
 % norm Gauss
 switch cnorm
     case 0 % maximum of Gauss has to be 1
-        gauss(:) = exyz(:)*((2*pi)^1.5*sigma(1)*sigma(2)*sigma(3));
+        gauss(:) = exyz(:)*((2*pi)^1.5*prod(sigma));
 
     case 1
         gauss(:) = exyz(:)/sum(exyz(:));
