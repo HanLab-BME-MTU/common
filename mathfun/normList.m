@@ -10,12 +10,12 @@ function [listOfNorms,normedVectors]=normList(vectors)
 %
 %c: 1/03 Jonas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-nVectors=size(vectors,1);
+[nVectors,nDims]=size(vectors);
 
 listOfNorms=zeros(nVectors,1);
-normedVectors=zeros(size(vectors));
+normedVectors=zeros(nVectors,nDims);
 
-listOfNorms=sqrt(vectors(:,1).^2+vectors(:,2).^2+vectors(:,3).^2);
+listOfNorms=sqrt(sum(vectors.^2,2));
 goodVectors=find(listOfNorms);
 
-normedVectors(goodVectors,:)=vectors(goodVectors,:)./(listOfNorms(goodVectors)*[1 1 1]);
+normedVectors(goodVectors,:)=vectors(goodVectors,:)./(repmat(listOfNorms(goodVectors),[1,nDims]));
