@@ -253,34 +253,20 @@ if (nonzeros(detvec3)>1)
     endp=begp+round(firstpoint/2);
     inclination=mean(dvec2(begp:endp));
     
-       
-%     %% these values can be refined to include variable lengths according to end of first
-%     %% steep rise (considering point where inbclination starts to drop)
-%     %% this will be done in next version
-%     inclinationvector=vec(begp:endp);
-%     leni=length(inclinationvector);
-%     a1=1:leni;
-%     a2=a1;
-%     a2(:)=1;
-%     A=[a1' a2'];
-%     B=inclinationvector';
-%     %[U] = linearLeastMedianSquares(A,B,[],[100,0]');
-%     inclination=sum(dvec(begp:endp))/(endp-begp);
-%     %display(['inclination= ',num2str(inclination),'  linLeastMedSq=',num2str(U(1))]);
-%     
-     plot(vec,'b.');
-     axis([ 20 120 -5000 75000]);
-     hold on
-     plot(filtervec,'b-');
-     ypts=[vec(begp) vec(endp)];
-     xpts=[begp endp];
-     plot(xpts, ypts, 'r.');
-     plot(firstpoint,filtervec(firstpoint),'go')
-     %LLMSfitx=begp:endp;
-     %LLMSfity=U(1)*LLMSfitx+U(2);
-     %plot(LLMSfitx, LLMSfity, 'g-');
-     hold off
-     pause(0.1);
+%  uncomment the following paragrpah for a display of the single traces%     
+%      plot(vec,'b.');
+%      axis([ 20 120 -5000 75000]);
+%      hold on
+%      plot(filtervec,'b-');
+%      ypts=[vec(begp) vec(endp)];
+%      xpts=[begp endp];
+%      plot(xpts, ypts, 'r.');
+%      plot(firstpoint,filtervec(firstpoint),'go')
+%      %LLMSfitx=begp:endp;
+%      %LLMSfity=U(1)*LLMSfitx+U(2);
+%      %plot(LLMSfitx, LLMSfity, 'g-');
+%      hold off
+%      pause(0.1);
     
 else
     firstpoint=NaN;
