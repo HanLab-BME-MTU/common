@@ -50,7 +50,7 @@ guidata(hObject, handles);
 
 %write the inputstring into the listbox
 try
-listCell = varargin{1};
+    listCell = varargin{1};
 catch
     if findstr(lasterr,'Index exceeds matrix dimensions.')
         error('input to chooseFileGUI must not be empty!')

@@ -69,7 +69,7 @@ numberOfLevels = length(levelBreaks);
 
 % load structure into mFile; make sure it gets the right name!!
 topLevelName = structName(1:levelBreaks(1)-1);
-eval([topLevelName '= evalin(''base'', [topLevelName '';'']);'])
+eval([topLevelName '= evalin(''caller'', [topLevelName '';'']);'])
 
 % decide whether we can go easy or not
 if numberOfLevels == 1

@@ -20,7 +20,7 @@ function [bestk,bestpp,bestmu,bestcov,dl,countf] = mixtures4(y,kmin,kmax,regular
 % "regularize" is a regularizing factor for covariance matrices; in very small samples, 
 % it may be necessary to add some small quantity to the diagonal of the covariances
 %
-% "th" is a stopping threshold
+% "th" is a stopping threshold (checks for relative change in the log-likelihood)
 %
 % "mu" (opt) is a initial guess for the mean value. If unknown supply empty array.
 % "pp" (opt) is a initial guess for the distribution probability. If unknown supply empty array.
