@@ -1,19 +1,20 @@
-function [backgroundlessImage] = imSubtractBackground (varargin)
+function [backgroundlessImage, realBgPlane] = imSubtractBackground (varargin)
 % imSubtractBackground takes an input image and subtracts the background from it. The
 % image without background is returned as output. This function uses the robustfit
 % algorithm to estimate a background plane and subtract it from the original image.
 % This works particularly well for images with an uneven background intensity like
 % phase-contrast images.
 %
-% SYNOPSIS       [backgroundlessImage] = imSubtractBackground (inputImage)
+% SYNOPSIS       [backgroundlessImage, background] = imSubtractBackground (varargin)
 %
 % INPUT          inputImage: the original greylevel image including background
 %
 % OUTPUT         backgroundlessImage: the original image with the estimated background subtracted
+%                       realBgPlane: the subtracted background plane
 %
 % DEPENDENCIES   imSubtractBackground uses { nothing }
 %                                  
-%                imSubtractBackground is used by { ptTrackCells }
+%                imSubtractBackground is used by { ptGetProcessedImage }
 %
 % Revision History
 % Name                  Date            Comment
@@ -25,11 +26,7 @@ if nargin < 1
    error('The input image has to be provided. See help imSubtractBackground.');
 end
 
-if ~ischar(varargin{1})
-   error('The first argument should be in string format. See help imSubtractBackground.');
-else
-   inputImage = varargin{1};
-end
+inputImage = varargin{1};
 
 % To estimate the background place we are first calculating the background plane. For this we
 % need the intensity values of the 4 sides of the image and robustly fit a line through it.
@@ -88,11 +85,15 @@ realBgPlane = imresize (bgPlane, size (inputImage), 'bilinear');
 % Finally we subtract the original image with the background
 backgroundlessImage = inputImage - realBgPlane;
 
+% Let's normalize the image back to [0..1] again
+imageMinimum = min (min (backgroundlessImage));
+imageMaximum = max (max (backgroundlessImage));
+backgroundlessImage = (backgroundlessImage - imageMinimum) / (imageMaximum - imageMinimum);
+
 % That's it we're finished
 clear x1; clear x2; clear x3; clear x4;
 clear y1; clear y2; clear y3; clear y4;
 clear coeff1; clear coeff2; clear coeff3; clear coeff4;
 clear y1Est; clear y2Est; clear y3Est; clear y4Est;
 clear c1; clear c2; clear c3; clear c4;
-clear bgPlane; clear realBgPlane;
-
+clear bgPlane; 
