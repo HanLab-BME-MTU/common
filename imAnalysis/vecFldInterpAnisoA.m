@@ -93,11 +93,24 @@ for i = 1 : tgtLength
     for j = 1 : srcLength
         
         if D(j, i) <= searchRadius
-            oriVec = flowVecList(j, :);
+            oriVec = flowVecList(j, :); % given external flow vector
             relativeVec = tgtPoints(i, :) - srcPoints(j, :);
             
+            normRelativeVec = norm(relativeVec);
             normOriVec = norm(oriVec); 
-            cosTheta = dot(oriVec * relativeVec) / normOriVec / norm(relativeVec);
+            
+            if (norm(oriVec) < 1e-3) % no external flow vector is defined.
+                continue;
+            end
+            
+            if (normRelativeVec < 1e-3) % src is the same as tgt
+                %weight = dot(oriVec, V(j, :);
+                weightsum = weightsum + 1;
+                vecsum = vecsum + V(j, :);
+                continue;
+            end
+            
+            cosTheta = dot(oriVec, relativeVec) / normOriVec / normRelativeVec;
             projectionU = normOriVec * cosTheta;
             projectionV = normOriVec * sqrt(1 - cosTheta^2);
            
@@ -108,8 +121,7 @@ for i = 1 : tgtLength
         end
     end
     if (weightsum < 1e-3)  % No vector within search radius
-        interField(i, 1) = 0;
-        interField(i, 2) = 0;
+        interField(i, 1:2) = [0 0];
     else
         interField(i, 1 : 2) = vecsum / weightsum;  % Normalization
     end
