@@ -224,39 +224,38 @@ cfm=ones(lm,rs);
 for n=1:lm
     cfm(n,:)=circumferenceCorrectionFactor(m1(n,1),m1(n,2),m2,msx,msy);
 end
-
-
-% define here row-entries for indexing cfm matrix
-rowVector = repeatEntries([1:lm]', lm);
-% assign thresh_mdist
 thresh_mdist = mdist;
-% initialize tempfinal
-tempfinal = thresh_mdist;
 
 for r=rs:-1:1
     %for given radius, set all values of mdist higher than the radius value
     %to zero
-    % since we are decreasing the radius, we can do this by updating the
-    % same matrix
+    %first step: thresh_mdistones is a matrix where all the places where
+    %the original value is <= r are set to one, all the places where the
+    %original value is either zero OR larger than the radius r are set to
+    %zero - first multiplication term takes care of setting stuff to zero,
+    %the second one does the scaling to 0-1
+    %thresh_mdistones=ceil( (mdist.*max((r+1-mdist),0))/((r+1)*max(max(mdist))) );
+    %second step: by multiplying with original matrix, we get zero in all
+    %places where the value exceeds r, all other values are retained
     thresh_mdist(thresh_mdist > r) = 0;
     thresh_mdistones = thresh_mdist;
     thresh_mdistones(thresh_mdist > 0) = 1;
-        
-    %round off to nearest integer value to make an index matrix
-    tempindex=floor(thresh_mdist);
-    tempindex(tempindex<1) = 1;
     
+    %round off to nearest integer value to make an index matrix
+    tempindex=max(floor(thresh_mdist),1);
+    %initialize tempweight
+    tempweight=thresh_mdistones; 
     %the value of tempweight at a position in column n (corresponding to 
     %point number n) with distance D of this point in mdist (rounded to 
     %tempindex) is the value of the circumferenceCorrectionFactor matrix at
     %distance (column) D for this point (line)
-    
-    % change tempindex into indices into cfm, assign tempfinal in one step
-    idx = sub2ind([lm, rs], rowVector, tempindex(:));
-    tempfinal(:) = thresh_mdistones(:)./cfm(idx);
-    
+    %loop over all points n
+    for n=1:lm
+        tempweight(:,n)=1./(cfm(n,tempindex(:,n)));
+    end
+    tempfinal=thresh_mdistones.*tempweight;    
     %sum over entire matrix to get number of points
-    npv=sum(tempfinal(:));
+    npv=sum(sum(tempfinal));
         
     %to average, divide sum by number of points (=columns)
     npv=(npv/lm);
@@ -270,49 +269,10 @@ for r=rs:-1:1
     %points
     m2(r)=npv/(pi*(lm-1)/(msx*msy));
     %using (lm-1) and not lm is Marcon&Puech's correction (2003)
-end % for r=rs:-1:1
+end
 
-% futile try to make it even faster 
-
-% % switch MAXMEM < prod(matrixSize)
-% % case 1 % do loop
-% % case 0 % use big matrices
-
-% % [tempfinal, rowMatrix, rMatrix] = ndgrid(1:lm, 1:lm, 1:rs); %use repmat?
-% % thresh_mdist = repmat(mdist,[1,1,rs]);
-% % thresh_mdist(thresh_mdist > rMatrix) = 0;
-% % clear rMatrix
-% % thresh_mdistones = thresh_mdist;
-% % thresh_mdistones(thresh_mdistones>0) = 1;
-% % 
-% % %round off to nearest integer value to make an index matrix
-% % tempindex=floor(thresh_mdist);
-% % tempindex(tempindex<1) = 1;
-% % %the value of tempweight at a position in column n (corresponding to
-% % %point number n) with distance D of this point in mdist (rounded to
-% % %tempindex) is the value of the circumferenceCorrectionFactor matrix at
-% % %distance (column) D for this point (line)
-% % 
-% % % change tempindex into indices into cfm, assign tempfinal in one step
-% % idx = sub2ind([lm, rs], rowMatrix(:), tempindex(:));
-% % tempfinal(:) = thresh_mdist(:)./cfm(idx);
-% % % sum over entire matrix to get number of points
-% % npv=squeeze(sum(sum(tempfinal,1),2));
-% % 
-% % % to average, divide sum by number of points (=columns)
-% % npv=(npv/lm);
-% % 
-% % % in order to be able to quantitatively compare the clustering in
-% % % distributions of different point densities, this npv value must now
-% % % be corrected for overall point density, which is lm/msx*msy; the
-% % % resulting normalized function is (if we also divide by pi to scale for
-% % % the circle area) more or less a simple square function;
-% % % it is a perfect square function for a perfectly random distribution of
-% % % points
-% % m2(:)=npv/(pi*(lm-1)/(msx*msy));
-% % % using (lm-1) and not lm is Marcon&Puech's correction (2003)
-
-end % function
+end
+  
 
 function[m2]=distanceMatrix(c1,c2)
 %this subfunction makes a neighbour-distance matrix for input matrix m1
