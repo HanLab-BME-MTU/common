@@ -22,12 +22,13 @@ if 1
    domain.x_size = 200;
    domain.y_size = 200;
    
-   domain.x_spacing = 15; 
-   domain.y_spacing = 15;
+   domain.x_spacing = 5; 
+   domain.y_spacing = 5;
    
    %create circle
    circle   = rsmak('circle',50,[0, 0]);
    ellipse  = fncmb(circle,[1.5 0;0 0.6]);
+   circle   = fncmb(circle,[0.6 0;0 1.5]);
    %ellipse  = fncmb(circle,[1.5 0;0 1.5]);
    circle   = fncmb(circle,'+', 100);
    ellipse  = fncmb(ellipse,'+',100);
@@ -234,8 +235,7 @@ delta_y = domain.x_spacing;
 i_end   = size(val_matrix_t1,1);
 j_end   = size(val_matrix_t1,2);
 
-phi_next = val_matrix_t0;
-phi_last = val_matrix_t0;
+phi(:,:,1) = val_matrix_t0;
 
 h_waitbar = waitbar(0,'Processing');
 figure
@@ -252,24 +252,23 @@ c=jet(max_time_steps);
 while time_step < max_time_steps & solution_difference(time_step) > 0.1
    waitbar(time_step/max_time_steps, h_waitbar, num2str(time_step));
    
-   phi(:,:,time_step) = phi_next; 
+  
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   [phi_next, velocity_fct(:,:,time_step), delta_t_opt(time_step)] = lsSolveConvection(phi_next,...
+   [phi(:,:,time_step+1), velocity_fct(:,:,time_step), delta_t_opt(time_step)] = lsSolveConvection(phi(:,:,time_step),...
                            delta_t, delta_x, delta_y, i_end, j_end, val_matrix_t1, domain);
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
    
    % extract the zero level
-   phi_zero = lsGetZeroLevel(phi_next, domain);
+   phi_zero = lsGetZeroLevel(phi(:,:,time_step+1), domain);
 
    if mod(time_step,15) == 0 || time_step == 1
       plot(phi_zero(1,:),phi_zero(2,:),'Color',[c(time_step,1) c(time_step,2) c(time_step,3)]);
    end
-   time_step = time_step+1;
-   residual(time_step)            = norm(phi_next - val_matrix_t1, 'fro');
-   solution_difference(time_step) = norm(phi_next - phi_last, 'fro');
-   phi_last = phi_next;
+   time_step = time_step+1;   
+   residual(time_step)            = norm(phi(:,:,time_step) - val_matrix_t1, 'fro');
+   solution_difference(time_step) = norm(phi(:,:,time_step) - phi(:,:,time_step-1), 'fro');
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -281,7 +280,7 @@ title('Optimal time step based on CFL number');
 figure
 contour(domain.x_grid_lines, domain.y_grid_lines, val_matrix_t0, 40);
 hold on
-contour(domain.x_grid_lines, domain.y_grid_lines, phi_next, 40);
+contour(domain.x_grid_lines, domain.y_grid_lines, phi(:,:,end), 40);
 
 figure
 residual(1) = residual(2);
@@ -305,6 +304,7 @@ plot(phi_zero(1,:), phi_zero(2,:),'r');
 for i= 1:size(track_points,3)
     plot(track_points(1,:,i), track_points(2,:,i), '.');
 end
+axis equal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 

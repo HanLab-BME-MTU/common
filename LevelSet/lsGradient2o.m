@@ -90,8 +90,8 @@ for i=1:i_end
       delta_plus(i,j)  =  sqrt(max(A(i,j),0)^2 + min(B(i,j),0)^2+...
                                max(C(i,j),0)^2 + min(D(i,j),0)^2);
       
-      delta_minus(i,j) = sqrt(max(B(i,j),0)^2 + min(A(i,j),0)^2+...
-                              max(D(i,j),0)^2 + min(C(i,j),0)^2);      
+      delta_minus(i,j) =  sqrt(max(B(i,j),0)^2 + min(A(i,j),0)^2+...
+                               max(D(i,j),0)^2 + min(C(i,j),0)^2);      
    end
 end
 

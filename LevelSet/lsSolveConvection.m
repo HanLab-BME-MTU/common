@@ -1,4 +1,4 @@
-function [phi_next, F, delta_t_optimal] = lsSolveConvection(phi, delta_t, delta_x, delta_y, i_end, j_end, phi_target, domain)
+function [phi_next, F, dt] = lsSolveConvection(phi, delta_t, delta_x, delta_y, i_end, j_end, phi_target, domain)
 % LSSOLVECONVECTION solves the equation d phi/ dt + F|grad phi| = 0 
 %    
 %           Second order spatial
@@ -22,7 +22,7 @@ function [phi_next, F, delta_t_optimal] = lsSolveConvection(phi, delta_t, delta_
 % 
 % OUTPUT     phi_next       :
 %            velocity_fct   : used velocity fct
-%            delta_t_optimal: optimal time step 
+%            dt             : used time step 
 %              
 %                           
 % DEPENDENCES    lsSolveConvection uses {                                
@@ -40,6 +40,11 @@ function [phi_next, F, delta_t_optimal] = lsSolveConvection(phi, delta_t, delta_
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
+% figure
+% quiver(domain.x_grid_lines, domain.y_grid_lines, grad_x, grad_y);
+% hold on
+% surface(domain.x_grid_lines,domain.y_grid_lines,phi);
+% contour(domain.x_grid_lines,domain.y_grid_lines,phi, 40);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%% Difference operators for the target function %%%%%%
@@ -76,6 +81,8 @@ F = lsGetVelocityFct(phi, phi_target, i_end, j_end, grad_x, grad_y, domain);
 
 % get the maximal time step based on the CLF number 
 delta_t_optimal = 0.9 * delta_x / max(max(F));
+%dt = delta_t_optimal;
+dt = delta_t;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -85,20 +92,20 @@ delta_t_optimal = 0.9 * delta_x / max(max(F));
 % Update the level-sets   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % methods Euler, Adams, Heun
 
-method = 'Heun';  
+method = 'Euler';  
 
 if strcmp(method,'Euler')
    % First order acccurate: Euler method
    for i=1:i_end
       for j=1:j_end
-         phi_next(i,j) = phi(i,j) - delta_t*(max(F(i,j), 0)*delta_plus(i,j) + min(F(i,j), 0) * delta_minus(i,j));
+         phi_next(i,j) = phi(i,j) - dt*(max(F(i,j), 0)*delta_plus(i,j) + min(F(i,j), 0) * delta_minus(i,j));
       end
    end
 elseif strcmp(method,'Adams')
    % Adams_Bashforth method: second order
     for i=1:i_end
       for j=1:j_end
-         phi_next(i,j) = phi(i,j) - delta_t*(max(F(i,j), 0)*delta_plus(i,j) + min(F(i,j), 0) * delta_minus(i,j));
+         phi_next(i,j) = phi(i,j) - dt*(max(F(i,j), 0)*delta_plus(i,j) + min(F(i,j), 0) * delta_minus(i,j));
       end
    end  
 elseif strcmp(method,'Heun')
@@ -106,20 +113,21 @@ elseif strcmp(method,'Heun')
    % Predictor step
    for i=1:i_end
       for j=1:j_end
-         phi_p(i,j) = phi(i,j) - delta_t*(max(F(i,j), 0)*delta_plus(i,j) + min(F(i,j), 0) * delta_minus(i,j));
+         phi_p(i,j) = phi(i,j) - dt*(max(F(i,j), 0)*delta_plus(i,j) + min(F(i,j), 0) * delta_minus(i,j));
       end
    end
    
-   [delta_plus_p, delta_minus_p, grad_x_p, grad_y_p] = lsFirstSecondDifferences(phi_p,...
-                                                                     delta_x, delta_y, i_end, j_end);
+   [delta_plus_p, delta_minus_p, grad_x_p, grad_y_p] = lsGradient2o(phi_p,...
+                                           delta_x, delta_y, i_end, j_end);
    
    F_p = lsGetVelocityFct(phi, phi_target, i_end, j_end, grad_x_p, grad_y_p, domain);
    
-   % Correctror step
+   % Corrector step
    for i=1:i_end
       for j=1:j_end
-         phi_next(i,j) = phi(i,j) - delta_t/2*(max(F(i,j), 0)*delta_plus(i,j) + min(F(i,j), 0) * delta_minus(i,j)+...
-                                               max(F_p(i,j), 0)*delta_plus_p(i,j) + min(F_p(i,j), 0) * delta_minus_p(i,j));
+         phi_next(i,j) = phi(i,j) -...
+             dt/2*(max(F(i,j),   0)*delta_plus(i,j)   + min(F(i,j),   0) * delta_minus(i,j)+...
+                   max(F_p(i,j), 0)*delta_plus_p(i,j) + min(F_p(i,j), 0) * delta_minus_p(i,j));
       end
    end   
 end

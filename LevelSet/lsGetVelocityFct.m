@@ -1,5 +1,30 @@
-function F = lsGetSpeedFct(phi, phi_target, i_end, j_end, grad_x, grad_y, domain)
-
+function F = lsGetVelocityFct(phi, phi_target, i_end, j_end, grad_x, grad_y, domain)
+% LSGETVELOCITYFCT calculates the speed F at the grid points
+%    
+%
+%
+% SYNOPSIS   F = lsGetVelocityFct(phi, phi_target, i_end, j_end, grad_x, grad_y, domain)
+%
+%
+% INPUT      phi        :
+%            phi_target :
+%            i_end      :
+%            j_end      :
+%            grad_x     :
+%            grad_y     :
+%            domain     :
+%                          
+% 
+% OUTPUT     F         :
+%              
+%                           
+% DEPENDENCES    lsGetVelocityFct uses {                                
+%                                       }
+%
+%                lsGetVelocityFct is used by { 
+%                                           }
+%
+% Matthias Machacek 06/24/04
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Calculate the speed function F  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -10,13 +35,13 @@ if 0
          F(i,j) = 1;
       end
    end
-elseif 0
+elseif 1
    % Flow in x-direction, y- direction, circular velocity field
    for i=1:i_end
       for j=1:j_end
-         grad_phi_l = sqrt(grad_x^2 + grad_y^2);
+         grad_l = sqrt(grad_x(i,j)^2 + grad_y(i,j)^2);
          
-         F(i,j) =  -j/10*grad_phi_x / grad_phi_l + i/10*grad_phi_y / grad_phi_l;
+         F(i,j) =  -j/2*grad_x(i,j) / grad_l + i/2*grad_y(i,j) / grad_l;
       end
    end
 elseif 0
