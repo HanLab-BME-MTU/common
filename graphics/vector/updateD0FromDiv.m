@@ -4,10 +4,13 @@ function d0=updateD0FromDiv(divM,d0in,alpha,nPi,nPg)
 % SYNOPSIS   d0=updateD0FromDiv(divM,d0,alpha,nPi,nPg)
 %
 % INPUT      divM : divergence as calculated by vectorFieldDiv.
-%            d0in : initial d0. It can be a scalar or a (nPg x nPi) matrix.
+%            d0in : initial d0. It can be a scalar or a (nPg x 1) vector 
+%                   (as returned by this function).
 %            alpha: see OUTPUT. alpha SHOULD be 0 < alpha <= 1, but may also 
 %                   be set higher.
-%            nPi  : number of vectors prior of interpolation (raw data)
+%            nPi  : OBSOLETE - this parameter is no longer used, it is maintained
+%                   to assure compatibility.
+%                   number of vectors prior of interpolation (raw data)
 %                   (see vectorFieldInterp).
 %            nPg  : number of grid points for interpolation
 %                   (see vectorFieldInterp).
@@ -18,7 +21,7 @@ function d0=updateD0FromDiv(divM,d0in,alpha,nPi,nPg)
 %                   d0/(1+alpha/max(divM(all))*divM),
 %                   where alpha is a parameter defining the range of
 %                   variation possible for divM.
-%                   d0 has size (nPg x nPi).
+%                   d0 has size (nPg x 1).
 
 % Check input parameters
 if nargin~=5
@@ -27,26 +30,23 @@ end
 if size(divM,1)~=nPg
     error('Parameter nPg does not match the number of rows of divM');
 end
-if size(d0in)~=[1 1] & size(d0in)~=[nPg nPi]
+if size(d0in)~=[1 1] & size(d0in)~=[nPg 1]
     error('The dimensions of d0 are wrong');
 end
 if alpha<=0
     error('The parameter alpha must be positive');
 end
 
-% Dimensions of the input d0
-[d0y d0x]=size(d0in);
-
 % Initialize d0
-d0=zeros(nPg,nPi);
+d0=zeros(nPg,1);
 
 % Fill d0 to be used in the correlation matrix for the interpolator
-if d0y==1
+if size(d0in,1)==1
     for i=1:nPg
-        d0(i,1:nPi)=d0in/(1+alpha/max(divM(:,3))*abs(divM(i,3)));
+        d0(i)=d0in/(1+alpha/max(divM(:,3))*abs(divM(i,3)));
     end
 else
     for i=1:nPg
-        d0(i,1:nPi)=d0in(i,1:nPi)/(1+alpha/max(divM(:,3))*abs(divM(i,3)));
+        d0(i)=d0in(i)/(1+alpha/max(divM(:,3))*abs(divM(i,3)));
     end
-end
+end    

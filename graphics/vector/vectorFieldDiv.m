@@ -26,8 +26,7 @@ function [divM,d0]=vectorFieldDiv(M,Pg,d0,polygon)
 %            d0      : parameter for the weight function K=exp(-D.^2/d0),
 %                      where D is the distance matrix between all grid
 %                      points and all vector (base) positions.
-%                      d0 can be a scalar or a matrix with size (nxm). See
-%                      calcD0fromDiv.
+%                      d0 must be a scalar.
 %                      Pass d0=0 to let the software set d0 for you (d0 is set equal 3 times
 %                      the (larger) grid size).
 %                      
@@ -47,6 +46,15 @@ function [divM,d0]=vectorFieldDiv(M,Pg,d0,polygon)
 %                      vectorFieldDiv is used by { }
 %
 % Aaron Ponti, 11/18/2002
+
+% Check inputs
+if nargin~=4
+    error('4 input parameters expected.');
+end
+
+if size(d0)~=[1 1]
+    error('The input parameter d0 must be a scalar.');
+end
 
 % Vector base positions
 Pi=M(:,1:2);

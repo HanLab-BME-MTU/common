@@ -14,8 +14,8 @@ function Mi=vectorFieldInterp(M,Pg,d0,polygon)
 %            d0      : parameter for the weight function G=exp(-D.^2/(1+d0^2)),
 %                      where D is the distance matrix between all grid
 %                      points and all vector (base) positions.
-%                      d0 can be a scalar or a matrix with size (nxm). See
-%                      calcD0fromDiv.
+%                      d0 can be a scalar or a vector with size (nx1). See
+%                      updateD0fromDiv.
 %            polygon : (optional - pass polygon=[] to disable). The interpolated vector
 %                      can be cropped to remove vectors outside a given region of interest.
 %                      To create the polygon use the functions ROIPOLY or
@@ -30,6 +30,11 @@ function Mi=vectorFieldInterp(M,Pg,d0,polygon)
 %
 % Aaron Ponti, 11/18/2002
 
+% Check input
+if nargin~=4
+    error('4 input parameters expected.');
+end
+
 % Vector base positions
 Pi=M(:,1:2);
 
@@ -39,8 +44,12 @@ V=[M(:,3)-M(:,1) M(:,4)-M(:,2)];
 % Calculate distances
 D=createDistanceMatrix(Pg,Pi);
 
-% Correlation matrix (d0 may be a scalar or a matrix)
-G=exp(-D.^2./d0.^2); clear D;
+% Correlation matrix (d0 may be a scalar or a vector)
+G=zeros(size(D));
+for i=1:size(D,1)  
+    G(i,:)=exp(-D(i,:).^2./d0(i,1).^2);
+end
+clear D % Not needed any more
 
 % Interpolate
 Vi=[G*V(:,1) G*V(:,2)];
