@@ -16,16 +16,29 @@ function [seg_img, obj_val, varargout]=imClusterSeg(img_in, CONTR, varargin)
 %             I=[1..k_clusters] where I=1 corresponds to the class with the
 %             lowes intensity and I=k_cluster to the class with the highest
 %             intensity.
+%             Binning can be used to speed up the function by binning with
+%             a factor 0 to n. For the kmeans algorithm a coarsing occurs,
+%             for the EM algorithm NO coarsing occurs!
 %
 %             If there is an error seg_img = -99 is returned
 %  
-%             K-means can be used with different definitions of the
-%             distance: 
-%             'cityblock'
-%             'sqEuclidean'
-%             'cosine'
+%             Optional arguments are:
+%               'method': 'em' or 'kmeans',
+%               'binning': [0..n..N] where n is an integer
+%             kmeans specific:
+%               'mu0': initinal values, [] is also a valid input
+%               'k_cluster': the number of clusters
+%               'distance': 'sqEuclidean', 'cityblock' or 'cosine'
+%             EM specific:
+%               'k_min': minimum number of clusters
+%               'k_max': maximum number of clusters
+%               'p0': initinal values for individual cluster probability, [] is also valid
+%               'mu0': initinal values for cluster mean values, [] is also a valid input
 %
-% SYNOPSIS    [seg_img, obj_val]=imClusterSeg(img_in, CONTR, varargin)
+%
+%
+%
+% SYNOPSIS    [seg_img, obj_val, varargout]=imClusterSeg(img_in, CONTR, varargin)
 %
 % INPUT       img       : the image
 %             DEPTH     : depth of the image
@@ -115,11 +128,6 @@ end
 %size of the image 
 [n_img m_img] = size(img_bin);
 
-
-%calculate the histogram
-%[img_hist, hist_val] = imhist(img_in,DEPTH);
-
-
 %reshape image into vector
 img_in_vec = reshape(img_bin, n_img*m_img, 1);
 
@@ -127,7 +135,16 @@ img_in_vec = reshape(img_bin, n_img*m_img, 1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%  clustering with kmeans  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if strcmp(METHOD,'kmeans')
-    [cluster_index, cluster_c, cluster_d_sum]  = kmeans(img_in_vec, K_CLUSTER, 'Distance', DISTANCE);
+    if ~isempty(MU0)
+        if size(MU0) ~= K_CLUSTER
+            h = warndlg('The size of your initial values for the clusters is different from your k_cluster','Warning!')    
+        end
+        %start clustering with initial values
+        [cluster_index, cluster_c, cluster_d_sum]  =  kmeans(img_in_vec, K_CLUSTER, 'Distance', DISTANCE, 'start', MU0); 
+    else
+        %start clustering without initial values
+        [cluster_index, cluster_c, cluster_d_sum]  =  kmeans(img_in_vec, K_CLUSTER, 'Distance', DISTANCE);
+    end
     
     %sort the index according to the intensity
     [cluster_c  cluster_c_index]= sort(cluster_c, 1);
@@ -145,6 +162,9 @@ if strcmp(METHOD,'kmeans')
     if BINNING > 0
         seg_img = imresize(seg_img, [n_img_org, m_img_org], 'bicubic');   
     end
+    
+    varargout{1} = [];
+    varargout{2} = obj_val;    
     
 elseif strcmp(METHOD,'em')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
