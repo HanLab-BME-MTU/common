@@ -15,19 +15,20 @@ function lsLineMatching
 % Matthias Machacek 6/10/04
 
 test = 0;
-if 1
+if 0
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
    domain.x_size = 200;
    domain.y_size = 200;
    
-   domain.x_spacing = 25; 
-   domain.y_spacing = 25;
+   domain.x_spacing = 1; 
+   domain.y_spacing = 1;
    
    %create circle
    circle   = rsmak('circle',50,[0, 0]);
    ellipse  = fncmb(circle,[1.5 0;0 0.75]);
+   %ellipse  = fncmb(circle,[1.5 0;0 1.5]);
    circle   = fncmb(circle,'+', 100);
    ellipse  = fncmb(ellipse,'+',100);
    fnplt(circle);
@@ -54,6 +55,23 @@ if 1
    
    % End test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
+   % (find the known points)
+   [x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0] = lsGetGridIntersections(x_spline_t0, y_spline_t0, domain);
+   known_zero_level_points_t0(:,1) = [x_X_i_t0'; x_Y_i_t0'];
+   known_zero_level_points_t0(:,2) = [y_X_i_t0'; y_Y_i_t0'];
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
+   [x_X_i_t1, y_X_i_t1, x_Y_i_t1, y_Y_i_t1] = lsGetGridIntersections(x_spline_t1, y_spline_t1, domain);
+   known_zero_level_points_t1(:,1) = [x_X_i_t1'; x_Y_i_t1'];
+   known_zero_level_points_t1(:,2) = [y_X_i_t1'; y_Y_i_t1'];
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 else
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,8 +79,8 @@ else
    domain.x_size = 439;
    domain.y_size = 345;
    
-   domain.x_spacing = 10; 
-   domain.y_spacing = 10;
+   domain.x_spacing = 3; 
+   domain.y_spacing = 3;
    
    %cd L:\projects\rho_protrusion\cell1\protrusion
    cd /lccb/projects/rho_protrusion/cell1/protrusion_1-30_ps2_s40
@@ -84,36 +102,43 @@ else
    firstfilename_mask=([PROJECT_DIR PROT_DIR 'mask_' IMG_NAME '.tif']);
    [filelist_mask]=getFileStackNames(firstfilename_mask);
    
-   
+   time = 4;
+   time_increment = 14;
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%% read the pixel edge %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   n_pix     = fscanf(fid_pixel_edge,'%g  ', [1 1]);
-   x_p_edge  = fscanf(fid_pixel_edge,'%g  ', [1 n_pix]);
-   y_p_edge  = fscanf(fid_pixel_edge,'%g  ', [1 n_pix]);
+   for i = 1 : time
+       n_pix_t0     = fscanf(fid_pixel_edge,'%g  ', [1 1]);
+       x_p_edge_t0  = fscanf(fid_pixel_edge,'%g  ', [1 n_pix_t0]);
+       y_p_edge_t0  = fscanf(fid_pixel_edge,'%g  ', [1 n_pix_t0]);
+       known_zero_level_points_t0 = [x_p_edge_t0', y_p_edge_t0'];
+   end
+   for i = 1 : time_increment
+       n_pix_t1     = fscanf(fid_pixel_edge,'%g  ', [1 1]);
+       x_p_edge_t1  = fscanf(fid_pixel_edge,'%g  ', [1 n_pix_t1]);
+       y_p_edge_t1  = fscanf(fid_pixel_edge,'%g  ', [1 n_pix_t1]);
+       known_zero_level_points_t1 = [x_p_edge_t1', y_p_edge_t1'];
+   end
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-   
-   time = 1;
    
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%% read the mask %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
    fileName_mask=char(filelist_mask(time));
    mask_img_t0=imread(fileName_mask);
    
-   fileName_mask=char(filelist_mask(time+1));
+   fileName_mask=char(filelist_mask(time+time_increment));
    mask_img_t1=imread(fileName_mask);   
-   
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
    % End data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
-   x_spline_t0 = edge_sp_array_x(1);
-   y_spline_t0 = edge_sp_array_y(1);
+   x_spline_t0 = edge_sp_array_x(time);
+   y_spline_t0 = edge_sp_array_y(time);
    
-   x_spline_t1 = edge_sp_array_x(2);
-   y_spline_t1 = edge_sp_array_y(2);
+   x_spline_t1 = edge_sp_array_x(time+time_increment);
+   y_spline_t1 = edge_sp_array_y(time+time_increment);
 end
 
 
@@ -125,13 +150,32 @@ domain = lsGenerateGridLines(domain);
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-% Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
-[x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0] = lsGetGridIntersections(x_spline_t0, y_spline_t0, domain);
-known_zero_level_points_t0(:,1) = [x_X_i_t0'; x_Y_i_t0'];
-known_zero_level_points_t0(:,2) = [y_X_i_t0'; y_Y_i_t0'];
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+if 0
+    % get the trail points
+    trial_grid_points = lsFindTrailPoints(x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0, domain);
+
+    % get the distance fct values of the trail points
+    trial_grid_points(:,3) = lsGetDistanceFctVec(mask_img_t0,...
+        trial_grid_points, known_zero_level_points_t0, domain, 1);
+
+    % get dist_fct_tmp (Fast Marching Method)
+    num_x_grid_lines = length(domain.x_grid_lines);
+    num_y_grid_lines = length(domain.y_grid_lines);
+    LARGE_NUMBER = 100000;
+    dist_fct_tmp0(1:num_x_grid_lines,1:num_y_grid_lines) = LARGE_NUMBER;
+    
+    % get distance function by fast marching
+    dist_fct_tmp = lsFastMarching(dist_fct_tmp0, trial_grid_points, domain, LARGE_NUMBER);
+    figure
+    surface(domain.x_grid_lines,domain.y_grid_lines,dist_fct_tmp);
+end
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Get edge at former time step %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -139,35 +183,17 @@ signed_t0 = 1;
 [val_t0, val_matrix_t0] = lsGetDistanceFct(mask_img_t0, grid_coordinates,...
                             known_zero_level_points_t0, domain, signed_t0);
 
-% test the ddistance function and the zero level set finding
-if test
-    phi_zero = lsGetZeroLevelSet(val_matrix_t0, domain);
-    figure,plot(phi_zero(1,:), phi_zero(2,:),'.');
-    hold on
-    plot(circle_points(1,:),circle_points(2,:),'r.'); 
-    title('Original front, red, and extracted front, blue');
-end
-
-% get the trail points
-trial_grid_points = lsFindTrailPoints(x_X_i_t0, y_X_i_t0, x_Y_i_t0, y_Y_i_t0, domain);
-
+phi_zero_t0 = lsGetZeroLevelSet(val_matrix_t0, domain); 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-% Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
-[x_X_i, y_X_i, x_Y_i, y_Y_i] = lsGetGridIntersections(x_spline_t1, y_spline_t1, domain);
-known_zero_level_points_t1(:,1) = [x_X_i'; x_Y_i'];
-known_zero_level_points_t1(:,2) = [y_X_i'; y_Y_i'];
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Get distance function for all grid points at present time step %%
 signed_t1 = 1;
 [val_t1, val_matrix_t1] = lsGetDistanceFct(mask_img_t1, grid_coordinates,...
                              known_zero_level_points_t1, domain, signed_t1);
+
+phi_zero_t1 = lsGetZeroLevel(val_matrix_t1, domain); 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
@@ -181,7 +207,6 @@ hold on
 plot(x_spline_points_t0, y_spline_points_t0,'r','LineWidth',2);
 contour(domain.x_grid_lines,domain.y_grid_lines,val_matrix_t0, 40);
 
-
 % plot results at present time step
 p_t1=1:x_spline_t1.knots(end);
 x_spline_points_t1 = fnval(x_spline_t1, p_t1);
@@ -191,6 +216,11 @@ figure,surface(domain.x_grid_lines,domain.y_grid_lines,val_matrix_t1);
 hold on
 plot(x_spline_points_t1, y_spline_points_t1,'r','LineWidth',2);
 contour(domain.x_grid_lines,domain.y_grid_lines,val_matrix_t1, 40);
+
+
+
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -203,20 +233,41 @@ i_end   = size(val_matrix_t1,1);
 j_end   = size(val_matrix_t1,2);
 
 phi_next = val_matrix_t0;
+phi_last = val_matrix_t0;
 
 h_waitbar = waitbar(0,'Processing');
 figure
 hold on
 plot(x_spline_points_t1, y_spline_points_t1,'r');
-num_time_steps = 500;
-for t=1:num_time_steps
-   waitbar(t/num_time_steps, h_waitbar, num2str(t));
-   [phi_next, delta_t_opt(t)] = lsSolveConvection(phi_next, delta_t, delta_x, delta_y, i_end, j_end, val_matrix_t1, domain);
-   if mod(t,20) == 0 || t == 1
-      phi_zero = lsGetZeroLevel(phi_next, domain);
-      plot(phi_zero(1,:),phi_zero(2,:));
+max_time_steps = 150;
+time_step = 1;
+residual(time_step) = 100;
+solution_difference(time_step) = 100;
+c=jet(max_time_steps);
+
+while time_step < max_time_steps & solution_difference(time_step) > 1
+   waitbar(time_step/max_time_steps, h_waitbar, num2str(time_step));
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   [phi_next, delta_t_opt(time_step)] = lsSolveConvection(phi_next,...
+           delta_t, delta_x, delta_y, i_end, j_end, val_matrix_t1, domain);
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+   
+   % extract the zero level
+   phi_zero = lsGetZeroLevel(phi_next, domain);
+
+   if mod(time_step,15) == 0 || time_step == 1
+      plot(phi_zero(1,:),phi_zero(2,:),'Color',[c(time_step,1) c(time_step,2) c(time_step,3)]);
    end
+   time_step = time_step+1;
+   residual(time_step)            = norm(phi_next - val_matrix_t1, 'fro');
+   solution_difference(time_step) = norm(phi_next - phi_last, 'fro');
+   phi_last = phi_next;
 end
+
+time_step
 
 figure
 plot(delta_t_opt);
@@ -225,6 +276,16 @@ figure
 contour(domain.x_grid_lines, domain.y_grid_lines, val_matrix_t0, 40);
 hold on
 contour(domain.x_grid_lines, domain.y_grid_lines, phi_next, 40);
+
+figure
+residual(1) = residual(2);
+plot(residual)
+title('Residual');
+
+figure
+solution_difference(1) = solution_difference(2);
+plot(solution_difference);
+title('Solution difference');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 

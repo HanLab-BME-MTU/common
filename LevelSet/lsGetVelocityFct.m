@@ -31,22 +31,23 @@ elseif 0
       end
    end  
 else
-   % Distance driven flow
-   if 0
-   % Calculate the velocity at the front, thus at the zero level set
-   % find the zero level set:
-   phi_zero = lsGetZeroLevel(phi, domain);
-   % get the velocity at the zero level set
-   for i = 1:size(phi_zero,2)
-       F(phi_zero(1,i), phi_zero(2,i)) = 0;
-   end
+    % Distance driven flow
+    if 0
+        % Calculate the velocity at the front, thus at the zero level set
+        % find the zero level set:
+        phi_zero = lsGetZeroLevel(phi, domain);
+        % get the velocity at the zero level set
+        for i = 1:size(phi_zero,2)
+            F(phi_zero(1,i), phi_zero(2,i)) = 0;
+        end
    
-   % get the extended velocity
+        % get the extended velocity
    end
    
    for i=1:i_end
       for j=1:j_end
-         F(i,j) = - sign(phi_target(i,j))*2;
+         %F(i,j) = - sign(phi_target(i,j))*2;
+         F(i,j) = phi(i,j) - phi_target(i,j);
       end
    end    
    
