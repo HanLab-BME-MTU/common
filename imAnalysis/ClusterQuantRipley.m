@@ -2,16 +2,20 @@ function[cpar,pvr,dpvr]=ClusterQuantRipley(mpm,imsizex,imsizey);
 % ClusterQuantRipley calculates a quantitative clustering parameter based on
 % fractal theory
 %
-% SYNOPSIS   [dfr,resvec]=ClusterQuantRipley(mpm,imsizex,imsizey);
+% SYNOPSIS   [cpar,pvr,dpvr]=ClusterQuantRipley(mpm,imsizex,imsizey);
 %       
 % INPUT      mpm:   mpm file containing (x,y) coordinates of points in the
 %                   image in succesive columns for different time points
 %            imsizex:   x-size of the image (maximum possible value for x-coordinate)
 %            imsizey:   y-size of the image (maximum possible value for
 %                       y-coordinate)
-%            
+%            cf:  correction =1 circumferebnce +2 area
 %            NOTE: in Johan's mpm-files, the image size is 1344 x 1024
 %               pixels
+%            NOTE2: this function uses Ripley's circumference correction
+%            NOTE3: Although this function is not actually named after 
+%                   Lt. Ellen Ripley, she certainly would deserve to have 
+%                   a kick-ass matlab function named after her.
 %
 %
 % OUTPUT     cpar:  for each time point, a single clustering parameter 
@@ -33,7 +37,7 @@ function[cpar,pvr,dpvr]=ClusterQuantRipley(mpm,imsizex,imsizey);
 % DEPENDENCES   ClusterQuantRipley uses {pointsincircle,clusterpara}
 %               ClusterQuantRipley is used by { }
 %
-% Dinah Loerke, October 6th, 2004
+% Dinah Loerke, October 7th, 2004
 
 %create vector containing x- and y-image size
 matsiz=[imsizex imsizey];
@@ -66,6 +70,7 @@ for k=1:(round(ny/2))
     smatt=[nonzeros(matt(:,1)), nonzeros(matt(:,2)) ];
     
     %comment/uncomment the next five lines if you want to monitor progress
+    %prints number of objects for every 10th line
     if(mod(k,10)==0)
         [smx,smy]=size(smatt);
         tempnp=max([smx,smy]);
@@ -78,12 +83,12 @@ for k=1:(round(ny/2))
     %averaged over all objects in smatt, and normalized with point density
     %tempnp/(msx*msy)
     [pvrt]=pointsincircle(smatt,matsiz);
-    %result is anormalized with point density tempnp/(msx*msy)
-    %within the function fract_np_vs_rad
+    %result is already normalized with point density tempnp/(msx*msy)
     pvr(:,k)=pvrt(:);
     
-    %from the current shape of pvrt, calculate a quantitative clustering
-    %parameter, cpar
+    %from the calculated function pvrt (number of points versus circle
+    %radius), calculate a quantitative clustering parameter, cpar
+    %somewhat arbitrarily defined as positive integral
     [cpar(k),dpvr(:,k)]=clusterpara(pvrt);
         
 end
@@ -158,9 +163,9 @@ end
 function[m2]=pointsincircle(m1,ms)
 %pointsincircle calculates the average number of points in a circle around
 %a given point as a function of the circle radius (averaged over all points
-%and normalized by total point density); derived from fractal theory, this
-%function is an indication of the amount of clustering in the point
-%distribution
+%and normalized by total point density); this function is called Ripley's
+%K-function in statistics, and is an indication of the amount of clustering
+%in the point distribution
 % 
 % SYNOPSIS   [m2]=pointsincircle(m1,ms);
 %       
@@ -206,44 +211,42 @@ rs=round(minms/2);
 %initialize m2 vector
 m2=1:rs;
 
-for r=1:rs
-    %for given radius, set all values of mdist higher than the radius value to zero
-    %the original values are not retained
-    thresh_mdist=mdist.*max((r+1-mdist),0);
+%create corrections factor matrix
+cfm=ones(lm,rs);
+for n=1:lm
+    cfm(n,:)=circumferenceCorrectionFactor(m1(n,1),m1(n,2),m2,msx,msy);
+end
 
-        
-    %average over all points in the image, i.e. loop over all rows 
-    %(or all columns) in thresh_mdist
-    %initialize npv (sum of points) parameter
-    npv=0;
-    for n=1:lm
-        %for a given point (i.e. a given row of the mdist matrix),
-        %look for the number of points with distance less than r (=npvt),
-        %which is the number of non-zero points in the thresholded matrix
-        temp=thresh_mdist(n,:);
-        findv=find(temp);
-        [o,npvt]=size(findv);
-        %now determine the area of the (possibly snipped) circle of radius 
-        %r around this particular point to determine a correction factor
-        %using function area_snippedcircleG
-        %(npvt is the number of objects found in the real image (a circle 
-        %possibly cut of cut off by a rectangle, i.e. the edges of the 
-        %image), whereas npvt/corrfac is the projected number of objects
-        %found in unsnipped circle of radius r
-        xx=m1(n,1);
-        yy=m1(n,2);
-        corfac=1;
-        if( (min(xx,(msx-xx))<r)|(min(yy,(msy-yy))<r) )
-            corfac=areaCorrectionFactor(xx,yy,r,msx,msy);
-        end
-        if(corfac==0)
-            dp=[r n];
-            disp(dp);
-        end
-        npv=npv+(npvt/corfac);
-    end
+for r=1:rs
+    %for given radius, set all values of mdist higher than the radius value
+    %to zero
+    %first step: thresh_mdistones is a matrix where all the places where
+    %the original value is <= r are set to one, all the places where the
+    %original value is either zero OR larger than the radius r are set to
+    %zero - first multiplication term takes care of setting stuff to zero,
+    %the second one does the scaling to 0-1
+    thresh_mdistones=ceil( (mdist.*max((r+1-mdist),0))/((r+1)*max(max(mdist))) );
+    %second step: by multiplying with original matrix, we get zero in all
+    %places where the value exceeds r, all other values are retained
+    thresh_mdist=mdist.*thresh_mdistones;
     
-    %to average, divide sum by number of points
+    %round off to nearest integer value to make an index matrix
+    tempindex=max(floor(thresh_mdist),1);
+    %initialize tempweight
+    tempweight=thresh_mdistones; 
+    %the value of tempweight at a position in column n (corresponding to 
+    %point number n) with distance D of this point in mdist (rounded to 
+    %tempindex) is the value of the circumferenceCorrectionFactor matrix at
+    %distance (column) D for this point (line)
+    %loop over all points n
+    for n=1:lm
+        tempweight(:,n)=1./(cfm(n,tempindex(:,n)));
+    end
+    tempfinal=thresh_mdistones.*tempweight;    
+    %sum over entire matrix to get number of points
+    npv=sum(sum(tempfinal));
+        
+    %to average, divide sum by number of points (=columns)
     npv=(npv/lm);
     
     %in order to be able to quantitatively compare the clustering in 
@@ -275,38 +278,42 @@ for k=1:ncx1
     end
 end
 
+    
+function[corfac]=circumferenceCorrectionFactor(xx,yy,rr,msx,msy)
+%circumference correction calculates a vector containing the correction factor
+%(for edge correction in Ripley's k-function) for values of rr
+%circumference correction: fraction of circumference of circle centered at
+%point P=(xx,yy) with radius rr (inside rectangular image) falling into the 
+%rectangle - this fraction becomes smaller as the point gets closer to one
+%of the rectangle's edges, and as the radius of the circle increases
+%if the circle falls completely inside the rectangle, the value is zero
 
-function[corfac]=areaCorrectionFactor(xx,yy,r,msx,msy)
-%function[a]=area_snippedcircle(r,x,y)
-%calculates the are of a snipped circle
-%i.e. circle center is placed into rectangle (of size msx,msy)
-%depending on radius, area of circle is limited by rectangle
-%radius of circle = r
-%position of cricle center = x,y
-%size of rectangle msx,msy
-%GEOMETRIC SOLUTION
+%1. this function assumes that rr is a vector
+
+% SYNOPSIS   [corfac]=circumferenceCorrectionFactor2(xx,yy,rr,msx,msy)
+%       
+% Dinah Loerke, October 6, 2004
 
 
 x=min(xx,(msx-xx));
 y=min(yy,(msy-yy));
 
-corfac=1;
-if((x<r)&(y<r))
-    if( (x<r) & (y<r) & (sqrt(x^2+y^2)>r) )
-         wfac=(2*asin(x/r)+2*asin(y/r))/(2*pi);
-         a=wfac*pi*r^2+ x*sqrt(r^2-x^2) + y*sqrt(r^2-y^2);
-         corfac=a/(pi*r^2);
+dim=max(size(rr));
+corfac=ones(dim,1);
+for i=1:dim
+    r=rr(i);
+    %if both x and y are smaller than r
+    if((x<r)&&(y<r))
+       if( (x<r) && (y<r) && (sqrt(x^2+y^2)>r) )
+           corfac(i)=(2*asin(x/r)+2*asin(y/r))/(2*pi);
+       else
+           corfac(i)=(0.5*pi+asin(x/r)+asin(y/r))/(2*pi);
+       end
+    %if either x OR y OR neither is smaller than r 
     else
-         wfac=(0.5*pi+asin(x/r)+asin(y/r))/(2*pi);
-         a=wfac*pi*r^2+ x*y + 0.5*x*sqrt(r^2-x^2)+ 0.5*y*sqrt(r^2-y^2);
-         corfac=a/(pi*r^2);
+       z=min( min(x,y),r );
+       corfac(i)=(pi+2*asin(z./r))/(2*pi);
     end
-else
-    z=min(x,y);
-    wfac=(pi+2*asin(z/r))/(2*pi);
-    a=wfac*pi*r^2 + z*sqrt(r^2-z^2);
-    corfac=a/(pi*r^2);
 end
 
 
-    
