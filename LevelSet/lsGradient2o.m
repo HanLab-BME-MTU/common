@@ -1,5 +1,30 @@
-function [delta_plus, delta_minus, grad_x, grad_y] = lsFirstSecondDifferences(phi, delta_x, delta_y, i_end, j_end)
-
+function [delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(phi, delta_x, delta_y, i_end, j_end)
+% LSFIRSTSECONDDIFFERENCES calculates gradient wit hsecond order accuracy
+%    
+%
+%
+% SYNOPSIS   [delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(phi, delta_x, delta_y, i_end, j_end)
+%
+%
+% INPUT      phi        : phi=f(x,y) function values on a grid
+%            delta_x    : x-direction grid spacing
+%            delta_y    : y-direction grid spacing
+%            i_end      : number of x grid points
+%            j_end      : number of y grid points 
+%                          
+% 
+% OUTPUT     delta_plus     :  right side absolute value of the gradient
+%            delta_minus    :  left side absolute value of the gradient
+%            grad_x         :  x-comp. of the gradient
+%            grad_y         :  y-comp. of the gradient
+%                           
+% DEPENDENCES     lsGradient2o uses {                                
+%                                       }
+%
+%                 lsGradient2o is used by { 
+%                                           }
+%
+% Matthias Machacek 06/22/04
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 

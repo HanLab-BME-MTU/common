@@ -15,19 +15,19 @@ function lsLineMatching
 % Matthias Machacek 6/10/04
 
 test = 0;
-if 0
+if 1
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % Test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
    domain.x_size = 200;
    domain.y_size = 200;
    
-   domain.x_spacing = 1; 
-   domain.y_spacing = 1;
+   domain.x_spacing = 15; 
+   domain.y_spacing = 15;
    
    %create circle
    circle   = rsmak('circle',50,[0, 0]);
-   ellipse  = fncmb(circle,[1.5 0;0 0.75]);
+   ellipse  = fncmb(circle,[1.5 0;0 0.6]);
    %ellipse  = fncmb(circle,[1.5 0;0 1.5]);
    circle   = fncmb(circle,'+', 100);
    ellipse  = fncmb(ellipse,'+',100);
@@ -55,6 +55,12 @@ if 0
    
    % End test data loading %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   
+   [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
+
+    % fill the grid_line field in structure domain
+    domain = lsGenerateGridLines(domain);
    
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -139,17 +145,13 @@ else
    
    x_spline_t1 = edge_sp_array_x(time+time_increment);
    y_spline_t1 = edge_sp_array_y(time+time_increment);
+   
+   
+    [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
+
+    % fill the grid_line field in structure domain
+    domain = lsGenerateGridLines(domain);
 end
-
-
-
-[grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
-
-% fill the grid_line field in structure domain
-domain = lsGenerateGridLines(domain);
-
-
-
 
 
 
@@ -183,7 +185,7 @@ signed_t0 = 1;
 [val_t0, val_matrix_t0] = lsGetDistanceFct(mask_img_t0, grid_coordinates,...
                             known_zero_level_points_t0, domain, signed_t0);
 
-phi_zero_t0 = lsGetZeroLevelSet(val_matrix_t0, domain); 
+phi_zero_t0 = lsGetZeroLevel(val_matrix_t0, domain); 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
@@ -245,13 +247,16 @@ residual(time_step) = 100;
 solution_difference(time_step) = 100;
 c=jet(max_time_steps);
 
-while time_step < max_time_steps & solution_difference(time_step) > 1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+while time_step < max_time_steps & solution_difference(time_step) > 0.1
    waitbar(time_step/max_time_steps, h_waitbar, num2str(time_step));
    
+   phi(:,:,time_step) = phi_next; 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   [phi_next, delta_t_opt(time_step)] = lsSolveConvection(phi_next,...
-           delta_t, delta_x, delta_y, i_end, j_end, val_matrix_t1, domain);
+   [phi_next, velocity_fct(:,:,time_step), delta_t_opt(time_step)] = lsSolveConvection(phi_next,...
+                           delta_t, delta_x, delta_y, i_end, j_end, val_matrix_t1, domain);
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
    
@@ -266,7 +271,8 @@ while time_step < max_time_steps & solution_difference(time_step) > 1
    solution_difference(time_step) = norm(phi_next - phi_last, 'fro');
    phi_last = phi_next;
 end
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 time_step
 
 figure
@@ -286,6 +292,19 @@ figure
 solution_difference(1) = solution_difference(2);
 plot(solution_difference);
 title('Solution difference');
+
+
+% integrate the velocity
+track_points = lsIntegrateVelocity(phi, velocity_fct, grid_coordinates, delta_t_opt, delta_x, delta_y, i_end, j_end, domain);
+
+figure
+plot(phi_zero_t0(1,:), phi_zero_t0(2,:),'g');
+hold on
+plot(phi_zero(1,:), phi_zero(2,:),'r');
+
+for i= 1:size(track_points,3)
+    plot(track_points(1,:,i), track_points(2,:,i), '.');
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 

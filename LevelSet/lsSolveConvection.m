@@ -1,15 +1,42 @@
-function [phi_next, delta_t_optimal] = lsSolveConvection(phi, delta_t, delta_x, delta_y, i_end, j_end, phi_target, domain)
-
-
-% Second order spatial
-% and first order temporal scheme 
-% according to J.A. Sethian: Level Set Methods
-% and Fast Marching Methods p.: 66
+function [phi_next, F, delta_t_optimal] = lsSolveConvection(phi, delta_t, delta_x, delta_y, i_end, j_end, phi_target, domain)
+% LSSOLVECONVECTION solves the equation d phi/ dt + F|grad phi| = 0 
+%    
+%           Second order spatial
+%           and first order temporal scheme 
+%           according to J.A. Sethian: Level Set Methods
+%           and Fast Marching Methods p.: 66
+%
+%
+% SYNOPSIS   [phi_next, velocity_fct, delta_t_optimal] = lsSolveConvection(phi, delta_t, delta_x, delta_y, i_end, j_end, phi_target, domain)
+%
+%
+% INPUT      phi        :
+%            delta_t    :
+%            delta_x    :
+%            delta_y    :
+%            i_end      :
+%            j_end      :
+%            phi_target :
+%            domain     :
+%                          
+% 
+% OUTPUT     phi_next       :
+%            velocity_fct   : used velocity fct
+%            delta_t_optimal: optimal time step 
+%              
+%                           
+% DEPENDENCES    lsSolveConvection uses {                                
+%                                       }
+%
+%                lsSolveConvection is used by { 
+%                                           }
+%
+% Matthias Machacek 06/22/04
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %%%%%%%%%%%%%%% Difference operators %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[delta_plus, delta_minus, grad_x, grad_y] = lsFirstSecondDifferences(phi, delta_x, delta_y, i_end, j_end);
+[delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(phi, delta_x, delta_y, i_end, j_end);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 

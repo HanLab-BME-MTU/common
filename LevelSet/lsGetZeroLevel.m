@@ -1,5 +1,19 @@
-function phi_zero = lsGetZeroLevelSet(phi, domain)
-
+function phi_zero = lsGetZeroLevel(phi, domain)
+% LSGETZEROLEVEL finds the zero level countour in a 2D matrix
+% 
+%
+% SYNOPSIS      phi_zero = lsGetZeroLevel(phi, domain)  
+%
+% INPUT         phi     : 2D matrix
+%               domain  : structure with x and y grid line coordinates          
+% 
+% OUTPUT        phi_zero: zero level contour, 2D vector (x,y)    
+%                     
+%                           
+% DEPENDENCES    lsLineMatching uses { contourc
+%                                    } 
+%
+% Matthias Machacek 6/22/04
 
 % this function gets the level at the grid lines ->
 % x-levels, y-levels.

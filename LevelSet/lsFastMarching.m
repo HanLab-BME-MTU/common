@@ -20,6 +20,7 @@ for i=1:size(trial_grid_points,1)
                                             trial_grid_points(i,3); 
 end
 
+
 figure
 while num_trail > 0
     % find trail point with smallest value
@@ -40,6 +41,7 @@ while num_trail > 0
     % c: upper
     % d: lower
     
+    % update the value of the right neighbour
     if i_min < num_x_grid_lines
         if status_matrix(i_min+1, j_min) ~=2
             if status_matrix(i_min+1, j_min) == 0
@@ -77,7 +79,7 @@ while num_trail > 0
             
         end
     end
-
+    % update the value of the left neighbour
     if i_min > 1
         if status_matrix(i_min-1, j_min) ~=2
             if status_matrix(i_min-1, j_min) == 0
@@ -111,7 +113,7 @@ while num_trail > 0
             dist_fct_matrix(i_min-1, j_min) = trial_grid_points(num_trail,3);
         end
     end
-
+    % update the value of the upper neighbour
     if j_min < num_y_grid_lines
         if status_matrix(i_min, j_min+1) ~= 2
             if status_matrix(i_min, j_min+1) == 0
@@ -145,7 +147,7 @@ while num_trail > 0
             dist_fct_matrix(i_min, j_min+1) = trial_grid_points(num_trail,3);
         end
     end
-
+    % update the value of the lower neighbour
     if j_min > 1
         if status_matrix(i_min, j_min-1)  ~= 2
             if status_matrix(i_min, j_min-1) == 0
