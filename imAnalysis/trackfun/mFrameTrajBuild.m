@@ -30,6 +30,10 @@ function MFT = mFrameTrajBuild(varargin)
 %Parse and check the inputs.
 [M,corLen,YX] = parse_inputs(varargin{:});
 
+%The searching radius used for calculating the distance matrix in the
+% interpolation of the vector field.
+srchRadius = max(20,2*corLen);
+
 %Get the total number of frames in 'M'.
 numFrames = size(M,3)+1;
 
@@ -41,9 +45,9 @@ MFT = zeros(numPoints,2*numFrames);
 frameID    = 1;
 MFT(:,1:2) = YX;
 for jj = 1:2:2*numFrames-3
-   MFT(:,jj:jj+3) = vectorFieldInterp( ...
+   MFT(:,jj:jj+3) = vectorFieldSparseInterp( ...
       M(find(M(:,1,frameID)~=0 & M(:,3,frameID)~=0),:,frameID), ...
-      MFT(:,jj:jj+1),corLen,[]);
+      MFT(:,jj:jj+1),srchRadius,corLen,[]);
    frameID = frameID+1;
 end
 

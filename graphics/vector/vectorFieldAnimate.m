@@ -124,5 +124,6 @@ for k = 1:numFrames
    end
 
    quiver(XY(:,1),XY(:,2),V(:,1,k)*scale,V(:,2,k)*scale,0,vc); hold off;
+   title(sprintf('Scale : %5.2f, Number of Frames : %d',scale,numFrames));
    M(k) = getframe;
 end
