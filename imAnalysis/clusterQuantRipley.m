@@ -238,6 +238,8 @@ for r=rs:-1:1
     % since we are decreasing the radius, we can do this by updating the
     % same matrix
     thresh_mdist(thresh_mdist > r) = 0;
+    thresh_mdistones = thresh_mdist;
+    thresh_mdistones(thresh_mdist > 0) = 1;
         
     %round off to nearest integer value to make an index matrix
     tempindex=floor(thresh_mdist);
@@ -250,7 +252,7 @@ for r=rs:-1:1
     
     % change tempindex into indices into cfm, assign tempfinal in one step
     idx = sub2ind([lm, rs], rowVector, tempindex(:));
-    tempfinal(:) = thresh_mdist(:)./cfm(idx);
+    tempfinal(:) = thresh_mdistones(:)./cfm(idx);
     
     %sum over entire matrix to get number of points
     npv=sum(tempfinal(:));
