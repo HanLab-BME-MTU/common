@@ -45,7 +45,7 @@ funStringMedian=['''median(',funStringFmin,')'', ''u'''];
 
 for i=1:parameterNamesN
     parmString=[parmString,', ',parameterNames{i}]; % write variable into parameter string
-    eval([parameterNames{i},'=parameters.',parameterNames{i},';']); % assign value to variable
+    eval([parameterNames{i},'=parameters.',parameterNames{i},'(:);']); % assign value to variable and make col-vectors
     funStringMedian=[funStringMedian,', ''',parameterNames{i},'''']; % write variable into inline object
 end
 

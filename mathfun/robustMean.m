@@ -1,19 +1,19 @@
-function [finalMean, stdSample, inlierIdx] = robustMean(data)
+function [finalMean, stdSample, inlierIdx] = robustMean(data,dim)
 %ROBUSTMEAN calculates mean and standard deviation discarding outliers
 %
 % SYNOPSIS [finalMean, stdSample, inlierIdx] = robustMean(data)
 %
 % INPUT    data : input data
-%          
+%          dim  : dimension along which the mean is taken
+%
 % OUTPUT   finalMean : robust mean
 %          stdSample : std of the data (divide by sqrt(n) to get std of the
 %                      mean)
-%          inlierIdx : index into data with the inliers (recover the others 
+%          inlierIdx : index into data with the inliers (recover the others
 %                      with findMissingIndices)
 %
 % REMARKS  The code is based on (linear)LeastMedianSquares. It could be changed to
-%          include weights and/or application of the mean along other
-%          dimensions
+%          include weights 
 %
 % c: jonas, 04/04
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -24,6 +24,9 @@ function [finalMean, stdSample, inlierIdx] = robustMean(data)
 if isempty(data) | ~all(isfinite(data))
     error('Please supply non-empty, finite data to robustMean')
 end
+if nargin<2 || isempty(dim)
+    dim = 1;
+end
 
 
 %========================
@@ -31,34 +34,67 @@ end
 %========================
 
 % define magic numbers:
-k=3; %value important for calculation of sigma, see Danuser, 1992 or Rousseeuw & Leroy, 1987
+k=3; %cut-off is roughly at 3 sigma, see Danuser, 1992 or Rousseeuw & Leroy, 1987
 magicNumber2=1.4826^2; %see same publications
 
-% prepare data
-data = data(:);
+% remember data size and reduced dataSize
+dataSize = size(data);
+reducedDataSize = dataSize;
+reducedDataSize(dim) = 1;
+% need this for later repmats
+blowUpDataSize = dataSize./reducedDataSize;
+% count how many relevant dimensions we have besides dim
+realDimensions = length(find(dataSize>1));
 
-% calc median
-medianData = median(data);
+% calc median - reduce dimension dim to length 1
+medianData = median(data,dim);
 
 % calculate statistics
-res2 = (data-medianData).^2;
-medRes2 = median(res2);
+res2 = (data-repmat(medianData,blowUpDataSize)).^2;
+medRes2 = median(res2,dim);
 
 %testvalue to calculate weights
-testValue=res2/(magicNumber2*medRes2);
+testValue=res2./repmat(magicNumber2*medRes2,blowUpDataSize);
 
-%goodRows: weight 1, badRows: weight 0
-inlierIdx=find(testValue<=k^2);
+if realDimensions == 1;
+    %goodRows: weight 1, badRows: weight 0
+    inlierIdx=find(testValue<=k^2);
 
-% calculate std of the sample;
-if nargout > 1
-    stdSample=sqrt(sum(res2(inlierIdx))/(length(inlierIdx)-4));
+    % calculate std of the sample;
+    if nargout > 1
+        stdSample=sqrt(sum(res2(inlierIdx))/(length(inlierIdx)-4));
+    end
+
+    %====END LMS=========
+
+    %======
+    % MEAN
+    %======
+
+    finalMean = mean(data(inlierIdx));
+
+else
+    
+    %goodRows: weight 1, badRows: weight 0
+    inlierIdx=find(testValue<=k^2);
+    outlierIdx=find(testValue > k^2);
+    
+    % mask outliers
+    res2(outlierIdx) = NaN;
+    % count inliers
+    nInliers = sum(~isnan(res2),dim);
+
+    % calculate std of the sample;
+    if nargout > 1
+        stdSample=sqrt(nansum(res2,dim)./(nInliers-4));
+    end
+
+    %====END LMS=========
+
+    %======
+    % MEAN
+    %======
+    
+    data(outlierIdx) = NaN;
+    finalMean = nanmean(data,dim);
 end
-
-%====END LMS=========
-
-%======
-% MEAN
-%======
-
-finalMean = mean(data(inlierIdx));
