@@ -21,7 +21,23 @@ function M = vectorFieldAnimate(varargin)
 %    The following properties can also be specified as optional inputs.
 %    'bgImg' : It can be either one image or a cell array of
 %       images whose length equals the number of time steps.
-%    'vc' : The color of the vector. Default: 'b' (blue).
+%    'vColor' : The color of the vector. It can be one of the following 
+%       values:
+%          Color names : such as 'r', 'g' or 'cyan' etc.
+%          RGB-triple  : [0.2 0.3 0].
+%          Cell array  : of colors in one of the above forms.
+%       If only one color is specified, all the fields are drawn in the same
+%       color. If a cell array is given, each color in the array is used for 
+%       vector field and the colors are cycled when there are less colors
+%       than the number of fields.
+%    'colorMap' : Either an m-by-3 matrix whose values are between 0 and 1 or
+%       one of the matlab accepted color map names such as 'default', 'jet' or
+%       'cool' etc. When a color map is specified, each field will be assigned
+%       a color that is determined by an even distribution of the vector field
+%       indices over the range of the color map. See help colormap.
+%    If neither 'vColor' nor 'colorMap' is specified, the default color map
+%    'colormap('default')' will be used. If both are specified, 'colorMap' has
+%    priority.
 %
 % OUTPUT :
 %    M : A matlab movie is returned.
@@ -66,12 +82,13 @@ if nargin >= 3 & isnumeric(varargin{3})
 end
 
 %Default property values.
-bgImg = [];
-vc    = 'b';
+bgImg    = [];
+vColor   = [];
+colorMap = [];
 
 if nargin >= pStart
    if rem(nargin-pStart+1,2) ~= 0
-      error('The properties and values specified do not match in pair.');
+      error('The properties and values specified do not match as pairs.');
    end
 
    numProperties = (nargin-pStart+1)/2;
@@ -87,7 +104,7 @@ if nargin >= pStart
             if length(inValue{k}) ~= 1 | ...
                length(inValue{k}) ~= numFrames
                error(['The number of background images can either be ' ...
-                  'one or the number of frames.']);
+                  'one or equal the number of frames.']);
             end
 
             if ischar(inValue{k}{1})
@@ -104,11 +121,51 @@ if nargin >= pStart
                bgImg{1} = inValue{k};
             end
          end
-      case 'vc'
-         vc = inValue{k};
+      case 'vColor'
+         vColor = inValue{k};
+      case 'colorMap'
+         if ischar(inValue{k})
+            %We do it in this complicated way becaus of the way 'colormap'
+            % works in matlab.
+            %Get the current map.
+            curMap   = colormap;
+            %Switch to the specified map and assign it to 'colorMap'.
+            colormap(inValue{k});
+            colorMap = colormap;
+            %Restore the original color map.
+            colormap(curMap);
+         else
+            colorMap = inValue{k};
+         end
       otherwise
          error([inProperty{k} ' is not an acceptable property.']);
       end
+   end
+end
+
+if isempty(vColor) & isempty(colorMap)
+   curMap = colormap;
+   colormap('default');
+   colorMap = colormap;
+   colormap(curMap);
+end
+
+if ~isempty(colorMap)
+   %'colorMap' has higher priority.
+   %Evenly distributing the indices of the vector fields over the range of the
+   % color map. 'cI' is the index vector into the color map.
+   cI = floor(linspace(1,size(colorMap,1),numFrames)+0.5);
+   %'vC' : the list of colors used for each frame.
+   vC = colorMap(cI,:);
+else
+   if iscell(vColor)
+      cLen = length(vColor);
+
+      %When the number of colors, 'cLen' is less than 'numFrames', the
+      % colors are reused periodically.
+      vC(1:numFrames) = vColor(rem([0:numFrames-1],cLen)+1);
+   else
+      vC(1:numFrames) = {vColor};
    end
 end
 
@@ -123,7 +180,15 @@ for k = 1:numFrames
       end
    end
 
-   quiver(XY(:,1),XY(:,2),V(:,1,k)*scale,V(:,2,k)*scale,0,vc); hold off;
+   h = quiver(XY(:,1),XY(:,2),V(:,1,k)*scale,V(:,2,k)*scale,0);
+   if iscell(vC)
+      set(h(1),'Color',vC{k});
+      set(h(2),'Color',vC{k});
+   else
+      set(h(1),'Color',vC(k,:));
+      set(h(2),'Color',vC(k,:));
+   end
    title(sprintf('Scale : %5.2f, Number of Frames : %d',scale,numFrames));
+   hold off;
    M(k) = getframe;
 end
