@@ -415,7 +415,7 @@ elseif TEST_CASE == 7
    [filelist_mask]=getFileStackNames(firstfilename_mask);
    
    time = 4;
-   time_increment = 1;
+   time_increment = 10;
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%% read the pixel edge %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    for i = 1 : time

@@ -15,7 +15,7 @@ end
 
 % generate fine grid linesindex = 1;
 % supersampling coefficient
-sc = 10;
+sc = 5;
 for i_x = 1: domain.x_spacing/sc : domain.x_size
     domain.x_grid_lines_f(index) = i_x;
     index = index+1;   

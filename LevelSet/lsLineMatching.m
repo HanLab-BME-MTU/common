@@ -83,9 +83,9 @@ if ~exist('mask_img_t0','var')
     % TEST_CASE = 2; % two offset non-intersecting circles
     % TEST_CASE = 3; % two lines    
     % TEST_CASE = 4; % line and protrusion
-     TEST_CASE = 5; % line and spike
+    % TEST_CASE = 5; % line and spike
     % TEST_CASE = 6; % seven star
-    % TEST_CASE = 7; % whole cell
+     TEST_CASE = 7; % whole cell
     % TEST_CASE = 8; % W512r_smaller
     % TEST_CASE = 9; % 
     % TEST_CASE = 10; % part cell cut_s399
@@ -93,7 +93,7 @@ if ~exist('mask_img_t0','var')
     x_s = 3;
     y_s = 3;
     
-    sp_spacing = 5;
+    sp_spacing = 2;
     
     [mask_img_t0, mask_img_t1, x_spline_t0, y_spline_t0,...
         x_spline_t1,y_spline_t1,...
@@ -321,75 +321,35 @@ for t=2:num_time_steps
         waitbar(t/num_time_steps, h_waitbar, num_time_steps);
         
         zero_level_set_t = lsGetZeroLevel(phi(:,:,t),domain,1);
-        % get spline 
-        % parameter
+        % get spline parameter
         clear s_p;
-        s_p(1)=0;
+        s_p(1) = 0;
         for i=2:length(zero_level_set_t)
             s_p(i) = s_p(i-1)+sqrt((zero_level_set_t(1,i)-zero_level_set_t(1,i-1))^2+...
                                    (zero_level_set_t(2,i)-zero_level_set_t(2,i-1))^2);
         end
         %sp_zero_level = spline(s_p, [zero_level_set_t(1,:); zero_level_set_t(2,:)]);
-        sp_zero_level = csaps(s_p, [zero_level_set_t(1,:); zero_level_set_t(2,:)], 1);
-        
-        % get the derivatives (angles) on the zero level spline
-        %sp_x_d = fnder(sp_x);
-        %sp_y_d = fnder(sp_y);
+        sp_zero_level = csaps(s_p, [zero_level_set_t(1,:); zero_level_set_t(2,:)], 1);        
        
         p1_sp = ppval(sp_zero_level,s_p);
          
-
-        %p2_sp_x = p1_sp_x + ppval(sp_x_d,s_p);
-        %p2_sp_y = p1_sp_y + ppval(sp_y_d,s_p);
-        
-        % tangent vector
-        %tx = p2_sp_x -  p1_sp_x;
-        %ty = p2_sp_y -  p1_sp_y;
 
         for i =1:size(track_points_0,1)
             dx_l = p1_sp(1,:) - track_points(i,1,t-1);
             dy_l = p1_sp(2,:) - track_points(i,2,t-1);
             
-
-            % get angle 
-            %l=(sqrt(dx_l.^2+dy_l.^2) .* sqrt(tx.^2+ty.^2));
-            %angle = acos( ((dx_l .* tx) + (dy_l .* ty)) ./ l);
-            
-            
-            %angle = 90 - angle.*(180/pi);
-            %sp_angle = spline(s_p, angle');
-            %sp_angle = spaps(s_p,angle',30);
-            
-            %angle_zeros = fnzeros(sp_angle,[s_p(1) s_p(end)]);
-            
             % calculate all distances 
             dist_p =sqrt(dx_l.^2 +dy_l.^2);
             
-            if 0
-                %sp_dist = spline(s_p, dist_p');
-                sp_dist = spaps(s_p,dist_p,30);
+            sp_dist = csaps(s_p,dist_p');
+            %sp_dist = spaps(s_p,dist_p,30);
+            [min_val min_s_p] = fnmin(sp_dist);
 
-                cands_dist = fnval(sp_dist, angle_zeros(1,:));
-                [cands_min_dist, cands_i] = min(cands_dist);
+            p = ppval(sp_zero_level,min_s_p);
 
-                min_s_p = angle_zeros(cands_i);
-
-                track_points(i,1,t) = ppval(sp_x,min_s_p);
-                track_points(i,2,t) = ppval(sp_y,min_s_p);
-
-            else
-                sp_dist = csaps(s_p,dist_p');
-                %sp_dist = spaps(s_p,dist_p,30);
-                [min_val min_s_p] = fnmin(sp_dist);
-            
-                p = ppval(sp_zero_level,min_s_p);
-                
-                track_points(i,1,t) = p(1);
-                track_points(i,2,t) = p(2);
-            end
+            track_points(i,1,t) = p(1);
+            track_points(i,2,t) = p(2);
         end
-        
-        
 end
 
 
@@ -410,7 +370,6 @@ end
 
 % extract the zero level sets
 if MOVIE == 1
-    feature accel off
     h_zero_levels =figure;
     %axis([0 domain.x_size 0 domain.y_size]);
     %hold on
@@ -419,14 +378,13 @@ if MOVIE == 1
     
     i_frame = 1;     
     MakeQTMovie('start', [RESULT_DIR 'prot_movie2.mov']);
-    for t=1:10:num_time_steps
+    for t=1:num_time_steps
         zero_level_set_t = lsGetZeroLevel(phi(:,:,t),domain);
         plot(zero_level_set_t(1,:), zero_level_set_t(2,:));
         axis([0 domain.x_size 0 domain.y_size]);
         MakeQTMovie('addfigure');
     end
     MakeQTMovie('finish');
-    feature accel on
 end
 
 % Initialize the displacement
@@ -522,27 +480,25 @@ if CONTROL
     plot(x_spline_points_t0, y_spline_points_t0,'g','LineWidth',1);
     hold on
     plot(x_spline_points_t1, y_spline_points_t1,'r','LineWidth',1);
-    if MOVIE == 1
-        feature accel off
-        i_frame = 1;     
-        MakeQTMovie('start', [RESULT_DIR 'prot_movie1.mov']);
-        p_max = size(track_points,3);
-    else
+%     if MOVIE == 1   
+%         i_frame = 1;     
+%         MakeQTMovie('start', [RESULT_DIR 'prot_movie1.mov']);
+%         p_max = size(track_points,3);
+%     else
         p_max = size(track_points,1);
-    end
+%    end
     for p = 1:p_max
-        if MOVIE == 1
-            plot(track_points(:,1,p), track_points(:,2,p),'.', 'MarkerSize',3);
-            i_frame = i_frame +1;
-            MakeQTMovie('addfigure');
-        elseif ~ MOVIE 
+%         if MOVIE == 1
+%             plot(track_points(:,1,p), track_points(:,2,p),'.', 'MarkerSize',3);
+%             i_frame = i_frame +1;
+%             MakeQTMovie('addfigure');
+%         elseif ~ MOVIE 
             plot(squeeze(track_points(p,1,:)), squeeze(track_points(p,2,:)));
-        end
+%        end
     end
-    if MOVIE == 1
-        MakeQTMovie('finish');
-        feature accel on
-    end
+%     if MOVIE == 1
+%         MakeQTMovie('finish');
+%     end
     axis equal
     title('Tracked points');
     legend('Cell edge at t0','Cell edge at t1')        
