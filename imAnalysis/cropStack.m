@@ -152,8 +152,15 @@ for i=1:n
     filename=[path,filesep,'crop_',fName,fno,fext];
    
     % Write file to disk
-    imwrite(imgC,filename, 'Compression', 'none');
-   
+    if strcmp(fext,'.tif') || strcmp(fext,'.tiff') || strcmp(fext,'.jpg') || strcmp(fext,'.jpeg')
+        imwrite(imgC,filename, 'Compression', 'none');
+    elseif strcmp(fext,'.bmp')
+        imwrite(imgC,filename);     
+    else
+       disp('Unknown image format!!');
+       return
+    end
+        
     % Update waitbar
     waitbar(i/n,h);
     
