@@ -74,7 +74,9 @@ for i=1:l
     elseif strcmp(varargin(i),'distance')
         DISTANCE=varargin{i+1};  
     elseif strcmp(varargin(i),'binning')
-        BINNING=varargin{i+1};    
+        BINNING=varargin{i+1};       
+    elseif strcmp(varargin(i),'emptyaction')
+        EMPTYACTION=varargin{i+1};  
     end
 end
 
@@ -90,13 +92,18 @@ end
 if ~exist('K_CLUSTER','var')
    K_CLUSTER=2;
 end
+if ~exist('EMPTYACTION','var')
+   EMPTYACTION='singleton';
+   %'error'
+   %'drop'
+   %'singleton'
+end
 if ~exist('DISTANCE','var')
    DISTANCE='cityblock';
    %'cityblock'
    %'sqEuclidean'
    %'cosine'
 end
-
 %%%%%%%%%%   EM parameter %%%%%%%%%%%%%%%%
 if ~exist('K_MIN','var')
    K_MIN=2;
@@ -140,10 +147,10 @@ if strcmp(METHOD,'kmeans')
             h = warndlg('The size of your initial values for the clusters is different from your k_cluster','Warning!')    
         end
         %start clustering with initial values
-        [cluster_index, cluster_c, cluster_d_sum]  =  kmeans(img_in_vec, K_CLUSTER, 'Distance', DISTANCE, 'start', MU0); 
+        [cluster_index, cluster_c, cluster_d_sum]  =  kmeans(img_in_vec, K_CLUSTER, 'Distance', DISTANCE, 'start', MU0, 'emptyaction', EMPTYACTION); 
     else
         %start clustering without initial values
-        [cluster_index, cluster_c, cluster_d_sum]  =  kmeans(img_in_vec, K_CLUSTER, 'Distance', DISTANCE);
+        [cluster_index, cluster_c, cluster_d_sum]  =  kmeans(img_in_vec, K_CLUSTER, 'Distance', DISTANCE, 'emptyaction', EMPTYACTION);
     end
     
     %sort the index according to the intensity
