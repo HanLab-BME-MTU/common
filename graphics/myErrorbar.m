@@ -29,6 +29,7 @@ function hh = myErrorbar(x, y, l, u)
 %
 %   Based on the matlab-function errorbar as revised by Claude Berney
 %   c: jonas, 06-03
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if min(size(x))==1, %x is a vector
     npt = length(x);
