@@ -54,13 +54,6 @@ if nargin<3|isempty(directory)
 end
 
 %includeSubDirectories
-if nargin>3&~isempty(includeSubDirectories)
-    if includeSubDirectories ~= 1
-        includeSubDirectories = 0;
-    end
-else
-    includeSubDirectories = 1;
-end
 if nargin<4|isempty(includeSubDirectories)
     includeSubDirectories = 1;
 end
@@ -82,42 +75,82 @@ end
 %look for directories and wanted files in current directory, then check all subdirs
 
 %init variables
-dirs2check{1} = directory;
-listOfFiles = [];
-oldDir = pwd;
 
-while ~isempty(dirs2check)
+dirs2checkInitLength = 100;
+dirs2checkLength     = 100;
+dirs2check           = cell(100,1);
+
+dirs2check{1} = directory;
+dirs2checkCt  = 1;
+topDir2check  = 1;
+
+listOfFilesInitLength = 100;
+listOfFilesLength     = 100;
+listOfFiles           = cell(100,2);
+listOfFilesCt         = 0;
+
+
+while ~isempty(dirs2check{topDir2check})
     %init/empty var
     pathCell = {};
     
-    %open dir & store currentDir
-    cd(dirs2check{1});
-    currentDir = pwd;
+    %read currentDir
+    currentDir = dirs2check{topDir2check};
     
     %list all files of current directory
-    currentDirList = dir;
+    currentDirList = dir(currentDir);
     
     %look for subdirectories and add to dirs2check
     isDirList = cat(1,currentDirList.isdir);
     if length(isDirList)>2
         subDirIdx = find(isDirList(3:end))+2;
         for i=1:length(subDirIdx)
-            dirs2check = [dirs2check; {[currentDir,filesep,currentDirList(subDirIdx(i)).name]}];
+            
+            % we will add a directory - count how many this will make
+            dirs2checkCt = dirs2checkCt + 1;
+            
+            % make sure that the dirList is long enough - make sure we do
+            % not get problems with topDir2check
+                if dirs2checkCt + 1 > dirs2checkLength
+                    tmpDirs2check = dirs2check;
+                    newDirs2checkLength = dirs2checkLength + dirs2checkInitLength;
+                    dirs2check = cell(newDirs2checkLength,1);
+                    dirs2check(1:dirs2checkLength) = tmpDirs2check;
+                    dirs2checkLength = newDirs2checkLength;
+                end
+            
+            dirs2check{dirs2checkCt} = [currentDir,filesep,currentDirList(subDirIdx(i)).name];
         end
     end %if length(isDirList)>2
     
     %look for files in current directory and store them
-    newFiles = chooseFile(includeString,[],selectionMode,excludeString);
+    newFiles = chooseFile(includeString,currentDir,selectionMode,excludeString);
     if ~isempty(newFiles)
         if ~iscell(newFiles)
             newFiles = cellstr(newFiles);
         end
         [pathCell{1:size(newFiles,1)}] = deal(currentDir);
-        listOfFiles = [listOfFiles; newFiles, pathCell'];
+        
+        % we will add a file - count how many this will make
+        numNewFiles = length(newFiles);
+        listOfFilesCtStart = listOfFilesCt + 1;
+        listOfFilesCt = listOfFilesCt + numNewFiles;
+        
+        % make sure that the dirList is long enough
+        if listOfFilesCt > listOfFilesLength
+            tmpListOfFiles = listOfFiles;
+            newListOfFilesLength = listOfFilesLength + listOfFilesInitLength;
+            listOfFiles = cell(newListOfFilesLength,1);
+            listOfFiles(1:listOfFilesLength) = tmpListOfFiles;
+            listOfFilesLength = newListOfFilesLength;
+        end
+        
+        listOfFiles(listOfFilesCtStart:listOfFilesCt,:) = [newFiles, pathCell'];
+        
     end %if ~isempty(newFiles)
     
-    %eliminate top directory
-    dirs2check(1)=[];
+    % move on to next directory
+    topDir2check = topDir2check + 1;
     
     %check wheter we want to look at subDirs
     if ~includeSubDirectories
@@ -129,4 +162,5 @@ end %while ~isempty(dirs2check)
 
 %---end collect files---
 
-cd(oldDir)
+% remove placeholders
+listOfFiles(listOfFilesCt+1:end,:)=[];
