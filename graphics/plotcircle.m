@@ -1,4 +1,4 @@
-function plotcricle(ctr,r,opt)
+function plotcircle(ctr,r,opt)
 %PLOTCIRCLE plots a circle
 %
 % SYNOPSIS plotrect(ctr,r,opt)
@@ -13,4 +13,5 @@ dt = 2*pi/400;
 t = 0:dt:2*pi;
 
 plot(r*cos(t)+ctr(1),r*sin(t)+ctr(2),opt);
+axis('equal');
 return;
