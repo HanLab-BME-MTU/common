@@ -85,13 +85,13 @@ if ~exist('mask_img_t0','var')
     % TEST_CASE = 4; % line and protrusion
     % TEST_CASE = 5; % line and spike
     % TEST_CASE = 6; % seven star
-    % TEST_CASE = 7; % ellipses two cirlces
-    % TEST_CASE = 8; % whole cell
-     TEST_CASE = 9; % part cell W512
+     TEST_CASE = 7; % whole cell
+    % TEST_CASE = 8; % W512r_smaller
+    % TEST_CASE = 9; % 
     % TEST_CASE = 10; % part cell cut_s399
     
-    x_s = 5;
-    y_s = 5;
+    x_s = 4;
+    y_s = 4;
     
     sp_spacing = 4;
     
@@ -128,8 +128,8 @@ else
     domain.x_size = img_w;
     domain.y_size = img_h;
 
-    domain.x_spacing = 3;
-    domain.y_spacing = 3;
+    domain.x_spacing = 4;
+    domain.y_spacing = 4;
 
     [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
 
@@ -205,15 +205,15 @@ if CONTROL & 0
     plot(x_spline_points_t1, y_spline_points_t1, 'r');
         
     % Save  results
-    hgsave(h_phi_t0, [RESULT_DIR 'phi_t0.fig']); 
-    print(h_phi_t0,  [RESULT_DIR 'phi_t0.eps'],'-depsc2','-tiff'); 
-    print(h_phi_t0,  [RESULT_DIR 'phi_t0.tif'],'-dtiff');
-    hgsave(h_phi_t1, [RESULT_DIR 'phi_t0.fig']); 
-    print(h_phi_t1,  [RESULT_DIR 'phi_t0.eps'],'-depsc2','-tiff'); 
-    print(h_phi_t1,  [RESULT_DIR 'phi_t0.tif'],'-dtiff');  
-    hgsave(h_edges,  [RESULT_DIR 'edges_t0_t1.fig']); 
-    print(h_edges,   [RESULT_DIR 'edges_t0_t1.eps'],'-depsc2','-tiff'); 
-    print(h_edges,   [RESULT_DIR 'edges_t0_t1.tif'],'-dtiff');    
+%     hgsave(h_phi_t0, [RESULT_DIR 'phi_t0.fig']); 
+%     print(h_phi_t0,  [RESULT_DIR 'phi_t0.eps'],'-depsc2','-tiff'); 
+%     print(h_phi_t0,  [RESULT_DIR 'phi_t0.tif'],'-dtiff');
+%     hgsave(h_phi_t1, [RESULT_DIR 'phi_t0.fig']); 
+%     print(h_phi_t1,  [RESULT_DIR 'phi_t0.eps'],'-depsc2','-tiff'); 
+%     print(h_phi_t1,  [RESULT_DIR 'phi_t0.tif'],'-dtiff');  
+%     hgsave(h_edges,  [RESULT_DIR 'edges_t0_t1.fig']); 
+%     print(h_edges,   [RESULT_DIR 'edges_t0_t1.eps'],'-depsc2','-tiff'); 
+%     print(h_edges,   [RESULT_DIR 'edges_t0_t1.tif'],'-dtiff');    
 end
 
 
@@ -313,6 +313,7 @@ end
 
 % extract the zero level sets
 if MOVIE == 1
+    feature accel off
     h_zero_levels =figure;
     %axis([0 domain.x_size 0 domain.y_size]);
     %hold on
@@ -328,6 +329,7 @@ if MOVIE == 1
         makeQTMovie('addfigure');
     end
     makeQTMovie('finish');
+    feature accel on
 end
 
 % Initialize the displacement
@@ -365,14 +367,14 @@ disp_points = [track_points(:,1,end), track_points(:,2,end)];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if CONTROL
     % show level sets
-    for t=1:40:num_time_steps
-        h_s = figure;
-        surface(domain.x_grid_lines, domain.y_grid_lines, phi(:,:,t));
-        hold on
-        zero_level_set_t = lsGetZeroLevel(phi(:,:,t),domain);
-        plot(zero_level_set_t(1,:), zero_level_set_t(2,:),'g','LineWidth',2);
-        print(h_f,  [RESULT_DIR 'level_set',num2str(t),'.tif'],'-dtiff');
-    end
+%     for t=1:40:num_time_steps
+%         h_s = figure;
+%         surface(domain.x_grid_lines, domain.y_grid_lines, phi(:,:,t));
+%         hold on
+%         zero_level_set_t = lsGetZeroLevel(phi(:,:,t),domain);
+%         plot(zero_level_set_t(1,:), zero_level_set_t(2,:),'g','LineWidth',2);
+%         print(h_f,  [RESULT_DIR 'level_set',num2str(t),'.tif'],'-dtiff');
+%     end
     
     % Show the time steps
     delta_t_opt = diff(t_steps);
@@ -422,6 +424,7 @@ if CONTROL
     hold on
     plot(x_spline_points_t1, y_spline_points_t1,'r','LineWidth',1);
     if MOVIE == 1
+        feature accel off
         i_frame = 1;     
         makeQTMovie('start', [RESULT_DIR 'prot_movie1.mov']);
         p_max = size(track_points,3);
@@ -439,6 +442,7 @@ if CONTROL
     end
     if MOVIE == 1
         makeQTMovie('finish');
+        feature accel on
     end
     axis equal
     title('Tracked points');
