@@ -80,7 +80,7 @@ c4 = (y4Est(1) + y1Est(end)) / 2;
 bgPlane = [c1, c2 ; c4, c3];
 
 % Calculate average background level
-avgBackLevel = c1 + c2 + c3 + c4 / 4;
+avgBackLevel = (c1 + c2 + c3 + c4) / 4;
 
 % Ofcourse the real plane has to be subtracted from the image so we resize it
 realBgPlane = imresize (bgPlane, size (inputImage), 'bilinear');
