@@ -1,5 +1,6 @@
-function makeQTMovie(cmd,arg, arg2)
-% MAKEQTMOVIE creates a QuickTime movie from a bunch of figures (and an optional sound).
+function MakeQTMovie(cmd,arg, arg2)
+% function MakeQTMovie(cmd, arg, arg2)
+% Create a QuickTime movie from a bunch of figures (and an optional sound).
 %
 % Syntax: MakeQTMovie cmd [arg]
 % The following commands are supported:
@@ -96,6 +97,9 @@ if nargin < 1
 			fprintf('this name\n');
 	return;
 end
+
+% Workaround for bug with global parameters in matlab 7
+feature accel off
 
 global MakeQTMovieStatus
 MakeDefaultQTMovieStatus;		% Needed first time, ignored otherwise
@@ -277,22 +281,22 @@ case 'demo'
 	sr = 22050;
 	fn = 'test.mov';
 	fprintf('Creating the movie %s.\n', fn);
-	makeQTMovie('start',fn);
-	makeQTMovie('size', [160 120]);
-	makeQTMovie('quality', 1.0);
+	MakeQTMovie('start',fn);
+	MakeQTMovie('size', [160 120]);
+	MakeQTMovie('quality', 1.0);
 	theSound = [];
 	for i=1:movieLength
 		plot(sin((1:100)/4+i));
-		makeQTMovie('addaxes');
+		MakeQTMovie('addaxes');
 		theSound = [theSound sin(440/sr*2*pi*(2^(i/12))*(1:sr/fps))];
 	end
-	makeQTMovie('framerate', fps);
-	makeQTMovie('addsound', theSound, sr);
-	makeQTMovie('finish');
+	MakeQTMovie('framerate', fps);
+	MakeQTMovie('addsound', theSound, sr);
+	MakeQTMovie('finish');
 
 case {'finish','close'}
 	AddQTHeader;
-	makeQTMovie('cleanup')			% Remove temporary files
+	MakeQTMovie('cleanup')			% Remove temporary files
 
 case 'framerate'
 	if nargin < 2
@@ -303,7 +307,7 @@ case 'framerate'
 	MakeQTMovieStatus.frameRate = arg;
 
 case 'help'
-	makeQTMovie				% To get help message.
+	MakeQTMovie				% To get help message.
 
 case 'size'
 						% Size is off by one on the
@@ -330,25 +334,25 @@ case 'start'
 		fprintf('with start command.\n');
 		return;
 	end
-	makeQTMovie('cleanup');
+	MakeQTMovie('cleanup');
 	MakeDefaultQTMovieStatus;
 	MakeQTMovieStatus.movieName = arg;
 	
 case 'test'
 	clf
 	MakeQTMovieStatus = [];
-	makeQTMovie('start','test.mov');
- 	makeQTMovie('size', [320 240]);
-	makeQTMovie('quality', 1.0);
+	MakeQTMovie('start','test.mov');
+ 	MakeQTMovie('size', [320 240]);
+	MakeQTMovie('quality', 1.0);
 	subplot(2,2,1);
 	for i=1:10
 		plot(sin((1:100)/4+i));
-		makeQTMovie('addfigure');
+		MakeQTMovie('addfigure');
 	end
-	makeQTMovie('framerate', 10);
-	makeQTMovie('addsound', sin(1:5000), 22050);
-	makeQTMovie('debug');
-	makeQTMovie('finish');
+	MakeQTMovie('framerate', 10);
+	MakeQTMovie('addsound', sin(1:5000), 22050);
+	MakeQTMovie('debug');
+	MakeQTMovie('finish');
 	
 case 'quality'
 	if nargin < 2
@@ -361,6 +365,9 @@ case 'quality'
 otherwise
 	fprintf('MakeQTMovie: Unknown method %s.\n', cmd);
 end
+
+% Workaround for bug with global parameters in matlab 7
+feature accel on
 
 %%%%%%%%%%%%%%%  MakeDefaultQTMovieStatus %%%%%%%%%%%%%%%%%
 % Make the default movie status structure.
