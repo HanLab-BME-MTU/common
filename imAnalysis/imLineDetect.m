@@ -62,7 +62,7 @@ if(nargin < 4)
    conf = 0.99;
 end;
 
-[aux,opt.noise] = mexNoiseEstim(img.data,1-conf);
+[aux,opt.noise] = imNoiseEstim(img.data,1-conf);
 
 if(nargout == 5)
    opt.nonMaxSupp = 1 ;
