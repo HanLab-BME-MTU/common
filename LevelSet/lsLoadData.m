@@ -1,5 +1,5 @@
 function [mask_img_t0, mask_img_t1,x_spline_t0, y_spline_t0, x_spline_t1,y_spline_t1,...  
-    known_zero_level_points_t0, known_zero_level_points_t1, grid_coordinates, domain] = lsLoadData(TEST_CASE, CONTROL)
+    known_zero_level_points_t0, known_zero_level_points_t1, grid_coordinates, domain] = lsLoadData(TEST_CASE, x_s, y_s, CONTROL)
 
 
 if TEST_CASE == 1 
@@ -9,8 +9,8 @@ if TEST_CASE == 1
    domain.x_size = 200;
    domain.y_size = 200;
    
-   domain.x_spacing = 5; 
-   domain.y_spacing = 5;
+   domain.x_spacing = x_s; 
+   domain.y_spacing = y_s;
    
    %create circle
    circle       = rsmak('circle',50,[0, 0]);
@@ -74,8 +74,8 @@ elseif TEST_CASE == 2
    domain.x_size = 200;
    domain.y_size = 200;
    
-   domain.x_spacing = 5; 
-   domain.y_spacing = 5;
+   domain.x_spacing = x_s; 
+   domain.y_spacing = y_s;
    
    %create circle
    circle1   = rsmak('circle',50,[0, 0]);
@@ -139,8 +139,8 @@ elseif TEST_CASE == 3
    domain.x_size = 200;
    domain.y_size = 200;
    
-   domain.x_spacing = 5; 
-   domain.y_spacing = 5;
+   domain.x_spacing = x_s; 
+   domain.y_spacing = y_s;
    
    %create first line
    line1(:,1) = 1:200;
@@ -194,8 +194,8 @@ elseif TEST_CASE == 4
    domain.x_size = 200;
    domain.y_size = 200;
    
-   domain.x_spacing = 5; 
-   domain.y_spacing = 5;
+   domain.x_spacing = x_s; 
+   domain.y_spacing = y_s;
    
    line_level1 = 105;
    line_level2 = 100;
@@ -258,8 +258,8 @@ elseif TEST_CASE == 5
    domain.x_size = 200;
    domain.y_size = 200;
    
-   domain.x_spacing = 3; 
-   domain.y_spacing = 3;
+   domain.x_spacing = x_s; 
+   domain.y_spacing = y_s;
    
    line_level1 = 105.5;
    line_level2 = 110.5;
@@ -325,8 +325,8 @@ elseif TEST_CASE == 6
    domain.x_size = 200;
    domain.y_size = 200;
    
-   domain.x_spacing = 3; 
-   domain.y_spacing = 3;
+   domain.x_spacing = x_s; 
+   domain.y_spacing = y_s;
    
    %create star
    s_scale = 25;
@@ -335,7 +335,7 @@ elseif TEST_CASE == 6
    y=(100+s_scale.*((2+sin(7.*2.*pi.*s)).*sin(2.*pi.*s)));
    
    circle   = rsmak('circle',22,[0, 0]);
-   circle   = fncmb(circle,'+', [100 100]);
+   circle   = fncmb(circle,'+', 100);
    
    figure
    fnplt(circle);
@@ -391,8 +391,8 @@ elseif TEST_CASE == 7
    domain.x_size = 439;
    domain.y_size = 345;
    
-   domain.x_spacing = 1; 
-   domain.y_spacing = 1;
+   domain.x_spacing = x_s; 
+   domain.y_spacing = y_s;
    
    %cd L:\projects\rho_protrusion\cell1\protrusion
    cd /lccb/projects/rho_protrusion/cell1/protrusion_1-30_ps2_s40
@@ -470,8 +470,8 @@ elseif TEST_CASE == 8
    domain.x_size = 439;
    domain.y_size = 345;
    
-   domain.x_spacing = 1; 
-   domain.y_spacing = 1;
+   domain.x_spacing = x_s; 
+   domain.y_spacing = y_s;
    
    cd /lccb/projects/alpha/W512r_smaller/protrusion_01-90_s30_p20
    load edge_spline
@@ -492,8 +492,8 @@ elseif TEST_CASE == 8
    firstfilename_mask=([PROJECT_DIR PROT_DIR 'mask_' IMG_NAME '.tif']);
    [filelist_mask]=getFileStackNames(firstfilename_mask);
    
-   time = 4;
-   time_increment = 15;
+   time = 1;
+   time_increment = 1;
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%% read the pixel edge %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    for i = 1 : time
@@ -557,8 +557,8 @@ elseif TEST_CASE == 9
    domain.x_size = img_w;
    domain.y_size = img_h;
    
-   domain.x_spacing = 4; 
-   domain.y_spacing = 4;
+   domain.x_spacing = x_s; 
+   domain.y_spacing = y_s;
    
    
    % file name containing the edge pixels
@@ -573,8 +573,8 @@ elseif TEST_CASE == 9
    firstfilename_mask=([PROJECT_DIR PROT_DIR 'mask_' IMG_NAME '.tif']);
    [filelist_mask]=getFileStackNames(firstfilename_mask);
    
-   time = 4;
-   time_increment = 10;
+   time = 1;
+   time_increment = 1;
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%% read the pixel edge %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    for i = 1 : time

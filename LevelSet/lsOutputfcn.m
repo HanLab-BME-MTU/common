@@ -11,12 +11,13 @@ if ~isempty(y)
         x = reshape(x_vec, length(x_vec)/2,2);
         % Extract the zero level
         phi_zero = lsGetZeroLevel(phi, domain);
-        plot(phi_zero(1,:), phi_zero(2,:),'g');       
+
+        plot(phi_zero(1,:), phi_zero(2,:),'k');  
     else
         phi = reshape(y, i_end, j_end);
         % Extract the zero level
         phi_zero = lsGetZeroLevel(phi(:,:,end), domain);
-        plot(phi_zero(1,:), phi_zero(2,:),'g');       
+        plot(phi_zero(1,:), phi_zero(2,:),'k');       
     end
 end
 

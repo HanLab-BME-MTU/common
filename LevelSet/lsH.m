@@ -9,18 +9,27 @@ else
     phi_t = reshape(y, i_end, j_end);
 end
 
-[delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(phi_t, delta_x, delta_y, i_end, j_end);
-%[delta_plus, delta_minus, grad_x, grad_y] = weno_5(phi_t, delta_x, delta_y, i_end, j_end);
-F = lsGetVelocityFct(phi_t, val_matrix_t1, i_end, j_end, grad_x, grad_y, domain);
+spatial_op = 2; 
 
-dy = zeros(i_end, j_end);
-for i=1:i_end
-    for j=1:j_end
-        dy(i,j) = -max(F(i,j), 0) * delta_plus(i,j) -...
-                   min(F(i,j), 0) * delta_minus(i,j);
-    end
+if spatial_op == 1
+    [delta_plus, delta_minus, grad_x, grad_y] = weno_5(phi_t, delta_x, delta_y, i_end, j_end);
+    F = lsGetVelocityFct(phi_t, val_matrix_t1, i_end, j_end, grad_x, grad_y, domain);
+
+    %H = -F .* (delta_plus + delta_minus)./2;
+    maxF = F > 0;
+    minF = F < 0;
+    H = - maxF.*F .* delta_plus - minF.*F .* delta_minus;
+    H_vec = reshape(H, numel(H),1);
+
+elseif spatial_op == 2
+    [delta_plus, delta_minus, grad_x, grad_y] = lsGradient2o(phi_t, delta_x, delta_y, i_end, j_end);
+    F = lsGetVelocityFct(phi_t, val_matrix_t1, i_end, j_end, grad_x, grad_y, domain);
+
+    maxF = F > 0;
+    minF = F < 0;
+    H = - maxF.*F .* delta_plus - minF.*F .* delta_minus;
+    H_vec = reshape(H, numel(H),1);
 end
-dy_vec = reshape(dy, numel(dy),1);
 
 if 1
     % Integrate the velocity 
@@ -60,7 +69,7 @@ if 1
     dx_x = x_velocity .* track_points_grad_x./ grad;
     dx_y = x_velocity .* track_points_grad_y./ grad;
     
-    dy_vec = cat(1, dy_vec, dx_x');
+    dy_vec = cat(1, H_vec, dx_x');
     dy_vec = cat(1, dy_vec, dx_y');
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

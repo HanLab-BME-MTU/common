@@ -67,38 +67,24 @@ elseif 0
    end  
 elseif 1
     % Distance driven flow
-    if 0
-        % Calculate the velocity at the front, thus at the zero level set
-        % find the zero level set:
-        phi_zero = lsGetZeroLevel(phi, domain);
-        % get the velocity at the zero level set
-        for i = 1:size(phi_zero,2)
-            F(phi_zero(1,i), phi_zero(2,i)) = 0;
-        end
-
-        % get the extended velocity
-    end
-
-    % level set difference driven flow 
-    kappa = lsCurvature(phi, domain.x_spacing, domain.y_spacing, i_end, j_end);
-    for i=1:i_end
-        for j=1:j_end
-            %F(i,j) = - sign(phi_target(i,j))*2;
-            
-            %sign_vel = sign(phi(i,j) - phi_target(i,j));
-            %F(i,j) = sign_vel *( phi(i,j) - phi_target(i,j))^2;
-            %F(i,j) = sign( phi(i,j) - phi_target(i,j)) * log(phi(i,j) - phi_target(i,j));
-            % this works
-            %F(i,j) = atan(phi(i,j) - phi_target(i,j));
-            d_level = phi(i,j) - phi_target(i,j);
-            if d_level >= 0
-                % protrusion
-                F(i,j) = 0.05 * d_level + atan(d_level);
-            else
-                % retraction
-                F(i,j) = d_level * (0.5 + kappa(i,j));
-            end
-        end
+    vel_m = 5;
+    if vel_m == 1
+        F = phi - phi_target;
+    elseif vel_m == 2
+        F = sign(phi - phi_target);
+    elseif vel_m == 3
+        F = atan(phi - phi_target);
+    elseif vel_m == 4
+        F = asinh(phi - phi_target);    
+    elseif vel_m == 5
+        kappa = lsCurvature(phi, domain.x_spacing, domain.y_spacing, i_end, j_end);
+        d_level = phi - phi_target;
+        d_l = d_level >= 0;
+        % protrusion
+        F_prot = asinh(d_level.*d_l);
+        % retraction
+        F_ret = d_level.*(~d_l) .* (0.3 + kappa);
+        F= F_prot + F_ret;
     end
 else
     % Curvature driven flow

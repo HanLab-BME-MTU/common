@@ -8,6 +8,10 @@ function [value,isterminal,direction] = events(t,y, phi_t1, i_end, j_end, delta_
 %        the zeros where the event function increases, and -1 if only the 
 %        zeros where the event function decreases.   
 
+global residual_last;
+global residual;
+global residual_i;
+
 if 1
     phi_vec = y(1:i_end*j_end);
     phi_t = reshape(phi_vec , i_end, j_end);
@@ -17,14 +21,27 @@ else
     phi_t = reshape(y, i_end, j_end);
 end
 
-residual = norm(phi_t - phi_t1, 'fro');
-if residual < 1
-    value = 0;
-else
-    value = residual;
-end
-isterminal = 1;
+res = norm(phi_t - phi_t1, 'fro');
+residual_d = residual_last - res;
 
+if 0
+    if residual_d < 2
+        value = 0;
+    else
+        value = residual_d;
+    end
+else
+    if res < 5 | residual_d < 0
+        value = -1;
+    else
+        value = 1;
+    end
+end
+
+residual_last = res;
+residual(residual_i) = res;
+residual_i = residual_i+1;
+isterminal = 1;
 direction = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

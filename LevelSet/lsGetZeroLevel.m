@@ -19,11 +19,19 @@ function phi_zero = lsGetZeroLevel(phi, domain)
 % x-levels, y-levels.
 % it finds them by linear interpolation of the level set 
 % matrix
+% interpolate Level set
 
+% interpolate on finer grid
+%phi_fine = interp2(domain.x_grid_lines, domain.y_grid_lines', phi, domain.x_grid_lines_f, domain.y_grid_lines_f','cubic');
+
+% extract zero level set
+%phi_zero = contourc(domain.x_grid_lines_f, domain.y_grid_lines_f, phi_fine,[0 0]);
 phi_zero = contourc(domain.x_grid_lines, domain.y_grid_lines, phi,[0 0]);
+
 if ~isempty(phi_zero)
     phi_zero(:,1)=[];
 end
+
 
 % contourslice(...,[cv cv])
 

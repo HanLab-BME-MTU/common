@@ -65,9 +65,14 @@ for i=1:2:l
     end    
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 CONTROL = 1; 
+MOVIE = 0;
 INT_VELOCITY = 1;
+global residual_last;
+global residual;
+global residual_i;
+residual_last = 1e10;
+residual_i = 1;
 if  ~exist('RESULT_DIR','var')
     RESULT_DIR = '/lccb/projects/alpha/Level_set_test/';
     %RESULT_DIR = 'L:\projects\alpha\Level_set_test\';
@@ -78,17 +83,22 @@ if ~exist('mask_img_t0','var')
     % TEST_CASE = 2; % two offset non-intersecting circles
     % TEST_CASE = 3; % two lines    
     % TEST_CASE = 4; % line and protrusion
-     TEST_CASE = 5; % line and spike
+    % TEST_CASE = 5; % line and spike
     % TEST_CASE = 6; % seven star
     % TEST_CASE = 7; % ellipses two cirlces
     % TEST_CASE = 8; % whole cell
-    % TEST_CASE = 9; % part cell
+     TEST_CASE = 9; % part cell W512
     % TEST_CASE = 10; % part cell cut_s399
+    
+    x_s = 5;
+    y_s = 5;
+    
+    sp_spacing = 4;
     
     [mask_img_t0, mask_img_t1, x_spline_t0, y_spline_t0,...
         x_spline_t1,y_spline_t1,...
         known_zero_level_points_t0, known_zero_level_points_t1,...
-        grid_coordinates, domain] = lsLoadData(TEST_CASE, CONTROL);
+        grid_coordinates, domain] = lsLoadData(TEST_CASE, x_s, y_s, CONTROL);
 
 
     if 0
@@ -222,7 +232,7 @@ if INT_VELOCITY
     %track_points_0 = phi_zero_t0';
     
     if ~exist('r_t0','var')
-        r_t0=1:0.5:x_spline_t0.knots(end);
+        r_t0=1:sp_spacing:x_spline_t0.knots(end);
     end
     % pixel based
 %     for i=1:floor(size(known_zero_level_points_t0,1)/2)
@@ -231,8 +241,8 @@ if INT_VELOCITY
 %     end
     
     % spline based
-    track_points_0(:,1) = fnval(x_spline_t0, r_t0);
-    track_points_0(:,2) = fnval(y_spline_t0, r_t0);
+    track_points_0(:,1) = fnval(x_spline_t0, r_t0)';
+    track_points_0(:,2) = fnval(y_spline_t0, r_t0)';
     
     num_track_points = size(track_points_0, 1);
     phi_t0_vec = cat(1, phi_t0_vec,track_points_0(:,1));
@@ -249,20 +259,28 @@ hold on
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%% Integrate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if 1
 tcpu1 = clock;
 [t_steps, Y, TE,YE,IE] = ode45(@lsH,[0 200],phi_t0_vec, options,...
     phi_t1, i_end, j_end, delta_x, delta_y, domain);
 cpu_time = etime(clock,tcpu1)
+else
+    tcpu1 = clock;
+    dt = 0.1;
+    [phi, residual] = RK_4_nonTVD(phi_t0, phi_t1, dt, i_end, j_end, delta_x, delta_y, domain);
+    cpu_time = etime(clock,tcpu1)
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if isempty(TE)
     display('Solution did not converge in given time limit');
 else
-    display(['Solution converged at time step  ' num2str(TE)]);
+    display(['Solution converged at time step  ' num2str(TE(end))]);
 end
 Y=Y';
 
 axis([0 domain.x_size 0 domain.y_size]);
+h_level_sets = figure(gcf);
 
 % Number of time steps
 num_time_steps = length(t_steps);
@@ -278,6 +296,40 @@ for t=1:num_time_steps
     end
 end
 
+if CONTROL
+    h_f = figure(gcf);
+    axis equal
+    axis([0 domain.x_size 0 domain.y_size]);
+    hgsave(h_f, [RESULT_DIR 'zero_level_evol.fig']);
+    print(h_f,  [RESULT_DIR 'zero_level_evol.eps'],'-depsc2','-tiff');
+    print(h_f,  [RESULT_DIR 'zero_level_evol.tif'],'-dtiff');
+    
+    h_res = figure;
+    plot(residual);
+    xlabel('Time step');
+    ylabel('Residual')
+end 
+
+
+% extract the zero level sets
+if MOVIE == 1
+    h_zero_levels =figure;
+    %axis([0 domain.x_size 0 domain.y_size]);
+    %hold on
+    %plot(x_spline_points_t0, y_spline_points_t0,'r','LineWidth',2);
+    %plot(x_spline_points_t1, y_spline_points_t1,'r','LineWidth',2);
+    
+    i_frame = 1;     
+    makeQTMovie('start', [RESULT_DIR 'prot_movie2.mov']);
+    for t=1:10:num_time_steps
+        zero_level_set_t = lsGetZeroLevel(phi(:,:,t),domain);
+        plot(zero_level_set_t(1,:), zero_level_set_t(2,:));
+        axis([0 domain.x_size 0 domain.y_size]);
+        makeQTMovie('addfigure');
+    end
+    makeQTMovie('finish');
+end
+
 % Initialize the displacement
 protrusion = zeros((size(Y,1) - (i_end * j_end))/2,  1);
 
@@ -289,13 +341,19 @@ for t=1:num_time_steps - 1
 end
 % Get the sign of the protrusion
 for i=1:size(track_points,1)
-    if round(track_points(i,1,end)) <= size(mask_img_t1,1) && round(track_points(i,2,end)) <= size(mask_img_t1,2)
+    max_l = round(track_points(i,1,end)) <= size(mask_img_t1,2) &&...
+            round(track_points(i,2,end)) <= size(mask_img_t1,1);
+    min_l = round(track_points(i,1,end)) >=1  && round(track_points(i,2,end)) >= 1;
+    if  max_l && min_l
         if logical(mask_img_t0(round(track_points(i,2,end)), round(track_points(i,1,end)))) == 0
             prot_sign = 1;
         else
             prot_sign = -1;
         end
+    else
+        prot_sign = 0;
     end
+       
     protrusion(i) = prot_sign * protrusion(i);
 end
 
@@ -306,17 +364,23 @@ disp_points = [track_points(:,1,end), track_points(:,2,end)];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if CONTROL
-    h_f = figure(gcf);
-    hgsave(h_f, [RESULT_DIR 'zero_level_evol.fig']);
-    print(h_f,  [RESULT_DIR 'zero_level_evol.eps'],'-depsc2','-tiff');
-    print(h_f,  [RESULT_DIR 'zero_level_evol.tif'],'-dtiff');
+    % show level sets
+    for t=1:40:num_time_steps
+        h_s = figure;
+        surface(domain.x_grid_lines, domain.y_grid_lines, phi(:,:,t));
+        hold on
+        zero_level_set_t = lsGetZeroLevel(phi(:,:,t),domain);
+        plot(zero_level_set_t(1,:), zero_level_set_t(2,:),'g','LineWidth',2);
+        print(h_f,  [RESULT_DIR 'level_set',num2str(t),'.tif'],'-dtiff');
+    end
     
-     % Show the time steps
+    % Show the time steps
     delta_t_opt = diff(t_steps);
-    figure
+    av_t_steps = mean(delta_t_opt);
+    h_time_steps = figure;
     plot(delta_t_opt);
-    title('Time steps');
-    
+    title(['Time steps,  average time step= ' num2str(av_t_steps)]);
+   
     % Show the curvature of the last distance function
     %kappa = lsCurvature(phi(:,:,end), delta_x, delta_y, i_end, j_end);
     %figure
@@ -327,48 +391,84 @@ if CONTROL
     contour(domain.x_grid_lines, domain.y_grid_lines, phi_t0, 40);
     hold on
     contour(domain.x_grid_lines, domain.y_grid_lines, phi(:,:,end), 40);
-    plot(phi_zero_t0(1,:), phi_zero_t0(2,:),'g','LineWidth',2);
-    plot(phi_zero_t1(1,:), phi_zero_t1(2,:),'r','LineWidth',2);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    plot(phi_zero_t0(1,:), phi_zero_t0(2,:), 'g','LineWidth',2);
+    plot(phi_zero_t1(1,:), phi_zero_t1(2,:), 'r','LineWidth',2);
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%    Track points plots     %%%%%%%%%%%%%%%%%%%%%%%%%%%%
     h_tracked_points = figure;
-    plot(phi_zero_t0(1,:), phi_zero_t0(2,:),'g');
+    %plot(phi_zero_t0(1,:), phi_zero_t0(2,:),'g');
+    %hold on
+    %plot(phi_zero(1,:), phi_zero(2,:),'r');
+    %plot(phi_zero_t1(1,:), phi_zero_t1(2,:),'--m');
+    plot(x_spline_points_t0, y_spline_points_t0,'g');
     hold on
-    plot(phi_zero(1,:), phi_zero(2,:),'r');
-    plot(phi_zero_t1(1,:), phi_zero_t1(2,:),'--m');
-    plot(x_spline_points_t0, y_spline_points_t0,'r+', 'MarkerSize',3);
-    plot(x_spline_points_t1, y_spline_points_t1,'r+', 'MarkerSize',3);
+    plot(x_spline_points_t1, y_spline_points_t1,'r');
     for p = 1:size(track_points,1)
         plot(squeeze(track_points(p,1,:)), squeeze(track_points(p,2,:)), '-');
     end
     axis equal
+    axis([0 domain.x_size 0 domain.y_size]);
     title('Tracked points');
-    legend('Zero level t0', 'Zero level t1 solution', 'Zero level t1 given',...
-        'org. curve t0','org. curve t1')
+    %legend('Zero level t0', 'Zero level t1 solution', 'Zero level t1 given',...
+    %    'org. curve t0','org. curve t1')
     
-        
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     h_tracked_points2 = figure;
-    plot(x_spline_points_t0, y_spline_points_t0,'g','LineWidth',2);
+    axis([0 domain.x_size 0 domain.y_size]);
+    axis equal
+    plot(x_spline_points_t0, y_spline_points_t0,'g','LineWidth',1);
     hold on
-    plot(x_spline_points_t1, y_spline_points_t1,'r','LineWidth',2);
-    i_frame = 1;
-    % makeQTMovie('start', ['/home/machacek/prot_movie.mov']);
-%    makeQTMovie('start', ['H:\prot_movie.mov']);
-    for p = 1:size(track_points,1)
-        plot(squeeze(track_points(p,1,:)), squeeze(track_points(p,2,:)), '-');
-%         if mod(p,30) == 0 | p==1
-%             movie_frame(i_frame) = getframe(h_tracked_points2); 
-%             i_frame = i_frame +1;
-              %makeQTMovie('addmatrix',); 
-%              makeQTMovie('addfigure');
-%         end
+    plot(x_spline_points_t1, y_spline_points_t1,'r','LineWidth',1);
+    if MOVIE == 1
+        i_frame = 1;     
+        makeQTMovie('start', [RESULT_DIR 'prot_movie1.mov']);
+        p_max = size(track_points,3);
+    else
+        p_max = size(track_points,1);
     end
-%    makeQTMovie('finish');
+    for p = 1:p_max
+        if MOVIE == 1
+            plot(track_points(:,1,p), track_points(:,2,p),'.', 'MarkerSize',3);
+            i_frame = i_frame +1;
+            makeQTMovie('addfigure');
+        elseif ~ MOVIE 
+            plot(squeeze(track_points(p,1,:)), squeeze(track_points(p,2,:)));
+        end
+    end
+    if MOVIE == 1
+        makeQTMovie('finish');
+    end
     axis equal
     title('Tracked points');
     legend('Cell edge at t0','Cell edge at t1')        
-        
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    h_time_lines = figure
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
+    % plot tracks and level sets at same time
+    figure(h_level_sets)
+    axis([0 domain.x_size 0 domain.y_size]);
+    plot(x_spline_points_t0, y_spline_points_t0,'g','LineWidth',1);
+    hold on
+    plot(x_spline_points_t1, y_spline_points_t1,'r','LineWidth',1);
+    i_frame = 1;
+    for p = 1:size(track_points,1)
+        plot(squeeze(track_points(p,1,:)), squeeze(track_points(p,2,:)), '-');
+    end
+    h_tracked_points3 = figure;
+    plot(x_spline_points_t0, y_spline_points_t0,'g','LineWidth',1);
+    hold on
+    plot(x_spline_points_t1, y_spline_points_t1,'r','LineWidth',1);
+    i_frame = 1;
+    for p = 1:size(track_points,1)
+        plot(squeeze(track_points(p,1,:)), squeeze(track_points(p,2,:)), '-');
+    end    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%        Time lines       %%%%%%%%%%%%%%%%%%%%%%%%%
+    h_time_lines = figure;
+    
     plot(phi_zero_t0(1,:), phi_zero_t0(2,:),'g');
     hold on
     plot(phi_zero(1,:), phi_zero(2,:),'r');
@@ -380,19 +480,34 @@ if CONTROL
     %          fnval(y_spline_tb,1: y_spline_tb.knots(end)) ,'y');
     % end
     axis equal
+    axis([0 domain.x_size 0 domain.y_size]);
     title('Time lines');
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     h_disp = figure;
     plot(protrusion);
     title('Protrusion [pixel/frame rate]');
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Save  results
+    hgsave(h_res, [RESULT_DIR 'residual.fig']);
+    print(h_res,  [RESULT_DIR 'residual.eps'],'-depsc2','-tiff');
+    print(h_res,  [RESULT_DIR 'residual.tif'],'-dtiff');
+    hgsave(h_level_sets, [RESULT_DIR 'super_pos.fig']);
+    print(h_level_sets,  [RESULT_DIR 'super_pos.eps'],'-depsc2','-tiff');
+    print(h_level_sets,  [RESULT_DIR 'super_pos.tif'],'-dtiff');     
+    hgsave(h_time_steps, [RESULT_DIR 'time_steps.fig']);
+    print(h_time_steps,  [RESULT_DIR 'time_steps.eps'],'-depsc2','-tiff');
+    print(h_time_steps,  [RESULT_DIR 'time_steps.tif'],'-dtiff');
     hgsave(h_tracked_points, [RESULT_DIR 'tracked_points.fig']);
     print(h_tracked_points,  [RESULT_DIR 'tracked_points.eps'],'-depsc2','-tiff');
     print(h_tracked_points,  [RESULT_DIR 'tracked_points.tif'],'-dtiff');
     hgsave(h_tracked_points2, [RESULT_DIR 'tracked_points2.fig']);
     print(h_tracked_points2,  [RESULT_DIR 'tracked_points2.eps'],'-depsc2','-tiff');
     print(h_tracked_points2,  [RESULT_DIR 'tracked_points2.tif'],'-dtiff');    
+    hgsave(h_tracked_points3, [RESULT_DIR 'tracked_points3.fig']);
+    print(h_tracked_points3,  [RESULT_DIR 'tracked_points3.eps'],'-depsc2','-tiff');
+    print(h_tracked_points3,  [RESULT_DIR 'tracked_points3.tif'],'-dtiff');     
     hgsave(h_time_lines, [RESULT_DIR 'time_lines.fig']);
     print(h_time_lines,  [RESULT_DIR 'time_lines.eps'],'-depsc2','-tiff');
     print(h_time_lines,  [RESULT_DIR 'time_lines.tif'],'-dtiff');
