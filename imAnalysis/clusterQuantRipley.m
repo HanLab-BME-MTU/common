@@ -1,4 +1,4 @@
-function[cpar,pvr,dpvr, cpar2]=clusterQuantRipley(mpm,imsizex,imsizey);
+function[cpar,pvr,dpvr, cpar2]=clusterQuantRipley(mpm,imsizex,imsizey,norm);
 % clusterQuantRipley calculates a quantitative clustering parameter based on
 % Ripley's K-function (a spatial statistics function for point patterns)
 %
@@ -9,7 +9,9 @@ function[cpar,pvr,dpvr, cpar2]=clusterQuantRipley(mpm,imsizex,imsizey);
 %            imsizex:   x-size of the image (maximum possible value for x-coordinate)
 %            imsizey:   y-size of the image (maximum possible value for
 %                       y-coordinate)
-%            cf:  correction =1 circumferebnce +2 area
+%            norm:   number of images for normalization; e.g. number of
+%                   images before adding growth factor to cells
+%
 %            NOTE: in Johan's mpm-files, the image size is 1344 x 1024
 %               pixels
 %            NOTE2: this function uses Ripley's circumference correction
@@ -82,9 +84,9 @@ for k=1:(round(ny/2))
     
     %comment/uncomment the next five lines if you want to monitor progress
     %prints number of objects for every 10th line
+    [smx,smy]=size(smatt);
+    tempnp=max([smx,smy]);
     if(mod(k,10)==0)
-        [smx,smy]=size(smatt);
-        tempnp=max([smx,smy]);
         disp(['plane ',num2str(k),'   number of objects ', num2str(tempnp)]);
     end  % of if
 
@@ -92,24 +94,29 @@ for k=1:(round(ny/2))
     %now determine number of objects in circle of increasing radius,
     %averaged over all objects in smatt, and normalized with point density
     %tempnp/(msx*msy)
-        [pvrt]=pointsincircle(smatt,matsiz);
+        [pvrt,nump]=pointsincircle(smatt,matsiz);
     %result is already normalized with point density tempnp/(msx*msy)
         pvr(:,k)=pvrt(:);
     
     %from the calculated function pvrt (number of points versus circle
     %radius), calculate a quantitative clustering parameter, cpar
     %somewhat arbitrarily defined as positive integral
-        [cpar(k),dpvr(:,k), cpar2(k)]=clusterpara(pvrt);
+    % wav containing actual number of points
+        
+        [cpar(k),dpvr(:,k), cpar2(k)]=clusterpara(pvrt,nump,tempnp);
     end  % of if
         
 end
 %normalize cpar with initial value
-ini=(cpar(1)+cpar(2))/2;
-cpar=cpar/ini;
+if(norm>length(cpar))
+    norm=1;
+end
+normfac=mean(cpar(1:norm));
+cpar=cpar/normfac;
 end
 
 
-function[cpar1, dpvrt, cpar2]=clusterpara(pvrt);
+function[cpar1, dpvrt, cpar2]=clusterpara(pvrt, nump, tempnp);
 %clusterpara calculates a quantitative cluster parameter from the input
 %function (points in circle) vs (circle radius)
 % SYNOPSIS   [cpar]=clusterpara(pvrt);
@@ -117,7 +124,9 @@ function[cpar1, dpvrt, cpar2]=clusterpara(pvrt);
 % INPUT      pvrt:   function containing normalized point density in 
 %                   circle around object
 %                   spacing of points implicitly assumes radii of 1,2,3...
-%   
+%            nump = total number of points in circles on which measurement
+%            is based (is relevant for statistical evaluation of point)
+%
 % OUTPUT     cpar:    cluster parameter
 %            dpvrt:   difference function of p vs r
 %
@@ -133,21 +142,30 @@ de=(1:len);
 %diff=sqrt(abs(pvrt))-de;
 % H(r) funtcion from poission clustering
 Hr=pvrt-de.^2;
-dpvrt=Hr;
+% for difffuncparas, we want to extract inclination around central point;
+% for high degree of cell division, the normalization of Hr affects this
+% inclination; therefore, to conserve the height of the first rise 
+% corresponding to the close neighborhood, we scale with number of cells; 
+% 
+numc=max(nump);
+dpvrt=Hr*sqrt(tempnp);
+% original version:
+%dpvrt=Hr;
+
 %extract parameters from diff
-[cpar1,cpar2]=DiffFuncParas(Hr);
+[cpar1,cpar2]=DiffFuncParas(dpvrt, nump);
 
 end    
 
     
-function[p1,p2]=DiffFuncParas(Hr);
+function[p1,p2]=DiffFuncParas(Hr, nump);
 %DiffFuncParas calculates a number of quantitative cluster parameter 
 %from the input function, the difference function
 % SYNOPSIS   DiffFuncParas(diff);
 %       
 % INPUT      diff:  difference function as calculated in clusterpara
 %                   vector with len number of points
-%%   
+%%          numvrt: wave containing total number of points (for statistics)
 % OUTPUT     p1,p2:  cluster parameters
 %                    currently: p1=inclination of the first rise of the
 %                                   H(t) function (clustering) 
@@ -159,26 +177,111 @@ function[p1,p2]=DiffFuncParas(Hr);
 %
 % Dinah Loerke, September 13th, 2004
 
+
 %% firstpoint: point where diff function systematically rises above zero 
 %% definition: diff>0 AND (diff)'>0 to exlude noisy one-point rises above
 %% zero. if there exists no such point (for completely scattered
 %% distributions), firstpoint is set to nan and incl is set to zero
 vec=Hr;
-dvec=diff(vec);
-detvec=vec;
-detvec(vec<0)=0;
-detvec(dvec<0)=0;
+% smooth
+filtervec=vec;
 
-if (nonzeros(detvec)>1)
-    firstpoint=min(find(detvec));
+%filtershape = [0.25 0.5 0.25];
+% shift=1;
+
+%filtershape = [0.0103 0.2076 0.5642 0.2076 0.0103];
+%shift=2;
+
+xs=-8:1:8;
+amps=exp(-(xs.^2)/(2*(2.5^2)));
+namps=amps/sum(amps);
+filtershape = namps;
+shift=8;
+
+[filtervec] = filter(filtershape,1,vec);
+
+
+xs2=-4:1:4;
+amps2=exp(-(xs2.^2)/(2*(1^2)));
+namps2=amps2/sum(amps2);
+filtershape2 = namps2;
+shift2=4;
+[filtervec2] = filter(filtershape2,1,vec);
+
+% the filter shifts the function two points to the right, this is
+% compensated by removing first two points
+% the size of the filter excludes variation caused by small cell numbers,
+% e.g. the wedge artifact for single cell increases at small distances, if
+% the number of lonely frames isn't too large
+filtervec(1:shift)=[];
+filtervec2(1:shift2)=[];
+
+%devc=first differential
+dvec=diff(filtervec);
+dvec2=diff(filtervec2);
+ddvec=diff(dvec);
+
+% detvec= determination vector; has the function to differentiate between 
+% clustered distributions, where we can calculate cluster parameters, and 
+% scattered distrubutions where this is impossible. detvec is set to zero 
+% where either the original function is below zero (indicating scattering)
+% or where the inclination (of the filtered function) is below zero (as 
+% would be the case for a single isolated above-zero data point, which is
+% not followed shortly after by an additional data point - the 'shortly
+% after' depends on the range of the filtering
+detvec1=dvec;
+detvec1(1:20)=0;
+detvec1(dvec<0)=0;
+minimum=min(find(detvec1));
+
+detvec2=ddvec;
+detvec2(1:minimum)=0;
+detvec2(ddvec>0)=0;
+turnpoint=min(find(detvec2));
+
+detvec3=filtervec;
+detvec3(1:minimum)=0;
+detvec3(filtervec<0)=0;
+firstzerocrosspoint=min(find(detvec3));
+
+
+if (nonzeros(detvec3)>1)
+    firstpoint=firstzerocrosspoint;
     % beginning point begp and end point endp for calculating inclination of the
     % function diff
-    begp=round(firstpoint+3);
-    endp=begp+10;
-    %% these values can be refined to include variable lengths according to end of first
-    %% steep rise (considering point where inbclination starts to drop)
-    %% this will be done in next version
-    inclination=sum(dvec(begp:endp))/(endp-begp);
+    begp=firstpoint-2;
+    endp=begp+round(firstpoint/2);
+    inclination=mean(dvec2(begp:endp));
+    
+       
+%     %% these values can be refined to include variable lengths according to end of first
+%     %% steep rise (considering point where inbclination starts to drop)
+%     %% this will be done in next version
+%     inclinationvector=vec(begp:endp);
+%     leni=length(inclinationvector);
+%     a1=1:leni;
+%     a2=a1;
+%     a2(:)=1;
+%     A=[a1' a2'];
+%     B=inclinationvector';
+%     %[U] = linearLeastMedianSquares(A,B,[],[100,0]');
+%     inclination=sum(dvec(begp:endp))/(endp-begp);
+%     %display(['inclination= ',num2str(inclination),'  linLeastMedSq=',num2str(U(1))]);
+%     
+     plot(vec,'b.');
+     axis([ 20 120 -5000 75000]);
+     hold on
+     plot(filtervec,'b-');
+     ypts=[vec(begp) vec(endp)];
+     xpts=[begp endp];
+     plot(xpts, ypts, 'r.');
+     plot(firstpoint,filtervec(firstpoint),'go')
+     %LLMSfitx=begp:endp;
+     %LLMSfity=U(1)*LLMSfitx+U(2);
+     %plot(LLMSfitx, LLMSfity, 'g-');
+     hold off
+     pause(0.1);
+    
 else
     firstpoint=NaN;
     inclination=0;
@@ -204,7 +307,7 @@ end
 
 
 
-function[m2]=pointsincircle(m1,ms)
+function[m2,num]=pointsincircle(m1,ms)
 %pointsincircle calculates the average number of points in a circle around
 %a given point as a function of the circle radius (averaged over all points
 %and normalized by total point density); this function is called Ripley's
@@ -274,13 +377,13 @@ for r=rs:-1:1
     %to zero
     thresh_mdistones = thresh_mdist;
     thresh_mdistones(thresh_mdist > 0) = 1;
-    
+    num(r)=sum(thresh_mdistones(:))/2;  
     %weigt every counted point with the circumference correction factor
     %calculated previously in corrFacMat
     tempfinal=thresh_mdistones./corrFacMat;    
     %sum over entire matrix to get number of points
     npv=sum(tempfinal(:));
-        
+      
     %to average, divide sum by number of points (=columns)
     npv=(npv/lm);
     
@@ -293,6 +396,7 @@ for r=rs:-1:1
     %points
     m2(r)=npv/(pi*(lm-1)/(msx*msy));
     %using (lm-1) and not lm is Marcon&Puech's correction (2003)
+    
 end
 
 end
