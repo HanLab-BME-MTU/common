@@ -24,8 +24,8 @@ function varargout = imInterp(varargin)
 %
 %    sp = imInterp(img,[],[],'spap2',...)
 %    When no interpolation point is specified and 'method' is one of the 
-%    B-Spline interpolation methods, the output is the B-form of the
-%    spline interpolation.
+%    B-Spline interpolation methods, the output is the B-form or pp-form of
+%    the spline interpolation.
 %
 % INPUT :
 %    img : The image intensity matrix. It can be of class uint8, uint16, or
@@ -191,30 +191,31 @@ elseif strcmp(method,'spap2') == 1
       error('The order of the spline interpolation has to be integer.');
    end
 
-   %If no knot sequence is provided, the default knot sequence with
-   % intervals of appoximately every other pixel is created and the default
-   % order is 4. For even number of pixels, the end interval has a length
-   % of 3 pixels.
-   if rem(numPixelsX,2) == 0 
-      knotsX = augknt([1:2:numPixelsX-3 numPixelsX],orderX);
-   else
-      knotsX = augknt([1:2:numPixelsX],orderX);
-   end
-
-   if rem(numPixelsY,2) == 0 
-      knotsY = augknt([1:2:numPixelsY-3 numPixelsY],orderY);
-   else
-      knotsY = augknt([1:2:numPixelsY],orderY);
-   end
-
    if nargin >= 5 & ~isempty(varargin{5})
       if iscell(varargin{5}) & length(varargin{5}) == 2
-         knotsX = varargin{5}{1};
-         knotsY = varargin{5}{2};
+         knotsY = varargin{5}{1};
+         knotsX = varargin{5}{2};
+      elseif isnumeric(varargin{5}) & length(varargin{5}) == 2
+         %Get distance between breaks for constructing knot sequence.
+         dY = varargin{5}(1);
+         dX = varargin{5}(2);
+
+         numBrksY = max(3,ceil(numPixelsY/dY));
+         numBrksX = max(3,ceil(numPixelsX/dX));
+         knotsY   = augknt(linspace(1,numPixelsY,numBrksY),orderY);
+         knotsX   = augknt(linspace(1,numPixelsX,numBrksX),orderX);
       else
-         error(['The two knot sequences should be provided ' ...
-            'in a cell array of two elements.']);
+         error(['The arguments for the method, ''spap2'' ' ...
+            'are not correctly given.']);
       end
+   else
+      %If no knot sequence is provided, the default knot sequence with
+      % intervals of appoximately every other pixel is created and the default
+      % order is 4.
+      numBrksY = max(3,ceil(numPixelsY/2));
+      numBrksX = max(3,ceil(numPixelsX/2));
+      knotsY   = augknt(linspace(1,numPixelsY,numBrksY),orderY);
+      knotsX   = augknt(linspace(1,numPixelsX,numBrksX),orderX);
    end
 elseif strcmp(method,'spaps') == 1
    if nargout > 2
@@ -255,11 +256,11 @@ imI  = (imI-minI)/(maxI-minI);
 if strcmp(method,'Gaussian') == 1
    %Compute the matrix of weights for intensities in a correlation square
    % whose center is moved around to each interpolation point. The size of 
-   % the sqare is determined by
-   % 'corLen'.
+   % the sqare is determined by 'corLenY' and 'corLenX'.
    corY = [-floor(2*corLenY):floor(2*corLenY)].';
    corX = [-floor(2*corLenX):floor(2*corLenX)];
    if length(corY) == 1 & length(corX) == 1
+      %Exact interpolation in this case.
       outI = imI;
    else
       W    = exp(-corY.^2/2/corLenY^2)*exp(-corX.^2/2/corLenX^2);
@@ -271,7 +272,12 @@ if strcmp(method,'Gaussian') == 1
    if ~isempty(YX)
       outI = outI(floor(YX(:,2)+0.5)*numPixelsY+floor(YX(:,1)+0.5));
 
-      %The following for loop should be implemented as mex function.
+      %The following for loop should be implemented as mex function. The
+      % initial idea is that when we only ask for the intensity values at a few
+      % points, we don't need to convolve the whole image. Anyone has an idea 
+      % to avoid the for loop here or is interested in implementing the mex
+      % function is highly respected.
+
       %outI = zeros(size(YX));
       %for k = 1:size(YX,1)
       %   %Move the center of the correlation square defined by 'corY' and 
@@ -305,7 +311,9 @@ if strcmp(method,'Gaussian') == 1
    end
    varargout{1} = outI;
    return;
-elseif strcmp(method,'spap2') == 1
+end
+
+if strcmp(method,'spap2') == 1
    sp = spap2({knotsY,knotsX},[orderY orderX], ...
       {[1:numPixelsY],[1:numPixelsX]},imI);
 elseif strcmp(method,'spaps') == 1
