@@ -23,8 +23,11 @@ function[cpar,pvr,dpvr]=ClusterQuantRipley(mpm,imsizex,imsizey);
 %                   NOTE: the default size for the radius implicit in the 
 %                   pvr function is [1,2,3...,minimsize] where minimsize is the
 %                   smalller dimension of imsizex,imsizey
-%            dpvr:  pvr difference function; logarithm of pvr with x^2
-%                   function subtracted for better comparison
+%                   This function corresponds to Ripley's K-function (/pi)
+%            dpvr:  pvr difference function; this function corresponds to 
+%                   the L-function (or more precisely ld-d); the x^2
+%                   function corresponding to a Poisson random clustering
+%                   is corrected for (corr. to zero line)
 %
 % DEPENDENCES   FractClusterQuant uses {pointsincircle,clusterpara}
 %               FractClusterQuant is used by { }
@@ -101,20 +104,11 @@ function[cpar,dpvrt]=clusterpara(pvrt);
 %
 % Dinah Loerke, September 13th, 2004
 
-%calculate difference function, using logarithm
+%calculate difference L(d)-d function, using L(d)=sqrt(K(d))
+%since K(d) is already divided by pi
 len=max(size(pvrt));
-%this loop is used to prevent error messages for log zero
-for in=1:len
-    if (pvrt(in)==0)
-        lnp(in)=0;
-    else
-        lnp(in)=log(pvrt(in));
-    end
-end
-lnr=log(1:len);
-%diff=difference function between pvrt and ideal x^2 function
-%logarithm for better differentiation
-diff=lnp-2*lnr;
+de=(1:1:len);
+diff=sqrt(abs(pvrt))-de;
 dpvrt=diff;
 %extract parameters from diff
 [cpar1,cpar2]=DiffFuncParas(diff);
@@ -237,7 +231,9 @@ for r=1:minms
         y=m1(n,2);
         carea=area_snippedcircleG(r,x,y,msx,msy);
         corrfac=carea/(pi*r^2);
-        
+        if(corrfac==0)
+            disp('carea=0 Check if you have msx, msy entered in the correct order!!');
+        end
         %add number of points npvt weighted by the correction factor
         %corrfac to the sum of points
         npv=npv+(npvt/corrfac);
@@ -254,7 +250,7 @@ for r=1:minms
     %it is a perfect square function for a perfectly random distribution of
     %points
     m2(r)=npv/(pi*lm/(msx*msy));
-end
+    end
 
 
   
