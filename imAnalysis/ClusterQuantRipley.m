@@ -1,6 +1,6 @@
 function[cpar,pvr,dpvr]=ClusterQuantRipley(mpm,imsizex,imsizey);
 % ClusterQuantRipley calculates a quantitative clustering parameter based on
-% fractal theory
+% Ripley's K-function (a spatial statistics function for point patterns)
 %
 % SYNOPSIS   [cpar,pvr,dpvr]=ClusterQuantRipley(mpm,imsizex,imsizey);
 %       
