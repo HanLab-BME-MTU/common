@@ -1,0 +1,82 @@
+function [x,dx,mse] = myLscov(A,b,V)
+%MYLSCOV Least squares with known covariance. - returns mse^2 (=sigma0hat^2) as additional output
+%   X = MYLSCOV(A,B,V) returns the vector X that solves A*X = B + E
+%   where E is normally distributed with zero mean and coVARIANCE V.
+%   A must be M-by-N where M > N.  This is the over-determined
+%   least squares problem with covariance V of the data.  
+%   The solution is found without inverting V.
+%   The error is forced to be >= eps -> no imaginary solutions with Re=0
+%   are possible right now
+%
+%   The vector X minimizes (A*X-B)'*inv(V)*(A*X-B). The classical
+%   linear algebra solution to this problem is:
+%
+%       X = inv(A'*inv(V)*A)*A'*inv(V)*B
+%
+%   [X, DX,MSE] =MYLSCOV(A,B,V) returns the standard errors of X in DX. 
+%   The standard statistical formula for the standard error of the
+%   coefficients is:
+%
+%      mse = B'*(inv(V) - inv(V)*A*inv(A'*inv(V)*A)*A'*inv(V))*B./(m-n) 
+%      dx = sqrt(diag(inv(A'*inv(V)*A)*mse))
+%
+%   To get the a priori variance (diagonal elements of Q, diag(inv(A'PA)),
+%   use dx^2/mse)
+%
+%   See also SLASH, LSQNONNEG, QR.
+
+%   References:
+%       G. Strang, "Introduction to Applied Mathematics",
+%       Wellesley-Cambridge, p. 398, 1986.
+%
+%       F. Graybill, "Theory and Application of the Linear Model",
+%       Duxbury Press p. 207, 1976.
+
+%   L. Shure 3-31-89
+%   Brad Jones 4-7-95
+%   L. Shure 2-8-96
+%   Copyright 1984-2002 The MathWorks, Inc. 
+%   $Revision: 5.15 $  $Date: 2002/04/08 23:51:49 $
+%   changed by jonas
+
+[m,n] = size(A);
+
+% Error checking
+if m <= n, error('Problem must be over-determined so that M > N.'); end
+if size(b,1)~=m, 
+  error(sprintf('B must be a column vector of size %d-by-1.',m));
+end
+if ~isequal(size(V),[m m]), 
+  error(sprintf('V must be a %d-by-%d matrix.',m,m));
+end
+
+[qnull,r] = qr(A);
+q = qnull(:,1:n);
+r = r(1:n,1:n);
+qnull(:,1:n) = [];
+
+g = qnull'*V*qnull;
+f = q'*V*qnull;
+
+c = q'*b;
+d = qnull'*b;
+
+x = r\(c-f*(g\d));
+
+if nargout > 1
+    % Standard formulas are:
+    %   mse = b'*(inv(V) - inv(V)*A*inv(A'*inv(V)*A)*A'*inv(V))*b./(m-n); 
+    %   dx = sqrt(diag(inv(A'*inv(V)*A)*mse));
+    U = (chol(V))';
+    z = U\b;
+    W = U\A;
+    mse = (z'*z - x'*W'*z)/(m-n);    
+    [Q, R] = qr(W,0);
+    ri = (R\eye(n))';
+    dx = (sqrt(sum(ri.*ri)*mse))';
+    
+    %make sure we do not get strange values when all B are equal
+    mse = max(real(mse),eps);
+    dx  = max(real(dx),eps);
+
+end
