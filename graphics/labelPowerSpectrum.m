@@ -28,32 +28,23 @@ end
 % Plot the power spectrum
 figure;
 plot(steps,nPower,'k-');
-% stem(steps,nPower);
 hold on;
 
-% Read first value
-pos=find(nPower==max(nPower));
-value=nPower(pos);
+% Only peaks with a power larger than minValue have to be labeled
+pos=locmax1d(nPower);
+pos=pos(find(nPower(pos)>minValue));
 
 % Go through peaks and label them if their power is > that minValue
-while value>minValue
-    
+for i=1:length(pos)
     if time==1
-        if pos~=1 % We don't label the DC
-            period=N/pos*dt;
-            text(steps(pos),value,[num2str(round(period)),'s']);
-        end
+        if pos(i)~=1 % We don't label the DC
+            period=N/pos(i)*dt;
+            text(steps(pos(i)),nPower(pos(i)),[num2str(round(period)),'s']);
+        end 
     else
         if pos~=1 % We don't label the DC
-            text(steps(pos),value,num2str(pos));
+            text(steps(pos(i)),nPower(pos(i)),num2str(pos(i)));
         end
     end
-    nPower(pos)=0;
-
-    % Read next value
-    pos=find(nPower==max(nPower));
-    value=nPower(pos);
-
 end
-
 hold off;

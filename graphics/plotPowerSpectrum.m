@@ -1,7 +1,7 @@
 function [steps,nPower]=plotPowerSpectrum(signal,s,freq,draw)
 % plotPowerSpectrum calculates and plots a normalized power spectrum 
 %
-% SYNOPSIS    [steps,nPower]=plotPowerSpectrum(signal,s)
+% SYNOPSIS    [steps,nPower]=plotPowerSpectrum(signal,s,freq,draw)
 %
 % INPUT       signal  : signal vector
 %             s       : frames for low-pass filtering in the time domain
@@ -30,12 +30,12 @@ end
 
 % Low pass filter signal, if needed
 if s>1
-%     s=[-fix(s/2):fix(s/2)]; % Low-pass filtering with gauss
-%     s=gauss1d(s,1);
-%     s=s/sum(s);
-%     signal=conv(signal,s);
-    s=ones(1,s)./s;           % Convolution with a [1/s 1/s 1/s ... ]s vector
+    s=[-fix(s/2):fix(s/2)]; % Low-pass filtering with gauss
+    s=gauss1d(s,1);
+    s=s/sum(s);
     signal=conv(signal,s);
+%     s=ones(1,s)./s;           % Convolution with a [1/s 1/s 1/s ... ]s vector
+%     signal=conv(signal,s);
 end
 
 % Calculate frequency step f
@@ -74,11 +74,15 @@ if draw==1
     % Display signal
     figure;
     h=plot(signal,'k-');
+    title('Signal');
     
     % Display power spectrum
     figure;
     h=plot(steps,nPower,'k-');
     set(h,'LineWidth',2);
+    title('Normalized power spectrum');
+    xlabel('Normalized frequency');
+    ylabel('Normalized power');
     hold off;
-    
+        
 end
