@@ -1,26 +1,75 @@
-function [kym,xBand,yBand] = imKymograph(stack,x,y,width);
+function [kym,xBand,yBand] = imKymograph(stack,x,y,width,varargin);
 %IMKYMOGRAPH generates a kymograph from an image stack
 % 
-% SYNOPSIS kym = imKymograph(stack,x,y,width);
+% SYNOPSIS :
+%    kym = imKymograph(stack,x,y,width);
+%    kym = imKymograph(stack,x,y,width,par1,value1,...);
 % 
-% INPUT    stack : image stack or filename of the first image or a cell array
-%                  of the list of files to be analyzed.
-%                  (image stack not yet implemented)
-%                  if [] a gui pops up to define the first filename  
-%          x     : x-coordinates of the kymographed trajectory
-%          y     : y-coordinates of the kymographed trajectory
-%                  The tracjectory is supposed to have no loops
-%                  if length(x) = length(y) = 2 then a traditional line 
-%                  kymograph is produced
-%          width : width of the graph (must be odd integer number). If the
-%                  input width is even, it will be added by 1.
+% INPUT :    
+%    stack : image stack or filename of the first image or a cell array
+%            of the list of files to be analyzed.
+%            (image stack not yet implemented)
+%            if [] a gui pops up to define the first filename  
+%    x     : x-coordinates of the kymographed trajectory
+%    y     : y-coordinates of the kymographed trajectory
+%            The tracjectory is supposed to have no loops
+%            if length(x) = length(y) = 2 then a traditional line 
+%            kymograph is produced
+%    width : width of the graph (must be odd integer number). If the
+%            input width is even, it will be added by 1.
 %
-% OUPUT    kym   : image with kymograph with the dimensions 
-%                  n * width x stretch(x,y)
-%                  where n is the number of frames in the stack
-%                  and   stretch(x,y) is the pixel length of the tracjectory
+%    The following optional parameters can be set:
+%    'interp'  : 'none' (default) or 'interp2'.
+%                Specify if interpolation is used to get the intensity at
+%                subpixel position. It is slower if you choose 'interp2' in
+%                which case matlab function 'interp2' is used.
+%    'verbose' : 'on' (default) or 'off'.
+%                Specify if progressing message is displayed.
+%
+% OUPUT :
+%    kym   : image with kymograph with the dimensions 
+%            n * width x stretch(x,y)
+%            where n is the number of frames in the stack
+%            and   stretch(x,y) is the pixel length of the tracjectory
+%    xBand : x-coordinates of the tube along the curve (x,y);
+%    yBand : y-coordinates of the tube along the curve (x,y);
+%
 
 % STARTED July-9-1999 GD
+
+if mod(nargin,2) ~= 0
+   error('The optional parameter/value has to appear in pair.');
+end
+
+interpM = 'none';
+verbose = 'on';
+
+par = [];
+j   = 1;
+for k = 1:2:nargin-4
+   par{j}   = varargin{k};
+   value{j} = varargin{k+1};
+   j = j+1;
+end
+
+for j = 1:length(par)
+   switch par{j}
+      case 'interp'
+         if ~ischar(value{j}) | (strcmp(value{j},'none') == 0 & ...
+            strcmp(value{j},'interp2') == 0)
+            error('The value for parameter ''interp'' is not valid.');
+         end
+         interpM = value{j};
+      case 'verbose'
+         if ~ischar(value{j}) | (strcmp(value{j},'on') == 0 & ...
+            strcmp(value{j},'off') == 0)
+            error('The value for parameter ''verbose'' is not valid.');
+         end
+         verbose = value{j};
+      otherwise
+         error(['Parameter' par{j} 'is not recogonized.']);
+   end
+end
 
 % check whether the stack is an empty matrix
 if(isempty(stack))
@@ -91,6 +140,9 @@ if ischar(stack) | iscell(stack)
       fileList = stack;
    end
 
+   auxI = imread(fileList{1});
+   imgH = size(auxI,1);
+   imgW = size(auxI,2);
    for k = 1:length(fileList)
       % read image by image and do the interpolation along the band
       auxI = imread(fileList{k});
@@ -99,21 +151,20 @@ if ischar(stack) | iscell(stack)
          auxI = rgb2gray(auxI);
       end;
       
-      % interpolate the intensities along the band 
-      bandI = [];
-      for(i = 1:width)
-         % bandI = cat(2,bandI,improfile(auxI,xBand(i,:),yBand(i,:)));
-         bandI = cat(1,bandI,interp2(double(auxI),xBand(i,:),yBand(i,:)));
-      end;
+      if strcmp(interpM,'none') == 1
+         indB = imgH*(ceil(xBand+0.5)-1)+ceil(yBand+0.5);
+         bandI = auxI(indB);
+      else
+         bandI = interp2(double(auxI),xBand,yBand);
+      end
+
       kym = cat(1,kym,bandI);
-      disp(['completed file: ',fileList{k}]);
+
+      if strcmp(verbose,'on') == 1
+         disp(['completed file: ',fileList{k}]);
+      end
    end;
 else
    error('input via image stack not yet implemented');
 end;
 
-   
-   
-
-
-   

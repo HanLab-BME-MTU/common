@@ -84,14 +84,22 @@ yi = handles.yi;
 %Delete the lines that are drawn during selection.
 if handles.numPoints > 1
    for k = 1:handles.numPoints-1
-      delete(handles.dashL{k});
-      delete(handles.dotL{k});
+      if ishandle(handles.dashL{k})
+         delete(handles.dashL{k});
+      end
+      if ishandle(handles.dotL{k})
+         delete(handles.dotL{k});
+      end
    end
 end
 
-if ~isempty(handles.mDashL)
+if ishandle(handles.mDashL)
    delete(handles.mDashL);
+   handles.mDashL = [];
+end
+if ishandle(handles.mDotL)
    delete(handles.mDotL);
+   handles.mDotL = [];
 end
 
 %Set guidata and figure properties back to the state before calling this
@@ -113,12 +121,14 @@ handles = guidata(obj);
 numPoints = handles.numPoints+1;
 
 %Delete previously drawn line while mounse is moving.
-if ~isempty(handles.mDashL)
+if ishandle(handles.mDashL)
    delete(handles.mDashL);
-   delete(handles.mDotL);
-   handles.mDashL = [];
-   handles.mDotL = [];
 end
+if ishandle(handles.mDotL)
+   delete(handles.mDotL);
+end
+handles.mDashL = [];
+handles.mDotL  = [];
 
 p = get(gca,'CurrentPoint');
 
@@ -152,10 +162,14 @@ if handles.numPoints == 0
 end
 
 %Delete previously drawn line while mounse is moving.
-if ~isempty(handles.mDashL)
+if ishandle(handles.mDashL)
    delete(handles.mDashL);
+end
+if ishandle(handles.mDotL)
    delete(handles.mDotL);
 end
+handles.mDashL = [];
+handles.mDotL  = [];
 
 p = get(gca,'CurrentPoint');
 
@@ -192,16 +206,22 @@ if double(ckey) == 8
 
    %Delete the last line.
    if numPoints > 1
-      delete(handles.dashL{end});
-      delete(handles.dotL{end});
+      if ishandle(handles.dashL{end})
+         delete(handles.dashL{end});
+      end
+      if ishandle(handles.dotL{end})
+         delete(handles.dotL{end});
+      end
       handles.dashL(end) = [];
       handles.dotL(end)  = [];
    end
 
-   if ~isempty(handles.mDashL)
+   if ishandle(handles.mDashL)
       delete(handles.mDashL);
-      delete(handles.mDotL);
       handles.mDashL = [];
+   end
+   if ishandle(handles.mDotL)
+      delete(handles.mDotL);
       handles.mDotL  = [];
    end
 

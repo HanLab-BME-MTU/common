@@ -1,6 +1,6 @@
 function v = imKymoSpeed(kym,bw)
-%imKymoSpeed: Automatically detect in a kymograph the line whose slope gives 
-%             the speed of a flow.
+%imKymoSpeed: Automatically detect in a kymograph the average line slope that 
+%             gives the speed of a flow.
 %
 % SYNTAX: v = imKymoSpeed(kym,bw)
 %    kym : The kymograph dissected and stacked from the movie of images. It is
@@ -41,7 +41,7 @@ kymHLen = size(kym,2);
 % that the movie image will flow the whole length of the selected curve for
 % kymograph analysis.
 %speedLimit  = kymHLen-1;
-speedLimit  = ceil(kymHLen/5);
+speedLimit  = ceil(kymHLen/2);
 
 %Reshape 'kym' so that we can correlate between frames.
 bandKym = squeeze(sum(reshape(kym.',kymHLen,bw,numFrames),2)).';
