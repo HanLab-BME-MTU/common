@@ -31,6 +31,13 @@ end
 %Get the current figure.
 h = gcf; figure(h);
 
+%Save the old guidata and some properties of the current figure.
+oldHandles         = guidata(h);
+oldPointer         = get(h,'Pointer');
+oldButtonDownFcn   = get(h,'WindowButtonDownFcn');
+oldButtonMotionFcn = get(h,'WindowButtonMotionFcn');
+oldKeyPressFcn     = get(h,'KeyPressFcn');
+
 %Initialize with empty data.
 handles.numPoints = 0;
 handles.xi        = [];
@@ -42,12 +49,6 @@ handles.mDotL     = [];
 
 %Update GUI data.
 guidata(h,handles);
-
-%Get old properties.
-oldPointer = get(h,'Pointer');
-oldButtonDownFcn = get(h,'WindowButtonDownFcn');
-oldButtonMotionFcn = get(h,'WindowButtonMotionFcn');
-oldKeyPressFcn = get(h,'KeyPressFcn');
 
 set(h,'DoubleBuffer','on','Pointer','cross');
 set(h,'WindowButtonDownFcn',@buttonDown_Callback);
@@ -69,11 +70,11 @@ while (w == 0 & (handles.maxNumPoints == 0 | handles.numPoints < ...
    handles = guidata(h);
 end
 
-%Set it back to normal.
+%Block mouse action and key pressing call back.
 set(h,'WindowStyle','normal','Pointer',oldPointer);
-set(h,'WindowButtonDownFcn',oldButtonDownFcn);
-set(h,'WindowButtonMotionFcn',oldButtonMotionFcn);
-set(h,'KeyPressFcn',oldKeyPressFcn);
+set(h,'WindowButtonDownFcn','');
+set(h,'WindowButtonMotionFcn','');
+set(h,'KeyPressFcn','');
 
 handles = guidata(h);
 
@@ -92,6 +93,15 @@ if ~isempty(handles.mDashL)
    delete(handles.mDashL);
    delete(handles.mDotL);
 end
+
+%Set guidata and figure properties back to the state before calling this
+% function.
+handles = oldHandles;
+guidata(h,handles);
+set(h,'WindowStyle','normal','Pointer',oldPointer);
+set(h,'WindowButtonDownFcn',oldButtonDownFcn);
+set(h,'WindowButtonMotionFcn',oldButtonMotionFcn);
+set(h,'KeyPressFcn',oldKeyPressFcn);
 
 
 % --- Call back function for WindowButtonDownFcn.

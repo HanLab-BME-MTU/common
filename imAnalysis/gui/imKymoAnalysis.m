@@ -106,6 +106,7 @@ handles.vLineY        = {};
 handles.vLineMP       = [];
 handles.selVLine      = 0;
 handles.manV          = [];
+handles.calV          = [];
 
 %Get the handles to some GUI objects.
 handles.defWidthH  = findobj('tag','defaultWidth');
@@ -152,7 +153,7 @@ if filterIndex == 0
    return;
 end
 
-imgFileList = getFileStackNames(firstImgFileName);
+imgFileList = getFileStackNames([pathName firstImgFileName]);
 
 %Display the first image
 image = imread(imgFileList{1});
@@ -182,6 +183,7 @@ handles.vLineY        = {};
 handles.vLineMP       = [];
 handles.selVLine      = 0;
 handles.manV          = [];
+handles.calV          = [];
 
 %Display the first image
 redrawAllImg(handles);
@@ -237,6 +239,8 @@ handles.vLineX{numKymoCurves}    = {};
 handles.vLineY{numKymoCurves}    = {};
 handles.vLineMP{numKymoCurves}   = [];
 handles.selVLine(numKymoCurves)  = 0;
+handles.manV{numKymoCurves}      = [];
+handles.calV(numKymoCurves)      = NaN;
 
 redrawAllImg(handles);
 guidata(hObject,handles);
@@ -288,6 +292,8 @@ handles.vLineX{numKymoCurves}    = {};
 handles.vLineY{numKymoCurves}    = {};
 handles.vLineMP{numKymoCurves}   = [];
 handles.selVLine(numKymoCurves)  = 0;
+handles.manV{numKymoCurves}      = [];
+handles.calV(numKymoCurves)      = NaN;
 
 redrawAllImg(handles);
 guidata(hObject,handles);
@@ -385,6 +391,9 @@ kymo         = handles.kymo{selKymoCurve};
 bw           = handles.width(selKymoCurve);
 
 handles.calV(selKymoCurve) = imKymoSpeed(kymo,bw);
+%if isnan(handles.calV(selKymoCurve))
+%   handles.calV(selKymoCurve) = imKymoSpeed(kymo,bw);
+%end
 
 set(handles.calVFieldH,'String',num2str(handles.calV(selKymoCurve)));
 guidata(hObject,handles);
@@ -539,14 +548,13 @@ if minD <= 10
             handles.kymo(index) = [];
          end
 
-         if index == selLine
-            handles.numVLines(index) = 0;
-            handles.vLineX(index)    = [];
-            handles.vLineY(index)    = [];
-            handles.vLineMP{index}   = [];
-            handles.selVLine(index)  = 0;
-            handles.manV{index}    = [];
-         end
+         handles.numVLines(index) = [];
+         handles.vLineX(index)    = [];
+         handles.vLineY(index)    = [];
+         handles.vLineMP(index)   = [];
+         handles.selVLine(index)  = [];
+         handles.manV(index)      = [];
+         handles.calV(index)      = [];
 
          if numLines == 1
             handles.selKymoCurve = 0;
@@ -692,6 +700,13 @@ ylabel('frame');
 numVLines = handles.numVLines(selKymoCurve);
 if numVLines == 0
    set(handles.manVFieldH,'String','');
+
+   if isnan(handles.calV(selKymoCurve))
+      set(handles.calVFieldH,'String','');
+   else
+      set(handles.calVFieldH,'String',num2str(handles.calV(selKymoCurve)));
+   end
+   
    return;
 end
 
@@ -710,4 +725,10 @@ if index ~= 0
    set(handles.manVFieldH,'String',num2str(handles.manV{selKymoCurve}(index)));
 else
    set(handles.manVFieldH,'String','');
+end
+
+if isnan(handles.calV(selKymoCurve))
+   set(handles.calVFieldH,'String','');
+else
+   set(handles.calVFieldH,'String',num2str(handles.calV(selKymoCurve)));
 end
