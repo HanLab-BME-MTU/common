@@ -256,7 +256,8 @@ for r=1:rs
     %the circle area) more or less a simple square function;
     %it is a perfect square function for a perfectly random distribution of
     %points
-    m2(r)=npv/(pi*lm/(msx*msy));
+    m2(r)=npv/(pi*(lm-1)/(msx*msy));
+    %using (lm-1) and not lm is Marcon&Puech's correction (2003)
 end
 
 
