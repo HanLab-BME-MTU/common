@@ -58,6 +58,7 @@ function [bestk,bestpp,bestmu,bestcov,dl,countf] = mixtures4(y,kmin,kmax,regular
 %   2000, 2001, 2002
 % 
 
+
 bins = 40; % number of bins for the univariate data histograms for visualization
 bins = 800;
 dl = []; % vector to store the consecutive values of the cost function 
@@ -355,8 +356,10 @@ while(k_cont)  % the outer loop will take us down from kmax to kmin components
         if any(verbose == 2)
             disp(sprintf('deltaloglike/th = %0.7g', abs(deltlike/loglike(countf-1))/th));
         end      
-        if (abs(deltlike/loglike(countf-1)) < th)
+        if (abs(deltlike/loglike(countf-1)) < th) | isnan(deltlike)
             % if the relative change in loglikelihood is below the threshold, we stop CEM2
+            % & we want to stop if deltlike became nan, because otherwise
+            % we have an infinite loop.
             cont=0;
         end
         
