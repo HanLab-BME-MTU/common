@@ -262,7 +262,7 @@ elseif strcmp(METHOD,'em')
         bestpp_sort(j) = bestpp(cluster_c_index(j)); 
     end
     varargout{1} = bestpp_sort;
-    varargout{2} = cluster_c;
+    varargout{2} = cluster_c';
 end
 
 if CONTR

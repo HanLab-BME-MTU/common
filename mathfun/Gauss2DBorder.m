@@ -3,11 +3,11 @@ function [out_corrected,M]=Gauss2DBorder(x,sigma);
 %
 %    [out_corrected,M]=Gauss2DBorder(x,sigma);
 %
-%    INPUT: x      image
-%           sigma  of gauss filter
+%    INPUT: x                   image
+%           sigma               of gauss filter
 %
-%    OUTPUT: out   filtered image
-%            M     gaussian mask
+%    OUTPUT: out_corrected      filtered image
+%            M                  gaussian mask
 %
 
 % bug fix: AP - 10.07.02
