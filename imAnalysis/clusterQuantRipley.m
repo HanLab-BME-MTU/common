@@ -1,8 +1,8 @@
-function[cpar,pvr,dpvr]=ClusterQuantRipley(mpm,imsizex,imsizey);
-% ClusterQuantRipley calculates a quantitative clustering parameter based on
+function[cpar,pvr,dpvr]=clusterQuantRipley(mpm,imsizex,imsizey);
+% clusterQuantRipley calculates a quantitative clustering parameter based on
 % Ripley's K-function (a spatial statistics function for point patterns)
 %
-% SYNOPSIS   [cpar,pvr,dpvr]=ClusterQuantRipley(mpm,imsizex,imsizey);
+% SYNOPSIS   [cpar,pvr,dpvr]=clusterQuantRipley(mpm,imsizex,imsizey);
 %       
 % INPUT      mpm:   mpm file containing (x,y) coordinates of points in the
 %                   image in succesive columns for different time points
@@ -67,7 +67,13 @@ for k=1:(round(ny/2))
     %since the original mpm file contains a lot of zeros, these zeros are 
     %deleted in the temporary coordinate matrix to yield a matrix containing
     %only the nonzero points of matt, smatt
-    smatt=[nonzeros(matt(:,1)), nonzeros(matt(:,2)) ];
+    nz1=size(nonzeros(matt(:,1)));
+    nz2=size(nonzeros(matt(:,2)));
+    if(nz1==nz2)
+        smatt=[nonzeros(matt(:,1)), nonzeros(matt(:,2)) ];
+    else
+        disp(['different number of point entries for x and y in plane ',num2str(k)]);
+    end
     
     %comment/uncomment the next five lines if you want to monitor progress
     %prints number of objects for every 10th line
@@ -93,9 +99,9 @@ for k=1:(round(ny/2))
         
 end
 %normalize cpar with initial value
-ini=cpar(1);
+ini=(cpar(1)+cpar(2))/2;
 cpar=cpar/ini;
-
+end
 
 
 function[cpar,dpvrt]=clusterpara(pvrt);
@@ -126,7 +132,7 @@ dpvrt=diff;
 %the following can be changed to accomodate additional parameters as 
 %measure of the clustering
 cpar=cpar1;
-    
+end    
 
     
 function[p1,p2]=DiffFuncParas(diff);
@@ -159,7 +165,7 @@ for i=1:len
         end
     end
 end
-
+end
 
 
 function[m2]=pointsincircle(m1,ms)
@@ -262,7 +268,7 @@ for r=1:rs
     %using (lm-1) and not lm is Marcon&Puech's correction (2003)
 end
 
-
+end
   
 
 function[m2]=distanceMatrix(c1,c2)
@@ -280,7 +286,7 @@ for k=1:ncx1
         m2(k,n)=d;
     end
 end
-
+end
     
 function[corfac]=circumferenceCorrectionFactor(xx,yy,rr,msx,msy)
 %circumference correction calculates a vector containing the correction factor
@@ -319,4 +325,5 @@ for i=1:dim
     end
 end
 
+end
 
