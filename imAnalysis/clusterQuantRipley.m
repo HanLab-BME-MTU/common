@@ -225,34 +225,35 @@ for n=1:lm
     cfm(n,:)=circumferenceCorrectionFactor(m1(n,1),m1(n,2),m2,msx,msy);
 end
 
-for r=1:rs
+% define here row-entries for indexing cfm matrix
+rowVector = repeatEntries([1:lm]', lm);
+% assign thresh_mdist
+thresh_mdist = mdist;
+% initialize tempfinal
+tempfinal = thresh_mdist;
+
+for r=rs:-1:1
     %for given radius, set all values of mdist higher than the radius value
     %to zero
-    %first step: thresh_mdistones is a matrix where all the places where
-    %the original value is <= r are set to one, all the places where the
-    %original value is either zero OR larger than the radius r are set to
-    %zero - first multiplication term takes care of setting stuff to zero,
-    %the second one does the scaling to 0-1
-    thresh_mdistones=ceil( (mdist.*max((r+1-mdist),0))/((r+1)*max(max(mdist))) );
-    %second step: by multiplying with original matrix, we get zero in all
-    %places where the value exceeds r, all other values are retained
-    thresh_mdist=mdist.*thresh_mdistones;
-    
+    % since we are decreasing the radius, we can do this by updating the
+    % same matrix
+    thresh_mdist(thresh_mdist > r) = 0;
+        
     %round off to nearest integer value to make an index matrix
-    tempindex=max(floor(thresh_mdist),1);
-    %initialize tempweight
-    tempweight=thresh_mdistones; 
+    tempindex=floor(thresh_mdist);
+    tempindex(tempindex<1) = 1;
+    
     %the value of tempweight at a position in column n (corresponding to 
     %point number n) with distance D of this point in mdist (rounded to 
     %tempindex) is the value of the circumferenceCorrectionFactor matrix at
     %distance (column) D for this point (line)
-    %loop over all points n
-    for n=1:lm
-        tempweight(:,n)=1./(cfm(n,tempindex(:,n)));
-    end
-    tempfinal=thresh_mdistones.*tempweight;    
+    
+    % change tempindex into indices into cfm, assign tempfinal in one step
+    idx = sub2ind([lm, rs], rowVector, tempindex(:));
+    tempfinal(:) = thresh_mdist(:)./cfm(idx);
+    
     %sum over entire matrix to get number of points
-    npv=sum(sum(tempfinal));
+    npv=sum(tempfinal(:));
         
     %to average, divide sum by number of points (=columns)
     npv=(npv/lm);
@@ -266,10 +267,9 @@ for r=1:rs
     %points
     m2(r)=npv/(pi*(lm-1)/(msx*msy));
     %using (lm-1) and not lm is Marcon&Puech's correction (2003)
-end
+end % for r=rs:-1:1
 
-end
-  
+end % function
 
 function[m2]=distanceMatrix(c1,c2)
 %this subfunction makes a neighbour-distance matrix for input matrix m1
