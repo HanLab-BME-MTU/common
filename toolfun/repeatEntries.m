@@ -31,8 +31,10 @@ if length(valSize)>2
     error('only 2D arrays supported for val')
 end
 
-% do not care about size of k: we want to make a col vector out of it
-kTimes = kTimes(:);
+% do not care about size of k: we want to make a col vector out of it - and
+% this vector should only contain nonzero positive integers
+kTimes = round(kTimes(:));
+kTimes = max(kTimes,ones(size(kTimes)));
 
 % decide whether we have scalar k
 numK = length(kTimes);
