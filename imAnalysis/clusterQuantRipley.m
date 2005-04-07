@@ -38,6 +38,7 @@ function[cpar,pvr,dpvr, cpar2]=clusterQuantRipley(mpm,imsizex,imsizey,norm);
 %               ClusterQuantRipley is used by { }
 %
 % Dinah Loerke, October 7th, 2004
+% last update: April 05,2005
 
 %create vector containing x- and y-image size
 matsiz=[imsizex imsizey];
@@ -78,8 +79,13 @@ for k=1:(round(ny/2))
         smatt=[nonzeros(matt(:,1)), nonzeros(matt(:,2)) ];
     else
         dovar=0;
-        disp(['Error in plane ',num2str(2*k), ' of input mpm']);
-        disp(['no objects (nonzero points) or non-matching number of x and y-coordinates']);
+        disp(['Error in frame ',num2str(k), ' of input mpm']);
+        if(nz1~=nz2)
+            disp(['unequal number of entries for x and y-coordinates']);
+        end
+        if (nz1==0) 
+        disp(['no objects (i.e. no nonzero entries) in this frame']);
+        end
     end
     
     %comment/uncomment the next five lines if you want to monitor progress
