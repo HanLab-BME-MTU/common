@@ -262,6 +262,9 @@ if (nonzeros(detvec3)>1)
     % function diff
     begp=firstpoint-2;
     endp=begp+round(firstpoint/2);
+    if ( endp>length(dvec2) )
+        endp=length(dvec2);
+    end
     inclination=mean(dvec2(begp:endp));
     
 %  uncomment the following paragrpah for a display of the single traces%     
