@@ -4,51 +4,80 @@ function [rhoAlpha,slopeIntcpt,dtls]=lineRegression(data,sData,rhoAlpha0,sApprox
 % SYNOPSIS [rhoAlpha,slopeIntcpt,dtls]=lineRegression(data,sData,rhoAlpha0,sApprox,sigma)
 %
 % INPUT data : 2xn matrix with the point coordinates
-%       sData: either [] if no uncertainty is given
+%       sData: (opt)
 %                     [sData_1, sData_2] to define one global uncertainty 
 %                     2xn matrix with an uncertainty value for all data points
-%       rhoAlpha0: either [] if no approxation is given 
-%                  [rho0, alpha0]
-%       sApprox :  uncertainty of approximations if given;
+%       rhoAlpha0: (opt) [rho0, alpha0]
+%       sApprox :  (opt) uncertainty of approximations if given;
 %                  if rhoAlpha0 ~= [] but sApprox == [], then sApprox is set 
 %                  to a large value.
-%       sigma :    stdev of unit weight obervation
+%       sigma :    (opt) stdev of unit weight obervation. Default: 1
 %
 % OUTPUT  rhoAlpha : estimate of the line parameters
 %         slopeIntcpt : parameters tranform3ed to slope and intercept with x_1 = 0;
 %         dtls : data structure with the field
 %            *.sigma  : aposteriori stdev of unit weight observation
 %            *.sRhoAlpha : precision of the parameters propagated through TLS
+%            *.sSlopeIntcpt : precision of slope and intercept propagated
+%                             from sRhoAlpha
 %            *.resid  : 2xn matrix with coordinate residuals
+%
 
-nPts = size(data,2);
+% c: Gaudenz Danuser
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% check the available information
-if(isempty(sData))
+%=======================
+% TEST INPUT
+%=======================
+
+if nargin == 0 || isempty(data)
+    error('LINEARREGRESSION needs a non-empty input argument ''data''!')
+end
+[nRows, nPts] = size(data);
+% make sure that the data is given as a 2-by-n matrix
+if nPts == 2 && nRows ~= 2
+    error('input argument ''data'' has to be a 2-by-n array!')
+elseif nPts < 3
+    error('you need at least 3 points for a linear regression!')
+end
+    
+if nargin < 5 || isempty(sigma)
+    sigma = 1;
+end
+
+if nargin < 2 || (isempty(sData))
    sData = ones([2,nPts])*sigma;
 else
    if(size(sData,1)*size(sData,2) == 2)
-      aux(1,:) = ones([1,nPts]).*sData(1);
-      aux(2,:) = ones([1,nPts]).*sData(2);
-      sData = aux;
+       % fill sigma-array
+       sData = repmat([sData(1);sData(2)],[1,nPts]);
    end;
 end;
 
-if(isempty(rhoAlpha0))
+if nargin < 3 || (isempty(rhoAlpha0))
    rhoAlpha0 = getApprox(data);
    sApprox = [10^32,10^32];
 else
-   if(isempty(sApprox))
+   if nargin < 4 || (isempty(sApprox))
       sApprox = [10^32,10^32];
    end;
 end;
+
+
 
 [dtls.resid,rhoAlpha,dtls.sRhoAlpha,dtls.sigma,dtls.nIter] = ...
    mexLineRegression(data',sData',rhoAlpha0,sApprox,sigma);
 
 if(rhoAlpha(2) ~= 0)
-   slopeIntcpt(1)=-cos(rhoAlpha(2))/sin(rhoAlpha(2));
-   slopeIntcpt(2)=rhoAlpha(1)/sin(rhoAlpha(2));
+   sinAlpha = sin(rhoAlpha(2));
+   slopeIntcpt(1)=-cos(rhoAlpha(2))/sinAlpha;
+   slopeIntcpt(2)=rhoAlpha(1)/sinAlpha;
+   % calculate sSlopeIntcpt via error propagation from sRhoAlpha
+   sRho = dtls.sRhoAlpha(1);
+   sAlpha = dtls.sRhoAlpha(2);
+   dtls.sSlopeIntcpt(1) = (sAlpha/sinAlpha^2);
+   dtls.sSlopeIntcpt(2) = ...
+       sqrt((sRho/sinAlpha)^2 + (rhoAlpha(1)*sAlpha/sinAlpha^2)^2);
 else
    slopeIntcpt = [];
 end;
