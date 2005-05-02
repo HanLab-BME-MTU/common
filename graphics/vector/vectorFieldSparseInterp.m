@@ -54,7 +54,11 @@ Vi=[G*V(:,1) G*V(:,2)];
 
 % Normalize
 sG=sum(G,2);
-sG(find(sG==0))=1; % Prevent division by zero
+
+%When the distances from a grid point to all the data points are >
+%threshold, the corresponding 'sG' is zero. In this case, we set it to be
+%'NaN' to indicate that this grid point is not interpolated.
+sG(find(sG==0))=NaN; % It also prevents division by zero
 Vi=[Vi(:,1)./sG Vi(:,2)./sG];
 
 % Mi is the interpolated M
