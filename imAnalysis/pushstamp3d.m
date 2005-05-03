@@ -8,7 +8,7 @@ function data=pushstamp3d(data,patch,center,symmetric,add)
 %            center     : pixel coords of center of patch in 3D data
 %            symmetric  : (opt) if part of the patch would fall outside of the 
 %                           img: whether to cut accordingly on the other side 
-%                           [0/{1}] (default for fears of incompatibility)
+%                           [{0}/1] 
 %            add        : (opt) whether to replace or to add patch to image
 %                           or whether to subtract [{0}/1/-1]
 %            
