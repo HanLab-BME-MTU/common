@@ -160,7 +160,7 @@ switch whichTest
     case 1
         % compare mean:  ttest. Below diagonal
         [dummy,pValue] = ...
-            ttest2(data1, data2, 0.05,'both','unequal');
+            ttest2(data1, data2, 0.05);
     case 2
         % compare median: Wilcoxon Mann Whitney ranksum test
         pValue = ranksum(data1, data2);

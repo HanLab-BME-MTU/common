@@ -27,7 +27,11 @@ function gaussList = GaussListND(coordList,sigma,center,intNorm)
 
 % check number of input arguments
 nIn = nargin;
-error(nargchk(2,4,nIn,'struct'));
+% the following doesn't work with Matlab 6.5.0
+% error(nargchk(2,4,nIn,'struct'));
+if nIn < 2 || nIn > 4
+    error('wrong number of input arguments!')
+end
 
 % check dimensionality of coordList. 
 if isempty(coordList)
