@@ -119,53 +119,71 @@ end
 % the two independent random variables.
 %
 
-%Calculate the covariance matrix.
-covM = cov(v1,v2);
+numIterations = 2;
 
-% 'S' is the linear transformation.
-[S,D] = eig(covM);
+corrInd = 1:length(v1);
+for k = 1:numIterations
+   %Calculate the covariance matrix.
+   covM = cov(v1(corrInd),v2(corrInd));
 
-%The variances of the two independent random variables.
-if D(1,1) < D(2,2)
-   %Make sure the first eigenvalue is alway bigger.
-   tmp = D(1,1);
-   D(1,1) = D(2,2);
-   D(2,2) = tmp;
+   % 'S' is the linear transformation.
+   [S,D] = eig(covM);
 
-   tmp = S(:,1);
-   S(:,1) = S(:,2);
-   S(:,2) = tmp;
+   %The variances of the two independent random variables.
+   if D(1,1) < D(2,2)
+      %Make sure the first eigenvalue is alway bigger.
+      tmp = D(1,1);
+      D(1,1) = D(2,2);
+      D(2,2) = tmp;
+
+      tmp = S(:,1);
+      S(:,1) = S(:,2);
+      S(:,2) = tmp;
+   end
+
+   var1 = D(1,1);
+   var2 = D(2,2);
+
+   %The two axes of the ellipse.
+   eAxis1 = S(:,1);
+   eAxis2 = S(:,2);
+
+   %The two radii of the threshold ellipse for excluding outliers.
+   r1 = sqrt(var1);
+   r2 = sqrt(var2);
+
+   %The mean of the two input vectors.
+   v1Mean = mean(v1(corrInd));
+   v2Mean = mean(v2(corrInd));
+
+   %Center of the ellipse.
+   eCenter = [v1Mean v2Mean].';
+
+   %Angle of the long axis.
+   eAngle = acos(sign(eAxis1(2))*eAxis1(1)/norm(eAxis1));
+
+   %Calculate elliptic distance of each (v1,v2) data point to the center of 
+   % the ellipse. First, map all the (v1,v2) to the two independent random 
+   % variables.
+   randV = S.'*([v1-v1Mean; v2-v2Mean]);
+   eDist = sqrt(randV(1,:).^2/var1 + randV(2,:).^2/var2);
+
+   if k == 1
+      corrInd    = find(eDist<=2*outlierThreshold);
+      outlierInd = find(eDist>2*outlierThreshold);
+   elseif k == 2
+      v1Iter2Std = r1;
+      v2Iter2Std = r2;
+      corrInd    = find(eDist<=outlierThreshold);
+      outlierInd = find(eDist>outlierThreshold);
+   else
+      shrinkFactor = min(r1/v1Iter2Std,r2/v2Iter2Std);
+      corrInd      = find(eDist<=outlierThreshold/shrinkFactor);
+      outlierInd   = find(eDist>outlierThreshold/shrinkFactor);
+      r1 = r1/shrinkFactor;
+      r2 = r2/shrinkFactor;
+   end
 end
-
-var1 = D(1,1);
-var2 = D(2,2);
-
-%The two axes of the ellipse.
-eAxis1 = S(:,1);
-eAxis2 = S(:,2);
-
-%The two radii of the threshold ellipse for excluding outliers.
-r1 = sqrt(var1);
-r2 = sqrt(var2);
-
-%The mean of the two input vectors.
-v1Mean = mean(v1);
-v2Mean = mean(v2);
-
-%Center of the ellipse.
-eCenter = [v1Mean v2Mean].';
-
-%Angle of the long axis.
-eAngle = acos(sign(eAxis1(2))*eAxis1(1)/norm(eAxis1));
-
-%Calculate elliptic distance of each (v1,v2) data point to the center of 
-% the ellipse. First, map all the (v1,v2) to the two independent random 
-% variables.
-randV = S.'*([v1-v1Mean; v2-v2Mean]);
-eDist = sqrt(randV(1,:).^2/var1 + randV(2,:).^2/var2);
-
-corrInd    = find(eDist<=outlierThreshold);
-outlierInd = find(eDist>outlierThreshold);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %The minimum and maximum of 'v1' gives the range of fitting.

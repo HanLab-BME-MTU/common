@@ -115,9 +115,11 @@ if length([range(1):range(2)])~=size(cmap,1)
 end
     
 % Render img lighter (if needed)
-if min(img(:))==0.5 & max(img(:))==1
+minImgI = min(img(:));
+maxImgI = max(img(:));
+if minImgI==0.5 & maxImgI==1
     % The image was already treated
-else
+elseif minImgI < maxImgI
     img=0.5+nrm(img,1)/2;  
 end
 
