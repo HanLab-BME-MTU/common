@@ -90,7 +90,7 @@ listOfFiles           = cell(100,2);
 listOfFilesCt         = 0;
 
 
-while ~isempty(dirs2check{topDir2check})
+while ~isempty(dirs2check) && ~isempty(dirs2check{topDir2check})
     %init/empty var
     pathCell = {};
     
@@ -154,7 +154,7 @@ while ~isempty(dirs2check{topDir2check})
     
     %check wheter we want to look at subDirs
     if ~includeSubDirectories
-        dirs2check = [];
+        dirs2check = {};
     end
     
     
