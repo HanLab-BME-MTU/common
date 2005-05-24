@@ -71,6 +71,38 @@ if isempty(outlierThreshold)
    outlierThreshold = Inf;
 end
 
+if isempty(v1) | isempty(v2)
+    sp = [];
+    errStd = [];
+    errV   = [];
+    outlierInd = [];
+    corrInd    = [];
+    
+    r1 = NaN;
+    r2 = NaN;
+    eAxis1  = [];
+    eAxis2  = [];
+    eAngle  = NaN;
+    eCenter = [];
+    if nargout > 2
+        varargout{1} = outlierInd;
+    end
+
+    if nargout > 3
+        varargout{2} = corrInd;
+    end
+
+    if nargout > 4
+        varargout{3}.center = eCenter;
+        varargout{3}.r1      = r1;
+        varargout{3}.r2      = r2;
+        varargout{3}.axis1  = eAxis1;
+        varargout{3}.axis2  = eAxis2;
+        varargout{3}.angle  = eAngle;
+    end
+    return;
+end
+
 [m,n] = size(v1);
 if n == 1
    v1 = v1.';
