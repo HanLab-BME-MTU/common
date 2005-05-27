@@ -12,9 +12,8 @@ function [sp,errStd,errV,varargout] = lsRandomFit(v1,v2,varargin)
 %
 % SYNOPSIS:
 %    [sp,errStd,errV] = lsRandomFit(v1,v2)
-%    [sp,errStd,errV,outlierInd] = lsRandomFit(v1,v2,varargin)
-%    [sp,errStd,errV,outlierInd,corrInd] = lsRandomFit(v1,v2,varargin)
-%    [sp,errStd,errV,outlierInd,corrInd,exEllipse] = lsRandomFit(v1,v2,varargin)
+%    [sp,errStd,errV,varargout] = lsRandomFit(v1,v2,varargin)
+%    [sp,errStd,errV,corrS,exEllipse,outlierInd,corrInd] = lsRandomFit(v1,v2,varargin)
 %
 % INPUT:
 %    v1, v2: Vector of samples of two random variables.
@@ -30,14 +29,24 @@ function [sp,errStd,errV,varargout] = lsRandomFit(v1,v2,varargin)
 %
 % OUTPUT:
 %    sp : The sp-form of the fitting B-spline. If 'linear' is on, a line is 
-%         given by sp = [a b] where v2 = a*v1+b+errV.
+%         given by sp = [a b] where v2 = a*v1+b+errV. Since we fit both
+%         'v2' as a function of 'v1' and 'v1' as a function of 'v2', it is
+%         really a cell array of sp-forms or lines.
+%    errV : A two-column matrix. The first column contains the error vector
+%         when we fit 'v2' as a function of 'v1', the second when 'v1' as a function of 'v2'.
 %    errStd: The standard deviation of the error vector 'errV'.
 %
 %    Optional output:
-%       outlierInd: Indices of outliers.
+%       corrS     : Correlation score of the two random variables: 'v1' and
+%                   'v2'. When linear fitting is chosen, we give two
+%                   scores. One is the classic correlation coefficient. The
+%                   other is the cosine of the angle between the two
+%                   fitting lines.
 %       exEllipse : Ellipse for excluding outliers. It is a structure that
 %                   contains the following fields:
 %                   eCenter, r1, r2, eAxis1, eAxis2, eAngle
+%       outlierInd: Indices of outliers.
+%       corrInd   : Indices of the remaining correlated samples.
 
 if nargin < 2 | rem(nargin-2,2) ~= 0
    error('Wrong number of input arguments.');
@@ -77,6 +86,7 @@ if isempty(v1) | isempty(v2)
     errV   = [];
     outlierInd = [];
     corrInd    = [];
+    corrS      = [];
     
     r1 = NaN;
     r2 = NaN;
@@ -85,21 +95,25 @@ if isempty(v1) | isempty(v2)
     eAngle  = NaN;
     eCenter = [];
     if nargout > 2
-        varargout{1} = outlierInd;
+        varargout{1} = corrS;
     end
-
     if nargout > 3
-        varargout{2} = corrInd;
+        varargout{2}.center = eCenter;
+        varargout{2}.r1      = r1;
+        varargout{2}.r2      = r2;
+        varargout{2}.axis1  = eAxis1;
+        varargout{2}.axis2  = eAxis2;
+        varargout{2}.angle  = eAngle;
+    end
+    
+    if nargout > 4
+        varargout{3} = outlierInd;
     end
 
-    if nargout > 4
-        varargout{3}.center = eCenter;
-        varargout{3}.r1      = r1;
-        varargout{3}.r2      = r2;
-        varargout{3}.axis1  = eAxis1;
-        varargout{3}.axis2  = eAxis2;
-        varargout{3}.angle  = eAngle;
+    if nargout > 5
+        varargout{4} = corrInd;
     end
+
     return;
 end
 
@@ -221,30 +235,44 @@ end
 %The minimum and maximum of 'v1' gives the range of fitting.
 minV1 = min(v1(corrInd));
 maxV1 = max(v1(corrInd));
+minV2 = min(v2(corrInd));
+maxV2 = max(v2(corrInd));
+
+corrM = corrcoef(v1(corrInd),v2(corrInd));
+corrS = corrM(1,2);
 
 %%%%%% Calculate the fitting curve. We use least-square B-spline.
 numKnots = 4;
-errV = NaN*ones(size(v2));
+errV = NaN*ones(2,length(v2));
 if strcmp(model,'bspline')
    spOrder  = 4;
 
    %Create the knot sequence.
-   knots = augknt(linspace(minV1,maxV1,numKnots),spOrder);
+   knots1 = augknt(linspace(minV1,maxV1,numKnots),spOrder);
+   knots2 = augknt(linspace(minV2,maxV2,numKnots),spOrder);
 
    %Least sqaures spline fitting.
-   sp = spap2(knots,spOrder,v1(corrInd), v2(corrInd));
+   sp1 = spap2(knots1,spOrder,v1(corrInd), v2(corrInd));
+   sp2 = spap2(knots2,spOrder,v2(corrInd), v1(corrInd));
 
-   errV(corrInd) = v2(corrInd) - fnval(sp,v1(corrInd));
+   errV(corrInd,1) = v2(corrInd) - fnval(sp1,v1(corrInd));
+   errV(corrInd,2) = v1(corrInd) - fnval(sp2,v2(corrInd));
 else
    %Linear least-square fitting.
    M = [v1(corrInd).' ones(length(v1(corrInd)),1)];
-   sp = M.'*M\(M.'*v2(corrInd).');
+   sp1 = M.'*M\(M.'*v2(corrInd).');
+   M = [v2(corrInd).' ones(length(v2(corrInd)),1)];
+   sp2 = M.'*M\(M.'*v1(corrInd).');
 
-   errV(corrInd) = v2(corrInd) - sp(1)*v1(corrInd) - sp(2);
+   errV(1,corrInd) = v2(corrInd) - sp1(1)*v1(corrInd) - sp1(2);
+   errV(2,corrInd) = v1(corrInd) - sp2(1)*v2(corrInd) - sp2(2);
+   line1 = [1 sp1(1)];
+   line2 = [sp2(1) 1];
+   corrS(2) = sum(line1.*line2)/norm(line1)/norm(line2);
 end
 
-errStd = std(errV(corrInd));
-errV   = reshape(errV,size(v2));
+errStd(1) = std(errV(1,corrInd));
+errStd(2) = std(errV(2,corrInd));
 
 if ishandle(figH)
    figure(figH); hold off;
@@ -261,27 +289,40 @@ if ishandle(figH)
       eCenter(2)+outlierThreshold*r2*eAxis2(2)*[1 -1],'m');
 
    %Plot the fitting curve.
-   plotRange = linspace(minV1,maxV1,5*numKnots);
+   plotRange1 = linspace(minV1,maxV1,5*numKnots);
    if strcmp(model,'bspline')
-      plot(plotRange,fnval(sp,plotRange),'r','lineWidth',3);
+      plot(plotRange1,fnval(sp1,plotRange1),'r','lineWidth',3);
    else
-      plot(plotRange,sp(1)*plotRange+sp(2),'r','lineWidth',3);
+      plot(plotRange1,sp1(1)*plotRange1+sp1(2),'r','lineWidth',3);
+   end
+   
+   %Plot the fitting curve.
+   plotRange2 = linspace(minV2,maxV2,5*numKnots);
+   if strcmp(model,'bspline')
+      plot(fnval(sp2,plotRange2),plotRange2,'r','lineWidth',3);
+   else
+      plot(sp2(1)*plotRange2+sp2(2),plotRange2,'g','lineWidth',3);
    end
 end
 
+sp = {sp1,sp2};
+
 if nargout > 2
-   varargout{1} = outlierInd;
+    varargout{1} = corrS;
 end
-
 if nargout > 3
-   varargout{2} = corrInd;
+    varargout{2}.center = eCenter;
+    varargout{2}.r1      = r1;
+    varargout{2}.r2      = r2;
+    varargout{2}.axis1  = eAxis1;
+    varargout{2}.axis2  = eAxis2;
+    varargout{2}.angle  = eAngle;
 end
 
-if nargout > 4 
-   varargout{3}.center = eCenter;
-   varargout{3}.r1      = r1;
-   varargout{3}.r2      = r2;
-   varargout{3}.axis1  = eAxis1;
-   varargout{3}.axis2  = eAxis2;
-   varargout{3}.angle  = eAngle;
+if nargout > 4
+    varargout{3} = outlierInd;
+end
+
+if nargout > 5
+    varargout{4} = corrInd;
 end
