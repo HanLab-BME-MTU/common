@@ -40,10 +40,13 @@ end
 
 %directory (ask if necessary)
 if nargin>2
+    if isempty(directory)
+        directory = 'ask';
+    end
     switch directory
         case {0,'pwd'}
             directory = pwd;
-        case {[],'ask'}
+        case {'ask'}
             directory = 'ask';
         otherwise
             if ~isdir(directory)
