@@ -1,13 +1,13 @@
-function [x, y] = lap(cc, NONLINK_MARKER)
+function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting)
 %LAP solves the linear assignment problem for a given cost matrix
 %
 % A linear assignment tries to establish links between points in two sets.
 % One point in set A can only link to one point in set B or it can not be
 % linked at all. The cost associated with the link from element i of A to
-% element j of B is given by cc(i,j). 
+% element j of B is given by cc(i,j).
 %
-% SYNOPSIS [x, y] = lap(cc, NONLINK_MARKER)
-% 
+% SYNOPSIS [x, y] = lap(cc, NONLINK_MARKER, extendedTesting)
+%
 % INPUT:  cc: cost matrix, which has to be square. Set cost(i,j) to the
 %             value of NONLINK_MARKER, if the link is not allowed. %
 %
@@ -24,9 +24,15 @@ function [x, y] = lap(cc, NONLINK_MARKER)
 % NONLINK_MARKER : value to indicate that two points cannot be linked.
 %             Default: -1. NaN is not allowed here
 %
-% OUTPUT: x: The point A(i) links to B(x(i)) 
+% extendedTesting: (optional, [0/{1}]) If 1, the cost matrix will be tested
+%                  for violations (at the expense of speed):
+%                     - There cannot be NaNs in cc
+%                     - In every row and every column of cc there must be
+%                       at least 1 element that is not a NONLINK_MARKER.
+%
+% OUTPUT: x: The point A(i) links to B(x(i))
 %         y: The point B(j) links to A(y(j))
-%         
+%
 %            Any x > m or y > n indicates that this point is not linked.
 %
 % lapjv is implemented through a MEX DLL.
@@ -61,6 +67,9 @@ if scc(1) ~= scc(2) || length(scc) > 2
     error('cost must be a 2D square matrixt!')
 end
 
+if nargin < 3 || isempty(extendedTesting)
+    extendedTesting = 1;
+end
 %=======================
 
 
@@ -74,25 +83,36 @@ end
 % fst: for every first significant element of a row: index into compactCC
 % kk : for every significant element: column
 
-% logical matrix with 1 for significant elements
+% do the work on the transposed cost matrix!
 cc = cc';
-logicArrayT = (cc ~= NONLINK_MARKER); % transpose here?
-logicArray = logicArrayT';
-
-rowSumLA = sum(logicArray,2);
-colSumLA = sum(logicArray,1);
-if any(isnan(rowSumLA) | rowSumLA == 0) || any(isnan(colSumLA) | colSumLA == 0)
-    error('there must be at least one possible link per row and column, and there cannot be NaNs')
+% find the significant elements. If sparse input, find nonzero elements
+if issparse(cc)
+    [rowIdx, colIdx, val] = find(cc);
+else
+    [rowIdx, colIdx, val] = find(cc ~= NONLINK_MARKER),
 end
 
-% assign all significant elements
-compactCC_2 = [0;cc(logicArrayT)];
-% find all column indices, pad a zero. 
-[kk_2,dummy] = find(logicArrayT);
-kk_2 = [0;kk_2];
-% find all the first entries per row
-fst_2 = cumsum(rowSumLA); 
-fst_2 = [-1;0;fst_2] + 1; 
+% test that all cols and all rows are filled, and that there are no nans
+if extendedTesting
+allCols = unique(colIdx);
+allRows = unique(rowIdx);
+if any(isnan(val)) || ~(length(allCols) == scc(1) && length(allRows) == scc(2))
+    error('there must be at least one possible link per row and column, and there cannot be NaNs')
+end
+end
+
+
+% write value vector, pad a zero
+compactCC = [0; val];
+% write kk, pad a zero
+kk = [0; rowIdx];
+
+% colIdx is already sorted, so we can find out the number of entries per
+% column via diff. Wherever there is a jump in the column, the deltaIdx
+% will be 1, and its rowIdx will equal fst
+deltaIdx = diff([0;colIdx]);
+% add 0 and length+1
+fst = [0;find(deltaIdx);length(val)+1];
 
 %==================================
 
@@ -100,7 +120,7 @@ fst_2 = [-1;0;fst_2] + 1;
 %==================================
 % CALL MEX-FUNCTION
 %==================================
-[x, y, u, v] = mexLap(double(scc(1)), int32(length(compactCC_2)), double(compactCC_2), int32(kk_2), int32(fst_2));
+[x, y, u, v] = mexLap(double(scc(1)), int32(length(compactCC)), double(compactCC), int32(kk), int32(fst));
 %==================================
 
 % remove first element from output vectors, as it is a meaningless 0.
