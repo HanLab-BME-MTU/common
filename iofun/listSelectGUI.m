@@ -1,10 +1,14 @@
 function varargout = listSelectGUI(varargin)
 %LISTSELECTGUI launches a GUI to allow selection from a list
 %
-% SYNOPSIS [selection, selectionList] = listSelectGUI(inputList,moveOrCopy)
+% SYNOPSIS [selection, selectionList] = listSelectGUI(inputList,maxSelect,moveOrCopy)
 %
 % INPUT    inputList   Cell, list of strings or numerical array from which
-%                      the user is to select any number of items
+%                      the user is to select a number of items
+%
+%          maxSelect   Maximum number of items that can be selected. If
+%                      empty, the number of selections is only limited by
+%                      the length of the inputList.
 %
 %          moveOrCopy  optional argument. If 'move', entries are moved from
 %                      the left to the right list, if 'copy' (default), the
@@ -76,22 +80,46 @@ end
 
 % assign list
 listLength = length(listCell);
-set(handles.LSG_listboxLeft,'String',listCell,...
-    'Max',listLength);
+set(handles.LSG_listboxLeft,'String',listCell);
 % store indexLists
 handles.leftIndexList = [1:listLength]';
 handles.rightIndexList = [];
 % remember original list
 handles.originalList = listCell;
 
-% if second input argument: remember moveOrCopy (can be 'move' or 'copy')
+% the second input argument determines how many items can be selected
 if length(varargin) > 1 && ~isempty(varargin{2})
+    maxSelect = varargin{2};
+    if ~(isnumeric(maxSelect) && isscalar(maxSelect) && all(maxSelect>0))
+        % run termination routine
+        handles.output = [];
+        guidata(hObject,handles)
+        h = errordlg('second input argument has to be a scalar >0!');
+        uiwait(h)
+        close(hObject)
+        return
+    end
+    % set max number of selections
+    set(handles.LSG_listboxLeft,'Max',maxSelect);
+else
+    maxSelect = 0;
+    % set max number of selections
+    set(handles.LSG_listboxLeft,'Max',listLength);
+end
+
+% store maxSelect
+handles.maxSelect = maxSelect;
+
+
+
+% if third input argument: remember moveOrCopy (can be 'move' or 'copy')
+if length(varargin) > 2 && ~isempty(varargin{3})
     moveOrCopy = varargin{2};
     if ~(strcmpi(moveOrCopy,'move')||strcmpi(moveOrCopy,'copy'))
         % run termination routine
         handles.output = [];
         guidata(hObject,handles)
-        h = errordlg('second input argument has to be either ''move'' or '' copy''!');
+        h = errordlg('third input argument has to be either ''move'' or '' copy''!');
         uiwait(h)
         close(hObject)
         return
@@ -99,6 +127,8 @@ if length(varargin) > 1 && ~isempty(varargin{2})
 else
     moveOrCopy = 'copy';
 end
+
+
 
 
 % store moveOrCopy and update handles
@@ -174,8 +204,28 @@ end
 % get selection, merge with rightIndexList, and then read out from
 % originalList
 leftSelection = get(handles.LSG_listboxLeft,'Value');
-rightIndexListNew = unique([handles.leftIndexList(leftSelection);...
-    handles.rightIndexList]);
+if handles.maxSelect
+    % loop through leftSelection. If more than maxSelect items, we throw
+    % out the first one
+    rightIndexListNew = handles.rightIndexList;
+    for i=1:length(leftSelection)
+        newItem = handles.leftIndexList(leftSelection(i));
+        if any(newItem == rightIndexListNew)
+            % we don't add the item
+        else
+            rightIndexListNew = [rightIndexListNew;...
+                newItem];
+            if length(rightIndexListNew) > handles.maxSelect
+                rightIndexListNew(1) = [];
+            end
+        end
+    end
+else
+    % just append and sort again
+    rightIndexListNew = unique([handles.leftIndexList(leftSelection);...
+        handles.rightIndexList]);
+end
+% show lists
 handles.rightIndexList = rightIndexListNew;
 set(handles.LSG_listboxRight,'String',...
     handles.originalList(rightIndexListNew));
