@@ -9,7 +9,9 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting)
 % SYNOPSIS [x, y] = lap(cc, NONLINK_MARKER, extendedTesting)
 %
 % INPUT:  cc: cost matrix, which has to be square. Set cost(i,j) to the
-%             value of NONLINK_MARKER, if the link is not allowed. %
+%             value of NONLINK_MARKER, if the link is not allowed. cc can
+%             be input as a sparse matrix (in which case there won't be any
+%             NONLINK_MARKERs).
 %
 %             For an unequal number of points the cost matrix is formed as
 %             a 2-by-2 catenation of four sub-matrices. If there are n
@@ -19,7 +21,9 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting)
 %             both diagonal square matrices (2,1: m-by-m; 1,2: n-by-n) with
 %             the cost for not linking a point (e.g. determined by a
 %             maximum search radius) in the diagonal and NONLINK_MARKER off
-%             the diagonal. Sub-matrix (2,2) is a m-b-n matrix of zeros.
+%             the diagonal. Sub-matrix (2,2) is a m-b-n matrix of any
+%             not-NONLINK_MARKER value (suggested: zero, except for sparse
+%             matrix input)
 %
 % NONLINK_MARKER : value to indicate that two points cannot be linked.
 %             Default: -1. NaN is not allowed here
