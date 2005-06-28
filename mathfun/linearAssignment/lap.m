@@ -1,4 +1,4 @@
-function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting)
+function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC)
 %LAP solves the linear assignment problem for a given cost matrix
 %
 % A linear assignment tries to establish links between points in two sets.
@@ -13,7 +13,8 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting)
 %             be input as a sparse matrix (in which case there won't be any
 %             NONLINK_MARKERs).
 %
-%             For an unequal number of points the cost matrix is formed as
+%             For an unequal number of points (or, generally, if birth and
+%             death is to be allowed) the cost matrix is formed as
 %             a 2-by-2 catenation of four sub-matrices. If there are n
 %             elements in set A and m elements in set B, sub-matrix (1,1)
 %             is a n-by-m matrix with the cost for each link. The two
@@ -34,6 +35,9 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting)
 %                     - In every row and every column of cc there must be
 %                       at least 1 element that is not a NONLINK_MARKER.
 %
+% augmentCC  (optional, [{0}/1]) If 1, the cost matrix will be augmented to
+%            allow births and deaths.
+%
 % OUTPUT: x: The point A(i) links to B(x(i))
 %         y: The point B(j) links to A(y(j))
 %
@@ -42,6 +46,7 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting)
 % lapjv is implemented through a MEX DLL.
 %
 % Author: Ge Yang, LCCB, TSRI, Dec. 10, 2004
+% extended by jonas 6/05
 
 
 % Basically, what this function does is to automatically extract the sparse matrix
@@ -64,17 +69,55 @@ if (nargin == 1)
 elseif isnan(NONLINK_MARKER)
     error('NONLINK_MARKER cannot be NaN!')
 end
-
-
+if nargin < 4 || isempty(augmentCC)
+    augmentCC = 0;
+end
+% test size
 scc = size(cc);
-if scc(1) ~= scc(2) || length(scc) > 2
-    error('cost must be a 2D square matrixt!')
+% check size only if no augmentation
+if ~augmentCC
+    if scc(1) ~= scc(2) || length(scc) > 2
+        error('cost must be a 2D square matrix!')
+    end
+elseif length(scc) > 2
+    error('cost must be a 2D matrix!')
 end
 
 if nargin < 3 || isempty(extendedTesting)
     extendedTesting = 1;
 end
 %=======================
+
+%=================================
+% AUTMENT COST MATRIX IF SELECTED
+%=================================
+if augmentCC
+    % expand the m-by-n cost matrix to a (m+n)-by-(n+m) matrix, adding
+    % diagonals with a cost above the highest cost
+    maxCost = max(cc(:)) + 1;
+
+    % check if sparse
+    if issparse(cc)
+        % mmDiag = spdiags(maxCost * ones(scc(1),1), 0, scc(1), scc(1));
+        % nnDiag = spdiags(maxCost * ones(scc(2),1), 0, scc(2), scc(2));
+        % nmMat  = sparse(ones(scc(2), scc(1)));
+        % cc = [cc, mmDiag; nnDiag, nmMat];
+        cc = [cc, spdiags(maxCost * ones(scc(1),1), 0, scc(1), scc(1));...
+            spdiags(maxCost * ones(scc(2),1), 0, scc(2), scc(2)),...
+            sparse(ones(scc(2), scc(1)))];
+    else
+        % mmDiag = diag(maxCost * ones(scc(1),1));
+        % nnDiag = diag(maxCost * ones(scc(2),1));
+        % nmMat  = sparse(ones(scc(2), scc(1)));
+        % cc = [cc, mmDiag; nnDiag, nmMat];
+        cc = [cc, diag(maxCost * ones(scc(1),1)); ...
+            diag(maxCost * ones(scc(2),1)), ...
+            sparse(ones(scc(2), scc(1)))];
+    end
+
+    % remember that the size of the matrix has increased!
+    scc = [sum(scc), sum(scc)];
+end
 
 
 %=============================
@@ -98,11 +141,11 @@ end
 
 % test that all cols and all rows are filled, and that there are no nans
 if extendedTesting
-allCols = unique(colIdx);
-allRows = unique(rowIdx);
-if any(isnan(val)) || ~(length(allCols) == scc(1) && length(allRows) == scc(2))
-    error('there must be at least one possible link per row and column, and there cannot be NaNs')
-end
+    allCols = unique(colIdx);
+    allRows = unique(rowIdx);
+    if any(isnan(val)) || ~(length(allCols) == scc(1) && length(allRows) == scc(2))
+        error('there must be at least one possible link per row and column, and there cannot be NaNs')
+    end
 end
 
 
