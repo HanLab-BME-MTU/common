@@ -114,7 +114,7 @@ handles.maxSelect = maxSelect;
 
 % if third input argument: remember moveOrCopy (can be 'move' or 'copy')
 if length(varargin) > 2 && ~isempty(varargin{3})
-    moveOrCopy = varargin{2};
+    moveOrCopy = varargin{3};
     if ~(strcmpi(moveOrCopy,'move')||strcmpi(moveOrCopy,'copy'))
         % run termination routine
         handles.output = [];
