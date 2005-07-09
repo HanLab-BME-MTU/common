@@ -29,13 +29,10 @@ m=mean(im_xproject);
 p=max(size(im_xproject));
 ct=100*round(p/1000);
 
+h = waitbar(0,'This might take awhile...');
 %loop over r = spatial shift in pixels
 for r=0:(p-1)
-    if(mod(r,ct)==0)
-        perc = 10*round(r/ct);
-        disp(['still computing... progress = ',num2str(perc),'%']);
-        pause(0.01);
-    end
+    waitbar(r/(p-1))
     %shiftedvec equals original vector shifted by r, with wraparound
     shiftedvecx(1:(p-r))=im_xproject((1+r):p);
     shiftedvecx((p-r):p)=im_xproject(1:(1+r));
@@ -52,9 +49,10 @@ for r=0:(p-1)
 
 end % of for
 
+close(h);
 account=acnx;
 account=0:(p-1);
-plot(account,acnx,'r.');
+plot(account,acnx,'r-');
 my=min(min(acnx),min(acny));
 mx=4*max(sizex,sizey);
 axis([-10 mx my 1]);
