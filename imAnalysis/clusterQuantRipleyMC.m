@@ -1,0 +1,909 @@
+function[cpar1,cpar2, cpar3,pvr,dpvr]=clusterQuantRipleyMC(mpm,imsizex,imsizey,norm,ra,corr);
+% clusterQuantRipleyMC calculates a quantitative clustering parameter based on
+% Ripley's K-function (a spatial statistics function for point patterns)
+% This function corrects for population growth (by cell division) by using
+% a Monte-Carlo simulation of the culster growth
+% SYNOPSIS   [cpar1,cpar2,
+% cpar3,pvr,dpvr]=clusterQuantRipleyMC(mpm,imsizex,imsizey,norm,ra,corr);
+%       
+% INPUT      mpm:       mpm file containing (x,y) coordinates of points in the
+%                       image in succesive columns for different time points
+%            imsizex:   x-size of the image (maximum possible value for x-coordinate)
+%            imsizey:   y-size of the image (maximum possible value for
+%                       y-coordinate)
+%            norm:      number of images for normalization; e.g. number of
+%                       images before adding growth factor to cells
+%            ra:        number of planes for rolling average - the function will
+%                       return cpar vectors that have the same size (i.e. the same
+%                       number of time points) as the original mpm, the missing
+%                       edge points will be filled up with ; a typical
+%                       value is e.g. ra=5
+%           corr:       optional input, enter 'flip' for overedge flip 
+%                       correction, the default is ripley's correction
+%                       (using correction factor determined by the fraction
+%                       of the circumference in the image)
+%
+%            NOTE:      in Johan's mpm-files, the image size is 1344 x 1024
+%                       pixels
+%            NOTE2:     this function uses ripley's correction unless
+%                       otherwise specified
+%            NOTE3:     Although this function is not actually named after 
+%                       Lt. Ellen Ripley, she certainly would deserve to have 
+%                       a kick-ass matlab function named after her.
+%
+%
+% OUTPUT    
+% for each time point, a single clustering parameter value is extracted
+% from the pvr function
+%                   
+%           cpar1:  total integrated value of dpvr (H(r)) from 0 to rs
+%                   (value of rs is specified below, depends on image size) 
+%           cpar2:  first point for dpvr to cross from negative to positive
+%                   values - means the distance for which a significantly
+%                   increased number of neighbors can be found in
+%                   comparison to statistical distributions
+%           cpar3:  partial integrated value of dpvr (H(r)) from 0 to rs
+%           pvr:    for each plane (time point), the function calculates
+%                   the function pvr=points vs radius, i.e. the number of
+%                   points contained in a circle of increasing radius
+%                   around an object, averaged over all objects in the
+%                   image
+%                   NOTE: the default size for the radius implicit in the 
+%                   pvr function is [1,2,3...,minimsize] where minimsize is the
+%                   smalller dimension of imsizex,imsizey
+%                   This function corresponds to Ripley's K-function (/pi)
+%           dpvr:   H(r) function, defined as Hr=pvrt-de'.^2 (in the
+%                   literature, you will also find a variant of this
+%                   function usually called the L(d)-d function, which is 
+%                   L(d)=sqrt(pvrt)-de'
+%            
+%
+% DEPENDENCIES      clusterQuantRipleyMC uses the external functions:
+%                   - nearNeiDistProbHisto
+%                   - numPointsinMpm
+%                   - mpmMCaddsim
+%                                                
+%
+% Dinah Loerke, last update: July 16th
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   SET DEFAULT VALUES AND INITIALIZE
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% if not otherwise specified, ra = 1, so that no rolling average is performed
+% for values >1, the function always uses the closest odd number for rolling
+% average, i.e. 3,5,7,...
+if nargin < 5, ra = 1; end
+ra=1+2*ceil((ra-1)/2);
+
+if ra>norm
+    disp('potential source of error: moving average window (ra) is larger than normalization window (norm)!');
+end
+
+% create vector containing x- and y-image size
+matsiz=[imsizex imsizey];
+
+% rs is size of distance vector in Ripley function
+% The size rs is chosen such that it is the radius of the circle with the 
+% same area as the image rectangle ( rs=round(sqrt((imsizex*imsizey)/pi)). 
+% Due to the normalization (the 'total' point density is measured from the
+% entire image and thus corresponds to this area), for a random 
+% distribution the ripley function at the length of the vector (at the 
+% distance rs) should be about zero
+% Technically, this is true for the more precise (but computationally much 
+% more expensive) Flip correction, but usually not quite for the faster
+% Ripley correction, which becomes noisier for large distances.
+
+rs=round(sqrt((imsizex*imsizey)/pi));
+
+% determine size of mpm-file
+[nx,ny]=size(mpm);
+if ((ny/2) < norm)
+    disp('potential source of error: normalization window is larger than length of input mpm!');
+end
+
+% number of frames 
+numframes = round(ny/2);
+numcells = zeros(numframes,1);
+
+% initialize results matrix pvr; x-dimension equals the employed number of
+% values for the circle radius, y-dimension equals number of planes of the
+% input mpm-file
+pvr=zeros(rs,numframes);
+pvr_growthCorr=zeros(rs,numframes);
+
+dpvr=zeros(rs,numframes);
+dpvr_growthCorr=zeros(rs,numframes);
+
+cpar=[1:numframes];
+cpar2=[1:numframes];
+cpar3=[1:numframes];
+
+cpar_growthCorr=[1:numframes];
+cpar2_growthCorr=[1:numframes];
+cpar3_growthCorr=[1:numframes];
+
+% initialize temporary coordinate matrix matt, which contains the object 
+%coordinates for one plane of the mpm
+matt=zeros(nx,2);
+
+corrVar = 0;
+if nargin > 5
+    if (corrVar == 'flip')
+        corrVar = 1;
+    end
+end
+
+
+%%======================================================================
+%  
+%   CALCULATE K(r)= Ripley's K-function of measured distribution
+%   (number of points in circle of radius r)
+%
+%=======================================================================
+
+disp('calculating Ripley K-function for input mpm...');
+[pvr]=RipleyKfunc(mpm,matsiz,corrVar);
+
+
+
+%======================================================================
+%
+%    For growth correction, simulate a growing (but non-scattering and
+%    non-moving) cell population 
+%    construct MPM and then also calculate Ripley's K-function   
+%
+%=======================================================================
+
+[np]=numPointsinMpm(mpm);
+numaddcells=zeros(length(np)-1,1);
+
+% modify np (remove point disappearances if necessary) and make addcell 
+% vector for MC simulation
+for k=1:length(np)
+    if (k>1)
+        if ( np(k)<np(k-1)) 
+            np(k)=np(k-1);
+        end
+        numaddcells(k-1) = np(k)-np(k-1);
+    end
+end
+
+% determine probability distribution for Monte Carlo simulation from as many
+% frames as possible, i.e. for the number of frames specified
+% for normalization
+
+pdavmat=zeros(100,norm);
+for k=1:norm
+    tx=2*k-1;
+    ty=2*k;
+    mpmktemp=mpm(:,tx:ty);
+    [pd,pdfilter]=nearNeiDistProbHisto(mpmktemp);
+    pdavmat(:,k)=pdfilter;
+end
+pdav=mean(pdavmat,2);
+% the approximate cell diameter is the distance for which the probability
+% distribution has its maximum value
+cellDiam = min(find(pdav ==(max(pdav))));
+
+
+% make simulated mpm using average probablity distribution pdav
+% use original data for frames 1-norm
+% start simulating @ frame 1
+
+% average over 3 simulated mpms
+pvr_growthCorrMat=zeros(rs,numframes,3);
+
+for simnum=1:3
+    
+    mpmstart=mpm(:,1:2);
+    mpmcurr=mpmstart;
+    mpmtot=zeros(nx,2*numframes);
+    mpmtot(:,1:2*norm)=mpm(:,1:2*norm);
+
+    for k=2:numframes
+        [mpmMC]=mpmMCaddsim(mpmcurr,[imsizex imsizey], numaddcells(k-1),pdav);
+        [xmc,ymc]=size(mpmMC);
+        mpmtot(1:xmc,(2*k-1):(2*k))=mpmMC; 
+        mpmcurr = mpmMC;
+    end % of for
+
+    %now calculate Ripley's K-function for simulated mpm just as for the original
+
+    disp(['calculating Ripley K-function for simulated mpm number ',num2str(simnum)]);
+    [pvr_growthCorrTemp]=RipleyKfunc(mpmtot,matsiz,corrVar);
+    pvr_growthCorrMat(:,:,simnum) = pvr_growthCorrTemp;
+    
+end % of for simnum
+pvr_growthCorr=mean(pvr_growthCorrMat,3);
+% pvr_growthCorr is now the averaged pvr function for a non-scattering and
+% non-moving dividing cell population
+
+
+
+%%======================================================================
+%
+%    CALCULATE H(r) FUNCTION AND CLUSTER PARAMETERS 
+%
+%=======================================================================
+
+%From the calculated function pvr (number of points versus circle
+%radius), we calculate a number of quantitative clustering parameters, cpar.
+%
+%If specified by user input as ra>1, use rolling average of pvr function
+%In this case, we fill the missing start and end points with duplicates -
+%since some frames get lost by the rolling average, but we want the
+%output to have the same number of frames as the original, so that in
+%subsequent analysis, we don't have to correct the normpoint (e.g. the time
+%point of drug addition) for the rolling average magnitude.
+%The "padding" in front and back (variable "shift") is 1 each for ra=3, 
+%2 each for ra=5, etc.
+%For example, for ra=5, the averages for the first 3 frames are all 1:5, then 2:6,
+% etc. For the last frames, the averages are n-5:n-1, then n-4:n in the last
+% three frames.
+
+shift=round((ra-1)/2);
+maxp=round(ny/2);
+% interpoint distance for homogeneous distribution of this density
+%ipdist=round(sqrt(((imsizex*imsizey)./numcells)/0.86));
+
+
+%now do final analysis including filtering (which uses forward and backward
+%data, so it has do be done in a separate loop
+h = waitbar(0,'parameter calculation');
+figure
+for k=1:numframes
+    waitbar(k/numframes);
+    %disp(['final parameter determination in frame ',num2str(k)]);
+    %startpoint cannot be below zero, is minumum of k-shift
+    astartpoint=max(1,k-shift);
+    %endpoint is shifted to right from startpoint, but cannot exceed 
+    %the maximum length of the vector
+    aendpoint=min(maxp,astartpoint+ra-1);
+    %startpoint is restrosepctively adjusted to endpoint
+    astartpoint=aendpoint-(ra-1);
+    points=[k astartpoint aendpoint];
+
+    %calculate rolling average of pvrt
+    pvrt = mean( pvr(:,astartpoint:aendpoint),2 );
+    pvrt_growthCorr = mean( pvr_growthCorr(:,astartpoint:aendpoint),2 );
+    
+    matt = mpm(:,k*2-1:2*k);
+    smatt=[nonzeros(matt(:,1)), nonzeros(matt(:,2)) ];
+    [smx,smy]=size(smatt);
+    tempnp=numcells(k);
+    
+    % calculate cluster parameters in subfunctions for original and
+    % simulated pvr
+    [dpvr(:,k), cpar1(k),cpar2(k),cpar3(k)]=clusterpara(pvrt,k,tempnp,matsiz,cellDiam);
+    [dpvr_growthCorr(:,k), cpar1_growthCorr(k),cpar2_growthCorr(k),cpar3_growthCorr(k)]=clusterpara(pvrt_growthCorr,k,tempnp,matsiz,cellDiam);
+    
+end % of for
+close(h);
+
+
+%=========================================================================
+% 
+%  Normalize and correct measured values using the normalization phase and
+%  using the results of the growth correction analysis
+%
+%==========================================================================
+
+%normalize cpar with initial value, either first point or specified lebgth
+%of normalization norm before drug addition
+if(norm>length(cpar))
+    norm=1;
+end
+
+%c1 is total integrated area
+
+normfac1=nanmean(cpar1(1:norm));
+cpar1=cpar1/normfac1;
+normfac1_growthCorr=nanmean(cpar1_growthCorr(1:norm));
+cpar1_growthCorr=cpar1_growthCorr/normfac1_growthCorr;
+
+%c2 ist first point of rise above zero
+
+normfac2=nanmean(cpar2(1:norm));
+cpar2=cpar2/normfac2;
+normfac2_growthCorr=nanmean(cpar2_growthCorr(1:norm));
+cpar2_growthCorr=cpar2_growthCorr/normfac2_growthCorr;
+
+
+%cpar 3 ist partial integrated area
+
+normfac3=nanmean(cpar3(1:norm));
+cpar3=cpar3/normfac3;
+normfac3_growthCorr=nanmean(cpar3_growthCorr(1:norm));
+cpar3_growthCorr=cpar3_growthCorr/normfac3_growthCorr;
+
+
+%===============================
+%
+%       Growth correction
+%
+%===============================
+
+% to correct integrals for the value of growth correction, smooth 
+% smooth growthCorr functions
+% since the simulated vectors correspond to a non-scattering distribution, 
+% they don't go below zero and just reflect the decay of the initial height 
+% of the H(r) function due to normalization effects
+% Thus, the measured value is divided by the (normalized) simulation value
+
+
+%filter (smooth) and shift to account for filter effects 
+filterLength = ceil(norm/4);
+preVec3 = ones(1,filterLength);
+preVec3(:) = cpar3_growthCorr(1);
+cpar3_growthCorrSmooth = filter( ones(1,filterLength)/filterLength,1,[preVec3 cpar3_growthCorr] );
+cpar3_growthCorrSmooth(1:round(1.5*filterLength)-1)=[];
+l3 = length(cpar3_growthCorrSmooth);
+cpar3_growthCorrSmooth(l3+1:numframes)=cpar3_growthCorrSmooth(l3);
+
+%same for preVec1 - this procedure is not necessary for cpar2, since this
+%parameter is intrinsically independent of cluster growth
+preVec1 = ones(1,filterLength);
+preVec1(:) = cpar1_growthCorr(1);
+[cpar1_growthCorrSmooth] = filter( ones(1,filterLength)/filterLength,1,[preVec1 cpar1_growthCorr] );
+cpar1_growthCorrSmooth(1:round(1.5*filterLength)-1)=[];
+l1 = length(cpar1_growthCorrSmooth);
+cpar1_growthCorrSmooth(l1+1:numframes)=cpar1_growthCorrSmooth(l1);
+
+
+cpar3=cpar3./cpar3_growthCorrSmooth;
+cpar1=cpar1./cpar1_growthCorrSmooth;
+
+
+%uncomment the following paragraphs to display results
+
+% figure
+% plot(cpar1_growthCorr,'b.');
+% hold on
+% axis([0 numframes 0 1.2]);
+% plot(cpar3_growthCorr,'r.');
+% plot(cpar1_growthCorrSmooth,'b-');
+% plot(cpar3_growthCorrSmooth,'r-');
+
+% figure
+% plot(cpar1,'b.');
+% axis([0 numframes 0 1.2]);
+% hold on
+% plot(cpar3,'r.');
+% plot(cpar2,'g.');
+% plot(cpar3,'r-');
+% plot(cpar1,'b-');
+
+
+%step 2: for the second cluster parameter, firstpoint, exclude those points
+%that occur for strongly scattered distributions, i.e. where the value of
+%cpar3 have dropped below a set threshold of e.g. 10%, since in the very
+%scattered distributions, this parameter eventually becomes meaningless and
+%very noisy
+%
+cpar2(find(cpar3<0.1))=nan;
+
+
+end % main function
+
+
+
+
+
+
+
+function[dpvrt, cpar1,cpar2,cpar3]=clusterpara(pvrt,k,tempnp,matsiz,cellDiam);
+%clusterpara calculates a quantitative cluster parameter from the input
+%function (points in circle) vs (circle radius)
+% SYNOPSIS   [cpar]=clusterpara(pvrt);
+%       
+% INPUT      pvrt:   function containing normalized point density in 
+%                   circle around object
+%                   spacing of points implicitly assumes radii of 1,2,3...
+%            k= number of plane in series (is used for monitoring progress)
+%               tempnp = number of points 
+%           tempnp = 
+%           matsiz
+%           cellDiam
+%
+% OUTPUT     cpar:    cluster parameter
+%            dpvrt:   difference function of p vs r
+%
+% DEPENDENCES   clusterpara uses {DiffFuncParas}
+%               clusterpara is used by {FractClusterQuant}
+%
+% Dinah Loerke, September 13th, 2004
+
+%============================================================
+% calculate difference L(d)-d function, using L(d)=sqrt(K(d)),
+% since K(d) is already divided by pi
+% This difference function is from now on called H(r)
+%=============================================================
+len=max(size(pvrt));
+de=(1:len);
+Hr=pvrt-de'.^2;
+%Hr=sqrt(pvrt)-de';
+% for difffuncparas, we want to extract inclination around central point;
+% for high degree of cell division, the normalization of Hr affects this
+% inclination; therefore, to conserve the height of the first rise 
+% corresponding to the close neighborhood, we scale with number of cells; 
+% 
+%numc=max(nump);
+%dpvrt=Hr*tempnp^(1.1);
+dpvrt=Hr;
+
+%extract parameters from diff
+[cpar1,cpar2,cpar3]=DiffFuncParas(dpvrt,k,tempnp,matsiz,cellDiam);
+%cpar3=sum(dpvrt(1:ipd));
+%cpar1=sum(dpvrt);
+end    
+
+ 
+
+
+
+
+
+function[p1,p2,p3]=DiffFuncParas(Hr,k,tempnp, matsiz,cellDiam)
+%DiffFuncParas calculates a number of quantitative cluster parameter 
+%from the input function, the difference function
+% SYNOPSIS   DiffFuncParas(diff);
+%       
+% INPUT      Hr:  difference function as calculated in clusterpara
+%                   vector with len number of points
+%%          k:  plane in series
+% OUTPUT     p1,p2:  cluster parameters
+%                    currently: p1=inclination of the first rise of the
+%                                   H(t) function (clustering) 
+%                               of total clustering)
+%                               p2= position of first rise
+%
+% DEPENDENCES   DiffFuncParas uses {}
+%               DiffFuncParas is used by {clusterpara}
+%
+% Dinah Loerke, September 13th, 2004
+
+
+%% firstpoint: point where diff function systematically rises above zero 
+%% definition: diff>0 AND (diff)'>0 to exlude noisy one-point rises above
+%% zero. if there exists no such point (for completely scattered
+%% distributions), firstpoint is set to nan and incl is set to zero
+
+
+vec=Hr;
+
+% smooth with Gaussian filter
+xs=-8:1:8;
+amps=exp(-(xs.^2)/(2*(2.5^2)));
+namps=amps/sum(amps);
+filtershape = namps;
+%the above definition of the filter will introduce a shift to the filtered
+%vector, this will need to be compensated by a counter-shift firther below
+shift=8;
+[filtervec] = filter(filtershape,1,vec);
+
+
+% the filter shifts the function several points to the right, this is
+% compensated by removing first points (number of points is=shift)
+% the size of the filter excludes variation caused by small cell numbers,
+% e.g. the wedge artifact for single cell increases at small distances, if
+% the number of lonely frames isn't too large
+filtervec(1:shift)=[];
+
+%devc=first differential
+dvec=diff(filtervec);
+%ddvec = second differential
+ddvec=diff(dvec);
+
+% detvec= determination vector; has the function to differentiate between 
+% clustered distributions, where we can calculate cluster parameters, and 
+% scattered distrubutions where this is impossible. detvec is set to zero 
+% where either the original function is below zero (indicating scattering)
+% or where the inclination (of the filtered function) is below zero (as 
+% would be the case for a single isolated above-zero data point, which is
+% not followed shortly after by an additional data point - the 'shortly
+% after' depends on the range of the filtering
+
+%inclination of curve has to be > 0...
+detvec1=dvec;
+detvec1(1:20)=0;
+detvec1(dvec<0)=0;
+minimum=min(find(detvec1));
+
+%...and the value of the function has to be > 0, too.
+detvec3=filtervec;
+detvec3(1:minimum)=0;
+detvec3(filtervec<0)=0;
+firstzerocrosspoint=min(find(detvec3));
+
+%for determination of inclination:
+detvec2=ddvec;
+detvec2(1:minimum)=0;
+detvec2(ddvec>0)=0;
+
+
+imsizex=matsiz(1);
+imsizey=matsiz(2);
+%since in this version of the function, the growth is already corrected
+%for, the ipdist value here can remain fixed
+%for ipdist, we choose a value realted to the cell diameter, so that cells
+%of different size can be compared to each other
+ipdist=2*cellDiam;
+entIntegral = sum(Hr);
+parIntegral = sum(Hr(1:ipdist));
+
+if (length(nonzeros(detvec3))>1)
+    firstpoint=firstzerocrosspoint;
+    % beginning point begp and end point endp for calculating inclination of the
+    % function diff
+    begp=firstpoint-2;
+    endp=begp+round(firstpoint/2);
+    if ( endp>length(dvec) )
+        endp=length(dvec);
+    end
+    inclination=mean(dvec(begp:endp));
+    
+%% =====================================================================
+%% if anything is funny with the results of the analysis,
+%  uncomment the following paragrpah for a display of the single traces 
+%  during determination
+%% ===========================================================
+     
+     plot(vec,'b.');
+     axis([ 20 ipdist+30 -5000 15000]);
+     hold on
+     plot(filtervec,'b-');
+     ypts=[vec(begp) vec(endp)];
+     xpts=[begp endp];
+     plot(xpts, ypts, 'r.');
+     plot(firstpoint,filtervec(firstpoint),'go');
+     plot(ipdist,filtervec(ipdist),'mo');
+     text(30,5000,num2str(k));
+     pause(0.1);
+     hold off;
+    
+else
+    firstpoint=NaN;
+    inclination=0;
+end
+
+%disp(['firstpoint ',num2str(firstpoint)]);
+%p1=inclination;
+p1 = entIntegral;
+p2 = firstpoint;
+p3 = parIntegral;
+
+
+end
+
+
+
+
+
+
+
+
+function[m2,num]=pointsincircle(m1,ms,corrVar)
+%pointsincircle calculates the average number of points in a circle around
+%a given point as a function of the circle radius (averaged over all points
+%and normalized by total point density); this function is called Ripley's
+%K-function in statistics, and is an indication of the amount of clustering
+%in the point distribution
+% 
+% SYNOPSIS   [m2]=pointsincircle(m1,ms);
+%       
+% INPUT      m1:   matrix of size (n x 2) containing the (x,y)-coordinates of n
+%                  points
+%            ms: vector containing the parameters [imsizex imsizey] (the 
+%                   x-size and y-size of the image)
+%            corr: 'flip' or 'rip' correction factor
+%
+%            NOTE: in Johan's mpm-files, the image size is 1344 x 1024
+%               pixels
+%
+%
+% OUTPUT     m2:    vector containing the number of points in a circle 
+%                   around each point, for an increasing radius;
+%                   radius default values are 1,2,3,....,min(ms)
+%                   function is averaged over all objects in the image
+%           num: number of points
+%
+% DEPENDENCES   pointsincircle uses {distanceMatrix, circumferenceCorrectionFactor}
+%                   (distanceMatrix, circumferenceCorrectionFactor added to this file)
+%               pointsincircle is used by {FractClusterQuant }
+%
+% Dinah Loerke, October 4th, 2004
+
+
+[lm,wm]=size(m1);
+
+%for points at the edges (where the circle of increasing size is cut off by
+%the edges of the image), this function corrects for the reduced size of 
+%the circle by assuming a contuous distribution, i.e. by flipping the image
+%over the edge
+
+msx=ms(1);
+msy=ms(2);
+minms=min(ms);
+%rs=round(minms/2);
+rs=round(sqrt((msx*msy)/pi));
+
+if (corrVar==1)
+    
+    midxo = round(0.6*msx);
+    midxu = round(0.4*msx);
+    midyo = round(0.6*msy);
+    midyu = round(0.4*msy);
+
+    %duplicate of m1 with all surrounding fields included
+    mq5=m1;
+    pos = find ((m1(:,1)>midxu) & (m1(:,2)>midyu));
+    mq1=[(m1(pos,1)-msx) (m1(pos,2)-msy)];
+    pos = find (m1(:,2)>midyu);
+    mq2=[(m1(pos,1))     (m1(pos,2)-msy)];
+    pos = find ((m1(:,1)<midxo) & (m1(:,2)>midyu));
+    mq3=[(m1(pos,1)+msx) (m1(pos,2)-msy)];
+    pos = find (m1(:,1)>midxu);
+    mq4=[(m1(pos,1)-msx) (m1(pos,2))     ];
+    pos = find (m1(:,1)<midxo);
+    mq6=[(m1(pos,1)+msx) (m1(pos,2))     ];
+    pos = find ((m1(:,1)>midxu) & (m1(:,2)<midyo));
+    mq7=[(m1(pos,1)-msx) (m1(pos,2)+msy)];
+    pos = find (m1(:,2)<midyo);
+    mq8=[(m1(:,1))     (m1(:,2)+msy)];
+    pos = find ((m1(:,1)<midxo) & (m1(:,2)<midyo));
+    mq9=[(m1(:,1)+msx) (m1(:,2)+msy)];
+
+    mq=[mq1; mq2; mq3; mq4; mq5; mq6; mq7; mq8; mq9];
+    %disp( ['matrix = ',num2str(length(m1)),'  mq = ',num2str(length(mq))]);
+    %create neighbour matrix m3
+    %matrix mdist contains the distance of all points in m1 from all points
+    %in itself
+    [mdist]=distanceMatrix(m1,mq);
+    
+
+else  %default is 'rip'=correction 'cause it's faster
+    %create neighbour matrix m3
+    %matrix m3 contains the distance of all points in m1 from all points
+    %in itself
+    [mdist]=distanceMatrix(m1,m1);
+
+    % %create corrections factor matrix (same dimension as mdist)
+    % %contains correction factor for precise radii (point distances) around each
+    % %point; for the zero entry at identity (p11,p22,p33), cfm equals one
+    corrFacMat=ones(lm);
+    for n=1:lm
+        corrFacMat(n,:) = circumferenceCorrectionFactor(m1(n,1),m1(n,2),mdist(n,:),msx,msy);
+    end
+    
+    
+end %of if-else
+
+thresh_mdist = mdist;
+
+for r=rs:-1:1
+    %for given radius, set all values of mdist higher than the radius value
+    %to zero
+    
+    thresh_mdist(thresh_mdist > r) = 0;
+    
+    %count all leftover points equally => set to one
+    
+    thresh_mdistones = thresh_mdist;
+    thresh_mdistones(thresh_mdist > 0) = 1;
+    %what's num represent, again...
+    
+    num(r)=sum(thresh_mdistones(:))/2;  
+    %weight every counted point with the circumference correction factor
+    %calculated previously in corrFacMat
+    if (corrVar == 0)
+        tempfinal=thresh_mdistones./corrFacMat;
+    else
+        tempfinal=thresh_mdistones;  
+    end
+    %sum over entire matrix to get number of points
+    npv=sum(tempfinal(:));
+    
+    
+    num(r)=sum(thresh_mdistones(:))/2;  
+    %weight every counted point with the circumference correction factor
+    %calculated previously in corrFacMat
+    tempfinal=thresh_mdistones./corrFacMat;    
+    %sum over entire matrix to get number of points
+    npv=sum(tempfinal(:));
+    
+    
+    %to average, divide sum by number of points (=columns)
+    npv=(npv/lm);
+    
+    %in order to be able to quantitatively compare the clustering in 
+    %distributions of different point densities, this npv value must now 
+    %be corrected for overall point density, which is lm/msx*msy; the 
+    %resulting normalized function is (if we also divide by pi to scale for
+    %the circle area) more or less a simple square function;
+    %it is a perfect square function for a perfectly random distribution of
+    %points
+    m2(r)=npv/(pi*(lm-1)/(msx*msy));
+    %using (lm-1) and not lm is Marcon&Puech's correction (2003)
+    
+end
+
+end % of function
+  
+
+
+
+
+
+
+function[m2]=distanceMatrix(c1,c2)
+%this subfunction makes a neighbour-distance matrix for input matrix m1
+%input: c1 (n1 x 2 points) and c2 (n2 x 2 points) matrices containing 
+%the x,y coordinates of n1 or n2 points
+%output: m2 (n1 x n2) matrix containing the distances of each point in c1 
+%from each point in c2
+[ncx1,ncy1]=size(c1);
+[ncx2,ncy2]=size(c2);
+m2=zeros(ncx1,ncx2);
+for k=1:ncx1
+    for n=1:ncx2
+        d=sqrt((c1(k,1)-c2(n,1))^2+(c1(k,2)-c2(n,2))^2);
+        m2(k,n)=d;
+    end
+end
+end
+
+
+
+
+
+
+function[corfac]=circumferenceCorrectionFactor(xx,yy,rr,msx,msy)
+%circumference correction calculates a vector containing the correction factor
+%(for edge correction in Ripley's k-function) for values of rr
+%circumference correction: fraction of circumference of circle centered at
+%point P=(xx,yy) with radius rr (inside rectangular image) falling into the 
+%rectangle - this fraction becomes smaller as the point gets closer to one
+%of the rectangle's edges, and as the radius of the circle increases
+%if the circle falls completely inside the rectangle, the value is zero
+
+%1. this function assumes that rr is a vector
+
+% SYNOPSIS   [corfac]=circumferenceCorrectionFactor2(xx,yy,rr,msx,msy)
+%       
+% Dinah Loerke, October 6, 2004
+
+
+x=min(xx,(msx-xx));
+y=min(yy,(msy-yy));
+
+rmax=max(size(rr));
+corfac=ones(rmax,1);
+
+for i=1:rmax
+    r=rr(i);
+    %if both x and y are smaller than r
+    if(r>0)
+        
+        if((x<r)&&(y<r))
+            if( (x<r) && (y<r) && (sqrt(x^2+y^2)>r) )
+                corfac(i)=(2*asin(x/r)+2*asin(y/r))/(2*pi);
+            else
+                corfac(i)=(0.5*pi+asin(x/r)+asin(y/r))/(2*pi);
+            end
+         %if either x OR y OR neither is smaller than r 
+        else
+             z=min( min(x,y),r );
+            corfac(i)=(pi+2*asin(z./r))/(2*pi);
+        end
+    end
+end
+
+end
+
+
+
+
+
+
+
+function[pvr]=RipleyKfunc(mpm,imsiz,corrFac);
+%[pvr]=RipleyKfuncFlip(mpm,imsiz); 
+%pure Kfunction calculation from mpm
+
+
+
+%create vector containing x- and y-image size
+imsizex = imsiz(1);
+imsizey = imsiz(2);
+
+%rs is size of distance vector in Ripley function
+%the size rs is chosen such that for a random distribution, the ripley
+%function over the length of the vector is close to zero
+%Theoretically, rs should be the radius of the circle with the same area as
+%the image rectangle ( rs=round(sqrt((imsizex*imsizey)/pi)); ), this is true 
+% for the flip correction, but not necessarily for the ripley correcion
+rs=round(sqrt((imsizex*imsizey)/pi));
+
+%determine size of mpm-file
+[nx,ny]=size(mpm);
+%number of frames
+numframes = round(ny/2);
+%numcells = zeros(numframes,1);
+
+%initialize results matrix pvr; x-dimension equals the employed number of
+%values for the circle radius, y-dimension equals number of planes of the
+%input mpm-file
+pvr=zeros(rs,numframes);
+
+%initialize temporary coordinate matrix matt, which contains the object 
+%coordinates for one plane of the mpm
+matt=zeros(nx,2);
+
+%%======================================================================
+%
+%    CALCULATE (relative) NUMBER OF POINTS IN CIRCLE OF INCREASING SiZE
+%
+%=======================================================================
+
+h = waitbar(0,'Ripley (K-function) calculation');
+%cycle over all planes of series, using two consecutive columns of mpm input
+%matrix as (x,y) coordinates of all measured points
+for k=1:(round(ny/2))
+    waitbar(k/round(ny/2));
+    %matt is set to two consecutive columns of input matrix m1
+    matt(:,:)=mpm(:,(2*k-1):(2*k));
+    
+    %since the original mpm file contains a lot of zeros, these zeros are 
+    %deleted in the temporary coordinate matrix to yield a matrix containing
+    %only the nonzero points of matt, smatt
+    [nz1,e]=size(nonzeros(matt(:,1)));
+    [nz2,e]=size(nonzeros(matt(:,2)));
+    % dovar is do-variable to determine whether function is performed on
+    % this plane or not (due to missing objects or non-matching coordinates)
+    dovar=1;
+    if( (nz1==nz2) && (nz1>0) )
+        smatt=[nonzeros(matt(:,1)), nonzeros(matt(:,2)) ];
+    else
+        dovar=0;
+        disp(['Error in frame ',num2str(k), ' of input mpm']);
+        if(nz1~=nz2)
+            disp(['unequal number of entries for x and y-coordinates']);
+        end
+        if (nz1==0) 
+        disp(['no objects (i.e. no nonzero entries) in this frame']);
+        end
+    end
+    
+    %comment/uncomment the next five lines if you want to monitor progress
+    %prints number of objects for every 10th line
+%     [smx,smy]=size(smatt);
+%     numcells(k)=max([smx,smy]);
+%     if(mod(k,10)==0)
+%         disp(['plane ',num2str(k),'   number of objects ', num2str(numcells(k))]);
+%     end  % of if
+
+    if (dovar>0)
+    %now determine number of objects in circle of increasing radius,
+    %averaged over all objects in smatt, and normalized with point density
+    %tempnp/(msx*msy)
+        [pvrt,nump]=pointsincircle(smatt,imsiz,corrFac);
+    %result is already normalized with point density tempnp/(msx*msy)
+        pvr(:,k)=pvrt(:);
+    
+    end  % of if
+        
+end %of for
+close(h);
+
+end % of function
+
+
+
+
