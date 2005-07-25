@@ -18,6 +18,9 @@ function [wrappedValues, multiplier] = wraparound(values,interval)
 %           It will never have th value of upper. To find out how
 %           far away from the lower limit the value lies, you have to
 %           subtract that lower limit yourself
+%           Remember: If the allowed values range from 1 to 10, lower=1 and
+%           upper = 11, because you want to allow a value of 10, but you
+%           want to turn 11 into 1.
 %
 % EXAMPLES  With an interval [0;10], 19 becomes [[9], [1]]
 %           With an interval [2;4],  [9.2;-2.6] becomes [[3.2;3.4], [3;-3]]
@@ -50,6 +53,14 @@ if ~all(interval(1,:) < interval(2,:))
     error('lower limits have to be strictly smaller than upper limits!')
 end
 
+% test whether we have all "integers"
+if all(all(isApproxEqual(values,round(values),1e-15))) && ...
+        all(all(isApproxEqual(interval,round(interval),1e-15)))
+    roundValues = 1;
+else
+    roundValues = 0;
+end
+
 % make arrays filled with lower and upper limits
 lower = repmat(interval(1,:),[sizeValues(1),1]);
 upper = repmat(interval(2,:),[sizeValues(1),1]);
@@ -60,13 +71,13 @@ upper = repmat(interval(2,:),[sizeValues(1),1]);
 
 % Strategy: Transform interval and data to [0,1], then separate integer
 % part as multiplier and transform the rest back onto the original interval
-% With negative data, add 1 to the value
-% shift values and upper limit by lower limit
+% Since we round towards minus infinity when calculating the multiplier, we
+% can just subtract the multiplier from everything and get the corect
+% wrappedValue: For example, -0.9 will be rounded down to -1, -0.9+1=0.1,
+% which is at the right position on the interval.
 wrappedValues = values - lower;
 upper = upper - lower;
 
-% find negative values
-isNegative = wrappedValues < 0;
 
 % divide by upper limit
 wrappedValues = wrappedValues ./ upper;
@@ -76,7 +87,12 @@ wrappedValues = wrappedValues ./ upper;
 multiplier = floor(wrappedValues);
 
 % now get remainder. Add 1 wherever we would get a negative wrapped value
-wrappedValues = abs(wrappedValues) - multiplier + isNegative;
+wrappedValues = wrappedValues - multiplier;
 
 % transform wrappedValues back onto the original interval
 wrappedValues = (wrappedValues .* upper) + lower;
+
+% if the input was "integer", we want to return "integers"
+if roundValues
+    wrappedValues = round(wrappedValues);
+end
