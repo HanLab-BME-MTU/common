@@ -86,7 +86,7 @@ wrappedValues = wrappedValues ./ upper;
 % values
 multiplier = floor(wrappedValues);
 
-% now get remainder. Add 1 wherever we would get a negative wrapped value
+% now get remainder. 
 wrappedValues = wrappedValues - multiplier;
 
 % transform wrappedValues back onto the original interval
