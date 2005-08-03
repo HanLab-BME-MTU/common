@@ -89,6 +89,9 @@ end
 % create vector containing x- and y-image size
 matsiz=[imsizex imsizey];
 
+%number of cycles for MC simulation
+simLoop = 3;
+
 % rs is size of distance vector in Ripley function
 % The size rs is chosen such that it is the radius of the circle with the 
 % same area as the image rectangle ( rs=round(sqrt((imsizex*imsizey)/pi)). 
@@ -200,7 +203,7 @@ cellDiam = min(find(pdav ==(max(pdav))));
 % average over 3 simulated mpms
 pvr_growthCorrMat=zeros(rs,numframes,3);
 
-for simnum=1:3
+for simnum=1:simLoop
     
     mpmstart=mpm(:,1:2);
     mpmcurr=mpmstart;
@@ -257,7 +260,7 @@ maxp=round(ny/2);
 %now do final analysis including filtering (which uses forward and backward
 %data, so it has do be done in a separate loop
 h = waitbar(0,'parameter calculation');
-figure
+h1 = figure;
 for k=1:numframes
     waitbar(k/numframes);
     %disp(['final parameter determination in frame ',num2str(k)]);
@@ -281,12 +284,14 @@ for k=1:numframes
     
     % calculate cluster parameters in subfunctions for original and
     % simulated pvr
+    subplot(1,2,1);
     [dpvr(:,k), cpar1(k),cpar2(k),cpar3(k)]=clusterpara(pvrt,k,tempnp,matsiz,cellDiam);
+    subplot(1,2,2);
     [dpvr_growthCorr(:,k), cpar1_growthCorr(k),cpar2_growthCorr(k),cpar3_growthCorr(k)]=clusterpara(pvrt_growthCorr,k,tempnp,matsiz,cellDiam);
     
 end % of for
 close(h);
-
+h2 = figure;
 
 %=========================================================================
 % 
@@ -356,11 +361,19 @@ cpar1_growthCorrSmooth(1:round(1.5*filterLength)-1)=[];
 l1 = length(cpar1_growthCorrSmooth);
 cpar1_growthCorrSmooth(l1+1:numframes)=cpar1_growthCorrSmooth(l1);
 
+plot(cpar3,'r-');
+axis([0 numframes 0 2]);
+hold on
+plot(cpar3_growthCorr,'b-');
+
+% plot(cpar3_growthCorr,'r.');
+% plot(cpar1_growthCorrSmooth,'b-');
+% plot(cpar3_growthCorrSmooth,'r-');
 
 cpar3=cpar3./cpar3_growthCorrSmooth;
 cpar1=cpar1./cpar1_growthCorrSmooth;
 
-
+plot(cpar3,'g-');
 %uncomment the following paragraphs to display results
 
 % figure
@@ -535,8 +548,9 @@ imsizey=matsiz(2);
 %for ipdist, we choose a value realted to the cell diameter, so that cells
 %of different size can be compared to each other
 ipdist=2*cellDiam;
+restZeroCross = round(0.85 * cellDiam);
 entIntegral = sum(Hr);
-parIntegral = sum(Hr(1:ipdist));
+parIntegral = sum(Hr(restZeroCross:ipdist));
 
 if (length(nonzeros(detvec3))>1)
     firstpoint=firstzerocrosspoint;
@@ -555,17 +569,23 @@ if (length(nonzeros(detvec3))>1)
 %  during determination
 %% ===========================================================
      
-     plot(vec,'b.');
-     axis([ 20 ipdist+30 -5000 15000]);
-     hold on
+     %plot(vec,'b.');
+     
+     %hold on
      plot(filtervec,'b-');
-     ypts=[vec(begp) vec(endp)];
-     xpts=[begp endp];
+     axis([ 0 120 -2000 17000]);
+     hold on
+     ypts=[filtervec(cellDiam) filtervec(ipdist)];
+     xpts=[cellDiam ipdist];
      plot(xpts, ypts, 'r.');
-     plot(firstpoint,filtervec(firstpoint),'go');
-     plot(ipdist,filtervec(ipdist),'mo');
-     text(30,5000,num2str(k));
-     pause(0.1);
+     ypts2=[filtervec(restZeroCross)];
+     xpts2=[restZeroCross];
+     plot(xpts2, ypts2, 'g.');
+     
+     %plot(firstpoint,filtervec(firstpoint),'go');
+     %plot(ipdist,filtervec(ipdist),'mo');
+     %text(30,5000,num2str(k));
+     pause(0.05);
      hold off;
     
 else
