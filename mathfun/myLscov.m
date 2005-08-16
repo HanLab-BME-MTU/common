@@ -48,7 +48,7 @@ function [x,dx,mse] = myLscov(A,b,V)
 
 % Error checking
 if m < n, error('Problem must be over-determined so that M > N.'); end
-if m == n, warning('MYLSCOV:NOFIT','There are as many equations as unknowns. There will be no fitting.'), end
+if m == n, warning('MYLSCOV:NOFIT','There are as many equations as unknowns. There will be no fitting.'),return,end
 if size(b,1)~=m, 
   error(sprintf('B must be a column vector of size %d-by-1.',m));
 end

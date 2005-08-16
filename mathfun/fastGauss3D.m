@@ -1,20 +1,33 @@
-function out=fastGauss3D(img,sigma,fSze,correctBorder);
+function out=fastGauss3D(img,sigma,fSze,correctBorder,filterMask);
 % fastGauss3D	apply a 3 dimensional gauss filter
 %
-%    out=Gauss3D(img,sigma,fSze);
+%    SYNOPSIS out=Gauss3D(img,sigma,fSze);
 %
-%    INPUT: img      3-dimensional data
-%           sigma  of gauss filter [sigmaX sigmaY sigmaZ]
-%           fSze   size of the gauss mask [sizeX sizeY sizeZ]
-%                  (odd size required for symmetric mask!)
-%           correctBorder (optional) if 1, border effects of the filtering are
-%                                   lessened
+%    INPUT:   img      3-dimensional data
+%             sigma    of gauss filter [sigmaX sigmaY sigmaZ]
+%             fSze     size of the gauss mask [sizeX sizeY sizeZ]
+%                          (odd size required for symmetric mask!)
+%             correctBorder (optional) if 1, border effects of the filtering are
+%                              lessened
+%             filterMask    (optional) supply your own mask instead of a
+%                              Gauss. In this case, sigma and fSze don't
+%                              have to be supplied
 %
-%    OUTPUT: out   filtered data
+%    OUTPUT:  out      filtered data
 
 % c: 13/03/01 dT
 
-gauss=GaussMask3D(sigma,fSze);
+if nargin > 4 && ~isempty(filterMask)
+    % Use user-supplied filter
+    gauss = filterMask;
+    sigma = [];
+    fSze = size(filterMask);
+    filterMask = []; % reclaim memory
+else
+    % make a GaussFilter
+    gauss=GaussMask3D(sigma,fSze);
+end
+    
 
 convnOpt = 'same';
 
@@ -36,7 +49,7 @@ if nargin > 3 & ~isempty(correctBorder)
     end
 end
 
-% Convolute matrices
+% Convolve matrices
 out=convn(img,gauss,convnOpt);
 
 

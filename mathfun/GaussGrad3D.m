@@ -1,7 +1,7 @@
 function [gaussGradY, gaussGradX, gaussGradZ] = GaussGrad3D(sigma,fSze,cent,cnorm,absCenter)
 % GAUSSGRAD3D creates 3D Gaussian gradients
 %
-%    SYNOPSIS gauss = GaussGrad3D(sigma,fSze,cent,cnorm,absCenter)
+%    SYNOPSIS [gaussGradY, gaussGradX, gaussGradZ] = GaussGrad3D(sigma,fSze,cent,cnorm,absCenter)
 %
 %    INPUT: sigma  of gauss mask [sigmaX sigmaY sigmaZ] or [sigma]. 
 %                  If scalar, sigma will be the same for all dimensions
@@ -106,9 +106,9 @@ switch cnorm
         gaussGradZ = gaussGradZ * ((2*pi)^1.5*prod(sigma));
 
     case 1
-        gaussGradX = gaussGradX / sum(gaussGradX(:));
-        gaussGradY = gaussGradY / sum(gaussGradY(:));
-        gaussGradZ = gaussGradZ / sum(gaussGradZ(:));
+        gaussGradX = gaussGradX / sum(abs(gaussGradX(:)));
+        gaussGradY = gaussGradY / sum(abs(gaussGradY(:)));
+        gaussGradZ = gaussGradZ / sum(abs(gaussGradZ(:)));
         
     case 2 % the whole erfc thing is already normed for infinite Gauss
         % so nothing to do here.
