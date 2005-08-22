@@ -10,15 +10,22 @@ function dataM = imDataMap(imgDim,YX,data,varargin)
 % data points. Then, we set pixels whose nearest distances are greater than
 % an influence length to be no data pixels.
 % 
+% If the data are on grids or the optional parameter for generating grids 
+% is specified in the case of irregularly sampled data, the spline
+% interpolation with the given order (optional, default is cubic) is used.
+% Otherwise, the matlab function 'griddata' is used. One should note that
+% 'griddata' may overesitmate or underestimate value especially in
+% extrapolation.
+%
 % SYNOPSIS : 
-%    dataM = imDataMap(imgDim,YX,data)
-%    dataM = imDataMap(imgDim,YX,data,'par1',value1,...)
+%    dataM = imDataMap(imgDim,[y x],data)
+%    dataM = imDataMap(imgDim,{y,x},data,'par1',value1,...)
 %
 % INPUT :
 %    imgDim : The dimension of the image in the form of [m,n] where m and n is 
 %             the vertical and horizontal dimension respectively.
-%    YX     : The y and x coordinates of sampled points. If it is a cell of
-%             two vectors in the form {y,x}, a mesh grid will be generated.
+%    [y x]  : The y and x coordinates of sampled points. If it is a cell of
+%    {y,x}  : two vectors in the form {y,x}, a mesh grid will be generated.
 %             Otherwise, it is expected to be a two-column matrix in the
 %             form [y,x] that gives the coordinate of each data point.
 %    data   : The sampled data. When YX = {y,x} is a cell, it is a 2D matrix of
@@ -36,6 +43,11 @@ function dataM = imDataMap(imgDim,YX,data,varargin)
 %             the data points are grids, or it is the average of the
 %             nearest distances of each data point if the data points are
 %             irregular.
+%    grid   : Two numbers in the form [yILen,xILen] that specified the
+%             interval length between grids in the y and x axis. Or, it can
+%             be a two-columns matrix, [y,x] that specified the two
+%             increasing sequences for generating grids in the y and x
+%             direction.
 %    bnd    : An Nx2 matrix that specifies a polygon bondary for the sampling
 %             points. 'bnd(:,1)' are the x-coordinates and 'bnd(:,2)' are the
 %             y-coordinates. We only interpolate for pixels inside this polygon. 
@@ -49,7 +61,8 @@ function dataM = imDataMap(imgDim,YX,data,varargin)
 %       'nearest'   - Nearest neighbor interpolation.
 %       'v4'        - MATLAB 4 griddata method.
 %       The default is 'nearest'.
-%    order  : The order of the spline when the data are on grids.
+%    order  : The order of the spline used when the data are on grids or the x,y 
+%             grid interval is specified in the case of randomly sampled data.
 %
 % OUTPUT :
 %    dataM : A pixel wise map of the data of dimension 'imgDim'.
@@ -62,66 +75,11 @@ n = imgDim(2);
 
 %The defaults.
 infLen = [];
+grid   = [];
 bnd    = [];
 mask   = [];
-method = 'nearest';
+method = 'linear';
 order  = 4;
-
-if iscell(YX)
-    if length(YX) > 2 | ~isnumeric(YX{1}) | ~isnumeric(YX{2})
-        error(['The coordinates of data sampled on grids ' ...
-            'should be entered in the form {y,x}.']);
-    end
-    y = YX{1};
-    x = YX{2};
-    
-    if ~isempty(find(diff(y)<=0)) | ~isempty(find(diff(x)<=0))
-        error('The grids in each dimension have to be increasing sequence.');
-    end
-    
-    if size(data,1) ~= length(y) | size(data,2) ~= length(x)
-        error('The size of the data does not match the size of the grids.');
-    end
-    
-    %Exclude grids out of image area.
-    y(find(y<1 | y>m)) = [];
-    x(find(x<1 | x>n)) = [];
-    
-    if isempty(y) | isempty(x)
-        error('No data points are inside the image area.');
-    end
-    
-    data = data(find(y>=1 & y<=m),find(x>=1 & x<= n));
-    
-    %Data is on grids.
-    dataLoc = 'grid';
-    
-    
-    %Create grid points.
-    [X,Y] = meshgrid(x,y);
-elseif isnumeric(YX)
-    if ndims(YX) > 2 | size(YX,2) ~= 2
-        error(['The coordinates of randomly sampled data sets ' ...
-            'should be entered as a two-column matrix.']);
-    end
-    
-    %Exclude data points are all outside the image area
-    outInd = find(YX(:,1)<1 | YX(:,1)>m | YX(:,2)<1 | YX(:,2)>n);
-    YX(outInd,:) = [];
-    data(outInd) = [];
-    
-    if isempty(YX)
-        error('No data points are inside the image area.');
-    end
-    
-    Y = YX(:,1);
-    X = YX(:,2);
-    
-    %Data locations are random (irregular).
-    dataLoc = 'random';
-else
-    error('The coordinates of the sampled data are not recogonized.');
-end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parsing optional parameters.
@@ -134,6 +92,8 @@ if nargin > 3
        switch varargin{k}
            case 'infLen'
                infLen = varargin{k+1};
+           case 'grid'
+               grid = varargin{k+1};
            case 'bnd'
                bnd = varargin{k+1};
            case 'mask'
@@ -146,20 +106,61 @@ if nargin > 3
    end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Check input error.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if isnumeric(YX)
+    if ndims(YX) > 2 | size(YX,2) ~= 2
+        error(['The coordinates of randomly sampled data sets ' ...
+            'should be entered as a two-column matrix.']);
+    end
+        
+    if isempty(YX)
+        error('No data points are inside the image area.');
+    end
+    
+    if length(data) ~= size(YX,1)
+        error('The length of data does not match the number of data points.');
+    end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Determine the infulence region of the data set.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if size(data,1) > 1 & size(data,2) > 1
+        error('Data should be one row or one column where it is not on grids.');
+    end
+    
+    if size(data,2) > 1
+        %Make sure 'data' is a column.
+        data = data.'
+    end
+elseif iscell(YX)
+    if length(YX) > 2 | ~isnumeric(YX{1}) | ~isnumeric(YX{2})
+        error(['The coordinates of data sampled on grids ' ...
+            'should be entered in the form {y,x}.']);
+    end
+    y = YX{1};
+    x = YX{2};
+
+    if ~isempty(find(diff(y)<=0)) | ~isempty(find(diff(x)<=0))
+        error('The grids in each dimension have to be increasing sequence.');
+    end
+
+    if size(data,1) ~= length(y) | size(data,2) ~= length(x)
+        error('The size of the data does not match the size of the grids.');
+    end
+end
+
 numInd = find(~isnan(data));
 if isempty(numInd)
     dataM = NaN*ones(m,n);
     return;
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Determine the infulence length if it is not specified.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if isempty(infLen)
     %The user does not specify 'infLen'. We set the default length to be
     % the mean distance between sampled data points.
-    if strcmp(dataLoc,'grid')
+    if iscell(YX)
         infLen = (mean(diff(y))+mean(diff(x)))/2;
     else
         %When the data points are randomly distributed, we use the average
@@ -176,10 +177,73 @@ if isempty(infLen)
     end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Assemble data depending on wether data are on grids or on irregularly
+% sampled data points.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if isnumeric(YX) & isempty(grid)    
+    Y = YX(:,1);
+    X = YX(:,2);
+    
+    %Data locations are random (irregular).
+    dataLoc = 'random';
+elseif iscell(YX)
+    %Exclude grids out of image area. But, we add a band of width 2*infLen
+    % to avoid edge effect.
+    yI = find(y>=1-2*infLen & y<=m+2*infLen);
+    xI = find(x>=1-2*infLen & x<=n+2*infLen);
+    y = y(yI);
+    x = x(xI);
+
+    if isempty(y) | isempty(x)
+        error('No data points are inside the image area.');
+    end
+
+    data = data(yI,xI);
+
+    %Create grid points.
+    [X,Y] = meshgrid(x,y);
+    
+    %Data is on grids.
+    dataLoc = 'grid';
+elseif isnumeric(YX) & ~isempty(grid)
+    %Data are not on grids. But, a grid is given.
+    if size(grid,1) == 1
+        %The distance between grids is given.
+        y = [1-2*infLen:grid(1):m+2*infLen];
+        x = [1-2*infLen:grid(2):n+2*infLen];
+    else
+        %The sequence of points for generating grids are given.
+        y = grid(:,1);
+        x = grid(:,2);
+    end
+
+    %Create grid points.
+    [X,Y] = meshgrid(x,y);
+
+    %Use 'VectorFieldSparseInterp' to interpolate to grids. Since we
+    % have scalar value, we set the 2nd component to the x-coordinates of data.
+    M = [YX YX(:,1)+data YX(:,2)];
+    Mi = vectorFieldSparseInterp(M,[Y(:) X(:)],infLen*2,infLen,[]);
+
+    data = reshape(Mi(:,3)-Mi(:,1),size(X));
+    
+    dataLoc = 'grid';
+else
+    error('The coordinates of the sampled data are not recogonized.');
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Determine the infulence region of the data set.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %In order to use 'bwdist', we first create a mask where only sampled data
 % pixels are nonzero.
 bwData = zeros(m,n);
-bwData((round(X(numInd))-1)*m+round(Y(numInd))) = 1;
+if isnumeric(YX)
+   bwData((round(YX(numInd,2))-1)*m+round(YX(numInd,1))) = 1;
+elseif iscell(YX)
+   bwData((round(X(numInd))-1)*m+round(Y(numInd))) = 1;
+end
 
 %Calculate the 2D distance transform.
 DT = bwdist(bwData,'chessboard');
