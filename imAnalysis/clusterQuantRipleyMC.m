@@ -113,7 +113,7 @@ end
 
 % number of frames 
 numframes = round(ny/2);
-numcells = zeros(numframes,1);
+numcells = numPointsinMpm(mpm);
 
 % initialize results matrix pvr; x-dimension equals the employed number of
 % values for the circle radius, y-dimension equals number of planes of the
@@ -164,7 +164,7 @@ disp('calculating Ripley K-function for input mpm...');
 %
 %=======================================================================
 
-[np]=numPointsinMpm(mpm);
+np = numcells;
 numaddcells=zeros(length(np)-1,1);
 
 % modify np (remove point disappearances if necessary) and make addcell 
@@ -199,18 +199,21 @@ cellDiam = min(find(pdav ==(max(pdav))));
 % make simulated mpm using average probablity distribution pdav
 % use original data for frames 1-norm
 % start simulating @ frame 1
+% start simulating @ frame randomly chosen from numbers 1:norm-1
 
 % average over 3 simulated mpms
 pvr_growthCorrMat=zeros(rs,numframes,3);
 
 for simnum=1:simLoop
     
-    mpmstart=mpm(:,1:2);
+    startnum = norm-1;
+    %startnum = ceil((norm-1)*rand(1));
+    mpmstart=mpm(:,(2*startnum-1):(2*startnum));
     mpmcurr=mpmstart;
     mpmtot=zeros(nx,2*numframes);
     mpmtot(:,1:2*norm)=mpm(:,1:2*norm);
 
-    for k=2:numframes
+    for k=(1+startnum):numframes
         [mpmMC]=mpmMCaddsim(mpmcurr,[imsizex imsizey], numaddcells(k-1),pdav);
         [xmc,ymc]=size(mpmMC);
         mpmtot(1:xmc,(2*k-1):(2*k))=mpmMC; 
@@ -259,8 +262,8 @@ maxp=round(ny/2);
 
 %now do final analysis including filtering (which uses forward and backward
 %data, so it has do be done in a separate loop
-h = waitbar(0,'parameter calculation');
-h1 = figure;
+h = waitbar(0,'H(r) calculation');
+%h1 = figure;
 for k=1:numframes
     waitbar(k/numframes);
     %disp(['final parameter determination in frame ',num2str(k)]);
@@ -277,21 +280,57 @@ for k=1:numframes
     pvrt = mean( pvr(:,astartpoint:aendpoint),2 );
     pvrt_growthCorr = mean( pvr_growthCorr(:,astartpoint:aendpoint),2 );
     
-    matt = mpm(:,k*2-1:2*k);
-    smatt=[nonzeros(matt(:,1)), nonzeros(matt(:,2)) ];
-    [smx,smy]=size(smatt);
-    tempnp=numcells(k);
+    len=max(size(pvrt));
+    de=(1:len);
+%============================================================
+% calculate difference L(d)-d function, using L(d)=sqrt(K(d)),
+% since K(d) is already divided by pi
+% This difference function is from now on called H(r)
+%In the context of this function, it's called dpvr
+%=============================================================
+    dpvr(:,k) = pvrt - de'.^2;
+    dpvr_growthCorr(:,k) = pvrt_growthCorr - de'.^2;
     
+end
+close(h);
+
+%use average of 1:norm to determine border values for paremetr
+%determination if desired
+
+dpvr_rest = mean(dpvr(:,1:norm),2);
+drest_smooth = dpvr_rest;
+flen = round(cellDiam/4);
+for f = flen+1:(len-flen); drest_smooth(f) = mean(dpvr_rest(f-flen:f+flen)); end
+
+d_drest = diff(drest_smooth);
+dd_drest = diff(d_drest);
+
+d2(1:2*cellDiam) = 0;
+rangef = drest_smooth(2*cellDiam:10*cellDiam);
+if ( min(rangef)<0 )
+    restCSiz = 2*cellDiam + min(find(rangef<0));
+else
+    restCSiz = 2*cellDiam + find(rangef == min(rangef));
+end
+%restCSiz is the first point for which the function drops below zero again,
+%i.e. something like the maximum cluster size at rest
+
+h = waitbar(0,'parameter calculation');
+
+    
+for k=1:numframes
+    waitbar(k/numframes);
+    tempnp=numcells(k);
     % calculate cluster parameters in subfunctions for original and
     % simulated pvr
-    subplot(1,2,1);
-    [dpvr(:,k), cpar1(k),cpar2(k),cpar3(k)]=clusterpara(pvrt,k,tempnp,matsiz,cellDiam);
-    subplot(1,2,2);
-    [dpvr_growthCorr(:,k), cpar1_growthCorr(k),cpar2_growthCorr(k),cpar3_growthCorr(k)]=clusterpara(pvrt_growthCorr,k,tempnp,matsiz,cellDiam);
+    %subplot(1,2,1);
+    [cpar1(k),cpar2(k),cpar3(k)]=clusterpara(dpvr(:,k),matsiz,cellDiam,restCSiz);
+    %subplot(1,2,2);
+    [cpar1_growthCorr(k),cpar2_growthCorr(k),cpar3_growthCorr(k)]=clusterpara(dpvr_growthCorr(:,k),matsiz,cellDiam,restCSiz);
     
 end % of for
 close(h);
-h2 = figure;
+%h2 = figure;
 
 %=========================================================================
 % 
@@ -361,37 +400,20 @@ cpar1_growthCorrSmooth(1:round(1.5*filterLength)-1)=[];
 l1 = length(cpar1_growthCorrSmooth);
 cpar1_growthCorrSmooth(l1+1:numframes)=cpar1_growthCorrSmooth(l1);
 
-plot(cpar3,'r-');
-axis([0 numframes 0 2]);
-hold on
-plot(cpar3_growthCorr,'b-');
+%uncomment the following paragraphs to display results, don't forget the
+%trailing line 415
 
-% plot(cpar3_growthCorr,'r.');
-% plot(cpar1_growthCorrSmooth,'b-');
-% plot(cpar3_growthCorrSmooth,'r-');
+% figure
+% plot(cpar3,'ro');
+% axis([0 numframes 0 2]);
+% hold on
+% plot(cpar3_growthCorr,'b-');
 
 cpar3=cpar3./cpar3_growthCorrSmooth;
 cpar1=cpar1./cpar1_growthCorrSmooth;
 
-plot(cpar3,'g-');
-%uncomment the following paragraphs to display results
+% plot(cpar3,'g.');
 
-% figure
-% plot(cpar1_growthCorr,'b.');
-% hold on
-% axis([0 numframes 0 1.2]);
-% plot(cpar3_growthCorr,'r.');
-% plot(cpar1_growthCorrSmooth,'b-');
-% plot(cpar3_growthCorrSmooth,'r-');
-
-% figure
-% plot(cpar1,'b.');
-% axis([0 numframes 0 1.2]);
-% hold on
-% plot(cpar3,'r.');
-% plot(cpar2,'g.');
-% plot(cpar3,'r-');
-% plot(cpar1,'b-');
 
 
 %step 2: for the second cluster parameter, firstpoint, exclude those points
@@ -411,76 +433,29 @@ end % main function
 
 
 
-function[dpvrt, cpar1,cpar2,cpar3]=clusterpara(pvrt,k,tempnp,matsiz,cellDiam);
+function[cpar1,cpar2,cpar3]=clusterpara(Hr,matsiz,cellDiam,restCSiz);
 %clusterpara calculates a quantitative cluster parameter from the input
 %function (points in circle) vs (circle radius)
-% SYNOPSIS   [cpar]=clusterpara(pvrt);
+% SYNOPSIS   [cpar1,cpar2,cpar3]=clusterpara(Hr,matsiz,cellDiam,restCSiz);
 %       
-% INPUT      pvrt:   function containing normalized point density in 
-%                   circle around object
+% INPUT      Hr:    function containing H(r) normalized point density in 
+%                   circle around object for specific t
 %                   spacing of points implicitly assumes radii of 1,2,3...
-%            k= number of plane in series (is used for monitoring progress)
-%               tempnp = number of points 
-%           tempnp = 
-%           matsiz
-%           cellDiam
+%            matsiz: size of image
+%            cellDiam = cell diamater (from nearest neighbor distance
+%            probability histogram)
+%            restCSiz : resting whole cluster size   
+%               
 %
-% OUTPUT     cpar:    cluster parameter
-%            dpvrt:   difference function of p vs r
+% OUTPUT     cpar1:  total integral
+%            cpar2:  position of first rise from <0 to >0
+%            cpar3:  partial integral from ~cellDiam to size of first 
+%            cluster (which is defined from at rest)
 %
-% DEPENDENCES   clusterpara uses {DiffFuncParas}
-%               clusterpara is used by {FractClusterQuant}
+% DEPENDENCIES   clusterpara uses {}
+%               
 %
-% Dinah Loerke, September 13th, 2004
-
-%============================================================
-% calculate difference L(d)-d function, using L(d)=sqrt(K(d)),
-% since K(d) is already divided by pi
-% This difference function is from now on called H(r)
-%=============================================================
-len=max(size(pvrt));
-de=(1:len);
-Hr=pvrt-de'.^2;
-%Hr=sqrt(pvrt)-de';
-% for difffuncparas, we want to extract inclination around central point;
-% for high degree of cell division, the normalization of Hr affects this
-% inclination; therefore, to conserve the height of the first rise 
-% corresponding to the close neighborhood, we scale with number of cells; 
-% 
-%numc=max(nump);
-%dpvrt=Hr*tempnp^(1.1);
-dpvrt=Hr;
-
-%extract parameters from diff
-[cpar1,cpar2,cpar3]=DiffFuncParas(dpvrt,k,tempnp,matsiz,cellDiam);
-%cpar3=sum(dpvrt(1:ipd));
-%cpar1=sum(dpvrt);
-end    
-
- 
-
-
-
-
-
-function[p1,p2,p3]=DiffFuncParas(Hr,k,tempnp, matsiz,cellDiam)
-%DiffFuncParas calculates a number of quantitative cluster parameter 
-%from the input function, the difference function
-% SYNOPSIS   DiffFuncParas(diff);
-%       
-% INPUT      Hr:  difference function as calculated in clusterpara
-%                   vector with len number of points
-%%          k:  plane in series
-% OUTPUT     p1,p2:  cluster parameters
-%                    currently: p1=inclination of the first rise of the
-%                                   H(t) function (clustering) 
-%                               of total clustering)
-%                               p2= position of first rise
-%
-% DEPENDENCES   DiffFuncParas uses {}
-%               DiffFuncParas is used by {clusterpara}
-%
-% Dinah Loerke, September 13th, 2004
+% Dinah Loerke, August 20th 2005
 
 
 %% firstpoint: point where diff function systematically rises above zero 
@@ -489,8 +464,8 @@ function[p1,p2,p3]=DiffFuncParas(Hr,k,tempnp, matsiz,cellDiam)
 %% distributions), firstpoint is set to nan and incl is set to zero
 
 
-vec=Hr;
 
+vec = Hr;
 % smooth with Gaussian filter
 xs=-8:1:8;
 amps=exp(-(xs.^2)/(2*(2.5^2)));
@@ -540,64 +515,67 @@ detvec2=ddvec;
 detvec2(1:minimum)=0;
 detvec2(ddvec>0)=0;
 
-
-imsizex=matsiz(1);
-imsizey=matsiz(2);
 %since in this version of the function, the growth is already corrected
 %for, the ipdist value here can remain fixed
-%for ipdist, we choose a value realted to the cell diameter, so that cells
+%for ipdist, we choose a value related to the cell diameter, so that cells
 %of different size can be compared to each other
-ipdist=2*cellDiam;
+ipdist=min (5*cellDiam, restCSiz);
 restZeroCross = round(0.85 * cellDiam);
-entIntegral = sum(Hr);
-parIntegral = sum(Hr(restZeroCross:ipdist));
+intlength = round(0.6*(ipdist-restZeroCross));
+entIntegral = sum(abs(Hr(restZeroCross:512)));
+parIntegral = sum(Hr(restZeroCross:restZeroCross+intlength));    
 
-if (length(nonzeros(detvec3))>1)
-    firstpoint=firstzerocrosspoint;
-    % beginning point begp and end point endp for calculating inclination of the
-    % function diff
-    begp=firstpoint-2;
-    endp=begp+round(firstpoint/2);
-    if ( endp>length(dvec) )
-        endp=length(dvec);
-    end
-    inclination=mean(dvec(begp:endp));
-    
-%% =====================================================================
-%% if anything is funny with the results of the analysis,
-%  uncomment the following paragrpah for a display of the single traces 
-%  during determination
-%% ===========================================================
-     
-     %plot(vec,'b.');
-     
-     %hold on
-     plot(filtervec,'b-');
-     axis([ 0 120 -2000 17000]);
-     hold on
-     ypts=[filtervec(cellDiam) filtervec(ipdist)];
-     xpts=[cellDiam ipdist];
-     plot(xpts, ypts, 'r.');
-     ypts2=[filtervec(restZeroCross)];
-     xpts2=[restZeroCross];
-     plot(xpts2, ypts2, 'g.');
-     
-     %plot(firstpoint,filtervec(firstpoint),'go');
-     %plot(ipdist,filtervec(ipdist),'mo');
-     %text(30,5000,num2str(k));
-     pause(0.05);
-     hold off;
-    
+
+% if (length(nonzeros(detvec3))>1)
+%     firstpoint=firstzerocrosspoint;
+%     % beginning point begp and end point endp for calculating inclination of the
+%     % function diff
+%     begp=firstpoint-2;
+%     endp=begp+round(firstpoint/2);
+%     if ( endp>length(dvec) )
+%         endp=length(dvec);
+%     end
+%     inclination=mean(dvec(begp:endp));
+%     %parIntegral = sum(Hr(firstpoint:ipdist));
+%     
+% %% =====================================================================
+% %% if anything is funny with the results of the analysis,
+% %  uncomment the following paragrpah for a display of the single traces 
+% %  during determination
+% %% ===========================================================
+%      
+%           
+% %      plot(filtervec,'b-');
+% %      axis([ 0 ipdist+20 -2000 17000]);
+% %      hold on
+% %      ypts=[filtervec(cellDiam) filtervec(ipdist)];
+% %      xpts=[cellDiam ipdist];
+% %      plot(xpts, ypts, 'r.');
+% %      ypts2=[filtervec(restZeroCross)];
+% %      xpts2=[restZeroCross];
+% %      plot(xpts2, ypts2, 'g.');
+% %      
+% %      pause(0.05);
+% %      hold off;
+%     
+% else
+%     firstpoint=NaN;
+%     inclination=0;
+% end
+
+
+if (parIntegral>0)
+    firstpoint = firstzerocrosspoint;
+%    parIntegral = sum(Hr(firstzerocrosspoint:firstzerocrosspoint+intlength));    
 else
-    firstpoint=NaN;
-    inclination=0;
+    firstpoint = NaN;
 end
 
-%disp(['firstpoint ',num2str(firstpoint)]);
-%p1=inclination;
-p1 = entIntegral;
-p2 = firstpoint;
-p3 = parIntegral;
+
+%cpar=inclination;
+cpar1 = entIntegral;
+cpar2 = firstpoint;
+cpar3 = parIntegral;
 
 
 end
