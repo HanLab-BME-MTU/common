@@ -3,8 +3,12 @@ function listOfFiles = searchFiles(includeString,excludeString,directory,include
 %
 %SYNOPSIS listOfFiles = searchFiles(includeString,excludeString,directory,includeSubDirectories,selectionMode)
 %
-%INPUT    includeString: string contained in the filenames you are looking for
-%         excludeString (opt): string not contained in the filenames you are looking for
+%INPUT    includeString: string contained in the filenames you are looking
+%                               for (can be regular expression; is case
+%                               insensitive)  
+%         excludeString (opt): string not contained in the filenames you
+%                               are looking for (can be regular expression;
+%                               is case insensitive)
 %         directory (opt): directory to search. if empty, current directory is searched (default)
 %                               if 'ask', program asks for directory
 %         includeSubDirectories (opt): whether to search subdirectories or not (0/{1})

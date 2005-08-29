@@ -3,7 +3,8 @@ function fileName=chooseFile(fileString,fileDir,chooseMode,excludeStr)
 %
 %SYNOPSIS fileName=chooseFile(fileString,fileDir,chooseMode,excludeStr)
 %
-%INPUT      fileString: string the files to be looked for contains
+%INPUT      fileString: string the files to be looked for contains (can be
+%                   regular expression) 
 %           opt fileDir: directory in which to look for files (if empty: current dir)
 %           opt chooseMode: 'old' selects the oldest of the files if multiple
 %                               files are found
@@ -12,7 +13,8 @@ function fileName=chooseFile(fileString,fileDir,chooseMode,excludeStr)
 %                       'GUI' launches a GUI if multiple files are found (default)
 %                       'all' returns the names of all matching files as cell array
 %
-%           opt excludeStr: files containing this string are excluded from list
+%           opt excludeStr: files containing this string are excluded from
+%                   list (can be regular expression)
 %
 %OUTPUT     fileName: [] if no such file
 %                     name of the file if file has been found. 
@@ -63,26 +65,43 @@ dirList=dir(fileDir);
 dirListCell=struct2cell(dirList);
 nameList=dirListCell(1,:)';
 dateList=dirListCell(2,:)';
+isDirList = cat(1,dirListCell{4,:});
 
-%lookfor file. strfind only allows string-by-string comparison, hence loop
-fileIdx = [];
-for i = 1:length(nameList)
-    if strfind(lower(nameList{i}),fileString)&~isdir(nameList{i})
-        fileIdx = [fileIdx; i];
+% %lookfor file. strfind only allows string-by-string comparison, hence loop
+% % fileIdx = [];
+% % for i = 1:length(nameList)
+% %     if strfind(lower(nameList{i}),fileString)&~isdir(nameList{i})
+% %         fileIdx = [fileIdx; i];
+% %     end
+% % end
+% % fileIdx=strmatch(fileString,nameList);
+% % %check if any of the fileIdx contains the excludeString
+% % if ~isempty(excludeStr)
+% %     for i=1:length(fileIdx)
+% %         %use strfind, else files are excluded that are contained in excludeStr
+% %         if strfind(lower(char(nameList(fileIdx(i)))),excludeStr)
+% %             fileIdx(i)=0;
+% %         end
+% %     end
+% %     fileIdx(find(fileIdx==0))=[];
+% % end
+
+% Improvement:
+% look for file with regexp; don't call the slow isdir anymore
+includeCell = regexp(lower(nameList),fileString);
+excludeCell = regexp(lower(nameList),excludeStr);
+fileIdx = zeros(length(nameList));
+% we have to loop because isempty does not work on a cell in the way we'd
+% need
+for i=length(nameList):-1:1
+    if ~isDirList(i) && ~isempty(includeCell{i}) && isempty(excludeCell{i})
+        fileIdx(i) = 1;
     end
 end
-% fileIdx=strmatch(fileString,nameList);
+fileIdx = find(fileIdx);
 
-%check if any of the fileIdx contains the excludeString
-if ~isempty(excludeStr)
-    for i=1:length(fileIdx)
-        %use strfind, else files are excluded that are contained in excludeStr
-        if strfind(lower(char(nameList(fileIdx(i)))),excludeStr)
-            fileIdx(i)=0;
-        end
-    end
-    fileIdx(find(fileIdx==0))=[];
-end
+
+
 
 %if no file returned: return empty
 %if one file returned: return fname
