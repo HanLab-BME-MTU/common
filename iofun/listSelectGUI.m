@@ -55,7 +55,7 @@ if isempty(varargin) || isempty(varargin{1})
     % run termination routine
     handles.output = [];
     guidata(hObject,handles)
-    h = errordlg('No input list for listSelectGUI')
+    h = errordlg('No input list for listSelectGUI');
     uiwait(h)
     close(hObject)
     return
