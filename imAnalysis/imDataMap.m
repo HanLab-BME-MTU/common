@@ -12,7 +12,7 @@ function dataM = imDataMap(imgDim,YX,data,varargin)
 % 
 % If the data are on grids or the optional parameter for generating grids 
 % is specified in the case of irregularly sampled data, the spline
-% interpolation with the given order (optional, default is cubic) is used.
+% interpolation with the given order (optional, default is 4 (cubic)) is used.
 % Otherwise, the matlab function 'griddata' is used. One should note that
 % 'griddata' may overesitmate or underestimate value especially in
 % extrapolation.
