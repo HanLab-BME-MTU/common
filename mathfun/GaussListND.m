@@ -85,7 +85,8 @@ end
 coordList = (coordList - center)./sigma;
 
 % double coordList as preparation for erfc
-coordList = cat(3,coordList-0.5, coordList+0.5);
+%fixed bug: must divide the 0.5 by sigma - KJ
+coordList = cat(3,coordList-0.5./sigma, coordList+0.5./sigma);
 
 % calculate gaussList
 %Jonas was missing the minus sign in erfc. I corrected that - KJ
