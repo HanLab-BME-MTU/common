@@ -78,7 +78,7 @@ end
 % CALC GAUSSLIST
 %======================
 
-% 0.5*erfc((x+0.5)/sqrt(2))-erfc((x-0.5)/sqrt(2)) gives the integral on the
+% 0.5*erfc(-(x+0.5)/sqrt(2))-0.5*erfc(-(x-0.5)/sqrt(2)) gives the integral on the
 % pixel at 1 of a Gaussian with mean 0 and sigma 1
 
 % convert coordList to 0/1
@@ -88,7 +88,8 @@ coordList = (coordList - center)./sigma;
 coordList = cat(3,coordList-0.5, coordList+0.5);
 
 % calculate gaussList
-gaussList = diff(0.5 * erfc(coordList/sqrt(2)),1,3);
+%Jonas was missing the minus sign in erfc. I corrected that - KJ
+gaussList = diff(0.5 * erfc(-coordList/sqrt(2)),1,3);
 gaussList = prod(gaussList,2);
 
 % norm gaussList
