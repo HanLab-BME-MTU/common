@@ -24,7 +24,7 @@ function [gaussGradY, gaussGradX, gaussGradZ] = GaussGrad3D(sigma,fSze,cent,cnor
 %                      (center of top left pixel of 2-D matrix = [1,1])
 %
 %
-%    OUTPUT: gaussGradX, gaussGradY, gaussGradZ
+%    OUTPUT: gaussGradY, gaussGradX, gaussGradZ
 %            gradients of 3D Gaussians
 %            
 %    REMARKS: In analogy to the built-in function gradient (which is slower

@@ -64,7 +64,8 @@ function newImg = addBorder(img,fSze);
 %c: 030514 jonas
 
 %init
-halFsze = floor(fSze/2); %half filter size
+halFsze = zeros(1,3);
+halFsze(1:length(fSze)) = floor(fSze/2); %half filter size
 oldSize = size(img);
 if length(oldSize) < 3 
     error('image too small for 3D filtering: no 3rd dimension!')
