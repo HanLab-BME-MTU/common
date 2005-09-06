@@ -124,6 +124,8 @@ if length(varargin) < 3 || isempty(varargin{3})
     % if no display requested, set only if no output arguments
     if nargout == 0 && nDims < 3
         % we can display. Set option later
+    elseif nargout > 0
+        % we don't care
     else
         % exit here, because there is no display and no output
         warning('too many dimensions. Cannot display output')
