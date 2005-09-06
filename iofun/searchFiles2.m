@@ -1,23 +1,24 @@
-function listOfFiles = searchFiles2(includeString1,includeString2,excludeString,directory,includeSubDirectories,selectionMode)
-%searchFiles2 is an utility to search for files containing one or two
-%specific strings
+function [listOfFiles,directory] = searchFiles2(includeString1,includeString2,excludeString,directory,includeSubDirectories,selectionMode,dirStr)
+%searchFiles2 is an utility to search for files containing 1-2 specific strings
 %
-%SYNOPSIS listOfFiles = searchFiles(includeString1,includeString2,excludeString,directory,includeSubDirectories,selectionMode)
+%SYNOPSIS [listOfFiles,directory] = searchFiles(includeString1,includeString2,excludeString,directory,includeSubDirectories,selectionMode)
 %
 %INPUT    includeString1: string contained in the filenames you are looking for
 %         includeString2 (opt): another string contained in the filenames you are looking for  
 %         excludeString (opt): string not contained in the filenames you are looking for
 %         directory (opt): directory to search. if empty, current directory is searched (default)
-%                               if 'ask', program asks for directory
+%                          if 'ask', program asks for directory
 %         includeSubDirectories (opt): whether to search subdirectories or not (0/{1})
 %         selectionMode (opt): which file(s) to select if there are several files matching the
-%                               includeString within one directory
+%                              includeString within one directory
 %                              {'all'}-all; 'new'-newest; 'old'-oldest; 'GUI'-open GUI to select one file
+%         dirStr (opt): string for directory search box (default 'select a
+%                       directory to search')
 %
 %OUTPUT  listOfFiles: cell array with {[fileName] [directoryName]}
+%        directory: path of directory searched
 %
-%c: 7-03 jonas
-%c: 9-05 kathryn - added possibility to look for two strings in file name
+%c: 9-05 kathryn - added possibility to look for two strings in file name and specify dirStr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %---test input---
@@ -48,12 +49,17 @@ else
     excludeString = [];
 end
 
+%dirStr
+if nargin<7|isempty(dirStr)
+    dirStr = 'select a directory to search'
+end
+
 %directory (ask if necessary)
 if nargin>3
     if isempty(directory)
         directory = pwd;
     elseif strcmp(directory,'ask')
-        directory = uigetdir(pwd,'select a directory to search');
+        directory = uigetdir(pwd,dirStr);
         if directory == 0
             error('searchFiles aborted by user')
         end
