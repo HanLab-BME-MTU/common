@@ -53,9 +53,14 @@ else
 
     [nPoints, nDims] = size(data);
     minData = min(data,[],1);
-    [maxData, maxIdx] = max(data,[],1);
-    % make masIdx into a linear index
-    maxIdx = maxIdx + [0:nPoints:(nDims-1)*nPoints];
+    [maxData] = max(data,[],1);
+    % loop through dimensions to check if there have been several maxIdx.
+    % Check individually for each col of data, because there are several
+    % different maxima
+    maxIdx = [];
+    for d=1:nDims
+        maxIdx = [maxIdx; find(data(:,d) == maxData(d)) + nPoints * (d-1)];
+    end
 end
 
 % argument 2
