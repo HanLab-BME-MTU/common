@@ -20,6 +20,11 @@ function S = idAvgCOfTwoVecFields(Va,Vh,P,varargin)
 %                       vector fields are scaled before averging so that 
 %                       different speed population can have the same weight 
 %                       in calculating the coupling.
+%    'rawVF'          : A cell array of the original two vector fields used 
+%                       to get the interpolated 'Va' and 'Vh'. Vector field
+%                       is given in the format [x y vx vy]. 
+%                       Note: It makes more sense to use the original vector
+%                       population for speed, coherence and population test.
 %    'smSpdThreshold' : Threshold for cutting off small speed that can not be
 %                       trusted for statistic analysis. Default value is 0.
 %    'cohrThreshold'  : Threshold for cutting off local (basic block) vector 
@@ -87,10 +92,29 @@ Vc             = Va;
 dispScale      = 15;
 
 %Default return.
-S.alpha  = NaN;
-S.dAngl  = NaN;
-S.aCohrS = NaN;
-S.hCohrS = NaN;
+S.alpha    = NaN;
+S.dAngl    = NaN;
+S.aCohrS   = NaN;
+S.hCohrS   = NaN;
+S.validPPL = 0;
+
+%Remove NaN from Va and Vh.
+nanInd = find(isnan(Va(:,1)) | isnan(Va(:,2)) | ...
+   isnan(Vh(:,1)) | isnan(Vh(:,2)) | isnan(Vc(:,1)) | isnan(Vc(:,2)));
+Va(nanInd,:) = [];
+Vh(nanInd,:) = [];
+Vc(nanInd,:) = [];
+P(nanInd,:)  = [];
+
+if isempty(Va)
+   return;
+end
+
+%Default raw vector fields.
+rawPa = P;
+rawVa = Va;
+rawPh = P;
+rawVh = Vh;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Parsing optional parameters.
@@ -107,6 +131,20 @@ for k = 1:2:nargin-3
          end
       case 'scaling'
          scaling = varargin{k+1};
+      case 'rawVF'
+         rawPa = varargin{k+1}{1}(:,1:2);
+         rawVa = varargin{k+1}{1}(:,3:4);
+         rawPh = varargin{k+1}{2}(:,1:2);
+         rawVh = varargin{k+1}{2}(:,3:4);
+
+         %Remove NaN from rawVa and rawVh.
+         nanInd = find(isnan(rawVa(:,1)) | isnan(rawVa(:,2)));
+         rawPa(nanInd,:) = [];
+         rawVa(nanInd,:) = [];
+
+         nanInd = find(isnan(rawVh(:,1)) | isnan(rawVh(:,2)));
+         rawPh(nanInd,:) = [];
+         rawVh(nanInd,:) = [];
       case 'smSpdThreshold'
          if ~isempty(varargin{k+1}) & ~isnan(varargin{k+1})
             smSpdThreshold = varargin{k+1};
@@ -136,17 +174,38 @@ for k = 1:2:nargin-3
    end
 end
 
-%Remove NaN from Va and Vh.
-nanInd = find(isnan(Va(:,1)) | isnan(Va(:,2)) | ...
-   isnan(Vh(:,1)) | isnan(Vh(:,2)) | isnan(Vc(:,1)) | isnan(Vc(:,2)));
-Va(nanInd,:) = [];
-Vh(nanInd,:) = [];
-Vc(nanInd,:) = [];
-P(nanInd,:)  = [];
+%Get the raw population that are in the neighborhood of P.
+minX = min(P(:,1));
+maxX = max(P(:,1));
+minY = min(P(:,2));
+maxY = max(P(:,2));
 
-if isempty(Va)
+if isinf(bSize) | isnan(bSize)
+   infLen = 5;
+else
+   infLen = bSize/2;
+end
+rawAInd = find(rawPa(:,1)<maxX+infLen & ...
+   rawPa(:,1)>minX-infLen & ...
+   rawPa(:,2)<maxY+infLen & ...
+   rawPa(:,2)>minY-infLen); 
+
+if isempty(rawAInd)
    return;
 end
+rawPa = rawPa(rawAInd,:);
+rawVa = rawVa(rawAInd,:);
+
+rawHInd = find(rawPh(:,1)<maxX+infLen & ...
+   rawPh(:,1)>minX-infLen & ...
+   rawPh(:,2)<maxY+infLen & ...
+   rawPh(:,2)>minY-infLen); 
+
+if isempty(rawHInd)
+   return;
+end
+rawPh = rawPh(rawHInd,:);
+rawVh = rawVh(rawHInd,:);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Rotation
@@ -158,25 +217,29 @@ cSpd = sqrt(sum(Vc.^2,2));
 aSpd = sqrt(sum(Va.^2,2));
 hSpd = sqrt(sum(Vh.^2,2));
 
+rawASpd = sqrt(sum(rawVa.^2,2));
+rawHSpd = sqrt(sum(rawVh.^2,2));
+
 %To avoid dividing by zero.
-smNumber = min([1e-6 1e-6*median(aSpd) 1e-6*median(hSpd)]);
+smNumber = min([1e-6 1e-6*[median(aSpd) median(hSpd) ...
+   median(rawASpd) median(rawHSpd)]]);
 if smNumber == 0
    smNumber = 1e-6;
 end
 
-unitVa = NaN*ones(size(Va));
-unitVh = NaN*ones(size(Vh));
+unitRawVa = NaN*ones(size(rawVa));
+unitRawVh = NaN*ones(size(rawVh));
 
 nzInd = find(aSpd>=smNumber);
 if ~isempty(nzInd)
-   unitVa(nzInd,1) = Va(nzInd,1)./aSpd(nzInd);
-   unitVa(nzInd,2) = Va(nzInd,2)./aSpd(nzInd);
+   unitRawVa(nzInd,1) = rawVa(nzInd,1)./rawASpd(nzInd);
+   unitRawVa(nzInd,2) = rawVa(nzInd,2)./rawASpd(nzInd);
 end
 
 nzInd = find(hSpd>=smNumber);
 if ~isempty(nzInd)
-   unitVh(nzInd,1) = Vh(nzInd,1)./hSpd(nzInd);
-   unitVh(nzInd,2) = Vh(nzInd,2)./hSpd(nzInd);
+   unitRawVh(nzInd,1) = rawVh(nzInd,1)./rawHSpd(nzInd);
+   unitRawVh(nzInd,2) = rawVh(nzInd,2)./rawHSpd(nzInd);
 end
 
 %Note: Before rotation, rotVc (or rotVa or rotVh) means the scaled Vc if
@@ -214,43 +277,43 @@ if strcmp(scaling,'on')
    end
 end
 
-if isinf(corLen)
-   %When corLen is Inf, there is only one block and we calculate the average
-   % of the whole population. Do nothing here except for the speed, coherence
+if isinf(corLen) | (maxX-minX <= bSize & maxY-minY <= bSize) 
+   %When corLen is Inf or the whole population is within the size of a
+   % block, we calculate the average of the whole population. 
+   % We essentially do nothing here except for the speed, coherence
    % and population test.
-   avgASpd = mean(aSpd);
 
-   nInd = find(~isnan(unitVa(:,1)) & ~isnan(unitVa(:,2)));
-   if ~isempty(nInd)
-      S.aCohrS  = norm(mean(unitVa(nInd,:)))/length(nInd);
-   else
-      S.aCohrS  = NaN;
+   avgRawASpd = mean(rawASpd);
+
+   numRawVa = find(~isnan(unitRawVa(:,1)) & ~isnan(unitRawVa(:,2)));
+   if ~isempty(numRawVa)
+      S.aCohrS  = norm(mean(unitRawVa(numRawVa,:),1));
    end
 
-   nInd = find(~isnan(unitVh(:,1)) & ~isnan(unitVh(:,2)));
-   if ~isempty(nInd)
-      S.hCohrS  = norm(mean(unitVh(nInd,:)))/length(nInd);
-   else
-      S.hCohrS  = NaN;
+   numRawVh = find(~isnan(unitRawVh(:,1)) & ~isnan(unitRawVh(:,2)));
+   if ~isempty(numRawVh)
+      S.hCohrS  = norm(mean(unitRawVh(numRawVh,:),1));
    end
 
-   if (avgASpd <= smSpdThreshold & (isnan(S.aCohrS) | ...
-      S.aCohrS <= cohrThreshold)) | ...
-      length(aSpd) <= pplThreshold
+   if isnan(S.aCohrS) | S.aCohrS <= cohrThreshold | ...
+      numRawVa <= pplThreshold | numRawVh <= pplThreshold | ...
+      (avgRawASpd <= smSpdThreshold & S.aCohrS <= 2*cohrThreshold)
       return;
    end
 else
    if isempty(img)
-      minX = min(P(:,1));
-      maxX = max(P(:,1));
-      minY = min(P(:,2));
-      maxY = max(P(:,2));
       x = minX-corLen:2*corLen:maxX+3*corLen;
       y = minY-corLen:2*corLen:maxY+3*corLen;
 
       %Translate so that the image area starts with pixel (1,1).
       P(:,1) = P(:,1)-x(1)+1;
       P(:,2) = P(:,2)-y(1)+1;
+
+      rawPa(:,1) = rawPa(:,1)-x(1)+1;
+      rawPa(:,2) = rawPa(:,2)-y(1)+1;
+      rawPh(:,1) = rawPh(:,1)-x(1)+1;
+      rawPh(:,2) = rawPh(:,2)-y(1)+1;
+
       x = x - x(1) + 1;
       y = y - y(1) + 1;
       img = zeros(y(end),x(end));
@@ -285,18 +348,23 @@ else
    rndP = round(P);
    indP = sub2ind(size(img),rndP(:,2),rndP(:,1));
 
+   rndPa = round(rawPa);
+   rndPh = round(rawPh);
+
    %anglVc = sign(Vc(:,2)).*acos(Vc(:,1)./cSpd);
 
    b.vecInd     = cell(nBlocks,1);
+   b.rVaInd     = cell(nBlocks,1);
+   b.rVhInd     = cell(nBlocks,1);
    b.vecSetID   = zeros(nBlocks,1);
    b.center     = zeros(nBlocks,2);
    b.angl       = NaN*ones(nBlocks,1);
    b.avgVc      = NaN*ones(nBlocks,2);
-   b.avgCSpd    = NaN*ones(nBlocks,1);
+   b.avgRawASpd = NaN*ones(nBlocks,1);
    b.aCohrS     = NaN*ones(nBlocks,1);
    b.hCohrS     = NaN*ones(nBlocks,1);
    b.outlier    = [];
-   b.inlier     = 1:nBlocks;
+   b.inlier     = [];
    for k = 1:nBlocks
       %Identify the index boundary of the block and find the index of vectors 
       % that are inside each block.
@@ -305,44 +373,61 @@ else
       b.vecInd{k} = find(rndP(:,2)>=y(yI) & rndP(:,2) < y(yI+1) & ...
          rndP(:,1)>=x(xI) & rndP(:,1)<x(xI+1));
 
-      if ~isempty(b.vecInd{k})
-         %The average angle, vector and speed for each block.
-         nInd = b.vecInd{k}(find(~isnan(unitVa(b.vecInd{k},1)) & ...
-            ~isnan(unitVa(b.vecInd{k},2))));
-         if ~isempty(nInd)
-            b.aCohrS(k) = norm(mean(unitVa(nInd,:)))/length(nInd);
-         end
+      b.rVaInd{k} = find(rndPa(:,2)>=y(yI) & rndPa(:,2) < y(yI+1) & ...
+         rndPa(:,1)>=x(xI) & rndPa(:,1)<x(xI+1));
+      b.rVhInd{k} = find(rndPh(:,2)>=y(yI) & rndPh(:,2) < y(yI+1) & ...
+         rndPh(:,1)>=x(xI) & rndPh(:,1)<x(xI+1));
 
-         nInd = b.vecInd{k}(find(~isnan(unitVh(b.vecInd{k},1)) & ...
-            ~isnan(unitVh(b.vecInd{k},2))));
-         if ~isempty(nInd)
-            b.hCohrS(k) = norm(mean(unitVh(nInd,:)))/length(nInd);
-         end
-         b.avgASpd(k) = mean(sqrt(sum(unitVa(b.vecInd{k},:).^2,2)));
-         
-         %To avoid dividing by zero, we use 'smNumber' defined above.
-         b.avgVc(k,:) = mean(Vc(b.vecInd{k},:));
+      if ~isempty(b.vecInd{k})
+         %Calculate the angle of the average vector for the block.
+         % To avoid dividing by zero, we use 'smNumber' defined above.
+         b.avgVc(k,:) = mean(Vc(b.vecInd{k},:),1);
          b.angl(k)    = sign(b.avgVc(k,2))* ...
                         acos(b.avgVc(k,1)/max(smNumber,norm(b.avgVc(k,:))));
 
          %Speed, coherence and population test.
-         if (b.avgASpd(k) <= smSpdThreshold & ...
-            (isnan(b.aCohrS(k)) | b.aCohrS(k) <= cohrThreshold)) | ...
-            length(b.vecInd{k}) <= pplThreshold
+         if ~isempty(b.rVaInd{k})
+            nInd = b.rVaInd{k}(find(~isnan(unitRawVa(b.rVaInd{k},1)) & ...
+               ~isnan(unitRawVa(b.rVaInd{k},2))));
+            if ~isempty(nInd)
+               b.aCohrS(k) = norm(mean(unitRawVa(nInd,:),1));
+            end
+            b.avgRawASpd(k) = mean(rawASpd(b.rVaInd{k}));
+         end
+
+         if ~isempty(b.rVhInd{k})
+            nInd = b.rVhInd{k}(find(~isnan(unitRawVh(b.rVhInd{k},1)) & ...
+               ~isnan(unitRawVh(b.rVhInd{k},2))));
+            if ~isempty(nInd)
+               b.hCohrS(k) = norm(mean(unitRawVh(nInd,:),1));
+            end
+         end
+         
+         if isnan(b.aCohrS(k)) | b.aCohrS(k) < cohrThreshold | ...
+            length(b.rVaInd{k}) <= pplThreshold | ...
+            length(b.rVhInd{k}) <= pplThreshold | ...
+            (b.avgRawASpd(k) <= smSpdThreshold & ...
+            b.aCohrS(k) <= 2*cohrThreshold)
             b.outlier = [b.outlier; k];
+         else
+            b.inlier = [b.inlier; k];
+            %The population of this block is counted towards valid population.
+            S.validPPL = S.validPPL+length(b.vecInd{k});
          end
       end
    end
-   b.inlier([b.outlier; find(isnan(b.angl))]) = [];
    
-   numberInd = find(~isnan(b.aCohrS));
+   numberInd = b.inlier(find(~isnan(b.aCohrS(b.inlier))));
    if ~isempty(numberInd)
       S.aCohrS = mean(b.aCohrS(numberInd));
    end
-   numberInd = find(~isnan(b.hCohrS));
+   numberInd = b.inlier(find(~isnan(b.hCohrS(b.inlier))));
    if ~isempty(numberInd)
       S.hCohrS = mean(b.hCohrS(numberInd));
    end
+
+   %In terms of percentage.
+   S.validPPL = S.validPPL/size(Va,1);
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %Group blocks into a set of angle bins. We assign angle bins according the
@@ -549,7 +634,7 @@ else
          vecSet.inlier = [vecSet.inlier; vecSet.ind{k}];
          
          %'vecSet.avgRotVc' is the vector we use to calcluated the rotation.
-         vecSet.avgRotVc(k,:) = mean(rotVc(vecSet.ind{k},:));
+         vecSet.avgRotVc(k,:) = mean(rotVc(vecSet.ind{k},:),1);
          unitAvgVc = vecSet.avgRotVc(k,:)/norm(vecSet.avgRotVc(k,:));
 
          rotM = [unitAvgVc(2) -unitAvgVc(1);unitAvgVc];
@@ -592,8 +677,12 @@ else
 
       %quiver(P(:,1),P(:,2),rotVa(:,1)*dispScale2,rotVa(:,2)*dispScale2,0,'y');
       %quiver(P(:,1),P(:,2),rotVh(:,1)*dispScale2,rotVh(:,2)*dispScale2,0,'g');
-      quiver(P(:,1),P(:,2),Va(:,1)*dispScale,Va(:,2)*dispScale,0,'r');
-      quiver(P(:,1),P(:,2),Vh(:,1)*dispScale,Vh(:,2)*dispScale,0,'g');
+      %quiver(P(:,1),P(:,2),Va(:,1)*dispScale,Va(:,2)*dispScale,0,'r');
+      %quiver(P(:,1),P(:,2),Vh(:,1)*dispScale,Vh(:,2)*dispScale,0,'g');
+      quiver(rawPa(:,1),rawPa(:,2),rawVa(:,1)*dispScale, ...
+         rawVa(:,2)*dispScale,0,'r');
+      quiver(rawPh(:,1),rawPh(:,2),rawVh(:,1)*dispScale, ...
+         rawVh(:,2)*dispScale,0,'g');
 
       quiver(b.center(b.inlier,1),b.center(b.inlier,2), ...
          b.avgVc(b.inlier,1)*dispScale, ...
@@ -622,8 +711,8 @@ end
 %%% Assemble Data.
 avgRotSpdA = mean(sqrt(sum(rotVa.^2,2)));
 avgRotSpdH = mean(sqrt(sum(rotVh.^2,2)));
-meanVa     = mean(rotVa);
-meanVh     = mean(rotVh);
+meanVa     = mean(rotVa,1);
+meanVh     = mean(rotVh,1);
 meanVaP    = [meanVa(2) -meanVa(1)];
 
 Da = norm(meanVa);
