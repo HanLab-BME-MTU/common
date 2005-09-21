@@ -64,7 +64,7 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC)
 %=====================
 % TEST INPUT
 %=====================
-if (nargin == 1)
+if (nargin == 1) || isempty(NONLINK_MARKER)
     NONLINK_MARKER = -1;
 elseif isnan(NONLINK_MARKER)
     error('NONLINK_MARKER cannot be NaN!')
@@ -79,8 +79,19 @@ if ~augmentCC
     if scc(1) ~= scc(2) || length(scc) > 2
         error('cost must be a 2D square matrix!')
     end
+    
 elseif length(scc) > 2
     error('cost must be a 2D matrix!')
+else
+    % if we're augmenting, sparse matrices are produced. This will be
+    % problematic with cost 0
+    if any(cc(:)==0)
+        validCC = cc ~= NONLINK_MARKER;
+        if any(any(cc(validCC))) < 0
+            warning('there are negative costs. This could lead to errors')
+        end
+        cc(validCC) = cc(validCC) + 1;
+    end
 end
 
 if nargin < 3 || isempty(extendedTesting)
@@ -110,6 +121,9 @@ if augmentCC
         % nnDiag = diag(maxCost * ones(scc(2),1));
         % nmMat  = sparse(ones(scc(2), scc(1)));
         % cc = [cc, mmDiag; nnDiag, nmMat];
+        
+        % make cc sparse. Take NLM in cc into account!
+        cc(cc==NONLINK_MARKER) = 0;
         cc = [cc, diag(maxCost * ones(scc(1),1)); ...
             diag(maxCost * ones(scc(2),1)), ...
             sparse(ones(scc(2), scc(1)))];
