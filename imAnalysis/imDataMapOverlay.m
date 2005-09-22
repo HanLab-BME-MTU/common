@@ -14,7 +14,9 @@ function [img3C,pixClasses]=imDataMapOverlay(img,dataM,range,cmap,opacity)
 %              Set dataM to 'NaN' at these pixels.
 %    range   : The range of data (format [lowerBound upperBound]) where
 %              colors are assigned according to a specific color
-%              map. Out of range data are assigned the min
+%              map. The color index of 'lowerBound' is the first index while
+%              The color index of 'upperBound' is the last index.
+%              Out of range data are assigned the min
 %              (<lowerBound) and max (>upperBound) color
 %              respectively. Default is the whole data range.
 %              Pass range=[] to use the default range.
@@ -141,23 +143,19 @@ if isempty(range)
    s1 = minS;
    s2 = maxS;
 else
-   s1 = max(minS,range(1));
-   s2 = min(maxS,range(2));
+   s1 = range(1);
+   s2 = range(2);
 end
-if s1 > s2
-   %The selected range is out of the full score range.
-   pixClasses(numInd) = NaN;
-   numInd = [];
+
+pixClasses(numInd(find(pixClasses(numInd)<s1)))=s1;
+pixClasses(numInd(find(pixClasses(numInd)>s2)))=s2;
+if s1==s2
+    %Assign the middle color.
+    pixClasses(numInd) = numColors/2;
 else
-   pixClasses(numInd(find(pixClasses(numInd)<s1)))=s1;
-   pixClasses(numInd(find(pixClasses(numInd)>s2)))=s2;
-   if s1==s2
-      %Assign the middle color.
-      pixClasses(numInd) = numColors/2;
-   else
-      pixClasses(numInd) = (pixClasses(numInd)-s1)/(s2-s1)*(numColors-1)+1;
-   end
+    pixClasses(numInd) = (pixClasses(numInd)-s1)/(s2-s1)*(numColors-1)+1;
 end
+
 %Make sure pixClasses are integer after scaling to colormap.
 pixClasses(numInd) = round(pixClasses(numInd));
 
@@ -175,14 +173,13 @@ minImgI     = min(img(nanInd));
 maxImgI     = max(img(nanInd));
 img(nanInd) = (img(nanInd)-minImgI)/(maxImgI-minImgI);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Scale image intensity under score area (numInd) according to opacity level
+% so that the underlying image can be seen to some extent.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 minImgI = min(img(numInd));
 maxImgI = max(img(numInd));
 img(numInd) = (img(numInd)-minImgI)/(maxImgI-minImgI)*(1-opacity) + opacity;
-%if minImgI==0.5 & maxImgI==1
-%    % The image was already treated
-%elseif minImgI < maxImgI
-%    img=0.5+nrm(img,1)/2;  
-%end
 
 % Create 3 channels
 %img3C(:,:,1)=img; img3C(:,:,2)=img; img3C(:,:,3)=img;

@@ -81,22 +81,23 @@ function S = idAvgCOfTwoVecFields(Va,Vh,P,varargin)
 %    below 'cohrThreshold'.
 
 %Default paramters.
-bSize          = 30;
-scaling        = 'on';
-smSpdThreshold = 0;
-cohrThreshold  = 0.05;
-pplThreshold   = 3;
-figH           = [];
-img            = [];
-Vc             = Va;
-dispScale      = 15;
+bSize               = 30;
+scaling             = 'on';
+smSpdThreshold      = 0;
+smSpdCohrThreshold  = 0.05;
+bigSpdCohrThreshold = 0.05;
+pplThreshold        = 3;
+figH                = [];
+img                 = [];
+Vc                  = Va;
+dispScale           = 15;
 
 %Default return.
 S.alpha    = NaN;
 S.dAngl    = NaN;
 S.aCohrS   = NaN;
 S.hCohrS   = NaN;
-S.validPPL = 0;
+S.cohrPPL = 0;
 
 %Remove NaN from Va and Vh.
 nanInd = find(isnan(Va(:,1)) | isnan(Va(:,2)) | ...
@@ -151,7 +152,13 @@ for k = 1:2:nargin-3
          end
       case 'cohrThreshold'
          if ~isempty(varargin{k+1}) & ~isnan(varargin{k+1})
-            cohrThreshold = varargin{k+1};
+            if length(varargin{k+1}) == 2
+               smSpdCohrThreshold = varargin{k+1}(1);
+               bigSpdCohrThreshold = varargin{k+1}(2);
+            else
+               smSpdCohrThreshold = varargin{k+1};
+               bigSpdCohrThreshold = varargin{k+1};
+            end
          end
       case 'pplThreshold'
          if ~isempty(varargin{k+1}) & ~isnan(varargin{k+1})
@@ -230,13 +237,13 @@ end
 unitRawVa = NaN*ones(size(rawVa));
 unitRawVh = NaN*ones(size(rawVh));
 
-nzInd = find(aSpd>=smNumber);
+nzInd = find(rawASpd>=smNumber);
 if ~isempty(nzInd)
    unitRawVa(nzInd,1) = rawVa(nzInd,1)./rawASpd(nzInd);
    unitRawVa(nzInd,2) = rawVa(nzInd,2)./rawASpd(nzInd);
 end
 
-nzInd = find(hSpd>=smNumber);
+nzInd = find(rawHSpd>=smNumber);
 if ~isempty(nzInd)
    unitRawVh(nzInd,1) = rawVh(nzInd,1)./rawHSpd(nzInd);
    unitRawVh(nzInd,2) = rawVh(nzInd,2)./rawHSpd(nzInd);
@@ -295,11 +302,15 @@ if isinf(corLen) | (maxX-minX <= bSize & maxY-minY <= bSize)
       S.hCohrS  = norm(mean(unitRawVh(numRawVh,:),1));
    end
 
-   if isnan(S.aCohrS) | S.aCohrS <= cohrThreshold | ...
-      numRawVa <= pplThreshold | numRawVh <= pplThreshold | ...
-      (avgRawASpd <= smSpdThreshold & S.aCohrS <= 2*cohrThreshold)
+   %Speed, coherence and population test.
+   if isnan(S.aCohrS) | ...
+      length(numRawVa) <= pplThreshold | length(numRawVh) <= pplThreshold | ...
+      (avgRawASpd > smSpdThreshold & S.aCohrS <= bigSpdCohrThreshold) | ...
+      (avgRawASpd <= smSpdThreshold & S.aCohrS <= smSpdCohrThreshold)
       return;
    end
+
+   S.cohrPPL = 1;
 else
    if isempty(img)
       x = minX-corLen:2*corLen:maxX+3*corLen;
@@ -328,19 +339,36 @@ else
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %Divide the image area into blocks and identify the vector population for
-   %each block.
+   % each block.
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    nGridY  = length(y);
    nGridX  = length(x);
    nBlocks = (nGridX-1)*(nGridY-1);
 
-   b.imgPixInd = cell(nBlocks,1);
+   %To cover all possible clusters of points, we have 4 layers of blocks. Each
+   % of them is a half block shift of the base layer.
+   %Block shift for each layer. Format: [y x].
+   bShift  = bSize*[0 0; ...
+                    0 0.5; ...
+                    0.5 0; ...
+                    0.5 0.5];
+
+%    bShift = [0 0];
+   nLayers = size(bShift,1);
+
+   [imgHeight,imgWidth] = size(img);
+
+   b.imgPixInd = cell(nBlocks,nLayers);
    k = 0;
    for jx = 1:nGridX-1
       for jy = 1:nGridY-1
          k = k+1;
-         [bX bY] = meshgrid(x(jx):x(jx+1)-1,y(jy):y(jy+1)-1);
-         b.imgPixInd{k} = sub2ind(size(img),bY(:),bX(:));
+         for jl = 1:nLayers
+            [bX bY] = meshgrid([x(jx):x(jx+1)-1]+bShift(jl,2), ...
+               [y(jy):y(jy+1)-1]+bShift(jl,1));
+            in = find(bX>=1 & bX<=imgWidth & bY>=1 & bY<=imgHeight);
+            b.imgPixInd{k,jl} = sub2ind(size(img),bY(in),bX(in));
+         end
       end
    end
 
@@ -350,87 +378,103 @@ else
 
    rndPa = round(rawPa);
    rndPh = round(rawPh);
+   indPa = sub2ind(size(img),rndPa(:,2),rndPa(:,1));
+   indPh = sub2ind(size(img),rndPh(:,2),rndPh(:,1));
 
-   %anglVc = sign(Vc(:,2)).*acos(Vc(:,1)./cSpd);
-
-   b.vecInd     = cell(nBlocks,1);
-   b.rVaInd     = cell(nBlocks,1);
-   b.rVhInd     = cell(nBlocks,1);
-   b.vecSetID   = zeros(nBlocks,1);
+   b.vecInd     = cell(nBlocks,nLayers);
+   b.rVaInd     = cell(nBlocks,nLayers);
+   b.rVhInd     = cell(nBlocks,nLayers);
    b.center     = zeros(nBlocks,2);
-   b.angl       = NaN*ones(nBlocks,1);
-   b.avgVc      = NaN*ones(nBlocks,2);
-   b.avgRawASpd = NaN*ones(nBlocks,1);
-   b.aCohrS     = NaN*ones(nBlocks,1);
-   b.hCohrS     = NaN*ones(nBlocks,1);
-   b.outlier    = [];
-   b.inlier     = [];
+   b.angl       = NaN*ones(nBlocks,nLayers);
+   b.avgVc      = NaN*ones(nBlocks,2,nLayers);
+   b.avgRawASpd = NaN*ones(nBlocks,nLayers);
+   b.aCohrS     = NaN*ones(nBlocks,nLayers);
+   b.hCohrS     = NaN*ones(nBlocks,nLayers);
+   b.outlier    = cell(1,nLayers);
+   b.inlier     = cell(1,nLayers);
+   for jl = 1:nLayers
+      b.outlier{jl} = [];
+      b.inlier{jl}  = [];
+   end
+
    for k = 1:nBlocks
-      %Identify the index boundary of the block and find the index of vectors 
-      % that are inside each block.
+      %Identify the starting index and the center of the block in the 
+      % base layer.
       [yI xI]     = ind2sub([nGridY-1,nGridX-1],k);
       b.center(k,:) = [(x(xI)+x(xI+1))/2 (y(yI)+y(yI+1))/2];
-      b.vecInd{k} = find(rndP(:,2)>=y(yI) & rndP(:,2) < y(yI+1) & ...
-         rndP(:,1)>=x(xI) & rndP(:,1)<x(xI+1));
 
-      b.rVaInd{k} = find(rndPa(:,2)>=y(yI) & rndPa(:,2) < y(yI+1) & ...
-         rndPa(:,1)>=x(xI) & rndPa(:,1)<x(xI+1));
-      b.rVhInd{k} = find(rndPh(:,2)>=y(yI) & rndPh(:,2) < y(yI+1) & ...
-         rndPh(:,1)>=x(xI) & rndPh(:,1)<x(xI+1));
+      for jl = 1:nLayers
+         %Identify the index of vectors that are inside each block.
+         %First, block boundary in y and x direction.
+         yL = y(yI)+bShift(jl,1);
+         yR = y(yI+1)+bShift(jl,1);
+         xL = x(xI)+bShift(jl,2);
+         xR = x(xI+1)+bShift(jl,2);
+         b.vecInd{k,jl} = find(rndP(:,2)>=yL & rndP(:,2) < yR & ...
+            rndP(:,1)>=xL & rndP(:,1)<xR);
 
-      if ~isempty(b.vecInd{k})
-         %Calculate the angle of the average vector for the block.
-         % To avoid dividing by zero, we use 'smNumber' defined above.
-         b.avgVc(k,:) = mean(Vc(b.vecInd{k},:),1);
-         b.angl(k)    = sign(b.avgVc(k,2))* ...
-                        acos(b.avgVc(k,1)/max(smNumber,norm(b.avgVc(k,:))));
+         b.rVaInd{k,jl} = find(rndPa(:,2)>=yL & rndPa(:,2) < yR & ...
+            rndPa(:,1)>=xL & rndPa(:,1)<xR);
+         b.rVhInd{k,jl} = find(rndPh(:,2)>=yL & rndPh(:,2) < yR & ...
+            rndPh(:,1)>=xL & rndPh(:,1)<xR);
 
-         %Speed, coherence and population test.
-         if ~isempty(b.rVaInd{k})
-            nInd = b.rVaInd{k}(find(~isnan(unitRawVa(b.rVaInd{k},1)) & ...
-               ~isnan(unitRawVa(b.rVaInd{k},2))));
-            if ~isempty(nInd)
-               b.aCohrS(k) = norm(mean(unitRawVa(nInd,:),1));
+         if ~isempty(b.vecInd{k,jl})
+            %Calculate the angle of the average vector for the block.
+            % To avoid dividing by zero, we use 'smNumber' defined above.
+            b.avgVc(k,:,jl) = mean(Vc(b.vecInd{k,jl},:),1);
+            b.angl(k,jl)    = sign(b.avgVc(k,2,jl))*acos(b.avgVc(k,1,jl)/ ...
+                              max(smNumber,norm(b.avgVc(k,:,jl))));
+
+            %Speed, coherence and population test.
+            if ~isempty(b.rVaInd{k,jl})
+               nInd = b.rVaInd{k,jl}(find(~isnan(unitRawVa(b.rVaInd{k,jl},1)) & ...
+                  ~isnan(unitRawVa(b.rVaInd{k,jl},2))));
+               if ~isempty(nInd)
+                  b.aCohrS(k,jl) = norm(mean(unitRawVa(nInd,:),1));
+               end
+               b.avgRawASpd(k,jl) = mean(rawASpd(b.rVaInd{k,jl}));
             end
-            b.avgRawASpd(k) = mean(rawASpd(b.rVaInd{k}));
-         end
 
-         if ~isempty(b.rVhInd{k})
-            nInd = b.rVhInd{k}(find(~isnan(unitRawVh(b.rVhInd{k},1)) & ...
-               ~isnan(unitRawVh(b.rVhInd{k},2))));
-            if ~isempty(nInd)
-               b.hCohrS(k) = norm(mean(unitRawVh(nInd,:),1));
+            if ~isempty(b.rVhInd{k,jl})
+               nInd = b.rVhInd{k,jl}(find(~isnan(unitRawVh(b.rVhInd{k,jl},1)) & ...
+               ~isnan(unitRawVh(b.rVhInd{k,jl},2))));
+               if ~isempty(nInd)
+                  b.hCohrS(k,jl) = norm(mean(unitRawVh(nInd,:),1));
+               end
             end
-         end
-         
-         if isnan(b.aCohrS(k)) | b.aCohrS(k) < cohrThreshold | ...
-            length(b.rVaInd{k}) <= pplThreshold | ...
-            length(b.rVhInd{k}) <= pplThreshold | ...
-            (b.avgRawASpd(k) <= smSpdThreshold & ...
-            b.aCohrS(k) <= 2*cohrThreshold)
-            b.outlier = [b.outlier; k];
-         else
-            b.inlier = [b.inlier; k];
-            %The population of this block is counted towards valid population.
-            S.validPPL = S.validPPL+length(b.vecInd{k});
+
+            if isnan(b.aCohrS(k,jl)) | ...
+               length(b.rVaInd{k,jl}) <= pplThreshold | ...
+               length(b.rVhInd{k,jl}) <= pplThreshold | ...
+               (b.avgRawASpd(k,jl) > smSpdThreshold & b.aCohrS(k,jl) <= bigSpdCohrThreshold) | ...
+               (b.avgRawASpd(k,jl) <= smSpdThreshold & b.aCohrS(k,jl) <= smSpdCohrThreshold)
+               b.outlier{jl} = [b.outlier{jl}; k];
+            else
+               b.inlier{jl} = [b.inlier{jl}; k];
+               %The population of this block is counted towards valid population.
+               %S.cohrPPL = S.cohrPPL+length(b.vecInd{k});
+            end
          end
       end
    end
    
-   numberInd = b.inlier(find(~isnan(b.aCohrS(b.inlier))));
+   %Calculate the mean coherence score.
+
+   numberInd = find(~isnan(b.aCohrS));
    if ~isempty(numberInd)
       S.aCohrS = mean(b.aCohrS(numberInd));
    end
-   numberInd = b.inlier(find(~isnan(b.hCohrS(b.inlier))));
+   numberInd = find(~isnan(b.hCohrS));
    if ~isempty(numberInd)
       S.hCohrS = mean(b.hCohrS(numberInd));
    end
 
    %In terms of percentage.
-   S.validPPL = S.validPPL/size(Va,1);
+   %S.cohrPPL = S.cohrPPL/size(Va,1);
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %Group blocks into a set of angle bins. We assign angle bins according the
+   %A smart angle bin assignment:
+   % Group blocks into a set of angle bins. We assign angle bins according the
    % natural angle distribution. This is a little bit tricky to code.
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %
@@ -440,7 +484,12 @@ else
    % points between -pi and pi. 
    anglNodes = linspace(-pi,pi,73);
    anglDstr  = zeros(size(anglNodes));
-   inlierAngl = b.angl(b.inlier);
+   
+   %Combine the angle of inliner blocks from all layers.
+   inlierAngl = [];
+   for jl = 1:nLayers
+      inlierAngl = [inlierAngl; b.angl(b.inlier{jl},jl)];
+   end
    for k = 1:length(anglNodes)
       if anglNodes(k)-pi/6 < -pi
          anglDstr(k) = length(find((inlierAngl<=anglNodes(k)+pi/6 & ...
@@ -535,6 +584,7 @@ else
    end
    anglBin(end+1) = anglNodes(end);
 
+   %Merge close nodes or add nodes to too big angle bin.
    j = 1;
    while j < length(anglBin)
       if abs(anglBin(j+1)-anglBin(j)) <= pi/3
@@ -556,64 +606,79 @@ else
          j = j+nAddedNodes+2;
       end
    end
+   %%% end of angle bin assignment %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
    %anglBin  = linspace(-pi,pi,13).';
    nAnglBin = length(anglBin)-1;
-   binSet.blockID   = cell(nAnglBin,1);
+   binSet.blockID   = cell(nAnglBin,nLayers);
    binSet.imgPixInd = cell(nAnglBin,1);
-   binSet.vecInd    = cell(nAnglBin,1);
+   binSet.vecInd    = cell(nAnglBin,nLayers);
    
-   vecSet.numObjects = 0;
-   img(:)   = 0;
-   labelImg = img;
-   anglImg  = img;
+   img(:)        = 0;
+   lastACohrSImg = img;
+   thisACohrSImg = img;
    for k = 1:nAnglBin
       %Get the index of blocks that belongs to each angle bin.
-      %binSet.blockID{k} = b.inlier(find(b.angl(b.inlier)>=anglBin(k) & ...
-      %   b.angl(b.inlier)<anglBin(k+1)));
-      binSet.blockID{k} = b.inlier(find(inlierAngl>=anglBin(k) & ...
-         inlierAngl<anglBin(k+1)));
-
       binSet.imgPixInd{k} = [];
-      if ~isempty(binSet.blockID{k})
-         for j = 1:length(binSet.blockID{k})
-            blockID = binSet.blockID{k}(j);
-            binSet.imgPixInd{k} = [binSet.imgPixInd{k} ...
-               b.imgPixInd{blockID}];
+      for jl = 1:nLayers
+         binSet.blockID{k,jl} = b.inlier{jl}( ...
+            find(b.angl(b.inlier{jl},jl)>=anglBin(k) & ...
+            b.angl(b.inlier{jl},jl)<anglBin(k+1)));
+
+         %binSet.blockID{k} = b.inlier(find(inlierAngl>=anglBin(k) & ...
+         %   inlierAngl<anglBin(k+1)));
+
+         if ~isempty(binSet.blockID{k,jl})
+            for j = 1:length(binSet.blockID{k,jl})
+               blockID = binSet.blockID{k,jl}(j);
+               bImgPix = b.imgPixInd{blockID,jl};
+               binSet.imgPixInd{k} = [binSet.imgPixInd{k}; bImgPix];
+
+               updInd = bImgPix(find(thisACohrSImg(bImgPix) < ...
+                  b.aCohrS(blockID,jl)));
+               thisACohrSImg(updInd) = b.aCohrS(blockID,jl);
+            end
          end
       end
 
-      %For each angle bin set population, identify connected clusters
-      % (objects) and then put all the objects from all angle bin sets
-      % together.
       if ~isempty(binSet.imgPixInd{k})
          %Assign an intensity by the angle
          % bin id for the image.
-         img(binSet.imgPixInd{k}) = k;
-         anglImg = anglImg + img;
-         [L, numObjects] = bwlabel(img);
-
-         nzInd = find(L~=0);
-         L(nzInd) = L(nzInd) + vecSet.numObjects;
-         labelImg = labelImg + L;
-
-         %Identify the object ID (vecSetID) each block belong to.
-         for j = 1:length(binSet.blockID{k})
-            blockID = binSet.blockID{k}(j);
-            b.vecSetID(blockID) = ...
-               labelImg(b.imgPixInd{blockID}(1));
-         end
-         vecSet.numObjects = vecSet.numObjects+numObjects;
-
-         img(:) = 0;
+         bsImgPix = binSet.imgPixInd{k};
+         updInd = bsImgPix( ...
+            find(thisACohrSImg(bsImgPix)>lastACohrSImg(bsImgPix)));
+         img(updInd) = k;
       end
+      lastACohrSImg = thisACohrSImg;
+   end
+
+   vecSet.numObjects = 0;
+   labelImg = zeros(size(img));
+   for k = 1:nAnglBin
+      %For each angle bin set population, identify connected block 
+      % clusters (objects).
+      L = img;
+      L(find(img~=k)) = 0;
+      [L, numObjects] = bwlabel(L);
+
+      nzInd = find(L~=0);
+      L(nzInd) = L(nzInd) + vecSet.numObjects;
+
+      %Then, put all the objects from all angle bin sets
+      % together. This is represented by 'labelImg' which is all 
+      % we need to identify clusters of vectors whose angles 
+      % are close.
+      labelImg = labelImg + L;
+
+      vecSet.numObjects = vecSet.numObjects+numObjects;
    end
 
    if vecSet.numObjects == 0
       return;
    end
    
-   %Get the center of each region.
+   %Get the center of each region (cluster of vectors).
    props = regionprops(labelImg,{'centroid'});
    center = [props.Centroid];
    vecSet.center(:,1) = center(1:2:end);
@@ -650,21 +715,22 @@ else
       end
    end
 
-   rotVa = rotVa(vecSet.inlier,:);
-   rotVh = rotVh(vecSet.inlier,:);
-   rotP  = P(vecSet.inlier,:);
    if ~isempty(figH)
+      vecSet.rawVaInlier = find(labelImg(indPa)~=0);
+      vecSet.rawVhInlier = find(labelImg(indPh)~=0);
+
       figure(figH(1)); hold off;
       %Blocks that are not used in statistic analysis in shown in black.
       % To stretch the contrast,
-      %anglImg(find(anglImg==0)) = -floor(max(anglImg(:))/2);
-      %labelImg(find(labelImg==0)) = -floor(max(labelImg(:))/2);
+      minV    = min(img(:));
+      maxV    = max(img(:));
+      imgDisp = img;
 
-      %stretch the contrast.
-      labelImg = labelImg*4;
-      labelImg(1,1) = 1.5*max(labelImg(:));
+      nzInd = find(img~=0);
+      imgDisp(nzInd) = (img(nzInd)-2*minV+maxV);
+      imgDisp(1,1)   = 3*(maxV-minV);
 
-      imshow(labelImg,[]);
+      imshow(4*imgDisp,[]);
       hold on;
 
       %Plot grid lines
@@ -675,37 +741,59 @@ else
          plot((x(k)-0.5)*ones(size(y)),y-0.5,'w');
       end
 
-      %quiver(P(:,1),P(:,2),rotVa(:,1)*dispScale2,rotVa(:,2)*dispScale2,0,'y');
-      %quiver(P(:,1),P(:,2),rotVh(:,1)*dispScale2,rotVh(:,2)*dispScale2,0,'g');
-      %quiver(P(:,1),P(:,2),Va(:,1)*dispScale,Va(:,2)*dispScale,0,'r');
-      %quiver(P(:,1),P(:,2),Vh(:,1)*dispScale,Vh(:,2)*dispScale,0,'g');
       quiver(rawPa(:,1),rawPa(:,2),rawVa(:,1)*dispScale, ...
-         rawVa(:,2)*dispScale,0,'r');
+         rawVa(:,2)*dispScale,0,'y');
       quiver(rawPh(:,1),rawPh(:,2),rawVh(:,1)*dispScale, ...
-         rawVh(:,2)*dispScale,0,'g');
+         rawVh(:,2)*dispScale,0,'b');
 
-      quiver(b.center(b.inlier,1),b.center(b.inlier,2), ...
-         b.avgVc(b.inlier,1)*dispScale, ...
-         b.avgVc(b.inlier,2)*dispScale,0,'w');
-      plot(b.center(b.inlier,1),b.center(b.inlier,2),'wo');
-      plot(b.center(b.outlier,1),b.center(b.outlier,2),'wo');
-      %quiver(b.center(:,1),b.center(:,2),b.avgRotVc(:,1)*corLen, ...
-      %   b.avgRotVc(:,2)*corLen,0,'b');
+      inlier = vecSet.rawVaInlier;
+      quiver(rawPa(inlier,1),rawPa(inlier,2),rawVa(inlier,1)*dispScale, ...
+         rawVa(inlier,2)*dispScale,0,'r');
+      inlier = vecSet.rawVhInlier;
+      quiver(rawPh(inlier,1),rawPh(inlier,2),rawVh(inlier,1)*dispScale, ...
+         rawVh(inlier,2)*dispScale,0,'g');
+
+      quiver(b.center(b.inlier{1},1),b.center(b.inlier{1},2), ...
+         b.avgVc(b.inlier{1},1,1)*dispScale, ...
+         b.avgVc(b.inlier{1},2,1)*dispScale,0,'w');
+      plot(b.center(b.inlier{1},1),b.center(b.inlier{1},2),'wo');
+      plot(b.center(b.outlier{1},1),b.center(b.outlier{1},2),'ro');
+      tH = text(b.center(b.outlier{1},1),b.center(b.outlier{1},2)-5,num2str(b.outlier{1}));
+      set(tH,'color','r');
 
       if length(figH) > 1
-         figure(figH(2)); hold off;
-         imshow(labelImg,[]); hold on; colormap('jet');
+         %stretch the contrast.
+         minV      = min(labelImg(:));
+         maxV      = max(labelImg(:));
+         labelDisp = labelImg;
 
-         quiver(rotP(:,1),rotP(:,2),rotVa(:,1)*dispScale,rotVa(:,2)*dispScale,0,'r');
-         quiver(rotP(:,1),rotP(:,2),rotVh(:,1)*dispScale,rotVh(:,2)*dispScale,0,'g');
+         nzInd = find(labelImg~=0);
+         labelDisp(nzInd) = labelDisp(nzInd)-2*minV+maxV;
+         labelDisp(1,1)   = 3*(maxV-minV);
+
+         figure(figH(2)); hold off;
+         imshow(4*labelDisp,[]); hold on; colormap('jet');
+
+         quiver(P(:,1),P(:,2),rotVa(:,1)*dispScale,rotVa(:,2)*dispScale,0,'r');
+         quiver(P(:,1),P(:,2),rotVh(:,1)*dispScale,rotVh(:,2)*dispScale,0,'g');
          
+         inlier = vecSet.inlier;
+         quiver(P(inlier,1),P(inlier,2),rotVa(inlier,1)*dispScale, ...
+            rotVa(inlier,2)*dispScale,0,'w');
+         quiver(P(inlier,1),P(inlier,2),rotVh(inlier,1)*dispScale, ...
+            rotVh(inlier,2)*dispScale,0,'k');
+
          quiver(vecSet.center(:,1),vecSet.center(:,2), ...
             vecSet.unitAvgVc(:,1)*corLen,vecSet.unitAvgVc(:,2)*corLen,0,'w');
          quiver(vecSet.center(:,1),vecSet.center(:,2), ...
             vecSet.rotUnitAvgVc(:,1)*corLen, vecSet.rotUnitAvgVc(:,2)*corLen,0,'k');
+         plot(vecSet.center(:,1),vecSet.center(:,2),'wo');
       end
    end
-   
+
+   S.cohrPPL = length(vecSet.inlier)/size(rotVa,1);
+   rotVa = rotVa(vecSet.inlier,:);
+   rotVh = rotVh(vecSet.inlier,:);
 end
 
 %%% Assemble Data.
