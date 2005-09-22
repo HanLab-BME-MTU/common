@@ -1,4 +1,4 @@
-function S = idAvgCOfTwoVecFields(Va,Vh,P,varargin)
+function S = idAvgCuplOfTwoVecFields(Va,Vh,P,varargin)
 %idAvgCuplOfTwoVecFields: This function identifies the average coupling 
 %                         between two vector fields.
 %
@@ -47,8 +47,10 @@ function S = idAvgCOfTwoVecFields(Va,Vh,P,varargin)
 %    S : A structure that contains the following fields:
 %        'alpha'     : the coupling coefficient.
 %        'dAngl'     : the deviation angle between 'Vac' and 'Vhc'.
-%        'aCohrS' : The cohrence score of 'Va'.
-%        'hCohrS' : The cohrence score of 'Vh'.
+%        'aCohrS'    : The cohrence score of 'Va'.
+%        'hCohrS'    : The cohrence score of 'Vh'.
+%        'cohrPPLP'  : The percentage of population that pass the coherence
+%                      test.
 %
 % The Model:
 %
@@ -78,7 +80,7 @@ function S = idAvgCOfTwoVecFields(Va,Vh,P,varargin)
 %    each basic block.
 %    A basic block is excluded if both the averge speed (not scaled) of the 
 %    block population is below 'smSpdThreshold' and the coherence score is 
-%    below 'cohrThreshold'.
+%    below 'smSpdCohrThreshold'.
 
 %Default paramters.
 bSize               = 30;
@@ -97,7 +99,7 @@ S.alpha    = NaN;
 S.dAngl    = NaN;
 S.aCohrS   = NaN;
 S.hCohrS   = NaN;
-S.cohrPPL = 0;
+S.cohrPPLP = 0;
 
 %Remove NaN from Va and Vh.
 nanInd = find(isnan(Va(:,1)) | isnan(Va(:,2)) | ...
@@ -176,6 +178,12 @@ for k = 1:2:nargin-3
          if ~isempty(varargin{k+1})
             Vc = varargin{k+1};
          end
+         %Remove NaN.
+         nanInd = find(isnan(Vc(:,1)) | isnan(Vc(:,2)));
+         Vc(nanInd,:) = [];
+         if isempty(Vc)
+            return;
+         end
       otherwise
          error(['Optional parameter '' varargin{k} '' is not recogonized.']);
    end
@@ -215,7 +223,7 @@ rawPh = rawPh(rawHInd,:);
 rawVh = rawVh(rawHInd,:);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Rotation
+% Rotation to preserve spatial heterogeniety.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Create an image area that covers the vector field.
 corLen = ceil(bSize/2);
@@ -294,12 +302,12 @@ if isinf(corLen) | (maxX-minX <= bSize & maxY-minY <= bSize)
 
    numRawVa = find(~isnan(unitRawVa(:,1)) & ~isnan(unitRawVa(:,2)));
    if ~isempty(numRawVa)
-      S.aCohrS  = norm(mean(unitRawVa(numRawVa,:),1));
+      S.aCohrS = norm(mean(unitRawVa(numRawVa,:),1));
    end
 
    numRawVh = find(~isnan(unitRawVh(:,1)) & ~isnan(unitRawVh(:,2)));
    if ~isempty(numRawVh)
-      S.hCohrS  = norm(mean(unitRawVh(numRawVh,:),1));
+      S.hCohrS = norm(mean(unitRawVh(numRawVh,:),1));
    end
 
    %Speed, coherence and population test.
@@ -310,7 +318,7 @@ if isinf(corLen) | (maxX-minX <= bSize & maxY-minY <= bSize)
       return;
    end
 
-   S.cohrPPL = 1;
+   S.cohrPPLP = 1;
 else
    if isempty(img)
       x = minX-corLen:2*corLen:maxX+3*corLen;
@@ -336,6 +344,7 @@ else
       y = 1:2*corLen:size(img,1);
       img(:) = 0;
    end
+   [imgHeight,imgWidth] = size(img);
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %Divide the image area into blocks and identify the vector population for
@@ -356,23 +365,8 @@ else
 %    bShift = [0 0];
    nLayers = size(bShift,1);
 
-   [imgHeight,imgWidth] = size(img);
-
-   b.imgPixInd = cell(nBlocks,nLayers);
-   k = 0;
-   for jx = 1:nGridX-1
-      for jy = 1:nGridY-1
-         k = k+1;
-         for jl = 1:nLayers
-            [bX bY] = meshgrid([x(jx):x(jx+1)-1]+bShift(jl,2), ...
-               [y(jy):y(jy+1)-1]+bShift(jl,1));
-            in = find(bX>=1 & bX<=imgWidth & bY>=1 & bY<=imgHeight);
-            b.imgPixInd{k,jl} = sub2ind(size(img),bY(in),bX(in));
-         end
-      end
-   end
-
-   %Round P to integer pixel and get the linear index.
+   %Round P, rawPa and rawPh to integer pixel and get their linear index
+   % relative to 'img'.
    rndP = round(P);
    indP = sub2ind(size(img),rndP(:,2),rndP(:,1));
 
@@ -381,15 +375,42 @@ else
    indPa = sub2ind(size(img),rndPa(:,2),rndPa(:,1));
    indPh = sub2ind(size(img),rndPh(:,2),rndPh(:,1));
 
-   b.vecInd     = cell(nBlocks,nLayers);
-   b.rVaInd     = cell(nBlocks,nLayers);
-   b.rVhInd     = cell(nBlocks,nLayers);
+   %We need the image index of each block in each layer later.
+   b.imgPixInd = cell(nBlocks,nLayers);
+   k = 0;
+   for jx = 1:nGridX-1
+      for jy = 1:nGridY-1
+         k = k+1;
+         for jl = 1:nLayers
+            [bX bY] = meshgrid([x(jx):x(jx+1)-1]+bShift(jl,2), ...
+               [y(jy):y(jy+1)-1]+bShift(jl,1));
+
+            %Make sure we only get the part of block that is inside the iamge.
+            in = find(bX>=1 & bX<=imgWidth & bY>=1 & bY<=imgHeight);
+            b.imgPixInd{k,jl} = sub2ind(size(img),bY(in),bX(in));
+         end
+      end
+   end
+
+   %Index of vectors inside each block of each layer.
+   b.vecInd     = cell(nBlocks,nLayers); %Vc
+   b.rVaInd     = cell(nBlocks,nLayers); %rawVa
+   b.rVhInd     = cell(nBlocks,nLayers); %rawVh
+
+   %Center of each block in the base layer.
    b.center     = zeros(nBlocks,2);
+
+   %Average flow angle, coupling vector, speed of raw vector field.
    b.angl       = NaN*ones(nBlocks,nLayers);
    b.avgVc      = NaN*ones(nBlocks,2,nLayers);
    b.avgRawASpd = NaN*ones(nBlocks,nLayers);
+
+   %Coherence of the two flow channels (Va and Vh) in each block of each layer.
    b.aCohrS     = NaN*ones(nBlocks,nLayers);
    b.hCohrS     = NaN*ones(nBlocks,nLayers);
+
+   %The index of outlier blocks (do not pass test) and inlier blocks (pass
+   % test) at each layer.
    b.outlier    = cell(1,nLayers);
    b.inlier     = cell(1,nLayers);
    for jl = 1:nLayers
@@ -397,6 +418,8 @@ else
       b.inlier{jl}  = [];
    end
 
+   %Identify vector index, calculate coherence score and do coherence test for
+   % each block population.
    for k = 1:nBlocks
       %Identify the starting index and the center of the block in the 
       % base layer.
@@ -425,24 +448,35 @@ else
             b.angl(k,jl)    = sign(b.avgVc(k,2,jl))*acos(b.avgVc(k,1,jl)/ ...
                               max(smNumber,norm(b.avgVc(k,:,jl))));
 
-            %Speed, coherence and population test.
+            %Calculate the coherence score for each block.
             if ~isempty(b.rVaInd{k,jl})
                nInd = b.rVaInd{k,jl}(find(~isnan(unitRawVa(b.rVaInd{k,jl},1)) & ...
                   ~isnan(unitRawVa(b.rVaInd{k,jl},2))));
                if ~isempty(nInd)
                   b.aCohrS(k,jl) = norm(mean(unitRawVa(nInd,:),1));
+
+                  %Coherence score only makes sense when there is enough
+                  % population. So, we scale it by the ratio to
+                  % 'pplThreshold'. If there is only one vector, the score is
+                  % set to zero. If there is more than 'pplThreshold' vectors,
+                  % it is not scaled (multiplied by 1).
+                  b.aCohrS(k,jl) = b.aCohrS(k,jl)/pplThreshold* ...
+                     min(pplThreshold,length(nInd)-1);
                end
                b.avgRawASpd(k,jl) = mean(rawASpd(b.rVaInd{k,jl}));
             end
 
             if ~isempty(b.rVhInd{k,jl})
                nInd = b.rVhInd{k,jl}(find(~isnan(unitRawVh(b.rVhInd{k,jl},1)) & ...
-               ~isnan(unitRawVh(b.rVhInd{k,jl},2))));
+                  ~isnan(unitRawVh(b.rVhInd{k,jl},2))));
                if ~isempty(nInd)
                   b.hCohrS(k,jl) = norm(mean(unitRawVh(nInd,:),1));
+                  b.hCohrS(k,jl) = b.hCohrS(k,jl)/pplThreshold* ...
+                     min(pplThreshold,length(nInd)-1);
                end
             end
 
+            %Speed, coherence and population test.
             if isnan(b.aCohrS(k,jl)) | ...
                length(b.rVaInd{k,jl}) <= pplThreshold | ...
                length(b.rVhInd{k,jl}) <= pplThreshold | ...
@@ -451,15 +485,12 @@ else
                b.outlier{jl} = [b.outlier{jl}; k];
             else
                b.inlier{jl} = [b.inlier{jl}; k];
-               %The population of this block is counted towards valid population.
-               %S.cohrPPL = S.cohrPPL+length(b.vecInd{k});
             end
          end
       end
    end
    
    %Calculate the mean coherence score.
-
    numberInd = find(~isnan(b.aCohrS));
    if ~isempty(numberInd)
       S.aCohrS = mean(b.aCohrS(numberInd));
@@ -468,9 +499,6 @@ else
    if ~isempty(numberInd)
       S.hCohrS = mean(b.hCohrS(numberInd));
    end
-
-   %In terms of percentage.
-   %S.cohrPPL = S.cohrPPL/size(Va,1);
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %A smart angle bin assignment:
@@ -609,51 +637,67 @@ else
    %%% end of angle bin assignment %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-   %anglBin  = linspace(-pi,pi,13).';
    nAnglBin = length(anglBin)-1;
+
+   %Index of blocks whose angle belongs to each angle bin in each layer.
    binSet.blockID   = cell(nAnglBin,nLayers);
+
+   %The image index under the blocks that belong to each bin.
    binSet.imgPixInd = cell(nAnglBin,1);
+
+   %Index of vectors that belong to each bin.
    binSet.vecInd    = cell(nAnglBin,nLayers);
    
+   %Make sure intially 'img = 0'.
    img(:)        = 0;
-   lastACohrSImg = img;
-   thisACohrSImg = img;
+
+   %To solve the problem of overlaying blocks, we assign the coherence score
+   % of each block to the pixels it covers and compare the score between
+   % layers.
+   %lastACohrSImg = img;
+   %thisACohrSImg = img;
+   aCohrSImg = img;
    for k = 1:nAnglBin
-      %Get the index of blocks that belongs to each angle bin.
       binSet.imgPixInd{k} = [];
       for jl = 1:nLayers
+         %Get the index of blocks that belongs to each angle bin.
          binSet.blockID{k,jl} = b.inlier{jl}( ...
             find(b.angl(b.inlier{jl},jl)>=anglBin(k) & ...
             b.angl(b.inlier{jl},jl)<anglBin(k+1)));
 
-         %binSet.blockID{k} = b.inlier(find(inlierAngl>=anglBin(k) & ...
-         %   inlierAngl<anglBin(k+1)));
-
+         %Get the image pixels covered by all the blocks (from all layers) that
+         % belongs to each angle bin.
          if ~isempty(binSet.blockID{k,jl})
             for j = 1:length(binSet.blockID{k,jl})
                blockID = binSet.blockID{k,jl}(j);
                bImgPix = b.imgPixInd{blockID,jl};
                binSet.imgPixInd{k} = [binSet.imgPixInd{k}; bImgPix];
 
-               updInd = bImgPix(find(thisACohrSImg(bImgPix) < ...
+               %We only update the cohrence score for pixels whose current
+               % score is less than the coherence score of the block at this
+               % layer that is going to cover it.
+               updInd = bImgPix(find(aCohrSImg(bImgPix) < ...
                   b.aCohrS(blockID,jl)));
-               thisACohrSImg(updInd) = b.aCohrS(blockID,jl);
+               %thisACohrSImg(updInd) = b.aCohrS(blockID,jl);
+               aCohrSImg(updInd) = b.aCohrS(blockID,jl);
+               img(updInd) = k;
             end
          end
       end
 
-      if ~isempty(binSet.imgPixInd{k})
-         %Assign an intensity by the angle
-         % bin id for the image.
-         bsImgPix = binSet.imgPixInd{k};
-         updInd = bsImgPix( ...
-            find(thisACohrSImg(bsImgPix)>lastACohrSImg(bsImgPix)));
-         img(updInd) = k;
-      end
-      lastACohrSImg = thisACohrSImg;
+%      bsImgPix = binSet.imgPixInd{k};
+%      if ~isempty(bsImgPix)
+%         %Assign an intensity by the angle bin id for these image pixles.
+%         updInd = bsImgPix( ...
+%            find(thisACohrSImg(bsImgPix)>lastACohrSImg(bsImgPix)));
+%         img(updInd) = k;
+%      end
+%      lastACohrSImg = thisACohrSImg;
    end
 
-   vecSet.numObjects = 0;
+   %Identify clusters of connected blocks that belongs to the same angle bin.
+   % Each of such clusters define a subpopulation of vectors.
+   nVecSets = 0;
    labelImg = zeros(size(img));
    for k = 1:nAnglBin
       %For each angle bin set population, identify connected block 
@@ -663,7 +707,7 @@ else
       [L, numObjects] = bwlabel(L);
 
       nzInd = find(L~=0);
-      L(nzInd) = L(nzInd) + vecSet.numObjects;
+      L(nzInd) = L(nzInd) + nVecSets;
 
       %Then, put all the objects from all angle bin sets
       % together. This is represented by 'labelImg' which is all 
@@ -671,10 +715,10 @@ else
       % are close.
       labelImg = labelImg + L;
 
-      vecSet.numObjects = vecSet.numObjects+numObjects;
+      nVecSets = nVecSets+numObjects;
    end
 
-   if vecSet.numObjects == 0
+   if nVecSets == 0
       return;
    end
    
@@ -684,17 +728,19 @@ else
    vecSet.center(:,1) = center(1:2:end);
    vecSet.center(:,2) = center(2:2:end);
 
-   %Identify vector set for each connected cluster (label).
-   vecSet.ind          = cell(vecSet.numObjects,1);
-   vecSet.avgVc        = NaN*ones(vecSet.numObjects,2);
-   vecSet.unitAvgVc    = NaN*ones(vecSet.numObjects,2);
-   vecSet.rotUnitAvgVc = NaN*ones(vecSet.numObjects,2);
+   %The index of vectors that belong to each connected cluster (label).
+   vecSet.ind          = cell(nVecSets,1);
+   vecSet.avgRotVc     = NaN*ones(nVecSets,2);
+   vecSet.unitAvgVc    = NaN*ones(nVecSets,2);
+   vecSet.rotUnitAvgVc = NaN*ones(nVecSets,2);
 
    vecSet.inlier = [];
-   for k = 1:vecSet.numObjects
+   for k = 1:nVecSets
       vecSet.ind{k} = find(labelImg(indP)==k);
 
-      if ~isempty(vecSet.ind{k})
+      if length(vecSet.ind{k}) > pplThreshold
+         %We only consider vector sets whose population is above the
+         % population threshold, 'pplThreshold'.
          %Bundle all the vector indices selected.
          vecSet.inlier = [vecSet.inlier; vecSet.ind{k}];
          
@@ -721,7 +767,8 @@ else
 
       figure(figH(1)); hold off;
       %Blocks that are not used in statistic analysis in shown in black.
-      % To stretch the contrast,
+      % We stretch the contrast so that each angle bin cluster can be
+      % distinguished.
       minV    = min(img(:));
       maxV    = max(img(:));
       imgDisp = img;
@@ -791,14 +838,14 @@ else
       end
    end
 
-   S.cohrPPL = length(vecSet.inlier)/size(rotVa,1);
+   S.cohrPPLP = length(vecSet.inlier)/size(rotVa,1);
    rotVa = rotVa(vecSet.inlier,:);
    rotVh = rotVh(vecSet.inlier,:);
 end
 
 %%% Assemble Data.
-avgRotSpdA = mean(sqrt(sum(rotVa.^2,2)));
-avgRotSpdH = mean(sqrt(sum(rotVh.^2,2)));
+%avgRotSpdA = mean(sqrt(sum(rotVa.^2,2)));
+%avgRotSpdH = mean(sqrt(sum(rotVh.^2,2)));
 meanVa     = mean(rotVa,1);
 meanVh     = mean(rotVh,1);
 meanVaP    = [meanVa(2) -meanVa(1)];
