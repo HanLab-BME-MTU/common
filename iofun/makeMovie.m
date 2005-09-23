@@ -77,8 +77,9 @@ h   = figure(gcf); hold off;
 set(h,'Position',pos);
 
 if strcmp(format,'mov') == 1 | strcmp(format,'MOV')
-   makeQTMovie('start',outFileName);
-   makeQTMovie('framerate',fps);
+   outFileName = [outFileName '.mov'];
+   MakeQTMovie('start',outFileName);
+   MakeQTMovie('framerate',fps);
 end
 
 for k = 1:length(imgFile)
@@ -88,12 +89,13 @@ for k = 1:length(imgFile)
    M(k) = getframe;
 
    if strcmp(format,'mov') == 1 | strcmp(format,'MOV')
-      makeQTMovie('addfigure');
+      MakeQTMovie('addfigure');
    end
 end
 
 if strcmp(format,'mov') == 1 | strcmp(format,'MOV')
-   makeQTMovie('finish');
+   MakeQTMovie('finish');
 elseif strcmp(format,'avi') == 1 | strcmp(format,'AVI')
+   outFileName = [outFileName '.avi'];
    movie2avi(M,outFileName);
 end

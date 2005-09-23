@@ -393,9 +393,11 @@ else
    end
 
    %Index of vectors inside each block of each layer.
-   b.vecInd     = cell(nBlocks,nLayers); %Vc
-   b.rVaInd     = cell(nBlocks,nLayers); %rawVa
-   b.rVhInd     = cell(nBlocks,nLayers); %rawVh
+   b.vecInd = cell(nBlocks,nLayers); %Vc
+   b.rVaInd = cell(nBlocks,nLayers); %rawVa
+   b.rVhInd = cell(nBlocks,nLayers); %rawVh
+   b.nRawVa = zeros(nBlocks,nLayers); %Number of 'rawVa' vectors.
+   b.nRawVh = zeros(nBlocks,nLayers); %Number of 'rawVh' vectors.
 
    %Center of each block in the base layer.
    b.center     = zeros(nBlocks,2);
@@ -440,7 +442,9 @@ else
             rndPa(:,1)>=xL & rndPa(:,1)<xR);
          b.rVhInd{k,jl} = find(rndPh(:,2)>=yL & rndPh(:,2) < yR & ...
             rndPh(:,1)>=xL & rndPh(:,1)<xR);
-
+         b.nRawVa(k,jl) = length(b.rVaInd{k,jl});
+         b.nRawVh(k,jl) = length(b.rVhInd{k,jl});
+         
          if ~isempty(b.vecInd{k,jl})
             %Calculate the angle of the average vector for the block.
             % To avoid dividing by zero, we use 'smNumber' defined above.
@@ -493,11 +497,13 @@ else
    %Calculate the mean coherence score.
    numberInd = find(~isnan(b.aCohrS));
    if ~isempty(numberInd)
-      S.aCohrS = mean(b.aCohrS(numberInd));
+      S.aCohrS = sum(b.aCohrS(numberInd).*b.nRawVa(numberInd))/ ...
+         sum(b.nRawVa(numberInd));
    end
    numberInd = find(~isnan(b.hCohrS));
    if ~isempty(numberInd)
-      S.hCohrS = mean(b.hCohrS(numberInd));
+      S.hCohrS = sum(b.hCohrS(numberInd).*b.nRawVh(numberInd))/ ...
+         sum(b.nRawVh(numberInd));
    end
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -654,8 +660,6 @@ else
    %To solve the problem of overlaying blocks, we assign the coherence score
    % of each block to the pixels it covers and compare the score between
    % layers.
-   %lastACohrSImg = img;
-   %thisACohrSImg = img;
    aCohrSImg = img;
    for k = 1:nAnglBin
       binSet.imgPixInd{k} = [];
@@ -684,15 +688,6 @@ else
             end
          end
       end
-
-%      bsImgPix = binSet.imgPixInd{k};
-%      if ~isempty(bsImgPix)
-%         %Assign an intensity by the angle bin id for these image pixles.
-%         updInd = bsImgPix( ...
-%            find(thisACohrSImg(bsImgPix)>lastACohrSImg(bsImgPix)));
-%         img(updInd) = k;
-%      end
-%      lastACohrSImg = thisACohrSImg;
    end
 
    %Identify clusters of connected blocks that belongs to the same angle bin.
@@ -846,6 +841,10 @@ end
 %%% Assemble Data.
 %avgRotSpdA = mean(sqrt(sum(rotVa.^2,2)));
 %avgRotSpdH = mean(sqrt(sum(rotVh.^2,2)));
+if size(rotVa,1) == 0 | size(rotVh,1) == 0
+   return;
+end
+
 meanVa     = mean(rotVa,1);
 meanVh     = mean(rotVh,1);
 meanVaP    = [meanVa(2) -meanVa(1)];
