@@ -456,13 +456,16 @@ else
             if ~isempty(b.rVaInd{k,jl})
                nInd = b.rVaInd{k,jl}(find(~isnan(unitRawVa(b.rVaInd{k,jl},1)) & ...
                   ~isnan(unitRawVa(b.rVaInd{k,jl},2))));
-               if ~isempty(nInd)
+               if length(nInd) > 2
                   b.aCohrS(k,jl) = norm(mean(unitRawVa(nInd,:),1));
 
                   %Coherence score only makes sense when there is enough
                   % population. So, we scale it by the ratio to
-                  % 'pplThreshold'. If there is only one vector, the score is
-                  % set to zero. If there is more than 'pplThreshold' vectors,
+                  % 'pplThreshold'. If there is only one or two vectors, 
+                  % the score is discarded by setting it to 'NaN'. It there
+                  % is more than 2 vectors (e.g. 3), it is multiplied by
+                  % '(3-1)/pplThreshold'.
+                  % If there is more than 'pplThreshold' vectors,
                   % it is not scaled (multiplied by 1).
                   b.aCohrS(k,jl) = b.aCohrS(k,jl)/pplThreshold* ...
                      min(pplThreshold,length(nInd)-1);
@@ -473,7 +476,7 @@ else
             if ~isempty(b.rVhInd{k,jl})
                nInd = b.rVhInd{k,jl}(find(~isnan(unitRawVh(b.rVhInd{k,jl},1)) & ...
                   ~isnan(unitRawVh(b.rVhInd{k,jl},2))));
-               if ~isempty(nInd)
+               if length(nInd) > 2
                   b.hCohrS(k,jl) = norm(mean(unitRawVh(nInd,:),1));
                   b.hCohrS(k,jl) = b.hCohrS(k,jl)/pplThreshold* ...
                      min(pplThreshold,length(nInd)-1);
