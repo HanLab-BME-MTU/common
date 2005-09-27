@@ -1,4 +1,4 @@
-function listOfFiles = searchFiles(includeString,excludeString,directory,includeSubDirectories,selectionMode)
+function [listOfFiles,tokenList] = searchFiles(includeString,excludeString,directory,includeSubDirectories,selectionMode)
 %searchFiles is an utility to search for files containing a specific string
 %
 %SYNOPSIS listOfFiles = searchFiles(includeString,excludeString,directory,includeSubDirectories,selectionMode)
@@ -17,6 +17,19 @@ function listOfFiles = searchFiles(includeString,excludeString,directory,include
 %                              {'all'}-all; 'new'-newest; 'old'-oldest; 'GUI'-open GUI to select one file
 %
 %OUTPUT  listOfFiles: cell array with {[fileName] [directoryName]}
+%        tokenList  : if includeString is a regular expression with tokens
+%                       (see regexp for help), tokens are returned in a
+%                       tokenList (cell array of strings)
+%                           tmp1 = ...
+%                           regexp(listOfFiles(:,1),includeString,'tokens')
+%                           tmp2 = cat(1,tmp1{:});
+%                           tokenList = cat(1,tmp2{:});
+%                       if no tokens are indicated in the input, tokenList will
+%                       be empty.
+%                       Assuming that all the tokens are numbers,
+%                       converting tokenList into a matrix of doubles can
+%                       be done as follows: 
+%                           tokenListAsDoubles = str2double(tokenList);
 %
 %c: 7-03 jonas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -168,3 +181,19 @@ end %while ~isempty(dirs2check)
 
 % remove placeholders
 listOfFiles(listOfFilesCt+1:end,:)=[];
+
+
+
+%----------- find tokens --------------
+if nargout > 1
+    % we need to make a tokenList
+    if findstr(includeString,'(') & findstr(includeString,')')
+        % only call regexp if there are tokens at all
+        
+        tmp = regexp(listOfFiles(:,1),includeString,'tokens');
+        tmp = cat(1,tmp{:});
+        tokenList = cat(1,tmp{:});
+    else
+        tokenList = [];
+    end
+end
