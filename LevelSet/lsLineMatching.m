@@ -6,9 +6,13 @@ function [phi_t1, val_t1, disp_points, protrusion] = lsLineMatching(varargin);
 %
 % INPUT                    
 % 
-% OUTPUT         phi_t1         : given distance function at second time step
-%                phi(:,:,end)   : calculated distance function at second time step
-%                track_points   : points on the edge (x,y,t)
+% OUTPUT         phi_t1             : given distance function at second time step
+%                val_t1(:,:,end)    : calculated distance function at second time step
+%                disp_points        : are the corresponding points of the edge at the
+%                                     next time step (x,y,t)
+%                protrusion         : is the integrated marker path length
+%                                     it positive for prot and negative for
+%                                     retraction
 %
 % DEPENDENCES    lsLineMatching uses { 
 %                                    } 
@@ -56,7 +60,10 @@ for i=1:2:l
         in_found=1; 
     elseif  strcmp(varargin(i),'result_dir')
         RESULT_DIR=varargin{i+1};     
-        in_found=1;         
+        in_found=1;
+    elseif  strcmp(varargin(i),'control')
+        CONTROL=varargin{i+1};     
+        in_found=1;    
     end
 
     if in_found == 0
@@ -65,33 +72,36 @@ for i=1:2:l
     end    
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-CONTROL = 1; 
-MOVIE = 1;
-INT_VELOCITY = 1;
+MOVIE = 0;
+INT_VELOCITY = 0;  
+% you have to change this variable also in lsH.m !!!!
 global residual_last;
 global residual;
 global residual_i;
 residual_last = 1e10;
 residual_i = 1;
+if  ~exist('CONTROL','var')
+    CONTROL = 1;    
+end
 if  ~exist('RESULT_DIR','var')
-    RESULT_DIR = '/lccb/projects/alpha/Level_set_test/';
+    RESULT_DIR = '/lccb/projects/alpha/Level_set_test/res/';
     %RESULT_DIR = 'L:\projects\alpha\Level_set_test\';
 end
 if ~exist('mask_img_t0','var')
-    
      TEST_CASE = 1; % two ellipses
     % TEST_CASE = 2; % two offset non-intersecting circles
     % TEST_CASE = 3; % two lines    
     % TEST_CASE = 4; % line and protrusion
     % TEST_CASE = 5; % line and spike
     % TEST_CASE = 6; % seven star
-     TEST_CASE = 7; % whole cell
+    % TEST_CASE = 7; % whole cell
     % TEST_CASE = 8; % W512r_smaller
     % TEST_CASE = 9; % 
     % TEST_CASE = 10; % part cell cut_s399
     
-    x_s = 1;
-    y_s = 1;
+    % computational grid size (pixel)
+    x_s = 5;
+    y_s = 5;
     
     sp_spacing = 2;
     
@@ -109,8 +119,8 @@ if ~exist('mask_img_t0','var')
         domain.x_size = img_w;
         domain.y_size = img_h;
 
-        domain.x_spacing = 1;
-        domain.y_spacing = 1; 
+        domain.x_spacing = 3;
+        domain.y_spacing = 3; 
         % get the trail points
         % Get intersection of grid with the curve %%%%%%%%%%%%%%%%%%%%%%%%%
         % (find the known points)
@@ -143,13 +153,14 @@ else
     domain.x_size = img_w;
     domain.y_size = img_h;
 
-    domain.x_spacing = 4;
-    domain.y_spacing = 4;
+    domain.x_spacing = 2;
+    domain.y_spacing = 2;
 
     [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
 
     % fill the grid_line field in structure domain
-    domain = lsGenerateGridLines(domain);
+    sc = 4;  % supersampling coefficient used to extract z=0 from phi
+    domain = lsGenerateGridLines(domain, sc);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
@@ -176,19 +187,6 @@ signed_t1 = 1;
 phi_zero_t1 = lsGetZeroLevel(phi_t1, domain); 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-
-%if TEST_CASE ~= 2
-%     p_t01=1:x_spline_t01.knots(end);
-%     x_spline_points_t01 = fnval(x_spline_t01, p_t01);
-%     y_spline_points_t01 = fnval(y_spline_t01, p_t01);
-%     p_t02=1:x_spline_t02.knots(end);
-%     x_spline_points_t02 = fnval(x_spline_t02, p_t01);
-%     y_spline_points_t02 = fnval(y_spline_t02, p_t01);
-% 
-%     x_spline_points_t0 = cat(2, x_spline_points_t01, x_spline_points_t02);
-%     y_spline_points_t0 = cat(2, y_spline_points_t01, y_spline_points_t02);
-% end
-
 
 p_t0 = x_spline_t0.knots(1):x_spline_t0.knots(end);
 x_spline_points_t0 = fnval(x_spline_t0, p_t0);
@@ -220,15 +218,15 @@ if CONTROL & 0
     plot(x_spline_points_t1, y_spline_points_t1, 'r');
         
     % Save  results
-%     hgsave(h_phi_t0, [RESULT_DIR 'phi_t0.fig']); 
-%     print(h_phi_t0,  [RESULT_DIR 'phi_t0.eps'],'-depsc2','-tiff'); 
-%     print(h_phi_t0,  [RESULT_DIR 'phi_t0.tif'],'-dtiff');
-%     hgsave(h_phi_t1, [RESULT_DIR 'phi_t0.fig']); 
-%     print(h_phi_t1,  [RESULT_DIR 'phi_t0.eps'],'-depsc2','-tiff'); 
-%     print(h_phi_t1,  [RESULT_DIR 'phi_t0.tif'],'-dtiff');  
-%     hgsave(h_edges,  [RESULT_DIR 'edges_t0_t1.fig']); 
-%     print(h_edges,   [RESULT_DIR 'edges_t0_t1.eps'],'-depsc2','-tiff'); 
-%     print(h_edges,   [RESULT_DIR 'edges_t0_t1.tif'],'-dtiff');    
+    hgsave(h_phi_t0, [RESULT_DIR 'phi_t0.fig']); 
+    print(h_phi_t0,  [RESULT_DIR 'phi_t0.eps'],'-depsc2','-tiff'); 
+    print(h_phi_t0,  [RESULT_DIR 'phi_t0.tif'],'-dtiff');
+    hgsave(h_phi_t1, [RESULT_DIR 'phi_t0.fig']); 
+    print(h_phi_t1,  [RESULT_DIR 'phi_t0.eps'],'-depsc2','-tiff'); 
+    print(h_phi_t1,  [RESULT_DIR 'phi_t0.tif'],'-dtiff');  
+    hgsave(h_edges,  [RESULT_DIR 'edges_t0_t1.fig']); 
+    print(h_edges,   [RESULT_DIR 'edges_t0_t1.eps'],'-depsc2','-tiff'); 
+    print(h_edges,   [RESULT_DIR 'edges_t0_t1.tif'],'-dtiff');    
 end
 
 
@@ -267,8 +265,9 @@ if INT_VELOCITY
 end
 
 %options = odeset('RelTol',1e-4,'AbsTol',1e-7,'OutputFcn',@outputfcn,'Events',@events);
-options = odeset('OutputFcn',@lsOutputfcn, 'Events',@lsEvents);
-%options = odeset('Events',@events);%'MaxStep',0.1,
+% use this output set if you want to generate a figure of the evolution
+options = odeset('OutputFcn',@lsOutputfcn, 'Events', @lsEvents);
+%options = odeset('Events',@lsEvents);
 
 figure
 plot(phi_zero_t0(1,:), phi_zero_t0(2,:),'r');
@@ -278,7 +277,7 @@ hold on
 %%%%%%%%%%%%%%%%%%%%% Integrate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if 1
     tcpu1 = clock;
-    [t_steps, Y, TE,YE,IE] = ode45(@lsH,0:0.5:200,phi_t0_vec, options,...
+    [t_steps, Y, TE,YE,IE] = ode45(@lsH,[0 200],phi_t0_vec, options,...
         phi_t1, i_end, j_end, delta_x, delta_y, domain);
     cpu_time = etime(clock,tcpu1)
 else
@@ -315,6 +314,7 @@ h_level_sets = figure(gcf);
 % Number of time steps
 num_time_steps = length(t_steps);
 
+% extract the phi and tracked points from the solution vector
 for t=1:num_time_steps
     if INT_VELOCITY
         phi_vec = Y(1:i_end * j_end,t);
@@ -327,59 +327,75 @@ for t=1:num_time_steps
 end
 
 
-clear track_points;
-
-
-track_points(:,:,1) = track_points_0;
-h_waitbar = waitbar(0,'Processing');
-for t=2:num_time_steps
+if ~INT_VELOCITY 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%   Get the marker paths by walking the shortest distance between the
+    %%   interpolated zero level sets
+    %%   The normal conditions does not work because in the case of edges the
+    %%   wrong solution is chosen
+    track_points(:,:,1) = track_points_0;
+    h_waitbar = waitbar(0,'Integrating marker paths');
+    for t=2:num_time_steps
         waitbar(t/num_time_steps, h_waitbar, num_time_steps);
-        
+
+        % extract zero level set using super-sampling
         zero_level_set_t = lsGetZeroLevel(phi(:,:,t),domain,1);
-        % get spline parameter
+        %zero_level_set_t(:,end+1)=zero_level_set_t(:,1);
+        % define a spline parameter based on the zero level set run length
         clear s_p;
+        clear s_p_fine;
         s_p(1) = 0;
         for i=2:length(zero_level_set_t)
             s_p(i) = s_p(i-1)+sqrt((zero_level_set_t(1,i)-zero_level_set_t(1,i-1))^2+...
-                                   (zero_level_set_t(2,i)-zero_level_set_t(2,i-1))^2);
+                (zero_level_set_t(2,i)-zero_level_set_t(2,i-1))^2);
         end
-        %sp_zero_level = spline(s_p, [zero_level_set_t(1,:); zero_level_set_t(2,:)]);
-        sp_zero_level = csaps(s_p, [zero_level_set_t(1,:); zero_level_set_t(2,:)], 1);        
-       
-        p1_sp = ppval(sp_zero_level,s_p);
-         
+        
+        % create spline of the z=0 curve at t+1 (track points are at time t
+        sp_zero_level = csaps(s_p, [zero_level_set_t(1,:); zero_level_set_t(2,:)], 1);
+        s_p_fine = 0:0.03:s_p(end);
+        s_p_fine(end+1)=s_p(end);
+        p1_sp = ppval(sp_zero_level,s_p_fine);
 
         for i =1:size(track_points_0,1)
             dx_l = p1_sp(1,:) - track_points(i,1,t-1);
             dy_l = p1_sp(2,:) - track_points(i,2,t-1);
-            
-            % calculate all distances 
-            dist_p =sqrt(dx_l.^2 +dy_l.^2);
-            
-            sp_dist = csaps(s_p,dist_p');
-            %sp_dist = spaps(s_p,dist_p,30);
-            [min_val min_s_p] = fnmin(sp_dist);
 
-            p = ppval(sp_zero_level,min_s_p);
+            % calculate all distances
+            dist_p =dx_l.^2 +dy_l.^2;
 
+            % get the minimum distance
+            [min_dist_p min_dist_p_index] = min(dist_p);
+
+            p=ppval(sp_zero_level,s_p_fine(min_dist_p_index));
             track_points(i,1,t) = p(1);
             track_points(i,2,t) = p(2);
         end
+    end
+    close(h_waitbar);
+    %%%%%%%%%%%%%%   End marker path integration %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
 
 
+
+
 if CONTROL
-    h_f = figure(gcf);
-    axis equal
-    axis([0 domain.x_size 0 domain.y_size]);
-    hgsave(h_f, [RESULT_DIR 'zero_level_evol.fig']);
-    print(h_f,  [RESULT_DIR 'zero_level_evol.eps'],'-depsc2','-tiff');
-    print(h_f,  [RESULT_DIR 'zero_level_evol.tif'],'-dtiff');
+    if 1
+        % if you use this you have to select the right odeset on line ~281
+        h_level_sets = figure(gcf);
+        axis equal
+        axis([0 domain.x_size 0 domain.y_size]);
+        hgsave(h_level_sets, [RESULT_DIR 'zero_level_evol.fig']);
+        print(h_level_sets,  [RESULT_DIR 'zero_level_evol.eps'],'-depsc2','-tiff');
+        print(h_level_sets,  [RESULT_DIR 'zero_level_evol.tif'],'-dtiff');
     
-    h_res = figure;
-    plot(residual);
-    xlabel('Time step');
-    ylabel('Residual')
+        h_res = figure;
+        plot(residual);
+        xlabel('Time step');
+        ylabel('Residual');
+    end
 end 
 
 
@@ -403,7 +419,8 @@ if MOVIE == 1
 end
 
 % Initialize the displacement
-protrusion = zeros((size(Y,1) - (i_end * j_end))/2,  1);
+%protrusion = zeros((size(Y,1) - (i_end * j_end))/2,  1);
+protrusion = zeros(size(track_points,1),1);
 
 for t=1:num_time_steps - 1
     % get the displacements
@@ -438,35 +455,66 @@ disp_points = [track_points(:,1,end), track_points(:,2,end)];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if CONTROL
-    % show level sets
-%     for t=1:40:num_time_steps
-%         h_s = figure;
-%         surface(domain.x_grid_lines, domain.y_grid_lines, phi(:,:,t));
-%         hold on
-%         zero_level_set_t = lsGetZeroLevel(phi(:,:,t),domain);
-%         plot(zero_level_set_t(1,:), zero_level_set_t(2,:),'g','LineWidth',2);
-%         print(h_f,  [RESULT_DIR 'level_set',num2str(t),'.tif'],'-dtiff');
-%     end
+    % show level sets. This is computationally very expensive
+    % so if you do not need it, switch it off.
+    if 0
+        for t=1:10:num_time_steps
+            h_s = figure;
+            surface(domain.x_grid_lines, domain.y_grid_lines, phi(:,:,t));
+            hold on
+            zero_level_set_t0 = lsGetZeroLevel(phi(:,:,1),domain);
+            zero_level_set_t  = lsGetZeroLevel(phi(:,:,t),domain);
+            zero_level_set_t1 = lsGetZeroLevel(phi(:,:,end),domain);
+            plot(zero_level_set_t0(1,:), zero_level_set_t0(2,:),'g','LineWidth',1);
+            plot(zero_level_set_t0(1,:), zero_level_set_t0(2,:),'g','LineWidth',1);            
+            plot(zero_level_set_t(1,:), zero_level_set_t(2,:),'g','LineWidth',2);
+            plot(zero_level_set_t(1,:), zero_level_set_t(2,:),'g','LineWidth',2);
+            plot(zero_level_set_t1(1,:), zero_level_set_t1(2,:),'r','LineWidth',2);
+            plot(zero_level_set_t1(1,:), zero_level_set_t1(2,:),'r','LineWidth',2);  
+            plot([0,0],[0 200]);
+            plot([200,200],[0 200]);
+            plot([0,200],[0 0]);
+            plot([200,0],[200 200]);
+            campos(1.0e+03 *[ 1.6544   -1.2042   -0.4867]);
+            set(gca,'ZDir','reverse')
+            axis vis3d off
+            %alpha(0.9)
+            text(20,10,40,'\phi_t');
+            text(170,120,0,'\Gamma_0');
+            text(110,175,0,'\Gamma_1');
+            text(180,160,0,'z=0');
+            print(h_s, [RESULT_DIR 'level_set',num2str(t,'%04.4d'),'.tif'],'-dtiff');
+            print(h_s, [RESULT_DIR 'level_set',num2str(t,'%04.4d'),'.eps'],'-depsc2','-tiff');
+        end
+    end
     
     % Show the time steps
-    delta_t_opt = diff(t_steps);
-    av_t_steps = mean(delta_t_opt);
-    h_time_steps = figure;
-    plot(delta_t_opt);
-    title(['Time steps,  average time step= ' num2str(av_t_steps)]);
-   
+    if 0
+        delta_t_opt = diff(t_steps);
+        av_t_steps = mean(delta_t_opt);
+        h_time_steps = figure;
+        plot(delta_t_opt);
+        title(['Time steps,  average time step= ' num2str(av_t_steps)]);
+        hgsave(h_time_steps, [RESULT_DIR 'time_steps.fig']);
+        print(h_time_steps,  [RESULT_DIR 'time_steps.eps'],'-depsc2','-tiff');
+        print(h_time_steps,  [RESULT_DIR 'time_steps.tif'],'-dtiff');
+    end
     % Show the curvature of the last distance function
-    %kappa = lsCurvature(phi(:,:,end), delta_x, delta_y, i_end, j_end);
-    %figure
-    %surface(kappa);
+    if 0
+        kappa = lsCurvature(phi(:,:,end), delta_x, delta_y, i_end, j_end);
+    	figure
+    	surface(kappa);
+    end
     
-    % Superimposed contour plots
-    h_contour = figure;
-    contour(domain.x_grid_lines, domain.y_grid_lines, phi_t0, 40);
-    hold on
-    contour(domain.x_grid_lines, domain.y_grid_lines, phi(:,:,end), 40);
-    plot(phi_zero_t0(1,:), phi_zero_t0(2,:), 'g','LineWidth',2);
-    plot(phi_zero_t1(1,:), phi_zero_t1(2,:), 'r','LineWidth',2);
+    % Superimposed contour plots (not so intressting)
+    if 0
+        h_contour = figure;
+        contour(domain.x_grid_lines, domain.y_grid_lines, phi_t0, 40);
+        hold on
+        contour(domain.x_grid_lines, domain.y_grid_lines, phi(:,:,end), 40);
+        plot(phi_zero_t0(1,:), phi_zero_t0(2,:), 'g','LineWidth',2);
+        plot(phi_zero_t1(1,:), phi_zero_t1(2,:), 'r','LineWidth',2);
+    end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -487,111 +535,61 @@ if CONTROL
     title('Tracked points');
     %legend('Zero level t0', 'Zero level t1 solution', 'Zero level t1 given',...
     %    'org. curve t0','org. curve t1')
-    
+    hgsave(h_tracked_points, [RESULT_DIR 'tracked_points.fig']);
+    print(h_tracked_points,  [RESULT_DIR 'tracked_points.eps'],'-depsc2','-tiff');
+    print(h_tracked_points,  [RESULT_DIR 'tracked_points.tif'],'-dtiff');     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    h_tracked_points2 = figure;
-    axis([0 domain.x_size 0 domain.y_size]);
-    axis equal
-    plot(x_spline_points_t0, y_spline_points_t0,'g','LineWidth',1);
-    hold on
-    plot(x_spline_points_t1, y_spline_points_t1,'r','LineWidth',1);
-%     if MOVIE == 1   
-%         i_frame = 1;     
-%         MakeQTMovie('start', [RESULT_DIR 'prot_movie1.mov']);
-%         p_max = size(track_points,3);
-%     else
-        p_max = size(track_points,1);
-%    end
-    for p = 1:p_max
-%         if MOVIE == 1
-%             plot(track_points(:,1,p), track_points(:,2,p),'.', 'MarkerSize',3);
-%             i_frame = i_frame +1;
-%             MakeQTMovie('addfigure');
-%         elseif ~ MOVIE 
-            plot(squeeze(track_points(p,1,:)), squeeze(track_points(p,2,:)));
-%        end
+    if MOVIE
+        h_tracked_points2 = figure;
+        axis([0 domain.x_size 0 domain.y_size]);
+        axis equal
+        plot(x_spline_points_t0, y_spline_points_t0,'g','LineWidth',1);
+        hold on
+        plot(x_spline_points_t1, y_spline_points_t1,'r','LineWidth',1);
+
+        i_frame = 1;
+        MakeQTMovie('start', [RESULT_DIR 'prot_movie1.mov']);
+        p_max = size(track_points,3);
+
+        for p = 1:p_max
+            plot(track_points(:,1,p), track_points(:,2,p),'.', 'MarkerSize',3);
+            i_frame = i_frame +1;
+            MakeQTMovie('addfigure');
+        end
+        MakeQTMovie('finish');
+        axis equal
+        title('Tracked points');
+        legend('Cell edge at t0','Cell edge at t1');
+        hgsave(h_tracked_points2, [RESULT_DIR 'tracked_points2.fig']);
+        print(h_tracked_points2,  [RESULT_DIR 'tracked_points2.eps'],'-depsc2','-tiff');
+        print(h_tracked_points2,  [RESULT_DIR 'tracked_points2.tif'],'-dtiff');   
     end
-%     if MOVIE == 1
-%         MakeQTMovie('finish');
-%     end
-    axis equal
-    title('Tracked points');
-    legend('Cell edge at t0','Cell edge at t1')        
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
-    % plot tracks and level sets at same time
-    figure(h_level_sets)
-    axis([0 domain.x_size 0 domain.y_size]);
-    plot(x_spline_points_t0, y_spline_points_t0,'g','LineWidth',1);
-    hold on
-    plot(x_spline_points_t1, y_spline_points_t1,'r','LineWidth',1);
-    i_frame = 1;
-    for p = 1:size(track_points,1)
-        plot(squeeze(track_points(p,1,:)), squeeze(track_points(p,2,:)), '-');
-    end
-    
-    h_tracked_points3 = figure;
-    plot(x_spline_points_t0, y_spline_points_t0,'g','LineWidth',1);
-    hold on
-    plot(x_spline_points_t1, y_spline_points_t1,'r','LineWidth',1);
-    i_frame = 1;
-    for p = 1:size(track_points,1)
-        plot(squeeze(track_points(p,1,:)), squeeze(track_points(p,2,:)), '-');
-    end    
-    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%        Time lines       %%%%%%%%%%%%%%%%%%%%%%%%%
     h_time_lines = figure;
-    
     plot(phi_zero_t0(1,:), phi_zero_t0(2,:),'g');
     hold on
     plot(phi_zero(1,:), phi_zero(2,:),'r');
     for t = 1:5:size(track_points,3)
         plot(track_points(:,1,t), track_points(:,2,t), '-');
     end
-    % if TEST_CASE == 3
-    %     plot(fnval(x_spline_tb,1: x_spline_tb.knots(end)),...
-    %          fnval(y_spline_tb,1: y_spline_tb.knots(end)) ,'y');
-    % end
     axis equal
     axis([0 domain.x_size 0 domain.y_size]);
     title('Time lines');
+    hgsave(h_time_lines, [RESULT_DIR 'time_lines.fig']);
+    print(h_time_lines,  [RESULT_DIR 'time_lines.eps'],'-depsc2','-tiff');
+    print(h_time_lines,  [RESULT_DIR 'time_lines.tif'],'-dtiff');
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     h_disp = figure;
     plot(protrusion);
     title('Protrusion [pixel/frame rate]');
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Save  results
-    hgsave(h_res, [RESULT_DIR 'residual.fig']);
-    print(h_res,  [RESULT_DIR 'residual.eps'],'-depsc2','-tiff');
-    print(h_res,  [RESULT_DIR 'residual.tif'],'-dtiff');
-    hgsave(h_level_sets, [RESULT_DIR 'super_pos.fig']);
-    print(h_level_sets,  [RESULT_DIR 'super_pos.eps'],'-depsc2','-tiff');
-    print(h_level_sets,  [RESULT_DIR 'super_pos.tif'],'-dtiff');     
-    hgsave(h_time_steps, [RESULT_DIR 'time_steps.fig']);
-    print(h_time_steps,  [RESULT_DIR 'time_steps.eps'],'-depsc2','-tiff');
-    print(h_time_steps,  [RESULT_DIR 'time_steps.tif'],'-dtiff');
-    hgsave(h_tracked_points, [RESULT_DIR 'tracked_points.fig']);
-    print(h_tracked_points,  [RESULT_DIR 'tracked_points.eps'],'-depsc2','-tiff');
-    print(h_tracked_points,  [RESULT_DIR 'tracked_points.tif'],'-dtiff');
-    hgsave(h_tracked_points2, [RESULT_DIR 'tracked_points2.fig']);
-    print(h_tracked_points2,  [RESULT_DIR 'tracked_points2.eps'],'-depsc2','-tiff');
-    print(h_tracked_points2,  [RESULT_DIR 'tracked_points2.tif'],'-dtiff');    
-    hgsave(h_tracked_points3, [RESULT_DIR 'tracked_points3.fig']);
-    print(h_tracked_points3,  [RESULT_DIR 'tracked_points3.eps'],'-depsc2','-tiff');
-    print(h_tracked_points3,  [RESULT_DIR 'tracked_points3.tif'],'-dtiff');     
-    hgsave(h_time_lines, [RESULT_DIR 'time_lines.fig']);
-    print(h_time_lines,  [RESULT_DIR 'time_lines.eps'],'-depsc2','-tiff');
-    print(h_time_lines,  [RESULT_DIR 'time_lines.tif'],'-dtiff');
     hgsave(h_disp, [RESULT_DIR 'protrusion.fig']);
     print(h_disp,  [RESULT_DIR 'protrusion.eps'],'-depsc2','-tiff');
     print(h_disp,  [RESULT_DIR 'protrusion.tif'],'-dtiff');  
-    hgsave(h_contour, [RESULT_DIR 'contour.fig']);
-    print(h_contour,  [RESULT_DIR 'contour.eps'],'-depsc2','-tiff');
-    print(h_contour,  [RESULT_DIR 'contour.tif'],'-dtiff');      
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 

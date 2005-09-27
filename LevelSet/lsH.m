@@ -1,6 +1,6 @@
 function dy_vec = lsH(t, y, val_matrix_t1, i_end, j_end, delta_x, delta_y, domain)
 
-INT_VELOCITY = 1;
+INT_VELOCITY = 0;
 
 if INT_VELOCITY
     phi_vec = y(1:i_end*j_end);
@@ -53,13 +53,13 @@ if INT_VELOCITY
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Use the matlab build-in gradient function
     %[grad_x, grad_y] = gradient(phi_t, delta_x, delta_y);
-    [grad_x, grad_y] = lsGradient(phi_t, 10, 0, delta_x, delta_y, i_end, j_end);
+    [grad_x, grad_y] = lsGradient(phi_t, 4, 0, delta_x, delta_y, i_end, j_end);
 
     % Find a B-spline interpolation of the gradient field
     grad_x_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_x');
     grad_y_spline = csapi({domain.x_grid_lines, domain.y_grid_lines}, grad_y');
-    % grad_x_spline = spapi({6 6}, {domain.x_grid_lines, domain.y_grid_lines}, grad_x');
-    % grad_y_spline = spapi({6 6}, {domain.x_grid_lines, domain.y_grid_lines}, grad_y');
+    %grad_x_spline = spapi({6 6}, {domain.x_grid_lines, domain.y_grid_lines}, grad_x');
+    %grad_y_spline = spapi({6 6}, {domain.x_grid_lines, domain.y_grid_lines}, grad_y');
 
     % Get the gradient at the track points
      track_points_grad_x = fnval(grad_x_spline, x');

@@ -12,6 +12,9 @@ if TEST_CASE == 1
    domain.x_spacing = x_s; 
    domain.y_spacing = y_s;
    
+   % supersampling coefficient
+   sc = 5;
+   
    %create circle
    circle       = rsmak('circle',50,[0, 0]);
    ellipse_t0   = fncmb(circle,[1.5 0;0 0.6]);
@@ -48,7 +51,7 @@ if TEST_CASE == 1
    [grid_coordinates, x_grid, y_grid] = lsGenerateGrid(domain);
 
    % fill the grid_line field in structure domain
-   domain = lsGenerateGridLines(domain);
+   domain = lsGenerateGridLines(domain, sc);
    
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

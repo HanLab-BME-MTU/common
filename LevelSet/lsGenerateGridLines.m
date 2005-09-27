@@ -1,5 +1,6 @@
-function [domain] = lsGenerateGridLines(domain)
+function [domain] = lsGenerateGridLines(domain, sc)
 
+% sc: supersampling coefficient
 
 index = 1;
 for i_x = 1: domain.x_spacing : domain.x_size
@@ -14,8 +15,6 @@ for i_y = 1:domain. y_spacing : domain.y_size
 end
 
 % generate fine grid linesindex = 1;
-% supersampling coefficient
-sc = 5;
 for i_x = 1: domain.x_spacing/sc : domain.x_size
     domain.x_grid_lines_f(index) = i_x;
     index = index+1;   
