@@ -34,7 +34,11 @@ if nargin < 2 | rem(nargin-2,2) ~= 0
    error('Wrong number of input arguments.');
 end
 
-outlierThreshold = 4;
+if length(v1) <= 10
+   outlierThreshold = 6;
+else
+   outlierThreshold = 4;
+end
 figH             = [];
 
 if nargin > 2 
@@ -83,12 +87,29 @@ end
 % the two independent random variables.
 %
 
-numIterations = 2;
+%Default output.
+inlier  = 1:length(v1);
+outlier = [];
 
-inlier = 1:length(v1);
+exEllipse.center = NaN;
+exEllipse.r1     = NaN;
+exEllipse.r2     = NaN;
+exEllipse.axis1  = NaN;
+exEllipse.axis2  = NaN;
+exEllipse.angle  = NaN;
+
+if length(v1) < 3
+   return;
+end
+
+numIterations = 2;
 for k = 1:numIterations
    %Calculate the covariance matrix.
    covM = cov(v1(inlier),v2(inlier));
+
+   if size(covM,1) == 1
+      return;
+   end
 
    % 'S' is the linear transformation.
    [S,D] = eig(covM);
@@ -107,6 +128,10 @@ for k = 1:numIterations
 
    var1 = D(1,1);
    var2 = D(2,2);
+
+   if var1 == 0
+      return;
+   end
 
    %The two axes of the ellipse.
    eAxis1 = S(:,1);
@@ -130,7 +155,11 @@ for k = 1:numIterations
    % the ellipse. First, map all the (v1,v2) to the two independent random 
    % variables.
    randV = S.'*([v1-v1Mean; v2-v2Mean]);
-   eDist = sqrt(randV(1,:).^2/var1 + randV(2,:).^2/var2);
+   if var2 == 0
+      eDist = sqrt(randV(1,:).^2 + randV(2,:).^2)/var1;
+   else
+      eDist = sqrt(randV(1,:).^2/var1 + randV(2,:).^2/var2);
+   end
 
    if k == 1
       inlier  = find(eDist<=2*outlierThreshold);
@@ -154,8 +183,8 @@ end
 if ishandle(figH)
    figure(figH); hold off;
 
-   plot(v1(corrInd),v2(corrInd),'.'); hold on;
-   plot(v1(outlierInd),v2(outlierInd),'r.');
+   plot(v1(inlier),v2(inlier),'.'); hold on;
+   plot(v1(outlier),v2(outlier),'r.');
 
    plotellipse(eCenter,outlierThreshold*r1,outlierThreshold*r2,eAngle,'m');
 

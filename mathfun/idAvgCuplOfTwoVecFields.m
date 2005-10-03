@@ -100,14 +100,15 @@ S.dAngl    = NaN;
 S.aCohrS   = NaN;
 S.hCohrS   = NaN;
 S.cohrPPLP = 0;
+S.inlier   = [];
 
 %Remove NaN from Va and Vh.
-nanInd = find(isnan(Va(:,1)) | isnan(Va(:,2)) | ...
-   isnan(Vh(:,1)) | isnan(Vh(:,2)) | isnan(Vc(:,1)) | isnan(Vc(:,2)));
-Va(nanInd,:) = [];
-Vh(nanInd,:) = [];
-Vc(nanInd,:) = [];
-P(nanInd,:)  = [];
+numInd = find(~isnan(Va(:,1)) & ~isnan(Va(:,2)) & ...
+   ~isnan(Vh(:,1)) & ~isnan(Vh(:,2)) & ~isnan(Vc(:,1)) & ~isnan(Vc(:,2)));
+Va = Va(numInd,:);
+Vh = Vh(numInd,:);
+Vc = Vc(numInd,:);
+P  = P(numInd,:);
 
 if isempty(Va)
    return;
@@ -200,6 +201,7 @@ if isinf(bSize) | isnan(bSize)
 else
    infLen = bSize/2;
 end
+
 rawAInd = find(rawPa(:,1)<maxX+infLen & ...
    rawPa(:,1)>minX-infLen & ...
    rawPa(:,2)<maxY+infLen & ...
@@ -257,6 +259,13 @@ if ~isempty(nzInd)
    unitRawVh(nzInd,2) = rawVh(nzInd,2)./rawHSpd(nzInd);
 end
 
+%If Scaling is 'on', we scale 'Va' and 'Vh' so that coupling of different
+% speed population are equally weighted. 
+%
+%Note that we divide by 'aSpd+hSpd' to avoid dividing by a very small
+% number. Since the two channels are divided by the same number,
+% it will not affect the calculated average coupling.
+%
 %Note: Before rotation, rotVc (or rotVa or rotVh) means the scaled Vc if
 % scaling is on. Otherwise, it is the same as Vc.
 rotVc = Vc;
@@ -270,10 +279,6 @@ if strcmp(scaling,'on')
       rotVc(nzInd,2) = Vc(nzInd,2)./cSpd(nzInd);
    end
 
-   %We also scale 'Va' and 'Vh' so that coupling of different speed population
-   % are equally weighted. Note that we divide by 'aSpd+hSpd' to avoid
-   % dividing by a very small number. Since the two channels are divided by
-   % the same number, it will not affect the calculated average coupling.
    bgSpdInd = find(aSpd>smSpdThreshold);
    smSpdInd = find(aSpd<=smSpdThreshold);
    
@@ -319,6 +324,7 @@ if isinf(corLen) | (maxX-minX <= bSize & maxY-minY <= bSize)
    end
 
    S.cohrPPLP = 1;
+   S.inlier   = numInd;
 else
    if isempty(img)
       x = minX-corLen:2*corLen:maxX+3*corLen;
@@ -839,6 +845,7 @@ else
    S.cohrPPLP = length(vecSet.inlier)/size(rotVa,1);
    rotVa = rotVa(vecSet.inlier,:);
    rotVh = rotVh(vecSet.inlier,:);
+   S.inlier = numInd(vecSet.inlier);
 end
 
 %%% Assemble Data.
