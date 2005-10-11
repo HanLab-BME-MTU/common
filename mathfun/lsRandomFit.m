@@ -59,7 +59,7 @@ if ~strcmp(model,'linear') & ~strcmp(model,'bspline')
    error('The specified fitting model is not recognized.');
 end
 
-if isempty(v1) | isempty(v2)
+if length(v1) < 3 | length(v2) < 3
     sp     = [];
     errStd = [];
     errV   = [];
