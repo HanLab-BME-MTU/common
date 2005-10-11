@@ -6,7 +6,7 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC)
 % linked at all. The cost associated with the link from element i of A to
 % element j of B is given by cc(i,j).
 %
-% SYNOPSIS [x, y] = lap(cc, NONLINK_MARKER, extendedTesting)
+% SYNOPSIS [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC)
 %
 % INPUT:  cc: cost matrix, which has to be square. Set cost(i,j) to the
 %             value of NONLINK_MARKER, if the link is not allowed. cc can

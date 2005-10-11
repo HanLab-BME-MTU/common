@@ -1,10 +1,12 @@
 function dm = distMat2(A,B,metric);
-%DISTMAT computes the distance matrix of two point sets
+%DISTMAT2 computes the distance matrix of two point sets
 %
-% SYNOPSIS dm = distMat(M);
+% SYNOPSIS dm = distMat2(A,B,metric);
 %
-% INPUT:  M: an S x T matrix where the # of columns is the # of dimensions
-%            and  the # of rows is the # of points
+% INPUT:  A, B: Arrays containg rowA, rowB points with nCol dimensions.
+%         metric (optional): weight of the dimensions
+%
+% OUTPUT: dm: rowA-by-rowB array of distances between points in A and B
 %
 % c: 18/09/01   dT
 
@@ -24,11 +26,13 @@ end
 
 dm=zeros(mA,mB);
 
-I=[1:mA]'*ones(1,mB);
+[I,J]=ndgrid(1:mA,1:mB);
 I=I(:);
-J=ones(mA,1)*[1:mB];
 J=J(:);
 
+% repeat the entries in A and B so that we'll take the difference between
+% all of them
 Y = (A(I,:)-B(J,:))';
-I = []; J = []; p = [];  % no need for I J p any more.
+
+% calculate distance as the rood of the squared sum
 dm(:)=sqrt(diag(Y'*metric*Y))';

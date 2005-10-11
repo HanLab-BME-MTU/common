@@ -1,20 +1,26 @@
-function [cutoffIndex, cutoffValue] = cutFirstMode(varargin);
-%CUTFIRSTMODE finds the end of the first mode in a histogram
+function [cutoffIndex, cutoffValue] = cutFirstHistMode(varargin);
+%CUTFIRSTHISTMODE finds the end of the first mode in a histogram
 %
-% cutFirstMode is an implementation of the algorithm presented in "unimodal
-% thresholding" by P.L. Rosin, Pattern Recognition (2001); 34:2083. It
-% assumes  that the first mode in the histogram (noise/background values
+% cutFirstHistMode is an implementation of the algorithm presented in "uni-
+% modal thresholding" by P.L. Rosin, Pattern Recognition (2001); 34:2083.
+% It assumes  that the first mode in the histogram (noise/background values
 % for most applications) is strongest, and places the cutoff where distance
 % between the line from the largest bin in the first mode to the first
 % empty bin after the last nonempty bin and the histogram is largest.
 %
-% SYNOPSIS [cutoffIndex, cutoffValue] = cutFirstMode(counts, bins);
-%          [cutoffIndex, cutoffValue] = cutFirstMode(data);
+% SYNOPSIS [cutoffIndex, cutoffValue] = cutFirstHistMode(counts, bins);
+%          [cutoffIndex, cutoffValue] = cutFirstHistMode(data);
+%          [...] = cutFirstHistMode(...,verbose)
 %
 % INPUT    counts, bins : counts in and center of histogram bins (output
-%               of functions such as "hist" or "histogram"
+%               of functions such as "hist" or "histogram". There has to be
+%               more than one bin.
 %          alternatively, you can pass the data directly, and the program
 %               set up the histogram
+%
+%          verbose (optional) decides whether the function will open a
+%               figure or not (default = 1).
+%
 %
 % OUTPUT   cutoffIndex : Index into list of bins/data of the placement of
 %               cutoff
@@ -35,11 +41,18 @@ function [cutoffIndex, cutoffValue] = cutFirstMode(varargin);
 % TEST INPUT
 %======================
 
-switch nargin
+% defaults
+verbose = 1;
+
+switch nargin - isscalar(varargin{end})
     case 1 % data
         doHistogram = 1;
         data = varargin{1};
         data = data(:);
+
+        if nargin == 2
+            verbose = varargin{2};
+        end
 
     case 2 % conts,bins
         doHistogram = 0;
@@ -49,8 +62,12 @@ switch nargin
         bins = bins(:);
         nBins = length(bins);
 
+        if nargin == 3
+            verbose = varargin{3};
+        end
+
     otherwise
-        error('wrong number of input arguments')
+        error('wrong number of input arguments or non-scalar ''verbose''')
 end
 
 %===========================
@@ -67,18 +84,18 @@ if doHistogram
     % horizontal. The number-count becomes counts, the actual value becomes the
     % bin position
     % we still need a histogram to find the maximum!
-    
+
     [bins,sortIdx] = sort(data(:));
     [counts] = histogram(bins);
     [maxVal, maxIdx] = max(counts);
     bins = bins(maxIdx:end);
     nBins = length(bins);
     counts = [nBins:-1:1]';
-    figure, plot(bins,counts)
+
 else
-[maxVal, maxIdx] = max(counts);
-% update nBins
-nBins = nBins - maxIdx + 1;
+    [maxVal, maxIdx] = max(counts);
+    % update nBins
+    nBins = nBins - maxIdx + 1;
 end
 %=========================
 
@@ -116,23 +133,28 @@ cutoffIndex = maxDistanceIdx + maxIdx - 1;
 cutoffValue = bins(cutoffIndex);
 
 if doHistogram
-    % we have to transform these values to match data point. Take the one
-    % that is just above the cutoffValue
-    %     delta = data-cutoffValue;
-    %     positiveDeltaIdx = find(delta >= 0);
-    %     [minPositiveDelta, minPositiveDeltaIdx] = min(delta(positiveDeltaIdx));
-    %
-    %     cutoffValue = data(positiveDeltaIdx(minPositiveDeltaIdx));
-    %     cutoffIndex = positiveDeltaIdx(minPositiveDeltaIdx);
 
-    % to find the value in the cumulative histogram, we just have to transform
+    % to find the cutoff in the cumulative histogram, we just have to transform
     % the index
-     hold on
-    plot([cutoffValue,cutoffValue],[0,nBins],'r')
     cutoffIndex = sortIdx(cutoffIndex + maxIdx - 1);
+
+    % for plotting: stuff stolen from plotyy
+    if verbose
+        fig =figure;
+        set(fig,'NextPlot','add')
+        histogram(data)
+        ax(1) = gca;
+        ax(2) = axes('Units',get(ax(1),'Units'), ...
+            'Position',get(ax(1),'Position'),'Parent',fig);
+        plot(ax(2),bins,counts,'g',[cutoffValue,cutoffValue],[0,nBins],'r')
+        set(ax(2),'YAxisLocation','right','Color','none','YColor','g')
+        set(ax,'Box','off');
+    end
+    
 else
-    figure,bar(bins,counts),hold on, 
-    plot([cutoffValue,cutoffValue],[0,maxVal],'r')
-   
+    if verbose
+        figure,bar(bins,counts),hold on,
+        plot([cutoffValue,cutoffValue],[0,maxVal],'r')
+    end
 
 end
