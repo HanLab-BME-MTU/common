@@ -85,17 +85,32 @@ if doHistogram
     % bin position
     % we still need a histogram to find the maximum!
 
-    [bins,sortIdx] = sort(data(:));
-    [counts] = histogram(bins);
-    [maxVal, maxIdx] = max(counts);
-    bins = bins(maxIdx:end);
-    nBins = length(bins);
-    counts = [nBins:-1:1]';
+    %     [bins,sortIdx] = sort(data(:));
+    %     [counts] = histogram(bins);
+    %     [maxVal, maxIdx] = max(counts);
+    %     bins = bins(maxIdx:end);
+    %     nBins = length(bins);
+    %     counts = [nBins:-1:1]';
+    
+    % the continuous histogram can potentially place the maximum elsewhere
+    % (where it might belong, but that's not the point)
+    % Do discrete histogram first, find max-bin, and then look for the
+    % maximum in the continuous histogram only up to the end of the
+    % maxBin+0.5
+    [counts, bins] = histogram(data);
+    [dummy,maxBinIdx] = max(counts);
+    maxBinValue = bins(maxBinIdx + 1);
+    
 
+    % continuous histogram
+    [counts,bins] = histogram(data,'smooth');
+    nBins = length(bins);
+    
+    % find maximum between bin 1 and the one with maxBinValue
+    [maxVal, maxIdx] = max(counts(bins < maxBinValue));
+    
 else
     [maxVal, maxIdx] = max(counts);
-    % update nBins
-    nBins = nBins - maxIdx + 1;
 end
 %=========================
 
@@ -106,9 +121,14 @@ end
 
 % for the line, we need the position of the maximum count and the position
 % of the first empty bin following the last nonempty bin
-[maxVal, maxIdx] = max(counts);
-pointMax = [bins(maxIdx), maxVal];
-pointEnd = [bins(end) + median(diff(bins)), 0];
+
+% normalize counts and bins to go from 0 to 1.
+countsN = counts / maxVal;
+binsN = bins / max(abs(bins));
+
+nBins = nBins - maxIdx + 1;
+pointMax = [binsN(maxIdx), 1]; % maxVal = 1 now
+pointEnd = [binsN(end) + median(diff(binsN)), 0];
 
 
 % calculate perpendicular distance to the line
@@ -116,8 +136,11 @@ vector = pointEnd-pointMax;
 [dummy,vector] = normList(vector);
 distanceVector = perpVector(...
     repmat(pointMax,[nBins,1]),repmat(vector,[nBins,1]),...
-    [bins(maxIdx:end),counts(maxIdx:end)]);
+    [binsN(maxIdx:end),countsN(maxIdx:end)]);
 distance = normList(distanceVector);
+
+% put distance = 0 wherever the contHistogram is above the line
+distance(all(distanceVector>0,2)) = 0;
 
 % find maximum
 [maxDistance, maxDistanceIdx] = max(distance);
@@ -134,10 +157,6 @@ cutoffValue = bins(cutoffIndex);
 
 if doHistogram
 
-    % to find the cutoff in the cumulative histogram, we just have to transform
-    % the index
-    cutoffIndex = sortIdx(cutoffIndex + maxIdx - 1);
-
     % for plotting: stuff stolen from plotyy
     if verbose
         fig =figure;
@@ -146,11 +165,11 @@ if doHistogram
         ax(1) = gca;
         ax(2) = axes('Units',get(ax(1),'Units'), ...
             'Position',get(ax(1),'Position'),'Parent',fig);
-        plot(ax(2),bins,counts,'g',[cutoffValue,cutoffValue],[0,nBins],'r')
-        set(ax(2),'YAxisLocation','right','Color','none','YColor','g')
+        plot(ax(2),bins,counts,'r',[cutoffValue,cutoffValue],[0,max(counts)],'-.r')
+        set(ax(2),'YAxisLocation','right','Color','none','YColor','r')
         set(ax,'Box','off');
     end
-    
+
 else
     if verbose
         figure,bar(bins,counts),hold on,
