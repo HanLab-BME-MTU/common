@@ -85,7 +85,7 @@ elseif length(scc) > 2
 else
     % if we're augmenting, sparse matrices are produced. This will be
     % problematic with cost 0
-    if any(cc(:)==0)
+    if any(cc(:)==0) && ~issparse(cc)
         validCC = cc ~= NONLINK_MARKER;
         if any(any(cc(validCC))) < 0
             warning('there are negative costs. This could lead to errors')
