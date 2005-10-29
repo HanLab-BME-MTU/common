@@ -8,13 +8,23 @@ function [N,X,sp] = histogram(data,factor)
 % INPUT    data: vector of input data
 %          factor: (opt) factor by which the bin-widths are multiplied
 %                   if "smooth", a smooth histogram will be formed.
+%                   (requires the spline toolbox)
 %
 % OUTPUT   N   : number of points per bin (value of spline)
 %          X   : center position of bins (sorted input data)
 %          sp  : definition of the smooth spline
 %
-% REMARKS: When a smooth histogram is calculated, the shape is very nice,
-%           but the counts seem quite off
+% REMARKS: The smooth histogram is formed by calculating the cumulative
+%           histogram, fitting it with a smoothening spline and then taking
+%           the analytical derivative. If the number of data points is
+%           markedly above 1000, the spline is fitting the curve too
+%           locally, so that the derivative can have huge peaks. Therefore,
+%           only 1000-1999 points are used for estimation.
+%           Note that the integral of the spline is almost exactly the
+%           total number of data points. For a standard histogram, the sum
+%           of the hights of the bins (but not their integral) equals the
+%           total number of data points. Therefore, the counts might seem
+%           off.
 %
 % c: 2/05 jonas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -70,8 +80,15 @@ else
     xData = sort(data);
     yData = 1:nData;
     
+    % when using too many data points, the spline fits very locally, and
+    % the derivatives can still be huge. Good results can be obtained with
+    % 500-1000 points. Use 1000 for now
+    step = max(floor(nData/1000),1);
+    xData2 = xData(1:step:end);
+    yData2 = yData(1:step:end);
+    
     % spline. Use strong smoothing
-    cdfSpline = csaps(xData,yData,1./(1+mean(diff(xData))^3/0.0006));
+    cdfSpline = csaps(xData2,yData2,1./(1+mean(diff(xData2))^3/0.0006));
     
     % pdf is the derivative of the cdf
     pdfSpline = fnder(cdfSpline);

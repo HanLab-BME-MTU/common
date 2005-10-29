@@ -28,7 +28,7 @@ function [x,dx,mse] = myLscov(A,b,V)
 %   To get the a priori variance (diagonal elements of Q, diag(inv(A'PA)),
 %   use dx^2/mse)
 %
-%   See also SLASH, LSQNONNEG, QR.
+%   See also SLASH, LSQNONNEG, QR, or LSCOV for Matlab7
 
 %   References:
 %       G. Strang, "Introduction to Applied Mathematics",
@@ -43,6 +43,27 @@ function [x,dx,mse] = myLscov(A,b,V)
 %   Copyright 1984-2002 The MathWorks, Inc. 
 %   $Revision: 5.15 $  $Date: 2002/04/08 23:51:49 $
 %   changed by jonas
+%   9/05: made into wrapper for the Matlab7 lscov
+
+
+% if we're in Matlab 7: Use the built-in lscov
+ver=version;
+if str2double(ver(1))>=7
+    [m,n] = size(A);
+    sv = size(V);
+    if ~isequal(sv,[m m]),
+        if any((sv == m)) && any(sv==1)
+            % vector input for lscov7 assumes weights as inverse V
+            V = 1./V(:);
+        else
+            error(sprintf('V must be a %d-by-%d matrix.',m,m));
+        end
+    end
+    [x,dx,mse] = lscov(A,b,V);
+    return
+end
+
+% Matlab 6
 
 [m,n] = size(A);
 

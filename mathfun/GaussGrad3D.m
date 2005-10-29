@@ -93,9 +93,9 @@ dez = diff(exp(-z.^2/2))/(sqrt(2*pi)*sigma(3));
 dxy = dex'*ey;
 xdy = ex'*dey;
 xy=ex'*ey;
-gaussGradX(:) = dxy(:) * ez;
-gaussGradY(:) = xdy(:) * ez;
-gaussGradZ(:) = xy(:) * dez;
+gaussGradX(:) = -dxy(:) * ez;
+gaussGradY(:) = -xdy(:) * ez;
+gaussGradZ(:) = -xy(:) * dez;
 
 
 % norm Gauss

@@ -85,6 +85,9 @@ switch nDims
         error('imNoiseEstime needs a 2-3D array as input image')
 end
 
+% reclaim memory
+[fx,fy, fz, auxImg] = deal([]);
+
 % sort and remove non-zero or NaN elements from gradMag
 gradMag = gradMag(:); % make vector
 gradMag = sort(gradMag( (gradMag~=0 & ~isnan(gradMag)) ));
@@ -96,20 +99,19 @@ gradMag = sort(gradMag( (gradMag~=0 & ~isnan(gradMag)) ));
 % be where the values lie closest together. Taking the mean of the
 % gradients corresponding to the pair will give us an estimate of the peak
 % of the histogram. Rinse, repeat for n times.
+
 n = 10;
 windowStart = [0,floor([.1:.4/(n-2):.5]*length(gradMag))];
 idxVector = [1:floor(length(gradMag)/2)]';
-idxMatrix = repmat(idxVector,[1,n]) + ...
-    repmat(windowStart,[length(idxVector),1]);
 
-dataMatrix = gradMag(idxMatrix);
-differenceMatrix = dataMatrix(:,2:end) - repmat(dataMatrix(:,1),[1,n-1]);
-[minDifference, minIdx] = min(differenceMatrix,[],1);
-
+% loop (for memory reasons - it's actually not really slower!)
 maxVal = zeros(n-1,1);
 for i=1:n-1
+    differenceVector = gradMag(idxVector + windowStart(i+1)) - ...
+        gradMag(idxVector);
+    [minDifference, minIdx] = min(differenceVector);
     % maximum is in the middle between the two bounding values
-maxVal(i) = mean(dataMatrix(minIdx(i),[1,i+1]));
+    maxVal(i) = mean(gradMag(minIdx + windowStart([1,i+1])));
 end
 
 % average the maxVals for an estimate of the maximum of the mode

@@ -23,15 +23,22 @@ function m=missingIndices(v,n)
 % Make sure v is sorted and does not contain repetitions
 v=unique(sort(v));
 
-% Initialize index vector
-m=[];
+% make vector with 1 where we have a value, 0 where it's missing
+fullVector = zeros(n,1);
+fullVector(v) = 1;
+% find the missing indices
+m = find(~fullVector);
 
-% Find missing entries
-c0=0;
-for c1=1:n
-    if isempty(find(v==c1))
-        c0=c0+1;   
-        m(c0)=c1;
-    end
-end
+% old version
+% % Initialize index vector
+% m=[];
+% 
+% % Find missing entries
+% c0=0;
+% for c1=1:n
+%     if isempty(find(v==c1))
+%         c0=c0+1;   
+%         m(c0)=c1;
+%     end
+% end
    

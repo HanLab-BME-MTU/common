@@ -88,8 +88,8 @@ dex = diff(exp(-x.^2/2))/(sqrt(2*pi)*sigma(1));
 dey = diff(exp(-y.^2/2))/(sqrt(2*pi)*sigma(2));
 
 % construct the 3D matrices
-gaussGradX = dex'*ey;
-gaussGradY = ex'*dey;
+gaussGradX = -dex'*ey;
+gaussGradY = -ex'*dey;
 
 
 
