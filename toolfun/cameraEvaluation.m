@@ -1,4 +1,4 @@
-function [averageImage,sdImage,hotImage,xPattern, yPattern, xPattern2, yPattern2]=cameraEvaluation(darkFrames)
+function [averageImage,sdImage,hotImage,xPattern, yPattern, xPattern2, yPattern2]=cameraEvaluation(darkFrames, testDynamicPattern, borderPercent)
 %CAMERAEVALUATION tests cameras for static and dynamic patterns
 %
 % The code performs an analysis on a series of dark images. 
@@ -16,10 +16,20 @@ function [averageImage,sdImage,hotImage,xPattern, yPattern, xPattern2, yPattern2
 %       graphs), there is a correlation.
 %       The code writes the number of hot pixels to the commandline.
 %
-% SYNOPSIS testCamera(darkFrames)
+% SYNOPSIS [averageImage,sdImage,hotImage,xPattern, ...
+%               yPattern, xPattern2, yPattern2]= ...
+%               cameraEvaluation(darkFrames, ...
+%               testDynamicPattern, borderPercent) 
 %
 % INPUT    darkFrames : 3D, 4D or 5D image stack (will be converted to a 3D
 %                       image stack) 
+%          testDynamicPattern : (opt) whether to test for a dynamic pattern
+%                       (significant autocorrelation left after the average
+%                       image has been subtracted and the standard
+%                       deviation has been normalized). [0/{1}]
+%          borderPercent : (opt) how many percent of the image should be
+%                       cut off from each border for the second round of
+%                       dynamic testing [20]
 %
 % OUTPUT   averageImage : average of the image series
 %          sdImage      : standard deviation of the image series
@@ -31,8 +41,18 @@ function [averageImage,sdImage,hotImage,xPattern, yPattern, xPattern2, yPattern2
 % c: jonas, 10/05
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% parameters
-borderPercent = 20;
+% TEST INPUT
+
+% default parameters
+def_borderPercent = 20;
+def_testDynamicPattern = 1;
+
+if nargin < 2 || isempty(testDynamicPattern)
+    testDynamicPattern = def_testDynamicPattern;
+end
+if nargin < 3 || isempty(borderPercent)
+    borderPercent = def_borderPercent);
+end
 
 % convert image
 movieSize = size(darkFrames);
@@ -95,6 +115,12 @@ darkFrames = darkFrames ./ repmat(sdImage,[1,1,movieSize(3)]);
 % figure('Name','Std corrected background')
 % histogram(correctedSdImage(:));
 
+if ~testDynamicPattern
+    
+    % assign empty output
+    [xPattern, yPattern, xPattern2, yPattern2] = deal([]);
+    
+else % test the dynamic pattern
 
 % get dynamic pattern. Do either 10 times the number of pixels along the
 % longer side of the image, or half the total number of pixels in the image
@@ -176,6 +202,7 @@ if all(xPercent > 2)
     plot([0:nCorr-1],0.05*ones(nCorr,1),'r')
 end
 
+end % if testDynamicPattern
 
 % display number of hot pixels
 disp(sprintf('Number of hot pixels: %i (%2.3f)',numberOfHotPixels, ...
