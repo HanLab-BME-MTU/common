@@ -51,7 +51,7 @@ if nargin < 2 || isempty(testDynamicPattern)
     testDynamicPattern = def_testDynamicPattern;
 end
 if nargin < 3 || isempty(borderPercent)
-    borderPercent = def_borderPercent);
+    borderPercent = def_borderPercent;
 end
 
 % convert image
@@ -63,12 +63,10 @@ movieSize = size(darkFrames);
 averageImage = mean(darkFrames,3);
 sdImage = std(darkFrames,0,3);
 
-[robMean, dummy, inlierIdx] = robustMean(averageImage(:));
-[robStd] = robustMean(sdImage(:));
-outlierIdx = missingIndices(inlierIdx,prod(movieSize(1:2)));
-hotImage = zeros(movieSize(1:2));
-hotImage(outlierIdx) = 1;
-hotImage = logical(hotImage);
+[robMean] = robustMean(averageImage(:));
+[robStd, dummy, inlierIdx] = robustMean(sdImage(:));
+
+hotImage = averageImage > (robMean + 10 * robStd/sqrt(movieSize(3)));
 numberOfHotPixels = nnz(hotImage);
 ratioOfHotPixels = numberOfHotPixels/prod(movieSize(1:2));
 
@@ -76,8 +74,8 @@ ratioOfHotPixels = numberOfHotPixels/prod(movieSize(1:2));
 % correct averageImage, stdImage for hot pixels
 averageImageC = averageImage;
 averageImageC(hotImage) = robMean;
-sdImageC = sdImage;
-sdImageC(hotImage) = robStd;
+sdImageC = robStd * ones(movieSize(1:2));;
+sdImageC(inlierIdx) = sdImage(inlierIdx);
 
 uiViewPanel;
 imshow(averageImageC,[]);
@@ -205,6 +203,6 @@ end
 end % if testDynamicPattern
 
 % display number of hot pixels
-disp(sprintf('Number of hot pixels: %i (%2.3f)',numberOfHotPixels, ...
+disp(sprintf('Number of hot pixels: %i (%2.3f%%)',numberOfHotPixels, ...
     100*ratioOfHotPixels));
 

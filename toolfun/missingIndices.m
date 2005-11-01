@@ -21,7 +21,7 @@ function m=missingIndices(v,n)
 % Aaron Ponti, March 3rd, 2003
 
 % Make sure v is sorted and does not contain repetitions
-v=unique(sort(v));
+v=unique(v); % (unique sorts!)
 
 % make vector with 1 where we have a value, 0 where it's missing
 fullVector = zeros(n,1);
