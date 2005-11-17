@@ -65,6 +65,8 @@ function[cpar1,cpar2, cpar3,pvr,dpvr]=clusterQuantRipleyMC(mpm,imsizex,imsizey,n
 %                                                
 %
 % Dinah Loerke, last update: July 16th
+%               last upgrade (to fix uncertainties in teh border
+%               correction) November 17, 2005
 
 
 
@@ -138,8 +140,11 @@ matt=zeros(nx,2);
 
 corrVar = 0;
 if nargin > 5
-    if (corrVar == 'flip')
+    if (corr == 'flip')
         corrVar = 1;
+        disp('edge correction: toroidal (flip image over edge)');
+    else
+        disp('edge correction: Ripley (weigh with ratio of circumference inside image)');
     end
 end
 
@@ -315,11 +320,11 @@ end
 %restCSiz is the first point for which the function drops below zero again,
 %i.e. something like the maximum cluster size at rest
 
-h = waitbar(0,'parameter calculation');
+%hwb = waitbar(0,'parameter calculation');
 
     
 for k=1:numframes
-    waitbar(k/numframes);
+    %waitbar(k/numframes);
     tempnp=numcells(k);
     % calculate cluster parameters in subfunctions for original and
     % simulated pvr
@@ -329,7 +334,7 @@ for k=1:numframes
     [cpar1_growthCorr(k),cpar2_growthCorr(k),cpar3_growthCorr(k)]=clusterpara(dpvr_growthCorr(:,k),matsiz,cellDiam,restCSiz);
     
 end % of for
-close(h);
+%close(hwb);
 %h2 = figure;
 
 %=========================================================================
@@ -403,16 +408,16 @@ cpar1_growthCorrSmooth(l1+1:numframes)=cpar1_growthCorrSmooth(l1);
 %uncomment the following paragraphs to display results, don't forget the
 %trailing line 415
 
-% figure
-% plot(cpar3,'ro');
-% axis([0 numframes 0 2]);
-% hold on
-% plot(cpar3_growthCorr,'b-');
+figure
+plot(cpar3,'ro');
+axis([0 numframes -0.5 1.5]);
+hold on
+plot(cpar3_growthCorr,'b-');
 
 cpar3=cpar3./cpar3_growthCorrSmooth;
 cpar1=cpar1./cpar1_growthCorrSmooth;
 
-% plot(cpar3,'g.');
+plot(cpar3,'g.');
 
 
 
@@ -545,18 +550,18 @@ parIntegral = sum(Hr(restZeroCross:restZeroCross+intlength));
 % %% ===========================================================
 %      
 %           
-% %      plot(filtervec,'b-');
-% %      axis([ 0 ipdist+20 -2000 17000]);
-% %      hold on
-% %      ypts=[filtervec(cellDiam) filtervec(ipdist)];
-% %      xpts=[cellDiam ipdist];
-% %      plot(xpts, ypts, 'r.');
-% %      ypts2=[filtervec(restZeroCross)];
-% %      xpts2=[restZeroCross];
-% %      plot(xpts2, ypts2, 'g.');
-% %      
-% %      pause(0.05);
-% %      hold off;
+     plot(filtervec,'b-');
+     axis([ 0 ipdist+20 -2000 17000]);
+     hold on
+     ypts=[filtervec(cellDiam) filtervec(ipdist)];
+     xpts=[cellDiam ipdist];
+     plot(xpts, ypts, 'r.');
+     ypts2=[filtervec(restZeroCross)];
+     xpts2=[restZeroCross];
+     plot(xpts2, ypts2, 'g.');
+     
+     pause(0.05);
+     hold off;
 %     
 % else
 %     firstpoint=NaN;
@@ -710,9 +715,7 @@ for r=rs:-1:1
     
     
     num(r)=sum(thresh_mdistones(:))/2;  
-    %weight every counted point with the circumference correction factor
-    %calculated previously in corrFacMat
-    tempfinal=thresh_mdistones./corrFacMat;    
+       
     %sum over entire matrix to get number of points
     npv=sum(tempfinal(:));
     
