@@ -98,7 +98,8 @@ if doHistogram
     % maximum in the continuous histogram only up to the end of the
     % maxBin+0.5
     [counts, bins] = histogram(data);
-    [dummy,maxBinIdx] = max(counts);
+    % the last bin cannot become the maximum
+    [dummy,maxBinIdx] = max(counts(1:end-1));
     maxBinValue = bins(maxBinIdx + 1);
     
 

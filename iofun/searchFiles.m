@@ -40,13 +40,13 @@ if nargin<1|isempty(includeString)
 end
 
 %includeString
-if ~isstr(includeString)
+if ~ischar(includeString)
     error('includeString has to be a string')
 end
 
 %excludeString
 if nargin>1&~isempty(excludeString)
-    if ~isstr(excludeString)
+    if ~ischar(excludeString)
         error('excludeString has to be a string')
     end
 else
@@ -79,7 +79,10 @@ end
 if nargin<5|isempty(selectionMode)
     selectionMode = 'all';
 else
-    if ~(strcmp(selectionMode,'new')+strcmp(selectionMode,'old')+strcmp(selectionMode,'GUI')+strcmp(selectionMode,'all'))
+    if ~any([strcmp(selectionMode,'new'),...
+            strcmp(selectionMode,'old'),...
+            strcmp(selectionMode,'GUI'),...
+            strcmp(selectionMode,'all')])
         error('wrong selectionMode')
     end
 end
