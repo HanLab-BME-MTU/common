@@ -133,18 +133,28 @@ for iData = 1:nData
         for gj = gi-1:-1:1
 
             % test 1: below diagonal
+            try
             pValue = test(dataStructure(gi).(dataNames{iData}),...
                 dataStructure(gj).(dataNames{iData}),...
                 testStructure.(dataNames{iData})(1),...
                 groupMeans([gi,gj],iData,:));
             compMatrices.(dataNames{iData})(gi,gj) = pValue;
+            catch
+                warning('data sets %i and %i could not be compared %s',...
+                    gi,gj,lasterr)
+            end
 
             % test 2: above diagonal
+            try
             pValue = test(dataStructure(gi).(dataNames{iData}),...
                 dataStructure(gj).(dataNames{iData}),...
                 testStructure.(dataNames{iData})(2),...
                 groupMeans([gi,gj],iData,:));
             compMatrices.(dataNames{iData})(gj,gi) = pValue;
+            catch
+                warning('data sets %i and %i could not be compared %s',...
+                    gi,gj,lasterr)
+            end
 
         end
     end

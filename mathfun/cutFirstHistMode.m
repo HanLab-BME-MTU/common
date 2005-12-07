@@ -44,6 +44,9 @@ function [cutoffIndex, cutoffValue] = cutFirstHistMode(varargin);
 % defaults
 verbose = 1;
 
+% goodDataIdx is used in case data contains nans
+goodDataIdx = [];
+
 switch nargin - isscalar(varargin{end})
     case 1 % data
         doHistogram = 1;
@@ -52,6 +55,14 @@ switch nargin - isscalar(varargin{end})
 
         if nargin == 2
             verbose = varargin{2};
+        end
+        
+        % make sure that there are no nans or infs
+        goodDataIdx = find(isfinite(data));
+        if ~isempty(goodDataIdx)
+            data = data(goodDataIdx);
+        else
+            error('all data is NaN or Inf!')
         end
 
     case 2 % conts,bins
@@ -177,4 +188,8 @@ else
         plot([cutoffValue,cutoffValue],[0,maxVal],'r')
     end
 
+end
+
+if ~isempty(goodDataIdx)
+    cutoffIndex = goodDataIdx(cutoffIndex);
 end

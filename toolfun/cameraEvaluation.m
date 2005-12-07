@@ -77,13 +77,20 @@ averageImageC(hotImage) = robMean;
 sdImageC = robStd * ones(movieSize(1:2));;
 sdImageC(inlierIdx) = sdImage(inlierIdx);
 
-uiViewPanel;
+%if which(uiViewPanel)
+%uiViewPanel;
+%else
+    figure
+%end
 imshow(averageImageC,[]);
 set(gcf,'Name','Average background');
 colormap('jet')
 
-
-uiViewPanel;
+%if which(uiViewPanel)
+%uiViewPanel;
+%else
+    figure
+%end
 imshow(sdImageC,[]);
 set(gcf,'Name','Std background');
 colormap('jet')

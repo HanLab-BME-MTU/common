@@ -102,7 +102,12 @@ next = lower(get(cax,'NextPlot'));
 %find color of current plot
 dataH = get(cax,'Children');
 myLineH = dataH(1);
+% support also bar plots
+if strcmp(get(myLineH,'Type'),'hggroup')
+    latestColor = get(myLineH,'EdgeColor'); %new children are added on top!
+else
 latestColor = get(myLineH,'Color'); %new children are added on top!
+end
 
 tee=0;
 if ~strcmp('log',get(gca,'XScale'))

@@ -3,7 +3,7 @@ function[acnx, acny]=normACfunc(image,verbose)
 %creates normalized spatial autocorrelation function (of mean zero) of
 %image with wraparound, one in x-, one in y-direction. The maximum lag is
 %ten times the longer side of the image, or one-half the number of elements
-%in the image, which ever is smaller (the acf is symmetric!)
+%in the image, whichever is smaller (the acf is symmetric!)
 %
 % SYNOPSIS: [acnx, acny]=normACfunc(image, verbose)
 %
