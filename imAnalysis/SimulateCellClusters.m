@@ -33,7 +33,7 @@ function[mpm]=SimulateCellClusters(m1,cbeh,cspid,np,dt,matsiz,celldia)
 %                else there will be an explosion of cells
 %                if dt=0, there is no growth
 %
-%            matsiz: matrix size [msx msy]
+%            matsiz: matrix/image size [msx msy] in pixels, e.g. [1344 1024]
 %
 %            celldia:  cell diameter, this parameter is optional, if there 
 %               is no entry, the cell diameter is taken from the nearest 
