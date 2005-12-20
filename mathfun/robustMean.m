@@ -51,7 +51,7 @@ medianData = median(data,dim);
 
 % calculate statistics
 res2 = (data-repmat(medianData,blowUpDataSize)).^2;
-medRes2 = median(res2,dim);
+medRes2 = max(median(res2,dim),eps);
 
 %testvalue to calculate weights
 testValue=res2./repmat(magicNumber2*medRes2,blowUpDataSize);
