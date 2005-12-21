@@ -2,16 +2,12 @@ function getSubsequenceOfFiles(stepSize,outFName)
 %getSubsequenceOfFiles: Get a subsequence of files every 'stepSize' from indexed
 %                       files in 'inDir' and output it to 'outDir'.
 %
-% SYNOPSIS: getSubsequenceOfFiles(inDir,outDir,inFName,outFName,stepSize)
+% SYNOPSIS: getSubsequenceOfFiles(stepSize,outFName)
 %
 % INPUT:
-%    inDir   : The path name of the input directory.
-%    outDir  : The path name of the output directory.
-%    inFName : The common prefix name of the input files from which the subsequence
-%              is drawn.
+%    stepSize: Get files every 'stepSize'.
 %    outFName: The common prefix name for the output files. Pass [] to use the
 %              same name as 'inFName'.
-%    stepSize: Get files every 'stepSize'.
 %
 % Version: MATLAB Version 7.0.4.352 (R14) Service Pack 2.
 % OS     : Linux.
