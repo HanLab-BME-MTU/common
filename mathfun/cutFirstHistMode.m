@@ -140,7 +140,7 @@ binsN = bins / max(abs(bins));
 
 nBins = nBins - maxIdx + 1;
 pointMax = [binsN(maxIdx), 1]; % maxVal = 1 now
-pointEnd = [binsN(end) + median(diff(binsN)), 0];
+pointEnd = [binsN(end) + median(diff(binsN)), countsN(end)];
 
 
 % calculate perpendicular distance to the line

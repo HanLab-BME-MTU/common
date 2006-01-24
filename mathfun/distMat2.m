@@ -19,9 +19,12 @@ if nA~=nB
 end;
 
 if nargin < 3
-    metric=eye(nA);
-elseif length(metric)~= nA
+    metric=ones(1,nA);
+    metricIsSquare = 0;
+elseif ~all(size(metric) == [nA,nB])
     error('incorrect dimension of metric');
+else
+    metricIsSquare = 1;
 end
 
 dm=zeros(mA,mB);
@@ -34,5 +37,10 @@ J=J(:);
 % all of them
 Y = (A(I,:)-B(J,:))';
 
-% calculate distance as the rood of the squared sum
-dm(:)=sqrt(diag(Y'*metric*Y))';
+% calculate distance as the rood of the squared sum. If metric is not a
+% square, we can use a memory-saving calculation
+if metricIsSquare
+    dm(:)=sqrt(diag(Y'*metric*Y))';
+else
+    dm(:) = sqrt(sum(Y'.^2.*repmat(metric,mA*mB,1),2));
+end
