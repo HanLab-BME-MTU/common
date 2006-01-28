@@ -62,7 +62,7 @@ switch nargin - isscalar(varargin{end})
         if ~isempty(goodDataIdx)
             data = data(goodDataIdx);
         else
-            error('all data is NaN or Inf!')
+            error('all data is NaN or Inf or empty!')
         end
 
     case 2 % conts,bins
