@@ -1,4 +1,4 @@
-function hh = myErrorbar(x, y, l, u)
+function hh = myErrorbar(varargin)
 %MYERRORBAR Adds errorbars to existing plot (unlike errorbar.m, which creates a new plot, and allows only bars for y values)
 %   MYERRORBAR(X,Y,L,U) adds error bars to the graph of vector X vs. vector Y with
 %   error bars specified by the vectors L and U.  L and U contain the
@@ -12,6 +12,9 @@ function hh = myErrorbar(x, y, l, u)
 %   second half specifies error bars for Y
 %
 %   MYERRORBAR(X,Y,E) or MYERRORBAR(Y,E) plots error bars [Y-E Y+E].
+%
+%   MYERRORBAR(AX,...), where AX is an axis handle, plots errorbars into
+%                       axes AX
 %
 %   H = MYERRORBAR(...) returns a vector of line handles.
 %
@@ -31,52 +34,93 @@ function hh = myErrorbar(x, y, l, u)
 %   c: jonas, 06-03
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if min(size(x))==1, %x is a vector
-    npt = length(x);
-    x = x(:);
-    y = y(:);
-    if nargin > 2,
-        if ~isstr(l),  
-            l = l(:);
-            if length(l)==2*length(x)
-                l = reshape(l,length(x),2);
-            end
-        end
-        if nargin > 3
-            if ~isstr(u)
-                u = u(:);
-                if length(u)==2*length(x)
-                    u = reshape(u,length(x),2);
-                end
-            end
-        end
-    end
+%==================
+% check input
+%==================
+
+if nargin < 2
+    error('not enough input arguments!')
+end
+
+% check if the first input argument is a handle
+if ishandle(varargin{1})
+    axesH = varargin{1};
+    % remove axis handle
+    varargin(1) = [];
 else
-    [npt,n] = size(x);
+    axesH = newplot;
 end
 
-if nargin == 3
-    if ~isstr(l)  
-        u = l;
-    end
-end
+% there could be
+% y,e
+% x,y,e
+% x,y,l,u
 
-% if nargin == 4
-% end
+switch length(varargin)
+    case 2 
+        % y, e
+        y = varargin{1};
+        y = y(:);
+        lengthY = length(y);
+        x = [1:lengthY]';
+        
+        e = varargin{2};
+        % check for 2 dimension errorbars
+        e = e(:);
+        if length(e) == 2*lengthY
+            e = reshape(e,lengthY,2);
+        end
+        [l,u] = deal(e);
+        
+    case 3
+        % x,y,e
+        x = varargin{1};
+        x = x(:);
+        y = varargin{2};
+        y = y(:);
+        lengthY = length(y);
+        
+        e = varargin{3};
+        % check for 2 dimension errorbars
+        e = e(:);
+        if length(e) == 2*lengthY
+            e = reshape(e,lengthY,2);
+        end
+        [l,u] = deal(e);
+        
+    case 4
+        % x,y,l,u
+        % x,y,e
+        x = varargin{1};
+        x = x(:);
+        y = varargin{2};
+        y = y(:);
+        lengthY = length(y);
+        
+        l = varargin{3};
+        % check for 2 dimension errorbars
+        l = l(:);
+        if length(l) == 2*lengthY
+            l = reshape(l,lengthY,2);
+        end
+        u = varargin{4};
+        % check for 2 dimension errorbars
+        u = u(:);
+        if length(u) == 2*lengthY
+            u = reshape(u,lengthY,2);
+        end
+        
+        if ~all(size(u)==size(l))
+            error('l, u have to be the same size!')
+        end
+        
+end % switch number of inputs
 
-
-if nargin == 2
-    l = y;
-    u = y;
-    y = x;
-    [m,n] = size(y);
-    x(:) = (1:npt)'*ones(1,n);;
-end
 
 u = abs(u);
 l = abs(l);
 
-if isstr(x) | isstr(y) | isstr(u) | isstr(l)
+if ischar(x) || ischar(y) || ischar(u) || ischar(l)
     error('Arguments must be numeric.')
 end
 
@@ -84,23 +128,24 @@ if ~isequal(size(x),size(y))
     error('The sizes of X and Y must be the same.');
 end
 
-if isequal([1 2].*size(x),size(l)) & isequal([1 2].*size(x),size(u))
+if isequal([1 2].*size(x),size(l)) && isequal([1 2].*size(x),size(u))
     xyBars = 1;
-elseif isequal(size(x),size(l)) & isequal(size(x),size(u))
+elseif isequal(size(x),size(l)) && isequal(size(x),size(u))
     xyBars = 0;
 else
     error('The sizes of L and U must be equal to or twice the size of X, Y')
 end
 
+%=======================
+
+
 % Plot graph and bars
 hold_state = ishold;
 hold on;
 
-cax = newplot;
-next = lower(get(cax,'NextPlot'));
 
 %find color of current plot
-dataH = get(cax,'Children');
+dataH = get(axesH,'Children');
 myLineH = dataH(1);
 % support also bar plots
 if strcmp(get(myLineH,'Type'),'hggroup')
@@ -110,24 +155,24 @@ latestColor = get(myLineH,'Color'); %new children are added on top!
 end
 
 tee=0;
-if ~strcmp('log',get(gca,'XScale'))
+if ~strcmp('log',get(axesH,'XScale'))
     tee = (max(x(:))-min(x(:)))/100;  % make tee .02 x-distance for error bars
     xl = x - tee;
     xr = x + tee;
 end
-if strcmp('log',get(gca,'XScale'))
+if strcmp('log',get(axesH,'XScale'))
     tee = (max(log(x(:)))-min(log(x(:))))/100;  % make tee .02 x-distance for error bars
     xl = x *exp(tee);
     xr = x *exp(-tee);
 end
 
 if xyBars
-    if ~strcmp('log',get(gca,'YScale'))
+    if ~strcmp('log',get(axesH,'YScale'))
         tee = (max(y(:))-min(y(:)))/100;  % make tee .02 y-distance for error bars
         yl = y - tee;
         yr = y + tee;
     end
-    if strcmp('log',get(gca,'YScale'))
+    if strcmp('log',get(axesH,'YScale'))
         tee = (max(log(y(:)))-min(log(y(:))))/100;  % make tee .02 y-distance for error bars
         yl = y *exp(tee);
         yr = y *exp(-tee);
@@ -147,7 +192,7 @@ end
 n = size(y,2);
 
 % build up nan-separated vector for bars
-xb = zeros(npt*9,n);
+xb = zeros(lengthY*9,n);
 xb(1:9:end,:) = x;
 xb(2:9:end,:) = x;
 xb(3:9:end,:) = NaN;
@@ -158,7 +203,7 @@ xb(7:9:end,:) = xl;
 xb(8:9:end,:) = xr;
 xb(9:9:end,:) = NaN;
 
-yb = zeros(npt*9,n);
+yb = zeros(lengthY*9,n);
 yb(1:9:end,:) = ytop;
 yb(2:9:end,:) = ybot;
 yb(3:9:end,:) = NaN;
@@ -169,7 +214,7 @@ yb(7:9:end,:) = ybot;
 yb(8:9:end,:) = ybot;
 yb(9:9:end,:) = NaN;
 
-h = [plot(xb,yb,'Color',latestColor)]; 
+h = [plot(axesH,xb,yb,'Color',latestColor)]; 
 
 if xyBars
     
@@ -193,7 +238,7 @@ if xyBars
     yb(8:9:end,:) = yr;
     yb(9:9:end,:) = NaN;
     
-    h = [h;plot(xb,yb,'Color',latestColor)]; 
+    h = [h;plot(axesH,xb,yb,'Color',latestColor)]; 
     
 end
 

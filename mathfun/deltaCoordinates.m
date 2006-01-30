@@ -2,11 +2,11 @@ function [distance, sigma, unitVector] = deltaCoordinates(points,sigmaZero,timeL
 %DELTACOORDINATES calculates distance, uncertainty and unit orientation vector from points with corresponding uncertainty
 %
 % SYNOPSIS [distance, sigma, unitVector] = (points,sigmaZero,timeLag)
-% 
+%
 % INPUT    points    structure array of length 1-4 with coordinates and covariances
 %                       of the individual points. n is the amount of e.g.
 %                       timepoints for which you want to measure the
-%                       distances. The second dimension is ordered 
+%                       distances. The second dimension is ordered
 %                       [point1, point2, correction1, correction2]. Points
 %                       are the point coordinates, corrections are the
 %                       coordinates by which the points have to be shifted.
@@ -20,7 +20,8 @@ function [distance, sigma, unitVector] = deltaCoordinates(points,sigmaZero,timeL
 %                       point is perfectly known
 %             fields of "points" (n: number of timepoints, d: dimension)
 %               .coordinates : nxd coordinates
-%               .covariances : nxdxd matrix of covariances
+%               .covariances : dxdxn array of covariances (or nxd array of
+%                              diagonals of covariance matrices)
 %             Please specify missing data points with NaN-entries of the
 %               correct size
 %
@@ -34,7 +35,7 @@ function [distance, sigma, unitVector] = deltaCoordinates(points,sigmaZero,timeL
 %
 %
 % OUTPUT   distance    (n-timeLag+1)-by-d array of distances/displacements
-%           
+%
 %          sigma       uncertainty of the distances
 %
 %          unitVector  unit vector pointing from the first to the second
@@ -75,7 +76,26 @@ end
 
 % test dimension
 if coordSize(2) ~= covSize(1) | coordSize(2) ~= covSize(2)
-    error('coordinate dimensions do not match dimensions of covariances!')
+    if all(coordSize == covSize)
+        % only the diagonal elements of the covariance matrices are
+        % supplied. Make covariance matrices
+        for iPoint = 1:length(points)
+            if ~isempty(points(iPoint).covariances)
+                covSizeOld = size(points(iPoint).covariances);
+                covNew = zeros(covSizeOld(2),covSizeOld(2),covSizeOld(1));
+                for t = 1:covSizeOld(1)
+                    covNew(:,:,t) = diag(points(iPoint).covariances(t,:));
+                end
+                points(iPoint).covariances = covNew;
+            end
+        end
+
+        % measure covSize again
+        covSize = size(points(1).covariances);
+
+    else
+        error('coordinate dimensions do not match dimensions of covariances!')
+    end
 end
 % test ntp
 if coordSize(1) ~= covSize(3)
@@ -111,31 +131,31 @@ end
 
 if nargout > 1 % speed up stuff
 
-% assign Q
-nDims = coordSize(2);
-Q = zeros(4*nDims);
+    % assign Q
+    nDims = coordSize(2);
+    Q = zeros(4*nDims);
 
-% assign sigma
-nSigmas = size(distance,1);
-sigma = zeros(nSigmas,1);
+    % assign sigma
+    nSigmas = size(distance,1);
+    sigma = zeros(nSigmas,1);
 
 
-% loop
-for iSigma = 1:nSigmas
-    
-    % Q
-    Q(0*nDims+1:1*nDims, 0*nDims+1:1*nDims) = cov1(:,:,iSigma);
-    Q(1*nDims+1:2*nDims, 1*nDims+1:2*nDims) = cov2(:,:,iSigma);
-    Q(2*nDims+1:3*nDims, 2*nDims+1:3*nDims) = cov3(:,:,iSigma);
-    Q(3*nDims+1:4*nDims, 3*nDims+1:4*nDims) = cov4(:,:,iSigma);
-    
-    % H
-    H = [-unitVector(iSigma,:), unitVector(iSigma,:), unitVector(iSigma,:), -unitVector(iSigma,:)];
-    
-    % sigma
-    sigma(iSigma) = sqrt(sigmaZero(iSigma) * (H*Q*H'));
-    
-end % for iSigma = 1:nSigmas
+    % loop
+    for iSigma = 1:nSigmas
+
+        % Q
+        Q(0*nDims+1:1*nDims, 0*nDims+1:1*nDims) = cov1(:,:,iSigma);
+        Q(1*nDims+1:2*nDims, 1*nDims+1:2*nDims) = cov2(:,:,iSigma);
+        Q(2*nDims+1:3*nDims, 2*nDims+1:3*nDims) = cov3(:,:,iSigma);
+        Q(3*nDims+1:4*nDims, 3*nDims+1:4*nDims) = cov4(:,:,iSigma);
+
+        % H
+        H = [-unitVector(iSigma,:), unitVector(iSigma,:), unitVector(iSigma,:), -unitVector(iSigma,:)];
+
+        % sigma
+        sigma(iSigma) = sqrt(sigmaZero(iSigma) * (H*Q*H'));
+
+    end % for iSigma = 1:nSigmas
 
 end
 
@@ -164,45 +184,45 @@ switch which2fill
     % 1: distance, no correction. Do as in 7, don't correct
     % 0: displacement, no correction. Do as in case 2, don't correct
     % 4/6: error
-    
+
     case 7
         % shift both positions, retain all covs
-        
+
         if all(size(points(2).coordinates)==coordSize) & all(size(points(3).coordinates)==coordSize) & all(size(points(3).coordinates)==coordSize) &...
                 all(size(points(2).covariances)==covSize) & all(size(points(3).covariances)==covSize) & all(size(points(4).covariances)==covSize)
-            
+
             distanceVectors = points(2).coordinates-points(4).coordinates - (points(1).coordinates-points(3).coordinates);
             cov1 = points(1).covariances;
             cov2 = points(2).covariances;
             cov3 = points(3).covariances;
             cov4 = points(4).covariances;
-            
+
         else
             error('Unequal numbers of coordinates or covariances')
         end
-        
+
     case 1
         % distance, no correction
-        
+
         if all(size(points(2).coordinates)==coordSize) &...
-                all(size(points(2).covariances)==covSize) 
-            
+                all(size(points(2).covariances)==covSize)
+
             distanceVectors = points(2).coordinates - points(1).coordinates;
             cov1 = points(1).covariances;
             cov2 = points(2).covariances;
             cov3 = zeros(covSize);
             cov4 = zeros(covSize);
-            
+
         else
             error('Unequal numbers of coordinates or covariances')
         end
-        
+
     case 2
         % displacement, corrected.
-        
+
         if all(size(points(3).coordinates)==coordSize)  &...
-                all(size(points(3).covariances)==covSize) 
-            
+                all(size(points(3).covariances)==covSize)
+
             pos1tmp = points(1).coordinates-points(3).coordinates;
             pos1 = pos1tmp(1:end-timeLag,:);
             pos2 = pos1tmp(timeLag+1:end,:);
@@ -211,19 +231,19 @@ switch which2fill
             cov2 = points(1).covariances(:,:,timeLag+1:end);
             cov3 = points(3).covariances(:,:,1:end-timeLag);
             cov4 = points(3).covariances(:,:,timeLag+1:end);
-            
+
             % shorten sigmaZero
             sigmaZero = mean(sigmaZero(1:end-timeLag)+sigmaZero(timeLag+1:end),2);
-            
+
             clear pos1tmp pos1 pos2
-            
+
         else
             error('Unequal numbers of coordinates or covariances')
         end
-        
+
     case 0
         % displacement, uncorrected
-        
+
         pos1tmp = points(1).coordinates;
         pos1 = pos1tmp(1:end-timeLag,:);
         pos2 = pos1tmp(timeLag+1:end);
@@ -232,13 +252,13 @@ switch which2fill
         cov2 = points(1).covariances(:,:,timeLag+1:end);
         cov3 = zeros(covSize);
         cov4 = zeros(covSize);
-        
+
         % shorten sigmaZero
         sigmaZero = mean(sigmaZero(1:end-timeLag)+sigmaZero(timeLag+1:end),2);
-        
+
         clear pos1tmp pos1 pos2
-        
+
     otherwise
-        
+
         error('Please fill either cols 1, 1&2, 1&3 or 1&2&3&4 in points-structure')
 end

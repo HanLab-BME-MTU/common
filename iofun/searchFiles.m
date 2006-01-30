@@ -195,7 +195,11 @@ if nargout > 1
         
         tmp = regexp(listOfFiles(:,1),includeString,'tokens');
         tmp = cat(1,tmp{:});
+        if ~isempty(tokenList)
         tokenList = cat(1,tmp{:});
+        else
+            % it's defined and empty already.
+        end
     else
         tokenList = [];
     end

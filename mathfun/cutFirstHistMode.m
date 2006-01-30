@@ -109,6 +109,11 @@ if doHistogram
     % maximum in the continuous histogram only up to the end of the
     % maxBin+0.5
     [counts, bins] = histogram(data);
+    % if there is only one bin, we have a problem. Therefore, force at
+    % least 3 bins.
+    if length(bins)<3
+    [counts,bins] = hist(data,3);
+    end
     % the last bin cannot become the maximum
     [dummy,maxBinIdx] = max(counts(1:end-1));
     maxBinValue = bins(maxBinIdx + 1);
