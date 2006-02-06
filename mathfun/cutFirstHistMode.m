@@ -1,4 +1,4 @@
-function [cutoffIndex, cutoffValue] = cutFirstHistMode(varargin);
+function [cutoffIndex, cutoffValue, sp] = cutFirstHistMode(varargin);
 %CUTFIRSTHISTMODE finds the end of the first mode in a histogram
 %
 % cutFirstHistMode is an implementation of the algorithm presented in "uni-
@@ -8,9 +8,10 @@ function [cutoffIndex, cutoffValue] = cutFirstHistMode(varargin);
 % between the line from the largest bin in the first mode to the first
 % empty bin after the last nonempty bin and the histogram is largest.
 %
-% SYNOPSIS [cutoffIndex, cutoffValue] = cutFirstHistMode(counts, bins);
-%          [cutoffIndex, cutoffValue] = cutFirstHistMode(data);
+% SYNOPSIS [cutoffIndex, cutoffValue,sp] = cutFirstHistMode(counts, bins);
+%          [cutoffIndex, cutoffValue,sp] = cutFirstHistMode(data);
 %          [...] = cutFirstHistMode(...,verbose)
+%          [...] = cutFirstHistMode(ax,...)
 %
 % INPUT    counts, bins : counts in and center of histogram bins (output
 %               of functions such as "hist" or "histogram". There has to be
@@ -20,17 +21,28 @@ function [cutoffIndex, cutoffValue] = cutFirstHistMode(varargin);
 %
 %          verbose (optional) decides whether the function will open a
 %               figure or not (default = 1).
+%          ax (optional) axes handle into which the function will plot.
+%               Supplying ax automatically sets verbose to 1. (Of course,
+%               setting verbose = 0 will overrule that, but this would be a
+%               bit nonsensical)
 %
 %
 % OUTPUT   cutoffIndex : Index into list of bins/data of the placement of
 %               cutoff
 %          cutoffValue : position of bin/data point where the histogram is
 %               cut off
+%          sp : definition of the histogram spline (only possible of
+%               cutFirstHistMode had to calculate a histogram)
 %
 % REMARKS  If data is supplied, cutoffIndex/cutoffData will point to the
 %               data point just at or above the center of the bin
 %          The function works only on 1D data so far (multidimensional data
 %          is handled as a vector)
+%
+%          Warning: If there are multiples of the minimum value, the
+%          smooth histogram might get very steep at the beginning and
+%          produce an unwanted highest peak. In such a case, remove the
+%          multiple small values first (for example, using isApproxEqual)
 %
 %
 % c: jonas, 8/06
@@ -47,16 +59,25 @@ verbose = 1;
 % goodDataIdx is used in case data contains nans
 goodDataIdx = [];
 
-switch nargin - isscalar(varargin{end})
+% check for axesHandle
+if ishandle(varargin{1})
+    axesH = varargin{1};
+    varargin(1) = [];
+    verbose = 1;
+else
+    axesH = [];
+end
+
+switch length(varargin) - isscalar(varargin{end})
     case 1 % data
         doHistogram = 1;
         data = varargin{1};
         data = data(:);
 
-        if nargin == 2
+        if length(varargin) == 2
             verbose = varargin{2};
         end
-        
+
         % make sure that there are no nans or infs
         goodDataIdx = find(isfinite(data));
         if ~isempty(goodDataIdx)
@@ -72,6 +93,7 @@ switch nargin - isscalar(varargin{end})
         counts = counts(:);
         bins = bins(:);
         nBins = length(bins);
+        sp = [];
 
         if nargin == 3
             verbose = varargin{3};
@@ -102,7 +124,7 @@ if doHistogram
     %     bins = bins(maxIdx:end);
     %     nBins = length(bins);
     %     counts = [nBins:-1:1]';
-    
+
     % the continuous histogram can potentially place the maximum elsewhere
     % (where it might belong, but that's not the point)
     % Do discrete histogram first, find max-bin, and then look for the
@@ -112,20 +134,20 @@ if doHistogram
     % if there is only one bin, we have a problem. Therefore, force at
     % least 3 bins.
     if length(bins)<3
-    [counts,bins] = hist(data,3);
+        [counts,bins] = hist(data,3);
     end
     % the last bin cannot become the maximum
     [dummy,maxBinIdx] = max(counts(1:end-1));
     maxBinValue = bins(maxBinIdx + 1);
-    
+
 
     % continuous histogram
-    [counts,bins] = histogram(data,'smooth');
+    [counts,bins,sp] = histogram(data,'smooth');
     nBins = length(bins);
-    
+
     % find maximum between bin 1 and the one with maxBinValue
     [maxVal, maxIdx] = max(counts(bins < maxBinValue));
-    
+
 else
     [maxVal, maxIdx] = max(counts);
 end
@@ -176,12 +198,24 @@ if doHistogram
 
     % for plotting: stuff stolen from plotyy
     if verbose
-        fig =figure;
-        set(fig,'NextPlot','add')
-        histogram(data)
-        ax(1) = gca;
+        
+        % check for axes (and figure!) to plot into
+        if ~isempty(axesH)
+            histogram(axesH,data)
+            fig = get(axesH,'Parent');
+        else
+            fig =figure;
+            set(fig,'NextPlot','add')
+            histogram(data)
+            axesH = gca;
+        end
+        ax(1) = axesH;
         ax(2) = axes('Units',get(ax(1),'Units'), ...
-            'Position',get(ax(1),'Position'),'Parent',fig);
+            'Position',get(ax(1),'Position'),...
+            'ActivePositionProperty',get(ax(1),'ActivePositionProperty'),...
+            'OuterPosition',get(ax(1),'OuterPosition'),...
+            'Position',get(ax(1),'Position'),...
+            'Parent',fig);
         plot(ax(2),bins,counts,'r',[cutoffValue,cutoffValue],[0,max(counts)],'-.r')
         set(ax(2),'YAxisLocation','right','Color','none','YColor','r')
         set(ax,'Box','off');
@@ -189,8 +223,16 @@ if doHistogram
 
 else
     if verbose
-        figure,bar(bins,counts),hold on,
-        plot([cutoffValue,cutoffValue],[0,maxVal],'r')
+        
+        % check for axes to plot into
+        if ~isempty(axesH)
+            bar(axesH,bins,counts),hold on,
+            plot(axesH,[cutoffValue,cutoffValue],[0,maxVal],'r')
+        else
+            figure,
+            bar(bins,counts),hold on,
+            plot([cutoffValue,cutoffValue],[0,maxVal],'r')
+        end
     end
 
 end

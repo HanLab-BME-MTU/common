@@ -28,6 +28,12 @@ function [N,X,sp] = histogram(data,factor,axesHandle)
 %           total number of data points. Therefore, the counts might seem
 %           off.
 %
+%           WARNING: If there are multiples of the minimum value, the
+%           smooth histogram might get very steep at the beginning and
+%           produce an unwanted peak. In such a case, remove the
+%           multiple small values first (for example, using isApproxEqual)
+
+%
 % c: 2/05 jonas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
