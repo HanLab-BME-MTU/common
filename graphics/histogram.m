@@ -63,8 +63,10 @@ data = varargin{1};
 data = data(:);
 
 % check for "factor"
-if numArgIn < 2 || isempty(factor)
+if numArgIn < 2 || isempty(varargin{2})
     factor = 1;
+else
+    factor = varargin{2};
 end
 if ischar(factor)
     if strmatch(factor,'smooth')
