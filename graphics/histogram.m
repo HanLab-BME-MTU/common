@@ -1,9 +1,10 @@
-function [N,X,sp] = histogram(data,factor,axesHandle)
+function [N,X,sp] = histogram(varargin)
 % HISTOGRAM generates a histogram using the "optimal" number of bins
 %
 % If called with no output argument, histogram plots into the current axes
 %
-% SYNOPSIS [N,X] = histogram(data,factor)
+% SYNOPSIS [N,X,sp] = histogram(data,factor)
+%          [...] = histogram(axesHandle,...)
 %
 % INPUT    data: vector of input data
 %          factor: (opt) factor by which the bin-widths are multiplied
@@ -38,9 +39,31 @@ function [N,X,sp] = histogram(data,factor,axesHandle)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % test input
+if nargin < 1
+    error('not enough input arguments for histogram')
+end
+
+% check for axes handle
+if ishandle(varargin{1});
+    axesHandle = varargin{1};
+    varargin(1) = [];
+else
+    % ensure compatibility to when axesHandle was given as last input
+    if nargin == 3 && ishandle(varargin{end})
+        axesHandle = varargin{end};
+        varargin(end) = [];
+    else
+        axesHandle = 0;
+    end
+end
+
+% assign data
+numArgIn = length(varargin);
+data = varargin{1};
 data = data(:);
 
-if nargin < 2 || isempty(factor)
+% check for "factor"
+if numArgIn < 2 || isempty(factor)
     factor = 1;
 end
 if ischar(factor)
@@ -51,11 +74,6 @@ if ischar(factor)
     end
 end
 
-if nargin < 3 || isempty(axesHandle)
-    axesHandle = 0;
-elseif ~ishandle(axesHandle)
-    error('axesHanlde is not a valid handle!');
-end
 % doPlot is set to 1 for now. We change it to 0 below if necessary.
 doPlot = 1;
 
