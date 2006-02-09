@@ -1,5 +1,5 @@
 function  dataOut = imResample(dataIn, stepIn, stepOut)
-%IMRESAMPLE resamples a n-D array, using the mean as low-pass filter
+%IMRESAMPLE resamples a n-D array
 %  The input data is assumed to be uniformely spaced in any of the
 %  dimensions, but the size can vary between dimensions. If the stepsizes
 %  do not allow for an array of the same 'size' (e.g. in um for an image),
@@ -19,6 +19,7 @@ function  dataOut = imResample(dataIn, stepIn, stepOut)
 %  OUTPUT   dataOut: n-dim resampled array
 %
 % c: 10/04 jonas
+%    02/06 kathryn - changed mean to sum
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %===================
@@ -54,9 +55,9 @@ end
 %=========================================
 
 % There are two ways for downsampling: In case the ratio of stepsizes is an
-% integer, the matrix is reshaped and the mean is taken. In case the ratio
+% integer, the matrix is reshaped and the sum is taken. In case the ratio
 % is a rational number, the cumulative sum is calculated along the
-% dimension of interest, then the intensieties are read via linear
+% dimension of interest, then the intensities are read via linear
 % interpolation, and finally, the intensity of the new pixel is found by
 % taking the difference of the resampled cumulative sum (idea GD).
 
@@ -98,10 +99,10 @@ for dim = 1:nDims
         if pixelRatio(dim) == 1
             % do nothing
         else
-        % reshape, so that mean can be taken along dimension 1
+        % reshape, so that sum can be taken along dimension 1
         dataOut = reshape(dataOut,pixelRatio(dim),[]);
         
-        dataOut = mean(dataOut);
+        dataOut = sum(dataOut);
         
         % shape back (size has been updated already)
         dataOut = reshape(dataOut, currSize);
@@ -121,7 +122,7 @@ for dim = 1:nDims
             [0:pixelRatio(dim):oldSize(dim)], 'linear');
         
         % take the difference, adjust intensity for changed pixelsize
-        dataOut = diff(dataOut) / pixelRatio(dim);
+        dataOut = diff(dataOut);
         
     end
     
