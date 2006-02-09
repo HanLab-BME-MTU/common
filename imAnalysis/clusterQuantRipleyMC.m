@@ -48,10 +48,15 @@ function[cpar1,cpar2, cpar3,pvr,dpvr]=clusterQuantRipleyMC(mpm,imsizex,imsizey,n
 %                   points contained in a circle of increasing radius
 %                   around an object, averaged over all objects in the
 %                   image
-%                   NOTE: the default size for the radius implicit in the 
-%                   pvr function is [1,2,3...,minimsize] where minimsize is the
-%                   smalller dimension of imsizex,imsizey
+%                   
+%                   NOTE: the default size for the maximum radius in the
+%                   function has been changed!! The maximum size used to be
+%                   minsiz/2, i.e. half of the smaller dimension of the
+%                   image; in the current version with an updated function
+%                   for edge correction, the default value for max r is
+%                   half of the diagonal length.
 %                   This function corresponds to Ripley's K-function (/pi)
+%
 %           dpvr:   H(r) function, defined as Hr=pvrt-de'.^2 (in the
 %                   literature, you will also find a variant of this
 %                   function usually called the L(d)-d function, which is 
@@ -64,9 +69,7 @@ function[cpar1,cpar2, cpar3,pvr,dpvr]=clusterQuantRipleyMC(mpm,imsizex,imsizey,n
 %                   - mpmMCaddsim
 %                                                
 %
-% Dinah Loerke, last update: July 16th
-%               last upgrade (to fix uncertainties in teh border
-%               correction) November 17, 2005
+% Dinah Loerke, last update: Feb 07, 2005
 
 
 
@@ -95,22 +98,24 @@ matsiz=[imsizex imsizey];
 simLoop = 3;
 
 % rs is size of distance vector in Ripley function
-% The size rs is chosen such that it is the radius of the circle with the 
-% same area as the image rectangle ( rs=round(sqrt((imsizex*imsizey)/pi)). 
-% Due to the normalization (the 'total' point density is measured from the
-% entire image and thus corresponds to this area), for a random 
-% distribution the ripley function at the length of the vector (at the 
-% distance rs) should be about zero
-% Technically, this is true for the more precise (but computationally much 
-% more expensive) Flip correction, but usually not quite for the faster
-% Ripley correction, which becomes noisier for large distances.
+% in former versions, rs was half the smaller image side length, in this
+% new version, rs is half the length of the diagonal - which means that for
+% all distances up to rs, at least some fraction of the circle lies within
+% the image, i.e. it is possible to detect neighbors at distance r even for
+% the centermost points in the image.
+% if this version is changed to include even larger distances, the
+% pointsincircle function also has to be changed, because then the case may
+% occur that for points in the center of the image, the entire circle lies
+% outside the image and no new points may be detected
 
-rs=round(sqrt((imsizex*imsizey)/pi));
+%rs=round(sqrt((imsizex*imsizey)/pi));
+global rs
+rs = round(sqrt(imsizex^2+imsizey^2)/2);
 
 % determine size of mpm-file
 [nx,ny]=size(mpm);
 if ((ny/2) < norm)
-    disp('potential source of error: normalization window is larger than length of input mpm!');
+    error('ERROR - normalization window is larger than number of frames in input mpm!');
 end
 
 % number of frames 
@@ -268,7 +273,8 @@ maxp=round(ny/2);
 %now do final analysis including filtering (which uses forward and backward
 %data, so it has do be done in a separate loop
 h = waitbar(0,'H(r) calculation');
-%h1 = figure;
+
+figure
 for k=1:numframes
     waitbar(k/numframes);
     %disp(['final parameter determination in frame ',num2str(k)]);
@@ -288,12 +294,26 @@ for k=1:numframes
     len=max(size(pvrt));
     de=(1:len);
 %============================================================
-% calculate difference L(d)-d function, using L(d)=sqrt(K(d)),
+% calculate difference function H(r)=K(r)-r^2
+% difference L(d)-d function, using L(d)=sqrt(K(d)),
 % since K(d) is already divided by pi
 % This difference function is from now on called H(r)
 %In the context of this function, it's called dpvr
 %=============================================================
+    
     dpvr(:,k) = pvrt - de'.^2;
+    switch k
+        case 1
+            plot(dpvr(:,k),'b-');
+            hold on
+        case norm
+            plot(dpvr(:,k),'c-');
+        case norm+round((numframes-norm)/2)
+            plot(dpvr(:,k),'g-');
+        case numframes
+            plot(dpvr(:,k),'r-');
+    end % of switch
+            
     dpvr_growthCorr(:,k) = pvrt_growthCorr - de'.^2;
     
 end
@@ -406,7 +426,7 @@ l1 = length(cpar1_growthCorrSmooth);
 cpar1_growthCorrSmooth(l1+1:numframes)=cpar1_growthCorrSmooth(l1);
 
 %uncomment the following paragraphs to display results, don't forget the
-%trailing line 415
+%trailing line 421
 
 figure
 plot(cpar3,'ro');
@@ -436,7 +456,7 @@ end % main function
 
 
 
-
+%==========================================================================
 
 function[cpar1,cpar2,cpar3]=clusterpara(Hr,matsiz,cellDiam,restCSiz);
 %clusterpara calculates a quantitative cluster parameter from the input
@@ -468,7 +488,7 @@ function[cpar1,cpar2,cpar3]=clusterpara(Hr,matsiz,cellDiam,restCSiz);
 %% zero. if there exists no such point (for completely scattered
 %% distributions), firstpoint is set to nan and incl is set to zero
 
-
+global rs
 
 vec = Hr;
 % smooth with Gaussian filter
@@ -527,7 +547,7 @@ detvec2(ddvec>0)=0;
 ipdist=min (5*cellDiam, restCSiz);
 restZeroCross = round(0.85 * cellDiam);
 intlength = round(0.6*(ipdist-restZeroCross));
-entIntegral = sum(abs(Hr(restZeroCross:512)));
+entIntegral = sum(abs(Hr(restZeroCross:rs)));
 parIntegral = sum(Hr(restZeroCross:restZeroCross+intlength));    
 
 
@@ -550,18 +570,18 @@ parIntegral = sum(Hr(restZeroCross:restZeroCross+intlength));
 % %% ===========================================================
 %      
 %           
-     plot(filtervec,'b-');
-     axis([ 0 ipdist+20 -2000 17000]);
-     hold on
-     ypts=[filtervec(cellDiam) filtervec(ipdist)];
-     xpts=[cellDiam ipdist];
-     plot(xpts, ypts, 'r.');
-     ypts2=[filtervec(restZeroCross)];
-     xpts2=[restZeroCross];
-     plot(xpts2, ypts2, 'g.');
-     
-     pause(0.05);
-     hold off;
+%      plot(filtervec,'b-');
+%      axis([ 0 ipdist+20 -2000 17000]);
+%      hold on
+%      ypts=[filtervec(cellDiam) filtervec(ipdist)];
+%      xpts=[cellDiam ipdist];
+%      plot(xpts, ypts, 'r.');
+%      ypts2=[filtervec(restZeroCross)];
+%      xpts2=[restZeroCross];
+%      plot(xpts2, ypts2, 'g.');
+%      
+%      pause(0.05);
+%      hold off;
 %     
 % else
 %     firstpoint=NaN;
@@ -589,17 +609,17 @@ end
 
 
 
+%==========================================================================
 
 
-
-function[m2,num]=pointsincircle(m1,ms,corrVar)
+function[m2]=pointsincircle(m1,ms,corrVar)
 %pointsincircle calculates the average number of points in a circle around
 %a given point as a function of the circle radius (averaged over all points
 %and normalized by total point density); this function is called Ripley's
 %K-function in statistics, and is an indication of the amount of clustering
 %in the point distribution
 % 
-% SYNOPSIS   [m2]=pointsincircle(m1,ms);
+% SYNOPSIS   [m2]=pointsincircle(m1,ms,corrVar)
 %       
 % INPUT      m1:   matrix of size (n x 2) containing the (x,y)-coordinates of n
 %                  points
@@ -615,7 +635,7 @@ function[m2,num]=pointsincircle(m1,ms,corrVar)
 %                   around each point, for an increasing radius;
 %                   radius default values are 1,2,3,....,min(ms)
 %                   function is averaged over all objects in the image
-%           num: number of points
+%           
 %
 % DEPENDENCES   pointsincircle uses {distanceMatrix, circumferenceCorrectionFactor}
 %                   (distanceMatrix, circumferenceCorrectionFactor added to this file)
@@ -633,9 +653,10 @@ function[m2,num]=pointsincircle(m1,ms,corrVar)
 
 msx=ms(1);
 msy=ms(2);
-minms=min(ms);
-%rs=round(minms/2);
-rs=round(sqrt((msx*msy)/pi));
+
+global rs
+
+%=========== for toroidal correction
 
 if (corrVar==1)
     
@@ -671,6 +692,8 @@ if (corrVar==1)
     [mdist]=distanceMatrix(m1,mq);
     
 
+    % ===================== else ripley correction
+
 else  %default is 'rip'=correction 'cause it's faster
     %create neighbour matrix m3
     %matrix m3 contains the distance of all points in m1 from all points
@@ -700,9 +723,7 @@ for r=rs:-1:1
     
     thresh_mdistones = thresh_mdist;
     thresh_mdistones(thresh_mdist > 0) = 1;
-    %what's num represent, again...
     
-    num(r)=sum(thresh_mdistones(:))/2;  
     %weight every counted point with the circumference correction factor
     %calculated previously in corrFacMat
     if (corrVar == 0)
@@ -710,18 +731,15 @@ for r=rs:-1:1
     else
         tempfinal=thresh_mdistones;  
     end
+           
     %sum over entire matrix to get number of points
-    npv=sum(tempfinal(:));
-    
-    
-    num(r)=sum(thresh_mdistones(:))/2;  
-       
-    %sum over entire matrix to get number of points
-    npv=sum(tempfinal(:));
+    npv = nansum(tempfinal(:));
     
     
     %to average, divide sum by number of points (=columns)
-    npv=(npv/lm);
+    %identity points have value 1 in the correction factor matrix, but they
+    %are NOT counted in the thresholded matrix
+    npv=npv/lm;
     
     %in order to be able to quantitatively compare the clustering in 
     %distributions of different point densities, this npv value must now 
@@ -741,7 +759,7 @@ end % of function
 
 
 
-
+%==========================================================================
 
 function[m2]=distanceMatrix(c1,c2)
 %this subfunction makes a neighbour-distance matrix for input matrix m1
@@ -763,7 +781,7 @@ end
 
 
 
-
+%==========================================================================
 
 function[corfac]=circumferenceCorrectionFactor(xx,yy,rr,msx,msy)
 %circumference correction calculates a vector containing the correction factor
@@ -774,45 +792,130 @@ function[corfac]=circumferenceCorrectionFactor(xx,yy,rr,msx,msy)
 %of the rectangle's edges, and as the radius of the circle increases
 %if the circle falls completely inside the rectangle, the value is zero
 
-%1. this function assumes that rr is a vector
+%Notes: - this function assumes that rr is a vector
+%       - this version of the function allows rr to be larger than ms/2
 
-% SYNOPSIS   [corfac]=circumferenceCorrectionFactor2(xx,yy,rr,msx,msy)
+% SYNOPSIS   [corfac]=circumferenceCorrectionFactor(xx,yy,rr,msx,msy)
 %       
-% Dinah Loerke, October 6, 2004
+% Dinah Loerke, January 27, 2006
 
 
+% while xx and yy are the point coordinates, x and y are the *distances* from
+% the nearest edge of the image in that direction; e.g. x=xx for a point close
+% to the left edge, and x=(msx-xx) for a point close to the right edge 
 x=min(xx,(msx-xx));
 y=min(yy,(msy-yy));
 
+%xo and yo are, conversely, the maximum distance to the image edge
+xo=max(xx,(msx-xx));
+yo=max(yy,(msy-yy));
+
 rmax=max(size(rr));
+%correction factor is initialized
 corfac=ones(rmax,1);
 
 for i=1:rmax
     r=rr(i);
-    %if both x and y are smaller than r
-    if(r>0)
-        
-        if((x<r)&&(y<r))
-            if( (x<r) && (y<r) && (sqrt(x^2+y^2)>r) )
-                corfac(i)=(2*asin(x/r)+2*asin(y/r))/(2*pi);
-            else
-                corfac(i)=(0.5*pi+asin(x/r)+asin(y/r))/(2*pi);
-            end
-         %if either x OR y OR neither is smaller than r 
+    
+    %the distance r needs to be positive, and smaller than the maximum
+    %distance of the current point (xx,yy) from any of the edges, since
+    %else no fraction of circumference falls inside the image. for larger 
+    %distances, the correction factor is technically zero, which creates a
+    %continuous function for increasing values of r, but this function
+    %should not generate zero-value outputs, since the main function 
+    %divides a defined value by the correction factor, so that we'd get 
+    %a 'divide by zero' error message. thus, the default value for this 
+    %situation is set to nan instead of zero
+    if ( (r>0) & (r<sqrt(xo^2+yo^2)) )
+             
+            %consider contributions of all 4 quadrants separately
+            %each quadrant can contribute at most 0.25, at least 0 to the
+            %total corrfactor
+            cont=zeros(4,1);
+            % loop over all four quadrants
+            for qq=1:4
+                switch qq
+                    %determine relevant distances from the edges (xd,yd) 
+                    %for each quadrant
+                    case(1)
+                        % quadrant 1 : upper left 
+                        xd=xx;
+                        yd=msy-yy;
+                    case(2)
+                        % quadrant 2 : upper right 
+                        xd=msx-xx;
+                        yd=msy-yy;
+                    case(3)
+                        % quadrant 3 : lower right 
+                        xd=msx-xx;
+                        yd=yy;
+                    case(4)
+                         % quadrant 4 : lower left 
+                        xd=xx;
+                        yd=yy;
+                end % of switch
+                
+                %now xd and yd are the distances from the closest image 
+                %edges in the current quadrant
+                %if both xd and yd are smaller than r, this means that the 
+                %circle goes across both edges of the image
+                if((xd<r)&&(yd<r))
+            
+                    %if additionally r is smaller than the distance to the corner,
+                    %we have case 1: the circle cuts off the corner
+                    if( sqrt(xd^2+yd^2) > r )
+                        %two angles on the side of the corner that define
+                        %the fraction of the circumference outside the
+                        %image
+                        out_angle1 = acos(xd/r);
+                        out_angle2 = acos(yd/r);
+                        %inside angle is 90-outside angles
+                        in_angle = (pi/2)-(out_angle1+out_angle2);
+                        %contribution is 0.25*relative fraction of inside 
+                        %angle in this quadrant
+                        cont(qq)=0.25*(in_angle/(pi/2));
+                    
+                    %else the circle clears the corner (case 2); in this
+                    %case, no part of the circumference of this quadrant
+                    %lies inside the image, and the contribution is zero
+                    else
+                        cont(qq)=0;
+                    end % of if
+                    
+                %else, either x or y is larger than r (or both are)
+                %this means that the circle goes across at most one edge of
+                %the image in this quadrant (case 3)
+                else
+                    % z is whatever is the smaller distance to the edge; if
+                    % the quarter circle is fully inside the image in this 
+                    % quadrant, then z=r                
+                    z= min(min(xd,yd),r) ;
+                    cont(qq)=0.25 * ( asin(z/r) / (pi/2) );
+                end % of if-else
+            end % of for qq
+            
+            %add contributions of four quadrants
+            corfac(i)=sum(cont);
+    %else corfac is zero (e.g. for point identity, because center point is
+    %not counted), or undefined because the distance r is not within the 
+    %limits of the image for this particular point (xx,yy) 
+    else
+        if (r==0)
+            corfac(i)=1;
         else
-             z=min( min(x,y),r );
-            corfac(i)=(pi+2*asin(z./r))/(2*pi);
+            corfac(i)=nan;
         end
-    end
-end
-
-end
+    end % of if
+end % of for i
 
 
-
+end  % of function
 
 
 
+
+
+%==========================================================================
 
 function[pvr]=RipleyKfunc(mpm,imsiz,corrFac);
 %[pvr]=RipleyKfuncFlip(mpm,imsiz); 
@@ -824,13 +927,8 @@ function[pvr]=RipleyKfunc(mpm,imsiz,corrFac);
 imsizex = imsiz(1);
 imsizey = imsiz(2);
 
-%rs is size of distance vector in Ripley function
-%the size rs is chosen such that for a random distribution, the ripley
-%function over the length of the vector is close to zero
-%Theoretically, rs should be the radius of the circle with the same area as
-%the image rectangle ( rs=round(sqrt((imsizex*imsizey)/pi)); ), this is true 
-% for the flip correction, but not necessarily for the ripley correcion
-rs=round(sqrt((imsizex*imsizey)/pi));
+%rs is size of distance vector in Ripley function, defined in main function
+global rs
 
 %determine size of mpm-file
 [nx,ny]=size(mpm);
@@ -873,12 +971,12 @@ for k=1:(round(ny/2))
         smatt=[nonzeros(matt(:,1)), nonzeros(matt(:,2)) ];
     else
         dovar=0;
-        disp(['Error in frame ',num2str(k), ' of input mpm']);
+        disp(['Error in frame ',num2str(k), ' of input mpm:']);
         if(nz1~=nz2)
-            disp(['unequal number of entries for x and y-coordinates']);
+            error(['unequal number of entries for x and y-coordinates']);
         end
         if (nz1==0) 
-        disp(['no objects (i.e. no nonzero entries) in this frame']);
+        error(['no objects (i.e. no nonzero entries) in this frame']);
         end
     end
     
@@ -894,7 +992,7 @@ for k=1:(round(ny/2))
     %now determine number of objects in circle of increasing radius,
     %averaged over all objects in smatt, and normalized with point density
     %tempnp/(msx*msy)
-        [pvrt,nump]=pointsincircle(smatt,imsiz,corrFac);
+        [pvrt]=pointsincircle(smatt,imsiz,corrFac);
     %result is already normalized with point density tempnp/(msx*msy)
         pvr(:,k)=pvrt(:);
     
