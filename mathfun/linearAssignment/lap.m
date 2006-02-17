@@ -106,6 +106,12 @@ if augmentCC
     % expand the m-by-n cost matrix to a (m+n)-by-(n+m) matrix, adding
     % diagonals with a cost above the highest cost
     maxCost = max(cc(:)) + 1;
+    
+    % if we have -1 as non-link-marker, and we get it everywhere, we get
+    % a segmentation fault.
+    if maxCost <= 0
+        maxCost = 1;
+    end
 
     % check if sparse
     if issparse(cc)

@@ -8,7 +8,7 @@ function patch=stamp3d(data,patchSize,center,symmetric)
 %       center : position of center pixel of patch in 3D data
 %       symmetric : (opt) if part of the patch would fall outside of the 
 %                    img: whether to cut accordingly on the other side 
-%                    [0/{1}] (default for fears of incompatibility)
+%                    [{0}/1]
 %
 % OUTPUT patch : 3D patch 
 
