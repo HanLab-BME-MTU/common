@@ -29,7 +29,8 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC)
 % NONLINK_MARKER : value to indicate that two points cannot be linked.
 %             Default: -1. NaN is not allowed here
 %
-% extendedTesting: (optional, [0/{1}]) If 1, the cost matrix will be tested
+% extendedTesting: (optional, [0/{1}]) If 1, the cost matrix, after 
+%                  augmenting it if augmentCC = 1, will be tested
 %                  for violations (at the expense of speed):
 %                     - There cannot be NaNs in cc
 %                     - In every row and every column of cc there must be
