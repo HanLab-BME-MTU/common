@@ -6,6 +6,9 @@ function [x,Qxx,goodRows,sigmaB] = linearLeastMedianSquares(A,B,V,x0)
 % in the data (B), and discards those, then it fits the reduced data with a
 % standard least squares algorithm (myLscov).
 %
+% It is possible that removing outliers will turn a column of A into all
+% zeros. In this case, the corresponding unknown will be returned as NaN.
+%
 % see: see Danuser, 1992 or Rousseeuw & Leroy, 1987
 %
 % SYNOPSIS : [x,Qxx,goodRows,sigmaB] = linearLeastMedianSquares(A,B,V,x0)
@@ -28,6 +31,8 @@ function [x,Qxx,goodRows,sigmaB] = linearLeastMedianSquares(A,B,V,x0)
 %            
 % c: 3/04 jonas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 
 %==============
 % TEST INPUT
@@ -67,12 +72,10 @@ end
 [badRowA,c] = find(isnan(A));
 [badRowB,c] = find(isnan(B));
 [badRowV,c] = find(isnan(V));
-badRows = [badRowA; badRowB; badRowV];
+badRows = union(badRowA, badRowB, badRowV);
 
 % remove bad rows if there are any
 if ~isempty(badRows)
-    
-    badRows = unique(badRows);
     
     % make a list of old rows, so that we return the correct goodRows!
     oldRows = [1:sizA(1)];
@@ -107,7 +110,9 @@ else
     end
 end
 
-% fit
+% fit. If there were NaNs in the initial guess, set them to 0 - otherwise
+% we have a problem.
+x0(isnan(x0)) = 0;
 [x,Qxx,goodRows,sigmaB] = fitRoutine(A,B,V,diagInvV,vIsVector,x0);
 
 %====================
@@ -145,7 +150,7 @@ xFmin = eval(fminCall);
 
 % calculate statistics
 res2 = (A*xFmin-B).^2;
-medRes2 = median(res2);
+medRes2 = nanmedian(res2);
 
 %testvalue to calculate weights
 testValue=res2/(magicNumber2*medRes2);
@@ -163,11 +168,26 @@ sigmaB=sqrt(sum(res2(goodRows))/(length(goodRows)-4));
 % LINEAR LEAST SQUARES
 %=======================
 
+% check whether we have a zero-column in A
+zeroCols = all(A(goodRows,:)==0,1);
+    % remove the zero-columns
+    A(:,find(zeroCols)) = [];
+
 % call myLscov
 if vIsVector
     [x,Qxx,mse] = myLscov(A(goodRows,:),B(goodRows,:),V(goodRows));
 else
-[x,Qxx] = myLscov(A(goodRows,:),B(goodRows,:),V(goodRows,goodRows));
+    [x,Qxx] = myLscov(A(goodRows,:),B(goodRows,:),V(goodRows,goodRows));
+end
+
+% if we removed zero-cols, we have to insert NaNs now.
+if any(zeroCols)
+    xTmp = repmat(NaN,size(xFmin));
+    xTmp(~zeroCols) = x;
+    x = xTmp;
+    % also assign NaN to Qxx where applicable
+    xTmp(~zeroCols) = Qxx;
+    Qxx = xTmp;
 end
 
 %=== END LSQ ========
