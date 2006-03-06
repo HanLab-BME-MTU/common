@@ -17,14 +17,14 @@ if nargin < 2 || isempty(exponent)
     exponent = 1;
 end
 
-s = size(img);
+[s1,s2,s3] = size(img);
 % reshape image only once
 img = img(:).^exponent;
 cx=0;
 cy=0;
 cz=0;
 % use meshgrid so that we get xyz in image coordinates
-[x,y,z] = meshgrid(1:s(1),1:s(2),1:s(3));
+[x,y,z] = meshgrid(1:s1,1:s2,1:s3);
 % nansum in case there are masked regions
 cx = nansum(x(:).*img);
 cy = nansum(y(:).*img);

@@ -20,7 +20,7 @@ if nargin < 4 || isempty(symmetric)
 end
 
 % find patch in data
-ds=size(data);
+[ds1,ds2,ds3]=size(data);
 hl=floor(patchSize/2);
 
 % find extension towards 0
@@ -29,9 +29,9 @@ hy1=min([center(2)-1,hl(2)]);
 hz1=min([center(3)-1,hl(3)]);
 
 % find extension towards inf
-hx2 = min([hl(1),ds(1)-center(1)]);
-hy2 = min([hl(2),ds(2)-center(2)]);
-hz2 = min([hl(3),ds(3)-center(3)]);
+hx2 = min([hl(1),ds1-center(1)]);
+hy2 = min([hl(2),ds2-center(2)]);
+hz2 = min([hl(3),ds3-center(3)]);
 
 % make symmetric, if necessary
 if symmetric
