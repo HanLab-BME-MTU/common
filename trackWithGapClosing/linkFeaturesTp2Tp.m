@@ -1,21 +1,24 @@
 function [trackedFeatureNum,trackedFeatureInfo,errFlag] = ...
-    linkFeaturesTp2Tp(movieInfo,searchRadius,maxAmpRatio)
+    linkFeaturesTp2Tp(movieInfo,costMatFun,costMatParams)
 %LINKFEATURESTP2TP links features between consecutive time points in a movie using LAP
 %
 %SYNOPSIS function [trackedFeatureNum,trackedFeatureInfo,errFlag] = ...
-%    linkFeaturesTp2Tp(movieInfo,searchRadius)
+%    linkFeaturesTp2Tp(movieInfo,costMatFun,costMatParams)
 %
-%INPUT  movieInfo   : Array of size equal to the number of time points
-%                     in a movie, containing the fields:
-%             .xCoord    : Image coordinate system x-coordinate of detected
-%                          features [x dx] (in pixels).
-%             .yCoord    : Image coorsinate system y-coordinate of detected
-%                          features [y dy] (in pixels).
-%             .amp       : Amplitudes of PSFs fitting detected features [a da].
-%       searchRadius: Maximum distance between two features in two
-%                     consecutive time points that allows linking them (in pixels).
-%       maxAmpRatio : Maximum ratio between the amplitudes of two features
-%                     in two censecutive time points that allows linking them.
+%INPUT  movieInfo    : Array of size equal to the number of time points
+%                      in a movie, containing the fields:
+%             .xCoord      : Image coordinate system x-coordinate of detected
+%                            features [x dx] (in pixels).
+%             .yCoord      : Image coorsinate system y-coordinate of detected
+%                            features [y dy] (in pixels).
+%             .amp         : Amplitudes of PSFs fitting detected features [a da].
+%       costMatFun   : Name of function used to calculate the cost matrix
+%                      for linking. 'costMatSimple' for simple cost matrix,
+%                      'costMatLogL' for cost matrix that uses information
+%                      on the distribution of diplacements and amplitudes.
+%       costMatParams: Structure with fields providing the parameters needed 
+%                      to calculate the cost matrix. See cost matrix of 
+%                      interest to determine what fields to include.
 %
 %OUTPUT trackedFeatureNum: Connectivity matrix of features between time points.
 %                          Rows indicate continuous tracks, while columns 
@@ -33,10 +36,7 @@ function [trackedFeatureNum,trackedFeatureInfo,errFlag] = ...
 %                          where the track does not exist.
 %       errFlag          : 0 if function executes normally, 1 otherwise.
 %
-%REMARKS No gap closing in this code.
-%        The cost of a link between 2 features in 2 consecutive frames
-%        = (displacement between frames) times (ratio of larger amplitude
-%        to smaller amplitude).
+%REMARKS No gap closing.
 %        The algorithm is currently for the special case of 2D, but in
 %        principle it can be generalized to ND quite easily.
 %
@@ -62,7 +62,7 @@ if nargin ~= nargin('linkFeaturesTp2Tp')
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Tracking
+%Linking
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %get number of time points in movie
@@ -79,58 +79,12 @@ trackedFeatureNum = [1:movieInfo(1).num]';
 %go over all time points
 for t = 1:numTimePoints-1
 
-    %calculate cost matrix, where costMat(i,j) = (distance between feature i
-    %in time point t and feature j in time point t+1) times (amplitude ratio, 
-    %where the larger amplitude is divided by the smaller amplitude).
-
-    %get number of features in the 2 time points
-    n = movieInfo(t).num;
-    m = movieInfo(t+1).num;
-
-    %replicate x,y-coordinates at the 2 time points to get n-by-m matrices
-    x1 = repmat(movieInfo(t).xCoord(:,1),1,m);
-    y1 = repmat(movieInfo(t).yCoord(:,1),1,m);
-    x2 = repmat(movieInfo(t+1).xCoord(:,1)',n,1);
-    y2 = repmat(movieInfo(t+1).yCoord(:,1)',n,1);
-
-    %calculate the square distances between features in time points t and t+1
-    costMat = (x1-x2).^2 + (y1-y2).^2;
-
-    %assign NaN to all pairs that are separated by a distance > searchRadius
-    indx = find(costMat>searchRadius^2);
-    costMat(indx) = NaN;
-
-    %replicate the feature amplitudes at the 2 time points to get n-by-m
-    %matrices
-    a1 = repmat(movieInfo(t).amp(:,1),1,m);
-    a2 = repmat(movieInfo(t+1).amp(:,1)',n,1);
+    %calculate cost matrix
+    eval(['costMat = ' costMatFun '(movieInfo(t:t+1),costMatParams);'])
     
-    %divide the larger of the two amplitudes by the smaller value
-    ampRatio = a1./a2;
-    for j=1:m
-        for i=1:n
-            if ampRatio(i,j) < 1
-                ampRatio(i,j) = 1/ampRatio(i,j);
-            end
-        end
-    end    
+    %get the number of features in the two time points
+    [n,m] = size(costMat);
     
-    %assign NaN to all pairs whose amplitude ratio is larger than the
-    %maximum allowed
-    indx = find(ampRatio>maxAmpRatio);
-    ampRatio(indx) = NaN;
-    
-    clear x1 y1 x2 y2 a1 a2;
-
-    %multiply the distance between pairs with the ratio between their
-    %amplitudes
-    costMat = costMat.*ampRatio;
-
-    %replace NaN, indicating pairs separated by a distance > searchRadius,
-    %with -1
-    indx = find(isnan(costMat));
-    costMat(indx) = -1;
-
     %track features based on this cost matrix, allowing for birth and death
     [link12,link21] = lap(costMat,-1,0,1);
     
