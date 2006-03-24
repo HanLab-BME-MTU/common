@@ -48,6 +48,12 @@ if ~isnumeric(A) | ~isnumeric(B)
     error('please specify numeric input for A and B')
 end
 
+% return false if one of the two is empty
+if isempty(A) || isempty(B)
+    trueOrFalse = logical(0);
+    return
+end
+
 sizA = size(A);
 sizB = size(B);
 

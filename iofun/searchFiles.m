@@ -87,6 +87,8 @@ else
     end
 end
 
+
+
 %---end test input---
 
 
@@ -195,10 +197,10 @@ if nargout > 1
         
         tmp = regexp(listOfFiles(:,1),includeString,'tokens');
         tmp = cat(1,tmp{:});
-        if ~isempty(tokenList)
+        if ~isempty(tmp)
         tokenList = cat(1,tmp{:});
         else
-            % it's defined and empty already.
+            tokenList = [];
         end
     else
         tokenList = [];

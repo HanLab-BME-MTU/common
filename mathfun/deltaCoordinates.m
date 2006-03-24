@@ -1,4 +1,4 @@
-function [distance, sigma, unitVector] = deltaCoordinates(points,sigmaZero,timeLag)
+function [distance, sigma, unitVector, sigmaUnitVector] = deltaCoordinates(points,sigmaZero,timeLag)
 %DELTACOORDINATES calculates distance, uncertainty and unit orientation vector from points with corresponding uncertainty
 %
 % SYNOPSIS [distance, sigma, unitVector] = (points,sigmaZero,timeLag)
@@ -40,6 +40,9 @@ function [distance, sigma, unitVector] = deltaCoordinates(points,sigmaZero,timeL
 %
 %          unitVector  unit vector pointing from the first to the second
 %                      point
+%           
+%          sigmaUnitVector uncertainty of every single component of the
+%                          unit vector (normed to vector of length 1!)
 %
 %c: jonas 05/04 (finally replacing the adgui-stuff)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,8 +100,8 @@ if coordSize(2) ~= covSize(1) | coordSize(2) ~= covSize(2)
         error('coordinate dimensions do not match dimensions of covariances!')
     end
 end
-% test ntp
-if coordSize(1) ~= covSize(3)
+% test ntp - account for single distance
+if ~(coordSize(1) == 1 && length(covSize) == 2) && coordSize(1) ~= covSize(3)
     error('number of coordinates does not match number of covariances!')
 end
 
@@ -154,6 +157,20 @@ if nargout > 1 % speed up stuff
 
         % sigma
         sigma(iSigma) = sqrt(sigmaZero(iSigma) * (H*Q*H'));
+        
+        if nargout > 3
+            % calculate the uncertainties in the individual directions
+            sigmaUnitVector = zeros(nSigmas,nDims);
+            for d=1:nDims
+                factor = [-1,1,1,-1];
+                H = zeros(1,4*nDims);
+                H(d:nDims:end) = factor;
+                % divide sigma by the length of the distanceVector to get
+                % the sigma of the components of the unit vector
+                sigmaUnitVector(iSigma,d) = ...
+                    sqrt(sigmaZero(iSigma) * (H*Q*H')) / distance(iSigma);
+            end
+        end
 
     end % for iSigma = 1:nSigmas
 

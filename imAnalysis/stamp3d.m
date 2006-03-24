@@ -19,6 +19,15 @@ if nargin < 4 || isempty(symmetric)
     symmetric = 0;
 end
 
+% expand patchSize, center if necessary (as with data of lower
+% dimensionality)
+tmp = ones(1,3);
+tmp(1:length(patchSize)) = patchSize;
+patchSize = tmp;
+tmp = ones(1,3);
+tmp(1:length(center)) = center;
+center = tmp;
+
 % find patch in data
 [ds1,ds2,ds3]=size(data);
 hl=floor(patchSize/2);
