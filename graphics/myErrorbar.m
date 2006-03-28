@@ -48,7 +48,7 @@ if ishandle(varargin{1})
     % remove axis handle
     varargin(1) = [];
 else
-    axesH = newplot;
+    axesH = gca;
 end
 
 % there could be
