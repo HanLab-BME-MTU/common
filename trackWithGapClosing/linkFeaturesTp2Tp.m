@@ -80,13 +80,13 @@ trackedFeatureNum = [1:movieInfo(1).num]';
 for t = 1:numTimePoints-1
 
     %calculate cost matrix
-    eval(['costMat = ' costMatFun '(movieInfo(t:t+1),costMatParams);'])
+    eval(['[costMat,noLinkCost] = ' costMatFun '(movieInfo(t:t+1),costMatParams);'])
     
     %get the number of features in the two time points
     [n,m] = size(costMat);
     
     %track features based on this cost matrix, allowing for birth and death
-    [link12,link21] = lap(costMat,-1,0,1);
+    [link12,link21] = lap(costMat,-1,0,1,noLinkCost);
     
     %get indices of features at time t+1 that are connected to features at time t
     indx2C = find(link21(1:m)<=n);

@@ -1,7 +1,7 @@
-function [costMat,errFlag] = costMatSimple(movieInfo,costMatParams)
+function [costMat,noLinkCost,errFlag] = costMatSimple(movieInfo,costMatParams)
 %COSTMATSIMPLE provides a simple cost matrix for linking features between 2 time points
 %
-%SYNOPSIS function [costMat,errFlag] = costMatSimple(movieInfo,costMatParams)
+%SYNOPSIS function [costMat,noLinkCost,errFlag] = costMatSimple(movieInfo,costMatParams)
 %
 %INPUT  movieInfo    : A 2x1 array (corresponding to the 2 time points of 
 %                      interest) containing the fields:
@@ -17,8 +17,13 @@ function [costMat,errFlag] = costMatSimple(movieInfo,costMatParams)
 %             .maxAmpRatio : Maximum ratio between the amplitudes of two
 %                            features in two censecutive time points that 
 %                            allows linking them.
+%             .noLnkPrctl  : Percentile used to calculate the cost of
+%                            linking a feature to nothing. Use -1 if you do
+%                            not want to calculate this cost.
 %
 %OUTPUT costMat      : Cost matrix.
+%       noLinkCost   : Cost of linking a feature to nothing, as derived
+%                      from the distribution of costs.
 %       errFlag      : 0 if function executes normally, 1 otherwise.
 %
 %REMARKS The cost for linking feature i in time point t to feature j 
@@ -32,6 +37,7 @@ function [costMat,errFlag] = costMatSimple(movieInfo,costMatParams)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 costMat = [];
+noLinkCost = [];
 errFlag = [];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,6 +53,7 @@ end
 
 searchRadius = costMatParams.searchRadius;
 maxAmpRatio = costMatParams.maxAmpRatio;
+noLnkPrctl = costMatParams.noLnkPrctl;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Cost matrix calculation
@@ -92,6 +99,11 @@ ampRatio(indx) = NaN;
 %multiply the distance between pairs with the ratio between their
 %amplitudes
 costMat = costMat.*ampRatio;
+
+%determine noLinkCost
+if noLnkPrctl ~= -1
+    noLinkCost = prctile(costMat(:),noLnkPrctl);
+end
 
 %replace NaN, indicating pairs that cannot be linked, with -1
 costMat(find(isnan(costMat))) = -1;

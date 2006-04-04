@@ -1,28 +1,32 @@
-function [costMat,errFlag] = costMatLogL(movieInfo,costMatParams)
+function [costMat,noLinkCost,errFlag] = costMatLogL(movieInfo,costMatParams)
 %COSTMATLOGL provides a cost matrix for linking features between 2 time points based on amplitude and displacement statistics
 %
-%SYNOPSIS function [costMat,errFlag] = costMatLogL(movieInfo,costMatParams)
+%SYNOPSIS [costMat,noLinkCost,errFlag] = costMatLogL(movieInfo,trackStats)
 %
 %INPUT  movieInfo    : A 2x1 array (corresponding to the 2 time points of 
 %                      interest) containing the fields:
-%             .xCoord      : Image coordinate system x-coordinate of detected
-%                            features [x dx] (in pixels).
-%             .yCoord      : Image coorsinate system y-coordinate of detected
-%                            features [y dy] (in pixels).
-%             .amp         : Amplitudes of PSFs fitting detected features [a da].
-%       costMatParams: Structure with the following fields:
-%             .dispSqLambda: Parameter of the exponential distribution
-%                            that describes the displacement of a feature
-%                            between two consecutive frames.
-%             .ampDiffStd  : Standard deviation of the change in a feature's 
-%                            amplitude between consecutive time points.
-%             .maxDispSq   : Maximim squared displacement between consecutive 
-%                            frames that allows the linking of two features.
-%             .maxAmpDiffSq: Maximum squared change in amplitude between
-%                            consecutive framces that allows the linking of
-%                            two features.
+%             .xCoord     : Image coordinate system x-coordinate of detected
+%                           features [x dx] (in pixels).
+%             .yCoord     : Image coorsinate system y-coordinate of detected
+%                           features [y dy] (in pixels).
+%             .amp        : Amplitudes of PSFs fitting detected features [a da].
+%       costMatParams: Structure with the fields:
+%             .trackStats : Structure with the following fields:
+%                   .dispSqLambda: Parameter of the exponential distribution
+%                                  that describes the displacement of a feature
+%                                  between two consecutive frames.
+%                   .ampDiffStd  : Standard deviation of the change in a feature's 
+%                                  amplitude between consecutive time points.
+%             .cutoffCProb: Cumulative probability of a square diplacement
+%                           or amplitude difference beyond which linking is 
+%                           not allowed.
+%             .noLnkPrctl : Percentile used to calculate the cost of
+%                           linking a feature to nothing. Use -1 if you do
+%                           not want to calculate this cost.
 %
 %OUTPUT costMat      : Cost matrix.
+%       noLinkCost   : Cost of linking a feature to nothing, as derived
+%                      from the distribution of costs.
 %       errFlag      : 0 if function executes normally, 1 otherwise.
 %
 %REMARKS The cost for linking feature i in time point t to feature j 
@@ -40,6 +44,7 @@ function [costMat,errFlag] = costMatLogL(movieInfo,costMatParams)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 costMat = [];
+noLinkCost = [];
 errFlag = [];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,14 +58,20 @@ if nargin ~= nargin('costMatLogL')
     return
 end
 
-dispSqLambda = costMatParams.dispSqLambda;
-ampDiffStd = costMatParams.ampDiffStd;
-maxDispSq = costMatParams.maxDispSq;
-maxAmpDiffSq = costMatParams.maxAmpDiffSq;
+dispSqLambda = costMatParams.trackStats.dispSqLambda(1);
+ampDiffStd = costMatParams.trackStats.ampDiffStd(1);
+cutoffCProb = costMatParams.cutoffCProb;
+noLnkPrctl = costMatParams.noLnkPrctl;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Cost matrix calculation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%get the maximum squared displacement that allows linking 2 features
+maxDispSq = expinv(cutoffCProb,dispSqLambda);
+
+%find the maximum squared amplitude change that allows linking 2 features
+maxAmpDiffSq = (norminv(cutoffCProb,0,ampDiffStd)).^2;
 
 %get number of features in the 2 time points
 n = movieInfo(1).num;
@@ -84,6 +95,11 @@ ampDiffSq(find(ampDiffSq>maxAmpDiffSq)) = NaN;
 
 %calculate the cost matrix
 costMat = ampDiffSq/2/ampDiffStd^2 + dispSqLambda*dispSq;
+
+%determine noLinkCost
+if noLnkPrctl ~= -1
+    noLinkCost = prctile(costMat(:),noLnkPrctl);
+end
 
 %replace NaN, indicating pairs that cannot be linked, with -1
 costMat(find(isnan(costMat))) = -1;

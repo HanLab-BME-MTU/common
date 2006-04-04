@@ -49,7 +49,11 @@ function [trackedFeatureNum,trackedFeatureInfo,errFlag] = ...
 %REMARKS The algorithm is currently for the special case of 2D, but in
 %        principle it can be generalized to ND quite easily.
 %
+%MUST FIX!
+%
 %Khuloud Jaqaman, March 2006
+
+%This function is a little outdated. Must be fixed.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Output

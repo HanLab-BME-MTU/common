@@ -1,4 +1,4 @@
-function plotWithTimeColor(trackedFeatureInfo,timeRange)
+function plotWithTimeColor(trackedFeatureInfo,timeRange,newFigure)
 %PLOTWITHTIMECOLOR plots a group of tracks with time color-coding
 %
 %SYNOPSIS plotWithTimeColor(trackedFeatureInfo)
@@ -14,6 +14,8 @@ function plotWithTimeColor(trackedFeatureInfo,timeRange)
 %                           where the track does not exist.
 %       timeRange         : Time range to plot. Optional. Default: whole
 %                           movie.
+%       newFigure         : 1 if plot should be made in a new figure
+%                           window, 0 otherwise. Optional. Default: 1.
 %
 %OUTPUT no output variables, just the plot
 %
@@ -41,6 +43,16 @@ if nargin < 2 || isempty(timeRange)
 else
     if timeRange(1) < 1 || timeRange(2) > numTimePoints
         disp('--plotWithTimeColor: Wrong time range for plotting!');
+        errFlag = 1;
+    end
+end
+
+%check whethre newFigure was input
+if nargin < 3 || isempty(newFigure)
+    newFigure = 1;
+else
+    if newFigure ~= 0 && newFigure ~= 1
+        disp('--plotWithTimeColor: newFigure should be 0 or 1!');
         errFlag = 1;
     end
 end
@@ -86,7 +98,9 @@ tracksXP = tracksX(timeRange(1):timeRange(2),:);
 tracksYP = tracksY(timeRange(1):timeRange(2),:);
 
 %open figure and hold on
-figure1 = figure;
+if newFigure
+    figure
+end
 hold on
 
 %plot tracks ignoring missing points
@@ -120,19 +134,19 @@ while strcmp(userEntry,'y')
     for i=1:length(x)
         distTrack2Point = (tracksXP-x(i)).^2+(tracksYP-y(i)).^2;
         [frameChosen,trackChosen] = find(distTrack2Point==min(distTrack2Point(:)));
-        disp(['Coordinates: ' num2str(tracksX(frameChosen,trackChosen)) ' ' ...
-            num2str(tracksY(frameChosen,trackChosen)) '   Frame: ' ...
-            num2str(frameChosen+timeRange(1)-1)]);
+        for j=1:length(trackChosen)
+            disp(['Coordinates: ' num2str(tracksX(frameChosen(j),trackChosen(j))) ' ' ...
+                num2str(tracksY(frameChosen(j),trackChosen(j))) '   Frame: ' ...
+                num2str(frameChosen(j)+timeRange(1)-1) '   Track: ' ...
+                num2str(trackChosen(j))]);
+        end
     end
-
+        
     %ask the user again whether she wants to click on figure and get frame
     %information
     userEntry = input('select points again? y/n ','s');
 
 end
-
-%hold off figure
-hold off
 
 %%%%% ~~ the end ~~ %%%%%
 

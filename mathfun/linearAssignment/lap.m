@@ -1,4 +1,4 @@
-function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC)
+function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC, noLinkCost)
 %LAP solves the linear assignment problem for a given cost matrix
 %
 % A linear assignment tries to establish links between points in two sets.
@@ -38,6 +38,9 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC)
 %
 % augmentCC  (optional, [{0}/1]) If 1, the cost matrix will be augmented to
 %            allow births and deaths.
+% noLinkCost (optional, [{maximum cost + 1}]) Cost for linking a feature
+%            to nothing.
+%
 %
 % OUTPUT: x: The point A(i) links to B(x(i))
 %         y: The point B(j) links to A(y(j))
@@ -98,41 +101,47 @@ end
 if nargin < 3 || isempty(extendedTesting)
     extendedTesting = 1;
 end
+
+if nargin < 5 || isempty(noLinkCost)
+    noLinkCost = max(cc(:)) + 1;
+end
+
+% if we have -1 as non-link-marker, and we get it everywhere, we get
+% a segmentation fault.
+if noLinkCost == NONLINK_MARKER
+    noLinkCost = noLinkCost + 1;
+end
+
+
 %=======================
 
 %=================================
 % AUTMENT COST MATRIX IF SELECTED
 %=================================
 if augmentCC
+
     % expand the m-by-n cost matrix to a (m+n)-by-(n+m) matrix, adding
-    % diagonals with a cost above the highest cost
-    maxCost = max(cc(:)) + 1;
-    
-    % if we have -1 as non-link-marker, and we get it everywhere, we get
-    % a segmentation fault.
-    if maxCost <= 0
-        maxCost = 1;
-    end
+    % diagonals with noLinkCost
 
     % check if sparse
     if issparse(cc)
-        % mmDiag = spdiags(maxCost * ones(scc(1),1), 0, scc(1), scc(1));
-        % nnDiag = spdiags(maxCost * ones(scc(2),1), 0, scc(2), scc(2));
+        % mmDiag = spdiags(noLinkCost * ones(scc(1),1), 0, scc(1), scc(1));
+        % nnDiag = spdiags(noLinkCost * ones(scc(2),1), 0, scc(2), scc(2));
         % nmMat  = sparse(ones(scc(2), scc(1)));
         % cc = [cc, mmDiag; nnDiag, nmMat];
-        cc = [cc, spdiags(maxCost * ones(scc(1),1), 0, scc(1), scc(1));...
-            spdiags(maxCost * ones(scc(2),1), 0, scc(2), scc(2)),...
+        cc = [cc, spdiags(noLinkCost * ones(scc(1),1), 0, scc(1), scc(1));...
+            spdiags(noLinkCost * ones(scc(2),1), 0, scc(2), scc(2)),...
             sparse(ones(scc(2), scc(1)))];
     else
-        % mmDiag = diag(maxCost * ones(scc(1),1));
-        % nnDiag = diag(maxCost * ones(scc(2),1));
+        % mmDiag = diag(noLinkCost * ones(scc(1),1));
+        % nnDiag = diag(noLinkCost * ones(scc(2),1));
         % nmMat  = sparse(ones(scc(2), scc(1)));
         % cc = [cc, mmDiag; nnDiag, nmMat];
         
         % make cc sparse. Take NLM in cc into account!
         cc(cc==NONLINK_MARKER) = 0;
-        cc = [cc, diag(maxCost * ones(scc(1),1)); ...
-            diag(maxCost * ones(scc(2),1)), ...
+        cc = [cc, diag(noLinkCost * ones(scc(1),1)); ...
+            diag(noLinkCost * ones(scc(2),1)), ...
             sparse(ones(scc(2), scc(1)))];
     end
 

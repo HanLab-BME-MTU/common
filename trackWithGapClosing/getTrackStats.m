@@ -1,9 +1,9 @@
-function [dispSqLambda,ampDiffStd,errFlag] = getTrackStats(...
-    trackedFeatureInfo,lenFrac,timeWindow)
+function [trackStats,statsRelChange,errFlag] = getTrackStats(trackedFeatureInfo,lenFrac,...
+    timeWindow,trackStatsOld)
 %GETTRACKSTATS determines the statistical characeteristics of amplitude change and displacement in tracks over time
 %
-%SYNOPSIS function [dispSqLambda,ampDiffStd,errFlag] = getTrackStats(...
-%    trackedFeatureInfo,lenFrac,timeWindow)
+%SYNOPSIS [trackStats,errFlag] = getTrackStats(trackedFeatureInfo,lenFrac,...
+%    timeWindow)
 %
 %INPUT  trackedFeatureInfo:The positions and amplitudes of the tracked
 %                          features. Number of rows = number of tracks, 
@@ -18,13 +18,17 @@ function [dispSqLambda,ampDiffStd,errFlag] = getTrackStats(...
 %                          time points in movie.
 %       timeWindow       : Time window of gap closing.
 %                          Optional. Default: 1.
+%       trackStatsOld    : trackStats (See output description) from previous 
+%                          calculation. Optional. Default: [].
 %
-%OUTPUT dispSqLambda     : timeWindow x 1 vector of parameter of the 
-%                          exponential distribution that describes the 
-%                          displacement of a feature between frames.
-%       ampDiffStd       : timeWindow x 1 vector of standard deviation of 
-%                          the change in a feature's amplitude between
-%                          frames.
+%OUTPUT trackStats       : Structure with fields:
+%           .dispSqLambda     : timeWindow x 1 vector of parameter of the 
+%                               exponential distribution that describes the 
+%                               displacement of a feature between frames.
+%           .ampDiffStd       : timeWindow x 1 vector of standard deviation of 
+%                               the change in a feature's amplitude between
+%                               frames.
+%       statsRelChange   : Relative change in statistical parameters.
 %       errFlag          : 0 if function executes normally, 1 otherwise.
 %
 %Khuloud Jaqaman, March 2006
@@ -33,8 +37,8 @@ function [dispSqLambda,ampDiffStd,errFlag] = getTrackStats(...
 %Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-dispSqLambda = [];
-ampDiffStd = [];
+trackStats = [];
+statsRelChange = [];
 errFlag = [];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,6 +58,10 @@ timeWindow_def = 1;
 %check timeWindow
 if nargin < 3 || isempty(timeWindow)
     timeWindow = timeWindow_def;
+end
+
+if nargin < 4 || isempty(trackStatsOld)
+    trackStatsOld = [];
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -102,6 +110,17 @@ if ~isempty(goodTracks) %if there are tracks to use ...
         ampDiffStd(i) = nanstd(ampDiff(:));
 
     end %(for i=1:timeWindow)
+    
+    %save output in structure
+    trackStats.dispSqLambda = dispSqLambda;
+    trackStats.ampDiffStd = ampDiffStd;
+    
+    %get the maximum relative change in parameters, if the old parameters
+    %are supplied
+    if ~isempty(trackStatsOld)
+        oldParam = [trackStatsOld.dispSqLambda;trackStatsOld.ampDiffStd];
+        statsRelChange = max(abs(([dispSqLambda;ampDiffStd]-oldParam)./oldParam));
+    end
 
 else %if there aren't any ...
 
