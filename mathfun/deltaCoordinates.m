@@ -1,7 +1,7 @@
 function [distance, sigma, unitVector, sigmaUnitVector] = deltaCoordinates(points,sigmaZero,timeLag)
 %DELTACOORDINATES calculates distance, uncertainty and unit orientation vector from points with corresponding uncertainty
 %
-% SYNOPSIS [distance, sigma, unitVector] = (points,sigmaZero,timeLag)
+% SYNOPSIS [distance, sigma, unitVector] = deltaCoordinates(points,sigmaZero,timeLag)
 %
 % INPUT    points    structure array of length 1-4 with coordinates and covariances
 %                       of the individual points. n is the amount of e.g.
@@ -11,7 +11,7 @@ function [distance, sigma, unitVector, sigmaUnitVector] = deltaCoordinates(point
 %                       are the point coordinates, corrections are the
 %                       coordinates by which the points have to be shifted.
 %                       If you want to calculate a displacement, fill
-%                       column 1 and 3 of the structure array. If you want
+%                       column 1 (and 3 for corrected). If you want
 %                       to calculate a distance measurement between two
 %                       points for all n timepoints, fill col. 1 and 2. If
 %                       both points have to be shifted by different
@@ -44,7 +44,7 @@ function [distance, sigma, unitVector, sigmaUnitVector] = deltaCoordinates(point
 %          sigmaUnitVector uncertainty of every single component of the
 %                          unit vector (normed to vector of length 1!)
 %
-%c: jonas 05/04 (finally replacing the adgui-stuff)
+%c: jonas 05/04 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %DEFAULTS
@@ -263,7 +263,7 @@ switch which2fill
 
         pos1tmp = points(1).coordinates;
         pos1 = pos1tmp(1:end-timeLag,:);
-        pos2 = pos1tmp(timeLag+1:end);
+        pos2 = pos1tmp(timeLag+1:end,:);
         distanceVectors = pos2-pos1;
         cov1 = points(1).covariances(:,:,1:end-timeLag);
         cov2 = points(1).covariances(:,:,timeLag+1:end);
