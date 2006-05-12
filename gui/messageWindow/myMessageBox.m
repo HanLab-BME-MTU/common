@@ -18,7 +18,7 @@ if nargin<4
 end;
 
 screenSize=get(0,'ScreenSize');
-if isempty(mHandle) | mHandle==0  | ~ishandle(mHandle)
+if isempty(mHandle) || mHandle==0  || ~ishandle(mHandle)
     if nargin<3
         name='';
     end;
