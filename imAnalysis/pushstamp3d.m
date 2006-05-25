@@ -29,7 +29,10 @@ end
 % find patch in data
 ds=size(data);
 patchSize = size(patch);
-hl=floor(patchSize/2);
+if length(patchSize) == 2
+    patchSize(3) = 1;
+end
+hl = patchSize/2 - 0.5;
 
 % find extension towards 0
 hx1=min([center(1)-1,hl(1)]);
