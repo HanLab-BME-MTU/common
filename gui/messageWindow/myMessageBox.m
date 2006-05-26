@@ -2,7 +2,7 @@ function mHandle=myMessageBox(mHandle,message,name,offset)
 % MYMESSAGEBOX display a message screen centered
 % 
 %
-% SYNOPSIS mHandle=myMessageBox(handle,message,offset)
+% SYNOPSIS mHandle=myMessageBox(handle,message,name,offset)
 %
 % INPUT mHandle : msgxboxHandle (if empty or zero a new box is opened)
 %       message : string or string list

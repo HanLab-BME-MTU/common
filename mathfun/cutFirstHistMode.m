@@ -219,6 +219,9 @@ if doHistogram
         plot(ax(2),bins,counts,'r',[cutoffValue,cutoffValue],[0,max(counts)],'-.r')
         set(ax(2),'YAxisLocation','right','Color','none','YColor','r')
         set(ax,'Box','off');
+        y2Limits = ylim(ax(2));
+        y2Limits(1) = 0;
+        ylim(ax(2),y2Limits)
     end
 
 else

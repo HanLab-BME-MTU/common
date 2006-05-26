@@ -256,6 +256,7 @@ whichBin = whichBin + 1;
 % array of pixel coordinates
 c = mat2cell(whichBin,nPoints,ones(1,nDims));
 countIdx = sub2ind(nBins,c{:});
+countIdx(isnan(countIdx)) = [];
 [countIdx,n] = countEntries(countIdx);
 if nDims == 1
     counts = zeros(nBins,1);

@@ -62,6 +62,9 @@ numArgIn = length(varargin);
 data = varargin{1};
 data = data(:);
 
+% check for non-finite data points
+data(~isfinite(data)) = [];
+
 % check for "factor"
 if numArgIn < 2 || isempty(varargin{2})
     factor = 1;
