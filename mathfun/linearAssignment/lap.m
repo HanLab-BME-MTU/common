@@ -166,7 +166,8 @@ cc = cc';
 if issparse(cc)
     [rowIdx, colIdx, val] = find(cc);
 else
-    [rowIdx, colIdx, val] = find(cc ~= NONLINK_MARKER);
+    [rowIdx, colIdx] = find(cc ~= NONLINK_MARKER);
+    val = cc(cc ~= NONLINK_MARKER);
 end
 
 % test that all cols and all rows are filled, and that there are no nans

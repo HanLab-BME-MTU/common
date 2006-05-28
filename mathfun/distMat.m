@@ -1,4 +1,4 @@
-function [dm,vectorMatrix] = distMat(M,metric);
+function [dm,vectorMatrix] = distMat(M,metric)
 %DISTMAT computes the distance matrix of a point set
 %
 % SYNOPSIS [dm,vectorMatrix] = distMat(M,metric);
