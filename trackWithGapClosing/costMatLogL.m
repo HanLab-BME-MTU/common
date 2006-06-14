@@ -17,9 +17,10 @@ function [costMat,noLinkCost,errFlag] = costMatLogL(movieInfo,costMatParams)
 %                                  between two consecutive frames.
 %                   .ampDiffStd  : Standard deviation of the change in a feature's 
 %                                  amplitude between consecutive time points.
-%             .cutoffCProb: Cumulative probability of a square diplacement
-%                           or amplitude difference beyond which linking is 
-%                           not allowed.
+%             .cutoffProbD: Cumulative probability of a square diplacement
+%                           beyond which linking is not allowed.
+%             .cutoffProbA: Cumulative probability of an amplitude
+%                           difference beyond which linking is not allowed.
 %             .noLnkPrctl : Percentile used to calculate the cost of
 %                           linking a feature to nothing. Use -1 if you do
 %                           not want to calculate this cost.
@@ -60,7 +61,8 @@ end
 
 dispSqLambda = costMatParams.trackStats.dispSqLambda(1);
 ampDiffStd = costMatParams.trackStats.ampDiffStd(1);
-cutoffCProb = costMatParams.cutoffCProb;
+cutoffProbD = costMatParams.cutoffProbD;
+cutoffProbA = costMatParams.cutoffProbA;
 noLnkPrctl = costMatParams.noLnkPrctl;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -68,10 +70,10 @@ noLnkPrctl = costMatParams.noLnkPrctl;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %get the maximum squared displacement that allows linking 2 features
-maxDispSq = expinv(cutoffCProb,dispSqLambda);
+maxDispSq = expinv(cutoffProbD,dispSqLambda);
 
 %find the maximum squared amplitude change that allows linking 2 features
-maxAmpDiffSq = (norminv(cutoffCProb,0,ampDiffStd)).^2;
+maxAmpDiffSq = (norminv(cutoffProbA,0,ampDiffStd)).^2;
 
 %get number of features in the 2 time points
 n = movieInfo(1).num;

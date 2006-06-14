@@ -21,9 +21,10 @@ function [costVec,errFlag] = costVecLinkMS(trackedFeatMS,timeSplit,...
 %                                  between two time points.
 %                   .ampDiffStd  : Standard deviations of the change in a feature's 
 %                                  amplitude between two time points.
-%             .cutoffCProb: Cumulative probability of a square diplacement
-%                           or amplitude difference beyond which linking is 
-%                           not allowed.
+%             .cutoffProbD: Cumulative probability of a square diplacement
+%                           beyond which linking is not allowed.
+%             .cutoffProbA: Cumulative probability of an amplitude
+%                           difference beyond which linking is not allowed.
 %       gapCloseParam: Structure containing variables needed for gap closing.
 %                      Contains the fields:
 %             .timeWindow : Largest time gap between the end of a track and the
@@ -64,7 +65,8 @@ end
 
 dispSqLambda = costMatParams.trackStats.dispSqLambda;
 ampDiffStd = costMatParams.trackStats.ampDiffStd;
-cutoffCProb = costMatParams.cutoffCProb;
+cutoffProbD = costMatParams.cutoffProbD;
+cutoffProbA = costMatParams.cutoffProbA;
 timeWindow = gapCloseParam.timeWindow;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,10 +74,10 @@ timeWindow = gapCloseParam.timeWindow;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %get the maximum squared displacement that allows linking 2 features
-maxDispSq = expinv(cutoffCProb,dispSqLambda);
+maxDispSq = expinv(cutoffProbD,dispSqLambda);
 
 %find the maximum squared amplitude change that allows linking 2 features
-maxAmpDiffSq = (norminv(cutoffCProb,0,ampDiffStd)).^2;
+maxAmpDiffSq = (norminv(cutoffProbA,0,ampDiffStd)).^2;
 
 %calculate the additive constant for each cost as a function of time gap
 addConst = log(ampDiffStd) - log(dispSqLambda);

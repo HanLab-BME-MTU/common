@@ -19,21 +19,27 @@ function [costMat,noLinkCost,trackStartTime,trackEndTime,indxMerge,numMerge,...
 %       trackStartTime : Starting time of all tracks.
 %       trackEndTime   : Ending time of all tracks.
 %       costMatParams  : Structure with the fields:
-%             .trackStats : Structure with the following fields:
+%             .trackStats  : Structure with the following fields:
 %                   .dispSqLambda: Parameters of the exponential distribution
 %                                  that describes the displacement of a feature
 %                                  between two time points.
 %                   .ampDiffStd  : Standard deviations of the change in a feature's 
 %                                  amplitude between two time points.
-%             .cutCProb1  : Cumulative probability of a square diplacement
-%                           or amplitude difference beyond which linking
-%                           between an end and a start is not allowed.
-%             .cutCProb2  : Cumulative probability of a square displacement
-%                           or amplitude difference beyond which merging
-%                           and splitting are not allowed.
-%             .noLnkPrctl : Percentile used to calculate the cost of
-%                           linking a feature to nothing. Use -1 if you do
-%                           not want to calculate this cost.
+%             .cutoffProbD1: Cumulative probability of a square diplacement
+%                            beyond which linking between an end and a 
+%                            start is not allowed.
+%             .cutoffProbA1: Cumulative probability of an amplitude change
+%                            beyond which linking between an end and a 
+%                            start is not allowed.
+%             .cutoffProbD2: Cumulative probability of a square displacement
+%                            beyond which merging and splitting are not
+%                            allowed.
+%             .cutoffProbA2: Cumulative probability of an amplitude change
+%                            beyond which merging and splitting are not
+%                            allowed.
+%             .noLnkPrctl  : Percentile used to calculate the cost of
+%                            linking a feature to nothing. Use -1 if you do
+%                            not want to calculate this cost.
 %       gapCloseParam  : Structure containing variables needed for gap closing.
 %                        Contains the fields:
 %             .timeWindow : Largest time gap between the end of a track and the
@@ -104,9 +110,11 @@ timeWindow = gapCloseParam.timeWindow;
 mergeSplit = gapCloseParam.mergeSplit;
 dispSqLambda = costMatParams.trackStats.dispSqLambda;
 ampDiffStd = costMatParams.trackStats.ampDiffStd;
-cutCProb1 = costMatParams.cutCProb1;
+cutoffProbD1 = costMatParams.cutoffProbD1;
+cutoffProbA1 = costMatParams.cutoffProbA1;
 if mergeSplit
-    cutCProb2 = costMatParams.cutCProb2;
+    cutoffProbD2 = costMatParams.cutoffProbD2;
+    cutoffProbA2 = costMatParams.cutoffProbA2;
 end
 noLnkPrctl = costMatParams.noLnkPrctl;
 
@@ -115,10 +123,10 @@ noLnkPrctl = costMatParams.noLnkPrctl;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %get the maximum squared displacement that allows linking an end to a start
-maxDispSq = expinv(cutCProb1,dispSqLambda);
+maxDispSq = expinv(cutoffProbD1,dispSqLambda);
 
 %find the maximum squared amplitude change that allows linking an end to a start
-maxAmpDiffSq = (norminv(cutCProb1,0,ampDiffStd)).^2;
+maxAmpDiffSq = (norminv(cutoffProbA1,0,ampDiffStd)).^2;
 
 %calculate the additive constant for each cost as a function of time gap
 addConst = log(ampDiffStd) - log(dispSqLambda);
@@ -230,11 +238,11 @@ if mergeSplit
     addConst2 = addConst(1) - log(dispSqLambda(1));
     
     %get the maximum squared displacement that allows merging and splitting
-    maxDispSqMS = expinv(cutCProb2,dispSqLambda);
+    maxDispSqMS = expinv(cutoffProbD2,dispSqLambda);
 
     %get maximum allowed intensity variation when merging or
     %splitting
-    maxAmpDiffSqMS = (norminv(cutCProb2,0,1.4142*ampDiffStd)).^2;
+    maxAmpDiffSqMS = (norminv(cutoffProbA2,0,1.4142*ampDiffStd)).^2;
     
     %costs of merging
     
