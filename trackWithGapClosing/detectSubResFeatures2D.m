@@ -132,7 +132,7 @@ alphaD = testAlpha.alphaD;
 
 %determine which signals are overlapping, in which case they must
 %be fitted together later on
-[clusters,errFlag] = findOverlapPSFs(cands,numPixelsX,numPixelsY,psfSigma);
+[clusters,errFlag] = findOverlapPSFs2D(cands,numPixelsX,numPixelsY,psfSigma);
 if errFlag
     disp('--detectSubResFeatures2D: Could not place signals in clusters!');
     return
@@ -386,7 +386,7 @@ end
 clustersMMF = clustersMMF(find(keepCluster));
 
 %save information in structure "detectedFeatures"
-tmp = vertcat(clustersMMF.positions);
+tmp = vertcat(clustersMMF.position);
 detectedFeatures.xCoord = [tmp(:,1) tmp(:,3)];
 detectedFeatures.yCoord = [tmp(:,2) tmp(:,4)];
 detectedFeatures.amp = vertcat(clustersMMF.amplitude);

@@ -170,6 +170,9 @@ else
     val = cc(cc ~= NONLINK_MARKER);
 end
 
+%clear cc to save memory
+clear cc;
+
 % test that all cols and all rows are filled, and that there are no nans
 if extendedTesting
     allCols = unique(colIdx);
@@ -179,18 +182,21 @@ if extendedTesting
     end
 end
 
+% %I have re-written this section to save memory --Khuloud
+% % write value vector, pad a zero
+% compactCC = [0; val];
+% % write kk, pad a zero
+% kk = [0; rowIdx];
+% 
+% % colIdx is already sorted, so we can find out the number of entries per
+% % column via diff. Wherever there is a jump in the column, the deltaIdx
+% % will be 1, and its rowIdx will equal fst
+% deltaIdx = diff([0;colIdx]);
+% % add 0 and length+1
+% fst = [0;find(deltaIdx);length(val)+1];
 
-% write value vector, pad a zero
-compactCC = [0; val];
-% write kk, pad a zero
-kk = [0; rowIdx];
-
-% colIdx is already sorted, so we can find out the number of entries per
-% column via diff. Wherever there is a jump in the column, the deltaIdx
-% will be 1, and its rowIdx will equal fst
-deltaIdx = diff([0;colIdx]);
-% add 0 and length+1
-fst = [0;find(deltaIdx);length(val)+1];
+%pad value vector with a zero --Khuloud
+val = [0; val];
 
 %==================================
 
@@ -198,7 +204,13 @@ fst = [0;find(deltaIdx);length(val)+1];
 %==================================
 % CALL MEX-FUNCTION
 %==================================
-[x, y, u, v] = mexLap(double(scc(1)), int32(length(compactCC)), double(compactCC), int32(kk), int32(fst));
+
+% %I have re-written the following line to save memory --Khuloud
+% [x, y, u, v] = mexLap(double(scc(1)), int32(length(compactCC)), double(compactCC), int32(kk), int32(fst));
+
+[x, y, u, v] = mexLap(double(scc(1)), int32(length(val)), double(val), ...
+    int32([0; rowIdx]), int32([0;find(diff([0;colIdx]));length(val)]));
+
 %==================================
 
 % remove first element from output vectors, as it is a meaningless 0.

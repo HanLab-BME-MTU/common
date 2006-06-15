@@ -100,11 +100,11 @@ numTimePoints = length(movieInfo);
 
 %get initial tracks by linking features between consecutive frames using
 %the simple initial criteria
-[trackedFeatNumInit,trackedFeatInfoInit,errFlag] = linkFeaturesTp2Tp(...
+[trackedFeatureNum,trackedFeatureInfo,errFlag] = linkFeaturesTp2Tp(...
     movieInfo,costMatrices(1).costMatFun,costMatrices(1).costMatParam);
 
 %get track statistics
-eval(['[trackStatsT,statsRelChange,errFlag] = ' trackStatFun '(trackedFeatInfoInit,lenFrac,timeWindow);'])
+eval(['[trackStatsT,statsRelChange,errFlag] = ' trackStatFun '(trackedFeatureInfo,lenFrac,timeWindow);'])
 
 %exit at this point if statistical analysis could not be performed
 if errFlag
@@ -123,20 +123,20 @@ while iterate
     %via the statistical analysis of tracks
     costMatParams = costMatrices(2).costMatParam;
     costMatParams.trackStats = trackStats;
-    [trackedFeatNumInit,trackedFeatInfoInit,errFlag] = linkFeaturesTp2Tp(...
+    [trackedFeatureNum,trackedFeatureInfo,errFlag] = linkFeaturesTp2Tp(...
         movieInfo,costMatrices(2).costMatFun,costMatParams);
 
     %close gaps using the information obtained via the statistical analysis
     %of tracks ...
 
     %get number of tracks formed by initial linking
-    numTracks = size(trackedFeatNumInit,1);
+    numTracks = size(trackedFeatureNum,1);
 
     %find the starting time points of all tracks, find tracks that start
     %after the first time point, and get their number
     trackStartTime = zeros(numTracks,1);
     for i=1:numTracks
-        trackStartTime(i) = find((trackedFeatNumInit(i,:)~=0),1,'first');
+        trackStartTime(i) = find((trackedFeatureNum(i,:)~=0),1,'first');
     end
     indxStart = find(trackStartTime>1);
     m = length(indxStart);
@@ -145,7 +145,7 @@ while iterate
     %before the last time point, and get the number
     trackEndTime = zeros(numTracks,1);
     for i=1:numTracks
-        trackEndTime(i) = find((trackedFeatNumInit(i,:)~=0),1,'last');
+        trackEndTime(i) = find((trackedFeatureNum(i,:)~=0),1,'last');
     end
     indxEnd = find(trackEndTime<numTimePoints);
     n = length(indxEnd);
@@ -158,16 +158,12 @@ while iterate
         costMatParams.trackStats = trackStats;
         eval(['[costMat,noLinkCost,trackStartTime,trackEndTime,indxMerge,' ...
             'numMerge,indxSplit,numSplit,errFlag] =' costMatrices(3).costMatFun ...
-            '(trackedFeatInfoInit,trackStartTime,indxStart,'...
+            '(trackedFeatureInfo,trackStartTime,indxStart,'...
             'trackEndTime,indxEnd,costMatParams,gapCloseParam);'])
 
         %link tracks based on this cost matrix, allowing for birth and death
         [link12,link21] = lap(costMat,-1000,0,1,noLinkCost);
 
-        %Connect the tracks using the information from LAP
-        trackedFeatureNum  = trackedFeatNumInit;
-        trackedFeatureInfo = trackedFeatInfoInit;
-        
         for i=m:-1:1 %go over all track starts
 
             if link21(i) <= n %if this start is linked to an end
@@ -211,7 +207,7 @@ while iterate
 
                     %collect splitting and merging tracks into one
                     %matrix
-                    trackedFeatMS = trackedFeatInfoInit([indxStart(i);...
+                    trackedFeatMS = trackedFeatureInfo([indxStart(i);...
                         indxEnd(trackPrevMerge)],:);
 
                     %find the costs for linking the merging tracks
@@ -231,7 +227,7 @@ while iterate
                     if ~isinf(minCost)
 
                         %get the row number where this track is stored
-                        %in trackedFeatInfoInit;
+                        %in trackedFeatureInfo;
                         mostProbTrack = indxEnd(trackPrevMerge(mostProbTrack));
 
                         %modify the matrix indicating linked feature number
@@ -259,12 +255,7 @@ while iterate
         trackedFeatureNum = trackedFeatureNum(indx,:);
         trackedFeatureInfo = trackedFeatureInfo(indx,:);
 
-    else %if there aren't any gaps to close
-
-        trackedFeatureNum = trackedFeatNumInit;
-        trackedFeatureInfo = trackedFeatInfoInit;
-
-    end %(if n~=0 && m~=0 ... else ...)
+    end %(if n~=0 && m~=0)
 
     %get track statistics after this iteration of tracking
     eval(['[trackStatsT,statsRelChange,errFlag] = ' trackStatFun ...
