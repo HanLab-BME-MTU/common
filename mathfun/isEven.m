@@ -18,3 +18,6 @@ out = mod(in + 1,2);
 
 % set NaNs for not 0 or 1
 out(find(~(out==1 | out==0))) = NaN;
+
+% make logical
+out = logical(out);
