@@ -327,6 +327,12 @@ if groupingOptions.verbose
                 'labels',groupingOptions.labels,'orientation','right',...
                 'COLORTHRESHOLD',threshold);
         end
+        if threshold > -1 && nGroups == nLinks
+            % matlab's dendrogram can't properly color the tree if only two
+            % data sets are different
+            set(optData.plotHandles.lineH(1),'Color','r')
+            set(optData.plotHandles.lineH(2:end),'Color','k')
+        end
     end
     optData.plotHandles.axesH = gca;
 end
