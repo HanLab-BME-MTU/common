@@ -47,8 +47,8 @@ sizA = size(A);
 
 % V: default: eye. However, myLscov accepts a vector, too.
 if nargin < 3 | isempty(V)
-    V = ones(sizA,1);
-    diagInvV = ones(sizA,1);
+    V = ones(sizA(1),1);
+    diagInvV = ones(sizA(1),1);
     vIsVector = 1;
 else
     % if it's a vector, make a diagonal matrix
@@ -105,7 +105,7 @@ end
 if nargin < 4 | isempty(x0)
     x0 = fitRoutine(A,B,V,diagInvV,vIsVector,ones(sizA(2),1));
 else
-    if length(x0~=sizA(2))
+    if length(x0)~=sizA(2)
         error('not the right number of initial guesses!')
     end
 end
