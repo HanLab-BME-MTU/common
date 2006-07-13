@@ -45,7 +45,7 @@ if ~ischar(includeString)
 end
 
 %excludeString
-if nargin>1&~isempty(excludeString)
+if nargin>1 && ~isempty(excludeString)
     if ~ischar(excludeString)
         error('excludeString has to be a string')
     end
@@ -55,7 +55,7 @@ end
 
 %directory (ask if necessary)
 if nargin>2
-    if isempty(directory)
+    if ~exist('directory','var') || isempty(directory)
         directory = pwd;
     elseif strcmp(directory,'ask')
         directory = uigetdir(pwd,'select a directory to search');
@@ -66,12 +66,9 @@ if nargin>2
         error([directory,' is not a valid directory!'])
     end
 end
-if nargin<3|isempty(directory)
-    directory = pwd;
-end
 
 %includeSubDirectories
-if nargin<4|isempty(includeSubDirectories)
+if nargin<4||isempty(includeSubDirectories)
     includeSubDirectories = 1;
 end
 
