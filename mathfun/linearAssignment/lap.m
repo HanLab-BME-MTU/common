@@ -47,6 +47,46 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC, noLinkCost
 %
 %            Any x > m or y > n indicates that this point is not linked.
 %
+% EXAMPLE
+% 
+% % Make a set of points p1 and slightly shift the points in p2
+% p1 = rand(5,2)*10;
+% p2 = p1+rand(5,2);
+% % plot the data
+% figure,plot(p1(:,1),p1(:,2),'.r',p2(:,1),p2(:,2),'.b')
+% % invert the order of p2 (to make it a bit more interesting) and remove the
+% % third point
+% p2 = p2(end:-1:1,:);
+% p2(3,:) = [];
+% % calculate distance matrix between the point sets
+% dm = distMat2(p1,p2);
+% % remove all links that are longer than a threshold (mark with -1)
+% dm(dm>5) = -1;
+% % print distance matrix
+% disp(dm)
+% % link via LAP. nonlinkmarker=-1, augment the matrix and show
+% [links12, links21] = lap(dm,-1,0,1)
+% % links12 should now look something like
+% % links12 =
+% % 
+% %            4
+% %            3
+% %            7
+% %            2
+% %            1
+% %            9
+% %            5
+% %            6
+% %            8
+% %
+% % For links12, the first five entries are relevant (because p1 consists of
+% % 5 points). The first point in p1 links to point #4 in set 2
+% % (link12(1)==4). The third point in p1 links nowhere - there are only 4
+% % points in links21, so an index above 4 means that a link to a virtual
+% % point had to be made.
+% % Links21 is analogous, except that only the first four entries count.
+%
+%
 % lapjv is implemented through a MEX DLL.
 %
 % Author: Ge Yang, LCCB, TSRI, Dec. 10, 2004
