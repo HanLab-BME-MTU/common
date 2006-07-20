@@ -65,6 +65,8 @@ if nargin>2
     elseif ~isdir(directory)
         error([directory,' is not a valid directory!'])
     end
+else
+    directory = pwd;
 end
 
 %includeSubDirectories
