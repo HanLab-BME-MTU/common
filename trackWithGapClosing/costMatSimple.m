@@ -5,11 +5,20 @@ function [costMat,noLinkCost,errFlag] = costMatSimple(movieInfo,costMatParams)
 %
 %INPUT  movieInfo    : A 2x1 array (corresponding to the 2 time points of 
 %                      interest) containing the fields:
-%             .xCoord      : Image coordinate system x-coordinate of detected
-%                            features [x dx] (in pixels).
-%             .yCoord      : Image coorsinate system y-coordinate of detected
-%                            features [y dy] (in pixels).
-%             .amp         : Amplitudes of PSFs fitting detected features [a da].
+%             .xCoord      : Image coordinate system x-coordinates of detected
+%                            features (in pixels). 1st column for
+%                            value and 2nd column for standard deviation.
+%             .yCoord      : Image coordinate system y-coordinates of detected
+%                            features (in pixels). 1st column for
+%                            value and 2nd column for standard deviation.
+%                            Optional. Skipped if problem is 1D. Default: zeros.
+%             .zCoord      : Image coordinate system z-coordinates of detected
+%                            features (in pixels). 1st column for
+%                            value and 2nd column for standard deviation.
+%                            Optional. Skipped if problem is 1D or 2D. Default: zeros.
+%             .amp         : Amplitudes of PSFs fitting detected features. 
+%                            1st column for values and 2nd column 
+%                            for standard deviations.
 %       costMatParams: Structure with the following fields:
 %             .searchRadius: Maximum distance between two features in two
 %                            consecutive time points that allows linking 
@@ -51,6 +60,39 @@ if nargin ~= nargin('costMatSimple')
     return
 end
 
+%check whether problem is 1D, 2D or 3D and augment coordinates if necessary
+if ~isfield(movieInfo,'yCoord') %if y-coordinates are not supplied
+
+    %problem is 1D
+    ndim = 1;
+
+    %assign zeros to y and z coordinates
+    for i=1:2
+        movieInfo(i).yCoord = zeros(size(movieInfo(i).xCoord));
+        movieInfo(i).zCoord = zeros(size(movieInfo(i).xCoord));
+    end
+
+else %if y-coordinates are supplied
+
+    if ~isfield(movieInfo,'zCoord') %if z-coordinates are not supplied
+
+        %problem is 2D
+        ndim = 2;
+
+        %assign zeros to z coordinates
+        for i=1:2
+            movieInfo(i).zCoord = zeros(size(movieInfo(i).xCoord));
+        end
+
+    else %if z-coordinates are supplied
+
+        %problem is 3D
+        ndim = 3;
+
+    end %(if ~isfield(movieInfo,'zCoord'))
+
+end %(if ~isfield(movieInfo,'yCoord') ... else ...)
+
 searchRadius = costMatParams.searchRadius;
 maxAmpRatio = costMatParams.maxAmpRatio;
 noLnkPrctl = costMatParams.noLnkPrctl;
@@ -66,11 +108,13 @@ m = movieInfo(2).num;
 %replicate x,y-coordinates at the 2 time points to get n-by-m matrices
 x1 = repmat(movieInfo(1).xCoord(:,1),1,m);
 y1 = repmat(movieInfo(1).yCoord(:,1),1,m);
+z1 = repmat(movieInfo(1).zCoord(:,1),1,m);
 x2 = repmat(movieInfo(2).xCoord(:,1)',n,1);
 y2 = repmat(movieInfo(2).yCoord(:,1)',n,1);
+z2 = repmat(movieInfo(2).zCoord(:,1)',n,1);
 
 %calculate the square distances between features in time points t and t+1
-costMat = (x1-x2).^2 + (y1-y2).^2;
+costMat = (x1-x2).^2 + (y1-y2).^2 + (z1-z2).^2;
 
 %assign NaN to all pairs that are separated by a distance > searchRadius
 indx = find(costMat>searchRadius^2);

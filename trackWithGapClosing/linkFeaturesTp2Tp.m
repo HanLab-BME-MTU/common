@@ -7,11 +7,20 @@ function [trackedFeatureNum,trackedFeatureInfo,errFlag] = ...
 %
 %INPUT  movieInfo    : Array of size equal to the number of time points
 %                      in a movie, containing the fields:
-%             .xCoord      : Image coordinate system x-coordinate of detected
-%                            features [x dx] (in pixels).
-%             .yCoord      : Image coorsinate system y-coordinate of detected
-%                            features [y dy] (in pixels).
-%             .amp         : Amplitudes of PSFs fitting detected features [a da].
+%             .xCoord      : Image coordinate system x-coordinates of detected
+%                            features (in pixels). 1st column for
+%                            value and 2nd column for standard deviation.
+%             .yCoord      : Image coordinate system y-coordinates of detected
+%                            features (in pixels). 1st column for
+%                            value and 2nd column for standard deviation.
+%                            Optional. Skipped if problem is 1D. Default: zeros.
+%             .zCoord      : Image coordinate system z-coordinates of detected
+%                            features (in pixels). 1st column for
+%                            value and 2nd column for standard deviation.
+%                            Optional. Skipped if problem is 1D or 2D. Default: zeros.
+%             .amp         : Amplitudes of PSFs fitting detected features. 
+%                            1st column for values and 2nd column 
+%                            for standard deviations.
 %       costMatFun   : Name of function used to calculate the cost matrix
 %                      for linking. 'costMatSimple' for simple cost matrix,
 %                      'costMatLogL' for cost matrix that uses information
@@ -28,9 +37,9 @@ function [trackedFeatureNum,trackedFeatureInfo,errFlag] = ...
 %                          is preceded by zeros. 
 %       trackedFeatureInfo:The positions and amplitudes of the tracked
 %                          features. Number of rows = number of tracks, 
-%                          while number of columns = 6*number of time 
+%                          while number of columns = 8*number of time 
 %                          points. Each row consists of 
-%                          [x1 y1 a1 dx1 dy1 da1 x2 y2 a2 dx2 dy2 da2 ...]
+%                          [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...]
 %                          in image coordinate system (coordinates in
 %                          pixels). NaN is used to indicate time points 
 %                          where the track does not exist.
@@ -61,12 +70,45 @@ if nargin ~= nargin('linkFeaturesTp2Tp')
     return
 end
 
+%get number of time points in movie
+numTimePoints = length(movieInfo);
+
+%check whether problem is 1D, 2D or 3D and augment coordinates if necessary
+if ~isfield(movieInfo,'yCoord') %if y-coordinates are not supplied
+
+    %problem is 1D
+    ndim = 1;
+
+    %assign zeros to y and z coordinates
+    for i=1:numTimePoints
+        movieInfo(i).yCoord = zeros(size(movieInfo(i).xCoord));
+        movieInfo(i).zCoord = zeros(size(movieInfo(i).xCoord));
+    end
+
+else %if y-coordinates are supplied
+
+    if ~isfield(movieInfo,'zCoord') %if z-coordinates are not supplied
+
+        %problem is 2D
+        ndim = 2;
+
+        %assign zeros to z coordinates
+        for i=1:numTimePoints
+            movieInfo(i).zCoord = zeros(size(movieInfo(i).xCoord));
+        end
+
+    else %if z-coordinates are supplied
+
+        %problem is 3D
+        ndim = 3;
+
+    end %(if ~isfield(movieInfo,'zCoord'))
+
+end %(if ~isfield(movieInfo,'yCoord') ... else ...)
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Linking
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%get number of time points in movie
-numTimePoints = length(movieInfo);
 
 %get number of features at each time point
 for t=1:numTimePoints
@@ -133,15 +175,16 @@ end
 trackedFeatureNum = trackedFeatureNum(indx,:);
 
 %store feature positions and amplitudes in a matrix that also shows their connectivities
-%information is stored as as [x y a dx dy da] in image coordinate system
+%information is stored as [x y z a dx dy dz da] in image coordinate system
 numRows = size(trackedFeatureNum,1);
-trackedFeatureInfo = NaN*ones(numRows,6*numTimePoints);
+trackedFeatureInfo = NaN*ones(numRows,8*numTimePoints);
 for t=1:numTimePoints
     indx1 = find(trackedFeatureNum(:,t)~=0);
     indx2 = trackedFeatureNum(indx1,t);
-    trackedFeatureInfo(indx1,6*(t-1)+1:6*t) = [movieInfo(t).xCoord(indx2,1) ...
-        movieInfo(t).yCoord(indx2,1) movieInfo(t).amp(indx2,1) ...
-        movieInfo(t).xCoord(indx2,2) movieInfo(t).yCoord(indx2,2) ...
+    trackedFeatureInfo(indx1,8*(t-1)+1:8*t) = [movieInfo(t).xCoord(indx2,1) ...
+        movieInfo(t).yCoord(indx2,1) movieInfo(t).zCoord(indx2,1) ...
+        movieInfo(t).amp(indx2,1) movieInfo(t).xCoord(indx2,2) ...
+        movieInfo(t).yCoord(indx2,2) movieInfo(t).zCoord(indx2,2) ...
         movieInfo(t).amp(indx2,2)];
 end
 

@@ -7,9 +7,9 @@ function [trackStats,statsRelChange,errFlag] = getTrackStats(trackedFeatureInfo,
 %
 %INPUT  trackedFeatureInfo:The positions and amplitudes of the tracked
 %                          features. Number of rows = number of tracks, 
-%                          while number of columns = 6*number of time 
+%                          while number of columns = 8*number of time 
 %                          points. Each row consists of 
-%                          [x1 y1 a1 dx1 dy1 da1 x2 y2 a2 dx2 dy2 da2 ...]
+%                          [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...]
 %                          in image coordinate system (coordinates in
 %                          pixels). NaN is used to indicate time points 
 %                          where the track does not exist.
@@ -22,12 +22,15 @@ function [trackStats,statsRelChange,errFlag] = getTrackStats(trackedFeatureInfo,
 %                          calculation. Optional. Default: [].
 %
 %OUTPUT trackStats       : Structure with fields:
-%           .dispSqLambda     : timeWindow x 1 vector of parameter of the 
-%                               exponential distribution that describes the 
-%                               displacement of a feature between frames.
-%           .ampDiffStd       : timeWindow x 1 vector of standard deviation of 
-%                               the change in a feature's amplitude between
-%                               frames.
+%           .dispSqR        : timeWindow x 1 vector of r in the gamma
+%                             distribution that describes the displacement
+%                             of a feature between frames.
+%           .dispSqTheta    : timeWindow x 1 vector of theta in the 
+%                             gamma distribution that describes the 
+%                             displacement of a feature between frames.
+%           .ampDiffStd     : timeWindow x 1 vector of standard deviation of 
+%                             the change in a feature's amplitude between
+%                             frames.
 %       statsRelChange   : Relative change in statistical parameters.
 %       errFlag          : 0 if function executes normally, 1 otherwise.
 %
@@ -70,39 +73,55 @@ end
 
 %get number of time points and tracks in movie
 [numTracks,numTimePoints] = size(trackedFeatureInfo);
-numTimePoints = numTimePoints/6;
+numTimePoints = numTimePoints/8;
 
 %find tracks that contain more than (lenFrac*numTimePoints) time points
 trackLength = zeros(numTracks,1);
 for i=1:numTracks
-    trackLength(i) = length(find(~isnan(trackedFeatureInfo(i,:))))/6;
+    trackLength(i) = length(find(~isnan(trackedFeatureInfo(i,:))))/8;
 end
 goodTracks = find(trackLength>=lenFrac*numTimePoints);
+
+%retain the lengths of only those tracks that are long enough
+trackLength = trackLength(goodTracks);
 
 if ~isempty(goodTracks) %if there are tracks to use ...
 
     %get the x,y-coordinates and amplitudes over time of these good tracks
-    xCoord = trackedFeatureInfo(goodTracks,1:6:end);
-    yCoord = trackedFeatureInfo(goodTracks,2:6:end);
-    amplitude = trackedFeatureInfo(goodTracks,3:6:end);
+    xCoord = trackedFeatureInfo(goodTracks,1:8:end);
+    yCoord = trackedFeatureInfo(goodTracks,2:8:end);
+    zCoord = trackedFeatureInfo(goodTracks,3:8:end);
+    amplitude = trackedFeatureInfo(goodTracks,4:8:end);
 
     %reserve memory for output vectors
-    dispSqLambda = zeros(timeWindow,1);
+    dispSqR = zeros(timeWindow,1);
+    dispSqTheta = zeros(timeWindow,1);
     ampDiffStd = zeros(timeWindow,1);
     
     for i=1:timeWindow
 
         %get the squared displacement between time points
         dispSq = (xCoord(:,i+1:end) - xCoord(:,1:end-i)).^2 + ...
-            (yCoord(:,i+1:end) - yCoord(:,1:end-i)).^2;
+            (yCoord(:,i+1:end) - yCoord(:,1:end-i)).^2 + ...
+            (zCoord(:,i+1:end) - zCoord(:,1:end-i)).^2;
 
-        %obtain the histogram of the squared displacement
-        [n,x] = histogram(dispSq(:));
+%         %obtain the histogram of the squared displacement
+%         [n,x] = histogram(dispSq(:));
+% 
+%         %fit the histogram with an exponential function
+%         expParam = lsqcurvefit(@expFun,[100 1]',x,n);
+%         dispSqTheta(i) = expParam(2);
+%         dispSqR(i) = 1;
 
-        %fit the histogram with an exponential function
-        expParam = lsqcurvefit(@expFun,[100 1]',x,n);
-        dispSqLambda(i) = expParam(2);
+        %calculate the mean and standard deviation of the squared
+        %displacement
+        dispSqMean = sum(trackLength.*nanmean(dispSq,2))/sum(trackLength(:));
+        dispSqVar = sum(trackLength.*nanvar(dispSq,[],2))./sum(trackLength(:));
 
+        %calculate the gamma distribution parameters
+        dispSqR(i) = dispSqMean^2/dispSqVar;
+        dispSqTheta(i) = dispSqMean/dispSqVar;
+        
         %get the amplitude change between time points
         ampDiff = amplitude(:,i+1:end) - amplitude(:,1:end-i);
 
@@ -112,14 +131,16 @@ if ~isempty(goodTracks) %if there are tracks to use ...
     end %(for i=1:timeWindow)
     
     %save output in structure
-    trackStats.dispSqLambda = dispSqLambda;
+    trackStats.dispSqR = dispSqR;
+    trackStats.dispSqTheta = dispSqTheta;
     trackStats.ampDiffStd = ampDiffStd;
     
     %get the maximum relative change in parameters, if the old parameters
     %are supplied
     if ~isempty(trackStatsOld)
-        oldParam = [trackStatsOld.dispSqLambda;trackStatsOld.ampDiffStd];
-        statsRelChange = max(abs(([dispSqLambda;ampDiffStd]-oldParam)./oldParam));
+        oldParam = [trackStatsOld.dispSqR; trackStatsOld.dispSqTheta; trackStatsOld.ampDiffStd];
+        statsRelChange = max(abs(([dispSqR; dispSqTheta; ampDiffStd] - oldParam)...
+            ./oldParam));
     end
 
 else %if there aren't any ...

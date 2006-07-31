@@ -1,9 +1,9 @@
 function [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
-    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual)
+    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF)
 %DETECTSUBRESFEATURES2D determines the positions and intensity amplitudes of sub-resolution features using mixture model fitting
 %
 %SYNOPSIS [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
-%    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual)
+%    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF)
 %
 %INPUT  image      : Image being analyzed.
 %       cands      : Cands structure as output from fsmCenter.
@@ -15,6 +15,8 @@ function [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
 %             .alphaD: For distance test. Optional: Default: 0.05.
 %       visual     : 1 if user wants to view results; 0 otherwise. 
 %                    Optional. Default: 0.
+%       doMMF      : 1 if user wants to do mixture-model fitting, 0
+%                    otherwise. Optional. Default: 1.
 %
 %OUTPUT detectedFeatures: Structure with fields:
 %             .xCoord    : Image coordinate system x-coordinate of detected
@@ -102,12 +104,12 @@ else
     end
 end
 
-%check saving option
-if nargin < 6 || isempty(saveIm)
-    saveIm = 0;
+%check whether to do MMF
+if nargin < 6 || isempty(doMMF)
+    doMMF = 1;
 else
-    if saveIm ~= 0 && saveIm ~= 1
-        disp('--detectSubResFeatures2D: Variable "saveIm" should be 0 or 1!');
+    if doMMF ~= 0 && doMMF ~= 1
+        disp('--detectSubResFeatures2D: Variable "doMMF" should be 0 or 1!');
         errFlag = 1;
     end
 end
@@ -155,7 +157,7 @@ keepCluster = ones(length(clusters),1);
 options = optimset('Jacobian','on');
 
 %go over all clusters
-for i=1:length(clusters)
+for i=length(clusters):-1:1
 
     %get initial guess of positions and amplitudes
     numMaximaT = clusters(i).numMaxima;
@@ -206,8 +208,8 @@ for i=1:length(clusters)
         %check whether addition of 1 PSF has significantly improved the fit
         if firstFit %if this is the first fit
 
-            firstFit = 0; %next one won't be ...
-
+            firstFit = 0; %next one won't be
+            
         else %if this is not the first fit
 
             %get test statistic, which is F-distributed
@@ -372,6 +374,12 @@ for i=1:length(clusters)
             end %(if isempty(indx))
 
         end %(if fit)
+
+        %if user does not want mixture-model fitting, then don't
+        %attempt another fit
+        if ~doMMF
+            fit = 0;
+        end
 
     end %(while fit)
 

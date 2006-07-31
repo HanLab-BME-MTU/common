@@ -10,9 +10,9 @@ function [costMat,noLinkCost,trackStartTime,trackEndTime,indxMerge,numMerge,...
 %INPUT  trackedFeatInfo: The positions and amplitudes of the tracked
 %                        features from linkFeaturesTp2Tp. 
 %                        Number of rows = number of tracks.
-%                        Number of columns = 6*number of time points. 
+%                        Number of columns = 8*number of time points. 
 %                        Each row consists of 
-%                        [x1 y1 a1 dx1 dy1 da1 x2 y2 a2 dx2 dy2 da2 ...]
+%                        [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...]
 %                        in image coordinate system (coordinates in
 %                        pixels). NaN is used to indicate time points 
 %                        where the track does not exist.
@@ -20,9 +20,12 @@ function [costMat,noLinkCost,trackStartTime,trackEndTime,indxMerge,numMerge,...
 %       trackEndTime   : Ending time of all tracks.
 %       costMatParams  : Structure with the fields:
 %             .trackStats  : Structure with the following fields:
-%                   .dispSqLambda: Parameters of the exponential distribution
-%                                  that describes the displacement of a feature
-%                                  between two time points.
+%                   .dispSqR     : timeWindow x 1 vector of r in the gamma
+%                                  distribution that describes the displacement
+%                                  of a feature between frames.
+%                   .dispSqTheta : timeWindow x 1 vector of theta in the 
+%                                  gamma distribution that describes the 
+%                                  displacement of a feature between frames.
 %                   .ampDiffStd  : Standard deviations of the change in a feature's 
 %                                  amplitude between two time points.
 %             .cutoffProbD1: Cumulative probability of a square diplacement
@@ -70,8 +73,8 @@ function [costMat,noLinkCost,trackStartTime,trackEndTime,indxMerge,numMerge,...
 %-log[p(dI)p(dispSq)], where dI = I(j;t') - I(i,t) is assumed to be 
 %normally distributed with mean 0 and standard deviation ampDiffStd(t'-t) 
 %(supplied by user), and dispSq = square of distance between end position 
-%of i at t and beginning position of j at t' is assumed to be exponentially
-%distributed with parameter dispSqLambda(t'-t) (supplied by user).
+%of i at t and beginning position of j at t' is assumed to be gamma
+%distributed with parameters dispSqR(t'-t) and dispSqTheta(t'-t) (supplied by user).
 %
 %The cost for merging and splitting is given by -log[p(dI)p(dispSq)], where
 %dispSq and p(dispSq) are as described above and, in the case of merging,
@@ -108,7 +111,8 @@ end
 
 timeWindow = gapCloseParam.timeWindow;
 mergeSplit = gapCloseParam.mergeSplit;
-dispSqLambda = costMatParams.trackStats.dispSqLambda;
+dispSqR = costMatParams.trackStats.dispSqR;
+dispSqTheta = costMatParams.trackStats.dispSqTheta;
 ampDiffStd = costMatParams.trackStats.ampDiffStd;
 cutoffProbD1 = costMatParams.cutoffProbD1;
 cutoffProbA1 = costMatParams.cutoffProbA1;
@@ -123,13 +127,13 @@ noLnkPrctl = costMatParams.noLnkPrctl;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %get the maximum squared displacement that allows linking an end to a start
-maxDispSq = expinv(cutoffProbD1,dispSqLambda);
+maxDispSq = expinv(cutoffProbD1,dispSqR,1./dispSqTheta);
 
 %find the maximum squared amplitude change that allows linking an end to a start
 maxAmpDiffSq = (norminv(cutoffProbA1,0,ampDiffStd)).^2;
 
 %calculate the additive constant for each cost as a function of time gap
-addConst = log(ampDiffStd) - log(dispSqLambda);
+addConst = log(ampDiffStd) - dispSqR.*log(dispSqTheta) + log(gamma(dispSqR));
 
 %get number of tracks formed by initial linking
 numTracks = size(trackedFeatInfo,1);
@@ -140,26 +144,30 @@ m = length(indxStart);
 %get the number of tracks whose ends are to be considered
 n = length(indxEnd);
 
-%get the x,y-coordinates and amplitudes of features at the starts of
+%get the x,y,z-coordinates and amplitudes of features at the starts of
 %their tracks
 xCoordStart = zeros(numTracks,1);
 yCoordStart = zeros(numTracks,1);
+zCoordStart = zeros(numTracks,1);
 ampStart = zeros(numTracks,1);
 for i=1:numTracks
-    xCoordStart(i) = trackedFeatInfo(i,(trackStartTime(i)-1)*6+1);
-    yCoordStart(i) = trackedFeatInfo(i,(trackStartTime(i)-1)*6+2);
-    ampStart(i) = trackedFeatInfo(i,(trackStartTime(i)-1)*6+3);
+    xCoordStart(i) = trackedFeatInfo(i,(trackStartTime(i)-1)*8+1);
+    yCoordStart(i) = trackedFeatInfo(i,(trackStartTime(i)-1)*8+2);
+    zCoordStart(i) = trackedFeatInfo(i,(trackStartTime(i)-1)*8+3);
+    ampStart(i) = trackedFeatInfo(i,(trackStartTime(i)-1)*8+4);
 end
 
-%get the x,y-coordinates and amplitudes of features at the ends of
+%get the x,y,z-coordinates and amplitudes of features at the ends of
 %their tracks
 xCoordEnd = zeros(numTracks,1);
 yCoordEnd = zeros(numTracks,1);
+zCoordEnd = zeros(numTracks,1);
 ampEnd = zeros(numTracks,1);
 for i=1:numTracks
-    xCoordEnd(i) = trackedFeatInfo(i,(trackEndTime(i)-1)*6+1);
-    yCoordEnd(i) = trackedFeatInfo(i,(trackEndTime(i)-1)*6+2);
-    ampEnd(i) = trackedFeatInfo(i,(trackEndTime(i)-1)*6+3);
+    xCoordEnd(i) = trackedFeatInfo(i,(trackEndTime(i)-1)*8+1);
+    yCoordEnd(i) = trackedFeatInfo(i,(trackEndTime(i)-1)*8+2);
+    zCoordEnd(i) = trackedFeatInfo(i,(trackEndTime(i)-1)*8+3);
+    ampEnd(i) = trackedFeatInfo(i,(trackEndTime(i)-1)*8+4);
 end
 
 %remove tracks that start at the first time point and get the total number of
@@ -167,6 +175,7 @@ end
 trackStartTime = trackStartTime(indxStart);
 xCoordStart = xCoordStart(indxStart);
 yCoordStart = yCoordStart(indxStart);
+zCoordStart = zCoordStart(indxStart);
 ampStart = ampStart(indxStart);
 
 %remove tracks that end at the last time point and get the total number of
@@ -174,6 +183,7 @@ ampStart = ampStart(indxStart);
 trackEndTime = trackEndTime(indxEnd);
 xCoordEnd = xCoordEnd(indxEnd);
 yCoordEnd = yCoordEnd(indxEnd);
+zCoordEnd = zCoordEnd(indxEnd);
 ampEnd = ampEnd(indxEnd);
 
 indx1 = []; %row number in cost matrix
@@ -195,7 +205,8 @@ for j=1:m %go over all starts
             %calculate the square distance between the end
             %point and starting point
             dispSq = (xCoordEnd(i)-xCoordStart(j))^2 + ...
-                (yCoordEnd(i)-yCoordStart(j))^2;
+                (yCoordEnd(i)-yCoordStart(j))^2 + ...
+                (zCoordEnd(i)-zCoordStart(j))^2;
 
             %calculate the square difference between the amplitude at
             %the beginning of track j and the end of track i
@@ -208,7 +219,8 @@ for j=1:m %go over all starts
                 %assign the cost for this pair of tracks
                 indx1 = [indx1; i]; %row number
                 indx2 = [indx2; j]; %column number
-                cost = [cost; dispSqLambda(timeGap)*dispSq + ...
+                cost = [cost; dispSqTheta(timeGap)*dispSq - ...
+                    (dispSqR(timeGap)-1)*log(dispSq) + ...
                     ampDiffSq/2/ampDiffStd(timeGap)^2 + ...
                     addConst(timeGap)]; %cost
 
@@ -235,10 +247,9 @@ if mergeSplit
 
     %calculate additional additive constants to cost
     halfLog2 = log(2)/2;
-    addConst2 = addConst(1) - log(dispSqLambda(1));
     
     %get the maximum squared displacement that allows merging and splitting
-    maxDispSqMS = expinv(cutoffProbD2,dispSqLambda);
+    maxDispSqMS = expinv(cutoffProbD2,dispSqR,1./dispSqTheta);
 
     %get maximum allowed intensity variation when merging or
     %splitting
@@ -259,7 +270,7 @@ if mergeSplit
         %from one time point to the next
 
         %get index indicating time of merging
-        timeIndx  = endTime*6;
+        timeIndx  = endTime*8;
 
         for j=tracksToConsider' %go over all ends considered
             for i=1:numTracks %go over all tracks
@@ -267,7 +278,8 @@ if mergeSplit
                 %get position and amplitude of merged feature
                 xCoordMid = trackedFeatInfo(i,timeIndx+1);
                 yCoordMid = trackedFeatInfo(i,timeIndx+2);
-                ampMidT1 = trackedFeatInfo(i,timeIndx+3);
+                zCoordMid = trackedFeatInfo(i,timeIndx+3);
+                ampMidT1 = trackedFeatInfo(i,timeIndx+4);
 
                 %get amplitude of feature that merged with the
                 %ending track, at time point before merging
@@ -278,7 +290,7 @@ if mergeSplit
                 %dispSq = NaN if the track does not exist at the
                 %time of merging (prohibiting a link)
                 dispSq = (xCoordEnd(j)-xCoordMid)^2 ...
-                    + (yCoordEnd(j)-yCoordMid)^2;
+                    + (yCoordEnd(j)-yCoordMid)^2 + (zCoordEnd(j)-zCoordMid)^2;
 
                 %calculate the square difference between the amplitude
                 %after merging and the sum of amplitudes before merging
@@ -301,12 +313,15 @@ if mergeSplit
                     indx1 = [indx1; j]; %row number
                     indx2 = [indx2; numMerge+m]; %column number
 
-                    cost = [cost; dispSqLambda(1)*dispSq + ...
+                    cost = [cost; dispSqTheta(1)*dispSq - ...
+                        (dispSqR(1)-1)*log(dispSq) + ...
                         ampDiffSq/4/ampDiffStd(1)^2 + ...
                         addConst(1) + halfLog2]; %cost of merging
 
-                    altCostMerge = [altCostMerge; 1 + halfLog2 + ... %cost of not mering
-                        (ampMidT0-ampMidT1)^2/4/ampDiffStd(1)^2 + addConst(1)];
+                    altCostMerge = [altCostMerge; dispSqR(1) - ...
+                        (dispSqR(1)-1)*log(dispSqR(1)/dispSqTheta(1)) + ...
+                        (ampMidT0-ampMidT1)^2/4/ampDiffStd(1)^2 + ...
+                        addConst(1) + halfLog2]; %cost of not merging
 
                 end %(if dispSq < maxDispSqMS(1) && ampDiffSq < maxAmpDiffSqMS)
 
@@ -379,12 +394,13 @@ if mergeSplit
             for i=1:numTracks %go over all tracks
 
                 %get indx indicating time of splitting
-                timeIndx  = (trackStartTime(j)-2)*6;
+                timeIndx  = (trackStartTime(j)-2)*8;
 
                 %get position and amplitude of feature before splitting
                 xCoordMid = trackedFeatInfo(i,timeIndx+1);
                 yCoordMid = trackedFeatInfo(i,timeIndx+2);
-                ampMidT1 = trackedFeatInfo(i,timeIndx+3);
+                zCoordMid = trackedFeatInfo(i,timeIndx+3);
+                ampMidT1 = trackedFeatInfo(i,timeIndx+4);
 
                 %get amplitude of feature that split at time point
                 %after splitting
@@ -393,7 +409,7 @@ if mergeSplit
                 %calculate the square distance between the starting track
                 %and the point of splitting
                 dispSq = (xCoordStart(j)-xCoordMid)^2 ...
-                    + (yCoordStart(j)-yCoordMid)^2;
+                    + (yCoordStart(j)-yCoordMid)^2 + (zCoordStart(j)-zCoordMid)^2;
 
                 %calculate the square difference between the amplitude
                 %after merging and the sum of amplitudes before merging
@@ -413,12 +429,15 @@ if mergeSplit
                     indx1 = [indx1; numSplit+n]; %row number
                     indx2 = [indx2; j]; %column number
 
-                    cost = [cost; dispSqLambda(1)*dispSq + ...
+                    cost = [cost; dispSqTheta(1)*dispSq - ...
+                        (dispSqR(1)-1)*log(dispSq) + ...
                         ampDiffSq/4/ampDiffStd(1)^2 + ...
                         addConst(1) + halfLog2]; %cost of splitting
 
-                    altCostSplit = [altCostSplit; 1 + halfLog2 + ... %cost of not mering
-                        (ampMidT0-ampMidT1)^2/4/ampDiffStd(1)^2 + addConst(1)];
+                    altCostSplit = [altCostSplit; dispSqR(i) - ...
+                        (dispSqR(1)-1)*log(dispSqR(1)/dispSqTheta(1)) + ...
+                        (ampMidT0-ampMidT1)^2/4/ampDiffStd(1)^2 + ...
+                        addConst(1) + halfLog2]; %cost of not splitting
 
                 end %(if dispSq < maxDispSqMS(1) && ampDiffSq < maxAmpDiffSqMS)
 

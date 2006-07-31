@@ -5,14 +5,26 @@ function [costMat,noLinkCost,errFlag] = costMatLogL(movieInfo,costMatParams)
 %
 %INPUT  movieInfo    : A 2x1 array (corresponding to the 2 time points of 
 %                      interest) containing the fields:
-%             .xCoord     : Image coordinate system x-coordinate of detected
-%                           features [x dx] (in pixels).
-%             .yCoord     : Image coorsinate system y-coordinate of detected
-%                           features [y dy] (in pixels).
-%             .amp        : Amplitudes of PSFs fitting detected features [a da].
+%             .xCoord      : Image coordinate system x-coordinates of detected
+%                            features (in pixels). 1st column for
+%                            value and 2nd column for standard deviation.
+%             .yCoord      : Image coordinate system y-coordinates of detected
+%                            features (in pixels). 1st column for
+%                            value and 2nd column for standard deviation.
+%                            Optional. Skipped if problem is 1D. Default: zeros.
+%             .zCoord      : Image coordinate system z-coordinates of detected
+%                            features (in pixels). 1st column for
+%                            value and 2nd column for standard deviation.
+%                            Optional. Skipped if problem is 1D or 2D. Default: zeros.
+%             .amp         : Amplitudes of PSFs fitting detected features. 
+%                            1st column for values and 2nd column 
+%                            for standard deviations.
 %       costMatParams: Structure with the fields:
 %             .trackStats : Structure with the following fields:
-%                   .dispSqLambda: Parameter of the exponential distribution
+%                   .dispSqR     : r parameter of the gamma distribution
+%                                  that describes the displacement of a feature
+%                                  between two consecutive frames.
+%                   .dispSqTheta : Theta parameter of the gamma distribution 
 %                                  that describes the displacement of a feature
 %                                  between two consecutive frames.
 %                   .ampDiffStd  : Standard deviation of the change in a feature's 
@@ -35,7 +47,7 @@ function [costMat,noLinkCost,errFlag] = costMatLogL(movieInfo,costMatParams)
 %dI = I(j;t+1) - I(i,t) is assumed to be normally distributed with mean 0
 %and standard deviation ampDiffStd (supplied by user), and 
 %dispSq = square of distance between feature i at t and feature j at t+1
-%is assumed to be exponentially distributed with parameter dispSqLambda
+%is assumed to be gamma distributed with parameters dispSqR and dispSqTheta
 %(supplied by user).
 %
 %Khuloud Jaqaman, March 2006
@@ -59,7 +71,41 @@ if nargin ~= nargin('costMatLogL')
     return
 end
 
-dispSqLambda = costMatParams.trackStats.dispSqLambda(1);
+%check whether problem is 1D, 2D or 3D and augment coordinates if necessary
+if ~isfield(movieInfo,'yCoord') %if y-coordinates are not supplied
+
+    %problem is 1D
+    ndim = 1;
+
+    %assign zeros to y and z coordinates
+    for i=1:2
+        movieInfo(i).yCoord = zeros(size(movieInfo(i).xCoord));
+        movieInfo(i).zCoord = zeros(size(movieInfo(i).xCoord));
+    end
+
+else %if y-coordinates are supplied
+
+    if ~isfield(movieInfo,'zCoord') %if z-coordinates are not supplied
+
+        %problem is 2D
+        ndim = 2;
+
+        %assign zeros to z coordinates
+        for i=1:2
+            movieInfo(i).zCoord = zeros(size(movieInfo(i).xCoord));
+        end
+
+    else %if z-coordinates are supplied
+
+        %problem is 3D
+        ndim = 3;
+
+    end %(if ~isfield(movieInfo,'zCoord'))
+
+end %(if ~isfield(movieInfo,'yCoord') ... else ...)
+
+dispSqR = costMatParams.trackStats.dispSqR(1);
+dispSqTheta = costMatParams.trackStats.dispSqTheta(1);
 ampDiffStd = costMatParams.trackStats.ampDiffStd(1);
 cutoffProbD = costMatParams.cutoffProbD;
 cutoffProbA = costMatParams.cutoffProbA;
@@ -70,7 +116,7 @@ noLnkPrctl = costMatParams.noLnkPrctl;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %get the maximum squared displacement that allows linking 2 features
-maxDispSq = expinv(cutoffProbD,dispSqLambda);
+maxDispSq = gaminv(cutoffProbD,dispSqR,1/dispSqTheta);
 
 %find the maximum squared amplitude change that allows linking 2 features
 maxAmpDiffSq = (norminv(cutoffProbA,0,ampDiffStd)).^2;
@@ -82,13 +128,15 @@ m = movieInfo(2).num;
 %replicate the x,y-coordinates and amplitude at the 2 time points to get n-by-m matrices
 x1 = repmat(movieInfo(1).xCoord(:,1),1,m);
 y1 = repmat(movieInfo(1).yCoord(:,1),1,m);
+z1 = repmat(movieInfo(1).zCoord(:,1),1,m);
 a1 = repmat(movieInfo(1).amp(:,1),1,m);
 x2 = repmat(movieInfo(2).xCoord(:,1)',n,1);
 y2 = repmat(movieInfo(2).yCoord(:,1)',n,1);
+z2 = repmat(movieInfo(2).zCoord(:,1)',n,1);
 a2 = repmat(movieInfo(2).amp(:,1)',n,1);
 
 %calculate the squared displacement of features from t to t+1
-dispSq = (x1-x2).^2 + (y1-y2).^2;
+dispSq = (x1-x2).^2 + (y1-y2).^2 + (z1-z2).^2;
 dispSq(find(dispSq>maxDispSq)) = NaN;
 
 %calculate the squared change in the amplitude of features from t to t+1
@@ -96,7 +144,7 @@ ampDiffSq = (a1 - a2).^2;
 ampDiffSq(find(ampDiffSq>maxAmpDiffSq)) = NaN;
 
 %calculate the cost matrix
-costMat = ampDiffSq/2/ampDiffStd^2 + dispSqLambda*dispSq;
+costMat = ampDiffSq/2/ampDiffStd^2 + dispSqTheta*dispSq - (dispSqR-1)*log(dispSq);
 
 %determine noLinkCost
 if noLnkPrctl ~= -1

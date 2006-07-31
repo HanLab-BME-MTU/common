@@ -7,11 +7,20 @@ function [trackedFeatureNum,trackedFeatureInfo,errFlag] = trackWithGapClosing(..
 %
 %INPUT  movieInfo    : Array of size equal to the number of time points
 %                      in a movie, containing the fields:
-%             .xCoord      : Image coordinate system x-coordinate of detected
-%                            features (in pixels).
-%             .yCoord      : Image coorsinate system y-coordinate of detected
-%                            features (in pixels).
-%             .amp         : Amplitudes of PSFs fitting detected features.
+%             .xCoord      : Image coordinate system x-coordinates of detected
+%                            features (in pixels). 1st column for
+%                            value and 2nd column for standard deviation.
+%             .yCoord      : Image coordinate system y-coordinates of detected
+%                            features (in pixels). 1st column for
+%                            value and 2nd column for standard deviation.
+%                            Optional. Skipped if problem is 1D. Default: zeros.
+%             .zCoord      : Image coordinate system z-coordinates of detected
+%                            features (in pixels). 1st column for
+%                            value and 2nd column for standard deviation.
+%                            Optional. Skipped if problem is 1D or 2D. Default: zeros.
+%             .amp         : Amplitudes of PSFs fitting detected features. 
+%                            1st column for values and 2nd column 
+%                            for standard deviations.
 %       costMatrices : 4-by-1 array indicating cost matrices and their
 %                      parameters.
 %                      -1st entry indicates the initial simple cost matrix
@@ -53,16 +62,15 @@ function [trackedFeatureNum,trackedFeatureInfo,errFlag] = trackWithGapClosing(..
 %                           is preceded by zeros.
 %       trackedFeatureInfo: The positions and amplitudes of the tracked
 %                           features. Number of rows = number of tracks,
-%                           while number of columns = 6*number of time
-%                           points. Each row consists of
-%                           [x1 y1 a1 dx1 dy1 da1 x2 y2 a2 dx2 dy2 da2 ...]
+%                           while number of columns = 8*number of time points.
+%                           Each row consists of
+%                           [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...]
 %                           in image coordinate system (coordinates in
 %                           pixels). NaN is used to indicate time points
 %                           where the track does not exist.
 %       errFlag           : 0 if function executes normally, 1 otherwise.
 %
-%REMARKS The algorithm is currently limited to the special case of 2D, but
-%        in principle it can be generalized to ND quite easily.
+%REMARKS For 1D, 2D and 3D problems.
 %
 %Khuloud Jaqaman, March 2006
 
@@ -85,6 +93,42 @@ if nargin ~= 5
     return
 end
 
+%get number of time points in movie
+numTimePoints = length(movieInfo);
+
+%check whether problem is 1D, 2D or 3D and augment coordinates if necessary
+if ~isfield(movieInfo,'yCoord') %if y-coordinates are not supplied
+
+    %problem is 1D
+    ndim = 1;
+
+    %assign zeros to y and z coordinates
+    for i=1:numTimePoints
+        movieInfo(i).yCoord = zeros(size(movieInfo(i).xCoord));
+        movieInfo(i).zCoord = zeros(size(movieInfo(i).xCoord));
+    end
+
+else %if y-coordinates are supplied
+
+    if ~isfield(movieInfo,'zCoord') %if z-coordinates are not supplied
+
+        %problem is 2D
+        ndim = 2;
+
+        %assign zeros to z coordinates
+        for i=1:numTimePoints
+            movieInfo(i).zCoord = zeros(size(movieInfo(i).xCoord));
+        end
+
+    else %if z-coordinates are supplied
+
+        %problem is 3D
+        ndim = 3;
+
+    end %(if ~isfield(movieInfo,'zCoord'))
+
+end %(if ~isfield(movieInfo,'yCoord') ... else ...)
+
 %get parameters from input
 timeWindow = gapCloseParam.timeWindow;
 mergeSplit = gapCloseParam.mergeSplit;
@@ -94,9 +138,6 @@ lenFrac = iterParam.lenFrac;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Tracking
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%get number of time points in movie
-numTimePoints = length(movieInfo);
 
 %get initial tracks by linking features between consecutive frames using
 %the simple initial criteria
@@ -142,7 +183,7 @@ while iterate
     m = length(indxStart);
 
     %find the termination time points of all tracks, find tracks that end
-    %before the last time point, and get the number
+    %before the last time point, and get their number
     trackEndTime = zeros(numTracks,1);
     for i=1:numTracks
         trackEndTime(i) = find((trackedFeatureNum(i,:)~=0),1,'last');
@@ -180,9 +221,9 @@ while iterate
                 trackedFeatureNum(trackAdded,time2Append:end) = 0;
 
                 %modify the matrix indicating linked feature information
-                trackedFeatureInfo(track2Append,6*(time2Append-1)+1:end) = ...
-                    trackedFeatureInfo(trackAdded,6*(time2Append-1)+1:end);
-                trackedFeatureInfo(trackAdded,6*(time2Append-1)+1:end) = NaN;
+                trackedFeatureInfo(track2Append,8*(time2Append-1)+1:end) = ...
+                    trackedFeatureInfo(trackAdded,8*(time2Append-1)+1:end);
+                trackedFeatureInfo(trackAdded,8*(time2Append-1)+1:end) = NaN;
 
             elseif mergeSplit && link21(i) > n && link21(i) <= n + numSplit %if this start is a split
 
@@ -237,10 +278,10 @@ while iterate
                         trackedFeatureNum(indxStart(i),timeSplit:end) = 0;
 
                         %modify the matrix indicating linked feature information
-                        trackedFeatureInfo(mostProbTrack,6*(timeMerge-1)+1:end) = ...
-                            [trackedFeatureInfo(trackSplitFrom,6*(timeMerge-1)+1:6*(timeSplit-1)) ...
-                            trackedFeatureInfo(indxStart(i),6*(timeSplit-1)+1:end)];
-                        trackedFeatureInfo(indxStart(i),6*(timeSplit-1)+1:end) = NaN;
+                        trackedFeatureInfo(mostProbTrack,8*(timeMerge-1)+1:end) = ...
+                            [trackedFeatureInfo(trackSplitFrom,8*(timeMerge-1)+1:8*(timeSplit-1)) ...
+                            trackedFeatureInfo(indxStart(i),8*(timeSplit-1)+1:end)];
+                        trackedFeatureInfo(indxStart(i),8*(timeSplit-1)+1:end) = NaN;
 
                     end %(if ~isinf(minCost))
 
