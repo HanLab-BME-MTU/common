@@ -42,11 +42,13 @@ function [trackedFeatureNum,trackedFeatureInfo,errFlag] = trackWithGapClosing(..
 %                      feature statistics.
 %       gapCloseParam: Structure containing variables needed for gap closing.
 %                      Contains the fields:
-%             .timeWindow  : Largest time gap between the end of a track and the
-%                            beginning of another that could be connected to it.
-%             .mergeSplit  : Logical variable with value 1 if the merging
-%                            and splitting of trajectories are to be consided;
-%                            and 0 if merging and splitting are not allowed.
+%             .timeWindow   : Largest time gap between the end of a track and the
+%                             beginning of another that could be connected to it.
+%             .mergeSplit   : Logical variable with value 1 if the merging
+%                             and splitting of trajectories are to be consided;
+%                             and 0 if merging and splitting are not allowed.
+%             .segmentLength: Length of time segment for sequential gap
+%                             closing. Optional. Default: entire movie length.
 %       iterParam    : Structure with parameters related to iterating:
 %             .tolerance   : Tolerance for changes in track statistics to
 %                            stop iterating.
@@ -99,9 +101,6 @@ numTimePoints = length(movieInfo);
 %check whether problem is 1D, 2D or 3D and augment coordinates if necessary
 if ~isfield(movieInfo,'yCoord') %if y-coordinates are not supplied
 
-    %problem is 1D
-    ndim = 1;
-
     %assign zeros to y and z coordinates
     for i=1:numTimePoints
         movieInfo(i).yCoord = zeros(size(movieInfo(i).xCoord));
@@ -112,18 +111,10 @@ else %if y-coordinates are supplied
 
     if ~isfield(movieInfo,'zCoord') %if z-coordinates are not supplied
 
-        %problem is 2D
-        ndim = 2;
-
         %assign zeros to z coordinates
         for i=1:numTimePoints
             movieInfo(i).zCoord = zeros(size(movieInfo(i).xCoord));
         end
-
-    else %if z-coordinates are supplied
-
-        %problem is 3D
-        ndim = 3;
 
     end %(if ~isfield(movieInfo,'zCoord'))
 
@@ -132,6 +123,11 @@ end %(if ~isfield(movieInfo,'yCoord') ... else ...)
 %get parameters from input
 timeWindow = gapCloseParam.timeWindow;
 mergeSplit = gapCloseParam.mergeSplit;
+if isfield(gapCloseParam,'segmentLength')
+    segmentLength = gapCloseParam.segmentLength;
+else
+    segmentLength = numTimePoints;
+end
 tolerance = iterParam.tolerance;
 lenFrac = iterParam.lenFrac;
 
@@ -169,135 +165,152 @@ while iterate
 
     %close gaps using the information obtained via the statistical analysis
     %of tracks ...
+    %close gaps sequentially (in segments) to avoid memory problems
+    
+    %determine the lower and upper bounds of first segment for gap closing
+    %go back in time by timeWindow when looking for track ends to be
+    %connected to track start in this segment
+    segmentUB = numTimePoints; %upper bound (for both end and starts)
+    segmentLBS = max(segmentUB+1-segmentLength,1); %lower bound for starts
+    segmentLBE = max(segmentUB+1-segmentLength-timeWindow,1); %lower bounds for ends
+    
+    while segmentUB > 0
 
-    %get number of tracks formed by initial linking
-    numTracks = size(trackedFeatureNum,1);
+        %get number of tracks formed by initial linking
+        numTracks = size(trackedFeatureNum,1);
 
-    %find the starting time points of all tracks, find tracks that start
-    %after the first time point, and get their number
-    trackStartTime = zeros(numTracks,1);
-    for i=1:numTracks
-        trackStartTime(i) = find((trackedFeatureNum(i,:)~=0),1,'first');
-    end
-    indxStart = find(trackStartTime>1);
-    m = length(indxStart);
+        %find the starting time points of all tracks, find tracks that start
+        %between segmentStartTime and segmentEndTime, and get their number
+        trackStartTime = zeros(numTracks,1);
+        for i=1:numTracks
+            trackStartTime(i) = find((trackedFeatureNum(i,:)~=0),1,'first');
+        end
+        indxStart = find(trackStartTime >= segmentLBS & trackStartTime <= segmentUB);
+        m = length(indxStart);
 
-    %find the termination time points of all tracks, find tracks that end
-    %before the last time point, and get their number
-    trackEndTime = zeros(numTracks,1);
-    for i=1:numTracks
-        trackEndTime(i) = find((trackedFeatureNum(i,:)~=0),1,'last');
-    end
-    indxEnd = find(trackEndTime<numTimePoints);
-    n = length(indxEnd);
+        %find the termination time points of all tracks, find tracks that end
+        %between segmentStartTime-timeWindow and segmentEndTime, and get their number
+        trackEndTime = zeros(numTracks,1);
+        for i=1:numTracks
+            trackEndTime(i) = find((trackedFeatureNum(i,:)~=0),1,'last');
+        end
+        indxEnd = find(trackEndTime >= segmentLBE & trackEndTime <= segmentUB);
+        n = length(indxEnd);
 
-    %if there are gaps to close ...
-    if n~=0 && m~=0
+        %if there are gaps to close ...
+        if n~=0 && m~=0
+
+            %calculate the cost matrix, in sparse matrix format
+            costMatParams = costMatrices(3).costMatParam;
+            costMatParams.trackStats = trackStats;
+            eval(['[costMat,noLinkCost,trackStartTime,trackEndTime,indxMerge,' ...
+                'numMerge,indxSplit,numSplit,errFlag] =' costMatrices(3).costMatFun ...
+                '(trackedFeatureInfo,trackStartTime,indxStart,'...
+                'trackEndTime,indxEnd,costMatParams,gapCloseParam);'])
+
+            %link tracks based on this cost matrix, allowing for birth and death
+            [link12,link21] = lap(costMat,-1000,0,1,noLinkCost);
+
+            for i=m:-1:1 %go over all track starts
+
+                if link21(i) <= n %if this start is linked to an end
+
+                    %get the track to be appended at its end, the time point at which
+                    %it will be appended, and the track that will be added to it
+                    track2Append = indxEnd(link21(i));
+                    time2Append = trackStartTime(i);
+                    trackAdded = indxStart(i);
+
+                    %modify the matrix indicating linked feature number
+                    trackedFeatureNum(track2Append,time2Append:end) = ...
+                        trackedFeatureNum(trackAdded,time2Append:end);
+                    trackedFeatureNum(trackAdded,time2Append:end) = 0;
+
+                    %modify the matrix indicating linked feature information
+                    trackedFeatureInfo(track2Append,8*(time2Append-1)+1:end) = ...
+                        trackedFeatureInfo(trackAdded,8*(time2Append-1)+1:end);
+                    trackedFeatureInfo(trackAdded,8*(time2Append-1)+1:end) = NaN;
+
+                elseif mergeSplit && link21(i) > n && link21(i) <= n + numSplit %if this start is a split
+
+                    %get the track it split from
+                    trackSplitFrom = indxSplit(link21(i)-n);
+
+                    %find the tracks that have previously merged with this
+                    %splitting track
+                    mergeTrackToLookAt = find(indxMerge==trackSplitFrom);
+                    trackPrevMerge = link21(mergeTrackToLookAt+m);
+                    trackPrevMerge = trackPrevMerge(find(trackPrevMerge<=n));
+                    numPrevMerge = length(trackPrevMerge);
+
+                    %only consider splits that have possible previous merges
+                    if numPrevMerge ~= 0
+
+                        %get the time of splitting
+                        timeSplit = trackStartTime(i);
+
+                        %find the times of merging
+                        timeMerge = trackEndTime(trackPrevMerge) + 1;
+
+                        %collect splitting and merging tracks into one
+                        %matrix
+                        trackedFeatMS = trackedFeatureInfo([indxStart(i);...
+                            indxEnd(trackPrevMerge)],:);
+
+                        %find the costs for linking the merging tracks
+                        %to the splitting track
+                        costMatParams = costMatrices(4).costMatParam;
+                        costMatParams.trackStats = trackStats;
+                        eval(['[costVec,errFlag] = ' costMatrices(4).costMatFun ...
+                            '(trackedFeatMS,timeSplit,timeMerge,'...
+                            'costMatParams,gapCloseParam);'])
+
+                        %choose the most likely merging track as that
+                        %with the minimum cost
+                        minCost = min(costVec);
+                        mostProbTrack = find(costVec==minCost);
+                        timeMerge = timeMerge(mostProbTrack);
+
+                        if ~isinf(minCost)
+
+                            %get the row number where this track is stored
+                            %in trackedFeatureInfo;
+                            mostProbTrack = indxEnd(trackPrevMerge(mostProbTrack));
+
+                            %modify the matrix indicating linked feature number
+                            trackedFeatureNum(mostProbTrack,timeMerge:end) = ...
+                                [trackedFeatureNum(trackSplitFrom,timeMerge:timeSplit-1) ...
+                                trackedFeatureNum(indxStart(i),timeSplit:end)];
+                            trackedFeatureNum(indxStart(i),timeSplit:end) = 0;
+
+                            %modify the matrix indicating linked feature information
+                            trackedFeatureInfo(mostProbTrack,8*(timeMerge-1)+1:end) = ...
+                                [trackedFeatureInfo(trackSplitFrom,8*(timeMerge-1)+1:8*(timeSplit-1)) ...
+                                trackedFeatureInfo(indxStart(i),8*(timeSplit-1)+1:end)];
+                            trackedFeatureInfo(indxStart(i),8*(timeSplit-1)+1:end) = NaN;
+
+                        end %(if ~isinf(minCost))
+
+                    end %(if numPrevMerge ~= 0)
+
+                end %(if link21 <= n ... elseif ... mergeSplit && link21 ...)
+
+            end %(for i=m:-1:1)
+
+            %remove rows that do not contain tracks
+            indx = find(max(trackedFeatureNum,[],2)>0);
+            trackedFeatureNum = trackedFeatureNum(indx,:);
+            trackedFeatureInfo = trackedFeatureInfo(indx,:);
+
+        end %(if n~=0 && m~=0)
+
+    %go to next segment. Update lower and upper bounds
+    segmentUB = segmentLBS - 1; %upper bound (for both end and starts)
+    segmentLBS = max(segmentUB+1-segmentLength,1); %lower bound for starts
+    segmentLBE = max(segmentUB+1-segmentLength-timeWindow,1); %lower bounds for ends
+    
+    end %(while segmentStartTime > 1)
         
-        %calculate the cost matrix, in sparse matrix format
-        costMatParams = costMatrices(3).costMatParam;
-        costMatParams.trackStats = trackStats;
-        eval(['[costMat,noLinkCost,trackStartTime,trackEndTime,indxMerge,' ...
-            'numMerge,indxSplit,numSplit,errFlag] =' costMatrices(3).costMatFun ...
-            '(trackedFeatureInfo,trackStartTime,indxStart,'...
-            'trackEndTime,indxEnd,costMatParams,gapCloseParam);'])
-
-        %link tracks based on this cost matrix, allowing for birth and death
-        [link12,link21] = lap(costMat,-1000,0,1,noLinkCost);
-
-        for i=m:-1:1 %go over all track starts
-
-            if link21(i) <= n %if this start is linked to an end
-
-                %get the track to be appended at its end, the time point at which
-                %it will be appended, and the track that will be added to it
-                track2Append = indxEnd(link21(i));
-                time2Append = trackStartTime(i);
-                trackAdded = indxStart(i);
-
-                %modify the matrix indicating linked feature number
-                trackedFeatureNum(track2Append,time2Append:end) = ...
-                    trackedFeatureNum(trackAdded,time2Append:end);
-                trackedFeatureNum(trackAdded,time2Append:end) = 0;
-
-                %modify the matrix indicating linked feature information
-                trackedFeatureInfo(track2Append,8*(time2Append-1)+1:end) = ...
-                    trackedFeatureInfo(trackAdded,8*(time2Append-1)+1:end);
-                trackedFeatureInfo(trackAdded,8*(time2Append-1)+1:end) = NaN;
-
-            elseif mergeSplit && link21(i) > n && link21(i) <= n + numSplit %if this start is a split
-
-                %get the track it split from
-                trackSplitFrom = indxSplit(link21(i)-n);
-
-                %find the tracks that have previously merged with this
-                %splitting track
-                mergeTrackToLookAt = find(indxMerge==trackSplitFrom);
-                trackPrevMerge = link21(mergeTrackToLookAt+m);
-                trackPrevMerge = trackPrevMerge(find(trackPrevMerge<=n));
-                numPrevMerge = length(trackPrevMerge);
-
-                %only consider splits that have possible previous merges
-                if numPrevMerge ~= 0
-
-                    %get the time of splitting
-                    timeSplit = trackStartTime(i);
-
-                    %find the times of merging
-                    timeMerge = trackEndTime(trackPrevMerge) + 1;
-
-                    %collect splitting and merging tracks into one
-                    %matrix
-                    trackedFeatMS = trackedFeatureInfo([indxStart(i);...
-                        indxEnd(trackPrevMerge)],:);
-
-                    %find the costs for linking the merging tracks
-                    %to the splitting track
-                    costMatParams = costMatrices(4).costMatParam;
-                    costMatParams.trackStats = trackStats;
-                    eval(['[costVec,errFlag] = ' costMatrices(4).costMatFun ...
-                        '(trackedFeatMS,timeSplit,timeMerge,'...
-                        'costMatParams,gapCloseParam);'])
-
-                    %choose the most likely merging track as that
-                    %with the minimum cost
-                    minCost = min(costVec);
-                    mostProbTrack = find(costVec==minCost);
-                    timeMerge = timeMerge(mostProbTrack);
-
-                    if ~isinf(minCost)
-
-                        %get the row number where this track is stored
-                        %in trackedFeatureInfo;
-                        mostProbTrack = indxEnd(trackPrevMerge(mostProbTrack));
-
-                        %modify the matrix indicating linked feature number
-                        trackedFeatureNum(mostProbTrack,timeMerge:end) = ...
-                            [trackedFeatureNum(trackSplitFrom,timeMerge:timeSplit-1) ...
-                            trackedFeatureNum(indxStart(i),timeSplit:end)];
-                        trackedFeatureNum(indxStart(i),timeSplit:end) = 0;
-
-                        %modify the matrix indicating linked feature information
-                        trackedFeatureInfo(mostProbTrack,8*(timeMerge-1)+1:end) = ...
-                            [trackedFeatureInfo(trackSplitFrom,8*(timeMerge-1)+1:8*(timeSplit-1)) ...
-                            trackedFeatureInfo(indxStart(i),8*(timeSplit-1)+1:end)];
-                        trackedFeatureInfo(indxStart(i),8*(timeSplit-1)+1:end) = NaN;
-
-                    end %(if ~isinf(minCost))
-
-                end %(if numPrevMerge ~= 0)
-
-            end %(if link21 <= n ... elseif ... mergeSplit && link21 ...)
-            
-        end %(for i=m:-1:1)
-
-        %remove rows that do not contain tracks
-        indx = find(max(trackedFeatureNum,[],2)>0);
-        trackedFeatureNum = trackedFeatureNum(indx,:);
-        trackedFeatureInfo = trackedFeatureInfo(indx,:);
-
-    end %(if n~=0 && m~=0)
-
     %get track statistics after this iteration of tracking
     eval(['[trackStatsT,statsRelChange,errFlag] = ' trackStatFun ...
         '(trackedFeatureInfo,lenFrac,timeWindow,trackStats);'])
@@ -310,6 +323,5 @@ while iterate
     end
 
 end %(while iterate)
-
 
 %%%%% ~~ the end ~~ %%%%%

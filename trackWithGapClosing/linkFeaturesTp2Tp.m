@@ -76,9 +76,6 @@ numTimePoints = length(movieInfo);
 %check whether problem is 1D, 2D or 3D and augment coordinates if necessary
 if ~isfield(movieInfo,'yCoord') %if y-coordinates are not supplied
 
-    %problem is 1D
-    ndim = 1;
-
     %assign zeros to y and z coordinates
     for i=1:numTimePoints
         movieInfo(i).yCoord = zeros(size(movieInfo(i).xCoord));
@@ -89,18 +86,10 @@ else %if y-coordinates are supplied
 
     if ~isfield(movieInfo,'zCoord') %if z-coordinates are not supplied
 
-        %problem is 2D
-        ndim = 2;
-
         %assign zeros to z coordinates
         for i=1:numTimePoints
             movieInfo(i).zCoord = zeros(size(movieInfo(i).xCoord));
         end
-
-    else %if z-coordinates are supplied
-
-        %problem is 3D
-        ndim = 3;
 
     end %(if ~isfield(movieInfo,'zCoord'))
 
