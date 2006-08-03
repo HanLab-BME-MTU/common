@@ -4,6 +4,7 @@ function [N,X,sp] = histogram(varargin)
 % If called with no output argument, histogram plots into the current axes
 %
 % SYNOPSIS [N,X,sp] = histogram(data,factor)
+%          [...] = histogram(data,'smooth')
 %          [...] = histogram(axesHandle,...)
 %
 % INPUT    data: vector of input data

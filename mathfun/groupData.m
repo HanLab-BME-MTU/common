@@ -295,7 +295,8 @@ if nGroups > 1
 else
     % only one group
     optData.collectedData.dataIdx = 1:nSets;
-    optData.collectedData.data = originalData;
+    optData.collectedData.data = ...
+        originalData(optData.collectedData.dataIdx);
     optData.collectedGrouping = [];
     threshold = -1;
 end
