@@ -156,7 +156,7 @@ end
 %=======================
 
 %=================================
-% AUTMENT COST MATRIX IF SELECTED
+% AUGMENT COST MATRIX IF SELECTED
 %=================================
 if augmentCC
 
@@ -165,28 +165,45 @@ if augmentCC
 
     % check if sparse
     if issparse(cc)
+        
         % mmDiag = spdiags(noLinkCost * ones(scc(1),1), 0, scc(1), scc(1));
         % nnDiag = spdiags(noLinkCost * ones(scc(2),1), 0, scc(2), scc(2));
         % nmMat  = sparse(ones(scc(2), scc(1)));
         % cc = [cc, mmDiag; nnDiag, nmMat];
+        
+%         costLL = sparse(ones(scc(2),scc(1)));
+        
+        [rowIdx, colIdx, val] = find(cc);
+        costLL = sparse(colIdx,rowIdx,ones(length(colIdx),1),scc(2),scc(1));
+        
         cc = [cc, spdiags(noLinkCost * ones(scc(1),1), 0, scc(1), scc(1));...
             spdiags(noLinkCost * ones(scc(2),1), 0, scc(2), scc(2)),...
-            sparse(ones(scc(2), scc(1)))];
+            costLL];
+        
     else
+        
         % mmDiag = diag(noLinkCost * ones(scc(1),1));
         % nnDiag = diag(noLinkCost * ones(scc(2),1));
         % nmMat  = sparse(ones(scc(2), scc(1)));
         % cc = [cc, mmDiag; nnDiag, nmMat];
         
+        [rowIdx, colIdx] = find(cc ~= NONLINK_MARKER);
+        costLL = sparse(colIdx,rowIdx,ones(length(colIdx),1),scc(2),scc(1));
+        
+%         costLL = sparse(ones(scc(2),scc(1)));
+        
         % make cc sparse. Take NLM in cc into account!
         cc(cc==NONLINK_MARKER) = 0;
+        
         cc = [cc, diag(noLinkCost * ones(scc(1),1)); ...
             diag(noLinkCost * ones(scc(2),1)), ...
-            sparse(ones(scc(2), scc(1)))];
+            costLL];
+        
     end
 
     % remember that the size of the matrix has increased!
     scc = [sum(scc), sum(scc)];
+    
 end
 
 

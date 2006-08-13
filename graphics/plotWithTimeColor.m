@@ -6,9 +6,9 @@ function plotWithTimeColor(trackedFeatureInfo,timeRange,newFigure)
 %INPUT  trackedFeatureInfo: Matrix indicating the positions and amplitudes 
 %                           of the tracked features to be plotted. Number 
 %                           of rows = number of tracks, while number of 
-%                           columns = 6*number of time points. Each row 
+%                           columns = 8*number of time points. Each row 
 %                           consists of 
-%                           [x1 y1 a1 dx1 dy1 da1 x2 y2 a2 dx2 dy2 da2 ...]
+%                           [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...]
 %                           in image coordinate system (coordinates in
 %                           pixels). NaN is used to indicate time points 
 %                           where the track does not exist.
@@ -33,7 +33,7 @@ end
 
 %get number of tracks and number of time points
 [numTracks,numTimePoints] = size(trackedFeatureInfo);
-numTimePoints = numTimePoints/6;
+numTimePoints = numTimePoints/8;
 
 errFlag = 0;
 
@@ -80,8 +80,8 @@ blueVariation = [[0:numTimePlotOver2-1]'/(numTimePlotOver2-1);...
 colorOverTime = [redVariation greenVariation blueVariation];
 
 %get the x,y-coordinates of features in all tracks
-tracksX = trackedFeatureInfo(:,1:6:end)';
-tracksY = trackedFeatureInfo(:,2:6:end)';
+tracksX = trackedFeatureInfo(:,1:8:end)';
+tracksY = trackedFeatureInfo(:,2:8:end)';
 
 %find the beginning and end of each track
 startEndPos = zeros(2,2,numTracks);

@@ -200,16 +200,17 @@ while iterate
         %if there are gaps to close ...
         if n~=0 && m~=0
 
-            %calculate the cost matrix, in sparse matrix format
+            %calculate the cost matrix, which already includes the
+            %costs of birth and death
             costMatParams = costMatrices(3).costMatParam;
             costMatParams.trackStats = trackStats;
             eval(['[costMat,noLinkCost,trackStartTime,trackEndTime,indxMerge,' ...
                 'numMerge,indxSplit,numSplit,errFlag] =' costMatrices(3).costMatFun ...
                 '(trackedFeatureInfo,trackStartTime,indxStart,'...
                 'trackEndTime,indxEnd,costMatParams,gapCloseParam);'])
-
+            
             %link tracks based on this cost matrix, allowing for birth and death
-            [link12,link21] = lap(costMat,-1000,0,1,noLinkCost);
+            [link12,link21] = lap(costMat,-1000,0,0,noLinkCost);
 
             for i=m:-1:1 %go over all track starts
 
@@ -321,6 +322,8 @@ while iterate
     elseif statsRelChange < tolerance %stop iterating if change is smaller than tolerance
         iterate = 0;
     end
+    
+    disp(['statsRelChange = ' num2str(statsRelChange)]);
 
 end %(while iterate)
 

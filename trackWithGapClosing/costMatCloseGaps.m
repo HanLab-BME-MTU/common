@@ -455,24 +455,18 @@ costMat = sparse(indx1,indx2,cost,n1,m1);
 
 %append cost matrix to allow births and deaths ...
 
-% %add block allowing deaths
-% indx1 = [indx1; [1:n1]'];
-% indx2 = [indx2; [m1+1:m1+n1]'];
-% cost = [cost; costBD*ones(n,1); altCostSplit];
-% 
-% %add block allowing births
-% indx1 = [indx1; [n1+1:n1+m1]'];
-% indx2 = [indx2; [1:m1]'];
-% cost = [cost; costBD*ones(m,1); altCostMerge];
-% 
-% %add last block (which has no practical use, but alas takes the most space...)
-% indx1 = [indx1; repmat([n1+1:n1+m1]',n1,1)];
-% indx2 = [indx2; reshape(repmat([m1+1:m1+n1],m1,1),n1*m1,1)];
-% cost = [cost; ones(n1*m1,1)];
-% 
-% %create cost matrix that allows for births and deaths
-% costMat = sparse(indx1,indx2,cost);
+%generate lower left block
+% costLL = sparse(ones(m1,n1));
+costLL = sparse(indx2,indx1,ones(length(indx1),1),m1,n1);
 
+%create cost matrix that allows for births and deaths
+costMat = [costMat ... %costs for links
+    spdiags([costBD*ones(n,1); altCostSplit],0,n1,n1); ... %costs for death
+    spdiags([costBD*ones(m,1); altCostMerge],0,m1,m1) ...  %costs for birth
+    costLL]; %dummy costs complete the cost matrix
+
+%since the full cost matrix (including the birth and death augmentation) 
+%is defined above, the noLnkPrctl variable should not be used for now. 
 %determine noLinkCost
 if noLnkPrctl ~= -1
     noLinkCost = prctile(cost,noLnkPrctl);

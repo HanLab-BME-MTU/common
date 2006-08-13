@@ -61,6 +61,7 @@ maxIndxY = max(index(:,2));
 
 %determine the contribution of each PSF (assuming amplitude 1) to a 
 %pixel based on its x-coordinate (needed to calculate F & J)
+psfIntegX = zeros(maxIndxX-minIndxX+1,numPSF);
 for i=1:numPSF
     psfIntegX(:,i) = GaussListND([minIndxX:maxIndxX]',...
         psfSigma,psfPos(i,1));
@@ -68,6 +69,7 @@ end
 
 %determine the contribution of each PSF (assuming amplitude 1) to a 
 %pixel based on its y-coordinate (needed to calculate F & J)
+psfIntegY = zeros(maxIndxY-minIndxY+1,numPSF);
 for i=1:numPSF
     psfIntegY(:,i) = GaussListND([minIndxY:maxIndxY]',...
         psfSigma,psfPos(i,2));
@@ -75,6 +77,8 @@ end
 
 %calculate the value of each PSF (assuming amplitude 1) at the 
 %x-coordinates of the corners of all pixels (needed to calculate J)
+% psfValueX = zeros
+psfValueX = zeros(maxIndxX-minIndxX+2,numPSF);
 for i=1:numPSF
     psfValueX(:,i) = exp(-([minIndxX-0.5:maxIndxX+0.5]'...
         -psfPos(i,1)).^2/2/psfSigma^2);
@@ -82,6 +86,7 @@ end
 
 %calculate the value of each PSF (assuming amplitude 1) at the
 %y-coordinates of the corners of all pixels (needed to calculate J)
+psfValueY = zeros(maxIndxY-minIndxY+2,numPSF);
 for i=1:numPSF
     psfValueY(:,i) = exp(-([minIndxY-0.5:maxIndxY+0.5]'...
         -psfPos(i,2)).^2/2/psfSigma^2);
