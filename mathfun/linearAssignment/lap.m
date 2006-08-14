@@ -143,7 +143,7 @@ if nargin < 3 || isempty(extendedTesting)
 end
 
 if nargin < 5 || isempty(noLinkCost)
-    noLinkCost = max(cc(:)) + 1;
+    noLinkCost = max(max(cc)) + 1;
 end
 
 % if we have -1 as non-link-marker, and we get it everywhere, we get
