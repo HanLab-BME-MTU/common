@@ -138,8 +138,8 @@ if noLnkPrctl ~= -1
     noLinkCost = prctile(costMat(:),noLnkPrctl);
 end
 
-%replace NaN, indicating pairs that cannot be linked, with -1
-costMat(find(isnan(costMat))) = -1;
+%replace NaN, indicating pairs that cannot be linked, with -1000
+costMat(find(isnan(costMat))) = -1000;
 
 
 %%%%% ~~ the end ~~ %%%%%
