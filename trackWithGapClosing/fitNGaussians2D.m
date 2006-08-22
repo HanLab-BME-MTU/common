@@ -126,5 +126,4 @@ for i=1:numPixel %for each pixel
     
 end
 
-
 %%%%% ~~ the end ~~ %%%%%

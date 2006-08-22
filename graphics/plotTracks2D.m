@@ -149,10 +149,10 @@ if colorTime == '1' %if user wants to color-code time
 
     %get the fraction of each color in each time interval to be plotted
     numTimePlotOver2 = ceil((numTimePlot-1)/2); %needed to change blue color over time
-    redVariation = [0:numTimePlot-2]'/(numTimePlot-2);
-    greenVariation = [numTimePlot-2:-1:0]'/(numTimePlot-2);
-    blueVariation = [[0:numTimePlotOver2-1]'/(numTimePlotOver2-1);...
-        [numTimePlot-numTimePlotOver2-2:-1:0]'/(numTimePlot-numTimePlotOver2-1)];
+    redVariation = (0:numTimePlot-2)'/(numTimePlot-2);
+    greenVariation = (numTimePlot-2:-1:0)'/(numTimePlot-2);
+    blueVariation = [(0:numTimePlotOver2-1)'/(numTimePlotOver2-1);...
+        (numTimePlot-numTimePlotOver2-2:-1:0)'/(numTimePlot-numTimePlotOver2-1)];
 
     %get the overall color per time interval
     colorOverTime = [redVariation greenVariation blueVariation];
@@ -175,7 +175,6 @@ end %(if colorTime == '1' ... else ...)
 if indicateSE %if user wants to indicate starts and ends
 
     %find the beginning and end of each track
-    startEndPos = zeros(2,2,numTracks);
     for i=numTracks:-1:1
         timePoint = find(~isnan(tracksX(:,i)));
         startInfo(i,:) = [tracksX(timePoint(1),i) ...
@@ -215,10 +214,10 @@ while strcmp(userEntry,'y')
         distTrack2Point = (tracksXP-x(i)).^2+(tracksYP-y(i)).^2;
         [frameChosen,trackChosen] = find(distTrack2Point==min(distTrack2Point(:)));
         for j=1:length(trackChosen)
-            disp(['Coordinates: ' num2str(tracksX(frameChosen(j),trackChosen(j))) ' ' ...
-                num2str(tracksY(frameChosen(j),trackChosen(j))) '   Frame: ' ...
-                num2str(frameChosen(j)+timeRange(1)-1) '   Track: ' ...
-                num2str(trackChosen(j))]);
+            disp(['Track: ' num2str(trackChosen(j)) ...
+                '   Frame: ' num2str(frameChosen(j)+timeRange(1)-1) ...
+                '   Coordinates: ' num2str(tracksXP(frameChosen(j),trackChosen(j))) ...
+                ' ' num2str(tracksYP(frameChosen(j),trackChosen(j)))  ]);
         end
     end
         
@@ -226,7 +225,6 @@ while strcmp(userEntry,'y')
     userEntry = input('select points again? y/n ','s');
 
 end
-
 
 %%%%% ~~ the end ~~ %%%%%
 
