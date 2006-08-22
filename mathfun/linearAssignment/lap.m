@@ -23,18 +23,17 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC, noLinkCost
 %             the cost for not linking a point (e.g. determined by a
 %             maximum search radius) in the diagonal and NONLINK_MARKER off
 %             the diagonal. Sub-matrix (2,2) is a m-b-n matrix of any
-%             not-NONLINK_MARKER value (suggested: zero, except for sparse
+%             not-NONLINK_MARKER value (suggested: one, except for sparse
 %             matrix input)
 %
 % NONLINK_MARKER : value to indicate that two points cannot be linked.
-%             Default: -1. NaN is not allowed here
+%             Default: -1. NaN is not allowed here. 
 %
-% extendedTesting: (optional, [0/{1}]) If 1, the cost matrix, after 
-%                  augmenting it if augmentCC = 1, will be tested
-%                  for violations (at the expense of speed):
-%                     - There cannot be NaNs in cc
-%                     - In every row and every column of cc there must be
-%                       at least 1 element that is not a NONLINK_MARKER.
+% extendedTesting (optional, input has no effect)
+%                LAP will always make sure that:
+%                  - There cannot be NaNs in cc
+%                  - In every row and every column of cc there must be
+%                    at least 1 element that is not a NONLINK_MARKER.
 %
 % augmentCC  (optional, [{0}/1]) If 1, the cost matrix will be augmented to
 %            allow births and deaths.
@@ -132,9 +131,10 @@ else
     if any(cc(:)==0) && ~issparse(cc)
         validCC = cc ~= NONLINK_MARKER;
         if any(any(cc(validCC))) < 0
-            warning('there are negative costs. This could lead to errors')
+            warning('LAP:negativeCosts',...
+                'there are negative and zero costs. This could lead to errors')
         end
-        cc(validCC) = cc(validCC) + 1;
+        cc(validCC) = cc(validCC) + 10;
     end
 end
 
@@ -150,6 +150,9 @@ end
 % a segmentation fault.
 if noLinkCost == NONLINK_MARKER
     noLinkCost = noLinkCost + 1;
+    if noLinkCost == 0
+        noLinkCost = 0.01;
+    end
 end
 
 
@@ -162,6 +165,15 @@ if augmentCC
 
     % expand the m-by-n cost matrix to a (m+n)-by-(n+m) matrix, adding
     % diagonals with noLinkCost
+    
+    % in the lower right corner, we want the lowest cost of all - take
+    % minimum cost, subtract 5 and make sure it's not either 0 or
+    % NONLINK_MARKER
+    minCost = min(min(cc))-5;
+    if minCost == 0 || minCost == NONLINK_MARKER
+        minCost = min(0,NONLINK_MARKER)-1;
+    end
+    
 
     % check if sparse
     if issparse(cc)
@@ -171,14 +183,14 @@ if augmentCC
         % nmMat  = sparse(ones(scc(2), scc(1)));
         % cc = [cc, mmDiag; nnDiag, nmMat];
         
-%         costLL = sparse(ones(scc(2),scc(1)));
+%         costLR = sparse(minCost*ones(scc(2),scc(1)));
         
-        [rowIdx, colIdx, val] = find(cc);
-        costLL = sparse(colIdx,rowIdx,ones(length(colIdx),1),scc(2),scc(1));
+        [rowIdx, colIdx] = find(cc);
+        costLR = sparse(colIdx,rowIdx,minCost*ones(length(colIdx),1),scc(2),scc(1));
         
         cc = [cc, spdiags(noLinkCost * ones(scc(1),1), 0, scc(1), scc(1));...
             spdiags(noLinkCost * ones(scc(2),1), 0, scc(2), scc(2)),...
-            costLL];
+            costLR];
         
     else
         
@@ -188,16 +200,16 @@ if augmentCC
         % cc = [cc, mmDiag; nnDiag, nmMat];
         
         [rowIdx, colIdx] = find(cc ~= NONLINK_MARKER);
-        costLL = sparse(colIdx,rowIdx,ones(length(colIdx),1),scc(2),scc(1));
+        costLR = sparse(colIdx,rowIdx,minCost*ones(length(colIdx),1),scc(2),scc(1));
         
-%         costLL = sparse(ones(scc(2),scc(1)));
+%         costLR = sparse(minCost*ones(scc(2),scc(1)));
         
         % make cc sparse. Take NLM in cc into account!
         cc(cc==NONLINK_MARKER) = 0;
         
         cc = [cc, diag(noLinkCost * ones(scc(1),1)); ...
             diag(noLinkCost * ones(scc(2),1)), ...
-            costLL];
+            costLR];
         
     end
 
@@ -227,17 +239,23 @@ else
     val = cc(cc ~= NONLINK_MARKER);
 end
 
+% test that all cols and all rows are filled, and that there are no nans
+if issparse(cc) && (any(sum(cc~=0,1)) || any(sum(cc~=0,2)))
+    error('LAP:BadCostMatrix',...
+        'Rows and columns of the cost matrix must allow at least one possible link!')
+elseif (any(sum(cc~=NONLINK_MARKER,1)) || any(sum(cc~=NONLINK_MARKER,2)))
+    error('LAP:BadCostMatrix',...
+        'Rows and columns of the cost matrix must allow at least one possible link!')
+end
+
+if any(any(isnan(cc)))
+    error('LAP:NanCostMatrix','Cost matrix cannot contain NaNs!')
+end
+
+    
+
 %clear cc to save memory
 clear cc;
-
-% test that all cols and all rows are filled, and that there are no nans
-if extendedTesting
-    allCols = unique(colIdx);
-    allRows = unique(rowIdx);
-    if any(isnan(val)) || ~(length(allCols) == scc(1) && length(allRows) == scc(2))
-        error('there must be at least one possible link per row and column, and there cannot be NaNs')
-    end
-end
 
 % %I have re-written this section to save memory --Khuloud
 % % write value vector, pad a zero
