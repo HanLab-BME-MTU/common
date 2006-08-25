@@ -7,7 +7,7 @@ function [u, sigmaU, goodIdx, plotAx] = robustExponentialFit2(Y, A, verbose)
 %           positive and negative values of Y. In that case, it will call
 %           robustExponentialFit, and there is no possiblility of
 %           complicated A's.
-%		A: (opt) design matrix. Default is [ones(size(Y), (1:n)']. For
+%		A: (opt) design matrix. Default is [ones(size(Y)), (1:n)']. For
 %           multiple processes with the same exponential decay, A has
 %           multiple columns 1:end-1, with A(i,j)=1 where Y(i) is
 %           a result from process j.

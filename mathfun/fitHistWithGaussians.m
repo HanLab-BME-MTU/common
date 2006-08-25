@@ -28,6 +28,11 @@ function [numObsPerBin,binCenter,gaussParam,errFlag] = fitHistWithGaussians(...
 %                     variance and amplitude of each Gaussian.
 %       errFlag     : 0 if function executes normally, 1 otherwise.
 %
+%REMARKS The fitted Gaussians are normalized. Thus, the contribution of one
+%Gaussian is given by
+%(gaussParam(3)/(gaussParam(2)*sqrt(2pi)))
+%                     *exp(-(x-gaussParam(1))^2/(2*gaussParam(2)^2)
+%
 %Khuloud Jaqaman, August 2006
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

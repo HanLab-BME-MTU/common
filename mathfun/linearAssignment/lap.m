@@ -167,11 +167,12 @@ if augmentCC
     % diagonals with noLinkCost
     
     % in the lower right corner, we want the lowest cost of all - take
-    % minimum cost, subtract 5 and make sure it's not either 0 or
-    % NONLINK_MARKER
-    minCost = min(min(cc))-5;
-    if minCost == 0 || minCost == NONLINK_MARKER
-        minCost = min(0,NONLINK_MARKER)-1;
+    % minimum cost, subtract 5 and make sure it's not either 0
+    % NONLINK_MARKER is not a problem because we make the matrix sparse
+    % before augmenting.
+    minCost = min(min(cc(cc~=NONLINK_MARKER)))-5;
+    if minCost == 0 
+        minCost = -2;
     end
     
 
@@ -240,12 +241,16 @@ else
 end
 
 % test that all cols and all rows are filled, and that there are no nans
-if issparse(cc) && (any(sum(cc~=0,1)) || any(sum(cc~=0,2)))
-    error('LAP:BadCostMatrix',...
-        'Rows and columns of the cost matrix must allow at least one possible link!')
-elseif (any(sum(cc~=NONLINK_MARKER,1)) || any(sum(cc~=NONLINK_MARKER,2)))
-    error('LAP:BadCostMatrix',...
-        'Rows and columns of the cost matrix must allow at least one possible link!')
+if issparse(cc)
+    if (~all(sum(cc~=0,1)) || ~all(sum(cc~=0,2)))
+        error('LAP:BadCostMatrix',...
+            'Rows and columns of the cost matrix must allow at least one possible link!')
+    end
+else
+    if (~all(sum(cc~=NONLINK_MARKER,1)) || ~all(sum(cc~=NONLINK_MARKER,2)))
+        error('LAP:BadCostMatrix',...
+            'Rows and columns of the cost matrix must allow at least one possible link!')
+    end
 end
 
 if any(any(isnan(cc)))

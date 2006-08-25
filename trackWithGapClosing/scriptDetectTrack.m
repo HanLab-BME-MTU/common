@@ -68,29 +68,29 @@ costMatrices(1).costMatParam = struct('searchRadius',3,...   %maximum distance t
 %cost matrix for linking between frames again using statistical data on the tracks
 costMatrices(2).costMatFun = 'costMatLogL';
 costMatrices(2).costMatParam = struct(...
-    'cutoffProbD',0.99,...    %cumulative probability of a square displacement beyond which linking is not allowed
-    'cutoffProbA',0.99,...    %cumulative probability of an amplitude difference beyond which linking is not allowed
+    'cutoffProbD',0.9999,...    %cumulative probability of a square displacement beyond which linking is not allowed
+    'cutoffProbA',0.9999,...    %cumulative probability of an amplitude difference beyond which linking is not allowed
     'noLnkPrctl',-1);
 
 %cost matrix for gap closing
 costMatrices(3).costMatFun = 'costMatCloseGaps';
 costMatrices(3).costMatParam = struct(...
-    'cutoffProbD1',0.99,...   %cumulative probability of a square displacement beyond which gap closing is not allowed
-    'cutoffProbA1',0.99,...   %cumulative probability of an amplitude difference beyond which gap closing is not allowed
-    'cutoffProbD2',0.99,...   %cumulative probability of a square displacement beyond which merging/splitting are not allowed
-    'cutoffProbA2',0.99,...   %cumulative probability of an amplitude difference beyond which merging/splitting are not allowed
+    'cutoffProbD1',0.9999,...   %cumulative probability of a square displacement beyond which gap closing is not allowed
+    'cutoffProbA1',0.9999,...   %cumulative probability of an amplitude difference beyond which gap closing is not allowed
+    'cutoffProbD2',0.9999,...   %cumulative probability of a square displacement beyond which merging/splitting are not allowed
+    'cutoffProbA2',0.9999,...   %cumulative probability of an amplitude difference beyond which merging/splitting are not allowed
     'noLnkPrctl',-1);
 
 %cost matrix for resolving merging and splitting conflicts
 costMatrices(4).costMatFun = 'costVecLinkMS';
 costMatrices(4).costMatParam = struct(...
-    'cutoffProbD',0.99,...    %cumulative probability of a square displacement beyond which merging/splitting are not allowed
-    'cutoffProbA',0.99);      %cumulative probability of an amplitude difference beyond which merging/splitting are not allowed
+    'cutoffProbD',0.9999,...    %cumulative probability of a square displacement beyond which merging/splitting are not allowed
+    'cutoffProbA',0.9999);      %cumulative probability of an amplitude difference beyond which merging/splitting are not allowed
 
 %gap closing parameters
 gapCloseParam.timeWindow = 5;       %largest gap that can be closed
 gapCloseParam.mergeSplit = 0;       %1 if merging/splitting are considered, 0 otherwise
-gapCloseParam.segmentLength = 100;  %length of time segment for sequential gap closing
+% gapCloseParam.segmentLength = 100;  %length of time segment for sequential gap closing
 
 %iteration parameters
 iterParam.tolerance = 0.05;   %maximum relative change of track statistical parameters to reach convergence
