@@ -2,7 +2,7 @@ function [trackedFeatureNum,trackedFeatureInfo,errFlag] = ...
     linkFeaturesTp2Tp(movieInfo,costMatFun,costMatParams)
 %LINKFEATURESTP2TP links features between consecutive time points in a movie using LAP
 %
-%SYNOPSIS function [trackedFeatureNum,trackedFeatureInfo,errFlag] = ...
+%SYNOPSIS [trackedFeatureNum,trackedFeatureInfo,errFlag] = ...
 %    linkFeaturesTp2Tp(movieInfo,costMatFun,costMatParams)
 %
 %INPUT  movieInfo    : Array of size equal to the number of time points
@@ -111,13 +111,14 @@ trackedFeatureNum = [1:movieInfo(1).num]';
 for t = 1:numTimePoints-1
 
     %calculate cost matrix
-    eval(['[costMat,noLinkCost] = ' costMatFun '(movieInfo(t:t+1),costMatParams);'])
+    eval(['[costMat,noLinkCost,nonlinkMarker] = ' costMatFun ...
+        '(movieInfo(t:t+1),costMatParams);'])
     
     %get the number of features in the two time points
     [n,m] = size(costMat);
     
     %track features based on this cost matrix, allowing for birth and death
-    [link12,link21] = lap(costMat,-1000,0,1,noLinkCost);
+    [link12,link21] = lap(costMat,nonlinkMarker,0,1,noLinkCost);
     
     %get indices of features at time t+1 that are connected to features at time t
     indx2C = find(link21(1:m)<=n);

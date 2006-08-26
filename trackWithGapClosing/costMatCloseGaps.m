@@ -1,11 +1,13 @@
-function [costMat,noLinkCost,trackStartTime,trackEndTime,indxMerge,numMerge,...
-    indxSplit,numSplit,errFlag] = costMatCloseGaps(trackedFeatInfo,...
-    trackStartTime,indxStart,trackEndTime,indxEnd,costMatParams,gapCloseParam)
+function [costMat,noLinkCost,nonlinkMarker,trackStartTime,trackEndTime,...
+    indxMerge,numMerge,indxSplit,numSplit,errFlag] = costMatCloseGaps(...
+    trackedFeatInfo,trackStartTime,indxStart,trackEndTime,indxEnd,...
+    costMatParams,gapCloseParam)
 %COSTMATCLOSEGAPS provides a cost matrix for closing gaps (including merging and splitting) based on tracked feature statistics
 %
-%SYNOPSIS [costMat,noLinkCost,trackStartTime,trackEndTime,indxMerge,numMerge,...
-%    indxSplit,numSplit,errFlag] = costMatCloseGaps(trackedFeatInfo,...
-%    trackStartTime,indxStart,trackEndTime,indxEnd,costMatParams,gapCloseParam)
+%SYNOPSIS [costMat,noLinkCost,nonlinkMarker,trackStartTime,trackEndTime,...
+%    indxMerge,numMerge,indxSplit,numSplit,errFlag] = costMatCloseGaps(...
+%    trackedFeatInfo,trackStartTime,indxStart,trackEndTime,indxEnd,...
+%    costMatParams,gapCloseParam)
 %
 %INPUT  trackedFeatInfo: The positions and amplitudes of the tracked
 %                        features from linkFeaturesTp2Tp. 
@@ -54,6 +56,7 @@ function [costMat,noLinkCost,trackStartTime,trackEndTime,indxMerge,numMerge,...
 %OUTPUT costMat       : Cost matrix.
 %       noLinkCost    : Cost of linking a feature to nothing, as derived
 %                       from the distribution of costs.
+%       nonlinkMarker : Value indicating that a link is not allowed.
 %       trackStartTime: Starting time of tracks whose starts are considered
 %                       for gap closing.
 %       trackEndTime  : Ending time of tracks whose ends are considered for
@@ -92,6 +95,7 @@ function [costMat,noLinkCost,trackStartTime,trackEndTime,indxMerge,numMerge,...
 
 costMat = [];
 noLinkCost = [];
+nonlinkMarker = [];
 indxMerge = [];
 numMerge = [];
 indxSplit = [];
@@ -231,9 +235,6 @@ for j=1:m %go over all starts
     end %(for i=1:n)
 end %(for j=1:m)
 
-%determine the cost of birth and death
-costBD = max(cost(:)) + 1;
-
 %define some merging and splitting variables
 numMerge  =  0; %index counting merging events
 indxMerge = []; %vector storing merging track number
@@ -328,53 +329,6 @@ if mergeSplit
             end %(for i=1:numTracks)
         end %(for j=tracksToConsider')
 
-%         %next consider the case where two ending tracks merge and form a 
-%         %third track that starts right after they end. This happens when 
-%         %the difference in the intensities of the two merging features 
-%         %is larger than the change in intensity from one time point 
-%         %to the next
-% 
-%         %find tracks that start right after these tracks end
-%         startTracksToConsider = find(trackStartTime==endTime+1);
-%         
-%         for j1=1:numTracksToConsider %go over all pairs of ends considered
-%             for k1=j1+1:numTracksToConsider
-% 
-%                 %get the end numbers
-%                 j = tracksToConsider(j1);
-%                 k = tracksToConsider(k1);
-% 
-%                 for i=startTracksToConsider'
-% 
-%                     %calculate the square distance between the end
-%                     %point of j and starting point of i
-%                     dispSq1 = (xCoordEnd(j)-xCoordStart(i))^2 + ...
-%                         (yCoordEnd(j)-yCoordStart(i))^2;
-% 
-%                     %calculate the square distance between the end
-%                     %point of k and starting point of i
-%                     dispSq2 = (xCoordEnd(k)-xCoordStart(i))^2 + ...
-%                         (yCoordEnd(k)-yCoordStart(i))^2;
-% 
-%                     %calculate the square difference between the amplitude
-%                     %of i (after merging) and the sum of amplitudes of j
-%                     %and k (before merging)
-%                     ampDiffSq = (ampEnd(j) + ampEnd(k) - ampStart(i))^2;
-% 
-%                     %if this is a possible link ...
-%                     if dispSq1 < maxDispSqMS(1) && ...
-%                             dispSq2 < maxDispSqMS(1) && ...
-%                             ampDiffSq < maxAmpDiffSqMS(1)
-% 
-%                         
-% 
-%                     end %(if dispSq1 < maxDispSqMS(1) && ...)
-% 
-%                 end %(for i=startTracksToConsider')
-% 
-%             end %(for k1=j1+1:numTracksToConsider)
-%         end %(for j1=1:numTracksToConsider)
-
     end %(for endTime = min(trackEndTime):max(trackEndTime))
 
     %costs of splitting
@@ -445,26 +399,31 @@ if mergeSplit
         end %(for j=tracksToConsider')
 
     end %(for startTime = min(trackStartTime):max(trackStartTime))
-        
+    
 end %(if mergeSplit)
 
-%create temporary cost matrix
+%create cost matrix without births and deaths
 n1 = n+numSplit;
 m1 = m+numMerge;
 costMat = sparse(indx1,indx2,cost,n1,m1);
 
 %append cost matrix to allow births and deaths ...
 
-%generate lower left block
-% costLL = sparse(ones(m1,n1));
-costLL = sparse(indx2,indx1,ones(length(indx1),1),m1,n1);
+%determine the cost of birth and death
+costBD = max(max(max(costMat))+1,1);
+
+%get the cost for the lower right block
+costLR = min(min(min(costMat))-1,-1);
 
 %create cost matrix that allows for births and deaths
-costMat = [costMat ... %costs for links
+costMat = [costMat ... %costs for links (gap closing + merge/split)
     spdiags([costBD*ones(n,1); altCostSplit],0,n1,n1); ... %costs for death
     spdiags([costBD*ones(m,1); altCostMerge],0,m1,m1) ...  %costs for birth
-    costLL]; %dummy costs complete the cost matrix
+    sparse(indx2,indx1,costLR*ones(length(indx1),1),m1,n1)]; %dummy costs to complete the cost matrix
 
+%determine the nonlinkMarker
+nonlinkMarker = min(floor(full(min(min(costMat))))-5,-5);
+    
 %since the full cost matrix (including the birth and death augmentation) 
 %is defined above, the noLnkPrctl variable should not be used for now. 
 %determine noLinkCost

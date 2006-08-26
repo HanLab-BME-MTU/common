@@ -1,7 +1,9 @@
-function [costMat,noLinkCost,errFlag] = costMatSimple(movieInfo,costMatParams)
+function [costMat,noLinkCost,nonlinkMarker,errFlag] = costMatSimple(...
+    movieInfo,costMatParams)
 %COSTMATSIMPLE provides a simple cost matrix for linking features between 2 time points
 %
-%SYNOPSIS function [costMat,noLinkCost,errFlag] = costMatSimple(movieInfo,costMatParams)
+%SYNOPSIS [costMat,noLinkCost,nonlinkMarker,errFlag] = costMatSimple(...
+%    movieInfo,costMatParams)
 %
 %INPUT  movieInfo    : A 2x1 array (corresponding to the 2 time points of 
 %                      interest) containing the fields:
@@ -33,6 +35,7 @@ function [costMat,noLinkCost,errFlag] = costMatSimple(movieInfo,costMatParams)
 %OUTPUT costMat      : Cost matrix.
 %       noLinkCost   : Cost of linking a feature to nothing, as derived
 %                      from the distribution of costs.
+%       nonlinkMarker: Value indicating that a link is not allowed.
 %       errFlag      : 0 if function executes normally, 1 otherwise.
 %
 %REMARKS The cost for linking feature i in time point t to feature j 
@@ -47,6 +50,7 @@ function [costMat,noLinkCost,errFlag] = costMatSimple(movieInfo,costMatParams)
 
 costMat = [];
 noLinkCost = [];
+nonlinkMarker = [];
 errFlag = [];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,8 +142,11 @@ if noLnkPrctl ~= -1
     noLinkCost = prctile(costMat(:),noLnkPrctl);
 end
 
-%replace NaN, indicating pairs that cannot be linked, with -1000
-costMat(find(isnan(costMat))) = -1000;
+%determine the nonlinkMarker
+nonlinkMarker = min(floor(min(min(costMat)))-5,-5);
+
+%replace NaN, indicating pairs that cannot be linked, with nonlinkMarker
+costMat(find(isnan(costMat))) = nonlinkMarker;
 
 
 %%%%% ~~ the end ~~ %%%%%

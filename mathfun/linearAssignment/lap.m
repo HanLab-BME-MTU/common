@@ -2,9 +2,9 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC, noLinkCost
 %LAP solves the linear assignment problem for a given cost matrix
 %
 % A linear assignment tries to establish links between points in two sets.
-% One point in set A can only link to one point in set B or it can not be
-% linked at all. The cost associated with the link from element i of A to
-% element j of B is given by cc(i,j).
+% One point in set A can only link to one point in set B and vice versa.
+% The cost associated with the link from element i of A to element j of B 
+% is given by cc(i,j).
 %
 % SYNOPSIS [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC)
 %
@@ -17,7 +17,7 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC, noLinkCost
 %             death is to be allowed) the cost matrix is formed as
 %             a 2-by-2 catenation of four sub-matrices. If there are n
 %             elements in set A and m elements in set B, sub-matrix (1,1)
-%             is a n-by-m matrix with the cost for each link. The two
+%             is an n-by-m matrix with the cost for each link. The two
 %             off-diagonal sub-matrices make non-links possible. They are
 %             both diagonal square matrices (2,1: m-by-m; 1,2: n-by-n) with
 %             the cost for not linking a point (e.g. determined by a
@@ -29,7 +29,8 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC, noLinkCost
 % NONLINK_MARKER : value to indicate that two points cannot be linked.
 %             Default: -1. NaN is not allowed here. 
 %
-% extendedTesting (optional, input has no effect)
+% extendedTesting (used to be optional, now input has no effect and 
+%                  extendedTesting will always be performed)
 %                LAP will always make sure that:
 %                  - There cannot be NaNs in cc
 %                  - In every row and every column of cc there must be
@@ -107,25 +108,32 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC, noLinkCost
 %=====================
 % TEST INPUT
 %=====================
+
 if (nargin == 1) || isempty(NONLINK_MARKER)
     NONLINK_MARKER = -1;
 elseif isnan(NONLINK_MARKER)
     error('NONLINK_MARKER cannot be NaN!')
 end
+
 if nargin < 4 || isempty(augmentCC)
     augmentCC = 0;
 end
+
 % test size
 scc = size(cc);
 % check size only if no augmentation
 if ~augmentCC
+    
     if scc(1) ~= scc(2) || length(scc) > 2
         error('cost must be a 2D square matrix!')
     end
     
 elseif length(scc) > 2
+    
     error('cost must be a 2D matrix!')
+    
 else
+    
     % if we're augmenting, sparse matrices are produced. This will be
     % problematic with cost 0
     if any(cc(:)==0) && ~issparse(cc)
@@ -136,6 +144,7 @@ else
         end
         cc(validCC) = cc(validCC) + 10;
     end
+    
 end
 
 if nargin < 3 || isempty(extendedTesting)
@@ -163,11 +172,11 @@ end
 %=================================
 if augmentCC
 
-    % expand the m-by-n cost matrix to a (m+n)-by-(n+m) matrix, adding
+    % expand the m-by-n cost matrix to an (m+n)-by-(n+m) matrix, adding
     % diagonals with noLinkCost
     
     % in the lower right corner, we want the lowest cost of all - take
-    % minimum cost, subtract 5 and make sure it's not either 0
+    % minimum cost, subtract 5 and make sure it's not 0.
     % NONLINK_MARKER is not a problem because we make the matrix sparse
     % before augmenting.
     minCost = min(min(cc(cc~=NONLINK_MARKER)))-5;
@@ -183,8 +192,6 @@ if augmentCC
         % nnDiag = spdiags(noLinkCost * ones(scc(2),1), 0, scc(2), scc(2));
         % nmMat  = sparse(ones(scc(2), scc(1)));
         % cc = [cc, mmDiag; nnDiag, nmMat];
-        
-%         costLR = sparse(minCost*ones(scc(2),scc(1)));
         
         [rowIdx, colIdx] = find(cc);
         costLR = sparse(colIdx,rowIdx,minCost*ones(length(colIdx),1),scc(2),scc(1));
@@ -202,8 +209,6 @@ if augmentCC
         
         [rowIdx, colIdx] = find(cc ~= NONLINK_MARKER);
         costLR = sparse(colIdx,rowIdx,minCost*ones(length(colIdx),1),scc(2),scc(1));
-        
-%         costLR = sparse(minCost*ones(scc(2),scc(1)));
         
         % make cc sparse. Take NLM in cc into account!
         cc(cc==NONLINK_MARKER) = 0;
@@ -296,3 +301,4 @@ val = [0; val];
 % remove first element from output vectors, as it is a meaningless 0.
 x = x(2:end);
 y = y(2:end);
+

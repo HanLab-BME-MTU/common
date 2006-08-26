@@ -165,17 +165,27 @@ while iterate
 
     %close gaps using the information obtained via the statistical analysis
     %of tracks ...
+
     %close gaps sequentially (in segments) to avoid memory problems
     
     %determine the lower and upper bounds of first segment for gap closing
     %go back in time by timeWindow when looking for track ends to be
     %connected to track start in this segment
-    segmentUB = numTimePoints; %upper bound (for both end and starts)
+    segmentUB = numTimePoints; %upper bound (for both ends and starts)
     segmentLBS = max(segmentUB+1-segmentLength,1); %lower bound for starts
     segmentLBE = max(segmentUB+1-segmentLength-timeWindow,1); %lower bounds for ends
     
-    while segmentUB > 0
+    %if there is no merging and splitting, segmentUB cannot be smaller than
+    %3, because if segmentUB < 3, there won't be any gaps to close
+    %if there is merging and splitting, segmentUB cannot be smaller than 2,
+    %because if segmentUB < 2, there won't be any gaps to close or merges
+    %and splits to consider
+    while segmentUB > 2 || (mergeSplit && segmentUB > 1)
 
+        segmentUB = 1;
+        segmentLBS = 1;
+        segmentLBE = 1;
+        
         %get number of tracks formed by initial linking
         numTracks = size(trackedFeatureNum,1);
 
@@ -204,13 +214,14 @@ while iterate
             %costs of birth and death
             costMatParams = costMatrices(3).costMatParam;
             costMatParams.trackStats = trackStats;
-            eval(['[costMat,noLinkCost,trackStartTime,trackEndTime,indxMerge,' ...
-                'numMerge,indxSplit,numSplit,errFlag] =' costMatrices(3).costMatFun ...
-                '(trackedFeatureInfo,trackStartTime,indxStart,'...
-                'trackEndTime,indxEnd,costMatParams,gapCloseParam);'])
+            eval(['[costMat,noLinkCost,nonlinkMarker,trackStartTime,' ...
+                'trackEndTime,indxMerge,numMerge,indxSplit,numSplit,errFlag] =' ...
+                costMatrices(3).costMatFun '(trackedFeatureInfo,'...
+                'trackStartTime,indxStart,trackEndTime,indxEnd,' ...
+                'costMatParams,gapCloseParam);'])
             
             %link tracks based on this cost matrix, allowing for birth and death
-            [link12,link21] = lap(costMat,-1000,0,0,noLinkCost);
+            [link12,link21] = lap(costMat,nonlinkMarker,0,0,noLinkCost);
 
             for i=m:-1:1 %go over all track starts
 
