@@ -1,4 +1,5 @@
-function [movieInfo,errFlag] = detectSubResFeatures2D_Movie(movieParam,detectionParam)
+function [movieInfo,framesFailed,errFlag] = detectSubResFeatures2D_Movie(...
+    movieParam,detectionParam)
 %DETECTSUBRESFEATURES2D_MOVIE detects subresolution features in a series of images
 %
 %SYNOPSIS [detectedFeatures,errFlag] = detectSubResFeatures2D_Movie(movieParam,detectionParam)
@@ -9,6 +10,7 @@ function [movieInfo,errFlag] = detectSubResFeatures2D_Movie(movieParam,detection
 %           .filenameBase : Filename base.
 %           .firstImageNum: Numerical index of first image in movie.
 %           .lastImageNum : Numerical index of last image in movie.
+%           .digits4Enum  : Number of digits used to enumerate frames.
 %       detectionParam: Structure with fields
 %           .psfSigma     : Standard deviation of point spread function (in pixels).
 %           .testAlpha    : Alpha-values for statistical tests. Optional.
@@ -19,12 +21,14 @@ function [movieInfo,errFlag] = detectSubResFeatures2D_Movie(movieParam,detection
 %                           otherwise. Optional. Default: 1.
 %
 %OUTPUT movieInfo     : Array of length "movie length" of structures 
-%                         containing the fields:
+%                       containing the fields:
 %             .xCoord    : Image coordinate system x-coordinate of detected
 %                          features [x dx] (in pixels).
 %             .yCoord    : Image coorsinate system y-coordinate of detected
 %                          features [y dy] (in pixels).
 %             .amp       : Amplitudes of PSFs fitting detected features [a da].
+%       framesFailed  : Array indicating frames where detection has failed.
+%                       If empty, then no frames failed.
 %       errFlag       : 0 if function executes normally, 1 otherwise.
 %
 %Khuloud Jaqaman, July 2006
@@ -34,6 +38,7 @@ function [movieInfo,errFlag] = detectSubResFeatures2D_Movie(movieParam,detection
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 movieInfo = [];
+framesFailed = [];
 errFlag = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,18 +88,21 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %assign leading zeros in numerical index of images
-if lastImageNum >= 1000
-    leadingZeros(1).value = '000';
-    leadingZeros(2).value = '00';
-    leadingZeros(3).value = '0';
-    leadingZeros(4).value = '';
-elseif lastImageNum >= 100
-    leadingZeros(1).value = '00';
-    leadingZeros(2).value = '0';
-    leadingZeros(3).value = '';
-elseif lastImageNum >= 10
-    leadingZeros(1).value = '0';
-    leadingZeros(2).value = '';
+switch movieParam.digits4Enum
+    case 4
+        leadingZeros(1).value = '000';
+        leadingZeros(2).value = '00';
+        leadingZeros(3).value = '0';
+        leadingZeros(4).value = '';
+    case 3
+        leadingZeros(1).value = '00';
+        leadingZeros(2).value = '0';
+        leadingZeros(3).value = '';
+    case 2
+        leadingZeros(1).value = '0';
+        leadingZeros(2).value = '';
+    case 1
+        leadingZeros(1).value = '';
 end
 
 movieInfo(lastImageNum).xCoord = [];
@@ -111,11 +119,20 @@ for i=min(9999,lastImageNum):-1:max(1000,firstImageNum)
     %get cands
     eval(['load ' candsDir 'cands' leadingZeros(4).value num2str(i) ';'])
 
-    %fit with mixture-models
-    featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF);
+    try %try to detect features in this frame
 
-    %save results
-    movieInfo(i) = featuresInfo;
+        %fit with mixture-models
+        featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF);
+
+        %save results
+        movieInfo(i) = featuresInfo;
+        
+    catch %if detection fails
+        
+        %add this frame to the array of frames with failed detection
+        framesFailed = [framesFailed; i];
+
+    end
 
 end
 
@@ -127,11 +144,20 @@ for i=min(999,lastImageNum):-1:max(100,firstImageNum)
     %get cands
     eval(['load ' candsDir 'cands' leadingZeros(3).value num2str(i) ';'])
 
-    %fit with mixture-models
-    featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF);
+    try %try to detect features in this frame
 
-    %save results
-    movieInfo(i) = featuresInfo;
+        %fit with mixture-models
+        featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF);
+
+        %save results
+        movieInfo(i) = featuresInfo;
+
+    catch %if detection fails
+
+        %add this frame to the array of frames with failed detection
+        framesFailed = [framesFailed; i];
+
+    end
 
 end
 
@@ -143,11 +169,20 @@ for i=min(99,lastImageNum):-1:max(10,firstImageNum)
     %get cands
     eval(['load ' candsDir 'cands' leadingZeros(2).value num2str(i) ';'])
 
-    %fit with mixture-models
-    featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF);
+    try %try to detect features in this frame
 
-    %save results
-    movieInfo(i) = featuresInfo;
+        %fit with mixture-models
+        featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF);
+
+        %save results
+        movieInfo(i) = featuresInfo;
+
+    catch %if detection fails
+
+        %add this frame to the array of frames with failed detection
+        framesFailed = [framesFailed; i];
+
+    end
 
 end
 
@@ -159,11 +194,20 @@ for i=min(9,lastImageNum):-1:max(1,firstImageNum)
     %get cands
     eval(['load ' candsDir 'cands' leadingZeros(1).value num2str(i) ';'])
 
-    %fit with mixture-models
-    featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF);
+    try %try to detect features in this frame
 
-    %save results
-    movieInfo(i) = featuresInfo;
+        %fit with mixture-models
+        featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF);
+
+        %save results
+        movieInfo(i) = featuresInfo;
+
+    catch %if detection fails
+
+        %add this frame to the array of frames with failed detection
+        framesFailed = [framesFailed; i];
+
+    end
 
 end
 

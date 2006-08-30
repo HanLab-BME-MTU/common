@@ -73,6 +73,9 @@ function [trackedFeatureNum,trackedFeatureInfo,errFlag] = trackWithGapClosing(..
 %       errFlag           : 0 if function executes normally, 1 otherwise.
 %
 %REMARKS For 1D, 2D and 3D problems.
+%        The algorithm can handle cases where some frames do not have any
+%        features at all. However, the very first frame must have some
+%        features in it.
 %
 %Khuloud Jaqaman, March 2006
 
@@ -182,10 +185,6 @@ while iterate
     %and splits to consider
     while segmentUB > 2 || (mergeSplit && segmentUB > 1)
 
-        segmentUB = 1;
-        segmentLBS = 1;
-        segmentLBE = 1;
-        
         %get number of tracks formed by initial linking
         numTracks = size(trackedFeatureNum,1);
 

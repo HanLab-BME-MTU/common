@@ -46,8 +46,9 @@ function [trackedFeatureNum,trackedFeatureInfo,errFlag] = ...
 %       errFlag          : 0 if function executes normally, 1 otherwise.
 %
 %REMARKS No gap closing.
-%        The algorithm is currently for the special case of 2D, but in
-%        principle it can be generalized to ND quite easily.
+%        The algorithm can handle cases where some frames do not have any
+%        features at all. However, the very first frame must have some
+%        features in it.
 %
 %Khuloud Jaqaman, August 2005
 
@@ -110,44 +111,81 @@ trackedFeatureNum = [1:movieInfo(1).num]';
 %go over all time points
 for t = 1:numTimePoints-1
 
-    %calculate cost matrix
-    eval(['[costMat,noLinkCost,nonlinkMarker] = ' costMatFun ...
-        '(movieInfo(t:t+1),costMatParams);'])
-    
     %get the number of features in the two time points
-    [n,m] = size(costMat);
-    
-    %track features based on this cost matrix, allowing for birth and death
-    [link12,link21] = lap(costMat,nonlinkMarker,0,1,noLinkCost);
-    
-    %get indices of features at time t+1 that are connected to features at time t
-    indx2C = find(link21(1:m)<=n);
-    
-    %get indices of corresponding features at time t
-    indx1C = link21(indx2C);
-    
-    %find the rows in "trackedFeatureNum" that are not connected to features at time t+1
-    indx1U = ones(size(trackedFeatureNum,1),1);
-    indx1U(indx1C) = 0;
-    indx1U = find(indx1U);
-    
-    %assign space for new matrix
-    tmp = zeros(size(trackedFeatureNum,1)+m-length(indx2C),t+1);
-    
-    %fill in the feature numbers at time t+1
-    tmp(1:m,t+1) = [1:m]';
-    
-    %shuffle the rows from the previous times to get the correct
-    %connectivity with time point t+1
-    tmp(indx2C,1:t) = trackedFeatureNum(indx1C,:);
-    
-    %add rows of tracks that are not connected to points at time t+1
-    tmp(max(m,length(indx1C))+1:end,1:t) = trackedFeatureNum(indx1U,:);
+    n = movieInfo(t).num;
+    m = movieInfo(t+1).num;
 
-    %update the connectivity matrix "trackedFeatureNum"
-    trackedFeatureNum = tmp;
-    
-end
+    if n ~= 0 %if there are features in first frame
+
+        if m ~= 0 %if there are features in second frame
+
+            %calculate cost matrix
+            eval(['[costMat,noLinkCost,nonlinkMarker] = ' costMatFun ...
+                '(movieInfo(t:t+1),costMatParams);'])
+
+            %track features based on this cost matrix, allowing for birth and death
+            [link12,link21] = lap(costMat,nonlinkMarker,0,1,noLinkCost);
+
+            %get indices of features at time t+1 that are connected to features at time t
+            indx2C = find(link21(1:m)<=n);
+
+            %get indices of corresponding features at time t
+            indx1C = link21(indx2C);
+
+            %find the rows in "trackedFeatureNum" that are not connected to features at time t+1
+            indx1U = ones(size(trackedFeatureNum,1),1);
+            indx1U(indx1C) = 0;
+            indx1U = find(indx1U);
+
+            %assign space for new matrix
+            tmp = zeros(size(trackedFeatureNum,1)+m-length(indx2C),t+1);
+
+            %fill in the feature numbers at time t+1
+            tmp(1:m,t+1) = [1:m]';
+
+            %shuffle the rows from the previous times to get the correct
+            %connectivity with time point t+1
+            tmp(indx2C,1:t) = trackedFeatureNum(indx1C,:);
+
+            %add rows of tracks that are not connected to points at time t+1
+            tmp(max(m,length(indx1C))+1:end,1:t) = trackedFeatureNum(indx1U,:);
+
+            %update the connectivity matrix "trackedFeatureNum"
+            trackedFeatureNum = tmp;
+
+        else %if there are no features in second frame
+
+            %add a column of zeros for the second frame
+            trackedFeatureNum = [trackedFeatureNum zeros(size(trackedFeatureNum,1),1)];
+
+        end %(if m ~= 0 ... else ...)
+
+    else %if there are no feature in first frame
+
+        if m ~= 0 %if there are features in second frame
+
+            %assign space for new matrix
+            tmp = zeros(size(trackedFeatureNum,1)+m,t+1);
+
+            %fill in the feature numbers at time t+1
+            tmp(1:m,t+1) = [1:m]';
+
+            %fill in the tracks upto time t
+            tmp(m+1:end,1:t) = trackedFeatureNum;
+
+            %update the connectivity matrix "trackedFeatureNum"
+            trackedFeatureNum = tmp;
+
+        else %if there are no features in second frame
+
+            %add a column of zeros for the second frame
+            trackedFeatureNum = [trackedFeatureNum zeros(size(trackedFeatureNum,1),1)];
+
+        end %(if m ~= 0 ... else ...)
+
+    end %(if n ~= 0 ... else ...)
+
+end %(for t=1:numTimePoints-1)
 
 %get total number of tracks
 numTracks = size(trackedFeatureNum,1);

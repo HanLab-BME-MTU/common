@@ -1,5 +1,5 @@
 function [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
-    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF)
+    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF,bitDepth)
 %DETECTSUBRESFEATURES2D determines the positions and intensity amplitudes of sub-resolution features using mixture model fitting
 %
 %SYNOPSIS [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
@@ -17,6 +17,7 @@ function [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
 %                    Optional. Default: 0.
 %       doMMF      : 1 if user wants to do mixture-model fitting, 0
 %                    otherwise. Optional. Default: 1.
+%       bitDepth   : Camera bit depth. Optional. Default: 14.
 %
 %OUTPUT detectedFeatures: Structure with fields:
 %             .xCoord    : Image coordinate system x-coordinate of detected
@@ -24,19 +25,19 @@ function [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
 %             .yCoord    : Image coorsinate system y-coordinate of detected
 %                          features [y dy] (in pixels).
 %             .amp       : Amplitudes of PSFs fitting detected features [a da].
-%       clustersMMF     : Array of clusters of sub-resolution features. 
-%                         Structure with fields:
+%       clustersMMF: Array of clusters of sub-resolution features. 
+%                    Structure with fields:
 %             .position  : Position of each feature in image coordinate 
 %                          system (in pixels): [x y dx dy] = [y x dy dx] 
 %                          in matrix coordinate system.
 %             .amplitude : Intensity of each feature [A dA].
 %             .bgAmp     : Background intensity [Abg dAbg].
 %             .varCovMat : Variance-covariance matrix of estimated parameters.
-%       imageN3         : Image with labeled features. Blue: those from cands;
-%                         Red: those from mixture-model fitting; Magenta: those 
-%                         from MMF which coincide with those from cands.
-%                         Will be output only if visual = 1.
-%       errFlag         : 0 if function executes normally, 1 otherwise.
+%       imageN3    : Image with labeled features. Blue: those from cands;
+%                    Red: those from mixture-model fitting; Magenta: those 
+%                    from MMF which coincide with those from cands.
+%                    Will be output only if visual = 1.
+%       errFlag    : 0 if function executes normally, 1 otherwise.
 %
 %Khuloud Jaqaman, August 2005
 
@@ -114,6 +115,15 @@ else
     end
 end
 
+%check the bit depth
+if nargin < 7 || isempty(bitDepth)
+    bitDepth = 14;
+else
+    if bitDepth <= 0 || bitDepth-floor(bitDepth) ~= 0
+        disp('--detectSubResFeatures2D: Variable "bitDepth" should be a positive integer!');
+    end
+end
+
 %exit if there are problems with input data
 if errFlag
     disp('--detectSubResFeatures2D: Please fix input data!');
@@ -140,8 +150,8 @@ if errFlag
     return
 end
 
-%convert image from uint16 to double, and divide by bitdepth
-image = double(image)/(2^14-1);
+%Divide the image by the bit depth, to normalize it between 0 and 1
+image = double(image)/(2^bitDepth-1);
 
 %get background intensity information from cands
 bgAmp = vertcat(cands.IBkg);
