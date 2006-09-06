@@ -12,6 +12,7 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC, noLinkCost
 %             value of NONLINK_MARKER, if the link is not allowed. cc can
 %             be input as a sparse matrix (in which case there won't be any
 %             NONLINK_MARKERs).
+%             Elements of the cost matrix cannot be inf or nan!
 %
 %             For an unequal number of points (or, generally, if birth and
 %             death is to be allowed) the cost matrix is formed as
@@ -258,8 +259,8 @@ else
     end
 end
 
-if any(any(isnan(cc)))
-    error('LAP:NanCostMatrix','Cost matrix cannot contain NaNs!')
+if any(any(~isfinite(cc)))
+    error('LAP:NanCostMatrix','Cost matrix cannot contain NaNs or Inf!')
 end
 
     
