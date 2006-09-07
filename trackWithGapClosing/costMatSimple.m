@@ -110,8 +110,7 @@ z2 = repmat(movieInfo(2).zCoord(:,1)',n,1);
 costMat = (x1-x2).^2 + (y1-y2).^2 + (z1-z2).^2;
 
 %assign NaN to all pairs that are separated by a distance > searchRadius
-indx = find(costMat>searchRadius^2);
-costMat(indx) = NaN;
+costMat(costMat>searchRadius^2) = NaN;
 
 %replicate the feature amplitudes at the 2 time points to get n-by-m
 %matrices
@@ -130,8 +129,7 @@ end
 
 %assign NaN to all pairs whose amplitude ratio is larger than the
 %maximum allowed
-indx = find(ampRatio>maxAmpRatio);
-ampRatio(indx) = NaN;
+ampRatio(ampRatio>maxAmpRatio) = NaN;
 
 %multiply the distance between pairs with the ratio between their
 %amplitudes
@@ -146,7 +144,7 @@ end
 nonlinkMarker = min(floor(min(min(costMat)))-5,-5);
 
 %replace NaN, indicating pairs that cannot be linked, with nonlinkMarker
-costMat(find(isnan(costMat))) = nonlinkMarker;
+costMat(isnan(costMat)) = nonlinkMarker;
 
 
 %%%%% ~~ the end ~~ %%%%%

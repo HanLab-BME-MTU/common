@@ -119,14 +119,16 @@ if ~isempty(goodTracks) %if there are tracks to use ...
         dispSqVar = sum(trackLength.*nanvar(dispSq,[],2))./sum(trackLength(:));
 
         %calculate the gamma distribution parameters
-        dispSqR(i) = dispSqMean^2/dispSqVar;
-        dispSqTheta(i) = dispSqMean/dispSqVar;
+        %avoid zeros because they cause problems with the logarithm and
+        %gamma functions
+        dispSqR(i) = max(dispSqMean^2/dispSqVar,1e-300); %gamma(realmin)=Inf, hence use 1e-300
+        dispSqTheta(i) = max(dispSqMean/dispSqVar,realmin);
         
         %get the amplitude change between time points
         ampDiff = amplitude(:,i+1:end) - amplitude(:,1:end-i);
 
         %get the standard deviation of amplitude change
-        ampDiffStd(i) = nanstd(ampDiff(:));
+        ampDiffStd(i) = max(nanstd(ampDiff(:)),realmin);
 
     end %(for i=1:timeWindow)
     

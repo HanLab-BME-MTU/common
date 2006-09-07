@@ -129,11 +129,12 @@ a2 = repmat(movieInfo(2).amp(:,1)',n,1);
 
 %calculate the squared displacement of features from t to t+1
 dispSq = (x1-x2).^2 + (y1-y2).^2 + (z1-z2).^2;
-dispSq(find(dispSq>maxDispSq)) = NaN;
+dispSq(dispSq>maxDispSq) = NaN;
+dispSq(dispSq==0) = realmin;
 
 %calculate the squared change in the amplitude of features from t to t+1
 ampDiffSq = (a1 - a2).^2;
-ampDiffSq(find(ampDiffSq>maxAmpDiffSq)) = NaN;
+ampDiffSq(ampDiffSq>maxAmpDiffSq) = NaN;
 
 %calculate the cost matrix
 costMat = ampDiffSq/2/ampDiffStd^2 + dispSqTheta*dispSq - (dispSqR-1)*log(dispSq);
@@ -147,7 +148,7 @@ end
 nonlinkMarker = min(floor(min(min(costMat)))-5,-5);
 
 %replace NaN, indicating pairs that cannot be linked, with nonlinkMarker
-costMat(find(isnan(costMat))) = nonlinkMarker;
+costMat(isnan(costMat)) = nonlinkMarker;
 
 
 %%%%% ~~ the end ~~ %%%%%
