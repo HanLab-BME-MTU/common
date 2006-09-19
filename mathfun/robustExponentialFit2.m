@@ -13,7 +13,8 @@ function [u, sigmaU, goodIdx, plotAx] = robustExponentialFit2(Y, A, verbose)
 %           a result from process j.
 %           Please always use the last column of A for the time/x values,
 %           as the code might otherwise return erroneous results!
-%       verbose: (opt) Plots the exponential fit. Default: 0
+%       verbose: (opt) Plots the exponential fit. Default: 0. Can also be a
+%           handle to the plot axes.
 %
 % OUTPUT u: parameters of the exponential. With the default A, the
 %           exponential form will be y=u(1)*exp(u(2)*t).
@@ -133,12 +134,20 @@ u(1:end-1) = ySign * u(1:end-1);
 
 if verbose
     
-
-    figure('Name','Exponential Fit');
+    if floor(verbose)~= verbose && ishandle(verbose)
+        % axes handle has been given
+        plotAx = verbose;
+    else
+        % create new figure, new axes
+        figure('Name','Exponential Fit');
+        plotAx = gca;
+    end
+    hold on
+    
+    
     t = A(:,end);
     colorOrder = get(gca,'ColorOrder');
-    plotAx = gca;
-    hold on
+    
     yFit=exp(A * [log(u(1:end-1));u(end)]);
     for i = 1:size(A,2)-1
         pIdx = find(A(:,i));

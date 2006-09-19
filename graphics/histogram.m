@@ -135,8 +135,12 @@ else
 
     % histogram
     if nargout > 0
-        N = fnval(pdfSpline,xData);
-        X = xData;
+        xDataU = unique(xData);
+        N = fnval(pdfSpline,xDataU);
+        X = xDataU;
+        % adjust the height of the histogram
+        Z = trapz(X,N);
+        N = N * nData/Z;
         sp = pdfSpline;
         % set doPlot. If there is an axesHandle, we will plot
         doPlot = axesHandle;
