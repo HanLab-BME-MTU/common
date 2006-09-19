@@ -109,6 +109,9 @@ if factor ~= -1
     % histogram
     if nargout > 0
         [N,X] = hist(data,nBins);
+        % adjust the height of the histogram
+        Z = trapz(X,N);
+        N = N * nData/Z;
     else
         hist(data,nBins);
     end
