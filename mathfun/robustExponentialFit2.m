@@ -1,4 +1,4 @@
-function [u, sigmaU, goodIdx, plotAx] = robustExponentialFit2(Y, A, verbose)
+function [u, sigmaU, goodIdx, plotAx] = robustExponentialFit2(Y, A, verbose, u0)
 %ROBUSTEXPONENTIALFIT2 robustly fits exponential functions in a more stable way than robusExponentialFit, but without additive constant
 %
 % SYNOPSIS: [u, sigmaU, goodIdx] = robustExponentialFit2(Y, A)
@@ -15,6 +15,7 @@ function [u, sigmaU, goodIdx, plotAx] = robustExponentialFit2(Y, A, verbose)
 %           as the code might otherwise return erroneous results!
 %       verbose: (opt) Plots the exponential fit. Default: 0. Can also be a
 %           handle to the plot axes.
+%       u0: (opt) initial guess for u
 %
 % OUTPUT u: parameters of the exponential. With the default A, the
 %           exponential form will be y=u(1)*exp(u(2)*t).
@@ -92,6 +93,16 @@ else
     ySign = 1;
 end
 
+% check for initial guess
+if nargin < 4 || isempty(u0)
+    u0 = [];
+elseif length(u0) ~= size(A,2)
+    error('initial guess needs to be the same size as the output')
+else
+    u0 = u0(:);
+end
+
+
 %===========================
 
 
@@ -110,7 +121,11 @@ else
 
     B = log(Y);
     W = Y;
-    [u, sigmaU, goodIdx] = linearLeastMedianSquares(A,B,1./W);
+    if ~isempty(u0)
+        % transform u0
+        u0(1:end-1) = log(u0(1:end-1));
+    end
+    [u, sigmaU, goodIdx] = linearLeastMedianSquares(A,B,1./W,u0);
 
     % transform u, sigmaU of multiplicative constants (! do proper error
     % propagation!)
@@ -134,7 +149,7 @@ u(1:end-1) = ySign * u(1:end-1);
 
 if verbose
     
-    if floor(verbose)~= verbose && ishandle(verbose)
+    if ~islogical(verbose) && floor(verbose)~= verbose && ishandle(verbose)
         % axes handle has been given
         plotAx = verbose;
     else

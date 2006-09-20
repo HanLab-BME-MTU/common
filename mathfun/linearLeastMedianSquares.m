@@ -69,9 +69,9 @@ end
 % --- remove NaNs
 
 % find them
-[badRowA,c] = find(isnan(A));
-[badRowB,c] = find(isnan(B));
-[badRowV,c] = find(isnan(V));
+[badRowA,c] = find(~isfinite(A));
+[badRowB,c] = find(~isfinite(B));
+[badRowV,c] = find(~isfinite(V));
 badRows = union(badRowA, badRowB, badRowV);
 
 % remove bad rows if there are any
