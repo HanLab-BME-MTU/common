@@ -2,7 +2,8 @@ function [movieInfo,framesFailed,errFlag] = detectSubResFeatures2D_Movie(...
     movieParam,detectionParam)
 %DETECTSUBRESFEATURES2D_MOVIE detects subresolution features in a series of images
 %
-%SYNOPSIS [detectedFeatures,errFlag] = detectSubResFeatures2D_Movie(movieParam,detectionParam)
+%SYNOPSIS [movieInfo,framesFailed,errFlag] = detectSubResFeatures2D_Movie(...
+%     movieParam,detectionParam)
 %
 %INPUT  movieParam    : Structure with fields
 %           .imageDir     : Directory where images are stored
@@ -19,6 +20,7 @@ function [movieInfo,framesFailed,errFlag] = detectSubResFeatures2D_Movie(...
 %                           Optional. Default: 0.
 %           .doMMF        : 1 if user wants to do mixture-model fitting, 0
 %                           otherwise. Optional. Default: 1.
+%           .bitDepth     : Camera bit depth. Optional. Default: 14.
 %
 %OUTPUT movieInfo     : Array of length "movie length" of structures 
 %                       containing the fields:
@@ -58,6 +60,7 @@ candsDir = movieParam.candsDir;
 filenameBase = movieParam.filenameBase;
 firstImageNum = movieParam.firstImageNum;
 lastImageNum = movieParam.lastImageNum;
+digits4Enum = movieParam.digits4Enum;
 
 %get PSF sigma
 psfSigma = detectionParam.psfSigma;
@@ -66,7 +69,7 @@ psfSigma = detectionParam.psfSigma;
 if ~isfield(detectionParam,'testAlpha')
     testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05);
 else
-    testAlpha = detectionParam.testAlpha
+    testAlpha = detectionParam.testAlpha;
 end
 
 %get visualization option
@@ -83,12 +86,19 @@ else
     doMMF = detectionParam.doMMF;
 end
 
+%get camera bit depth
+if ~isfield(detectionParam,'bitDepth')
+    bitDepth = 14;
+else
+    bitDepth = detectionParam.bitDepth;
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Detection
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %assign leading zeros in numerical index of images
-switch movieParam.digits4Enum
+switch digits4Enum
     case 4
         leadingZeros(1).value = '000';
         leadingZeros(2).value = '00';
@@ -122,7 +132,8 @@ for i=min(9999,lastImageNum):-1:max(1000,firstImageNum)
     try %try to detect features in this frame
 
         %fit with mixture-models
-        featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF);
+        featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,...
+            testAlpha,visual,doMMF,bitDepth);
 
         %save results
         movieInfo(i) = featuresInfo;
@@ -147,7 +158,8 @@ for i=min(999,lastImageNum):-1:max(100,firstImageNum)
     try %try to detect features in this frame
 
         %fit with mixture-models
-        featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF);
+        featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,...
+            testAlpha,visual,doMMF,bitDepth);
 
         %save results
         movieInfo(i) = featuresInfo;
@@ -172,7 +184,8 @@ for i=min(99,lastImageNum):-1:max(10,firstImageNum)
     try %try to detect features in this frame
 
         %fit with mixture-models
-        featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF);
+        featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,...
+            testAlpha,visual,doMMF,bitDepth);
 
         %save results
         movieInfo(i) = featuresInfo;
@@ -197,7 +210,8 @@ for i=min(9,lastImageNum):-1:max(1,firstImageNum)
     try %try to detect features in this frame
 
         %fit with mixture-models
-        featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF);
+        featuresInfo = detectSubResFeatures2D(image,cands,psfSigma,...
+            testAlpha,visual,doMMF,bitDepth);
 
         %save results
         movieInfo(i) = featuresInfo;

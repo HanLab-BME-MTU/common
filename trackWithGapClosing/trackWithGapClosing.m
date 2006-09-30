@@ -3,7 +3,7 @@ function [trackedFeatureNum,trackedFeatureInfo,errFlag] = trackWithGapClosing(..
 %TRACKWITHGAPCLOSING links features between frames in a movie and closes gaps, with the possibility of track merging and splitting
 %
 %SYNOPSIS [trackedFeatureNum,trackedFeatureInfo,errFlag] = trackWithGapClosing(...
-%    movieInfo,linkingLimits,gapCloseParam,iterParam)
+%    movieInfo,costMatrices,trackStatFun,gapCloseParam,iterParam)
 %
 %INPUT  movieInfo    : Array of size equal to the number of time points
 %                      in a movie, containing the fields:

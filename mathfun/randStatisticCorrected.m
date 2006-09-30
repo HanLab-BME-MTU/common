@@ -1,13 +1,13 @@
-function rand = randStatisticCorrected(groups1,groups2)
+function randStat = randStatisticCorrected(groups1,groups2)
 %RANDSTATISTICCORRECTED calculates the corrected rand for two grouping procedures
 %
-% SYNOPSIS: rand = randStatisticCorrected(groups1,groups2)
+% SYNOPSIS: randStat = randStatisticCorrected(groups1,groups2)
 %
 % INPUT groups: vectors containing the group labels according to procedure
 %               1 and 2, respectively, for every data item. Group labels
 %               have to be finite integers > 0
 %
-% OUTPUT rand statistic. 1 if perfect agreement, 0 if random grouping,
+% OUTPUT randStat statistic. 1 if perfect agreement, 0 if random grouping,
 %        negative if actively messed up 
 %
 % REMARKS see e.g. Jain and Dubes (1984) Algorithms for Clustering Data.
@@ -80,5 +80,5 @@ nData = length(groups1);
 nPairs = nData *(nData-1)/2;
 
 % calculate corrected rand
-rand = (bsumNij - bsumNi*bsumNj/nPairs)/((bsumNi+bsumNj)/2 - bsumNi*bsumNj/nPairs);
+randStat = (bsumNij - bsumNi*bsumNj/nPairs)/((bsumNi+bsumNj)/2 - bsumNi*bsumNj/nPairs);
 

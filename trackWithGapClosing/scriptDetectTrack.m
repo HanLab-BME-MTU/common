@@ -35,20 +35,23 @@
 movieParam.candsDir = ''; %directory where initial position estimates are
 movieParam.imageDir = ''; %directory where images are
 movieParam.filenameBase = ''; %image file name base
-movieParam.firstImageNum: 1; %number of first image in movie
-movieParam.lastImageNum: 250; %number of last image in movie
+movieParam.firstImageNum = 1; %number of first image in movie
+movieParam.lastImageNum = 250; %number of last image in movie
+movieParam.digits4Enum = 3; %number of digits used for frame enumeration (1-4).
 
 %detectionParam
 detectionParam.psfSigma = 1.078; %point spread function sigma (in pixels)
 detectionParam.testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05); %alpha-values for detection statistical tests
 detectionParam.visual = 0; %1 to see image with detected features, 0 otherwise
 detectionParam.doMMF = 1; %1 if mixture-model fitting, 0 otherwise
+detectionParam.bitDepth = 14; %Camera bit depth
 
 %run the detection function
-[movieInfo,errFlag] = detectSubResFeatures2D_Movie(movieParam,detectionParam)
+[movieInfo,framesFailed] = detectSubResFeatures2D_Movie(...
+    movieParam,detectionParam);
 
 %save the input and output
-save('detectedFeatures','movieParam','detectionParam','movieInfo');
+save('detectedFeatures','movieParam','detectionParam','movieInfo','framesFailed');
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,7 +93,7 @@ costMatrices(4).costMatParam = struct(...
 %gap closing parameters
 gapCloseParam.timeWindow = 5;       %largest gap that can be closed
 gapCloseParam.mergeSplit = 0;       %1 if merging/splitting are considered, 0 otherwise
-% gapCloseParam.segmentLength = 100;  %length of time segment for sequential gap closing
+gapCloseParam.segmentLength = 100;  %length of time segment for sequential gap closing
 
 %iteration parameters
 iterParam.tolerance = 0.05;   %maximum relative change of track statistical parameters to reach convergence
