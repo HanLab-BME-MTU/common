@@ -223,6 +223,8 @@ if augmentCC
     % remember that the size of the matrix has increased!
     scc = [sum(scc), sum(scc)];
     
+    clear costLR colIdx rowIdx
+    
 end
 
 
@@ -259,7 +261,7 @@ else
     end
 end
 
-if any(any(~isfinite(cc)))
+if any(~isfinite(nonzeros(cc)))
     error('LAP:NanCostMatrix','Cost matrix cannot contain NaNs or Inf!')
 end
 
