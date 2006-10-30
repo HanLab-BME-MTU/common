@@ -5,7 +5,7 @@ function [listOfFiles,tokenList] = searchFiles(includeString,excludeString,direc
 %
 %INPUT    includeString: string contained in the filenames you are looking
 %                               for (can be regular expression; is case
-%                               insensitive)  
+%                               insensitive)
 %         excludeString (opt): string not contained in the filenames you
 %                               are looking for (can be regular expression;
 %                               is case insensitive)
@@ -28,7 +28,7 @@ function [listOfFiles,tokenList] = searchFiles(includeString,excludeString,direc
 %                       be empty.
 %                       Assuming that all the tokens are numbers,
 %                       converting tokenList into a matrix of doubles can
-%                       be done as follows: 
+%                       be done as follows:
 %                           tokenListAsDoubles = str2double(tokenList);
 %
 %c: 7-03 jonas
@@ -58,7 +58,24 @@ if nargin>2
     if ~exist('directory','var') || isempty(directory)
         directory = pwd;
     elseif strcmp(directory,'ask')
+
+        % on linux, uigetdir requires the selection of a file, which is
+        % rater inconvenient, if there are no files in the directory. Use
+        % workaround
+
+        if isunix
+            % remember system dialog setting
+            sysDialogState = getappdata(0,'UseNativeSystemDialogs');
+            setappdata(0,'UseNativeSystemDialogs',false)
+        end
+
         directory = uigetdir(pwd,'select a directory to search');
+
+        if isunix
+            % reset system dialog setting
+            setappdata(0,'UseNativeSystemDialogs',sysDialogState)
+        end
+
         if directory == 0
             error('searchFiles aborted by user')
         end
@@ -114,36 +131,36 @@ listOfFilesCt         = 0;
 while ~isempty(dirs2check) && ~isempty(dirs2check{topDir2check})
     %init/empty var
     pathCell = {};
-    
+
     %read currentDir
     currentDir = dirs2check{topDir2check};
-    
+
     %list all files of current directory
     currentDirList = dir(currentDir);
-    
+
     %look for subdirectories and add to dirs2check
     isDirList = cat(1,currentDirList.isdir);
     if length(isDirList)>2
         subDirIdx = find(isDirList(3:end))+2;
         for i=1:length(subDirIdx)
-            
+
             % we will add a directory - count how many this will make
             dirs2checkCt = dirs2checkCt + 1;
-            
+
             % make sure that the dirList is long enough - make sure we do
             % not get problems with topDir2check
-                if dirs2checkCt + 1 > dirs2checkLength
-                    tmpDirs2check = dirs2check;
-                    newDirs2checkLength = dirs2checkLength + dirs2checkInitLength;
-                    dirs2check = cell(newDirs2checkLength,1);
-                    dirs2check(1:dirs2checkLength) = tmpDirs2check;
-                    dirs2checkLength = newDirs2checkLength;
-                end
-            
+            if dirs2checkCt + 1 > dirs2checkLength
+                tmpDirs2check = dirs2check;
+                newDirs2checkLength = dirs2checkLength + dirs2checkInitLength;
+                dirs2check = cell(newDirs2checkLength,1);
+                dirs2check(1:dirs2checkLength) = tmpDirs2check;
+                dirs2checkLength = newDirs2checkLength;
+            end
+
             dirs2check{dirs2checkCt} = [currentDir,filesep,currentDirList(subDirIdx(i)).name];
         end
     end %if length(isDirList)>2
-    
+
     %look for files in current directory and store them
     newFiles = chooseFile(includeString,currentDir,selectionMode,excludeString);
     if ~isempty(newFiles)
@@ -151,12 +168,12 @@ while ~isempty(dirs2check) && ~isempty(dirs2check{topDir2check})
             newFiles = cellstr(newFiles);
         end
         [pathCell{1:size(newFiles,1)}] = deal(currentDir);
-        
+
         % we will add a file - count how many this will make
         numNewFiles = length(newFiles);
         listOfFilesCtStart = listOfFilesCt + 1;
         listOfFilesCt = listOfFilesCt + numNewFiles;
-        
+
         % make sure that the dirList is long enough
         if listOfFilesCt > listOfFilesLength
             tmpListOfFiles = listOfFiles;
@@ -165,20 +182,20 @@ while ~isempty(dirs2check) && ~isempty(dirs2check{topDir2check})
             listOfFiles(1:listOfFilesLength,:) = tmpListOfFiles;
             listOfFilesLength = newListOfFilesLength;
         end
-        
+
         listOfFiles(listOfFilesCtStart:listOfFilesCt,:) = [newFiles, pathCell'];
-        
+
     end %if ~isempty(newFiles)
-    
+
     % move on to next directory
     topDir2check = topDir2check + 1;
-    
+
     %check wheter we want to look at subDirs
     if ~includeSubDirectories
         dirs2check = {};
     end
-    
-    
+
+
 end %while ~isempty(dirs2check)
 
 %---end collect files---
@@ -193,11 +210,11 @@ if nargout > 1
     % we need to make a tokenList
     if findstr(includeString,'(') & findstr(includeString,')')
         % only call regexp if there are tokens at all
-        
+
         tmp = regexp(listOfFiles(:,1),includeString,'tokens');
         tmp = cat(1,tmp{:});
         if ~isempty(tmp)
-        tokenList = cat(1,tmp{:});
+            tokenList = cat(1,tmp{:});
         else
             tokenList = [];
         end
