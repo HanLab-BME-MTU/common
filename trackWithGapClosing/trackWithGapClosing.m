@@ -101,6 +101,9 @@ end
 %get number of time points in movie
 numTimePoints = length(movieInfo);
 
+%initialize variable indicating whether problem is 2D
+problem2D = 0;
+
 %check whether problem is 1D, 2D or 3D and augment coordinates if necessary
 if ~isfield(movieInfo,'yCoord') %if y-coordinates are not supplied
 
@@ -118,6 +121,9 @@ else %if y-coordinates are supplied
         for i=1:numTimePoints
             movieInfo(i).zCoord = zeros(size(movieInfo(i).xCoord));
         end
+        
+        %indicate that problem is 2D
+        problem2D = 1;
 
     end %(if ~isfield(movieInfo,'zCoord'))
 
@@ -144,7 +150,8 @@ lenFrac = iterParam.lenFrac;
     movieInfo,costMatrices(1).costMatFun,costMatrices(1).costMatParam);
 
 %get track statistics
-eval(['[trackStatsT,statsRelChange,errFlag] = ' trackStatFun '(trackedFeatureInfo,lenFrac,timeWindow);'])
+eval(['[trackStatsT,statsRelChange,errFlag] = ' trackStatFun ...
+    '(trackedFeatureInfo,lenFrac,timeWindow,problem2D);'])
 
 %exit at this point if statistical analysis could not be performed
 if errFlag
@@ -324,7 +331,7 @@ while iterate
         
     %get track statistics after this iteration of tracking
     eval(['[trackStatsT,statsRelChange,errFlag] = ' trackStatFun ...
-        '(trackedFeatureInfo,lenFrac,timeWindow,trackStats);'])
+        '(trackedFeatureInfo,lenFrac,timeWindow,problem2D,trackStats);'])
 
     if errFlag %exit at this point if statistical analysis failed
         disp('--trackWithGapClosing: Getting track statistics failed. Stopping prematurely!');

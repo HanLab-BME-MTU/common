@@ -1,9 +1,9 @@
 function [trackStats,statsRelChange,errFlag] = getTrackStats(trackedFeatureInfo,lenFrac,...
-    timeWindow,trackStatsOld)
+    timeWindow,problem2D,trackStatsOld)
 %GETTRACKSTATS determines the statistical characeteristics of amplitude change and displacement in tracks over time
 %
 %SYNOPSIS [trackStats,errFlag] = getTrackStats(trackedFeatureInfo,lenFrac,...
-%    timeWindow)
+%    timeWindow,problem2D,trackStatsOld)
 %
 %INPUT  trackedFeatureInfo:The positions and amplitudes of the tracked
 %                          features. Number of rows = number of tracks, 
@@ -18,6 +18,8 @@ function [trackStats,statsRelChange,errFlag] = getTrackStats(trackedFeatureInfo,
 %                          time points in movie.
 %       timeWindow       : Time window of gap closing.
 %                          Optional. Default: 1.
+%       problem2D        : 1 if problem is 2D, 0 otherwise. Optional.
+%                          Default: 0.
 %       trackStatsOld    : trackStats (See output description) from previous 
 %                          calculation. Optional. Default: [].
 %
@@ -105,25 +107,37 @@ if ~isempty(goodTracks) %if there are tracks to use ...
             (yCoord(:,i+1:end) - yCoord(:,1:end-i)).^2 + ...
             (zCoord(:,i+1:end) - zCoord(:,1:end-i)).^2;
 
-%         %obtain the histogram of the squared displacement
-%         [n,x] = histogram(dispSq(:));
-% 
-%         %fit the histogram with an exponential function
-%         expParam = lsqcurvefit(@expFun,[100 1]',x,n);
-%         dispSqTheta(i) = expParam(2);
-%         dispSqR(i) = 1;
+        %if the problem is 2D, the squared displacements have an exponential
+        %distribution, which is a special case of the gamma distribution. I
+        %treat the exponential distribution explicitly in order to make the
+        %tracking more reliable and robust.
+        if problem2D
 
-        %calculate the mean and standard deviation of the squared
-        %displacement
-        dispSqMean = sum(trackLength.*nanmean(dispSq,2))/sum(trackLength(:));
-        dispSqVar = sum(trackLength.*nanvar(dispSq,[],2))./sum(trackLength(:));
+            %obtain the histogram of the squared displacement
+            [n,x] = histogram(dispSq(:));
 
-        %calculate the gamma distribution parameters
-        %avoid zeros because they cause problems with the logarithm and
-        %gamma functions
-        dispSqR(i) = max(dispSqMean^2/dispSqVar,1e-300); %gamma(realmin)=Inf, hence use 1e-300
-        dispSqTheta(i) = max(dispSqMean/dispSqVar,realmin);
-        
+            %fit the histogram with an exponential function
+            expParam = lsqcurvefit(@expFun,[100 1]',x,n);
+
+            %assign gamma distribution parameters
+            dispSqR(i) = 1;
+            dispSqTheta(i) = expParam(2);
+
+        else %if problem is not 2D
+
+            %calculate the mean and standard deviation of the squared
+            %displacement
+            dispSqMean = sum(trackLength.*nanmean(dispSq,2))/sum(trackLength(:));
+            dispSqVar = sum(trackLength.*nanvar(dispSq,[],2))./sum(trackLength(:));
+
+            %calculate the gamma distribution parameters
+            %avoid zeros because they cause problems with the logarithm and
+            %gamma functions
+            dispSqR(i) = max(dispSqMean^2/dispSqVar,1e-300); %gamma(realmin)=Inf, hence use 1e-300
+            dispSqTheta(i) = max(dispSqMean/dispSqVar,realmin);
+
+        end %(if problem2D)
+
         %get the amplitude change between time points
         ampDiff = amplitude(:,i+1:end) - amplitude(:,1:end-i);
 
@@ -131,12 +145,12 @@ if ~isempty(goodTracks) %if there are tracks to use ...
         ampDiffStd(i) = max(nanstd(ampDiff(:)),realmin);
 
     end %(for i=1:timeWindow)
-    
+
     %save output in structure
     trackStats.dispSqR = dispSqR;
     trackStats.dispSqTheta = dispSqTheta;
     trackStats.ampDiffStd = ampDiffStd;
-    
+
     %get the maximum relative change in parameters, if the old parameters
     %are supplied
     if ~isempty(trackStatsOld)

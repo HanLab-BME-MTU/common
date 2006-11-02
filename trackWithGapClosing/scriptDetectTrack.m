@@ -32,11 +32,11 @@
 %define the input variables
 
 %movieParam
-movieParam.candsDir = ''; %directory where initial position estimates are
-movieParam.imageDir = ''; %directory where images are
-movieParam.filenameBase = ''; %image file name base
+movieParam.candsDir = '/mnt/mit/khuloudDir/synapse/July2006/0707_ML7/dish2/ML7_2-veryfew/analysis/fsm/tack/cands/'; %directory where initial position estimates are
+movieParam.imageDir = '/mnt/mit/khuloudDir/synapse/July2006/0707_ML7/dish2/ML7_2-veryfew/images/'; %directory where images are
+movieParam.filenameBase = '070706_dish2_ML7_105frps_gain205_2_'; %image file name base
 movieParam.firstImageNum = 1; %number of first image in movie
-movieParam.lastImageNum = 250; %number of last image in movie
+movieParam.lastImageNum = 178; %number of last image in movie
 movieParam.digits4Enum = 3; %number of digits used for frame enumeration (1-4).
 
 %detectionParam
@@ -80,8 +80,8 @@ costMatrices(3).costMatFun = 'costMatCloseGaps';
 costMatrices(3).costMatParam = struct(...
     'cutoffProbD1',0.9999,...   %cumulative probability of a square displacement beyond which gap closing is not allowed
     'cutoffProbA1',0.9999,...   %cumulative probability of an amplitude difference beyond which gap closing is not allowed
-    'cutoffProbD2',0.9999,...   %cumulative probability of a square displacement beyond which merging/splitting are not allowed
-    'cutoffProbA2',0.9999,...   %cumulative probability of an amplitude difference beyond which merging/splitting are not allowed
+    'cutoffProbD2',0.999,...   %cumulative probability of a square displacement beyond which merging/splitting are not allowed
+    'cutoffProbA2',0.999,...   %cumulative probability of an amplitude difference beyond which merging/splitting are not allowed
     'noLnkPrctl',-1);
 
 %cost matrix for resolving merging and splitting conflicts
@@ -93,7 +93,7 @@ costMatrices(4).costMatParam = struct(...
 %gap closing parameters
 gapCloseParam.timeWindow = 5;       %largest gap that can be closed
 gapCloseParam.mergeSplit = 0;       %1 if merging/splitting are considered, 0 otherwise
-gapCloseParam.segmentLength = 100;  %length of time segment for sequential gap closing
+gapCloseParam.segmentLength = 50;  %length of time segment for sequential gap closing
 
 %iteration parameters
 iterParam.tolerance = 0.05;   %maximum relative change of track statistical parameters to reach convergence
