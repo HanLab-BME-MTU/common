@@ -65,7 +65,11 @@ if nargin < 3 || isempty(timeWindow)
     timeWindow = timeWindow_def;
 end
 
-if nargin < 4 || isempty(trackStatsOld)
+if nargin < 4 || isempty(problem2D)
+    problem2D = 0;
+end
+
+if nargin < 5 || isempty(trackStatsOld)
     trackStatsOld = [];
 end
 
