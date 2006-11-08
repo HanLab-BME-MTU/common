@@ -134,7 +134,7 @@ switch isnumeric(alpha)
                     errFlag = 1;
                 end
                 if ~status
-                    if strcmp('lastwarn,Already connected to an R server.')
+                    if strcmp(lastwarn,'Already connected to an R server.')
                         leaveRopen = true;
                     else
                         disp('--fitHistWithGaussians: unable to launch R');
@@ -165,10 +165,10 @@ switch isnumeric(alpha)
             end
         end
         % variableVar ~maxNumGauss
-        if nargin < 4 || isempty(maxNumGauss)
+        if nargin < 4 || isempty(variableVar)
             maxNumGauss = 9;
         else
-            if maxNumGauss < 1
+            if variableVar < 1
                 disp('--fitHistWithGaussians: Variable "maxNumGaussians" should be at least 1');
                 errFlag = 1;
             else
@@ -436,10 +436,17 @@ switch isR
     case 1
         % check if downsampling necessary - cap at 1000 observations
         numObservations = length(observations);
-        if  numObservations > 1000
-            observationsDS = sort(observations);
-            observationsDS = observationsDS(round(linspace(1,numObservations,1000)));
+        % remove NaN, Inf
+        observationsC = observations;
+        observationsC(~isfinite(observationsC)) = [];
+        numObservationsC = length(observationsC);
+        if  numObservationsC > 1000
+            observationsDS = sort(observationsC);
+            observationsDS = observationsDS(round(linspace(1,numObservationsC,1000)));
+        else
+            observationsDS = observationsC;
         end
+        clear observationsC
 
         % run R (it's already open)
 
@@ -456,6 +463,10 @@ switch isR
         % when multiplied by the number of observations)
         mu = evalR('clusterData$mu');
         sigma = sqrt(evalR('clusterData$sigma'));
+        % take care of possible equal sigma
+        if length(sigma) == 1
+            sigma = repmat(sigma,1,length(mu));
+        end
         amp = evalR('clusterData$pro')*numObservations;
 
         % catenate into gaussParam
@@ -512,11 +523,11 @@ if showPlot
     figure
 
     %plot the histogram and the fitted Gaussians in the left half of the
-    %figure
+    %figure. Correct by the number of NaNs
     subplot(1,2,1);
     bar(binCenterP,numObsPerBinP,'k')
     hold on
-    plot(binCenterP,distrNGauss,'r')
+    plot(binCenterP,distrNGauss * sum(isfinite(observations))/numObservations,'r')
 
     %plot the histogram and the fitted Gaussians in the right half of the
     %figure

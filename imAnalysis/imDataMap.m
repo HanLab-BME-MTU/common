@@ -60,9 +60,11 @@ function dataM = imDataMap(imgDim,YX,data,varargin)
 %       'cubic'     - Triangle-based cubic interpolation.
 %       'nearest'   - Nearest neighbor interpolation.
 %       'v4'        - MATLAB 4 griddata method.
-%       The default is 'nearest'.
 %    order  : The order of the spline used when the data are on grids or the x,y 
 %             grid interval is specified in the case of randomly sampled data.
+%    gridSmoothing : smoothing parameter d0 that is used for
+%                    vectorFieldSparseInterp in case a grid is specified.
+%                    Default: infLen
 %
 % OUTPUT :
 %    dataM : A pixel wise map of the data of dimension 'imgDim'.
@@ -80,6 +82,7 @@ bnd    = [];
 mask   = [];
 method = 'linear';
 order  = 4;
+gridSmoothing = [];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Parsing optional parameters.
@@ -102,6 +105,8 @@ if nargin > 3
                method = varargin{k+1};
            case 'order'
                order = varargin{k+1};
+           case 'gridSmoothing'
+               gridSmoothing = varargin{k+1};
        end
    end
 end
@@ -154,6 +159,7 @@ if isempty(numInd)
     return;
 end
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Determine the infulence length if it is not specified.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -175,6 +181,11 @@ if isempty(infLen)
         end
         infLen = infLen/size(D,1);
     end
+end
+
+% if gridSmoothing wasn't specified: create here
+if isempty(gridSmoothing)
+    gridSmoothing = infLen;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -224,7 +235,7 @@ elseif isnumeric(YX) & ~isempty(grid)
     %Use 'VectorFieldSparseInterp' to interpolate to grids. Since we
     % have scalar value, we set the 2nd component to the x-coordinates of data.
     M = [YX YX(:,1)+data YX(:,2)];
-    Mi = vectorFieldSparseInterp(M,[Y(:) X(:)],infLen*2,infLen,[]);
+    Mi = vectorFieldSparseInterp(M,[Y(:) X(:)],infLen*2,gridSmoothing,[]);
 
     data = reshape(Mi(:,3)-Mi(:,1),size(X));
     
