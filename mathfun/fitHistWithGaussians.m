@@ -45,6 +45,8 @@ function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(..
 %(gaussParam(3)/(gaussParam(2)*sqrt(2pi)))
 %                     *exp(-(x-gaussParam(1))^2/(2*gaussParam(2)^2)
 %
+%       The function does not yet allow to set min#clust, maxPoints!
+%
 %Khuloud Jaqaman, August 2006
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -360,7 +362,7 @@ switch isR
                         binCenter,cumHist,lb,ub,options,variableMean,variableVar);
 
                     %get output from parameters vector
-                    gaussParamT(:,1) = [1:numGaussT]'*param(1);
+                    gaussParamT(:,1) = (1:numGaussT)'*param(1);
                     gaussParamT(:,2) = param(2:numGaussT+1);
                     gaussParamT(:,3) = param(numGaussT+2:end);
 
@@ -394,7 +396,7 @@ switch isR
                         binCenter,cumHist,lb,ub,options,variableMean,variableVar);
 
                     %get output from parameters vector
-                    gaussParamT(:,1) = [1:numGaussT]'*param(1);
+                    gaussParamT(:,1) = (1:numGaussT)'*param(1);
                     gaussParamT(:,2) = repmat(param(2),numGaussT,1);
                     gaussParamT(:,3) = param(3:end);
 
@@ -456,10 +458,26 @@ switch isR
         % put observations into R
         putRdata('inputData',observationsDS);
 
-        % run Mclust
-        evalR(sprintf('clusterData <- Mclust(inputData,1,%i)',maxNumGauss))
-
+        % run Mclust - they have changed the syntax since the last version!
+        try
+            % new version
+        evalR(sprintf('clusterData <- Mclust(inputData,G=1:%i)',maxNumGauss))
         % read mu, sigma, and probabilities (which will give amplitudes
+        % when multiplied by the number of observations)
+        mu = evalR('clusterData$parameters$mean');
+        sigma = sqrt(evalR('clusterData$parameters$variance$sigmasq'));
+        numGauss = length(mu);
+        if numGauss == 1
+            amp = numObservations;
+        else
+        amp = evalR('clusterData$parameters$pro')*numObservations;
+        end
+        
+        catch
+            try
+                % old version
+                evalR(sprintf('clusterData <- Mclust(inputData,1,%i)',maxNumGauss))
+                % read mu, sigma, and probabilities (which will give amplitudes
         % when multiplied by the number of observations)
         mu = evalR('clusterData$mu');
         sigma = sqrt(evalR('clusterData$sigma'));
@@ -468,12 +486,21 @@ switch isR
             sigma = repmat(sigma,1,length(mu));
         end
         amp = evalR('clusterData$pro')*numObservations;
+        numGauss = length(mu);
+            catch
+                rethrow(lasterror)
+            end
+        end
+
+        % check the number of sigmas
+        if length(sigma) ~= numGauss
+            sigma = sigma * ones(1,numGauss);
+        end
 
         % catenate into gaussParam
         gaussParam = [mu',sigma',amp'];
 
-        % find number of Gaussians
-        numGauss = evalR('clusterData$G');
+
 
         % close R
         if ~leaveRopen

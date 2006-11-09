@@ -10,7 +10,7 @@ function out = repeatEntries(val,kTimes)
 %                   repeated entries specified with k
 %
 % EXAMPLES     repeatEntries([1;2;3;4],[2;3;1;1]) returns [1;1;2;2;2;3;4]
-%              
+%
 %              repeatEntries([1;2;3;4],2) returns [1;1;2;2;3;3;4;4]
 %
 % c: jonas, 2/04
@@ -21,7 +21,7 @@ function out = repeatEntries(val,kTimes)
 %===========
 
 % nargin
-if nargin ~= 2 | isempty(val) | isempty(kTimes)
+if nargin ~= 2 || isempty(val) || isempty(kTimes)
     error('two non-empty input arguments are needed!')
 end
 
@@ -31,10 +31,7 @@ if length(valSize)>2
     error('only 2D arrays supported for val')
 end
 
-% do not care about size of k: we want to make a col vector out of it - and
-% this vector should only contain nonzero positive integers
-kTimes = round(kTimes(:));
-kTimes = max(kTimes,ones(size(kTimes)));
+
 
 % decide whether we have scalar k
 numK = length(kTimes);
@@ -42,7 +39,7 @@ if numK == 1
     scalarK = 1;
 elseif numK ~= valSize(1)
     error('vector k must have the same length as the number of rows in val or be a scalar')
-else 
+else
     % check again whether we could use scalar k
     if all(kTimes(1) == kTimes)
         scalarK = 1;
@@ -51,60 +48,79 @@ else
     end
 end
 
+% do not care about size of k: we want to make a col vector out of it - and
+% this vector should only contain nonzero positive integers
+kTimes = round(kTimes(:));
+% if there are any negative values or zeros, remove the entry
+if scalarK && kTimes < 1
+    out = [];
+    return
+end
+if ~scalarK
+    badK = kTimes < 1;
+    kTimes(badK) = [];
+    val(badK,:) = [];
+    % update valSize
+    valSize = size(val);
+    if any(valSize==0)
+        out = [];
+        return
+    end
+end
+%kTimes = max(kTimes,ones(size(kTimes)));
+
+
 %============
 % fill in out
 %============
 
 % first the elegant case: scalar k
 if scalarK
-    
-    % init out
-    out = zeros( kTimes(1)*valSize(1), valSize(2) );
-    
+
     % build repeat index matrix idxMat
     idxMat = meshgrid( 1:valSize(1), 1:kTimes(1) );
     idxMat = idxMat(:); % returns [1;1...2;2;... etc]
-    
+
     out = val(idxMat,:);
 
-% second: the loop    
+    % second: the loop
 else
-    
+
     % init out, init counter
     out = zeros( sum(kTimes), valSize(2) );
     endct = 0;
-    
-    if valSize(2) == 1 
-        
+
+    if valSize(2) == 1
+
         % vector: fill directly
-        
+
         % loop and fill
         for i = 1:valSize(1)
             startct = endct + 1;
             endct   = endct + kTimes(i);
             out(startct:endct,:) = val(i);
         end % for i=1:valSize(1)
-        
+
     else
-        
+
         % matrix: fill via index list
-        
+
         idxMat = zeros(sum(kTimes),1);
-        
+
         for i = 1:valSize(1)
             startct = endct + 1;
             endct   = endct + kTimes(i);
             idxMat(startct:endct) = i;
         end % for i=1:valSize(1)
         out = val(idxMat,:);
-        
+
     end
-    
+
     % check for strings and transform if necessary
-    if isstr(val)
+    if ischar(val)
         out = char(out);
     end
-    
+
 end % if doScalar
-   
+
 

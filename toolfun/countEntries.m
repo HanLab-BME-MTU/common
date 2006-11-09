@@ -1,4 +1,4 @@
-function [uniqueEntries,numberOfOccurences,whereIdx] = countEntries(m,isRow)
+function [uniqueEntries,numberOfOccurences,whereIdx] = countEntries(m,isRow, keepNaN)
 %COUNTENTRIES returns all unique entries (sorted) in the array m and how many times the respective entries occured
 %
 %SYNOPSIS [uniqueEntries,numberOfOccurences] = countEntries(m,isRow)
@@ -6,6 +6,10 @@ function [uniqueEntries,numberOfOccurences,whereIdx] = countEntries(m,isRow)
 %INPUT  m          : any matrix (not cells or structs)
 %       isRow(opt) : should rows be counted or not [1/{0}]
 %                       (if it's cols, transpose m before calling the function!)
+%       keepNaN (opt) : count NaN as entry? [{1}/0] If 0, NaNs (or
+%                       NaN-containing rows) are removed after sorting, so
+%                       that whereIdx still refers to the original position
+%                       of the uniqueEntries in the input array.
 %
 %OUTPUT uniqueEntries : unique(m)
 %       numberOfOccurences : how many times the unique entries appear in m
@@ -16,11 +20,11 @@ function [uniqueEntries,numberOfOccurences,whereIdx] = countEntries(m,isRow)
 
 
 %---test input
-if iscell(m) | isstruct(m)
+if iscell(m) || isstruct(m)
     error('cells and structs are not supportet as input');
 end
 
-if nargin < 2 | isempty(isRow)
+if nargin < 2 || isempty(isRow)
     doRow = 0;
 else
     if isRow == 1;
@@ -30,6 +34,9 @@ else
     else
         error('input argument isRow has to be 1 or 0!')
     end
+end
+if nargin < 3 || isempty(keepNaN)
+    keepNaN = true;
 end
 %---end test input
 
@@ -44,6 +51,14 @@ if ~doRow %do the fast method
     m = sort(m);
     
     [uniqueEntries, uniqueIdx, whereIdx] = unique(m);
+    
+    if ~keepNaN
+        % remove NaN, inf
+        badIdx = find(~isfinite(uniqueEntries));
+        uniqueEntries(badIdx) = [];
+        uniqueIdx(badIdx) = [];
+        whereIdx(ismember(whereIdx,badIdx)) = [];
+    end
     
     %uniqueIdx returns the last occurence of the respective unique entry
     %having sorted m before, we can now count the number of occurences
@@ -63,6 +78,14 @@ else %do it the complicated way
     
     %rember output
     whereIdx = uniqueIdx;
+    
+    if ~keepNaN
+        % remove NaN, inf
+        badIdx = find(any(~isfinite(uniqueEntries),2));
+        uniqueEntries(badIdx,:) = [];
+        whereIdx(ismember(whereIdx,badIdx)) = [];
+        uniqueIdx = whereIdx;
+    end
     
     %uniqueIdx returns the indexList where uniqueEntriy #x occurs.
     %We will now sort this list and take a diff to find where this index

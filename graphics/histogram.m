@@ -45,7 +45,7 @@ if nargin < 1
 end
 
 % check for axes handle
-if ishandle(varargin{1});
+if length(varargin{1}) == 1 && ishandle(varargin{1});
     axesHandle = varargin{1};
     varargin(1) = [];
 else
