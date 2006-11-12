@@ -10,7 +10,7 @@ function varargout = arbitraryGrid(e_1, e_2, e_3, zero, v1, v2, v3, imSize)
 %          zero        : origin of the grid 
 %          v1,v2,v3    : for each argument: 
 %                        - specify numeric array [min max]
-%                          to indicate the extent of the grid. [-2:3] will
+%                          to indicate the extent of the grid. [-2 3] will
 %                          generate 6 grid points in the given direction,
 %                          with the zero-point as the third element
 %                        - specify inf for either min or max or both if
