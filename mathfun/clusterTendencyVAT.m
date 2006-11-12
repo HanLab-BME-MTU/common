@@ -1,7 +1,7 @@
-function clusterTendencyVAT(dissimilarityMatrix)
+function sortedIndices = clusterTendencyVAT(dissimilarityMatrix)
 %CLUSTERTENDENCYVAT visually assesses clustering tendency using the VAT algorithm
 %
-% SYNOPSIS: clusterTendencyVAT(dissimilarityMatrix)
+% SYNOPSIS: sortedIndices = clusterTendencyVAT(dissimilarityMatrix)
 %
 % INPUT dissimilarityMatrix : symmetric 2-d array of dissimilarities. It
 %                             should have the following properties:
@@ -9,7 +9,7 @@ function clusterTendencyVAT(dissimilarityMatrix)
 %                             dM(i,j) == dM(j,i)
 %                             dM(i,i) == 0
 %
-% OUTPUT 
+% OUTPUT sortedIndices: list of sorted rows/cols of the distance matrix
 %
 % REMARKS Implementation of Bezdek & Hathaway 2002 VAT:A tool for visual
 %         assessment of (Cluster) tendency
