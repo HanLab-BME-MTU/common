@@ -18,14 +18,15 @@ function dataM = imDataMap(imgDim,YX,data,varargin)
 % extrapolation.
 %
 % SYNOPSIS : 
-%    dataM = imDataMap(imgDim,[y x],data)
-%    dataM = imDataMap(imgDim,{y,x},data,'par1',value1,...)
+%    dataM = imDataMap(imgDim,YX,data)
+%    dataM = imDataMap(imgDim,YX,data,'par1',value1,...)
 %
 % INPUT :
 %    imgDim : The dimension of the image in the form of [m,n] where m and n is 
 %             the vertical and horizontal dimension respectively.
-%    [y x]  : The y and x coordinates of sampled points. If it is a cell of
-%    {y,x}  : two vectors in the form {y,x}, a mesh grid will be generated.
+%    YX     : YX = [y x] or {y,x}. The y and x coordinates of sampled points. 
+%             If it is a cell of two vectors in the form {y,x}, a mesh grid
+%             will be generated.
 %             Otherwise, it is expected to be a two-column matrix in the
 %             form [y,x] that gives the coordinate of each data point.
 %    data   : The sampled data. When YX = {y,x} is a cell, it is a 2D matrix of
@@ -60,6 +61,7 @@ function dataM = imDataMap(imgDim,YX,data,varargin)
 %       'cubic'     - Triangle-based cubic interpolation.
 %       'nearest'   - Nearest neighbor interpolation.
 %       'v4'        - MATLAB 4 griddata method.
+%       The default is 'linear'.
 %    order  : The order of the spline used when the data are on grids or the x,y 
 %             grid interval is specified in the case of randomly sampled data.
 %    gridSmoothing : smoothing parameter d0 that is used for
@@ -69,7 +71,7 @@ function dataM = imDataMap(imgDim,YX,data,varargin)
 % OUTPUT :
 %    dataM : A pixel wise map of the data of dimension 'imgDim'.
 %
-% By Lin Ji.
+% AUTHOR: Lin Ji, Aug. 30, 2005
 
 %Get the dimension of the image.
 m = imgDim(1);
@@ -311,7 +313,8 @@ end
 % Set dataat pixels out of user defined 'bnd' to be NaN.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if ~isempty(bnd)
-   [in on] = inpolygon(gridX(:),gridY(:),bnd(:,1),bnd(:,2));
+   [pixelX pixelY] = meshgrid(1:n,1:m);
+   [in on] = inpolygon(pixelX(:),pixelY(:),bnd(:,1),bnd(:,2));
    outI = find(in==0 | on==1);
    dataM(outI) = NaN;
 end

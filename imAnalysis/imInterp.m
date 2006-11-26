@@ -81,7 +81,7 @@ else
    imI = img;
 end
 
-if isrgb(imI)
+if size(imI,3) == 3
    error('RGB images are not supported. Call RGB2GRAY first.');
 %elseif isind(imI)
 %   error('Indexed images are not supported. Call IND2GRAY first.');
