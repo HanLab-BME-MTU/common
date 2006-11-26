@@ -2,8 +2,8 @@ function [img3C,pixClasses]=imDataMapOverlay(img,dataM,range,cmap,opacity)
 % imDataMapOverlay Overlay a colored data map to an image.
 %
 % SYINOPSIS :  
-%    [img3C,pixClasses]=applyColorMap(img,dataM)
-%    [img3C,pixClasses]=applyColorMap(img,dataM,range,cmap)
+%    [img3C,pixClasses]=imDataMapOverlay(img,dataM)
+%    [img3C,pixClasses]=imDataMapOverlay(img,dataM,range,cmap)
 %
 % INPUT :
 %    img     : image to which the color-coded dataM will be
@@ -35,7 +35,7 @@ function [img3C,pixClasses]=imDataMapOverlay(img,dataM,range,cmap,opacity)
 %                 corresponding data at that pixel. It has the same size of
 %                 'dataM'.
 %
-% Lin Ji, Aug. 30, 2005
+% AUTHOR: Lin Ji, Aug. 30, 2005
 %
 % This function is modified from Araon's 'applyColormap with the following
 % added features:
