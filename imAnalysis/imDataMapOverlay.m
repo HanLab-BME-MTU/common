@@ -3,7 +3,7 @@ function [img3C,pixClasses]=imDataMapOverlay(img,dataM,range,cmap,opacity)
 %
 % SYINOPSIS :  
 %    [img3C,pixClasses]=imDataMapOverlay(img,dataM)
-%    [img3C,pixClasses]=imDataMapOverlay(img,dataM,range,cmap)
+%    [img3C,pixClasses]=imDataMapOverlay(img,dataM,range,cmap,opacity)
 %
 % INPUT :
 %    img     : image to which the color-coded dataM will be

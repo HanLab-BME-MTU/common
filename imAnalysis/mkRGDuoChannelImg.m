@@ -14,6 +14,8 @@ function mkRGDuoChannelImg(varargin)
 %                    the percentage of cut-offs at the lower and upper end of image intensity.
 %    'greenImgIScale': (green channel) A vector of two numbers between 0 and 1 that specifies
 %                    the percentage of cut-offs at the lower and upper end of image intensity.
+%    'startFrameNo': The starting frame number to be merged.
+%    'numFrames' : The number of frames to be processed.
 %
 % AUTHOR: Lin Ji, Nov. 26, 2005
 
@@ -67,6 +69,8 @@ end
 %Default
 redImgIScale   = [0 1];
 greenImgIScale = [0 1];
+startFrameNo   = 1;
+numFrames      = numRedImgFiles;
 
 if nargin > 0
    for kk = 1:2:nargin
@@ -77,12 +81,19 @@ if nargin > 0
             redImgIScale = varargin{kk+1};
          case 'greenImgIScale'
             greenImgIScale = varargin{kk+1};
+         case 'startFrameNo'
+            startFrameNo = varargin{kk+1};
+         case 'numFrames'
+            numFrames = varargin{kk+1};
       end
    end
 end
 
+%Make sure the requested number of frames does not exceed the total number of images available.
+numFrames = min(numFrames,numRedImgFiles-startFrameNo+1);
+
 figH = figure; hold off;
-for kk = 1:numRedImgFiles
+for kk = startFrameNo:startFrameNo+numFrames-1
    [path,imgFName,no,ext] = getFilenameBody(redImgFList{kk});
    imgIndexStr = no;
 
