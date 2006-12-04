@@ -11,6 +11,9 @@ function [fileList, index] = getNamedFiles(srchDir,fName)
 % OUTPUT:
 %    fileList: A cell array of found files.
 %    index   : The index (number suffix) of the files.
+%
+% AUTHOR: Lin Ji.
+% DATE  : July 21, 2006
 
 if ~isdir(srchDir)
    fileList = {};

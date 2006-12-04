@@ -33,8 +33,9 @@ filelist = filelist(selIndex);
 
 numTotalFiles  = length(index);
 subSequence    = [1:stepSize:numTotalFiles];
+subIndex       = index(subSequence);
 numSubseqFiles = length(subSequence);
-indexForm      = sprintf('%%.%dd',length(num2str(numSubseqFiles)));
+indexForm      = sprintf('%%.%dd',length(num2str(numTotalFiles)));
 
 parentDir = [inDir filesep '..'];
 outDir = uigetdir(parentDir,'Select output directory');
@@ -44,8 +45,21 @@ if isequal(outDir,0)
    return;
 end
 
-for k = 1:numSubseqFiles
-   inFileName  = [inDir filesep filelist{subSequence(k)}];
-   outFileName = [outDir filesep outFName sprintf(indexForm,k) ext];
+startTime = cputime;
+backStr   = '';
+fprintf(1,'Processing: ');
+for jj = 1:numSubseqFiles
+   for ii = 1:length(backStr)
+      fprintf(1,'\b');
+   end
+   backStr = sprintf('%d/%d ... ',jj,numSubseqFiles);
+   fprintf(1,backStr);
+   
+   fileNo    = subSequence(jj);
+   fileIndex = subIndex(jj);
+   
+   inFileName  = [inDir filesep filelist{fileNo}];
+   outFileName = [outDir filesep outFName sprintf(indexForm,fileIndex) ext];
    [success,msgID] = copyfile(inFileName,outFileName);
 end
+fprintf(1,'Done in %5.3f sec.\n',cputime-startTime);
