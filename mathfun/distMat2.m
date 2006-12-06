@@ -1,4 +1,4 @@
-function dm = distMat2(A,B,metric);
+function [dm, dmVectors] = distMat2(A,B,metric);
 %DISTMAT2 computes the distance matrix of two point sets
 %
 % SYNOPSIS dm = distMat2(A,B,metric);
@@ -7,6 +7,7 @@ function dm = distMat2(A,B,metric);
 %         metric (optional): weight of the dimensions
 %
 % OUTPUT: dm: rowA-by-rowB array of distances between points in A and B
+%         dmVectors: rowA-by-rowB-by-nDimensions array of distance vectors
 %
 % c: 18/09/01   dT
 
@@ -35,7 +36,7 @@ J=J(:);
 
 % repeat the entries in A and B so that we'll take the difference between
 % all of them
-Y = (A(I,:)-B(J,:))';
+Y = (B(J,:)-A(I,:))';
 
 % calculate distance as the rood of the squared sum. If metric is not a
 % square, we can use a memory-saving calculation
@@ -43,4 +44,10 @@ if metricIsSquare
     dm(:)=sqrt(diag(Y'*metric*Y))';
 else
     dm(:) = sqrt(sum(Y'.^2.*repmat(metric,mA*mB,1),2));
+end
+
+if nargout > 1
+    % transform Y to output
+    dmVectors = reshape(Y',mB,mA,nA);
+    dmVectors = permute(dmVectors,[2,1,3]);
 end

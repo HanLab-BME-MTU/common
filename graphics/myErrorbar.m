@@ -43,7 +43,7 @@ if nargin < 2
 end
 
 % check if the first input argument is a handle
-if ishandle(varargin{1})
+if length(varargin{1}) == 1 && ishandle(varargin{1}) && strcmpi(get(varargin{1},'Type'),'axes')
     axesH = varargin{1};
     % remove axis handle
     varargin(1) = [];
