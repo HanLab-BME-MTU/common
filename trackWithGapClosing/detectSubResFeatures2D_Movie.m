@@ -1,8 +1,8 @@
-function [movieInfo,framesFailed,errFlag] = detectSubResFeatures2D_Movie(...
+function [movieInfo,emptyFrames,framesFailed,errFlag] = detectSubResFeatures2D_Movie(...
     movieParam,detectionParam)
 %DETECTSUBRESFEATURES2D_MOVIE detects subresolution features in a series of images
 %
-%SYNOPSIS [movieInfo,framesFailed,errFlag] = detectSubResFeatures2D_Movie(...
+%SYNOPSIS [movieInfo,emptyFrames,framesFailed,errFlag] = detectSubResFeatures2D_Movie(...
 %     movieParam,detectionParam)
 %
 %INPUT  movieParam    : Structure with fields
@@ -15,22 +15,23 @@ function [movieInfo,framesFailed,errFlag] = detectSubResFeatures2D_Movie(...
 %       detectionParam: Structure with fields
 %           .psfSigma     : Standard deviation of point spread function (in pixels).
 %           .testAlpha    : Alpha-values for statistical tests. Optional.
-%                           (See detectSubResFeatures2D for details). 
-%           .visual       : 1 if user wants to view results; 0 otherwise. 
+%                           (See detectSubResFeatures2D for details).
+%           .visual       : 1 if user wants to view results; 0 otherwise.
 %                           Optional. Default: 0.
 %           .doMMF        : 1 if user wants to do mixture-model fitting, 0
 %                           otherwise. Optional. Default: 1.
 %           .bitDepth     : Camera bit depth. Optional. Default: 14.
 %
-%OUTPUT movieInfo     : Array of length "movie length" of structures 
+%OUTPUT movieInfo     : Array of length "movie length" of structures
 %                       containing the fields:
 %             .xCoord    : Image coordinate system x-coordinate of detected
 %                          features [x dx] (in pixels).
 %             .yCoord    : Image coorsinate system y-coordinate of detected
 %                          features [y dy] (in pixels).
 %             .amp       : Amplitudes of PSFs fitting detected features [a da].
+%       emptyFrames   : Array indicating frames where no features were
+%                       detected.
 %       framesFailed  : Array indicating frames where detection has failed.
-%                       If empty, then no frames failed.
 %       errFlag       : 0 if function executes normally, 1 otherwise.
 %
 %Khuloud Jaqaman, July 2006
@@ -40,6 +41,7 @@ function [movieInfo,framesFailed,errFlag] = detectSubResFeatures2D_Movie(...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 movieInfo = [];
+emptyFrames = [];
 framesFailed = [];
 errFlag = 0;
 
@@ -137,9 +139,17 @@ for i=min(9999,lastImageNum):-1:max(1000,firstImageNum)
 
         %save results
         movieInfo(i) = featuresInfo;
-        
+
+        %check whether frame is empty
+        if isempty(featuresInfo.xCoord)
+            emptyFrames = [emptyFrames; i];
+        end
+
     catch %if detection fails
-        
+
+        %label frame as empty
+        emptyFrames = [emptyFrames; i];
+
         %add this frame to the array of frames with failed detection
         framesFailed = [framesFailed; i];
 
@@ -164,7 +174,15 @@ for i=min(999,lastImageNum):-1:max(100,firstImageNum)
         %save results
         movieInfo(i) = featuresInfo;
 
+        %check whether frame is empty
+        if isempty(featuresInfo.xCoord)
+            emptyFrames = [emptyFrames; i];
+        end
+
     catch %if detection fails
+
+        %label frame as empty
+        emptyFrames = [emptyFrames; i];
 
         %add this frame to the array of frames with failed detection
         framesFailed = [framesFailed; i];
@@ -190,7 +208,15 @@ for i=min(99,lastImageNum):-1:max(10,firstImageNum)
         %save results
         movieInfo(i) = featuresInfo;
 
+        %check whether frame is empty
+        if isempty(featuresInfo.xCoord)
+            emptyFrames = [emptyFrames; i];
+        end
+
     catch %if detection fails
+
+        %label frame as empty
+        emptyFrames = [emptyFrames; i];
 
         %add this frame to the array of frames with failed detection
         framesFailed = [framesFailed; i];
@@ -216,7 +242,15 @@ for i=min(9,lastImageNum):-1:max(1,firstImageNum)
         %save results
         movieInfo(i) = featuresInfo;
 
+        %check whether frame is empty
+        if isempty(featuresInfo.xCoord)
+            emptyFrames = [emptyFrames; i];
+        end
+
     catch %if detection fails
+
+        %label frame as empty
+        emptyFrames = [emptyFrames; i];
 
         %add this frame to the array of frames with failed detection
         framesFailed = [framesFailed; i];

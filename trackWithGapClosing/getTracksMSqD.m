@@ -1,7 +1,7 @@
-function [mSqDisp,errFlag] = getTracksMSqD(trackedFeatureInfo)
+function [mSqDisp,mSqDMatrix,mSqDErrMatrix,errFlag] = getTracksMSqD(trackedFeatureInfo)
 %GETTRACKSMSQD calculates the mean squared displacement of the input tracks
 %
-%SYNOPSIS [mSqDisp,errFlag] = getTracksMSqD(trackedFeatureInfo)
+%SYNOPSIS [mSqDisp,mSqDMatrix,mSqDErrMatrix,errFlag] = getTracksMSqD(trackedFeatureInfo)
 %
 %INPUT  trackedFeatureInfo: Matrix indicating the positions and amplitudes 
 %                           of the tracked features to be plotted. Number 
@@ -16,6 +16,13 @@ function [mSqDisp,errFlag] = getTracksMSqD(trackedFeatureInfo)
 %OUTPUT mSqDisp           : Structure array of length equal to number of
 %                           input tracks with field "values" = output of
 %                           the function meanSquaredDisplacement.
+%       mSqDMatrix        : Matrix where the mean square displacement of
+%                           each track is placed in a column. NaN is added
+%                           to the end of each column to equalize column
+%                           lengths.
+%       mSqDErrMatrix     : Matrix where the error in the mean square
+%                           displacement of each track is placed in a column.
+%                           NaN also added for length equalization.
 %
 %Khuloud Jaqaman, August 2006
 
@@ -45,6 +52,9 @@ end
 [numTracks,numTimePoints] = size(trackedFeatureInfo);
 numTimePoints = numTimePoints/8;
 
+%initialize timeLagMax
+timeLagMax = 0;
+
 %go over all tracks
 for j=numTracks:-1:1
     
@@ -63,6 +73,29 @@ for j=numTracks:-1:1
     tmp = meanSquaredDisplacement(positions);
     mSqDisp(j).values = tmp;
     
+    %get the maximum time lag
+    timeLagMax(j) = size(tmp,1);
+    
 end
+
+%collect all mean square displacements and their errors in two big matrices
+
+%get the maximum time lag among all tracks
+timeLagMaxMax = max(timeLagMax);
+
+%initialize the two big matrices
+mSqDMatrix = NaN*ones(timeLagMaxMax,numTracks);
+mSqDErrMatrix = NaN*ones(timeLagMaxMax,numTracks);
+
+%fill the matrices
+for j=1:numTracks
+    
+    mSqDMatrix(1:timeLagMax(j),j) = mSqDisp(j).values(:,1); %mean square displacement
+
+    mSqDErrMatrix(1:timeLagMax(j),j) = mSqDisp(j).values(:,2)... % standard deviation of square displacement
+        ./sqrt(mSqDisp(j).values(:,3)); %divided by square root of number of pairs used in estimation
+
+end
+
 
 %%%%% ~~ the end ~~ %%%%%

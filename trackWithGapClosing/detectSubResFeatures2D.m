@@ -164,7 +164,7 @@ bgAmpAve = mean(bgAmp);
 keepCluster = ones(length(clusters),1);
 
 %set optimization options
-options = optimset('Jacobian','on');
+options = optimset('Jacobian','on','Display','off');
 
 %go over all clusters
 for i=length(clusters):-1:1
@@ -428,14 +428,27 @@ for i=length(clusters):-1:1
 
 end %(for i=length(clusters):-1:1)
 
-%retain only those clusters which have significant signals in them
-clustersMMF = clustersMMF(find(keepCluster));
+%find the clusters that have significant signals in them
+indx = find(keepCluster);
 
-%save information in structure "detectedFeatures"
-tmp = vertcat(clustersMMF.position);
-detectedFeatures.xCoord = [tmp(:,1) tmp(:,3)];
-detectedFeatures.yCoord = [tmp(:,2) tmp(:,4)];
-detectedFeatures.amp = vertcat(clustersMMF.amplitude);
+if ~isempty(indx) %if there are clusters with significant signal
+
+    %retain only those clusters which have significant signals in them
+    clustersMMF = clustersMMF(indx);
+
+    %save information in structure "detectedFeatures"
+    tmp = vertcat(clustersMMF.position);
+    detectedFeatures.xCoord = [tmp(:,1) tmp(:,3)];
+    detectedFeatures.yCoord = [tmp(:,2) tmp(:,4)];
+    detectedFeatures.amp = vertcat(clustersMMF.amplitude);
+
+else
+
+    %save empty structures
+    clustersMMF = struct('position',zeros(0,4),'amplitude',zeros(0,2),'bgAmp',zeros(0,2));
+    detectedFeatures = struct('xCoord',zeros(0,2),'yCoord',zeros(0,2),'amp',zeros(0,2));
+    
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %visualization
