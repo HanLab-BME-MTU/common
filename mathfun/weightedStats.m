@@ -83,7 +83,7 @@ end
 if strcmp(sw,'s')
     %w = 1/sigma^2
     if any(weights == 0)
-        warning('WEIGHTEDSTATS:sigma==0','At least one sigma == 0; set to eps');
+        warning('WEIGHTEDSTATS:SigmaIsZero','At least one sigma == 0; set to eps');
 	weights = max(weights,eps);
     end
     %assign weight 1 to the measurement with smallest error
@@ -113,7 +113,7 @@ switch sw
         %the number of non-zero weights http://www.itl.nist.gov/div898/software/dataplot/refman2/ch2/weightsd.pdf
         
         %get divisor (nnz is not defined for matrices)
-        for i=1:numCols
+        for i=numCols:-1:1
             % set NaN-weights to 0
             nanWeights = isnan(weights(:,i));
             weights(nanWeights,i) = 0;
