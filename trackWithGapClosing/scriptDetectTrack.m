@@ -32,26 +32,30 @@
 %define the input variables
 
 %movieParam
-movieParam.candsDir = '/mnt/mit/khuloudDir/synapse/July2006/0707_ML7/dish2/ML7_2-veryfew/analysis/fsm/tack/cands/'; %directory where initial position estimates are
-movieParam.imageDir = '/mnt/mit/khuloudDir/synapse/July2006/0707_ML7/dish2/ML7_2-veryfew/images/'; %directory where images are
-movieParam.filenameBase = '070706_dish2_ML7_105frps_gain205_2_'; %image file name base
+movieParam.candsDir = '/mnt/mit/khuloudDir/synapse/July2006/0707_ML7/dish3/ML7_1-good/analysisPart/fsm/tack/cands/'; %directory where initial position estimates are
+movieParam.imageDir = '/mnt/mit/khuloudDir/synapse/July2006/0707_ML7/dish3/ML7_1-good/imagesPart/'; %directory where images are
+movieParam.filenameBase = 'crop_070706_dish3_ML7_105frps_gain205_1_'; %image file name base
 movieParam.firstImageNum = 1; %number of first image in movie
-movieParam.lastImageNum = 178; %number of last image in movie
+movieParam.lastImageNum = 1; %number of last image in movie
 movieParam.digits4Enum = 3; %number of digits used for frame enumeration (1-4).
 
 %detectionParam
 detectionParam.psfSigma = 1.078; %point spread function sigma (in pixels)
 detectionParam.testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05); %alpha-values for detection statistical tests
 detectionParam.visual = 0; %1 to see image with detected features, 0 otherwise
-detectionParam.doMMF = 1; %1 if mixture-model fitting, 0 otherwise
+detectionParam.doMMF = 0; %1 if mixture-model fitting, 0 otherwise
 detectionParam.bitDepth = 14; %Camera bit depth
 
-%run the detection function
-[movieInfo,framesFailed] = detectSubResFeatures2D_Movie(...
-    movieParam,detectionParam);
+%saveResults
+saveResults.dir = '/mnt/mit/khuloudDir/synapse/July2006/0707_ML7/dish3/ML7_1-good/analysisPart/mmf/'; %directory where to save input and output
+saveResults.filename = 'detectedFeatures'; %name of file where input and output are saved
 
-%save the input and output
-save('detectedFeatures','movieParam','detectionParam','movieInfo','framesFailed');
+%run the detection function
+[movieInfo,emptyFrames,framesFailed] = detectSubResFeatures2D_Movie(...
+    movieParam,detectionParam,saveResults);
+
+% %save the input and output
+% save('detectedFeatures','movieParam','detectionParam','movieInfo','emptyFrames','framesFailed');
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -99,13 +103,17 @@ gapCloseParam.segmentLength = 50;  %length of time segment for sequential gap cl
 iterParam.tolerance = 0.05;   %maximum relative change of track statistical parameters to reach convergence
 iterParam.lenFrac = 0.5;      %minimum length of tracks used for statistical analysis, as a function of the movie length
 
+%saveResults
+saveResults.dir = '/mnt/mit/khuloudDir/synapse/July2006/0707_ML7/dish3/ML7_1-good/analysisPart/mmf/'; %directory where to save input and output
+saveResults.filename = 'trackedFeatures'; %name of file where input and output are saved
+
 %run the tracking function
 [trackedFeatureNum,trackedFeatureInfo,errFlag] = trackWithGapClosing(...
-    movieInfo,costMatrices,'getTrackStats',gapCloseParam,iterParam);
+    movieInfo,costMatrices,'getTrackStats',gapCloseParam,iterParam,saveResults);
 
-%save the input and output
-save('trackedFeatures','costMatrices','gapCloseParam','iterParam',...
-    'trackedFeatureNum','trackedFeatureInfo');
+% %save the input and output
+% save('trackedFeatures','costMatrices','gapCloseParam','iterParam',...
+%     'trackedFeatureNum','trackedFeatureInfo');
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

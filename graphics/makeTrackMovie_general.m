@@ -44,26 +44,26 @@ tinumf = round(tiy/8);
 % set optional parameters to default values if necessary
 
 % start and end frames
-if nargin>2
+if nargin>2 && ~isempty(startend)
     startendVector = startend;   
 else
     startendVector = [1 tinumf];
 end
 
 % dragtail length
-if nargin>3
+if nargin>3 && ~isempty(dragtailLength)
     dtLength = dragtailLength;
 else
     dtLength = 10;
 end
 
 % recording status
-if nargin>4
+if nargin>4 && ~isempty(recordingVariable)
     recStatus = recordingVariable;
     % if recording is desired, initialize the quicktime movie
     if (recStatus==1) 
         % if movie name is specified, use name, else call it 'Trackmovie'
-        if nargin>5
+        if nargin>5 && ~isempty(moviename)
             evalString = ['MakeQTMovie start ',moviename];
         else
             evalString = ('MakeQTMovie start Trackmovie');

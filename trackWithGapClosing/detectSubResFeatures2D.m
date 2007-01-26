@@ -1,9 +1,11 @@
 function [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
-    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF,bitDepth)
+    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF,...
+    bitDepth,saveResults)
 %DETECTSUBRESFEATURES2D determines the positions and intensity amplitudes of sub-resolution features using mixture model fitting
 %
 %SYNOPSIS [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
-%    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF)
+%    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF,...
+%    bitDepth,saveResults)
 %
 %INPUT  image      : Image being analyzed.
 %       cands      : Cands structure as output from fsmCenter.
@@ -18,6 +20,10 @@ function [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
 %       doMMF      : 1 if user wants to do mixture-model fitting, 0
 %                    otherwise. Optional. Default: 1.
 %       bitDepth   : Camera bit depth. Optional. Default: 14.
+%       saveResults: 1 if results are to be saved (in file 'detectedFeatures.mat'),
+%                    0 otherwise. Optional. Default: 0.
+%
+%       All optional variables can be entered as [] to use default values.
 %
 %OUTPUT detectedFeatures: Structure with fields:
 %             .xCoord    : Image coordinate system x-coordinate of detected
@@ -121,6 +127,15 @@ if nargin < 7 || isempty(bitDepth)
 else
     if bitDepth <= 0 || bitDepth-floor(bitDepth) ~= 0
         disp('--detectSubResFeatures2D: Variable "bitDepth" should be a positive integer!');
+    end
+end
+
+%check whether results are to be saved
+if nargin < 8 || isempty(saveResults)
+    saveResults = 0;
+else
+    if saveResults ~= 0 || saveResults ~= 1
+        disp('--detectSubResFeatures2D: Variable "saveResults" should be 0 or 1!');
     end
 end
 
@@ -436,7 +451,7 @@ if ~isempty(indx) %if there are clusters with significant signal
     %retain only those clusters which have significant signals in them
     clustersMMF = clustersMMF(indx);
 
-    %save information in structure "detectedFeatures"
+    %store information in structure "detectedFeatures"
     tmp = vertcat(clustersMMF.position);
     detectedFeatures.xCoord = [tmp(:,1) tmp(:,3)];
     detectedFeatures.yCoord = [tmp(:,2) tmp(:,4)];
@@ -444,11 +459,17 @@ if ~isempty(indx) %if there are clusters with significant signal
 
 else
 
-    %save empty structures
+    %store empty structures
     clustersMMF = struct('position',zeros(0,4),'amplitude',zeros(0,2),'bgAmp',zeros(0,2));
     detectedFeatures = struct('xCoord',zeros(0,2),'yCoord',zeros(0,2),'amp',zeros(0,2));
     
 end
+
+%save output if requested
+if saveResults
+    save('detectedFeatures','detectedFeatures','clustersMMF');
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %visualization

@@ -1,9 +1,9 @@
 function [movieInfo,emptyFrames,framesFailed,errFlag] = detectSubResFeatures2D_Movie(...
-    movieParam,detectionParam)
+    movieParam,detectionParam,saveResults)
 %DETECTSUBRESFEATURES2D_MOVIE detects subresolution features in a series of images
 %
 %SYNOPSIS [movieInfo,emptyFrames,framesFailed,errFlag] = detectSubResFeatures2D_Movie(...
-%     movieParam,detectionParam)
+%     movieParam,detectionParam,saveResults)
 %
 %INPUT  movieParam    : Structure with fields
 %           .imageDir     : Directory where images are stored
@@ -21,6 +21,14 @@ function [movieInfo,emptyFrames,framesFailed,errFlag] = detectSubResFeatures2D_M
 %           .doMMF        : 1 if user wants to do mixture-model fitting, 0
 %                           otherwise. Optional. Default: 1.
 %           .bitDepth     : Camera bit depth. Optional. Default: 14.
+%       saveResults   : Structure with fields:
+%           .dir          : Directory where results should be saved.
+%                           Optional. Default: current directory.
+%           .filename     : Name of file where results should be saved.
+%                           Optional. Default: detectedFeatures.
+%                       Whole structure optional.
+%
+%       All optional variables can be entered as [] to use default values.
 %
 %OUTPUT movieInfo     : Array of length "movie length" of structures
 %                       containing the fields:
@@ -68,31 +76,48 @@ digits4Enum = movieParam.digits4Enum;
 psfSigma = detectionParam.psfSigma;
 
 %get statistical test alpha values
-if ~isfield(detectionParam,'testAlpha')
+if ~isfield(detectionParam,'testAlpha') || isempty(detectionParam.testAlpha)
     testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05);
 else
     testAlpha = detectionParam.testAlpha;
 end
 
 %get visualization option
-if ~isfield(detectionParam,'visual')
+if ~isfield(detectionParam,'visual') || isempty(detectionParam.visual)
     visual = 0;
 else
     visual = detectionParam.visual;
 end
 
 %check whether to do MMF
-if ~isfield(detectionParam,'doMMF')
+if ~isfield(detectionParam,'doMMF') || isempty(detectionParam.doMMF)
     doMMF = 1;
 else
     doMMF = detectionParam.doMMF;
 end
 
 %get camera bit depth
-if ~isfield(detectionParam,'bitDepth')
+if ~isfield(detectionParam,'bitDepth') || isempty(detectionParam.bitDepth)
     bitDepth = 14;
 else
     bitDepth = detectionParam.bitDepth;
+end
+
+%determine where to save results
+if nargin < 3 || isempty(saveResults) %if nothing was input
+    saveResDir = pwd;
+    saveResFile = 'detectedFeatures';
+else
+    if ~isfield(saveResults,'dir') || isempty(saveResults.dir)
+        saveResDir = pwd;
+    else
+        saveResDir = saveResults.dir;
+    end
+    if ~isfield(saveResults,'filename') || isempty(saveResults.filename)
+        saveResFile = 'detectedFeatures';
+    else
+        saveResFile = saveResults.filename;
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -258,6 +283,10 @@ for i=min(9,lastImageNum):-1:max(1,firstImageNum)
     end
 
 end
+
+%save results
+save([saveResDir filesep saveResFile],'movieParam','detectionParam',...
+    'movieInfo','emptyFrames','framesFailed');
 
 
 %%%%% ~~ the end ~~ %%%%%

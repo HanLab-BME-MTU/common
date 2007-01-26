@@ -1,5 +1,5 @@
 function [trackedFeatureNum,trackedFeatureInfo,errFlag] = trackWithGapClosing(...
-    movieInfo,costMatrices,trackStatFun,gapCloseParam,iterParam)
+    movieInfo,costMatrices,trackStatFun,gapCloseParam,iterParam,saveResults)
 %TRACKWITHGAPCLOSING links features between frames in a movie and closes gaps, with the possibility of track merging and splitting
 %
 %SYNOPSIS [trackedFeatureNum,trackedFeatureInfo,errFlag] = trackWithGapClosing(...
@@ -55,6 +55,15 @@ function [trackedFeatureNum,trackedFeatureInfo,errFlag] = trackWithGapClosing(..
 %             .lenFrac     : Minimum length of tracks used for statistical
 %                            analysis, as a fraction of the total number of
 %                            time points in movie.
+%       saveResults  : Structure with fields:
+%           .dir          : Directory where results should be saved.
+%                           Optional. Default: current directory.
+%           .filename     : Name of file where results should be saved.
+%                           Optional. Default: trackedFeatures.
+%                       Whole structure optional.
+%
+%       All optional variables can be entered as [] to use default values.
+%
 %
 %OUTPUT trackedFeatureNum : Connectivity matrix of features between time points.
 %                           Rows indicate continuous tracks, while columns
@@ -92,7 +101,7 @@ errFlag = [];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %check whether correct number of input arguments was used
-if nargin ~= 5
+if nargin < 5
     disp('--trackWithGapClosing: Incorrect number of input arguments!');
     errFlag  = 1;
     return
@@ -139,6 +148,23 @@ else
 end
 tolerance = iterParam.tolerance;
 lenFrac = iterParam.lenFrac;
+
+%determine where to save results
+if nargin < 6 || isempty(saveResults) %if nothing was input
+    saveResDir = pwd;
+    saveResFile = 'trackedFeatures';
+else
+    if ~isfield(saveResults,'dir') || isempty(saveResults.dir)
+        saveResDir = pwd;
+    else
+        saveResDir = saveResults.dir;
+    end
+    if ~isfield(saveResults,'filename') || isempty(saveResults.filename)
+        saveResFile = 'trackedFeatures';
+    else
+        saveResFile = saveResults.filename;
+    end
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Tracking
@@ -343,6 +369,10 @@ while iterate
     disp(['statsRelChange = ' num2str(statsRelChange)]);
 
 end %(while iterate)
+
+%save results
+save([saveResDir filesep saveResFile],'costMatrices','gapCloseParam',...
+    'iterParam','trackedFeatureNum','trackedFeatureInfo');
 
 
 %%%%% ~~ the end ~~ %%%%%
