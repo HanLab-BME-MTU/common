@@ -22,6 +22,25 @@ function []=makeTrackMovie_general(trackInfo,axisVector,startend,dragtailLength,
 % OUTPUT: none, but if movie is recorded, then QT movie is written into
 %           directory where TIFFs are located
 %
+%         In the Quicktime movie, the overlaid markers mean the following:
+%           round markers:    detected objects
+%           stars:            closed gaps
+%         The colors mean the following:
+%           *round markers*:
+%           magenta = objects appear OR disappear (they are present in
+%                     either the first or the last frame of the movie)
+%           white = objects are stationary (they are present for the
+%                   entire course of the movie, including the first and
+%                   last frame)
+%           red = objects appear AND disappear (they are not present in the
+%                 first or last frame), which makes it possible to
+%                 determine their exact lifetime
+%           green = object appearance (first frame of trajectory)
+%           yellow = object disappearance (last frame of trajectory)
+%           *stars*:
+%           blue = 'bad gap' (gap is longer than adjacent trajectory pieces)
+%           cyan = 'good gap' (gap is shorter than adjacent trajectory pieces)
+%
 % NOTE1: this version of the function does not require the presence of the
 % images loaded into the workspace, rather, the images are loaded
 % temporarily from the location specified where they are stored
@@ -30,6 +49,8 @@ function []=makeTrackMovie_general(trackInfo,axisVector,startend,dragtailLength,
 %
 % created by: dloerke
 % DATE: 25-Jan-2007
+%
+% last modified 01/26/2006
 %
 
 %% =======================================================================
