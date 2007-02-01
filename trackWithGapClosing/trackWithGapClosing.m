@@ -187,6 +187,9 @@ else %otherwise iterate
     iterate = 1;
 end
 
+%initialize vector storing relative change in track statistics
+statsRelChangeAll = [];
+
 while iterate
 
     %get latest statistics
@@ -360,13 +363,76 @@ while iterate
         '(trackedFeatureInfo,lenFrac,timeWindow,problem2D,trackStats);'])
 
     if errFlag %exit at this point if statistical analysis failed
+
         disp('--trackWithGapClosing: Getting track statistics failed. Stopping prematurely!');
         iterate = 0;
-    elseif statsRelChange < tolerance %stop iterating if change is smaller than tolerance
-        iterate = 0;
-    end
-    
-    disp(['statsRelChange = ' num2str(statsRelChange)]);
+
+    else %continue if statistical analysis succeeded
+
+        %display relative change in statistics
+        disp(['statsRelChange = ' num2str(statsRelChange)]);
+
+        %store the relative change in track statistics
+        statsRelChangeAll = [statsRelChangeAll; statsRelChange];
+
+        if statsRelChange < tolerance %stop iterating if change is smaller than tolerance
+
+            disp('--trackWithGapClosing: Relative change in track statistics smaller than tolerance. Stopping!');
+            iterate = 0;
+
+        else %if change is not smaller than tolerance
+
+            if length(statsRelChangeAll) > 10 %if there have been more than 10 iterations, check for oscillations
+
+                %get statsRelChange in the last 3 iterations
+                testVar = statsRelChangeAll(end-2:end)';
+
+                %if last 3 iterations had the same statsRelChange
+                if isequal(testVar(:,1),testVar(:,2),testVar(:,3))
+
+                    %stop iterating
+                    disp('--trackWithGapClosing: Track statistics not converging. Stopping!');
+                    iterate = 0;
+
+                else
+
+                    %get statsRelChange in the last 6 iterations
+                    testVar = reshape(statsRelChangeAll(end-5:end),2,3);
+                    
+                    %if last 3 cycles of 2 had the same statsRelChange
+                    if isequal(testVar(:,1),testVar(:,2),testVar(:,3))
+                        
+                        if (testVar(2,3) < testVar(1,3)) %if the last statsRelChange is the smallest in the oscillation
+                            %stop iterating
+                            disp('--trackWithGapClosing: Track statistics oscillating between two values. Stopping after iteration with smallest relative change!');
+                            iterate = 0;                            
+                        end
+                        
+                    else
+
+                        %get statsRelChange in the last 9 iterations
+                        testVar = reshape(statsRelChangeAll(end-8:end),3,3);
+                        
+                        %if last 3 cycles of 3 had the same statsRelChange
+                        if isequal(testVar(:,1),testVar(:,2),testVar(:,3))
+                            
+                            if min((testVar(3,3) < testVar(1:2,3))) %if the last statsRelChange is the smallest in the oscillation
+                                %stop iterating
+                                disp('--trackWithGapClosing: Track statistics oscillating between three values. Stopping after iteration with smallest relative change!');
+                                iterate = 0;
+                            end
+                            
+                        end %oscillations of 3
+                        
+                    end %oscillations of 2
+                    
+                end %oscillations of 1
+                
+            end %(if length(statsRelChangeAll) > 15)
+
+        end %(if statsRelChange < tolerance ... else ...)
+
+    end %(if errFlag ... else ...)
 
 end %(while iterate)
 

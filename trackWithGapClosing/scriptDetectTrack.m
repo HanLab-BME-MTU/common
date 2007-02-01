@@ -104,8 +104,8 @@ iterParam.tolerance = 0.05;   %maximum relative change of track statistical para
 iterParam.lenFrac = 0.5;      %minimum length of tracks used for statistical analysis, as a function of the movie length
 
 %saveResults
-saveResults.dir = '/mnt/mit/khuloudDir/synapse/July2006/0707_ML7/dish3/ML7_1-good/analysisPart/mmf/'; %directory where to save input and output
-saveResults.filename = 'trackedFeatures'; %name of file where input and output are saved
+saveResults.dir = '/mnt/mit/khuloudDir/synapse/July2006/0707_ML7/dish1/ml7_1-veryfew/analysis/mmf/'; %directory where to save input and output
+saveResults.filename = 'trackedFeatures2'; %name of file where input and output are saved
 
 %run the tracking function
 [trackedFeatureNum,trackedFeatureInfo,errFlag] = trackWithGapClosing(...
