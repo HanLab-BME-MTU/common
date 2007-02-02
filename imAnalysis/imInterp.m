@@ -67,6 +67,8 @@ function varargout = imInterp(varargin)
 %
 % AUTHOR : Lin Ji 
 % DATE   : Feb. 12, 2004.
+% Changed by Kathryn to convert pixel xy-coordinates correctly
+% outI = outI((floor(YX(:,2)+0.5)-1)*numPixelsY+floor(YX(:,1)+0.5)); 
 
 if nargin < 1
    error('There has to be at least one input argument.');
@@ -284,7 +286,7 @@ if strcmp(method,'Gaussian') == 1
    end
 
    if ~isempty(YX)
-      outI = outI(floor(YX(:,2)+0.5)*numPixelsY+floor(YX(:,1)+0.5));
+      outI = outI((floor(YX(:,2)+0.5)-1)*numPixelsY+floor(YX(:,1)+0.5));
 
       %The following for loop should be implemented as mex function. The
       % initial idea is that when we only ask for the intensity values at a few
