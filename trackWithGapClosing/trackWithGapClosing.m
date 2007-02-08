@@ -181,7 +181,7 @@ eval(['[trackStatsT,statsRelChange,errFlag] = ' trackStatFun ...
 
 %exit at this point if statistical analysis could not be performed
 if errFlag
-    disp('--trackWithGapClosing: Getting track statistics failed. Stopping after initial linking!');
+    disp('--trackWithGapClosing: Stopping after initial linking! Getting track statistics failed. Use smaller iterParam.lenFrac.');
     iterate = 0;
 else %otherwise iterate
     iterate = 1;
@@ -364,7 +364,7 @@ while iterate
 
     if errFlag %exit at this point if statistical analysis failed
 
-        disp('--trackWithGapClosing: Getting track statistics failed. Stopping prematurely!');
+        disp('--trackWithGapClosing: Stopping prematurely! Getting track statistics failed. Use smaller iterParam.lenFrac.');
         iterate = 0;
 
     else %continue if statistical analysis succeeded
@@ -377,7 +377,7 @@ while iterate
 
         if statsRelChange < tolerance %stop iterating if change is smaller than tolerance
 
-            disp('--trackWithGapClosing: Relative change in track statistics smaller than tolerance. Stopping!');
+            disp('--trackWithGapClosing: Done! Relative change in track statistics smaller than tolerance.');
             iterate = 0;
 
         else %if change is not smaller than tolerance
@@ -391,7 +391,7 @@ while iterate
                 if isequal(testVar(:,1),testVar(:,2),testVar(:,3))
 
                     %stop iterating
-                    disp('--trackWithGapClosing: Track statistics not converging. Stopping!');
+                    disp('--trackWithGapClosing: Stopping! Solution not converging.');
                     iterate = 0;
 
                 else
@@ -404,7 +404,7 @@ while iterate
                         
                         if (testVar(2,3) < testVar(1,3)) %if the last statsRelChange is the smallest in the oscillation
                             %stop iterating
-                            disp('--trackWithGapClosing: Track statistics oscillating between two values. Stopping after iteration with smallest relative change!');
+                            disp('--trackWithGapClosing: Stopping! Solution oscillating between two values.');
                             iterate = 0;                            
                         end
                         
@@ -418,7 +418,7 @@ while iterate
                             
                             if min((testVar(3,3) < testVar(1:2,3))) %if the last statsRelChange is the smallest in the oscillation
                                 %stop iterating
-                                disp('--trackWithGapClosing: Track statistics oscillating between three values. Stopping after iteration with smallest relative change!');
+                                disp('--trackWithGapClosing: Stopping! Solution oscillating between three values.');
                                 iterate = 0;
                             end
                             

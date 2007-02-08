@@ -91,6 +91,9 @@ goodTracks = find(trackLength>=lenFrac*numTimePoints);
 %retain the lengths of only those tracks that are long enough
 trackLength = trackLength(goodTracks);
 
+%set curve fitting options
+options = optimset('Display','off');
+
 if ~isempty(goodTracks) %if there are tracks to use ...
 
     %get the x,y-coordinates and amplitudes over time of these good tracks
@@ -121,7 +124,7 @@ if ~isempty(goodTracks) %if there are tracks to use ...
             [n,x] = histogram(dispSq(:));
 
             %fit the histogram with an exponential function
-            expParam = lsqcurvefit(@expFun,[100 1]',x,n);
+            expParam = lsqcurvefit(@expFun,[100 1]',x,n,[],[],options);
 
             %assign gamma distribution parameters
             dispSqR(i) = 1;

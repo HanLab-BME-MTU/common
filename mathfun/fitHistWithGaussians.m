@@ -2,7 +2,7 @@ function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(..
     observations,alpha,variableMean,variableVar,showPlot,maxNumGauss)
 %FITHISTWITHGAUSSIANS fits multiple Gaussians to a histogram (including determining the number of necessary Gaussians)
 %
-%SYNOPSIS [numObsPerBin,binCenter,gaussParam,errFlag] = fitHistWithGaussians(...
+%SYNOPSIS [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(...
 %    observations,alpha,variableMean,variableVar,showPlot,maxNumGauss)
 %
 % or [numObsPerBin,binCenter,gaussParam,errFlag] = fitHistWithGaussians(...
@@ -11,14 +11,18 @@ function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(..
 %INPUT  observations: Vector of observations whose histogram is to be fitted.
 %       alpha       : Alpha-value for the statistical test that compares the
 %                     fit of n+1 Gaussians to the fit of n Gaussians.
-%                     Optional. Default: 0.05.
+%                     If 'R' instead of numerical value, the program will
+%                     call the function mclust in the statistical package
+%                     R. For this, you will need the toolbox matlab2R,
+%                     a local installation of R with a COM interface, and
+%                     Windows as OS.
 %       variableMean: 0 if assuming the fixed relationship
 %                     (mean of nth Gaussian) = n * (mean of 1st Gaussian).
 %                     1 if there is no relationship between the means of
 %                     different Gaussians.
 %                     Optional. Default: 0.
 %       variableVar : 0 if assuming that all Gaussians have the same
-%                     variance. 1 if there is no relationshop between the
+%                     variance. 1 if there is no relationship between the
 %                     variances of different Gaussians.
 %                     Optional. Default: 0.
 %       showPlot    : 0 to not plot anything
@@ -26,12 +30,7 @@ function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(..
 %                     2 as 1, but with smooth histogram
 %                     Optional. Default: 1.
 %       maxNumGauss : upper limit to the number of Gaussians.
-%                         Optional. Default: 100 (if 'R', default: 9)
-%       'R'         : If you input 'R' as second element, the program will
-%                     call the function mclust in the statistical package
-%                     R. For this, you will need the toolbox matlab2R, and
-%                     a local installation of R with a COM interface, and
-%                     Windows as OS.
+%                     Optional. Default: 100 (if 'R', default: 9)
 %
 %OUTPUT numObsPerBin: Number of observations that fall in each bin.
 %       binCenter   : Center of each bin.
@@ -45,7 +44,7 @@ function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(..
 %(gaussParam(3)/(gaussParam(2)*sqrt(2pi)))
 %                     *exp(-(x-gaussParam(1))^2/(2*gaussParam(2)^2)
 %
-%       The function does not yet allow to set min#clust, maxPoints!
+%        The function does not yet allow to set min#clust, maxPoints!
 %
 %Khuloud Jaqaman, August 2006
 
@@ -63,9 +62,10 @@ errFlag = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %check whether correct number of input arguments was used
-if nargin < 1 || isempty(observations)
+if nargin < 2
     disp('--fitHistWithGaussians: Incorrect number of input arguments!');
     errFlag = 1;
+    return
 else
     % make sure observations is a col-vector
     observations = observations(:);
@@ -77,13 +77,9 @@ switch isnumeric(alpha)
 
         isR = false;
 
-        if nargin < 2 || isempty(alpha)
-            alpha = 0.05;
-        else
-            if alpha <= 0 || alpha >= 1
-                disp('--fitHistWithGaussians: Variable "alpha" should be between 0 and 1!');
-                errFlag = 1;
-            end
+        if alpha <= 0 || alpha >= 1
+            disp('--fitHistWithGaussians: Variable "alpha" should be between 0 and 1!');
+            errFlag = 1;
         end
 
         if nargin < 3 || isempty(variableMean)
