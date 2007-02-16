@@ -37,7 +37,7 @@ function [costMat,noLinkCost,nonlinkMarker,errFlag] = costMatLogL_D2(...
 %             .noLnkPrctl : Percentile used to calculate the cost of
 %                           linking a feature to nothing. Use -1 if you do
 %                           not want to calculate this cost.
-%             .maxDistance : maximum Distance
+%             .maxDist    : maximum Distance
 %
 %OUTPUT costMat      : Cost matrix.
 %       noLinkCost   : Cost of linking a feature to nothing, as derived
