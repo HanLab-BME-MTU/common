@@ -427,8 +427,26 @@ while iterate
                     end %oscillations of 2
                     
                 end %oscillations of 1
-                
-            end %(if length(statsRelChangeAll) > 15)
+
+                if length(statsRelChangeAll) > 15 %if there have been more than 15 iterations, check for oscillations of period 4
+
+                    %get statsRelChange in the last 12 iterations
+                    testVar = reshape(statsRelChangeAll(end-11:end),4,3);
+
+                    %if last 3 cycles of 4 had the same statsRelChange
+                    if isequal(testVar(:,1),testVar(:,2),testVar(:,3))
+
+                        if min((testVar(4,3) < testVar(1:3,3))) %if the last statsRelChange is the smallest in the oscillation
+                            %stop iterating
+                            disp('--trackWithGapClosing: Stopping! Solution oscillating between four values.');
+                            iterate = 0;
+                        end
+
+                    end %oscillations of 4
+
+                end %(if length(statsRelChangeAll) > 15)
+
+            end %(if length(statsRelChangeAll) > 10)
 
         end %(if statsRelChange < tolerance ... else ...)
 
