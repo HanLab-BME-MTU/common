@@ -23,12 +23,12 @@ if isempty(depth)
    error('A value for ''depth'' must be defined');
 end
 %
-if ~(depth==8 | depth==16)
+if ~(depth==8 || depth==16)
    error('parameter ''depth'' must be either 8 or 16');
 end
 
 % Check for input image
-if ~(class(image)=='double' & max(max(image))<=1)
+if ~(isa(image,'double') && max(max(image))<=1)
    error('The input image is not a valid IMWRITEND input parameter');
 end
 

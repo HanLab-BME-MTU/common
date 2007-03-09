@@ -1,9 +1,9 @@
-function gauss=GaussMask3D(sigma,fSze,cent,cnorm,absCenter)
+function gauss=GaussMask3D(sigma,fSze,cent,cnorm,absCenter,noInt)
 % GaussMask3D	create a gaussian 3D mask
 %
 %    SYNOPSIS gauss =GaussMask3D(sigma,fSze,cent,cnorm,absCenter);
 %
-%    INPUT: sigma  of gauss mask [sigmaX sigmaY sigmaZ] or [sigma]. 
+%    INPUT: sigma  of gauss mask [sigmaX sigmaY sigmaZ] or [sigma].
 %                  If scalar, sigma will be the same for all dimensions
 %           fSze   size of the gauss mask [sizeX sizeY sizeZ] or [size]
 %                  If scalar, size will be the same for all dimensions.
@@ -22,6 +22,12 @@ function gauss=GaussMask3D(sigma,fSze,cent,cnorm,absCenter)
 %                  =1 Zero is at [0,0,0] in matrix coordinates, which is
 %                  outside of the array by half a pixel!
 %                      (center of top left pixel of 2-D matrix = [1,1])
+%           noInt  (optional) normally, GaussMask3D would calculate
+%                  integral over a voxel. However, due to numerical
+%                  problems, this integral will become zero after 8 sigma.
+%                  =0 (default) Intensities are the integral over voxels
+%                  =1 Intensities are the value of the Gauss at the voxel
+%                     center
 %
 %
 %    OUTPUT: gauss   3D gaussian intensity distribution with voxel values
@@ -55,10 +61,13 @@ if nargin < 3 || isempty(cent)
     cent=[0 0 0];
 end;
 if nargin<4 || isempty(cnorm)
-    cnorm=0;
+    cnorm = false;
 end;
 if nargin < 5 || isempty(absCenter)
-    absCenter = 0;
+    absCenter = false;
+end
+if nargin < 6 || isempty(noInt)
+    noInt = false;
 end
 
 % transform absolute center into relative center
@@ -73,13 +82,20 @@ end
 % fortunately, has the spacing 1.
 
 gauss=zeros(fSze);
-x=([-fSze(1)/2:fSze(1)/2]-cent(1))./sigma(1);
-y=([-fSze(2)/2:fSze(2)/2]-cent(2))./sigma(2);
-z=([-fSze(3)/2:fSze(3)/2]-cent(3))./sigma(3);
-ex = diff(0.5 * erfc(-x./sqrt(2)));
-ey = diff(0.5 * erfc(-y./sqrt(2)));
-ez = diff(0.5 * erfc(-z./sqrt(2)));
-
+x=((-fSze(1)/2:fSze(1)/2)-cent(1))./sigma(1);
+y=((-fSze(2)/2:fSze(2)/2)-cent(2))./sigma(2);
+z=((-fSze(3)/2:fSze(3)/2)-cent(3))./sigma(3);
+if noInt
+    % calculate the Gaussian
+    ex = 1/sqrt(pi*2) * exp(-(x(1:end-1)+0.5/sigma(1)).^2./2)/sigma(1);
+    ey = 1/sqrt(pi*2) * exp(-(y(1:end-1)+0.5/sigma(2)).^2./2)/sigma(2);
+    ez = 1/sqrt(pi*2) * exp(-(z(1:end-1)+0.5/sigma(3)).^2./2)/sigma(3);
+else
+    % calculate the integral
+    ex = diff(0.5 * erfc(-x./sqrt(2)));
+    ey = diff(0.5 * erfc(-y./sqrt(2)));
+    ez = diff(0.5 * erfc(-z./sqrt(2)));
+end
 % construct the 3D matrix (nice work by Dom!)
 exy=ex'*ey;
 gauss(:)=exy(:)*ez;

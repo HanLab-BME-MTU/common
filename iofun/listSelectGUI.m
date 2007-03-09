@@ -1,7 +1,7 @@
 function varargout = listSelectGUI(varargin)
 %LISTSELECTGUI launches a GUI to allow selection from a list
 %
-% SYNOPSIS [selection, selectionList] = listSelectGUI(inputList,maxSelect,moveOrCopy)
+% SYNOPSIS [selection, selectionList] = listSelectGUI(inputList,maxSelect,moveOrCopy,forceChoice)
 %
 % INPUT    inputList   Cell, list of strings or numerical array from which
 %                      the user is to select a number of items
@@ -13,6 +13,11 @@ function varargout = listSelectGUI(varargin)
 %          moveOrCopy  optional argument. If 'move', entries are moved from
 %                      the left to the right list, if 'copy' (default), the
 %                      inputList always remains on the right
+%
+%          forceChoice optional. If 1, listSelectGUI will launch on any
+%                      number of items in the list. If 0 (default), it will
+%                      not open if the number of items is equal to
+%                      maxSelect (or 1, if maxSelect is empty)
 %
 % OUTPUT   selection   Indices into inputList of selected items
 %
@@ -82,7 +87,7 @@ end
 listLength = length(listCell);
 set(handles.LSG_listboxLeft,'String',listCell);
 % store indexLists
-handles.leftIndexList = [1:listLength]';
+handles.leftIndexList = (1:listLength)';
 handles.rightIndexList = [];
 % remember original list
 handles.originalList = listCell;
@@ -130,10 +135,19 @@ end
 
 
 
-
 % store moveOrCopy and update handles
 handles.moveOrCopy = moveOrCopy;
 guidata(hObject,handles);
+
+% fourth input argument: forceChoice?
+if length(varargin) > 3 && ~isempty(varargin{4})
+    forceChoice = varargin{4};
+else
+    forceChoice = false;
+end
+
+% check for whether we have to make a choice at all
+
 
 % UIWAIT makes listSelectGUI wait for user response (see UIRESUME)
 uiwait(handles.listSelectGUI);
