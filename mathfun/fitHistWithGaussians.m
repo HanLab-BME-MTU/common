@@ -433,7 +433,7 @@ switch isR
 
                             %calculate number of degrees of freedom
                             numDegFreeT = numBins - 3*numGaussT;
-
+                            
                             %assign initial values to unknown parameters
                             gaussParamT = [gaussParam; [binCenter(floor(end/2)) ...
                                 10*(binCenter(end)-binCenter(end-1)) numObservations]];
