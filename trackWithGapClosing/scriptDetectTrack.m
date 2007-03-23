@@ -32,23 +32,23 @@
 %define the input variables
 
 %movieParam
-movieParam.candsDir = '/mnt/sickkids/Yoav_files/singleMoleculeYoav/primaryMacrophagesFeb17/1_micg_ml_200ms_2/analysis/fsm/tack/cands/'; %directory where initial position estimates are
-movieParam.imageDir = '/mnt/sickkids/Yoav_files/singleMoleculeYoav/primaryMacrophagesFeb17/1_micg_ml_200ms_2/images/'; %directory where images are
-movieParam.filenameBase = 'cold_'; %image file name base
+movieParam.candsDir = '/mnt/sickkids/Fixed_Cy3movies_Nico/mov11Cy3_0030toodense&small/analysis_57to456/fsm/tack/cands/'; %directory where initial position estimates are
+movieParam.imageDir = '/mnt/sickkids/Fixed_Cy3movies_Nico/mov11Cy3_0030toodense&small/cropped_57to456/'; %directory where images are
+movieParam.filenameBase = 'crop_06-12-22_Calib_'; %image file name base
 movieParam.firstImageNum = 1; %number of first image in movie
-movieParam.lastImageNum = 159; %number of last image in movie
+movieParam.lastImageNum = 479; %number of last image in movie
 movieParam.digits4Enum = 4; %number of digits used for frame enumeration (1-4).
 
 %detectionParam
-detectionParam.psfSigma = 1.297; %point spread function sigma (in pixels)
+detectionParam.psfSigma = 0.511; %point spread function sigma (in pixels)
 detectionParam.testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05); %alpha-values for detection statistical tests
 detectionParam.visual = 0; %1 to see image with detected features, 0 otherwise
-detectionParam.doMMF = 1; %1 if mixture-model fitting, 0 otherwise
+detectionParam.doMMF = 0; %1 if mixture-model fitting, 0 otherwise
 detectionParam.bitDepth = 16; %Camera bit depth
 
 %saveResults
-saveResults.dir = '/mnt/sickkids/Yoav_files/singleMoleculeYoav/primaryMacrophagesFeb17/1_micg_ml_200ms_2/analysis/mmf/'; %directory where to save input and output
-saveResults.filename = 'detectedFeatures'; %name of file where input and output are saved
+saveResults.dir = '/mnt/sickkids/Fixed_Cy3movies_Nico/mov11Cy3_0030toodense&small/analysis_57to456/mmf/'; %directory where to save input and output
+saveResults.filename = 'detectionFixedCy3_mov11_003_57to456'; %name of file where input and output are saved
 
 %run the detection function
 [movieInfo,emptyFrames,framesFailed] = detectSubResFeatures2D_Movie(...
@@ -73,18 +73,18 @@ costMatrices(1).costMatParam = struct('searchRadius',3,...   %maximum distance t
     'noLnkPrctl',-1);
 
 %cost matrix for linking between frames again using statistical data on the tracks
-costMatrices(2).costMatFun = 'costMatLogL_D2';
+costMatrices(2).costMatFun = 'costMatLogL_D2_V';
 costMatrices(2).costMatParam = struct(...
     'cutoffProbD',0.9999,...    %cumulative probability of a square displacement beyond which linking is not allowed
-    'cutoffProbA',0.9999,...    %cumulative probability of an amplitude difference beyond which linking is not allowed
+    'cutoffProbA',1,...    %cumulative probability of an amplitude difference beyond which linking is not allowed
     'noLnkPrctl',-1,...
     'maxDist',3);               %search radius
 
 %cost matrix for gap closing
-costMatrices(3).costMatFun = 'costMatCloseGaps_D2';
+costMatrices(3).costMatFun = 'costMatCloseGaps_D2_V';
 costMatrices(3).costMatParam = struct(...
     'cutoffProbD1',0.9999,...   %cumulative probability of a square displacement beyond which gap closing is not allowed
-    'cutoffProbA1',0.9999,...   %cumulative probability of an amplitude difference beyond which gap closing is not allowed
+    'cutoffProbA1',1,...   %cumulative probability of an amplitude difference beyond which gap closing is not allowed
     'cutoffProbD2',0.999,...    %cumulative probability of a square displacement beyond which merging/splitting are not allowed
     'cutoffProbA2',0.999,...    %cumulative probability of an amplitude difference beyond which merging/splitting are not allowed
     'noLnkPrctl',-1,...
