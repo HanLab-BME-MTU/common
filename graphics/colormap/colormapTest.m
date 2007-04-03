@@ -30,7 +30,8 @@ cmap = returnRightVector(cmap, 3, 'c');
 gaussX = repmat(-10:0.2:10,101,1);
 gaussY = repmat((0:100)',1,101);
 gaussZ = exp(-(gaussX-6+0.06*gaussY).^2./2) + ...
-    exp(-(gaussX+6-0.06*gaussY).^2./2);
+    exp(-(gaussX+6-0.06*gaussY).^2./2) + ...
+    0.5*exp(-(gaussY-40+gaussX).^2./200);
 
 peaksZ = peaks(100);
 
@@ -59,12 +60,14 @@ contourf(gaussX,gaussY,gaussZ,'LineStyle','none','LevelList',linspace(nanmin(gau
     nanmax(gaussZ(:)),100));
 set(ah,'xGrid','off','yGrid','off','zGrid','off','Color','none','xTick',[],'yTick',[],'zTick',[])
 colormap(cmap)
+axis square
 colorbar('peer',ah)
 
 % do the same for peaks
 ah = subplot(2,3,4);
 surf(peaksZ,'FaceColor','interp','FaceLighting','phong','EdgeColor','none');
-set(ah,'xGrid','off','yGrid','off','zGrid','off','Color','none','xTick',[],'yTick',[],'zTick',[])
+set(ah,'xGrid','off','yGrid','off','zGrid','off','Color','none',...
+    'xTick',[],'yTick',[],'zTick',[],'clim',[-9,9])
 %colormap gray
 light('Position',[-100,100,10])
 light('Position',[-100,0,10])
@@ -73,15 +76,18 @@ material shiny
 % plot 3d with colormap
 ah = subplot(2,3,5);
 surf(peaksZ,'FaceColor','interp','FaceLighting','phong','EdgeColor','none');
-set(ah,'xGrid','off','yGrid','off','zGrid','off','Color','none','xTick',[],'yTick',[],'zTick',[])
+set(ah,'xGrid','off','yGrid','off','zGrid','off','Color','none',...
+    'xTick',[],'yTick',[],'zTick',[],'clim',[-9,9])
 colormap(cmap)
 
 % plot 2d - with colorbar
 ah = subplot(2,3,6);
 contourf(peaksZ,'LineStyle','none','LevelList',linspace(nanmin(peaksZ(:)),...
     nanmax(peaksZ(:)),100));
-set(ah,'xGrid','off','yGrid','off','zGrid','off','Color','none','xTick',[],'yTick',[],'zTick',[])
+set(ah,'xGrid','off','yGrid','off','zGrid','off','Color','none',...
+    'xTick',[],'yTick',[],'zTick',[],'clim',[-9,9])
 colormap(cmap)
+axis square
 colorbar('peer',ah)
 
 % return figure handle if requested
