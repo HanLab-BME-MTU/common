@@ -1,9 +1,9 @@
 function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
-     errFlag] = costMatLinearMotion(movieInfo,kalmanFilterInfoFrame1)
+     errFlag] = costMatLinearMotion(movieInfo,kalmanFilterInfoFrame1,costMatParam)
 %COSTMATLINEARMOTION provides a cost matrix for linking features based on competing linear motion models
 %
 %SYNOPSIS [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker] ...
-%     = costMatLinearMotion(movieInfo,kalmanFilterInfoFrame1)
+%     = costMatLinearMotion(movieInfo,kalmanFilterInfoFrame1,costMatParam)
 %
 %INPUT  movieInfo             : A 2x1 array (corresponding to the 2 frames of 
 %                               interest) containing the fields:
@@ -24,6 +24,8 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %                                   for each feature in 1st frame.
 %             .noiseVar           : Variance of state noise for each
 %                                   feature in 1st frame.
+%      costMatParam           : Structure with fields:
+%             .maxSearchRadius    : Maximum allowed search radius (in pixels).
 %
 %OUTPUT costMat               : Cost matrix.
 %       propagationScheme     : Propagation scheme corresponding to each
@@ -66,6 +68,8 @@ if nargin ~= nargin('costMatLinearMotion')
     errFlag  = 1;
     return
 end
+
+maxSearchRadius2 = (costMatParam.maxSearchRadius)^2;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Cost matrix calculation
@@ -149,7 +153,7 @@ end
 [costMat,propagationScheme] = min(costMat,[],3);
 
 %estimate square search radius from positional noise variance
-searchRadius2 = 20*max(kalmanFilterInfoFrame1.noiseVar(1,1,:));
+searchRadius2 = min(9*max(kalmanFilterInfoFrame1.noiseVar(1,1,:)),maxSearchRadius2);
 
 %assign NaN to all pairs that are separated by a distance > searchRadius
 costMat(costMat>searchRadius2) = NaN;

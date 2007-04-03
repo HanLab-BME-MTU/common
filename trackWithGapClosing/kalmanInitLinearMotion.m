@@ -62,7 +62,7 @@ end
 %initialize state noise variance
 for iFeature = 1 : numFeatures
     kalmanFilterInfo.noiseVar(:,:,iFeature) = diag(...
-        [4 4 4 4]);
+        [1 1 1 1]);
 end
 
 

@@ -32,23 +32,23 @@
 %define the input variables
 
 %movieParam
-movieParam.candsDir = '/mnt/sickkids/Fixed_Cy3movies_Nico/mov11Cy3_0030toodense&small/analysis_57to456/fsm/tack/cands/'; %directory where initial position estimates are
-movieParam.imageDir = '/mnt/sickkids/Fixed_Cy3movies_Nico/mov11Cy3_0030toodense&small/cropped_57to456/'; %directory where images are
-movieParam.filenameBase = 'crop_06-12-22_Calib_'; %image file name base
-movieParam.firstImageNum = 1; %number of first image in movie
-movieParam.lastImageNum = 479; %number of last image in movie
+movieParam.candsDir = '/mnt/sickkids/Yoav_files/2007_03_06_Calibration_slides/150ms_MaxExc_200Sens/analysis_57to456/fsm/tack/cands/'; %directory where initial position estimates are
+movieParam.imageDir = '/mnt/sickkids/Yoav_files/2007_03_06_Calibration_slides/150ms_MaxExc_200Sens/cropped_57to456/'; %directory where images are
+movieParam.filenameBase = 'crop_cy3_1pg_monodisp_'; %image file name base
+movieParam.firstImageNum = 30; %number of first image in movie
+movieParam.lastImageNum = 395; %number of last image in movie
 movieParam.digits4Enum = 4; %number of digits used for frame enumeration (1-4).
 
 %detectionParam
-detectionParam.psfSigma = 0.511; %point spread function sigma (in pixels)
+detectionParam.psfSigma = 1.221; %point spread function sigma (in pixels)
 detectionParam.testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05); %alpha-values for detection statistical tests
 detectionParam.visual = 0; %1 to see image with detected features, 0 otherwise
-detectionParam.doMMF = 0; %1 if mixture-model fitting, 0 otherwise
+detectionParam.doMMF = 1; %1 if mixture-model fitting, 0 otherwise
 detectionParam.bitDepth = 16; %Camera bit depth
 
 %saveResults
-saveResults.dir = '/mnt/sickkids/Fixed_Cy3movies_Nico/mov11Cy3_0030toodense&small/analysis_57to456/mmf/'; %directory where to save input and output
-saveResults.filename = 'detectionFixedCy3_mov11_003_57to456'; %name of file where input and output are saved
+saveResults.dir = '/mnt/sickkids/Yoav_files/2007_03_06_Calibration_slides/150ms_MaxExc_200Sens/analysis_57to456/mmf/'; %directory where to save input and output
+saveResults.filename = 'detectionCalib_150ms_MaxExc_200Sens_57to456'; %name of file where input and output are saved
 
 %run the detection function
 [movieInfo,emptyFrames,framesFailed] = detectSubResFeatures2D_Movie(...
@@ -73,7 +73,7 @@ costMatrices(1).costMatParam = struct('searchRadius',3,...   %maximum distance t
     'noLnkPrctl',-1);
 
 %cost matrix for linking between frames again using statistical data on the tracks
-costMatrices(2).costMatFun = 'costMatLogL_D2_V';
+costMatrices(2).costMatFun = 'costMatLogL_D2';
 costMatrices(2).costMatParam = struct(...
     'cutoffProbD',0.9999,...    %cumulative probability of a square displacement beyond which linking is not allowed
     'cutoffProbA',1,...    %cumulative probability of an amplitude difference beyond which linking is not allowed
@@ -81,10 +81,10 @@ costMatrices(2).costMatParam = struct(...
     'maxDist',3);               %search radius
 
 %cost matrix for gap closing
-costMatrices(3).costMatFun = 'costMatCloseGaps_D2_V';
+costMatrices(3).costMatFun = 'costMatCloseGaps_D2';
 costMatrices(3).costMatParam = struct(...
     'cutoffProbD1',0.9999,...   %cumulative probability of a square displacement beyond which gap closing is not allowed
-    'cutoffProbA1',1,...   %cumulative probability of an amplitude difference beyond which gap closing is not allowed
+    'cutoffProbA1',0.9999,...   %cumulative probability of an amplitude difference beyond which gap closing is not allowed
     'cutoffProbD2',0.999,...    %cumulative probability of a square displacement beyond which merging/splitting are not allowed
     'cutoffProbA2',0.999,...    %cumulative probability of an amplitude difference beyond which merging/splitting are not allowed
     'noLnkPrctl',-1,...
@@ -100,15 +100,15 @@ costMatrices(4).costMatParam = struct(...
 %gap closing parameters
 gapCloseParam.timeWindow = 20;      %largest gap that can be closed
 gapCloseParam.mergeSplit = 0;       %1 if merging/splitting are considered, 0 otherwise
-gapCloseParam.segmentLength = 847;  %length of time segment for sequential gap closing
+gapCloseParam.segmentLength = 687;  %length of time segment for sequential gap closing
 
 %iteration parameters
 iterParam.tolerance = 0.05;   %maximum relative change of track statistical parameters to reach convergence
 iterParam.lenFrac = 0.1;     %minimum length of tracks used for statistical analysis, as a function of the movie length
 
 %saveResults
-saveResults.dir = '/mnt/sickkids/Yoav_files/singleMoleculeYoav/calibration/analysis/mmf/'; %directory where to save input and output
-saveResults.filename = 'trackedFeaturesCalibration'; %name of file where input and output are saved
+saveResults.dir = '/mnt/sickkids/Yoav_files/2007_03_06_Calibration_slides/100ms_MaxExc_255Sens/analysis_57to456/mmf/'; %directory where to save input and output
+saveResults.filename = 'tracksCalib_100ms_MaxExc_255Sens_57to456'; %name of file where input and output are saved
 
 %run the tracking function
 [trackedFeatureNum,trackedFeatureInfo,errFlag] = trackWithGapClosing(...

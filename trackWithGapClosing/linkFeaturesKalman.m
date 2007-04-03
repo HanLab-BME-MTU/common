@@ -1,9 +1,9 @@
 function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,errFlag] ...
-    = linkFeaturesKalman(movieInfo,filterInfoPrev)
+    = linkFeaturesKalman(movieInfo,costMatParam,filterInfoPrev)
 %LINKFEATURESKALMAN links features between consecutive frames using LAP and directed motion models
 %
 %SYNOPSIS [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,errFlag] ...
-%    = linkFeaturesKalman(movieInfo)
+%    = linkFeaturesKalman(movieInfo,linkParam,filterInfoPrev)
 %
 %INPUT  movieInfo         : Array of size equal to the number of time points
 %                           in a movie, containing the fields:
@@ -16,6 +16,9 @@ function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,errFlag] ...
 %             .amp             : Amplitudes of PSFs fitting detected features. 
 %                                1st column for values and 2nd column 
 %                                for standard deviations.
+%       costMatParam      : Parameters needed for cost matrix calculation. 
+%                           Structure with fields specified by particular
+%                           cost matrix.
 %       filterInfoPrev    : Structure array with number of entries equal to
 %                           number of frames in movie. Contains the fields:
 %             .stateVec        : Kalman filter state vector for each
@@ -76,14 +79,14 @@ errFlag = [];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %check whether correct number of input arguments was used
-if nargin < 1
+if nargin < 2
     disp('--linkFeaturesKalman: Incorrect number of input arguments!');
     errFlag  = 1;
     return
 end
 
 %check whether a priori Kalman filter information is given
-if nargin < 2 || isempty(filterInfoPrev)
+if nargin < 3 || isempty(filterInfoPrev)
     filterInfoPrev = [];
     usePriorInfo = 0;
 else
@@ -140,7 +143,8 @@ for iFrame = 1 : numFrames-1
             %function also outputs Kalman filter predictions for feature positions
             %and velocities in 2nd frame based on possible motion models
             [costMat,propagationScheme,kalmanFilterInfoTmp,nonlinkMarker] ...
-                = costMatLinearMotion(movieInfo(iFrame:iFrame+1),kalmanFilterInfo(iFrame));
+                = costMatLinearMotion(movieInfo(iFrame:iFrame+1),...
+                kalmanFilterInfo(iFrame),costMatParam);
 
             if any(costMat(:)~=nonlinkMarker) %if there are potential links
 

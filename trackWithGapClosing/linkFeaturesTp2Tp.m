@@ -121,7 +121,7 @@ for t = 1:numTimePoints-1
 
             %calculate cost matrix
             eval(['[costMat,noLinkCost,nonlinkMarker] = ' costMatFun ...
-                '(movieInfo(t:t+1),costMatParams);'])
+                '(movieInfo(t:t+1),costMatParams);']);
 
             if any(costMat(:)~=nonlinkMarker) %if there are potential links
             

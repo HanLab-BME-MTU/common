@@ -157,22 +157,22 @@ for iFeature = 1 : numFeatures
         %impose isotropy (x and y are equivalent)
         stateNoisePos = [stateNoiseAll(:,1); stateNoiseAll(:,2)];
         stateNoiseVel = [stateNoiseAll(:,3); stateNoiseAll(:,4)];
-        
-%         %don't impose isotropy
-%         stateNoisePos = stateNoiseAll(:,1:2);
-%         stateNoiseVel = stateNoiseAll(:,3:4);
+
+        %         %don't impose isotropy
+        %         stateNoisePos = stateNoiseAll(:,1:2);
+        %         stateNoiseVel = stateNoiseAll(:,3:4);
 
         %estimate positional noise variance in current frame
         noiseVar(1:2) = var(stateNoisePos);
-        
+
         %estimate speed noise variances in current frame
         noiseVar(3:4) = var(stateNoiseVel);
-        
+
         %save this information in kalmanFilterInfo
         kalmanFilterInfoOut(iFrame).stateVec(iFeature,:) = stateVec';
         kalmanFilterInfoOut(iFrame).stateCov(:,:,iFeature) = stateCov;
         kalmanFilterInfoOut(iFrame).noiseVar(:,:,iFeature) = diag(noiseVar);
-        
+
     else %if this feature is not connected to anything in previous frame
 
         %initialize Kalman filter for this feature
