@@ -1,4 +1,4 @@
-function sortedIndices = clusterTendencyVAT(dissimilarityMatrix)
+function [sortedIndices,dmSort] = clusterTendencyVAT(dissimilarityMatrix)
 %CLUSTERTENDENCYVAT visually assesses clustering tendency using the VAT algorithm
 %
 % SYNOPSIS: sortedIndices = clusterTendencyVAT(dissimilarityMatrix)
@@ -10,6 +10,8 @@ function sortedIndices = clusterTendencyVAT(dissimilarityMatrix)
 %                             dM(i,i) == 0
 %
 % OUTPUT sortedIndices: list of sorted rows/cols of the distance matrix
+%        dmSort : sorted dissimilarity matrix. If dmSort is requested, the
+%                 code will not display figures. 
 %
 % REMARKS Implementation of Bezdek & Hathaway 2002 VAT:A tool for visual
 %         assessment of (Cluster) tendency
@@ -92,10 +94,16 @@ end
 %% DISPLAY UNSORTED, SORTED DM
 %=================================
 
-fh = uiViewPanel;
-set(fh,'Name','Unsorted dissimilarity matrix');
-imshow(dissimilarityMatrix,[]);
+if nargout > 1
+    dmSort = dissimilarityMatrix(sortedIndices,sortedIndices);
+else
 
-fh = uiViewPanel;
-set(fh,'Name','Sorted dissimilarity matrix');
-imshow(dissimilarityMatrix(sortedIndices,sortedIndices),[]);
+    fh = uiViewPanel;
+    set(fh,'Name','Unsorted dissimilarity matrix');
+    imshow(dissimilarityMatrix,[0,max(dissimilarityMatrix(:))]);
+
+    fh = uiViewPanel;
+    set(fh,'Name','Sorted dissimilarity matrix');
+    imshow(dissimilarityMatrix(sortedIndices,sortedIndices),...
+        [0,max(dissimilarityMatrix(:))]);
+end
