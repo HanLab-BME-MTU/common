@@ -1,9 +1,9 @@
 function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
-     errFlag] = costMatLinearMotion(movieInfo,kalmanFilterInfoFrame1,costMatParam)
-%COSTMATLINEARMOTION provides a cost matrix for linking features based on competing linear motion models
+     errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,costMatParam)
+%COSTMATLINEARMOTIONLINK provides a cost matrix for linking features based on competing linear motion models
 %
 %SYNOPSIS [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker] ...
-%     = costMatLinearMotion(movieInfo,kalmanFilterInfoFrame1,costMatParam)
+%     = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,costMatParam)
 %
 %INPUT  movieInfo             : A 2x1 array (corresponding to the 2 frames of 
 %                               interest) containing the fields:
@@ -153,7 +153,7 @@ end
 [costMat,propagationScheme] = min(costMat,[],3);
 
 %estimate square search radius from positional noise variance
-searchRadius2 = min(9*max(kalmanFilterInfoFrame1.noiseVar(1,1,:)),maxSearchRadius2);
+searchRadius2 = min(25*max(kalmanFilterInfoFrame1.noiseVar(1,1,:)),maxSearchRadius2);
 
 %assign NaN to all pairs that are separated by a distance > searchRadius
 costMat(costMat>searchRadius2) = NaN;
