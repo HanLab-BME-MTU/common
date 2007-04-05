@@ -43,7 +43,7 @@ function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(..
 %       binCenter   : Center of each bin.
 %       gaussParam  : Matrix with number of rows equal to number of fitted
 %                     Gaussians and three columns indicating the mean,
-%                     variance and amplitude of each Gaussian.
+%                     standard deviation and amplitude of each Gaussian.
 %       errFlag     : 0 if function executes normally, 1 otherwise.
 %
 %REMARKS The fitted Gaussians are normalized. Thus, the contribution of one
