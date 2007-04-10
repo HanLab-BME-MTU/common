@@ -202,9 +202,10 @@ for i = startFrame : endFrame
 end
 
 %fit the amplitude distribution in each frame with Gaussians
+%don't consider frame if it has less than 10 features
 intensityHist(1:numFrames) = struct('gaussParam',[]);
 for i = startFrame : endFrame
-    if numFeatures(i) ~= 0
+    if numFeatures(i) >= 10
         [numObsPerBin,binCenter,gaussParam,errFlag] = ...
             fitHistWithGaussians(movieInfo(i).amp(:,1),alpha,variableMean,...
             variableStd,0,maxNumGauss,2);
@@ -215,10 +216,8 @@ end
 %get number of peaks found in each frame
 numPeaks = NaN*ones(1,numFrames);
 for i = startFrame : endFrame
-    if numFeatures(i) ~= 0
+    if ~isempty(intensityHist(i).gaussParam)
         numPeaks(i) = size(intensityHist(i).gaussParam,1);
-    else
-        numPeaks(i) = 0;
     end
 end
 
@@ -226,7 +225,7 @@ end
 firstGaussMean = NaN*ones(1,numFrames);
 firstGaussStd = NaN*ones(1,numFrames);
 for i = startFrame : endFrame
-    if numFeatures(i) ~= 0
+    if ~isempty(intensityHist(i).gaussParam)
         firstGaussMean(i) = intensityHist(i).gaussParam(1,1);
         firstGaussStd(i) = intensityHist(i).gaussParam(1,2);
     end
@@ -236,7 +235,7 @@ end
 ratioPeak2toPeak1 = NaN*ones(1,numFrames);
 ratioPeak3toPeak2 = NaN*ones(1,numFrames);
 for i = startFrame : endFrame
-    if numFeatures(i) ~= 0
+    if ~isempty(intensityHist(i).gaussParam)
         switch numPeaks(i)
             case 2 %if there are two peaks
                 ratioPeak2toPeak1(i) = ...
