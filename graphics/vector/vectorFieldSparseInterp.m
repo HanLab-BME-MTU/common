@@ -32,9 +32,9 @@ function Mi=vectorFieldSparseInterp(M,Pg,threshold,d0,polygon)
 % Aaron Ponti, 02/11/2004
 
 % Check d0
-if size(d0)~=[1 1]
-    error('The input parameter d0 must be a scalar.');
-end
+% if size(d0)~=[1 1]
+%     error('The input parameter d0 must be a scalar.');
+% end
 
 % Vector base positions
 Pi=M(:,1:2);
@@ -48,6 +48,7 @@ D=createSparseDistanceMatrix(Pg,Pi,threshold);
 % Correlation matrix (d0 may be a scalar or a matrix)
 G=D; % Copy the sparse matrix
 G(find(D))=exp(-D(find(D)).^2./d0.^2); clear D;
+
 
 % Interpolate
 Vi=[G*V(:,1) G*V(:,2)];
@@ -66,7 +67,7 @@ Mi=[Pg Pg+Vi];
 
 % Set all vectors outside the passed polygon to 0
 if ~isempty(polygon)
-    index=inpolygon(Mi(:,1),Mi(:,2),polygon(:,2),polygon(:,1));
+    index=inpolygon(Mi(:,2),Mi(:,1),polygon(:,2),polygon(:,1)); % changed Mi order
     Mi(find(~index),3)=Mi(find(~index),1);
     Mi(find(~index),4)=Mi(find(~index),2);
 end

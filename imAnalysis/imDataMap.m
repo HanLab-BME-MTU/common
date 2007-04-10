@@ -286,7 +286,7 @@ if strcmp(dataLoc,'grid')
        Mi = vectorFieldSparseInterp(M,[Y(nanInd) X(nanInd)],Inf,gridSmoothing,[]);
        %data(nanInd) = griddata(Y(numInd),X(numInd),data(numInd), ...
        %   Y(nanInd),X(nanInd),'nearest');
-       data(nanInd) = reshape(Mi(:,3)-Mi(:,1),size(X));
+       data(nanInd) = reshape(Mi(:,3)-Mi(:,1),size(nanInd));
     end
     
     %Spline interpolation.
