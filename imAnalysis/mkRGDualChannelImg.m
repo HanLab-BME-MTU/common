@@ -1,9 +1,9 @@
-function mkRGDuoChannelImg(varargin)
-%mkRGDuoChannelImg: This function creates Red/Green duo-channel images.
+function mkRGDualChannelImg(varargin)
+%mkRGDualChannelImg: This function creates Red/Green duo-channel images.
 %
 % SYNOPSIS:
-%    mkRGDuoChannelImg;
-%    mkRGDuoChannelImg('outFileName',outFileName,'redImgIScale',redImgIScale,'greenImgIScale',greenImgIScale);
+%    mkRGDualChannelImg;
+%    mkRGDualChannelImg('outFileName',outFileName,'redImgIScale',redImgIScale,'greenImgIScale',greenImgIScale);
 %
 % OPTIONAL PAR/VALUE INPUT:
 %        PAR
@@ -14,6 +14,9 @@ function mkRGDuoChannelImg(varargin)
 %                    the percentage of cut-offs at the lower and upper end of image intensity.
 %    'greenImgIScale': (green channel) A vector of two numbers between 0 and 1 that specifies
 %                    the percentage of cut-offs at the lower and upper end of image intensity.
+%    'greenToRedIRatio': An intensity ratio of green over red can also be
+%                    specified so that signals in one channel may be enhanced in the overlaid
+%                    image. Default, 1.
 %    'startFrameNo': The starting frame number to be merged.
 %    'numFrames' : The number of frames to be processed.
 %
@@ -67,10 +70,11 @@ if isequal(outDir,0)
 end
 
 %Default
-redImgIScale   = [0 1];
-greenImgIScale = [0 1];
-startFrameNo   = 1;
-numFrames      = numRedImgFiles;
+redImgIScale     = [0 1];
+greenImgIScale   = [0 1];
+greenToRedIRatio = 1;
+startFrameNo     = 1;
+numFrames        = numRedImgFiles;
 
 if nargin > 0
    for kk = 1:2:nargin
@@ -81,6 +85,8 @@ if nargin > 0
             redImgIScale = varargin{kk+1};
          case 'greenImgIScale'
             greenImgIScale = varargin{kk+1};
+         case 'greenToRedIRatio'
+            greenToRedIRatio = varargin{kk+1};
          case 'startFrameNo'
             startFrameNo = varargin{kk+1};
          case 'numFrames'
@@ -91,6 +97,12 @@ end
 
 %Make sure the requested number of frames does not exceed the total number of images available.
 numFrames = min(numFrames,numRedImgFiles-startFrameNo+1);
+
+endFrameNo = startFrameNo+numFrames-1;
+rgAVIFile  = [outDir filesep outFileName num2str(startFrameNo) '_' ...
+   num2str(endFrameNo) '.avi'];
+%To make an avi movie.
+aviobj = avifile(rgAVIFile);
 
 figH = figure; hold off;
 for kk = startFrameNo:startFrameNo+numFrames-1
@@ -127,12 +139,24 @@ for kk = startFrameNo:startFrameNo+numFrames-1
 
    greenImgF = (greenImgF-minGreenImgI)/(maxGreenImgI-minGreenImgI);
 
-   rgImg(:,:,1) = redImgF;
-   rgImg(:,:,2) = greenImgF;
+   if greenToRedIRatio <= 1
+      rgImg(:,:,1) = redImgF;
+      rgImg(:,:,2) = greenImgF*greenToRedIRatio;
+   else
+      rgImg(:,:,1) = redImgF/greenToRedIRatio;
+      rgImg(:,:,2) = greenImgF;
+   end
 
    figure(figH); hold off;
    imshow(rgImg,[]);
 
    rgImgFile = [outDir filesep outFileName imgIndexStr '.fig'];
    saveas(figH,rgImgFile,'fig');
+   
+   %Add frame to avi movie:
+   frm = getframe(figH);
+   aviobj = addframe(aviobj,frm);
 end
+
+%Close the AVI file.
+aviobj = close(aviobj);

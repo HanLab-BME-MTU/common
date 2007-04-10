@@ -282,8 +282,11 @@ if strcmp(dataLoc,'grid')
     numInd = find(~isnan(data));
     
     if ~isempty(nanInd)
-        data(nanInd) = griddata(Y(numInd),X(numInd),data(numInd), ...
-            Y(nanInd),X(nanInd),'nearest');
+       M  = [Y(numInd) X(numInd) Y(numInd)+data(numInd) X(numInd)];
+       Mi = vectorFieldSparseInterp(M,[Y(nanInd) X(nanInd)],Inf,gridSmoothing,[]);
+       %data(nanInd) = griddata(Y(numInd),X(numInd),data(numInd), ...
+       %   Y(nanInd),X(nanInd),'nearest');
+       data(nanInd) = reshape(Mi(:,3)-Mi(:,1),size(X));
     end
     
     %Spline interpolation.
