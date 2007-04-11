@@ -265,33 +265,41 @@ if plotResults
     %plot number of features per frame in 1st sub-plot
     subplot(4,1,1)
     hold on;
-    plot(numFeatures,'k');
-    axis([0 numFrames 0 1.1*max(numFeatures)]);
+    if any(~isnan(numFeatures))
+        plot(numFeatures,'k');
+        axis([0 numFrames 0 1.1*max(numFeatures)]);
+    end
     title(['number of features for ' movieName]);
 
     %plot number of peaks per frame in 2nd sub-plot
     subplot(4,1,2)
     hold on;
-    plot(numPeaks,'k')
-    axis([0 numFrames 0 max(numPeaks)+1]);
+    if any(~isnan(numPeaks))
+        plot(numPeaks,'k')
+        axis([0 numFrames 0 max(numPeaks)+1]);
+    end
     title('number of peaks');
     
     %plot mean and std of first fitted Gaussian in 3rd sub-plot
     subplot(4,1,3)
     hold on
-    plot(firstGaussMean,'k')
-    plot(firstGaussStd,'r')
-    axis([0 numFrames 0 1.1*max([firstGaussMean firstGaussStd])]);
+    if any(~isnan(firstGaussMean))
+        plot(firstGaussMean,'k')
+        plot(firstGaussStd,'r')
+        axis([0 numFrames 0 1.1*max([firstGaussMean firstGaussStd])]);
+    end
     title('mean (black) and std (red) of 1st peak');
     
     %plot ratio of amplitudes of 2nd peak to 1st peak and 3rd peak to 2nd
     %peak
     subplot(4,1,4)
     hold on
-    plot(ratioPeak2toPeak1,'k','marker','.')
-    plot(ratioPeak3toPeak2,'r','marker','.')
+    if any(~isnan(ratioPeak2toPeak1))
+        plot(ratioPeak2toPeak1,'k','marker','.')
+        plot(ratioPeak3toPeak2,'r','marker','.')
+        axis([0 numFrames 0 1.1*max([ratioPeak2toPeak1 ratioPeak3toPeak2])]);
+    end
     title('ratio of amplitudes of 2nd to 1st peak (black) and 3rd to 2nd peak (red)');
-    axis([0 numFrames 0 1.1*max([ratioPeak2toPeak1 ratioPeak3toPeak2])]);
     xlabel('frame number');
     
 end %(if plotRes)
