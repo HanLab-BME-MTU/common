@@ -32,23 +32,23 @@
 %define the input variables
 
 %movieParam
-movieParam.candsDir = '/mnt/sickkids/Yoav_files/2007_03_06_Calibration_slides/150ms_MaxExc_200Sens/analysis_57to456/fsm/tack/cands/'; %directory where initial position estimates are
-movieParam.imageDir = '/mnt/sickkids/Yoav_files/2007_03_06_Calibration_slides/150ms_MaxExc_200Sens/cropped_57to456/'; %directory where images are
-movieParam.filenameBase = 'crop_cy3_1pg_monodisp_'; %image file name base
-movieParam.firstImageNum = 30; %number of first image in movie
-movieParam.lastImageNum = 395; %number of last image in movie
-movieParam.digits4Enum = 4; %number of digits used for frame enumeration (1-4).
+movieParam.candsDir = '/mnt/mit/khuloudDir/synapse/troubleShooting/April2007/test1/analysis2/fsm/tack/cands/'; %directory where initial position estimates are
+movieParam.imageDir = '/mnt/mit/khuloudDir/synapse/troubleShooting/April2007/test1/images/'; %directory where images are
+movieParam.filenameBase = 'crop_crop_071106_dish1_unload2s_135frps_gain210_1_'; %image file name base
+movieParam.firstImageNum = 1; %number of first image in movie
+movieParam.lastImageNum = 250; %number of last image in movie
+movieParam.digits4Enum = 3; %number of digits used for frame enumeration (1-4).
 
 %detectionParam
-detectionParam.psfSigma = 1.221; %point spread function sigma (in pixels)
+detectionParam.psfSigma = 1.078; %point spread function sigma (in pixels)
 detectionParam.testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05); %alpha-values for detection statistical tests
 detectionParam.visual = 0; %1 to see image with detected features, 0 otherwise
-detectionParam.doMMF = 1; %1 if mixture-model fitting, 0 otherwise
-detectionParam.bitDepth = 16; %Camera bit depth
+detectionParam.doMMF = 0; %1 if mixture-model fitting, 0 otherwise
+detectionParam.bitDepth = 14; %Camera bit depth
 
 %saveResults
-saveResults.dir = '/mnt/sickkids/Yoav_files/2007_03_06_Calibration_slides/150ms_MaxExc_200Sens/analysis_57to456/mmf/'; %directory where to save input and output
-saveResults.filename = 'detectionCalib_150ms_MaxExc_200Sens_57to456'; %name of file where input and output are saved
+saveResults.dir = '/mnt/mit/khuloudDir/synapse/troubleShooting/April2007/test1/analysis2/mmf/'; %directory where to save input and output
+saveResults.filename = 'detectionResultsNoMMF'; %name of file where input and output are saved
 
 %run the detection function
 [movieInfo,emptyFrames,framesFailed] = detectSubResFeatures2D_Movie(...
@@ -68,7 +68,7 @@ saveResults.filename = 'detectionCalib_150ms_MaxExc_200Sens_57to456'; %name of f
 
 %cost matrix for the initial simple linking from frame to frame
 costMatrices(1).costMatFun = 'costMatSimple';
-costMatrices(1).costMatParam = struct('searchRadius',3,...   %maximum distance that allows the linking of 2 features
+costMatrices(1).costMatParam = struct('searchRadius',7,...   %maximum distance that allows the linking of 2 features
     'maxAmpRatio',10,...   %maximum ratio of amplitudes that allows the linking of 2 features
     'noLnkPrctl',-1);
 
@@ -78,7 +78,7 @@ costMatrices(2).costMatParam = struct(...
     'cutoffProbD',0.9999,...    %cumulative probability of a square displacement beyond which linking is not allowed
     'cutoffProbA',1,...    %cumulative probability of an amplitude difference beyond which linking is not allowed
     'noLnkPrctl',-1,...
-    'maxDist',3);               %search radius
+    'maxDist',7);               %search radius
 
 %cost matrix for gap closing
 costMatrices(3).costMatFun = 'costMatCloseGaps_D2';
@@ -88,7 +88,7 @@ costMatrices(3).costMatParam = struct(...
     'cutoffProbD2',0.999,...    %cumulative probability of a square displacement beyond which merging/splitting are not allowed
     'cutoffProbA2',0.999,...    %cumulative probability of an amplitude difference beyond which merging/splitting are not allowed
     'noLnkPrctl',-1,...
-    'maxDist',3*ones(20,1),...   %search radius for each time window
+    'maxDist',7*ones(20,1),...   %search radius for each time window
     'gapPenalty',zeros(20,1));   %penalty for closing gaps for each time window
 
 %cost matrix for resolving merging and splitting conflicts

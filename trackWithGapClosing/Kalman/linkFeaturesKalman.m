@@ -1,9 +1,11 @@
-function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,errFlag] ...
-    = linkFeaturesKalman(movieInfo,costMatParam,filterInfoPrev)
+function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
+    nnDistTracks,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
+    filterInfoPrev,kalmanInitParam,useLocalDensity)
 %LINKFEATURESKALMAN links features between consecutive frames using LAP and directed motion models
 %
-%SYNOPSIS [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,errFlag] ...
-%    = linkFeaturesKalman(movieInfo,linkParam,filterInfoPrev)
+%SYNOPSIS [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
+%    nnDistTracks,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
+%    filterInfoPrev,kalmanInitParam,useLocalDensity)
 %
 %INPUT  movieInfo         : Array of size equal to the number of time points
 %                           in a movie, containing the fields:
@@ -16,9 +18,14 @@ function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,errFlag] ...
 %             .amp             : Amplitudes of PSFs fitting detected features. 
 %                                1st column for values and 2nd column 
 %                                for standard deviations.
+%             .nnDist          : Distance from each feature to its nearest
+%                                neighbor. Optional. If useLocalDensity = 1
+%                                and not supplied, it will be calculated.
+%                                If useLocalDensity = 0, it will be
+%                                ignored.
 %       costMatParam      : Parameters needed for cost matrix calculation. 
 %                           Structure with fields specified by particular
-%                           cost matrix.
+%                           cost matrices used.
 %       filterInfoPrev    : Structure array with number of entries equal to
 %                           number of frames in movie. Contains the fields:
 %             .stateVec        : Kalman filter state vector for each
@@ -27,7 +34,14 @@ function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,errFlag] ...
 %                                for each feature in frame.
 %             .noiseVar        : Variance of state noise for each
 %                                feature in frame.
-%                           Optional input. Enter [] or nothing if not to be used.
+%                           Optional. Enter [] or nothing if not to be used.
+%       kalmanInitParam   : Structure with fields containing variables
+%                           used in Kalman filter initialization. See
+%                           particular initialization function for fields.
+%                           Optional. Enter [] or nothing if not to be used.
+%       useLocalDensity   : Logical variable indicating whether to use
+%                           local density in search radius estimation.
+%                           Optional. Default: 0.
 %
 %OUTPUT trackedFeatureIndx: Connectivity matrix of features between time points.
 %                           Rows indicate continuous tracks, while columns 
@@ -57,6 +71,10 @@ function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,errFlag] ...
 %                                feature to previous feature. 2nd column:
 %                                propagation scheme connecting feature to
 %                                next feature.
+%       nnDistTracks      : Vector indicating the nearest neighbor distance
+%                           of each track, i.e. the closest distance any of
+%                           the features making it comes to any other
+%                           feature in the feature's frame.
 %
 %       errFlag           : 0 if function executes normally, 1 otherwise.
 %
@@ -85,6 +103,38 @@ if nargin < 2
     return
 end
 
+%get number of frames in movie
+numFrames = length(movieInfo);
+
+%get number of features in each frame
+for iFrame = 1 : numFrames
+    movieInfo(iFrame).num = size(movieInfo(iFrame).xCoord,1);
+end
+
+%calculate nearest neighbor distances if not supplied
+if ~isfield(movieInfo,'nnDist')
+
+    %calculate distance between each feature and its nearest neighbor
+    %for all frames
+    for iFrame = 1 : numFrames
+
+        %collect feature coordinates into one matrix
+        coordinates = [movieInfo(iFrame).xCoord(:,1) movieInfo(iFrame).yCoord(:,1)];
+
+        %compute distance matrix
+        nnDist = createDistanceMatrix(coordinates,coordinates);
+
+        %sort distance matrix and find nearest neighbor distance
+        nnDist = sort(nnDist,2);
+        nnDist = nnDist(:,2);
+
+        %store nearest neighbor distance
+        movieInfo(iFrame).nnDist = nnDist;
+
+    end %(for iFrame = 1 : numFrames)
+
+end %(if useLocalDensity && ~isfield(movieInfo,'nnDist'))
+
 %check whether a priori Kalman filter information is given
 if nargin < 3 || isempty(filterInfoPrev)
     filterInfoPrev = [];
@@ -93,17 +143,20 @@ else
     usePriorInfo = 1;
 end
 
+%check whether additional parameters for Kalman filter initialization are
+%given
+if nargin < 4 || isempty(kalmanInitParam)
+    kalmanInitParam = [];
+end
+
+%check whether the variable useLocalDensity was input
+if nargin < 5 || isempty(useLocalDensity)
+    useLocalDensity = 0; %default is zero
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Linking
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%get number of frames in movie
-numFrames = length(movieInfo);
-
-%get number of features in each frame
-for iFrame = 1 : numFrames
-    movieInfo(iFrame).num = size(movieInfo(iFrame).xCoord,1);
-end
 
 %reserve memory for kalmanFilterInfo
 for iFrame = 1 : numFrames
@@ -113,8 +166,12 @@ for iFrame = 1 : numFrames
         'stateNoise',zeros(numFeatures,4),'scheme',zeros(numFeatures,2));
 end
 
-%fill the feature numbers in 1st frame in the connectivity matrix
+%fill the feature indices in 1st frame in the connectivity matrix
 trackedFeatureIndx = (1:movieInfo(1).num)';
+
+%fill the nearest neighbor distances of features in first frame, which are
+%the first approximation of the nearest neighbor distances of tracks
+nnDistTracks = movieInfo(1).nnDist;
 
 %initialize Kalman filter for features in 1st frame
 if usePriorInfo %use a priori information if available
@@ -122,7 +179,7 @@ if usePriorInfo %use a priori information if available
     kalmanFilterInfo(1).stateCov = filterInfoPrev(1).stateCov; %state covariance
     kalmanFilterInfo(1).noiseVar = filterInfoPrev(1).noiseVar; %noise variance
 else
-    [filterInit,errFlag] = kalmanInitLinearMotion(movieInfo(1));
+    [filterInit,errFlag] = kalmanInitLinearMotion(movieInfo(1),kalmanInitParam);
     kalmanFilterInfo(1).stateVec = filterInit.stateVec;
     kalmanFilterInfo(1).stateCov = filterInit.stateCov;
     kalmanFilterInfo(1).noiseVar = filterInit.noiseVar;
@@ -143,8 +200,9 @@ for iFrame = 1 : numFrames-1
             %function also outputs Kalman filter predictions for feature positions
             %and velocities in 2nd frame based on possible motion models
             [costMat,propagationScheme,kalmanFilterInfoTmp,nonlinkMarker] ...
-                = costMatLinearMotion(movieInfo(iFrame:iFrame+1),...
-                kalmanFilterInfo(iFrame),costMatParam);
+                = costMatLinearMotionLink(movieInfo(iFrame:iFrame+1),...
+                kalmanFilterInfo(iFrame),costMatParam,useLocalDensity,...
+                nnDistTracks(1:numFeaturesFrame1));
 
             if any(costMat(:)~=nonlinkMarker) %if there are potential links
 
@@ -162,21 +220,31 @@ for iFrame = 1 : numFrames-1
                 indx1U(indx1C) = 0;
                 indx1U = find(indx1U);
 
-                %assign space for new matrix
+                %assign space for new connectivity matrix and for vector
+                %storing track nearest neighbor distances
                 tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2-length(indx2C),iFrame+1);
+                tmpNN = NaN*ones(length(nnDistTracks)+numFeaturesFrame2-length(indx2C),1);
 
                 %fill in the feature numbers in 2nd frame
                 tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
 
                 %shuffle existing tracks to get the correct connectivity with 2nd frame
+                %also shuffle track nearest neighbor distance
                 tmp(indx2C,1:iFrame) = trackedFeatureIndx(indx1C,:);
+                tmpNN(indx2C) = nnDistTracks(indx1C);
 
                 %add rows of tracks that are not connected to points in 2nd frame
-                tmp(max(numFeaturesFrame2,length(indx1C))+1:end,1:iFrame) ...
-                    = trackedFeatureIndx(indx1U,:);
+                %also add track nearest neighbor distances
+                tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx(indx1U,:);
+                tmpNN(numFeaturesFrame2+1:end) = nnDistTracks(indx1U);
 
                 %update the connectivity matrix "trackedFeatureIndx"
                 trackedFeatureIndx = tmp;
+                
+                %update the track nearest neighbor vector
+                nnDistTracks = tmpNN;
+                nnDistTracks(1:numFeaturesFrame2) = min([nnDistTracks(1:...
+                    numFeaturesFrame2) movieInfo(iFrame+1).nnDist],[],2);
 
                 %use the Kalman gain from linking to get better estimates
                 %of the state vector and its covariance matrix in 2nd frame
@@ -185,12 +253,13 @@ for iFrame = 1 : numFrames-1
                     [kalmanFilterInfo,errFlag] = kalmanGainLinearMotion(...
                         trackedFeatureIndx(1:numFeaturesFrame2,:),...
                         movieInfo(iFrame+1),kalmanFilterInfoTmp,...
-                        propagationScheme,kalmanFilterInfo,filterInfoPrev(iFrame+1));
+                        propagationScheme,kalmanFilterInfo,...
+                        filterInfoPrev(iFrame+1),kalmanInitParam);
                 else %if no prior information is supplied
                     [kalmanFilterInfo,errFlag] = kalmanGainLinearMotion(...
                         trackedFeatureIndx(1:numFeaturesFrame2,:),...
                         movieInfo(iFrame+1),kalmanFilterInfoTmp,...
-                        propagationScheme,kalmanFilterInfo);
+                        propagationScheme,kalmanFilterInfo,[],kalmanInitParam);
                 end
                 
             else %if there are no potential links
@@ -206,14 +275,18 @@ for iFrame = 1 : numFrames-1
 
                 %update the connectivity matrix "trackedFeatureIndx"
                 trackedFeatureIndx = tmp;
-
+                
+                %update the track nearest neighbor vector
+                nnDistTracks = [movieInfo(iFrame+1).nnDist; nnDistTrack];
+                
                 %initialize Kalman filter for features in 2nd frame
                 if usePriorInfo %use a priori information if available
                     kalmanFilterInfo(iFrame+1).stateVec = filterInfoPrev(iFrame+1).stateVec; %state vector
                     kalmanFilterInfo(iFrame+1).stateCov = filterInfoPrev(iFrame+1).stateCov; %state covariance
                     kalmanFilterInfo(iFrame+1).noiseVar = filterInfoPrev(iFrame+1).noiseVar; %noise variance
                 else
-                    [filterInit,errFlag] = kalmanInitLinearMotion(movieInfo(iFrame+1));
+                    [filterInit,errFlag] = kalmanInitLinearMotion(...
+                        movieInfo(iFrame+1),kalmanInitParam);
                     kalmanFilterInfo(iFrame+1).stateVec = filterInit.stateVec;
                     kalmanFilterInfo(iFrame+1).stateCov = filterInit.stateCov;
                     kalmanFilterInfo(iFrame+1).noiseVar = filterInit.noiseVar;
@@ -240,21 +313,25 @@ for iFrame = 1 : numFrames-1
 
             %fill in the tracks upto 1st frame
             tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx;
-            
+
             %update the connectivity matrix "trackedFeatureIndx"
             trackedFeatureIndx = tmp;
 
+            %update the track nearest neighbor vector
+            nnDistTracks = [movieInfo(iFrame+1).nnDist; nnDistTrack];
+
             %initialize Kalman filter for features in 2nd frame
-                if usePriorInfo %use a priori information if available
-                    kalmanFilterInfo(iFrame+1).stateVec = filterInfoPrev(iFrame+1).stateVec; %state vector
-                    kalmanFilterInfo(iFrame+1).stateCov = filterInfoPrev(iFrame+1).stateCov; %state covariance
-                    kalmanFilterInfo(iFrame+1).noiseVar = filterInfoPrev(iFrame+1).noiseVar; %noise variance
-                else
-                    [filterInit,errFlag] = kalmanInitLinearMotion(movieInfo(iFrame+1));
-                    kalmanFilterInfo(iFrame+1).stateVec = filterInit.stateVec;
-                    kalmanFilterInfo(iFrame+1).stateCov = filterInit.stateCov;
-                    kalmanFilterInfo(iFrame+1).noiseVar = filterInit.noiseVar;
-                end
+            if usePriorInfo %use a priori information if available
+                kalmanFilterInfo(iFrame+1).stateVec = filterInfoPrev(iFrame+1).stateVec; %state vector
+                kalmanFilterInfo(iFrame+1).stateCov = filterInfoPrev(iFrame+1).stateCov; %state covariance
+                kalmanFilterInfo(iFrame+1).noiseVar = filterInfoPrev(iFrame+1).noiseVar; %noise variance
+            else
+                [filterInit,errFlag] = kalmanInitLinearMotion(...
+                    movieInfo(iFrame+1),kalmanInitParam);
+                kalmanFilterInfo(iFrame+1).stateVec = filterInit.stateVec;
+                kalmanFilterInfo(iFrame+1).stateCov = filterInit.stateCov;
+                kalmanFilterInfo(iFrame+1).noiseVar = filterInit.noiseVar;
+            end
 
         else %if there are no features in 2nd frame
 

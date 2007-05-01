@@ -480,7 +480,7 @@ switch isR
 
                 %compare p-value to alpha
                 %1-sided F-test: H0: F=1, H1: F<1
-                if pValue < alpha && numGaussT <= maxNumGauss %if p-value is smaller and the limit of Gaussians isn't reached
+                if pValue <= alpha && numGaussT <= maxNumGauss %if p-value is smaller and the limit of Gaussians isn't reached
                     fit = 1; %accept this fit and attempt another fit with an additional Gaussian
                 else %if p-value is larger
                     fit = 0; %do not accept this fit and exit

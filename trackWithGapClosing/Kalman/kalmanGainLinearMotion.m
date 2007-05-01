@@ -1,9 +1,11 @@
 function [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIndx,...
-    frameInfo,kalmanFilterInfoTmp,propagationScheme,kalmanFilterInfoIn,filterInfoPrev)
+    frameInfo,kalmanFilterInfoTmp,propagationScheme,kalmanFilterInfoIn,...
+    filterInfoPrev,kalmanInitParam)
 %KALMANGAINLINEARMOTION uses the Kalman gain from linking to get better estimates of the state vector, its covariance matrix, state noise and its variance
 %
 %SYNOPSIS [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIndx,...
-%    frameInfo,kalmanFilterInfoTmp,propagationScheme,kalmanFilterInfoIn)
+%    frameInfo,kalmanFilterInfoTmp,propagationScheme,kalmanFilterInfoIn,...
+%    filterInfoPrev,kalmanInitParam)
 %
 %INPUT  trackedFeatureIndx : Matrix showing connectivity between features
 %                            in current frame (listed in last column of matrix) 
@@ -52,6 +54,10 @@ function [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIn
 %             .noiseVar        : Variance of state noise for each
 %                                feature in frame.
 %                            Optional input. Enter [] or nothing if not to be used.
+%       kalmanInitParam    : Structure with fields containing variables
+%                            used in Kalman filter initialization. See
+%                            particular initialization function for fields.
+%                            Optional. Enter [] or nothing if not to be used.
 %
 %OUTPUT kalmanFilterInfoOut: Structure with fields (for all frames upto current):
 %             .stateVec        : Kalman filter state vector for all features.
@@ -93,6 +99,12 @@ if nargin < 6 || isempty(filterInfoPrev)
 else
     usePriorInfo = 1;
 end
+
+%check whether additional parameters for Kalman filter initialization are
+%given
+if nargin < 7 || isempty(kalmanInitParam)
+    kalmanInitParam = [];
+end 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Gain calculation and update
@@ -185,7 +197,7 @@ for iFeature = 1 : numFeatures
             featureInfo.yCoord = frameInfo.yCoord(iFeature,:);
             featureInfo.amp = frameInfo.amp(iFeature,:);
             featureInfo.num = 1;
-            [filterTmp,errFlag] = kalmanInitLinearMotion(featureInfo);
+            [filterTmp,errFlag] = kalmanInitLinearMotion(featureInfo,kalmanInitParam);
             kalmanFilterInfoOut(iFrame).stateVec(iFeature,:) = filterTmp.stateVec;
             kalmanFilterInfoOut(iFrame).stateCov(:,:,iFeature) = filterTmp.stateCov;
             kalmanFilterInfoOut(iFrame).noiseVar(:,:,iFeature) = filterTmp.noiseVar;
