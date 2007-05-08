@@ -29,13 +29,13 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %             .noiseVar           : Variance of state noise for each
 %                                   feature in 1st frame.
 %      costMatParam           : Structure with fields:
-%             .maxSearchRadius    : Maximum allowed search radius (in pixels).
-%             .minSearchRadius    : Minimum allowed search radius (in pixels).
-%             .brownStdMultLink   : Factor multiplying Brownian
+%             .maxSearchRadiusL   : Maximum allowed search radius (in pixels).
+%             .minSearchRadiusL   : Minimum allowed search radius (in pixels).
+%             .brownStdMultL      : Factor multiplying Brownian
 %                                   displacement std to get search radius.
-%             .closestDistScaleLink:Scaling factor of nearest neighbor
+%             .closestDistScaleL  :Scaling factor of nearest neighbor
 %                                   distance. Not needed if useLocalDensity = 0;
-%             .maxStdMultLink     : Maximum value of factor multiplying
+%             .maxStdMultL        : Maximum value of factor multiplying
 %                                   Brownian displacement std to get search
 %                                   radius. Not needed if useLocalDensity = 0;
 %      useLocalDensity        : Logical variable indicating whether to use
@@ -86,12 +86,12 @@ if nargin ~= nargin('costMatLinearMotionLink')
 end
 
 %get cost calculation parameters
-maxSearchRadius = costMatParam.maxSearchRadius;
-minSearchRadius = costMatParam.minSearchRadius;
-brownStdMult    = costMatParam.brownStdMultLink;
+maxSearchRadius = costMatParam.maxSearchRadiusL;
+minSearchRadius = costMatParam.minSearchRadiusL;
+brownStdMult    = costMatParam.brownStdMultL;
 if useLocalDensity
-    closestDistScale = costMatParam.closestDistScaleLink;
-    maxStdMult = costMatParam.maxStdMultLink;
+    closestDistScale = costMatParam.closestDistScaleL;
+    maxStdMult = costMatParam.maxStdMultL;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -182,10 +182,10 @@ if useLocalDensity
 
     %divide each feature's nearest neighbor distance/closestDistScale by kalmanStd
     ratioDist2Std = nnDistTracks./kalmanStd/closestDistScale;
-   
-    %make ratios larger than maxStdMult equal to 10
+
+    %make ratios larger than maxStdMult equal to maxStdMult
     ratioDist2Std(ratioDist2Std > maxStdMult) = maxStdMult;
-    
+
     %expand search radius multiplication factor if possible
     stdMultInd = max([stdMultInd ratioDist2Std],[],2);
     

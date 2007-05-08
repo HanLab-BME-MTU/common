@@ -1,11 +1,11 @@
 function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
-    nnDistTracks,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
-    filterInfoPrev,kalmanInitParam,useLocalDensity)
+    nnDistFeatures,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
+    filterInfoPrev,kalmanInitParam,useLocalDensity,nnWindow)
 %LINKFEATURESKALMAN links features between consecutive frames using LAP and directed motion models
 %
 %SYNOPSIS [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
 %    nnDistTracks,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
-%    filterInfoPrev,kalmanInitParam,useLocalDensity)
+%    filterInfoPrev,kalmanInitParam,useLocalDensity,nnWindow)
 %
 %INPUT  movieInfo         : Array of size equal to the number of time points
 %                           in a movie, containing the fields:
@@ -42,6 +42,9 @@ function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
 %       useLocalDensity   : Logical variable indicating whether to use
 %                           local density in search radius estimation.
 %                           Optional. Default: 0.
+%       nnWindow          : Time window to be used in estimating the
+%                           nearest neighbor distance of a feature in a
+%                           track.
 %
 %OUTPUT trackedFeatureIndx: Connectivity matrix of features between time points.
 %                           Rows indicate continuous tracks, while columns 
@@ -71,11 +74,9 @@ function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
 %                                feature to previous feature. 2nd column:
 %                                propagation scheme connecting feature to
 %                                next feature.
-%       nnDistTracks      : Vector indicating the nearest neighbor distance
-%                           of each track, i.e. the closest distance any of
-%                           the features making it comes to any other
-%                           feature in the feature's frame.
-%
+%       nnDistFeatures    : Matrix indicating the nearest neighbor
+%                           distances of features linked together within
+%                           tracks.
 %       errFlag           : 0 if function executes normally, 1 otherwise.
 %
 %REMARKS Code restricted to 2D motion. 
@@ -171,6 +172,7 @@ trackedFeatureIndx = (1:movieInfo(1).num)';
 
 %fill the nearest neighbor distances of features in first frame, which are
 %the first approximation of the nearest neighbor distances of tracks
+nnDistFeatures = movieInfo(1).nnDist;
 nnDistTracks = movieInfo(1).nnDist;
 
 %initialize Kalman filter for features in 1st frame
@@ -223,28 +225,36 @@ for iFrame = 1 : numFrames-1
                 %assign space for new connectivity matrix and for vector
                 %storing track nearest neighbor distances
                 tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2-length(indx2C),iFrame+1);
-                tmpNN = NaN*ones(length(nnDistTracks)+numFeaturesFrame2-length(indx2C),1);
+                tmpNN = NaN*ones(size(tmp));
+                tmpNN2 = NaN*ones(size(tmp,1),1);
 
-                %fill in the feature numbers in 2nd frame
+                %fill in the feature numbers in 2nd frame and their nearest
+                %neighbor distances
                 tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
+                tmpNN(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
 
                 %shuffle existing tracks to get the correct connectivity with 2nd frame
                 %also shuffle track nearest neighbor distance
                 tmp(indx2C,1:iFrame) = trackedFeatureIndx(indx1C,:);
-                tmpNN(indx2C) = nnDistTracks(indx1C);
+                tmpNN(indx2C,1:iFrame) = nnDistFeatures(indx1C,:);
+                tmpNN2(indx2C) = nnDistTracks(indx1C);
 
                 %add rows of tracks that are not connected to points in 2nd frame
                 %also add track nearest neighbor distances
                 tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx(indx1U,:);
-                tmpNN(numFeaturesFrame2+1:end) = nnDistTracks(indx1U);
+                tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures(indx1U,:);
+                tmpNN2(numFeaturesFrame2+1:end) = nnDistTracks(indx1U);
 
                 %update the connectivity matrix "trackedFeatureIndx"
                 trackedFeatureIndx = tmp;
                 
-                %update the track nearest neighbor vector
-                nnDistTracks = tmpNN;
-                nnDistTracks(1:numFeaturesFrame2) = min([nnDistTracks(1:...
-                    numFeaturesFrame2) movieInfo(iFrame+1).nnDist],[],2);
+                %update the nearest neighbor distances of connected
+                %features and the track nearest neighbor vector
+                nnDistFeatures = tmpNN;
+                nnDistTracks = tmpNN2;
+                tmpNN = max(1,iFrame-nnWindow);
+                nnDistTracks(1:numFeaturesFrame2) = min(nnDistFeatures...
+                    (1:numFeaturesFrame2,tmpNN:end),[],2);
 
                 %use the Kalman gain from linking to get better estimates
                 %of the state vector and its covariance matrix in 2nd frame
@@ -359,6 +369,9 @@ end
 %same time in descending order from longest to shortest.
 trackedFeatureIndx = trackedFeatureIndx(indx,:);
 
+%also re-arrange the matrix indicating nearest neighbor distances
+nnDistFeatures = nnDistFeatures(indx,:);
+
 %store feature positions and amplitudes in a matrix that also shows their connectivities
 %information is stored as [x y z a dx dy dz da] in image coordinate system
 %since this code is restricted to 2D data, z=dz=0
@@ -388,6 +401,5 @@ for iFrame = 1 : numFrames
     end
 
 end
-
 
 %%%%% ~~ the end ~~ %%%%%

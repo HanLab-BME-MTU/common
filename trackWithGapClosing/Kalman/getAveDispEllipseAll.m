@@ -1,12 +1,15 @@
-function [dispDrift,dispBrown,longVec,shortVec] = getAveDispEllipseAll(xVel,...
-    yVel,brownStd,trackType,undetBrownStd,timeWindow,brownStdMult,linStdMult,...
-    timeReachConf,minSearchRadius,useLocalDensity,closestDistScale,...
-    maxStdMult,nnDistTracks)
+function [dispDrift,dispBrown,longVecS,longVecE,shortVecS,shortVecE] = ...
+    getAveDispEllipseAll(xVel,yVel,brownStd,trackType,undetBrownStd,...
+    timeWindow,brownStdMult,linStdMult,timeReachConfB,timeReachConfL,...
+    minSearchRadius,maxSearchRadius,useLocalDensity,closestDistScale,...
+    maxStdMult,nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime)
 %GETAVEDISPELLIPSE determines the search ellipse and expected displacement along x and y of a particle undergoing 2D diffusion with drift
 %
-%SYNOPSIS [dispDrift,dispBrown,longVec,shortVec] = getAveDispEllipseAll(xVel,...
-%    yVel,brownStd,trackType,undetBrownStd,timeWindow,brownStdMult,linStdMult,...
-%    timeReachConf,minSearchRadius,useLocalDensity,closestDistScale,maxStdMult)
+%SYNOPSIS [dispDrift,dispBrown,longVecS,longVecE,shortVecS,shortVecE] = ...
+%    getAveDispEllipseAll(xVel,yVel,brownStd,trackType,undetBrownStd,...
+%    timeWindow,brownStdMult,linStdMult,timeReachConfB,timeReachConfL,...
+%    minSearchRadius,maxSearchRadius,useLocalDensity,closestDistScale,...
+%    maxStdMult,nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime)
 %
 %INPUT  xVel           : Velocity in x-direction.
 %       yVel           : Velocity in y-direction.
@@ -19,23 +22,38 @@ function [dispDrift,dispBrown,longVec,shortVec] = getAveDispEllipseAll(xVel,...
 %                        displacement to search radius.
 %       linStdMult     : Multiplication factor to go from average linear
 %                        displacement to search radius.
-%       timeReachConf  : Time gap for reaching confinement.
+%       timeReachConfB : Time gap for Brownian motion to reach confinement.
+%       timeReachConfL : Time gap for linear motion to reach confinement.
 %       minSearchRadius: Minimum allowed search radius.
+%       maxSearchRadius: Maximum allowed search radius for linking between
+%                        two consecutive frames. It will be expanded for
+%                        different gap lengths based on the time scaling of
+%                        Brownian motion.
 %       useLocalDensity: 1 if local density of features is used to expand 
 %                        their search radius if possible, 0 otherwise.
 %       closestDistScale:Scaling factor of nearest neighbor distance.
 %       maxStdMult     : Maximum value of factor multiplying std to get
 %                        search radius.
-%       nnDistTracks   : Vector indicating the nearest neighbor distance
-%                        of each track, i.e. the closest distance any of
-%                        the features making it comes to any other
-%                        feature in the feature's frame.
+%       nnDistLinkedFeat:Matrix indicating the nearest neighbor
+%                        distances of features linked together within
+%                        tracks.
+%       nnWindow       : Time window to be used in estimating the
+%                        nearest neighbor distance of a track at its start
+%                        and end.
+%       trackStartTime : Starting time of all tracks.
+%       trackEndTime   : Ending time of all tracks.
 %
-%OUTPUT dispDrift : Column vector of expected displacement along x and y due to drift.
+%OUTPUT dispDrift : Vector of expected displacement along x and y due to drift.
 %       dispBrown : Expected displacement along x (= along y) due to
 %                   Brownian motion.
-%       longVec   : Column vector defining long radius of search ellipse.
-%       shortVec  : Column vector defining short radius of search ellipse.
+%       longVecS  : Vector defining long radius of search ellipse at the
+%                   starts of tracks.
+%       longVecE  : Vector defining long radius of search ellipse at the
+%                   ends of tracks.
+%       shortVecS : Vector defining short radius of search ellipse at the
+%                   starts of tracks.
+%       shortvecE : Vector defining short radius of search ellipse at the
+%                   ends of tracks.
 %       errFlag   : 0 if function executes normally, 1 otherwise
 %
 %REMARKS Drift is assumed to look more like 1D diffusion, i.e. the particle
@@ -49,8 +67,10 @@ function [dispDrift,dispBrown,longVec,shortVec] = getAveDispEllipseAll(xVel,...
 
 dispDrift = [];
 dispBrown = [];
-longVec = [];
-shortVec = [];
+longVecS  = [];
+longVecE  = [];
+shortVecS = [];
+shortVecE = [];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Input
@@ -72,18 +92,37 @@ numTracks = length(xVel);
 %reserve memory for output
 dispDrift = zeros(2,timeWindow,numTracks);
 dispBrown = zeros(timeWindow,numTracks);
-longVec = zeros(2,timeWindow,numTracks);
-shortVec = zeros(2,timeWindow,numTracks);
+longVecS  = zeros(2,timeWindow,numTracks);
+longVecE  = zeros(2,timeWindow,numTracks);
+shortVecS = zeros(2,timeWindow,numTracks);
+shortVecE = zeros(2,timeWindow,numTracks);
 
 %define square root of two to avoid calculating it many times
 sqrtTwo = sqrt(2);
 
 %put time scaling of linear motion in a vector
-sqrtTimeGap = sqrt(1:timeWindow);
+timeScalingLin = [sqrt(1:timeReachConfL) sqrt(timeReachConfL) * ...
+    (2:timeWindow-timeReachConfL+1).^0.1];
 
 %put time scaling of Brownian motion in a vector
-timeScalingBrown = [sqrt(1:timeReachConf) sqrt(timeReachConf) * ...
-    (2:timeWindow-timeReachConf+1).^0.1];
+timeScalingBrown = [sqrt(1:timeReachConfB) sqrt(timeReachConfB) * ...
+    (2:timeWindow-timeReachConfB+1).^0.1];
+
+%scale maxSearchRadius like Brownian motion (it's only imposed on the
+%Brownian aspect of tracks)
+maxSearchRadius = maxSearchRadius * timeScalingBrown;
+
+%determine the nearest neighbor distances of tracks at their starts and ends
+windowLimS = min([trackStartTime+nnWindow trackEndTime],[],2);
+windowLimE = max([trackEndTime-nnWindow trackStartTime],[],2);
+nnDistTracksS = zeros(numTracks,1);
+nnDistTracksE = zeros(numTracks,1);
+for iTrack = 1 : numTracks
+    nnDistTracksS(iTrack) = min(nnDistLinkedFeat(iTrack,...
+        trackStartTime(iTrack):windowLimS(iTrack)));
+    nnDistTracksE(iTrack) = min(nnDistLinkedFeat(iTrack,...
+        windowLimE(iTrack):trackEndTime(iTrack)));
+end
 
 for iTrack = 1 : numTracks
 
@@ -98,112 +137,281 @@ for iTrack = 1 : numTracks
 
             %calculate the expected displacement due to drift for all time
             %gaps
-            dispDrift1 = repmat(velDrift,1,timeWindow) .* repmat(sqrtTimeGap,2,1);
+            dispDrift1 = repmat(velDrift,1,timeWindow) .* repmat(timeScalingLin,2,1);
 
             %calculate the expected displacement along x (= along y) due to
             %brownian motion for all time gaps
             dispBrown1 = brownStd(iTrack) * timeScalingBrown;
+            
+            %copy brownStdMult into vector that might be modified using
+            %local density
+            brownStdMultModS = brownStdMult'; %for track start
+            brownStdMultModE = brownStdMult'; %for track end
 
-            %determine the long vector of the search ellipse for all time
+            %if local density information is used to expand search radius ...
+            if useLocalDensity
+
+                %divide the track's nearest neighbor distance at its start
+                %/closestDistScale by expected Brownian displacement
+                ratioDist2Std = repmat(nnDistTracksS(iTrack)/closestDistScale,...
+                    1,timeWindow) ./ dispBrown1;
+
+                %make ratios larger than maxStdMult equal to maxStdMult
+                ratioDist2Std(ratioDist2Std > maxStdMult) = maxStdMult;
+
+                %expand search radius multiplication factor at track start
+                %if possible
+                brownStdMultModS = max([brownStdMultModS; ratioDist2Std]);
+
+                %divide the track's nearest neighbor distance at its end
+                %/closestDistScale by expected Brownian displacement
+                ratioDist2Std = repmat(nnDistTracksE(iTrack)/closestDistScale,...
+                    1,timeWindow) ./ dispBrown1;
+
+                %make ratios larger than maxStdMult equal to maxStdMult
+                ratioDist2Std(ratioDist2Std > maxStdMult) = maxStdMult;
+
+                %expand search radius multiplication factor at track end
+                %if possible
+                brownStdMultModE = max([brownStdMultModE; ratioDist2Std]);
+
+            end
+
+            %determine the long vectors of the search ellipses for all time
             %gaps
             longVec1 = repmat(linStdMult',2,1) .* dispDrift1 + ...
                 repmat((brownStdMult' .* dispBrown1 * sqrtTwo),2,1) .* ...
                 repmat(directionMotion,1,timeWindow);
+            longVecMag = sqrt((diag(longVec1' * longVec1))');  %magnitude
+            longVecDir = longVec1 ./ repmat(longVecMag,2,1); %direction
             
-            %determine the short vector
-            shortVec1 = repmat((brownStdMult' .* dispBrown1 * sqrtTwo),2,1) .* ...
+            %determine the short vectors at track starts
+            shortVecS1 = repmat((brownStdMultModS .* dispBrown1 * sqrtTwo),2,1) .* ...
                 repmat([directionMotion(2) -directionMotion(1)]',1,timeWindow);
+            shortVecSMag = sqrt((diag(shortVecS1' * shortVecS1))');  %magnitude
+            shortVecSDir = shortVecS1 ./ repmat(shortVecSMag,2,1); %direction
+
+            %determine the short vectors at track ends
+            shortVecE1 = repmat((brownStdMultModE .* dispBrown1 * sqrtTwo),2,1) .* ...
+                repmat([directionMotion(2) -directionMotion(1)]',1,timeWindow);
+            shortVecEMag = sqrt((diag(shortVecE1' * shortVecE1))');  %magnitude
+            shortVecEDir = shortVecE1 ./ repmat(shortVecEMag,2,1); %direction
 
             %output the absolute value of dispDrift
             dispDrift1 = abs(dispDrift1);
 
             %make sure that long vectors are longer than minimum allowed
-            vecMag = sqrt((diag(longVec1' * longVec1))');  %magnitude
-            vecDir = longVec1 ./ repmat(vecMag,2,1); %direction
-            vecMag = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
-            longVec1 = repmat(vecMag,2,1) .* vecDir; %new long vector
+            longVecMag = max([longVecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
+            longVec1 = repmat(longVecMag,2,1) .* longVecDir; %new long vector
 
-            %make sure that short vectors are longer than minimum allowed
-            vecMag = sqrt((diag(shortVec1' * shortVec1))');  %magnitude
-            vecDir = shortVec1 ./ repmat(vecMag,2,1); %direction
-            vecMag = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
-            shortVec1 = repmat(vecMag,2,1) .* vecDir; %new short vector
+            %make sure that short vectors at track starts are longer than 
+            %minimum allowed and shorter than maximum allowed
+            shortVecSMag = max([shortVecSMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
+            shortVecSMag = min([shortVecSMag;maxSearchRadius]); %compare to maximum
+            shortVecS1 = repmat(shortVecSMag,2,1) .* shortVecSDir; %new short vector
+
+            %make sure that short vectors at track ends are longer than 
+            %minimum allowed and shorter than maximum allowed
+            shortVecEMag = max([shortVecEMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
+            shortVecEMag = min([shortVecEMag;maxSearchRadius]); %compare to maximum
+            shortVecE1 = repmat(shortVecEMag,2,1) .* shortVecEDir; %new short vector
 
             %save values for this time gap
             dispDrift(:,:,iTrack) = dispDrift1;
             dispBrown(:,iTrack) = dispBrown1;
-            longVec(:,:,iTrack) = longVec1;
-            shortVec(:,:,iTrack) = shortVec1;
+            longVecS(:,:,iTrack) = longVec1;
+            longVecE(:,:,iTrack) = longVec1;
+            shortVecS(:,:,iTrack) = shortVecS1;
+            shortVecE(:,:,iTrack) = shortVecE1;
 
         case 0
             
-            %take direction of motion along x
+            %take direction of motion to be along x
             directionMotion = [1 0]';
 
             %calculate the expected displacement along x (= along y) due to
             %brownian motion for all time gaps
             dispBrown1 = brownStd(iTrack) * timeScalingBrown;
 
-            %determine the long vector of the search ellipse for all time
-            %gaps
-            longVec1 = repmat((brownStdMult' .* dispBrown1 * sqrtTwo),2,1) .* ...
+            %copy brownStdMult into vector that might be modified using
+            %local density
+            brownStdMultModS = brownStdMult'; %for track start
+            brownStdMultModE = brownStdMult'; %for track end
+            
+            %if local density information is used to expand search radius ...
+            if useLocalDensity
+
+                %divide the track's nearest neighbor distance/closestDistScale
+                %by expected Brownian displacement
+                ratioDist2Std = repmat(nnDistTracksS(iTrack)/closestDistScale,...
+                    1,timeWindow) ./ dispBrown1;
+
+                %make ratios larger than maxStdMult equal to maxStdMult
+                ratioDist2Std(ratioDist2Std > maxStdMult) = maxStdMult;
+
+                %expand search radius multiplication factor if possible
+                brownStdMultModS = max([brownStdMultModS; ratioDist2Std]);
+
+                %divide the track's nearest neighbor distance at its end
+                %/closestDistScale by expected Brownian displacement
+                ratioDist2Std = repmat(nnDistTracksE(iTrack)/closestDistScale,...
+                    1,timeWindow) ./ dispBrown1;
+
+                %make ratios larger than maxStdMult equal to maxStdMult
+                ratioDist2Std(ratioDist2Std > maxStdMult) = maxStdMult;
+
+                %expand search radius multiplication factor at track end
+                %if possible
+                brownStdMultModE = max([brownStdMultModE; ratioDist2Std]);
+
+            end
+
+            %determine the long vectors of the search ellipses at track
+            %starts for all time gaps
+            longVecS1 = repmat((brownStdMultModS .* dispBrown1 * sqrtTwo),2,1) .* ...
                 repmat(directionMotion,1,timeWindow);
 
-            %determine the short vector
-            shortVec1 = repmat((brownStdMult' .* dispBrown1 * sqrtTwo),2,1) .* ...
+            %determine the long vectors of the search ellipses at track
+            %ends for all time gaps
+            longVecE1 = repmat((brownStdMultModE .* dispBrown1 * sqrtTwo),2,1) .* ...
+                repmat(directionMotion,1,timeWindow);
+
+            %determine the short vectors at track starts
+            shortVecS1 = repmat((brownStdMultModS .* dispBrown1 * sqrtTwo),2,1) .* ...
                 repmat([directionMotion(2) -directionMotion(1)]',1,timeWindow);
 
-            %make sure that long vectors are longer than minimum allowed
-            vecMag = sqrt((diag(longVec1' * longVec1))');  %magnitude
-            vecDir = longVec1 ./ repmat(vecMag,2,1); %direction
-            vecMag = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
-            longVec1 = repmat(vecMag,2,1) .* vecDir; %new long vector
+            %determine the short vectors at track ends
+            shortVecE1 = repmat((brownStdMultModE .* dispBrown1 * sqrtTwo),2,1) .* ...
+                repmat([directionMotion(2) -directionMotion(1)]',1,timeWindow);
 
-            %make sure that short vectors are longer than minimum allowed
-            vecMag = sqrt((diag(shortVec1' * shortVec1))');  %magnitude
-            vecDir = shortVec1 ./ repmat(vecMag,2,1); %direction
+            %get magnitude and direction of both vectors at track starts
+            vecMag = sqrt((diag(longVecS1' * longVecS1))'); %magnitude of both vectors
+            longVecDir = longVecS1 ./ repmat(vecMag,2,1);   %direction of long vector
+            shortVecDir = shortVecS1 ./ repmat(vecMag,2,1); %direction of short vector
+            
+            %make sure that magnitude is larger than minimum allowed and
+            %smaller than maximum allowed
             vecMag = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
-            shortVec1 = repmat(vecMag,2,1) .* vecDir; %new short vector
+            vecMag = min([vecMag;maxSearchRadius]); %compare to maximum
+            
+            %re-calculate both vectors based on modified magnitudes            
+            longVecS1 = repmat(vecMag,2,1) .* longVecDir; %new long vector
+            shortVecS1 = repmat(vecMag,2,1) .* shortVecDir; %new short vector
+
+            %get magnitude and direction of both vectors at track ends
+            vecMag = sqrt((diag(longVecE1' * longVecE1))');  %magnitude of both vectors
+            longVecDir = longVecE1 ./ repmat(vecMag,2,1);   %direction of long vector
+            shortVecDir = shortVecE1 ./ repmat(vecMag,2,1); %direction of short vector
+            
+            %make sure that magnitude is larger than minimum allowed and
+            %smaller than maximum allowed
+            vecMag = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
+            vecMag = min([vecMag;maxSearchRadius]); %compare to maximum
+            
+            %re-calculate both vectors based on modified magnitudes            
+            longVecE1 = repmat(vecMag,2,1) .* longVecDir; %new long vector
+            shortVecE1 = repmat(vecMag,2,1) .* shortVecDir; %new short vector
 
             %save values for this time gap
             dispBrown(:,iTrack) = dispBrown1;
-            longVec(:,:,iTrack) = longVec1;
-            shortVec(:,:,iTrack) = shortVec1;
+            longVecS(:,:,iTrack) = longVecS1;
+            longVecE(:,:,iTrack) = longVecE1;
+            shortVecS(:,:,iTrack) = shortVecS1;
+            shortVecE(:,:,iTrack) = shortVecE1;
 
         otherwise
 
-            %take direction of motion along x
+            %take direction of motion to be along x
             directionMotion = [1 0]';
 
             %calculate the expected displacement along x (= along y) due to
             %brownian motion for all time gaps
             dispBrown1 = undetBrownStd * timeScalingBrown;
 
-            %determine the long vector of the search ellipse for all time
-            %gaps
-            longVec1 = repmat((brownStdMult' .* dispBrown1 * sqrtTwo),2,1) .* ...
+            %copy brownStdMult into vector that might be modified using
+            %local density
+            brownStdMultModS = brownStdMult'; %for track start
+            brownStdMultModE = brownStdMult'; %for track end
+
+            %if local density information is used to expand search radius ...
+            if useLocalDensity
+
+                %divide the track's nearest neighbor distance/closestDistScale
+                %by expected Brownian displacement
+                ratioDist2Std = repmat(nnDistTracksS(iTrack)/closestDistScale,...
+                    1,timeWindow) ./ dispBrown1;
+
+                %make ratios larger than maxStdMult equal to maxStdMult
+                ratioDist2Std(ratioDist2Std > maxStdMult) = maxStdMult;
+
+                %expand search radius multiplication factor if possible
+                brownStdMultModS = max([brownStdMultModS; ratioDist2Std]);
+
+                %divide the track's nearest neighbor distance/closestDistScale
+                %by expected Brownian displacement
+                ratioDist2Std = repmat(nnDistTracksE(iTrack)/closestDistScale,...
+                    1,timeWindow) ./ dispBrown1;
+
+                %make ratios larger than maxStdMult equal to maxStdMult
+                ratioDist2Std(ratioDist2Std > maxStdMult) = maxStdMult;
+
+                %expand search radius multiplication factor if possible
+                brownStdMultModE = max([brownStdMultModE; ratioDist2Std]);
+
+            end
+            
+            %determine the long vector of the search ellipse at track
+            %starts for all time gaps
+            longVecS1 = repmat((brownStdMultModS .* dispBrown1 * sqrtTwo),2,1) .* ...
                 repmat(directionMotion,1,timeWindow);
 
-            %determine the short vector
-            shortVec1 = repmat((brownStdMult' .* dispBrown1 * sqrtTwo),2,1) .* ...
+            %determine the long vector of the search ellipse at track
+            %ends for all time gaps
+            longVecE1 = repmat((brownStdMultModE .* dispBrown1 * sqrtTwo),2,1) .* ...
+                repmat(directionMotion,1,timeWindow);
+
+            %determine the short vector at track starts
+            shortVecS1 = repmat((brownStdMultModS .* dispBrown1 * sqrtTwo),2,1) .* ...
                 repmat([directionMotion(2) -directionMotion(1)]',1,timeWindow);
 
-            %make sure that long vectors are longer than minimum allowed
-            vecMag = sqrt((diag(longVec1' * longVec1))');  %magnitude
-            vecDir = longVec1 ./ repmat(vecMag,2,1); %direction
-            vecMag = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
-            longVec1 = repmat(vecMag,2,1) .* vecDir; %new long vector
+            %determine the short vector at track ends
+            shortVecE1 = repmat((brownStdMultModE .* dispBrown1 * sqrtTwo),2,1) .* ...
+                repmat([directionMotion(2) -directionMotion(1)]',1,timeWindow);
 
-            %make sure that short vectors are longer than minimum allowed
-            vecMag = sqrt((diag(shortVec1' * shortVec1))');  %magnitude
-            vecDir = shortVec1 ./ repmat(vecMag,2,1); %direction
+            %get magnitude and direction of both vectors at track starts
+            vecMag = sqrt((diag(longVecS1' * longVecS1))'); %magnitude of both vectors
+            longVecDir = longVecS1 ./ repmat(vecMag,2,1);   %direction of long vector
+            shortVecDir = shortVecS1 ./ repmat(vecMag,2,1); %direction of short vector
+            
+            %make sure that magnitude is larger than minimum allowed and
+            %smaller than maximum allowed
             vecMag = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
-            shortVec1 = repmat(vecMag,2,1) .* vecDir; %new short vector
+            vecMag = min([vecMag;maxSearchRadius]); %compare to maximum
+            
+            %re-calculate both vectors based on modified magnitudes            
+            longVecS1 = repmat(vecMag,2,1) .* longVecDir; %new long vector
+            shortVecS1 = repmat(vecMag,2,1) .* shortVecDir; %new short vector
+
+            %get magnitude and direction of both vectors at track ends
+            vecMag = sqrt((diag(longVecE1' * longVecE1))'); %magnitude of both vectors
+            longVecDir = longVecE1 ./ repmat(vecMag,2,1);   %direction of long vector
+            shortVecDir = shortVecE1 ./ repmat(vecMag,2,1); %direction of short vector
+            
+            %make sure that magnitude is larger than minimum allowed and
+            %smaller than maximum allowed
+            vecMag = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
+            vecMag = min([vecMag;maxSearchRadius]); %compare to maximum
+            
+            %re-calculate both vectors based on modified magnitudes            
+            longVecE1 = repmat(vecMag,2,1) .* longVecDir; %new long vector
+            shortVecE1 = repmat(vecMag,2,1) .* shortVecDir; %new short vector
 
             %save values for this time gap
             dispBrown(:,iTrack) = dispBrown1;
-            longVec(:,:,iTrack) = longVec1;
-            shortVec(:,:,iTrack) = shortVec1;
+            longVecS(:,:,iTrack) = longVecS1;
+            longVecE(:,:,iTrack) = longVecE1;
+            shortVecS(:,:,iTrack) = shortVecS1;
+            shortVecE(:,:,iTrack) = shortVecE1;
 
     end %(switch trackType)
 

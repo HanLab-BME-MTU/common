@@ -80,12 +80,12 @@ trackLifeTime  = trackSEL(:,3);
 
 %assign the asymmetry parameter thresholds that indicate directed motion
 %for different track lengths 
-% % % %90th percentile:
-% % % asymThresh = [[NaN NaN 5 2.8 2.2 1.9 1.7 1.6 1.5 1.5 1.45 1.4 1.4 1.4 1.4 1.4 ...
-% % %     1.4 1.35 1.35 1.3]'; 1.3*ones(numFrames-20,1)];
-%99th percentile:
-asymThresh = [[NaN NaN 10 5 3.7 3 2.8 2.7 2.6 2.5 2.4 2.3 2.2 2.2 2.1 2.1 ...
-    2.1 2.1 2.1 2.1]'; 2*ones(numFrames-20,1)];
+%90th percentile:
+asymThresh = [[NaN NaN 5 2.8 2.2 1.9 1.7 1.6 1.5 1.5 1.45 1.4 1.4 1.4 1.4 1.4 ...
+    1.4 1.35 1.35 1.3]'; 1.3*ones(numFrames-20,1)];
+% % % %99th percentile:
+% % % asymThresh = [[NaN NaN 10 5 3.7 3 2.8 2.7 2.6 2.5 2.4 2.3 2.2 2.2 2.1 2.1 ...
+% % %     2.1 2.1 2.1 2.1]'; 2*ones(numFrames-20,1)];
 
 %go over all compound tracks in trackConnect
 for iTrack = 1 : numTracksCG
@@ -216,4 +216,3 @@ for iTrack = 1 : numTracksCG
     end %(switch overallType)
 
 end %(for iTrack = 1 : numTracksCG)
-

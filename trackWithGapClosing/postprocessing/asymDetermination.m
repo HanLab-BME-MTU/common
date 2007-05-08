@@ -27,11 +27,12 @@ asymmetry = [];
 % Calculation of the 2D-radius (Rg) of the gyration tensor 
 %----------------------------------------------------------
 
-R11 = (mean(positions(:,1).^2)) - ((mean(positions(:,1))).^2);
+R11 = max((mean(positions(:,1).^2)) - ((mean(positions(:,1))).^2),eps);
 
-R22 = (mean(positions(:,2).^2)) - ((mean(positions(:,2))).^2);
+R22 = max((mean(positions(:,2).^2)) - ((mean(positions(:,2))).^2),eps);
 
-R12 = (mean(positions(:,1).*positions(:,2))) - (mean(positions(:,1)) * (mean(positions(:,2))));
+R12 = max((mean(positions(:,1).*positions(:,2))) - ...
+    (mean(positions(:,1)) * (mean(positions(:,2)))),eps);
 
 R21 = R12;
 
