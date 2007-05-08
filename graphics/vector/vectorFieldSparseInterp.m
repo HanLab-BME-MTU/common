@@ -22,7 +22,7 @@ function Mi=vectorFieldSparseInterp(M,Pg,threshold,d0,polygon)
 %                        To create the polygon use the functions ROIPOLY or
 %                        GETLINE. These functions return the polygon vertices
 %                        stored in two vectors y and x. Set polygon=[x y] to
-%                        use with vectorFieldInterp.
+%                        use with vectorFieldSparseInterp.
 %
 % OUTPUT     Mi        : interpolated vector field.
 %
@@ -65,9 +65,11 @@ Vi=[Vi(:,1)./sG Vi(:,2)./sG];
 % Mi is the interpolated M
 Mi=[Pg Pg+Vi];
 
-% Set all vectors outside the passed polygon to 0
+% Set all vectors outside the passed polygon to NaN
 if ~isempty(polygon)
     index=inpolygon(Mi(:,2),Mi(:,1),polygon(:,2),polygon(:,1)); % changed Mi order
-    Mi(find(~index),3)=Mi(find(~index),1);
-    Mi(find(~index),4)=Mi(find(~index),2);
+    %Mi(find(~index),3)=Mi(find(~index),1);
+    %Mi(find(~index),4)=Mi(find(~index),2);
+    Mi(find(~index),3)=NaN;
+    Mi(find(~index),4)=NaN;
 end
