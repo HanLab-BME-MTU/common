@@ -1,24 +1,22 @@
 function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
     errFlag] = costMatLinearMotionCloseGaps(trackedFeatInfo,...
-    trackedFeatIndx,indxStart,indxEnd,trackStartTime,trackEndTime,...
-    costMatParam,gapCloseParam,kalmanFilterInfo,trackConnect,...
-    useLocalDensity,nnDistLinkedFeat,nnWindow)
+    trackedFeatIndx,trackStartTime,trackEndTime,costMatParam,gapCloseParam,...
+    kalmanFilterInfo,trackConnect,useLocalDensity,nnDistLinkedFeat,nnWindow)
 %COSTMATLINEARMOTIONCLOSEGAPS provides a cost matrix for closing gaps using Kalman filter information (no merging/splitting yet)
 %
 %SYNOPSIS [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %    errFlag] = costMatLinearMotionCloseGaps(trackedFeatInfo,...
-%    trackedFeatIndx,indxStart,indxEnd,trackStartTime,trackEndTime,...
-%    costMatParam,gapCloseParam,kalmanFilterInfo,trackConnect,...
-%    useLocalDensity,nnDistLinkedFeat,nnWindow)
+%    trackedFeatIndx,trackStartTime,trackEndTime,costMatParam,gapCloseParam,...
+%    kalmanFilterInfo,trackConnect,useLocalDensity,nnDistLinkedFeat,nnWindow)
 %
 %INPUT  trackedFeatInfo: The positions and amplitudes of the tracked
-%                        features from linkFeaturesKalman. 
+%                        features from linkFeaturesKalman.
 %                        Number of rows = number of tracks.
-%                        Number of columns = 8*number of frames. 
-%                        Each row consists of 
+%                        Number of columns = 8*number of frames.
+%                        Each row consists of
 %                        [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...]
 %                        in image coordinate system (coordinates in
-%                        pixels). NaN is used to indicate time points 
+%                        pixels). NaN is used to indicate time points
 %                        where the track does not exist.
 %       trackedFeatIndx: Connectivity matrix of features between frames.
 %                        Rows indicate continuous tracks, while columns
@@ -26,10 +24,6 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                        last time point is followed by zeros, and a track
 %                        that starts at a time after the first time point
 %                        is preceded by zeros.
-%       indxStart      : Index of tracks whose starts are considered for
-%                        gap closing.
-%       indxEnd        : Index of tracks whose ends are considered for gap
-%                        closing.
 %       trackStartTime : Starting time of all tracks.
 %       trackEndTime   : Ending time of all tracks.
 %       costMatParam   : Structure containing variables needed for cost
@@ -51,10 +45,10 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                               search radius. Vector with number of entries
 %                               equal to gapCloseParam.timeWindow (defined
 %                               below).
-%             .timeReachConfB : Time gap for reaching confinement for 
+%             .timeReachConfB : Time gap for reaching confinement for
 %                               2D Brownian motion. For smaller time gaps,
-%                               expected displacement increases with 
-%                               sqrt(time gap). For larger time gaps, 
+%                               expected displacement increases with
+%                               sqrt(time gap). For larger time gaps,
 %                               expected displacement increases slowly with
 %                               (time gap)^0.1.
 %             .timeReachConfL : Time gap for reaching confinement for
@@ -79,7 +73,7 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %             .mergeSplit : Logical variable with value 1 if the merging
 %                           and splitting of trajectories are to be consided;
 %                           and 0 if merging and splitting are not allowed.
-%       kalmanFilterInfo:Structure array with number of entries equal to 
+%       kalmanFilterInfo:Structure array with number of entries equal to
 %                        number of frames in movie. Contains the fields:
 %             .stateVec   : Kalman filter state vector for each
 %                           feature in frame.
@@ -95,7 +89,7 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                           next feature.
 %       trackConnect   : Matrix indicating connectivity between tracks (from
 %                        initial linking) after gap closing.
-%       useLocalDensity: 1 if local density of features is used to expand 
+%       useLocalDensity: 1 if local density of features is used to expand
 %                        their search radius if possible, 0 otherwise.
 %       nnDistLinkedFeat:Matrix indicating the nearest neighbor
 %                        distances of features linked together within
@@ -163,44 +157,34 @@ end
 
 %get gap closing parameters
 timeWindow = gapCloseParam.timeWindow;
-%mergeSplit = gapCloseParam.mergeSplit;
+mergeSplit = gapCloseParam.mergeSplit;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Calcualte cost matrix
+%Calculate cost matrix
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%get number of tracks whose starts are to be considered and number of
-%tracks whose ends are to be considered
-numStart = length(indxStart);
-numEnd = length(indxEnd);
-
-%retain only the start and end times of tracks that will be considered for
-%gap closing
-trackStartTimeAll = trackStartTime;
-trackEndTimeAll = trackEndTime;
-trackStartTime = trackStartTime(indxStart);
-trackEndTime = trackEndTime(indxEnd);
+%find the number of tracks to be linked and the number of frames in the movie
+[numTracks,numFrames] = size(trackedFeatInfo);
+numFrames = numFrames / 8;
 
 %get the x,y-coordinates and amplitudes at the starts of tracks
-xCoordStart   = zeros(numStart,1); %x-coordinate
-yCoordStart   = zeros(numStart,1); %y-coordinate
-ampStart      = zeros(numStart,1); %amplitude
-for iStart = 1 : numStart
-    iTrack = indxStart(iStart);
-    xCoordStart(iStart) = trackedFeatInfo(iTrack,(trackStartTime(iStart)-1)*8+1);
-    yCoordStart(iStart) = trackedFeatInfo(iTrack,(trackStartTime(iStart)-1)*8+2);
-    ampStart(iStart) = trackedFeatInfo(iTrack,(trackStartTime(iStart)-1)*8+4);
+xCoordStart   = zeros(numTracks,1); %x-coordinate
+yCoordStart   = zeros(numTracks,1); %y-coordinate
+ampStart      = zeros(numTracks,1); %amplitude
+for iTrack = 1 : numTracks
+    xCoordStart(iTrack) = trackedFeatInfo(iTrack,(trackStartTime(iTrack)-1)*8+1);
+    yCoordStart(iTrack) = trackedFeatInfo(iTrack,(trackStartTime(iTrack)-1)*8+2);
+    ampStart(iTrack) = trackedFeatInfo(iTrack,(trackStartTime(iTrack)-1)*8+4);
 end
 
 %get the x,y-coordinates and amplitudes at the ends of tracks
-xCoordEnd   = zeros(numEnd,1);
-yCoordEnd   = zeros(numEnd,1);
-ampEnd      = zeros(numEnd,1);
-for iEnd = 1 : numEnd
-    iTrack = indxEnd(iEnd);
-    xCoordEnd(iEnd) = trackedFeatInfo(iTrack,(trackEndTime(iEnd)-1)*8+1);
-    yCoordEnd(iEnd) = trackedFeatInfo(iTrack,(trackEndTime(iEnd)-1)*8+2);
-    ampEnd(iEnd) = trackedFeatInfo(iTrack,(trackEndTime(iEnd)-1)*8+4);
+xCoordEnd   = zeros(numTracks,1);
+yCoordEnd   = zeros(numTracks,1);
+ampEnd      = zeros(numTracks,1);
+for iTrack = 1 : numTracks
+    xCoordEnd(iTrack) = trackedFeatInfo(iTrack,(trackEndTime(iTrack)-1)*8+1);
+    yCoordEnd(iTrack) = trackedFeatInfo(iTrack,(trackEndTime(iTrack)-1)*8+2);
+    ampEnd(iTrack) = trackedFeatInfo(iTrack,(trackEndTime(iTrack)-1)*8+4);
 end
 
 %determine the types, velocities and noise stds of all tracks
@@ -219,27 +203,7 @@ undetBrownStd = prctile(noiseStdAll,95);
     getAveDispEllipseAll(xVel,yVel,noiseStd,trackType,undetBrownStd,...
     timeWindow,brownStdMult,linStdMult,timeReachConfB,timeReachConfL,...
     minSearchRadius,maxSearchRadius,useLocalDensity,closestDistScale,...
-    maxStdMult,nnDistLinkedFeat,nnWindow,trackStartTimeAll,trackEndTimeAll);
-
-%retain only the information for tracks whose starts are considered for gap closing
-trackTypeStart = trackType(indxStart);
-% xVelStart      = xVel(indxStart);
-% yVelStart      = yVel(indxStart);
-% noiseStdStart  = noiseStd(indxStart);
-dispDriftStart = dispDrift(:,:,indxStart);
-dispBrownStart = dispBrown(:,indxStart);
-longVecStart  = longVecSAll(:,:,indxStart);
-shortVecStart = shortVecSAll(:,:,indxStart);
-
-%retain only the information for tracks whose ends are considered for gap closing
-trackTypeEnd = trackType(indxEnd);
-% xVelEnd      = xVel(indxEnd);
-% yVelEnd      = yVel(indxEnd);
-% noiseStdEnd  = noiseStd(indxEnd);
-dispDriftEnd = dispDrift(:,:,indxEnd);
-dispBrownEnd = dispBrown(:,indxEnd);
-longVecEnd  = longVecEAll(:,:,indxEnd);
-shortVecEnd = shortVecEAll(:,:,indxEnd);
+    maxStdMult,nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime);
 
 %find all pairs of ends and starts that can potentially be linked
 %determine this by looking at gaps between ends and starts
@@ -274,20 +238,20 @@ for iPair = 1 : length(indxEnd2)
     timeGap = timeGap2(iEnd,iStart);
 
     %get the types of the two tracks
-    trackTypeS = trackTypeStart(iStart);
-    trackTypeE = trackTypeEnd(iEnd);
+    trackTypeS = trackType(iStart);
+    trackTypeE = trackType(iEnd);
 
     %determine the average displacement and search ellipse of track iStart
-    %     dispDriftS = dispDriftStart(:,timeGap,iStart);
-    %     dispBrownS = dispBrownStart(timeGap,iStart);
-    longVecS = longVecStart(:,timeGap,iStart);
-    shortVecS = shortVecStart(:,timeGap,iStart);
+    %     dispDriftS = dispDrift(:,timeGap,iStart);
+    %     dispBrownS = dispBrown(timeGap,iStart);
+    longVecS = longVecSAll(:,timeGap,iStart);
+    shortVecS = shortVecSAll(:,timeGap,iStart);
 
     %determine the average displacement and search ellipse of track iEnd
-    %     dispDriftE = dispDriftEnd(:,timeGap,iEnd);
-    %     dispBrownE = dispBrownEnd(timeGap,iEnd);
-    longVecE = longVecEnd(:,timeGap,iEnd);
-    shortVecE = shortVecEnd(:,timeGap,iEnd);
+    %     dispDriftE = dispDrift(:,timeGap,iEnd);
+    %     dispBrownE = dispBrown(timeGap,iEnd);
+    longVecE = longVecEAll(:,timeGap,iEnd);
+    shortVecE = shortVecEAll(:,timeGap,iEnd);
 
     %calculate the vector connecting the end of track iEnd to the
     %start of track iStart
@@ -321,7 +285,7 @@ for iPair = 1 : length(indxEnd2)
             switch trackTypeS
                 case 1 %if start is directed
 
-                    %calculate the square sine of angle between velocity vectors
+                    %calculate the square sine of the angle between velocity vectors
                     sin2Angle = 1 -  (longVecE' * longVecS / (longVecMagE * longVecMagS))^2;
 
                     %check whether the end of track iEnd is within the search
@@ -434,9 +398,287 @@ numSplit  =  0; %index counting splitting events
 indxSplit = []; %vector storing splitting track number
 altCostSplit = []; %vector storing alternative costs of not splitting
 
+%if merging and splitting are to be considered ...
+if mergeSplit
+
+    %find the maximum velocity and multiply that by 2*linStdMult(1)
+    %to get the absolute upper limit of acceptable displacement between two
+    %frames
+    maxDispAllowed = max([xVel; yVel]) * 2 * linStdMult(1);
+
+    %costs of merging
+
+    %go over all track end times
+    for endTime = 1 : numFrames-1
+
+        %find tracks that end in this frame
+        endsToConsider = find(trackEndTime == endTime);
+        
+        %find tracks that start no later than this frame
+        mergesToConsider = find(trackStartTime <= endTime);
+
+        %get index indicating frame of merging
+        timeIndx  = endTime*8;
+
+        %calculate displacement between track ends and other tracks in the
+        %next frame
+        dispMat2 = createDistanceMatrix([xCoordEnd(endsToConsider) ...
+            yCoordEnd(endsToConsider)],[trackedFeatInfo(mergesToConsider, ...
+            timeIndx+1) trackedFeatInfo(mergesToConsider,timeIndx+2)]);
+
+        %find possible pairs
+        [indxEnd2,indxMerge2] = find(dispMat2 <= maxDispAllowed);
+
+        %go over all possible pairs
+        for iPair = 1 : length(indxEnd2)
+
+            %get indices of ending track and track it might merge with
+            iEnd = endsToConsider(indxEnd2(iPair));
+            iMerge = mergesToConsider(indxMerge2(iPair));
+
+            %get the types of the two tracks
+            trackTypeE = trackType(iEnd);
+            trackTypeM = trackType(iMerge);
+
+            %determine the search ellipse of track iEnd
+            longVecE = longVecEAll(:,1,iEnd);
+            shortVecE = shortVecEAll(:,1,iEnd);
+
+            %calculate the magnitudes of the long and short search vectors
+            %of the end
+            longVecMagE = sqrt(longVecE' * longVecE);
+            shortVecMagE = sqrt(shortVecE' * shortVecE);
+
+            %get the direction of motion of the merging track
+            %longVecM will be already normalized to unity
+            longVecM = longVecEAll(:,1,iMerge);
+            longVecM = longVecM / sqrt(longVecM' * longVecM);
+
+            %calculate the vector connecting the end of track iEnd to the
+            %point of merging
+            dispVec = [xCoordEnd(iEnd) - trackedFeatInfo(iMerge,timeIndx+1) ...
+                yCoordEnd(iEnd) - trackedFeatInfo(iMerge,timeIndx+2)];
+
+            %project the connecting vector onto the long and short vectors
+            %of track iEnd and take absolute value
+            projEndLong = abs(dispVec * longVecE) / longVecMagE;
+            projEndShort = abs(dispVec * shortVecE) / shortVecMagE;
+
+            %get the absolute value of dispVec
+            dispVec = abs(dispVec);
+
+            %decide whether this is a possible link based on the types of
+            %the two tracks
+            switch trackTypeE
+                case 1 %if end is directed
+                    switch trackTypeM
+                        case 1 %if merging track is directed
+
+                            %calculate the square sine of the angle between velocity vectors
+                            sin2Angle = 1 - (longVecE' * longVecM / longVecMagE)^2;
+
+                            %check whether the merging feature is within
+                            %the search region of the end of track iEnd
+                            %and whether the angle between the two
+                            %directions of motion is within acceptable
+                            %bounds
+                            possibleLink = projEndLong <= longVecMagE && ...
+                                projEndShort <= shortVecMagE && ...
+                                sin2Angle <= sin2AngleMax;
+
+                        otherwise %if merging track is Brownian or undetermined
+
+                            %check whether the merging feature is within
+                            %the search region of the end of track iEnd
+                            possibleLink = projEndLong <= longVecMagE && ...
+                                projEndShort <= shortVecMagE;
+
+                    end
+                otherwise %if end is Brownian or undetermined
+
+                    %check whether the merging feature is within
+                    %the search region of the end of track iEnd
+                    possibleLink = projEndLong <= longVecMagE && ...
+                        projEndShort <= shortVecMagE;
+
+            end
+
+            %if this is a possible link ...
+            if possibleLink
+
+                %increase the "merge index" by one
+                numMerge = numMerge + 1;
+
+                %save the merging track's number
+                indxMerge = [indxMerge; iMerge];
+
+                %store the location of this pair in the cost matrix
+                indx1 = [indx1; iEnd]; %row number
+                indx2 = [indx2; numMerge+numTracks]; %column number
+
+                %calculate the cost of linking them
+                dispVecMag2 = dispVec * dispVec';
+                if trackTypeE == 1 && trackTypeM == 1
+                    cost12 = dispVecMag2 * sin2Angle;
+                else
+                    cost12 = dispVecMag2;
+                end
+
+                %add this cost to the list of costs
+                cost = [cost; cost12];
+
+                %calculate the alternative cost of not merging for the
+                %track that the end is possibly merging with
+                cost12 = 0.1 * cost12;
+
+                %add this cost to the list of alternative costs
+                altCostMerge = [altCostMerge; cost12];
+
+            end %(if possibleLink)
+
+        end %(for iPair = 1 : length(indxEnd2))
+
+    end %(for endTime = min(trackEndTime):max(trackEndTime))
+
+    %costs of splitting
+
+    %go over all track starting times
+    for startTime = 2 : numFrames
+
+        %find tracks that start in this frame
+        startsToConsider = find(trackStartTime==startTime);
+
+        %find tracks that end no earlier than this frame
+        splitsToConsider = find(trackEndTime >= startTime);
+
+        %get index indicating time of splitting
+        timeIndx  = (startTime-2)*8;
+
+        %calculate displacement between track starts and other tracks in the
+        %previous frame
+        dispMat2 = createDistanceMatrix([xCoordStart(startsToConsider) ...
+            yCoordStart(startsToConsider)],[trackedFeatInfo(splitsToConsider, ...
+            timeIndx+1) trackedFeatInfo(splitsToConsider,timeIndx+2)]);
+
+        %find possible pairs
+        [indxStart2,indxSplit2] = find(dispMat2 <= maxDispAllowed);
+
+        %go over all possible pairs
+        for iPair = 1 : length(indxStart2)
+
+            %get indices of starting track and track it might have split from
+            iStart = startsToConsider(indxStart2(iPair));
+            iSplit = splitsToConsider(indxSplit2(iPair));
+
+            %get the types of the two tracks
+            trackTypeS = trackType(iStart);
+            trackTypeSp = trackType(iSplit);
+
+            %determine the search ellipse of track iStart
+            longVecS = longVecSAll(:,1,iStart);
+            shortVecS = shortVecSAll(:,1,iStart);
+
+            %calculate the magnitudes of the long and short search vectors
+            %of the start
+            longVecMagS = sqrt(longVecS' * longVecS);
+            shortVecMagS = sqrt(shortVecS' * shortVecS);
+
+            %get the direction of motion of the splitting track
+            %longVecSp will be already normalized to unity
+            longVecSp = longVecEAll(:,1,iSplit);
+            longVecSp = longVecSp / sqrt(longVecSp' * longVecSp);
+
+            %calculate the vector connecting the end of track iStart to the
+            %point of splitting
+            dispVec = [xCoordStart(iStart) - trackedFeatInfo(iSplit,timeIndx+1) ...
+                yCoordStart(iStart) - trackedFeatInfo(iSplit,timeIndx+2)];
+
+            %project the connecting vector onto the long and short vectors
+            %of track iStart and take absolute value
+            projStartLong = abs(dispVec * longVecS) / longVecMagS;
+            projStartShort = abs(dispVec * shortVecS) / shortVecMagS;
+
+            %get the absolute value of dispVec
+            dispVec = abs(dispVec);
+
+            %decide whether this is a possible link based on the types of
+            %the two tracks
+            switch trackTypeS
+                case 1 %if start is directed
+                    switch trackTypeSp
+                        case 1 %if splitting track is directed
+
+                            %calculate the square sine of the angle between velocity vectors
+                            sin2Angle = 1 - (longVecS' * longVecSp / longVecMagS)^2;
+
+                            %check whether the splitting feature is within
+                            %the search region of the start of track iStart
+                            %and whether the angle between the two
+                            %directions of motion is within acceptable
+                            %bounds
+                            possibleLink = projStartLong <= longVecMagS && ...
+                                projStartShort <= shortVecMagS && ...
+                                sin2Angle <= sin2AngleMax;
+
+                        otherwise %if splitting track is Brownian or undetermined
+
+                            %check whether the splitting feature is within
+                            %the search region of the start of track iStart
+                            possibleLink = projStartLong <= longVecMagS && ...
+                                projStartShort <= shortVecMagS;
+
+                    end
+                otherwise %if start is Brownian or undetermined
+
+                    %check whether the splitting feature is within the
+                    %search region of the start of track iStart
+                    possibleLink = projStartLong <= longVecMagS && ...
+                        projStartShort <= shortVecMagS;
+
+            end
+
+            %if this is a possible link ...
+            if possibleLink
+
+                %increase the "split index" by one
+                numSplit = numSplit + 1;
+
+                %save the merging track's number
+                indxSplit = [indxSplit; iSplit];
+
+                %store the location of this pair in the cost matrix
+                indx1 = [indx1; numSplit+numTracks]; %row number
+                indx2 = [indx2; iStart]; %column number
+
+                %calculate the cost of linking them
+                dispVecMag2 = dispVec * dispVec';
+                if trackTypeS == 1 && trackTypeSp == 1
+                    cost12 = dispVecMag2 * sin2Angle;
+                else
+                    cost12 = dispVecMag2;
+                end
+
+                %add this cost to the list of costs
+                cost = [cost; cost12];
+
+                %calculate the alternative cost of not merging for the
+                %track that the end is possibly merging with
+                cost12 = 0.1 * cost12;
+
+                %add this cost to the list of alternative costs
+                altCostSplit = [altCostSplit; cost12];
+
+            end %(if possibleLink)
+
+        end %(for for iPair = 1 : length(indxStart2))
+
+    end %(for startTime = min(trackStartTime):max(trackStartTime))
+
+end %(if mergeSplit)
+
 %create cost matrix without births and deaths
-numEndSplit = numEnd + numSplit;
-numStartMerge = numStart + numMerge;
+numEndSplit = numTracks + numSplit;
+numStartMerge = numTracks + numMerge;
 costMat = sparse(indx1,indx2,cost,numEndSplit,numStartMerge);
 
 %append cost matrix to allow births and deaths ...
@@ -449,8 +691,8 @@ costLR = min(min(min(costMat))-1,-1);
 
 %create cost matrix that allows for births and deaths
 costMat = [costMat ... %costs for links (gap closing + merge/split)
-    spdiags([costBD*ones(numEnd,1); altCostSplit],0,numEndSplit,numEndSplit); ... %costs for death
-    spdiags([costBD*ones(numStart,1); altCostMerge],0,numStartMerge,numStartMerge) ...  %costs for birth
+    spdiags([costBD*ones(numTracks,1); altCostSplit],0,numEndSplit,numEndSplit); ... %costs for death
+    spdiags([costBD*ones(numTracks,1); altCostMerge],0,numStartMerge,numStartMerge) ...  %costs for birth
     sparse(indx2,indx1,costLR*ones(length(indx1),1),numStartMerge,numEndSplit)]; %dummy costs to complete the cost matrix
 
 %determine the nonlinkMarker
@@ -458,153 +700,4 @@ nonlinkMarker = min(floor(full(min(min(costMat))))-5,-5);
 
 
 %%%%% ~~ the end ~~ %%%%%
-
-% % %if merging and splitting are to be considered ...
-% % if mergeSplit
-% % 
-% %     %costs of merging
-% % 
-% %     %go over all track ending times
-% %     for endTime = min(trackEndTime):max(trackEndTime)
-% % 
-% %         %find tracks that end at this time point
-% %         tracksToConsider = find(trackEndTime==endTime);
-% %         numTracksToConsider = length(tracksToConsider);
-% % 
-% %         %first consider the case where the ending track merges with another
-% %         %existing track. This happens when the difference in the intensities
-% %         %of the two merging features is smaller than the change in intensity
-% %         %from one time point to the next
-% % 
-% %         %get index indicating time of merging
-% %         timeIndx  = endTime*8;
-% % 
-% %         for j=tracksToConsider' %go over all ends considered
-% %             for i=1:numTracks %go over all tracks
-% % 
-% %                 %get position and amplitude of merged feature
-% %                 xCoordMid = trackedFeatInfo(i,timeIndx+1);
-% %                 yCoordMid = trackedFeatInfo(i,timeIndx+2);
-% %                 zCoordMid = trackedFeatInfo(i,timeIndx+3);
-% %                 ampMidT1 = trackedFeatInfo(i,timeIndx+4);
-% % 
-% %                 %get amplitude of feature that merged with the
-% %                 %ending track, at time point before merging
-% %                 ampMidT0 = trackedFeatInfo(i,timeIndx-3);
-% % 
-% %                 %calculate the square distance between the ending track
-% %                 %and the point of merging
-% %                 %dispSq = NaN if the track does not exist at the
-% %                 %time of merging (prohibiting a link)
-% %                 dispSq = (xCoordEnd(j)-xCoordMid)^2 ...
-% %                     + (yCoordEnd(j)-yCoordMid)^2 + (zCoordEnd(j)-zCoordMid)^2;
-% % 
-% %                 %calculate the square difference between the amplitude
-% %                 %after merging and the sum of amplitudes before merging
-% %                 %ampDiffSq = NaN if the track does not exist at the
-% %                 %time of merging or the time point before it (prohibiting a
-% %                 %link).
-% %                 ampDiffSq = (ampEnd(j) + ampMidT0 - ampMidT1)^2;
-% % 
-% %                 %if this is a possible link ...
-% %                 if dispSq < maxDispSqMS(1) && ...
-% %                         ampDiffSq < maxAmpDiffSqMS(1)
-% % 
-% %                     %increase the "merge index" by one
-% %                     numMerge = numMerge + 1;
-% % 
-% %                     %save the merging track's number
-% %                     indxMerge = [indxMerge; i];
-% % 
-% %                     %calculate the cost of merging
-% %                     indx1 = [indx1; j]; %row number
-% %                     indx2 = [indx2; numMerge+m]; %column number
-% % 
-% %                     cost = [cost; dispSqTheta(1)*dispSq - ...
-% %                         (dispSqR(1)-1)*log(max(dispSq,realmin)) + ...
-% %                         ampDiffSq/4/ampDiffStd(1)^2 + ...
-% %                         addConst(1) + halfLog2]; %cost of merging
-% % 
-% %                     altCostMerge = [altCostMerge; dispSqR(1) - ...
-% %                         (dispSqR(1)-1)*log(dispSqR(1)/dispSqTheta(1)) + ...
-% %                         (ampMidT0-ampMidT1)^2/4/ampDiffStd(1)^2 + ...
-% %                         addConst(1) + halfLog2]; %cost of not merging
-% % 
-% %                 end %(if dispSq < maxDispSqMS(1) && ampDiffSq < maxAmpDiffSqMS)
-% % 
-% %             end %(for i=1:numTracks)
-% %         end %(for j=tracksToConsider')
-% % 
-% %     end %(for endTime = min(trackEndTime):max(trackEndTime))
-% % 
-% %     %costs of splitting
-% % 
-% %     %go over all track starting times
-% %     for startTime = min(trackStartTime):max(trackStartTime)
-% % 
-% %         %find tracks that start at this time point
-% %         tracksToConsider = find(trackStartTime==startTime);
-% % 
-% %         %first consider the case where the starting track splits from another
-% %         %existing track. This happens when the difference in the intensities
-% %         %of the two merged features is smaller than the change in intensity
-% %         %from one time point to the next
-% % 
-% %         for j=tracksToConsider' %go over all starts considered
-% %             for i=1:numTracks %go over all tracks
-% % 
-% %                 %get indx indicating time of splitting
-% %                 timeIndx  = (trackStartTime(j)-2)*8;
-% % 
-% %                 %get position and amplitude of feature before splitting
-% %                 xCoordMid = trackedFeatInfo(i,timeIndx+1);
-% %                 yCoordMid = trackedFeatInfo(i,timeIndx+2);
-% %                 zCoordMid = trackedFeatInfo(i,timeIndx+3);
-% %                 ampMidT1 = trackedFeatInfo(i,timeIndx+4);
-% % 
-% %                 %get amplitude of feature that split at time point
-% %                 %after splitting
-% %                 ampMidT0 = trackedFeatInfo(i,timeIndx+9);
-% % 
-% %                 %calculate the square distance between the starting track
-% %                 %and the point of splitting
-% %                 dispSq = (xCoordStart(j)-xCoordMid)^2 ...
-% %                     + (yCoordStart(j)-yCoordMid)^2 + (zCoordStart(j)-zCoordMid)^2;
-% % 
-% %                 %calculate the square difference between the amplitude
-% %                 %after merging and the sum of amplitudes before merging
-% %                 ampDiffSq = (ampStart(j) + ampMidT0 - ampMidT1)^2;
-% % 
-% %                 %if this is a possible link ...
-% %                 if dispSq < maxDispSqMS(1) && ...
-% %                         ampDiffSq < maxAmpDiffSqMS(1)
-% % 
-% %                     %increase the "split index" by one
-% %                     numSplit = numSplit + 1;
-% % 
-% %                     %save the splitting track's number
-% %                     indxSplit = [indxSplit; i];
-% % 
-% %                     %calculate the cost of splitting
-% %                     indx1 = [indx1; numSplit+n]; %row number
-% %                     indx2 = [indx2; j]; %column number
-% % 
-% %                     cost = [cost; dispSqTheta(1)*dispSq - ...
-% %                         (dispSqR(1)-1)*log(max(dispSq,realmin)) + ...
-% %                         ampDiffSq/4/ampDiffStd(1)^2 + ...
-% %                         addConst(1) + halfLog2]; %cost of splitting
-% % 
-% %                     altCostSplit = [altCostSplit; dispSqR(i) - ...
-% %                         (dispSqR(1)-1)*log(dispSqR(1)/dispSqTheta(1)) + ...
-% %                         (ampMidT0-ampMidT1)^2/4/ampDiffStd(1)^2 + ...
-% %                         addConst(1) + halfLog2]; %cost of not splitting
-% % 
-% %                 end %(if dispSq < maxDispSqMS(1) && ampDiffSq < maxAmpDiffSqMS)
-% % 
-% %             end %(for i=1:numTracks)
-% %         end %(for j=tracksToConsider')
-% % 
-% %     end %(for startTime = min(trackStartTime):max(trackStartTime))
-% % 
-% % end %(if mergeSplit)
 

@@ -1,4 +1,4 @@
-function [tracksFeatIndxCG,tracksCoordAmpCG,tracksFeatIndxLink,...
+function [tracksFinal,tracksFeatIndxLink,...
     tracksCoordAmpLink,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
     movieInfo,costMatParam,gapCloseParam,kalmanInitParam,useLocalDensity,...
     saveResults)
@@ -105,6 +105,11 @@ function [tracksFeatIndxCG,tracksCoordAmpCG,tracksFeatIndxLink,...
 %REMARKS The algorithm can handle cases where some frames do not have any
 %        features at all. However, the very first frame must have some
 %        features in it.
+%        When gapCloseParam.mergeSplit = 1, gapCloseParam.tolerance MUST BE
+%        1 to prevent iteration. The part which assigns track segment types
+%        based on overall track type cannot handle tracks which contain
+%        merging and splitting. Therefore, it will only work well with the
+%        initial connectivity matrix from linking.
 %
 %Khuloud Jaqaman, April 2007
 
@@ -112,8 +117,7 @@ function [tracksFeatIndxCG,tracksCoordAmpCG,tracksFeatIndxLink,...
 %Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-tracksFeatIndxCG   = [];
-tracksCoordAmpCG   = [];
+tracksFinal        = [];
 tracksFeatIndxLink = [];
 tracksCoordAmpLink = [];
 kalmanInfoLink     = [];
@@ -170,7 +174,8 @@ else
 end
 
 %get gap closing parameters from input
-tolerance = gapCloseParam.tolerance;
+% tolerance = gapCloseParam.tolerance;
+mergeSplit = gapCloseParam.mergeSplit;
 
 %calculate nearest neighbor distances and store them in movieInfo
 for iFrame = 1 : numFrames
@@ -195,17 +200,19 @@ end %(for iFrame = 1 : numFrames)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %get initial tracks by linking features between consecutive frames
-[tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink,nnDistLinkedFeat,...
-    errFlag] = linkFeaturesKalman(movieInfo,costMatParam,[],...
+[tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink] = ...
+    linkFeaturesKalman(movieInfo,costMatParam,[],...
     kalmanInitParam,useLocalDensity.link,useLocalDensity.nnWindowL);
+clear tracksFeatIndxLink tracksCoordAmpLink errFlag
 
 %redo the linking by going backwards in the movie and using the
 %Kalman filter information from the first linking attempt
 %this will improve the linking and the state estimation
-[tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink,nnDistLinkedFeat,...
-    errFlag] = linkFeaturesKalman(movieInfo(end:-1:1),costMatParam,...
+[tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink] = ...
+    linkFeaturesKalman(movieInfo(end:-1:1),costMatParam,...
     kalmanInfoLink(end:-1:1),kalmanInitParam,useLocalDensity.link,...
     useLocalDensity.nnWindowL);
+clear tracksFeatIndxLink tracksCoordAmpLink errFlag
 
 %go forward one more time to get the final estimate of the initial tracks
 [tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink,nnDistLinkedFeat,...
@@ -214,251 +221,335 @@ end %(for iFrame = 1 : numFrames)
     useLocalDensity.nnWindowL);
 
 %get number of tracks
-numTracksOld = size(tracksFeatIndxLink,1);
+numTracksLink = size(tracksFeatIndxLink,1);
 
-%construct initial track connectivity matrix (which actually has no
-%connectivity after the initial linking)
-trackConnectLink = zeros(numTracksOld,numFrames);
-trackConnectLink(:,1) = (1:numTracksOld)';
-
-%find track start and end times
+%get track start and end times
 trackSEL = getTrackSEL(tracksCoordAmpLink);
 trackStartTime = trackSEL(:,1);
-trackEndTime = trackSEL(:,2);
+trackEndTime   = trackSEL(:,2);
+clear trackSEL
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Close gaps
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%get the indices and total number of tracks that will be considered for gap
-%closing (those which start after the first frame)
-indxStart = find(trackStartTime > 1);
-numStart = length(indxStart);
+%if there are gaps to close (i.e. if there are tracks that start after the
+%first frame and tracks that end before the last frame) ...
+if any(trackStartTime > 1) && any(trackEndTime < numFrames)
 
-%get the indices and total number of tracks that will be considered for gap
-%closing (those which end before the last frame)
-indxEnd = find(trackEndTime < numFrames);
-numEnd = length(indxEnd);
+    %calculate the cost matrix, which already includes the
+    %costs of birth and death
+    [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
+        errFlag] = costMatLinearMotionCloseGaps(tracksCoordAmpLink,...
+        tracksFeatIndxLink,trackStartTime,trackEndTime,costMatParam,...
+        gapCloseParam,kalmanInfoLink,(1:numTracksLink)',...
+        useLocalDensity.cg,nnDistLinkedFeat,useLocalDensity.nnWindowCG);
 
-%initialize track connectivity matrix after gap closing = track
-%connectivity matrix from initial linking
-trackConnectCGOld = trackConnectLink;
+    %link tracks based on this cost matrix, allowing for birth and death
+    [link12,link21] = lap(costMat,nonlinkMarker);
+    link12 = double(link12);
+    link21 = double(link21);
 
-%if there are gaps to close ...
-if numEnd ~= 0 && numStart ~= 0
+    %put the indices of all tracks from linking in one vector
+    tracks2Link = (1:numTracksLink)';
+    tracksRemaining = tracks2Link;
+    
+    %reserve memory space for matrix showing track connectivity
+    compoundTrack = zeros(numTracksLink);
 
-    %assign dummy value to relChangeNumTracks to start first iteration
-    relChangeNumTracks = 1.5;
+    %initialize compTrackIndx
+    compTrackIndx = 0;
 
-    while relChangeNumTracks > tolerance
+    while ~isempty(tracksRemaining)
 
-        %calculate the cost matrix, which already includes the
-        %costs of birth and death
-        [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
-            errFlag] = costMatLinearMotionCloseGaps(tracksCoordAmpLink,...
-            tracksFeatIndxLink,indxStart,indxEnd,trackStartTime,...
-            trackEndTime,costMatParam,gapCloseParam,kalmanInfoLink,...
-            trackConnectCGOld,useLocalDensity.cg,nnDistLinkedFeat,...
-            useLocalDensity.nnWindowCG);
+        %update compound track index by 1
+        compTrackIndx = compTrackIndx + 1;
 
-        %link tracks based on this cost matrix, allowing for birth and death
-        [link12,link21] = lap(costMat,nonlinkMarker);
+        %take first track as a seed to build a compound track with
+        %closed gaps and merges/splits
+        trackSeed = tracksRemaining(1);
+        seedLength = 1;
+        seedLengthOld = 0; %dummy just to get into the while loop
 
-        %initialize new track connectivity matrix
-        trackConnectCGNew = trackConnectLink;
+        %while current seed contains more tracks than previous seed, i.e.
+        %whie new track segments are still being added to the compound
+        %track
+        while seedLength > seedLengthOld
 
-        for iStart = numStart : -1 : 1 %go over all track starts
+            %store current seed for later comparison
+            seedLengthOld = seedLength;
 
-            if link21(iStart) <= numEnd %if this start is linked to an end
+            %find tracks connected to ends of seed tracks
+            tmpTracks = link12(trackSeed);
+            trackLink2End = tmpTracks(tmpTracks <= numTracksLink); %starts linked to ends
+            trackMerge = [];
+            if mergeSplit
+                trackMerge = indxMerge(tmpTracks(tmpTracks > numTracksLink & ...
+                    tmpTracks <= numTracksLink+numMerge) - numTracksLink); %tracks that ends merge with
+            end
 
-                %get the track to be appended at its end, the time point at which
-                %it will be appended, and the track that will be added to it
-                track2Append = indxEnd(link21(iStart));
-                trackAdded = indxStart(iStart);
-
-                %update track connectivity matrix
-                trackConnectCGNew(track2Append,2:end) = trackConnectCGNew(trackAdded,1:end-1);
-                trackConnectCGNew(trackAdded,:) = 0;
-
-            end %(if link21(iStart) <= numEnd)
-
-        end %(for iStart = numStart : -1 : 1)
-
-        %remove rows that do not contain tracks
-        maxValue = max(trackConnectCGNew,[],2);
-        trackConnectCGNew = trackConnectCGNew(maxValue > 0,:);
-
-        %determine number of tracks after gap closing
-        numTracksNew = size(trackConnectCGNew,1);
-
-        %calculate relative change in number of tracks from previous
-        %iteration
-        relChangeNumTracks = abs(numTracksNew - numTracksOld) / numTracksOld;
-        disp([num2str(numTracksNew) '   ' num2str(relChangeNumTracks)]);
-        
-        %change New to Old
-        trackConnectCGOld = trackConnectCGNew;
-        numTracksOld = numTracksNew;
-
-    end %(while relChangeNumTracks > tolerance)
-
-    %reserve memory for matrix storing feature indices
-    %and for matrix storing coordinates and amplitudes
-    tracksFeatIndxCG = zeros(numTracksNew,numFrames);
-    tracksCoordAmpCG = NaN*ones(numTracksNew,8*numFrames);
-
-    %go over all tracks
-    for iTrack = 1 : numTracksNew
-
-        %get indices of segments from linking making up current track
-        segmentIndx = trackConnectCGNew(iTrack,:);
-        segmentIndx = segmentIndx(segmentIndx ~= 0);
-        
-        %go over all segments
-        for iSegment = segmentIndx
-
-            %get segment start and end time
-            segmentStartTime = trackStartTime(iSegment);
-            segmentEndTime = trackEndTime(iSegment);
+            %find tracks connected to starts of seed tracks
+            tmpTracks = link21(trackSeed);
+            trackLink2Start = tmpTracks(tmpTracks <= numTracksLink); %ends linked to starts
+            trackSplit = [];
+            if mergeSplit
+                trackSplit = indxSplit(tmpTracks(tmpTracks > numTracksLink & ...
+                    tmpTracks <= numTracksLink+numSplit) - numTracksLink); %tracks that starts split from
+            end
             
-            %store feature indices
-            tracksFeatIndxCG(iTrack,segmentStartTime:segmentEndTime) = ...
-                tracksFeatIndxLink(iSegment,segmentStartTime:segmentEndTime);
+            %put all tracks together as the new seed
+            trackSeed = [trackSeed; trackLink2End; trackLink2Start; ...
+                trackMerge; trackSplit];
 
-            %modify start and end time for storing coordinates
-            %and amplitudes
-            segmentStartTime = 8 * (segmentStartTime - 1) + 1;
-            segmentEndTime = 8 * segmentEndTime;
+            %remove repetitions and arrange tracks in ascending order
+            trackSeed = unique(trackSeed);
 
-            %store coordinates and amplitudes
-            tracksCoordAmpCG(iTrack,segmentStartTime:segmentEndTime) = ...
-                tracksCoordAmpLink(iSegment,segmentStartTime:segmentEndTime);
+            %get number of tracks in new seed
+            seedLength = length(trackSeed);
+            
+            %expand new seed if merging/splitting are allowed
+            if mergeSplit
 
-        end %(for iSegment = segmentIndx)
+                %variables storing merge/split seed tracks
+                mergeSeed = [];
+                splitSeed = [];
+                
+                %go over all seed tracks
+                for iSeed = 1 : seedLength
+                    
+                    %get the location(s) of this track in indxMerge
+                    mergeSeed = [mergeSeed; find(indxMerge == trackSeed(iSeed))];
+                    
+                    %get the location(s) of this track in indxSplit
+                    splitSeed = [splitSeed; find(indxSplit == trackSeed(iSeed))];
+                    
+                end
+
+                %add numTracksLink to mergeSeed and splitSeed to determine
+                %their location in the cost matrix
+                mergeSeed = mergeSeed + numTracksLink;
+                splitSeed = splitSeed + numTracksLink;
+                
+                %find tracks merging with seed tracks
+                trackMerge = [];
+                for iSeed = 1 : length(mergeSeed)
+                    trackMerge = [trackMerge; find(link12(1:numTracksLink)==mergeSeed(iSeed))];
+                end
+
+                %find tracks splitting from seed tracks
+                trackSplit = [];
+                for iSeed = 1 : length(splitSeed)
+                    trackSplit = [trackSplit; find(link21(1:numTracksLink)==splitSeed(iSeed))];
+                end
+
+                %add these track to the seed
+                trackSeed = [trackSeed; trackMerge; trackSplit];
+
+                %remove repetitions and arrange tracks in ascending order
+                trackSeed = unique(trackSeed);
+
+                %get number of tracks in new seed
+                seedLength = length(trackSeed);                
+                
+            end %(if mergeSplit)
+
+        end %(while length(trackSeed) > length(trackSeedOld))
+
+        %expand trackSeed to reserve memory for connetivity information
+        trackSeedConnect = [trackSeed zeros(seedLength,2)];
         
-    end %(for iTrack = 1 : numTracksNew)
+        %store the tracks that the ends of the seed tracks are linked to,
+        %and indicate whether it's an end-to-start link (+ve) or a merge (-ve)
+        tmpTracks = link12(trackSeed);
+        if mergeSplit
+            tmpTracks(tmpTracks > numTracksLink & tmpTracks <= ...
+                numTracksLink+numMerge) = -indxMerge(tmpTracks(tmpTracks > ...
+                numTracksLink & tmpTracks <= numTracksLink+numMerge) - numTracksLink);
+        end
+        tmpTracks(tmpTracks > numTracksLink) = NaN;
+        trackSeedConnect(:,2) = tmpTracks;
+        
+        %store the tracks that the starts of the seed tracks are linked to,
+        %and indicate whether it's a start-to-end link (+ve) or a split (-ve)
+        tmpTracks = link21(trackSeed);
+        if mergeSplit
+            tmpTracks(tmpTracks > numTracksLink & tmpTracks <= ...
+                numTracksLink+numSplit) = -indxSplit(tmpTracks(tmpTracks > ...
+                numTracksLink & tmpTracks <= numTracksLink+numSplit) - numTracksLink);
+        end
+        tmpTracks(tmpTracks > numTracksLink) = NaN;
+        trackSeedConnect(:,3) = tmpTracks;
 
-end %(if n~=0 && m~=0)
+        %store tracks making up this compound track and their connectivity
+        compoundTrack(compTrackIndx,1:3*seedLength) = reshape(...
+            trackSeedConnect,3*seedLength,1)';
+
+        %in the list of all tracks, indicate that these tracks have
+        %been taken care of by placing NaN instead of their number
+        tracks2Link(trackSeed) = NaN;
+
+        %retain only tracks that have not been linked to anything yet
+        tracksRemaining = tracks2Link(~isnan(tracks2Link));
+
+    end %(while ~isempty(tracksRemaining))
+
+    %remove empty rows
+    maxValue = max(compoundTrack,[],2);
+    compoundTrack = compoundTrack(maxValue > 0,:);
+
+    %determine number of tracks after gap closing (including merge/split if
+    %specified)
+    numTracksCG = size(compoundTrack,1);
+
+    %reserve memory for structure storing tracks after gap closing
+    tracksFinal = repmat(struct('tracksFeatIndxCG',[],...
+        'tracksCoordAmpCG',[],'seqOfEvents',[]),numTracksCG,1);
+
+    %go over all compound tracks
+    for iTrack = 1 : numTracksCG
+
+        %get indices of tracks from linking making up current compound track
+        %determine their number and connectivity
+        trackSeedConnect = compoundTrack(iTrack,:)';
+        trackSeedConnect = trackSeedConnect(trackSeedConnect ~= 0);
+        seedLength = length(trackSeedConnect)/3; %number of segments making current track
+        trackSeedConnect = reshape(trackSeedConnect,seedLength,3);
+        
+        %get their start times
+        segmentStartTime = trackStartTime(trackSeedConnect(:,1));
+        
+        %arrange segments in ascending order of their start times
+        [segmentStartTime,indxOrder] = sort(segmentStartTime);
+        trackSeedConnect = trackSeedConnect(indxOrder,:);
+        
+        %get the segments' end times
+        segmentEndTime = trackEndTime(trackSeedConnect(:,1));
+        
+        %calculate the segments' positions in the matrix of coordinates and
+        %amplitudes
+        segmentStartTime8 = 8 * (segmentStartTime - 1) + 1;
+        segmentEndTime8   = 8 * segmentEndTime;
+
+        %instead of having the connectivity in terms of the original track
+        %indices, have it in terms of the indices of this subset of tracks
+        %(which are arranged in ascending order of their start times)
+        for iSeed = 1 : seedLength
+            value = trackSeedConnect(iSeed,2);
+            if value > 0
+                trackSeedConnect(iSeed,2) = find(trackSeedConnect(:,1) == ...
+                    value);
+            elseif value < 0
+                trackSeedConnect(iSeed,2) = -find(trackSeedConnect(:,1) == ...
+                    -value);
+            end
+            value = trackSeedConnect(iSeed,3);
+            if value > 0
+                trackSeedConnect(iSeed,3) = find(trackSeedConnect(:,1) == ...
+                    value);
+            elseif value < 0
+                trackSeedConnect(iSeed,3) = -find(trackSeedConnect(:,1) == ...
+                    -value);
+            end
+        end
+
+        %get track information from the matrices storing linking information
+        tracksFeatIndxCG = tracksFeatIndxLink(trackSeedConnect(:,1),:);
+        tracksCoordAmpCG = tracksCoordAmpLink(trackSeedConnect(:,1),:);
+
+        %perform all gap closing links and modify connectivity accordingly
+        %go over all starts in reverse order
+        for iSeed = seedLength : -1 : 2
+            
+            %find the track this track might be connected to
+            track2Append = trackSeedConnect(iSeed,3);
+
+            %if there is a track (which is not a split)
+            if track2Append > 0
+                
+                %put track information in the relevant row
+                tracksFeatIndxCG(track2Append,segmentStartTime(iSeed):...
+                    segmentEndTime(iSeed)) = tracksFeatIndxCG(iSeed,...
+                    segmentStartTime(iSeed):segmentEndTime(iSeed));
+                tracksFeatIndxCG(iSeed,:) = 0;
+                tracksCoordAmpCG(track2Append,segmentStartTime8(iSeed):...
+                    segmentEndTime8(iSeed)) = tracksCoordAmpCG(iSeed,...
+                    segmentStartTime8(iSeed):segmentEndTime8(iSeed));
+                tracksCoordAmpCG(iSeed,:) = NaN;
+                
+                %update segment information
+                segmentEndTime(track2Append) = segmentEndTime(iSeed);
+                segmentEndTime8(track2Append) = segmentEndTime8(iSeed);
+                segmentEndTime(iSeed) = NaN;
+                segmentEndTime8(iSeed) = NaN;
+                segmentStartTime(iSeed) = NaN;
+                segmentStartTime8(iSeed) = NaN;
+                
+                %update connectivity
+                trackSeedConnect(track2Append,2) = trackSeedConnect(iSeed,2);
+                trackSeedConnect(trackSeedConnect(:,2) == iSeed,2) = track2Append;
+                trackSeedConnect(trackSeedConnect(:,3) == iSeed,3) = track2Append;
+                trackSeedConnect(trackSeedConnect(:,2) == -iSeed,2) = -track2Append;
+                trackSeedConnect(trackSeedConnect(:,3) == -iSeed,3) = -track2Append;
+
+            end %(if track2Append > 0)
+                
+        end %(for iSeed = seedLength : -1 : 2)
+        
+        %find rows that are not empty
+        maxValue = max(tracksFeatIndxCG,[],2);
+        rowsNotEmpty = find(maxValue > 0);
+
+        %remove empty rows
+        tracksFeatIndxCG = tracksFeatIndxCG(rowsNotEmpty,:);
+        tracksCoordAmpCG = tracksCoordAmpCG(rowsNotEmpty,:);
+        segmentEndTime   = segmentEndTime(rowsNotEmpty);
+        segmentStartTime = segmentStartTime(rowsNotEmpty);
+        trackSeedConnect = trackSeedConnect(rowsNotEmpty,:);
+
+        %update connectivity accordingly
+        %by now, only merges and splits are left - thus no need for minus
+        %sign to distinguish them from closed gaps
+        for iSeed = 1 : length(rowsNotEmpty)
+            trackSeedConnect(trackSeedConnect(:,2) == -rowsNotEmpty(...
+                iSeed),2) = iSeed;
+            trackSeedConnect(trackSeedConnect(:,3) == -rowsNotEmpty(...
+                iSeed),3) = iSeed;
+        end
+        
+        %determine new "seedLength"
+        seedLength = length(rowsNotEmpty);
+
+        %store the sequence of events of this track
+        seqOfEvents = [segmentStartTime ones(seedLength,1) ...
+            (1:seedLength)' trackSeedConnect(:,3); ...
+            segmentEndTime 2*ones(seedLength,1) ...
+            (1:seedLength)' trackSeedConnect(:,2)];
+        
+        %sort sequence of events in ascending order of time
+        [tmp,indxOrder] = sort(seqOfEvents(:,1));
+        seqOfEvents = seqOfEvents(indxOrder,:);
+        
+        %add 1 to the times of merges
+        indx = find(~isnan(seqOfEvents(:,4)) & seqOfEvents(:,2) == 2);
+        seqOfEvents(indx,1) = seqOfEvents(indx,1) + 1;
+        
+        %store final tracks
+        tracksFinal(iTrack).tracksFeatIndxCG = tracksFeatIndxCG;
+        tracksFinal(iTrack).tracksCoordAmpCG = tracksCoordAmpCG;
+        tracksFinal(iTrack).seqOfEvents = seqOfEvents;
+
+    end %(for iTrack = 1 : numTracksCG)
+
+end %(if any(trackStartTime > 1) && any(trackEndTime < numFrames))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Save results
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 save([saveResDir filesep saveResFile],'costMatParam','gapCloseParam',...
-    'kalmanInitParam','tracksFeatIndxCG','tracksCoordAmpCG',...
-    'tracksFeatIndxLink','tracksCoordAmpLink','kalmanInfoLink');
+    'kalmanInitParam','tracksFinal','tracksFeatIndxLink',...
+    'tracksCoordAmpLink','kalmanInfoLink');
 
 
 %%%%% ~~ the end ~~ %%%%%
-
-
-% %
-% %
-% %
-% %             elseif mergeSplit && link21(i) > n && link21(i) <= n + numSplit %if this start is a split
-% %
-% %                 %get the track it split from
-% %                 trackSplitFrom = indxSplit(link21(i)-n);
-% %
-% %                 %find the tracks that have previously merged with this
-% %                 %splitting track
-% %                 mergeTrackToLookAt = find(indxMerge==trackSplitFrom);
-% %                 trackPrevMerge = link21(mergeTrackToLookAt+m);
-% %                 trackPrevMerge = trackPrevMerge(trackPrevMerge<=n);
-% %                 numPrevMerge = length(trackPrevMerge);
-% %
-% %                 %only consider splits that have possible previous merges
-% %                 if numPrevMerge ~= 0
-% %
-% %                     %get the time of splitting
-% %                     timeSplit = trackStartTime(i);
-% %
-% %                     %find the times of merging
-% %                     timeMerge = trackEndTime(trackPrevMerge) + 1;
-% %
-% %                     %collect splitting and merging tracks into one
-% %                     %matrix
-% %                     trackedFeatMS = trackedFeatureInfo([indxStart(i);...
-% %                         indxEnd(trackPrevMerge)],:);
-% %
-% %                     %find the costs for linking the merging tracks
-% %                     %to the splitting track
-% %                     costMatParams = costMatrices(4).costMatParam;
-% %                     costMatParams.trackStats = trackStats;
-% %                     eval(['[costVec,errFlag] = ' costMatrices(4).costMatFun ...
-% %                         '(trackedFeatMS,timeSplit,timeMerge,'...
-% %                         'costMatParams,gapCloseParam);'])
-% % 
-% %                     %choose the most likely merging track as that
-% %                     %with the minimum cost
-% %                     minCost = min(costVec);
-% %                     mostProbTrack = find(costVec==minCost);
-% %                     timeMerge = timeMerge(mostProbTrack);
-% % 
-% %                     if ~isinf(minCost)
-% % 
-% %                         %get the row number where this track is stored
-% %                         %in trackedFeatureInfo;
-% %                         mostProbTrack = indxEnd(trackPrevMerge(mostProbTrack));
-% % 
-% %                         %modify the matrix indicating linked feature number
-% %                         trackedFeatureIndx(mostProbTrack,timeMerge:end) = ...
-% %                             [trackedFeatureIndx(trackSplitFrom,timeMerge:timeSplit-1) ...
-% %                             trackedFeatureIndx(indxStart(i),timeSplit:end)];
-% %                         trackedFeatureIndx(indxStart(i),timeSplit:end) = 0;
-% % 
-% %                         %modify the matrix indicating linked feature information
-% %                         trackedFeatureInfo(mostProbTrack,8*(timeMerge-1)+1:end) = ...
-% %                             [trackedFeatureInfo(trackSplitFrom,8*(timeMerge-1)+1:8*(timeSplit-1)) ...
-% %                             trackedFeatureInfo(indxStart(i),8*(timeSplit-1)+1:end)];
-% %                         trackedFeatureInfo(indxStart(i),8*(timeSplit-1)+1:end) = NaN;
-% % 
-% %                     end %(if ~isinf(minCost))
-% % 
-% %                 end %(if numPrevMerge ~= 0)
-% % 
-
-
-% %close gaps sequentially (in segments) to avoid memory issues if problem is too big
-% %determine the lower and upper bounds of first segment for gap closing
-% %go back in time by timeWindow when looking for track ends to be
-% %connected to track starts in this segment
-% segmentUB = numFrames; %upper bound (for both ends and starts)
-% segmentLBS = max(segmentUB+1-segmentLength,2); %lower bound for starts
-% segmentLBE = max(segmentUB+1-segmentLength-timeWindow,1); %lower bounds for ends
-% 
-% %if there is no merging and splitting, segmentUB cannot be smaller than
-% %3, because if segmentUB < 3, there won't be any gaps to close
-% %if there is merging and splitting, segmentUB cannot be smaller than 2,
-% %because if segmentUB < 2, there won't be any gaps to close or merges
-% %and splits to consider
-% while segmentUB > 2 || (mergeSplit && segmentUB > 1)
-% 
-%     %get the index of tracks that start between segment start time and
-%     %segment end time
-%     trackStartTime = trackSEL(:,1);
-%     indxStart = find(trackStartTime >= segmentLBS & trackStartTime <= segmentUB);
-%     numStart = length(indxStart);
-% 
-%     %get the index of tracks that end between segment start time -
-%     %timeWindow and segment end time
-%     trackEndTime = trackSEL(:,2);
-%     indxEnd = find(trackEndTime >= segmentLBE & trackEndTime <= min(segmentUB,numFrames-1));
-%     numEnd = length(indxEnd);
-% 
-%     %go to next segment. Update lower and upper bounds
-%     segmentUB = segmentLBS - 1; %upper bound (for both end and starts)
-%     segmentLBS = max(segmentUB+1-segmentLength,1); %lower bound for starts
-%     segmentLBE = max(segmentUB+1-segmentLength-timeWindow,1); %lower bounds for ends
-% 
-% end %(segmentUB > 2 || (mergeSplit && segmentUB > 1))
-
-%get parameters from input
-% timeWindow = gapCloseParam.timeWindow;
-% mergeSplit = gapCloseParam.mergeSplit;
-% if isfield(gapCloseParam,'segmentLength')
-%     segmentLength = gapCloseParam.segmentLength;
-% else
-%     segmentLength = numFrames;
-% end
 

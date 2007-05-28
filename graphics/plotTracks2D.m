@@ -1,11 +1,13 @@
-function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,indicateSE,...
-    newFigure,image)
+function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
+    indicateSE,newFigure,image)
 %PLOTTRACKS2D plots a group of tracks in 2D and allows user to click on them and extract track information
 %
-%SYNOPSIS plotTracks2D(trackedFeatureInfo,timeRange,colorTime,indicateSE,...
-%    newFigure,image)
+%SYNOPSIS plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
+%    indicateSE,newFigure,image)
 %
-%INPUT  trackedFeatureInfo: Matrix indicating the positions and amplitudes 
+%INPUT  trackedFeatureInfo: -- EITHER -- 
+%                           Output of trackWithGapClosing:
+%                           Matrix indicating the positions and amplitudes 
 %                           of the tracked features to be plotted. Number 
 %                           of rows = number of tracks, while number of 
 %                           columns = 8*number of time points. Each row 
@@ -14,6 +16,25 @@ function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,indicateSE,...
 %                           in image coordinate system (coordinates in
 %                           pixels). NaN is used to indicate time points 
 %                           where the track does not exist.
+%                           -- OR -- 
+%                           Output of trackCloseGapsKalman:
+%                           Structure array with number of entries equal to
+%                           the number of tracks (or compound tracks when
+%                           merging/splitting are considered). Contains the
+%                           fields:
+%           .tracksCoordAmpCG: Matrix like trackedFeatureInfo from
+%                              trackWithGapClosing, but each row
+%                              corresponds to one segment of the compound
+%                              track.
+%           .seqOfEvents      : Matrix with 4 columns indicating the
+%                               sequence of events in a compound track. 1st
+%                               column indicates time, 2nd columnd
+%                               indicates start (1) and end (2), 3rd column
+%                               indicates segment index and 4th column
+%                               indicates whether the start/end is due to a
+%                               birth/death (NaN) or split/merge (positive
+%                               integer corresponding to interacting
+%                               segment).
 %       timeRange         : 2-element row vector indicating time range to plot. 
 %                           Optional. Default: whole movie.
 %       colorTime         : String with the following options:
@@ -22,6 +43,9 @@ function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,indicateSE,...
 %                           -'k', 'b', 'r', etc. if all tracks are in black,
 %                           blue, red, etc.
 %                           Optional. Default: 'k'.
+%       markerType        : String indicating marker type for plotting.
+%                           Only used if colorTime is not '1'.
+%                           Optional. Default: 'none'.
 %       indicateSE        : 1 if track starts and ends are to be indicated
 %                           with circles and squares, respectively; 0
 %                           otherwise. Optional. Default: 1.
@@ -33,7 +57,7 @@ function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,indicateSE,...
 %                           newFigure=1. It will be ignored if newFigure=0.
 %                           Optional. Default: no image.
 %
-%OUTPUT no output variables, just the plot
+%OUTPUT The plot.
 %
 %Khuloud Jaqaman, August 2006
 
@@ -48,7 +72,12 @@ if nargin < 1
 end
 
 %get number of tracks and number of time points
-[numTracks,numTimePoints] = size(trackedFeatureInfo);
+if isstruct(trackedFeatureInfo) %if tracks are in structure format
+    numTracks = length(trackedFeatureInfo);
+    numTimePoints = size(trackedFeatureInfo(1).tracksCoordAmpCG,2);
+else %if tracks are in matrix format
+    [numTracks,numTimePoints] = size(trackedFeatureInfo);
+end
 numTimePoints = numTimePoints/8;
 
 errFlag = 0;
@@ -68,8 +97,13 @@ if nargin < 3 || isempty(colorTime)
     colorTime = 'k';
 end
 
+%check whether markerType was input
+if nargin < 4 || isempty(markerType)
+    markerType = 'none';
+end
+
 %check whether indicateSE was input
-if nargin < 4 || isempty(indicateSE)
+if nargin < 5 || isempty(indicateSE)
     indicateSE = 1;
 else
     if indicateSE ~= 0 && indicateSE ~= 1
@@ -79,7 +113,7 @@ else
 end
 
 %check whether newFigure was input
-if nargin < 5 || isempty(newFigure)
+if nargin < 6 || isempty(newFigure)
     newFigure = 1;
 else
     if newFigure ~= 0 && newFigure ~= 1
@@ -89,7 +123,7 @@ else
 end
 
 %check whether user supplied an image
-if nargin < 6 || isempty(image)
+if nargin < 7 || isempty(image)
     image = [];
 end
 
@@ -100,32 +134,104 @@ if errFlag
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Plotting
+%Pre-processing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%calculate the number of time points to be plotted
-numTimePlot = timeRange(2) - timeRange(1) + 1;
+if isstruct(trackedFeatureInfo) %if tracks are input in structure format
+
+    %store the input structure as a variable with a different name
+    inputStructure = trackedFeatureInfo;
+    clear trackedFeatureInfo;
+    
+    %get number of segments making each track
+    numSegments = zeros(numTracks,1);
+    for i = 1 : numTracks
+        numSegments(i) = size(inputStructure(i).tracksCoordAmpCG,1);
+    end
+
+    %if all tracks have only one segment ...
+    if max(numSegments) == 1
+
+        %indicate that there are no compound tracks with merging and splitting branches
+        mergeSplit = 0;
+
+        %locate the row of the first track of each compound track in the
+        %big matrix of all tracks (to be constructed in the next step) 
+        %in this case of course every compound track is simply one track
+        %without branches
+        trackStartRow = (1:numTracks)';
+
+        %store tracks in a matrix
+        trackedFeatureInfo = zeros(numTracks,8*numTimePoints);
+        for i = 1 : numTracks
+            trackedFeatureInfo(i,:) = inputStructure(i).tracksCoordAmpCG;
+        end
+        
+    else %if some tracks have merging/splitting branches
+        
+        %indicate that in the variable mergeSplit
+        mergeSplit = 1;
+        
+        %locate the row of the first track of each compound track in the
+        %big matrix of all tracks (to be constructed in the next step)
+        trackStartRow = ones(numTracks,1);
+        for iTrack = 2 : numTracks
+            trackStartRow(iTrack) = trackStartRow(iTrack-1) + numSegments(iTrack-1);            
+        end
+        
+        %put all tracks together in a matrix
+        trackedFeatureInfo = zeros(trackStartRow(end)+numSegments(end)-1,8*numTimePoints);
+        for i = 1 : numTracks
+            trackedFeatureInfo(trackStartRow(i):trackStartRow(i)+numSegments(i)-1,:) = ...
+                inputStructure(i).tracksCoordAmpCG;
+        end
+        
+    end    
+    
+else %if tracks are not input in structure format
+
+    %indicate that there are no compound tracks with merging and splitting branches
+    mergeSplit = 0;
+
+    %locate the row of the first track of each compound track in the
+    %big matrix of all tracks
+    %in this case of course every compound track is simply one track
+    %without branches
+    trackStartRow = (1:numTracks)';
+
+end
 
 %get the x,y-coordinates of features in all tracks
 tracksX = trackedFeatureInfo(:,1:8:end)';
 tracksY = trackedFeatureInfo(:,2:8:end)';
 
-%extract the portion of tracksX and tracksY that is of interest
-tracksXP = tracksX(timeRange(1):timeRange(2),:);
-tracksYP = tracksY(timeRange(1):timeRange(2),:);
+%find x-coordinate limits
+% minXCoord = floor(min(tracksX(:)));
+maxXCoord =  ceil(max(tracksX(:)));
+
+%find y-coordinate limits
+% minYCoord = floor(min(tracksY(:)));
+maxYCoord =  ceil(max(tracksY(:)));
+
+%calculate the number of time points to be plotted
+numTimePlot = timeRange(2) - timeRange(1) + 1;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Plotting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %if the user wants to plot in a new figure window
 if newFigure
-    
+
     %open new figure window
     figure
 
     if ~isempty(image) %if user supplied an image
         imshow(image,[]); %plot the image
     else %if user did not supply an image
-        imshow(ones(ceil(max(tracksY(:))),ceil(max(tracksX(:)))),[]); %plot an empty image
+        imshow(ones(maxYCoord,maxXCoord),[]); %plot an empty image
     end
-    
+
     %show coordinates on axes
     ah = gca;
     set(ah,'visible','on');
@@ -139,12 +245,17 @@ end
 %hold on figure
 hold on
 
+%extract the portion of tracksX and tracksY that is of interest
+tracksXP = tracksX(timeRange(1):timeRange(2),:);
+tracksYP = tracksY(timeRange(1):timeRange(2),:);
+
 if colorTime == '1' %if user wants to color-code time
 
-    %plot tracks ignoring missing points as a dotted black line
-    for i=1:numTracks
+    %plot tracks ignoring missing points
+    %gaps are depicted as a dotted black line
+    for i = 1 : trackStartRow(end) + numSegments(end) - 1
         obsAvail = find(~isnan(tracksXP(:,i)));
-        plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:')
+        plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
     end
 
     %get the fraction of each color in each time interval to be plotted
@@ -163,44 +274,171 @@ if colorTime == '1' %if user wants to color-code time
     end
 
 else
-    
-    %plot tracks ignoring missing points with the line color indicated
-    for i=1:numTracks
+
+    %plot tracks with the line color indicated, where missing intervals are
+    %indicated by a dotted line
+    for i = 1 : trackStartRow(end) + numSegments(end) - 1
         obsAvail = find(~isnan(tracksXP(:,i)));
-        plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),colorTime)
+        plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),[colorTime ':']);
+        plot(tracksXP(:,i),tracksYP(:,i),colorTime,'marker',markerType);
     end
 
-end %(if colorTime == '1' ... else ...) 
-    
+end %(if colorTime == '1' ... else ...)
+
+%show merges and splits
+if mergeSplit
+
+    %draw line in black if time color coding was used initially
+    if colorTime == '1'
+        colorTime = 'k';
+    end
+
+    %go over all tracks
+    for iTrack = 1 : numTracks
+
+        %parse sequence of events of this compound track and find merges and
+        %splits
+        seqOfEvents = inputStructure(iTrack).seqOfEvents;
+        indxSplit = (find(seqOfEvents(:,2) == 1 & ~isnan(seqOfEvents(:,4)) ...
+            & seqOfEvents(:,1) > timeRange(1) & seqOfEvents(:,1) <= timeRange(2)))';
+        indxMerge = (find(seqOfEvents(:,2) == 2 & ~isnan(seqOfEvents(:,4)) ...
+            & seqOfEvents(:,1) > timeRange(1) & seqOfEvents(:,1) <= timeRange(2)))';
+
+        %go over all splits
+        for iSplit = indxSplit
+
+            %get time of splitting
+            timeSplit = seqOfEvents(iSplit,1);
+
+            %determine row where starting track is located
+            rowS = trackStartRow(iTrack) + seqOfEvents(iSplit,3) - 1;
+
+            %determine row where splitting track is located
+            rowSp = trackStartRow(iTrack) + seqOfEvents(iSplit,4) - 1;
+
+            %plot split as a dash-dotted line
+            plot([tracksX(timeSplit,rowS) tracksX(timeSplit-1,rowSp)], ...
+                [tracksY(timeSplit,rowS) tracksY(timeSplit-1,rowSp)],...
+                [colorTime '-.']);
+
+        end
+
+        %go over all merges
+        for iMerge = indxMerge
+
+            %get time of merging
+            timeMerge = seqOfEvents(iMerge,1);
+
+            %determine row where ending track is located
+            rowE = trackStartRow(iTrack) + seqOfEvents(iMerge,3) - 1;
+
+            %determine row where merging track is located
+            rowM = trackStartRow(iTrack) + seqOfEvents(iMerge,4) - 1;
+
+            %plot merge as a dashed line
+            plot([tracksX(timeMerge-1,rowE) tracksX(timeMerge,rowM)], ...
+                [tracksY(timeMerge-1,rowE) tracksY(timeMerge,rowM)],...
+                [colorTime '--']);
+
+        end
+
+    end %(for iTrack = 1 : numTracks)
+
+end %(if mergeSplit)
+
 if indicateSE %if user wants to indicate starts and ends
 
-    %find the beginning and end of each track
-    for i=numTracks:-1:1
-        timePoint = find(~isnan(tracksX(:,i)));
-        startInfo(i,:) = [tracksX(timePoint(1),i) ...
-            tracksY(timePoint(1),i) timePoint(1)];
-        endInfo(i,:) = [tracksX(timePoint(end),i) ...
-            tracksY(timePoint(end),i) timePoint(end)];
-    end
+    %if there are merges and splits
+    if mergeSplit
 
-    %place circles at track starts and squares at track ends if they happen to
-    %be in the plotting region of interest
-    if colorTime == '1'
-        indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
-        plot(startInfo(indx,1),startInfo(indx,2),'k','LineStyle','none','marker','o');
-        indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
-        plot(endInfo(indx,1),endInfo(indx,2),'k','LineStyle','none','marker','square');
-    else
-        indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
-        plot(startInfo(indx,1),startInfo(indx,2),colorTime,...
-            'LineStyle','none','marker','o');
-        indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
-        plot(endInfo(indx,1),endInfo(indx,2),colorTime,...
-            'LineStyle','none','marker','square');
-    end
+        %go over all tracks
+        for iTrack = 1 : numTracks
 
-end
+            %parse sequence of events of this compound track and find starts and
+            %ends
+            seqOfEvents = inputStructure(iTrack).seqOfEvents;
+            indxStart = (find(seqOfEvents(:,2) == 1 & isnan(seqOfEvents(:,4)) ...
+                & seqOfEvents(:,1) >= timeRange(1) & seqOfEvents(:,1) <= timeRange(2)))';
+            indxEnd = (find(seqOfEvents(:,2) == 2 & isnan(seqOfEvents(:,4)) ...
+                & seqOfEvents(:,1) >= timeRange(1) & seqOfEvents(:,1) <= timeRange(2)))';
 
+            %get the information of the starts
+            startInfo = [];
+            for i = 1 : length(indxStart)
+                iStart = indxStart(i);
+
+                %get start time
+                timeStart = seqOfEvents(iStart,1);
+
+                %determine row where starting track is located in big matrix
+                %of tracks
+                rowS = trackStartRow(iTrack) + seqOfEvents(iStart,3) - 1;
+
+                %get coordinates at the start
+                startInfo(i,:) = [tracksX(timeStart,rowS) tracksY(timeStart,rowS) timeStart];
+
+            end
+
+            %get the information of the ends
+            endInfo = [];
+            for i = 1 : length(indxEnd)
+                iEnd = indxEnd(i);
+                
+                %get end time
+                timeEnd = seqOfEvents(iEnd,1);
+
+                %determine row where ending track is located in big matrix
+                %of tracks
+                rowE = trackStartRow(iTrack) + seqOfEvents(iEnd,3) - 1;
+
+                %get coordinates at the end
+                endInfo(i,:) = [tracksX(timeEnd,rowE) tracksY(timeEnd,rowE) timeEnd];
+
+            end
+
+            %place circles at track starts and squares at track ends
+            if ~isempty(startInfo)
+                plot(startInfo(:,1),startInfo(:,2),colorTime,...
+                    'LineStyle','none','marker','o');
+            end
+            if ~isempty(endInfo)
+                plot(endInfo(:,1),endInfo(:,2),colorTime,...
+                    'LineStyle','none','marker','square');
+            end
+
+        end %(for iTrack = 1 : numTracks)
+
+    else %if there are no merges and splits
+
+        %find the beginning and end of each track
+        for i=numTracks:-1:1
+            timePoint = find(~isnan(tracksX(:,i)));
+            startInfo(i,:) = [tracksX(timePoint(1),i) ...
+                tracksY(timePoint(1),i) timePoint(1)];
+            endInfo(i,:) = [tracksX(timePoint(end),i) ...
+                tracksY(timePoint(end),i) timePoint(end)];
+        end
+
+        %place circles at track starts and squares at track ends if they happen to
+        %be in the plotting region of interest
+        if colorTime == '1'
+            indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
+            plot(startInfo(indx,1),startInfo(indx,2),'k','LineStyle','none','marker','o');
+            indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
+            plot(endInfo(indx,1),endInfo(indx,2),'k','LineStyle','none','marker','square');
+        else
+            indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
+            plot(startInfo(indx,1),startInfo(indx,2),colorTime,...
+                'LineStyle','none','marker','o');
+            indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
+            plot(endInfo(indx,1),endInfo(indx,2),colorTime,...
+                'LineStyle','none','marker','square');
+        end
+
+    end %(if mergeSplit)
+
+end %(if indicateSE)
+        
 %ask the user whether to click on figure and get frame information
 userEntry = input('select points in figure? y/n ','s');
 
@@ -211,14 +449,28 @@ while strcmp(userEntry,'y')
 
     %find the time points of the indicated points
     for i=1:length(x)
+        
+        %find the distances between those points and the tracks
         distTrack2Point = (tracksXP-x(i)).^2+(tracksYP-y(i)).^2;
-        [frameChosen,trackChosen] = find(distTrack2Point==min(distTrack2Point(:)));
-        for j=1:length(trackChosen)
-            disp(['Track: ' num2str(trackChosen(j)) ...
+        
+        %determine the minimum distance for each chosen point
+        [frameChosen,rowChosen] = find(distTrack2Point==min(distTrack2Point(:)));
+        
+        %go over all chosen rows
+        for j = 1 : length(rowChosen)
+            
+            %find the track corresponding to each minimum distance
+            trackChosen = find(trackStartRow <= rowChosen(j),1,'last');
+            segmentChosen = rowChosen(j) - trackStartRow(trackChosen) + 1;
+        
+            disp(['Track: ' num2str(trackChosen) ...
+                '   Segment: ' num2str(segmentChosen) ...
                 '   Frame: ' num2str(frameChosen(j)+timeRange(1)-1) ...
-                '   Coordinates: ' num2str(tracksXP(frameChosen(j),trackChosen(j))) ...
-                ' ' num2str(tracksYP(frameChosen(j),trackChosen(j)))  ]);
+                '   Coordinates: ' num2str(tracksXP(frameChosen(j),rowChosen(j))) ...
+                ' ' num2str(tracksYP(frameChosen(j),rowChosen(j)))  ]);
+            
         end
+        
     end
         
     %ask the user again whether to click on figure and get frame information
