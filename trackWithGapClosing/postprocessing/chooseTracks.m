@@ -3,7 +3,9 @@ function [trackIndx,errFlag] = chooseTracks(trackedFeatureInfo,criteria)
 %
 %SYNOPSIS [trackIndx,errFlag] = chooseTracks(trackedFeatureInfo,criteria);
 %
-%INPUT  trackedFeatureInfo: Matrix indicating the positions and amplitudes 
+%INPUT  trackedFeatureInfo: -- EITHER -- 
+%                           Output of trackWithGapClosing:
+%                           Matrix indicating the positions and amplitudes 
 %                           of the tracked features to be plotted. Number 
 %                           of rows = number of tracks, while number of 
 %                           columns = 8*number of time points. Each row 
@@ -12,6 +14,31 @@ function [trackIndx,errFlag] = chooseTracks(trackedFeatureInfo,criteria)
 %                           in image coordinate system (coordinates in
 %                           pixels). NaN is used to indicate time points 
 %                           where the track does not exist.
+%                           -- OR -- 
+%                           Output of trackCloseGapsKalman:
+%                           Structure array with number of entries equal to
+%                           the number of tracks (or compound tracks when
+%                           merging/splitting are considered). Contains the
+%                           fields:
+%           .tracksCoordAmpCG: The positions and amplitudes of the tracked
+%                              features, after gap closing. Number of rows
+%                              = number of track segments in compound
+%                              track. Number of columns = 8 * number of 
+%                              frames the compound track spans. Each row
+%                              consists of 
+%                              [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...]
+%                              NaN indicates frames where track segments do
+%                              not exist.
+%           .seqOfEvents     : Matrix with number of rows equal to number
+%                              of events happening in a track and 4
+%                              columns:
+%                              1st: Frame where event happens;
+%                              2nd: 1 - start of track, 2 - end of track;
+%                              3rd: Index of track segment that ends or starts;
+%                              4th: NaN - start is a birth and end is a death,
+%                                   number - start is due to a split, end
+%                                   is due to a merge, number is the index
+%                                   of track segment for the merge/split.
 %       criteria          : Structure with fields:
 %           .lifeTime        :Structure with fields:
 %               .min            :minimum lifetime.
@@ -37,7 +64,7 @@ function [trackIndx,errFlag] = chooseTracks(trackedFeatureInfo,criteria)
 %                           All criteria are optional. Leave out or give as
 %                           [] if not of interest.
 %
-%OUTPUT trackIndx         : Indices of tracks that satisfy the input criteria.
+%OUTPUT trackIndx         : Indices of (compound) tracks that satisfy the input criteria.
 %       errFlag           : 0 if function executes normally, 1 otherwise
 %
 %Khuloud Jaqaman, August 2006
@@ -64,8 +91,12 @@ end
 %Track indices
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%get number of tracks and time points
-numTracks = size(trackedFeatureInfo,1);
+%get number of tracks
+if isstruct(trackedFeatureInfo)
+    numTracks = length(trackedFeatureInfo);
+else
+    numTracks = size(trackedFeatureInfo,1);
+end
 
 %get track start, end and life times
 trackSEL = getTrackSEL(trackedFeatureInfo);
@@ -150,8 +181,14 @@ if isfield(criteria,'initialAmp') && ~isempty(criteria.initialAmp)
     
     %find initial amplitudes
     comparisonVec = zeros(numTracks,1);
-    for i=1:numTracks
-        comparisonVec(i) = trackedFeatureInfo(i,(trackSEL(i,1)-1)*8+4);
+    if isstruct(trackedFeatureInfo)
+        for i=1:numTracks
+            comparisonVec(i) = trackedFeatureInfo(i).tracksCoordAmpCG(1,4);
+        end
+    else
+        for i=1:numTracks
+            comparisonVec(i) = trackedFeatureInfo(i,(trackSEL(i,1)-1)*8+4);
+        end
     end
     
     %get minimum initial amplitude
@@ -177,10 +214,16 @@ if isfield(criteria,'initialXCoord') && ~isempty(criteria.initialXCoord)
     
     %find initial x-coordinates
     comparisonVec = zeros(numTracks,1);
-    for i=1:numTracks
-        comparisonVec(i) = trackedFeatureInfo(i,(trackSEL(i,1)-1)*8+1);
+    if isstruct(trackedFeatureInfo)
+        for i=1:numTracks
+            comparisonVec(i) = trackedFeatureInfo(i).tracksCoordAmpCG(1,1);
+        end
+    else
+        for i=1:numTracks
+            comparisonVec(i) = trackedFeatureInfo(i,(trackSEL(i,1)-1)*8+1);
+        end
     end
-    
+
     %get minimum initial x-coordinate
     if isfield(criteria.initialXCoord,'min') && ~isempty(criteria.initialXCoord.min)
         minCrit = criteria.initialXCoord.min;
@@ -204,8 +247,14 @@ if isfield(criteria,'initialYCoord') && ~isempty(criteria.initialYCoord)
     
     %find initial y-coordinates
     comparisonVec = zeros(numTracks,1);
-    for i=1:numTracks
-        comparisonVec(i) = trackedFeatureInfo(i,(trackSEL(i,1)-1)*8+2);
+    if isstruct(trackedFeatureInfo)
+        for i=1:numTracks
+            comparisonVec(i) = trackedFeatureInfo(i).tracksCoordAmpCG(1,2);
+        end
+    else
+        for i=1:numTracks
+            comparisonVec(i) = trackedFeatureInfo(i,(trackSEL(i,1)-1)*8+2);
+        end
     end
     
     %get minimum initial y-coordinate
@@ -231,8 +280,14 @@ if isfield(criteria,'initialZCoord') && ~isempty(criteria.initialZCoord)
     
     %find initial z-coordinates
     comparisonVec = zeros(numTracks,1);
-    for i=1:numTracks
-        comparisonVec(i) = trackedFeatureInfo(i,(trackSEL(i,1)-1)*8+3);
+    if isstruct(trackedFeatureInfo)
+        for i=1:numTracks
+            comparisonVec(i) = trackedFeatureInfo(i).tracksCoordAmpCG(1,3);
+        end
+    else
+        for i=1:numTracks
+            comparisonVec(i) = trackedFeatureInfo(i,(trackSEL(i,1)-1)*8+3);
+        end
     end
     
     %get minimum initial z-coordinate

@@ -32,23 +32,23 @@
 %define the input variables
 
 %movieParam
-movieParam.candsDir = '/mnt/mit/khuloudDir/synapse/troubleShooting/April2007/test1/analysis2/fsm/tack/cands/'; %directory where initial position estimates are
-movieParam.imageDir = '/mnt/mit/khuloudDir/synapse/troubleShooting/April2007/test1/images/'; %directory where images are
-movieParam.filenameBase = 'crop_crop_071106_dish1_unload2s_135frps_gain210_1_'; %image file name base
+movieParam.candsDir = '/mnt/sickkids/Yoav_files/2007_04_22/2007_04_27_live_cell_movie/analysis/fsm/tack/cands/'; %directory where initial position estimates are
+movieParam.imageDir = '/mnt/sickkids/Yoav_files/2007_04_22/2007_04_27_live_cell_movie/images/'; %directory where images are
+movieParam.filenameBase = 'live_cell_'; %image file name base
 movieParam.firstImageNum = 1; %number of first image in movie
-movieParam.lastImageNum = 250; %number of last image in movie
-movieParam.digits4Enum = 3; %number of digits used for frame enumeration (1-4).
+movieParam.lastImageNum = 289; %number of last image in movie
+movieParam.digits4Enum = 4; %number of digits used for frame enumeration (1-4).
 
 %detectionParam
-detectionParam.psfSigma = 1.078; %point spread function sigma (in pixels)
+detectionParam.psfSigma = 1.221; %point spread function sigma (in pixels)
 detectionParam.testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05); %alpha-values for detection statistical tests
 detectionParam.visual = 0; %1 to see image with detected features, 0 otherwise
-detectionParam.doMMF = 0; %1 if mixture-model fitting, 0 otherwise
-detectionParam.bitDepth = 14; %Camera bit depth
+detectionParam.doMMF = 1; %1 if mixture-model fitting, 0 otherwise
+detectionParam.bitDepth = 16; %Camera bit depth
 
 %saveResults
-saveResults.dir = '/mnt/mit/khuloudDir/synapse/troubleShooting/April2007/test1/analysis2/mmf/'; %directory where to save input and output
-saveResults.filename = 'detectionResultsNoMMF'; %name of file where input and output are saved
+saveResults.dir = '/mnt/sickkids/Yoav_files/2007_04_22/2007_04_27_live_cell_movie/analysis/mmf/'; %directory where to save input and output
+saveResults.filename = 'detectionYoavLiveCell'; %name of file where input and output are saved
 
 %run the detection function
 [movieInfo,emptyFrames,framesFailed] = detectSubResFeatures2D_Movie(...

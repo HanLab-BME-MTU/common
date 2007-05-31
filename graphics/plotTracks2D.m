@@ -22,19 +22,25 @@ function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
 %                           the number of tracks (or compound tracks when
 %                           merging/splitting are considered). Contains the
 %                           fields:
-%           .tracksCoordAmpCG: Matrix like trackedFeatureInfo from
-%                              trackWithGapClosing, but each row
-%                              corresponds to one segment of the compound
-%                              track.
-%           .seqOfEvents      : Matrix with 4 columns indicating the
-%                               sequence of events in a compound track. 1st
-%                               column indicates time, 2nd columnd
-%                               indicates start (1) and end (2), 3rd column
-%                               indicates segment index and 4th column
-%                               indicates whether the start/end is due to a
-%                               birth/death (NaN) or split/merge (positive
-%                               integer corresponding to interacting
-%                               segment).
+%           .tracksCoordAmpCG: The positions and amplitudes of the tracked
+%                              features, after gap closing. Number of rows
+%                              = number of track segments in compound
+%                              track. Number of columns = 8 * number of 
+%                              frames the compound track spans. Each row
+%                              consists of 
+%                              [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...]
+%                              NaN indicates frames where track segments do
+%                              not exist.
+%           .seqOfEvents     : Matrix with number of rows equal to number
+%                              of events happening in a track and 4
+%                              columns:
+%                              1st: Frame where event happens;
+%                              2nd: 1 - start of track, 2 - end of track;
+%                              3rd: Index of track segment that ends or starts;
+%                              4th: NaN - start is a birth and end is a death,
+%                                   number - start is due to a split, end
+%                                   is due to a merge, number is the index
+%                                   of track segment for the merge/split.
 %       timeRange         : 2-element row vector indicating time range to plot. 
 %                           Optional. Default: whole movie.
 %       colorTime         : String with the following options:
@@ -74,11 +80,13 @@ end
 %get number of tracks and number of time points
 if isstruct(trackedFeatureInfo) %if tracks are in structure format
     numTracks = length(trackedFeatureInfo);
-    numTimePoints = size(trackedFeatureInfo(1).tracksCoordAmpCG,2);
+    tmp = vertcat(trackedFeatureInfo.seqOfEvents);
+    numTimePoints = max(tmp(:,1));
+    clear tmp
 else %if tracks are in matrix format
     [numTracks,numTimePoints] = size(trackedFeatureInfo);
+    numTimePoints = numTimePoints/8;
 end
-numTimePoints = numTimePoints/8;
 
 errFlag = 0;
 
@@ -162,9 +170,11 @@ if isstruct(trackedFeatureInfo) %if tracks are input in structure format
         trackStartRow = (1:numTracks)';
 
         %store tracks in a matrix
-        trackedFeatureInfo = zeros(numTracks,8*numTimePoints);
+        trackedFeatureInfo = NaN*ones(numTracks,8*numTimePoints);
         for i = 1 : numTracks
-            trackedFeatureInfo(i,:) = inputStructure(i).tracksCoordAmpCG;
+            startTime = inputStructure(i).seqOfEvents(1,1);
+            endTime   = inputStructure(i).seqOfEvents(end,1);
+            trackedFeatureInfo(i,8*(startTime-1)+1:8*endTime) = inputStructure(i).tracksCoordAmpCG;
         end
         
     else %if some tracks have merging/splitting branches
@@ -180,9 +190,12 @@ if isstruct(trackedFeatureInfo) %if tracks are input in structure format
         end
         
         %put all tracks together in a matrix
-        trackedFeatureInfo = zeros(trackStartRow(end)+numSegments(end)-1,8*numTimePoints);
+        trackedFeatureInfo = NaN*ones(trackStartRow(end)+numSegments(end)-1,8*numTimePoints);
         for i = 1 : numTracks
-            trackedFeatureInfo(trackStartRow(i):trackStartRow(i)+numSegments(i)-1,:) = ...
+            startTime = inputStructure(i).seqOfEvents(1,1);
+            endTime   = inputStructure(i).seqOfEvents(end,1);
+            trackedFeatureInfo(trackStartRow(i):trackStartRow(i)+...
+                numSegments(i)-1,8*(startTime-1)+1:8*endTime) = ...
                 inputStructure(i).tracksCoordAmpCG;
         end
         

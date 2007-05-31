@@ -44,7 +44,8 @@ function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
 %                           Optional. Default: 0.
 %       nnWindow          : Time window to be used in estimating the
 %                           nearest neighbor distance of a feature in a
-%                           track.
+%                           track. Needed even if useLocalDensity = 0. If
+%                           not input, default is 1. 
 %
 %OUTPUT trackedFeatureIndx: Connectivity matrix of features between time points.
 %                           Rows indicate continuous tracks, while columns 
@@ -155,12 +156,17 @@ if nargin < 5 || isempty(useLocalDensity)
     useLocalDensity = 0; %default is zero
 end
 
+%check whether the variable nnWindow was input
+if nargin < 6 || isempty(nnWindow)
+    nnWindow = 1;
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Linking
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %reserve memory for kalmanFilterInfo
-for iFrame = 1 : numFrames
+for iFrame = numFrames : -1 : 1
     numFeatures = movieInfo(iFrame).num;
     kalmanFilterInfo(iFrame) = struct('stateVec',zeros(numFeatures,4),...
         'stateCov',zeros(4,4,numFeatures),'noiseVar',zeros(4,4,numFeatures),...

@@ -1,11 +1,9 @@
-function [tracksFinal,tracksFeatIndxLink,...
-    tracksCoordAmpLink,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
+function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
     movieInfo,costMatParam,gapCloseParam,kalmanInitParam,useLocalDensity,...
     saveResults)
-%TRACKCLOSEGAPSKALMAN links features between frames and closes gaps, with merging and splitting, using the Kalman filter
+%TRACKCLOSEGAPSKALMAN (1) links features between frames using the Kalman Filter and (2) closes gaps, with merging and splitting
 %
-%SYNOPSIS [tracksFeatIndxCG,tracksCoordAmpCG,tracksFeatIndxLink,...
-%    tracksCoordAmpLink,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
+%SYNOPSIS [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %    movieInfo,costMatParam,gapCloseParam,kalmanInitParam,useLocalDensity,...
 %    saveResults)
 %
@@ -18,22 +16,16 @@ function [tracksFinal,tracksFeatIndxLink,...
 %                            features (in pixels). 1st column for
 %                            value and 2nd column for standard deviation.
 %                            Optional. Skipped if problem is 1D. Default: zeros.
-%             .zCoord      : Image coordinate system z-coordinates of detected
-%                            features (in pixels). 1st column for
-%                            value and 2nd column for standard deviation.
-%                            Optional. Skipped if problem is 1D or 2D. Default: zeros.
 %             .amp         : Amplitudes of PSFs fitting detected features.
 %                            1st column for values and 2nd column
 %                            for standard deviations.
-%       costMatParam : Parameters needed for cost matrices. See cost
-%                      matrices for details of fields.
+%       costMatParam : Parameters needed for cost matrices. For now, all
+%                      parameters for both linking and gap closing are put
+%                      in one structure. See cost matrices for fields.
 %       gapCloseParam: Structure containing variables needed for gap closing.
 %                      Contains the fields:
 %             .timeWindow   : Largest time gap between the end of a track and the
 %                             beginning of another that could be connected to it.
-%             .tolerance    : Relative change in number of tracks in two
-%                             consecutive gap closing steps below which
-%                             iteration stops.
 %             .mergeSplit   : Logical variable with value 1 if the merging
 %                             and splitting of trajectories are to be consided;
 %                             and 0 if merging and splitting are not allowed.
@@ -47,7 +39,15 @@ function [tracksFinal,tracksFeatIndxLink,...
 %                           otherwise.
 %           .cg           : 1 if local density is used for determining
 %                           search radius when gap closing, 0 otherwise.
-%                        Both optional. Default: 0.
+%           .nnWindowL    : Time window (of previous frames) used to
+%                           calculate nearest neighbor distance in the 
+%                           linking step.
+%           .nnWindowCG   : Time window used to calculate the nearest
+%                           neighbor distances at the starts and ends of
+%                           tracks for gap closing.
+%                        Structure optional. Default: both .link and .cg =
+%                        0. If .link or .cg are 1, corresponding nnWindow
+%                        must be input.
 %       saveResults  : Structure with fields:
 %           .dir          : Directory where results should be saved.
 %                           Optional. Default: current directory.
@@ -58,48 +58,51 @@ function [tracksFinal,tracksFeatIndxLink,...
 %       All optional variables can be entered as [] to use default values.
 %
 %
-%OUTPUT tracksFeatIndxCG  : Connectivity matrix of features between time points after gap closing.
-%                           Rows indicate continuous tracks, while columns
-%                           indicate time points. A track that ends before the
-%                           last time point is followed by zeros, and a track
-%                           that starts at a time after the first time point
-%                           is preceded by zeros.
-%       tracksCoordAmpCG  : The positions and amplitudes of the tracked
-%                           features after gap closing. Number of rows = number of tracks,
-%                           while number of columns = 8*number of time points.
-%                           Each row consists of
-%                           [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...]
-%                           in image coordinate system (coordinates in
-%                           pixels). NaN is used to indicate time points
-%                           where the track does not exist.
-%       tracksFeatIndxLink: Connectivity matrix of features between time points after initial linking.
-%                           Rows indicate continuous tracks, while columns
-%                           indicate time points. A track that ends before the
-%                           last time point is followed by zeros, and a track
-%                           that starts at a time after the first time point
-%                           is preceded by zeros.
-%       tracksCoordAmpLink: The positions and amplitudes of the tracked
-%                           features after initial linking. Number of rows = number of tracks,
-%                           while number of columns = 8*number of time points.
-%                           Each row consists of
-%                           [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...]
-%                           in image coordinate system (coordinates in
-%                           pixels). NaN is used to indicate time points
-%                           where the track does not exist.
+%OUTPUT tracksFinal       : Structure Array where each element corresponds
+%                           to a compound track. Each element contains
+%                           the following fields:
+%           .tracksFeatIndxCG: Connectivity matrix of features between
+%                              frames, after gap closing. Number of rows
+%                              = number of track segments in compound
+%                              track. Number of columns = number of frames
+%                              the compound track spans. Zeros indicate
+%                              frames where track segments do not exist
+%                              (either because those frames are before the
+%                              segment starts or after it ends, or because
+%                              of losing parts of a segment.
+%           .tracksCoordAmpCG: The positions and amplitudes of the tracked
+%                              features, after gap closing. Number of rows
+%                              = number of track segments in compound
+%                              track. Number of columns = 8 * number of 
+%                              frames the compound track spans. Each row
+%                              consists of 
+%                              [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...]
+%                              NaN indicates frames where track segments do
+%                              not exist, like the zeros above.
+%           .seqOfEvents     : Matrix with number of rows equal to number
+%                              of events happening in a track and 4
+%                              columns:
+%                              1st: Frame where event happens;
+%                              2nd: 1 - start of track, 2 - end of track;
+%                              3rd: Index of track segment that ends or starts;
+%                              4th: NaN - start is a birth and end is a death,
+%                                   number - start is due to a split, end
+%                                   is due to a merge, number is the index
+%                                   of track segment for the merge/split.
 %       kalmanInfoLink    : Structure array with number of entries equal to
 %                           number of frames in movie. Contains the fields:
-%             .stateVec        : Kalman filter state vector for each
-%                                feature in frame.
-%             .stateCov        : Kalman filter state covariance matrix
-%                                for each feature in frame.
-%             .noiseVar        : Variance of state noise for each
-%                                feature in frame.
-%             .stateNoise      : Estimated state noise for each feature in
-%                                frame.
-%             .scheme          : 1st column: propagation scheme connecting
-%                                feature to previous feature. 2nd column:
-%                                propagation scheme connecting feature to
-%                                next feature.
+%             .stateVec      : Kalman filter state vector for each
+%                              feature in frame.
+%             .stateCov      : Kalman filter state covariance matrix
+%                              for each feature in frame.
+%             .noiseVar      : Variance of state noise for each
+%                              feature in frame.
+%             .stateNoise    : Estimated state noise for each feature in
+%                              frame.
+%             .scheme        : 1st column: propagation scheme connecting
+%                              feature to previous feature. 2nd column:
+%                              propagation scheme connecting feature to
+%                              next feature.
 %       errFlag           : 0 if function executes normally, 1 otherwise.
 %
 %REMARKS The algorithm can handle cases where some frames do not have any
@@ -118,8 +121,6 @@ function [tracksFinal,tracksFeatIndxLink,...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 tracksFinal        = [];
-tracksFeatIndxLink = [];
-tracksCoordAmpLink = [];
 kalmanInfoLink     = [];
 errFlag            = 0;
 
@@ -147,12 +148,26 @@ end
 if nargin < 5 || isempty(useLocalDensity)
     useLocalDensity.link = 0;
     useLocalDensity.cg = 0;
+    useLocalDensity.nnWindowL = 1;
+    useLocalDensity.nnWindowCG = 1;
 else
-    if ~isfield(useLocalDensity,'link')
+    if isfield(useLocalDensity,'link')
+        if ~isfield(useLocalDensity,'nnWindowL')
+            disp('--trackCloseGapsKalman: Variable useLocalDensity missing field nnWindowL.');
+            errFlag = 1;
+        end
+    else
         useLocalDensity.link = 0;
+        useLocalDensity.nnWindowL = 1;
     end
-    if ~isfield(useLocalDensity,'cg')
+    if isfield(useLocalDensity,'cg')
+        if ~isfield(useLocalDensity,'nnWindowCG')
+            disp('--trackCloseGapsKalman: Variable useLocalDensity missing field nnWindowCG.');
+            errFlag = 1;
+        end
+    else
         useLocalDensity.cg = 0;
+        useLocalDensity.nnWindowCG = 1;
     end
 end
 
@@ -174,8 +189,13 @@ else
 end
 
 %get gap closing parameters from input
-% tolerance = gapCloseParam.tolerance;
 mergeSplit = gapCloseParam.mergeSplit;
+
+%exit if there are problems with input
+if errFlag
+    disp('--trackCloseGapsKalman: Please fix input parameters.');
+    return
+end
 
 %calculate nearest neighbor distances and store them in movieInfo
 for iFrame = 1 : numFrames
@@ -533,9 +553,17 @@ if any(trackStartTime > 1) && any(trackEndTime < numFrames)
         indx = find(~isnan(seqOfEvents(:,4)) & seqOfEvents(:,2) == 2);
         seqOfEvents(indx,1) = seqOfEvents(indx,1) + 1;
         
-        %store final tracks
-        tracksFinal(iTrack).tracksFeatIndxCG = tracksFeatIndxCG;
-        tracksFinal(iTrack).tracksCoordAmpCG = tracksCoordAmpCG;
+        %find the frame where the compound track starts and the frames
+        %where it ends
+        frameStart = seqOfEvents(1,1);
+        frameEnd   = seqOfEvents(end,1);
+        
+        %store final tracks, removing frames before anything happens and
+        %after everything happens
+        tracksFinal(iTrack).tracksFeatIndxCG = tracksFeatIndxCG(:,...
+            frameStart:frameEnd);
+        tracksFinal(iTrack).tracksCoordAmpCG = tracksCoordAmpCG(:,...
+            8*(frameStart-1)+1:8*frameEnd);
         tracksFinal(iTrack).seqOfEvents = seqOfEvents;
 
     end %(for iTrack = 1 : numTracksCG)
