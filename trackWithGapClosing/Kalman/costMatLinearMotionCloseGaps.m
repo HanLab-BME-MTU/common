@@ -552,37 +552,56 @@ if mergeSplit
             %if this is a possible link ...
             if possibleLink
 
-                %increase the "merge index" by one
-                numMerge = numMerge + 1;
-
-                %save the merging track's number
-                indxMSMS(iPair) = iMerge;
-
-                %store the location of this pair in the cost matrix
-                indx1MS(iPair) = iEnd; %row number
-                indx2MS(iPair) = numMerge+numTracks; %column number
-
-                %calculate the cost of linking them
+                %calculate the cost of linking
                 dispVecMag2 = dispVec * dispVec'; %due to displacement
                 ampCost = ampRatio; %due to amplitude
                 ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2); %punishment harsher when intensity of merged feature < sum of intensities of merging features
-                cost12 = dispVecMag2 * ampCost;
+                cost12 = dispVecMag2 * ampCost; %cost
 
                 %add this cost to the list of costs
                 costMS(iPair) = cost12;
 
-                %calculate the alternative cost of not merging for the
-                %track that the end is possibly merging with
-                %this primarily depends on intensities
-                ampCost1 = ampM / ampM1;
-                ampCost1(ampCost1<1) = ampCost1(ampCost1<1) ^ (-2); %cost of "merged" feature not merging with its previous feature
-                ampCost2 = ampM / ampE;
-                ampCost2(ampCost2<1) = ampCost2(ampCost2<1) ^ (-2); %cost of "merged" feature not merging with ending feature
-                cost12 = dispVecMag2 * max(ampCost1,ampCost2); %alternative cost
+                %check whether the track being merged with has had
+                %something possibly merging with it in this same frame
+                prevAppearance = find(indxMSMS == iMerge);
 
-                %add this cost to the list of alternative costs
-                altCostMS(iPair) = cost12;
+                %if this track in this frame did not appear before ...
+                if isempty(prevAppearance)
 
+                    %increase the "merge index" by one
+                    numMerge = numMerge + 1;
+
+                    %save the merging track's index
+                    indxMSMS(iPair) = iMerge;
+
+                    %store the location of this pair in the cost matrix
+                    indx1MS(iPair) = iEnd; %row number
+                    indx2MS(iPair) = numMerge+numTracks; %column number
+
+                    %calculate the alternative cost of not merging for the
+                    %track that the end is possibly merging with
+                    %this primarily depends on intensities
+                    ampCost = ampM / ampM1;
+                    ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2); %cost of "merged" feature merging with nothing
+                    cost12 = dispVecMag2 * ampCost; %alternative cost
+
+                    %add this cost to the list of alternative costs
+                    altCostMS(iPair) = cost12;
+
+                else %if this track in this frame appeared before
+                    
+                    %do not increase the "merge index" or save the merging
+                    %track's index (they are already saved)
+                    
+                    %store the location of this pair in the cost matrix
+                    indx1MS(iPair) = iEnd; %row number
+                    indx2MS(iPair) = indx2MS(prevAppearance); %column number
+                    
+                    %no need to calculate and save the alternative cost
+                    %since that is already saved from previous appearance
+                    
+                end %(if isempty(prevAppearance))
+                
             end %(if possibleLink)
 
         end %(for iPair = 1 : numPairs)
@@ -592,9 +611,10 @@ if mergeSplit
         indx1MS   = indx1MS(possiblePairs);
         indx2MS   = indx2MS(possiblePairs);
         costMS    = costMS(possiblePairs);
-        altCostMS = altCostMS(possiblePairs);
-        indxMSMS  = indxMSMS(possiblePairs);
-        clear possiblePairs
+        possibleMerges = find(indxMSMS ~= 0);
+        indxMSMS  = indxMSMS(possibleMerges);
+        altCostMS = altCostMS(possibleMerges);
+        clear possiblePairs possibleMerges
         
         %append these vectors to overall cost and related vectors
         indx1 = [indx1; indx1MS];
@@ -695,36 +715,55 @@ if mergeSplit
             %if this is a possible link ...
             if possibleLink
 
-                %increase the "split index" by one
-                numSplit = numSplit + 1;
-
-                %save the merging track's number
-                indxMSMS(iPair) = iSplit;
-
-                %store the location of this pair in the cost matrix
-                indx1MS(iPair) = numSplit+numTracks; %row number
-                indx2MS(iPair) = iStart; %column number
-
-                %calculate the cost of linking them
+                %calculate the cost of linking
                 dispVecMag2 = dispVec * dispVec';
                 ampCost = ampRatio; %due to amplitude
                 ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2); %punishment harsher when intensity of splitting feature < sum of intensities of features after splitting
                 cost12 = dispVecMag2 * ampCost;
-                
+
                 %add this cost to the list of costs
                 costMS(iPair) = cost12;
 
-                %calculate the alternative cost of not merging for the
-                %track that the end is possibly merging with
-                %this primarily depends on intensities
-                ampCost1 = ampSp / ampSp1;
-                ampCost1(ampCost1<1) = ampCost1(ampCost1<1) ^ (-2); %cost of "splitting" feature not linking to its next feature
-                ampCost2 = ampSp / ampS;
-                ampCost2(ampCost2<1) = ampCost2(ampCost2<1) ^ (-2); %cost of "splitting" feature not linking to the starting feature
-                cost12 = dispVecMag2 * max(ampCost1,ampCost2); %alternative cost
+                %check whether the track being split from has had something
+                %possibly splitting from it in this same frame
+                prevAppearance = find(indxMSMS == iSplit);
 
-                %add this cost to the list of alternative costs
-                altCostMS(iPair) = cost12;
+                %if this track in this frame did not appear before ...
+                if isempty(prevAppearance)
+
+                    %increase the "split index" by one
+                    numSplit = numSplit + 1;
+
+                    %save the merging track's number
+                    indxMSMS(iPair) = iSplit;
+
+                    %store the location of this pair in the cost matrix
+                    indx1MS(iPair) = numSplit+numTracks; %row number
+                    indx2MS(iPair) = iStart; %column number
+
+                    %calculate the alternative cost of not splitting for the
+                    %track that the start is possibly splitting from
+                    %this primarily depends on intensities
+                    ampCost = ampSp / ampSp;
+                    ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2); %cost of "splitting" feature having "nothing" split from it
+                    cost12 = dispVecMag2 * ampCost; %alternative cost
+
+                    %add this cost to the list of alternative costs
+                    altCostMS(iPair) = cost12;
+                    
+                else %if this track in this frame appeared before
+                    
+                    %do not increase the "split index" or save the
+                    %splitting track's index (they are already saved)
+                    
+                    %store the location of this pair in the cost matrix
+                    indx1MS(iPair) = indx1MS(prevAppearance); %row number
+                    indx2MS(iPair) = iStart; %column number
+                    
+                    %no need to calculate and save the alternative cost
+                    %since that is already saved from previous appearance
+                    
+                end %(if isempty(prevAppearance))
 
             end %(if possibleLink)
 
@@ -735,9 +774,10 @@ if mergeSplit
         indx1MS   = indx1MS(possiblePairs);
         indx2MS   = indx2MS(possiblePairs);
         costMS    = costMS(possiblePairs);
-        altCostMS = altCostMS(possiblePairs);
-        indxMSMS  = indxMSMS(possiblePairs);
-        clear possiblePairs
+        possibleSplits = find(indxMSMS ~= 0);
+        altCostMS = altCostMS(possibleSplits);
+        indxMSMS  = indxMSMS(possibleSplits);
+        clear possiblePairs possibleSplits
         
         %append these vectors to overall cost and related vectors
         indx1 = [indx1; indx1MS];

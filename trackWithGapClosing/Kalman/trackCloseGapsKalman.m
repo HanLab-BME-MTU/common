@@ -108,11 +108,6 @@ function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %REMARKS The algorithm can handle cases where some frames do not have any
 %        features at all. However, the very first frame must have some
 %        features in it.
-%        When gapCloseParam.mergeSplit = 1, gapCloseParam.tolerance MUST BE
-%        1 to prevent iteration. The part which assigns track segment types
-%        based on overall track type cannot handle tracks which contain
-%        merging and splitting. Therefore, it will only work well with the
-%        initial connectivity matrix from linking.
 %
 %Khuloud Jaqaman, April 2007
 
@@ -427,7 +422,7 @@ if any(trackStartTime > 1) && any(trackEndTime < numFrames)
 
     %go over all compound tracks
     for iTrack = 1 : numTracksCG
-
+        
         %get indices of tracks from linking making up current compound track
         %determine their number and connectivity
         trackSeedConnect = compoundTrack(iTrack,:)';
@@ -575,8 +570,7 @@ end %(if any(trackStartTime > 1) && any(trackEndTime < numFrames))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 save([saveResDir filesep saveResFile],'costMatParam','gapCloseParam',...
-    'kalmanInitParam','tracksFinal','tracksFeatIndxLink',...
-    'tracksCoordAmpLink','kalmanInfoLink');
+    'kalmanInitParam','useLocalDensity','tracksFinal','kalmanInfoLink');
 
 
 %%%%% ~~ the end ~~ %%%%%
