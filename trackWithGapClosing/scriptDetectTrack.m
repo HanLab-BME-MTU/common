@@ -122,34 +122,42 @@ saveResults.filename = 'tracksCalib_100ms_MaxExc_255Sens_57to456'; %name of file
 %define the input variables
 
 %some gap closing parameters
-gapCloseParam.timeWindow = 20;
-gapCloseParam.mergeSplit = 0;
+gapCloseParam.timeWindow = 20; %maximum allowed time gap (in frames) between a track end and a track start that allows linking them.
+gapCloseParam.mergeSplit = 0; %1 if merging and splitting are considered, 0 if not.
 
 %linking cost matrix parameters
-costMatParam.minSearchRadiusL = 2;
-costMatParam.maxSearchRadiusL = 5;
-costMatParam.brownStdMultL = 3;
-costMatParam.closestDistScaleL = 2;
-costMatParam.maxStdMultL = 20;
+%these are the parameters for linking detected features from one frame to
+%the next in order to construct the initial tracks
+costMatParam.minSearchRadiusL = 2; %minimum allowed search radius (in pixels). The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
+costMatParam.maxSearchRadiusL = 5; %maximum allowed search radius (in pixels). Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
+costMatParam.brownStdMultL = 3; %just keep this as 3. In In the final code I will probably hardwire this value in the code.
+costMatParam.closestDistScaleL = 2; %same here. Keep as 2.
+costMatParam.maxStdMultL = 20; %same here. Keep it as 20. I will explain these three parameters when I visit.
 
 %gap closing cost matrix parameters
-costMatParam.minSearchRadiusCG = 2;
-costMatParam.maxSearchRadiusCG = 5;
-costMatParam.brownStdMultCG = 3*ones(gapCloseParam.timeWindow,1);
-costMatParam.linStdMultCG = 3*ones(gapCloseParam.timeWindow,1);
-costMatParam.timeReachConfB = 1;
-costMatParam.timeReachConfL = 5;
-costMatParam.closestDistScaleCG = 2;
-costMatParam.maxStdMultCG = 20;
-costMatParam.lenForClassify = 10;
-costMatParam.maxAngle = 10;
-costMatParam.ampRatioLimitCG = [0.5000 2];
+%these are the parameters for gap closing as well as merging and splitting
+%these operations are performed on the initial tracks obtained in the
+%previous step
+costMatParam.minSearchRadiusCG = 2; %minimum allowed search radius (in pixels).
+costMatParam.maxSearchRadiusCG = 5; %maximum allowed search radius (in pixels).
+costMatParam.brownStdMultCG = 3*ones(gapCloseParam.timeWindow,1); %keep this as 3.
+costMatParam.linStdMultCG = 3*ones(gapCloseParam.timeWindow,1); %keep this as 3.
+costMatParam.timeReachConfB = 1; %in the code, the search radius expands with the time gap (since a particle is expected to move further away in a longer gap than in a shorter one). This parameter controls how fast the search radius grows with time. timeReachConfB stands for time to reach confinement for the Brownian part of the motion. So before timeReachConfB, the search radius grows with the square root of time, after that it grows very, very slowly (it's almost fixed). I found a value of 1 works best, but you can play with this a little bit.
+costMatParam.timeReachConfL = 5; %same as the previous parameter, but for the linear part of the motion. Again, I found that 5 works best, but you can play around with this parameter.
+costMatParam.closestDistScaleCG = 2; %keep this as 2.
+costMatParam.maxStdMultCG = 20; %and keep this as 20.
+costMatParam.lenForClassify = 10; %keep this as 10.
+costMatParam.maxAngle = 10; %maximum angle between the directions of motion of two tracks that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
+costMatParam.ampRatioLimitCG = [0.5000 2]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum the intensities of the 2 features that merge/split.
 
 %parameters for using local density to expand search radius
-useLocalDensity.link = 1;
-useLocalDensity.cg = 1;
-useLocalDensity.nnWindowL = 10;
-useLocalDensity.nnWindowCG = 10;
+%the search radius is generall calculated from the motion parameters of a
+%feature or track. However, if a feature or track is really isolated from
+%anything else, I expand its search radius.
+useLocalDensity.link = 1; %1 if you want to expand the search radius of isolated features in the linking (initial tracking) step.
+useLocalDensity.cg = 1; %1 if you want to expand the search radius of isolated tracks in the gap closing step.
+useLocalDensity.nnWindowL = 10; %number of frames before the current one where you want to look to see a feature's nearest neighbor in order to decide how isolated it is (in the initial linking step).
+useLocalDensity.nnWindowCG = 10; %number of frames before/after the current one where you want to look to see a track's nearest neighbor at its end/start (in the gap closing step).
 
 %saveResults
 saveResults.dir = '/mnt/sickkids/Hiro/070601/single_FabCy3_on_Glass/analysis/mmf/'; %directory where to save input and output
