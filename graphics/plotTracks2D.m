@@ -205,6 +205,9 @@ else %if tracks are not input in structure format
 
     %indicate that there are no compound tracks with merging and splitting branches
     mergeSplit = 0;
+    
+    %indicate that each track consists of one segment
+    numSegments = ones(numTracks,1);
 
     %locate the row of the first track of each compound track in the
     %big matrix of all tracks

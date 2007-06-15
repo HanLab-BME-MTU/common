@@ -409,32 +409,32 @@ for i=length(clusters):-1:1
     end %(while fit)
 
     
-    %check that the residuals from the overall fit are significantly
-    %smaller than residuals from not fitting any PSFs.
-
-    %fit the image with zero kernels, i.e. estimate the background
-    %intensity only
-    numDegFreeT = size(clusterPixels,1)-1;
-    solutionT = lsqnonlin(@fitNGaussians2D,bgAmp(1),1e-5,5*bgAmp(1),options,imageC,...
-        clusterPixels,psfSigma);
-
-    %get residuals and Jacobian matrix to calculate uncertainty in
-    %estimated parameters
-    [residualsT,jacMatT] = fitNGaussians2D(solutionT,imageC,...
-        clusterPixels,psfSigma);
-
-    %get test statistic, which is F-distributed
-    testStat = (sum(residuals.^2)/numDegFree)/...
-        (sum(residualsT.^2)/numDegFreeT);
-
-    %get p-value of test statistic
-    pValue = fcdf(testStat,numDegFree,numDegFreeT);
-
-    %compare p-value to alpha
-    %1-sided F-test: H0: F=1, H1: F<1
-    if pValue > alphaR %if p-value is larger, reject overall fit
-        keepCluster(i) = 0;
-    end
+% % %     %check that the residuals from the overall fit are significantly
+% % %     %smaller than residuals from not fitting any PSFs.
+% % % 
+% % %     %fit the image with zero kernels, i.e. estimate the background
+% % %     %intensity only
+% % %     numDegFreeT = size(clusterPixels,1)-1;
+% % %     solutionT = lsqnonlin(@fitNGaussians2D,bgAmp(1),1e-5,5*bgAmp(1),options,imageC,...
+% % %         clusterPixels,psfSigma);
+% % % 
+% % %     %get residuals and Jacobian matrix to calculate uncertainty in
+% % %     %estimated parameters
+% % %     [residualsT,jacMatT] = fitNGaussians2D(solutionT,imageC,...
+% % %         clusterPixels,psfSigma);
+% % % 
+% % %     %get test statistic, which is F-distributed
+% % %     testStat = (sum(residuals.^2)/numDegFree)/...
+% % %         (sum(residualsT.^2)/numDegFreeT);
+% % % 
+% % %     %get p-value of test statistic
+% % %     pValue = fcdf(testStat,numDegFree,numDegFreeT);
+% % % 
+% % %     %compare p-value to alpha
+% % %     %1-sided F-test: H0: F=1, H1: F<1
+% % %     if pValue > alphaR %if p-value is larger, reject overall fit
+% % %         keepCluster(i) = 0;
+% % %     end
 
     %store solution in clustersMMF
     clustersMMF(i).position = maximaPos;

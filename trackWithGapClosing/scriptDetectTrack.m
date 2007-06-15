@@ -33,23 +33,23 @@
 %define the input variables
 
 %movieParam
-movieParam.candsDir = '/mnt/sickkids/Hiro/070601/single_FabCy3_on_Glass/analysis/fsm/tack/cands/'; %directory where initial position estimates are
-movieParam.imageDir = '/mnt/sickkids/Hiro/070601/single_FabCy3_on_Glass/images/'; %directory where images are
-movieParam.filenameBase = '070401_AbOnGlass-'; %image file name base
+movieParam.candsDir = '/mnt/mit/khuloudDir/unc/analysis/fsm/tack/cands/'; %directory where initial position estimates are
+movieParam.imageDir = '/mnt/mit/khuloudDir/unc/images/'; %directory where images are
+movieParam.filenameBase = 'sampleMovieUNC_'; %image file name base
 movieParam.firstImageNum = 1; %number of first image in movie
-movieParam.lastImageNum = 598; %number of last image in movie
+movieParam.lastImageNum = 600; %number of last image in movie
 movieParam.digits4Enum = 4; %number of digits used for frame enumeration (1-4).
 
 %detectionParam
-detectionParam.psfSigma = 1.221; %point spread function sigma (in pixels)
-detectionParam.testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05); %alpha-values for detection statistical tests
+detectionParam.psfSigma = 1.601; %point spread function sigma (in pixels)
+detectionParam.testAlpha = struct('alphaR',0.05,'alphaA',0.1,'alphaD',0.05); %alpha-values for detection statistical tests
 detectionParam.visual = 0; %1 to see image with detected features, 0 otherwise
-detectionParam.doMMF = 1; %1 if mixture-model fitting, 0 otherwise
+detectionParam.doMMF = 0; %1 if mixture-model fitting, 0 otherwise
 detectionParam.bitDepth = 16; %Camera bit depth
 
 %saveResults
-saveResults.dir = '/mnt/sickkids/Hiro/070601/single_FabCy3_on_Glass/analysis/mmf/'; %directory where to save input and output
-saveResults.filename = 'detectHiroSingle_FabCy3_on_Glass'; %name of file where input and output are saved
+saveResults.dir = '/mnt/sickkids/Yoav/2007_03_06_Calibration_slides/100ms_MaxExc_150Sens/analysis_57to456/mmf/'; %directory where to save input and output
+saveResults.filename = 'detectionCalib_100ms_MaxExc_150Sens_57to456_new.mat'; %name of file where input and output are saved
 
 %run the detection function
 [movieInfo,emptyFrames,framesFailed] = detectSubResFeatures2D_Movie(...
@@ -122,14 +122,14 @@ saveResults.filename = 'tracksCalib_100ms_MaxExc_255Sens_57to456'; %name of file
 %define the input variables
 
 %some gap closing parameters
-gapCloseParam.timeWindow = 20; %maximum allowed time gap (in frames) between a track end and a track start that allows linking them.
+gapCloseParam.timeWindow = 100; %maximum allowed time gap (in frames) between a track end and a track start that allows linking them.
 gapCloseParam.mergeSplit = 0; %1 if merging and splitting are considered, 0 if not.
 
 %linking cost matrix parameters
 %these are the parameters for linking detected features from one frame to
 %the next in order to construct the initial tracks
 costMatParam.minSearchRadiusL = 2; %minimum allowed search radius (in pixels). The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
-costMatParam.maxSearchRadiusL = 5; %maximum allowed search radius (in pixels). Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
+costMatParam.maxSearchRadiusL = 10; %maximum allowed search radius (in pixels). Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
 costMatParam.brownStdMultL = 3; %just keep this as 3. In In the final code I will probably hardwire this value in the code.
 costMatParam.closestDistScaleL = 2; %same here. Keep as 2.
 costMatParam.maxStdMultL = 20; %same here. Keep it as 20. I will explain these three parameters when I visit.
@@ -139,10 +139,10 @@ costMatParam.maxStdMultL = 20; %same here. Keep it as 20. I will explain these t
 %these operations are performed on the initial tracks obtained in the
 %previous step
 costMatParam.minSearchRadiusCG = 2; %minimum allowed search radius (in pixels).
-costMatParam.maxSearchRadiusCG = 5; %maximum allowed search radius (in pixels).
+costMatParam.maxSearchRadiusCG = 10; %maximum allowed search radius (in pixels).
 costMatParam.brownStdMultCG = 3*ones(gapCloseParam.timeWindow,1); %keep this as 3.
 costMatParam.linStdMultCG = 3*ones(gapCloseParam.timeWindow,1); %keep this as 3.
-costMatParam.timeReachConfB = 1; %in the code, the search radius expands with the time gap (since a particle is expected to move further away in a longer gap than in a shorter one). This parameter controls how fast the search radius grows with time. timeReachConfB stands for time to reach confinement for the Brownian part of the motion. So before timeReachConfB, the search radius grows with the square root of time, after that it grows very, very slowly (it's almost fixed). I found a value of 1 works best, but you can play with this a little bit.
+costMatParam.timeReachConfB = 5; %in the code, the search radius expands with the time gap (since a particle is expected to move further away in a longer gap than in a shorter one). This parameter controls how fast the search radius grows with time. timeReachConfB stands for time to reach confinement for the Brownian part of the motion. So before timeReachConfB, the search radius grows with the square root of time, after that it grows very, very slowly (it's almost fixed). I found a value of 1 works best, but you can play with this a little bit.
 costMatParam.timeReachConfL = 5; %same as the previous parameter, but for the linear part of the motion. Again, I found that 5 works best, but you can play around with this parameter.
 costMatParam.closestDistScaleCG = 2; %keep this as 2.
 costMatParam.maxStdMultCG = 20; %and keep this as 20.
@@ -156,12 +156,12 @@ costMatParam.ampRatioLimitCG = [0.5000 2]; %for merging and splitting. Minimum a
 %anything else, I expand its search radius.
 useLocalDensity.link = 1; %1 if you want to expand the search radius of isolated features in the linking (initial tracking) step.
 useLocalDensity.cg = 1; %1 if you want to expand the search radius of isolated tracks in the gap closing step.
-useLocalDensity.nnWindowL = 10; %number of frames before the current one where you want to look to see a feature's nearest neighbor in order to decide how isolated it is (in the initial linking step).
-useLocalDensity.nnWindowCG = 10; %number of frames before/after the current one where you want to look to see a track's nearest neighbor at its end/start (in the gap closing step).
+useLocalDensity.nnWindowL = 100; %number of frames before the current one where you want to look to see a feature's nearest neighbor in order to decide how isolated it is (in the initial linking step).
+useLocalDensity.nnWindowCG = 100; %number of frames before/after the current one where you want to look to see a track's nearest neighbor at its end/start (in the gap closing step).
 
 %saveResults
-saveResults.dir = '/mnt/sickkids/Hiro/070601/single_FabCy3_on_Glass/analysis/mmf/'; %directory where to save input and output
-saveResults.filename = 'trackHiroSingle_FabCy3_on_Glass_win20'; %name of file where input and output are saved
+saveResults.dir = '/mnt/mit/khuloudDir/unc/analysis/mmf/'; %directory where to save input and output
+saveResults.filename = 'tracksUncR10C5'; %name of file where input and output are saved
 
 %run the tracking function
 [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(movieInfo,...
