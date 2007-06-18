@@ -270,7 +270,7 @@ if any(trackStartTime > 1) && any(trackEndTime < numFrames)
     tracksRemaining = tracks2Link;
     
     %reserve memory space for matrix showing track connectivity
-    compoundTrack = zeros(numTracksLink);
+    compoundTrack = zeros(numTracksLink,600);
 
     %initialize compTrackIndx
     compTrackIndx = 0;
