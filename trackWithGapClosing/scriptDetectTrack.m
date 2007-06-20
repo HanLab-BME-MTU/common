@@ -122,7 +122,7 @@ saveResults.filename = 'tracksCalib_100ms_MaxExc_255Sens_57to456'; %name of file
 %define the input variables
 
 %some gap closing parameters
-gapCloseParam.timeWindow = 100; %maximum allowed time gap (in frames) between a track end and a track start that allows linking them.
+gapCloseParam.timeWindow = 10; %maximum allowed time gap (in frames) between a track end and a track start that allows linking them.
 gapCloseParam.mergeSplit = 0; %1 if merging and splitting are considered, 0 if not.
 
 %linking cost matrix parameters
@@ -156,12 +156,12 @@ costMatParam.ampRatioLimitCG = [0.5000 2]; %for merging and splitting. Minimum a
 %anything else, I expand its search radius.
 useLocalDensity.link = 1; %1 if you want to expand the search radius of isolated features in the linking (initial tracking) step.
 useLocalDensity.cg = 1; %1 if you want to expand the search radius of isolated tracks in the gap closing step.
-useLocalDensity.nnWindowL = 100; %number of frames before the current one where you want to look to see a feature's nearest neighbor in order to decide how isolated it is (in the initial linking step).
-useLocalDensity.nnWindowCG = 100; %number of frames before/after the current one where you want to look to see a track's nearest neighbor at its end/start (in the gap closing step).
+useLocalDensity.nnWindowL = 10; %number of frames before the current one where you want to look to see a feature's nearest neighbor in order to decide how isolated it is (in the initial linking step).
+useLocalDensity.nnWindowCG = 10; %number of frames before/after the current one where you want to look to see a track's nearest neighbor at its end/start (in the gap closing step).
 
 %saveResults
-saveResults.dir = '/mnt/mit/khuloudDir/unc/analysis/mmf/'; %directory where to save input and output
-saveResults.filename = 'tracksUncR10C5'; %name of file where input and output are saved
+saveResults.dir = '/mnt/sickkids/Yoav/debug/07-06-19/'; %directory where to save input and output
+saveResults.filename = 'tracks'; %name of file where input and output are saved
 
 %run the tracking function
 [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(movieInfo,...

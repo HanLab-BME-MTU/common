@@ -197,13 +197,33 @@ for iFrame = 1 : numFrames
 
     %collect feature coordinates into one matrix
     coordinates = [movieInfo(iFrame).xCoord(:,1) movieInfo(iFrame).yCoord(:,1)];
+    
+    %calculate number of features in frame
+    numFeatures = size(coordinates,1);
 
-    %compute distance matrix
-    nnDist = createDistanceMatrix(coordinates,coordinates);
+    switch numFeatures
 
-    %sort distance matrix and find nearest neighbor distance
-    nnDist = sort(nnDist,2);
-    nnDist = nnDist(:,2);
+        case 0 %if there are no features
+            
+            %there are no nearest neighbor distances
+            nnDist = zeros(0,1);
+
+        case 1 %if there is only 1 feature
+
+            %assign nearest neighbor distance as 1000 pixels (a very big
+            %number)
+            nnDist = 1000;
+
+        otherwise %if there are more than 1 feature
+
+            %compute distance matrix
+            nnDist = createDistanceMatrix(coordinates,coordinates);
+
+            %sort distance matrix and find nearest neighbor distance
+            nnDist = sort(nnDist,2);
+            nnDist = nnDist(:,2);
+
+    end
 
     %store nearest neighbor distance
     movieInfo(iFrame).nnDist = nnDist;

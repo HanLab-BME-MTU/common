@@ -4,7 +4,7 @@ function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
 %LINKFEATURESKALMAN links features between consecutive frames using LAP and directed motion models
 %
 %SYNOPSIS [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
-%    nnDistTracks,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
+%    nnDistFeatures,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
 %    filterInfoPrev,kalmanInitParam,useLocalDensity,nnWindow)
 %
 %INPUT  movieInfo         : Array of size equal to the number of time points
@@ -115,7 +115,7 @@ end
 
 %calculate nearest neighbor distances if not supplied
 if ~isfield(movieInfo,'nnDist')
-
+    
     %calculate distance between each feature and its nearest neighbor
     %for all frames
     for iFrame = 1 : numFrames
@@ -123,12 +123,32 @@ if ~isfield(movieInfo,'nnDist')
         %collect feature coordinates into one matrix
         coordinates = [movieInfo(iFrame).xCoord(:,1) movieInfo(iFrame).yCoord(:,1)];
 
-        %compute distance matrix
-        nnDist = createDistanceMatrix(coordinates,coordinates);
+        %calculate number of features in frame
+        numFeatures = size(coordinates,1);
 
-        %sort distance matrix and find nearest neighbor distance
-        nnDist = sort(nnDist,2);
-        nnDist = nnDist(:,2);
+        switch numFeatures
+
+            case 0 %if there are no features
+
+                %there are no nearest neighbor distances
+                nnDist = zeros(0,1);
+
+            case 1 %if there is only 1 feature
+
+                %assign nearest neighbor distance as 1000 pixels (a very big
+                %number)
+                nnDist = 1000;
+
+            otherwise %if there are more than 1 feature
+
+                %compute distance matrix
+                nnDist = createDistanceMatrix(coordinates,coordinates);
+
+                %sort distance matrix and find nearest neighbor distance
+                nnDist = sort(nnDist,2);
+                nnDist = nnDist(:,2);
+
+        end
 
         %store nearest neighbor distance
         movieInfo(iFrame).nnDist = nnDist;
@@ -228,8 +248,9 @@ for iFrame = 1 : numFrames-1
                 indx1U(indx1C) = 0;
                 indx1U = find(indx1U);
 
-                %assign space for new connectivity matrix and for vector
-                %storing track nearest neighbor distances
+                %assign space for new connectivity matrix,
+                %for matrix of nearest neighbors of connected features,
+                %and for vector storing track nearest neighbor distances
                 tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2-length(indx2C),iFrame+1);
                 tmpNN = NaN*ones(size(tmp));
                 tmpNN2 = NaN*ones(size(tmp,1),1);
@@ -240,13 +261,13 @@ for iFrame = 1 : numFrames-1
                 tmpNN(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
 
                 %shuffle existing tracks to get the correct connectivity with 2nd frame
-                %also shuffle track nearest neighbor distance
+                %also shuffle nearest neighbor distances
                 tmp(indx2C,1:iFrame) = trackedFeatureIndx(indx1C,:);
                 tmpNN(indx2C,1:iFrame) = nnDistFeatures(indx1C,:);
                 tmpNN2(indx2C) = nnDistTracks(indx1C);
 
                 %add rows of tracks that are not connected to points in 2nd frame
-                %also add track nearest neighbor distances
+                %also add nearest neighbor distances
                 tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx(indx1U,:);
                 tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures(indx1U,:);
                 tmpNN2(numFeaturesFrame2+1:end) = nnDistTracks(indx1U);
@@ -280,21 +301,33 @@ for iFrame = 1 : numFrames-1
                 
             else %if there are no potential links
 
-                %assign space for new matrix
+                %assign space for new connectivity matrix,
+                %for matrix of nearest neighbors of connected features,
+                %and for vector storing track nearest neighbor distances
                 tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2,iFrame+1);
+                tmpNN = NaN*ones(size(tmp));
+                tmpNN2 = NaN*ones(size(tmp,1),1);
 
-                %fill in the feature numbers in 2nd frame
+                %fill in the feature numbers in 2nd frame and their nearest
+                %neighbor distances
                 tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
+                tmpNN(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
 
-                %fill in the tracks upto 1st frame
+                %fill in the tracks upto 1st frame and their nearest
+                %neighbor distances
                 tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx;
+                tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures;
+                tmpNN2(numFeaturesFrame2+1:end) = nnDistTracks;
 
                 %update the connectivity matrix "trackedFeatureIndx"
                 trackedFeatureIndx = tmp;
-                
-                %update the track nearest neighbor vector
-                nnDistTracks = [movieInfo(iFrame+1).nnDist; nnDistTrack];
-                
+
+                %update the nearest neighbor distances of connected
+                %features and the track nearest neighbor vector
+                nnDistFeatures = tmpNN;
+                nnDistTracks = tmpNN2;
+                nnDistTracks(1:numFeaturesFrame2) = movieInfo(iFrame+1).nnDist;
+
                 %initialize Kalman filter for features in 2nd frame
                 if usePriorInfo %use a priori information if available
                     kalmanFilterInfo(iFrame+1).stateVec = filterInfoPrev(iFrame+1).stateVec; %state vector
@@ -312,8 +345,13 @@ for iFrame = 1 : numFrames-1
 
         else %if there are no features in 2nd frame
 
-            %add a column of zeros for the 2nd frame
+            %add a column of zeros for the 2nd frame in the track
+            %connectivity matrix
             trackedFeatureIndx = [trackedFeatureIndx zeros(size(trackedFeatureIndx,1),1)];
+            
+            %add a column of NaNs for the 2nd frame in the nearest neighbor
+            %matrix
+            nnDistFeatures = [nnDistFeatures NaN*ones(size(nnDistFeatures,1),1)];
 
         end %(if numFeaturesFrame2 ~= 0 ... else ...)
 
@@ -321,20 +359,32 @@ for iFrame = 1 : numFrames-1
 
         if numFeaturesFrame2 ~= 0 %if there are features in 2nd frame
 
-            %assign space for new matrix
+            %assign space for new connectivity matrix,
+            %for matrix of nearest neighbors of connected features,
+            %and for vector storing track nearest neighbor distances
             tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2,iFrame+1);
+            tmpNN = NaN*ones(size(tmp));
+            tmpNN2 = NaN*ones(size(tmp,1),1);
 
-            %fill in the feature numbers in 2nd frame
+            %fill in the feature numbers in 2nd frame and their nearest
+            %neighbor distances
             tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
+            tmpNN(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
 
-            %fill in the tracks upto 1st frame
+            %fill in the tracks upto 1st frame and their nearest
+            %neighbor distances
             tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx;
+            tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures;
+            tmpNN2(numFeaturesFrame2+1:end) = nnDistTracks;
 
             %update the connectivity matrix "trackedFeatureIndx"
             trackedFeatureIndx = tmp;
 
-            %update the track nearest neighbor vector
-            nnDistTracks = [movieInfo(iFrame+1).nnDist; nnDistTrack];
+            %update the nearest neighbor distances of connected
+            %features and the track nearest neighbor vector
+            nnDistFeatures = tmpNN;
+            nnDistTracks = tmpNN2;
+            nnDistTracks(1:numFeaturesFrame2) = movieInfo(iFrame+1).nnDist;
 
             %initialize Kalman filter for features in 2nd frame
             if usePriorInfo %use a priori information if available
@@ -351,8 +401,13 @@ for iFrame = 1 : numFrames-1
 
         else %if there are no features in 2nd frame
 
-            %add a column of zeros for 2nd frame
+            %add a column of zeros for the 2nd frame in the track
+            %connectivity matrix
             trackedFeatureIndx = [trackedFeatureIndx zeros(size(trackedFeatureIndx,1),1)];
+            
+            %add a column of NaNs for the 2nd frame in the nearest neighbor
+            %matrix
+            nnDistFeatures = [nnDistFeatures NaN*ones(size(nnDistFeatures,1),1)];
 
         end %(if numFeaturesFrame2 ~= 0 ... else ...)
 
