@@ -35,7 +35,7 @@ function [listOfFiles,tokenList] = searchFiles(includeString,excludeString,direc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %---test input---
-if nargin<1|isempty(includeString)
+if nargin<1||isempty(includeString)
     error('not enough input arguments or empty includeString')
 end
 
@@ -92,7 +92,7 @@ if nargin<4||isempty(includeSubDirectories)
 end
 
 %selectionMode
-if nargin<5|isempty(selectionMode)
+if nargin<5||isempty(selectionMode)
     selectionMode = 'all';
 else
     if ~any([strcmp(selectionMode,'new'),...
@@ -208,7 +208,7 @@ listOfFiles(listOfFilesCt+1:end,:)=[];
 %----------- find tokens --------------
 if nargout > 1
     % we need to make a tokenList
-    if findstr(includeString,'(') & findstr(includeString,')')
+    if findstr(includeString,'(') && findstr(includeString,')')
         % only call regexp if there are tokens at all
 
         tmp = regexp(listOfFiles(:,1),includeString,'tokens');
