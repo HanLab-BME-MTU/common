@@ -82,10 +82,10 @@ for iRow = 2:nObjects
     % find minimum distance between already sorted and the rest
     [i,j] = find(groupDistances == min(groupDistances(:)));
     % add to sortedIndices the jth unsorted column
-    newRow = unsortedList(j);
+    newRow = unsortedList(j(1));
     sortedIndices(iRow) = newRow;
     sortedList(iRow) = newRow;
-    unsortedList(j) = [];
+    unsortedList(j(1)) = [];
 end
 
 %=================================
