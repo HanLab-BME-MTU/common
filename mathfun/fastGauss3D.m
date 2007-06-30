@@ -20,12 +20,11 @@ function out=fastGauss3D(img,sigma,fSze,correctBorder,filterMask)
 if nargin > 4 && ~isempty(filterMask)
     % Use user-supplied filter
     gauss = filterMask;
-    sigma = [];
     fSze = size(filterMask);
-    filterMask = []; % reclaim memory
+    clear filtermask % reclaim memory
 else
     % make a GaussFilter
-    gauss=GaussMask3D(sigma,fSze);
+    gauss=GaussMask3D(sigma,fSze,[],1);
 end
     
 
@@ -55,6 +54,7 @@ out=convn(img,gauss,convnOpt);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function newImg = addBorder(img,fSze)
+%ADDBORDER adds a border around 3D images for filtering
 %adds a border of halFsze around the img, and fill it with pixels whose
 %value is computed as follows:
 %for all 3 dimensions i (=6 sides) of the array, the median of the first or last
