@@ -8,9 +8,8 @@ function varargout = contHisto(data,distribution,normalized,verb,n)
 %         dist        : (opt) {'norm'} or 'unif' depending on whether the
 %                       data should be represented by normal or uniform 
 %                       distributions
-%         normalized  : (opt) {1}/0 if the surface each data point contributes
-
-%                       should be normalized
+%         normalized  : (opt) {1}/0 if the surface each data point
+%                             contributes should be normalized
 %         n           : (opt) number of points along the x-axis (500). min 10
 %         verb        : (opt) {0}/1 whether the histogram should be plotted.
 %

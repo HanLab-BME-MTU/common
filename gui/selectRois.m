@@ -53,8 +53,8 @@ while ~done
     selectIdxL(:,nRoi) = inpolygon(X,Y,xRoi,yRoi);
     
     % ask for more
-    cont = questdlg('Do you want to select another ROI?','',...
-        'Yes','No','Remove Last','Yes');
+    cont = myQuestdlg('Do you want to select another ROI?','',...
+        'Yes','No','Remove last','Remove last and quit','Yes');
     switch cont
         case 'Yes'
             % up nRoi, check whether we have enough space
@@ -65,11 +65,17 @@ while ~done
             nRoi = nRoi + 1;
             % not done
             
-        case 'Remove Last'
+        case 'Remove last'
             % remove the line, redo current ROI
             delete(lh)
             
             % not done
+            
+        case 'Remove last and quit'
+            % remove the line, exit
+            delete(lh)
+            selectidxL(:,nRoi:end) = [];
+            done = true;
             
             
         otherwise

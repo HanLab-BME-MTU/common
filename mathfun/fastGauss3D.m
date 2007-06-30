@@ -1,4 +1,4 @@
-function out=fastGauss3D(img,sigma,fSze,correctBorder,filterMask);
+function out=fastGauss3D(img,sigma,fSze,correctBorder,filterMask)
 % fastGauss3D	apply a 3 dimensional gauss filter
 %
 %    SYNOPSIS out=Gauss3D(img,sigma,fSze);
@@ -31,7 +31,7 @@ end
 
 convnOpt = 'same';
 
-if nargin > 3 & ~isempty(correctBorder)
+if nargin > 3 && ~isempty(correctBorder)
     if correctBorder == 1
         %correct for border effects
         try
@@ -54,7 +54,7 @@ out=convn(img,gauss,convnOpt);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function newImg = addBorder(img,fSze);
+function newImg = addBorder(img,fSze)
 %adds a border of halFsze around the img, and fill it with pixels whose
 %value is computed as follows:
 %for all 3 dimensions i (=6 sides) of the array, the median of the first or last

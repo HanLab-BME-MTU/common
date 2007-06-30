@@ -30,11 +30,11 @@ if nargin < 2
 end
 
 % alpha
-if nargin < 3 | isempty(alpha)
+if nargin < 3 || isempty(alpha)
     alpha = 0.001;
 else
     alpha = abs(alpha);
-    if alpha < 0 | alpha > 1
+    if alpha < 0 || alpha > 1
         error('alpha has to be between 0 and 1')
     end
 end
@@ -44,13 +44,13 @@ if nargin < 4 || isempty(relOrAbs)
 end
 
 % A and B
-if ~isnumeric(A) | ~isnumeric(B)
+if ~isnumeric(A) || ~isnumeric(B)
     error('please specify numeric input for A and B')
 end
 
 % return false if one of the two is empty
 if isempty(A) || isempty(B)
-    trueOrFalse = logical(0);
+    trueOrFalse = false;
     return
 end
 
