@@ -1,7 +1,7 @@
-function [u,sigmaU] = robustExponentialFit(xData, yData, fitConstant, verbose)
+function [u,sigmaU,goodRows] = robustExponentialFit(xData, yData, fitConstant, verbose)
 %ROBUSTEXPONENTIALFIT uses least median squares to fit an exponential model
 %
-% SYNOPSIS [u,sigmaU] = robustExponentialFit(xData, yData, fitConstant)
+% SYNOPSIS [u,sigmaU,goodRows] = robustExponentialFit(xData, yData, fitConstant)
 %
 % INPUT    xData : x-values of the data.
 %          yData : y-values of the data.
@@ -13,6 +13,7 @@ function [u,sigmaU] = robustExponentialFit(xData, yData, fitConstant, verbose)
 %
 % OUTPUT   u: vector of the fitted values A,B and potentially C
 %          sigmaU: a-posteriori uncertainty of the parameters
+%          goodRows: inliers in yData
 %
 % c: jonas 11/04
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -76,9 +77,9 @@ parameters = struct('xdata',xData,'ydata',yData);
 options = optimset('Display','off');
 
 if fitConstant
-    [u,dummy,sigmaU]=leastMedianSquares('(ydata-(u(1)*exp(-xdata/u(2)))-u(3))',init,options,parameters);
+    [u,goodRows,sigmaU]=leastMedianSquares('(ydata-(u(1)*exp(-xdata/u(2)))-u(3))',init,options,parameters);
 else
-    [u,dummy,sigmaU]=leastMedianSquares('(ydata-(u(1)*exp(-xdata/u(2))))',init(1:2),options,parameters);
+    [u,goodRows,sigmaU]=leastMedianSquares('(ydata-(u(1)*exp(-xdata/u(2))))',init(1:2),options,parameters);
 end
 
 % plot results
