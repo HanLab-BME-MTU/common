@@ -1,4 +1,4 @@
-function [dm, dmVectors] = distMat2(A,B,metric);
+function [dm, dmVectors] = distMat2(A,B,metric)
 %DISTMAT2 computes the distance matrix of two point sets
 %
 % SYNOPSIS dm = distMat2(A,B,metric);
@@ -19,9 +19,13 @@ if nA~=nB
     error('point set must be in same dim-space');
 end;
 
-if nargin < 3
-    metric=ones(1,nA);
+if nargin < 3 || isempty(metric)
+   % use mex-fcn
+   dm = createDistanceMatrix(A,B);
+   return
+elseif nA == nB && all(size(metric(:)) == [nA,1])
     metricIsSquare = 0;
+    metric = metric(:)';    
 elseif ~all(size(metric) == [nA,nB])
     error('incorrect dimension of metric');
 else

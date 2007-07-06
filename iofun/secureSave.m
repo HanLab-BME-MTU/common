@@ -39,6 +39,9 @@ vars=sprintf('''%s'',', varargin{2:end});
 vars=vars(1:end-1);
 savecmd=['save(''' fname ''',' vars ');'];
 evalin('caller',savecmd);
-
-savedFileName = [body num2str(nr) ext];
+if ~isempty(nr)
+    savedFileName = [body '_' num2str(nr) ext];
+else
+    savedFileName = [body ext];
+end
 savePath = path;

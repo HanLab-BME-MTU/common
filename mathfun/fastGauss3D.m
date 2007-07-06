@@ -11,7 +11,10 @@ function out=fastGauss3D(img,sigma,fSze,correctBorder,filterMask)
 %                              lessened
 %             filterMask    (optional) supply your own mask instead of a
 %                              Gauss. In this case, sigma and fSze don't
-%                              have to be supplied
+%                              have to be supplied. If the filter mask is a
+%                              cell, the data will be sequentially filtered
+%                              by the contents of the cell. In that case,
+%                              fSze is required.
 %
 %    OUTPUT:  out      filtered data
 
@@ -20,11 +23,16 @@ function out=fastGauss3D(img,sigma,fSze,correctBorder,filterMask)
 if nargin > 4 && ~isempty(filterMask)
     % Use user-supplied filter
     gauss = filterMask;
-    fSze = size(filterMask);
+    if isempty(fSze)
+        if iscell(filterMask)
+            error('if you supply a separated filter, you will need to supply the filter size!')
+        end
+        fSze = size(filterMask);
+    end
     clear filtermask % reclaim memory
 else
-    % make a GaussFilter
-    gauss=GaussMask3D(sigma,fSze,[],1);
+    % make a GaussFilter - create cell of separated kernels!
+    gauss=GaussMask3D(sigma,fSze,[],1,[],[],1);
 end
     
 
@@ -49,7 +57,14 @@ if nargin > 3 && ~isempty(correctBorder)
 end
 
 % Convolve matrices
-out=convn(img,gauss,convnOpt);
+if iscell(gauss)
+    for i=1:length(gauss)
+        img = convn(img,gauss{i},convnOpt);
+    end
+    out = img;
+else
+    out=convn(img,gauss,convnOpt);
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

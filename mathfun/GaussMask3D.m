@@ -1,7 +1,7 @@
-function gauss=GaussMask3D(sigma,fSze,cent,cnorm,absCenter,noInt)
+function gauss=GaussMask3D(sigma,fSze,cent,cnorm,absCenter,noInt,separated)
 % GaussMask3D	create a gaussian 3D mask
 %
-%    SYNOPSIS gauss =GaussMask3D(sigma,fSze,cent,cnorm,absCenter);
+%    SYNOPSIS gauss =GaussMask3D(sigma,fSze,cent,cnorm,absCenter,separated);
 %
 %    INPUT: sigma  of gauss mask [sigmaX sigmaY sigmaZ] or [sigma].
 %                  If scalar, sigma will be the same for all dimensions
@@ -28,7 +28,10 @@ function gauss=GaussMask3D(sigma,fSze,cent,cnorm,absCenter,noInt)
 %                  =0 (default) Intensities are the integral over voxels
 %                  =1 Intensities are the value of the Gauss at the voxel
 %                     center
-%
+%           separated (optional; [{0}/1]) if 1, gauss will be a cell array
+%                  with 3 vectors, gx, gy, gz that can be used to
+%                  sequentially filter the image in order to speed up
+%                  calculations
 %
 %    OUTPUT: gauss   3D gaussian intensity distribution with voxel values
 %                    equal to the integral of the gauss over the area of
@@ -69,6 +72,9 @@ end
 if nargin < 6 || isempty(noInt)
     noInt = false;
 end
+if nargin < 7 || isempty(separated)
+    separated = false;
+end
 
 % transform absolute center into relative center
 if absCenter
@@ -96,22 +102,51 @@ else
     ey = diff(0.5 * erfc(-y./sqrt(2)));
     ez = diff(0.5 * erfc(-z./sqrt(2)));
 end
-% construct the 3D matrix (nice work by Dom!)
-exy=ex'*ey;
-gauss(:)=exy(:)*ez;
 
-% norm Gauss
-switch cnorm
-    case 0 % maximum of Gauss has to be 1
-        gauss = gauss*((2*pi)^1.5*prod(sigma));
+if separated
+    % return cell array of vectors
 
-    case 1
-        gauss = gauss/sum(gauss(:));
-    case 2 % the whole erfc thing is already normed for infinite Gauss
-        % so nothing to do here.
-        % gauss(:) = gauss;
+    % norm Gauss
+    switch cnorm
+        case 0 % maximum of Gauss has to be 1
+            ex = ex*((2*pi)^0.5*prod(sigma));
+            ey = ey*((2*pi)^0.5*prod(sigma));
+            ez = ez*((2*pi)^0.5*prod(sigma));
 
-    otherwise
-        % no change to gauss
+        case 1
+            ex = ex/sum(ex);
+            ey = ey/sum(ey);
+            ez = ez/sum(ez);
 
+        case 2 % the whole erfc thing is already normed for infinite Gauss
+            % so nothing to do here.
+            % gauss(:) = gauss;
+
+        otherwise
+            % no change to gauss
+
+    end
+
+    gauss = {ex',ey,permute(ez,[3,1,2])};
+
+else
+    % construct the 3D matrix (nice work by Dom!)
+    exy=ex'*ey;
+    gauss(:)=exy(:)*ez;
+
+    % norm Gauss
+    switch cnorm
+        case 0 % maximum of Gauss has to be 1
+            gauss = gauss*((2*pi)^1.5*prod(sigma));
+
+        case 1
+            gauss = gauss/sum(gauss(:));
+        case 2 % the whole erfc thing is already normed for infinite Gauss
+            % so nothing to do here.
+            % gauss(:) = gauss;
+
+        otherwise
+            % no change to gauss
+
+    end
 end
