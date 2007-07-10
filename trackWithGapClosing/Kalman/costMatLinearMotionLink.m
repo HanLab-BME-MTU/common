@@ -1,20 +1,16 @@
 function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
      errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
-     costMatParam,useLocalDensity,nnDistTracks)
+     costMatParam,useLocalDensity,nnDistTracks,probDim)
 %COSTMATLINEARMOTIONLINK provides a cost matrix for linking features based on competing linear motion models
 %
 %SYNOPSIS [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %     errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
-%     costMatParam,useLocalDensity,nnDistTracks)
+%     costMatParam,useLocalDensity,nnDistTracks,probDim)
 %
 %INPUT  movieInfo             : A 2x1 array (corresponding to the 2 frames of 
 %                               interest) containing the fields:
-%             .xCoord             : Image coordinate system x-coordinates of detected
-%                                   features (in pixels). 1st column for
-%                                   value and 2nd column for standard deviation.
-%             .yCoord             : Image coordinate system y-coordinates of detected
-%                                   features (in pixels). 1st column for
-%                                   value and 2nd column for standard deviation.
+%             .allCoord           : x,dx,y,dy,[z,dz] of features collected in one
+%                                   matrix.
 %             .amp                : Amplitudes of PSFs fitting detected features. 
 %                                   1st column for values and 2nd column 
 %                                   for standard deviations.
@@ -42,6 +38,7 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %                               local density in search radius estimation.
 %      nnDistTracks           : Nearest neighbor distance of features in
 %                               frame 1 given their history.
+%      probDim                : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
 %
 %OUTPUT costMat               : Cost matrix.
 %       propagationScheme     : Propagation scheme corresponding to each
@@ -101,22 +98,25 @@ end
 %specify number of propagation schemes used
 numSchemes = 3;
 
+%calculate vector sizes
+vecSize = 2 * probDim;
+
 %construct transition matrices
-transMat(:,:,1) = [1 0 1 0; 0 1 0 1; 0 0 1 0; 0 0 0 1]; %forward drift transition matrix
-transMat(:,:,2) = [1 0 -1 0; 0 1 0 -1; 0 0 1 0; 0 0 0 1]; %backward drift transition matrix
-transMat(:,:,3) = eye(4); %zero drift transition matrix
+transMat(:,:,1) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
+transMat(:,:,2) = eye(vecSize) + diag(-ones(probDim,1),probDim); %backward drift transition matrix
+transMat(:,:,3) = eye(vecSize); %zero drift transition matrix
 
 %construct observation matrix
-observationMat = [1 0 0 0; 0 1 0 0]; %observation matrix
+observationMat = [eye(probDim) zeros(probDim)]; %observation matrix
 
 %get number of features in the 2 frames
 numFeaturesFrame1 = movieInfo(1).num;
 numFeaturesFrame2 = movieInfo(2).num;
 
 %reserve memory for "kalmanFilterInfoframe2"
-kalmanFilterInfoFrame2 = struct('stateVec',zeros(numFeaturesFrame1,4,numSchemes),...
-    'stateCov',zeros(4,4,numFeaturesFrame1,numSchemes),...
-    'obsVec',zeros(numFeaturesFrame1,2,numSchemes));
+kalmanFilterInfoFrame2 = struct('stateVec',zeros(numFeaturesFrame1,vecSize,numSchemes),...
+    'stateCov',zeros(vecSize,vecSize,numFeaturesFrame1,numSchemes),...
+    'obsVec',zeros(numFeaturesFrame1,probDim,numSchemes));
 
 %apply Kalman filters to each feature in 1st frame
 for iFeature = 1 : numFeaturesFrame1
@@ -152,18 +152,18 @@ end
 %get the propagated positions of features in 1st frame based on the three propagation schemes
 propagatedPos = kalmanFilterInfoFrame2.obsVec;
 
-%put the x and y coordinates of features in the 2nd frame in one matrix
-yx2 = [movieInfo(2).yCoord(:,1) movieInfo(2).xCoord(:,1)];
+%put the coordinates of features in the 2nd frame in one matrix
+coord2 = movieInfo(2).allCoord(:,1:2:end);
 
 %calculate the cost matrices for all three propagation schemes
 for iScheme = 1 : numSchemes
 
     %put the propagated x and y coordinates of features from 1st frame in
     %one matrix
-    yx1 = [propagatedPos(:,2,iScheme) propagatedPos(:,1,iScheme)];
+    coord1 = propagatedPos(:,:,iScheme);
 
     %calculate the distances between features
-    costMatTmp(:,:,iScheme) = createDistanceMatrix(yx1,yx2);
+    costMatTmp(:,:,iScheme) = createDistanceMatrix(coord1,coord2);
 
 end
 
@@ -172,7 +172,7 @@ end
 [costMat,propagationScheme] = min(costMatTmp,[],3);
 
 %get the Kalman standard deviation of all features in frame 1
-kalmanStd = sqrt(2*squeeze(kalmanFilterInfoFrame1.noiseVar(1,1,:)));
+kalmanStd = sqrt(probDim * squeeze(kalmanFilterInfoFrame1.noiseVar(1,1,:)));
 
 %copy brownStdMult into vector
 stdMultInd = repmat(brownStdMult,numFeaturesFrame1,1);

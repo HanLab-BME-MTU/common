@@ -1,9 +1,11 @@
-function [trackType,xVel,yVel,noiseStd,errFlag] = estimTrackTypeParamLM(...
-    trackedFeatIndx,trackedFeatInfo,kalmanFilterInfo,trackConnect,lenForClassify)
+function [trackType,xyzVel,noiseStd,errFlag] = estimTrackTypeParamLM(...
+    trackedFeatIndx,trackedFeatInfo,kalmanFilterInfo,trackConnect,...
+    lenForClassify,probDim)
 %ESTIMTRACKTYPEPARAMLM ...
 %
-%SYNOPSIS [trackType,xVel,yVel,noiseStd,errFlag] = estimTrackTypeParamLM(...
-%    trackedFeatIndx,trackedFeatInfo,kalmanFilterInfo,trackConnect,lenForClassify);
+%SYNOPSIS [trackType,xyzVel,noiseStd,errFlag] = estimTrackTypeParamLM(...
+%    trackedFeatIndx,trackedFeatInfo,kalmanFilterInfo,trackConnect,...
+%    lenForClassify,probDim);
 %
 %INPUT  trackedFeatIndx : Connectivity matrix of features between time
 %                         points from initial linking. Rows indicate tracks, while columns
@@ -25,14 +27,12 @@ function [trackType,xVel,yVel,noiseStd,errFlag] = estimTrackTypeParamLM(...
 %                         initial linking, for example due to gap closing.
 %       lenForClassify  : Minimum length of a track to classify it as
 %                         directed or Brownian.
+%       probDim        : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
 %
-%OUTPUT trackedFeatKalmanInfo: The velocities, random element variance and
-%                              propagation scheme along the tracks. Rows
-%                              indicate tracks. # columns = 8 * # time
-%                              points. Each row consists of
-%                              [vx1 dvx1 vy1 dvy1 epsX1 epsY1 varEps1 scheme1 vx2 dvx2 vy2 dvy2 epsX2 epsY2 varEps2 scheme2 ...]
-%
-%       errFlag              : 0 if function executes normally, 1 otherwise.
+%OUTPUT trackType
+%       xyzVel
+%       noiseStd
+%       errFlag         : 0 if function executes normally, 1 otherwise.
 %
 %Khuloud Jaqaman, April 2007
 
@@ -41,8 +41,7 @@ function [trackType,xVel,yVel,noiseStd,errFlag] = estimTrackTypeParamLM(...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 trackType = [];
-xVel = [];
-yVel = [];
+xyzVel = [];
 noiseStd = [];
 errFlag = 0;
 
@@ -68,8 +67,7 @@ numTracksCG = size(trackConnect,1);
 
 %reserve memory for output variables
 trackType = NaN*ones(numTracksLink,1);
-xVel = zeros(numTracksLink,1);
-yVel = zeros(numTracksLink,1);
+xyzVel = zeros(numTracksLink,probDim);
 noiseStd = zeros(numTracksLink,1);
 
 %get the start times, end times and lifetimes of all tracks
@@ -77,15 +75,25 @@ trackSEL = getTrackSEL(trackedFeatInfo);
 trackStartTime = trackSEL(:,1);
 trackEndTime   = trackSEL(:,2);
 trackLifeTime  = trackSEL(:,3);
+clear trackSEL
 
 %assign the asymmetry parameter thresholds that indicate directed motion
-%for different track lengths 
-%90th percentile:
-asymThresh = [[NaN NaN 5 2.8 2.2 1.9 1.7 1.6 1.5 1.5 1.45 1.4 1.4 1.4 1.4 1.4 ...
-    1.4 1.35 1.35 1.3]'; 1.3*ones(numFrames-20,1)];
-% % % %99th percentile:
-% % % asymThresh = [[NaN NaN 10 5 3.7 3 2.8 2.7 2.6 2.5 2.4 2.3 2.2 2.2 2.1 2.1 ...
-% % %     2.1 2.1 2.1 2.1]'; 2*ones(numFrames-20,1)];
+%for different track lengths
+if probDim == 2
+    %90th percentile:
+    asymThresh = [[NaN NaN 5 2.8 2.2 1.9 1.7 1.6 1.5 1.5 1.45 1.4 1.4 ...
+        1.4 1.4 1.4 1.4 1.35 1.35 1.3]'; 1.3*ones(numFrames-20,1)];
+    % % %     %99th percentile:
+    % % %     asymThresh = [[NaN NaN 10 5 3.7 3 2.8 2.7 2.6 2.5 2.4 2.3 ...
+    % % %         2.2 2.2 2.1 2.1 2.1 2.1 2.1 2.1]'; 2*ones(numFrames-20,1)];
+else
+    %90th percentile:
+    asymThresh = [[NaN NaN 1.9 1.3 1.1 1.0 0.9 0.9 0.9 0.9 0.85 0.85 ...
+        0.85 0.85 0.85]'; 0.8*ones(numFrames-15,1)];
+    % % %     %99th percentile:
+    % % %     asymThresh = [[NaN NaN 4 2.5 2.0 1.8 1.6 1.6 1.5 1.5 1.5 1.45 1.4 ...
+    % % %         1.4 1.4]'; 1.4*ones(numFrames-15,1)];
+end
 
 %go over all compound tracks in trackConnect
 for iTrack = 1 : numTracksCG
@@ -108,13 +116,13 @@ for iTrack = 1 : numTracksCG
         %(shorter tracks are not reliable) ...
         if trackLifeTime(iSegment) >= lenForClassify
 
-            %get current track's x and y coordinates
-            currentTrack = [trackedFeatInfo(iSegment,1:8:end)' ...
-                trackedFeatInfo(iSegment,2:8:end)'];
+            %get current track's coordinates
+            currentTrack = (reshape(trackedFeatInfo(iSegment,:)',8,[]))';
+            currentTrack = currentTrack(:,1:probDim);
             currentTrack = currentTrack(trackStartTime(iSegment):trackEndTime(iSegment),:);
 
             %evaluate the asymmetry parameter as defined in the Huet et al. BJ 2006 paper
-            asymmetry(i) = asymDetermination(currentTrack);
+            asymmetry(i) = asymDeterm2D3D(currentTrack,probDim);
 
         end %(if trackLifeTime(iSegment) >= lenForClassify)
 
@@ -127,17 +135,17 @@ for iTrack = 1 : numTracksCG
     %if the maximum asymmetry among all segments is larger than threshold ...
     if maxAsymmetry > asymThresh(trackLifeTime(indxMaxAsym))
 
-        %get coordinates of compound track
-        xCoord = reshape(trackedFeatInfo(segmentIndx,1:8:end)',numSegments*numFrames,1);
-        yCoord = reshape(trackedFeatInfo(segmentIndx,2:8:end)',numSegments*numFrames,1);
-        currentTrack = [xCoord yCoord];
-        currentTrack = currentTrack(~isnan(xCoord),:);
+        %get coordinates of compound track - I'm not sure this works
+        currentTrack = reshape(trackedFeatInfo(segmentIndx,:)',8,numSegments*numFrames);
+        currentTrack = currentTrack';
+        currentTrack = currentTrack(:,1:probDim);
+        currentTrack = currentTrack(~isnan(currentTrack(:,1)),:);
 
-        %get number of observation in compound track
+        %get number of observations in compound track
         overallTrackLength = size(currentTrack,1);
 
         %evaluate asymmetry of whole track
-        overallAsymmetry = asymDetermination(currentTrack);
+        overallAsymmetry = asymDeterm2D3D(currentTrack,probDim);
 
         %if asymmetry of overall track is larger than threshold, overall track motion is
         %directed (1). If smaller, overall track motion is Brownian (0).
@@ -160,12 +168,9 @@ for iTrack = 1 : numTracksCG
             
             %assign to all segments the velocity and std of the track with
             %maximum asymmetry
-            xVel(segmentIndx) = kalmanFilterInfo(trackEndTime(...
+            xyzVel(segmentIndx,:) = kalmanFilterInfo(trackEndTime(...
                 indxMaxAsym)).stateVec(trackedFeatIndx(indxMaxAsym,...
-                trackEndTime(indxMaxAsym)),3);
-            yVel(segmentIndx) = kalmanFilterInfo(trackEndTime(...
-                indxMaxAsym)).stateVec(trackedFeatIndx(indxMaxAsym,...
-                trackEndTime(indxMaxAsym)),4);
+                trackEndTime(indxMaxAsym)),probDim+1:2*probDim);
             noiseStd(segmentIndx) = sqrt(kalmanFilterInfo(trackEndTime(...
                 indxMaxAsym)).noiseVar(1,1,trackedFeatIndx(indxMaxAsym,...
                 trackEndTime(indxMaxAsym))));
@@ -179,9 +184,8 @@ for iTrack = 1 : numTracksCG
                     %assign the type of all of its segments to 0 (Brownian)
                     trackType(segmentIndx) = 0;
 
-                    %give all segments a velocity of zero
-                    xVel(segmentIndx) = 0;
-                    yVel(segmentIndx) = 0;
+                    %give all segments a velocity of zero - which they
+                    %already have from initialization
 
                     %find the segments which were originally Brownian
                     indxBrown = segmentIndx(~isnan(asymmetry));
@@ -202,9 +206,8 @@ for iTrack = 1 : numTracksCG
                     %assign the type of all of its segments to NaN (undetermined)
                     trackType(segmentIndx) = NaN;
 
-                    %give all segments a velocity of zero
-                    xVel(segmentIndx) = 0;
-                    yVel(segmentIndx) = 0;
+                    %give all segments a velocity of zero - which they
+                    %already have from initialization
                     
                     %give all segments a noise std of 1 (this value will be
                     %overwritten in the actual calculation of average displacement

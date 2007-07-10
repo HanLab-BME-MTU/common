@@ -1,10 +1,10 @@
 function [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIndx,...
-    frameInfo,kalmanFilterInfoTmp,propagationScheme,kalmanFilterInfoIn,...
+    frameInfo,kalmanFilterInfoTmp,propagationScheme,kalmanFilterInfoIn,probDim,...
     filterInfoPrev,kalmanInitParam)
 %KALMANGAINLINEARMOTION uses the Kalman gain from linking to get better estimates of the state vector, its covariance matrix, state noise and its variance
 %
 %SYNOPSIS [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIndx,...
-%    frameInfo,kalmanFilterInfoTmp,propagationScheme,kalmanFilterInfoIn,...
+%    frameInfo,kalmanFilterInfoTmp,propagationScheme,kalmanFilterInfoIn,probDim,...
 %    filterInfoPrev,kalmanInitParam)
 %
 %INPUT  trackedFeatureIndx : Matrix showing connectivity between features
@@ -13,12 +13,8 @@ function [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIn
 %                            columns before last indicates that feature is
 %                            not connected to any previous features.
 %       frameInfo          : Structure with fields (for current frame):
-%             .xCoord          : Image coordinate system x-coordinates of detected
-%                                features (in pixels). 1st column for
-%                                value and 2nd column for standard deviation.
-%             .yCoord          : Image coordinate system y-coordinates of detected
-%                                features (in pixels). 1st column for
-%                                value and 2nd column for standard deviation.
+%             .allCoord        : x,dx,y,dy,[z,dz] of features collected in one
+%                                matrix.
 %             .amp             : Amplitudes of PSFs fitting detected features. 
 %                                1st column for values and 2nd column 
 %                                for standard deviations.
@@ -46,6 +42,7 @@ function [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIn
 %                                feature to previous feature. 2nd column:
 %                                propagation scheme connecting feature to
 %                                next feature.
+%       probDim            : Problem dimension. 2 (for 2D) or 3 (for 3D).
 %       filterInfoPrev     : Structure with fields (for current frame):
 %             .stateVec        : Kalman filter state vector for each
 %                                feature in frame.
@@ -86,14 +83,14 @@ errFlag = [];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %check whether correct number of input arguments was used
-if nargin < 5
+if nargin < 6
     disp('--kalmanGainLinearMotion: Incorrect number of input arguments!');
     errFlag  = 1;
     return
 end
 
 %check whether a priori Kalman filter information is given
-if nargin < 6 || isempty(filterInfoPrev)
+if nargin < 7 || isempty(filterInfoPrev)
     filterInfoPrev = [];
     usePriorInfo = 0;
 else
@@ -102,7 +99,7 @@ end
 
 %check whether additional parameters for Kalman filter initialization are
 %given
-if nargin < 7 || isempty(kalmanInitParam)
+if nargin < 8 || isempty(kalmanInitParam)
     kalmanInitParam = [];
 end 
 
@@ -117,7 +114,7 @@ kalmanFilterInfoOut = kalmanFilterInfoIn;
 [numFeatures,iFrame] = size(trackedFeatureIndx);
 
 %construct Kalman filter observation matrix
-observationMat = [1 0 0 0; 0 1 0 0];
+observationMat = [diag(ones(probDim,1)) zeros(probDim)];
 
 %go over all features in current frame
 for iFeature = 1 : numFeatures
@@ -141,11 +138,10 @@ for iFeature = 1 : numFeatures
         %calculate Kalman gain
         kalmanGain = stateCovOld*observationMat'*...
             inv(observationMat*stateCovOld*observationMat'+...
-            diag([frameInfo.xCoord(iFeature,2)^2 frameInfo.yCoord(iFeature,2)^2]));
+            diag(frameInfo.allCoord(iFeature,2:2:end).^2));
 
         %estimate state noise in previous frame and save in kalmanFilterInfo
-        stateNoise = kalmanGain*([frameInfo.xCoord(iFeature,1) ...
-            frameInfo.yCoord(iFeature,1)]'-obsVecOld);
+        stateNoise = kalmanGain * (frameInfo.allCoord(iFeature,1:2:end)' - obsVecOld);
         kalmanFilterInfoOut(iFrame-1).stateNoise(iFeaturePrev,:) = stateNoise';
         
         %update estimate of state vector in current frame
@@ -166,19 +162,15 @@ for iFeature = 1 : numFeatures
             stateNoiseAll = [stateNoiseAll; kalmanFilterInfoOut(i).stateNoise(indx(i),:)];
         end
 
-        %impose isotropy (x and y are equivalent)
-        stateNoisePos = [stateNoiseAll(:,1); stateNoiseAll(:,2)];
-        stateNoiseVel = [stateNoiseAll(:,3); stateNoiseAll(:,4)];
-
-        %         %don't impose isotropy
-        %         stateNoisePos = stateNoiseAll(:,1:2);
-        %         stateNoiseVel = stateNoiseAll(:,3:4);
+        %impose isotropy (all directions are equivalent)
+        stateNoisePos = stateNoiseAll(:,1:probDim);
+        stateNoiseVel = stateNoiseAll(:,probDim+1:2*probDim);
 
         %estimate positional noise variance in current frame
-        noiseVar(1:2) = var(stateNoisePos);
+        noiseVar(1:probDim) = var(stateNoisePos(:));
 
         %estimate speed noise variances in current frame
-        noiseVar(3:4) = var(stateNoiseVel);
+        noiseVar(probDim+1:2*probDim) = var(stateNoiseVel(:));
 
         %save this information in kalmanFilterInfo
         kalmanFilterInfoOut(iFrame).stateVec(iFeature,:) = stateVec';
@@ -193,11 +185,10 @@ for iFeature = 1 : numFeatures
             kalmanFilterInfoOut(iFrame).stateCov(:,:,iFeature) = filterInfoPrev.stateCov(:,:,iFeature);
             kalmanFilterInfoOut(iFrame).noiseVar(:,:,iFeature) = filterInfoPrev.noiseVar(:,:,iFeature);
         else
-            featureInfo.xCoord = frameInfo.xCoord(iFeature,:);
-            featureInfo.yCoord = frameInfo.yCoord(iFeature,:);
-            featureInfo.amp = frameInfo.amp(iFeature,:);
+            featureInfo.allCoord = frameInfo.allCoord(iFeature,:);
             featureInfo.num = 1;
-            [filterTmp,errFlag] = kalmanInitLinearMotion(featureInfo,kalmanInitParam);
+            [filterTmp,errFlag] = kalmanInitLinearMotion(featureInfo,probDim,...
+                kalmanInitParam);
             kalmanFilterInfoOut(iFrame).stateVec(iFeature,:) = filterTmp.stateVec;
             kalmanFilterInfoOut(iFrame).stateCov(:,:,iFeature) = filterTmp.stateCov;
             kalmanFilterInfoOut(iFrame).noiseVar(:,:,iFeature) = filterTmp.noiseVar;

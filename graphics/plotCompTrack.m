@@ -46,8 +46,8 @@ function plotCompTrack(trackedFeatureInfo,plotX,plotY,plotA,inOneFigure)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %check whether correct number of input arguments was used
-if nargin < 1
-    disp('--plotTracks2D: Incorrect number of input arguments!');
+if nargin ~= nargin('plotCompTrack')
+    disp('--plotCompTrack: Incorrect number of input arguments!');
     return
 end
 

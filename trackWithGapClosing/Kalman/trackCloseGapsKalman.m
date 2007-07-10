@@ -1,21 +1,24 @@
 function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
     movieInfo,costMatParam,gapCloseParam,kalmanInitParam,useLocalDensity,...
-    saveResults)
+    saveResults,probDim)
 %TRACKCLOSEGAPSKALMAN (1) links features between frames using the Kalman Filter and (2) closes gaps, with merging and splitting
 %
 %SYNOPSIS [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %    movieInfo,costMatParam,gapCloseParam,kalmanInitParam,useLocalDensity,...
-%    saveResults)
+%    saveResults,probDim)
 %
-%INPUT  movieInfo    : Array of size equal to the number of time points
-%                      in a movie, containing the fields:
-%             .xCoord      : Image coordinate system x-coordinates of detected
+%INPUT  movieInfo    : Array of size equal to the number of frames in a
+%                      movie, containing the fields:
+%             .xCoord      : [Image coordinate system] x-coordinates of detected
 %                            features (in pixels). 1st column for
 %                            value and 2nd column for standard deviation.
-%             .yCoord      : Image coordinate system y-coordinates of detected
+%             .yCoord      : [Image coordinate system] y-coordinates of detected
 %                            features (in pixels). 1st column for
 %                            value and 2nd column for standard deviation.
-%                            Optional. Skipped if problem is 1D. Default: zeros.
+%             .zCoord      : [Image coordinate system] z-coordinates of detected
+%                            features (in pixels). 1st column for
+%                            value and 2nd column for standard deviation.
+%                            Optional. Skipped if problem is 2D. Default: zeros.
 %             .amp         : Amplitudes of PSFs fitting detected features.
 %                            1st column for values and 2nd column
 %                            for standard deviations.
@@ -45,20 +48,26 @@ function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %           .nnWindowCG   : Time window used to calculate the nearest
 %                           neighbor distances at the starts and ends of
 %                           tracks for gap closing.
-%                        Structure optional. Default: both .link and .cg =
-%                        0. If .link or .cg are 1, corresponding nnWindow
-%                        must be input.
-%       saveResults  : Structure with fields:
+%                      Structure optional. Default: both .link and .cg =
+%                      0. If .link or .cg are 1, corresponding nnWindow
+%                      must be input.
+%       saveResults  : 0 if no saving is requested. 
+%                      If saving is requested, structure with fields:
 %           .dir          : Directory where results should be saved.
 %                           Optional. Default: current directory.
 %           .filename     : Name of file where results should be saved.
-%                           Optional. Default: trackedFeatures.
-%                       Whole structure optional.
+%                      Or []. Default: trackedFeatures in directory
+%                      where run is initiated.
+%                      
+%                      Whole structure optional.
+%       probDim      : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
+%                      Optional. If not input, dimensionality will be
+%                      derived from movieInfo.
 %
 %       All optional variables can be entered as [] to use default values.
 %
 %
-%OUTPUT tracksFinal       : Structure Array where each element corresponds
+%OUTPUT tracksFinal       : Structure array where each element corresponds
 %                           to a compound track. Each element contains
 %                           the following fields:
 %           .tracksFeatIndxCG: Connectivity matrix of features between
@@ -133,6 +142,13 @@ end
 %get number of frames in movie
 numFrames = length(movieInfo);
 
+%check whether z-coordinates were input, making problem potentially 3D
+if isfield(movieInfo,'zCoord')
+    probDimT = 3;
+else    
+    probDimT = 2;
+end
+
 %check whether additional parameters for Kalman filter initialization are
 %supplied
 if nargin < 4 || isempty(kalmanInitParam)
@@ -171,20 +187,31 @@ if nargin < 6 || isempty(saveResults) %if nothing was input
     saveResDir = pwd;
     saveResFile = 'trackedFeatures';
 else
-    if ~isfield(saveResults,'dir') || isempty(saveResults.dir)
-        saveResDir = pwd;
+    if isstruct(saveResults)
+        if ~isfield(saveResults,'dir') || isempty(saveResults.dir)
+            saveResDir = pwd;
+        else
+            saveResDir = saveResults.dir;
+        end
+        if ~isfield(saveResults,'filename') || isempty(saveResults.filename)
+            saveResFile = 'trackedFeatures';
+        else
+            saveResFile = saveResults.filename;
+        end
     else
-        saveResDir = saveResults.dir;
-    end
-    if ~isfield(saveResults,'filename') || isempty(saveResults.filename)
-        saveResFile = 'trackedFeatures';
-    else
-        saveResFile = saveResults.filename;
+        saveResults = 0;
     end
 end
 
-%get gap closing parameters from input
-mergeSplit = gapCloseParam.mergeSplit;
+%assign problem dimensionality if not input
+if nargin < 7 || isempty(probDim)
+    probDim = probDimT;
+else
+    if probDim == 3 && probDimT == 2
+        disp('--trackCloseGapsKalman: Inconsistency in input. Problem 3D but no z-coordinates.');
+        errFlag = 1;
+    end
+end
 
 %exit if there are problems with input
 if errFlag
@@ -192,16 +219,28 @@ if errFlag
     return
 end
 
-%calculate nearest neighbor distances and store them in movieInfo
+%get gap closing parameters from input
+mergeSplit = gapCloseParam.mergeSplit;
+
+%go over all frames
+%get number of features, put coordinates in one matrix and calculate
+%nearest neighbor distances
 for iFrame = 1 : numFrames
 
-    %collect feature coordinates into one matrix
-    coordinates = [movieInfo(iFrame).xCoord(:,1) movieInfo(iFrame).yCoord(:,1)];
-    
-    %calculate number of features in frame
-    numFeatures = size(coordinates,1);
+    %get number of features in frame
+    movieInfo(iFrame).num = size(movieInfo(iFrame).xCoord,1);
 
-    switch numFeatures
+    %collect coordinates and their std in one matrix
+    if probDim == 2
+        movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
+            movieInfo(iFrame).yCoord];
+    else
+        movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
+            movieInfo(iFrame).yCoord movieInfo(iFrame).zCoord];
+    end
+
+    %calculate nearest neighbor distance
+    switch movieInfo(iFrame).num
 
         case 0 %if there are no features
             
@@ -214,10 +253,11 @@ for iFrame = 1 : numFrames
             %number)
             nnDist = 1000;
 
-        otherwise %if there are more than 1 feature
+        otherwise %if there is more than 1 feature
 
             %compute distance matrix
-            nnDist = createDistanceMatrix(coordinates,coordinates);
+            nnDist = createDistanceMatrix(movieInfo(iFrame).allCoord(:,1:2:end),...
+                movieInfo(iFrame).allCoord(:,1:2:end));
 
             %sort distance matrix and find nearest neighbor distance
             nnDist = sort(nnDist,2);
@@ -235,25 +275,22 @@ end %(for iFrame = 1 : numFrames)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %get initial tracks by linking features between consecutive frames
-[tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink] = ...
-    linkFeaturesKalman(movieInfo,costMatParam,[],...
-    kalmanInitParam,useLocalDensity.link,useLocalDensity.nnWindowL);
-clear tracksFeatIndxLink tracksCoordAmpLink errFlag
+[dummy,dummy1,kalmanInfoLink] = linkFeaturesKalman(movieInfo,costMatParam,[],...
+    kalmanInitParam,useLocalDensity.link,useLocalDensity.nnWindowL,probDim);
 
 %redo the linking by going backwards in the movie and using the
 %Kalman filter information from the first linking attempt
 %this will improve the linking and the state estimation
-[tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink] = ...
-    linkFeaturesKalman(movieInfo(end:-1:1),costMatParam,...
-    kalmanInfoLink(end:-1:1),kalmanInitParam,useLocalDensity.link,...
-    useLocalDensity.nnWindowL);
-clear tracksFeatIndxLink tracksCoordAmpLink errFlag
+[dummy,dummy1,kalmanInfoLink] = linkFeaturesKalman(movieInfo(end:-1:1),...
+    costMatParam,kalmanInfoLink(end:-1:1),kalmanInitParam,...
+    useLocalDensity.link,useLocalDensity.nnWindowL,probDim);
+clear dummy dummy1
 
 %go forward one more time to get the final estimate of the initial tracks
 [tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink,nnDistLinkedFeat,...
     errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
     kalmanInfoLink(end:-1:1),kalmanInitParam,useLocalDensity.link,...
-    useLocalDensity.nnWindowL);
+    useLocalDensity.nnWindowL,probDim);
 
 %get number of tracks
 numTracksLink = size(tracksFeatIndxLink,1);
@@ -278,7 +315,7 @@ if any(trackStartTime > 1) && any(trackEndTime < numFrames)
         errFlag] = costMatLinearMotionCloseGaps(tracksCoordAmpLink,...
         tracksFeatIndxLink,trackStartTime,trackEndTime,costMatParam,...
         gapCloseParam,kalmanInfoLink,(1:numTracksLink)',...
-        useLocalDensity.cg,nnDistLinkedFeat,useLocalDensity.nnWindowCG);
+        useLocalDensity.cg,nnDistLinkedFeat,useLocalDensity.nnWindowCG,probDim);
 
     %link tracks based on this cost matrix, allowing for birth and death
     [link12,link21] = lap(costMat,nonlinkMarker);
@@ -589,9 +626,10 @@ end %(if any(trackStartTime > 1) && any(trackEndTime < numFrames))
 %Save results
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-save([saveResDir filesep saveResFile],'costMatParam','gapCloseParam',...
-    'kalmanInitParam','useLocalDensity','tracksFinal','kalmanInfoLink');
-
+if isstruct(saveResults)
+    save([saveResDir filesep saveResFile],'costMatParam','gapCloseParam',...
+        'kalmanInitParam','useLocalDensity','tracksFinal','kalmanInfoLink');
+end
 
 %%%%% ~~ the end ~~ %%%%%
 

@@ -1,0 +1,13 @@
+function kalmanFilterInfo = kalmanResMemLM(numFrames,numFeatures,probDim)
+
+vecSize = 2 * probDim;
+
+for iFrame = numFrames : -1 : 1
+
+    kalmanFilterInfo(iFrame) = struct('stateVec',zeros(numFeatures(iFrame),vecSize),...
+        'stateCov',zeros(vecSize,vecSize,numFeatures(iFrame)),...
+        'noiseVar',zeros(vecSize,vecSize,numFeatures(iFrame)),...
+        'stateNoise',zeros(numFeatures(iFrame),vecSize),...
+        'scheme',zeros(numFeatures(iFrame),2));
+
+end

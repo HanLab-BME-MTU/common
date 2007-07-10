@@ -1,13 +1,13 @@
 function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
     errFlag] = costMatLinearMotionCloseGaps(trackedFeatInfo,...
     trackedFeatIndx,trackStartTime,trackEndTime,costMatParam,gapCloseParam,...
-    kalmanFilterInfo,trackConnect,useLocalDensity,nnDistLinkedFeat,nnWindow)
+    kalmanFilterInfo,trackConnect,useLocalDensity,nnDistLinkedFeat,nnWindow,probDim)
 %COSTMATLINEARMOTIONCLOSEGAPS provides a cost matrix for closing gaps using Kalman filter information (no merging/splitting yet)
 %
 %SYNOPSIS [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %    errFlag] = costMatLinearMotionCloseGaps(trackedFeatInfo,...
 %    trackedFeatIndx,trackStartTime,trackEndTime,costMatParam,gapCloseParam,...
-%    kalmanFilterInfo,trackConnect,useLocalDensity,nnDistLinkedFeat,nnWindow)
+%    kalmanFilterInfo,trackConnect,useLocalDensity,nnDistLinkedFeat,nnWindow,probDim)
 %
 %INPUT  trackedFeatInfo: The positions and amplitudes of the tracked
 %                        features from linkFeaturesKalman.
@@ -101,6 +101,7 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %       nnWindow       : Time window to be used in estimating the
 %                        nearest neighbor distance of a track at its start
 %                        and end.
+%       probDim        : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
 %
 %OUTPUT costMat       : Cost matrix.
 %       nonlinkMarker : Value indicating that a link is not allowed.
@@ -112,10 +113,7 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %       numSplit      : Number of such tracks.
 %       errFlag       : 0 if function executes normally, 1 otherwise.
 %
-%REMARKS the costs are given by ...
-%
-%The cost for linking the end of one track to the start of another track is
-%given by ...
+%REMARKS
 %
 %Khuloud Jaqaman, April 2007
 
@@ -165,12 +163,16 @@ maxAmpRatio = costMatParam.ampRatioLimitCG(2);
 timeWindow = gapCloseParam.timeWindow;
 mergeSplit = gapCloseParam.mergeSplit;
 
+%make sure that timeReachConfB and timeReachConfL are <= timeWindow
+timeReachConfB = min(timeReachConfB,timeWindow);
+timeReachConfL = min(timeReachConfL,timeWindow);
+
 %find the number of tracks to be linked and the number of frames in the movie
 [numTracks,numFrames] = size(trackedFeatInfo);
 numFrames = numFrames / 8;
 
 %list the tracks that start and end in each frame
-tracksPerFrame = repmat(struct('starts',[],'ends',[]),100,1);
+tracksPerFrame = repmat(struct('starts',[],'ends',[]),numFrames,1);
 for iFrame = 1 : numFrames    
     tracksPerFrame(iFrame).starts = find(trackStartTime == iFrame); %starts
     tracksPerFrame(iFrame).ends = find(trackEndTime == iFrame); %ends
@@ -181,29 +183,27 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %get the x,y-coordinates and amplitudes at the starts of tracks
-xCoordStart   = zeros(numTracks,1); %x-coordinate
-yCoordStart   = zeros(numTracks,1); %y-coordinate
-ampStart      = zeros(numTracks,1); %amplitude
+coordStart = zeros(numTracks,probDim);
+ampStart   = zeros(numTracks,1);
 for iTrack = 1 : numTracks
-    xCoordStart(iTrack) = trackedFeatInfo(iTrack,(trackStartTime(iTrack)-1)*8+1);
-    yCoordStart(iTrack) = trackedFeatInfo(iTrack,(trackStartTime(iTrack)-1)*8+2);
+    coordStart(iTrack,:) = trackedFeatInfo(iTrack,...
+        (trackStartTime(iTrack)-1)*8+1:(trackStartTime(iTrack)-1)*8+probDim);
     ampStart(iTrack) = trackedFeatInfo(iTrack,(trackStartTime(iTrack)-1)*8+4);
 end
 
 %get the x,y-coordinates and amplitudes at the ends of tracks
-xCoordEnd   = zeros(numTracks,1);
-yCoordEnd   = zeros(numTracks,1);
-ampEnd      = zeros(numTracks,1);
+coordEnd = zeros(numTracks,probDim);
+ampEnd   = zeros(numTracks,1);
 for iTrack = 1 : numTracks
-    xCoordEnd(iTrack) = trackedFeatInfo(iTrack,(trackEndTime(iTrack)-1)*8+1);
-    yCoordEnd(iTrack) = trackedFeatInfo(iTrack,(trackEndTime(iTrack)-1)*8+2);
+    coordEnd(iTrack,:) = trackedFeatInfo(iTrack,...
+        (trackEndTime(iTrack)-1)*8+1:(trackEndTime(iTrack)-1)*8+probDim);
     ampEnd(iTrack) = trackedFeatInfo(iTrack,(trackEndTime(iTrack)-1)*8+4);
 end
 
 %determine the types, velocities and noise stds of all tracks
-[trackType,xVel,yVel,noiseStd] = estimTrackTypeParamLM(...
+[trackType,xyzVel,noiseStd] = estimTrackTypeParamLM(...
     trackedFeatIndx,trackedFeatInfo,kalmanFilterInfo,trackConnect,...
-    lenForClassify);
+    lenForClassify,probDim);
 
 %find the average noise standard deviation in order to use that for undetermined
 %tracks (after removing std = 1 which indicates the simple initialization
@@ -212,11 +212,12 @@ noiseStdAll = noiseStd(noiseStd ~= 1);
 undetBrownStd = prctile(noiseStdAll,95);
 
 %determine the average displacements and search ellipses of all tracks
-[dispDrift,dispBrown,longVecSAll,longVecEAll,shortVecSAll,shortVecEAll] = ...
-    getAveDispEllipseAll(xVel,yVel,noiseStd,trackType,undetBrownStd,...
-    timeWindow,brownStdMult,linStdMult,timeReachConfB,timeReachConfL,...
-    minSearchRadius,maxSearchRadius,useLocalDensity,closestDistScale,...
-    maxStdMult,nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime);
+[longVecSAll,longVecEAll,shortVecSAll,shortVecEAll,shortVecS3DAll,...
+    shortVecE3DAll] = getAveDispEllipseAll(xyzVel,noiseStd,trackType,...
+    undetBrownStd,timeWindow,brownStdMult,linStdMult,timeReachConfB,...
+    timeReachConfL,minSearchRadius,maxSearchRadius,useLocalDensity,...
+    closestDistScale,maxStdMult,nnDistLinkedFeat,nnWindow,...
+    trackStartTime,trackEndTime,probDim);
 
 %find all pairs of ends and starts that can potentially be linked
 %determine this by looking at gaps between ends and starts
@@ -224,9 +225,9 @@ undetBrownStd = prctile(noiseStdAll,95);
 indxEnd2 = [];
 indxStart2 = [];
 
-%find the maximum velocity and multiply that by 2*linStdMult(1)*sqrt(largest
-%possible time gap) to get the absolute upper limit of acceptable displacements
-maxDispAllowed = max([xVel; yVel]) * 2 * linStdMult(1);
+%find the maximum velocity and multiply that by probDim*linStdMult(1)
+%to get the absolute upper limit of acceptable displacements in one frame
+maxDispAllowed = max(xyzVel(:)) * probDim * linStdMult(1);
 
 %go over all frames until the one before last
 for iFrame = 1 : numFrames - 1
@@ -240,9 +241,8 @@ for iFrame = 1 : numFrames - 1
         startsToConsider = tracksPerFrame(jFrame).starts;
 
         %calculate the distance between ends and starts
-        dispMat2 = createDistanceMatrix(...
-            [xCoordEnd(endsToConsider) yCoordEnd(endsToConsider)],...
-            [xCoordStart(startsToConsider) yCoordStart(startsToConsider)]);
+        dispMat2 = createDistanceMatrix(coordEnd(endsToConsider,:),...
+            coordStart(startsToConsider,:));
         
         %find possible pairs
         [indxEnd3,indxStart3] = find(dispMat2 <= maxDispAllowed * sqrt(jFrame-iFrame));
@@ -272,7 +272,7 @@ cost  = zeros(numPairs,1); %cost value
 
 %go over all possible pairs of starts and ends
 for iPair = 1 : numPairs
-
+    
     %get indices of start and end and the time gap between them
     iStart = indxStart2(iPair);
     iEnd = indxEnd2(iPair);
@@ -284,39 +284,49 @@ for iPair = 1 : numPairs
     trackTypeS = trackType(iStart);
     trackTypeE = trackType(iEnd);
 
-    %determine the average displacement and search ellipse of track iStart
-    %     dispDriftS = dispDrift(:,timeGap,iStart);
-    %     dispBrownS = dispBrown(timeGap,iStart);
+    %determine the search rectangle of track iStart
     longVecS = longVecSAll(:,timeGap,iStart);
     shortVecS = shortVecSAll(:,timeGap,iStart);
 
-    %determine the average displacement and search ellipse of track iEnd
-    %     dispDriftE = dispDrift(:,timeGap,iEnd);
-    %     dispBrownE = dispBrown(timeGap,iEnd);
+    %determine the search rectangle of track iEnd
     longVecE = longVecEAll(:,timeGap,iEnd);
     shortVecE = shortVecEAll(:,timeGap,iEnd);
 
-    %calculate the vector connecting the end of track iEnd to the
-    %start of track iStart
-    dispVec = [xCoordEnd(iEnd) - xCoordStart(iStart) ...
-        yCoordEnd(iEnd) - yCoordStart(iStart)];
-
     %calculate the magnitudes of the long and short search vectors
-    %of both end and start
-    longVecMagE = sqrt(longVecE' * longVecE);
-    shortVecMagE = sqrt(shortVecE' * shortVecE);
+    %of both start and end
     longVecMagS = sqrt(longVecS' * longVecS);
     shortVecMagS = sqrt(shortVecS' * shortVecS);
+    longVecMagE = sqrt(longVecE' * longVecE);
+    shortVecMagE = sqrt(shortVecE' * shortVecE);
 
-    %project the connecting vector onto the long and short vectors
-    %of track iEnd and take absolute value
-    projEndLong = abs(dispVec * longVecE) / longVecMagE;
-    projEndShort = abs(dispVec * shortVecE) / shortVecMagE;
+    %calculate the vector connecting the end of track iEnd to the
+    %start of track iStart
+    dispVec = coordEnd(iEnd,:) - coordStart(iStart,:);
 
     %project the connecting vector onto the long and short vectors
     %of track iStart and take absolute value
     projStartLong = abs(dispVec * longVecS) / longVecMagS;
     projStartShort = abs(dispVec * shortVecS) / shortVecMagS;
+    
+    %project the connecting vector onto the long and short vectors
+    %of track iEnd and take absolute value
+    projEndLong = abs(dispVec * longVecE) / longVecMagE;
+    projEndShort = abs(dispVec * shortVecE) / shortVecMagE;
+
+    %get second short vector and project along it if problem is 3D
+    if probDim == 3
+        shortVecS3D = shortVecS3DAll(:,timeGap,iStart); %second short vectors
+        shortVecE3D = shortVecE3DAll(:,timeGap,iEnd);
+        shortVecMagS3D = sqrt(shortVecS3D' * shortVecS3D); %their magnitudes
+        shortVecMagE3D = sqrt(shortVecE3D' * shortVecE3D);
+        projStartShort3D = abs(dispVec * shortVecS3D) / shortVecMagS3D; %projection
+        projEndShort3D = abs(dispVec * shortVecE3D) / shortVecMagE3D;
+    else %if problem is 2D, make values zero
+        shortVecMagS3D = 0;
+        shortVecMagE3D = 0;
+        projStartShort3D = 0;
+        projEndShort3D = 0;
+    end
 
     %get the absolute value of dispVec
     dispVec = abs(dispVec);
@@ -338,8 +348,10 @@ for iPair = 1 : numPairs
                     %bounds
                     possibleLink = projEndLong <= longVecMagE && ...
                         projEndShort <= shortVecMagE && ...
+                        projEndShort3D <= shortVecMagE3D && ...
                         projStartLong <= longVecMagS && ...
                         projStartShort <= shortVecMagS && ...
+                        projStartShort3D <= shortVecMagS3D && ...
                         sin2Angle <= sin2AngleMax;
 
                 otherwise %if start is Brownian or undetermined
@@ -347,7 +359,8 @@ for iPair = 1 : numPairs
                     %check whether the start of track iStart is within the search
                     %region of the end of track iEnd
                     possibleLink = projEndLong <= longVecMagE && ...
-                        projEndShort <= shortVecMagE;
+                        projEndShort <= shortVecMagE && ...
+                        projEndShort3D <= shortVecMagE3D;
 
             end
         case 0 %if end is Brownian
@@ -357,7 +370,8 @@ for iPair = 1 : numPairs
                     %check whether the end of track iEnd is within the search
                     %region of the start of track iStart
                     possibleLink = projStartLong <= longVecMagS && ...
-                        projStartShort <= shortVecMagS;
+                        projStartShort <= shortVecMagS && ...
+                        projStartShort3D <= shortVecMagS3D;
 
                 case 0 %if start is Brownian
 
@@ -365,15 +379,18 @@ for iPair = 1 : numPairs
                     %region of the start of track iStart and vice versa
                     possibleLink = projEndLong <= longVecMagE && ...
                         projEndShort <= shortVecMagE && ...
+                        projEndShort3D <= shortVecMagE3D & ...
                         projStartLong <= longVecMagS && ...
-                        projStartShort <= shortVecMagS;
+                        projStartShort <= shortVecMagS && ...
+                        projStartShort3D <= shortVecMagS3D;
 
                 otherwise %if start is undetermined
 
-                    %check whether the end of track iEnd is within the search
-                    %region of the start of track iStart and vice versa
+                    %check whether the start of track iStart is within the search
+                    %region of the end of track iEnd
                     possibleLink = projEndLong <= longVecMagE && ...
-                        projEndShort <= shortVecMagE;
+                        projEndShort <= shortVecMagE && ...
+                        projEndShort3D <= shortVecMagE3D;
 
             end
         otherwise %if end is undetermined
@@ -381,7 +398,8 @@ for iPair = 1 : numPairs
             %check whether the end of track iEnd is within the search
             %region of the start of track iStart
             possibleLink = projStartLong <= longVecMagS && ...
-                projStartShort <= shortVecMagS;
+                projStartShort <= shortVecMagS && ...
+                projStartShort3D <= shortVecMagS3D;
 
     end
 
@@ -392,16 +410,7 @@ for iPair = 1 : numPairs
         indx1(iPair) = iEnd; %row number
         indx2(iPair) = iStart; %column number
 
-        %         %calculate the cost of linking them (type 1)
-        %         cost12 = (dispVec(1) / (dispDriftE(1) + dispBrownE))^2 + ... %compare x-displacement to average x-displacement of end
-        %             (dispVec(1) / (dispDriftS(1) + dispBrownS))^2 + ... %compare x-displacement to average x-displacement of start
-        %             (dispVec(2) / (dispDriftE(2) + dispBrownE))^2 + ... %compare y-displacement to average y-displacement of end
-        %             (dispVec(2) / (dispDriftS(2) + dispBrownS))^2; %compare y-displacement to average y-displacement of start
-
-        %                 %calculate the cost of linking them  (type 2)
-        %                 cost12 = dispVec' * dispVec;
-
-        %calculate the cost of linking them (type 3)
+        %calculate the cost of linking
         dispVecMag2 = dispVec * dispVec';
         if trackTypeE == 1 && trackTypeS == 1
             cost12 = dispVecMag2 * sin2Angle;
@@ -457,7 +466,7 @@ if mergeSplit
     %find the maximum velocity and multiply that by 2*linStdMult(1)
     %to get the absolute upper limit of acceptable displacement between two
     %frames
-    maxDispAllowed = max([xVel; yVel]) * 2 * linStdMult(1);
+    maxDispAllowed = max(xyzVel(:)) * probDim * linStdMult(1);
 
     %costs of merging
 
@@ -477,9 +486,8 @@ if mergeSplit
 
         %calculate displacement between track ends and other tracks in the
         %next frame
-        dispMat2 = createDistanceMatrix([xCoordEnd(endsToConsider) ...
-            yCoordEnd(endsToConsider)],[trackedFeatInfo(mergesToConsider, ...
-            timeIndx+1) trackedFeatInfo(mergesToConsider,timeIndx+2)]);
+        dispMat2 = createDistanceMatrix(coordEnd(endsToConsider,:), ...
+            trackedFeatInfo(mergesToConsider,timeIndx+1:timeIndx+probDim));
 
         %find possible pairs
         [indxEnd2,indxMerge2] = find(dispMat2 <= maxDispAllowed);
@@ -502,6 +510,10 @@ if mergeSplit
         %go over all possible pairs
         for iPair = 1 : numPairs
 
+            if endTime == 40 && iPair == 38
+                disp('here');
+            end
+
             %get indices of ending track and track it might merge with
             iEnd = indxEnd2(iPair);
             iMerge = indxMerge2(iPair);
@@ -517,20 +529,30 @@ if mergeSplit
 
             %calculate the vector connecting the end of track iEnd to the
             %point of merging
-            dispVec = [xCoordEnd(iEnd) - trackedFeatInfo(iMerge,timeIndx+1) ...
-                yCoordEnd(iEnd) - trackedFeatInfo(iMerge,timeIndx+2)];
-
+            dispVec = coordEnd(iEnd,:) - trackedFeatInfo(iMerge,...
+                timeIndx+1:timeIndx+probDim);
+            
             %project the connecting vector onto the long and short vectors
             %of track iEnd and take absolute value
             projEndLong = abs(dispVec * longVecE) / longVecMagE;
             projEndShort = abs(dispVec * shortVecE) / shortVecMagE;
+
+            %get second short vector and project along it if problem is 3D
+            if probDim == 3
+                shortVecE3D = shortVecE3DAll(:,1,iEnd);
+                shortVecMagE3D = sqrt(shortVecE3D' * shortVecE3D);
+                projEndShort3D = abs(dispVec * shortVecE3D) / shortVecMagE3D;
+            else %if problem is 2D, make values zero
+                shortVecMagE3D = 0;
+                projEndShort3D = 0;
+            end
 
             %get the absolute value of dispVec
             dispVec = abs(dispVec);
 
             %get the amplitude at the end of track iEnd
             ampE = ampEnd(iEnd);
-            
+
             %get the amplitude of the merging track at the point of merging
             %and the point before it
             ampM = trackedFeatInfo(iMerge,8*endTime+4); %at point of merging
@@ -547,6 +569,7 @@ if mergeSplit
             %within acceptable limits
             possibleLink = projEndLong <= longVecMagE && ...
                 projEndShort <= shortVecMagE && ...
+                projEndShort3D <= shortVecMagE3D && ...
                 ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio;
             
             %if this is a possible link ...
@@ -616,7 +639,7 @@ if mergeSplit
         altCostMS = altCostMS(possibleMerges);
         clear possiblePairs possibleMerges
         
-        %append these vectors to overall cost and related vectors
+        %append these vectors to overall cost vector and related vectors
         indx1 = [indx1; indx1MS];
         indx2 = [indx2; indx2MS];
         cost  = [cost; costMS];
@@ -642,9 +665,8 @@ if mergeSplit
 
         %calculate displacement between track starts and other tracks in the
         %previous frame
-        dispMat2 = createDistanceMatrix([xCoordStart(startsToConsider) ...
-            yCoordStart(startsToConsider)],[trackedFeatInfo(splitsToConsider, ...
-            timeIndx+1) trackedFeatInfo(splitsToConsider,timeIndx+2)]);
+        dispMat2 = createDistanceMatrix(coordStart(startsToConsider,:), ...
+            trackedFeatInfo(splitsToConsider,timeIndx+1:timeIndx+probDim));
 
         %find possible pairs
         [indxStart2,indxSplit2] = find(dispMat2 <= maxDispAllowed);
@@ -682,20 +704,30 @@ if mergeSplit
 
             %calculate the vector connecting the end of track iStart to the
             %point of splitting
-            dispVec = [xCoordStart(iStart) - trackedFeatInfo(iSplit,timeIndx+1) ...
-                yCoordStart(iStart) - trackedFeatInfo(iSplit,timeIndx+2)];
+            dispVec = coordStart(iStart,:) - trackedFeatInfo(iSplit,...
+                timeIndx+1:timeIndx+probDim);
 
             %project the connecting vector onto the long and short vectors
             %of track iStart and take absolute value
             projStartLong = abs(dispVec * longVecS) / longVecMagS;
             projStartShort = abs(dispVec * shortVecS) / shortVecMagS;
 
+            %get second short vector and project along it if problem is 3D
+            if probDim == 3
+                shortVecS3D = shortVecS3DAll(:,1,iStart); %second short vectors
+                shortVecMagS3D = sqrt(shortVecS3D' * shortVecS3D); %their magnitudes
+                projStartShort3D = abs(dispVec * shortVecS3D) / shortVecMagS3D; %projection
+            else %if problem is 2D, make values zero
+                shortVecMagS3D = 0;
+                projStartShort3D = 0;
+            end
+
             %get the absolute value of dispVec
             dispVec = abs(dispVec);
 
             %get the amplitude at the start of track iStart
             ampS = ampStart(iStart);
-            
+
             %get the amplitude of the splitting track at the point of splitting
             %and the point before it
             ampSp1 = trackedFeatInfo(iSplit,8*(startTime-1)+4); %at point of splitting
@@ -710,6 +742,7 @@ if mergeSplit
             %of the start of track iStart
             possibleLink = projStartLong <= longVecMagS && ...
                 projStartShort <= shortVecMagS && ...
+                projStartShort3D <= shortVecMagS3D && ...
                 ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio;
 
             %if this is a possible link ...
