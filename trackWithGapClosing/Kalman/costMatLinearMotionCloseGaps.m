@@ -1,13 +1,15 @@
 function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
     errFlag] = costMatLinearMotionCloseGaps(trackedFeatInfo,...
     trackedFeatIndx,trackStartTime,trackEndTime,costMatParam,gapCloseParam,...
-    kalmanFilterInfo,trackConnect,useLocalDensity,nnDistLinkedFeat,nnWindow,probDim)
+    kalmanFilterInfo,trackConnect,useLocalDensity,nnDistLinkedFeat,nnWindow,...
+    probDim,linearMotion)
 %COSTMATLINEARMOTIONCLOSEGAPS provides a cost matrix for closing gaps using Kalman filter information (no merging/splitting yet)
 %
 %SYNOPSIS [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %    errFlag] = costMatLinearMotionCloseGaps(trackedFeatInfo,...
 %    trackedFeatIndx,trackStartTime,trackEndTime,costMatParam,gapCloseParam,...
-%    kalmanFilterInfo,trackConnect,useLocalDensity,nnDistLinkedFeat,nnWindow,probDim)
+%    kalmanFilterInfo,trackConnect,useLocalDensity,nnDistLinkedFeat,nnWindow,...
+%    probDim,linearMotion)
 %
 %INPUT  trackedFeatInfo: The positions and amplitudes of the tracked
 %                        features from linkFeaturesKalman.
@@ -102,6 +104,7 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                        nearest neighbor distance of a track at its start
 %                        and end.
 %       probDim        : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
+%       linearMotion   : 1 if linear motion is to be considered, 0 otherwise.
 %
 %OUTPUT costMat       : Cost matrix.
 %       nonlinkMarker : Value indicating that a link is not allowed.
@@ -204,6 +207,12 @@ end
 [trackType,xyzVel,noiseStd] = estimTrackTypeParamLM(...
     trackedFeatIndx,trackedFeatInfo,kalmanFilterInfo,trackConnect,...
     lenForClassify,probDim);
+
+%if by chance some tracks are labeled linear when linearMotion=0, make them
+%Brownian
+if linearMotion ~= 1
+    trackType(trackType==1) = 0;
+end
 
 %find the average noise standard deviation in order to use that for undetermined
 %tracks (after removing std = 1 which indicates the simple initialization

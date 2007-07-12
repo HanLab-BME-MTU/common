@@ -1,6 +1,6 @@
 function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
      errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
-     costMatParam,useLocalDensity,nnDistTracks,probDim)
+     costMatParam,useLocalDensity,nnDistTracks,probDim,linearMotion)
 %COSTMATLINEARMOTIONLINK provides a cost matrix for linking features based on competing linear motion models
 %
 %SYNOPSIS [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
@@ -39,6 +39,8 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %      nnDistTracks           : Nearest neighbor distance of features in
 %                               frame 1 given their history.
 %      probDim                : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
+%      linearMotion           : 1 if linear motion is to be considered, 0 
+%                               otherwise.
 %
 %OUTPUT costMat               : Cost matrix.
 %       propagationScheme     : Propagation scheme corresponding to each
@@ -102,10 +104,15 @@ numSchemes = 3;
 vecSize = 2 * probDim;
 
 %construct transition matrices
-transMat(:,:,1) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
-transMat(:,:,2) = eye(vecSize) + diag(-ones(probDim,1),probDim); %backward drift transition matrix
-transMat(:,:,3) = eye(vecSize); %zero drift transition matrix
-
+if linearMotion
+    transMat(:,:,1) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
+    transMat(:,:,2) = eye(vecSize) + diag(-ones(probDim,1),probDim); %backward drift transition matrix
+    transMat(:,:,3) = eye(vecSize); %zero drift transition matrix
+else
+    transMat(:,:,3) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
+    transMat(:,:,2) = eye(vecSize) + diag(-ones(probDim,1),probDim); %backward drift transition matrix
+    transMat(:,:,1) = eye(vecSize); %zero drift transition matrix
+end
 %construct observation matrix
 observationMat = [eye(probDim) zeros(probDim)]; %observation matrix
 

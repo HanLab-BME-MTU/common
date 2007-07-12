@@ -1,11 +1,11 @@
 function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
     movieInfo,costMatParam,gapCloseParam,kalmanInitParam,useLocalDensity,...
-    saveResults,probDim)
+    saveResults,probDim,linearMotion)
 %TRACKCLOSEGAPSKALMAN (1) links features between frames using the Kalman Filter and (2) closes gaps, with merging and splitting
 %
 %SYNOPSIS [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %    movieInfo,costMatParam,gapCloseParam,kalmanInitParam,useLocalDensity,...
-%    saveResults,probDim)
+%    saveResults,probDim,linearMotion)
 %
 %INPUT  movieInfo    : Array of size equal to the number of frames in a
 %                      movie, containing the fields:
@@ -58,11 +58,12 @@ function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %           .filename     : Name of file where results should be saved.
 %                      Or []. Default: trackedFeatures in directory
 %                      where run is initiated.
-%                      
 %                      Whole structure optional.
 %       probDim      : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
 %                      Optional. If not input, dimensionality will be
 %                      derived from movieInfo.
+%       linearMotion : 1 if linear motion is to be considered, 0 otherwise.
+%                      Optional. Default: 1.
 %
 %       All optional variables can be entered as [] to use default values.
 %
@@ -213,6 +214,11 @@ else
     end
 end
 
+%check whether linear motion is to be considered
+if nargin < 8 || isempty(linearMotion)
+    linearMotion = 1;
+end
+
 %exit if there are problems with input
 if errFlag
     disp('--trackCloseGapsKalman: Please fix input parameters.');
@@ -276,21 +282,22 @@ end %(for iFrame = 1 : numFrames)
 
 %get initial tracks by linking features between consecutive frames
 [dummy,dummy1,kalmanInfoLink] = linkFeaturesKalman(movieInfo,costMatParam,[],...
-    kalmanInitParam,useLocalDensity.link,useLocalDensity.nnWindowL,probDim);
+    kalmanInitParam,useLocalDensity.link,useLocalDensity.nnWindowL,...
+    probDim,linearMotion);
 
 %redo the linking by going backwards in the movie and using the
 %Kalman filter information from the first linking attempt
 %this will improve the linking and the state estimation
 [dummy,dummy1,kalmanInfoLink] = linkFeaturesKalman(movieInfo(end:-1:1),...
     costMatParam,kalmanInfoLink(end:-1:1),kalmanInitParam,...
-    useLocalDensity.link,useLocalDensity.nnWindowL,probDim);
+    useLocalDensity.link,useLocalDensity.nnWindowL,probDim,linearMotion);
 clear dummy dummy1
 
 %go forward one more time to get the final estimate of the initial tracks
 [tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink,nnDistLinkedFeat,...
     errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
     kalmanInfoLink(end:-1:1),kalmanInitParam,useLocalDensity.link,...
-    useLocalDensity.nnWindowL,probDim);
+    useLocalDensity.nnWindowL,probDim,linearMotion);
 
 %get number of tracks
 numTracksLink = size(tracksFeatIndxLink,1);
@@ -315,7 +322,8 @@ if any(trackStartTime > 1) && any(trackEndTime < numFrames)
         errFlag] = costMatLinearMotionCloseGaps(tracksCoordAmpLink,...
         tracksFeatIndxLink,trackStartTime,trackEndTime,costMatParam,...
         gapCloseParam,kalmanInfoLink,(1:numTracksLink)',...
-        useLocalDensity.cg,nnDistLinkedFeat,useLocalDensity.nnWindowCG,probDim);
+        useLocalDensity.cg,nnDistLinkedFeat,useLocalDensity.nnWindowCG,...
+        probDim,linearMotion);
 
     %link tracks based on this cost matrix, allowing for birth and death
     [link12,link21] = lap(costMat,nonlinkMarker);

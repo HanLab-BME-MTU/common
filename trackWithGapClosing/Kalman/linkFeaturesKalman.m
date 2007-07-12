@@ -1,11 +1,13 @@
 function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
     nnDistFeatures,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
-    filterInfoPrev,kalmanInitParam,useLocalDensity,nnWindow,probDim)
+    filterInfoPrev,kalmanInitParam,useLocalDensity,nnWindow,probDim,...
+    linearMotion)
 %LINKFEATURESKALMAN links features between consecutive frames using LAP and directed motion models
 %
 %SYNOPSIS [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
 %    nnDistFeatures,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
-%    filterInfoPrev,kalmanInitParam,useLocalDensity,nnWindow,probDim)
+%    filterInfoPrev,kalmanInitParam,useLocalDensity,nnWindow,probDim,...
+%    linearMotion)
 %
 %INPUT  movieInfo         : Array of size equal to the number of frames
 %                           in a movie, containing the fields:
@@ -56,6 +58,8 @@ function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
 %       probDim           : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
 %                           Optional. If not input, dimensionality will be
 %                           derived from movieInfo.
+%       linearMotion      : 1 if linear motion is to be considered, 0 
+%                           otherwise. Optional. Default: 1.
 %
 %OUTPUT trackedFeatureIndx: Connectivity matrix of features between time points.
 %                           Rows indicate continuous tracks, while columns 
@@ -153,6 +157,11 @@ else
         disp('--linkFeaturesKalman: Inconsistency in input. Problem 3D but no z-coordinates.');
         errFlag = 1;
     end
+end
+
+%check whether linear motion is to be considered
+if nargin < 8 || isempty(linearMotion)
+    linearMotion = 1;
 end
 
 %exit if there are problems with input
@@ -270,7 +279,7 @@ for iFrame = 1 : numFrames-1
             [costMat,propagationScheme,kalmanFilterInfoTmp,nonlinkMarker] ...
                 = costMatLinearMotionLink(movieInfo(iFrame:iFrame+1),...
                 kalmanFilterInfo(iFrame),costMatParam,useLocalDensity,...
-                nnDistTracks(1:numFeaturesFrame1),probDim);
+                nnDistTracks(1:numFeaturesFrame1),probDim,linearMotion);
 
             if any(costMat(:)~=nonlinkMarker) %if there are potential links
 
