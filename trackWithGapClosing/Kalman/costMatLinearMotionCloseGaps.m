@@ -234,9 +234,11 @@ undetBrownStd = prctile(noiseStdAll,95);
 indxEnd2 = [];
 indxStart2 = [];
 
-%find the maximum velocity and multiply that by probDim*linStdMult(1)
-%to get the absolute upper limit of acceptable displacements in one frame
-maxDispAllowed = max(xyzVel(:)) * probDim * linStdMult(1);
+%get the absolute upper limit of acceptable displacements in one frame
+%as the maximum of (maximum velocity multiplied by probDim*linStdMult(1),
+%maxSearchRadiusCG)
+maxDispAllowed = max(max(xyzVel(:)) * probDim * linStdMult(1), ...
+    maxSearchRadius);
 
 %go over all frames until the one before last
 for iFrame = 1 : numFrames - 1
@@ -472,10 +474,11 @@ altCostSplit = []; %vector storing alternative costs of not splitting
 %if merging and splitting are to be considered ...
 if mergeSplit
 
-    %find the maximum velocity and multiply that by 2*linStdMult(1)
-    %to get the absolute upper limit of acceptable displacement between two
-    %frames
-    maxDispAllowed = max(xyzVel(:)) * probDim * linStdMult(1);
+    %get the absolute upper limit of acceptable displacements in one frame
+    %as the maximum of (maximum velocity multiplied by probDim*linStdMult(1),
+    %maxSearchRadiusCG)
+    maxDispAllowed = max(max(xyzVel(:)) * probDim * linStdMult(1), ...
+        maxSearchRadius);
 
     %costs of merging
 
