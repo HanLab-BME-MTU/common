@@ -116,8 +116,8 @@ function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %       errFlag           : 0 if function executes normally, 1 otherwise.
 %
 %REMARKS The algorithm can handle cases where some frames do not have any
-%        features at all. However, the very first frame must have some
-%        features in it.
+%        features at all. However, the first frame and last frame cannot be
+%        empty.
 %
 %Khuloud Jaqaman, April 2007
 
@@ -275,6 +275,46 @@ for iFrame = 1 : numFrames
     movieInfo(iFrame).nnDist = nnDist;
 
 end %(for iFrame = 1 : numFrames)
+
+%remove empty frames in the beginning and the end and keep the information
+%for later
+emptyStart = 0;
+numFeatures = vertcat(movieInfo.num);
+emptyFrames = find(numFeatures == 0);
+if ~isempty(emptyFrames)
+    findEmpty = emptyFrames(1) == 1;
+else
+    findEmpty = 0;
+end
+while findEmpty
+    emptyStart = emptyStart + 1;
+    numFeatures = numFeatures(2:end);
+    emptyFrames = find(numFeatures == 0);
+    if ~isempty(emptyFrames)
+        findEmpty = emptyFrames(1) == 1;
+    else
+        findEmpty = 0;
+    end
+end
+emptyEnd = 0;
+numFeatures = vertcat(movieInfo.num);
+emptyFrames = find(numFeatures == 0);
+if ~isempty(emptyFrames)
+    findEmpty = emptyFrames(end) == length(numFeatures);
+else
+    findEmpty = 0;
+end
+while findEmpty
+    emptyEnd = emptyEnd + 1;
+    numFeatures = numFeatures(1:end-1);
+    emptyFrames = find(numFeatures == 0);
+    if ~isempty(emptyFrames)
+        findEmpty = emptyFrames(end) == length(numFeatures);
+    else
+        findEmpty = 0;
+    end
+end
+movieInfo = movieInfo(emptyStart+1:numFrames-emptyEnd);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Link between frames
@@ -629,6 +669,11 @@ if any(trackStartTime > 1) && any(trackEndTime < numFrames)
     end %(for iTrack = 1 : numTracksCG)
 
 end %(if any(trackStartTime > 1) && any(trackEndTime < numFrames))
+
+%shift time if any of the initial frames are empty
+for iTrack = 1 : length(tracksFinal)
+    tracksFinal(iTrack).seqOfEvents(:,1) = tracksFinal(iTrack).seqOfEvents(:,1) + emptyStart;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Save results
