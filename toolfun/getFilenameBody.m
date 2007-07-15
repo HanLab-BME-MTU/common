@@ -56,7 +56,7 @@ end
 [start dummy dummy dummy tokens] = regexp(name, [separator '(\d+)$']);
 if ~isempty(tokens)
     tokens = tokens{1};
-    no = str2double(tokens{1});
+    no = tokens{1};
     body = name(1:start-1);
 else
     body = name;

@@ -24,6 +24,7 @@ end;
 if isempty(nr)
     fname=[path filesep body ext];
 else
+    nr = str2double(nr);
     fname=[path filesep body '_' num2str(nr) ext];
 end
 %if filename already exists, add a (increasing) number at end
