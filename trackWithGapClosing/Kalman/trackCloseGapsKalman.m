@@ -116,8 +116,7 @@ function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %       errFlag           : 0 if function executes normally, 1 otherwise.
 %
 %REMARKS The algorithm can handle cases where some frames do not have any
-%        features at all. However, the first frame and last frame cannot be
-%        empty.
+%        features at all.
 %
 %Khuloud Jaqaman, April 2007
 
