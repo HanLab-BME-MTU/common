@@ -115,9 +115,6 @@ function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %                              next feature.
 %       errFlag           : 0 if function executes normally, 1 otherwise.
 %
-%REMARKS The algorithm can handle cases where some frames do not have any
-%        features at all.
-%
 %Khuloud Jaqaman, April 2007
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -227,53 +224,64 @@ end
 %get gap closing parameters from input
 mergeSplit = gapCloseParam.mergeSplit;
 
-%go over all frames
-%get number of features, put coordinates in one matrix and calculate
-%nearest neighbor distances
-for iFrame = 1 : numFrames
+%get number of features in each frame
+if ~isfield(movieInfo,'num')
+    for iFrame = 1 : numFrames
+        movieInfo(iFrame).num = size(movieInfo(iFrame).xCoord,1);
+    end
+end
 
-    %get number of features in frame
-    movieInfo(iFrame).num = size(movieInfo(iFrame).xCoord,1);
-
-    %collect coordinates and their std in one matrix
+%collect coordinates and their std in one matrix in each frame
+if ~isfield(movieInfo,'allCoord')
     if probDim == 2
-        movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
-            movieInfo(iFrame).yCoord];
+        for iFrame = 1 : numFrames
+            movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
+                movieInfo(iFrame).yCoord];
+        end
     else
-        movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
-            movieInfo(iFrame).yCoord movieInfo(iFrame).zCoord];
+        for iFrame = 1 : numFrames
+            movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
+                movieInfo(iFrame).yCoord movieInfo(iFrame).zCoord];
+        end
     end
+end
 
-    %calculate nearest neighbor distance
-    switch movieInfo(iFrame).num
+%calculate nearest neighbor distance for each feature in each frame
+if ~isfield(movieInfo,'nnDist')
 
-        case 0 %if there are no features
-            
-            %there are no nearest neighbor distances
-            nnDist = zeros(0,1);
+    for iFrame = 1 : numFrames
+        
+        switch movieInfo(iFrame).num
 
-        case 1 %if there is only 1 feature
+            case 0 %if there are no features
 
-            %assign nearest neighbor distance as 1000 pixels (a very big
-            %number)
-            nnDist = 1000;
+                %there are no nearest neighbor distances
+                nnDist = zeros(0,1);
 
-        otherwise %if there is more than 1 feature
+            case 1 %if there is only 1 feature
 
-            %compute distance matrix
-            nnDist = createDistanceMatrix(movieInfo(iFrame).allCoord(:,1:2:end),...
-                movieInfo(iFrame).allCoord(:,1:2:end));
+                %assign nearest neighbor distance as 1000 pixels (a very big
+                %number)
+                nnDist = 1000;
 
-            %sort distance matrix and find nearest neighbor distance
-            nnDist = sort(nnDist,2);
-            nnDist = nnDist(:,2);
+            otherwise %if there is more than 1 feature
+
+                %compute distance matrix
+                nnDist = createDistanceMatrix(movieInfo(iFrame).allCoord(:,1:2:end),...
+                    movieInfo(iFrame).allCoord(:,1:2:end));
+
+                %sort distance matrix and find nearest neighbor distance
+                nnDist = sort(nnDist,2);
+                nnDist = nnDist(:,2);
+
+        end
+
+        %store nearest neighbor distance
+        movieInfo(iFrame).nnDist = nnDist;
 
     end
-
-    %store nearest neighbor distance
-    movieInfo(iFrame).nnDist = nnDist;
-
-end %(for iFrame = 1 : numFrames)
+    
+end
 
 %remove empty frames in the beginning and the end and keep the information
 %for later

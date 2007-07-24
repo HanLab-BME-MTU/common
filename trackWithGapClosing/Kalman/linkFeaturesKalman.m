@@ -173,31 +173,33 @@ end
 %get number of frames in movie
 numFrames = length(movieInfo);
 
-%calculate number of features in each frame if not supplied
+%get number of features in each frame
 if ~isfield(movieInfo,'num')
     for iFrame = 1 : numFrames
         movieInfo(iFrame).num = size(movieInfo(iFrame).xCoord,1);
     end
 end
 
-%collect coordinates in one matrix if allCoord not supplied
+%collect coordinates and their std in one matrix in each frame
 if ~isfield(movieInfo,'allCoord')
     if probDim == 2
-        movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
-            movieInfo(iFrame).yCoord];
+        for iFrame = 1 : numFrames
+            movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
+                movieInfo(iFrame).yCoord];
+        end
     else
-        movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
-            movieInfo(iFrame).yCoord movieInfo(iFrame).zCoord];
+        for iFrame = 1 : numFrames
+            movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
+                movieInfo(iFrame).yCoord movieInfo(iFrame).zCoord];
+        end
     end
 end
 
-%calculate nearest neighbor distances if not supplied
+%calculate nearest neighbor distance for each feature in each frame
 if ~isfield(movieInfo,'nnDist')
-    
-    %calculate distance between each feature and its nearest neighbor
-    %for all frames
-    for iFrame = 1 : numFrames
 
+    for iFrame = 1 : numFrames
+        
         switch movieInfo(iFrame).num
 
             case 0 %if there are no features
@@ -211,11 +213,11 @@ if ~isfield(movieInfo,'nnDist')
                 %number)
                 nnDist = 1000;
 
-            otherwise %if there are more than 1 feature
+            otherwise %if there is more than 1 feature
 
                 %compute distance matrix
-                nnDist = createDistanceMatrix(movieInfo(iFrame).allCoord(1:2:end),...
-                    movieInfo(iFrame).allCoord(1:2:end));
+                nnDist = createDistanceMatrix(movieInfo(iFrame).allCoord(:,1:2:end),...
+                    movieInfo(iFrame).allCoord(:,1:2:end));
 
                 %sort distance matrix and find nearest neighbor distance
                 nnDist = sort(nnDist,2);
@@ -226,9 +228,9 @@ if ~isfield(movieInfo,'nnDist')
         %store nearest neighbor distance
         movieInfo(iFrame).nnDist = nnDist;
 
-    end %(for iFrame = 1 : numFrames)
+    end
 
-end %(if ~isfield(movieInfo,'nnDist'))
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Linking
@@ -236,6 +238,7 @@ end %(if ~isfield(movieInfo,'nnDist'))
 
 %reserve memory for kalmanFilterInfo - generalize to 3D - maybe make
 %separate function
+numFeatures = zeros(numFrames,1);
 for iFrame = numFrames : -1 : 1
     numFeatures(iFrame) = movieInfo(iFrame).num;
 end
