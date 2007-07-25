@@ -6,7 +6,7 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC, noLinkCost
 % The cost associated with the link from element i of A to element j of B 
 % is given by cc(i,j).
 %
-% SYNOPSIS [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC)
+% SYNOPSIS [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC, noLinkCost)
 %
 % INPUT:  cc: cost matrix, which has to be square. Set cost(i,j) to the
 %             value of NONLINK_MARKER, if the link is not allowed. cc can
@@ -194,8 +194,11 @@ if augmentCC
         % nmMat  = sparse(ones(scc(2), scc(1)));
         % cc = [cc, mmDiag; nnDiag, nmMat];
         
-        [rowIdx, colIdx] = find(cc);
-        costLR = sparse(colIdx,rowIdx,minCost*ones(length(colIdx),1),scc(2),scc(1));
+        % use transposed costmatrix for LR - otherwise, nonLinkCost has no
+        % effect
+        %[rowIdx, colIdx] = find(cc);
+        %costLR = sparse(colIdx,rowIdx,minCost*ones(length(colIdx),1),scc(2),scc(1));
+        costLR = cc';
         
         cc = [cc, spdiags(noLinkCost * ones(scc(1),1), 0, scc(1), scc(1));...
             spdiags(noLinkCost * ones(scc(2),1), 0, scc(2), scc(2)),...
@@ -208,11 +211,15 @@ if augmentCC
         % nmMat  = sparse(ones(scc(2), scc(1)));
         % cc = [cc, mmDiag; nnDiag, nmMat];
         
-        [rowIdx, colIdx] = find(cc ~= NONLINK_MARKER);
-        costLR = sparse(colIdx,rowIdx,minCost*ones(length(colIdx),1),scc(2),scc(1));
+        % use transposed costmatrix for LR - otherwise, nonLinkCost has no
+        % effect
+        %[rowIdx, colIdx] = find(cc ~= NONLINK_MARKER);
+        %costLR = sparse(colIdx,rowIdx,minCost*ones(length(colIdx),1),scc(2),scc(1));
         
         % make cc sparse. Take NLM in cc into account!
         cc(cc==NONLINK_MARKER) = 0;
+        cc=sparse(cc);
+        costLR = cc';
         
         cc = [cc, diag(noLinkCost * ones(scc(1),1)); ...
             diag(noLinkCost * ones(scc(2),1)), ...
