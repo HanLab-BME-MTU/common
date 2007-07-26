@@ -19,8 +19,14 @@ function mkRGDualChannelImg(varargin)
 %                    image. Default, 1.
 %    'startFrameNo': The starting frame number to be merged.
 %    'numFrames' : The number of frames to be processed.
+%    'edgeDir'   : Path to detected cell edge. If it is specified, cell edge will be plotted. 
+%                  Default, ''.
+%    'edgeColor' : Color of plotted cell edge. Default, 'r'.
 %
 % AUTHOR: Lin Ji, Nov. 26, 2005
+
+edgeDir   = '';
+edgeColor = 'r';
 
 [redFirstImgFile redInDir filterIndex] = uigetfile('*.*','Pick the first image for red channel');
 if isequal(redFirstImgFile,0) || isequal(redInDir,0)
@@ -69,6 +75,14 @@ if isequal(outDir,0)
    return;
 end
 
+if ~isdir([outDir filesep 'TIFF'])
+   [success,msg,msgID] = mkdir(outDir,'TIFF');
+   if ~success
+      error('Trouble making directory.');
+   end
+end
+outTifDir = [outDir filesep 'TIFF'];
+
 %Default
 redImgIScale     = [0 1];
 greenImgIScale   = [0 1];
@@ -91,6 +105,10 @@ if nargin > 0
             startFrameNo = varargin{kk+1};
          case 'numFrames'
             numFrames = varargin{kk+1};
+         case 'edgeDir'
+            edgeDir = varargin{kk+1};
+         case 'edgeColor'
+            edgeColor = varargin{kk+1};
       end
    end
 end
@@ -103,6 +121,15 @@ rgAVIFile  = [outDir filesep outFileName num2str(startFrameNo) '_' ...
    num2str(endFrameNo) '.avi'];
 %To make an avi movie.
 aviobj = avifile(rgAVIFile);
+
+pixel_edge = [];
+if isdir(edgeDir)
+   pixel_edgeFile = [edgeDir filesep 'pixel_edge.mat'];
+   if exist(pixel_edgeFile,'file')
+      s = load(pixel_edgeFile);
+      pixel_edge =s.pixel_edge;
+   end
+end
 
 figH = figure; hold off;
 for kk = startFrameNo:startFrameNo+numFrames-1
@@ -148,14 +175,23 @@ for kk = startFrameNo:startFrameNo+numFrames-1
    end
 
    figure(figH); hold off;
-   imshow(rgImg,[]);
+   imshow(rgImg,[]); hold on;
 
+   if ~isempty(pixel_edge)
+      lineObj = plot(pixel_edge{kk}(:,1),pixel_edge{kk}(:,2),edgeColor);
+      set(lineObj,'LineWidth',2);
+   end
+   
    rgImgFile = [outDir filesep outFileName imgIndexStr '.fig'];
+   rgImgTifFile = [outTifDir filesep outFileName imgIndexStr '.tif'];
    saveas(figH,rgImgFile,'fig');
    
    %Add frame to avi movie:
    frm = getframe(figH);
    aviobj = addframe(aviobj,frm);
+   
+   [tifImg,imgCMap] = frame2im(frm);
+   imwrite(tifImg,rgImgTifFile,'TIFF','Compression','none');
 end
 
 %Close the AVI file.
