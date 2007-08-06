@@ -208,7 +208,7 @@ listOfFiles(listOfFilesCt+1:end,:)=[];
 %----------- find tokens --------------
 if nargout > 1
     % we need to make a tokenList
-    if findstr(includeString,'(') && findstr(includeString,')')
+    if any(findstr(includeString,'(')) && any(findstr(includeString,')'))
         % only call regexp if there are tokens at all
 
         tmp = regexp(listOfFiles(:,1),includeString,'tokens');
