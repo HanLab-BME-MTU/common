@@ -12,7 +12,8 @@ function [out,M]=Gauss2D(x,sigma);
 
 % bug fix: AP - 10.07.02
 
-R = ceil(3*sigma);   % cutoff radius of the gaussian kernel  
+R = ceil(3*sigma);   % cutoff radius of the gaussian kernel
+M = zeros(2*R+1); % KJ
 for i = -R:R,
    for j = -R:R,
       M(i+R+1,j+R+1) = exp(-(i*i+j*j)/2/sigma/sigma);

@@ -1,11 +1,11 @@
 function [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
-    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF,...
-    bitDepth,saveResults)
+    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,...
+    doMMF,bitDepth,saveResults,bgNoiseSigma)
 %DETECTSUBRESFEATURES2D determines the positions and intensity amplitudes of sub-resolution features using mixture model fitting
 %
 %SYNOPSIS [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
-%    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,doMMF,...
-%    bitDepth,saveResults)
+%    detectSubResFeatures2D(image,cands,psfSigma,testAlpha,visual,...
+%    doMMF,bitDepth,saveResults,bgNoiseSigma)
 %
 %INPUT  image      : Image being analyzed.
 %       cands      : Cands structure as output from fsmCenter.
@@ -14,7 +14,10 @@ function [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
 %             .alphaR: For the residuals test, comparing N+1-kernel fit to
 %                      N-kernal fit. Optional. Default: 0.05.
 %             .alphaA: For amplitude test. Optional. Default: 0.05.
-%             .alphaD: For distance test. Optional: Default: 0.05.
+%             .alphaD: For distance test. Optional. Default: 0.05.
+%             .alphaF: Final residuals test, comparing residuals from final
+%                      fit to estimated background noise.
+%                      Optional. Default: 0.05.
 %       visual     : 1 if user wants to view results; 0 otherwise. 
 %                    Optional. Default: 0.
 %       doMMF      : 1 if user wants to do mixture-model fitting, 0
@@ -22,6 +25,8 @@ function [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
 %       bitDepth   : Camera bit depth. Optional. Default: 14.
 %       saveResults: 1 if results are to be saved (in file 'detectedFeatures.mat'),
 %                    0 otherwise. Optional. Default: 0.
+%       bgNoiseSigma:Standard deviation of background noise. Optional. If
+%                    not input, the code will estimate it from the image.
 %
 %       All optional variables can be entered as [] to use default values.
 %
@@ -70,7 +75,7 @@ end
 %check whether statistical test alpha values were inputted
 if nargin < 4 || isempty(testAlpha) %if not, assign defaults
     
-    testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05);
+    testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05,'alphaF',0.05);
     
 else %if some were, check their values and assign default for the rest
 
@@ -95,6 +100,14 @@ else %if some were, check their values and assign default for the rest
     else
         if testAlpha.alphaD < 0 || testAlpha.alphaD > 1
             disp('--detectSubResFeatures2D: testAlpha.alphaD should be between 0 and 1!');
+            errFlag = 1;
+        end
+    end
+    if ~isfield(testAlpha,'alphaF')
+        testAlpha.alphaF = 0.05;
+    else
+        if testAlpha.alphaF < 0 || testAlpha.alphaF > 1
+            disp('--detectSubResFeatures2D: testAlpha.alphaF should be between 0 and 1!');
             errFlag = 1;
         end
     end
@@ -134,9 +147,18 @@ end
 if nargin < 8 || isempty(saveResults)
     saveResults = 0;
 else
-    if saveResults ~= 0 || saveResults ~= 1
+    if saveResults ~= 0 && saveResults ~= 1
         disp('--detectSubResFeatures2D: Variable "saveResults" should be 0 or 1!');
     end
+end
+
+%check whether back ground noise sigma is input or whether it should be
+%calculated on the fly
+if nargin < 9 || isempty(bgNoiseSigma)
+    bgNoiseSigma = 0;
+    estimateBgNoise = 1;
+else
+    estimateBgNoise = 0;
 end
 
 %exit if there are problems with input data
@@ -152,6 +174,7 @@ end
 alphaR = testAlpha.alphaR;
 alphaA = testAlpha.alphaA;
 alphaD = testAlpha.alphaD;
+alphaF = testAlpha.alphaF;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Mixture Model Fitting
@@ -171,7 +194,7 @@ image = double(image)/(2^bitDepth-1);
 %get background intensity information from cands
 bgAmp = vertcat(cands.IBkg);
 status = vertcat(cands.status);
-bgAmp = bgAmp(find(status==1));
+bgAmp = bgAmp(status==1);
 bgAmpMax = max(bgAmp);
 bgAmpAve = mean(bgAmp);
 
@@ -267,136 +290,149 @@ for i=length(clusters):-1:1
             varCovMat = inv(jacMat'*jacMat)*sum(residuals.^2)/numDegFree;
             uncertainty = sqrt(diag(varCovMat));
             
-            %extract estimate and uncertainty of background intensity and
-            %remove from vectors
-            bgAmp = [solution(end) uncertainty(end)];
-            solution = solution(1:end-1);
-            uncertainty = uncertainty(1:end-1);
+            %if nothing weird took place in the fit...
+            if all(isreal(uncertainty))
 
-            %reshape 3nx1 vectors "solution" and "uncertainty" into nx3 matrices
-            solution = reshape(solution,3,numMaxima);
-            solution = solution';
-            uncertainty = reshape(uncertainty,3,numMaxima);
-            uncertainty = uncertainty';
+                %extract estimate and uncertainty of background intensity and
+                %remove from vectors
+                bgAmp = [solution(end) uncertainty(end)];
+                solution = solution(1:end-1);
+                uncertainty = uncertainty(1:end-1);
 
-            %extract feature positions and amplitudes and their uncertainties
-            maximaPos = [solution(:,1:2) uncertainty(:,1:2)];
-            maximaAmp = [solution(:,3) uncertainty(:,3)];
+                %reshape 3nx1 vectors "solution" and "uncertainty" into nx3 matrices
+                solution = reshape(solution,3,numMaxima);
+                solution = solution';
+                uncertainty = reshape(uncertainty,3,numMaxima);
+                uncertainty = uncertainty';
 
-            %check amplitudes and remove maxima with insignificant amplitudes
-            %1-sided t-test: H0: T=0, H1: T>0
-            %calculate test statistic (t-distributed)
-            testStat = maximaAmp(:,1)./maximaAmp(:,2);
-            %get its p-value
-            pValue = 1-tcdf(testStat,numDegFree);
-            %find the maxima whose p-value > alpha
-            indx = find(pValue<alphaA);
-            
-            if isempty(indx) %if none of the maxima have a significant amplitude
+                %extract feature positions and amplitudes and their uncertainties
+                maximaPos = [solution(:,1:2) uncertainty(:,1:2)];
+                maximaAmp = [solution(:,3) uncertainty(:,3)];
 
-                fit = 0; %stop fitting this cluster
-                keepCluster(i) = 0; %mark it to be discarded
-
-            else %if there are maxima with significant amplitude
-
-                %keep only maxima with significant amplitudes
-                maximaPos = maximaPos(indx,:);
-                maximaAmp = maximaAmp(indx,:);
-                numMaxima = size(maximaAmp,1);
-                
-                %update variance-covariance matrix as well
-                indx2 = 3*(indx-1)+1;
-                indx2 = [indx2 indx2+1 indx2+2];
-                indx2 = reshape(indx2',3*size(indx2,1),1);
-                varCovMat = varCovMat(indx2,:);
-                varCovMat = varCovMat(:,indx2);
-
-                %check distances between maxima if there is more than 1
-                %maximum in cluster
+                %check amplitudes and remove maxima with insignificant amplitudes
                 %1-sided t-test: H0: T=0, H1: T>0
-                if numMaxima > 1
+                %calculate test statistic (t-distributed)
+                testStat = maximaAmp(:,1)./maximaAmp(:,2);
+                %             testStat = maximaAmp(:,1)./(sqrt(maximaAmp(:,2).^2+bgAmp(2)^2));
+                %             testStat = maximaAmp(:,1)./bgNoiseSigma;
+                %get its p-value
+                pValue = 1-tcdf(testStat,numDegFree);
+                %find the maxima whose p-value < alpha
+                indx = find(pValue<alphaA);
 
-                    repTest = 1; %logical variable indicating whether distance test is performed
-                    while repTest
-                        
-                        %get p-values of distances between maxima
-                        pValue = zeros(numMaxima);
-                        for k=1:numMaxima-1
-                            for j=k+1:numMaxima
+                if isempty(indx) %if none of the maxima have a significant amplitude
 
-                                %calculate distance between the 2 maxima
-                                x1_x2 = maximaPos(j,1) - maximaPos(k,1);
-                                y1_y2 = maximaPos(j,2) - maximaPos(k,2);
-                                distance = sqrt(x1_x2^2+y1_y2^2);
-                                
-                                %get the uncertainty in the distance
-                                j1 = 3*(j-1)+1;
-                                k1 = 3*(k-1)+1;
-                                stdDist = x1_x2^2*(varCovMat(j1,j1) + ...
-                                    varCovMat(k1,k1) - 2*varCovMat(j1,k1)) ...
-                                    + y1_y2^2*(varCovMat(j1+1,j1+1) + ...
-                                    varCovMat(k1+1,k1+1) - 2*varCovMat(j1+1,k1+1)) ...
-                                    + 2*x1_x2*y1_y2*(varCovMat(j1,j1+1) - ...
-                                    varCovMat(j1,k1+1) - varCovMat(j1+1,k1) + ...
-                                    varCovMat(k1,k1+1));                                
-                                stdDist = sqrt(stdDist)/distance;
+                    fit = 0; %stop fitting this cluster
+                    keepCluster(i) = 0; %mark it to be discarded
 
-                                %calculate test statistic (t-distributed)
-                                testStat = distance/stdDist;
+                else %if there are maxima with significant amplitude
 
-                                %get p-value
-                                pValue(j,k) = 1-tcdf(testStat,numDegFree);
+                    %keep only maxima with significant amplitudes
+                    maximaPos = maximaPos(indx,:);
+                    maximaAmp = maximaAmp(indx,:);
+                    numMaxima = size(maximaAmp,1);
 
+                    %update variance-covariance matrix as well
+                    indx2 = 3*(indx-1)+1;
+                    indx2 = [indx2 indx2+1 indx2+2];
+                    indx2 = reshape(indx2',3*size(indx2,1),1);
+                    varCovMat = varCovMat(indx2,:);
+                    varCovMat = varCovMat(:,indx2);
+
+                    %check distances between maxima if there is more than 1
+                    %maximum in cluster
+                    %1-sided t-test: H0: T=0, H1: T>0
+                    if numMaxima > 1
+
+                        repTest = 1; %logical variable indicating whether distance test is performed
+                        while repTest
+
+                            %get p-values of distances between maxima
+                            pValue = zeros(numMaxima);
+                            for k=1:numMaxima-1
+                                for j=k+1:numMaxima
+
+                                    %calculate distance between the 2 maxima
+                                    x1_x2 = maximaPos(j,1) - maximaPos(k,1);
+                                    y1_y2 = maximaPos(j,2) - maximaPos(k,2);
+                                    distance = sqrt(x1_x2^2+y1_y2^2);
+
+                                    %get the uncertainty in the distance
+                                    j1 = 3*(j-1)+1;
+                                    k1 = 3*(k-1)+1;
+                                    stdDist = x1_x2^2*(varCovMat(j1,j1) + ...
+                                        varCovMat(k1,k1) - 2*varCovMat(j1,k1)) ...
+                                        + y1_y2^2*(varCovMat(j1+1,j1+1) + ...
+                                        varCovMat(k1+1,k1+1) - 2*varCovMat(j1+1,k1+1)) ...
+                                        + 2*x1_x2*y1_y2*(varCovMat(j1,j1+1) - ...
+                                        varCovMat(j1,k1+1) - varCovMat(j1+1,k1) + ...
+                                        varCovMat(k1,k1+1));
+                                    stdDist = sqrt(stdDist)/distance;
+
+                                    %calculate test statistic (t-distributed)
+                                    testStat = distance/stdDist;
+
+                                    %get p-value
+                                    pValue(j,k) = 1-tcdf(testStat,numDegFree);
+
+                                end
                             end
-                        end
 
-                        %compare maximum p-value to alpha
-                        maxPValue = max(pValue(:));
+                            %compare maximum p-value to alpha
+                            maxPValue = max(pValue(:));
 
-                        if maxPValue > alphaD %if the maximum p-value is not significant
+                            if maxPValue > alphaD %if the maximum p-value is not significant
 
-                            %find pair with maximum p-value
-                            [indx,indx2] = find(pValue==maxPValue);
+                                %find pair with maximum p-value
+                                [indx,indx2] = find(pValue==maxPValue);
 
-                            %out of this pair, identify maximum with smaller amplitude
-                            indx2 = [indx;indx2];
-                            indx = ones(numMaxima,1);
-                            indx(indx2(find(indx2==min(indx2)))) = 0;
+                                %out of this pair, identify maximum with smaller amplitude
+                                indx2 = [indx;indx2];
+                                indx = ones(numMaxima,1);
+                                indx(indx2(indx2==min(indx2))) = 0;
 
-                            %remove that maximum
-                            indx = find(indx);
-                            maximaPos = maximaPos(indx,:);
-                            maximaAmp = maximaAmp(indx,:);
-                            numMaxima = numMaxima - 1;
+                                %remove that maximum
+                                indx = find(indx);
+                                maximaPos = maximaPos(indx,:);
+                                maximaAmp = maximaAmp(indx,:);
+                                numMaxima = numMaxima - 1;
 
-                            %repeat test if there still is more than 1 maximum
-                            if numMaxima > 1
-                                repTest = 1;
+                                %repeat test if there still is more than 1 maximum
+                                if numMaxima > 1
+                                    repTest = 1;
+                                else
+                                    repTest = 0;
+                                end
+
                             else
-                                repTest = 0;
-                            end
 
-                        else
+                                repTest = 0; %do not repeat test if all distances are significant
 
-                            repTest = 0; %do not repeat test if all distances are significant
+                            end %(if maxPValue > alpha)
 
-                        end %(if maxPValue > alpha)
+                        end %(while repTest)
 
-                    end %(while repTest)
+                    end %(if numMaxima > 1)
 
-                end
+                    %since the acceptance of this fit implies that another fit with
+                    %an additional kernel will be attempted, add one kernel to the
+                    %cluster next to the signal with largest amplitude
+                    numMaximaT = numMaxima + 1; %update number of maxima
+                    maximaAmpT = [maximaAmp(:,1); mean(maximaAmp(:,1))]; %signal amplitude
+                    tmp = find(maximaAmpT==max(maximaAmpT),1); %signal with largest amplitude
+                    coord = maximaPos(tmp,1:2) + (2*rand(1,2)-1)*2; %position of new kernel
+                    maximaPosT = [maximaPos(:,1:2); coord]; %signal positions
+                    bgAmpT = bgAmp(1); %background amplitude
 
-                %since the acceptance of this fit implies that another fit with
-                %an additional kernel will be attempted, add one kernel to the
-                %cluster next to the signal with largest amplitude
-                numMaximaT = numMaxima + 1; %update number of maxima
-                maximaAmpT = [maximaAmp(:,1); mean(maximaAmp(:,1))]; %signal amplitude
-                tmp = find(maximaAmpT==max(maximaAmpT),1); %signal with largest amplitude
-                coord = maximaPos(tmp,1:2) + (2*rand(1,2)-1)*2; %position of new kernel
-                maximaPosT = [maximaPos(:,1:2); coord]; %signal positions
-                bgAmpT = bgAmp(1); %background amplitude
-
-            end %(if isempty(indx))
+                end %(if isempty(indx))
+                
+            else %if things went wrong in the fit ...
+                
+                %discard this cluster and don't attempt any more kernels
+                fit = 0;
+                keepCluster(i) = 0;
+                
+            end %()
 
         end %(if fit)
 
@@ -408,56 +444,131 @@ for i=length(clusters):-1:1
 
     end %(while fit)
 
-    
-% % %     %check that the residuals from the overall fit are significantly
-% % %     %smaller than residuals from not fitting any PSFs.
-% % % 
-% % %     %fit the image with zero kernels, i.e. estimate the background
-% % %     %intensity only
-% % %     numDegFreeT = size(clusterPixels,1)-1;
-% % %     solutionT = lsqnonlin(@fitNGaussians2D,bgAmp(1),1e-5,5*bgAmp(1),options,imageC,...
-% % %         clusterPixels,psfSigma);
-% % % 
-% % %     %get residuals and Jacobian matrix to calculate uncertainty in
-% % %     %estimated parameters
-% % %     [residualsT,jacMatT] = fitNGaussians2D(solutionT,imageC,...
-% % %         clusterPixels,psfSigma);
-% % % 
-% % %     %get test statistic, which is F-distributed
-% % %     testStat = (sum(residuals.^2)/numDegFree)/...
-% % %         (sum(residualsT.^2)/numDegFreeT);
-% % % 
-% % %     %get p-value of test statistic
-% % %     pValue = fcdf(testStat,numDegFree,numDegFreeT);
-% % % 
-% % %     %compare p-value to alpha
-% % %     %1-sided F-test: H0: F=1, H1: F<1
-% % %     if pValue > alphaR %if p-value is larger, reject overall fit
-% % %         keepCluster(i) = 0;
-% % %     end
+    %if this is a good cluster,
+    %repeat the fit with the final number of kernels to get a final
+    %estimate of the parameters and the residuals from the fit
+    if keepCluster(i)
 
-    %store solution in clustersMMF
-    clustersMMF(i).position = maximaPos;
-    clustersMMF(i).amplitude = maximaAmp;
-    clustersMMF(i).bgAmp = bgAmp;
+        %collect initial guesses and lower and upper bounds of ...
+        %feature positions
+        x0 = maximaPos(:,1:2); %initial guess
+        lb = max(2,x0-2); %lower bound
+        ub = [];
+        ub(:,1) = min(numPixelsX-2,x0(:,1)+2); %upper bound of x-coordinates
+        ub(:,2) = min(numPixelsY-2,x0(:,2)+2); %upper bound of y-coordinates
+        %feature amplitudes
+        x0 = [x0 maximaAmp(:,1)];
+        lb(:,3) = 1e-5;
+        ub(:,3) = 2*x0(:,3);
+        %background intensity
+        x0 = x0';
+        x0 = [x0(:); bgAmp(1)];
+        lb = lb';
+        lb = [lb(:); 1e-5];
+        ub = ub';
+        ub = [ub(:); 2*bgAmpMax];
+
+        %calculate number of degrees of freedom in system
+        numDegFree = size(clusterPixels,1)-3*numMaxima-1;
+
+        %determine feature positions and amplitudes, and estimate background
+        %intensity, using nonlinear least squares data fitting
+        solution = lsqnonlin(@fitNGaussians2D,x0,lb,ub,options,imageC,...
+            clusterPixels,psfSigma);
+
+        %get residuals and Jacobian matrix to calculate uncertainty in
+        %estimated parameters
+        [residuals,jacMat] = fitNGaussians2D(solution,imageC,...
+            clusterPixels,psfSigma);
+
+        %calculate the parameters' variance-covariance matrix and get their
+        %uncertainties
+        varCovMat = inv(jacMat'*jacMat)*sum(residuals.^2)/numDegFree;
+        uncertainty = sqrt(diag(varCovMat));
+
+        %extract estimate and uncertainty of background intensity and
+        %remove from vectors
+        bgAmp = [solution(end) uncertainty(end)];
+        solution = solution(1:end-1);
+        uncertainty = uncertainty(1:end-1);
+
+        %reshape 3nx1 vectors "solution" and "uncertainty" into nx3 matrices
+        solution = reshape(solution,3,numMaxima);
+        solution = solution';
+        uncertainty = reshape(uncertainty,3,numMaxima);
+        uncertainty = uncertainty';
+
+        %extract feature positions and amplitudes and their uncertainties
+        maximaPos = [solution(:,1:2) uncertainty(:,1:2)];
+        maximaAmp = [solution(:,3) uncertainty(:,3)];
+
+        %store solution in clustersMMF
+        clustersMMF(i).position = maximaPos;
+        clustersMMF(i).amplitude = maximaAmp;
+        clustersMMF(i).bgAmp = bgAmp;
+        clustersMMF(i).numDegFree = numDegFree;
+        clustersMMF(i).residuals = residuals;
+        
+    end %(if keepCluster(i))
 
 end %(for i=length(clusters):-1:1)
 
-%find the clusters that have significant signals in them
+%find the clusters to retain
 indx = find(keepCluster);
 
-if ~isempty(indx) %if there are clusters with significant signal
+ %if there are clusters with significant signal ...
+ if ~isempty(indx)
 
     %retain only those clusters which have significant signals in them
     clustersMMF = clustersMMF(indx);
+    
+    %re-initialize keepClusters to use in next test
+    keepCluster = ones(length(indx),1);
+    
+    %estimate background noise variance if not supplied
+    if estimateBgNoise
+    else
+        bgNoiseVar = bgNoiseSigma^2;
+    end
+    
+    %go over all clusters and check that their residuals are
+    %comparable to the background noise 
+    for iCluster = 1 : length(clustersMMF)
+        
+        %get test statistic, which is F-distributed
+        testStat = (sum(clustersMMF(iCluster).residuals.^2)/numDegFree)/...
+            bgNoiseVar;
 
-    %store information in structure "detectedFeatures"
-    tmp = vertcat(clustersMMF.position);
-    detectedFeatures.xCoord = [tmp(:,1) tmp(:,3)];
-    detectedFeatures.yCoord = [tmp(:,2) tmp(:,4)];
-    detectedFeatures.amp = vertcat(clustersMMF.amplitude);
+        %get p-value of test statistic
+        pValue = 1 - fcdf(testStat,numDegFree,numDegFree+3*size(clustersMMF(iCluster).bgAmp,1));
 
-else
+        %compare p-value to alpha
+        %1-sided F-test: H0: F=1, H1: F>1
+        if pValue < alphaF %if p-value is smaller than alpha, reject overall fit
+            keepCluster(iCluster) = 0;
+        end
+
+    end %(for iCluster = 1 : length(clustersMMF))
+    
+    %determine clusters that pass the residuals test
+    indx = find(keepCluster);
+    
+    if ~isempty(indx)
+
+        %keep only clusters that pass the residuals test
+        clustersMMF = clustersMMF(indx);
+
+        %store information in structure "detectedFeatures"
+        tmp = vertcat(clustersMMF.position);
+        detectedFeatures.xCoord = [tmp(:,1) tmp(:,3)];
+        detectedFeatures.yCoord = [tmp(:,2) tmp(:,4)];
+        detectedFeatures.amp = vertcat(clustersMMF.amplitude);
+
+    end
+    
+end %(if ~isempty(indx))
+
+if isempty(indx)
 
     %store empty structures
     clustersMMF = struct('position',zeros(0,4),'amplitude',zeros(0,2),'bgAmp',zeros(0,2));

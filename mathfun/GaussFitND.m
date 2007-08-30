@@ -320,7 +320,8 @@ end
 mask = zeros(size(intensities));
 for k = 1:nKernels
     dist = normList(coordList-repmat(parameters(k,1:nDims),nCoords,1));
-    mask = mask | dist < 3*parameters(k,nDims+2);
+    % %     mask = mask | dist < 3*parameters(k,nDims+2);
+    mask = mask | dist < 4*parameters(k,nDims+2); %--KJ (more reliable fit with bigger area)
 end
 intensities = intensities(mask);
 coordList = coordList(mask,:);

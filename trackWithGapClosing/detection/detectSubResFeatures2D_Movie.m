@@ -77,7 +77,7 @@ psfSigma = detectionParam.psfSigma;
 
 %get statistical test alpha values
 if ~isfield(detectionParam,'testAlpha') || isempty(detectionParam.testAlpha)
-    testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05);
+    testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05,'alphaF',0.05);
 else
     testAlpha = detectionParam.testAlpha;
 end
@@ -146,6 +146,10 @@ movieInfo(lastImageNum).xCoord = [];
 movieInfo(lastImageNum).yCoord = [];
 movieInfo(lastImageNum).amp = [];
 
+%define variable to monitor progress
+iProgress = 0;
+progressText(0);
+
 %go through the images
 
 for i=min(9999,lastImageNum):-1:max(1000,firstImageNum)
@@ -177,8 +181,12 @@ for i=min(9999,lastImageNum):-1:max(1000,firstImageNum)
 
         %add this frame to the array of frames with failed detection
         framesFailed = [framesFailed; i];
-
+        
     end
+
+    %display progress on screen
+    iProgress = iProgress + 1;
+    progressText(iProgress/(lastImageNum-firstImageNum+1));
 
 end
 
@@ -214,6 +222,10 @@ for i=min(999,lastImageNum):-1:max(100,firstImageNum)
 
     end
 
+    %display progress on screen
+    iProgress = iProgress + 1;
+    progressText(iProgress/(lastImageNum-firstImageNum+1));
+
 end
 
 for i=min(99,lastImageNum):-1:max(10,firstImageNum)
@@ -248,6 +260,10 @@ for i=min(99,lastImageNum):-1:max(10,firstImageNum)
 
     end
 
+    %display progress on screen
+    iProgress = iProgress + 1;
+    progressText(iProgress/(lastImageNum-firstImageNum+1));
+
 end
 
 for i=min(9,lastImageNum):-1:max(1,firstImageNum)
@@ -281,6 +297,10 @@ for i=min(9,lastImageNum):-1:max(1,firstImageNum)
         framesFailed = [framesFailed; i];
 
     end
+
+    %display progress on screen
+    iProgress = iProgress + 1;
+    progressText(iProgress/(lastImageNum-firstImageNum+1));
 
 end
 

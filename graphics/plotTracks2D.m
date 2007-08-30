@@ -48,6 +48,8 @@ function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
 %                           beginning, blue in the middle, red in the end).
 %                           -'k', 'b', 'r', etc. if all tracks are in black,
 %                           blue, red, etc.
+%                           -'2' if tracks are colored by cycling through
+%                           the plot's default color order.
 %                           Optional. Default: 'k'.
 %       markerType        : String indicating marker type for plotting.
 %                           Only used if colorTime is not '1'.
@@ -265,41 +267,57 @@ hold on
 tracksXP = tracksX(timeRange(1):timeRange(2),:);
 tracksYP = tracksY(timeRange(1):timeRange(2),:);
 
-if colorTime == '1' %if user wants to color-code time
+switch colorTime
+    
+    case '1' %if user wants to color-code time
 
-    %plot tracks ignoring missing points
-    %gaps are depicted as a dotted black line
-    for i = 1 : trackStartRow(end) + numSegments(end) - 1
-        obsAvail = find(~isnan(tracksXP(:,i)));
-        plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
-    end
+        %plot tracks ignoring missing points
+        %gaps are depicted as a dotted black line
+        for i = 1 : trackStartRow(end) + numSegments(end) - 1
+            obsAvail = find(~isnan(tracksXP(:,i)));
+            plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
+        end
 
-    %get the fraction of each color in each time interval to be plotted
-    numTimePlotOver2 = ceil((numTimePlot-1)/2); %needed to change blue color over time
-    redVariation = (0:numTimePlot-2)'/(numTimePlot-2);
-    greenVariation = (numTimePlot-2:-1:0)'/(numTimePlot-2);
-    blueVariation = [(0:numTimePlotOver2-1)'/(numTimePlotOver2-1);...
-        (numTimePlot-numTimePlotOver2-2:-1:0)'/(numTimePlot-numTimePlotOver2-1)];
+        %get the fraction of each color in each time interval to be plotted
+        numTimePlotOver2 = ceil((numTimePlot-1)/2); %needed to change blue color over time
+        redVariation = (0:numTimePlot-2)'/(numTimePlot-2);
+        greenVariation = (numTimePlot-2:-1:0)'/(numTimePlot-2);
+        blueVariation = [(0:numTimePlotOver2-1)'/(numTimePlotOver2-1);...
+            (numTimePlot-numTimePlotOver2-2:-1:0)'/(numTimePlot-numTimePlotOver2-1)];
 
-    %get the overall color per time interval
-    colorOverTime = [redVariation greenVariation blueVariation];
+        %get the overall color per time interval
+        colorOverTime = [redVariation greenVariation blueVariation];
 
-    %overlay tracks with color coding wherever a feature has been detected
-    for i=1:numTimePlot-1
-        plot(tracksXP(i:i+1,:),tracksYP(i:i+1,:),'color',colorOverTime(i,:));
-    end
+        %overlay tracks with color coding wherever a feature has been detected
+        for i=1:numTimePlot-1
+            plot(tracksXP(i:i+1,:),tracksYP(i:i+1,:),'color',colorOverTime(i,:));
+        end
 
-else
+    case '2' %no time color-coding, loop through series of colors to color tracks
+        
+        %define colors to loop through
+        colorLoop = [0 0 0; 1 0 0; 0 1 0; 0 0 1; 1 1 0; 1 0 1; 0 1 1]; %colors: k,r,g,b,y,m,c
 
-    %plot tracks with the line color indicated, where missing intervals are
-    %indicated by a dotted line
-    for i = 1 : trackStartRow(end) + numSegments(end) - 1
-        obsAvail = find(~isnan(tracksXP(:,i)));
-        plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),[colorTime ':']);
-        plot(tracksXP(:,i),tracksYP(:,i),colorTime,'marker',markerType);
-    end
+        %plot tracks by looping through colors
+        %missing intervals are indicated by a dotted line
+        for i = 1 : trackStartRow(end) + numSegments(end) - 1
+            obsAvail = find(~isnan(tracksXP(:,i)));
+            plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),[colorTime ':']);
+            plot(tracksXP(:,i),tracksYP(:,i),'color',colorLoop(mod(i-1,7)+1,:),...
+                'marker',markerType);
+        end
 
-end %(if colorTime == '1' ... else ...)
+    otherwise %no time color-coding, all tracks same color
+
+        %plot tracks with the line color indicated
+        %missing intervals are indicated by a dotted line
+        for i = 1 : trackStartRow(end) + numSegments(end) - 1
+            obsAvail = find(~isnan(tracksXP(:,i)));
+            plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),[colorTime ':']);
+            plot(tracksXP(:,i),tracksYP(:,i),colorTime,'marker',markerType);
+        end
+
+end %(switch colorTime)
 
 %show merges and splits
 if mergeSplit

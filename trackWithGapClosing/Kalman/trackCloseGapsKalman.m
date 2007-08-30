@@ -183,6 +183,7 @@ end
 if nargin < 6 || isempty(saveResults) %if nothing was input
     saveResDir = pwd;
     saveResFile = 'trackedFeatures';
+    saveResults.dir = pwd;
 else
     if isstruct(saveResults)
         if ~isfield(saveResults,'dir') || isempty(saveResults.dir)

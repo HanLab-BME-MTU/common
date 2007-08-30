@@ -16,27 +16,20 @@ function [F,J] = fitNGaussians2D(x0,image,index,psfSigma)
 
 %Khuloud Jaqaman, August 2005
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Output
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Output
 
 F = [];
 J = [];
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Input
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Input
 
 %check whether correct number of input arguments was used
 if nargin ~= 4
     disp('--fitNGaussians2D: Incorrect number of input arguments!');
-    errFlag  = 1;
     return
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Calculating F & J
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Calculating F & J
 
 %extract background intensity from x0 and remove from vector
 bgAmp = x0(end);
@@ -63,7 +56,7 @@ maxIndxY = max(index(:,2));
 %pixel based on its x-coordinate (needed to calculate F & J)
 psfIntegX = zeros(maxIndxX-minIndxX+1,numPSF);
 for i=1:numPSF
-    psfIntegX(:,i) = GaussListND([minIndxX:maxIndxX]',...
+    psfIntegX(:,i) = GaussListND((minIndxX:maxIndxX)',...
         psfSigma,psfPos(i,1));
 end
 
@@ -71,7 +64,7 @@ end
 %pixel based on its y-coordinate (needed to calculate F & J)
 psfIntegY = zeros(maxIndxY-minIndxY+1,numPSF);
 for i=1:numPSF
-    psfIntegY(:,i) = GaussListND([minIndxY:maxIndxY]',...
+    psfIntegY(:,i) = GaussListND((minIndxY:maxIndxY)',...
         psfSigma,psfPos(i,2));
 end
 
@@ -80,7 +73,7 @@ end
 % psfValueX = zeros
 psfValueX = zeros(maxIndxX-minIndxX+2,numPSF);
 for i=1:numPSF
-    psfValueX(:,i) = exp(-([minIndxX-0.5:maxIndxX+0.5]'...
+    psfValueX(:,i) = exp(-((minIndxX-0.5:maxIndxX+0.5)'...
         -psfPos(i,1)).^2/2/psfSigma^2);
 end
 
@@ -88,42 +81,65 @@ end
 %y-coordinates of the corners of all pixels (needed to calculate J)
 psfValueY = zeros(maxIndxY-minIndxY+2,numPSF);
 for i=1:numPSF
-    psfValueY(:,i) = exp(-([minIndxY-0.5:maxIndxY+0.5]'...
+    psfValueY(:,i) = exp(-((minIndxY-0.5:maxIndxY+0.5)'...
         -psfPos(i,2)).^2/2/psfSigma^2);
 end
 
 %get number of pixels in image
 numPixel = length(image);
 
-%reserve memory for F & J
-F = zeros(numPixel,1);
-J = ones(numPixel,3*numPSF+1);
+%get xy-indices relative to minimum
+relIndxX = index(:,1) - minIndxX + 1;
+relIndxY = index(:,2) - minIndxY + 1;
 
-%calculate F & J
-for i=1:numPixel %for each pixel
+%calculate the value of F at all pixels
+F = (sum(repmat(psfAmp,1,numPixel).*psfIntegX(relIndxX,:)'.*psfIntegY(relIndxY,:)',1))' ...
+    + repmat(bgAmp,numPixel,1) - image;
 
-    %get xy-indices relative to minimum
-    relIndxX = index(i,1) - minIndxX + 1;
-    relIndxY = index(i,2) - minIndxY + 1;
-    
-    %calculate the value of F
-    F(i) = sum(psfAmp.*psfIntegX(relIndxX,:)'.*psfIntegY(relIndxY,:)') ...
-        + bgAmp - image(i);
+%calculate the derivative at all pixels
+J = ones(numPixel,3*numPSF+1); %(last column for background amplitude)
+J(:,1:3:3*numPSF) = repmat(psfAmp',numPixel,1).*(psfValueX(relIndxX,:)-...
+    psfValueX(relIndxX+1,:)).*psfIntegY(relIndxY,:)/psfSigma^2; %w.r.t. x
+J(:,2:3:3*numPSF) = repmat(psfAmp',numPixel,1).*(psfValueY(relIndxY,:)-...
+    psfValueY(relIndxY+1,:)).*psfIntegX(relIndxX,:)/psfSigma^2; %w.r.t. y
+J(:,3:3:3*numPSF) = psfIntegX(relIndxX,:).*psfIntegY(relIndxY,:); %w.r.t. amp
 
-    %calculate the derivative wrt x-coordinate
-    J(i,1:3:3*numPSF) = psfAmp'.*(psfValueX(relIndxX,:)-...
-        psfValueX(relIndxX+1,:)).*psfIntegY(relIndxY,:)/psfSigma^2;
 
-    %calculate the derivative wrt y-coordinate
-    J(i,2:3:3*numPSF) = psfAmp'.*(psfValueY(relIndxY,:)-...
-        psfValueY(relIndxY+1,:)).*psfIntegX(relIndxX,:)/psfSigma^2;
+%% ~~ the end ~~ 
 
-    %calculate the derivative wrt amplitude
-    J(i,3:3:3*numPSF) = psfIntegX(relIndxX,:).*psfIntegY(relIndxY,:);
 
-    %since the derivative wrt background intensity = 1, this is already
-    %accounted for in the initial assignment of J.
-    
-end
 
-%%%%% ~~ the end ~~ %%%%%
+
+%% OLD CODE
+
+% % J = ones(numPixel,3*numPSF+1);
+% % F = ones(numPixel,1);
+% % 
+% % for i=1:numPixel %for each pixel
+% % 
+% %     %get xy-indices relative to minimum
+% %     relIndxX = index(i,1) - minIndxX + 1;
+% %     relIndxY = index(i,2) - minIndxY + 1;
+% %     
+% %     %calculate the value of F
+% %     F(i) = sum(psfAmp.*psfIntegX(relIndxX,:)'.*psfIntegY(relIndxY,:)') ...
+% %         + bgAmp - image(i);
+% % 
+% %     %calculate the derivative wrt x-coordinate
+% %     J(i,1:3:3*numPSF) = psfAmp'.*(psfValueX(relIndxX,:)-...
+% %         psfValueX(relIndxX+1,:)).*psfIntegY(relIndxY,:)/psfSigma^2;
+% % 
+% %     %calculate the derivative wrt y-coordinate
+% %     J(i,2:3:3*numPSF) = psfAmp'.*(psfValueY(relIndxY,:)-...
+% %         psfValueY(relIndxY+1,:)).*psfIntegX(relIndxX,:)/psfSigma^2;
+% % 
+% %     %calculate the derivative wrt amplitude
+% %     J(i,3:3:3*numPSF) = psfIntegX(relIndxX,:).*psfIntegY(relIndxY,:);
+% % 
+% %     %since the derivative wrt background intensity = 1, this is already
+% %     %accounted for in the initial assignment of J.
+% %     
+% % end
+
+
+

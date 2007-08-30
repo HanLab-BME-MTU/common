@@ -37,7 +37,7 @@ mask(indx) = mask(indx) + 1;
 % apply a max filter
 fImg = ordfilt2(img,prod(mask),ones(mask));
 fImg2 = ordfilt2(img,prod(mask)-1,ones(mask));
-fImg(find(fImg2==fImg))=0;
+fImg(fImg2==fImg)=0;
 
 % take only those positions where the max filter and the original image value
 % are equal -> this is a local maximum
