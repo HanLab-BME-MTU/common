@@ -229,7 +229,7 @@ undetBrownStd = prctile(noiseStdAll,95);
     trackStartTime,trackEndTime,probDim);
 
 %find all pairs of ends and starts that can potentially be linked
-%determine this by looking at gaps between ends and starts
+%determine this by looking at time gaps between ends and starts
 %and by looking at the distance between pairs
 indxEnd2 = [];
 indxStart2 = [];
@@ -265,7 +265,7 @@ for iFrame = 1 : numFrames - 1
         %add them to the list of possible pairs
         indxEnd2 = [indxEnd2; endsToConsider(indxEnd3)];
         indxStart2 = [indxStart2; startsToConsider(indxStart3)];
-        
+                
     end %(for jFrame = iFrame + 1 : iFrame + timeWindow)
     
 end %(for iFrame = 1 : numFrames)
@@ -521,10 +521,6 @@ if mergeSplit
         
         %go over all possible pairs
         for iPair = 1 : numPairs
-
-            if endTime == 40 && iPair == 38
-                disp('here');
-            end
 
             %get indices of ending track and track it might merge with
             iEnd = indxEnd2(iPair);

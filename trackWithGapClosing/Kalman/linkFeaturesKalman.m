@@ -265,6 +265,9 @@ else
     kalmanFilterInfo(1).noiseVar = filterInit.noiseVar;
 end
 
+%initialize progress display
+progressText(0,'Linking frame-to-frame');
+
 %go over all frames
 for iFrame = 1 : numFrames-1
 
@@ -320,8 +323,10 @@ for iFrame = 1 : numFrames-1
 
                 %add rows of tracks that are not connected to points in 2nd frame
                 %also add nearest neighbor distances
-                tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx(indx1U,:);
-                tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures(indx1U,:);
+                dummy = trackedFeatureIndx(indx1U,:);
+                tmp(numFeaturesFrame2+1:end,1:iFrame) = dummy;
+                dummy = nnDistFeatures(indx1U,:);
+                tmpNN(numFeaturesFrame2+1:end,1:iFrame) = dummy;
                 tmpNN2(numFeaturesFrame2+1:end) = nnDistTracks(indx1U);
 
                 %update the connectivity matrix "trackedFeatureIndx"
@@ -465,6 +470,9 @@ for iFrame = 1 : numFrames-1
         end %(if numFeaturesFrame2 ~= 0 ... else ...)
 
     end %(if numFeaturesFrame1 ~= 0 ... else ...)
+
+    %display progress
+    progressText(iFrame/(numFrames-1),'Linking frame-to-frame');
 
 end %(for iFrame=1:numFrames-1)
 

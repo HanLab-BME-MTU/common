@@ -121,9 +121,9 @@ function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-tracksFinal        = [];
-kalmanInfoLink     = [];
-errFlag            = 0;
+tracksFinal    = [];
+kalmanInfoLink = [];
+errFlag        =  0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Input
@@ -329,6 +329,7 @@ movieInfo = movieInfo(emptyStart+1:numFrames-emptyEnd);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %get initial tracks by linking features between consecutive frames
+disp('Linking features forwards ...');
 [dummy,dummy1,kalmanInfoLink] = linkFeaturesKalman(movieInfo,costMatParam,[],...
     kalmanInitParam,useLocalDensity.link,useLocalDensity.nnWindowL,...
     probDim,linearMotion);
@@ -336,12 +337,14 @@ movieInfo = movieInfo(emptyStart+1:numFrames-emptyEnd);
 %redo the linking by going backwards in the movie and using the
 %Kalman filter information from the first linking attempt
 %this will improve the linking and the state estimation
+disp('Linking features backwards ...');
 [dummy,dummy1,kalmanInfoLink] = linkFeaturesKalman(movieInfo(end:-1:1),...
     costMatParam,kalmanInfoLink(end:-1:1),kalmanInitParam,...
     useLocalDensity.link,useLocalDensity.nnWindowL,probDim,linearMotion);
 clear dummy dummy1
 
 %go forward one more time to get the final estimate of the initial tracks
+disp('Linking features forwards ...');
 [tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink,nnDistLinkedFeat,...
     errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
     kalmanInfoLink(end:-1:1),kalmanInitParam,useLocalDensity.link,...
@@ -363,6 +366,12 @@ clear trackSEL
 %if there are gaps to close (i.e. if there are tracks that start after the
 %first frame and tracks that end before the last frame) ...
 if any(trackStartTime > 1) && any(trackEndTime < numFrames)
+
+    disp(sprintf('Closing gaps (%d starts and %d ends) ...',...
+        length(find(trackStartTime>1)),length(find(trackEndTime<numFrames))));
+
+    %initialize progress display
+    progressText(0,'Gap closing');
 
     %calculate the cost matrix, which already includes the
     %costs of birth and death
@@ -675,13 +684,16 @@ if any(trackStartTime > 1) && any(trackEndTime < numFrames)
         tracksFinal(iTrack).seqOfEvents = seqOfEvents;
 
     end %(for iTrack = 1 : numTracksCG)
-
+    
 end %(if any(trackStartTime > 1) && any(trackEndTime < numFrames))
 
 %shift time if any of the initial frames are empty
 for iTrack = 1 : length(tracksFinal)
     tracksFinal(iTrack).seqOfEvents(:,1) = tracksFinal(iTrack).seqOfEvents(:,1) + emptyStart;
 end
+
+%Display elapsed time
+progressText(1,'Gap closing');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Save results

@@ -209,7 +209,7 @@ imageLast5 = double(imageF(:,:,last5start:numImages));
 %% Local maxima detection
 
 %initialize structure saving local maxima information
-localMaxima(1:numImages) = struct('cands',[]);
+localMaxima = repmat(struct('cands',[]),numImages,1);
 
 %initialize progress display
 progressText(0,'Detecting local maxima');
@@ -221,7 +221,7 @@ for iImage = 1 : numImages
 
         %call locmax2d to get local maxima in filtered image
         fImg = locmax2d(imageF(:,:,iImage),[1 1]*ceil(3*psfSigma));
-
+        
         %get positions and amplitudes of local maxima
         [localMaxPosX,localMaxPosY,localMaxAmp] = find(fImg);
 
@@ -247,8 +247,8 @@ for iImage = 1 : numImages
         else %if there are local maxima
 
             %define background mean and status
-            cands(1:numLocalMax) = struct('IBkg',bgMean,'status',1,...
-                'Lmax',[],'amp',[],'pValue',[]);
+            cands = repmat(struct('IBkg',bgMean,'status',1,...
+                'Lmax',[],'amp',[],'pValue',[]),numLocalMax,1);
             
             %store maxima positions, amplitudes and p-values
             for iMax = 1 : numLocalMax
@@ -300,7 +300,8 @@ if estimateSigma
     progressText(0,'Estimating PSF sigma');
 
     %go over the first 10 images and find isolated features
-    for iImage =  1 : min(numImages,10)
+%     for iImage =  1 : min(numImages,10)
+    for iImage =  1 : numImages
 
         %get feature positions and amplitudes
         featPos = vertcat(localMaxima(iImage).cands.Lmax);
@@ -318,7 +319,7 @@ if estimateSigma
         nnDist = sort(nnDist,2);
         nnDist = nnDist(:,2);
 
-        %retain only features whose nearest neighbor is more than 10*psfSigma0
+        %retain only features whose nearest neighbor is more than 20*psfSigma0
         %away
         feat2use = find(nnDist > ceil(10*psfSigma0));
         featPos = featPos(feat2use,:);
@@ -355,12 +356,17 @@ if estimateSigma
         psfSigma = [psfSigma; parameters(:,4)];
 
     %display progress
-    progressText(iImage/min(numImages,10),'Estimating PSF sigma');
+%     progressText(iImage/min(numImages,10),'Estimating PSF sigma');
+    progressText(iImage/numImages,'Estimating PSF sigma');
 
     end
 
     %esimate psfSigma as the robust mean of all the sigmas from the fits
-    psfSigma = robustMean(psfSigma);
+    numCalcs = length(psfSigma);
+    [psfSigma,sigmaStd,inlierIndx] = robustMean(psfSigma);
+    
+    disp(sprintf('PSF sigma = %1.3f (%d inliers out of %d observations)',...
+        psfSigma,length(inlierIndx),numCalcs));
     
 end
 
@@ -368,7 +374,7 @@ end
 
 %initialize movieInfo
 clear movieInfo
-movieInfo(1:numImages) = struct('xCoord',[],'yCoord',[],'amp',[]);
+movieInfo = repmat(struct('xCoord',[],'yCoord',[],'amp',[]),numImages,1);
 
 %initialize progress display
 progressText(0,'Mixture-model fitting');
@@ -419,7 +425,8 @@ movieInfo(firstImageNum:lastImageNum) = tmptmp;
 %save results
 if isstruct(saveResults)
     save([saveResDir filesep saveResFile],'movieParam','detectionParam',...
-        'movieInfo','emptyFrames','framesFailedMMF','framesFailedLocMax');
+        'alphaLocMax','estimateSigma','movieInfo','emptyFrames',...
+        'framesFailedMMF','framesFailedLocMax','psfSigma');
 end
 
 %go back to original warnings state

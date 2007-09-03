@@ -45,7 +45,7 @@ startDir = pwd;
 if(isa(fName,'char') && isa(dirName,'char'))
     
     %get all file names in stack
-    outFileList=getFileStackNames([dirName,fName]);
+    outFileList = getFileStackNames([dirName,fName]);
     numFrames = length(outFileList);
     
     %read first image to get image size
@@ -184,14 +184,16 @@ for iTrack = 1 : numTracks
     seqOfEvents = tracksFinal(iTrack).seqOfEvents;
     
     %assign point status for features just after a birth
-    points2consider = find(seqOfEvents(:,2)==1 & isnan(seqOfEvents(:,4)))';
+    points2consider = find(seqOfEvents(:,2)==1 & isnan(seqOfEvents(:,4)) ...
+        & seqOfEvents(:,1)~=1)';
     for iPoint = points2consider
         pointStatus(trackStartRow(iTrack)+seqOfEvents(iPoint,3)-1,...
             seqOfEvents(iPoint,1)) = 4;
     end
     
     %assign point status for features just before a death
-    points2consider = find(seqOfEvents(:,2)==2 & isnan(seqOfEvents(:,4)))';
+    points2consider = find(seqOfEvents(:,2)==2 & isnan(seqOfEvents(:,4)) ...
+        & seqOfEvents(:,1)~=numFrames)';
     for iPoint = points2consider
         pointStatus(trackStartRow(iTrack)+seqOfEvents(iPoint,3)-1,...
             seqOfEvents(iPoint,1)) = 5;
