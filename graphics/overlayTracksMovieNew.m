@@ -8,7 +8,7 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %INPUT  tracksFinal   : Output of trackCloseGapsKalman.
 %       startend      : Row vector indicating first and last frame to
 %                       include in movie. Format: [startframe endframe]. 
-%                       Optional. Default: [1 (maximum available frame)]            
+%                       Optional. Default: [(first frame with tracks) (last frame with tracks)]            
 %       dragtailLength: Length of drag tail (in frames). 
 %                       Optional. Default: 10 frames
 %                       If dragtailLength = 0, then no dragtail. 
@@ -34,6 +34,11 @@ if nargin < 1
     disp('--overlayTracksMovieNew: Incorrect number of input arguments!');
     return
 end
+
+%get first and last frames where there are tracks
+allEvents = vertcat(tracksFinal.seqOfEvents);
+tracksFirstFrame = min(allEvents(:,1));
+tracksLastFrame = max(allEvents(:,1));
 
 %record directory before start of function
 startDir = pwd;
@@ -61,9 +66,7 @@ end
 
 %check startend and assign default if necessary
 if nargin < 2 || isempty(startend)
-    startend = [1 numFrames];
-else
-    startend(2) = min(startend(2),numFrames); %make sure that last frame does not exceed real last frame
+    startend = [tracksFirstFrame tracksLastFrame];
 end
 
 %check dragtailLength and assign default if not necessary
@@ -124,7 +127,7 @@ trackSEL = getTrackSEL(tracksFinal);
 %2: track exists throughout movie
 %1: track exists either in first frame or in last frame
 %0: track does not exist in both first frame and last frame
-trackStatus  = (trackSEL(:,1) == 1) + (trackSEL(:,2) == numFrames); 
+trackStatus  = (trackSEL(:,1) == tracksFirstFrame) + (trackSEL(:,2) == tracksLastFrame); 
 
 %get number of segments making each track
 numSegments = zeros(numTracks,1);
@@ -143,8 +146,9 @@ end
 %matrices)
 numSegmentsTracks = trackStartRow(end)+numSegments(end)-1;
 
-%construct a matrix indicating point status in big matrices: 
-%-1: gap
+%construct a matrix indicating point status in big matrices:
+%-2: bad gap (gap length > either segment length on its sides)
+%-1: good gap (gap length < both segment lengths on its sides)
 %0 : before track start or after track end
 %1 : detected feature in the middle of a track of trackStatus = 0
 %2 : detected feature in the middle of a track of trackStatus = 1
@@ -185,7 +189,7 @@ for iTrack = 1 : numTracks
     
     %assign point status for features just after a birth
     points2consider = find(seqOfEvents(:,2)==1 & isnan(seqOfEvents(:,4)) ...
-        & seqOfEvents(:,1)~=1)';
+        & seqOfEvents(:,1)~=tracksFirstFrame)';
     for iPoint = points2consider
         pointStatus(trackStartRow(iTrack)+seqOfEvents(iPoint,3)-1,...
             seqOfEvents(iPoint,1)) = 4;
@@ -193,7 +197,7 @@ for iTrack = 1 : numTracks
     
     %assign point status for features just before a death
     points2consider = find(seqOfEvents(:,2)==2 & isnan(seqOfEvents(:,4)) ...
-        & seqOfEvents(:,1)~=numFrames)';
+        & seqOfEvents(:,1)~=tracksLastFrame)';
     for iPoint = points2consider
         pointStatus(trackStartRow(iTrack)+seqOfEvents(iPoint,3)-1,...
             seqOfEvents(iPoint,1)) = 5;
@@ -246,6 +250,11 @@ for iGap = 1 : size(gapInfo,1)
     iSegment = gapInfo(iGap,2);
     iStart = gapInfo(iGap,3);
     gapLength = gapInfo(iGap,4);
+    if gapInfo(iGap,5) <= 1 && gapInfo(iGap,6) <= 1
+        gapType = -1;
+    else
+        gapType = -2;
+    end
     
     xCoordMatAll(trackStartRow(iTrack)+iSegment-1,iStart:iStart+gapLength-1) = ...
         xCoordMatAll(trackStartRow(iTrack)+iSegment-1,iStart-1); %x-coordinates
@@ -253,7 +262,7 @@ for iGap = 1 : size(gapInfo,1)
     yCoordMatAll(trackStartRow(iTrack)+iSegment-1,iStart:iStart+gapLength-1) = ...
         yCoordMatAll(trackStartRow(iTrack)+iSegment-1,iStart-1); %y-coordinates
     
-    pointStatus(trackStartRow(iTrack)+iSegment-1,iStart:iStart+gapLength-1) = -1; %point status
+    pointStatus(trackStartRow(iTrack)+iSegment-1,iStart:iStart+gapLength-1) = gapType; %point status
     
 end
 
@@ -282,42 +291,46 @@ for iFrame = 1 : size(xCoordMatAll,2)
         dragTailStart = max(iFrame-dragtailLength,1);
         xCoord2plot = (xCoordMatAll(pointStatus(:,iFrame)~=0,dragTailStart:iFrame))';
         yCoord2plot = (yCoordMatAll(pointStatus(:,iFrame)~=0,dragTailStart:iFrame))';
-        plot(xCoord2plot,yCoord2plot,'r');
+        plot(xCoord2plot,yCoord2plot,'Color',[1 0.7 0.7]);
     end
     
     %plot points (features + gaps)
     
-    %cyan stars: gaps
+    %blue stars: bad gaps
+    points2plot = find(pointStatus(:,iFrame)==-2);
+    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'b*','MarkerSize',6);
+    
+    %cyan stars: good gaps
     points2plot = find(pointStatus(:,iFrame)==-1);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'c*','MarkerSize',5);
+    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'c*','MarkerSize',6);
     
     %red circles: detected feature in the middle of track with status 0
     points2plot = find(pointStatus(:,iFrame)==1);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'ro','MarkerSize',4);
+    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'ro','MarkerSize',5);
 
     %magenta circles: detected feature in the middle of track with status 1
     points2plot = find(pointStatus(:,iFrame)==2);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'mo','MarkerSize',4);
+    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'mo','MarkerSize',5);
 
     %white circles: detected feature in the middle of track with status 2
     points2plot = find(pointStatus(:,iFrame)==3);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wo','MarkerSize',4);
+    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wo','MarkerSize',5);
 
     %green circles: detected feature just after birth
     points2plot = find(pointStatus(:,iFrame)==4);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'go','MarkerSize',4);
+    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'go','MarkerSize',5);
 
     %yellow circles: detected feature just before death
     points2plot = find(pointStatus(:,iFrame)==5);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yo','MarkerSize',4);
+    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yo','MarkerSize',5);
 
     %green diamonds: detected feature just before/after a split
     points2plot = find(pointStatus(:,iFrame)==6);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'gd','MarkerSize',5);
+    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'gd','MarkerSize',6);
 
     %yellow diamonds: detected feature just before/after a merge
     points2plot = find(pointStatus(:,iFrame)==7);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yd','MarkerSize',5);
+    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yd','MarkerSize',6);
 
     %add frame to movie if movie is saved
     if saveMovie

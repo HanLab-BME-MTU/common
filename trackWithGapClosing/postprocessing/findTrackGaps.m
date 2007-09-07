@@ -40,13 +40,17 @@ function gapInfo = findTrackGaps(trackedFeatureInfo)
 %                                   is due to a merge, number is the index
 %                                   of track segment for the merge/split.
 %
-%OUTPUT gapInfo           : An array with 4 columns:
+%OUTPUT gapInfo           : An array with 6 columns:
 %                           1st column: (compound) track to which gap
 %                           belongs;
 %                           2nd column: segment within track to which gap
 %                           belongs;
 %                           3rd column: frame where gap starts; 
 %                           4th column: gap length.
+%                           5th column: ratio of gap length to length of
+%                           segment before it.
+%                           6th column: ratio of gap length to length of
+%                           segment after it.
 %
 %Khuloud Jaqaman, February 2007
 
@@ -131,7 +135,7 @@ trackSEL = getTrackSEL(trackedFeatureInfo);
 trackedFeatureInfo = trackedFeatureInfo(:,1:8:end);
 
 %alocate memory for output (assume that each track will have 10 gaps on average)
-gapInfo = zeros(10*numTracks,4);
+gapInfo = zeros(10*numTracks,6);
 
 %assign value of index showing last stored position in gapInfo.
 indxLast = 0;
@@ -172,10 +176,18 @@ for i = 1 : numTracks
 
             %get number of gaps in track
             numGaps = length(gapStart);
+            
+            %get lengths of segments before and after gaps
+            segmentLength = [gapStart-1; end0] - [start0; gapEnd+1] + 1;
+            
+            %calculate ratio of gap length to segments before it and after
+            %it
+            lengthRatio = [gapLength ./ segmentLength(1:end-1) ...
+                gapLength ./ segmentLength(2:end)];
 
             %place the gaps of current track in gapInfo
             gapInfo(indxLast+1:indxLast+numGaps,:) = [i*ones(numGaps,1) ...
-                j*ones(numGaps,1) gapStart gapLength];
+                j*ones(numGaps,1) gapStart gapLength lengthRatio];
 
             %update indxLast
             indxLast = indxLast + numGaps;

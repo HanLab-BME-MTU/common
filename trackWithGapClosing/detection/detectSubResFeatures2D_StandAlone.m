@@ -1,11 +1,9 @@
-function [movieInfo,emptyFrames,framesFailedMMF,framesFailedLocMax,...
-    psfSigma] = detectSubResFeatures2D_StandAlone(movieParam,...
-    detectionParam,alphaLocMax,estimateSigma,saveResults)
+function [movieInfo,exceptions,psfSigma] = detectSubResFeatures2D_StandAlone(...
+    movieParam,detectionParam,saveResults)
 %DETECTSUBRESFEATURES2D_STANDALONE detects subresolution features in a series of images
 %
-%SYNOPSIS [movieInfo,emptyFrames,framesFailedMMF,framesFailedLocMax,...
-%    psfSigma] = detectSubResFeatures2D_StandAlone(movieParam,...
-%    detectionParam,alphaLocMax,saveResults)
+%SYNOPSIS [movieInfo,exceptions,psfSigma] = detectSubResFeatures2D_StandAlone(...
+%    movieParam,detectionParam,saveResults)
 %
 %INPUT  movieParam    : Structure with fields
 %           .imageDir     : Directory where images are stored
@@ -24,10 +22,11 @@ function [movieInfo,emptyFrames,framesFailedMMF,framesFailedLocMax,...
 %           .doMMF        : 1 if user wants to do mixture-model fitting, 0
 %                           otherwise. Optional. Default: 1.
 %           .bitDepth     : Camera bit depth. Optional. Default: 14.
-%       alphaLocMax   : Alpha value for statistical test in local maxima
-%                       detection. Optional. default: 0.005.
-%       estimateSigma : 1 to refine PSF sigma value using the data, 0
-%                       otherwise. Optional. Default: 1.
+%           .alphaLocMax  : Alpha value for statistical test in local maxima
+%                           detection. Optional. default: 0.005.
+%           .numSigmaIter : Maximum number of iterations to perform when trying
+%                           to estimate PSF sigma. Input 0 to request no
+%                           estimation. Optional. Default: 10.
 %       saveResults   : 0 if no saving is requested. 
 %                       If saving is requested, structure with fields:
 %           .dir          : Directory where results should be saved.
@@ -45,12 +44,13 @@ function [movieInfo,emptyFrames,framesFailedMMF,framesFailedLocMax,...
 %             .yCoord    : Image coorsinate system y-coordinate of detected
 %                          features [y dy] (in pixels).
 %             .amp       : Amplitudes of PSFs fitting detected features [a da].
-%       emptyFrames   : Array indicating frames where no features were
-%                       detected.
-%       framesFailedMMF: Array indicating frames where mixture-model fitting
-%                        has failed.
-%       framesFailedLocMax: Array indicating frames where initial detection
-%                           of local maxima has failed.
+%       exceptions    : Structure with fields:
+%             .emptyFrames: Array indicating frames where no features were
+%                           detected.
+%             .framesFailedMMF: Array indicating frames where mixture-model fitting
+%                               has failed.
+%             .framesFailedLocMax: Array indicating frames where initial detection
+%                                  of local maxima has failed.
 %       psfSigma      : Standard deviation of point spread function as
 %                       estimated from the data.
 %       errFlag       : 0 if function executes normally, 1 otherwise.
@@ -60,9 +60,7 @@ function [movieInfo,emptyFrames,framesFailedMMF,framesFailedLocMax,...
 %% Output
 
 movieInfo = [];
-emptyFrames = [];
-framesFailedMMF = [];
-framesFailedLocMax = [];
+exceptions = [];
 psfSigma = [];
 
 %% Input + Pre-processing
@@ -112,17 +110,21 @@ else
 end
 
 %get alpha-value for local maxima detection
-if nargin < 3 || isempty(alphaLocMax)
+if ~isfield(detectionParam,'alphaLocMax') || isempty(detectionParam.alphaLocMax)
     alphaLocMax = 0.005;
+else
+    alphaLocMax = detectionParam.alphaLocMax;
 end
 
 %check whether to estimate PSF sigma from the data
-if nargin < 4 || isempty(estimateSigma)
-    estimateSigma = 1;
+if ~isfield(detectionParam,'numSigmaIter') || isempty(detectionParam.numSigmaIter)
+    numSigmaIter = 10;
+else
+    numSigmaIter = detectionParam.numSigmaIter;
 end
     
 %determine where to save results
-if nargin < 5 || isempty(saveResults) %if nothing was input
+if nargin < 3 || isempty(saveResults) %if nothing was input
     saveResDir = pwd;
     saveResFile = 'detectedFeatures';
     saveResults.dir = pwd;
@@ -146,7 +148,12 @@ end
 %store the string version of the numerical index of each image
 enumString = getStringIndx(digits4Enum);
 
-%% Image reading + filtering
+%initialize some variables
+emptyFrames = [];
+framesFailedLocMax = [];
+framesFailedMMF = [];
+
+%% Image reading
 
 %turn warnings off
 warningState = warning('off','all');
@@ -176,6 +183,8 @@ end
 %normalize images
 image = image / (2^bitDepth-1);
 
+%% image filtering
+
 %initialize progress display
 progressText(0,'Filtering images');
 
@@ -204,7 +213,6 @@ imageLast5 = double(image(:,:,last5start:numImages));
 %do the same for the filtered image
 imageLast5 = double(imageF(:,:,last5start:numImages));
 [bgMeanF,bgStdF] = robustMean(imageLast5(:));
-
 
 %% Local maxima detection
 
@@ -237,7 +245,7 @@ for iImage = 1 : numImages
         localMaxAmp = localMaxAmp(keepMax);
         pValue = pValue(keepMax);
         numLocalMax = length(keepMax);
-
+        
         %construct cands structure
         if numLocalMax == 0 %if there are no local maxima
 
@@ -248,13 +256,12 @@ for iImage = 1 : numImages
 
             %define background mean and status
             cands = repmat(struct('IBkg',bgMean,'status',1,...
-                'Lmax',[],'amp',[],'pValue',[]),numLocalMax,1);
+                'Lmax',[],'amp',[]),numLocalMax,1);
             
             %store maxima positions, amplitudes and p-values
             for iMax = 1 : numLocalMax
                 cands(iMax).Lmax = [localMaxPosX(iMax) localMaxPosY(iMax)];
                 cands(iMax).amp = localMaxAmp(iMax);
-                cands(iMax).pValue = pValue(iMax);
             end
 
         end
@@ -279,96 +286,222 @@ for iImage = 1 : numImages
 
 end
 
+% % %go over all images ...
+% % frameMax = repmat(struct('localMaxPosX',[],'localMaxPosY',[],...
+% %     'localMaxAmp',[]),numImages,1);
+% % for iImage = 1 : numImages
+% %
+% %     try
+% %
+% %         %call locmax2d to get local maxima in filtered image
+% %         fImg = locmax2d(imageF(:,:,iImage),[1 1]*ceil(3*psfSigma));
+% %
+% %         %get positions and amplitudes of local maxima
+% %         [localMaxPosX,localMaxPosY,localMaxAmp] = find(fImg);
+% %         frameMax(iImage).localMaxPosX = localMaxPosX;
+% %         frameMax(iImage).localMaxPosY = localMaxPosY;
+% %         frameMax(iImage).localMaxAmp = localMaxAmp;
+% %
+% %     catch
+% %
+% %         %if command fails, store empty
+% %         frameMax(iImage).localMaxPosX = [];
+% %         frameMax(iImage).localMaxPosY = [];
+% %         frameMax(iImage).localMaxAmp = [];
+% %
+% %         %add this frame to the array of frames with failed local maxima
+% %         %detection and to the array of empty frames
+% %         framesFailedLocMax = [framesFailedLocMax; imageIndx(iImage)];
+% %         emptyFrames = [emptyFrames; imageIndx(iImage)];
+% %
+% %     end
+% %
+% % end
+% %
+% % %get amplitude cutoff using Otsu's method
+% % localMaxAmp = vertcat(frameMax.localMaxAmp);
+% % ampCutoff = graythresh(localMaxAmp);
+% %
+% % %go over all images again ...
+% % for iImage = 1 : numImages
+% %
+% %     %get information about this image's local maxima
+% %     localMaxPosX = frameMax(iImage).localMaxPosX;
+% %     localMaxPosY = frameMax(iImage).localMaxPosY;
+% %     localMaxAmp = frameMax(iImage).localMaxAmp;
+% %
+% %     if ~isempty(localMaxAmp)
+% %
+% %         %retain only those maxima with amplitude > cutoff
+% %         keepMax = find(localMaxAmp > ampCutoff);
+% %         localMaxPosX = localMaxPosX(keepMax);
+% %         localMaxPosY = localMaxPosY(keepMax);
+% %         localMaxAmp = localMaxAmp(keepMax);
+% %         numLocalMax = length(keepMax);
+% %
+% %         %construct cands structure
+% %         if numLocalMax == 0 %if there are no local maxima
+% %
+% %             %add frames to list of empty frames
+% %             cands = [];
+% %             emptyFrames = [emptyFrames; imageIndx(iImage)];
+% %
+% %         else %if there are local maxima
+% %
+% %             %define background mean and status
+% %             cands = repmat(struct('IBkg',bgMean,'status',1,...
+% %                 'Lmax',[],'amp',[]),numLocalMax,1);
+% %
+% %             %store maxima positions and amplitudes
+% %             for iMax = 1 : numLocalMax
+% %                 cands(iMax).Lmax = [localMaxPosX(iMax) localMaxPosY(iMax)];
+% %                 cands(iMax).amp = localMaxAmp(iMax);
+% %             end
+% %
+% %         end
+% % 
+% %         %add the cands of the current image to the rest
+% %         localMaxima(iImage).cands = cands;
+% %     end
+% % 
+% %     %display progress
+% %     progressText(iImage/numImages,'Detecting local maxima');
+% % 
+% % end
+
 %make a list of images that have local maxima
 goodImages = setxor(1:numImages,emptyFrames);
 
 %% PSF sigma estimation
 
-if estimateSigma
+if numSigmaIter
 
     %specify which parameters to fit for sigma estimation
     fitParameters = [{'X1'} {'X2'} {'A'} {'Sxy'} {'B'}];
-
-    %save input PSF sigma in new variable and empty psfSigma for estimation
-    psfSigma0 = psfSigma;
-    psfSigma = [];
     
-    %calculate some numbers that get repeated many times
-    psfSigma5 = ceil(5*psfSigma0);
+    %store original input sigma
+    psfSigmaIn = psfSigma;
+    
+    %give a dummy value for psfSigma0 and acceptCalc to start while loop
+    psfSigma0 = 0;
+    acceptCalc = 1;
+    
+    %initialize variable counting number of iterations
+    numIter = 0;
 
-    %initialize progress display
-    progressText(0,'Estimating PSF sigma');
+    %iterate as long as estimated sigma is larger than initial sigma
+    while numIter <= numSigmaIter && acceptCalc && ((psfSigma-psfSigma0)/psfSigma0 > 0.05)
+        
+        %add one to number of iterations
+        numIter = numIter + 1;
 
-    %go over the first 10 images and find isolated features
-%     for iImage =  1 : min(numImages,10)
-    for iImage =  1 : numImages
+        %save input PSF sigma in new variable and empty psfSigma for estimation
+        psfSigma0 = psfSigma;
+        psfSigma = [];
 
-        %get feature positions and amplitudes
-        featPos = vertcat(localMaxima(iImage).cands.Lmax);
-        featAmp = vertcat(localMaxima(iImage).cands.amp);
+        %calculate some numbers that get repeated many times
+        psfSigma5 = ceil(5*psfSigma0);
 
-        %retain only features that are more than 5*psfSigma0 away from boundaries
-        feat2use = find(featPos(:,1) > psfSigma5 & ...
-            featPos(:,1) < imageSizeX - psfSigma5 & ...
-            featPos(:,2) > psfSigma5 & featPos(:,2) < imageSizeY - psfSigma5);
-        featPos = featPos(feat2use,:);
-        featAmp = featAmp(feat2use);
+        %initialize progress display
+        switch numIter
+            case 1
+                progressText(0,'Estimating PSF sigma');
+            otherwise
+                progressText(0,'Repeating PSF sigma estimation');
+        end
+                
+        %go over all the images and find isolated features
+        for iImage =  1 : min(numImages,50)
 
-        %find nearest neighbor distances
-        nnDist = createDistanceMatrix(featPos,featPos);
-        nnDist = sort(nnDist,2);
-        nnDist = nnDist(:,2);
+            %get feature positions and amplitudes
+            featPos = vertcat(localMaxima(iImage).cands.Lmax);
+            featAmp = vertcat(localMaxima(iImage).cands.amp);
 
-        %retain only features whose nearest neighbor is more than 20*psfSigma0
-        %away
-        feat2use = find(nnDist > ceil(10*psfSigma0));
-        featPos = featPos(feat2use,:);
-        featAmp = featAmp(feat2use);
+            %retain only features that are more than 5*psfSigma0 away from boundaries
+            feat2use = find(featPos(:,1) > psfSigma5 & ...
+                featPos(:,1) < imageSizeX - psfSigma5 & ...
+                featPos(:,2) > psfSigma5 & featPos(:,2) < imageSizeY - psfSigma5);
+            featPos = featPos(feat2use,:);
+            featAmp = featAmp(feat2use);
 
-        %retain only features with amplitudes between the 25th and 75th
-        %percentiles
-        percentile25 = prctile(featAmp,25);
-        percentile75 = prctile(featAmp,75);
-        feat2use = find(featAmp > percentile25 & featAmp < percentile75);
-        featPos = featPos(feat2use,:);
-        featAmp = featAmp(feat2use);
+            %find nearest neighbor distances
+            nnDist = createDistanceMatrix(featPos,featPos);
+            nnDist = sort(nnDist,2);
+            nnDist = nnDist(:,2);
 
-        %go over the selected features and estimate psfSigma
-        numFeats = length(featAmp);
-        parameters = zeros(numFeats,5);
-        for iFeat = 1 : numFeats
+            %retain only features whose nearest neighbor is more than 20*psfSigma0
+            %away
+            feat2use = find(nnDist > ceil(10*psfSigma0));
+            featPos = featPos(feat2use,:);
+            featAmp = featAmp(feat2use);
 
-            %crop image around selected feature
-            lowerBound = featPos(iFeat,:) - psfSigma5;
-            upperBound = featPos(iFeat,:) + psfSigma5;
-            imageCropped = image(lowerBound(1):upperBound(1),...
-                lowerBound(2):upperBound(2),iImage);
+            %retain only features with amplitudes between the 25th and 75th
+            %percentiles
+            percentile25 = prctile(featAmp,25);
+            percentile75 = prctile(featAmp,75);
+            feat2use = find(featAmp > percentile25 & featAmp < percentile75);
+            featPos = featPos(feat2use,:);
+            featAmp = featAmp(feat2use);
 
-            %make initial guess for fit (in the order given in fitParameters)
-            initGuess = [psfSigma5+1 psfSigma5+1 featAmp(iFeat) psfSigma0 bgMean];
+            %go over the selected features and estimate psfSigma
+            numFeats = length(featAmp);
+            parameters = zeros(numFeats,5);
+            for iFeat = 1 : numFeats
 
-            %fit image and estimate sigma of Gaussian
-            parameters(iFeat,:) = GaussFitND(imageCropped,[],fitParameters,initGuess);
+                %crop image around selected feature
+                lowerBound = featPos(iFeat,:) - psfSigma5;
+                upperBound = featPos(iFeat,:) + psfSigma5;
+                imageCropped = image(lowerBound(1):upperBound(1),...
+                    lowerBound(2):upperBound(2),iImage);
+
+                %make initial guess for fit (in the order given in fitParameters)
+                initGuess = [psfSigma5+1 psfSigma5+1 featAmp(iFeat) psfSigma0 bgMean];
+
+                %fit image and estimate sigma of Gaussian
+                parameters(iFeat,:) = GaussFitND(imageCropped,[],fitParameters,initGuess);
+
+            end
+
+            %add to array of sigmas
+            psfSigma = [psfSigma; parameters(:,4)];
+            
+            %display progress
+            switch numIter
+                case 1
+                    progressText(iImage/min(numImages,50),'Estimating PSF sigma');
+                otherwise
+                    progressText(iImage/min(numImages,50),'Repeating PSF sigma estimation');
+            end
 
         end
 
-        %add to array of sigmas
-        psfSigma = [psfSigma; parameters(:,4)];
+        %estimate psfSigma as the robust mean of all the sigmas from the fits
+        numCalcs = length(psfSigma);
+        [psfSigma,sigmaStd,inlierIndx] = robustMean(psfSigma);
 
-    %display progress
-%     progressText(iImage/min(numImages,10),'Estimating PSF sigma');
-    progressText(iImage/numImages,'Estimating PSF sigma');
+        %accept new sigma if there are enough observations and inliers
+        acceptCalc = (numCalcs >= 100 && length(inlierIndx) >= 0.7*numCalcs) || ...
+            (numCalcs >= 50 && length(inlierIndx) >= 0.9*numCalcs) || ...
+            (numCalcs >= 10 && length(inlierIndx) == numCalcs);
 
-    end
+        %show new sigma if estimation is accepted
+        if acceptCalc
+            disp(sprintf('PSF sigma = %1.3f (%d inliers out of %d observations)',...
+                psfSigma,length(inlierIndx),numCalcs));
+        else %otherwise alert user that input sigma was retained
+            psfSigma = psfSigmaIn;
+            disp('Not enough observations to change PSF sigma, using input PSF sigma');
+        end
 
-    %esimate psfSigma as the robust mean of all the sigmas from the fits
-    numCalcs = length(psfSigma);
-    [psfSigma,sigmaStd,inlierIndx] = robustMean(psfSigma);
+    end %(while numIter <= numSigmaIter && acceptCalc && ((psfSigma-psfSigma0)/psfSigma0 > 0.05))
     
-    disp(sprintf('PSF sigma = %1.3f (%d inliers out of %d observations)',...
-        psfSigma,length(inlierIndx),numCalcs));
-    
-end
+    %if maximum number of iterations has been performed but sigma value is not converging
+    if numIter == numSigmaIter+1 && acceptCalc && ((psfSigma-psfSigma0)/psfSigma0 > 0.05)
+        psfSigma = psfSigmaIn;
+        disp('Estimation terminated (no convergence), using input PSF sigma');
+    end 
+
+end %(if numSigmaIter)
 
 %% Mixture-model fitting
 
@@ -417,6 +550,11 @@ end
 %sort list of empty frames
 emptyFrames = sort(emptyFrames);
 
+%store empty frames and frames where detection failed in structure
+%exceptions
+exceptions = struct('emptyFrames',emptyFrames,'framesFailedLocMax',...
+    framesFailedLocMax,'framesFailedMMF',framesFailedMMF');
+
 %indicate correct frames in movieInfo
 tmptmp = movieInfo;
 clear movieInfo
@@ -425,8 +563,7 @@ movieInfo(firstImageNum:lastImageNum) = tmptmp;
 %save results
 if isstruct(saveResults)
     save([saveResDir filesep saveResFile],'movieParam','detectionParam',...
-        'alphaLocMax','estimateSigma','movieInfo','emptyFrames',...
-        'framesFailedMMF','framesFailedLocMax','psfSigma');
+        'movieInfo','exceptions','psfSigma');
 end
 
 %go back to original warnings state
