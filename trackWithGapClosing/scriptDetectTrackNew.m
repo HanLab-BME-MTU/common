@@ -16,10 +16,10 @@
 %define the input variables
 
 %movie information
-movieParam.imageDir = '/mnt/sickkids/Hiro/070820Cy3Titration/20000_60_8/images/'; %directory where images are
-movieParam.filenameBase = '070817Cy3Fab36_'; %image file name base
+movieParam.imageDir = '/mnt/sickkids/Yoav/2007_08_20/monodisperse/100ms_cy3/cell_01/images/'; %directory where images are
+movieParam.filenameBase = 'monodisperse_'; %image file name base
 movieParam.firstImageNum = 1; %number of first image in movie
-movieParam.lastImageNum = 246; %number of last image in movie
+movieParam.lastImageNum = 96; %number of last image in movie
 movieParam.digits4Enum = 4; %number of digits used for frame enumeration (1-4).
 
 %detection parameters
@@ -28,17 +28,17 @@ detectionParam.testAlpha = struct('alphaR',0.05,'alphaA',0.001,'alphaD',1,'alpha
 detectionParam.visual = 0; %1 to see image with detected features, 0 otherwise
 detectionParam.doMMF = 1; %1 if mixture-model fitting, 0 otherwise
 detectionParam.bitDepth = 16; %Camera bit depth
-detectionParam.alphaLocMax = 0.00001; %alpha-value for initial detection of local maxima
+detectionParam.alphaLocMax = 0.000001; %alpha-value for initial detection of local maxima
 detectionParam.numSigmaIter = 10; %maximum number of iterations for PSF sigma estimation
 
 %save results
-saveResults.dir = '/mnt/sickkids/Hiro/070820Cy3Titration/20000_60_8/analysis/mmf/'; %directory where to save input and output
-saveResults.filename = 'detection070905_1.mat'; %name of file where input and output are saved
+saveResults.dir = '/mnt/sickkids/Yoav/2007_08_20/monodisperse/100ms_cy3/cell_01/analysis/mmf/'; %directory where to save input and output
+saveResults.filename = 'detection.mat'; %name of file where input and output are saved
 % saveResults = 0;
 
 %run the detection function
-[movieInfo,exceptions,psfSigma] = detectSubResFeatures2D_StandAlone(...
-    movieParam,detectionParam,saveResults);
+[movieInfo,exceptions,localMaxima,background,psfSigma] = ...
+    detectSubResFeatures2D_StandAlone(movieParam,detectionParam,saveResults);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Track features - new
@@ -49,15 +49,16 @@ saveResults.filename = 'detection070905_1.mat'; %name of file where input and ou
 %define the input variables
 
 %some gap closing parameters
-gapCloseParam.timeWindow = 100; %maximum allowed time gap (in frames) between a track end and a track start that allows linking them.
-gapCloseParam.mergeSplit = 1; %1 if merging and splitting are considered, 0 if not.
+gapCloseParam.timeWindow = 20; %maximum allowed time gap (in frames) between a track end and a track start that allows linking them.
+gapCloseParam.mergeSplit = 0; %1 if merging and splitting are considered, 0 if not.
+gapCloseParam.minTrackLen = 5; %minimum length of tracks from linking to be used in gap closing.
 
 %linking cost matrix parameters
 %these are the parameters for linking detected features from one frame to
 %the next in order to construct the initial tracks
-costMatParam.minSearchRadiusL = 5; %minimum allowed search radius (in pixels). The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
-costMatParam.maxSearchRadiusL = 10; %maximum allowed search radius (in pixels). Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
-costMatParam.brownStdMultL = 3; %just keep this as 3. In In the final code I will probably hardwire this value in the code.
+costMatParam.minSearchRadiusL = 4; %minimum allowed search radius (in pixels). The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
+costMatParam.maxSearchRadiusL = 6; %maximum allowed search radius (in pixels). Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
+costMatParam.brownStdMultL = 4; %just keep this as 3. In In the final code I will probably hardwire this value in the code.
 costMatParam.closestDistScaleL = 2; %same here. Keep as 2.
 costMatParam.maxStdMultL = 20; %same here. Keep it as 20. I will explain these three parameters when I visit.
 
@@ -65,17 +66,18 @@ costMatParam.maxStdMultL = 20; %same here. Keep it as 20. I will explain these t
 %these are the parameters for gap closing as well as merging and splitting
 %these operations are performed on the initial tracks obtained in the
 %previous step
-costMatParam.minSearchRadiusCG = 5; %minimum allowed search radius (in pixels).
-costMatParam.maxSearchRadiusCG = 10; %maximum allowed search radius (in pixels).
-costMatParam.brownStdMultCG = 3*ones(gapCloseParam.timeWindow,1); %keep this as 3.
-costMatParam.linStdMultCG = 3*ones(gapCloseParam.timeWindow,1); %keep this as 3.
+costMatParam.minSearchRadiusCG = 4; %minimum allowed search radius (in pixels).
+costMatParam.maxSearchRadiusCG = 6; %maximum allowed search radius (in pixels).
+costMatParam.brownStdMultCG = 4*ones(gapCloseParam.timeWindow,1); %keep this as 3.
+costMatParam.linStdMultCG = 4*ones(gapCloseParam.timeWindow,1); %keep this as 3.
 costMatParam.timeReachConfB = 1; %in the code, the search radius expands with the time gap (since a particle is expected to move further away in a longer gap than in a shorter one). This parameter controls how fast the search radius grows with time. timeReachConfB stands for time to reach confinement for the Brownian part of the motion. So before timeReachConfB, the search radius grows with the square root of time, after that it grows very, very slowly (it's almost fixed). I found a value of 1 works best, but you can play with this a little bit.
-costMatParam.timeReachConfL = 5; %same as the previous parameter, but for the linear part of the motion. Again, I found that 5 works best, but you can play around with this parameter.
+costMatParam.timeReachConfL = 1; %same as the previous parameter, but for the linear part of the motion. Again, I found that 5 works best, but you can play around with this parameter.
 costMatParam.closestDistScaleCG = 2; %keep this as 2.
 costMatParam.maxStdMultCG = 20; %and keep this as 20.
 costMatParam.lenForClassify = 10; %keep this as 10.
-costMatParam.maxAngle = 10; %maximum angle between the directions of motion of two tracks that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
-costMatParam.ampRatioLimitCG = [0.8 1.25]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum the intensities of the 2 features that merge/split.
+costMatParam.maxAngleVV = 10; %maximum angle between the directions of motion of two tracks that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
+costMatParam.maxAngleVD = 20; %maximum angle between the direction of motion of a track and the vector connecting its center to the center of another track that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
+costMatParam.ampRatioLimitCG = [0.9 2]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum the intensities of the 2 features that merge/split.
 
 %parameters for using local density to expand search radius
 %the search radius is generall calculated from the motion parameters of a
