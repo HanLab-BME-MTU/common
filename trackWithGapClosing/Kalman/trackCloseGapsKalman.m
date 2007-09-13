@@ -32,6 +32,8 @@ function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %             .mergeSplit   : Logical variable with value 1 if the merging
 %                             and splitting of trajectories are to be consided;
 %                             and 0 if merging and splitting are not allowed.
+%             .minTrackLen  : Minimum length of tracks obtained from
+%                             linking to be used in gap closing.
 %       kalmanInitParam: Structure with fields containing variables
 %                        used in Kalman filter initialization. See
 %                        particular initialization function for fields.
@@ -224,6 +226,7 @@ end
 
 %get gap closing parameters from input
 mergeSplit = gapCloseParam.mergeSplit;
+minTrackLen = gapCloseParam.minTrackLen;
 
 %get number of features in each frame
 if ~isfield(movieInfo,'num')
@@ -350,14 +353,42 @@ disp('Linking features forwards ...');
     kalmanInfoLink(end:-1:1),kalmanInitParam,useLocalDensity.link,...
     useLocalDensity.nnWindowL,probDim,linearMotion);
 
-%get number of tracks
-numTracksLink = size(tracksFeatIndxLink,1);
-
-%get track start and end times
+%get track start times, end times amd lifetimes
 trackSEL = getTrackSEL(tracksCoordAmpLink);
+
+%remove tracks that are only 1 frame long
+indxKeep = find(trackSEL(:,3) >= minTrackLen);
+trackSEL = trackSEL(indxKeep,:);
+tracksFeatIndxLink = tracksFeatIndxLink(indxKeep,:);
+tracksCoordAmpLink = tracksCoordAmpLink(indxKeep,:);
+nnDistLinkedFeat = nnDistLinkedFeat(indxKeep,:);
+
+%calculate the new nearest-neighbor distance of each feature in each frame
+for iFrame = 1 : numFrames
+    
+    %get the coordinates of features in this frame
+    coordFrame = tracksCoordAmpLink(:,(iFrame-1)*8+1:(iFrame-1)*8+3);
+    coordFrame = coordFrame(~isnan(coordFrame(:,1)),:);
+
+    %compute distance matrix
+    nnDist = createDistanceMatrix(coordFrame,coordFrame);
+
+    %sort distance matrix and find nearest neighbor distance
+    nnDist = sort(nnDist,2);
+    nnDist = nnDist(:,2);
+    
+    %store nearest neighbor distances in matrix
+    nnDistLinkedFeat(~isnan(nnDistLinkedFeat(:,iFrame)),iFrame) = nnDist;
+    
+end
+
+%save track start and end times
 trackStartTime = trackSEL(:,1);
 trackEndTime   = trackSEL(:,2);
 clear trackSEL
+
+%get number of tracks
+numTracksLink = size(tracksFeatIndxLink,1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Close gaps
@@ -378,9 +409,8 @@ if any(trackStartTime > 1) && any(trackEndTime < numFrames)
     [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
         errFlag] = costMatLinearMotionCloseGaps(tracksCoordAmpLink,...
         tracksFeatIndxLink,trackStartTime,trackEndTime,costMatParam,...
-        gapCloseParam,kalmanInfoLink,(1:numTracksLink)',...
-        useLocalDensity.cg,nnDistLinkedFeat,useLocalDensity.nnWindowCG,...
-        probDim,linearMotion);
+        gapCloseParam,kalmanInfoLink,useLocalDensity.cg,nnDistLinkedFeat,...
+        useLocalDensity.nnWindowCG,probDim,linearMotion);
 
     %link tracks based on this cost matrix, allowing for birth and death
     [link12,link21] = lap(costMat,nonlinkMarker);

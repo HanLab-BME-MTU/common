@@ -1,11 +1,11 @@
-function [trackType,xyzVel,noiseStd,errFlag] = estimTrackTypeParamLM(...
-    trackedFeatIndx,trackedFeatInfo,kalmanFilterInfo,trackConnect,...
-    lenForClassify,probDim)
+function [trackType,xyzVel,noiseStd,trackCenter,errFlag] = ...
+    estimTrackTypeParamLM(trackedFeatIndx,trackedFeatInfo,...
+    kalmanFilterInfo,lenForClassify,probDim)
 %ESTIMTRACKTYPEPARAMLM ...
 %
-%SYNOPSIS [trackType,xyzVel,noiseStd,errFlag] = estimTrackTypeParamLM(...
-%    trackedFeatIndx,trackedFeatInfo,kalmanFilterInfo,trackConnect,...
-%    lenForClassify,probDim);
+%SYNOPSIS [trackType,xyzVel,noiseStd,trackCenter,errFlag] = ...
+%    estimTrackTypeParamLM(trackedFeatIndx,trackedFeatInfo,...
+%    kalmanFilterInfo,lenForClassify,probDim)
 %
 %INPUT  trackedFeatIndx : Connectivity matrix of features between time
 %                         points from initial linking. Rows indicate tracks, while columns
@@ -23,8 +23,6 @@ function [trackType,xyzVel,noiseStd,errFlag] = estimTrackTypeParamLM(...
 %                         where the track does not exist.
 %       kalmanFilterInfo: Kalman filter information as calculated in
 %                         linkFeaturesKalman for the linear motion model.
-%       trackConnect    : Matrix indicating connectivity between tracks from
-%                         initial linking, for example due to gap closing.
 %       lenForClassify  : Minimum length of a track to classify it as
 %                         directed or Brownian.
 %       probDim        : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
@@ -32,22 +30,20 @@ function [trackType,xyzVel,noiseStd,errFlag] = estimTrackTypeParamLM(...
 %OUTPUT trackType
 %       xyzVel
 %       noiseStd
+%       trackCenter
 %       errFlag         : 0 if function executes normally, 1 otherwise.
 %
 %Khuloud Jaqaman, April 2007
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Output
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Output
 
 trackType = [];
 xyzVel = [];
 noiseStd = [];
+trackCenter = [];
 errFlag = 0;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Input
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Input
 
 %check whether correct number of input arguments was used
 if nargin ~= nargin('estimTrackTypeParamLM')
@@ -58,17 +54,13 @@ end
 %get number of tracks from initial linking and number of frames
 [numTracksLink,numFrames] = size(trackedFeatIndx);
 
-%get number of compound tracks in trackConnect
-numTracksCG = size(trackConnect,1);
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Estimation of type and motion parameters
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Estimation of type and motion parameters
 
 %reserve memory for output variables
-trackType = NaN*ones(numTracksLink,1);
+trackType = NaN(numTracksLink,1);
 xyzVel = zeros(numTracksLink,probDim);
 noiseStd = zeros(numTracksLink,1);
+trackCenter = zeros(numTracksLink,probDim);
 
 %get the start times, end times and lifetimes of all tracks
 trackSEL = getTrackSEL(trackedFeatInfo);
@@ -95,127 +87,72 @@ else
     % % %         1.4 1.4]'; 1.4*ones(numFrames-15,1)];
 end
 
-%go over all compound tracks in trackConnect
-for iTrack = 1 : numTracksCG
-
-    %get the indices of track segments making this compound track
-    segmentIndx = trackConnect(iTrack,:);
-    segmentIndx = segmentIndx(segmentIndx ~= 0);
-    numSegments = length(segmentIndx);
+%go over all tracks
+for iTrack = 1 : numTracksLink
     
-    %reserve memory for track asymmetry
-    asymmetry = NaN*ones(numSegments,1); %for individual segments
+    %get current track's coordinates
+    currentTrack = (reshape(trackedFeatInfo(iTrack,:)',8,[]))';
+    currentTrack = currentTrack(:,1:probDim);
+    currentTrack = currentTrack(trackStartTime(iTrack):trackEndTime(iTrack),:);
 
-    %go over all segments
-    for i = 1 : numSegments
+    %calculate the track's center of mass
+    trackCenter(iTrack,:) = mean(currentTrack);
+    
+    %assign default value of track type (NaN implies track is too short to
+    %determine its type)
+    overallType = NaN;
+    
+    %if track's lifetime is at least "lenForClassify" frames
+    %(shorter tracks are not reliable) ...
+    if trackLifeTime(iTrack) >= lenForClassify
 
-        %get index of current segment
-        iSegment = segmentIndx(i);
+        %evaluate the asymmetry parameter as defined in the Huet et al. BJ 2006 paper
+        asymmetry = asymDeterm2D3D(currentTrack,probDim);
 
-        %if segments's lifetime is at least "lenForClassify" frames
-        %(shorter tracks are not reliable) ...
-        if trackLifeTime(iSegment) >= lenForClassify
+        %if the asymmetry is larger than threshold ...
+        overallType = asymmetry > asymThresh(trackLifeTime(iTrack));
 
-            %get current track's coordinates
-            currentTrack = (reshape(trackedFeatInfo(iSegment,:)',8,[]))';
-            currentTrack = currentTrack(:,1:probDim);
-            currentTrack = currentTrack(trackStartTime(iSegment):trackEndTime(iSegment),:);
+    end %(if trackLifeTime(iTrack) >= lenForClassify)
+    
+    %store track type in vector
+    trackType(iTrack) = overallType;
 
-            %evaluate the asymmetry parameter as defined in the Huet et al. BJ 2006 paper
-            asymmetry(i) = asymDeterm2D3D(currentTrack,probDim);
-
-        end %(if trackLifeTime(iSegment) >= lenForClassify)
-
-    end %(for i = 1 : numSegments)
-
-    %get maximum asymmetry among all segments
-    [maxAsymmetry,indxMaxAsym] = max(asymmetry);
-    indxMaxAsym = segmentIndx(indxMaxAsym);
-
-    %if the maximum asymmetry among all segments is larger than threshold ...
-    if maxAsymmetry > asymThresh(trackLifeTime(indxMaxAsym))
-
-        %get coordinates of compound track - I'm not sure this works
-        currentTrack = reshape(trackedFeatInfo(segmentIndx,:)',8,numSegments*numFrames);
-        currentTrack = currentTrack';
-        currentTrack = currentTrack(:,1:probDim);
-        currentTrack = currentTrack(~isnan(currentTrack(:,1)),:);
-
-        %get number of observations in compound track
-        overallTrackLength = size(currentTrack,1);
-
-        %evaluate asymmetry of whole track
-        overallAsymmetry = asymDeterm2D3D(currentTrack,probDim);
-
-        %if asymmetry of overall track is larger than threshold, overall track motion is
-        %directed (1). If smaller, overall track motion is Brownian (0).
-        overallType = overallAsymmetry > asymThresh(overallTrackLength);
-        
-    else %if maxAsymmetry is not larger than threshold ...
-        
-        %assign type to zero
-        overallType = 0;
-        
-    end
-
-    %assign types and motion parameters to segments based on overallType
+    %assign motion parameters for track based on overallType
     switch overallType
 
-        case 1 %if compound track is directed
+        case 1 %if track is directed
+
+            %assign velocity and std
+            xyzVel(iTrack,:) = kalmanFilterInfo(trackEndTime(...
+                iTrack)).stateVec(trackedFeatIndx(iTrack,...
+                trackEndTime(iTrack)),probDim+1:2*probDim);
+            noiseStd(iTrack) = sqrt(kalmanFilterInfo(trackEndTime(...
+                iTrack)).noiseVar(1,1,trackedFeatIndx(iTrack,...
+                trackEndTime(iTrack))));
             
-            %assign the type of all of its segments to 1 (directed)
-            trackType(segmentIndx) = 1;
+        case 0 %if track is Brownian
+
+            %give track a velocity of zero - which it
+            %already has from initialization
+
+            %assign noise std
+            noiseStd(iTrack) = sqrt(kalmanFilterInfo(trackEndTime(...
+                iTrack)).noiseVar(1,1,trackedFeatIndx(iTrack,...
+                trackEndTime(iTrack))));
+
+        otherwise %if track is undetermined
             
-            %assign to all segments the velocity and std of the track with
-            %maximum asymmetry
-            xyzVel(segmentIndx,:) = kalmanFilterInfo(trackEndTime(...
-                indxMaxAsym)).stateVec(trackedFeatIndx(indxMaxAsym,...
-                trackEndTime(indxMaxAsym)),probDim+1:2*probDim);
-            noiseStd(segmentIndx) = sqrt(kalmanFilterInfo(trackEndTime(...
-                indxMaxAsym)).noiseVar(1,1,trackedFeatIndx(indxMaxAsym,...
-                trackEndTime(indxMaxAsym))));
+            %give track a velocity of zero - which it
+            %already has from initialization
 
-        otherwise
-            
-            switch isnan(maxAsymmetry)
-
-                case 0 %if compound track is Brownian
-
-                    %assign the type of all of its segments to 0 (Brownian)
-                    trackType(segmentIndx) = 0;
-
-                    %give all segments a velocity of zero - which they
-                    %already have from initialization
-
-                    %find the segments which were originally Brownian
-                    indxBrown = segmentIndx(~isnan(asymmetry));
-
-                    %get their noise std
-                    segNoiseStd = zeros(length(indxBrown),1);
-                    for i = 1 : length(indxBrown)
-                        segNoiseStd(i) = sqrt(kalmanFilterInfo(trackEndTime(...
-                            indxBrown(i))).noiseVar(1,1,trackedFeatIndx(indxBrown(i),...
-                            trackEndTime(indxBrown(i)))));
-                    end
-
-                    %assign the maximum noise std to all segments
-                    noiseStd(segmentIndx) = max(segNoiseStd);
-
-                otherwise %if all segments are undetermined
-
-                    %assign the type of all of its segments to NaN (undetermined)
-                    trackType(segmentIndx) = NaN;
-
-                    %give all segments a velocity of zero - which they
-                    %already have from initialization
-                    
-                    %give all segments a noise std of 1 (this value will be
-                    %overwritten in the actual calculation of average displacement
-                    %and search radius
-                    noiseStd(segmentIndx) = 1;
-
-            end %(switch isnan(overallAsymmetry))
+            %give track a noise std of 1 (this value will be
+            %overwritten in the actual calculation of average displacement
+            %and search radius
+            noiseStd(iTrack) = 1;
 
     end %(switch overallType)
 
-end %(for iTrack = 1 : numTracksCG)
+end %(for iTrack = 1 : numTracksLink)
+
+
+%% ~~~ the end ~~~

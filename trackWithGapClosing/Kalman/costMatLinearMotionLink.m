@@ -1,11 +1,11 @@
 function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
      errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
-     costMatParam,useLocalDensity,nnDistTracks,probDim,linearMotion)
+     costMatParam,useLocalDensity,nnDistTracks,probDim,linearMotion,prevCost)
 %COSTMATLINEARMOTIONLINK provides a cost matrix for linking features based on competing linear motion models
 %
 %SYNOPSIS [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %     errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
-%     costMatParam,useLocalDensity,nnDistTracks,probDim)
+%     costMatParam,useLocalDensity,nnDistTracks,probDim,linearMotion,prevCost)
 %
 %INPUT  movieInfo             : A 2x1 array (corresponding to the 2 frames of 
 %                               interest) containing the fields:
@@ -41,6 +41,7 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %      probDim                : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
 %      linearMotion           : 1 if linear motion is to be considered, 0 
 %                               otherwise.
+%      prevCost               : Matrix of previous linking costs.
 %
 %OUTPUT costMat               : Cost matrix.
 %       propagationScheme     : Propagation scheme corresponding to each
@@ -210,6 +211,25 @@ searchRadius = repmat(searchRadius,1,numFeaturesFrame2);
 %assign NaN to costs corresponding to distance > searchRadius
 costMat(costMat>searchRadius) = NaN;
 
+%append matrix to allow birth and death
+maxCost = max(max(max(costMat))+1,1);
+deathCost = maxCost*ones(numFeaturesFrame1,1);
+birthCost = maxCost*ones(numFeaturesFrame2,1);
+
+%generate upper right and lower left block
+deathBlock = diag(deathCost); %upper right
+deathBlock(deathBlock==0) = NaN;
+birthBlock = diag(birthCost); %lower left
+birthBlock(birthBlock==0) = NaN;
+
+%get the cost for the lower right block
+costLR = min(min(min(costMat))-1,-1);
+lrBlock = costMat';
+lrBlock(~isnan(lrBlock)) = costLR;
+
+%append cost matrix
+costMat = [costMat deathBlock; birthBlock lrBlock];
+
 %determine the nonlinkMarker
 nonlinkMarker = min(floor(min(min(costMat)))-5,-5);
 
@@ -219,6 +239,7 @@ costMat(isnan(costMat)) = nonlinkMarker;
 
 %%%%% ~~ the end ~~ %%%%%
 
+%% old snippets of code
 
 %             .cost2probExpo      : Exponent coefficient in formula
 %                                   converting linking cost to scheme
@@ -320,5 +341,18 @@ costMat(isnan(costMat)) = nonlinkMarker;
 % %amplitudes
 % costMat = costMat.*ampRatio;
 
+
+% % %for features in first frame that are linked to features in previous
+% % %frames, assign death cost as the 80th percentile of the cost of previous
+% % %links
+% % deathCost = prctile(prevCost(1:numFeaturesFrame1,:),50,2);
+% % 
+% % %calculate 80th percentile of all previous costs to assign as a death cost
+% % %for features in 1st frame not linked to the past and as a birth cost for
+% % %features in 2nd frame
+% % prevCostAve = prctile(prevCost(:),50);
+% % prevCostAve(isnan(prevCostAve)) = max(max(costMat)) + 1;
+% % deathCost(isnan(deathCost)) = prevCostAve;
+% % birthCost = prevCostAve*ones(numFeaturesFrame2,1);
 
 

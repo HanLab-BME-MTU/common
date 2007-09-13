@@ -112,11 +112,11 @@ sqrtDim = sqrt(probDim);
 
 %put time scaling of linear motion in a vector
 timeScalingLin = [sqrt(1:timeReachConfL) sqrt(timeReachConfL) * ...
-    (2:timeWindow-timeReachConfL+1).^0.1];
+    (2:timeWindow-timeReachConfL+1).^0.01];
 
 %put time scaling of Brownian motion in a vector
 timeScalingBrown = [sqrt(1:timeReachConfB) sqrt(timeReachConfB) * ...
-    (2:timeWindow-timeReachConfB+1).^0.1];
+    (2:timeWindow-timeReachConfB+1).^0.01];
 
 %scale maxSearchRadius like Brownian motion (it's only imposed on the
 %Brownian aspect of tracks)
@@ -284,7 +284,7 @@ for iTrack = 1 : numTracks
                 %make ratios larger than maxStdMult equal to maxStdMult
                 ratioDist2Std(ratioDist2Std > maxStdMult) = maxStdMult;
 
-                %expand search radius multiplication factor if possible
+                %expand start's search radius multiplication factor if possible
                 brownStdMultModS = max([brownStdMultModS; ratioDist2Std]);
 
                 %divide the track's nearest neighbor distance at its end
@@ -295,8 +295,7 @@ for iTrack = 1 : numTracks
                 %make ratios larger than maxStdMult equal to maxStdMult
                 ratioDist2Std(ratioDist2Std > maxStdMult) = maxStdMult;
 
-                %expand search radius multiplication factor at track end
-                %if possible
+                %expand end's search radius multiplication factor if possible
                 brownStdMultModE = max([brownStdMultModE; ratioDist2Std]);
 
             end
@@ -400,7 +399,7 @@ for iTrack = 1 : numTracks
                 %make ratios larger than maxStdMult equal to maxStdMult
                 ratioDist2Std(ratioDist2Std > maxStdMult) = maxStdMult;
 
-                %expand search radius multiplication factor if possible
+                %expand start's search radius multiplication factor if possible
                 brownStdMultModS = max([brownStdMultModS; ratioDist2Std]);
 
                 %divide the track's nearest neighbor distance/closestDistScale
@@ -411,7 +410,7 @@ for iTrack = 1 : numTracks
                 %make ratios larger than maxStdMult equal to maxStdMult
                 ratioDist2Std(ratioDist2Std > maxStdMult) = maxStdMult;
 
-                %expand search radius multiplication factor if possible
+                %expand end's search radius multiplication factor if possible
                 brownStdMultModE = max([brownStdMultModE; ratioDist2Std]);
 
             end
