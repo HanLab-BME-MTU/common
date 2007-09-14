@@ -12,7 +12,8 @@ function [imageStack]=makeAiryImageFromMPM(trackInfo,bgav,bgnoise,sigma,imsize,r
 %                           value or, for background inequality, an image 
 %                           of the same size as imsize)
 %               bgnoise   = std of backgound noise
-%               sigma     = width of point-spread function (in pixels)
+%               sigma     = width of point-spread function (in pixels),
+%                           where sigma = (1/3)*(radius of Airy disc)
 %               imsize    = size of image [sx,sy]
 %               rad       = radius used for the generation of the Airy disc
 %                           for each object, in increments of sigma 
