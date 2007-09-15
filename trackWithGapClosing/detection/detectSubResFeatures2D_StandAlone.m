@@ -61,12 +61,18 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %             .pValue     : P-value of local maximum in statistical test
 %                           determining its significance.
 %       background    : Structure with fields:
-%             .mean       : Mean background intensity in movie.
-%             .std        : Standard deviation of background intensity in
-%                           movie.
-%             .meanF      : Mean background intensity in filtered movie.
-%             .stdF       : Standard deviation of background intensity in
-%                           movie.
+%             .meanRawLast5: Mean background intensity in raw movie as
+%                            calculated from the last 5 frames.
+%             .stdRawLast5 : Standard deviation of background intensity in
+%                            raw movie as calculated from the 5 frames.
+%             .meanIntegFLast1: Mean background intensity in last frame of
+%                               filtered integrated movie.
+%             .stdIntegFLast1 : Standard deviation of background intensity
+%                               in last frame of filtered integrated movie.
+%             .meanIntegFFirst1: Mean background intensity in first frame of
+%                                filtered integrated movie.
+%             .stdIntegFFirst1 : Standard deviation of background intensity
+%                                in first frame of filtered integrated movie.
 %       psfSigma      : Standard deviation of point spread function as
 %                       estimated from fitting to local maxima in the movie.
 %       errFlag       : 0 if function executes normally, 1 otherwise.
@@ -171,106 +177,141 @@ emptyFrames = [];
 framesFailedLocMax = [];
 framesFailedMMF = [];
 
-%% Image reading
-
 %turn warnings off
 warningState = warning('off','all');
+
+%% Image reading + time integration
 
 %get image related parameters
 imageTmp = imread([imageDir filenameBase enumString(1,:) '.tif']); %first image
 [imageSizeX,imageSizeY] = size(imageTmp); %image size
 imageIndx = firstImageNum : lastImageNum; %image indices
-numImages = lastImageNum - firstImageNum + 1; %number of images
+numImagesRaw = lastImageNum - firstImageNum + 1; %number of images
 clear imageTmp
 
 %initialize progress display
 progressText(0,'Reading images');
 
 %read images 
-image = zeros(imageSizeX,imageSizeY,numImages);
-for iImage = 1 : numImages
+imageRaw = zeros(imageSizeX,imageSizeY,numImagesRaw);
+for iImage = 1 : numImagesRaw
     
     %store images in array
-    image(:,:,iImage) = imread([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif']);    
+    imageRaw(:,:,iImage) = imread([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif']);    
 
     %display progress
-    progressText(iImage/numImages,'Reading images');
+    progressText(iImage/numImagesRaw,'Reading images');
 
 end
 
 %normalize images
-image = image / (2^bitDepth-1);
+imageRaw = double(imageRaw) / (2^bitDepth-1);
 
-%% image filtering
+%integrate over time
+integWindow = 2;
+numImagesInteg = numImagesRaw - 2 * integWindow;
+imageInteg = zeros(imageSizeX,imageSizeY,numImagesInteg);
+progressText(0,'Time-integrating images');
+for iImage = 1 : numImagesInteg
+    imageInteg(:,:,iImage) = mean(imageRaw(:,:,iImage:iImage+2*integWindow),3);
+    progressText(iImage/numImagesInteg,'Time-integrating images');
+end
+
+%% integrated image filtering
 
 %initialize progress display
 progressText(0,'Filtering images');
 
 %filter images
-imageF = zeros(imageSizeX,imageSizeY,numImages);
-for iImage = 1 : numImages
+imageIntegF = zeros(imageSizeX,imageSizeY,numImagesInteg);
+for iImage = 1 : numImagesInteg
 
-    imageF(:,:,iImage) = Gauss2D(image(:,:,iImage),psfSigma);
+    %     imageIntegF(:,:,iImage) = Gauss2D(imageInteg(:,:,iImage),psfSigma);
+    imageIntegF(:,:,iImage) = Gauss2D(imageInteg(:,:,iImage),1);
 
     %display progress
-    progressText(iImage/numImages,'Filtering images');
+    progressText(iImage/numImagesInteg,'Filtering images');
 end
 
 %% Background noise estimation
 
-%get the intensities in the last 5 images
-last5start = max(numImages-5,1);
-imageLast5 = double(image(:,:,last5start:numImages));
-
-%initialize progress display
-progressText(0,'Estimating background');
-
-%estimate the background noise mean and standard deviation
-%use robustMean to get mean and std of intensities
+%use robustMean to get mean and std of background intensities
 %in this method, the intensities of actual features will look like
 %outliers, so we are effectively getting the mean and std of the background
 %account for possible spatial heterogeneity by taking a spatial moving
 %average
-[bgMean,bgStd] = spatialMovAveBG(imageLast5,imageSizeX,imageSizeY);
 
-%display progress
-progressText(0.5,'Estimating background');
+last5start = max(numImagesRaw-4,1);
+imageLast5 = imageRaw(:,:,last5start:end);
+[bgMeanRaw,bgStdRaw] = spatialMovAveBG(imageLast5,imageSizeX,imageSizeY);
 
-%do the same for the filtered image
-imageLast5 = double(imageF(:,:,last5start:numImages));
-[bgMeanF,bgStdF] = spatialMovAveBG(imageLast5,imageSizeX,imageSizeY);
+% bgMeanRaw = zeros(imageSizeX,imageSizeY,numImagesRaw);
+% bgStdRaw = bgMeanRaw;
+% 
+% for iImage = integWindow+1 : numImagesRaw-integWindow
+%     [bgMeanRaw(:,:,iImage),bgStdRaw(:,:,iImage)] = ...
+%         spatialMovAveBG(imageRaw(:,:,iImage-integWindow:iImage+integWindow),...
+%         imageSizeX,imageSizeY);
+% end
+% for iImage = 1 : integWindow
+%     bgMeanRaw(:,:,iImage) = bgMeanRaw(:,:,integWindow+1);
+%     bgStdRaw(:,:,iImage) = bgStdRaw(:,:,integWindow+1);
+% end
+% for iImage = numImagesRaw-integWindow+1 : numImagesRaw
+%     bgMeanRaw(:,:,iImage) = bgMeanRaw(:,:,numImagesRaw-integWindow);
+%     bgStdRaw(:,:,iImage) = bgStdRaw(:,:,numImagesRaw-integWindow);
+% end
 
-%display progress
-progressText(1,'Estimating background');
+%get background of filtered integrated movie
+bgMeanIntegF = zeros(imageSizeX,imageSizeY,numImagesInteg);
+bgStdIntegF = bgMeanIntegF;
+
+%initialize progress display
+progressText(0,'Estimating background');
+
+%go over all images
+for iImage = 1 : numImagesInteg
+
+    %get image background noise statistics
+    [bgMeanIntegF(:,:,iImage),bgStdIntegF(:,:,iImage)] = ...
+        spatialMovAveBG(imageInteg(:,:,iImage),imageSizeX,imageSizeY);
+
+    %display progress
+    progressText(iImage/numImagesInteg,'Estimating background');
+
+end
 
 %store output
-background = struct('mean',bgMean,'std',bgStd,'meanF',bgMeanF,'stdF',bgStdF);
-
+background = struct('meanRawLast5',bgMeanRaw,'stdRawLast5',bgStdRaw,...
+    'meanIntegFLast1',bgMeanIntegF(:,:,end),'stdIntegFLast1',bgStdIntegF(:,:,end),...
+    'meanIntegFFirst1',bgMeanIntegF(:,:,1),'stdIntegFFirst1',bgStdIntegF(:,:,1));
 
 %% Local maxima detection
 
 %initialize structure saving local maxima information
-localMaxima = repmat(struct('cands',[]),numImages,1);
+localMaxima = repmat(struct('cands',[]),numImagesRaw,1);
 
 %initialize progress display
 progressText(0,'Detecting local maxima');
 
-%go over all images ...
-for iImage = 1 : numImages
+%go over all integrated images ...
+for iImage = 1 : numImagesInteg
 
     try
 
         %call locmax2d to get local maxima in filtered image
-        fImg = locmax2d(imageF(:,:,iImage),[1 1]*ceil(3*psfSigma));
+        fImg = locmax2d(imageIntegF(:,:,iImage),[3 3]);
         
         %get positions and amplitudes of local maxima
         [localMaxPosX,localMaxPosY,localMaxAmp] = find(fImg);
         localMax1DIndx = find(fImg(:));
         
         %get background values corresponding to local maxima
-        bgMeanMaxF = bgMeanF(localMax1DIndx);
-        bgStdMaxF = bgStdF(localMax1DIndx);
-        bgMeanMax = bgMean(localMax1DIndx);
+        bgMeanIntegF1 = bgMeanIntegF(:,:,iImage);
+        bgMeanMaxF = bgMeanIntegF1(localMax1DIndx);
+        bgStdIntegF1 = bgStdIntegF(:,:,iImage);
+        bgStdMaxF = bgStdIntegF1(localMax1DIndx);
+        bgMeanMax = bgMeanRaw(localMax1DIndx);
 
         %calculate the p-value corresponding to the local maxima's amplitudes
         %assume that background intensity in filtered image is normally
@@ -290,7 +331,7 @@ for iImage = 1 : numImages
         if numLocalMax == 0 %if there are no local maxima
 
             cands = [];
-            emptyFrames = [emptyFrames; imageIndx(iImage)];
+            emptyFrames = [emptyFrames; imageIndx(iImage+integWindow)];
 
         else %if there are local maxima
 
@@ -308,8 +349,9 @@ for iImage = 1 : numImages
 
         end
 
-        %add the cands of the current image to the rest
-        localMaxima(iImage).cands = cands;
+        %add the cands of the current image to the rest - this is done
+        %for the raw images, not the integrated ones
+        localMaxima(iImage+integWindow).cands = cands;
          
     catch
 
@@ -318,18 +360,34 @@ for iImage = 1 : numImages
         
         %add this frame to the array of frames with failed local maxima
         %detection and to the array of empty frames
-        framesFailedLocMax = [framesFailedLocMax; imageIndx(iImage)];
-        emptyFrames = [emptyFrames; imageIndx(iImage)];
+        framesFailedLocMax = [framesFailedLocMax; imageIndx(iImage+integWindow)];
+        emptyFrames = [emptyFrames; imageIndx(iImage+integWindow)];
         
     end
 
     %display progress
-    progressText(iImage/numImages,'Detecting local maxima');
+    progressText(iImage/numImagesInteg,'Detecting local maxima');
 
 end
 
+%assign local maxima for frames left out due to time integration
+localMaxima(1:integWindow) = localMaxima(integWindow+1);
+localMaxima(end-integWindow+1:end) = localMaxima(end-integWindow);
+if any(emptyFrames==integWindow+1)
+    emptyFrames = [emptyFrames; (1:integWindow)'];
+end
+if any(emptyFrames==numImagesRaw-integWindow)
+    emptyFrames = [emptyFrames; (numImagesRaw-integWindow+1:numImagesRaw)'];
+end
+if any(framesFailedLocMax==integWindow+1)
+    framesFailedLocMax = [framesFailedLocMax; (1:integWindow)'];
+end
+if any(framesFailedLocMax==numImagesRaw-integWindow)
+    framesFailedLocMax = [framesFailedLocMax; (numImagesRaw-integWindow+1:numImagesRaw)'];
+end
+
 %make a list of images that have local maxima
-goodImages = setxor(1:numImages,emptyFrames);
+goodImages = setxor(1:numImagesRaw,emptyFrames);
 
 %% PSF sigma estimation
 
@@ -370,7 +428,7 @@ if numSigmaIter
         end
                 
         %go over all the images and find isolated features
-        for iImage =  1 : min(numImages,50)
+        for iImage =  1 : min(numImagesRaw,50)
 
             %get feature positions and amplitudes and average background
             featPos = vertcat(localMaxima(iImage).cands.Lmax);
@@ -392,7 +450,7 @@ if numSigmaIter
             nnDist = sort(nnDist,2);
             nnDist = nnDist(:,2);
 
-            %retain only features whose nearest neighbor is more than 20*psfSigma0
+            %retain only features whose nearest neighbor is more than 10*psfSigma0
             %away
             feat2use = find(nnDist > ceil(10*psfSigma0));
             featPos = featPos(feat2use,:);
@@ -417,7 +475,7 @@ if numSigmaIter
                 %crop image around selected feature
                 lowerBound = featPos(iFeat,:) - psfSigma5;
                 upperBound = featPos(iFeat,:) + psfSigma5;
-                imageCropped = image(lowerBound(1):upperBound(1),...
+                imageCropped = imageRaw(lowerBound(1):upperBound(1),...
                     lowerBound(2):upperBound(2),iImage);
 
                 %make initial guess for fit (in the order given in fitParameters)
@@ -436,9 +494,9 @@ if numSigmaIter
             %display progress
             switch numIter
                 case 1
-                    progressText(iImage/min(numImages,50),'Estimating PSF sigma');
+                    progressText(iImage/min(numImagesRaw,50),'Estimating PSF sigma');
                 otherwise
-                    progressText(iImage/min(numImages,50),'Repeating PSF sigma estimation');
+                    progressText(iImage/min(numImagesRaw,50),'Repeating PSF sigma estimation');
             end
 
         end
@@ -475,7 +533,7 @@ end %(if numSigmaIter)
 
 %initialize movieInfo
 clear movieInfo
-movieInfo = repmat(struct('xCoord',[],'yCoord',[],'amp',[]),numImages,1);
+movieInfo = repmat(struct('xCoord',[],'yCoord',[],'amp',[]),numImagesRaw,1);
 
 %initialize progress display
 progressText(0,'Mixture-model fitting');
@@ -486,8 +544,8 @@ for iImage = goodImages
     try %try to detect features in this frame
 
         %fit with mixture-models
-        featuresInfo = detectSubResFeatures2D(image(:,:,iImage),...
-            localMaxima(iImage).cands,psfSigma,testAlpha,visual,doMMF,1,0,mean(bgStd(:)));
+        featuresInfo = detectSubResFeatures2D(imageRaw(:,:,iImage),...
+            localMaxima(iImage).cands,psfSigma,testAlpha,visual,doMMF,1,0,mean(bgStdRaw(:)));
 
         %save results
         movieInfo(iImage) = featuresInfo;
@@ -509,7 +567,7 @@ for iImage = goodImages
     end
 
     %display progress
-    progressText(iImage/numImages,'Mixture-model fitting');
+    progressText(iImage/numImagesRaw,'Mixture-model fitting');
 
 end
 
@@ -526,7 +584,7 @@ exceptions = struct('emptyFrames',emptyFrames,'framesFailedLocMax',...
 %indicate correct frames in movieInfo
 tmptmp = movieInfo;
 clear movieInfo
-movieInfo(firstImageNum:lastImageNum) = tmptmp;
+movieInfo(firstImageNum:lastImageNum,1) = tmptmp;
 
 %save results
 if isstruct(saveResults)
@@ -724,4 +782,87 @@ end
 % %     progressText(iImage/numImages,'Detecting local maxima');
 % % 
 % % end
+
+% % %allocate memory for background mean and std
+% % bgMean = zeros(imageSizeX,imageSizeY,numImages);
+% % bgStd = bgMean;
+% % bgMeanF = bgMean;
+% % bgStdF = bgMean;
+% % 
+% % %initialize progress display
+% % progressText(0,'Estimating background');
+% % 
+% % %estimate the background noise mean and standard deviation
+% % %use robustMean to get mean and std of intensities
+% % %in this method, the intensities of actual features will look like
+% % %outliers, so we are effectively getting the mean and std of the background
+% % %account for possible spatial heterogeneity by taking a spatial moving
+% % %average
+% % imageLast5 = image(:,:,end-4:end);
+% % [bgMeanLast5,bgStdLast5] = spatialMovAveBG(imageLast5,imageSizeX,imageSizeY);
+% % 
+% % %estimate overall background of first five and last five images
+% % imageFirst5 = image(:,:,1:5);
+% % [bgMeanAllFirst5,bgStdAllFirst5] = robustMean(imageFirst5(:));
+% % [bgMeanAllLast5,bgStdAllLast5] = robustMean(imageLast5(:));
+% % 
+% % %get slope of straight line
+% % slopeBgMean = (bgMeanAllFirst5 - bgMeanAllLast5)/(numImages-1);
+% % slopeBgStd = (bgStdAllFirst5 - bgStdAllLast5)/(numImages-1);
+% % 
+% % %calculate the background for all images
+% % for iImage = 1 : numImages
+% %     bgMean(:,:,iImage) = bgMeanLast5 + slopeBgMean * (numImages - iImage);
+% %     bgStd(:,:,iImage) = bgStdLast5 + slopeBgStd * (numImages - iImage);
+% % end
+% % 
+% % %save results for output
+% % mean1 = struct('last5Local',bgMeanLast5,'last5Global',bgMeanAllLast5,...
+% %     'first5Global',bgMeanAllFirst5);
+% % std1 = struct('last5Local',bgStdLast5,'last5Global',bgStdAllLast5,...
+% %     'first5Global',bgStdAllFirst5);
+% % raw = struct('mean',mean1,'std',std1);
+% % 
+% % %display progress
+% % progressText(0.5,'Estimating background');
+% % 
+% % %do the same for the filtered image
+% % 
+% % %use robustMean to get mean and std of background intensities
+% % imageLast5 = imageF(:,:,end-4:end);
+% % [bgMeanLast5,bgStdLast5] = spatialMovAveBG(imageLast5,imageSizeX,imageSizeY);
+% % 
+% % %estimate overall background of first five and last five images
+% % imageFirst5 = imageF(:,:,1:5);
+% % [bgMeanAllFirst5,bgStdAllFirst5] = robustMean(imageFirst5(:));
+% % [bgMeanAllLast5,bgStdAllLast5] = robustMean(imageLast5(:));
+% % 
+% % slopeBgMean = (bgMeanAllFirst5 - bgMeanAllLast5)/(numImages-1);
+% % slopeBgStd = (bgStdAllFirst5 - bgStdAllLast5)/(numImages-1);
+% % 
+% % %calculate the background for all images
+% % for iImage = 1 : numImages
+% %     bgMeanF(:,:,iImage) = bgMeanLast5 + slopeBgMean * (numImages - iImage);
+% %     bgStdF(:,:,iImage) = bgStdLast5 + slopeBgStd * (numImages - iImage);
+% % end
+% % 
+% % %save results for output
+% % mean1 = struct('last5Local',bgMeanLast5,'last5Global',bgMeanAllLast5,...
+% %     'first5Global',bgMeanAllFirst5);
+% % std1 = struct('last5Local',bgStdLast5,'last5Global',bgStdAllLast5,...
+% %     'first5Global',bgStdAllFirst5);
+% % filtered = struct('mean',mean1,'std',std1);
+% % 
+% % %display progress
+% % progressText(1,'Estimating background');
+% % 
+% % %store output
+% % background = struct('raw',raw,'filtered',filtered);
+
+% %         bgMeanF1 = bgMeanF(:,:,iImage);
+% %         bgMeanMaxF = bgMeanF1(localMax1DIndx);
+% %         bgStdF1 = bgStdF(:,:,iImage);
+% %         bgStdMaxF = bgStdF1(localMax1DIndx);
+% %         bgMean1 = bgMean(:,:,iImage);
+% %         bgMeanMax = bgMean1(localMax1DIndx);
 
