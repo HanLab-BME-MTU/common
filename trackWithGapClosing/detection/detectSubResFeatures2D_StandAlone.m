@@ -27,6 +27,8 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %           .numSigmaIter : Maximum number of iterations to perform when
 %                           trying to estimate PSF sigma. Input 0 for no
 %                           estimation. Optional. Default: 10.
+%           .integWindow  : Number of frames on each side of a frame
+%                           used for time integration.
 %       saveResults   : 0 if no saving is requested. 
 %                       If saving is requested, structure with fields:
 %           .dir          : Directory where results should be saved.
@@ -146,6 +148,12 @@ if ~isfield(detectionParam,'numSigmaIter') || isempty(detectionParam.numSigmaIte
 else
     numSigmaIter = detectionParam.numSigmaIter;
 end
+
+if ~isfield(detectionParam,'integWindow')
+    integWindow = 2;
+else
+    integWindow = detectionParam.integWindow;
+end
     
 %determine where to save results
 if nargin < 3 || isempty(saveResults) %if nothing was input
@@ -208,7 +216,6 @@ end
 imageRaw = double(imageRaw) / (2^bitDepth-1);
 
 %integrate over time
-integWindow = 2;
 numImagesInteg = numImagesRaw - 2 * integWindow;
 imageInteg = zeros(imageSizeX,imageSizeY,numImagesInteg);
 progressText(0,'Time-integrating images');
@@ -300,7 +307,7 @@ for iImage = 1 : numImagesInteg
     try
 
         %call locmax2d to get local maxima in filtered image
-        fImg = locmax2d(imageIntegF(:,:,iImage),[3 3]);
+        fImg = locmax2d(imageIntegF(:,:,iImage),[3 3],1);
         
         %get positions and amplitudes of local maxima
         [localMaxPosX,localMaxPosY,localMaxAmp] = find(fImg);
@@ -503,12 +510,20 @@ if numSigmaIter
 
         %estimate psfSigma as the robust mean of all the sigmas from the fits
         numCalcs = length(psfSigma);
-        [psfSigma,sigmaStd,inlierIndx] = robustMean(psfSigma);
+        if numCalcs > 0
+            
+            [psfSigma,sigmaStd,inlierIndx] = robustMean(psfSigma);
 
-        %accept new sigma if there are enough observations and inliers
-        acceptCalc = (numCalcs >= 100 && length(inlierIndx) >= 0.7*numCalcs) || ...
-            (numCalcs >= 50 && length(inlierIndx) >= 0.9*numCalcs) || ...
-            (numCalcs >= 10 && length(inlierIndx) == numCalcs);
+            %accept new sigma if there are enough observations and inliers
+            acceptCalc = (numCalcs >= 100 && length(inlierIndx) >= 0.7*numCalcs) || ...
+                (numCalcs >= 50 && length(inlierIndx) >= 0.9*numCalcs) || ...
+                (numCalcs >= 10 && length(inlierIndx) == numCalcs);
+            
+        else
+            
+            acceptCalc = 0;
+            
+        end
 
         %show new sigma if estimation is accepted
         if acceptCalc

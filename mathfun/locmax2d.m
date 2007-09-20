@@ -1,10 +1,13 @@
-function fImg=locmax2d(img,mask)
+function fImg=locmax2d(img,mask,keepFlat)
 %LOCALMAX searches for local maxima in an image
 %
 %    SYNOPSIS fImg=(img,mask)
 %
 %    INPUT    img    image matrix
 %             mask   [m n] defines the operator window dimensions
+%             keepFlat Optional input variable to choose whether to remove
+%                      "flat" maxima or to keep them. Default is 0, to
+%                      remove them. - KJ
 %
 %    OUTPUT   fImg   map with all the local maxima (zeros elsewhere);
 %                    the non-zero values contain the original value 
@@ -23,6 +26,10 @@ if nargin<2
    error('Please define all parameters');
 end
 
+if nargin < 3 || isempty(keepFlat)
+    keepFlat = 0;
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % DEFINITIONS
@@ -36,8 +43,10 @@ mask(indx) = mask(indx) + 1;
 
 % apply a max filter
 fImg = ordfilt2(img,prod(mask),ones(mask));
-fImg2 = ordfilt2(img,prod(mask)-1,ones(mask));
-fImg(fImg2==fImg)=0;
+if keepFlat == 0 %change made by KJ
+    fImg2 = ordfilt2(img,prod(mask)-1,ones(mask));
+    fImg(fImg2==fImg)=0;
+end
 
 % take only those positions where the max filter and the original image value
 % are equal -> this is a local maximum

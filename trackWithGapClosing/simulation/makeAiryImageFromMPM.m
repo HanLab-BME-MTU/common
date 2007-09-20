@@ -10,8 +10,10 @@ function [imageStack]=makeAiryImageFromMPM(trackInfo,bgav,bgnoise,sigma,imsize,r
 %                           x1,y1,i1,x2,y2,i2,...
 %               bgav      = average background level (can be either single 
 %                           value or, for background inequality, an image 
-%                           of the same size as imsize)
-%               bgnoise   = std of backgound noise
+%                           of the same size as imsize). In counts, e.g.
+%                           assuming a 16-bit camera.
+%               bgnoise   = std of backgound noise. In counts, e.g.
+%                           assuming a 16-bit camera.
 %               sigma     = width of point-spread function (in pixels),
 %                           where sigma = (1/3)*(radius of Airy disc)
 %               imsize    = size of image [sx,sy]
@@ -64,7 +66,7 @@ end
 if (nargin>5)
     % if a value for rad is entered, use it, but it can't be less than 3
     % times the Airy disc radius specified by sigma
-    ns = min(rad,3);
+    ns = max(rad,3);
 else
     % default value is 6
     ns = 6;
