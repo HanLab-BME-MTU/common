@@ -370,15 +370,29 @@ for iFrame = 1 : numFrames
     coordFrame = tracksCoordAmpLink(:,(iFrame-1)*8+1:(iFrame-1)*8+3);
     coordFrame = coordFrame(~isnan(coordFrame(:,1)),:);
 
-    %compute distance matrix
-    nnDist = createDistanceMatrix(coordFrame,coordFrame);
+    if ~isempty(coordFrame)
 
-    %sort distance matrix and find nearest neighbor distance
-    nnDist = sort(nnDist,2);
-    nnDist = nnDist(:,2);
-    
-    %store nearest neighbor distances in matrix
-    nnDistLinkedFeat(~isnan(nnDistLinkedFeat(:,iFrame)),iFrame) = nnDist;
+        %compute distance matrix
+        nnDist = createDistanceMatrix(coordFrame,coordFrame);
+
+        %if there happens to be only one feature in this frame, give it a very
+        %large nearest neighbor distance
+        if length(nnDist(:)) == 1
+
+            nnDist = 1000;
+
+        else %if there is more than 1 feature
+
+            %sort distance matrix and find nearest neighbor distance
+            nnDist = sort(nnDist,2);
+            nnDist = nnDist(:,2);
+
+        end
+
+        %store nearest neighbor distances in matrix
+        nnDistLinkedFeat(~isnan(nnDistLinkedFeat(:,iFrame)),iFrame) = nnDist;
+        
+    end
     
 end
 
