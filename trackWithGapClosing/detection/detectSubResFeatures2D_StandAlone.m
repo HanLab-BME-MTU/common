@@ -452,27 +452,31 @@ if numSigmaIter
             featBG = featBG(feat2use);
             featPV = featPV(feat2use);
 
-            %find nearest neighbor distances
-            nnDist = createDistanceMatrix(featPos,featPos);
-            nnDist = sort(nnDist,2);
-            nnDist = nnDist(:,2);
+            if length(feat2use) > 1
 
-            %retain only features whose nearest neighbor is more than 10*psfSigma0
-            %away
-            feat2use = find(nnDist > ceil(10*psfSigma0));
-            featPos = featPos(feat2use,:);
-            featAmp = featAmp(feat2use);
-            featBG = featBG(feat2use);
-            featPV = featPV(feat2use);
+                %find nearest neighbor distances
+                nnDist = createDistanceMatrix(featPos,featPos);
+                nnDist = sort(nnDist,2);
+                nnDist = nnDist(:,2);
 
-            %retain only features with pValue between the 25th and 75th
-            %percentiles
-            percentile25 = prctile(featPV,25);
-            percentile75 = prctile(featPV,75);
-            feat2use = find(featPV > percentile25 & featPV < percentile75);
-            featPos = featPos(feat2use,:);
-            featAmp = featAmp(feat2use);
-            featBG = featBG(feat2use);
+                %retain only features whose nearest neighbor is more than 10*psfSigma0
+                %away
+                feat2use = find(nnDist > ceil(10*psfSigma0));
+                featPos = featPos(feat2use,:);
+                featAmp = featAmp(feat2use);
+                featBG = featBG(feat2use);
+                featPV = featPV(feat2use);
+
+                %retain only features with pValue between the 25th and 75th
+                %percentiles
+                percentile25 = prctile(featPV,25);
+                percentile75 = prctile(featPV,75);
+                feat2use = find(featPV > percentile25 & featPV < percentile75);
+                featPos = featPos(feat2use,:);
+                featAmp = featAmp(feat2use);
+                featBG = featBG(feat2use);
+                
+            end
 
             %go over the selected features and estimate psfSigma
             numFeats = length(featAmp);
