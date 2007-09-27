@@ -1,7 +1,7 @@
-function [finalMean, stdSample, inlierIdx] = robustMean(data,dim)
+function [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data,dim)
 %ROBUSTMEAN calculates mean and standard deviation discarding outliers
 %
-% SYNOPSIS [finalMean, stdSample, inlierIdx] = robustMean(data)
+% SYNOPSIS [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data)
 %
 % INPUT    data : input data
 %          dim  : dimension along which the mean is taken
@@ -9,8 +9,8 @@ function [finalMean, stdSample, inlierIdx] = robustMean(data,dim)
 % OUTPUT   finalMean : robust mean
 %          stdSample : std of the data (divide by sqrt(n) to get std of the
 %                      mean)
-%          inlierIdx : index into data with the inliers (recover the others
-%                      with findMissingIndices)
+%          inlierIdx : index into data with the inliers 
+%          outlierIdx: index into data with the outliers
 %
 % REMARKS  The code is based on (linear)LeastMedianSquares. It could be changed to
 %          include weights 
@@ -21,7 +21,7 @@ function [finalMean, stdSample, inlierIdx] = robustMean(data,dim)
 
 % test input
 
-if isempty(data) | ~all(isfinite(data))
+if isempty(data) | ~all(isfinite(data)) %#ok<OR2>
     error('Please supply non-empty, finite data to robustMean')
 end
 if nargin<2 || isempty(dim)
@@ -59,6 +59,7 @@ testValue=res2./repmat(magicNumber2*medRes2,blowUpDataSize);
 if realDimensions == 1;
     %goodRows: weight 1, badRows: weight 0
     inlierIdx=find(testValue<=k^2);
+    outlierIdx = find(testValue>k^2);
 
     % calculate std of the sample;
     if nargout > 1

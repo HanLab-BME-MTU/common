@@ -27,8 +27,9 @@ function [parameters,sigmaParameters,Q,chiSquared,degreesOfFreedom,residualImage
 %               NaNs as parameters, because the estimation will be
 %               meaningless.
 %		 isNormed: (opt) Whether the Gaussian should be normed to an
-%               integral of 1. [{0}/1]. This is only relevant if the width
-%               of the Gaussian (sigma) is fitted.
+%               integral of 1. [{0}/1]. Only relevant for sigma-fitting,
+%               when the input is normed already, and thus the amplitude is
+%               not a fit-parameter.
 %        fitOptions: (opt) Options for lsqnonlin. It is not recommended
 %               that you set 'Jacobian' to 'off'
 %               Default options
@@ -226,10 +227,11 @@ if any(isnan(parameters))
     background = parameters(end);
     fullImage = fullImage - background;
 
-    if any(amplitudeIdx)
+    if any(amplitudeIdx) && ~isNormed
         % amplitude is the maximum of a 3^nDims pixel region around the center.
         % Stamp3D is another of those functions that would have to be extended
         % for N-D.
+        % if isNormed, there is no need for estimating amplitude
         subImage = stamp3d(fullImage,repmat(3,[1,nDims]),floor(center));
         parameters(nDims+1) = max(subImage(:));
     end
@@ -443,7 +445,7 @@ else
 
     % define fitFcn
     fitFcn = @(x)(GaussFitND_lsqnonlinFitFcn(...
-        x,fitParameters,parameters,xIdx,intensities,coordList,isNormed));
+        x,fitParameters,parameters,xIdx,intensities,coordList,isNormed,nDims,isSxy));
     % fit
     x = lsqnonlin(...
         fitFcn,parameters(xIdx),[],[],fitOptions);
@@ -463,7 +465,7 @@ else
         % get residuals and jacobian
         [residuals, jacobian, gaussian] = ...
             GaussFitND_lsqnonlinFitFcn(parameters(xIdx),...
-            fitParameters,parameters,xIdx,intensities,coordList,isNormed);
+            fitParameters,parameters,xIdx,intensities,coordList,isNormed,nDims,isSxy);
     end
 
 
@@ -522,7 +524,7 @@ end
 % SUBFUNCTIONS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [residuals, jacobian, gaussian] = GaussFitND_lsqnonlinFitFcn(x,fitParameters,parameters,xIdx,intensities,coordList,isNormed)
+function [residuals, jacobian, gaussian] = GaussFitND_lsqnonlinFitFcn(x,fitParameters,parameters,xIdx,intensities,coordList,isNormed,nDims,isSxy)
 % GaussFitND_lsqnonlinFitFcn is the fit-routine in GaussFitND
 % input: x: vector of unknowns.
 %        fitParameters: 'labels' of the unknowns.
@@ -538,7 +540,19 @@ function [residuals, jacobian, gaussian] = GaussFitND_lsqnonlinFitFcn(x,fitParam
 parameters(xIdx) = x;
 parameters(:,end) = parameters(end);
 
-% calculate gradient, gaussian
+% check for amplitude norm - if normed, amplitude is a function of sigma.
+% Fill it in.
+if isNormed
+    % amplitude is 1/(2*pi)^(nDims/2)*1/(sx*sy*sz)
+    sigmas = parameters(:,end-(nDims-isSxy):end-1);
+    if isSxy
+        sigmas(:,1) = sigmas(:,1).^2;
+    end
+    parameters(:,nDims+1) = 1/(2*pi)^(nDims/2)*1./prod(sigmas,2);
+end
+    
+
+% calculate gradient, Gaussian
 [jacobian,gaussian] = ...
     GaussFitND_gradient(fitParameters,parameters,coordList,isNormed);
 

@@ -123,8 +123,9 @@ for iKernel = 1:nKernels
 
     %---- Calculate Gaussian
 
-    % calculate Gaussian
-    tmpGauss = GaussListND(coordList,sigma,center,isNormed);
+    % calculate Gaussian. Don't ask for normed, b/c we'll be multiplying
+    % with "normed" amplitude later
+    tmpGauss = GaussListND(coordList,sigma,center,0);
 
     % set amplitude
     tmpGauss = tmpGauss * ampAndBg(1);
