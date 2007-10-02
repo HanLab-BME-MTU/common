@@ -363,7 +363,7 @@ for iImage = 1 : numImagesInteg
     catch
 
         %if local maxima detection fails, make cands empty
-        localMaxima(iImage).cands = [];
+        localMaxima(iImage+integWindow).cands = [];
         
         %add this frame to the array of frames with failed local maxima
         %detection and to the array of empty frames
@@ -435,73 +435,82 @@ if numSigmaIter
         end
                 
         %go over all the images and find isolated features
-        for iImage =  1 : min(numImagesRaw,50)
+        for iImage = integWindow+1 : min(numImagesRaw,50)
 
-            %get feature positions and amplitudes and average background
-            featPos = vertcat(localMaxima(iImage).cands.Lmax);
-            featAmp = vertcat(localMaxima(iImage).cands.amp);
-            featBG  = vertcat(localMaxima(iImage).cands.IBkg);
-            featPV  = vertcat(localMaxima(iImage).cands.pValue);
+            if ~any(emptyFrames==iImage)
 
-            %retain only features that are more than 5*psfSigma0 away from boundaries
-            feat2use = find(featPos(:,1) > psfSigma5 & ...
-                featPos(:,1) < imageSizeX - psfSigma5 & ...
-                featPos(:,2) > psfSigma5 & featPos(:,2) < imageSizeY - psfSigma5);
-            featPos = featPos(feat2use,:);
-            featAmp = featAmp(feat2use);
-            featBG = featBG(feat2use);
-            featPV = featPV(feat2use);
+                %get feature positions and amplitudes and average background
+                featPos = vertcat(localMaxima(iImage).cands.Lmax);
+                featAmp = vertcat(localMaxima(iImage).cands.amp);
+                featBG  = vertcat(localMaxima(iImage).cands.IBkg);
+                featPV  = vertcat(localMaxima(iImage).cands.pValue);
 
-            if length(feat2use) > 1
-
-                %find nearest neighbor distances
-                nnDist = createDistanceMatrix(featPos,featPos);
-                nnDist = sort(nnDist,2);
-                nnDist = nnDist(:,2);
-
-                %retain only features whose nearest neighbor is more than 10*psfSigma0
-                %away
-                feat2use = find(nnDist > ceil(10*psfSigma0));
+                %retain only features that are more than 5*psfSigma0 away from boundaries
+                feat2use = find(featPos(:,1) > psfSigma5 & ...
+                    featPos(:,1) < imageSizeX - psfSigma5 & ...
+                    featPos(:,2) > psfSigma5 & featPos(:,2) < imageSizeY - psfSigma5);
                 featPos = featPos(feat2use,:);
                 featAmp = featAmp(feat2use);
                 featBG = featBG(feat2use);
                 featPV = featPV(feat2use);
 
-                %retain only features with pValue between the 25th and 75th
-                %percentiles
-                percentile25 = prctile(featPV,25);
-                percentile75 = prctile(featPV,75);
-                feat2use = find(featPV > percentile25 & featPV < percentile75);
-                featPos = featPos(feat2use,:);
-                featAmp = featAmp(feat2use);
-                featBG = featBG(feat2use);
-                
-            end
+                %if there is more than one feature ...
+                if length(feat2use) > 1
 
-            %go over the selected features and estimate psfSigma
-            numFeats = length(featAmp);
-            parameters = zeros(numFeats,5);
-            for iFeat = 1 : numFeats
+                    %find nearest neighbor distances
+                    nnDist = createDistanceMatrix(featPos,featPos);
+                    nnDist = sort(nnDist,2);
+                    nnDist = nnDist(:,2);
 
-                %crop image around selected feature
-                lowerBound = featPos(iFeat,:) - psfSigma5;
-                upperBound = featPos(iFeat,:) + psfSigma5;
-                imageCropped = imageRaw(lowerBound(1):upperBound(1),...
-                    lowerBound(2):upperBound(2),iImage);
+                    %retain only features whose nearest neighbor is more than 10*psfSigma0
+                    %away
+                    feat2use = find(nnDist > ceil(10*psfSigma0));
+                    featPos = featPos(feat2use,:);
+                    featAmp = featAmp(feat2use);
+                    featBG = featBG(feat2use);
+                    featPV = featPV(feat2use);
 
-                %make initial guess for fit (in the order given in fitParameters)
-                initGuess = [psfSigma5+1 psfSigma5+1 featAmp(iFeat) ...
-                    psfSigma0 featBG(iFeat)];
+                    %retain only features with pValue between the 25th and 75th
+                    %percentiles
+                    percentile25 = prctile(featPV,25);
+                    percentile75 = prctile(featPV,75);
+                    feat2use = find(featPV > percentile25 & featPV < percentile75);
+                    featPos = featPos(feat2use,:);
+                    featAmp = featAmp(feat2use);
+                    featBG = featBG(feat2use);
 
-                %fit image and estimate sigma of Gaussian
-                parameters(iFeat,:) = GaussFitND(imageCropped,[],...
-                    fitParameters,initGuess);
+                end
 
-            end
+                %go over the selected features and estimate psfSigma
+                numFeats = length(featAmp);
+                parameters = zeros(numFeats,5);
+                if numFeats >= 1
+                    
+                    for iFeat = 1 : numFeats
 
-            %add to array of sigmas
-            psfSigma = [psfSigma; parameters(:,4)];
-            
+                        %crop image around selected feature
+                        lowerBound = featPos(iFeat,:) - psfSigma5;
+                        upperBound = featPos(iFeat,:) + psfSigma5;
+                        imageCropped = imageRaw(lowerBound(1):upperBound(1),...
+                            lowerBound(2):upperBound(2),iImage);
+
+                        %make initial guess for fit (in the order given in fitParameters)
+                        initGuess = [psfSigma5+1 psfSigma5+1 featAmp(iFeat) ...
+                            psfSigma0 featBG(iFeat)];
+
+                        %fit image and estimate sigma of Gaussian
+                        parameters(iFeat,:) = GaussFitND(imageCropped,[],...
+                            fitParameters,initGuess);
+
+                    end
+
+                    %add to array of sigmas
+                    psfSigma = [psfSigma; parameters(:,4)];
+                    
+                end %(if numFeats >= 1)
+
+            end %(if ~any(emptyFrames==iImage))
+
             %display progress
             switch numIter
                 case 1
@@ -510,23 +519,23 @@ if numSigmaIter
                     progressText(iImage/min(numImagesRaw,50),'Repeating PSF sigma estimation');
             end
 
-        end
+        end %(for iImage = integWindow+1 : min(numImagesRaw,50))
 
         %estimate psfSigma as the robust mean of all the sigmas from the fits
         numCalcs = length(psfSigma);
         if numCalcs > 0
-            
+
             [psfSigma,sigmaStd,inlierIndx] = robustMean(psfSigma);
 
             %accept new sigma if there are enough observations and inliers
             acceptCalc = (numCalcs >= 100 && length(inlierIndx) >= 0.7*numCalcs) || ...
                 (numCalcs >= 50 && length(inlierIndx) >= 0.9*numCalcs) || ...
                 (numCalcs >= 10 && length(inlierIndx) == numCalcs);
-            
+
         else
-            
+
             acceptCalc = 0;
-            
+
         end
 
         %show new sigma if estimation is accepted
@@ -539,12 +548,12 @@ if numSigmaIter
         end
 
     end %(while numIter <= numSigmaIter && acceptCalc && ((psfSigma-psfSigma0)/psfSigma0 > 0.05))
-    
+
     %if maximum number of iterations has been performed but sigma value is not converging
     if numIter == numSigmaIter+1 && acceptCalc && ((psfSigma-psfSigma0)/psfSigma0 > 0.05)
         psfSigma = psfSigmaIn;
         disp('Estimation terminated (no convergence), using input PSF sigma');
-    end 
+    end
 
 end %(if numSigmaIter)
 
