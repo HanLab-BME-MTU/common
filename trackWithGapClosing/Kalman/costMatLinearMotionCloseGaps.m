@@ -491,26 +491,6 @@ indx2 = indx2(possiblePairs);
 cost  = cost(possiblePairs);
 clear possiblePairs
 
-%remove possible links with extremely high costs that can be considered
-%outliers
-
-%calculate mean of costs
-meanCost = mean(cost);
-
-%calculate standard deviation of costs
-stdCost = std(cost);
-
-%find indices of links with costs closer than 3*std from the mean
-indxInlier = find(cost < meanCost + 3 * stdCost);
-
-%retain only those links
-indx1 = indx1(indxInlier);
-indx2 = indx2(indxInlier);
-cost  = cost(indxInlier);
-
-%clear memory
-clear meanCost stdCost indxInlier
-
 %define some merging and splitting variables
 numMerge  =  0; %index counting merging events
 indxMerge = []; %vector storing merging track number
@@ -956,7 +936,8 @@ costMat = sparse(indx1,indx2,cost,numEndSplit,numStartMerge);
 %append cost matrix to allow births and deaths ...
 
 %determine the cost of birth and death
-costBD = max(max(max(costMat))+1,1);
+% costBD = max(max(max(costMat))+1,1);
+costBD = prctile(cost,90);
 
 %get the cost for the lower right block
 costLR = min(min(min(costMat))-1,-1);
@@ -1102,4 +1083,24 @@ nonlinkMarker = min(floor(full(min(min(costMat))))-5,-5);
 % %                 else
 % %                     cost12 = dispVecMag2;
 % %                 end
+
+% %remove possible links with extremely high costs that can be considered
+% %outliers
+% 
+% % %calculate mean of costs
+% % meanCost = mean(cost);
+% % 
+% % %calculate standard deviation of costs
+% % stdCost = std(cost);
+% % 
+% % %find indices of links with costs closer than 3*std from the mean
+% % indxInlier = find(cost < meanCost + 3 * stdCost);
+% % 
+% % %retain only those links
+% % indx1 = indx1(indxInlier);
+% % indx2 = indx2(indxInlier);
+% % cost  = cost(indxInlier);
+% % 
+% % %clear memory
+% % clear meanCost stdCost indxInlier
 

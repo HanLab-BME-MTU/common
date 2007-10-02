@@ -212,7 +212,8 @@ searchRadius = repmat(searchRadius,1,numFeaturesFrame2);
 costMat(costMat>searchRadius) = NaN;
 
 %append matrix to allow birth and death
-maxCost = max(max(max(costMat))+1,1);
+% maxCost = max(max(max(costMat))+1,1);
+maxCost = prctile(costMat(:),95);
 deathCost = maxCost*ones(numFeaturesFrame1,1);
 birthCost = maxCost*ones(numFeaturesFrame2,1);
 

@@ -1,4 +1,5 @@
-function simMPM = simulateMimickCD36(imSize,numP,lftDist,numF,intVec,mtSpacing,motionParam)
+function simMPM = simulateMimickCD36(imSize,numP,lftDist,numF,intVec,...
+    mtSpacing,motionParam)
 %SIMULATEMIMICKCD36 generates tracks that mimick CD36 motion
 %
 % INPUT 	imSize        : Image size vector [sx,sy]

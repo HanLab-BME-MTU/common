@@ -5,8 +5,8 @@ function [linkStats,gapStats] = scoreLinksGaps(tracksFinal,simMPM)
 %
 %INPUT  tracksFinal : Either output of trackCloseGapsKalman (structure) or
 %                     output of trackWithGapClosing (matrix).
-%       simMPM      : Simulated tracks, as obtained from simulateMimickCD36
-%                     or from simulateMPMlftbeh.
+%       simMPM      : Simulated tracks, as obtained from
+%                     simulateMimickCD36 or simulateMPMlftbeh.
 %
 %OUTPUT linkStats   : (number of frames - 1) - by - 5 array. Row i 
 %                     corresponds to the links from frame i to frame i+1.
@@ -27,7 +27,6 @@ function [linkStats,gapStats] = scoreLinksGaps(tracksFinal,simMPM)
 %                     2 - if one or both features just before and just
 %                     after the gap are detection artifacts.
 %       
-%
 %Khuloud Jaqaman, September 2007
 
 %% convert tracksFinal from structure to matrix
@@ -66,6 +65,7 @@ if isstruct(tracksFinal) %if tracks are input in structure format
     
 else %if tracks are input in matrix format
     
+    %copy input into new variable
     trackedFeatureInfo = tracksFinal;
     
 end
