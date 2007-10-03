@@ -74,7 +74,7 @@ end
 %%   place MTs in image
 
 %assign average x-coordinate of MTs
-mtPosX = (1.5*confRad2D : mtSpacing(1) : lx-1.5*confRad2D)';
+mtPosX = (3*confRad2D : mtSpacing(1) : lx-3*confRad2D)';
 
 %get number of MTs
 numMT = length(mtPosX);
@@ -144,7 +144,7 @@ vis_lifetime   = vis_endframe - vis_startframe + 1;
 
 %assign initial positions
 posX = mtPosX(ceil(rand(numTracks,1)*numMT)); %x-coordinate - on one of the MTs
-posY = rand(numTracks,1)*ly; %y-coordinate - anywhere on an MT
+posY = 3*confRad2D + rand(numTracks,1) * (ly - 6*confRad2D); %y-coordinate - anywhere on an MT
 
 %assign initial intensities
 startInt = intVec(1) + intVec(2)*randn(numTracks,1);
@@ -314,4 +314,28 @@ simMPM(:,2:3:end) = dummy(:,2:8:end);
 simMPM(:,3:3:end) = dummy(:,4:8:end);
 simMPM(isnan(simMPM)) = 0;
 
+%% shift coordinates to remove any negative coordinates
+
+%get minimum x and y coordinates
+minX = min(min(simMPM(:,1:3:end)));
+minY = min(min(simMPM(:,2:3:end)));
+
+%shift if minimum is nonpositive
+if minX <= 0
+    shiftX = abs(minX) + 1;
+    simMPM(:,1:3:end) = simMPM(:,1:3:end) + shiftX;
+    for iTrack = 1 : numTracks
+        tracksSim(iTrack).tracksCoordAmpCG(:,1:8:end) = ...
+            tracksSim(iTrack).tracksCoordAmpCG(:,1:8:end) + shiftX;
+    end
+end
+
+if minY <= 0
+    shiftY = abs(minY) + 1;
+    simMPM(:,2:3:end) = simMPM(:,2:3:end) + shiftY;
+    for iTrack = 1 : numTracks
+        tracksSim(iTrack).tracksCoordAmpCG(:,2:8:end) = ...
+            tracksSim(iTrack).tracksCoordAmpCG(:,2:8:end) + shiftY;
+    end
+end
 

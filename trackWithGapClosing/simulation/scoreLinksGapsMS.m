@@ -1,5 +1,5 @@
 function [linkStats,gapStats,mergeSplitStats] = scoreLinksGapsMS(tracksFinal,tracksSim)
-%SCORELINKS compares links obtained via tracking to the ground truth
+%SCORELINKSGAPSMS compares links, closed gaps and merges/splits obtained via tracking to the ground truth
 %
 %SYNOPSIS [linkStats,gapStats,mergeSplitStats] = scoreLinksGapsMS(tracksFinal,tracksSim)
 %

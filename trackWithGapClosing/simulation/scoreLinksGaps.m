@@ -1,5 +1,5 @@
 function [linkStats,gapStats] = scoreLinksGaps(tracksFinal,simMPM)
-%SCORELINKS compares links obtained via tracking to the ground truth
+%SCORELINKSGAPS compares links and closed gaps obtained via tracking to the ground truth
 %
 %SYNOPSIS [linkStats,gapStats] = scoreLinksGaps(tracksFinal,simMPM)
 %
