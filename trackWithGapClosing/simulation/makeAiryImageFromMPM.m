@@ -33,7 +33,7 @@ function [imageStack]=makeAiryImageFromMPM(trackInfo,bgav,bgnoise,sigma,imsize,r
 % created by: dloerke
 % DATE: 28-Feb-2006
 % last modified
-% DATE: 15-Sep-2007
+% DATE: 05-Oct-2007
 %
 %
 
@@ -62,28 +62,29 @@ end
 
 
 %% generate little mask for individual airys
-%generate list of pixels - circle of radius rad ns*sigma around each speckle
+%generate list of pixels - circle of radius ns*sigma around each speckle,
+%the value of ns is max(3,rad)
 if (nargin>5)
-    % if a value for rad is entered, use it, but it can't be less than 3
-    % times the Airy disc radius specified by sigma
+    % if a value for rad is entered, use it, but it can't be less than the
+    % Airy disc radius, which is specified by 3*sigma
     ns = max(rad,3);
 else
     % default value is 6
     ns = 6;
 end
-% radius of cell mask
+% radius of cell mask in pixels
 radius = ceil(ns*sigma);
 % length of window
-len = 2*rad+1;
+len = 2*radius+1;
 
 % positions of mini-window in grid form
 [miniImX, miniImY] = ndgrid(-radius:radius,-radius:radius);
 miniDist = sqrt(miniImX.^2 + miniImY.^2);
 % extract from the square grid positions those below the specified radius
 % (convert to circular area)
-[XinPix, YinPix] = find(miniDist<=(ns*sigma));
-XinPix = XinPix-(rad+1);
-YinPix = YinPix-(rad+1);
+[XinPix, YinPix] = find( miniDist<=radius );
+XinPix = XinPix-(radius+1);
+YinPix = YinPix-(radius+1);
 % now XinPix and YinPix contain the positions of the pixels in the circular
 % area around the origin with radius radius
 
