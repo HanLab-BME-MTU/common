@@ -326,6 +326,7 @@ while findEmpty
     end
 end
 movieInfo = movieInfo(emptyStart+1:numFrames-emptyEnd);
+numFramesEff = length(movieInfo);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Link between frames
@@ -364,7 +365,7 @@ tracksCoordAmpLink = tracksCoordAmpLink(indxKeep,:);
 nnDistLinkedFeat = nnDistLinkedFeat(indxKeep,:);
 
 %calculate the new nearest-neighbor distance of each feature in each frame
-for iFrame = 1 : numFrames
+for iFrame = 1 : numFramesEff
     
     %get the coordinates of features in this frame
     coordFrame = tracksCoordAmpLink(:,(iFrame-1)*8+1:(iFrame-1)*8+3);
@@ -410,10 +411,10 @@ numTracksLink = size(tracksFeatIndxLink,1);
 
 %if there are gaps to close (i.e. if there are tracks that start after the
 %first frame and tracks that end before the last frame) ...
-if any(trackStartTime > 1) && any(trackEndTime < numFrames)
+if any(trackStartTime > 1) && any(trackEndTime < numFramesEff)
 
     disp(sprintf('Closing gaps (%d starts and %d ends) ...',...
-        length(find(trackStartTime>1)),length(find(trackEndTime<numFrames))));
+        length(find(trackStartTime>1)),length(find(trackEndTime<numFramesEff))));
 
     %initialize progress display
     progressText(0,'Gap closing');
@@ -729,7 +730,7 @@ if any(trackStartTime > 1) && any(trackEndTime < numFrames)
 
     end %(for iTrack = 1 : numTracksCG)
     
-end %(if any(trackStartTime > 1) && any(trackEndTime < numFrames))
+end %(if any(trackStartTime > 1) && any(trackEndTime < numFramesEff)
 
 %shift time if any of the initial frames are empty
 for iTrack = 1 : length(tracksFinal)

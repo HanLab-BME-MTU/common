@@ -314,7 +314,7 @@ simMPM(:,2:3:end) = dummy(:,2:8:end);
 simMPM(:,3:3:end) = dummy(:,4:8:end);
 simMPM(isnan(simMPM)) = 0;
 
-%% shift coordinates to remove any negative coordinates
+%% shift positions to remove any negative coordinates
 
 %get minimum x and y coordinates
 minX = min(min(simMPM(:,1:3:end)));

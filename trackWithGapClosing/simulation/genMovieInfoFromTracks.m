@@ -105,15 +105,15 @@ for iFrame = 1 : numFrames
         numFeatDetected = 0;
         keepIndx = [];
     end
-    
+
     %store feature information in movieInfo
     movieInfo(iFrame).xCoord = [[xCoordNot2Delete; xCoordCanDelete(keepIndx)] ...
         zeros(numFeatNot2Delete+numFeatDetected,1)];
-     movieInfo(iFrame).yCoord = [[yCoordNot2Delete; yCoordCanDelete(keepIndx)] ...
+    movieInfo(iFrame).yCoord = [[yCoordNot2Delete; yCoordCanDelete(keepIndx)] ...
         zeros(numFeatNot2Delete+numFeatDetected,1)];
-     movieInfo(iFrame).amp    = [[ampNot2Delete; ampCanDelete(keepIndx)] ...
+    movieInfo(iFrame).amp    = [[ampNot2Delete; ampCanDelete(keepIndx)] ...
         zeros(numFeatNot2Delete+numFeatDetected,1)];
-   
+
 end %(for iFrame = 1 : numFrames)
 
 %%% ~~ the end ~~ %%%

@@ -50,7 +50,7 @@ saveResults.filename = 'detection1.mat'; %name of file where input and output ar
 %define the input variables
 
 %some gap closing parameters
-gapCloseParam.timeWindow = 10; %maximum allowed time gap (in frames) between a track end and a track start that allows linking them.
+gapCloseParam.timeWindow = 4; %maximum allowed time gap (in frames) between a track end and a track start that allows linking them.
 gapCloseParam.mergeSplit = 1; %1 if merging and splitting are considered, 0 if not.
 gapCloseParam.minTrackLen = 1; %minimum length of tracks from linking to be used in gap closing.
 
