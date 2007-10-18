@@ -22,10 +22,10 @@ function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(..
 %                     different Gaussians.
 %                     Optional. Default: 0.
 %       variableStd : 0 if assuming that all Gaussians have the same
-%                     standard deviation. 1 if there is no relationship 
+%                     standard deviation. 1 if there is no relationship
 %                     between the standard deviations of different
-%                     Gaussians, 2 if assuming the relationship 
-%                     (std of nth Gaussian) = sqrt(n) * (std of 1st Gaussian). 
+%                     Gaussians, 2 if assuming the relationship
+%                     (std of nth Gaussian) = sqrt(n) * (std of 1st Gaussian).
 %                     WvariableStd can equal 2 only if variableMean is 0.
 %                     Optional. Default: 0.
 %       showPlot    : 0 to not plot anything
@@ -34,6 +34,8 @@ function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(..
 %                     Optional. Default: 1.
 %       maxNumGauss : upper limit to the number of Gaussians.
 %                     Optional. Default: 100 (if 'R', default: 9)
+%                     If 'R', it can also be a vector with [minNumGauss
+%                     maxNumGauss]                    
 %       binStrategy : Binning strategy for calculating the cumulative
 %                     histogram. 1 for using "histogram" and 2 for using
 %                     the data directly.
@@ -51,7 +53,7 @@ function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(..
 %(gaussParam(3)/(gaussParam(2)*sqrt(2pi)))
 %                     *exp(-(x-gaussParam(1))^2/(2*gaussParam(2)^2)
 %
-%        The function does not yet allow to set min#clust, maxPoints!
+%        The function does not yet allow to set maxPoints!
 %
 %Khuloud Jaqaman, August 2006
 
@@ -119,6 +121,15 @@ switch isnumeric(alpha)
         if nargin < 6 || isempty(maxNumGauss)
             maxNumGauss = 100;
         else
+            if length(maxNumGauss) > 1
+                minNumGauss = maxNumGauss(1);
+                maxNumGauss = maxNumGauss(2);
+            else
+                minNumGauss = 1;
+            end
+            if minNumGauss>1
+                warning('minNumGauss can only be taken into account if ''R''') %#ok<WNTAG>
+            end
             if maxNumGauss < 1
                 disp('--fitHistWithGaussians: Variable "maxNumGauss" should be at least 1!');
                 errFlag = 1;
@@ -182,11 +193,16 @@ switch isnumeric(alpha)
         if nargin < 4 || isempty(variableStd)
             maxNumGauss = 9;
         else
-            if variableStd < 1
+            maxNumGauss = variableStd;
+            if length(maxNumGauss) > 1
+                minNumGauss = maxNumGauss(1);
+                maxNumGauss = maxNumGauss(2);
+            else
+                minNumGauss = 1;
+            end
+            if maxNumGauss < 1
                 disp('--fitHistWithGaussians: Variable "maxNumGaussians" should be at least 1');
                 errFlag = 1;
-            else
-                maxNumGauss = variableStd;
             end
         end
 
@@ -433,7 +449,7 @@ switch isR
 
                             %calculate number of degrees of freedom
                             numDegFreeT = numBins - 3*numGaussT;
-                            
+
                             %assign initial values to unknown parameters
                             gaussParamT = [gaussParam; [binCenter(floor(end/2)) ...
                                 10*(binCenter(end)-binCenter(end-1)) numObservations]];
@@ -525,7 +541,7 @@ switch isR
         % run Mclust - they have changed the syntax since the last version!
         try
             % new version
-            evalR(sprintf('clusterData <- Mclust(inputData,G=1:%i)',maxNumGauss))
+            evalR(sprintf('clusterData <- Mclust(inputData,G=%i:%i)',minNumGauss,maxNumGauss))
             % read mu, sigma, and probabilities (which will give amplitudes
             % when multiplied by the number of observations)
             mu = evalR('clusterData$parameters$mean');
@@ -540,7 +556,7 @@ switch isR
         catch
             try
                 % old version
-                evalR(sprintf('clusterData <- Mclust(inputData,1,%i)',maxNumGauss))
+                evalR(sprintf('clusterData <- Mclust(inputData,%i,%i)',minNumGauss,maxNumGauss))
                 % read mu, sigma, and probabilities (which will give amplitudes
                 % when multiplied by the number of observations)
                 mu = evalR('clusterData$mu');
@@ -549,7 +565,11 @@ switch isR
                 if length(sigma) == 1
                     sigma = repmat(sigma,1,length(mu));
                 end
-                amp = evalR('clusterData$pro')*numObservations;
+                if length(mu) == 1
+                    amp = numObservations;
+                else
+                    amp = evalR('clusterData$pro')*numObservations;
+                end
                 numGauss = length(mu);
             catch
                 rethrow(lasterror)

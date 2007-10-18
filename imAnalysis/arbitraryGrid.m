@@ -65,7 +65,7 @@ if any(infExtent(:))
     end
     e_matrix = [e_1',e_2',e_3'];
     [u,v,w] = ndgrid([1,imSize(1)],[1,imSize(2)],[1,imSize(3)]);
-    imageCorners = [u(:)';v(:)';w(:)'];
+    imageCorners = [u(:)';v(:)';w(:)']-repmat(zero',1,8);
     requiredSize = ceil(e_matrix\imageCorners);
     
     % find minimum and maximum extent for the three new dimensions
