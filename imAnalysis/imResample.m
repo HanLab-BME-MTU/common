@@ -7,6 +7,8 @@ function  dataOut = imResample(dataIn, stepIn, stepOut)
 %  coordinates. Transpose the image first, if you measured in image coords.
 %  Be careful: Resampling changes the zero position of your image (it lies
 %  at -0.5 pixels, and this changes with resampling)
+%  If the ratio between the pixelsizes is within 1e-14 of an integer, the
+%  ratio will be treated as integer.
 %
 %  SYNOPSIS dataOut = imResample(dataIn, stepIn, stepOut)
 %
@@ -17,6 +19,11 @@ function  dataOut = imResample(dataIn, stepIn, stepOut)
 %               downsampling.
 %
 %  OUTPUT   dataOut: n-dim resampled array
+%
+%  REMARKS  currently, the code will crash with integer ratios and
+%           non-commensurate sizes. Solution: append the input with NaNs,
+%           and use nansum. Then, multiply the border pixel line so that
+%           there is no obvious resampling artifact
 %
 % c: 10/04 jonas
 %    02/06 kathryn - changed mean to sum
@@ -61,8 +68,10 @@ end
 % interpolation, and finally, the intensity of the new pixel is found by
 % taking the difference of the resampled cumulative sum (idea GD).
 
-% calculate pixelRatio
+% calculate pixelRatio. Take care of rounding errors
 pixelRatio = stepOut ./ stepIn;
+integerRatio = isApproxEqual(round(pixelRatio),pixelRatio,1e-14,'absolute');
+pixelRatio(integerRatio) = round(pixelRatio(integerRatio));
 
 % calculate size of the new image. Round down if necessary
 newSize = floor(oldSize ./ pixelRatio);
@@ -71,7 +80,6 @@ newSize = floor(oldSize ./ pixelRatio);
 deltaSize = oldSize - newSize .* pixelRatio;
 
 % init loop
-integerRatio = floor(pixelRatio)-pixelRatio == zeros(size(pixelRatio));
 currSize = oldSize;
 
 % now loop through dimensions. Use cumsum approach only when needed (slow
