@@ -1,5 +1,5 @@
 function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
-    nnDistFeatures,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
+    nnDistFeatures,numPotLinksPerFeature,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
     filterInfoPrev,kalmanInitParam,useLocalDensity,nnWindow,probDim,...
     linearMotion)
 %LINKFEATURESKALMAN links features between consecutive frames using LAP and directed motion models
@@ -271,6 +271,9 @@ prevCost = NaN(movieInfo(1).num,1);
 %initialize progress display
 progressText(0,'Linking frame-to-frame');
 
+%for paper - get number of potential link per feature
+numPotLinksPerFeature = [];
+
 %go over all frames
 for iFrame = 1 : numFrames-1
 
@@ -289,11 +292,15 @@ for iFrame = 1 : numFrames-1
                 = costMatLinearMotionLink(movieInfo(iFrame:iFrame+1),...
                 kalmanFilterInfo(iFrame),costMatParam,useLocalDensity,...
                 nnDistTracks(1:numFeaturesFrame1),probDim,linearMotion,prevCost);
+            
+            %for paper - get number of potential links per feature
+            numPotLinksPerFeature = [numPotLinksPerFeature; sum(...
+                costMat(1:numFeaturesFrame1,1:numFeaturesFrame2)...
+                ~=nonlinkMarker,2)];
 
             if any(costMat(:)~=nonlinkMarker) %if there are potential links
 
                 %link features based on cost matrix, allowing for birth and death
-                %                 [link12,link21] = lap(costMat,nonlinkMarker,0,1);
                 [link12,link21] = lap(costMat,nonlinkMarker,0);
 
                 %get indices of features in 2nd frame that are connected to features in 1st frame

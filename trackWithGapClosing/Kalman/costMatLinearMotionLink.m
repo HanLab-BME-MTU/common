@@ -213,9 +213,27 @@ costMat(costMat>searchRadius) = NaN;
 
 %append matrix to allow birth and death
 % maxCost = max(max(max(costMat))+1,1);
-maxCost = prctile(costMat(:),95);
+% % maxCost = prctile(costMat(:),80);
+if any(~isnan(prevCost))
+    maxCost = max(prevCost(:));
+else
+    maxCost = prctile(costMat(:),80);
+end
 deathCost = maxCost*ones(numFeaturesFrame1,1);
 birthCost = maxCost*ones(numFeaturesFrame2,1);
+
+% % %for features in first frame that are linked to features in previous
+% % %frames, assign death cost as the 80th percentile of the cost of previous
+% % %links
+% % deathCost = prctile(prevCost(1:numFeaturesFrame1,:),95,2);
+% % 
+% % %calculate 80th percentile of all previous costs to assign as a death cost
+% % %for features in 1st frame not linked to the past and as a birth cost for
+% % %features in 2nd frame
+% % prevCostAve = prctile(prevCost(:),95);
+% % prevCostAve(isnan(prevCostAve)) = prctile(costMat(:),80);
+% % deathCost(isnan(deathCost)) = prevCostAve;
+% % birthCost = prevCostAve*ones(numFeaturesFrame2,1);
 
 %generate upper right and lower left block
 deathBlock = diag(deathCost); %upper right
@@ -343,17 +361,5 @@ costMat(isnan(costMat)) = nonlinkMarker;
 % costMat = costMat.*ampRatio;
 
 
-% % %for features in first frame that are linked to features in previous
-% % %frames, assign death cost as the 80th percentile of the cost of previous
-% % %links
-% % deathCost = prctile(prevCost(1:numFeaturesFrame1,:),50,2);
-% % 
-% % %calculate 80th percentile of all previous costs to assign as a death cost
-% % %for features in 1st frame not linked to the past and as a birth cost for
-% % %features in 2nd frame
-% % prevCostAve = prctile(prevCost(:),50);
-% % prevCostAve(isnan(prevCostAve)) = max(max(costMat)) + 1;
-% % deathCost(isnan(deathCost)) = prevCostAve;
-% % birthCost = prevCostAve*ones(numFeaturesFrame2,1);
 
 

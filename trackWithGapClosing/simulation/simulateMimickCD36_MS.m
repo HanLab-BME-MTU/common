@@ -4,12 +4,13 @@ function [simMPM,tracksSim] = simulateMimickCD36_MS(imSize,numP,lftDist,...
 %
 % INPUT 	imSize        : Image size vector [sx,sy]
 %           numP          : Average number of points per image.
-%           lftDist       : Lifetime distribution vector (normalized 
-%                           probability). the vector is 1-dimensional, as the
-%                           length position automatically corresponds to the 
-%                           number of frames - if e.g. all objects should
-%                           have the same lifetime 10 frames, then lftDist
-%                           should have the form [0 0 0 0 0 0 0 0 0 1]           
+%           lftDist       : Life time distribution. 
+%                           Vector of normalized probability.
+%                           The vector is 1-dimensional, as the index
+%                           corresponds to the number of frames 
+%                           - if e.g. all objects should have the same 
+%                           lifetime 10 frames, then lftDist should 
+%                           have the form [0 0 0 0 0 0 0 0 0 1].
 %           numF          : Number of frames
 %           intVec        : Intensity vector [average std]. std refers to the
 %                           variation in intensity. In counts (assuming,
@@ -210,11 +211,12 @@ for iTrack = 1 : numTracks
     
     %generate main track
     if cnf > 1
-        xyvecTraj = brownianMotion(2,diffCoef2D,cnf-1,1,1,confRad2D); %Brownian part
+        xyvecTraj = brownianMotion(2,diffCoef2D,cnf-1,0.1,1,confRad2D); %Brownian part
         if mType(iTrack) == 1 %linear part
-            trackLin = brownianMotion(1,diffCoef1D,cnf-1,1);
+            trackLin = brownianMotion(1,diffCoef1D,cnf-1,0.1);
             xyvecTraj(:,2) = xyvecTraj(:,2) + trackLin;
         end
+        xyvecTraj = xyvecTraj(1:10:end,:);
     else
         xyvecTraj = zeros(1,2);
     end

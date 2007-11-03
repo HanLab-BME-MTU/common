@@ -10,7 +10,7 @@ function [linkStats,gapStats,mergeSplitStats] = scoreLinksGapsMS(tracksFinal,tra
 %       tracksSim   : Simulated tracks as obtained from
 %                     simulateMimickCD36_MS (structure format).
 %
-%OUTPUT linkStats   : (number of frames - 1) - by - 5 array. Row i 
+%OUTPUT linkStats   : (Number of frames - 1) - by - 5 array. Row i 
 %                     corresponds to the links from frame i to frame i+1.
 %                     The columns show the number of:
 %                     (1) ground truth links;
