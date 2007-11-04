@@ -1,7 +1,9 @@
-function [mSqDisp,mSqDMatrix,mSqDErrMatrix,errFlag] = getTracksMSqD(trackedFeatureInfo)
-%GETTRACKSMSQD calculates the mean squared displacement of the input tracks
+function [mSqDisp,mSqDMatrix,mSqDErrMatrix,errFlag] = ...
+    getIndTrackMSqD(trackedFeatureInfo)
+%GETINDTRACKMSQD calculates the mean squared displacement of the input tracks
 %
-%SYNOPSIS [mSqDisp,mSqDMatrix,mSqDErrMatrix,errFlag] = getTracksMSqD(trackedFeatureInfo)
+%SYNOPSIS [mSqDisp,mSqDMatrix,mSqDErrMatrix,errFlag] = ...
+%    getIndTrackMSqD(trackedFeatureInfo)
 %
 %INPUT  trackedFeatureInfo: Matrix indicating the positions and amplitudes 
 %                           of the tracked features to be plotted. Number 
@@ -39,7 +41,7 @@ errFlag = 0;
 
 %check whether correct number of input arguments was used
 if nargin < 1
-    disp('--getTracksMSqD: Incorrect number of input arguments!');
+    disp('--getIndTrackMSqD: Incorrect number of input arguments!');
     errFlag = 1;
     return
 end
