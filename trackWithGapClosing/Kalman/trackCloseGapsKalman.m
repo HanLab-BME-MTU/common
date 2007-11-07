@@ -1,11 +1,11 @@
 function [tracksFinal,kalmanInfoLink,numPotLinksPerFeature,numPotLinksPerTrack,errFlag] = trackCloseGapsKalman(...
     movieInfo,costMatParam,gapCloseParam,kalmanInitParam,useLocalDensity,...
-    saveResults,probDim,linearMotion)
+    saveResults,probDim,linearMotion,verbose)
 %TRACKCLOSEGAPSKALMAN (1) links features between frames using the Kalman Filter and (2) closes gaps, with merging and splitting
 %
 %SYNOPSIS [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %    movieInfo,costMatParam,gapCloseParam,kalmanInitParam,useLocalDensity,...
-%    saveResults,probDim,linearMotion)
+%    saveResults,probDim,linearMotion,verbose)
 %
 %INPUT  movieInfo    : Array of size equal to the number of frames in a
 %                      movie, containing the fields:
@@ -65,6 +65,8 @@ function [tracksFinal,kalmanInfoLink,numPotLinksPerFeature,numPotLinksPerTrack,e
 %                      Optional. If not input, dimensionality will be
 %                      derived from movieInfo.
 %       linearMotion : 1 if linear motion is to be considered, 0 otherwise.
+%                      Optional. Default: 1.
+%       verbose      : 1 to show calculation progress, 0 otherwise.
 %                      Optional. Default: 1.
 %
 %       All optional variables can be entered as [] to use default values.
@@ -216,6 +218,11 @@ if nargin < 8 || isempty(linearMotion)
     linearMotion = 1;
 end
 
+%check whether linear motion is to be considered
+if nargin < 9 || isempty(verbose)
+    verbose = 1;
+end
+
 %exit if there are problems with input
 if errFlag
     disp('--trackCloseGapsKalman: Please fix input parameters.');
@@ -334,26 +341,32 @@ end
 %% Link between frames
 
 %get initial tracks by linking features between consecutive frames
-disp('Linking features forwards ...');
+if verbose
+    disp('Linking features forwards ...');
+end
 [dummy,dummy1,kalmanInfoLink] = linkFeaturesKalman(movieInfo,costMatParam,[],...
     kalmanInitParam,useLocalDensity.link,useLocalDensity.nnWindowL,...
-    probDim,linearMotion);
+    probDim,linearMotion,verbose);
 
 %redo the linking by going backwards in the movie and using the
 %Kalman filter information from the first linking attempt
 %this will improve the linking and the state estimation
-disp('Linking features backwards ...');
+if verbose
+    disp('Linking features backwards ...');
+end
 [dummy,dummy1,kalmanInfoLink] = linkFeaturesKalman(movieInfo(end:-1:1),...
     costMatParam,kalmanInfoLink(end:-1:1),kalmanInitParam,...
-    useLocalDensity.link,useLocalDensity.nnWindowL,probDim,linearMotion);
+    useLocalDensity.link,useLocalDensity.nnWindowL,probDim,linearMotion,verbose);
 clear dummy dummy1
 
 %go forward one more time to get the final estimate of the initial tracks
-disp('Linking features forwards ...');
+if verbose
+    disp('Linking features forwards ...');
+end
 [tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink,nnDistLinkedFeat,...
     numPotLinksPerFeature,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
     kalmanInfoLink(end:-1:1),kalmanInitParam,useLocalDensity.link,...
-    useLocalDensity.nnWindowL,probDim,linearMotion);
+    useLocalDensity.nnWindowL,probDim,linearMotion,verbose);
 
 %get track start times, end times amd lifetimes
 trackSEL = getTrackSEL(tracksCoordAmpLink);
@@ -412,11 +425,15 @@ numTracksLink = size(tracksFeatIndxLink,1);
 %first frame and tracks that end before the last frame) ...
 if any(trackStartTime > 1) && any(trackEndTime < numFramesEff)
 
-    disp(sprintf('Closing gaps (%d starts and %d ends) ...',...
-        length(find(trackStartTime>1)),length(find(trackEndTime<numFramesEff))));
+    if verbose
+        disp(sprintf('Closing gaps (%d starts and %d ends) ...',...
+            length(find(trackStartTime>1)),length(find(trackEndTime<numFramesEff))));
+    end
 
     %initialize progress display
-    progressText(0,'Gap closing');
+    if verbose
+        progressText(0,'Gap closing');
+    end
 
     %calculate the cost matrix, which already includes the
     %costs of birth and death
@@ -739,7 +756,9 @@ if any(trackStartTime > 1) && any(trackEndTime < numFramesEff)
         
     else %if there are no possible links
 
-        disp('No gaps to close!');
+        if verbose
+            disp('No gaps to close!');
+        end
 
         %convert matrix of tracks into structure
         tracksFinal = convertMat2Struct(tracksCoordAmpLink,tracksFeatIndxLink);
@@ -747,11 +766,15 @@ if any(trackStartTime > 1) && any(trackEndTime < numFramesEff)
     end %(if any(~isfinite(nonzeros(costMat))))
 
     %display elapsed time
-    progressText(1,'Gap closing');
+    if verbose
+        progressText(1,'Gap closing');
+    end
 
 else %if there are no gaps to close
 
-    disp('No gaps to close!');
+    if verbose
+        disp('No gaps to close!');
+    end
 
     %convert matrix of tracks into structure
     tracksFinal = convertMat2Struct(tracksCoordAmpLink,tracksFeatIndxLink);

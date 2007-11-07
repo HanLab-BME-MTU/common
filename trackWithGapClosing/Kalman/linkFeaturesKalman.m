@@ -1,13 +1,13 @@
 function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
     nnDistFeatures,numPotLinksPerFeature,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
     filterInfoPrev,kalmanInitParam,useLocalDensity,nnWindow,probDim,...
-    linearMotion)
+    linearMotion,verbose)
 %LINKFEATURESKALMAN links features between consecutive frames using LAP and directed motion models
 %
 %SYNOPSIS [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
 %    nnDistFeatures,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
 %    filterInfoPrev,kalmanInitParam,useLocalDensity,nnWindow,probDim,...
-%    linearMotion)
+%    linearMotion,verbose)
 %
 %INPUT  movieInfo         : Array of size equal to the number of frames
 %                           in a movie, containing the fields:
@@ -60,6 +60,8 @@ function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
 %                           derived from movieInfo.
 %       linearMotion      : 1 if linear motion is to be considered, 0 
 %                           otherwise. Optional. Default: 1.
+%       verbose           : 1 to show calculation progress, 0 otherwise.
+%                           Optional. Default: 1.
 %
 %OUTPUT trackedFeatureIndx: Connectivity matrix of features between time points.
 %                           Rows indicate continuous tracks, while columns 
@@ -162,6 +164,11 @@ end
 %check whether linear motion is to be considered
 if nargin < 8 || isempty(linearMotion)
     linearMotion = 1;
+end
+
+%check whether linear motion is to be considered
+if nargin < 9 || isempty(verbose)
+    verbose = 1;
 end
 
 %exit if there are problems with input
@@ -269,7 +276,9 @@ end
 prevCost = NaN(movieInfo(1).num,1);
 
 %initialize progress display
-progressText(0,'Linking frame-to-frame');
+if verbose
+    progressText(0,'Linking frame-to-frame');
+end
 
 %for paper - get number of potential link per feature
 numPotLinksPerFeature = [];
@@ -514,7 +523,9 @@ for iFrame = 1 : numFrames-1
     end %(if numFeaturesFrame1 ~= 0 ... else ...)
 
     %display progress
-    progressText(iFrame/(numFrames-1),'Linking frame-to-frame');
+    if verbose
+        progressText(iFrame/(numFrames-1),'Linking frame-to-frame');
+    end
 
 end %(for iFrame=1:numFrames-1)
 
