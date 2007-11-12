@@ -98,7 +98,7 @@ if factor ~= -1
         binLength = 2*interQuartileDist*length(data)^(-1/3)*factor;
 
         % number of bins: divide data range by binLength
-        nBins = floor((max(data)-min(data))/binLength);
+        nBins = round((max(data)-min(data))/binLength);
 
         if ~isfinite(nBins)
             nBins = length(unique(data));

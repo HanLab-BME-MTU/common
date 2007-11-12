@@ -602,7 +602,7 @@ end
 if showPlot == 2
     [numObsPerBinP,binCenterP] = histogram(observations,'smooth');
     numObsPerBinP = numObsPerBinP*(binCenterP(2)-binCenterP(1));
-else
+elseif showPlot ~= 0
     [numObsPerBinP,binCenterP] = histogram(observations);
     numObsPerBinP = numObsPerBinP*(binCenterP(2)-binCenterP(1));
 end
