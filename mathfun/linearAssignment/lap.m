@@ -301,7 +301,7 @@ clear cc;
 % Also, type the variables here already. Val should be a double, anyway,
 % but better make sure, as the mex function is not forgiving.
 rowIdx = int32([0;rowIdx]);
-colIdx = int32([0;find(diff([0;colIdx]));length(val)]);
+%colIdx = int32([0;find(diff([0;colIdx]));length(val)]);
 val = double([0; val]);
 
 
@@ -322,8 +322,11 @@ val = double([0; val]);
 % I saved some more memory --Jonas
 % The function wants to give four outputs. u and v seem to be the costs
 % associated with links in x and y, respectively.
+% For some really weird reason, there is a seg-fault if colIdx is not being
+% assigned above. WTF.
 [x, y, u, v] = ...
-    mexLap(double(scc(1)), int32(length(val)), val, rowIdx, colIdx); %#ok<NASGU>
+    mexLap(double(scc(1)), int32(length(val)), val, ...
+    rowIdx, int32([0;find(diff([0;colIdx]));length(val)])); %#ok<NASGU>
 
 %==================================
 
