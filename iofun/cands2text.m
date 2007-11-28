@@ -1,6 +1,8 @@
  defaultFileName = '*.mat';    
  [firstCandsName, firstCandsPath] = uigetfile('.mat', 'Please select the first speckle/vesicle data file', defaultFileName);
 
+ 
+ 
  firstCandsName = [firstCandsPath, firstCandsName];
 
  candsStackList = getFileStackNames(firstCandsName);
