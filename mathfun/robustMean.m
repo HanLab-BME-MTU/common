@@ -1,10 +1,11 @@
-function [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data,dim)
+function [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data,dim,k)
 %ROBUSTMEAN calculates mean and standard deviation discarding outliers
 %
 % SYNOPSIS [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data)
 %
 % INPUT    data : input data
-%          dim  : dimension along which the mean is taken
+%          dim  : (opt) dimension along which the mean is taken
+%          k    : (opt) #of sigmas at which to place cut-off
 %
 % OUTPUT   finalMean : robust mean
 %          stdSample : std of the data (divide by sqrt(n) to get std of the
@@ -27,6 +28,9 @@ end
 if nargin<2 || isempty(dim)
     dim = 1;
 end
+if nargin < 3 || isempty(k)
+    k = 3;
+end
 
 
 %========================
@@ -34,7 +38,7 @@ end
 %========================
 
 % define magic numbers:
-k=3; %cut-off is roughly at 3 sigma, see Danuser, 1992 or Rousseeuw & Leroy, 1987
+%k=3; %cut-off is roughly at 3 sigma, see Danuser, 1992 or Rousseeuw & Leroy, 1987
 magicNumber2=1.4826^2; %see same publications
 
 % remember data size and reduced dataSize

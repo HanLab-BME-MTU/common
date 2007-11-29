@@ -40,7 +40,7 @@ if nargin < 3 || isempty(n)
     n = def_n;
 end
 if nargin < 4 || isempty(gaussOrBessel)
-    gob = 'def_gob';
+    gob = def_gob;
 else
     switch lower(gaussOrBessel)
         case 'gauss'

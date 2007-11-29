@@ -1,6 +1,6 @@
-function out = returnRightVector(vector, nFix, rowOrCol)
+function out = returnRightVector(vector, nFix, rowOrCol, noWarn)
 %RETURNRIGHTVECTOR checks if n-by-x has the correct size and transposes it if necessary
-% 
+%
 % For many functions, it is necessary that inputs are of the form n-by-x or
 % x-by-n, where x is a fixed number of columns/rows. RETURNRIGHTVECTOR is a
 % utility function for checking such input and transposing it if necessary.
@@ -13,6 +13,8 @@ function out = returnRightVector(vector, nFix, rowOrCol)
 %           nFix  : (opt, {1}) number of fixed rows/cols in the output (x)
 %           rowOrCol : (opt, ['r'/{'c'}]) whether output should be in rows
 %                      (x-by-n) or columns (n-by-x).
+%           noWarn : (opt, {1}) if there should be no warning with
+%                       ambiguous input
 %
 % OUTPUT    out   : output vector
 %
@@ -55,6 +57,10 @@ switch rowOrCol
         error('rowOrCol has to be either ''r'' or ''c''!')
 end
 
+if nargin < 4 || isempty(noWarn)
+    noWarn = false;
+end
+
 %========================
 
 
@@ -73,8 +79,11 @@ if ~any(vSize == nFix)
     error('at least one dimension has to have the fixed lenght')
 end
 if all(vSize == nFix)
-    warning('RETURNRIGHTVECTOR:SQUAREINPUT',...
-        'Ambiguous input: The number of rows matches the number of columns. \n The input might have to be transposed')
+    if ~noWarn
+        warning('RETURNRIGHTVECTOR:SQUAREINPUT',...
+            'Ambiguous input: The number of rows matches the number of columns. \n The input might have to be transposed')
+
+    end
 end
 
 % transpose if necessary

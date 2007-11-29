@@ -1,4 +1,4 @@
-function [x,Qxx,goodRows,sigmaB] = linearLeastMedianSquares(A,B,V,x0)
+function [x,Qxx,goodRows,sigmaB] = linearLeastMedianSquares(A,B,V,x0,k)
 %LINEARLEASTMEDIANSQUARES uses a least median square estimate to do robust least squares fitting of data with outliers
 %
 % linearLeastMedianSquares fits linear problems in the form of A*x = B + E,
@@ -23,6 +23,7 @@ function [x,Qxx,goodRows,sigmaB] = linearLeastMedianSquares(A,B,V,x0)
 %            x0  : optional initial guess (default: ones(size(x)))
 %                  (fminsearch is sensitive to initial conditions, so it helps 
 %                  to have a good first guess)
+%            k   : outlier threshold. Default is {3} sigma. 
 %
 % OUTPUT   : x,Qxx : fitted unknowns and covariance
 %            goodRows : rows in B that are not outliers
@@ -38,7 +39,7 @@ function [x,Qxx,goodRows,sigmaB] = linearLeastMedianSquares(A,B,V,x0)
 % TEST INPUT
 %==============
 
-if nargin < 2 | isempty(A) | isempty(B)
+if nargin < 2 || isempty(A) || isempty(B)
     error('Not enough or empty input arguments in linearLeastMedianSquares');
 end
 
@@ -46,7 +47,7 @@ end
 sizA = size(A);
 
 % V: default: eye. However, myLscov accepts a vector, too.
-if nargin < 3 | isempty(V)
+if nargin < 3 || isempty(V)
     V = ones(sizA(1),1);
     diagInvV = ones(sizA(1),1);
     vIsVector = 1;
@@ -66,13 +67,19 @@ else
     end
 end
 
+% set sigma cutoff
+if nargin < 5 || isempty(k)
+    k = 3;
+end
+
 % --- remove NaNs
 
 % find them
 [badRowA,c] = find(~isfinite(A));
 [badRowB,c] = find(~isfinite(B));
 [badRowV,c] = find(~isfinite(V));
-badRows = union(badRowA, badRowB, badRowV);
+badRows = union(badRowA, badRowB);
+badRows = union(badRows, badRowV);
 
 % remove bad rows if there are any
 if ~isempty(badRows)
@@ -102,8 +109,8 @@ end
 %===================================
 
 % If no good initialization provided, we need to fit to find something ok
-if nargin < 4 | isempty(x0)
-    x0 = fitRoutine(A,B,V,diagInvV,vIsVector,ones(sizA(2),1));
+if nargin < 4 || isempty(x0)
+    x0 = fitRoutine(A,B,V,diagInvV,vIsVector,ones(sizA(2),1),k);
 else
     if length(x0)~=sizA(2)
         error('not the right number of initial guesses!')
@@ -113,7 +120,7 @@ end
 % fit. If there were NaNs in the initial guess, set them to 0 - otherwise
 % we have a problem.
 x0(isnan(x0)) = 0;
-[x,Qxx,goodRows,sigmaB] = fitRoutine(A,B,V,diagInvV,vIsVector,x0);
+[x,Qxx,goodRows,sigmaB] = fitRoutine(A,B,V,diagInvV,vIsVector,x0,k);
 
 %====================
 % OUTPUT
@@ -127,15 +134,14 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ===== FITTING FUNCTION =====
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [x,Qxx,goodRows,sigmaB] = fitRoutine(A,B,V,diagInvV,vIsVector,x0)
+function [x,Qxx,goodRows,sigmaB] = fitRoutine(A,B,V,diagInvV,vIsVector,x0,k)
 
 %========================
 % LEAST MEDIAN SQUARES
 %========================
 
-% define magic numbers:
-k=3; %value important for calculation of sigma, see Danuser, 1992 or Rousseeuw & Leroy, 1987
-magicNumber2=1.4826^2; %see same publications
+% define magic number:
+magicNumber2=1.4826^2; %value important for calculation of sigma, see Danuser, 1992 or Rousseeuw & Leroy, 1987
 
 % generate function string
 functionString = ['inline(''median((A*x-B).*diagInvV.*(A*x-B))'',''x'',''A'',''B'',''diagInvV'')'];

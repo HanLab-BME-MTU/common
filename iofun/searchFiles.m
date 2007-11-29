@@ -1,7 +1,7 @@
-function [listOfFiles,tokenList] = searchFiles(includeString,excludeString,directory,includeSubDirectories,selectionMode)
+function [listOfFiles,tokenList] = searchFiles(includeString,excludeString,directory,includeSubDirectories,selectionMode,fullName)
 %searchFiles is an utility to search for files containing a specific string
 %
-%SYNOPSIS listOfFiles = searchFiles(includeString,excludeString,directory,includeSubDirectories,selectionMode)
+%SYNOPSIS listOfFiles = searchFiles(includeString,excludeString,directory,includeSubDirectories,selectionMode,fullName)
 %
 %INPUT    includeString: string contained in the filenames you are looking
 %                               for (can be regular expression; is case
@@ -15,6 +15,8 @@ function [listOfFiles,tokenList] = searchFiles(includeString,excludeString,direc
 %         selectionMode (opt): which file(s) to select if there are several files matching the
 %                               includeString within one directory
 %                              {'all'}-all; 'new'-newest; 'old'-oldest; 'GUI'-open GUI to select one file
+%         fullName (opt): if 1, listOfFiles will be a nFiles-by-1 cell
+%                               array with full path. Default: 0
 %
 %OUTPUT  listOfFiles: cell array with {[fileName] [directoryName]}
 %        tokenList  : if includeString is a regular expression with tokens
@@ -103,7 +105,10 @@ else
     end
 end
 
-
+% fullfile
+if nargin<6||isempty(fullName)
+    fullName = false;
+end
 
 %---end test input---
 
@@ -124,7 +129,7 @@ topDir2check  = 1;
 
 listOfFilesInitLength = 100;
 listOfFilesLength     = 100;
-listOfFiles           = cell(100,2);
+listOfFiles           = cell(100,2-fullName);
 listOfFilesCt         = 0;
 
 
@@ -178,12 +183,18 @@ while ~isempty(dirs2check) && ~isempty(dirs2check{topDir2check})
         if listOfFilesCt > listOfFilesLength
             tmpListOfFiles = listOfFiles;
             newListOfFilesLength = listOfFilesLength + listOfFilesInitLength;
-            listOfFiles = cell(newListOfFilesLength,2);
+            listOfFiles = cell(newListOfFilesLength,2-fullName);
             listOfFiles(1:listOfFilesLength,:) = tmpListOfFiles;
             listOfFilesLength = newListOfFilesLength;
         end
 
+        if fullName
+            for f=1:numNewFiles
+                listOfFiles{listOfFilesCtStart-1+f} = fullfile(currentDir,newFiles{f});
+            end
+        else
         listOfFiles(listOfFilesCtStart:listOfFilesCt,:) = [newFiles, pathCell'];
+        end
 
     end %if ~isempty(newFiles)
 
