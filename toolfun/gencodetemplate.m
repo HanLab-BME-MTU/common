@@ -40,6 +40,14 @@ end
 % the username in the input dialogue, anyway.
 username = getenv('username');
 
+% Add your username here if you want to change/expand the name
+switch username
+    case 'p0877743'
+        username = 'Jonas Dorn';
+    otherwise
+        % don't change username
+end
+
 % get version, OS, date
 vers    = version;
 os      = getenv('OS');
