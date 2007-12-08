@@ -79,7 +79,7 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %                       estimated from fitting to local maxima in the movie.
 %       errFlag       : 0 if function executes normally, 1 otherwise.
 %
-%Khuloud Jaqaman, July 2006
+%Khuloud Jaqaman, September 2007
 
 %% Output
 
@@ -485,7 +485,7 @@ if numSigmaIter
                 numFeats = length(featAmp);
                 parameters = zeros(numFeats,5);
                 if numFeats >= 1
-                    
+
                     for iFeat = 1 : numFeats
 
                         %crop image around selected feature

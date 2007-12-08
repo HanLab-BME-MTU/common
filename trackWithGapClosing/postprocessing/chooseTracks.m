@@ -1,4 +1,4 @@
-function [trackIndx,errFlag] = chooseTracks(trackedFeatureInfo,criteria)
+function [trackIndx,errFlag] = chooseTracks(trackedFeatureInfo,criteria,probDim)
 %CHOOSETRACKS outputs the indices of tracks that satisfy the input criteria
 %
 %SYNOPSIS [trackIndx,errFlag] = chooseTracks(trackedFeatureInfo,criteria);
@@ -61,24 +61,22 @@ function [trackIndx,errFlag] = chooseTracks(trackedFeatureInfo,criteria)
 %           .initialZCoord   :Structure with fields:
 %               .min            :minimum z-coordinate.
 %               .max            :maximum z-coordinate.
+%           .trackType       :0/1 to choose Brownian/directed tracks.
 %                           All criteria are optional. Leave out or give as
 %                           [] if not of interest.
+%       probDim           : 2 for 2D, 3 for 3D. Optional. Default: 2.
 %
 %OUTPUT trackIndx         : Indices of (compound) tracks that satisfy the input criteria.
 %       errFlag           : 0 if function executes normally, 1 otherwise
 %
 %Khuloud Jaqaman, August 2006
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Output
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Output
 
 trackIndx = [];
 errFlag = 0;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Input
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Input
 
 %check whether correct number of input arguments was used
 if nargin < 2
@@ -87,9 +85,11 @@ if nargin < 2
     return
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Track indices
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if nargin < 3 || isempty(probDim)
+    probDim = 2;
+end
+
+%% Track indices
 
 %get number of tracks
 if isstruct(trackedFeatureInfo)
@@ -308,9 +308,20 @@ if isfield(criteria,'initialZCoord') && ~isempty(criteria.initialZCoord)
     trackIndx = trackIndx & comparisonVec >= minCrit & comparisonVec <= maxCrit;
 end
 
+%Check track type
+if isfield(criteria,'trackType') && ~isempty(criteria.trackType)
+    
+    %get track types
+    comparisonVec = getTrackType(trackedFeatureInfo,probDim);
+
+    %assign one to tracks that satisfy this criterion (plus all criteria above)
+    trackIndx = trackIndx & comparisonVec == criteria.trackType;
+    
+end
+
 %keep only the indices of tracks that satisfy all input criteria
 trackIndx = find(trackIndx);
 
 
-%%%%% ~~ the end ~~ %%%%%
+%% ~~~ the end ~~~
 

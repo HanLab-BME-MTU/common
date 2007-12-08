@@ -1,58 +1,32 @@
-function asymmetry = asymDeterm2D3D(positions,probDim)
-
-% ASYMDETERMINATION  function which calculates the asymmetry of the gyration
-%                    tensor of the x and y values of a given set of
-%                    datapoints (trajectory)
+function asymParam = asymDeterm2D3D(positions)
+%ASYMDETERM2D3D estimates the asymmetry in a scatter of positions
 %
-% SYNOPSIS  asymmetry = asymDetermination(positions)
-% 
-% INPUT     positions = n-by-m matrix
-%                   
-%                   rows: timepoints along a trajectory
-%                   columns: 1. x-values
-%                            2. y-values  
-%                            3. z-values (if 3D)
+%SYNPOSIS asymParam = asymDeterm2D3D(positions,probDim)
 %
-%           probDim: Problem dimension. 2 (for 2D) or 3 (for 3D)
+%INPUT  positions: n-by-2/3 array of positions (x,y,[z])
 %
-% OUTPUT    asymmetry = asymmetry of all positions in the dataset
-%                       (trajectory)
+%OUTPUT asymParam: Parameter estimating asymmetry of positional scatter
 %
-% CREATED gp 4/02/07
+%Khuloud Jaqaman, December 2007
 
-%-----------------------------------------
-% Initialize
-%-----------------------------------------
+%get problem dimensionality (2D or 3D)
+probDim = size(positions,2);
 
-asymmetry = [];
+%calculate the variance-covariance matrix of positions
+posCov = nancov(positions);
 
-%----------------------------------------------------------
-% Calculation of the 2D-radius (Rg) of the gyration tensor 
-%----------------------------------------------------------
-
-%reserve memory for the gyration tensor Rg
-Rg = zeros(probDim);
-
-%calculate the components of Rg
-for i = 1 : probDim
-    for j = i : probDim
-        Rg(i,j) = max((mean(positions(:,i).*positions(:,j))) - ...
-            (mean(positions(:,i)) * (mean(positions(:,j)))),eps);
-        Rg(j,i) = Rg(i,j); %tensor is symmetric
-    end
-end
-
-%compute the eigenvalues and the eigenvectors of Rg
-[eigenVector,eigenValue] = eig(Rg);
+%perform eigenvalue decomposition
+[eigenVec,eigenVal] = eig(posCov);
 
 %get the eigenvalues in a vector
-eigenValue = diag(eigenValue);
+eigenVal = diag(eigenVal);
 
-%calculate the asymmetry parameter
+%calculate some intermediate sums
 doubleSum = 0;
 for i = 1 : probDim - 1
-    doubleSum = doubleSum + sum((eigenValue(i) - eigenValue(i+1:end)).^2);
+    doubleSum = doubleSum + sum( ( eigenVal(i) - eigenVal(i+1:end) ).^2 );
 end
-singleSum = (probDim - 1) * (sum(eigenValue))^2;
-asymmetry = -log(1 - doubleSum / singleSum);
+singleSum = (probDim - 1) * ( sum(eigenVal) )^2;
 
+%calculate asymmetry parameter
+asymParam = -log( 1 - doubleSum / singleSum );

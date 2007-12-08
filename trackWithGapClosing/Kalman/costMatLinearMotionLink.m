@@ -114,6 +114,7 @@ else
     transMat(:,:,2) = eye(vecSize) + diag(-ones(probDim,1),probDim); %backward drift transition matrix
     transMat(:,:,1) = eye(vecSize); %zero drift transition matrix
 end
+
 %construct observation matrix
 observationMat = [eye(probDim) zeros(probDim)]; %observation matrix
 
