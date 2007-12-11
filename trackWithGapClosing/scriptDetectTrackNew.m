@@ -50,7 +50,7 @@ saveResults.filename = 'detect_071023ControlCD36_con10_4.mat'; %name of file whe
 %define the input variables
 
 %some gap closing parameters
-gapCloseParam.timeWindow = 7; %maximum allowed time gap (in frames) between a track end and a track start that allows linking them.
+gapCloseParam.timeWindow = 10; %maximum allowed time gap (in frames) between a track end and a track start that allows linking them.
 gapCloseParam.mergeSplit = 1; %1 if merging and splitting are considered, 0 if not.
 gapCloseParam.minTrackLen = 2; %minimum length of tracks from linking to be used in gap closing.
 
@@ -75,10 +75,10 @@ costMatParam.timeReachConfB = 1; %in the code, the search radius expands with th
 costMatParam.timeReachConfL = gapCloseParam.timeWindow; %same as the previous parameter, but for the linear part of the motion. Again, I found that 5 works best, but you can play around with this parameter.
 costMatParam.closestDistScaleCG = 2; %keep this as 2.
 costMatParam.maxStdMultCG = 100; %and keep this as 20.
-costMatParam.lenForClassify = 10; %keep this as 10.
+costMatParam.lenForClassify = 6; %keep this as 10.
 costMatParam.maxAngleVV = 20; %maximum angle between the directions of motion of two tracks that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
 costMatParam.maxAngleVD = 20; %maximum angle between the direction of motion of a track and the vector connecting its center to the center of another track that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
-costMatParam.ampRatioLimitCG = [0.65 4]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
+costMatParam.ampRatioLimitCG = [0.5 10]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
 
 %parameters for using local density to expand search radius
 %the search radius is generall calculated from the motion parameters of a
@@ -90,8 +90,8 @@ useLocalDensity.nnWindowL = gapCloseParam.timeWindow; %number of frames before t
 useLocalDensity.nnWindowCG = gapCloseParam.timeWindow; %number of frames before/after the current one where you want to look to see a track's nearest neighbor at its end/start (in the gap closing step).
 
 %saveResults
-saveResults.dir = '/mnt/sickkids/Hiro/071018CLNB37/bleb4/analysis/'; %directory where to save input and output
-saveResults.filename = 'tracks_071018CLNB37_bleb_4_3.mat'; %name of file where input and output are saved
+saveResults.dir = '/mnt/sickkids/Hiro/071018CLNB37/noco6/analysis/'; %directory where to save input and output
+saveResults.filename = 'track_071018CLNB37_noco6_4_3.mat'; %name of file where input and output are saved
 % saveResults = 0;
 
 %run the tracking function

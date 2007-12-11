@@ -74,18 +74,18 @@ end
 %for different track lengths
 if probDim == 2
     %90th percentile:
-    asymThresh = [[NaN NaN 5 2.8 2.2 1.9 1.7 1.6 1.5 1.5 1.45 1.4 1.4 ...
-        1.4 1.4 1.4 1.4 1.35 1.35 1.3]'; 1.3*ones(numFrames-20,1)];
+    asymThresh = [[NaN NaN 5 2.7 2.1 1.8 1.7 1.6 1.5 1.45 1.45 1.4 1.4 ...
+        1.4 1.4 1.4 1.4 1.35 1.35 1.35]'; 1.3*ones(numFrames-20,1)];
     % % %     %99th percentile:
-    % % %     asymThresh = [[NaN NaN 10 5 3.7 3 2.8 2.7 2.6 2.5 2.4 2.3 ...
-    % % %         2.2 2.2 2.1 2.1 2.1 2.1 2.1 2.1]'; 2*ones(numFrames-20,1)];
+    % % %     asymThresh = [[NaN NaN 9 5 3.5 3 2.7 2.5 2.4 2.4 2.3 2.2 ...
+    % % %         2.2 2.2 2.2 2.2 2.2 2.2 2.2 2.2]'; 2.1*ones(numFrames-20,1)];
 else
     %90th percentile:
-    asymThresh = [[NaN NaN 1.9 1.3 1.1 1.0 0.9 0.9 0.9 0.9 0.85 0.85 ...
-        0.85 0.85 0.85]'; 0.8*ones(numFrames-15,1)];
+    asymThresh = [[NaN NaN 2.9 1.9 1.5 1.4 1.3 1.3 1.2 1.2 1.2 1.2 ...
+        1.2 1.2 1.2]'; 1.1*ones(numFrames-15,1)];
     % % %     %99th percentile:
-    % % %     asymThresh = [[NaN NaN 4 2.5 2.0 1.8 1.6 1.6 1.5 1.5 1.5 1.45 1.4 ...
-    % % %         1.4 1.4]'; 1.4*ones(numFrames-15,1)];
+    % % %     asymThresh = [[NaN NaN 5.5 3 2.5 2.3 2 2 1.9 1.9 1.9 1.8 1.8 ...
+    % % %         1.8 1.7]'; 1.7*ones(numFrames-15,1)];
 end
 
 %% asymmetry calculation
