@@ -31,6 +31,10 @@ function [simMPM,tracksSim] = simulateMimickCD36_MS(imSize,numP,lftDist,...
 %                               probability of having 0, 1, 2 or 3 splits/merges.
 %                               The sum of probabilities = 1.
 %                               Skip field or enter [] for no merges & splits.
+%               .randOrient   : 1 if giving each linear track a random
+%                               direction, 0 to give them all the same
+%                               direction. Skip field or enter [] for
+%                               default = 0;
 %
 % OUTPUT    simMPM        : Matrix of tracks for Dinah's makeAiryImageFromMPM.
 %           tracksFinal   : Tracks in the format of the output of
@@ -59,17 +63,22 @@ ly = imSize(2);
 diffCoef2D = motionParam.diffCoef2D;
 confRad2D = motionParam.confRad2D;
 diffCoef1D = motionParam.diffCoef1D;
-if isfield(motionParam,'fractionLin')
+if isfield(motionParam,'fractionLin') && ~isempty(motionParam.fractionLin)
     fractionLin = motionParam.fractionLin;
 else
     fractionLin = 0.5;
 end
-if isfield(motionParam,'probMS')
+if isfield(motionParam,'probMS') && ~isempty(motionParam.probMS)
     mergeSplit = 1;
     probMS = motionParam.probMS;
     probMS = [probMS(1) sum(probMS(1:2)) sum(probMS(1:3)) 1];
 else
     mergeSplit = 0;
+end
+if isfield(motionParam,'randOrient') && ~isempty(motionParam.randOrient)
+    randOrient = motionParam.randOrient;
+else
+    randOrient = 0;
 end
 
 %%   place MTs in image
@@ -112,12 +121,15 @@ while numTracksTmp < numTracks
 
     %assign track lifetimes based on the input lifetime distribution
     randVar = rand(10*numTracks,1);
-    lifetimeTmp = zeros(10*numTracks,1);
-    for iTrack = 1 : 10*numTracks
+    randVar = randVar(randVar<max(cumLftDist));
+    numAttempts = length(randVar);
+    lifetimeTmp = zeros(numAttempts,1);
+    for iTrack = 1 : numAttempts
         lifetimeTmp(iTrack) = find(cumLftDist>=randVar(iTrack),1,'first');
     end
 
     %hence calculate ending frame
+    startframeTmp = startframeTmp(1:numAttempts);
     endframeTmp = startframeTmp + lifetimeTmp - 1;
 
     %retain only tracks that end after frame 1
@@ -213,8 +225,20 @@ for iTrack = 1 : numTracks
     if cnf > 1
         xyvecTraj = brownianMotion(2,diffCoef2D,cnf-1,0.1,1,confRad2D); %Brownian part
         if mType(iTrack) == 1 %linear part
-            trackLin = brownianMotion(1,diffCoef1D,cnf-1,0.1);
-            xyvecTraj(:,2) = xyvecTraj(:,2) + trackLin;
+            %             trackLin = brownianMotion(1,diffCoef1D,cnf-1,0.1);
+            trackLinDiff = (1+0.1*(2*rand((cnf-1)*10,1)-1)).*sqrt(2*diffCoef1D*0.1)...
+                .*sign(randn((cnf-1)*10,1));
+            trackLin = zeros((cnf-1)*10+1,1);
+            for i=1:length(trackLin)-1
+                trackLin(i+1) = trackLin(i) + trackLinDiff(i);
+            end
+            if randOrient
+                orientAngle = rand(1)*2*pi;
+                trackLinXY = [trackLin*cos(orientAngle) trackLin*sin(orientAngle)];
+                xyvecTraj = xyvecTraj + trackLinXY;
+            else
+                xyvecTraj(:,2) = xyvecTraj(:,2) + trackLin;
+            end
         end
         xyvecTraj = xyvecTraj(1:10:end,:);
     else
@@ -237,10 +261,12 @@ for iTrack = 1 : numTracks
         timeMS = seqOfEvents(indxMS,1);
         
         %assign positions
+        posMS = NaN(numMS,2);
         for iMS = 1 : numMS
-            mainTrackPos = xyvecTraj(timeMS(iMS)-vis_startframe(iTrack):timeMS(iMS)-vis_startframe(iTrack)+2,:);
-            mainTrackPos = mainTrackPos([1 3],:);
-            posMS(iMS,:) = mean(mainTrackPos) + randn(1,2)*sqrt(2*diffCoef2D);
+            mainTrackPos = xyvecTraj(timeMS(iMS)-vis_startframe(iTrack):...
+                timeMS(iMS)-vis_startframe(iTrack)+1,:);
+            posMS(iMS,:) = mainTrackPos(2,:) + (2*randn(1,2)-1) .* ...
+                (mainTrackPos(2,:)-mainTrackPos(1,:))/50;
         end
 
         %add up intensities to account for merging and splitting

@@ -1,8 +1,8 @@
-function [trackedFeatKalmanInfo,errFlag] = getKalmanInfoLinearMotion(...
+function [trackedFeatKalmanInfo,errFlag] = getKalmanInfoLinearMotion2D(...
     trackedFeatureIndx,kalmanFilterInfo,indxList)
-%GETTRACKKALMANINFO outputs the Kalman filter information for tracked features
+%GETKALMANINFOLINEARMOTION2D outputs the Kalman filter information for tracked features
 %
-%SYNOPSIS [trackedFeatKalmanInfo,errFlag] = getKalmanInfoLinearMotion(...
+%SYNOPSIS [trackedFeatKalmanInfo,errFlag] = getKalmanInfoLinearMotion2D(...
 %    trackedFeatureIndx,kalmanFilterInfo,indxList)
 %
 %INPUT  trackedFeatureIndx: Connectivity matrix of features between time
@@ -40,7 +40,7 @@ errFlag = 0;
 
 %check whether correct number of input arguments was used
 if nargin < 2
-    disp('--getKalmanInfoLinearMotion: Incorrect number of input arguments!');
+    disp('--getKalmanInfoLinearMotion2D: Incorrect number of input arguments!');
     return
 end
 

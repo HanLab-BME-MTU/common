@@ -33,8 +33,11 @@ function [linkStats,gapStats,mergeSplitStats] = scoreLinksGapsMS(tracksFinal,tra
 %                        merges/splits in ground truth, 2nd column shows
 %                        number of merges/splits in tracking results, and
 %                        3rd column shows number of correct merges/splits
-%                        in tracking results. Merges/splits statistics
-%                        ignore false detection positives for now.
+%                        in tracking results. Merge/split statistics
+%                        don't explicitly account for detection false
+%                        positives, i.e. they simply count toward wrong
+%                        merges/splits, just like real features if wrongly
+%                        assigned a merge/split.
 %       
 %Khuloud Jaqaman, October 2007
 
@@ -102,7 +105,7 @@ for iFrame = 1 : numFrames0 - 1
             
     %% number of correct links from tracking code ...
     
-    %get common links between ground trutha and tracking results
+    %get common links between ground truth and tracking results
     commonLinks = intersect(tracksGT12,tracksCode12,'rows');
     
     %remove zeros to get number of correct links
@@ -217,8 +220,8 @@ if mergeSplit
             xyCoordMBef02 = xyCoordM0(indxGT,6:7);
             
             %find how many tracking and ground truth coordinates are equivalent
-            numEquiv = length(intersect([xyCoordMBef11; xyCoordMBef12],...
-                [xyCoordMBef01; xyCoordMBef02],'rows'));
+            numEquiv = size(intersect([xyCoordMBef11; xyCoordMBef12],...
+                [xyCoordMBef01; xyCoordMBef02],'rows'),1);
             
             %update number of correct merges based on numEquiv
             switch numEquiv
@@ -272,8 +275,8 @@ if mergeSplit
             xyCoordSAft02 = xyCoordM0(indxGT,6:7);
             
             %find how many tracking and ground truth coordinates are equivalent
-            numEquiv = length(intersect([xyCoordSAft11; xyCoordSAft12],...
-                [xyCoordSAft01; xyCoordSAft02],'rows'));
+            numEquiv = size(intersect([xyCoordSAft11; xyCoordSAft12],...
+                [xyCoordSAft01; xyCoordSAft02],'rows'),1);
             
             %update number of correct splits based on numEquiv
             switch numEquiv

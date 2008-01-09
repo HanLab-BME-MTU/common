@@ -104,6 +104,11 @@ J(:,2:3:3*numPSF) = repmat(psfAmp',numPixel,1).*(psfValueY(relIndxY,:)-...
     psfValueY(relIndxY+1,:)).*psfIntegX(relIndxX,:)/psfSigma^2; %w.r.t. y
 J(:,3:3:3*numPSF) = psfIntegX(relIndxX,:).*psfIntegY(relIndxY,:); %w.r.t. amp
 
+%remove pixels with NaN (which means they are out of the cropped image
+%area)
+indxPixel = find(~isnan(image));
+F = F(indxPixel);
+J = J(indxPixel,:);
 
 %% ~~ the end ~~ 
 

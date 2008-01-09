@@ -212,6 +212,10 @@ for iImage = 1 : numImagesRaw
 
 end
 
+%replace zeros with NaNs
+%zeros result from cropping that leads to curved boundaries
+imageRaw(imageRaw==0) = NaN;
+
 %normalize images
 imageRaw = double(imageRaw) / (2^bitDepth-1);
 
@@ -493,14 +497,24 @@ if numSigmaIter
                         upperBound = featPos(iFeat,:) + psfSigma5;
                         imageCropped = imageRaw(lowerBound(1):upperBound(1),...
                             lowerBound(2):upperBound(2),iImage);
+                        
+                        %estimate sigma if image region contains no NaNs
+                        %NaNs appear due to cropping
+                        if all(~isnan(imageCropped(:)))
 
-                        %make initial guess for fit (in the order given in fitParameters)
-                        initGuess = [psfSigma5+1 psfSigma5+1 featAmp(iFeat) ...
-                            psfSigma0 featBG(iFeat)];
+                            %make initial guess for fit (in the order given in fitParameters)
+                            initGuess = [psfSigma5+1 psfSigma5+1 featAmp(iFeat) ...
+                                psfSigma0 featBG(iFeat)];
 
-                        %fit image and estimate sigma of Gaussian
-                        parameters(iFeat,:) = GaussFitND(imageCropped,[],...
-                            fitParameters,initGuess);
+                            %fit image and estimate sigma of Gaussian
+                            parameters(iFeat,:) = GaussFitND(imageCropped,[],...
+                                fitParameters,initGuess);
+                            
+                        else %otherwise assign NaN
+                            
+                            parameters(iFeat,:) = NaN;
+                            
+                        end
 
                     end
 
@@ -522,6 +536,7 @@ if numSigmaIter
         end %(for iImage = integWindow+1 : min(numImagesRaw,50))
 
         %estimate psfSigma as the robust mean of all the sigmas from the fits
+        psfSigma = psfSigma(~isnan(psfSigma)); %get rid of NaNs from cropped regions
         numCalcs = length(psfSigma);
         if numCalcs > 0
 
@@ -696,7 +711,14 @@ for iPixelX = startPixelX : 11 : endPixelX
         imageLocal = imageLast5(iPixelX-15:iPixelX+15,iPixelY-15:iPixelY+15,:);
         
         %estimate robust mean and std
-        [bgMean1,bgStd1] = robustMean(imageLocal(:));
+        %first remove NaNs representing cropped regions
+        imageLocal = imageLocal(~isnan(imageLocal));
+        if ~isempty(imageLocal)
+            [bgMean1,bgStd1] = robustMean(imageLocal(:));
+        else
+            bgMean1 = NaN;
+            bgStd1 = NaN;
+        end
         
         %put values in matrix representing image
         bgMean(iPixelX-5:iPixelX+5,iPixelY-5:iPixelY+5) = bgMean1;
