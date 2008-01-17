@@ -111,9 +111,13 @@ for i=1:numTraj
         otherwise %remove trend with differencing at specified lag
             tmp1 = traj(i).observations(correct+1:end,1) - ...
                 traj(i).observations(1:end-correct,1);
-            tmp2 = sqrt(traj(i).observations(correct+1:end,2).^2 + ...
-                traj(i).observations(1:end-correct,2).^2);
-            traj(i).observations = [tmp1 tmp2];
+            if size(traj(i).observations,2)>1
+                tmp2 = sqrt(traj(i).observations(correct+1:end,2).^2 + ...
+                    traj(i).observations(1:end-correct,2).^2);
+                traj(i).observations = [tmp1 tmp2];
+            else
+                traj(i).observations = tmp1;
+            end
             %modify trajectory length
             trajLength(i) = trajLength(i) - correct;
     end

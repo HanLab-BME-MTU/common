@@ -23,7 +23,7 @@ function [trajectoryOut, linFit] = removeLinearTrend(trajectory, sigmaTrajectory
 %============
 
 % get size of original trajectory
-trajSizeOri = size(trajectory);
+%trajSizeOri = size(trajectory);
 
 % make into column vector
 trajectory = returnRightVector(trajectory);
