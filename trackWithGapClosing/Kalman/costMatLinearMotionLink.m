@@ -1,11 +1,13 @@
 function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
      errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
-     costMatParam,useLocalDensity,nnDistTracks,probDim,linearMotion,prevCost)
+     costMatParam,useLocalDensity,nnDistTracks,probDim,linearMotion,...
+     prevCost,featLifetime)
 %COSTMATLINEARMOTIONLINK provides a cost matrix for linking features based on competing linear motion models
 %
 %SYNOPSIS [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %     errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
-%     costMatParam,useLocalDensity,nnDistTracks,probDim,linearMotion,prevCost)
+%     costMatParam,useLocalDensity,nnDistTracks,probDim,linearMotion,...
+%     prevCost,featLifetime)
 %
 %INPUT  movieInfo             : A 2x1 array (corresponding to the 2 frames of 
 %                               interest) containing the fields:
@@ -34,6 +36,11 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %             .maxStdMultL        : Maximum value of factor multiplying
 %                                   Brownian displacement std to get search
 %                                   radius. Not needed if useLocalDensity = 0;
+%             .lftCdf             : Lifetime cumulative density function.
+%                                   Column vector, specifying cdf for
+%                                   lifetime = 0 to movie length.
+%                                   Enter [] if cdf is not to be used. 
+%                                   Optional. Default: [].
 %      useLocalDensity        : Logical variable indicating whether to use
 %                               local density in search radius estimation.
 %      nnDistTracks           : Nearest neighbor distance of features in
@@ -42,6 +49,8 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %      linearMotion           : 1 if linear motion is to be considered, 0 
 %                               otherwise.
 %      prevCost               : Matrix of previous linking costs.
+%      featLifetime           : Lengths of tracks that features in
+%                               first frame belong to.
 %
 %OUTPUT costMat               : Cost matrix.
 %       propagationScheme     : Propagation scheme corresponding to each
@@ -64,9 +73,7 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %
 %Khuloud Jaqaman, March 2007
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Output
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Output
 
 costMat = [];
 propagationScheme = [];
@@ -74,9 +81,7 @@ kalmanFilterInfoFrame2 = [];
 nonlinkMarker = [];
 errFlag = [];
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Input
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Input
 
 %check whether correct number of input arguments was used
 if nargin ~= nargin('costMatLinearMotionLink')
@@ -93,10 +98,13 @@ if useLocalDensity
     closestDistScale = costMatParam.closestDistScaleL;
     maxStdMult = costMatParam.maxStdMultL;
 end
+if isfield('costMatParam','lftCdf')
+    lftCdf = costMatParam.lftCdf;
+else
+    lftCdf = [];
+end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Cost matrix calculation
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Motion propagation
 
 %specify number of propagation schemes used
 numSchemes = 3;
@@ -109,6 +117,7 @@ if linearMotion
     transMat(:,:,1) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
     transMat(:,:,2) = eye(vecSize) + diag(-ones(probDim,1),probDim); %backward drift transition matrix
     transMat(:,:,3) = eye(vecSize); %zero drift transition matrix
+    %     transMat(:,:,3) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
 else
     transMat(:,:,3) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
     transMat(:,:,2) = eye(vecSize) + diag(-ones(probDim,1),probDim); %backward drift transition matrix
@@ -140,6 +149,14 @@ for iFeature = 1 : numFeaturesFrame1
 
         %predict state vector of feature in 2nd frame
         stateVec = transMat(:,:,iScheme)*stateOld;
+        %         if probDim == 2
+        %             stateVec = transMat(:,:,iScheme)*[movieInfo(1).xCoord(iFeature,1); ...
+        %                 movieInfo(1).yCoord(iFeature,1); stateOld(probDim+1:end)];
+        %         else
+        %             stateVec = transMat(:,:,iScheme)*[movieInfo(1).xCoord(iFeature,1); ...
+        %                 movieInfo(1).yCoord(iFeature,1); movieInfo(1).zCoord(iFeature,1); ...
+        %                 stateOld(probDim+1:end)];
+        %         end
 
         %predict state covariance matrix of feature in 2nd frame
         stateCov = transMat(:,:,iScheme)*stateCovOld*transMat(:,:,iScheme)' ...
@@ -180,6 +197,8 @@ end
 %determines the best propagation scheme to perform that link
 [costMat,propagationScheme] = min(costMatTmp,[],3);
 
+%% Search radius
+
 %get the Kalman standard deviation of all features in frame 1
 kalmanStd = sqrt(probDim * squeeze(kalmanFilterInfoFrame1.noiseVar(1,1,:)));
 
@@ -212,16 +231,38 @@ searchRadius = repmat(searchRadius,1,numFeaturesFrame2);
 %assign NaN to costs corresponding to distance > searchRadius
 costMat(costMat>searchRadius) = NaN;
 
+%% Lifetime penalty
+
+if ~isempty(lftCdf)
+
+    %specify 1 - lifetime cumulative probability
+    oneMinusLftCdf = 1 - lftCdf;
+
+    %calculate 1 / (lifetime penalty), which is 1 / (1-cumulative probability
+    %of lifetime of feature in first frame)
+    oneOverLftPen = oneMinusLftCdf(featLifetime+1);
+
+    %multiple each cost by the lifetime penalty
+    costMat = costMat ./ repmat(oneOverLftPen,1,numFeaturesFrame2);
+
+    %replace infinite costs by NaN
+    costMat(isinf(costMat)) = NaN;
+    
+end
+
+%% Birth and death
+
 %append matrix to allow birth and death
 % maxCost = max(max(max(costMat))+1,1);
 % % maxCost = prctile(costMat(:),80);
-if any(~isnan(prevCost))
-    maxCost = max(prevCost(:));
+if any(~isnan(prevCost(:)))
+    maxCost = 1.05*max(prevCost(:));
+    %     maxCost = prctile(prevCost(:),95);
 else
     maxCost = prctile(costMat(:),80);
 end
-deathCost = maxCost*ones(numFeaturesFrame1,1);
-birthCost = maxCost*ones(numFeaturesFrame2,1);
+deathCost = maxCost * ones(numFeaturesFrame1,1);
+birthCost = maxCost * ones(numFeaturesFrame2,1);
 
 % % %for features in first frame that are linked to features in previous
 % % %frames, assign death cost as the 80th percentile of the cost of previous
@@ -250,6 +291,8 @@ lrBlock(~isnan(lrBlock)) = costLR;
 %append cost matrix
 costMat = [costMat deathBlock; birthBlock lrBlock];
 
+%% nonLinkMarker
+
 %determine the nonlinkMarker
 nonlinkMarker = min(floor(min(min(costMat)))-5,-5);
 
@@ -257,7 +300,8 @@ nonlinkMarker = min(floor(min(min(costMat)))-5,-5);
 costMat(isnan(costMat)) = nonlinkMarker;
 
 
-%%%%% ~~ the end ~~ %%%%%
+%% ~~~ the end ~~~
+
 
 %% old snippets of code
 

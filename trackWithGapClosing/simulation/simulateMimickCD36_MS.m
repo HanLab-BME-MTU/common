@@ -106,7 +106,7 @@ numTracks = round(numP*numF/ex_lft);
 %%   create objects with specified lifetime, initial position & intensity, motion type and merge/split events
 
 %initialize tracksSim
-tracksSim = repmat(struct('tracksCoordAmpCG',[],'tracksFeatIndx',[],'seqOfEvents',[]),numTracks,1);
+tracksSim = repmat(struct('tracksCoordAmpCG',[],'tracksFeatIndxCG',[],'seqOfEvents',[]),numTracks,1);
 
 %assign track start times, end times and lifetimes
 numTracksTmp = 0;
@@ -225,13 +225,13 @@ for iTrack = 1 : numTracks
     if cnf > 1
         xyvecTraj = brownianMotion(2,diffCoef2D,cnf-1,0.1,1,confRad2D); %Brownian part
         if mType(iTrack) == 1 %linear part
-            %             trackLin = brownianMotion(1,diffCoef1D,cnf-1,0.1);
-            trackLinDiff = (1+0.1*(2*rand((cnf-1)*10,1)-1)).*sqrt(2*diffCoef1D*0.1)...
-                .*sign(randn((cnf-1)*10,1));
-            trackLin = zeros((cnf-1)*10+1,1);
-            for i=1:length(trackLin)-1
-                trackLin(i+1) = trackLin(i) + trackLinDiff(i);
-            end
+            trackLin = brownianMotion(1,diffCoef1D,cnf-1,0.1);
+            %             trackLinDiff = (1+0.1*(2*rand((cnf-1)*10,1)-1)).*sqrt(2*diffCoef1D*0.1)...
+            %                 .*sign(randn((cnf-1)*10,1));
+            %             trackLin = zeros((cnf-1)*10+1,1);
+            %             for i=1:length(trackLin)-1
+            %                 trackLin(i+1) = trackLin(i) + trackLinDiff(i);
+            %             end
             if randOrient
                 orientAngle = rand(1)*2*pi;
                 trackLinXY = [trackLin*cos(orientAngle) trackLin*sin(orientAngle)];

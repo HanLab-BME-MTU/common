@@ -221,6 +221,11 @@ imageRaw = double(imageRaw) / (2^bitDepth-1);
 
 %integrate over time
 numImagesInteg = numImagesRaw - 2 * integWindow;
+while numImagesInteg <= 0
+    disp('Reducing integration window by 1 due to insufficient number of frames.');
+    integWindow = integWindow - 1;
+    numImagesInteg = numImagesRaw - 2 * integWindow;
+end
 imageInteg = zeros(imageSizeX,imageSizeY,numImagesInteg);
 progressText(0,'Time-integrating images');
 for iImage = 1 : numImagesInteg

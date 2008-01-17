@@ -275,6 +275,9 @@ end
 %store NaN since there are no previous links
 prevCost = NaN(movieInfo(1).num,1);
 
+%assign the lifetime of feature in first frame
+featLifetime = ones(movieInfo(1).num,1);
+
 %initialize progress display
 if verbose
     progressText(0,'Linking frame-to-frame');
@@ -300,7 +303,8 @@ for iFrame = 1 : numFrames-1
             [costMat,propagationScheme,kalmanFilterInfoTmp,nonlinkMarker] ...
                 = costMatLinearMotionLink(movieInfo(iFrame:iFrame+1),...
                 kalmanFilterInfo(iFrame),costMatParam,useLocalDensity,...
-                nnDistTracks(1:numFeaturesFrame1),probDim,linearMotion,prevCost);
+                nnDistTracks(1:numFeaturesFrame1),probDim,linearMotion,...
+                prevCost,featLifetime);
             
             %for paper - get number of potential links per feature
             numPotLinksPerFeature = [numPotLinksPerFeature; sum(...
@@ -370,6 +374,12 @@ for iFrame = 1 : numFrames-1
                 
                 %update the matrix of previous linking costs
                 prevCost = tmpCost;
+                
+                %get track lifetimes for features in 2nd frame
+                featLifetime = ones(numFeaturesFrame2,1);
+                for iFeat = 1 : numFeaturesFrame2
+                    featLifetime(iFeat) = length(find(trackedFeatureIndx(iFeat,:)~=0));
+                end
 
                 %use the Kalman gain from linking to get better estimates
                 %of the state vector and its covariance matrix in 2nd frame
@@ -423,6 +433,9 @@ for iFrame = 1 : numFrames-1
                 %update the matrix of previous linking costs
                 prevCost = tmpCost;
 
+                %assign track lifetimes for features in 2nd frame
+                featLifetime = ones(numFeaturesFrame2,1);
+
                 %initialize Kalman filter for features in 2nd frame
                 if usePriorInfo %use a priori information if available
                     kalmanFilterInfo(iFrame+1).stateVec = filterInfoPrev(iFrame+1).stateVec; %state vector
@@ -451,6 +464,9 @@ for iFrame = 1 : numFrames-1
             %add a column of NaNs for the 2nd frame in the matrix of
             %previous linking costs
             prevCost = [prevCost NaN(size(trackedFeatureIndx,1),1)];
+
+            %assign track lifetimes for features in 2nd frame
+            featLifetime = [];
 
         end %(if numFeaturesFrame2 ~= 0 ... else ...)
 
@@ -487,9 +503,12 @@ for iFrame = 1 : numFrames-1
             nnDistFeatures = tmpNN;
             nnDistTracks = tmpNN2;
             nnDistTracks(1:numFeaturesFrame2) = movieInfo(iFrame+1).nnDist;
-
+            
             %update the matrix of previous linking costs
             prevCost = tmpCost;
+
+            %assign track lifetimes for features in 2nd frame
+            featLifetime = ones(numFeaturesFrame2,1);
 
             %initialize Kalman filter for features in 2nd frame
             if usePriorInfo %use a priori information if available
@@ -517,6 +536,9 @@ for iFrame = 1 : numFrames-1
             %add a column of NaNs for the 2nd frame in the matrix of
             %previous linking costs
             prevCost = [prevCost NaN(size(trackedFeatureIndx,1),1)];
+
+            %assign track lifetimes for features in 2nd frame
+            featLifetime = [];
 
         end %(if numFeaturesFrame2 ~= 0 ... else ...)
 

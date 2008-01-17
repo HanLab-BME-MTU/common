@@ -88,8 +88,8 @@ for iTrack = 1 : numTracks
 end
 
 %remove empty columns
-mergesInfo = mergesInfo(:,any(mergesInfo~=0,1));
-splitsInfo = splitsInfo(:,any(splitsInfo~=0,1));
+mergesInfo = [mergesInfo(:,1) mergesInfo(:,1+any(mergesInfo(:,2:end)~=0,1))];
+splitsInfo = [splitsInfo(:,1) splitsInfo(:,1+any(splitsInfo(:,2:end)~=0,1))];
 
 %remove rows without merges or splits
 filledRows = find(any(mergesInfo(:,3)~=0,2));

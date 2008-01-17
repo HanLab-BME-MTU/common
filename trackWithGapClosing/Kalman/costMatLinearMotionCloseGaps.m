@@ -69,6 +69,11 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                               the amplitude of a merged feature and the
 %                               sum of the amplitude of the two features
 %                               making it.
+%             .lftCdf         : Lifetime cumulative density function.
+%                               Column vector, specifying cdf for
+%                               lifetime = 0 to movie length.
+%                               Enter [] if cdf is not to be used. 
+%                               Optional. Default: [].
 %       gapCloseParam  : Structure containing variables needed for gap closing.
 %                        Contains the fields:
 %             .timeWindow : Largest time gap between the end of a track and the
@@ -118,9 +123,7 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %
 %Khuloud Jaqaman, April 2007
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Output
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Output
 
 costMat = [];
 nonlinkMarker = [];
@@ -130,9 +133,7 @@ indxSplit = [];
 numSplit = [];
 errFlag = [];
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Input
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Input
 
 %check whether correct number of input arguments was used
 if nargin ~= nargin('costMatLinearMotionCloseGaps')
@@ -161,6 +162,13 @@ end
 minAmpRatio = costMatParam.ampRatioLimitCG(1);
 maxAmpRatio = costMatParam.ampRatioLimitCG(2);
 
+if isfield('costMatParam','lftCdf')
+    lftCdf = costMatParam.lftCdf;
+    oneMinusLftCdf = 1 - lftCdf;
+else
+    lftCdf = [];
+end
+
 %get gap closing parameters
 timeWindow = gapCloseParam.timeWindow;
 mergeSplit = gapCloseParam.mergeSplit;
@@ -180,9 +188,7 @@ for iFrame = 1 : numFrames
     tracksPerFrame(iFrame).ends = find(trackEndTime == iFrame); %ends
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Calculate cost matrix
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Gap closing
 
 %get the x,y-coordinates and amplitudes at the starts of tracks
 coordStart = zeros(numTracks,probDim);
@@ -460,10 +466,6 @@ for iPair = 1 : numPairs
     %if this is a possible link ...
     if possibleLink
 
-        %specify the location of this pair in the cost matrix
-        indx1(iPair) = iEnd; %row number
-        indx2(iPair) = iStart; %column number
-
         %calculate the cost of linking
         dispVecMag2 = dispVecMag ^ 2;
         if trackTypeE == 1 && trackTypeS == 1
@@ -477,8 +479,22 @@ for iPair = 1 : numPairs
             cost12 = dispVecMag2 / timeScalingBrown(timeGap);
         end
 
-        %add this cost to the list of costs
-        cost(iPair) = cost12;
+        %penalize cost for lifetime considerations
+        if ~isempty(lftCdf)
+            cost12 = cost12 / oneMinusLftCdf(trackEndTime(iStart)-trackStartTime(iEnd)+2);
+        end
+
+        %if the lifetime consideration does not make this link impossible
+        if ~isinf(cost12)
+            
+            %add this cost to the list of costs
+            cost(iPair) = cost12;
+
+            %specify the location of this pair in the cost matrix
+            indx1(iPair) = iEnd; %row number
+            indx2(iPair) = iStart; %column number
+            
+        end
 
     end %(if possibleLink)
 
@@ -490,6 +506,8 @@ indx1 = indx1(possiblePairs);
 indx2 = indx2(possiblePairs);
 cost  = cost(possiblePairs);
 clear possiblePairs
+
+%% Merging and splitting
 
 %define some merging and splitting variables
 numMerge  =  0; %index counting merging events
@@ -641,59 +659,69 @@ if mergeSplit
                 ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2); %punishment harsher when intensity of merged feature < sum of intensities of merging features
                 cost12 = dispVecMag2 * ampCost * (1 + sin2AngleE); %cost
 
-                %add this cost to the list of costs
-                costMS(iPair) = cost12;
+                %penalize cost for lifetime considerations
+                if ~isempty(lftCdf)
+                    cost12 = cost12 / oneMinusLftCdf(trackEndTime(iMerge)-trackStartTime(iEnd)+2);
+                end
 
-                %check whether the track being merged with has had
-                %something possibly merging with it in this same frame
-                prevAppearance = find(indxMSMS == iMerge);
+                %if the lifetime consideration does not make this link impossible
+                if ~isinf(cost12)
 
-                %if this track in this frame did not appear before ...
-                if isempty(prevAppearance)
+                    %add this cost to the list of costs
+                    costMS(iPair) = cost12;
 
-                    %increase the "merge index" by one
-                    numMerge = numMerge + 1;
+                    %check whether the track being merged with has had
+                    %something possibly merging with it in this same frame
+                    prevAppearance = find(indxMSMS == iMerge);
 
-                    %save the merging track's index
-                    indxMSMS(iPair) = iMerge;
+                    %if this track in this frame did not appear before ...
+                    if isempty(prevAppearance)
 
-                    %store the location of this pair in the cost matrix
-                    indx1MS(iPair) = iEnd; %row number
-                    indx2MS(iPair) = numMerge+numTracks; %column number
+                        %increase the "merge index" by one
+                        numMerge = numMerge + 1;
 
-                    %calculate the alternative cost of not merging for the
-                    %track that the end is possibly merging with
+                        %save the merging track's index
+                        indxMSMS(iPair) = iMerge;
+
+                        %store the location of this pair in the cost matrix
+                        indx1MS(iPair) = iEnd; %row number
+                        indx2MS(iPair) = numMerge+numTracks; %column number
+
+                        %calculate the alternative cost of not merging for the
+                        %track that the end is possibly merging with
+
+                        %get the average square displacement in this track
+                        trackCoord = trackedFeatInfo(indxMSMS(iPair),:);
+                        trackCoord = reshape(trackCoord',8,[]);
+                        dispVecMag2 = (diff(trackCoord,1,2)).^2;
+                        dispVecMag2 = nanmean(dispVecMag2,2);
+                        dispVecMag2 = sum(dispVecMag2(1:2));
+
+                        %calculate intensity cost if no merge happens
+                        ampCost = ampM / ampM1;
+                        ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2);
+
+                        %calculate alternative cost
+                        cost12 = dispVecMag2 * ampCost;
+
+                        %add this cost to the list of alternative costs
+                        altCostMS(iPair) = cost12;
+
+                    else %if this track in this frame appeared before
+
+                        %do not increase the "merge index" or save the merging
+                        %track's index (they are already saved)
+
+                        %store the location of this pair in the cost matrix
+                        indx1MS(iPair) = iEnd; %row number
+                        indx2MS(iPair) = indx2MS(prevAppearance); %column number
+
+                        %no need to calculate and save the alternative cost
+                        %since that is already saved from previous encounter
+
+                    end %(if isempty(prevAppearance))
                     
-                    %get the average square displacement in this track
-                    trackCoord = trackedFeatInfo(indxMSMS(iPair),:);
-                    trackCoord = reshape(trackCoord',8,[]);
-                    dispVecMag2 = (diff(trackCoord,1,2)).^2;
-                    dispVecMag2 = nanmean(dispVecMag2,2);
-                    dispVecMag2 = sum(dispVecMag2(1:2));
-                    
-                    %calculate intensity cost if no merge happens
-                    ampCost = ampM / ampM1;
-                    ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2);
-                    
-                    %calculate alternative cost
-                    cost12 = dispVecMag2 * ampCost;
-
-                    %add this cost to the list of alternative costs
-                    altCostMS(iPair) = cost12;
-
-                else %if this track in this frame appeared before
-                    
-                    %do not increase the "merge index" or save the merging
-                    %track's index (they are already saved)
-                    
-                    %store the location of this pair in the cost matrix
-                    indx1MS(iPair) = iEnd; %row number
-                    indx2MS(iPair) = indx2MS(prevAppearance); %column number
-                    
-                    %no need to calculate and save the alternative cost
-                    %since that is already saved from previous encounter
-                    
-                end %(if isempty(prevAppearance))
+                end %(if ~isinf(cost12))
                 
             end %(if possibleLink)
 
@@ -849,59 +877,69 @@ if mergeSplit
                 ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2); %punishment harsher when intensity of splitting feature < sum of intensities of features after splitting
                 cost12 = dispVecMag2 * ampCost * (1 + sin2AngleS);
 
-                %add this cost to the list of costs
-                costMS(iPair) = cost12;
+                %penalize cost for lifetime considerations
+                if ~isempty(lftCdf)
+                    cost12 = cost12 / oneMinusLftCdf(trackEndTime(iStart)-trackStartTime(iSplit)+2);
+                end
 
-                %check whether the track being split from has had something
-                %possibly splitting from it in this same frame
-                prevAppearance = find(indxMSMS == iSplit);
+                %if the lifetime consideration does not make this link impossible
+                if ~isinf(cost12)
 
-                %if this track in this frame did not appear before ...
-                if isempty(prevAppearance)
+                    %add this cost to the list of costs
+                    costMS(iPair) = cost12;
 
-                    %increase the "split index" by one
-                    numSplit = numSplit + 1;
+                    %check whether the track being split from has had something
+                    %possibly splitting from it in this same frame
+                    prevAppearance = find(indxMSMS == iSplit);
 
-                    %save the merging track's number
-                    indxMSMS(iPair) = iSplit;
+                    %if this track in this frame did not appear before ...
+                    if isempty(prevAppearance)
 
-                    %store the location of this pair in the cost matrix
-                    indx1MS(iPair) = numSplit+numTracks; %row number
-                    indx2MS(iPair) = iStart; %column number
+                        %increase the "split index" by one
+                        numSplit = numSplit + 1;
 
-                    %calculate the alternative cost of not splitting for the
-                    %track that the start is possibly splitting from
+                        %save the merging track's number
+                        indxMSMS(iPair) = iSplit;
 
-                    %get the average square displacement in this track
-                    trackCoord = trackedFeatInfo(indxMSMS(iPair),:);
-                    trackCoord = reshape(trackCoord',8,[]);
-                    dispVecMag2 = (diff(trackCoord,1,2)).^2;
-                    dispVecMag2 = nanmean(dispVecMag2,2);
-                    dispVecMag2 = sum(dispVecMag2(1:2));
+                        %store the location of this pair in the cost matrix
+                        indx1MS(iPair) = numSplit+numTracks; %row number
+                        indx2MS(iPair) = iStart; %column number
 
-                    %calculate intensity cost if no split happens
-                    ampCost = ampSp / ampSp1;
-                    ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2);
+                        %calculate the alternative cost of not splitting for the
+                        %track that the start is possibly splitting from
 
-                    %calculate alternative cost
-                    cost12 = dispVecMag2 * ampCost;
+                        %get the average square displacement in this track
+                        trackCoord = trackedFeatInfo(indxMSMS(iPair),:);
+                        trackCoord = reshape(trackCoord',8,[]);
+                        dispVecMag2 = (diff(trackCoord,1,2)).^2;
+                        dispVecMag2 = nanmean(dispVecMag2,2);
+                        dispVecMag2 = sum(dispVecMag2(1:2));
 
-                    %add this cost to the list of alternative costs
-                    altCostMS(iPair) = cost12;
+                        %calculate intensity cost if no split happens
+                        ampCost = ampSp / ampSp1;
+                        ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2);
 
-                else %if this track in this frame appeared before
+                        %calculate alternative cost
+                        cost12 = dispVecMag2 * ampCost;
+
+                        %add this cost to the list of alternative costs
+                        altCostMS(iPair) = cost12;
+
+                    else %if this track in this frame appeared before
+
+                        %do not increase the "split index" or save the
+                        %splitting track's index (they are already saved)
+
+                        %store the location of this pair in the cost matrix
+                        indx1MS(iPair) = indx1MS(prevAppearance); %row number
+                        indx2MS(iPair) = iStart; %column number
+
+                        %no need to calculate and save the alternative cost
+                        %since that is already saved from previous appearance
+
+                    end %(if isempty(prevAppearance))
                     
-                    %do not increase the "split index" or save the
-                    %splitting track's index (they are already saved)
-                    
-                    %store the location of this pair in the cost matrix
-                    indx1MS(iPair) = indx1MS(prevAppearance); %row number
-                    indx2MS(iPair) = iStart; %column number
-                    
-                    %no need to calculate and save the alternative cost
-                    %since that is already saved from previous appearance
-                    
-                end %(if isempty(prevAppearance))
+                end %(if ~isinf(cost12))
 
             end %(if possibleLink)
 
@@ -933,7 +971,7 @@ numEndSplit = numTracks + numSplit;
 numStartMerge = numTracks + numMerge;
 costMat = sparse(indx1,indx2,cost,numEndSplit,numStartMerge);
 
-%append cost matrix to allow births and deaths ...
+%% Append cost matrix to allow births and deaths ...
 
 %determine the cost of birth and death
 % costBD = max(max(max(costMat))+1,1);
@@ -952,7 +990,7 @@ costMat = [costMat ... %costs for links (gap closing + merge/split)
 nonlinkMarker = min(floor(full(min(min(costMat))))-5,-5);
 
 
-%%%%% ~~ the end ~~ %%%%%
+%% ~~~ the end ~~~
 
 
 %% snippets of old code

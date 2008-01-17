@@ -1,11 +1,11 @@
-function [tracksFinal,kalmanInfoLink,numPotLinksPerFeature,numPotLinksPerTrack,errFlag] = trackCloseGapsKalman(...
-    movieInfo,costMatParam,gapCloseParam,kalmanInitParam,useLocalDensity,...
-    saveResults,probDim,linearMotion,verbose)
+function [tracksFinal,kalmanInfoLink,numPotLinksPerFeature,numPotLinksPerTrack,...
+    errFlag] = trackCloseGapsKalman(movieInfo,costMatParam,gapCloseParam,...
+    kalmanInitParam,useLocalDensity,saveResults,probDim,linearMotion,verbose)
 %TRACKCLOSEGAPSKALMAN (1) links features between frames using the Kalman Filter and (2) closes gaps, with merging and splitting
 %
-%SYNOPSIS [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
-%    movieInfo,costMatParam,gapCloseParam,kalmanInitParam,useLocalDensity,...
-%    saveResults,probDim,linearMotion,verbose)
+%SYNOPSIS [tracksFinal,kalmanInfoLink,numPotLinksPerFeature,numPotLinksPerTrack,...
+%    errFlag] = trackCloseGapsKalman(movieInfo,costMatParam,gapCloseParam,...
+%    kalmanInitParam,useLocalDensity,saveResults,probDim,linearMotion,verbose)
 %
 %INPUT  movieInfo    : Array of size equal to the number of frames in a
 %                      movie, containing the fields:
@@ -24,7 +24,7 @@ function [tracksFinal,kalmanInfoLink,numPotLinksPerFeature,numPotLinksPerTrack,e
 %                            for standard deviations.
 %       costMatParam : Parameters needed for cost matrices. For now, all
 %                      parameters for both linking and gap closing are put
-%                      in one structure. See cost matrices for fields.
+%                      in one structure. See cost matrix functions for fields.
 %       gapCloseParam: Structure containing variables needed for gap closing.
 %                      Contains the fields:
 %             .timeWindow   : Largest time gap between the end of a track and the
@@ -117,6 +117,11 @@ function [tracksFinal,kalmanInfoLink,numPotLinksPerFeature,numPotLinksPerTrack,e
 %                              feature to previous feature. 2nd column:
 %                              propagation scheme connecting feature to
 %                              next feature.
+%       numPotLinksPerFeature: Number of potential links each feature gets
+%                           during linking from one frame to the next.
+%       numPotLinksPerTrack: Number of potential links (closed gaps,
+%                           merges/splits) each track end/start gets in gap
+%                           closing.
 %       errFlag           : 0 if function executes normally, 1 otherwise.
 %
 %Khuloud Jaqaman, April 2007
@@ -371,7 +376,7 @@ end
 %get track start times, end times amd lifetimes
 trackSEL = getTrackSEL(tracksCoordAmpLink);
 
-%remove tracks that are only 1 frame long
+%remove tracks whose length is less than minTrackLen
 indxKeep = find(trackSEL(:,3) >= minTrackLen);
 trackSEL = trackSEL(indxKeep,:);
 tracksFeatIndxLink = tracksFeatIndxLink(indxKeep,:);
@@ -790,7 +795,8 @@ end
 
 if isstruct(saveResults)
     save([saveResDir filesep saveResFile],'costMatParam','gapCloseParam',...
-        'kalmanInitParam','useLocalDensity','tracksFinal','kalmanInfoLink');
+        'kalmanInitParam','useLocalDensity','tracksFinal','kalmanInfoLink',...
+        'numPotLinksPerFeature','numPotLinksPerTrack');
 end
 
 
