@@ -1,4 +1,4 @@
-function [averageImage,sdImage,hotImage,xPattern, yPattern, xPattern2, yPattern2]=cameraEvaluation(darkFrames, testDynamicPattern, borderPercent)
+function [averageImage,sdImage,hotImage,xPattern, yPattern, xPatternL, yPatternL]=cameraEvaluation(darkFrames, testDynamicPattern, nImagesForCorr, nLags)
 %CAMERAEVALUATION tests cameras for static and dynamic patterns
 %
 % The code performs an analysis on a series of dark images. 
@@ -19,7 +19,7 @@ function [averageImage,sdImage,hotImage,xPattern, yPattern, xPattern2, yPattern2
 % SYNOPSIS [averageImage,sdImage,hotImage,xPattern, ...
 %               yPattern, xPattern2, yPattern2]= ...
 %               cameraEvaluation(darkFrames, ...
-%               testDynamicPattern, borderPercent) 
+%               testDynamicPattern, nImagesForCorr, nLags) 
 %
 % INPUT    darkFrames : 3D, 4D or 5D image stack (will be converted to a 3D
 %                       image stack) 
@@ -27,9 +27,12 @@ function [averageImage,sdImage,hotImage,xPattern, yPattern, xPattern2, yPattern2
 %                       (significant autocorrelation left after the average
 %                       image has been subtracted and the standard
 %                       deviation has been normalized). [0/{1}]
-%          borderPercent : (opt) how many percent of the image should be
-%                       cut off from each border for the second round of
-%                       dynamic testing [20]
+%          nImagesForCorr : how many images should be chosen to run the
+%                       autocorrelation analysis. inf = all. Default:
+%                       min(25,nImages). Careful: Increasing this number
+%                       will slow down things tremendously.
+%          nLags :      Determines the maximum lag for the autoCorrelation
+%                       as nLags*max(imageSize). Default: 3.1
 %
 % OUTPUT   averageImage : average of the image series
 %          sdImage      : standard deviation of the image series
@@ -44,14 +47,19 @@ function [averageImage,sdImage,hotImage,xPattern, yPattern, xPattern2, yPattern2
 % TEST INPUT
 
 % default parameters
-def_borderPercent = 20;
+%def_borderPercent = 20;
 def_testDynamicPattern = 1;
+def_nImagesForCorr = 25;
+def_nLags = 3.1;
 
 if nargin < 2 || isempty(testDynamicPattern)
     testDynamicPattern = def_testDynamicPattern;
 end
-if nargin < 3 || isempty(borderPercent)
-    borderPercent = def_borderPercent;
+if nargin < 3 || isempty(nImagesForCorr)
+    nImagesForCorr = def_nImagesForCorr;
+end
+if nargin < 4 || isempty(nLags)
+    nLags = def_nLags;
 end
 
 % convert image
@@ -74,7 +82,7 @@ ratioOfHotPixels = numberOfHotPixels/prod(movieSize(1:2));
 % correct averageImage, stdImage for hot pixels
 averageImageC = averageImage;
 averageImageC(hotImage) = robMean;
-sdImageC = robStd * ones(movieSize(1:2));;
+sdImageC = robStd * ones(movieSize(1:2));
 sdImageC(inlierIdx) = sdImage(inlierIdx);
 
 %if which(uiViewPanel)
@@ -123,91 +131,147 @@ darkFrames = darkFrames ./ repmat(sdImage,[1,1,movieSize(3)]);
 if ~testDynamicPattern
     
     % assign empty output
-    [xPattern, yPattern, xPattern2, yPattern2] = deal([]);
+    [xPattern, yPattern, xPatternL, yPatternL] = deal([]);
     
 else % test the dynamic pattern
 
 % get dynamic pattern. Do either 10 times the number of pixels along the
 % longer side of the image, or half the total number of pixels in the image
-nCorr = min(max(10*movieSize(1:2)),ceil(prod(movieSize(1:2))/2));
-[xPattern, yPattern] = deal(zeros(nCorr,movieSize(3)));
-tic
-for i = 1:movieSize(3)
-    [xPattern(:,i), yPattern(:,i)] = ...
-        normACfunc(darkFrames(:,:,i), -1);
-    disp(sprintf('iteration: %i/%i, time: %9.3f',i,movieSize(3),toc))
+%nCorr = min(max(10*movieSize(1:2)),ceil(prod(movieSize(1:2))/2));
+
+% correlate 3 times longer side
+% run for 25 random images
+imgList = randPerm(movieSize(3));
+
+imgList = imgList(1:nImagesForCorr);
+nCorr = ceil(nLags*max(movieSize(1:2)));
+[xPattern, yPattern] = deal(zeros(nCorr+1,nImagesForCorr));
+progressText(0,'Correlations') % Create text
+ct = 1;
+for i = imgList
+    currentFrame = darkFrames(:,:,i);
+    out = autoCorr(currentFrame(:),nCorr,-1);
+    xPattern(:,ct) = out(:,1);
+    currentFrame = currentFrame';
+    out = autoCorr(currentFrame(:),nCorr,-1);
+    yPattern(:,ct) = out(:,1);
+    progressText(ct/nImagesForCorr);
+    ct = ct+1;
 end
 
 % check for significance: is autocorrelation larger than 
 % 1.96/sqrt(numberOfPixels)?
 numberOfPixels = prod(movieSize(1:2));
-xPattern = abs(xPattern) > 1.96/sqrt(numberOfPixels);
-yPattern = abs(yPattern) > 1.96/sqrt(numberOfPixels);
+% significance threshold: choose such that only 1 pixel should be
+% significant
+thresh = norminv(1-0.5/numberOfPixels)/sqrt(numberOfPixels);
+xPatternL = abs(xPattern) > thresh;
+yPatternL = abs(yPattern) > thresh;
 
-% the first row is obviously not informative
-xPattern(1,:) = logical(0);
-yPattern(1,:) = logical(0);
+% plot
 
-% uiViewPanel,imshow(xPattern',[])
-% uiViewPanel,imshow(yPattern',[])
-
-% sum the incidence of significant lags. Normalize by the number of frames
-sx = sum(xPattern,2)/movieSize(3);
-sy = sum(yPattern,2)/movieSize(3);
-
-figure('Name','Correlation X'),stem([0:nCorr-1]',sx);
+% correlations
+figure('Name',sprintf('average correlation rows (npts=%i, nimg=%i)',numberOfPixels,nImagesForCorr))
+m=mean(xPattern,2);
+s=std(xPattern,0,2);
+area(0:nCorr,m+s,'BaseValue',-1,'LineStyle','none','FaceColor',[0.8,0.8,0.8])
 hold on
-plot([0:nCorr-1],0.05*ones(nCorr,1),'r')
-figure('Name','Correlation Y'),stem([0:nCorr-1],sy);
+area(0:nCorr,m-s,'BaseValue',-1,'LineStyle','none','FaceColor','w')
+plot(0:nCorr,m)
+plot(0:nCorr,repmat(thresh,nCorr+1,1),'r')
+xlabel(sprintf('Pixel lags (%i pix/row)',movieSize(1)))
+ylabel('Normalized autocorrelation')
+
+figure('Name',sprintf('average correlation rows (npts=%i, nimg=%i)',numberOfPixels,nImagesForCorr))
+m=mean(yPattern,2);
+s=std(yPattern,0,2);
+area(0:nCorr,m+s,'BaseValue',-1,'LineStyle','none','FaceColor',[0.8,0.8,0.8])
 hold on
-plot([0:nCorr-1],0.05*ones(nCorr,1),'r')
+area(0:nCorr,m-s,'BaseValue',-1,'LineStyle','none','FaceColor','w')
+plot(0:nCorr,m)
+plot(0:nCorr,repmat(thresh,nCorr+1,1),'r')
+xlabel(sprintf('Pixel lags (%i pix/row)',movieSize(2)))
+ylabel('Normalized autocorrelation')
 
-% do again, but without 20% pixels all around
-xPercent = floor(movieSize(1:2)/(borderPercent/100));
-if all(xPercent > 2)
-    
-    darkFrames = darkFrames(xPercent(1)+1:end-xPercent(1),...
-        xPercent(2)+1:end-xPercent(2),:);
-    movieSize = size(darkFrames);
-    nCorr = min(max(10*movieSize(1:2)),ceil(prod(movieSize(1:2))/2));
-    [xPattern2, yPattern2] = deal(zeros(nCorr,movieSize(3)));
-    tic
-    for i = 1:movieSize(3)
-        [xPattern2(:,i), yPattern2(:,i)] = ...
-            normACfunc(darkFrames(:,:,i), -1);
-        disp(sprintf('iteration: %i/%i, time: %9.3f',i,movieSize(3),toc))
-    end
+% sum of significant correlations
+figure('Name',sprintf('Number of significant correlations in rows (npts=%i, nimg=%i)',numberOfPixels,nImagesForCorr))
+plot(0:nCorr,sum(xPatternL,2),'.')
+xlabel(sprintf('Pixel lags (%i pix/row)',movieSize(2)))
+ylabel(sprintf('Number of significant correlations out of %i',nImagesForCorr))
+ylim([-0.2,nImagesForCorr+0.2])
+grid on
 
-    % check for significance: is autocorrelation larger than
-    % 1.96/sqrt(numberOfPixels)?
-    numberOfPixels = prod(movieSize(1:2));
-    xPattern2 = abs(xPattern2) > 1.96/sqrt(numberOfPixels);
-    yPattern2 = abs(yPattern2) > 1.96/sqrt(numberOfPixels);
+figure('Name',sprintf('Number of significant correlations in rows (npts=%i, nimg=%i)',numberOfPixels,nImagesForCorr))
+plot(0:nCorr,sum(yPatternL,2),'.')
+xlabel(sprintf('Pixel lags (%i pix/row)',movieSize(2)))
+ylabel(sprintf('Number of significant correlations (max %i)',nImagesForCorr))
+ylim([-0.2,nImagesForCorr+0.2])
+grid on
 
-    % the first row is obviously not informative
-    xPattern2(1,:) = logical(0);
-    yPattern2(1,:) = logical(0);
+% % the first row is obviously not informative
+% xPatternL(1,:) = false;
+% yPatternL(1,:) = false;
+% 
+% % uiViewPanel,imshow(xPattern',[])
+% % uiViewPanel,imshow(yPattern',[])
+% 
+% % sum the incidence of significant lags. Normalize by the number of frames
+% sx = sum(xPatternL,2)/movieSize(3);
+% sy = sum(yPatternL,2)/movieSize(3);
+% 
+% figure('Name','Correlation X'),stem([0:nCorr-1]',sx);
+% hold on
+% plot([0:nCorr-1],0.05*ones(nCorr,1),'r')
+% figure('Name','Correlation Y'),stem([0:nCorr-1],sy);
+% hold on
+% plot([0:nCorr-1],0.05*ones(nCorr,1),'r')
 
-    % uiViewPanel,imshow(xPattern',[])
-    % uiViewPanel,imshow(yPattern',[])
-
-    % sum the incidence of significant lags. Normalize by the number of frames
-    sx = sum(xPattern2,2)/movieSize(3);
-    sy = sum(yPattern2,2)/movieSize(3);
-
-    figure('Name',...
-        sprintf('Correlation X (minus 2x %i border pix)',xPercent(1)));
-    stem([0:nCorr-1]',sx);
-    hold on
-    plot([0:nCorr-1],0.05*ones(nCorr,1),'r')
-    figure('Name',...
-        sprintf('Correlation Y (minus 2x %i border pix)',xPercent(2)));
-    stem([0:nCorr-1],sy);
-    hold on
-    plot([0:nCorr-1],0.05*ones(nCorr,1),'r')
-end
-
-end % if testDynamicPattern
+% % do again, but without 20% pixels all around
+% xPercent = floor(movieSize(1:2)/(borderPercent/100));
+% if all(xPercent > 2)
+%     
+%     darkFrames = darkFrames(xPercent(1)+1:end-xPercent(1),...
+%         xPercent(2)+1:end-xPercent(2),:);
+%     movieSize = size(darkFrames);
+%     nCorr = min(max(10*movieSize(1:2)),ceil(prod(movieSize(1:2))/2));
+%     [xPattern2, yPattern2] = deal(zeros(nCorr,movieSize(3)));
+%     tic
+%     for i = 1:movieSize(3)
+%         [xPattern2(:,i), yPattern2(:,i)] = ...
+%             normACfunc(darkFrames(:,:,i), -1);
+%         disp(sprintf('iteration: %i/%i, time: %9.3f',i,movieSize(3),toc))
+%     end
+% 
+%     % check for significance: is autocorrelation larger than
+%     % 1.96/sqrt(numberOfPixels)?
+%     numberOfPixels = prod(movieSize(1:2));
+%     xPattern2 = abs(xPattern2) > 1.96/sqrt(numberOfPixels);
+%     yPattern2 = abs(yPattern2) > 1.96/sqrt(numberOfPixels);
+% 
+%     % the first row is obviously not informative
+%     xPattern2(1,:) = logical(0);
+%     yPattern2(1,:) = logical(0);
+% 
+%     % uiViewPanel,imshow(xPattern',[])
+%     % uiViewPanel,imshow(yPattern',[])
+% 
+%     % sum the incidence of significant lags. Normalize by the number of frames
+%     sx = sum(xPattern2,2)/movieSize(3);
+%     sy = sum(yPattern2,2)/movieSize(3);
+% 
+%     figure('Name',...
+%         sprintf('Correlation X (minus 2x %i border pix)',xPercent(1)));
+%     stem([0:nCorr-1]',sx);
+%     hold on
+%     plot([0:nCorr-1],0.05*ones(nCorr,1),'r')
+%     figure('Name',...
+%         sprintf('Correlation Y (minus 2x %i border pix)',xPercent(2)));
+%     stem([0:nCorr-1],sy);
+%     hold on
+%     plot([0:nCorr-1],0.05*ones(nCorr,1),'r')
+% end
+% 
+ end % if testDynamicPattern
 
 % display number of hot pixels
 disp(sprintf('Number of hot pixels: %i (%2.3f%%)',numberOfHotPixels, ...
