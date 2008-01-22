@@ -22,7 +22,10 @@ function progressText(fractionDone,text)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-persistent starttime lastupdate fprintfExpression finalText
+persistent starttime lastupdate clearText printText finalText
+
+% constants
+nCharsBase = 27; % change this if changing output format
 
 % Test input
 if nargin < 1 || isempty(fractionDone) 
@@ -51,17 +54,31 @@ if fractionDone == 0
     initialText = sprintf('%s 0%%%% done xx:xx:xx remaining',text);
     finalText = sprintf('%s100%%%% done %%s elapsed\n',text);
     % get length of fprintf expression
-    nChars = length(initialText)-1; %careful with the %%'s
+    nChars = nCharsBase + length(text);
     clearText = repmat('\b',1,nChars);
     
     % print initialText and return
     fprintf(1,initialText);
     
-    %fprintfExpression removes old expression before overwriting
-    fprintfExpression = [clearText printText];
-    finalText = [clearText, finalText];
+%     %fprintfExpression removes old expression before overwriting
+%     fprintfExpression = [clearText printText];
+%     fprintfExpressionFinal = [clearText, finalText];
     
     return
+elseif ~isempty(text)
+    % text has been changed. Create fprintfExpressions first, then update
+    % clearText
+    printText = sprintf('%s%%2d%%%% done %%s remaining',text);
+    finalText = sprintf('%s100%%%% done %%s elapsed\n',text);
+    fprintfExpression = [clearText printText];
+    fprintfExpressionFinal = [clearText, finalText];
+    
+    nChars = nCharsBase + length(text);
+    clearText = repmat('\b',1,nChars);
+else
+    % all is normal. Just generate output
+    fprintfExpression = [clearText printText];
+    fprintfExpressionFinal = [clearText, finalText];
 end
 
 % write progress
@@ -71,8 +88,8 @@ percentDone = floor(100*fractionDone);
 runTime = etime(clock,starttime);
 
 if percentDone == 100 % Task completed
-    fprintf(1,finalText,convertTime(runTime)); % finish up
-    clear starttime lastupdate fprintfExpression finalText % Clear persistent vars
+    fprintf(1,fprintfExpressionFinal,convertTime(runTime)); % finish up
+    clear starttime lastupdate clearText printText finalText % Clear persistent vars
     return
 end
 

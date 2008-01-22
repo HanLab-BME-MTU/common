@@ -37,7 +37,7 @@ function  dataOut = imResample(dataIn, stepIn, stepOut)
 msg = nargchk(3, 3, nargin, 'struct');
 if ~isempty(msg)
     disp('wrong number of input arguments')
-    help resampleMean
+    help imResample
     return
 end
 
