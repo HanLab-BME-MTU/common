@@ -11,8 +11,9 @@ function [image, filename]= r3dread(filename,start,nTimes,MOVIERANGE,waveIdx,wav
 %       MOVIERANGE: possible range of values (256 for 8-bit-movies) {2^12}
 %       waveIdx  : index of wavelength(s) to load (default: 1:nWavelengths)
 %       waveOrder: order of wavelengths in the movie.
-%                   1: interlaced: r/g/r/g.... 
-%                   2: unmixed: r/r/r/g/g/g  (default)
+%                   1: z/w/t, i.e. z cycles first, then w, then t
+%                   2: z/t/w
+%                   3: w/z/t (default)
 %
 %
 % OUTPUT image : image series =[X,Y,Z,WVL,TIME]
@@ -43,7 +44,7 @@ end
 
 % check for order of wavelengths
 if nargin < 6 || isempty(waveOrder)
-    waveOrder = 2;
+    waveOrder = 3;
 end
 
 %if no filename, open file selection dialog
@@ -128,51 +129,84 @@ elseif min(waveIdx)<1 || max(waveIdx)>numWvl
     error('waveIdx out of bounds! Only %i wavelengths found.',numWvl);
 end
 
-%allocate mem
-image=zeros(numRow,numCol,numZ,length(waveIdx),nTimes);
-readIm=zeros(numCol,numRow,numZ);
+
 
 % switch dependent on how the movie is ordered
-if waveOrder == 1 || numWvl == 1
-    % we either have only one wavelength, or the different colors are
-    % interlaced. Loop normally.
-    % The 2 is probably for 2 bytes per voxel
-    fseek(file,HEADER_SIZE+firstImage+(start-1)*numCol*numRow*numZ*2*numWvl,-1);
-    for t=1:nTimes
+switch waveOrder
+    case 1
+        % the different colors are interlaced, but z is stored independently
+        % The 2 is probably for 2 bytes per voxel
+
+        %allocate mem
+        image=zeros(numRow,numCol,numZ,length(waveIdx),nTimes);
+        readIm=zeros(numCol,numRow,numZ);
+
+        for t=1:nTimes
+            for w=1:numWvl
+                readIm(:)=fread(file,numCol*numRow*numZ,'int16');
+                % only save good wavelengths
+                wCt = find(w==waveIdx);
+                if ~isempty(wCt)
+
+                    % rotate and normalize
+                    for z=1:size(readIm,3)
+                        image(:,:,z,wCt,t)=readIm(:,:,z)'/MOVIERANGE;
+                    end;
+                end
+            end;
+        end;
+
+    case 2
+        % the colors are separated (first, there are all frames of one color,fseek(file,HEADER_SIZE+firstImage+(start-1)*numCol*numRow*numZ*2*numWvl,-1);
+        % then all frames of the second color, etc.)
+        % Therefore, read wavelengths sequentially
+
+        %allocate mem
+        image=zeros(numRow,numCol,numZ,length(waveIdx),nTimes);
+        readIm=zeros(numCol,numRow,numZ);
+
         for w=1:numWvl
-            readIm(:)=fread(file,numCol*numRow*numZ,'int16');
-            % only save good wavelengths
+            % only read the wavelengths we actually want
             wCt = find(w==waveIdx);
             if ~isempty(wCt)
-
-                % rotate and normalize
-                for z=1:size(readIm,3)
-                    image(:,:,z,wCt,t)=readIm(:,:,z)'/MOVIERANGE;
-                end;
-            end
+                % find the starting point for each color
+                fseek(file,HEADER_SIZE+firstImage+(start-1)*numCol*numRow*numZ*2 + (w-1)*numCol*numRow*numZ*numTimes*2,-1);
+                for t=1:nTimes
+                    readIm(:)=fread(file,numCol*numRow*numZ,'int16');
+                    % rotate and normalize
+                    for z=1:size(readIm,3)
+                        image(:,:,z,wCt,t)=readIm(:,:,z)'/MOVIERANGE;
+                    end;
+                end
+            end;
         end;
-    end;
 
-else
-    % the colors are separated (first, there are all frames of one color,
-    % then all frames of the second color, etc.)
-    % Therefore, read wavelengths sequentially
+    case 3
 
-    for w=1:numWvl
-        % only read the wavelengths we actually want
-        wCt = find(w==waveIdx);
-        if ~isempty(wCt)
-            % find the starting point for each color
-            fseek(file,HEADER_SIZE+firstImage+(start-1)*numCol*numRow*numZ*2 + (w-1)*numCol*numRow*numZ*numTimes*2,-1);
-            for t=1:nTimes
-                readIm(:)=fread(file,numCol*numRow*numZ,'int16');
-                % rotate and normalize
-                for z=1:size(readIm,3)
-                    image(:,:,z,wCt,t)=readIm(:,:,z)'/MOVIERANGE;
-                end;
-            end
+        %allocate mem
+        image=zeros(numRow,numCol,numZ,length(waveIdx),nTimes);
+        readIm=zeros(numCol,numRow,numWvl);
+
+        % first the colors cycle, then z, then t (which is what makes most
+        % sense, actually)
+        fseek(file,HEADER_SIZE+firstImage+(start-1)*numCol*numRow*numZ*2*numWvl,-1);
+        for t=1:nTimes
+            for z=1:numZ
+                readIm(:)=fread(file,numCol*numRow*numWvl,'int16');
+                for w=1:numWvl
+
+                    % only save good wavelengths
+                    wCt = find(w==waveIdx);
+                    if ~isempty(wCt)
+
+                        % rotate and normalize
+
+                        image(:,:,z,wCt,t)=readIm(:,:,w)'/MOVIERANGE;
+                    end;
+                end
+            end;
         end;
-    end;
+
 end
 
 % check for negative intensities
