@@ -1,4 +1,4 @@
-function [image, filename]= r3dread(filename,start,nTimes,MOVIERANGE,waveIdx,waveOrder)
+function [image, filename, header]= r3dread(filename,start,nTimes,MOVIERANGE,waveIdx,waveOrder,isQu)
 %3RDREAD reads the SOFTWORX *.r3d files into matlab (UNIX byte ordering)
 %
 % SYNOPSIS image = r3dread(filename)
@@ -14,10 +14,13 @@ function [image, filename]= r3dread(filename,start,nTimes,MOVIERANGE,waveIdx,wav
 %                   1: z/w/t, i.e. z cycles first, then w, then t
 %                   2: z/t/w
 %                   3: w/z/t (default)
+%       isQu     : If true, image will be output in the Qu dataset format.
+%                   Default: false
 %
 %
 % OUTPUT image : image series =[X,Y,Z,WVL,TIME]
 %        fname : (optional) string
+%        header: file header as read by readr3dheader
 
 % c: 6/3/00	dT
 % @ 7/3/01 : the header contains a lot information that is ignored for the moment
@@ -45,6 +48,9 @@ end
 % check for order of wavelengths
 if nargin < 6 || isempty(waveOrder)
     waveOrder = 3;
+end
+if nargin < 7 || isempty(isQu)
+    isQu = false;
 end
 
 %if no filename, open file selection dialog
@@ -217,6 +223,41 @@ end
 
 fclose(file);
 
+% check whether to transform for qu
+if isQu
+    % transform to dataset
+  
+    % switch colors/timepoints if it's a movie
+    image = permute(image,[1,2,3,5,4]);
+    arraySize = ones(1,5);
+    arraySize(1:ndims(image)) = size(image);
+
+    % check for multicolor-double and convert
+    if arraySize(5)>1
+        % convert to uint16
+        image = norm01(image);
+        image = image*(2^16-1);
+        image = uint16(round(image));
+    end
+
+    dataset = cell(arraySize(4:5));
+
+    % loop and fill the dataset
+    for t=1:arraySize(4)
+        for c=1:arraySize(5)
+            dataset{t,c} = image(:,:,:,t,c);
+        end
+    end
+
+    % prepare output
+    image = dataset;
+end
+
+
+% read header
+if nargout > 2
+    header = readr3dheader(filename);
+end
 
 
 % header structure:
