@@ -21,7 +21,8 @@ function [kr,lr]=RipleysKfunction(mpm1,mpm2,imsiz,dist,corrFacMat,normArea);
 %           NOTE: IF you want to pre-calculate the correction factor matrix
 %           (which is recommended because it saves time), then run the 
 %           function: 
-%           [corrFacMatrix] = makeCorrFactorMatrix(imsiz,samplesize,mask);
+%           [corrFacMatrix] = makeCorrFactorMatrix(imsiz, dist, samplesize,
+%           mask); 
 %           
 %           IF nargin == 5              the provided corrFacMat is used
 %           IF corrFacMat is an integer corrFacMat is calculated using
