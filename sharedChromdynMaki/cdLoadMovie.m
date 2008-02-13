@@ -18,7 +18,11 @@ function [movie, movieHeader, loadStruct] = cdLoadMovie(movieType, dirName, load
 %                           "synth". MovieName should contain directory!
 %
 %           dirName (opt): directory name in which the movie can be found.
-%                          If empty, current directory will be used
+%                          If empty, current directory will be used. You
+%                          can also specify a movieType and set the dirName
+%                          to 'ask'. You will still have to choose a movie
+%                          in the target directory, but the program loads
+%                          the movie of the chosen type.
 %           loadOpt (opt): Load options
 %                            - array with a vector of timepoints to be
 %                              loaded (e.g. [startFrame:endFrame])
@@ -154,12 +158,13 @@ end
 %==========================
 
 % find movie file if necessary
+selectionCell = {'*.fim;moviedat*','filtered movie';...
+        '*.r3d;*.r3c;*.dv','corrected movie';...
+        '*.r3d;*.r3c;*.dv','raw movie'};
 if type == 6
     oldDir = cd(dirName);
     [movieName, dirName, chooseIdx] = ...
-        uigetfile({'*.fim;moviedat*','filtered movie';...
-        '*.r3d;*.r3c;*.dv','corrected movie';...
-        '*.r3d;*.r3c;*.dv','raw movie'},...
+        uigetfile(selectionCell,...
         'Please choose movie type and location!');
     cd(oldDir);
 
@@ -176,6 +181,31 @@ if type == 6
         % translate type
         type = 4 - chooseIdx;
     end
+elseif strcmpi(dirName,'ask')
+    type2sel = [3,2,1,3,2,0,3];
+    
+    oldDir = pwd;
+    [movieName, dirName] = ...
+        uigetfile(selectionCell(type2sel(type),:),...
+        'Please choose movie location!');
+    cd(oldDir);
+
+    if movieName == 0
+        % user aborted
+        warning('CDLOADMOVIE:UserAbort','No movie loaded');
+        if nargout > 0
+            movie = 0;
+            movieHeader = 0;
+            loadStruct = 0;
+        end
+        return
+    end
+    
+    % set movieName to [], if we're only interested in the path
+    if type > 3
+        movieName = [];
+    end
+    
 else
     % we want to use movieName below - assing empty here
     movieName = [];
@@ -256,7 +286,7 @@ else
 
         % find via regexpr - $ searches at end of name only - no problem
         % with .log
-        regCell = regexp(fileNameList,'r3d$|3D.dv$');
+        regCell = regexpi(fileNameList,'r3d$|3D.dv$');
         % find index where there is something
         idx = find(~cellfun('isempty',regCell));
 
@@ -265,7 +295,7 @@ else
             % simulation. Look for *r3c movie
 
             % search for raw movie file
-            regCell = regexp(fileNameList,'r3c$');
+            regCell = regexpi(fileNameList,'r3c$');
             % find index where there is something
             idx = find(~cellfun('isempty',regCell));
 

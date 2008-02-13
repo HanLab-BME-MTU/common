@@ -121,15 +121,20 @@ end;
 if all(expTime(1)==expTime)
     header.expTime=expTime(1);
 else
+    % only warn if there is only one color
+    if numWvs == 1
     warning('R3DREADHEADER:exposureTimeChanged',...
         'exposure time changed during acquisition');
+    end
     header.expTime=expTime;
 end;
 if all(ndFilter(1)==ndFilter)
     header.ndFilter=ndFilter(1);
 else
+    if numWvs == 1
     warning('R3DREADHEADER:ndFilterChanged',...
         'ndFilter changed during acquisition');
+    end
     header.ndFilter=ndFilter;
 end;
 

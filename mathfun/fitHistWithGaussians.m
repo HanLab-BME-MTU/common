@@ -159,12 +159,8 @@ switch isnumeric(alpha)
                     errFlag = 1;
                 end
                 if ~status
-                    if strcmp(lastwarn,'Already connected to an R server.')
-                        leaveRopen = true;
-                    else
                         disp('--fitHistWithGaussians: unable to launch R');
                         errFlag = 1;
-                    end
                 else
                     leaveRopen = false;
                 end
@@ -192,6 +188,7 @@ switch isnumeric(alpha)
         % variableStd ~maxNumGauss
         if nargin < 4 || isempty(variableStd)
             maxNumGauss = 9;
+            minNumGauss = 1;
         else
             maxNumGauss = variableStd;
             if length(maxNumGauss) > 1

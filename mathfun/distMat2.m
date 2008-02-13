@@ -21,8 +21,14 @@ end;
 
 if nargin < 3 || isempty(metric)
    % use mex-fcn
+   try
    dm = createDistanceMatrix(A,B);
    return
+   catch
+       % mex-problem
+       metricIsSquare = 0;
+       metric = ones(1,nA);
+   end
 elseif nA == nB && all(size(metric(:)) == [nA,1])
     metricIsSquare = 0;
     metric = metric(:)';    
