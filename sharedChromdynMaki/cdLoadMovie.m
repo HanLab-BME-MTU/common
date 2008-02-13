@@ -603,7 +603,7 @@ else
                 % account for the possibility that we have size limits
                 testStruct.maxSize = loadOpt.maxSize;
             else
-                testStruct = 1:r3dMovieHeader.numTimepoints;
+                testStruct.frames2load = {1:r3dMovieHeader.numTimepoints};
             end
 
             % add wave options
