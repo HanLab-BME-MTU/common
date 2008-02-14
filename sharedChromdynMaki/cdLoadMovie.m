@@ -604,11 +604,13 @@ else
                 testStruct.maxSize = loadOpt.maxSize;
             else
                 testStruct.frames2load = {1:r3dMovieHeader.numTimepoints};
+                testStruct.maxSize = sqrt(realmax);
             end
 
             % add wave options
             testStruct.waveIdx = loadStruct.waveIdx;
             testStruct.waveOrder = loadStruct.waveOrder;
+            
 
             % check whether this works at all (at the moment there is no
             % possibility of using dark frame subtraction with multiple
