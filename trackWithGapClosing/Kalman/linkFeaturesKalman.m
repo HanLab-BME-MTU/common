@@ -275,7 +275,7 @@ end
 %store NaN since there are no previous links
 prevCost = NaN(movieInfo(1).num,1);
 
-%assign the lifetime of feature in first frame
+%assign the lifetime of features in first frame
 featLifetime = ones(movieInfo(1).num,1);
 
 %initialize progress display

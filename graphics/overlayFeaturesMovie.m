@@ -101,7 +101,12 @@ if saveMovie
 end
 
 %retain only the movieInfo of the frames of interest
-movieInfo = movieInfo(startend(1):startend(2));
+if isempty(movieInfo)
+    movieInfo = repmat(struct('xCoord',[],'yCoord',[],'amp',[]),...
+        startend(2)-startend(1)+1,1);
+else
+    movieInfo = movieInfo(startend(1):startend(2));
+end
 
 
 %% make movie

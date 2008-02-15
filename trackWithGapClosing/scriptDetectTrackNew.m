@@ -16,10 +16,10 @@
 %define the input variables
 
 %movie information
-movieParam.imageDir = '/mnt/sickkids/Hiro/071229_many/control/con_bleb_02/images/'; %directory where images are
-movieParam.filenameBase = '071218_bleb_'; %image file name base
+movieParam.imageDir = '/mnt/sickkids/Hiro/071229_many/latrunculin/lat_0123_74/images/'; %directory where images are
+movieParam.filenameBase = '0123_latrB_'; %image file name base
 movieParam.firstImageNum = 1; %number of first image in movie
-movieParam.lastImageNum = 1; %number of last image in movie
+movieParam.lastImageNum = 99; %number of last image in movie
 movieParam.digits4Enum = 4; %number of digits used for frame enumeration (1-4).
 
 %detection parameters
@@ -33,9 +33,9 @@ detectionParam.numSigmaIter = 10; %maximum number of iterations for PSF sigma es
 detectionParam.integWindow = 1; %number of frames before and after a frame for time integration
 
 %save results
-% saveResults.dir = '/mnt/sickkids/Hiro/071229_many/latrunculin/lat_02/analysis/'; %directory where to save input and output
-% saveResults.filename = 'detection_lat_02_1.mat'; %name of file where input and output are saved
-saveResults = 0;
+saveResults.dir = '/mnt/sickkids/Hiro/071229_many/latrunculin/lat_0123_74/analysis/'; %directory where to save input and output
+saveResults.filename = 'detection_lat_0123_74_1.mat'; %name of file where input and output are saved
+% saveResults = 0;
 
 %run the detection function
 [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
@@ -78,7 +78,7 @@ costMatParam.maxStdMultCG = 100; %and keep this as 20.
 costMatParam.lenForClassify = 5; %keep this as 10.
 costMatParam.maxAngleVV = 45; %maximum angle between the directions of motion of two tracks that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
 costMatParam.maxAngleVD = 90; %maximum angle between the direction of motion of a track and the vector connecting its center to the center of another track that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
-costMatParam.ampRatioLimitCG = [0.5 4]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
+costMatParam.ampRatioLimitCG = [0.5 10]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
 
 %lifetime distribution information
 costMatParam.lftCdf = [];
@@ -93,8 +93,8 @@ useLocalDensity.nnWindowL = gapCloseParam.timeWindow; %number of frames before t
 useLocalDensity.nnWindowCG = gapCloseParam.timeWindow; %number of frames before/after the current one where you want to look to see a track's nearest neighbor at its end/start (in the gap closing step).
 
 %saveResults
-saveResults.dir = '/mnt/sickkids/Hiro/071229_many/nocodazole/60minute/noc60_29/analysis/'; %directory where to save input and output
-saveResults.filename = 'track_noc60_29_1_2.mat'; %name of file where input and output are saved
+saveResults.dir = '/mnt/sickkids/Hiro/071201Qdot655/Qdot114_100ms/analysis/'; %directory where to save input and output
+saveResults.filename = 'track_Qdot114_100ms_5_1.mat'; %name of file where input and output are saved
 % saveResults = 0;
 
 %run the tracking function

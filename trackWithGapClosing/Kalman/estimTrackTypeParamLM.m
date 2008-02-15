@@ -72,9 +72,15 @@ clear trackSEL
 %assign the asymmetry parameter thresholds that indicate directed motion
 %for different track lengths
 if probDim == 2
-    %90th percentile:
-    asymThresh = [[NaN NaN 5 2.7 2.1 1.8 1.7 1.6 1.5 1.45 1.45 1.4 1.4 ...
-        1.4 1.4 1.4 1.4 1.35 1.35 1.35]'; 1.3*ones(numFrames-20,1)];
+    % % %     %50th percentile:
+    % % %     asymThresh = [[NaN NaN 1.6 0.95 0.75 0.66 0.64 0.6 0.57 0.55 0.54 ...
+    % % %         0.53 0.52 0.5 0.5]'; 0.5*ones(numFrames-15,1)];
+    %80th percentile:
+    asymThresh = [[NaN NaN 3.5 2 1.5 1.4 1.3 1.2 1.2 1.1 1.1 1.1 1.1 1.1 1.1 ...
+        1.05 1.05 1.05 1.05 1.05]'; ones(numFrames-20,1)];
+    % % %     %90th percentile:
+    % % %     asymThresh = [[NaN NaN 5 2.7 2.1 1.8 1.7 1.6 1.5 1.45 1.45 1.4 1.4 ...
+    % % %         1.4 1.4 1.4 1.4 1.35 1.35 1.35]'; 1.3*ones(numFrames-20,1)];
     % % %     %99th percentile:
     % % %     asymThresh = [[NaN NaN 9 5 3.5 3 2.7 2.5 2.4 2.4 2.3 2.2 ...
     % % %         2.2 2.2 2.2 2.2 2.2 2.2 2.2 2.2]'; 2.1*ones(numFrames-20,1)];
@@ -111,21 +117,36 @@ for iTrack = 1 : numTracksLink
 
         %if the asymmetry is larger than threshold ...
         overallType = asymmetry > asymThresh(trackLifeTime(iTrack));
-
+        
     end %(if trackLifeTime(iTrack) >= lenForClassify)
     
     %store track type in vector
     trackType(iTrack) = overallType;
-
+    
     %assign motion parameters for track based on overallType
     switch overallType
 
         case 1 %if track is directed
+            
+            %             %get velocity magnitude from kalman filter
+            %             velMag = norm(kalmanFilterInfo(trackEndTime(...
+            %                 iTrack)).stateVec(trackedFeatIndx(iTrack,...
+            %                 trackEndTime(iTrack)),probDim+1:2*probDim));
+            %
+            %             %get direction of motion
+            %             [eigenVec,eigenVal] = eig(nancov(currentTrack));
+            %             eigenVal = diag(eigenVal);
+            %             velDir = eigenVec(:,eigenVal==max(eigenVal));
+            %
+            %             %assign velocity
+            %             xyzVel(iTrack,:) = velMag * velDir';
 
-            %assign velocity and std
+            %assign velocity
             xyzVel(iTrack,:) = kalmanFilterInfo(trackEndTime(...
                 iTrack)).stateVec(trackedFeatIndx(iTrack,...
                 trackEndTime(iTrack)),probDim+1:2*probDim);
+            
+            %assign noise std
             noiseStd(iTrack) = sqrt(kalmanFilterInfo(trackEndTime(...
                 iTrack)).noiseVar(1,1,trackedFeatIndx(iTrack,...
                 trackEndTime(iTrack))));

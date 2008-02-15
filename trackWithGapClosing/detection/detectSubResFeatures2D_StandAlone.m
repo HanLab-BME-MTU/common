@@ -43,7 +43,7 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %                       movie, containing the fields:
 %             .xCoord    : Image coordinate system x-coordinate of detected
 %                          features [x dx] (in pixels).
-%             .yCoord    : Image coorsinate system y-coordinate of detected
+%             .yCoord    : Image coordinate system y-coordinate of detected
 %                          features [y dy] (in pixels).
 %             .amp       : Amplitudes of PSFs fitting detected features [a da].
 %       exceptions    : Structure with fields:
@@ -77,6 +77,11 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %                                in first frame of filtered integrated movie.
 %       psfSigma      : Standard deviation of point spread function as
 %                       estimated from fitting to local maxima in the movie.
+%       signal2noiseRatio: Number of features - by - number of frames
+%                       array showing signal to noise ratio of all
+%                       features in all frames (SNR = signal amplitude
+%                       above background / local background std). - WILL
+%                       IMPLEMENT SOON.
 %       errFlag       : 0 if function executes normally, 1 otherwise.
 %
 %Khuloud Jaqaman, September 2007
@@ -191,9 +196,9 @@ warningState = warning('off','all');
 %% Image reading + time integration
 
 %get image related parameters
-imageTmp = imread([imageDir filenameBase enumString(1,:) '.tif']); %first image
-[imageSizeX,imageSizeY] = size(imageTmp); %image size
 imageIndx = firstImageNum : lastImageNum; %image indices
+imageTmp = imread([imageDir filenameBase enumString(imageIndx(1),:) '.tif']); %first image
+[imageSizeX,imageSizeY] = size(imageTmp); %image size
 numImagesRaw = lastImageNum - firstImageNum + 1; %number of images
 clear imageTmp
 
@@ -611,7 +616,7 @@ for iImage = goodImages
         %add this frame to the array of frames with failed mixture-model
         %fitting
         framesFailedMMF = [framesFailedMMF; imageIndx(iImage)];
-        
+
     end
 
     %display progress

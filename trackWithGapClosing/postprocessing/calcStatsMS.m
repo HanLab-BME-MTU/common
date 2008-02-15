@@ -19,8 +19,10 @@ function [msStats,msTimeInfo,mergesInfo,splitsInfo] = calcStatsMS(tracks,minTrac
 %                    7th/8th: Fraction of merges/splits in linear tracks.
 %                    9th/10th: Probability of a feature merging/splitting
 %                              while in a linear track.
-%                    10th/11th: Probability of a feature merging/splitting
+%                    11th/12th: Probability of a feature merging/splitting
 %                               while in a Brownian track.
+%                    13th/14th: Ratio of linear probability to Brownian
+%                               probability for merges/splits.
 %       msTimeInfo : Structure with field 'brown' and 'linear' for Brownian
 %                    and linear tracks. Each field is a structure
 %                    containing the fields:
@@ -271,7 +273,8 @@ end
 
 msStats = [aveFeatPerFrame aveMergePerFeat aveSplitPerFeat ...
     numTracks fracTrackLin fracFeatLin fracMergesLin fracSplitsLin ...
-    probMergeLin probSplitLin probMergeBr probSplitBr];
+    probMergeLin probSplitLin probMergeBr probSplitBr ...
+    probMergeLin./probMergeBr probSplitLin./probSplitBr];
 
 msTimeInfo.brown.numTracks = numTracksBrown;
 msTimeInfo.brown.timeMerge2Split = timeMerge2SplitBrown;

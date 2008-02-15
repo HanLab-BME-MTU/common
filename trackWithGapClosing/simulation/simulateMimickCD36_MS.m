@@ -84,7 +84,11 @@ end
 %%   place MTs in image
 
 %assign average x-coordinate of MTs
-mtPosX = (3*confRad2D : mtSpacing(1) : lx-3*confRad2D)';
+if ~isempty(confRad2D)
+    mtPosX = (3*confRad2D : mtSpacing(1) : lx-3*confRad2D)';
+else
+    mtPosX = (1 : mtSpacing(1) : lx-1)';
+end
 
 %get number of MTs
 numMT = length(mtPosX);
@@ -157,7 +161,11 @@ vis_lifetime   = vis_endframe - vis_startframe + 1;
 
 %assign initial positions
 posX = mtPosX(ceil(rand(numTracks,1)*numMT)); %x-coordinate - on one of the MTs
-posY = 3*confRad2D + rand(numTracks,1) * (ly - 6*confRad2D); %y-coordinate - anywhere on an MT
+if ~isempty(confRad2D)
+    posY = 3*confRad2D + rand(numTracks,1) * (ly - 6*confRad2D); %y-coordinate - anywhere on an MT
+else
+    posY = 1 + rand(numTracks,1) * (ly - 2);
+end
 
 %assign initial intensities
 startInt = intVec(1) + intVec(2)*randn(numTracks,1);
@@ -223,7 +231,11 @@ for iTrack = 1 : numTracks
     
     %generate main track
     if cnf > 1
-        xyvecTraj = brownianMotion(2,diffCoef2D,cnf-1,0.1,1,confRad2D); %Brownian part
+        if ~isempty(confRad2D)
+            xyvecTraj = brownianMotion(2,diffCoef2D,cnf-1,0.1,1,confRad2D); %Brownian part
+        else
+            xyvecTraj = brownianMotion(2,diffCoef2D,cnf-1,0.1);
+        end
         if mType(iTrack) == 1 %linear part
             trackLin = brownianMotion(1,diffCoef1D,cnf-1,0.1);
             %             trackLinDiff = (1+0.1*(2*rand((cnf-1)*10,1)-1)).*sqrt(2*diffCoef1D*0.1)...
