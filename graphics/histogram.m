@@ -3,16 +3,20 @@ function [N,X,sp] = histogram(varargin)
 %
 % If called with no output argument, histogram plots into the current axes
 %
-% SYNOPSIS [N,X,sp] = histogram(data,factor)
+% SYNOPSIS [N,X,sp] = histogram(data,factor,normalize)
 %          [...] = histogram(data,'smooth')
 %          [...] = histogram(axesHandle,...)
 %
 % INPUT    data: vector of input data
 %          factor: (opt) factor by which the bin-widths are multiplied
 %                   if "smooth", a smooth histogram will be formed.
-%                   (requires the spline toolbox)
+%                   (requires the spline toolbox). For an alternative
+%                   approach to a smooth histogram, see ksdensity.m
 %          axesHandle: (opt) if given, histogram will be plotted into these
 %                       axes, even if output arguments are requested
+%          normalize : if 1 (default), integral of histogram equals number
+%                       data points. If 0, height of bins equals counts.
+%                       This option is exclusive to non-"smooth" histograms
 %
 % OUTPUT   N   : number of points per bin (value of spline)
 %          X   : center position of bins (sorted input data)
@@ -50,7 +54,7 @@ if length(varargin{1}) == 1 && ishandle(varargin{1});
     varargin(1) = [];
 else
     % ensure compatibility to when axesHandle was given as last input
-    if nargin == 3 && ishandle(varargin{end})
+    if nargin == 3 && ishandle(varargin{end}) && varargin{end} ~= 0
         axesHandle = varargin{end};
         varargin(end) = [];
     else
@@ -77,6 +81,13 @@ if ischar(factor)
         factor = -1;
     else
         error('only string input permitted is ''smooth''')
+    end
+else
+    % check for normalize
+    if numArgIn < 3 || isempty(varargin{3})
+        normalize = true;
+    else
+        normalize = varargin{3};
     end
 end
 
@@ -109,8 +120,10 @@ if factor ~= -1
     % histogram
     [nn,xx] = hist(data,nBins);
     % adjust the height of the histogram
+    if normalize
         Z = trapz(xx,nn);
         nn = nn * nData/Z;
+    end
     if nargout > 0        
         N = nn;
         X = xx;
