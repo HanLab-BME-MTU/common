@@ -96,10 +96,10 @@ end
 
 disp('extract MPMs from saved trackInfo');
 % extract the relevant MPMs for population 1
-[extractedMPMs1]=endoHotspotsMPMexDynamic(data, restrict(1,:));
+[extractedMPMs1]=extractMPMexDynamic(data, restrict(1,:));
 if npop>1
     % same for population 2
-    [extractedMPMs2]=endoHotspotsMPMexDynamic(data, restrict(2,:));
+    [extractedMPMs2]=extractMPMexDynamic(data, restrict(2,:));
 end
 
 
