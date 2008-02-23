@@ -9,13 +9,13 @@ function [allResults]=pitClusterRipleyCross_project(data, restrict, udist, scale
 %                       for e.g. 10 cell movies, the structure should have 10
 %                       entries; the data structure can be created with the 
 %                       function loadConditionData, and it needs to contain
-%                       at least the field .source, which is the (path) 
-%                       location of the TrackInfo matrix, from which we can
-%                       calculate the pertinent lifetime information like
-%                       .lftInfo.Mat_status
-%                       .lftInfo.Mat_xcoord
-%                       .lftInfo.Mat_ycoord
-%                       .lftInfo.Mat_disapp
+%                       at least the field 
+%                       .source, which is the (path) location of the 
+%                       lifetime information folder
+%                       .framerate, which is the movie framerate, which is
+%                       necessary for the lifetime restriction
+%                       .movieLength, i.e. the number of frames in the
+%                       movie                       
 %           restrict  = restriction vector can have variable length;
 %                       minimum length is five, where the entries are
 %                       [stat da minfr minlft maxlft]
@@ -94,28 +94,50 @@ numcc = sum([1:ccx]);
 % allLR
 allLR = zeros(length(udist),numcc,length(data));
 
+orDir = cd;
 
 % loop over all fields in the data
 for i=1:length(data)
     
     fprintf('movie #%02d',i);
     
-    % current lftInfo 
-    currLI = data(i).lftInfo;
+    path = data(i).source;
+    cd(path);
+    
+    
+    % load lifetime data
+    lftInfo = [];
+    % check for Lifetime Info data
+    if exist('LifetimeInfo')==7
+        cd('LifetimeInfo')
+        if exist('lftInfo.mat')==2
+            loadfile = load('lftInfo.mat');
+            lftInfo = loadfile.lftInfo;
+        end
+        cd(path);
+    end
+
+    % if no leftInfo data is found, skip this movie
+    if isempty(lftInfo)
+        allLR(:,:,i) = nan;
+        continue
+    end
+    
     % status matrix
-    mat_stat = currLI.Mat_status;
+    mat_stat    = lftInfo.Mat_status;
     % lifetime matrix
-    mat_lft = currLI.Mat_lifetime;
+    mat_lft     = lftInfo.Mat_lifetime;
     % x-coordinate matrix
-    mat_x = currLI.Mat_xcoord;
+    mat_x       = lftInfo.Mat_xcoord;
     % y-coordinate matrix
-    mat_y = currLI.Mat_ycoord;
+    mat_y       = lftInfo.Mat_ycoord;
     % disapp status matrix
-    mat_da = currLI.Mat_disapp;
+    mat_da      = lftInfo.Mat_disapp;
     % framerate
-    fr = data(i).framerate;
+    fr          = data(i).framerate;
     % image size
-    imsiz = data(i).imagesize;
+    imsiz       = data(i).imagesize;
+    
     msx = imsiz(1);
     msy = imsiz(2);
     imsizS = [imsiz(2) imsiz(1)];

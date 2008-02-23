@@ -289,7 +289,7 @@ allResults.NDsem = ndenSEM;
 areaplot1d = [ ((ndenAV(:,1)-ndenSEM(:,1))') ; 2*ndenSEM(:,1)' ];
 if npop>1
     areaplot2d = [ ((ndenAV(:,2)-ndenSEM(:,2))') ; 2*ndenSEM(:,2)' ];
-    areaplot3d = [ ((ndenAV(:,3)-ndenSEM(:,2))') ; 2*ndenSEM(:,3)' ];
+    areaplot3d = [ ((ndenAV(:,3)-ndenSEM(:,3))') ; 2*ndenSEM(:,3)' ];
 end
 
 figure
