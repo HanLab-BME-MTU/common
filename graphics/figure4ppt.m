@@ -1,9 +1,10 @@
-function figure4ppt(figureH)
+function figure4ppt(figureH,whiteBg)
 %FIGURE4PPT formats a figure for export into powerpoint via copy figure
 %
 %SYNOPSIS   figure4ppt(figureH)
 %
 %INPUT      figureH(opt): handle of figure to be formatted (default is current figure)
+%           whiteBg : Prepare for white background (i.e. no yellow)
 %
 %OUTPUT     the same figure, with:
 %               transparent background (gives a crisscrossed pattern on the figure)
@@ -28,13 +29,16 @@ function figure4ppt(figureH)
 
 %check OS
 if ~ispc
-    h = warndlg('This does not work properly under linux! (By the way, Powerpoint runs under windows)')
+    h = warndlg('This does not work properly under linux! (By the way, Powerpoint runs under windows)');
     uiwait(h);
 end
 
 %check input
-if nargin < 1 | isempty(figureH)
+if nargin < 1 || isempty(figureH)
     figureH = gcf;
+end
+if nargin < 2 || isempty(whiteBg)
+    whiteBg = false;
 end
 
 %is it a figure handle?
@@ -56,6 +60,13 @@ set(figureH,'Color','none');
 %find the axes
 childrenH = figureHandles.Children;
 
+% decide on color
+if whiteBg
+    color = [0 0 0]; % black lines
+else
+    color = [1 1 0]; % yellow lines
+end
+
 %there could be several axes! Therefore loop through all the handles and
 %format the axes
 for i = 1:length(childrenH)
@@ -67,12 +78,12 @@ for i = 1:length(childrenH)
         
         %background: black, axes: yellow, font: Tahoma18, lineWidth: 2
         set(axesH,'Color','none','FontName','Tahoma','FontSize',18,'LineWidth',2,...
-            'XColor', [1 1 0],'YColor', [1 1 0],'ZColor', [1 1 0]);
+            'XColor', color,'YColor', color,'ZColor', color);
         
         %Title: tahoma28, rest tahoma24, all yellow
         titleH = axesHandles.Title;
-        set(titleH,'FontName','Tahoma','FontSize',28,'Color',[1 1 0]);
-        set([axesHandles.YLabel,axesHandles.XLabel,axesHandles.ZLabel],'FontName','Tahoma','FontSize',24,'Color',[1 1 0]);
+        set(titleH,'FontName','Tahoma','FontSize',28,'Color',color);
+        set([axesHandles.YLabel,axesHandles.XLabel,axesHandles.ZLabel],'FontName','Tahoma','FontSize',24,'Color',color);
         
         %all lines: lineWidth 2. No color checks are done!
         lineHList = findall(axesH,'Type','line');
