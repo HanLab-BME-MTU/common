@@ -1,4 +1,4 @@
-function [averageImage,sdImage,hotImage,xPattern, yPattern, xPatternL, yPatternL]=cameraEvaluation(darkFrames, testDynamicPattern, nImagesForCorr, nLags)
+function [averageImage,sdImage,hotImage,xPattern, yPattern, xPatternL, yPatternL]=cameraEvaluation(darkFrames, testDynamicPattern, nImagesForCorr, nLags, imgName)
 %CAMERAEVALUATION tests cameras for static and dynamic patterns
 %
 % The code performs an analysis on a series of dark images. 
@@ -33,6 +33,7 @@ function [averageImage,sdImage,hotImage,xPattern, yPattern, xPatternL, yPatternL
 %                       will slow down things tremendously.
 %          nLags :      Determines the maximum lag for the autoCorrelation
 %                       as nLags*max(imageSize). Default: 3.1
+%          imgName :    Name of image
 %
 % OUTPUT   averageImage : average of the image series
 %          sdImage      : standard deviation of the image series
@@ -61,6 +62,9 @@ end
 if nargin < 4 || isempty(nLags)
     nLags = def_nLags;
 end
+if nargin < 5 || isempty(imgName)
+    imgName = inputname(1);
+end
 
 % convert image
 movieSize = size(darkFrames);
@@ -85,27 +89,20 @@ averageImageC(hotImage) = robMean;
 sdImageC = robStd * ones(movieSize(1:2));
 sdImageC(inlierIdx) = sdImage(inlierIdx);
 
-%if which(uiViewPanel)
-%uiViewPanel;
-%else
-    figure
-%end
+
+figure('Name',sprintf('Average background %s',imgName))
 imshow(averageImageC,[]);
 set(gcf,'Name','Average background');
 colormap('jet')
 
-%if which(uiViewPanel)
-%uiViewPanel;
-%else
-    figure
-%end
+
+figure('Name',sprintf('Std background %s',imgName))
 imshow(sdImageC,[]);
-set(gcf,'Name','Std background');
 colormap('jet')
 
-figure('Name','Average background (no hot pixels)'),
+figure('Name',sprintf('Average background (no hot pixels) %s',imgName)),
 histogram(averageImageC(~hotImage));
-figure('Name','Std background (no hot pixels)');
+figure('Name',sprintf('Std background (no hot pixels) %s',imgName));
 histogram(sdImageC(~hotImage));
 
 % subtract static pattern, divide by sd
@@ -141,7 +138,7 @@ else % test the dynamic pattern
 
 % correlate 3 times longer side
 % run for 25 random images
-imgList = randPerm(movieSize(3));
+imgList = randperm(movieSize(3));
 
 imgList = imgList(1:nImagesForCorr);
 nCorr = ceil(nLags*max(movieSize(1:2)));
@@ -171,7 +168,7 @@ yPatternL = abs(yPattern) > thresh;
 % plot
 
 % correlations
-figure('Name',sprintf('average correlation rows (npts=%i, nimg=%i)',numberOfPixels,nImagesForCorr))
+figure('Name',sprintf('average correlation rows (npts=%i, nimg=%i) %s',numberOfPixels,nImagesForCorr, imgName))
 m=mean(xPattern,2);
 s=std(xPattern,0,2);
 area(0:nCorr,m+s,'BaseValue',-1,'LineStyle','none','FaceColor',[0.8,0.8,0.8])
@@ -182,7 +179,7 @@ plot(0:nCorr,repmat(thresh,nCorr+1,1),'r')
 xlabel(sprintf('Pixel lags (%i pix/row)',movieSize(1)))
 ylabel('Normalized autocorrelation')
 
-figure('Name',sprintf('average correlation rows (npts=%i, nimg=%i)',numberOfPixels,nImagesForCorr))
+figure('Name',sprintf('average correlation rows (npts=%i, nimg=%i) %s',numberOfPixels,nImagesForCorr,imgName))
 m=mean(yPattern,2);
 s=std(yPattern,0,2);
 area(0:nCorr,m+s,'BaseValue',-1,'LineStyle','none','FaceColor',[0.8,0.8,0.8])
@@ -194,14 +191,14 @@ xlabel(sprintf('Pixel lags (%i pix/row)',movieSize(2)))
 ylabel('Normalized autocorrelation')
 
 % sum of significant correlations
-figure('Name',sprintf('Number of significant correlations in rows (npts=%i, nimg=%i)',numberOfPixels,nImagesForCorr))
+figure('Name',sprintf('Number of significant correlations in rows (npts=%i, nimg=%i) %s',numberOfPixels,nImagesForCorr,imgName))
 plot(0:nCorr,sum(xPatternL,2),'.')
 xlabel(sprintf('Pixel lags (%i pix/row)',movieSize(2)))
 ylabel(sprintf('Number of significant correlations out of %i',nImagesForCorr))
 ylim([-0.2,nImagesForCorr+0.2])
 grid on
 
-figure('Name',sprintf('Number of significant correlations in rows (npts=%i, nimg=%i)',numberOfPixels,nImagesForCorr))
+figure('Name',sprintf('Number of significant correlations in rows (npts=%i, nimg=%i) %s',numberOfPixels,nImagesForCorr,imgName))
 plot(0:nCorr,sum(yPatternL,2),'.')
 xlabel(sprintf('Pixel lags (%i pix/row)',movieSize(2)))
 ylabel(sprintf('Number of significant correlations (max %i)',nImagesForCorr))
