@@ -1,4 +1,4 @@
-function outputImage = multicolorImage(images,cmap,norm)
+function outputImage = multicolorImage(images,cmap,normIn,normOut)
 %MULTICOLORIMAGE creates an overlay color image out of multiple 2D images
 %
 % SYNOPSIS: outputImage = multicolorImage(images,colormap)
@@ -7,8 +7,12 @@ function outputImage = multicolorImage(images,cmap,norm)
 %		cmap: (opt) nImages-by-3 colormap (see help colormap), or string of
 %		      color codes ('rgb' resolves to red, green, blue)
 %             Default: Jet
-%       norm: (opt) If 1, individual images will be normed to 0...1.
+%       normIn: (opt) If 1, individual images will be normed to 0...1.
 %             Default: 1
+%       normOut: (opt) If 1, output image will be normed to 0...1. If 2,
+%             output image will be divided by the number of input images.
+%             If 3, lowest 1% will be set to 0, highest 1% to 1
+%             Default: 0
 %
 % OUTPUT outputImage: multicolor overlay image
 %
@@ -65,8 +69,11 @@ if ~all(size(cmap) == [nImages,3])
     error('colormap must be nImages-by-3 array')
 end
 
-if nargin < 3 || isempty(norm)
-    norm = true;
+if nargin < 3 || isempty(normIn)
+    normIn = true;
+end
+if nargin < 4 || isempty(normOut)
+    normOut = 0;
 end
 
 %========================
@@ -82,7 +89,7 @@ outputImage = zeros([imSize,3]);
 % add individual images to end result. A lot of overlay may lead to
 % "saturation". I'm not correcting for that for now.
 for i=1:nImages
-    if norm
+    if normIn
         tmp = norm01(images(:,:,i));
     else
         tmp = images(:,:,i);
@@ -91,6 +98,18 @@ for i=1:nImages
         cat(3,tmp*cmap(i,1),...
         tmp*cmap(i,2),...
         tmp*cmap(i,3));
+end
+
+% norm output image if requested
+switch normOut
+    case 1
+        outputImage = norm01(outputImage);
+    case 2 
+        outputImage = outputImage/nImages;
+    case 3
+        outputImage = norm01(outputImage,[1,99]);
+    otherwise
+        warning('unrecognized option for normOut in multicolorImage')
 end
 
 if nargout == 0
