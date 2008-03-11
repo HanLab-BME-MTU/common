@@ -5,7 +5,8 @@ function progressText(fractionDone,text)
 %
 % INPUT fractionDone: fraction of loop done (0-1)
 %		text (opt): {yourTexthere} : XX% done xx:xx:xx remaining
-% OUTPUT 
+%                   Note: text can be changed for every call
+% OUTPUT none
 %
 % EXAMPLE
 %   n = 1000;
@@ -14,6 +15,7 @@ function progressText(fractionDone,text)
 %       pause(0.01) % Do something important
 %       progressText(i/n) % Update text
 %   end
+%
 %
 % created with MATLAB ver.: 7.4.0.287 (R2007a) on Windows_NT
 %
@@ -37,16 +39,14 @@ else
     text = [text,' : '];
 end
 
-if fractionDone == 0
+if fractionDone == 0 || isempty(starttime)
     % set up everything
     
     % Set time of last update to ensure calculation
     lastupdate = clock - 1;
     
     % Task starting time reference
-    if isempty(starttime) || (fractionDone == 0)
-        starttime = clock;
-    end
+    starttime = clock;
     
     % create fprintf-expression
     

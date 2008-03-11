@@ -30,14 +30,12 @@ counter = 0;
 ccounter = 0;
 
 % check for progressText
-verbose = which('progressText.m');
-% try
-%     progressText(0,'Updating subversion directories') % Create text
-%     progressText(1);
-%     verbose = true;
-% catch
-%     verbose = false;
-% end
+try
+    progressText(0,'Updating subversion directories') % Create text
+    verbose = true;
+catch
+    verbose = false;
+end
 
 nSubdirs = numel( subdirs );
 report = cell(nSubdirs,2);
@@ -51,7 +49,7 @@ for i = 1 : nSubdirs
     end
 
     if verbose
-        progressText((i-1)/nSubdirs,sprintf('Checking %s', subdirs( i ).name))
+        progressText((i-1)/nSubdirs,sprintf('Updating subversion directories (checking %s)', subdirs( i ).name))
     end
     % Run an svn status first. For some reason, you need to give the full
     % path in order to get the full answer.
@@ -70,7 +68,7 @@ for i = 1 : nSubdirs
     end
     
     if verbose
-        progressText((i-1)/nSubdirs,sprintf('Updating %s', subdirs( i ).name))
+        progressText((i-1)/nSubdirs,sprintf('Updating subversion directories (updating %s)', subdirs( i ).name))
     end
 
     % Run an svn update
@@ -81,6 +79,9 @@ for i = 1 : nSubdirs
     report{ counter, 1 } = subdirs( i ).name;
     report{ counter, 2 } = err;
 
+end
+if verbose
+    progressText(1,'Updating subversion directories');
 end
 
 report(counter+1:end,:) = [];
