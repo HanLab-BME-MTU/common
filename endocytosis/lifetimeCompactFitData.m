@@ -1,6 +1,7 @@
 function [compactRes, data] = lifetimeCompactFitData(data, restrict, shape);
-% perform multiple-population fit on lifetime data, including cell-to-cell
-% varaiations in all parameters
+% perform multiple-population fit on lifetime data, and write all relevant
+% results, including cell-to-cell variation and statistics, into a copmact
+% results file
 % INPUT:    data    = experiment data, has to contain fields
 %           restrict    = time restriction in seconds, e.g. 300
 %           shape   = shape for populations, e.g. [2 2 1], where 1
@@ -9,7 +10,8 @@ function [compactRes, data] = lifetimeCompactFitData(data, restrict, shape);
 % OUTPUT:   compactRes    = compact results
 %           data (optional) = with added field .lftHist if not already
 %           present
-
+%
+% Dinah Loerke, last modified Mar 13, 2008
 
 [data] = fillStructLifetimeHist(data);
 
