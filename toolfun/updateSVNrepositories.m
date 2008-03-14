@@ -49,7 +49,7 @@ for i = 1 : nSubdirs
     end
 
     if verbose
-        progressText((i-1)/nSubdirs,sprintf('Updating subversion directories (checking %s)', subdirs( i ).name))
+        progressText((i-1)/nSubdirs+eps,sprintf('Updating subversion directories (checking %s)', subdirs( i ).name))
     end
     % Run an svn status first. For some reason, you need to give the full
     % path in order to get the full answer.
@@ -116,10 +116,10 @@ end
 
 % Write to log
 for c = 1 : counter
-    fprintf( fid, 'Update of %s: %s\n',report{ c, 1 }, report{ c, 2 } );
+    fprintf( fid, 'Update of %s:\n %s\n',report{ c, 1 }, report{ c, 2 } );
 end
 if ccounter > 0
-    fprintf( fid, '\n\n Un-committed files:\n');
+    fprintf( fid, '\n\n Un-committed or locked files:\n');
     for cc = 1 : ccounter;
         fprintf( fid, '%s:\n %s\n',reportCommit{ cc, 1 }, reportCommit{ cc, 2 } );
     end
