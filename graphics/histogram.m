@@ -84,10 +84,10 @@ if ischar(factor)
     end
 else
     % check for normalize
-    if numArgIn < 3 || isempty(varargin{3})
+    if numArgIn < 4 || isempty(varargin{4})
         normalize = true;
     else
-        normalize = varargin{3};
+        normalize = varargin{4};
     end
 end
 

@@ -556,7 +556,7 @@ indx = find(keepCluster);
 
         %keep only clusters that pass the residuals test
         clustersMMF = clustersMMF(indx);
-
+        
         %store information in structure "detectedFeatures"
         tmp = vertcat(clustersMMF.position);
         detectedFeatures.xCoord = [tmp(:,1) tmp(:,3)];

@@ -796,7 +796,7 @@ end
 if isstruct(saveResults)
     save([saveResDir filesep saveResFile],'costMatParam','gapCloseParam',...
         'kalmanInitParam','useLocalDensity','tracksFinal','kalmanInfoLink',...
-        'numPotLinksPerFeature','numPotLinksPerTrack');
+        'numPotLinksPerFeature','numPotLinksPerTrack','linearMotion');
 end
 
 

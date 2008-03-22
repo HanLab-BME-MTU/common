@@ -34,8 +34,8 @@ if nargin < 3
 end
 
 %check input data
-if maxLag <= 0
-    disp('--crossCorr: Variable "maxLag" should be a positive integer!');
+if maxLag < 0
+    disp('--crossCorr: Variable "maxLag" should be a nonnegative integer!');
     errFlag = 1;
 end
 

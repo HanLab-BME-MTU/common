@@ -1,4 +1,15 @@
 function [trackedFeatureInfo,trackedFeatureIndx] = convStruct2MatNoMS(tracksFinal)
+%CONVSTRUCT2MATNOMS converts tracks from structure format to matrix format, provided there are NO merges/splits.
+%
+%SYNPOSIS [trackedFeatureInfo,trackedFeatureIndx] = convStruct2MatNoMS(tracksFinal)
+%
+%INPUT  tracksFinal: Output of trackCloseGapsKalman, when run with
+%                    gapCloseParam.mergeSplit = 0.
+%       trackedFeatureInfo, trackedFeatureIndx: Output of trackWithGapClosing.
+%
+%Khuloud Jaqaman, February 2008
+
+%% conversion
 
 %get number of tracks
 numTracks = length(tracksFinal);
@@ -22,3 +33,5 @@ for iTrack = 1 : numTracks
     trackedFeatureIndx(iTrack,startTime:endTime) = ...
         tracksFinal(iTrack).tracksFeatIndxCG;
 end
+
+%% ~~~ the end ~~~

@@ -10,10 +10,9 @@ function [mSqDisp,mSqDMatrix,mSqDErrMatrix,errFlag] = ...
 %                           of rows = number of tracks, while number of 
 %                           columns = 8*number of time points. Each row 
 %                           consists of 
-%                           [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...]
-%                           in image coordinate system (coordinates in
-%                           pixels). NaN is used to indicate time points 
-%                           where the track does not exist.
+%                           [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...].
+%                           NaN is used to indicate time points where the
+%                           track does not exist.
 %
 %OUTPUT mSqDisp           : Structure array of length equal to number of
 %                           input tracks with field "values" = output of

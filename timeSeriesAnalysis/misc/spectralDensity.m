@@ -16,7 +16,7 @@ function [specDenV,lambda,errFlag] = spectralDensity(gamma)
 %Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-spectralDensityV = [];
+specDenV = [];
 lambda = [];
 errFlag = 0;
 
@@ -36,7 +36,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %determine values of lambda for spectral density calculation
-lambda = [0:0.02:pi]';
+lambda = (0:0.02:pi)';
 numLambda = length(lambda);
 
 %reserve memory for specDenV
@@ -47,7 +47,7 @@ maxLag = length(gamma) - 1;
 
 %calculate the spectral density
 for i=1:numLambda
-    specDenV(i) = (2*cos([1:maxLag]*lambda(i))*gamma(2:end) ...
+    specDenV(i) = (2*cos((1:maxLag)*lambda(i))*gamma(2:end) ...
         + gamma(1))/2/pi;
 end
 

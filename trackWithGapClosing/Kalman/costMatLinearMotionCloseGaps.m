@@ -1000,7 +1000,6 @@ costMat = sparse(indx1,indx2,cost,numEndSplit,numStartMerge);
 %% Append cost matrix to allow births and deaths ...
 
 %determine the cost of birth and death
-% costBD = max(max(max(costMat))+1,1);
 costBD = prctile(cost,90);
 
 %get the cost for the lower right block

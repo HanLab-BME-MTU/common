@@ -602,7 +602,7 @@ for iImage = goodImages
 
         %save results
         movieInfo(iImage) = featuresInfo;
-
+        
         %check whether frame is empty
         if isempty(featuresInfo.xCoord)
             emptyFrames = [emptyFrames; imageIndx(iImage)];

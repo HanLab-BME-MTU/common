@@ -9,7 +9,7 @@ function mSqDisp = meanSquaredDisplacement(positions, sigmaZero, doOneD)
 %               Fields:
 %                   .coordinates    n-by-d array of coordinates
 %                   .covariances    d-by-d-by-n array of covariances
-%          
+%
 %          sigmaZero            (opt) n-by-1 array of sigma0 (noise) at the
 %                               position of the coordinates. Default: 1
 %
@@ -24,12 +24,12 @@ function mSqDisp = meanSquaredDisplacement(positions, sigmaZero, doOneD)
 %
 % OUTPUT   mSqDisp              x-by-3 array with
 %                                   - r^2=<[r(t+dt)-r(t)]^2>
-%                                   - sigma(r^2) - for SEM divide by 
+%                                   - sigma(r^2) - for SEM divide by
 %                                         sqrt(nDataPoints!)
 %                                   - nDataPoints
 %
 %                               dt is max 1/4 of the
-%                               available timepoints. 
+%                               available timepoints.
 %                               See Saxton, Biophys.J.,1997
 %
 %c: 05/04 jonas
@@ -45,7 +45,7 @@ defaultMinNumData = 20;
 % TEST INPUT
 %=====================
 
-% nargin 
+% nargin
 if nargin < 1 || ~isstruct(positions) || ~isfield(positions,'coordinates') || ~isfield(positions,'covariances')
     error('Please specify a ''positions'' structure with fields ''coordinates'' and ''covariances''!')
 end
@@ -64,7 +64,7 @@ if any(coordSize(2) ~= covSize(1:2))
 end
 
 % fill sigmaZero
-if nargin < 2 | isempty(sigmaZero)
+if nargin < 2 || isempty(sigmaZero)
     sigmaZero = repmat(defaultSigmaZero,[coordSize(1),1]);
 end
 
@@ -78,7 +78,7 @@ else
 end
 
 % this is not so elegant, but I am quickly changing the code, so it will
-% have to suffice. 
+% have to suffice.
 coordinates = positions(1).coordinates;
 covariances = positions(1).covariances;
 clear positions
@@ -103,9 +103,9 @@ if doOneD
     positions(1).covariances = covariances;
     positions(2).coordinates = referenceCoordinates;
     positions(2).covariances = referenceCovariances;
-    
+
     [distance,sigma] = deltaCoordinates(positions,sigmaZero);
-    
+
     coordinates = distance;
     % make 1-by-1-by n array. Let reshape calculate the size
     covariances = reshape(sigma,1,1,[]);
@@ -113,7 +113,7 @@ if doOneD
     covSize   = size(covariances);
     referenceCoordinates = zeros(coordSize);
     referenceCovariances = zeros(covSize);
-    
+
 end
 
 %=====================
@@ -148,25 +148,25 @@ positions(3).covariances = referenceCovariances;
 
 % loop through all timeLags and calculate displacement and sigma
 for timeLag = 1:maxTimeLag
-    
+
     % calculate displacements.
     [displacement,sigma] = deltaCoordinates(positions,sigmaZero,timeLag);
-    
-%     % DEBUG
-%     idx=find(sigma==0);
-%     if ~isempty(idx)
-%         idx,timeLag
-%     end
-    
+
+    %     % DEBUG
+    %     idx=find(sigma==0);
+    %     if ~isempty(idx)
+    %         idx,timeLag
+    %     end
+
     % find ~NaNs
     goodData = find(isfinite(displacement) & isfinite(sigma) & (sigma~=0));
-    
+
     % if more than 20 data points, we average
     if length(goodData) >= defaultMinNumData
         % use sigma of distances, not squared distances, for weight
-         [r2,dummy,sigmaR2] = weightedStats(displacement(goodData).^2,sigma(goodData),'s');
-         mSqDisp(timeLag,:) = [r2,sigmaR2,length(goodData)];
+        [r2,dummy,sigmaR2] = weightedStats(displacement(goodData).^2,sigma(goodData),'s');
+        mSqDisp(timeLag,:) = [r2,sigmaR2,length(goodData)];
     end
-    
+
 end % for timeLag = 1:maxTimeLag
 
