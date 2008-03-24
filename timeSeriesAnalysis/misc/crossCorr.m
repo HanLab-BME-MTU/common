@@ -16,6 +16,10 @@ function [gamma,errFlag] = crossCorr(traj1,traj2,maxLag)
 %
 %REMARKS Input trajectories could have a nonzero mean. The algorithm accounts
 %        for that.
+%        Significant correlation at positive lags means that traj2 follows
+%        traj1, e.g. traj2(t) = traj1(t-1) has correlation 1 at lag 1.
+%        Significant correlation at negative lags means that traj2 preceeds
+%        traj1, e.g. traj1(t) = traj2(t-1) has correlation 1 at lag -1.
 %
 %Khuloud Jaqaman, August 2007
 
