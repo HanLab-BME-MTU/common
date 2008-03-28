@@ -44,6 +44,8 @@ username = getenv('username');
 switch username
     case 'p0877743'
         username = 'Jonas Dorn';
+    case 'p0774774'
+        username = 'Thai-Hang Nguyen';
     otherwise
         % don't change username
 end
