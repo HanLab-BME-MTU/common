@@ -45,7 +45,7 @@ function [cutoffIndex, cutoffValue, sp] = cutFirstHistMode(varargin);
 %          multiple small values first (for example, using isApproxEqual)
 %
 %
-% c: jonas, 8/06
+% c: jonas, 8/06   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
