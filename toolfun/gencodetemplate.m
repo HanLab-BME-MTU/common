@@ -26,6 +26,12 @@ if nargin < 1 || isempty(fxnname) || ~ischar(fxnname)
     fxnname = [];
 end
 
+% check whether function already exists
+fxnCheck = which(fxnname);
+if ~isempty(fxnCheck)
+    error('%s already exists: %s',fxnname,fxnCheck)
+end
+
 %==============
 
 
@@ -93,11 +99,7 @@ if isempty(fxnname) || isempty(description{2})...
 end
 
 
-% check whether function already exists
-fxnCheck = which(fxnname);
-if ~isempty(fxnCheck)
-    error('%s already exists: %s',fxnname,fxnCheck)
-end
+
 
 % read other input
 username = description{1};
