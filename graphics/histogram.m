@@ -12,11 +12,11 @@ function [N,X,sp] = histogram(varargin)
 %                   if "smooth", a smooth histogram will be formed.
 %                   (requires the spline toolbox). For an alternative
 %                   approach to a smooth histogram, see ksdensity.m
-%          axesHandle: (opt) if given, histogram will be plotted into these
-%                       axes, even if output arguments are requested
 %          normalize : if 1 (default), integral of histogram equals number
 %                       data points. If 0, height of bins equals counts.
 %                       This option is exclusive to non-"smooth" histograms
+%          axesHandle: (opt) if given, histogram will be plotted into these
+%                       axes, even if output arguments are requested
 %
 % OUTPUT   N   : number of points per bin (value of spline)
 %          X   : center position of bins (sorted input data)
@@ -80,14 +80,15 @@ if ischar(factor)
     if strmatch(factor,'smooth')
         factor = -1;
     else
-        error('only string input permitted is ''smooth''')
+        error('The only string input permitted for histogram.m is ''smooth''')
     end
 else
-    % check for normalize
-    if numArgIn < 4 || isempty(varargin{4})
+    % check for normalize, but do so only if there is no "smooth". Note
+    % that numArgIn is not necessarily equal to nargin
+    if numArgIn < 3 || isempty(varargin{3})
         normalize = true;
     else
-        normalize = varargin{4};
+        normalize = varargin{3};
     end
 end
 
