@@ -26,10 +26,12 @@ if nargin < 1 || isempty(fxnname) || ~ischar(fxnname)
     fxnname = [];
 end
 
-% check whether function already exists
-fxnCheck = which(fxnname);
-if ~isempty(fxnCheck)
-    error('%s already exists: %s',fxnname,fxnCheck)
+% check whether function already exists - only if given as input
+if ~isempty(fxnname)
+    fxnCheck = which(fxnname);
+    if ~isempty(fxnCheck)
+        error('%s already exists: %s',fxnname,fxnCheck)
+    end
 end
 
 %==============
@@ -69,37 +71,60 @@ inPrompt = {'Username',...
     'Description: ''FUNCTIONNAME does ...'' (captitalized function name)',...
     'Synopsis: ''[output1, output2] = functionname(input1, input2)',...
     'Description of input arguments (use \n for line breaks)',...
-    'Description of output arguments (use \n for line breaks)'};
+    'Description of output arguments (use \n for line breaks)',...
+    'Function: 1, Class: 2'};
 inTitle = 'Please describe your function';
-numLines = repmat([1,100],6,1);
+numLines = repmat([1,100],7,1);
 % assign defaultAnswer
-[defaultAnswer{1:6}] = deal('');
+[defaultAnswer{1:7}] = deal('');
 % assign username in default answers
 defaultAnswer{1} = username;
+defaultAnswer{7} = '1';
 % if we have a function name already, all will be simpler
 if ~isempty(fxnname)
     defaultAnswer{2} = fxnname;
     defaultAnswer{3} = sprintf('%s ...', upper(fxnname));
 end
 
-% get input
-description = inputdlg(inPrompt, inTitle, numLines, defaultAnswer);
+% loop till description is ok
+ok = false;
 
-% check for user abort
-if isempty(description)
-    error('description cancelled by user');
-end
+while ~ok
 
-% read description. Functionname, description and synopsis are required
-fxnname = description{2};
-if isempty(fxnname) || isempty(description{2})...
-        || isempty(description{3}) || isempty(description{4}) ||...
-        any(findstr(description{3},'...')) || isempty(regexpi(description{4},fxnname)) 
-    error('Username, function name, description and synopsis are required inputs!')
-end
+    % get input
+    description = inputdlg(inPrompt, inTitle, numLines, defaultAnswer);
 
+    % check for user abort
+    if isempty(description)
+        error('description cancelled by user');
+    else
+        ok = true; % hope for the best
+    end
 
+    % read description. Functionname, description and synopsis are required
+    fxnname = description{2};
+    if isempty(fxnname) || isempty(description{2})...
+            || isempty(description{3}) || isempty(description{4}) ||...
+            any(findstr(description{3},'...')) || isempty(regexpi(description{4},fxnname))
+        h = errordlg('Username, function name, description and synopsis are required inputs!');
+        uiwait(h);
+        ok = false;
+    end
 
+    % check whether function already exists (again)
+    fxnCheck = which(fxnname);
+    if ~isempty(fxnCheck)
+        h = errordlg('%s already exists: %s',fxnname,fxnCheck);
+        uiwait(h);
+        ok = false;
+    end
+
+    % check for ok and update defaultAnswer with description if necessary
+    if ~ok
+        defaultAnswer = description;
+    end
+
+end % while
 
 % read other input
 username = description{1};
@@ -134,10 +159,8 @@ fsuffix = '.m';
 filename = fullfile(dirName,[fxnname fsuffix]);
 % end filename creation
 
-% this switch allows users to set their own design preferences.
-% Just add case 'myusername'
-switch username
-    otherwise
+switch description{7}
+    case '1' % function
         % beginning of file-printing stage
         fid = fopen(filename,'wt');
         fprintf(fid,'function %s\n',synopsis);
@@ -159,6 +182,26 @@ switch username
         fprintf(fid,'%s\n',repmat('%',1,75));
         fclose(fid);
         % end of file-printing stage
+    case '2' % class
+        fid = fopen(filename,'wt');
+        fprintf(fid,'%%%s\n',desc);
+        fprintf(fid,'%%\n');
+        fprintf(fid,'%% SYNOPSIS: %s\n',synopsis);
+        fprintf(fid,'%%\n');
+        fprintf(fid,['%% INPUT ',inputtext,'\n']);
+        fprintf(fid,'%%\n');
+        fprintf(fid,['%% OUTPUT ',outputtext,'\n']);
+        fprintf(fid,'%%\n');
+        fprintf(fid,'%% REMARKS\n');
+        fprintf(fid,'%%\n');
+        fprintf(fid,'%% created with MATLAB ver.: %s on %s\n',vers,os);
+        fprintf(fid,'%%\n');
+        fprintf(fid,'%% created by: %s\n',username);
+        fprintf(fid,'%% DATE: %s\n',datetoday);
+        fprintf(fid,'%%\n');
+        fprintf(fid,'%s\n',repmat('%',1,75));
+        fprintf(fid,'\nclassdef %s\n\nend',fxnname)
+        fclose(fid);
 end
 
 % pop up the newly generated file
