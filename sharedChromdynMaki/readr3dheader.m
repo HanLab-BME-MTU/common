@@ -61,10 +61,13 @@ block = fread(fid,10,'int32');
 numCols = block(1);
 numRows = block(2);
 numImages = block(3);
-header.firstImageAddress = block(24); % important info for reading images
 header.pixelX = fread(fid,1,'float');
 header.pixelY = fread(fid,1,'float');
 header.pixelZ = fread(fid,1,'float');
+
+fseek(fid,0,-1);
+block = fread(fid,24,'int32');
+header.firstImageAddress = block(24); % important info for reading images
 
 
 %offset
@@ -96,7 +99,7 @@ header.numTimepoints=numTimepoints;
 header.numWvs=numWvs;
 
 % make header.zwtOrder understandable
-strs = {'ztw';'wzt','zwt'};
+strs = {'ztw';'wzt';'zwt'};
 header.zwtOrder = strs{imagesequence+1};
 
 
@@ -106,8 +109,8 @@ for i=1:header.numWvs
 end;
 
 % preassign header.Time, header.timestamp
-header.Time = zeros(numTimepoints*numWvs*numZSlices,1);
-[header.timestamp,expTime,ndFilter] = deal(zeros(numZSlices,numTimepoints,numWvs));
+header.Time = zeros(numTimepoints*numWvs*header.numZSlices,1);
+[header.timestamp,expTime,ndFilter] = deal(zeros(header.numZSlices,numTimepoints,numWvs));
 
 
 %read extended header information
@@ -131,9 +134,9 @@ for t=0:numTimepoints-1
             % basically carry the same information as Time, only that the
             % info will be useful.
             header.Time(theSection+1)=block(2);
-            header.timestamp(z,t,w) = blick(2);
-            expTime(z,t,w)=block(9); % before: expTime(theSection+1)
-            ndFilter(z,t,w)=block(10);
+            header.timestamp(z+1,t+1,w+1) = block(2);
+            expTime(z+1,t+1,w+1)=block(9); % before: expTime(theSection+1)
+            ndFilter(z+1,t+1,w+1)=block(10);
         end;
     end;
 end;

@@ -113,8 +113,8 @@ firstImage = block(24);
 fseek(file,180,-1);
 numTimes=fread(file,1,'short');
 % read zwt order
-strs = {'ztw';'wzt','zwt'};
-zwtOrder = strs{fread(fid,1,'short')+1};
+strs = {'ztw';'wzt';'zwt'};
+zwtOrder = strs{fread(file,1,'short')+1};
 
 % set to all images if not exist
 if nargin < 3 || isempty(nTimes)
