@@ -147,7 +147,8 @@ switch zwtOrder
         %allocate mem
         image=zeros(numRow,numCol,numZ,length(waveIdx),nTimes);
         readIm=zeros(numCol,numRow,numZ);
-
+        % find the starting point
+        fseek(file,HEADER_SIZE+firstImage+(start-1)*numCol*numRow*numZ*2*numWvl,-1);
         for t=1:nTimes
             for w=1:numWvl
                 readIm(:)=fread(file,numCol*numRow*numZ,'int16');
@@ -164,7 +165,7 @@ switch zwtOrder
         end;
 
     case 'ztw'
-        % the colors are separated (first, there are all frames of one color,fseek(file,HEADER_SIZE+firstImage+(start-1)*numCol*numRow*numZ*2*numWvl,-1);
+        % the colors are separated (first, there are all frames of one color,
         % then all frames of the second color, etc.)
         % Therefore, read wavelengths sequentially
 
