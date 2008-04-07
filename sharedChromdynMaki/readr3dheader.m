@@ -61,6 +61,7 @@ block = fread(fid,10,'int32');
 numCols = block(1);
 numRows = block(2);
 numImages = block(3);
+header.firstImageAddress = block(24); % important info for reading images
 header.pixelX = fread(fid,1,'float');
 header.pixelY = fread(fid,1,'float');
 header.pixelZ = fread(fid,1,'float');
@@ -84,6 +85,7 @@ fseek(fid,180,-1);
 numTimepoints=fread(fid,1,'short');
 imagesequence=fread(fid,1,'short');
 
+
 %skip values to number of wavelengths
 fseek(fid,196,-1);
 numWvs=fread(fid,1,'short');
@@ -91,52 +93,75 @@ header.numCols = numCols;
 header.numRows = numRows;
 header.numZSlices=numImages/(numTimepoints*numWvs);
 header.numTimepoints=numTimepoints;
-
 header.numWvs=numWvs;
+
+% make header.zwtOrder understandable
+strs = {'ztw';'wzt','zwt'};
+header.zwtOrder = strs{imagesequence+1};
+
+
 % read wavelengths
 for i=1:header.numWvs
     header.wvl(i)=fread(fid,1,'short')/1000;
 end;
 
+% preassign header.Time, header.timestamp
+header.Time = zeros(numTimepoints*numWvs*numZSlices,1);
+[header.timestamp,expTime,ndFilter] = deal(zeros(numZSlices,numTimepoints,numWvs));
+
+
 %read extended header information
 for t=0:numTimepoints-1
     for w=0:numWvs-1
         for z=0:header.numZSlices-1
-            switch imagesequence
-                case 0
+            switch header.zwtOrder
+                case 'ztw'
                     theSection=z+t*header.numZSlices+(w*header.numZSlices*numTimepoints);
-                case 1
+                case 'wzt'
                     theSection=w+z*numWvs+(t*numWvs*header.numZSlices);
-                case 2
+                case 'zwt'
                     theSection=z+w*header.numZSlices+(t*header.numZSlices*numWvs);
             end;
             fseek(fid,1024+theSection*sectionOffset+insectionOffset,-1);
             block = fread(fid,13,'float');
+            % timestamp, expTime and ndFilter should be stored for zwt.
+            % There is no function that actually reads exposure time or
+            % ndFilter for calculations. However, header.Time is used a few
+            % times. Thus, I add a new field, timestamp, that will
+            % basically carry the same information as Time, only that the
+            % info will be useful.
             header.Time(theSection+1)=block(2);
-            expTime(theSection+1)=block(9);
-            ndFilter(theSection+1)=block(10);
+            header.timestamp(z,t,w) = blick(2);
+            expTime(z,t,w)=block(9); % before: expTime(theSection+1)
+            ndFilter(z,t,w)=block(10);
         end;
     end;
 end;
-if all(expTime(1)==expTime)
-    header.expTime=expTime(1);
-else
-    % only warn if there is only one color
-    if numWvs == 1
-    warning('R3DREADHEADER:exposureTimeChanged',...
-        'exposure time changed during acquisition');
-    end
-    header.expTime=expTime;
-end;
-if all(ndFilter(1)==ndFilter)
-    header.ndFilter=ndFilter(1);
-else
-    if numWvs == 1
-    warning('R3DREADHEADER:ndFilterChanged',...
-        'ndFilter changed during acquisition');
-    end
-    header.ndFilter=ndFilter;
-end;
+
+% properly assign expTime, ndFilter. Assume it doesn't change for a single
+% channel
+header.expTime = reshape(expTime(1,1,:),1,numWvs);
+header.ndFilter = reshape(ndFilter(1,1,:),1,numWvs);
+
+% if all(expTime(1)==expTime)
+%     header.expTime=expTime(1);
+% else
+%     % only warn if there is only one color
+%     if numWvs == 1
+%     warning('R3DREADHEADER:exposureTimeChanged',...
+%         'exposure time changed during acquisition');
+%     end
+%     header.expTime=expTime;
+% end;
+% if all(ndFilter(1)==ndFilter)
+%     header.ndFilter=ndFilter(1);
+% else
+%     if numWvs == 1
+%     warning('R3DREADHEADER:ndFilterChanged',...
+%         'ndFilter changed during acquisition');
+%     end
+%     header.ndFilter=ndFilter;
+% end;
 
 fclose(fid);
 

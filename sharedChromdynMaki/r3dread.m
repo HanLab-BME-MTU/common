@@ -13,7 +13,9 @@ function [image, filename, header]= r3dread(filename,start,nTimes,MOVIERANGE,wav
 %       waveOrder: order of wavelengths in the movie.
 %                   1: z/w/t, i.e. z cycles first, then w, then t
 %                   2: z/t/w
-%                   3: w/z/t (default)
+%                   3: w/z/t 
+%                   Note: This info is actually stored in the header, and
+%                   thus not considered any longer.
 %       isQu     : If true, image will be output in the Qu dataset format.
 %                   Default: false
 %
@@ -45,9 +47,9 @@ end
 
 % check for waveIdx below, when # of wavelengths are known
 
-% check for order of wavelengths
+% check for order of wavelengths - not anymore
 if nargin < 6 || isempty(waveOrder)
-    waveOrder = 3;
+    %waveOrder = 3;
 end
 if nargin < 7 || isempty(isQu)
     isQu = false;
@@ -110,10 +112,9 @@ firstImage = block(24);
 %skip values to number of time points
 fseek(file,180,-1);
 numTimes=fread(file,1,'short');
-% imagesequence is not used at the moment (it's used in readr3dheader).
-% imagesequence can be 0,1,2. If it isn't 2, the code won't read the data
-% properly!
-% imagesequence=fread(fid,1,'short');
+% read zwt order
+strs = {'ztw';'wzt','zwt'};
+zwtOrder = strs{fread(fid,1,'short')+1};
 
 % set to all images if not exist
 if nargin < 3 || isempty(nTimes)
@@ -138,8 +139,8 @@ end
 
 
 % switch dependent on how the movie is ordered
-switch waveOrder
-    case 1
+switch zwtOrder
+    case 'zwt'
         % the different colors are interlaced, but z is stored independently
         % The 2 is probably for 2 bytes per voxel
 
@@ -162,7 +163,7 @@ switch waveOrder
             end;
         end;
 
-    case 2
+    case 'ztw'
         % the colors are separated (first, there are all frames of one color,fseek(file,HEADER_SIZE+firstImage+(start-1)*numCol*numRow*numZ*2*numWvl,-1);
         % then all frames of the second color, etc.)
         % Therefore, read wavelengths sequentially
@@ -187,7 +188,7 @@ switch waveOrder
             end;
         end;
 
-    case 3
+    case 'wzt'
 
         %allocate mem
         image=zeros(numRow,numCol,numZ,length(waveIdx),nTimes);

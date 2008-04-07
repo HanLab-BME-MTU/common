@@ -4,8 +4,8 @@ function [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data,dim,k)
 % SYNOPSIS [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data)
 %
 % INPUT    data : input data
-%          dim  : (opt) dimension along which the mean is taken
-%          k    : (opt) #of sigmas at which to place cut-off
+%          dim  : (opt) dimension along which the mean is taken {1}
+%          k    : (opt) #of sigmas at which to place cut-off {3}
 %
 % OUTPUT   finalMean : robust mean
 %          stdSample : std of the data (divide by sqrt(n) to get std of the
