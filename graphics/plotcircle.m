@@ -1,9 +1,9 @@
-function lineHandle = drawCircle(varargin)
-%DRAWCIRCLE draws a circle
+function lineHandle = plotcircle(varargin)
+%PLOTCIRCLE draws a circle
 %
-% SYNOPSIS: lineHandle = drawCircle(center,radius,lineSpec)
-%           lineHandle = drawCircle(center,radius,pn,pv)
-%           lineHandle = drawCircle(ah,...)
+% SYNOPSIS: lineHandle = plotcircle(center,radius,lineSpec)
+%           lineHandle = plotcircle(center,radius,pn,pv)
+%           lineHandle = plotcircle(ah,...)
 %
 % INPUT center (optional): n-by-2 list of centers. Default: [0,0]
 %       radius (optional): n-by-1 list of radii. Default: [1]
