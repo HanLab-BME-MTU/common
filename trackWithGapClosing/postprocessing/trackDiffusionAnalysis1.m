@@ -62,6 +62,12 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                              the 3rd entry.
 %           .oneDim        : MSS analysis results for reduced dimensionality.
 %                            Structure with same fields as fullDim.
+%           .confRadius    : Confinement radius for particles undergoing
+%                            confined Brownian motion. Confinement radii
+%                            both parallel and perpendicular to the
+%                            direction of motion for particles undergoing
+%                            linear motion.
+%
 %       errFlag         : 0 if executed normally, 1 otherwise.
 %
 %REMARKS While tracks do not have to be linear in order to be asymmetric,
@@ -188,6 +194,7 @@ momentOrders = 0 : 6;
 %reserve memory for results
 trackClassAsym = NaN(numTrackSegments,1);
 asymParam = NaN(numTrackSegments,1);
+indxAsym = [];
 
 if checkAsym
 
@@ -290,10 +297,75 @@ if checkAsym && ~isempty(indxAsym)
     
 end
 
+%% confinement radius estimation
+
+%find all tracks classified as confined or Brownian
+indxConf = find( trackClassMSS == 1 );
+
+%remove from the list those tracks classified as linear
+indxConf = setdiff(indxConf,indxAsym);
+
+%reserve memory
+confRadius = NaN(numTrackSegments,2);
+trackCenter = NaN(numTrackSegments,probDim);
+prefDir = NaN(numTrackSegments,probDim);
+
+%estimate the confinement radius
+for iTrack = indxConf'
+    
+    %get track coordinates
+    xCoord = (tracks(iTrack,1:8:end))';
+    yCoord = (tracks(iTrack,2:8:end))';
+    zCoord = (tracks(iTrack,3:8:end))';
+    xyzCoord = [xCoord yCoord zCoord];
+    
+    %find the eignevalues and eigenvectors of the variance-covariance
+    %matrix of this track's positions
+    eigenVal = eig(nancov(xyzCoord(:,1:probDim)));
+    
+    %calculate the track's confinement radius
+    confRadius(iTrack,1) = sqrt( mean(eigenVal) * (probDim + 2) );
+    
+    %calculate the track's center
+    trackCenter(iTrack,:) = nanmean(xyzCoord(:,1:probDim));
+    
+end
+
+%estimate the confinement radii (short and long) of tracks classified as linear
+for iTrack = indxAsym'
+    
+    %get track coordinates
+    xCoord = (tracks(iTrack,1:8:end))';
+    yCoord = (tracks(iTrack,2:8:end))';
+    zCoord = (tracks(iTrack,3:8:end))';
+    xyzCoord = [xCoord yCoord zCoord];
+    
+    %find the eignevalues of the variance-covariance matrix of this track's
+    %positions
+    [eigenVec,eigenVal] = eig(nancov(xyzCoord(:,1:probDim)));
+    eigenVal = diag(eigenVal);
+    
+    %calculate the confinement radius along the preferred direction of
+    %motion
+    confRadius(iTrack,2) = sqrt( max(eigenVal) * (3) );
+    
+    %calculate the confinement radius perpendicular to the preferred
+    %direction of motion
+    confRadius(iTrack,1) = sqrt( mean(eigenVal(eigenVal~=max(eigenVal))) * (probDim + 1) );
+    
+    %calculate the track's center
+    trackCenter(iTrack,:) = nanmean(xyzCoord(:,1:probDim));
+    
+    %store the preferred direction of motion
+    prefDir(iTrack,:) = eigenVec(:,eigenVal==max(eigenVal))';
+    
+end
+
 %% save results in output structure
 
 %reserve memory
-diffAnalysisRes = repmat(struct('classification',[],'fullDim',[],'oneDim',[]),numInputTracks,1);
+diffAnalysisRes = repmat(struct('classification',[],'fullDim',[],'oneDim',...
+    [],'confRadInfo',[]),numInputTracks,1);
 
 %go over all input tracks
 for iTrack = 1 : numInputTracks
@@ -316,7 +388,7 @@ for iTrack = 1 : numInputTracks
         compTrackStartRow(iTrack)+numSegments(iTrack)-1,:);
     diffAnalysisRes(iTrack).fullDim = fullDim;
 
-    %store parameter of 1D classification
+    %store parameters of 1D classification
     oneDim.mssSlope = mssSlope1D(compTrackStartRow(iTrack):...
         compTrackStartRow(iTrack)+numSegments(iTrack)-1);
     oneDim.genDiffCoef = genDiffCoef1D(compTrackStartRow(iTrack):...
@@ -324,6 +396,15 @@ for iTrack = 1 : numInputTracks
     oneDim.scalingPower = scalingPower1D(compTrackStartRow(iTrack):...
         compTrackStartRow(iTrack)+numSegments(iTrack)-1,:);
     diffAnalysisRes(iTrack).oneDim = oneDim;
+    
+    %store confinement radius information
+    confRadInfo.confRadius = confRadius(compTrackStartRow(iTrack):...
+        compTrackStartRow(iTrack)+numSegments(iTrack)-1,:);
+    confRadInfo.trackCenter = trackCenter(compTrackStartRow(iTrack):...
+        compTrackStartRow(iTrack)+numSegments(iTrack)-1,:);
+    confRadInfo.prefDir = prefDir(compTrackStartRow(iTrack):...
+        compTrackStartRow(iTrack)+numSegments(iTrack)-1,:);
+    diffAnalysisRes(iTrack).confRadInfo = confRadInfo;
 
 end
 

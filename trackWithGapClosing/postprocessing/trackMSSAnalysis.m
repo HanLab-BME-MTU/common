@@ -155,38 +155,60 @@ for iTrack = indx4diff'
         %caculate ln(lag) and ln(moment)
         lnTime = log((1:maxLag)');
         lnMoment = log(trackMoments(:,iOrder));
+        
+        %remove any NaNs
+        indxGood = find(~isnan(lnMoment));
+        lnTime = lnTime(indxGood);
+        lnMoment = lnMoment(indxGood);
+        
+        %if there are moments to fit ...
+        if ~isempty(lnMoment)
 
-        %fit a straight line in the plot of lnMoment vs. nTime
-        slParam = polyfit(lnTime,lnMoment,1);
+            %fit a straight line in the plot of lnMoment vs. nTime
+            slParam = polyfit(lnTime,lnMoment,1);
 
-        %get scaling power and generalized diffusion coefficient
-        scalingPowerT(iOrder) = slParam(1);
-        genDiffCoefT(iOrder) = exp(slParam(2)) / 2 / probDim;
+            %get scaling power and generalized diffusion coefficient
+            scalingPowerT(iOrder) = slParam(1);
+            genDiffCoefT(iOrder) = exp(slParam(2)) / 2 / probDim;
+            
+        end
 
     end
 
-    %fit a straight line to the MSS
-    slParam = polyfit(momentOrders,scalingPowerT,1);
+    %keep only non-NaN scaling powers
+    indxGood = find(~isnan(scalingPowerT));
+    momentOrders4fit = momentOrders(indxGood);
+    scalingPowerT = scalingPowerT(indxGood);
+    
+    %if there are non-NaN scaling powers
+    if ~isempty(scalingPowerT)
 
-    %get the slope of the line
-    mssSlopeT = slParam(1);
+        %fit a straight line to the MSS
+        slParam = polyfit(momentOrders4fit,scalingPowerT,1);
 
-    %classify track as ...
-    %1 = confined Brownian, if MSS slope < mssThreshNeg
-    %2 = pure Brownian, if mssThreshNeg <= MSS slope <= mssThreshPos
-    %3 = directed, if MSS slope > mssThreshPos
-    if mssSlopeT < mssThreshNeg(numTimePoints)
-        trackClass(iTrack) = 1;
-    elseif mssSlopeT > mssThreshPos(numTimePoints)
-        trackClass(iTrack) = 3;
-    else
-        trackClass(iTrack) = 2;
+        %get the slope of the line
+        mssSlopeT = slParam(1);
+
+        %classify track as ...
+        %1 = confined Brownian, if MSS slope < mssThreshNeg
+        %2 = pure Brownian, if mssThreshNeg <= MSS slope <= mssThreshPos
+        %3 = directed, if MSS slope > mssThreshPos
+        if ~isnan(mssSlopeT)
+            if mssSlopeT < mssThreshNeg(numTimePoints)
+                trackClass(iTrack) = 1;
+            elseif mssSlopeT > mssThreshPos(numTimePoints)
+                trackClass(iTrack) = 3;
+            else
+                trackClass(iTrack) = 2;
+            end
+        end
+
+        %save additional output information
+        mssSlope(iTrack) = mssSlopeT;
+        genDiffCoef(iTrack,:) = genDiffCoefT;
+        scalingPower(iTrack,:) = scalingPowerT;
+        
     end
-
-    %save additional output information
-    mssSlope(iTrack) = mssSlopeT;
-    genDiffCoef(iTrack,:) = genDiffCoefT;
-    scalingPower(iTrack,:) = scalingPowerT;
 
 end
 

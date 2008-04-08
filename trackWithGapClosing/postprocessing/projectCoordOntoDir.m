@@ -1,5 +1,5 @@
 function [posAlongDir,deltaPosAlongDir,prefDir] = projectCoordOntoDir(...
-    trackCoord,deltaCoord,prefDir,centerCoord)
+    trackCoord,deltaCoord,centerCoord,prefDir)
 %PROJECTCOORDALONGDIR reduces coordinates into their 1D projection along a line
 %
 %SYNPOSIS [posAlongDir,deltaPosAlongDir,prefDir] = projectCoordOntoDir(...
@@ -10,12 +10,12 @@ function [posAlongDir,deltaPosAlongDir,prefDir] = projectCoordOntoDir(...
 %       deltaCoord      : # time points x dimensionality array of
 %                         coordinate standard deviations.
 %                         Optional. Default: zeros.
-%       prefDir         : Direction to project coordinates onto.
-%                         Optional. Default: preferred direction of motion
-%                         as calculated from scatter of positions.
 %       centerCoord     : Coordinates of point used as direction
 %                         reference. Optional. Default: []. Ignored if
 %                         prefDir is input.
+%       prefDir         : Direction to project coordinates onto.
+%                         Optional. Default: preferred direction of motion
+%                         as calculated from scatter of positions.
 %
 %OUTPUT posAlongDir     : 1D projected coordinates along specified
 %                         direction.
@@ -28,7 +28,7 @@ function [posAlongDir,deltaPosAlongDir,prefDir] = projectCoordOntoDir(...
 %% input
 
 if nargin < 1 || isempty(trackCoord)
-    disp('--trackCoord: Please input coordinates to be projected');
+    disp('--projectCoordOntoDir: Please input coordinates to be projected');
     return
 end
 

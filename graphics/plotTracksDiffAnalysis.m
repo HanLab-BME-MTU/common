@@ -1,5 +1,5 @@
 function plotTracksDiffAnalysis(trackedFeatureInfo,diffAnalysisRes,timeRange,...
-    newFigure,image)
+    newFigure,image,showConf)
 %PLOTTRACKSDIFFANALYSIS plots tracks in 2D highlighting the different diffusion types
 %
 %SYNOPSIS plotTracksDiffAnalysis(trackedFeatureInfo,diffAnalysisRes,timeRange,...
@@ -52,6 +52,8 @@ function plotTracksDiffAnalysis(trackedFeatureInfo,diffAnalysisRes,timeRange,...
 %       image             : An image that the tracks will be overlaid on if
 %                           newFigure=1. It will be ignored if newFigure=0.
 %                           Optional. Default: no image.
+%       showConf          : 1 to show confinement radii, 0 otherwise.
+%                           Optional. Default: 0.
 %
 %OUTPUT The plot.
 %
@@ -101,6 +103,11 @@ end
 %check whether user supplied an image
 if nargin < 5 || isempty(image)
     image = [];
+end
+
+%check whether to plot confinement radii
+if nargin < 6 || isempty(showConf)
+    showConf = 0;
 end
 
 %exit if there are problems in input variables
@@ -172,9 +179,6 @@ else %if tracks are not input in structure format
     %indicate that there are no compound tracks with merging and splitting branches
     mergeSplit = 0;
     
-    %indicate that each track consists of one segment
-    numSegments = ones(numTracks,1);
-
     %locate the row of the first track of each compound track in the
     %big matrix of all tracks
     %in this case of course every compound track is simply one track
@@ -215,6 +219,20 @@ trackSegmentColor(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 3) = 'g'
 trackSegmentColor(trackSegmentType(:,1) == 1 & isnan(trackSegmentType(:,3))) = 'm';
 trackSegmentColor(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 1) = 'b';
 trackSegmentColor(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 2) = 'c';
+
+%% confinement radius information
+
+%get track segment center, confinement radii and preferred direction of
+%motion
+trackSegmentCenter = catStruct(1,'diffAnalysisRes.confRadInfo.trackCenter');
+trackSegmentConfRad = catStruct(1,'diffAnalysisRes.confRadInfo.confRadius');
+trackSegmentPrefDir = catStruct(1,'diffAnalysisRes.confRadInfo.prefDir');
+
+%determine indices of tracks with one confinement radius
+indxCircle = find( ~isnan(trackSegmentConfRad(:,1)) & isnan(trackSegmentConfRad(:,2)) );
+
+%determine indices of tracks with 2 confinement radii
+indxRectangle = find( ~isnan(trackSegmentConfRad(:,2)) );
 
 %% Plotting
 
@@ -308,6 +326,44 @@ if mergeSplit
     end %(for iTrack = 1 : numTracks)
 
 end %(if mergeSplit)
+
+%show confinement areas if requested
+if showConf
+
+    %generate circle to plot
+    theta = (0:pi/10:2*pi); %angle
+    xy = [cos(theta') sin(theta')]; %x and y-coordinates
+    
+    %go over symmetric tracks
+    for iTrack = indxCircle'
+        
+        %plot a circle of radius = confinement radius and centered at the
+        %center of this track
+        circleVal = xy .* trackSegmentConfRad(iTrack,1);
+        plot(trackSegmentCenter(iTrack,1)+circleVal(:,1),...
+            trackSegmentCenter(iTrack,2)+circleVal(:,2),'k');
+        
+    end
+    
+    %go over linear tracks
+    for iTrack = indxRectangle'
+    
+        %get the confinement axes
+        axisPara = trackSegmentPrefDir(iTrack,:);
+        axisPerp = [-axisPara(2) axisPara(1)] * trackSegmentConfRad(iTrack,1);
+        axisPara = axisPara * trackSegmentConfRad(iTrack,2);
+        
+        %find the 4 corners of the confinement rectangle
+        cornerCoord = [-axisPara - axisPerp; -axisPara + axisPerp; ...
+            axisPara + axisPerp; axisPara - axisPerp; -axisPara - axisPerp] ...
+            + repmat(trackSegmentCenter(iTrack,:),5,1);
+        
+        %plot the rectangle
+        plot(cornerCoord(:,1),cornerCoord(:,2),'k');
+
+    end
+    
+end
 
 %%%%% ~~ the end ~~ %%%%%
 

@@ -68,11 +68,8 @@ end
 %calculate the variance-covariance matrix of positions
 posCov = nancov(positions);
 
-%perform eigenvalue decomposition
-[eigenVec,eigenVal] = eig(posCov);
-
-%get the eigenvalues in a vector
-eigenVal = diag(eigenVal);
+%get the eigen-values of the variance-covariance matrix
+eigenVal = eig(posCov);
 
 %calculate some intermediate sums
 doubleSum = 0;
