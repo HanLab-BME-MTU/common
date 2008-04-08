@@ -3,7 +3,7 @@ function [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data,dim,k)
 %
 % SYNOPSIS [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data)
 %
-% INPUT    data : input data
+% INPUT    data : input data 
 %          dim  : (opt) dimension along which the mean is taken {1}
 %          k    : (opt) #of sigmas at which to place cut-off {3}
 %
@@ -13,7 +13,8 @@ function [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data,dim,k)
 %          inlierIdx : index into data with the inliers 
 %          outlierIdx: index into data with the outliers
 %
-% REMARKS  The code is based on (linear)LeastMedianSquares. It could be changed to
+% REMARKS  NaN or Inf will be counted as neither in- nor outlier
+%          The code is based on (linear)LeastMedianSquares. It could be changed to
 %          include weights 
 %
 % c: jonas, 04/04
@@ -22,14 +23,29 @@ function [finalMean, stdSample, inlierIdx, outlierIdx] = robustMean(data,dim,k)
 
 % test input
 
-if isempty(data) | ~all(isfinite(data)) %#ok<OR2>
-    error('Please supply non-empty, finite data to robustMean')
+if isempty(data) 
+    error('Please supply non-empty data to robustMean')
 end
 if nargin<2 || isempty(dim)
-    dim = 1;
+    % make sure that the dimensinon is correct if there's a vector
+    if any(size(data)==1)
+        dim = find(size(data)>1);
+    else
+        dim = 1;
+    end
 end
 if nargin < 3 || isempty(k)
     k = 3;
+end
+
+if sum(isfinite(data(:))) < 4
+    warning('ROBUSTMEAN:INSUFFICIENTDATA',...
+        'Less than 4 data points!')
+    finalMean = nanmean(data,dim);
+    stdSample = NaN(size(finalMean));
+    inlierIdx = find(isfinite(data));
+    outlierIdx = [];
+    return
 end
 
 
@@ -51,11 +67,11 @@ blowUpDataSize = dataSize./reducedDataSize;
 realDimensions = length(find(dataSize>1));
 
 % calc median - reduce dimension dim to length 1
-medianData = median(data,dim);
+medianData = nanmedian(data,dim);
 
 % calculate statistics
 res2 = (data-repmat(medianData,blowUpDataSize)).^2;
-medRes2 = max(median(res2,dim),eps);
+medRes2 = max(nanmedian(res2,dim),eps);
 
 %testvalue to calculate weights
 testValue=res2./repmat(magicNumber2*medRes2,blowUpDataSize);
