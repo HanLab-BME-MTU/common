@@ -162,7 +162,7 @@ for iTrack = indx4diff'
         lnMoment = lnMoment(indxGood);
         
         %if there are moments to fit ...
-        if ~isempty(lnMoment)
+        if length(lnMoment) > 1
 
             %fit a straight line in the plot of lnMoment vs. nTime
             slParam = polyfit(lnTime,lnMoment,1);
