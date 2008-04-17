@@ -165,7 +165,7 @@ lh = plot (axesHandle, x',y',plotOpt);
 if ~isempty(setCell)
     set(lh, setCell{:});
 end
-axis equal
+axis(axesHandle,'equal')
 
 % only return line handle if requested
 if nargout > 0
