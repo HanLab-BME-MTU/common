@@ -193,6 +193,12 @@ for i=1:length(data)
         % density of objects
         allDen(r,i) = 1000 * length(findpos)/sum(areamask(:));
         
+        %calculate average lifetime of restricted objects for each
+        %restriction and each movie
+        LifetimesPerMovie = max(mat_lft,[],2);  %find lifetimes for each trajectory
+        findRestrictedLifetimes = find((LifetimesPerMovie>minlft_fr) & (LifetimesPerMovie<maxlft_fr)); %find where lifetimes fall within specified restrictions
+        avgLifetimeForMovie(r,i) = nanmean(LifetimesPerMovie(findRestrictedLifetimes)); %average all lifetimes that fall within specified restrictions
+        
          % print the average number of points of each population in each 
          % frame - if this number is extremely low, this acts as a 
          % cautionary in interpreting the data
@@ -318,20 +324,30 @@ for i=1:length(data)
     currKRdiff(2:length(udist),:) = diff(currKR,1);
     currDen = currKRdiff./amat;
     
-    allDen(:,:,i) = currDen;
+    allDen(:,:,i) = currDen - 1;
+    %movieDen = [allResults.dens(1,i) allResults.dens(1,i) allResults.dens(2,i)];
+    avgLifetimeForCond = mean(avgLifetimeForMovie,2);
+    allNormDen(:,:,i) = currDen./repmat([avgLifetimeForCond(1) avgLifetimeForCond(1) avgLifetimeForCond(2)],length(udist),1)/data(i).framerate/data(i).movieLength*60*60;
+
 end
 
 
 ndenAV = nanmean(allDen,3);
 ndenSTD = nanstd(allDen,1,3);
 ndenSEM = ndenSTD/sqrt(length(data));
+ndenNormAV = nanmean(allNormDen,3);
+ndenNormMedian = nanmedian(allNormDen,3);
+ndenNormSTD = nanstd(allNormDen,1,3);
+ndenNormSEM = ndenNormSTD/sqrt(length(data));
 
 allResults.ND = allDen;
 allResults.NDmean = ndenAV;
 allResults.NDstd = ndenSTD;
 allResults.NDsem = ndenSEM;
-
-
+allResults.NDmeanNorm = ndenNormAV;
+allResults.NDmedianNorm = ndenNormMedian;
+allResults.NDsemNorm = ndenNormSEM;
+allResults.NDnorm = allNormDen;
 
 areaplot1d = [ ((ndenAV(:,1)-ndenSEM(:,1))') ; 2*ndenSEM(:,1)' ];
 if ccx>1
