@@ -8,14 +8,17 @@ function [image, filename, header]= r3dread(filename,start,nTimes,MOVIERANGE,wav
 %                  a file selection dialog is opened
 %       start    : frame with which to start reading {default: 1}
 %       nTimes   : number of frames to read {default: length(movie)}
-%       MOVIERANGE: possible range of values (256 for 8-bit-movies) {2^12}
+%       MOVIERANGE: possible range of values (255 for 8-bit-movies) {2^12-1}
+%                   data will be divided by this value to make the image
+%                   intensities go from 0 to 1. If you don't want that,
+%                   supply 1 for movieRange.
 %       waveIdx  : index of wavelength(s) to load (default: 1:nWavelengths)
 %       waveOrder: order of wavelengths in the movie.
 %                   1: z/w/t, i.e. z cycles first, then w, then t
 %                   2: z/t/w
 %                   3: w/z/t 
 %                   Note: This info is actually stored in the header, and
-%                   thus not considered any longer.
+%                   thus this input is not considered any longer.
 %       isQu     : If true, image will be output in the Qu dataset format.
 %                   Default: false
 %
@@ -42,7 +45,7 @@ end
 
 %assume 12-bit movie
 if nargin<4 || isempty(MOVIERANGE)
-    MOVIERANGE = 2^12;
+    MOVIERANGE = 2^12-1;
 end
 
 % check for waveIdx below, when # of wavelengths are known

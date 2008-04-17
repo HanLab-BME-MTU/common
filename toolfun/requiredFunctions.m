@@ -51,10 +51,21 @@ toolboxes = unique(aaa,'rows');
 listOfFunctions = neededFunctions;
 listOfFunctions(matlabIdx) = [];
 
+
+
 % remove operators from list
 opIdx = regexp(listOfFunctions,'\\@.?int');
 opIdxL = ~cellfun(@isempty,opIdx);
 listOfFunctions(opIdxL) = [];
 
-
+% for listOfFunctions: Check whether there are gui-figs that are required
+for f = 1:length(listOfFunctions)
+    [pname,fname] = fileparts(listOfFunctions{f});
+    guiName = fullfile(pname,[fname,'.fig']);
+    if exist(guiName,'file')
+        listOfFunctions{end+1} = guiName; %#ok<AGROW>
+    end
+end
+%... and sort
+listOfFunctions = sort(listOfFunctions);
 

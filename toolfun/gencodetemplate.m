@@ -200,7 +200,7 @@ switch description{7}
         fprintf(fid,'%% DATE: %s\n',datetoday);
         fprintf(fid,'%%\n');
         fprintf(fid,'%s\n',repmat('%',1,75));
-        fprintf(fid,'\nclassdef %s\n\nend',fxnname)
+        fprintf(fid,'\nclassdef %s\n\nend',fxnname);
         fclose(fid);
 end
 
