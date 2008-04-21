@@ -104,6 +104,10 @@ for i=1:total_frame_num
     % load current image
     tempname = char(oriImageStackList(i));
     currImage = imread(tempname);
+    [cisx,cisy,cisz] = size(currImage);
+    if cisz>1
+        currImage = currImage(:,:,1);
+    end
     
     % if segmentation is to be optimized for patterned surface
     if strcmp(type,'pattern')
