@@ -104,18 +104,18 @@ for i=1:length(ex)
         
                 
         cd(od);
-        % fill in trackInfo for the lifetime determination
-        ex(i).trackInfo = trackInfo;
-        ex(i).movieLength = length(movieInfo);
-        
-        if length(ex)>1
-            ex(i) = fillStructLifetimeInfo(ex(i));
-        else
-            ex = fillStructLifetimeInfo(ex);
-        end
-        
-        %... then delete it again to save space
-        ex(i).trackInfo = [];
+%         % fill in trackInfo for the lifetime determination
+%         ex(i).trackInfo = trackInfo;
+%         ex(i).movieLength = length(movieInfo);
+%         
+%         if length(ex)>1
+%             ex(i) = fillStructLifetimeInfo(ex(i));
+%         else
+%             ex = fillStructLifetimeInfo(ex);
+%         end
+%         
+%         %... then delete it again to save space
+%         ex(i).trackInfo = [];
     end
     
 end % of for-loop
