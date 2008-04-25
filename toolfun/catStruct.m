@@ -26,13 +26,13 @@ function out = catStruct(dim,structName,separator,string)
 %=====================
 
 % nargin
-if nargin < 2 | isempty(dim) | isempty(structName)
+if nargin < 2 || isempty(dim) || isempty(structName)
     error('CATSTRUCT needs two non-empty input arguments!')
 end
 
 
 % test string-opt
-if nargin > 3 & ~isempty(string)
+if nargin > 3 && ~isempty(string)
     % we have a string argument
     if ~(ismember(string,[1 0]))
         error('string has to be either 0 or 1')
@@ -46,9 +46,9 @@ else
 end
 
 % test separator
-if nargin > 2 & ~isempty(separator)
+if nargin > 2 && ~isempty(separator)
     if string
-        if ~isstr(separator)
+        if ~ischar(separator)
             error('separator has to be string if ''string'' is 1')
         elseif length(separator)>1
             error('maxLength of separator is 1')
