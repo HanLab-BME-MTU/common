@@ -28,20 +28,21 @@ oldDir = cd;
 cd(experiment(1).source);
 cd ..
 cd ..
+condDir = pwd;
+%get condition directory name to use as default for analysis results
+dirName = findstr(condDir,filesep);
+dirName = condDir(dirName(end)+1:end);
 %ask user to identify folder to save data to; condition folder is used as
 %default
-directory = uigetdir(pwd,['Specify folder to store lifetime analysis result.\n If empty default (' cd ') will be used']);
-%get directory name to use as default for analysis results
-dirName = findstr(directory,filesep);
-dirName = directory(dirName(end)+1:end);
-%if user doesn't input anything, use default
+directory = uigetdir(condDir,['Specify folder to store lifetime analysis result.\n If empty default (' cd ') will be used']);
+%if user doesn't input anything, use condition directory as default
 if ~ischar(directory)
-    directory = pwd;
+    directory = condDir;
 end
 %Ask user to name file
 fileName = input('Specify name for lifetime analysis result files (date will be included automatically).','s');
 if isempty(fileName)
-    fileName = dirName;
+    fileName = [dirName 'LifetimeAnalysisResults'];
 end
 
 
@@ -85,10 +86,23 @@ end
 [compactRes, data] = lifetimeCompactFitData(experiment, restrict, shape);
 
 %Save Data
-secureSave([directory filesep fileName datestr(now,'yyyymmdd')],'compactRes');
+filePath = [directory filesep fileName datestr(now,'yyyymmdd')];
+secureSave(filePath,'compactRes');
 
-fid = fopen([directory filesep fileName datestr(now,'yyyymmdd') '.txt'],'wt');
-fprintf(fid,'%s\n',[fileName ',shape,C,deltaC,Tau,deltaTau,Tau50']);
+if exist([filePath '.txt'],'file')
+    cd(directory)
+    directoryFiles = ls;
+    fileNumber = length(findstr([fileName datestr(now,'yyyymmdd') '.txt'],directoryFiles));
+    filePath = [directory filesep fileName datestr(now,'yyyymmdd') '_' num2str(fileNumber)];
+    while exist([filePath '.txt'],'file')
+    fileNumber = fileNumber + 1;
+    filePath = [directory filesep fileName datestr(now,'yyyymmdd') '_' num2str(fileNumber)];
+    end
+end
+
+fid = fopen([filePath '.txt'],'w');
+fprintf(fid,'%s',[fileName ',shape,C,deltaC,Tau,deltaTau,Tau50']);
+fprintf(fid,'\n');
 fprintf(fid,'%s\n',['PP,' num2str(0) ',' num2str(compactRes.contr(1)) ',' num2str(compactRes.contrError(1)) ',' num2str(compactRes.tau(1)) ',' num2str(compactRes.tauError(1)) ',' num2str(compactRes.tau50(1)) ',' num2str(compactRes.numcells) ',cell number']);
 fprintf(fid,'%s\n',['P1,' num2str(shape(1)) ',' num2str(compactRes.contr(2)) ',' num2str(compactRes.contrError(2)) ',' num2str(compactRes.tau(2)) ',' num2str(compactRes.tauError(2)) ',' num2str(compactRes.tau50(2)) ',' num2str(compactRes.numtraj) ',traj number']);
 fprintf(fid,'%s\n',['P2,' num2str(shape(2)) ',' num2str(compactRes.contr(3)) ',' num2str(compactRes.contrError(3)) ',' num2str(compactRes.tau(3)) ',' num2str(compactRes.tauError(3)) ',' num2str(compactRes.tau50(3)) ',' 'num2str(compactRes.numcells)' ',density']);
