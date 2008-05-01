@@ -1,15 +1,10 @@
 function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
     errFlag] = costMatLinearMotionCloseGaps(trackedFeatInfo,...
     trackedFeatIndx,trackStartTime,trackEndTime,costMatParam,gapCloseParam,...
-    kalmanFilterInfo,useLocalDensity,nnDistLinkedFeat,nnWindow,...
-    probDim,linearMotion)
+    kalmanFilterInfo,nnDistLinkedFeat,probDim)
 %COSTMATLINEARMOTIONCLOSEGAPS provides a cost matrix for closing gaps using Kalman filter information (no merging/splitting yet)
 %
-%SYNOPSIS [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
-%    errFlag] = costMatLinearMotionCloseGaps(trackedFeatInfo,...
-%    trackedFeatIndx,trackStartTime,trackEndTime,costMatParam,gapCloseParam,...
-%    kalmanFilterInfo,useLocalDensity,nnDistLinkedFeat,nnWindow,...
-%    probDim,linearMotion)
+%SYNOPSIS 
 %
 %INPUT  trackedFeatInfo: The positions and amplitudes of the tracked
 %                        features from linkFeaturesKalman.
@@ -74,6 +69,11 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                               lifetime = 0 to movie length.
 %                               Enter [] if cdf is not to be used. 
 %                               Optional. Default: [].
+%             .useLocalDensity: 1 if local density of features is used to expand
+%                               their search radius if possible, 0 otherwise.
+%             .nnWindow       : Time window to be used in estimating the
+%                               nearest neighbor distance of a track at its start
+%                               and end.
 %       gapCloseParam  : Structure containing variables needed for gap closing.
 %                        Contains the fields:
 %             .timeWindow : Largest time gap between the end of a track and the
@@ -98,16 +98,10 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                           feature to previous feature. 2nd column:
 %                           propagation scheme connecting feature to
 %                           next feature.
-%       useLocalDensity: 1 if local density of features is used to expand
-%                        their search radius if possible, 0 otherwise.
 %       nnDistLinkedFeat:Matrix indicating the nearest neighbor
 %                        distances of features linked together within
 %                        tracks.
-%       nnWindow       : Time window to be used in estimating the
-%                        nearest neighbor distance of a track at its start
-%                        and end.
 %       probDim        : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
-%       linearMotion   : 1 if linear motion is to be considered, 0 otherwise.
 %
 %OUTPUT costMat       : Cost matrix.
 %       nonlinkMarker : Value indicating that a link is not allowed.
@@ -143,24 +137,27 @@ if nargin ~= nargin('costMatLinearMotionCloseGaps')
 end
 
 %get cost matrix parameters
-minSearchRadius = costMatParam.minSearchRadiusCG;
-maxSearchRadius = costMatParam.maxSearchRadiusCG;
-brownStdMult = costMatParam.brownStdMultCG;
-linStdMult   = costMatParam.linStdMultCG;
+linearMotion = costMatParam.linearMotion;
+minSearchRadius = costMatParam.minSearchRadius;
+maxSearchRadius = costMatParam.maxSearchRadius;
+brownStdMult = costMatParam.brownStdMult;
 timeReachConfB = costMatParam.timeReachConfB;
-timeReachConfL = costMatParam.timeReachConfL;
 lenForClassify = costMatParam.lenForClassify;
+useLocalDensity = costMatParam.useLocalDensity;
+linStdMult   = costMatParam.linStdMult;
+timeReachConfL = costMatParam.timeReachConfL;
 sin2AngleMax = (sin(costMatParam.maxAngleVV*pi/180))^2;
-sin2AngleMaxVD = (sin(costMatParam.maxAngleVD*pi/180))^2;
+sin2AngleMaxVD = 1;
+nnWindow = costMatParam.nnWindow;
 if useLocalDensity
-    closestDistScale = costMatParam.closestDistScaleCG;
-    maxStdMult = costMatParam.maxStdMultCG;
+    closestDistScale = 2;
+    maxStdMult = 100;
 else
     closestDistScale = [];
     maxStdMult = [];
 end
-minAmpRatio = costMatParam.ampRatioLimitCG(1);
-maxAmpRatio = costMatParam.ampRatioLimitCG(2);
+minAmpRatio = costMatParam.ampRatioLimit(1);
+maxAmpRatio = costMatParam.ampRatioLimit(2);
 
 if isfield('costMatParam','lftCdf')
     lftCdf = costMatParam.lftCdf;
@@ -1016,154 +1013,3 @@ nonlinkMarker = min(floor(full(min(min(costMat))))-5,-5);
 
 
 %% ~~~ the end ~~~
-
-
-%% snippets of old code
-
-
-% % %determine the cost of birth and death
-% % xCoord = trackedFeatInfo(:,1:8:end);
-% % yCoord = trackedFeatInfo(:,2:8:end);
-% % zCoord = trackedFeatInfo(:,3:8:end);
-% % dispSquare = diff(xCoord,1,2).^2 + diff(yCoord,1,2).^2 + diff(zCoord,1,2).^2;
-% % costBD = prctile(dispSquare,100,2)*2;
-% % dispSquare95 = prctile(dispSquare(:),100)*2;
-% % costBD(isnan(costBD)) = dispSquare95;
-
-
-% % costMat = [costMat ... %costs for links (gap closing + merge/split)
-% %     spdiags([costBD; altCostSplit],0,numEndSplit,numEndSplit); ... %costs for death
-% %     spdiags([costBD; altCostMerge],0,numStartMerge,numStartMerge) ...  %costs for birth
-% %     sparse(indx2,indx1,costLR*ones(length(indx1),1),numStartMerge,numEndSplit)]; %dummy costs to complete the cost matrix
-
-
-% %             %get the types of the two tracks
-% %             trackTypeE = trackType(iEnd);
-% %             trackTypeM = trackType(iMerge);
-
-% % %get the direction of motion of the merging track
-% % %longVecM will be already normalized to unity
-% % longVecM = longVecEAll(:,1,iMerge);
-% % longVecM = longVecM / sqrt(longVecM' * longVecM);
-
-
-
-% %             %decide whether this is a possible link based on the types of
-% %             %the two tracks
-% %             switch trackTypeE
-% %                 case 1 %if end is directed
-% %                     switch trackTypeM
-% %                         case 1 %if merging track is directed
-% % 
-% %                             %calculate the square sine of the angle between velocity vectors
-% %                             sin2Angle = 1 - (longVecE' * longVecM / longVecMagE)^2;
-% % 
-% %                             %check whether the merging feature is within
-% %                             %the search region of the end of track iEnd
-% %                             %and whether the angle between the two
-% %                             %directions of motion is within acceptable
-% %                             %bounds
-% %                             possibleLink = projEndLong <= longVecMagE && ...
-% %                                 projEndShort <= shortVecMagE && ...
-% %                                 sin2Angle <= sin2AngleMax;
-% % 
-% %                         otherwise %if merging track is Brownian or undetermined
-% % 
-% %                             %check whether the merging feature is within
-% %                             %the search region of the end of track iEnd
-% %                             possibleLink = projEndLong <= longVecMagE && ...
-% %                                 projEndShort <= shortVecMagE;
-% % 
-% %                     end
-% %                 otherwise %if end is Brownian or undetermined
-% % 
-% %                     %check whether the merging feature is within
-% %                     %the search region of the end of track iEnd
-% %                     possibleLink = projEndLong <= longVecMagE && ...
-% %                         projEndShort <= shortVecMagE;
-% % 
-% %             end
-
-
-% %                 if trackTypeE == 1 && trackTypeM == 1
-% %                     cost12 = dispVecMag2 * sin2Angle;
-% %                 else
-% %                     cost12 = dispVecMag2;
-% %                 end
-
-
-
-% %             %get the types of the two tracks
-% %             trackTypeS = trackType(iStart);
-% %             trackTypeSp = trackType(iSplit);
-
-% %             %get the direction of motion of the splitting track
-% %             %longVecSp will be already normalized to unity
-% %             longVecSp = longVecEAll(:,1,iSplit);
-% %             longVecSp = longVecSp / sqrt(longVecSp' * longVecSp);
-
-
-
-
-% %             %decide whether this is a possible link based on the types of
-% %             %the two tracks
-% %             switch trackTypeS
-% %                 case 1 %if start is directed
-% %                     switch trackTypeSp
-% %                         case 1 %if splitting track is directed
-% % 
-% %                             %calculate the square sine of the angle between velocity vectors
-% %                             sin2Angle = 1 - (longVecS' * longVecSp / longVecMagS)^2;
-% % 
-% %                             %check whether the splitting feature is within
-% %                             %the search region of the start of track iStart
-% %                             %and whether the angle between the two
-% %                             %directions of motion is within acceptable
-% %                             %bounds
-% %                             possibleLink = projStartLong <= longVecMagS && ...
-% %                                 projStartShort <= shortVecMagS && ...
-% %                                 sin2Angle <= sin2AngleMax;
-% % 
-% %                         otherwise %if splitting track is Brownian or undetermined
-% % 
-% %                             %check whether the splitting feature is within
-% %                             %the search region of the start of track iStart
-% %                             possibleLink = projStartLong <= longVecMagS && ...
-% %                                 projStartShort <= shortVecMagS;
-% % 
-% %                     end
-% %                 otherwise %if start is Brownian or undetermined
-% % 
-% %                     %check whether the splitting feature is within the
-% %                     %search region of the start of track iStart
-% %                     possibleLink = projStartLong <= longVecMagS && ...
-% %                         projStartShort <= shortVecMagS;
-% % 
-% %             end
-
-% %                 if trackTypeS == 1 && trackTypeSp == 1
-% %                     cost12 = dispVecMag2 * sin2Angle;
-% %                 else
-% %                     cost12 = dispVecMag2;
-% %                 end
-
-% %remove possible links with extremely high costs that can be considered
-% %outliers
-% 
-% % %calculate mean of costs
-% % meanCost = mean(cost);
-% % 
-% % %calculate standard deviation of costs
-% % stdCost = std(cost);
-% % 
-% % %find indices of links with costs closer than 3*std from the mean
-% % indxInlier = find(cost < meanCost + 3 * stdCost);
-% % 
-% % %retain only those links
-% % indx1 = indx1(indxInlier);
-% % indx2 = indx2(indxInlier);
-% % cost  = cost(indxInlier);
-% % 
-% % %clear memory
-% % clear meanCost stdCost indxInlier
-

@@ -181,8 +181,8 @@ numTrackSegments = size(tracks,1);
 
 %call the moment scaling spectrum analysis code
 momentOrders = 0 : 6;
-[trackClassMSS,mssSlope,genDiffCoef,scalingPower] = trackMSSAnalysis(...
-    tracks,probDim,momentOrders,alphaValues(1));
+[trackClassMSS,mssSlope,genDiffCoef,scalingPower,normDiffCoef] = ...
+    trackMSSAnalysis(tracks,probDim,momentOrders,alphaValues(1));
 
 
 %% track classification based on asymmetry
@@ -250,6 +250,7 @@ trackClass1D = NaN(numTrackSegments,1);
 mssSlope1D = NaN(numTrackSegments,1);
 genDiffCoef1D = NaN(numTrackSegments,length(momentOrders));
 scalingPower1D = NaN(numTrackSegments,length(momentOrders));
+normDiffCoef1D = NaN(numTrackSegments,1);
 
 if checkAsym && ~isempty(indxAsym)
 
@@ -285,8 +286,8 @@ if checkAsym && ~isempty(indxAsym)
 
     %call the moment scaling spectrum analysis code
     momentOrders = 0 : 6;
-    [trackClassT,mssSlopeT,genDiffCoefT,scalingPowerT] = trackMSSAnalysis(...
-        tracksAsym,1,momentOrders,alphaValues(1));
+    [trackClassT,mssSlopeT,genDiffCoefT,scalingPowerT,normDiffCoefT] = ...
+        trackMSSAnalysis(tracksAsym,1,momentOrders,alphaValues(1));
 
     %since not all track segments are linear, put analysis results in their
     %proper place among all track segment
@@ -294,12 +295,13 @@ if checkAsym && ~isempty(indxAsym)
     mssSlope1D(indxAsym) = mssSlopeT;
     genDiffCoef1D(indxAsym,:) = genDiffCoefT;
     scalingPower1D(indxAsym,:) = scalingPowerT;
+    normDiffCoef1D(indxAsym) = normDiffCoefT;
     
 end
 
 %% confinement radius estimation
 
-%find all tracks classified as confined or Brownian
+%find all tracks classified as confined
 indxConf = find( trackClassMSS == 1 );
 
 %remove from the list those tracks classified as linear
@@ -386,6 +388,8 @@ for iTrack = 1 : numInputTracks
         compTrackStartRow(iTrack)+numSegments(iTrack)-1,:);
     fullDim.scalingPower = scalingPower(compTrackStartRow(iTrack):...
         compTrackStartRow(iTrack)+numSegments(iTrack)-1,:);
+    fullDim.normDiffCoef = normDiffCoef(compTrackStartRow(iTrack):...
+        compTrackStartRow(iTrack)+numSegments(iTrack)-1);
     diffAnalysisRes(iTrack).fullDim = fullDim;
 
     %store parameters of 1D classification
@@ -395,6 +399,8 @@ for iTrack = 1 : numInputTracks
         compTrackStartRow(iTrack)+numSegments(iTrack)-1,:);
     oneDim.scalingPower = scalingPower1D(compTrackStartRow(iTrack):...
         compTrackStartRow(iTrack)+numSegments(iTrack)-1,:);
+    oneDim.normDiffCoef = normDiffCoef1D(compTrackStartRow(iTrack):...
+        compTrackStartRow(iTrack)+numSegments(iTrack)-1);
     diffAnalysisRes(iTrack).oneDim = oneDim;
     
     %store confinement radius information

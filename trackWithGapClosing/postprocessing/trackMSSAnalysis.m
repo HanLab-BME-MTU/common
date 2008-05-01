@@ -1,9 +1,9 @@
-function [trackClass,mssSlope,genDiffCoef,scalingPower] = trackMSSAnalysis(...
-    tracks,probDim,momentOrders,alphaMSS)
+function [trackClass,mssSlope,genDiffCoef,scalingPower,normDiffCoef] ...
+    = trackMSSAnalysis(tracks,probDim,momentOrders,alphaMSS)
 %TRACKMSSANALYSIS classifies trajectories based on their moment scaling spectrum
 
-%SYNPOSIS [trackClass,mssSlope,genDiffCoef,scalingPower] = trackMSSAnalysis(...
-%    tracks,probDim,momentOrders,alphaMSS)
+%SYNPOSIS [trackClass,mssSlope,genDiffCoef,scalingPower,normDiffCoef] ...
+%    = trackMSSAnalysis(tracks,probDim,momentOrders,alphaMSS)
 %
 %INPUT  tracks      : Matrix indicating the positions and amplitudes of the
 %                     tracked features. Number of rows = number of tracks,
@@ -33,6 +33,9 @@ function [trackClass,mssSlope,genDiffCoef,scalingPower] = trackMSSAnalysis(...
 %                     NaN indicates tracks that could not be analyzed.
 %       scalingPower: # tracks x 1 vector of power with which moment values
 %                     scale with time.
+%                     NaN indicates tracks that could not be analyzed.
+%       normDiffCoef: # tracks x 1 vector of each track's "normal"
+%                     diffusion coefficient.
 %                     NaN indicates tracks that could not be analyzed.
 %
 %REMARKS (1) Algorithm is based on Ewers et al. 2005. PNAS 102:
@@ -121,6 +124,7 @@ trackClass = NaN(numTracks,1);
 mssSlope = NaN(numTracks,1);
 genDiffCoef = NaN(numTracks,numOrders);
 scalingPower = NaN(numTracks,numOrders);
+normDiffCoef = NaN(numTracks,1);
 
 %% moments and their scaling with time
 
@@ -164,12 +168,22 @@ for iTrack = indx4diff'
         %if there are moments to fit ...
         if length(lnMoment) > 1
 
-            %fit a straight line in the plot of lnMoment vs. nTime
+            %fit a straight line in the plot of lnMoment vs. lnTime
             slParam = polyfit(lnTime,lnMoment,1);
 
             %get scaling power and generalized diffusion coefficient
             scalingPowerT(iOrder) = slParam(1);
             genDiffCoefT(iOrder) = exp(slParam(2)) / 2 / probDim;
+            
+            %if this is the 2nd moment, calculate the "normal" diffusion
+            %coefficient
+            if momentOrders(iOrder)==2
+                options = optimset('Display','off','Jacobian','on');
+                lnSlope = lsqcurvefit(@strLineFun2,1,lnTime(1:min(5,...
+                    length(lnTime))),lnMoment(1:min(5,length(lnMoment))),...
+                    [],[],options);
+                normDiffCoefT = exp(lnSlope) / 2 / probDim;                
+            end
             
         end
 
@@ -179,6 +193,7 @@ for iTrack = indx4diff'
     indxGood = find(~isnan(scalingPowerT));
     momentOrders4fit = momentOrders(indxGood);
     scalingPowerT = scalingPowerT(indxGood);
+    genDiffCoefT = genDiffCoefT(indxGood);
     
     %if there are non-NaN scaling powers
     if ~isempty(scalingPowerT)
@@ -207,10 +222,18 @@ for iTrack = indx4diff'
         mssSlope(iTrack) = mssSlopeT;
         genDiffCoef(iTrack,:) = genDiffCoefT;
         scalingPower(iTrack,:) = scalingPowerT;
+        normDiffCoef(iTrack) = normDiffCoefT;
         
     end
 
 end
+
+%% subfunction 1
+function [y,d] = strLineFun2(logSlope,x)
+
+y = logSlope + x;
+d = ones(size(x));
+
 
 %% thresholds
 

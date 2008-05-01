@@ -1,6 +1,6 @@
 function [kalmanFilterInfo,errFlag] = kalmanInitLinearMotion(frameInfo,...
     probDim,initParam)
-%KALMANINITLINEARMOTION initializes Kalman filter state vector and covariance matrix for features in one frame
+%KALMANINITLINEARMOTION initializes Kalman filter state vector and covariance matrix for features in a frame
 %
 %SYNOPSIS [kalmanFilterInfo,errFlag] = kalmanInitLinearMotion(frameInfo,...
 %    probDim,initParam)
@@ -30,16 +30,12 @@ function [kalmanFilterInfo,errFlag] = kalmanInitLinearMotion(frameInfo,...
 %
 %Khuloud Jaqaman, March 2007
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Output
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Output
 
 kalmanFilterInfo = [];
 errFlag = 0;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Input
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Input
 
 %check whether correct number of input arguments was used
 if nargin < 2
@@ -74,9 +70,7 @@ if errFlag
     return
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Initialization
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Initialization
 
 %find number of features in frame
 numFeatures = frameInfo.num;
@@ -118,4 +112,4 @@ for iFeature = 1 : numFeatures
 end
 
 
-%%%%% ~~ the end ~~ %%%%%
+%% %%%% ~~ the end ~~ %%%%

@@ -71,16 +71,12 @@ function [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIn
 %
 %Khuloud Jaqaman, March 2007
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Output
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Output
 
 kalmanFilterInfoOut = [];
 errFlag = [];
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Input
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Input
 
 %check whether correct number of input arguments was used
 if nargin < 6
@@ -103,9 +99,7 @@ if nargin < 8 || isempty(kalmanInitParam)
     kalmanInitParam = [];
 end 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Gain calculation and update
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Gain calculation and update
 
 %copy kalmanFilterInfoIn into kalmanFilterInfoOut
 kalmanFilterInfoOut = kalmanFilterInfoIn;
@@ -199,4 +193,4 @@ for iFeature = 1 : numFeatures
 end %(for iFeature = 1 : numFeatures)
 
 
-%%%%% ~~ the end ~~ %%%%%
+%% %%%% ~~ the end ~~ %%%%

@@ -16,26 +16,26 @@
 %define the input variables
 
 %movie information
-movieParam.imageDir = 'M:\ucsf\weiner\mtriple021_crop\c1\'; %directory where images are
-movieParam.filenameBase = 'mtriple021_cropt'; %image file name base
+movieParam.imageDir = 'U:\Hiro\080424_MTvsCD36\'; %directory where images are
+movieParam.filenameBase = 'Cont_MTvsCD36_6_cd36_'; %image file name base
 movieParam.firstImageNum = 1; %number of first image in movie
-movieParam.lastImageNum = 40; %number of last image in movie
-movieParam.digits4Enum = 3; %number of digits used for frame enumeration (1-4).
+movieParam.lastImageNum = 1; %number of last image in movie
+movieParam.digits4Enum = 1; %number of digits used for frame enumeration (1-4).
 
 %detection parameters
 detectionParam.psfSigma = 2; %point spread function sigma (in pixels)
-detectionParam.testAlpha = struct('alphaR',1,'alphaA',1,'alphaD',1,'alphaF',0); %alpha-values for detection statistical tests
-detectionParam.visual = 0; %1 to see image with detected features, 0 otherwise
+detectionParam.testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05,'alphaF',0); %alpha-values for detection statistical tests
+detectionParam.visual = 1; %1 to see image with detected features, 0 otherwise
 detectionParam.doMMF = 0; %1 if mixture-model fitting, 0 otherwise
 detectionParam.bitDepth = 16; %Camera bit depth
-detectionParam.alphaLocMax = 0.2; %alpha-value for initial detection of local maxima
+detectionParam.alphaLocMax = 0.09; %alpha-value for initial detection of local maxima
 detectionParam.numSigmaIter = 0; %maximum number of iterations for PSF sigma estimation
 detectionParam.integWindow = 0; %number of frames before and after a frame for time integration
 
 %save results
-saveResults.dir = 'M:\ucsf\weiner\mtriple021_crop\c1\'; %directory where to save input and output
-saveResults.filename = 'detectionAttempt1.mat'; %name of file where input and output are saved
-% saveResults = 0;
+% saveResults.dir = 'U:\Hiro\080424_MTvsCD36\'; %directory where to save input and output
+% saveResults.filename = 'detectCD36_6.mat'; %name of file where input and output are saved
+saveResults = 0;
 
 %run the detection function
 [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
@@ -50,9 +50,9 @@ saveResults.filename = 'detectionAttempt1.mat'; %name of file where input and ou
 %define the input variables
 
 %some gap closing parameters
-gapCloseParam.timeWindow = 2; %maximum allowed time gap (in frames) between a track end and a track start that allows linking them.
+gapCloseParam.timeWindow = 2; %maximum allowed time gap (in frames) between a track segment end and a track segment start that allows linking them.
 gapCloseParam.mergeSplit = 1; %1 if merging and splitting are considered, 0 if not.
-gapCloseParam.minTrackLen = 2; %minimum length of tracks from linking to be used in gap closing.
+gapCloseParam.minTrackLen = 2; %minimum length of track segments from linking to be used in gap closing.
 
 %linking cost matrix parameters
 %these are the parameters for linking detected features from one frame to
@@ -75,10 +75,10 @@ costMatParam.timeReachConfB = 2; %in the code, the search radius expands with th
 costMatParam.timeReachConfL = gapCloseParam.timeWindow; %same as the previous parameter, but for the linear part of the motion. Again, I found that 5 works best, but you can play around with this parameter.
 costMatParam.closestDistScaleCG = 2; %keep this as 2.
 costMatParam.maxStdMultCG = 100; %and keep this as 20.
-costMatParam.lenForClassify = 5; %keep this as 10.
+costMatParam.lenForClassify = 5; %keep this as 5.
 costMatParam.maxAngleVV = 45; %maximum angle between the directions of motion of two tracks that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
 costMatParam.maxAngleVD = 90; %maximum angle between the direction of motion of a track and the vector connecting its center to the center of another track that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
-costMatParam.ampRatioLimitCG = [0.5 4]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
+costMatParam.ampRatioLimitCG = [0 Inf]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
 
 %lifetime distribution information
 costMatParam.lftCdf = [];

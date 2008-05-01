@@ -1,30 +1,37 @@
-function [tracksFinal,kalmanInfoLink,numPotLinksPerFeature,numPotLinksPerTrack,...
-    errFlag] = trackCloseGapsKalman(movieInfo,costMatParam,gapCloseParam,...
-    kalmanInitParam,useLocalDensity,saveResults,probDim,linearMotion,verbose)
-%TRACKCLOSEGAPSKALMAN (1) links features between frames using the Kalman Filter and (2) closes gaps, with merging and splitting
+function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
+    movieInfo,costMatrices,gapCloseParam,kalmanFunctions,probDim,...
+    saveResults,verbose)
+%TRACKCLOSEGAPSKALMAN (1) links features between frames, possibly using the Kalman Filter for motion propagation and (2) closes gaps, with merging and splitting
 %
-%SYNOPSIS [tracksFinal,kalmanInfoLink,numPotLinksPerFeature,numPotLinksPerTrack,...
-%    errFlag] = trackCloseGapsKalman(movieInfo,costMatParam,gapCloseParam,...
-%    kalmanInitParam,useLocalDensity,saveResults,probDim,linearMotion,verbose)
+%SYNOPSIS [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
+%    movieInfo,costMatrices,gapCloseParam,kalmanFunctions,probDim,...
+%    saveResults,verbose)
 %
 %INPUT  movieInfo    : Array of size equal to the number of frames in a
 %                      movie, containing the fields:
-%             .xCoord      : [Image coordinate system] x-coordinates of detected
-%                            features (in pixels). 1st column for
-%                            value and 2nd column for standard deviation.
-%             .yCoord      : [Image coordinate system] y-coordinates of detected
-%                            features (in pixels). 1st column for
-%                            value and 2nd column for standard deviation.
-%             .zCoord      : [Image coordinate system] z-coordinates of detected
-%                            features (in pixels). 1st column for
-%                            value and 2nd column for standard deviation.
+%             .xCoord      : x-coordinates of detected features. 
+%                            1st column: value, 2nd column: standard
+%                            deviation (zeros if not available).
+%             .yCoord      : y-coordinates of detected features.
+%                            1st column: value, 2nd column: standard
+%                            deviation (zeros if not available).
+%             .zCoord      : z-coordinates of detected features.
+%                            1st column: value, 2nd column: standard
+%                            deviation (zeros if not available).
 %                            Optional. Skipped if problem is 2D. Default: zeros.
-%             .amp         : Amplitudes of PSFs fitting detected features.
-%                            1st column for values and 2nd column
-%                            for standard deviations.
-%       costMatParam : Parameters needed for cost matrices. For now, all
-%                      parameters for both linking and gap closing are put
-%                      in one structure. See cost matrix functions for fields.
+%             .amp         : "Intensities" of detected features.
+%                            1st column: values (ones if not available),
+%                            2nd column: standard deviation (zeros if not
+%                            available).
+%       costMatrices : 2-by-1 array indicating cost matrices and their
+%                      parameters.
+%                      -1st entry supplies the cost matrix for linking
+%                       between consecutive frames.
+%                      -2nd entry supplies the cost matrix for closing gaps
+%                       and merging and splitting.
+%                      Each entry is a structure with fields:
+%             .funcName    : Name of function used to calculate cost matrix.
+%             .parameters  : Structure containing parameters needed for cost matrix.
 %       gapCloseParam: Structure containing variables needed for gap closing.
 %                      Contains the fields:
 %             .timeWindow   : Largest time gap between the end of a track and the
@@ -34,25 +41,17 @@ function [tracksFinal,kalmanInfoLink,numPotLinksPerFeature,numPotLinksPerTrack,.
 %                             and 0 if merging and splitting are not allowed.
 %             .minTrackLen  : Minimum length of tracks obtained from
 %                             linking to be used in gap closing.
-%       kalmanInitParam: Structure with fields containing variables
-%                        used in Kalman filter initialization. See
-%                        particular initialization function for fields.
-%                        Optional. Enter [] or nothing if not to be used.
-%       useLocalDensity: Structure with fields:
-%           .link         : 1 if local density is used for determining
-%                           search radius when linking between frames, 0
-%                           otherwise.
-%           .cg           : 1 if local density is used for determining
-%                           search radius when gap closing, 0 otherwise.
-%           .nnWindowL    : Time window (of previous frames) used to
-%                           calculate nearest neighbor distance in the
-%                           linking step.
-%           .nnWindowCG   : Time window used to calculate the nearest
-%                           neighbor distances at the starts and ends of
-%                           tracks for gap closing.
-%                      Structure optional. Default: both .link and .cg =
-%                      0. If .link or .cg are 1, corresponding nnWindow
-%                      must be input.
+%       kalmanFunctions: Names of Kalman filter functions for self-adaptive
+%                        tracking. Structure with fields:
+%             .reserveMem   : Reserves memory for kalmanFilterInfo.
+%             .initialize   : Initializes the Kalman filter for an appearing
+%                             feature.
+%             .calcGain     : Calculates the Kalman gain after linking.
+%                        For non-self-adaptive tracking, enter [].
+%                        Optional. Default: [].
+%       probDim      : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
+%                      Optional. If not input, dimensionality will be
+%                      derived from movieInfo.
 %       saveResults  : 0 if no saving is requested.
 %                      If saving is requested, structure with fields:
 %           .dir          : Directory where results should be saved.
@@ -61,20 +60,14 @@ function [tracksFinal,kalmanInfoLink,numPotLinksPerFeature,numPotLinksPerTrack,.
 %                      Or []. Default: trackedFeatures in directory
 %                      where run is initiated.
 %                      Whole structure optional.
-%       probDim      : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
-%                      Optional. If not input, dimensionality will be
-%                      derived from movieInfo.
-%       linearMotion : 1 if linear motion is to be considered, 0 otherwise.
-%                      Optional. Default: 1.
 %       verbose      : 1 to show calculation progress, 0 otherwise.
 %                      Optional. Default: 1.
 %
 %       All optional variables can be entered as [] to use default values.
 %
-%
-%OUTPUT tracksFinal       : Structure array where each element corresponds
-%                           to a compound track. Each element contains
-%                           the following fields:
+%OUTPUT tracksFinal   : Structure array where each element corresponds to a 
+%                       compound track. Each element contains the following 
+%                       fields:
 %           .tracksFeatIndxCG: Connectivity matrix of features between
 %                              frames, after gap closing. Number of rows
 %                              = number of track segments in compound
@@ -94,35 +87,20 @@ function [tracksFinal,kalmanInfoLink,numPotLinksPerFeature,numPotLinksPerTrack,.
 %                              NaN indicates frames where track segments do
 %                              not exist, like the zeros above.
 %           .seqOfEvents     : Matrix with number of rows equal to number
-%                              of events happening in a track and 4
+%                              of events happening in a compound track and 4
 %                              columns:
 %                              1st: Frame where event happens;
-%                              2nd: 1 - start of track, 2 - end of track;
+%                              2nd: 1 = start of track segment, 2 = end of track segment;
 %                              3rd: Index of track segment that ends or starts;
-%                              4th: NaN - start is a birth and end is a death,
-%                                   number - start is due to a split, end
+%                              4th: NaN = start is a birth and end is a death,
+%                                   number = start is due to a split, end
 %                                   is due to a merge, number is the index
 %                                   of track segment for the merge/split.
-%       kalmanInfoLink    : Structure array with number of entries equal to
-%                           number of frames in movie. Contains the fields:
-%             .stateVec      : Kalman filter state vector for each
-%                              feature in frame.
-%             .stateCov      : Kalman filter state covariance matrix
-%                              for each feature in frame.
-%             .noiseVar      : Variance of state noise for each
-%                              feature in frame.
-%             .stateNoise    : Estimated state noise for each feature in
-%                              frame.
-%             .scheme        : 1st column: propagation scheme connecting
-%                              feature to previous feature. 2nd column:
-%                              propagation scheme connecting feature to
-%                              next feature.
-%       numPotLinksPerFeature: Number of potential links each feature gets
-%                           during linking from one frame to the next.
-%       numPotLinksPerTrack: Number of potential links (closed gaps,
-%                           merges/splits) each track end/start gets in gap
-%                           closing.
-%       errFlag           : 0 if function executes normally, 1 otherwise.
+%       kalmanInfoLink: Structure array with number of entries equal to 
+%                       number of frames in movie. Contains the fields
+%                       defined in kalmanFunctions.reserveMem (at
+%                       least stateVec, stateCov and noiseVar).
+%       errFlag       : 0 if function executes normally, 1 otherwise.
 %
 %Khuloud Jaqaman, April 2007
 
@@ -130,8 +108,8 @@ function [tracksFinal,kalmanInfoLink,numPotLinksPerFeature,numPotLinksPerTrack,.
 
 tracksFinal    = [];
 kalmanInfoLink = [];
-numPotLinksPerFeature = [];
-numPotLinksPerTrack = [];
+% numPotLinksPerFeature = [];
+% numPotLinksPerTrack = [];
 errFlag        =  0;
 
 %% Input
@@ -141,6 +119,14 @@ if nargin < 3
     disp('--trackCloseGapsKalman: Incorrect number of input arguments!');
     errFlag = 1;
     return
+end
+
+%check whether tracking is self-adaptive 
+if nargin < 4 || isempty(kalmanFunctions)
+    kalmanFunctions = [];
+    selfAdaptive = 0;
+else
+    selfAdaptive = 1;
 end
 
 %get number of frames in movie
@@ -153,36 +139,13 @@ else
     probDimT = 2;
 end
 
-%check whether additional parameters for Kalman filter initialization are
-%supplied
-if nargin < 4 || isempty(kalmanInitParam)
-    kalmanInitParam = [];
-end
-
-%determine whether local density is used
-if nargin < 5 || isempty(useLocalDensity)
-    useLocalDensity.link = 0;
-    useLocalDensity.cg = 0;
-    useLocalDensity.nnWindowL = 1;
-    useLocalDensity.nnWindowCG = 1;
+%assign problem dimensionality if not input
+if nargin < 5 || isempty(probDim)
+    probDim = probDimT;
 else
-    if isfield(useLocalDensity,'link')
-        if ~isfield(useLocalDensity,'nnWindowL')
-            disp('--trackCloseGapsKalman: Variable useLocalDensity missing field nnWindowL.');
-            errFlag = 1;
-        end
-    else
-        useLocalDensity.link = 0;
-        useLocalDensity.nnWindowL = 1;
-    end
-    if isfield(useLocalDensity,'cg')
-        if ~isfield(useLocalDensity,'nnWindowCG')
-            disp('--trackCloseGapsKalman: Variable useLocalDensity missing field nnWindowCG.');
-            errFlag = 1;
-        end
-    else
-        useLocalDensity.cg = 0;
-        useLocalDensity.nnWindowCG = 1;
+    if probDim == 3 && probDimT == 2
+        disp('--trackCloseGapsKalman: Inconsistency in input. Problem 3D but no z-coordinates.');
+        errFlag = 1;
     end
 end
 
@@ -208,23 +171,8 @@ else
     end
 end
 
-%assign problem dimensionality if not input
-if nargin < 7 || isempty(probDim)
-    probDim = probDimT;
-else
-    if probDim == 3 && probDimT == 2
-        disp('--trackCloseGapsKalman: Inconsistency in input. Problem 3D but no z-coordinates.');
-        errFlag = 1;
-    end
-end
-
-%check whether linear motion is to be considered
-if nargin < 8 || isempty(linearMotion)
-    linearMotion = 1;
-end
-
-%check whether linear motion is to be considered
-if nargin < 9 || isempty(verbose)
+%check whether verbose
+if nargin < 7 || isempty(verbose)
     verbose = 1;
 end
 
@@ -233,6 +181,8 @@ if errFlag
     disp('--trackCloseGapsKalman: Please fix input parameters.');
     return
 end
+
+%% preamble
 
 %get gap closing parameters from input
 mergeSplit = gapCloseParam.mergeSplit;
@@ -247,16 +197,17 @@ end
 
 %collect coordinates and their std in one matrix in each frame
 if ~isfield(movieInfo,'allCoord')
-    if probDim == 2
-        for iFrame = 1 : numFrames
-            movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
-                movieInfo(iFrame).yCoord];
-        end
-    else
-        for iFrame = 1 : numFrames
-            movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
-                movieInfo(iFrame).yCoord movieInfo(iFrame).zCoord];
-        end
+    switch probDim
+        case 2
+            for iFrame = 1 : numFrames
+                movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
+                    movieInfo(iFrame).yCoord];
+            end
+        case 3
+            for iFrame = 1 : numFrames
+                movieInfo(iFrame).allCoord = [movieInfo(iFrame).xCoord ...
+                    movieInfo(iFrame).yCoord movieInfo(iFrame).zCoord];
+            end
     end
 end
 
@@ -345,33 +296,52 @@ end
 
 %% Link between frames
 
-%get initial tracks by linking features between consecutive frames
-if verbose
-    disp('Linking features forwards ...');
-end
-[dummy,dummy1,kalmanInfoLink] = linkFeaturesKalman(movieInfo,costMatParam,[],...
-    kalmanInitParam,useLocalDensity.link,useLocalDensity.nnWindowL,...
-    probDim,linearMotion,verbose);
+%if self-adaptive, link in multiple rounds
+if selfAdaptive
 
-%redo the linking by going backwards in the movie and using the
-%Kalman filter information from the first linking attempt
-%this will improve the linking and the state estimation
-if verbose
-    disp('Linking features backwards ...');
-end
-[dummy,dummy1,kalmanInfoLink] = linkFeaturesKalman(movieInfo(end:-1:1),...
-    costMatParam,kalmanInfoLink(end:-1:1),kalmanInitParam,...
-    useLocalDensity.link,useLocalDensity.nnWindowL,probDim,linearMotion,verbose);
-clear dummy dummy1
+    %get initial track segments by linking features between consecutive frames
+    if verbose
+        disp('Linking features forwards ...');
+    end
+    [dummy,dummy,kalmanInfoLink,dummy,linkingCosts] = linkFeaturesKalman(...
+        movieInfo,costMatrices(1).funcName,costMatrices(1).parameters,...
+        kalmanFunctions,probDim,[],[],verbose);
 
-%go forward one more time to get the final estimate of the initial tracks
-if verbose
-    disp('Linking features forwards ...');
+    %redo the linking by going backwards in the movie and using the
+    %Kalman filter information from the first linking attempt
+    %this will improve the linking and the state estimation
+    if verbose
+        disp('Linking features backwards ...');
+    end
+    [dummy,dummy,kalmanInfoLink,dummy,linkingCosts] = linkFeaturesKalman(...
+        movieInfo(end:-1:1),costMatrices(1).funcName,costMatrices(1).parameters,...
+        kalmanFunctions,probDim,kalmanInfoLink(end:-1:1),linkingCosts,verbose);
+    clear dummy dummy1
+
+    %go forward one more time to get the final estimate of the initial track
+    %segments
+    if verbose
+        disp('Linking features forwards ...');
+    end
+    [tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink,nnDistLinkedFeat,...
+        dummy,errFlag] = linkFeaturesKalman(movieInfo,costMatrices(1).funcName,...
+        costMatrices(1).parameters,kalmanFunctions,probDim,...
+        kalmanInfoLink(end:-1:1),linkingCosts,verbose);
+    
+else %if not self-adaptive, link in one round only
+    
+    %get initial track segments by linking features between consecutive frames
+    if verbose
+        disp('Linking features ...');
+    end
+    [tracksFeatIndxLink,tracksCoordAmpLink,dummy,nnDistLinkedFeat,...
+        dummy,errFlag] = linkFeaturesKalman(movieInfo,costMatrices(1).funcName,...
+        costMatrices(1).parameters,kalmanFunctions,probDim,[],[],verbose);
+    kalmanInfoLink = [];
+
 end
-[tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink,nnDistLinkedFeat,...
-    numPotLinksPerFeature,errFlag] = linkFeaturesKalman(movieInfo,costMatParam,...
-    kalmanInfoLink(end:-1:1),kalmanInitParam,useLocalDensity.link,...
-    useLocalDensity.nnWindowL,probDim,linearMotion,verbose);
+
+%% post-processing of linking results
 
 %get track start times, end times amd lifetimes
 trackSEL = getTrackSEL(tracksCoordAmpLink);
@@ -442,19 +412,19 @@ if any(trackStartTime > 1) && any(trackEndTime < numFramesEff)
 
     %calculate the cost matrix, which already includes the
     %costs of birth and death
-    [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
-        errFlag] = costMatLinearMotionCloseGaps(tracksCoordAmpLink,...
-        tracksFeatIndxLink,trackStartTime,trackEndTime,costMatParam,...
-        gapCloseParam,kalmanInfoLink,useLocalDensity.cg,nnDistLinkedFeat,...
-        useLocalDensity.nnWindowCG,probDim,linearMotion);
+    % -- USER DEFINED FUNCTION -- %
+    eval(['[costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,'...
+        'errFlag] = ' costMatrices(2).funcName '(tracksCoordAmpLink,'...
+        'tracksFeatIndxLink,trackStartTime,trackEndTime,costMatrices(2).parameters,'...
+        'gapCloseParam,kalmanInfoLink,nnDistLinkedFeat,probDim);'])
 
     %if there are possible links ...
     if any(isfinite(nonzeros(costMat)))
 
-        %for paper - get number of potential links per track
-        numPotLinksPerTrack = full([sum(costMat(1:numTracksLink,1:numTracksLink+numMerge)...
-            ~=0,2); sum(costMat(1:numTracksLink+numSplit,1:numTracksLink)...
-            ~=0,1)']);
+        % % %         %for paper - get number of potential links per track
+        % % %         numPotLinksPerTrack = full([sum(costMat(1:numTracksLink,1:numTracksLink+numMerge)...
+        % % %             ~=0,2); sum(costMat(1:numTracksLink+numSplit,1:numTracksLink)...
+        % % %             ~=0,1)']);
 
         %link tracks based on this cost matrix, allowing for birth and death
         [link12,link21] = lap(costMat,nonlinkMarker);
@@ -794,9 +764,8 @@ end
 %% Save results
 
 if isstruct(saveResults)
-    save([saveResDir filesep saveResFile],'costMatParam','gapCloseParam',...
-        'kalmanInitParam','useLocalDensity','tracksFinal','kalmanInfoLink',...
-        'numPotLinksPerFeature','numPotLinksPerTrack','linearMotion');
+    save([saveResDir filesep saveResFile],'costMatrices','gapCloseParam',...
+        'tracksFinal','kalmanInfoLink');
 end
 
 

@@ -93,7 +93,7 @@ for iImage = 1 : numImagesRaw
     bgStdLocal = bgStd(round(yCoord),round(xCoord),iImage);
     bgStdLocal = diag(bgStdLocal);
     
-    %divide amplitues by local background std
+    %divide amplitudes by local background std
     snrValues = amp./bgStdLocal;
     
     %store in output matrix
