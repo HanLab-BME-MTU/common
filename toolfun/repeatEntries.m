@@ -87,7 +87,11 @@ if scalarK
 else
 
     % init out, init counter
+    if iscell(val)
+        out = cell(sum(kTimes) , valSize(2));
+    else
     out = zeros( sum(kTimes), valSize(2) );
+    end
     endct = 0;
 
     if valSize(2) == 1
