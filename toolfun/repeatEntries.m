@@ -43,6 +43,7 @@ else
     % check again whether we could use scalar k
     if all(kTimes(1) == kTimes)
         scalarK = 1;
+        kTimes = kTimes(1);
     else
         scalarK = 0;
     end
