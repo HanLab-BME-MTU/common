@@ -79,11 +79,12 @@ for iData = 1:nData
 
     for iGroup = 1:nGroups
         if ~isempty(dataStructure(iGroup).(dataNames{iData}))
-
+% subtract nanMean/nanMedian to make sure that we don't lose all data for
+% one NaN
             groupMeans(iGroup,iData,1) = ...
-                mean(dataStructure(iGroup).(dataNames{iData}));
+                nanmean(dataStructure(iGroup).(dataNames{iData}));
             groupMeans(iGroup,iData,2) = ...
-                median(dataStructure(iGroup).(dataNames{iData}));
+                nanmedian(dataStructure(iGroup).(dataNames{iData}));
 
 
         else
