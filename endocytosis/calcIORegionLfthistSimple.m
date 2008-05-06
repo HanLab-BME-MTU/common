@@ -2,9 +2,12 @@ function [segmentStatusVector] = calcIORegionLfthistSimple(lftInfo, maskPattern)
 % calculate lifetimes outside and inside segmented area
 % 
 % INPUT:    lftInfo 	= lifetime info 
-%           maskPattern =  
+%           maskPattern = BW mask of corresponding pattern 
 %           
-% OUTPUT:   segmentStatusVector      
+% OUTPUT:   segmentStatusVector = vector of length corresponding to the
+%           number of trajectories found in lftInfo.Mat_lifetime, where the
+%           status value is 1 if the majority of this trajectory's
+%           positions are inside the pattern, and 0 otherwise
 %
 % Dinah Loerke, last changed 04/17/2008
 
