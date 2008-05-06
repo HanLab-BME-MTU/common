@@ -173,8 +173,9 @@ switch whichTest
         [dummy,pValue] = ...
             ttest2(data1, data2, 0.05,'both','unequal');
     case 2
-        % compare median: Wilcoxon Mann Whitney ranksum test
-        pValue = ranksum(data1, data2);
+        % compare median: Wilcoxon Mann Whitney ranksum test. Remove NaN
+        % first
+        pValue = ranksum(data1(~isnan(data1)), data2(~isnan(data2)));
     case 10
         % compare distributions: KS-test. No correction
         [dummy,pValue] = ...
