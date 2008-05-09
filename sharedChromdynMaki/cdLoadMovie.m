@@ -286,7 +286,7 @@ else
 
         % find via regexpr - $ searches at end of name only - no problem
         % with .log
-        regCell = regexpi(fileNameList,'r3d$|3D.dv$');
+        regCell = regexpi(fileNameList,'r3d$|dv$');
         % find index where there is something
         idx = find(~cellfun('isempty',regCell));
 
