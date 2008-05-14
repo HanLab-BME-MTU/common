@@ -73,6 +73,7 @@ end
 %Fill in movie length and image size
 [experiment] = determineMovieLength(experiment);
 [experiment] = determineImagesize(experiment);
+[experiment] = determinePitDensities(experiment);
 %Create lftInfo file if not already there
 [experiment] = determineLifetimeInfo(experiment);
 %load lftInfo into experiment structures
@@ -80,6 +81,8 @@ for iexp = 1:length(experiment)
     cd([experiment(iexp).source filesep 'LifetimeInfo']);
     load('lftInfo.mat');
     experiment(iexp).lftInfo = lftInfo;
+    %also add mean movie density to each movie
+    experiment(iexp).meanPitDensity = mean(experiment(iexp).pitDensity);
 end
 
 %Analyse Data
@@ -100,13 +103,18 @@ if exist([filePath '.txt'],'file')
     end
 end
 
+%calculate mean and error of movie densities for condition
+meanConditionDensity = round(100*nanmean([experiment(1:end).meanPitDensity]))/100;
+errorConditionDensity = round(100*nanstd([experiment(1:end).meanPitDensity]))/100;
+
+
 fid = fopen([filePath '.txt'],'w');
 fprintf(fid,'%s',[fileName ',shape,C,deltaC,Tau,deltaTau,Tau50']);
 fprintf(fid,'\n');
 fprintf(fid,'%s\n',['PP,' num2str(0) ',' num2str(compactRes.contr(1)) ',' num2str(compactRes.contrError(1)) ',' num2str(compactRes.tau(1)) ',' num2str(compactRes.tauError(1)) ',' num2str(compactRes.tau50(1)) ',' num2str(compactRes.numcells) ',cell number']);
 fprintf(fid,'%s\n',['P1,' num2str(shape(1)) ',' num2str(compactRes.contr(2)) ',' num2str(compactRes.contrError(2)) ',' num2str(compactRes.tau(2)) ',' num2str(compactRes.tauError(2)) ',' num2str(compactRes.tau50(2)) ',' num2str(compactRes.numtraj) ',traj number']);
-fprintf(fid,'%s\n',['P2,' num2str(shape(2)) ',' num2str(compactRes.contr(3)) ',' num2str(compactRes.contrError(3)) ',' num2str(compactRes.tau(3)) ',' num2str(compactRes.tauError(3)) ',' num2str(compactRes.tau50(3)) ',' num2str(data.pitDensity(1)) ',density']);
-fprintf(fid,'%s\n',['P3,' num2str(shape(3)) ',' num2str(compactRes.contr(4)) ',' num2str(compactRes.contrError(4)) ',' num2str(compactRes.tau(4)) ',' num2str(compactRes.tauError(4)) ',' num2str(compactRes.tau50(4)) ',' num2str(data.pitDensity(2)) ',delta density']);
+fprintf(fid,'%s\n',['P2,' num2str(shape(2)) ',' num2str(compactRes.contr(3)) ',' num2str(compactRes.contrError(3)) ',' num2str(compactRes.tau(3)) ',' num2str(compactRes.tauError(3)) ',' num2str(compactRes.tau50(3)) ',' num2str( meanConditionDensity) ',density']);
+fprintf(fid,'%s\n',['P3,' num2str(shape(3)) ',' num2str(compactRes.contr(4)) ',' num2str(compactRes.contrError(4)) ',' num2str(compactRes.tau(4)) ',' num2str(compactRes.tauError(4)) ',' num2str(compactRes.tau50(4)) ',' num2str(errorConditionDensity) ',delta density']);
 fprintf(fid,'%s\n',['Max lifetime for analysis (restrict):,' num2str(restrict)]);
 fprintf(fid,'%s\n',['Movies Used:']);
 for iexperiment = 1:length(experiment)
