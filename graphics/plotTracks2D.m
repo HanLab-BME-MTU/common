@@ -306,16 +306,9 @@ switch colorTime
             obsAvail = find(~isnan(tracksXP(:,i)));
             plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
         end
-
-        %get the fraction of each color in each time interval to be plotted
-        numTimePlotOver2 = ceil((numTimePlot-1)/2); %needed to change blue color over time
-        redVariation = (0:numTimePlot-2)'/(numTimePlot-2);
-        greenVariation = (numTimePlot-2:-1:0)'/(numTimePlot-2);
-        blueVariation = [(0:numTimePlotOver2-1)'/(numTimePlotOver2-1);...
-            (numTimePlot-numTimePlotOver2-2:-1:0)'/(numTimePlot-numTimePlotOver2-1)];
-
+        
         %get the overall color per time interval
-        colorOverTime = [redVariation greenVariation blueVariation];
+        colorOverTime = timeColormap(numTimePlot);
 
         %overlay tracks with color coding wherever a feature has been detected
         for i=1:numTimePlot-1
