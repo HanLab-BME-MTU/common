@@ -3,7 +3,7 @@ utlDir = ' ./Utilities/Carma_Utilities/';
 minDir = ' ./Minimizer/';
 carmaDir = ' ./';
 
-flags = ' -output carmaFitModel ';
+flags = ' -g -output carmaFitModel ';
 callString = 'mex';
 
 matOpsArray = {'matrixAdd.c',
@@ -85,3 +85,7 @@ callString = strcat(callString,matOpsString);
 callString = strcat(callString,minimString);
 
 eval(callString);
+
+clear j callString flags carmaString utilsString matOpsString minimString
+clear matOpsDir utlDir carmaDir minDir 
+clear matOpsArray utilsArray carmaArray minimArray
