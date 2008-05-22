@@ -5,6 +5,11 @@
 #include "prob.c"
 #include "carmaFitModel.h"
 
+#if !defined(MAX)
+
+#define	MAX(A, B)	((A) > (B) ? (A) : (B))
+
+#endif
 
 double carmaNegLnLikelihood(double *paramVnr, void *probP)
 			  
@@ -30,6 +35,7 @@ double carmaNegLnLikelihood(double *paramVnr, void *probP)
   int *topoBIN = prob->topoBIN;
   int *maBIN = prob->maBIN;
   int nNodes = prob->nNodes;
+  int nInputs = prob->nInputs;
   int numParams = prob->numParams;
   double wnVariance = prob->wnVariance;
 
@@ -97,8 +103,9 @@ double carmaNegLnLikelihood(double *paramVnr, void *probP)
   innovations = (double *) malloc(sizeof(double) * trajLength);
   innovationVars = (double *) malloc(sizeof(double) * trajLength);
   wnV = (double *) malloc(sizeof(double) * trajLength);    
+  int numMissing = 0;
 
-  for (iNode = 0; iNode < nNodes; iNode++){
+  for (iNode = nInputs; iNode < nNodes; iNode++){
 
     sum1 = 0;
     sum2 = 0;
@@ -111,11 +118,16 @@ double carmaNegLnLikelihood(double *paramVnr, void *probP)
 				 wnVariance,iNode,
 				 &innovations,
 				 &innovationVars,&wnV,
-				 &sum1,&sum2);
+				 &sum1,&sum2,
+				 &numMissing);
     
     
     
-    likelihood += sum1 + trajLength * log(sum2);
+    likelihood += sum1 + (trajLength-numMissing) * log(sum2);
+
+    /* Store the number of missing observations in problem structure */
+    prob->numMissing = MAX(prob->numMissing,numMissing);
+    
             
     
   }/* End for iNode */

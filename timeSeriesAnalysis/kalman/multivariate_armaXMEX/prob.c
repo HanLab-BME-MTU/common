@@ -10,7 +10,9 @@ struct probCDT{
   int *maBIN;
   int *topoBIN;
   int nNodes;
+  int nInputs;
   double wnVariance;
   int numParams;
+  int numMissing;
 
 };

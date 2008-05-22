@@ -44,7 +44,8 @@ int carmaCalcKalmanInnov(
 			  double **innovationVars,
 			  double **wnVector,
 			  double *sum1,
-			  double *sum2)
+			  double *sum2,
+			  int *numMissing)
 {
 
   /* Development Note: If in the future you are using models with long maximum  AR lags
@@ -338,6 +339,10 @@ int carmaCalcKalmanInnov(
 	matrixMultiplyConst(&tmpMat2[0][0],maxOrder,maxOrder,.5,&stateCovMatT_T[0][0]);                                                            
             
 	nanPresent = 0;
+
+	/* Count these missing observations */
+	(*numMissing)++;
+
 	/* Put NaN in place of innovations and variance */
 	*(*innovations+j) = 0.0/0.0;
 	*(*innovationVars+j) = 0.0/0.0;

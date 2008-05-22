@@ -28,6 +28,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
   
   probADT pProb = &prob;
     
+  prob.numMissing = 0;
+
   /* Retrieve model parameters and time series from
      model structure. 
      Fields are retrieved from structure with mxGetField.
@@ -48,7 +50,12 @@ void mexFunction( int nlhs, mxArray *plhs[],
     } else {
 	mxErrMsgTxt("Cannot retrieve field 'nNodes' from input model structure !");
     }
-    
+
+    if (mxGetFieldNumber(prhs[0],"nInputs") >= 0){
+	prob.nInputs = (int) *mxGetPr(mxGetField(prhs[0],0,"nInputs"));
+    } else {
+	mxErrMsgTxt("Cannot retrieve field 'nInputs' from input model structure !");
+    }
 
     if (mxGetFieldNumber(prhs[0],"TOPO") >= 0){
 	
@@ -291,7 +298,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* moving average parameters*/
   plhs[1] = mxCreateDoubleMatrix(prob.maOrderMax,prob.nNodes,mxREAL);
   /* and BIC */
-  plhs[2] = mxCreateDoubleScalar(  vertexLikelihoods[1] + prob.numParams * log(prob.trajLength) );    
+  plhs[2] = mxCreateDoubleScalar(  vertexLikelihoods[1] + prob.numParams * log(prob.trajLength-prob.numMissing) );    
 
   double *TOPOfit = mxGetPr(plhs[0]);
   double *maPARAMSfit = mxGetPr(plhs[1]);
