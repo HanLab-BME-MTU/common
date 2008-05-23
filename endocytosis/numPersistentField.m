@@ -36,7 +36,26 @@ if ((framerate*numf)>min(threshold)) %& (framerate>=2)
     path = experField.source;
     
     % load TrackInfo matrix
-    lftInfo = experField.lftInfo;
+    loadvar = 0;
+    if isfield(experField,'lftInfo')
+        lftInfo = experField.lftInfo;
+        if isempty(lftInfo)
+            loadvar = 1;
+        end
+    else
+        loadvar = 1;
+    end
+    
+    if loadvar==1
+        odir = cd;
+        cd(path);
+        if exist('LifetimeInfo')==7
+            cd('LifetimeInfo')
+            loadfile = load('lftInfo.mat');
+            lftInfo = loadfile.lftInfo;
+        end
+        cd(odir);
+    end
     
     
     if ~isempty(lftInfo)
