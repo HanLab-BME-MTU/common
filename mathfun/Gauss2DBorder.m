@@ -13,16 +13,27 @@ function [out_corrected,M]=Gauss2DBorder(x,sigma);
 % bug fix: AP - 10.07.02
 % Added correction for image boarder effects
 % Matthias Machacek 04/05/04
+% Increased speed by about an order of magnitude for large sigmas
+%   jonas, 22/05/08
 
 R = ceil(3*sigma);   % cutoff radius of the gaussian kernel 
 
-for i = -R:R,
-   for j = -R:R,
-      M(i+R+1,j+R+1) = exp(-(i*i+j*j)/2/sigma/sigma);
-   end
+% get separated Gauss kernel. Use value at pix instead of integral over pix
+% to ensure backward compatibility
+gauss=GaussMask2D(sigma,[2*R+1 2*R+1],[],1,[],0,1);
+% if M is requested as output argument, create it from vector
+% multiplication. 
+if nargout > 1
+    M = gauss{1}*gauss{2};
 end
-M = M/sum(M(:));   % normalize the gaussian mask so that the sum is
-                   % equal to 1
+
+% for i = -R:R,
+%    for j = -R:R,
+%       M(i+R+1,j+R+1) = exp(-(i*i+j*j)/2/sigma/sigma);
+%    end
+% end
+% M = M/sum(M(:));   % normalize the gaussian mask so that the sum is
+%                    % equal to 1
 
  
 % initialize new image
@@ -52,5 +63,7 @@ x_extendet(end-R:end ,end-R:end)        = fliplr(flipud(x(end-R:end ,end-R:end))
 
 
 % Convolute matrices
-out=filter2(M,x_extendet);
+% out=filter2(M,x_extendet);
+out = conv2(x_extendet,gauss{1},'same');
+out = conv2(out,gauss{2},'same');
 out_corrected=out(R+1 : end-R,  R+1 : end-R);

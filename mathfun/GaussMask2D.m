@@ -1,4 +1,4 @@
-function gauss=GaussMask2D(sigma,fSze,cent,cnorm,absCenter)
+function gauss=GaussMask2D(sigma,fSze,cent,cnorm,absCenter,noInt,separated)
 % GaussMask2D	create a gaussian 2D mask
 %
 %    SYNOPSIS gauss =GaussMask3D(sigma,fSze,cent,cnorm,absCenter);
@@ -22,6 +22,17 @@ function gauss=GaussMask2D(sigma,fSze,cent,cnorm,absCenter)
 %                  =1 Zero is at [0,0] in matrix coordinates, which is
 %                  outside of the array by half a pixel!
 %                      (center of top left pixel of 2-D matrix = [1,1])
+%           noInt  (optional) normally, GaussMask3D would calculate
+%                  integral over a voxel. However, due to numerical
+%                  problems, this integral will become zero after 8 sigma.
+%                  =0 (default) Intensities are the integral over voxels
+%                  =1 Intensities are the value of the Gauss at the voxel
+%                     center
+%           separated (optional; [{0}/1]) if 1, gauss will be a cell array
+%                  with 3 vectors, gx, gy, gz that can be used to
+%                  sequentially filter the image in order to speed up
+%                  calculations
+
 %
 %
 %    OUTPUT: gauss   2D gaussian intensity distribution with pixel values
@@ -60,6 +71,12 @@ end;
 if nargin < 5 || isempty(absCenter)
     absCenter = 0;
 end
+if nargin < 6 || isempty(noInt)
+    noInt = false;
+end
+if nargin < 7 || isempty(separated)
+    separated = false;
+end
 
 % transform absolute center into relative center
 if absCenter
@@ -73,16 +90,50 @@ end
 % fortunately, has the spacing 1.
 
 gauss=zeros(fSze);
-x=([-fSze(1)/2:fSze(1)/2]-cent(1))./sigma(1);
-y=([-fSze(2)/2:fSze(2)/2]-cent(2))./sigma(2);
+x=((-fSze(1)/2:fSze(1)/2)-cent(1))./sigma(1);
+y=((-fSze(2)/2:fSze(2)/2)-cent(2))./sigma(2);
 
-ex = diff(0.5 * erfc(-x./sqrt(2)));
-ey = diff(0.5 * erfc(-y./sqrt(2)));
+if noInt
+    % calculate the Gaussian
+    ex = 1/sqrt(pi*2) * exp(-(x(1:end-1)+0.5/sigma(1)).^2./2)/sigma(1);
+    ey = 1/sqrt(pi*2) * exp(-(y(1:end-1)+0.5/sigma(2)).^2./2)/sigma(2);
+else
+    % calculate the integral
+    ex = diff(0.5 * erfc(-x./sqrt(2)));
+    ey = diff(0.5 * erfc(-y./sqrt(2)));
+end
 
 
-% construct the 2D matrix 
+
+
+if separated
+    % return cell array of vectors
+
+    % norm Gauss
+    switch cnorm
+        case 0 % maximum of Gauss has to be 1
+            ex = ex*((2*pi)^0.5*prod(sigma));
+            ey = ey*((2*pi)^0.5*prod(sigma));
+
+        case 1
+            ex = ex/sum(ex);
+            ey = ey/sum(ey);
+
+        case 2 % the whole erfc thing is already normed for infinite Gauss
+            % so nothing to do here.
+            % gauss(:) = gauss;
+
+        otherwise
+            % no change to gauss
+
+    end
+
+    gauss = {ex',ey};
+
+else
+    
+    % construct the 2D matrix 
 gauss(:)=ex'*ey;
-
 
 % norm Gauss
 switch cnorm
@@ -97,5 +148,7 @@ switch cnorm
 
     otherwise
         %gauss(:) = exy(:);
+
+end
 
 end

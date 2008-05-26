@@ -1,4 +1,4 @@
-function [x,Qxx,goodRows,sigmaB] = linearLeastMedianSquares(A,B,V,x0,k)
+function [x,Qxx,goodRows,sigmaB,badRows] = linearLeastMedianSquares(A,B,V,x0,k)
 %LINEARLEASTMEDIANSQUARES uses a least median square estimate to do robust least squares fitting of data with outliers
 %
 % linearLeastMedianSquares fits linear problems in the form of A*x = B + E,
@@ -11,7 +11,7 @@ function [x,Qxx,goodRows,sigmaB] = linearLeastMedianSquares(A,B,V,x0,k)
 %
 % see: see Danuser, 1992 or Rousseeuw & Leroy, 1987
 %
-% SYNOPSIS : [x,Qxx,goodRows,sigmaB] = linearLeastMedianSquares(A,B,V,x0)
+% SYNOPSIS : [x,Qxx,goodRows,sigmaB,badRows] = linearLeastMedianSquares(A,B,V,x0)
 %
 % INPUT    : A,B : matrices to describe the least squares problem in the
 %                  form A*x = B
@@ -21,15 +21,15 @@ function [x,Qxx,goodRows,sigmaB] = linearLeastMedianSquares(A,B,V,x0,k)
 %                  Note that to calculate leastMedianSquare, only the
 %                  diagonal elements of the inverse of V are used!
 %            x0  : optional initial guess (default: ones(size(x)))
-%                  (fminsearch is sensitive to initial conditions, so it helps 
+%                  (fminsearch is sensitive to initial conditions, so it helps
 %                  to have a good first guess)
-%            k   : outlier threshold. Default is {3} sigma. 
+%            k   : outlier threshold. Default is {3} sigma.
 %
 % OUTPUT   : x,Qxx : fitted unknowns and covariance
 %            goodRows : rows in B that are not outliers
 %            sigmaB   : estimate for the std of the error E without
 %                       outliers
-%            
+%
 % c: 3/04 jonas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -55,9 +55,9 @@ else
     % if it's a vector, make a diagonal matrix
     sizV = size(V);
     if sizV(1) == sizV(2) && ndims(V) == 2 && sizV(1) == sizA(1)
-    % covariance matrix supplied. For median, we only use the diagonal
-    diagInvV = diag(inv(V));
-    vIsVector = 0;
+        % covariance matrix supplied. For median, we only use the diagonal
+        diagInvV = diag(inv(V));
+        vIsVector = 0;
     elseif any(sizV == sizA(1)) && any(sizV == 1)
         % covariance vector - we can supply that directly into myLscov
         diagInvV = 1./V;
@@ -78,26 +78,32 @@ end
 [badRowA,c] = find(~isfinite(A));
 [badRowB,c] = find(~isfinite(B));
 [badRowV,c] = find(~isfinite(V));
-badRows = union(badRowA, badRowB);
-badRows = union(badRows, badRowV);
+if ~isempty(badRowA) || ~isempty(badRowB)
+    badRows = union(badRowA, badRowB);
+else
+    badRows = [];
+end
+if ~isempty(badRowV)
+    badRows = union(badRows, badRowV);
+end
 
 % remove bad rows if there are any
 if ~isempty(badRows)
-    
+
     % make a list of old rows, so that we return the correct goodRows!
     oldRows = [1:sizA(1)];
     oldRows(badRows) = [];
-    
+
     % remove bad rows
     A(badRows,:) = [];
     B(badRows,:) = [];
     if vIsVector
         V = V(oldRows);
     else
-    V = V(oldRows, oldRows);    
+        V = V(oldRows, oldRows);
     end
     diagInvV(badRows) = [];
-    
+
     % update size of A
     sizA = size(A);
 end
@@ -120,7 +126,7 @@ end
 % fit. If there were NaNs in the initial guess, set them to 0 - otherwise
 % we have a problem.
 x0(isnan(x0)) = 0;
-[x,Qxx,goodRows,sigmaB] = fitRoutine(A,B,V,diagInvV,vIsVector,x0,k);
+[x,Qxx,goodRows,sigmaB,badR] = fitRoutine(A,B,V,diagInvV,vIsVector,x0,k);
 
 %====================
 % OUTPUT
@@ -129,12 +135,16 @@ x0(isnan(x0)) = 0;
 %set the correct goodRows
 if ~isempty(badRows)
     goodRows = oldRows(goodRows);
+    badR = oldRows(badR);
+    badRows = union(badR,badRows);
+else
+    badRows = badR;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ===== FITTING FUNCTION =====
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [x,Qxx,goodRows,sigmaB] = fitRoutine(A,B,V,diagInvV,vIsVector,x0,k)
+function [x,Qxx,goodRows,sigmaB,badRows] = fitRoutine(A,B,V,diagInvV,vIsVector,x0,k)
 
 %========================
 % LEAST MEDIAN SQUARES
@@ -163,6 +173,7 @@ testValue=res2/(magicNumber2*medRes2);
 
 %goodRows: weight 1, badRows: weight 0
 goodRows=find(testValue<=k^2);
+badRows=find(testValue>k^2);
 
 % ssq=sum(res2);
 sigmaB=sqrt(sum(res2(goodRows))/(length(goodRows)-4));
@@ -176,8 +187,8 @@ sigmaB=sqrt(sum(res2(goodRows))/(length(goodRows)-4));
 
 % check whether we have a zero-column in A
 zeroCols = all(A(goodRows,:)==0,1);
-    % remove the zero-columns
-    A(:,find(zeroCols)) = [];
+% remove the zero-columns
+A(:,zeroCols) = [];
 
 % call myLscov
 if vIsVector
