@@ -83,7 +83,12 @@ if realDimensions == 1;
 
     % calculate std of the sample;
     if nargout > 1
-        stdSample=sqrt(sum(res2(inlierIdx))/(length(inlierIdx)-4));
+        nInlier = length(inlierIdx);
+        if nInlier > 4
+            stdSample=sqrt(sum(res2(inlierIdx))/(nInlier-4));
+        else 
+            stdSample = NaN;
+        end
     end
 
     %====END LMS=========

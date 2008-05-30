@@ -176,7 +176,12 @@ goodRows=find(testValue<=k^2);
 badRows=find(testValue>k^2);
 
 % ssq=sum(res2);
-sigmaB=sqrt(sum(res2(goodRows))/(length(goodRows)-4));
+nGoodRows = length(goodRows);
+if nGoodRows > 4
+    sigmaB=sqrt(sum(res2(goodRows))/(nGoodRows-4));
+else
+    sigmaB = NaN;
+end
 
 %====END LMS=========
 

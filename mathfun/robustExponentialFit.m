@@ -89,6 +89,9 @@ if verbose
     subplot(2,1,1);
     yinit = init(1)*exp(-xData./init(2))+init(3);
     plot(xData,yData,'.', xData,yinit,'b');
+    badRows = ~ismember(1:length(xData),goodRows);
+    hold on
+    plot(xData(badRows),yData(badRows),'or')
 
     figure(fh)
     hold on
