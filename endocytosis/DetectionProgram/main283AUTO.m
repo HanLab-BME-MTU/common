@@ -56,7 +56,7 @@ clc;
 %=========================================================================
 
 icleandefault = 0;
-icutdefault   = 5;
+icutdefault   = 0;
 itestdefault  = 0;
 
 
