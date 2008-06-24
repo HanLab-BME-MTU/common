@@ -651,11 +651,11 @@ end %(while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05)
 if ~isempty([arParamK(1,:) maParamK(1,:) xParamK(1,:)])
 
     %calculate the model's Fisher information matrix
-    [fishInfoMat,errFlag] = armaxFisherInfoMatrix(trajOut,trajIn,...
-        arParamK(1,:),maParamK(1,:),xParamK,wnVariance);
+%    [fishInfoMat,errFlag] = armaxFisherInfoMatrix(trajOut,trajIn,...
+%        arParamK(1,:),maParamK(1,:),xParamK,wnVariance);
 
     %get the variance-covariance matrix of the ARMA coefficients
-    varCovMatF = inv(fishInfoMat/totAvail)/totAvail;
+%    varCovMatF = inv(fishInfoMat/totAvail)/totAvail;
 
 end
 
@@ -694,7 +694,7 @@ end
 
 %report failure of fit and do not consider results if residuals are not white noise
 if H == 1
-    %     disp('--armaxCoefKalman: Residuals did not pass portmanteau test!')
+    disp('--armaxCoefKalman: Residuals did not pass portmanteau test!')
     errFlag = 1;
 end
 

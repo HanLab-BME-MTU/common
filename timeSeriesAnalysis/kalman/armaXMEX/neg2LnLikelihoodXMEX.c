@@ -154,6 +154,7 @@ void calcInnovations(
                     int xOrder,
                     mwSize numParam,
                     mwSize trajLength,
+                    int *numNans,
                     double *wnVariance
                     )                    
 {        
@@ -292,9 +293,9 @@ void calcInnovations(
     double tmpMat[maxOrder][maxOrder];
     double tmpMat2[maxOrder][maxOrder];
     double tmpVec[maxOrder];
-    bool nanInInput = 0;
-    bool nanPresent = 0;
     
+/*    bool nanInInput = 0;
+    bool nanPresent = 0; */    
     
     /* Predict and filter timeseries */
     /* This is the meat! */                    
@@ -320,14 +321,14 @@ void calcInnovations(
 
             /* check for NaNs in input vectors */        
 
-            for (k = 0; k < xOrder+1; k++){                
+            /* for (k = 0; k < xOrder+1; k++){                
                 if ( mxIsNaN( *(inputVector + k) ) ){
                     nanInInput = 1;
                 }                
-            }        
+            } */       
         }
         
-        if ( !nanInInput){
+/*        if ( !nanInInput){    */
             
             /* If no NaN, predict the state at t+1 */
 
@@ -351,16 +352,17 @@ void calcInnovations(
             matrixMultiply(&tmpMat[0][0],maxOrder,maxOrder,&Fprime[0][0],maxOrder,maxOrder,&tmpMat2[0][0],maxOrder,maxOrder);
             /* add G*G' */
             matrixAdd(&tmpMat2[0][0],maxOrder,maxOrder,GGprimeWN,maxOrder,maxOrder,&stateCovMatT1_T[0][0],maxOrder,maxOrder);
-        }
-        /*check if there is an observation at current timepoint */
+            
+/*        } */
+            
+            
+        /*check if there is an observation at current timepoint */        
         
+        if ( mxIsNaN( *(TRAJ + trajLength + j) ) ){
+            
+            /* Count this missing observation */
+            (*numNans)++;
         
-        if ( mxIsNaN( *(TRAJ + trajLength + j) ) | nanInInput ){
-            nanPresent = 1;
-            nanInInput = 0;
-        }
-        
-        if (nanPresent){
             for (k = 0; k < maxOrder; k++){
 
                 stateVecT_T[k] = stateVecT1_T[k];
@@ -374,9 +376,7 @@ void calcInnovations(
             /* insure that covariance matrix is symmetric */
             matrixTranspose(&stateCovMatT_T[0][0],maxOrder,maxOrder,&tmpMat[0][0]);
             matrixAdd(&stateCovMatT_T[0][0],maxOrder,maxOrder,&tmpMat[0][0],maxOrder,maxOrder,&tmpMat2[0][0],maxOrder,maxOrder);
-            matrixMultiplyConst(&tmpMat2[0][0],maxOrder,maxOrder,.5,&stateCovMatT_T[0][0]);                                                            
-            
-            nanPresent = 0;
+            matrixMultiplyConst(&tmpMat2[0][0],maxOrder,maxOrder,.5,&stateCovMatT_T[0][0]);                                                                        
             
             innovations[j] = mxGetNaN();
             innovationVar[j] = mxGetNaN();
@@ -424,7 +424,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
     double *likelihood;
     double *wnVariance;
     int arOrder, maOrder, xOrder;
-    int numAvail;
     mxArray *tmp;
     double *tmp2;    
     
@@ -458,22 +457,19 @@ void mexFunction( int nlhs, mxArray *plhs[],
     TRAJ = mxGetPr(tmp);    
     
     tmp = mxGetField(prhs[1],0,"wnVariance");      
-    wnVariance = mxGetPr(tmp);       
-    
-    tmp = mxGetField(prhs[1],0,"numAvail");      
-    tmp2 = mxGetPr(tmp);
-    numAvail = (int) *tmp2;
+    wnVariance = mxGetPr(tmp);        
     
     double sum1 = 0;
     double sum2 = 0;
     *likelihood = 0;
+    int numMissing = 0;
     
     calcInnovations(TRAJ,params,likelihood,&sum1,&sum2,
                     arOrder,maOrder,xOrder,
-                    numParam,trajLength,wnVariance);
+                    numParam,trajLength,&numMissing,wnVariance);
     
 
-    *likelihood += sum1 + (numAvail * log( sum2 ) );
+    *likelihood += sum1 + ((trajLength-numMissing) * log( sum2 ) );
 
 
 }
