@@ -26,7 +26,7 @@ double carmaNegLnLikelihood(double *paramVnr, void *probP)
   double sum2;
   int iNode = 2;
 
-  /* Extract process orders etc. from problem structure */
+  /* Extract process orders etc. from problem structure for readability */
   
   double *TRAJ = prob->TRAJ;
   int trajLength = prob->trajLength;

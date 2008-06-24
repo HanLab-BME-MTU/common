@@ -272,9 +272,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   /* Now evaluate the likelihood at each vertex */
   for (j = 1; j <= prob.numParams+1; j++){
-    vertexLikelihoods[j] = carmaNegLnLikelihood(&p[j][1],pProb);	
+    vertexLikelihoods[j] = carmaNegLnLikelihood(&p[j][0],pProb);	
   }
-  int numEvals = 0;
+  int numEvals = 0; 
 
   double fTol = .00000001;
 
