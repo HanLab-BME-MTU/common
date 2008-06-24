@@ -146,7 +146,6 @@ void matrixTranspose(double *pInMat, int mInMat, int nInMat, double *pOutMat){
 void calcInnovations(
                     double *TRAJ,
                     double *params,
-                    double *likelihood,
                     double *sum1,
                     double *sum2, 
                     int arOrder,
@@ -154,7 +153,7 @@ void calcInnovations(
                     int xOrder,
                     mwSize numParam,
                     mwSize trajLength,
-                    int *numNans,
+                    double *numNans,
                     double *wnVariance
                     )                    
 {        
@@ -361,7 +360,7 @@ void calcInnovations(
         if ( mxIsNaN( *(TRAJ + trajLength + j) ) ){
             
             /* Count this missing observation */
-            (*numNans)++;
+            (*numNans) += 1;
         
             for (k = 0; k < maxOrder; k++){
 
@@ -407,8 +406,13 @@ void calcInnovations(
             matrixTranspose(&stateCovMatT_T[0][0],maxOrder,maxOrder,&tmpMat[0][0]);
             matrixAdd(&stateCovMatT_T[0][0],maxOrder,maxOrder,&tmpMat[0][0],maxOrder,maxOrder,&tmpMat2[0][0],maxOrder,maxOrder);
             matrixMultiplyConst(&tmpMat2[0][0],maxOrder,maxOrder,.5,&stateCovMatT_T[0][0]);                                                                                    
+    
             
-            *sum1 += log( innovationVar[j] );
+            /* Avoid nan from log of negative innovation... */
+            if (innovationVar[j] > 0){
+                *sum1 += log( innovationVar[j] );
+            }
+            
             *sum2 += pow( innovations[j] , 2) / innovationVar[j];
             
 
@@ -421,7 +425,10 @@ void mexFunction( int nlhs, mxArray *plhs[],
 {  
     
     double *params, *TRAJ;
-    double *likelihood;
+    double *sum1, *sum2;
+    double *numMissing;
+    
+/*    double *likelihood; */
     double *wnVariance;
     int arOrder, maOrder, xOrder;
     mxArray *tmp;
@@ -429,14 +436,22 @@ void mexFunction( int nlhs, mxArray *plhs[],
     
     mwSize numParam, trajLength, sizebuf, nConn;
     
-    int j, currNode;    
-    
+    int j, currNode;        
+        
     /*Determine number of input parameters */
     params = mxGetPr(prhs[0]);
     numParam = mxGetM(prhs[0]);        
     
+    /* Set pointers for output */
+    
     plhs[0] = mxCreateDoubleScalar(0);
-    likelihood = mxGetPr(plhs[0]);
+    sum1 = mxGetPr(plhs[0]);
+    
+    plhs[1] = mxCreateDoubleScalar(0);
+    sum2 = mxGetPr(plhs[1]);
+
+    plhs[2] = mxCreateDoubleScalar(0);
+    numMissing =  mxGetPr(plhs[2]);
     
     /* Get pointers for input matrices */
                 
@@ -459,17 +474,16 @@ void mexFunction( int nlhs, mxArray *plhs[],
     tmp = mxGetField(prhs[1],0,"wnVariance");      
     wnVariance = mxGetPr(tmp);        
     
-    double sum1 = 0;
-    double sum2 = 0;
-    *likelihood = 0;
-    int numMissing = 0;
+    *sum1 = 0;
+    *sum2 = 0;
+    *numMissing = 0;
     
-    calcInnovations(TRAJ,params,likelihood,&sum1,&sum2,
+    calcInnovations(TRAJ,params,sum1,sum2,
                     arOrder,maOrder,xOrder,
-                    numParam,trajLength,&numMissing,wnVariance);
+                    numParam,trajLength,numMissing,wnVariance);
     
 
-    *likelihood += sum1 + ((trajLength-numMissing) * log( sum2 ) );
+/*    *likelihood += sum1 + ((trajLength-numMissing) * log( sum2 ) ); */
 
 
 }
