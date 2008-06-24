@@ -30,9 +30,10 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                     color-coding:
 %                     *red: linear & 1D normal diffusion.
 %                     *green: linear & 1D super diffusion.
-%                     *magenta: linear & too short to analyze 1D diffusion.
+%                     *yellow: linear & too short to analyze 1D diffusion.
 %                     *blue: not linear & 2D confined diffusion.
 %                     *cyan: not linear & 2D normal diffusion.
+%                     *magenta: not linear & 2D super diffusion.
 %                     *black: unclassified.
 %
 %OUTPUT diffAnalysisRes : Structure array with the following fields per

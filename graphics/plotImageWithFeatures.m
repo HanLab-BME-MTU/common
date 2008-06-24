@@ -14,7 +14,7 @@ color = [1 0 0];
 %label maxima
 for i=1:size(positions,1)
     pos = (round(positions(:,1)-1))*numPixelsX + round(positions(:,2));
-    %     pos = [pos pos+1 pos+numPixelsY pos+1+numPixelsY];
+    %     pos = [pos pos+1 pos+numPixelsX pos+1+numPixelsX];
     for j=1:3
         imageN3(pos+(j-1)*numPixelsX*numPixelsY)=color(j);
     end

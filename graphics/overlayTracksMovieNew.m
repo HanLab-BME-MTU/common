@@ -1,26 +1,36 @@
 function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
-    saveMovie,movieName,filterSigma)
+    saveMovie,movieName,filterSigma,classifyGaps,highlightES)
 %Overlays tracks obtained via trackCloseGapsKalman on movies
 %
-%SYNPOSIS overlayTracksMovieNew(tracksFinal,plotBoundary,startend,...
-%   dragtailLength,saveMovie,movieName,filterSigma)
+%SYNPOSIS overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
+%    saveMovie,movieName,filterSigma,classifyGaps,highlightES)
 %
 %INPUT  tracksFinal   : Output of trackCloseGapsKalman.
 %       startend      : Row vector indicating first and last frame to
 %                       include in movie. Format: [startframe endframe]. 
 %                       Optional. Default: [(first frame with tracks) (last frame with tracks)]            
 %       dragtailLength: Length of drag tail (in frames). 
-%                       Optional. Default: 10 frames
+%                       Optional. Default: 10 frames.
 %                       If dragtailLength = 0, then no dragtail. 
 %                       To show full tracks, set dragtailLength to any 
 %                       value longer than the movie.
 %       saveMovie     : 1 to save movie (as Quicktime), 0 otherwise.
-%                       Optional. Default: 0
+%                       Optional. Default: 0.
 %       movieName     : filename for saving movie. 
 %                       Optional. Default: TrackMovie (if saveMovie = 1).
 %       filterSigma   : 0 to overlay on raw image, PSF sigma to overlay on
 %                       image filtered with given filterSigma. 
-%                       Optional. Default: 0
+%                       Optional. Default: 0.
+%       classifyGaps  : 1 to classify gaps as "good" and "bad", depending
+%                       on their length relative to the legnths of the
+%                       segments they connect, 0 otherwise.
+%                       Optional. Default: 1.
+%       highlightES   : 1 to highlight track ends and starts, 0 otherwise.
+%                       Optional. Default: 1.
+%       imageRange    : Image region to make movie out of, in the form:
+%                       [min pixel X, max pixel X; min pixel Y, max pixel Y].
+%                       Optional. Default: Whole image.
+%                       NOT IMPLEMENTED YET!!!
 %
 %OUTPUT If movie is to be saved, the QT movie is written into directory
 %       where TIFFs are located
@@ -89,6 +99,16 @@ if nargin < 6 || isempty(filterSigma)
     filterSigma = 0;
 end
 
+%check whether to color-code gaps
+if nargin < 7 || isempty(classifyGaps)
+    classifyGaps = 1;
+end
+
+%check whether to highligh track starts and ends
+if nargin < 8 || isempty(highlightES)
+    highlightES = 1;
+end
+
 %keep only the frames of interest
 outFileList = outFileList(startend(1):startend(2));
 
@@ -101,6 +121,14 @@ for i=1:length(outFileList)
     if (mod(i,10)==0), waitbar(i/length(outFileList)); end
 end
 close(h);
+
+%get image size
+[imSizeX,imSizeY] = size(ImageStack(:,:,1));
+
+%check whether an area of interest was input
+if nargin < 9;
+    imageRange = [1 imSizeX; 1 imSizeY];
+end
 
 %filter images if requested
 if filterSigma
@@ -187,20 +215,24 @@ for iTrack = 1 : numTracks
     %get sequence of events of track
     seqOfEvents = tracksFinal(iTrack).seqOfEvents;
     
-    %assign point status for features just after a birth
-    points2consider = find(seqOfEvents(:,2)==1 & isnan(seqOfEvents(:,4)) ...
-        & seqOfEvents(:,1)~=tracksFirstFrame)';
-    for iPoint = points2consider
-        pointStatus(trackStartRow(iTrack)+seqOfEvents(iPoint,3)-1,...
-            seqOfEvents(iPoint,1)) = 4;
-    end
-    
-    %assign point status for features just before a death
-    points2consider = find(seqOfEvents(:,2)==2 & isnan(seqOfEvents(:,4)) ...
-        & seqOfEvents(:,1)~=tracksLastFrame)';
-    for iPoint = points2consider
-        pointStatus(trackStartRow(iTrack)+seqOfEvents(iPoint,3)-1,...
-            seqOfEvents(iPoint,1)) = 5;
+    if highlightES
+
+        %assign point status for features just after a birth
+        points2consider = find(seqOfEvents(:,2)==1 & isnan(seqOfEvents(:,4)) ...
+            & seqOfEvents(:,1)~=tracksFirstFrame)';
+        for iPoint = points2consider
+            pointStatus(trackStartRow(iTrack)+seqOfEvents(iPoint,3)-1,...
+                seqOfEvents(iPoint,1)) = 4;
+        end
+
+        %assign point status for features just before a death
+        points2consider = find(seqOfEvents(:,2)==2 & isnan(seqOfEvents(:,4)) ...
+            & seqOfEvents(:,1)~=tracksLastFrame)';
+        for iPoint = points2consider
+            pointStatus(trackStartRow(iTrack)+seqOfEvents(iPoint,3)-1,...
+                seqOfEvents(iPoint,1)) = 5;
+        end
+        
     end
     
     %assign point status for features just after and before a split
@@ -250,10 +282,14 @@ for iGap = 1 : size(gapInfo,1)
     iSegment = gapInfo(iGap,2);
     iStart = gapInfo(iGap,3);
     gapLength = gapInfo(iGap,4);
-    if gapInfo(iGap,5) <= 1 && gapInfo(iGap,6) <= 1
-        gapType = -1;
+    if classifyGaps
+        if gapInfo(iGap,5) <= 1 && gapInfo(iGap,6) <= 1
+            gapType = -1;
+        else
+            gapType = -2;
+        end
     else
-        gapType = -2;
+        gapType = -1;
     end
     
     xCoordMatAll(trackStartRow(iTrack)+iSegment-1,iStart:iStart+gapLength-1) = ...
@@ -280,7 +316,8 @@ for iFrame = 1 : size(xCoordMatAll,2)
     
     %plot image in current frame
     clf;
-    imshow(ImageStack(:,:,iFrame),[]); 
+    imshow(ImageStack(imageRange(1,1):imageRange(1,2),...
+        imageRange(2,1):imageRange(2,2),iFrame),[]); 
     hold on; 
 
     %show frame number

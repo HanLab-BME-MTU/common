@@ -56,6 +56,14 @@ function plotTracksDiffAnalysis(trackedFeatureInfo,diffAnalysisRes,timeRange,...
 %                           Optional. Default: 0.
 %
 %OUTPUT The plot.
+%       Color coding:
+%       linear & 1D normal diffusion -> red
+%       linear & 1D super diffusion -> green
+%       linear & too short to analyze 1D diffusion -> yellow
+%       not linear & 2D confined diffusion -> blue
+%       not linear & 2D normal diffusion -> cyan
+%       not linear & 2D super diffusion -> magenta
+%       not linear & too short to analyze 2D diffusion -> black
 %
 %Khuloud Jaqaman, March 2008
 
@@ -210,15 +218,18 @@ trackSegmentType = vertcat(diffAnalysisRes.classification);
 %color coding:
 %linear & 1D normal diffusion -> red
 %linear & 1D super diffusion -> green
-%linear & too short to analyze 1D diffusion -> magenta
+%linear & too short to analyze 1D diffusion -> yellow
 %not linear & 2D confined diffusion -> blue
 %not linear & 2D normal diffusion -> cyan
+%not linear & 2D super diffusion -> magenta
+%not linear & too short to analyze 2D diffusion -> black
 trackSegmentColor = repmat('k',numTrackSegments,1);
 trackSegmentColor(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 2) = 'r';
 trackSegmentColor(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 3) = 'g';
-trackSegmentColor(trackSegmentType(:,1) == 1 & isnan(trackSegmentType(:,3))) = 'm';
+trackSegmentColor(trackSegmentType(:,1) == 1 & isnan(trackSegmentType(:,3))) = 'y';
 trackSegmentColor(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 1) = 'b';
 trackSegmentColor(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 2) = 'c';
+trackSegmentColor(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 3) ='m';
 
 %% confinement radius information
 
@@ -265,7 +276,7 @@ hold on
 tracksXP = tracksX(timeRange(1):timeRange(2),:);
 tracksYP = tracksY(timeRange(1):timeRange(2),:);
 
-%plot tracks with their appropriate line color indicated
+%plot tracks with their appropriate line color
 %missing intervals are indicated by a dotted line
 for i = 1 : numTrackSegments
     obsAvail = find(~isnan(tracksXP(:,i)));

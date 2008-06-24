@@ -765,7 +765,7 @@ end
 
 if isstruct(saveResults)
     save([saveResDir filesep saveResFile],'costMatrices','gapCloseParam',...
-        'tracksFinal','kalmanInfoLink');
+        'kalmanFunctions','tracksFinal','kalmanInfoLink');
 end
 
 
