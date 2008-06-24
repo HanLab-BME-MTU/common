@@ -116,11 +116,6 @@ function [arParamK,maParamK,xParamK,arParamL,maParamL,xParamL,varCovMatL,...
 %        represent. Thus Eqs. 3.14 and 3.15 in the paper are modified
 %        accordingly.
 %
-%        Then the problem is re-formulated as a least squares problem in
-%        order to obtain the variance-covariance matrix of the estimated
-%        coefficients. The output is regressed onto its past values, the
-%        white noise series estimated above, and the input series.
-%
 %        *CONSTRAINED MINIMIZATION MIGHT NEED UPDATING. DON'T USE!
 %        *CURRENTLY I SUBTRACT THE MEAN ONLY WHEN NO X. THINK ABOUT IT!
 %        *MINIMIZATION OPTION 'ml' OUT OF DATE. DON'T USE!
@@ -458,7 +453,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                     %                         [],[],[],[],boundLow,boundHigh,[],options,prob);
 
                     %minimize -2ln(likelihood) using fminunc
-                    [params,fval,exitFlag] = fminunc(@neg2LnLikelihoodX,param0,...
+                    [params,fval,exitFlag] = fminunc(@neg2LnLikelihoodXMEX,param0,...
                         options,prob);
 
                 catch
@@ -651,11 +646,11 @@ end %(while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05)
 if ~isempty([arParamK(1,:) maParamK(1,:) xParamK(1,:)])
 
     %calculate the model's Fisher information matrix
-%    [fishInfoMat,errFlag] = armaxFisherInfoMatrix(trajOut,trajIn,...
-%        arParamK(1,:),maParamK(1,:),xParamK,wnVariance);
+    [fishInfoMat,errFlag] = armaxFisherInfoMatrix(trajOut,trajIn,...
+        arParamK(1,:),maParamK(1,:),xParamK,wnVariance);
 
     %get the variance-covariance matrix of the ARMA coefficients
-%    varCovMatF = inv(fishInfoMat/totAvail)/totAvail;
+    varCovMatF = inv(fishInfoMat/totAvail)/totAvail;
 
 end
 
@@ -694,7 +689,7 @@ end
 
 %report failure of fit and do not consider results if residuals are not white noise
 if H == 1
-    disp('--armaxCoefKalman: Residuals did not pass portmanteau test!')
+    %     disp('--armaxCoefKalman: Residuals did not pass portmanteau test!')
     errFlag = 1;
 end
 
