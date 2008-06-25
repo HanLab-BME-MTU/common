@@ -25,24 +25,38 @@ function [data] = fillStructSurvivalFunction_segment(data)
 
 for k=1:length(data)
     
-    if isfield(data,'lftHist_censored')
-        currHist = data(k).lftHist_censored;
+    if isfield(data,'lftHist_InRegion')
+        currHistIn = data(k).lftHist_InRegion;
+        currHistOut = data(k).lftHist_OutRegion;
     else
-        error('function requires existence of a structure field .lftHist_censored');
+        error('function requires existence of a structure field .lftHist_InRegion');
     end
           
     % lifetime function
-    pdef = find(isfinite(currHist));
-    hf = currHist(pdef);
-    cf = cumsum(hf);
-    currLifetimeFunction = currHist;
-    currLifetimeFunction(pdef) = cf;
+    pdefIn = find(isfinite(currHistIn));
+    hfIn = currHistIn(pdefIn);
+    cfIn = cumsum(hfIn);
+    currLifetimeFunctionIn = currHistIn;
+    currLifetimeFunctionIn(pdefIn) = cfIn;
+    
+    % lifetime function
+    pdefOut = find(isfinite(currHistOut));
+    hfOut = currHistOut(pdefOut);
+    cfOut = cumsum(hfOut);
+    currLifetimeFunctionOut = currHistOut;
+    currLifetimeFunctionOut(pdefOut) = cfOut;
+    
     
     % survival function
-    currMax = max(currLifetimeFunction);
-    currSurvivalFunction = currMax - currLifetimeFunction;
+    currMaxIn = max(currLifetimeFunctionIn);
+    currSurvivalFunctionIn = currMaxIn - currLifetimeFunctionIn;
     
-    data(k).survivalFunction = currSurvivalFunction;
+    % survival function
+    currMaxOut = max(currLifetimeFunctionOut);
+    currSurvivalFunctionOut = currMaxOut - currLifetimeFunctionOut;
+    
+    data(k).survivalFunction_InRegion = currSurvivalFunctionIn;
+    data(k).survivalFunction_OutRegion = currSurvivalFunctionOut;
 end
 
 
