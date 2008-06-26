@@ -12,8 +12,9 @@ function [data] = fillStructSurvivalFunction_segment(data)
 %                   location, the function reads the lftInfo
 %                   from a folder called LifetimeInfo
 %
-% OUTPUT    data:   creates a new field
-%                   .lftHist_censored  
+% OUTPUT    data:   creates new fields
+%                   .survivalFunction_InRegion
+%                   .survivalFunction_OutRegion
 % REMARKS 
 %
 %
