@@ -1,4 +1,4 @@
-function [data] = fillStructLifetimeHist_segment(data);
+function [data] = fillStructLifetimeHist_segment(data,censor);
 % fill experiment structure with lifetime histogram based on the lftInfo
 % file saved at the specified directory; separate lftHist vectors are
 % calculated based on the image segmentation in the specified folders
@@ -10,6 +10,9 @@ function [data] = fillStructLifetimeHist_segment(data);
 %                .movieLength
 %                .segmentDataFileName 
 %                .segmentDataFilePath 
+%           censor: censor variable; if this is set to zero, all
+%               trajectories regardless of status (complete or partial) are
+%               counted for the lifetime histogram - default is censor=1
 % OUTPUT    creates new fields in the data structure called
 %                .lftHist   
 %                .lftHist_InRegion
@@ -20,9 +23,13 @@ function [data] = fillStructLifetimeHist_segment(data);
 %                 - only outside the segmented region
 % REMARKS 
 %
-% Dinah Loerke, last modified April 20, 2008
+% Dinah Loerke, last modified June 25, 2008
 
 
+censoring = 1;
+if nargin>1
+    censoring = censor;
+end
 
 % number of entries in data structure
 lens = length(data);
@@ -68,14 +75,23 @@ for i=1:lens
     lftVecIN = nan*zeros(sx,1);
     lftVecOUT = nan*zeros(sx,1);
 
+    % DEFAULT:
     % a trajectory is counted for the lifetime analysis if the status of 
     % the trajectory is ==1 and the value of the gaps is ==4
+    % IF censoring==0
+    % count all status trajectories
     for k=1:sx
         % current status vector
         cstat = nonzeros(statMat(k,:));
         % current lifetime vector
         clft = lftMat(k,:);
-        if ( (min(cstat)==1) & (max(cstat)<5) )
+        
+        countStat = ( (min(cstat)==1) & (max(cstat)<5) );
+        if censoring==0
+            countStat = (max(cstat)<5);
+        end
+        
+        if countStat==1
             lftVec(k) = max(clft);
             % count into either IN or OUT vector depending on
             % segmentation status
@@ -86,6 +102,8 @@ for i=1:lens
             end
 
         end
+        
+        
     end    
     
     % lifetime vectors containing all counted lifetime lengths
