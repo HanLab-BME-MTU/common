@@ -208,27 +208,29 @@ if checkAsym
     clear criteria
 
     %go over all of these tracks
-    for iTrack = indx4asymClass'
+    if ~isempty(indx4asymClass')
+        for iTrack = indx4asymClass'
 
-        %get the particle positions along the track
-        coordX = tracks(iTrack,1:8:end)';
-        coordY = tracks(iTrack,2:8:end)';
-        coordZ = tracks(iTrack,3:8:end)';
-        coordXYZ = [coordX coordY coordZ];
+            %get the particle positions along the track
+            coordX = tracks(iTrack,1:8:end)';
+            coordY = tracks(iTrack,2:8:end)';
+            coordZ = tracks(iTrack,3:8:end)';
+            coordXYZ = [coordX coordY coordZ];
 
-        %determine whether the track is sufficiently asymmetric
-        [asymParamT,asymFlag] = asymDeterm2D3D(coordXYZ(:,1:probDim),alphaAsym);
+            %determine whether the track is sufficiently asymmetric
+            [asymParamT,asymFlag] = asymDeterm2D3D(coordXYZ(:,1:probDim),alphaAsym);
 
-        %classify track as ...
-        %1 = linear, if the asymmetry parameter is larger than the threshold
-        %0 = not linear, if the asymmetry parameter is smaller than the
-        %threshold
-        %otherwise, keep track classification as undetermined
-        trackClassAsym(iTrack,:) = asymFlag;
+            %classify track as ...
+            %1 = linear, if the asymmetry parameter is larger than the threshold
+            %0 = not linear, if the asymmetry parameter is smaller than the
+            %threshold
+            %otherwise, keep track classification as undetermined
+            trackClassAsym(iTrack,:) = asymFlag;
 
-        %also save asymmetry parameter
-        asymParam(iTrack,:) = asymParamT;
+            %also save asymmetry parameter
+            asymParam(iTrack,:) = asymParamT;
 
+        end
     end
 
     %find indices of all tracks classified as asymmetric
@@ -314,54 +316,58 @@ trackCenter = NaN(numTrackSegments,probDim);
 prefDir = NaN(numTrackSegments,probDim);
 
 %estimate the confinement radius
-for iTrack = indxConf'
-    
-    %get track coordinates
-    xCoord = (tracks(iTrack,1:8:end))';
-    yCoord = (tracks(iTrack,2:8:end))';
-    zCoord = (tracks(iTrack,3:8:end))';
-    xyzCoord = [xCoord yCoord zCoord];
-    
-    %find the eignevalues and eigenvectors of the variance-covariance
-    %matrix of this track's positions
-    eigenVal = eig(nancov(xyzCoord(:,1:probDim)));
-    
-    %calculate the track's confinement radius
-    confRadius(iTrack,1) = sqrt( mean(eigenVal) * (probDim + 2) );
-    
-    %calculate the track's center
-    trackCenter(iTrack,:) = nanmean(xyzCoord(:,1:probDim));
-    
+if ~isempty(indxConf)
+    for iTrack = indxConf'
+
+        %get track coordinates
+        xCoord = (tracks(iTrack,1:8:end))';
+        yCoord = (tracks(iTrack,2:8:end))';
+        zCoord = (tracks(iTrack,3:8:end))';
+        xyzCoord = [xCoord yCoord zCoord];
+
+        %find the eignevalues and eigenvectors of the variance-covariance
+        %matrix of this track's positions
+        eigenVal = eig(nancov(xyzCoord(:,1:probDim)));
+
+        %calculate the track's confinement radius
+        confRadius(iTrack,1) = sqrt( mean(eigenVal) * (probDim + 2) );
+
+        %calculate the track's center
+        trackCenter(iTrack,:) = nanmean(xyzCoord(:,1:probDim));
+
+    end
 end
 
 %estimate the confinement radii (short and long) of tracks classified as linear
-for iTrack = indxAsym'
-    
-    %get track coordinates
-    xCoord = (tracks(iTrack,1:8:end))';
-    yCoord = (tracks(iTrack,2:8:end))';
-    zCoord = (tracks(iTrack,3:8:end))';
-    xyzCoord = [xCoord yCoord zCoord];
-    
-    %find the eignevalues of the variance-covariance matrix of this track's
-    %positions
-    [eigenVec,eigenVal] = eig(nancov(xyzCoord(:,1:probDim)));
-    eigenVal = diag(eigenVal);
-    
-    %calculate the confinement radius along the preferred direction of
-    %motion
-    confRadius(iTrack,2) = sqrt( max(eigenVal) * (3) );
-    
-    %calculate the confinement radius perpendicular to the preferred
-    %direction of motion
-    confRadius(iTrack,1) = sqrt( mean(eigenVal(eigenVal~=max(eigenVal))) * (probDim + 1) );
-    
-    %calculate the track's center
-    trackCenter(iTrack,:) = nanmean(xyzCoord(:,1:probDim));
-    
-    %store the preferred direction of motion
-    prefDir(iTrack,:) = eigenVec(:,eigenVal==max(eigenVal))';
-    
+if ~isempty(indxAsym)
+    for iTrack = indxAsym'
+
+        %get track coordinates
+        xCoord = (tracks(iTrack,1:8:end))';
+        yCoord = (tracks(iTrack,2:8:end))';
+        zCoord = (tracks(iTrack,3:8:end))';
+        xyzCoord = [xCoord yCoord zCoord];
+
+        %find the eignevalues of the variance-covariance matrix of this track's
+        %positions
+        [eigenVec,eigenVal] = eig(nancov(xyzCoord(:,1:probDim)));
+        eigenVal = diag(eigenVal);
+
+        %calculate the confinement radius along the preferred direction of
+        %motion
+        confRadius(iTrack,2) = sqrt( max(eigenVal) * (3) );
+
+        %calculate the confinement radius perpendicular to the preferred
+        %direction of motion
+        confRadius(iTrack,1) = sqrt( mean(eigenVal(eigenVal~=max(eigenVal))) * (probDim + 1) );
+
+        %calculate the track's center
+        trackCenter(iTrack,:) = nanmean(xyzCoord(:,1:probDim));
+
+        %store the preferred direction of motion
+        prefDir(iTrack,:) = eigenVec(:,eigenVal==max(eigenVal))';
+
+    end
 end
 
 %% save results in output structure
