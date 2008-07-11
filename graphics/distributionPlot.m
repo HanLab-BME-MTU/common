@@ -41,7 +41,8 @@ if nargin == 0
 end
 
 % check for axes handle
-if ~iscell(varargin{1}) && ishandle(varargin{1}) && strcmp(get(varargin{1},'Type'),'axes')
+if ~iscell(varargin{1}) && length(varargin{1}) == 1 && ...
+        ishandle(varargin{1}) && strcmp(get(varargin{1},'Type'),'axes')
     ah = varargin{1};
     data = varargin{2};
     varargin(1:2) = [];
