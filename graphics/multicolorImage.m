@@ -70,7 +70,7 @@ if ~all(size(cmap) == [nImages,3])
 end
 
 if nargin < 3 || isempty(normIn)
-    normIn = true;
+    normIn = 1;
 end
 if nargin < 4 || isempty(normOut)
     normOut = 0;
@@ -102,6 +102,8 @@ end
 
 % norm output image if requested
 switch normOut
+    case 0
+        % no norm
     case 1
         outputImage = norm01(outputImage);
     case 2 
