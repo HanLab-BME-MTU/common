@@ -154,18 +154,20 @@ void calcInnovations(
                     mwSize numParam,
                     mwSize trajLength,
                     double *numNans,
-                    double *wnVariance
+                    double *wnVariance,
+                    int obsErrPresent
                     )                    
 {        
     int j, k, l, m, n;
     int maxOrder = MAX(arOrder,maOrder+1);
     double arParamMod[maxOrder], maParamMod[maxOrder];
-    double *arParamP, *arParam, *maParamP, *maParam, *G;
+    double *arParamP, *arParam, *maParamP, *maParam, *G;    
     double stateVecT1_T[maxOrder], stateVecT_T[maxOrder];
     double stateCovMatT_T[maxOrder][maxOrder];
     double stateCovMatT1_T[maxOrder][maxOrder];
     double observationVec[maxOrder];
-    double tmp = 0;  
+    double tmp = 0;
+    double *oeVarianceP;
 
     /* initialize variables for call to covKalmanInit */
     
@@ -186,6 +188,12 @@ void calcInnovations(
 
     arParamP = params;
     maParamP = (params + arOrder );
+    
+    /* If no observational error was included, then it is a parameter */
+    if (~obsErrPresent){
+        
+        oeVarianceP = params + arOrder + maOrder + xOrder + 1;        
+    }
     
     /* Convert partial ARMA parameters to normal ARMA params */
     levinsonDurbinExpoAR(arParamP,arOrder,arParam);
@@ -387,9 +395,14 @@ void calcInnovations(
             
             /* Calculate innovations */
             innovations[j] = *(TRAJ + trajLength + j) - stateVecT1_T[0];
-            /* And variance in innovations */
-            innovationVar[j] = stateCovMatT1_T[0][0] + pow( *(TRAJ + 3*trajLength + j ), 2); 
-
+            
+            if (obsErrPresent){
+                /* And variance in innovations */
+                innovationVar[j] = stateCovMatT1_T[0][0] + pow( *(TRAJ + 3*trajLength + j ), 2); 
+            }else{
+                innovationVar[j] = stateCovMatT1_T[0][0] + pow( *oeVarianceP, 2); 
+            }
+            
             /* calculate Delta */
             matrixMultiplyConst(&stateCovMatT1_T[0][0],maxOrder,1,( 1 / innovationVar[j] ),&delta[0]);
             /* delta times the next innovation */
@@ -397,7 +410,7 @@ void calcInnovations(
             /* add this to previous state prediction */
             matrixAdd(&stateVecT1_T[0],maxOrder,1,&tmpVec[0],maxOrder,1,&stateVecT_T[0],maxOrder,1);
 
-            /* update covatiance matrix */
+            /* update covariance matrix */
             matrixMultiply(&delta[0],maxOrder,1,&observationVec[0],1,maxOrder,&tmpMat[0][0],maxOrder,maxOrder);
             matrixMultiply(&tmpMat[0][0],maxOrder,maxOrder,&stateCovMatT1_T[0][0],maxOrder,maxOrder,&tmpMat2[0][0],maxOrder,maxOrder);
             matrixSubtract(&stateCovMatT1_T[0][0],maxOrder,maxOrder,&tmpMat2[0][0],maxOrder,maxOrder,&stateCovMatT_T[0][0],maxOrder,maxOrder);
@@ -406,12 +419,9 @@ void calcInnovations(
             matrixTranspose(&stateCovMatT_T[0][0],maxOrder,maxOrder,&tmpMat[0][0]);
             matrixAdd(&stateCovMatT_T[0][0],maxOrder,maxOrder,&tmpMat[0][0],maxOrder,maxOrder,&tmpMat2[0][0],maxOrder,maxOrder);
             matrixMultiplyConst(&tmpMat2[0][0],maxOrder,maxOrder,.5,&stateCovMatT_T[0][0]);                                                                                    
-    
             
-            /* Avoid nan from log of negative innovation... */
-            if (innovationVar[j] > 0){
-                *sum1 += log( innovationVar[j] );
-            }
+            
+            *sum1 += log( innovationVar[j] );
             
             *sum2 += pow( innovations[j] , 2) / innovationVar[j];
             
@@ -431,6 +441,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 /*    double *likelihood; */
     double *wnVariance;
     int arOrder, maOrder, xOrder;
+    int obsErrPresent;
     mxArray *tmp;
     double *tmp2;    
     
@@ -440,7 +451,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
         
     /*Determine number of input parameters */
     params = mxGetPr(prhs[0]);
-    numParam = mxGetM(prhs[0]);        
+    numParam = mxGetN(prhs[0]);        
     
     /* Set pointers for output */
     
@@ -455,24 +466,18 @@ void mexFunction( int nlhs, mxArray *plhs[],
     
     /* Get pointers for input matrices */
                 
-    tmp = mxGetField(prhs[1],0,"arOrder");
-    tmp2 = mxGetPr(tmp);
-    arOrder = (int) *tmp2;	
+    arOrder = (int) *mxGetPr(mxGetField(prhs[1],0,"arOrder"));
     
-    tmp = mxGetField(prhs[1],0,"maOrder");
-    tmp2 = mxGetPr(tmp);
-    maOrder = (int) *tmp2;
+    maOrder = (int) *mxGetPr(mxGetField(prhs[1],0,"maOrder"));
     
-    tmp = mxGetField(prhs[1],0,"xOrder");
-    tmp2 = mxGetPr(tmp);
-    xOrder = (int) *tmp2;
+    xOrder = (int) *mxGetPr(mxGetField(prhs[1],0,"xOrder"));
 
-    tmp = mxGetField(prhs[1],0,"TRAJ");
-    trajLength = mxGetM(tmp);
-    TRAJ = mxGetPr(tmp);    
+    TRAJ = mxGetPr(mxGetField(prhs[1],0,"TRAJ"));
+    trajLength = mxGetM(mxGetField(prhs[1],0,"TRAJ"));
     
-    tmp = mxGetField(prhs[1],0,"wnVariance");      
-    wnVariance = mxGetPr(tmp);        
+    wnVariance = mxGetPr(mxGetField(prhs[1],0,"wnVariance"));      
+    
+    obsErrPresent = (int) *mxGetPr(mxGetField(prhs[1],0,"obsErrPresent"));
     
     *sum1 = 0;
     *sum2 = 0;
@@ -480,7 +485,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
     
     calcInnovations(TRAJ,params,sum1,sum2,
                     arOrder,maOrder,xOrder,
-                    numParam,trajLength,numMissing,wnVariance);
+                    numParam,trajLength,numMissing,
+                    wnVariance,obsErrPresent);
     
 
 /*    *likelihood += sum1 + ((trajLength-numMissing) * log( sum2 ) ); */

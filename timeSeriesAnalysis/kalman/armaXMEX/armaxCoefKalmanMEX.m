@@ -1,7 +1,7 @@
 function [arParamK,maParamK,xParamK,arParamL,maParamL,xParamL,varCovMatL,...
-    varCovMatF,wnVariance,wnVector,selectCrit,pVCompKL,pVPort,errFlag] ...
+    varCovMatF,wnVariance,wnVector,oeVarK,selectCrit,pVCompKL,pVPort,errFlag] ...
     = armaxCoefKalmanMEX(trajOut,trajIn,arParamP0,maParamP0,xParam0,...
-    constParam,minOpt)
+    oeVarP0,constParam,minOpt)
 %ARMAXCOEFKALMAN fits an ARMAX model to a time series which could depend on another series.
 %
 %SYNOPSIS [arParamK,maParamK,xParamK,arParamL,maParamL,xParamL,varCovMatLS,...
@@ -286,8 +286,25 @@ end
 %     end
 % end
 
+%Check if observational error variance should be estimated
+if nargin < 6 || isempty(oeVarP0)  
+    
+    obsErrPresent = 1;
+    oeVarP0 = [];
+    
+else    
+    obsErrPresent = 0;        
+    
+    if oeVarP0 < 0
+        disp('--armaxCoefKalman: Initial guess of observational error STD must be positive!');
+        errFlag = 1;
+    end    
+end
+
+
+
 %check parameter constraints
-if nargin < 6 || isempty(constParam) %if no constraints were entered
+if nargin < 7 || isempty(constParam) %if no constraints were entered
     constParam = constParam_def;
 else
     if isfield(constParam,'ar')
@@ -335,7 +352,7 @@ else
 end %(nargin < 6 || isempty(constParam) ... else ...)
 
 %check whether minOpt has one of the required values
-if nargin < 7 || isempty(minOpt)
+if nargin < 8 || isempty(minOpt)
     minOpt = minOpt_def;
 else
     %     if (~strcmp(minOpt,'ml') && ~strcmp(minOpt,'tl') ...
@@ -379,6 +396,7 @@ for i=1:numTraj
 end
 totAvail = sum(numAvail);
 
+
 %calculate the normalization constant "weight0" for the weights, so that
 %sum_i=1^numTraj(weight(i)*numAvail(i)/weight0) = sum_i=1^numTraj(numAvail(i)) = totAvail
 weight0 = sum([trajOut.weight].*numAvail)/totAvail;
@@ -393,6 +411,17 @@ tmp = vertcat(trajOut.observations);
 wnVariance0 = nanvar(tmp(:,1)); %variance from "previous" iteration
 wnVariance = 0.8*wnVariance0; %variance from "current" iteration
 
+if ~obsErrPresent
+    
+    %Use the initial white noise variance to determine limits for observational
+    %error variance    
+    oeLimit = wnVariance * 10;
+
+else    
+    oeLimit = [];
+end
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Maximum likelihood estimation of model
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -403,7 +432,7 @@ wnVariance = 0.8*wnVariance0; %variance from "current" iteration
 %significantly between iterations.
 
 %assign initial guess of parameters to paramT
-paramT = [arParamP0 maParamP0 xParam0];
+paramT = [arParamP0 maParamP0 xParam0 oeVarP0];
 
 %while the variance changes by more than 5% from one iteration to the next
 while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
@@ -413,12 +442,19 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
 
     %divide the observational error by the standard deviation of the white
     %noise in all trajectories
-    trajOut2 = trajOut;
     wnStd = sqrt(wnVariance);
-    for i=1:numTraj
-        trajOut2(i).observations(:,2) = trajOut2(i).observations(:,2)/wnStd;
-    end
+    
+    if obsErrPresent
+        
+        trajOut2 = trajOut;
 
+        for i=1:numTraj
+            trajOut2(i).observations(:,2) = trajOut2(i).observations(:,2)/wnStd;
+        end                
+    else        
+        trajOut2 = trajOut;        
+    end
+    
     %get initial guess of parameters
     param0 = paramT;
     
@@ -441,12 +477,13 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 prob.user.trajOut = trajOut2;
                 prob.user.trajIn  = trajIn;
                 prob.user.numAvail = totAvail;
+                prob.user.obsErrPresent = obsErrPresent;
 
                 try
 
                     %assign lower and upper bounds of variables
-                    boundLow  = [-10*ones(1,arOrder+maOrder) -2*ones(1,xOrder+1)];
-                    boundHigh = [10*ones(1,arOrder+maOrder) 2*ones(1,xOrder+1)];
+                    boundLow  = [-10*ones(1,arOrder+maOrder) -2*ones(1,xOrder+1) -oeLimit];
+                    boundHigh = [10*ones(1,arOrder+maOrder) 2*ones(1,xOrder+1) oeLimit];
 
                     %                     %minimize -2ln(likelihood) using fmincon
                     %                     [params,fval,exitFlag] = fmincon(@neg2LnLikelihoodX,param0,...
@@ -480,8 +517,8 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 if isempty(constParam) %if there are no constraints
 
                     prob = conAssign('neg2LnLikelihoodXMEXcall',[],[],[],...
-                        [-10*ones(1,arOrder+maOrder) -2*ones(1,numXParam)],...
-                        [10*ones(1,arOrder+maOrder) 2*ones(1,numXParam)],...
+                        [-10*ones(1,arOrder+maOrder) -2*ones(1,numXParam) -oeLimit],...
+                        [10*ones(1,arOrder+maOrder) 2*ones(1,numXParam) oeLimit],...
                         'locMinNegLik',param0);
                     prob.PriLevOpt = 0;
                     prob.user.arOrder = arOrder;
@@ -490,7 +527,8 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                     prob.user.trajOut = trajOut2;
                     prob.user.trajIn  = trajIn;
                     prob.user.numAvail = totAvail;
-
+                    prob.user.obsErrPresent = obsErrPresent;
+                    
                     %minimize -2ln(likelihood) using Tomlab's ucSolve
                     % -- 1/25/07 jonas: changed printLevel to 0
                     result = tomRun('ucSolve',prob,0,2);
@@ -499,12 +537,12 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
 
                     %define local minimizaton problem with constraints
                     prob = conAssign('neg2LnLikelihoodXMEXcall',[],[],[],...
-                        [-10*ones(1,arOrder+maOrder) -2*ones(1,xOrder+1)],...
-                        [10*ones(1,arOrder+maOrder) 2*ones(1,xOrder+1)],...
+                        [-10*ones(1,arOrder+maOrder) -2*ones(1,xOrder+1) -oeLimit],...
+                        [10*ones(1,arOrder+maOrder) 2*ones(1,xOrder+1) oeLimit],...
                         'locMinNegLik',param0,[],[],[],[],[],'minKalmanConstraint',...
                         [],[],[],...
-                        [constParam.ar(:,2);constParam.ma(:,2);constParam.x(:,2)],...
-                        [constParam.ar(:,2);constParam.ma(:,2);constParam.x(:,2)]);
+                        [constParam.ar(:,2);constParam.ma(:,2);constParam.x(:,2);constParam.oe(:,2)],...
+                        [constParam.ar(:,2);constParam.ma(:,2);constParam.x(:,2);constParam.oe(:,2)]);
                     prob.PriLevOpt = 0;
                     prob.user.arOrder = arOrder;
                     prob.user.maOrder = maOrder;
@@ -512,9 +550,11 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                     prob.user.trajOut = trajOut2;
                     prob.user.trajIn = trajIn;
                     prob.user.numAvail = totAvail;
+                    prob.user.obsErrPresent = obsErrPresent;
                     prob.user.constParam.ar = constParam.ar(:,1);
                     prob.user.constParam.ma = constParam.ma(:,1);
                     prob.user.constParam.x  = constParam.x(:,1);
+                    prob.user.constParam.oe = constParam.oe(:,1);
 
                     %minimize -2ln(likelihood) using Tomlab's conSolve
                     result = tomRun('conSolve',prob,0,2);
@@ -554,7 +594,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
         %assign parameters obtained through minimization
         arParamP = params(1:arOrder);
         maParamP = params(arOrder+1:arOrder+maOrder);
-        xParamK = params(arOrder+maOrder+1:end);
+        
         %         if ~isempty(xLag) && xLag ~= 0
         %             xParamK = [zeros(1,xLag) xParamK];
         %         end
@@ -570,6 +610,15 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
         else
             maParamK = [];
         end
+    
+        %If the observational error variance was estimated, use return it
+        if obsErrPresent
+            xParamK = params(arOrder+maOrder+1:end);
+            oeVarPK = [];
+        else
+            xParamK = params(arOrder+maOrder+1:end-1);
+            oeVarPK = params(end);
+        end
 
         %obtain likelihood, white noise sequence and white noise variance
         sum1 = 0;
@@ -580,8 +629,8 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
             %get the innovations, their variances and the estimated white noise series
             %using Kalman prediction and filtering
             [innovation,innovationVar,wnVector(i).observations,dummy1,...
-                dummy2,errFlag] = armaxKalmanInnov(trajOut2(i).observations,...
-                trajIn(i).observations,arParamK,maParamK,xParamK);
+                dummy2,errFlag] = armaxKalmanInnovMEXcall(trajOut2(i).observations,...
+                trajIn(i).observations,arParamK,maParamK,xParamK,oeVarPK);
             if errFlag
                 disp('--armaxCoefKalman: "armaxKalmanInnov" did not function properly!');
                 return
@@ -595,7 +644,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
             %2nd sum in Eq. 3.15
             sum2 = sum2 + trajOut2(i).weight*nansum(innovation.^2./innovationVar);
 
-        end %(for i = 1:numTraj)
+        end %(for i = 1:numTraj) 
 
         %calculate -2ln(likelihood) (Eq. 3.15)
         neg2LnLikelihoodV = sum1 + totAvail*log(sum2);
@@ -603,9 +652,17 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
         %calculate mean white noise variance of all trajectories (Eq. 3.14)
         wnVariance = (([trajOut2.weight].*numAvail)*wnVarianceSamp)/totAvail;
 
+        %Use the white noise variance to determine the observational error
+        oeVarK = oeVarPK;   %*sqrt(wnVariance);
+            
         %get number of parameters estimated: arOrder AR coefficients, maOrder MA
         %coefficients, xOrder+1``` X coefficients, and white noise variance
         numParam = arOrder + maOrder + xOrder + 2;
+        
+        %And the observational error variance, if estimated.
+        if ~obsErrPresent
+            numParam = numParam+1;
+        end
 
         %evaluate Akaike's Information Criterion
         selectCrit.aic = neg2LnLikelihoodV + 2*numParam;
@@ -689,7 +746,7 @@ end
 
 %report failure of fit and do not consider results if residuals are not white noise
 if H == 1
-    %     disp('--armaxCoefKalman: Residuals did not pass portmanteau test!')
+    disp('--armaxCoefKalman: Residuals did not pass portmanteau test!')
     errFlag = 1;
 end
 

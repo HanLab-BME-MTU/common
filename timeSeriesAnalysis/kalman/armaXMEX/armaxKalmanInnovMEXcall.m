@@ -1,5 +1,5 @@
 function [innovations,innovationVariances,whiteNoise,dummy1,dummy2,errFlag] = ...
-    armaxKalmanInnovMEXcall(trajOut,trajIn,arParam,maParam,xParam,wnVariance)
+    armaxKalmanInnovMEXcall(trajOut,trajIn,arParam,maParam,xParam,wnVariance,oeVariance)
 
 %ARMAXKALMANINNOV does forward Kalman prediction and filtering of a time series using an ARMAX model
 %
@@ -74,12 +74,21 @@ else
     prob.wnVariance = wnVariance;
 end
 
+%Check if time dependent or constant observational error is used
+if nargin < 7 || isempty(oeVariance)
+    
+    prob.obsErrPresent = 1;
+    oeVariance = [];    
+else    
+    prob.obsErrPresent = 0;    
+end
+
 %find arOrder, maOrder and xOrder
 prob.arOrder = length(arParam);
 prob.maOrder = length(maParam);
 prob.xOrder  = length(xParam) - 1;
 
-paramV = cat(2,arParam,maParam,xParam)';
+paramV = [arParam maParam xParam oeVariance];
 
 if (prob.xOrder < 1) || isempty(trajIn);
    trajIn = zeros(trajLength,2);   
