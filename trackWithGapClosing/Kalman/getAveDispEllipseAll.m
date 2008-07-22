@@ -13,7 +13,7 @@ function [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D] = ...
 %
 %INPUT  xyzVel         : Velocity in x, y and z (if 3D).
 %       brownStd       : Standard deviation of Brownian motion steps.
-%       trackType      : Type of track. 1 for directed, 0 for Brownian, NaN for unetermined.
+%       trackType      : Type of track. 1 for directed, 0 for Brownian, NaN for undetermined.
 %       undetBrownStd  : Standard deviation of Brownian motion steps to be used
 %                        for undetermined tracks.
 %       timeWindow     : Maximum gap size.

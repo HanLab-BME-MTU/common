@@ -74,8 +74,8 @@ end
 %for different track lengths
 if probDim == 2
     % % %     %80th percentile:
-    % % %         asymThresh = [[NaN NaN 3.5 2 1.5 1.4 1.3 1.2 1.2 1.1 1.1 1.1 1.1 1.1 1.1 ...
-    % % %             1.05 1.05 1.05 1.05 1.05]'; ones(numFrames-20,1)];
+    % % %     asymThresh = [[NaN NaN 3.5 2 1.5 1.4 1.3 1.2 1.2 1.1 1.1 1.1 1.1 1.1 1.1 ...
+    % % %         1.05 1.05 1.05 1.05 1.05]'; ones(numFrames-20,1)];
     %90th percentile:
     asymThresh = [[NaN NaN 5 2.7 2.1 1.8 1.7 1.6 1.5 1.45 1.45 1.4 1.4 ...
         1.4 1.4 1.4 1.4 1.35 1.35 1.35]'; 1.3*ones(numFrames-20,1)];

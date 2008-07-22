@@ -1,10 +1,13 @@
 function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
     errFlag] = costMatLinearMotionCloseGaps(trackedFeatInfo,...
     trackedFeatIndx,trackStartTime,trackEndTime,costMatParam,gapCloseParam,...
-    kalmanFilterInfo,nnDistLinkedFeat,probDim)
-%COSTMATLINEARMOTIONCLOSEGAPS provides a cost matrix for closing gaps using Kalman filter information (no merging/splitting yet)
+    kalmanFilterInfo,nnDistLinkedFeat,probDim,movieInfo)
+%COSTMATLINEARMOTIONCLOSEGAPS provides a cost matrix for closing gaps and capturing merges/splits using Kalman filter information
 %
-%SYNOPSIS 
+%SYNOPSIS [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
+%    errFlag] = costMatLinearMotionCloseGaps(trackedFeatInfo,...
+%    trackedFeatIndx,trackStartTime,trackEndTime,costMatParam,gapCloseParam,...
+%    kalmanFilterInfo,nnDistLinkedFeat,probDim,movieInfo)
 %
 %INPUT  trackedFeatInfo: The positions and amplitudes of the tracked
 %                        features from linkFeaturesKalman.
@@ -102,6 +105,9 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                        distances of features linked together within
 %                        tracks.
 %       probDim        : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
+%       movieInfo      : movieInfo as input to trackCloseGapsKalman. Not
+%                        really used in this code, but needed for
+%                        compatibility with other cost functions.
 %
 %OUTPUT costMat       : Cost matrix.
 %       nonlinkMarker : Value indicating that a link is not allowed.

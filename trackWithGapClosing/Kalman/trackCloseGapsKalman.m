@@ -8,7 +8,7 @@ function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %    saveResults,verbose)
 %
 %INPUT  movieInfo    : Array of size equal to the number of frames in a
-%                      movie, containing the fields:
+%                      movie, containing at least the fields:
 %             .xCoord      : x-coordinates of detected features. 
 %                            1st column: value, 2nd column: standard
 %                            deviation (zeros if not available).
@@ -23,6 +23,10 @@ function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %                            1st column: values (ones if not available),
 %                            2nd column: standard deviation (zeros if not
 %                            available).
+%           ADDITIONAL FIELDS:
+%             .kinType     : Kinetochore type: 0 - inlier, 1 -
+%                            unaligned, 2 - lagging. Needed only when
+%                            using costMatHeLaKinsLink and costMatHeLaKinsCloseGaps.
 %       costMatrices : 2-by-1 array indicating cost matrices and their
 %                      parameters.
 %                      -1st entry supplies the cost matrix for linking
@@ -255,7 +259,7 @@ numFeatures = vertcat(movieInfo.num);
 emptyFrames = find(numFeatures == 0);
 if ~isempty(emptyFrames)
     findEmpty = emptyFrames(1) == 1;
-else
+else%                           
     findEmpty = 0;
 end
 while findEmpty
@@ -416,7 +420,7 @@ if any(trackStartTime > 1) && any(trackEndTime < numFramesEff)
     eval(['[costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,'...
         'errFlag] = ' costMatrices(2).funcName '(tracksCoordAmpLink,'...
         'tracksFeatIndxLink,trackStartTime,trackEndTime,costMatrices(2).parameters,'...
-        'gapCloseParam,kalmanInfoLink,nnDistLinkedFeat,probDim);'])
+        'gapCloseParam,kalmanInfoLink,nnDistLinkedFeat,probDim,movieInfo);'])
 
     %if there are possible links ...
     if any(isfinite(nonzeros(costMat)))

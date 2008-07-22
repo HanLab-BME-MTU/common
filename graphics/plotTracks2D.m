@@ -321,9 +321,9 @@ switch colorTime
         %missing intervals are indicated by a dotted line
         for i = 1 : trackStartRow(end) + numSegments(end) - 1
             obsAvail = find(~isnan(tracksXP(:,i)));
-%             plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
-%             plot(tracksXP(:,i),tracksYP(:,i),'color',colorLoop(mod(i-1,7)+1,:),...
-%                 'marker',markerType);
+            plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
+            plot(tracksXP(:,i),tracksYP(:,i),'color',colorLoop(mod(i-1,7)+1,:),...
+                'marker',markerType);
         end
 
     otherwise %no time color-coding, all tracks same color
