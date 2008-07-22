@@ -1,7 +1,7 @@
 function handles = distributionPlot(varargin)
 %DISTRIBUTIONPLOT plots distributions similar to boxplot
 %
-% SYNOPSIS: handles = distributionPlot(data,distWidth,showMM,xNames)
+% SYNOPSIS: handles = distributionPlot(data,distWidth,showMM,xNames,divFactor,invert)
 %           handles = distributionPlot(ah,...)
 %
 % INPUT data : cell array of length nData or m-by-nData array of values
@@ -13,6 +13,12 @@ function handles = distributionPlot(varargin)
 %                green squares, respectively. Default: 1
 %       xNames : (opt) cell array of length nData containing x-tick names
 %               (instead of the default '1,2,3')
+%       divFactor : (opt) distributionPlot uses ksdensity with the
+%                   Epanechnikov-kernel to smooth the histogram. DivFactor
+%                   indicates by how much the default-width will be divided
+%                   in order to avoid an overly smooth histogram. 
+%                   Default: 2
+%       invert : (opt) if 1, image will be white on black. Default: 0
 %       ah (opt) axes handle to plot the distribution. Default: gca
 %
 % OUTPUT handles : 1-by-2 cell array with patch-handles for the
@@ -35,6 +41,8 @@ function handles = distributionPlot(varargin)
 def_xNames = [];
 def_showMM = 1;
 def_distWidth = 0.9;
+def_divFactor = 2;
+def_invert = false;
 
 if nargin == 0 
     error('not enough input arguments')
@@ -46,10 +54,12 @@ if ~iscell(varargin{1}) && length(varargin{1}) == 1 && ...
     ah = varargin{1};
     data = varargin{2};
     varargin(1:2) = [];
+    newAx = false;
 else
     ah = gca;
     data = varargin{1};
     varargin(1) = []; 
+    newAx = true;
 end
 
 % check data. If not cell, convert
@@ -81,11 +91,26 @@ if length(varargin) > 2 && ~isempty(varargin{3})
 else
     xNames = def_xNames;
 end
+if length(varargin) > 3 && ~isempty(varargin{4})
+    divFactor = varargin{4};
+else
+    divFactor = def_divFactor;
+end
+if length(varargin) > 4 && ~isempty(varargin{5})
+    invert = varargin{5};
+else
+    invert = def_invert;
+end
 
 
 % set hold on
 holdState = get(ah,'NextPlot');
 set(ah,'NextPlot','add');
+
+% if new axes: invert
+if newAx && invert
+    set(gca,'Color','k')
+end
 
 %===================================
 
@@ -108,7 +133,9 @@ for iData = 1:nData
     
     % make histogram (use ksdensity for now)
     % x,y are switched relative to normal histogram
-    [xHist,yHist] = ksdensity(currentData,'kernel','epanechnikov');
+    [xHist,yHist,u] = ksdensity(currentData,'kernel','epanechnikov');
+    % take smaller kernel to avoid over-smoothing
+    [xHist,yHist] = ksdensity(currentData,'kernel','epanechnikov','width',u/divFactor);
     
     % find y-step
     dy = min(diff(yHist));
@@ -131,7 +158,11 @@ for iData = 1:nData
     
     % add patch
     axes(ah);
-    hh{iData} = patch(xArray,yArray,repmat(1-xHist/max(xHist),[4,1,3]));
+    if invert
+        hh{iData} = patch(xArray,yArray,repmat(xHist/max(xHist),[4,1,3]));
+    else
+        hh{iData} = patch(xArray,yArray,repmat(1-xHist/max(xHist),[4,1,3]));
+    end
     set(hh{iData},'EdgeColor','none')
     
     m(iData) = mean(currentData);
