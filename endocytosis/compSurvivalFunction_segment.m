@@ -28,6 +28,7 @@ function [survFunc,tvec] = compSurvivalFunction_segment(data)
 % functions in the first place
 %
 % last modified DATE: 25-Jun-2008 (Dinah)
+% last modified DATE: 23-Jul-2008 (Dinah)
 
 
 % averaging can only be performed up until the minimum common length of all 
@@ -88,6 +89,51 @@ xlabel('lifetime (frames)');
 ylabel('survival function (fraction)');
 legend('inside region','outside region');
 axis([0 minlen -0.02 1.02]);
+
+
+% barmat = tvec(2:3,[9:-1:1]);
+% for k=1:2
+%     barmatDiff(k,2:9) = diff(barmat(k,:));
+% end
+% barmatDiff(:,1) = barmat(:,1);
+% 
+% figure; hold on
+% barh(barmatDiff,0.4,'stack');
+% axis([0 max(barmat(:)) 0.5 2.5]);
+% set(gca,'YTick',[1 2]);
+% set(gca,'YTickLabel',{'Inside','Outside'});
+
+
+npt = length(survFunc(1,:));
+% calculate base from number of bins
+nbin = 12;
+bas = exp(log(npt)/(nbin-1));
+% calculate number of bins from base
+bas = 1.6;
+nbin = floor(log(npt)/log(bas))+1;
+
+llogvec = bas.^[0:nbin-1];
+ttvec = [1:length(survFunc(1,:))];
+
+ppoints1 = interp1(ttvec,survFunc(1,:),llogvec);
+ppoints2 = interp1(ttvec,survFunc(2,:),llogvec);
+
+pdpoints1 = abs(diff(ppoints1));
+pdpoints2 = abs(diff(ppoints2));
+
+pdpoints1(length(pdpoints1)+1) = 1-sum(pdpoints1);
+pdpoints2(length(pdpoints2)+1) = 1-sum(pdpoints2);
+
+figure
+barh([pdpoints1;pdpoints2;(1/nbin)+0*[1:nbin]],0.6,'stack');
+axis([0 1 0.4 3.8]);
+set(gca,'YTick',[1 2 3]);
+set(gca,'YTickLabel',{'Inside','Outside','Colorbar'});
+xlabel('fraction in lifetime interval');
+
+for i=1:nbin, names{i}=num2str(round(10*llogvec(i))/10); end
+text(((1/nbin)*[0:nbin-1]+0.02),(2.9+0*[1:nbin]),names,'Rotation',90);
+text(0.4,3.5,'Lifetime Intervals');
 
 end % of function
 
