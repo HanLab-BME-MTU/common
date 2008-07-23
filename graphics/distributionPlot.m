@@ -122,7 +122,7 @@ end
 
 % assign output
 hh = cell(nData,1);
-[m,md] = deal(zeros(nData,1));
+[m,md] = deal(nan(nData,1));
 
 % get base x-array
 xBase = abs(distWidth) .* [-0.5;0.5;0.5;-0.5];
@@ -130,6 +130,7 @@ xBase = abs(distWidth) .* [-0.5;0.5;0.5;-0.5];
 % loop through data. Prepare patch input, then draw patch into gca
 for iData = 1:nData
     currentData = data{iData};
+     if ~isempty(currentData)
     
     % make histogram (use ksdensity for now)
     % x,y are switched relative to normal histogram
@@ -167,6 +168,7 @@ for iData = 1:nData
     
     m(iData) = mean(currentData);
     md(iData) = median(currentData);
+     end
 end % loop
 
 if showMM

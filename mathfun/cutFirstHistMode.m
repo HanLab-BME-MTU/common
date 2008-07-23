@@ -1,4 +1,4 @@
-function [cutoffIndex, cutoffValue, sp] = cutFirstHistMode(varargin);
+function [cutoffIndex, cutoffValue, sp, axesH] = cutFirstHistMode(varargin)
 %CUTFIRSTHISTMODE finds the end of the first mode in a histogram
 %
 % cutFirstHistMode is an implementation of the algorithm presented in "uni-
@@ -11,7 +11,7 @@ function [cutoffIndex, cutoffValue, sp] = cutFirstHistMode(varargin);
 % SYNOPSIS [cutoffIndex, cutoffValue,sp] = cutFirstHistMode(counts, bins);
 %          [cutoffIndex, cutoffValue,sp] = cutFirstHistMode(data);
 %          [...] = cutFirstHistMode(...,verbose)
-%          [...] = cutFirstHistMode(ax,...)
+%          [...] = cutFirstHistMode(axesH,...)
 %
 % INPUT    counts, bins : counts in and center of histogram bins (output
 %               of functions such as "hist" or "histogram". There has to be
@@ -21,7 +21,7 @@ function [cutoffIndex, cutoffValue, sp] = cutFirstHistMode(varargin);
 %
 %          verbose (optional) decides whether the function will open a
 %               figure or not (default = 1).
-%          ax (optional) axes handle into which the function will plot.
+%          axesH (optional) axes handle into which the function will plot.
 %               Supplying ax automatically sets verbose to 1. (Of course,
 %               setting verbose = 0 will overrule that, but this would be a
 %               bit nonsensical)
@@ -33,6 +33,7 @@ function [cutoffIndex, cutoffValue, sp] = cutFirstHistMode(varargin);
 %               cut off
 %          sp : definition of the histogram spline (only possible of
 %               cutFirstHistMode had to calculate a histogram)
+%          axesH : plot axes. Empty if verbose is 0
 %
 % REMARKS  If data is supplied, cutoffIndex/cutoffData will point to the
 %               data point just at or above the center of the bin

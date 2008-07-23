@@ -125,11 +125,17 @@ if factor ~= -1
         Z = trapz(xx,nn);
         nn = nn * nData/Z;
     end
-    if nargout > 0        
+    if nargout > 0
         N = nn;
         X = xx;
-    else
-        bar(xx,nn,1);
+        doPlot = axesHandle;
+    end
+    if doPlot
+        if axesHandle
+            bar(axesHandle,xx,nn,1);
+        else
+            bar(xx,nn,1);
+        end
     end
 
 else
