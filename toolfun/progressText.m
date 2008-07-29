@@ -16,6 +16,7 @@ function progressText(fractionDone,text)
 %       progressText(i/n) % Update text
 %   end
 %
+% REMARKS progressText will set lastwarn to ''
 %
 % created with MATLAB ver.: 7.4.0.287 (R2007a) on Windows_NT
 %
@@ -63,6 +64,9 @@ if fractionDone == 0 || isempty(starttime)
 %     %fprintfExpression removes old expression before overwriting
 %     fprintfExpression = [clearText printText];
 %     fprintfExpressionFinal = [clearText, finalText];
+
+% empty warning
+lastwarn('');
     
     return
 elseif ~isempty(text)
@@ -87,8 +91,16 @@ percentDone = floor(100*fractionDone);
 % get elapsed time
 runTime = etime(clock,starttime);
 
+% check whether there has been a warning since last time
+if ~isempty(lastwarn)
+    lastwarn('');
+    warned = '\n';
+else
+    warned = '';
+end
+
 if percentDone == 100 % Task completed
-    fprintf(1,fprintfExpressionFinal,convertTime(runTime)); % finish up
+    fprintf(1,[warned,fprintfExpressionFinal],convertTime(runTime)); % finish up
     clear starttime lastupdate clearText printText finalText % Clear persistent vars
     return
 end
@@ -100,7 +112,7 @@ end
 
 % update
 timeLeft = runTime/fractionDone - runTime;
-fprintf(1,fprintfExpression,percentDone,convertTime(timeLeft));
+fprintf(1,[warned,fprintfExpression],percentDone,convertTime(timeLeft));
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
