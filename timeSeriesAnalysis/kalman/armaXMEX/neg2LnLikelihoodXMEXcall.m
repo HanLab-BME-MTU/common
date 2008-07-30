@@ -61,7 +61,9 @@ for j = 1:nTraj
     if prob.user.xOrder < 0
         prob.user.trajIn(j).observations = zeros(trajLength,2);   
     end        
-     
+    
+    %Re-arrange trajectory so that it is stored in the correct order in
+    %memory for pointer arithmetic in C
     prob.user.TRAJ = cat(3, prob.user.trajIn(j).observations , prob.user.trajOut(j).observations);
     prob.user.TRAJ = permute( prob.user.TRAJ, [1 3 2]);
     
@@ -80,3 +82,5 @@ for j = 1:nTraj
 end
 
 likelihood = (sum1 + (totalObs - numMissing)*log(sum2));
+
+fuckshit = 1.234;

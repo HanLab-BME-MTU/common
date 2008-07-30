@@ -1,7 +1,7 @@
 function [arParamK,maParamK,xParamK,arParamL,maParamL,xParamL,varCovMatL,...
     varCovMatF,wnVariance,wnVector,oeVarK,selectCrit,pVCompKL,pVPort,errFlag] ...
     = armaxCoefKalmanMEX(trajOut,trajIn,arParamP0,maParamP0,xParam0,...
-    oeVarP0,constParam,minOpt)
+    oeParam0,constParam,minOpt)
 %ARMAXCOEFKALMAN fits an ARMAX model to a time series which could depend on another series.
 %
 %SYNOPSIS [arParamK,maParamK,xParamK,arParamL,maParamL,xParamL,varCovMatLS,...
@@ -138,10 +138,13 @@ varCovMatL = [];
 varCovMatF = [];
 wnVariance = [];
 wnVector   = [];
+oeParamK   = [];
 selectCrit = [];
 pVCompKL   = [];
 pVPort     = [];
 errFlag    =  0;
+obsErrEstimated = 0;
+obsErrInput = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Input
@@ -194,6 +197,10 @@ for i=1:numTraj
         else
             disp('--armaxCoefKalman: "trajOut.observations" should have either 1 column for measurements, or 2 columns: 1 for measurements and 1 for measurement uncertainties!');
             errFlag = 1;
+        end
+    else
+        if (nnz(traj(:,2)) ~= 0)
+            obsErrInput = obsErrInput + 1;
         end
     end
     trajOut(i).observations = traj;
@@ -287,21 +294,28 @@ end
 % end
 
 %Check if observational error variance should be estimated
-if nargin < 6 || isempty(oeVarP0)  
+if nargin < 6 || isempty(oeParam0)  
     
     obsErrPresent = 1;
-    oeVarP0 = [];
+    oeParam0 = [];
+    if obsErrInput == 0
+        disp('--armaxCoefKalman: No observational error OR error ratio initial guess was input!')
+        errFlag = 1;
+    end
     
 else    
     obsErrPresent = 0;        
     
-    if oeVarP0 < 0
-        disp('--armaxCoefKalman: Initial guess of observational error STD must be positive!');
+    if oeParam0 < 0
+        disp('--armaxCoefKalman: Initial guess of error ratio must be positive!');
         errFlag = 1;
-    end    
+    end
+    
+    if obsErrInput ~= 0
+       disp('--armaxCoefKalman: !WARNING! Observational error was input along with an initial guess for error ratio! Ignoring observational error!');        
+    end
+    
 end
-
-
 
 %check parameter constraints
 if nargin < 7 || isempty(constParam) %if no constraints were entered
@@ -415,7 +429,7 @@ if ~obsErrPresent
     
     %Use the initial white noise variance to determine limits for observational
     %error variance    
-    oeLimit = wnVariance * 10;
+    oeLimit = sqrt(wnVariance) * 10;
 
 else    
     oeLimit = [];
@@ -432,10 +446,10 @@ end
 %significantly between iterations.
 
 %assign initial guess of parameters to paramT
-paramT = [arParamP0 maParamP0 xParam0 oeVarP0];
+paramT = [arParamP0 maParamP0 xParam0 oeParam0];
 
 %while the variance changes by more than 5% from one iteration to the next
-while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
+while (abs(wnVariance-wnVariance0)/wnVariance0 > 0.05) && ~obsErrEstimated
 
     %update wnVariance0
     wnVariance0 = wnVariance;
@@ -482,7 +496,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 try
 
                     %assign lower and upper bounds of variables
-                    boundLow  = [-10*ones(1,arOrder+maOrder) -2*ones(1,xOrder+1) -oeLimit];
+                    boundLow  = [-10*ones(1,arOrder+maOrder) -2*ones(1,xOrder+1) 0*oeLimit];
                     boundHigh = [10*ones(1,arOrder+maOrder) 2*ones(1,xOrder+1) oeLimit];
 
                     %                     %minimize -2ln(likelihood) using fmincon
@@ -517,7 +531,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 if isempty(constParam) %if there are no constraints
 
                     prob = conAssign('neg2LnLikelihoodXMEXcall',[],[],[],...
-                        [-10*ones(1,arOrder+maOrder) -2*ones(1,numXParam) -oeLimit],...
+                        [-10*ones(1,arOrder+maOrder) -2*ones(1,numXParam) 0*oeLimit],...
                         [10*ones(1,arOrder+maOrder) 2*ones(1,numXParam) oeLimit],...
                         'locMinNegLik',param0);
                     prob.PriLevOpt = 0;
@@ -537,7 +551,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
 
                     %define local minimizaton problem with constraints
                     prob = conAssign('neg2LnLikelihoodXMEXcall',[],[],[],...
-                        [-10*ones(1,arOrder+maOrder) -2*ones(1,xOrder+1) -oeLimit],...
+                        [-10*ones(1,arOrder+maOrder) -2*ones(1,xOrder+1) 0*oeLimit],...
                         [10*ones(1,arOrder+maOrder) 2*ones(1,xOrder+1) oeLimit],...
                         'locMinNegLik',param0,[],[],[],[],[],'minKalmanConstraint',...
                         [],[],[],...
@@ -611,15 +625,20 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
             maParamK = [];
         end
     
-        %If the observational error variance was estimated, use return it
+        %If the error ratio parameter was estimated, return it
         if obsErrPresent
             xParamK = params(arOrder+maOrder+1:end);
-            oeVarPK = [];
-        else
+            oeParamK = [];
+        elseif ~isempty(params)
             xParamK = params(arOrder+maOrder+1:end-1);
-            oeVarPK = params(end);
+            oeParamK = params(end);
+            obsErrEstimated = 1;
+        else
+            %This is just to make it an empty 1x0 instead of 0x0...
+            %matlab is wierd...
+            xParamK = params(1:end);
         end
-
+        
         %obtain likelihood, white noise sequence and white noise variance
         sum1 = 0;
         sum2 = 0;
@@ -630,7 +649,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
             %using Kalman prediction and filtering
             [innovation,innovationVar,wnVector(i).observations,dummy1,...
                 dummy2,errFlag] = armaxKalmanInnovMEXcall(trajOut2(i).observations,...
-                trajIn(i).observations,arParamK,maParamK,xParamK,oeVarPK);
+                trajIn(i).observations,arParamK,maParamK,xParamK,[],oeParamK);
             if errFlag
                 disp('--armaxCoefKalman: "armaxKalmanInnov" did not function properly!');
                 return
@@ -653,7 +672,8 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
         wnVariance = (([trajOut2.weight].*numAvail)*wnVarianceSamp)/totAvail;
 
         %Use the white noise variance to determine the observational error
-        oeVarK = oeVarPK;   %*sqrt(wnVariance);
+        %from the noise ratio parameter
+        oeVarK = (oeParamK*sqrt(wnVariance))^2;
             
         %get number of parameters estimated: arOrder AR coefficients, maOrder MA
         %coefficients, xOrder+1``` X coefficients, and white noise variance
@@ -701,6 +721,12 @@ end %(while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if ~isempty([arParamK(1,:) maParamK(1,:) xParamK(1,:)])
+    
+    %For now, just use the estimated oeVariance as observational error in
+    %calculating the variance-covariance matrix.    
+    for i = 1:numTraj
+        trajOut(i).observations(:,2) = sqrt(oeVarK);
+    end    
 
     %calculate the model's Fisher information matrix
     [fishInfoMat,errFlag] = armaxFisherInfoMatrix(trajOut,trajIn,...

@@ -190,7 +190,7 @@ void calcInnovations(
     maParamP = (params + arOrder );
     
     /* If no observational error was included, then it is a parameter */
-    if (~obsErrPresent){
+    if (!obsErrPresent){
         
         oeVarianceP = params + arOrder + maOrder + xOrder + 1;        
     }
@@ -420,8 +420,12 @@ void calcInnovations(
             matrixAdd(&stateCovMatT_T[0][0],maxOrder,maxOrder,&tmpMat[0][0],maxOrder,maxOrder,&tmpMat2[0][0],maxOrder,maxOrder);
             matrixMultiplyConst(&tmpMat2[0][0],maxOrder,maxOrder,.5,&stateCovMatT_T[0][0]);                                                                                    
             
+            /*Some parameter values which are close to the invertability limits give negative innovation variances!! */
+            /* Floating point error ...??? */
             
-            *sum1 += log( innovationVar[j] );
+            if (innovationVar[j] > 0){
+                *sum1 += log( innovationVar[j] );
+            }
             
             *sum2 += pow( innovations[j] , 2) / innovationVar[j];
             
@@ -451,7 +455,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
         
     /*Determine number of input parameters */
     params = mxGetPr(prhs[0]);
-    numParam = mxGetN(prhs[0]);        
+    numParam = mxGetM(prhs[0]);        
     
     /* Set pointers for output */
     
