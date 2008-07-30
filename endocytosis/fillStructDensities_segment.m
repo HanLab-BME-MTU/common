@@ -1,7 +1,6 @@
 function [data] = fillStructDensities_segment(data,censor,outvar);
-% fill experiment structure with lifetime histogram based on the lftInfo
-% file saved at the specified directory; separate lftHist vectors are
-% calculated based on the image segmentation in the specified folders
+% fill experiment structure with density values for the inside and outside
+% regions based on the image segmentation in the specified folders
 % 
 % SYNOPSIS [data] = fillStructDensities_segment(data,censor,outvar);
 %
@@ -33,9 +32,30 @@ function [data] = fillStructDensities_segment(data,censor,outvar);
 %                 - in the entire image
 %                 - only inside the segmented region
 %                 - only outside the segmented region
-% REMARKS 
+%           
+%           NOTE1: the dimension of the density is 
+%           # of objects per square pixel
 %
-% Dinah Loerke, last modified July 23, 2008
+%       NOTE2: Unlike the function determinePitDensity, the densities here
+%       are calculated based NOT only on the number of all detected objects
+%       in every frame, but using the full trajectories (i.e. the 
+%       trajectories that are also counted towards the survival function).
+%       Trajectories can be excluded if they have the wrong 'censor'
+%       status or if they aren't counted towards the lifetime analysis
+%       (status=5). In addition, an object's segmentation status (i.e.
+%       whether it's considered to be inside or outside the pattern) is 
+%       based on its entire trajectory, and not only its current position.
+%       This approach can reduce the number of counted objects compared to
+%       the function determinePitDensity. However, if the precise
+%       segmentation of the cell outline is used (outvar==1), the outside
+%       area is restricted so precisely that it's likely to be smaller than
+%       the convex hull area used in determinePitDensity - thus, for
+%       outvar==1, the densities calculated by this function can be
+%       expected to be higher than the densities calculated with
+%       determinePitDensity
+%
+% Dinah Loerke, modified July 23, 2008
+% Dinah Loerke, modified July 29, 2008
 
 
 censoring = 1;
