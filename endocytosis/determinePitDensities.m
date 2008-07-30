@@ -1,13 +1,26 @@
 function [data] = determinePitDensities(data)
 % determinePitDensities calculates density of pits in whole movie
 % 
-% INPUT:    data  = struct containing all data for one condition (e.g. 
+% INPUT:    data    =   struct containing all data for one condition (e.g. 
 %                       clathrin control)
 %           
 %
-% OUTPUT:   data.pitDensity [av std]
+% OUTPUT:   data    =   structure with added field
+%                       .pitDensity 
+%                       which is a vector containing the density of objects
+%                       in each frame of the movie
+%
+%           NOTE: the dimension of the density is 
+%           # of objects per square pixel
+%
+%           NOTE2: An earlier version used convex hull to determine the
+%           area; this can be tricky for more complicated cell shaped, so
+%           this version determines the area using the overlaid and
+%           filtered positions of all detected objects
+%
 %
 % Dinah Loerke, last changed 03/19/2008
+%               modified 07/29/2008
 
 od = cd;
 
@@ -66,7 +79,7 @@ for i = 1:length(data)
         
         totalarea = sum(mask_close(:));
         
-        denPitsFrame = 1000*numPitsFrame/totalarea;        
+        denPitsFrame = numPitsFrame/totalarea;        
               
         data(i).pitDensity = denPitsFrame;
         localdensity(i) = nanmean(denPitsFrame);
@@ -78,9 +91,9 @@ for i = 1:length(data)
     
 end % of for m
 
-avDensity = round(100*nanmean(localdensity))/100;
-stdDensity = round(100*nanstd(localdensity))/100;
-disp(['pit density = ',num2str(avDensity),' +- ',num2str(stdDensity)]);          
+avDensity = round(10000*nanmean(localdensity))/10000;
+stdDensity = round(10000*nanstd(localdensity))/10000;
+disp(['pit density = ',num2str(avDensity),' +- ',num2str(stdDensity),' obj. per square pixel']);          
         
 end % of function
     
