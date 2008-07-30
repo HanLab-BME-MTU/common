@@ -91,9 +91,13 @@ for i = 1:length(data)
     
 end % of for m
 
-avDensity = round(10000*nanmean(localdensity))/10000;
-stdDensity = round(10000*nanstd(localdensity))/10000;
-disp(['pit density = ',num2str(avDensity),' +- ',num2str(stdDensity),' obj. per square pixel']);          
+avDensity = nanmean(localdensity);
+stdDensity = nanstd(localdensity);
+fprintf('density %2.4f',avDensity);
+fprintf(' +- %2.4f',stdDensity);
+fprintf(' obj. per square pixel');
+fprintf('\n')
+%disp(['pit density = ',num2str(avDensity),' +- ',num2str(stdDensity),' obj. per square pixel']);          
         
 end % of function
     
