@@ -55,7 +55,16 @@ for i=1:lens
                     trackInfo = loadfile.trackInfoMat;
                 else
                     trackInfo = [];
-                end        
+                end
+            elseif exist('tracksFinal.mat')==2
+                % load trackInfo
+                loadfile = load('tracksFinal.mat');
+                if isfield(loadfile,'tracksFinal')
+                    tracksFinal = loadfile.tracksFinal;
+                    [trackInfo] = convStruct2MatNoMS(tracksFinal);
+                else
+                    trackInfo = [];
+                end 
             end
             cd(currPath);
         end   
