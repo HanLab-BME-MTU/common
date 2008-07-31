@@ -635,7 +635,7 @@ while (abs(wnVariance-wnVariance0)/wnVariance0 > 0.05) && ~obsErrEstimated
             obsErrEstimated = 1;
         else
             %This is just to make it an empty 1x0 instead of 0x0...
-            %matlab is wierd...
+            %matlab is weird...
             xParamK = params(1:end);
         end
         
@@ -724,10 +724,11 @@ if ~isempty([arParamK(1,:) maParamK(1,:) xParamK(1,:)])
     
     %For now, just use the estimated oeVariance as observational error in
     %calculating the variance-covariance matrix.    
-    for i = 1:numTraj
-        trajOut(i).observations(:,2) = sqrt(oeVarK);
-    end    
-
+    if ~obsErrPresent
+        for i = 1:numTraj
+            trajOut(i).observations(:,2) = sqrt(oeVarK);
+        end    
+    end
     %calculate the model's Fisher information matrix
     [fishInfoMat,errFlag] = armaxFisherInfoMatrix(trajOut,trajIn,...
         arParamK(1,:),maParamK(1,:),xParamK,wnVariance);
