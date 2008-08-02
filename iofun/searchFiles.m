@@ -180,7 +180,7 @@ while ~isempty(dirs2check) && ~isempty(dirs2check{topDir2check})
         listOfFilesCt = listOfFilesCt + numNewFiles;
 
         % make sure that the dirList is long enough
-        if listOfFilesCt > listOfFilesLength
+        while listOfFilesCt > listOfFilesLength
             tmpListOfFiles = listOfFiles;
             newListOfFilesLength = listOfFilesLength + listOfFilesInitLength;
             listOfFiles = cell(newListOfFilesLength,2-fullName);

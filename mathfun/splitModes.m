@@ -1,5 +1,5 @@
 function cutValue = splitModes(data,loHi,jumpMax,verbose)
-%SPLITMODES cut histogram where there is no data
+%SPLITMODES cut histogram where there is no or little data
 %
 % SYNOPSIS cutValue = splitModes(data,loHi,jumpMax)
 %
@@ -26,7 +26,7 @@ if nargin < 4 || isempty(verbose)
 end
 
 % first guess via cutFirstHistMode - put as 1 to see histograms
-[cutIdx, cutVal,sp,ah] = cutFirstHistMode(data,0);
+[cutIdx, cutVal,sp] = cutFirstHistMode(data,0);
 
 % now check the local minima in the vicinity of the cutoff
 spder = fnder(sp);
