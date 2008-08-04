@@ -112,7 +112,7 @@ for iexp = 1:length(experiment)
 
     %SAVE RESULTS
     mkdir([experiment(iexp).source filesep 'diffusionAnalysis']);
-    secureSave([experiment(iexp).source filesep 'diffusionAnalysis' filesep 'diffusionAnalysisResults' datestr(now,'yyyymmdd')],'diffAnalysisRes','errFlag','alphaValues','checkAsym','restrict');
+    secureSave([experiment(iexp).source filesep 'diffusionAnalysis' filesep 'diffusionAnalysisResults' datestr(now,'yyyymmdd')],'diffAnalysisRes','errFlag','alphaValues','checkAsym','rest');
     
     %clear trackInfo so that it doesn't interfere with the trackInfo of the
     %next movie (because there are two names for this variable depending on
