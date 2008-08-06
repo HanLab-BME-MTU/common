@@ -104,8 +104,8 @@ if exist([filePath '.txt'],'file')
 end
 
 %calculate mean and error of movie densities for condition
-meanConditionDensity = round(100*nanmean([experiment(1:end).meanPitDensity]))/100;
-errorConditionDensity = round(100*nanstd([experiment(1:end).meanPitDensity]))/100;
+meanConditionDensity = nanmean([experiment(1:end).meanPitDensity]);
+errorConditionDensity = nanstd([experiment(1:end).meanPitDensity]);
 
 
 fid = fopen([filePath '.txt'],'w');
