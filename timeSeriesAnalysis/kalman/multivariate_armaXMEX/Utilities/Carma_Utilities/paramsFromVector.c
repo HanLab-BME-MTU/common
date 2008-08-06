@@ -1,78 +1,62 @@
 #include <stdlib.h>
 #include "carmaUtils.h"
 
-/* Extracts CARMA model parameters from vector used by minimizer, */
-
-
-/****** Synopsis **********/
+/*
+ * File: paramsFromVector.c
+ * ------------------------
+ * The function paramsFromVector extracts CARMA parameters
+ * from vector used by the minimizer.
+ */
 
 
 
 paramsFromVector(double **TOPO, int nNodes, int arOrderMax, 
-		     double **maPARAMS, int maOrderMax, 
-		     int *topoBIN, int *maBIN, 
-		     double *paramVector, int numParams)
+		 double **maPARAMS, int maOrderMax, 
+		 int *topoBIN, int *maBIN, 
+		 double *vec, int numParams)
 {
+ int i, j, k;
 
-/* Initialize Counters */
- int m, n, r;
- 
- /* Retrieve Parameters from Vector */
+ int start, ctr, nLags;
 
- int strt;
- int paramCtr = numParams;
- paramCtr--;
+ nLags = arOrderMax + 1;
+ ctr = numParams - 1;
 
- /* First, retrieve the MA parameters */
+ /* Retrieve the MA parameters */
 
- for (m = nNodes-1; m >= 0; m--){
-    
-   /* Retrieve the Moving Average (MA) parameters at this node, 
-	if maBIN indicates a parameter present */
-   for (n = maOrderMax-1; n >= 0; n--){
-
-     if ( *(maBIN + n + (m*maOrderMax)) ){
-
-	 *(*maPARAMS + n + (m*maOrderMax)) = *(paramVector+paramCtr);
-	 paramCtr--;
+ for (i = nNodes - 1; i >= 0; i--){
+   for (j = maOrderMax - 1; j >= 0; j--){
+     if (*(maBIN + j + i * maOrderMax)){
+	 *(*maPARAMS + j + i * maOrderMax) = *(vec + ctr);
+	 ctr--;
      } else {
-	 *(*maPARAMS + n + (m*maOrderMax)) = 0.0;
+	 *(*maPARAMS + j + i * maOrderMax) = 0;
+     }
+   }
+ }
+
+ /* Retrieve the AR and X params */ 
+
+ for (i = nNodes - 1; i >= 0; i--){
+   for (j = nNodes - 1; j >= 0; j--){
+
+     /* Get the params for node / connection, excluding NaNs */
+
+     if (i == j){
+       start = 1;	
+       *(*TOPO + j * nLags + i * nNodes * nLags) = 0;
+     } else {
+       start = 0;
      }
 
-   }/* end for n */
- }/* end for m */
-
- /* Now retrieve the AR and X params (C params) */ 
-
- for (m = nNodes-1; m >= 0; m--){
-    for (n = nNodes-1; n >=0; n--){
-
-
-	/* Get the params for node/connection, excluding NaNs */
-	  
-	/* No AR params at lag 0 */
-	if (m == n){
-	  strt = 1;	
-	  *(*TOPO + (n*(arOrderMax+1)) + (m*nNodes*(arOrderMax+1))) = 0;
-	} else {
-	  strt = 0;
-	}
-
-	for (r = arOrderMax; r >= strt; r--){
-	  
-	  /* If topoBIN indicates a parameter is present, get it */
-	  if (*(topoBIN + r + (n*(arOrderMax+1)) + (m*nNodes*(arOrderMax+1)) ) ){
-
-	    *(*TOPO + r + (n*(arOrderMax+1)) + (m*nNodes*(arOrderMax+1))) = *(paramVector+paramCtr);
-	    paramCtr--;
-	  } else{
-	    *(*TOPO + r + (n*(arOrderMax+1)) + (m*nNodes*(arOrderMax+1))) = 0.0;
-	  }
-	}
-    
-    }/*end for n */
-    
- }/*end for m */
-		   
-
-} /* Close paramsFromVector */
+     for (k = arOrderMax; k >= start; k--){
+       if (*(topoBIN + k + j * nLags + i * nNodes * nLags)){
+	 *(*TOPO + k + j * nLags + i * nNodes * nLags) = *(vec + ctr);
+	 ctr--;
+       } else{
+	 *(TOPO + k + j * nLags + i * nNodes * nLags) = 0;
+       }
+     }
+   }
+ }
+}
