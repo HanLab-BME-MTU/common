@@ -106,24 +106,25 @@ for i=1:lens
             SegmentMask = logical(SegmentMask/max(SegmentMask(:)));
         end
 
-        if ovariable==1
-            % load segmentation image from specified location
-            SegmFileNameOUT = data(i).segmentDataFileNameOUT;
-            SegmFilePathOUT = data(i).segmentDataFilePathOUT;
-
-            cd(SegmFilePathOUT);
-            SegmentMaskOUT = imread(SegmFileNameOUT);
-
-            if ~islogical(SegmentMaskOUT)
-                SegmentMaskOUT = logical(SegmentMaskOUT/max(SegmentMaskOUT(:)));
-            end
-
-        end
-
         % calculate segmentation status (1=Inside, 0=oustide segmented region)
         [segmentStatusVector] = calcIORegionLfthistSimple(lftInfo, SegmentMask);
     
     end % of if segmentation status vector field already exists
+    
+    % if ovariable==1, load segmentation data to restrict the OUTSIDE area
+    % additionally (e.g. to the cell outline)
+    if ovariable==1
+        % load segmentation image from specified location
+        SegmFileNameOUT = data(i).segmentDataFileNameOUT;
+        SegmFilePathOUT = data(i).segmentDataFilePathOUT;
+
+        cd(SegmFilePathOUT);
+        SegmentMaskOUT = imread(SegmFileNameOUT);
+
+        if ~islogical(SegmentMaskOUT)
+            SegmentMaskOUT = logical(SegmentMaskOUT/max(SegmentMaskOUT(:)));
+        end
+    end
     
     % calculate average number of inside and outside objects for all
     % appropriate objects (depending on censor status)
@@ -197,6 +198,8 @@ for i=1:lens
     fprintf('\b\b\b\b\b\b\b\b\b');       
 
 end % of for
+
+cd(od);
 
 fprintf('\n'); 
 
