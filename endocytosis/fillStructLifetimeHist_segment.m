@@ -40,31 +40,41 @@ for i=1:lens
     
     fprintf('movie #%02d',i);
     
-    % current path
-    path = data(i).source;
-    
-    % number of frames for this exp
-    lenf = data(i).movieLength;
-    
-    
-    % load segmentation image from specified location
-    SegmFileName = data(i).segmentDataFileName;
-    SegmFilePath = data(i).segmentDataFilePath;
+    % check if segmentation status already exists
+    if isfield(data,'segmentStatus')
+        
+        segmentStatusVector = data(i).segmentStatus;
+    % else determine the segmentation status here and fill in the value    
+    else
+                
+        % current path
+        path = data(i).source;
 
-    cd(SegmFilePath);
-    SegmentMask = imread(SegmFileName);    
-    
-    % load lifetime inof data file
-    lftpath = [path,'/LifetimeInfo'];
-    cd(lftpath);
-    lftname = 'lftInfo.mat';
-    loadfile = load(lftname);
-    cd(od);
-    
-    lftInfo = loadfile.lftInfo;
+        % number of frames for this exp
+        lenf = data(i).movieLength;
 
-    % calculate segmentation status (1=Inside, 0=oustide segmented region)
-    [segmentStatusVector] = calcIORegionLfthistSimple(lftInfo, SegmentMask);
+        % load segmentation image from specified location
+        SegmFileName = data(i).segmentDataFileName;
+        SegmFilePath = data(i).segmentDataFilePath;
+
+        cd(SegmFilePath);
+        SegmentMask = imread(SegmFileName);    
+
+        % load lifetime inof data file
+        lftpath = [path,'/LifetimeInfo'];
+        cd(lftpath);
+        lftname = 'lftInfo.mat';
+        loadfile = load(lftname);
+        cd(od);
+
+        lftInfo = loadfile.lftInfo;
+
+        % calculate segmentation status (1=Inside, 0=oustide segmented region)
+        [segmentStatusVector] = calcIORegionLfthistSimple(lftInfo, SegmentMask);
+        
+        data(i).segmentStatus = segmentStatusVector';
+        
+    end
     
     lftMat = lftInfo.Mat_lifetime;
     statMat =  lftInfo.Mat_status;
@@ -102,9 +112,8 @@ for i=1:lens
             end
 
         end
-        
-        
-    end    
+            
+    end % of for k-loop    
     
     % lifetime vectors containing all counted lifetime lengths
     lftVec = lftVec(find(isfinite(lftVec)));
