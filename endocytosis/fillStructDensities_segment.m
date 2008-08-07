@@ -79,42 +79,51 @@ for i=1:lens
     % number of frames for this exp
     lenf = data(i).movieLength;
     
-    
-    % load segmentation image from specified location
-    SegmFileName = data(i).segmentDataFileName;
-    SegmFilePath = data(i).segmentDataFilePath;
-
-    cd(SegmFilePath);
-    SegmentMask = imread(SegmFileName);    
-    if ~islogical(SegmentMask)
-        SegmentMask = logical(SegmentMask/max(SegmentMask(:)));
-    end
-    
-    if ovariable==1
-        % load segmentation image from specified location
-        SegmFileNameOUT = data(i).segmentDataFileNameOUT;
-        SegmFilePathOUT = data(i).segmentDataFilePathOUT;
-
-        cd(SegmFilePathOUT);
-        SegmentMaskOUT = imread(SegmFileNameOUT);
-        
-        if ~islogical(SegmentMaskOUT)
-            SegmentMaskOUT = logical(SegmentMaskOUT/max(SegmentMaskOUT(:)));
-        end
-        
-    end
-    
     % load lifetime info data file
     lftpath = [path,'/LifetimeInfo'];
     cd(lftpath);
     lftname = 'lftInfo.mat';
     loadfile = load(lftname);
     cd(od);
-    
     lftInfo = loadfile.lftInfo;
+    
+    
+    % check if segmentation status already exists
+    if isfield(data,'segmentStatus')
+        
+        segmentStatusVector = data(i).segmentStatus;
+    
+    % else determine the segmentation status here and fill in the value 
+    else
+    
+        % load segmentation image from specified location
+        SegmFileName = data(i).segmentDataFileName;
+        SegmFilePath = data(i).segmentDataFilePath;
 
-    % calculate segmentation status (1=Inside, 0=oustide segmented region)
-    [segmentStatusVector] = calcIORegionLfthistSimple(lftInfo, SegmentMask);
+        cd(SegmFilePath);
+        SegmentMask = imread(SegmFileName);    
+        if ~islogical(SegmentMask)
+            SegmentMask = logical(SegmentMask/max(SegmentMask(:)));
+        end
+
+        if ovariable==1
+            % load segmentation image from specified location
+            SegmFileNameOUT = data(i).segmentDataFileNameOUT;
+            SegmFilePathOUT = data(i).segmentDataFilePathOUT;
+
+            cd(SegmFilePathOUT);
+            SegmentMaskOUT = imread(SegmFileNameOUT);
+
+            if ~islogical(SegmentMaskOUT)
+                SegmentMaskOUT = logical(SegmentMaskOUT/max(SegmentMaskOUT(:)));
+            end
+
+        end
+
+        % calculate segmentation status (1=Inside, 0=oustide segmented region)
+        [segmentStatusVector] = calcIORegionLfthistSimple(lftInfo, SegmentMask);
+    
+    end % of if segmentation status vector field already exists
     
     % calculate average number of inside and outside objects for all
     % appropriate objects (depending on censor status)
