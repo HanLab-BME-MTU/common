@@ -1,12 +1,11 @@
-function [TRAJ,NOISE] = simCARMA(model,noiseSigma,TRAJin)
+function [TRAJ,NOISE] = simCARMA(model,trajLength,noiseSigma,TRAJin)
     
     
 % Extract parameters from model 
 
 maPARAM = model.maPARAMS;
 TOPOLOGY = model.TOPO;
-nTimePts = model.trajLength;
-nNodes = model.nNodes;
+nNodes = size(TOPOLOGY,2);
 
 %%%%%%%%%%%%%%%%
 % INPUT CHECKS %
@@ -18,8 +17,18 @@ if nargin < 1
     return;
 end
 
-%Check if exogenous input time series were included
+%Check if number of timepoints was input.
+if nargin < 2
+    trajLength = [];
+end
+
+%Check if local noise levels were input.
 if nargin < 3
+    noiseSigma = [];
+end
+
+%Check if exogenous input time series were included
+if nargin < 4
     TRAJin = [];
 elseif ~isempty(TRAJin)
     %check dimensionality
@@ -37,6 +46,7 @@ elseif ~isempty(TRAJin)
         end
     end
 end
+    
 
 %Use size of TOPOLOGY matrix to determine number of nodes and
 %maximum order of connection coefficients/ AR parameters
@@ -44,8 +54,8 @@ end
 arOrder = arOrder - 1;
 
 %Determine length and number of input time series
-[trajLength,nInputs] = size(TRAJin);
-if isempty(nTimePts)
+[trajLengthIn,nInputs] = size(TRAJin);
+if isempty(trajLength)
     if ~isempty(TRAJin)
         nTimePts = trajLength;
         if nInputs >= nNodes
@@ -88,7 +98,7 @@ if isempty(noiseSigma)
     noiseSigma = zeros(1,nNodes);
 else
     %Check that the correct number of white noise sigmas was given
-    if length(noiseSigma) ~= (nNodes-nInputs) | ndims(noiseSigma) ~= 2
+    if length(noiseSigma) ~= (nNodes-nInputs) || ndims(noiseSigma) ~= 2
         disp('Incorrect number of noise sigma given!');
         return;
     end
@@ -130,22 +140,22 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %allocate memory for trajectories
-TRAJ = zeros(nTimePts,nNodes);
+TRAJ = zeros(trajLength,nNodes);
 if (nInputs > 0)
     TRAJ(:,1:nInputs) = TRAJin;
 end
-NOISE = zeros(nTimePts,nNodes);
+NOISE = zeros(trajLength,nNodes);
 %initialize normal random number generator
 randn('state',sum(100*clock));
 
 %get white noise matrix
 for n = nInputs+1:nNodes
-    NOISE(:,n) = noiseSigma(n-nInputs) .* randn(nTimePts,1);
+    NOISE(:,n) = noiseSigma(n-nInputs) .* randn(trajLength,1);
 end
 
 %construct trajectory
 
-for i = max([arOrder maOrder])+1:nTimePts
+for i = max([arOrder maOrder])+1:trajLength
     for ito = 1:nNodes
         
         currSum = 0;

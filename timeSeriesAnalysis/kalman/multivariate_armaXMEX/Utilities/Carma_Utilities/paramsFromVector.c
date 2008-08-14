@@ -54,7 +54,7 @@ paramsFromVector(double **TOPO, int nNodes, int arOrderMax,
 	 *(*TOPO + k + j * nLags + i * nNodes * nLags) = *(vec + ctr);
 	 ctr--;
        } else{
-	 *(TOPO + k + j * nLags + i * nNodes * nLags) = 0;
+	 *(*TOPO + k + j * nLags + i * nNodes * nLags) = 0;
        }
      }
    }
