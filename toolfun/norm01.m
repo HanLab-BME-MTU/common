@@ -1,4 +1,4 @@
-function in = norm01(in,quantile)
+function [in,add,mult] = norm01(in,quantile)
 %NORM01 norms an array to 0..1
 %
 % SYNOPSIS: out = norm01(in)
@@ -8,6 +8,8 @@ function in = norm01(in,quantile)
 %           highest max% pixels to 1. Default: [0 100]
 %
 % OUTPUT in: same array, but with minimum 0 and maximum 1
+%        add, mult: If you need to backtransform the image:
+%           originalImage = (outputImage*mult)+add
 %
 % REMARKS
 %
@@ -18,7 +20,7 @@ function in = norm01(in,quantile)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if isempty(in) || ~any(isfinite(in(:)))
+if isempty(in) || ~any(isfinite(in(:)))  || all(in(:)==0)
     return
 end
 
@@ -44,6 +46,10 @@ end
 
         in = in - minMovie;
         in = in/(maxMovie);
+        if nargout > 1
+            mult = maxMovie;
+            add = minMovie;
+        end
     else
         if length(quantile) == 1
             quantile = [quantile 100-quantile];
@@ -55,5 +61,9 @@ end
         in = in - minMovie;
         in = min(in,maxMovie);
         in = in/(double(maxMovie)/double(maxMax));
+        if nargout > 1
+            mult = double(maxMovie)*double(maxMax);
+            add = minMovie;
+        end
     end
 

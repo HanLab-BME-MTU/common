@@ -94,10 +94,12 @@ for i=1:nImages
     else
         tmp = images(:,:,i);
     end
+    if any(isfinite(tmp(:))) % if all NaN, output will be black 
     outputImage = outputImage + ...
         cat(3,tmp*cmap(i,1),...
         tmp*cmap(i,2),...
         tmp*cmap(i,3));
+    end
 end
 
 % norm output image if requested
