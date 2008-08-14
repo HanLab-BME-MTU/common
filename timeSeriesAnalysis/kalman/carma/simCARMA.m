@@ -152,7 +152,7 @@ xOrder = xOrder-1;
 %NOTE: Nodes with only AR or only MA should have zeros in place of missing
 %coeeficients
 if arN ~= maN
-    disp('Node # disagreement in ARMA parameters! (For nodes with only AR or only MA use NaN)');
+    disp('Node # disagreement in ARMA parameters! (For nodes with only AR or only MA, fill with zeros!)');
     return;
 else
     nNodes = arN;

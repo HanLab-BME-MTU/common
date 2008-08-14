@@ -3,7 +3,9 @@ utlDir = ' ./Utilities/Carma_Utilities/';
 minDir = ' ./Minimizer/';
 carmaDir = ' ./';
 
-flags = ' -output carmaFitModel ';
+flags = ' -g -output carmaFitModel '; %For debugging
+%flags = ' -output carmaFitModel '; %for speed (with optimizations)
+
 callString = 'mex';
 
 matOpsArray = {'matrixAdd.c',

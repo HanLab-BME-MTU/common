@@ -20,6 +20,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
                   int nrhs, const mxArray *prhs[] )
 {
 
+  /* Initialize variables and pointers */  
+    
   double *TOPO, *TOPOp;
   double *maPARAMS, *maPARAMSp;
 
@@ -48,24 +50,12 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* Retrieve model parameters and time series from input. */
 
 
-
+  /*Verify input is a structure */
   if (!mxIsStruct(prhs[0]))
-    mxErrMsgTxt("First input must be a structure.");
-
-
-
-  pm = mxGetField(prhs[0], 0, "nNodes");
-  if (pm == NULL) mxErrMsgTxt("Cannot retrieve nNodes from input.");
-
-
-
-  pm = mxGetField(prhs[0], 0, "nInputs");
-  if (pm == NULL) mxErrMsgTxt("Cannot retrieve nInputs from input.");
-
-  prob.nInputs = (int) *mxGetPr(pm);
-
-
-
+    mxErrMsgTxt("First input must be a structure.");  
+  
+  /* Retrieve the topology matrix containing AR and X parameters and 
+   * determine its size */
   pm = mxGetField(prhs[0], 0, "TOPO");
   if (pm == NULL) mxErrMsgTxt("Cannot retrieve TOPO from input.");
 
@@ -83,11 +73,12 @@ void mexFunction( int nlhs, mxArray *plhs[],
     mxErrMsgTxt("If nNodes > 1, input matrix must be 3D.");
 
   if (nDims == 3)
-    if ((topoDim[1] != nNodes) || (topoDim[2] != nNodes))
+    if (topoDim[2] != nNodes)
       mxErrMsgTxt("Input topology matrix has wrong dimensions.");
 
-
-
+  /* Retrieve the MA parameters from input structure and determine 
+   * and determine their size */
+  
   pm = mxGetField(prhs[0], 0, "maPARAMS");
   if (pm == NULL) mxErrMsgTxt("Cannot retrieve maPARAMS from input.");
 
@@ -98,16 +89,12 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   prob.maOrderMax = maOrderMax = nRows;
 
-
-
   if (nCols != nNodes)
     mxErrMsgTxt("Second dimension of maPARAMS shouldbe equal to equal nNodes.");
 
 
 
   /* Get the pointer for the binary moving average parameter matrix */
-
-
 
   pm = mxGetField(prhs[0], 0, "maBIN");
   if (pm == NULL) mxErrMsgTxt("Cannot retrieve maBIN from input.");
@@ -116,7 +103,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   nRows = (int) mxGetM(pm);
   if (nRows != maOrderMax)
-    mxErrMsgTxt("maBIN must be equal to maPARAMS.");
+    mxErrMsgTxt("maBIN must be same size as maPARAMS.");
 
   nCols = (int) mxGetN(pm);
   if (nCols != nNodes)
@@ -125,8 +112,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 
   /* Get the pointer for input time series */
-
-
 
   pm = mxGetField(prhs[0], 0, "TRAJ");
   if (pm == NULL) mxErrMsgTxt("Cannot retrieve TRAJ from input.");
@@ -177,7 +162,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   if ((nDims > 2) && (topoBinDim[2] != nNodes))
     mxErrMsgTxt("topoBIN should be equal to TOPO dimensionally.");
 
-
+ 
 
   /* Convert ARMA parameters to partial parameters for the minimizer */
 
@@ -209,9 +194,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
       }
 
     }
-  }    
+  }
  
-
 
   maPARAMSp = (double *) malloc(sizeof(double) * nNodes * maOrderMax);
 
@@ -249,7 +233,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     vertexLikelihoods[i] = carmaNegLnLikelihood(p[i], &prob);
 
 
-
+  /* Call the minimizer for maximum likelihood estimation of model params */
   nEvals = 0;
   fTol = 1.0E-8;
 
@@ -262,7 +246,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     plhs[3] = mxCreateDoubleScalar(0);
   }
 
-
+  /* Set up outputs for results of minimization */
 
   /* Dimensions of the TOPO matrix */
 
@@ -270,11 +254,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
   topoD[1] = topoD[2] = nNodes;
 
 
-  /* Allocate output matrices */
+  /* Allocate output topology matrix */
 
   plhs[0] = mxCreateNumericArray(3, topoD, mxDOUBLE_CLASS, mxREAL);
 
-  /* MA parameters */
+  /* output MA parameters */
 
   plhs[1] = mxCreateDoubleMatrix(maOrderMax, nNodes, mxREAL);
 
@@ -326,13 +310,13 @@ void mexFunction( int nlhs, mxArray *plhs[],
   
     }
   } 
-    
+  /* Convert partial MA parameters to full for return */
   for (i = 0; i < nNodes; i++)
     levinsonDurbinExpoMA(maPARAMSfitp + i * maOrderMax, maOrderMax,
 			 maPARAMSfit + i * maOrderMax);
 
 
-
+  /* Free allocated memory */
   free(paramV);
   free_vector(vertexLikelihoods, 1, nParams + 1);
   free_matrix(p, 1, nParams + 1, 1, nParams);

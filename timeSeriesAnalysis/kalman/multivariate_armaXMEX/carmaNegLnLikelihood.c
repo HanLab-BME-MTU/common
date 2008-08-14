@@ -41,16 +41,17 @@ double carmaNegLnLikelihood(double *paramNR, void *data)
   int *topoBIN = prob->topoBIN;
   int *maBIN = prob->maBIN;
   int nNodes = prob->nNodes;
-  int nInputs = prob->nInputs;
   int numParams = prob->numParams;
   double wnVariance = prob->wnVariance;
 
-
+  /* Allocate memory for partial parameters */
 
   TOPOp = (double *) malloc(sizeof(double) * nNodes * nNodes * nLags);
 
   maPARAMSp = (double *) malloc(sizeof(double) * nNodes * maOrderMax);
 
+  /* Retrieve partial parameters from parameter vector using binary 
+   * topology and MA matrices */
   paramsFromVector(&TOPOp, nNodes, arOrderMax,
 		   &maPARAMSp, maOrderMax,
 		   topoBIN, maBIN,
@@ -69,9 +70,9 @@ double carmaNegLnLikelihood(double *paramNR, void *data)
 	if (i == j) {
 
 	  /* No AR parameters at lag 0 */
-
 	  *(TOPO + i * nLags + j * nNodes * nLags) = 0;
-
+      
+      /* Convert partial AR to full parameters for innovations calculation */
 	  levinsonDurbinExpoAR((TOPOp + i * nLags + j * nNodes * nLags + 1),
 			       arOrderMax,
 			       (TOPO + i * nLags + j * nNodes * nLags + 1));
@@ -92,6 +93,7 @@ double carmaNegLnLikelihood(double *paramNR, void *data)
 
   maPARAMS = (double *) malloc(sizeof(double) * nNodes * maOrderMax);
 
+  /* Convert partial MA parameters to full for innovations calculation */
   for (i = 0; i < nNodes; i++)
     levinsonDurbinExpoMA(maPARAMSp + i * maOrderMax,
 			 maOrderMax,
@@ -111,7 +113,8 @@ double carmaNegLnLikelihood(double *paramNR, void *data)
 
   likelihood = 0;
 
-  for (iNode = nInputs; iNode < nNodes; iNode++){
+  /* Calculate the innovations for each node, and sum the -2lnlikelihoods */
+  for (iNode = 0; iNode < nNodes; iNode++){
 
     sum1 = sum2 = 0;
 

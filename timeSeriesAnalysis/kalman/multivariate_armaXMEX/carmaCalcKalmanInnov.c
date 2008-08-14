@@ -314,9 +314,8 @@ int carmaCalcKalmanInnov(
 	/* add G*G' */
 	matrixAdd(&tmpMat2[0][0],maxOrder,maxOrder,GGprimeWN,maxOrder,maxOrder,&stateCovMatT1_T[0][0]);
     }
-    /*check if there is an observation at current timepoint */
-        
-        
+    
+    /*check if there is an observation at current timepoint */                
     if ( isnan( *(TRAJ + iNode*trajLength + j) ) | nanInInput ){
 	nanPresent = 1;
 	nanInInput = 0;
