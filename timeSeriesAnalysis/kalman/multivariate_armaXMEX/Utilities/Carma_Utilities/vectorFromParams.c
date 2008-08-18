@@ -80,5 +80,5 @@ int vectorFromParams(double *TOPO, double *maPARAMS, void *problem, double **vec
   
   /* Return number of parameters, which is one fewer than ctr due to zero at beginning for NR*/
 
-  prob->numParams = ctr - 1;
+  prob->nParams = ctr - 1;
 }

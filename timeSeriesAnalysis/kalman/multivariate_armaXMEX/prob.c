@@ -1,52 +1,19 @@
-/* Structure for ARMAX/CARMA model parameters */
-
-
-
-struct probCDT{
-
-  double *TRAJ;
-  int trajLength;
-  int nNodes;
-  int numMissing;
-
-  int numParams;
-  int arOrderMax;
-  int maOrderMax;
-  int *topoBIN;
-  int *maBIN;
-
-  int nInputs;
-
-  double wnVariance;
-};
-
 /*
-
-struct movie {
-  double *TRAJ;
-  int trajLength;
-  int nNodes;
-  int numMissing;
-};
-
-*/
-
-/*
- * struct probCDT
- * --------------
- * The first field will be modified as:
- *
- * struct movie *data
- *
- * Data contains an array of movies.
+ * File: prob.c
+ * ------------
+ * MATLAB input:
+ * model.trajOut(1).observations
+ * model.trajOut(1).numMissing
  */
 
 /*
 
 struct probCDT{
 
-  struct movie data;
-  int nMovies;
+  double *TRAJ;
+  int trajLength;
+  int nNodes;
+  int numMissing;
 
   int numParams;
   int arOrderMax;
@@ -60,5 +27,36 @@ struct probCDT{
 };
 
 */
+
+struct movie {
+  double *traj;
+  int trajLen;
+  int nMissing;
+};
+
+
+
+/*
+ * struct probCDT
+ * --------------
+ * Data contains an array of movies.
+ */
+
+struct probCDT{
+
+  struct movie *data;
+  int nMovies;
+
+  int nNodes;
+  int nParams;
+  int arOrderMax;
+  int maOrderMax;
+  int *topoBIN;
+  int *maBIN;
+
+  double wnVariance;
+};
+
+
 
 

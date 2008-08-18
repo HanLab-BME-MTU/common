@@ -3,8 +3,8 @@ utlDir = ' ./Utilities/Carma_Utilities/';
 minDir = ' ./Minimizer/';
 carmaDir = ' ./';
 
-flags = ' -g -output carmaFitModel '; %For debugging
-%flags = ' -output carmaFitModel '; %for speed (with optimizations)
+% flags = ' -g -output carmaFitModel '; %For debugging
+flags = ' -output carmaFitModel '; %for speed (with optimizations)
 
 callString = 'mex';
 

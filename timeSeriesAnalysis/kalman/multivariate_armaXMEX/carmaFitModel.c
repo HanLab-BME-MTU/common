@@ -32,30 +32,27 @@ void mexFunction( int nlhs, mxArray *plhs[],
   double *TOPOfit, *TOPOfitp, *maPARAMSfit, *maPARAMSfitp;
 
   int i, j, k, nRows, nCols, nDims;
-  int nNodes, nParams, nEvals, nLags, arOrderMax, maOrderMax;
+  int nMovies, nNodes, nParams, nEvals, nLags, nPoints, arOrderMax, maOrderMax;
 
   struct probCDT prob;
 
-  mxArray *pm;      /* generic mxArray pointer */
+  mxArray *pm, *tr;      /* generic mxArray pointer */
 
-  const mwSize *trajDim, *topoDim, *topoBinDim;
+  const mwSize *trajOutDim, *trajDim, *topoDim, *topoBinDim;
+
   mwSize topoD[3];
 
 
 
-  prob.numMissing = 0;
+  /* Verify input is a structure */
 
-
-
-  /* Retrieve model parameters and time series from input. */
-
-
-  /*Verify input is a structure */
   if (!mxIsStruct(prhs[0]))
     mxErrMsgTxt("First input must be a structure.");  
-  
-  /* Retrieve the topology matrix containing AR and X parameters and 
-   * determine its size */
+
+
+
+  /* Retrieve topology matrix containing AR and X parameters */
+
   pm = mxGetField(prhs[0], 0, "TOPO");
   if (pm == NULL) mxErrMsgTxt("Cannot retrieve TOPO from input.");
 
@@ -69,6 +66,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
   nLags = topoDim[0];
   prob.nNodes = nNodes = topoDim[1];
 
+  /* mexPrintf("\nprob.nNodes = %d\n", prob.nNodes); */
+
   if ((nNodes > 1) && (nDims != 3))
     mxErrMsgTxt("If nNodes > 1, input matrix must be 3D.");
 
@@ -76,8 +75,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
     if (topoDim[2] != nNodes)
       mxErrMsgTxt("Input topology matrix has wrong dimensions.");
 
-  /* Retrieve the MA parameters from input structure and determine 
-   * and determine their size */
+
+
+  /* Retrieve MA parameters */
   
   pm = mxGetField(prhs[0], 0, "maPARAMS");
   if (pm == NULL) mxErrMsgTxt("Cannot retrieve maPARAMS from input.");
@@ -90,11 +90,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
   prob.maOrderMax = maOrderMax = nRows;
 
   if (nCols != nNodes)
-    mxErrMsgTxt("Second dimension of maPARAMS shouldbe equal to equal nNodes.");
+    mxErrMsgTxt("Second dimension of maPARAMS should be equal to nNodes.");
 
 
 
-  /* Get the pointer for the binary moving average parameter matrix */
+  /* Retrieve binary matrix of MA parameters */
 
   pm = mxGetField(prhs[0], 0, "maBIN");
   if (pm == NULL) mxErrMsgTxt("Cannot retrieve maBIN from input.");
@@ -111,32 +111,43 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 
 
-  /* Get the pointer for input time series */
+  /* Assign input time series to prob */
 
-  pm = mxGetField(prhs[0], 0, "TRAJ");
-  if (pm == NULL) mxErrMsgTxt("Cannot retrieve TRAJ from input.");
+  tr = mxGetField(prhs[0], 0, "trajOut");
+  if (tr == NULL) mxErrMsgTxt("Cannot retrieve trajectory from input.");
 
-  prob.TRAJ = mxGetPr(pm);
+  trajOutDim = mxGetDimensions(tr);
+  /* mexPrintf("\ntrajOutD = %d x %d\n", trajOutDim[0], trajOutDim[1]); */
 
-  nDims = mxGetNumberOfDimensions(pm);
+  prob.nMovies = nMovies = trajOutDim[1];
+
+  prob.data = (struct movie *) malloc(nMovies * sizeof(struct movie));
+  if (prob.data == NULL) mxErrMsgTxt("No memory available for prob.data");
+
+  for (i = 0; i < nMovies; i++){  
+ 
+    pm = mxGetField(tr, i, "observations");
+    if (pm == NULL) mxErrMsgTxt("Cannot retrieve observations.");
+
+    prob.data[i].traj = mxGetPr(pm);
+
+    nDims = mxGetNumberOfDimensions(pm);
 		
-  if (nDims != 3)
-    mxErrMsgTxt("Input time series matrix should be 3D. ", 
-		"Put zeros as observational error if none exists.");
+    if (nDims != 3)
+      mxErrMsgTxt("Input time series matrix should be 3D. Assign observational error to 0 if none exists.");
+
+    trajDim = mxGetDimensions(pm);
+    prob.data[i].trajLen = trajDim[0];
+
+    if ((trajDim[1] != nNodes) || (trajDim[2] != 2))
+      mxErrMsgTxt("Size of input time series is incorrect.");
+
+    prob.data[i].nMissing = 0;      /* temp */
+  }
 
 
 
-  /* Determine the time series length */
-
-  trajDim = mxGetDimensions(pm);
-  prob.trajLength = trajDim[0];
-
-  if ((trajDim[1] != nNodes) || (trajDim[2] != 2))
-    mxErrMsgTxt("Size of input time series is incorrect.");
-
-
-
-  /* Get pointer for binary topology matrix */
+  /* Retrieve binary matrix of topology */
 
   pm = mxGetField(prhs[0], 0, "topoBIN");
   if (pm == NULL) mxErrMsgTxt("Cannot retrieve topoBIN from first input.");
@@ -153,8 +164,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* Binary topology should be equal to topology */
 
   topoBinDim = mxGetDimensions(pm);
-
-  /* Check the size of time series */
 
   if ((topoBinDim[0] != nLags) || (topoBinDim[1] != nNodes))
     mxErrMsgTxt("topoBIN should be equal to TOPO dimensionally.");
@@ -209,7 +218,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   vectorFromParams(TOPOp, maPARAMSp, &prob, &paramV);
 
-  nParams = prob.numParams;
+  nParams = prob.nParams;
 
   prob.wnVariance = 1;
 
@@ -217,7 +226,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   p = matrix(1, nParams + 1, 1, nParams);
 
-  /* Allocate vector for function values at simplex vertices */
+  /* Allocate a vector for function values at simplex vertices */
 
   vertexLikelihoods = vector(1, nParams + 1);
 
@@ -227,13 +236,16 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 
 
-  /* Now evaluate the likelihood at each vertex */
+  /* Evaluate the likelihood at each vertex */
 
-  for (i = 1; i <= nParams + 1; i++)
+  for (i = 1; i <= nParams + 1; i++) {
     vertexLikelihoods[i] = carmaNegLnLikelihood(p[i], &prob);
+    /*   mexPrintf("\nvertex %d: likelihood = %g\n", i, vertexLikelihoods[i]); */
+  }
 
 
   /* Call the minimizer for maximum likelihood estimation of model params */
+
   nEvals = 0;
   fTol = 1.0E-8;
 
@@ -254,17 +266,31 @@ void mexFunction( int nlhs, mxArray *plhs[],
   topoD[1] = topoD[2] = nNodes;
 
 
-  /* Allocate output topology matrix */
+  /* Output topology matrix */
 
   plhs[0] = mxCreateNumericArray(3, topoD, mxDOUBLE_CLASS, mxREAL);
 
-  /* output MA parameters */
+  /* Output MA parameters */
 
   plhs[1] = mxCreateDoubleMatrix(maOrderMax, nNodes, mxREAL);
 
-  /* BIC */
 
-  plhs[2] = mxCreateDoubleScalar(vertexLikelihoods[1] + nParams * log(prob.trajLength - prob.numMissing));
+
+  /*
+   * plhs[2]
+   * -------
+   * plhs[2] contains the Bayesian Information Criterion (BIC).
+   * ref: Jaqaman et al. Biophys. J. 91: 2312-2325 (2006), equation (5)
+   */
+
+  nPoints = 0;
+
+  for (i = 0; i < nMovies; i++)
+    nPoints += prob.data[i].trajLen - prob.data[i].nMissing;
+
+  mexPrintf("\nnPoints = %d\n", nPoints);
+
+  plhs[2] = mxCreateDoubleScalar(vertexLikelihoods[1] + log(nPoints) * nParams);
 
 
 
@@ -288,11 +314,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
   for (i = 0; i < nNodes; i++){
     for (j = 0; j < nNodes; j++){
 	  
-	/* Along the diagonal the parameters are AR */
+      /* Along the diagonal the parameters are AR */
 
 	if (i == j) {
 	    
-	  /* No AR parameters at lag = 0 */
+	  /* No AR parameters at lag 0 */
 
 	  *(TOPOfit + i * nLags + j * nLags * nNodes) = 0;
 	    
@@ -309,14 +335,18 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	}
   
     }
-  } 
+  }
+ 
   /* Convert partial MA parameters to full for return */
+
   for (i = 0; i < nNodes; i++)
     levinsonDurbinExpoMA(maPARAMSfitp + i * maOrderMax, maOrderMax,
 			 maPARAMSfit + i * maOrderMax);
 
 
-  /* Free allocated memory */
+
+  free(prob.data);
+
   free(paramV);
   free_vector(vertexLikelihoods, 1, nParams + 1);
   free_matrix(p, 1, nParams + 1, 1, nParams);
