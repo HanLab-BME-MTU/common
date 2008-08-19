@@ -59,7 +59,7 @@ double carmaNegLnLikelihood(double *paramNR, void *d)
 
 
   likelihood = 0;
-  sum1 = sum2 = 0;
+
 
   for (n = 0; n < nMovies; n++) {
 
@@ -128,6 +128,8 @@ double carmaNegLnLikelihood(double *paramNR, void *d)
 
     /* Calculate the innovations for each node, and sum the -2lnlikelihoods */
 
+    sum1 = sum2 = 0;
+
     for (i = 0; i < nNodes; i++){
       carmaCalcKalmanInnov(traj, trajLen,
 			   TOPO, topoBIN,
@@ -137,6 +139,8 @@ double carmaNegLnLikelihood(double *paramNR, void *d)
 			   &innovations, &innovationVars, &wnV,
 			   &sum1, &sum2, &nMissing);
     }
+
+    likelihood += sum1 + (trajLen - nMissing) * log(sum2);
 
     prob->data[n].nMissing = MAX(prob->data[n].nMissing, nMissing);
 
@@ -152,7 +156,5 @@ double carmaNegLnLikelihood(double *paramNR, void *d)
   free(maPARAMS);
   free(maPARAMSp);
 
-  likelihood = sum1 + (trajLen - nMissing) * log(sum2);
-  
   return likelihood;
 }

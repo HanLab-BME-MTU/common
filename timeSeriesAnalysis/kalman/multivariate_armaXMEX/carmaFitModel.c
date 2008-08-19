@@ -288,7 +288,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
   for (i = 0; i < nMovies; i++)
     nPoints += prob.data[i].trajLen - prob.data[i].nMissing;
 
+  /*
+  mexPrintf("\nlikelihood = %g\n", vertexLikelihoods[1]);
   mexPrintf("\nnPoints = %d\n", nPoints);
+  mexPrintf("\nnParams = %d\n", nParams);
+  */
 
   plhs[2] = mxCreateDoubleScalar(vertexLikelihoods[1] + log(nPoints) * nParams);
 
