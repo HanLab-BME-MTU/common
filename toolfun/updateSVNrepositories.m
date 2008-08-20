@@ -42,10 +42,15 @@ report = cell(nSubdirs,2);
 reportCommit = report;
 for i = 1 : nSubdirs
     
-    
-
-    if strcmp( subdirs( i ).name, '.' ) || strcmp( subdirs( i ).name, '..' )
+     
+    if strcmp( subdirs( i ).name, '.' ) || strcmp( subdirs( i ).name, '..' ) 
         continue;
+    end
+    
+    % do not check directories to which certain users do not have access
+    if strcmp(getenv('COMPUTERNAME'),'MADP05-IRIC') && ~strcmp(getenv('USERNAME'),'p0877743') && ...
+        (strcmp(subdirs(i).name,'newFunctions') || strcmp(subdirs(i).name,'chromdyn-tsri'))
+        continue
     end
 
     if verbose
