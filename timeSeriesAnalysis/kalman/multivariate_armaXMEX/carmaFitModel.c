@@ -18,9 +18,7 @@
 
 void mexFunction( int nlhs, mxArray *plhs[],
                   int nrhs, const mxArray *prhs[] )
-{
-
-  /* Initialize variables and pointers */  
+{  
     
   double *TOPO, *TOPOp;
   double *maPARAMS, *maPARAMSp;
@@ -36,7 +34,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   struct probCDT prob;
 
-  mxArray *pm, *tr;      /* generic mxArray pointer */
+  mxArray *pm, *pt; /* pointer to mxArray, pointer to trajOut */
 
   const mwSize *trajOutDim, *trajDim, *topoDim, *topoBinDim;
 
@@ -111,12 +109,12 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 
 
-  /* Assign input time series to prob */
+  /* Retrieve an array of time series */
 
-  tr = mxGetField(prhs[0], 0, "trajOut");
-  if (tr == NULL) mxErrMsgTxt("Cannot retrieve trajectory from input.");
+  pt = mxGetField(prhs[0], 0, "trajOut");
+  if (pt == NULL) mxErrMsgTxt("Cannot retrieve trajOut from input.");
 
-  trajOutDim = mxGetDimensions(tr);
+  trajOutDim = mxGetDimensions(pt);
   /* mexPrintf("\ntrajOutD = %d x %d\n", trajOutDim[0], trajOutDim[1]); */
 
   prob.nMovies = nMovies = trajOutDim[1];
@@ -126,7 +124,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   for (i = 0; i < nMovies; i++){  
  
-    pm = mxGetField(tr, i, "observations");
+    pm = mxGetField(pt, i, "observations");
     if (pm == NULL) mxErrMsgTxt("Cannot retrieve observations.");
 
     prob.data[i].traj = mxGetPr(pm);
@@ -220,7 +218,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   nParams = prob.nParams;
 
-  prob.wnVariance = 1;
+  prob.wnVariance = 1;      /* temp */
 
 
 
@@ -244,6 +242,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   }
 
 
+
   /* Call the minimizer for maximum likelihood estimation of model params */
 
   nEvals = 0;
@@ -257,6 +256,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
     printf("\nMaximum number of evaluations is exceeded.\n");
     plhs[3] = mxCreateDoubleScalar(0);
   }
+
+
 
   /* Set up outputs for results of minimization */
 
@@ -280,7 +281,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
    * plhs[2]
    * -------
    * plhs[2] contains the Bayesian Information Criterion (BIC).
-   * ref: Jaqaman et al. Biophys. J. 91: 2312-2325 (2006), equation (5)
+   * Ref: Jaqaman et al. Biophys. J. 91: 2312-2325 (2006), equation (5)
    */
 
   nPoints = 0;
@@ -300,7 +301,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   TOPOfit = mxGetPr(plhs[0]);
   TOPOfitp = (double *) malloc(sizeof(double) * nLags * nNodes * nNodes);
-
   maPARAMSfit = mxGetPr(plhs[1]);
   maPARAMSfitp = (double *) malloc(sizeof(double) * nNodes * maOrderMax);
 
