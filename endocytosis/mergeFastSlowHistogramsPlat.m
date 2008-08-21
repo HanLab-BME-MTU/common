@@ -1,7 +1,30 @@
 function [mergedHistRes]=mergeFastSlowHistogramsPlat(Results, restrict, shape)
-% merge the fast and slow histograms preserving the normalization
+% merge the fast and slow histograms preserving the normalization, and
 % fit multiple populations to lifetimes
-% fit time constants with the assumption that the best combination is RRE
+% SYNOPSIS [mergedHistRes]=mergeFastSlowHistogramsPlat(Results, restrict, shape);
+%
+% INPUT     Results     = results of function StageFitLifetimePlat, which
+%                         contain the summarized fast and slow results
+%           restrict    = (optional) time restriction in seconds, e.g. 300
+%           shape   = (optional) shape for populations, e.g. [2 2 1], where
+%                   1 indicates an exponential distribution, and 
+%                   2 indicates a Rayleigh distribution
+%
+% OUTPUT    mergedHistRes = merged Histogram results, which have the fields
+%           .numcells   = number of trajectories, fast+slow;
+%           .tvec_or    = time vector for original merged histogram
+%           .hvec_or    =  original merged histogram
+%           .tvec_cum   = time vector for original cumulative histogram
+%           .hvec_cum   = cumulative merged histogram
+%           .compactFitRes = compact matrix representation of fit results,
+%               where the first column represents the relative
+%               contributions of all populations (including the persistent
+%               population offset), the second column represents the time 
+%               constants, and the third column represents tau50   
+%
+%
+% Dinah Loerke
+% last modified August 20, 2008
 
 
 % the input results have the following format:
@@ -29,16 +52,12 @@ nc_slow = Results.numcells_slow;
 OffsetCH = 1 - sum(hvecslow);
 
 
-% determine Rayleigh time constant from fast lifetime histogram, then
-% combine slow and fast and fit together
-
 
 %% ========================================================================
 % 
-%       fit fast lifetime data to determine Rayleigh
+%    fit fast lifetime data to determine time constant of first Rayleigh
 %
 % =========================================================================
-
 
 figure
 plot(tvecfast, hvecfast,'mo');
@@ -202,13 +221,14 @@ end
 
 
 maxt = tfit(length(tfit));
+
 % figure;
-%subplot(2,1,1);
-plot(tfit,hfitNorm);
-axis([0 maxt -0.001 0.03]);
-%subplot(2,1,2);
-plot(tfit,hfitNormCum);
-axis([0 maxt -0.05 1.05]);
+% subplot(2,1,1);
+% plot(tfit,hfitNorm);
+% axis([0 maxt -0.001 0.03]);
+% subplot(2,1,2);
+% plot(tfit,hfitNormCum);
+% axis([0 maxt -0.05 1.05]);
 
 
 
@@ -234,13 +254,12 @@ fixv1template   = [1  0  1  1  0  0  1  0  0  1  0  0  1];
 fixv1 = startv1;
 fixv1(1:length(fixv1)) = fixv1template(1:length(fixv1));
 
-%subplot(2,1,1); hold on;
+% subplot(2,1,1); hold on;
 [est1] = fitcurveMultiWeibullODF_lsq( tfit, hfitNorm, startv1, fixv1);
 
-for t=1:length(shapevec), text1{t}=num2str(est1(3*t-1:3*t+1)); end
-text( 10, 0.9*max(hfitNorm),text1 );
-axis([0 maxt 0 1.01*max(hfitNorm)]);
-
+% for t=1:length(shapevec), text1{t}=num2str(est1(3*t-1:3*t+1)); end
+% text( 10, 0.9*max(hfitNorm),text1 );
+% axis([0 maxt 0 1.01*max(hfitNorm)]);
 
 %% ========================================================================
 % 
@@ -266,14 +285,14 @@ fixv2template   = [0  0  1  1  0  0  1  0  0  1  0  0  1];
 fixv2 = fixv1;
 fixv2(1:length(fixv2)) = fixv2template(1:length(fixv2));
 
-%subplot(2,1,2); hold on;
+% subplot(2,1,2); hold on;
 axis([0 maxt 0 1.01*max(hcfit)]);
 [est2] = fitcurveMultiWeibullCDF_lsq( tcfit, hcfit, startv2, fixv2);
 
-for t=1:length(shapevec), text2{t}=num2str( round(1000*est2(3*t-1:3*t+1))/1000 ); end
-text( 10, 0.9*max(hcfit),text2 );
-axis([0 maxt 0 1.01*max(hcfit)]);
-
+% for t=1:length(shapevec), text2{t}=num2str( round(1000*est2(3*t-1:3*t+1))/1000 ); end
+% text( 10, 0.9*max(hcfit),text2 );
+% axis([0 maxt 0 1.01*max(hcfit)]);
+% title('merged cumulative histogram');
 
 %% ========================================================================
 % 
@@ -291,7 +310,7 @@ axis([0 maxt 0 1.01*max(hcfit)]);
 % (for infinity) of the sum of the distributions may be less, but not more
 % than 100.
 
-figure
+%figure
 startv3 = est2; 
 startv3(4:3:length(startv3)) = shapevec;
 startv3(1) = 0;
@@ -345,6 +364,55 @@ compResMat = [ATcont' ATtau' range50' range75'];
 format bank
 
 mergedHistRes.compactFitRes = compResMat;
+
+tplot = [0.5:0.5:max(t)];
+if min(nonzeros(diff(t(:))))<1
+    tplot = t;
+end
+
+%% ========================================================================
+%                               display final results
+% ========================================================================
+
+
+figure;
+% plot original histogram
+plot(tfit,hfitNorm,'b.-');
+axis([0 150 -0.001 1.05*max(hfitNorm(:))]);
+title('merged orginal histogram');
+xlabel('lifetime');
+ylabel('frequency');
+legendstring(1) = {'measured data'};
+
+hold on;
+% final fit results
+estimates = est3;
+p1params = [0 estimates(2:4)];
+p1curve = multiWeibullODF(tfit,p1params);
+plot(tfit,p1curve,'c-'); 
+legendstring(2) = {'population 1'};
+if length(estimates)>6
+    p2params = [0 estimates(5:7)];
+    p2curve = multiWeibullODF(tfit,p2params);
+    plot(tfit,p2curve,'g-');
+    legendstring(3) = {'population 2'};
+    if length(estimates)>9
+        p3params = [0 estimates(8:10)];
+        p3curve = multiWeibullODF(tfit,p3params);
+        plot(tfit,p3curve,'m-');
+        legendstring(4) = {'population 3'};
+        if length(estimates)>12
+            p4params = [0 estimates(11:13)];
+            p4curve = multiWeibullODF(tfit,p4params);
+            plot(tfit,p4curve,'r-');
+            legendstring(5) = {'population 4'};
+        end
+            
+    end
+end
+legend(legendstring);
+
+
 
 end % of function
 
