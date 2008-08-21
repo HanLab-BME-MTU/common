@@ -120,6 +120,7 @@ if fid==-1
 end
 
 % Write to log
+if ~nolog
 for c = 1 : counter
     fprintf( fid, 'Update of %s:\n %s\n',report{ c, 1 }, report{ c, 2 } );
 end
@@ -132,6 +133,7 @@ end
 
 % Close file
 fclose( fid );
+end
 
 if nolog == false
     if ccounter == 0
@@ -139,5 +141,7 @@ if nolog == false
     else
         disp( [ 'Done. Warning: Your working copy contains un-committed changes (<a href="file:///',tmpfile,'">details</a>).' ]);
     end
+else
+    fprintf('Unable to write file %s\n',tmpfile)
 end
 

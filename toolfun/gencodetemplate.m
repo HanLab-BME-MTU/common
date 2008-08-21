@@ -54,6 +54,8 @@ switch username
         username = 'Jonas Dorn';
     case 'p0774774'
         username = 'Thai-Hang Nguyen';
+    case 'p0717065'
+        username = 'Tan-Trao Phi';
     otherwise
         % don't change username
 end
