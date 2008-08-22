@@ -20,8 +20,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
                   int nrhs, const mxArray *prhs[] )
 {  
     
-  double *TOPO, *TOPOp;
-  double *maPARAMS, *maPARAMSp;
+  double *TOPOp;
+  double *maPARAMSp;
 
   double edgeLen, fTol;
   double *paramV, *vertexLikelihoods;
@@ -51,10 +51,10 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   /* Retrieve topology matrix containing AR and X parameters */
 
-  pm = mxGetField(prhs[0], 0, "TOPO");
-  if (pm == NULL) mxErrMsgTxt("Cannot retrieve TOPO from input.");
+  pm = mxGetField(prhs[0], 0, "TOPOp");
+  if (pm == NULL) mxErrMsgTxt("Cannot retrieve TOPOp from input.");
 
-  TOPO = mxGetPr(pm);
+  TOPOp = mxGetPr(pm);
 
   nDims = (int) mxGetNumberOfDimensions(pm);
 
@@ -77,10 +77,10 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   /* Retrieve MA parameters */
   
-  pm = mxGetField(prhs[0], 0, "maPARAMS");
-  if (pm == NULL) mxErrMsgTxt("Cannot retrieve maPARAMS from input.");
+  pm = mxGetField(prhs[0], 0, "maPARAMSp");
+  if (pm == NULL) mxErrMsgTxt("Cannot retrieve maPARAMSp from input.");
 
-  maPARAMS = mxGetPr(pm);
+  maPARAMSp = mxGetPr(pm);
 
   nRows = (int) mxGetM(pm);
   nCols = (int) mxGetN(pm);
@@ -88,7 +88,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   prob.maOrderMax = maOrderMax = nRows;
 
   if (nCols != nNodes)
-    mxErrMsgTxt("Second dimension of maPARAMS should be equal to nNodes.");
+    mxErrMsgTxt("Second dimension of maPARAMSp should be equal to nNodes.");
 
 
 
@@ -169,57 +169,21 @@ void mexFunction( int nlhs, mxArray *plhs[],
   if ((nDims > 2) && (topoBinDim[2] != nNodes))
     mxErrMsgTxt("topoBIN should be equal to TOPO dimensionally.");
 
- 
-
-  /* Convert ARMA parameters to partial parameters for the minimizer */
-
-  TOPOp = (double *) malloc(sizeof(double) * nLags * nNodes * nNodes);
-
-
-
-  for (i = 0; i < nNodes; i++){
-    for (j = 0; j < nNodes; j++){
-   
-      /* Along the diagonal are AR parameters */
-    
-      if (i == j) {
-    
-	/* No AR parameters at lag 0 */
-    
-	*(TOPOp + i * nLags + j * nLags * nNodes) = 0;
-
-	inverseLevinsonDurbinExpoAR( (TOPO + i * nLags + j * nLags * nNodes + 1), arOrderMax,
-				     (TOPOp + i * nLags + j * nLags * nNodes + 1) );
-
-      } else {
-
-	/* Copy directly the X-parameters */
-
-	for (k = 0; k < nLags; k++)
-	  *(TOPOp + i * nLags + j * nLags * nNodes + k) = *(TOPO + i * nLags + j * nLags * nNodes + k);
-
-      }
-
-    }
+  /* Retrieve white noise variance if input */
+  pm = mxGetField(prhs[0],0,"wnVariance");
+  if (pm == NULL){ 
+      prob.wnVariance = 1;
+  } else {
+      prob.wnVariance = *mxGetPr(pm);
   }
+
  
-
-  maPARAMSp = (double *) malloc(sizeof(double) * nNodes * maOrderMax);
-
-  for (i = 0; i < nNodes; i++)
-    inverseLevinsonDurbinExpoMA(maPARAMS + i * maOrderMax, maOrderMax,
-				maPARAMSp + i * maOrderMax);
-
-
 
   /* Assemble the parameters into a vector for passing to minimizer */
 
   vectorFromParams(TOPOp, maPARAMSp, &prob, &paramV);
 
   nParams = prob.nParams;
-
-  prob.wnVariance = 1;      /* temp */
-
 
 
   p = matrix(1, nParams + 1, 1, nParams);
