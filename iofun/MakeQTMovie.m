@@ -106,10 +106,12 @@ end
 % a known bug with global variables
 matlabVersion = version;
 if (matlabVersion(1) == '7')
-    oldJFValue = feature('javafigures');
-    feature('javafigures',0);
-    oldAccelValue = feature('accel');
-    feature('accel',0);
+    if isempty(strfind(version,'R2008'))
+        oldJFValue = feature('javafigures');
+        feature('javafigures',0);
+        oldAccelValue = feature('accel');
+        feature('accel',0);
+    end
 end
 
 global MakeQTMovieStatus
@@ -380,8 +382,10 @@ end
 % Set the values back for the figuresize
 matlabVersion = version;
 if (matlabVersion(1) == '7')
-    feature('javafigures',oldJFValue);
-    feature('accel',oldAccelValue);
+    if isempty(strfind(version,'R2008'))
+        feature('javafigures',oldJFValue);
+        feature('accel',oldAccelValue);
+    end
 end
 
 %%%%%%%%%%%%%%%  MakeDefaultQTMovieStatus %%%%%%%%%%%%%%%%%
