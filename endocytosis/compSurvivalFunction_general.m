@@ -1,4 +1,4 @@
-function [survFunc,pvec] = compSurvivalFunction_general(data1, field1, data2, field2)
+function [survFunc,pvec] = compSurvivalFunction_general(data1, field1, data2, field2, numBS)
 % compSurvivalFunction_general compares the survival functions for
 % different conditions
 %
@@ -11,15 +11,19 @@ function [survFunc,pvec] = compSurvivalFunction_general(data1, field1, data2, fi
 %           data2   = experiment structure with second data set
 %           field2  = field in data1 from which the lifetime histogram is
 %                   read, E.G. 'survivalFunction_OutRegion'
+%           numBS  = number of bootstrap runs (OPTIONAL)
+%                    default = 2000
+%                   
 %
 % OUTPUT    survFunc = survival function 
 %                       (first row DATA1, second row Data2)
 %           pvec    = vector of p-values;
 %                     1: KS-test on difference between data1 and data2
-%                     2: 5% threshold for KS-test on bootstrapped
-%                     subsamples of data1
-%                     3. 5% threshold for KS-test on bootstrapped
-%                     subsamples of data2 
+%                     2: 95% threshold for KS-test on bootstrapped
+%                     subsamples of data1 vs bootstrapped subsamples of
+%                     data2
+%                     3. fraction of non-significant boostrap KS-test
+%                     p-values 
 %
 % NOTE: The current version of the function assumes that ALL MOVIES in the
 % data structure are acquired at the same framerate, or that the user
@@ -27,9 +31,7 @@ function [survFunc,pvec] = compSurvivalFunction_general(data1, field1, data2, fi
 % are normalized to the value for the lifetime 1 frame.
 %
 %
-% last modified DATE: 25-Jun-2008 (Dinah)
-% last modified DATE: 23-Jul-2008 (Dinah)
-% last modified DATE: 06-Aug-2008 (Dinah)
+% last modified DATE: 28-Aug-2008 (Dinah)
 
 
 % averaging can only be performed up until the minimum common length of all 
@@ -58,9 +60,7 @@ for k=1:n1
     
     if isfield(data1,field1)
         survFun = getfield(data1(k), field1);
-        % normalize individual survival functions to minlen length
-        survFunNorm = survFun(1:minlen)/sum(survFun(1:minlen));
-        histmat1(k,:) = survFunNorm;
+        histmat1(k,:) = survFun(1:minlen);
     else
         error(['function requires a structure field called ',field1]);
     end          
@@ -71,92 +71,140 @@ for k=1:n2
     
     if isfield(data2,field2)
         survFun = getfield(data2(k), field2);
-        survFunNorm = survFun(1:minlen)/sum(survFun(1:minlen));
-        histmat2(k,:) = survFunNorm;
+        histmat2(k,:) = survFun(1:minlen);
     else
         error(['function requires a structure field called ',field2]);
     end          
 end
 
 
-
 % average survival functions
-survFun1_AVE = nanmean(histmat1,1);
-survFun2_AVE = nanmean(histmat2,1);
+survFun1_SUM = nansum(histmat1,1);
+survFun2_SUM = nansum(histmat2,1);
+survFun1_AVE = survFun1_SUM/n1;
+survFun2_AVE = survFun2_SUM/n2;
 
 % define output
 survFunc(1,:) = survFun1_AVE;
 survFunc(2,:) = survFun2_AVE;
 
+
+% convert to distributions
+df1 = convSurvivalFunction2dist(survFun1_SUM);
+df2 = convSurvivalFunction2dist(survFun2_SUM);
+nd1 = length(df1);
+nd2 = length(df2);
+
 % compare averages
-[H,pval_av] = kstest2(survFun1_AVE,survFun2_AVE);
+[H,pval_av] = kstest2(df1,df2);
 
 
+
+
+%=================================
 %% bootstrap
 
 % number of bootstrap runs
-nbs = 1000;
+if nargin>4
+    nbs = numBS;
+else
+    nbs = 2000;
+end
+
 
 % bootstrap first data set
 for b=1:nbs
+    
+    fprintf('bootstrap %03d',round(100*(b/nbs)));
+    
+    %=================================
+    % bootstrap from reshuffled movies
+    
     % position vector
-    pos = randsample(n1,n1,true); 
+    pos1 = randsample(n1,n1,true); 
     % local bootstrap set from normalized matrix
-    cmat = histmat1(pos,:);    
-    % average
-    bootstrapAVE = nanmean(cmat,1); 
-    bootstrap1mat(b,:) = bootstrapAVE;   
-    % comp between average and subsampled average
-    [H,pval_bs] = kstest2(bootstrapAVE,survFun1_AVE);
-    bootstrap1_pval(b) = pval_bs;
+    cmat1 = histmat1(pos1,:);  
+    bootstrapSUM1 = nansum(cmat1,1); 
+    df1_sub = convSurvivalFunction2dist(bootstrapSUM1);
 
+    % position vector
+    if n2==n1
+        pos2 = pos1;
+    else
+        pos2 = randsample(n2,n2,true); 
+    end
+    % local bootstrap set from normalized matrix
+    cmat2 = histmat2(pos2,:); 
+    bootstrapSUM2 = nansum(cmat2,1); 
+    df2_sub = convSurvivalFunction2dist(bootstrapSUM2);
+    
+    %===========================================
+    % comp between subsample 1 and total sample 2
+    %[H,pval_bs1] = kstest2(df1_sub,df2);
+    [H,pval_bs1] = kstest2(df1_sub,df2_sub);
+    bootstrap1_pval(b) = pval_bs1;
+    
+     
+    fprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b');
+    
 end
 
-for b=1:nbs
-    % position vector
-    pos = randsample(n2,n2,true); 
-    % local bootstrap set from normalized matrix
-    cmat = histmat2(pos,:);    
-    % average
-    bootstrapAVE = nanmean(cmat,1); 
-    bootstrap2mat(b,:) = bootstrapAVE;
-    % comp between average and subsampled average
-    [H,pval_bs] = kstest2(bootstrapAVE,survFun2_AVE);
-    bootstrap2_pval(b) = pval_bs;
-end
+fprintf('\n');
 
-% bootstrap confidence intervals
+
+% sorted bootstrap confidence intervals
 sort_bs1 = sort(bootstrap1_pval);
-sort_bs2 = sort(bootstrap2_pval);
 
-cflevel1 = sort_bs1(round(0.05*nbs));
-cflevel2 = sort_bs2(round(0.05*nbs));
+% 95% of all bootstrap comparison p-values are smaller than...
+cflevel = sort_bs1(round(0.95*nbs));
 
-
-% output
-pvec(1) = pval_av;
-pvec(2) = cflevel1;
-pvec(3) = cflevel2;
+% the fraction of bootstrap comparison p-values that are non-significant
+% (i.e. larger than 0.05) is...
+plevel = length(find(sort_bs1>0.05))/nbs;
 
 
-%% display
+
+% output:
+pvec(1) = pval_av; % KS-test p-value of all data1 vs all data 2
+pvec(2) = cflevel; % KS-test p-value below which 95% of bootstrap tests are located
+pvec(3) = plevel;  % percentage of non-significant boostrap test results
+
+
+
+
+%==========================================================================
+%% display results
+
 figure; hold on;
-plot(survFun1_AVE,'r-'); 
-plot(survFun2_AVE,'b-');
+cdfplot(df1);
+cdfplot(df2);
+h = findobj(gca,'type','line');
+set(h(1),'linestyle',':','color','r')
 
 xlabel('lifetime (frames)');
-ylabel('survival function (fraction)');
+ylabel('cumulative fraction');
 legend('data1','data2');
-axismax = 1.1*max(max(survFun1_AVE),max(survFun2_AVE));
-axis([0 minlen -0.001 axismax]);
+axis([0 minlen -0.01 1.01]);
+box on
 
-textstr1 = ['KS-test avdiff 1-2 p=',num2str(pval_av)];
-textstr2 = ['KS-test 5% boostrap1 p=',num2str(cflevel1)];
-textstr3 = ['KS-test 5% boostrap2 p=',num2str(cflevel2)];
 
-text(50,0.9*axismax,textstr1);
-text(50,0.85*axismax,textstr2);
-text(50,0.8*axismax,textstr3);
+textstr1 = ['ave1 vs ave2: KS-test p=',num2str(pval_av)];
+
+textstr2 = ['bootstrap1 vs bootstrap2 95% p<',num2str(cflevel)];
+
+if length(find(sort_bs1>0.05)) == 0
+    textstr3 = ['fraction of non-sign. bootstraps < ',num2str(1/nbs)];
+else
+    textstr3 = ['fraction of non-sign. bootstraps = ',num2str(plevel)];
+end
+
+text(60,0.5,textstr1);
+text(60,0.4,textstr2);
+text(60,0.3,textstr3);
+
+grid off
+
+
 
 end % of function
 
