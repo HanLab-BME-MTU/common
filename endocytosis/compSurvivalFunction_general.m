@@ -211,6 +211,42 @@ end % of function
 
 
 
+%=========================================================================
+%
+%                            SUBFUNCTION
+
+
+
+function [df] = convSurvivalFunction2dist(sf)
+% convSurvivalFunction2dist converts a survival function back into a
+% distribution function
+%
+% SYNOPSIS [df] = convSurvivalFunction2dist(sf)
+%
+% INPUT     sf    = survival function, presumed at equal spacing 
+%
+% OUTPUT    df    = distribution function
+%
+% NOTE: Advantage of this function is that survival functions can be summed
+% and cropped until appropriate time points, that that the reconversion
+% gets rid of the problem of unequal movie lengths
+
+
+% convert to histogram
+hf = abs(diff(sf));
+
+df = zeros(sum(hf),1);
+ct = 0;
+
+for i=1:length(hf)
+    numentry = round(hf(i));
+    %cv = i + zeros(numentry,1);
+    df(ct+1:ct+numentry) = i; 
+    ct = ct+numentry;
+end % of for
+
+end % of subfunction
+
 
 
 
