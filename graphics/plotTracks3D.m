@@ -396,7 +396,7 @@ if indicateSE %if user wants to indicate starts and ends
                     'LineStyle','none','marker','o');
             end
             if ~isempty(endInfo)
-                plot(endInfo(:,1),endInfo(:,2),endInfo(:,3),colorTime,...
+                plot3(endInfo(:,1),endInfo(:,2),endInfo(:,3),colorTime,...
                     'LineStyle','none','marker','square');
             end
 
