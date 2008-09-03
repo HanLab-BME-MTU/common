@@ -110,8 +110,10 @@ OUTPUTDIR=MATLABHOME;
 %     end
 % end
 
-% Prepare report
-tmpfile=fullfile(OUTPUTDIR,'svn_log.txt');
+% Prepare report. In case multiple users share the same repository,
+% everyone has to write their separate logfile, because in Windows, Matlab
+% cannot set write permission for all.
+tmpfile=fullfile(OUTPUTDIR,sprintf('svn_log_%s.txt',getenv('USERNAME')));
 
 nolog = false;
 fid=fopen(tmpfile,'w');
