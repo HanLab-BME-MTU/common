@@ -54,8 +54,8 @@ compactRes.tau50 = resmat1(:,3);
 for i=1:length(data)
     Dens(i) = nanmean(data(i).pitDensity);
 end
-densAV = round(100*nanmean(Dens))/100;
-densSTD = round(100*nanstd(Dens))/100;
+densAV = nanmean(Dens);
+densSTD = nanstd(Dens);
 
 
 matrix(:,1) = compactRes.contr;
