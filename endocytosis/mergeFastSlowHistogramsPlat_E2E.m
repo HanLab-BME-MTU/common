@@ -242,12 +242,12 @@ for nf = 1:nfast-1
             shapevec = [2 1 1];
         end
 
-        startv1template = [0    0.2 sigRay  2   0.1  10  2   0.2  90  1];
+        startv1template = [0 0.2 sigRay 2 0.1 10 2 0.2 90 1 0.2 30 1 0.2 40 1];
         startv1 = zeros(1,1+3*length(shapevec));
         startv1(1:length(startv1)) = startv1template(1:length(startv1));
         startv1(4:3:length(startv1)) = shapevec;
 
-        fixv1template   = [1    0    1      1   0   0   1   0   0   1]; 
+        fixv1template   = [1 0 1 1 0 0 1 0 0 1 0 0 1 0 0 1]; 
         fixv1 = startv1;
         fixv1(1:length(fixv1)) = fixv1template(1:length(fixv1));
 
@@ -279,7 +279,7 @@ for nf = 1:nfast-1
         % fitting - this is owed to the fact that the data are normalized and the
         % sum of the three individual populations cannot be more than 1 , only less
         % than 1
-        fixv2template   = [0    0    1      1   0   0   1   0   0   1]; 
+        fixv2template   = [0 0 1 1 0 0 1 0 0 1 0 0 1 0 0 1]; 
         fixv2 = fixv1;
         fixv2(1:length(fixv2)) = fixv2template(1:length(fixv2));
 
@@ -312,7 +312,7 @@ for nf = 1:nfast-1
         startv3 = est2; 
         startv3(4:3:length(startv3)) = shapevec;
         startv3(1) = 0;
-        fixv3template   = [0    0    0      1   0   0   1   0   0   1]; 
+        fixv3template   = [0 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1]; 
         fixv3 = fixv2;
         fixv3(1:length(fixv3)) = fixv3template(1:length(fixv3));
 
