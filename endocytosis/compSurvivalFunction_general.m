@@ -1,4 +1,4 @@
-function [survFunc,pvec] = compSurvivalFunction_general(data1, field1, data2, field2, numBS)
+function [survFunc,pvec,decaytimes] = compSurvivalFunction_general(data1, field1, data2, field2, numBS, typeBS, percvec)
 % compSurvivalFunction_general compares the survival functions for
 % different conditions
 %
@@ -13,6 +13,12 @@ function [survFunc,pvec] = compSurvivalFunction_general(data1, field1, data2, fi
 %                   read, E.G. 'survivalFunction_OutRegion'
 %           numBS  = number of bootstrap runs (OPTIONAL)
 %                    default = 2000
+%           typeBS = type of bootstrap (OPTIONAL)
+%                    'movie' (default) = subsample individual movie
+%                    combinations
+%                    'traj' = subsample individual trajectories (especially
+%                    relevant for big difference in inside vs outside)
+%                   
 %                   
 %
 % OUTPUT    survFunc = survival function 
@@ -24,7 +30,16 @@ function [survFunc,pvec] = compSurvivalFunction_general(data1, field1, data2, fi
 %                     data2
 %                     3. fraction of non-significant boostrap KS-test
 %                     p-values 
-%
+%           decaytimes  = decay times, i.e. number of frames for which the
+%                     respective survival function reaches the percentage
+%                     levels specified by percvec; this has the format
+%                     row 1: specified percentage levels
+%                     row 2: average condition 1
+%                     row 3: error condition 1
+%                     row 4: average condition 2
+%                     row 5: error condition 2
+%                     row 6: p-value for t-test between condition 1 and 2  
+%                   
 % NOTE: The current version of the function assumes that ALL MOVIES in the
 % data structure are acquired at the same framerate, or that the user
 % chooses to treat them as being the same, and that the survival functions
@@ -32,6 +47,7 @@ function [survFunc,pvec] = compSurvivalFunction_general(data1, field1, data2, fi
 %
 %
 % last modified DATE: 28-Aug-2008 (Dinah)
+% last modified DATE: 10-Sep-2008 (Dinah)
 
 
 % averaging can only be performed up until the minimum common length of all 
@@ -111,32 +127,59 @@ else
     nbs = 2000;
 end
 
+testtype = 0;
+if nargin>5
+    if strcmp(typeBS,'traj')
+        testtype = 1;
+    end
+end
+
 
 % bootstrap first data set
 for b=1:nbs
     
     fprintf('bootstrap %03d',round(100*(b/nbs)));
     
-    %=================================
+    % testtype 0=================================
     % bootstrap from reshuffled movies
-    
-    % position vector
-    pos1 = randsample(n1,n1,true); 
-    % local bootstrap set from normalized matrix
-    cmat1 = histmat1(pos1,:);  
-    bootstrapSUM1 = nansum(cmat1,1); 
-    df1_sub = convSurvivalFunction2dist(bootstrapSUM1);
-
-    % position vector
-    if n2==n1
-        pos2 = pos1;
+    if testtype==0
+        % first position vector
+        pos1 = randsample(n1,n1,true); 
+        % local bootstrap set from normalized matrix
+        cmat1 = histmat1(pos1,:);  
+        bootstrapSUM1 = nansum(cmat1,1); 
+        df1_sub = convSurvivalFunction2dist(bootstrapSUM1);
+        % second position vector
+        if n2==n1
+            pos2 = pos1;
+        else
+            pos2 = randsample(n2,n2,true); 
+        end
+        % local bootstrap set from normalized matrix
+        cmat2 = histmat2(pos2,:); 
+        bootstrapSUM2 = nansum(cmat2,1); 
+        df2_sub = convSurvivalFunction2dist(bootstrapSUM2);
+        
     else
-        pos2 = randsample(n2,n2,true); 
+        
+    % testtype 1=================================
+    % bootstrap from downsampled trajectories
+    
+        if nd1>nd2
+            % position vector
+            pos1 = randsample(nd1,nd2,false);
+            df1_sub = df1(pos1);
+            df2_sub = df2;
+        else
+            % position vector
+            pos2 = randsample(nd2,nd1,false);
+            df1_sub = df1;
+            df2_sub = df2(pos2);
+        end
+        
     end
-    % local bootstrap set from normalized matrix
-    cmat2 = histmat2(pos2,:); 
-    bootstrapSUM2 = nansum(cmat2,1); 
-    df2_sub = convSurvivalFunction2dist(bootstrapSUM2);
+        
+      
     
     %===========================================
     % comp between subsample 1 and total sample 2
@@ -169,6 +212,46 @@ pvec(1) = pval_av; % KS-test p-value of all data1 vs all data 2
 pvec(2) = cflevel; % KS-test p-value below which 95% of bootstrap tests are located
 pvec(3) = plevel;  % percentage of non-significant boostrap test results
 
+%
+if nargin>6
+    levels = percvec;
+else
+    levels = [0.9:-0.1:0.1];
+end
+
+for k=1:length(levels)
+    
+    % current perecntage increment
+    cinc = levels(k);
+    incrVec1 = [];
+    incrVec2 = [];
+    % find decay time for this level condition 1
+    for a=1:n1
+        fpos = find( (histmat1(a,:)/histmat1(a,1))<cinc );
+        if ~isempty(fpos)
+            incrVec1(a) = min( fpos );
+        else
+            incrVec1(a) = nan;
+        end
+    end
+    % find decay time for this level condition 1
+    for b=1:n2
+        fpos = find( ( histmat2(b,:)/histmat2(b,1) )<cinc );
+        if ~isempty(fpos)
+            incrVec2(b) = min( fpos );
+        else
+            incrVec2(b) = nan;
+        end
+    end
+    [h,pval] = ttest2(incrVec1,incrVec2);
+
+    decaytimes(1,k) = levels(k);
+    decaytimes(2,k) = nanmean(incrVec1);
+    decaytimes(3,k) = nanstd(incrVec1)/sqrt(n1);
+    decaytimes(4,k) = nanmean(incrVec2);
+    decaytimes(5,k) = nanstd(incrVec2)/sqrt(n2);
+    decaytimes(6,k) = pval;
+end
 
 
 
@@ -203,6 +286,23 @@ text(60,0.4,textstr2);
 text(60,0.3,textstr3);
 
 grid off
+
+
+
+figure; hold on;
+errorbar([1:length(levels)]-0.15,decaytimes(2,:),decaytimes(3,:),'r.');
+errorbar([1:length(levels)]+0.15,decaytimes(4,:),decaytimes(5,:),'b.');
+bar([1:length(levels)]-0.15,decaytimes(2,:),0.3,'r' );
+bar([1:length(levels)]+0.15,decaytimes(4,:),0.3,'b' );
+for n=1:length(levels)
+    tlevel(n) = {num2str(levels(n))};
+    text( n-0.15,1.1*max(decaytimes(2,n),decaytimes(4,n)),['p=',num2str(decaytimes(6,n))] );
+end
+set(gca,'XTick',[1:length(levels)]);
+set(gca,'XTickLabel',tlevel);
+xlabel('percentage level');
+ylabel('decay time');
+
 
 
 
