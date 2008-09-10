@@ -39,6 +39,21 @@ od = cd;
 for i=1:lens
     
     fprintf('movie #%02d',i);
+        
+    % current path
+    path = data(i).source;
+
+    % number of frames for this exp
+    lenf = data(i).movieLength;
+
+    % load lifetime inof data file
+    lftpath = [path,'/LifetimeInfo'];
+    cd(lftpath);
+    lftname = 'lftInfo.mat';
+    loadfile = load(lftname);
+    cd(od);
+
+    lftInfo = loadfile.lftInfo;
     
     % check if segmentation status already exists
     if isfield(data,'segmentStatus')
@@ -46,13 +61,7 @@ for i=1:lens
         segmentStatusVector = data(i).segmentStatus;
     % else determine the segmentation status here and fill in the value    
     else
-                
-        % current path
-        path = data(i).source;
-
-        % number of frames for this exp
-        lenf = data(i).movieLength;
-
+              
         % load segmentation image from specified location
         SegmFileName = data(i).segmentDataFileName;
         SegmFilePath = data(i).segmentDataFilePath;
@@ -60,14 +69,7 @@ for i=1:lens
         cd(SegmFilePath);
         SegmentMask = imread(SegmFileName);    
 
-        % load lifetime inof data file
-        lftpath = [path,'/LifetimeInfo'];
-        cd(lftpath);
-        lftname = 'lftInfo.mat';
-        loadfile = load(lftname);
         cd(od);
-
-        lftInfo = loadfile.lftInfo;
 
         % calculate segmentation status (1=Inside, 0=oustide segmented region)
         [segmentStatusVector] = calcIORegionLfthistSimple(lftInfo, SegmentMask);
