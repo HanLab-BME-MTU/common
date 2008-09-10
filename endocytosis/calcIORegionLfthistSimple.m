@@ -1,4 +1,4 @@
-function [segmentStatusVector] = calcIORegionLfthistSimple(lftInfo, maskPattern);
+function [segmentStatusVector] = calcIORegionLfthistSimple(lftInfo, maskPattern, mode);
 % calculate lifetimes outside and inside segmented area
 % 
 % INPUT:    lftInfo 	= lifetime info 
@@ -9,7 +9,7 @@ function [segmentStatusVector] = calcIORegionLfthistSimple(lftInfo, maskPattern)
 %           status value is 1 if the majority of this trajectory's
 %           positions are inside the pattern, and 0 otherwise
 %
-% Dinah Loerke, last changed 04/17/2008
+% Dinah Loerke, last modified 09/09/2008
 
 [no,nf] = size(lftInfo.Mat_lifetime);
 
@@ -30,7 +30,7 @@ hold on;
 
     
 %% loop over all objects and determine each object's status as either
-%% inside or outside the segmentaed region
+%% inside or outside the segmented region
 for n=1:no
         
     % traj of this object
@@ -40,7 +40,11 @@ for n=1:no
     
     % object is defined as IN if the majority of its points are inside    
     % maskIN
-    instatus = maskIN(round(curry),round(currx));
+     instatus = [];
+    for k=1:length(upos)
+        instatus(k) = maskIN(ceil(curry(k)),ceil(currx(k)));
+    end
+    
     if length(find(instatus))>(0.5*length(upos))
         objectInStatus(n) = 1;
     else
