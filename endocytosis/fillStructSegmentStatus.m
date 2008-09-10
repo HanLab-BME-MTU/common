@@ -1,4 +1,4 @@
-function [data] = fillStructSegmentStatus(data);
+function [data] = fillStructSegmentStatus(data, fieldname);
 % fill experiment structure with vectors designating the segmentation
 % status of each trajectory (inside vs. outside pattern) 
 % based on the image segmentation in the specified folders
@@ -10,6 +10,9 @@ function [data] = fillStructSegmentStatus(data);
 %                .movieLength
 %                .segmentDataFileName 
 %                .segmentDataFilePath 
+%           fieldname (OPTIONAL)
+%                   the segmentation image - or the path to its location - 
+%                   can also be directly contained in another field 
 %
 % OUTPUT    creates new fields in the data structure called
 %                .segmentStatus   
@@ -21,6 +24,10 @@ function [data] = fillStructSegmentStatus(data);
 %
 % Dinah Loerke, modified July 30, 2008
 
+segmDefault = 0;
+if nargin>1
+    segmDefault = 1;
+end
 
 % number of entries in data structure
 lens = length(data);
@@ -37,17 +44,26 @@ for i=1:lens
     % number of frames for this exp
     lenf = data(i).movieLength;
     
-    
-    % load segmentation image from specified location
-    SegmFileName = data(i).segmentDataFileName;
-    SegmFilePath = data(i).segmentDataFilePath;
+    if segmDefault==0
+        % load segmentation image from specified location
+        SegmFileName = data(i).segmentDataFileName;
+        SegmFilePath = data(i).segmentDataFilePath;
 
-    cd(SegmFilePath);
-    SegmentMask = imread(SegmFileName);    
+        cd(SegmFilePath);
+        SegmentMask = imread(SegmFileName);    
+        
+    else
+        segmentation = getfield(data(i), fieldname);
+        if isstr(segmentation)
+            SegmentMask = imread(segmentation);
+        else
+            SegmentMask = segmentation;
+        end
+    end
+        
     if ~islogical(SegmentMask)
         SegmentMask = logical(SegmentMask/max(SegmentMask(:)));
-    end
-    
+    end    
         
     % load lifetime info data file
     lftpath = [path,'/LifetimeInfo'];
