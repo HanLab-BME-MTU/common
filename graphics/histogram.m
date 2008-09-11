@@ -103,7 +103,11 @@ if factor ~= -1
     % consider the distribution discrete if there are, on average, 3
     % entries per bin
     nBins = length(xx);
-    if nBins*3 > nData
+    if nBins*3 < nData
+        % discrete distribution. 
+        nn = nn';
+        xx = xx';
+    else
         % not a discrete distribution
         if nData < 20
             warning('HISTOGRAM:notEnoughDataPoints','Less than 20 data points!')
@@ -133,6 +137,7 @@ if factor ~= -1
             Z = trapz(xx,nn);
             nn = nn * nData/Z;
         end
+        
     end
     if nargout > 0
         N = nn;

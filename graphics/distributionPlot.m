@@ -6,9 +6,11 @@ function handles = distributionPlot(varargin)
 %
 % INPUT data : cell array of length nData or m-by-nData array of values
 %       distWidth : (opt) width of distributions. 1 means that the maxima
-%           of  two adjacent distributions will touch bar. Negative numbers
+%           of  two adjacent distributions might touch. Negative numbers
 %           indicate that the distributions should have constant width, i.e
-%           the density is only expressed through greylevels. Default: 0.9
+%           the density is only expressed through greylevels. 
+%           Values between 1 and 2 are like values between 0 and 1, except
+%           that densities are not expressed via graylevels. Default: 0.9
 %       showMM : (opt) if 1, mean and median are shown as red circles and
 %                green squares, respectively. Default: 1
 %       xNames : (opt) cell array of length nData containing x-tick names
@@ -54,6 +56,7 @@ def_distWidth = 0.9;
 def_histOpt = 1;
 def_divFactor = [25,2,1];
 def_invert = false;
+useGray = true;
 
 if nargin == 0
     error('not enough input arguments')
@@ -91,6 +94,10 @@ if ~isempty(varargin) && ~isempty(varargin{1})
     end
 else
     distWidth = def_distWidth;
+end
+if distWidth > 1
+    distWidth = distWidth - 1;
+    useGray = false;
 end
 if length(varargin) > 1 && ~isempty(varargin{2})
     showMM = varargin{2};
@@ -191,9 +198,17 @@ for iData = 1:nData
         % add patch
         axes(ah);
         if invert
+            if useGray
             hh{iData} = patch(xArray,yArray,repmat(xHist/max(xHist),[4,1,3]));
+            else
+                hh{iData} = patch(xArray,yArray,'w');
+            end
         else
+            if useGray
             hh{iData} = patch(xArray,yArray,repmat(1-xHist/max(xHist),[4,1,3]));
+            else
+                hh{iData} = patch(xArray,yArray,'k');
+            end
         end
         set(hh{iData},'EdgeColor','none')
         
