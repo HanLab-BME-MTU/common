@@ -1,9 +1,9 @@
 function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
-    extractType,probDim,checkAsym,alphaValues,plotRes)
+    extractType,probDim,checkAsym,alphaValues,plotRes,confRadMin)
 %TRACKDIFFUSIONANALYSIS performs diffusion analysis, checking first for asymmetric tracks
 %
 %SYNOPSIS [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
-%    extractType,probDim,checkAsym,alphaValues)
+%    extractType,probDim,checkAsym,alphaValues,plotRes,confRadMin)
 %
 %INPUT  tracks      : -- EITHER --
 %                     Output of trackWithGapClosing (matrix),
@@ -35,6 +35,11 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                     *cyan: not linear & 2D normal diffusion.
 %                     *magenta: not linear & 2D super diffusion.
 %                     *black: unclassified.
+%       confRadMin  : 1 to calculate the confinement radius of confined
+%                     particles using the minimum positional standard
+%                     deviation, 0 to calculate it using the mean
+%                     positional standard deviation.
+%                     Optional. Default: 0.
 %
 %OUTPUT diffAnalysisRes : Structure array with the following fields per
 %                         track:
@@ -118,6 +123,10 @@ if nargin < 6 || isempty(plotRes)
 elseif plotRes == 1 && probDim ~= 2
     disp('--trackDiffusionAnalysis1: Cannot plot tracks if problem is not 2D!');
     plotRes = 0;
+end
+
+if nargin < 7 || isempty(confRadMin)
+    confRadMin = 0;
 end
 
 if errFlag
@@ -330,8 +339,12 @@ if ~isempty(indxConf)
         eigenVal = eig(nancov(xyzCoord(:,1:probDim)));
 
         %calculate the track's confinement radius
-        confRadius(iTrack,1) = sqrt( mean(eigenVal) * (probDim + 2) );
-
+        if confRadMin
+            confRadius(iTrack,1) = sqrt( min(eigenVal) * (probDim + 2) );
+        else
+            confRadius(iTrack,1) = sqrt( mean(eigenVal) * (probDim + 2) );
+        end
+        
         %calculate the track's center
         trackCenter(iTrack,:) = nanmean(xyzCoord(:,1:probDim));
 

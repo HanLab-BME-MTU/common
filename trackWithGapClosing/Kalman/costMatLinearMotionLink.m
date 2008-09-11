@@ -252,10 +252,10 @@ end
 %% Birth and death
 
 %append matrix to allow birth and death
-if any(~isnan(prevCost(:)))
+if any(~isnan(prevCost(:)) & prevCost(:)~=0)
     maxCost = 1.05*max(prevCost(:));
 else
-    maxCost = prctile(costMat(:),80);
+    maxCost = max(prctile(costMat(:),80),eps);
 end
 deathCost = maxCost * ones(numFeaturesFrame1,1);
 birthCost = maxCost * ones(numFeaturesFrame2,1);
