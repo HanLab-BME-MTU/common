@@ -5,7 +5,7 @@ function handles = distributionPlot(varargin)
 %           handles = distributionPlot(ah,...)
 %
 % INPUT data : cell array of length nData or m-by-nData array of values
-%       distWidth : (opt) width of distributions. 1 means that the maxima 
+%       distWidth : (opt) width of distributions. 1 means that the maxima
 %           of  two adjacent distributions will touch bar. Negative numbers
 %           indicate that the distributions should have constant width, i.e
 %           the density is only expressed through greylevels. Default: 0.9
@@ -13,11 +13,21 @@ function handles = distributionPlot(varargin)
 %                green squares, respectively. Default: 1
 %       xNames : (opt) cell array of length nData containing x-tick names
 %               (instead of the default '1,2,3')
-%       divFactor : (opt) distributionPlot uses ksdensity with the
-%                   Epanechnikov-kernel to smooth the histogram. DivFactor
-%                   indicates by how much the default-width will be divided
-%                   in order to avoid an overly smooth histogram. 
-%                   Default: 2
+%       histOpt : (opt) histogram type to plot
+%                   0 : use hist command (no smoothing, fixed number of
+%                       bins)
+%                   1 : smoothened histogram using ksdensitz with
+%                       Epanechnikov-kernel. Default.
+%                   2 : histogram command (no smoothing, automatic
+%                       determination of bin width)
+%       divFactor : (opt) Parameter dependent on histOpt.
+%                   histOpt == 0: divFactor = # of bins. Default: 25.
+%                   histOpt == 1: divFactor decides by how much the default
+%                       kernel-width is multiplied in order to avoid an
+%                       overly smooth histogram. Default: 1/2
+%                   histOpt == 2: divFactor decided by how much the
+%                       automatic bin width is multiplied in order to have
+%                       more (<1) or less (>1) detail. Default: 1
 %       invert : (opt) if 1, image will be white on black. Default: 0
 %       ah (opt) axes handle to plot the distribution. Default: gca
 %
@@ -41,10 +51,11 @@ function handles = distributionPlot(varargin)
 def_xNames = [];
 def_showMM = 1;
 def_distWidth = 0.9;
-def_divFactor = 2;
+def_histOpt = 1;
+def_divFactor = [25,2,1];
 def_invert = false;
 
-if nargin == 0 
+if nargin == 0
     error('not enough input arguments')
 end
 
@@ -58,7 +69,7 @@ if ~iscell(varargin{1}) && length(varargin{1}) == 1 && ...
 else
     ah = gca;
     data = varargin{1};
-    varargin(1) = []; 
+    varargin(1) = [];
     newAx = true;
 end
 
@@ -92,12 +103,17 @@ else
     xNames = def_xNames;
 end
 if length(varargin) > 3 && ~isempty(varargin{4})
-    divFactor = varargin{4};
+    histOpt = varargin{4};
 else
-    divFactor = def_divFactor;
+    histOpt = def_histOpt;
 end
 if length(varargin) > 4 && ~isempty(varargin{5})
-    invert = varargin{5};
+    divFactor = varargin{5};
+else
+    divFactor = def_divFactor(histOpt+1);
+end
+if length(varargin) > 5 && ~isempty(varargin{6})
+    invert = varargin{6};
 else
     invert = def_invert;
 end
@@ -130,54 +146,69 @@ xBase = abs(distWidth) .* [-0.5;0.5;0.5;-0.5];
 % loop through data. Prepare patch input, then draw patch into gca
 for iData = 1:nData
     currentData = data{iData};
-     if ~isempty(currentData)
-    
-    % make histogram (use ksdensity for now)
-    % x,y are switched relative to normal histogram
-    [xHist,yHist,u] = ksdensity(currentData,'kernel','epanechnikov');
-    % take smaller kernel to avoid over-smoothing
-    [xHist,yHist] = ksdensity(currentData,'kernel','epanechnikov','width',u/divFactor);
-    
-    % find y-step
-    dy = min(diff(yHist));
-
-    % create x,y arrays
-    nPoints = length(xHist);
-    xArray = repmat(xBase,1,nPoints);
-    yArray = repmat([-0.5;-0.5;0.5;0.5],1,nPoints);
-    
-    % x is iData +/- almost 0.5, multiplied with the height of the
-    % histogram
-    if distWidth > 0
-        xArray = xArray.*repmat(xHist,4,1)./max(xHist) + iData;
-    else
-        xArray = xArray + iData;
+    if ~isempty(currentData)
+        
+        switch histOpt
+            case 0
+                % use hist
+                [xHist,yHist] = hist(currentData,divFactor);
+                
+            case 1
+                % use ksdensity
+                
+                % make histogram (use ksdensity for now)
+                % x,y are switched relative to normal histogram
+                [xHist,yHist,u] = ksdensity(currentData,'kernel','epanechnikov');
+                % take smaller kernel to avoid over-smoothing
+                if divFactor ~= 1
+                    [xHist,yHist] = ksdensity(currentData,'kernel','epanechnikov','width',u/divFactor);
+                end
+                
+            case 2
+                % use histogram
+                [xHist,yHist] = histogram(currentData,divFactor);
+        end
+        
+        % find y-step
+        dy = min(diff(yHist));
+        
+        % create x,y arrays
+        nPoints = length(xHist);
+        xArray = repmat(xBase,1,nPoints);
+        yArray = repmat([-0.5;-0.5;0.5;0.5],1,nPoints);
+        
+        % x is iData +/- almost 0.5, multiplied with the height of the
+        % histogram
+        if distWidth > 0
+            xArray = xArray.*repmat(xHist,4,1)./max(xHist) + iData;
+        else
+            xArray = xArray + iData;
+        end
+        
+        % yData is simply the bin locations
+        yArray = repmat(yHist,4,1) + dy*yArray;
+        
+        % add patch
+        axes(ah);
+        if invert
+            hh{iData} = patch(xArray,yArray,repmat(xHist/max(xHist),[4,1,3]));
+        else
+            hh{iData} = patch(xArray,yArray,repmat(1-xHist/max(xHist),[4,1,3]));
+        end
+        set(hh{iData},'EdgeColor','none')
+        
+        m(iData) = mean(currentData);
+        md(iData) = median(currentData);
     end
-    
-    % yData is simply the bin locations
-    yArray = repmat(yHist,4,1) + dy*yArray;
-    
-    % add patch
-    axes(ah);
-    if invert
-        hh{iData} = patch(xArray,yArray,repmat(xHist/max(xHist),[4,1,3]));
-    else
-        hh{iData} = patch(xArray,yArray,repmat(1-xHist/max(xHist),[4,1,3]));
-    end
-    set(hh{iData},'EdgeColor','none')
-    
-    m(iData) = mean(currentData);
-    md(iData) = median(currentData);
-     end
 end % loop
 
 if showMM
-% plot mean, median. Mean is filled red circle, median is green square
-mh = plot(1:nData,m,'or','MarkerFaceColor','r');
-mdh = plot(1:nData,md,'sg');
+    % plot mean, median. Mean is filled red circle, median is green square
+    mh = plot(1:nData,m,'or','MarkerFaceColor','r');
+    mdh = plot(1:nData,md,'sg');
 end
 
-% if ~empty, use xNames 
+% if ~empty, use xNames
 set(ah,'XTick',1:nData);
 if ~isempty(xNames)
     set(ah,'XTickLabel',xNames)
@@ -195,7 +226,7 @@ xlim([0,nData+1])
 if nargout > 0
     handles{1} = hh;
     if showMM
-    handles{2} = [mh;mdh];
+        handles{2} = [mh;mdh];
     end
 end
 
