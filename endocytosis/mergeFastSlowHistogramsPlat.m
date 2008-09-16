@@ -1,4 +1,4 @@
-function [mergedHistRes]=mergeFastSlowHistogramsPlat(Results, restrict, shape)
+function [mergedHistRes]=mergeFastSlowHistogramsPlat(Results, restrict, shape, startpar)
 % merge the fast and slow histograms preserving the normalization, and
 % fit multiple populations to lifetimes
 % SYNOPSIS [mergedHistRes]=mergeFastSlowHistogramsPlat(Results, restrict, shape);
@@ -9,6 +9,8 @@ function [mergedHistRes]=mergeFastSlowHistogramsPlat(Results, restrict, shape)
 %           shape   = (optional) shape for populations, e.g. [2 2 1], where
 %                   1 indicates an exponential distribution, and 
 %                   2 indicates a Rayleigh distribution
+%           startpar (optional) = start values for fitting
+%           [ b a1 tau1 k1 a2 tau2 k2 .... an taun kn]
 %
 % OUTPUT    mergedHistRes = merged Histogram results, which have the fields
 %           .numcells   = number of trajectories, fast+slow;
@@ -246,6 +248,11 @@ else
 end
 
 startv1template = [0    0.2 sigRay  2   0.1  10  2   0.2  90  1 0.2  100  1];
+if nargin>3
+    startv1template = startpar;
+    startv1template(3) = sigRay;
+end
+
 startv1 = zeros(1,1+3*length(shapevec));
 startv1(1:length(startv1)) = startv1template(1:length(startv1));
 startv1(4:3:length(startv1)) = shapevec;
