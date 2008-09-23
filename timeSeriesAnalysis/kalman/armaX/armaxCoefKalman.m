@@ -61,9 +61,12 @@ function [arParamK,maParamK,xParamK,arParamL,maParamL,xParamL,varCovMatL,...
 %       minOpt    : Minimization option:
 %                   -'ml' for Matlab local minimizer "fmincon";
 %                   -'tl' for Tomlab local minimizer "ucSolve";
+%                   -'nl' for Numerical Recipes local minimizer "amoeba";
+%
 %                   -'tg' for Tomlab global minimizer "glbFast"' followed
 %                     by Tomlab local minimizer "ucSolve"; -- DON'T USE
 %                   -'nag' for NAG's local minimizerE04JAF. -- DON'T USE
+%                  
 %                   Default: 'tl'
 %
 %OUTPUT arParamK  : Estimated AR coefficients (1st row) and parameters related
@@ -122,7 +125,10 @@ function [arParamK,maParamK,xParamK,arParamL,maParamL,xParamL,varCovMatL,...
 %        *STARTED USING A LAG THAT SPECIFIES WHERE X-DEPENDENCE STARTS, BUT
 %         CURRENTLY NOT IMPLEMENTED ALL THE WAY THROUGH AND COMMENTED OUT.
 %
-%Khuloud Jaqaman, January 2006
+% Khuloud Jaqaman, January 2006
+%
+% Modification: Numerical Recipes local minimizer is added as a minOpt ('nl').
+% Pei-hsin Hsu, September 2008
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Output
@@ -343,8 +349,8 @@ else
     %         disp('--armaxCoefKalman: "minOpt" should be either "ml", "tl", "tg" or ''nag''!');
     %         errFlag = 1;
     %     end
-    if (~strcmp(minOpt,'ml') && ~strcmp(minOpt,'tl'))
-        disp('--armaxCoefKalman: "minOpt" should be either "ml" or "tl"!');
+    if (~strcmp(minOpt,'ml') && ~strcmp(minOpt,'tl') && ~strcmp(minOpt, 'nl'))
+        disp('--armaxCoefKalman: "minOpt" should be "ml", "nl" or "tl"!');
         errFlag = 1;
     end
 end
@@ -392,6 +398,8 @@ end
 tmp = vertcat(trajOut.observations);
 wnVariance0 = nanvar(tmp(:,1)); %variance from "previous" iteration
 wnVariance = 0.8*wnVariance0; %variance from "current" iteration
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Maximum likelihood estimation of model
@@ -529,6 +537,38 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                     proceed = 0;
                 end
 
+                
+            case 'nl' % local minimization using Numerical Recipes' amoeba
+                
+                % To call carmaFitModel.c, each trajOut(i).observations is
+                % transformed to 3D
+                
+                for i = 1:numTraj
+                    traj = trajOut(i).observations;
+                    traj3D(:, :, 1) = traj(:, 1);
+                    traj3D(:, :, 2) = traj(:, 2);
+                    trajOut3D(i).observations = traj3D;
+                end
+                
+                model.trajOut = trajOut3D;                
+                model.TOPOp = cat(1, 0, (arParamP0)');
+                model.maPARAMSp = (maParamP0)';
+                
+                topoBIN = cat(1, 0, ones(arOrder, 1));
+                maBIN = ones(maOrder, 1);
+                
+                model.topoBIN = cast(topoBIN, 'int32');
+                model.maBIN = cast(maBIN, 'int32');
+                
+                
+                [topo, ma, proceed] = carmaFitModel(model);
+                
+                
+                % Minor redundancy to fit case 'nr' to armaxCoefKalman
+                
+                ar = topo(2:(arOrder+1));
+                params = cat(2, (ar)', (ma)');
+                
             otherwise %if wrong optimization option was input
 
                 disp('--armaxCoefKalman: Wrong optimization option!');
