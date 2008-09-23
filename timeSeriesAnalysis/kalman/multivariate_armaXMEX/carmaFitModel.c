@@ -1,6 +1,10 @@
 /*
  * File: carmaFitModel.c
  * ---------------------
+ * The mexFunction is designed to be called in armaxFitKalman.m, if
+ * option 'nl' (Numerical Recipes local minimizer) is chosen.
+ *
+ * Hunter Elliott, Pei-hsin Hsu, September 2008
  */
 
 #include <stdio.h>
@@ -170,6 +174,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     mxErrMsgTxt("topoBIN should be equal to TOPO dimensionally.");
 
   /* Retrieve white noise variance if input */
+
   pm = mxGetField(prhs[0],0,"wnVariance");
   if (pm == NULL){ 
       prob.wnVariance = 1;
@@ -206,24 +211,30 @@ void mexFunction( int nlhs, mxArray *plhs[],
   }
 
 
-
-  /* Call the minimizer for maximum likelihood estimation of model params */
+  /* 
+   * Minimizer: amoeba
+   * -----------------
+   * (1) If minimization is successful, the third output plhs[2] is 1. The variable "proceed"
+   *     of armaxCoefKalman.m should be assigned to this value.
+   * (2) Originally, plhs[2] is Bayesian Information Criterion (BIC). The calculation of BIC
+   *     is commented out to fit this module to armaxCoefKalman.m.
+   */
 
   nEvals = 0;
   fTol = 1.0E-8;
 
   if (amoeba(p, vertexLikelihoods, nParams, fTol, carmaNegLnLikelihood, &nEvals, &prob)){
     printf("\ncarmaFitModel: Minimizer succeeds.\n");
-    plhs[3] = mxCreateDoubleScalar(1);
+    plhs[2] = mxCreateDoubleScalar(1);
   } else{
-    printf("\ncarmaFitModel: Minimizer fails.\n");
+    printf("\ncarmaFitModel: Minimizer fails.");
     printf("\nMaximum number of evaluations is exceeded.\n");
-    plhs[3] = mxCreateDoubleScalar(0);
+    plhs[2] = mxCreateDoubleScalar(0);
   }
 
 
 
-  /* Set up outputs for results of minimization */
+  /* Set up first two outputs */
 
   /* Dimensions of the TOPO matrix */
 
@@ -241,32 +252,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 
 
-  /*
-   * plhs[2]
-   * -------
-   * plhs[2] contains the Bayesian Information Criterion (BIC).
-   * Ref: Jaqaman et al. Biophys. J. 91: 2312-2325 (2006), equation (5)
-   */
+  TOPOfitp = mxGetPr(plhs[0]);
+  maPARAMSfitp = mxGetPr(plhs[1]);
 
-  nPoints = 0;
-
-  for (i = 0; i < nMovies; i++)
-    nPoints += prob.data[i].trajLen - prob.data[i].nMissing;
-
-  /*
-  mexPrintf("\nlikelihood = %g\n", vertexLikelihoods[1]);
-  mexPrintf("\nnPoints = %d\n", nPoints);
-  mexPrintf("\nnParams = %d\n", nParams);
-  */
-
-  plhs[2] = mxCreateDoubleScalar(vertexLikelihoods[1] + log(nPoints) * nParams);
-
-
-
-  TOPOfit = mxGetPr(plhs[0]);
-  TOPOfitp = (double *) malloc(sizeof(double) * nLags * nNodes * nNodes);
-  maPARAMSfit = mxGetPr(plhs[1]);
-  maPARAMSfitp = (double *) malloc(sizeof(double) * nNodes * maOrderMax);
+  /* TOPOfitp = (double *) malloc(sizeof(double) * nLags * nNodes * nNodes); */
+  /* maPARAMSfitp = (double *) malloc(sizeof(double) * nNodes * maOrderMax); */
 
 
 
@@ -277,16 +267,15 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		   prob.topoBIN, prob.maBIN,
 		   p[1] + 1, nParams);
 
-  /* Convert these to regular parameters for return */
+  
 
+  /* Convert partial TOPO parameter to full for return */
+
+  /* 
   for (i = 0; i < nNodes; i++){
     for (j = 0; j < nNodes; j++){
-	  
-      /* Along the diagonal the parameters are AR */
 
 	if (i == j) {
-	    
-	  /* No AR parameters at lag 0 */
 
 	  *(TOPOfit + i * nLags + j * nLags * nNodes) = 0;
 	    
@@ -295,8 +284,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 	} else {
 
-	  /* Copy directly the X-parameters */
-
 	  for (k = 0; k < nLags; k++)
 	    *(TOPOfit + i * nLags + j * nLags * nNodes + k) = 
 	      *(TOPOfitp + i * nLags + j * nLags * nNodes + k);
@@ -304,17 +291,35 @@ void mexFunction( int nlhs, mxArray *plhs[],
   
     }
   }
+  */
+
  
   /* Convert partial MA parameters to full for return */
 
+  /*
   for (i = 0; i < nNodes; i++)
     levinsonDurbinExpoMA(maPARAMSfitp + i * maOrderMax, maOrderMax,
 			 maPARAMSfit + i * maOrderMax);
+  */
 
+
+  /*
+   * plhs[2]
+   * -------
+   * plhs[2] contains the Bayesian Information Criterion (BIC).
+   * Ref: Jaqaman et al. Biophys. J. 91: 2312-2325 (2006), equation (5)
+   */
+  /*
+  nPoints = 0;
+
+  for (i = 0; i < nMovies; i++)
+    nPoints += prob.data[i].trajLen - prob.data[i].nMissing;
+
+  plhs[2] = mxCreateDoubleScalar(vertexLikelihoods[1] + log(nPoints) * nParams);
+  */
 
 
   free(prob.data);
-
   free(paramV);
   free_vector(vertexLikelihoods, 1, nParams + 1);
   free_matrix(p, 1, nParams + 1, 1, nParams);
