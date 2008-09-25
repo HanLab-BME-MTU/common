@@ -145,7 +145,8 @@ double carmaNegLnLikelihood(double *paramNR, void *d)
 
       traj = prob->data[n].traj;
       trajLen = prob->data[n].trajLen;
-      nMissing = prob->data[n].nMissing;
+      nMissing = 0;
+/*      nMissing = prob->data[n].nMissing; */
 
       innovations = (double *) malloc(sizeof(double) * trajLen);
       innovationVars = (double *) malloc(sizeof(double) * trajLen);
@@ -159,9 +160,10 @@ double carmaNegLnLikelihood(double *paramNR, void *d)
 			   &innovations, &innovationVars, &wnV,
 			   &sum1, &sum2, &nMissing);
 
-      prob->data[n].nMissing = MAX(prob->data[n].nMissing, nMissing);
-
+/*      prob->data[n].nMissing = MAX(prob->data[n].nMissing, nMissing); */
+        
       totLen += trajLen;
+      prob->data[n].nMissing = nMissing;
       totMissing += prob->data[n].nMissing;
 
       free(innovations);

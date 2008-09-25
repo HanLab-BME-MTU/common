@@ -273,7 +273,7 @@ int carmaCalcKalmanInnov(
 
 		/* check for NaNs in input vectors */        
 		for (k = 0; k < arOrderMax+1; k++){                
-		  if ( isnan( *(inputVectors[m] + k) ) ){
+		  if ( mxIsNaN( *(inputVectors[m] + k) ) ){
 		    nanInInput = 1;
 		  }                
 		}
@@ -321,9 +321,9 @@ int carmaCalcKalmanInnov(
     }
     
     /*check if there is an observation at current timepoint */                
-    if ( isnan( *(TRAJ + iNode*trajLength + j) ) | nanInInput ){
-	nanPresent = 1;
-	nanInInput = 0;
+    if ( mxIsNaN( *(TRAJ + iNode*trajLength + j) ) | nanInInput ){
+        nanPresent = 1;
+    	nanInInput = 0;
     }
         
     if (nanPresent){
