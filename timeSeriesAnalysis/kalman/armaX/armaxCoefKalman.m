@@ -349,7 +349,7 @@ else
     %         disp('--armaxCoefKalman: "minOpt" should be either "ml", "tl", "tg" or ''nag''!');
     %         errFlag = 1;
     %     end
-    if (~strcmp(minOpt,'ml') && ~strcmp(minOpt,'tl') && ~strcmp(minOpt, 'nl'))
+    if (~strcmp(minOpt,'ml') && ~strcmp(minOpt,'nl') && ~strcmp(minOpt, 'tl'))
         disp('--armaxCoefKalman: "minOpt" should be "ml", "nl" or "tl"!');
         errFlag = 1;
     end
@@ -545,12 +545,14 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 
                 for i = 1:numTraj
                     traj = trajOut(i).observations;
-                    traj3D(:, :, 1) = traj(:, 1);
-                    traj3D(:, :, 2) = traj(:, 2);
-                    trajOut3D(i).observations = traj3D;
+                    [m, n] = size(traj);
+                    traj3d = zeros(m, 1, 2);
+                    traj3d(:, 1, 1) = traj(:, 1);
+                    traj3d(:, 1, 2) = traj(:, 2);
+                    tr(i).observations = traj3d;
                 end
                 
-                model.trajOut = trajOut3D;                
+                model.trajOut = tr;                
                 model.TOPOp = cat(1, 0, (arParamP0)');
                 model.maPARAMSp = (maParamP0)';
                 
@@ -564,7 +566,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 [topo, ma, proceed] = carmaFitModel(model);
                 
                 
-                % Minor redundancy to fit case 'nr' to armaxCoefKalman
+                % Minor redundancy to fit case 'nl' to armaxCoefKalman
                 
                 ar = topo(2:(arOrder+1));
                 params = cat(2, (ar)', (ma)');
