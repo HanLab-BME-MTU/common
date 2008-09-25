@@ -91,9 +91,12 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   prob.maOrderMax = maOrderMax = nRows;
 
-  if (nCols != nNodes)
-    mxErrMsgTxt("Second dimension of maPARAMSp should be equal to nNodes.");
+  /*
 
+  if (nCols != nNodes)
+  mxErrMsgTxt("Second dimension of maPARAMSp should be equal to nNodes.");
+
+  */
 
 
   /* Retrieve binary matrix of MA parameters */
@@ -224,11 +227,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
   fTol = 1.0E-8;
 
   if (amoeba(p, vertexLikelihoods, nParams, fTol, carmaNegLnLikelihood, &nEvals, &prob)){
-    printf("\ncarmaFitModel: Minimizer succeeds.\n");
     plhs[2] = mxCreateDoubleScalar(1);
   } else{
-    printf("\ncarmaFitModel: Minimizer fails.");
-    printf("\nMaximum number of evaluations is exceeded.\n");
     plhs[2] = mxCreateDoubleScalar(0);
   }
 

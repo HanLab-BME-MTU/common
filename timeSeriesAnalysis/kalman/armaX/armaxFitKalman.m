@@ -45,6 +45,7 @@ function [fitResults,errFlag] = armaxFitKalman(trajOut,trajIn,modelParamOrOrder,
 %                          initial guesses of parameters picked randomly.
 %       minOpt           : Minimization option: 
 %                          -'ml' for Matlab local minimizer "fmincon";
+%                          -'nl' for Numerical Recipes local minimizer "amoeba"
 %                          -'tl' for Tomlab local minimizer "ucSolve";
 %                          -'tg' for Tomlab global minimizer "glbFast"' followed
 %                           by Tomlab local minimizer "ucSolve"; -- DON'T USE
@@ -266,8 +267,8 @@ else %if minimization option was input, check its value
 %         disp('--armaxFitKalman: "minOpt" should be either "ml", "tl", "tg" or "nag"!');
 %         errFlag = 1;
 %     end
-    if (~strcmp(minOpt,'ml') && ~strcmp(minOpt,'tl'))
-        disp('--armaxFitKalman: "minOpt" should be either "ml" or "tl"!');
+    if (~strcmp(minOpt,'ml') && ~strcmp(minOpt,'tl') && ~strcmp(minOpt, 'nl'))
+        disp('--armaxFitKalman: "minOpt" should be "ml", "tl" or "nl"!');
         errFlag = 1;
     end
 end

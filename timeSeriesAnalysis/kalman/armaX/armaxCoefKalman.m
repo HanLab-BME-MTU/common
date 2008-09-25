@@ -568,8 +568,17 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 
                 % Minor redundancy to fit case 'nl' to armaxCoefKalman
                 
-                ar = topo(2:(arOrder+1));
-                params = cat(2, (ar)', (ma)');
+                if arOrder > 0
+                    ar = topo(2:(arOrder+1));
+                    if maOrder > 0
+                        params = cat(2, (ar)', (ma)');
+                    else
+                        params = (ar)';
+                    end
+                else 
+                    params = (ma)';
+                end
+                   
                 
             otherwise %if wrong optimization option was input
 

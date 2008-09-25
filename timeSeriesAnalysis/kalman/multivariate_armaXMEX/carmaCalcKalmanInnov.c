@@ -1,3 +1,8 @@
+/*
+ * File: carmaCalcKalmanInnov.c
+ * ----------------------------
+ */
+
 #include <math.h>
 #include <stdlib.h>
 #include "carmaFitModel.h"
