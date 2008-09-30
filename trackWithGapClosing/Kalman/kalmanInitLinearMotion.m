@@ -1,9 +1,9 @@
 function [kalmanFilterInfo,errFlag] = kalmanInitLinearMotion(frameInfo,...
-    probDim,initParam)
+    probDim,costMatParam)
 %KALMANINITLINEARMOTION initializes Kalman filter state vector and covariance matrix for features in a frame
 %
 %SYNOPSIS [kalmanFilterInfo,errFlag] = kalmanInitLinearMotion(frameInfo,...
-%    probDim,initParam)
+%    probDim,costMatParam)
 %
 %INPUT  frameInfo       : Structure with fields (for 1 frame):
 %             .allCoord     : Image coordinate system x,dx,y,dy,[z,dz] of 
@@ -11,15 +11,20 @@ function [kalmanFilterInfo,errFlag] = kalmanInitLinearMotion(frameInfo,...
 %                             pixels).
 %             .num          : Number of features in frame.
 %       probDim         : Problem dimension. 2 (for 2D) or 3 (for 3D).
-%       initParam       : Structure with fields
-%             .convergePoint: Convergence point (x, y, [z] coordinates) of tracks
-%                             if motion is radial, in image coordinate
-%                             system. Should be a row vector.
-%                             Optional. If supplied, radial form is assumed and
-%                             value is used to estimate initial velocities. If
-%                             not supplied, then initial velocity is taken as
-%                             zero. Default: [].
-%                         Optional. Enter as [] if not used.
+%       costMatParam    : Linking cost matrix parameters. In addition
+%                         to the fields needed for costMatLinearMotionLink,
+%                         if it has the field 
+%             .kalmanInitParam, then sub-fields within will be used for
+%                               initialization. Currently, one subfield is
+%                               supported:
+%                   .convergePoint: Convergence point (x, y, [z]
+%                                   coordinates) of tracks if motion is
+%                                   radial, in image coordinate system.
+%                                   Should be a row vector. If supplied,
+%                                   radial form is assumed and value is
+%                                   used to estimate initial velocities. If
+%                                   not supplied, then initial velocity is
+%                                   taken as zero.
 %
 %OUTPUT kalmanFilterInfo: Structure with fields:
 %             .stateVec     : State vector for each feature.
@@ -38,19 +43,33 @@ errFlag = 0;
 %% Input
 
 %check whether correct number of input arguments was used
-if nargin < 2
+if nargin < 3
     disp('--kalmanInitLinearMotion: Incorrect number of input arguments!');
     errFlag  = 1;
     return
 end
 
-%check whether convergence point for radial motion is supplied
-if nargin < 3 || isempty(initParam) || ~isfield(initParam,'convergePoint')
-    initParam.convergePoint = [];
-end
+%extract min. and max. search radii and brownStdMult from costMatParam
+minSearchRadius = costMatParam.minSearchRadius;
+maxSearchRadius = costMatParam.maxSearchRadius;
+brownStdMult = costMatParam.brownStdMult;
 
-%get convergence point for radial motion
-convergePoint = initParam.convergePoint;
+%estimate initial state noise variance
+noiseVarInit = (mean([minSearchRadius maxSearchRadius]) / brownStdMult) ^ 2;
+
+%check whether additional initialization parameters were input
+if isfield(costMatParam,'kalmanInitParam')
+    initParam = costMatParam.kalmanInitParam;
+    if isfield(initParam,'convergePoint')
+        convergePoint = initParam.convergePoint;
+    else
+        initParam.convergePoint = [];
+        convergePoint = [];
+    end
+else
+    initParam.convergePoint = [];
+    convergePoint = [];
+end
 
 if ~isempty(convergePoint)
     [nRow,nCol] = size(convergePoint);
@@ -108,7 +127,7 @@ end
 %initialize state noise variance
 for iFeature = 1 : numFeatures
     kalmanFilterInfo.noiseVar(:,:,iFeature) = diag(...
-        ones(2*probDim,1));
+        ones(2*probDim,1)*noiseVarInit);
 end
 
 

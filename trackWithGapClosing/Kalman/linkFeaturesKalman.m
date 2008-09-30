@@ -254,7 +254,7 @@ if selfAdaptive
         kalmanFilterInfo(1).noiseVar = filterInfoPrev(1).noiseVar; %noise variance
     else
         eval(['[filterInit,errFlag] = ' kalmanFunctions.initialize ...
-            '(movieInfo(1),probDim);'])
+            '(movieInfo(1),probDim,costMatParam);'])
         kalmanFilterInfo(1).stateVec = filterInit.stateVec;
         kalmanFilterInfo(1).stateCov = filterInit.stateCov;
         kalmanFilterInfo(1).noiseVar = filterInit.noiseVar;
@@ -377,12 +377,13 @@ for iFrame = 1 : numFrames-1
                             '(trackedFeatureIndx(1:numFeaturesFrame2,:),'...
                             'movieInfo(iFrame+1),kalmanFilterInfoTmp,'...
                             'propagationScheme,kalmanFilterInfo,probDim,'...
-                            'filterInfoPrev(iFrame+1));'])
+                            'filterInfoPrev(iFrame+1),costMatParam);'])
                     else %if no prior information is supplied
                         eval(['[kalmanFilterInfo,errFlag] = ' kalmanFunctions.calcGain ...
                             '(trackedFeatureIndx(1:numFeaturesFrame2,:),'...
                             'movieInfo(iFrame+1),kalmanFilterInfoTmp,'...
-                            'propagationScheme,kalmanFilterInfo,probDim,[]);'])
+                            'propagationScheme,kalmanFilterInfo,probDim,'...
+                            '[],costMatParam);'])
                     end
                     
                 end
@@ -429,7 +430,7 @@ for iFrame = 1 : numFrames-1
                         kalmanFilterInfo(iFrame+1).noiseVar = filterInfoPrev(iFrame+1).noiseVar; %noise variance
                     else
                         eval(['[filterInit,errFlag] = ' kalmanFunctions.initialize ...
-                            '(movieInfo(iFrame+1),probDim);'])
+                            '(movieInfo(iFrame+1),probDim,costMatParam);'])
                         kalmanFilterInfo(iFrame+1).stateVec = filterInit.stateVec;
                         kalmanFilterInfo(iFrame+1).stateCov = filterInit.stateCov;
                         kalmanFilterInfo(iFrame+1).noiseVar = filterInit.noiseVar;
@@ -502,7 +503,7 @@ for iFrame = 1 : numFrames-1
                     kalmanFilterInfo(iFrame+1).noiseVar = filterInfoPrev(iFrame+1).noiseVar; %noise variance
                 else
                     eval(['[filterInit,errFlag] = ' kalmanFunctions.initialize ...
-                        '(movieInfo(iFrame+1),probDim);'])
+                        '(movieInfo(iFrame+1),probDim,costMatParam);'])
                     kalmanFilterInfo(iFrame+1).stateVec = filterInit.stateVec;
                     kalmanFilterInfo(iFrame+1).stateCov = filterInit.stateCov;
                     kalmanFilterInfo(iFrame+1).noiseVar = filterInit.noiseVar;

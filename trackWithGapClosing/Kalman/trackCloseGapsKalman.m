@@ -311,6 +311,10 @@ if selfAdaptive
         movieInfo,costMatrices(1).funcName,costMatrices(1).parameters,...
         kalmanFunctions,probDim,[],[],verbose);
 
+    %time-reverse Kalman filter information
+    % -- USER DEFINED FUNCTION -- %
+    eval(['kalmanInfoLink = ' kalmanFunctions.timeReverse '(kalmanInfoLink);']);
+    
     %redo the linking by going backwards in the movie and using the
     %Kalman filter information from the first linking attempt
     %this will improve the linking and the state estimation
@@ -319,9 +323,13 @@ if selfAdaptive
     end
     [dummy,dummy,kalmanInfoLink,dummy,linkingCosts] = linkFeaturesKalman(...
         movieInfo(end:-1:1),costMatrices(1).funcName,costMatrices(1).parameters,...
-        kalmanFunctions,probDim,kalmanInfoLink(end:-1:1),linkingCosts,verbose);
+        kalmanFunctions,probDim,kalmanInfoLink,linkingCosts,verbose);
     clear dummy dummy1
 
+    %time-reverse Kalman filter information
+    % -- USER DEFINED FUNCTION -- %
+    eval(['kalmanInfoLink = ' kalmanFunctions.timeReverse '(kalmanInfoLink);']);
+    
     %go forward one more time to get the final estimate of the initial track
     %segments
     if verbose
@@ -330,7 +338,7 @@ if selfAdaptive
     [tracksFeatIndxLink,tracksCoordAmpLink,kalmanInfoLink,nnDistLinkedFeat,...
         dummy,errFlag] = linkFeaturesKalman(movieInfo,costMatrices(1).funcName,...
         costMatrices(1).parameters,kalmanFunctions,probDim,...
-        kalmanInfoLink(end:-1:1),linkingCosts,verbose);
+        kalmanInfoLink,linkingCosts,verbose);
     
 else %if not self-adaptive, link in one round only
     

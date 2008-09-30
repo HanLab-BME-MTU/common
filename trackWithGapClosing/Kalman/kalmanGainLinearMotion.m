@@ -1,11 +1,11 @@
 function [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIndx,...
     frameInfo,kalmanFilterInfoTmp,propagationScheme,kalmanFilterInfoIn,probDim,...
-    filterInfoPrev,kalmanInitParam)
+    filterInfoPrev,costMatParam)
 %KALMANGAINLINEARMOTION uses the Kalman gain from linking to get better estimates of the state vector, its covariance matrix, state noise and its variance
 %
 %SYNOPSIS [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIndx,...
 %    frameInfo,kalmanFilterInfoTmp,propagationScheme,kalmanFilterInfoIn,probDim,...
-%    filterInfoPrev,kalmanInitParam)
+%    filterInfoPrev,costMatParam)
 %
 %INPUT  trackedFeatureIndx : Matrix showing connectivity between features
 %                            in current frame (listed in last column of matrix) 
@@ -14,7 +14,7 @@ function [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIn
 %                            not connected to any previous features.
 %       frameInfo          : Structure with fields (for current frame):
 %             .allCoord        : x,dx,y,dy,[z,dz] of features collected in one
-%                                matrix.
+%                                matrix.kalmanFunctions.
 %             .amp             : Amplitudes of PSFs fitting detected features. 
 %                                1st column for values and 2nd column 
 %                                for standard deviations.
@@ -50,11 +50,8 @@ function [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIn
 %                                for each feature in frame.
 %             .noiseVar        : Variance of state noise for each
 %                                feature in frame.
-%                            Optional input. Enter [] or nothing if not to be used.
-%       kalmanInitParam    : Structure with fields containing variables
-%                            used in Kalman filter initialization. See
-%                            particular initialization function for fields.
-%                            Optional. Enter [] or nothing if not to be used.
+%                            Enter [] if there is no previous information.
+%       costMatParam       : Linking cost matrix parameters.
 %
 %OUTPUT kalmanFilterInfoOut: Structure with fields (for all frames upto current):
 %             .stateVec        : Kalman filter state vector for all features.
@@ -79,25 +76,17 @@ errFlag = [];
 %% Input
 
 %check whether correct number of input arguments was used
-if nargin < 6
+if nargin < 8
     disp('--kalmanGainLinearMotion: Incorrect number of input arguments!');
     errFlag  = 1;
     return
 end
 
-%check whether a priori Kalman filter information is given
-if nargin < 7 || isempty(filterInfoPrev)
-    filterInfoPrev = [];
+if isempty(filterInfoPrev)
     usePriorInfo = 0;
 else
     usePriorInfo = 1;
 end
-
-%check whether additional parameters for Kalman filter initialization are
-%given
-if nargin < 8 || isempty(kalmanInitParam)
-    kalmanInitParam = [];
-end 
 
 %% Gain calculation and update
 
@@ -182,7 +171,7 @@ for iFeature = 1 : numFeatures
             featureInfo.allCoord = frameInfo.allCoord(iFeature,:);
             featureInfo.num = 1;
             [filterTmp,errFlag] = kalmanInitLinearMotion(featureInfo,probDim,...
-                kalmanInitParam);
+                costMatParam);
             kalmanFilterInfoOut(iFrame).stateVec(iFeature,:) = filterTmp.stateVec;
             kalmanFilterInfoOut(iFrame).stateCov(:,:,iFeature) = filterTmp.stateCov;
             kalmanFilterInfoOut(iFrame).noiseVar(:,:,iFeature) = filterTmp.noiseVar;
