@@ -389,7 +389,13 @@ for k=size(modelParam,3):-1:1
             end %(if strcmp(minOpt,'tg') || suppliedIG ... else ...)
 
             %get number of observations used in parameter estimation
-            tmp = vertcat(wnVector.observations);
+            
+            if errFlag == 0
+                tmp = vertcat(wnVector.observations);
+            else
+                tmp = vertcat(trajOut.observations);
+            end
+            
             numObserve = length(find(~isnan(tmp(:,1))));
 
             %write output as fields in fitResults
