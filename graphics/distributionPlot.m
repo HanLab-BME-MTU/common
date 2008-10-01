@@ -8,17 +8,19 @@ function handles = distributionPlot(varargin)
 %       distWidth : (opt) width of distributions. 1 means that the maxima
 %           of  two adjacent distributions might touch. Negative numbers
 %           indicate that the distributions should have constant width, i.e
-%           the density is only expressed through greylevels. 
+%           the density is only expressed through greylevels.
 %           Values between 1 and 2 are like values between 0 and 1, except
 %           that densities are not expressed via graylevels. Default: 0.9
 %       showMM : (opt) if 1, mean and median are shown as red circles and
 %                green squares, respectively. Default: 1
+%                2: only mean
+%                3: only median
 %       xNames : (opt) cell array of length nData containing x-tick names
 %               (instead of the default '1,2,3')
 %       histOpt : (opt) histogram type to plot
 %                   0 : use hist command (no smoothing, fixed number of
 %                       bins)
-%                   1 : smoothened histogram using ksdensitz with
+%                   1 : smoothened histogram using ksdensity with
 %                       Epanechnikov-kernel. Default.
 %                   2 : histogram command (no smoothing, automatic
 %                       determination of bin width)
@@ -199,13 +201,13 @@ for iData = 1:nData
         axes(ah);
         if invert
             if useGray
-            hh{iData} = patch(xArray,yArray,repmat(xHist/max(xHist),[4,1,3]));
+                hh{iData} = patch(xArray,yArray,repmat(xHist/max(xHist),[4,1,3]));
             else
                 hh{iData} = patch(xArray,yArray,'w');
             end
         else
             if useGray
-            hh{iData} = patch(xArray,yArray,repmat(1-xHist/max(xHist),[4,1,3]));
+                hh{iData} = patch(xArray,yArray,repmat(1-xHist/max(xHist),[4,1,3]));
             else
                 hh{iData} = patch(xArray,yArray,'k');
             end
@@ -219,8 +221,12 @@ end % loop
 
 if showMM
     % plot mean, median. Mean is filled red circle, median is green square
-    mh = plot(1:nData,m,'or','MarkerFaceColor','r');
-    mdh = plot(1:nData,md,'sg');
+    if any(showMM==[1,2])
+        mh = plot(1:nData,m,'or','MarkerFaceColor','r');
+    end
+    if any(showMM==[1,3])
+        mdh = plot(1:nData,md,'sg');
+    end
 end
 
 % if ~empty, use xNames
