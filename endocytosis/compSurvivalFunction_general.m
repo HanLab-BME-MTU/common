@@ -1,4 +1,4 @@
-function [survFunc,pvec,decaytimes] = compSurvivalFunction_general(data1, field1, data2, field2, numBS, typeBS, percvec)
+function [survFunc,pvec,decaytimes] = compSurvivalFunction_general(data1, field1, data2, field2, numBS, typeBS, percvec, id)
 % compSurvivalFunction_general compares the survival functions for
 % different conditions
 %
@@ -6,18 +6,22 @@ function [survFunc,pvec,decaytimes] = compSurvivalFunction_general(data1, field1
 % data2, field2)
 %
 % INPUT     data1    = experiment structure with first data set
-%           field1  = field in data1 from which the lifetime histogram is
-%                   read, e.g. 'survivalFunction_InRegion'
-%           data2   = experiment structure with second data set
-%           field2  = field in data1 from which the lifetime histogram is
-%                   read, E.G. 'survivalFunction_OutRegion'
-%           numBS  = number of bootstrap runs (OPTIONAL)
-%                    default = 2000
-%           typeBS = type of bootstrap (OPTIONAL)
-%                    'movie' (default) = subsample individual movie
-%                    combinations
-%                    'traj' = subsample individual trajectories (especially
-%                    relevant for big difference in inside vs outside)
+%           field1   = field in data1 from which the lifetime histogram is
+%                      read, e.g. 'survivalFunction_InRegion'
+%           data2    = experiment structure with second data set
+%           field2   = field in data1 from which the lifetime histogram is
+%                      read, E.G. 'survivalFunction_OutRegion'
+%           numBS    = number of bootstrap runs (OPTIONAL)
+%                      default = 2000
+%           typeBS   = type of bootstrap (OPTIONAL)
+%                      'movie' (default) = subsample individual movie
+%                      combinations
+%                      'traj' = subsample individual trajectories (especially
+%                      relevant for big difference in inside vs outside)
+%           percvec  = vector with percentage points of survival function
+%                      for comparison; default is [0.9:-0.1:0.1]
+%           id       = set to 1 if you want to compare matched pairs (e.g.
+%                      inside/outside of the same movie)
 %                   
 %                   
 %
@@ -38,7 +42,11 @@ function [survFunc,pvec,decaytimes] = compSurvivalFunction_general(data1, field1
 %                     row 3: error condition 1
 %                     row 4: average condition 2
 %                     row 5: error condition 2
-%                     row 6: p-value for t-test between condition 1 and 2  
+%                     row 6: p-value for t-test between condition 1 and 2
+%                     IF ID==1, also added:
+%                     row 7: average difference 1-2
+%                     row 8: error difference 1-2
+%                     row 9: p-value for t-test on difference
 %                   
 % NOTE: The current version of the function assumes that ALL MOVIES in the
 % data structure are acquired at the same framerate, or that the user
@@ -48,6 +56,7 @@ function [survFunc,pvec,decaytimes] = compSurvivalFunction_general(data1, field1
 %
 % last modified DATE: 28-Aug-2008 (Dinah)
 % last modified DATE: 10-Sep-2008 (Dinah)
+% last modified DATE: 02-Oct-2008 (Dinah)
 
 
 % averaging can only be performed up until the minimum common length of all 
@@ -67,7 +76,18 @@ minlen2 = min(mlvec2);
 
 minlen = min(minlen1,minlen2);
 
-
+idvar = 0;
+if nargin>7
+    if id==1 
+        if n1==n2
+            idvar=1;
+        else
+            disp('idvar can''t be set to 1 since data sets have different sizes');
+        end
+    end
+end
+        
+        
 histmat1 = nan*zeros(length(data1),minlen);
 histmat2 = nan*zeros(length(data2), minlen);
 
@@ -212,45 +232,100 @@ pvec(1) = pval_av; % KS-test p-value of all data1 vs all data 2
 pvec(2) = cflevel; % KS-test p-value below which 95% of bootstrap tests are located
 pvec(3) = plevel;  % percentage of non-significant boostrap test results
 
-%
+%% level outout
+
+levels = [0.9:-0.1:0.1];
 if nargin>6
-    levels = percvec;
-else
-    levels = [0.9:-0.1:0.1];
+    if ~isempty(percvec)
+        levels = percvec;
+    end
 end
+
+
 
 for k=1:length(levels)
     
-    % current perecntage increment
+    % current percentage increment
     cinc = levels(k);
-    incrVec1 = [];
-    incrVec2 = [];
+    %incrVec1 = [];
+    %incrVec2 = [];
     % find decay time for this level condition 1
     for a=1:n1
         fpos = find( (histmat1(a,:)/histmat1(a,1))<cinc );
         if ~isempty(fpos)
-            incrVec1(a) = min( fpos );
+            incrVec1(a,k) = min( fpos );
         else
-            incrVec1(a) = nan;
+            incrVec1(a,k) = nan;
         end
     end
     % find decay time for this level condition 1
     for b=1:n2
         fpos = find( ( histmat2(b,:)/histmat2(b,1) )<cinc );
         if ~isempty(fpos)
-            incrVec2(b) = min( fpos );
+            incrVec2(b,k) = min( fpos );
         else
-            incrVec2(b) = nan;
+            incrVec2(b,k) = nan;
         end
     end
-    [h,pval] = ttest2(incrVec1,incrVec2);
+    
+end
+
+for k=1:length(levels)
+    
+    cincrVec1 = incrVec1(:,k);
+    cincrVec2 = incrVec2(:,k);
+    
+    [h,pval] = ttest2(cincrVec1,cincrVec2);
 
     decaytimes(1,k) = levels(k);
-    decaytimes(2,k) = nanmean(incrVec1);
-    decaytimes(3,k) = nanstd(incrVec1)/sqrt(n1);
-    decaytimes(4,k) = nanmean(incrVec2);
-    decaytimes(5,k) = nanstd(incrVec2)/sqrt(n2);
+    decaytimes(2,k) = nanmean(cincrVec1);
+    decaytimes(3,k) = nanstd(cincrVec1)/sqrt(n1);
+    decaytimes(4,k) = nanmean(cincrVec2);
+    decaytimes(5,k) = nanstd(cincrVec2)/sqrt(n2);
     decaytimes(6,k) = pval;
+end
+
+
+%==========================================================================
+%% if data are inside vs outside of same movies, compare the individual
+%% differences
+
+if idvar==1
+    
+      
+    incrDiff = incrVec1-incrVec2;
+    
+    for k=1:length(levels)
+
+        cdiff = incrDiff(:,k);
+        [h,pval2] = ttest(cdiff); 
+        ptdiff(k) = pval2;
+        
+    end
+      
+    decaytimes(7,:) = nanmean(incrDiff,1);
+    decaytimes(8,:) = nanstd(incrDiff,1);
+    decaytimes(9,:) = ptdiff(:);
+    
+    
+    
+    figure
+    hold on;
+    errorbar([1:length(levels)],decaytimes(7,:),decaytimes(8,:),'r.');
+    bar([1:length(levels)],decaytimes(7,:),0.3,'r' );
+
+    for n=1:length(levels)
+        tlevel(n) = {num2str(levels(n))};
+        text( n-0.15,1.1*decaytimes(7,n),['p=',num2str(decaytimes(9,n))] );
+    end
+
+    set(gca,'XTick',[1:length(levels)]);
+    set(gca,'XTickLabel',tlevel);
+    xlabel('percentage level');
+    ylabel('decay time pair difference');
+    title('single-sided t-test on matched pair differences'); 
+    
+       
 end
 
 
@@ -302,7 +377,7 @@ set(gca,'XTick',[1:length(levels)]);
 set(gca,'XTickLabel',tlevel);
 xlabel('percentage level');
 ylabel('decay time');
-
+title('double-sided t-test on percentage levels'); 
 
 
 
