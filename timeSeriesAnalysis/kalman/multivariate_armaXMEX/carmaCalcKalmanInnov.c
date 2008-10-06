@@ -227,7 +227,7 @@ int carmaCalcKalmanInnov(
   double tmpMat[maxOrder][maxOrder];
   double tmpMat2[maxOrder][maxOrder];
   double tmpVec[maxOrder];
-  int nanInInput;
+  int nanInInput,tInit;
 
 
 
@@ -245,8 +245,14 @@ int carmaCalcKalmanInnov(
     if(mxIsNaN(*(TRAJ + iNode*trajLength + j)))
       (*numMissing)++;
   }
+  
+  if (nConnTo > 0){
+      tInit = MAX(arOrderMax,0);
+  } else{
+      tInit = 0;
+  }
 
-  for (j = Max(arOrderMax, 0); j < trajLength; j++){
+  for (j = tInit; j < trajLength; j++){
 
     nanInInput = 0;
 

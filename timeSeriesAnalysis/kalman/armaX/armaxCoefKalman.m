@@ -544,7 +544,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 % transformed to 3D
                 
                 for i = 1:numTraj
-                    traj = trajOut(i).observations;
+                    traj = trajOut2(i).observations;
                     [m, n] = size(traj);
                     traj3d = zeros(m, 1, 2);
                     traj3d(:, 1, 1) = traj(:, 1);
