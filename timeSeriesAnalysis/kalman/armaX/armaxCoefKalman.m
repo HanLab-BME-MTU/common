@@ -71,7 +71,7 @@ function [arParamK,maParamK,xParamK,arParamL,maParamL,xParamL,varCovMatL,...
 %
 %OUTPUT arParamK  : Estimated AR coefficients (1st row) and parameters related
 %                   to partial AR coefficients (2nd row) using likelihood maximization.
-%       maParamK  : Estimated MA coefficients (1st row) and parameters related
+%       maParamK  : Estimated MA coefficients (1st row) and parameters rela5.331937430ted
 %                   to partial MA coefficients (2nd row) using likelihood maximization.
 %       xParamK   : Estimated X coefficients using likelihood maximization,
 %                   indicating dependence on input. Zero is used for
@@ -540,7 +540,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 
             case 'nl' % local minimization using Numerical Recipes' amoeba
                 
-                % To call carmaFitModel.c, each trajOut(i).observations is
+                % To call carmaFitModel.c, each trajOut2(i).observations is
                 % transformed to 3D
                 
                 for i = 1:numTraj
@@ -576,7 +576,11 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                         params = (ar)';
                     end
                 else 
-                    params = (ma)';
+                    if maOrder > 0
+                        params = (ma)';
+                    else
+                        params = [];
+                    end
                 end
                    
                 
@@ -650,6 +654,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
 
         %calculate -2ln(likelihood) (Eq. 3.15)
         neg2LnLikelihoodV = sum1 + totAvail*log(sum2);
+       
 
         %calculate mean white noise variance of all trajectories (Eq. 3.14)
         wnVariance = (([trajOut2.weight].*numAvail)*wnVarianceSamp)/totAvail;
@@ -657,7 +662,9 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
         %get number of parameters estimated: arOrder AR coefficients, maOrder MA
         %coefficients, xOrder+1``` X coefficients, and white noise variance
         numParam = arOrder + maOrder + xOrder + 2;
-
+        
+        
+        
         %evaluate Akaike's Information Criterion
         selectCrit.aic = neg2LnLikelihoodV + 2*numParam;
 

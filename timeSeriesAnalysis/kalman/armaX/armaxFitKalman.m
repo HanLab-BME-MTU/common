@@ -321,7 +321,7 @@ for k=size(modelParam,3):-1:1
 
             else %if local minimization and initial guess was not supplied
 
-                %anitialize output
+                %initialize output
                 neg2LL = 10^20;
                 arParamK   = [];
                 maParamK   = [];
