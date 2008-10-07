@@ -1,5 +1,6 @@
 function [params,fluorData,not2keep]=spcklMovModel4(params,fluorData,not2keep)
-% no parameters for user to set here - just check params
+% antiparallel microtubules in bundles
+% initial positions and veloctiy assignments handled by spckleMovGenFluor
 
 dT=params.dT;
 vx=params.mod4vx;

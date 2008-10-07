@@ -1,8 +1,6 @@
 function [params,fluorData,not2keep]=spcklMovModel2(params,fluorData,not2keep)
-% speckles converge wither with depoly occuring such that avg I is constant
-% or with no depoly - that and pole location are set in spckleMovMain
-
-% no settings for user to set here
+% speckles converge with depoly such that avg I is constant, or with no
+% depoly such that I gets brighter at pole
 
 nmPerSecFlowSpeed=not2keep.nmPerSecFlowSpeed; % actin flow nm/s
 

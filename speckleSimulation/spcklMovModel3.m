@@ -1,13 +1,11 @@
 function [params,fluorData,not2keep]=spcklMovModel3(params,fluorData,not2keep)
 % fluorophores move in one direction and change flow based on state
 
-% USER-SPECIFIED RATE CONSTANTS ===============================
 if params.protein == 1 % actin
     
     % actin can only go between 0 (unbound) and 2 (bound)
-    % user should change these two rate constants
-    k20=0.05; % F-actin to G-actin
-    k02=0.05; % G-actin to F-acting
+    k02=params.k02; % kon,  G-actin to F-actin rate
+    k20=params.k20; % koff, F-actin to G-actin rate
 
     % all the other rate constants should be ZERO, since those state
     % changes aren't allowed for actin
@@ -39,30 +37,26 @@ if params.protein == 1 % actin
     k33=1-k30-k31-k32;
 
 else % adhesion
-    % user should change these as desired
-    % index note: eg) k10 is rate constant from switching from
-    % substrate-bound to unbound (diffuse)
-    % 0=unbound (neither), 1=substrate, 2=actin, 3=both substrate and actin
     
     % kOFF from all states to unbound
-    k10=0.02;
-    k20=0.02;
-    k30=0.00; % not happening, can't go from bound to both to bound to neither in one step 
+    k10=params.k10;
+    k20=params.k20;
+    k30=params.k30;
 
     % kON from all states to substrate bound
-    k01=0.02;
-    k21=0.00; 
-    k31=0.02; 
+    k01=params.k01;
+    k21=params.k21;
+    k31=params.k31;
 
     % kON from all states to actin bound
-    k02=0.02;
-    k12=0.00;
-    k32=0.02; 
+    k02=params.k02;
+    k12=params.k12;
+    k32=params.k32;
 
     % kON from all states to substrate and actin bound
-    k03=0.00; % not happening, can't go from bound to neither to bound to both in one step
-    k13=0.02; 
-    k23=0.02; 
+    k03=params.k03;
+    k13=params.k13;
+    k23=params.k23;
     
     % rates of staying in present state is 1 minus sum of all the other rates
     k00=1-k01-k02-k03;

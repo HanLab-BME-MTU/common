@@ -1,12 +1,17 @@
 function [frmMeanI,fluorData,params]=spcklMovMain(params)
-% SPCKLMOVMAIN generates a movie from user-defined model of speckle motion
+% here we generate a movie from user-defined model of speckle motion
 
-% this subfunction exists so user-specified stuff can be viewed at the top
-% of this function
+% NOTE: this function gets executed by spcklMovParams.  (The
+% function names are somewhat deceptive - the params function is the one to
+% run, not this one.) 
+
+
+% subfunction to set set up directories and generate initial fluorophores
 [params,not2keep,fluorData,warningstate]=initializeEverything(params);
 
+% ===== MODEL SPECIFIC SECTION =====
+% in this section you can change the STATE distributions
 
-% ===== MODEL SPECIFIC, USER-SPECIFIED SECTION =====
 switch params.nModel
     case 1 % Stationary network, random poly/depoly
 
@@ -77,7 +82,7 @@ switch params.nModel
 
     otherwise
 end
-% ===== END OF MODEL SPECIFIC, USER-SPECIFIED SECTION =====
+% ===== END OF MODEL SPECIFIC SECTION =====
 
 
 % FIGURE OUT MORE STUFF FOR fluorData
@@ -106,7 +111,7 @@ fluorData.inView(fluorData.pixY>=params.border.top+1 & ...
 save([params.outputDirMovieInfo filesep 'frmMeanI'],'frmMeanI');
 save([params.outputDirMovieInfo filesep 'parameters'],'params');
 save([params.outputDirMovieInfo filesep 'fluorStateAndLoc'],'fluorData');
-save([params.outputDirMovieInfo filesep 'not2keep'],'not2keep');
+save([params.outputDirMovieInfo filesep 'not2keep'],'not2keep'); % oh, why not?
 
 % RETURN THE WARNING SETTINGS TO THEIR ORIGINAL STATE
 warning(warningstate);
@@ -249,8 +254,6 @@ switch params.nModel
                 %           /edge/cell_mask
                 %       /images/tifs
                 %       /movieInfo
-                %       /masked_adhesion
-                %       /rg_merge
                 %   /red_actin
                 %       /analysis
                 %           /edge/cell_mask
@@ -277,12 +280,6 @@ switch params.nModel
 
                 params.outputDirMovieInfo=[params.adhesDir filesep 'movie_info'];
                 mkdir(params.outputDirMovieInfo);
-
-                params.mskAdhes=[params.projDir filesep 'masked_adhesion'];
-                mkdir(params.mskAdhes);
-
-                params.rgmerge=[params.projDir filesep 'rg_merge'];
-                mkdir(params.rgmerge);
 
             otherwise
                 error('User input for model 3 should be 1 for actin or 2 for adhesion. Must run actin before adhesion if doing dual-channel.')

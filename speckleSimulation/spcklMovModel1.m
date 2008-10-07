@@ -1,12 +1,8 @@
 function [params,fluorData,not2keep]=spcklMovModel1(params,fluorData,not2keep)
 % stationary fluorophores with random poly/depoly at kon/koff
 
-% USER-SPECIFIED RATE CONSTANTS ===============================
-
-k01=0.05; % percent of monomer addition per second (kon)
-k10=0.05; % percent monomer depolymerizing per second (koff)
-
-%==============================================================
+k01=params.k01; % kon,  G-actin to F-actin rate
+k10=params.k10; % koff, F-actin to G-actin rate
 
 % probabilities for switching from 1 to 0 and 0 to 1
 P10=k10*params.dT;

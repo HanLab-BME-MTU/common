@@ -1,7 +1,6 @@
 function [params,py1,px1] = spckleMovGenFluor(params,not2keep)
 % generate fluorophores in area of image and border for t=0
 
-
 switch params.nModel
     case {1, 2, 3}
     % for actin, the minimum repeat of the double-stranded helix is 35.75 nm and contains

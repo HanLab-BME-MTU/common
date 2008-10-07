@@ -3,10 +3,8 @@ function [params,not2keep]=spcklMovCalcBorder(params)
 % to avoid edge effects.  the borders get cropped off when the images are
 % saved in spcklMovWrtIm
 
-
-
 switch params.nModel
-    case 1 %stationary - no border needed
+    case 1 %stationary - no substantial border needed
         % add some in case diffusion causes border effect
         params.border.left=10;
         params.border.right=10;
@@ -27,8 +25,7 @@ switch params.nModel
         not2keep.nmPerSecFlowSpeed=params.umPerMinFlowSpeed*(1000/60); % convert to nm/s
         nmPerFrame=not2keep.nmPerSecFlowSpeed*params.nSecPerFrame; % calculation flow speed in nm/frame
         b=ceil((nmPerFrame*params.nFrames)/params.pixNM); % max distance covered over movie
-        b = round(sqrt(b^2/2));
-        
+
         params.border.left=b;
         params.border.right=b;
         params.border.top=b;
