@@ -1,7 +1,7 @@
 function [u,sigmaU,goodRows] = robustExponentialFit(xData, yData, fitConstant, verbose)
 %ROBUSTEXPONENTIALFIT uses least median squares to fit an exponential model
 %
-% SYNOPSIS [u,sigmaU,goodRows] = robustExponentialFit(xData, yData, fitConstant)
+% SYNOPSIS [u,sigmaU,goodRows] = robustExponentialFit(xData, yData, fitConstant, verbose)
 %
 % INPUT    xData : x-values of the data.
 %          yData : y-values of the data.
