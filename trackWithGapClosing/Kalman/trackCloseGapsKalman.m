@@ -313,7 +313,8 @@ if selfAdaptive
 
     %time-reverse Kalman filter information
     % -- USER DEFINED FUNCTION -- %
-    eval(['kalmanInfoLink = ' kalmanFunctions.timeReverse '(kalmanInfoLink);']);
+    eval(['kalmanInfoLink = ' kalmanFunctions.timeReverse ...
+        '(kalmanInfoLink,probDim);']);
     
     %redo the linking by going backwards in the movie and using the
     %Kalman filter information from the first linking attempt
@@ -328,7 +329,8 @@ if selfAdaptive
 
     %time-reverse Kalman filter information
     % -- USER DEFINED FUNCTION -- %
-    eval(['kalmanInfoLink = ' kalmanFunctions.timeReverse '(kalmanInfoLink);']);
+    eval(['kalmanInfoLink = ' kalmanFunctions.timeReverse ...
+        '(kalmanInfoLink,probDim);']);
     
     %go forward one more time to get the final estimate of the initial track
     %segments

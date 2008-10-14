@@ -1,4 +1,4 @@
-function kalmanFilterInfo = kalmanReverseLinearMotion(kalmanFilterInfo)
+function kalmanFilterInfo = kalmanReverseLinearMotion(kalmanFilterInfo,probDim)
 %KALMANREVERSELINEARMOTION revese Kalman filter information in time
 %
 %SYNPOSIS kalmanFilterInfo = kalmanResMemLM(numFrames,numFeatures,probDim)
@@ -16,5 +16,6 @@ kalmanFilterInfo = kalmanFilterInfo(end:-1:1);
 
 %go over all frames and reverse velocity
 for iFrame = length(kalmanFilterInfo) : -1 : 1
-    kalmanFilterInfo(iFrame).stateVec(:,3:4) = -kalmanFilterInfo(iFrame).stateVec(:,3:4);
+    kalmanFilterInfo(iFrame).stateVec(:,probDim+1:end) = ...
+        -kalmanFilterInfo(iFrame).stateVec(:,probDim+1:end);
 end
