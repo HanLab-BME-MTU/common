@@ -151,6 +151,11 @@ end
 %% PREPARE THE DATA
 %===========================
 
+% remove NaNs
+goodRows = ~isnan(X) & ~isnan(Y);
+X = X(goodRows);
+Y = Y(goodRows);
+
 % remove data - either via %cutoff, or via rectangle
 if length(cutoff) == 1
 
