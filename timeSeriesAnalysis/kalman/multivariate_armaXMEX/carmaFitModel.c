@@ -1,8 +1,9 @@
 /*
  * File: carmaFitModel.c
  * ---------------------
- * The mexFunction is designed to be called in armaxFitKalman.m, if
+ * The mexFunction is designed to be called by armaxCoefKalman.m, if
  * option 'nl' (Numerical Recipes local minimizer) is chosen.
+ * Hunter Elliott, Pei-hsin Hsu
  */
 
 #include <stdio.h>
@@ -33,7 +34,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   int i, j, k, nRows, nCols, nDims;
   int nMovies, nNodes, nParams, nEvals, nLags, nPoints, arOrderMax, maOrderMax;
-  int flag;
+  int status; /* exit status of amoeba */
 
   struct probCDT prob;
 
@@ -67,8 +68,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
   nLags = topoDim[0];
   prob.nNodes = nNodes = topoDim[1];
 
-  /* mexPrintf("\nprob.nNodes = %d\n", prob.nNodes); */
-
   if ((nNodes > 1) && (nDims != 3))
     mxErrMsgTxt("If nNodes > 1, input matrix must be 3D.");
 
@@ -90,12 +89,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   prob.maOrderMax = maOrderMax = nRows;
 
-  /*
-
   if (nCols != nNodes)
-  mxErrMsgTxt("Second dimension of maPARAMSp should be equal to nNodes.");
+    mxErrMsgTxt("Second dimension of maPARAMSp should be equal to nNodes.");
 
-  */
 
 
   /* Retrieve binary matrix of MA parameters */
@@ -121,7 +117,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
   if (pt == NULL) mxErrMsgTxt("Cannot retrieve trajOut from input.");
 
   trajOutDim = mxGetDimensions(pt);
-  /* mexPrintf("\ntrajOutD = %d x %d\n", trajOutDim[0], trajOutDim[1]); */
 
   prob.nMovies = nMovies = trajOutDim[1];
 
@@ -145,8 +140,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
     if ((trajDim[1] != nNodes) || (trajDim[2] != 2))
       mxErrMsgTxt("Size of input time series is incorrect.");
-
-    prob.data[i].nMissing = 0;      /* temp */
   }
 
 
@@ -175,6 +168,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
   if ((nDims > 2) && (topoBinDim[2] != nNodes))
     mxErrMsgTxt("topoBIN should be equal to TOPO dimensionally.");
 
+
+
   /* Retrieve white noise variance if input */
 
   pm = mxGetField(prhs[0],0,"wnVariance");
@@ -184,49 +179,25 @@ void mexFunction( int nlhs, mxArray *plhs[],
       prob.wnVariance = *mxGetPr(pm);
   }
 
- 
 
-  /* Assemble the parameters into a vector for passing to minimizer */
+
+  /* Assemble the parameters into a vector for amoeba */
 
   vectorFromParams(TOPOp, maPARAMSp, &prob, &paramV);
-
   nParams = prob.nParams;
- 
 
 
-  p = matrix(1, nParams + 1, 1, nParams);
-
-  /* Allocate a vector for function values at simplex vertices */
-
-  vertexLikelihoods = vector(1, nParams + 1);
+  /* Initialize the simplex p */
 
   edgeLen = 3.0E-1;
-
+  p = matrix(1, nParams + 1, 1, nParams);
   createSimplex(paramV, nParams, edgeLen, p);
-
-
-
-
-
-
-  /* Set up outputs */
-
-  /* Dimensions of the TOPO matrix */
-
-  topoD[0] = nLags;
-  topoD[1] = topoD[2] = nNodes;
-
-
-  /* Topology matrix */
-  plhs[0] = mxCreateNumericArray(3, topoD, mxDOUBLE_CLASS, mxREAL);
-
-  /* MA parameters */
-  plhs[1] = mxCreateDoubleMatrix(maOrderMax, nNodes, mxREAL);
 
 
 
   /* Evaluate the likelihood at each vertex */
 
+  vertexLikelihoods = vector(1, nParams + 1);
   for (i = 1; i <= nParams + 1; i++) vertexLikelihoods[i] = carmaNegLnLikelihood(p[i], &prob);
 
 
@@ -234,8 +205,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
   /* 
    * Minimizer: amoeba
    * -----------------
-   * (1) If minimization is successful, the third output plhs[2] is 1. The variable "proceed"
-   *     of armaxCoefKalman.m should be assigned to this value.
+   * (1) If minimization is successful, plhs[2] (exit status) is 0, and the variable "proceed"
+   *     in armaxCoefKalman.m should be assigned to 1.
    * (2) Originally, plhs[2] is Bayesian Information Criterion (BIC). The calculation of BIC
    *     is commented out to fit this module to armaxCoefKalman.m.
    */
@@ -243,9 +214,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
   nEvals = 0;
   fTol = 1.0E-12;
 
-  flag = amoeba(p, vertexLikelihoods, nParams, fTol, carmaNegLnLikelihood, &nEvals, &prob);
+  status = amoeba(p, vertexLikelihoods, nParams, fTol, carmaNegLnLikelihood, &nEvals, &prob);
 
-  plhs[2] = mxCreateDoubleScalar(flag);
+  plhs[2] = mxCreateDoubleScalar(status);
 
 
 
@@ -262,13 +233,20 @@ void mexFunction( int nlhs, mxArray *plhs[],
     nPoints += prob.data[i].trajLen - prob.data[i].nMissing;
 
   double bic = vertexLikelihoods[1] + log(nPoints) * (nParams + 1);
-  /* mxCreateDoubleScalar(bic) */
+  /* plhs[2] = mxCreateDoubleScalar(bic) */
   /* mexPrintf("c: totAvail = %d, numParam = %d\n", nPoints, nParams + 1); */
   /* mexPrintf("c: likelihood = %-15.15g\n", vertexLikelihoods[1]); */
   /* mexPrintf("c: bic = %-15.15g\n", bic); */
 
 
 
+  /* Initialize output plhs[0] and plhs[1] */
+
+  topoD[0] = nLags;
+  topoD[1] = topoD[2] = nNodes;
+
+  plhs[0] = mxCreateNumericArray(3, topoD, mxDOUBLE_CLASS, mxREAL);
+  plhs[1] = mxCreateDoubleMatrix(maOrderMax, nNodes, mxREAL);
 
   TOPOfitp = mxGetPr(plhs[0]);
   maPARAMSfitp = mxGetPr(plhs[1]);
@@ -278,7 +256,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 
 
-  /* Extract partial parameters from simplex */
+  /* Extract partial parameters from simplex p*/
 
   paramsFromVector(&TOPOfitp, nNodes, arOrderMax,
 		   &maPARAMSfitp, maOrderMax,
@@ -311,7 +289,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
   }
   */
 
- 
+
+
   /* Convert partial MA parameters to full for return */
 
   /*
