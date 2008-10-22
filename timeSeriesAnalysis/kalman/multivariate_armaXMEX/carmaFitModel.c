@@ -3,8 +3,6 @@
  * ---------------------
  * The mexFunction is designed to be called in armaxFitKalman.m, if
  * option 'nl' (Numerical Recipes local minimizer) is chosen.
- *
- * Hunter Elliott, Pei-hsin Hsu, September 2008
  */
 
 #include <stdio.h>
@@ -35,6 +33,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   int i, j, k, nRows, nCols, nDims;
   int nMovies, nNodes, nParams, nEvals, nLags, nPoints, arOrderMax, maOrderMax;
+  int flag;
 
   struct probCDT prob;
 
@@ -192,6 +191,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   vectorFromParams(TOPOp, maPARAMSp, &prob, &paramV);
 
   nParams = prob.nParams;
+ 
 
 
   p = matrix(1, nParams + 1, 1, nParams);
@@ -206,12 +206,29 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 
 
+
+
+
+  /* Set up outputs */
+
+  /* Dimensions of the TOPO matrix */
+
+  topoD[0] = nLags;
+  topoD[1] = topoD[2] = nNodes;
+
+
+  /* Topology matrix */
+  plhs[0] = mxCreateNumericArray(3, topoD, mxDOUBLE_CLASS, mxREAL);
+
+  /* MA parameters */
+  plhs[1] = mxCreateDoubleMatrix(maOrderMax, nNodes, mxREAL);
+
+
+
   /* Evaluate the likelihood at each vertex */
 
-  for (i = 1; i <= nParams + 1; i++) {
-    vertexLikelihoods[i] = carmaNegLnLikelihood(p[i], &prob);
-    /*   mexPrintf("\nvertex %d: likelihood = %g\n", i, vertexLikelihoods[i]); */
-  }
+  for (i = 1; i <= nParams + 1; i++) vertexLikelihoods[i] = carmaNegLnLikelihood(p[i], &prob);
+
 
 
   /* 
@@ -224,31 +241,32 @@ void mexFunction( int nlhs, mxArray *plhs[],
    */
 
   nEvals = 0;
-  fTol = 1.0E-8;
+  fTol = 1.0E-12;
 
-  if (amoeba(p, vertexLikelihoods, nParams, fTol, carmaNegLnLikelihood, &nEvals, &prob)){
-    plhs[2] = mxCreateDoubleScalar(1);
-  } else{
-    plhs[2] = mxCreateDoubleScalar(0);
-  }
+  flag = amoeba(p, vertexLikelihoods, nParams, fTol, carmaNegLnLikelihood, &nEvals, &prob);
+
+  plhs[2] = mxCreateDoubleScalar(flag);
 
 
 
-  /* Set up first two outputs */
+  /*
+   * Bayesian Information Criterion (BIC)
+   * ------------------------------------
+   * Ref: Jaqaman et al. Biophys. J. 91: 2312-2325 (2006), Eq. 5
+   */
 
-  /* Dimensions of the TOPO matrix */
 
-  topoD[0] = nLags;
-  topoD[1] = topoD[2] = nNodes;
+  nPoints = 0;
 
+  for (i = 0; i < nMovies; i++)
+    nPoints += prob.data[i].trajLen - prob.data[i].nMissing;
 
-  /* Output topology matrix */
+  double bic = vertexLikelihoods[1] + log(nPoints) * (nParams + 1);
+  /* mxCreateDoubleScalar(bic) */
+  /* mexPrintf("c: totAvail = %d, numParam = %d\n", nPoints, nParams + 1); */
+  /* mexPrintf("c: likelihood = %-15.15g\n", vertexLikelihoods[1]); */
+  /* mexPrintf("c: bic = %-15.15g\n", bic); */
 
-  plhs[0] = mxCreateNumericArray(3, topoD, mxDOUBLE_CLASS, mxREAL);
-
-  /* Output MA parameters */
-
-  plhs[1] = mxCreateDoubleMatrix(maOrderMax, nNodes, mxREAL);
 
 
 
@@ -267,7 +285,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		   prob.topoBIN, prob.maBIN,
 		   p[1] + 1, nParams);
 
-  
+
 
   /* Convert partial TOPO parameter to full for return */
 
@@ -302,21 +320,6 @@ void mexFunction( int nlhs, mxArray *plhs[],
 			 maPARAMSfit + i * maOrderMax);
   */
 
-
-  /*
-   * plhs[2]
-   * -------
-   * plhs[2] contains the Bayesian Information Criterion (BIC).
-   * Ref: Jaqaman et al. Biophys. J. 91: 2312-2325 (2006), equation (5)
-   */
-  /*
-  nPoints = 0;
-
-  for (i = 0; i < nMovies; i++)
-    nPoints += prob.data[i].trajLen - prob.data[i].nMissing;
-
-  plhs[2] = mxCreateDoubleScalar(vertexLikelihoods[1] + log(nPoints) * nParams);
-  */
 
 
   free(prob.data);

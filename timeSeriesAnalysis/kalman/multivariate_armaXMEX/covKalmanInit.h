@@ -37,11 +37,9 @@
  *
  * OUTPUT
  *     initCov      : Initial state covariance matrix, passed by reference
- *     1            : success
- *     0            : failure
  */
 
-int covKalmanInit(double *arPar, double *maPar, double *procErrCov, int arOrd, int maOrd, int maxOrd, double **initCov);
+void covKalmanInit(double *arPar, double *maPar, double *procErrCov, int arOrd, int maOrd, int maxOrd, double **initCov);
 
 
 #endif

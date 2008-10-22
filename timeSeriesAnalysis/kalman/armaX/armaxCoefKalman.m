@@ -127,8 +127,11 @@ function [arParamK,maParamK,xParamK,arParamL,maParamL,xParamL,varCovMatL,...
 %
 % Khuloud Jaqaman, January 2006
 %
-% Modification: Numerical Recipes local minimizer is added as a minOpt ('nl').
-% Pei-hsin Hsu, September 2008
+%
+% MODIFICATION
+%
+%       Numerical Recipes local minimizer is added as a minOpt ('nl').
+%       Pei-hsin Hsu, October 2008
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Output
@@ -551,6 +554,9 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                     traj3d(:, 1, 2) = traj(:, 2);
                     tr(i).observations = traj3d;
                 end
+ 
+                arParamP0 = param0(1:arOrder);
+                maParamP0 = param0(arOrder+1:arOrder+maOrder);
                 
                 model.trajOut = tr;                
                 model.TOPOp = cat(1, 0, (arParamP0)');
@@ -563,24 +569,30 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 model.maBIN = cast(maBIN, 'int32');
                 
                 
-                [topo, ma, proceed] = carmaFitModel(model);
+                [topo, ma, flag] = carmaFitModel(model);
                 
                 
                 % Minor redundancy to fit case 'nl' to armaxCoefKalman
+                if flag == 0
+                    proceed = 1;
+                    if arOrder > 0
+                        ar = topo(2:(arOrder+1));
+                        if maOrder > 0
+                            params = cat(2, (ar)', (ma)');
+                        else
+                            params = (ar)';
+                        end
+                    else % if arOrder <= 0
+                        if maOrder > 0
+                            params = (ma)';
+                        else
+                            params = [];
+                        end
+                    end
+                end
                 
-                if arOrder > 0
-                    ar = topo(2:(arOrder+1));
-                    if maOrder > 0
-                        params = cat(2, (ar)', (ma)');
-                    else
-                        params = (ar)';
-                    end
-                else 
-                    if maOrder > 0
-                        params = (ma)';
-                    else
-                        params = [];
-                    end
+                if flag ~= 0
+                    proceed = 0;
                 end
                    
                 
@@ -654,16 +666,13 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
 
         %calculate -2ln(likelihood) (Eq. 3.15)
         neg2LnLikelihoodV = sum1 + totAvail*log(sum2);
-       
 
         %calculate mean white noise variance of all trajectories (Eq. 3.14)
-        wnVariance = (([trajOut2.weight].*numAvail)*wnVarianceSamp)/totAvail;
-
+        wnVariance = (([trajOut2.weight].*numAvail)*wnVarianceSamp)/totAvail;        
+        
         %get number of parameters estimated: arOrder AR coefficients, maOrder MA
         %coefficients, xOrder+1``` X coefficients, and white noise variance
         numParam = arOrder + maOrder + xOrder + 2;
-        
-        
         
         %evaluate Akaike's Information Criterion
         selectCrit.aic = neg2LnLikelihoodV + 2*numParam;
@@ -673,6 +682,10 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
 
         %evaluate the Bayesian Information Criterion
         selectCrit.bic = neg2LnLikelihoodV + log(totAvail)*numParam;
+        %fprintf('matlab: sum1 = %f, sum2 = %f\n', sum1, sum2);
+        %fprintf('matlab: totAvail = %i, numParam = %i\n', totAvail, numParam);
+        %fprintf('matlab: likelihood = %f\n', neg2LnLikelihoodV);
+        %fprintf('matlab: bic = %f\n', selectCrit.bic);
 
         %put partial coefficients in 2nd row of coefficients matrix
         arParamK(2,:) = arParamP;

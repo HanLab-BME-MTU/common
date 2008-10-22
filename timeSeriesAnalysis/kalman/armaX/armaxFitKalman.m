@@ -301,7 +301,7 @@ iRun = 0;
 for k=size(modelParam,3):-1:1
     for j=size(modelParam,2):-1:1
         for i=size(modelParam,1):-1:1
-
+             
             if strcmp(minOpt,'tg') || suppliedIG %if global minimization or if initial guess was supplied
 
                 %assign model data
@@ -344,7 +344,7 @@ for k=size(modelParam,3):-1:1
                     arParamP0 = modelParam(i,j,k,l).arParamP0;
                     maParamP0 = modelParam(i,j,k,l).maParamP0;
                     xParam0   = modelParam(i,j,k,l).xParam0;
-
+                    
                     %estimate ARMA coeffients and white noise variance
                     [arParamK1,maParamK1,xParamK1,arParamL1,maParamL1,...
                         xParamL1,varCovMatL1,varCovMatF1,wnVariance1,...

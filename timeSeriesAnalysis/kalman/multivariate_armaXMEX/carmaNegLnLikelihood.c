@@ -3,8 +3,10 @@
  * ----------------------------
  * The objective function carmaNegLnLikelihood has been modified to
  * accommodate multiple nodes, each contains multiple time series.
- * Author: Hunter Elliott
- * Modified by Pei-hsin Hsu, August 2008.
+ *
+ *   
+ * Hunter Elliott
+ * Modified by Pei-hsin Hsu
  */
 
 #include <math.h>
@@ -139,14 +141,13 @@ double carmaNegLnLikelihood(double *paramNR, void *d)
 
     totLen = totMissing = 0;
 
-    sum1 = sum2 = 0;      /* Two terms in eq (3.15) of Jones paper */
+    sum1 = sum2 = 0;      /* Two terms in Eq 3.15 of Jones paper */
 
     for (n = 0; n < nMovies; n++) {
 
       traj = prob->data[n].traj;
       trajLen = prob->data[n].trajLen;
       nMissing = 0;
-/*      nMissing = prob->data[n].nMissing; */
 
       innovations = (double *) malloc(sizeof(double) * trajLen);
       innovationVars = (double *) malloc(sizeof(double) * trajLen);
@@ -159,12 +160,11 @@ double carmaNegLnLikelihood(double *paramNR, void *d)
 			   wnVariance, i,
 			   &innovations, &innovationVars, &wnV,
 			   &sum1, &sum2, &nMissing);
-
-/*      prob->data[n].nMissing = MAX(prob->data[n].nMissing, nMissing); */
-        
+      
       totLen += trajLen;
+      totMissing += nMissing;
       prob->data[n].nMissing = nMissing;
-      totMissing += prob->data[n].nMissing;
+      /* mexPrintf("c: [%d] trajLen = %d, nMissing = %d\n", n, trajLen, nMissing); */
 
       free(innovations);
       free(innovationVars);
@@ -175,7 +175,7 @@ double carmaNegLnLikelihood(double *paramNR, void *d)
 
   }
 
-
+  /* mexPrintf("c: sum1 = %g, sum2 = %g\n", sum1, sum2); */
 
   free(TOPO);
   free(TOPOp);

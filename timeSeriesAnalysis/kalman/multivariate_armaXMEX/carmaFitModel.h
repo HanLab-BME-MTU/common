@@ -20,8 +20,8 @@ extern int errHandle(char *logMessage, int lineNo, char *fileName);
 
 extern int writeLogFile(char *logMessage);
 
-extern int covKalmanInit(double *arPar, double *maPar, 
-				 double *procErrCov, 
-				 int arOrd, int maOrd, int maxOrd, 
-				 double **initCov);
+extern void covKalmanInit(double *arPar, double *maPar, 
+			  double *procErrCov, 
+			  int arOrd, int maOrd, int maxOrd, 
+			  double **initCov);
 

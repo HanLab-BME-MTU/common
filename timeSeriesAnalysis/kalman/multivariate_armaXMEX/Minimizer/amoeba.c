@@ -42,6 +42,7 @@ static double amotry(double **p, double y[], double psum[], int ndim, objFn fn, 
 int amoeba(double **p, double y[], int ndim, double ftol, objFn fn, int *nfunk, void *prob)
 {
 	int i,ihi,ilo,inhi,j,mpts=ndim+1;
+
 	double rtol,sum,swap,ysave,ytry,*psum;
 
 	psum=vector(1,ndim);
@@ -65,22 +66,28 @@ int amoeba(double **p, double y[], int ndim, double ftol, objFn fn, int *nfunk, 
 			break;
 		}
 
-		if (*nfunk >= NMAX) return (0); /* nrerror("NMAX exceeded"); */
+		if (*nfunk >= NMAX) return (1); /* nrerror("NMAX exceeded"); */
+
 
 		*nfunk += 2;
 
 		ytry=amotry(p,y,psum,ndim,fn,ihi,-1.0, prob);
 
 		if (ytry <= y[ilo]){
+
 		  ytry=amotry(p,y,psum,ndim,fn,ihi,2.0, prob);
+
 		} else if (ytry >= y[inhi]) {
 			ysave=y[ihi];
+			
 			ytry=amotry(p,y,psum,ndim,fn,ihi,0.5, prob);
+
 			if (ytry >= ysave) {
 				for (i=1;i<=mpts;i++) {
 					if (i != ilo) {
 						for (j=1;j<=ndim;j++)
 							p[i][j]=psum[j]=0.5*(p[i][j]+p[ilo][j]);
+
 						y[i]=(*fn)(psum, prob);
 					}
 				}
@@ -91,7 +98,7 @@ int amoeba(double **p, double y[], int ndim, double ftol, objFn fn, int *nfunk, 
 	}
 
 	free_vector(psum,1,ndim);
-	return (1);
+	return (0);
 }
 
 
@@ -110,7 +117,7 @@ int amoeba(double **p, double y[], int ndim, double ftol, objFn fn, int *nfunk, 
 
 static double amotry(double **p, double y[], double psum[], int ndim, objFn fn, int ihi, double fac, void *prob)
 {
-	int j;
+  int j;
 	double fac1,fac2,ytry,*ptry;
 
 	ptry=vector(1,ndim);
@@ -118,7 +125,7 @@ static double amotry(double **p, double y[], double psum[], int ndim, objFn fn, 
 	fac2=fac1-fac;
 	for (j=1;j<=ndim;j++) ptry[j]=psum[j]*fac1-p[ihi][j]*fac2;
 
-	ytry=(*fn)(ptry, prob);    /* function value at the trial point */
+	ytry = (*fn)(ptry, prob);    /* function value at the trial point */
 
 	if (ytry < y[ihi]) {
 		y[ihi]=ytry;

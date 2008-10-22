@@ -55,6 +55,7 @@ static void free_ivector(int *v, long nl, long nh);
  *     Numerical Recipes uses float.
  * (2) The indices have been shifted from original [1..n] to canonical C version [0..n-1].
  *     Please see implementation note for details.
+ * (3) gaussj will return 0 if matrix A is singular. (NR error handling will be invoked in original design.)
  */
 
 
@@ -88,7 +89,11 @@ void gaussj(double **a, int n, double **b, int m)
 		}
 		indxr[i]=irow;
 		indxc[i]=icol;
-		if (a[icol][icol] == 0.0) nrerror("gaussj: Singular Matrix");
+
+		if (a[icol][icol] == 0.0){
+		  nrerror("gaussj: Singular Matrix");
+		}
+
 		pivinv=1.0/a[icol][icol];
 		a[icol][icol]=1.0;
 		for (l=0;l<n;l++) a[icol][l] *= pivinv;

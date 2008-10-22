@@ -44,7 +44,6 @@ static void PrintMat(double **mat, int row, int col);
  *
  * OUTPUT
  *     initCov      : Initial state covariance matrix, passed by reference
- *     1            : success
  *
  * LOCAL VARIABLES
  *     nNonZero     : Number of nonzero terms of the rhs vector (4.11)
@@ -56,7 +55,7 @@ static void PrintMat(double **mat, int row, int col);
  *     sum          : Temporary storage for local summation.
  */
 
-int covKalmanInit(double *arPar, double *maPar, double *procErrCov, int arOrd, int maOrd, int maxOrd, double **initCov)
+void covKalmanInit(double *arPar, double *maPar, double *procErrCov, int arOrd, int maOrd, int maxOrd, double **initCov)
 {
   int i, j, k;
   int nNonZero, nRow, nCol, lenC;
@@ -212,8 +211,6 @@ int covKalmanInit(double *arPar, double *maPar, double *procErrCov, int arOrd, i
   FreeMat(rhsVec, arOrd + 1);
   FreeMat(lhsMat, arOrd + 1);
   free(C);
-
-  return (1);
 } 
   
 

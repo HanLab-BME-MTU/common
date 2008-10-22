@@ -17,7 +17,7 @@ static void FreeMat(double **mat, int row);
 
 
 
-int carmaCalcKalmanInnov(
+void carmaCalcKalmanInnov(
 			  double *TRAJ,
 			  int trajLength,
 			  double *TOPO,
@@ -114,8 +114,8 @@ int carmaCalcKalmanInnov(
   double **tmp1 = NewMat(maxOrder, maxOrder);
   double tmp2[maxOrder][maxOrder];
   
-  if (!covKalmanInit(arParamMod,maParamMod,G,arOrderMax,maOrderMax,maxOrder, tmp1))
-    errHandle("Problem calling covKalmanInit!",__LINE__,__FILE__);
+  covKalmanInit(arParamMod,maParamMod,G,arOrderMax,maOrderMax,maxOrder, tmp1);
+ 
 
   /* Copy elements of covariance matrix so they are contiguous in memory */
 
@@ -245,12 +245,14 @@ int carmaCalcKalmanInnov(
     if(mxIsNaN(*(TRAJ + iNode*trajLength + j)))
       (*numMissing)++;
   }
-  
+
   if (nConnTo > 0){
-      tInit = MAX(arOrderMax,0);
-  } else{
-      tInit = 0;
+    tInit = MAX(arOrderMax,0);
+  } else {
+    tInit = 0;
+    *numMissing = 0;
   }
+
 
   for (j = tInit; j < trajLength; j++){
 
