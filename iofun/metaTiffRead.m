@@ -26,10 +26,16 @@ if (nargin == 0)
     cd(pathname);
 end
 
-if (nargin<=1 || isempty(img_first)),  img_first = 1; img_last = 10000; end
-if (nargin<=2 || isempty(img_last)),  img_last = img_first;            end
+if (nargin<=1)
+    img_first = 1;
+    img_last = 10000;
+end
 
-if nargin < 4 || isempty(verbose)
+if (nargin == 2)
+    img_last = img_first;
+end
+
+if (nargin < 4)
     verbose = 1;
 end
 
@@ -67,7 +73,8 @@ end
 
 % read header
 % read byte order: II = little endian, MM = big endian
-byte_order = setstr(fread(TIF.file, 2, 'uchar'));
+byte_order = fread(TIF.file, 2, '*char');
+
 if ( strcmp(byte_order', 'II') )
     TIF.BOS = 'l';                                %normal PC format
 elseif ( strcmp(byte_order','MM') )
@@ -78,7 +85,9 @@ end
 
 % read in a number which identifies file as TIFF format
 tiff_id = fread(TIF.file,1,'uint16', TIF.BOS);
-if (tiff_id ~= 42)  error('This is not a TIFF file (no 42).'); end
+if (tiff_id ~= 42)
+    error('This is not a TIFF file (no 42).');
+end
 
 % read the byte offset for the first image file directory (IFD)
 ifd_pos = fread(TIF.file,1,'uint32', TIF.BOS);
@@ -114,7 +123,9 @@ while (ifd_pos ~= 0)
                 TIF.bytes_per_pixel  = entry.val / 8;
                 %disp(sprintf('%i bits per pixels', entry.val));
             case 259         % compression
-                if (entry.val ~= 1) error('Compression format not supported.'); end
+                if (entry.val ~= 1)
+                    error('Compression format not supported.');
+                end
             case 262         % photometric interpretatio
                 TIFIM.photo_type     = entry.val;
             case 269
@@ -129,7 +140,9 @@ while (ifd_pos ~= 0)
                 %disp(strcat('num_strips =', num2str(TIF.num_strips)));
             case 277         % sample_per pixel
                 TIF.samples_per_pixel = entry.val;
-                if (TIF.samples_per_pixel ~= 1) error('color not supported'); end
+                if (TIF.samples_per_pixel ~= 1)
+                    error('color not supported');
+                end
             case 278         % rows per strip
                 TIF.rows_per_strip   = entry.val;
             case 279         % strip byte counts - number of bytes in each strip after any compressio
@@ -147,14 +160,16 @@ while (ifd_pos ~= 0)
             case 315
                 TIFIM.artist         = entry.val;
             case 317        %predictor for compression
-                if (entry.val ~= 1) error('unsuported predictor value'); end
+                if (entry.val ~= 1)
+                    error('unsuported predictor value');
+                end
             case 320         % color map
                 TIFIM.cmap          = entry.val;
                 TIFIM.colors        = entry.cnt/3;
             case 339
                 TIF.sample_format   = entry.val;
                 if ( TIF.sample_format > 2 )
-                    error(sprintf('unsuported sample format = %i', TIF.sample_format));
+                    error('unsuported sample format = %i', TIF.sample_format);
                 end
             case 33628       %metamorph specific data
                 TIFIM.MM_private1   = entry.val;
@@ -179,15 +194,15 @@ while (ifd_pos ~= 0)
 
     %read the next IFD address:
     ifd_pos = fread(TIF.file, 1, 'uint32', TIF.BOS);
-    %if (ifd_pos) disp(['next ifd at', num2str(ifd_pos)]); end
 
-    if ( img_last > stack_cnt ) img_last = stack_cnt; end
-
+    if ( img_last > stack_cnt )
+        img_last = stack_cnt;
+    end
 
     stack_pos = 0;
 
     for i=1:stack_cnt
-
+     
         if ( img_skip + 1 >= img_first )
             img_read = img_read + 1;
             %disp(sprintf('reading MM frame %i at %i',num2str(img_read),num2str(TIF.strip_offsets(1)+stack_pos)));
@@ -215,7 +230,9 @@ while (ifd_pos ~= 0)
                 end
             end
 
-            if ( img_skip + img_read >= img_last ) return; end
+            if ( img_skip + img_read >= img_last )
+                return;
+            end
         else
             %disp('skiping strips');
             img_skip = img_skip + 1;
@@ -266,8 +283,8 @@ for i = 1:TIF.num_strips
     if length(strip) ~= TIF.strip_bytes(i) / TIF.bytes_per_pixel
         error('End of file reached unexpectedly.');
     end
-    stripCols = TIF.strip_bytes(i) ./ width_bytes;
-    data(:, colIndx:(colIndx+stripCols-1)) = reshape(strip, numRows, stripCols);
+    stripCols = TIF.strip_bytes(i) / width_bytes;
+    data(:, colIndx:(colIndx + stripCols - 1)) = reshape(strip, numRows, stripCols);
     colIndx = colIndx + stripCols;
 end
 % Extract valid part of data
@@ -334,6 +351,8 @@ else
         entry.val = fread(TIF.file, entry.cnt, entry.typechar, TIF.BOS);
     end
 end
-if ( entry.typecode == 2 ) entry.val = char(entry.val'); end
+if ( entry.typecode == 2 )
+    entry.val = char(entry.val');
+end
 
 return;
