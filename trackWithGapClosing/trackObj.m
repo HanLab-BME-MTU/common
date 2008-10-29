@@ -52,12 +52,14 @@
 % PROPERTIES
 %   movieInfo/costMatrices/gapCloseParam/kalmanFunctions/probDim
 %       input for trackCloseGapsKalman
+%   rawMovieInfo is the movieInfo as supplied by the user (i.e. original
+%       positions)
 %   tracksFinal/kalmanInfoLink/errFlag
 %       output of trackCloseGapsKalman
 %   results : results according to the outputStyle. results is a structure
 %           with at least the fields .featureIdx and .trackInfo
 %           If outputStyle is:
-%             'separateObjects' - featureIdx is a nTracks-by-1 cell array
+%  TBD!!      'separateObjects' - featureIdx is a nTracks-by-1 cell array
 %                that contains a nTimepoints-by-1 list of object indices
 %                with NaNs where there is no data, or a nTimepoints-by-2
 %                list with [timepoint, index], if .nanList is 1 or 0,
@@ -164,6 +166,7 @@ classdef trackObj<handle
     end % static props
     properties (Dependent)
         results % property depending on outputStyle
+        rawMovieInfo % raw coordinates (before alignment)
     end % dependent properties
     properties (Hidden)
         % set here default options for outputStyles. For every name, there
