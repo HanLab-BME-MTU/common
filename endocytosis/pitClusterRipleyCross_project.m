@@ -324,10 +324,7 @@ for i=1:length(data)
     currKRdiff(2:length(udist),:) = diff(currKR,1);
     currDen = currKRdiff./amat;
     
-    allDen(:,:,i) = currDen - 1;
-    %movieDen = [allResults.dens(1,i) allResults.dens(1,i) allResults.dens(2,i)];
-    avgLifetimeForCond = mean(avgLifetimeForMovie,2);
-    allNormDen(:,:,i) = currDen./repmat([avgLifetimeForCond(1) avgLifetimeForCond(1) avgLifetimeForCond(2)],length(udist),1)/data(i).framerate/data(i).movieLength*60*60;
+    allDen(:,:,i) = currDen;
 
 end
 
@@ -335,19 +332,11 @@ end
 ndenAV = nanmean(allDen,3);
 ndenSTD = nanstd(allDen,1,3);
 ndenSEM = ndenSTD/sqrt(length(data));
-ndenNormAV = nanmean(allNormDen,3);
-ndenNormMedian = nanmedian(allNormDen,3);
-ndenNormSTD = nanstd(allNormDen,1,3);
-ndenNormSEM = ndenNormSTD/sqrt(length(data));
 
 allResults.ND = allDen;
 allResults.NDmean = ndenAV;
 allResults.NDstd = ndenSTD;
 allResults.NDsem = ndenSEM;
-allResults.NDmeanNorm = ndenNormAV;
-allResults.NDmedianNorm = ndenNormMedian;
-allResults.NDsemNorm = ndenNormSEM;
-allResults.NDnorm = allNormDen;
 
 areaplot1d = [ ((ndenAV(:,1)-ndenSEM(:,1))') ; 2*ndenSEM(:,1)' ];
 if ccx>1
