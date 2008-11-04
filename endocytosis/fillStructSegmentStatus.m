@@ -75,11 +75,12 @@ for i=1:lens
     lftInfo = loadfile.lftInfo;
 
     % calculate segmentation status (1=Inside, 0=oustide segmented region)
-    [segmentStatusVector] = calcIORegionLfthistSimple(lftInfo, SegmentMask);
+    [segmentStatusVector,segmentEUdistVector] = calcIORegionLfthistSimple(lftInfo, SegmentMask);
     
     
     % lifetime histograms
     data(i).segmentStatus = segmentStatusVector';
+    data(i).segmentEUdist = segmentEUdistVector';
     
         
     fprintf('\b\b\b\b\b\b\b\b\b');       
