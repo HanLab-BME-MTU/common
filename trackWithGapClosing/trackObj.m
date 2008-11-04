@@ -107,6 +107,9 @@
 %                           Optional. Default: no image
 %           flipXY       : 1 if x and y coord should be flipped for
 %                           plotting. Optional. Default: 0.
+%           useRaw       : 1 if raw (unaligned) coordinates should be used
+%                           for plotting. Optional. Default: 0;
+%
 %    name : name of data set
 %
 % METHODS
@@ -159,14 +162,15 @@ classdef trackObj<handle
         outputStyle = struct('name','separateObjects','options','');
         plotOptions = struct('timeRange',[],'colorTime','1',...
             'markerType','none','indicateSE',1,'axH',0,...
-            'image',[],'flipXY',0)
+            'image',[],'flipXY',0,'useRaw',0);
         name = '';
         additionalOutput  = false;
         nTimepoints = 0;
+        rawMovieInfo % raw coordinates (before alignment)
+
     end % static props
     properties (Dependent)
         results % property depending on outputStyle
-        rawMovieInfo % raw coordinates (before alignment)
     end % dependent properties
     properties (Hidden)
         % set here default options for outputStyles. For every name, there
@@ -377,6 +381,17 @@ classdef trackObj<handle
                     end
                 end
             end
+        
+        end
+        %% Get Method rawMovieInfo
+        function out = get.rawMovieInfo(obj)
+            % return movieInfo unless correctCoords has written
+            % rawMovieInfo
+            if isempty(obj.rawMovieInfo)
+                out = obj.movieinfo;
+            else
+                out = obj.rawMovieInfo;
+            end
         end
     end % public methods
     methods (Hidden)
@@ -434,18 +449,8 @@ classdef trackObj<handle
                         end
                     end
                     
-                    % correct Centroid
-                    if options.inputInfo.correctCentroid > 0
-                        % if not correct rotation, co is -1, otherwise inf
-                        if options.inputInfo.correctCentroid == 1;
-                            co = -1;
-                        else
-                            co = Inf;
-                        end
-                        [movieInfo,obj.outputStyle.centroids,...
-                            obj.outputStyle.rotMats] = alignCoords(...
-                            movieInfo,fieldList,co,obj.probDim);
-                    end
+                    % correct centroid
+                    correctCentroid;
                     
                 case 'initCoord'
                     % check options
@@ -475,8 +480,21 @@ classdef trackObj<handle
                             movieInfo(t).amp = coord(t).(ampName);
                         end
                         
-                        % correct Centroid
+                        correctCentroid;
+                        
+                    end
+                    
+            end % switch inputParser
+            
+            obj.nTimepoints = length(movieInfo);
+            
+            %--- nested function correctCentroid
+            function correctCentroid
+                % correct Centroid
                         if options.inputInfo.correctCentroid > 0
+                            % store rawMovieInfo
+                            obj.rawMovieInfo = movieInfo;
+                            
                             % if not correct rotation, co is -1, otherwise inf
                             if options.inputInfo.correctCentroid == 1;
                                 co = -1;
@@ -488,11 +506,7 @@ classdef trackObj<handle
                                 movieInfo,{'xCoord','yCoord','zCoord','amp'},...
                                 co,obj.probDim);
                         end
-                    end
-                    
-            end % switch inputParser
-            
-            obj.nTimepoints = length(movieInfo);
+            end
         end % parseInputs
         %===========================
         %% SET PARAMETERS
@@ -733,7 +747,7 @@ classdef trackObj<handle
                     error('%s not implemented yet',default)
             end
         end
-        
+       
     end % hidden methods
     
 end
