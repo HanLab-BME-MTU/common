@@ -88,18 +88,24 @@ trackType = trackType(indx,:);
 
 %find linear tracks with normal diffusive behavior along preferred
 %direction of motion
-tracks1 = tracks(trackType(:,1)==1&trackType(:,3)==2,:);
+tracks1 = tracks(trackType(:,1)==1 & trackType(:,3)==2,:);
 
 %find linear tracks with super-diffusive behavior along preferred direction
 %of motion
-tracks2 = tracks(trackType(:,1)==1&trackType(:,3)==3,:);
+tracks2 = tracks(trackType(:,1)==1 & trackType(:,3)==3,:);
+
+%find non-linear tracks with normal diffusive behavior
+tracks3 = tracks(trackType(:,1)==0 & trackType(:,2)==2,:);
+
+%find non-linear tracks with sub-diffusive behavior
+tracks4 = tracks(trackType(:,1)==0 & trackType(:,2)==1,:);
 
 clear criteria tracks indx
 
 %% displacement statistics
 
 %go over both types of linear tracks
-for iType = 1 : 2
+for iType = 1 : 4
     
     %get information on current track type and reserve memory
     eval(['tracks = tracks' num2str(iType) ';']);

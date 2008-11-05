@@ -28,6 +28,7 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %       trackEndTime   : Ending time of all tracks.
 %       costMatParam   : Structure containing variables needed for cost
 %                        calculation. Contains the fields:
+%             .linearMotion   : 1 to use a linear motion model, 0 otherwise.
 %             .minSearchRadiusCG:Minimum allowed search radius (in pixels).
 %             .maxSearchRadiusCG:Maximum allowed search radius (in pixels).
 %                               This value is the maximum search radius

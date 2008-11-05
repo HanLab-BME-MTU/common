@@ -51,6 +51,9 @@ function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %             .initialize   : Initializes the Kalman filter for an appearing
 %                             feature.
 %             .calcGain     : Calculates the Kalman gain after linking.
+%             .timeReverse  : Reverses time (and associated variables) in
+%                             kalmanInfoLink between the different
+%                             frame-to-frame linking steps.
 %                        For non-self-adaptive tracking, enter [].
 %                        Optional. Default: [].
 %       probDim      : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
