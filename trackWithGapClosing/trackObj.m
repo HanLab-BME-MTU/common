@@ -684,6 +684,7 @@ classdef trackObj<handle
                     obj.kalmanFunctions.reserveMem = 'kalmanResMemLM';
                     obj.kalmanFunctions.initialize = 'kalmanInitLinearMotion';
                     obj.kalmanFunctions.calcGain = 'kalmanGainLinearMotion';
+                    obj.kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
                 case 'standard'
                     % general gap closing parameters
                     obj.gapCloseParam.timeWindow = 5; %maximum allowed time gap (in frames) between a track segment end and a track segment start that allows linking them.
@@ -743,6 +744,7 @@ classdef trackObj<handle
                     obj.kalmanFunctions.reserveMem = 'kalmanResMemLM';
                     obj.kalmanFunctions.initialize = 'kalmanInitLinearMotion';
                     obj.kalmanFunctions.calcGain = 'kalmanGainLinearMotion';
+                    obj.kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
                 otherwise
                     error('%s not implemented yet',default)
             end
