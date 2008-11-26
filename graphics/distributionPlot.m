@@ -1,7 +1,7 @@
 function handles = distributionPlot(varargin)
 %DISTRIBUTIONPLOT plots distributions similar to boxplot
 %
-% SYNOPSIS: handles = distributionPlot(data,distWidth,showMM,xNames,divFactor,invert)
+% SYNOPSIS: handles = distributionPlot(data,distWidth,showMM,xNames,histOpt,divFactor,invert)
 %           handles = distributionPlot(ah,...)
 %
 % INPUT data : cell array of length nData or m-by-nData array of values

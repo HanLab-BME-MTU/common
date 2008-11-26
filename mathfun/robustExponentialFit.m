@@ -77,9 +77,9 @@ parameters = struct('xdata',xData,'ydata',yData);
 options = optimset('Display','off');
 
 if fitConstant
-    [u,goodRows,sigmaU]=leastMedianSquares('(ydata-(u(1)*exp(-xdata/u(2)))-u(3))',init,options,parameters);
+    [u,goodRows,sigma0,sigmaU]=leastMedianSquares('(ydata-(u(1)*exp(-xdata/u(2)))-u(3))',init,options,parameters);
 else
-    [u,goodRows,sigmaU]=leastMedianSquares('(ydata-(u(1)*exp(-xdata/u(2))))',init(1:2),options,parameters);
+    [u,goodRows,sigma0,sigmaU]=leastMedianSquares('(ydata-(u(1)*exp(-xdata/u(2))))',init(1:2),options,parameters);
 end
 
 % plot results
