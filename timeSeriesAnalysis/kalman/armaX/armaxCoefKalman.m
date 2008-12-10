@@ -543,8 +543,8 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 
             case 'nl' % local minimization using Numerical Recipes' amoeba
                 
-                % To call carmaFitModel.c, each trajOut2(i).observations is
-                % transformed to 3D
+                % To call carmaFitModel.c, each trajOut2(i).observations
+                % has to be transformed to 3D
                 
                 for i = 1:numTraj
                     traj = trajOut2(i).observations;
@@ -554,13 +554,10 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                     traj3d(:, 1, 2) = traj(:, 2);
                     tr(i).observations = traj3d;
                 end
- 
-                arParamP0 = param0(1:arOrder);
-                maParamP0 = param0(arOrder+1:arOrder+maOrder);
                 
                 model.trajOut = tr;                
-                model.TOPOp = cat(1, 0, (arParamP0)');
-                model.maPARAMSp = (maParamP0)';
+                model.TOPOp = cat(1, 0, (param0(1:arOrder))');
+                model.maPARAMSp = (param0(arOrder+1:arOrder+maOrder))';
                 
                 topoBIN = cat(1, 0, ones(arOrder, 1));
                 maBIN = ones(maOrder, 1);
@@ -569,11 +566,11 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 model.maBIN = cast(maBIN, 'int32');
                 
                 
-                [topo, ma, flag] = carmaFitModel(model);
+                [topo, ma, status] = carmaFitModel(model);
                 
                 
                 % Minor redundancy to fit case 'nl' to armaxCoefKalman
-                if flag == 0
+                if status == 0
                     proceed = 1;
                     if arOrder > 0
                         ar = topo(2:(arOrder+1));
@@ -591,7 +588,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                     end
                 end
                 
-                if flag ~= 0
+                if status ~= 0
                     proceed = 0;
                 end
                    

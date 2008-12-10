@@ -180,7 +180,9 @@ if isempty(trajIn)
 else
     orderValX_def = -1:3; %X order values
 end
-repeat_def = 10; %times to repeat local minimization if initial guess not supplied
+
+repeat_def = 20; %times to repeat local minimization if initial guess not supplied
+
 minOpt_def = 'tl'; %minimization option
 
 %check models to be tested
@@ -310,6 +312,7 @@ for k=size(modelParam,3):-1:1
                 xParam0   = modelParam(i,j,k,1).xParam0;
 
                 %estimate ARMA coeffients and white noise variance
+                
                 [arParamK,maParamK,xParamK,arParamL,maParamL,xParamL,...
                     varCovMatL,varCovMatF,wnVariance,wnVector,selectCrit,...
                     pVCompKL,pVPort,errFlag] = armaxCoefKalman(trajOut,...
@@ -351,6 +354,7 @@ for k=size(modelParam,3):-1:1
                         wnVector1,selectCrit1,pVCompKL1,pVPort1,errFlag1]...
                         = armaxCoefKalman(trajOut,trajIn,arParamP0,...
                         maParamP0,xParam0,[],minOpt);
+
 
                     if ~isempty(selectCrit1)
 
