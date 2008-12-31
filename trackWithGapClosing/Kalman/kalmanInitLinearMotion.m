@@ -15,8 +15,7 @@ function [kalmanFilterInfo,errFlag] = kalmanInitLinearMotion(frameInfo,...
 %                         to the fields needed for costMatLinearMotionLink,
 %                         if it has the field 
 %             .kalmanInitParam, then sub-fields within will be used for
-%                               initialization. Currently, one subfield is
-%                               supported:
+%                               initialization. 
 %                   .convergePoint: Convergence point (x, y, [z]
 %                                   coordinates) of tracks if motion is
 %                                   radial, in image coordinate system.
@@ -25,6 +24,18 @@ function [kalmanFilterInfo,errFlag] = kalmanInitLinearMotion(frameInfo,...
 %                                   used to estimate initial velocities. If
 %                                   not supplied, then initial velocity is
 %                                   taken as zero.
+%                   .searchRadiusFirstIteration: max number of pixels to
+%                                   use in the first frame pair where the
+%                                   search is essentially a nearest
+%                                   neighbor. here we use this parameter to
+%                                   get the initial noise variance. in
+%                                   kathryn's alternate function
+%                                   costMatLinearMotionLink_EB3.m, the
+%                                   min/max search radii are not applied in
+%                                   the first iteration so that this
+%                                   initial radius can be sufficiently big
+%                                   if features are moving quickly (ie
+%                                   faster than the max search radius)
 %
 %OUTPUT kalmanFilterInfo: Structure with fields:
 %             .stateVec     : State vector for each feature.
@@ -54,8 +65,7 @@ minSearchRadius = costMatParam.minSearchRadius;
 maxSearchRadius = costMatParam.maxSearchRadius;
 brownStdMult = costMatParam.brownStdMult;
 
-%estimate initial state noise variance
-noiseVarInit = (mean([minSearchRadius maxSearchRadius]) / brownStdMult) ^ 2;
+
 
 %check whether additional initialization parameters were input
 if isfield(costMatParam,'kalmanInitParam')
@@ -66,9 +76,20 @@ if isfield(costMatParam,'kalmanInitParam')
         initParam.convergePoint = [];
         convergePoint = [];
     end
+    
+    % calculate noiseVarInit from max search radius (if given) or from
+    % min/max search radii
+    if isfield(initParam,'searchRadiusFirstIteration')
+        searchRadiusFirstIteration = initParam.searchRadiusFirstIteration;
+        noiseVarInit = (searchRadiusFirstIteration/brownStdMult)^2/probDim;
+    else
+        noiseVarInit = (mean([minSearchRadius maxSearchRadius]) / brownStdMult) ^ 2;
+    end
+
 else
     initParam.convergePoint = [];
     convergePoint = [];
+    noiseVarInit = (mean([minSearchRadius maxSearchRadius]) / brownStdMult) ^ 2;
 end
 
 if ~isempty(convergePoint)
