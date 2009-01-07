@@ -50,12 +50,12 @@ compactRes.tau = resmat1(:,2);
 compactRes.tauError = round(10*E2Eval(:,2))/10;
 compactRes.tau50 = resmat1(:,3);
 
-[data] = determinePitDensities(data);
-for i=1:length(data)
-    Dens(i) = nanmean(data(i).pitDensity);
-end
-densAV = nanmean(Dens);
-densSTD = nanstd(Dens);
+ [data] = determinePitDensities(data);
+ for i=1:length(data)
+     Dens(i) = nanmean(data(i).pitDensity);
+ end
+ densAV = nanmean(Dens);
+ densSTD = nanstd(Dens);
 
 
 matrix(:,1) = compactRes.contr;
@@ -66,8 +66,8 @@ matrix(:,5) = compactRes.tau50;
 
 matrix(1,6) = compactRes.numcells;
 matrix(2,6) = compactRes.numtraj;
-matrix(3,6) = densAV;
-matrix(4,6) = densSTD;
+matrix(3,6) = 1000*densAV;
+matrix(4,6) = 1000*densSTD;
 
 
 

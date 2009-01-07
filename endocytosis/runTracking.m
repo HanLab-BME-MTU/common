@@ -1,5 +1,7 @@
 function [] = runTracking()
-% runTracking tracks movies under a given condition folder
+% runTracking tracks movies under a given condition folder. This creates
+% the TrackInfo and lftInfo data structures necessary for lifetime
+% analysis.
 %
 % SYNOPSIS [experiment] = runTracking()
 %
@@ -13,6 +15,10 @@ function [] = runTracking()
 %           directory; if you want a partial or faulty tracking to be
 %           replaced, you need to DELETE these folders first.
 %
+% Dependencies  loadIndividualMovies
+%               loadAndSaveDetection
+%               trackMissingFields
+%               
 % Daniel Nunez, March 5, 2008
 
 % LOAD Required Files
