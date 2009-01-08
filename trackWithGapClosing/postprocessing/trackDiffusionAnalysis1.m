@@ -354,7 +354,7 @@ end
 %estimate the confinement radii (short and long) of tracks classified as linear
 
 % --- TEMPORARY --- %
-indxAsym = [indxAsym; indxConf];
+% indxAsym = [indxAsym; indxConf];
 
 if ~isempty(indxAsym)
     for iTrack = indxAsym'

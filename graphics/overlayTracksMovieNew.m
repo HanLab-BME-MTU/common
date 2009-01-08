@@ -1,9 +1,9 @@
 function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
-    saveMovie,movieName,filterSigma,classifyGaps,highlightES)
+    saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,imageRange)
 %Overlays tracks obtained via trackCloseGapsKalman on movies
 %
 %SYNPOSIS overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
-%    saveMovie,movieName,filterSigma,classifyGaps,highlightES)
+%    saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,imageRange)
 %
 %INPUT  tracksFinal   : Output of trackCloseGapsKalman.
 %       startend      : Row vector indicating first and last frame to
@@ -27,10 +27,13 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %                       Optional. Default: 1.
 %       highlightES   : 1 to highlight track ends and starts, 0 otherwise.
 %                       Optional. Default: 1.
+%       showRaw       : 1 to add raw movie to the left of the movie with
+%                       tracks overlaid, 2 to add raw movie at the top of
+%                       the movie with tracks overlaid, 0 otherwise.
+%                       Optional. Defatul: 0.
 %       imageRange    : Image region to make movie out of, in the form:
 %                       [min pixel X, max pixel X; min pixel Y, max pixel Y].
 %                       Optional. Default: Whole image.
-%                       NOT IMPLEMENTED YET!!!
 %
 %OUTPUT If movie is to be saved, the QT movie is written into directory
 %       where TIFFs are located
@@ -109,6 +112,11 @@ if nargin < 8 || isempty(highlightES)
     highlightES = 1;
 end
 
+%check whether to put raw movie adjacent to movie with tracks overlaid
+if nargin < 9 || isempty(showRaw)
+    showRaw = 0;
+end
+
 %keep only the frames of interest
 outFileList = outFileList(startend(1):startend(2));
 
@@ -126,7 +134,7 @@ close(h);
 [imSizeX,imSizeY] = size(ImageStack(:,:,1));
 
 %check whether an area of interest was input
-if nargin < 9;
+if nargin < 10 || isempty(imageRange)
     imageRange = [1 imSizeX; 1 imSizeY];
 end
 
@@ -314,21 +322,54 @@ cd(dirName);
 %go over all specified frames
 for iFrame = 1 : size(xCoordMatAll,2)
     
-    %plot image in current frame
+    %plot image in current frame and show frame number
     clf;
-    imshow(ImageStack(imageRange(1,1):imageRange(1,2),...
-        imageRange(2,1):imageRange(2,2),iFrame),[]); 
-    hold on; 
-
-    %show frame number
-    text(10,10,num2str(iFrame),'Color','white');
-
+    switch showRaw
+        case 1
+            axes('Position',[0 0 0.495 1]);
+            imshow(ImageStack(:,:,iFrame),[]);
+            xlim(imageRange(1,:));
+            ylim(imageRange(2,:));
+            hold on;
+            textDeltaCoord = min(diff(imageRange,[],2))/20;
+            text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
+                textDeltaCoord,num2str(iFrame),'Color','white');
+            axes('Position',[0.505 0 0.495 1]);
+            imshow(ImageStack(:,:,iFrame),[]);
+            xlim(imageRange(1,:));
+            ylim(imageRange(2,:));
+            hold on;
+        case 2
+            axes('Position',[0 0.505 1 0.495]);
+            imshow(ImageStack(:,:,iFrame),[]);
+            xlim(imageRange(1,:));
+            ylim(imageRange(2,:));
+            hold on;
+            textDeltaCoord = min(diff(imageRange,[],2))/20;
+            text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
+                textDeltaCoord,num2str(iFrame),'Color','white');
+            axes('Position',[0 0 1 0.495]);
+            imshow(ImageStack(:,:,iFrame),[]);
+            xlim(imageRange(1,:));
+            ylim(imageRange(2,:));
+            hold on;
+        otherwise
+            axes('Position',[0 0 1 1]);
+            imshow(ImageStack(:,:,iFrame),[]);
+            xlim(imageRange(1,:));
+            ylim(imageRange(2,:));
+            hold on;
+            textDeltaCoord = min(diff(imageRange,[],2))/20;
+            text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
+                textDeltaCoord,num2str(iFrame),'Color','white');
+    end
+    
     %plot tracks
     if iFrame > 1
         dragTailStart = max(iFrame-dragtailLength,1);
         xCoord2plot = (xCoordMatAll(pointStatus(:,iFrame)~=0,dragTailStart:iFrame))';
         yCoord2plot = (yCoordMatAll(pointStatus(:,iFrame)~=0,dragTailStart:iFrame))';
-        plot(xCoord2plot,yCoord2plot,'Color',[1 0.7 0.7]);
+        plot(xCoord2plot,yCoord2plot,'Color',[1 0.7 0.7],'LineWidth',2);
     end
     
     %plot points (features + gaps)

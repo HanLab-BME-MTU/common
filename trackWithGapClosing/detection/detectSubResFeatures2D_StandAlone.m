@@ -307,6 +307,9 @@ background = struct('meanRawLast5',bgMeanRaw,'stdRawLast5',bgStdRaw,...
     'meanIntegFLast1',bgMeanIntegF(:,:,end),'stdIntegFLast1',bgStdIntegF(:,:,end),...
     'meanIntegFFirst1',bgMeanIntegF(:,:,1),'stdIntegFFirst1',bgStdIntegF(:,:,1));
 
+%clear some variables
+clear imageInteg
+
 %% Local maxima detection
 
 %initialize structure saving local maxima information
@@ -409,6 +412,9 @@ end
 
 %make a list of images that have local maxima
 goodImages = setxor(1:numImagesRaw,emptyFrames);
+
+%clear some variables
+clear ImageIntegF
 
 %% PSF sigma estimation
 

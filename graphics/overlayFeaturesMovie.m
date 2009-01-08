@@ -119,6 +119,7 @@ for iFrame = 1 : length(movieInfo)
     
     %plot image in current frame
     clf;
+    axes('Position',[0 0 1 1]);
     imshow(ImageStack(:,:,iFrame),[]); 
     hold on; 
 
