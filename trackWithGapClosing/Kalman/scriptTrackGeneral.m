@@ -1,6 +1,6 @@
 
 %% general gap closing parameters
-gapCloseParam.timeWindow = 50; %maximum allowed time gap (in frames) between a track segment end and a track segment start that allows linking them.
+gapCloseParam.timeWindow = 10; %maximum allowed time gap (in frames) between a track segment end and a track segment start that allows linking them.
 gapCloseParam.mergeSplit = 1; %1 if merging and splitting are to be considered, 0 otherwise.
 gapCloseParam.minTrackLen = 2; %minimum length of track segments from linking to be used in gap closing.
 
@@ -40,7 +40,7 @@ parameters.maxSearchRadius = 5; %maximum allowed search radius.
 parameters.brownStdMult = 3*ones(gapCloseParam.timeWindow,1); %multiplication factor to calculate Brownian search radius from standard deviation.
 parameters.timeReachConfB = 2; %in the code, the search radius expands with the time gap (since a particle is expected to move further away in a longer gap than in a shorter one). This parameter controls how fast the search radius grows with time. timeReachConfB stands for time to reach confinement for the Brownian part of the motion. So before timeReachConfB, the search radius grows with the square root of time, after that it grows very, very slowly (it's almost fixed).
 
-parameters.ampRatioLimit = [0 Inf]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
+parameters.ampRatioLimit = [0.5 4]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
 
 parameters.lenForClassify = 5; %minimum track segment length to classify it as linear or random.
 
@@ -64,9 +64,9 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/mnt/sickkids/Hiro/081223_q36/5000_q36_5/analysis/'; %directory where to save input and output
-saveResults.filename = 'tracks_Qdot_0_1.mat'; %name of file where input and output are saved
-% saveResults = 0; %don't save results
+% saveResults.dir = '/mnt/sickkids/Hiro/081223_q36/5000_q36_5/analysis/'; %directory where to save input and output
+% saveResults.filename = 'tracks_Qdot_0_1.mat'; %name of file where input and output are saved
+saveResults = 0; %don't save results
 
 %verbose
 verbose = 1;

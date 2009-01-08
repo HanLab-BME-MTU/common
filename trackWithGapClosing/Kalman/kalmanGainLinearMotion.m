@@ -1,11 +1,11 @@
 function [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIndx,...
     frameInfo,kalmanFilterInfoTmp,propagationScheme,kalmanFilterInfoIn,probDim,...
-    filterInfoPrev,costMatParam)
+    filterInfoPrev,costMatParam,initFunctionName)
 %KALMANGAINLINEARMOTION uses the Kalman gain from linking to get better estimates of the state vector, its covariance matrix, state noise and its variance
 %
 %SYNOPSIS [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIndx,...
 %    frameInfo,kalmanFilterInfoTmp,propagationScheme,kalmanFilterInfoIn,probDim,...
-%    filterInfoPrev,costMatParam)
+%    filterInfoPrev,costMatParam,initFunctionName)
 %
 %INPUT  trackedFeatureIndx : Matrix showing connectivity between features
 %                            in current frame (listed in last column of matrix) 
@@ -52,6 +52,8 @@ function [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIn
 %                                feature in frame.
 %                            Enter [] if there is no previous information.
 %       costMatParam       : Linking cost matrix parameters.
+%       initFunctionName   : Name of function for Kalman filter
+%                            initialization.
 %
 %OUTPUT kalmanFilterInfoOut: Structure with fields (for all frames upto current):
 %             .stateVec        : Kalman filter state vector for all features.
@@ -76,7 +78,7 @@ errFlag = [];
 %% Input
 
 %check whether correct number of input arguments was used
-if nargin < 8
+if nargin < 9
     disp('--kalmanGainLinearMotion: Incorrect number of input arguments!');
     errFlag  = 1;
     return
@@ -170,8 +172,8 @@ for iFeature = 1 : numFeatures
         else
             featureInfo.allCoord = frameInfo.allCoord(iFeature,:);
             featureInfo.num = 1;
-            [filterTmp,errFlag] = kalmanInitLinearMotion(featureInfo,probDim,...
-                costMatParam);
+            eval(['[filterTmp,errFlag] = ' initFunctionName '(featureInfo,probDim,'...
+                'costMatParam);']);
             kalmanFilterInfoOut(iFrame).stateVec(iFeature,:) = filterTmp.stateVec;
             kalmanFilterInfoOut(iFrame).stateCov(:,:,iFeature) = filterTmp.stateCov;
             kalmanFilterInfoOut(iFrame).noiseVar(:,:,iFeature) = filterTmp.noiseVar;
