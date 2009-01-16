@@ -109,6 +109,9 @@
 %                           plotting. Optional. Default: 0.
 %           useRaw       : 1 if raw (unaligned) coordinates should be used
 %                           for plotting. Optional. Default: 0;
+%           beforeAfter  : 2-element vector with # of timepoints before and
+%                           after current timepoint that is to be plotted.
+%                           Used with method plotFrame
 %
 %    name : name of data set
 %
@@ -135,6 +138,9 @@
 %       Plots the track result. Uses options defined in obj.plotOptions,
 %       plotOpt is a structure of the same form as plotOptions and allows
 %       to overrule plotOptions.
+%
+%    plotFrame(trackObj,t,ah)
+%       plots the track around frame t into the axes specified by ah
 %
 % REMARKS trackObj is a handle class. Thus, it will be passed by reference!
 %         Note this is still work in progress.
@@ -335,6 +341,15 @@ classdef trackObj<handle
                 obj(iObj).plotOptions.axH = tmpAxH;
             end
         end % plot
+        %==========================
+        %% PLOTFRAME
+        %==========================
+        function plotFrame(obj,t,axH)
+            if nargin < 3 || isempty(t) || isempty(axH)
+                error('please supply time and axes handle for plotting the current frame')
+            end
+            
+        end
         %==========================
         %% GET.RESULTS
         %==========================
