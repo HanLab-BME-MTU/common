@@ -196,8 +196,9 @@ switch description{7}
         fprintf(fid,'%%   #property1:\n');
         fprintf(fid,'%%\n');
         fprintf(fid,'%% METHODS\n');
-        fprintf(fid,'%%   #method1: out = method1(obj,in)\n');
-        fprintf(fid,'%%        Description\n');
+        fprintf(fid,'%%   #method1: short description');
+        fprintf(fit,'%%        out = method1(obj,in)\n');
+        fprintf(fid,'%%        Description of input and output\n');
         fprintf(fid,'%%\n');
         fprintf(fid,'%% REMARKS\n');
         fprintf(fid,'%%\n');

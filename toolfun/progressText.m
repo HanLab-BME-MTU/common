@@ -94,13 +94,12 @@ runTime = etime(clock,starttime);
 % check whether there has been a warning since last time
 if ~isempty(lastwarn)
     lastwarn('');
-    warned = '\n';
-else
-    warned = '';
+    fprintfExpression = regexprep(fprintfExpression,'(\\b)*','\\n');
+    fprintfExpressionFinal = regexprep(fprintfExpressionFinal,'(\\b)*','\\n');
 end
 
 if percentDone == 100 % Task completed
-    fprintf(1,[warned,fprintfExpressionFinal],convertTime(runTime)); % finish up
+    fprintf(1,fprintfExpressionFinal,convertTime(runTime)); % finish up
     clear starttime lastupdate clearText printText finalText % Clear persistent vars
     return
 end
@@ -112,7 +111,7 @@ end
 
 % update
 timeLeft = runTime/fractionDone - runTime;
-fprintf(1,[warned,fprintfExpression],percentDone,convertTime(timeLeft));
+fprintf(1,fprintfExpression,percentDone,convertTime(timeLeft));
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
