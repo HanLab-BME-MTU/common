@@ -47,9 +47,11 @@ function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
 %                           -'1' if time is to be color-coded (green in the
 %                           beginning, blue in the middle, red in the end).
 %                           -'k', 'b', 'r', etc. if all tracks are in black,
-%                           blue, red, etc.
+%                              blue, red, etc.
 %                           -'2' if tracks are colored by cycling through
-%                           the plot's default color order.
+%                              the plot's default color order.
+%                           -'3' as 2, but using extendedColors (23
+%                              different colors).
 %                           Optional. Default: 'k'.
 %       markerType        : String indicating marker type for plotting.
 %                           Only used if colorTime is not '1'.
@@ -323,6 +325,17 @@ switch colorTime
             obsAvail = find(~isnan(tracksXP(:,i)));
             plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
             plot(tracksXP(:,i),tracksYP(:,i),'color',colorLoop(mod(i-1,7)+1,:),...
+                'marker',markerType);
+        end
+        
+    case '3' % no time color-coding, use extendedColors
+        
+        %plot tracks by looping through colors
+        %missing intervals are indicated by a dotted line
+        for i = 1 : trackStartRow(end) + numSegments(end) - 1
+            obsAvail = find(~isnan(tracksXP(:,i)));
+            plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
+            plot(tracksXP(:,i),tracksYP(:,i),'color',extendedColors(mod(i-1,23)+1),...
                 'marker',markerType);
         end
 
