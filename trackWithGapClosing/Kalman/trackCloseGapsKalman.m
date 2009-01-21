@@ -310,7 +310,7 @@ if selfAdaptive
     if verbose
         disp('Linking features forwards ...');
     end
-    [dummy,dummy,kalmanInfoLink,dummy,linkingCosts] = linkFeaturesKalman(...
+    [dummy,dummy1,kalmanInfoLink,dummy,linkingCosts] = linkFeaturesKalman(...
         movieInfo,costMatrices(1).funcName,costMatrices(1).parameters,...
         kalmanFunctions,probDim,[],[],verbose);
 
@@ -359,6 +359,16 @@ else %if not self-adaptive, link in one round only
 end
 
 %% post-processing of linking results
+
+
+%this function now breaks up frame-to-frame linked tracks if they do not
+%follow a linear trajectory.  it only runs with the EB3 cost matrix
+if isequal(costMatrices(1).funcName,'costMatLinearMotionLink_EB3')
+    [tracksCoordAmpLink,tracksFeatIndxLink,nnDistLinkedFeat]=...
+       breakNonlinearTracks(tracksCoordAmpLink,tracksFeatIndxLink,nnDistLinkedFeat);
+end
+
+
 
 %get track start times, end times amd lifetimes
 trackSEL = getTrackSEL(tracksCoordAmpLink);
