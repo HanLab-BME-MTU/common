@@ -107,7 +107,7 @@ end
 trajOut = zeros(trajLength,1);
 
 %initialize normal random number generator
-randn('state',sum(100*clock));
+%randn('state',sum(100*clock));
 
 %get white noise vector
 noise = noiseSigma*randn(trajLength,1);
