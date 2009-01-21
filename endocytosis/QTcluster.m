@@ -33,8 +33,7 @@ function [clusterResults] = QTcluster(experiment,rest);
 %
 % Uses: determineMovieLength
 %       determineImagesize
-%       RipleysKfunction
-%       makeCorrFactorMatrix
+%       determineHotSpotRadius
 %       QualityThresholdCluster
 %
 % Daniel Nunez, January 9, 2009
@@ -48,81 +47,7 @@ oldDir = cd;
 [experiment] = determineImagesize(experiment);
 
 %GET HOT SPOT RADIUS FROM DENSITY PLOTS
-dist = 1:1:20;
-for iexp = 1:length(experiment)
-    
-    %Load Lifetime Information
-    cd([experiment(iexp).source filesep 'LifetimeInfo'])
-    load('lftInfo')
-    % status matrix
-    statMat = lftInfo.Mat_status;
-    % lifetime matrix
-    lftMat = lftInfo.Mat_lifetime;
-    % x-coordinate matrix
-    matX = lftInfo.Mat_xcoord;
-    % y-coordinate matrix
-    matY = lftInfo.Mat_ycoord;
-    % disapp status matrix
-    daMat = lftInfo.Mat_disapp;
-    % framerate
-    framerate = experiment(iexp).framerate;
-    % image size
-    imsize  = experiment(iexp).imagesize;
-    
-    %find all pits in movie that meet requirements specified by restriction
-    %vector
-    findPos = find((statMat==rest(1,1)) & (daMat==rest(1,2)) &...
-        (lftMat>rest(1,3)) & (lftMat>round(rest(1,4)/framerate)) & (lftMat<round(rest(1,5)/framerate)));
-    
-    msx = imsize(1);
-    msy = imsize(2);
-    imsizS = [imsize(2) imsize(1)];
-    % construct convex hull out of complete point distribution
-    % combined mpm
-    selx = full(matX); selx = selx(isfinite(selx)); selx = nonzeros(selx(:));
-    sely = full(matY); sely = sely(isfinite(sely)); sely = nonzeros(sely(:));
-    combMPM = [ selx sely ];
-    K = convhull(combMPM(:,1),combMPM(:,2));
-    % edge points of the convex hull
-    cpointsx = combMPM(K,1);
-    cpointsy = combMPM(K,2);
-    % create mask
-    areamask = poly2mask(cpointsx,cpointsy,msx,msy);
-    % CREATE CORRECTION FACTOR MATRIX FOR THIS MOVIE using all objects
-    corrFacMat = makeCorrFactorMatrix(imsizS, dist, 10, areamask'); 
-    normArea = sum(areamask(:));
-
-    mpmPits = [full(matX(findPos)) full(matY(findPos))];
-    [kr,lr]=RipleysKfunction(mpmPits,mpmPits,imsizS,dist,[],normArea);
-    Lpits(:,iexp) = lr;  
-end
-
-    [dlx,dly,dlz] = size(Lpits);
-    carea = dist.^2;
-    careadiff = carea; careadiff(2:length(careadiff)) = diff(carea);
-    amat = repmat(careadiff',1,dly);
-    dmat = repmat(dist',1,dly);
-    currLR = Lpits;
-    currKR = (currLR+dmat).^2;
-    currKRdiff = currKR;
-    currKRdiff(2:length(dist),:) = diff(currKR,1);
-    currDen = currKRdiff./amat;
-    pitDen = nanmedian(currDen,2);
-
-%fit spline to productive data
-ppProd = csaps(dist,pitDen);
-denFitValuesProd = fnplt(ppProd);
-%find max value of fit
-maxNormDenProd = max(denFitValuesProd(2,:));
-%find where radius is 10 pixels
-findMidRadProd = find(denFitValuesProd(1,:) >= 10,1,'first');
-%take the mean density from 10 pixels to the end as the far distance value
-farDenProd = mean(denFitValuesProd(2,findMidRadProd:end));
-%get point at 10 percent of difference in between maximum and long distance
-%densities
-findRadProd = find(denFitValuesProd(2,:) < 1+farDenProd,1,'first');
-hotSpotRadiusProd = denFitValuesProd(1,findRadProd);
-hotSpotRadius = hotSpotRadiusProd;
+[hotSpotRadius] = determineHotSpotRadius(experiment);
 
 
 %%
@@ -164,7 +89,6 @@ for iexp = 1:length(experiment)
     % create mask
     areamask = poly2mask(cpointsx,cpointsy,msx,msy);
     % CREATE CORRECTION FACTOR MATRIX FOR THIS MOVIE using all objects
-    corfacmatM = makeCorrFactorMatrix(imsizS, dist, 10, areamask');
     normArea = sum(areamask(:));
 
     %find all pits in movie that meet requirements specified by restriction
