@@ -1,4 +1,4 @@
-function [hotSpotRadius] = determineHotSpotRadius(experiment);
+function [hotSpotRadius] = determineHotSpotRadius(experiment,rest);
 
 % determineHotSpotRadius calculates radius of hot spot based on pair
 % correlation (takes mean value of pair correlation from pixels 10 to 20
