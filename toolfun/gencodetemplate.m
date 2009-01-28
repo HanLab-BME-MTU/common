@@ -74,7 +74,7 @@ inPrompt = {'Username',...
     'Synopsis: ''[output1, output2] = functionname(input1, input2)',...
     'Description of input arguments (use \n for line breaks)',...
     'Description of output arguments (use \n for line breaks)',...
-    'Function: 1, Class: 2'};
+    'Function: 1, Value Class: 2, Handle Class: 3'};
 inTitle = 'Please describe your function';
 numLines = repmat([1,100],7,1);
 % assign defaultAnswer
@@ -92,17 +92,17 @@ end
 ok = false;
 
 while ~ok
-
+    
     % get input
     description = inputdlg(inPrompt, inTitle, numLines, defaultAnswer);
-
+    
     % check for user abort
     if isempty(description)
         error('description cancelled by user');
     else
         ok = true; % hope for the best
     end
-
+    
     % read description. Functionname, description and synopsis are required
     fxnname = description{2};
     if isempty(fxnname) || isempty(description{2})...
@@ -112,7 +112,7 @@ while ~ok
         uiwait(h);
         ok = false;
     end
-
+    
     % check whether function already exists (again)
     fxnCheck = which(fxnname);
     if ~isempty(fxnCheck)
@@ -120,12 +120,12 @@ while ~ok
         uiwait(h);
         ok = false;
     end
-
+    
     % check for ok and update defaultAnswer with description if necessary
     if ~ok
         defaultAnswer = description;
     end
-
+    
 end % while
 
 % read other input
@@ -184,7 +184,7 @@ switch description{7}
         fprintf(fid,'%s\n',repmat('%',1,75));
         fclose(fid);
         % end of file-printing stage
-    case '2' % class
+    case {'2','3'} % class
         fid = fopen(filename,'wt');
         fprintf(fid,'%%%s\n',desc);
         fprintf(fid,'%%\n');
@@ -197,7 +197,7 @@ switch description{7}
         fprintf(fid,'%%\n');
         fprintf(fid,'%% METHODS\n');
         fprintf(fid,'%%   #method1: short description');
-        fprintf(fit,'%%        out = method1(obj,in)\n');
+        fprintf(fid,'%%        out = method1(obj,in)\n');
         fprintf(fid,'%%        Description of input and output\n');
         fprintf(fid,'%%\n');
         fprintf(fid,'%% REMARKS\n');
@@ -208,7 +208,12 @@ switch description{7}
         fprintf(fid,'%% DATE: %s\n',datetoday);
         fprintf(fid,'%%\n');
         fprintf(fid,'%s\n',repmat('%',1,75));
-        fprintf(fid,'\nclassdef %s\n\nend',fxnname);
+        % subclass myClass or myHandle by default
+        if strcmp(description{7},'2')
+            fprintf(fid,'\nclassdef %s < myClass\n\nend',fxnname);
+        else
+            fprintf(fid,'\nclassdef %s < myHandle\n\nend',fxnname);
+        end
         fclose(fid);
 end
 
