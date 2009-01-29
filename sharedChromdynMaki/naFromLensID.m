@@ -1,7 +1,7 @@
 function [NA,mag] = naFromLensID(lensID,ask)
 %NAFROMLENSID is a lookup table to find the NA for a given lensID
 %
-% SYNOPSIS  NA = naFromLensID(lensID,ask)
+% SYNOPSIS  [NA,mag] = naFromLensID(lensID,ask)
 %
 % INPUT     lensID : ID of the lens according to deltaVision
 %           ask    : Whether or not to ask for lensID if not found in list
