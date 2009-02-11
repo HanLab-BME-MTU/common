@@ -8,14 +8,16 @@
 /*                                                         */
 /* ------------------------------------------------------- */
 
-#ifndef DISTMAT_H_
-    
-    #define DISTMAT_H_
+#include "distmat.h"
 
-    #include "distmat.h"
-
-#endif
-
+/* #ifndef DISTMAT_H_
+//     
+//     #define DISTMAT_H_
+// 
+//     #include "distmat.h"
+//    
+// #endif
+*/
 /* calcDistMatrix1D */
 
 void calcDistMatrix1D(double *D, double *M, double *N, int Mrows, int Nrows)
@@ -26,7 +28,7 @@ void calcDistMatrix1D(double *D, double *M, double *N, int Mrows, int Nrows)
         
         for (j=0;j<Mrows;j++) {
         
-            // Store calculated distance in D
+            /* Store calculated distance in D */
             *D++=*(N+i)-*(M+j);            
         }
     }
@@ -43,19 +45,19 @@ void calcDistMatrix2D(double *D, double *M, double *N, int Mrows, int Nrows)
     
     for (i=0;i<Nrows;i++) {
         
-        // Get source position
+        /* Get source position */
         posN=N+i;
         nX=*posN;
         nY=*(posN+Nrows);
         
         for (j=0;j<Mrows;j++) {
         
-            // Get target position
+            /* Get target position */
             posM=M+j;
             mX=*posM;
 			mY=*(posM+Mrows);
             
-             // Store calculated distance in D
+             /* Store calculated distance in D */
             *D++=sqrt((nY-mY)*(nY-mY)+(nX-mX)*(nX-mX));           
         }
     }
@@ -72,7 +74,7 @@ void calcDistMatrix3D(double *D, double *M, double *N, int Mrows, int Nrows)
     
     for (i=0;i<Nrows;i++) {
         
-        // Get source position
+        /* Get source position */
         posN=N+i;
         nX=*posN;
         nY=*(posN+Nrows);
@@ -80,13 +82,13 @@ void calcDistMatrix3D(double *D, double *M, double *N, int Mrows, int Nrows)
         
         for (j=0;j<Mrows;j++) {
         
-            // Get target position
+            /* Get target position */
             posM=M+j;
             mX=*posM;
 			mY=*(posM+Mrows);
 			mZ=*(posM+2*Mrows);
             
-            // Store calculated distance in D
+            /* Store calculated distance in D */
             *D++=sqrt((nY-mY)*(nY-mY)+(nX-mX)*(nX-mX)+(nZ-mZ)*(nZ-mZ));
             
         }
