@@ -35,7 +35,7 @@ for i=1:length(exp)
         
         od = cd;
         path = exp(i).source;
-        detectionpath = [path,'/DetectionStructures'];
+        detectionpath = [path,filesep,'DetectionStructures'];
         cd(detectionpath);
         
         readDetectionFilename = 'detection.mat';
