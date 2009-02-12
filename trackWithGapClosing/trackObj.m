@@ -35,7 +35,7 @@
 %                               .amp - field name to use for amp. Default:
 %                                 'amp'
 %                               .correctCentroid -  0: no correction
-%                                (default), 1: correct translation, 2;
+%                                (default), 1: correct translation, 2:
 %                                correct translation and rotation
 %                      .inputInfo  : additional information for the parser
 %                      .outputStyle : settings for outputStyle (see
@@ -56,28 +56,12 @@
 %       positions)
 %   tracksFinal/kalmanInfoLink/errFlag
 %       output of trackCloseGapsKalman
-%   results : results according to the outputStyle. results is a structure
-%           with at least the fields .featureIdx and .trackInfo
+%   results : results according to the outputStyle.
 %           If outputStyle is:
-%  TBD!!      'separateObjects' - featureIdx is a nTracks-by-1 cell array
-%                that contains a nTimepoints-by-1 list of object indices
-%                with NaNs where there is no data, or a nTimepoints-by-2
-%                list with [timepoint, index], if .nanList is 1 or 0,
-%                respectively.
-%                trackInfo is a nEvents-by-3 array with [idx,id,t], where
-%                idx is the track number, id is 1,2,3, or 4 depending on
-%                whether it is a birth, death, merge, or split, and t is
-%                the timepoint where it happens (for merge/split t is the
-%                timepoint between where the two trajectories are together
-%                and where they are separate.
-%                Additional options
-%                   .nanList - see above
-%                   .allowMerge - if 0, all tracks with merges are
-%                     discarded. Default: 1
-%                   .allowSplit - if 0, all tracks with splits are
-%                     discarded. Default: 1
-%                   .msStrategy - strategy to identify which spot is which
-%                     after merge followed by split.
+%             'standard': obj.results == obj.tracksFinal
+%             'raw' : tracksFinal with uncorrected coordinates. Default,
+%                   since 'standard' output can easily be obtained from
+%                   obj.tracksFinal
 %   outputStyle : structure with fields
 %       .name : name of the style
 %       .options : additional options
@@ -165,7 +149,7 @@ classdef trackObj<handle
         kalmanInfoLink = [];
         errFlag = [];
         % additional properties
-        outputStyle = struct('name','separateObjects','options','');
+        outputStyle = struct('name','raw','options','');
         plotOptions = struct('timeRange',[],'colorTime','1',...
             'markerType','none','indicateSE',1,'axH',0,...
             'image',[],'flipXY',0,'useRaw',0);
@@ -173,7 +157,7 @@ classdef trackObj<handle
         additionalOutput  = false;
         nTimepoints = 0;
         rawMovieInfo % raw coordinates (before alignment)
-
+        
     end % static props
     properties (Dependent)
         results % property depending on outputStyle
@@ -181,9 +165,8 @@ classdef trackObj<handle
     properties (Hidden)
         % set here default options for outputStyles. For every name, there
         % need to be defaults for all corresponding options
-        outputStyleDefOpt = struct('separateObjects',...
-            struct('nanList',true,'allowMerge',true,'allowSplit',true,...
-            'msStrategy','ampDist')...
+        outputStyleDefOpt = struct('standard',[],...
+            'raw',[]...
             );
         % defaults for inputInfo
         % correctCentroid: 0 - none; 1- only centroid; 2 - centroid and rot
@@ -359,8 +342,7 @@ classdef trackObj<handle
             % count objects
             nObj = numel(obj);
             % assign default output
-            [varargout{1:nObj}] = deal(struct('featureIdx',[],...
-                'trackInfo',[]));
+            [varargout{1:nObj}] = deal(obj.tracksFinal);
             
             % loop objects.
             for iObj = 1:numel(obj)
@@ -371,39 +353,57 @@ classdef trackObj<handle
                 if ~isempty(cObj.tracksFinal)
                     % switch according to outputStyle
                     switch cObj.outputStyle.name
-                        case 'separateObjects'
-                            % merges have to be resolved into multiple
-                            % tracks.
+                        case 'standard'
+                            % done already
+                        case 'raw'
+                            % replace coordinates with raw coordinates
+                            tracks = cObj.tracksFinal;
                             
-                            % pass once through the list to get the number
-                            % of segments and to remove merges/splits/ms if
-                            % necessary
-                            %                             nTracks = 0;
-                            %                             trackList = cObj.tracksFinal;
-                            %                             for i=length(trackList):-1:1
-                            %                                 % check for merge/split
-                            %                                 nSegments = size(trackList(i).tracksFeatIndxCG,1);
-                            %                                 if nSegments > 1 && ...
-                            %                                         any(tracksFinal(iTrack).seqOfEvents(:,2)==2 & ...
-                            %                                         ~isnan(tracksFinal(iTrack).seqOfEvents(:,4)))
-                            %                                     % bad track
-                            %                                     nSegments = 0;
-                            %                                 end
-                            %                             end
-                            
+                            % copied from makiGenerateTracks
+                            for iTrack = 1 : length(tracks)
+                                
+                                
+                                %fetch the start and end time of this track
+                                startTime = tracks(iTrack).seqOfEvents(1,1);
+                                endTime = tracks(iTrack).seqOfEvents(2,1);
+                                
+                                %go over all frames where this track exists
+                                for iFrame =  startTime : endTime
+                                    
+                                    %get the feature making up this track in this frame
+                                    iFeature = tracks(iTrack).tracksFeatIndxCG(iFrame-startTime+1);
+                                    
+                                    %if there is a feature (not a gap)
+                                    if iFeature ~= 0
+                                        
+                                        %replace coordiantes and their stds
+                                        tracks(iTrack).tracksCoordAmpCG(1,(iFrame-startTime)*8+1:...
+                                            (iFrame-startTime)*8+3) = [cObj.rawMovieInfo(iFrame).xCoord(iFeature,1),...
+                                            cObj.rawMovieInfo(iFrame).yCoord(iFeature,1),...
+                                            cObj.rawMovieInfo(iFrame).zCoord(iFeature,1)];
+                                        tracks(iTrack).tracksCoordAmpCG(1,(iFrame-startTime)*8+5:...
+                                            (iFrame-startTime)*8+7) = [cObj.rawMovieInfo(iFrame).xCoord(iFeature,2),...
+                                            cObj.rawMovieInfo(iFrame).yCoord(iFeature,2),...
+                                            cObj.rawMovieInfo(iFrame).zCoord(iFeature,2)];
+                                        
+                                    end
+                                    
+                                end
+                                
+                            end %(for iTrack = 1 : numTracks)
                         otherwise
                             error('unrecognized output style %s',cObj.outputStyle.name)
                     end
                 end
             end
-        
+            
         end
         %% Get Method rawMovieInfo
         function out = get.rawMovieInfo(obj)
             % return movieInfo unless correctCoords has written
             % rawMovieInfo
             if isempty(obj.rawMovieInfo)
-                out = obj.movieinfo;
+                out = obj.movieInfo;
             else
                 out = obj.rawMovieInfo;
             end
@@ -506,21 +506,21 @@ classdef trackObj<handle
             %--- nested function correctCentroid
             function correctCentroid
                 % correct Centroid
-                        if options.inputInfo.correctCentroid > 0
-                            % store rawMovieInfo
-                            obj.rawMovieInfo = movieInfo;
-                            
-                            % if not correct rotation, co is -1, otherwise inf
-                            if options.inputInfo.correctCentroid == 1;
-                                co = -1;
-                            else
-                                co = Inf;
-                            end
-                            [movieInfo,obj.outputStyle.centroids,...
-                                obj.outputStyle.rotMats] = alignCoords(...
-                                movieInfo,{'xCoord','yCoord','zCoord','amp'},...
-                                co,obj.probDim);
-                        end
+                if options.inputInfo.correctCentroid > 0
+                    % store rawMovieInfo
+                    obj.rawMovieInfo = movieInfo;
+                    
+                    % if not correct rotation, co is -1, otherwise inf
+                    if options.inputInfo.correctCentroid == 1;
+                        co = -1;
+                    else
+                        co = Inf;
+                    end
+                    [movieInfo,obj.outputStyle.centroids,...
+                        obj.outputStyle.rotMats] = alignCoords(...
+                        movieInfo,{'xCoord','yCoord','zCoord','amp'},...
+                        co,obj.probDim);
+                end
             end
         end % parseInputs
         %===========================
@@ -764,7 +764,7 @@ classdef trackObj<handle
                     error('%s not implemented yet',default)
             end
         end
-       
+        
     end % hidden methods
     
 end
