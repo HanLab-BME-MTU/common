@@ -1,4 +1,5 @@
-function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,filterSigma)
+function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
+    filterSigma,showRaw)
 %Overlays detected features obtained via detectSubResFeatures2D_Movie on movies
 %
 %SYNPOSIS overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,filterSigma)
@@ -14,6 +15,10 @@ function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,filterSigma
 %       filterSigma : 0 to overlay on raw image, PSF sigma to overlay on image
 %                     filtered with given filterSigma. 
 %                     Optional. Default: 0
+%       showRaw     : 1 to add raw movie to the left of the movie with
+%                     tracks overlaid, 2 to add raw movie at the top of
+%                     the movie with tracks overlaid, 0 otherwise.
+%                     Optional. Default: 0.
 %
 %OUTPUT If movie is to be saved, the QT movie is written into directory
 %       where TIFFs are located
@@ -74,6 +79,11 @@ if nargin < 5 || isempty(filterSigma)
     filterSigma = 0;
 end
 
+%check whether to put raw movie adjacent to movie with tracks overlaid
+if nargin < 6 || isempty(showRaw)
+    showRaw = 0;
+end
+
 %keep only the frames of interest
 outFileList = outFileList(startend(1):startend(2));
 
@@ -108,6 +118,10 @@ else
     movieInfo = movieInfo(startend(1):startend(2));
 end
 
+%get image size
+[imSizeX,imSizeY] = size(ImageStack(:,:,1));
+imageRange = [1 imSizeX; 1 imSizeY];
+
 
 %% make movie
 
@@ -119,13 +133,47 @@ for iFrame = 1 : length(movieInfo)
     
     %plot image in current frame
     clf;
-    axes('Position',[0 0 1 1]);
-    imshow(ImageStack(:,:,iFrame),[]); 
-    hold on; 
-
-    %show frame number
-    text(10,10,num2str(iFrame),'Color','white');
-
+    
+    switch showRaw
+        case 1
+            axes('Position',[0 0 0.495 1]);
+            imshow(ImageStack(:,:,iFrame),[]);
+            xlim(imageRange(1,:));
+            ylim(imageRange(2,:));
+            hold on;
+            textDeltaCoord = min(diff(imageRange,[],2))/20;
+            text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
+                textDeltaCoord,num2str(iFrame),'Color','white');
+            axes('Position',[0.505 0 0.495 1]);
+            imshow(ImageStack(:,:,iFrame),[]);
+            xlim(imageRange(1,:));
+            ylim(imageRange(2,:));
+            hold on;
+        case 2
+            axes('Position',[0 0.505 1 0.495]);
+            imshow(ImageStack(:,:,iFrame),[]);
+            xlim(imageRange(1,:));
+            ylim(imageRange(2,:));
+            hold on;
+            textDeltaCoord = min(diff(imageRange,[],2))/20;
+            text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
+                textDeltaCoord,num2str(iFrame),'Color','white');
+            axes('Position',[0 0 1 0.495]);
+            imshow(ImageStack(:,:,iFrame),[]);
+            xlim(imageRange(1,:));
+            ylim(imageRange(2,:));
+            hold on;
+        otherwise
+            axes('Position',[0 0 1 1]);
+            imshow(ImageStack(:,:,iFrame),[]);
+            xlim(imageRange(1,:));
+            ylim(imageRange(2,:));
+            hold on;
+            textDeltaCoord = min(diff(imageRange,[],2))/20;
+            text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
+                textDeltaCoord,num2str(iFrame),'Color','white');
+    end
+    
     %plot features
     if ~isempty(movieInfo(iFrame).xCoord)
         plot(movieInfo(iFrame).xCoord(:,1),movieInfo(iFrame).yCoord(:,1),'ro','MarkerSize',4);

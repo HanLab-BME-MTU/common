@@ -68,13 +68,13 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %             .stdRawLast5 : Standard deviation of background intensity in
 %                            raw movie as calculated from the 5 frames.
 %             .meanIntegFLast1: Mean background intensity in last frame of
-%                               filtered integrated movie.
+%                               integrated movie.
 %             .stdIntegFLast1 : Standard deviation of background intensity
-%                               in last frame of filtered integrated movie.
+%                               in last frame of integrated movie.
 %             .meanIntegFFirst1: Mean background intensity in first frame of
-%                                filtered integrated movie.
+%                                integrated movie.
 %             .stdIntegFFirst1 : Standard deviation of background intensity
-%                                in first frame of filtered integrated movie.
+%                                in first frame of integrated movie.
 %       psfSigma      : Standard deviation of point spread function as
 %                       estimated from fitting to local maxima in the movie.
 %       signal2noiseRatio: Number of features - by - number of frames
@@ -266,26 +266,9 @@ last5start = max(numImagesRaw-4,1);
 imageLast5 = imageRaw(:,:,last5start:end);
 [bgMeanRaw,bgStdRaw] = spatialMovAveBG(imageLast5,imageSizeX,imageSizeY);
 
-% bgMeanRaw = zeros(imageSizeX,imageSizeY,numImagesRaw);
-% bgStdRaw = bgMeanRaw;
-% 
-% for iImage = integWindow+1 : numImagesRaw-integWindow
-%     [bgMeanRaw(:,:,iImage),bgStdRaw(:,:,iImage)] = ...
-%         spatialMovAveBG(imageRaw(:,:,iImage-integWindow:iImage+integWindow),...
-%         imageSizeX,imageSizeY);
-% end
-% for iImage = 1 : integWindow
-%     bgMeanRaw(:,:,iImage) = bgMeanRaw(:,:,integWindow+1);
-%     bgStdRaw(:,:,iImage) = bgStdRaw(:,:,integWindow+1);
-% end
-% for iImage = numImagesRaw-integWindow+1 : numImagesRaw
-%     bgMeanRaw(:,:,iImage) = bgMeanRaw(:,:,numImagesRaw-integWindow);
-%     bgStdRaw(:,:,iImage) = bgStdRaw(:,:,numImagesRaw-integWindow);
-% end
-
-%get background of filtered integrated movie
-bgMeanIntegF = zeros(imageSizeX,imageSizeY,numImagesInteg);
-bgStdIntegF = bgMeanIntegF;
+%get background of integrated movie
+bgMeanInteg = zeros(imageSizeX,imageSizeY,numImagesInteg);
+bgStdInteg = bgMeanInteg;
 
 %initialize progress display
 progressText(0,'Estimating background');
@@ -293,8 +276,8 @@ progressText(0,'Estimating background');
 %go over all images
 for iImage = 1 : numImagesInteg
 
-    %get image background noise statistics
-    [bgMeanIntegF(:,:,iImage),bgStdIntegF(:,:,iImage)] = ...
+    %get integrated image background noise statistics
+    [bgMeanInteg(:,:,iImage),bgStdInteg(:,:,iImage)] = ...
         spatialMovAveBG(imageInteg(:,:,iImage),imageSizeX,imageSizeY);
 
     %display progress
@@ -304,8 +287,8 @@ end
 
 %store output
 background = struct('meanRawLast5',bgMeanRaw,'stdRawLast5',bgStdRaw,...
-    'meanIntegFLast1',bgMeanIntegF(:,:,end),'stdIntegFLast1',bgStdIntegF(:,:,end),...
-    'meanIntegFFirst1',bgMeanIntegF(:,:,1),'stdIntegFFirst1',bgStdIntegF(:,:,1));
+    'meanIntegLast1',bgMeanInteg(:,:,end),'stdIntegLast1',bgStdInteg(:,:,end),...
+    'meanIntegFirst1',bgMeanInteg(:,:,1),'stdIntegFirst1',bgStdInteg(:,:,1));
 
 %clear some variables
 clear imageInteg
@@ -331,15 +314,15 @@ for iImage = 1 : numImagesInteg
         localMax1DIndx = find(fImg(:));
         
         %get background values corresponding to local maxima
-        bgMeanIntegF1 = bgMeanIntegF(:,:,iImage);
-        bgMeanMaxF = bgMeanIntegF1(localMax1DIndx);
-        bgStdIntegF1 = bgStdIntegF(:,:,iImage);
-        bgStdMaxF = bgStdIntegF1(localMax1DIndx);
+        bgMeanInteg1 = bgMeanInteg(:,:,iImage);
+        bgMeanMaxF = bgMeanInteg1(localMax1DIndx);
+        bgStdInteg1 = bgStdInteg(:,:,iImage);
+        bgStdMaxF = bgStdInteg1(localMax1DIndx);
         bgMeanMax = bgMeanRaw(localMax1DIndx);
 
         %calculate the p-value corresponding to the local maxima's amplitudes
-        %assume that background intensity in filtered image is normally
-        %distributed with mean bgMeanF and standard deviation bgStdF
+        %assume that background intensity in integrated image is normally
+        %distributed with mean bgMeanMaxF and standard deviation bgStdMaxF
         pValue = 1 - normcdf(localMaxAmp,bgMeanMaxF,bgStdMaxF);
 
         %retain only those maxima with significant amplitude

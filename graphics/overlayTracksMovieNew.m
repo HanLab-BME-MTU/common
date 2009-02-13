@@ -30,7 +30,7 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %       showRaw       : 1 to add raw movie to the left of the movie with
 %                       tracks overlaid, 2 to add raw movie at the top of
 %                       the movie with tracks overlaid, 0 otherwise.
-%                       Optional. Defatul: 0.
+%                       Optional. Default: 0.
 %       imageRange    : Image region to make movie out of, in the form:
 %                       [min pixel X, max pixel X; min pixel Y, max pixel Y].
 %                       Optional. Default: Whole image.
