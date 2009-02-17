@@ -152,7 +152,7 @@ classdef trackObj<handle
         outputStyle = struct('name','raw','options','');
         plotOptions = struct('timeRange',[],'colorTime','1',...
             'markerType','none','indicateSE',1,'axH',0,...
-            'image',[],'flipXY',0,'useRaw',0);
+            'image',[],'flipXY',0,'useRaw',0,'beforeAfter',[2,1]);
         name = '';
         additionalOutput  = false;
         nTimepoints = 0;
@@ -266,13 +266,11 @@ classdef trackObj<handle
         %% PLOT
         %======================
         function plot(obj,plotOpt)
-            % todo: allow direct input to overwrite plotOptions
             % todo: set callback (don't forget to set userData in
             % plotTracks)
+            
+            
             % loop through objects and plot
-            
-            
-            
             nObj = numel(obj);
             for iObj = 1:nObj
                 
@@ -304,7 +302,7 @@ classdef trackObj<handle
                 end
                 switch obj(iObj).probDim
                     case 2
-                        plotTracks2D(obj(iObj).tracksFinal,...
+                        plotTracks2D(obj(iObj).results,...
                             plotOptions.timeRange,...
                             plotOptions.colorTime,...
                             plotOptions.markerType,...
@@ -313,7 +311,7 @@ classdef trackObj<handle
                             plotOptions.image,...
                             plotOptions.flipXY,0);
                     case 3
-                        plotTracks3D(obj(iObj).tracksFinal,...
+                        plotTracks3D(obj(iObj).results,...
                             plotOptions.timeRange,...
                             plotOptions.colorTime,...
                             plotOptions.markerType,...
@@ -327,10 +325,52 @@ classdef trackObj<handle
         %==========================
         %% PLOTFRAME
         %==========================
-        function plotFrame(obj,t,axH)
+        function plotFrame(obj,t,axH,plotOpt)
+            % plotFrame plots the tracks into a GUI window
+            % plotFrame(obj,t,axH,plotOpt)
+            %
+            % plotFrame makes the following assumptions:
+            % - 2D plotting
+            % - feature is getting plotted by another routine
+            % - only one object
+            
             if nargin < 3 || isempty(t) || isempty(axH)
                 error('please supply time and axes handle for plotting the current frame')
             end
+            
+            % read plotOptions
+            if nargin < 2 || isempty(plotOpt)
+                plotOptions = obj.plotOptions;
+            else
+                plotOptions = obj.plotOptions;
+                % overwrite plotOptions
+                for fn = fieldnames(plotOpt)'
+                    plotOptions.(fn{1}) = plotOpt.(fn{1});
+                end
+            end
+            
+            % get start/end times
+            minMaxTime = [1,length(obj.movieInfo)];
+            startEndTime = Nan(1,2);
+            startEndTime(1) = max(minMaxTime(1),t-plotOptions.beforeAfter(1));
+            startEndTime(2) = max(minMaxTime(2),t+plotOptions.beforeAfter(2));
+            
+            % make sure we're getting raw coordinates
+            oldStyle = obj.outputStyle;
+            obj.outputStyle.name = 'raw';
+            
+            % plot
+            plotTracks2D(obj.results,...
+                startEndTime,...
+                plotOptions.colorTime,...
+                plotOptions.markerType,...
+                plotOptions.indicateSE,...
+                axH,...
+                [],...
+                plotOptions.flipXY,0);
+            
+            % reset style
+            obj.outputStyle.name = oldStyle;
             
         end
         %==========================
@@ -362,31 +402,45 @@ classdef trackObj<handle
                             % copied from makiGenerateTracks
                             for iTrack = 1 : length(tracks)
                                 
+                                nCompoundTracks =  size(tracks(iTrack).tracksFeatIndxCG,1);
                                 
-                                %fetch the start and end time of this track
-                                startTime = tracks(iTrack).seqOfEvents(1,1);
-                                endTime = tracks(iTrack).seqOfEvents(2,1);
+                                if nCompoundTracks == 1
+                                    % single track. Everything is easy
+                                    
+                                    %fetch the start and end time of this track
+                                    startTime = tracks(iTrack).seqOfEvents(1,1);
+                                    endTime = tracks(iTrack).seqOfEvents(2,1);
+                                    
+                                else
+                                    % tracks will start early and end late
+                                    startTime = min(tracks(iTrack).seqOfEvents(:,1));
+                                    endTime = max(tracks(iTrack).seqOfEvents(:,1));
+                                end
                                 
                                 %go over all frames where this track exists
                                 for iFrame =  startTime : endTime
                                     
-                                    %get the feature making up this track in this frame
-                                    iFeature = tracks(iTrack).tracksFeatIndxCG(iFrame-startTime+1);
-                                    
-                                    %if there is a feature (not a gap)
-                                    if iFeature ~= 0
+                                    % loop through compound tracks
+                                    for iCT = 1:nCompoundTracks
                                         
-                                        %replace coordiantes and their stds
-                                        tracks(iTrack).tracksCoordAmpCG(1,(iFrame-startTime)*8+1:...
-                                            (iFrame-startTime)*8+3) = [cObj.rawMovieInfo(iFrame).xCoord(iFeature,1),...
-                                            cObj.rawMovieInfo(iFrame).yCoord(iFeature,1),...
-                                            cObj.rawMovieInfo(iFrame).zCoord(iFeature,1)];
-                                        tracks(iTrack).tracksCoordAmpCG(1,(iFrame-startTime)*8+5:...
-                                            (iFrame-startTime)*8+7) = [cObj.rawMovieInfo(iFrame).xCoord(iFeature,2),...
-                                            cObj.rawMovieInfo(iFrame).yCoord(iFeature,2),...
-                                            cObj.rawMovieInfo(iFrame).zCoord(iFeature,2)];
+                                        %get the feature making up this track in this frame
+                                        iFeature = tracks(iTrack).tracksFeatIndxCG(iCT,iFrame-startTime+1);
                                         
-                                    end
+                                        %if there is a feature (not a gap)
+                                        if iFeature ~= 0
+                                            
+                                            %replace coordiantes and their stds
+                                            tracks(iTrack).tracksCoordAmpCG(iCT,(iFrame-startTime)*8+1:...
+                                                (iFrame-startTime)*8+3) = [cObj.rawMovieInfo(iFrame).xCoord(iFeature,1),...
+                                                cObj.rawMovieInfo(iFrame).yCoord(iFeature,1),...
+                                                cObj.rawMovieInfo(iFrame).zCoord(iFeature,1)];
+                                            tracks(iTrack).tracksCoordAmpCG(iCT,(iFrame-startTime)*8+5:...
+                                                (iFrame-startTime)*8+7) = [cObj.rawMovieInfo(iFrame).xCoord(iFeature,2),...
+                                                cObj.rawMovieInfo(iFrame).yCoord(iFeature,2),...
+                                                cObj.rawMovieInfo(iFrame).zCoord(iFeature,2)];
+                                            
+                                        end
+                                    end % loop compound tracks
                                     
                                 end
                                 
@@ -395,6 +449,8 @@ classdef trackObj<handle
                             error('unrecognized output style %s',cObj.outputStyle.name)
                     end
                 end
+                % assign tracks to output
+                varargout{iObj} = tracks;
             end
             
         end
@@ -451,7 +507,7 @@ classdef trackObj<handle
                         for t = 1:nTimepoints
                             if ~isempty(fieldList(iName))
                                 movieInfo(t).(movieInfoFields{iName}) = ...
-                                    coords(t).(fieldList{iName});
+                                    coord(t).(fieldList{iName});
                                 if size(movieInfo(t).(movieInfoFields{iName}),2) == 1
                                     movieInfo(t).(movieInfoFields{iName})(:,2) = 1;
                                 end
