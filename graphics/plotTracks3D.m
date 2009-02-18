@@ -58,6 +58,8 @@ function plotTracks3D(trackedFeatureInfo,timeRange,colorTime,markerType,...
 %       newFigure         : 1 if plot should be made in a new figure
 %                           window, 0 otherwise (in which case it will be
 %                           plotted in an existing figure window).
+%                           newFigure can also be a handle to the axes in
+%                           which to plot.
 %                           Optional. Default: 1.
 %
 %OUTPUT The plot.
@@ -121,10 +123,17 @@ end
 if nargin < 6 || isempty(newFigure)
     newFigure = 1;
 else
-    if newFigure ~= 0 && newFigure ~= 1
-        disp('--plotTracks2D: newFigure should be 0 or 1!');
+    if newFigure ~= 0 && newFigure ~= 1 && ~(ishandle(newFigure) && strmatch(get(newFigure,'Type'),'axes'))
+        disp('--plotTracks2D: newFigure should be 0 or 1 or an axes handle!');
         errFlag = 1;
     end
+end
+% check for axes handle
+if ishandle(newFigure) && strcmp(get(newFigure,'Type'),'axes')
+    axH = newFigure;
+    newFigure = 0;
+elseif newFigure == 0
+    axH = gca;
 end
 
 %exit if there are problem in input variables
@@ -224,6 +233,8 @@ numTimePlot = timeRange(2) - timeRange(1) + 1;
 %open a new figure window if requested
 if newFigure
     figure
+    % read axes handle of new figure
+    axH = gca;
 end
 
 %hold on figure
@@ -240,7 +251,7 @@ if colorTime == '1' %if user wants to color-code time
     %gaps are depicted as a dotted black line
     for i = 1 : trackStartRow(end) + numSegments(end) - 1
         obsAvail = find(~isnan(tracksXP(:,i)));
-        plot3(tracksXP(obsAvail,i),tracksYP(obsAvail,i),tracksZP(obsAvail,i),'k:');
+        plot3(axH,tracksXP(obsAvail,i),tracksYP(obsAvail,i),tracksZP(obsAvail,i),'k:');
     end
 
     %get the fraction of each color in each time interval to be plotted
@@ -255,7 +266,7 @@ if colorTime == '1' %if user wants to color-code time
 
     %overlay tracks with color coding wherever a feature has been detected
     for i=1:numTimePlot-1
-        plot3(tracksXP(i:i+1,:),tracksYP(i:i+1,:),tracksZP(i:i+1,:),'color',colorOverTime(i,:));
+        plot3(axH,tracksXP(i:i+1,:),tracksYP(i:i+1,:),tracksZP(i:i+1,:),'color',colorOverTime(i,:));
     end
 
 else
@@ -264,8 +275,8 @@ else
     %indicated by a dotted line
     for i = 1 : trackStartRow(end) + numSegments(end) - 1
         obsAvail = find(~isnan(tracksXP(:,i)));
-        plot3(tracksXP(obsAvail,i),tracksYP(obsAvail,i),tracksZP(obsAvail,i),[colorTime ':']);
-        plot3(tracksXP(:,i),tracksYP(:,i),tracksZP(:,i),colorTime,'marker',markerType);
+        plot3(axH,tracksXP(obsAvail,i),tracksYP(obsAvail,i),tracksZP(obsAvail,i),[colorTime ':']);
+        plot3(axH,tracksXP(:,i),tracksYP(:,i),tracksZP(:,i),colorTime,'marker',markerType);
     end
 
 end %(if colorTime == '1' ... else ...)
@@ -307,7 +318,7 @@ if mergeSplit
             rowSp = trackStartRow(iTrack) + seqOfEvents(iSplit,4) - 1;
 
             %plot split as a dash-dotted line
-            plot3([tracksX(timeSplit,rowS) tracksX(timeSplit-1,rowSp)], ...
+            plot3(axH,[tracksX(timeSplit,rowS) tracksX(timeSplit-1,rowSp)], ...
                 [tracksY(timeSplit,rowS) tracksY(timeSplit-1,rowSp)],...
                 [tracksZ(timeSplit,rowS) tracksZ(timeSplit-1,rowSp)],...
                 [colorTime '-.']);
@@ -327,7 +338,7 @@ if mergeSplit
             rowM = trackStartRow(iTrack) + seqOfEvents(iMerge,4) - 1;
 
             %plot merge as a dashed line
-            plot3([tracksX(timeMerge-1,rowE) tracksX(timeMerge,rowM)], ...
+            plot3(axH,[tracksX(timeMerge-1,rowE) tracksX(timeMerge,rowM)], ...
                 [tracksY(timeMerge-1,rowE) tracksY(timeMerge,rowM)],...
                 [tracksZ(timeMerge-1,rowE) tracksZ(timeMerge,rowM)],...
                 [colorTime '--']);
@@ -392,11 +403,11 @@ if indicateSE %if user wants to indicate starts and ends
 
             %place circles at track starts and squares at track ends
             if ~isempty(startInfo)
-                plot3(startInfo(:,1),startInfo(:,2),startInfo(:,3),colorTime,...
+                plot3(axH,startInfo(:,1),startInfo(:,2),startInfo(:,3),colorTime,...
                     'LineStyle','none','marker','o');
             end
             if ~isempty(endInfo)
-                plot3(endInfo(:,1),endInfo(:,2),endInfo(:,3),colorTime,...
+                plot3(axH,endInfo(:,1),endInfo(:,2),endInfo(:,3),colorTime,...
                     'LineStyle','none','marker','square');
             end
 
@@ -417,15 +428,15 @@ if indicateSE %if user wants to indicate starts and ends
         %be in the plotting region of interest
         if colorTime == '1'
             indx = find(startInfo(:,4)>=timeRange(1) & startInfo(:,4)<=timeRange(2));
-            plot3(startInfo(indx,1),startInfo(indx,2),startInfo(indx,3),'k','LineStyle','none','marker','o');
+            plot3(axH,startInfo(indx,1),startInfo(indx,2),startInfo(indx,3),'k','LineStyle','none','marker','o');
             indx = find(endInfo(:,4)>=timeRange(1) & endInfo(:,4)<=timeRange(2));
-            plot3(endInfo(indx,1),endInfo(indx,2),endInfo(indx,3),'k','LineStyle','none','marker','square');
+            plot3(axH,endInfo(indx,1),endInfo(indx,2),endInfo(indx,3),'k','LineStyle','none','marker','square');
         else
             indx = find(startInfo(:,4)>=timeRange(1) & startInfo(:,4)<=timeRange(2));
-            plot3(startInfo(indx,1),startInfo(indx,2),startInfo(indx,3),colorTime,...
+            plot3(axH,startInfo(indx,1),startInfo(indx,2),startInfo(indx,3),colorTime,...
                 'LineStyle','none','marker','o');
             indx = find(endInfo(:,4)>=timeRange(1) & endInfo(:,4)<=timeRange(2));
-            plot3(endInfo(indx,1),endInfo(indx,2),endInfo(indx,3),colorTime,...
+            plot3(axH,endInfo(indx,1),endInfo(indx,2),endInfo(indx,3),colorTime,...
                 'LineStyle','none','marker','square');
         end
 

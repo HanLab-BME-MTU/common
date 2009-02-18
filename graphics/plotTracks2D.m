@@ -62,6 +62,8 @@ function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
 %       newFigure         : 1 if plot should be made in a new figure
 %                           window, 0 otherwise (in which case it will be
 %                           plotted in an existing figure window).
+%                           newFigure can also be a handle to the axes in
+%                           which to plot.
 %                           Optional. Default: 1.
 %       image             : An image that the tracks will be overlaid on if
 %                           newFigure=1. It will be ignored if newFigure=0.
@@ -137,10 +139,17 @@ end
 if nargin < 6 || isempty(newFigure)
     newFigure = 1;
 else
-    if newFigure ~= 0 && newFigure ~= 1
-        disp('--plotTracks2D: newFigure should be 0 or 1!');
+if newFigure ~= 0 && newFigure ~= 1 && ~(ishandle(newFigure) && strmatch(get(newFigure,'Type'),'axes'))
+        disp('--plotTracks2D: newFigure should be 0 or 1 or an axes handle!');
         errFlag = 1;
     end
+end
+% check for axes handle
+if ishandle(newFigure) && strcmp(get(newFigure,'Type'),'axes')
+    axH = newFigure;
+    newFigure = 0;
+elseif newFigure == 0
+    axH = gca;
 end
 
 %check whether user supplied an image
@@ -277,8 +286,8 @@ if newFigure
     end
 
     %show coordinates on axes
-    ah = gca;
-    set(ah,'visible','on');
+    axH = gca;
+    set(axH,'visible','on');
 
     %label axes
     if flipXY
@@ -306,7 +315,7 @@ switch colorTime
         %gaps are depicted as a dotted black line
         for i = 1 : trackStartRow(end) + numSegments(end) - 1
             obsAvail = find(~isnan(tracksXP(:,i)));
-            plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
+            plot(axH,tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
         end
         
         %get the overall color per time interval
@@ -314,7 +323,7 @@ switch colorTime
 
         %overlay tracks with color coding wherever a feature has been detected
         for i=1:numTimePlot-1
-            plot(tracksXP(i:i+1,:),tracksYP(i:i+1,:),'color',colorOverTime(i,:));
+            plot(axH,tracksXP(i:i+1,:),tracksYP(i:i+1,:),'color',colorOverTime(i,:));
         end
 
     case '2' %no time color-coding, loop through series of colors to color tracks
@@ -323,8 +332,8 @@ switch colorTime
         %missing intervals are indicated by a dotted line
         for i = 1 : trackStartRow(end) + numSegments(end) - 1
             obsAvail = find(~isnan(tracksXP(:,i)));
-            plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
-            plot(tracksXP(:,i),tracksYP(:,i),'color',colorLoop(mod(i-1,7)+1,:),...
+            plot(axH,tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
+            plot(axH,tracksXP(:,i),tracksYP(:,i),'color',colorLoop(mod(i-1,7)+1,:),...
                 'marker',markerType);
         end
         
@@ -334,8 +343,8 @@ switch colorTime
         %missing intervals are indicated by a dotted line
         for i = 1 : trackStartRow(end) + numSegments(end) - 1
             obsAvail = find(~isnan(tracksXP(:,i)));
-            plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
-            plot(tracksXP(:,i),tracksYP(:,i),'color',extendedColors(mod(i-1,23)+1),...
+            plot(axH,tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
+            plot(axH,tracksXP(:,i),tracksYP(:,i),'color',extendedColors(mod(i-1,23)+1),...
                 'marker',markerType);
         end
 
@@ -345,8 +354,8 @@ switch colorTime
         %missing intervals are indicated by a dotted line
         for i = 1 : trackStartRow(end) + numSegments(end) - 1
             obsAvail = find(~isnan(tracksXP(:,i)));
-            plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
-            plot(tracksXP(:,i),tracksYP(:,i),colorTime,'marker',markerType);
+            plot(axH,tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
+            plot(axH,tracksXP(:,i),tracksYP(:,i),colorTime,'marker',markerType);
         end
 
 end %(switch colorTime)
@@ -378,7 +387,7 @@ if mergeSplit
             rowSp = trackStartRow(iTrack) + seqOfEvents(iSplit,4) - 1;
 
             %plot split as a dash-dotted line
-            plot([tracksX(timeSplit,rowS) tracksX(timeSplit-1,rowSp)], ...
+            plot(axH,[tracksX(timeSplit,rowS) tracksX(timeSplit-1,rowSp)], ...
                 [tracksY(timeSplit,rowS) tracksY(timeSplit-1,rowSp)],'k-.');
 
         end
@@ -396,7 +405,7 @@ if mergeSplit
             rowM = trackStartRow(iTrack) + seqOfEvents(iMerge,4) - 1;
 
             %plot merge as a dashed line
-            plot([tracksX(timeMerge-1,rowE) tracksX(timeMerge,rowM)], ...
+            plot(axH,[tracksX(timeMerge-1,rowE) tracksX(timeMerge,rowM)], ...
                 [tracksY(timeMerge-1,rowE) tracksY(timeMerge,rowM)],'k--');
 
         end
@@ -457,31 +466,32 @@ if indicateSE %if user wants to indicate starts and ends
 
             %place circles at track starts and squares at track ends
             switch colorTime
-                case '1'
+                case {'1','2','3'}
                     if ~isempty(startInfo)
-                        plot(startInfo(:,1),startInfo(:,2),'k',...
+                        plot(axH,startInfo(:,1),startInfo(:,2),'k',...
                             'LineStyle','none','marker','o');
                     end
                     if ~isempty(endInfo)
-                        plot(endInfo(:,1),endInfo(:,2),'k',...
+                        plot(axH,endInfo(:,1),endInfo(:,2),'k',...
                             'LineStyle','none','marker','square');
                     end
-                case '2'
-                    if ~isempty(startInfo)
-                        plot(startInfo(:,1),startInfo(:,2),'k',...
-                            'LineStyle','none','marker','o');
-                    end
-                    if ~isempty(endInfo)
-                        plot(endInfo(:,1),endInfo(:,2),'k',...
-                            'LineStyle','none','marker','square');
-                    end
+                    % JD 2/09: case 2 is identical to case 1
+%                 case '2'
+%                     if ~isempty(startInfo)
+%                         plot(axH,startInfo(:,1),startInfo(:,2),'k',...
+%                             'LineStyle','none','marker','o');
+%                     end
+%                     if ~isempty(endInfo)
+%                         plot(axH,endInfo(:,1),endInfo(:,2),'k',...
+%                             'LineStyle','none','marker','square');
+%                     end
                 otherwise
                     if ~isempty(startInfo)
-                        plot(startInfo(:,1),startInfo(:,2),colorTime,...
+                        plot(axH,startInfo(:,1),startInfo(:,2),colorTime,...
                             'LineStyle','none','marker','o');
                     end
                     if ~isempty(endInfo)
-                        plot(endInfo(:,1),endInfo(:,2),colorTime,...
+                        plot(axH,endInfo(:,1),endInfo(:,2),colorTime,...
                             'LineStyle','none','marker','square');
                     end
             end
@@ -504,20 +514,20 @@ if indicateSE %if user wants to indicate starts and ends
         switch colorTime
             case '1'
                 indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
-                plot(startInfo(indx,1),startInfo(indx,2),'k','LineStyle','none','marker','o');
+                plot(axH,startInfo(indx,1),startInfo(indx,2),'k','LineStyle','none','marker','o');
                 indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
-                plot(endInfo(indx,1),endInfo(indx,2),'k','LineStyle','none','marker','square');
+                plot(axH,endInfo(indx,1),endInfo(indx,2),'k','LineStyle','none','marker','square');
             case '2'
                 indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
-                plot(startInfo(indx,1),startInfo(indx,2),'k','LineStyle','none','marker','o');
+                plot(axH,startInfo(indx,1),startInfo(indx,2),'k','LineStyle','none','marker','o');
                 indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
-                plot(endInfo(indx,1),endInfo(indx,2),'k','LineStyle','none','marker','square');
+                plot(axH,endInfo(indx,1),endInfo(indx,2),'k','LineStyle','none','marker','square');
             otherwise
                 indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
-                plot(startInfo(indx,1),startInfo(indx,2),colorTime,...
+                plot(axH,startInfo(indx,1),startInfo(indx,2),colorTime,...
                     'LineStyle','none','marker','o');
                 indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
-                plot(endInfo(indx,1),endInfo(indx,2),colorTime,...
+                plot(axH,endInfo(indx,1),endInfo(indx,2),colorTime,...
                     'LineStyle','none','marker','square');
         end
 

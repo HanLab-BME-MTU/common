@@ -10,7 +10,7 @@
 %                        'brownian' : brownian motion only
 %                     .costMatrices; gapCloseParm; kalmanFunctions
 %                        optional fields to modify the default settings
-%                    If parameters is not supplied, default 1 will be
+%                    If parameters is not supplied, default 'brownian' is
 %                      chosen
 %		options: (opt) structure with fields
 %                      .inputParser : selection of how to treat input
@@ -339,7 +339,7 @@ classdef trackObj<handle
             end
             
             % read plotOptions
-            if nargin < 2 || isempty(plotOpt)
+            if nargin < 4 || isempty(plotOpt)
                 plotOptions = obj.plotOptions;
             else
                 plotOptions = obj.plotOptions;
@@ -351,12 +351,12 @@ classdef trackObj<handle
             
             % get start/end times
             minMaxTime = [1,length(obj.movieInfo)];
-            startEndTime = Nan(1,2);
+            startEndTime = NaN(1,2);
             startEndTime(1) = max(minMaxTime(1),t-plotOptions.beforeAfter(1));
-            startEndTime(2) = max(minMaxTime(2),t+plotOptions.beforeAfter(2));
+            startEndTime(2) = min(minMaxTime(2),t+plotOptions.beforeAfter(2));
             
             % make sure we're getting raw coordinates
-            oldStyle = obj.outputStyle;
+            oldStyle = obj.outputStyle.name;
             obj.outputStyle.name = 'raw';
             
             % plot
@@ -382,7 +382,11 @@ classdef trackObj<handle
             % count objects
             nObj = numel(obj);
             % assign default output
-            [varargout{1:nObj}] = deal(obj.tracksFinal);
+            if nargout > 1
+                [varargout{1:nObj}] = deal(obj.tracksFinal);
+            else
+                varargout{1} = obj.tracksFinal;
+            end
             
             % loop objects.
             for iObj = 1:numel(obj)
@@ -398,6 +402,10 @@ classdef trackObj<handle
                         case 'raw'
                             % replace coordinates with raw coordinates
                             tracks = cObj.tracksFinal;
+                            
+                            % read rawMovieInfo so that we do not keep
+                            % calling the getMethod inside a long loop
+                            rawMovieInfo = cObj.rawMovieInfo;
                             
                             % copied from makiGenerateTracks
                             for iTrack = 1 : length(tracks)
@@ -431,13 +439,13 @@ classdef trackObj<handle
                                             
                                             %replace coordiantes and their stds
                                             tracks(iTrack).tracksCoordAmpCG(iCT,(iFrame-startTime)*8+1:...
-                                                (iFrame-startTime)*8+3) = [cObj.rawMovieInfo(iFrame).xCoord(iFeature,1),...
-                                                cObj.rawMovieInfo(iFrame).yCoord(iFeature,1),...
-                                                cObj.rawMovieInfo(iFrame).zCoord(iFeature,1)];
+                                                (iFrame-startTime)*8+3) = [rawMovieInfo(iFrame).xCoord(iFeature,1),...
+                                                rawMovieInfo(iFrame).yCoord(iFeature,1),...
+                                                rawMovieInfo(iFrame).zCoord(iFeature,1)];
                                             tracks(iTrack).tracksCoordAmpCG(iCT,(iFrame-startTime)*8+5:...
-                                                (iFrame-startTime)*8+7) = [cObj.rawMovieInfo(iFrame).xCoord(iFeature,2),...
-                                                cObj.rawMovieInfo(iFrame).yCoord(iFeature,2),...
-                                                cObj.rawMovieInfo(iFrame).zCoord(iFeature,2)];
+                                                (iFrame-startTime)*8+7) = [rawMovieInfo(iFrame).xCoord(iFeature,2),...
+                                                rawMovieInfo(iFrame).yCoord(iFeature,2),...
+                                                rawMovieInfo(iFrame).zCoord(iFeature,2)];
                                             
                                         end
                                     end % loop compound tracks
@@ -445,13 +453,106 @@ classdef trackObj<handle
                                 end
                                 
                             end %(for iTrack = 1 : numTracks)
+                            
+                            % assign tracks to output
+                    varargout{iObj} = tracks;
+                    
                         otherwise
                             error('unrecognized output style %s',cObj.outputStyle.name)
                     end
                 end
-                % assign tracks to output
-                varargout{iObj} = tracks;
             end
+        end
+        %============
+        %% INSPECT
+        %============
+        function stats = inspect(obj)
+            % reads data from movieInfo to show distribution of nearest neighbor displacements etc. to allow better choice of parameters
+            % stats.nnDisplacement
+            % stats.nnDispAmp
+            % stats.nnDistance
+            
+            stats = struct('nnDisplacement',{cell(obj.nTimepoints-1,2)},...
+                'nnDispAmp',{cell(obj.nTimepoints-1,2)},...
+                'nnDistance',{cell(obj.nTimepoints)},...
+                'nnAmp',{cell(obj.nTimepoints)});
+            
+            goodTimes = arrayfun(@(x)(~isempty(x.xCoord)),obj.movieInfo);
+            
+            % it is possible to do this all without loops, but with lots of
+            % features, there may be memory problems.
+            
+            %         % get nearest neighbor distance. Note that the minimum in the
+            %         % distance matrix is all zeros
+            %         nnd = arrayfun(@(x)(createDistanceMatrix([x.xCoord(:,1),x.yCoord(:,1),x.zCoord(:,1)],...
+            %             [x.xCoord(:,1),x.yCoord(:,1),x.zCoord(:,1)])),obj.movieInfo(goodTimes),...
+            %             'UniformOutput',false);
+            %         ss = cellfun(@(x)(sort(x,2,'ascend')),nnd,'UniformOutput',false);
+            %         stats.nnDistance(goodTimes) = cellfun(@(x)(x(:,2)),ss,'UniformOutput',false);
+            %         clear nnd ss
+            %         % get nearest neighbor amplitude
+            %         nnd = arrayfun(@(x)(createDistanceMatrix(x.amp(:,1),x.amp(:,1))),...
+            %             obj.movieInfo(goodTimes),'UniformOutput',false);
+            %         ss = cellfun(@(x)(sort(x,2,'ascend')),nnd,'UniformOutput',false);
+            %         stats.nnAmp(goodTimes) = cellfun(@(x)(x(:,2)),ss,'UniformOutput',false);
+            %         clear nnd ss
+            %
+            %         goodPairs = find(goodTimes(1:end-1) & goodTimes(2:end));
+            %         nnd = arrayfun(@(x,y)(createDistanceMatrix(...
+            %                          [x.xCoord(:,1),x.yCoord(:,1),x.zCoord(:,1)],...
+            %                          [y.xCoord(:,1),y.yCoord(:,1),y.zCoord(:,1)])),...
+            %                          obj.movieInfo(goodPairs),...
+            %                          obj.movieInfo(goodPairs+1),...
+            %                          'UniformOutput',false);
+            
+            
+            for t = find(goodTimes(:))'
+                
+                % get nn distance
+                xyz = [obj.movieInfo(t).xCoord(:,1),obj.movieInfo(t).yCoord(:,1),obj.movieInfo(t).zCoord(:,1)];
+                nnd = createDistanceMatrix(xyz,xyz);
+                nnd = sort(nnd,2);
+                stats.nnDistance{t} = nnd(:,2); % do not get zero-diagonal
+                
+                % get nn amplitude
+                nnd = createDistanceMatrix(obj.movieInfo(t).amp(:,1),obj.movieInfo(t).amp(:,1));
+                nnd = sort(nnd,2);
+                stats.nnAmp{t} = nnd(:,2); % do not get zero-diagonal
+                
+                if t < obj.nTimepoints && all(goodTimes(t:t+1))
+                    % get nnDisplacement
+                    nnd = createDistanceMatrix(xyz,...
+                        [obj.movieInfo(t+1).xCoord(:,1),obj.movieInfo(t+1).yCoord(:,1),obj.movieInfo(t+1).zCoord(:,1)]);
+                    nnd = sort(nnd,2);
+                    stats.nnDisplacement{t,1} = nnd(:,1);
+                    stats.nnDisplacement{t,2} = nnd(:,2);
+                    
+                    % get nnDispAmp. Careful, deltaAmp can be both positive
+                    % and negative!
+                    nnd = createDistanceMatrix(obj.movieInfo(t).amp(:,1),obj.movieInfo(t+1).amp(:,1));
+                    [tmp,colIdx] = sort(abs(nnd),2);
+                    rowIdx = repmat((1:size(tmp,1))',1,size(tmp,2));
+                    linIdx = sub2ind(size(tmp),rowIdx(:),colIdx(:));
+                    nnd(:) = nnd(linIdx);
+                    stats.nnDispAmp{t,1} = nnd(:,1);
+                    stats.nnDispAmp{t,2} = nnd(:,2);
+                end
+            end
+            
+            % Plot
+            figure('Name','nearest neighbour displacement')
+            hc = distributionPlot(stats.nnDisplacement(:,1));
+            figure('Name','second nearest neighbour displacement')
+            hc2 = distributionPlot(stats.nnDisplacement(:,2));
+            % read axes limits for hc2, set for hc
+            ylim(hc{3},ylim(hc2{3}));
+            figure('Name','nearest neighbour distance')
+            distributionPlot(stats.nnDistance(:,1));
+            figure('Name','nearest neighbour amplitude');
+            hc = distributionPlot(stats.nnDispAmp(:,1));
+            figure('Name','second nearest neighbour amplitude');
+            hc2 = distributionPlot(stats.nnDispAmp(:,2));
+            ylim(hc{3},ylim(hc2{3}));
             
         end
         %% Get Method rawMovieInfo
