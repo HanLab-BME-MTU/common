@@ -325,7 +325,7 @@ classdef trackObj<handle
         %==========================
         %% PLOTFRAME
         %==========================
-        function plotFrame(obj,t,axH,plotOpt)
+        function plotFrame(obj,t,axH,plotOpt,offset)
             % plotFrame plots the tracks into a GUI window
             % plotFrame(obj,t,axH,plotOpt)
             %
@@ -348,6 +348,9 @@ classdef trackObj<handle
                     plotOptions.(fn{1}) = plotOpt.(fn{1});
                 end
             end
+            if nargin < 5 || isempty(offset)
+                offset = [0,0];
+            end
             
             % get start/end times
             minMaxTime = [1,length(obj.movieInfo)];
@@ -367,7 +370,7 @@ classdef trackObj<handle
                 plotOptions.indicateSE,...
                 axH,...
                 [],...
-                plotOptions.flipXY,0);
+                plotOptions.flipXY,0,offset);
             
             % reset style
             obj.outputStyle.name = oldStyle;
@@ -466,11 +469,15 @@ classdef trackObj<handle
         %============
         %% INSPECT
         %============
-        function stats = inspect(obj)
+        function stats = inspect(obj,useRaw)
             % reads data from movieInfo to show distribution of nearest neighbor displacements etc. to allow better choice of parameters
             % stats.nnDisplacement
             % stats.nnDispAmp
             % stats.nnDistance
+            
+            if nargin < 2 || isempty(useRaw)
+                useRaw = false;
+            end
             
             stats = struct('nnDisplacement',{cell(obj.nTimepoints-1,2)},...
                 'nnDispAmp',{cell(obj.nTimepoints-1,2)},...
@@ -505,31 +512,37 @@ classdef trackObj<handle
             %                          obj.movieInfo(goodPairs+1),...
             %                          'UniformOutput',false);
             
+            if useRaw
+                movieInfo = obj.rawMovieInfo;
+            else
+                 movieInfo = obj.movieInfo;
+            end
+         
             
             for t = find(goodTimes(:))'
-                
+                                
                 % get nn distance
-                xyz = [obj.movieInfo(t).xCoord(:,1),obj.movieInfo(t).yCoord(:,1),obj.movieInfo(t).zCoord(:,1)];
+                xyz = [movieInfo(t).xCoord(:,1),movieInfo(t).yCoord(:,1),movieInfo(t).zCoord(:,1)];
                 nnd = createDistanceMatrix(xyz,xyz);
                 nnd = sort(nnd,2);
                 stats.nnDistance{t} = nnd(:,2); % do not get zero-diagonal
                 
                 % get nn amplitude
-                nnd = createDistanceMatrix(obj.movieInfo(t).amp(:,1),obj.movieInfo(t).amp(:,1));
+                nnd = createDistanceMatrix(movieInfo(t).amp(:,1),movieInfo(t).amp(:,1));
                 nnd = sort(nnd,2);
                 stats.nnAmp{t} = nnd(:,2); % do not get zero-diagonal
                 
                 if t < obj.nTimepoints && all(goodTimes(t:t+1))
                     % get nnDisplacement
                     nnd = createDistanceMatrix(xyz,...
-                        [obj.movieInfo(t+1).xCoord(:,1),obj.movieInfo(t+1).yCoord(:,1),obj.movieInfo(t+1).zCoord(:,1)]);
+                        [movieInfo(t+1).xCoord(:,1),movieInfo(t+1).yCoord(:,1),movieInfo(t+1).zCoord(:,1)]);
                     nnd = sort(nnd,2);
                     stats.nnDisplacement{t,1} = nnd(:,1);
                     stats.nnDisplacement{t,2} = nnd(:,2);
                     
                     % get nnDispAmp. Careful, deltaAmp can be both positive
                     % and negative!
-                    nnd = createDistanceMatrix(obj.movieInfo(t).amp(:,1),obj.movieInfo(t+1).amp(:,1));
+                    nnd = createDistanceMatrix(movieInfo(t).amp(:,1),movieInfo(t+1).amp(:,1));
                     [tmp,colIdx] = sort(abs(nnd),2);
                     rowIdx = repmat((1:size(tmp,1))',1,size(tmp,2));
                     linIdx = sub2ind(size(tmp),rowIdx(:),colIdx(:));

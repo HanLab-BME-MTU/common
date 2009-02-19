@@ -1,9 +1,9 @@
 function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
-    indicateSE,newFigure,image,flipXY,ask4sel)
+    indicateSE,newFigure,image,flipXY,ask4sel,offset)
 %PLOTTRACKS2D plots a group of tracks in 2D and allows user to click on them and extract track information
 %
 %SYNOPSIS plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
-%    indicateSE,newFigure,image,flipXY,ask4sel)
+%    indicateSE,newFigure,image,flipXY,ask4sel,offset)
 %
 %INPUT  trackedFeatureInfo: -- EITHER --
 %                           Output of trackWithGapClosing:
@@ -73,6 +73,8 @@ function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
 %       ask4sel           : 1 if user should be asked to select tracks in
 %                           plot in order to show track information.
 %                           Optional. Default: 1.
+%       offset            : [dx,dy] that is to be added to the coordinates.
+%                           Optional. Default: [0,0]
 %
 %OUTPUT The plot.
 %
@@ -163,6 +165,9 @@ end
 if nargin < 9 || isempty(ask4sel)
     ask4sel = true;
 end
+if nargin < 10 || isempty(offset)
+    offset = [0,0];
+end
 
 %exit if there are problem in input variables
 if errFlag
@@ -248,12 +253,16 @@ end
 
 %get the x,y-coordinates of features in all tracks
 if flipXY
-    tracksY = trackedFeatureInfo(:,1:8:end)';
-    tracksX = trackedFeatureInfo(:,2:8:end)';
+    tracksY = trackedFeatureInfo(:,1:8:end)' + offset(1);
+    tracksX = trackedFeatureInfo(:,2:8:end)' + offset(2);
 else
-    tracksX = trackedFeatureInfo(:,1:8:end)';
-    tracksY = trackedFeatureInfo(:,2:8:end)';
+    tracksX = trackedFeatureInfo(:,1:8:end)' + offset(1);
+    tracksY = trackedFeatureInfo(:,2:8:end)' + offset(2);
 end
+
+% add offset
+tracksX = tracksX ;
+tracksY = tracksY ;
 
 %find x-coordinate limits
 % minXCoord = floor(min(tracksX(:)));
