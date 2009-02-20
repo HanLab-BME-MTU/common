@@ -6,7 +6,7 @@ function drive = getDriveName(path)
 %    If no valid 'drive' has been found, [] is returned;
 
 drive = [];
-if strcmp(path(1),'/')
+if strcmp(path(1),'/') || strcmp(path(1),'~') %HLE - added case for home directory
    %Consider it as Unix directory.
    fileSepInd = findstr('/',path);
    mntInd = findstr('/mnt/',path);

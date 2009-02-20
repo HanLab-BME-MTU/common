@@ -147,7 +147,14 @@ for k = 1:length(outDir)
    outDir{k}(fileSepInd) = '\';
 
    outDir{k} = [winDriveList{k} outDir{k}];
+   
+   %HLE - got rid of trailing fileseperator introduced above
+    if strcmp(outDir{k}(end),'\')
+        outDir{k} = outDir{k}(1:end-1);
+    end
 end
+
+
 
 if ~iscell(inDir)
    outDir = outDir{1};
