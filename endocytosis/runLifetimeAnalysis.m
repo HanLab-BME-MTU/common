@@ -51,20 +51,31 @@ end
 if nargin == 0
     restrict = 300; %restrict pit lifetimes
     shape = [2 2 1]; %distribution shape vector
+    disp('lifetimes have been restricted to under 300 seconds and shape set to [2 2 1]')
     %if restrict is specified, but empty then use default
-elseif isempty(restrict) && length(shape) == 3
+elseif nargin == 1 && length(restrict) > 1
     restrict = 300;
+    disp('lifetimes have been restricted to under 300 seconds')
     %if shape is specified, but empty then use default
-elseif isempty(shape) && length(restrict) == 1
+elseif nargin == 1 && length(restrict) == 1
     shape = [2 2 1];
+    disp('shape set to [2 2 1]')
     %if two inputs do nothing unless restrict is a vector and shape a scalar
 elseif nargin == 2
-    if length(shape) == 1 && length(restrict) == 3
+    if length(shape) == 1 && length(restrict) > 1
         new_shape = restrict;
         new_restrict = shape;
         shape = new_shape;
         restrict = new_restrict;
         warning('Inputs may have been misinterpreted.');
+    end
+    if isempty(shape)
+        shape = [2 2 1]; %distribution shape vector
+        disp('lifetimes have been restricted to under 300 seconds and shape set to [2 2 1]')
+    end
+    if isemptry(restrict)
+        restrict = 300;
+        disp('lifetimes have been restricted to under 300 seconds')
     end
 else
     error('Input must of the form (),(restrict,[]), ([],shape), or (restrict,shape).\n Restrict must be of length 1 and shape of length 3.')
@@ -98,8 +109,8 @@ if exist([filePath '.txt'],'file')
     fileNumber = length(findstr([fileName datestr(now,'yyyymmdd') '.txt'],directoryFiles));
     filePath = [directory filesep fileName datestr(now,'yyyymmdd') '_' num2str(fileNumber)];
     while exist([filePath '.txt'],'file')
-    fileNumber = fileNumber + 1;
-    filePath = [directory filesep fileName datestr(now,'yyyymmdd') '_' num2str(fileNumber)];
+        fileNumber = fileNumber + 1;
+        filePath = [directory filesep fileName datestr(now,'yyyymmdd') '_' num2str(fileNumber)];
     end
 end
 
@@ -118,7 +129,7 @@ fprintf(fid,'%s\n',['P3,' num2str(shape(3)) ',' num2str(compactRes.contr(4)) ','
 fprintf(fid,'%s\n',['Max lifetime for analysis (restrict):' num2str(restrict)]);
 fprintf(fid,'%s\n',['Movies Used:']);
 for iexperiment = 1:length(experiment)
-fprintf(fid,'%s\n',[experiment(iexperiment).source]);
+    fprintf(fid,'%s\n',[experiment(iexperiment).source]);
 end
 fclose(fid);
 

@@ -47,7 +47,7 @@ oldDir = cd;
 [experiment] = determineImagesize(experiment);
 
 %GET HOT SPOT RADIUS FROM DENSITY PLOTS
-[hotSpotRadius] = determineHotSpotRadius(experiment);
+[hotSpotRadius] = determineHotSpotRadius(experiment,rest);
 
 
 %%
@@ -128,6 +128,7 @@ for iexp = 1:length(experiment)
     clusterResults(iexp).framerate = framerate;
     clusterResults(iexp).movieID = iexp;
     clusterResults(iexp).movie = experiment(iexp).source;
+    clusterResults(iexp).movieLength = experiment(iexp).movieLength;
 end %for each movie
 %save data onto folder under density folder
 cd(PATHNAME);
