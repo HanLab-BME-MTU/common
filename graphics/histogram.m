@@ -12,6 +12,12 @@ function [N,X,sp] = histogram(varargin)
 %                   if "smooth", a smooth histogram will be formed.
 %                   (requires the spline toolbox). For an alternative
 %                   approach to a smooth histogram, see ksdensity.m
+%                   if "discrete", the data is assumed to be a discrete
+%                   collection of values. Note that if every data point is,
+%                   on average, repeated at least 3 times, histogram will
+%                   consider it a discrete distribution automatically.
+%                   if "continuous", histogram is not automatically
+%                   checking for discreteness.
 %          normalize : if 1 (default), integral of histogram equals number
 %                       data points. If 0, height of bins equals counts.
 %                       This option is exclusive to non-"smooth" histograms
@@ -77,10 +83,15 @@ else
     factor = varargin{2};
 end
 if ischar(factor)
-    if strmatch(factor,'smooth')
+    switch factor
+        case {'smooth','s'}
         factor = -1;
-    else
-        error('The only string input permitted for histogram.m is ''smooth''')
+        case {'discrete','d'}
+            factor = -2;
+        case {'continuous','c'}
+            factor = -3;
+    otherwise
+        error('The only string inputs permitted for histogram.m are ''smooth'',''discrete'', or ''continuous''')
     end
 else
     % check for normalize, but do so only if there is no "smooth". Note
@@ -103,7 +114,7 @@ if factor ~= -1
     % consider the distribution discrete if there are, on average, 3
     % entries per bin
     nBins = length(xx);
-    if nBins*3 < nData
+    if factor == -2 || (factor ~= -3 && nBins*3 < nData) 
         % discrete distribution. 
         nn = nn';
         xx = xx';
