@@ -74,7 +74,7 @@ inPrompt = {'Username',...
     'Synopsis: ''[output1, output2] = functionname(input1, input2)',...
     'Description of input arguments (use \n for line breaks)',...
     'Description of output arguments (use \n for line breaks)',...
-    'Function: 1, Value Class: 2, Handle Class: 3'};
+    'Function: 1, Value Class: 2, Handle Class: 3, Subclass: superclass-name'};
 inTitle = 'Please describe your function';
 numLines = repmat([1,100],7,1);
 % assign defaultAnswer
@@ -161,60 +161,68 @@ fsuffix = '.m';
 filename = fullfile(dirName,[fxnname fsuffix]);
 % end filename creation
 
-switch description{7}
-    case '1' % function
-        % beginning of file-printing stage
-        fid = fopen(filename,'wt');
-        fprintf(fid,'function %s\n',synopsis);
-        fprintf(fid,'%%%s\n',desc);
-        fprintf(fid,'%%\n');
-        fprintf(fid,'%% SYNOPSIS: %s\n',synopsis);
-        fprintf(fid,'%%\n');
-        fprintf(fid,['%% INPUT ',inputtext,'\n']);
-        fprintf(fid,'%%\n');
-        fprintf(fid,['%% OUTPUT ',outputtext,'\n']);
-        fprintf(fid,'%%\n');
-        fprintf(fid,'%% REMARKS\n');
-        fprintf(fid,'%%\n');
-        fprintf(fid,'%% created with MATLAB ver.: %s on %s\n',vers,os);
-        fprintf(fid,'%%\n');
-        fprintf(fid,'%% created by: %s\n',username);
-        fprintf(fid,'%% DATE: %s\n',datetoday);
-        fprintf(fid,'%%\n');
-        fprintf(fid,'%s\n',repmat('%',1,75));
-        fclose(fid);
-        % end of file-printing stage
-    case {'2','3'} % class
-        fid = fopen(filename,'wt');
-        fprintf(fid,'%%%s\n',desc);
-        fprintf(fid,'%%\n');
-        fprintf(fid,'%% CONSTRUCTOR: %s\n',synopsis);
-        fprintf(fid,['%%   IN : ',inputtext,'\n']);
-        fprintf(fid,['%%   OUT: ',outputtext,'\n']);
-        fprintf(fid,'%%\n');
-        fprintf(fid,'%% PROPERTIES\n');
-        fprintf(fid,'%%   #property1:\n');
-        fprintf(fid,'%%\n');
-        fprintf(fid,'%% METHODS\n');
-        fprintf(fid,'%%   #method1: short description');
-        fprintf(fid,'%%        out = method1(obj,in)\n');
-        fprintf(fid,'%%        Description of input and output\n');
-        fprintf(fid,'%%\n');
-        fprintf(fid,'%% REMARKS\n');
-        fprintf(fid,'%%\n');
-        fprintf(fid,'%% created with MATLAB ver.: %s on %s\n',vers,os);
-        fprintf(fid,'%%\n');
-        fprintf(fid,'%% created by: %s\n',username);
-        fprintf(fid,'%% DATE: %s\n',datetoday);
-        fprintf(fid,'%%\n');
-        fprintf(fid,'%s\n',repmat('%',1,75));
-        % subclass myClass or myHandle by default
-        if strcmp(description{7},'2')
-            fprintf(fid,'\nclassdef %s < myClass\n\nend',fxnname);
-        else
-            fprintf(fid,'\nclassdef %s < myHandle\n\nend',fxnname);
-        end
-        fclose(fid);
+% check for function vs. class and add default superclasses if necessary
+d7 = str2double(description{7});
+if isnan(d7)
+    superclass = description{7};
+    isClass = true;
+elseif d7 == 2 || d7 == 3
+    isClass = true;
+    superclass = {'myClass','myHandle'};
+    superclass = superclass(d7-1);
+else
+    isClass = false;
+end
+
+if ~isClass % it's a function
+    % beginning of file-printing stage
+    fid = fopen(filename,'wt');
+    fprintf(fid,'function %s\n',synopsis);
+    fprintf(fid,'%%%s\n',desc);
+    fprintf(fid,'%%\n');
+    fprintf(fid,'%% SYNOPSIS: %s\n',synopsis);
+    fprintf(fid,'%%\n');
+    fprintf(fid,['%% INPUT ',inputtext,'\n']);
+    fprintf(fid,'%%\n');
+    fprintf(fid,['%% OUTPUT ',outputtext,'\n']);
+    fprintf(fid,'%%\n');
+    fprintf(fid,'%% REMARKS\n');
+    fprintf(fid,'%%\n');
+    fprintf(fid,'%% created with MATLAB ver.: %s on %s\n',vers,os);
+    fprintf(fid,'%%\n');
+    fprintf(fid,'%% created by: %s\n',username);
+    fprintf(fid,'%% DATE: %s\n',datetoday);
+    fprintf(fid,'%%\n');
+    fprintf(fid,'%s\n',repmat('%',1,75));
+    fclose(fid);
+    % end of file-printing stage
+else % it's a class
+    fid = fopen(filename,'wt');
+    fprintf(fid,'%%%s\n',desc);
+    fprintf(fid,'%%\n');
+    fprintf(fid,'%% CONSTRUCTOR: %s\n',synopsis);
+    fprintf(fid,['%%   IN : ',inputtext,'\n']);
+    fprintf(fid,['%%   OUT: ',outputtext,'\n']);
+    fprintf(fid,'%%\n');
+    fprintf(fid,'%% PROPERTIES\n');
+    fprintf(fid,'%%   #property1:\n');
+    fprintf(fid,'%%\n');
+    fprintf(fid,'%% METHODS\n');
+    fprintf(fid,'%%   #method1: short description\n');
+    fprintf(fid,'%%        out = method1(obj,in)\n');
+    fprintf(fid,'%%        Description of input and output\n');
+    fprintf(fid,'%%\n');
+    fprintf(fid,'%% REMARKS\n');
+    fprintf(fid,'%%\n');
+    fprintf(fid,'%% created with MATLAB ver.: %s on %s\n',vers,os);
+    fprintf(fid,'%%\n');
+    fprintf(fid,'%% created by: %s\n',username);
+    fprintf(fid,'%% DATE: %s\n',datetoday);
+    fprintf(fid,'%%\n');
+    fprintf(fid,'%s\n',repmat('%',1,75));
+    % subclass myClass or myHandle by default
+    fprintf(fid,'\nclassdef %s < %s\n\nend',fxnname,superclass);
+    fclose(fid);
 end
 
 % pop up the newly generated file
