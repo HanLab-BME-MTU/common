@@ -1,10 +1,13 @@
-function [missingList]=findMissingFiles(completeList)
+function [missingList]=findMissingFiles(completeList,excludeDirs)
 %findMissingFiles checks for essential Matlab files which are not found in the defined paths
 %
 %SYNOPSIS missingList=findMissingFiles(completeList)
 %
 %INPUT    completeList: cell array of functions on which program 'programName' depends, generated with the
 %           command 'list=depfun(programName);' on a machine where the program works
+%           If completeList is empty, a dialog box allows you to sear
+%         excludeDirs : directories to exclude in the path search. The
+%           match is case-sensitive, and the drive name is lower case.
 %
 %OUTPUT   missingList: cell array of all function names that are not found in the matlab paths
 %         
@@ -15,9 +18,20 @@ function [missingList]=findMissingFiles(completeList)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %test input
+if isempty(completeList)
+    bait = uipickfiles('REFilter','\.m$');
+    completeList = depfun(bait{:});
+end
 if ~iscell(completeList)
     error('sorry, wrong input. Generate cell array ''completeList'' with depfun');
 end
+if nargin < 2 || isempty(excludeDirs)
+    excludeDirs = [];
+elseif ~iscell(excludeDirs)
+    excludeDirs = {excludeDirs};
+end
+nExclude = numel(excludeDirs);
+
 
 %initialize variables
 k=1;
@@ -30,11 +44,23 @@ for i=1:size(completeList,1)
     %extract filename
     fileSeparators=findstr(currentFile,filesep);
     %fileName: all chars after the last file separator. If no file separator, it is no file
-    if ~isempty(fileSeparators)
+    % also, check that the file is not on the matlab path
+    if isempty(strmatch(matlabroot,currentFile)) &&  ~isempty(fileSeparators) 
         fileName=currentFile(fileSeparators(end)+1:end);
         
         %search paths for fileName
         isItThere=which(fileName, '-all');
+        
+        % check whether to exlcude dirs
+        iter = 1;
+        while ~isempty(isItThere) && iter <= nExclude
+            % match all or beginning
+            idx = strmatch(excludeDirs{iter},isItThere);
+            if ~isempty(idx)
+                isItThere(idx) = [];
+            end
+            iter = iter + 1;
+        end
         
         %write fileName into output if not there
         if isempty(isItThere)
