@@ -8,6 +8,8 @@ function [missingList]=findMissingFiles(completeList,excludeDirs)
 %           If completeList is empty, a dialog box allows you to sear
 %         excludeDirs : directories to exclude in the path search. The
 %           match is case-sensitive, and the drive name is lower case.
+%           If you have specified excludeDirs in the subfunction, you can
+%           instead supply a numeric selection.
 %
 %OUTPUT   missingList: cell array of all function names that are not found in the matlab paths
 %         
@@ -27,6 +29,8 @@ if ~iscell(completeList)
 end
 if nargin < 2 || isempty(excludeDirs)
     excludeDirs = [];
+elseif isnumeric(excludeDirs)
+    excludeDirs = defaultExcludes(excludeDirs);
 elseif ~iscell(excludeDirs)
     excludeDirs = {excludeDirs};
 end
@@ -70,4 +74,21 @@ for i=1:size(completeList,1)
     end
 end
 missingList=sort(missingList);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% subfunctions
+function excludeDirs = defaultExcludes(selection)
+% defaultExcludes is a place to store default exclude directory lists
+
+switch selection
+    case 1
+        excludeDirs = {'c:\data\jonas\matlab\common-tsri';...
+            'c:\data\jonas\matlab\extern-tsri';...
+            'c:\data\jonas\matlab\newFunctions';...
+            'c:\data\jonas\matlab\mdxMisc';...
+            'c:\data\jonas\matlab\chromdyn-tsri'};
+    otherwise
+        excludeDirs = [];
+end
 
