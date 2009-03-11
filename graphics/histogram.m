@@ -9,14 +9,14 @@ function [N,X,sp] = histogram(varargin)
 %
 % INPUT    data: vector of input data
 %          factor: (opt) factor by which the bin-widths are multiplied
-%                   if "smooth", a smooth histogram will be formed.
+%                   if 'smooth' (or 's'), a smooth histogram will be formed.
 %                   (requires the spline toolbox). For an alternative
 %                   approach to a smooth histogram, see ksdensity.m
-%                   if "discrete", the data is assumed to be a discrete
+%                   if 'discrete' (or 'd'), the data is assumed to be a discrete
 %                   collection of values. Note that if every data point is,
 %                   on average, repeated at least 3 times, histogram will
 %                   consider it a discrete distribution automatically.
-%                   if "continuous", histogram is not automatically
+%                   if 'continuous' (or 'c'), histogram is not automatically
 %                   checking for discreteness.
 %          normalize : if 1 (default), integral of histogram equals number
 %                       data points. If 0, height of bins equals counts.
@@ -44,7 +44,7 @@ function [N,X,sp] = histogram(varargin)
 %           smooth histogram might get very steep at the beginning and
 %           produce an unwanted peak. In such a case, remove the
 %           multiple small values first (for example, using isApproxEqual)
-
+%
 %
 % c: 2/05 jonas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

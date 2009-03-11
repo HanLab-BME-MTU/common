@@ -25,7 +25,7 @@ function progressText(fractionDone,text)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-persistent starttime lastupdate clearText printText finalText
+persistent starttime lastupdate clearText printText finalText warnText
 
 % constants
 nCharsBase = 27; % change this if changing output format
@@ -67,6 +67,7 @@ if fractionDone == 0 || isempty(starttime)
 
 % empty warning
 lastwarn('');
+warnText = '';
     
     return
 elseif ~isempty(text)
@@ -74,15 +75,25 @@ elseif ~isempty(text)
     % clearText
     printText = sprintf('%s%%2d%%%% done %%s remaining',text);
     finalText = sprintf('%s100%%%% done %%s elapsed\n',text);
-    fprintfExpression = [clearText printText];
-    fprintfExpressionFinal = [clearText, finalText];
+    fprintfExpression = [clearText printText, warnText];
+    fprintfExpressionFinal = [clearText, finalText, warnText];
     
     nChars = nCharsBase + length(text);
     clearText = repmat('\b',1,nChars);
+% elseif ~isempty(lastwarn)
+%     % add warnings to the end of the progressText
+%     % find warning
+%     w = lastwarn;
+%     nw = length(w);
+%     % erase warning
+%     fprintf(1,repmat('\b',1,11+nw));
+%     % create new warnText
+%     w = regexprep(w,sprintf('(%s\s+)',char(10)),' - ');
+%     warnText = [warnText,sprintf('\n%%3d - Warning : %s',)
 else
     % all is normal. Just generate output
-    fprintfExpression = [clearText printText];
-    fprintfExpressionFinal = [clearText, finalText];
+    fprintfExpression = [clearText printText, warnText];
+    fprintfExpressionFinal = [clearText, finalText, warnText];
 end
 
 % write progress
@@ -95,7 +106,7 @@ runTime = etime(clock,starttime);
 if ~isempty(lastwarn)
     lastwarn('');
     fprintfExpression = regexprep(fprintfExpression,'(\\b)*','\\n');
-    fprintfExpressionFinal = regexprep(fprintfExpressionFinal,'(\\b)*','\\n');
+    fprintfExpressionFinal = regexprep(fprintfExpressionFinal,'(\\b)*','\\b\\n');
 end
 
 if percentDone == 100 % Task completed
