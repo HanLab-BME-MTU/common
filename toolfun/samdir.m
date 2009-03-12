@@ -6,7 +6,7 @@ function success = samdir(dir1,dir2)
 %    identical. 'dir1' and 'dir2' are two strings referring to
 %    two directories. 
 
-if ~isdir(dir1) | ~isdir(dir2)
+if ~isdir(dir1) || ~isdir(dir2)
    success = 0;
    return;
 end
