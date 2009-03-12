@@ -25,7 +25,7 @@ function progressText(fractionDone,text)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-persistent starttime lastupdate clearText printText finalText warnText
+persistent starttime lastupdate clearText printText finalText warnText clearWarn
 
 % constants
 nCharsBase = 27; % change this if changing output format
@@ -53,7 +53,7 @@ if fractionDone == 0 || isempty(starttime)
     
     printText = sprintf('%s%%2d%%%% done %%s remaining',text);
     initialText = sprintf('%s 0%%%% done xx:xx:xx remaining',text);
-    finalText = sprintf('%s100%%%% done %%s elapsed\n',text);
+    finalText = sprintf('%s100%%%% done %%s elapsed',text);
     % get length of fprintf expression
     nChars = nCharsBase + length(text);
     clearText = repmat('\b',1,nChars);
@@ -68,32 +68,42 @@ if fractionDone == 0 || isempty(starttime)
 % empty warning
 lastwarn('');
 warnText = '';
+clearWarn = '';
     
     return
 elseif ~isempty(text)
     % text has been changed. Create fprintfExpressions first, then update
     % clearText
     printText = sprintf('%s%%2d%%%% done %%s remaining',text);
-    finalText = sprintf('%s100%%%% done %%s elapsed\n',text);
-    fprintfExpression = [clearText printText, warnText];
-    fprintfExpressionFinal = [clearText, finalText, warnText];
+    finalText = sprintf('%s100%%%% done %%s elapsed',text);
+    fprintfExpression = [clearText clearWarn printText, warnText];
+    fprintfExpressionFinal = [clearText, clearWarn, finalText, warnText, '\n'];
     
     nChars = nCharsBase + length(text);
     clearText = repmat('\b',1,nChars);
-% elseif ~isempty(lastwarn)
-%     % add warnings to the end of the progressText
-%     % find warning
-%     w = lastwarn;
-%     nw = length(w);
-%     % erase warning
-%     fprintf(1,repmat('\b',1,11+nw));
-%     % create new warnText
-%     w = regexprep(w,sprintf('(%s\s+)',char(10)),' - ');
-%     warnText = [warnText,sprintf('\n%%3d - Warning : %s',)
+elseif ~isempty(lastwarn)
+    % add warnings to the end of the progressText
+    % find warning
+    w = lastwarn;
+    lastwarn('')
+    nw = length(w);
+    % erase warning
+    fprintf(1,repmat('\b',1,11+nw));
+    % create new warnText
+    w = regexprep(w,['(',char(10),'\s+)'],' - ');
+    warnTextNew = sprintf('\n  Warning @%7.3f%%%% done : %s ',100*fractionDone,w);
+    warnLength = length(warnTextNew) - 1; % subtract 2 for %%-sign
+    warnText = [warnText,warnTextNew];
+    
+    fprintfExpression = [clearText clearWarn printText, warnText];
+    fprintfExpressionFinal = [clearText, clearWarn, finalText, warnText, '\n'];
+    
+    % prepare cleanWarn for next time
+    clearWarn = [clearWarn,repmat('\b',1,warnLength)];
 else
     % all is normal. Just generate output
-    fprintfExpression = [clearText printText, warnText];
-    fprintfExpressionFinal = [clearText, finalText, warnText];
+    fprintfExpression = [clearText clearWarn printText, warnText];
+    fprintfExpressionFinal = [clearText, clearWarn, finalText, warnText, '\n'];
 end
 
 % write progress
@@ -103,11 +113,11 @@ percentDone = floor(100*fractionDone);
 runTime = etime(clock,starttime);
 
 % check whether there has been a warning since last time
-if ~isempty(lastwarn)
-    lastwarn('');
-    fprintfExpression = regexprep(fprintfExpression,'(\\b)*','\\n');
-    fprintfExpressionFinal = regexprep(fprintfExpressionFinal,'(\\b)*','\\b\\n');
-end
+% if ~isempty(lastwarn)
+%     lastwarn('');
+%     fprintfExpression = regexprep(fprintfExpression,'(\\b)*','\\n');
+%     fprintfExpressionFinal = regexprep(fprintfExpressionFinal,'(\\b)*','\\b\\n');
+% end
 
 if percentDone == 100 % Task completed
     fprintf(1,fprintfExpressionFinal,convertTime(runTime)); % finish up
