@@ -97,8 +97,8 @@ elseif nargin == 2
         restrict = 300;
         disp('lifetimes have been restricted to under 300 seconds')
     end
-else
-    error('Input must of the form (),(restrict,[]), ([],shape), or (restrict,shape).\n Restrict must be of length 1 and shape of length 3.')
+% else
+%    error('Input must of the form (),(restrict,[]), ([],shape), or (restrict,shape).\n Restrict must be of length 1 and shape of length 3.')
 end
 
 %Fill in movie length and image size
