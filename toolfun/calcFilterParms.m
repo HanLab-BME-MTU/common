@@ -57,6 +57,13 @@ end
 if nargin < 5 || isempty(corr)
     corr = def_corr;
 end
+% check for 3 entries in corr instead of two
+if length(corr) > 2
+   if ~all(corr(2:end-1)==corr(1))
+       warning('CALCFILTERPARMS: FACTOR NOT USED','only the first and the last entry of sigmaCorr will be used to calculate filter sizes')
+   end
+   corr = corr([1,end]);
+end
 if nargin < 6 || isempty(pixelSize)
     pixelSize = def_pix;
 end
