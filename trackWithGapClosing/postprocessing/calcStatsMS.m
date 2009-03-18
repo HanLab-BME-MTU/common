@@ -231,10 +231,18 @@ probFeatSplit = aveSplitPerFrame / aveFeatPerFrame;
 %% merges/splits vs. type
 
 %get the types of segments participating in merges and splits
-listOfMergeTypes = [trackSegmentType(listOfMerges(:,1)) ...
-    trackSegmentType(listOfMerges(:,2))];
-listOfSplitTypes = [trackSegmentType(listOfSplits(:,1)) ...
-    trackSegmentType(listOfSplits(:,2))];
+if numMergesTot > 0
+    listOfMergeTypes = [trackSegmentType(listOfMerges(:,1)) ...
+        trackSegmentType(listOfMerges(:,2))];
+else
+    listOfMergeTypes = zeros(0,2);
+end
+if numSplitsTot > 0
+    listOfSplitTypes = [trackSegmentType(listOfSplits(:,1)) ...
+        trackSegmentType(listOfSplits(:,2))];
+else
+    listOfSplitTypes = zeros(0,2);
+end
 
 %sort the lists so that the "larger" (more dynamic) type is in the first
 %column
@@ -244,8 +252,8 @@ listOfSplitTypes = sort(listOfSplitTypes,2,'descend');
 %get number of merges/splits per type
 
 %first approach:
-%classify a merge/split type based on the more dynamic of its two segments 
-%in terms of dynamics, linear > Brownian > confined Browian > undetermined 
+%classify a merge/split type based on the more dynamic of its two segments
+%in terms of dynamics, linear > Brownian > confined Browian > undetermined
 %&length >= 5 > undetermined&length < 5
 %for example, if a linear track segment merges with a Brownian track
 %segment, the merge is classified as linear
@@ -324,7 +332,7 @@ numSplitsUndet22  = length(indxSplitsUndet22);
 %get the fraction of merge/split types - this is the conditional
 %probability of having a certain motion type if merging/splitting
 
-%first approach 
+%first approach
 probLinIfMerge1   = numMergesLin1   / numMergesTot;
 probBrownIfMerge1 = numMergesBrown1 / numMergesTot;
 probConfIfMerge1  = numMergesConf1  / numMergesTot;
@@ -336,7 +344,7 @@ probConfIfSplit1  = numSplitsConf1  / numSplitsTot;
 probUndet1IfSplit1 = numSplitsUndet11 / numSplitsTot;
 probUndet2IfSplit1 = numSplitsUndet21 / numSplitsTot;
 
-%second approach 
+%second approach
 probLinIfMerge2   = numMergesLin2   / numMergesTot;
 probBrownIfMerge2 = numMergesBrown2 / numMergesTot;
 probConfIfMerge2  = numMergesConf2  / numMergesTot;
@@ -387,7 +395,7 @@ probSplitIfUndet22 = probUndet2IfSplit2 * probFeatSplit / probFeatUndet2;
 
 % % % %calculate the conditional probability of 2 features undergoing a
 % % % %merge/split IF each is undergoing a certain motion type
-% % % 
+% % %
 % % % %third approach
 % % % probFeatAll = [probFeatLin probFeatBrown probFeatConf probFeatUndet];
 % % % probMergeIfLin3   = probLinIfMerge3   * probFeatMerge / probFeatLin   ./ probFeatAll;
@@ -398,7 +406,7 @@ probSplitIfUndet22 = probUndet2IfSplit2 * probFeatSplit / probFeatUndet2;
 % % % probSplitIfBrown3 = probBrownIfSplit3 * probFeatSplit / probFeatBrown ./ probFeatAll;
 % % % probSplitIfConf3  = probConfIfSplit3  * probFeatSplit / probFeatConf  ./ probFeatAll;
 % % % probSplitIfUndet3 = probUndetIfSplit3 * probFeatSplit / probFeatUndet ./ probFeatAll;
-    
+
 %% output
 
 %statistics per category of motion
@@ -412,7 +420,8 @@ statsPerCat = [fracSegmentsLin probFeatLin probMergeIfLin1 probSplitIfLin1 ...
     probMergeIfUndet12 probSplitIfUndet12; ...
     fracSegmentsUndet2 probFeatUndet2 probMergeIfUndet21 probSplitIfUndet21 ...
     probMergeIfUndet22 probSplitIfUndet22];
-    
+statsPerCat(isnan(statsPerCat)) = 0;
+
 % % % statsPerCat = [fracSegmentsLin probFeatLin probMergeIfLin1 probSplitIfLin1 ...
 % % %     probMergeIfLin2 probSplitIfLin2 probMergeIfLin3 probSplitIfLin3; ...
 % % %     fracSegmentsBrown probFeatBrown probMergeIfBrown1 probSplitIfBrown1 ...

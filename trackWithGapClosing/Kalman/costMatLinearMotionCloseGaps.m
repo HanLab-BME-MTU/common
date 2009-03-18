@@ -519,6 +519,7 @@ for iPair = 1 : numPairs
             
             %add this cost to the list of costs
             cost(iPair) = cost12;
+            %             cost(iPair) = cost12 * timeGap;
 
             %specify the location of this pair in the cost matrix
             indx1(iPair) = iEnd; %row number

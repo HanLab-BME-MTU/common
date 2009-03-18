@@ -1,4 +1,4 @@
-function [trackedFeatureInfo,trackedFeatureIndx,trackStartRow,numSegments] = ...
+function [trackedFeatureInfo,trackedFeatureIndx,trackStartRow,numSegments,aggregStateMat] = ...
     convStruct2MatIgnoreMS(tracksFinal)
 %CONVSTRUCT2MATIGNOREMS converts tracks from structure format to matrix format, ignoring merges/splits.
 %
@@ -12,8 +12,19 @@ function [trackedFeatureInfo,trackedFeatureIndx,trackStartRow,numSegments] = ...
 %       trackStartRow: Row where each compound track starts in
 %                      the output matrices.
 %       numSegments: Number of segments in each compound track.
+%       aggregStateMat: Matrix of aggregation states, same dimensions as
+%                       trackedFeatureIndx. Calculated only if aggregation
+%                       state is supplied in tracksFinal.
 %
 %Khuloud Jaqaman, February 2008
+
+%% input - output
+if isfield(tracksFinal,'aggregState')
+    calcAggregation = 1;
+else
+    calcAggregation = 0;
+    aggregStateMat = [];
+end
 
 %% conversion
 
@@ -43,6 +54,11 @@ trackedFeatureInfo = NaN(trackStartRow(end)+numSegments(end)-1,8*numTimePoints);
 %reserve memory for matrix of feature indices
 trackedFeatureIndx = zeros(trackStartRow(end)+numSegments(end)-1,numTimePoints);
 
+%reserve memory for matrix of aggregation state
+if calcAggregation
+    aggregStateMat = NaN(trackStartRow(end)+numSegments(end)-1,numTimePoints);
+end
+
 %put all tracks together in a matrix
 for iTrack = 1 : numTracks
     startTime = tracksFinal(iTrack).seqOfEvents(1,1);
@@ -53,6 +69,11 @@ for iTrack = 1 : numTracks
     trackedFeatureIndx(trackStartRow(iTrack):trackStartRow(iTrack)+...
         numSegments(iTrack)-1,startTime:endTime) = ...
         tracksFinal(iTrack).tracksFeatIndxCG;
+    if calcAggregation
+        aggregStateMat(trackStartRow(iTrack):trackStartRow(iTrack)+...
+            numSegments(iTrack)-1,startTime:endTime) = ...
+            tracksFinal(iTrack).aggregState;
+    end
 end
 
 %% ~~~ the end ~~~

@@ -1,9 +1,11 @@
 function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
-    saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,imageRange)
+    saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,...
+    imageRange,onlyTracks)
 %Overlays tracks obtained via trackCloseGapsKalman on movies
 %
 %SYNPOSIS overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
-%    saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,imageRange)
+%    saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,...
+%    imageRange,onlyTracks)
 %
 %INPUT  tracksFinal   : Output of trackCloseGapsKalman.
 %       startend      : Row vector indicating first and last frame to
@@ -12,8 +14,10 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %       dragtailLength: Length of drag tail (in frames). 
 %                       Optional. Default: 10 frames.
 %                       If dragtailLength = 0, then no dragtail. 
-%                       To show full tracks, set dragtailLength to any 
-%                       value longer than the movie.
+%                       To show tracks from their beginning to their end,
+%                       set dragtailLength to any value longer than the
+%                       movie. To show tracks statitically while features
+%                       dance on them, use -1.
 %       saveMovie     : 1 to save movie (as Quicktime), 0 otherwise.
 %                       Optional. Default: 0.
 %       movieName     : filename for saving movie. 
@@ -34,6 +38,10 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %       imageRange    : Image region to make movie out of, in the form:
 %                       [min pixel X, max pixel X; min pixel Y, max pixel Y].
 %                       Optional. Default: Whole image.
+%       onlyTracks    : 1 to show only tracks without any symbols showing
+%                       detections, closed gaps, merges and splits; 0 to
+%                       show symbols on top of tracks.
+%                       Optional. Default: 0.
 %
 %OUTPUT If movie is to be saved, the QT movie is written into directory
 %       where TIFFs are located
@@ -80,6 +88,9 @@ end
 %check startend and assign default if necessary
 if nargin < 2 || isempty(startend)
     startend = [tracksFirstFrame tracksLastFrame];
+else
+    tracksFirstFrame = min(tracksFirstFrame,startend(1));
+    tracksLastFrame = max(tracksLastFrame,startend(2));
 end
 
 %check dragtailLength and assign default if not necessary
@@ -136,6 +147,11 @@ close(h);
 %check whether an area of interest was input
 if nargin < 10 || isempty(imageRange)
     imageRange = [1 imSizeX; 1 imSizeY];
+end
+
+%check whether to plot tracks only or also symbols
+if nargin < 11 || isempty(onlyTracks)
+    onlyTracks = 0;
 end
 
 %filter images if requested
@@ -363,52 +379,62 @@ for iFrame = 1 : size(xCoordMatAll,2)
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
                 textDeltaCoord,num2str(iFrame),'Color','white');
     end
-    
+
     %plot tracks
-    if iFrame > 1
-        dragTailStart = max(iFrame-dragtailLength,1);
-        xCoord2plot = (xCoordMatAll(pointStatus(:,iFrame)~=0,dragTailStart:iFrame))';
-        yCoord2plot = (yCoordMatAll(pointStatus(:,iFrame)~=0,dragTailStart:iFrame))';
-        plot(xCoord2plot,yCoord2plot,'Color',[1 0.7 0.7],'LineWidth',2);
+    if dragtailLength >= 0 %plot tracks dynamically
+        if iFrame > 1
+            dragTailStart = max(iFrame-dragtailLength,1);
+            xCoord2plot = (xCoordMatAll(pointStatus(:,iFrame)~=0,dragTailStart:iFrame))';
+            yCoord2plot = (yCoordMatAll(pointStatus(:,iFrame)~=0,dragTailStart:iFrame))';
+            plot(xCoord2plot,yCoord2plot,'Color',[1 0.7 0.7],'LineWidth',2);
+        end
+    else %plot tracks statically
+        xCoord2plot = (xCoordMatAll)';
+        yCoord2plot = (yCoordMatAll)';
+        plot(xCoord2plot,yCoord2plot,'Color',[1 0.7 0.7],'LineWidth',1);
+
     end
-    
-    %plot points (features + gaps)
-    
-    %blue stars: bad gaps
-    points2plot = find(pointStatus(:,iFrame)==-2);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'b*','MarkerSize',6);
-    
-    %cyan stars: good gaps
-    points2plot = find(pointStatus(:,iFrame)==-1);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'c*','MarkerSize',6);
-    
-    %red circles: detected feature in the middle of track with status 0
-    points2plot = find(pointStatus(:,iFrame)==1);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'ro','MarkerSize',5);
 
-    %magenta circles: detected feature in the middle of track with status 1
-    points2plot = find(pointStatus(:,iFrame)==2);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'mo','MarkerSize',5);
+    %plot points (features + gaps + merges + splits)
+    if ~onlyTracks
 
-    %white circles: detected feature in the middle of track with status 2
-    points2plot = find(pointStatus(:,iFrame)==3);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wo','MarkerSize',5);
+        %blue stars: bad gaps
+        points2plot = find(pointStatus(:,iFrame)==-2);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'b*','MarkerSize',6);
 
-    %green circles: detected feature just after birth
-    points2plot = find(pointStatus(:,iFrame)==4);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'go','MarkerSize',5);
+        %cyan stars: good gaps
+        points2plot = find(pointStatus(:,iFrame)==-1);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'c*','MarkerSize',6);
 
-    %yellow circles: detected feature just before death
-    points2plot = find(pointStatus(:,iFrame)==5);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yo','MarkerSize',5);
+        %red circles: detected feature in the middle of track with status 0
+        points2plot = find(pointStatus(:,iFrame)==1);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'ro','MarkerSize',5);
 
-    %green diamonds: detected feature just before/after a split
-    points2plot = find(pointStatus(:,iFrame)==6);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'gd','MarkerSize',6);
+        %magenta circles: detected feature in the middle of track with status 1
+        points2plot = find(pointStatus(:,iFrame)==2);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'mo','MarkerSize',5);
 
-    %yellow diamonds: detected feature just before/after a merge
-    points2plot = find(pointStatus(:,iFrame)==7);
-    plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yd','MarkerSize',6);
+        %white circles: detected feature in the middle of track with status 2
+        points2plot = find(pointStatus(:,iFrame)==3);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wo','MarkerSize',5);
+
+        %green circles: detected feature just after birth
+        points2plot = find(pointStatus(:,iFrame)==4);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'go','MarkerSize',5);
+
+        %yellow circles: detected feature just before death
+        points2plot = find(pointStatus(:,iFrame)==5);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yo','MarkerSize',5);
+
+        %green diamonds: detected feature just before/after a split
+        points2plot = find(pointStatus(:,iFrame)==6);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'gd','MarkerSize',6);
+
+        %yellow diamonds: detected feature just before/after a merge
+        points2plot = find(pointStatus(:,iFrame)==7);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yd','MarkerSize',6);
+        
+    end
 
     %add frame to movie if movie is saved
     if saveMovie

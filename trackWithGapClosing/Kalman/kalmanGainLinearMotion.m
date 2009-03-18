@@ -138,23 +138,24 @@ for iFeature = 1 : numFeatures
         %find indices of previous features connected to this feature
         indx = trackedFeatureIndx(iFeature,1:end-1); 
         
-        %determine where the track starts
+        %determine length of track
         indxLength = length(find(indx));
         
         %collect all of the error terms
-        stateNoiseAll = [];
+        stateNoiseAll = zeros(indxLength,2*probDim);
+        j = 0;
         for i = iFrame-indxLength : iFrame-1
-            stateNoiseAll = [stateNoiseAll; kalmanFilterInfoOut(i).stateNoise(indx(i),:)];
+            j = j + 1;
+            stateNoiseAll(j,:) = kalmanFilterInfoOut(i).stateNoise(indx(i),:);
         end
 
         %impose isotropy (all directions are equivalent)
         stateNoisePos = stateNoiseAll(:,1:probDim);
         stateNoiseVel = stateNoiseAll(:,probDim+1:2*probDim);
 
-        %estimate positional noise variance in current frame
+        %estimate positional and speed noise variances in current frame
+        noiseVar = zeros(1,2*probDim);
         noiseVar(1:probDim) = var(stateNoisePos(:));
-
-        %estimate speed noise variances in current frame
         noiseVar(probDim+1:2*probDim) = var(stateNoiseVel(:));
 
         %save this information in kalmanFilterInfo
