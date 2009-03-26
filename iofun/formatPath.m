@@ -22,6 +22,9 @@ if ispc && ~isempty(idxLinux) % Linux --> Windows
     chunk(1:pwdSlashIdx(end))=[];
 
     pathIdx=strfind(oldPath,chunk);
+    if isempty(pathIdx)
+        error('Error using formatPath: change working directory to oldPath server')
+    end
     newPath=[pwd oldPath(pathIdx+length(chunk):end)];
     
 elseif ~ispc && ~isempty(idxWindows) % Windows --> Linux
@@ -32,6 +35,9 @@ elseif ~ispc && ~isempty(idxWindows) % Windows --> Linux
     chunk(1:pwdSlashIdx(end))=[];
 
     pathIdx=strfind(oldPath,chunk);
+    if isempty(pathIdx)
+        error('Error using formatPath: change working directory to oldPath server')
+    end
     newPath=[pwd oldPath(pathIdx+length(chunk):end)];
     
 else % same OS, no change needed
