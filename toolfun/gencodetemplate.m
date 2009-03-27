@@ -47,6 +47,10 @@ end
 % find username. This will return empty on Linux, but we have a line for
 % the username in the input dialogue, anyway.
 username = getenv('username');
+if isempty(username)
+    % this should work on OS X
+    username = getenv('USER');
+end
 
 % Add your username here if you want to change/expand the name
 switch username
@@ -62,8 +66,27 @@ end
 
 % get version, OS, date
 vers    = version;
-os      = getenv('OS');
 datetoday = date;
+
+% getenv('OS') does not work on Mac. Query the OS like ver.m
+% find platform OS
+if ispc
+   platform = [system_dependent('getos'),' ',system_dependent('getwinsys')];
+elseif ismac
+    [fail, input] = unix('sw_vers');
+    if ~fail
+        platform = strrep(input, 'ProductName:', '');
+        platform = strrep(platform, sprintf('\t'), '');
+        platform = strrep(platform, sprintf('\n'), ' ');
+        platform = strrep(platform, 'ProductVersion:', ' Version: ');
+        platform = strrep(platform, 'BuildVersion:', 'Build: ');
+    else
+        platform = system_dependent('getos');
+    end
+else    
+   platform = system_dependent('getos');
+end
+os = platform;
 
 % ask for the rest of the input with inputdlg
 
