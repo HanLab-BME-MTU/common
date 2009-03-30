@@ -163,18 +163,21 @@ if verbose
     t = A(:,end);
     colorOrder = get(gca,'ColorOrder');
     
-    yFit=exp(A * [log(u(1:end-1));u(end)]);
+    % jonas, 3/09: this should work, I hope
+    %yFit=exp(A * [log(u(1:end-1));u(end)]);
+    ut = unique(t);
+    yFit=u(1:end-1)*exp(u(2)*unique(t));
     for i = 1:size(A,2)-1
         pIdx = find(A(:,i));
         % make sure that the time is ordered when plotting the estimate
-        plotData = [t(pIdx),yFit(pIdx)];
-        plotData = sortrows(plotData,1);
+        plotData = [ut,yFit(:,i)];
+        %plotData = sortrows(plotData,1);
         plot(plotData(:,1),plotData(:,2),'Color',colorOrder(wraparound(i,[1;size(colorOrder,1)]),:))        
-        plot(t(pIdx),Y(pIdx),'.','Color',colorOrder(wraparound(i,[1;size(colorOrder,1)]),:))
+        plot(t(pIdx),Y(pIdx)*ySign,'.','Color',colorOrder(wraparound(i,[1;size(colorOrder,1)]),:))
 
     end
     badIdx = setdiff(1:lengthY,goodIdx);
-    plot(t(badIdx), Y(badIdx),'*r');
+    plot(t(badIdx), Y(badIdx)*ySign,'*r');
     
 else
     plotAx = [];
