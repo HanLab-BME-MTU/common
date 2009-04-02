@@ -424,13 +424,26 @@ intRes.sn       = sn;
 intRes.tvec     = tvec;
 intRes.framerate = sframe;
 
+% determine final average and standard error of the mean:
+
+% total error variance sum: std of each movie squared, multiplied by number
+% of trajs in the respective movie
+varmat = (errorMat.^2).*repmat(sn',1,size(errorMat,2));
+
+% final error of mean: root of total variance sum divided by total n,
+% divided by sqrt(n)
+varvec = sqrt(nansum(varmat,1)/sum(sn))/sqrt(sum(sn));
+    
+intRes.intAVE   = nanmean(intMat);
+intRes.intSEM   = varvec;
+
 
 % plot final results results
 tvec    = intRes.tvec(1,:);
 if alignvar==2, tvec = intRes.tvec(2,:); end
-ivec    = nanmean(intRes.intMat,1);
-evec    = sqrt(sum(intRes.errorMat)/sum(intRes.sn));
-fr  = intRes.framerate;
+ivec    = intRes.intAVE;
+evec    = intRes.intSEM;
+fr      = intRes.framerate;
 
 figure
 errorbar(fr*tvec,ivec,evec,'k-');
