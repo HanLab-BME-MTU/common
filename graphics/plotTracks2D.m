@@ -309,8 +309,8 @@ if newFigure
 
 end
 
-%hold on figure
-hold on
+%hold on axes
+set(axH,'NextPlot','add');
 
 %extract the portion of tracksX and tracksY that is of interest
 tracksXP = tracksX(timeRange(1):timeRange(2),:);
