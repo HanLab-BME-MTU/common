@@ -20,25 +20,28 @@ function [] = extractIntensityMat(data, dvector, tbuffer, channel, shiftvar, use
 %                       specify that field here; the function will then
 %                       automatically point you to this directory and save
 %                       you lots of unnecessary mouse clicking
-%                       default is the field .source
+%                       DEFAULT is 'source'
 %           shiftvar (optional): indicates whether or not the positions
 %                       should be shifted by the vector value indicated in
-%                       the field .colorShiftVector; DEFAULT = no
+%                       the field .colorShiftVector; 1=yes, 0=no; 
+%                       DEFAULT is 0 (no)
 %                       NOTE: This functionality is relevant if you are
 %                       reading intensities from a dual-channel movie,
 %                       where the objects are detected in one channel and
 %                       you are reading intensities or parameters from a
-%                       second channel that is shifted by a few pixels
+%                       second channel that is shifted by a few pixels; see
+%                       note below
 %           usemask (optional): indicate whether or not a cell outline mask
 %                       should be used for the reference points, provided
-%                       it's available
-%                       DEFAULT = no
+%                       it's available; 1=yes, 0=no
+%                       DEFAULT is 0 (no)
 %           filenameRoot (optional): root of the filename for results files
 %                       that are written into your source directory, e.g.
 %                       'ClathrinInt' will cause a file 'ClathrinInt.mat'
 %                       and a file 'ClathrinInt_Ref.mat' to be written as
 %                       results files
-%                       DEFAULT = 'parameterMat.mat' and 'parameterMat_Ref.mat'
+%                       DEFAULT is ''parameterMat', which will produce the 
+%                       files parameterMat.mat' and 'parameterMat_Ref.mat'
     
 %
 % OUTPUT:   file with results is written into source directory; format of
@@ -51,7 +54,22 @@ function [] = extractIntensityMat(data, dvector, tbuffer, channel, shiftvar, use
 %
 % last modified: Dinah Loerke, March 17, 2009
 %
-
+% NOTE regarding color Shift:
+% If the data originate from different channels that are shifted, e.g. if
+% you have a red and a green color channel that are shifted significantly 
+% (several pixels) due to chromatic aberration in the optical system, then 
+% your readout positions in the second channel should ideally be corrected
+% by that shift. For this purpose, the shift information should be stored 
+% in the data structure in a field called .colorShiftVector, in form of a 
+% vector, e.g. [2,2] or [-10,5].
+% What do the dimensions of the shiftvector mean? In the current
+% implementation, a shift vector =[-10,-5] means that image2/channel2
+% is shifted in such a way with respect to image1/channel1 that the
+% point (1,1) in image1 (e.g. clathrin) is located at point (11,6) in 
+% image2 (e.g. actin). Using this convention, we obtain the correct
+% coordinates in the second channel by subtracting the shift vector (which
+% amounts to adding if the shift is negative) from the positions in the
+% first channel. 
 
 %% set reference and default values
 od = cd;
@@ -145,20 +163,17 @@ for i=1:length(data)
     tMat_t1 = [ MPMpos_obj(:,1:2:sy,2) ; MPMpos_ref(:,1:2:sy,2) ];
     tMat_t2 = [ MPMpos_obj(:,1:2:sy,3) ; MPMpos_ref(:,1:2:sy,3) ];
     
-    % if the data originate from different channels that are shifted, e.g.
-    % from a red and green color channels are shifted a few pixels, then
-    % that shift information for this particular movie should be stored in
-    % a fiels called .colorShiftVector
+    % if the data originate from different channels that are shifted, then
+    % that shift information for this particular movie is stored in a
+    % field called .colorShiftVector
     % If such a field exists, then the object positions in MPMglobal have 
     % to be shifted by the shift vector to read the appropriate position in
-    % the intensity/parameter images
-    % NOTE: What do the dimensions of the shiftvector mean? For example, a 
-    % shift of shiftvec=[-10,-5]) means that image2 is shifted in such a 
-    % way that the point im1(1,1) in image1 (clathrin) overlays point 
-    % im2(11,6) in image2 (actin). Thus, the shift has to be subtracted
-    % from the positions in the clathrin channel to obtain the correct
-    % coordinates in the actin channel. Positions outside the shifted image
-    % dimensions have to be set to nan
+    % the intensity/parameter images. In the current
+    % implementation/convention for dimensionality, we obtain the correct
+    % coordinates in the second channel by subtracting the shift vector (or
+    % adding if the shift is negative) from the positions in the first 
+    % channel. After the subtraction, positions lying outside the shifted 
+    % image dimensions have to be set to nan again!
     
     if isfield(data,'colorShiftVector') & (shift==1)
         if ~isempty(data(i).colorShiftVector)
@@ -180,7 +195,7 @@ for i=1:length(data)
     
     % read current images
     currImageStackList = ImageStackList(i).list;    
-    total_frame_num = length(imageStackList);
+    total_frame_num = length(currImageStackList);
     
 %     for k=1:total_frame_num
 %         
