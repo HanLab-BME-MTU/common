@@ -54,7 +54,7 @@ end
 
 % Add your username here if you want to change/expand the name
 switch username
-    case 'p0877743'
+    case {'p0877743','Jadmin','Jonas'}
         username = 'Jonas Dorn';
     case 'p0774774'
         username = 'Thai-Hang Nguyen';
