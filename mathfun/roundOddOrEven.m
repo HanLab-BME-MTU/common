@@ -43,6 +43,8 @@ switch infOrZero
             case 'odd'
                 %remember sign
                 sig=sign(x);
+                % sign(0) is 0. Round 0 toward 1
+                sig(sig==0) = 1;
                 %round
                 x=ceil(sig.*x).*sig;
                 %make odd
@@ -60,6 +62,8 @@ switch infOrZero
             case 'odd'
                 %remember sign
                 sig=sign(x);
+                % sign(0) is 0. Round 0 toward -1
+                sig(sig==0) = -1;
                 %round
                 x=fix(x);
                 %make odd
