@@ -45,7 +45,7 @@ if nargin < 5 || isempty(filterMask)
         error('please supply nonempty sigma of correct dimensionality')
     end
     if length(sigma) == 1
-        sigma = simga * ones(1,dims);
+        sigma = sigma * ones(1,dims);
     end
     % check for filterSize
     if nargin < 3 || isempty(fSze)
