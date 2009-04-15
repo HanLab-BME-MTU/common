@@ -88,6 +88,8 @@ switch selection
             'c:\data\jonas\matlab\newFunctions';...
             'c:\data\jonas\matlab\mdxMisc';...
             'c:\data\jonas\matlab\chromdyn-tsri'};
+    case 2
+        excludeDirs = {'/Users/jonas/matlab'};
     otherwise
         excludeDirs = [];
 end

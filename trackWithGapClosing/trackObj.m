@@ -440,15 +440,29 @@ classdef trackObj<handle
                                         %if there is a feature (not a gap)
                                         if iFeature ~= 0
                                             
-                                            %replace coordiantes and their stds
-                                            tracks(iTrack).tracksCoordAmpCG(iCT,(iFrame-startTime)*8+1:...
-                                                (iFrame-startTime)*8+3) = [rawMovieInfo(iFrame).xCoord(iFeature,1),...
-                                                rawMovieInfo(iFrame).yCoord(iFeature,1),...
-                                                rawMovieInfo(iFrame).zCoord(iFeature,1)];
-                                            tracks(iTrack).tracksCoordAmpCG(iCT,(iFrame-startTime)*8+5:...
-                                                (iFrame-startTime)*8+7) = [rawMovieInfo(iFrame).xCoord(iFeature,2),...
-                                                rawMovieInfo(iFrame).yCoord(iFeature,2),...
-                                                rawMovieInfo(iFrame).zCoord(iFeature,2)];
+                                            switch cObj.probDim
+                                                case 2
+                                                    %replace coordiantes and their stds
+                                                    tracks(iTrack).tracksCoordAmpCG(iCT,(iFrame-startTime)*8+1:...
+                                                        (iFrame-startTime)*8+2) = [rawMovieInfo(iFrame).xCoord(iFeature,1),...
+                                                        rawMovieInfo(iFrame).yCoord(iFeature,1)];
+                                                    tracks(iTrack).tracksCoordAmpCG(iCT,(iFrame-startTime)*8+5:...
+                                                        (iFrame-startTime)*8+6) = [rawMovieInfo(iFrame).xCoord(iFeature,2),...
+                                                        rawMovieInfo(iFrame).yCoord(iFeature,2)];
+                                                case 3
+                                                    %replace coordiantes and their stds
+                                                    tracks(iTrack).tracksCoordAmpCG(iCT,(iFrame-startTime)*8+1:...
+                                                        (iFrame-startTime)*8+3) = [rawMovieInfo(iFrame).xCoord(iFeature,1),...
+                                                        rawMovieInfo(iFrame).yCoord(iFeature,1),...
+                                                        rawMovieInfo(iFrame).zCoord(iFeature,1)];
+                                                    tracks(iTrack).tracksCoordAmpCG(iCT,(iFrame-startTime)*8+5:...
+                                                        (iFrame-startTime)*8+7) = [rawMovieInfo(iFrame).xCoord(iFeature,2),...
+                                                        rawMovieInfo(iFrame).yCoord(iFeature,2),...
+                                                        rawMovieInfo(iFrame).zCoord(iFeature,2)];
+                                                    
+                                                otherwise
+                                                    error('dimensionality %i not implemented yet',cObj.probDim)
+                                            end
                                             
                                         end
                                     end % loop compound tracks
@@ -458,8 +472,8 @@ classdef trackObj<handle
                             end %(for iTrack = 1 : numTracks)
                             
                             % assign tracks to output
-                    varargout{iObj} = tracks;
-                    
+                            varargout{iObj} = tracks;
+                            
                         otherwise
                             error('unrecognized output style %s',cObj.outputStyle.name)
                     end
@@ -515,14 +529,22 @@ classdef trackObj<handle
             if useRaw
                 movieInfo = obj.rawMovieInfo;
             else
-                 movieInfo = obj.movieInfo;
+                movieInfo = obj.movieInfo;
             end
-         
+            
             
             for t = find(goodTimes(:))'
-                                
+                
                 % get nn distance
-                xyz = [movieInfo(t).xCoord(:,1),movieInfo(t).yCoord(:,1),movieInfo(t).zCoord(:,1)];
+                switch obj.probDim
+                    case 2
+                        xyz = [movieInfo(t).xCoord(:,1),movieInfo(t).yCoord(:,1)];
+                        xyz(end,3) = 0;
+                    case 3
+                        xyz = [movieInfo(t).xCoord(:,1),movieInfo(t).yCoord(:,1),movieInfo(t).zCoord(:,1)];
+                    otherwise
+                        error('dimensionality %i not supported yet',obj.probDim)
+                end
                 nnd = createDistanceMatrix(xyz,xyz);
                 nnd = sort(nnd,2);
                 stats.nnDistance{t} = nnd(:,2); % do not get zero-diagonal
@@ -534,8 +556,16 @@ classdef trackObj<handle
                 
                 if t < obj.nTimepoints && all(goodTimes(t:t+1))
                     % get nnDisplacement
-                    nnd = createDistanceMatrix(xyz,...
-                        [movieInfo(t+1).xCoord(:,1),movieInfo(t+1).yCoord(:,1),movieInfo(t+1).zCoord(:,1)]);
+                    switch obj.probDim
+                        case 2
+                            nnd = createDistanceMatrix(xyz(:,1:2),...
+                                [movieInfo(t+1).xCoord(:,1),movieInfo(t+1).yCoord(:,1)]);
+                        case 3
+                            nnd = createDistanceMatrix(xyz,...
+                                [movieInfo(t+1).xCoord(:,1),movieInfo(t+1).yCoord(:,1),movieInfo(t+1).zCoord(:,1)]);
+                        otherwise
+                            error('dimensionality %i not supported yet',obj.probDim)
+                    end
                     nnd = sort(nnd,2);
                     stats.nnDisplacement{t,1} = nnd(:,1);
                     stats.nnDisplacement{t,2} = nnd(:,2);
@@ -587,9 +617,9 @@ classdef trackObj<handle
             switch options.inputParser
                 case 'movieInfo'
                     % set default field names
-                    movieInfoFields = options.inputInfo.fieldNames;
+                    movieInfoFields = obj.inputInfoDefOpt.movieInfo.fieldNames;
                     if ~options.inputInfo.findNames
-                        fieldList = options.inputInfo(:);
+                        fieldList = options.inputInfo.fieldNames;
                     else
                         % if no explicit list: find fieldnames from coord
                         fieldList = fieldnames(coord);
@@ -597,8 +627,8 @@ classdef trackObj<handle
                         if nameIdx(1)==0
                             error('you need at least to supply x coords')
                         end
-                        fieldList = movieInfoFields;
-                        [fieldList{~nameIdx}] = deal('');
+                        fieldList = cell(size(movieInfoFields));
+                        fieldList(nameIdx) = movieInfoFields(nameIdx);
                     end
                     if length(fieldList) == 3 || isempty(fieldList{3})
                         % 2D problem. remove zCoord
@@ -788,7 +818,7 @@ classdef trackObj<handle
                     options.inputInfo.(fn{1}) = tmp.(fn{1});
                 end
                 if strcmp(options.inputParser,'movieInfo') && ...
-                        (~isfield(tmp,'fieldNames') || isempty(tmp,'fieldNames'))
+                        (~isfield(tmp,'fieldNames') || isempty(tmp.fieldNames))
                     options.inputInfo.findNames = true;
                 end
             end
