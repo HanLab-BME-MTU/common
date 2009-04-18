@@ -598,6 +598,220 @@ classdef trackObj<handle
             ylim(hc{3},ylim(hc2{3}));
             
         end
+        %% INSPECTTRACKS
+        function out = inspectTracks(obj,moreData)
+%INSPECTTRACKS plots some hopefully useful data about tracks. 
+% moreData: struct with length nTimepoints and fields with an entry for every feature
+%
+% plots: For every stat make a plot with all tracks in subplots
+
+% get tracksFinal
+tracksFinal = obj.tracksFinal;
+% get number of tracks
+nTracks = length(tracksFinal);
+
+% init output. TrackStats is
+% 1 - overall length (time)
+% 2 - nSegments
+% 3 - nSplits
+% 4 - nMerges
+% 
+trackStats = zeros(nTracks,4);
+
+% find moreData - names
+if nargin < 2 || isempty(moreData)
+    nNames = 0;
+    fn = {};
+else
+    fn = fieldnames(moreData);
+    nNames = length(fn);
+end
+
+%% create figures
+nBase = 2; % one figure for amp, one figure for displacement
+nFigures = nBase + nNames;
+figureHandles = zeros(nFigures,1);
+axHandles = zeros(nFigures,nTracks);
+
+nameList = [{'amp';'displacement'};fn];
+
+% loop through the tracks and names and create subplot-axes that are hold
+% on already
+nRows = floor(sqrt(nTracks));
+nCols = ceil(nTracks/nRows);
+for f = 1:nFigures
+    figureHandles(f) = figure('Name',nameList{f});
+    for iTrack = 1:nTracks
+        axHandles(f,iTrack) = subplot(nRows,nCols,iTrack,'NextPlot','add');
+    end
+    allowaxestogrow(figureHandles(f));
+end
+
+%% read and plot data
+
+for iTrack = 1:nTracks
+    % find number of segments
+    nSegments = size(tracksFinal(iTrack).tracksFeatIndxCG,1);
+    soe = tracksFinal(iTrack).seqOfEvents;
+    
+    for iFigure = 1:nFigures
+        switch nameList{iFigure}
+            case 'amp'
+                data = tracksFinal(iTrack).tracksCoordAmpCG(:,4:8:end);
+                plotCompTrackCore(axHandles(iFigure,iTrack),data,soe);
+            case 'displacement'
+                % read positions, copy start/end position for s/m and
+                % calculate displacement
+                [nSeg,n8] = size(tracksFinal(iTrack).tracksCoordAmpCG);
+                posIdx = sort([1:8:n8,2:8:n8,3:8:n8]);
+                pos = tracksFinal(iTrack).tracksCoordAmpCG(:,posIdx);
+                
+                % loop through segments and calculate displacement
+                displacement = NaN(nSeg,n8/8);
+                
+                for s = 1:nSeg
+                    % check for merge/split
+                    startIdx = soe(:,2)==1 & soe(:,3)==s;
+                    endIdx = soe(:,2)==2 & soe(:,3)==s;
+                    if ~isnan(soe(startIdx,4))
+                        % split - copy last position of other track
+                        % cpIdx: indices to copy
+                        cpIdx = (soe(startIdx,1)-1)*3;
+                        cpIdx = cpIdx-2:cpIdx;
+                        % splitTrackIdx: track from which to copy
+                        splitTrackIdx = soe(startIdx,4);
+                        pos(s,cpIdx) = pos(splitTrackIdx,cpIdx);
+                    end
+                    if ~isnan(soe(endIdx,4))
+                        % merge - copy next position of other track
+                        % cpIdx: indices to copy
+                        cpIdx = (soe(endIdx,1)+1)*3;
+                        cpIdx = cpIdx-2:cpIdx;
+                        % splitTrackIdx: track from which to copy
+                        splitTrackIdx = soe(endIdx,4);
+                        pos(s,cpIdx) = pos(splitTrackIdx,cpIdx);
+                    end
+                    
+                    % calculate displacement
+                    segPos = reshape(pos(s,:),3,[])';
+                    segPos = diff(segPos,[],1); % displacementVectors
+                    
+                    % write into displacements
+                    displacement(s,:) = [normList(segPos);NaN]';
+                    
+                end % loop segments
+                
+                % plot
+                    plotCompTrackCore(axHandles(iFigure,iTrack),displacement,soe);
+                        
+            otherwise
+                idx = tracksFinal(iTrack).tracksFeatIndxCG;
+                data = NaN(size(idx));
+                for timeIdx = 1:size(idx,2)
+                    goodIdx = idx(:,timeIdx) > 0;
+                    data(goodIdx,timeIdx) = ...
+                        moreData(timeIdx + soe(1) - 1).(nameList{iFigure})(idx(goodIdx,timeIdx));
+                end
+                plotCompTrackCore(axHandles(iFigure,iTrack),data,soe);
+        end
+    end
+end
+
+% set correct limits
+for f = 1:nFigures
+    % xlim : global min/max
+    xlimc = get(axHandles(f,:),'xlim');
+    xlimAll = cat(1,xlimc{:});
+    xmin = min(xlimAll(:,1));
+    xmax = max(xlimAll(:,2));
+set(axHandles(f,:),'xlim',[xmin,xmax]);
+% ylim : global min/max
+ylimc = get(axHandles(f,:),'ylim');
+    ylimAll = cat(1,ylimc{:});
+    ymin = min(ylimAll(:,1));
+    ymax = max(ylimAll(:,2));
+set(axHandles(f,:),'ylim',[ymin,ymax]);
+end
+if nargout > 0
+    out = trackStats;
+end
+
+
+%% subfcn plotCompTrackCore
+% from KJ's plotCompTrack.m
+
+function plotCompTrackCore(ah,valuesMatrix,seqOfEvents)
+% ah : axes handle
+% values matrix: nSegments-by-nPoints array of values to be plotted
+% seqOfEvents : track.seqOfEvents
+
+% samplingFreq: leftover from Khuloud's code
+samplingFreq = 1;
+
+%get first frame, last frame and number of frames
+firstFrame = seqOfEvents(1,1);
+lastFrame = seqOfEvents(end,1);
+
+%get number of segments making compound track
+numSegments = size(valuesMatrix,1);
+
+%plot values as dotted black lines, closing gaps
+for i = 1 : numSegments
+    indx = find(~isnan(valuesMatrix(i,:)));
+    plot(ah,(indx-1)*samplingFreq+firstFrame,valuesMatrix(i,indx),'k:');
+end
+
+%plot values in color, leaving gaps as blank (so that they appear as
+%dotted lines in the final figure)
+plot(ah,(firstFrame:samplingFreq:lastFrame)',valuesMatrix','marker','.');
+
+%find merges and splits
+indxSplit = (find(seqOfEvents(:,2) == 1 & ~isnan(seqOfEvents(:,4))))';
+indxMerge = (find(seqOfEvents(:,2) == 2 & ~isnan(seqOfEvents(:,4))))';
+
+%go over all splits
+for iSplit = indxSplit
+
+    %get time of splitting
+    timeSplit = seqOfEvents(iSplit,1);
+
+    %determine location in valuesMatrix
+    splitLoc = (timeSplit - firstFrame) / samplingFreq + 1;
+
+    %determine index of starting track
+    rowS = seqOfEvents(iSplit,3);
+
+    %determine index of splitting track
+    rowSp = seqOfEvents(iSplit,4);
+
+    %plot split as a black dash-dotted line
+    plot(ah,[timeSplit-samplingFreq timeSplit],[valuesMatrix(rowSp,splitLoc-1) ...
+        valuesMatrix(rowS,splitLoc)],'k-.')
+
+end
+
+%go over all merges
+for iMerge = indxMerge
+
+    %get time of merging
+    timeMerge = seqOfEvents(iMerge,1);
+
+    %determine location in valuesMatrix
+    mergeLoc = (timeMerge - firstFrame) / samplingFreq + 1;
+
+    %determine index of ending track
+    rowE = seqOfEvents(iMerge,3);
+
+    %determine index of merging track
+    rowM = seqOfEvents(iMerge,4);
+
+    %plot merge as a black dashed line
+    plot(ah,[timeMerge-samplingFreq timeMerge],[valuesMatrix(rowE,mergeLoc-1) ...
+        valuesMatrix(rowM,mergeLoc)],'k--')
+
+end
+end
+        end
         %% Get Method rawMovieInfo
         function out = get.rawMovieInfo(obj)
             % return movieInfo unless correctCoords has written

@@ -7,7 +7,7 @@ function dcmObj = plotTracksAddDataCursor(figureHandle,tracksFinal,plotOpt,flipX
 %		tracksFinal: tracksFinal structure (output of tracksCloseGapsKalman.m)
 %		plotOpt: (opt) what to plot. Default: 1
 %           1: basic list (+ moreData if nonempty)
-%           2: basic list + distances to other points (+ moreData if nonempty)
+%     --TBD 2: basic list + distances to other points (+ moreData if nonempty)
 %		flipXY: (opt) true if x and y are flipped. Default: false
 %		moreData: (opt) structure of length nTimepoints with any fields of
 %                 length nFeatures(t). The content of the structure will be
@@ -31,10 +31,14 @@ end
 
 if nargin < 3 || isempty(plotOpt)
     plotOpt = 1;
+elseif ~isscalar(plotOpt)
+    error('plotOpt needs to be a numeric scalar')
 end
 
 if nargin < 4 || isempty(flipXY)
     flipXY = false;
+elseif ~isscalar(flipXY)
+    error('flipXY needs to be a numeric scalar')
 end
 
 if nargin < 5 || isempty(moreData)
@@ -116,7 +120,7 @@ end
 %% nested functions
     function txt = basicText
         txt = {sprintf('X/Y/Z/T : %6.2f/%6.2f/%6.2f/%i',coords,timePoint);...
-            sprintf('Tr/Seg/SSt/SE/idx : %i/%i/%i/%i/%i/%i',iTrack,segment,segStart,segEnd,featIdx);...
+            sprintf('Tr/Seg/SSt/SE/idx : %i/%i/%i/%i/%i',iTrack,segment,segStart,segEnd,featIdx);...
             sprintf('amp : %6.2f',amp);...
             };
     end
