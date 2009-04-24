@@ -90,9 +90,9 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %               * Type 2: Linear + 1D normal diffusion: Red.
 %               * Type 3: Linear + 1D super diffusion: Green.
 %               * Type 4: Linear + too short for 1D classification: Yellow.
-%               * Type 5: Random + 2D confined diffusion: Blue.
-%               * Type 6: Random + 2D normal diffusion: Cyan.
-%               * Type 7: Random + 2D super diffusion: Magenta.
+%               * Type 5: Random/Unclassified + 2D confined diffusion: Blue.
+%               * Type 6: Random/Unclassified + 2D normal diffusion: Cyan.
+%               * Type 7: Random/Unclassified + 2D super diffusion: Magenta.
 %               * Type 8: Random + too short for 2D classification: Purple.
 %               * Type 0: Too short for any analysis: Light pink.
 %
