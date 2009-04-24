@@ -4,6 +4,9 @@ gapCloseParam.timeWindow = 15; %maximum allowed time gap (in frames) between a t
 gapCloseParam.mergeSplit = 0; %1 if merging and splitting are to be considered, 2 if only merging is to be considered, 3 if only splitting is to be considered, 0 if no merging or splitting are to be considered.
 gapCloseParam.minTrackLen = 1; %minimum length of track segments from linking to be used in gap closing.
 
+%optional input:
+gapCloseParam.diagnostics = 1; %1 to plot a histogram of gap lengths in the end; 0 or empty otherwise.
+
 %% cost matrix for frame-to-frame linking
 
 %function name
@@ -22,6 +25,9 @@ parameters.nnWindow = gapCloseParam.timeWindow; %number of frames before the cur
 % parameters.nnWindow = 10; %number of frames before the current one where you want to look to see a feature's nearest neighbor in order to decide how isolated it is (in the initial linking step).
 
 parameters.kalmanInitParam = []; %Kalman filter initialization parameters.
+
+%optional input
+parameters.diagnostics = [2 80]; %if you want to plot the histogram of linking distances up to certain frames, indicate their numbers; 0 or empty otherwise. Does not work for the first or last frame of a movie.
 
 costMatrices(1).parameters = parameters;
 clear parameters

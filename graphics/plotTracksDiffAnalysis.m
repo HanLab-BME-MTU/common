@@ -57,13 +57,15 @@ function plotTracksDiffAnalysis(trackedFeatureInfo,diffAnalysisRes,timeRange,...
 %
 %OUTPUT The plot.
 %       Color coding:
+%       linear & 1D confined diffusion -> orange
 %       linear & 1D normal diffusion -> red
 %       linear & 1D super diffusion -> green
 %       linear & too short to analyze 1D diffusion -> yellow
-%       not linear & 2D confined diffusion -> blue
-%       not linear & 2D normal diffusion -> cyan
-%       not linear & 2D super diffusion -> magenta
-%       not linear & too short to analyze 2D diffusion -> black
+%       random/unclassified & 2D confined diffusion -> blue
+%       random/unclassified & 2D normal diffusion -> cyan
+%       random/unclassified & 2D super diffusion -> magenta
+%       random & too short to analyze 2D diffusion -> purple
+%       too short for any analysis -> black
 %
 %Khuloud Jaqaman, March 2008
 
@@ -216,20 +218,32 @@ numTrackSegments = size(tracksX,2);
 trackSegmentType = vertcat(diffAnalysisRes.classification);
 
 %color coding:
-%linear & 1D normal diffusion -> red
-%linear & 1D super diffusion -> green
-%linear & too short to analyze 1D diffusion -> yellow
-%not linear & 2D confined diffusion -> blue
-%not linear & 2D normal diffusion -> cyan
-%not linear & 2D super diffusion -> magenta
-%not linear & too short to analyze 2D diffusion -> black
-trackSegmentColor = repmat('k',numTrackSegments,1);
-trackSegmentColor(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 2) = 'r';
-trackSegmentColor(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 3) = 'g';
-trackSegmentColor(trackSegmentType(:,1) == 1 & isnan(trackSegmentType(:,3))) = 'y';
-trackSegmentColor(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 1) = 'b';
-trackSegmentColor(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 2) = 'c';
-trackSegmentColor(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 3) ='m';
+%       linear & 1D confined diffusion -> orange
+%       linear & 1D normal diffusion -> red
+%       linear & 1D super diffusion -> green
+%       linear & too short to analyze 1D diffusion -> yellow
+%       random/unclassified & 2D confined diffusion -> blue
+%       random/unclassified & 2D normal diffusion -> cyan
+%       random/unclassified & 2D super diffusion -> magenta
+%       random & too short to analyze 2D diffusion -> purple
+%       too short for any analysis -> black
+trackSegmentColor = repmat([0 0 0],numTrackSegments,1);
+indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 1);
+trackSegmentColor(indx,:) = repmat([1 0.7 0],length(indx),1);
+indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 2);
+trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
+indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 3);
+trackSegmentColor(indx,:) = repmat([0 1 0],length(indx),1);
+indx = find(trackSegmentType(:,1) == 1 & isnan(trackSegmentType(:,3)));
+trackSegmentColor(indx,:) = repmat([1 1 0],length(indx),1);
+indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 1);
+trackSegmentColor(indx,:) = repmat([0 0 1],length(indx),1);
+indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 2);
+trackSegmentColor(indx,:) = repmat([0 1 1],length(indx),1);
+indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 3);
+trackSegmentColor(indx,:) = repmat([1 0 1],length(indx),1);
+indx = find(trackSegmentType(:,1) == 0 & isnan(trackSegmentType(:,2)));
+trackSegmentColor(indx,:) = repmat([0.6 0 1],length(indx),1);
 
 %% confinement radius information
 
@@ -281,7 +295,7 @@ tracksYP = tracksY(timeRange(1):timeRange(2),:);
 for i = 1 : numTrackSegments
     obsAvail = find(~isnan(tracksXP(:,i)));
     plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
-    plot(tracksXP(:,i),tracksYP(:,i),trackSegmentColor(i));
+    plot(tracksXP(:,i),tracksYP(:,i),'Color',trackSegmentColor(i,:));
 end
 
 %show merges and splits

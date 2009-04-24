@@ -1,7 +1,7 @@
 function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
     saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,...
-    imageRange,onlyTracks)
-%Overlays tracks obtained via trackCloseGapsKalman on movies
+    imageRange,onlyTracks,classifyLft,diffAnalysisRes)
+%OVERLAYTRACKSMOVIENEW Overlays tracks obtained via trackCloseGapsKalman on movies with variable color-coding
 %
 %SYNPOSIS overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %    saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,...
@@ -13,11 +13,15 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %                       Optional. Default: [(first frame with tracks) (last frame with tracks)]            
 %       dragtailLength: Length of drag tail (in frames). 
 %                       Optional. Default: 10 frames.
-%                       If dragtailLength = 0, then no dragtail. 
-%                       To show tracks from their beginning to their end,
+%                       ** If dragtailLength = 0, then no dragtail. 
+%                       ** To show tracks from their beginning to their end,
 %                       set dragtailLength to any value longer than the
-%                       movie. To show tracks statitically while features
-%                       dance on them, use -1.
+%                       movie. 
+%                       ** To show tracks statically while features dance
+%                       on them, use -1.
+%                       ** To show tracks from their beginning to their
+%                       end, and to retain tracks even after the particle
+%                       disappears, use -2.
 %       saveMovie     : 1 to save movie (as Quicktime), 0 otherwise.
 %                       Optional. Default: 0.
 %       movieName     : filename for saving movie. 
@@ -42,9 +46,55 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %                       detections, closed gaps, merges and splits; 0 to
 %                       show symbols on top of tracks.
 %                       Optional. Default: 0.
+%       classifyLft   : 1 to classify objects based on (1) whether they
+%                       exist throughout the whole movie, (2) whether they
+%                       appear OR disappear, and (3) whether they appear
+%                       AND disappear; 0 otherwise. 
+%                       Optional. Default: 1.
+%       diffAnalysisRes: Diffusion analysis results (output of
+%                       trackDiffusionAnalysis1). Needed if tracks are to be
+%                       colored based on their diffusion classification.
+%                       With this option, classifyGaps, highlightES and
+%                       classifyLft are set to zero, regardless of input.
+%                       Optional. Default: None.
 %
 %OUTPUT If movie is to be saved, the QT movie is written into directory
 %       where TIFFs are located
+%
+%REMARKS Color-coding:
+%        ** Without diffusion classification, all tracks have a neutral
+%        color, while objects are color coded in the following way:
+%               * Detected object just after appearance: Green circle.
+%               * Detected object just before disappearance: Yellow
+%                 circle.
+%               * Detected object in middle of trajectory that spans
+%                 whole movie: White circle.
+%               * Detected object in middle of trajectory that appears OR
+%                 disappears within movie: Magenta circle.
+%               * Detected object in middle of trajectory that appears AND
+%                 disappears within movie: Red circle.
+%               * Gap that is short than both segments it connects: Cyan
+%                 star.
+%               * Gap that is longer than at least one ofthe segments it
+%                 connects: Blue star.
+%               * Object before and after splitting: Green diamond.
+%               * OBject before and after merging: Yellow diamond.
+%           When classifyGaps = 0, all gaps are cyan.
+%           When highlighES = 0, no green and yellow circles.
+%           When classifyLft = 0, all objets in middle of trajectory are white.
+%
+%       ** With diffusion classification, all objects and gaps have neutral
+%       color (merges and splits are diamonds), while tracks are
+%       color coded in the following way:
+%               * Type 1: Linear + 1D confined diffusion: Orange.
+%               * Type 2: Linear + 1D normal diffusion: Red.
+%               * Type 3: Linear + 1D super diffusion: Green.
+%               * Type 4: Linear + too short for 1D classification: Yellow.
+%               * Type 5: Random + 2D confined diffusion: Blue.
+%               * Type 6: Random + 2D normal diffusion: Cyan.
+%               * Type 7: Random + 2D super diffusion: Magenta.
+%               * Type 8: Random + too short for 2D classification: Purple.
+%               * Type 0: Too short for any analysis: Light pink.
 %
 %Khuloud Jaqaman, August 2007
 
@@ -154,6 +204,20 @@ if nargin < 11 || isempty(onlyTracks)
     onlyTracks = 0;
 end
 
+%check whether to classify lifetime
+if nargin < 12 || isempty(classifyLft)
+    classifyLft = 1;
+end
+
+%check whether to color-code tracks based on diffusion classification
+if nargin < 13 || isempty(diffAnalysisRes)
+    diffAnalysisRes = [];
+else
+    classifyGaps = 0;
+    highlightES = 0;
+    classifyLft = 0;
+end
+
 %filter images if requested
 if filterSigma
     for i = 1 : length(outFileList)
@@ -179,7 +243,13 @@ trackSEL = getTrackSEL(tracksFinal);
 %2: track exists throughout movie
 %1: track exists either in first frame or in last frame
 %0: track does not exist in both first frame and last frame
-trackStatus  = (trackSEL(:,1) == tracksFirstFrame) + (trackSEL(:,2) == tracksLastFrame); 
+trackStatus  = (trackSEL(:,1) == tracksFirstFrame) + (trackSEL(:,2) == tracksLastFrame);
+
+%give all tracks same classification if lifetime classification not
+%requested
+if classifyLft == 0
+    trackStatus(:) = 2;
+end
 
 %get number of segments making each track
 numSegments = zeros(numTracks,1);
@@ -187,7 +257,7 @@ for i = 1 : numTracks
     numSegments(i) = size(tracksFinal(i).tracksCoordAmpCG,1);
 end
 
-%locate the row of the first track of each compound track in the
+%locate the row of the first segment of each compound track in the
 %big matrices of all tracks (to be constructed in the next step)
 trackStartRow = ones(numTracks,1);
 for iTrack = 2 : numTracks
@@ -293,7 +363,7 @@ for iTrack = 1 : numTracks
             +seqOfEvents(iPoint,4)-1,seqOfEvents(iPoint,1));
     end
     
-end
+end %(for iTrack = 1 : numTracks)
 
 %find gaps in tracks
 gapInfo = findTrackGaps(tracksFinal);
@@ -329,6 +399,30 @@ end
 %retain in the big matrices only the frames of interest
 xCoordMatAll = xCoordMatAll(:,startend(1):startend(2));
 yCoordMatAll = yCoordMatAll(:,startend(1):startend(2));
+
+%% get track classification based on diffusion analysis
+
+%assign default classification as 0, which means undetermined, and which is
+%the only classification when there are no diffusion analysis results
+trackClass = zeros(numSegmentsTracks,1);
+
+%if there are diffusion analysis results ...
+if ~isempty(diffAnalysisRes)
+
+    %get track segment types from diffusion analysis
+    trackSegmentType = vertcat(diffAnalysisRes.classification);
+
+    %assign classes
+    trackClass(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 1) = 1; %linear + 1D confined (orange)
+    trackClass(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 2) = 2; %linear + 1D normal (red)
+    trackClass(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 3) = 3; %linear + 1D super (green)
+    trackClass(trackSegmentType(:,1) == 1 & isnan(trackSegmentType(:,3))) = 4; %linear + too short (yellow)
+    trackClass(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 1) = 5; %random/unclassified + 2D confined (blue)
+    trackClass(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 2) = 6; %random/unclassified + 2D normal (cyan)
+    trackClass(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 3) = 7; %random/unclassified + 2D super (magenta)
+    trackClass(trackSegmentType(:,1) == 0 & isnan(trackSegmentType(:,2))) = 8; %random + too short (purple)    
+    
+end
 
 %% make movie
 
@@ -380,19 +474,58 @@ for iFrame = 1 : size(xCoordMatAll,2)
                 textDeltaCoord,num2str(iFrame),'Color','white');
     end
 
-    %plot tracks
+    %get tracks to plot
+    plotOrNot = 0;
     if dragtailLength >= 0 %plot tracks dynamically
+        
         if iFrame > 1
             dragTailStart = max(iFrame-dragtailLength,1);
-            xCoord2plot = (xCoordMatAll(pointStatus(:,iFrame)~=0,dragTailStart:iFrame))';
-            yCoord2plot = (yCoordMatAll(pointStatus(:,iFrame)~=0,dragTailStart:iFrame))';
-            plot(xCoord2plot,yCoord2plot,'Color',[1 0.7 0.7],'LineWidth',2);
+            indx2keep = find(pointStatus(:,iFrame)~=0);
+            xCoord2plot = (xCoordMatAll(indx2keep,dragTailStart:iFrame))';
+            yCoord2plot = (yCoordMatAll(indx2keep,dragTailStart:iFrame))';
+            trackClass2plot = trackClass(indx2keep);
+            plotOrNot = 1;
         end
-    else %plot tracks statically
+        
+    elseif dragtailLength == -1 %plot tracks statically
+        
         xCoord2plot = (xCoordMatAll)';
         yCoord2plot = (yCoordMatAll)';
-        plot(xCoord2plot,yCoord2plot,'Color',[1 0.7 0.7],'LineWidth',1);
+        trackClass2plot = trackClass;
+        plotOrNot = 1;
+        
+    elseif dragtailLength == -2 %plot tracks dynamically but keep them after they disappear
+        
+        if iFrame > 1
+            xCoord2plot = xCoordMatAll(:,1:iFrame)';
+            yCoord2plot = yCoordMatAll(:,1:iFrame)';
+            trackClass2plot = trackClass;
+            plotOrNot = 1;
+        end
+        
+    end
 
+    %plot tracks
+    %color-code dragtail based on diffusion analysis if supplied
+    if plotOrNot
+        plot(xCoord2plot(:,trackClass2plot==0),yCoord2plot(:,trackClass2plot==0),...
+            'Color',[1 0.7 0.7],'LineWidth',2); %light pink
+        plot(xCoord2plot(:,trackClass2plot==1),yCoord2plot(:,trackClass2plot==1),...
+            'Color',[1 0.7 0],'LineWidth',2); %orange
+        plot(xCoord2plot(:,trackClass2plot==2),yCoord2plot(:,trackClass2plot==2),...
+            'Color','r','LineWidth',2); %[1 0 0]
+        plot(xCoord2plot(:,trackClass2plot==3),yCoord2plot(:,trackClass2plot==3),...
+            'Color','g','LineWidth',2); %[0 1 0]
+        plot(xCoord2plot(:,trackClass2plot==4),yCoord2plot(:,trackClass2plot==4),...
+            'Color','y','LineWidth',2); %[1 1 0]
+        plot(xCoord2plot(:,trackClass2plot==5),yCoord2plot(:,trackClass2plot==5),...
+            'Color','b','LineWidth',2); %[0 0 1]
+        plot(xCoord2plot(:,trackClass2plot==6),yCoord2plot(:,trackClass2plot==6),...
+            'Color','c','LineWidth',2); %[0 1 1]
+        plot(xCoord2plot(:,trackClass2plot==7),yCoord2plot(:,trackClass2plot==7),...
+            'Color','m','LineWidth',2); %[1 0 1]
+        plot(xCoord2plot(:,trackClass2plot==8),yCoord2plot(:,trackClass2plot==8),...
+            'Color',[0.6 0 1],'LineWidth',2); %purple
     end
 
     %plot points (features + gaps + merges + splits)
@@ -404,7 +537,11 @@ for iFrame = 1 : size(xCoordMatAll,2)
 
         %cyan stars: good gaps
         points2plot = find(pointStatus(:,iFrame)==-1);
-        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'c*','MarkerSize',6);
+        if isempty(diffAnalysisRes)
+            plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'c*','MarkerSize',6);
+        else
+            plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'w*','MarkerSize',6);
+        end
 
         %red circles: detected feature in the middle of track with status 0
         points2plot = find(pointStatus(:,iFrame)==1);
@@ -428,12 +565,20 @@ for iFrame = 1 : size(xCoordMatAll,2)
 
         %green diamonds: detected feature just before/after a split
         points2plot = find(pointStatus(:,iFrame)==6);
-        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'gd','MarkerSize',6);
+        if isempty(diffAnalysisRes)
+            plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'gd','MarkerSize',6);
+        else
+            plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wd','MarkerSize',6);
+        end
 
         %yellow diamonds: detected feature just before/after a merge
         points2plot = find(pointStatus(:,iFrame)==7);
-        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yd','MarkerSize',6);
-        
+        if isempty(diffAnalysisRes)
+            plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yd','MarkerSize',6);
+        else
+            plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wd','MarkerSize',6);
+        end
+            
     end
 
     %add frame to movie if movie is saved
@@ -444,7 +589,7 @@ for iFrame = 1 : size(xCoordMatAll,2)
     %pause for a moment to see frame
     pause(0.1);
 
-end
+end %(for iFrame = 1 : size(xCoordMatAll,2))
 
 %finish movie
 if saveMovie==1

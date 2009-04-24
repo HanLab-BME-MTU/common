@@ -45,6 +45,9 @@ function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalman(...
 %                             and 0 if merging and splitting are not allowed.
 %             .minTrackLen  : Minimum length of tracks obtained from
 %                             linking to be used in gap closing.
+%             .diagnostics  : Logical variable with value 1 to plot a
+%                             histogram of gap lengths; 0 otherwise.
+%                             Optional. Default: 0.
 %       kalmanFunctions: Names of Kalman filter functions for self-adaptive
 %                        tracking. Structure with fields:
 %             .reserveMem   : Reserves memory for kalmanFilterInfo.
@@ -793,6 +796,33 @@ end
 if isstruct(saveResults)
     save([saveResDir filesep saveResFile],'costMatrices','gapCloseParam',...
         'kalmanFunctions','tracksFinal','kalmanInfoLink');
+end
+
+%% Gap closing diagnostics
+
+%check whether to perform diagnostics
+if isfield(gapCloseParam,'diagnostics')
+    diagnostics = gapCloseParam.diagnostics;
+else
+    diagnostics = 0;
+end
+
+%if diagnostics are requested
+if ~isempty(diagnostics) && diagnostics == 1
+
+    %extract gap information from tracks
+    gapInfo = findTrackGaps(tracksFinal);
+
+    %plot the histogram of gap lengths if there are gaps
+    if ~isempty(gapInfo)
+        figure('Name','Gap length histogram','NumberTitle','off');
+        hist(gapInfo(:,4),(1:max(gapInfo(:,4))));
+        xlabel('Gap length');
+        ylabel('Counts');
+    else
+        disp('No gaps to plot');
+    end
+
 end
 
 

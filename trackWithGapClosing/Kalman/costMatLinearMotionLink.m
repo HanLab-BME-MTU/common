@@ -40,6 +40,12 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %                                   local density in search radius estimation.
 %             .nnWindow           : Number of past frames for calculating
 %                                   nearest neighbor distance.
+%             .diagnostics        : Row vector indicating frames at which
+%                                   histogram of linking distances (from 
+%                                   the beginning till that frame) are to
+%                                   be plotted. Does not work for 1st or
+%                                   last frame of a movie.
+%                                   Optional. Default: None.
 %      nnDistFeatures         : Matrix of nearest neighbor distances of 
 %                               features in first frame as well as of 
 %                               features in previous frames that they are
@@ -102,6 +108,11 @@ if isfield('costMatParam','lftCdf')
     lftCdf = costMatParam.lftCdf;
 else
     lftCdf = [];
+end
+if isfield(costMatParam,'diagnostics')
+    diagnostics = costMatParam.diagnostics;
+else
+    diagnostics = 0;
 end
 
 %calculate nearest neighbor distance given feature history
@@ -281,6 +292,30 @@ nonlinkMarker = min(floor(min(min(costMat)))-5,-5);
 
 %replace NaN, indicating pairs that cannot be linked, with nonlinkMarker
 costMat(isnan(costMat)) = nonlinkMarker;
+
+%% Histogram of linking distances
+
+%get current frame
+currentFrame = size(prevCost,2);
+
+%check whether current frame matches any of the diagnostics frames
+if currentFrame ~= 1 && any(diagnostics == currentFrame)
+
+    %get linking distances
+    prevCostNoCol1 = prevCost(:,2:end);
+    linkingDistances = sqrt(prevCostNoCol1(~isnan(prevCostNoCol1)));
+    
+    %plot histogram
+    figure('Name',['frame # ' num2str(currentFrame)],'NumberTitle','off');
+    try
+        histogram(linkingDistances,[],0);
+        xlabel('Linking distance');
+        ylabel('Counts');
+    catch
+        disp('histogram plot failed');
+    end
+
+end
 
 
 %% ~~~ the end ~~~
