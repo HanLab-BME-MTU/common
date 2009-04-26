@@ -276,7 +276,7 @@ classdef trackObj<handle
                 
                 % read plotOptions individually for each object
                 if nargin < 2 || isempty(plotOpt)
-                    plotOptions = obj(iObj).plotOptions;
+                    plotOptions = obj(iObj).plotOptions; %#ok<*PROP>
                 else
                     plotOptions = obj(iObj).plotOptions;
                     % overwrite plotOptions
@@ -599,218 +599,353 @@ classdef trackObj<handle
             
         end
         %% INSPECTTRACKS
-        function out = inspectTracks(obj,moreData)
-%INSPECTTRACKS plots some hopefully useful data about tracks. 
-% moreData: struct with length nTimepoints and fields with an entry for every feature
-%
-% plots: For every stat make a plot with all tracks in subplots
-
-% get tracksFinal
-tracksFinal = obj.tracksFinal;
-% get number of tracks
-nTracks = length(tracksFinal);
-
-% init output. TrackStats is
-% 1 - overall length (time)
-% 2 - nSegments
-% 3 - nSplits
-% 4 - nMerges
-% 
-trackStats = zeros(nTracks,4);
-
-% find moreData - names
-if nargin < 2 || isempty(moreData)
-    nNames = 0;
-    fn = {};
-else
-    fn = fieldnames(moreData);
-    nNames = length(fn);
-end
-
-%% create figures
-nBase = 2; % one figure for amp, one figure for displacement
-nFigures = nBase + nNames;
-figureHandles = zeros(nFigures,1);
-axHandles = zeros(nFigures,nTracks);
-
-nameList = [{'amp';'displacement'};fn];
-
-% loop through the tracks and names and create subplot-axes that are hold
-% on already
-nRows = floor(sqrt(nTracks));
-nCols = ceil(nTracks/nRows);
-for f = 1:nFigures
-    figureHandles(f) = figure('Name',nameList{f});
-    for iTrack = 1:nTracks
-        axHandles(f,iTrack) = subplot(nRows,nCols,iTrack,'NextPlot','add');
-    end
-    allowaxestogrow(figureHandles(f));
-end
-
-%% read and plot data
-
-for iTrack = 1:nTracks
-    % find number of segments
-    nSegments = size(tracksFinal(iTrack).tracksFeatIndxCG,1);
-    soe = tracksFinal(iTrack).seqOfEvents;
-    
-    for iFigure = 1:nFigures
-        switch nameList{iFigure}
-            case 'amp'
-                data = tracksFinal(iTrack).tracksCoordAmpCG(:,4:8:end);
-                plotCompTrackCore(axHandles(iFigure,iTrack),data,soe);
-            case 'displacement'
-                % read positions, copy start/end position for s/m and
-                % calculate displacement
-                [nSeg,n8] = size(tracksFinal(iTrack).tracksCoordAmpCG);
-                posIdx = sort([1:8:n8,2:8:n8,3:8:n8]);
-                pos = tracksFinal(iTrack).tracksCoordAmpCG(:,posIdx);
-                
-                % loop through segments and calculate displacement
-                displacement = NaN(nSeg,n8/8);
-                
-                for s = 1:nSeg
-                    % check for merge/split
-                    startIdx = soe(:,2)==1 & soe(:,3)==s;
-                    endIdx = soe(:,2)==2 & soe(:,3)==s;
-                    if ~isnan(soe(startIdx,4))
-                        % split - copy last position of other track
-                        % cpIdx: indices to copy
-                        cpIdx = (soe(startIdx,1)-1)*3;
-                        cpIdx = cpIdx-2:cpIdx;
-                        % splitTrackIdx: track from which to copy
-                        splitTrackIdx = soe(startIdx,4);
-                        pos(s,cpIdx) = pos(splitTrackIdx,cpIdx);
-                    end
-                    if ~isnan(soe(endIdx,4))
-                        % merge - copy next position of other track
-                        % cpIdx: indices to copy
-                        cpIdx = (soe(endIdx,1)+1)*3;
-                        cpIdx = cpIdx-2:cpIdx;
-                        % splitTrackIdx: track from which to copy
-                        splitTrackIdx = soe(endIdx,4);
-                        pos(s,cpIdx) = pos(splitTrackIdx,cpIdx);
-                    end
-                    
-                    % calculate displacement
-                    segPos = reshape(pos(s,:),3,[])';
-                    segPos = diff(segPos,[],1); % displacementVectors
-                    
-                    % write into displacements
-                    displacement(s,:) = [normList(segPos);NaN]';
-                    
-                end % loop segments
-                
-                % plot
-                    plotCompTrackCore(axHandles(iFigure,iTrack),displacement,soe);
-                        
-            otherwise
-                idx = tracksFinal(iTrack).tracksFeatIndxCG;
-                data = NaN(size(idx));
-                for timeIdx = 1:size(idx,2)
-                    goodIdx = idx(:,timeIdx) > 0;
-                    data(goodIdx,timeIdx) = ...
-                        moreData(timeIdx + soe(1) - 1).(nameList{iFigure})(idx(goodIdx,timeIdx));
+        function [out,figureHandles,axHandles] = inspectTracks(obj,moreData,verbose)
+            %INSPECTTRACKS plots some hopefully useful data about tracks.
+            % moreData: struct with length nTimepoints and fields with an entry for every feature
+            % verbose : (opt) 0: no figures shown, stats calculated. 
+            %           1: figures shown, stats calculated if requested. 
+            %           2: figures shown, no stats calculated.
+            %           Default: 0 if output is requested, 2 if no output
+            %           is requested; 
+            %
+            %
+            % plots: For every stat make a plot with all tracks in subplots
+            
+            
+            % check for output
+            if nargout > 0
+                out = [];
+                calcStats = true;
+            else
+                calcStats = false;
+            end
+            
+            % check verbosity
+            if nargin < 3 || isempty(verbose)
+                verbose = 1-calcStats;
+            end
+            
+            % update calcStats if necessary
+            if verbose == 2
+                calcStats = false;
+            end
+            
+            
+            % get tracksFinal
+            tracksFinal = obj.tracksFinal;
+            % get number of tracks
+            nTracks = length(tracksFinal);
+            
+           
+            
+            % find moreData - names
+            if nargin < 2 || isempty(moreData)
+                nNames = 0;
+                fn = {};
+            else
+                fn = fieldnames(moreData);
+                nNames = length(fn);
+            end
+            
+            %% create figures
+            nBase = 2; % one figure for amp, one figure for displacement
+            nFigures = nBase + nNames;
+            figureHandles = zeros(nFigures,1);
+            axHandles = zeros(nFigures,nTracks);
+            
+            nameList = [{'amp';'displacement'};fn];
+            
+             % init output. TrackStats is a struct of length nTracks with
+            % fields
+            % displacement, amp, fieldnames(moreData) 
+            % nSegments, soe (=seqOfEvents)
+            % offset : timepoint for timeIdx 0 (i.e. the first entry of a
+            %   track (timeIdx=1) may be at timepoint other than 1)
+            % mergeSplitGapIdx: nSegments-by-3 cell array.
+            %   merge/split is [tms;otherSegment], gap is [tstart,tend]
+            % info : nSegments-by-6 array with
+            %   start, end, nMerges, nSplits, nGaps, nDataPoints
+            %   nDataPoints is end-start+1-totalGapLength
+            %
+            % NOTE both amp and displacement calculations are filling some
+            % of the statistics. 
+            if calcStats
+            nameListTS = [nameList,cell(size(nameList));{'nSegments',[];'soe',[];...
+                'offset',[];'mergeSplitGapIdx',[];'info',[]}]';
+            trackStats(1:nTracks,1) = struct(nameListTS{:});
+            end
+            
+            % loop through the tracks and names and create subplot-axes that are hold
+            % on already
+            nRows = floor(sqrt(nTracks));
+            nCols = ceil(nTracks/nRows);
+            if verbose
+            for f = 1:nFigures
+                figureHandles(f) = figure('Name',nameList{f});
+                for iTrack = 1:nTracks
+                    axHandles(f,iTrack) = subplot(nRows,nCols,iTrack,'NextPlot','add');
                 end
-                plotCompTrackCore(axHandles(iFigure,iTrack),data,soe);
-        end
-    end
-end
-
-% set correct limits
-for f = 1:nFigures
-    % xlim : global min/max
-    xlimc = get(axHandles(f,:),'xlim');
-    xlimAll = cat(1,xlimc{:});
-    xmin = min(xlimAll(:,1));
-    xmax = max(xlimAll(:,2));
-set(axHandles(f,:),'xlim',[xmin,xmax]);
-% ylim : global min/max
-ylimc = get(axHandles(f,:),'ylim');
-    ylimAll = cat(1,ylimc{:});
-    ymin = min(ylimAll(:,1));
-    ymax = max(ylimAll(:,2));
-set(axHandles(f,:),'ylim',[ymin,ymax]);
-end
-if nargout > 0
-    out = trackStats;
-end
-
-
-%% subfcn plotCompTrackCore
-% from KJ's plotCompTrack.m
-
-function plotCompTrackCore(ah,valuesMatrix,seqOfEvents)
-% ah : axes handle
-% values matrix: nSegments-by-nPoints array of values to be plotted
-% seqOfEvents : track.seqOfEvents
-
-% samplingFreq: leftover from Khuloud's code
-samplingFreq = 1;
-
-%get first frame, last frame and number of frames
-firstFrame = seqOfEvents(1,1);
-lastFrame = seqOfEvents(end,1);
-
-%get number of segments making compound track
-numSegments = size(valuesMatrix,1);
-
-%plot values as dotted black lines, closing gaps
-for i = 1 : numSegments
-    indx = find(~isnan(valuesMatrix(i,:)));
-    plot(ah,(indx-1)*samplingFreq+firstFrame,valuesMatrix(i,indx),'k:');
-end
-
-%plot values in color, leaving gaps as blank (so that they appear as
-%dotted lines in the final figure)
-plot(ah,(firstFrame:samplingFreq:lastFrame)',valuesMatrix','marker','.');
-
-%find merges and splits
-indxSplit = (find(seqOfEvents(:,2) == 1 & ~isnan(seqOfEvents(:,4))))';
-indxMerge = (find(seqOfEvents(:,2) == 2 & ~isnan(seqOfEvents(:,4))))';
-
-%go over all splits
-for iSplit = indxSplit
-
-    %get time of splitting
-    timeSplit = seqOfEvents(iSplit,1);
-
-    %determine location in valuesMatrix
-    splitLoc = (timeSplit - firstFrame) / samplingFreq + 1;
-
-    %determine index of starting track
-    rowS = seqOfEvents(iSplit,3);
-
-    %determine index of splitting track
-    rowSp = seqOfEvents(iSplit,4);
-
-    %plot split as a black dash-dotted line
-    plot(ah,[timeSplit-samplingFreq timeSplit],[valuesMatrix(rowSp,splitLoc-1) ...
-        valuesMatrix(rowS,splitLoc)],'k-.')
-
-end
-
-%go over all merges
-for iMerge = indxMerge
-
-    %get time of merging
-    timeMerge = seqOfEvents(iMerge,1);
-
-    %determine location in valuesMatrix
-    mergeLoc = (timeMerge - firstFrame) / samplingFreq + 1;
-
-    %determine index of ending track
-    rowE = seqOfEvents(iMerge,3);
-
-    %determine index of merging track
-    rowM = seqOfEvents(iMerge,4);
-
-    %plot merge as a black dashed line
-    plot(ah,[timeMerge-samplingFreq timeMerge],[valuesMatrix(rowE,mergeLoc-1) ...
-        valuesMatrix(rowM,mergeLoc)],'k--')
-
-end
-end
+                allowaxestogrow(figureHandles(f));
+            end
+            end
+            
+            %% read and plot data
+            
+            for iTrack = 1:nTracks
+                % find number of segments and fill other stats
+                nSegments = size(tracksFinal(iTrack).tracksFeatIndxCG,1);
+                
+                soe = tracksFinal(iTrack).seqOfEvents;
+                
+                if calcStats
+                trackStats(iTrack).nSegments = nSegments;
+                trackStats(iTrack).soe = soe;
+                trackStats(iTrack).offset = soe(1)-1;
+                
+                % find merge/split
+                trackStats(iTrack).mergeSplitGapIdx = cell(nSegments,3);
+                trackStats(iTrack).info = NaN(nSegments,6);
+                mergeIdx = find(soe(:,2) == 2 & ~isnan(soe(:,4)));
+                for mg = mergeIdx'
+                    % there is a merge for segment mg, and a merge for the
+                    % segment it points to. Keep KJ's definition of
+                    % merge-time
+                    trackStats(iTrack).mergeSplitGapIdx{soe(mg,3),1}(:,end+1) = [soe(mg,1);soe(mg,4)];
+                    trackStats(iTrack).mergeSplitGapIdx{soe(mg,4),1}(:,end+1) = [soe(mg,1);soe(mg,3)];
+                end
+                splitIdx = find(soe(:,2) == 1 & ~isnan(soe(:,4)));
+                for sp = splitIdx'
+                    % there is a split for segment sp, and a split for the
+                    % segment it points to. Keep KJ's definition of
+                    % split-time
+                    trackStats(iTrack).mergeSplitGapIdx{soe(sp,3),2}(:,end+1) = [soe(sp,1);soe(sp,4)];
+                    trackStats(iTrack).mergeSplitGapIdx{soe(sp,4),2}(:,end+1) = [soe(sp,1);soe(sp,3)];
+                end
+                
+                % fill number of m/s
+                trackStats(iTrack).info(:,3) = ...
+                    cellfun('size',trackStats(iTrack).mergeSplitGapIdx(:,1),2);
+                trackStats(iTrack).info(:,4) = ...
+                    cellfun('size',trackStats(iTrack).mergeSplitGapIdx(:,2),2);
+                end
+                
+                for iFigure = 1:nFigures
+                    switch nameList{iFigure}
+                        case 'amp'
+                            data = tracksFinal(iTrack).tracksCoordAmpCG(:,4:8:end);
+                            
+                            if verbose
+                            plotCompTrackCore(axHandles(iFigure,iTrack),data,soe);
+                            end
+                            
+                            % calculate additional statistics
+                            if calcStats
+                            trackStats(iTrack).amp = data;
+                            % find datapoints
+                            dataList = ~isnan(data);
+                            trackStats(iTrack).info(:,6) = sum(dataList,2);
+                            for iSeg = 1:nSegments
+                                % if we have data at 2,3,7,9, gapIdx is 1 
+                                % at [2,3], and diffIdx([2,3]) is [4,2]
+                                % starts are 4,8 (3,7 + 1), ends 6,8 (3,7 +
+                                % 4,2 - 1)
+                                dataIdx = find(dataList(iSeg,:))';
+                                diffIdx = diff(dataIdx);
+                                gapIdx = diffIdx > 1;
+                                if any(gapIdx)
+                                trackStats(iTrack).mergeSplitGapIdx{iSeg,3} =...
+                                    [dataIdx(gapIdx)+1;dataIdx(gapIdx)+diffIdx(gapIdx)-1];
+                                end
+                                
+                                trackStats(iTrack).info(iSeg,1) = dataIdx(1);
+                                trackStats(iTrack).info(iSeg,2) = dataIdx(end);
+                            end
+                            % count gaps
+                            trackStats(iTrack).info(:,5) = cellfun('size',...
+                                trackStats(iTrack).mergeSplitGapIdx(:,3),2);
+                            end
+                            
+                        case 'displacement'
+                            % read positions, copy start/end position for s/m and
+                            % calculate displacement
+                            [nSeg,n8] = size(tracksFinal(iTrack).tracksCoordAmpCG);
+                            posIdx = sort([1:8:n8,2:8:n8,3:8:n8]);
+                            pos = tracksFinal(iTrack).tracksCoordAmpCG(:,posIdx);
+                            
+                            % loop through segments and calculate displacement
+                            displacement = NaN(nSeg,n8/8);
+                            
+                            for s = 1:nSeg
+                                % check for merge/split
+                                startIdx = soe(:,2)==1 & soe(:,3)==s;
+                                endIdx = soe(:,2)==2 & soe(:,3)==s;
+                                if ~isnan(soe(startIdx,4))
+                                    % split - copy last position of other track
+                                    % do this only if there is another
+                                    % timepoint beforehand
+                                    
+                                    % splitTrackIdx: track from which to copy
+                                    splitTrackIdx = soe(startIdx,4);
+                                    otherStart = soe(soe(:,3)==splitTrackIdx & soe(:,2) == 1);
+                                    
+                                    if soe(startIdx,1) > otherStart
+                                    % cpIdx: indices to copy
+                                    cpIdx = (soe(startIdx,1)-1)*3 - (soe(1)-1)*3;
+                                    cpIdx = cpIdx-2:cpIdx;
+                                    
+                                    pos(s,cpIdx) = pos(splitTrackIdx,cpIdx);
+                                    end
+                                end
+                                if ~isnan(soe(endIdx,4))
+                                    % merge - copy next position of other track
+                                    % do this only if there is another
+                                    % timepoint afterward
+                                    
+                                    % splitTrackIdx: track from which to copy
+                                    splitTrackIdx = soe(endIdx,4);
+                                    otherEnd = soe(soe(:,3)==splitTrackIdx & soe(:,2) == 2);
+                                    if soe(endIdx,1) < otherEnd
+                                    % cpIdx: indices to copy
+                                    cpIdx = (soe(endIdx,1)+1)*3 - (soe(1)-1)*3;
+                                    cpIdx = cpIdx-2:cpIdx;
+                                    
+                                    pos(s,cpIdx) = pos(splitTrackIdx,cpIdx);
+                                    end
+                                end
+                                
+                                % calculate displacement
+                                segPos = reshape(pos(s,:),3,[])';
+                                segPos = diff(segPos,[],1); %#ok<UDIM> % displacementVectors
+                                
+                                % write into displacements
+                                displacement(s,:) = [normList(segPos);NaN]';
+                                
+                            end % loop segments
+                            
+                            if calcStats
+                            trackStats(iTrack).displacement = displacement;
+                            end
+                            
+                            % plot
+                            if verbose
+                            plotCompTrackCore(axHandles(iFigure,iTrack),displacement,soe);
+                            end
+                            
+                        otherwise
+                            idx = tracksFinal(iTrack).tracksFeatIndxCG;
+                            data = NaN(size(idx));
+                            for timeIdx = 1:size(idx,2)
+                                goodIdx = idx(:,timeIdx) > 0;
+                                data(goodIdx,timeIdx) = ...
+                                    moreData(timeIdx + soe(1) - 1).(nameList{iFigure})(idx(goodIdx,timeIdx));
+                            end
+                            
+                            if calcStats
+                            trackStats(iTrack).(nameList{iFigure}) = data;
+                            end
+                            if verbose
+                            plotCompTrackCore(axHandles(iFigure,iTrack),data,soe);
+                            end
+                    end
+                end
+            end
+            
+            % set correct limits
+            if verbose
+            for f = 1:nFigures
+                % xlim : global min/max
+                xlimc = get(axHandles(f,:),'xlim');
+                xlimAll = cat(1,xlimc{:});
+                xmin = min(xlimAll(:,1));
+                xmax = max(xlimAll(:,2));
+                set(axHandles(f,:),'xlim',[xmin,xmax]);
+                % ylim : global min/max
+                ylimc = get(axHandles(f,:),'ylim');
+                ylimAll = cat(1,ylimc{:});
+                ymin = min(ylimAll(:,1));
+                ymax = max(ylimAll(:,2));
+                set(axHandles(f,:),'ylim',[ymin,ymax]);
+            end
+            end
+            if calcStats
+                out = trackStats;
+            end
+            
+            
+            %% subfcn plotCompTrackCore
+            % from KJ's plotCompTrack.m
+            
+            function plotCompTrackCore(ah,valuesMatrix,seqOfEvents)
+                % ah : axes handle
+                % values matrix: nSegments-by-nPoints array of values to be plotted
+                % seqOfEvents : track.seqOfEvents
+                
+                % samplingFreq: leftover from Khuloud's code
+                samplingFreq = 1;
+                
+                %get first frame, last frame and number of frames
+                firstFrame = seqOfEvents(1,1);
+                lastFrame = seqOfEvents(end,1);
+                
+                %get number of segments making compound track
+                numSegments = size(valuesMatrix,1);
+                
+                %plot values as dotted black lines, closing gaps
+                for i = 1 : numSegments
+                    indx = find(~isnan(valuesMatrix(i,:)));
+                    plot(ah,(indx-1)*samplingFreq+firstFrame,valuesMatrix(i,indx),'k:');
+                end
+                
+                %plot values in color, leaving gaps as blank (so that they appear as
+                %dotted lines in the final figure)
+                plot(ah,(firstFrame:samplingFreq:lastFrame)',valuesMatrix','marker','.');
+                
+                %find merges and splits
+                indxSplit = (find(seqOfEvents(:,2) == 1 & ~isnan(seqOfEvents(:,4))))';
+                indxMerge = (find(seqOfEvents(:,2) == 2 & ~isnan(seqOfEvents(:,4))))';
+                
+                %go over all splits
+                for iSplit = indxSplit
+                    
+                    %get time of splitting
+                    timeSplit = seqOfEvents(iSplit,1);
+                    
+                    %determine location in valuesMatrix
+                    splitLoc = (timeSplit - firstFrame) / samplingFreq + 1;
+                    
+                    %determine index of starting track
+                    rowS = seqOfEvents(iSplit,3);
+                    
+                    %determine index of splitting track
+                    rowSp = seqOfEvents(iSplit,4);
+                    
+                    %plot split as a black dash-dotted line
+                    plot(ah,[timeSplit-samplingFreq timeSplit],[valuesMatrix(rowSp,splitLoc-1) ...
+                        valuesMatrix(rowS,splitLoc)],'k-.')
+                    
+                end
+                
+                %go over all merges
+                for iMerge = indxMerge
+                    
+                    %get time of merging
+                    timeMerge = seqOfEvents(iMerge,1);
+                    
+                    %determine location in valuesMatrix
+                    mergeLoc = (timeMerge - firstFrame) / samplingFreq + 1;
+                    
+                    %determine index of ending track
+                    rowE = seqOfEvents(iMerge,3);
+                    
+                    %determine index of merging track
+                    rowM = seqOfEvents(iMerge,4);
+                    
+                    %plot merge as a black dashed line
+                    plot(ah,[timeMerge-samplingFreq timeMerge],[valuesMatrix(rowE,mergeLoc-1) ...
+                        valuesMatrix(rowM,mergeLoc)],'k--')
+                    
+                end
+            end
         end
         %% Get Method rawMovieInfo
         function out = get.rawMovieInfo(obj)
@@ -822,6 +957,63 @@ end
                 out = obj.rawMovieInfo;
             end
         end
+        %% setMethod gapCloseParam
+        function set.gapCloseParam(obj,val)
+            fn = fieldnames(val);
+            for field = fn'
+                field = field{1};
+                
+                % check for whether timeWindow exists and whether it has
+                % changed
+                if strcmp(field,'timeWindow') && isfield(obj.gapCloseParam,'timeWindow') && val.timeWindow ~= obj.gapCloseParam.timeWindow
+                    % make sure that dependent properties are up-to-date
+                    if ~isempty(obj.costMatrices) %#ok<*MCSUP> %
+                        % check for the existence of fields before updating
+                        if isfield(obj.costMatrices(1),'parameters') > 0 && isfield(obj.costMatrices(1).parameters,'nnWindow') %#ok<MCSUP>
+                            obj.costMatrices(1).parameters.nnWindow = val.timeWindow;
+                        end
+                        if length(obj.costMatrices) > 1
+                            if isfield(obj.costMatrices(2).parameters,'nnWindow')
+                                obj.costMatrices(2).parameters.nnWindow = val.timeWindow;
+                            end
+                            if isfield(obj.costMatrices(2).parameters,'brownStdMult')
+                                if all(obj.costMatrices(2).parameters.brownStdMult == obj.costMatrices(2).parameters.brownStdMult(1))
+                                    obj.costMatrices(2).parameters.brownStdMult = repmat(obj.costMatrices(2).parameters.brownStdMult(1),val.timeWindow,1);
+                                else
+                                    warning('please update trackObj.costMatrices(2).parameters.brownStdMult')
+                                end
+                            end
+                            if isfield(obj.costMatrices(2).parameters,'timeReachConfB')
+                                % only update if it was the same as timeWindow before
+                                if obj.costMatrices(2).parameters.timeReachConfB == obj.gapCloseParam.timeWindow
+                                    obj.costMatrices(2).parameters.timeReachConfB = val.timeWindow;
+                                end
+                            end
+                            if isfield(obj.costMatrices(2).parameters,'timeReachConfL')
+                                % only update if it was the same as timeWindow before
+                                if obj.costMatrices(2).parameters.timeReachConfL == obj.gapCloseParam.timeWindow
+                                    obj.costMatrices(2).parameters.timeReachConfL = val.timeWindow;
+                                end
+                            end
+                            if isfield(obj.costMatrices(2).parameters,'linStdMult')
+                                if all(obj.costMatrices(2).parameters.linStdMult == obj.costMatrices(2).parameters.linStdMult(1))
+                                    obj.costMatrices(2).parameters.linStdMult = repmat(obj.costMatrices(2).parameters.linStdMult(1),val.timeWindow,1);
+                                else
+                                    warning('please update trackObj.costMatrices(2).parameters.linStdMult')
+                                end
+                            end
+                        end % exist costMatrices(2)
+                    end % isempty costmatrices
+                end % check for field timeWindow
+                
+                
+                
+                % update parameters only now so that we can compare to the
+                % old timeWindow if necessary
+                obj.gapCloseParam.(field) = val.(field);
+            end % loop fields
+            
+        end % function setGapCloseParam
     end % public methods
     methods (Hidden)
         %===========================
