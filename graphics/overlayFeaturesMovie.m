@@ -138,36 +138,36 @@ for iFrame = 1 : length(movieInfo)
         case 1
             axes('Position',[0 0 0.495 1]);
             imshow(ImageStack(:,:,iFrame),[]);
-            xlim(imageRange(1,:));
-            ylim(imageRange(2,:));
+            xlim(imageRange(2,:));
+            ylim(imageRange(1,:));
             hold on;
             textDeltaCoord = min(diff(imageRange,[],2))/20;
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
                 textDeltaCoord,num2str(iFrame),'Color','white');
             axes('Position',[0.505 0 0.495 1]);
             imshow(ImageStack(:,:,iFrame),[]);
-            xlim(imageRange(1,:));
-            ylim(imageRange(2,:));
+            xlim(imageRange(2,:));
+            ylim(imageRange(1,:));
             hold on;
         case 2
             axes('Position',[0 0.505 1 0.495]);
             imshow(ImageStack(:,:,iFrame),[]);
-            xlim(imageRange(1,:));
-            ylim(imageRange(2,:));
+            xlim(imageRange(2,:));
+            ylim(imageRange(1,:));
             hold on;
             textDeltaCoord = min(diff(imageRange,[],2))/20;
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
                 textDeltaCoord,num2str(iFrame),'Color','white');
             axes('Position',[0 0 1 0.495]);
             imshow(ImageStack(:,:,iFrame),[]);
-            xlim(imageRange(1,:));
-            ylim(imageRange(2,:));
+            xlim(imageRange(2,:));
+            ylim(imageRange(1,:));
             hold on;
         otherwise
             axes('Position',[0 0 1 1]);
             imshow(ImageStack(:,:,iFrame),[]);
-            xlim(imageRange(1,:));
-            ylim(imageRange(2,:));
+            xlim(imageRange(2,:));
+            ylim(imageRange(1,:));
             hold on;
             textDeltaCoord = min(diff(imageRange,[],2))/20;
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
