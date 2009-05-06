@@ -22,7 +22,7 @@ function varargout = SegPanel(varargin)
 
 % Edit the above text to modify the response to help SegPanel
 
-% Last Modified by GUIDE v2.5 10-Apr-2009 16:32:38
+% Last Modified by GUIDE v2.5 06-May-2009 12:28:01
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -316,7 +316,7 @@ slider_channel_step(2) = 1/(Closure_Size_Max-1);
 set(handles.slider_closure, 'Visible', 'on','Max',Closure_Size_Max,...
     'Value',5,'Min',0,'sliderstep',slider_channel_step);
 handles.closure_size = 5;
-handles.segType = 3;
+handles.segType = 4;
 handles.isseg = 0;
 % Update handles structure
 guidata(hObject, handles);
@@ -850,6 +850,10 @@ for n_idx=1:handles.numImages(1)
             % Code for when radiobutton_seg3 is selected.
             % Phase Contrast Segmentation
             segmask = phasecontrastSeg(thismask, handles.closure_size);
+        case 4
+            % Code for when radiobutton_seg4 is selected.
+            % Customized Segmentation
+            segmask = CustomizedSeg(thismask, handles.closure_size);            
         otherwise
             % Code for when there is no match.
     end
@@ -1019,6 +1023,10 @@ switch get(hObject,'Tag')   % Get Tag of selected object
         % Code for when radiobutton_seg3 is selected.
         % Phase Contrast Segmentation
         handles.segType = 3;        
+    case 'radiobutton_seg4'
+        % Code for when radiobutton_seg4 is selected.
+        % Customized Segmentation
+        handles.segType = 4;                
     otherwise
         % Code for when there is no match.
         handles.segType = 1;
@@ -1047,6 +1055,10 @@ switch handles.segType   % Get Tag of selected object
         % Code for when radiobutton_seg3 is selected.
         % Phase Contrast Segmentation
         segmask = phasecontrastSeg(thismask, handles.closure_size);
+    case 4
+        % Code for when radiobutton_seg4 is selected.
+        % Customized Segmentation
+        segmask = CustomizedSeg(thismask, handles.closure_size);        
     otherwise
         % Code for when there is no match.
 end
@@ -1133,4 +1145,17 @@ for n_idx=1:handles.numImages(1)
     waitbar(n_idx/handles.numImages(1),h);
 end
 close(h);
+
+
+
+
+
+% --- Executes on button press in radiobutton_seg3.
+function radiobutton_seg3_Callback(hObject, eventdata, handles)
+% hObject    handle to radiobutton_seg3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of radiobutton_seg3
+
 

@@ -1,13 +1,23 @@
 function mask = phasecontrastSeg(im, closureRadius)
-%function [BWoutline, BWfill, segmentedCells] = phasecontrastSeg(im);
+% phasecontrastSeg segments cell outline in phase contrast micrographs
+% Use |edge| and the Sobel|log|canny operator to calculate the threshold
+% value. Tune the threshold value and use |edge| again to obtain a
+% binary mask that contains the segmented cell. This method is modifying
+% ipexbatchDetectCells.m in the image processing toolbox
+% 
+% Input:    im                              target image for segmentation
+%           (optional) closureRadius        performed image closing on the
+%                                           segmentation mask with a disk
+%                                           with radius = closureRadius
+%
+% Output:   mask                            segmented mask
+%
+% Last updated: May 06, 2009 by Shann-Ching Chen, LCCB
+% See also: graythresh, im2bw, medianSeg, phasecontrastSeg, CustomizedSeg
 
-% imf = im(:);
-% imf = imf(find(imf>0));
-% Q(2) = median(imf);
-% imf1 = imf(find(imf<Q(2)));
-% Q(1) = median(imf1);
-% im(find(im<Q(1))) = Q(1);
-% im = im - Q(1);
+if( nargin < 2)
+	closureRadius = 0;
+end
 
 im1 = edge(im,'log');
 im2 = edge(im,'sobel');
@@ -15,7 +25,6 @@ im3 = edge(im,'canny');
 %im4 = tz_imstdedge(im)>0;
 %im5 = ipexSeg(im);
 
-%keyboard;
 %BW = im1 | im2 | im3 | im4 | im5;
 BW = im1 | im2 | im3;
 
@@ -35,18 +44,6 @@ BWclose(1,:) = BWclose(2,:);
 BWclose(:,1) = BWclose(:,2);
 BWclose(end,:) = BWclose(end-1,:);  
 BWclose(:,end) = BWclose(:,end-1);
-
-% idx = find(BWclose(1,:)==1);    BWclose(1,min(idx):max(idx)) = 1;
-% idx = find(BWclose(:,1)==1);    BWclose(min(idx):max(idx),1) = 1;
-% idx = find(BWclose(end,:)==1);    BWclose(end,min(idx):max(idx)) = 1;
-% idx = find(BWclose(:,end)==1);    BWclose(min(idx):max(idx),end) = 1;
-
-
-%mask = bwfill(BWclose, 'holes', 4);
-% BWoutline = bwperim(BWfill);
-% BWmask = BWoutline;
-% segmentedCells = im;
-% segmentedCells(BWoutline) = 100;
 
 L = bwlabel(BWclose);
 s  = regionprops(L, 'Area');
