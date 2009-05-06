@@ -15,9 +15,9 @@ if( nargin < 2)
 	closureRadius = 0;
 end
 
-thismask = nrm(thismask,16);
-level = graythresh(thismask);
-mask = im2bw(thismask,level);
+thisimage = nrm(thisimage,16);
+level = graythresh(thisimage);
+mask = im2bw(thisimage,level);
 
 % find the largest mask
 L = bwlabel(mask);
@@ -40,7 +40,7 @@ s2  = regionprops(L2, 'Area','PixelIdxList');
 numberOfBlobs = size(s2, 1);
 for k=1:numberOfBlobs
     PixelIdxList = s2(k).PixelIdxList;
-    meanGL(k) = mean(thismask(PixelIdxList));
+    meanGL(k) = mean(thisimage(PixelIdxList));
 end
 [tmp1, tmp2] = min(meanGL);
 maskbg = (L2 == tmp2);

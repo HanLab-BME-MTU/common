@@ -22,7 +22,7 @@ function varargout = SegPanel(varargin)
 
 % Edit the above text to modify the response to help SegPanel
 
-% Last Modified by GUIDE v2.5 06-May-2009 12:28:01
+% Last Modified by GUIDE v2.5 06-May-2009 12:54:47
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -1145,17 +1145,4 @@ for n_idx=1:handles.numImages(1)
     waitbar(n_idx/handles.numImages(1),h);
 end
 close(h);
-
-
-
-
-
-% --- Executes on button press in radiobutton_seg3.
-function radiobutton_seg3_Callback(hObject, eventdata, handles)
-% hObject    handle to radiobutton_seg3 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of radiobutton_seg3
-
 
