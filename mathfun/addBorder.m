@@ -73,6 +73,7 @@ if ~isempty(nanMask)
     for z = nanList'
         % dilate. Replace NaN with small value
         tmp1 = array(:,:,z);
+        if ~all(isnan(tmp1(:))) % no 3D support test here
         tmp1(nanMask(:,:,z)) = minArray(z)-1;
         tmp1 = imdilate(tmp1,se);
         tmp1(tmp1==minArray(z)-1) = NaN; % put mask back on
@@ -89,6 +90,7 @@ if ~isempty(nanMask)
         tmp1(~nanMask(:,:,z)) = tmp2(~nanMask(:,:,z));
         % replace slice
         array(:,:,z) = tmp1;
+        end
     end % loop z
 end% nanMask
         

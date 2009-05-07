@@ -1,5 +1,5 @@
-function out=fastGauss3D(img,sigma,fSze,correctBorder,filterMask)
-% fastGauss3D	apply a 3 dimensional gauss filter
+function out=fastGauss3D(img,sigma,fSze,correctBorder,filterMask,reduceNanImage)
+% fastGauss3D	apply a 2/3 dimensional gauss filter
 %
 %    SYNOPSIS out=fastGauss3D(img,sigma,fSze,correctBorder,filterMask)
 %
@@ -18,6 +18,9 @@ function out=fastGauss3D(img,sigma,fSze,correctBorder,filterMask)
 %                              the filter mask is a cell, the data will be
 %                              sequentially filtered by the contents of the
 %                              cell. In that case, fSze is required.
+%             reduceNanImage (optional) if 1, nan-containing areas are
+%                              clipped before filtering to increase speed.
+%                              Default: 0
 %
 %    OUTPUT:  out      filtered data
 %
@@ -68,6 +71,11 @@ else
     end
 end
 
+if nargin < 6 || isempty(reduceNanImage)
+    reduceNanImage = false;
+end
+
+
 % add border to image
 convnOpt = 'same';
 nanMask = []; % mask indicating all the NaNs in the original image;
@@ -86,6 +94,25 @@ if correctBorder == 1
     %that takes up 1/8th the space of the original. As long as more than
     %1/8th of the image contains Nan, it's smaller than a list of indices
     nanMask = isnan(img); 
+    if reduceNanImage && any(nanMask(:))
+        goodRCZcell = cell(dims,1);
+        nan2 = all(nanMask,3);
+        goodRCZcell{1} = ~all(nan2,2);
+        goodRCZcell{2} = ~all(nan2,1);
+        clear nan2
+        if dims > 2
+            goodRCZcell{3} = ~all(all(nanMask,1),2);
+        end
+        nanRatio = 1-prod(cellfun(@(x)(sum(x)),goodRCZcell))/numel(nanMask);
+        if nanRatio > 0.05 %-- may have to find better cutoff
+            img = img(goodRCZcell{:});
+            fullMask = nanMask;
+            nanMask = nanMask(goodRCZcell{:});
+        else
+            fullMask = [];
+        end
+    end
+        
     % pass nanMask so that we don't need to recalc again
     img = addBorder(img,floor(fSze/2),nanMask);
     convnOpt = 'valid';
@@ -120,7 +147,15 @@ end
 
 
 if ~isempty(nanMask)
-    img(nanMask) = NaN;
+    if reduceNanImage && ~isempty(fullMask)
+        % rebuild full image
+        img = out;
+        out = NaN(size(fullMask));
+        out(~fullMask) = img(~nanMask);
+    else
+        % simply ensure that NaNs are in the right place
+    out(nanMask) = NaN;
+    end
 end
 
 

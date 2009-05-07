@@ -75,7 +75,7 @@ for tt = 1:length(todoList)
                 if ~isempty(moreDivIdx)
                     % remember additional segment indices
                     transferIdx = [transferIdx;tracksFinal(iTrack).seqOfEvents(moreDivIdx,3)];
-                    seg2check = [seg2check;moreDivIdx];
+                    seg2check = [seg2check;tracksFinal(iTrack).seqOfEvents(moreDivIdx,3)];
                 end
             end
             
