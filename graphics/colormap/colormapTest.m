@@ -1,9 +1,10 @@
-function fh = colormapTest(cmap)
+function fh = colormapTest(cmap,name)
 %COLORMAPTEST shows test plots for colormaps
 %
-% SYNOPSIS: fh = colormapTest(cmap)
+% SYNOPSIS: fh = colormapTest(cmap,name)
 %
 % INPUT cmap: n-by-3 RGB colormap
+%       name: name of colormap
 %
 % OUTPUT fh: handle to test figure
 %
@@ -37,7 +38,12 @@ peaksZ = peaks(100);
 
 
 % plot. Top: Gauss, Bottom: Peaks
-handle = figure('Name',sprintf('Test of colormap %s',inputname(1)));
+if nargin < 2 || isempty(name)
+    handle = figure('Name',sprintf('Test of colormap %s',inputname(1)));
+else
+    handle = figure('Name',sprintf('Test of colormap %s',name));
+end
+
 
 % plot grey with light - can't do grey!!
 ah = subplot(2,3,1);
