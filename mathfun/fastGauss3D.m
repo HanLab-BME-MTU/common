@@ -104,7 +104,7 @@ if correctBorder == 1
             goodRCZcell{3} = ~all(all(nanMask,1),2);
         end
         nanRatio = 1-prod(cellfun(@(x)(sum(x)),goodRCZcell))/numel(nanMask);
-        if nanRatio > 0.05 %-- may have to find better cutoff
+        if nanRatio > 0.05 %-- from a little bit of testing it looks like you get about nanRatio*0.4 reduction in time
             img = img(goodRCZcell{:});
             fullMask = nanMask;
             nanMask = nanMask(goodRCZcell{:});
