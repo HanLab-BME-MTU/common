@@ -681,7 +681,7 @@ classdef trackObj<handle
             nCols = ceil(nTracks/nRows);
             if verbose
             for f = 1:nFigures
-                figureHandles(f) = figure('Name',nameList{f});
+                figureHandles(f) = figure('Name',sprintf('%s %s',obj.name,nameList{f}));
                 for iTrack = 1:nTracks
                     axHandles(f,iTrack) = subplot(nRows,nCols,iTrack,'NextPlot','add');
                 end
