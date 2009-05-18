@@ -20,11 +20,14 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %       checkAsym   : 1 to check for asymmetric tracks and to analyze their
 %                     diffusion after dimensionality reduction, 0
 %                     otherwise. Optional. Default: 0.
-%       alphaValues : Column vector with 2 entries. First entry is the
-%                     alpha-value for MSS analysis. Second entry is the
-%                     alpha-value for asymmetry determination. 
-%                     Optional. Default: 0.1. If only one value is entered,
-%                     it is taken as the alpha-value for MSS analysis.
+%       alphaValues : Row vector with 2 entries. First entry is the
+%                     alpha-value for MSS analysis (can take the values
+%                     0.2, 0.1 and 0.05). Second entry is the alpha-value
+%                     for asymmetry determination (can take the values 0.2,
+%                     0.1, 0.05 and 0.01).
+%                     Optional. Default: [0.1 0.1]. If only one value is
+%                     entered, it is taken as the alpha-value for MSS
+%                     analysis.
 %       plotRes     : 1 to plot results, 0 otherwise. Optional. Default: 0.
 %                     Results can be plotted only if problem is 2D.
 %                     color-coding:

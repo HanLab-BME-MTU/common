@@ -141,7 +141,7 @@ end
 if nargin < 6 || isempty(newFigure)
     newFigure = 1;
 else
-if newFigure ~= 0 && newFigure ~= 1 && ~(ishandle(newFigure) && strmatch(get(newFigure,'Type'),'axes'))
+    if newFigure ~= 0 && newFigure ~= 1 && ~(ishandle(newFigure) && strmatch(get(newFigure,'Type'),'axes'))
         disp('--plotTracks2D: newFigure should be 0 or 1 or an axes handle!');
         errFlag = 1;
     end
@@ -260,16 +260,16 @@ else
     tracksY = trackedFeatureInfo(:,2:8:end)' + offset(2);
 end
 
-% add offset
-tracksX = tracksX ;
-tracksY = tracksY ;
+% % add offset
+% tracksX = tracksX ;
+% tracksY = tracksY ;
 
 %find x-coordinate limits
-% minXCoord = floor(min(tracksX(:)));
+minXCoord = min(floor(min(tracksX(:))),0);
 maxXCoord =  ceil(max(tracksX(:)));
 
 %find y-coordinate limits
-% minYCoord = floor(min(tracksY(:)));
+minYCoord = min(floor(min(tracksY(:))),0);
 maxYCoord =  ceil(max(tracksY(:)));
 
 %calculate the number of time points to be plotted
@@ -293,6 +293,9 @@ if newFigure
     else %if user did not supply an image
         imshow(ones(maxYCoord,maxXCoord),[]); %plot an empty image
     end
+
+    %set figure axes limits
+    axis([minXCoord maxXCoord minYCoord maxYCoord]);
 
     %show coordinates on axes
     axH = gca;

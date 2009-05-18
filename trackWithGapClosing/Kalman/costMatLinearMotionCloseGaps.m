@@ -29,8 +29,8 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %       costMatParam   : Structure containing variables needed for cost
 %                        calculation. Contains the fields:
 %             .linearMotion   : 1 to use a linear motion model, 0 otherwise.
-%             .minSearchRadiusCG:Minimum allowed search radius (in pixels).
-%             .maxSearchRadiusCG:Maximum allowed search radius (in pixels).
+%             .minSearchRadius: Minimum allowed search radius (in pixels).
+%             .maxSearchRadius: Maximum allowed search radius (in pixels).
 %                               This value is the maximum search radius
 %                               between two consecutive frames as when
 %                               linking between consecutive frames. It will
@@ -38,11 +38,11 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                               based on the scaling factor of Brownian
 %                               motion (expanding it will make use of the
 %                               field .timeReachConfB).
-%             .brownStdMultCG : Factor multiplying Brownian
+%             .brownStdMult   : Factor multiplying Brownian
 %                               displacement std to get search radius.
 %                               Vector with number of entries equal to
 %                               gapCloseParam.timeWindow (defined below).
-%             .linStdMultCG   : Factor multiplying linear motion std to get
+%             .linStdMult     : Factor multiplying linear motion std to get
 %                               search radius. Vector with number of entries
 %                               equal to gapCloseParam.timeWindow (defined
 %                               below).
@@ -57,27 +57,37 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                               timeReachConfB above.
 %             .lenForClassify : Minimum length of a track to classify it as
 %                               directed or Brownian.
-%             .maxAngle       : Maximum allowed angle between two
+%             .maxAngleVV     : Maximum allowed angle between two
 %                               directions of motion for potential linking
 %                               (in degrees).
-%             .closestDistScaleCG:Scaling factor of nearest neighbor
-%                                 distance.
-%             .maxStdMultCG   : Maximum value of factor multiplying
-%                               std to get search radius.
-%             .ampRatioLimitCG: Minimum and maximum allowed ratio between
-%                               the amplitude of a merged feature and the
-%                               sum of the amplitude of the two features
-%                               making it.
-%             .lftCdf         : Lifetime cumulative density function.
-%                               Column vector, specifying cdf for
-%                               lifetime = 0 to movie length.
-%                               Enter [] if cdf is not to be used. 
-%                               Optional. Default: [].
 %             .useLocalDensity: 1 if local density of features is used to expand
 %                               their search radius if possible, 0 otherwise.
 %             .nnWindow       : Time window to be used in estimating the
 %                               nearest neighbor distance of a track at its start
 %                               and end.
+%           Optional fields ...
+%             .ampRatioLimit  : Minimum and maximum allowed ratio between
+%                               the amplitude of a merged feature and the
+%                               sum of the amplitude of the two features
+%                               making it.
+%                               Default: [], in which case the amplitude is 
+%                               not used for cost calculation.
+%             .lftCdf         : Lifetime cumulative density function.
+%                               Column vector, specifying cdf for
+%                               lifetime = 0 to movie length.
+%                               Default: [], in which case cdf is not used.
+%             .gapPenalty     : Penalty for increasing temporary
+%                               disappearance time, to be used in gap
+%                               closing cost. Disappearing for n frames,
+%                               i.e. closing a gap of n+1 frames,
+%                               gets a penalty of gapPenalty^n.
+%                               Default: 1, i.e. no penalty.
+%             .resLimit       : Resolution limit. Used to expand search 
+%                               radius for merging and splitting, if
+%                               motion- and density-based search radius is
+%                               smaller than resolution limit.
+%                               Default: 0, i.e. resolution limit is not
+%                               used for search radius expansion.
 %       gapCloseParam  : Structure containing variables needed for gap closing.
 %                        Contains the fields:
 %             .timeWindow : Largest time gap between the end of a track and the
@@ -163,14 +173,30 @@ else
     closestDistScale = [];
     maxStdMult = [];
 end
-minAmpRatio = costMatParam.ampRatioLimit(1);
-maxAmpRatio = costMatParam.ampRatioLimit(2);
-
-if isfield('costMatParam','lftCdf')
+if isfield(costMatParam,'ampRatioLimit') && ~isempty(costMatParam.ampRatioLimit)
+    minAmpRatio = costMatParam.ampRatioLimit(1);
+    maxAmpRatio = costMatParam.ampRatioLimit(2);
+    useAmp = 1;
+else
+    minAmpRatio = 0;
+    maxAmpRatio = Inf;
+    useAmp = 0;
+end
+if isfield(costMatParam,'lftCdf') && ~isempty(costMatParam.lftCdf)
     lftCdf = costMatParam.lftCdf;
     oneMinusLftCdf = 1 - lftCdf;
 else
     lftCdf = [];
+end
+if isfield(costMatParam,'gapPenalty') && ~isempty(costMatParam.gapPenalty)
+    gapPenalty = costMatParam.gapPenalty;
+else
+    gapPenalty = 1;
+end
+if isfield(costMatParam,'resLimit') && ~isempty(costMatParam.resLimit)
+    resLimit = costMatParam.resLimit;
+else
+    resLimit = 0;
 end
 
 %get gap closing parameters
@@ -230,11 +256,12 @@ undetBrownStd = prctile(noiseStdAll,80);
 
 %determine the search areas of all tracks
 [longVecSAll,longVecEAll,shortVecSAll,shortVecEAll,shortVecS3DAll,...
-    shortVecE3DAll] = getAveDispEllipseAll(xyzVel,noiseStd,trackType,...
-    undetBrownStd,timeWindow,brownStdMult,linStdMult,timeReachConfB,...
-    timeReachConfL,minSearchRadius,maxSearchRadius,useLocalDensity,...
-    closestDistScale,maxStdMult,nnDistLinkedFeat,nnWindow,...
-    trackStartTime,trackEndTime,probDim);
+    shortVecE3DAll,longVecSAllMS,longVecEAllMS,shortVecSAllMS,shortVecEAllMS,...
+    shortVecS3DAllMS,shortVecE3DAllMS] = getAveDispEllipseAll(xyzVel,...
+    noiseStd,trackType,undetBrownStd,timeWindow,brownStdMult,linStdMult,...
+    timeReachConfB,timeReachConfL,minSearchRadius,maxSearchRadius,...
+    useLocalDensity,closestDistScale,maxStdMult,nnDistLinkedFeat,nnWindow,...
+    trackStartTime,trackEndTime,probDim,resLimit);
 
 %find all pairs of ends and starts that can potentially be linked
 %determine this by looking at time gaps between ends and starts
@@ -302,7 +329,7 @@ timeScalingBrown = ones(timeWindow,1);
 %go over all possible pairs of starts and ends
 for iPair = 1 : numPairs
     
-    %get indices of start and end and the time gap between them
+    %get indices of starts and ends and the time gap between them
     iStart = indxStart2(iPair);
     iEnd = indxEnd2(iPair);
     
@@ -517,9 +544,11 @@ for iPair = 1 : numPairs
         %if the lifetime consideration does not make this link impossible
         if ~isinf(cost12)
             
+            %penalize cost for gap length considerations
+            cost12 = cost12 * gapPenalty^(timeGap-1);
+            
             %add this cost to the list of costs
             cost(iPair) = cost12;
-            %             cost(iPair) = cost12 * timeGap;
 
             %specify the location of this pair in the cost matrix
             indx1(iPair) = iEnd; %row number
@@ -556,6 +585,7 @@ if mergeSplit > 0
     %maxSearchRadiusCG)
     maxDispAllowed = max(max(xyzVel(:)) * probDim * linStdMult(1), ...
         maxSearchRadius);
+    maxDispAllowed = max(maxDispAllowed,resLimit);
 
     %costs of merging
     if mergeSplit == 1 || mergeSplit == 2
@@ -605,8 +635,8 @@ if mergeSplit > 0
                 iMerge = indxMerge2(iPair);
 
                 %determine the search ellipse of track iEnd
-                longVecE = longVecEAll(:,1,iEnd);
-                shortVecE = shortVecEAll(:,1,iEnd);
+                longVecE = longVecEAllMS(:,1,iEnd);
+                shortVecE = shortVecEAllMS(:,1,iEnd);
 
                 %calculate the magnitudes of the long and short search vectors
                 %of the end
@@ -635,6 +665,12 @@ if mergeSplit > 0
                 %calculate the ratio of the amplitude after merging to the sum
                 %of the amplitudes before merging
                 ampRatio = ampM / (ampE + ampM1);
+                
+                %if amplitude is not to be used, make all amplitude related
+                %variables 1
+                if ~useAmp
+                    [ampRatio,ampM,ampM1] = deal(1);
+                end
 
                 %decide whether this is a possible link based on displacement,
                 %directionality and amplitude ratio
@@ -642,7 +678,7 @@ if mergeSplit > 0
 
                     %get second short vector and project along it if problem is 3D
                     if probDim == 3
-                        shortVecE3D = shortVecE3DAll(:,1,iEnd);
+                        shortVecE3D = shortVecE3DAllMS(:,1,iEnd);
                         shortVecMagE3D = sqrt(shortVecE3D' * shortVecE3D);
                         projEndShort3D = abs(dispVec * shortVecE3D) / shortVecMagE3D;
                     else %if problem is 2D, make values zero
@@ -827,8 +863,8 @@ if mergeSplit > 0
                 iSplit = indxSplit2(iPair);
 
                 %determine the search ellipse of track iStart
-                longVecS = longVecSAll(:,1,iStart);
-                shortVecS = shortVecSAll(:,1,iStart);
+                longVecS = longVecSAllMS(:,1,iStart);
+                shortVecS = shortVecSAllMS(:,1,iStart);
 
                 %calculate the magnitudes of the long and short search vectors
                 %of the start
@@ -858,13 +894,19 @@ if mergeSplit > 0
                 %of the amplitudes after splitting
                 ampRatio = ampSp / (ampS + ampSp1);
 
+                %if amplitude is not to be used, make all amplitude related
+                %variables 1
+                if ~useAmp
+                    [ampRatio,ampSp,ampSp1] = deal(1);
+                end
+
                 %decide whether this is a possible link based on displacement,
                 %directionality and amplitude ratio
                 if trackType(iStart) == 1
 
                     %get second short vector and project along it if problem is 3D
                     if probDim == 3
-                        shortVecS3D = shortVecS3DAll(:,1,iStart); %second short vectors
+                        shortVecS3D = shortVecS3DAllMS(:,1,iStart); %second short vectors
                         shortVecMagS3D = sqrt(shortVecS3D' * shortVecS3D); %their magnitudes
                         projStartShort3D = abs(dispVec * shortVecS3D) / shortVecMagS3D; %projection
                     else %if problem is 2D, make values zero

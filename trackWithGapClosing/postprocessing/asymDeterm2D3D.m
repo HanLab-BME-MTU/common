@@ -5,6 +5,7 @@ function [asymParam,asymFlag] = asymDeterm2D3D(positions,alpha)
 %
 %INPUT  positions: n-by-2/3 array of positions (x,y,[z]).
 %       alpha    : Alpha-value for determining the threshold.
+%                  Can take the values 0.2, 0.1 and 0.05.
 %                  Optional. Default: 0.1.
 %
 %OUTPUT asymParam: Parameter estimating asymmetry of positional scatter.
@@ -63,26 +64,35 @@ switch probDim
         end
 end
 
-%% asymmetry calculation
+if numTimePoints > 2
 
-%calculate the variance-covariance matrix of positions
-posCov = nancov(positions);
+    %% asymmetry calculation
 
-%get the eigen-values of the variance-covariance matrix
-eigenVal = eig(posCov);
+    %calculate the variance-covariance matrix of positions
+    posCov = nancov(positions);
 
-%calculate some intermediate sums
-doubleSum = 0;
-for i = 1 : probDim - 1
-    doubleSum = doubleSum + sum( ( eigenVal(i) - eigenVal(i+1:end) ).^2 );
+    %get the eigen-values of the variance-covariance matrix
+    eigenVal = eig(posCov);
+
+    %calculate some intermediate sums
+    doubleSum = 0;
+    for i = 1 : probDim - 1
+        doubleSum = doubleSum + sum( ( eigenVal(i) - eigenVal(i+1:end) ).^2 );
+    end
+    singleSum = (probDim - 1) * ( sum(eigenVal) )^2;
+
+    %calculate asymmetry parameter
+    asymParam = -log( 1 - doubleSum / singleSum );
+
+    %% comparison with threshold
+
+    asymFlag = asymParam > asymThresh(numTimePoints);
+    
+else
+    
+    asymParam = NaN;
+    asymFlag = NaN;
+    
 end
-singleSum = (probDim - 1) * ( sum(eigenVal) )^2;
-
-%calculate asymmetry parameter
-asymParam = -log( 1 - doubleSum / singleSum );
-
-%% comparison with threshold
-
-asymFlag = asymParam > asymThresh(numTimePoints);
 
 %% ~~~ the end ~~~

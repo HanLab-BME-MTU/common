@@ -99,14 +99,17 @@ else %if input is a matrix
 
     %make new matrix which contains only one column per time point
     trackedFeatureInfo = trackedFeatureInfo(:,1:8:end);
+    
+    %find non-empty tracks
+    indxGood = find(~isnan(max(trackedFeatureInfo,[],2)));
 
     %find track start times
-    for i=1:numTracks
+    for i = indxGood'
         trackSEL(i,1) = find(~isnan(trackedFeatureInfo(i,:)),1,'first');
     end
 
     %find track end times
-    for i=1:numTracks
+    for i = indxGood'
         trackSEL(i,2) = find(~isnan(trackedFeatureInfo(i,:)),1,'last');
     end
 

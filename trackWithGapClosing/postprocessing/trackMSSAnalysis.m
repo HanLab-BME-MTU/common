@@ -15,7 +15,8 @@ function [trackClass,mssSlope,genDiffCoef,scalingPower,normDiffCoef] ...
 %       probDim     : Problem dimensionality. Optional. Default: 2.
 %       momentOrders: Orders of moments to be calculated.
 %                     Optional. Default: 0 through 6.
-%       alphaMSS    : Alpha-value for classification. 
+%       alphaMSS    : Alpha-value for classification. Can take the values
+%                     0.2, 0.1, 0.05 and 0.01.
 %                     Optional. Default: 0.1.
 %
 %OUTPUT trackClass  : # tracks x 1 vector of track classification.
@@ -28,11 +29,11 @@ function [trackClass,mssSlope,genDiffCoef,scalingPower,normDiffCoef] ...
 %       mssSlope    : # tracks x 1 vector of each track's slope of the line
 %                     representing moment scaling power vs. moment order.
 %                     NaN indicates tracks that could not be analyzed.
-%       genDiffCoef : # tracks x 1 vector of generalized diffusion
+%       genDiffCoef : # tracks x # orders array of generalized diffusion
 %                     coefficients for every moment order considered.
 %                     NaN indicates tracks that could not be analyzed.
-%       scalingPower: # tracks x 1 vector of power with which moment values
-%                     scale with time.
+%       scalingPower: # tracks x # orders array of powers with which moment
+%                     values scale with time.
 %                     NaN indicates tracks that could not be analyzed.
 %       normDiffCoef: # tracks x 1 vector of each track's "normal"
 %                     diffusion coefficient.
@@ -44,7 +45,7 @@ function [trackClass,mssSlope,genDiffCoef,scalingPower,normDiffCoef] ...
 %spectrum curve, i.e. that the motion is strongly self-similar. Weakly
 %self-similar processes will generate an MSS which is piece-wise
 %continuous, hence before fitting to estimate the slope the curve must be
-%shopped into smaller straigh-line pieces.
+%chopped into smaller straight-line pieces (but this is not done).
 %
 %Khuloud Jaqaman, March 2008
 
@@ -90,6 +91,8 @@ switch probDim
                 [mssThreshNeg,mssThreshPos] = threshMSS1D_p10(numFramesMovie);
             case 0.05 %2.5th percentile and 97.5th percentile
                 [mssThreshNeg,mssThreshPos] = threshMSS1D_p05(numFramesMovie);
+            case 0.01 %0.5th percentile and 99.5th percentile
+                [mssThreshNeg,mssThreshPos] = threshMSS1D_p01(numFramesMovie);
         end
     case 2
         switch alphaMSS
@@ -99,6 +102,8 @@ switch probDim
                 [mssThreshNeg,mssThreshPos] = threshMSS2D_p10(numFramesMovie);
             case 0.05 %2.5th percentile and 97.5th percentile
                 [mssThreshNeg,mssThreshPos] = threshMSS2D_p05(numFramesMovie);
+            case 0.01 %0.5th percentile and 99.5th percentile
+                [mssThreshNeg,mssThreshPos] = threshMSS2D_p01(numFramesMovie);
         end
     case 3
         switch alphaMSS
@@ -108,6 +113,8 @@ switch probDim
                 [mssThreshNeg,mssThreshPos] = threshMSS3D_p10(numFramesMovie);
             case 0.05 %2.5th percentile and 97.5th percentile
                 [mssThreshNeg,mssThreshPos] = threshMSS3D_p05(numFramesMovie);
+            case 0.01 %0.5th percentile and 99.5th percentile
+                [mssThreshNeg,mssThreshPos] = threshMSS3D_p01(numFramesMovie);
         end
 end
 
@@ -253,6 +260,7 @@ interseptP = [0.672499246818346 0.602141373785626 0.567918792644692 0.5547276969
 [mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,turnPointsP,...
     slopeM,slopeP,interseptM,interseptP,nTP);
 
+%%%%%%%%%%%%%%%%%%%%%%%
 
 function [mssThreshNeg,mssThreshPos] = threshMSS1D_p10(nTP)
 
@@ -270,6 +278,7 @@ interseptP = [0.727469044719516 0.628123133276013 0.607226353979748 0.5730783664
 [mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,turnPointsP,...
     slopeM,slopeP,interseptM,interseptP,nTP);
 
+%%%%%%%%%%%%%%%%%%%%%%%
 
 function [mssThreshNeg,mssThreshPos] = threshMSS1D_p05(nTP)
 
@@ -287,6 +296,25 @@ interseptP = [0.772420366381382 0.658656588595335 0.638228190358568 0.5875878542
 [mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,turnPointsP,...
     slopeM,slopeP,interseptM,interseptP,nTP);
 
+%%%%%%%%%%%%%%%%%%%%%%%
+
+function [mssThreshNeg,mssThreshPos] = threshMSS1D_p01(nTP)
+
+%1D, alpha = 0.01
+
+%threshold curve parameters
+turnPointsM = [20 50 150 500];
+turnPointsP = [20 45 100 500];
+slopeM = [0.00748519566052008 0.00132812830129705 0.000291477165467116 0];
+slopeP = [-0.00263804313196125 -0.000652822904393821 -0.000123920022338378 0];
+interseptM = [-0.27508360480994 0.0327697631512118 0.188267433525701 0.334006016259259];
+interseptP = [0.839817228313045 0.750482318072511 0.697592029866967 0.635632018697778];
+
+%threshold curve evaluation
+[mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,turnPointsP,...
+    slopeM,slopeP,interseptM,interseptP,nTP);
+
+%%%%%%%%%%%%%%%%%%%%%%%
 
 function [mssThreshNeg,mssThreshPos] = threshMSS2D_p20(nTP)
 
@@ -300,11 +328,11 @@ slopeP = [-0.001158501020215 -0.000170757301414 -0.000033415212947 0];
 interseptM = [0.227688919307209 0.329580767987585 0.367423350014689 0.436403876348735];
 interseptP = [0.634413262884249 0.575148639756167 0.554547326486174 0.537839720012491];
 
-
 %threshold curve evaluation
 [mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,turnPointsP,...
     slopeM,slopeP,interseptM,interseptP,nTP);
 
+%%%%%%%%%%%%%%%%%%%%%%%
 
 function [mssThreshNeg,mssThreshPos] = threshMSS2D_p10(nTP)
 
@@ -318,11 +346,11 @@ slopeP = [-0.001737592454918 -0.000337743432604 -0.000073809631405 0];
 interseptM = [0.169732430047339 0.291320857705762 0.337583919093415 0.423505472539345];
 interseptP = [0.684919949284652 0.614927498168961 0.588534118049036 0.551629302346427];
 
-
 %threshold curve evaluation
 [mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,turnPointsP,...
     slopeM,slopeP,interseptM,interseptP,nTP);
 
+%%%%%%%%%%%%%%%%%%%%%%%
 
 function [mssThreshNeg,mssThreshPos] = threshMSS2D_p05(nTP)
 
@@ -336,11 +364,29 @@ slopeP = [-0.001937063703976 -0.00055853262239 -0.000095409685751 0];
 interseptM = [0.14034289465302 0.257691415866306 0.307322337349635 0.40821905946088];
 interseptP = [0.724427540398996 0.6555009863197 0.609188692655777 0.561483849780384];
 
+%threshold curve evaluation
+[mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,turnPointsP,...
+    slopeM,slopeP,interseptM,interseptP,nTP);
+
+%%%%%%%%%%%%%%%%%%%%%%%
+
+function [mssThreshNeg,mssThreshPos] = threshMSS2D_p01(nTP)
+
+%2D, alpha = 0.01
+
+%threshold curve parameters
+turnPointsM = [20 50 150 500];
+turnPointsP = [20 60 200 500];
+slopeM = [0.00435441385708182 0.000812259003939792 0.000273699080289468 0];
+slopeP = [-0.00172943051183377 -0.000284948443095389 -0.000153857046768591 0];
+interseptM = [-0.00562462883719271 0.171483113819909 0.252267102367457 0.389116642512191];
+interseptP = [0.779260212544801 0.692591288420498 0.666373009155138 0.589444485770843];
 
 %threshold curve evaluation
 [mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,turnPointsP,...
     slopeM,slopeP,interseptM,interseptP,nTP);
 
+%%%%%%%%%%%%%%%%%%%%%%%
 
 function [mssThreshNeg,mssThreshPos] = threshMSS3D_p20(nTP)
 
@@ -354,11 +400,11 @@ slopeP = [-0.000746906632969 -0.000348357342053 -0.000037074457479 0];
 interseptM = [0.299405762325546 0.364121452942741 0.39853985343145 0.452860029162242];
 interseptP = [0.609183824504497 0.585270867049586 0.554142578592106 0.535605349852791];
 
-
 %threshold curve evaluation
 [mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,turnPointsP,...
     slopeM,slopeP,interseptM,interseptP,nTP);
 
+%%%%%%%%%%%%%%%%%%%%%%%
 
 function [mssThreshNeg,mssThreshPos] = threshMSS3D_p10(nTP)
 
@@ -372,11 +418,11 @@ slopeP = [-0.001033885285809 -0.000409579718459 -0.000060967307118 0];
 interseptM = [0.258642983727984 0.333806796235989 0.374880395529001 0.439626798542322];
 interseptP = [0.644618927677761 0.613403649310276 0.57854240817611 0.548058754617302];
 
-
 %threshold curve evaluation
 [mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,turnPointsP,...
     slopeM,slopeP,interseptM,interseptP,nTP);
 
+%%%%%%%%%%%%%%%%%%%%%%%
 
 function [mssThreshNeg,mssThreshPos] = threshMSS3D_p05(nTP)
 
@@ -390,12 +436,31 @@ slopeP = [-0.001281266825658 -0.000815336722161 -0.000079326637385 0];
 interseptM = [0.217433363211081 0.307881166763189 0.356933932246803 0.429457090091877];
 interseptP = [0.683369058696754 0.660072553521921 0.601191746739831 0.56152842804728];
 
-
-%% threshold curve evaluation subfunction
+% threshold curve evaluation
 
 %threshold curve evaluation
 [mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,turnPointsP,...
     slopeM,slopeP,interseptM,interseptP,nTP);
+
+function [mssThreshNeg,mssThreshPos] = threshMSS3D_p01(nTP)
+
+%3D, alpha = 0.01
+
+%threshold curve parameters
+turnPointsM = [20 50 200 500];
+turnPointsP = [20 90 200 500];
+slopeM = [0.00330864748993062 0.000607571513122873 0.000183704012624133 0];
+slopeP = [-0.0011001388082068 -0.000401685416953439 -7.31736162754304e-05 0];
+interseptM = [0.100955106735165 0.236008905575552 0.3207824056753 0.412634411987367];
+interseptP = [0.747201850658008 0.684341045445206 0.618638685309604 0.582051877171889];
+
+%threshold curve evaluation
+[mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,turnPointsP,...
+    slopeM,slopeP,interseptM,interseptP,nTP);
+
+%%%%%%%%%%%%%%%%%%%%%%%
+
+%% threshold curve evaluation subfunction
 
 function [mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,...
     turnPointsP,slopeM,slopeP,interseptM,interseptP,nTP)
@@ -404,7 +469,7 @@ function [mssThreshNeg,mssThreshPos] = getThreshCurve(turnPointsM,...
 mssThreshNeg = NaN(1,turnPointsM(1)-1);
 for i = 1 : length(turnPointsM)-1
     x = turnPointsM(i) : turnPointsM(i+1)-1;
-    mssThreshNeg = [mssThreshNeg slopeM(i)*x+interseptM(i)];
+    mssThreshNeg = [mssThreshNeg slopeM(i)*x+interseptM(i)]; %#ok<AGROW>
 end
 x = turnPointsM(end) : nTP;
 mssThreshNeg = [mssThreshNeg slopeM(end)*x+interseptM(end)];
@@ -413,7 +478,7 @@ mssThreshNeg = [mssThreshNeg slopeM(end)*x+interseptM(end)];
 mssThreshPos = NaN(1,turnPointsP(1)-1);
 for i = 1 : length(turnPointsP)-1
     x = turnPointsP(i) : turnPointsP(i+1)-1;
-    mssThreshPos = [mssThreshPos slopeP(i)*x+interseptP(i)];
+    mssThreshPos = [mssThreshPos slopeP(i)*x+interseptP(i)]; %#ok<AGROW>
 end
 x = turnPointsP(end) : nTP;
 mssThreshPos = [mssThreshPos slopeP(end)*x+interseptP(end)];

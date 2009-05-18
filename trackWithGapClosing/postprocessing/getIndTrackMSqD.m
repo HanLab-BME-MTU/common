@@ -1,9 +1,9 @@
 function [mSqDisp,mSqDMatrix,mSqDErrMatrix,errFlag] = ...
-    getIndTrackMSqD(trackedFeatureInfo)
+    getIndTrackMSqD(trackedFeatureInfo,maxLag)
 %GETINDTRACKMSQD calculates the mean squared displacement of the input tracks
 %
 %SYNOPSIS [mSqDisp,mSqDMatrix,mSqDErrMatrix,errFlag] = ...
-%    getIndTrackMSqD(trackedFeatureInfo)
+%    getIndTrackMSqD(trackedFeatureInfo,maxLag)
 %
 %INPUT  trackedFeatureInfo: Matrix indicating the positions and amplitudes 
 %                           of the tracked features to be plotted. Number 
@@ -13,6 +13,9 @@ function [mSqDisp,mSqDMatrix,mSqDErrMatrix,errFlag] = ...
 %                           [x1 y1 z1 a1 dx1 dy1 dz1 da1 x2 y2 z2 a2 dx2 dy2 dz2 da2 ...].
 %                           NaN is used to indicate time points where the
 %                           track does not exist.
+%       maxLag            : Maximum lag for mean square displacement
+%                           calculation.
+%                           Optiona. Default: track length/4.
 %
 %OUTPUT mSqDisp           : Structure array of length equal to number of
 %                           input tracks with field "values" = output of
@@ -45,6 +48,10 @@ if nargin < 1
     return
 end
 
+if nargin < 2
+    maxLag = [];
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Mean squared displacement calculation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,30 +60,30 @@ end
 [numTracks,numTimePoints] = size(trackedFeatureInfo);
 numTimePoints = numTimePoints/8;
 
-%initialize timeLagMax
-timeLagMax = 0;
+%reserve memory
+mSqDisp = repmat(struct('values',[]),numTracks,1);
+timeLagMax = zeros(numTracks,1);
 
 %go over all tracks
 for j=numTracks:-1:1
     
     %get positions over time
-    positions.coordinates = [trackedFeatureInfo(j,1:8:end)' ...
+    coordinates = [trackedFeatureInfo(j,1:8:end)' ...
         trackedFeatureInfo(j,2:8:end)' trackedFeatureInfo(j,3:8:end)'];
-    
+
     %get corresponding variance-covariance matrices
     for i=1:numTimePoints
-        positions.covariances(:,:,i) = [trackedFeatureInfo(j,(i-1)*8+5)^2 0 0; ...
-            0 trackedFeatureInfo(j,(i-1)*8+6)^2 0; ...
-            0 0 trackedFeatureInfo(j,(i-1)*8+7)^2];
+        standardDevs = [trackedFeatureInfo(j,5:8:end)' ...
+            trackedFeatureInfo(j,6:8:end)' trackedFeatureInfo(j,7:8:end)'];
     end
-    
+
     %get the mean squared displacement
-    tmp = meanSquaredDisplacement(positions);
-    mSqDisp(j).values = tmp;
-    
+    trackMoments = calcTrackMoments(coordinates,standardDevs,2,maxLag);
+    mSqDisp(j).values = trackMoments.momentValues;
+
     %get the maximum time lag
-    timeLagMax(j) = size(tmp,1);
-    
+    timeLagMax(j) = size(trackMoments.momentValues,1);
+
 end
 
 %collect all mean square displacements and their errors in two big matrices
@@ -90,12 +97,8 @@ mSqDErrMatrix = NaN*ones(timeLagMaxMax,numTracks);
 
 %fill the matrices
 for j=1:numTracks
-    
     mSqDMatrix(1:timeLagMax(j),j) = mSqDisp(j).values(:,1); %mean square displacement
-
-    mSqDErrMatrix(1:timeLagMax(j),j) = mSqDisp(j).values(:,2)... % standard deviation of square displacement
-        ./sqrt(mSqDisp(j).values(:,3)); %divided by square root of number of pairs used in estimation
-
+    mSqDErrMatrix(1:timeLagMax(j),j) = mSqDisp(j).values(:,2); %its standard deviation
 end
 
 

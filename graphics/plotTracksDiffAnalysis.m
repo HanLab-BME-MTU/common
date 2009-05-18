@@ -202,11 +202,11 @@ tracksX = trackedFeatureInfo(:,1:8:end)';
 tracksY = trackedFeatureInfo(:,2:8:end)';
 
 %find x-coordinate limits
-% minXCoord = floor(min(tracksX(:)));
+minXCoord = min(floor(min(tracksX(:))),0);
 maxXCoord =  ceil(max(tracksX(:)));
 
 %find y-coordinate limits
-% minYCoord = floor(min(tracksY(:)));
+minYCoord = min(floor(min(tracksY(:))),0);
 maxYCoord =  ceil(max(tracksY(:)));
 
 %get number of track segment to be plotted
@@ -272,6 +272,9 @@ if newFigure
     else %if user did not supply an image
         imshow(ones(maxYCoord,maxXCoord),[]); %plot an empty image
     end
+
+    %set figure axes limits
+    axis([minXCoord maxXCoord minYCoord maxYCoord]);
 
     %show coordinates on axes
     ah = gca;

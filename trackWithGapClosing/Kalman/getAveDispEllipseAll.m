@@ -1,15 +1,17 @@
-function [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D] = ...
+function [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D,...
+    longVecSMS,longVecEMS,shortVecSMS,shortVecEMS,shortVecS3DMS,shortVecE3DMS] = ...
     getAveDispEllipseAll(xyzVel,brownStd,trackType,undetBrownStd,timeWindow,...
     brownStdMult,linStdMult,timeReachConfB,timeReachConfL,minSearchRadius,...
     maxSearchRadius,useLocalDensity,closestDistScale,maxStdMult,...
-    nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime,probDim)
+    nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime,probDim,resLimit)
 %GETAVEDISPELLIPSEALL determines the search ellipse and expected displacement along x and y of a particle undergoing 2D diffusion with drift
 %
-%SYNOPSIS [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D] = ...
+%SYNOPSIS [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D,...
+%    longVecSMS,longVecEMS,shortVecSMS,shortVecEMS,shortVecS3DMS,shortVecE3DMS] = ...
 %    getAveDispEllipseAll(xyzVel,brownStd,trackType,undetBrownStd,timeWindow,...
 %    brownStdMult,linStdMult,timeReachConfB,timeReachConfL,minSearchRadius,...
 %    maxSearchRadius,useLocalDensity,closestDistScale,maxStdMult,...
-%    nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime,probDim)
+%    nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime,probDim,resLimit)
 %
 %INPUT  xyzVel         : Velocity in x, y and z (if 3D).
 %       brownStd       : Standard deviation of Brownian motion steps.
@@ -42,6 +44,9 @@ function [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D] = ...
 %       trackStartTime : Starting time of all tracks.
 %       trackEndTime   : Ending time of all tracks.
 %       probDim        : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
+%       resLimit       : Resolution limit, in whatever space units are
+%                        being used.
+%                        Optional. Default: 0 (i.e. don't use).
 %
 %OUTPUT longVecS  : Vector defining long radius of search ellipse/ellipsoid at the
 %                   starts of tracks.
@@ -49,20 +54,14 @@ function [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D] = ...
 %                   ends of tracks.
 %       shortVecS : Vector defining short radius of search ellipse/ellipsoid at the
 %                   starts of tracks.
-%       shortvecE : Vector defining short radius of search ellipse/ellipsoid at the
+%       shortVecE : Vector defining short radius of search ellipse/ellipsoid at the
 %                   ends of tracks.
 %       shortVecS3D:Vector defining 2nd short radius of search ellipse/ellipsoid at the
 %                   starts of tracks in case of 3D.
-%       shortvecE3D:Vector defining 2nd short radius of search ellipse/ellipsoid at the
+%       shortVecE3D:Vector defining 2nd short radius of search ellipse/ellipsoid at the
 %                   ends of tracks in case of 3D.
-%       errFlag   : 0 if function executes normally, 1 otherwise
-%
-%       dispDrift : Vector of expected displacement along x and y due to
-%                   drift (not output any more - although still
-%                   calculated).
-%       dispBrown : Expected displacement along x (= along y) due to
-%                   Brownian motion (not output any more - although still
-%                   calculated).
+%       longVecSMS, longVecEMS, shortVecSMS, shortVecEMS, shortVecS3DMS,
+%       shortVecE3DMS: Same as above, but for merging ang splitting.
 %
 %REMARKS Drift is assumed to look more like 1D diffusion, i.e. the particle
 %goes back and forth along a line
@@ -81,15 +80,25 @@ shortVecS = [];
 shortVecE = [];
 shortVecS3D = [];
 shortVecE3D = [];
+longVecSMS  = [];
+longVecEMS  = [];
+shortVecSMS = [];
+shortVecEMS = [];
+shortVecS3DMS = [];
+shortVecE3DMS = [];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Input
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %check whether correct number of input arguments was used
-if nargin ~= nargin('getAveDispEllipseAll')
+if nargin < 19
     disp('--getAveDispEllipseAll: Incorrect number of input arguments!');
     return
+end
+
+if nargin < 20 || isempty(resLimit)
+    resLimit = 0;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -106,6 +115,16 @@ longVecS  = zeros(probDim,timeWindow,numTracks);
 longVecE  = zeros(probDim,timeWindow,numTracks);
 shortVecS = zeros(probDim,timeWindow,numTracks);
 shortVecE = zeros(probDim,timeWindow,numTracks);
+longVecSMS  = zeros(probDim,timeWindow,numTracks);
+longVecEMS  = zeros(probDim,timeWindow,numTracks);
+shortVecSMS = zeros(probDim,timeWindow,numTracks);
+shortVecEMS = zeros(probDim,timeWindow,numTracks);
+if probDim == 3
+    shortVecS3D = zeros(probDim,timeWindow,numTracks);
+    shortVecE3D = zeros(probDim,timeWindow,numTracks);
+    shortVecS3DMS = zeros(probDim,timeWindow,numTracks);
+    shortVecE3DMS = zeros(probDim,timeWindow,numTracks);
+end
 
 %define square root of "problem dimension" to avoid calculating it many times
 sqrtDim = sqrt(probDim);
@@ -121,6 +140,11 @@ timeScalingBrown = [sqrt(1:timeReachConfB) sqrt(timeReachConfB) * ...
 %scale maxSearchRadius like Brownian motion (it's only imposed on the
 %Brownian aspect of tracks)
 maxSearchRadius = maxSearchRadius * timeScalingBrown;
+
+%calculate minimum and maximum search radii for merging and splitting,
+%taking into account the point spread function width
+minSearchRadiusMS = max(minSearchRadius,resLimit);
+maxSearchRadiusMS = max(maxSearchRadius,resLimit);
 
 %determine the nearest neighbor distances of tracks at their starts and ends
 windowLimS = min([trackStartTime+nnWindow trackEndTime],[],2);
@@ -196,7 +220,7 @@ for iTrack = 1 : numTracks
 
             end
 
-            %determine the long vectors of the search ellipses for all time
+            %determine the "long vectors" of the search rectangles for all time
             %gaps
             longVec1 = repmat(linStdMult',probDim,1) .* dispDrift1 + ...
                 repmat((brownStdMult' .* dispBrown1 * sqrtDim),probDim,1) .* ...
@@ -204,13 +228,13 @@ for iTrack = 1 : numTracks
             longVecMag = sqrt((diag(longVec1' * longVec1))');  %magnitude
             longVecDir = longVec1 ./ repmat(longVecMag,probDim,1); %direction
             
-            %determine the short vectors at track starts
+            %determine the "short vectors" at track starts
             shortVecS1 = repmat((brownStdMultModS .* dispBrown1 * sqrtDim),probDim,1) .* ...
                 repmat(perpendicular,1,timeWindow);
             shortVecSMag = sqrt((diag(shortVecS1' * shortVecS1))');  %magnitude
             shortVecSDir = shortVecS1 ./ repmat(shortVecSMag,probDim,1); %direction
 
-            %determine the short vectors at track ends
+            %determine the "short vectors" at track ends
             shortVecE1 = repmat((brownStdMultModE .* dispBrown1 * sqrtDim),probDim,1) .* ...
                 repmat(perpendicular,1,timeWindow);
             shortVecEMag = sqrt((diag(shortVecE1' * shortVecE1))');  %magnitude
@@ -219,21 +243,32 @@ for iTrack = 1 : numTracks
             %             %output the absolute value of dispDrift1
             %             dispDrift1 = abs(dispDrift1);
 
-            %make sure that long vectors are longer than minimum allowed
-            longVecMag = max([longVecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
-            longVec1 = repmat(longVecMag,probDim,1) .* longVecDir; %new long vector
+            %make sure that "long vectors" are longer than minimum allowed
+            longVecMagTmp = max([longVecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
+            longVec1 = repmat(longVecMagTmp,probDim,1) .* longVecDir; %new long vector
+            %do the same for merging and splitting
+            longVecMagTmp = max([longVecMag;repmat(minSearchRadiusMS,1,timeWindow)]);
+            longVec1MS = repmat(longVecMagTmp,probDim,1) .* longVecDir;
 
-            %make sure that short vectors at track starts are within
+            %make sure that "short vectors" at track starts are within
             %allowed range
-            shortVecSMag = max([shortVecSMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
-            shortVecSMag = min([shortVecSMag;maxSearchRadius]); %compare to maximum
-            shortVecS1 = repmat(shortVecSMag,probDim,1) .* shortVecSDir; %new short vector
+            shortVecSMagTmp = max([shortVecSMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
+            shortVecSMagTmp = min([shortVecSMagTmp;maxSearchRadius]); %compare to maximum
+            shortVecS1 = repmat(shortVecSMagTmp,probDim,1) .* shortVecSDir; %new short vector
+            %do the same for merging and splitting
+            shortVecSMagTmpMS = max([shortVecSMag;repmat(minSearchRadiusMS,1,timeWindow)]);
+            shortVecSMagTmpMS = min([shortVecSMagTmpMS;maxSearchRadiusMS]);
+            shortVecS1MS = repmat(shortVecSMagTmpMS,probDim,1) .* shortVecSDir;
 
-            %make sure that short vectors at track ends are within allowed
+            %make sure that "short vectors" at track ends are within allowed
             %range
-            shortVecEMag = max([shortVecEMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
-            shortVecEMag = min([shortVecEMag;maxSearchRadius]); %compare to maximum
-            shortVecE1 = repmat(shortVecEMag,probDim,1) .* shortVecEDir; %new short vector
+            shortVecEMagTmp = max([shortVecEMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
+            shortVecEMagTmp = min([shortVecEMagTmp;maxSearchRadius]); %compare to maximum
+            shortVecE1 = repmat(shortVecEMagTmp,probDim,1) .* shortVecEDir; %new short vector
+            %do the same for merging and splitting
+            shortVecEMagTmpMS = max([shortVecEMag;repmat(minSearchRadiusMS,1,timeWindow)]);
+            shortVecEMagTmpMS = min([shortVecEMagTmpMS;maxSearchRadiusMS]);
+            shortVecE1MS = repmat(shortVecEMagTmpMS,probDim,1) .* shortVecEDir;
             
             %save values for this track
             %             dispDrift(:,:,iTrack) = dispDrift1;
@@ -242,13 +277,22 @@ for iTrack = 1 : numTracks
             longVecE(:,:,iTrack) = longVec1;
             shortVecS(:,:,iTrack) = shortVecS1;
             shortVecE(:,:,iTrack) = shortVecE1;
+            longVecSMS(:,:,iTrack) = longVec1MS;
+            longVecEMS(:,:,iTrack) = longVec1MS;
+            shortVecSMS(:,:,iTrack) = shortVecS1MS;
+            shortVecEMS(:,:,iTrack) = shortVecE1MS;
             
             %construct additional short vectors for 3D problems
             if probDim == 3
-                shortVecS13D = repmat(shortVecSMag,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
-                shortVecE13D = repmat(shortVecEMag,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
+                shortVecS13D = repmat(shortVecSMagTmp,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
+                shortVecE13D = repmat(shortVecEMagTmp,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
                 shortVecS3D(:,:,iTrack) = shortVecS13D;
                 shortVecE3D(:,:,iTrack) = shortVecE13D;
+                %do the same for merging and splitting
+                shortVecS13DMS = repmat(shortVecSMagTmpMS,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
+                shortVecE13DMS = repmat(shortVecEMagTmpMS,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
+                shortVecS3DMS(:,:,iTrack) = shortVecS13DMS;
+                shortVecE3DMS(:,:,iTrack) = shortVecE13DMS;
             end
 
         case 0
@@ -324,18 +368,27 @@ for iTrack = 1 : numTracks
             shortVecDir = shortVecS1 ./ repmat(vecMag,probDim,1); %direction of short vector
             
             %make sure that magnitude is within allowed range
-            vecMag = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
-            vecMag = min([vecMag;maxSearchRadius]); %compare to maximum
+            vecMagTmp = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
+            vecMagTmp = min([vecMagTmp;maxSearchRadius]); %compare to maximum
+            %repeat for merging and splitting
+            vecMagTmpMS = max([vecMag;repmat(minSearchRadiusMS,1,timeWindow)]);
+            vecMagTmpMS = min([vecMagTmpMS;maxSearchRadiusMS]);
             
             %re-calculate both vectors based on modified magnitudes            
-            longVecS1 = repmat(vecMag,probDim,1) .* longVecDir; %new long vector
-            shortVecS1 = repmat(vecMag,probDim,1) .* shortVecDir; %new short vector
+            longVecS1 = repmat(vecMagTmp,probDim,1) .* longVecDir; %new long vector
+            shortVecS1 = repmat(vecMagTmp,probDim,1) .* shortVecDir; %new short vector
+            %repeat for merging and splitting
+            longVecS1MS = repmat(vecMagTmpMS,probDim,1) .* longVecDir;
+            shortVecS1MS = repmat(vecMagTmpMS,probDim,1) .* shortVecDir;
 
             %construct additional short vectors for 3D problems and save
             %them
             if probDim == 3
-                shortVecS13D = repmat(vecMag,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
+                shortVecS13D = repmat(vecMagTmp,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
                 shortVecS3D(:,:,iTrack) = shortVecS13D;
+                %repeat for merging and splitting
+                shortVecS13DMS = repmat(vecMagTmpMS,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
+                shortVecS3DMS(:,:,iTrack) = shortVecS13DMS;
             end
 
             %get magnitude and direction of both vectors at track ends
@@ -345,12 +398,28 @@ for iTrack = 1 : numTracks
             
             %make sure that magnitude is larger than minimum allowed and
             %smaller than maximum allowed
-            vecMag = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
-            vecMag = min([vecMag;maxSearchRadius]); %compare to maximum
+            vecMagTmp = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
+            vecMagTmp = min([vecMagTmp;maxSearchRadius]); %compare to maximum
+            %repeat for merging and splitting
+            vecMagTmpMS = max([vecMag;repmat(minSearchRadiusMS,1,timeWindow)]);
+            vecMagTmpMS = min([vecMagTmpMS;maxSearchRadiusMS]);
             
             %re-calculate both vectors based on modified magnitudes            
-            longVecE1 = repmat(vecMag,probDim,1) .* longVecDir; %new long vector
-            shortVecE1 = repmat(vecMag,probDim,1) .* shortVecDir; %new short vector
+            longVecE1 = repmat(vecMagTmp,probDim,1) .* longVecDir; %new long vector
+            shortVecE1 = repmat(vecMagTmp,probDim,1) .* shortVecDir; %new short vector
+            %repeat for merging and splitting
+            longVecE1MS = repmat(vecMagTmpMS,probDim,1) .* longVecDir;
+            shortVecE1MS = repmat(vecMagTmpMS,probDim,1) .* shortVecDir;
+
+            %construct additional short vectors for 3D problems and save
+            %them
+            if probDim == 3
+                shortVecE13D = repmat(vecMagTmp,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
+                shortVecE3D(:,:,iTrack) = shortVecE13D;
+                %repear for merging and splitting
+                shortVecE13DMS = repmat(vecMagTmpMS,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
+                shortVecE3DMS(:,:,iTrack) = shortVecE13DMS;
+            end
 
             %save values for this track
             %             dispBrown(:,iTrack) = dispBrown1;
@@ -358,13 +427,10 @@ for iTrack = 1 : numTracks
             longVecE(:,:,iTrack) = longVecE1;
             shortVecS(:,:,iTrack) = shortVecS1;
             shortVecE(:,:,iTrack) = shortVecE1;
-
-            %construct additional short vectors for 3D problems and save
-            %them
-            if probDim == 3
-                shortVecE13D = repmat(vecMag,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
-                shortVecE3D(:,:,iTrack) = shortVecE13D;
-            end
+            longVecSMS(:,:,iTrack) = longVecS1MS;
+            longVecEMS(:,:,iTrack) = longVecE1MS;
+            shortVecSMS(:,:,iTrack) = shortVecS1MS;
+            shortVecEMS(:,:,iTrack) = shortVecE1MS;
 
         otherwise
 
@@ -437,22 +503,31 @@ for iTrack = 1 : numTracks
             vecMag = sqrt((diag(longVecS1' * longVecS1))'); %magnitude of both vectors
             longVecDir = longVecS1 ./ repmat(vecMag,probDim,1);   %direction of long vector
             shortVecDir = shortVecS1 ./ repmat(vecMag,probDim,1); %direction of short vector
-            
+
             %make sure that magnitude is larger than minimum allowed and
             %smaller than maximum allowed
-            vecMag = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
-            vecMag = min([vecMag;maxSearchRadius]); %compare to maximum
-            
-            %re-calculate both vectors based on modified magnitudes            
-            longVecS1 = repmat(vecMag,probDim,1) .* longVecDir; %new long vector
-            shortVecS1 = repmat(vecMag,probDim,1) .* shortVecDir; %new short vector
+            vecMagTmp = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
+            vecMagTmp = min([vecMagTmp;maxSearchRadius]); %compare to maximum
+            %repeat for merging and spltting
+            vecMagTmpMS = max([vecMag;repmat(minSearchRadiusMS,1,timeWindow)]); %compare to minimum
+            vecMagTmpMS = min([vecMagTmpMS;maxSearchRadiusMS]); %compare to maximum
+
+            %re-calculate both vectors based on modified magnitudes
+            longVecS1 = repmat(vecMagTmp,probDim,1) .* longVecDir; %new long vector
+            shortVecS1 = repmat(vecMagTmp,probDim,1) .* shortVecDir; %new short vector
+            %repeat for merging and splitting
+            longVecS1MS = repmat(vecMagTmpMS,probDim,1) .* longVecDir;
+            shortVecS1MS = repmat(vecMagTmpMS,probDim,1) .* shortVecDir;
 
             %construct additional short vectors for 3D problems
             if probDim == 3
-                shortVecS13D = repmat(vecMag,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
+                shortVecS13D = repmat(vecMagTmp,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
                 shortVecS3D(:,:,iTrack) = shortVecS13D;
+                %repeat for merging and splitting
+                shortVecS13DMS = repmat(vecMagTmpMS,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
+                shortVecS3DMS(:,:,iTrack) = shortVecS13DMS;
             end
-            
+
             %get magnitude and direction of both vectors at track ends
             vecMag = sqrt((diag(longVecE1' * longVecE1))'); %magnitude of both vectors
             longVecDir = longVecE1 ./ repmat(vecMag,probDim,1);   %direction of long vector
@@ -460,26 +535,39 @@ for iTrack = 1 : numTracks
             
             %make sure that magnitude is larger than minimum allowed and
             %smaller than maximum allowed
-            vecMag = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
-            vecMag = min([vecMag;maxSearchRadius]); %compare to maximum
+            vecMagTmp = max([vecMag;repmat(minSearchRadius,1,timeWindow)]); %compare to minimum
+            vecMagTmp = min([vecMagTmp;maxSearchRadius]); %compare to maximum
+            %repeat for merging and spltting
+            vecMagTmpMS = max([vecMag;repmat(minSearchRadiusMS,1,timeWindow)]);
+            vecMagTmpMS = min([vecMagTmpMS;maxSearchRadiusMS]);
             
             %re-calculate both vectors based on modified magnitudes
-            longVecE1 = repmat(vecMag,probDim,1) .* longVecDir; %new long vector
-            shortVecE1 = repmat(vecMag,probDim,1) .* shortVecDir; %new short vector
+            longVecE1 = repmat(vecMagTmp,probDim,1) .* longVecDir; %new long vector
+            shortVecE1 = repmat(vecMagTmp,probDim,1) .* shortVecDir; %new short vector
+            %repeat for merging and splitting
+            longVecE1MS = repmat(vecMagTmpMS,probDim,1) .* longVecDir; %new long vector
+            shortVecE1MS = repmat(vecMagTmpMS,probDim,1) .* shortVecDir; %new short vector
 
+            %construct additional short vectors for 3D problems
+            if probDim == 3
+                shortVecE13D = repmat(vecMagTmp,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
+                shortVecE3D(:,:,iTrack) = shortVecE13D;
+                %repeat for merging and splitting
+                shortVecE13DMS = repmat(vecMagTmpMS,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
+                shortVecE3DMS(:,:,iTrack) = shortVecE13DMS;
+            end
+            
             %save values for this track
             %             dispBrown(:,iTrack) = dispBrown1;
             longVecS(:,:,iTrack) = longVecS1;
             longVecE(:,:,iTrack) = longVecE1;
             shortVecS(:,:,iTrack) = shortVecS1;
             shortVecE(:,:,iTrack) = shortVecE1;
+            longVecSMS(:,:,iTrack) = longVecS1MS;
+            longVecEMS(:,:,iTrack) = longVecE1MS;
+            shortVecSMS(:,:,iTrack) = shortVecS1MS;
+            shortVecEMS(:,:,iTrack) = shortVecE1MS;
 
-            %construct additional short vectors for 3D problems
-            if probDim == 3
-                shortVecE13D = repmat(vecMag,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
-                shortVecE3D(:,:,iTrack) = shortVecE13D;
-            end
-            
     end %(switch trackType)
 
 end %(for iTrack = 1 : numTracks)

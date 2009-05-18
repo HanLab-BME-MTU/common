@@ -48,7 +48,7 @@ end
 numOrders = length(momentOrders);
 
 %assign maxLag if not input
-if nargin < 4 || isempty(maxLag)
+if nargin < 4 || isempty(maxLag) || maxLag > floor(numTimePoints/4)
     maxLag = floor(numTimePoints/4);
 end
 
@@ -72,14 +72,17 @@ for iLag = 1 : maxLag
     
     %get standard deviation of displacement magnitude
     dispMagStd = sqrt( sum(displacements.^2 .* dispVar,2) ) ./ dispMag;
-    if all(dispMagStd==0)
-        dispMagStd = eps * ones(size(dispMagStd));
-    end
+    dispMagStd(dispMagStd==0) = eps;
     
     %keep only non-NaNs
     goodEntries = find(~isnan(dispMag));
     dispMag = dispMag(goodEntries);
     dispMagStd = dispMagStd(goodEntries);
+    
+    %     %remove outlier values
+    %     [outlierIdx,inlierIdx] = detectOutliers(dispMag,20);
+    %     dispMag = dispMag(inlierIdx);
+    %     dispMagStd = dispMagStd(inlierIdx);
     
     %proceed if there are at least 10 values to calculate the average
     if length(dispMag) >= 10
