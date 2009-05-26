@@ -290,10 +290,15 @@ for currConn = 1:nConnTry
         end
         
         tic;
-        
-        [tmpARK(:,:,currTry),tmpMAK(:,:,currTry),tmpTOPOK(:,:,:,currTry),...
-            tmpBIC(currTry),errFlag] = armaxCoefKalmanMultiNode(...
-            TRAJ,TOPO0,nExoInputs,arPARAM0,maPARAM0,allCONN(:,:,currConn));
+        try
+            [tmpARK(:,:,currTry),tmpMAK(:,:,currTry),tmpTOPOK(:,:,:,currTry),...
+                tmpBIC(currTry),errFlag] = armaxCoefKalmanMultiNode(...
+                TRAJ,TOPO0,nExoInputs,arPARAM0,maPARAM0,allCONN(:,:,currConn));                        
+        catch errMess
+            
+            errFlag = 1;
+            
+        end
         
         tSingleReg(currConn,currTry) = toc;
         
@@ -324,7 +329,7 @@ for currConn = 1:nConnTry
     end % 1:numGuess
     
     %determine which guess had best fit and store those parameters
-    [minTmpBic,indBestTmpBic] = min(tmpBIC);
+    [minTmpBic,indBestTmpBic] = nanmin(tmpBIC);
     
     allarPARAMK(:,:,currConn) = squeeze(tmpARK(:,:,indBestTmpBic));
     allmaPARAMK(:,:,currConn) = squeeze(tmpMAK(:,:,indBestTmpBic));
@@ -336,7 +341,7 @@ for currConn = 1:nConnTry
 end % 1:nConntry
 
 %determine best connectivity and return it
-[bestBic,indBestBic] = min(allBIC);
+[bestBic,indBestBic] = nanmin(allBIC);
 bestCONN = squeeze(allCONN(:,:,indBestBic));
 
 %%%%%%%%%
