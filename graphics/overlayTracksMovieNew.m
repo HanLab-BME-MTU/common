@@ -51,11 +51,12 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %                       appear OR disappear, and (3) whether they appear
 %                       AND disappear; 0 otherwise. 
 %                       Optional. Default: 1.
-%       diffAnalysisRes: Diffusion analysis results (output of
-%                       trackDiffusionAnalysis1). Needed if tracks are to be
+%       diffAnalysisRes: Diffusion analysis results (either output of
+%                       trackDiffusionAnalysis1 or trackTransientDiffusionAnalysis2).
+%                       Needed if tracks/track segments are to be
 %                       colored based on their diffusion classification.
 %                       With this option, classifyGaps, highlightES and
-%                       classifyLft are set to zero, regardless of input.
+%                       classifyLft are force-set to zero, regardless of input.
 %                       Optional. Default: None.
 %
 %OUTPUT If movie is to be saved, the QT movie is written into directory
@@ -84,8 +85,8 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %           When classifyLft = 0, all objets in middle of trajectory are white.
 %
 %       ** With diffusion classification, all objects and gaps have neutral
-%       color (merges and splits are diamonds), while tracks are
-%       color coded in the following way:
+%       color (merges and splits are diamonds), while tracks and track
+%       segments are color-coded in the following way:
 %               * Type 1: Linear + 1D confined diffusion: Orange.
 %               * Type 2: Linear + 1D normal diffusion: Red.
 %               * Type 3: Linear + 1D super diffusion: Green.
@@ -210,12 +211,19 @@ if nargin < 12 || isempty(classifyLft)
 end
 
 %check whether to color-code tracks based on diffusion classification
+%checm whether diffusion classification is for overall tracks or transient
 if nargin < 13 || isempty(diffAnalysisRes)
     diffAnalysisRes = [];
+    transDiffClass = 0;
 else
     classifyGaps = 0;
     highlightES = 0;
     classifyLft = 0;
+    if isfield(diffAnalysisRes,'segmentClass')
+        transDiffClass = 1;
+    else
+        transDiffClass = 0;
+    end
 end
 
 %filter images if requested
@@ -402,26 +410,125 @@ yCoordMatAll = yCoordMatAll(:,startend(1):startend(2));
 
 %% get track classification based on diffusion analysis
 
-%assign default classification as 0, which means undetermined, and which is
-%the only classification when there are no diffusion analysis results
-trackClass = zeros(numSegmentsTracks,1);
+%copy all coordinates into new variables
+%only the "0" variables will be used when there is no diffusion
+%classification
+[xCoordMatAll0,xCoordMatAll1,xCoordMatAll2,xCoordMatAll3,xCoordMatAll4,...
+    xCoordMatAll5,xCoordMatAll6,xCoordMatAll7,xCoordMatAll8] = deal(xCoordMatAll);
+[yCoordMatAll0,yCoordMatAll1,yCoordMatAll2,yCoordMatAll3,yCoordMatAll4,...
+    yCoordMatAll5,yCoordMatAll6,yCoordMatAll7,yCoordMatAll8] = deal(yCoordMatAll);
 
-%if there are diffusion analysis results ...
-if ~isempty(diffAnalysisRes)
+if ~isempty(diffAnalysisRes) %if there are diffusion analysis results ...
 
-    %get track segment types from diffusion analysis
-    trackSegmentType = vertcat(diffAnalysisRes.classification);
+    if transDiffClass %if transient diffusion classification ...
 
-    %assign classes
-    trackClass(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 1) = 1; %linear + 1D confined (orange)
-    trackClass(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 2) = 2; %linear + 1D normal (red)
-    trackClass(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 3) = 3; %linear + 1D super (green)
-    trackClass(trackSegmentType(:,1) == 1 & isnan(trackSegmentType(:,3))) = 4; %linear + too short (yellow)
-    trackClass(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 1) = 5; %random/unclassified + 2D confined (blue)
-    trackClass(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 2) = 6; %random/unclassified + 2D normal (cyan)
-    trackClass(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 3) = 7; %random/unclassified + 2D super (magenta)
-    trackClass(trackSegmentType(:,1) == 0 & isnan(trackSegmentType(:,2))) = 8; %random + too short (purple)    
-    
+        %put all track segment classifications into one array (note that
+        %here we're talking about merging and splitting segments)
+        trackSegmentClass = vertcat(diffAnalysisRes.segmentClass);
+        
+        %get number of time points in movie
+        numTimePoints = size(xCoordMatAll,2);
+
+        %go over all track segments and classify their points
+        for iTrackSegment = 1 : numSegmentsTracks
+            
+            %get current track's classification
+            trackClassCurrent = trackSegmentClass(iTrackSegment).momentScalingSpectrum(:,1:3);
+            
+            %map the transient classification numbers into the same numbers
+            %as the whole track classification
+            trackClassCol3 = trackClassCurrent(:,3);
+            trackClassCurrent(trackClassCol3==1,3) = 5; %random/unclassified + 2D confined (blue)
+            trackClassCurrent(trackClassCol3==2,3) = 6; %random/unclassified + 2D normal (cyan)
+            trackClassCurrent(trackClassCol3==3,3) = 7; %random/unclassified + 2D super (magenta)
+            trackClassCurrent(isnan(trackClassCol3),3) = 0; %completely unclassified
+
+            %extract and store segments classified as 5
+            classCurrent = find(trackClassCurrent(:,3)==5); %find points classified as 5
+            pointsCurrent = [];
+            for iClass = classCurrent'
+                pointsCurrent = [pointsCurrent (trackClassCurrent(iClass,1):...
+                    trackClassCurrent(iClass,2)+1)]; %#ok<AGROW> %extend each interval by 1 point beyond its end to ensure continuity
+            end
+            pointsNotCurrent = setdiff(1:numTimePoints,pointsCurrent); %find points not classified as 5
+            xCoordMatAll5(iTrackSegment,pointsNotCurrent) = NaN; %remove time points not classified as 5
+            yCoordMatAll5(iTrackSegment,pointsNotCurrent) = NaN;
+
+            %extract and store segments classified as 6
+            classCurrent = find(trackClassCurrent(:,3)==6); %find points classified as 6
+            pointsCurrent = [];
+            for iClass = classCurrent'
+                pointsCurrent = [pointsCurrent (trackClassCurrent(iClass,1):...
+                    trackClassCurrent(iClass,2)+1)]; %#ok<AGROW> %extend each interval by 1 point beyond its end to ensure continuity
+            end
+            pointsNotCurrent = setdiff(1:numTimePoints,pointsCurrent); %find points not classified as 6
+            xCoordMatAll6(iTrackSegment,pointsNotCurrent) = NaN; %remove time points not classified as 6
+            yCoordMatAll6(iTrackSegment,pointsNotCurrent) = NaN;
+
+            %extract and store segments classified as 7
+            classCurrent = find(trackClassCurrent(:,3)==7); %find points classified as 7
+            pointsCurrent = [];
+            for iClass = classCurrent'
+                pointsCurrent = [pointsCurrent (trackClassCurrent(iClass,1):...
+                    trackClassCurrent(iClass,2)+1)]; %#ok<AGROW> %extend each interval by 1 point beyond its end to ensure continuity
+            end
+            pointsNotCurrent = setdiff(1:numTimePoints,pointsCurrent); %find points not classified as 7
+            xCoordMatAll7(iTrackSegment,pointsNotCurrent) = NaN; %remove time points not classified as 7
+            yCoordMatAll7(iTrackSegment,pointsNotCurrent) = NaN;
+
+            %extract and store unclassified segments
+            classCurrent = find(trackClassCurrent(:,3)==0); %find points classified as 0
+            pointsCurrent = [];
+            for iClass = classCurrent'
+                pointsCurrent = [pointsCurrent (trackClassCurrent(iClass,1):...
+                    trackClassCurrent(iClass,2)+1)]; %#ok<AGROW> %extend each interval by 1 point beyond its end to ensure continuity
+            end
+            pointsNotCurrent = setdiff(1:numTimePoints,pointsCurrent); %find points not classified as 0
+            xCoordMatAll0(iTrackSegment,pointsNotCurrent) = NaN; %remove time points not classified as 0
+            yCoordMatAll0(iTrackSegment,pointsNotCurrent) = NaN;
+
+        end
+
+    else %if whole track diffusion classification ...
+
+        %get track segment types from diffusion analysis
+        trackSegmentType = vertcat(diffAnalysisRes.classification);
+
+        %assign classes
+        trackClass = zeros(numSegmentsTracks,1); %initialize with the indicator for undetermined
+        trackClass(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 1) = 1; %linear + 1D confined (orange)
+        trackClass(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 2) = 2; %linear + 1D normal (red)
+        trackClass(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 3) = 3; %linear + 1D super (green)
+        trackClass(trackSegmentType(:,1) == 1 & isnan(trackSegmentType(:,3))) = 4; %linear + too short (yellow)
+        trackClass(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 1) = 5; %random/unclassified + 2D confined (blue)
+        trackClass(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 2) = 6; %random/unclassified + 2D normal (cyan)
+        trackClass(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 3) = 7; %random/unclassified + 2D super (magenta)
+        trackClass(trackSegmentType(:,1) == 0 & isnan(trackSegmentType(:,2))) = 8; %random + too short (purple)
+
+        %extract the tracks/track segments of different classifications
+        %x-coordinates
+        xCoordMatAll0(trackClass~=0,:) = NaN;
+        xCoordMatAll1(trackClass~=1,:) = NaN;
+        xCoordMatAll2(trackClass~=2,:) = NaN;
+        xCoordMatAll3(trackClass~=3,:) = NaN;
+        xCoordMatAll4(trackClass~=4,:) = NaN;
+        xCoordMatAll5(trackClass~=5,:) = NaN;
+        xCoordMatAll6(trackClass~=6,:) = NaN;
+        xCoordMatAll7(trackClass~=7,:) = NaN;
+        xCoordMatAll8(trackClass~=8,:) = NaN;
+        %y-coordinates
+        yCoordMatAll0(trackClass~=0,:) = NaN;
+        yCoordMatAll1(trackClass~=1,:) = NaN;
+        yCoordMatAll2(trackClass~=2,:) = NaN;
+        yCoordMatAll3(trackClass~=3,:) = NaN;
+        yCoordMatAll4(trackClass~=4,:) = NaN;
+        yCoordMatAll5(trackClass~=5,:) = NaN;
+        yCoordMatAll6(trackClass~=6,:) = NaN;
+        yCoordMatAll7(trackClass~=7,:) = NaN;
+        yCoordMatAll8(trackClass~=8,:) = NaN;
+
+    end %(if transDiffClass ... else ...)
+
 end
 
 %% make movie
@@ -431,7 +538,7 @@ cd(dirName);
 
 %go over all specified frames
 for iFrame = 1 : size(xCoordMatAll,2)
-    
+
     %plot image in current frame and show frame number
     clf;
     switch showRaw
@@ -477,55 +584,95 @@ for iFrame = 1 : size(xCoordMatAll,2)
     %get tracks to plot
     plotOrNot = 0;
     if dragtailLength >= 0 %plot tracks dynamically
-        
+
         if iFrame > 1
             dragTailStart = max(iFrame-dragtailLength,1);
             indx2keep = find(pointStatus(:,iFrame)~=0);
-            xCoord2plot = (xCoordMatAll(indx2keep,dragTailStart:iFrame))';
-            yCoord2plot = (yCoordMatAll(indx2keep,dragTailStart:iFrame))';
-            trackClass2plot = trackClass(indx2keep);
+            xCoord2plot0 = (xCoordMatAll0(indx2keep,dragTailStart:iFrame))';
+            yCoord2plot0 = (yCoordMatAll0(indx2keep,dragTailStart:iFrame))';
+            xCoord2plot1 = (xCoordMatAll1(indx2keep,dragTailStart:iFrame))';
+            yCoord2plot1 = (yCoordMatAll1(indx2keep,dragTailStart:iFrame))';
+            xCoord2plot2 = (xCoordMatAll2(indx2keep,dragTailStart:iFrame))';
+            yCoord2plot2 = (yCoordMatAll2(indx2keep,dragTailStart:iFrame))';
+            xCoord2plot3 = (xCoordMatAll3(indx2keep,dragTailStart:iFrame))';
+            yCoord2plot3 = (yCoordMatAll3(indx2keep,dragTailStart:iFrame))';
+            xCoord2plot4 = (xCoordMatAll4(indx2keep,dragTailStart:iFrame))';
+            yCoord2plot4 = (yCoordMatAll4(indx2keep,dragTailStart:iFrame))';
+            xCoord2plot5 = (xCoordMatAll5(indx2keep,dragTailStart:iFrame))';
+            yCoord2plot5 = (yCoordMatAll5(indx2keep,dragTailStart:iFrame))';
+            xCoord2plot6 = (xCoordMatAll6(indx2keep,dragTailStart:iFrame))';
+            yCoord2plot6 = (yCoordMatAll6(indx2keep,dragTailStart:iFrame))';
+            xCoord2plot7 = (xCoordMatAll7(indx2keep,dragTailStart:iFrame))';
+            yCoord2plot7 = (yCoordMatAll7(indx2keep,dragTailStart:iFrame))';
+            xCoord2plot8 = (xCoordMatAll8(indx2keep,dragTailStart:iFrame))';
+            yCoord2plot8 = (yCoordMatAll8(indx2keep,dragTailStart:iFrame))';
             plotOrNot = 1;
         end
-        
+
     elseif dragtailLength == -1 %plot tracks statically
-        
-        xCoord2plot = (xCoordMatAll)';
-        yCoord2plot = (yCoordMatAll)';
-        trackClass2plot = trackClass;
+
+        xCoord2plot0 = (xCoordMatAll0)';
+        yCoord2plot0 = (yCoordMatAll0)';
+        xCoord2plot1 = (xCoordMatAll1)';
+        yCoord2plot1 = (yCoordMatAll1)';
+        xCoord2plot2 = (xCoordMatAll2)';
+        yCoord2plot2 = (yCoordMatAll2)';
+        xCoord2plot3 = (xCoordMatAll3)';
+        yCoord2plot3 = (yCoordMatAll3)';
+        xCoord2plot4 = (xCoordMatAll4)';
+        yCoord2plot4 = (yCoordMatAll4)';
+        xCoord2plot5 = (xCoordMatAll5)';
+        yCoord2plot5 = (yCoordMatAll5)';
+        xCoord2plot6 = (xCoordMatAll6)';
+        yCoord2plot6 = (yCoordMatAll6)';
+        xCoord2plot7 = (xCoordMatAll7)';
+        yCoord2plot7 = (yCoordMatAll7)';
+        xCoord2plot8 = (xCoordMatAll8)';
+        yCoord2plot8 = (yCoordMatAll8)';
         plotOrNot = 1;
-        
+
     elseif dragtailLength == -2 %plot tracks dynamically but keep them after they disappear
         
         if iFrame > 1
-            xCoord2plot = xCoordMatAll(:,1:iFrame)';
-            yCoord2plot = yCoordMatAll(:,1:iFrame)';
-            trackClass2plot = trackClass;
+            xCoord2plot0 = xCoordMatAll0(:,1:iFrame)';
+            yCoord2plot0 = yCoordMatAll0(:,1:iFrame)';
+            xCoord2plot1 = xCoordMatAll1(:,1:iFrame)';
+            yCoord2plot1 = yCoordMatAll1(:,1:iFrame)';
+            xCoord2plot2 = xCoordMatAll2(:,1:iFrame)';
+            yCoord2plot2 = yCoordMatAll2(:,1:iFrame)';
+            xCoord2plot3 = xCoordMatAll3(:,1:iFrame)';
+            yCoord2plot3 = yCoordMatAll3(:,1:iFrame)';
+            xCoord2plot4 = xCoordMatAll4(:,1:iFrame)';
+            yCoord2plot4 = yCoordMatAll4(:,1:iFrame)';
+            xCoord2plot5 = xCoordMatAll5(:,1:iFrame)';
+            yCoord2plot5 = yCoordMatAll5(:,1:iFrame)';
+            xCoord2plot6 = xCoordMatAll6(:,1:iFrame)';
+            yCoord2plot6 = yCoordMatAll6(:,1:iFrame)';
+            xCoord2plot7 = xCoordMatAll7(:,1:iFrame)';
+            yCoord2plot7 = yCoordMatAll7(:,1:iFrame)';
+            xCoord2plot8 = xCoordMatAll8(:,1:iFrame)';
+            yCoord2plot8 = yCoordMatAll8(:,1:iFrame)';
             plotOrNot = 1;
         end
-        
+
     end
 
     %plot tracks
     %color-code dragtail based on diffusion analysis if supplied
     if plotOrNot
-        plot(xCoord2plot(:,trackClass2plot==0),yCoord2plot(:,trackClass2plot==0),...
-            'Color',[1 0.7 0.7],'LineWidth',2); %light pink
-        plot(xCoord2plot(:,trackClass2plot==1),yCoord2plot(:,trackClass2plot==1),...
-            'Color',[1 0.7 0],'LineWidth',2); %orange
-        plot(xCoord2plot(:,trackClass2plot==2),yCoord2plot(:,trackClass2plot==2),...
-            'Color','r','LineWidth',2); %[1 0 0]
-        plot(xCoord2plot(:,trackClass2plot==3),yCoord2plot(:,trackClass2plot==3),...
-            'Color','g','LineWidth',2); %[0 1 0]
-        plot(xCoord2plot(:,trackClass2plot==4),yCoord2plot(:,trackClass2plot==4),...
-            'Color','y','LineWidth',2); %[1 1 0]
-        plot(xCoord2plot(:,trackClass2plot==5),yCoord2plot(:,trackClass2plot==5),...
-            'Color','b','LineWidth',2); %[0 0 1]
-        plot(xCoord2plot(:,trackClass2plot==6),yCoord2plot(:,trackClass2plot==6),...
-            'Color','c','LineWidth',2); %[0 1 1]
-        plot(xCoord2plot(:,trackClass2plot==7),yCoord2plot(:,trackClass2plot==7),...
-            'Color','m','LineWidth',2); %[1 0 1]
-        plot(xCoord2plot(:,trackClass2plot==8),yCoord2plot(:,trackClass2plot==8),...
-            'Color',[0.6 0 1],'LineWidth',2); %purple
+        plot(xCoord2plot0,yCoord2plot0,'Color',[1 0.7 0.7],'LineWidth',2); %light pink
+        if ~isempty(diffAnalysisRes)
+            plot(xCoord2plot5,yCoord2plot5,'Color','b','LineWidth',2); %[0 0 1]
+            plot(xCoord2plot6,yCoord2plot6,'Color','c','LineWidth',2); %[0 1 1]
+            plot(xCoord2plot7,yCoord2plot7,'Color','m','LineWidth',2); %[1 0 1]
+            if ~transDiffClass
+                plot(xCoord2plot1,yCoord2plot1,'Color',[1 0.7 0],'LineWidth',2); %orange
+                plot(xCoord2plot2,yCoord2plot2,'Color','r','LineWidth',2); %[1 0 0]
+                plot(xCoord2plot3,yCoord2plot3,'Color','g','LineWidth',2); %[0 1 0]
+                plot(xCoord2plot4,yCoord2plot4,'Color','y','LineWidth',2); %[1 1 0]
+                plot(xCoord2plot8,yCoord2plot8,'Color',[0.6 0 1],'LineWidth',2); %purple
+            end
+        end
     end
 
     %plot points (features + gaps + merges + splits)
