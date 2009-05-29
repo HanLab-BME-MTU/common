@@ -99,17 +99,16 @@ if nargin < 3 || isempty(probDim)
 end
 
 if nargin < 4 || isempty(alphaValues)
-    alphaValues = [0.1 0.1];
+    alphaValues = [0.05 0.05];
 elseif length(alphaValues) == 1
     alphaValues = [alphaValues alphaValues];
 end
 
 if nargin < 5 || isempty(minDuration)
-    minDuration = [8 8];
+    minDuration = [8 2];
 elseif length(minDuration) == 1
     minDuration = [minDuration minDuration];
 end
-% minDuration(minDuration<8) = 8;
 
 if nargin < 6 || isempty(plotRes)
     plotRes = 0;
