@@ -366,7 +366,7 @@ end
 
 %this function now breaks up frame-to-frame linked tracks if they do not
 %follow a linear trajectory.  it only runs with the EB3 cost matrix
-if isequal(costMatrices(1).funcName,'costMatLinearMotionLink_EB3')
+if isequal(costMatrices(2).funcName,'plusTipCostMatCloseGaps')
     [tracksCoordAmpLink,tracksFeatIndxLink,nnDistLinkedFeat]=...
        breakNonlinearTracks(tracksCoordAmpLink,tracksFeatIndxLink,nnDistLinkedFeat);
 end
