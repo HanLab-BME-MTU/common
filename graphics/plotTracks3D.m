@@ -94,7 +94,7 @@ if nargin < 2 || isempty(timeRange)
     timeRange = [1 numTimePoints];
 else
     if timeRange(1) < 1 || timeRange(2) > numTimePoints
-        disp('--plotTracks2D: Wrong time range for plotting!');
+        disp('--plotTracks3D: Wrong time range for plotting!');
         errFlag = 1;
     end
 end
@@ -114,7 +114,7 @@ if nargin < 5 || isempty(indicateSE)
     indicateSE = 1;
 else
     if indicateSE ~= 0 && indicateSE ~= 1
-        disp('plotTracks2D: indicateSE should be 0 or 1!');
+        disp('plotTracks3D: indicateSE should be 0 or 1!');
         errFlag = 1;
     end
 end
@@ -124,7 +124,7 @@ if nargin < 6 || isempty(newFigure)
     newFigure = 1;
 else
     if newFigure ~= 0 && newFigure ~= 1 && ~(ishandle(newFigure) && strmatch(get(newFigure,'Type'),'axes'))
-        disp('--plotTracks2D: newFigure should be 0 or 1 or an axes handle!');
+        disp('--plotTracks3D: newFigure should be 0 or 1 or an axes handle!');
         errFlag = 1;
     end
 end
@@ -138,7 +138,7 @@ end
 
 %exit if there are problem in input variables
 if errFlag
-    disp('--plotTracks2D: Please fix input data!');
+    disp('--plotTracks3D: Please fix input data!');
     return
 end
 

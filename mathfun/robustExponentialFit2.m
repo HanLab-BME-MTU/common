@@ -163,10 +163,10 @@ if verbose
     t = A(:,end);
     colorOrder = get(gca,'ColorOrder');
     
-    % jonas, 3/09: this should work, I hope
+    % jonas, 3/09: this should work, I hope - 6/09: it didn't, now it does
     %yFit=exp(A * [log(u(1:end-1));u(end)]);
     ut = unique(t);
-    yFit=u(1:end-1)*exp(u(2)*unique(t));
+    yFit=exp(u(end)*ut)*u(1:end-1)';
     for i = 1:size(A,2)-1
         pIdx = find(A(:,i));
         % make sure that the time is ordered when plotting the estimate
