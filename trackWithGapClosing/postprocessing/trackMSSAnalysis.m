@@ -1389,8 +1389,8 @@ mssThreshPos = [...
     0.556919223808095
     0.556881417775385];
 
-mssThreshNeg = [mssThreshNeg(1:nTP); mssThreshNeg(500)*ones(max(0,nTP-500),1)];
-mssThreshPos = [mssThreshPos(1:nTP); mssThreshPos(500)*ones(max(0,nTP-500),1)];
+mssThreshNeg = [mssThreshNeg(1:min(500,nTP)); mssThreshNeg(500)*ones(max(0,nTP-500),1)];
+mssThreshPos = [mssThreshPos(1:min(500,nTP)); mssThreshPos(500)*ones(max(0,nTP-500),1)];
 
 %%%%%%%%%%%%%%%%%%%%%%%
 
@@ -2404,8 +2404,8 @@ mssThreshPos = [...
     0.570736389427111
     0.57067819887202];
 
-mssThreshNeg = [mssThreshNeg(1:nTP); mssThreshNeg(500)*ones(max(0,nTP-500),1)];
-mssThreshPos = [mssThreshPos(1:nTP); mssThreshPos(500)*ones(max(0,nTP-500),1)];
+mssThreshNeg = [mssThreshNeg(1:min(500,nTP)); mssThreshNeg(500)*ones(max(0,nTP-500),1)];
+mssThreshPos = [mssThreshPos(1:min(500,nTP)); mssThreshPos(500)*ones(max(0,nTP-500),1)];
 
 %%%%%%%%%%%%%%%%%%%%%%%
 
@@ -3417,8 +3417,8 @@ mssThreshPos = [...
     0.598278404183069
     0.598222598105197];
 
-mssThreshNeg = [mssThreshNeg(1:nTP); mssThreshNeg(500)*ones(max(0,nTP-500),1)];
-mssThreshPos = [mssThreshPos(1:nTP); mssThreshPos(500)*ones(max(0,nTP-500),1)];
+mssThreshNeg = [mssThreshNeg(1:min(500,nTP)); mssThreshNeg(500)*ones(max(0,nTP-500),1)];
+mssThreshPos = [mssThreshPos(1:min(500,nTP)); mssThreshPos(500)*ones(max(0,nTP-500),1)];
 
 %%%%%%%%%%%%%%%%%%%%%%%
 
