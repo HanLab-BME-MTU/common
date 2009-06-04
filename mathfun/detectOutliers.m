@@ -15,6 +15,8 @@ function [outlierIdx,inlierIdx] = detectOutliers(observations,k)
 %        algorithm.
 %
 %Khuloud Jaqaman, October 2007
+%Hunter Elliott, 6/4/2009  - switched median to nanmedian to support
+%missing observations.
 
 if nargin < 2 || isempty(k)
     k = 3;
@@ -23,7 +25,7 @@ end
 %% outlier detection
 
 %calculate median of observations
-medObs = median(observations(:));
+medObs = nanmedian(observations(:));
 
 %get residuals, i.e. distance of observations from median
 residuals = observations(:) - medObs;
@@ -32,7 +34,7 @@ residuals = observations(:) - medObs;
 res2 = residuals .^ 2;
 
 %calculate the median of the squared residuals
-medRes2 = median(res2);
+medRes2 = nanmedian(res2);
 
 %define parameter to remove outliers
 magicNumber2 = 1.4826^2;
