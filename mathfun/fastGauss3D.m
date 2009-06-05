@@ -94,6 +94,7 @@ if correctBorder == 1
     %that takes up 1/8th the space of the original. As long as more than
     %1/8th of the image contains Nan, it's smaller than a list of indices
     nanMask = isnan(img); 
+    fullMask = [];
     if reduceNanImage && any(nanMask(:))
         goodRCZcell = cell(dims,1);
         nan2 = all(nanMask,3);
@@ -108,8 +109,6 @@ if correctBorder == 1
             img = img(goodRCZcell{:});
             fullMask = nanMask;
             nanMask = nanMask(goodRCZcell{:});
-        else
-            fullMask = [];
         end
     end
         
