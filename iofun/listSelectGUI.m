@@ -1,7 +1,7 @@
 function varargout = listSelectGUI(varargin)
 %LISTSELECTGUI launches a GUI to allow selection from a list
 %
-% SYNOPSIS [selection, selectionList] = listSelectGUI(inputList,maxSelect,moveOrCopy,forceChoice)
+% SYNOPSIS [selection, selectionList] = listSelectGUI(inputList,maxSelect,moveOrCopy,forceChoice,preselect)
 %
 % INPUT    inputList   Cell, list of strings or numerical array from which
 %                      the user is to select a number of items
@@ -14,10 +14,15 @@ function varargout = listSelectGUI(varargin)
 %                      the left to the right list, if 'copy' (default), the
 %                      inputList always remains on the right
 %
-%          forceChoice optional. If 1, listSelectGUI will launch on any
-%                      number of items in the list. If 0 (default), it will
+%          forceChoice optional. If 1 (default), listSelectGUI will launch 
+%                      on any number of items in the list. If 0 , it will
 %                      not open if the number of items is equal to
 %                      maxSelect (or 1, if maxSelect is empty)
+%
+%          preselect   optional. If empty (default), all input is in the
+%                      left selection window. A list of indices into
+%                      inputList has the selected entries appear in the
+%                      right selection window.
 %
 % OUTPUT   selection   Indices into inputList of selected items
 %
@@ -53,7 +58,23 @@ function listSelectGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % varargin   command line arguments to listSelectGUI (see VARARGIN)
 
 % run opening function until we wait for figure to close.
-% First, we write selectionList into the left listBox
+
+% if third input argument: remember moveOrCopy (can be 'move' or 'copy')
+if length(varargin) > 2 && ~isempty(varargin{3})
+    moveOrCopy = varargin{3};
+    if ~(strcmpi(moveOrCopy,'move')||strcmpi(moveOrCopy,'copy'))
+        % run termination routine
+        handles.output = [];
+        guidata(hObject,handles)
+        h = errordlg('third input argument has to be either ''move'' or '' copy''!');
+        uiwait(h)
+        close(hObject)
+        return
+    end
+else
+    moveOrCopy = 'copy';
+end
+handles.moveOrCopy = moveOrCopy;
 
 % we allow numbers, strings and cells as input
 if isempty(varargin) || isempty(varargin{1})
@@ -85,12 +106,25 @@ end
 
 % assign list
 listLength = length(listCell);
-set(handles.LSG_listboxLeft,'String',listCell);
-% store indexLists
-handles.leftIndexList = (1:listLength)';
-handles.rightIndexList = [];
 % remember original list
 handles.originalList = listCell;
+
+% pre-select
+if length(varargin) > 4
+    handles.rightIndexList = varargin {5};
+else
+    handles.rightIndexList = [];
+end
+
+% store indexLists
+if isempty(handles.rightIndexList) || strcmp(moveOrCopy,'copy')
+    handles.leftIndexList = (1:listLength)';
+else
+    handles.leftIndexList = missingIndices(handles.rightIndexList,listLength);
+end
+set(handles.LSG_listboxLeft,'String',listCell(handles.leftIndexList));
+set(handles.LSG_listboxRight,'String',listCell(handles.rightIndexList));
+
 
 % the second input argument determines how many items can be selected
 if length(varargin) > 1 && ~isempty(varargin{2})
@@ -116,29 +150,6 @@ end
 handles.maxSelect = maxSelect;
 
 
-
-% if third input argument: remember moveOrCopy (can be 'move' or 'copy')
-if length(varargin) > 2 && ~isempty(varargin{3})
-    moveOrCopy = varargin{3};
-    if ~(strcmpi(moveOrCopy,'move')||strcmpi(moveOrCopy,'copy'))
-        % run termination routine
-        handles.output = [];
-        guidata(hObject,handles)
-        h = errordlg('third input argument has to be either ''move'' or '' copy''!');
-        uiwait(h)
-        close(hObject)
-        return
-    end
-else
-    moveOrCopy = 'copy';
-end
-
-
-
-% store moveOrCopy and update handles
-handles.moveOrCopy = moveOrCopy;
-guidata(hObject,handles);
-
 % fourth input argument: forceChoice?
 if length(varargin) > 3 && ~isempty(varargin{4})
     forceChoice = varargin{4};
@@ -146,11 +157,17 @@ else
     forceChoice = false;
 end
 
+% update handles
+guidata(hObject,handles);
+
+
 % check for whether we have to make a choice at all
-
-
-% UIWAIT makes listSelectGUI wait for user response (see UIRESUME)
-uiwait(handles.listSelectGUI);
+if ~forceChoice &&listLength <= maxSelect
+    % done
+else
+    % wait for user
+    uiwait(handles.listSelectGUI);
+end
 
 
 
