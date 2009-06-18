@@ -22,7 +22,9 @@ function varargout = listSelectGUI(varargin)
 %          preselect   optional. If empty (default), all input is in the
 %                      left selection window. A list of indices into
 %                      inputList has the selected entries appear in the
-%                      right selection window.
+%                      right selection window. If indices are negative, it
+%                      preselect indicates the list of entries that are not
+%                      in the right selection window.
 %
 % OUTPUT   selection   Indices into inputList of selected items
 %
@@ -112,6 +114,12 @@ handles.originalList = listCell;
 % pre-select
 if length(varargin) > 4
     handles.rightIndexList = varargin {5};
+    if any(abs(handles.rightIndexList)>listLength)
+        error('at least one preselect index is out of range')
+    end
+    if any(handles.rightIndexList<0)
+        handles.rightIndexList = missingIndices(abs(handles.rightIndexList),listLength);
+    end       
 else
     handles.rightIndexList = [];
 end
