@@ -1,4 +1,4 @@
-function h = plotTransparent(x,y,width,color,opacity,axisEqual)
+function h = plotTransparent(x,y,width,color,opacity,perpendicularOffset)
 
 %
 % h = plotTransparent(x,y,width,plotStyle)
@@ -21,24 +21,30 @@ function h = plotTransparent(x,y,width,color,opacity,axisEqual)
 %     opacity - How transparent the line is. If 1, the line is opaque. If
 %     0, the line is invisible.
 %
-%     axisEqual - if 1, the code assumes equal axes and thus calculates the
+%     perpendicularOffset - if 1, the code assumes equal axes and thus calculates the
 %                 line such that it is expanded at a right angle to the
 %                 individual line segments. This only looks good if you set
 %                 'axis equal' or if you plot onto an image created with
 %                 imshow, but it allows to plot any 2D line, not just those
-%                 that can be described as y = f(x). Optional. Default: 0
+%                 that can be described as y = f(x). Optional. Default: 1
+%
+%                 
 %
 % Output: h   -    Handle to the patch object
 %
-% Examples 
-%           figure,plotTransparent(rand(25,1))
+% Example 
 %
 %           phi = -pi:0.01:pi;
 %           figure,
-%           plotTransparent(sin(phi),cos(phi),[],[],[],1),axis equal
+%           plotTransparent(sin(phi),cos(phi)),axis equal
 %
 % Hunter Elliott, 6/2009
 % adapted for any 2D lines by Jonas
+
+% note: it turns out that Hunter's version looks equally crappy with
+% unequal axes (example: figure,plotTransparent(rand(25,1),[],[],[],[],0) )
+% Therefore, I set the perpendicularOffset as default.
+
 
 if nargin  == 0
     error('plotTransparent needs at least one nonempty input argument')
@@ -71,8 +77,8 @@ if nargin < 5 || isempty(opacity)
     opacity = .4;
 end
 
-if nargin < 6 || isempty(axisEqual)
-    axisEqual = false;
+if nargin < 6 || isempty(perpendicularOffset)
+    perpendicularOffset = true;
 end
 
 n = length(x);
@@ -89,7 +95,7 @@ if length(width) ~= n
     error('Width must be a scalar or a vector of the same length as x & y!!')
 end
 
-if any(isnan([x y]))
+if any(isnan([x; y]))
     disp('Warning: NaN values will be ignored!')
     
     notNan = ~isnan(x) & ~isnan(y);
@@ -100,10 +106,10 @@ end
 
 
 
-if ~axisEqual
+if ~perpendicularOffset
     % Hunter's version
-    xFill = [x x(end:-1:1)];
-    yFill = [(y - width) (y(end:-1:1) + width)];
+    xFill = [x; x(end:-1:1)];
+    yFill = [(y - width); (y(end:-1:1) + width)];
     
 else
     % Jonas' version
