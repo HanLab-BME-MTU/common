@@ -5,9 +5,9 @@ function [bgMean,bgStd] = spatialMovAveBG(imageLast5,imageSizeX,imageSizeY)
 
 %define pixel limits where moving average can be calculated
 startPixelX = 16;
-endPixelX = imageSizeX - 15;
+endPixelX = max(imageSizeX - 15,startPixelX);
 startPixelY = 16;
-endPixelY = imageSizeY - 15;
+endPixelY = max(imageSizeY - 15,startPixelY);
 
 %allocate memory for output
 bgMean = NaN(imageSizeX,imageSizeY);
@@ -18,7 +18,7 @@ for iPixelX = startPixelX : 11 : endPixelX
     for iPixelY = startPixelY : 11 : endPixelY
         
         %get local image
-        imageLocal = imageLast5(iPixelX-15:iPixelX+15,iPixelY-15:iPixelY+15,:);
+        imageLocal = imageLast5(iPixelX-15:min(iPixelX+15,imageSizeX),iPixelY-15:min(iPixelY+15,imageSizeY),:);
         
         %estimate robust mean and std
         %first remove NaNs representing cropped regions
