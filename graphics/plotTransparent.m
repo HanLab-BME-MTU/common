@@ -109,7 +109,7 @@ end
 if ~perpendicularOffset
     % Hunter's version
     xFill = [x; x(end:-1:1)];
-    yFill = [(y - width); (y(end:-1:1) + width)];
+    yFill = [(y - width); (y(end:-1:1) + width(end:-1:1)];
     
 else
     % Jonas' version
