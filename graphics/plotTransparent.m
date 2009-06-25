@@ -30,6 +30,12 @@ function h = plotTransparent(x,y,width,color,opacity,axisEqual)
 %
 % Output: h   -    Handle to the patch object
 %
+% Examples 
+%           figure,plotTransparent(rand(25,1))
+%
+%           phi = -pi:0.01:pi;
+%           figure,
+%           plotTransparent(sin(phi),cos(phi),[],[],[],1),axis equal
 %
 % Hunter Elliott, 6/2009
 % adapted for any 2D lines by Jonas
@@ -49,6 +55,9 @@ end
 if isempty(x)
     x = 1:length(y);
 end
+
+x = x(:);
+y = y(:);
 
 if nargin < 3 || isempty(width)
     width = nanstd(y) / 20;
@@ -80,10 +89,10 @@ if length(width) ~= n
     error('Width must be a scalar or a vector of the same length as x & y!!')
 end
 
-if any(isnan([x(:)' y(:)']))
+if any(isnan([x y]))
     disp('Warning: NaN values will be ignored!')
     
-    notNan = ~isnan(x(:)) & ~isnan(y(:));
+    notNan = ~isnan(x) & ~isnan(y);
     width = width(notNan);
     x = x(notNan);
     y = y(notNan);
@@ -99,7 +108,7 @@ if ~axisEqual
 else
     % Jonas' version
     
-    xy = [x(:),y(:)];
+    xy = [x,y];
     % find derivative to have proper corners
     [n_xy,e_xy] = normList(diff(xy));
     offset = [-e_xy(:,2),e_xy(:,1)];
