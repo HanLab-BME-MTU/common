@@ -91,6 +91,8 @@ if length(width) == 1
     width = repmat(width,n,1);
 end
 
+width = width(:);
+
 if length(width) ~= n
     error('Width must be a scalar or a vector of the same length as x & y!!')
 end
@@ -108,8 +110,8 @@ end
 
 if ~perpendicularOffset
     % Hunter's version
-    xFill = [x; x(end:-1:1)];
-    yFill = [(y - width); (y(end:-1:1) + width(end:-1:1)];
+    xFill = [x(:)' x(end:-1:1)'];
+    yFill = [(y(:)' - width(:)') (y(end:-1:1)' + width(end:-1:1)') ];
     
 else
     % Jonas' version
