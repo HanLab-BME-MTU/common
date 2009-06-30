@@ -45,9 +45,9 @@ parameters.linearMotion = 1; %use linear motion Kalman filter.
 parameters.minSearchRadius = 2; %minimum allowed search radius.
 parameters.maxSearchRadius = 5; %maximum allowed search radius.
 parameters.brownStdMult = 3*ones(gapCloseParam.timeWindow,1); %multiplication factor to calculate Brownian search radius from standard deviation.
-parameters.timeReachConfB = 2; %in the code, the search radius expands with the time gap (since a particle is expected to move further away in a longer gap than in a shorter one). This parameter controls how fast the search radius grows with time. timeReachConfB stands for time to reach confinement for the Brownian part of the motion. So before timeReachConfB, the search radius grows with the square root of time, after that it grows very, very slowly (it's almost fixed).
+parameters.timeReachConfB = 3; %in the code, the search radius expands with the time gap (since a particle is expected to move further away in a longer gap than in a shorter one). This parameter controls how fast the search radius grows with time. timeReachConfB stands for time to reach confinement for the Brownian part of the motion. So before timeReachConfB, the search radius grows with the square root of time, after that it grows very, very slowly (it's almost fixed).
 
-parameters.ampRatioLimit = [0.5 4]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
+parameters.ampRatioLimit = [0.7 4]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
 
 parameters.lenForClassify = 5; %minimum track segment length to classify it as linear or random.
 
@@ -79,8 +79,8 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/mnt/sickkids/Hiro/071229_many/control/con_noco_21/analysis/'; %directory where to save input and output
-saveResults.filename = 'track_con_noco_21_D1_090508.mat'; %name of file where input and output are saved
+saveResults.dir = '/mnt/sickkids/Hiro/071229_many/nocodazole/30minute/noc_clnb_04/analysis/'; %directory where to save input and output
+saveResults.filename = 'track_noc_clnb_04_D1_090624.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
 %verbose

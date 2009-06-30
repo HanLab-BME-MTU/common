@@ -359,12 +359,12 @@ for iImage = 1 : numImagesInteg
         %add the cands of the current image to the rest - this is done
         %for the raw images, not the integrated ones
         localMaxima(iImage+integWindow).cands = cands;
-         
+
     catch
 
         %if local maxima detection fails, make cands empty
         localMaxima(iImage+integWindow).cands = [];
-        
+
         %add this frame to the array of frames with failed local maxima
         %detection and to the array of empty frames
         framesFailedLocMax = [framesFailedLocMax; imageIndx(iImage+integWindow)];

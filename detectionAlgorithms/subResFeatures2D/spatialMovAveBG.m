@@ -19,7 +19,7 @@ for iPixelX = startPixelX : 11 : endPixelX
         
         %get local image
         imageLocal = imageLast5(iPixelX-15:min(iPixelX+15,imageSizeX),iPixelY-15:min(iPixelY+15,imageSizeY),:);
-        
+           
         %estimate robust mean and std
         %first remove NaNs representing cropped regions
         imageLocal = imageLocal(~isnan(imageLocal));

@@ -1,9 +1,9 @@
 function [statsGeneral,statsPerCat,numEventsPerCat] = calcStatsMS(tracks,...
-    minTrackLen,probDim,diffAnalysisRes)
+    minTrackLen,probDim,diffAnalysisRes,removePotArtifacts)
 %CALCSTATSMS calculates merge/split statistics for linear, Brownian and confined Brownian tracks
 %
 %SYNOPSIS [statsGeneral,statsPerCat,numEventsPerCat] = calcStatsMS(tracks,...
-%    minTrackLen,probDim,diffAnalysisRes)
+%    minTrackLen,probDim,diffAnalysisRes,removePotArtifacts)
 %
 %INPUT  tracks     : Output of trackCloseGapsKalman.
 %       minTrackLen: Minimum length of a track to be used in getting
@@ -14,6 +14,10 @@ function [statsGeneral,statsPerCat,numEventsPerCat] = calcStatsMS(tracks,...
 %       diffAnalysisRes: Diffusion analysis results (output of
 %                    trackDiffAnalysis1). Optional. If not input, it will
 %                    be calculated.
+%       removePotArtifacts: 1 to remove potentially artifactual merges and
+%                    splits, resulting for instance from detection
+%                    artifact, 0 otherwise. 
+%                    Optional. Default: 1.
 %
 %OUTPUT statsGeneral: Row vector with entries: 
 %                     (1) Number of features per frame.
@@ -92,6 +96,10 @@ if nargin < 4 || isempty(diffAnalysisRes)
     if errFlag
         return
     end
+end
+
+if nargin < 5 || isempty(removePotArtifacts)
+    removePotArtifacts = 1;
 end
 
 %% preamble
@@ -184,9 +192,14 @@ listOfSplits = [];
 
 %go over all compound tracks
 for iTrack = 1 : numTracks
-
+    
     %get the sequence of events of this compound track
     seqOfEvents = tracks(iTrack).seqOfEvents;
+
+    %if requested, remove splits and merges that are most likely artifacts
+    if removePotArtifacts
+        seqOfEvents = removeSplitMergeArtifacts(seqOfEvents,0);
+    end
 
     %find where this track has merges/splits
     indxMS = find(~isnan(seqOfEvents(:,4)));
@@ -206,9 +219,9 @@ for iTrack = 1 : numTracks
 
         %add this merge/split to the list of merges/splits
         if msType == 2 %merge
-            listOfMerges = [listOfMerges; segmentsMS];
+            listOfMerges = [listOfMerges; segmentsMS]; %#ok<AGROW>
         else %split
-            listOfSplits = [listOfSplits; segmentsMS];
+            listOfSplits = [listOfSplits; segmentsMS]; %#ok<AGROW>
         end
 
     end

@@ -1,7 +1,9 @@
-function [msStats,msTimeInfo,mergesInfo,splitsInfo] = calcStatsMSSimple(tracks,minTrackLen,probDim)
+function [msStats,msTimeInfo,mergesInfo,splitsInfo] = calcStatsMSSimple(...
+    tracks,minTrackLen,probDim)
 %MSSTATS calculate some merge/split statistics
 %
-%SYNOPSIS [msStats,msTimeInfo,mergesInfo,splitsInfo] = calcStatsMSSimple(tracks,minTrackLen,probDim)
+%SYNOPSIS [msStats,msTimeInfo,mergesInfo,splitsInfo] = calcStatsMSSimple(...
+%    tracks,minTrackLen,probDim)
 %
 %INPUT  tracks     : Output of trackCloseGapsKalman.
 %       minTrackLen: Minimum length of a track to be used in getting

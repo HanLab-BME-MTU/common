@@ -1,4 +1,5 @@
-function [msTimeInfo] = calcMergeSplitTimes(tracks,minTrackLen,probDim,diffAnalysisRes)
+function [msTimeInfo] = calcMergeSplitTimes(tracks,minTrackLen,probDim,...
+    diffAnalysisRes,removePotArtifacts)
 %CALCMERGESPLITTIMES calculates times between merges and splits
 %
 %SYNOPSIS [msTimeInfo] = calcMergeSplitTimes(tracks,minTrackLen,probDim,diffAnalysisRes)
@@ -12,6 +13,10 @@ function [msTimeInfo] = calcMergeSplitTimes(tracks,minTrackLen,probDim,diffAnaly
 %       diffAnalysisRes: Diffusion analysis results (output of
 %                    trackDiffAnalysis1). Optional. If not input, it will
 %                    be calculated.
+%       removePotArtifacts: 1 to remove potentially artifactual merges and
+%                    splits, resulting for instance from detection
+%                    artifact, 0 otherwise. 
+%                    Optional. Default: 1.
 %
 %OUTPUT msTimeInfo : Structure with field 'conf','brown' and 'linear' for
 %                    confined, Brownian and linear tracks. Each field is a
@@ -47,10 +52,14 @@ end
 
 if nargin < 4 || isempty(diffAnalysisRes)
     [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,1,probDim,...
-        1,[0.05 0.2],0);
+        1,[0.05 0.1],0);
     if errFlag
         return
     end
+end
+
+if nargin < 5 || isempty(removePotArtifacts)
+    removePotArtifacts = 1;
 end
 
 %% preamble
@@ -114,6 +123,11 @@ for iType = 1 : 3
         %get track's sequence of events
         seqOfEvents = tracks(iTrack).seqOfEvents;
 
+        %if requested, remove splits and merges that are most likely artifacts
+        if removePotArtifacts
+            seqOfEvents = removeSplitMergeArtifacts(seqOfEvents,1);
+        end
+        
         %find indices where there are splits
         splitIndxGlob = find(~isnan(seqOfEvents(:,4)) & seqOfEvents(:,2)==1);
 

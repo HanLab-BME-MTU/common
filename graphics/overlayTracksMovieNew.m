@@ -235,7 +235,7 @@ end
 
 %initialize QT movie if it is to be saved
 if saveMovie
-    evalString = ['MakeQTMovie start ',movieName];
+    evalString = ['MakeQTMovie start ',fullfile(dirName,movieName)];
     eval(evalString);
 end
 
@@ -533,8 +533,8 @@ end
 
 %% make movie
 
-%go to directory where movie will be saved
-cd(dirName);
+% %go to directory where movie will be saved
+% cd(dirName);
 
 %go over all specified frames
 for iFrame = 1 : size(xCoordMatAll,2)
@@ -744,6 +744,6 @@ if saveMovie==1
 end
 
 %% change directory back to original
-cd(startDir);
+% cd(startDir);
 
 %% ~~~ end ~~~
