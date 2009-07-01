@@ -5,7 +5,8 @@ function [missingList]=findMissingFiles(completeList,excludeDirs)
 %
 %INPUT    completeList: cell array of functions on which program 'programName' depends, generated with the
 %           command 'list=depfun(programName);' on a machine where the program works
-%           If completeList is empty, a dialog box allows you to sear
+%           If completeList is empty, a dialog box allows you to search for
+%           files.
 %         excludeDirs : directories to exclude in the path search. The
 %           match is case-sensitive, and the drive name is lower case.
 %           If you have specified excludeDirs in the subfunction, you can
@@ -70,6 +71,13 @@ for i=1:size(completeList,1)
         if isempty(isItThere)
             missingList{k,1}=currentFile;
             k=k+1;           
+            % check whether there is a fig file with the same name
+            [pn,fn] = fileparts(currentFile);
+            figFile = fullfile(pn,fn,'.fig');
+            if exist(figFile,'file')
+                missingList{k,1} = figFile;
+                k = k + 1;
+            end
         end
     end
 end

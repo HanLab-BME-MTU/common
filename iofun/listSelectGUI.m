@@ -195,6 +195,7 @@ else
     listCell = get(handles.LSG_listboxRight,'String');
     varargout{1} = handles.rightIndexList;
     varargout{2} = listCell;
+    set(handles.listSelectGUI,'Visible','off')
     delete(handles.listSelectGUI)
 end
 
