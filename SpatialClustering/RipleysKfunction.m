@@ -1,7 +1,7 @@
-function [kr,lr]=RipleysKfunction(mpm1,mpm2,imsiz,dist,corrFacMat,normArea);
+function [kr,lr,pcr]=RipleysKfunction(mpm1,mpm2,imsiz,dist,corrFacMat,normArea);
 % RipleysKfunction calculates Ripley's K-function for a given MPM,
 % allowing cross-corrlation between two MPMs
-% SYNOPSIS  [kr,lr]=RipleysKfunction(mpm,imsiz,dist,corrFacMat);
+% SYNOPSIS  [kr,lr,pcr]=RipleysKfunction(mpm,imsiz,dist,corrFacMat, normArea);
 %       
 % INPUT     mpm1:      mpm file containing (x,y) coordinates of points in 
 %                      the image in succesive columns for different time 
@@ -33,8 +33,10 @@ function [kr,lr]=RipleysKfunction(mpm1,mpm2,imsiz,dist,corrFacMat,normArea);
 % OUTPUT                    
 %           kr:     Ripley's K-function 
 %           lr:     Besag's L-function = sqrt(K(r))-r
-%           for both, every columns contains the kr/lr function for one
-%           frame of the mpm-file
+%           pcr:    pair-correlation function
+%           for all, every column contains the kr/lr function for one
+%           frame of the mpm-file, the row values correspond to the
+%           specified distances
 %                                                
 %
 % created with MATLAB ver.: 7.1.0.246 (R14) Service Pack 3 on Windows_NT
@@ -42,7 +44,8 @@ function [kr,lr]=RipleysKfunction(mpm1,mpm2,imsiz,dist,corrFacMat,normArea);
 % created by: dloerke
 % 
 % last modified
-% DATE: 29-Jan-2008 (last update)
+% DATE:     29-Jan-2008 (last update)
+%           1-July-2009
 %
 %
 
@@ -96,20 +99,21 @@ end
 %initialize results matrix pvr; x-dimension equals the employed number of
 %values for the circle radius, y-dimension equals number of planes of the
 %input mpm-file
-kr = zeros(nr,numf);
-lr = kr;
+kr  = zeros(nr,numf);
+lr  = kr;
+pcr = lr;
 
 % loop over all frames
 for i=1:numf
     % relevant nonzero x,y-positions in mpm1
-    pos1 = find(mpm1(:,i*2)>0);
-    cmpm1 = mpm1(pos1,2*i-1:2*i);
-    np1 = length(pos1);
+    pos1    = find(mpm1(:,i*2)>0);
+    cmpm1   = mpm1(pos1,2*i-1:2*i);
+    np1     = length(pos1);
     
     % relevant nonzero x,y-positions in mpm2
-    pos2 = find(mpm2(:,i*2)>0);
-    cmpm2 = mpm2(pos2,2*i-1:2*i);
-    np2 = length(pos2);
+    pos2    = find(mpm2(:,i*2)>0);
+    cmpm2   = mpm2(pos2,2*i-1:2*i);
+    np2     = length(pos2);
     
     fprintf(' frame %04d',i);
     
@@ -126,13 +130,16 @@ for i=1:numf
         if nargin>5
             totaldensity = nump/normArea;
         end
-    
+
         prnorm = (pr/pi)*(1/totaldensity);
-        kr(:,i) = prnorm;
-        lr(:,i) = sqrt(prnorm) - distvec;
+        %prnorm = pr;
+        kr(:,i)     = prnorm;
+        lr(:,i)     = sqrt(prnorm) - distvec;
+        pcr(:,i)    = convertLR2PCF(lr(:,i),distvec);
     else
-        kr(:,i) = nan*dist;
-        lr(:,i) = nan*dist;
+        kr(:,i)     = nan*dist;
+        lr(:,i)     = nan*dist;
+        pcr(:,i)    = nan*dist;
     end
     
     fprintf('\b\b\b\b\b\b\b\b\b\b\b');
@@ -208,7 +215,12 @@ msy=ms(2);
 % excluded for IDENTICAL mpms
 
 % identity variable 
-ivar = (m2==m1);
+ivar = 0;
+if length(m2(:))==length(m1(:))
+    if m2(:)==m1(:)
+        ivar=1;
+    end
+end
 
 % monitor progress
 %fprintf(' progress %02d',0);
@@ -422,8 +434,42 @@ for k = 1:np1
         d = sqrt((c1(k,1)-c2(n,1))^2+(c1(k,2)-c2(n,2))^2);
         m2(k,n)=d;
     end
+end % of for
+
+
+end % of subfunction
+
+
+%% =======================================================================
+function pcfunc = convertLR2PCF(lr,dvec);
+% convert L-function to pair correlation function
+
+pcfunc = lr;
+[dlx,dly] = size(lr);
+
+if dlx==length(dvec)
+    nf = dly;
+else
+    nf = dlx;
+    lr = lr';
 end
 
+% area of circles corresponding to radii in dvec
+area        = dvec.^2;
+% area of radius increments (central circle and rings)
+area_diff   = area;
+area_diff(2:length(area_diff)) = diff(area);
 
-end
+% matrix of areas
+amat    = repmat(area_diff',1,dly);
+dmat    = repmat(dvec',1,dly);
 
+for n=1:nf
+    kr          = (lr(:,n)+dmat).^2;
+    kr_diff     =  kr;
+    kr_diff(2:length(dvec),:) = diff(kr,1);
+    
+    pcfunc(:,n) = kr_diff./amat;
+end % of for
+    
+end % of subfunction
