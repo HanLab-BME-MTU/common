@@ -20,14 +20,24 @@ function m=missingIndices(v,n)
 %
 % Aaron Ponti, March 3rd, 2003
 
-% Make sure v is sorted and does not contain repetitions
-v=unique(v); % (unique sorts!)
 
-% make vector with 1 where we have a value, 0 where it's missing
-fullVector = zeros(n,1);
-fullVector(v) = 1;
-% find the missing indices
-m = find(~fullVector);
+
+m = (1:n)';
+
+if ~isempty(v)
+    m(v(:)) = [];
+end
+
+
+% another old version
+% % Make sure v is sorted and does not contain repetitions
+% v=unique(v); % (unique sorts!)
+% 
+% % make vector with 1 where we have a value, 0 where it's missing
+% fullVector = zeros(n,1);
+% fullVector(v) = 1;
+% % find the missing indices
+% m = find(~fullVector);
 
 % old version
 % % Initialize index vector
