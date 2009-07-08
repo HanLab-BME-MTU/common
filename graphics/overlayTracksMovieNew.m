@@ -144,6 +144,9 @@ else
     tracksLastFrame = max(tracksLastFrame,startend(2));
 end
 
+%keep only the frames of interest
+outFileList = outFileList(startend(1):startend(2));
+
 %check dragtailLength and assign default if not necessary
 if nargin < 3 || isempty(dragtailLength)
     dragtailLength = 10;
@@ -179,25 +182,9 @@ if nargin < 9 || isempty(showRaw)
     showRaw = 0;
 end
 
-%keep only the frames of interest
-outFileList = outFileList(startend(1):startend(2));
-
-%read specified images into ImageStack
-ImageStack = zeros(isx,isy,length(outFileList));
-h = waitbar(0,'reading images');
-for i=1:length(outFileList)
-    currentImage = imread(outFileList{i});
-    ImageStack(:,:,i) = currentImage;
-    if (mod(i,10)==0), waitbar(i/length(outFileList)); end
-end
-close(h);
-
-%get image size
-[imSizeX,imSizeY] = size(ImageStack(:,:,1));
-
 %check whether an area of interest was input
 if nargin < 10 || isempty(imageRange)
-    imageRange = [1 imSizeX; 1 imSizeY];
+    imageRange = [1 isx; 1 isy];
 end
 
 %check whether to plot tracks only or also symbols
@@ -226,16 +213,9 @@ else
     end
 end
 
-%filter images if requested
-if filterSigma
-    for i = 1 : length(outFileList)
-        imageStack(:,:,i) = Gauss2D(imageStack(:,:,i),filterSigma);
-    end
-end
-
 %initialize QT movie if it is to be saved
 if saveMovie
-    evalString = ['MakeQTMovie start ',fullfile(dirName,movieName)];
+    evalString = ['MakeQTMovie start ''' fullfile(dirName,movieName) ''''];
     eval(evalString);
 end
 
@@ -538,13 +518,21 @@ end
 
 %go over all specified frames
 for iFrame = 1 : size(xCoordMatAll,2)
-
+    
+    %read specified image
+    imageStack = imread(outFileList{iFrame});
+    
+    %filter images if requested
+    if filterSigma
+        imageStack = Gauss2D(imageStack,filterSigma);
+    end
+    
     %plot image in current frame and show frame number
     clf;
     switch showRaw
         case 1
             axes('Position',[0 0 0.495 1]);
-            imshow(ImageStack(:,:,iFrame),[]);
+            imshow(imageStack,[]);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
@@ -552,13 +540,13 @@ for iFrame = 1 : size(xCoordMatAll,2)
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
                 textDeltaCoord,num2str(iFrame),'Color','white');
             axes('Position',[0.505 0 0.495 1]);
-            imshow(ImageStack(:,:,iFrame),[]);
+            imshow(imageStack,[]);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
         case 2
             axes('Position',[0 0.505 1 0.495]);
-            imshow(ImageStack(:,:,iFrame),[]);
+            imshow(imageStack,[]);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
@@ -566,13 +554,13 @@ for iFrame = 1 : size(xCoordMatAll,2)
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
                 textDeltaCoord,num2str(iFrame),'Color','white');
             axes('Position',[0 0 1 0.495]);
-            imshow(ImageStack(:,:,iFrame),[]);
+            imshow(imageStack,[]);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
         otherwise
             axes('Position',[0 0 1 1]);
-            imshow(ImageStack(:,:,iFrame),[]);
+            imshow(imageStack,[]);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;

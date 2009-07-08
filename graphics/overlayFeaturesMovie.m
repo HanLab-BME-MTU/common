@@ -6,14 +6,14 @@ function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
 %
 %INPUT  movieInfo   : Output of detectSubResFeatures2D_Movie.
 %       startend    : Row vector indicating first and last frame to
-%                     include in movie. Format: [startframe endframe]. 
-%                     Optional. Default: [1 (maximum available frame)]            
+%                     include in movie. Format: [startframe endframe].
+%                     Optional. Default: [1 (maximum available frame)]
 %       saveMovie   : 1 to save movie (as Quicktime), 0 otherwise.
 %                     Optional. Default: 0
-%       movieName   : filename for saving movie. 
+%       movieName   : filename for saving movie.
 %                     Optional. Default: FeaturesMovie (if saveMovie = 1).
 %       filterSigma : 0 to overlay on raw image, PSF sigma to overlay on image
-%                     filtered with given filterSigma. 
+%                     filtered with given filterSigma.
 %                     Optional. Default: 0
 %       showRaw     : 1 to add raw movie to the left of the movie with
 %                     tracks overlaid, 2 to add raw movie at the top of
@@ -49,12 +49,12 @@ if(isa(fName,'char') && isa(dirName,'char'))
     %read first image to get image size
     currentImage = imread(outFileList{1});
     [isx,isy] = size(currentImage);
-
+    
 else %else, exit
     
     disp('--overlayTracksMovieNew: Bad file selection');
     return
-
+    
 end
 
 %check startend and assign default if necessary
@@ -87,26 +87,9 @@ end
 %keep only the frames of interest
 outFileList = outFileList(startend(1):startend(2));
 
-%read specified images into ImageStack
-ImageStack = zeros(isx,isy,length(outFileList));
-h = waitbar(0,'reading images');
-for i=1:length(outFileList)
-    currentImage = imread(outFileList{i});
-    ImageStack(:,:,i) = currentImage;
-    if (mod(i,10)==0), waitbar(i/length(outFileList)); end
-end
-close(h);
-
-%filter images if requested
-if filterSigma
-    for i = 1 : length(outFileList)
-        imageStack(:,:,i) = Gauss2D(imageStack(:,:,i),filterSigma);
-    end
-end
-
 %initialize QT movie if it is to be saved
 if saveMovie
-    evalString = ['MakeQTMovie start ',fullfile(dirName,movieName)];
+    evalString = ['MakeQTMovie start ''' fullfile(dirName,movieName) ''''];
     eval(evalString);
 end
 
@@ -119,8 +102,7 @@ else
 end
 
 %get image size
-[imSizeX,imSizeY] = size(ImageStack(:,:,1));
-imageRange = [1 imSizeX; 1 imSizeY];
+imageRange = [1 isx; 1 isy];
 
 
 %% make movie
@@ -131,13 +113,21 @@ imageRange = [1 imSizeX; 1 imSizeY];
 %go over all specified frames
 for iFrame = 1 : length(movieInfo)
     
+    %read specified image
+    imageStack = imread(outFileList{iFrame});
+    
+    %filter image if requested
+    if filterSigma
+        imageStack = Gauss2D(imageStack,filterSigma);
+    end
+    
     %plot image in current frame
     clf;
     
     switch showRaw
         case 1
             axes('Position',[0 0 0.495 1]);
-            imshow(ImageStack(:,:,iFrame),[]);
+            imshow(imageStack,[]);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
@@ -145,13 +135,13 @@ for iFrame = 1 : length(movieInfo)
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
                 textDeltaCoord,num2str(iFrame),'Color','white');
             axes('Position',[0.505 0 0.495 1]);
-            imshow(ImageStack(:,:,iFrame),[]);
+            imshow(imageStack,[]);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
         case 2
             axes('Position',[0 0.505 1 0.495]);
-            imshow(ImageStack(:,:,iFrame),[]);
+            imshow(imageStack,[]);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
@@ -159,13 +149,13 @@ for iFrame = 1 : length(movieInfo)
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
                 textDeltaCoord,num2str(iFrame),'Color','white');
             axes('Position',[0 0 1 0.495]);
-            imshow(ImageStack(:,:,iFrame),[]);
+            imshow(imageStack,[]);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
         otherwise
             axes('Position',[0 0 1 1]);
-            imshow(ImageStack(:,:,iFrame),[]);
+            imshow(imageStack,[]);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
@@ -178,15 +168,15 @@ for iFrame = 1 : length(movieInfo)
     if ~isempty(movieInfo(iFrame).xCoord)
         plot(movieInfo(iFrame).xCoord(:,1),movieInfo(iFrame).yCoord(:,1),'ro','MarkerSize',4);
     end
-        
+    
     %add frame to movie if movie is saved
     if saveMovie
         MakeQTMovie addfigure
     end
-
+    
     %pause for a moment to see frame
     pause(0.1);
-
+    
 end
 
 %finish movie
