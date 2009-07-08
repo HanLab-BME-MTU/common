@@ -14,7 +14,7 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %       detectionParam: Structure with fields
 %           .psfSigma     : Initial guess for standard deviation of point
 %                           spread function (in pixels).
-%           .testAlpha    : Alpha-values for statistical tests in
+%           .testAlpha    : Alpha-values for statistical tests in 
 %                           detectSubResFeatures2D. Optional.
 %                           (See detectSubResFeatures2D for details).
 %           .visual       : 1 if user wants to view results; 0 otherwise.
@@ -29,7 +29,7 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %                           estimation. Optional. Default: 10.
 %           .integWindow  : Number of frames on each side of a frame
 %                           used for time integration.
-%       saveResults   : 0 if no saving is requested.
+%       saveResults   : 0 if no saving is requested. 
 %                       If saving is requested, structure with fields:
 %           .dir          : Directory where results should be saved.
 %                           Optional. Default: current directory.
@@ -159,7 +159,7 @@ if ~isfield(detectionParam,'integWindow')
 else
     integWindow = detectionParam.integWindow;
 end
-
+    
 %determine where to save results
 if nargin < 3 || isempty(saveResults) %if nothing was input
     saveResDir = pwd;
@@ -200,147 +200,131 @@ imageIndx = firstImageNum : lastImageNum; %image indices
 imageTmp = imread([imageDir filenameBase enumString(imageIndx(1),:) '.tif']); %first image
 [imageSizeX,imageSizeY] = size(imageTmp); %image size
 numImagesRaw = lastImageNum - firstImageNum + 1; %number of images
-numImagesInteg = numImagesRaw - 2 * integWindow; %number of integrated images
 clear imageTmp
 
-last5start = max(numImagesRaw-4,1);
-i = 0;
-for iImage = last5start : numImagesRaw
-    i = i + 1;
-    imageLast5(:,:,i) = imread([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif']);
+%initialize progress display
+progressText(0,'Reading images');
+
+%read images 
+imageRaw = zeros(imageSizeX,imageSizeY,numImagesRaw);
+for iImage = 1 : numImagesRaw
+    
+    %store images in array
+    imageRaw(:,:,iImage) = imread([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif']);    
+
+    %display progress
+    progressText(iImage/numImagesRaw,'Reading images');
+
 end
-imageLast5 = double(imageLast5) / (2^bitDepth-1);
-imageLast5(imageLast5==0) = NaN;
+
+%replace zeros with NaNs
+%zeros result from cropping that leads to curved boundaries
+imageRaw(imageRaw==0) = NaN;
+
+%normalize images
+imageRaw = double(imageRaw) / (2^bitDepth-1);
+
+%integrate over time
+numImagesInteg = numImagesRaw - 2 * integWindow;
+while numImagesInteg <= 0
+    disp('Reducing integration window by 1 due to insufficient number of frames.');
+    integWindow = integWindow - 1;
+    numImagesInteg = numImagesRaw - 2 * integWindow;
+end
+imageInteg = zeros(imageSizeX,imageSizeY,numImagesInteg);
+progressText(0,'Time-integrating images');
+for iImage = 1 : numImagesInteg
+    imageInteg(:,:,iImage) = mean(imageRaw(:,:,iImage:iImage+2*integWindow),3);
+    progressText(iImage/numImagesInteg,'Time-integrating images');
+end
+
+%% integrated image filtering
+
+%initialize progress display
+progressText(0,'Filtering images');
+
+%filter images
+imageIntegF = zeros(imageSizeX,imageSizeY,numImagesInteg);
+for iImage = 1 : numImagesInteg
+
+    %     imageIntegF(:,:,iImage) = Gauss2D(imageInteg(:,:,iImage),psfSigma);
+    imageIntegF(:,:,iImage) = Gauss2D(imageInteg(:,:,iImage),1);
+
+    %display progress
+    progressText(iImage/numImagesInteg,'Filtering images');
+end
+
+%% Background noise estimation
+
+%use robustMean to get mean and std of background intensities
+%in this method, the intensities of actual features will look like
+%outliers, so we are effectively getting the mean and std of the background
+%account for possible spatial heterogeneity by taking a spatial moving
+%average
+
+last5start = max(numImagesRaw-4,1);
+imageLast5 = imageRaw(:,:,last5start:end);
 [bgMeanRaw,bgStdRaw] = spatialMovAveBG(imageLast5,imageSizeX,imageSizeY);
+
+%get background of integrated movie
+bgMeanInteg = zeros(imageSizeX,imageSizeY,numImagesInteg);
+bgStdInteg = bgMeanInteg;
+
+%initialize progress display
+progressText(0,'Estimating background');
+
+%go over all images
+for iImage = 1 : numImagesInteg
+
+    %get integrated image background noise statistics
+    [bgMeanInteg(:,:,iImage),bgStdInteg(:,:,iImage)] = ...
+        spatialMovAveBG(imageInteg(:,:,iImage),imageSizeX,imageSizeY);
+
+    %display progress
+    progressText(iImage/numImagesInteg,'Estimating background');
+
+end
+
+%store output
+background = struct('meanRawLast5',bgMeanRaw,'stdRawLast5',bgStdRaw,...
+    'meanIntegLast1',bgMeanInteg(:,:,end),'stdIntegLast1',bgStdInteg(:,:,end),...
+    'meanIntegFirst1',bgMeanInteg(:,:,1),'stdIntegFirst1',bgStdInteg(:,:,1));
+
+%clear some variables
+clear imageInteg
+
+%% Local maxima detection
 
 %initialize structure saving local maxima information
 localMaxima = repmat(struct('cands',[]),numImagesRaw,1);
 
-% %initialize progress display
-% progressText(0,'Reading images');
-
+%initialize progress display
 progressText(0,'Detecting local maxima');
 
-
-%read images
-% imageRaw = zeros(imageSizeX,imageSizeY,numImagesRaw);
+%go over all integrated images ...
 for iImage = 1 : numImagesInteg
-    
-    %store raw images in array
-    for jImage = 1 : 1 + 2*integWindow;
-        imageRaw(:,:,jImage) = imread([imageDir filenameBase enumString(imageIndx(jImage+iImage-1),:) '.tif']);
-    end
-    
-    %     %display progress
-    %     progressText(iImage/numImagesRaw,'Reading images');
-    
-    % end
-    
-    %replace zeros with NaNs
-    %zeros result from cropping that leads to curved boundaries
-    imageRaw(imageRaw==0) = NaN;
-    
-    %normalize images
-    imageRaw = double(imageRaw) / (2^bitDepth-1);
-    
-    % %integrate over time
-    % while numImagesInteg <= 0
-    %     disp('Reducing integration window by 1 due to insufficient number of frames.');
-    %     integWindow = integWindow - 1;
-    %     numImagesInteg = numImagesRaw - 2 * integWindow;
-    % end
-    % imageInteg = zeros(imageSizeX,imageSizeY,numImagesInteg);
-    % progressText(0,'Time-integrating images');
-    % for iImage = 1 : numImagesInteg
-    
-    imageInteg = mean(imageRaw,3);
-    
-    %     progressText(iImage/numImagesInteg,'Time-integrating images');
-    % end
-    
-    %% integrated image filtering
-    
-    % %initialize progress display
-    % progressText(0,'Filtering images');
-    
-    %filter images
-    % imageIntegF = zeros(imageSizeX,imageSizeY,numImagesInteg);
-    % for iImage = 1 : numImagesInteg
-    
-    %     imageIntegF(:,:,iImage) = Gauss2D(imageInteg(:,:,iImage),psfSigma);
-    
-    imageIntegF = Gauss2D(imageInteg,1);
-    
-    %     %display progress
-    %     progressText(iImage/numImagesInteg,'Filtering images');
-    % end
-    
-    %% Background noise estimation
-    
-    %use robustMean to get mean and std of background intensities
-    %in this method, the intensities of actual features will look like
-    %outliers, so we are effectively getting the mean and std of the background
-    %account for possible spatial heterogeneity by taking a spatial moving
-    %average
-    
-    % %get background of integrated movie
-    % bgMeanInteg = zeros(imageSizeX,imageSizeY,numImagesInteg);
-    % bgStdInteg = bgMeanInteg;
-    %
-    % %initialize progress display
-    % progressText(0,'Estimating background');
-    
-    % %go over all images
-    % for iImage = 1 : numImagesInteg
-    
-    %get integrated image background noise statistics
-    [bgMeanInteg,bgStdInteg] = ...
-        spatialMovAveBG(imageInteg,imageSizeX,imageSizeY);
-    
-    %     %display progress
-    %     progressText(iImage/numImagesInteg,'Estimating background');
-    
-    % end
-    
-    % %store output
-    % background = struct('meanRawLast5',bgMeanRaw,'stdRawLast5',bgStdRaw,...
-    %     'meanIntegLast1',bgMeanInteg(:,:,end),'stdIntegLast1',bgStdInteg(:,:,end),...
-    %     'meanIntegFirst1',bgMeanInteg(:,:,1),'stdIntegFirst1',bgStdInteg(:,:,1));
-    
-    background = [];
-    
-    %clear some variables
-    clear imageInteg
-    
-    %% Local maxima detection
-    
-    %     %initialize progress display
-    %     progressText(0,'Detecting local maxima');
-    
-    % %go over all integrated images ...
-    % for iImage = 1 : numImagesInteg
-    
+
     try
-        
+
         %call locmax2d to get local maxima in filtered image
-        fImg = locmax2d(imageIntegF,[3 3],1);
+        fImg = locmax2d(imageIntegF(:,:,iImage),[3 3],1);
         
         %get positions and amplitudes of local maxima
         [localMaxPosX,localMaxPosY,localMaxAmp] = find(fImg);
         localMax1DIndx = find(fImg(:));
         
         %get background values corresponding to local maxima
-        bgMeanInteg1 = bgMeanInteg;
+        bgMeanInteg1 = bgMeanInteg(:,:,iImage);
         bgMeanMaxF = bgMeanInteg1(localMax1DIndx);
-        bgStdInteg1 = bgStdInteg;
+        bgStdInteg1 = bgStdInteg(:,:,iImage);
         bgStdMaxF = bgStdInteg1(localMax1DIndx);
         bgMeanMax = bgMeanRaw(localMax1DIndx);
-        
+
         %calculate the p-value corresponding to the local maxima's amplitudes
         %assume that background intensity in integrated image is normally
         %distributed with mean bgMeanMaxF and standard deviation bgStdMaxF
         pValue = 1 - normcdf(localMaxAmp,bgMeanMaxF,bgStdMaxF);
-        
+
         %retain only those maxima with significant amplitude
         keepMax = find(pValue < alphaLocMax);
         localMaxPosX = localMaxPosX(keepMax);
@@ -352,12 +336,12 @@ for iImage = 1 : numImagesInteg
         
         %construct cands structure
         if numLocalMax == 0 %if there are no local maxima
-            
+
             cands = [];
             emptyFrames = [emptyFrames; imageIndx(iImage+integWindow)];
-            
+
         else %if there are local maxima
-            
+
             %define background mean and status
             cands = repmat(struct('status',1,'IBkg',[],...
                 'Lmax',[],'amp',[],'pValue',[]),numLocalMax,1);
@@ -369,28 +353,28 @@ for iImage = 1 : numImagesInteg
                 cands(iMax).amp = localMaxAmp(iMax);
                 cands(iMax).pValue = pValue(iMax);
             end
-            
+
         end
-        
+
         %add the cands of the current image to the rest - this is done
         %for the raw images, not the integrated ones
         localMaxima(iImage+integWindow).cands = cands;
-        
+
     catch
-        
+
         %if local maxima detection fails, make cands empty
         localMaxima(iImage+integWindow).cands = [];
-        
+
         %add this frame to the array of frames with failed local maxima
         %detection and to the array of empty frames
         framesFailedLocMax = [framesFailedLocMax; imageIndx(iImage+integWindow)];
         emptyFrames = [emptyFrames; imageIndx(iImage+integWindow)];
         
     end
-    
+
     %display progress
     progressText(iImage/numImagesInteg,'Detecting local maxima');
-    
+
 end
 
 %assign local maxima for frames left out due to time integration
@@ -418,7 +402,7 @@ clear ImageIntegF
 %% PSF sigma estimation
 
 if numSigmaIter
-    
+
     %specify which parameters to fit for sigma estimation
     fitParameters = [{'X1'} {'X2'} {'A'} {'Sxy'} {'B'}];
     
@@ -431,20 +415,20 @@ if numSigmaIter
     
     %initialize variable counting number of iterations
     numIter = 0;
-    
+
     %iterate as long as estimated sigma is larger than initial sigma
     while numIter <= numSigmaIter && acceptCalc && ((psfSigma-psfSigma0)/psfSigma0 > 0.05)
         
         %add one to number of iterations
         numIter = numIter + 1;
-        
+
         %save input PSF sigma in new variable and empty psfSigma for estimation
         psfSigma0 = psfSigma;
         psfSigma = [];
-        
+
         %calculate some numbers that get repeated many times
         psfSigma5 = ceil(5*psfSigma0);
-        
+
         %initialize progress display
         switch numIter
             case 1
@@ -452,23 +436,18 @@ if numSigmaIter
             otherwise
                 progressText(0,'Repeating PSF sigma estimation');
         end
-        
+                
         %go over all the images and find isolated features
         for iImage = integWindow+1 : min(numImagesRaw,50)
-            
-            %read raw image
-            imageRaw = imread([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif']);
-            
-            imageRaw = double(imageRaw) / (2^bitDepth-1);
-            
+
             if ~any(emptyFrames==iImage)
-                
+
                 %get feature positions and amplitudes and average background
                 featPos = vertcat(localMaxima(iImage).cands.Lmax);
                 featAmp = vertcat(localMaxima(iImage).cands.amp);
                 featBG  = vertcat(localMaxima(iImage).cands.IBkg);
                 featPV  = vertcat(localMaxima(iImage).cands.pValue);
-                
+
                 %retain only features that are more than 5*psfSigma0 away from boundaries
                 feat2use = find(featPos(:,1) > psfSigma5 & ...
                     featPos(:,1) < imageSizeX - psfSigma5 & ...
@@ -477,15 +456,15 @@ if numSigmaIter
                 featAmp = featAmp(feat2use);
                 featBG = featBG(feat2use);
                 featPV = featPV(feat2use);
-                
+
                 %if there is more than one feature ...
                 if length(feat2use) > 1
-                    
+
                     %find nearest neighbor distances
                     nnDist = createDistanceMatrix(featPos,featPos);
                     nnDist = sort(nnDist,2);
                     nnDist = nnDist(:,2);
-                    
+
                     %retain only features whose nearest neighbor is more than 10*psfSigma0
                     %away
                     feat2use = find(nnDist > ceil(10*psfSigma0));
@@ -493,7 +472,7 @@ if numSigmaIter
                     featAmp = featAmp(feat2use);
                     featBG = featBG(feat2use);
                     featPV = featPV(feat2use);
-                    
+
                     %retain only features with pValue between the 25th and 75th
                     %percentiles
                     percentile25 = prctile(featPV,25);
@@ -502,30 +481,30 @@ if numSigmaIter
                     featPos = featPos(feat2use,:);
                     featAmp = featAmp(feat2use);
                     featBG = featBG(feat2use);
-                    
+
                 end
-                
+
                 %go over the selected features and estimate psfSigma
                 numFeats = length(featAmp);
                 parameters = zeros(numFeats,5);
                 if numFeats >= 1
-                    
+
                     for iFeat = 1 : numFeats
-                        
+
                         %crop image around selected feature
                         lowerBound = featPos(iFeat,:) - psfSigma5;
                         upperBound = featPos(iFeat,:) + psfSigma5;
                         imageCropped = imageRaw(lowerBound(1):upperBound(1),...
-                            lowerBound(2):upperBound(2),1);
+                            lowerBound(2):upperBound(2),iImage);
                         
                         %estimate sigma if image region contains no NaNs
                         %NaNs appear due to cropping
                         if all(~isnan(imageCropped(:)))
-                            
+
                             %make initial guess for fit (in the order given in fitParameters)
                             initGuess = [psfSigma5+1 psfSigma5+1 featAmp(iFeat) ...
                                 psfSigma0 featBG(iFeat)];
-                            
+
                             %fit image and estimate sigma of Gaussian
                             parameters(iFeat,:) = GaussFitND(imageCropped,[],...
                                 fitParameters,initGuess);
@@ -535,16 +514,16 @@ if numSigmaIter
                             parameters(iFeat,:) = NaN;
                             
                         end
-                        
+
                     end
-                    
+
                     %add to array of sigmas
                     psfSigma = [psfSigma; parameters(:,4)];
                     
                 end %(if numFeats >= 1)
-                
+
             end %(if ~any(emptyFrames==iImage))
-            
+
             %display progress
             switch numIter
                 case 1
@@ -552,27 +531,27 @@ if numSigmaIter
                 otherwise
                     progressText(iImage/min(numImagesRaw,50),'Repeating PSF sigma estimation');
             end
-            
+
         end %(for iImage = integWindow+1 : min(numImagesRaw,50))
-        
+
         %estimate psfSigma as the robust mean of all the sigmas from the fits
         psfSigma = psfSigma(~isnan(psfSigma)); %get rid of NaNs from cropped regions
         numCalcs = length(psfSigma);
         if numCalcs > 0
-            
+
             [psfSigma,sigmaStd,inlierIndx] = robustMean(psfSigma);
-            
+
             %accept new sigma if there are enough observations and inliers
             acceptCalc = (numCalcs >= 100 && length(inlierIndx) >= 0.7*numCalcs) || ...
                 (numCalcs >= 50 && length(inlierIndx) >= 0.9*numCalcs) || ...
                 (numCalcs >= 10 && length(inlierIndx) == numCalcs);
-            
+
         else
-            
+
             acceptCalc = 0;
-            
+
         end
-        
+
         %show new sigma if estimation is accepted
         if acceptCalc
             disp(sprintf('PSF sigma = %1.3f (%d inliers out of %d observations)',...
@@ -581,15 +560,15 @@ if numSigmaIter
             psfSigma = psfSigmaIn;
             disp('Not enough observations to change PSF sigma, using input PSF sigma');
         end
-        
+
     end %(while numIter <= numSigmaIter && acceptCalc && ((psfSigma-psfSigma0)/psfSigma0 > 0.05))
-    
+
     %if maximum number of iterations has been performed but sigma value is not converging
     if numIter == numSigmaIter+1 && acceptCalc && ((psfSigma-psfSigma0)/psfSigma0 > 0.05)
         psfSigma = psfSigmaIn;
         disp('Estimation terminated (no convergence), using input PSF sigma');
     end
-    
+
 end %(if numSigmaIter)
 
 %% Mixture-model fitting
@@ -603,17 +582,13 @@ progressText(0,'Mixture-model fitting');
 
 %go over all non-empty images ...
 for iImage = goodImages
-    
-    %read raw image
-    imageRaw = imread([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif']);
-    imageRaw = double(imageRaw) / (2^bitDepth-1);
-    
+
     try %try to detect features in this frame
-        
+
         %fit with mixture-models
-        featuresInfo = detectSubResFeatures2D(imageRaw,...
+        featuresInfo = detectSubResFeatures2D(imageRaw(:,:,iImage),...
             localMaxima(iImage).cands,psfSigma,testAlpha,visual,doMMF,1,0,mean(bgStdRaw(:)));
-        
+
         %save results
         movieInfo(iImage) = featuresInfo;
         
@@ -621,21 +596,21 @@ for iImage = goodImages
         if isempty(featuresInfo.xCoord)
             emptyFrames = [emptyFrames; imageIndx(iImage)];
         end
-        
+
     catch %if detection fails
-        
+
         %label frame as empty
         emptyFrames = [emptyFrames; imageIndx(iImage)];
-        
+
         %add this frame to the array of frames with failed mixture-model
         %fitting
         framesFailedMMF = [framesFailedMMF; imageIndx(iImage)];
-        
+
     end
-    
+
     %display progress
     progressText(iImage/numImagesRaw,'Mixture-model fitting');
-    
+
 end
 
 %% Post-processing
@@ -789,14 +764,14 @@ end
 % %             end
 % %
 % %         end
-% %
+% % 
 % %         %add the cands of the current image to the rest
 % %         localMaxima(iImage).cands = cands;
 % %     end
-% %
+% % 
 % %     %display progress
 % %     progressText(iImage/numImages,'Detecting local maxima');
-% %
+% % 
 % % end
 
 % % %allocate memory for background mean and std
@@ -804,10 +779,10 @@ end
 % % bgStd = bgMean;
 % % bgMeanF = bgMean;
 % % bgStdF = bgMean;
-% %
+% % 
 % % %initialize progress display
 % % progressText(0,'Estimating background');
-% %
+% % 
 % % %estimate the background noise mean and standard deviation
 % % %use robustMean to get mean and std of intensities
 % % %in this method, the intensities of actual features will look like
@@ -816,62 +791,62 @@ end
 % % %average
 % % imageLast5 = image(:,:,end-4:end);
 % % [bgMeanLast5,bgStdLast5] = spatialMovAveBG(imageLast5,imageSizeX,imageSizeY);
-% %
+% % 
 % % %estimate overall background of first five and last five images
 % % imageFirst5 = image(:,:,1:5);
 % % [bgMeanAllFirst5,bgStdAllFirst5] = robustMean(imageFirst5(:));
 % % [bgMeanAllLast5,bgStdAllLast5] = robustMean(imageLast5(:));
-% %
+% % 
 % % %get slope of straight line
 % % slopeBgMean = (bgMeanAllFirst5 - bgMeanAllLast5)/(numImages-1);
 % % slopeBgStd = (bgStdAllFirst5 - bgStdAllLast5)/(numImages-1);
-% %
+% % 
 % % %calculate the background for all images
 % % for iImage = 1 : numImages
 % %     bgMean(:,:,iImage) = bgMeanLast5 + slopeBgMean * (numImages - iImage);
 % %     bgStd(:,:,iImage) = bgStdLast5 + slopeBgStd * (numImages - iImage);
 % % end
-% %
+% % 
 % % %save results for output
 % % mean1 = struct('last5Local',bgMeanLast5,'last5Global',bgMeanAllLast5,...
 % %     'first5Global',bgMeanAllFirst5);
 % % std1 = struct('last5Local',bgStdLast5,'last5Global',bgStdAllLast5,...
 % %     'first5Global',bgStdAllFirst5);
 % % raw = struct('mean',mean1,'std',std1);
-% %
+% % 
 % % %display progress
 % % progressText(0.5,'Estimating background');
-% %
+% % 
 % % %do the same for the filtered image
-% %
+% % 
 % % %use robustMean to get mean and std of background intensities
 % % imageLast5 = imageF(:,:,end-4:end);
 % % [bgMeanLast5,bgStdLast5] = spatialMovAveBG(imageLast5,imageSizeX,imageSizeY);
-% %
+% % 
 % % %estimate overall background of first five and last five images
 % % imageFirst5 = imageF(:,:,1:5);
 % % [bgMeanAllFirst5,bgStdAllFirst5] = robustMean(imageFirst5(:));
 % % [bgMeanAllLast5,bgStdAllLast5] = robustMean(imageLast5(:));
-% %
+% % 
 % % slopeBgMean = (bgMeanAllFirst5 - bgMeanAllLast5)/(numImages-1);
 % % slopeBgStd = (bgStdAllFirst5 - bgStdAllLast5)/(numImages-1);
-% %
+% % 
 % % %calculate the background for all images
 % % for iImage = 1 : numImages
 % %     bgMeanF(:,:,iImage) = bgMeanLast5 + slopeBgMean * (numImages - iImage);
 % %     bgStdF(:,:,iImage) = bgStdLast5 + slopeBgStd * (numImages - iImage);
 % % end
-% %
+% % 
 % % %save results for output
 % % mean1 = struct('last5Local',bgMeanLast5,'last5Global',bgMeanAllLast5,...
 % %     'first5Global',bgMeanAllFirst5);
 % % std1 = struct('last5Local',bgStdLast5,'last5Global',bgStdAllLast5,...
 % %     'first5Global',bgStdAllFirst5);
 % % filtered = struct('mean',mean1,'std',std1);
-% %
+% % 
 % % %display progress
 % % progressText(1,'Estimating background');
-% %
+% % 
 % % %store output
 % % background = struct('raw',raw,'filtered',filtered);
 
