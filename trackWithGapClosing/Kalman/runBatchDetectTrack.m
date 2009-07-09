@@ -6,7 +6,7 @@ numJobs = length(batchJob);
 
 for iJob = 1 : numJobs
     
-    disp(['Analyzing Movie #' num2str(iJob) '...'])
+    disp(['--- Movie #' num2str(iJob) ' ---'])
     
     %detect
     try    
