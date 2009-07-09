@@ -62,6 +62,7 @@ while doneFlag==0
         doneFlag=1;
     else
         currentDir=uigetdir(currentDir,'Select any directory above input directory');
+        cd(currentDir)
     end
 end
 
