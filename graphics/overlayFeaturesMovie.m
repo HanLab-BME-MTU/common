@@ -1,8 +1,9 @@
 function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
-    filterSigma,showRaw)
+    filterSigma,showRaw,intensityScale)
 %Overlays detected features obtained via detectSubResFeatures2D_Movie on movies
 %
-%SYNPOSIS overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,filterSigma)
+%SYNPOSIS overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
+%    filterSigma,showRaw,autoscaleImage)
 %
 %INPUT  movieInfo   : Output of detectSubResFeatures2D_Movie.
 %       startend    : Row vector indicating first and last frame to
@@ -19,6 +20,11 @@ function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
 %                     tracks overlaid, 2 to add raw movie at the top of
 %                     the movie with tracks overlaid, 0 otherwise.
 %                     Optional. Default: 0.
+%       intensityScale: 0 to autoscale every image in the movie, 1
+%                     to have a fixed scale using intensity mean and std, 2
+%                     to have a fixed scale using minimum and maximum
+%                     intensities.
+%                     Optional. Default: 1.
 %
 %OUTPUT If movie is to be saved, the QT movie is written into directory
 %       where TIFFs are located
@@ -84,6 +90,11 @@ if nargin < 6 || isempty(showRaw)
     showRaw = 0;
 end
 
+%check how to scale image intensity
+if nargin < 7 || isempty(intensityScale)
+    intensityScale = 1;
+end
+
 %keep only the frames of interest
 outFileList = outFileList(startend(1):startend(2));
 
@@ -104,11 +115,39 @@ end
 %get image size
 imageRange = [1 isx; 1 isy];
 
-
 %% make movie
 
 % %go to directory where movie will be saved
 % cd(dirName);
+
+%go over all specified frames and find minimum and maximum intensity in all
+%of them combined
+switch intensityScale
+    case 0
+        intensityMinMax = [];
+    case 1
+        meanIntensity = zeros(length(movieInfo),1);
+        stdIntensity = meanIntensity;
+        for iFrame = 1 : length(movieInfo)
+            imageStack = double(imread(outFileList{iFrame}));
+            meanIntensity(iFrame) = mean(imageStack(:));
+            stdIntensity(iFrame) = std(imageStack(:));
+        end
+        meanIntensity = mean(meanIntensity);
+        stdIntensity = mean(stdIntensity);
+        intensityMinMax = [meanIntensity-2*stdIntensity meanIntensity+6*stdIntensity];
+    case 2
+        minIntensity = zeros(length(movieInfo),1);
+        maxIntensity = minIntensity;
+        for iFrame = 1 : length(movieInfo)
+            imageStack = double(imread(outFileList{iFrame}));
+            minIntensity(iFrame) = min(imageStack(:));
+            maxIntensity(iFrame) = max(imageStack(:));
+        end
+        minIntensity = min(minIntensity);
+        maxIntensity = max(maxIntensity);
+        intensityMinMax = [minIntensity maxIntensity];
+end
 
 %go over all specified frames
 for iFrame = 1 : length(movieInfo)
@@ -127,7 +166,7 @@ for iFrame = 1 : length(movieInfo)
     switch showRaw
         case 1
             axes('Position',[0 0 0.495 1]);
-            imshow(imageStack,[]);
+            imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
@@ -135,13 +174,13 @@ for iFrame = 1 : length(movieInfo)
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
                 textDeltaCoord,num2str(iFrame),'Color','white');
             axes('Position',[0.505 0 0.495 1]);
-            imshow(imageStack,[]);
+            imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
         case 2
             axes('Position',[0 0.505 1 0.495]);
-            imshow(imageStack,[]);
+            imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
@@ -149,13 +188,13 @@ for iFrame = 1 : length(movieInfo)
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
                 textDeltaCoord,num2str(iFrame),'Color','white');
             axes('Position',[0 0 1 0.495]);
-            imshow(imageStack,[]);
+            imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
         otherwise
             axes('Position',[0 0 1 1]);
-            imshow(imageStack,[]);
+            imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;

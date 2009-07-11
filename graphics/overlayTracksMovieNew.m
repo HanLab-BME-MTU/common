@@ -1,11 +1,13 @@
 function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
     saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,...
-    imageRange,onlyTracks,classifyLft,diffAnalysisRes)
+    imageRange,onlyTracks,classifyLft,diffAnalysisRes,intensityScale,...
+    colorTracks)
 %OVERLAYTRACKSMOVIENEW Overlays tracks obtained via trackCloseGapsKalman on movies with variable color-coding
 %
 %SYNPOSIS overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %    saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,...
-%    imageRange,onlyTracks)
+%    imageRange,onlyTracks,classifyLft,diffAnalysisRes,intensityScale,...
+%    colorTracks)
 %
 %INPUT  tracksFinal   : Output of trackCloseGapsKalman.
 %       startend      : Row vector indicating first and last frame to
@@ -58,6 +60,17 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %                       With this option, classifyGaps, highlightES and
 %                       classifyLft are force-set to zero, regardless of input.
 %                       Optional. Default: None.
+%       intensityScale: 0 to autoscale every image in the movie, 1
+%                       to have a fixed scale using intensity mean and std,
+%                       2 to have a fixed scale using minimum and maximum
+%                       intensities.
+%                       Optional. Default: 1.
+%       colorTracks   : 1 to color tracks by rotating through 7 different
+%                       colors, 0 otherwise. With this option,
+%                       classifyGaps, highlightES and classifyLft are
+%                       force-set to zero, regardless of input.
+%                       Option ignored if diffAnalysisRes is supplied.
+%                       Optional. Default: 0.
 %
 %OUTPUT If movie is to be saved, the QT movie is written into directory
 %       where TIFFs are located
@@ -212,6 +225,28 @@ else
         transDiffClass = 0;
     end
 end
+
+%check how to scale image intensity
+if nargin < 14 || isempty(intensityScale)
+    intensityScale = 1;
+end
+
+%check whether to color individual tracks
+if nargin < 15 || isempty(colorTracks)
+    colorTracks = 0;
+else
+    if ~isempty(diffAnalysisRes)
+        colorTracks = 0;
+    end
+    if colorTracks == 1
+        classifyGaps = 0;
+        highlightES = 0;
+        classifyLft = 0;
+    end
+end    
+
+%define colors to loop through
+colorLoop = [1 0.7 0.7; 1 0 0; 0 1 0; 0 0 1; 1 1 0; 1 0 1; 0 1 1]; %colors: 'light pink',r,g,b,y,m,c
 
 %initialize QT movie if it is to be saved
 if saveMovie
@@ -516,6 +551,35 @@ end
 % %go to directory where movie will be saved
 % cd(dirName);
 
+%go over all specified frames and find minimum and maximum intensity in all
+%of them combined
+switch intensityScale
+    case 0
+        intensityMinMax = [];
+    case 1
+        meanIntensity = zeros(size(xCoordMatAll,2),1);
+        stdIntensity = meanIntensity;
+        for iFrame = 1 : size(xCoordMatAll,2)
+            imageStack = double(imread(outFileList{iFrame}));
+            meanIntensity(iFrame) = mean(imageStack(:));
+            stdIntensity(iFrame) = std(imageStack(:));
+        end
+        meanIntensity = mean(meanIntensity);
+        stdIntensity = mean(stdIntensity);
+        intensityMinMax = [meanIntensity-2*stdIntensity meanIntensity+6*stdIntensity];
+    case 2
+        minIntensity = zeros(size(xCoordMatAll,2),1);
+        maxIntensity = minIntensity;
+        for iFrame = 1 : size(xCoordMatAll,2)
+            imageStack = double(imread(outFileList{iFrame}));
+            minIntensity(iFrame) = min(imageStack(:));
+            maxIntensity(iFrame) = max(imageStack(:));
+        end
+        minIntensity = min(minIntensity);
+        maxIntensity = max(maxIntensity);
+        intensityMinMax = [minIntensity maxIntensity];
+end
+
 %go over all specified frames
 for iFrame = 1 : size(xCoordMatAll,2)
     
@@ -532,7 +596,7 @@ for iFrame = 1 : size(xCoordMatAll,2)
     switch showRaw
         case 1
             axes('Position',[0 0 0.495 1]);
-            imshow(imageStack,[]);
+            imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
@@ -540,13 +604,13 @@ for iFrame = 1 : size(xCoordMatAll,2)
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
                 textDeltaCoord,num2str(iFrame),'Color','white');
             axes('Position',[0.505 0 0.495 1]);
-            imshow(imageStack,[]);
+            imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
         case 2
             axes('Position',[0 0.505 1 0.495]);
-            imshow(imageStack,[]);
+            imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
@@ -554,13 +618,13 @@ for iFrame = 1 : size(xCoordMatAll,2)
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
                 textDeltaCoord,num2str(iFrame),'Color','white');
             axes('Position',[0 0 1 0.495]);
-            imshow(imageStack,[]);
+            imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
         otherwise
             axes('Position',[0 0 1 1]);
-            imshow(imageStack,[]);
+            imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
@@ -648,7 +712,13 @@ for iFrame = 1 : size(xCoordMatAll,2)
     %plot tracks
     %color-code dragtail based on diffusion analysis if supplied
     if plotOrNot
-        plot(xCoord2plot0,yCoord2plot0,'Color',[1 0.7 0.7],'LineWidth',2); %light pink
+        if colorTracks == 0
+            plot(xCoord2plot0,yCoord2plot0,'Color',colorLoop(1,:),'LineWidth',2); %light pink
+        else
+            for i = 1 : 7  %loop through colors
+                plot(xCoord2plot0(:,i:7:end),yCoord2plot0(:,i:7:end),'Color',colorLoop(i,:),'LineWidth',2);
+            end
+        end
         if ~isempty(diffAnalysisRes)
             plot(xCoord2plot5,yCoord2plot5,'Color','b','LineWidth',2); %[0 0 1]
             plot(xCoord2plot6,yCoord2plot6,'Color','c','LineWidth',2); %[0 1 1]
