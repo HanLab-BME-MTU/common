@@ -99,7 +99,7 @@ for iTrack = 1 : numTracksLink
     %get current track's coordinates
     currentTrack = (reshape(trackedFeatInfo(iTrack,:)',8,[]))';
     currentTrack = currentTrack(:,1:probDim);
-    currentTrack = currentTrack(trackStartTime(iTrack):trackEndTime(iTrack),:);
+    currentTrack = full(currentTrack(trackStartTime(iTrack):trackEndTime(iTrack),:));
 
     %calculate the track's center of mass
     trackCenter(iTrack,:) = mean(currentTrack);

@@ -100,6 +100,13 @@ else %if input is a matrix
     %make new matrix which contains only one column per time point
     trackedFeatureInfo = trackedFeatureInfo(:,1:8:end);
     
+    %if matrix is in sparse format, convert to full and replace zeros with
+    %NaNs
+    if issparse(trackedFeatureInfo)
+        trackedFeatureInfo = full(trackedFeatureInfo);
+        trackedFeatureInfo(trackedFeatureInfo==0) = NaN;
+    end
+    
     %find non-empty tracks
     indxGood = find(~isnan(max(trackedFeatureInfo,[],2)));
 

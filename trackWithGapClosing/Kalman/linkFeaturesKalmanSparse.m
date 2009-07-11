@@ -1,11 +1,11 @@
 function [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
-    nnDistFeatures,prevCost,errFlag] = linkFeaturesKalman(movieInfo,...
+    nnDistFeatures,prevCost,errFlag] = linkFeaturesKalmanSparse(movieInfo,...
     costMatName,costMatParam,kalmanFunctions,probDim,filterInfoPrev,...
     prevCost,verbose)
 %LINKFEATURESKALMAN links features between consecutive frames using LAP and possibly motion propagation using the Kalman filter
 %
 %SYNOPSIS [trackedFeatureIndx,trackedFeatureInfo,kalmanFilterInfo,...
-%    nnDistFeatures,prevCost,errFlag] = linkFeaturesKalman(movieInfo,...
+%    nnDistFeatures,prevCost,errFlag] = linkFeaturesKalmanSparse(movieInfo,...
 %    costMatName,costMatParam,kalmanFunctions,probDim,filterInfoPrev,...
 %    prevCost,verbose)
 %
@@ -99,7 +99,7 @@ errFlag = [];
 
 %check whether correct number of input arguments was used
 if nargin < 3
-    disp('--linkFeaturesKalman: Incorrect number of input arguments!');
+    disp('--linkFeaturesKalmanSparse: Incorrect number of input arguments!');
     errFlag  = 1;
     return
 end
@@ -124,7 +124,7 @@ if nargin < 5 || isempty(probDim)
     probDim = probDimT;
 else
     if probDim == 3 && probDimT == 2
-        disp('--linkFeaturesKalman: Inconsistency in input. Problem 3D but no z-coordinates.');
+        disp('--linkFeaturesKalmanSparse: Inconsistency in input. Problem 3D but no z-coordinates.');
         errFlag = 1;
     end
 end
@@ -149,7 +149,7 @@ end
 
 %exit if there are problems with input
 if errFlag
-    disp('--linkFeaturesKalman: Please fix input parameters.');
+    disp('--linkFeaturesKalmanSparse: Please fix input parameters.');
     return
 end
 
@@ -564,7 +564,8 @@ clear costMat tmp tmpNN tmpCost
 %information is stored as [x y z a dx dy dz da] in image coordinate system
 
 %reserve space for matrix
-trackedFeatureInfo = NaN*ones(size(trackedFeatureIndx,1),8*numFrames);
+trackedFeatureInfo = sparse(zeros(size(trackedFeatureIndx,1),8*numFrames));
+% trackedFeatureInfo = NaN(size(trackedFeatureIndx,1),8*numFrames);
 
 %for now, the matrix always has space for z, hence I have to treat 2D and
 %3D differently.

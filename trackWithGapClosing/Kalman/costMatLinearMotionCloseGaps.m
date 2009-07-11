@@ -224,18 +224,18 @@ end
 coordStart = zeros(numTracks,probDim);
 ampStart   = zeros(numTracks,1);
 for iTrack = 1 : numTracks
-    coordStart(iTrack,:) = trackedFeatInfo(iTrack,...
-        (trackStartTime(iTrack)-1)*8+1:(trackStartTime(iTrack)-1)*8+probDim);
-    ampStart(iTrack) = trackedFeatInfo(iTrack,(trackStartTime(iTrack)-1)*8+4);
+    coordStart(iTrack,:) = full(trackedFeatInfo(iTrack,...
+        (trackStartTime(iTrack)-1)*8+1:(trackStartTime(iTrack)-1)*8+probDim));
+    ampStart(iTrack) = full(trackedFeatInfo(iTrack,(trackStartTime(iTrack)-1)*8+4));
 end
 
 %get the x,y-coordinates and amplitudes at the ends of tracks
 coordEnd = zeros(numTracks,probDim);
 ampEnd   = zeros(numTracks,1);
 for iTrack = 1 : numTracks
-    coordEnd(iTrack,:) = trackedFeatInfo(iTrack,...
-        (trackEndTime(iTrack)-1)*8+1:(trackEndTime(iTrack)-1)*8+probDim);
-    ampEnd(iTrack) = trackedFeatInfo(iTrack,(trackEndTime(iTrack)-1)*8+4);
+    coordEnd(iTrack,:) = full(trackedFeatInfo(iTrack,...
+        (trackEndTime(iTrack)-1)*8+1:(trackEndTime(iTrack)-1)*8+probDim));
+    ampEnd(iTrack) = full(trackedFeatInfo(iTrack,(trackEndTime(iTrack)-1)*8+4));
 end
 
 %determine the types, velocities, noise stds and centers of all tracks
@@ -607,7 +607,7 @@ if mergeSplit > 0
             %calculate displacement between track ends and other tracks in the
             %next frame
             dispMat2 = createDistanceMatrix(coordEnd(endsToConsider,:), ...
-                trackedFeatInfo(mergesToConsider,timeIndx+1:timeIndx+probDim));
+                full(trackedFeatInfo(mergesToConsider,timeIndx+1:timeIndx+probDim)));
 
             %find possible pairs
             [indxEnd2,indxMerge2] = find(dispMat2 <= maxDispAllowed);
@@ -645,8 +645,8 @@ if mergeSplit > 0
 
                 %calculate the vector connecting the end of track iEnd to the
                 %point of merging and compute its magnitude
-                dispVec = coordEnd(iEnd,:) - trackedFeatInfo(iMerge,...
-                    timeIndx+1:timeIndx+probDim);
+                dispVec = coordEnd(iEnd,:) - full(trackedFeatInfo(iMerge,...
+                    timeIndx+1:timeIndx+probDim));
                 dispVecMag = sqrt(dispVec * dispVec');
 
                 %project the connecting vector onto the long and short vectors
@@ -659,8 +659,8 @@ if mergeSplit > 0
 
                 %get the amplitude of the merging track at the point of merging
                 %and the point before it
-                ampM = trackedFeatInfo(iMerge,8*endTime+4); %at point of merging
-                ampM1 = trackedFeatInfo(iMerge,8*(endTime-1)+4); %just before merging
+                ampM = full(trackedFeatInfo(iMerge,8*endTime+4)); %at point of merging
+                ampM1 = full(trackedFeatInfo(iMerge,8*(endTime-1)+4)); %just before merging
 
                 %calculate the ratio of the amplitude after merging to the sum
                 %of the amplitudes before merging
@@ -761,9 +761,17 @@ if mergeSplit > 0
                             %get the average square displacement in this track
                             trackCoord = trackedFeatInfo(indxMSMS(iPair),:);
                             trackCoord = reshape(trackCoord',8,[]);
+                            if issparse(trackCoord)
+                                trackCoord = full(trackCoord);
+                                trackCoord(trackCoord==0) = NaN;
+                                if probDim == 2
+                                    trackCoord(3,:) = 0;
+                                    trackCoord(7,:) = 0;
+                                end
+                            end
                             dispVecMag2 = (diff(trackCoord,1,2)).^2;
                             dispVecMag2 = nanmean(dispVecMag2,2);
-                            dispVecMag2 = sum(dispVecMag2(1:2));
+                            dispVecMag2 = sum(dispVecMag2(1:probDim));
 
                             %calculate intensity cost if no merge happens
                             ampCost = ampM / ampM1;
@@ -835,7 +843,7 @@ if mergeSplit > 0
             %calculate displacement between track starts and other tracks in the
             %previous frame
             dispMat2 = createDistanceMatrix(coordStart(startsToConsider,:), ...
-                trackedFeatInfo(splitsToConsider,timeIndx+1:timeIndx+probDim));
+                full(trackedFeatInfo(splitsToConsider,timeIndx+1:timeIndx+probDim)));
 
             %find possible pairs
             [indxStart2,indxSplit2] = find(dispMat2 <= maxDispAllowed);
@@ -873,8 +881,8 @@ if mergeSplit > 0
 
                 %calculate the vector connecting the end of track iStart to the
                 %point of splitting and compute its magnitude
-                dispVec = coordStart(iStart,:) - trackedFeatInfo(iSplit,...
-                    timeIndx+1:timeIndx+probDim);
+                dispVec = coordStart(iStart,:) - full(trackedFeatInfo(iSplit,...
+                    timeIndx+1:timeIndx+probDim));
                 dispVecMag = sqrt(dispVec * dispVec');
 
                 %project the connecting vector onto the long and short vectors
@@ -887,8 +895,8 @@ if mergeSplit > 0
 
                 %get the amplitude of the splitting track at the point of splitting
                 %and the point before it
-                ampSp1 = trackedFeatInfo(iSplit,8*(startTime-1)+4); %at point of splitting
-                ampSp = trackedFeatInfo(iSplit,8*(startTime-2)+4); %just before splitting
+                ampSp1 = full(trackedFeatInfo(iSplit,8*(startTime-1)+4)); %at point of splitting
+                ampSp = full(trackedFeatInfo(iSplit,8*(startTime-2)+4)); %just before splitting
 
                 %calculate the ratio of the amplitude before splitting to the sum
                 %of the amplitudes after splitting
@@ -985,12 +993,22 @@ if mergeSplit > 0
                             %calculate the alternative cost of not splitting for the
                             %track that the start is possibly splitting from
 
+                            %---CHANGE HERE---%
+                            
                             %get the average square displacement in this track
                             trackCoord = trackedFeatInfo(indxMSMS(iPair),:);
                             trackCoord = reshape(trackCoord',8,[]);
+                            if issparse(trackCoord)
+                                trackCoord = full(trackCoord);
+                                trackCoord(trackCoord==0) = NaN;
+                                if probDim == 2
+                                    trackCoord(3,:) = 0;
+                                    trackCoord(7,:) = 0;
+                                end
+                            end
                             dispVecMag2 = (diff(trackCoord,1,2)).^2;
                             dispVecMag2 = nanmean(dispVecMag2,2);
-                            dispVecMag2 = sum(dispVecMag2(1:2));
+                            dispVecMag2 = sum(dispVecMag2(1:probDim));
 
                             %calculate intensity cost if no split happens
                             ampCost = ampSp / ampSp1;
