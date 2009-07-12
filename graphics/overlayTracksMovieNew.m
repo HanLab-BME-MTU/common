@@ -423,17 +423,53 @@ end
 xCoordMatAll = xCoordMatAll(:,startend(1):startend(2));
 yCoordMatAll = yCoordMatAll(:,startend(1):startend(2));
 
-%% get track classification based on diffusion analysis
+%% divide tracks based on diffusion analysis or just into groups to be colored separately
 
-%copy all coordinates into new variables
-%only the "0" variables will be used when there is no diffusion
-%classification
-[xCoordMatAll0,xCoordMatAll1,xCoordMatAll2,xCoordMatAll3,xCoordMatAll4,...
-    xCoordMatAll5,xCoordMatAll6,xCoordMatAll7,xCoordMatAll8] = deal(xCoordMatAll);
-[yCoordMatAll0,yCoordMatAll1,yCoordMatAll2,yCoordMatAll3,yCoordMatAll4,...
-    yCoordMatAll5,yCoordMatAll6,yCoordMatAll7,yCoordMatAll8] = deal(yCoordMatAll);
+%if tracks are to be individually colored
+if colorTracks
+    
+    %divide tracks among 9 matrices that will get their own colors
+    
+    %x-coordinates ...
+    [xCoordMatAll0,xCoordMatAll1,xCoordMatAll2,xCoordMatAll3,xCoordMatAll4,...
+        xCoordMatAll5,xCoordMatAll6,xCoordMatAll7,xCoordMatAll8] = deal(NaN(size(xCoordMatAll)));
+    xCoordMatAll0(1:9:end,:) = xCoordMatAll(1:9:end,:);
+    xCoordMatAll1(2:9:end,:) = xCoordMatAll(2:9:end,:);
+    xCoordMatAll2(3:9:end,:) = xCoordMatAll(3:9:end,:);
+    xCoordMatAll3(4:9:end,:) = xCoordMatAll(4:9:end,:);
+    xCoordMatAll4(5:9:end,:) = xCoordMatAll(5:9:end,:);
+    xCoordMatAll5(6:9:end,:) = xCoordMatAll(6:9:end,:);
+    xCoordMatAll6(7:9:end,:) = xCoordMatAll(7:9:end,:);
+    xCoordMatAll7(8:9:end,:) = xCoordMatAll(8:9:end,:);
+    xCoordMatAll8(9:9:end,:) = xCoordMatAll(9:9:end,:);
+    
+    %y-coordinates ...
+    [yCoordMatAll0,yCoordMatAll1,yCoordMatAll2,yCoordMatAll3,yCoordMatAll4,...
+        yCoordMatAll5,yCoordMatAll6,yCoordMatAll7,yCoordMatAll8] = deal(NaN(size(yCoordMatAll)));
+    yCoordMatAll0(1:9:end,:) = yCoordMatAll(1:9:end,:);
+    yCoordMatAll1(2:9:end,:) = yCoordMatAll(2:9:end,:);
+    yCoordMatAll2(3:9:end,:) = yCoordMatAll(3:9:end,:);
+    yCoordMatAll3(4:9:end,:) = yCoordMatAll(4:9:end,:);
+    yCoordMatAll4(5:9:end,:) = yCoordMatAll(5:9:end,:);
+    yCoordMatAll5(6:9:end,:) = yCoordMatAll(6:9:end,:);
+    yCoordMatAll6(7:9:end,:) = yCoordMatAll(7:9:end,:);
+    yCoordMatAll7(8:9:end,:) = yCoordMatAll(8:9:end,:);
+    yCoordMatAll8(9:9:end,:) = yCoordMatAll(9:9:end,:);
+    
+else %otherwise
+    
+    %copy all coordinates into new variables
+    %only the "0" variables will be used when there is no diffusion
+    %classification
+    [xCoordMatAll0,xCoordMatAll1,xCoordMatAll2,xCoordMatAll3,xCoordMatAll4,...
+        xCoordMatAll5,xCoordMatAll6,xCoordMatAll7,xCoordMatAll8] = deal(xCoordMatAll);
+    [yCoordMatAll0,yCoordMatAll1,yCoordMatAll2,yCoordMatAll3,yCoordMatAll4,...
+        yCoordMatAll5,yCoordMatAll6,yCoordMatAll7,yCoordMatAll8] = deal(yCoordMatAll);
+    
+end
 
-if ~isempty(diffAnalysisRes) %if there are diffusion analysis results ...
+%if there are diffusion analysis results ...
+if ~isempty(diffAnalysisRes)
 
     if transDiffClass %if transient diffusion classification ...
 
@@ -708,17 +744,26 @@ for iFrame = 1 : size(xCoordMatAll,2)
         end
 
     end
-
+    
     %plot tracks
-    %color-code dragtail based on diffusion analysis if supplied
     if plotOrNot
-        if colorTracks == 0
-            plot(xCoord2plot0,yCoord2plot0,'Color',colorLoop(1,:),'LineWidth',2); %light pink
-        else
-            for i = 1 : 7  %loop through colors
-                plot(xCoord2plot0(:,i:7:end),yCoord2plot0(:,i:7:end),'Color',colorLoop(i,:),'LineWidth',2);
-            end
+        
+        %plot basic tracks
+        plot(xCoord2plot0,yCoord2plot0,'Color',[1 0.7 0.7],'LineWidth',2); %light pink
+        
+        %color individual tracks randomly if requested
+        if colorTracks == 1
+            plot(xCoord2plot1,yCoord2plot1,'Color',[1 0.7 0],'LineWidth',2); %orange
+            plot(xCoord2plot2,yCoord2plot2,'Color','r','LineWidth',2); %[1 0 0]
+            plot(xCoord2plot3,yCoord2plot3,'Color','g','LineWidth',2); %[0 1 0]
+            plot(xCoord2plot4,yCoord2plot4,'Color','y','LineWidth',2); %[1 1 0]
+            plot(xCoord2plot5,yCoord2plot5,'Color','b','LineWidth',2); %[0 0 1]
+            plot(xCoord2plot6,yCoord2plot6,'Color','c','LineWidth',2); %[0 1 1]
+            plot(xCoord2plot7,yCoord2plot7,'Color','m','LineWidth',2); %[1 0 1]
+            plot(xCoord2plot8,yCoord2plot8,'Color',[0.6 0 1],'LineWidth',2); %purple
         end
+        
+        %color-code dragtail based on diffusion analysis if supplied
         if ~isempty(diffAnalysisRes)
             plot(xCoord2plot5,yCoord2plot5,'Color','b','LineWidth',2); %[0 0 1]
             plot(xCoord2plot6,yCoord2plot6,'Color','c','LineWidth',2); %[0 1 1]
@@ -731,11 +776,12 @@ for iFrame = 1 : size(xCoordMatAll,2)
                 plot(xCoord2plot8,yCoord2plot8,'Color',[0.6 0 1],'LineWidth',2); %purple
             end
         end
+        
     end
-
+    
     %plot points (features + gaps + merges + splits)
     if ~onlyTracks
-
+        
         %blue stars: bad gaps
         points2plot = find(pointStatus(:,iFrame)==-2);
         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'b*','MarkerSize',6);
