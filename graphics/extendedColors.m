@@ -51,9 +51,15 @@ if nargin == 0
 end
 
 %test colorSwitch
-if nargin == 1 & ~isempty(colorSwitch)
+if nargin == 1 && ~isempty(colorSwitch)
     if length(colorSwitch)>2
-        error('too many arguments for colorSwitch!');
+        % recursively call extendedColors
+        nColors = length(colorSwitch);
+        color = zeros(nColors,3);
+        for i=1:nColors
+            color(i,:) = extendedColors(colorSwitch(i));
+        end
+        return
     end
     
     switch ischar(colorSwitch) + 2*isnumeric(colorSwitch)
