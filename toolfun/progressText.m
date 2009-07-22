@@ -88,7 +88,7 @@ elseif ~isempty(lastwarn)
     lastwarn('')
     nw = length(w);
     % erase warning
-    fprintf(1,repmat('\b',1,11+nw));
+    fprintf(1,repmat('\b',1,11+nw)); %--- is this correct???
     % create new warnText
     w = regexprep(w,['(',char(10),'\s+)'],' - ');
     warnTextNew = sprintf('\n  Warning @%7.3f%%%% done : %s ',100*fractionDone,w);
