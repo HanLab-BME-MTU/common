@@ -545,6 +545,7 @@ classdef trackObj<handle
                     otherwise
                         error('dimensionality %i not supported yet',obj.probDim)
                 end
+                if size(xyz,1) > 1
                 nnd = createDistanceMatrix(xyz,xyz);
                 nnd = sort(nnd,2);
                 stats.nnDistance{t} = nnd(:,2); % do not get zero-diagonal
@@ -553,7 +554,7 @@ classdef trackObj<handle
                 nnd = createDistanceMatrix(movieInfo(t).amp(:,1),movieInfo(t).amp(:,1));
                 nnd = sort(nnd,2);
                 stats.nnAmp{t} = nnd(:,2); % do not get zero-diagonal
-                
+                end % check for at least two spots
                 if t < obj.nTimepoints && all(goodTimes(t:t+1))
                     % get nnDisplacement
                     switch obj.probDim
@@ -568,7 +569,9 @@ classdef trackObj<handle
                     end
                     nnd = sort(nnd,2);
                     stats.nnDisplacement{t,1} = nnd(:,1);
+                    if size(nnd,2) > 1
                     stats.nnDisplacement{t,2} = nnd(:,2);
+                    end
                     
                     % get nnDispAmp. Careful, deltaAmp can be both positive
                     % and negative!
@@ -578,9 +581,12 @@ classdef trackObj<handle
                     linIdx = sub2ind(size(tmp),rowIdx(:),colIdx(:));
                     nnd(:) = nnd(linIdx);
                     stats.nnDispAmp{t,1} = nnd(:,1);
+                    if size(nnd,2) > 1
                     stats.nnDispAmp{t,2} = nnd(:,2);
+                    end
                 end
-            end
+                
+            end % loop time
             
             % Plot
             figure('Name','nearest neighbour displacement')
