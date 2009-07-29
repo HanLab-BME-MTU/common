@@ -2,40 +2,40 @@
 # define   	SOLVER_HPP
 
 # include <cmath>
+# include <cassert>
+# include <limits>
 
-# include <matrix.h> // for mxAssert uses
-
-class _Solver
+class _solver
 {
 public:
-  int nRoots() const { return nRoots_; }
+  int nroots() const { return nroots_; }
 
   double root(unsigned i) const
   {
-    mxAssert(i < 4, "");
+    assert(i < 4);
 
     return roots_[i];
   }
 
 protected:
   static double roots_[4];
-  static int nRoots_;
+  static int nroots_;
 };
 
-class Solver : public _Solver
+class solver : public _solver
 {
 public:
-  Solver(double prec = DBL_EPSILON) : prec_(prec) {}
+  solver(double prec = std::numeric_limits<double>::epsilon()) : prec_(prec) {}
 
   // Resolve a linear equation of form: aX + b = 0 in R
   void operator()(double a, double b)
   {
-    nRoots_ = 0;
+    nroots_ = 0;
 
     if (fabs(a) >= prec_)
       {
 	roots_[0] = - b / a;
-	nRoots_ = 1;
+	nroots_ = 1;
       }
   }
 
@@ -43,7 +43,7 @@ public:
   // ref: "Numerical Recipes in C" p. 183--184
   void operator()(double a, double b, double c)
   {
-    nRoots_ = 0;
+    nroots_ = 0;
 
     if (fabs(a) < prec_)
       {
@@ -56,7 +56,7 @@ public:
     if (fabs(delta) < prec_)
       {
 	roots_[0] = - b / (2 * a);
-	nRoots_ = 1;
+	nroots_ = 1;
       }
     else
       if (delta > 0)
@@ -65,7 +65,7 @@ public:
 
 	  roots_[0] = q / a;
 	  roots_[1] = c / q;
-	  nRoots_ = 2;
+	  nroots_ = 2;
 	}
   }
 
@@ -73,7 +73,7 @@ public:
   // aX3 + bX2 + cX + d = 0 in R
   void operator()(double a, double b, double c, double d)
   {
-    nRoots_ = 0;
+    nroots_ = 0;
 
     if (fabs(a) < prec_)
       {
@@ -88,7 +88,7 @@ public:
   // aX4 + bX3 + cX2 + dX + e = 0 in R
   void operator()(double a, double b, double c, double d, double e)
   {
-    nRoots_ = 0;
+    nroots_ = 0;
 
     if (fabs(a) < prec_)
       {
@@ -118,7 +118,7 @@ private:
 	roots_[1] = - 2 * sqrt(q) * cos((theta + 2 * M_PI) / 3) - a_3;
 	roots_[2] = - 2 * sqrt(q) * cos((theta - 2 * M_PI) / 3) - a_3;
 
-	nRoots_ = 3;
+	nroots_ = 3;
       }
     else
       {
@@ -128,7 +128,7 @@ private:
 
 	roots_[0] = a + b - a_3;
 
-	nRoots_ = 1;
+	nroots_ = 1;
       }
   }
 
@@ -139,59 +139,61 @@ private:
 
     double y1 = roots_[0];
 
-    nRoots_ = 0;
+    nroots_ = 0;
 
-    double deltaR = 0.25 * a3 * a3 - a2 + y1;
+    double delta_r = 0.25 * a3 * a3 - a2 + y1;
 
-    if (deltaR < 0)
+    if (delta_r < 0)
       return;
 
-    double R = sqrt(deltaR);
+    double r = sqrt(delta_r);
 
-    double D, E;
-    double deltaD, deltaE;
+    double d, e;
+    double delta_d, delta_e;
 
-    if (fabs(R) < prec_)
+    if (fabs(r) < prec_)
       {
-	deltaD = 0.75 * a3 * a3 - 2 * a2 + 2 * sqrt(y1 * y1 - 4 * a0);
-	deltaE = 0.75 * a3 * a3 - 2 * a2 - 2 * sqrt(y1 * y1 - 4 * a0);
+	delta_d = 0.75 * a3 * a3 - 2 * a2 + 2 * sqrt(y1 * y1 - 4 * a0);
+	delta_e = 0.75 * a3 * a3 - 2 * a2 - 2 * sqrt(y1 * y1 - 4 * a0);
 
-	if (deltaD >= 0)
+	if (delta_d >= 0)
 	  {
-	    D = sqrt(deltaD);
-	    roots_[0] = - 0.25 * a3 + 0.5 * D;
-	    roots_[1] = - 0.25 * a3 - 0.5 * D;
-	    nRoots_ = 2;
+	    d = sqrt(delta_d);
+	    roots_[0] = - 0.25 * a3 + 0.5 * d;
+	    roots_[1] = - 0.25 * a3 - 0.5 * d;
+	    nroots_ = 2;
 	  }
 
-	if (deltaE >= 0)
+	if (delta_e >= 0)
 	  {
-	    E = sqrt(deltaE);
-	    roots_[nRoots_] = - 0.25 * a3 + 0.5 * E;
-	    roots_[nRoots_ + 1] = - 0.25 * a3 - 0.5 * E;
-	    nRoots_ += 2;
+	    e = sqrt(delta_e);
+	    roots_[nroots_] = - 0.25 * a3 + 0.5 * e;
+	    roots_[nroots_ + 1] = - 0.25 * a3 - 0.5 * e;
+	    nroots_ += 2;
 	  }
       }
     else
       {
-	deltaD = 0.75 * a3 * a3 - R * R - 2 * a2 + (a3 * a2 - 2 * a1 - 0.25 * a3 * a3 * a3) / R;
+	delta_d = 0.75 * a3 * a3 - r * r - 2 * a2 +
+	  (a3 * a2 - 2 * a1 - 0.25 * a3 * a3 * a3) / r;
 
-	deltaE = 0.75 * a3 * a3 - R * R - 2 * a2 - (a3 * a2 - 2 * a1 - 0.25 * a3 * a3 * a3) / R;
+	delta_e = 0.75 * a3 * a3 - r * r - 2 * a2 -
+	  (a3 * a2 - 2 * a1 - 0.25 * a3 * a3 * a3) / r;
 
-	if (deltaD >= 0)
+	if (delta_d >= 0)
 	  {
-	    D = sqrt(deltaD);
-	    roots_[0] = - 0.25 * a3 + 0.5 * R + 0.5 * D;
-	    roots_[1] = - 0.25 * a3 + 0.5 * R - 0.5 * D;
-	    nRoots_ = 2;
+	    d = sqrt(delta_d);
+	    roots_[0] = - 0.25 * a3 + 0.5 * r + 0.5 * d;
+	    roots_[1] = - 0.25 * a3 + 0.5 * r - 0.5 * d;
+	    nroots_ = 2;
 	  }
 
-	if (deltaE >= 0)
+	if (delta_e >= 0)
 	  {
-	    E = sqrt(deltaE);
-	    roots_[nRoots_] = - 0.25 * a3 - 0.5 * R + 0.5 * E;
-	    roots_[nRoots_ + 1] = - 0.25 * a3 - 0.5 * R - 0.5 * E;
-	    nRoots_ += 2;
+	    e = sqrt(delta_e);
+	    roots_[nroots_] = - 0.25 * a3 - 0.5 * r + 0.5 * e;
+	    roots_[nroots_ + 1] = - 0.25 * a3 - 0.5 * r - 0.5 * e;
+	    nroots_ += 2;
 	  }
       }
   }
@@ -200,7 +202,7 @@ private:
   double prec_;
 };
 
-double _Solver::roots_[4] = {0, 0, 0, 0};
-int _Solver::nRoots_ = -1;
+double _solver::roots_[4] = {0, 0, 0, 0};
+int _solver::nroots_ = -1;
 
 #endif	    /* !SOLVER_HPP */

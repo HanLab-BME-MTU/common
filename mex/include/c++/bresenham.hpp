@@ -1,16 +1,16 @@
 #ifndef BRESENHAM_HPP
 # define BRESENHAM_HPP
 
-# include <Point.hpp>
+# include <point_2d.hpp>
 
 template <typename T, typename F>
-void bresenham(const Point<T>& p1,
-	       const Point<T>& p2,
+void bresenham(const point_2d<T>& p1,
+	       const point_2d<T>& p2,
 	       F& func)
 {
   int l, q, dqr, dqru;
       
-  Point<T> p, incr1, incr2;
+  point_2d<T> p, incr1, incr2;
       
   int dy = p2.y - p1.y;
   int dx = p2.x - p1.x;
