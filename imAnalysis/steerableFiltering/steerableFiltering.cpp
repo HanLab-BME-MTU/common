@@ -1,32 +1,8 @@
 #include <mex.h>
 
-#include <Image.hpp>
-#include <nms.hpp>
-#include <steerableFiltering.hpp>
-
-////////////////////////////////////////////////////////////////
-//							      //
-// Input:						      //
-//   							      //
-// I		input image.				      //
-//							      //
-// method	string designating which kind of steerable    //
-//              filtering should be used. Choice are:         //
-//              - '2ndGaussian' 2nd Derivative of a Gaussian  //
-//              - 'UnserM1'     1st order Unser edge filter   //
-//              - 'UnserM2'     2nd order Unser ridge filter  //
-//							      //
-// sigmaPSF	standard deviation of the filter.	      //
-//   							      //
-// Output:						      //
-//   							      //
-// R		filtering response.			      //
-//							      //
-// T		optimal angle.				      //
-//							      //
-// NMS		non-maximal suppression (optional).	      //
-//							      //
-////////////////////////////////////////////////////////////////
+#include <image.hpp>
+#include <compute_nms.hpp>
+#include <steerable_filtering.hpp>
 
 void mexFunction(int nlhs, mxArray *plhs[],
 		 int nrhs, const mxArray *prhs[])
@@ -55,7 +31,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
     mexErrMsgTxt("method argument is not a string.");
 
   if (mxGetNumberOfElements(prhs[2]) != 1)
-    mexErrMsgTxt("Invalid dimension for sigmaPSF argument.");
+    mexErrMsgTxt("Invalid dimension for sigma argument.");
 
   //////////////////////////
   // Get input parameters //
@@ -63,59 +39,59 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
   const mwSize* size = mxGetDimensions(prhs[0]);
   double* ptr = mxGetPr(prhs[0]);
-  Image<double> I(ptr, size[1], size[0]);
+  image<double> ima(ptr, size[1], size[0]);
 
-  int strLength = mxGetNumberOfElements(prhs[1]);
+  int str_length = mxGetNumberOfElements(prhs[1]);
 
-  char* methodNameC = new char[strLength];
+  char* buf = new char[str_length];
 
-  mxGetString(prhs[1], methodNameC, strLength + 1);
+  mxGetString(prhs[1], buf, str_length + 1);
 
-  std::string methodName(methodNameC, strLength);
+  std::string method_name(buf, str_length);
 
-  delete[] methodNameC;
+  delete[] buf;
 
-  const std::string validMethodNames[] = {
+  const std::string valid_method_names[] = {
     "2ndGaussian",
     "UnserM1",
     "UnserM2"
   };
 
-  int methodID = 0;
+  int method_id = 0;
 
-  while (methodID < 3 && methodName != validMethodNames[methodID])
-    ++methodID;
+  while (method_id < 3 && method_name != valid_method_names[method_id])
+    ++method_id;
 
-  if (methodID == 3)
-    mexErrMsgTxt((methodName + " is not a valid method").c_str());
+  if (method_id == 3)
+    mexErrMsgTxt((method_name + " is not a valid method").c_str());
 
   ptr = mxGetPr(prhs[2]);
 
   if (*ptr <= 0)
-    mexErrMsgTxt("sigmaPSF must be strictly positive.");
+    mexErrMsgTxt("sigma must be strictly positive.");
 
-  double sigmaPSF = *ptr;
+  double sigma = *ptr;
   
   ///////////////////////
   // Compute filtering //
   ///////////////////////
   
-  Image<double> R(I.width(), I.height(), 2); // for nms safety
-  Image<double> T(I.width(), I.height());
+  image<double> res(ima.width(), ima.height(), 2); // for nms safety
+  image<double> theta(ima.width(), ima.height());
 
-  switch (methodID)
+  switch (method_id)
     {
-    case 0: sndGaussianFiltering(I, sigmaPSF, R, T); break;
-    case 1: unserFilteringM1(I, sigmaPSF, R, T); break;
-    case 2: unserFilteringM2(I, sigmaPSF, R, T); break;
+    case 0: snd_gaussian_filtering(ima, sigma, res, theta); break;
+    case 1: unser_m1_filtering(ima, sigma, res, theta); break;
+    case 2: unser_m2_filtering(ima, sigma, res, theta); break;
     }
 
   ////////////////////////////
   // Allocate output arrays //
   ////////////////////////////
 
-  if (nlhs > 0) R.convertToMxArray(plhs[0]);
-  if (nlhs > 1) T.convertToMxArray(plhs[1]);
+  if (nlhs > 0) res.image2mxArray(plhs[0]);
+  if (nlhs > 1) theta.image2mxArray(plhs[1]);
 
   if (nlhs > 2)
     {
@@ -123,10 +99,10 @@ void mexFunction(int nlhs, mxArray *plhs[],
       // Compute non-maximal suppression //
       /////////////////////////////////////
 
-      Image<double> NMS(I.width(), I.height());
+      image<double> nms(ima.width(), ima.height());
   
-      nms(R, T, NMS);
+      compute_nms(res, theta, nms);
 
-      NMS.convertToMxArray(plhs[2]);
+      nms.image2mxArray(plhs[2]);
     }
 }

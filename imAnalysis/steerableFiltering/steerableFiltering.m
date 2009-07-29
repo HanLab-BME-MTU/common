@@ -11,7 +11,7 @@ function [R T NMS] = steerableFiltering(I, method, sigmaPSF) %#ok<STOUT,INUSD>
 %              - 'UnserM1'     1st order Unser edge filter
 %              - 'UnserM2'     2nd order Unser ridge filter
 %
-% sigmaPSF	standard deviation of the filter.
+% sigma		standard deviation of the filter.
 % 
 % Output:
 %

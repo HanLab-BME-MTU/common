@@ -1,25 +1,25 @@
-#ifndef	GAUSSIANDERIVATIVE1D_HPP
-# define GAUSSIANDERIVATIVE1D_HPP
+#ifndef	GAUSSIAN_DERIVATIVE_1D_HPP
+# define GAUSSIAN_DERIVATIVE_1D_HPP
 
-# include <matrix.h> // for mxAssert uses
+# include <cassert>
 
 template <int N>
-struct HermitePolynomial
+struct hermite_polynomial
 {
   static double res(double x, double inv_v)
   {
-    return inv_v * (x * HermitePolynomial<N - 1>::res(x, inv_v) -
-		    HermitePolynomial<N - 1>::derivate(x, inv_v));
+    return inv_v * (x * hermite_polynomial<N - 1>::res(x, inv_v) -
+		    hermite_polynomial<N - 1>::derivate(x, inv_v));
   }
 
   static double derivate(double x, double inv_v)
   {
-    return N * HermitePolynomial<N - 1>::res(x, inv_v);
+    return N * hermite_polynomial<N - 1>::res(x, inv_v);
   }
 };
 
 template <>
-struct HermitePolynomial<0>
+struct hermite_polynomial<0>
 {
   static double res(double x, double inv_v) { return 1; }
 
@@ -27,10 +27,10 @@ struct HermitePolynomial<0>
 };
 
 template <int N>
-class GaussianDerivative1D
+class gaussian_derivative_1d
 {
 public:
-  GaussianDerivative1D(double sigma) :
+  gaussian_derivative_1d(double sigma) :
     sigma_(sigma),
     size_(0),
     data_(0)
@@ -38,7 +38,7 @@ public:
     // Note: sigma should be > 0. However, sigma < 1 yields to a very
     // degrated discretization of the Gaussian filter.
 
-    mxAssert(sigma >= 1, "");
+    assert(sigma >= 1);
 
     int hside = ((int) ceil(6 * sigma));
 
@@ -51,11 +51,11 @@ public:
     double c = (N & 1 ? -1 : 1) / (sqrt(2 * M_PI) * sigma);
     
     for (int x = -hside; x <= hside; ++x)
-      data_[x + hside] = c * HermitePolynomial<N>::res(x, inv_v) *
+      data_[x + hside] = c * hermite_polynomial<N>::res(x, inv_v) *
 	exp(- 0.5 * x * x * inv_v);
   }
   
-  ~GaussianDerivative1D()
+  ~gaussian_derivative_1d()
   {
     delete[] data_;
   }
@@ -67,12 +67,12 @@ public:
 
   double operator[](int x) const
   {
-    mxAssert(x >= 0 && x < size_, "");
+    assert(x >= 0 && x < size_);
 
     return data_[x];
   }
 
-  double normL1() const
+  double norm_l1() const
   {
     double res = 0;
 
@@ -82,7 +82,7 @@ public:
     return res;
   }
 
-  double normL2() const
+  double norm_l2() const
   {
     double res = 0;
 
@@ -100,6 +100,6 @@ private:
   double* data_;
 };
 
-typedef GaussianDerivative1D<0> Gaussian;
+typedef gaussian_derivative_1d<0> gaussian;
 
-#endif /* !GAUSSIANDERIVATIVE1D_HPP */
+#endif /* !GAUSSIAN_DERIVATIVE_1D_HPP */

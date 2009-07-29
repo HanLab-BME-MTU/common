@@ -1,12 +1,12 @@
-#ifndef	NONSEPARABLEFILTER2D_HPP
-# define NONSEPARABLEFILTER2D_HPP
+#ifndef	NON_SEPARABLE_FILTER_2D_HPP
+# define NON_SEPARABLE_FILTER_2D_HPP
 
-# include <matrix.h> // for mxAssert uses
+# include <cassert>
 
-class NonSeparableFilter2D
+class non_separable_filter_2d
 {
 public:
-  NonSeparableFilter2D(int width, int height) :
+  non_separable_filter_2d(int width, int height) :
     width_(width),
     height_(height)
   {
@@ -16,7 +16,7 @@ public:
       data_[x] = new double[height_];
   }
   
-  ~NonSeparableFilter2D()
+  ~non_separable_filter_2d()
   {
     for (int x = 0; x < width_; ++x)
       delete[] data_[x];
@@ -29,21 +29,21 @@ public:
 
   double operator()(int x, int y) const
   {
-    mxAssert(x >= 0 && x < width_, "");
-    mxAssert(y >= 0 && y < height_, "");
+    assert(x >= 0 && x < width_);
+    assert(y >= 0 && y < height_);
 
     return data_[x][y];
   }
 
   double & operator()(int x, int y)
   {
-    mxAssert(x >= 0 && x < width_, "");
-    mxAssert(y >= 0 && y < height_, "");
+    assert(x >= 0 && x < width_);
+    assert(y >= 0 && y < height_);
 
     return data_[x][y];
   }
 
-  double normL1() const
+  double norm_l1() const
   {
     double res = 0;
 
@@ -54,7 +54,7 @@ public:
     return res;
   }
 
-  double normL2() const
+  double norm_l2() const
   {
     double res = 0;
 
@@ -71,4 +71,4 @@ private:
   double** data_;
 };
 
-#endif /* !NONSEPARABLEFILTER2D_HPP */
+#endif /* !NON_SEPARABLE_FILTER_2D_HPP */

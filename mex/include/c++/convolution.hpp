@@ -2,25 +2,24 @@
 # define   	CONVOLUTION_HPP
 
 # include <vector>
+# include <cassert>
 
-# include <matrix.h> // for mxAssert uses
-
-# include <GaussianDerivative1D.hpp>
-# include <NonSeparableFilter2D.hpp>
-# include <Image.hpp>
+# include <gaussian_derivative_1d.hpp>
+# include <non_separable_filter_2d.hpp>
+# include <image.hpp>
 
 //////////////////////////////
 // 2D separable convolution //
 //////////////////////////////
 
 template <typename T, int N, int M>
-inline void convolve(const Image<T> & src,
-		     const GaussianDerivative1D<N> & win1,
-		     const GaussianDerivative1D<M> & win2,
-		     Image<double> & dst,
+inline void convolve(const image<T> & src,
+		     const gaussian_derivative_1d<N> & win1,
+		     const gaussian_derivative_1d<M> & win2,
+		     image<double> & dst,
 		     bool mirror = false)
 {
-  mxAssert(dst.width() == src.width() && dst.height() == src.height(), "");
+  assert(dst.width() == src.width() && dst.height() == src.height());
 
   int hside1 = win1.size() >> 1;
   int hside2 = win2.size() >> 1;
@@ -28,11 +27,11 @@ inline void convolve(const Image<T> & src,
   int new_margin = std::max(hside1, hside2);
 
   if (mirror)
-    src.borderMirror(new_margin);
+    src.border_mirror(new_margin);
   else
-    src.borderReplicate(new_margin);
+    src.border_replicate(new_margin);
 
-  Image<double> tmp(src.width(), src.height(), src.margin());
+  image<double> tmp(src.width(), src.height(), src.margin());
 
   double sum;
 
@@ -47,9 +46,9 @@ inline void convolve(const Image<T> & src,
       }
 
   if (mirror)
-    tmp.borderMirror(new_margin);
+    tmp.border_mirror(new_margin);
   else
-    tmp.borderReplicate(new_margin);
+    tmp.border_replicate(new_margin);
 
   // for all columns
   for (int i = 0; i < src.width(); ++i)
@@ -67,12 +66,12 @@ inline void convolve(const Image<T> & src,
 //////////////////////////////////
 
 template <typename T>
-inline void convolve(const Image<T> & src,
-		     const NonSeparableFilter2D & win,
-		     Image<double> & dst,
+inline void convolve(const image<T> & src,
+		     const non_separable_filter_2d & win,
+		     image<double> & dst,
 		     bool mirror = false)
 {
-  mxAssert(dst.width() == src.width() && dst.height() == src.height(), "");
+  assert(dst.width() == src.width() && dst.height() == src.height());
 
   int hside1 = win.width() >> 1;
   int hside2 = win.height() >> 1;
@@ -80,9 +79,9 @@ inline void convolve(const Image<T> & src,
   int new_margin = std::max(hside1, hside2);
 
   if (mirror)
-    src.borderMirror(new_margin);
+    src.border_mirror(new_margin);
   else
-    src.borderReplicate(new_margin);
+    src.border_replicate(new_margin);
 
   double sum;
   
