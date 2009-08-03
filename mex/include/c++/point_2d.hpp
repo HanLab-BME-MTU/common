@@ -70,6 +70,10 @@ struct point_2d
     return point_2d<U>(x / v, y / v);
   }
 
+  double norm2() const { return x * x + y * y; }
+
+  double norm() const { return sqrt(norm2()); }
+
   T x, y;
 };
 
@@ -94,6 +98,12 @@ template <typename T>
 double dist(const point_2d<T>& p1, const point_2d<T>& p2)
 {
   return sqrt(dist2(p1, p2));
+}
+
+template <typename T>
+double dot_product(const point_2d<T>& p1, const point_2d<T>& p2)
+{
+  return p1.x * p2.x + p1.y * p2.y;
 }
 
 template <typename T>
