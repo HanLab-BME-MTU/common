@@ -172,7 +172,7 @@ for iFrame = 1 : length(movieInfo)
             hold on;
             textDeltaCoord = min(diff(imageRange,[],2))/20;
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
-                textDeltaCoord,num2str(iFrame),'Color','white');
+                textDeltaCoord,num2str(iFrame+startend(1)-1),'Color','white');
             axes('Position',[0.505 0 0.495 1]);
             imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
@@ -186,7 +186,7 @@ for iFrame = 1 : length(movieInfo)
             hold on;
             textDeltaCoord = min(diff(imageRange,[],2))/20;
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
-                textDeltaCoord,num2str(iFrame),'Color','white');
+                textDeltaCoord,num2str(iFrame+startend(1)-1),'Color','white');
             axes('Position',[0 0 1 0.495]);
             imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
@@ -200,7 +200,7 @@ for iFrame = 1 : length(movieInfo)
             hold on;
             textDeltaCoord = min(diff(imageRange,[],2))/20;
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
-                textDeltaCoord,num2str(iFrame),'Color','white');
+                textDeltaCoord,num2str(iFrame+startend(1)-1),'Color','white');
     end
     
     %plot features

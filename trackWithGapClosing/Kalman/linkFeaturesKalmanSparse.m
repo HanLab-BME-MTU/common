@@ -316,50 +316,51 @@ for iFrame = 1 : numFrames-1
                 %get indices of corresponding features in 1st frame
                 indx1C = link21(indx2C);
 
-                %find existing tracks that are not connected to features in 2nd frame
-                indx1U = ones(size(trackedFeatureIndx,1),1);
-                indx1U(indx1C) = 0;
-                indx1U = find(indx1U);
+                %                 %find existing tracks that are not connected to features in 2nd frame
+                %                 indx1U = ones(size(trackedFeatureIndx,1),1);
+                %                 indx1U(indx1C) = 0;
+                %                 indx1U = find(indx1U);
 
-                %assign space for new connectivity matrix,
-                %for matrix of nearest neighbors of connected features,
-                %and for matrix of linking costs
+                %assign space for new connectivity matrix
                 tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2-length(indx2C),iFrame+1);
-                tmpNN = NaN(size(tmp));
-                tmpCost = NaN(size(tmp));
 
-                %fill in the feature numbers in 2nd frame and their nearest
-                %neighbor distances
+                %fill in the feature numbers in 2nd frame
                 tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
-                tmpNN(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
 
-                %fill in the linking costs for features in 2nd frame that
-                %got linked to features in 1st frame
-                for i = 1 : length(indx2C)
-                    tmpCost(indx2C(i),iFrame+1) = costMat(indx1C(i),indx2C(i));
-                end
-                
                 %shuffle existing tracks to get the correct connectivity with 2nd frame
-                %also shuffle nearest neighbor distances and previous linking costs
                 tmp(indx2C,1:iFrame) = trackedFeatureIndx(indx1C,:);
-                tmpNN(indx2C,1:iFrame) = nnDistFeatures(indx1C,:);
-                tmpCost(indx2C,1:iFrame) = prevCost(indx1C,:);
 
                 %add rows of tracks that are not connected to points in 2nd frame
-                %also add nearest neighbor distances and previous linking costs
-                tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx(indx1U,:);
-                tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures(indx1U,:);
-                tmpCost(numFeaturesFrame2+1:end,1:iFrame) = prevCost(indx1U,:);
+                tmptmp = trackedFeatureIndx;
+                tmptmp(indx1C,:) = [];
+                tmp(numFeaturesFrame2+1:end,1:iFrame) = tmptmp;
+                %                 tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx(indx1U,:);
 
                 %update the connectivity matrix "trackedFeatureIndx"
                 trackedFeatureIndx = tmp;
-                
-                %update the nearest neighbor distances of connected features
-                nnDistFeatures = tmpNN;
-                
-                %update the matrix of previous linking costs
-                prevCost = tmpCost;
-                
+
+                %repeat for the matrix of nearest neighbor distances
+                tmp(:) = NaN;
+                tmp(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
+                tmp(indx2C,1:iFrame) = nnDistFeatures(indx1C,:);
+                tmptmp = nnDistFeatures;
+                tmptmp(indx1C,:) = [];
+                tmp(numFeaturesFrame2+1:end,1:iFrame) = tmptmp;
+                %                 tmp(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures(indx1U,:);
+                nnDistFeatures = tmp;
+
+                %repeat for the matrix of linking costs
+                tmp(:) = NaN;
+                for i = 1 : length(indx2C)
+                    tmp(indx2C(i),iFrame+1) = costMat(indx1C(i),indx2C(i));
+                end
+                tmp(indx2C,1:iFrame) = prevCost(indx1C,:);
+                tmptmp = prevCost;
+                tmptmp(indx1C,:) = [];
+                tmp(numFeaturesFrame2+1:end,1:iFrame) = tmptmp;
+                %                 tmp(numFeaturesFrame2+1:end,1:iFrame) = prevCost(indx1U,:);
+                prevCost = tmp;
+
                 %get track lifetimes for features in 2nd frame
                 featLifetime = ones(numFeaturesFrame2,1);
                 for iFeat = 1 : numFeaturesFrame2
@@ -391,32 +392,28 @@ for iFrame = 1 : numFrames-1
             else %if there are no potential links
 
                 %assign space for new connectivity matrix,
-                %for matrix of nearest neighbors of connected features,
-                %and for matrix of linking costs
                 tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2,iFrame+1);
-                tmpNN = NaN(size(tmp));
-                tmpCost = NaN(size(tmp));
 
-                %fill in the feature numbers in 2nd frame and their nearest
-                %neighbor distances
+                %fill in the feature numbers in 2nd frame
                 tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
-                tmpNN(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
-
-                %fill in the tracks upto 1st frame, their nearest
-                %neighbor distances and their linking costs
+                
+                %fill in the tracks upto 1st frame
                 tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx;
-                tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures;
-                tmpCost(numFeaturesFrame2+1:end,1:iFrame) = prevCost;
-
+                
                 %update the connectivity matrix "trackedFeatureIndx"
                 trackedFeatureIndx = tmp;
 
-                %update the nearest neighbor distances of connected features
-                nnDistFeatures = tmpNN;
+                %repeat for the matrix of nearest neighbor distances
+                tmp(:) = NaN;
+                tmp(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
+                tmp(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures;
+                nnDistFeatures = tmp;
 
-                %update the matrix of previous linking costs
-                prevCost = tmpCost;
-
+                %repeat for the matrix of linking costs
+                tmp(:) = NaN;
+                tmp(numFeaturesFrame2+1:end,1:iFrame) = prevCost;
+                prevCost = tmp;                
+                
                 %assign track lifetimes for features in 2nd frame
                 featLifetime = ones(numFeaturesFrame2,1);
 
@@ -464,31 +461,27 @@ for iFrame = 1 : numFrames-1
         if numFeaturesFrame2 ~= 0 %if there are features in 2nd frame
 
             %assign space for new connectivity matrix,
-            %for matrix of nearest neighbors of connected features,
-            %and for matrix of linking costs
             tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2,iFrame+1);
-            tmpNN = NaN(size(tmp));
-            tmpCost = NaN(size(tmp));
 
-            %fill in the feature numbers in 2nd frame and their nearest
-            %neighbor distances
+            %fill in the feature numbers in 2nd frame
             tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
-            tmpNN(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
-
-            %fill in the tracks upto 1st frame, their nearest
-            %neighbor distances and their linking costs
+            
+            %fill in the tracks upto 1st frame
             tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx;
-            tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures;
-            tmpCost(numFeaturesFrame2+1:end,1:iFrame) = prevCost;
-
+            
             %update the connectivity matrix "trackedFeatureIndx"
             trackedFeatureIndx = tmp;
 
-            %update the nearest neighbor distances of connected features
-            nnDistFeatures = tmpNN;
-            
-            %update the matrix of previous linking costs
-            prevCost = tmpCost;
+            %repeat for the matrix of nearest neighbor distances
+            tmp(:) = NaN;
+            tmp(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
+            tmp(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures;
+            nnDistFeatures = tmp;
+
+            %repeat for the matrix of linking costs
+            tmp(:) = NaN;
+            tmp(numFeaturesFrame2+1:end,1:iFrame) = prevCost;
+            prevCost = tmp;
 
             %assign track lifetimes for features in 2nd frame
             featLifetime = ones(numFeaturesFrame2,1);
@@ -554,11 +547,13 @@ end
 %same time in descending order from longest to shortest.
 trackedFeatureIndx = trackedFeatureIndx(indx,:);
 
-%also re-arrange the matrix indicating nearest neighbor distances
+%also re-arrange the matrix indicating nearest neighbor distances and
+%previouc costs
 nnDistFeatures = nnDistFeatures(indx,:);
+prevCost = prevCost(indx,:);
 
 %clear some memory
-clear costMat tmp tmpNN tmpCost
+clear costMat tmp
 
 %store feature positions and amplitudes in a matrix that also shows their connectivities
 %information is stored as [x y z a dx dy dz da] in image coordinate system
@@ -642,3 +637,97 @@ end
 %             tmpNN2(numFeaturesFrame2+1:end) = nnDistTracks;
 %             nnDistTracks = tmpNN2;
 %             nnDistTracks(1:numFeaturesFrame2) = movieInfo(iFrame+1).nnDist;
+
+
+%                 %assign space for new connectivity matrix,
+%                 %for matrix of nearest neighbors of connected features,
+%                 %and for matrix of linking costs
+%                 tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2-length(indx2C),iFrame+1);
+%                 tmpNN = NaN(size(tmp));
+%                 tmpCost = NaN(size(tmp));
+%
+%                 %fill in the feature numbers in 2nd frame and their nearest
+%                 %neighbor distances
+%                 tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
+%                 tmpNN(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
+%
+%                 %fill in the linking costs for features in 2nd frame that
+%                 %got linked to features in 1st frame
+%                 for i = 1 : length(indx2C)
+%                     tmpCost(indx2C(i),iFrame+1) = costMat(indx1C(i),indx2C(i));
+%                 end
+%
+%                 %shuffle existing tracks to get the correct connectivity with 2nd frame
+%                 %also shuffle nearest neighbor distances and previous linking costs
+%                 tmp(indx2C,1:iFrame) = trackedFeatureIndx(indx1C,:);
+%                 tmpNN(indx2C,1:iFrame) = nnDistFeatures(indx1C,:);
+%                 tmpCost(indx2C,1:iFrame) = prevCost(indx1C,:);
+%
+%                 %add rows of tracks that are not connected to points in 2nd frame
+%                 %also add nearest neighbor distances and previous linking costs
+%                 tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx(indx1U,:);
+%                 tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures(indx1U,:);
+%                 tmpCost(numFeaturesFrame2+1:end,1:iFrame) = prevCost(indx1U,:);
+%
+%                 %update the connectivity matrix "trackedFeatureIndx"
+%                 trackedFeatureIndx = tmp;
+%
+%                 %update the nearest neighbor distances of connected features
+%                 nnDistFeatures = tmpNN;
+%
+%                 %update the matrix of previous linking costs
+%                 prevCost = tmpCost;
+
+%                 %assign space for new connectivity matrix,
+%                 %for matrix of nearest neighbors of connected features,
+%                 %and for matrix of linking costs
+%                 tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2,iFrame+1);
+%                 tmpNN = NaN(size(tmp));
+%                 tmpCost = NaN(size(tmp));
+%
+%                 %fill in the feature numbers in 2nd frame and their nearest
+%                 %neighbor distances
+%                 tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
+%                 tmpNN(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
+%
+%                 %fill in the tracks upto 1st frame, their nearest
+%                 %neighbor distances and their linking costs
+%                 tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx;
+%                 tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures;
+%                 tmpCost(numFeaturesFrame2+1:end,1:iFrame) = prevCost;
+%
+%                 %update the connectivity matrix "trackedFeatureIndx"
+%                 trackedFeatureIndx = tmp;
+%
+%                 %update the nearest neighbor distances of connected features
+%                 nnDistFeatures = tmpNN;
+%
+%                 %update the matrix of previous linking costs
+%                 prevCost = tmpCost;
+
+%             %assign space for new connectivity matrix,
+%             %for matrix of nearest neighbors of connected features,
+%             %and for matrix of linking costs
+%             tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2,iFrame+1);
+%             tmpNN = NaN(size(tmp));
+%             tmpCost = NaN(size(tmp));
+%
+%             %fill in the feature numbers in 2nd frame and their nearest
+%             %neighbor distances
+%             tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
+%             tmpNN(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
+%
+%             %fill in the tracks upto 1st frame, their nearest
+%             %neighbor distances and their linking costs
+%             tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx;
+%             tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures;
+%             tmpCost(numFeaturesFrame2+1:end,1:iFrame) = prevCost;
+%
+%             %update the connectivity matrix "trackedFeatureIndx"
+%             trackedFeatureIndx = tmp;
+%
+%             %update the nearest neighbor distances of connected features
+%             nnDistFeatures = tmpNN;
+%
+%             %update the matrix of previous linking costs
+%             prevCost = tmpCost;
