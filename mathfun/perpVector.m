@@ -1,4 +1,4 @@
-function v_perp=perpVector(point1,e_1,point2)
+function [v_perp v_proj]=perpVector(point1,e_1,point2)
 %finds the perpendicular vector v connecting the straight line defined by
 %point1 and e_1 with point2
 %
