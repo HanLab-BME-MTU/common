@@ -1,13 +1,17 @@
-function [trackedFeatureInfo,trackedFeatureIndx] = convStruct2MatNoMS(tracksFinal)
+function [trackedFeatureInfo,trackedFeatureIndx] = convStruct2MatNoMS(tracksFinal,movieInfo)
 %CONVSTRUCT2MATNOMS converts tracks from structure format to matrix format, provided there are NO merges/splits.
 %
-%SYNPOSIS [trackedFeatureInfo,trackedFeatureIndx] = convStruct2MatNoMS(tracksFinal)
+%SYNPOSIS [trackedFeatureInfo,trackedFeatureIndx] = convStruct2MatNoMS(tracksFinal,movieInfo)
 %
 %INPUT  tracksFinal: Output of trackCloseGapsKalman, when run with
 %                    gapCloseParam.mergeSplit = 0.
 %       trackedFeatureInfo, trackedFeatureIndx: Output of trackWithGapClosing.
 %
 %Khuloud Jaqaman, February 2008
+%Kathryn Applegate, August 2009 - added movieInfo input to make larger 
+%matrix from full movie, since if fewer frames than the total are tracked,
+%numTimePoints will be smaller if we only look at the max frame number
+%used
 
 %% conversion
 
@@ -15,8 +19,12 @@ function [trackedFeatureInfo,trackedFeatureIndx] = convStruct2MatNoMS(tracksFina
 numTracks = length(tracksFinal);
 
 %get number of time points
-tmp = vertcat(tracksFinal.seqOfEvents);
-numTimePoints = max(tmp(:,1));
+if nargin<2 || isempty(movieInfo)
+    tmp = vertcat(tracksFinal.seqOfEvents);
+    numTimePoints = max(tmp(:,1));
+else
+    numTimePoints=length(movieInfo);
+end
 
 %reserve memory for matrix of tracks
 trackedFeatureInfo = NaN(numTracks,8*numTimePoints);
