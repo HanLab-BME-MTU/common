@@ -60,6 +60,8 @@ switch username
         username = 'Thai-Hang Nguyen';
     case 'p0717065'
         username = 'Tan-Trao Phi';
+    case {'p0832231','Avator'}
+        username = 'Isabelle Filiatreault';
     otherwise
         % don't change username
 end
