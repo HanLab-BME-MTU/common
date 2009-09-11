@@ -53,15 +53,20 @@ function [trackIndx,errFlag] = chooseTracks(trackedFeatureInfo,criteria,probDim)
 %               .min            :minimum initial amplitude.
 %               .max            :maximum initial amplitude.
 %           .initialXCoord   :Structure with fields:
-%               .min            :minimum x-coordinate.
-%               .max            :maximum x-coordinate.
+%               .min            :minimum initial x-coordinate.
+%               .max            :maximum initial x-coordinate.
 %           .initialYCoord   :Structure with fields:
-%               .min            :minimum y-coordinate.
-%               .max            :maximum y-coordinate.
+%               .min            :minimum initial y-coordinate.
+%               .max            :maximum initial y-coordinate.
 %           .initialZCoord   :Structure with fields:
-%               .min            :minimum z-coordinate.
-%               .max            :maximum z-coordinate.
-%           .trackType       :0/1 to choose Brownian/directed tracks.
+%               .min            :minimum initial z-coordinate.
+%               .max            :maximum initial z-coordinate.
+%           .numSegments     : Structure with fields:
+%               .min            :minimum number of segments making a
+%                                compound track.
+%               .max            :maximum number of segments making a
+%                                compound track.
+%           .trackType       :0/1 to choose random/linear tracks.
 %                           All criteria are optional. Leave out or give as
 %                           [] if not of interest.
 %       probDim           : 2 for 2D, 3 for 3D. Optional. Default: 2.
@@ -89,7 +94,7 @@ if nargin < 3 || isempty(probDim)
     probDim = 2;
 end
 
-%% Track indices
+%% Preamble
 
 %get number of tracks
 if isstruct(trackedFeatureInfo)
@@ -104,7 +109,7 @@ trackSEL = getTrackSEL(trackedFeatureInfo);
 %initialize vector of track indices
 trackIndx = ones(numTracks,1);
 
-%Check lifetime criterion
+%% Lifetime
 if isfield(criteria,'lifeTime') && ~isempty(criteria.lifeTime)
     
     %find track lifetimes
@@ -124,11 +129,12 @@ if isfield(criteria,'lifeTime') && ~isempty(criteria.lifeTime)
         maxCrit = max(comparisonVec) + 1;
     end
     
-    %assign one to tracks that satisfy this criterion (plus all criteria above)
+    %assign one to tracks that satisfy this criterion plus all criteria
+    %above
     trackIndx = trackIndx & comparisonVec >= minCrit & comparisonVec <= maxCrit;
 end
 
-%Check start time criterion
+%% Start time
 if isfield(criteria,'startTime') && ~isempty(criteria.startTime)
     
     %find track start times
@@ -148,11 +154,12 @@ if isfield(criteria,'startTime') && ~isempty(criteria.startTime)
         maxCrit = max(comparisonVec) + 1;
     end
     
-    %assign one to tracks that satisfy this criterion (plus all criteria above)
-    trackIndx = trackIndx & trackSEL(:,1) >= minCrit & trackSEL(:,1) <= maxCrit;
+    %assign one to tracks that satisfy this criterion plus all criteria
+    %above
+    trackIndx = trackIndx & comparisonVec >= minCrit & comparisonVec <= maxCrit;
 end
 
-%Check end time criterion
+%% End time
 if isfield(criteria,'endTime') && ~isempty(criteria.endTime)
     
     %find track end times
@@ -172,11 +179,12 @@ if isfield(criteria,'endTime') && ~isempty(criteria.endTime)
         maxCrit = max(comparisonVec) + 1;
     end
     
-    %assign one to tracks that satisfy this criterion (plus all criteria above)
-    trackIndx = trackIndx & trackSEL(:,2) >= minCrit & trackSEL(:,2) <= maxCrit;
+    %assign one to tracks that satisfy this criterion plus all criteria
+    %above
+    trackIndx = trackIndx & comparisonVec >= minCrit & comparisonVec <= maxCrit;
 end
 
-%Check initial amplitude criterion
+%% Initial amplitude
 if isfield(criteria,'initialAmp') && ~isempty(criteria.initialAmp)
     
     %find initial amplitudes
@@ -205,11 +213,12 @@ if isfield(criteria,'initialAmp') && ~isempty(criteria.initialAmp)
         maxCrit = max(comparisonVec) + 1;
     end
     
-    %assign one to tracks that satisfy this criterion (plus all criteria above)
+    %assign one to tracks that satisfy this criterion plus all criteria
+    %above
     trackIndx = trackIndx & comparisonVec >= minCrit & comparisonVec <= maxCrit;
 end
 
-%Check initial x-coordinates
+%% Initial x-coordinate
 if isfield(criteria,'initialXCoord') && ~isempty(criteria.initialXCoord)
     
     %find initial x-coordinates
@@ -238,11 +247,12 @@ if isfield(criteria,'initialXCoord') && ~isempty(criteria.initialXCoord)
         maxCrit = max(comparisonVec) + 1;
     end
     
-    %assign one to tracks that satisfy this criterion (plus all criteria above)
+    %assign one to tracks that satisfy this criterion plus all criteria
+    %above
     trackIndx = trackIndx & comparisonVec >= minCrit & comparisonVec <= maxCrit;
 end
 
-%Check initial y-coordinates
+%% Initial y-coordinate
 if isfield(criteria,'initialYCoord') && ~isempty(criteria.initialYCoord)
     
     %find initial y-coordinates
@@ -271,11 +281,12 @@ if isfield(criteria,'initialYCoord') && ~isempty(criteria.initialYCoord)
         maxCrit = max(comparisonVec) + 1;
     end
     
-    %assign one to tracks that satisfy this criterion (plus all criteria above)
+    %assign one to tracks that satisfy this criterion plus all criteria
+    %above
     trackIndx = trackIndx & comparisonVec >= minCrit & comparisonVec <= maxCrit;
 end
 
-%Check initial z-coordinates
+%% Initial z-coordinate
 if isfield(criteria,'initialZCoord') && ~isempty(criteria.initialZCoord)
     
     %find initial z-coordinates
@@ -304,20 +315,53 @@ if isfield(criteria,'initialZCoord') && ~isempty(criteria.initialZCoord)
         maxCrit = max(comparisonVec) + 1;
     end
     
-    %assign one to tracks that satisfy this criterion (plus all criteria above)
+    %assign one to tracks that satisfy this criterion plus all criteria
+    %above
     trackIndx = trackIndx & comparisonVec >= minCrit & comparisonVec <= maxCrit;
 end
 
-%Check track type
+%% Number of segments
+if isfield(criteria,'numSegments') && ~isempty(criteria.numSegments)
+    
+    %calculate number of segments in each track
+    if isstruct(trackedFeatureInfo)
+        comparisonVec = getNumSegments(trackedFeatureInfo);
+    else
+        comparisonVec = ones(size(trackedFeatureInfo,1),1);
+    end
+
+    %get minimum number of segments
+    if isfield(criteria.numSegments,'min') && ~isempty(criteria.numSegments.min)
+        minCrit = criteria.numSegments.min;
+    else
+        minCrit = min(comparisonVec) - 1;
+    end
+    
+    %get maximum number of segments
+    if isfield(criteria.numSegments,'max') && ~isempty(criteria.numSegments.max)
+        maxCrit = criteria.numSegments.max;
+    else
+        maxCrit = max(comparisonVec) + 1;
+    end
+    
+    %assign one to tracks that satisfy this criterion plus all criteria
+    %above
+    trackIndx = trackIndx & comparisonVec >= minCrit & comparisonVec <= maxCrit;
+end
+
+%% Track type
 if isfield(criteria,'trackType') && ~isempty(criteria.trackType)
     
     %get track types
     comparisonVec = getTrackType(trackedFeatureInfo,probDim);
 
-    %assign one to tracks that satisfy this criterion (plus all criteria above)
+    %assign one to tracks that satisfy this criterion plus all criteria
+    %above
     trackIndx = trackIndx & comparisonVec == criteria.trackType;
     
 end
+
+%% Output
 
 %keep only the indices of tracks that satisfy all input criteria
 trackIndx = find(trackIndx);

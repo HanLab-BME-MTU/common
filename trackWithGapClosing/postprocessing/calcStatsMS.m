@@ -138,7 +138,7 @@ trackSegmentLength = getTrackSEL(tracksMat);
 trackSegmentLength = trackSegmentLength(:,3);
 
 %get indices of linear, Brownian, confined Brownian and undetermined tracks
-indxLin    = find( trackSegmentClass(:,1) == 1 );
+indxLin    = find( trackSegmentClass(:,1) == 1 | trackSegmentClass(:,2) == 3 );
 indxBrown  = find( trackSegmentClass(:,1) ~= 1 & trackSegmentClass(:,2) == 2 );
 indxConf   = find( trackSegmentClass(:,1) ~= 1 & trackSegmentClass(:,2) == 1 );
 indxUndet1 = find( trackSegmentClass(:,1) ~= 1 & isnan(trackSegmentClass(:,2)) ...

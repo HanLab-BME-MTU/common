@@ -26,16 +26,16 @@ if (nargin == 0)
     cd(pathname);
 end
 
-if (nargin<=1)
+if (nargin < 2) || isempty(img_first)
     img_first = 1;
     img_last = 10000;
 end
 
-if (nargin == 2)
+if (nargin < 3) || isempty(img_last)
     img_last = img_first;
 end
 
-if (nargin < 4)
+if (nargin < 4) || isempty(verbose)
     verbose = 1;
 end
 

@@ -1,6 +1,6 @@
 function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(...
     observations,alpha,variableMean,variableStd,showPlot,maxNumGauss,binStrategy)
-%FITHISTWITHGAUSSIANS fits multiple Gaussians to a histogram (including determining the number of necessary Gaussians)
+%FITHISTWITHGAUSSIANS determines the number of Gaussians + their characteristics to fit a histogram
 %
 %SYNOPSIS [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(...
 %    observations,alpha,variableMean,variableStd,showPlot,maxNumGauss,binStrategy)
@@ -608,13 +608,17 @@ end
 if showPlot
 
     %get the distribution from the optimized parameters
-    distrNGauss = zeros(size(binCenterP));
+    %     distrNGauss = zeros(size(binCenterP));
+    distrIndGauss = zeros(numGauss,length(binCenterP));
     for i=1:numGauss
         % no longer multiply by the bin width - histograms is normed now
-        distrNGauss = distrNGauss + gaussParam(i,3)*normpdf(binCenterP,...
+        distrIndGauss(i,:) = gaussParam(i,3)*normpdf(binCenterP,...
             gaussParam(i,1),gaussParam(i,2))*(binCenterP(2)-binCenterP(1));
+        %         distrNGauss = distrNGauss + gaussParam(i,3)*normpdf(binCenterP,...
+        %             gaussParam(i,1),gaussParam(i,2))*(binCenterP(2)-binCenterP(1));
     end
-
+    distrNGauss = sum(distrIndGauss,1);
+    
     if isR
         [cumHist,binCenter] = cdfcalc(observations);
         binCenter = (binCenter(1:end-1)+binCenter(2:end))/2;
@@ -636,10 +640,13 @@ if showPlot
     subplot(1,2,1);
     bar(binCenterP,numObsPerBinP,'k')
     hold on
+    for i = 1 : numGauss
+        plot(binCenterP,distrIndGauss(i,:) * sum(isfinite(observations))/numObservations,'r:')
+    end
     plot(binCenterP,distrNGauss * sum(isfinite(observations))/numObservations,'r')
-
-    %plot the histogram and the fitted Gaussians in the right half of the
-    %figure
+    
+    %plot the cumulative histogram and the fitted Gaussians in the right
+    %half of the figure
     subplot(1,2,2);
     plot(binCenter,cumHist,'k.')
     hold on

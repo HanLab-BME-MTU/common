@@ -270,6 +270,8 @@ if isempty(prevCost)
 else
     prevCost = max(prevCost(:))*ones(movieInfo(1).num,1);
 end
+prevCostStruct.all = prevCost;
+prevCostStruct.max = max(prevCost(:));
 
 %assign the lifetime of features in first frame
 featLifetime = ones(movieInfo(1).num,1);
@@ -298,7 +300,7 @@ for iFrame = 1 : numFrames-1
             eval(['[costMat,propagationScheme,kalmanFilterInfoTmp,nonlinkMarker]'...
                 ' = ' costMatName '(movieInfo(iFrame:iFrame+1),'...
                 'kalmanFilterInfo(iFrame),costMatParam,nnDistFeatures(1:numFeaturesFrame1,:),'...
-                'probDim,prevCost,featLifetime);'])
+                'probDim,prevCostStruct,featLifetime);'])
 
             % % %             %for paper - get number of potential links per feature
             % % %             numPotLinksPerFeature = [numPotLinksPerFeature; sum(...
@@ -316,25 +318,22 @@ for iFrame = 1 : numFrames-1
                 %get indices of corresponding features in 1st frame
                 indx1C = link21(indx2C);
 
-                %                 %find existing tracks that are not connected to features in 2nd frame
-                %                 indx1U = ones(size(trackedFeatureIndx,1),1);
-                %                 indx1U(indx1C) = 0;
-                %                 indx1U = find(indx1U);
+                %find existing tracks that are not connected to features in 2nd frame
+                numExistTracks = size(trackedFeatureIndx,1);
+                indx1U = setdiff(1:numExistTracks,indx1C);
 
                 %assign space for new connectivity matrix
-                tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2-length(indx2C),iFrame+1);
+                tmp = zeros(numExistTracks+numFeaturesFrame2-length(indx2C),iFrame+1);
 
                 %fill in the feature numbers in 2nd frame
                 tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
 
                 %shuffle existing tracks to get the correct connectivity with 2nd frame
                 tmp(indx2C,1:iFrame) = trackedFeatureIndx(indx1C,:);
-
+                
                 %add rows of tracks that are not connected to points in 2nd frame
-                tmptmp = trackedFeatureIndx;
-                tmptmp(indx1C,:) = [];
+                tmptmp = trackedFeatureIndx(indx1U,:);
                 tmp(numFeaturesFrame2+1:end,1:iFrame) = tmptmp;
-                %                 tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx(indx1U,:);
 
                 %update the connectivity matrix "trackedFeatureIndx"
                 trackedFeatureIndx = tmp;
@@ -343,10 +342,8 @@ for iFrame = 1 : numFrames-1
                 tmp(:) = NaN;
                 tmp(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
                 tmp(indx2C,1:iFrame) = nnDistFeatures(indx1C,:);
-                tmptmp = nnDistFeatures;
-                tmptmp(indx1C,:) = [];
+                tmptmp = nnDistFeatures(indx1U,:);
                 tmp(numFeaturesFrame2+1:end,1:iFrame) = tmptmp;
-                %                 tmp(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures(indx1U,:);
                 nnDistFeatures = tmp;
 
                 %repeat for the matrix of linking costs
@@ -355,10 +352,8 @@ for iFrame = 1 : numFrames-1
                     tmp(indx2C(i),iFrame+1) = costMat(indx1C(i),indx2C(i));
                 end
                 tmp(indx2C,1:iFrame) = prevCost(indx1C,:);
-                tmptmp = prevCost;
-                tmptmp(indx1C,:) = [];
+                tmptmp = prevCost(indx1U,:);
                 tmp(numFeaturesFrame2+1:end,1:iFrame) = tmptmp;
-                %                 tmp(numFeaturesFrame2+1:end,1:iFrame) = prevCost(indx1U,:);
                 prevCost = tmp;
 
                 %get track lifetimes for features in 2nd frame
@@ -525,11 +520,15 @@ for iFrame = 1 : numFrames-1
 
     end %(if numFeaturesFrame1 ~= 0 ... else ...)
 
+    %update structure of previous costs
+    prevCostStruct.all = prevCost;
+    prevCostStruct.max = max([prevCostStruct.max; prevCost(:,end)]);
+    
     %display progress
     if verbose
         progressText(iFrame/(numFrames-1),'Linking frame-to-frame');
     end
-
+    
 end %(for iFrame=1:numFrames-1)
 
 %get total number of tracks

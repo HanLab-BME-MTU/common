@@ -51,7 +51,9 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %                               features in previous frames that they are
 %                               connected to.
 %      probDim                : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
-%      prevCost               : Matrix of previous linking costs.
+%      prevCost               : Structure with fields:
+%             .all                : Matrix of previous linking costs.
+%             .max                : Maximum previous linking cost.
 %      featLifetime           : Lengths of tracks that features in
 %                               first frame belong to.
 %
@@ -263,8 +265,10 @@ end
 %% Birth and death
 
 %append matrix to allow birth and death
-if any(~isnan(prevCost(:)) & prevCost(:)~=0)
-    maxCost = 1.05*max(prevCost(:));
+% prevCostMax = max(prevCost(:));
+prevCostMax = prevCost.max;
+if ~isnan(prevCostMax) && prevCostMax ~= 0
+    maxCost = 1.05*prevCostMax;
 else
     maxCost = max(prctile(costMat(:),80),eps);
 end
@@ -296,13 +300,13 @@ costMat(isnan(costMat)) = nonlinkMarker;
 %% Histogram of linking distances
 
 %get current frame
-currentFrame = size(prevCost,2);
+currentFrame = size(prevCost.all,2);
 
 %check whether current frame matches any of the diagnostics frames
 if currentFrame ~= 1 && any(diagnostics == currentFrame)
 
     %get linking distances
-    prevCostNoCol1 = prevCost(:,2:end);
+    prevCostNoCol1 = prevCost.all(:,2:end);
     linkingDistances = sqrt(prevCostNoCol1(~isnan(prevCostNoCol1)));
     
     %plot histogram
