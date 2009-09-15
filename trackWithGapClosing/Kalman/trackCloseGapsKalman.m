@@ -368,7 +368,7 @@ end
 %follow a linear trajectory.  it only runs with the EB3 cost matrix
 if isequal(costMatrices(2).funcName,'plusTipCostMatCloseGaps')
     [tracksCoordAmpLink,tracksFeatIndxLink,nnDistLinkedFeat]=...
-       breakNonlinearTracks(tracksCoordAmpLink,tracksFeatIndxLink,nnDistLinkedFeat);
+       plusTipBreakNonlinearTracks(tracksCoordAmpLink,tracksFeatIndxLink,nnDistLinkedFeat);
 end
 
 
