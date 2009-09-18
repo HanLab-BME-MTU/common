@@ -36,7 +36,7 @@ doneFlag=0;
 currentDir=pwd;
 % find oldPath's filesep locations
 tempFilesepIdx=strfind(temp,filesep);
-
+tryNum=1;
 while doneFlag==0
     % find current directory's filesep locations
     currentDirFilesepIdx=strfind(currentDir,filesep);
@@ -61,8 +61,13 @@ while doneFlag==0
     if isdir(newPath)
         doneFlag=1;
     else
-        currentDir=uigetdir(currentDir,'Select any directory above input directory');
-        cd(currentDir)
+        if tryNum<=3
+            currentDir=uigetdir(currentDir,'Select any directory above input directory');
+            cd(currentDir)
+        else
+            error('formatPath: data not found. either wrong server or permission denied.')
+        end
     end
+    tryNum=tryNum+1;
 end
 
