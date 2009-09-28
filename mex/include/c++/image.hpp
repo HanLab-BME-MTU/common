@@ -223,6 +223,15 @@ public:
   }
 
 public:
+  void fill(T value)
+  {
+    int width_eff = width_ + (margin_ << 1);
+    int height_eff = height_ + (margin_ << 1);
+
+    std::fill_n(data_, width_eff * height_eff, value);
+  }
+
+public:
   void border_replicate(int new_margin) const
   {
     if (new_margin != margin_)
