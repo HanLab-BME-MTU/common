@@ -190,6 +190,8 @@ end
 % LINEAR LEAST SQUARES
 %=======================
 
+if ~isempty(goodRows)
+
 % check whether we have a zero-column in A
 zeroCols = all(A(goodRows,:)==0,1);
 % remove the zero-columns
@@ -210,6 +212,10 @@ if any(zeroCols)
     % also assign NaN to Qxx where applicable
     xTmp(~zeroCols) = Qxx;
     Qxx = xTmp;
+end
+else
+    % all data is considered outlier (possible if highly bimodal data)
+    [x,Qxx] = deal([]);
 end
 
 %=== END LSQ ========

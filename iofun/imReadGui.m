@@ -1,7 +1,7 @@
-function img = imReadGui(type,title)
+function img = imReadGui(type,title,filter)
 %IMREADGUI reads an image with a GUI / interface to imread()
 %
-% SYNOPSIS img = imReadGui(type)
+% SYNOPSIS img = imReadGui(type,title,filter)
 %
 % INPUT type: (optional) 'double' or 'uint8'; default -> 'double'
 %             if set to 'struct' image becomes a structure with
@@ -9,6 +9,8 @@ function img = imReadGui(type,title)
 %             *.perm = 'M' permutation status set to MATLAB
 %       title (optional) Title for the file dialogue. 
 %              Default: 'imReadGui ...' 
+%       filter (optional) filterspec (as in uigetfile to suggest certain
+%              image formats. Default {'*.tif','Tiff-files';'*.*,'All files'}
 %
 % OUTPUT img : image matrix
 
@@ -18,12 +20,17 @@ end;
 if nargin < 2 || isempty(title)
     title = 'imReadGui ...';
 end
+if nargin < 3 || isempty(filter)
+    filter = {'*.tif','Tiff-files';'*.*','All files'};
+end
+    
 
-[fName,dirName] = uigetfile('*.tif',title);
+[fName,dirName] = uigetfile(filter,title);
 
 if( isa(fName,'char') & isa(dirName,'char'))
    aux = imread([dirName,fName]);
 else
+   img = [];
    return;
 end;
 

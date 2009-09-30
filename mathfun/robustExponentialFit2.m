@@ -177,7 +177,7 @@ if verbose
 
     end
     badIdx = setdiff(1:lengthY,goodIdx);
-    plot(t(badIdx), Y(badIdx)*ySign,'*r');
+    plot(t(badIdx), Y(badIdx)*ySign,'ok',t(badIdx), Y(badIdx)*ySign,'+k');
     
 else
     plotAx = [];
