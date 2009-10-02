@@ -1,4 +1,4 @@
-function [kr,lr,pcr]=RipleysKfunction(mpm1,mpm2,imsiz,dist,corrFacMat,normArea);
+function [kr,lr,pcr]=RipleysKfunction(mpm1,mpm2,imsiz,dist,corrFacMat,normArea)
 % RipleysKfunction calculates Ripley's K-function for a given MPM,
 % allowing cross-corrlation between two MPMs
 % SYNOPSIS  [kr,lr,pcr]=RipleysKfunction(mpm,imsiz,dist,corrFacMat, normArea);
@@ -58,10 +58,10 @@ imsizey = imsiz(2);
 % of the image (this is the standard in the literature)
 rs = round(sqrt(imsizex^2+imsizey^2));
 if nargin<4
-    distvec = [1:rs];
+    distvec = 1:rs;
     nr = rs;
 elseif isnan(dist)
-    distvec = [1:rs];
+    distvec = 1:rs;
     nr = rs;
 else
     distvec = dist;
@@ -115,12 +115,12 @@ for i=1:numf
     cmpm2   = mpm2(pos2,2*i-1:2*i);
     np2     = length(pos2);
     
-    fprintf(' frame %04d',i);
+    %fprintf(' frame %04d',i);
     
     % if there are any relevant points in this frame - at least one point
     % each for cross-correlation (different matrices mpm1/mpm2), at least 
     % two points for auto-corr (mpm1 == mpm2)
-    if ( min(np1,np2)>0 ) & ( (np1+np2)>2 )
+    if ( min(np1,np2)>0 ) && ( (np1+np2)>2 )
         
         % output pr: # of points as a function of distance    
         [pr,nump] = pointsincircleCross(cmpm1,cmpm2,imsiz,distvec,corrFacMat);
@@ -142,11 +142,11 @@ for i=1:numf
         pcr(:,i)    = nan*dist;
     end
     
-    fprintf('\b\b\b\b\b\b\b\b\b\b\b');
+    %fprintf('\b\b\b\b\b\b\b\b\b\b\b');
     
 end % of for i-loop
 
-fprintf('\n');
+%fprintf('\n');
 
 end % of function
 
@@ -194,9 +194,7 @@ function [npvr,nump]=pointsincircleCross(m1,m2,ms,dist,corrMat)
 %
 % Dinah Loerke, Jan 29th, 2008
 
-[nump1,numd1]=size(m1);
-[nump2,numd2]=size(m2);
-
+nump1 = size(m1,1);
 msx=ms(1);
 msy=ms(2);
 
@@ -214,22 +212,17 @@ msy=ms(2);
 % zero-distances have to be included for DIFFERENT mpms, but should be
 % excluded for IDENTICAL mpms
 
-% identity variable 
-ivar = 0;
-if length(m2(:))==length(m1(:))
-    if m2(:)==m1(:)
-        ivar=1;
-    end
-end
-
 % monitor progress
 %fprintf(' progress %02d',0);
 
-if isempty(m1) | isempty(m2) | isempty(mdist) | (mdist==0)
+if isempty(m1) || isempty(m2) || isempty(mdist)
     npvr = nan*dist;
     nump = 0;
 else
     
+    %allocate space
+    histmat = nan(length(mdist(:,1)),length(dist)+1);
+    corrmat = nan(length(mdist(:,1)),length(dist));
     for i=1:length(mdist(:,1))
 
         % matrix histmat contains the distance histogram for each point, where 
@@ -253,9 +246,9 @@ else
             corrmat(i,:)= circumferenceCorrectionFactor(ex,ey,dist,msx,msy);
         end
 
-        % update iter 
-        iter = round( 100*(i/length(mdist(:,1))) );
-        %if iter<100, fprintf('\b\b%02d',iter); end
+%         % update iter 
+%         iter = round( 100*(i/length(mdist(:,1))) );
+%         %if iter<100, fprintf('\b\b%02d',iter); end
 
     end
 
@@ -303,8 +296,8 @@ function [corfac]=circumferenceCorrectionFactor(xx,yy,rr,msx,msy)
 % while xx and yy are the point coordinates, x and y are the *distances* from
 % the nearest edge of the image in that direction; e.g. x=xx for a point close
 % to the left edge, and x=(msx-xx) for a point close to the right edge 
-x=min(xx,(msx-xx));
-y=min(yy,(msy-yy));
+%x=min(xx,(msx-xx));
+%y=min(yy,(msy-yy));
 
 %xo and yo are, conversely, the maximum distance to the image edge
 xo=max(xx,(msx-xx));
@@ -326,7 +319,7 @@ for i=1:rmax
     %divides a defined value by the correction factor, so that we'd get 
     %a 'divide by zero' error message. thus, the default value for this 
     %situation is set to nan instead of zero
-    if ( (r>0) & (r<sqrt(xo^2+yo^2)) )
+    if ( (r>0) && (r<sqrt(xo^2+yo^2)) )
              
             %consider contributions of all 4 quadrants separately
             %each quadrant can contribute at most 0.25, at least 0 to the
@@ -418,14 +411,14 @@ end  % of function
 
 
 
-function [m2]=DistanceMatrix(c1,c2);
+function [m2]=DistanceMatrix(c1,c2)
 %this subfunction makes a neighbour-distance matrix for input matrix c1
 %(n1 x 2 points) and c2
 %output: m2 (n1 x n1) matrix containing the distances of each point in c1 
 %from each point in c2
 
-[np1,sd1]=size(c1);
-[np2,sd2]=size(c2);
+np1=size(c1,1);
+np2=size(c2,1);
 
 m2=zeros(np1,np2);
 
@@ -441,7 +434,7 @@ end % of subfunction
 
 
 %% =======================================================================
-function pcfunc = convertLR2PCF(lr,dvec);
+function pcfunc = convertLR2PCF(lr,dvec)
 % convert L-function to pair correlation function
 
 pcfunc = lr;
