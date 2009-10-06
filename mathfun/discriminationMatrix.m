@@ -21,6 +21,9 @@ function compMatrices = discriminationMatrix(dataStructure,testStructure)
 %                               mean (default for above diag.)
 %                          12 - K-S test for distributions with subtracted
 %                               median
+%                          20 - permutation test for means
+%                          21 - distribution test - calibrated K-S test
+%                               with mean subtraction
 %
 % OUTPUT   compMatrices  : Structure with fieldnames equal to the
 %                     fieldnames of the data structure, containing
@@ -32,6 +35,7 @@ function compMatrices = discriminationMatrix(dataStructure,testStructure)
 %                     Values in the diagonal are 1.01
 %
 % c: jonas, 12/04
+% kathryn, 10/09 - added permutation and distribution tests
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %=====================
@@ -49,7 +53,11 @@ defaultTest = [1 11];
 %       mean (default for above diag.)
 % 12 - K-S test for distributions with subtracted
 %       median
-testList = [1 2 10 11 12];
+% 20 - permutation test for means
+% 21 - distribution test - calibrated KS with mean subtraction
+
+
+testList = [1 2 10 11 12 20 21];
 
 % nargin
 if nargin == 0 || isempty(dataStructure) || ~isstruct(dataStructure)
@@ -188,4 +196,10 @@ switch whichTest
         % compare distributions: KS-test. Subtract medians
         [dummy,pValue] = ...
             kstest2(data1-groupMeans(1,1,2), data2-groupMeans(2,1,2));
+    case 20
+        % compare means: permutation test
+        pValue=permTest(data1,data2);
+    case 21
+        % compare distributions: calibrated KS-test
+        pValue=distribTest(data1,data2); % here pValue is really the confidence value
 end
