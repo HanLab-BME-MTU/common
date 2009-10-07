@@ -1,11 +1,9 @@
 function [mergesInfo,splitsInfo,mergesInfoSpace,splitsInfoSpace] = ...
-    findMergesSplits(tracks,probDim,removePotArtifacts,plotRes,figureName,...
-    image)
-%FINDMERGESSPLITS finds the merges and splits in each track and gives back their location
+    findMergesSplits(tracks,probDim,removePotArtifacts,plotRes)
+%FINDMERGESSPLITS finds the merges and splits in each track and gives back their time and location
 %
 %SYNOPSIS [mergesInfo,splitsInfo,mergesInfoSpace,splitsInfoSpace] = ...
-%    findMergesSplits(tracks,probDim,removePotArtifacts,plotRes,figureName,...
-%    image)
+%    findMergesSplits(tracks,probDim,removePotArtifacts,plotRes)
 %
 %INPUT  tracks    : Output of trackCloseGapsKalman:
 %                   Structure array with number of entries equal to
@@ -37,11 +35,8 @@ function [mergesInfo,splitsInfo,mergesInfoSpace,splitsInfoSpace] = ...
 %                   artifact, 0 otherwise. 
 %                   Optional. Default: 1.
 %       plotRes   : 0 to not plot anything, 1 to make a spatial map of
-%                   merges and splits (in cyan and magenta, respectively).
+%                   merges and splits.
 %                   Optional. Default: 0.
-%       figureName: Figure name.
-%       image     : Image to overlay spatial map on.
-%                   Optional. Default: [].
 %
 %OUTPUT mergesInfo     : 2D array where first column indicates track number,
 %                        second column indicates track type (1 linear, 0 o.w.),
@@ -86,15 +81,29 @@ end
 if nargin < 4 || isempty(plotRes)
     plotRes = 0;
 end
+if probDim ~= 2
+    plotRes = 0;
+end
 
 %get number of tracks
 numTracks = length(tracks);
 
 %get number of segments per track
-numSegments = getNumSegmentsPerTrack(tracksFinal);
+numSegments = getNumSegmentsPerTrack(tracks);
 
 %estimate track types
 trackType = getTrackType(tracks,probDim);
+
+% %convert tracks from structure to matrix format
+% tracksMat = convStruct2MatIgnoreMS(tracks);
+% 
+% %find minimum and maximum coordinates for plotting
+% xCoord = tracksMat(:,1:8:end);
+% minXCoord = min(floor(min(xCoord(:))),0);
+% maxXCoord =  ceil(max(xCoord(:)));
+% yCoord = tracksMat(:,2:8:end);
+% minYCoord = min(floor(min(yCoord(:))),0);
+% maxYCoord =  ceil(max(yCoord(:)));
 
 %% Merge/split statistics
 
@@ -115,19 +124,20 @@ for iTrack = 1 : numTracks
     %find rows with merging information
     indxMerge = find( seqOfEvents(:,2)==2 & ~isnan(seqOfEvents(:,4)) );
     
-    %get the merge times
+    %get the merge times (absolute and relative to track start)
     mergeTimes = seqOfEvents(indxMerge,1);
+    relMergeTimes = mergeTimes - seqOfEvents(1,1) + 1;
     
     %get the track segments that are merged with
     mergeSegment = seqOfEvents(indxMerge,4);
     
     %get the coordinates of each merge
     mergeCoords = [];
-    for iMerge = indxMerge'
+    for iMerge = 1 : length(indxMerge)
         mergeCoords = [mergeCoords ...
-            trackCoordX(mergeSegment(iMerge),mergeTimes(iMerge)) ...
-            trackCoordY(mergeSegment(iMerge),mergeTimes(iMerge)) ...
-            trackCoordZ(mergeSegment(iMerge),mergeTimes(iMerge))]; %#ok<AGROW>
+            trackCoordX(mergeSegment(iMerge),relMergeTimes(iMerge)) ...
+            trackCoordY(mergeSegment(iMerge),relMergeTimes(iMerge)) ...
+            trackCoordZ(mergeSegment(iMerge),relMergeTimes(iMerge))]; %#ok<AGROW>
     end
     
     %store the merge information for this track
@@ -138,19 +148,20 @@ for iTrack = 1 : numTracks
     %find rows with splitting information
     indxSplit = find( seqOfEvents(:,2)==1 & ~isnan(seqOfEvents(:,4)) );
     
-    %get split times
+    %get split times (absolute and relative to track start)
     splitTimes = seqOfEvents(indxSplit,1);
+    relSplitTimes = splitTimes - seqOfEvents(1,1) + 1;
 
     %get the track segments that are split from
     splitSegment = seqOfEvents(indxSplit,4);
     
     %get the coordinates of each merge
     splitCoords = [];
-    for iSplit = indxSplit'
+    for iSplit = 1 : length(indxSplit)
         splitCoords = [splitCoords ...
-            trackCoordX(splitSegment(iSplit),splitTimes(iSplit)-1) ...
-            trackCoordY(splitSegment(iSplit),splitTimes(iSplit)-1) ...
-            trackCoordZ(splitSegment(iSplit),splitTimes(iSplit)-1)]; %#ok<AGROW>
+            trackCoordX(splitSegment(iSplit),relSplitTimes(iSplit)-1) ...
+            trackCoordY(splitSegment(iSplit),relSplitTimes(iSplit)-1) ...
+            trackCoordZ(splitSegment(iSplit),relSplitTimes(iSplit)-1)]; %#ok<AGROW>
     end
     
     %store the split information for this track
@@ -181,52 +192,13 @@ splitsInfoSpace = splitsInfoSpace(filledRows,:);
 %% Plotting
 
 if plotRes
-    
-    %make new figure
-    if isempty(figureName)
-        figure
-    else
-        figure('Name',figureName)
-    end
-    hold on
-    
-    %plot the image to overlay the spatial map on, if given
-    if ~isempty(image)
-        imshow(image,[]);
-    else
-        imshow(ones(maxYCoord,maxXCoord),[]);
-    end
-    
-    %set figure axes limits
-    axis([minXCoord maxXCoord minYCoord maxYCoord]);
-    
-    %show coordinates on axes
-    axH = gca;
-    set(axH,'visible','on');
-    
-    %label axes
-    xlabel('x-coordinate (pixels)');
-    ylabel('y-coordinate (pixels)');
-    
     switch probDim
         case 2
-            
-            %get coordinates of merges
-            xCoord = mergesInfoSpace(:,1:2:end);
-            xCoord = xCoord(:);
-            yCoord = mergesInfoSpace(:,2:2:end);
-            yCoord = yCoord(:);
-            
-            %keep only non-zero entries
-            indxKeep = find( xCoord~=0 & yCoord~=0 );
-            xCoord = xCoord(indxKeep);
-            yCoord = yCoord(indxKeep);
-            
+            plotMergeSplitPositions2D(tracks,mergesInfo,splitsInfo,...
+                mergesInfoSpace,splitsInfoSpace)
         case 3
     end
-    
 end
-
 
 %% %%%%% ~~ the end ~~ %%%%%
 

@@ -1,8 +1,8 @@
-function plotPropertySpatialMap(tracksFinal,figureName,minLength,...
+function plotPropertySpatialMap2D(tracksFinal,figureName,minLength,...
     properties2plot,positions2plot,image,fixedSegLength,diffAnalysisRes)
 %PLOTPROPERTYSPATIALMAP creates spatial maps of trajectory properties
 %
-%SYNOPSIS plotPropertySpatialMap(tracksFinal,figureName,minLength,...
+%SYNOPSIS plotPropertySpatialMap2D(tracksFinal,figureName,minLength,...
 %    properties2plot,positions2plot,image,fixedSegLength,diffAnalysisRes)
 %
 %INPUT  tracksFinal    : Output of trackCloseGapsKalman.
@@ -37,6 +37,11 @@ function plotPropertySpatialMap(tracksFinal,figureName,minLength,...
 %Khuloud Jaqaman, August 2009
 
 %% Input
+
+if nargin < 1
+    disp('--plotPropertySpatialMap2D: Incorrect number of input arguments!');
+    return
+end
 
 if nargin < 2 || isempty(figureName)
     figureName = [];

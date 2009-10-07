@@ -1,7 +1,7 @@
 
 %% movie information
-movieParam.imageDir = '/groups/lccb-receptors/Galbraiths/090902_Pax_CHO04/images/'; %directory where images are
-movieParam.filenameBase = '090902_CHO05_tdEosPax_256_2400_25_'; %image file name base
+movieParam.imageDir = '/groups/lccb-receptors/Galbraiths/data/alphaV/090916_AlphaV_CHO06b/images/'; %directory where images are
+movieParam.filenameBase = '090916_CHO06b_TdEosAv_2400_25_'; %image file name base
 movieParam.firstImageNum = 1; %number of first image in movie
 movieParam.lastImageNum = 2400; %number of last image in movie
 movieParam.digits4Enum = 4; %number of digits used for frame enumeration (1-4).
@@ -17,7 +17,7 @@ detectionParam.numSigmaIter = 10; %maximum number of iterations for PSF sigma es
 detectionParam.integWindow = 1; %number of frames before and after a frame for time integration
 
 %% save results
-saveResults.dir = '/groups/lccb-receptors/Galbraiths/090902_Pax_CHO04/analysis/'; %directory where to save input and output
+saveResults.dir = '/groups/lccb-receptors/Galbraiths/data/alphaV/090916_AlphaV_CHO06b/analysis/'; %directory where to save input and output
 saveResults.filename = 'detection1AllFrames.mat'; %name of file where input and output are saved
 % saveResults = 0;
 

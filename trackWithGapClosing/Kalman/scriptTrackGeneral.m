@@ -79,8 +79,8 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/groups/lccb-receptors/Galbraiths/090902_Pax_CHO04/analysis/'; %directory where to save input and output
-saveResults.filename = 'tracks1Detection1Frames0601to1200.mat'; %name of file where input and output are saved
+saveResults.dir = '/groups/lccb-receptors/Galbraiths/090914_AlphaV_CHO05/analysis/'; %directory where to save input and output
+saveResults.filename = 'tracks1Detection1Frames1801to2400.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
 %verbose
@@ -91,7 +91,7 @@ probDim = 2;
 
 %% tracking function call
 
-[tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(601:1200),...
+[tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1801:2400),...
     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,9 +1,11 @@
 function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(...
-    observations,alpha,variableMean,variableStd,showPlot,maxNumGauss,binStrategy)
+    observations,alpha,variableMean,variableStd,showPlot,maxNumGauss,...
+    binStrategy,plotName)
 %FITHISTWITHGAUSSIANS determines the number of Gaussians + their characteristics to fit a histogram
 %
 %SYNOPSIS [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(...
-%    observations,alpha,variableMean,variableStd,showPlot,maxNumGauss,binStrategy)
+%    observations,alpha,variableMean,variableStd,showPlot,maxNumGauss,...
+%    binStrategy,plotName)
 %
 % or [numObsPerBin,binCenter,gaussParam,errFlag] = fitHistWithGaussians(...
 %    observations,'R',showPlot,maxNumGauss)
@@ -40,12 +42,16 @@ function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(..
 %                     histogram. 1 for using "histogram" and 2 for using
 %                     the data directly.
 %                     Optional. Default: 2.
+%       plotName    : The title of the plotted figure.
+%                     Optional. Default: 'Figure'.
 %
 %OUTPUT numObsPerBin: Number of observations that fall in each bin.
 %       binCenter   : Center of each bin.
 %       gaussParam  : Matrix with number of rows equal to number of fitted
 %                     Gaussians and three columns indicating the mean,
-%                     standard deviation and amplitude of each Gaussian.
+%                     standard deviation and amplitude of each Gaussian, as
+%                     well as a fourth column with an entry in the first
+%                     row storing the mean square residual of the fit.
 %       errFlag     : 0 if function executes normally, 1 otherwise.
 %
 %REMARKS The fitted Gaussians are normalized. Thus, the contribution of one
@@ -53,7 +59,28 @@ function [numObsPerBinP,binCenterP,gaussParam,errFlag] = fitHistWithGaussians(..
 %(gaussParam(3)/(gaussParam(2)*sqrt(2pi)))
 %                     *exp(-(x-gaussParam(1))^2/(2*gaussParam(2)^2)
 %
-%        The function does not yet allow to set maxPoints!
+%        For larger samples, binning strategy 1 (using "histogram") works
+%        better than binning strategy 2 (using the data directly), at
+%        least when using the matlab option (not R).
+%        "Better" means the following: 
+%        I generated N(10,1) samples of size 500-200000 and applied the
+%        code to them. For all samples, binning strategy 1 gave back 1
+%        Gaussian as the best fit more often than binning strategy 2, which
+%        often (~50% of the time) found at least 2 Gaussians.
+%        With binning strategy 1, the following are "good" alpha-values
+%        and the corresponding probability of getting back 1 Gaussian:
+%        sample size        alpha-value
+%            500            1e-2 (90%), 1e-3 (99%)
+%          1,000            1e-3 (95%), 1e-4 (99%)
+%         10,000            1e-4 (90%), 1e-5 (95%)
+%         50,000            1e-6 (90%), 1e-8 (95%)
+%        100,000            1e-6 (90%), 1e-8 (95%)
+%        200,000            1e-7 (90%), 1e-10 (95%)
+%
+%
+%        The function does not yet allow to set maxPoints! (WHO WROTE
+%        THIS? -KJ)
+%
 %
 %Khuloud Jaqaman, August 2006
 
@@ -79,6 +106,9 @@ else
     % make sure observations is a col-vector
     observations = observations(:);
 end
+%get rid of outliers in the observations vector
+[outlierIdx,inlierIdx] = detectOutliers(observations,4);
+observations = observations(inlierIdx);
 
 % Check whether to use the matlab routine or R
 switch isnumeric(alpha)
@@ -144,8 +174,14 @@ switch isnumeric(alpha)
                 errFlag = 1;
             end
         end
+        
+        if nargin < 8 || isempty(plotName)
+            plotName = 'Figure';
+        end
 
     case 0 % alpha is not numeric
+        
+        plotName = []; %this is to avoid a code crash
 
         isR = true;
 
@@ -209,7 +245,6 @@ end % switch
 if errFlag
     return
 end
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Histogram calculation and fitting
@@ -290,24 +325,30 @@ switch isR
 
         %fit the cumulative histogram with as many Gaussians as necessary
         while fit
-
+            
+            %add another Gaussian to the fit
+            numGaussT = numGauss + 1;
+            
+            %assign the parameter initial guesses
+            meanInitialGuess = prctile(observations,(1:numGaussT)'*100/(numGaussT+1));
+            stdInitialGuess = nanstd(observations)/sqrt(numGaussT)*ones(numGaussT,1);
+            ampInitialGuess = numObservations/numGaussT*ones(numGaussT,1);
+            gaussParamT = [meanInitialGuess stdInitialGuess ampInitialGuess];
+            %             gaussParamT = [gaussParam; [binCenter(floor(end/2)) ...
+            %                 10*(binCenter(end)-binCenter(end-1)) numObservations/2]];
+            
             switch variableMean
-
+                
                 case 0 %if mean is constrained
 
                     switch variableStd
 
                         case 0 %if variance is constrained to all variances are equal
 
-                            %add another Gaussian to the fit
-                            numGaussT = numGauss + 1;
-
                             %calculate number of degrees of freedom
                             numDegFreeT = numBins - numGaussT - 2;
 
-                            %assign initial values to unknown parameters
-                            gaussParamT = [gaussParam; [binCenter(floor(end/2)) ...
-                                10*(binCenter(end)-binCenter(end-1)) numObservations/2]];
+                            %assign parameter initial values
                             x0 = [gaussParamT(1,1:2)'; gaussParamT(:,3)];
 
                             %assign lower bounds
@@ -333,15 +374,10 @@ switch isR
 
                         case 1 %if variance is variable
 
-                            %add another Gaussian to the fit
-                            numGaussT = numGauss + 1;
-
                             %calculate number of degrees of freedom
                             numDegFreeT = numBins - 2*numGaussT - 1;
 
-                            %assign initial values to unknown parameters
-                            gaussParamT = [gaussParam; [binCenter(floor(end/2)) ...
-                                10*(binCenter(end)-binCenter(end-1)) numObservations/2]];
+                            %assign parameter initial values
                             x0 = [gaussParamT(1,1); gaussParamT(:,2); gaussParamT(:,3)];
 
                             %assign lower bounds
@@ -367,15 +403,10 @@ switch isR
 
                         case 2 %if variance is constrained to variance_n = n*variance_1
 
-                            %add another Gaussian to the fit
-                            numGaussT = numGauss + 1;
-
                             %calculate number of degrees of freedom
                             numDegFreeT = numBins - numGaussT - 2;
 
-                            %assign initial values to unknown parameters
-                            gaussParamT = [gaussParam; [binCenter(floor(end/2)) ...
-                                10*(binCenter(end)-binCenter(end-1)) numObservations/2]];
+                            %assign parameter initial values
                             x0 = [gaussParamT(1,1:2)'; gaussParamT(:,3)];
 
                             %assign lower bounds
@@ -407,15 +438,10 @@ switch isR
 
                         case 0 %if variance is constrained to all variances are equal
 
-                            %add another Gaussian to the fit
-                            numGaussT = numGauss + 1;
-
                             %calculate number of degrees of freedom
                             numDegFreeT = numBins - 2*numGaussT - 1;
 
-                            %assign initial values to unknown parameters
-                            gaussParamT = [gaussParam; [binCenter(floor(end/2)) ...
-                                10*(binCenter(end)-binCenter(end-1)) numObservations/2]];
+                            %assign parameter initial values
                             x0 = [gaussParamT(:,1); gaussParamT(1,2); gaussParamT(:,3)];
 
                             %assign lower bounds
@@ -441,15 +467,10 @@ switch isR
 
                         case 1 %if variance is variable
 
-                            %add another Gaussian to the fit
-                            numGaussT = numGauss + 1;
-
                             %calculate number of degrees of freedom
                             numDegFreeT = numBins - 3*numGaussT;
 
-                            %assign initial values to unknown parameters
-                            gaussParamT = [gaussParam; [binCenter(floor(end/2)) ...
-                                10*(binCenter(end)-binCenter(end-1)) numObservations]];
+                            %assign parameter initial values
                             x0 = gaussParamT(:);
 
                             %assign lower bounds
@@ -508,7 +529,7 @@ switch isR
                 residuals = residualsT;
                 numDegFree = numDegFreeT;
             end
-
+            
         end %(while fit)
 
         % ----- R ------
@@ -590,6 +611,16 @@ switch isR
 
 end
 
+%order the Gaussians in ascending value of the mean
+gaussMeans = gaussParam(:,1);
+[gaussMeans,orderIndx] = sort(gaussMeans);
+gaussParam = gaussParam(orderIndx,:);
+
+%append the sum of squared residuals / # degrees of freedom to
+%the first row of gaussParam
+if ~isR
+    gaussParam(1,end+1) = sum(residuals.^2) / numDegFree;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Plotting
@@ -633,7 +664,11 @@ if showPlot
     end
 
     %make new figure
-    figure
+    if isempty(plotName)
+        figure
+    else
+        figure('Name',plotName,'NumberTitle','off')
+    end
 
     %plot the histogram and the fitted Gaussians in the left half of the
     %figure. Correct by the number of NaNs
@@ -641,16 +676,22 @@ if showPlot
     bar(binCenterP,numObsPerBinP,'k')
     hold on
     for i = 1 : numGauss
-        plot(binCenterP,distrIndGauss(i,:) * sum(isfinite(observations))/numObservations,'r:')
+        plot(binCenterP,distrIndGauss(i,:) * sum(isfinite(observations))/...
+            numObservations,'g--','LineWidth',1.5)
     end
-    plot(binCenterP,distrNGauss * sum(isfinite(observations))/numObservations,'r')
+    plot(binCenterP,distrNGauss * sum(isfinite(observations))/...
+        numObservations,'r-.','LineWidth',1.5)
+    xlabel('Observation values')
+    ylabel('Counts')
     
     %plot the cumulative histogram and the fitted Gaussians in the right
     %half of the figure
     subplot(1,2,2);
     plot(binCenter,cumHist,'k.')
     hold on
-    plot(binCenter,cumDistrNGauss,'r')
+    plot(binCenter,cumDistrNGauss,'r','LineWidth',1.5)
+    xlabel('Observation values')
+    ylabel('Cumulative counts')
 
 end %(if showPlot)
 

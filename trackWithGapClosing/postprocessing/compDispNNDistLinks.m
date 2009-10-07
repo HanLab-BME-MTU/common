@@ -43,15 +43,15 @@ if isstruct(tracks)
     
 end
 
-%% possible links per feature
-
-meanPotLinksPerFeat = mean(numPotLinksPerFeat);
-fracFeatsMore1PotLink = length(find(numPotLinksPerFeat>1))/length(numPotLinksPerFeat);
-
-%% possible links per track
-
-meanPotLinksPerTrack = mean(numPotLinksPerTrack);
-fracTracksMore1PotLink = length(find(numPotLinksPerTrack>1))/length(numPotLinksPerTrack);
+% %% possible links per feature
+% 
+% meanPotLinksPerFeat = mean(numPotLinksPerFeat);
+% fracFeatsMore1PotLink = length(find(numPotLinksPerFeat>1))/length(numPotLinksPerFeat);
+% 
+% %% possible links per track
+% 
+% meanPotLinksPerTrack = mean(numPotLinksPerTrack);
+% fracTracksMore1PotLink = length(find(numPotLinksPerTrack>1))/length(numPotLinksPerTrack);
 
 %% mean displacement
 

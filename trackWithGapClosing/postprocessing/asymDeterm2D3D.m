@@ -5,7 +5,7 @@ function [asymParam,asymFlag] = asymDeterm2D3D(positions,alpha)
 %
 %INPUT  positions: n-by-2/3 array of positions (x,y,[z]).
 %       alpha    : Alpha-value for determining the threshold.
-%                  Can take the values 0.2, 0.1 and 0.05.
+%                  Can take the values 0.2, 0.1, 0.05 and 0.01.
 %                  Optional. Default: 0.1.
 %
 %OUTPUT asymParam: Parameter estimating asymmetry of positional scatter.
@@ -20,8 +20,8 @@ function [asymParam,asymFlag] = asymDeterm2D3D(positions,alpha)
 if nargin < 2 || isempty(alpha)
     alpha = 0.1;
 else
-    if ~any(alpha == [0.2 0.1 0.05])
-        disp('--asymDeterm2D3D: alpha can take only the values 0.05, 0.1 or 0.2');
+    if ~any(alpha == [0.2 0.1 0.05 0.01])
+        disp('--asymDeterm2D3D: alpha can take only the values 0.01, 0.05, 0.1 or 0.2');
         disp('                  assigning default value of 0.1');
         alpha = 0.1;
     end
@@ -46,9 +46,13 @@ switch probDim
                     1.4 1.4 1.4 1.4 1.4 1.4 1.35 1.35 1.35]'; ...
                     1.3*ones(max(numTimePoints-20,1),1)];
             case 0.05 %95th percentile
-                asymThresh = [[NaN NaN 6.0 3.5 2.5 2.2 1.9 1.9 1.9 1.8 ...
+                asymThresh = [[NaN NaN 6.4 3.5 2.5 2.2 1.9 1.9 1.9 1.8 ...
                     1.75 1.74 1.74 1.73 1.7 1.7 1.7 1.7 1.67 1.65]'; ...
                     1.6*ones(max(numTimePoints-20,1),1)];
+            case 0.01 %99th percentile
+                asymThresh = [[NaN NaN 9.1 4.9 3.6 3.1 2.8 2.5 2.4 2.3 ...
+                    2.3 2.2 2.2 2.2 2.2 2.2 2.1 2.1 2.1 2.1]'; ...
+                    2.0*ones(max(numTimePoints-20,1),1)];
         end
     case 3
         switch alpha
@@ -61,6 +65,9 @@ switch probDim
             case 0.05 %95th percentile
                 asymThresh = [[NaN NaN 3.7 2.2 1.9 1.6 1.5 1.4 1.4 1.4]'; ...
                     1.35*ones(max(numTimePoints-10,1),1)];
+            case 0.01 %99th percentile
+                asymThresh = [[NaN NaN 5.6 3.1 2.5 2.4 2.1 2.0 1.9 1.9 ...
+                    1.9 1.8 1.8 1.8 1.8]'; 1.7*ones(max(numTimePoints-15,1),1)];
         end
 end
 

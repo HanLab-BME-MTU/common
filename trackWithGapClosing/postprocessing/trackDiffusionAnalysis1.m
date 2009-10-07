@@ -22,12 +22,15 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                     otherwise. Optional. Default: 0.
 %       alphaValues : Row vector with 2 entries. First entry is the
 %                     alpha-value for MSS analysis (can take the values
-%                     0.2, 0.1 and 0.05). Second entry is the alpha-value
-%                     for asymmetry determination (can take the values 0.2,
-%                     0.1, 0.05 and 0.01).
+%                     0.2, 0.1, 0.05 and 0.01; see help of trackMSSAnalysis
+%                     for most up-to-date values allowed). Second entry is
+%                     the alpha-value for asymmetry determination (can take
+%                     the values 0.2, 0.1, 0.05 and 0.01; see help of
+%                     asymDeterm2D3D for most up-to-date values allowed).
 %                     Optional. Default: [0.1 0.1]. If only one value is
 %                     entered, it is taken as the alpha-value for MSS
-%                     analysis.
+%                     analysis, whiel the alpha-value for asymmetry
+%                     analysis is given the default value.
 %       plotRes     : 1 to plot results, 0 otherwise. Optional. Default: 0.
 %                     Results can be plotted only if problem is 2D.
 %                     color-coding:
@@ -445,7 +448,7 @@ end
 
 %plot results if requested
 if plotRes
-    plotTracksDiffAnalysis(tracksInput,diffAnalysisRes,[],1);
+    plotTracksDiffAnalysis2D(tracksInput,diffAnalysisRes,[],1);
 end
 
 %% ~~~ the end ~~~

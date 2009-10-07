@@ -325,7 +325,7 @@ if isfield(criteria,'numSegments') && ~isempty(criteria.numSegments)
     
     %calculate number of segments in each track
     if isstruct(trackedFeatureInfo)
-        comparisonVec = getNumSegments(trackedFeatureInfo);
+        comparisonVec = getNumSegmentsPerTrack(trackedFeatureInfo);
     else
         comparisonVec = ones(size(trackedFeatureInfo,1),1);
     end

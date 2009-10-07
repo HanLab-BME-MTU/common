@@ -631,7 +631,7 @@ end %(for iTrack = 1 : numInputTracks)
 
 %plot results if requested
 if plotRes
-    plotTracksTransDiffAnalysis(tracksInput,transDiffAnalysisRes,[],1);
+    plotTracksTransDiffAnalysis2D(tracksInput,transDiffAnalysisRes,[],1);
 end
 
 

@@ -1,9 +1,9 @@
-function plotTracksTransDiffAnalysis(trackedFeatureInfo,diffAnalysisRes,timeRange,...
+function plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
     newFigure,image,showConf)
-%PLOTTRACKSTRANSDIFFANALYSIS plots tracks in 2D highlighting the different diffusion segments within each track
+%PLOTTRACKSDIFFANALYSIS plots tracks in 2D highlighting the different diffusion types
 %
-%SYNOPSIS plotTracksTransDiffAnalysis(trackedFeatureInfo,diffAnalysisRes,timeRange,...
-%    newFigure,image,showConf)
+%SYNOPSIS plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
+%    newFigure,image)
 %
 %INPUT  trackedFeatureInfo: -- EITHER -- 
 %                           Output of trackWithGapClosing:
@@ -42,7 +42,7 @@ function plotTracksTransDiffAnalysis(trackedFeatureInfo,diffAnalysisRes,timeRang
 %                                   is due to a merge, number is the index
 %                                   of track segment for the merge/split.
 %       diffAnalysisRes   : Structure of diffusion analysis results as
-%                           output by the code "trackTransDiffusionAnalysis1".
+%                           output by the code "trackDiffusionAnalysis1".
 %       timeRange         : 2-element row vector indicating time range to plot. 
 %                           Optional. Default: whole movie.
 %       newFigure         : 1 if plot should be made in a new figure
@@ -57,20 +57,23 @@ function plotTracksTransDiffAnalysis(trackedFeatureInfo,diffAnalysisRes,timeRang
 %
 %OUTPUT The plot.
 %       Color coding:
-%       linear according to asymmetry -> red
+%       linear & 1D confined diffusion -> orange
+%       linear & 1D normal diffusion -> red
+%       linear & 1D super diffusion -> green
+%       linear & too short to analyze 1D diffusion -> yellow
 %       random/unclassified & 2D confined diffusion -> blue
 %       random/unclassified & 2D normal diffusion -> cyan
 %       random/unclassified & 2D super diffusion -> magenta
 %       random & too short to analyze 2D diffusion -> purple
 %       too short for any analysis -> black
 %
-%Khuloud Jaqaman, April 2009
+%Khuloud Jaqaman, March 2008
 
 %% Input
 
 %check whether correct number of input arguments was used
 if nargin < 2
-    disp('--plotTracksTransDiffAnalysis: Incorrect number of input arguments!');
+    disp('--plotTracksDiffAnalysis2D Incorrect number of input arguments!');
     return
 end
 
@@ -92,7 +95,7 @@ if nargin < 3 || isempty(timeRange)
     timeRange = [1 numTimePoints];
 else
     if timeRange(1) < 1 || timeRange(2) > numTimePoints
-        disp('--plotTracksTransDiffAnalysis: Wrong time range for plotting!');
+        disp('--plotTracksDiffAnalysis2D: Wrong time range for plotting!');
         errFlag = 1;
     end
 end
@@ -102,7 +105,7 @@ if nargin < 4 || isempty(newFigure)
     newFigure = 1;
 else
     if newFigure ~= 0 && newFigure ~= 1
-        disp('--plotTracksTransDiffAnalysis: newFigure should be 0 or 1!');
+        disp('--plotTracksDiffAnalysis2D: newFigure should be 0 or 1!');
         errFlag = 1;
     end
 end
@@ -119,7 +122,7 @@ end
 
 %exit if there are problems in input variables
 if errFlag
-    disp('--plotTracksTransDiffAnalysis: Please fix input data!');
+    disp('--plotTracksDiffAnalysis2D: Please fix input data!');
     return
 end
 
@@ -206,25 +209,55 @@ maxXCoord =  ceil(max(tracksX(:)));
 minYCoord = min(floor(min(tracksY(:))),0);
 maxYCoord =  ceil(max(tracksY(:)));
 
-%get number of track segments to be plotted
+%get number of track segment to be plotted
 numTrackSegments = size(tracksX,2);
 
+%% track segment color based on track type
+
 %get track segment types from diffusion analysis
-trackSegmentType = vertcat(diffAnalysisRes.segmentClass);
+trackSegmentType = vertcat(diffAnalysisRes.classification);
+
+%color coding:
+%       linear & 1D confined diffusion -> orange
+%       linear & 1D normal diffusion -> red
+%       linear & 1D super diffusion -> green
+%       linear & too short to analyze 1D diffusion -> yellow
+%       random/unclassified & 2D confined diffusion -> blue
+%       random/unclassified & 2D normal diffusion -> cyan
+%       random/unclassified & 2D super diffusion -> magenta
+%       random & too short to analyze 2D diffusion -> purple
+%       too short for any analysis -> black
+trackSegmentColor = repmat([0 0 0],numTrackSegments,1);
+indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 1);
+trackSegmentColor(indx,:) = repmat([1 0.7 0],length(indx),1);
+indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 2);
+trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
+indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 3);
+trackSegmentColor(indx,:) = repmat([0 1 0],length(indx),1);
+indx = find(trackSegmentType(:,1) == 1 & isnan(trackSegmentType(:,3)));
+trackSegmentColor(indx,:) = repmat([1 1 0],length(indx),1);
+indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 1);
+trackSegmentColor(indx,:) = repmat([0 0 1],length(indx),1);
+indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 2);
+trackSegmentColor(indx,:) = repmat([0 1 1],length(indx),1);
+indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 3);
+trackSegmentColor(indx,:) = repmat([1 0 1],length(indx),1);
+indx = find(trackSegmentType(:,1) == 0 & isnan(trackSegmentType(:,2)));
+trackSegmentColor(indx,:) = repmat([0.6 0 1],length(indx),1);
 
 %% confinement radius information
 
-% %get track segment center, confinement radii and preferred direction of
-% %motion
-% trackSegmentCenter = catStruct(1,'diffAnalysisRes.confRadInfo.trackCenter');
-% trackSegmentConfRad = catStruct(1,'diffAnalysisRes.confRadInfo.confRadius');
-% trackSegmentPrefDir = catStruct(1,'diffAnalysisRes.confRadInfo.prefDir');
-% 
-% %determine indices of tracks with one confinement radius
-% indxCircle = find( ~isnan(trackSegmentConfRad(:,1)) & isnan(trackSegmentConfRad(:,2)) );
-% 
-% %determine indices of tracks with 2 confinement radii
-% indxRectangle = find( ~isnan(trackSegmentConfRad(:,2)) );
+%get track segment center, confinement radii and preferred direction of
+%motion
+trackSegmentCenter = catStruct(1,'diffAnalysisRes.confRadInfo.trackCenter');
+trackSegmentConfRad = catStruct(1,'diffAnalysisRes.confRadInfo.confRadius');
+trackSegmentPrefDir = catStruct(1,'diffAnalysisRes.confRadInfo.prefDir');
+
+%determine indices of tracks with one confinement radius
+indxCircle = find( ~isnan(trackSegmentConfRad(:,1)) & isnan(trackSegmentConfRad(:,2)) );
+
+%determine indices of tracks with 2 confinement radii
+indxRectangle = find( ~isnan(trackSegmentConfRad(:,2)) );
 
 %% Plotting
 
@@ -260,89 +293,13 @@ hold on
 tracksXP = tracksX(timeRange(1):timeRange(2),:);
 tracksYP = tracksY(timeRange(1):timeRange(2),:);
 
-%plot track segments with their appropriate diffusion type colors
+%plot tracks with their appropriate line color
+%missing intervals are indicated by a dotted line
 for i = 1 : numTrackSegments
-
-    %missing intervals are indicated by a dotted black line
     obsAvail = find(~isnan(tracksXP(:,i)));
     plot(tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
-    
-    %get the classification of this track segment
-    segmentClassMSS  = trackSegmentType(i).momentScalingSpectrum(:,1:3);
-    segmentClassAsym = trackSegmentType(i).asymmetryAfterMSS;
-    segmentClass = [segmentClassMSS segmentClassAsym(:,3)];
-    segmentConfInfo = trackSegmentType(i).momentScalingSpectrum(:,end-2:end);
-    
-    %remove any parts of the track segment classification before the
-    %plotting time interval
-    while segmentClass(1,2) < timeRange(1)
-        segmentClass = segmentClass(2:end,:);
-    end
-    segmentClass(1,1) = max(segmentClass(1,1),timeRange(1));
-    
-    %remove any parts of the track segment classification after the
-    %plotting time interval
-    while segmentClass(end,1) > timeRange(2)
-        segmentClass = segmentClass(1:end-1,:);
-    end
-    segmentClass(end,2) = min(segmentClass(end,2),timeRange(2));
-    
-    %shift the track segment classification to make it start at 1
-    segmentClass(:,1:2) = segmentClass(:,1:2) - timeRange(1) + 1;
-    
-    %substract 1 from the starts of track segments after the first to
-    %prevent discontinuities in the plotting
-    segmentClass(2:end,1) = segmentClass(2:end,1) - 1;
-
-    %plot the different parts with their appropriate colors
-    for iPart = 1 : size(segmentClass,1)
-
-        switch segmentClass(iPart,3)
-
-            case -1 %linear based on asymmetry
-                plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
-                    tracksYP(segmentClass(iPart,1):segmentClass(iPart,2),i),'r');
-
-            case 1 %confined based on MSS
-                plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
-                    tracksYP(segmentClass(iPart,1):segmentClass(iPart,2),i),'b');
-                
-                %plot confinement radius if requested
-                if showConf
-                    theta = (0:pi/10:2*pi); %angle
-                    xy = [cos(theta') sin(theta')]; %x and y-coordinates
-                    circleVal = xy .* segmentConfInfo(iPart,1);
-                    plot(segmentConfInfo(iPart,2)+circleVal(:,1),...
-                        segmentConfInfo(iPart,3)+circleVal(:,2),'k');
-                end
-
-            case 2 %Brownian based on MSS
-                plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
-                    tracksYP(segmentClass(iPart,1):segmentClass(iPart,2),i),'c');
-
-            case 3 %directed based on MSS
-                plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
-                    tracksYP(segmentClass(iPart,1):segmentClass(iPart,2),i),'m');
-
-            otherwise
-                
-                switch segmentClass(iPart,4)
-                    
-                    case 0 %random based on asymmetry but too short for MSS analysis
-                        plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
-                            tracksYP(segmentClass(iPart,1):segmentClass(iPart,2),i),'Color',[0.6 0 1]);
-
-                    otherwise %too short fo any analysis
-                        plot(tracksXP(segmentClass(iPart,1):segmentClass(iPart,2),i),...
-                            tracksYP(segmentClass(iPart,1):segmentClass(iPart,2),i),'k');
-
-                end %(switch segmentClass(iPart,4))
-
-        end %(switch segmentClass(iPart,3))
-
-    end %(for iPart = 1 : size(segmentClass,1))
-
-end %(for i = 1 : numTrackSegments)
+    plot(tracksXP(:,i),tracksYP(:,i),'Color',trackSegmentColor(i,:));
+end
 
 %show merges and splits
 if mergeSplit
@@ -398,43 +355,43 @@ if mergeSplit
 
 end %(if mergeSplit)
 
-% %show confinement areas if requested
-% if showConf
-% 
-%     %generate circle to plot
-%     theta = (0:pi/10:2*pi); %angle
-%     xy = [cos(theta') sin(theta')]; %x and y-coordinates
-%     
-%     %go over symmetric tracks
-%     for iTrack = indxCircle'
-%         
-%         %plot a circle of radius = confinement radius and centered at the
-%         %center of this track
-%         circleVal = xy .* trackSegmentConfRad(iTrack,1);
-%         plot(trackSegmentCenter(iTrack,1)+circleVal(:,1),...
-%             trackSegmentCenter(iTrack,2)+circleVal(:,2),'k');
-%         
-%     end
-%     
-%     %go over linear tracks
-%     for iTrack = indxRectangle'
-%     
-%         %get the confinement axes
-%         axisPara = trackSegmentPrefDir(iTrack,:);
-%         axisPerp = [-axisPara(2) axisPara(1)] * trackSegmentConfRad(iTrack,1);
-%         axisPara = axisPara * trackSegmentConfRad(iTrack,2);
-%         
-%         %find the 4 corners of the confinement rectangle
-%         cornerCoord = [-axisPara - axisPerp; -axisPara + axisPerp; ...
-%             axisPara + axisPerp; axisPara - axisPerp; -axisPara - axisPerp] ...
-%             + repmat(trackSegmentCenter(iTrack,:),5,1);
-%         
-%         %plot the rectangle
-%         plot(cornerCoord(:,1),cornerCoord(:,2),'k');
-% 
-%     end
-%     
-% end
+%show confinement areas if requested
+if showConf
+
+    %generate circle to plot
+    theta = (0:pi/10:2*pi); %angle
+    xy = [cos(theta') sin(theta')]; %x and y-coordinates
+    
+    %go over symmetric tracks
+    for iTrack = indxCircle'
+        
+        %plot a circle of radius = confinement radius and centered at the
+        %center of this track
+        circleVal = xy .* trackSegmentConfRad(iTrack,1);
+        plot(trackSegmentCenter(iTrack,1)+circleVal(:,1),...
+            trackSegmentCenter(iTrack,2)+circleVal(:,2),'k');
+        
+    end
+    
+    %go over linear tracks
+    for iTrack = indxRectangle'
+    
+        %get the confinement axes
+        axisPara = trackSegmentPrefDir(iTrack,:);
+        axisPerp = [-axisPara(2) axisPara(1)] * trackSegmentConfRad(iTrack,1);
+        axisPara = axisPara * trackSegmentConfRad(iTrack,2);
+        
+        %find the 4 corners of the confinement rectangle
+        cornerCoord = [-axisPara - axisPerp; -axisPara + axisPerp; ...
+            axisPara + axisPerp; axisPara - axisPerp; -axisPara - axisPerp] ...
+            + repmat(trackSegmentCenter(iTrack,:),5,1);
+        
+        %plot the rectangle
+        plot(cornerCoord(:,1),cornerCoord(:,2),'k');
+
+    end
+    
+end
 
 %%%%% ~~ the end ~~ %%%%%
 

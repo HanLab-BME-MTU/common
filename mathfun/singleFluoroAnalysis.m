@@ -88,7 +88,7 @@ errFlag = [];
 
 %check whether correct number of input arguments was used
 if nargin < 1
-    disp('--analyzeIntensities: Function needs at least 1 input argument!');
+    disp('--singleFluoroAnalysis: Function needs at least 1 input argument!');
     return
 end
 
@@ -115,7 +115,7 @@ if nargin < 3 || isempty(startFrame)
     startFrame = startFrame_def;
 else
     if startFrame < 1 || startFrame > numFrames
-        disp('--analyzeIntensities: "startFrame" should be between 1 and number of frames in movie!');
+        disp('--singleFluoroAnalysis: "startFrame" should be between 1 and number of frames in movie!');
         errFlag = 1;
     end
 end
@@ -125,7 +125,7 @@ if nargin < 4 || isempty(endFrame)
     endFrame = endFrame_def;
 else
     if endFrame < startFrame || endFrame > numFrames
-        disp('--analyzeIntensities: "endFrame" should be between "startFrame" and number of frames in movie!');
+        disp('--singleFluoroAnalysis: "endFrame" should be between "startFrame" and number of frames in movie!');
         errFlag = 1;
     end
 end
@@ -135,7 +135,7 @@ if nargin < 5 || isempty(alpha)
     alpha = alpha_def;
 else
     if alpha < 0 || alpha > 1
-        disp('--analyzeIntensities: "alpha" should be between 0 and 1!');
+        disp('--singleFluoroAnalysis: "alpha" should be between 0 and 1!');
         errFlag = 1;
     end
 
@@ -146,7 +146,7 @@ if nargin < 6 || isempty(variableMean)
     variableMean = variableMean_def;
 else
     if ~any(variableMean == [0,1])
-        disp('--analyzeIntensities: "variableMean" should be 0 or 1!');
+        disp('--singleFluoroAnalysis: "variableMean" should be 0 or 1!');
         errFlag = 1;
     end
 end
@@ -156,7 +156,7 @@ if nargin < 7 || isempty(variableStd)
     variableStd = variableStd_def;
 else
     if ~any(variableStd == [0,1,2])
-        disp('--analyzeIntensities: "variableStd" should be 0, 1 or 2!');
+        disp('--singleFluoroAnalysis: "variableStd" should be 0, 1 or 2!');
         errFlag = 1;
     end
 end
@@ -166,7 +166,7 @@ if nargin < 8 || isempty(maxNumGauss)
     maxNumGauss = maxNumGauss_def;
 else
     if maxNumGauss < 1
-        disp('--analyzeIntensities: "maxNumGauss" should be at least 1!');
+        disp('--singleFluoroAnalysis: "maxNumGauss" should be at least 1!');
         errFlag = 1;
     end
 end
@@ -176,14 +176,14 @@ if nargin < 9 || isempty(plotResults)
     plotResults = plotResults_def;
 else
     if ~any(plotResults == [0,1])
-        disp('--analyzeIntensities: "plotResults" should be 0 or 1!');
+        disp('--singleFluoroAnalysis: "plotResults" should be 0 or 1!');
         errFlag = 1;
     end
 end
 
 %exit if there are problem in input variables
 if errFlag
-    disp('--analyzeIntensities: Please fix input data!');
+    disp('--singleFluoroAnalysis: Please fix input data!');
     return
 end
 
