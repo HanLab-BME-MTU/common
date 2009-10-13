@@ -19,12 +19,8 @@ if nargin < 3 || isempty(symmetric)
 end
 
 R = ceil(3*sigma);   % cutoff radius of the gaussian kernel
-M = zeros(2*R+1); % KJ
-for i = -R:R,
-   for j = -R:R,
-      M(i+R+1,j+R+1) = exp(-(i*i+j*j)/2/sigma/sigma);
-   end
-end
+[I J] = meshgrid(-R:R);
+M = exp(-.5 * (I.^2+J.^2) / sigma^2); % SB: remove the loop
 M = M/sum(M(:));   % normalize the gaussian mask so that the sum is
                    % equal to 1
                    
