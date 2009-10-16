@@ -1,17 +1,19 @@
 function W = WTATrou(I, varargin)
-% W = WTATROU(I) computes the A Trou Wavelet Transform. A description of
-% the algorithm can be found in:
+% W = WTATROU(I) computes the A Trou Wavelet Transform of image I.
+% A description of the algorithm can be found in:
 % J.-L. Starck, F. Murtagh, A. Bijaoui, "Image Processing and Data
 % Analysis: The Multiscale Approach", Cambridge Press, Cambridge, 2000. 
 %
-% Input:
-% I: the input image of size N x M.
-% W: the wavelet coefficients which consists of a array of size N x M x K+1
-% where K = ceil(max(log2(N), log2(M))). The coefficients are organized as
-% follows:
-% W(:, :, 1:K) corresponds to the wavelet coefficients (also called detail
-% images) at scale k = 1...K
-% W(:, :, K+1) corresponds to the last approximation image A_K.
+% W = WTATROU(I, nBands) computes the A Trou Wavelet decomposition of the
+% image I up to nBands scale (inclusive). The default value is nBands =
+% ceil(max(log2(N), log2(M))), where [N M] = size(I).
+%
+% Output:
+% W contains the wavelet coefficients, an array of size N x M x nBands+1.
+% The coefficients are organized as follows:
+% W(:, :, 1:nBands) corresponds to the wavelet coefficients (also called
+% detail images) at scale k = 1...nBands
+% W(:, :, nBands+1) corresponds to the last approximation image A_K.
 %
 % You can use plotWTATrou(W) to display the wavelet coefficients.
 %
@@ -19,20 +21,30 @@ function W = WTATrou(I, varargin)
 
 [N, M] = size(I);
 
-J = ceil(max(log2(N), log2(M)));
+K = ceil(max(log2(N), log2(M)));
 
-W = zeros(N, M, J + 1);
+nBands = K;
+
+if nargin > 1 && ~isempty(varargin{1})
+    nBands = varargin{1};
+    
+    if nBands < 1 || nBands > K
+        error('invalid range for nBands parameter.');
+    end
+end
+
+W = zeros(N, M, nBands + 1);
 
 I = double(I);
 lastA = I;
 
-for k = 1:J
+for k = 1:nBands
     newA = convolve(I, k);
     W(:, :, k) = lastA - newA;
     lastA = newA;
 end
 
-W(:, :, J + 1) = lastA;
+W(:, :, nBands + 1) = lastA;
 
     function F = convolve(I, k)
         [N, M] = size(I);

@@ -4,11 +4,14 @@ function plotWTATrou(W)
 %
 % Sylvain Berlemont, 2009
 
-nScales = size(W, 3);
+n = size(W, 3);
 
-nCols = ceil(nScales / 2);
+nCols = ceil(n / 2);
 
-for i = 1:nScales
+for i = 1:n-1
     subplot(2, nCols, i); imshow(W(:, :, i), []);
-    title(['scale = ' num2str(i)]);
+    title(sprintf('W_{%d}', i));
 end
+
+subplot(2, nCols, n); imshow(W(:, :, n), []);
+title(sprintf('A_{%d}', n-1));
