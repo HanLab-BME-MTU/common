@@ -1,5 +1,5 @@
-function plotWTATrou(W)
-% PLOTWTATROU(W) plots the coefficients from the A Trou Wavelet Transform.
+function awtDisplay(W)
+% awtDisplay(W) plots the coefficients from the A Trou Wavelet Transform.
 % See WTATrou.m for details about that wavelet transform.
 %
 % Sylvain Berlemont, 2009

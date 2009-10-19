@@ -1,10 +1,10 @@
-function W = WTATrou(I, varargin)
-% W = WTATROU(I) computes the A Trou Wavelet Transform of image I.
+function W = awt(I, varargin)
+% W = AWT(I) computes the A Trou Wavelet Transform of image I.
 % A description of the algorithm can be found in:
 % J.-L. Starck, F. Murtagh, A. Bijaoui, "Image Processing and Data
 % Analysis: The Multiscale Approach", Cambridge Press, Cambridge, 2000. 
 %
-% W = WTATROU(I, nBands) computes the A Trou Wavelet decomposition of the
+% W = AWT(I, nBands) computes the A Trou Wavelet decomposition of the
 % image I up to nBands scale (inclusive). The default value is nBands =
 % ceil(max(log2(N), log2(M))), where [N M] = size(I).
 %
@@ -15,7 +15,7 @@ function W = WTATrou(I, varargin)
 % detail images) at scale k = 1...nBands
 % W(:, :, nBands+1) corresponds to the last approximation image A_K.
 %
-% You can use plotWTATrou(W) to display the wavelet coefficients.
+% You can use awtDisplay(W) to display the wavelet coefficients.
 %
 % Sylvain Berlemont, 2009
 
@@ -51,7 +51,7 @@ W(:, :, nBands + 1) = lastA;
         k1 = 2^(k - 1);
         k2 = 2^k;
         
-        tmp = padarray(I, [k2 0], 'replicate');
+        tmp = padarray(I, [k2 0], 'symmetric');
         
         % Convolve the columns
         for i = k2+1:k2+N
@@ -59,7 +59,7 @@ W(:, :, nBands + 1) = lastA;
                 4 * tmp(i - k1, :) + tmp(i + k2, :) + tmp(i - k2, :);
         end
 
-        tmp = padarray(I * .0625, [0, k2], 'replicate');
+        tmp = padarray(I * .0625, [0, k2], 'symmetric');
         
         % Convolve the rows
         for i = k2+1:k2+M
