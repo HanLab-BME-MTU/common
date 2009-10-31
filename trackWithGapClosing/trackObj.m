@@ -703,10 +703,14 @@ classdef trackObj<handle
                 
                 soe = tracksFinal(iTrack).seqOfEvents;
                 
+                % offset is not necessarily soe(1), but is the earliest
+                % start of any segment
+                timeOffset = min(soe(:,1)) - 1;
+                
                 if calcStats
                 trackStats(iTrack).nSegments = nSegments;
                 trackStats(iTrack).soe = soe;
-                trackStats(iTrack).offset = soe(1)-1;
+                trackStats(iTrack).offset = timeOffset;
                 
                 % find merge/split
                 trackStats(iTrack).mergeSplitGapIdx = cell(nSegments,3);
@@ -796,9 +800,9 @@ classdef trackObj<handle
                                     
                                     if soe(startIdx,1) > otherStart
                                     % cpIdx: indices to copy
-                                    cpIdx = (soe(startIdx,1)-1)*3 - (soe(1)-1)*3;
+                                    cpIdx = (soe(startIdx,1)-1)*3 - (timeOffset)*3;
                                     cpIdx = cpIdx-2:cpIdx;
-                                    
+                                    %% cpIdx<0??
                                     pos(s,cpIdx) = pos(splitTrackIdx,cpIdx);
                                     end
                                 end
@@ -812,7 +816,7 @@ classdef trackObj<handle
                                     otherEnd = soe(soe(:,3)==splitTrackIdx & soe(:,2) == 2);
                                     if soe(endIdx,1) < otherEnd
                                     % cpIdx: indices to copy
-                                    cpIdx = (soe(endIdx,1)+1)*3 - (soe(1)-1)*3;
+                                    cpIdx = (soe(endIdx,1)+1)*3 - (timeOffset)*3;
                                     cpIdx = cpIdx-2:cpIdx;
                                     
                                     pos(s,cpIdx) = pos(splitTrackIdx,cpIdx);
@@ -843,7 +847,7 @@ classdef trackObj<handle
                             for timeIdx = 1:size(idx,2)
                                 goodIdx = idx(:,timeIdx) > 0;
                                 data(goodIdx,timeIdx) = ...
-                                    moreData(timeIdx + soe(1) - 1).(nameList{iFigure})(idx(goodIdx,timeIdx));
+                                    moreData(timeIdx + timeOffset).(nameList{iFigure})(idx(goodIdx,timeIdx));
                             end
                             
                             if calcStats

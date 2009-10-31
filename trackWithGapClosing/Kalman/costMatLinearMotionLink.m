@@ -1,18 +1,18 @@
 function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
-     errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
-     costMatParam,nnDistFeatures,probDim,prevCost,featLifetime)
+    errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
+    costMatParam,nnDistFeatures,probDim,prevCost,featLifetime)
 %COSTMATLINEARMOTIONLINK provides a cost matrix for linking features based on competing linear motion models
 %
 %SYNOPSIS [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %     errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
 %     costMatParam,nnDistFeatures,probDim,prevCost,featLifetime)
 %
-%INPUT  movieInfo             : A 2x1 array (corresponding to the 2 frames of 
+%INPUT  movieInfo             : A 2x1 array (corresponding to the 2 frames of
 %                               interest) containing the fields:
 %             .allCoord           : x,dx,y,dy,[z,dz] of features collected in one
 %                                   matrix.
-%             .amp                : Amplitudes of PSFs fitting detected features. 
-%                                   1st column for values and 2nd column 
+%             .amp                : Amplitudes of PSFs fitting detected features.
+%                                   1st column for values and 2nd column
 %                                   for standard deviations.
 %             .num                : Number of features in each frame.
 %             .nnDist             : Distance from each feature to its nearest
@@ -34,20 +34,20 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %             .lftCdf             : Lifetime cumulative density function.
 %                                   Column vector, specifying cdf for
 %                                   lifetime = 0 to movie length.
-%                                   Enter [] if cdf is not to be used. 
+%                                   Enter [] if cdf is not to be used.
 %                                   Optional. Default: [].
 %             .useLocalDensity    : Logical variable indicating whether to use
 %                                   local density in search radius estimation.
 %             .nnWindow           : Number of past frames for calculating
 %                                   nearest neighbor distance.
 %             .diagnostics        : Row vector indicating frames at which
-%                                   histogram of linking distances (from 
+%                                   histogram of linking distances (from
 %                                   the beginning till that frame) are to
 %                                   be plotted. Does not work for 1st or
 %                                   last frame of a movie.
 %                                   Optional. Default: None.
-%      nnDistFeatures         : Matrix of nearest neighbor distances of 
-%                               features in first frame as well as of 
+%      nnDistFeatures         : Matrix of nearest neighbor distances of
+%                               features in first frame as well as of
 %                               features in previous frames that they are
 %                               connected to.
 %      probDim                : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
@@ -62,7 +62,7 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %                               cost in the cost matrix.
 %       kalmanFilterInfoFrame2: Structure with at least the following fields:
 %             .stateVec           : Kalman filter prediction of state
-%                                   vector in 2nd frame based on all 3 
+%                                   vector in 2nd frame based on all 3
 %                                   motion models.
 %             .stateCov           : Kalman filter prediction of state
 %                                   covariance matrix in 2nd frame based on
@@ -155,33 +155,33 @@ kalmanFilterInfoFrame2 = struct('stateVec',zeros(numFeaturesFrame1,vecSize,numSc
 
 %apply Kalman filters to each feature in 1st frame
 for iFeature = 1 : numFeaturesFrame1
-
+    
     %get state vector and its covariance matrix of feature in 1st frame
     stateOld = kalmanFilterInfoFrame1.stateVec(iFeature,:)';
     stateCovOld = kalmanFilterInfoFrame1.stateCov(:,:,iFeature);
     noiseVar = kalmanFilterInfoFrame1.noiseVar(:,:,iFeature);
-
+    
     %go over all possible propagation schemes
     for iScheme = 1 : numSchemes
-
+        
         %predict state vector of feature in 2nd frame
         stateVec = transMat(:,:,iScheme)*stateOld;
-
+        
         %predict state covariance matrix of feature in 2nd frame
         stateCov = transMat(:,:,iScheme)*stateCovOld*transMat(:,:,iScheme)' ...
             + noiseVar;
-
+        
         %determine observation vector of feature in 2nd frame (i.e. the
         %propagated position of the feature)
         obsVec = observationMat*stateVec;
-
+        
         %save information in kalmanFilterInfoFrame2
         kalmanFilterInfoFrame2.stateVec(iFeature,:,iScheme) = stateVec';
         kalmanFilterInfoFrame2.stateCov(:,:,iFeature,iScheme) = stateCov;
         kalmanFilterInfoFrame2.obsVec(iFeature,:,iScheme) = obsVec';
-
+        
     end
-
+    
 end
 
 %get the propagated positions of features in 1st frame based on the three propagation schemes
@@ -192,14 +192,14 @@ coord2 = movieInfo(2).allCoord(:,1:2:end);
 
 %calculate the cost matrices for all three propagation schemes
 for iScheme = 1 : numSchemes
-
+    
     %put the propagated x and y coordinates of features from 1st frame in
     %one matrix
     coord1 = propagatedPos(:,:,iScheme);
-
+    
     %calculate the distances between features
     costMatTmp(:,:,iScheme) = createDistanceMatrix(coord1,coord2);
-
+    
 end
 
 %find the minimum cost for the link between every pair, which also
@@ -216,13 +216,13 @@ stdMultInd = repmat(brownStdMult,numFeaturesFrame1,1);
 
 %if local density information is used to expand search radius ...
 if useLocalDensity
-
+    
     %divide each feature's nearest neighbor distance/closestDistScale by kalmanStd
     ratioDist2Std = nnDistTracks./kalmanStd/closestDistScale;
-
+    
     %make ratios larger than maxStdMult equal to maxStdMult
     ratioDist2Std(ratioDist2Std > maxStdMult) = maxStdMult;
-
+    
     %expand search radius multiplication factor if possible
     stdMultInd = max([stdMultInd ratioDist2Std],[],2);
     
@@ -246,17 +246,17 @@ costMat = costMat.^2;
 %% Lifetime penalty
 
 if ~isempty(lftCdf)
-
+    
     %specify 1 - lifetime cumulative probability
     oneMinusLftCdf = 1 - lftCdf;
-
+    
     %calculate 1 / (lifetime penalty), which is 1 / (1-cumulative probability
     %of lifetime of feature in first frame)
     oneOverLftPen = oneMinusLftCdf(featLifetime+1);
-
+    
     %multiple each cost by the lifetime penalty
     costMat = costMat ./ repmat(oneOverLftPen,1,numFeaturesFrame2);
-
+    
     %replace infinite costs by NaN
     costMat(isinf(costMat)) = NaN;
     
@@ -265,8 +265,12 @@ end
 %% Birth and death
 
 %append matrix to allow birth and death
-% prevCostMax = max(prevCost(:));
-prevCostMax = prevCost.max;
+% jonas, 10/09: fix for non-sparse tracker
+if isstruct(prevCost)
+    prevCostMax = prevCost.max;
+else
+    prevCostMax = max(prevCost(:));
+end
 if ~isnan(prevCostMax) && prevCostMax ~= 0
     maxCost = 1.05*prevCostMax;
 else
@@ -300,13 +304,23 @@ costMat(isnan(costMat)) = nonlinkMarker;
 %% Histogram of linking distances
 
 %get current frame
-currentFrame = size(prevCost.all,2);
+% jonas, 10/09: fix for non-sparse tracker
+if isstruct(prevCost)
+    currentFrame = size(prevCost.all,2);
+else
+    currentFrame = size(prevCost,2);
+end
 
 %check whether current frame matches any of the diagnostics frames
 if currentFrame ~= 1 && any(diagnostics == currentFrame)
-
+    
     %get linking distances
-    prevCostNoCol1 = prevCost.all(:,2:end);
+    % jonas, 10/09: fix for non-sparse tracker
+    if isstruct(prevCost)
+        prevCostNoCol1 = prevCost.all(:,2:end);
+    else
+        prevCostNoCol1 = prevCost(:,2:end);
+    end
     linkingDistances = sqrt(prevCostNoCol1(~isnan(prevCostNoCol1)));
     
     %plot histogram
@@ -318,7 +332,7 @@ if currentFrame ~= 1 && any(diagnostics == currentFrame)
     catch
         disp('histogram plot failed');
     end
-
+    
 end
 
 
@@ -334,71 +348,71 @@ end
 % %reserve memory
 % costMat = NaN*ones(numFeaturesFrame1,numFeaturesFrame2);
 % propagationScheme = ones(numFeaturesFrame1,numFeaturesFrame2);
-% 
+%
 % %pick a set of uniformly distributed random numbers
 % randomNumber = rand(numFeaturesFrame1,numFeaturesFrame2);
-% 
+%
 % %go over all features in frame 1
 % for i1 = 1 : numFeaturesFrame1
-% 
+%
 %     %get the square search radius of feature i1 in frame 1
 %     %     searchRadius2 = min(noiseStdMult2*2*...
 %     %         kalmanFilterInfoFrame1.noiseVar(1,1,i1),maxSearchRadius2);
 %     searchRadius2 = min(noiseStdMult2*2*...
 %         max(kalmanFilterInfoFrame1.noiseVar(1,1,:)),maxSearchRadius2);
-% 
+%
 %     %go over all features in frame 2
 %     for i2 = 1 : numFeaturesFrame2
-% 
+%
 %         %get the costs for this pair
 %         costPair = squeeze(costMatTmp(i1,i2,:));
-% 
+%
 %         %assign NaN to schemes whose cost = square distance > searchRadius2
 %         costPair(costPair>searchRadius2) = NaN;
-% 
+%
 %         %find the propagation scheme with the minimum cost
 %         [costTmp,propSchemeTmp] = min(costPair);
-% 
+%
 %         %if there is a possible link between the two features
 %         if ~isnan(costTmp)
-% 
+%
 %             %if Brownian motion has the minumum cost, accept it
 %             if propSchemeTmp == 3
-% 
+%
 %                 propagationScheme(i1,i2) = propSchemeTmp;
 %                 costMat(i1,i2) = costTmp;
-% 
+%
 %             else %if forward or backward propagation has minimum cost
-% 
+%
 %                 %make the other propagation scheme impossible
 %                 if propSchemeTmp == 1
 %                     costPair(2) = NaN;
 %                 else
 %                     costPair(1) = NaN;
 %                 end
-% 
+%
 %                 %calculate the probability of each scheme using its cost
 %                 schemeProb = exp(-cost2probExpo*costPair);
-% 
+%
 %                 %assign a probability of zero to impossible schemes
 %                 schemeProb(isnan(schemeProb)) = 0;
-% 
+%
 %                 %normalize the probabilities
 %                 schemeProb = schemeProb/sum(schemeProb);
-% 
+%
 %                 %calculate the cumulative probability
 %                 schemeProb(2) = schemeProb(2) + schemeProb(1);
 %                 schemeProb(3) = 1;
-% 
+%
 %                 %choose propagation scheme based on probabilities and random number
 %                 propagationScheme(i1,i2) = find((randomNumber(i1,i2)<=schemeProb),1,'first');
-% 
+%
 %                 %assign cost based on chosen propagation scheme
 %                 costMat(i1,i2) = costMatTmp(i1,i2,propagationScheme(i1,i2));
-% 
+%
 %             end %(if propSchemeTmp == 3)
-% 
+%
 %         end %(if any(~isnan(costPair)))
-% 
+%
 %     end %(for i2 = 1 : numFeaturesFrame2)
 % end %(for i1 = 1 : numFeaturesFrame1)

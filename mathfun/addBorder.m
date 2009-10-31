@@ -96,7 +96,7 @@ end% nanMask
         
 % flip along first dimension
 array = cat(1,flipdim(array(1:border(1,1),:,:),1),...
-    array,flipdim(array(end-border(1,2)+1:end,:,:),1));
+    array,flipdim(array(end-border(2,1)+1:end,:,:),1));
 if nDims > 1
     % flip along second dimension
     array = cat(2,flipdim(array(:,1:border(1,2),:),2),...

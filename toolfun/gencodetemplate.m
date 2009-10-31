@@ -47,23 +47,12 @@ end
 % find username. This will return empty on Linux, but we have a line for
 % the username in the input dialogue, anyway.
 username = getenv('username');
-if isempty(username)
-    % this should work on OS X
-    username = getenv('USER');
-end
 
-% Add your username here if you want to change/expand the name
-switch username
-    case {'p0877743','Jadmin','Jonas'}
-        username = 'Jonas Dorn';
-    case 'p0774774'
-        username = 'Thai-Hang Nguyen';
-    case 'p0717065'
-        username = 'Tan-Trao Phi';
-    case {'p0832231','Avator'}
-        username = 'Isabelle Filiatreault';
-    otherwise
-        % don't change username
+try %#ok<TRYNC>
+    % try to resolve user name - since this functionality was not used by
+    % any LCCB members, and since I needed the functionality elsewhere, I
+    % moved it to a seperate function in mdxCommon
+    username = username2name(username);
 end
 
 % get version, OS, date
