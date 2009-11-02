@@ -1,7 +1,9 @@
-function [u,inlierIdx,sigma0,sigmaU]=leastMedianSquares(functionString,u0,options,parameters)
+function [u,inlierIdx,sigma0,sigmaU,inlierResiduals] = leastMedianSquares(...
+    functionString,u0,options,parameters)
 %leastMedianSquare calculates the least median squares for a function handed down as string using parameters (including x/y-data) from the structure parameters
 %
-%SYNOPSIS [u,inlierIdx,sigma0]=leastMedianSquares(functionString,u0,options,parameters)
+%SYNOPSIS [u,inlierIdx,sigma0,sigmaU,inlierResiduals] = leastMedianSquares(...
+%    functionString,u0,options,parameters)
 %
 %INPUT functionString       string which specifies the function to be
 %                           minimized, e.g. '(y-(u(1)*x+u(2)))'. The
@@ -27,6 +29,8 @@ function [u,inlierIdx,sigma0,sigmaU]=leastMedianSquares(functionString,u0,option
 %        sigma0             estimate for std of error of the data according to the fit
 %        sigmaU             vector with std of the parameters according to
 %                           lsqnonlin
+%        inlierResiduals    vector of residuals from the fit, naturally
+%                           only for inlier points
 %
 %REMEMBER TO CHECK THE NUMBER OF LOCAL MINIMA IN THE REGION OF YOUR
 %SOLUTION (lsqnonlin is sensitive to intial conditions)
@@ -41,6 +45,7 @@ function [u,inlierIdx,sigma0,sigmaU]=leastMedianSquares(functionString,u0,option
 % 11/07 made code robust to NaNs - also: use lsqnonlin. That makes the code
 % a little less robust, but it returns much better solutions and allows to
 % return uncertainties.
+%   10/09: Code now outputs the residuals for inlier points - KJ
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % note: this is an old function, but I won't rework it for prettiness
@@ -88,7 +93,15 @@ sigma0=sqrt(sum(res2(inlierIdx))/(length(inlierIdx)-4));
 
 
 % write function string for least squares formulation
-funStringLsq = ['''((' funStringFmin '))'', ''u'' ']; %now we want the sum of funStringFmin
+
+%Jonas's original version:
+% funStringLsq = ['''((' funStringFmin '))'', ''u'' ']; %now we want the sum of funStringFmin
+
+%KJ: fixed bug in original version, where the squared function was passed
+%to lsqnonlin, instead of the function itself.
+
+%CORRECT VERSION:
+funStringLsq = ['''((' functionString '))'', ''u'' '];
 
 % update parameters: take only good rows - or write inlierIdx into
 % parameters
@@ -121,3 +134,6 @@ end
 % for dof: count also outliers
 dof = length(res2)-length(u);
 sigmaU = full(sqrt(diag(inv(jacobian'*jacobian))*resnorm/dof));
+
+%save inlierResiduals for output
+inlierResiduals = residual;

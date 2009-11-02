@@ -3,6 +3,16 @@ function [meanDisp,meanNNDist,fracNNDistLess2MD,fracNNDistLessMD,...
     fracTracksMore1PotLink] = compDispNNDistLinks(tracks,...
     numPotLinksPerFeat,numPotLinksPerTrack)
 
+%% Input
+
+if nargin < 2 || isempty(numPotLinksPerFeat)
+    numPotLinksPerFeat = [];
+end
+
+if nargin < 3 || isempty(numPorLinksPerTrack)
+    numPotLinksPerTrack = [];
+end
+
 %% general information
 
 %get number of tracks and number of frames
@@ -43,15 +53,25 @@ if isstruct(tracks)
     
 end
 
-% %% possible links per feature
-% 
-% meanPotLinksPerFeat = mean(numPotLinksPerFeat);
-% fracFeatsMore1PotLink = length(find(numPotLinksPerFeat>1))/length(numPotLinksPerFeat);
-% 
-% %% possible links per track
-% 
-% meanPotLinksPerTrack = mean(numPotLinksPerTrack);
-% fracTracksMore1PotLink = length(find(numPotLinksPerTrack>1))/length(numPotLinksPerTrack);
+%% possible links per feature
+
+if ~isempty(numPotLinksPerFeat)
+    meanPotLinksPerFeat = mean(numPotLinksPerFeat);
+    fracFeatsMore1PotLink = length(find(numPotLinksPerFeat>1))/length(numPotLinksPerFeat);
+else
+    meanPotLinksPerFeat = [];
+    fracFeatsMore1PotLink = [];
+end
+
+%% possible links per track
+
+if ~isempty(numPotLinksPerTrack)
+    meanPotLinksPerTrack = mean(numPotLinksPerTrack);
+    fracTracksMore1PotLink = length(find(numPotLinksPerTrack>1))/length(numPotLinksPerTrack);
+else
+    meanPotLinksPerTrack = [];
+    fracTracksMore1PotLink = [];
+end
 
 %% mean displacement
 
@@ -79,12 +99,16 @@ for iFrame = 1 : numFrames
     yCoord1 = yCoord(:,iFrame);
     yCoord1 = yCoord1(~isnan(yCoord1));
     
-    featureDist = createDistanceMatrix([xCoord1 yCoord1],...
-        [xCoord1 yCoord1]);
-    
-    featureDist = sort(featureDist,2);
-    featureDist = featureDist(:,2);
-    nnDist = [nnDist; featureDist];
+    if length(xCoord1) > 1
+        
+        featureDist = createDistanceMatrix([xCoord1 yCoord1],...
+            [xCoord1 yCoord1]);
+        
+        featureDist = sort(featureDist,2);
+        featureDist = featureDist(:,2);
+        nnDist = [nnDist; featureDist]; %#ok<AGROW>
+        
+    end
     
 end
 

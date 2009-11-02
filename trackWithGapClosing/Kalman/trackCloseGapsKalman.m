@@ -198,6 +198,12 @@ end
 mergeSplit = gapCloseParam.mergeSplit;
 minTrackLen = gapCloseParam.minTrackLen;
 
+%make sure that gapCloseParam.timeWindow is not equal to 0
+%set to 1 in this case, in order to not have any gap closing
+if gapCloseParam.timeWindow == 0
+    gapCloseParam.timeWindow = 1;
+end
+
 %get number of features in each frame
 if ~isfield(movieInfo,'num')
     for iFrame = 1 : numFrames

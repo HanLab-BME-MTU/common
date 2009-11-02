@@ -1,10 +1,10 @@
-function [intensityHist,numPeaks,firstGaussMean,firstGaussStd,ratioPeak2toPeak1,...
+function [intensityHist,numPeaks,allGaussMean,allGaussStd,ratioPeak2toPeak1,...
     ratioPeak3toPeak2,numFeatures,errFlag] = singleFluoroAnalysis(movieInfo,...
     movieName,startFrame,endFrame,alpha,variableMean,variableStd,maxNumGauss,...
     plotResults)
 %SINGLEFLUOROANALYSIS looks for peaks in the intensity histogram in each frame and plots their characteristics.
 %
-%SYNOPSIS [intensityHist,numPeaks,firstGaussMean,firstGaussStd,ratioPeak2toPeak1,...
+%SYNOPSIS [intensityHist,numPeaks,allGaussMean,allGaussStd,ratioPeak2toPeak1,...
 %    ratioPeak3toPeak2,numFeatures,errFlag] = singleFluoroAnalysis(movieInfo,...
 %    movieName,startFrame,endFrame,alpha,variableMean,variableStd,maxNumGauss,...
 %    plotResults)
@@ -58,12 +58,10 @@ function [intensityHist,numPeaks,firstGaussMean,firstGaussStd,ratioPeak2toPeak1,
 %                          fitHistWithGaussians for each analyzed frame.
 %       numPeaks         : Number of intensity peaks detected in each
 %                          analyzed frame.
-%       firstGaussMean   : Mean of first fitted Gaussian in each analyzed
-%                          frame (i.e. position of first peak in intensity
-%                          histogram).
-%       firstGaussStd    : Standard deviation of first fitted Gaussian in
-%                          each analyzed frame (which is proportional to 
-%                          the width of the first peak in intensity histogram).
+%       allGaussMean     : Means of fitted Gaussians in each analyzed
+%                          frame.
+%       allGaussStd      : Standard deviations of fitted Gaussians in
+%                          each analyzed frame.
 %       ratioPeak2toPeak1: Ratio of amplitude of second peak to first peak
 %                          per analyzed frame. NaN indicates that a frame 
 %                          does not have a second peak.
@@ -220,14 +218,15 @@ for i = startFrame : endFrame
         numPeaks(i) = size(intensityHist(i).gaussParam,1);
     end
 end
+maxNumPeaks = max(numPeaks);
 
-%get mean and std of first Gaussian in each frame
-firstGaussMean = NaN*ones(1,numFrames);
-firstGaussStd = NaN*ones(1,numFrames);
+%get mean and std of the Gaussians in each frame
+allGaussMean = NaN*ones(maxNumPeaks,numFrames);
+allGaussStd = NaN*ones(maxNumPeaks,numFrames);
 for i = startFrame : endFrame
     if ~isempty(intensityHist(i).gaussParam)
-        firstGaussMean(i) = intensityHist(i).gaussParam(1,1);
-        firstGaussStd(i) = intensityHist(i).gaussParam(1,2);
+        allGaussMean(1:numPeaks(i),i) = intensityHist(i).gaussParam(:,1);
+        allGaussStd(1:numPeaks(i),i) = intensityHist(i).gaussParam(:,2);
     end
 end
 
@@ -283,10 +282,10 @@ if plotResults
     %plot mean and std of first fitted Gaussian in 3rd sub-plot
     subplot(4,1,3)
     hold on
-    if any(~isnan(firstGaussMean))
-        plot(firstGaussMean,'k')
-        plot(firstGaussStd,'r')
-        axis([0 numFrames 0 1.1*max([firstGaussMean firstGaussStd])]);
+    if any(~isnan(allGaussMean))
+        plot(allGaussMean(1,:),'k')
+        plot(allGaussStd(1,:),'r')
+        axis([0 numFrames 0 1.1*max([allGaussMean(1,:) allGaussStd(1,:)])]);
     end
     title('mean (black) and std (red) of 1st peak');
     

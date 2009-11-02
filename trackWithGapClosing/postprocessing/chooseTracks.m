@@ -52,6 +52,9 @@ function [trackIndx,errFlag] = chooseTracks(trackedFeatureInfo,criteria,probDim)
 %           .initialAmp      :Structure with fields:
 %               .min            :minimum initial amplitude.
 %               .max            :maximum initial amplitude.
+%           .finalAmp        :Structure with fields:
+%               .min            :minimum initial amplitude.
+%               .max            :maximum initial amplitude.
 %           .initialXCoord   :Structure with fields:
 %               .min            :minimum initial x-coordinate.
 %               .max            :maximum initial x-coordinate.
@@ -209,6 +212,40 @@ if isfield(criteria,'initialAmp') && ~isempty(criteria.initialAmp)
     %get maximum initial amplitude
     if isfield(criteria.initialAmp,'max') && ~isempty(criteria.initialAmp.max)
         maxCrit = criteria.initialAmp.max;
+    else
+        maxCrit = max(comparisonVec) + 1;
+    end
+    
+    %assign one to tracks that satisfy this criterion plus all criteria
+    %above
+    trackIndx = trackIndx & comparisonVec >= minCrit & comparisonVec <= maxCrit;
+end
+
+%% Final amplitude
+if isfield(criteria,'finalAmp') && ~isempty(criteria.finalAmp)
+    
+    %find final amplitudes
+    comparisonVec = zeros(numTracks,1);
+    if isstruct(trackedFeatureInfo)
+        for i=1:numTracks
+            comparisonVec(i) = max(trackedFeatureInfo(i).tracksCoordAmpCG(:,end-4));
+        end
+    else
+        for i=1:numTracks
+            comparisonVec(i) = trackedFeatureInfo(i,(trackSEL(i,2)-1)*8+4);
+        end
+    end
+    
+    %get minimum final amplitude
+    if isfield(criteria.finalAmp,'min') && ~isempty(criteria.finalAmp.min)
+        minCrit = criteria.finalAmp.min;
+    else
+        minCrit = min(comparisonVec) - 1;
+    end
+    
+    %get maximum final amplitude
+    if isfield(criteria.finalAmp,'max') && ~isempty(criteria.finalAmp.max)
+        maxCrit = criteria.finalAmp.max;
     else
         maxCrit = max(comparisonVec) + 1;
     end

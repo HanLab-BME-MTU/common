@@ -1,5 +1,5 @@
 function [rho,errFlag] = determinabilityGruen(varCovMat)
-%RELDETERMINABILITY calculates the determinability of parameters in a model
+%DETERMINABILITYGRUEN calculates the determinability of parameters in a model
 %
 %SYNOPSIS [rho,errFlag] = determinabilityGruen(varCovMat)
 %
