@@ -91,6 +91,9 @@ plottedPosition = {'center position','start position','end position'};
 criteria.lifeTime.min = minLength;
 indx = chooseTracks(tracksFinal,criteria);
 tracksFinal = tracksFinal(indx);
+if ~isempty(diffAnalysisRes)
+    diffAnalysisRes = diffAnalysisRes(indx);
+end
 
 %convert tracksFinal into matrix if it's a structure
 inputStructure = tracksFinal;
@@ -314,7 +317,7 @@ for iProperty = properties2plot
         
         %label axes
         xlabel(plottedProperty{iProperty});
-        ylabel('Fraction of trajectories');
+        ylabel('Fraction');
         
         %initialize figure legend text
         legendText = [];
