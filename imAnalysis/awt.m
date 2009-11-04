@@ -39,7 +39,7 @@ I = double(I);
 lastA = I;
 
 for k = 1:nBands
-    newA = convolve(I, k);
+    newA = convolve(lastA, k);
     W(:, :, k) = lastA - newA;
     lastA = newA;
 end
@@ -51,15 +51,15 @@ W(:, :, nBands + 1) = lastA;
         k1 = 2^(k - 1);
         k2 = 2^k;
         
-        tmp = padarray(I, [k2 0], 'symmetric');
+        tmp = padarray(I, [k2 0], 'replicate');
         
         % Convolve the columns
         for i = k2+1:k2+N
             I(i - k2, :) = 6 * tmp(i, :) + 4 * tmp(i + k1, :) + ...
                 4 * tmp(i - k1, :) + tmp(i + k2, :) + tmp(i - k2, :);
         end
-
-        tmp = padarray(I * .0625, [0, k2], 'symmetric');
+        
+        tmp = padarray(I * .0625, [0 k2], 'replicate');
         
         % Convolve the rows
         for i = k2+1:k2+M
