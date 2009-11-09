@@ -32,6 +32,11 @@ function [M2]=swapMaskValues(M1,oldValues,newValues)
 if nargin==2 || nargin>3 % need 1 or 3 arguments
     error('Wrong number of input arguments');
 end
+if isempty(M1)
+    M2=M1;
+    return
+end
+
 if nargin==1 % assume user wants a simple swap of 2 values
     U=unique(M1); % need to ensure mask only has 2 values to swap
     UNaNs=sum(isnan(U)); % NaN's get counted separately with unique.m
