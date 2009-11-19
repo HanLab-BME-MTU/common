@@ -1,11 +1,16 @@
-function collectionFigure = collectCurves(figureHandles, recolor, showLegend)
+function collectionFigure = collectCurves(figureHandles, recolor, showLegend,varargin)
 %COLLECTCURVES will copy curves from several figures into one figure
 %
 % SYNOPSIS collectCurves(figureHandles, recolor)
 %
 % INPUT    figureHandles : vector of figure handles
-%          recolor       : (opt) [0/{1}] whether or not to recolor the curves
+%          recolor       : (opt) [0/{1}/2] whether or not to recolor the curves
+%                           0: keep original color
+%                           1: each curve has a different color
+%                           2: same color from curves from the same figure
 %          showLegend    : (opt) [0/{1}] whether or not to show legend
+%          pn/pv         : propertyName/propertyValue to be set to each
+%                           object, if possible
 %
 % OUTPUT   collectionFigure : handle to the figure with the collected curves
 %
@@ -30,6 +35,9 @@ if nargin < 2 || isempty(recolor)
 end
 if nargin < 3 || isempty(showLegend)
     showLegend = 1;
+end
+if nargin < 4 || isempty(varargin)
+    varargin = {};
 end
 %-------------
 
@@ -89,7 +97,7 @@ for fh = figureHandles
             set(newH(lineCt),'Tag',newTag);
 
             % change color
-            if recolor
+            if recolor > 0
                 if ~isempty(findstr(oldTag,'errorBar'))
                     % set line color
                     set(newH(lineCt),'Color',extendedColors(colorCt-1));
@@ -100,7 +108,18 @@ for fh = figureHandles
                 else
                     % set new color
                     set(newH(lineCt),'Color',extendedColors(colorCt));
-                    colorCt = colorCt+1;
+                    if recolor == 1
+                        colorCt = colorCt+1;
+                    end
+                end
+            end
+            
+            % try and set pn/pv
+            if ~isempty(varargin)
+                for pIdx = 1:2:length(varargin)
+                    try
+                        set(newH,varargin{pIdx},varargin{pIdx+1})
+                    end
                 end
             end
 
@@ -144,7 +163,18 @@ for fh = figureHandles
                     % set new color
                     set(newH(lineCt),'FaceColor',extendedColors(colorCt));
                     set(newH(lineCt),'EdgeColor',extendedColors(colorCt));
+                    if recolor == 1
                     colorCt = colorCt+1;
+                    end
+                end
+            end
+            
+             % try and set pn/pv
+            if ~isempty(varargin)
+                for pIdx = 1:2:length(varargin)
+                    try
+                        set(newH,varargin{pIdx},varargin{pIdx+1})
+                    end
                 end
             end
 
@@ -160,6 +190,11 @@ for fh = figureHandles
             lineCt = lineCt + 1;
         end
     end
+    
+    % if recoloring per figure, update counter now
+      if recolor == 2
+                    colorCt = colorCt+1;
+                    end
 
     %     % turn legend back on - does not work for some reason
     %     if figHadLegend

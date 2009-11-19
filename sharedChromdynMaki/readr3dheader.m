@@ -110,7 +110,7 @@ end;
 
 % preassign header.Time, header.timestamp
 header.Time = zeros(numTimepoints*numWvs*header.numZSlices,1);
-[header.timestamp,expTime,ndFilter] = deal(zeros(header.numZSlices,numTimepoints,numWvs));
+[header.timestamp,expTime,ndFilter,header.lampIntensity,header.minInt,header.maxInt] = deal(zeros(header.numZSlices,numTimepoints,numWvs));
 
 
 %read extended header information
@@ -126,6 +126,21 @@ for t=0:numTimepoints-1
                     theSection=z+w*header.numZSlices+(t*header.numZSlices*numWvs);
             end;
             fseek(fid,1024+theSection*sectionOffset+insectionOffset,-1);
+            % this block contains
+            % Lamp Intensity
+            % Time
+            % stage X
+            % stage Y
+            % stage Z
+            % minInt
+            % maxInt
+            % meanInt
+            % xpTime
+            % ndFilter (0=100%)
+            % exWave
+            % emWave
+            % ???
+            
             block = fread(fid,13,'float');
             % timestamp, expTime and ndFilter should be stored for zwt.
             % There is no function that actually reads exposure time or
@@ -137,6 +152,15 @@ for t=0:numTimepoints-1
             header.timestamp(z+1,t+1,w+1) = block(2);
             expTime(z+1,t+1,w+1)=block(9); % before: expTime(theSection+1)
             ndFilter(z+1,t+1,w+1)=block(10);
+            header.lampIntensity(z+1,t+1,w+1) = block(1);
+            header.minInt(z+1,t+1,w+1) = block(6);
+            header.maxInt(z+1,t+1,w+1) = block(7);
+            header.meanInt(z+1,t+1,w+1) = block(8);
+            
+            % store stagePosition of the first slice (once)
+            if z==0 && t==0 && w==0
+                header.stagePosition = block(3:5);
+            end
         end;
     end;
 end;

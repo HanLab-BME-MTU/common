@@ -7,7 +7,10 @@ function cutValue = splitModes(data,loHi,jumpMax,verbose)
 %          loHi : (opt) number of minima that should be checked to the left
 %                 and right of the initial guess for the cutoff. The lowest
 %                 minimum right of the highest peak will be chosen.
-%                 Default: [1,2] - 1 to the left, 2 to the right
+%                 Default: [1,2] - 1 to the left, 2 to the right. Note that
+%                 the number of minima does not include the minumum closest
+%                 to the initial guess, i.e. [0,0] chooses the minimum
+%                 closest to the initial guess without looking for more.
 %          jumpMax : (opt) if true, minimum is searched to the left of the
 %                 highest maximum, too. Default: 0
 %          verbose : (opt) if 1, output will be plotted. Default: 0
