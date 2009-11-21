@@ -4,7 +4,7 @@ function [newPath]=formatPath(oldPath)
 % this function attempts to create a directory name from the input path as
 % well as the currently working directory. if the path generated is not an
 % existing directory, the function prompts the user to select another
-% directory. the user should then select any directory above or below the
+% directory. the user should then select any directory above the
 % input directory, or the input directory itself (making sure it does
 % in fact exist).  the reason this may occur is the current working
 % directory may not be pointing to the same server where the input
@@ -19,11 +19,11 @@ if ispc
 else
     temp=strrep(oldPath, '\', '/');
 end
-if isequal(temp,oldPath)
-    % OS didn't change, nothing to do.
-    newPath=oldPath;
-    return
-end
+% if isequal(temp,oldPath)
+%     % OS didn't change, nothing to do.
+%     newPath=oldPath;
+%     return
+% end
 
 % check to make sure the input path doesn't contain white space
 whiteSpaceIdx=regexp(temp,['\s'],'start')';
@@ -33,27 +33,30 @@ end
 
 doneFlag=0;
 % look at current directory
-currentDir=pwd;
+currentDir=[pwd filesep];
 % find oldPath's filesep locations
 tempFilesepIdx=strfind(temp,filesep);
 tryNum=1;
 while doneFlag==0
     % find current directory's filesep locations
-    currentDirFilesepIdx=strfind(currentDir,filesep);
+    currFsepIdx=strfind(currentDir,filesep);
+
+    % concat the first part of the current directory and the second part of
+    % the target directory
+    k=[]; 
+    for i=1:length(currFsepIdx)-1
+        finalStr=currentDir(currFsepIdx(end-i)+1:currFsepIdx(end-i+1)-1);
+        j=strfind(currentDir,finalStr)-1; % last letter of current dir before match
+        k = strfind(temp,finalStr); % first letter of match in temp
+        if ~isempty(k)
+            break
+        end
+    end
     
-    if ispc
-        % replace, for example, '/mnt/fsm' with 'S:'
-        newPath=[currentDir(1:currentDirFilesepIdx(1)-1) temp(tempFilesepIdx(3):end)];
+    if isempty(k)
+        newPath=[];
     else
-        % OS is linux
-        % there should be at least 3 fileseps for a linux directory
-        % (i.e. '/mnt/fsm/'), but there may only be 1 or 2.  in this case
-        % the name will not yield a real directory, but the user will be
-        % directed to select one on the path. here we take care of indexing
-        % problem in case of 1 or 2.
-        num=min(length(currentDirFilesepIdx),3);
-        % replace, for example, 'S:\' with '/mnt/fsm'
-        newPath=[currentDir(1:currentDirFilesepIdx(num)-1) temp(tempFilesepIdx(1):end)];
+        newPath=[currentDir(1:j) temp(k:end)];
     end
 
     % check if the created path is actually a directory. if not,the root
@@ -62,8 +65,9 @@ while doneFlag==0
         doneFlag=1;
     else
         if tryNum<=3
-            currentDir=uigetdir(currentDir,'Select any directory above input directory');
+            currentDir=uigetdir(pwd,'Select a directory above project directory');
             cd(currentDir)
+            currentDir=[currentDir filesep];
         else
             error('formatPath: data not found. either wrong server or permission denied.')
         end
