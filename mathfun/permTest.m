@@ -29,8 +29,12 @@ for i=1:nReps
     s2=randsample(bigPop,n2,'true');
 
     delta(i)=mean(s1)-mean(s2);
-
 end
+
+% two-sided p-value: proportion of abs(delta) values greater than deltaPop
+%pValue = sum(abs(delta)>deltaPop)/nReps;
 
 % calculate the one-sided p-value
 pValue = 1-normcdf(deltaPop,mean(delta),std(delta));
+
+%figure; hist(delta,25)
