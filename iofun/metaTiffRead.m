@@ -231,6 +231,7 @@ while (ifd_pos ~= 0)
             end
 
             if ( img_skip + img_read >= img_last )
+                fclose(TIF.file); %KJ, Nov. 09: added fclose here, which was missing in Nedelec's original code, causing crashes after repeated calls of the function
                 return;
             end
         else

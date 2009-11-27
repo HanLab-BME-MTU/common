@@ -228,7 +228,7 @@ for iImage = 1 : numImagesInteg
     
     %store raw images in array
     for jImage = 1 : 1 + 2*integWindow;
-        imageRaw(:,:,jImage) = imread([imageDir filenameBase enumString(imageIndx(jImage+iImage-1),:) '.tif']);
+        imageRaw(:,:,jImage) = double(imread([imageDir filenameBase enumString(imageIndx(jImage+iImage-1),:) '.tif']));
     end
     
     %     %display progress
@@ -241,7 +241,7 @@ for iImage = 1 : numImagesInteg
     imageRaw(imageRaw==0) = NaN;
     
     %normalize images
-    imageRaw = double(imageRaw) / (2^bitDepth-1);
+    imageRaw = imageRaw / (2^bitDepth-1);
     
     % %integrate over time
     % while numImagesInteg <= 0

@@ -7,7 +7,7 @@ basePath = uigetdir([],'Please select directory of STK files of interest');
 cd(basePath);
 
 %find all files ending with ".nd" in the chosen directory
-fileList = searchFiles('.nd',[],basePath,1);
+fileList = searchFiles('.nd',[],basePath,0);
 numList = size(fileList,1);
 
 %go over all movies
@@ -27,7 +27,8 @@ for iFile = numList : -1 : 1
     cd(newDir);
     
     %move all the files belonging to this movie into its directory
-    movefile([newDir '*']);
+    movefile([newDir '_t*']);
+    movefile([newDir '.nd']);
     
     %go back to original directory
     cd(basePath);

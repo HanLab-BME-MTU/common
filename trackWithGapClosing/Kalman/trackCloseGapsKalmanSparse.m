@@ -1,7 +1,7 @@
 function [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(...
     movieInfo,costMatrices,gapCloseParam,kalmanFunctions,probDim,...
     saveResults,verbose)
-%TRACKCLOSEGAPSKALMAN (1) links features between frames, possibly using the Kalman Filter for motion propagation and (2) closes gaps, with merging and splitting
+%TRACKCLOSEGAPSKALMANSPARSE (1) links features between frames, possibly using the Kalman Filter for motion propagation and (2) closes gaps, with merging and splitting
 %
 %SYNOPSIS [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(...
 %    movieInfo,costMatrices,gapCloseParam,kalmanFunctions,probDim,...
@@ -683,13 +683,40 @@ if any(trackStartTime > 1) && any(trackEndTime < numFramesEff)
             %get track information from the matrices storing linking information
             tracksFeatIndxCG = tracksFeatIndxLink(trackSeedConnect(:,1),:);
             tracksCoordAmpCG = tracksCoordAmpLink(trackSeedConnect(:,1),:);
+            
+            %convert zeros to NaNs where approriate for the case of sparse
+            %matrices
             if issparse(tracksCoordAmpCG)
+                
+                %convert sparse to full
                 tracksCoordAmpCG = full(tracksCoordAmpCG);
-                tracksCoordAmpCG(tracksCoordAmpCG==0) = NaN;
-                if probDim == 2
-                    tracksCoordAmpCG(:,3:8:end) = 0;
-                    tracksCoordAmpCG(:,7:8:end) = 0;
+                
+                %go over all the rows in this compound track
+                for iRow = 1 : size(tracksCoordAmpCG,1)
+                    
+                    %find all the zero entries
+                    colZero = find(tracksCoordAmpCG(iRow,:)==0);
+                    colZero = colZero(:)';
+                    
+                    %find the columns of the x-coordinates corresponding to
+                    %the zero columns
+                    xCoordCol = colZero - mod(colZero-1,8*ones(size(colZero)));
+                    
+                    %keep only the columns whose x-coordinate is zero as
+                    %well
+                    colZero = colZero(tracksCoordAmpCG(iRow,xCoordCol)==0);
+                    
+                    %replace zero with NaN in the surviving columns
+                    tracksCoordAmpCG(iRow,colZero) = NaN;
+                    
                 end
+                
+                %                 tracksCoordAmpCG(tracksCoordAmpCG==0) = NaN;
+                %                 if probDim == 2
+                %                     tracksCoordAmpCG(:,3:8:end) = 0;
+                %                     tracksCoordAmpCG(:,7:8:end) = 0;
+                %                 end
+                
             end
 
             %perform all gap closing links and modify connectivity accordingly

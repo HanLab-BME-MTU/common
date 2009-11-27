@@ -38,10 +38,14 @@ for iPixelX = startPixelX : 11 : endPixelX
 end
 
 %find limits of actual pixels filled up above
-firstFullX = find(~isnan(bgMean(:,startPixelY)),1,'first');
-lastFullX = find(~isnan(bgMean(:,startPixelY)),1,'last');
-firstFullY = find(~isnan(bgMean(startPixelX,:)),1,'first');
-lastFullY = find(~isnan(bgMean(startPixelX,:)),1,'last');
+% firstFullX = find(~isnan(bgMean(:,startPixelY)),1,'first');
+% lastFullX = find(~isnan(bgMean(:,startPixelY)),1,'last');
+% firstFullY = find(~isnan(bgMean(startPixelX,:)),1,'first');
+% lastFullY = find(~isnan(bgMean(startPixelX,:)),1,'last');
+firstFullX = startPixelX - 5;
+lastFullX = iPixelX + 5;
+firstFullY = startPixelY - 5;
+lastFullY = iPixelY + 5;
 
 %patch the rest
 for iPixelY = firstFullY : lastFullY
