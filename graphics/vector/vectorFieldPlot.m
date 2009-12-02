@@ -63,18 +63,18 @@ if size(F,2)==4
     end
     
     % Check for MATLAB version - quiver 7.0 is no longer compatible
-    v=ver('MATLAB');
-    pointPos=findstr(v.Version,'.');
-    if ~isempty(pointPos)
-        v.Version=v.Version(1:pointPos(1)+1);
-    end
+    %v=ver('MATLAB');
+    %pointPos=findstr(v.Version,'.');
+    %if ~isempty(pointPos)
+    %    v.Version=v.Version(1:pointPos(1)+1);
+    %end
 
     % Plot scaled vector field and change the axis orientation to ij (see help on axis)
-    if str2num(v.Version)<7
-        quiver(F(:,2),F(:,1),F(:,4)-F(:,2),F(:,3)-F(:,1),0);
-    else
-        quiver('v6',F(:,2),F(:,1),F(:,4)-F(:,2),F(:,3)-F(:,1),0);
-    end
+    %if str2num(v.Version)<7
+    quiver(F(:,2),F(:,1),F(:,4)-F(:,2),F(:,3)-F(:,1),0);
+    %else
+    % quiver('v6',F(:,2),F(:,1),F(:,4)-F(:,2),F(:,3)-F(:,1),0);
+    %end
     axis ij
     xlabel('x');
     ylabel('y');
@@ -104,7 +104,7 @@ if size(F,2)==4
     end
     
     % Change colors
-    counter=nPlots/2+1;
+    counter=floor(nPlots/2)+1;
     for i=1:2:nPlots-1
         counter=counter-1;
         set(plotHandles(i),'Color',char(colorTable(counter)));
