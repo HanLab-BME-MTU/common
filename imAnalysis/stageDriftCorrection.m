@@ -62,7 +62,14 @@ T = zeros(n - 1, 2);
 % Step 1: Subpixel spot detection
 %
 
-% TODO: see FSM Specktacle subpixelic detection.
+for i = 1:n
+
+    % TODO: see FSM Specktacle subpixelic detection.
+
+    if isempty(pts{i})
+        error('Frame %d does not contain any point.', ind);
+    end
+end
 
 %
 % Step 2: Point registration
