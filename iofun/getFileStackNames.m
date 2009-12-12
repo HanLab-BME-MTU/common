@@ -24,7 +24,7 @@ outputFileList = {};
 
 [fpath,fname,fno,fext]=getFilenameBody(firstfilename);
 
-if(isempty(fname) | isempty(fno) | isempty(fext) )
+if(isempty(fname) || isempty(fno) || isempty(fext) )
    error('invalid first filename specified');
 end;
 
@@ -35,26 +35,26 @@ if(~isempty(fpath))
 else
    %check if it is in the matlab search path
    tempName=which(firstfilename);
-   if(~isempty(tempName))
+   if ~isempty(tempName)
       [fpath,fname,fno,fext]=getFilenameBody(tempName);
       oldDir = cd(fpath);
-	end;
-end;
+   end
+end
 
 dirListing = dir;
 
 % get all relevant filenames
 iEntry = 1;
 fileList = {};
-for( i = 1:length(dirListing))
+for i = 1:length(dirListing)
    if(~dirListing(i).isdir)
       fileList(iEntry) = lower({dirListing(i).name});
       iEntry = iEntry + 1;
-   end;
-end;
+   end
+end
 
 nEntries = 0;
-imIndx = str2num(fno);
+imIndx = str2double(fno);
 l_fno=length(num2str(fno));
 searchName= [fname,num2str(imIndx,['%.' num2str(l_fno) 'd']),fext];
 outputFileList(1)={strcat(fpath,filesep,searchName)};
