@@ -10,7 +10,7 @@ function T = stageDriftCorrection(inputFileList, numIter, tol)
 %          numIter: maximum number of iterations for the registration
 %          process (Iterative Closest Point).
 %
-%          tol: maximum value underwhich any rotation effect between the
+%          tol: maximum value |R - Id| underwhich any rotation R between the
 %          sets of points is considered to be unsignificant. For a standard
 %          microscope stage, only translation should be expected.
 %
@@ -65,10 +65,16 @@ T = zeros(n - 1, 2);
 for i = 1:n
 
     % TODO: see FSM Specktacle subpixelic detection.
+    
 
-    if isempty(pts{i})
+    if isempty(cands)
         error('Frame %d does not contain any point.', ind);
     end
+    
+    % Subpixel
+    estimates = fitMixModel(img, xycand_fit, sigma, amp_fit, b_fit);
+    
+    pts{i} = estimates(:,1:2);
 end
 
 %
@@ -92,7 +98,7 @@ for i = 1:n-1
     [~, ~, treeRoot] = kdtree(model', []);
     % Run the ICP algorithm.
     [Ri, Ti] = icpCpp(model, data, weights, rndvec, sizernd, treeRoot, numIter);
-    if norm(Ri - eye(3)) > tol
+    if norm(Ri(1:2, 1:2) - eye(2)) > tol
         warning('Warning: significant rotation effect detected between frame %d-%d.',...
             i, i+1); %#ok<WNTAG>
         T(i, :) = NaN;
