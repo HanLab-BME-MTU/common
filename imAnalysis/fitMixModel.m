@@ -1,4 +1,4 @@
-function [estimates] = fitMixModel(image, xyvec, sig, amps, b)
+function [estimates] = fitMixModel(image, xyvec, sig, amps, b, options)
 % fit mixture model to image with Jacobian to retrieve subpixel values for
 % speckle positions, using info from cands as start point
 % INPUT:    image
@@ -7,8 +7,18 @@ function [estimates] = fitMixModel(image, xyvec, sig, amps, b)
 %           sig:    sigma of Guassian, corresponding to (1/3)*PSF width
 %           amps:   amplitudes (deltaI) vector
 %           b:      background value
+%           options: optional parameter set for the lsqnonlin function.
+%
 % OUTPUT: estimates
 % UPDATED Dec 10/2009 Sylvain Berlemont
+
+if nargin < 6 || isempty(options)
+    maxIter = 15;
+    options = optimset('TolFun',1e-4,'TolX',1e-4,'Display','off',...
+        'MaxIter', maxIter,'Jacobian','on');
+else
+    maxIter = options.MaxIter;
+end
 
 [xs,ys] = size(image);
 numspec = size(xyvec, 1);
@@ -23,10 +33,6 @@ numspec = size(xyvec, 1);
 %mask is copy of image with 1 for speckle vicinity; max projection of all
 %single mat3's (calculated in loop below)
 mask=zeros(xs, ys);
-
-%masksin = sparse matrix with 1/0 values for coordinates; each speckle is
-%one column
-%masksin=sparse(xs*ys,numspec);
 
 % radius for speckle spot calculation
 rad = ceil(6*sig);
@@ -75,13 +81,10 @@ mask(ind) = 1;
 start_point = [xyvec amps];
 lowbound=[xyvec-2 0.8*amps];
 upbound=[xyvec+2 1.2*amps];
-maxIter = 15;
-options = optimset('TolFun',1e-4,'TolX',1e-4,'Display','off',...
-    'MaxIter', maxIter,'Jacobian','on');
 
 fh = waitbar(0,'fitting mixture model');
-iteration = 1;
 
+iteration = 1;
 [estimates] = lsqnonlin(@Gauss2Dfun, start_point, lowbound, upbound, options);
 
 % in the present implementation, the function Gauss2Dfun fits the x-
