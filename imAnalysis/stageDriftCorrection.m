@@ -21,6 +21,8 @@ function T = stageDriftCorrection(inputFileList, numIter, tol)
 %
 % Sylvain Berlemont, December 12th, 2009
 
+T = [];
+
 if nargin < 1 || isempty(inputFileList)
    [filename, pathname] = uigetfile({'*.tif';'*.jpg';'*.png';'*.*'}, ...
        'Select First Image');
@@ -72,7 +74,7 @@ for i = 1:n
     end
     
     % Subpixel
-    estimates = fitMixModel(img, xycand_fit, sigma, amp_fit, b_fit);
+    estimates = fitMixModel(img, xycand_fit, sigmaPSF, amp_fit, b_fit);
     
     pts{i} = estimates(:,1:2);
 end
