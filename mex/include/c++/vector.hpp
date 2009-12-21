@@ -41,27 +41,27 @@ public:
     return n;
   }
 	
-	bool is_unit() const
-	{
-		return fabs(this->norm() - 1.0) < std::numeric_limits<double>::epsilon();
-	}
+  bool is_unit() const
+  {
+    return fabs(this->norm() - 1.0) < std::numeric_limits<double>::epsilon();
+  }
 	
-	bool is_null() const
-	{
-		return this->norm() < std::numeric_limits<double>::epsilon();
-	}
+  bool is_null() const
+  {
+    return this->norm() < std::numeric_limits<double>::epsilon();
+  }
 	
-	double norm_l2() const
-	{
-		double n_l2 = 0;
-		for (unsigned i = 0; i < n; ++i)
-			n_l2 += data_[i] * data_[i];
-		return sqrt(n_l2);
-	}
+  double norm_l2() const
+  {
+    double n_l2 = 0;
+    for (unsigned i = 0; i < n; ++i)
+      n_l2 += data_[i] * data_[i];
+    return sqrt(n_l2);
+  }
 	
   const vector & normalize()
   {
-	  double n_l2 = this->norm_l2();
+    double n_l2 = this->norm_l2();
     for (unsigned i = 0; i < n; ++i)
       data_[i] = T(data_[i] / n_l2);
     return *this;
@@ -148,11 +148,11 @@ template <typename T>
 inline
 vector<3, T> vprod(const vector<3, T> & lhs, const vector<3, T> & rhs)
 {
-	vec<3, T> tmp;
-	tmp[0] = lhs[1] * rhs[2] - lhs[2] * rhs[1];
-	tmp[1] = lhs[2] * rhs[0] - lhs[0] * rhs[2];
-	tmp[2] = lhs[0] * rhs[1] - lhs[1] * rhs[0];
-	return tmp;
+  vec<3, T> tmp;
+  tmp[0] = lhs[1] * rhs[2] - lhs[2] * rhs[1];
+  tmp[1] = lhs[2] * rhs[0] - lhs[0] * rhs[2];
+  tmp[2] = lhs[0] * rhs[1] - lhs[1] * rhs[0];
+  return tmp;
 }
 
 template <unsigned n, typename T>
