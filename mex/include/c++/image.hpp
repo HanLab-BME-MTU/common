@@ -5,7 +5,7 @@
 # include <cmath>
 # include <cassert>
 
-# include <point_2d.hpp>
+# include <vector.hpp>
 
 # include <mex.h>
 
@@ -134,18 +134,16 @@ public:
 
   const T* data() const { return data_; }
 
-  const T& operator[](const point_2d<int> & p) const
+  template <typename U>
+  const T& operator[](const vector<2, U> & p) const
   {
-    assert(contains_large(p.x, p.y));
-
-    return idx_data_[p.x][p.y];
+    return (*this)(p[0], p[1]);
   }
 
-  T& operator[](const point_2d<int> & p)
+  template <typename U>
+  T& operator[](const vector<2, U> & p)
   {
-    assert(contains_large(p.x, p.y));
-
-    return idx_data_[p.x][p.y];
+    return (*this)(p[0], p[1]);
   }
 
   const T& operator()(int x, int y) const

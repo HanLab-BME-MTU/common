@@ -1,4 +1,4 @@
-function T = stageDriftCorrection(inputFileList, numIter, tol)
+function T = stageDriftCorrection(inputFileList, sigmaPSF, numIter, tol)
 % stageDriftCorrection returns an array containing all drifts between each
 % consecutive pair of images.
 %
@@ -6,6 +6,9 @@ function T = stageDriftCorrection(inputFileList, numIter, tol)
 %
 % INPUT    inputFileList: cell array of all image filenames (including full
 %                         path name).
+%
+%          sigmaPSF: hald-with of the point spread function (standard
+%          deviation of a Gaussian model PSF).
 %
 %          numIter: maximum number of iterations for the registration
 %          process (Iterative Closest Point).
@@ -65,16 +68,24 @@ T = zeros(n - 1, 2);
 %
 
 for i = 1:n
-
-    % TODO: see FSM Specktacle subpixelic detection.
+    % Read image.
+    I = double(imread(inputFileList{i}));
     
+    % Denoise image using Wavelet A Trou.
+    Irec = awtDenoising(I, [], 0, 3);
+    % Find local maximum
+    w = 2 * ceil(sigmaPSF) + 1;
+    locMax = find(locmax2d(Irec, [w, w]));
 
-    if isempty(cands)
+    if isempty(locMax)
         error('Frame %d does not contain any point.', ind);
     end
     
-    % Subpixel
-    estimates = fitMixModel(img, xycand_fit, sigmaPSF, amp_fit, b_fit);
+    [y x] = ind2sub(size(Irec), locMax);
+    
+    % Subpixel detection
+    estimates = fitMixModel(I, [y x], sigmaPSF, I(locMax), ...
+        mean(nonzeros(I - Irec)));
     
     pts{i} = estimates(:,1:2);
 end
@@ -95,7 +106,7 @@ for i = 1:n-1
     % randvec
     rndvec = uint32(randperm(n_data)-1);
     % sizerand, number of point-matchings in each iteration.
-    sizernd = min(n_model, n_data);
+    sizernd = ceil(1.45*n_data); % = min(n_model, n_data);
     % Create the kd-tree, TreeRoot is the pointer to the kd-tree
     [~, ~, treeRoot] = kdtree(model', []);
     % Run the ICP algorithm.

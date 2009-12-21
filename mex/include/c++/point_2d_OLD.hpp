@@ -3,6 +3,7 @@
 
 # include <iostream>
 # include <cassert>
+# include <cmath>
 # include <limits>
 
 template <typename T>
@@ -28,12 +29,12 @@ struct point_2d
     return *this;
   }
 
-  // Generic accessors. Do NOT change the field x, y.
+  // Array-like accessors. Do NOT change the field x, y.
   const T & operator[](int dim) const
   {
     assert(dim >= 0 && dim < 2);
 
-    return reinterpret_cast<T*>(this)[dim];
+    return reinterpret_cast<const T*>(this)[dim];
   }
 
   T & operator[](int dim)
