@@ -1,6 +1,9 @@
 #ifndef VECTOR_HPP
 # define VECTOR_HPP
 
+# include <cmath>
+# include <cassert>
+
 template <unsigned n, typename T>
 class vector
 {
@@ -36,6 +39,14 @@ public:
     return data_[i];
   }
 	
+  vector operator-() const
+  {
+    vector<n, T> tmp;
+    for (unsigned i = 0; i < n; ++i)
+      tmp[i] = -data_[i];
+    return tmp;
+  }
+
   unsigned size() const
   {
     return n;
@@ -67,7 +78,7 @@ public:
     return *this;
   }
 	
-private:
+protected:
   T data_[n];
 };
 
@@ -103,7 +114,7 @@ vector<n, T> operator-(const vector<n, T> & lhs, const vector<n, T> & rhs)
 
 template <unsigned n, typename T>
 inline
-vector<n, T> operator*(const vector<n, T> & lhs, const vector<n, T> & rhs)
+T operator*(const vector<n, T> & lhs, const vector<n, T> & rhs)
 {
   T tmp = 0;
   for (unsigned i = 0; i < n; ++i)
@@ -148,16 +159,16 @@ template <typename T>
 inline
 vector<3, T> vprod(const vector<3, T> & lhs, const vector<3, T> & rhs)
 {
-  vec<3, T> tmp;
+  vector<3, T> tmp;
   tmp[0] = lhs[1] * rhs[2] - lhs[2] * rhs[1];
   tmp[1] = lhs[2] * rhs[0] - lhs[0] * rhs[2];
   tmp[2] = lhs[0] * rhs[1] - lhs[1] * rhs[0];
   return tmp;
 }
 
-template <unsigned n, typename T>
+template <unsigned n, typename O, typename T>
 inline
-std::ostream & operator<<(std::ostream & ostr, const vector<n,T> & v)
+O & operator<<(O & ostr, const vector<n, T> & v)
 {
   ostr << '(';
   for (unsigned i = 0; i < n; ++i)

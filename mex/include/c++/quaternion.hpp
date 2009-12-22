@@ -26,12 +26,12 @@ public:
 	
   quaternion(const vector<4, double> & v)
   {
-    static_cast<super_type>(*this) = v;
+    *this = v;
   }
 	
   const vector<4, double> & to_vector() const
   {
-    return static_cast<super_type>(*this);
+    return *this;
   }
 	
   double s() const { return data_[0]; }
@@ -60,22 +60,25 @@ public:
   quaternion inverse() const
   {
     double f = this->norm_l2();
-    return quaternion(conj() / (f * f));
+    return conj() / (f * f);
   }
 	
-  vector<3, double> rotate(const vector<3, double> & v)
-  {
-    return ((*this) * quaternion(0, v) * (*this).inverse()).v();
-  }
+  vector<3, double> rotate(const vector<3, double> & v);
 };
 
 inline
 quaternion operator*(const quaternion & lhs, const quaternion & rhs)
 {
   quaternion tmp(lhs.s() * rhs.s() - lhs.v() * rhs.v(),
-		 vprod(lhs.v(),
-		       rhs.v()) + lhs.s() * rhs.v() + rhs.s() * lhs.v());
+ 		 vprod(lhs.v(), rhs.v()) + lhs.v() * rhs.s() + 
+ 		 rhs.v() * lhs.s());
   return tmp;
+}
+
+inline
+vector<3, double> quaternion::rotate(const vector<3, double> & v)
+{
+  return ((*this) * quaternion(0, v) * (*this).inverse()).v();
 }
 
 #endif
