@@ -7,6 +7,9 @@
 class quaternion : public vector<4,double>
 {
 public:
+  typedef vector<4, double> super_type;
+
+public:
   quaternion() {}
 	
   quaternion(double s, double x, double y, double z)
@@ -25,11 +28,17 @@ public:
     data_[3] = v[2];
   }
 	
-  quaternion(const vector<4,double> & v)
+  quaternion(const vector<4,double> & v) : super_type(v)
   {
-    *this = v;
   }
-	
+  
+  quaternion & operator=(const vector<4,double> & v)
+  {
+    static_cast<super_type*>(this)->operator=(v);
+
+    return *this;
+  }
+
   const vector<4,double> & to_vector() const
   {
     return *this;
