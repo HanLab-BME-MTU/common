@@ -1,6 +1,8 @@
 #ifndef MATRIX_HPP
 # define MATRIX_HPP
 
+# include <iostream>
+
 # include <vector.hpp>
 
 template <unsigned n, unsigned m, typename T>
@@ -9,7 +11,7 @@ class matrix
 public:
   static const matrix Id;
 	
-  matrix(T value = 0)
+  matrix(T val = 0)
   {
     for (unsigned i = 0; i < n; ++i)
       for (unsigned j = 0; j < m; ++j)
@@ -45,18 +47,35 @@ public:
 	
   unsigned size() const { return n * m; }
 	
+	matrix<m,n,T> transpose() const
+	{
+		matrix<m, n, T> tmp;
+		for (unsigned i = 0; i < n; ++i)
+			for (unsigned j = 0; j < m; ++j)
+				tmp(j,i) = data_[i][j];
+		return tmp;
+	}
+	
+	double trace() const
+	{
+		double f = 0;
+		for (unsigned i = 0; i < n; ++i)
+			f += data_[i][i];
+		return f;
+	}
+	
   static matrix identity();
 	
 private:
   T data_[n][m];
 };
 
-template <unsigned n, typename T>
-const matrix<n, n, T>::Id = matrix<n, n,, T>::identity();
+template <unsigned n, unsigned m, typename T>
+const matrix<n, m, T> matrix<n, m, T>::Id = matrix<n, m, T>::identity();
 
-template <unsigned n, typename T>
+template <unsigned n, unsigned m, typename T>
 inline
-matrix<n, n, T> matrix<n, n, T>::identity()
+matrix<n, m, T> matrix<n, m, T>::identity()
 {
   static matrix<n, n, T> id_;
   static bool flower = true;
@@ -81,23 +100,23 @@ operator==(matrix<n,m,T>& lhs, const matrix<n,m,U>& rhs)
   return true;
 }
 
-template <unsigned n, unsigned m, typename T, typename U>
+template <unsigned n, unsigned m, typename T>
 inline
-matrix<n, m, mln_trait_op_plus(T,U)>
-operator+(const matrix<n,m,T>& lhs, const matrix<n,m,U>& rhs)
+matrix<n, m, T>
+operator+(const matrix<n,m,T>& lhs, const matrix<n,m,T>& rhs)
 {
-  matrix<n, m, mln_trait_op_plus(T,U)> tmp;
+  matrix<n, m, T> tmp;
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; j < m; ++j)
       tmp(i, j) = lhs(i, j) + rhs(i, j);
   return tmp;
 }
 
-template <unsigned n, unsigned m, typename T, typename U>
-matrix<n, m, mln_trait_op_minus(T,U)>
-operator-(const matrix<n,m,T>& lhs, const matrix<n,m,U>& rhs)
+template <unsigned n, unsigned m, typename T>
+matrix<n, m, T>
+operator-(const matrix<n,m,T>& lhs, const matrix<n,m,T>& rhs)
 {
-  matrix<n,m, mln_trait_op_minus(T,U)> tmp;
+  matrix<n,m, T> tmp;
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; j < m; ++j)
       tmp(i, j) = lhs(i, j) - rhs(i, j);
@@ -105,41 +124,39 @@ operator-(const matrix<n,m,T>& lhs, const matrix<n,m,U>& rhs)
 }
 
 template <unsigned n, unsigned m, typename T>
-matrix<n, m, mln_trait_op_uminus(T)>
-operator-(const matrix<n,m,T>& lhs)
+matrix<n, m, T>
+operator-(const matrix<n,m,T>& rhs)
 {
-  matrix<n,m, mln_trait_op_uminus(T)> tmp;
+  matrix<n,m, T> tmp;
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; i < m; ++i)
       tmp(i, j) = - rhs(i, j);
   return tmp;
 }
 
-template <unsigned n, unsigned o, typename T,
-	  unsigned m, typename U>
-matrix<n, m, mln_sum_x(T,U)>
-operator*(const matrix<n,o,T>& lhs, const matrix<o,m,U>& rhs)
+template <unsigned n, unsigned o, typename T, unsigned m>
+matrix<n, m, T>
+operator*(const matrix<n,o,T>& lhs, const matrix<o,m,T>& rhs)
 {
-  matrix<n,m, mln_sum_x(T,U)> tmp;
+  matrix<n,m, T> tmp;
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; j < m; ++j)
       {
-	tmp(i, j) = literal::zero;
+	tmp(i, j) = 0;
 	for (unsigned k = 0; k < o; ++k)
 	  tmp(i, j) += lhs(i, k) * rhs(k, j);
       }
   return tmp;
 }
 
-template <unsigned n, unsigned m, typename T,
-	  typename U>
-vec<n, mln_sum_x(T,U)>
-operator*(const matrix<n,m,T>& lhs, const vec<m,U>& rhs)
+template <unsigned n, unsigned m, typename T>
+vector<n, T>
+operator*(const matrix<n,m,T>& lhs, const vector<m,T>& rhs)
 {
-  vec<n, mln_sum_x(T,U)> tmp;
+  vector<n, T> tmp;
   for (unsigned i = 0; i < n; ++i)
     {
-      mln_sum_x(T,U) sum(literal::zero);
+      T sum = 0;
       for (unsigned j = 0; j < m; ++j)
 	sum += lhs(i, j) * rhs[j];
       tmp[i] = sum;
@@ -147,33 +164,30 @@ operator*(const matrix<n,m,T>& lhs, const vec<m,U>& rhs)
   return tmp;
 }
 
-template <unsigned n, unsigned m, typename T,
-	  typename S>
-matrix<n, m, mln_trait_op_times(T,S)>
-operator*(const matrix<n,m,T>& lhs, const value::scalar_<S>& s)
+template <unsigned n, unsigned m, typename T>
+matrix<n, m, T>
+operator*(const matrix<n,m,T>& lhs, T val)
 {
-  S s = s_.to_equiv();
-  matrix<n, m, mln_trait_op_times(T,S)> tmp;
+  matrix<n, m, T> tmp;
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; j < m; ++j)
-      tmp(i, j) = lhs(i, j) * s;
-  return tmp;
-}
-
-template <unsigned n, unsigned m, typename T, typename S>
-inline
-matrix<n,m, mln_trait_op_div(T,S)>
-operator/(const matrix<n,m,T>& lhs, const value::scalar_<S>& s_)
-{
-  S s = s_.to_equiv();
-  matrix<n,m, mln_trait_op_times(T,S)> tmp;
-  for (unsigned i = 0; i < n; ++i)
-    for (unsigned j = 0; j < m; ++j)
-      tmp(i,j) = lhs(i, j) / s;
+      tmp(i, j) = lhs(i, j) * val;
   return tmp;
 }
 
 template <unsigned n, unsigned m, typename T>
+inline
+matrix<n,m, T>
+operator/(const matrix<n,m,T>& lhs, T val)
+{
+  matrix<n,m, T> tmp;
+  for (unsigned i = 0; i < n; ++i)
+    for (unsigned j = 0; j < m; ++j)
+      tmp(i,j) = lhs(i, j) / val;
+  return tmp;
+}
+
+template <unsigned n, unsigned m, typename T, typename O>
 std::ostream&
 operator<<(std::ostream& ostr, const matrix<n,m,T>& v)
 {
@@ -181,30 +195,10 @@ operator<<(std::ostream& ostr, const matrix<n,m,T>& v)
     {
       ostr << '[';
       for (unsigned j = 0; j < m; ++j)
-	ostr << debug::format(v(i, j)) << (j == m - 1 ? "]" : ", ");
+	ostr << v(i, j) << (j == m - 1 ? "]" : ", ");
       ostr << std::endl;
     }
   return ostr;
-}
-
-template<unsigned n, unsigned m, typename T>
-matrix<m,n,T>
-trans(const matrix<n,m,T>& matrix)
-{
-  matrix<m,n,T> tmp;
-  for (unsigned i = 0; i < n; ++i)
-    for (unsigned j = 0; j < m; ++j)
-      tmp(j,i) = matrix(i,j);
-  return tmp;
-}
-
-template<unsigned n, typename T> inline
-double trace(const matrix<n,n,T>& m)
-{
-  double f = 0;
-  for (unsigned i = 0; i < n; ++i)
-    f += m(i,i);
-  return f;
 }
 
 #endif

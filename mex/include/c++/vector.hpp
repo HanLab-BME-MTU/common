@@ -3,6 +3,7 @@
 
 # include <cmath>
 # include <cassert>
+# include <iostream>
 
 template <unsigned n, typename T>
 class vector
@@ -47,6 +48,20 @@ public:
     return tmp;
   }
 
+	vector & operator+=(const vector & rhs)
+	{
+		for (unsigned i = 0; i < n; ++i)
+			data_[i] += rhs[i];
+		return *this;
+	}
+	
+	vector & operator/=(T val)
+	{
+		for (unsigned i = 0; i < n; ++i)
+			data_[i] /= val;
+		return *this;
+	}
+	
   unsigned size() const
   {
     return n;
@@ -166,9 +181,9 @@ vector<3, T> vprod(const vector<3, T> & lhs, const vector<3, T> & rhs)
   return tmp;
 }
 
-template <unsigned n, typename O, typename T>
+template <unsigned n, typename T>
 inline
-O & operator<<(O & ostr, const vector<n, T> & v)
+std::ostream & operator<<(std::ostream & ostr, const vector<n, T> & v)
 {
   ostr << '(';
   for (unsigned i = 0; i < n; ++i)

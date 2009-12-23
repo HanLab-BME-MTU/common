@@ -2,6 +2,7 @@
 # define QUATERNION_HPP
 
 # include <vector.hpp>
+# include <matrix.hpp>
 
 class quaternion : public vector<4, double>
 {
@@ -34,6 +35,28 @@ public:
     return *this;
   }
 	
+	matrix<3, 3, double> to_matrix() const
+	{
+		matrix<3, 3, double> mat;
+		
+		double q0 = data_[0];
+		double q1 = data_[1];
+		double q2 = data_[2];
+		double q3 = data_[3];
+		
+		mat(0, 0) = q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3;
+		mat(1, 0) = 2 * (q1 * q2 + q0 * q3);
+		mat(2, 0) = 2 * (q1 * q3 - q0 * q2);
+		mat(0, 1) = 2 * (q1 * q2 - q0 * q3);
+		mat(1, 1) = q0 * q0 - q1 * q1 + q2 * q2 - q3 * q3;
+		mat(2, 1) = 2 * (q2 * q3 + q0 * q1);
+		mat(0, 2) = 2 * (q1 * q3 + q0 * q2);
+		mat(1, 2) = 2 * (q2 * q3 - q0 * q1);
+		mat(2, 2) = q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3;
+		
+		return mat;
+	}
+	
   double s() const { return data_[0]; }
   double & s() { return data_[0]; }
 		
@@ -63,7 +86,7 @@ public:
     return conj() / (f * f);
   }
 	
-  vector<3, double> rotate(const vector<3, double> & v);
+  vector<3, double> rotate(const vecotvector<3, double> & v);
 };
 
 inline
