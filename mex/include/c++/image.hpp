@@ -135,13 +135,13 @@ public:
   const T* data() const { return data_; }
 
   template <typename U>
-  const T& operator[](const vector<2, U> & p) const
+  const T& operator[](const vector<2,U> & p) const
   {
     return (*this)(p[0], p[1]);
   }
 
   template <typename U>
-  T& operator[](const vector<2, U> & p)
+  T& operator[](const vector<2,U> & p)
   {
     return (*this)(p[0], p[1]);
   }

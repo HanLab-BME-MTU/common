@@ -34,7 +34,16 @@ public:
 	data_[i][j] = rhs(i, j);
     return *this;		
   }
-	
+  
+  template <typename U>
+  matrix & set_all(U rhs)
+  {
+    for (unsigned i = 0; i < n; ++i)
+      for (unsigned j = 0; j < m; ++j)
+	data_[i][j] = rhs;
+    return *this;		
+  }
+
   const T & operator()(unsigned i, unsigned j) const
   {
     return data_[i][j];
@@ -44,25 +53,49 @@ public:
   {
     return data_[i][j];
   }
+
+  matrix & operator+=(const matrix & rhs)
+  {
+    for (unsigned i = 0; i < n; ++i)
+      for (unsigned j = 0; j < m; ++j)
+	data_[i][j] += rhs(i, j);
+    return *this;
+  }
+
+  matrix & operator-=(const matrix & rhs)
+  {
+    for (unsigned i = 0; i < n; ++i)
+      for (unsigned j = 0; j < m; ++j)
+	data_[i][j] -= rhs(i, j);
+    return *this;
+  }
+
+  matrix & operator/=(T val)
+  {
+    for (unsigned i = 0; i < n; ++i)
+      for (unsigned j = 0; j < m; ++j)
+	data_[i][j] /= val;
+    return *this;
+  }
 	
   unsigned size() const { return n * m; }
 	
-	matrix<m,n,T> transpose() const
-	{
-		matrix<m, n, T> tmp;
-		for (unsigned i = 0; i < n; ++i)
-			for (unsigned j = 0; j < m; ++j)
-				tmp(j,i) = data_[i][j];
-		return tmp;
-	}
+  matrix<m,n,T> transpose() const
+  {
+    matrix<m, n, T> tmp;
+    for (unsigned i = 0; i < n; ++i)
+      for (unsigned j = 0; j < m; ++j)
+	tmp(j,i) = data_[i][j];
+    return tmp;
+  }
 	
-	double trace() const
-	{
-		double f = 0;
-		for (unsigned i = 0; i < n; ++i)
-			f += data_[i][i];
-		return f;
-	}
+  T trace() const
+  {
+    T t = 0;
+    for (unsigned i = 0; i < n; ++i)
+      t += data_[i][i];
+    return t;
+  }
 	
   static matrix identity();
 	
@@ -71,27 +104,28 @@ private:
 };
 
 template <unsigned n, unsigned m, typename T>
-const matrix<n, m, T> matrix<n, m, T>::Id = matrix<n, m, T>::identity();
+const matrix<n,m,T> matrix<n,m,T>::Id = matrix<n,m,T>::identity();
 
 template <unsigned n, unsigned m, typename T>
 inline
-matrix<n, m, T> matrix<n, m, T>::identity()
+matrix<n,m,T> matrix<n,m,T>::identity()
 {
   static matrix<n, n, T> id_;
-  static bool flower = true;
-  if (flower)
+  static bool first = true;
+
+  if (first)
     {
       for (unsigned i = 0; i < n; ++i)
 	for (unsigned j = 0; j < m; ++j)
 	  id_(i, j) = (i == j);
-      flower = false;
+      first = false;
     }
   return id_;	
 }
 
 template <unsigned n, unsigned m, typename T, typename U>
-bool
-operator==(matrix<n,m,T>& lhs, const matrix<n,m,U>& rhs)
+inline
+bool operator==(matrix<n,m,T> & lhs, const matrix<n,m,U> & rhs)
 {
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; j < m; ++j)
@@ -102,10 +136,9 @@ operator==(matrix<n,m,T>& lhs, const matrix<n,m,U>& rhs)
 
 template <unsigned n, unsigned m, typename T>
 inline
-matrix<n, m, T>
-operator+(const matrix<n,m,T>& lhs, const matrix<n,m,T>& rhs)
+matrix<n,m,T> operator+(const matrix<n,m,T> & lhs, const matrix<n,m,T> & rhs)
 {
-  matrix<n, m, T> tmp;
+  matrix<n,m,T> tmp;
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; j < m; ++j)
       tmp(i, j) = lhs(i, j) + rhs(i, j);
@@ -113,10 +146,10 @@ operator+(const matrix<n,m,T>& lhs, const matrix<n,m,T>& rhs)
 }
 
 template <unsigned n, unsigned m, typename T>
-matrix<n, m, T>
-operator-(const matrix<n,m,T>& lhs, const matrix<n,m,T>& rhs)
+inline
+matrix<n,m,T> operator-(const matrix<n,m,T> & lhs, const matrix<n,m,T> & rhs)
 {
-  matrix<n,m, T> tmp;
+  matrix<n,m,T> tmp;
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; j < m; ++j)
       tmp(i, j) = lhs(i, j) - rhs(i, j);
@@ -124,21 +157,21 @@ operator-(const matrix<n,m,T>& lhs, const matrix<n,m,T>& rhs)
 }
 
 template <unsigned n, unsigned m, typename T>
-matrix<n, m, T>
-operator-(const matrix<n,m,T>& rhs)
+inline
+matrix<n,m,T> operator-(const matrix<n,m,T> & rhs)
 {
-  matrix<n,m, T> tmp;
+  matrix<n,m,T> tmp;
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; i < m; ++i)
       tmp(i, j) = - rhs(i, j);
   return tmp;
 }
 
-template <unsigned n, unsigned o, typename T, unsigned m>
-matrix<n, m, T>
-operator*(const matrix<n,o,T>& lhs, const matrix<o,m,T>& rhs)
+template <unsigned n, unsigned o, unsigned m, typename T>
+inline
+matrix<n,m,T> operator*(const matrix<n,o,T> & lhs, const matrix<o,m,T> & rhs)
 {
-  matrix<n,m, T> tmp;
+  matrix<n,m,T> tmp;
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; j < m; ++j)
       {
@@ -150,8 +183,8 @@ operator*(const matrix<n,o,T>& lhs, const matrix<o,m,T>& rhs)
 }
 
 template <unsigned n, unsigned m, typename T>
-vector<n, T>
-operator*(const matrix<n,m,T>& lhs, const vector<m,T>& rhs)
+inline
+vector<n,T> operator*(const matrix<n,m,T> & lhs, const vector<m,T> & rhs)
 {
   vector<n, T> tmp;
   for (unsigned i = 0; i < n; ++i)
@@ -164,11 +197,22 @@ operator*(const matrix<n,m,T>& lhs, const vector<m,T>& rhs)
   return tmp;
 }
 
-template <unsigned n, unsigned m, typename T>
-matrix<n, m, T>
-operator*(const matrix<n,m,T>& lhs, T val)
+template <typename T>
+inline
+matrix<3,3,T> mtimes(const vector<3,T> & lhs, const vector<3,T> & rhs)
 {
-  matrix<n, m, T> tmp;
+  matrix<3,3,T> tmp;
+  for (unsigned i = 0; i < 3; ++i)
+    for (unsigned j = 0; j < 3; ++j)
+      tmp(i, j) = lhs[i] * rhs[j];
+  return tmp;
+}
+
+template <unsigned n, unsigned m, typename T>
+inline
+matrix<n,m,T> operator*(const matrix<n,m,T> & lhs, T val)
+{
+  matrix<n,m,T> tmp;
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; j < m; ++j)
       tmp(i, j) = lhs(i, j) * val;
@@ -177,19 +221,18 @@ operator*(const matrix<n,m,T>& lhs, T val)
 
 template <unsigned n, unsigned m, typename T>
 inline
-matrix<n,m, T>
-operator/(const matrix<n,m,T>& lhs, T val)
+matrix<n,m,T> operator/(const matrix<n,m,T> & lhs, T val)
 {
-  matrix<n,m, T> tmp;
+  matrix<n,m,T> tmp;
   for (unsigned i = 0; i < n; ++i)
     for (unsigned j = 0; j < m; ++j)
       tmp(i,j) = lhs(i, j) / val;
   return tmp;
 }
 
-template <unsigned n, unsigned m, typename T, typename O>
-std::ostream&
-operator<<(std::ostream& ostr, const matrix<n,m,T>& v)
+template <unsigned n, unsigned m, typename T>
+inline
+std::ostream & operator<<(std::ostream & ostr, const matrix<n,m,T> & v)
 {
   for (unsigned i = 0; i < n; ++i)
     {

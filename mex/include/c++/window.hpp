@@ -5,60 +5,66 @@
 
 # include <vector.hpp>
 
-template <typename T, std::size_t N>
+template <unsigned n, typename T>
 class window
 {
 public:
-  window(const vector<2, T> points[])
+  window() {}
+
+  window(const vector<2,T> points[])
   {
-    std::copy(points, points + N, points_);
+    std::copy(points, points + n, points_);
   }
   
-  const vector<2, T>& point(std::size_t i) const
-  {
-    assert(i < N);
+  const vector<2,T> & point(unsigned i) const { return points_[i]; }
 
-    return points_[i];
-  }
+  vector<2,T> & point(unsigned i) { return points_[i]; }
 
-  static std::size_t card() { return N; }
+  static unsigned size() { return n; }
   
 private:
-  vector<2, T> points_[N];
+  vector<2,T> points_[n];
 };
 
 template <typename T>
-const window<T, 4> neighb_c4()
+inline
+window<4,T> neighb_c4()
 {
-  vector<2, T> points[4];
-
-  points[0][0] = 1; points[0][1] = 0;
-  points[1][0] = -1; points[1][1] = 0;
-  points[2][0] = 0; points[2][1] = 1;
-  points[3][0] = 0; points[3][1] = -1;
-
-  const window<T, 4> n(points);
+  static window<4,T> win;
+  static bool first = true;
   
-  return n;
+  if (first)
+    {
+      win.point(0)[0] = 1;	win.point(0)[1] = 0;
+      win.point(1)[0] = -1;	win.point(1)[1] = 0;
+      win.point(2)[0] = 0;	win.point(2)[1] = 1;
+      win.point(3)[0] = 0;	win.point(3)[1] = -1;
+      first = false;
+    }
+  return win;
 }
 
 template <typename T>
-const window<T, 8> neighb_c8()
+inline
+window<8,T> neighb_c8()
 {
-  vector<2, T> points[8];
+  static window<8,T> win;
+  static bool first = true;
 
-  points[0][0] = -1; points[0][1] = -1;
-  points[1][0] = 0; points[1][1] = -1;
-  points[2][0] = 1; points[2][1] = -1;
-  points[3][0] = -1; points[3][1] = 0;
-  points[4][0] = 1; points[4][1] = 0;
-  points[5][0] = -1; points[5][1] = 1;
-  points[6][0] = 0; points[6][1] = 1;
-  points[7][0] = 1; points[7][1] = 1;
-
-  const window<T, 8> n(points);
+  if (first)
+    {
+      win.point(0)[0] = -1;	win.point(0)[1] = -1;
+      win.point(1)[0] = 0;	win.point(0)[1] = -1;
+      win.point(2)[0] = 1;	win.point(0)[1] = -1;
+      win.point(3)[0] = -1;	win.point(0)[1] = 0;
+      win.point(4)[0] = 1;	win.point(0)[1] = 0;
+      win.point(5)[0] = -1;	win.point(0)[1] = 1;
+      win.point(6)[0] = 0;	win.point(0)[1] = 1;
+      win.point(7)[0] = 1;	win.point(0)[1] = 1;
+      first = false;
+    }
   
-  return n;
+  return win;
 }
 
 #endif /* WINDOW_HPP */

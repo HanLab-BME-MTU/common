@@ -16,51 +16,59 @@ public:
   }
 	
   template <typename U>
-  vector(const vector<n, U> & rhs)
+  vector(const vector<n,U> & rhs)
   {
     for (unsigned i = 0; i < n; ++i)
       data_[i] = rhs[i];
   }
 	
   template <typename U>
-  vector & operator=(const vector<n, U> & rhs)
+  vector & operator=(const vector<n,U> & rhs)
   {
     for (unsigned i = 0; i < n; ++i)
       data_[i] = rhs[i];
     return *this;
   }
 	
-  const T& operator[](unsigned i) const
+  template <typename U>
+  vector & set_all(U rhs)
+  {
+    for (unsigned i = 0; i < n; ++i)
+      data_[i] = rhs;
+    return *this;
+  }
+
+  const T & operator[](unsigned i) const
   {
     return data_[i];
   }
 
-  T& operator[](unsigned i)
+  T & operator[](unsigned i)
   {
     return data_[i];
   }
 	
   vector operator-() const
   {
-    vector<n, T> tmp;
+    vector tmp;
     for (unsigned i = 0; i < n; ++i)
       tmp[i] = -data_[i];
     return tmp;
   }
 
-	vector & operator+=(const vector & rhs)
-	{
-		for (unsigned i = 0; i < n; ++i)
-			data_[i] += rhs[i];
-		return *this;
-	}
+  vector & operator+=(const vector & rhs)
+  {
+    for (unsigned i = 0; i < n; ++i)
+      data_[i] += rhs[i];
+    return *this;
+  }
 	
-	vector & operator/=(T val)
-	{
-		for (unsigned i = 0; i < n; ++i)
-			data_[i] /= val;
-		return *this;
-	}
+  vector & operator/=(T val)
+  {
+    for (unsigned i = 0; i < n; ++i)
+      data_[i] /= val;
+    return *this;
+  }
 	
   unsigned size() const
   {
@@ -99,7 +107,7 @@ protected:
 
 template <unsigned n, typename T, typename U>
 inline
-bool operator==(const vector<n, T> & lhs, const vector<n, U> & rhs)
+bool operator==(const vector<n,T> & lhs, const vector<n,U> & rhs)
 {
   for (unsigned i = 0; i < n; ++i)
     if (lhs[i] != rhs[i])
@@ -109,9 +117,9 @@ bool operator==(const vector<n, T> & lhs, const vector<n, U> & rhs)
 
 template <unsigned n, typename T>
 inline
-vector<n, T> operator+(const vector<n, T> & lhs, const vector<n, T> & rhs)
+vector<n,T> operator+(const vector<n,T> & lhs, const vector<n,T> & rhs)
 {
-  vector<n, T> tmp;
+  vector<n,T> tmp;
   for (unsigned i = 0; i < n; ++i)
     tmp[i] = lhs[i] + rhs[i];
   return tmp;
@@ -119,9 +127,9 @@ vector<n, T> operator+(const vector<n, T> & lhs, const vector<n, T> & rhs)
 
 template <unsigned n, typename T>
 inline
-vector<n, T> operator-(const vector<n, T> & lhs, const vector<n, T> & rhs)
+vector<n,T> operator-(const vector<n,T> & lhs, const vector<n,T> & rhs)
 {
-  vector<n, T> tmp;
+  vector<n,T> tmp;
   for (unsigned i = 0; i < n; ++i)
     tmp[i] = lhs[i] - rhs[i];
   return tmp;
@@ -129,7 +137,7 @@ vector<n, T> operator-(const vector<n, T> & lhs, const vector<n, T> & rhs)
 
 template <unsigned n, typename T>
 inline
-T operator*(const vector<n, T> & lhs, const vector<n, T> & rhs)
+T operator*(const vector<n,T> & lhs, const vector<n,T> & rhs)
 {
   T tmp = 0;
   for (unsigned i = 0; i < n; ++i)
@@ -139,9 +147,9 @@ T operator*(const vector<n, T> & lhs, const vector<n, T> & rhs)
 
 template <unsigned n, typename T>
 inline
-vector<n, T> operator*(const vector<n, T> & lhs, const T & rhs)
+vector<n,T> operator*(const vector<n,T> & lhs, const T & rhs)
 {
-  vector<n, T> tmp;
+  vector<n,T> tmp;
   for (unsigned i = 0; i < n; ++i)
     tmp[i] = lhs[i] * rhs;
   return tmp;
@@ -149,9 +157,9 @@ vector<n, T> operator*(const vector<n, T> & lhs, const T & rhs)
 
 template <unsigned n, typename T>
 inline
-vector<n, T> operator/(const vector<n, T> & lhs, const T & rhs)
+vector<n,T> operator/(const vector<n,T> & lhs, const T & rhs)
 {
-  vector<n, T> tmp;
+  vector<n,T> tmp;
   for (unsigned i = 0; i < n; ++i)
     tmp[i] = lhs[i] / rhs;
   return tmp;
@@ -159,7 +167,7 @@ vector<n, T> operator/(const vector<n, T> & lhs, const T & rhs)
 
 template <unsigned n, typename T1, typename T2>
 inline
-double dist(const vector<n, T1> & lhs, const vector<n, T2> & rhs)
+double dist(const vector<n,T1> & lhs, const vector<n,T2> & rhs)
 {
   double tmp, d = 0;
   for (unsigned i = 0; i < n; ++i)
@@ -172,9 +180,9 @@ double dist(const vector<n, T1> & lhs, const vector<n, T2> & rhs)
 
 template <typename T>
 inline
-vector<3, T> vprod(const vector<3, T> & lhs, const vector<3, T> & rhs)
+vector<3, T> vprod(const vector<3,T> & lhs, const vector<3,T> & rhs)
 {
-  vector<3, T> tmp;
+  vector<3,T> tmp;
   tmp[0] = lhs[1] * rhs[2] - lhs[2] * rhs[1];
   tmp[1] = lhs[2] * rhs[0] - lhs[0] * rhs[2];
   tmp[2] = lhs[0] * rhs[1] - lhs[1] * rhs[0];
@@ -183,7 +191,7 @@ vector<3, T> vprod(const vector<3, T> & lhs, const vector<3, T> & rhs)
 
 template <unsigned n, typename T>
 inline
-std::ostream & operator<<(std::ostream & ostr, const vector<n, T> & v)
+std::ostream & operator<<(std::ostream & ostr, const vector<n,T> & v)
 {
   ostr << '(';
   for (unsigned i = 0; i < n; ++i)
