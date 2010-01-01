@@ -10,12 +10,14 @@ function T = stageDriftCorrection(inputFileList, sigmaPSF, numIter, tol)
 %          sigmaPSF: hald-with of the point spread function (standard
 %          deviation of a Gaussian model PSF).
 %
-%          numIter: maximum number of iterations for the registration
-%          process (Iterative Closest Point).
+%          numIter: maximum number of iterations for the Iterative Closest
+%          Point (ICP).
 %
-%          tol: maximum value |R - Id| underwhich any rotation R between the
-%          sets of points is considered to be unsignificant. For a standard
-%          microscope stage, only translation should be expected.
+%          tol: precision value under which the ICP stops.
+%
+%          tolR: maximum value |R - Id| underwhich any rotation R between
+%          the sets of points is considered to be unsignificant. For a
+%          standard microscope stage, only translation should be expected.
 %
 % OUTPUT   T: an array of the same size of inputFileList minus 1 containing
 %          all 2D drifts between images.
@@ -59,6 +61,11 @@ if nargin < 3 || ~isnumeric(tol)
     tol = 1e-4;
 end
 
+% Tolerance on the rotation
+if nargin < 4 || ~isnumeric(to)
+    tolR = 1e-4;
+end
+
 n = numel(inputFileList);
 pts = cell(n, 1);
 T = zeros(n - 1, 2);
@@ -95,23 +102,21 @@ end
 %
 
 for i = 1:n-1
-    % Define model
-    n_model = size(pts{i}, 1);
-    model = [pts{i}(:, 2), pts{i}(:, 1) zeros(n_model, 1)]';
-    % Define data
-    n_data = size(pts{i+1}, 1);
-    data = [pts{i+1}(:, 2), pts{i+1}(:, 1) zeros(n_data, 1)]';
-    % weights
-    weights = ones(1, n_data);
-    % randvec
-    rndvec = uint32(randperm(n_data)-1);
-    % sizerand, number of point-matchings in each iteration.
-    sizernd = ceil(1.45*n_data); % = min(n_model, n_data);
-    % Create the kd-tree, TreeRoot is the pointer to the kd-tree
-    [~, ~, treeRoot] = kdtree(model', []);
-    % Run the ICP algorithm.
-    [Ri, Ti] = icpCpp(model, data, weights, rndvec, sizernd, treeRoot, numIter);
-    if norm(Ri(1:2, 1:2) - eye(2)) > tol
+    n1 = size(pts{i}, 1);
+    X1 = [pts{i}(:, 1:2) zeros(n1, 1)];
+    n2 = size(pts{i+1}, 1);
+    X2 = [pts{i+1}(:, 1:2) zeros(n2, 1)];
+    
+    if n1 > n2
+        [Ri, Ti] = computeICP(X1, X2, numIter, tol);
+        Ti = -Ti;
+    else
+        [Ri, Ti] = computeICP(X2, X1, numIter, tol);
+    end
+    
+    Ri = round(Ri / tolR) * tolR;
+    
+    if ~all(all(Ri == eye(3)))
         warning('Warning: significant rotation effect detected between frame %d-%d.',...
             i, i+1); %#ok<WNTAG>
         T(i, :) = NaN;

@@ -101,10 +101,9 @@ public:
 inline
 quaternion operator*(const quaternion & lhs, const quaternion & rhs)
 {
-  quaternion tmp(lhs.s() * rhs.s() - lhs.v() * rhs.v(),
- 		 vprod(lhs.v(), rhs.v()) + lhs.v() * rhs.s() + 
- 		 rhs.v() * lhs.s());
-  return tmp;
+  return quaternion(lhs.s() * rhs.s() - lhs.v() * rhs.v(),
+		    vprod(lhs.v(), rhs.v()) + lhs.v() * rhs.s() + 
+		    rhs.v() * lhs.s());
 }
 
 inline
