@@ -22,8 +22,6 @@ function T = stageDriftCorrection(inputFileList, sigmaPSF, numIter, tol)
 % OUTPUT   T: an array of the same size of inputFileList minus 1 containing
 %          all 2D drifts between images.
 %
-% DEPENDENCES: extern/icp/*
-%
 % Sylvain Berlemont, December 12th, 2009
 
 T = [];
