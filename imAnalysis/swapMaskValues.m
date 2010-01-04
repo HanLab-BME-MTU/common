@@ -38,9 +38,20 @@ if isempty(M1)
 end
 
 if nargin==1 % assume user wants a simple swap of 2 values
-    U=unique(M1); % need to ensure mask only has 2 values to swap
+    U=unique(M1);
     UNaNs=sum(isnan(U)); % NaN's get counted separately with unique.m
-    if length(U)==2 || length(U)-UNaNs==1 % either 2 numbers, or 1 number and a nan
+    if length(U)==1
+        if U==1 % assume binary swap is desired
+            M2=zeros(size(M1));
+            return
+        elseif U==0
+            M2=ones(size(M1));
+            return
+        else
+            error('Not simple swap: M1 contains one or more than two values')
+        end
+        
+    elseif length(U)==2 || length(U)-UNaNs==1 % either 2 numbers, or 1 number and a nan
         oldValues=[U(1) U(2)];
         newValues=[U(2) U(1)];
     else
