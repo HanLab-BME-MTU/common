@@ -1,4 +1,4 @@
-function T = stageDriftCorrection(inputFileList, sigmaPSF, numIter, tol)
+function T = stageDriftCorrection(inputFileList, sigmaPSF)
 % stageDriftCorrection returns an array containing all drifts between each
 % consecutive pair of images.
 %
@@ -9,15 +9,6 @@ function T = stageDriftCorrection(inputFileList, sigmaPSF, numIter, tol)
 %
 %          sigmaPSF: hald-with of the point spread function (standard
 %          deviation of a Gaussian model PSF).
-%
-%          numIter: maximum number of iterations for the Iterative Closest
-%          Point (ICP).
-%
-%          tol: precision value under which the ICP stops.
-%
-%          tolR: maximum value |R - Id| underwhich any rotation R between
-%          the sets of points is considered to be unsignificant. For a
-%          standard microscope stage, only translation should be expected.
 %
 % OUTPUT   T: an array of the same size of inputFileList minus 1 containing
 %          all 2D drifts between images.
@@ -47,21 +38,6 @@ end
 
 if numel(inputFileList) < 2
     error('Number of images is less than 2.');
-end
-
-% Number of iterations for ICP.
-if nargin < 2 || ~isinteger(numIter)
-    numIter = 50;
-end
-
-% Tolerance
-if nargin < 3 || ~isnumeric(tol)
-    tol = 1e-4;
-end
-
-% Tolerance on the rotation
-if nargin < 4 || ~isnumeric(to)
-    tolR = 1e-4;
 end
 
 n = numel(inputFileList);
@@ -98,6 +74,10 @@ end
 %
 % Step 2: Point registration
 %
+
+numIter = 10;
+tol = 1e-4;
+tolR = 1e-4;
 
 for i = 1:n-1
     n1 = size(pts{i}, 1);
