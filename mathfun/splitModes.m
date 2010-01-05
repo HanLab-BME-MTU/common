@@ -29,7 +29,14 @@ if nargin < 4 || isempty(verbose)
 end
 
 % first guess via cutFirstHistMode - put as 1 to see histograms
+if iscell(data)
+    % data is already in counts/bins
+    [cutIdx,cutVal] = cutFirstHistMode(data{:},0);
+    % create the spline
+    sp = spline(data{2},data{1});
+else
 [cutIdx, cutVal,sp] = cutFirstHistMode(data,0);
+end
 
 % now check the local minima in the vicinity of the cutoff
 spder = fnder(sp);
@@ -63,7 +70,11 @@ cutValue = zeroList(indexList(cutIdx));
 if verbose
     figure
     ah = gca;
+    if iscell(data)
+        bar(data{2},data{1})
+    else
     histogram(ah,data,1,0);
+    end
     hold on
     plot(ah,[cutVal;cutVal],[0,maxVal],':r')
     plot(ah,[cutValue;cutValue],[0,maxVal],'r')

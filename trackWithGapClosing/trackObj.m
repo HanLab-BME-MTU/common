@@ -37,6 +37,11 @@
 %                               .correctCentroid -  0: no correction
 %                                (default), 1: correct translation, 2:
 %                                correct translation and rotation
+%                           'connectiveComponent' - data is connective
+%                                component as used for cexSegment with structure
+%                                connComp(timepoints) = struct('Connectivity',
+%                                   [], 'ImageSize', [], 'NumObjects', [], 
+%                                   'PixelIdxList', []);
 %                      .inputInfo  : additional information for the parser
 %                      .outputStyle : settings for outputStyle (see
 %                          property description of outputStyle)
@@ -590,18 +595,24 @@ classdef trackObj<handle
             
             % Plot
             figure('Name','nearest neighbour displacement')
-            hc = distributionPlot(stats.nnDisplacement(:,1));
+            hc = distributionPlot(stats.nnDisplacement(:,1),[],[],[],[],[],[],1);
             figure('Name','second nearest neighbour displacement')
-            hc2 = distributionPlot(stats.nnDisplacement(:,2));
+            hc2 = distributionPlot(stats.nnDisplacement(:,2),[],[],[],[],[],[],1);
             % read axes limits for hc2, set for hc
-            ylim(hc{3},ylim(hc2{3}));
+            y1 = ylim(hc{3});
+            y2 = ylim(hc2{3});
+            ylim(hc{3},[y1(1),y2(2)]);
+            ylim(hc2{3},[y1(1),y2(2)]);
             figure('Name','nearest neighbour distance')
-            distributionPlot(stats.nnDistance(:,1));
+            distributionPlot(stats.nnDistance(:,1),[],[],[],[],[],[],1);
             figure('Name','nearest neighbour amplitude');
-            hc = distributionPlot(stats.nnDispAmp(:,1));
+            hc = distributionPlot(stats.nnDispAmp(:,1),[],[],[],[],[],[],1);
             figure('Name','second nearest neighbour amplitude');
-            hc2 = distributionPlot(stats.nnDispAmp(:,2));
-            ylim(hc{3},ylim(hc2{3}));
+            hc2 = distributionPlot(stats.nnDispAmp(:,2),[],[],[],[],[],[],1);
+            y1 = ylim(hc{3});
+            y2 = ylim(hc2{3});
+            ylim(hc{3},[y1(1),y2(2)]);
+            ylim(hc2{3},[y1(1),y2(2)]);
             
         end
         %% INSPECTTRACKS
@@ -1109,6 +1120,63 @@ classdef trackObj<handle
                             movieInfo(t).yCoord = coord(t).allCoord(:,[2 5]);
                             movieInfo(t).zCoord = coord(t).allCoord(:,[3 6]);
                             movieInfo(t).amp = coord(t).(ampName);
+                        end
+                        
+                        correctCentroid;
+                        
+                    end
+   
+                    
+                case 'connectiveComponent'
+                    % check options
+                    if ~isempty(options.inputInfo) && isfield(options.inputInfo,'amp')
+                        ampName = options.inputInfo.amp;
+                    else
+                        ampName = 'volume';
+                    end
+                    
+                    % coords will be a table like so
+                    %coords(x) = struct('Connectivity', [], ...
+                    %  'ImageSize', [], 'NumObjects', [], 'PixelIdxList', []);
+                    
+                    voxelSize = obj.voxelSize(1) * obj.voxelSize(2) * obj.voxelSize(3);
+
+                    
+                    % problem dimension is automatically 3
+                    obj.probDim = 3;
+                    % create movieInfo
+                    nTimepoints = length(coord);
+                    movieInfo(1:nTimepoints) = struct('xCoord',[],...
+                        'yCoord',[],'zCoord',[],'amp',[]);
+                    
+                    %goodTimes = find(arrayfun(@(x)(~isempty(x.allCoord)), coord));
+                    
+                    % get 'true' for all connective components that aren't empty
+                    goodTimes = arrayfun(@(x)(~isempty(x)), coords);
+                    % get their indices
+                    %goodIndex = find(goodIndexBoolean);
+                    
+                    %hack
+                    params.scaleSpaceFactors = [4 4 2; 8 8 4];
+                    
+                    if ~isempty(goodTimes)
+                        % only do the rest if nonempty input
+                        
+                        
+                        for t = goodTimes'
+                           curFrame = obj.imageData.scalespace({t},params.scaleSpaceFactors);   
+                           
+                           for i = 1:coords.NumObjects %coords for each potential object in CC
+                               % voxels in each CC object
+                               [subs(:,1) subs(:,2) subs(:,3)] = ind2sub(size(curFrame), coords(t).PixelIdxList{i});
+                               movieInfo(t).xCoord(i) = subs(:,1);
+                               movieInfo(t).yCoord(i) = subs(:,2);
+                               movieInfo(t).zCoord(i) = subs(:,3);
+                               % volume
+                               movieInfo(t).amp(i) = length(CC.PixelIdxList{iChrom}) * voxelSize;
+                               
+                               clear subs;
+                           end
                         end
                         
                         correctCentroid;
