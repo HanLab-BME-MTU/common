@@ -6,7 +6,7 @@ function [trackedFeatureInfo,trackedFeatureIndx,trackStartRow,numSegments,aggreg
 %    convStruct2MatIgnoreMS(tracksFinal)
 %
 %INPUT  tracksFinal: Output of trackCloseGapsKalman, when run with
-%                    gapCloseParam.mergeSplit = 0.
+%                    gapCloseParam.mergeSplit = 1.
 %OUTPUT trackedFeatureInfo, trackedFeatureIndx: Output of trackWithGapClosing.
 %                    Every segment in tracksFinal becomes a separate track.
 %       trackStartRow: Row where each compound track starts in

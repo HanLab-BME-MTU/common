@@ -27,7 +27,7 @@ parameters.nnWindow = gapCloseParam.timeWindow; %number of frames before the cur
 parameters.kalmanInitParam = []; %Kalman filter initialization parameters.
 
 %optional input
-parameters.diagnostics = [2 599 1199]; %if you want to plot the histogram of linking distances up to certain frames, indicate their numbers; 0 or empty otherwise. Does not work for the first or last frame of a movie.
+parameters.diagnostics = []; %if you want to plot the histogram of linking distances up to certain frames, indicate their numbers; 0 or empty otherwise. Does not work for the first or last frame of a movie.
 
 costMatrices(1).parameters = parameters;
 clear parameters
@@ -79,8 +79,8 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/home/kj35/.gvfs/orchestra on files.med.harvard.edu/groups/lccb-receptors/Galbraiths/data/alphaV/091106_CHO04_mEOSAV_1200_25ms_24min/analysis/'; %directory where to save input and output
-saveResults.filename = 'tracks1Detection1AllFrames.mat'; %name of file where input and output are saved
+saveResults.dir = '/orchestra/groups/lccb-receptors/Galbraiths/data/alphaV/091012_CHO07hifix_mEosAV_2400_25/analysis/'; %directory where to save input and output
+saveResults.filename = 'tracks1Detection1Frames1201to2400.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
 %verbose
@@ -91,7 +91,7 @@ probDim = 2;
 
 %% tracking function call
 
-[tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...
+[tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1201:2400),...
     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

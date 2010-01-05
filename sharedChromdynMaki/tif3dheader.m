@@ -1,5 +1,5 @@
-function header = stk3dheader(rawMoviePath,rawMovieName,metaData)
-%STK3DHEADER reads 3D+t STK files into the maki software package
+function header = tif3dheader(rawMoviePath,rawMovieName,metaData)
+%TIF3DHEADER reads 3D+t TIF files into the maki software package
 %
 %INPUT  rawMoviePath, rawMovieName: Movie path and name.
 %       metaData: Selected metadata needed for image analysis. Structure with
@@ -16,10 +16,10 @@ function header = stk3dheader(rawMoviePath,rawMovieName,metaData)
 %
 %OUTPUT header: Same as output of readr3dheader.
 %
-%Khuloud Jaqaman, August 2008
+%Khuloud Jaqaman, January 2010
 
 %read in first stack of time lapse
-[stackData,numZSlices] = metaTiffRead(fullfile(rawMoviePath,rawMovieName));
+imageInfo = imfinfo(fullfile(rawMoviePath,rawMovieName));
 
 %extract header information
 
@@ -32,15 +32,15 @@ header.pixelZ = metaData.thicknessZSlice;
 header.firstImageAddress = []; %not sure what this is or what it is used for
 
 %objective lens information
-header.lensID = [1.40 100];
+header.lensID = metaData.objLensInfo;
 
 %movie size in X, Y and Z
-header.numCols = stackData(1).width; %X in IMARIS
-header.numRows = stackData(1).height; %Y in IMARIS
-header.numZSlices = numZSlices;
+header.numCols = imageInfo(1).Width; %X in IMARIS
+header.numRows = imageInfo(1).Height; %Y in IMARIS
+header.numZSlices = length(imageInfo);
 
 %number of time points
-fileList = searchFiles('.STK$',[],rawMoviePath,1);
+fileList = searchFiles('.tif$',[],rawMoviePath,1);
 header.numTimepoints = size(fileList,1);
 
 %emission wavelength information
@@ -54,7 +54,7 @@ header.ndFilter = [];
 
 %sampling time information
 timeStamp = (0:header.numTimepoints-1)*metaData.timeBetweenFrames;
-timeStamp = repmat(timeStamp,numZSlices,1) + ...
-    repmat((0:numZSlices-1)'*metaData.timeBetweenZSlices,1,header.numTimepoints);
+timeStamp = repmat(timeStamp,header.numZSlices,1) + ...
+    repmat((0:header.numZSlices-1)'*metaData.timeBetweenZSlices,1,header.numTimepoints);
 header.timestamp = timeStamp;
 header.Time = timeStamp(:);

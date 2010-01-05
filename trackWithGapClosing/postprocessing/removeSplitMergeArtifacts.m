@@ -28,7 +28,7 @@ while ~isempty(splitIndx)
         timeMerge = seqOfEvents(iMerge,1);
         timeSplit2Merge = timeMerge - timeSplit;
         
-        %if the split to merge time in only 1 frame
+        %if the split to merge time is only 1 frame
         if timeSplit2Merge == 1
             
             %discard both the split and the merge from the sequence of events
@@ -64,16 +64,16 @@ while ~isempty(splitIndx)
         timeSplit2End1 = timeEnd1 - timeSplit;
         timeSplit2End2 = timeEnd2 - timeSplit;
         
-        %if either time is equal to 1 frame, discard the split
-        if any([timeSplit2End1 timeSplit2End2]==1)
+        %if either time is equal to 0 frame, discard the split
+        if any([timeSplit2End1 timeSplit2End2]==0)
 
             %if the splitting segment (segment1) ends immediately
-            if timeSplit2End1 == 1
+            if timeSplit2End1 == 0
 
                 %discard both the split and the end of segment1
                 seqOfEvents = seqOfEvents([1:iSplit-1 iSplit+1:iEnd1-1 iEnd1+1:end],:);
 
-            elseif timeSplit2End2 == 1 %if the segment that got split from (segment2) ends immediately
+            elseif timeSplit2End2 == 0 %if the segment that got split from (segment2) ends immediately
                 
                 %discard both the split and the end of segment2
                 seqOfEvents = seqOfEvents([1:iSplit-1 iSplit+1:iEnd2-1 iEnd2+1:end],:);

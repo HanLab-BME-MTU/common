@@ -85,7 +85,11 @@ switch inputType
         end
         dataProperties.PIXELSIZE_Z = inputStruct.pixelZ;
         dataProperties.LENSID = inputStruct.lensID;
-        dataProperties.NA = naFromLensID(dataProperties.LENSID,1);
+        if length(inputStruct.lensID) == 1
+            dataProperties.NA = naFromLensID(dataProperties.LENSID,1);
+        else
+            dataProperties.NA = inputStruct.lensID(1);
+        end
         dataProperties.movieSize(2) = inputStruct.numCols;
         dataProperties.movieSize(1) = inputStruct.numRows;
         dataProperties.movieSize(3) = inputStruct.numZSlices;
