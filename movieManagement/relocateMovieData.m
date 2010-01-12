@@ -99,7 +99,7 @@ for iMov = 1:nMov
     mdFileList{iMov} = regexprep(mdFileList{iMov},[filesep 'movieData.mat'],'');
 
     %Convert file seperators in case there has been a change of OS
-    movieArray{iMov} = rReplace(movieArray{iMov},'/|\',filesep);
+    movieArray{iMov} = rReplace(movieArray{iMov},'/|\',filesep);        
 
     if ~strcmp(bPressed,yesAllStr)
 
@@ -108,6 +108,14 @@ for iMov = 1:nMov
 
         newDir = mdFileList{iMov};
         oldDir = movieArray{iMov}.analysisDirectory;
+        
+        %Remove any trailing file seperators
+        if strcmp(newDir(end),filesep)
+            newDir = newDir(1:end-1);
+        end
+        if strcmp(oldDir(end),filesep)
+            oldDir = oldDir(1:end-1);
+        end
 
         %Find the first character where the two directories differ:
         stillMatch = true;
@@ -129,7 +137,11 @@ for iMov = 1:nMov
         oldPdir = oldDir(1:end-iFs);
         newPdir = newDir(1:end-iFs);
 
-        fprintf(['Old parent directory:\n' oldPdir '\n New parent directory:\n' newPdir '\n'])        
+        disp('Old parent directory:')
+        disp(oldPdir)
+        disp('New parent directory:')
+        disp(newPdir)       
+        
         if confirmChange
             %Force the user to confirm this change is correct
             bPressed = questdlg('Are the old and new dirctories correct? (see command prompt)','Confirm Directory Change','Yes',yesAllStr,'No','No');
@@ -140,7 +152,7 @@ for iMov = 1:nMov
     
     if strcmp(bPressed,'Yes') || strcmp(bPressed,yesAllStr)
     
-        movieArray{iMov} = rReplace(movieArray{iMov},oldPdir,newPdir);
+        movieArray{iMov} = rReplace(movieArray{iMov},regexptranslate('escape',oldPdir),regexptranslate('escape',newPdir));
         updateMovieData(movieArray{iMov})        
         if showOutput
             disp(['Movie ' num2str(iMov) ' successfully relocated!'])
