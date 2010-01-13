@@ -1,4 +1,4 @@
-function T = stageDriftCorrection(inputFileList, sigmaPSF)
+function T = stageDriftCorrection(inputFileList, sigmaPSF, bitDepth, maxDrift, showResult)
 % stageDriftCorrection returns an array containing all drifts between each
 % consecutive pair of images.
 %
@@ -7,8 +7,14 @@ function T = stageDriftCorrection(inputFileList, sigmaPSF)
 % INPUT    inputFileList: cell array of all image filenames (including full
 %                         path name).
 %
-%          sigmaPSF: hald-with of the point spread function (standard
-%          deviation of a Gaussian model PSF).
+%          sigmaPSF: hald-with of the point spread function, i.e. standard
+%          deviation of a Gaussian model PSF (In pixel).
+%
+%          bitDepth: camera bit depth.
+%
+%          maxDrift: maximum drift allowed (in pixel).
+%
+%          showResult: show maximum projection 
 %
 % OUTPUT   T: an array of the same size of inputFileList minus 1 containing
 %          all 2D drifts between images.
@@ -45,62 +51,123 @@ pts = cell(n, 1);
 T = zeros(n - 1, 2);
 
 %
-% Step 1: Subpixel spot detection
+% Step 1: Make calibration
 %
 
-for i = 1:n
-    % Read image.
+[I0, sDN, GaussRatio] = fsmCalcNoiseParam(inputFileList{1}, bitDepth, sigmaPSF, []);
+noiseParam = [1.96 / GaussRatio, sDN, 0, I0];
+
+%
+% Subpixel spot detection
+%
+
+h = waitbar(0, 'Subpixel spot detection');
+
+for i=1:n
+    % Load image
     I = double(imread(inputFileList{i}));
     
-    % Denoise image using Wavelet A Trou.
-    Irec = awtDenoising(I, [], 0, 3);
-    % Find local maximum
-    w = 2 * ceil(sigmaPSF) + 1;
-    locMax = find(locmax2d(Irec, [w, w]));
+    % Normalized it
+    In = I / (2^bitDepth-1);
+    
+    % Prepare the image for the analysis
+    If = fsmPrepPrepareImage(In, 1, [1 1 0 0; 0 0 size(I)], sigmaPSF);
+    
+    % Statistically test the local maxima to extract (significant) speckles
+    [~, cands] = fsmPrepMainSecondarySpeckles(If, 0, [], noiseParam, [1 0]);
 
-    if isempty(locMax)
-        error('Frame %d does not contain any point.', ind);
+    % Get speckle infos
+    status = vertcat(cands(:).status);
+    C = vertcat(cands(status == 1).Lmax);
+    mu = mean(vertcat(cands(status == 1).IBkg)) * bitDepth;
+    locMax = sub2ind(size(I), C(:, 1), C(:, 2));
+    
+    if ~numel(locMax)
+        close(h);
+        error('Frame %d does not contain any point.', i);
     end
     
-    [y x] = ind2sub(size(Irec), locMax);
-    
     % Subpixel detection
-    estimates = fitMixModel(I, [y x], sigmaPSF, I(locMax), ...
-        mean(nonzeros(I - Irec)));
+    estimates = fitMixModel(I, [C(:, 1) C(:, 2)], sigmaPSF, I(locMax), mu);
     
     pts{i} = estimates(:,1:2);
+    
+    waitbar(i / n, h);
 end
 
+close(h);
+
 %
-% Step 2: Point registration
+% Step 3: Point registration
 %
 
 numIter = 10;
 tol = 1e-4;
-tolR = 1e-4;
+
+h = waitbar(0, 'Point registration');
 
 for i = 1:n-1
-    n1 = size(pts{i}, 1);
-    X1 = [pts{i}(:, 1:2) zeros(n1, 1)];
-    n2 = size(pts{i+1}, 1);
-    X2 = [pts{i+1}(:, 1:2) zeros(n2, 1)];
+    % Discard every point that doesn't contain a point in the next frame
+    % within its vincinity,
+    D = createDistanceMatrix(pts{i}, pts{i+1});
+    D = D < maxDrift;
+    X1 = pts{i}(sum(D, 2) ~= 0, 1:2);
+    X2 = pts{i+1}(sum(D, 1) ~= 0, 1:2);
+    n1 = size(X1, 1);
+    n2 = size(X2, 1);
     
-    if n1 > n2
-        [Ri, Ti] = computeICP(X1, X2, numIter, tol);
-        Ti = -Ti;
-    else
-        [Ri, Ti] = computeICP(X2, X1, numIter, tol);
+    if ~(n1 && n2)
+        close(h);
+        error('Unable to register frames %i-%i', i, i+1);
     end
     
-    Ri = round(Ri / tolR) * tolR;
+    X1 = [X1 zeros(n1, 1)];
+    X2 = [X2 zeros(n2, 1)];
     
-    if ~all(all(Ri == eye(3)))
-        warning('Warning: significant rotation effect detected between frame %d-%d.',...
-            i, i+1); %#ok<WNTAG>
-        T(i, :) = NaN;
+    if n1 >= n2
+        Ti = computeICP(X1, X2, numIter, tol);
     else
-        T(i, :) = Ti(1:2);
+        Ti = -computeICP(X2, X1, numIter, tol);
     end
-    % Free allocated memory for the kd-tree.
-    kdtree([], [], treeRoot);
+    
+    T(i, :) = Ti(1:2);
+    
+    waitbar(i / (n-1), h);
+end
+
+close(h);
+
+%
+% Step 4: Register image for debug purposes
+%
+
+if showResult
+    sumT = cumsum(T);
+    maxX = ceil(max(abs(sumT(:, 2))));
+    maxY = ceil(max(abs(sumT(:, 1))));
+    I = double(imread(inputFileList{1}));
+    I = padarray(I, [maxY, maxX]);
+    %[path, ~, no] = getFilenameBody(inputFileList{1});
+    %save([path filesep 'REGISTRED_' no '.txt'], 'I', '-ASCII', '-double');
+    
+    projI = I;
+    projR = zeros(size(I));
+    
+    for i = 2:n
+        % Read image.
+        I = double(imread(inputFileList{i}));
+        I = padarray(I, [maxY, maxX]);
+        Tr = maketform('affine', [1 0 0; 0 1 0; fliplr(sumT(i-1, :)) 1]);
+        R = imtransform(I, Tr, 'bicubic', 'XData', [1 size(I, 2)], ...
+            'YData', [1 size(I, 1)]);
+        %[path, ~, no] = getFilenameBody(inputFileList{i});
+        %save([path filesep 'REGISTRED_' no '.txt'], 'R', '-ASCII', '-double');
+        
+        projI = projI + I;
+        projR = projR + R;
+    end
+    
+    colormap('jet');
+    subplot(1, 2, 1); imagesc(projI); title('Original stack projection.');
+    subplot(1, 2, 2); imagesc(projR); title('Registered stack projection.');
 end

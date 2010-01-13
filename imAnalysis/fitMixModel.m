@@ -13,11 +13,8 @@ function [estimates] = fitMixModel(image, xyvec, sig, amps, b, options)
 % UPDATED Dec 10/2009 Sylvain Berlemont
 
 if nargin < 6 || isempty(options)
-    maxIter = 15;
     options = optimset('TolFun',1e-4,'TolX',1e-4,'Display','off',...
-        'MaxIter', maxIter,'Jacobian','on');
-else
-    maxIter = options.MaxIter;
+        'Jacobian','on');
 end
 
 [xs,ys] = size(image);
@@ -51,7 +48,6 @@ YinPixLar = YinPixLar-(rad+1);
 singleSpecLarPositions = cell(numspec,1);
 GlobalCoordMat = cell(numspec,1);
 
-hm = waitbar(0,'generating sparse mask');
 for n=1:numspec
     SmalCoorX = xyvec(n, 1) + XinPix;
     SmalCoorY = xyvec(n, 2) + YinPix;
@@ -67,12 +63,8 @@ for n=1:numspec
     ind = find((LarCoorX>=1) & (LarCoorY>=1) & (LarCoorX<=xs) & (LarCoorY<=ys));
     LarCoorX = LarCoorX(ind);
     LarCoorY = LarCoorY(ind);
-    singleSpecLarPositions{n} = [LarCoorX, LarCoorY, sub2ind([xs ys],LarCoorX, LarCoorY)]; %% ???
-    
-    waitbar(n / numspec, hm);
+    singleSpecLarPositions{n} = [LarCoorX, LarCoorY, sub2ind([xs ys],LarCoorX, LarCoorY)];
 end
-
-close(hm);
 
 ind = cell2mat(GlobalCoordMat);
 mask(ind) = 1;
@@ -81,8 +73,6 @@ mask(ind) = 1;
 start_point = [xyvec amps];
 lowbound=[xyvec-2 0.8*amps];
 upbound=[xyvec+2 1.2*amps];
-
-fh = waitbar(0,'fitting mixture model');
 
 iteration = 1;
 [estimates] = lsqnonlin(@Gauss2Dfun, start_point, lowbound, upbound, options);
@@ -199,10 +189,6 @@ iteration = 1;
             
         end % of if (nargout>1)
         iteration = iteration + 1;
-        waitbar(iteration / maxIter, fh);
         
     end %of function F
-
-close(fh);
-
 end
