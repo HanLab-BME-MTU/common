@@ -116,37 +116,49 @@ for iMov = 1:nMov
         if strcmp(oldDir(end),filesep)
             oldDir = oldDir(1:end-1);
         end
-
-        %Find the first character where the two directories differ:
-        stillMatch = true;
-        j=1;
-        while stillMatch        
-            stillMatch = strncmp(newDir(end:-1:1),oldDir(end:-1:1),j);
-            j=j+1;        
-        end
-        j = j-2; %Remove offset in j.
         
-        % 'Snap' the location of the difference to the next highest directory
-        % to correct for directory names which are partially equivalent
-
-        %Find the first seperator they have in common
-        iFs = regexp(newDir,filesep);
-        iFs = (length(newDir)+1) - iFs(find(iFs > (length(newDir)-j),1));
-
-        %Get the old and new parent directories
-        oldPdir = oldDir(1:end-iFs);
-        newPdir = newDir(1:end-iFs);
-
-        disp('Old parent directory:')
-        disp(oldPdir)
-        disp('New parent directory:')
-        disp(newPdir)       
-        
-        if confirmChange
-            %Force the user to confirm this change is correct
-            bPressed = questdlg('Are the old and new dirctories correct? (see command prompt)','Confirm Directory Change','Yes',yesAllStr,'No','No');
+        %Check for the case that the old and new directories are identical
+        if strcmp(oldDir,newDir)
+            
+            %Don't ask - it's identical
+            bPressed = 'No';
+            disp('Old and new movieData''s are identical!')
+            
         else
-            bPressed = yesAllStr;
+
+            %Find the first character where the two directories differ:
+            stillMatch = true;
+            j=1;
+            while stillMatch        
+                stillMatch = strncmp(newDir(end:-1:1),oldDir(end:-1:1),j);
+                j=j+1;        
+            end
+            j = j-2; %Remove offset in j.
+
+
+
+            % 'Snap' the location of the difference to the next highest directory
+            % to correct for directory names which are partially equivalent
+
+            %Find the first seperator they have in common
+            iFs = regexp(newDir,filesep);
+            iFs = (length(newDir)+1) - iFs(find(iFs > (length(newDir)-j),1));
+
+            %Get the old and new parent directories
+            oldPdir = oldDir(1:end-iFs);
+            newPdir = newDir(1:end-iFs);
+
+            disp('Old parent directory:')
+            disp(oldPdir)
+            disp('New parent directory:')
+            disp(newPdir)       
+
+            if confirmChange
+                %Force the user to confirm this change is correct
+                bPressed = questdlg('Are the old and new dirctories correct? (see command prompt)','Confirm Directory Change','Yes',yesAllStr,'No','No');
+            else
+                bPressed = yesAllStr;
+            end
         end
     end
     
