@@ -30,7 +30,6 @@ end
 
 P = size(matIn,3);
 
-figure
 hold on
 
 for p = 1:P
@@ -46,5 +45,5 @@ end
 
 %Set the viewpoint to 3d
 view(3)
-%Set axes scaling to enhance 3d viewing
-axis vis3d
+%Set axes scaling
+axis image
