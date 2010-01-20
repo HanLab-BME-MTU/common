@@ -34,7 +34,7 @@ for p = 1:P
     
 end
 
-view(3);
+view(-45,45);
 axis image;
 
 
