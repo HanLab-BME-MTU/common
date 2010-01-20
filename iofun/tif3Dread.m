@@ -15,6 +15,10 @@ function image = tif3Dread(filename)
 % 
 %   image - The 3D matrix containing the concatenated images.
 %
+% NOTE: This function is semi-redundant with stackRead.m. The only
+% difference is that it supports the matlab-default .tif compression, while
+% stackRead.m does not. However, stackRead.m is faster so use that unless
+% you are dealing with compressed multi-page .tifs.
 %
 % Hunter Elliott
 % 1/2010
