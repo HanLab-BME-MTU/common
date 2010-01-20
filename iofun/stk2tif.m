@@ -4,7 +4,8 @@ function stk2tif(filename)
 %
 % SYNOPSIS   stk2tif(filename)
 %
-% INPUT      filename : string containing the common name of the sequence of .tif files
+% INPUT      filename : string containing the common name of the sequence
+%            of .tif files
 %
 % OUTPUT     none     :    
 % 
@@ -33,7 +34,7 @@ end
 
 n = size(stack, 3);
 L=length(num2str(n)); 
-strg=sprintf('%%.%dd', L); % Creates the format string for the numerical indexes
+strg=sprintf('%%.%dd', L);
 
 % Select a directory where the output .tif files will be written
 path=uigetdir('','Select output directory');
