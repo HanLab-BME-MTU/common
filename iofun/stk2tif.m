@@ -1,5 +1,4 @@
 function stk2tif(filename)
-
 % stk2tif converts STK to TIF using stackRead
 %
 % SYNOPSIS   stk2tif(filename)
