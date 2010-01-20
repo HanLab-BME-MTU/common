@@ -1,6 +1,6 @@
 function stk2tif(filename)
 
-% stk2tif converts STK to TIF using metaTiffRead
+% stk2tif converts STK to TIF using stackRead
 %
 % SYNOPSIS   stk2tif(filename)
 %
@@ -12,10 +12,10 @@ function stk2tif(filename)
 %       
 %
 %
-% DEPENDENCES   stk2tif uses {metaTiffRead}
+% DEPENDENCES   stk2tif uses {stackRead}
 %               stk2tif is used by {}
 %
-% Alexandre Matov, November 7th, 2002
+% Sylvain Berlemont, 20th Jan 2009
 
 if nargin~=1
     error('Please enter a valid (common) file name for the output files');
@@ -25,13 +25,15 @@ if isempty(filename)
 end
 
 try
-    [S,n]=metaTiffRead;
+    stack = stackRead;
 catch
     disp('Interrupted by user.');
     return
 end
+
+n = size(stack, 3);
 L=length(num2str(n)); 
-strg=sprintf('%%.%dd',L); % Creates the format string for the numerical indexes
+strg=sprintf('%%.%dd', L); % Creates the format string for the numerical indexes
 
 % Select a directory where the output .tif files will be written
 path=uigetdir('','Select output directory');
@@ -41,9 +43,9 @@ if path==0
 end    
 
 h=waitbar(0,'Please wait! Writing .tif files');
-for i=1:n
-    indxStr=sprintf(strg,i);
-    imwrite(S(i).data,[path,filesep,filename,indxStr,'.tif']);
-    waitbar(i/n,h);
+for z=1:n
+    indxStr=sprintf(strg,z);
+    imwrite(stack(:, :, z),[path,filesep,filename,indxStr,'.tif']);
+    waitbar(z/n,h);
 end
 close(h);
