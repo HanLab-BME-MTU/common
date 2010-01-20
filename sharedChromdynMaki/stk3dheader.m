@@ -19,7 +19,7 @@ function header = stk3dheader(rawMoviePath,rawMovieName,metaData)
 %Khuloud Jaqaman, August 2008
 
 %read in first stack of time lapse
-[stackData,numZSlices] = metaTiffRead(fullfile(rawMoviePath,rawMovieName));
+[stackData,numZSlices] = tiffread(fullfile(rawMoviePath,rawMovieName));
 
 %extract header information
 
