@@ -24,12 +24,7 @@ if isempty(filename)
     error('Please enter a valid (common) file name for the output files');
 end
 
-try
-    stack = stackRead;
-catch
-    disp('Interrupted by user.');
-    return
-end
+stack = stackRead;
 
 n = size(stack, 3);
 L=length(num2str(n)); 

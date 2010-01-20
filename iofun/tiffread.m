@@ -617,6 +617,17 @@ parse  = textscan(info, '%s %s', 'Delimiter', ':');
 tokens = parse{1};
 values = parse{2};
 
+% If the stk file has been created in imageJ, the delimiter used is '='.
+if isempty(str2mat(values))
+    parse = textscan(info, '%s%s', 'Delimiter', '=');
+    tokens = parse{1};
+    values = parse{2};
+    
+    if isempty(str2mat(values))
+        error('Invalid delimiter in metamorph stack info.');
+    end
+end
+
 first = char(tokens(1,1));
 
 k = 0;
