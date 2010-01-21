@@ -30,8 +30,9 @@ end
 
 % Low pass filter signal, if needed
 if s>1
-    s=[-fix(s/2):fix(s/2)]; % Low-pass filtering with gauss
-    s=gauss1d(s,1);
+    s = -fix(s/2):fix(s/2); % Low-pass filtering with gauss    
+    s = exp(-1/2 * s.^2) ./ (sqrt(2*pi));
+    
     s=s/sum(s);
     signal=conv(signal,s);
 %     s=ones(1,s)./s;           % Convolution with a [1/s 1/s 1/s ... ]s vector
@@ -45,9 +46,9 @@ f=1/l;
 
 % Number of steps
 if l==fix(l)
-    steps=[0:f:l*f-f];
+    steps=0:f:l*f-f;
 else
-    steps=[0:f:l*f];
+    steps=0:f:l*f;
 end
 
 % Calculate power spectrum
@@ -61,8 +62,9 @@ nPower=nPower/max(nPower);
 
 % Filter spectrum if needed
 if freq>1
-    frq=[-fix(freq/2):fix(freq/2)]; % Low-pass filtering with gauss
-    frq=gauss1d(frq,1);
+    frq = -fix(freq/2):fix(freq/2); % Low-pass filtering with gauss   
+    frq = exp(-1/2 * frq.^2) ./ sqrt(2*pi);
+    
     frq=frq./sum(frq);
     nPower=conv(nPower,frq);
     nPower=nPower(fix(freq/2)+1:end-fix(freq/2));
@@ -73,7 +75,7 @@ if draw==1
     
     % Display signal
     figure;
-    h=plot(signal,'k-');
+    plot(signal,'k-');
     title('Signal');
     
     % Display power spectrum
