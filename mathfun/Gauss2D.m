@@ -20,6 +20,9 @@ w = ceil(3*sigma); % cutoff radius of the gaussian kernel
 x = -w:w;
 g = exp(-x.^2/(2*sigma^2));
 g = g/sum(g);
-G = g'*g;
 
 out = conv2(g', g, padarrayXT(image, [w w], borderCondition), 'valid');
+
+if (nargout>1)
+    G = g'*g;
+end
