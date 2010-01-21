@@ -5,8 +5,5 @@ function y = dogauss1d(x,s)
 %
 %   where x = 1/sqrt(s*pi) * (-x/s^2) * exp(-1/2 * (x/s)^2);
 % 
-% SEE ALSO gauss1d
-
-y = gauss1d(x,s);
-
+y = exp(-1/2 * (x/s).^2) ./ (sqrt(2*pi)*s);
 y = -y.*x/(s^2);
