@@ -89,10 +89,12 @@ void gaussj(double **a, int n, double **b, int m)
 		}
 		indxr[i]=irow;
 		indxc[i]=icol;
-
-		if (a[icol][icol] == 0.0){
-		  nrerror("gaussj: Singular Matrix");
+        
+        /*
+        if (a[icol][icol] == 0.0){
+            nrerror("gaussj: Singular Matrix");
 		}
+         */
 
 		pivinv=1.0/a[icol][icol];
 		a[icol][icol]=1.0;
