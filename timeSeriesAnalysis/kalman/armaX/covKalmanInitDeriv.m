@@ -62,6 +62,8 @@ numParam = matSize/covSize;
 %set initial guess of covariance matrix to zero
 stateCovMatDeriv00 = zeros(matSize,covSize);
 
+maxNumIter = 1000;
+
 for iparam = 1:numParam-(xOrder+1)
 
     %get relevant derivatives
@@ -73,6 +75,7 @@ for iparam = 1:numParam-(xOrder+1)
     
     %initialize iteration variable
     doAgain = 1;
+    numIter = 0;
 
     %iterate until the derivative of the covariance matrix does not change
     %significantly from one iteration to another
@@ -94,6 +97,10 @@ for iparam = 1:numParam-(xOrder+1)
 
         %assign new estimate to stateCovMat00
         covDeriv = covDerivNew;
+        
+        numIter = numIter + 1;
+        
+        if numIter > maxNumIter; errFlag = 1; break; end
 
     end %(while doAgain)
 

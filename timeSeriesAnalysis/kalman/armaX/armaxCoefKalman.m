@@ -570,26 +570,36 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 
                 
                 % Minor redundancy to fit case 'nl' to armaxCoefKalman
-                if status == 0
-                    proceed = 1;
-                    if arOrder > 0
-                        ar = topo(2:(arOrder+1));
-                        if maOrder > 0
-                            params = cat(2, (ar)', (ma)');
-                        else
-                            params = (ar)';
-                        end
-                    else % if arOrder <= 0
-                        if maOrder > 0
-                            params = (ma)';
-                        else
-                            params = [];
-                        end
-                    end
-                end
                 
-                if status ~= 0
-                    proceed = 0;
+                switch (status)
+                    
+                    case 0
+                        
+                        proceed = 1;
+                        
+                        if arOrder > 0
+                            ar = topo(2:(arOrder+1));
+                            if maOrder > 0
+                                params = cat(2, (ar)', (ma)');
+                            else
+                                params = (ar)';
+                            end
+                        else % if arOrder == 0
+                            if maOrder > 0
+                                params = (ma)';
+                            else
+                                params = [];
+                            end
+                        end
+                        
+                    case 1
+                
+                        proceed = 0;
+                    
+                    otherwise
+                        disp('--armaxCoefKalman: carmaFitModel reports error.');
+                        errFlag = 1;
+                        return
                 end
                    
                 
