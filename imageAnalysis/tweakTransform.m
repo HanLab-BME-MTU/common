@@ -45,6 +45,3 @@ inImage = imtransform(inImage,xForm,'XData',[1 size(baseImage,2)],'YData',[1 siz
 brdr = 20;
 imDiff = abs(baseImage(brdr:end-brdr,brdr:end-brdr) - inImage(brdr:end-brdr,brdr:end-brdr));
 imProd = sum(sum(imDiff ./ baseImage(brdr:end-brdr,brdr:end-brdr)));
-
-
-
