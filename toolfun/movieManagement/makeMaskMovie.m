@@ -14,23 +14,23 @@ function makeMaskMovie(movieData,varargin)
 %
 %   Possible Option Names:
 %
-%   'ChannelIndex' : Positive integer scalar or vector of length <=3
+%   'channels' : Positive integer scalar or vector of length <=3
 %   These numbers correspond to the indices of the channels to overlay
 %   masks from. If not input, user is asked.
 %
-%   'FigureHandle' - Positive integer figure handle to plot the images / masks on.
+%   'figureHandle' - Positive integer figure handle to plot the images / masks on.
 %
-%   'ShowBackground' - Logical. If true, and background masks have been
+%   'showBackground' - Logical. If true, and background masks have been
 %   created using createMovieBackgroundMasks.m, the background mask outline
 %   will also be overlain, but as a dotted line.
 %
-%   'FileName' - Character string specifying file name to save movie as.
+%   'fileName' - Character string specifying file name to save movie as.
 %   Default is "maskMovie"
 %
-%   'MakeAvi' - Logical determining whether the movie is saved as .avi.
+%   'makeAvi' - Logical determining whether the movie is saved as .avi.
 %   Default is false.
 %
-%   'MakeMov' - Logical determining whether or not movie is saved as .mov.
+%   'makeMov' - Logical determining whether or not movie is saved as .mov.
 %   Default is true.
 %
 % Output:
@@ -248,24 +248,24 @@ for i = 1:2:nArg
     
    switch argArray{i}                     
               
-       case 'ChannelIndex'
+       case 'channels'
            
            iChannels = argArray{i+1};
            
-       case 'FigureHandle'
+       case 'figureHandle'
            
            figHan = argArray{i+1};
    
-       case 'ShowBackground'
+       case 'showBackground'
            showBkgrnd = argArray{i+1};
            
-       case 'FileName'
+       case 'fileName'
            mvName = argArray{i+1};
            
-       case 'MakeAvi'
+       case 'makeAvi'
            makeAvi = argArray{i+1};
            
-       case 'MakeMov'
+       case 'makeMov'
            makeMov = argArray{i+1};
            
            
