@@ -11,6 +11,6 @@ function plotmask(mask,ctr,opt)
 % SEE ALSO plot
 
 sze = size(mask);
-[xi,yi] = bwExtractCrds(mask);
+[xi, yi] = ind2sub(sze, mask ~= 0);
 lh=plot(xi-1+ctr(1)-(sze(2)-1)/2,yi-1+ctr(2)-(sze(1)-1)/2,opt);
 set(lh,'MarkerSize',get(lh,'MarkerSize')/3);
