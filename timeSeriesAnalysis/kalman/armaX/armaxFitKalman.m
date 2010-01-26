@@ -45,12 +45,13 @@ function [fitResults,errFlag] = armaxFitKalman(trajOut,trajIn,modelParamOrOrder,
 %                          initial guesses of parameters picked randomly.
 %       minOpt           : Minimization option: 
 %                          -'ml' for Matlab local minimizer "fmincon";
-%                          -'nl' for Numerical Recipes local minimizer "amoeba"
-%                          -'tl' for Tomlab local minimizer "ucSolve";
+%                          -'nl' for Numerical Recipes local minimizer
+%                          "amoeba";
+%                          -'tl' for Tomlab local minimizer "ucSolve"; -- DON'T USE
 %                          -'tg' for Tomlab global minimizer "glbFast"' followed
 %                           by Tomlab local minimizer "ucSolve"; -- DON'T USE
 %                          -'nag' for NAG's local minimizer E04JAF. -- DON'T USE
-%                          Default: 'tl'.
+%                          Default: 'nl'.
 %
 %OUTPUT fitResults: Structure array containing fitting results. 
 %                   Will have the dimensions indicated in modelParamOrOrder. 
@@ -183,7 +184,7 @@ end
 
 repeat_def = 20; %times to repeat local minimization if initial guess not supplied
 
-minOpt_def = 'tl'; %minimization option
+minOpt_def = 'nl'; %minimization option
 
 %check models to be tested
 if nargin < 3 || isempty(modelParamOrOrder) %if no models to fit were input
@@ -269,8 +270,8 @@ else %if minimization option was input, check its value
 %         disp('--armaxFitKalman: "minOpt" should be either "ml", "tl", "tg" or "nag"!');
 %         errFlag = 1;
 %     end
-    if (~strcmp(minOpt,'ml') && ~strcmp(minOpt,'tl') && ~strcmp(minOpt, 'nl'))
-        disp('--armaxFitKalman: "minOpt" should be "ml", "tl" or "nl"!');
+    if (~strcmp(minOpt,'ml') && ~strcmp(minOpt, 'nl'))
+        disp('--armaxFitKalman: "minOpt" should be "ml" or "nl"!');
         errFlag = 1;
     end
 end

@@ -60,14 +60,14 @@ function [arParamK,maParamK,xParamK,arParamL,maParamL,xParamL,varCovMatL,...
 %                   Default: []
 %       minOpt    : Minimization option:
 %                   -'ml' for Matlab local minimizer "fmincon";
-%                   -'tl' for Tomlab local minimizer "ucSolve";
+%                   -'tl' for Tomlab local minimizer "ucSolve"; -- DON'T USE
 %                   -'nl' for Numerical Recipes local minimizer "amoeba";
 %
 %                   -'tg' for Tomlab global minimizer "glbFast"' followed
 %                     by Tomlab local minimizer "ucSolve"; -- DON'T USE
 %                   -'nag' for NAG's local minimizerE04JAF. -- DON'T USE
 %                  
-%                   Default: 'tl'
+%                   Default: 'nl'
 %
 %OUTPUT arParamK  : Estimated AR coefficients (1st row) and parameters related
 %                   to partial AR coefficients (2nd row) using likelihood maximization.
@@ -169,7 +169,7 @@ maParamP0_def  = [];
 xParam0_def    = [];
 % xLag_def       = [];
 constParam_def = [];
-minOpt_def     = 'tl';
+minOpt_def     = 'nl';
 
 %check "trajOut" and turn it into struct if necessary
 if ~isstruct(trajOut)
@@ -566,8 +566,12 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 model.maBIN = cast(maBIN, 'int32');
                 
                 
-                [topo, ma, status] = carmaFitModel(model);
-                
+                try
+                    [topo, ma, status] = carmaFitModel(model);
+                catch
+                    disp('ameoba crashed');
+                    status = 1;
+                end
                 
                 % Minor redundancy to fit case 'nl' to armaxCoefKalman
                 
