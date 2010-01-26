@@ -1,7 +1,10 @@
-% dirList calls 'dir' and returns visible directories.
-
-% Francois Aguet, 11/02/2009
 function d = dirList(dpath)
+% function d = dirList(dpath)
+%
+% dirList is the same as 'dir' but returns only visible directories.
+%
+% Francois Aguet, 11/02/2009
+
 
 d = dir(dpath);
 
