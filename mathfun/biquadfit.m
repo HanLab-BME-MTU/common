@@ -21,10 +21,10 @@ dimX1 = size(x1);
 dimX2 = size(x2);
 dimF  = size(f);
 
-if((dimX1(1) ~= dimF(1)) | dimX2(1) ~= dimF(1))
+if((dimX1(1) ~= dimF(1)) || dimX2(1) ~= dimF(1))
    error('dimensions of input matrices not equal');
 end;
-if((dimX1(2) ~= dimF(2)) | dimX2(2) ~= dimF(2))
+if((dimX1(2) ~= dimF(2)) || dimX2(2) ~= dimF(2))
    error('dimensions of input matrices not equal');
 end;
 
@@ -37,6 +37,6 @@ rhs = f(:);
 design = ones(size(rhs));
 design = cat(2,design, vX1, vX2, vX1.^2, vX2.^2, vX1.*vX2);
 
-[nObs,nParams]=size(design);
+nObs=size(design);
 [a,sa] = lscov(design,rhs,eye(nObs));
 return;

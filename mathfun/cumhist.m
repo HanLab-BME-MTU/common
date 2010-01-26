@@ -26,7 +26,7 @@ if nargin == 1
 end
 
 if min(size(y))==1, y = y(:); end
-if isstr(x) | isstr(y)
+if ischar(x) || ischar(y)
     error('Input arguments must be numeric.')
 end
 

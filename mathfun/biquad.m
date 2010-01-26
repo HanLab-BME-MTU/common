@@ -1,4 +1,4 @@
-function f = biquad(x1,x2,a);
+function f = biquad(x1,x2,a)
 %BIQUAD computes the values of a biquadratic function at x1,x2-coordinates
 % returns a matrix 
 % f(i,j) = a(1) + a(2)*x1(i,j) + a(3)*x2(i,j) + 
@@ -21,7 +21,7 @@ if(dima(1) < dima(2))
    a = permute(a,[2,1]);
 end;
 [nCoeffs,dummy] = size(a);
-if((nCoeffs~=6) | (dummy~=1))
+if((nCoeffs~=6) || (dummy~=1))
    error('coefficient vector does not contain 6 values');
 end;
 
