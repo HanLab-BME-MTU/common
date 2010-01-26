@@ -1,12 +1,12 @@
 function [p, G] = fitGaussian2D(data, p, mode)
 %
-% function [xp, yp, A, sigma, c] = fitGaussian2D_LS(data, p, mode)
+% function [xp, yp, A, sigma, c] = fitGaussian2D(data, p, mode)
 %
 % Input: data: 2-D image array
 %        p   : [xp, yp, A, sigma, c]
 %        mode: specifies which parameters to estimate
 %
-% Data is assumed to contain a single spot located at the intensity maximum
+% Data is assumed to contain a single spot
 % Fitting is performed using the Levenberg-Marquardt algorithm.
 %
 % Francois Aguet, last modified 01/24/2010
