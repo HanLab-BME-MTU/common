@@ -35,8 +35,12 @@ inputImage = varargin{1};
 greyMax    = varargin{2};
 kernelSize = varargin{3};
 
-% Calculate the variance image
-varImage = imVarianceImage (inputImage, kernelSize);
+% Calculate the normalized variance image
+[dummy, stdImage] = localAvgStd2D(inputImage, kernelSize);
+varImage = stdImage.^2;
+minSigmaSquare = min(varImage(:));
+maxSigmaSquare = max(varImage(:));
+varImage = (varImage - minSigmaSquare) / (maxSigmaSquare - minSigmaSquare);
 
 % Calculate the optimum threshold to segment this image
 [threshold, J] = imMinimumThreshold (varImage, greyMax);
@@ -47,7 +51,7 @@ binImage = ~im2bw (varImage, threshold);
 % Show only the background pixels in the original image (by multiplying with 
 % the binary image). And then fetch the index of these specific pixels
 newImage = inputImage .* binImage;
-backOnlyImage = newImage (find (binImage));
+backOnlyImage = newImage(binImage ~= 0);
 
 % Get the x and y coordinates of these pixels
 [x,y] = find (binImage);
