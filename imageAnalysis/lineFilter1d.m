@@ -30,8 +30,8 @@ end;
 x = -max(scales)*4:d:max(scales)*4;
 xhLength = (length(x)-1)/2;
 
-for(i = 1:length(scales))
-   if((type == 1) | (type == 2))
+for i = 1:length(scales)
+   if((type == 1) || (type == 2))
       mb = weight(1)*dogauss1d(x-scales(i),scales(i));
       mf = weight(3)*dogauss1d(x+scales(i),scales(i));
       rb = conv(data,mb);
@@ -56,7 +56,7 @@ for(i = 1:length(scales))
       crcC = clipNegative(rcC);
       % compute the cubic root
       aux = crcC.*crbC.*crfC;
-      for(j = 1:length(aux))
+      for j = 1:length(aux)
          if(aux(j)>0)
             resp(i,j)=scales(i)*exp(log(aux(j))/3);
          else
@@ -65,3 +65,14 @@ for(i = 1:length(scales))
       end;
    end;
 end;
+
+
+function y = dogauss1d(x,s)
+%DOGAUSS1D returns the 1st derivative of the gaussian bell curve for the values in x
+%
+% SYNOPSIS y = dogauss1d(x,s)
+%
+%   where x = 1/sqrt(s*pi) * (-x/s^2) * exp(-1/2 * (x/s)^2);
+% 
+y = exp(-1/2 * (x/s).^2) ./ (sqrt(2*pi)*s);
+y = -y.*x/(s^2);
