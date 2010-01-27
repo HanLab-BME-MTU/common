@@ -1,28 +1,40 @@
-function [out, G] = Gauss2D(image, sigma, borderCondition)
-% Gauss2D :	filters an image with a 2-D Gaussian mask
+function [out,M]=Gauss2D(x,sigma,symmetric)
+% Gauss2D	apply a 2 dimensional gauss filter
 %
-%    [out, G] = Gauss2D(image, sigma, borderCondition);
+%    out = Gauss2D(x,sigma);
 %
-%    INPUT: image           : 2-D input array
-%           sigma           : standard deviation of the Gaussian
-%           borderCondition : input for 'padarrayXT'. Default: 'symmetric'
+%    INPUT: x      image
+%           sigma  of gauss filter
+%           symmetric 1 to use imfilter with the option 'symmetric', 0
+%           otherwise. Optional. Default: 0.
 %
-%    OUTPUT: out : filtered image
-%            G   : Gaussian mask
+%    OUTPUT: out   filtered image
+%            M     gaussian mask
 %
-% Francois Aguet, added 01/21/2010
 
-if nargin < 3 || isempty(borderCondition)
-    borderCondition = 'symmetric';
+% bug fix: AP - 10.07.02
+
+if nargin < 3 || isempty(symmetric)
+    symmetric = 0;
 end
 
-w = ceil(3*sigma); % cutoff radius of the gaussian kernel
-x = -w:w;
-g = exp(-x.^2/(2*sigma^2));
-g = g/sum(g);
-
-out = conv2(g', g, padarrayXT(image, [w w], borderCondition), 'valid');
-
-if (nargout>1)
-    G = g'*g;
+R = ceil(3*sigma);   % cutoff radius of the gaussian kernel
+M = zeros(2*R+1); % KJ
+for i = -R:R,
+   for j = -R:R,
+      M(i+R+1,j+R+1) = exp(-(i*i+j*j)/2/sigma/sigma);
+   end
 end
+M = M/sum(M(:));   % normalize the gaussian mask so that the sum is
+                   % equal to 1
+                   
+% more correct version - and probably a bit faster
+% M = GaussMask2D(sigma,2*R+1,[],1);
+
+% Convolute matrices
+if symmetric
+    out = imfilter(x,M,'symmetric');
+else
+    out = filter2(M,x);
+end
+
