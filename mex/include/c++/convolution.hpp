@@ -13,10 +13,10 @@
 //////////////////////////////
 
 template <typename T, int N, int M>
-inline void convolve(const image<T> & src,
+inline void convolve(const image<2, T> & src,
 		     const gaussian_derivative_1d<N> & win1,
 		     const gaussian_derivative_1d<M> & win2,
-		     image<double> & dst,
+		     image<2, double> & dst,
 		     bool mirror = false)
 {
   assert(dst.width() == src.width() && dst.height() == src.height());
@@ -31,7 +31,7 @@ inline void convolve(const image<T> & src,
   else
     src.border_replicate(new_margin);
 
-  image<double> tmp(src.width(), src.height(), src.margin());
+  image<2, double> tmp(src.size(), src.margin());
 
   double sum;
 
@@ -66,9 +66,9 @@ inline void convolve(const image<T> & src,
 //////////////////////////////////
 
 template <typename T>
-inline void convolve(const image<T> & src,
+inline void convolve(const image<2, T> & src,
 		     const non_separable_filter_2d & win,
-		     image<double> & dst,
+		     image<2, double> & dst,
 		     bool mirror = false)
 {
   assert(dst.width() == src.width() && dst.height() == src.height());

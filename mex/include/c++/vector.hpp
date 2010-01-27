@@ -1,6 +1,7 @@
 #ifndef VECTOR_HPP
 # define VECTOR_HPP
 
+# include <limits>
 # include <cmath>
 # include <cassert>
 # include <iostream>
