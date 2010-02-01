@@ -1,4 +1,4 @@
-function movieData = validateMovieMasks(movieData,varargin)
+function movieData = autoVerifyMovieSegmentation(movieData,varargin)
 
 % movieData = validateMovieMasks(movieData)
 %

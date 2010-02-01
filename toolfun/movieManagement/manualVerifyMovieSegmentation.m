@@ -1,9 +1,14 @@
 function movieData = manualVerifyMovieSegmentation(movieData,iChannels)
-
+%MANUALVERIFYMOVIESEGMENTATION allows the user to judge the mask quality by viewing a movie overlay
+%
+%
 % movieData = manualValidateMovieMasks(movieData,iChannels)
 % 
-% This function shows several plots and movies which allow
-% the user to manually verify that the segmentation is correct/as desired.
+% This function shows a movie overlaying the mask outline on the
+% fluorescence in every frame. The user can then subjectively decide
+% whether the masks are of "Good", "Mediocre" or "Bad" quality, and
+% classify the movie accordingly.
+%
 % 
 % Input:
 % 
@@ -15,8 +20,8 @@ function movieData = manualVerifyMovieSegmentation(movieData,iChannels)
 %
 % Output:
 %
-%   movieData - The updated movieDat with the user's evluation stored in it
-%               in the field movieData.classification.verify
+%   movieData - The updated movieData with the user's evluation stored in it
+%               in the field movieData.classification.
 %
 % Hunter Elliott, 10/2009
 %
@@ -44,7 +49,7 @@ end
 %Check that the mask movie has been made
 if ~checkMovieMaskMovie(movieData)
     disp('Mask movie has not been made yet, making movie...')
-    movieData = makeMaskMovie(movieData,iChannels);    
+    movieData = makeMaskMovie(movieData,'ChannelIndex',iChannels);    
     
     %Check that it succeeded
     if ~checkMovieMaskMovie(movieData)
@@ -53,7 +58,7 @@ if ~checkMovieMaskMovie(movieData)
 end 
 
 %Compare the date/time on the segmentation and the mask movie
-if datenum(movieData.classification.dateTime) > datenum(movieData.classification.movie.dateTime)
+if datenum(movieData.masks.dateTime) > datenum(movieData.masks.movie.dateTime)
     bPressed = questdlg('The segmentation is newer than the mask movie!',...
         'User Mask Validation','Re-Make Movie','Ignore','Abort','Abort');
     
@@ -61,7 +66,7 @@ if datenum(movieData.classification.dateTime) > datenum(movieData.classification
         
         case 'Re-Make Movie'
             
-            movieData = makeMaskMovie(movieData,iChannels);
+            movieData = makeMaskMovie(movieData,'ChannelIndex',iChannels);
             
         case 'Abort'
             
@@ -78,11 +83,11 @@ mb=msgbox('Please view the mask movie, and then close the viewing application wh
 uiwait(mb);
 
 if ispc
-    fStat = system([movieData.analysisDirectory filesep movieData.classification.movie.fileName]);        
+    fStat = system([movieData.analysisDirectory filesep movieData.masks.movie.fileName]);        
     
 elseif isunix
     cd(movieData.analysisDirectory)
-    fStat = system(['totem '  movieData.classification.movie.fileName]); %not ideal, but what else?
+    fStat = system(['totem '  movieData.masks.movie.fileName]); %not ideal, but what else?
 end
 
 if fStat ~= 0
@@ -90,15 +95,13 @@ if fStat ~= 0
 end
 
 %Ask the user how the masks looked
-bPressed = questdlg('Were the masks correct?','User Mask Validation','Yes','No','No');
+bPressed = questdlg('How did the masks look?','User Mask Validation','Good','Mediocre','Bad','Bad');
 
-if strcmp(bPressed,'Yes')
-    movieData.classification.manualValidateMasks = {'Good'};    
-else
-    movieData.classification.manualValidateMasks = {'Bad'};
+if ~isempty(bPressed) %As long as the user didn't click cancel, 
+    %store the classification in the moviedata.    
+    movieData.classification.manualValidateMasks = bPressed;          
 end
-
-
+    
 
 %Save the movieData
 updateMovieData(movieData);

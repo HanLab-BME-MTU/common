@@ -1,4 +1,6 @@
 function movieData = manualClassifyMovie(movieData,className,categories,single)
+%MANUALCLASSIFYMOVIE allows the user to classify a movie by viewing images from it
+%
 % movieData = manualClassifyMovie(movieData,className,categories,single)
 % 
 % This displays several frames from a movie and then allows the user to

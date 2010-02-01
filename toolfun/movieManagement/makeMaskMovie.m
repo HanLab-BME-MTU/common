@@ -1,4 +1,4 @@
-function makeMaskMovie(movieData,varargin)
+function movieData = makeMaskMovie(movieData,varargin)
 
 % movieData = makeMaskMovie(movieData)
 % 
@@ -14,29 +14,32 @@ function makeMaskMovie(movieData,varargin)
 %
 %   Possible Option Names:
 %
-%   'channels' : Positive integer scalar or vector of length <=3
+%   'ChannelIndex' : Positive integer scalar or vector of length <=3
 %   These numbers correspond to the indices of the channels to overlay
 %   masks from. If not input, user is asked.
 %
-%   'figureHandle' - Positive integer figure handle to plot the images / masks on.
+%   'FigureHandle' - Positive integer figure handle to plot the images / masks on.
 %
-%   'showBackground' - Logical. If true, and background masks have been
+%   'ShowBackground' - Logical. If true, and background masks have been
 %   created using createMovieBackgroundMasks.m, the background mask outline
 %   will also be overlain, but as a dotted line.
 %
-%   'fileName' - Character string specifying file name to save movie as.
+%   'FileName' - Character string specifying file name to save movie as.
 %   Default is "maskMovie"
 %
-%   'makeAvi' - Logical determining whether the movie is saved as .avi.
+%   'MakeAvi' - Logical determining whether the movie is saved as .avi.
 %   Default is false.
 %
-%   'makeMov' - Logical determining whether or not movie is saved as .mov.
+%   'MakeMov' - Logical determining whether or not movie is saved as .mov.
 %   Default is true.
 %
 % Output:
 %
-% The resulting movie will be saved in the analysis directory specified in
-% the movieData.
+%   movieData - The movieData with the movie's name and location logged in
+%   it.
+%
+%   The resulting movie will be saved in the analysis directory specified in
+%   the movieData.
 % 
 % Hunter Elliott, 2/2009
 %
@@ -121,11 +124,12 @@ if showBkgrnd
     bkgrndMaskDir = cell(nChanMov,1);
     bkgrndMaskFileNames = cell(nChanMov,1);
     for j = 1:nChanMov        
-        bkgrndMaskDir{j} = [movieData.FRETprocessing.backgroundMasks.directory filesep ...
-                            movieData.FRETprocessing.backgroundMasks.channelDirectory{iChannels(j)}];
+        bkgrndMaskDir{j} = [movieData.backgroundMasks.directory filesep ...
+                            movieData.backgroundMasks.channelDirectory{iChannels(j)}];
         bkgrndMaskFileNames{j} = dir([bkgrndMaskDir{j} filesep '*.tif']);        
     end
 end
+
 %Indicate that the movie-making was started
 movieData.masks.movie.status = 0;
 
@@ -200,23 +204,25 @@ end
 
 if makeMov
     MakeQTMovie('finish')
+    if ~makeAvi %Only specify the .avi extension if both are made
+        movieData.masks.movie.fileName = [mvName '.mov'];
+    end
 end
 
 if makeAvi
     %Make the movie, save it to the movie directory
     if isunix %Compression is not supported under unix!
-        movie2avi(maskMovie,[movieData.analysisDirectory  filesep mvName '.avi']);
+        movie2avi(maskMovie,[movieData.analysisDirectory  filesep mvName '.avi']);        
     else
         movie2avi(maskMovie,[movieData.analysisDirectory  filesep mvName '.avi'],'compression','Cinepak')    
     end
+    movieData.masks.movie.fileName = [mvName '.avi'];
 end
 
 
 %Modify and save the movieData
-movieData.masks.movie.fileName = mvName;
 movieData.masks.movie.dateTime = datestr(now);
 movieData.masks.movie.status = 1;
-
 updateMovieData(movieData);
 
 function [iChannels,figHan,showBkgrnd,mvName,makeAvi,makeMov] = parseInput(argArray)
@@ -248,24 +254,24 @@ for i = 1:2:nArg
     
    switch argArray{i}                     
               
-       case 'channels'
+       case 'ChannelIndex'
            
            iChannels = argArray{i+1};
            
-       case 'figureHandle'
+       case 'FigureHandle'
            
            figHan = argArray{i+1};
    
-       case 'showBackground'
+       case 'ShowBackground'
            showBkgrnd = argArray{i+1};
            
-       case 'fileName'
+       case 'FileName'
            mvName = argArray{i+1};
            
-       case 'makeAvi'
+       case 'MakeAvi'
            makeAvi = argArray{i+1};
            
-       case 'makeMov'
+       case 'MakeMov'
            makeMov = argArray{i+1};
            
            
