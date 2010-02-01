@@ -1,12 +1,16 @@
-function varargout = thresholdFluorescenceImage(imageIn,showPlots)
+function thresholdValue = thresholdFluorescenceImage(imageIn,showPlots)
 
 %
-% mask = thresholdFluorescenceImage(imageIn)
+% threseholdValue = thresholdFluorescenceImage(imageIn)
 % 
-% [mask,thesholdValue] = thresholdFluorescenceImage(imageIn,showPlots)
+% thesholdValue = thresholdFluorescenceImage(imageIn,showPlots)
 % 
-% This function thresholds the input fluorescence image by automatically
-% selecting a threshold based on the intensity histogram.
+% This function selects a threshold for the input fluorescence image by
+% analyzing the image's intensity distribution. This requires good signal-
+% to-noise, and a significant amount of background in the image. The
+% threshold is selected by first finding the lowest intensity maximum in the
+% image histogram (the background). Then the first minimum in the histogram
+% of higher intensity than this peak is selected as the threshold.
 % 
 % Input:
 % 
@@ -20,8 +24,6 @@ function varargout = thresholdFluorescenceImage(imageIn,showPlots)
 % 
 % Output:
 % 
-%   mask - The logical array which is true at values in imageIn greater
-%   than the selected threshold.
 % 
 %   thresholdValue - The intensity value selected for thresholding.
 %
@@ -83,12 +85,4 @@ if showPlots
         contour(imageMask,'w')
         colormap hot    
     end
-end
-
-
-if nargout == 2;
-    varargout{1} = imageMask;
-    varargout{2} = thresholdValue;
-else
-    varargout = {imageMask};
 end
