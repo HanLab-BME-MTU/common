@@ -1,4 +1,4 @@
-function movieData = manualValidateMovieMasks(movieData,iChannels)
+function movieData = manualVerifyMovieSegmentation(movieData,iChannels)
 
 % movieData = manualValidateMovieMasks(movieData,iChannels)
 % 
@@ -16,7 +16,7 @@ function movieData = manualValidateMovieMasks(movieData,iChannels)
 % Output:
 %
 %   movieData - The updated movieDat with the user's evluation stored in it
-%               in the field movieData.masks.verify
+%               in the field movieData.classification.verify
 %
 % Hunter Elliott, 10/2009
 %
@@ -37,9 +37,6 @@ if ~checkMovieMasks(movieData,iChannels)
 end
 
 
-%Indicate that user verification was started
-movieData.masks.manualValidate.manual.status = 0;
-
 
 %% ------- User verification of Segmentation via Mask Movie ------ %%
 
@@ -56,7 +53,7 @@ if ~checkMovieMaskMovie(movieData)
 end 
 
 %Compare the date/time on the segmentation and the mask movie
-if datenum(movieData.masks.dateTime) > datenum(movieData.masks.movie.dateTime)
+if datenum(movieData.classification.dateTime) > datenum(movieData.classification.movie.dateTime)
     bPressed = questdlg('The segmentation is newer than the mask movie!',...
         'User Mask Validation','Re-Make Movie','Ignore','Abort','Abort');
     
@@ -81,13 +78,11 @@ mb=msgbox('Please view the mask movie, and then close the viewing application wh
 uiwait(mb);
 
 if ispc
-    fStat = system([movieData.analysisDirectory filesep movieData.masks.movie.fileName]);        
+    fStat = system([movieData.analysisDirectory filesep movieData.classification.movie.fileName]);        
     
 elseif isunix
     cd(movieData.analysisDirectory)
-    fStat = system(['totem '  movieData.masks.movie.fileName]); %not ideal, but what else?
-else
-    error('This function does not support this operating system! Only linux and windows are supported!')
+    fStat = system(['totem '  movieData.classification.movie.fileName]); %not ideal, but what else?
 end
 
 if fStat ~= 0
@@ -98,15 +93,13 @@ end
 bPressed = questdlg('Were the masks correct?','User Mask Validation','Yes','No','No');
 
 if strcmp(bPressed,'Yes')
-    movieData.masks.manualValidate.manual.status = 1;    
+    movieData.classification.manualValidateMasks = {'Good'};    
 else
-    movieData.masks.manualValidate.manual.status = 0;    
+    movieData.classification.manualValidateMasks = {'Bad'};
 end
 
-movieData.masks.manualValidate.manual.dateTime = datestr(now);
+
 
 %Save the movieData
 updateMovieData(movieData);
 
-
-% create & Show other validation plots!!!?? TEMP
