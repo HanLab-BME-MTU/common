@@ -1,6 +1,7 @@
 #include <mex.h>
 
 #include <image.hpp>
+#include <mx_wrapper.hpp>
 #include <compute_nms.hpp>
 #include <steerable_filtering.hpp>
 
@@ -37,9 +38,11 @@ void mexFunction(int nlhs, mxArray *plhs[],
   // Get input parameters //
   //////////////////////////
 
-  const mwSize* size = mxGetDimensions(prhs[0]);
+  int size[2];
+  sizeWrapper<2>::convert(mxGetDimensions(prhs[0]), size);
   double* ptr = mxGetPr(prhs[0]);
-  image<double> ima(ptr, size[1], size[0]);
+  image<2, double> ima(size);
+  ima.fill(ptr);
 
   int str_length = mxGetNumberOfElements(prhs[1]);
 
@@ -76,8 +79,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
   // Compute filtering //
   ///////////////////////
   
-  image<double> res(ima.width(), ima.height(), 2); // for nms safety
-  image<double> theta(ima.width(), ima.height());
+  image<2, double> res(ima.size(), 2); // for nms safety
+  image<2, double> theta(ima.size());
 
   switch (method_id)
     {
@@ -90,8 +93,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
   // Allocate output arrays //
   ////////////////////////////
 
-  if (nlhs > 0) res.image2mxArray(plhs[0]);
-  if (nlhs > 1) theta.image2mxArray(plhs[1]);
+  if (nlhs > 0) image2mxArray(res, plhs[0]);
+  if (nlhs > 1) image2mxArray(theta, plhs[1]);
 
   if (nlhs > 2)
     {
@@ -99,10 +102,10 @@ void mexFunction(int nlhs, mxArray *plhs[],
       // Compute non-maximal suppression //
       /////////////////////////////////////
 
-      image<double> nms(ima.width(), ima.height());
+      image<2, double> nms(ima.size());
   
       compute_nms(res, theta, nms);
 
-      nms.image2mxArray(plhs[2]);
+      image2mxArray(nms, plhs[2]);
     }
 }

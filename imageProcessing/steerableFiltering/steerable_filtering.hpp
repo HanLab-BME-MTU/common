@@ -9,14 +9,14 @@
 # include <non_separable_filter_2d.hpp>
 # include <solver.hpp>
 
-inline void snd_gaussian_filtering(const image<double> & ima,
+inline void snd_gaussian_filtering(const image<2, double> & ima,
 				   double sigma,
-				   image<double> & res,
-				   image<double> & theta)
+				   image<2, double> & res,
+				   image<2, double> & theta)
 {
-  image<double> fyy0(ima.width(), ima.height());
-  image<double> fyy60(ima.width(), ima.height());
-  image<double> fyy120(ima.width(), ima.height());
+  image<2, double> fyy0(ima.size());
+  image<2, double> fyy60(ima.size());
+  image<2, double> fyy120(ima.size());
 
   //////////////////////////////////////////////
   // Compute f * gyy0 (separable convolution) //
@@ -119,13 +119,13 @@ inline void snd_gaussian_filtering(const image<double> & ima,
       }
 }
 
-inline void unser_m1_filtering(const image<double> & ima,
+inline void unser_m1_filtering(const image<2, double> & ima,
 			       double sigma,
-			       image<double> & res,
-			       image<double> & theta)
+			       image<2, double> & res,
+			       image<2, double> & theta)
 {
-  image<double> fx(ima.width(), ima.height());
-  image<double> fy(ima.width(), ima.height());
+  image<2, double> fx(ima.size());
+  image<2, double> fy(ima.size());
 
   gaussian g0(sigma);
   gaussian_derivative_1d<1> g1(sigma);
@@ -169,14 +169,14 @@ inline void unser_m1_filtering(const image<double> & ima,
       }
 }
 
-inline void unser_m2_filtering(const image<double> & ima,
+inline void unser_m2_filtering(const image<2, double> & ima,
 			       double sigma,
-			       image<double> & res,
-			       image<double> & theta)
+			       image<2, double> & res,
+			       image<2, double> & theta)
 {
-  image<double> fxx(ima.width(), ima.height());
-  image<double> fxy(ima.width(), ima.height());
-  image<double> fyy(ima.width(), ima.height());
+  image<2, double> fxx(ima.size());
+  image<2, double> fxy(ima.size());
+  image<2, double> fyy(ima.size());
 
   gaussian g0(sigma);
   gaussian_derivative_1d<1> g1(sigma);

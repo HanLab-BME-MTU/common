@@ -7,9 +7,9 @@
 # include <image.hpp>
 
 template <typename T>
-void compute_nms(const image<T> & src,
-		 const image<double> & theta,
-		 image<double> & dst)
+void compute_nms(const image<2, T> & src,
+		 const image<2, double> & theta,
+		 image<2, double> & dst)
 {
   double t, ct, st, g;
 

@@ -3,7 +3,7 @@ function y = gauss1d(x,s)
 %
 % SYNOPSIS y = gauss1d(x,s)
 %
-%   where x = 1/sqrt(s*pi) * exp(-1/2 * (x/s)^2);
+%   where y = 1/sqrt(s*pi) * exp(-1/2 * (x/s)^2);
 
 y = exp(-1/2 * (x/s).^2);
 y = y ./(sqrt(2*pi)*s);
