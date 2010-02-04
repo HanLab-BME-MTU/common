@@ -11,31 +11,34 @@ function movieData = autoVerifyMovieSegmentation(movieData,varargin)
 % 
 % Possible Options:
 % 
-% 'channels' - Indices of channels to check masks for. Positive integer
+% 'ChannelIndex' - Indices of channels to check masks for. Positive integer
 % scalar or vector. Optional. If not specified, all channels which have
 % masks will be checked.
 %
-% 'maxAreaDiffTime' - Maximum allowed fractional change in mask area between
+% 'MaxAreaDiffTime' - Maximum allowed fractional change in mask area between
 % frames. That is, if  
 %     abs(change in mask area from frame n to n+1)/(mask area in frame n) 
 % is greater than this value for any two consecutive frames, the masks will
-% fail validation. Default is .1
+% fail validation. Default is .15
 %
-% 'maxAreaDiffChannel' - Maximum allowed fractional difference in mask areas
-% between channels on any given frame. Optional. Default is .25
+% 'MaxAreaDiffChannel' - Maximum allowed fractional difference in mask areas
+% between channels on any given frame. Optional. Default is .15
 %
-% 'batchMode' - If true, all graphical output will be suppressed (including
+% 'BatchMode' - If true, all graphical output will be suppressed (including
 % progress bars, figures etc.). Optional. Default is false;
 %
 %
 %
 % Output:
 %
-%   The validation results will be stored in the movieData field "masks" in
-%   a sub-field called "validation"
+%   The validation results will be stored in the movieData field
+%   "classification" in a sub-field called "autoVerifyMasks" 
 %
 % Hunter Elliott, 11/2009
 %
+%% ----- Parameters ---- %%
+
+fileName = 'mask_validation_stats.mat'; %File name for saving mask statistics and detected bad frames.
 
 %% --------- Input ------------ %%
 
@@ -57,11 +60,11 @@ if isempty(iChannels) || ~checkMovieMasks(movieData,iChannels)
 end
 
 if isempty(maxDAreaDt)
-    maxDAreaDt = .10;
+    maxDAreaDt = .15;
 end
 
 if isempty(maxDAreaDc)
-    maxDAreaDc = .25;
+    maxDAreaDc = .15;
 end
 
 if isempty(batchMode)
@@ -90,7 +93,6 @@ end
 
 nImages = movieData.nImages(iChannels(1));
 
-movieData.masks.validation.status = 0;
 
 maskAreas = zeros(nImages,nChan);
 deltaMaskAreaT = zeros(nImages,nChan); %Area difference between frames
@@ -149,7 +151,8 @@ iBadFrames = sort(unique(iBadFrames));
 if isempty(iBadFrames)
     disp('All masks passed validation!')
 else
-    disp('Problems found with masks! Check movieData.masks.validation for bad frame numbers.')
+    disp(['Problems found with masks! Check the file ' fileName ...
+        ' in movie analysis directory for bad frames.'])
 end
 
 
@@ -187,16 +190,18 @@ plot(deltaMaskAreaC)
 
 
 if isempty(iBadFrames)
-    movieData.masks.validation.status = 1;
+    movieData.classification.autoVerifyMasks = {'Good'};
 else
-    movieData.masks.validation.iBadFrames = iBadFrames;
+    movieData.classification.autoVerifyMasks = {'Bad'};    
 end
 
-movieData.masks.validation.iChannels = iChannels;
-movieData.masks.validation.dateTime = datestr(now);
-movieData.masks.validation.parameters.maxDeltaArea_Time = maxDAreaDt;
-movieData.masks.validation.parameters.maxDeltaArea_Chan = maxDAreaDc;
+dateTime = datestr(now); %#ok<NASGU>
 
+%Save the statistics/bad frames to file.
+save([movieData.analysisDirectory filesep fileName],'iBadFrames','iChannels',...
+    'dateTime','maxDAreaDt','maxDAreaDc','maskAreas','deltaMaskAreaT','deltaMaskAreaC');
+
+%Save the figure also
 hgsave(figHan,[movieData.analysisDirectory filesep 'mask_validation_figure.fig']);
 
 updateMovieData(movieData)
@@ -232,16 +237,16 @@ for i = 1:2:nArg
     
    switch argArray{i}                     
               
-       case 'channels'           
+       case 'ChannelIndex'           
            iChannels = argArray{i+1};
            
-       case 'maxAreaDiffTime'
+       case 'MaxAreaDiffTime'
            maxDAreaDt = argArray{i+1};
            
-       case 'maxAreaDiffChannel'
+       case 'MaxAreaDiffChannel'
            maxDAreaDc = argArray{i+1};
            
-       case 'batchMode'
+       case 'BatchMode'
            batchMode = argArray{i+1};
            
        otherwise

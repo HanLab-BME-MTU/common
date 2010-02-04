@@ -21,7 +21,7 @@ function movieData = manualVerifyMovieSegmentation(movieData,iChannels)
 % Output:
 %
 %   movieData - The updated movieData with the user's evluation stored in it
-%               in the field movieData.classification.
+%               in the field movieData.classification.manualVerifyMasks
 %
 % Hunter Elliott, 10/2009
 %
@@ -99,7 +99,7 @@ bPressed = questdlg('How did the masks look?','User Mask Validation','Good','Med
 
 if ~isempty(bPressed) %As long as the user didn't click cancel, 
     %store the classification in the moviedata.    
-    movieData.classification.manualValidateMasks = bPressed;          
+    movieData.classification.manualVerifyMasks = {bPressed};          
 end
     
 

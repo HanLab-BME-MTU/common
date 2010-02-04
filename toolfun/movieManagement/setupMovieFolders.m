@@ -1,4 +1,4 @@
-function setupMovieFolders(projectFolder)
+function setupMovieImageFolders(projectFolder)
 
 %Description:
 %A quick and dirty script to set up movie data folders assuming it is a CFP

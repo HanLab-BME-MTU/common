@@ -1,6 +1,6 @@
 function setupProjectMovieData(projectFolder,pixSize,timeInterval,forceReplace)
-
-
+%SETUPPROJECTMOVIEDATA sets up the movieData for a collection of movies with the same properties.
+%
 % setupProjectMovieData(projectFolder,pixSize,timeInterval,forceReplace)
 %
 % This function takes movie folders (which must be set up as
