@@ -35,7 +35,7 @@ else
    return;
 end;
 
-[fpath,fname,fno,fext]=getfilenamebody(firstfilename);
+[fpath,fname,fno,fext]=getFilenameBody(firstfilename);
 
 if(isempty(fname) | isempty(fno) | isempty(fext) )
    error('invalid first filename specified');

@@ -1,5 +1,5 @@
 function [outputFileList]=getFileStackNames(firstfilename)
-% getFileStackNames returns a cell array containing all file names (with path) belonging to a stack
+% getFileStackNames returns a cell array containing all file names (with path) belonging to a stack.
 %
 % SYNOPSIS [outputFileList]=getFileStackNames(firstFileName)
 %
@@ -8,14 +8,17 @@ function [outputFileList]=getFileStackNames(firstfilename)
 %                    the actual filename must consist of 
 %                    - alphanumeric body
 %                    - numeric number
-%                    - extension
+%                    - extension 
+%                    - tolarates missing files e.g. 1,2,5,..
 %
 % OUTPUT   outputFileList: names of all files belonging to the stack
-%                          defined by firstFileName
+%                          defined by firstFileName. The output is sorted
+%                          with respect to the file number.
 %
 % DEPENDENCES
 %
 % Aaron Ponti, October 4th, 2002
+% modified by Achim Besser, February 2nd, 2010
 
 oldDir = [];
 
@@ -48,34 +51,29 @@ iEntry = 1;
 fileList = {};
 for i = 1:length(dirListing)
    if(~dirListing(i).isdir)
-      fileList(iEntry) = lower({dirListing(i).name});
+      fileList(iEntry) = {dirListing(i).name};
       iEntry = iEntry + 1;
    end
 end
 
 nEntries = 0;
-imIndx = str2double(fno);
-l_fno=length(num2str(fno));
-searchName= [fname,num2str(imIndx,['%.' num2str(l_fno) 'd']),fext];
-outputFileList(1)={strcat(fpath,filesep,searchName)};
 
-nEntries=1;
+%Identify all relevant files and store them in unsortedOutputFileList:
+for fileIndex=1:length(fileList)
+    [~,currentfname,currentfno,currentfext]=getFilenameBody(fileList{fileIndex});
+    %Here strcmpi is case insesitive:
+    if strcmpi(currentfname,fname) && str2double(currentfno)>=str2double(fno) && strcmpi(currentfext,fext)
+        nEntries=nEntries+1;
+        unsortedOutputFileList(nEntries)={strcat(fpath,filesep,fileList{fileIndex})};
+        frameNoList(nEntries)=str2double(currentfno);
+    end
+end
 
-if(~isempty(fileList))
-   while( ~isempty(strmatch(lower(searchName),fileList)))
-      nEntries = nEntries + 1;
-      index(nEntries) = imIndx;
-      imIndx = imIndx + 1;
-      searchName= [fname,num2str(imIndx,['%.' num2str(l_fno) 'd']),fext];
-      outputFileList(nEntries)={strcat(fpath,filesep,searchName)};
-   end;
-end;
-
-% Removing last file name, which does not exist 
-outputFileList=outputFileList(1,1:length(outputFileList)-1);
+%The outputFileList might be unsorted, this is fixed in the following:
+[~,newIndx] = sort(frameNoList);
+outputFileList=unsortedOutputFileList(newIndx);
 
 % change back to original directory
 if(~isempty(oldDir))
    cd(oldDir);
 end;
-
