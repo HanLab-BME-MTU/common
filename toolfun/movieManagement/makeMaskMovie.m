@@ -183,12 +183,12 @@ for j = 1:nImages
     
     %Show the channel names and corresponding colors
     for k = 1:nChanMov
-        text(max(ylim) - 20,20*k,movieData.channelDirectory{k},'color',mColors{k},'FontSize',16);
+        text(max(ylim) - 20,20*k,movieData.channelDirectory{iChannels(k)},'color',mColors{k},'FontSize',16);
     end
 
             
     if makeAvi
-        maskMovie(j) = getframe(figHan); %#ok<AGROW> Pre-allocation not needed with movies.
+        maskMovie(j) = getframe(figHan); %#ok<AGROW> Pre-allocation not needed with movies. I'm serious.
     end    
            
     if makeMov
@@ -196,9 +196,9 @@ for j = 1:nImages
         if j == 1
             MakeQTMovie('start',[movieData.analysisDirectory filesep mvName '.mov'])
             MakeQTMovie('quality',.85)
-        else
-            MakeQTMovie('addfigure')
         end
+        MakeQTMovie('addfigure')
+        
     end
 end
 
