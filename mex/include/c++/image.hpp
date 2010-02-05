@@ -20,7 +20,7 @@ namespace detail
     int margin() const { return margin_; }
 
     template <typename U>
-    const T& operator[](const vector<2,U> & p) const
+    const T operator[](const vector<2,U> & p) const
     {
       return (*this)(p[0], p[1]);
     }
@@ -31,7 +31,7 @@ namespace detail
       return (*this)(p[0], p[1]);
     }
 
-    const T& operator()(int x, int y) const
+    const T operator()(int x, int y) const
     {
       assert(contains_large(x, y));
 
@@ -62,6 +62,11 @@ namespace detail
     
       return (dx * (v11 * dy - v10 * (dy - 1.0)) -
 	      (dx - 1.0) * (v01 * dy - v00 * (dy - 1.0)));
+    }
+
+    bool contains(const vector<2, int> & p) const
+    {
+      return contains(p[0], p[1]);
     }
 
     bool contains(int x, int y) const
@@ -249,7 +254,7 @@ namespace detail
     int margin() const { return margin_; }
 
     template <typename U>
-    const T& operator[](const vector<3,U> & p) const
+    const T operator[](const vector<3,U> & p) const
     {
       return (*this)(p[0], p[1], p[2]);
     }
@@ -303,6 +308,11 @@ namespace detail
       double w2 = j1 * (1 - dy) + j2 * dy;
 
       return w1 * (1 - dx) + w2 * dx;
+    }
+
+    bool contains(const vector<3, int> & p) const
+    {
+      return contains(p[0], p[1], p[2]);
     }
 
     bool contains(int x, int y, int z) const

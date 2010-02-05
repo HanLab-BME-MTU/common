@@ -156,11 +156,11 @@ vector<n,T> operator*(const vector<n,T> & lhs, const T & rhs)
   return tmp;
 }
 
-template <unsigned n, typename T>
+template <unsigned n, typename T, typename U>
 inline
-vector<n,T> operator/(const vector<n,T> & lhs, const T & rhs)
+vector<n,U> operator/(const vector<n,T> & lhs, const U & rhs)
 {
-  vector<n,T> tmp;
+  vector<n,U> tmp;
   for (unsigned i = 0; i < n; ++i)
     tmp[i] = lhs[i] / rhs;
   return tmp;
