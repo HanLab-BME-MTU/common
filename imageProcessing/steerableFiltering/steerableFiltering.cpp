@@ -57,15 +57,16 @@ void mexFunction(int nlhs, mxArray *plhs[],
   const std::string valid_method_names[] = {
     "2ndGaussian",
     "UnserM1",
-    "UnserM2"
+    "UnserM2",
+    "UnserM4"
   };
 
   int method_id = 0;
 
-  while (method_id < 3 && method_name != valid_method_names[method_id])
+  while (method_id < 4 && method_name != valid_method_names[method_id])
     ++method_id;
 
-  if (method_id == 3)
+  if (method_id == 4)
     mexErrMsgTxt((method_name + " is not a valid method").c_str());
 
   ptr = mxGetPr(prhs[2]);
@@ -87,8 +88,9 @@ void mexFunction(int nlhs, mxArray *plhs[],
     case 0: snd_gaussian_filtering(ima, sigma, res, theta); break;
     case 1: unser_m1_filtering(ima, sigma, res, theta); break;
     case 2: unser_m2_filtering(ima, sigma, res, theta); break;
+    case 3: unser_m4_filtering(ima, sigma, res, theta); break;
     }
-
+  
   ////////////////////////////
   // Allocate output arrays //
   ////////////////////////////
