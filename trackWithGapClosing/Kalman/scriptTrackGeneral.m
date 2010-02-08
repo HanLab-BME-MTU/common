@@ -16,8 +16,8 @@ costMatrices(1).funcName = 'costMatLinearMotionLink';
 
 parameters.linearMotion = 0; %use linear motion Kalman filter.
 
-parameters.minSearchRadius = 2; %minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
-parameters.maxSearchRadius = 5; %maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
+parameters.minSearchRadius = 15; %minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
+parameters.maxSearchRadius = 20; %maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
 parameters.brownStdMult = 3; %multiplication factor to calculate search radius from standard deviation.
 
 parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the linking (initial tracking) step.
@@ -42,8 +42,8 @@ costMatrices(2).funcName = 'costMatLinearMotionCloseGaps';
 %needed all the time
 parameters.linearMotion = 0; %use linear motion Kalman filter.
 
-parameters.minSearchRadius = 2; %minimum allowed search radius.
-parameters.maxSearchRadius = 5; %maximum allowed search radius.
+parameters.minSearchRadius = 15; %minimum allowed search radius.
+parameters.maxSearchRadius = 20; %maximum allowed search radius.
 parameters.brownStdMult = 3*ones(gapCloseParam.timeWindow,1); %multiplication factor to calculate Brownian search radius from standard deviation.
 parameters.timeReachConfB = gapCloseParam.timeWindow; %in the code, the search radius expands with the time gap (since a particle is expected to move further away in a longer gap than in a shorter one). This parameter controls how fast the search radius grows with time. timeReachConfB stands for time to reach confinement for the Brownian part of the motion. So before timeReachConfB, the search radius grows with the square root of time, after that it grows very, very slowly (it's almost fixed).
 

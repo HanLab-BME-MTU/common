@@ -60,7 +60,7 @@ nEntries = 0;
 
 %Identify all relevant files and store them in unsortedOutputFileList:
 for fileIndex=1:length(fileList)
-    [~,currentfname,currentfno,currentfext]=getFilenameBody(fileList{fileIndex});
+    [dummy,currentfname,currentfno,currentfext]=getFilenameBody(fileList{fileIndex});
     %Here strcmpi is case insesitive:
     if strcmpi(currentfname,fname) && str2double(currentfno)>=str2double(fno) && strcmpi(currentfext,fext)
         nEntries=nEntries+1;
@@ -70,7 +70,7 @@ for fileIndex=1:length(fileList)
 end
 
 %The outputFileList might be unsorted, this is fixed in the following:
-[~,newIndx] = sort(frameNoList);
+[dummy,newIndx] = sort(frameNoList);
 outputFileList=unsortedOutputFileList(newIndx);
 
 % change back to original directory
