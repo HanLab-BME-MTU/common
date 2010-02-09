@@ -1,4 +1,4 @@
-function[lftMat,statMat,xMat,yMat,disappMat,lftVec]=findLifetimesStatusSimple(trackinfo);
+function[lftMat,statMat,xMat,yMat,disappMat,lftVec]=findLifetimesStatusSimple(trackinfo)
 % find lifetimes and status of all tracks in the trackInfo matrix
 % SYNOPSIS:
 % [lftMat,statMat,xMat,yMat,disappMat,lftVec]=findLifetimesStatusSimple(trackinfo);
@@ -26,13 +26,12 @@ function[lftMat,statMat,xMat,yMat,disappMat,lftVec]=findLifetimesStatusSimple(tr
 %
 % created with MATLAB ver.: 7.1.0.246 (R14) Service Pack 3 on Windows_NT
 %
-% created by: dloerke
-% last modified: 25-Jan-2007
-%
+% created by: dloerke, last modified: 25-Jan-2007
+% Last modified: Francois Aguet, 02/09/2010
 
-%% =======================================================================
-%%======        Step 0: initialize and set default values
-%% =======================================================================
+%=======================================================================
+% Step 0: initialize and set default values
+%=======================================================================
 
 [stx,sty] = size(trackinfo);
 tsiz = round(sty/8);
@@ -54,22 +53,21 @@ else
     use_trackinfo = trackinfo;
 end
 
-%% =======================================================================
-%%======                    Step 1: find lifetimes
-%% =======================================================================
+%=======================================================================
+% Step 1: find lifetimes
+%=======================================================================
 
 
 % loop over rows (trajectories)
-h= waitbar(0,'calculating lifetimes');
+%h= waitbar(0,'calculating lifetimes');
 for i=1:stx
     % find defined x coordinates
     xcoords = use_trackinfo(i,1:8:sty);
     xcoords_valpos = find(xcoords>0);
     % find defined y coordinates
     ycoords = use_trackinfo(i,2:8:sty);
-    ycoords_valpos = find(ycoords>0);
     
-    if (length(xcoords_valpos)>0)
+    if ~isempty(xcoords_valpos)
     
     pmin = min(xcoords_valpos);
     pmax = max(xcoords_valpos);
@@ -94,7 +92,7 @@ for i=1:stx
         % if the track starts after frame 1 and end before the last frame,
         % we have a valid full trajectory (i.e. one that appears and
         % disappears)
-        if (pmin>1) & (pmax<tsiz)
+        if (pmin>1) && (pmax<tsiz)
             vec_stat(xcoords_valpos) = 1;
             vec_lft(xcoords_valpos) = traj_len;
         % else we have a partial trajectory (where the trajectory is cut 
@@ -119,7 +117,6 @@ for i=1:stx
     % In this simple version, a "bad" gap is a gap>2 flanked by single
     % detection events on either side - a "good" gap is everything else
     
-        traj = xcoords;
         % gap status is 1 for existence of trajectory, 0 for empty
         gap_status = (xcoords>0);
     
@@ -136,8 +133,8 @@ for i=1:stx
     % reappears, and then disappears (if partial at frame tsiz)
     
         diffgap = diff(gap_status);
-        gap_posFirst = min(find(diffgap==-1));
-        gap_posLast = max(find(diffgap==-1));
+        gap_posFirst = find(diffgap==-1, 1, 'first');
+        gap_posLast = find(diffgap==-1, 1, 'last' );
         gap_posAll = find(abs(diffgap)>0);
         % if the track doesn't appear, the values are buffered with 1
         if (min(gap_posAll)==gap_posFirst)
@@ -155,7 +152,7 @@ for i=1:stx
         for p = 2:2:gp_len
              % the gap is good if either the number of detected points is >2, or
             % if the gap between the points is not larger than 1 empty frame
-            if ( traj_np > 2 ) | ( traj_len-traj_np < 2 )
+            if ( traj_np > 2 ) || ( traj_len-traj_np < 2 )
                 vec_stat(gap_posAll(p)+1:gap_posAll(p+1)) = 4;
                 vec_lft(gap_posAll(p)+1:gap_posAll(p+1)) = gap_piecelengths(p);
                 % since x,y values in gaps are zero, fill up with the last
@@ -181,19 +178,19 @@ for i=1:stx
     lftMat(i,:) = vec_lft;
     disappMat(i,:) = vec_disapp;
     
-    if (mod(i,round(stx/10))==0)
-        waitbar(i/stx); 
-    end
+%     if (mod(i,round(stx/10))==0)
+%         waitbar(i/stx); 
+%     end
     
     end % of if points exists in this row
     
     % if the status of the trajectory is ==1 and the value of the gaps is
     % ==4, then this trajectory is counted in the lifetimes vector
-    if ( (min(nonzeros(vec_stat))==1) & (max(vec_stat)<5) )
+    if ( (min(nonzeros(vec_stat))==1) && (max(vec_stat)<5) )
         lftVec(i)=max(vec_lft);
     end
 end % of for loop over rows
-close(h);
+%close(h);
 
 xMat = sparse(xMat);
 yMat = sparse(yMat);
