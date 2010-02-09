@@ -1,6 +1,6 @@
 function F = dLSegment2D(X, Y, xc, yc, A, sigmaPSF, l, theta)
 % Diffraction-limited Segment Model
-% F = dLSegment2D(X, Y, xc, xy, amplitude, sigmaPSF, l, theta);
+% F = dLSegment2D(X, Y, xc, xy, A, sigmaPSF, l, theta);
 %
 % parameters:
 % (X, Y)       2 vectors representing the 2-dimensional domain (e.g X =
@@ -18,6 +18,8 @@ function F = dLSegment2D(X, Y, xc, yc, A, sigmaPSF, l, theta)
 %
 % output:
 % F is a NxM matrix where N = numel(X) and M = numel(Y).
+%
+% Sylvain Berlemont, 2009
 
 ct = cos(theta);
 st = sin(theta);
