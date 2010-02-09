@@ -24,19 +24,16 @@ function F = dLSegment2D(X, Y, xc, yc, A, sigmaPSF, l, theta)
 ct = cos(theta);
 st = sin(theta);
 
-lDiv2 = l / 2;
+l = l / 2;
 
 c0 = sqrt(2) * sigmaPSF;
-c1 = sqrt(2) / (sigmaPSF * pi) * erf(lDiv2 / c0);
-c1 = A / c1 * 1 / (c0 * pi);
+c = A / (2 * erf(l / c0));
 
 [X Y] = meshgrid(X,Y);
 
 X = X - xc;
 Y = Y - yc;
 
-F = c1 * exp(-((st * X - ct * Y) / c0).^2) .* ...
-         (erf((lDiv2 - ct * X - st * Y) / c0) + ...
-          erf((lDiv2 + ct * X + st * Y) / c0));
-      
-end
+F = c * exp(-((st * X - ct * Y) / c0).^2) .* ...
+    (erf((l - ct * X - st * Y) / c0) + ...
+    erf((l + ct * X + st * Y) / c0));
