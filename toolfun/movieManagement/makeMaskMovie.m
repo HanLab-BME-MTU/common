@@ -14,24 +14,32 @@ function movieData = makeMaskMovie(movieData,varargin)
 %
 %   Possible Option Names:
 %
-%   'ChannelIndex' : Positive integer scalar or vector of length <=3
-%   These numbers correspond to the indices of the channels to overlay
-%   masks from. If not input, user is asked.
+%   ('OptionName'->Possible values)
 %
-%   'FigureHandle' - Positive integer figure handle to plot the images / masks on.
+%       ('ChannelIndex'-> positive integer scalar or vector of length <=3)
+%       These numbers correspond to the indices of the channels to overlay
+%       masks from. 
+%       Optional. If not input, user is asked.
 %
-%   'ShowBackground' - Logical. If true, and background masks have been
-%   created using createMovieBackgroundMasks.m, the background mask outline
-%   will also be overlain, but as a dotted line.
+%       ('FigureHandle' - Positive integer) figure handle to plot the
+%       images / masks on.
+%       Optional. Default is to create a new figure.
 %
-%   'FileName' - Character string specifying file name to save movie as.
-%   Default is "maskMovie"
+%       ('ShowBackground'-> Logical scalar) If true, and background masks
+%       have been created using createMovieBackgroundMasks.m, the
+%       background mask outline will also be overlain, but as a dotted
+%       line.
+%       Optional. Default is false.
 %
-%   'MakeAvi' - Logical determining whether the movie is saved as .avi.
-%   Default is false.
+%       ('FileName'-> Character array) String specifying file name to save
+%       movie as.
+%       Optional. Default is "maskMovie"
 %
-%   'MakeMov' - Logical determining whether or not movie is saved as .mov.
-%   Default is true.
+%       ('MakeAvi' - Logical scalar) If true, the movie will be saved as .avi.
+%       Optional. Default is false.
+%
+%       ('MakeMov' - Logical scalar) If true, movie will be saved as .mov.
+%       Optional. Default is true.
 %
 % Output:
 %
@@ -56,7 +64,7 @@ function movieData = makeMaskMovie(movieData,varargin)
 
 %Make sure that either makAvi or makeMov are true!!
 if ~(makeMov || makeAvi)
-    error('Either makeMov or makeAvi MUST be true!')
+    error('Either makeMov or makeAvi MUST be true!! (otherwise no movie will be saved!!)')
 end
 
 %Check/set up the movieData
@@ -99,24 +107,9 @@ end
 
 %% ------ Init ------ %%
 
-%Get the mask directory and file names
-
-maskDir = cell(nChanMov,1);
-maskFileNames = cell(nChanMov,1);
-for j = 1:nChanMov
-    maskDir{j} = [movieData.masks.directory filesep movieData.masks.channelDirectory{iChannels(j)}];
-    maskFileNames{j} = dir([maskDir{j} filesep '*.tif']);    
-end                       
-
-
-
-%Get the image names for each channel
-imDir = cell(nChanMov,1);
-imNames = cell(nChanMov,1);
-for j = 1:nChanMov
-    imDir{j} = [movieData.imageDirectory filesep movieData.channelDirectory{iChannels(j)}];
-    imNames{j} = dir([imDir{j} filesep '*.tif']);    
-end
+%Get the mask and image file names
+maskFileNames = getMovieMaskFileNames(movieData,iChannels);
+imNames = getMovieImageFileNames(movieData,iChannels);
 
 
 %If requested, get the background mask directories and names
@@ -144,7 +137,7 @@ for j = 1:nImages
         
         if j == 1 && k == 1
             %Load an image to get the size
-            tmp = double(imread([maskDir{k} filesep maskFileNames{k}(j).name]));
+            tmp = double(imread(maskFileNames{k}{j}));
             currMasks = zeros([ size(tmp) nChanMov]);
             currImage = zeros([ size(tmp) 3]);            
             if showBkgrnd
@@ -153,10 +146,10 @@ for j = 1:nImages
         end
                                         
         %Load the mask
-        currMasks(:,:,k) = double(imread([maskDir{k} filesep maskFileNames{k}(j).name]));
+        currMasks(:,:,k) = double(imread(maskFileNames{k}{j}));
 
         %Load the image
-        currImage(:,:,k) = mat2gray(double(imread([imDir{k} filesep imNames{k}(j).name])));
+        currImage(:,:,k) = mat2gray(double(imread(imNames{k}{j})));
         
         if showBkgrnd
             %Load the background masks if requested
@@ -254,12 +247,10 @@ for i = 1:2:nArg
     
    switch argArray{i}                     
               
-       case 'ChannelIndex'
-           
+       case 'ChannelIndex'           
            iChannels = argArray{i+1};
            
-       case 'FigureHandle'
-           
+       case 'FigureHandle'           
            figHan = argArray{i+1};
    
        case 'ShowBackground'
