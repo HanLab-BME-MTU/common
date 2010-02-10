@@ -1,4 +1,4 @@
-function movieData = manualVerifyMovieSegmentation(movieData,iChannels)
+    function movieData = manualVerifyMovieSegmentation(movieData,iChannels)
 %MANUALVERIFYMOVIESEGMENTATION allows the user to judge the mask quality by viewing a movie overlay
 %
 %
