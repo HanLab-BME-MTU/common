@@ -36,15 +36,14 @@ if ~ischar(findString) || ~ischar(replaceString)
     error('Inputs 2 and 3 must be character strings!')
 end
 
-if isstruct(s)
-    
+if isstruct(s)    
     %Call this function on each field
     nS = length(s); %In the case that a field is actually a structure array.
     for i = 1:nS
         s(i) = structfun(@(x)(rReplace(x,findString,replaceString)),s(i),'UniformOutput',false);
     end
+elseif iscell(s)
+    s = cellfun(@(x)(rReplace(x,findString,replaceString)),s,'UniformOutput',false);
 elseif ischar(s)
-    
     s = regexprep(s,findString,replaceString);
-    
 end
