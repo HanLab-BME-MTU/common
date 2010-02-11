@@ -195,11 +195,14 @@ for j = 1:nImages
     end
 end
 
+%% ----- Finalization ----- %%
+
 if makeMov
     MakeQTMovie('finish')
-    if ~makeAvi %Only specify the .avi extension if both are made
-        movieData.masks.movie.fileName = [mvName '.mov'];
-    end
+    %Only specify the .mov extension if both are made
+    movieData.masks.movie.fileName = [mvName '.mov'];    
+else
+    movieData.masks.movie.fileName = [mvName '.avi'];
 end
 
 if makeAvi
@@ -208,15 +211,18 @@ if makeAvi
         movie2avi(maskMovie,[movieData.analysisDirectory  filesep mvName '.avi']);        
     else
         movie2avi(maskMovie,[movieData.analysisDirectory  filesep mvName '.avi'],'compression','Cinepak')    
-    end
-    movieData.masks.movie.fileName = [mvName '.avi'];
+    end    
 end
 
 
 %Modify and save the movieData
-movieData.masks.movie.dateTime = datestr(now);
-movieData.masks.movie.status = 1;
+movieData.movies.maskMovie.dateTime = datestr(now);
+movieData.movies.maskMovie.status = 1;
 updateMovieData(movieData);
+
+if ishandle(figHan)%Make sure the user hasn't closed it already.
+    close(figHan);
+end
 
 function [iChannels,figHan,showBkgrnd,mvName,makeAvi,makeMov] = parseInput(argArray)
 %Sub-function for parsing variable input arguments
