@@ -1,6 +1,10 @@
 function figHan = fsFigure(sizeFraction)
-
+%FSFIGURE creates a figure which takes up the whole screen or a specified fraction of it
 % 
+% fsFigure
+%
+% figHan = fsFigure
+%
 % figHan = fsFigure(sizeFraction)
 % 
 % This will create a full-screen (or smaller) figure centered on the
@@ -8,7 +12,7 @@ function figHan = fsFigure(sizeFraction)
 % 
 % Input:
 % 
-%     sizeFraction - Optional. Scalare or vector of length 2. The fraction
+%     sizeFraction - Optional. Scalar or vector of length 2. The fraction
 %                    of the screen dimensions to make the figure. That is,
 %                    if your screen  resolution is 1024x768 and
 %                    sizeFraction is 1, the figure will also be 1024x768,
@@ -18,10 +22,9 @@ function figHan = fsFigure(sizeFraction)
 %                    If sizeFraction is a vector, the first elements
 %                    specifies the fraction of the screen width to use, and
 %                    the second element the fraction of the screen height.
-%                    So if sizeFraction = 
 %
-%                    Default is 1 - that is, to make the figure the same
-%                    size as the screen.
+%                    Optional. Default is 1 - that is, to make the figure
+%                    the same size as the screen.
 %                    
 % Output:
 % 
