@@ -77,14 +77,8 @@ end
 %Get number of channels to check masks for
 nChan = length(iChannels);
 
-maskDir = cell(nChan,1);
-maskFileNames = cell(nChan,1);
-
 %Get the mask file names and directories for each channel to be checked
-for j = 1:nChan            
-    maskDir{j} = [movieData.masks.directory filesep movieData.masks.channelDirectory{iChannels(j)}];
-    maskFileNames{j} = dir([maskDir{j} filesep '*.tif']);            
-end
+maskFileNames = getMovieMaskFileNames(movieData,iChannels);
 
 %Check that the mask channels to be checked have the same number of masks
 if length(unique(movieData.nImages(iChannels))) > 1
@@ -115,7 +109,7 @@ for iImage = 1:nImages
                 
     %Go through each channel and get the areas in each frame
     for iChan = 1:nChan    
-        currMask = imread([maskDir{iChan} filesep maskFileNames{iChan}(iImage).name]);        
+        currMask = imread(maskFileNames{iChan}{iImage});        
         maskAreas(iImage,iChan) = sum(currMask(:));    
     end
     

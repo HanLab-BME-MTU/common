@@ -16,8 +16,6 @@ function setupMovieImageFolders(projectFolder,channelNames)
 %Hunter Elliott 2/09
 %
 
-fExt = 'tif';%File extension of images to look for.
-
 if nargin < 2 || isempty(channelNames)
     channelNames = {'CFP','FRET','DIC'};%default is basic FRET channels
 end
@@ -44,21 +42,24 @@ for j = 1:nMovies
     cd([projectFolder filesep movieFolders(j).name]);    
     
     %Create the images directory
-    mkdir('images')
-    
+    mkdir('images')        
     
     for k = 1:nChan
-    
-        %Look for files fitting the current string
-        imFiles = dir(['*' channelNames{k} '*.' fExt]);
         
-        if ~isempty(imFiles)
+        %Find all images in this directory
+        imFiles = imDir; %This should be outside the nChan loop, but is here temporarily as a workaround for files which match more than one name... HLE    
+        
+        %Look for files fitting the current string        
+        currMatches = arrayfun(@(x)(~isempty(regexp(x.name,channelNames{k},'ONCE'))),imFiles);
+        
+        
+        if sum(currMatches) > 0
             
             %Make this channel's directory
             mkdir(['images' filesep channelNames{k}]);
             
-            %Move all the images into it.
-            arrayfun(@(x)(movefile(x.name,['images' filesep channelNames{k} filesep x.name])),imFiles);
+            %Move all the matching images into it.
+            arrayfun(@(x)(movefile(x.name,['images' filesep channelNames{k} filesep x.name])),imFiles(currMatches));
             
         else
             

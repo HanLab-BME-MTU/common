@@ -119,7 +119,7 @@ if showBkgrnd
     for j = 1:nChanMov        
         bkgrndMaskDir{j} = [movieData.backgroundMasks.directory filesep ...
                             movieData.backgroundMasks.channelDirectory{iChannels(j)}];
-        bkgrndMaskFileNames{j} = dir([bkgrndMaskDir{j} filesep '*.tif']);        
+        bkgrndMaskFileNames{j} = imDir(bkgrndMaskDir{j});        
     end
 end
 

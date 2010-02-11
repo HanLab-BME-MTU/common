@@ -668,7 +668,7 @@ for i=1:size(tokens,1)
                 elseif isstrprop(val,'digit')
                     eval(['mm(k).',field,'=str2num(val)'';']);
                 else
-                    eval(['mm(k).',field,'=val;']);
+                    mm(k).(field)=val;
                 end
         end
     end

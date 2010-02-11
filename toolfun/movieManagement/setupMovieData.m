@@ -103,7 +103,7 @@ if ~isfield(movieData,'imageDirectory') || ...
     %Check if the folder contains images, or other folders. If it contains
     %both sub-folders and images, ask if each is a seperate channel
     folderList = dir(movieData.imageDirectory);
-    imageList = dir([movieData.imageDirectory filesep '*.tif']);
+    imageList = imDir(movieData.imageDirectory);
     nImages = length(imageList);
     nFolders = length(folderList);
     isDir = false(nFolders,1);
@@ -201,7 +201,7 @@ if ~isfield(movieData,'nImages') || isempty(movieData.nImages)
     %Go through each channel and check the number of images    
     movieData.nImages = zeros(1,nChan);    
     for j = 1:nChan
-        movieData.nImages(j) = length(dir([movieData.imageDirectory filesep movieData.channelDirectory{j} filesep '*.tif']));                       
+        movieData.nImages(j) = length(imDir([movieData.imageDirectory filesep movieData.channelDirectory{j}]));                       
     end
 
 end
@@ -213,7 +213,7 @@ if ~isfield(movieData,'imSize')
     %they're all the same...)
     movieData.imSize = zeros(2,nChan);
     for j = 1:nChan
-        currFnames = dir([movieData.imageDirectory filesep movieData.channelDirectory{j} filesep '*.tif']);
+        currFnames = imDir([movieData.imageDirectory filesep movieData.channelDirectory{j}]);
         currIm = imread([movieData.imageDirectory filesep movieData.channelDirectory{j} filesep currFnames(j).name]);
         movieData.imSize(:,j) = size(currIm);        
     end

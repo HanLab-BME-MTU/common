@@ -33,6 +33,7 @@ function setupProjectMovieData(projectFolder,pixSize,timeInterval,forceReplace)
 % Re-written 1/20/2010
 %
 
+
 if nargin < 3 || isempty(pixSize) || isempty(timeInterval)
     error('You must specify a project directory, a time interval and a pixel size!')
 end
@@ -93,7 +94,8 @@ for j = 1:nMovies
                 %directory.
                 for i = 1:length(chanDir)
 
-                    imFiles = dir([pwd filesep 'images' filesep chanDir(i).name filesep '*.tif']);
+                    %Find images in this directory
+                    imFiles = imDir([pwd filesep 'images' filesep chanDir(i).name]);
 
                     movieData.nImages(i) = length(imFiles);
                     movieData.channelDirectory{i} = chanDir(i).name;
@@ -107,8 +109,8 @@ for j = 1:nMovies
 
                 end
             else %If it's a single-channel movie
-                movieData.channelDirectory{1} = '';
-                imFiles = dir([pwd filesep 'images' filesep '*.tif']);
+                movieData.channelDirectory{1} = '';                
+                imFiles = imDir([pwd filesep 'images']);
                 movieData.nImages = length(imFiles);
                 if movieData.nImages > 0
                     %Load the header for one image to determine size

@@ -52,7 +52,7 @@ maskNames = cell(1,nChan);
 for i = 1:nChan
     
     currDir = [movieData.masks.directory filesep movieData.masks.channelDirectory{iChannels(i)}];
-    tmpNames = dir([currDir filesep '*.tif']);    
+    tmpNames = imDir(currDir);    
     
     maskNames{i}  = {tmpNames(:).name};
     

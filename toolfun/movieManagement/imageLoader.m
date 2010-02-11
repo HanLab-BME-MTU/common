@@ -54,15 +54,15 @@ if ischar(chanID) %If a channel name was input.
 end
 
 if round(chanID) == chanID && chanID > 0 && chanID <= length(movieData.channelDirectory)
+        
+    imNames = getMovieImageFileNames(movieData,chanID);
     
-    imDir = [movieData.imageDirectory filesep movieData.channelDirectory{chanID}];
-    imNames = dir([imDir filesep '*.tif']);
     
-    if length(imNames) < frameNo
+    if length(imNames{1}) < frameNo
         error('Invalid frame number! Not enough images found!')
     end
     
-    image = imread([imDir filesep imNames(frameNo).name]);
+    image = imread(imNames{1}{frameNo});
     
     
     

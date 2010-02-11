@@ -149,13 +149,14 @@ roiMovieData.imageDirectory = [parentDir filesep 'images'];
 
 wtBar = waitbar(0,'Please wait, cropping images....');
 
+%Get current image file names    
+imNames = getMovieImageFileNames(movieData,cropChannels);
+
 %Go through the images
 for iChan = 1:nCrop
     
-    %Get current image directory and image names
-    imDir = [movieData.imageDirectory filesep movieData.channelDirectory{cropChannels(iChan)} ];
-    imNames = dir([imDir filesep '*.tif']);
-    nImages = length(imNames); %Allow variable image # per channel
+    
+    nImages = length(imNames{iChan}); %Allow variable image # per channel
     
     %Store the channel names in the ROI's movieData
     roiMovieData.channelDirectory{cropChannels(iChan)} = movieData.channelDirectory{cropChannels(iChan)};
@@ -166,7 +167,7 @@ for iChan = 1:nCrop
     for iFrame = 1:nImages
         
         %Load the current image
-        currIm = imread([imDir filesep imNames(iFrame).name]);
+        currIm = imread(imNames{iChan}{iFrame});
         
         if iFrame == 1
             [imageM,imageN] = size(currIm);                        
@@ -182,7 +183,8 @@ for iChan = 1:nCrop
                                   max(1,floor(min(cropPoly(:,1) ) ))  : min(ceil(max(cropPoly(:,1) ) ),imageN));
         
         %Write it to the new image directory
-        imwrite(currIm,[roiMovieData.imageDirectory filesep roiMovieData.channelDirectory{cropChannels(iChan)} filesep 'crop_' imNames(iFrame).name],'tif')                
+        iLastSep = max(regexp(imNames{1}{iImage},filesep));
+        imwrite(currIm,[roiMovieData.imageDirectory filesep roiMovieData.channelDirectory{cropChannels(iChan)} filesep 'crop_' imNames{iChan}{iFrame}(iLastSep:end)]);
         
         
         waitbar( (nImages*(iChan-1) + iFrame ) / (nImages*nCrop),wtBar)

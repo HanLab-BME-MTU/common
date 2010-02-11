@@ -40,12 +40,7 @@ imNames = cell(1,nChan);
 for i = 1:nChan
     
     currDir = [movieData.imageDirectory filesep movieData.channelDirectory{iChannels(i)}];
-    tmpNames = dir([currDir filesep '*.tif']);
-    
-    %If not .tif found, try .STK
-    if isempty(tmpNames)
-        tmpNames = dir([currDir filesep '*.STK']);
-    end
+    tmpNames = imDir(currDir);
     
     imNames{i}  = {tmpNames(:).name};
     

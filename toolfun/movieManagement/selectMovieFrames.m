@@ -58,9 +58,8 @@ for iMov = 1:nMovies
     end
     
     
-    %Get image file names
-    imDir = [movieData{iMov}.imageDirectory filesep movieData{iMov}.channelDirectory{visChan} ];
-    imNames = dir([imDir filesep '*.tif']);
+    %Get image file names    
+    imNames = getMovieImageFileNames(movieData{iMov},visChan);
     
     
     
@@ -69,7 +68,7 @@ for iMov = 1:nMovies
     end    
     
     %Open the requested channel for viewing using default image viewer    
-    system([imDir filesep imNames(1).name]);
+    system(imNames{1}{1});
     
     
         

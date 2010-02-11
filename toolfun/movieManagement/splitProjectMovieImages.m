@@ -23,8 +23,6 @@ function splitProjectMovieImages(projectDir)
 % 2/2010
 
 
-
-fExt = 'tif';%File extension to look for images
 storeName = 'originalStacks'; %The name of the directory to put the original stacks in after they have been split
 
 
@@ -39,7 +37,7 @@ nSub = length(allSub);
 for i = 1:nSub
     
     %Check for images in this directory
-    im = dir([projectDir filesep allSub(i).name filesep '*.' fExt ]);
+    im = imDir([projectDir filesep allSub(i).name]);
     
     if ~isempty(im)
         
