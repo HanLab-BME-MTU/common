@@ -70,7 +70,6 @@ end
 
 %calculate the value of each PSF (assuming amplitude 1) at the 
 %x-coordinates of the corners of all pixels (needed to calculate J)
-% psfValueX = zeros
 psfValueX = zeros(maxIndxX-minIndxX+2,numPSF);
 for i=1:numPSF
     psfValueX(:,i) = exp(-((minIndxX-0.5:maxIndxX+0.5)'...
@@ -99,9 +98,9 @@ F = (sum(repmat(psfAmp,1,numPixel).*psfIntegX(relIndxX,:)'.*psfIntegY(relIndxY,:
 %calculate the derivative at all pixels
 J = ones(numPixel,3*numPSF+1); %(last column for background amplitude)
 J(:,1:3:3*numPSF) = repmat(psfAmp',numPixel,1).*(psfValueX(relIndxX,:)-...
-    psfValueX(relIndxX+1,:)).*psfIntegY(relIndxY,:)/psfSigma^2; %w.r.t. x
+    psfValueX(relIndxX+1,:)).*psfIntegY(relIndxY,:); %w.r.t. x
 J(:,2:3:3*numPSF) = repmat(psfAmp',numPixel,1).*(psfValueY(relIndxY,:)-...
-    psfValueY(relIndxY+1,:)).*psfIntegX(relIndxX,:)/psfSigma^2; %w.r.t. y
+    psfValueY(relIndxY+1,:)).*psfIntegX(relIndxX,:); %w.r.t. y
 J(:,3:3:3*numPSF) = psfIntegX(relIndxX,:).*psfIntegY(relIndxY,:); %w.r.t. amp
 
 %remove pixels with NaN (which means they are out of the cropped image

@@ -47,9 +47,24 @@ zeroVals = fnval(sp,zeroList);
 
 % look in zeroList. Find one value before cutVal, three after. Go into
 % zeroVals and find lowest minimum
-[dummy,closestIdx] = min(abs(zeroList - cutVal));
 
-% check only the minimas that are close by; two to the right and
+%KJ: this original line assumes that the index closest to the first guess
+%is a minimum, but that is not necessarily the case
+%so I am modifying it to make sure that what is designated as the closest
+%index is for sure a minimum
+%this is particularly important when hiLo = [0 0]
+%
+% [dummy,closestIdx] = min(abs(zeroList - cutVal));
+
+distFromCutVal = zeroList - cutVal;
+closestIdxNeg = max(length(distFromCutVal(distFromCutVal<0)),1);
+closestIdxPos = closestIdxNeg + 1;
+closestIdxBoth = [closestIdxNeg closestIdxPos];
+zeroValsBoth = zeroVals(closestIdxBoth);
+[dummy,minIdx] = min(zeroValsBoth);
+closestIdx = closestIdxBoth(minIdx);
+
+% check only the minima that are close by; two to the right and
 % one to the left (don't forget that between two minima there will
 % always be a maximum!)
 indexList = (closestIdx-loHi(1)*2):(closestIdx + loHi(2)*2);
