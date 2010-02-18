@@ -119,9 +119,10 @@ for iImage = 1:nImages
     if rangeAdj 
         if iImage == 1                
             %Normalization to first frame for colormap        
-            %Find the mean and standard deviation of first image values
-            imMean = nanmean(cast(currImage(:),'double'));
-            imStd = nanstd(cast(currImage(:),'double'));        
+            %Find the mean and standard deviation of first image values,
+            %excluding zero values
+            imMean = nanmean(cast(currImage(currImage(:)~=0),'double'));
+            imStd = nanstd(cast(currImage(currImage(:)~=0),'double'));        
         end
         caxis([imMean-2*imStd imMean+2*imStd])
         
