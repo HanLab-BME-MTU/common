@@ -1,24 +1,34 @@
-function [R T NMS] = steerableFiltering(I, method, sigmaPSF) %#ok<STOUT,INUSD>
-% Add some text.
+function [R T NMS FBANK] = steerableFiltering(I, M, sigmaPSF) %#ok<STOUT,INUSD>
+% [R T NMS FBANK] = steerableFiltering(I, M, sigmaPSF)
+%
+% This function implements the article:
+% Jacob M, Unser M. "Design of steerable filters for feature detection
+% using canny-like criteria" IEEE Trans Pattern Anal Mach Intell. 2004
+% Aug;26(8):1007-19.
 %
 % Input:
 %
-% I		input image.
+% I		    input image.
 %
-% method	string designating which kind of steerable
-%              filtering should be used. Choice are:
-%              - '2ndGaussian' 2nd Derivative of a Gaussian
-%              - 'UnserM1'     1st order Unser edge filter
-%              - 'UnserM2'     2nd order Unser ridge filter
+% M	        filter order (M = 1, 2, 3 or 4). Use an even order for ridge
+%           detection and an odd order for edge detection (M = 1
+%           corresponds to Canny edge detector).
 %
 % sigma		standard deviation of the filter.
 % 
 % Output:
 %
-% R		filtering response.
+% R		    filtering response.
 %
-% T		optimal angle.
+% T		    optimal angle.
 %
-% NMS		non-maximal suppression (optional).
+% NMS		non-maximal suppression.
+%
+% FBANK     the image convolved by every basis filter from which the Mth
+%           order filter is made of. The number of basis filter is defined
+%           by the recursive formula
+%           nfilter = acc(M),
+%           where acc(i) = (i*(i+3)/2) - acc(i-1)
+%                 acc(0) = 0
 
 end

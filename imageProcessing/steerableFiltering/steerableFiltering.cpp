@@ -5,6 +5,58 @@
 #include <compute_nms.hpp>
 #include <steerable_filtering.hpp>
 
+template <int M>
+static void dispatch(const image<2, double> & ima,
+		     double sigma,
+		     int nlhs,
+		     mxArray *plhs[])
+{
+  unser_filtering<2, M> f(ima.size());
+
+  f.compute(ima, sigma);
+
+  ////////////////////////////
+  // Allocate output arrays //
+  ////////////////////////////
+
+  if (nlhs > 0) image2mxArray(f.res(), plhs[0]);
+  if (nlhs > 1) image2mxArray(f.theta(), plhs[1]);
+
+  if (nlhs > 2)
+    {
+      /////////////////////////////////////
+      // Compute non-maximal suppression //
+      /////////////////////////////////////
+
+      image<2, double> nms(ima.size());
+  
+      compute_nms(f.res(), f.theta(), nms);
+
+      image2mxArray(nms, plhs[2]);
+    }
+
+  if (nlhs > 3)
+    {
+      int nfilters = unser_filtering<2, M>::nfilters;
+
+      int s[3];
+
+      s[0] = ima.height();
+      s[1] = ima.width();
+      s[2] = nfilters;
+
+      plhs[3] = mxCreateNumericArray(3, s, mxDOUBLE_CLASS, mxREAL);
+
+      double * ptr = mxGetPr(plhs[3]);
+
+      for (int i = 0; i < nfilters; ++i)
+	{
+	  f.fconvh(i).raw_data(ptr);
+	  ptr += (s[0] * s[1]);
+	}
+    }
+}
+
 void mexFunction(int nlhs, mxArray *plhs[],
 		 int nrhs, const mxArray *prhs[])
 {
@@ -15,7 +67,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
   if (nrhs < 3)
     mexErrMsgTxt("Three input arguments required.");
 
-  if (nlhs > 3)
+  if (nlhs > 4)
     mexErrMsgTxt("Too many output arguments");
 
   ////////////////////////////
@@ -28,8 +80,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
   if (!mxIsDouble(prhs[0]))
     mexErrMsgTxt("I is not a double-precision matrix.");
 
-  if (!mxIsChar(prhs[1]))
-    mexErrMsgTxt("method argument is not a string.");
+  if (mxGetNumberOfElements(prhs[1]) != 1)
+    mexErrMsgTxt("Invalid dimension for M argument.");
 
   if (mxGetNumberOfElements(prhs[2]) != 1)
     mexErrMsgTxt("Invalid dimension for sigma argument.");
@@ -44,30 +96,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
   image<2, double> ima(size);
   ima.fill(ptr);
 
-  int str_length = mxGetNumberOfElements(prhs[1]);
-
-  char* buf = new char[str_length];
-
-  mxGetString(prhs[1], buf, str_length + 1);
-
-  std::string method_name(buf, str_length);
-
-  delete[] buf;
-
-  const std::string valid_method_names[] = {
-    "2ndGaussian",
-    "UnserM1",
-    "UnserM2",
-    "UnserM4"
-  };
-
-  int method_id = 0;
-
-  while (method_id < 4 && method_name != valid_method_names[method_id])
-    ++method_id;
-
-  if (method_id == 4)
-    mexErrMsgTxt((method_name + " is not a valid method").c_str());
+  int m = (int) *mxGetPr(prhs[1]);
 
   ptr = mxGetPr(prhs[2]);
 
@@ -79,35 +108,13 @@ void mexFunction(int nlhs, mxArray *plhs[],
   ///////////////////////
   // Compute filtering //
   ///////////////////////
-  
-  image<2, double> res(ima.size(), 2); // for nms safety
-  image<2, double> theta(ima.size());
 
-  switch (method_id)
+  switch (m)
     {
-    case 0: snd_gaussian_filtering(ima, sigma, res, theta); break;
-    case 1: unser_m1_filtering(ima, sigma, res, theta); break;
-    case 2: unser_m2_filtering(ima, sigma, res, theta); break;
-    case 3: unser_m4_filtering(ima, sigma, res, theta); break;
-    }
-  
-  ////////////////////////////
-  // Allocate output arrays //
-  ////////////////////////////
-
-  if (nlhs > 0) image2mxArray(res, plhs[0]);
-  if (nlhs > 1) image2mxArray(theta, plhs[1]);
-
-  if (nlhs > 2)
-    {
-      /////////////////////////////////////
-      // Compute non-maximal suppression //
-      /////////////////////////////////////
-
-      image<2, double> nms(ima.size());
-  
-      compute_nms(res, theta, nms);
-
-      image2mxArray(nms, plhs[2]);
+    case 1: dispatch<1>(ima, sigma, nlhs, plhs); break;
+    case 2: dispatch<2>(ima, sigma, nlhs, plhs); break;
+    case 3: dispatch<3>(ima, sigma, nlhs, plhs); break;
+    case 4: dispatch<4>(ima, sigma, nlhs, plhs); break;
+    default: mexErrMsgTxt("Invalid order (M must be 1, 2, 3, or 4.");
     }
 }

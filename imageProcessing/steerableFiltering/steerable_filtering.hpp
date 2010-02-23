@@ -6,126 +6,56 @@
 # include <image.hpp>
 # include <convolution.hpp>
 # include <gaussian_derivative_1d.hpp>
-# include <non_separable_filter_2d.hpp>
 # include <solver.hpp>
 
-inline void snd_gaussian_filtering(const image<2, double> & ima,
-				   double sigma,
-				   image<2, double> & res,
-				   image<2, double> & theta)
+template <int M>
+struct unser_traits
 {
-  image<2, double> fyy0(ima.size());
-  image<2, double> fyy60(ima.size());
-  image<2, double> fyy120(ima.size());
+  enum { nfilters = (M * (M + 3) / 2) - unser_traits<M - 1>::nfilters };
+};
 
-  //////////////////////////////////////////////
-  // Compute f * gyy0 (separable convolution) //
-  //////////////////////////////////////////////
-
-  gaussian g0(sigma);
-  gaussian_derivative_1d<2> g2(sigma);
-
-  convolve(ima, g0, g2, fyy0);
-
-  ///////////////////////////////////////////////////
-  // Compute f * gyy60 (non-separable convolution) //
-  ///////////////////////////////////////////////////
-
-  int hside = (int) ceil(6 * sigma);
-
-  non_separable_filter_2d gyy60(2 * hside + 1, 2 * hside + 1);
-
-  double t = M_PI / 3;
-  double ct = cos(t);
-  double st = sin(t);
-  double s2 = sigma * sigma;
-  double s6 = s2 * s2 * s2;
-
-  for (int x = -hside; x <= hside; ++x)
-    for (int y = -hside; y <= hside; ++y)
-      {
-	double yy = (-x * st + y * ct);
-
-	gyy60(x + hside, y + hside) = 
-	  (yy * yy - s2) / (2 * M_PI * s6) * exp(- (x * x + y * y) / (2 * s2));
-      }
-
-  convolve(ima, gyy60, fyy60);
-
-  ////////////////////////////////////////////////////
-  // Compute f * gyy120 (non-separable convolution) //
-  ////////////////////////////////////////////////////
-
-  non_separable_filter_2d gyy120(2 * hside + 1, 2 * hside + 1);
-
-  t = 2 * M_PI / 3;
-  ct = cos(t);
-  st = sin(t);
-
-  for (int x = -hside; x <= hside; ++x)
-    for (int y = -hside; y <= hside; ++y)
-      {
-	double yy = (-x * st + y * ct);
-
-	gyy120(x + hside, y + hside) = 
-	  (yy * yy - s2) / (2 * M_PI * s6) * exp(- (x * x + y * y) / (2 * s2));
-      }
-
-  convolve(ima, gyy120, fyy120);
-
-  solver s;
-
-  const double sqrt3_div2 = sqrt(3 / 2);
-
-  double a, b, c, k1, k2, k3, r;
-
-  for (int i = 0; i < ima.width(); ++i)
-    for (int j = 0; j < ima.height(); ++j)
-      {
-	a = sqrt3_div2 * (fyy60(i, j) - fyy120(i, j));
-	b = 2 * fyy0(i, j) - fyy60(i, j) - fyy120(i, j);
-	c = sqrt3_div2 * (fyy120(i, j) - fyy60(i, j));
-	      
-	s(a, b, c);
-
-	// Note: If there is no real solution, we provide 1 real
-	// default solution (x = 0).
-	      
-	if (s.nroots() == 0)
-	  s(1, 0);
-	    
-	res(i, j) = -std::numeric_limits<double>::max();
-	      
-	for (int k = 0; k < s.nroots(); ++k)
-	  {
-	    t = atan(s.root(k));
-
-	    k1 = 1 + 2 * cos(2 * t);
-	    k2 = 1 + 2 * cos(2 * (t - M_PI / 3));
-	    k3 = 1 + 2 * cos(2 * (t - 2 * M_PI / 3));
-
-	    // We put a - since we want ima * -Gyy_t.
-
-	    r = -(1.0 / 3) * (k1 * fyy0(i, j) +
-			      k2 * fyy60(i, j) +
-			      k3 * fyy120(i, j));
-
-	    if (r > res(i, j))
-	      {
-		res(i, j) = r;
-		theta(i, j) = t;
-	      }
-	  }
-      }
-}
-
-inline void unser_m1_filtering(const image<2, double> & ima,
-			       double sigma,
-			       image<2, double> & res,
-			       image<2, double> & theta)
+template <>
+struct unser_traits<0>
 {
-  image<2, double> fx(ima.size());
-  image<2, double> fy(ima.size());
+  enum { nfilters = 0 };
+};
+
+template <int N, int M>
+class unser_filtering
+{
+public:
+  static const int nfilters = unser_traits<M>::nfilters;
+
+  unser_filtering(const int size[N]) : res_(size), theta_(size)
+  {
+    for (int i = 0; i < nfilters; ++i)
+      fconvh_[i] = new image<N, double>(size);
+  }
+
+  ~unser_filtering()
+  {
+    for (int i = 0; i < nfilters; ++i)
+      delete fconvh_[i];
+  }
+
+  const image<N, double> & res() const { return res_; }
+  const image<N, double> & theta() const { return theta_; }
+  const image<N, double> & fconvh(int i) const { return *fconvh_[i]; }
+
+public:
+  void compute(const image<N, double> & ima, double sigma);
+
+private:
+  image<N, double> res_, theta_;
+  image<N, double> * fconvh_[nfilters];
+};
+
+template <>
+inline void unser_filtering<2, 1>::compute(const image<2, double> & ima,
+					   double sigma)
+{
+  image<2, double> & fx = *fconvh_[0];
+  image<2, double> & fy = *fconvh_[1];
 
   gaussian g0(sigma);
   gaussian_derivative_1d<1> g1(sigma);
@@ -158,25 +88,24 @@ inline void unser_m1_filtering(const image<2, double> & ima,
 
 	if (r1 > r2)
 	  {
-	    res(i, j) = r1;
-	    theta(i, j) = t1;
+	    res_(i, j) = r1;
+	    theta_(i, j) = t1;
 	  }
 	else
 	  {
-	    res(i, j) = r2;
-	    theta(i, j) = t2;
+	    res_(i, j) = r2;
+	    theta_(i, j) = t2;
 	  }
       }
 }
 
-inline void unser_m2_filtering(const image<2, double> & ima,
-			       double sigma,
-			       image<2, double> & res,
-			       image<2, double> & theta)
+template <>
+inline void unser_filtering<2, 2>::compute(const image<2, double> & ima,
+					   double sigma)
 {
-  image<2, double> fxx(ima.size());
-  image<2, double> fxy(ima.size());
-  image<2, double> fyy(ima.size());
+  image<2, double> & fxx = *fconvh_[0];
+  image<2, double> & fxy = *fconvh_[1];
+  image<2, double> & fyy = *fconvh_[2];
 
   gaussian g0(sigma);
   gaussian_derivative_1d<1> g1(sigma);
@@ -212,7 +141,7 @@ inline void unser_m2_filtering(const image<2, double> & ima,
 	if (s.nroots() == 0)
 	  s(1, 0);
 	    
-	res(i, j) = -std::numeric_limits<double>::max();
+	res_(i, j) = -std::numeric_limits<double>::max();
 	      
 	for (int k = 0; k < s.nroots(); ++k)
 	  {
@@ -223,28 +152,34 @@ inline void unser_m2_filtering(const image<2, double> & ima,
 		  
 	    r = ct * ct * b1 + ct * st * b2 + st * st * b3;
 
-	    if (r > res(i, j))
+	    if (r > res_(i, j))
 	      {
-		res(i, j) = r;
-		theta(i, j) = t;
+		res_(i, j) = r;
+		theta_(i, j) = t;
 	      }
 	  }
       }
 }
 
-inline void unser_m4_filtering(const image<2, double> & ima,
-			       double sigma,
-			       image<2, double> & res,
-			       image<2, double> & theta)
+template <>
+inline void unser_filtering<2, 3>::compute(const image<2, double> & ima,
+					   double sigma)
 {
-  image<2, double> fxx(ima.size());
-  image<2, double> fxy(ima.size());
-  image<2, double> fyy(ima.size());
-  image<2, double> fxxxx(ima.size());
-  image<2, double> fxxxy(ima.size());
-  image<2, double> fxxyy(ima.size());
-  image<2, double> fxyyy(ima.size());
-  image<2, double> fyyyy(ima.size());
+  // TODO
+}
+
+template <>
+inline void unser_filtering<2, 4>::compute(const image<2, double> & ima,
+					   double sigma)
+{
+  image<2, double> & fxx = *fconvh_[0];
+  image<2, double> & fxy = *fconvh_[1];
+  image<2, double> & fyy = *fconvh_[2];
+  image<2, double> & fxxxx = *fconvh_[3];
+  image<2, double> & fxxxy = *fconvh_[4];
+  image<2, double> & fxxyy = *fconvh_[5];
+  image<2, double> & fxyyy = *fconvh_[6];
+  image<2, double> & fyyyy = *fconvh_[7];
 
   gaussian g0(sigma);
   gaussian_derivative_1d<1> g1(sigma);
@@ -281,10 +216,13 @@ inline void unser_m4_filtering(const image<2, double> & ima,
 	b2 = (2 * a20 - 2 * a22) * fxy(i,j);
 	b3 = a22 * fxx(i,j) + a20 * fyy(i,j);
 	b4 = a40 * fxxxx(i,j) + a42 * fxxyy(i,j) + a44 * fyyyy(i,j);
-	b5 = 2 * a42 * (fxyyy(i,j) - fxxxy(i,j)) + 4 * (a40 * fxxxy(i,j) - a44 * fxyyy(i,j));
-	b6 = a42 * (fxxxx(i,j) - 4 * fxxyy(i,j) + fyyyy(i,j)) + 6 * a40 * fxxyy(i,j) + 6 * a44 * 
+	b5 = 2 * a42 * (fxyyy(i,j) - fxxxy(i,j)) + 4 * (a40 * fxxxy(i,j) -
+							a44 * fxyyy(i,j));
+	b6 = a42 * (fxxxx(i,j) - 4 * fxxyy(i,j) + fyyyy(i,j)) +
+	  6 * a40 * fxxyy(i,j) + 6 * a44 * 
 	  fxxyy(i,j);
-	b7 = 2 * a42 * (fxxxy(i,j) - fxyyy(i,j)) + 4 * (a40 * fxyyy(i,j) - a44 * fxxxy(i,j));
+	b7 = 2 * a42 * (fxxxy(i,j) - fxyyy(i,j)) + 4 * (a40 * fxyyy(i,j) -
+							a44 * fxxxy(i,j));
 	b8 = a40 * fyyyy(i,j) + a42 * fxxyy(i,j) + a44 * fxxxx(i,j);
 		
 	a = -b2 - b7;
@@ -301,7 +239,7 @@ inline void unser_m4_filtering(const image<2, double> & ima,
 	if (s.nroots() == 0)
 	  s(1,0);
 
-	res(i, j) = -std::numeric_limits<double>::max();
+	res_(i, j) = -std::numeric_limits<double>::max();
 	      
 	for (int k = 0; k < s.nroots(); ++k)
 	  {
@@ -316,19 +254,22 @@ inline void unser_m4_filtering(const image<2, double> & ima,
 	    r = ct2 * (a22 * fyy(i,j) + a20 * fxx(i,j))
 	      + ct * st * ((2 * a20 - 2 * a22) * fxy(i,j))
 	      + st2 * (a22 * fxx(i,j) + a20 * fyy(i,j))
-	      + ct2 * ct2 * (a40 * fxxxx(i,j) + a42 * fxxyy(i,j) + a44 * fyyyy(i,j))
+	      + ct2 * ct2 * (a40 * fxxxx(i,j) + a42 * fxxyy(i,j) +
+			     a44 * fyyyy(i,j))
 	      + ct2 * ct * st * (2 * a42 * (fxyyy(i,j) - fxxxy(i,j)) + 4 *
 				 (a40 * fxxxy(i,j) - a44 * fxyyy(i,j)))
-	      + ct2 * st2 * (a42 * (fxxxx(i,j) - 4 * fxxyy(i,j) + fyyyy(i,j)) + 6 * a40 * fxxyy(i,j)+
+	      + ct2 * st2 * (a42 * (fxxxx(i,j) - 4 * fxxyy(i,j) +
+				    fyyyy(i,j)) + 6 * a40 * fxxyy(i,j)+
 			     6 * a44 * fxxyy(i,j))
-	      + ct * st2 * st * (2 * a42 * (fxxxy(i,j) - fxyyy(i,j)) + 4 * (a40 * fxyyy(i,j) -
-									    a44 * fxxxy(i,j)))
-	      + st2 * st2 * (a40 * fyyyy(i,j) + a42 * fxxyy(i,j) + a44 * fxxxx(i,j));
+	      + ct * st2 * st * (2 * a42 * (fxxxy(i,j) - fxyyy(i,j)) +
+				 4 * (a40 * fxyyy(i,j) - a44 * fxxxy(i,j)))
+	      + st2 * st2 * (a40 * fyyyy(i,j) + a42 * fxxyy(i,j) +
+			     a44 * fxxxx(i,j));
 	    
-	    if (r > res(i, j))
+	    if (r > res_(i, j))
 	      {
-		res(i, j) = r;
-		theta(i, j) = t;
+		res_(i, j) = r;
+		theta_(i, j) = t;
 	      }
 	  }
       }
