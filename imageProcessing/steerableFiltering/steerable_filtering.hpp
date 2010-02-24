@@ -70,14 +70,6 @@ inline void unser_filtering<2, 1>::compute(const image<2, double> & ima,
   for (int i = 0; i < ima.width(); ++i)
     for (int j = 0; j < ima.height(); ++j)
       {
-	//////////////////////////////////////////////////////////////////
-        // Bug: this does not yield to a normally distributed response	//
-	// with null mean and predictable variance. However, when one	//
-	// of r1 or r2 is discarded and - sin(...) is replaced by +	//
-	// sin(...), it yields to a normally distributed response with	//
-	// null mean and predictable variance.				//
-        //////////////////////////////////////////////////////////////////
-
  	t1 = atan2(-fx(i, j), fy(i, j));
 
   	r1 = a11 * (cos(t1) * fy(i, j) - sin(t1) * fx(i, j));
@@ -120,7 +112,7 @@ inline void unser_filtering<2, 2>::compute(const image<2, double> & ima,
 
   double b1, b2, b3, a, b, c, t, ct, st, r;
 
-  solver s;
+  solver s(1e-15);
 
   for (int i = 0; i < ima.width(); ++i)
     for (int j = 0; j < ima.height(); ++j)
@@ -132,32 +124,58 @@ inline void unser_filtering<2, 2>::compute(const image<2, double> & ima,
 	a = - b2;
 	b = 2 * (b3 - b1);
 	c = b2;
-	      
+	
+	if (fabs(a) < s.prec()) a = 0;
+	if (fabs(b) < s.prec()) b = 0;
+	if (fabs(c) < s.prec()) c = 0;
+
+	// Solve a X^2 + b X + c = 0
 	s(a, b, c);
 
-	// Note: If there is no real solution, we provide 1 real
-	// default solution (x = 0).
-	      
 	if (s.nroots() == 0)
-	  s(1, 0);
-	    
-	res_(i, j) = -std::numeric_limits<double>::max();
-	      
-	for (int k = 0; k < s.nroots(); ++k)
 	  {
-	    t = atan(s.root(k));
-
-	    ct = cos(t);
-	    st = sin(t);
-		  
-	    r = ct * ct * b1 + ct * st * b2 + st * st * b3;
-
-	    if (r > res_(i, j))
-	      {
-		res_(i, j) = r;
-		theta_(i, j) = t;
-	      }
+	    // Note: If there is no real solution, we provide 1 real
+	    // default solution (theta = 0).
+	    
+	    res_(i, j) = b1;
+	    theta_(i, j) = 0;
+	    break;
 	  }
+	else
+	  if (s.nroots() == 1 && fabs(s.root(0)) < s.prec())
+	    {
+	      // Note: this is when a and c are null. We test
+	      // theta = 0 or pi/2.
+
+	      if (b1 < b3)
+		{
+		  res_(i, j) = b3;
+		  theta_(i, j) = M_PI_2;
+		}
+	      else
+		{
+		  res_(i, j) = b1;
+		  theta_(i, j) = 0;
+		}		  
+	    }
+	  else
+	    {
+	      res_(i, j) = -std::numeric_limits<double>::max();
+	      
+	      for (int k = 0; k < s.nroots(); ++k)
+		{
+		  t = atan(s.root(k));
+		  ct = cos(t);
+		  st = sin(t);
+		  r = ct * ct * b1 + ct * st * b2 + st * st * b3;
+
+		  if (r > res_(i, j))
+		    {
+		      res_(i, j) = r;
+		      theta_(i, j) = t;
+		    }
+		}
+	    }
       }
 }
 
@@ -205,7 +223,7 @@ inline void unser_filtering<2, 4>::compute(const image<2, double> & ima,
   const double a42 = -0.194 * sigma3;
   const double a44 = 0.063 * sigma3;
 
-  solver s;
+  solver s(1e-15);
 
   double b1, b2, b3, b4, b5, b6, b7, b8, a, b, c, d, e, ct, st, ct2, st2, t, r;
 
@@ -213,7 +231,7 @@ inline void unser_filtering<2, 4>::compute(const image<2, double> & ima,
     for (int j = 0; j < ima.height(); ++j)
       {
 	b1 = a22 * fyy(i,j) + a20 * fxx(i,j);
-	b2 = (2 * a20 - 2 * a22) * fxy(i,j);
+	b2 = 2 * (a20 - a22) * fxy(i,j);
 	b3 = a22 * fxx(i,j) + a20 * fyy(i,j);
 	b4 = a40 * fxxxx(i,j) + a42 * fxxyy(i,j) + a44 * fyyyy(i,j);
 	b5 = 2 * a42 * (fxyyy(i,j) - fxxxy(i,j)) + 4 * (a40 * fxxxy(i,j) -
@@ -231,47 +249,84 @@ inline void unser_filtering<2, 4>::compute(const image<2, double> & ima,
 	d = 2 * (b6 - 2 * b4 + b3 - b1);
 	e = b2 + b5;
 
+	if (fabs(a) < s.prec()) a = 0;
+	if (fabs(b) < s.prec()) b = 0;
+	if (fabs(c) < s.prec()) c = 0;
+	if (fabs(d) < s.prec()) d = 0;
+	if (fabs(e) < s.prec()) e = 0;
+
+	// Solve a X^4 + b X^3 + c X^2 + d X + e = 0
 	s(a, b, c, d, e);
 
-	// Note: If there is no real solution, we provide 1 real
-	// default solution (x = 0).
+	if (i == 65 && j == 49)
+	  {
+	    std::cout << a << std::endl;
+	    std::cout << b << std::endl;
+	    std::cout << c << std::endl;
+	    std::cout << d << std::endl;
+	    std::cout << e << std::endl;
+
+	    std::cout << s.nroots() << std::endl;
+	    std::cout << s.root(0) << std::endl;
+	    std::cout << s.root(1) << std::endl;
+	    std::cout << s.root(2) << std::endl;
+	  }
 
 	if (s.nroots() == 0)
-	  s(1,0);
-
-	res_(i, j) = -std::numeric_limits<double>::max();
-	      
-	for (int k = 0; k < s.nroots(); ++k)
-	  {
-	    t = atan(s.root(k));
-
-	    ct = cos(t);
-	    st = sin(t);
-
-	    ct2 = ct * ct;
-	    st2 = st * st;
-
-	    r = ct2 * (a22 * fyy(i,j) + a20 * fxx(i,j))
-	      + ct * st * ((2 * a20 - 2 * a22) * fxy(i,j))
-	      + st2 * (a22 * fxx(i,j) + a20 * fyy(i,j))
-	      + ct2 * ct2 * (a40 * fxxxx(i,j) + a42 * fxxyy(i,j) +
-			     a44 * fyyyy(i,j))
-	      + ct2 * ct * st * (2 * a42 * (fxyyy(i,j) - fxxxy(i,j)) + 4 *
-				 (a40 * fxxxy(i,j) - a44 * fxyyy(i,j)))
-	      + ct2 * st2 * (a42 * (fxxxx(i,j) - 4 * fxxyy(i,j) +
-				    fyyyy(i,j)) + 6 * a40 * fxxyy(i,j)+
-			     6 * a44 * fxxyy(i,j))
-	      + ct * st2 * st * (2 * a42 * (fxxxy(i,j) - fxyyy(i,j)) +
-				 4 * (a40 * fxyyy(i,j) - a44 * fxxxy(i,j)))
-	      + st2 * st2 * (a40 * fyyyy(i,j) + a42 * fxxyy(i,j) +
-			     a44 * fxxxx(i,j));
+	  {	      
+	    // Note: If there is no real solution, we provide 1 real
+	    // default solution (theta = 0).
 	    
-	    if (r > res_(i, j))
-	      {
-		res_(i, j) = r;
-		theta_(i, j) = t;
-	      }
+	    res_(i, j) = b1;
+	    theta_(i, j) = 0;
+	    break;
 	  }
+	else
+	  if (s.nroots() == 1 && fabs(s.root(0)) < s.prec())
+	    {
+	      // Note: this is when a, b, c and e are null. We
+	      // test theta = 0 or pi/2.
+	      
+	      if (b3 + b8 < b1 + b4)
+		{
+		  res_(i, j) = b3 + b8;
+		  theta_(i, j) = M_PI_2;
+		}
+	      else
+		{
+		  res_(i, j) = b1 + b4;
+		  theta_(i, j) = 0;
+		}		  
+	    }
+	  else
+	    if (s.nroots() == 3 && c == 0 && e == 0)
+	      {
+	      }
+	    else
+	      {
+		res_(i, j) = -std::numeric_limits<double>::max();
+	      
+		for (int k = 0; k < s.nroots(); ++k)
+		  {
+		    t = atan(s.root(k));
+
+		    ct = cos(t);
+		    st = sin(t);
+
+		    ct2 = ct * ct;
+		    st2 = st * st;
+
+		    r = ct2 * b1 + ct * st * b2 + st2 * b3 + ct2 * ct2 * b4 +
+		      ct2 * ct * st * b5 + ct2 * st2 * b6 + ct * st2 * st * b7
+		      + st2 * st2 * b8;
+	    
+		    if (r > res_(i, j))
+		      {
+			res_(i, j) = r;
+			theta_(i, j) = t;
+		      }
+		  }
+	      }
       }
 }
 
