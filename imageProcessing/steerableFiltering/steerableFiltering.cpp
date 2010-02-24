@@ -39,11 +39,7 @@ static void dispatch(const image<2, double> & ima,
     {
       int nfilters = unser_filtering<2, M>::nfilters;
 
-      mwSize s[3];
-
-      s[0] = ima.height();
-      s[1] = ima.width();
-      s[2] = nfilters;
+      const mwSize s[] = {ima.height(), ima.width(), nfilters};
 
       plhs[3] = mxCreateNumericArray(3, s, mxDOUBLE_CLASS, mxREAL);
 
