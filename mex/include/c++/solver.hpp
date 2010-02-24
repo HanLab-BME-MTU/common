@@ -5,36 +5,31 @@
 # include <cassert>
 # include <limits>
 
-class _solver
+class solver
 {
 public:
+  double prec() const { return prec_; }
+
   int nroots() const { return nroots_; }
 
-  double root(unsigned i) const
-  {
-    assert(i < 4);
+  double root(int k) const { return roots_[k]; }
 
-    return roots_[i];
-  }
-
-protected:
-  static double roots_[4];
-  static int nroots_;
-};
-
-class solver : public _solver
-{
 public:
-  solver(double prec = std::numeric_limits<double>::epsilon()) : prec_(prec) {}
+  solver(double prec = std::numeric_limits<double>::epsilon()) :
+    prec_(prec), nroots_(0)
+  {
+    for (int i = 0; i < 4; ++i)
+      roots_[i] = 0;
+  }
 
   // Resolve a linear equation of form: aX + b = 0 in R
   void operator()(double a, double b)
   {
     nroots_ = 0;
 
-    if (fabs(a) >= prec_)
+    if (a != 0)
       {
-	roots_[0] = - b / a;
+	roots_[0] = -b / a;
 	nroots_ = 1;
       }
   }
@@ -45,7 +40,7 @@ public:
   {
     nroots_ = 0;
 
-    if (fabs(a) < prec_)
+    if (a == 0)
       {
 	this->operator()(b, c);
 	return;
@@ -75,7 +70,7 @@ public:
   {
     nroots_ = 0;
 
-    if (fabs(a) < prec_)
+    if (a == 0)
       {
 	this->operator()(b, c, d);
 	return;
@@ -90,7 +85,7 @@ public:
   {
     nroots_ = 0;
 
-    if (fabs(a) < prec_)
+    if (a == 0)
       {
 	this->operator()(b, c, d, e);
 	return;
@@ -200,9 +195,9 @@ private:
 
 private:
   double prec_;
-};
 
-double _solver::roots_[4] = {0, 0, 0, 0};
-int _solver::nroots_ = -1;
+  double roots_[4];
+  int nroots_;
+};
 
 #endif	    /* !SOLVER_HPP */
