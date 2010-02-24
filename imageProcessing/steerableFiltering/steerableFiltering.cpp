@@ -39,7 +39,7 @@ static void dispatch(const image<2, double> & ima,
     {
       int nfilters = unser_filtering<2, M>::nfilters;
 
-      int s[3];
+      mwSize s[3];
 
       s[0] = ima.height();
       s[1] = ima.width();

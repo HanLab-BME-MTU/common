@@ -10,25 +10,31 @@
 template <int n>
 struct sizeWrapper
 {
-  static bool eq(const int* s1, const int* s2);
-  static void convert(const int* src, int* dst);
+  template <typename S1, typename S2>
+  static bool eq(const S1* s1, const S2* s2);
+  
+  template <typename S1, typename S2>
+  static void convert(const S1* src, S2* dst);
 };
  
 template <>
-void sizeWrapper<2>::convert(const int* src, int* dst)
+template <typename S1, typename S2>
+void sizeWrapper<2>::convert(const S1* src, S2* dst)
 {
   dst[0] = src[1];
   dst[1] = src[0];
 }
 
 template <>
-bool sizeWrapper<2>::eq(const int* s1, const int* s2)
+template <typename S1, typename S2>
+bool sizeWrapper<2>::eq(const S1* s1, const S2* s2)
 {
   return s1[0] == s2[1] && s1[1] == s2[0];
 }
 
 template <>
-void sizeWrapper<3>::convert(const int* src, int* dst)
+template <typename S1, typename S2>
+void sizeWrapper<3>::convert(const S1* src, S2* dst)
 {
   dst[0] = src[1];
   dst[1] = src[0];
@@ -36,7 +42,8 @@ void sizeWrapper<3>::convert(const int* src, int* dst)
 }
 
 template <>
-bool sizeWrapper<3>::eq(const int* s1, const int* s2)
+template <typename S1, typename S2>
+bool sizeWrapper<3>::eq(const S1* s1, const S2* s2)
 {
   return s1[0] == s2[1] && s1[1] == s2[0] && s1[2] == s2[2];
 }
@@ -68,7 +75,7 @@ template <int n, typename T>
 void image2mxArray(const image<n, T> & src, mxArray*& dst)
 {
   const int* src_size = src.size();
-  int src_size2[n];
+  mwSize src_size2[n];
   sizeWrapper<n>::convert(src_size, src_size2);
 
   if (dst)
