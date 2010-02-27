@@ -71,7 +71,10 @@ void mexFunction(int nlhs, mxArray *plhs[],
   ////////////////////////////
 
   if (mxGetNumberOfDimensions(prhs[0]) != 2)
-    mexErrMsgTxt("Invalid dimension for I argument.");
+    {
+      std::cout << mxGetNumberOfDimensions(prhs[0]) << std::endl;
+      mexErrMsgTxt("Invalid dimension for I argument.");
+    }
 
   if (!mxIsDouble(prhs[0]))
     mexErrMsgTxt("I is not a double-precision matrix.");
@@ -105,12 +108,44 @@ void mexFunction(int nlhs, mxArray *plhs[],
   // Compute filtering //
   ///////////////////////
 
-  switch (m)
-    {
-    case 1: dispatch<1>(ima, sigma, nlhs, plhs); break;
-    case 2: dispatch<2>(ima, sigma, nlhs, plhs); break;
-    case 3: dispatch<3>(ima, sigma, nlhs, plhs); break;
-    case 4: dispatch<4>(ima, sigma, nlhs, plhs); break;
-    default: mexErrMsgTxt("Invalid order (M must be 1, 2, 3, or 4.");
-    }
+//   switch (m)
+//     {
+//     case 1: dispatch<1>(ima, sigma, nlhs, plhs); break;
+//     case 2: dispatch<2>(ima, sigma, nlhs, plhs); break;
+//     case 3: dispatch<3>(ima, sigma, nlhs, plhs); break;
+//     case 4: dispatch<4>(ima, sigma, nlhs, plhs); break;
+//     default: mexErrMsgTxt("Invalid order (M must be 1, 2, 3, or 4.");
+//     }
+}
+
+// Compile this file with the following command:
+// LD_RUN_PATH=/usr/local/Matlab/bin/glnxa64 && g++ -g -DARRAY_ACCESS_INLINING -I. -L/usr/local/Matlab/bin/glnxa64 -I../../mex/include/c++/ -I/usr/local/Matlab/extern/include steerableFiltering.cpp -lmx -lmex
+
+// debug
+int main()
+{
+  int nlhs = 4;
+  int nrhs = 3;
+
+  mxArray* plhs[4];
+  mxArray* prhs[3];
+
+  plhs[0] = mxCreateDoubleMatrix(100, 100, mxREAL);
+  double* ptr = mxGetPr(plhs[0]);
+  for (int i = 0; i < 10000; ++i)
+    ptr[i] = 1;
+
+  plhs[1] = mxCreateDoubleMatrix(1, 1, mxREAL);
+  ptr = mxGetPr(plhs[1]);
+  *ptr = 2;
+
+  plhs[2] = mxCreateDoubleMatrix(1, 1, mxREAL);
+  ptr = mxGetPr(plhs[1]);
+  *ptr = 1;
+
+  std::cout << mxGetNumberOfDimensions(prhs[0]) << std::endl;
+
+  mexFunction(nlhs, plhs, nrhs, const_cast<const mxArray**>(prhs));
+
+  return 0;
 }
