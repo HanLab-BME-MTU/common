@@ -628,14 +628,3 @@ end
 
 %%%%% ~~ the end ~~ %%%%%
 
-
-%                     %since the acceptance of this fit implies that another fit with
-%                     %an additional kernel will be attempted, add one kernel to the
-%                     %cluster next to the signal with largest amplitude
-%                     numMaximaT = numMaxima + 1; %update number of maxima
-%                     maximaAmpT = [maximaAmp(:,1); mean(maximaAmp(:,1))]; %signal amplitude
-%                     tmp = find(maximaAmpT==max(maximaAmpT),1); %signal with largest amplitude
-%                     coord = maximaPos(tmp,1:2) + (2*rand(1,2)-1)*2; %position of new kernel
-%                     maximaPosT = [maximaPos(:,1:2); coord]; %signal positions
-%                     bgAmpT = bgAmp(1); %background amplitude
-
