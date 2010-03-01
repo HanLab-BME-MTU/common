@@ -25,7 +25,7 @@ function [x,Qxx,goodRows,sigmaB,badRows] = linearLeastMedianSquares(A,B,V,x0,k)
 %                  to have a good first guess)
 %            k   : outlier threshold. Default is {3} sigma.
 %
-% OUTPUT   : x,Qxx : fitted unknowns and covariance
+% OUTPUT   : x,Qxx : fitted unknowns and uncertainty
 %            goodRows : rows in B that are not outliers
 %            sigmaB   : estimate for the std of the error E without
 %                       outliers

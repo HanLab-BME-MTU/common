@@ -906,7 +906,7 @@ classdef trackObj<handle
                 
                 %get first frame, last frame and number of frames
                 firstFrame = seqOfEvents(1,1);
-                lastFrame = seqOfEvents(end,1);
+                lastFrame = max(seqOfEvents(:,1));
                 
                 %get number of segments making compound track
                 numSegments = size(valuesMatrix,1);
