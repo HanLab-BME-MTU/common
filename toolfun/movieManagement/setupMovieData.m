@@ -214,7 +214,7 @@ if ~isfield(movieData,'imSize')
     movieData.imSize = zeros(2,nChan);
     for j = 1:nChan
         currFnames = imDir([movieData.imageDirectory filesep movieData.channelDirectory{j}]);
-        currIm = imread([movieData.imageDirectory filesep movieData.channelDirectory{j} filesep currFnames(j).name]);
+        currIm = imread([movieData.imageDirectory filesep movieData.channelDirectory{j} filesep currFnames(1).name]);
         movieData.imSize(:,j) = size(currIm);        
     end
 end
