@@ -27,11 +27,11 @@ if nStack > 0
         iT = max(regexp(stackFiles(i).name,'t'));
         
         %And of the file extension
-        iLFS = max(regexp(stackFiles(i).name,'.'));
+        iLFS = max(regexp(stackFiles(i).name,'\.'));
         
         iFrame = str2double(stackFiles(i).name(iT+1:iLFS-1));
         
-        newName = [stackFiles(i).name(1:iT) num2str(iFrame,fString) stackFiles(i).name(iLFS-1)];
+        newName = [stackFiles(i).name(1:iT) num2str(iFrame,fString) stackFiles(i).name(iLFS:end)];
         
         if ~strcmp(newName,stackFiles(i).name)
             movefile([directory filesep stackFiles(i).name],...
