@@ -5,16 +5,16 @@ function splitProjectMovieImages(projectDir)
 % splitMovieImages(projectDir)
 % 
 % This function goes through every sub-directory of the directory projectDir
-% and if that directory contains .tif files, a sub-directory called
-% "Images" is created. Each .tif is the placed in a seperate sub-directory
-% of this Images directory which is named after the .tif, and if it is a
+% and if that directory contains image files, a sub-directory called
+% "Images" is created. Each image is then placed in a seperate sub-directory
+% of this Images directory which is named after the image, and if it is a
 % multi-page .tif file the pages are split into seperate, sequentially
 % named files.
 % 
 % Input:
 % 
 %   projectDir - Parent directory containing sub-directories, each of
-%   whichc contains images.
+%   which contains images.
 % 
 % 
 % 
@@ -44,8 +44,8 @@ for i = 1:nSub
         disp(['Splitting images for folder ' num2str(i)])
         
         %Set up the image directory
-        imDir = [projectDir filesep allSub(i).name filesep 'images'];        
-        mkdir(imDir)
+        imageDir = [projectDir filesep allSub(i).name filesep 'images'];        
+        mkdir(imageDir)
         
         %Make a folder for storing the old stacks
         mkdir([projectDir filesep allSub(i).name filesep storeName]);
@@ -54,7 +54,7 @@ for i = 1:nSub
         for j = 1:length(im)
             
             %Make the image directory
-            mkdir([imDir filesep im(j).name(1:end-4)])%Name the directory after the stack, removing the file extension
+            mkdir([imageDir filesep im(j).name(1:end-4)])%Name the directory after the stack, removing the file extension
             
             %Load all the images
             currIm = stackRead([projectDir filesep allSub(i).name filesep im(j).name]);
@@ -66,7 +66,7 @@ for i = 1:nSub
             %Write them all to new dir
             disp(['Splitting "' im(j).name '" into ' num2str(nIm) ' seperate files...'])
             for k = 1:nIm
-                imwrite(squeeze(currIm(:,:,k)),[imDir filesep im(j).name(1:end-4) filesep im(j).name(1:end-4) '_' num2str(k,fString) '.' fExt]);
+                imwrite(squeeze(currIm(:,:,k)),[imageDir filesep im(j).name(1:end-4) filesep im(j).name(1:end-4) '_' num2str(k,fString) im(j).name(end-4:end)]);
             end
             
             movefile([projectDir filesep allSub(i).name filesep im(j).name],[projectDir filesep allSub(i).name filesep storeName])
