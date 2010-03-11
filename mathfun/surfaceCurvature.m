@@ -1,8 +1,10 @@
-function K = surfaceCurvature(S,N)
+function [K,H] = surfaceCurvature(S,N)
 %SURFACECURVATURE calculates the local curvature of each face in the input triangular mesh 
 % 
 % K = surfaceCurvature(surface,normals)
 % 
+% [K,H] = surfaceCurvature(surface,normals)
+%
 % This function will calculate an approximate curvature value for each face
 % in the input triangular mesh. The surface should follow the format used
 % by patch, where the surface is contained in a structure with the fields
@@ -32,10 +34,13 @@ function K = surfaceCurvature(S,N)
 % 
 % Output:
 % 
-%   K = A Mx1, where M is the number of faces, vector of the approximate
+%   K = An Mx1 vector, where M is the number of faces, of the approximate
 %   gaussian curvature at each face.
 % 
+%   H = An Mx1 vector, where M is the number of faces, of the approximate
+%   mean curvature at each face.
 % 
+%
 % 
 %Hunter Elliott 
 %3/2010
@@ -53,8 +58,9 @@ abc = ones(1,3) * 1/3; %This will estimate curvature at the center of each face.
 
 %Init array for curvature values
 K = zeros(nTri,1);
+H = zeros(nTri,1);
 
-%Should probably vectorize this at some point...
+%Should probably vectorize/arrayfun this at some point...
 for i = 1:nTri
     
     %Get the coordinates of this triangle's vertices
@@ -71,6 +77,15 @@ for i = 1:nTri
     
     %Gaussian curvature
     K(i) = det(n) / (dot(ni,ni)*dot(ni,m));
+    
+           
+    %H from formula (13) in ref [1]
+    h = cross(n(1,:),X(3,:)-X(2,:))+...
+        cross(n(2,:),X(1,:)-X(3,:))+...
+        cross(n(3,:),X(2,:)-X(1,:));
+    
+    %Mean curvature
+    H(i) = .5*dot(ni,h) / (norm(ni)*dot(ni,m));
               
 end
 
