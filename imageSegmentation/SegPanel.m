@@ -853,7 +853,8 @@ for n_idx=1:handles.numImages(1)
         case 4
             % Code for when radiobutton_seg4 is selected.
             % Customized Segmentation
-            segmask = CustomizedSeg(thismask, handles.closure_size);            
+            %             segmask = CustomizedSeg(thismask, handles.closure_size);
+            segmask = firstMinAfterFirstMaxSeg(thismask, handles.closure_size);            
         otherwise
             % Code for when there is no match.
     end
@@ -1058,7 +1059,8 @@ switch handles.segType   % Get Tag of selected object
     case 4
         % Code for when radiobutton_seg4 is selected.
         % Customized Segmentation
-        segmask = CustomizedSeg(thismask, handles.closure_size);        
+        %         segmask = CustomizedSeg(thismask, handles.closure_size);
+        segmask = firstMinAfterFirstMaxSeg(thismask, handles.closure_size);        
     otherwise
         % Code for when there is no match.
 end
