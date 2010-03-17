@@ -26,7 +26,7 @@ class unser_filtering
 public:
   static const int nfilters = unser_traits<M>::nfilters;
 
-  unser_filtering(const int size[N]) : res_(size), theta_(size)
+  unser_filtering(const int size[N]) : res_(size, 2), theta_(size)
   {
     for (int i = 0; i < nfilters; ++i)
       fconvh_[i] = new image<N, double>(size);
@@ -139,7 +139,6 @@ inline void unser_filtering<2, 2>::compute(const image<2, double> & ima,
 	    
 	    res_(i, j) = b1;
 	    theta_(i, j) = 0;
-	    break;
 	  }
 	else
 	  if (s.nroots() == 1 && fabs(s.root(0)) < s.prec())
@@ -258,20 +257,6 @@ inline void unser_filtering<2, 4>::compute(const image<2, double> & ima,
 	// Solve a X^4 + b X^3 + c X^2 + d X + e = 0
 	s(a, b, c, d, e);
 
-	if (i == 65 && j == 49)
-	  {
-	    std::cout << a << std::endl;
-	    std::cout << b << std::endl;
-	    std::cout << c << std::endl;
-	    std::cout << d << std::endl;
-	    std::cout << e << std::endl;
-
-	    std::cout << s.nroots() << std::endl;
-	    std::cout << s.root(0) << std::endl;
-	    std::cout << s.root(1) << std::endl;
-	    std::cout << s.root(2) << std::endl;
-	  }
-
 	if (s.nroots() == 0)
 	  {	      
 	    // Note: If there is no real solution, we provide 1 real
@@ -279,7 +264,6 @@ inline void unser_filtering<2, 4>::compute(const image<2, double> & ima,
 	    
 	    res_(i, j) = b1;
 	    theta_(i, j) = 0;
-	    break;
 	  }
 	else
 	  if (s.nroots() == 1 && fabs(s.root(0)) < s.prec())

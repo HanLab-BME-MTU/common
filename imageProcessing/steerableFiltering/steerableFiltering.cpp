@@ -29,7 +29,7 @@ static void dispatch(const image<2, double> & ima,
       /////////////////////////////////////
 
       image<2, double> nms(ima.size());
-  
+
       compute_nms(f.res(), f.theta(), nms);
 
       image2mxArray(nms, plhs[2]);
@@ -108,18 +108,18 @@ void mexFunction(int nlhs, mxArray *plhs[],
   // Compute filtering //
   ///////////////////////
 
-//   switch (m)
-//     {
-//     case 1: dispatch<1>(ima, sigma, nlhs, plhs); break;
-//     case 2: dispatch<2>(ima, sigma, nlhs, plhs); break;
-//     case 3: dispatch<3>(ima, sigma, nlhs, plhs); break;
-//     case 4: dispatch<4>(ima, sigma, nlhs, plhs); break;
-//     default: mexErrMsgTxt("Invalid order (M must be 1, 2, 3, or 4.");
-//     }
+  switch (m)
+    {
+    case 1: dispatch<1>(ima, sigma, nlhs, plhs); break;
+    case 2: dispatch<2>(ima, sigma, nlhs, plhs); break;
+    case 3: dispatch<3>(ima, sigma, nlhs, plhs); break;
+    case 4: dispatch<4>(ima, sigma, nlhs, plhs); break;
+    default: mexErrMsgTxt("Invalid order (M must be 1, 2, 3, or 4.");
+    }
 }
 
 // Compile this file with the following command:
-// LD_RUN_PATH=/usr/local/Matlab/bin/glnxa64 && g++ -g -DARRAY_ACCESS_INLINING -I. -L/usr/local/Matlab/bin/glnxa64 -I../../mex/include/c++/ -I/usr/local/Matlab/extern/include steerableFiltering.cpp -lmx -lmex
+// export LD_RUN_PATH=/usr/local/Matlab/bin/glnxa64 && g++ -g -DARRAY_ACCESS_INLINING -I. -L/usr/local/Matlab/bin/glnxa64 -I../../mex/include/c++/ -I/usr/local/Matlab/extern/include steerableFiltering.cpp -lmx -lmex
 
 // debug
 int main()
@@ -127,25 +127,31 @@ int main()
   int nlhs = 4;
   int nrhs = 3;
 
-  mxArray* plhs[4];
-  mxArray* prhs[3];
+  mxArray* plhs[4] = {0, 0, 0, 0};
+  mxArray* prhs[3] = {0, 0, 0};
 
-  plhs[0] = mxCreateDoubleMatrix(100, 100, mxREAL);
-  double* ptr = mxGetPr(plhs[0]);
-  for (int i = 0; i < 10000; ++i)
+  prhs[0] = mxCreateDoubleMatrix(100, 10, mxREAL);
+  double* ptr = mxGetPr(prhs[0]);
+  for (int i = 0; i < 1000; ++i)
     ptr[i] = 1;
 
-  plhs[1] = mxCreateDoubleMatrix(1, 1, mxREAL);
-  ptr = mxGetPr(plhs[1]);
+  prhs[1] = mxCreateDoubleMatrix(1, 1, mxREAL);
+  ptr = mxGetPr(prhs[1]);
   *ptr = 2;
 
-  plhs[2] = mxCreateDoubleMatrix(1, 1, mxREAL);
-  ptr = mxGetPr(plhs[1]);
+  prhs[2] = mxCreateDoubleMatrix(1, 1, mxREAL);
+  ptr = mxGetPr(prhs[2]);
   *ptr = 1;
 
-  std::cout << mxGetNumberOfDimensions(prhs[0]) << std::endl;
-
   mexFunction(nlhs, plhs, nrhs, const_cast<const mxArray**>(prhs));
+
+  for (int i = 0; i < nrhs; ++i)
+    if (prhs[i])
+      mxDestroyArray(prhs[i]);
+
+  for (int i = 0; i < nlhs; ++i)
+    if (plhs[i])
+      mxDestroyArray(plhs[i]);
 
   return 0;
 }
