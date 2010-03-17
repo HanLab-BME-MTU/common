@@ -40,7 +40,7 @@ yRange = cell(n, 1);
 % F = reshape(I - dlSegment2DImageModel(x, sigmaPSF, [nrows ncols]), m, 1)
 % But we want to keep xRange yRange since they are required to compute J.
 
-F = zeros(nrows,ncols);
+F = I;
 
 for i = 1:n
     xC = x(i,1);
@@ -56,7 +56,7 @@ for i = 1:n
     
     S = dLSegment2D(xRange{i}, yRange{i}, xC, yC, A, sigmaPSF, l, t);
 
-    F(yRange,xRange) = I(yRange,xRange) - S;
+    F(yRange,xRange) = F(yRange,xRange) - S;
 end
 
 F = F(:);
@@ -73,7 +73,7 @@ if nargout > 1
         l = x(i,4);
         t = x(i,5);
         
-        % Compute all partial derivatives of segment parameters
+        % Compute all partial derivatives of F against segment parameters
         [dFdXc, dFdYc, dFdA, dFds, dFdl, dFdt] = ...
             dlSegment2DJacobian(xRange{i}, yRange{i}, xC, yC, A, ...
             sigmaPSF, l, t); %#ok<ASGLU>
