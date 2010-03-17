@@ -1,6 +1,7 @@
-function F = dLSegment2D(xRange, yRange, xC, yC, A, sigmaPSF, l, theta)
-% 2D Diffraction-limited Segment Model
-% F = dLSegment2D(xRange, yRange, xC, xC, A, sigmaPSF, l, theta);
+function dFdYc = dLSegment2D_dFdYc(xRange, yRange, xC, yC, A, sigmaPSF, l, theta)
+% Partial derivative of a 2-dimensional diffraction-limited degment
+% function in function of yC.
+% dFdYc = dLSegment2D_dFdYc(xRange, yRange, xC, xC, A, sigmaPSF, l, theta);
 %
 % parameters:
 % (xRange, yRange)   2 vectors representing the 2-dimensional domain (e.g.
@@ -17,7 +18,7 @@ function F = dLSegment2D(xRange, yRange, xC, yC, A, sigmaPSF, l, theta)
 % theta              orientation of the segment
 %
 % output:
-% F is a NxM matrix where N = numel(X) and M = numel(Y).
+% dFdYc is a NxM matrix where N = numel(xRange) and M = numel(yRange).
 %
 % Sylvain Berlemont, 2009
 
@@ -34,6 +35,6 @@ c = A / (2 * erf(l / c0));
 X = X - xC;
 Y = Y - yC;
 
-F = c * exp(-((st * X - ct * Y) / c0).^2) .* ...
+dFdYc = c * exp(-((st * X - ct * Y) / c0).^2) .* ...
     (erf((l - ct * X - st * Y) / c0) + ...
     erf((l + ct * X + st * Y) / c0));
