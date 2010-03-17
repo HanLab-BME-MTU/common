@@ -1,5 +1,5 @@
 function [F J] = dLSegment2DFit(x, I, sigmaPSF)
-% This function compute the I - Im, where I is an image and Im is an image
+% This function computes I - Im, where I is an image and Im is an image
 % model defined by the sum of 2D diffraction-limited segment model
 % caracterize by params x (see dLSegment2DImageModel.m for mode details).
 % This function intends to be used as a function handler in lsqnonlin,
