@@ -1,6 +1,6 @@
 function F = dLSegment2D(xRange, yRange, xC, yC, A, sigmaPSF, l, theta)
 % 2D Diffraction-limited Segment Model
-% F = dLSegment2D(xRange, yRange, xC, xC, A, sigmaPSF, l, theta);
+% F = dLSegment2D(xRange, yRange, xC, xC, A, sigmaPSF, l, theta)
 %
 % parameters:
 % (xRange, yRange)   2 vectors representing the 2-dimensional domain (e.g.
