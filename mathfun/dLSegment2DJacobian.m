@@ -29,34 +29,20 @@ st = sin(theta);
 
 l = l / 2;
 
-c0 = sqrt(2) * sigmaPSF;
-c = A / (2 * erf(l / c0));
-
 [X Y] = meshgrid(xRange, yRange);
 
 X = X - xC;
 Y = Y - yC;
 
-dFdXc = c * exp(-((st * X - ct * Y) / c0).^2) .* ...
-    (erf((l - ct * X - st * Y) / c0) + ...
-    erf((l + ct * X + st * Y) / c0));
+dFdXc = (1/2).*A.*exp(1).^((-1/2).*sigmaPSF.^(-2).*((y+(-1).*yc).*cos(theta)+((-1).*x+xc).*sin(theta)).^2).*sigmaPSF.^(-2).*Erf(2.^(-1/2).*l.*sigmaPSF.^(-1)).^(-1).*(exp(1).^((-1/8).*sigmaPSF.^(-2).*(l+(-2).*(x+(-1).*xc).*cos(theta)+(-2).*(y+(-1).*yc).*sin(theta)).^2).*(2.*pi.^(-1)).^(1/2).*sigmaPSF.*cos(theta)+(-1).*exp(1).^((-1/8).*sigmaPSF.^(-2).*(l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta)).^2).*(2.*pi.^(-1)).^(1/2).*sigmaPSF.*cos(theta)+(Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta)))+Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+(-2).*(x+(-1).*xc).*cos(theta)+(-2).*y.*sin(theta)+2.*yc.*sin(theta)))).*sin(theta).*(((-1).*y+yc).*cos(theta)+(x+(-1).*xc).*sin(theta)));
 
-dFdYc = c * exp(-((st * X - ct * Y) / c0).^2) .* ...
-    (erf((l - ct * X - st * Y) / c0) + ...
-    erf((l + ct * X + st * Y) / c0));
+dFdYc = (1/2).*A.*exp(1).^((-1/2).*sigmaPSF.^(-2).*((y+(-1).*yc).*cos(theta)+((-1).*x+xc).*sin(theta)).^2).*sigmaPSF.^(-2).*Erf(2.^(-1/2).*l.*sigmaPSF.^(-1)).^(-1).*(exp(1).^((-1/8).*sigmaPSF.^(-2).*(l+(-2).*(x+(-1).*xc).*cos(theta)+(-2).*(y+(-1).*yc).*sin(theta)).^2).*(2.*pi.^(-1)).^(1/2).*sigmaPSF.*sin(theta)+(-1).*exp(1).^((-1/8).*sigmaPSF.^(-2).*(l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta)).^2).*(2.*pi.^(-1)).^(1/2).*sigmaPSF.*sin(theta)+cos(theta).*(Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta)))+Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+(-2).*(x+(-1).*xc).*cos(theta)+(-2).*y.*sin(theta)+2.*yc.*sin(theta)))).*((y+(-1).*yc).*cos(theta)+((-1).*x+xc).*sin(theta)));
 
-dFdA = c * exp(-((st * X - ct * Y) / c0).^2) .* ...
-    (erf((l - ct * X - st * Y) / c0) + ...
-    erf((l + ct * X + st * Y) / c0));
+dFdA = (1/2).*exp(1).^((-1/2).*sigmaPSF.^(-2).*((y+(-1).*yc).*cos(theta)+((-1).*x+xc).*sin(theta)).^2).*Erf(2.^(-1/2).*l.*sigmaPSF.^(-1)).^(-1).*(Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta)))+Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+(-2).*(x+(-1).*xc).*cos(theta)+(-2).*y.*sin(theta)+2.*yc.*sin(theta))));
 
-dFds = c * exp(-((st * X - ct * Y) / c0).^2) .* ...
-    (erf((l - ct * X - st * Y) / c0) + ...
-    erf((l + ct * X + st * Y) / c0));
+dFds = (1/2).*A.*exp(1).^((-1/2).*sigmaPSF.^(-2).*((y+(-1).*yc).*cos(theta)+((-1).*x+xc).*sin(theta)).^2).*Erf(2.^(-1/2).*l.*sigmaPSF.^(-1)).^(-2).*(exp(1).^((-1/2).*l.^2.*sigmaPSF.^(-2)).*l.*(2.*pi.^(-1)).^(1/2).*sigmaPSF.^(-2).*(Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta)))+Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+(-2).*(x+(-1).*xc).*cos(theta)+(-2).*y.*sin(theta)+2.*yc.*sin(theta))))+sigmaPSF.^(-3).*Erf(2.^(-1/2).*l.*sigmaPSF.^(-1)).*(Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta)))+Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+(-2).*(x+(-1).*xc).*cos(theta)+(-2).*y.*sin(theta)+2.*yc.*sin(theta)))).*((y+(-1).*yc).*cos(theta)+((-1).*x+xc).*sin(theta)).^2+(2.*pi).^(-1/2).*sigmaPSF.^(-2).*Erf(2.^(-1/2).*l.*sigmaPSF.^(-1)).*(exp(1).^((-1/8).*sigmaPSF.^(-2).*(l+(-2).*(x+(-1).*xc).*cos(theta)+(-2).*(y+(-1).*yc).*sin(theta)).^2).*((-1).*l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta))+(-1).*exp(1).^((-1/8).*sigmaPSF.^(-2).*(l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta)).^2).*(l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta))));
 
-dFdl = c * exp(-((st * X - ct * Y) / c0).^2) .* ...
-    (erf((l - ct * X - st * Y) / c0) + ...
-    erf((l + ct * X + st * Y) / c0));
+dFdl = (1/2).*A.*exp(1).^((-1/2).*sigmaPSF.^(-2).*((y+(-1).*yc).*cos(theta)+((-1).*x+xc).*sin(theta)).^2).*(2.*pi).^(-1/2).*sigmaPSF.^(-1).*Erf(2.^(-1/2).*l.*sigmaPSF.^(-1)).^(-2).*((exp(1).^((-1/8).*sigmaPSF.^(-2).*(l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta)).^2)+exp(1).^((-1/8).*sigmaPSF.^(-2).*(l+(-2).*x.*cos(theta)+2.*xc.*cos(theta)+(-2).*y.*sin(theta)+2.*yc.*sin(theta)).^2)).*Erf(2.^(-1/2).*l.*sigmaPSF.^(-1))+(-2).*exp(1).^((-1/2).*l.^2.*sigmaPSF.^(-2)).*(Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta)))+Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+(-2).*x.*cos(theta)+2.*xc.*cos(theta)+(-2).*y.*sin(theta)+2.*yc.*sin(theta)))));
 
-dFdt = c * exp(-((st * X - ct * Y) / c0).^2) .* ...
-    (erf((l - ct * X - st * Y) / c0) + ...
-    erf((l + ct * X + st * Y) / c0));
+dFdt = (1/2).*A.*exp(1).^((-1/2).*sigmaPSF.^(-2).*((y+(-1).*yc).*cos(theta)+((-1).*x+xc).*sin(theta)).^2).*Erf(2.^(-1/2).*l.*sigmaPSF.^(-1)).^(-1).*(exp(1).^((-1/8).*sigmaPSF.^(-2).*(l+(-2).*(x+(-1).*xc).*cos(theta)+(-2).*(y+(-1).*yc).*sin(theta)).^2).*(2.*pi).^(-1/2).*sigmaPSF.^(-1).*((-2).*(y+(-1).*yc).*cos(theta)+2.*(x+(-1).*xc).*sin(theta))+exp(1).^((-1/8).*sigmaPSF.^(-2).*(l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta)).^2).*(2.*pi.^(-1)).^(1/2).*sigmaPSF.^(-1).*((y+(-1).*yc).*cos(theta)+((-1).*x+xc).*sin(theta))+sigmaPSF.^(-2).*(Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+2.*(x+(-1).*xc).*cos(theta)+2.*(y+(-1).*yc).*sin(theta)))+Erf((1/2).*2.^(-1/2).*sigmaPSF.^(-1).*(l+(-2).*(x+(-1).*xc).*cos(theta)+(-2).*y.*sin(theta)+2.*yc.*sin(theta)))).*((y+(-1).*yc).*cos(theta)+((-1).*x+xc).*sin(theta)).*((x+(-1).*xc).*cos(theta)+(y+(-1).*yc).*sin(theta)));
+
