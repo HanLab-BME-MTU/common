@@ -5,8 +5,9 @@ function Im = dLSegment2DImageModel(params, sigmaPSF, imSize)
 % Im = dLSegment2DImageModel(params, sigmaPSF, imSize)
 %
 % parameters:
-% params          nx5 matrix where n is the number of segments and their
-%                 parameters, i.e. xC, yC, A, l, t are stored column-wise.
+% params          nx6 matrix where n is the number of segments and their
+%                 parameters, i.e. xC, yC, A, Bg, l, t are stored
+%                 column-wise.
 %
 % sigmaPSF        half width of the gaussian PSF model
 %
@@ -25,15 +26,16 @@ for i = 1:n
     xC = params(i,1);
     yC = params(i,2);
     A = params(i,3);
-    l = params(i,4);
-    t = params(i,5);
+    Bg = params(i,4);
+    l = params(i,5);
+    t = params(i,6);
     
     [xRange yRange] = dLSegment2DSupport(xC, yC, sigmaPSF, l, t);
 
     xRange = max(xRange(1),1):min(xRange(end),imSize(2));
     yRange = max(yRange(1),1):min(yRange(end),imSize(1));
     
-    S = dLSegment2D(xRange, yRange, xC, yC, A, sigmaPSF, l, t);
+    S = dLSegment2D(xRange, yRange, xC, yC, A, Bg, sigmaPSF, l, t);
 
     Im(yRange,xRange) = Im(yRange,xRange) + S;
 end
