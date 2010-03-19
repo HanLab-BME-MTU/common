@@ -22,7 +22,7 @@ l2 = l / 2;
 
 % Hypothenuse length, corresponding to the half-length diagonal of a
 % 2*(L2+d) long by 2d wide rectangle surrounding the segment.
-d = 5 * sigmaPSF;
+d = 4 * sigmaPSF;
 lh = sqrt(d.^2 + (l2 + d).^2);
 
 % Angle between a rectangle border and a diagonal of the rectangle

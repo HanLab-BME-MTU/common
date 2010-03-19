@@ -60,7 +60,7 @@ for i = 1:n
     F(yRange{i},xRange{i}) = F(yRange{i},xRange{i}) + S;
 end
 
-F = reshape(I - F, m, 1);
+F = reshape(F - I, m, 1);
 
 sum(F(:).^2)
 
