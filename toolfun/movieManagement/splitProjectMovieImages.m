@@ -66,7 +66,7 @@ for i = 1:nSub
             %Write them all to new dir
             disp(['Splitting "' im(j).name '" into ' num2str(nIm) ' seperate files...'])
             for k = 1:nIm
-                imwrite(squeeze(currIm(:,:,k)),[imageDir filesep im(j).name(1:end-4) filesep im(j).name(1:end-4) '_' num2str(k,fString) im(j).name(end-4:end)]);
+                imwrite(squeeze(currIm(:,:,k)),[imageDir filesep im(j).name(1:end-4) filesep im(j).name(1:end-4) '_' num2str(k,fString) im(j).name(end-3:end)]);
             end
             
             movefile([projectDir filesep allSub(i).name filesep im(j).name],[projectDir filesep allSub(i).name filesep storeName])

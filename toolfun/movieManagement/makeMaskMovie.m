@@ -200,9 +200,9 @@ end
 if makeMov
     MakeQTMovie('finish')
     %Only specify the .mov extension if both are made
-    movieData.masks.movie.fileName = [mvName '.mov'];    
+    movieData.movies.maskMovie.fileName = [mvName '.mov'];    
 else
-    movieData.masks.movie.fileName = [mvName '.avi'];
+    movieData.movies.maskMovie.fileName = [mvName '.avi'];
 end
 
 if makeAvi

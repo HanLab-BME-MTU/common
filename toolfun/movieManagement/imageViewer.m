@@ -92,6 +92,8 @@ end
 
 if isempty(iFrame)
     iFrame = 1;%Default is to display first frame
+elseif ~isnumeric(iFrame) || round(iFrame) ~= iFrame || iFrame > movieData.nImages(iChan)
+    error('Invalid frame number specified! Check frame number!')
 end
 
 %If no handle given, create figure

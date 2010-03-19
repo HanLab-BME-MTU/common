@@ -39,6 +39,10 @@ function movieData = makeActivityMovie(movieData,varargin)
 %       values in the image.
 %       Optional. Default is false.
 %
+%       ('ColorBar' -> Logical) If true, a scale bar showing the scale of
+%       the colormap will be displayed next to the image.
+%       Optional. Default is true.
+%
 %       ('MakeAvi' - Logical scalar) If true, the movie will be saved as .avi.
 %       Optional. Default is false.
 %
@@ -113,6 +117,7 @@ for iImage = 1:nImages
     imagesc(currImage)
     colormap(cMap)
     axis image,axis off,axis tight
+    caxis([min(currImage(currImage(:)>0)) max(currImage(currImage(:)>0))]);
     colorbar;        
     
     %Adjust the colormap range if requested
@@ -140,7 +145,7 @@ for iImage = 1:nImages
     end
     
     if makeAvi
-        movieFrames(iImage) = getframe(figHan);
+        movieFrames(iImage) = getframe(figHan); %#ok<AGROW> - pre allocation not needed. See moviein.m documentation.
     end
     
 end

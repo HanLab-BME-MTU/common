@@ -58,7 +58,7 @@ if ~checkMovieMaskMovie(movieData)
 end 
 
 %Compare the date/time on the segmentation and the mask movie
-if datenum(movieData.masks.dateTime) > datenum(movieData.masks.movie.dateTime)
+if datenum(movieData.masks.dateTime) > datenum(movieData.movies.maskMovie.dateTime)
     bPressed = questdlg('The segmentation is newer than the mask movie!',...
         'User Mask Validation','Re-Make Movie','Ignore','Abort','Abort');
     
@@ -83,11 +83,11 @@ mb=msgbox('Please view the mask movie, and then close the viewing application wh
 uiwait(mb);
 
 if ispc
-    fStat = system([movieData.analysisDirectory filesep movieData.masks.movie.fileName]);        
+    fStat = system([movieData.analysisDirectory filesep movieData.movies.maskMovie.fileName]);        
     
 elseif isunix
     cd(movieData.analysisDirectory)
-    fStat = system(['totem '  movieData.masks.movie.fileName]); %not ideal, but what else?
+    fStat = system(['totem '  movieData.movies.maskMovie.fileName]); %not ideal, but what else?
 end
 
 if fStat ~= 0
