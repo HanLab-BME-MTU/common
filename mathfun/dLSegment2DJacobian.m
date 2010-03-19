@@ -33,8 +33,6 @@ function [dFdXc dFdYc dFdA dFdBg dFds dFdl dFdt] = ...
 ct = cos(theta);
 st = sin(theta);
 
-l = l / 2;
-
 [X Y] = meshgrid(xRange, yRange);
 
 X = X - xC;
@@ -71,4 +69,3 @@ dFdl = A*C1.*C9*s_1.*C2.^(-2).*((C6+C5).*C2-2*C7.*(C3+C4));
 
 dFdt = A*C1.*C2.^(-1).*(C5.*C9.*s_1.*(2*X*st-2*Y*ct)+C6.*C8*s_1.*...
     (Y*ct-X*st)+s_2*(C3+C4).*(Y*ct-X*st).*(X*ct+Y*st));
-
