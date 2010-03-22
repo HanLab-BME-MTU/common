@@ -35,6 +35,7 @@ m = nrows * ncols;
     
 xRange = cell(n, 1);
 yRange = cell(n, 1);
+BB = cell(n,1);
 
 % The following loop could be simply replaced by:
 % F = reshape(dlSegment2DImageModel(x, sigmaPSF, [nrows ncols]) - I, m, 1)
@@ -50,14 +51,14 @@ for i = 1:n
     l = x(i,5);
     t = x(i,6);
     
-    [xR yR] = dLSegment2DSupport(xC, yC, sigmaPSF, l, t);
+    [xR,yR,BB{i}] = dLSegment2DSupport(xC, yC, sigmaPSF, l, t);
 
     xRange{i} = max(xR(1),1):min(xR(end),size(I,2));
     yRange{i} = max(yR(1),1):min(yR(end),size(I,1));
     
     S = dLSegment2D(xRange{i}, yRange{i}, xC, yC, A, Bg, sigmaPSF, l, t);
 
-    F(yRange{i},xRange{i}) = F(yRange{i},xRange{i}) + S;
+    F(yRange{i},xRange{i}) = F(yRange{i},xRange{i}) + S .* BB{i};
 end
 
 F = reshape(F - I, m, 1);

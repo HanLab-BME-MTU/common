@@ -15,7 +15,7 @@ function Im = dLSegment2DImageModel(params, sigmaPSF, imSize)
 
 [n,p] = size(params);
 
-if p ~= 5
+if p ~= 6
     error('Invalid number of segment parameters.');
 end
 
@@ -30,12 +30,12 @@ for i = 1:n
     l = params(i,5);
     t = params(i,6);
     
-    [xRange yRange] = dLSegment2DSupport(xC, yC, sigmaPSF, l, t);
+    [xRange,yRange,nzIdx] = dLSegment2DSupport(xC, yC, sigmaPSF, l, t);
 
     xRange = max(xRange(1),1):min(xRange(end),imSize(2));
     yRange = max(yRange(1),1):min(yRange(end),imSize(1));
     
-    S = dLSegment2D(xRange, yRange, xC, yC, A, Bg, sigmaPSF, l, t);
-
-    Im(yRange,xRange) = Im(yRange,xRange) + S;
+    S = dLSegment2D(xRange-xC, yRange-yC, A, Bg, sigmaPSF, l, t, nzIdx);
+    
+    Im(yRange,xRange) = Im(yRange,xRange) + S .* BB;
 end

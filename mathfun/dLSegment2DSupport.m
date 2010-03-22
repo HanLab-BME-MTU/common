@@ -1,4 +1,4 @@
-function [xRange, yRange] = dLSegment2DSupport(xC, yC, sigmaPSF, l, theta)
+function [xRange,yRange,nzIdx] = dLSegment2DSupport(xC, yC, sigmaPSF, l, theta)
 % Compute the finite support of 2D Diffraction-limited Segment Model given
 % its parameters.
 % [xRange yRange] = dLSegment2DSupport(xC, xC, sigmaPSF, l, theta)
@@ -55,3 +55,5 @@ if yMax < yMin
 else
     yRange = yMin:yMax;
 end
+
+BB = poly2mask(x-xRange(1)+1,y-yRange(1)+1,length(yRange),length(xRange));

@@ -1,12 +1,12 @@
-function F = dLSegment2D(xRange, yRange, xC, yC, A, Bg, sigmaPSF, l, theta)
+function F = dLSegment2D(xRange, yRange, A, Bg, sigmaPSF, l, theta, nzIdx)
 % 2D Diffraction-limited Segment Model
-% F = dLSegment2D(xRange, yRange, xC, xC, A, Bg, sigmaPSF, l, theta)
+% F = dLSegment2D(xRange, yRange, A, Bg, sigmaPSF, l, theta, nzIdx)
 %
 % parameters:
-% (xRange, yRange)   2 vectors representing the 2-dimensional domain (e.g.
-%                    xRange = -10:.1:10, yRange = -5:.1:5
-%
-% (xC,yC)            center of the segment
+% (xRange, yRange)   2 vectors representing the 2-dimensional domain where
+%                    the segment is centered on (0,0). Call dLSegment2D
+%                    with xRange-xC and yRange-yC for a segment centered on
+%                    (xC,yC).
 %
 % A                  amplitude of the segment
 %
@@ -18,22 +18,34 @@ function F = dLSegment2D(xRange, yRange, xC, yC, A, Bg, sigmaPSF, l, theta)
 %
 % theta              orientation of the segment
 %
-% output:
-% F is a NxM matrix where N = numel(X) and M = numel(Y).
+% nzIdx              linear indexes of a NxM matrix (N = numel(yRange) and
+%                    M = numel(xRange)) where the model is defined. If not
+%                    provided, nzIdx = ones(N*M, 1).
 %
-% Sylvain Berlemont, 2009
+% output:
+% F                  the model defined on a NxM matrix.
+%
+% Sylvain Berlemont, 2010
+
+N = numel(yRange);
+M = numel(xRange);
+
+if nargin < 8 || isempty(nzIdx)
+    nzIdx = ones(N*M, 1);
+end
 
 ct = cos(theta);
 st = sin(theta);
 
 [X Y] = meshgrid(xRange, yRange);
-
-X = X - xC;
-Y = Y - yC;
+X = X(nzIdx);
+Y = Y(nzIdx);
 
 C0 = (1/2).*A.*erf(2.^(-1/2).*l.*sigmaPSF.^(-1)).^(-1);
 C1 = (1/2).*2.^(-1/2).*sigmaPSF.^(-1);
 
-F = Bg + C0 * exp((-1/2).*sigmaPSF.^(-2).*(Y.*ct-X.*st).^2).*(...
+F = zeros(N,M);
+
+F(nzIdx) = Bg + C0 * exp((-1/2).*sigmaPSF.^(-2).*(Y.*ct-X.*st).^2).*(...
     erf(C1.*(l+2.*X.*ct+2.*Y.*st))+...
     erf(C1.*(l-2*X*ct-2*Y*st)));
