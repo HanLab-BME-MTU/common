@@ -1,10 +1,4 @@
-//
-//  movieManagment.java
-//  
-//
-//  Created by Sylvain Berlemont on 3/22/10.
-//  Copyright 2010 Danuser Lab - Harvard Medical School. All rights reserved.
-//
+
 
 // This defines the abstract class Process from which every user-defined process
 // will inherit.
@@ -42,8 +36,8 @@ public abstract class Process {
 public class maskProcess extends Process
 {
 	// Define the constructor
-	public maskProcess(movieManagement owner) {
-		super(owner, 'maskProcess')
+	public maskProcess(movieManagement owner, String dateTime) {
+		super(owner, 'maskProcess', dateTime)
 	}
 		
 	// Get the ith mask path
