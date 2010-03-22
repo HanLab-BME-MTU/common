@@ -9,8 +9,8 @@
 // This defines the abstract class Process from which every user-defined process
 // will inherit.
 public abstract class Process {
-	// Contructor
-	protected Process(movieManagement owner, String name)
+	// Constructor
+	protected Process(movieManagement owner, String name, String dateTime)
 	{
 		owner_ = owner;
 	}
@@ -19,7 +19,11 @@ public abstract class Process {
 	public String getName() {
 		return name_;
 	}
-	
+
+	public String getDateTime() {
+		return dateTime_;
+	}		
+
 	// make a sanity check of the process
 	public abstract boolean sanityCheck();
 	
@@ -27,9 +31,11 @@ public abstract class Process {
 	
 	// protected field section
 	protected const movieManagement owner_;
-	
+	protected String dateTime_;	
+
 	// private fields
 	private String name_;
+
 }
 
 // Here is an example of a concrete process (i.e. that implements the Process abstract class)
@@ -59,10 +65,12 @@ public class maskProcess extends Process
 		// check that the maskPaths_ array is the same size that channelPaths_
 		// array.
 		
-		if maskPaths_.length() != owner_.channelPaths()
+		if maskPaths_.length() != owner_.channelPaths().length()
 			// error
 		
 		// check mask path for every channel
+		// check mask number for every channel == owner_.nFrames()
+
 	}
 	
 	// Private field section
@@ -70,12 +78,13 @@ public class maskProcess extends Process
 	String[] maskPaths_;
 	String functionName_;
 	String[] functionParams_;
+
 }
 
 // This defines the abstract class Process from which every user-defined process
 // will inherit.
 public abstract class Package {
-	// Contructor
+	// Constructor
 	protected Package(movieManagement owner, String name)
 	{
 		owner_ = owner;
@@ -84,6 +93,10 @@ public abstract class Package {
 	// Get the name of the package
 	public String getName() {
 		return name_;
+	}
+
+	public String[] getProcesses() {
+		return processes_;
 	}
 	
 	// make a sanity check of the process
@@ -96,6 +109,8 @@ public abstract class Package {
 	
 	// private fields
 	private String name_;
+	private String[] processes_;
+
 }
 
 // Here is an example of a concrete package (i.e. that implements the Package abstract class)
@@ -124,31 +139,16 @@ public class bioSensorPackage extends Package {
 
 public class movieManagment {
 	
-	// TODO: Define constructors (that might be specific to Matlab OO)
+	public movieManagement(int[] imSize,int nFrames,String[] channelPaths,double pixelSize,double timeInterval)
 
 	// Return the number of frames
 	public int nFrames() {
 		return nFrames_;
 	}
 
-	// Get the current spatial unit (nm, um, ...)
-	public String getSpatialUnit() {
-		return spatialUnit_;
-	}
-	
-	// Set the spatial unit.
-	public void setSpatialUnit(String spatialUnit) {
-		spatialUnit_ = spatialUnit;		
-	}
-	
-	// Get the current temporal unit (s, min, h, ...)
-	public String getTemporalUnit() {
-		return temporalUnit_;
-	}
-	
-	// Set the temporal unit.
-	public void setTemporalUnit(String temporalUnit) {
-		temporalUnit_ = temporalUnit;
+	//Return the number of images
+	public int[] imSize() {
+		return imSize_;
 	}
 	
 	// Get pixel size
@@ -165,10 +165,6 @@ public class movieManagment {
 	public String getChannelPath(int i) {
 		return channelPaths_[i];
 	}
-
-	// Add a path to the channelPaths array
-	public void addChannelPath(String channelPath) {
-	}
 	
 	// Get the number of processes
 	public int getNumberOfProcesses() {
@@ -178,6 +174,11 @@ public class movieManagment {
 	// Get the ith process
 	public Process getProcess(int i) {
 		return processes_[i];
+	}
+
+	// Set the ith process
+	public Process setProcess(int i, Process process) {
+		processes_[i] = process;
 	}
 	
 	// Add a process to the processes array
@@ -194,8 +195,13 @@ public class movieManagment {
 		return packages_[i];
 	}
 	
+	//Set the ith package
+	public Package setPackage(int i, Package package){
+		packages_[i] = package;
+	}
+	
 	// Add a package to the package array
-	public void addPackage(Packge p) {
+	public void addPackage(Package p) {
 	}
 	
 	// This method checks the validity of the data stored in that object.
@@ -203,18 +209,18 @@ public class movieManagment {
 		boolean isValid = true;
 
 		// check whether channelPaths exist and that each channelPath contains
-		// nFrames tif files, ...
+		// nFrames tif files, ...		
 		
 		// Call the sanity check of every process
 		for (int i = 0; i < processes_.length(); ++i)
-			isValid &= processes_[i].sanityCheck();
+			isValid &= processes_[i].sanityCheck(full);
 		
 		if (~isValid)
 			return false;
-		
+				
 		// Call the sanity check of every package
 		for (int i = 0; i < packages_.length(); ++i)
-			isValid &= packages_[i].sanityCheck();
+			isValid &= packages_[i].sanityCheck(full);
 		
 		return isValid;
 	}
@@ -222,12 +228,10 @@ public class movieManagment {
 	// Below starts the private field section
 	
 	private int nFrames_;
-	private String spatialUnit_;
-	private String temporalUnit_;
-	private double pixelSize_;
-	private double timeInterval_;
+	private int[] imSize_;
 	private String[] channelPaths_;
-	
+	private double pixelSize_;
+	private double timeInterval_;	
 	private Process[] processes_;
-	private Package[] pachages_;
+	private Package[] packages_;
 }
