@@ -1,5 +1,5 @@
 
-
+// 
 // This defines the abstract class Process from which every user-defined process
 // will inherit.
 public abstract class Process {
@@ -9,6 +9,8 @@ public abstract class Process {
 		owner_ = owner;
 	}
 		
+	
+	
 	// Get the name of the process
 	public String getName() {
 		return name_;
