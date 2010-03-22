@@ -35,6 +35,10 @@ s2 = [1 -1 1 -1];
 x = xC + s1 .* cos(theta + s2 * at) * lh;
 y = yC + s1 .* sin(theta + s2 * at) * lh;
 
+% truncate numbers towards zero with 10 decimals.
+x = fix(x * 1e10) * 1e-10;
+y = fix(y * 1e10) * 1e-10;
+
 xMin = min(floor(x));
 xMax = max(ceil(x));
 yMin = min(floor(y));

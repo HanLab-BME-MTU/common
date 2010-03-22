@@ -17,7 +17,7 @@ function [F J] = dLSegment2DFit(x, I, sigmaPSF)
 % sigmaPSF     half width of the gaussian PSF model
 %
 % Output:
-% F            F = I - model
+% F            F = model - I
 %
 % J            J is an MxN matrix where M = numel(I) and N = numel(x). This
 %              correspond to the jacobian of I against x (see lsqnonlin for
@@ -37,7 +37,7 @@ xRange = cell(n, 1);
 yRange = cell(n, 1);
 
 % The following loop could be simply replaced by:
-% F = reshape(I - dlSegment2DImageModel(x, sigmaPSF, [nrows ncols]), m, 1)
+% F = reshape(dlSegment2DImageModel(x, sigmaPSF, [nrows ncols]) - I, m, 1)
 % But we want to keep xRange yRange since they are required to compute J.
 
 F = zeros(size(I));
@@ -62,8 +62,6 @@ end
 
 F = reshape(F - I, m, 1);
 
-sum(F(:).^2)
-
 if nargout > 1
     indPixels = cell(n,1);
     indParams = cell(n,1);
@@ -79,7 +77,7 @@ if nargout > 1
         
         % Compute all partial derivatives of F against segment parameters
         [dFdXc, dFdYc, dFdA, dFdBg, dFds, dFdl, dFdt] = ...
-            dlSegment2DJacobian(xRange{i}, yRange{i}, xC, yC, A, Bg, ...
+            dLSegment2DJacobian(xRange{i}, yRange{i}, xC, yC, A, Bg, ...
             sigmaPSF, l, t); %#ok<ASGLU>
         
         [X Y] = meshgrid(xRange{i}, yRange{i});
