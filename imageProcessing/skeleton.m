@@ -48,8 +48,7 @@ function skel = skeleton(bw,method,divThreshold)
 %           produce the skeleton (should be negative!). Lower (more
 %           negative) values will give fewer points which are more likely
 %           to lie on the true keleton, but less likely to preserve
-%           connectivity. If positive, the divergence image itself is
-%           returned. Optional. Default is -1;
+%           connectivity. Optional. Default is -1;
 %
 %       Optional. Default method is 't'
 %
@@ -103,11 +102,8 @@ switch method
         %Initialize the skeleton matrix
         skel = false(size(bw));
 
-        %Initialze the eroded matrix
-        imE = true(size(bw));
-
         j = 1;
-        while any(imE(:))
+        while any(bw(:))
 
             if ndims(bw) == 3
                 nH = binarySphere(j);
@@ -115,9 +111,9 @@ switch method
                 nH = strel('disk',double(j),0).getnhood;
             end    
             %perform the erosion at the current radius.
-            imE = imerode(bw,nH);
+            bw = imerode(bw,nH);
             %Subtract the opening with unit radius.
-            skel = skel | imE - imopen(imE,nH_1);
+            skel = skel | bw ~= imopen(bw,nH_1);
 
             j = j + 1;
             

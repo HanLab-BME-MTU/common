@@ -26,13 +26,17 @@ if nargin < 1 || isempty(radius) || radius < 1
     error('You must specify a radius >= 1 for the sphere!')
 end
 
-%So the radius matches the traditional 2D definition of a structuring
-%element radius.
-radius = radius+1;
 
-%Get x,y,z coordinate matrices for distance-from-origin calculation
-[xx,yy,zz] = meshgrid(-radius:radius,-radius:radius,-radius:radius);
+if radius > 1
+    
+    %Get x,y,z coordinate matrices for distance-from-origin calculation
+    [xx,yy,zz] = meshgrid(-radius:radius,-radius:radius,-radius:radius);
 
-%Return all points which are less than radius away from origin of
-%neighborhood
-sph = xx .^2 + yy .^2 + zz.^2 < radius^2;
+    %Return all points which are less than radius away from origin of
+    %neighborhood
+    sph = xx .^2 + yy .^2 + zz.^2 < radius^2;
+else
+    %Special case for radius = 1 - gives 6-connected neighborhood
+    sph = [0 0 0;0 1 0;0 0 0;0 1 0;1 1 1;0 1 0;0 0 0;0 1 0;0 0 0;];
+    sph = reshape(sph,[3 3 3]);        
+end
