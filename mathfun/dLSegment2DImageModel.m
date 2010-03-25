@@ -29,13 +29,10 @@ for i = 1:n
     Bg = params(i,4);
     l = params(i,5);
     t = params(i,6);
-    
-    [xRange,yRange,nzIdx] = dLSegment2DSupport(xC, yC, sigmaPSF, l, t);
 
-    xRange = max(xRange(1),1):min(xRange(end),imSize(2));
-    yRange = max(yRange(1),1):min(yRange(end),imSize(1));
+    [xRange,yRange,nzIdx] = dLSegment2DSupport(xC,yC,sigmaPSF,l,t,imSize);
+
+    S = dLSegment2D(xRange-xC,yRange-yC,A,Bg,sigmaPSF,l,t,nzIdx);
     
-    S = dLSegment2D(xRange-xC, yRange-yC, A, Bg, sigmaPSF, l, t, nzIdx);
-    
-    Im(yRange,xRange) = Im(yRange,xRange) + S .* BB;
+    Im(yRange,xRange) = Im(yRange,xRange) + S;
 end

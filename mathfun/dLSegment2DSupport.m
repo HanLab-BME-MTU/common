@@ -1,7 +1,7 @@
-function [xRange,yRange,nzIdx] = dLSegment2DSupport(xC, yC, sigmaPSF, l, theta)
+function [xRange,yRange,nzIdx] = dLSegment2DSupport(xC,yC,sigmaPSF,l,theta,imSize)
 % Compute the finite support of 2D Diffraction-limited Segment Model given
 % its parameters.
-% [xRange yRange] = dLSegment2DSupport(xC, xC, sigmaPSF, l, theta)
+% [xRange,yRange,nzIdx] = dLSegment2DSupport(xC, xC, sigmaPSF, l, theta, imSize)
 %
 % parameters:
 % (xC,yC)            center of the segment
@@ -12,8 +12,10 @@ function [xRange,yRange,nzIdx] = dLSegment2DSupport(xC, yC, sigmaPSF, l, theta)
 %
 % theta              orientation of the segment
 %
+% imSize             image size
+%
 % output:
-% (xRange, yRange)   2 vectors representing the 2-dimensional domain
+% (xRange, yRange)   2 vectors representing the 2-dimensional domain 
 %
 % Sylvain Berlemont, 2010
 
@@ -44,16 +46,7 @@ xMax = max(ceil(x));
 yMin = min(floor(y));
 yMax = max(ceil(y));
 
-if xMax < xMin
-    xRange = xMax:xMin;
-else
-    xRange = xMin:xMax;
-end
+xRange = max(xMin,1):min(xMax,imSize(2));
+yRange = max(yMin,1):min(yMax,imSize(1));
 
-if yMax < yMin
-    yRange = yMax:yMin;
-else
-    yRange = yMin:yMax;
-end
-
-BB = poly2mask(x-xRange(1)+1,y-yRange(1)+1,length(yRange),length(xRange));
+nzIdx = find(poly2mask(x-xRange(1)+1,y-yRange(1)+1,length(yRange),length(xRange)));

@@ -35,7 +35,7 @@ m = nrows * ncols;
     
 xRange = cell(n, 1);
 yRange = cell(n, 1);
-BB = cell(n,1);
+nzIdx = cell(n,1);
 
 % The following loop could be simply replaced by:
 % F = reshape(dlSegment2DImageModel(x, sigmaPSF, [nrows ncols]) - I, m, 1)
@@ -51,14 +51,12 @@ for i = 1:n
     l = x(i,5);
     t = x(i,6);
     
-    [xR,yR,BB{i}] = dLSegment2DSupport(xC, yC, sigmaPSF, l, t);
+    [xRange{i},yRange{i},nzIdx{i}] = dLSegment2DSupport(xC,yC,sigmaPSF,l,t,...
+        [nrows,ncols]);
 
-    xRange{i} = max(xR(1),1):min(xR(end),size(I,2));
-    yRange{i} = max(yR(1),1):min(yR(end),size(I,1));
-    
-    S = dLSegment2D(xRange{i}, yRange{i}, xC, yC, A, Bg, sigmaPSF, l, t);
+    S = dLSegment2D(xRange{i}-xC,yRange{i}-yC,A,Bg,sigmaPSF,l,t,nzIdx{i});
 
-    F(yRange{i},xRange{i}) = F(yRange{i},xRange{i}) + S .* BB{i};
+    F(yRange{i},xRange{i}) = F(yRange{i},xRange{i}) + S;
 end
 
 F = reshape(F - I, m, 1);
@@ -78,8 +76,8 @@ if nargout > 1
         
         % Compute all partial derivatives of F against segment parameters
         [dFdXc, dFdYc, dFdA, dFdBg, dFds, dFdl, dFdt] = ...
-            dLSegment2DJacobian(xRange{i}, yRange{i}, xC, yC, A, Bg, ...
-            sigmaPSF, l, t); %#ok<ASGLU>
+            dLSegment2DJacobian(xRange{i}-xC, yRange{i}-yC, A, Bg, sigmaPSF, ...
+            l, t,nzIdx{i}); %#ok<ASGLU>
         
         [X Y] = meshgrid(xRange{i}, yRange{i});
         ind = sub2ind([nrows ncols], Y(:), X(:));
