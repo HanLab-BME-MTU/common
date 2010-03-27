@@ -1,6 +1,6 @@
-function F = dLSegment2D(xRange, yRange, A, Bg, sigmaPSF, l, theta, nzIdx)
+function F = dLSegment2D(xRange, yRange, A, sigmaPSF, l, theta, nzIdx)
 % 2D Diffraction-limited Segment Model
-% F = dLSegment2D(xRange, yRange, A, Bg, sigmaPSF, l, theta, nzIdx)
+% F = dLSegment2D(xRange, yRange, A, sigmaPSF, l, theta, nzIdx)
 %
 % parameters:
 % (xRange, yRange)   2 vectors representing the 2-dimensional domain where
@@ -9,8 +9,6 @@ function F = dLSegment2D(xRange, yRange, A, Bg, sigmaPSF, l, theta, nzIdx)
 %                    (xC,yC).
 %
 % A                  amplitude of the segment
-%
-% Bg                 amplitude of the background
 %
 % sigmaPSF           half width of the gaussian PSF model.
 %
@@ -30,8 +28,8 @@ function F = dLSegment2D(xRange, yRange, A, Bg, sigmaPSF, l, theta, nzIdx)
 N = numel(yRange);
 M = numel(xRange);
 
-if nargin < 8 || isempty(nzIdx)
-    nzIdx = ones(N*M, 1);
+if nargin < 7 || isempty(nzIdx)
+    nzIdx = 1:N*M;
 end
 
 ct = cos(theta);
@@ -46,6 +44,6 @@ C1 = (1/2).*2.^(-1/2).*sigmaPSF.^(-1);
 
 F = zeros(N,M);
 
-F(nzIdx) = Bg + C0 * exp((-1/2).*sigmaPSF.^(-2).*(Y.*ct-X.*st).^2).*(...
+F(nzIdx) = C0 * exp((-1/2).*sigmaPSF.^(-2).*(Y.*ct-X.*st).^2).*(...
     erf(C1.*(l+2.*X.*ct+2.*Y.*st))+...
     erf(C1.*(l-2*X*ct-2*Y*st)));

@@ -1,8 +1,8 @@
-function [dFdXc dFdYc dFdA dFdBg dFds dFdl dFdt] = ...
-    dLSegment2DJacobian(xRange, yRange,A, Bg, sigmaPSF, l, theta, nzIdx) %#ok<INUSL>
+function [dFdXc dFdYc dFdA dFds dFdl dFdt] = ...
+    dLSegment2DJacobian(xRange, yRange,A, sigmaPSF, l, theta, nzIdx)
 % Partial derivatives of a 2-dimensional diffraction-limited segment.
-% [dFdXc dFdXy dFdA dFdBg dFds dFdl dFdt] =
-%           dLSegment2D_dFdA(xRange, yRange, A, Bg, sigmaPSF, l, theta)
+% [dFdXc dFdXy dFdA dFds dFdl dFdt] =
+%           dLSegment2DJacobian(xRange, yRange, A, sigmaPSF, l, theta)
 %
 % parameters:
 % (xRange, yRange)   2 vectors representing the 2-dimensional domain where
@@ -11,12 +11,6 @@ function [dFdXc dFdYc dFdA dFdBg dFds dFdl dFdt] = ...
 %                    (xC,yC).
 %
 % A                  amplitude of the segment
-%
-% Bg                 amplitude of the background (This parameter is
-%                    actually not used since every partial derivative
-%                    annealiate this term (dFdBg = 1). We keep it though to
-%                    be constitent with other dLSegment2D* function
-%                    prototypes.
 %
 % sigmaPSF           half width of the gaussian PSF model.
 %
@@ -29,14 +23,14 @@ function [dFdXc dFdYc dFdA dFdBg dFds dFdl dFdt] = ...
 %                    provided, nzIdx = ones(N*M, 1).
 %
 % output:
-% dFdXc dFdXy dFdA dFdBg dFds dFdl dFdt are NxM matrices. 
+% dFdXc dFdXy dFdA dFds dFdl dFdt are NxM matrices. 
 %
 % Sylvain Berlemont, 2010
 
 N = numel(yRange);
 M = numel(xRange);
 
-if nargin < 8 || isempty(nzIdx)
+if nargin < 7 || isempty(nzIdx)
     nzIdx = ones(N*M, 1);
 end
 
@@ -71,9 +65,6 @@ dFdYc(nzIdx) = A*C1*s_2.*C2.^(-1).*(C5*C8*sigmaPSF*st-C6*C8*sigmaPSF*st+...
 
 dFdA = zeros(N,M);
 dFdA(nzIdx) = C1.*C2.^(-1).*(C3+C4);
-
-dFdBg = zeros(N,M);
-dFdBg(nzIdx) = 1;
 
 dFds = zeros(N,M);
 dFds(nzIdx) = A*C1.*C2.^(-2).*(C7.*l.*C8*s_2.*(C3+C4)+s_3.*C2.*(C3+C4).*...

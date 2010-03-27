@@ -9,7 +9,7 @@ function [F J] = dLSegment2DFit(x, I, sigmaPSF)
 %
 % Parameters:
 % x            a nx6 matrix where n is the number of segments and their
-%              parameters, i.e. xC, yC, A, Bg, l, t are stored column-wise
+%              parameters, i.e. xC, yC, A, l, t are stored column-wise
 %              (see dLSegment2D.m for more details)
 %
 % I            image
@@ -25,7 +25,7 @@ function [F J] = dLSegment2DFit(x, I, sigmaPSF)
 
 [n p] = size(x);
 
-if p ~= 6
+if p ~= 5
     error('Invalid number of segment parameters.');
 end
 
@@ -47,14 +47,13 @@ for i = 1:n
     xC = x(i,1);
     yC = x(i,2);
     A = x(i,3);
-    Bg = x(i,4);
-    l = x(i,5);
-    t = x(i,6);
+    l = x(i,4);
+    t = x(i,5);
     
-    [xRange{i},yRange{i},nzIdx{i}] = dLSegment2DSupport(xC,yC,sigmaPSF,l,t,...
-        [nrows,ncols]);
+    [xRange{i},yRange{i},nzIdx{i}] = dLSegment2DSupport(xC,yC,sigmaPSF,...
+        l,t,[nrows,ncols]);
 
-    S = dLSegment2D(xRange{i}-xC,yRange{i}-yC,A,Bg,sigmaPSF,l,t,nzIdx{i});
+    S = dLSegment2D(xRange{i}-xC,yRange{i}-yC,A,sigmaPSF,l,t,nzIdx{i});
 
     F(yRange{i},xRange{i}) = F(yRange{i},xRange{i}) + S;
 end
@@ -70,13 +69,12 @@ if nargout > 1
         xC = x(i,1);
         yC = x(i,2);
         A = x(i,3);
-        Bg = x(i,4);
-        l = x(i,5);
-        t = x(i,6);
+        l = x(i,4);
+        t = x(i,5);
         
         % Compute all partial derivatives of F against segment parameters
-        [dFdXc, dFdYc, dFdA, dFdBg, dFds, dFdl, dFdt] = ...
-            dLSegment2DJacobian(xRange{i}-xC, yRange{i}-yC, A, Bg, sigmaPSF, ...
+        [dFdXc, dFdYc, dFdA, dFds, dFdl, dFdt] = ...
+            dLSegment2DJacobian(xRange{i}-xC, yRange{i}-yC, A, sigmaPSF, ...
             l, t,nzIdx{i}); %#ok<ASGLU>
         
         [X Y] = meshgrid(xRange{i}, yRange{i});
@@ -85,8 +83,7 @@ if nargout > 1
         indPixels{i} = repmat(ind, p, 1);
         indParams{i} = cell2mat(arrayfun(@(k) ones(numel(ind), 1) * i + ...
             k * n, (0:p-1)', 'UniformOutput', false));
-        val{i} = vertcat(dFdXc(:), dFdYc(:), dFdA(:), dFdBg(:), dFdl(:), ...
-            dFdt(:));
+        val{i} = vertcat(dFdXc(:), dFdYc(:), dFdA(:), dFdl(:), dFdt(:));
     end
     
     indPixels = vertcat(indPixels{:});
