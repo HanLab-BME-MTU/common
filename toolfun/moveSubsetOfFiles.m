@@ -41,6 +41,11 @@ end
 
 %% Action!
 
+%to keep the user informed of progress...
+progressText(0,'Moving files');
+numFiles2move = length(indices2move);
+iDummy = 0;
+
 %based on renumbering choice ...
 if renumber %if file names are renumbered
     
@@ -60,8 +65,12 @@ if renumber %if file names are renumbered
         %move file
         movefile(fullfile(sourceDir,file2move),fullfile(targetDir,newName));
         
-    end
+        %to keep the user informed of progress...
+        iDummy = iDummy + 1;
+        progressText(iDummy/numFiles2move,'Moving files');
         
+    end
+    
 else %if file names stay the same
     
     %go over files to be moved
@@ -72,6 +81,10 @@ else %if file names stay the same
         
         %move file
         movefile(fullfile(sourceDir,file2move),targetDir);
+        
+        %to keep the user informed of progress...
+        iDummy = iDummy + 1;
+        progressText(iDummy/numFiles2move,'Moving files');
         
     end
     

@@ -1,9 +1,11 @@
-function [statsGeneral,statsPerCat,numEventsPerCat] = calcStatsMS(tracks,...
-    minTrackLen,probDim,diffAnalysisRes,removePotArtifacts)
+function [statsGeneral,motionTypeFrac,probMSIfTypeFull,probMSIfType12,...
+    numEventsPerCatFull,motionRedTypeFrac,probMSIfRedTypeFull,probMSIfRedType12]...
+    = calcStatsMS(tracks,minTrackLen,probDim,diffAnalysisRes,removePotArtifacts)
 %CALCSTATSMS calculates merge/split statistics for linear, Brownian and confined Brownian tracks
 %
-%SYNOPSIS [statsGeneral,statsPerCat,numEventsPerCat] = calcStatsMS(tracks,...
-%    minTrackLen,probDim,diffAnalysisRes,removePotArtifacts)
+%SYNOPSIS [statsGeneral,motionTypeFrac,probMSIfTypeFull,probMSIfType12,...
+%    numEventsPerCatFull,motionRedTypeFrac,probMSIfRedTypeFull,probMSIfRedType12]...
+%    = calcStatsMS(tracks,minTrackLen,probDim,diffAnalysisRes,removePotArtifacts)
 %
 %INPUT  tracks     : Output of trackCloseGapsKalman.
 %       minTrackLen: Minimum length of a track to be used in getting
@@ -26,52 +28,55 @@ function [statsGeneral,statsPerCat,numEventsPerCat] = calcStatsMS(tracks,...
 %                         with length >= minTrackLen.
 %                     (4) Probability of a feature merging.
 %                     (5) Probability of a feature splitting.
-%       statsPerCat : 5-by-6 array. Rows correspond to: (1) linear, 
-%                     (2) Brownian, (3) confined Brownian,
-%                     (4) undetermined >= 5 frames, and 
-%                     (5) undetermined < 5 frames.
-%                     Columns corrrespond to:
-%                     (1) Fraction of track segments in each category.
-%                     (2) Probability of a feature belonging to a category.
-%                     (3) Conditional probability of a feature
-%                         merging IF in a category, where the category of
-%                         the more dynamic feature is dominant.
-%                     (4) Conditional probability of a feature
-%                         splitting IF in a category, where the category of
-%                         the more dynamic feature is dominant.
-%                     (5) Conditional probability of a feature
-%                         merging IF in a category, regardless of the other
-%                         feature's category.
-%                     (6) Conditional probability of a feature
-%                         splitting IF in a category, regardless of the other
-%                         feature's category.
-% % %                     NO LONGER:
-% % %                     (7-10) Conditional probability of a feature merging
-% % %                            IF in a category AND the other feature is in
-% % %                            the linear, Brownian, confined or
-% % %                            undetermined category.
-% % %                     (11-14) Conditional probability of a feature splitting
-% % %                            IF in a category AND the other feature is in
-% % %                            the linear, Brownian, confined or
-% % %                            undetermined category.
-%       numEventsPerCat: 5-by-4 array. Rows correspond to: (1) linear, 
-%                     (2) Brownian, (3) confined Brownian,
-%                     (4) undetermined >= 5 frames, and
-%                     (5) undetermined < 5 frames.
-%                     Columns corrrespond to:
-%                     (1) Number of merges, where the category of the more 
-%                         dynamic feature is dominant.
-%                     (2) Number of splits, where the category of the more 
-%                         dynamic feature is dominant.
-%                     (3) Number of merges, regardless of the other
-%                         feature's category.
-%                     (4) Number of splits, regardless of the other
-%                         feature's category.
-% % %                     NO LONGER:
-% % %                     (5-8) Number of merges when the other feature in
-% % %                         linear, Brownian, confined or undetermined.
-% % %                     (9-12) Number of splits when the other feature in
-% % %                         linear, Brownian, confined or undetermined.
+%    All the following variables have 5 rows, corresponding to the motion
+%    types:
+%                     (1) linear, (2) Brownian, (3) confined Brownian,
+%                     (4) undetermined >= 5 frames (i.e. not linear but
+%                     undetermine whether Brownian or confined), and
+%                     (5) undetermined < 5 frames (i.e. can be anything).
+%       motionTypeFrac: 5-by-2 array. Columns corrrespond to:
+%                     (1) Fraction of track segments in each motion type.
+%                     (2) Probability of a feature undergoing a motion type.
+%       probMSIfTypeFull: 5-by-5-by-3 array showing double conditional
+%                     probability of merging/splitting for the different
+%                     motion type combinations. Columns are transpose of
+%                     rows. Third dimension corresponds to (1) merges, (2)
+%                     splits and (3) their average.
+%       probMSIfType12: 5-by-2-by-3 array. Columns correspond to
+%                     (1) Conditional probability of a feature
+%                         merging/splitting IF undergoing a motion type,
+%                         where the more dynamic motion type is dominant.
+%                     (2) Conditional probability of a feature
+%                         merging/splitting IF undergoing a motion type,
+%                         regardless of the other feature's motion type.
+%                     Third dimension corresponds to (1) merges, (2) splits
+%                     and (3) their average.
+%       numEventsPerCatFull: 5-by-5-by-3 array showing number of
+%                     merging/splitting events observed per motion type.
+%                     Rows and columns correspond to motion types. Third
+%                     dimension corresponds to (1) merging, (2) splitting
+%                     and (3) sum of merging and splitting events.
+%    All the following variables have 3 rows, corresponding to the motion
+%    types:
+%                     (1) linear, (2) not linear, i.e. sum of 2-4 above,
+%                     and (3) undetermined < 5 frames.
+%       motionRedTypeFrac: 3-by-2 array. Columns corrrespond to:
+%                     (1) Fraction of track segments in each motion type.
+%                     (2) Probability of a feature undergoing a motion type.
+%       probMSIfRedTypeFull: 3-by-3-by-3 array showing double conditional
+%                     probability of merging/splitting for the different
+%                     motion type combinations. Columns are transpose of
+%                     rows. Third dimension corresponds to (1) merges, (2)
+%                     splits and (3) their average.
+%       probMSIfRedType12: 3-by-2-by-3 array. Columns correspond to
+%                     (1) Conditional probability of a feature
+%                         merging/splitting IF undergoing a motion type,
+%                         where the more dynamic motion type is dominant.
+%                     (2) Conditional probability of a feature
+%                         merging/splitting IF undergoing a motion type,
+%                         regardless of the other feature's motion type.
+%                     Third dimension corresponds to (1) merges, (2) splits
+%                     and (3) their average.
 %
 %Khuloud Jaqaman, December 2007
 
@@ -156,33 +161,33 @@ trackSegmentType(indxBrown)  = 2;
 trackSegmentType(indxLin)    = 3;
 
 %calculate number of track segments per category
-numSegmentsLin    = length(indxLin);
-numSegmentsBrown  = length(indxBrown);
-numSegmentsConf   = length(indxConf);
-numSegmentsUndet1 = length(indxUndet1);
-numSegmentsUndet2 = length(indxUndet2);
+numSegmentsType = [length(indxLin) length(indxBrown) length(indxConf) ...
+    length(indxUndet1) length(indxUndet2)]';
+
+%calculate number of track segments per reduced category (i.e. 0, 1 and 2
+%are lumped together into one non-linear category)
+numSegmentsRedType = [numSegmentsType(1) sum(numSegmentsType(2:4)) numSegmentsType(5)]';
 
 %calculate fraction of track segments falling in each category
-fracSegmentsLin    = numSegmentsLin    / numTrackSegments;
-fracSegmentsBrown  = numSegmentsBrown  / numTrackSegments;
-fracSegmentsConf   = numSegmentsConf   / numTrackSegments;
-fracSegmentsUndet1 = numSegmentsUndet1 / numTrackSegments;
-fracSegmentsUndet2 = numSegmentsUndet2 / numTrackSegments;
+fracSegmentsType = numSegmentsType / numTrackSegments;
 
-%calculate number of features in each category
-numFeatLin    = length(find(tracksIndxMat(indxLin,:)));
-numFeatBrown  = length(find(tracksIndxMat(indxBrown,:)));
-numFeatConf   = length(find(tracksIndxMat(indxConf,:)));
-numFeatUndet1 = length(find(tracksIndxMat(indxUndet1,:)));
-numFeatUndet2 = length(find(tracksIndxMat(indxUndet2,:)));
+%calculate fraction of track segments falling in each reduced category
+fracSegmentsRedType = numSegmentsRedType / numTrackSegments;
+
+%calculate number of features in each category and each reduced category
+numFeatType = [length(find(tracksIndxMat(indxLin,:))) ...
+    length(find(tracksIndxMat(indxBrown,:))) ...
+    length(find(tracksIndxMat(indxConf,:))) ...
+    length(find(tracksIndxMat(indxUndet1,:))) ...
+    length(find(tracksIndxMat(indxUndet2,:)))]';
+numFeatRedType = [numFeatType(1) sum(numFeatType(2:4)) numFeatType(5)]';
 
 %get fraction of features in each category - this is the probability of a
 %feature undergoing a certain motion type
-probFeatLin    = numFeatLin    / numFeatTot;
-probFeatBrown  = numFeatBrown  / numFeatTot;
-probFeatConf   = numFeatConf   / numFeatTot;
-probFeatUndet1 = numFeatUndet1 / numFeatTot;
-probFeatUndet2 = numFeatUndet2 / numFeatTot;
+probFeatType = numFeatType / numFeatTot;
+
+%repeat for reduced categories
+probFeatRedType = numFeatRedType / numFeatTot;
 
 %% merges/splits vs. features
 
@@ -262,230 +267,158 @@ end
 listOfMergeTypes = sort(listOfMergeTypes,2,'descend');
 listOfSplitTypes = sort(listOfSplitTypes,2,'descend');
 
-%get number of merges/splits per type
+%get number of merges/splits based on the types of the two track segments
+%involved
+typeList = [3 2 1 0 -1];
+[numMergesTypeType1,numMergesTypeType2] = deal(NaN(5));
+for iType = 1 : 5
+    for jType = iType : 5
+        [numMergesTypeType1(iType,jType),numMergesTypeType2(iType,jType),...
+            numMergesTypeType2(jType,iType)] = deal(length(find( ...
+            listOfMergeTypes(:,1)==typeList(iType) & ...
+            listOfMergeTypes(:,2)==typeList(jType) )));
+    end
+end
+[numSplitsTypeType1,numSplitsTypeType2] = deal(NaN(5));
+for iType = 1 : 5
+    for jType = iType : 5
+        [numSplitsTypeType1(iType,jType),numSplitsTypeType2(iType,jType),...
+            numSplitsTypeType2(jType,iType)] = deal(length(find( ...
+            listOfSplitTypes(:,1)==typeList(iType) & ...
+            listOfSplitTypes(:,2)==typeList(jType) )));
+    end
+end
 
-%first approach:
+%simplification 1: 
 %classify a merge/split type based on the more dynamic of its two segments
-%in terms of dynamics, linear > Brownian > confined Browian > undetermined
-%&length >= 5 > undetermined&length < 5
+%(linear > Brownian > confined Browian > (undetermined&length>=5) > (undetermined&length<5))
 %for example, if a linear track segment merges with a Brownian track
 %segment, the merge is classified as linear
-numMergesLin1    = length(find(listOfMergeTypes(:,1)==3));
-numMergesBrown1  = length(find(listOfMergeTypes(:,1)==2));
-numMergesConf1   = length(find(listOfMergeTypes(:,1)==1));
-numMergesUndet11 = length(find(listOfMergeTypes(:,1)==0));
-numMergesUndet21 = length(find(listOfMergeTypes(:,1)==-1));
-numSplitsLin1    = length(find(listOfSplitTypes(:,1)==3));
-numSplitsBrown1  = length(find(listOfSplitTypes(:,1)==2));
-numSplitsConf1   = length(find(listOfSplitTypes(:,1)==1));
-numSplitsUndet11 = length(find(listOfSplitTypes(:,1)==0));
-numSplitsUndet21 = length(find(listOfSplitTypes(:,1)==-1));
+numMergesType1 = nansum(numMergesTypeType1,2);
+numSplitsType1 = nansum(numSplitsTypeType1,2);
 
-%second approach:
-%get number of merges/splits involving a certain motion type regardless of
-%the other segment type
-%no ordering of dynamics in this case
-indxMergesLin2    = find(any(listOfMergeTypes==3,2));
-numMergesLin2     = length(indxMergesLin2);
-indxMergesBrown2  = find(any(listOfMergeTypes==2,2));
-numMergesBrown2   = length(indxMergesBrown2);
-indxMergesConf2   = find(any(listOfMergeTypes==1,2));
-numMergesConf2    = length(indxMergesConf2);
-indxMergesUndet12 = find(any(listOfMergeTypes==0,2));
-numMergesUndet12  = length(indxMergesUndet12);
-indxMergesUndet22 = find(any(listOfMergeTypes==-1,2));
-numMergesUndet22  = length(indxMergesUndet22);
-indxSplitsLin2    = find(any(listOfSplitTypes==3,2));
-numSplitsLin2     = length(indxSplitsLin2);
-indxSplitsBrown2  = find(any(listOfSplitTypes==2,2));
-numSplitsBrown2   = length(indxSplitsBrown2);
-indxSplitsConf2   = find(any(listOfSplitTypes==1,2));
-numSplitsConf2    = length(indxSplitsConf2);
-indxSplitsUndet12 = find(any(listOfSplitTypes==0,2));
-numSplitsUndet12  = length(indxSplitsUndet12);
-indxSplitsUndet22 = find(any(listOfSplitTypes==-1,2));
-numSplitsUndet22  = length(indxSplitsUndet22);
+%simplification 2:
+%classify a merge/split type based on one of its two segments regardless of
+%the other segment, i.e. no ranking of dynamicity in this case
+numMergesType2 = sum(numMergesTypeType2,2);
+numSplitsType2 = sum(numSplitsTypeType2,2);
 
-% % % %third approach:
-% % % %classify merges/splits based on the types of the two track segments
-% % % %involved
-% % % numMergesLin3   = [length(find(listOfMergeTypes(indxMergesLin2,2)==3)) ...
-% % %     length(find(listOfMergeTypes(indxMergesLin2,2)==2)) ...
-% % %     length(find(listOfMergeTypes(indxMergesLin2,2)==1)) ...
-% % %     length(find(listOfMergeTypes(indxMergesLin2,2)==0))];
-% % % numMergesBrown3 = [length(find(listOfMergeTypes(indxMergesBrown2,1)==3)) ...
-% % %     length(find(all(listOfMergeTypes(indxMergesBrown2,:)==2,2))) ...
-% % %     length(find(listOfMergeTypes(indxMergesBrown2,2)==1)) ...
-% % %     length(find(listOfMergeTypes(indxMergesBrown2,2)==0))];
-% % % numMergesConf3  = [length(find(listOfMergeTypes(indxMergesConf2,1)==3)) ...
-% % %     length(find(listOfMergeTypes(indxMergesConf2,1)==2)) ...
-% % %     length(find(all(listOfMergeTypes(indxMergesConf2,:)==1,2))) ...
-% % %     length(find(listOfMergeTypes(indxMergesConf2,2)==0))];
-% % % numMergesUndet3 = [length(find(listOfMergeTypes(indxMergesUndet2,1)==3)) ...
-% % %     length(find(listOfMergeTypes(indxMergesUndet2,1)==2)) ...
-% % %     length(find(listOfMergeTypes(indxMergesUndet2,1)==1)) ...
-% % %     length(find(listOfMergeTypes(indxMergesUndet2,1)==0))];
-% % % numSplitsLin3   = [length(find(listOfSplitTypes(indxSplitsLin2,2)==3)) ...
-% % %     length(find(listOfSplitTypes(indxSplitsLin2,2)==2)) ...
-% % %     length(find(listOfSplitTypes(indxSplitsLin2,2)==1)) ...
-% % %     length(find(listOfSplitTypes(indxSplitsLin2,2)==0))];
-% % % numSplitsBrown3 = [length(find(listOfSplitTypes(indxSplitsBrown2,1)==3)) ...
-% % %     length(find(all(listOfSplitTypes(indxSplitsBrown2,:)==2,2))) ...
-% % %     length(find(listOfSplitTypes(indxSplitsBrown2,2)==1)) ...
-% % %     length(find(listOfSplitTypes(indxSplitsBrown2,2)==0))];
-% % % numSplitsConf3  = [length(find(listOfSplitTypes(indxSplitsConf2,1)==3)) ...
-% % %     length(find(listOfSplitTypes(indxSplitsConf2,1)==2)) ...
-% % %     length(find(all(listOfSplitTypes(indxSplitsConf2,:)==1,2))) ...
-% % %     length(find(listOfSplitTypes(indxSplitsConf2,2)==0))];
-% % % numSplitsUndet3 = [length(find(listOfSplitTypes(indxSplitsUndet2,1)==3)) ...
-% % %     length(find(listOfSplitTypes(indxSplitsUndet2,1)==2)) ...
-% % %     length(find(listOfSplitTypes(indxSplitsUndet2,1)==1)) ...
-% % %     length(find(listOfSplitTypes(indxSplitsUndet2,1)==0))];
+%also get number of merges/splits based on reduced track segment types
+%i.e. 2, 1 and 0 are lumped into one non-linear type
+numMergesRedTypeType1 = NaN(3);
+numMergesRedTypeType1(1,:) = [numMergesTypeType1(1,1) sum(numMergesTypeType1(1,2:4)) numMergesTypeType1(1,5)];
+numMergesRedTypeType1(2,2:3) = [nansum(nansum(numMergesTypeType1(2:4,2:4))) sum(numMergesTypeType1(2:4,5))];
+numMergesRedTypeType1(3,3) = numMergesTypeType1(5,5);
+tmpMat(:,:,1) = numMergesRedTypeType1;
+tmpMat(:,:,2) = numMergesRedTypeType1';
+numMergesRedTypeType2 = max(tmpMat,[],3);
+numSplitsRedTypeType1 = NaN(3);
+numSplitsRedTypeType1(1,:) = [numSplitsTypeType1(1,1) sum(numSplitsTypeType1(1,2:4)) numSplitsTypeType1(1,5)];
+numSplitsRedTypeType1(2,2:3) = [nansum(nansum(numSplitsTypeType1(2:4,2:4))) sum(numSplitsTypeType1(2:4,5))];
+numSplitsRedTypeType1(3,3) = numSplitsTypeType1(5,5);
+tmpMat(:,:,1) = numSplitsRedTypeType1;
+tmpMat(:,:,2) = numSplitsRedTypeType1';
+numSplitsRedTypeType2 = max(tmpMat,[],3);
+
+%simplification 1:
+numMergesRedType1 = nansum(numMergesRedTypeType1,2);
+numSplitsRedType1 = nansum(numSplitsRedTypeType1,2);
+
+%simplification 2:
+numMergesRedType2 = sum(numMergesRedTypeType2,2);
+numSplitsRedType2 = sum(numSplitsRedTypeType2,2);
 
 %get the fraction of merge/split types - this is the conditional
 %probability of having a certain motion type if merging/splitting
 
-%first approach
-probLinIfMerge1   = numMergesLin1   / numMergesTot;
-probBrownIfMerge1 = numMergesBrown1 / numMergesTot;
-probConfIfMerge1  = numMergesConf1  / numMergesTot;
-probUndet1IfMerge1 = numMergesUndet11 / numMergesTot;
-probUndet2IfMerge1 = numMergesUndet21 / numMergesTot;
-probLinIfSplit1   = numSplitsLin1   / numSplitsTot;
-probBrownIfSplit1 = numSplitsBrown1 / numSplitsTot;
-probConfIfSplit1  = numSplitsConf1  / numSplitsTot;
-probUndet1IfSplit1 = numSplitsUndet11 / numSplitsTot;
-probUndet2IfSplit1 = numSplitsUndet21 / numSplitsTot;
+%simplification 1:
+probTypeIfMerge1 = numMergesType1 / numMergesTot;
+probTypeIfSplit1 = numSplitsType1 / numSplitsTot;
 
-%second approach
-probLinIfMerge2   = numMergesLin2   / numMergesTot;
-probBrownIfMerge2 = numMergesBrown2 / numMergesTot;
-probConfIfMerge2  = numMergesConf2  / numMergesTot;
-probUndet1IfMerge2 = numMergesUndet12 / numMergesTot;
-probUndet2IfMerge2 = numMergesUndet22 / numMergesTot;
-probLinIfSplit2   = numSplitsLin2   / numSplitsTot;
-probBrownIfSplit2 = numSplitsBrown2 / numSplitsTot;
-probConfIfSplit2  = numSplitsConf2  / numSplitsTot;
-probUndet1IfSplit2 = numSplitsUndet12 / numSplitsTot;
-probUndet2IfSplit2 = numSplitsUndet22 / numSplitsTot;
+%simplification 2:
+probTypeIfMerge2 = numMergesType2 / numMergesTot;
+probTypeIfSplit2 = numSplitsType2 / numSplitsTot;
 
-% % % %third approach
-% % % probLinIfMerge3   = numMergesLin3   / numMergesTot;
-% % % probBrownIfMerge3 = numMergesBrown3 / numMergesTot;
-% % % probConfIfMerge3  = numMergesConf3  / numMergesTot;
-% % % probUndetIfMerge3 = numMergesUndet3 / numMergesTot;
-% % % probLinIfSplit3   = numSplitsLin3   / numSplitsTot;
-% % % probBrownIfSplit3 = numSplitsBrown3 / numSplitsTot;
-% % % probConfIfSplit3  = numSplitsConf3  / numSplitsTot;
-% % % probUndetIfSplit3 = numSplitsUndet3 / numSplitsTot;
+%full:
+probTypeTypeIfMerge = numMergesTypeType1 / numMergesTot;
+probTypeTypeIfSplit = numSplitsTypeType1 / numSplitsTot;
+
+%reduced types, simplification 1:
+probRedTypeIfMerge1 = numMergesRedType1 / numMergesTot;
+probRedTypeIfSplit1 = numSplitsRedType1 / numSplitsTot;
+
+%reduced types, simplification 2:
+probRedTypeIfMerge2 = numMergesRedType2 / numMergesTot;
+probRedTypeIfSplit2 = numSplitsRedType2 / numSplitsTot;
+
+%reduced types, full:
+probRedTypeTypeIfMerge = numMergesRedTypeType1 / numMergesTot;
+probRedTypeTypeIfSplit = numSplitsRedTypeType1 / numSplitsTot;
 
 %calculate the conditional probability of a feature undergoing a
 %merge/split IF undergoing a certain motion type
 
-%first approach
-probMergeIfLin1   = probLinIfMerge1   * probFeatMerge / probFeatLin;
-probMergeIfBrown1 = probBrownIfMerge1 * probFeatMerge / probFeatBrown;
-probMergeIfConf1  = probConfIfMerge1  * probFeatMerge / probFeatConf;
-probMergeIfUndet11 = probUndet1IfMerge1 * probFeatMerge / probFeatUndet1;
-probMergeIfUndet21 = probUndet2IfMerge1 * probFeatMerge / probFeatUndet2;
-probSplitIfLin1   = probLinIfSplit1   * probFeatSplit / probFeatLin;
-probSplitIfBrown1 = probBrownIfSplit1 * probFeatSplit / probFeatBrown;
-probSplitIfConf1  = probConfIfSplit1  * probFeatSplit / probFeatConf;
-probSplitIfUndet11 = probUndet1IfSplit1 * probFeatSplit / probFeatUndet1;
-probSplitIfUndet21 = probUndet2IfSplit1 * probFeatSplit / probFeatUndet2;
+%simplification 1:
+probMergeIfType1 = probTypeIfMerge1 * probFeatMerge ./ probFeatType;
+probSplitIfType1 = probTypeIfSplit1 * probFeatSplit ./ probFeatType;
 
-%second approach
-probMergeIfLin2   = probLinIfMerge2   * probFeatMerge / probFeatLin;
-probMergeIfBrown2 = probBrownIfMerge2 * probFeatMerge / probFeatBrown;
-probMergeIfConf2  = probConfIfMerge2  * probFeatMerge / probFeatConf;
-probMergeIfUndet12 = probUndet1IfMerge2 * probFeatMerge / probFeatUndet1;
-probMergeIfUndet22 = probUndet2IfMerge2 * probFeatMerge / probFeatUndet2;
-probSplitIfLin2   = probLinIfSplit2   * probFeatSplit / probFeatLin;
-probSplitIfBrown2 = probBrownIfSplit2 * probFeatSplit / probFeatBrown;
-probSplitIfConf2  = probConfIfSplit2  * probFeatSplit / probFeatConf;
-probSplitIfUndet12 = probUndet1IfSplit2 * probFeatSplit / probFeatUndet1;
-probSplitIfUndet22 = probUndet2IfSplit2 * probFeatSplit / probFeatUndet2;
+%simplification 2:
+probMergeIfType2 = probTypeIfMerge2 * probFeatMerge ./ probFeatType;
+probSplitIfType2 = probTypeIfSplit2 * probFeatSplit ./ probFeatType;
 
-% % % %calculate the conditional probability of 2 features undergoing a
-% % % %merge/split IF each is undergoing a certain motion type
-% % %
-% % % %third approach
-% % % probFeatAll = [probFeatLin probFeatBrown probFeatConf probFeatUndet];
-% % % probMergeIfLin3   = probLinIfMerge3   * probFeatMerge / probFeatLin   ./ probFeatAll;
-% % % probMergeIfBrown3 = probBrownIfMerge3 * probFeatMerge / probFeatBrown ./ probFeatAll;
-% % % probMergeIfConf3  = probConfIfMerge3  * probFeatMerge / probFeatConf  ./ probFeatAll;
-% % % probMergeIfUndet3 = probUndetIfMerge3 * probFeatMerge / probFeatUndet ./ probFeatAll;
-% % % probSplitIfLin3   = probLinIfSplit3   * probFeatSplit / probFeatLin   ./ probFeatAll;
-% % % probSplitIfBrown3 = probBrownIfSplit3 * probFeatSplit / probFeatBrown ./ probFeatAll;
-% % % probSplitIfConf3  = probConfIfSplit3  * probFeatSplit / probFeatConf  ./ probFeatAll;
-% % % probSplitIfUndet3 = probUndetIfSplit3 * probFeatSplit / probFeatUndet ./ probFeatAll;
+%full:
+probFeatTypeType = probFeatType * probFeatType';
+probMergeIfTypeType = probTypeTypeIfMerge * probFeatMerge ./ probFeatTypeType;
+probSplitIfTypeType = probTypeTypeIfSplit * probFeatSplit ./ probFeatTypeType;
+
+%reduced types, simplification 1:
+probMergeIfRedType1 = probRedTypeIfMerge1 * probFeatMerge ./ probFeatRedType;
+probSplitIfRedType1 = probRedTypeIfSplit1 * probFeatSplit ./ probFeatRedType;
+
+%reduced types, simplification 2:
+probMergeIfRedType2 = probRedTypeIfMerge2 * probFeatMerge ./ probFeatRedType;
+probSplitIfRedType2 = probRedTypeIfSplit2 * probFeatSplit ./ probFeatRedType;
+
+%reduced types, full:
+probFeatRedTypeType = probFeatRedType * probFeatRedType';
+probMergeIfRedTypeType = probRedTypeTypeIfMerge * probFeatMerge ./ probFeatRedTypeType;
+probSplitIfRedTypeType = probRedTypeTypeIfSplit * probFeatSplit ./ probFeatRedTypeType;
 
 %% output
 
-%statistics per category of motion
-statsPerCat = [fracSegmentsLin probFeatLin probMergeIfLin1 probSplitIfLin1 ...
-    probMergeIfLin2 probSplitIfLin2; ...
-    fracSegmentsBrown probFeatBrown probMergeIfBrown1 probSplitIfBrown1 ...
-    probMergeIfBrown2 probSplitIfBrown2; ...
-    fracSegmentsConf probFeatConf probMergeIfConf1 probSplitIfConf1 ...
-    probMergeIfConf2 probSplitIfConf2; ...
-    fracSegmentsUndet1 probFeatUndet1 probMergeIfUndet11 probSplitIfUndet11 ...
-    probMergeIfUndet12 probSplitIfUndet12; ...
-    fracSegmentsUndet2 probFeatUndet2 probMergeIfUndet21 probSplitIfUndet21 ...
-    probMergeIfUndet22 probSplitIfUndet22];
-statsPerCat(isnan(statsPerCat)) = 0;
-
-% % % statsPerCat = [fracSegmentsLin probFeatLin probMergeIfLin1 probSplitIfLin1 ...
-% % %     probMergeIfLin2 probSplitIfLin2 probMergeIfLin3 probSplitIfLin3; ...
-% % %     fracSegmentsBrown probFeatBrown probMergeIfBrown1 probSplitIfBrown1 ...
-% % %     probMergeIfBrown2 probSplitIfBrown2 probMergeIfBrown3 probSplitIfBrown3; ...
-% % %     fracSegmentsConf probFeatConf probMergeIfConf1 probSplitIfConf1 ...
-% % %     probMergeIfConf2 probSplitIfConf2 probMergeIfConf3 probSplitIfConf3; ...
-% % %     fracSegmentsUndet probFeatUndet probMergeIfUndet1 probSplitIfUndet1 ...
-% % %     probMergeIfUndet2 probSplitIfUndet2 probMergeIfUndet3 probSplitIfUndet3];
-
-%additional general statistics
+%general statistics
 statsGeneral = [aveFeatPerFrame numTracks numTrackSegments probFeatMerge probFeatSplit];
 
-%number of events per category, to get an idea of how many observations
-%there are
-numEventsPerCat = [numMergesLin1 numSplitsLin1 numMergesLin2 numSplitsLin2; ...
-    numMergesBrown1 numSplitsBrown1 numMergesBrown2 numSplitsBrown2; ...
-    numMergesConf1 numSplitsConf1 numMergesConf2 numSplitsConf2; ...
-    numMergesUndet11 numSplitsUndet11 numMergesUndet12 numSplitsUndet12; ...
-    numMergesUndet21 numSplitsUndet21 numMergesUndet22 numSplitsUndet22];
+%motion type probabilities
+%full and reduced
+motionTypeFrac = [fracSegmentsType probFeatType];
+motionRedTypeFrac = [fracSegmentsRedType probFeatRedType];
 
-% % % numEventsPerCat = [numMergesLin1 numSplitsLin1 numMergesLin2 numSplitsLin2 ...
-% % %     numMergesLin3 numSplitsLin3; ...
-% % %     numMergesBrown1 numSplitsBrown1 numMergesBrown2 numSplitsBrown2 ...
-% % %     numMergesBrown3 numSplitsBrown3; ...
-% % %     numMergesConf1 numSplitsConf1 numMergesConf2 numSplitsConf2 ...
-% % %     numMergesConf3 numSplitsConf3; ...
-% % %     numMergesUndet1 numSplitsUndet1 numMergesUndet2 numSplitsUndet2 ...
-% % %     numMergesUndet3 numSplitsUndet3];
+%merging and splitting probability per motion type
+%full
+probMSIfTypeFull(:,:,1) = probMergeIfTypeType;
+probMSIfTypeFull(:,:,2) = probSplitIfTypeType;
+probMSIfTypeFull(:,:,3) = nanmean(probMSIfTypeFull(:,:,1:2),3);
+%simplified
+probMSIfType12(:,:,1) = [probMergeIfType1 probMergeIfType2];
+probMSIfType12(:,:,2) = [probSplitIfType1 probSplitIfType2];
+probMSIfType12(:,:,3) = nanmean(probMSIfType12(:,:,1:2),3);
+
+%merging and splitting probability per reduced motion type
+%full
+probMSIfRedTypeFull(:,:,1) = probMergeIfRedTypeType;
+probMSIfRedTypeFull(:,:,2) = probSplitIfRedTypeType;
+probMSIfRedTypeFull(:,:,3) = nanmean(probMSIfRedTypeFull(:,:,1:2),3);
+%simplified
+probMSIfRedType12(:,:,1) = [probMergeIfRedType1 probMergeIfRedType2];
+probMSIfRedType12(:,:,2) = [probSplitIfRedType1 probSplitIfRedType2];
+probMSIfRedType12(:,:,3) = nanmean(probMSIfRedType12(:,:,1:2),3);
+
+%number of events per category
+%full
+numEventsPerCatFull(:,:,1) = numMergesTypeType1;
+numEventsPerCatFull(:,:,2) = numSplitsTypeType1;
+numEventsPerCatFull(:,:,3) = sum(numEventsPerCatFull(:,:,1:2),3);
 
 %% ~~~ the end ~~~
-
-
-%% trial stuff
-
-% % % for iTrack = 1 : numTracks
-% % %     trackSegmentClassTmp = diffAnalysisRes(iTrack).classification;
-% % %     if any(trackSegmentClassTmp(:,1) == 1)
-% % %         trackClass = 3;
-% % %     elseif any(trackSegmentClassTmp(:,2) == 2)
-% % %         trackClass = 2;
-% % %     elseif any(trackSegmentClassTmp(:,2) == 1)
-% % %         trackClass = 1;
-% % %     else
-% % %         trackClass = 0;
-% % %     end
-% % %     trackSegmentType(trackStartRow(iTrack):trackStartRow(iTrack)+...
-% % %         numSegments(iTrack)-1,1) = trackClass;
-% % % end
-% % % indxLin = find(trackSegmentType==3);
-% % % indxBrown = find(trackSegmentType==2);
-% % % indxConf = find(trackSegmentType==1);
-% % % indxUndet = find(trackSegmentType==0);
-
 

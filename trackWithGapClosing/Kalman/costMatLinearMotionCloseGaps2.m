@@ -1,8 +1,8 @@
 function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
-    errFlag] = costMatLinearMotionCloseGaps(trackedFeatInfo,...
+    errFlag] = costMatLinearMotionCloseGaps2(trackedFeatInfo,...
     trackedFeatIndx,trackStartTime,trackEndTime,costMatParam,gapCloseParam,...
     kalmanFilterInfo,nnDistLinkedFeat,probDim,movieInfo)
-%COSTMATLINEARMOTIONCLOSEGAPS provides a cost matrix for closing gaps and capturing merges/splits using Kalman filter information
+%COSTMATLINEARMOTIONCLOSEGAPS2 provides a cost matrix for closing gaps and capturing merges/splits using Kalman filter information
 %
 %SYNOPSIS [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %    errFlag] = costMatLinearMotionCloseGaps(trackedFeatInfo,...
@@ -147,8 +147,8 @@ errFlag = [];
 %% Input
 
 %check whether correct number of input arguments was used
-if nargin ~= nargin('costMatLinearMotionCloseGaps')
-    disp('--costMatLinearMotionCloseGaps: Incorrect number of input arguments!');
+if nargin ~= nargin('costMatLinearMotionCloseGaps2')
+    disp('--costMatLinearMotionCloseGaps2: Incorrect number of input arguments!');
     errFlag  = 1;
     return
 end
@@ -218,7 +218,7 @@ for iFrame = 1 : numFrames
     tracksPerFrame(iFrame).ends = find(trackEndTime == iFrame); %ends
 end
 
-%% Gap closing
+%% Pre-processing
 
 %get the x,y-coordinates and amplitudes at the starts of tracks
 coordStart = zeros(numTracks,probDim);
@@ -238,30 +238,46 @@ for iTrack = 1 : numTracks
     ampEnd(iTrack) = full(trackedFeatInfo(iTrack,(trackEndTime(iTrack)-1)*8+4));
 end
 
-%determine the types, velocities, noise stds and centers of all tracks
-[trackType,xyzVel,noiseStd,trackCenter] = estimTrackTypeParamLM(...
+%determine the types, velocities, noise stds, centers and mean
+%displacements of all tracks
+[trackType,xyzVel,noiseStd,trackCenter,trackMeanDisp] = estimTrackTypeParamLM2(...
     trackedFeatIndx,trackedFeatInfo,kalmanFilterInfo,lenForClassify,probDim);
 
 %if by chance some tracks are labeled linear when linearMotion=0, make them
-%Brownian
+%not linear
 if linearMotion ~= 1
     trackType(trackType==1) = 0;
 end
 
-%find the 80th percentile of the noise standard deviation in order to use
-%that for undetermined tracks (after removing std = 1 which indicates the
-%simple initialization conditions
+%find the 10th percentile of the noise standard deviation in order to use
+%that for undetermined tracks whose mean displacement cannot be used to
+%estimate their noise standard deviation
+%(after removing std = 1 which indicates the simple initialization conditions)
+%use 10% to be quite strict - basically, unless such a short track falls in
+%the search area of a longer track, it won't get linked to anything
 noiseStdAll = noiseStd(noiseStd ~= 1);
-undetBrownStd = prctile(noiseStdAll,80);
+undetBrownStd = prctile(noiseStdAll,10);
+
+%for undetermined tracks that have a mean displacement estimate (i.e. all
+%tracks longer than 1 frame), use the mean displacement estimate to assign
+%a noiseStd value (instead of the Kalman filter)
+indx = find(noiseStd==1 & ~isnan(trackMeanDisp));
+noiseStd(indx) = trackMeanDisp(indx)/sqrt(2);
+
+%calculate the average mean displacement for all tracks, to assign to
+%tracks that have no mean displacement estimate
+meanDispAllTracks = nanmean(trackMeanDisp);
 
 %determine the search areas of all tracks
 [longVecSAll,longVecEAll,shortVecSAll,shortVecEAll,shortVecS3DAll,...
     shortVecE3DAll,longVecSAllMS,longVecEAllMS,shortVecSAllMS,shortVecEAllMS,...
-    shortVecS3DAllMS,shortVecE3DAllMS] = getAveDispEllipseAll(xyzVel,...
+    shortVecS3DAllMS,shortVecE3DAllMS] = getAveDispEllipseAll2(xyzVel,...
     noiseStd,trackType,undetBrownStd,timeWindow,brownStdMult,linStdMult,...
     timeReachConfB,timeReachConfL,minSearchRadius,maxSearchRadius,...
     useLocalDensity,closestDistScale,maxStdMult,nnDistLinkedFeat,nnWindow,...
     trackStartTime,trackEndTime,probDim,resLimit);
+
+%% Gap closing
 
 %find all pairs of ends and starts that can potentially be linked
 %determine this by looking at time gaps between ends and starts
@@ -315,6 +331,7 @@ clear dispMat2 maxDispAllowed
 indx1 = zeros(numPairs,1); %row number in cost matrix
 indx2 = zeros(numPairs,1); %column number in cost matrix
 cost  = zeros(numPairs,1); %cost value
+% timeGapAll = zeros(numPairs,1);
 
 %put time scaling of linear motion in a vector
 % timeScalingLin = [(1:timeReachConfL) timeReachConfL * ...
@@ -339,7 +356,7 @@ for iPair = 1 : numPairs
     %get the types of the two tracks
     trackTypeS = trackType(iStart);
     trackTypeE = trackType(iEnd);
-
+    
     %determine the search area of track iStart
     longVecS = longVecSAll(:,timeGap,iStart);
     shortVecS = shortVecSAll(:,timeGap,iStart);
@@ -395,7 +412,15 @@ for iPair = 1 : numPairs
         case 1 %if end is directed
             switch trackTypeS
                 case 1 %if start is directed
-
+                    
+                    %                     %calculate the average displacement for the two tracks combined
+                    %                     %the average displacement is scaled by sqrt(time gap)
+                    %                     %for linear tracks in order to put linear and Brownian
+                    %                     %displacements on an equal footing
+                    %                     meanDisp2Tracks = nanmean([sqrt(timeGap)*trackMeanDisp(iStart) ...
+                    %                         sqrt(timeGap)*trackMeanDisp(iEnd)]);
+                    %                     meanDisp2Tracks(isnan(meanDisp2Tracks)) = meanDispAllTracks;
+                    
                     %calculate the square sine of the angle between velocity vectors
                     sin2Angle = 1 - (longVecE' * longVecS / ...
                         (longVecMagE * longVecMagS))^2;
@@ -425,6 +450,14 @@ for iPair = 1 : numPairs
                     
                 case 0 %if start is Brownian
 
+                    %                     %calculate the average displacement for the two tracks combined
+                    %                     %the average displacement is scaled by sqrt(time gap)
+                    %                     %for linear tracks in order to put linear and Brownian
+                    %                     %displacements on an equal footing
+                    %                     meanDisp2Tracks = nanmean([trackMeanDisp(iStart) ...
+                    %                         sqrt(timeGap)*trackMeanDisp(iEnd)]);
+                    %                     meanDisp2Tracks(isnan(meanDisp2Tracks)) = meanDispAllTracks;
+                    
                     %calculate the square sine of the angle between the
                     %end's motion direction vector and the displacement vector
                     sin2AngleE = 1 - (cen2cenVec * longVecE / ...
@@ -444,6 +477,14 @@ for iPair = 1 : numPairs
 
                 otherwise %if start is undetermined
 
+                    %                     %calculate the average displacement for the two tracks combined
+                    %                     %the average displacement is scaled by sqrt(time gap)
+                    %                     %for linear tracks in order to put linear and Brownian
+                    %                     %displacements on an equal footing
+                    %                     meanDisp2Tracks = nanmean([trackMeanDisp(iStart) ...
+                    %                         sqrt(timeGap)*trackMeanDisp(iEnd)]);
+                    %                     meanDisp2Tracks(isnan(meanDisp2Tracks)) = meanDispAllTracks;
+                    
                     %calculate the square sine of the angle between the
                     %end's motion direction vector and the displacement vector
                     sin2AngleE = 1 - (cen2cenVec * longVecE / ...
@@ -463,6 +504,14 @@ for iPair = 1 : numPairs
             switch trackTypeS
                 case 1 %if start is directed
 
+                    %                     %calculate the average displacement for the two tracks combined
+                    %                     %the average displacement is scaled by sqrt(time gap)
+                    %                     %for linear tracks in order to put linear and Brownian
+                    %                     %displacements on an equal footing
+                    %                     meanDisp2Tracks = nanmean([sqrt(timeGap)*trackMeanDisp(iStart) ...
+                    %                         trackMeanDisp(iEnd)]);
+                    %                     meanDisp2Tracks(isnan(meanDisp2Tracks)) = meanDispAllTracks;
+                    
                     %calculate the square sine of the angle between the
                     %start's motion direction vector and the displacement vector
                     sin2AngleS = 1 - (cen2cenVec * longVecS / ...
@@ -482,6 +531,14 @@ for iPair = 1 : numPairs
 
                 case 0 %if start is Brownian
 
+                    %                     %calculate the average displacement for the two tracks combined
+                    %                     %the average displacement is scaled by sqrt(time gap)
+                    %                     %for linear tracks in order to put linear and Brownian
+                    %                     %displacements on an equal footing
+                    %                     meanDisp2Tracks = nanmean([trackMeanDisp(iStart) ...
+                    %                         trackMeanDisp(iEnd)]);
+                    %                     meanDisp2Tracks(isnan(meanDisp2Tracks)) = meanDispAllTracks;
+                    
                     %check whether the end of track iEnd is within the search
                     %disc of the start of track iStart and vice versa
                     possibleLink = (dispVecMag <= longVecMagE) || ...
@@ -489,6 +546,14 @@ for iPair = 1 : numPairs
 
                 otherwise %if start is undetermined
 
+                    %                     %calculate the average displacement for the two tracks combined
+                    %                     %the average displacement is scaled by sqrt(time gap)
+                    %                     %for linear tracks in order to put linear and Brownian
+                    %                     %displacements on an equal footing
+                    %                     meanDisp2Tracks = nanmean([trackMeanDisp(iStart) ...
+                    %                         trackMeanDisp(iEnd)]);
+                    %                     meanDisp2Tracks(isnan(meanDisp2Tracks)) = meanDispAllTracks;
+                    
                     %check whether the start of track iStart is within the search
                     %disc of the end of track iEnd
                     possibleLink = dispVecMag <= longVecMagE;
@@ -499,6 +564,14 @@ for iPair = 1 : numPairs
             switch trackTypeS
                 case 1 %if start is directed
 
+                    %                     %calculate the average displacement for the two tracks combined
+                    %                     %the average displacement is scaled by sqrt(time gap)
+                    %                     %for linear tracks in order to put linear and Brownian
+                    %                     %displacements on an equal footing
+                    %                     meanDisp2Tracks = nanmean([sqrt(timeGap)*trackMeanDisp(iStart) ...
+                    %                         trackMeanDisp(iEnd)]);
+                    %                     meanDisp2Tracks(isnan(meanDisp2Tracks)) = meanDispAllTracks;
+                    
                     %calculate the square sine of the angle between the
                     %start's motion direction vector and the displacement vector
                     sin2AngleS = 1 - (cen2cenVec * longVecS / ...
@@ -513,34 +586,57 @@ for iPair = 1 : numPairs
 
                 otherwise %if start is Brownian or undetermined
 
+                    %                     %calculate the average displacement for the two tracks combined
+                    %                     %the average displacement is scaled by sqrt(time gap)
+                    %                     %for linear tracks in order to put linear and Brownian
+                    %                     %displacements on an equal footing
+                    %                     meanDisp2Tracks = nanmean([trackMeanDisp(iStart) ...
+                    %                         trackMeanDisp(iEnd)]);
+                    %                     meanDisp2Tracks(isnan(meanDisp2Tracks)) = meanDispAllTracks;
+                    
                     %check whether the end of track iEnd is within the search
                     %disc of the start of track iStart
                     possibleLink = dispVecMag <= longVecMagS;
-
+                    
             end
     end
-
+    
     %if this is a possible link ...
     if possibleLink
-
+        
+        %calculate the average displacement for the two tracks combined
+        meanDisp2Tracks = nanmean([trackMeanDisp(iStart) ...
+            trackMeanDisp(iEnd)]);
+        meanDisp2Tracks(isnan(meanDisp2Tracks)) = meanDispAllTracks;
+        
+        %         %compare displacement magnitude to expected displacement in time
+        %         %gap (=sqrt(time gap)*mean frame-to-frame displacement, assuming
+        %         %Brownian motion)
+        %         %allow potential link only if ratio is <= 10
+        %         ratioDisp2MeanDisp = dispVecMag / (meanDisp2Tracks*sqrt(timeGap));
+        %         if ratioDisp2MeanDisp <= 2
+        
         %calculate the cost of linking
         dispVecMag2 = dispVecMag ^ 2;
         if trackTypeE == 1 && trackTypeS == 1
             cost12 = dispVecMag2 * (1 + mean([sin2Angle sin2AngleE sin2AngleS])) ...
-                / timeScalingLin(timeGap);
+                / timeScalingLin(timeGap) / (meanDisp2Tracks^2);
         elseif trackTypeE == 1
-            cost12 = dispVecMag2 * (1 + sin2AngleE) / timeScalingLin(timeGap);
+            cost12 = dispVecMag2 * (1 + sin2AngleE) ...
+                / timeScalingLin(timeGap) / (meanDisp2Tracks^2);
         elseif trackTypeS == 1
-            cost12 = dispVecMag2 * (1 + sin2AngleS) / timeScalingLin(timeGap);
+            cost12 = dispVecMag2 * (1 + sin2AngleS) ...
+                / timeScalingLin(timeGap) / (meanDisp2Tracks^2);
         else
-            cost12 = dispVecMag2 / timeScalingBrown(timeGap);
+            cost12 = dispVecMag2 ...
+                / timeScalingBrown(timeGap) / (meanDisp2Tracks^2);
         end
-
+        
         %penalize cost for lifetime considerations
         if ~isempty(lftCdf)
             cost12 = cost12 / oneMinusLftCdf(trackEndTime(iStart)-trackStartTime(iEnd)+2);
         end
-
+        
         %if the lifetime consideration does not make this link impossible
         if ~isinf(cost12)
             
@@ -549,15 +645,18 @@ for iPair = 1 : numPairs
             
             %add this cost to the list of costs
             cost(iPair) = cost12;
-
+            %             timeGapAll(iPair) = timeGap;
+            
             %specify the location of this pair in the cost matrix
             indx1(iPair) = iEnd; %row number
             indx2(iPair) = iStart; %column number
             
         end
-
+        
+        %         end %(if dispVecMag <= meanDisp2Tracks*sqrt(timeGap)*10)
+        
     end %(if possibleLink)
-
+    
 end %(for iPair = 1 : numPairs)
 
 %keep only pairs that turned out to be possible
@@ -565,6 +664,9 @@ possiblePairs = find(indx1 ~= 0);
 indx1 = indx1(possiblePairs);
 indx2 = indx2(possiblePairs);
 cost  = cost(possiblePairs);
+
+% timeGapAll = timeGapAll(possiblePairs);
+
 clear possiblePairs
 
 %% Merging and splitting
@@ -725,7 +827,12 @@ if mergeSplit > 0
                     dispVecMag2 = dispVecMag ^ 2; %due to displacement
                     ampCost = ampRatio; %due to amplitude
                     ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2); %punishment harsher when intensity of merged feature < sum of intensities of merging features
-                    cost12 = dispVecMag2 * ampCost * (1 + sin2AngleE); %cost
+                    meanDisp2Tracks = nanmean([trackMeanDisp(iEnd) trackMeanDisp(iMerge)]); %for displacement scaling
+                    if isnan(meanDisp2Tracks)
+                        meanDisp2Tracks = meanDispAllTracks;
+                    end
+                    cost12 = dispVecMag2 * ampCost * (1 + sin2AngleE) ...
+                        / (meanDisp2Tracks^2); %cost
 
                     %penalize cost for lifetime considerations
                     if ~isempty(lftCdf)
@@ -772,13 +879,18 @@ if mergeSplit > 0
                             dispVecMag2 = (diff(trackCoord,1,2)).^2;
                             dispVecMag2 = nanmean(dispVecMag2,2);
                             dispVecMag2 = sum(dispVecMag2(1:probDim));
+                            
+                            %if the average square displacement is smaller
+                            %than resLimit^2, then expand it
+                            dispVecMag2 = max([dispVecMag2 resLimit^2]);
 
                             %calculate intensity cost if no merge happens
                             ampCost = ampM / ampM1;
                             ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2);
-
+                            
                             %calculate alternative cost
-                            cost12 = dispVecMag2 * ampCost;
+                            cost12 = dispVecMag2 * ampCost ...
+                                / (trackMeanDisp(indxMSMS(iPair))^2);
 
                             %add this cost to the list of alternative costs
                             altCostMS(iPair) = cost12;
@@ -960,7 +1072,12 @@ if mergeSplit > 0
                     dispVecMag2 = dispVecMag ^ 2; %due to displacement
                     ampCost = ampRatio; %due to amplitude
                     ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2); %punishment harsher when intensity of splitting feature < sum of intensities of features after splitting
-                    cost12 = dispVecMag2 * ampCost * (1 + sin2AngleS);
+                    meanDisp2Tracks = nanmean([trackMeanDisp(iStart) trackMeanDisp(iSplit)]); %for displacement scaling
+                    if isnan(meanDisp2Tracks)
+                        meanDisp2Tracks = meanDispAllTracks;
+                    end
+                    cost12 = dispVecMag2 * ampCost * (1 + sin2AngleS) ...
+                        / (meanDisp2Tracks^2);
 
                     %penalize cost for lifetime considerations
                     if ~isempty(lftCdf)
@@ -993,8 +1110,6 @@ if mergeSplit > 0
                             %calculate the alternative cost of not splitting for the
                             %track that the start is possibly splitting from
 
-                            %---CHANGE HERE---%
-                            
                             %get the average square displacement in this track
                             trackCoord = trackedFeatInfo(indxMSMS(iPair),:);
                             trackCoord = reshape(trackCoord',8,[]);
@@ -1010,12 +1125,17 @@ if mergeSplit > 0
                             dispVecMag2 = nanmean(dispVecMag2,2);
                             dispVecMag2 = sum(dispVecMag2(1:probDim));
 
+                            %if the average square displacement is smaller
+                            %than resLimit^2, then expand it
+                            dispVecMag2 = max([dispVecMag2 resLimit^2]);
+
                             %calculate intensity cost if no split happens
                             ampCost = ampSp / ampSp1;
                             ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2);
 
                             %calculate alternative cost
-                            cost12 = dispVecMag2 * ampCost;
+                            cost12 = dispVecMag2 * ampCost ...
+                                / (trackMeanDisp(indxMSMS(iPair))^2);
 
                             %add this cost to the list of alternative costs
                             altCostMS(iPair) = cost12;
@@ -1071,10 +1191,25 @@ costMat = sparse(indx1,indx2,cost,numEndSplit,numStartMerge);
 %% Append cost matrix to allow births and deaths ...
 
 %determine the cost of birth and death
-costBD = prctile(cost,90);
+tmp = (costMat~=0);
+numPotAssignRow = full(sum(tmp,2));
+numPotAssignCol = full(sum(tmp)');
+numPotAssignColAll = sum(numPotAssignCol);
+numPartCol = length(find(numPotAssignCol));
+% numPartCol = length(numPotAssignCol);
+extraCol = (numPotAssignColAll-numPartCol)/numPotAssignColAll;
+numPotAssignRowAll = sum(numPotAssignRow);
+numPartRow = length(find(numPotAssignRow));
+% numPartRow = length(numPotAssignRow);
+extraRow = (numPotAssignRowAll-numPartRow)/numPotAssignRowAll;
+prctile2use = 100 - mean([extraRow extraCol])*100;
+costBD = 1.05*prctile(cost(:),prctile2use);
+
+% costBD = prctile(cost,90);
 
 %get the cost for the lower right block
-costLR = min(min(min(costMat))-1,-1);
+% costLR = min(min(min(costMat))-1,-1);
+costLR = costBD;
 
 %create cost matrix that allows for births and deaths
 costMat = [costMat ... %costs for links (gap closing + merge/split)

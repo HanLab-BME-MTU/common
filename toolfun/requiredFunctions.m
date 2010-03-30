@@ -42,7 +42,11 @@ neededFunctions = depfun(functionList{:},'-quiet');
 matlabIdx = strmatch(matlabroot,neededFunctions);
 
 % get toolboxes
-[dummy,dummy,dummy,dummy,tokens] = regexp(neededFunctions(matlabIdx),'\\toolbox\\(\w+)\\');
+if ispc
+    [dummy,dummy,dummy,dummy,tokens] = regexp(neededFunctions(matlabIdx),'\\toolbox\\(\w+)\\');
+else
+    [dummy,dummy,dummy,dummy,tokens] = regexp(neededFunctions(matlabIdx),'/toolbox/(\w+)/');
+end
 aa = cat(1,tokens{:});aa = cat(1,aa{:});
 aaa = strvcat(aa{:}); %#ok<VCAT>
 toolboxes = unique(aaa,'rows');

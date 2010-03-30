@@ -126,7 +126,7 @@ tracksFirstFrame = min(allEvents(:,1));
 tracksLastFrame = max(allEvents(:,1));
 
 %record directory before start of function
-startDir = pwd;
+% startDir = pwd;
 
 %ask user for images
 [fName,dirName] = uigetfile('*.tif','specify first image in the stack - specify very first image, even if not to be plotted');
@@ -136,7 +136,19 @@ if(isa(fName,'char') && isa(dirName,'char'))
     
     %get all file names in stack
     outFileList = getFileStackNames([dirName,fName]);
-    numFrames = length(outFileList);
+    numFiles = length(outFileList);
+    
+    %determine which frames the files correspond to, and generate the inverse map
+    %indicate missing frames with a zero
+    frame2fileMap = zeros(numFiles,1);
+    for iFile = 1 : numFiles
+        [~,~,frameNumStr] = getFilenameBody(outFileList{iFile});
+        frameNum = str2double(frameNumStr);
+        frame2fileMap(frameNum) = iFile;
+    end
+    
+    %assign as number of frames the last frame number observed
+    numFrames = frameNum;
     
     %read first image to get image size
     currentImage = imread(outFileList{1});
@@ -158,7 +170,10 @@ else
 end
 
 %keep only the frames of interest
-outFileList = outFileList(startend(1):startend(2));
+outFileList = outFileList(frame2fileMap(startend(1)):frame2fileMap(startend(2)));
+frame2fileMap = frame2fileMap(startend(1):startend(2));
+indxNotZero = find(frame2fileMap~=0);
+frame2fileMap(indxNotZero) = frame2fileMap(indxNotZero) - frame2fileMap(indxNotZero(1)) + 1;
 
 %check dragtailLength and assign default if not necessary
 if nargin < 3 || isempty(dragtailLength)
@@ -597,9 +612,11 @@ switch intensityScale
         meanIntensity = zeros(size(xCoordMatAll,2),1);
         stdIntensity = meanIntensity;
         for iFrame = 1 : size(xCoordMatAll,2)
-            imageStack = double(imread(outFileList{iFrame}));
-            meanIntensity(iFrame) = mean(imageStack(:));
-            stdIntensity(iFrame) = std(imageStack(:));
+            if frame2fileMap(iFrame) ~= 0
+                imageStack = double(imread(outFileList{frame2fileMap(iFrame)}));
+                meanIntensity(iFrame) = mean(imageStack(:));
+                stdIntensity(iFrame) = std(imageStack(:));
+            end
         end
         meanIntensity = mean(meanIntensity);
         stdIntensity = mean(stdIntensity);
@@ -608,9 +625,11 @@ switch intensityScale
         minIntensity = zeros(size(xCoordMatAll,2),1);
         maxIntensity = minIntensity;
         for iFrame = 1 : size(xCoordMatAll,2)
-            imageStack = double(imread(outFileList{iFrame}));
-            minIntensity(iFrame) = min(imageStack(:));
-            maxIntensity(iFrame) = max(imageStack(:));
+            if frame2fileMap(iFrame) ~= 0
+                imageStack = double(imread(outFileList{frame2fileMap(iFrame)}));
+                minIntensity(iFrame) = min(imageStack(:));
+                maxIntensity(iFrame) = max(imageStack(:));
+            end
         end
         minIntensity = min(minIntensity);
         maxIntensity = max(maxIntensity);
@@ -620,12 +639,21 @@ end
 %go over all specified frames
 for iFrame = 1 : size(xCoordMatAll,2)
     
-    %read specified image
-    imageStack = imread(outFileList{iFrame});
-    
-    %filter images if requested
-    if filterSigma
-        imageStack = Gauss2D(imageStack,filterSigma);
+    if frame2fileMap(iFrame) ~= 0 %if frame exists
+        
+        %read specified image
+        imageStack = imread(outFileList{frame2fileMap(iFrame)});
+        
+        %filter images if requested
+        if filterSigma
+            imageStack = Gauss2D(imageStack,filterSigma);
+        end
+        
+    else %otherwise
+        
+        %make empty frame
+        imageStack = zeros(isx,isy);
+        
     end
     
     %plot image in current frame and show frame number

@@ -1,7 +1,7 @@
 function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
-    errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
+    errFlag] = costMatLinearMotionLink2(movieInfo,kalmanFilterInfoFrame1,...
     costMatParam,nnDistFeatures,probDim,prevCost,featLifetime)
-%COSTMATLINEARMOTIONLINK provides a cost matrix for linking features based on competing linear motion models
+%COSTMATLINEARMOTIONLINK2 provides a cost matrix for linking features based on competing linear motion models
 %
 %SYNOPSIS [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %     errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
@@ -89,8 +89,8 @@ errFlag = [];
 %% Input
 
 %check whether correct number of input arguments was used
-if nargin ~= nargin('costMatLinearMotionLink')
-    disp('--costMatLinearMotionLink: Incorrect number of input arguments!');
+if nargin ~= nargin('costMatLinearMotionLink2')
+    disp('--costMatLinearMotionLink2: Incorrect number of input arguments!');
     errFlag  = 1;
     return
 end
@@ -243,6 +243,22 @@ costMat(costMat>searchRadius) = NaN;
 %square the cost matrix to make the cost = distance squared
 costMat = costMat.^2;
 
+%% Cost scaling
+
+% %scale the cost of each potential link by kalmanStd^2 in order to normalize
+% %costs in case of heterogeneously moving particles ...
+% 
+% %first get kalmanStd^2 for each particle
+% %use mean(kalmanStd^2) for particles that just appeared
+% kalmanVar = kalmanStd.^2;
+% meanKalmanVar = mean(kalmanVar(featLifetime>1));
+% if ~isnan(meanKalmanVar)
+%     kalmanVar(featLifetime==1) = meanKalmanVar;
+% end
+% 
+% %then divide costs by kalmanVar
+% costMat = costMat ./ repmat(kalmanVar,1,numFeaturesFrame2);
+
 %% Lifetime penalty
 
 if ~isempty(lftCdf)
@@ -271,11 +287,27 @@ if isstruct(prevCost)
 else
     prevCostMax = max(prevCost(:));
 end
+
 if ~isnan(prevCostMax) && prevCostMax ~= 0
     maxCost = 1.05*prevCostMax;
 else
-    maxCost = max(prctile(costMat(:),80),eps);
+    
+    %     tmp = ~isnan(costMat);
+    %     numPotAssignRow = full(sum(tmp,2));
+    %     numPotAssignCol = full(sum(tmp)');
+    %     numPotAssignColAll = sum(numPotAssignCol);
+    %     numPartCol = length(find(numPotAssignCol));
+    %     extraCol = (numPotAssignColAll-numPartCol)/numPotAssignColAll;
+    %     numPotAssignRowAll = sum(numPotAssignRow);
+    %     numPartRow = length(find(numPotAssignRow));
+    %     extraRow = (numPotAssignRowAll-numPartRow)/numPotAssignRowAll;
+    %     prctile2use = 100 - mean([extraRow extraCol])*100;
+    %     maxCost = max(prctile(costMat(:),prctile2use),eps);
+    
+    maxCost = 1.05*max(prctile(costMat(:),100),eps);
+    
 end
+
 deathCost = maxCost * ones(numFeaturesFrame1,1);
 birthCost = maxCost * ones(numFeaturesFrame2,1);
 
@@ -286,7 +318,8 @@ birthBlock = diag(birthCost); %lower left
 birthBlock(birthBlock==0) = NaN;
 
 %get the cost for the lower right block
-costLR = min(min(min(costMat))-1,-1);
+% costLR = min(min(min(costMat))-1,-1);
+costLR = maxCost;
 lrBlock = costMat';
 lrBlock(~isnan(lrBlock)) = costLR;
 
@@ -337,82 +370,3 @@ end
 
 
 %% ~~~ the end ~~~
-
-
-%% old snippets of code
-
-%             .cost2probExpo      : Exponent coefficient in formula
-%                                   converting linking cost to scheme
-%                                   probability.
-% cost2probExpo    = costMatParam.cost2probExpo;
-% %reserve memory
-% costMat = NaN*ones(numFeaturesFrame1,numFeaturesFrame2);
-% propagationScheme = ones(numFeaturesFrame1,numFeaturesFrame2);
-%
-% %pick a set of uniformly distributed random numbers
-% randomNumber = rand(numFeaturesFrame1,numFeaturesFrame2);
-%
-% %go over all features in frame 1
-% for i1 = 1 : numFeaturesFrame1
-%
-%     %get the square search radius of feature i1 in frame 1
-%     %     searchRadius2 = min(noiseStdMult2*2*...
-%     %         kalmanFilterInfoFrame1.noiseVar(1,1,i1),maxSearchRadius2);
-%     searchRadius2 = min(noiseStdMult2*2*...
-%         max(kalmanFilterInfoFrame1.noiseVar(1,1,:)),maxSearchRadius2);
-%
-%     %go over all features in frame 2
-%     for i2 = 1 : numFeaturesFrame2
-%
-%         %get the costs for this pair
-%         costPair = squeeze(costMatTmp(i1,i2,:));
-%
-%         %assign NaN to schemes whose cost = square distance > searchRadius2
-%         costPair(costPair>searchRadius2) = NaN;
-%
-%         %find the propagation scheme with the minimum cost
-%         [costTmp,propSchemeTmp] = min(costPair);
-%
-%         %if there is a possible link between the two features
-%         if ~isnan(costTmp)
-%
-%             %if Brownian motion has the minumum cost, accept it
-%             if propSchemeTmp == 3
-%
-%                 propagationScheme(i1,i2) = propSchemeTmp;
-%                 costMat(i1,i2) = costTmp;
-%
-%             else %if forward or backward propagation has minimum cost
-%
-%                 %make the other propagation scheme impossible
-%                 if propSchemeTmp == 1
-%                     costPair(2) = NaN;
-%                 else
-%                     costPair(1) = NaN;
-%                 end
-%
-%                 %calculate the probability of each scheme using its cost
-%                 schemeProb = exp(-cost2probExpo*costPair);
-%
-%                 %assign a probability of zero to impossible schemes
-%                 schemeProb(isnan(schemeProb)) = 0;
-%
-%                 %normalize the probabilities
-%                 schemeProb = schemeProb/sum(schemeProb);
-%
-%                 %calculate the cumulative probability
-%                 schemeProb(2) = schemeProb(2) + schemeProb(1);
-%                 schemeProb(3) = 1;
-%
-%                 %choose propagation scheme based on probabilities and random number
-%                 propagationScheme(i1,i2) = find((randomNumber(i1,i2)<=schemeProb),1,'first');
-%
-%                 %assign cost based on chosen propagation scheme
-%                 costMat(i1,i2) = costMatTmp(i1,i2,propagationScheme(i1,i2));
-%
-%             end %(if propSchemeTmp == 3)
-%
-%         end %(if any(~isnan(costPair)))
-%
-%     end %(for i2 = 1 : numFeaturesFrame2)
-% end %(for i1 = 1 : numFeaturesFrame1)

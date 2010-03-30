@@ -312,7 +312,7 @@ for iImage = 1 : numImagesInteg
         if numLocalMax == 0 %if there are no local maxima
             
             cands = [];
-            emptyFrames = [emptyFrames; imageIndx(iImage+integWindow)]; %#ok<AGROW>
+            emptyFrames = [emptyFrames; iImage+integWindow]; %#ok<AGROW>
             
         else %if there are local maxima
             
@@ -341,8 +341,8 @@ for iImage = 1 : numImagesInteg
         
         %add this frame to the array of frames with failed local maxima
         %detection and to the array of empty frames
-        framesFailedLocMax = [framesFailedLocMax; imageIndx(iImage+integWindow)]; %#ok<AGROW>
-        emptyFrames = [emptyFrames; imageIndx(iImage+integWindow)]; %#ok<AGROW>
+        framesFailedLocMax = [framesFailedLocMax; iImage+integWindow]; %#ok<AGROW>
+        emptyFrames = [emptyFrames; iImage+integWindow]; %#ok<AGROW>
         
     end
     
@@ -584,17 +584,17 @@ for iImage = goodImages
         
         %check whether frame is empty
         if isempty(featuresInfo.xCoord)
-            emptyFrames = [emptyFrames; imageIndx(iImage)]; %#ok<AGROW>
+            emptyFrames = [emptyFrames; iImage]; %#ok<AGROW>
         end
         
     catch %#ok<CTCH> %if detection fails
         
         %label frame as empty
-        emptyFrames = [emptyFrames; imageIndx(iImage)]; %#ok<AGROW>
+        emptyFrames = [emptyFrames; iImage]; %#ok<AGROW>
         
         %add this frame to the array of frames with failed mixture-model
         %fitting
-        framesFailedMMF = [framesFailedMMF; imageIndx(iImage)]; %#ok<AGROW>
+        framesFailedMMF = [framesFailedMMF; iImage]; %#ok<AGROW>
         
     end
     
