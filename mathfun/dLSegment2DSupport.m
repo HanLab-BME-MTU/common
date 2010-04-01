@@ -17,6 +17,13 @@ function [xRange,yRange,nzIdx] = dLSegment2DSupport(xC,yC,sigmaPSF,l,theta,imSiz
 % output:
 % (xRange, yRange)   2 vectors representing the 2-dimensional domain 
 %
+% nzIdx              linear indices where pixel value is not zere. These
+%                    indices are local:
+%
+%                    [xRange,yRange,nzIdx] = dLSegment2DSupport(...);
+%                    mySegment = zeros(numel(yRange), numel(xRange));
+%                    mySegment(nzIdx) = ...
+%
 % Sylvain Berlemont, 2010
 
 % half length of the segment
