@@ -8,8 +8,6 @@ public abstract class Process {
 	{
 		owner_ = owner;
 	}
-		
-	
 	
 	// Get the name of the process
 	public String getName() {
@@ -71,9 +69,9 @@ public class maskProcess extends Process
 	
 	// Private field section
 	
-	String[] maskPaths_;
-	String functionName_;
-	String[] functionParams_;
+	private String[] maskPaths_;
+	private String functionName_;
+	private String[] functionParams_;
 
 }
 
