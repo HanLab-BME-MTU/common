@@ -2,7 +2,7 @@ function W = awt(I, varargin)
 % W = AWT(I) computes the A Trou Wavelet Transform of image I.
 % A description of the algorithm can be found in:
 % J.-L. Starck, F. Murtagh, A. Bijaoui, "Image Processing and Data
-% Analysis: The Multiscale Approach", Cambridge Press, Cambridge, 2000. 
+% Analysis: The Multiscale Approach", Cambridge Press, Cambridge, 2000.
 %
 % W = AWT(I, nBands) computes the A Trou Wavelet decomposition of the
 % image I up to nBands scale (inclusive). The default value is nBands =
@@ -46,25 +46,26 @@ end
 
 W(:, :, nBands + 1) = lastA;
 
-    function F = convolve(I, k)
-        [N, M] = size(I);
-        k1 = 2^(k - 1);
-        k2 = 2^k;
-        
-        tmp = padarray(I, [k2 0], 'replicate');
-        
-        % Convolve the columns
-        for i = k2+1:k2+N
-            I(i - k2, :) = 6 * tmp(i, :) + 4 * tmp(i + k1, :) + ...
-                4 * tmp(i - k1, :) + tmp(i + k2, :) + tmp(i - k2, :);
-        end
-        
-        tmp = padarray(I * .0625, [0 k2], 'replicate');
-        
-        % Convolve the rows
-        for i = k2+1:k2+M
-            I(:, i - k2) = 6 * tmp(:, i) + 4 * tmp(:, i + k1) + ...
-                4 * tmp(:, i - k1) + tmp(:, i + k2) + tmp(:, i - k2);
-        end
 
-        F = I * .0625;
+function F = convolve(I, k)
+[N, M] = size(I);
+k1 = 2^(k - 1);
+k2 = 2^k;
+
+tmp = padarrayXT(I, [k2 0], 'replicate');
+
+% Convolve the columns
+for i = k2+1:k2+N
+    I(i - k2, :) = 6*tmp(i, :) + 4*(tmp(i + k1, :) + tmp(i - k1, :))...
+                   + tmp(i + k2, :) + tmp(i - k2, :);
+end
+
+tmp = padarrayXT(I * .0625, [0 k2], 'replicate');
+
+% Convolve the rows
+for i = k2+1:k2+M
+    I(:, i - k2) = 6*tmp(:, i) + 4*(tmp(:, i + k1) + tmp(:, i - k1))...
+                   + tmp(:, i + k2) + tmp(:, i - k2);
+end
+
+F = I * .0625;
