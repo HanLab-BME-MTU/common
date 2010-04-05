@@ -1,9 +1,9 @@
 function [F J] = dLSegment2DFit(x, I, sigmaPSF)
 % This function computes I - Im, where I is an image and Im is an image
 % model defined by the sum of 2D diffraction-limited segment model
-% caracterize by params x (see dLSegment2DImageModel.m for mode details).
-% This function intends to be used as a function handler in lsqnonlin,
-% lsqlin, etc. optimization functions.
+% caracterize by params x (see dLSegment2DImageModel() function for more
+% details). This function intends to be used as a function handler in
+% lsqnonlin, lsqlin, etc. optimization functions.
 %
 % [F J] = dlSegment2DFit(x, I, sigmaPSF)
 %
@@ -20,7 +20,7 @@ function [F J] = dLSegment2DFit(x, I, sigmaPSF)
 % F            F = model - I
 %
 % J            J is an MxN matrix where M = numel(I) and N = numel(x). This
-%              correspond to the jacobian of I against x (see lsqnonlin for
+%              corresponds to the jacobian of I against x (see lsqnonlin for
 %              mode details)
 
 [n p] = size(x);
@@ -36,10 +36,6 @@ m = nrows * ncols;
 xRange = cell(n, 1);
 yRange = cell(n, 1);
 nzIdx = cell(n,1);
-
-% The following loop could be simply replaced by:
-% F = reshape(dlSegment2DImageModel(x, sigmaPSF, [nrows ncols]) - I, m, 1)
-% But we want to keep xRange yRange since they are required to compute J.
 
 F = zeros(size(I));
 

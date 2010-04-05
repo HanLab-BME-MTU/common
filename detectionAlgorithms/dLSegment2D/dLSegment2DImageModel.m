@@ -1,6 +1,6 @@
 function Im = dLSegment2DImageModel(params, sigmaPSF, imSize)
-% Compute an image model which is the sum of 2D diffraction-limited segment
-% models defined by params (see dLSegment2D.m for more details).
+% Compute an image model which is the sum of diffraction-limited 2D
+% segments defined by params (see dLSegment2D.m for more details).
 %
 % Im = dLSegment2DImageModel(params, sigmaPSF, imSize)
 %

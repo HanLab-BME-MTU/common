@@ -1,7 +1,8 @@
 function [xRange,yRange,nzIdx] = dLSegment2DSupport(xC,yC,sigmaPSF,l,theta,imSize)
-% Compute the finite support of 2D Diffraction-limited Segment Model given
+% [xRange,yRange,nzIdx] = dLSegment2DSupport(xC,xC,sigmaPSF,l,theta,imSize)
+%
+% Compute the finite support of a diffraction-limited 2D segment given
 % its parameters.
-% [xRange,yRange,nzIdx] = dLSegment2DSupport(xC, xC, sigmaPSF, l, theta, imSize)
 %
 % parameters:
 % (xC,yC)            center of the segment
@@ -15,14 +16,13 @@ function [xRange,yRange,nzIdx] = dLSegment2DSupport(xC,yC,sigmaPSF,l,theta,imSiz
 % imSize             image size
 %
 % output:
-% (xRange, yRange)   2 vectors representing the 2-dimensional domain 
+% (xRange, yRange)   2 vectors representing the 2-dimensional support of
+%                    the segment in the image domain 1:size(imSize,1) x
+%                    1:size(imSize,2).
 %
-% nzIdx              linear indices where pixel value is not zere. These
-%                    indices are local:
-%
-%                    [xRange,yRange,nzIdx] = dLSegment2DSupport(...);
-%                    mySegment = zeros(numel(yRange), numel(xRange));
-%                    mySegment(nzIdx) = ...
+% nzIdx              linear indices where pixel value is not zero. These
+%                    indices are local and are intended to be passed to
+%                    dLSegment2D() and dLSegment2DJacobian() functions.
 %
 % Sylvain Berlemont, 2010
 

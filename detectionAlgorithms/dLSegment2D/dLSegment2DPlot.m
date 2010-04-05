@@ -1,8 +1,12 @@
 function dLSegment2DPlot(I, params)
 % dLSegment2DPlot(I, params)
+%
+% Overlay a set of lines on an image, where each line represents a
+% diffraction-limited 2D segment.
+%
 % parameters:
 %
-% I               image
+% I               the image
 %
 % params          nx6 matrix where n is the number of segments and their
 %                 parameters, i.e. xC, yC, A, l, t are stored column-wise.

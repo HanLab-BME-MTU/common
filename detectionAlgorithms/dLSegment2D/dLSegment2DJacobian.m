@@ -1,14 +1,14 @@
 function [dFdXc dFdYc dFdA dFds dFdl dFdt] = ...
     dLSegment2DJacobian(xRange, yRange,A, sigmaPSF, l, theta, nzIdx)
-% Partial derivatives of a 2-dimensional diffraction-limited segment.
+% Partial derivatives of a diffraction-limited 2D segment against each of
+% its parameter.
 % [dFdXc dFdXy dFdA dFds dFdl dFdt] =
 %           dLSegment2DJacobian(xRange, yRange, A, sigmaPSF, l, theta)
 %
 % parameters:
-% (xRange, yRange)   2 vectors representing the 2-dimensional domain where
-%                    the segment is centered on (0,0). Call dLSegment2D
-%                    with xRange-xC and yRange-yC for a segment centered on
-%                    (xC,yC).
+% (xRange, yRange)   2 vectors representing the 2-dimensional support of
+%                    the segment. This support can be determined using
+%                    dLSegment2DSupport() function.
 %
 % A                  amplitude of the segment
 %
@@ -18,9 +18,10 @@ function [dFdXc dFdYc dFdA dFds dFdl dFdt] = ...
 %
 % theta              orientation of the segment
 %
-% nzIdx              linear indexes of a NxM matrix (N = numel(yRange) and
-%                    M = numel(xRange)) where the model is defined. If not
-%                    provided, nzIdx = ones(N*M, 1).
+% nzIdx              linear indices of a NxM matrix (N = numel(yRange) and
+%                    M = numel(xRange)) where the segment is not null. If
+%                    not provided, nzIdx = ones(N*M, 1). These indices can
+%                    be determined using dLSegment2DSupport() function.
 %
 % output:
 % dFdXc dFdXy dFdA dFds dFdl dFdt are NxM matrices. 

@@ -1,12 +1,11 @@
 function F = dLSegment2D(xRange, yRange, A, sigmaPSF, l, theta, nzIdx)
-% 2D Diffraction-limited Segment Model
+% diffraction-limited 2D segment model.
 % F = dLSegment2D(xRange, yRange, A, sigmaPSF, l, theta, nzIdx)
 %
 % parameters:
-% (xRange, yRange)   2 vectors representing the 2-dimensional domain where
-%                    the segment is centered on (0,0). Call dLSegment2D
-%                    with xRange-xC and yRange-yC for a segment centered on
-%                    (xC,yC).
+% (xRange, yRange)   2 vectors representing the 2-dimensional support of
+%                    the segment. This support can be determined using
+%                    dLSegment2DSupport() function.
 %
 % A                  amplitude of the segment
 %
@@ -16,12 +15,17 @@ function F = dLSegment2D(xRange, yRange, A, sigmaPSF, l, theta, nzIdx)
 %
 % theta              orientation of the segment
 %
-% nzIdx              linear indexes of a NxM matrix (N = numel(yRange) and
+% nzIdx              linear indices of a NxM matrix (N = numel(yRange) and
 %                    M = numel(xRange)) where the model is defined. If not
-%                    provided, nzIdx = ones(N*M, 1).
+%                    provided, nzIdx = ones(N*M, 1). These indices can be
+%                    determined using dLSegment2DSupport() function.
 %
 % output:
 % F                  the model defined on a NxM matrix.
+%
+% usage:
+% image = imread(...);
+% [xRange,yRange,nzIdx] = dLSegment2DSupport(xC,xC,sigmaPSF,l,theta,imSize)
 %
 % Sylvain Berlemont, 2010
 
