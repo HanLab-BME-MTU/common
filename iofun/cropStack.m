@@ -43,7 +43,7 @@ end
 
 % Load First image
 [fName,dirName] = uigetfile(...
-    {'*.tif;*.tiff;*.jpg;*.jpeg','Image Files (*.tif,*.tiff,*.jpg,*.jpeg)';
+    {'*.tif;*.tiff;*.jpg;*.jpeg;*.TIF','Image Files (*.tif,*.tiff,*.jpg,*.jpeg)';
     '*.tif','TIF files (*.tif)'
     '*.tiff','TIFF files (*.tiff)'
     '*.jpg;','JPG files (*.jpg)'
@@ -152,7 +152,7 @@ for i=1:n
     filename=[path,filesep,'crop_',fName,fno,fext];
    
     % Write file to disk
-    if strcmp(fext,'.tif') || strcmp(fext,'.tiff') || strcmp(fext,'.jpg') || strcmp(fext,'.jpeg')
+    if strcmp(fext,'.tif') || strcmp(fext,'.tiff') || strcmp(fext,'.TIF') || strcmp(fext,'.jpg') || strcmp(fext,'.jpeg')
         imwrite(imgC,filename, 'Compression', 'none');
     elseif strcmp(fext,'.bmp')
         imwrite(imgC,filename);     
