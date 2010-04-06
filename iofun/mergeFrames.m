@@ -1,17 +1,17 @@
 function mergeFrames(path1, path2, mergepath)
 
 if nargin<1
-    path1 = uigetdir('.tif', 'Select directory frames of 1st movie');
+    path1 = uigetdir('Select directory frames of 1st movie');
 end
 if nargin<2
-    path2 = uigetdir('.tif', 'Select directory frames of 2nd movie');
+    path2 = uigetdir('Select directory frames of 2nd movie');
 end
 if nargin<3
-    mergepath = uigetdir('.tif', 'Select directory for output');
+    mergepath = uigetdir('Select directory for output');
 end
 
-tifFiles1 = dir([path1 filesep '*.tif*']);
-tifFiles2 = dir([path2 filesep '*.tif*']);
+tifFiles1 = imDir([path1 filesep]);
+tifFiles2 = imDir([path2 filesep]);
 
 nFrames = length(tifFiles1);
 
