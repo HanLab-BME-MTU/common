@@ -21,22 +21,33 @@ end
 %Get number of movies
 nMovies = length(movieArray);
 
-for j = 1:nMovies
+for j = 1:nMovies        
     if isfield(movieArray{j},'analysisDirectory') && ...
             exist(movieArray{j}.analysisDirectory,'dir')
 
-        if exist([movieArray{j}.analysisDirectory filesep 'movieData.mat'],'file') %Keep the old one
+        if exist([movieArray{j}.analysisDirectory filesep 'movieData.mat'],'file') 
             
-             copyfile([movieArray{j}.analysisDirectory filesep 'movieData.mat'], ...
-                      [movieArray{j}.analysisDirectory filesep 'movieData.old']);
+            %load the old one for comparison
+            oldMovieData = load([movieArray{j}.analysisDirectory filesep 'movieData.mat']);
+            oldMovieData = oldMovieData.movieData;
             
+            if ~isequal(oldMovieData,movieArray{j})
+                      
+                %Keep the old one
+                 copyfile([movieArray{j}.analysisDirectory filesep 'movieData.mat'], ...
+                          [movieArray{j}.analysisDirectory filesep 'movieData.old']);
+
+            end       
+            
+        else
+            oldMovieData = NaN;
         end
         
-        movieData = movieArray{j}; %#ok<NASGU>
-        save([movieArray{j}.analysisDirectory filesep 'movieData.mat'],'movieData');
-        if exist('oldMovieData','var')            
-            movieData = oldMovieData;
-            save([movieArray{j}.analysisDirectory filesep 'movieData.old'],'movieData','-mat');
+        %If there are changes since the last save, or if this is a new movieData...
+        if ~isequal(oldMovieData,movieArray{j})
+            movieData = movieArray{j}; %#ok<NASGU>
+            %Save the new movieData
+            save([movieArray{j}.analysisDirectory filesep 'movieData.mat'],'movieData');            
         end
 
     else
