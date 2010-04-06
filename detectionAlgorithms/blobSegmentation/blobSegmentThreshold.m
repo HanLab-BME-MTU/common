@@ -79,45 +79,17 @@ level = 0.33333*level1 + 0.66667*level2;
 
 %threshold the image
 imageThresholded = im2bw(imageDilatedNorm,level);
-imageThresholded = double(imageThresholded);
 
 %fill holes in thresholded image to make continuous blobs
 imageThresholdedFilled = imfill(imageThresholded,'holes');
 
-%find pixels belonging to blobs
-[indxBlob,numBlob] = bwlabel(imageThresholdedFilled);
-
-%find average background intensity
-% intensityBG = mean(imageDilatedNorm(indxFA==0));
-
-%go over blobs and find their size and average intensity
-%discard those in which there is little confidence (generally, small size
-%and low intensity) - although intensity criterion is not looked at any more
-[sizeBlob,intensityBlob] = deal(zeros(numBlob,1));
-for iBlob = 1 : numBlob
-
-    %find pixel indices belonging to this blob
-    indxBlobCurrent = find(indxBlob == iBlob);
-
-    %find number of pixels belonging to this Blob
-    sizeBlobCurrent = length(indxBlobCurrent);
-
-    %get average intensity of blob
-    intensityBlobCurrent = mean(imageDilatedNorm(indxBlobCurrent));
-
-    %store size and intensity
-    sizeBlob(iBlob) = sizeBlobCurrent;
-    intensityBlob(iBlob) = intensityBlobCurrent;
-
-    %discard if blob size is smaller than the minimum allowed
-    if sizeBlobCurrent < minSize
-        indxBlob(indxBlobCurrent) = 0;
-    end 
-
-end
+% go over blobs and remove those with a size smaller that minSize
+labels = bwlabel(imageThresholdedFilled);
+stats = regionprops(labels, 'Area'); %#ok<MRPBW>
+idx = find([stats.Area] > minSize);
 
 %output final blob mask
-maskBlobs = double(indxBlob > 0);
+maskBlobs = ismember(labels, idx);
 
 %% Plotting
 
