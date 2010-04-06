@@ -37,7 +37,7 @@ public class maskProcess extends Process
 {
 	// Define the constructor
 	public maskProcess(movieManagement owner, String dateTime) {
-		super(owner, 'maskProcess', dateTime)
+		super(owner, 'maskProcess', dateTime) // ??? process name/ID ???
 	}
 		
 	// Get the ith mask path
