@@ -10,20 +10,17 @@ if nargin<3
     mergepath = uigetdir('.tif', 'Select directory for output');
 end
 
-disp('adw')
-
-tifFiles1 = dir([path1 '*.tif*']);
-tifFiles2 = dir([path2 '*.tif*']);
+tifFiles1 = dir([path1 filesep '*.tif*']);
+tifFiles2 = dir([path2 filesep '*.tif*']);
 
 nFrames = length(tifFiles1);
 
 for k = 1:nFrames
-    img1 = double(imread([path1 tifFiles1(k).name]));
-    img2 = double(imread([path2 tifFiles2(k).name]));
+    img1 = double(imread([path1 filesep tifFiles1(k).name]));
+    img2 = double(imread([path2 filesep tifFiles2(k).name]));
     [nx ny] = size(img1);
     merge = zeros(nx, 2*ny);
     merge(:,1:ny) = img1;
     merge(:,ny+1:2*ny) = img2;
-    figure; imagesc(merge)
-    imwrite(uint16(merge), [mergepath 'mergeframe_' num2str(k, ['%.' num2str(length(num2str(nFrames))) 'd']) '.tif'], 'tif', 'compression', 'lzw');
+    imwrite(uint16(merge), [mergepath filesep 'mergeframe_' num2str(k, ['%.' num2str(length(num2str(nFrames))) 'd']) '.tif'], 'tif', 'compression', 'lzw');
 end
