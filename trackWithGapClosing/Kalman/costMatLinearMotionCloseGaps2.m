@@ -888,10 +888,18 @@ if mergeSplit > 0
                             ampCost = ampM / ampM1;
                             ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2);
                             
+                            %get track's mean displacement
+                            meanDisp1Track = trackMeanDisp(indxMSMS(iPair));
+                            meanDisp1Track(isnan(meanDisp1Track)) = ...
+                                meanDispAllTracks;
+                            
                             %calculate alternative cost
                             cost12 = dispVecMag2 * ampCost ...
-                                / (trackMeanDisp(indxMSMS(iPair))^2);
+                                / (meanDisp1Track^2);
 
+                            %although alternative cost is still calculated,
+                            %it is actually not used any more in the end
+                            
                             %add this cost to the list of alternative costs
                             altCostMS(iPair) = cost12;
 
@@ -1043,10 +1051,10 @@ if mergeSplit > 0
                     sin2AngleS = 1 - (cen2cenVec * longVecS / ...
                         (longVecMagS * cen2cenVecMag))^2;
 
-                    %check whether the merging feature is within the search
-                    %region of the end of track iEnd, that the center-to-center
+                    %check whether the splitting feature is within the search
+                    %region of the start of track iStart, that the center-to-center
                     %vector is reasonably well aligned with the directionality
-                    %of track iEnd, and that the amplitude ratio is
+                    %of track iStart, and that the amplitude ratio is
                     %within acceptable limits
                     possibleLink = projStartLong <= longVecMagS && ...
                         projStartShort <= shortVecMagS && ...
@@ -1133,10 +1141,18 @@ if mergeSplit > 0
                             ampCost = ampSp / ampSp1;
                             ampCost(ampCost<1) = ampCost(ampCost<1) ^ (-2);
 
+                            %get track's mean displacement
+                            meanDisp1Track = trackMeanDisp(indxMSMS(iPair));
+                            meanDisp1Track(isnan(meanDisp1Track)) = ...
+                                meanDispAllTracks;
+                            
                             %calculate alternative cost
                             cost12 = dispVecMag2 * ampCost ...
-                                / (trackMeanDisp(indxMSMS(iPair))^2);
+                                / (meanDisp1Track^2);
 
+                            %although alternative cost is still calculated,
+                            %it is actually not used any more in the end
+                            
                             %add this cost to the list of alternative costs
                             altCostMS(iPair) = cost12;
 
@@ -1212,9 +1228,14 @@ costBD = 1.05*prctile(cost(:),prctile2use);
 costLR = costBD;
 
 %create cost matrix that allows for births and deaths
+% costMat = [costMat ... %costs for links (gap closing + merge/split)
+%     spdiags([costBD*ones(numTracks,1); altCostSplit],0,numEndSplit,numEndSplit); ... %costs for death
+%     spdiags([costBD*ones(numTracks,1); altCostMerge],0,numStartMerge,numStartMerge) ...  %costs for birth
+%     sparse(indx2,indx1,costLR*ones(length(indx1),1),numStartMerge,numEndSplit)]; %dummy costs to complete the cost matrix
+
 costMat = [costMat ... %costs for links (gap closing + merge/split)
-    spdiags([costBD*ones(numTracks,1); altCostSplit],0,numEndSplit,numEndSplit); ... %costs for death
-    spdiags([costBD*ones(numTracks,1); altCostMerge],0,numStartMerge,numStartMerge) ...  %costs for birth
+    spdiags(costBD*ones(numTracks+numSplit,1),0,numEndSplit,numEndSplit); ... %costs for death
+    spdiags(costBD*ones(numTracks+numMerge,1),0,numStartMerge,numStartMerge) ...  %costs for birth
     sparse(indx2,indx1,costLR*ones(length(indx1),1),numStartMerge,numEndSplit)]; %dummy costs to complete the cost matrix
 
 %determine the nonlinkMarker

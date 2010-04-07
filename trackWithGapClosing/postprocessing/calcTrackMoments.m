@@ -84,9 +84,10 @@ for iLag = 1 : maxLag
     %     dispMag = dispMag(inlierIdx);
     %     dispMagStd = dispMagStd(inlierIdx);
     
-    %proceed if there are at least 10 values to calculate the average
-    if length(dispMag) >= 10
-        
+    %proceed if there are at least 5 values to calculate the average
+    if length(dispMag) >= 5
+        %         if length(dispMag) >= 10
+    
         %evaluate the moments at this lag
         for iOrder = 1 : numOrders
 

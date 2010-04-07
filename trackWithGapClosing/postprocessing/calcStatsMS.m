@@ -97,7 +97,7 @@ end
 
 if nargin < 4 || isempty(diffAnalysisRes)
     [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,1,probDim,...
-        1,[0.05 0.2],0);
+        1,[0.05 0.05],0);
     if errFlag
         return
     end

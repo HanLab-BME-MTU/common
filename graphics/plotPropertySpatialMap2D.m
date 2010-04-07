@@ -14,7 +14,9 @@ function plotPropertySpatialMap2D(tracksFinal,figureName,minLength,...
 %                        1 - Diffusion classification.
 %                        2 - Diffusion coefficient.
 %                        3 - Confinement radius.
-%                        Optional. Default: Everything.
+%                        4 - Track lifetime.
+%                        5 - Average frame-to-frame displacement.
+%                        Optional. Default: 1, 2 and 3.
 %	    positions2plot : Row vector of trajectory position to plot:
 %                        1 - Center position.
 %                        2 - Start position.
@@ -82,7 +84,7 @@ segmentColor = [0 0 0; 0 0 1; 0.2 0.7 0.7; 0 1 1; 0 1 0; ...
 
 %construct parts of figure titles
 plottedProperty = {'Classification','Diffusion coefficient',...
-    'Confinement radius'};
+    'Confinement radius','Lifetime','Frame-to-frame displacement'};
 plottedPosition = {'center position','start position','end position'};
 
 %% Trajectory pre-processing
@@ -121,8 +123,10 @@ maxYCoord =  ceil(max(yCoord(:)));
 trajSEL = getTrackSEL(tracksFinal);
 
 %get the start, end and center position of trajectories
+%also calculate the average frame-to-frame displacement
 trajXCoord = NaN(numTraj,3);
 trajYCoord = NaN(numTraj,3);
+frame2frameDisp = NaN(numTraj,1);
 for iTraj = 1 : numTraj
 
     %get current track's positions over its lifetime
@@ -138,6 +142,9 @@ for iTraj = 1 : numTraj
     %variable positions2plot
     trajXCoord(iTraj,:) = [centerPos(1) startPos(1) endPos(1)];
     trajYCoord(iTraj,:) = [centerPos(2) startPos(2) endPos(2)];
+
+    %calculate the average frame-to-frame displacement
+    frame2frameDisp(iTraj) = nanmean(sqrt(diff(xCoordCurrent).^2+diff(yCoordCurrent).^2));
 
 end
 
@@ -157,13 +164,16 @@ fracTrajClass = hist(trajClass,1:3);
 fracTrajClass = fracTrajClass / sum(fracTrajClass);
 
 %get diffusion coefficients from diffusion analysis results
-diffCoefNorm = catStruct(1,'diffAnalysisRes.fullDim.normDiffCoef');
+% diffCoefNorm = catStruct(1,'diffAnalysisRes.fullDim.normDiffCoef');
+diffCoefGen = catStruct(1,'diffAnalysisRes.fullDim.genDiffCoef(:,3)');
 
 %divide the range of diffusion coefficients into segments, determine
 %which segment each trajectory falls into, and calculate the fraction of
 %trajectories in each segment
+% [diffCoefSegment,segmentEdgesDC,fracInSegmentsDC] = divideRangeIntoSegments(...
+%     diffCoefNorm,numSegments,fixedSegLength);
 [diffCoefSegment,segmentEdgesDC,fracInSegmentsDC] = divideRangeIntoSegments(...
-    diffCoefNorm,numSegments,fixedSegLength);
+    diffCoefGen,numSegments,fixedSegLength);
 
 %get confinement radii from diffusion analysis results
 confRad = catStruct(1,'diffAnalysisRes.confRadInfo.confRadius(:,1)');
@@ -173,6 +183,21 @@ confRad = catStruct(1,'diffAnalysisRes.confRadInfo.confRadius(:,1)');
 %trajectories in each segment
 [confRadSegment,segmentEdgesCR,fracInSegmentsCR] = divideRangeIntoSegments(...
     confRad,numSegments,fixedSegLength);
+
+%get trajectory lifetimes
+trajLft = trajSEL(:,3);
+
+%divide the range of lifetimes into segments, determine which
+%segment each trajectory falls into, and calculate the fraction of
+%trajectories in each segment
+[trajLftSegment,segmentEdgesLft,fracInSegmentsLft] = divideRangeIntoSegments(...
+    trajLft,numSegments,fixedSegLength);
+
+%divide the range of frame-to-frame displacements into segments, determine
+%which segment each trajectory falls into, and calculate the fraction of
+%trajectories in each segment
+[f2fDispSegment,segmentEdgesFFD,fracInSegmentsFFD] = divideRangeIntoSegments(...
+    frame2frameDisp,numSegments,fixedSegLength);
 
 %% Plotting
 
@@ -298,6 +323,36 @@ for iProperty = properties2plot
                     end
                 end
                 
+            case 4 %lifetime
+                
+                %go over the different lifetime segments
+                for iSegment = 1 : numSegments
+                    indx = find(trajLftSegment==iSegment);
+                    if ~isempty(indx)
+                        plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
+                            '.','Color',segmentColor(iSegment,:));
+                    end
+                end
+                
+            case 5 %frame-to-frame displacement
+                
+                %trajectories without a frame-to-frame displacement
+                indx = find(isnan(f2fDispSegment));
+                if ~isempty(indx)
+                    plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
+                        '.','Color',[0.7 0.7 0.7]);
+                    legendText{end+1} = 'unclassified'; %#ok<AGROW>
+                end
+                
+                %go over the different frame-to-frame displacement segments
+                for iSegment = 1 : numSegments
+                    indx = find(f2fDispSegment==iSegment);
+                    if ~isempty(indx)
+                        plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
+                            '.','Color',segmentColor(iSegment,:));
+                    end
+                end
+                
         end
         
         %add subplot title
@@ -324,7 +379,7 @@ for iProperty = properties2plot
         
         switch iProperty
             
-            case 1
+            case 1 %classification
                 
                 %plot the bars with different colors
                 bar([1 2],[fracTrajClass(1) 0],'BarWidth',1,'FaceColor',...
@@ -335,7 +390,7 @@ for iProperty = properties2plot
                     'm','EdgeColor','none');
                 legendText = {'confined','free','directed'};
                 
-            case 2
+            case 2 %diffusion coefficient
                 
                 %get the center and width of each segment
                 segmentCenter = mean(segmentEdgesDC,2);
@@ -351,7 +406,7 @@ for iProperty = properties2plot
                         ' - ' num2str(segmentEdgesDC(iSegment,2))]; %#ok<AGROW>
                 end
                 
-            case 3
+            case 3 %confinement radius
                 
                 %get the center and width of each segment
                 segmentCenter = mean(segmentEdgesCR,2);
@@ -365,6 +420,38 @@ for iProperty = properties2plot
                         'EdgeColor','none');
                     legendText{end+1} = [num2str(segmentEdgesCR(iSegment,1)) ...
                         ' - ' num2str(segmentEdgesCR(iSegment,2))]; %#ok<AGROW>
+                end
+                
+            case 4 %lifetime
+                
+                %get the center and width of each segment
+                segmentCenter = mean(segmentEdgesLft,2);
+                segmentWidth = segmentEdgesLft(:,2) - segmentEdgesLft(:,1);
+                
+                %plot the bars with different colors
+                for iSegment = 1 : numSegments
+                    bar([segmentCenter(iSegment) segmentCenter(iSegment)+...
+                        segmentWidth(iSegment)],[fracInSegmentsLft(iSegment) 0],...
+                        'BarWidth',1,'FaceColor',segmentColor(iSegment,:),...
+                        'EdgeColor','none');
+                    legendText{end+1} = [num2str(segmentEdgesLft(iSegment,1)) ...
+                        ' - ' num2str(segmentEdgesLft(iSegment,2))]; %#ok<AGROW>
+                end
+                
+            case 5 %frame-to-frame displacement
+                
+                %get the center and width of each segment
+                segmentCenter = mean(segmentEdgesFFD,2);
+                segmentWidth = segmentEdgesFFD(:,2) - segmentEdgesFFD(:,1);
+                
+                %plot the bars with different colors
+                for iSegment = 1 : numSegments
+                    bar([segmentCenter(iSegment) segmentCenter(iSegment)+...
+                        segmentWidth(iSegment)],[fracInSegmentsFFD(iSegment) 0],...
+                        'BarWidth',1,'FaceColor',segmentColor(iSegment,:),...
+                        'EdgeColor','none');
+                    legendText{end+1} = [num2str(segmentEdgesFFD(iSegment,1)) ...
+                        ' - ' num2str(segmentEdgesFFD(iSegment,2))]; %#ok<AGROW>
                 end
                 
         end

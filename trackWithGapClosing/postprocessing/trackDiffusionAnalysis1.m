@@ -43,8 +43,11 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                     *black: unclassified.
 %       confRadMin  : 1 to calculate the confinement radius of confined
 %                     particles using the minimum positional standard
-%                     deviation, 0 to calculate it using the mean
-%                     positional standard deviation.
+%                     deviation; OR
+%                     0 to calculate it using the mean positional standard
+%                     deviation; OR
+%                     2 to approximate the confinement area by a rectangle
+%                     and calculate the length of both edges.
 %                     Optional. Default: 0.
 %
 %OUTPUT diffAnalysisRes : Structure array with the following fields per
@@ -74,12 +77,13 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                              the 3rd entry.
 %           .oneDim        : MSS analysis results for reduced dimensionality.
 %                            Structure with same fields as fullDim.
-%           .confRadius    : Confinement radius for particles undergoing
-%                            confined Brownian motion. Confinement radii
-%                            both parallel and perpendicular to the
-%                            direction of motion for particles undergoing
-%                            linear motion.
-%
+%           .confRadius    : For particles undergoing confined motion, the
+%                            confinement radius assuming circular
+%                            confinement, or the 2 confinement dimensions
+%                            assuming rectangular confinement.
+%                            For particles undergoing linear motion, the 2
+%                            confinement dimensions parallel and
+%                            perpendicular to the direction of motion.
 %       errFlag         : 0 if executed normally, 1 otherwise.
 %
 %REMARKS While tracks do not have to be linear in order to be asymmetric,
@@ -330,7 +334,7 @@ confRadius = NaN(numTrackSegments,2);
 trackCenter = NaN(numTrackSegments,probDim);
 prefDir = NaN(numTrackSegments,probDim);
 
-%estimate the confinement radius
+%estimate the confinement radius of confined tracks
 if ~isempty(indxConf)
     for iTrack = indxConf'
 
@@ -345,7 +349,7 @@ if ~isempty(indxConf)
         eigenVal = eig(nancov(xyzCoord(:,1:probDim)));
 
         %calculate the track's confinement radius
-        if confRadMin
+        if confRadMin == 1
             confRadius(iTrack,1) = sqrt( min(eigenVal) * (probDim + 2) );
         else
             confRadius(iTrack,1) = sqrt( mean(eigenVal) * (probDim + 2) );
@@ -357,11 +361,12 @@ if ~isempty(indxConf)
     end
 end
 
-%estimate the confinement radii (short and long) of tracks classified as linear
+%add confined tracks to asymmetric tracks if requested
+if confRadMin == 2
+    indxAsym = [indxAsym; indxConf];
+end
 
-% --- TEMPORARY --- %
-% indxAsym = [indxAsym; indxConf];
-
+%estimate the confinement radii of asymmetric tracks
 if ~isempty(indxAsym)
     for iTrack = indxAsym'
 
