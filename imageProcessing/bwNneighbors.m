@@ -1,5 +1,5 @@
 function nn = bwNneighbors(bw,nHood)
-%BWNNEIGHBORS counts the number of neighbors of each element in the input N-dimensional binary matrix
+%BWNNEIGHBORS counts the number of neighbors of each element in the input 2 or 3 dimensional binary matrix
 % 
 % nn = bwNneighbors(bw)
 %
@@ -39,6 +39,10 @@ function nn = bwNneighbors(bw,nHood)
 
 nD = ndims(bw);
 
+if nD < 2 || nD > 3
+    error('Input matrix must be 2 or 3 dimensional!')
+end
+
 %Create default neighborhood if not input
 if nargin < 2 || isempty(nHood)
     nHood = true(repmat(3,1,nD));
@@ -58,9 +62,14 @@ nn = zeros(size(bw),'uint8');
 
 %This can probably be sped-up, maybe using accumarray...HLE
 %Go through each neighbor and sum up dilations
-for j = 1:nnz(nHood)    
-    nn = nn + uint8(imdilate(bw,nHood(:,:,:,j)));                
+if ndims(bw) == 3
+    for j = 1:nnz(nHood)    
+        nn = nn + uint8(imdilate(bw,nHood(:,:,:,j)));                
+    end
+elseif ndims(bw) == 2
+    for j = 1:nnz(nHood)    
+        nn = nn + uint8(imdilate(bw,nHood(:,:,j)));                
+    end    
 end
-
 
 
