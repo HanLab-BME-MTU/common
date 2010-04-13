@@ -23,10 +23,9 @@ else
 end
 
 hside = floor(winSize/2);
-n = length(x);
+xPad = padarray(x(:), hside);
+nPad = length(xPad);
 
-ind = hside+1:n-hside;
+xMin = arrayfun(@(pos) min(xPad(pos-hside:pos+hside)), hside+1:nPad-hside);
 
-xMax = arrayfun(@(pos) min(x(pos-hside:pos+hside)), ind);
-
-indx = find(x(ind) == xMax(:)) + hside;
+indx = find(x(:) == xMin(:));
