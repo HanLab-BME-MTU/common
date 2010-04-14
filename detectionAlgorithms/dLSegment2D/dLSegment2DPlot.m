@@ -21,8 +21,6 @@ t = params(:,5);
 
 line([xC - (l / 2) .* cos(t), xC + (l / 2) .* cos(t)]', ...
      [yC - (l / 2) .* sin(t), yC + (l / 2) .* sin(t)]', ...
-    'Color', 'r');
+    'Color', 'g');
 
-plot(xC, yC, 'r.');
-
-%arrayfun(@(ind) elt(ind).f(2), 1:numel(myStruct))
+plot(xC, yC, 'g.');
