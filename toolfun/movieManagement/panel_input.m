@@ -22,7 +22,7 @@ function varargout = panel_input(varargin)
 
 % Edit the above text to modify the response to help panel_input
 
-% Last Modified by GUIDE v2.5 12-Apr-2010 12:59:01
+% Last Modified by GUIDE v2.5 20-Apr-2010 10:08:40
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -63,14 +63,21 @@ handles.output = hObject;
 % Set GUI data used to save MovieData object
 handles.MD = [ ];
 
-% Save the new-entered text of description
+% Load help icon from dialogicons.mat
+load dialogicons.mat
+questIconMap(256,:) = get(hObject,'color');
 
-% Update handles structure
+axes(handles.axes_1);
+Img = image(questIconData);
+set(hObject,'colormap',questIconMap);
+set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
+    'visible','off');
+set(Img,'ButtonDownFcn',@help_ButtonDownFcn);
+
 guidata(hObject, handles);
 
 % UIWAIT makes panel_input wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
-
 
 % --- Outputs from this function are returned to the command line.
 function varargout = panel_input_OutputFcn(hObject, eventdata, handles)  %#ok<INUSL>
@@ -81,14 +88,6 @@ function varargout = panel_input_OutputFcn(hObject, eventdata, handles)  %#ok<IN
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
-
-
-% --- Executes on button press in pushbutton_help.
-function pushbutton_help_Callback(hObject, eventdata, handles)  %#ok<*INUSD>
-% hObject    handle to pushbutton_help (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 
 % --- Executes on button press in pushbutton_done.
 function pushbutton_done_Callback(hObject, eventdata, handles) %#ok<*DEFNU>
@@ -334,15 +333,6 @@ catch ME
     
     return;
 end
-
-
-
-
-
-
-
-
-
 
 function edit_ps_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_ps (see GCBO)
@@ -640,3 +630,8 @@ eventdata2 = struct('EventName','SelectionChanged',...
 set(handles.uipanel_1, 'SelectedObject', handles.radiobutton_1);
 % Go to SelectionChangeFcn for 
 uipanel_1_SelectionChangeFcn(handles.uipanel_1, eventdata2);
+
+function help_ButtonDownFcn(hObject, eventdata)
+% Call back function when help icon is clicked
+t = help('plot');
+helpdlg(t,'Help');

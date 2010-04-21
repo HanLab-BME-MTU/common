@@ -43,6 +43,10 @@ classdef  MovieData < handle
                         % Exception
                     error('LCCB:MovieData:WrongMInfo',...
                         'Movie information is invalid\n\n');
+                elseif str2double(pixelSize)<=0 || ...
+                        str2double(timeInterval)<=0 
+                    error('LCCB:MovieData:NegaMInfo',...
+                        'Movie information cannot be negative\n\n');
                 else
                     obj.pixelSize_ = str2double(pixelSize);
                     obj.timeInterval_ = str2double(timeInterval);
@@ -66,8 +70,6 @@ classdef  MovieData < handle
             if nargin < 4 || isempty(full)
                full = false; 
             end
-            
-            
             % Check saved user input is numeric 
             if ~isnumeric(obj.pixelSize_ ) || ...
                                      ~isnumeric(obj.timeInterval_)
