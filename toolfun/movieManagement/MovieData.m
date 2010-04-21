@@ -90,7 +90,6 @@ classdef  MovieData < handle
             % Dig into every channel path
             imSize = zeros(2, length(obj.channelPath_));
             nFrames = zeros(length(obj.channelPath_),1);
-            fExt = {'tif','TIF','STK','bmp','BMP','jpg','m'};
             for i=1:length(obj.channelPath_)
                 % II. Check that every channelPath exists
                 if isempty( dir(obj.channelPath_{i}) )
@@ -100,16 +99,17 @@ classdef  MovieData < handle
                         'Please make sure the channel path/paths are corrent\n\n']);
                 end
                 % Check the number of file extensions
-                fileNames = [ ];
-                nofExt = 0;
-                for j = 1: length(fExt)
-                    tempfileNames = dir([obj.channelPath_{i}, ...
-                                                 filesep, '*.', fExt{j}]);
-                    if ~isempty(tempfileNames)
-                        nofExt = nofExt + 1;
-                    end
-                    fileNames = vertcat(fileNames, tempfileNames);                  %#ok<AGROW>
-                end
+                [fileNames nofExt] = imDir(obj.channelPath_{i},true);
+%                 fileNames = [ ];
+%                 nofExt = 0;
+%                 for j = 1: length(fExt)
+%                     tempfileNames = dir([obj.channelPath_{i}, ...
+%                                                  filesep, '*.', fExt{j}]);
+%                     if ~isempty(tempfileNames)
+%                         nofExt = nofExt + 1;
+%                     end
+%                     fileNames = vertcat(fileNames, tempfileNames);                  %#ok<AGROW>
+%                 end
                 switch nofExt
                     case 0
                         % ToDo: Exception: No proper image files are detected

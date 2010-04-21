@@ -1,10 +1,12 @@
-function fileNames = imDir(imDirectory,returnAll)
+function [fileNames formatNum] = imDir(imDirectory,returnAll)
 %IMDIR is a wrapper for the dir command which searches only for common image file types
 % 
 % fileNames = imDir(directory);
 % 
 % fileNames = imDir(directory,returnAll);
-% 
+%
+% [fileNames formatNum] = imDir(...);
+%
 % This function will find all files in the specified directory with common
 % file extensions for images. They are returned in the same format as the
 % dir command.
@@ -33,6 +35,8 @@ function fileNames = imDir(imDirectory,returnAll)
 %   fileNames - a structure containing the names and statistics for all the
 %   images found. This is the same as the output of the dir function.
 %
+%   formatNum - the number of specified extensions in the search directory 
+%
 % Hunter Elliott
 % 2/2010
 %
@@ -51,11 +55,16 @@ if nargin < 2 || isempty(returnAll)
 end
 
 fileNames = [];
+formatNum = 0;
 
 for i = 1:length(fExt)
     
-    fileNames = vertcat(fileNames,dir([imDirectory filesep '*.' fExt{i}]));
+    tempfileNames = dir([imDirectory filesep '*.' fExt{i}]);
+    if ~isempty(tempfileNames)
+        formatNum = formatNum +1;
+    end
     
+    fileNames = vertcat(fileNames, tempfileNames);
     if ~returnAll && ~isempty(fileNames);
         break
     end
