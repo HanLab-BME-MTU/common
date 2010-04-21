@@ -100,16 +100,6 @@ classdef  MovieData < handle
                 end
                 % Check the number of file extensions
                 [fileNames nofExt] = imDir(obj.channelPath_{i},true);
-%                 fileNames = [ ];
-%                 nofExt = 0;
-%                 for j = 1: length(fExt)
-%                     tempfileNames = dir([obj.channelPath_{i}, ...
-%                                                  filesep, '*.', fExt{j}]);
-%                     if ~isempty(tempfileNames)
-%                         nofExt = nofExt + 1;
-%                     end
-%                     fileNames = vertcat(fileNames, tempfileNames);                  %#ok<AGROW>
-%                 end
                 switch nofExt
                     case 0
                         % ToDo: Exception: No proper image files are detected
