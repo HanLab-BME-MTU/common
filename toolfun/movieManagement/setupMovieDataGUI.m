@@ -1,26 +1,28 @@
-function varargout = panel_input(varargin)
-% PANEL_INPUT M-file for panel_input.fig
-%      PANEL_INPUT, by itself, creates a new PANEL_INPUT or raises the existing
-%      singleton*.
+function varargout = setupMovieDataGUI(varargin)
+% SETUPMOVIEDATAGUI M-file for SETUPMOVIEDATAGUI.fig
+%      SETUPMOVIEDATAGUI, by itself, creates a new SETUPMOVIEDATAGUI or
+%      raises the existing singleton*.
 %
-%      H = PANEL_INPUT returns the handle to a new PANEL_INPUT or the handle to
-%      the existing singleton*.
+%      H = SETUPMOVIEDATAGUI returns the handle to a new SETUPMOVIEDATAGUI
+%      or the handle to the existing singleton*.
 %
-%      PANEL_INPUT('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in PANEL_INPUT.M with the given input arguments.
+%      SETUPMOVIEDATAGUI('CALLBACK',hObject,eventData,handles,...) calls
+%      the local function named CALLBACK in SETUPMOVIEDATAGUI.M with the
+%      given input arguments. 
 %
-%      PANEL_INPUT('Property','Value',...) creates a new PANEL_INPUT or raises the
-%      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before panel_input_OpeningFcn gets called.  An
-%      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to panel_input_OpeningFcn via varargin.
+%      SETUPMOVIEDATAGUI('Property','Value',...) creates a new
+%      SETUPMOVIEDATAGUI or raises the existing singleton*.  Starting from
+%      the left, property value pairs are applied to the GUI before
+%      setupMovieDataGUI_OpeningFcn gets called.  An unrecognized property
+%      name or invalid value makes property application stop.  All inputs
+%      are passed to setupMovieDataGUI_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help panel_input
+% Edit the above text to modify the response to help setupMovieDataGUI
 
 % Last Modified by GUIDE v2.5 20-Apr-2010 10:08:40
 
@@ -28,8 +30,8 @@ function varargout = panel_input(varargin)
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @panel_input_OpeningFcn, ...
-                   'gui_OutputFcn',  @panel_input_OutputFcn, ...
+                   'gui_OpeningFcn', @setupMovieDataGUI_OpeningFcn, ...
+                   'gui_OutputFcn',  @setupMovieDataGUI_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -44,15 +46,15 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before panel_input is made visible.
-function panel_input_OpeningFcn(hObject, eventdata, handles, varargin) %#ok<INUSL>
+% --- Executes just before setupMovieDataGUI is made visible.
+function setupMovieDataGUI_OpeningFcn(hObject, eventdata, handles, varargin) %#ok<INUSL>
 % This function has no output args, see OutputFcn.
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to panel_input (see VARARGIN)
+% varargin   command line arguments to setupMovieDataGUI (see VARARGIN)
 
-% Choose default command line output for panel_input
+% Choose default command line output for setupMovieDataGUI
 handles.output = hObject;
 
 % Set callback function of radio button group uipanel_1
@@ -76,11 +78,11 @@ set(Img,'ButtonDownFcn',@help_ButtonDownFcn);
 
 guidata(hObject, handles);
 
-% UIWAIT makes panel_input wait for user response (see UIRESUME)
+% UIWAIT makes setupMovieDataGUI wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
 % --- Outputs from this function are returned to the command line.
-function varargout = panel_input_OutputFcn(hObject, eventdata, handles)  %#ok<INUSL>
+function varargout = setupMovieDataGUI_OutputFcn(hObject, eventdata, handles)  %#ok<INUSL>
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
