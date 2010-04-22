@@ -1,4 +1,4 @@
-function dLSegment2DPlot(I, params)
+function dLSegment2DPlot(I, params, color)
 % dLSegment2DPlot(I, params)
 %
 % Overlay a set of lines on an image, where each line represents a
@@ -12,7 +12,11 @@ function dLSegment2DPlot(I, params)
 %                 parameters, i.e. xC, yC, A, l, t are stored column-wise.
 %
 
-imshow(I, []); hold on;
+%imshow(I, []); hold on;
+
+if nargin < 3 || isempty(color) || ~ischar(color)
+    color = 'g';
+end
 
 xC = params(:,1);
 yC = params(:,2);
@@ -21,6 +25,6 @@ t = params(:,5);
 
 line([xC - (l / 2) .* cos(t), xC + (l / 2) .* cos(t)]', ...
      [yC - (l / 2) .* sin(t), yC + (l / 2) .* sin(t)]', ...
-    'Color', 'g');
+    'Color', color);
 
-plot(xC, yC, 'g.');
+plot(xC, yC, 'Color', color, 'LineStyle', '.');

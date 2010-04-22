@@ -17,9 +17,9 @@
 // 5 when the user clicks on 'finish' call the package controller with the
 //   current movieData object.
 
-public class movieData {
+public class MovieData {
 	
-	public movieData(String movieDataPath,
+	public MovieData(String movieDataPath,
 					 String movieDataFileName,
 					 String[] channelPaths,
 					 double pixelSize,
@@ -182,152 +182,6 @@ public class movieData {
 	private String[] channelPaths_;
 	private double pixelSize_;
 	private double timeInterval_;	
-	private Process[] processes_;
-	private Package[] packages_;
+	private Process[] allProcesses_;
+	private Package[] allPackages_;
 }
-
-
-
-
-// This defines the abstract class Process from which every user-defined process
-// will inherit.
-public abstract class Package {
-	// Constructor
-	protected Package(movieData owner, String name)
-	{
-		owner_ = owner;
-	}
-	
-	// Get the name of the package
-	public String getName() {
-		return name_;
-	}
-
-	public String[] getProcesses() {
-		return processes_;
-	}
-	
-	// make a sanity check of the process
-	public abstract void sanityCheck(boolean full);
-	
-	// more abstract methods...
-	
-	// protected field section
-	protected const movieData owner_;
-	
-	// private fields
-	private String name_;
-	private String[] processes_;
-
-}
-
-// Here is an example of a concrete package (i.e. that implements the Package abstract class)
-public class bioSensorPackage extends Package {
-	// Define the constructor
-	public bioSensorPackage(movieData owner) {
-		super(owner, 'bioSensorPackage')
-	}
-	
-	public void sanityCheck(boolean full) {
-		// check that every process related to biosensor has been processed:
-		
-		// Traverse the list
-		for (int i = 1; i < owner_.getNumberOfProcesses(); ++i) {
-			if (owner_.getProcess(i).getName() != 'maskProcess') {				
-				// error => Mask process hasn't been performed.
-			}
-			else {
-				// maskProcess is here and needs to be sanity checked;
-				// owner_.getProcess(i).sanityCheck()
-			}
-		}
-	}
-}
-
-// 
-// This defines the abstract class Process from which every user-defined process
-// will inherit.
-public abstract class Process {
-	// Constructor
-	protected Process(movieData owner, String name, String dateTime)
-	{
-		owner_ = owner;
-	}
-	
-	// Get the name of the process
-	public String getName() {
-		return name_;
-	}
-	
-	// Get the date when the process has been finished
-	public String getDateTime() {
-		return dateTime_;
-	}		
-	
-	// Get the comment the user could have wrote on the process GUI.
-	public String getComment() {
-		return comment_;
-	}
-	
-	// abstract methods section
-	
-	// Get the help text
-	public abstract String getHelp();
-	
-	// make a sanity check of the process
-	public abstract void sanityCheck(boolean full);
-	
-	// more abstract methods...
-	
-	// protected field section
-	protected const movieData owner_;
-	protected String dateTime_;	
-	protected String comment_;
-	
-	// private fields
-	private String name_;
-}
-
-// Here is an example of a concrete process (i.e. that implements the Process abstract class)
-public class maskProcess extends Process
-{
-	// Define the constructor
-	public maskProcess(movieData owner, String dateTime) {
-		super(owner, "maskProcess", dateTime) // ??? process name/ID ???
-	}
-	
-	// Get the ith mask path
-	public String getMaskPath(int i) {
-		return maskPaths_[i];
-	}
-	
-	// Get the name of the function used to create the mask
-	public String getFunctionName() {
-		return functionName_;
-	}
-	
-	// Get the list of parameters used in the function to create the mask
-	public String getFunctionParams() {
-		return functionParams_;
-	}
-	
-	public void sanityCheck(boolean full) {
-		// check that the maskPaths_ array is the same size that channelPaths_
-		// array.
-		
-		if maskPaths_.length() != owner_.channelPaths().length()
-			// error
-			
-			// check mask path for every channel
-			// check mask number for every channel == owner_.nFrames()
-			
-			}
-	
-	// Private field section
-	
-	private String[] maskPaths_;
-	private String functionName_;
-	private String[] functionParams_;
-	
-}
-
