@@ -1,10 +1,10 @@
 // Here is an example of a concrete process (i.e. that implements the Process
 // abstract class)
-public class maskProcess extends Process
+public class SegmentationProcess extends Process
 {
 	// Define the constructor
-	public maskProcess(movieData owner, String dateTime) {
-		super(owner, "maskProcess", dateTime) // ??? process name/ID ???
+	public SegmentationProcess(movieData owner, String dateTime) {
+		super(owner, "SegmentationProcess", dateTime)
 	}
 	
 	// Get the ith mask path
@@ -26,13 +26,14 @@ public class maskProcess extends Process
 		// check that the maskPaths_ array is the same size that channelPaths_
 		// array.
 		
-		if maskPaths_.length() != owner_.channelPaths().length()
+		if (maskPaths_.length() != owner_.channelPaths().length()) {
 			// error
 			
 			// check mask path for every channel
 			// check mask number for every channel == owner_.nFrames()
 			
-			}
+		}
+	}
 	
 	// Private field section
 	
