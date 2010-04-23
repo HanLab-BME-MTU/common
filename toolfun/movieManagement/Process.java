@@ -6,6 +6,7 @@ public abstract class Process {
 	protected Process(movieData owner, String name, String dateTime)
 	{
 		owner_ = owner;
+		hasChanged_ = false;
 	}
 	
 	// Get the name of the process
@@ -19,8 +20,16 @@ public abstract class Process {
 	}		
 	
 	// Get the comment the user could have wrote on the process GUI.
-	public String getComment() {
-		return comment_;
+	public String getNote() {
+		return note_;
+	}
+	
+	// Return whether the process parameters have been changed. The field
+	// hasChanged_ needs to be update anytime the process parameters are
+	// modified in the process GUI (hasChanged_ = true) or if the process has
+	// has just been run with the new parameters (hasChanged_ = false).
+	public boolean hasChanged() {
+		return hasChanged_;
 	}
 	
 	// abstract methods section
@@ -31,12 +40,11 @@ public abstract class Process {
 	// make a sanity check of the process
 	public abstract void sanityCheck(boolean full);
 	
-	// more abstract methods...
-	
 	// protected field section
 	protected const movieData owner_;
+	protected boolean hasChanged_;
 	protected String dateTime_;	
-	protected String comment_;
+	protected String note_;
 	
 	// private fields
 	private String name_;
