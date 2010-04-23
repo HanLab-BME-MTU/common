@@ -24,7 +24,7 @@ function varargout = setupMovieDataGUI(varargin)
 
 % Edit the above text to modify the response to help setupMovieDataGUI
 
-% Last Modified by GUIDE v2.5 20-Apr-2010 10:08:40
+% Last Modified by GUIDE v2.5 23-Apr-2010 09:42:07
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -66,12 +66,12 @@ handles.output = hObject;
 handles.MD = [ ];
 
 % Load help icon from dialogicons.mat
-load dialogicons.mat
-questIconMap(256,:) = get(hObject,'color');
+load lccbGuiIcons.mat
+supermap(1,:) = get(hObject,'color');
 
 axes(handles.axes_1);
 Img = image(questIconData);
-set(hObject,'colormap',questIconMap);
+set(hObject,'colormap',supermap);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off');
 set(Img,'ButtonDownFcn',@help_ButtonDownFcn);
@@ -485,8 +485,8 @@ function menu_file_Callback(hObject, eventdata, handles)
 
 
 % --------------------------------------------------------------------
-function menu_help_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_help (see GCBO)
+function menu_about_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_about (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
