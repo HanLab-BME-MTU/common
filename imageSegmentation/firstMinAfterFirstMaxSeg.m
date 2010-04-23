@@ -1,4 +1,4 @@
-function mask = firstMinAfterFirstMaxSeg(thismask, closureRadius)
+function mask = firstMinAfterFirstMaxSeg(thismask, closureRadius, sigmaGauss)
 %FIRSTMINAFTERFIRSTMAXSEG Detects cell edge by thresholding the intensity histogram at the first minimum after the highest maximum
 %
 %SYNOPSIS mask = firstMinAfterFirstMaxSeg(thismask, closureRadius)
@@ -16,11 +16,15 @@ if( nargin < 2)
 	closureRadius = 0;
 end
 
+if nargin < 3 || isempty(sigmaGauss)
+    sigmaGauss=1;
+end
+
 %make sure that image is in double format
 thismask = double(thismask);
 
-%remove noise by filtering image with a Gaussian whose sigma = 1 pixel
-imageFiltered = Gauss2D(thismask,1,1);
+%remove noise by filtering image with a Gaussian whose sigma in [pixel] = sigmaGauss 
+imageFiltered = Gauss2D(thismask,sigmaGauss,1);
 
 %get minumum and maximum pixel values in image
 minSignal = min(imageFiltered(:));
