@@ -9,7 +9,7 @@ public class BioSensorsPackage extends Package {
 	// Following are the 3 abstract methods every package needs to implement.
 	
 	// Sanity check
-	public void sanityCheck(boolean full) {
+	public void sanityCheck(boolean full) throws Exception {
 		// check the status of each process and their dependencies with
 		// each other.
 		checkProcessDependencies_(full);
