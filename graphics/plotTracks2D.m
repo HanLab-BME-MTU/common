@@ -276,7 +276,11 @@ maxYCoord =  ceil(max(tracksY(:)));
 numTimePlot = timeRange(2) - timeRange(1) + 1;
 
 %define colors to loop through in case colorTime = '2'
-colorLoop = [0 0 0; 1 0 0; 0 1 0; 0 0 1; 1 1 0; 1 0 1; 0 1 1]; %colors: k,r,g,b,y,m,c
+if isempty(image)
+    colorLoop = [0 0 0; 1 0 0; 0 1 0; 0 0 1; 1 1 0; 1 0 1; 0 1 1]; %colors: k,r,g,b,y,m,c
+else
+    colorLoop = [0.7 0.7 0.7; 1 0 0; 0 1 0; 0 0 1; 1 1 0; 1 0 1; 0 1 1]; %colors: 'ligh pink',r,g,b,y,m,c
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Plotting

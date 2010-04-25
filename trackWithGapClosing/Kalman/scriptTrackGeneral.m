@@ -5,7 +5,7 @@ gapCloseParam.mergeSplit = 1; %1 if merging and splitting are to be considered, 
 gapCloseParam.minTrackLen = 1; %minimum length of track segments from linking to be used in gap closing.
 
 %optional input:
-gapCloseParam.diagnostics = 1; %1 to plot a histogram of gap lengths in the end; 0 or empty otherwise.
+gapCloseParam.diagnostics = 0; %1 to plot a histogram of gap lengths in the end; 0 or empty otherwise.
 
 %% cost matrix for frame-to-frame linking
 
@@ -79,8 +79,8 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/orchestra/groups/lccb-receptors/Galbraiths/data/alphaVandCellEdge/100323_Cs1_CHO05/analysisAlphaV/'; %directory where to save input and output
-% saveResults.filename = 'tracks2Detection1AllFrames100323.mat'; %name of file where input and output are saved
+saveResults.dir = '/orchestra/groups/lccb-receptors/Galbraiths/data/alphaV/091106_CHO03_mEOSAV_1200_25ms_0min/analysis/'; %directory where to save input and output
+% saveResults.filename = 'tracksTest4_detection3.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
 %verbose
@@ -91,53 +91,56 @@ probDim = 2;
 
 %% tracking function call
 
-saveResults.filename = 'tracks1Detection2Frames0001to0600.mat';
+% [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+
+saveResults.filename = 'tracks2Detection1_100425_Frames0001to0600.mat';
 [tracksFinal01,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1:600),...
     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
 
-saveResults.filename = 'tracks1Detection2Frames0601to1200.mat';
+saveResults.filename = 'tracks2Detection1_100425_Frames0601to1200.mat';
 [tracksFinal02,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(601:1200),...
     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
 
-saveResults.filename = 'tracks1Detection2Frames1201to1800.mat';
-[tracksFinal03,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1201:1800),...
-    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-
-saveResults.filename = 'tracks1Detection2Frames1801to2400.mat';
-[tracksFinal04,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1801:2400),...
-    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-
-saveResults.filename = 'tracks1Detection2Frames2401to3000.mat';
-[tracksFinal05,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(2401:3000),...
-    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-
-saveResults.filename = 'tracks1Detection2Frames3001to3600.mat';
-[tracksFinal06,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(3001:3600),...
-    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-
-saveResults.filename = 'tracks1Detection2Frames3601to4200.mat';
-[tracksFinal07,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(3601:4200),...
-    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-
-saveResults.filename = 'tracks1Detection2Frames4201to4800.mat';
-[tracksFinal08,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(4201:4800),...
-    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-
-saveResults.filename = 'tracks1Detection2Frames4801to5400.mat';
-[tracksFinal09,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(4801:5400),...
-    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-
-saveResults.filename = 'tracks1Detection2Frames5401to6000.mat';
-[tracksFinal10,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(5401:6000),...
-    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-
-saveResults.filename = 'tracks1Detection2Frames6001to6600.mat';
-[tracksFinal11,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(6001:6600),...
-    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-
-saveResults.filename = 'tracks1Detection2Frames6601to7200.mat';
-[tracksFinal12,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(6601:7200),...
-    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% saveResults.filename = 'tracks1DetectionMF1Frames1201to1800.mat';
+% [tracksFinal03,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1201:1800),...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% 
+% saveResults.filename = 'tracks1DetectionMF1Frames1801to2400.mat';
+% [tracksFinal04,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1801:2400),...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% 
+% saveResults.filename = 'tracks1DetectionMF1Frames2401to3000.mat';
+% [tracksFinal05,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(2401:3000),...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% 
+% saveResults.filename = 'tracks1Detection2Frames3001to3600.mat';
+% [tracksFinal06,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(3001:3600),...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% 
+% saveResults.filename = 'tracks1Detection2Frames3601to4200.mat';
+% [tracksFinal07,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(3601:4200),...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% 
+% saveResults.filename = 'tracks1Detection2Frames4201to4800.mat';
+% [tracksFinal08,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(4201:4800),...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% 
+% saveResults.filename = 'tracks1Detection2Frames4801to5400.mat';
+% [tracksFinal09,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(4801:5400),...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% 
+% saveResults.filename = 'tracks1Detection2Frames5401to6000.mat';
+% [tracksFinal10,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(5401:6000),...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% 
+% saveResults.filename = 'tracks1Detection2Frames6001to6600.mat';
+% [tracksFinal11,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(6001:6600),...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% 
+% saveResults.filename = 'tracks1Detection2Frames6601to7200.mat';
+% [tracksFinal12,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(6601:7200),...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

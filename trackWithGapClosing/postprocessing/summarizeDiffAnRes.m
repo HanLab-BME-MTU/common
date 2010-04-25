@@ -178,25 +178,29 @@ motionCharTmp = [diffCoefAll([indxLinConf;indxLinBrown;indxLinDir]) ...
     confRadAll([indxLinConf;indxLinBrown;indxLinDir],:) ...
     trackSegmentLft([indxLinConf;indxLinBrown;indxLinDir])];
 motionChar.linear.all.distribution = motionCharTmp;
-motionChar.linear.all.meanStd = [nanmean(motionCharTmp); nanstd(motionCharTmp)];
+motionChar.linear.all.meanStd = [nanmean(motionCharTmp,1); nanstd(motionCharTmp,[],1)];
+motionChar.linear.all.median = nanmedian(motionCharTmp,1);
 
 %non-linear & confined
 motionCharTmp = [diffCoefAll(indxNonlinConf) confRadAll(indxNonlinConf,:) ...
     trackSegmentLft(indxNonlinConf)];
 motionChar.notLinear.confined.distribution = motionCharTmp;
-motionChar.notLinear.confined.meanStd = [nanmean(motionCharTmp); nanstd(motionCharTmp)];
+motionChar.notLinear.confined.meanStd = [nanmean(motionCharTmp,1); nanstd(motionCharTmp,[],1)];
+motionChar.notLinear.confined.median = nanmedian(motionCharTmp,1);
 
 %non-linear & Brownian
 motionCharTmp = [diffCoefAll(indxNonlinBrown) confRadAll(indxNonlinBrown,:) ...
     trackSegmentLft(indxNonlinBrown)];
 motionChar.notLinear.brownian.distribution = motionCharTmp;
-motionChar.notLinear.brownian.meanStd = [nanmean(motionCharTmp); nanstd(motionCharTmp)];
+motionChar.notLinear.brownian.meanStd = [nanmean(motionCharTmp,1); nanstd(motionCharTmp,[],1)];
+motionChar.notLinear.brownian.median = nanmedian(motionCharTmp,1);
 
 %non-linear & directed
 motionCharTmp = [diffCoefAll(indxNonlinDir) confRadAll(indxNonlinDir,:) ...
     trackSegmentLft(indxNonlinDir)];
 motionChar.notLinear.directed.distribution = motionCharTmp;
-motionChar.notLinear.directed.meanStd = [nanmean(motionCharTmp); nanstd(motionCharTmp)];
+motionChar.notLinear.directed.meanStd = [nanmean(motionCharTmp,1); nanstd(motionCharTmp,[],1)];
+motionChar.notLinear.directed.median = nanmedian(motionCharTmp,1);
 
 %% ~~~ the end ~~~
 

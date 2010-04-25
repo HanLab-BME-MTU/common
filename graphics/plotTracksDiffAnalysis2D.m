@@ -1,9 +1,9 @@
 function plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
-    newFigure,image,showConf)
-%PLOTTRACKSDIFFANALYSIS plots tracks in 2D highlighting the different diffusion types
+    newFigure,image,showConf,simplifyLin)
+%PLOTTRACKSDIFFANALYSIS2D plots tracks in 2D highlighting the different diffusion types
 %
 %SYNOPSIS plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
-%    newFigure,image)
+%    newFigure,image,showConf,simplifyLin)
 %
 %INPUT  trackedFeatureInfo: -- EITHER -- 
 %                           Output of trackWithGapClosing:
@@ -54,6 +54,11 @@ function plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,.
 %                           Optional. Default: no image.
 %       showConf          : 1 to show confinement radii, 0 otherwise.
 %                           Optional. Default: 0.
+%       simplifyLin       : 1 to color all linear groups as one category;
+%                           2 to include "random+superdiffusive" also in
+%                           the overall linear category;
+%                           0 to keep each group separate.
+%                           Optional. Default: 0.
 %
 %OUTPUT The plot.
 %       Color coding:
@@ -66,6 +71,10 @@ function plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,.
 %       random/unclassified & 2D super diffusion -> magenta
 %       random & too short to analyze 2D diffusion -> purple
 %       too short for any analysis -> black
+%
+%       If simplifyLin = 1, all linear groups will be colored red.
+%       If simplifyLin = 2, all linear groups + random&super-diffusive will
+%       be colored red.
 %
 %Khuloud Jaqaman, March 2008
 
@@ -118,6 +127,11 @@ end
 %check whether to plot confinement radii
 if nargin < 6 || isempty(showConf)
     showConf = 0;
+end
+
+%check whether to simplify color-coding of linear tracks
+if nargin < 7 || isempty(simplifyLin)
+    simplifyLin = 0;
 end
 
 %exit if there are problems in input variables
@@ -227,21 +241,46 @@ trackSegmentType = vertcat(diffAnalysisRes.classification);
 %       random/unclassified & 2D super diffusion -> magenta
 %       random & too short to analyze 2D diffusion -> purple
 %       too short for any analysis -> black
+%
+%       If simplifyLin = 1, all linear groups will be colored red.
+%       If simplifyLin = 2, all linear groups + random&super-diffusive will
+%       be colored red.
+%
 trackSegmentColor = repmat([0 0 0],numTrackSegments,1);
 indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 1);
-trackSegmentColor(indx,:) = repmat([1 0.7 0],length(indx),1);
+switch simplifyLin
+    case 0
+        trackSegmentColor(indx,:) = repmat([1 0.7 0],length(indx),1);
+    case {1,2}
+        trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
+end
 indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 2);
 trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
 indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 3);
-trackSegmentColor(indx,:) = repmat([0 1 0],length(indx),1);
+switch simplifyLin
+    case 0
+        trackSegmentColor(indx,:) = repmat([0 1 0],length(indx),1);
+    case {1,2}
+        trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
+end
 indx = find(trackSegmentType(:,1) == 1 & isnan(trackSegmentType(:,3)));
-trackSegmentColor(indx,:) = repmat([1 1 0],length(indx),1);
+switch simplifyLin
+    case 0
+        trackSegmentColor(indx,:) = repmat([1 1 0],length(indx),1);
+    case {1,2}
+        trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
+end
 indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 1);
 trackSegmentColor(indx,:) = repmat([0 0 1],length(indx),1);
 indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 2);
 trackSegmentColor(indx,:) = repmat([0 1 1],length(indx),1);
 indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 3);
-trackSegmentColor(indx,:) = repmat([1 0 1],length(indx),1);
+switch simplifyLin
+    case {0,1}
+        trackSegmentColor(indx,:) = repmat([1 0 1],length(indx),1);
+    case 2
+        trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
+end
 indx = find(trackSegmentType(:,1) == 0 & isnan(trackSegmentType(:,2)));
 trackSegmentColor(indx,:) = repmat([0.6 0 1],length(indx),1);
 

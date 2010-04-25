@@ -200,20 +200,22 @@ for iCell = 1 : numCells
     
 end
 
-
 %% Generate weighted distribution of merging and splitting statistics using the bootstrap samples
 
 %initialize variable
-probMSIfType2Distr = [];
+probMSIfType1Distr = []; %m/s probability calculated using Method 1
+probMSIfType2Distr = []; %m/s probability calculated using Method 2
 
 %go over all cells
 for iCell = 1 : numCells
     
     %get this cell's entries
     msStatsTmp = msStatsSample(1:numRepIndFromNumFeatSquared(iCell),iCell); %#ok<NASGU>
+    probMSIfType1Ind = (catStruct(2,'msStatsTmp.probMSIfType12(:,1,3)'))';
     probMSIfType2Ind = (catStruct(2,'msStatsTmp.probMSIfType12(:,2,3)'))';
     
     %add its original contribution to the weighted distribution
+    probMSIfType1Distr = [probMSIfType1Distr; probMSIfType1Ind]; %#ok<AGROW>
     probMSIfType2Distr = [probMSIfType2Distr; probMSIfType2Ind]; %#ok<AGROW>
     
 end
@@ -221,7 +223,12 @@ end
 %% Generate weighted distribution of motion type statistics using the bootstrap samples
 
 %initialize variable
-probMotionTypeDistr = [];
+probMotionTypeDistr = []; %motion type probabilities
+linearDiffCoefDistr = []; %diffusion coefficient of linear particles
+linearConfWidthDistr = []; %width of linear confinement areas
+brownianDiffCoefDistr = []; %diffusion coefficient of brownian particles
+confinedDiffCoefDistr = []; %diffusion cofficient of confined particles
+confinedConfWidthDistr = []; %size of confinement area for confined particles
 
 %go over all cells
 for iCell = 1 : numCells
@@ -229,8 +236,21 @@ for iCell = 1 : numCells
     %get this cell's entries
     motionStatsTmp = motionStatsSample(1:numRepIndFromNumFeat(iCell),iCell); %#ok<NASGU>
     probMotionTypeInd = (catStruct(2,'motionStatsTmp.probMotionType(:,1)'))';
+    linearDiffCoefInd = (catStruct(2,'motionStatsTmp.motionChar.linear.all.meanStd(:,1)'))';
+    linearConfWidthInd = (catStruct(2,'motionStatsTmp.motionChar.linear.all.meanStd(:,2)'))';
+    brownianDiffCoefInd = (catStruct(2,'motionStatsTmp.motionChar.notLinear.brownian.meanStd(:,1)'))';
+    confinedDiffCoefInd = (catStruct(2,'motionStatsTmp.motionChar.notLinear.confined.meanStd(:,1)'))';
+    confinedConfWidthInd = [];
+    confinedConfWidthInd(:,:,1) = (catStruct(2,'motionStatsTmp.motionChar.notLinear.confined.meanStd(:,2)'))';
+    confinedConfWidthInd(:,:,2) = (catStruct(2,'motionStatsTmp.motionChar.notLinear.confined.meanStd(:,3)'))';
+    confinedConfWidthInd = mean(confinedConfWidthInd,3);
     
     probMotionTypeDistr = [probMotionTypeDistr; probMotionTypeInd]; %#ok<AGROW>
+    linearDiffCoefDistr = [linearDiffCoefDistr; linearDiffCoefInd]; %#ok<AGROW>
+    linearConfWidthDistr = [linearConfWidthDistr; linearConfWidthInd]; %#ok<AGROW>
+    brownianDiffCoefDistr = [brownianDiffCoefDistr; brownianDiffCoefInd]; %#ok<AGROW>
+    confinedDiffCoefDistr = [confinedDiffCoefDistr; confinedDiffCoefInd]; %#ok<AGROW>
+    confinedConfWidthDistr = [confinedConfWidthDistr; confinedConfWidthInd]; %#ok<AGROW>
     
 end
 
@@ -251,18 +271,66 @@ analysisResFull.ind.bootstrap = struct('msStats',msStatsSample,...
 %results of particular interest
 
 %motion type probabilities
-analysisResPart.probMotionType.all.original = motionStatsAll.probMotionType(:,1)';
+analysisResPart.probMotionType.all.original  = motionStatsAll.probMotionType(:,1)';
 analysisResPart.probMotionType.all.bootstrap = (catStruct(2,'motionStatsAllSample.probMotionType(:,1)'))';
-analysisResPart.probMotionType.ind.original = (catStruct(2,'motionStatsInd.probMotionType(:,1)'))';
+analysisResPart.probMotionType.ind.original  = (catStruct(2,'motionStatsInd.probMotionType(:,1)'))';
 analysisResPart.probMotionType.ind.bootstrap = probMotionTypeDistr;
 
 %probability of linear motion
-analysisResPart.probLin.all.original = sum(analysisResPart.probMotionType.all.original([1 2 3 4 7]));
+analysisResPart.probLin.all.original  = sum(analysisResPart.probMotionType.all.original([1 2 3 4 7]));
 analysisResPart.probLin.all.bootstrap = sum(analysisResPart.probMotionType.all.bootstrap(:,[1 2 3 4 7]),2);
-analysisResPart.probLin.ind.original = sum(analysisResPart.probMotionType.ind.original(:,[1 2 3 4 7]),2);
+analysisResPart.probLin.ind.original  = sum(analysisResPart.probMotionType.ind.original(:,[1 2 3 4 7]),2);
 analysisResPart.probLin.ind.bootstrap = sum(analysisResPart.probMotionType.ind.bootstrap(:,[1 2 3 4 7]),2);
 
-%merge/split probabilities
+%diffusion coefficient of linear particles
+analysisResPart.linearDiffCoef.all.original  = motionStatsAll.motionChar.linear.all.meanStd(:,1)';
+analysisResPart.linearDiffCoef.all.bootstrap = (catStruct(2,'motionStatsAllSample.motionChar.linear.all.meanStd(:,1)'))';
+analysisResPart.linearDiffCoef.ind.original  = (catStruct(2,'motionStatsInd.motionChar.linear.all.meanStd(:,1)'))';
+analysisResPart.linearDiffCoef.ind.bootstrap = linearDiffCoefDistr;
+
+%confinement width of linear particles
+analysisResPart.linearConfHalfWidth.all.original  = motionStatsAll.motionChar.linear.all.meanStd(:,2)';
+analysisResPart.linearConfHalfWidth.all.bootstrap = (catStruct(2,'motionStatsAllSample.motionChar.linear.all.meanStd(:,2)'))';
+analysisResPart.linearConfHalfWidth.ind.original  = (catStruct(2,'motionStatsInd.motionChar.linear.all.meanStd(:,2)'))';
+analysisResPart.linearConfHalfWidth.ind.bootstrap = linearConfWidthDistr;
+
+%diffusion coefficient of Brownian particles
+analysisResPart.brownianDiffCoef.all.original  = motionStatsAll.motionChar.notLinear.brownian.meanStd(:,1)';
+analysisResPart.brownianDiffCoef.all.bootstrap = (catStruct(2,'motionStatsAllSample.motionChar.notLinear.brownian.meanStd(:,1)'))';
+analysisResPart.brownianDiffCoef.ind.original  = (catStruct(2,'motionStatsInd.motionChar.notLinear.brownian.meanStd(:,1)'))';
+analysisResPart.brownianDiffCoef.ind.bootstrap = brownianDiffCoefDistr;
+
+%diffusion coefficient of confined particles
+analysisResPart.confinedDiffCoef.all.original  = motionStatsAll.motionChar.notLinear.confined.meanStd(:,1)';
+analysisResPart.confinedDiffCoef.all.bootstrap = (catStruct(2,'motionStatsAllSample.motionChar.notLinear.confined.meanStd(:,1)'))';
+analysisResPart.confinedDiffCoef.ind.original  = (catStruct(2,'motionStatsInd.motionChar.notLinear.confined.meanStd(:,1)'))';
+analysisResPart.confinedDiffCoef.ind.bootstrap = confinedDiffCoefDistr;
+
+%confinement width of confined particles
+confinedConfWidthInd = [];
+confinedConfWidthInd(:,:,1) = motionStatsAll.motionChar.notLinear.confined.meanStd(:,2)';
+confinedConfWidthInd(:,:,2) = motionStatsAll.motionChar.notLinear.confined.meanStd(:,3)';
+confinedConfWidthInd = mean(confinedConfWidthInd,3);
+analysisResPart.confinedConfHalfWidth.all.original  = confinedConfWidthInd;
+confinedConfWidthInd = [];
+confinedConfWidthInd(:,:,1) = (catStruct(2,'motionStatsAllSample.motionChar.notLinear.confined.meanStd(:,2)'))';
+confinedConfWidthInd(:,:,2) = (catStruct(2,'motionStatsAllSample.motionChar.notLinear.confined.meanStd(:,3)'))';
+confinedConfWidthInd = mean(confinedConfWidthInd,3);
+analysisResPart.confinedConfHalfWidth.all.bootstrap = confinedConfWidthInd;
+confinedConfWidthInd = [];
+confinedConfWidthInd(:,:,1) = (catStruct(2,'motionStatsInd.motionChar.notLinear.confined.meanStd(:,2)'))';
+confinedConfWidthInd(:,:,2) = (catStruct(2,'motionStatsInd.motionChar.notLinear.confined.meanStd(:,3)'))';
+confinedConfWidthInd = mean(confinedConfWidthInd,3);
+analysisResPart.confinedConfHalfWidth.ind.original  = confinedConfWidthInd;
+analysisResPart.confinedConfHalfWidth.ind.bootstrap = confinedConfWidthDistr;
+
+%merge/split probabilities - 1
+analysisResPart.probMSIfType1.all.original = msStatsAll.probMSIfType12(:,1,3)';
+analysisResPart.probMSIfType1.all.bootstrap = (catStruct(2,'msStatsAllSample.probMSIfType12(:,1,3)'))';
+analysisResPart.probMSIfType1.ind.original = (catStruct(2,'msStatsInd.probMSIfType12(:,1,3)'))';
+analysisResPart.probMSIfType1.ind.bootstrap = probMSIfType1Distr;
+
+%merge/split probabilities - 2
 analysisResPart.probMSIfType2.all.original = msStatsAll.probMSIfType12(:,2,3)';
 analysisResPart.probMSIfType2.all.bootstrap = (catStruct(2,'msStatsAllSample.probMSIfType12(:,2,3)'))';
 analysisResPart.probMSIfType2.ind.original = (catStruct(2,'msStatsInd.probMSIfType12(:,2,3)'))';
