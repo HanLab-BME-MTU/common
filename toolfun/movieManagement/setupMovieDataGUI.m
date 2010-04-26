@@ -149,7 +149,7 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
             handles.MD = MD;
             guidata(hObject, handles);
         else 
-            disp('Potential problem exists in object');
+            disp('User-defined: Potential problem exists in MovieData object');
         end
         
         % Catch: exception occurs - data is not saved.
@@ -165,7 +165,7 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
         % Go to the first package
         if isempty(handles.MD)
             errordlg(['Movie data has not been sucessfully loaded. Please' ...
-                ' click ''Open File...'' button to select a MAT file.'],...
+                ' click ''Open File...'' button to select a valid MAT file.'],...
                 'Movie Data Not Loaded','modal');
             return;
         end

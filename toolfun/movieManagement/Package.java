@@ -5,31 +5,28 @@
 // - a pop up windows should notify the user that the previous package information
 //   wil be used.
 //
-// - the sanity check method of the package should be called. Any exception
-//   thrown during that check should set the flag icons (good,warning,wrong) next
-//   to each process.
-//
-// * If the package does not exists:
+// * otherwise:
 // - Call the constructor of the pacakge. Example:
 //
 //   newPackage = BiosensorPackage(movieData);
 //
-// - Call the sanity check. Any exception thrown during that check set the 
-//   flag icons (not run, problem, dependency problem) next to each process.
+// In both case, call the sanity check. Any exception thrown during that check
+// set the flag icons (not run, problem, dependency problem) next to each process.
 //
 //   try {
 //     newPackage.sanityCheck(full);
 //   } catch(ExceptionProcesses) {
-//     // display icons according to exceptions thrown
+//     // display warning icons according to exceptions thrown
 //   } catch(otherTypeOfExceptions) {
 //     // ...
-//   } 
+//   } finally {
+//     // No exception caught: every process has to have a "green check" icon
+//   }
 //	
-// - If no critical erro occur, add the package to the movieData package list:
+// - If no critical error occured and the package was new, add the package to the
+// movieData package list:
 //
 //   movieData.addPackage(newPackage);
-
-// - A sanity check is then performed to check the consistency of the object.
 //
 // This class defines the abstract class Package from which every user-defined
 // package will inherit.
@@ -158,7 +155,7 @@ public abstract class Package {
 		// 2. Check whether the process parameters have changed
 		
 		for (int i = 0; i < nProcesses; ++i) {
-			if (localProcesses_[i].parameterChanged()) {
+			if (localProcesses_[i].hasChanged()) {
 				newException = new Exception("Some of the process parameters
 											 have changed since previous run.");
 				
@@ -175,7 +172,7 @@ public abstract class Package {
 				dfs_(i, processExceptions, processVisited);
 		}
 		
-		// Finally, if at least one of the process a has problem, we throw the
+		// Finally, if at least one of the process has a problem, we throw the
 		// processExeptions cell array (the way it is done in Matlab is specific
 		// so I just write something simple here: 
 		if any(processExceptions) {
@@ -187,21 +184,24 @@ public abstract class Package {
 		
 		processVisited[iProcess] = true;
 		
-		int nProcesses = length(processVisited);
-		
-		for (int j = 0; j < nProcesses; ++j) {
-			if (depMatrix_[iProcess, j] == 1 && !processVisited[j]) {
-				dfs_(j, processExceptions, processVisited);
+		for (int j = 0; j < iProcess; ++j) {
+			// does process iProcess depend on j ?
+			if (depMatrix_[iProcess, j] == 1) {
+				// ok, process iProcess depends on process j. Do we need to explore process j?
+				if (!processVisited[j]) {
+					// yes
+					dfs_(j, processExceptions, processVisited);
+				}
 
 				// if jth process has a problem, we add an exception to the
 				// ith process list of exception since ith process depends
 				// on the jth process.
 				if (processExceptions[j].length != 0) {
-					newException = new Exception("Process " + i +
+					newException = new Exception("Process " + iProcess +
 												 " depends on process " +
 												 j + "which has problem.");
 					
-					processExceptions[i].add(newException);
+					processExceptions[iProcess].add(newException);
 				}
 			}
 		}
@@ -212,6 +212,8 @@ public abstract class Package {
 	
 	// protected fields section
 	protected movieData owner_;
+	// dependency matrix
+	protected Matrix depMatrix_;
 	// list of required processes
 	protected Process[] localProcesses_;
 }

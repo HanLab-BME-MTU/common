@@ -22,12 +22,12 @@ public class SegmentationProcess extends Process
 		return functionParams_;
 	}
 	
-	public void sanityCheck(boolean full) {
+	public void sanityCheck(boolean full) throws Exception {
 		// check that the maskPaths_ array is the same size that channelPaths_
 		// array.
 		
 		if (maskPaths_.length() != owner_.channelPaths().length()) {
-			// error
+			// error: thro Exception
 			
 			// check mask path for every channel
 			// check mask number for every channel == owner_.nFrames()

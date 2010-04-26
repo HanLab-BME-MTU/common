@@ -166,8 +166,6 @@ classdef  MovieData < handle
             else
                 obj.nFrames_ = nFrames(1);
             end
-
-            
             if ~isempty(obj.imSize_)
                 if (obj.imSize_(1) ~= imSize(1) || obj.imSize_(2) ~=imSize(2))
                 % Exception: the image size stored in this movieData is
@@ -200,9 +198,9 @@ classdef  MovieData < handle
         function addProcesses(obj, newprocess)
             % Add a process to the processes_ array
             if isempty(obj.processes_)
-                obj.processes_ = newprocess;
+                obj.processes_{1} = newprocess;
             else
-                obj.processes_(end+1) = newprocess;
+                obj.processes_{end+1} = newprocess;
             end
         end
         function val = getProcess(obj, i)
@@ -210,7 +208,7 @@ classdef  MovieData < handle
             if i > length(obj.processes_)
                 error('Index of process exceeds dimension of processes_ array');
             else
-                val = obj.processes_(i);
+                val = obj.processes_{i};
             end
         end
         function setProcess(obj, i, process)
@@ -218,17 +216,17 @@ classdef  MovieData < handle
             if i > length(obj.processes_)
                 error('Index of process exceeds dimension of processes_ array');
             else
-                delete(obj.processes_(i));
-                obj.processes_(i) = process;
+                delete(obj.processes_{i});
+                obj.processes_{i} = process;
             end
         end
         %% Functions to manipulate package object array
         function addPackages(obj, newpackage)
             % Add a package to the packages_ array
             if isempty(obj.packages_)
-                obj.packages_ = newpackage;
+                obj.packages_{1} = newpackage;
             else
-                obj.packages_(end+1) = newpackage;
+                obj.packages_{end+1} = newpackage;
             end
         end
         function val = getPackage(obj, i)
@@ -236,7 +234,7 @@ classdef  MovieData < handle
             if i > length(obj.packages_)
                 error('Index of package exceeds dimension of packages_ array');
             else
-                val = obj.packages_(i);
+                val = obj.packages_{i};
             end
         end
         function setPackage(obj, i, package)
@@ -244,8 +242,8 @@ classdef  MovieData < handle
             if i > length(obj.packages_)
                 error('Index of package exceeds dimension of packages_ array');
             else
-                delete(obj.packages_(i));
-                obj.packages_(i) = package;
+                delete(obj.packages_{i});
+                obj.packages_{i} = package;
             end
         end
 
