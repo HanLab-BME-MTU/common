@@ -24,8 +24,6 @@ static void gradientDescent(const image<2,double> & f,
       i = (int) floor(p[0]);
       j = (int) floor(p[1]);
 
-      std::cout << "\t\t => " << p << std::endl;
-
       pts.push_back(p);
       values.push_back(f[p]);
 
@@ -92,12 +90,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
       int x = (int) floor(pt[0]);
       int y = (int) floor(pt[1]);
 
-      std::cout << "START = " << x << " " << y << std::endl;
-
       if (f.contains(x, y) && f.contains(x + 1, y + 1))
 	gradientDescent(f,pt,pts_list[i],values_list[i]);
-
-      std::cout << "END" << std::endl;
     }
 
   // Output
