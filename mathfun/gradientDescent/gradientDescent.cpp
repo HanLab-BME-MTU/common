@@ -17,18 +17,28 @@ static void gradientDescent(const image<2,double> & f,
 
   double dx, dy;
 
+  int i, j;
+
   do
     {
+      i = (int) floor(p[0]);
+      j = (int) floor(p[1]);
+
+      std::cout << "\t\t => " << p << std::endl;
+
       pts.push_back(p);
       values.push_back(f[p]);
 
       q = p;
+
       dx = .5 * (f(p[0] + 1, p[1]) - f(p[0] - 1, p[1]));
       dy = .5 * (f(p[0], p[1] + 1) - f(p[0], p[1] - 1));
+
       p[0] -= dx;
       p[1] -= dy;
     }
-  while (f[p] > eps, dist(p, q) > eps);
+  while (f.contains(i, j) && f.contains(i + 1, j + 1) &&
+	 f[p] > eps && dist(p, q) > eps);
 }
 
 void mexFunction(int nlhs, mxArray *plhs[],
@@ -44,7 +54,11 @@ void mexFunction(int nlhs, mxArray *plhs[],
   
   // Check the argument types
   if (!mxIsDouble(prhs[0]))
-    mexErrMsgTxt("Undefined function or method 'gradientDescent' for input arguments of type 'single'.");
+    {
+      std::string err_msg("Undefined function or method 'gradientDescent' for input arguments of type ");
+      err_msg += mxGetClassName(prhs[0]);
+      mexErrMsgTxt(err_msg.c_str());
+    }
 
   // Check the number of dimensions
   if (mxGetNumberOfDimensions(prhs[0]) != 2)
@@ -78,8 +92,12 @@ void mexFunction(int nlhs, mxArray *plhs[],
       int x = (int) floor(pt[0]);
       int y = (int) floor(pt[1]);
 
+      std::cout << "START = " << x << " " << y << std::endl;
+
       if (f.contains(x, y) && f.contains(x + 1, y + 1))
 	gradientDescent(f,pt,pts_list[i],values_list[i]);
+
+      std::cout << "END" << std::endl;
     }
 
   // Output
