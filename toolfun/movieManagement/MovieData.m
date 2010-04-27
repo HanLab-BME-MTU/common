@@ -57,7 +57,7 @@ classdef  MovieData < handle
                 
             end
         end
-        %% MovieData Sanity Check
+        % MovieData Sanity Check
         function isValid = sanityCheck(obj, movieDataPath, ...
                                                 movieDataFileName, full)
         % 1. Sanity check (user input, input channels, image files)
@@ -185,7 +185,7 @@ classdef  MovieData < handle
 
         end
         
-        %%
+        %
         function addChannelPath(obj, newpath)
             % Add a new channel path to the object
             if isempty(obj.channelPath_)
@@ -194,7 +194,7 @@ classdef  MovieData < handle
                 obj.channelPath_{end+1} = newpath;
             end 
         end
-        %% Functions to manipulate process object array
+        % Functions to manipulate process object array
         function addProcesses(obj, newprocess)
             % Add a process to the processes_ array
             if isempty(obj.processes_)
@@ -220,7 +220,7 @@ classdef  MovieData < handle
                 obj.processes_{i} = process;
             end
         end
-        %% Functions to manipulate package object array
+        % Functions to manipulate package object array
         function addPackages(obj, newpackage)
             % Add a package to the packages_ array
             if isempty(obj.packages_)
