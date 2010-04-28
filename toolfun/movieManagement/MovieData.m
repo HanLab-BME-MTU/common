@@ -70,16 +70,9 @@ classdef  MovieData < handle
             if nargin < 4 || isempty(full)
                full = false; 
             end
-            % Check saved user input is numeric 
-            if ~isnumeric(obj.pixelSize_ ) || ...
-                                     ~isnumeric(obj.timeInterval_)
-               % Exception: 
-               error('LCCB:SanMD:WrongMInfo',...
-                   'For unknown reason, the value of pixel size or time interval is invalid\n\n');
-            end
             % I. Check if the path and filename stored in the movieData are the same
-            % than the ones provided in argument. They can differ if the movieData
-            % file has been rename, move or copy to another location.
+            % as the ones provided in argument. They can differ if the movieData
+            % MAT file has been rename, move or copy to another location.
             if  ~strcmp(obj.movieDataPath_, movieDataPath)
                obj.movieDataPath_ = movieDataPath;
             end
