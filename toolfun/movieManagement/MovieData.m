@@ -9,16 +9,19 @@ classdef  MovieData < handle
         channelPath_
         pixelSize_
         timeInterval_
-        processes_ % object array to store process objects
-        packages_ % object array to store package objects
+        processes_ = {}; % Cell array to store process objects
+        packages_ = {};% Cell array to store package objects
         movieDataPath_
         movieDataFileName_
         notes_
+        
+        crtPackage_ = [ ]; % Handle of current package
+        crtProcess_ = [ ]; % Handle of current process
     end
 
     methods
         function obj = MovieData(channelPath, pixelSize, timeInterval,...
-                movieDataPath, movieDataFileName, notes)
+                movieDataPath, movieDataFileName, notes) % throws exception
             % MovieManager construntor
             if nargin > 0
                 
@@ -181,63 +184,40 @@ classdef  MovieData < handle
         %
         function addChannelPath(obj, newpath)
             % Add a new channel path to the object
-            if isempty(obj.channelPath_)
-               obj.channelPath_{1} = newpath; 
-            else
-                obj.channelPath_{end+1} = newpath;
-            end 
+            obj.channelPath_ = horzcat(obj.channelPath_, {newpath});
         end
         % Functions to manipulate process object array
-        function addProcesses(obj, newprocess)
+        function addProcess(obj, newprocess)
             % Add a process to the processes_ array
-            if isempty(obj.processes_)
-                obj.processes_{1} = newprocess;
-            else
-                obj.processes_{end+1} = newprocess;
-            end
-        end
-        function val = getProcess(obj, i)
-            % Get the i th process in processes_ array
-            if i > length(obj.processes_)
-                error('Index of process exceeds dimension of processes_ array');
-            else
-                val = obj.processes_{i};
-            end
+            obj.processes_ = horzcat(obj.processes_, {newprocess});
         end
         function setProcess(obj, i, process)
             % Set the i th process in processes_ array
-            if i > length(obj.processes_)
-                error('Index of process exceeds dimension of processes_ array');
-            else
+            assert( i > length(obj.processes_),...
+                'Index of process exceeds dimension of processes_ array');
                 delete(obj.processes_{i});
                 obj.processes_{i} = process;
-            end
+        end
+        function setCrtProcess(obj, process)
+           % Set the current process to 'process'
+           obj.crtProcess_ = process;
         end
         % Functions to manipulate package object array
-        function addPackages(obj, newpackage)
+        function addPackage(obj, newpackage)
             % Add a package to the packages_ array
-            if isempty(obj.packages_)
-                obj.packages_{1} = newpackage;
-            else
-                obj.packages_{end+1} = newpackage;
-            end
+            obj.packages_ = horzcat(obj.packages_ , {newpackage});
         end
-        function val = getPackage(obj, i)
-            % Get the i th package in packages_ array
-            if i > length(obj.packages_)
-                error('Index of package exceeds dimension of packages_ array');
-            else
-                val = obj.packages_{i};
-            end
-        end
+
         function setPackage(obj, i, package)
             % Set the i th package in packages_ array
-            if i > length(obj.packages_)
-                error('Index of package exceeds dimension of packages_ array');
-            else
+            assert( i > length(obj.packages_), ...
+                'Index of package exceeds dimension of packages_ array');
                 delete(obj.packages_{i});
                 obj.packages_{i} = package;
-            end
+        end
+        function setCrtPackage(obj, package)
+           % Set the current package to 'package'
+           obj.crtPackage_ = package;
         end
 
     end

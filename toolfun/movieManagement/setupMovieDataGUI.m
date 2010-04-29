@@ -65,6 +65,14 @@ handles.output = hObject;
 % Set GUI data used to save MovieData object
 handles.MD = [ ];
 
+% Indicate the first package control panel the GUI will go to after 
+% MovieData is sucessfully created and MovieDate setup panel is destroied.
+% For future needs of multiple packages or multiple movie data input. 
+% These variables can be re-defined as input variables when MovieData 
+% setup panel is created.
+handles.firstPackageName = 'BioSensorsPackage';
+handles.firstPackageCtr = @BioSensorsPackage;
+
 % Load help icon from dialogicons.mat
 load lccbGuiIcons.mat
 supermap(1,:) = get(hObject,'color');
@@ -101,7 +109,7 @@ if isempty (get(handles.uipanel_1, 'SelectedObject'));
     errordlg('Please select a method to choose input channels',...
         'Please select a method','modal');
     return;
-else
+end
     
 switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
     case 'radiobutton_1'
@@ -131,7 +139,6 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
         if ~any([file,path])
             return;
         end
-        
         % Creat the movieData object (try/catch block) -------------!!!
         try
         MD = MovieData(channelPath,pixelSize,timeInterval,path,file,notes);
@@ -140,13 +147,14 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
                 'User Input Error','modal');
             return;
         end   
+
         try
         % Sanity Check
         if MD.sanityCheck(path, file, false);
             save([path file], 'MD');
             disp('Input data has been saved');
             % Save MovieDate as GUI data
-            handles.MD = MD;
+             handles.MD = MD;
             guidata(hObject, handles);
         else 
             disp('User-defined: Potential problem exists in MovieData object');
@@ -155,6 +163,7 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
         % Catch: exception occurs - data is not saved.
         catch ME
             delete(MD);
+            handles.MD = [ ];
             errordlg([ME.message 'Input data is not saved.'],...
                 'Channel Path & Movie Data Error','modal');
             return;
@@ -169,14 +178,82 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
                 'Movie Data Not Loaded','modal');
             return;
         end
+        % handles to the same MovieData object
+        MD = handles.MD;
     otherwise
         error('User-defined: unexpected radio button has been selected');
 end
 
 % Go to the first package, call the control panel window
+% handle.MD and MD are handles of the same MovieData object. Use MD for
+% convenience
 disp('Continue to the first package');
+% I. Befor going to the first package, firstly check if the first package
+% already exists    
+packageExist = false;
+if isempty(MD.packages_)
+    % create a new package object
+    MD.addPackage( handles.firstPackageCtr(MD) );
+    % Set the current package to the newly created package
+    MD.setCrtPackage( MD.packages_{1} ) ;
+else
+    % find existing package
 
+    for i = 1: length(MD.packages_)
+        if strcmp(class(MD.packages_{i}), handles.firstPackageName)
+            % TODO: dlg box: previous package exists; Save package and
+            % proceeds  
+            
+            MD.setCrtPackage(MD.packages_{i});
+            packageExist = true;
+            break;
+        end
+    end
+    if ~packageExist
+        % No same package is found.. create a new package object
+        MD.addPackage( handles.firstPackageCtr(MD) )
+        MD.setCrtPackage( MD.packages_{end} );
+    end
 end
+
+% II. Before going to the first package, secondly check if existing
+% processes can be recycled. New package has no processes in it.
+if ~packageExist && ~isempty(MD.processes_)
+    for i = 1: length(MD.crtPackage_.processClassNames_)
+        % ith process in package's process list
+        % 'sameProcID' save the ID of existing processes in MovieData that 
+        % could be recycled by current package. 
+
+        sameProcID = [];
+        sameProcName = {};
+        for j = 1: length(MD.processes_)
+            % jth available process in MovieData's process pool
+           if strcmp(class(MD.processes_{j}), ...
+                        MD.crtPackage_.processClassNames_{i}) 
+                sameProcID = horzcat (sameProcID, j);
+                sameProcName = horzcat(sameProcName, ...
+                                            {MD.processes_{j}.name_});
+           end
+        end
+        if ~isempty(sameProcID)
+            [select, ok] = listdlg('ListString', sameProcName, ...
+                 'SelectionMode','single','ListSize',[420 200], ...
+                 'Name','Select an existing process','PromptString', ...
+                 {['There are existing ',sameProcName{1},' processes saved during previous sessions. You can choose to:'],...
+                 '',...
+                 '1. Use one of the following existing processes by click ''Select''',...
+                 '2. click ''New'' to start over this process'} , ...
+                 'OKString','Select','CancelString','New'); 
+             if ok 
+                 % Add process to current package
+                 MD.crtPackage_.setProcess(i,MD.processes_{select});
+             end
+        end
+    end
+end
+
+
+guidata(hObject, handles);
 
 
 % --- Executes on selection change in listbox.
@@ -293,7 +370,7 @@ end
 structMD = pre( logical(strcmp({pre(:).class},'MovieData')) );
 switch length(structMD)
     case 0
-        % Exception
+        % Exception: No MovieData object is in the MAT file
         errordlg('No MovieData object is found in selected .mat file',...
             'Wrong .MAT File','modal');
         return;
@@ -320,12 +397,12 @@ try
     if MD.sanityCheck( pathname,filename,false );       
         % Success Notice: Movie Data has been loaded
         set(handles.text_body8,'visible','on');
-        % Movie data is loaded. Save MovieData object as GUI data
         handles.MD = MD;
         guidata(hObject,handles);
     end
 catch ME
     % If don't pass sanity check, set MovieData unloaded
+    delete(MD);
     handles.MD = [ ];
     errordlg([ME.message 'Movie data is not sucessfully loaded.'],...
                 'Channel Path & Movie Data Error','modal');   

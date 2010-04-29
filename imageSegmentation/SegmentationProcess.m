@@ -17,7 +17,7 @@ classdef SegmentationProcess < Process
               super_args = {};
            else
                super_args{1} = owner;
-               super_args{2} = 'SegmentationProcess'; % ??? process name/ID ???
+               super_args{2} = 'Segmentation'; 
            end
            % Call the supercalss constructor with empty cell array (no
            % argument) if nargin == 0

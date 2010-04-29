@@ -15,7 +15,8 @@ classdef Package < handle
     properties(SetAccess = protected, GetAccess = public)
         owner_ % The MovieData object this package belongs to
         processes_ % Cell array containing all processes who will be used in this package
-        processClassNames_ % List of processes required by the package, 
+        processClassNames_ % Must have accurate process class name
+                           % List of processes required by the package, 
                            % Cell array - same order and number of elements
                            % as processes in dependency matrix
         depMatrix_ % Processes' dependency matrix
