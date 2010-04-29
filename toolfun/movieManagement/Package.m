@@ -34,8 +34,9 @@ classdef Package < handle
                
             end
         end
-        function checkProcesses(obj, full) % throws Exception Cell Array
-            % checkProcesses is called by package's sanitycheck. 
+        function processExceptions = checkProcesses(obj, full) 
+            % checkProcesses is called by package's sanitycheck. It returns
+            % a cell array of exceptions.
             % The following things will be checked in this function
             %   1. The process itself has a problem
             %   2. The parameters in the process setting panel have changed
