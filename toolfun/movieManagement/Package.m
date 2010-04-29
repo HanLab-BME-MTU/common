@@ -9,15 +9,17 @@ classdef Package < handle
     % Objects of sub-class of Package cannot change variable values since 
     % 'SetAccess' attribute is set to private
         name_  % the name of instantiated package
+        createTime_ % The time when object is created. Same output as 
+                    % function 'clock' 
     end
     properties(SetAccess = protected, GetAccess = public)
+        owner_ % The MovieData object this package belongs to
         processes_ % Cell array containing all processes who will be used in this package
         processClassNames_ % List of processes required by the package, 
                            % Cell array - same order and number of elements
                            % as processes in dependency matrix
-        owner_ % The MovieData object this package belongs to
-        depMatrix_ % Processes' dependency matrix 
-        
+        depMatrix_ % Processes' dependency matrix
+        notes_ % The notes users put down
     end
     
     methods (Access = protected)
@@ -25,8 +27,9 @@ classdef Package < handle
             % Constructor of class Package
             
             if nargin > 0
-                obj.owner_ = owner; 
                 obj.name_ = name;
+                obj.createTime_ = clock;
+                obj.owner_ = owner; 
                 obj.depMatrix_ = depMatrix;
                 
                 obj.processClassNames_ = processClassNames;
@@ -139,6 +142,9 @@ classdef Package < handle
             assert(isa(newProcess, 'Process'), ...
                 'UserDefined Error: input is not ''Process'' object.');
             obj.processes_{i} = newProcess;
+        end
+        function setNotes (obj, text)
+            obj.notes_ = text;
         end
     end
     

@@ -6,23 +6,29 @@ classdef Process < handle
     % GetAccess = public - can get the values of variables outside object without
     % definging accessor functions
        name_ 
-       owner_
-       timeStamp_ % Put down the time when process object is created
+       createTime_ % Put down the time when process object is created
     end
-    
-    methods
+    properties(SetAccess = protected, GetAccess = public)
+        owner_
+        hasChanged_ 
+        notes_
+    end
+    methods (Access = protected)
         function obj = Process(owner, name)
             % Constructor of class Process
             if nargin > 0
                 obj.owner_ = owner; 
                 obj.name_ = name;
-                obj.timeStamp_ = clock;
+                obj.createTime_ = clock;
+                obj.hasChanged_ = false;
             end
-        end      
+        end
+        function setNotes(obj, text)
+            obj.notes_ = text;
+        end
     end
     methods (Abstract)
-        % Abstract methods to be implemented by sub-classes
-        isValid = sanityCheck(obj)
+        sanityCheck(obj)
         % More abstract classed goes here
         % ... ...
     end
