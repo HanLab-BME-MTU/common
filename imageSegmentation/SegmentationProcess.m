@@ -40,4 +40,9 @@ classdef SegmentationProcess < Process
             
         end
     end
+    methods (Static)
+        function text = getHelp(obj)
+           text = 'This is specific help text of segmentation process'; 
+        end
+    end
 end

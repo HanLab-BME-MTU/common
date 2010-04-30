@@ -151,6 +151,7 @@ classdef Package < handle
     
     methods (Abstract)
         sanityCheck(obj)
+
         % More abstract methods go here
     end
 end
