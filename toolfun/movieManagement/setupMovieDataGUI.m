@@ -72,6 +72,7 @@ handles.MD = [ ];
 % setup panel is created.
 handles.firstPackageName = 'BioSensorsPackage';
 handles.firstPackageCtr = @BioSensorsPackage;
+handles.firstPackageGUI = @biosensorsPackageGUI;
 
 % Load help icon from dialogicons.mat
 load lccbGuiIcons.mat
@@ -152,7 +153,7 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
         % Sanity Check
         if MD.sanityCheck(path, file, false);
             save([path file], 'MD');
-            disp('Input data has been saved');
+%             disp('Input data has been saved');
             % Save MovieDate as GUI data
              handles.MD = MD;
             guidata(hObject, handles);
@@ -188,7 +189,7 @@ end
 % handle.MD and MD are handles of the same MovieData object. Use MD for
 % convenience
 disp('Continue to the first package');
-% I. Befor going to the first package, firstly check if the first package
+% I. Before going to the first package, firstly check if the first package
 % already exists    
 packageExist = false;
 if isempty(MD.packages_)
@@ -251,9 +252,12 @@ if ~packageExist && ~isempty(MD.processes_)
         end
     end
 end
-
-
 guidata(hObject, handles);
+handles.firstPackageGUI(MD);
+delete(handles.figure1);
+
+
+
 
 
 % --- Executes on selection change in listbox.
