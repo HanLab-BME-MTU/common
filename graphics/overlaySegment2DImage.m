@@ -1,18 +1,20 @@
-function subResSegment2DPlot(I, segmentParams)
-% subResSegment2DPlot(I, params)
-%
+function overlaySegment2DImage(I, segmentParams)
 % Overlay a set of lines on an image, where each line represents a
 % sub-resolution 2D segment.
 %
-% INPUT:
+% overlaySegment2DImage(I, segmentParams)
 %
+% INPUT:
 % I               : the image
 %
 % segmentParams   : nx5 matrix where n is the number of segments and their
 %                   parameters, i.e. xC, yC, A, l, t are stored column-wise.
 %
+% Sylvain Berlemont, 2010
 
-imshow(I, []); hold on;
+imagesc(I),colormap gray,axis image,axis off;
+
+hold on;
 
 xC = segmentParams(:,1);
 yC = segmentParams(:,2);
