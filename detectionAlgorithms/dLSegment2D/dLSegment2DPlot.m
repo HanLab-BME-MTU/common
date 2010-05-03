@@ -1,8 +1,8 @@
-function dLSegment2DPlot(I, params, color)
-% dLSegment2DPlot(I, params)
+function subResSegment2DPlot(I, params, color)
+% subResSegment2DPlot(I, params)
 %
 % Overlay a set of lines on an image, where each line represents a
-% diffraction-limited 2D segment.
+% sub-resolution 2D segment.
 %
 % parameters:
 %

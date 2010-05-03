@@ -1,16 +1,16 @@
-function [F J] = dLSegment2DFit(x, I, sigmaPSF)
+function [F J] = subResSegment2DFit(x, I, sigmaPSF)
 % This function computes I - Im, where I is an image and Im is an image
-% model defined by the sum of 2D diffraction-limited segment model
-% caracterize by params x (see dLSegment2DImageModel() function for more
-% details). This function intends to be used as a function handler in
-% lsqnonlin, lsqlin, etc. optimization functions.
+% model defined by the sum of sub-resolution 2D segment model caracterize
+% by params x (see subResSegment2DImageModel() function for more details).
+% This function intends to be used as a function handler in lsqnonlin,
+% lsqlin, etc. optimization functions.
 %
-% [F J] = dlSegment2DFit(x, I, sigmaPSF)
+% [F J] = subResSegment2DFit(x, I, sigmaPSF)
 %
 % Parameters:
 % x            a nx6 matrix where n is the number of segments and their
 %              parameters, i.e. xC, yC, A, l, t are stored column-wise
-%              (see dLSegment2D.m for more details)
+%              (see subResSegment2D.m for more details)
 %
 % I            image
 %
@@ -46,10 +46,10 @@ for i = 1:n
     l = x(i,4);
     t = x(i,5);
     
-    [xRange{i},yRange{i},nzIdx{i}] = dLSegment2DSupport(xC,yC,sigmaPSF,...
+    [xRange{i},yRange{i},nzIdx{i}] = subResSegment2DSupport(xC,yC,sigmaPSF,...
         l,t,[nrows,ncols]);
 
-    S = dLSegment2D(xRange{i}-xC,yRange{i}-yC,A,sigmaPSF,l,t,nzIdx{i});
+    S = subResSegment2D(xRange{i}-xC,yRange{i}-yC,A,sigmaPSF,l,t,nzIdx{i});
 
     F(yRange{i},xRange{i}) = F(yRange{i},xRange{i}) + S;
 end
@@ -70,7 +70,7 @@ if nargout > 1
         
         % Compute all partial derivatives of F against segment parameters
         [dFdXc, dFdYc, dFdA, dFds, dFdl, dFdt] = ...
-            dLSegment2DJacobian(xRange{i}-xC, yRange{i}-yC, A, sigmaPSF, ...
+            subResSegment2DJacobian(xRange{i}-xC, yRange{i}-yC, A, sigmaPSF, ...
             l, t,nzIdx{i}); %#ok<ASGLU>
         
         [X Y] = meshgrid(xRange{i}, yRange{i});

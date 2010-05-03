@@ -1,8 +1,8 @@
-function Im = dLSegment2DImageModel(params, sigmaPSF, imSize)
-% Compute an image model which is the sum of diffraction-limited 2D
-% segments defined by params (see dLSegment2D.m for more details).
+function Im = subResSegment2DImageModel(params, sigmaPSF, imSize)
+% Compute an image model which is the sum of sub-resolution 2D segments
+% defined by params (see subResSegment2D.m for more details).
 %
-% Im = dLSegment2DImageModel(params, sigmaPSF, imSize)
+% Im = subResSegment2DImageModel(params, sigmaPSF, imSize)
 %
 % parameters:
 % params          nx6 matrix where n is the number of segments and their
@@ -28,9 +28,9 @@ for i = 1:n
     l = params(i,4);
     t = params(i,5);
 
-    [xRange,yRange,nzIdx] = dLSegment2DSupport(xC,yC,sigmaPSF,l,t,imSize);
+    [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,yC,sigmaPSF,l,t,imSize);
 
-    S = dLSegment2D(xRange-xC,yRange-yC,A,sigmaPSF,l,t,nzIdx);
+    S = subResSegment2D(xRange-xC,yRange-yC,A,sigmaPSF,l,t,nzIdx);
     
     Im(yRange,xRange) = Im(yRange,xRange) + S;
 end
