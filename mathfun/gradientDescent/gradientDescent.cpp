@@ -36,7 +36,7 @@ static void gradientDescent(const image<2,double> & f,
       p[1] -= dy;
     }
   while (f.contains(i, j) && f.contains(i + 1, j + 1) &&
-	 f[p] > eps && dist(p, q) > eps);
+	 /*f[p] > eps && */dist(p, q) > eps);
 }
 
 void mexFunction(int nlhs, mxArray *plhs[],
