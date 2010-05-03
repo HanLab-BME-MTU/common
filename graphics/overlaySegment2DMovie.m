@@ -86,7 +86,7 @@ else
     
     [~,~,~,ext] = getFilenameBody(saveMovieInfo.filename);
     
-    if ~strcmp(ext, 'mov')
+    if ~strcmp(ext, '.mov')
         disp('--overSegment2DMovie: Invalid output filename format (.mov is required).');
         return;
     end
@@ -110,7 +110,7 @@ end
 if isempty(segmentParams)
     segmentParams = cell(startend(2)-startend(1)+1,1);
 else
-    segmentParams = segmentParmas(startend(1):startend(2));
+    segmentParams = segmentParams(startend(1):startend(2));
 end
 
 %get image size
@@ -133,7 +133,7 @@ for iFrame = 1 : length(segmentParams)
     %plot image in current frame
     clf;
     
-    axes('Position',[0 0 0.495 1]);
+% axes('Position',[0 0 0.495 1]);
     imagesc(imageStack),colormap gray,axis image,axis off;
 %     xlim(imageRange(2,:));
 %     ylim(imageRange(1,:));
@@ -147,7 +147,7 @@ for iFrame = 1 : length(segmentParams)
 %     ylim(imageRange(1,:));
 %     hold on;
     
-    %plot features
+    %plot segments
     if ~isempty(segmentParams{iFrame})
         xC = segmentParams{iFrame}(:,1);
         yC = segmentParams{iFrame}(:,2);
@@ -158,7 +158,7 @@ for iFrame = 1 : length(segmentParams)
             [yC - (l / 2) .* sin(t), yC + (l / 2) .* sin(t)]', ...
             'Color', 'g');
 
-        line(xC, yC, 'Color', 'g', 'LineStyle', '.');
+        line(xC, yC, 'Color', 'g', 'Marker', '.', 'LineStyle', 'none');
     end
     
     %add frame to movie if movie is saved
