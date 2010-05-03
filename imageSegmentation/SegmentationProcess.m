@@ -4,7 +4,7 @@ classdef SegmentationProcess < Process
     % SetAccess = private - cannot change the values of variables outside object
     % GetAccess = public - can get the values of variables outside object without
     % definging accessor functions
-       maskPaths_ 
+       maskPaths_
        funName_
        funParams_
     end
@@ -25,19 +25,24 @@ classdef SegmentationProcess < Process
            if nargin > 0
               obj.maskPaths_ = maskPaths;
               obj.funName_ = funName;
-              obj.funParams_ = funParams;
+              if isnumeric (funParams)
+                obj.funParams_ = funParams;
+              else
+                obj.funParams_ = str2double(funParams);
+              end
            end
         end
-        function sanityCheck(obj)
+        function setPara(obj, para)
+            % Reset process' parameters
+            obj.funParams_ = para;
+        end
+        function sanityCheck(obj) % throw exception
             % Sanity Check
-
-            if length(obj.maskPath_) ~= length(obj.owner_.channelPath_)
-                
-                disp('User-defined warning: The number of mask channels is different from input channel');
+            if obj.funParams_ < 0
+                error('lccb:set:fatal','Fatal problem is detected in pamameter set up.\n\n');
             end
             % Check mask path for each channel
             % ... ...
-            
         end
     end
     methods (Static)

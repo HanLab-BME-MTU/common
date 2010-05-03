@@ -61,7 +61,7 @@ classdef  MovieData < handle
             end
         end
         % MovieData Sanity Check
-        function isValid = sanityCheck(obj, movieDataPath, ...
+        function sanityCheck(obj, movieDataPath, ...
                                                 movieDataFileName, full)
         % 1. Sanity check (user input, input channels, image files)
         % 2. Assignments to 4 properties:
@@ -176,8 +176,6 @@ classdef  MovieData < handle
             if full
             % Call the sanity check of every process and package
             end
-            
-            isValid =true;
 
         end
         

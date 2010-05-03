@@ -58,33 +58,30 @@ classdef Package < handle
             nProcesses = length(obj.processClassNames_);
             processExceptions = cell(1,nProcesses);
             processVisited = false(1,nProcesses);
-            
+            % 1. Check if the process itself has a problem
             for i = 1:nProcesses
                 if isempty(obj.processes_{i})
                     continue;
                 else
-                    % 1. Check if the process itself has a problem
                     try
-                    obj.processes_{i}.sanityCheck;
+                        obj.processes_{i}.sanityCheck;
                     catch ME
-                        % Add runtime exception to the ith process
-                        if isempty(processExceptions{i})
-                            processExceptions{i} = ME;
-                        else
-                            processExceptions{i}(end+1) = ME;
-                        end
+                        % Add process exception to the ith process
+                        processExceptions{i} = horzcat(processExceptions{i}, ME);
                     end
-                    % 2. Check if the para in the process setting panel
-                    %    have changed
+                end
+            end
+            % 2. Check if the para in the process setting panel
+            %    have changed
+            for i = 1:nProcesses
+                if isempty(obj.processes_{i})
+                    continue;
+                else            
                     if obj.processes_{i}.hasChanged()
                         ME = MException('lccb:???',['Parameters of this process have been',...
-                            'changed since previous run']);
+                            ' changed since previous run']);
                         % Add para exception to the ith process
-                        if isempty(processExceptions{i})
-                            processExceptions{i} = ME;
-                        else
-                            processExceptions{i}(end+1) = ME;
-                        end                            
+                        processExceptions{i} = horzcat(processExceptions{i}, ME);                           
                     end
                 end 
             end
@@ -126,11 +123,8 @@ classdef Package < handle
                             'depends on process ',obj.processClassNames_{j},
                             ', which has a problem']);
                         % Add dependency exception to the ith process
-                        if isempty(processExceptions{iProcess})
-                            processExceptions{iProcess} = ME;
-                        else
-                            processExceptions{iProcess}(end+1) = ME;
-                        end
+                        processExceptions{iProcess} = ...
+                                horzcat(processExceptions{iProcess}, ME); 
                     end
                 end
             end

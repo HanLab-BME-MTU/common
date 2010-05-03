@@ -29,7 +29,7 @@ classdef Process < handle
     end
     methods (Abstract)
         sanityCheck(obj)
-
+        setPara(obj, para)
         % More abstract classed goes here
         % ... ...
     end

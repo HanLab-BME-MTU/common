@@ -122,14 +122,12 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
         notes = get(handles.edit_notes, 'string');
         % Check if text box is empty
         if isempty(channelPath)
-            % Exception
             errordlg('Please provide at least one channel path',...
                        'User Input Error','modal');
             return;
         end
         if isempty(pixelSize) || ...
                 isempty(timeInterval)
-            % Exception
             errordlg('Please provide pixel size and time interval values',...
                 'User Input Error','modal');
             return;
@@ -151,16 +149,7 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
 
         try
         % Sanity Check
-        if MD.sanityCheck(path, file, false);
-            save([path file], 'MD');
-%             disp('Input data has been saved');
-            % Save MovieDate as GUI data
-             handles.MD = MD;
-            guidata(hObject, handles);
-        else 
-            disp('User-defined: Potential problem exists in MovieData object');
-        end
-        
+        MD.sanityCheck(path, file, false);
         % Catch: exception occurs - data is not saved.
         catch ME
             delete(MD);
@@ -168,7 +157,12 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
             errordlg([ME.message 'Input data is not saved.'],...
                 'Channel Path & Movie Data Error','modal');
             return;
-        end
+        end        
+        save([path file], 'MD');
+%       disp('Input data has been saved');
+        % Save MovieDate as GUI data
+        handles.MD = MD;
+        guidata(hObject, handles);
 
     case 'radiobutton_2'
         % Sanity check will be done in callback fcn of pushbutton_open 
@@ -247,12 +241,13 @@ if ~packageExist && ~isempty(MD.processes_)
                  'OKString','Select','CancelString','New'); 
              if ok 
                  % Add process to current package
-                 MD.crtPackage_.setProcess(i,MD.processes_{select});
+                 MD.crtPackage_.setProcess(i,MD.processes_{sameProcID(select)});
              end
         end
     end
 end
 guidata(hObject, handles);
+% Start first package GUI and delete MovieData setup GUI
 handles.firstPackageGUI(MD);
 delete(handles.figure1);
 
