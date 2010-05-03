@@ -1,30 +1,29 @@
-function subResSegment2DPlot(I, params, color)
+function subResSegment2DPlot(I, segmentParams)
 % subResSegment2DPlot(I, params)
 %
 % Overlay a set of lines on an image, where each line represents a
 % sub-resolution 2D segment.
 %
-% parameters:
+% INPUT:
 %
-% I               the image
+% I               : the image
 %
-% params          nx6 matrix where n is the number of segments and their
-%                 parameters, i.e. xC, yC, A, l, t are stored column-wise.
+% segmentParams   : nx5 matrix where n is the number of segments and their
+%                   parameters, i.e. xC, yC, A, l, t are stored column-wise.
 %
 
-%imshow(I, []); hold on;
+imshow(I, []); hold on;
 
-if nargin < 3 || isempty(color) || ~ischar(color)
-    color = 'g';
-end
+xC = segmentParams(:,1);
+yC = segmentParams(:,2);
+l = segmentParams(:,4);
+t = segmentParams(:,5);
 
-xC = params(:,1);
-yC = params(:,2);
-l = params(:,4);
-t = params(:,5);
+ct = cos(t);
+st = sin(t);
 
-line([xC - (l / 2) .* cos(t), xC + (l / 2) .* cos(t)]', ...
-     [yC - (l / 2) .* sin(t), yC + (l / 2) .* sin(t)]', ...
-    'Color', color);
+line([xC - (l / 2) .* ct, xC + (l / 2) .* ct]', ...
+     [yC - (l / 2) .* st, yC + (l / 2) .* st]', ...
+    'Color', 'g');
 
-plot(xC, yC, 'Color', color, 'LineStyle', '.');
+line(xC, yC, 'Color', 'g', 'LineStyle', '.');

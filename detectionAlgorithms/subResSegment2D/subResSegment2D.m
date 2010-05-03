@@ -1,5 +1,10 @@
 function F = subResSegment2D(xRange, yRange, A, sigmaPSF, l, theta, nzIdx)
-% sub-resolution 2D segment model.
+% sub-resolution 2D segment model defined by 5 parameters:
+%    xy      : position of the segment's center
+%    A       : mean amplitude along the segment
+%    l       : length
+%    theta   : orientation [-pi/2, pi/2)
+%
 % F = subResSegment2D(xRange, yRange, A, sigmaPSF, l, theta, nzIdx)
 %
 % parameters:
