@@ -1,4 +1,4 @@
-function overlaySegment2DMovie(segmentParams,startend,saveMovieInfo)
+function overlaySegment2DMovie(segmentParams,startend,inputMovieInfo,saveMovieInfo)
 %Overlays detected 2D segment obtained via subResSegment2DFit or any
 %segment detection algorithm that complies with the subResSegment2D
 %definition (see subResSegment2D.m for details)
@@ -16,29 +16,66 @@ function overlaySegment2DMovie(segmentParams,startend,saveMovieInfo)
 %       startend       : Row vector indicating first and last frame to
 %                        include in movie. Format: [startframe endframe].
 %                        Optional. Default: [1 (maximum available frame)]
-%       saveMovieInfo  : empty struct if no saving is requested. If saving is
-%                        requested, structure with fields:
+%       inputMovieInfo : a structure providing the location of raw images
+%                        to be overlaid.
+%           .dir          : Directory where the raw images are located.
+%           .filename     : filename of the very first image in the movie.
+%       saveMovieInfo  : empty struct if no saving is requested.
 %           .dir          : Directory where the movie should be saved.
 %           .filename     : Name of file where results should be saved.
 %
-%Sylvain Berlemont, 2010
+%NOTE this file has been adapted from overlayFeaturesMovie.m. Some changes
+%have been made:
+% - parameters filterSigma, showRaw and intensityScale have been removed.
+% - parameter saveMovie and movieName have been bundled into a structure
+% saveMovieInfo containing the directory and the filename of the saved
+% movie. if the structure is empty, the movie is not saved. There is no
+% more a default filename and default location in case the movie wants to
+% be saved. This new parameter avoids to save the movie into directory
+% where raw images are located.
+% - inputMovieInfo is a structure containing the directory and the first
+% name of the raw images to be overlaid. In case inputMovieInfo is not
+% provided, the user will be asked to specify first image of the movie,
+% complying with the initial behavious or overlayFeaturesMovie.m. This new
+% parameter allows to batch movie creation.
+%
+%Khuloud Jaqaman, August 2007
+%Adapted by Sylvain Berlemont, 2010
 
 %% input
 
 %check whether correct number of input arguments was used
 if nargin < 1
-    disp('--overSegment2DMovie: Incorrect number of input arguments!');
+    disp('--overSegment2DMovie: Incorrect number of input arguments.');
     return
 end
 
-%ask user for images
-[fName,dirName] = uigetfile('*.tif','specify first image in the stack - specify very first image, even if not to be plotted');
+%check whether a inputMovieInfo has been provided
+if nargin < 3 || isempty(inputMovieInfo)
+
+    %ask user for images
+    [fName,dirName] = uigetfile('*.tif','specify first image in the stack - specify very first image, even if not to be plotted');
+
+else
+    if ~isfield(inputMovieInfo, 'dir') || ~exist(inputMovieInfo.dir, 'dir')
+        disp('--overSegment2DMovie: Invalid input directory.');
+        return;
+    end
+    
+    if ~isfield(inputMovieInfo, 'filename') || ~ischar(inputMovieInfo.filename)
+        disp('--overSegment2DMovie: Invalid input filename.');
+        return;
+    end
+    
+    fName = inputMovieInfo.filename;
+    dirName = inputMovieInfo.dir;
+end
 
 %if input is valid ...
 if(isa(fName,'char') && isa(dirName,'char'))
     
     %get all file names in stack
-    outFileList = getFileStackNames([dirName,fName]);
+    outFileList = getFileStackNames(fullfile(dirName,fName));
     numFiles = length(outFileList);
     
     %determine which frames the files correspond to, and generate the inverse map
@@ -60,7 +97,6 @@ if(isa(fName,'char') && isa(dirName,'char'))
 else %else, exit
     disp('--overSegment2DMovie: Bad file selection');
     return
-    
 end
 
 %check startend and assign default if necessary
@@ -70,8 +106,14 @@ else
     startend(2) = min(startend(2),numFrames); %make sure that last frame does not exceed real last frame
 end
 
+%keep only the frames of interest
+outFileList = outFileList(frame2fileMap(startend(1)):frame2fileMap(startend(2)));
+frame2fileMap = frame2fileMap(startend(1):startend(2));
+indxNotZero = find(frame2fileMap~=0);
+frame2fileMap(indxNotZero) = frame2fileMap(indxNotZero) - frame2fileMap(indxNotZero(1)) + 1;
+
 %check whether to save movie
-if nargin < 3 || isempty(saveMovieInfo)
+if nargin < 4 || isempty(saveMovieInfo)
     saveMovie = false;
 else
     if ~isfield(saveMovieInfo, 'dir') || ~exist(saveMovieInfo.dir, 'dir')
@@ -93,12 +135,6 @@ else
     
     saveMovie = true;
 end
-
-%keep only the frames of interest
-outFileList = outFileList(frame2fileMap(startend(1)):frame2fileMap(startend(2)));
-frame2fileMap = frame2fileMap(startend(1):startend(2));
-indxNotZero = find(frame2fileMap~=0);
-frame2fileMap(indxNotZero) = frame2fileMap(indxNotZero) - frame2fileMap(indxNotZero(1)) + 1;
 
 %initialize QT movie if it is to be saved
 if saveMovie
@@ -133,19 +169,11 @@ for iFrame = 1 : length(segmentParams)
     %plot image in current frame
     clf;
     
-% axes('Position',[0 0 0.495 1]);
     imagesc(imageStack),colormap gray,axis image,axis off;
-%     xlim(imageRange(2,:));
-%     ylim(imageRange(1,:));
-     hold on;
-     textDeltaCoord = min(diff(imageRange,[],2))/20;
-     text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
-         textDeltaCoord,num2str(iFrame+startend(1)-1),'Color','white');
-%     axes('Position',[0.505 0 0.495 1]);
-%     imshow(imageStack,[]);
-%     xlim(imageRange(2,:));
-%     ylim(imageRange(1,:));
-%     hold on;
+    hold on;
+    textDeltaCoord = min(diff(imageRange,[],2))/20;
+    text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
+        textDeltaCoord,num2str(iFrame+startend(1)-1),'Color','white');
     
     %plot segments
     if ~isempty(segmentParams{iFrame})
@@ -163,7 +191,7 @@ for iFrame = 1 : length(segmentParams)
     
     %add frame to movie if movie is saved
     if saveMovie
-        MakeQTMovie addfigure
+        MakeQTMovie addaxes
     end
 end
 
