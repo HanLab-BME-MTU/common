@@ -5,8 +5,7 @@ classdef SegmentationProcess < Process
     % GetAccess = public - can get the values of variables outside object without
     % definging accessor functions
        maskPaths_
-       funName_
-       funParams_
+
     end
     
     methods (Access = public)
@@ -31,10 +30,6 @@ classdef SegmentationProcess < Process
                 obj.funParams_ = str2double(funParams);
               end
            end
-        end
-        function setPara(obj, para)
-            % Reset process' parameters
-            obj.funParams_ = para;
         end
         function sanityCheck(obj) % throw exception
             % Sanity Check

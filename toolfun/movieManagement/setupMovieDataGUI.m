@@ -158,7 +158,7 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
                 'Channel Path & Movie Data Error','modal');
             return;
         end        
-        save([path file], 'MD');
+%         save([path file], 'MD');
 %       disp('Input data has been saved');
         % Save MovieDate as GUI data
         handles.MD = MD;
@@ -248,6 +248,7 @@ if ~packageExist && ~isempty(MD.processes_)
 end
 guidata(hObject, handles);
 % Start first package GUI and delete MovieData setup GUI
+save([MD.movieDataPath_ MD.movieDataFileName_], 'MD');
 handles.firstPackageGUI(MD);
 delete(handles.figure1);
 
@@ -384,21 +385,15 @@ switch length(structMD)
             'Bad .MAT File','modal');
         return;
 end
-% Sanity check of saved movie data
+% Set parameter values in .mat file to GUI        
+set(handles.edit_mat,'String',[pathname,filename]);
+set(handles.listbox_2,'String',MD.channelPath_);
+set(handles.edit_ps2,'String',MD.pixelSize_);
+set(handles.edit_ti2,'String',MD.timeInterval_);
+set(handles.edit_notes,'String',MD.notes_)
 try
-    % Set parameter values in .mat file to GUI 
-        set(handles.edit_mat,'String',[pathname,filename]);
-        set(handles.listbox_2,'String',MD.channelPath_);
-        set(handles.edit_ps2,'String',MD.pixelSize_);
-        set(handles.edit_ti2,'String',MD.timeInterval_);
-        set(handles.edit_notes,'String',MD.notes_)
-    
-    if MD.sanityCheck( pathname,filename,false );       
-        % Success Notice: Movie Data has been loaded
-        set(handles.text_body8,'visible','on');
-        handles.MD = MD;
-        guidata(hObject,handles);
-    end
+% Sanity check of saved movie data 
+MD.sanityCheck( pathname,filename,false );       
 catch ME
     % If don't pass sanity check, set MovieData unloaded
     delete(MD);
@@ -411,7 +406,11 @@ catch ME
     
     return;
 end
-
+        % Success Notice: Movie Data has been loaded
+set(handles.text_body8,'visible','on');
+handles.MD = MD;
+guidata(hObject,handles);
+        
 function edit_ps_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_ps (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB

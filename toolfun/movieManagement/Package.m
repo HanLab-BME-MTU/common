@@ -14,7 +14,8 @@ classdef Package < handle
     end
     properties(SetAccess = protected, GetAccess = public)
         owner_ % The MovieData object this package belongs to
-        processes_ % Cell array containing all processes who will be used in this package
+        % Cell array containing all processes who will be used in this package
+        processes_ 
         processClassNames_ % Must have accurate process class name
                            % List of processes required by the package, 
                            % Cell array - same order and number of elements
@@ -29,18 +30,21 @@ classdef Package < handle
             
             if nargin > 0
                 obj.name_ = name;
-                obj.createTime_ = clock;
                 obj.owner_ = owner; 
                 obj.depMatrix_ = depMatrix;
-                
                 obj.processClassNames_ = processClassNames;
+                
                 obj.processes_ = cell(1,length(processClassNames));
-               
+                obj.createTime_ = clock;
             end
         end
         function processExceptions = checkProcesses(obj, full) 
             % checkProcesses is called by package's sanitycheck. It returns
-            % a cell array of exceptions.
+            % a cell array of exceptions. Keep in mind, make sure all process 
+            % objects of processes checked in the GUI exist before running
+            % package sanitycheck. Otherwise, it will cause a runtime error
+            % which is not caused by algorithm itself.
+            %
             % The following things will be checked in this function
             %   1. The process itself has a problem
             %   2. The parameters in the process setting panel have changed
@@ -48,9 +52,13 @@ classdef Package < handle
             %      problem
             %
             % processExceptions is a cell array with same length of
-            % processClassNames_. It takes down all the exceptions found in
+            % processClassNames_. It collects all the exceptions found in
             % sanity check. Exceptions of i th process will be saved in
             % processExceptions{i}
+            %
+            % full = ture   check 1,2,3
+            % full = false  check 2,3
+            
             if nargin < 2
                 full = true;
             end
@@ -58,6 +66,7 @@ classdef Package < handle
             nProcesses = length(obj.processClassNames_);
             processExceptions = cell(1,nProcesses);
             processVisited = false(1,nProcesses);
+        if full
             % 1. Check if the process itself has a problem
             for i = 1:nProcesses
                 if isempty(obj.processes_{i})
@@ -71,6 +80,7 @@ classdef Package < handle
                     end
                 end
             end
+        end
             % 2. Check if the para in the process setting panel
             %    have changed
             for i = 1:nProcesses
@@ -78,7 +88,9 @@ classdef Package < handle
                     continue;
                 else            
                     if obj.processes_{i}.hasChanged()
-                        ME = MException('lccb:???',['Parameters of this process have been',...
+                        ME = MException('lccb:paraChanged:warn',...
+                            ['Parameters of process ', ...
+                            obj.processes_{i}.name_,' have been',...
                             ' changed since previous run']);
                         % Add para exception to the ith process
                         processExceptions{i} = horzcat(processExceptions{i}, ME);                           
@@ -96,15 +108,15 @@ classdef Package < handle
                             obj.dfs_(i, processExceptions, processVisited);
                 end
             end
-            % Throw exception array
-            throw(processExceptions);
+
+            
         end
     end
     methods (Access = private)
         function [processExceptions, processVisited] = dfs_(obj, ...
-                iProcess,processExceptions,processVisited)
-            processVisited(iProcess) = true;
-            parentIndex = find(obj.depMatrix_(iProcess,:));
+                i,processExceptions,processVisited)
+            processVisited(i) = true;
+            parentIndex = find(obj.depMatrix_(i,:));
             if isempty(parentIndex)
                 return;
             else
@@ -116,15 +128,20 @@ classdef Package < handle
                     % If j th process has an exception, add an exception to
                     % the exception list of i th process. Since i th
                     % process depends on the j th process
-                    if ~isempty(processExceptions{j}) || ...
-                                                isempty(obj.processes_{j})
-                        ME = MException('lccb:????', ...
-                            ['Process ',obj.processClassNames_{iProcess},...
-                            'depends on process ',obj.processClassNames_{j},
+                    % Exception is created when satisty:
+                    % 1. Process is successfully run in the last time
+                    % 2. Parent process has error OR parent process does
+                    %    not exist
+                    if obj.processes_{i}.success_ && ...
+          ( ~isempty(processExceptions{j}) || isempty(obj.processes_{j}) )
+      
+                        ME = MException('lccb:depe:warn', ...
+                            ['Process ',obj.processes_{i}.name_,...
+                            ' depends on process ',obj.processes_{j}.name_, ...
                             ', which has a problem']);
                         % Add dependency exception to the ith process
-                        processExceptions{iProcess} = ...
-                                horzcat(processExceptions{iProcess}, ME); 
+                        processExceptions{i} = ...
+                                horzcat(processExceptions{i}, ME); 
                     end
                 end
             end
