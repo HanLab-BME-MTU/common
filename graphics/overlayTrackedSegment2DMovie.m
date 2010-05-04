@@ -542,33 +542,6 @@ if colorTracks
     yCoordMatAll6(7:9:end,:) = yCoordMatAll(7:9:end,:);
     yCoordMatAll7(8:9:end,:) = yCoordMatAll(8:9:end,:);
     yCoordMatAll8(9:9:end,:) = yCoordMatAll(9:9:end,:);
-    
-    %lengths ...
-    [lengthMatAll0,lengthMatAll1,lengthMatAll2,lengthMatAll3,lengthMatAll4,...
-        lengthMatAll5,lengthMatAll6,lengthMatAll7,lengthMatAll8] = deal(NaN(size(lengthMatAll)));
-    lengthMatAll0(1:9:end,:) = lengthMatAll(1:9:end,:);
-    lengthMatAll1(2:9:end,:) = lengthMatAll(2:9:end,:);
-    lengthMatAll2(3:9:end,:) = lengthMatAll(3:9:end,:);
-    lengthMatAll3(4:9:end,:) = lengthMatAll(4:9:end,:);
-    lengthMatAll4(5:9:end,:) = lengthMatAll(5:9:end,:);
-    lengthMatAll5(6:9:end,:) = lengthMatAll(6:9:end,:);
-    lengthMatAll6(7:9:end,:) = lengthMatAll(7:9:end,:);
-    lengthMatAll7(8:9:end,:) = lengthMatAll(8:9:end,:);
-    lengthMatAll8(9:9:end,:) = lengthMatAll(9:9:end,:);
-
-    %orientations ...
-    [angleMatAll0,angleMatAll1,angleMatAll2,angleMatAll3,angleMatAll4,...
-        angleMatAll5,angleMatAll6,angleMatAll7,angleMatAll8] = deal(NaN(size(angleMatAll)));
-    angleMatAll0(1:9:end,:) = angleMatAll(1:9:end,:);
-    angleMatAll1(2:9:end,:) = angleMatAll(2:9:end,:);
-    angleMatAll2(3:9:end,:) = angleMatAll(3:9:end,:);
-    angleMatAll3(4:9:end,:) = angleMatAll(4:9:end,:);
-    angleMatAll4(5:9:end,:) = angleMatAll(5:9:end,:);
-    angleMatAll5(6:9:end,:) = angleMatAll(6:9:end,:);
-    angleMatAll6(7:9:end,:) = angleMatAll(7:9:end,:);
-    angleMatAll7(8:9:end,:) = angleMatAll(8:9:end,:);
-    angleMatAll8(9:9:end,:) = angleMatAll(9:9:end,:);
-        
 else %otherwise
     
     %copy all coordinates into new variables
@@ -578,10 +551,6 @@ else %otherwise
         xCoordMatAll5,xCoordMatAll6,xCoordMatAll7,xCoordMatAll8] = deal(xCoordMatAll);
     [yCoordMatAll0,yCoordMatAll1,yCoordMatAll2,yCoordMatAll3,yCoordMatAll4,...
         yCoordMatAll5,yCoordMatAll6,yCoordMatAll7,yCoordMatAll8] = deal(yCoordMatAll);
-    [lengthMatAll0,lengthMatAll1,lengthMatAll2,lengthMatAll3,lengthMatAll4,...
-        lengthMatAll5,lengthMatAll6,lengthMatAll7,lengthMatAll8] = deal(NaN(size(lengthMatAll)));
-    [angleMatAll0,angleMatAll1,angleMatAll2,angleMatAll3,angleMatAll4,...
-        angleMatAll5,angleMatAll6,angleMatAll7,angleMatAll8] = deal(NaN(size(angleMatAll)));
 end
 
 %if there are diffusion analysis results ...
@@ -620,8 +589,6 @@ if ~isempty(diffAnalysisRes)
             pointsNotCurrent = setdiff(1:numTimePoints,pointsCurrent); %find points not classified as 5
             xCoordMatAll5(iTrackSegment,pointsNotCurrent) = NaN; %remove time points not classified as 5
             yCoordMatAll5(iTrackSegment,pointsNotCurrent) = NaN;
-            lengthMatAll5(iTrackSegment,pointsNotCurrent) = NaN;
-            angleMatAll5(iTrackSegment,pointsNotCurrent) = NaN;
             
             %extract and store segments classified as 6
             classCurrent = find(trackClassCurrent(:,3)==6); %find points classified as 6
@@ -633,8 +600,6 @@ if ~isempty(diffAnalysisRes)
             pointsNotCurrent = setdiff(1:numTimePoints,pointsCurrent); %find points not classified as 6
             xCoordMatAll6(iTrackSegment,pointsNotCurrent) = NaN; %remove time points not classified as 6
             yCoordMatAll6(iTrackSegment,pointsNotCurrent) = NaN;
-            lengthMatAll6(iTrackSegment,pointsNotCurrent) = NaN;
-            angleMatAll6(iTrackSegment,pointsNotCurrent) = NaN;
             
             %extract and store segments classified as 7
             classCurrent = find(trackClassCurrent(:,3)==7); %find points classified as 7
@@ -646,8 +611,6 @@ if ~isempty(diffAnalysisRes)
             pointsNotCurrent = setdiff(1:numTimePoints,pointsCurrent); %find points not classified as 7
             xCoordMatAll7(iTrackSegment,pointsNotCurrent) = NaN; %remove time points not classified as 7
             yCoordMatAll7(iTrackSegment,pointsNotCurrent) = NaN;
-            lengthMatAll7(iTrackSegment,pointsNotCurrent) = NaN;
-            angleMatAll7(iTrackSegment,pointsNotCurrent) = NaN;
             
             %extract and store unclassified segments
             classCurrent = find(trackClassCurrent(:,3)==0); %find points classified as 0
@@ -658,9 +621,7 @@ if ~isempty(diffAnalysisRes)
             end
             pointsNotCurrent = setdiff(1:numTimePoints,pointsCurrent); %find points not classified as 0
             xCoordMatAll0(iTrackSegment,pointsNotCurrent) = NaN; %remove time points not classified as 0
-            yCoordMatAll0(iTrackSegment,pointsNotCurrent) = NaN;
-            lengthMatAll0(iTrackSegment,pointsNotCurrent) = NaN;
-            angleMatAll0(iTrackSegment,pointsNotCurrent) = NaN;            
+            yCoordMatAll0(iTrackSegment,pointsNotCurrent) = NaN;       
         end
         
     else %if whole track diffusion classification ...
@@ -700,26 +661,6 @@ if ~isempty(diffAnalysisRes)
         yCoordMatAll6(trackClass~=6,:) = NaN;
         yCoordMatAll7(trackClass~=7,:) = NaN;
         yCoordMatAll8(trackClass~=8,:) = NaN;
-        %lengths
-        lengthMatAll0(trackClass~=0,:) = NaN;
-        lengthMatAll1(trackClass~=1,:) = NaN;
-        lengthMatAll2(trackClass~=2,:) = NaN;
-        lengthMatAll3(trackClass~=3,:) = NaN;
-        lengthMatAll4(trackClass~=4,:) = NaN;
-        lengthMatAll5(trackClass~=5,:) = NaN;
-        lengthMatAll6(trackClass~=6,:) = NaN;
-        lengthMatAll7(trackClass~=7,:) = NaN;
-        lengthMatAll8(trackClass~=8,:) = NaN;
-        %orientations
-        angleMatAll0(trackClass~=0,:) = NaN;
-        angleMatAll1(trackClass~=1,:) = NaN;
-        angleMatAll2(trackClass~=2,:) = NaN;
-        angleMatAll3(trackClass~=3,:) = NaN;
-        angleMatAll4(trackClass~=4,:) = NaN;
-        angleMatAll5(trackClass~=5,:) = NaN;
-        angleMatAll6(trackClass~=6,:) = NaN;
-        angleMatAll7(trackClass~=7,:) = NaN;
-        angleMatAll8(trackClass~=8,:) = NaN;
         
     end %(if transDiffClass ... else ...)
     
@@ -990,17 +931,9 @@ for iFrame = 1 : size(xCoordMatAll,2)
         MakeQTMovie addaxes
     end
     
-    %pause for a moment to see frame
-    pause(0.1);
-    
-end %(for iFrame = 1 : size(xCoordMatAll,2))
+end
 
 %finish movie
 if saveMovie==1
     MakeQTMovie finish
 end
-
-%% change directory back to original
-% cd(startDir);
-
-%% ~~~ end ~~~
