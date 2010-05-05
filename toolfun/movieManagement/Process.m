@@ -11,7 +11,13 @@ classdef Process < handle
     properties(SetAccess = protected, GetAccess = public)
         owner_
         procChanged_ % Whether existing process's pamameters are changed 
-                     % since last run
+                     % since last run. (if the process is outdated)
+                     % changed - true, unchanged - false
+                     %
+                     % If parent process is changed (true), then the
+                     %  children processes will also be set to 'true'
+                     % after exception array is returned by sanitycheck
+                     
         success_ % If the process is successfully run in the most recent 
                  % time
         notes_
@@ -50,19 +56,15 @@ classdef Process < handle
             % changed. changed 'true' or 'false'
            obj.procChanged_ =  changed;
         end
-        function change = hasChanged(obj)
-            % 'hasChanged' returns true if satisfying the following two
-            % conditions:
-            % 1. Process has been successfully run (obj.success_ = ture)
-            % 2. Pamameters are changed (reported by uicontrols in setting
-            % panel, and obj.procChanged_ field is 'true')
-            if obj.success_ && obj.procChanged_
-                change = true;
-            else
-                change = false;
-            end
-        end        
         
+        % Temp function
+        function runProcess(obj) % throws exception
+            pause(.5);
+            if abs(normrnd(1, 2)) > 10
+                error('lccb:runtime:fatal',['T_T Runtime error occurs in step' ...
+                    obj.name_ '... zz ZZZ\n\n']);
+            end
+        end
     end
     methods (Abstract)
         sanityCheck(obj)

@@ -34,7 +34,7 @@ classdef SegmentationProcess < Process
         function sanityCheck(obj) % throw exception
             % Sanity Check
             if obj.funParams_ < 0
-                error('lccb:set:fatal','Fatal problem is detected in pamameter set up.\n\n');
+                error('lccb:set:fatal','Function parameter should be larger than 0.\n\n');
             end
             % Check mask path for each channel
             % ... ...

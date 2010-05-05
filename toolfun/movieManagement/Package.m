@@ -38,37 +38,55 @@ classdef Package < handle
                 obj.createTime_ = clock;
             end
         end
-        function processExceptions = checkProcesses(obj, full) 
+        function processExceptions = checkProcesses(obj, full, procID) 
             % checkProcesses is called by package's sanitycheck. It returns
             % a cell array of exceptions. Keep in mind, make sure all process 
             % objects of processes checked in the GUI exist before running
             % package sanitycheck. Otherwise, it will cause a runtime error
             % which is not caused by algorithm itself.
             %
-            % The following things will be checked in this function
+            % The following steps will be checked in this function
             %   1. The process itself has a problem
             %   2. The parameters in the process setting panel have changed
             %   3. The process that current process depends on has a
             %      problem
             %
-            % processExceptions is a cell array with same length of
+            % OUTPUT:
+            %   processExceptions - a cell array with same length of
             % processClassNames_. It collects all the exceptions found in
             % sanity check. Exceptions of i th process will be saved in
             % processExceptions{i}
             %
-            % full = ture   check 1,2,3
-            % full = false  check 2,3
-            
-            if nargin < 2
-                full = true;
-            end
+            % INPUT:
+            %   obj - package object
+            %   full - ture   check 1,2,3 steps 
+            %          false  check 2,3 steps
+            %   procID - A. Numeric array: id of processes for sanitycheck
+            %            B. String 'all': all processes will do 
+            %                                      sanity check 
+            %
 
             nProcesses = length(obj.processClassNames_);
             processExceptions = cell(1,nProcesses);
             processVisited = false(1,nProcesses);
+            
+            if nargin < 2
+                full = true;
+                procID = 1:nProcesses;
+            end
+            if nargin < 3
+               procID = 1:nProcesses ;
+            end
+            if strcmp(procID,'all')
+                procID = 1:nProcesses;
+            end
+            if any(procID > nProcesses)
+                error('User-defined: process id exceeds number of processes');
+            end
+            
         if full
-            % 1. Check if the process itself has a problem
-            for i = 1:nProcesses
+            % 1 Step. Check if the process itself has a problem
+            for i = procID
                 if isempty(obj.processes_{i})
                     continue;
                 else
@@ -81,13 +99,19 @@ classdef Package < handle
                 end
             end
         end
-            % 2. Check if the para in the process setting panel
-            %    have changed
-            for i = 1:nProcesses
+            % 2 Step. 
+            % Determine the pamameters are changed if satisfying the 
+            % following two conditions:
+            % A. Process has been successfully run (obj.success_ = ture)
+            % B. Pamameters are changed (reported by uicontrols in setting
+            % panel, and obj.procChanged_ field is 'true')
+            for i = procID
                 if isempty(obj.processes_{i})
                     continue;
                 else            
-                    if obj.processes_{i}.hasChanged()
+                    if obj.processes_{i}.success_ && ...
+                            obj.processes_{i}.procChanged_
+
                         ME = MException('lccb:paraChanged:warn',...
                             ['Parameters of process ', ...
                             obj.processes_{i}.name_,' have been',...
@@ -97,10 +121,9 @@ classdef Package < handle
                     end
                 end 
             end
-            % 3. Check if the processes that current process depends on
-            %    have problems
-            
-            for i = 1:nProcesses
+            % 3 Step. Check if the processes that current process depends on
+            %    have problems   
+            for i = procID
                 if isempty(obj.processes_{i})
                     continue;
                 elseif ~processVisited(i)
@@ -108,8 +131,6 @@ classdef Package < handle
                             obj.dfs_(i, processExceptions, processVisited);
                 end
             end
-
-            
         end
     end
     methods (Access = private)
