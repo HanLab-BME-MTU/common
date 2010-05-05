@@ -1,4 +1,4 @@
-function P = bresenham(p0, p1)
+function P = bresenham(p0, p1,conn)
 %BRESENHAM computes the integer positions on a line between the
 % positions xS and xE
 %
@@ -6,9 +6,12 @@ function P = bresenham(p0, p1)
 %
 % INPUT p0 : coordinate of line start point
 %       p1 : coordinate of line end point
+%     conn : connectivity of the line. The connectivity is either 4 or 8.
+%            The default is conn=8 (if conn is not specified). For a 
+%            c4-connected line enter conn=4.
 % 
-% OUTPUT P : 2xn matrix with the coordinates of all the 
-%            integer positions on the line 
+% OUTPUT P : nx2 matrix with the coordinates of all the 
+%            integer positions on the line
 %
 % Sylvain Berlemont, 2009
 
@@ -55,6 +58,45 @@ for d = 1:l+1
         p = p + incr2;
         q = q + dqr;
     end
+end
+
+% This is code added by Achim, 2010. Note that
+% exchanging the order of p0 and p1 gives different results, because the 
+% P from above is not symmetric. The code that follows should give 
+% symmetric results:
+if nargin>2 && conn==4
+    n=size(P,1);
+    i=1;
+    while i<n
+        % check if two consecutive points are connected through a vertex
+        % instead of an edge:
+        dxy=P(i+1,:)-P(i,:);
+        if sum(abs(dxy))==2 % if there is a shift in x and y:
+            % create new point with the x component of the first point and
+            % the y component of the second point, or vice verca. 
+            % The if statement makes it symmetric (p0 <-> p1):
+            if P(i,1)>P(i+1,1)
+                xPt=[P(i,1)   P(i+1,2)];
+            else
+                xPt=[P(i+1,1)   P(i,2)];
+            end
+            
+            % now insert this point:
+            newP(1:i,:)=P(1:i,:);
+            newP(i+1,:)=xPt;
+            newP(i+2:n+1,:)=P(i+1:end,:);
+            P=newP;
+            clear newP;
+            
+            % the length has also changed now (important for the 
+            % termination of the loop):
+            n=length(P);           
+        end        
+        i=i+1;
+    end
+else
+    display('Only connectivity=4 is treated, nothing has been done')
+    return
 end
 
 end
