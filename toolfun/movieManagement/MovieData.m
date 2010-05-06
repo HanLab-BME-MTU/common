@@ -15,6 +15,8 @@ classdef  MovieData < handle
         movieDataFileName_
         notes_
         
+        createTime_
+        
         crtPackage_ = [ ]; % Handle of current package
         crtProcess_ = [ ]; % Handle of current process
     end
@@ -57,6 +59,7 @@ classdef  MovieData < handle
                 obj.movieDataPath_ = movieDataPath;
                 obj.movieDataFileName_ = movieDataFileName;
                 obj.notes_ = notes;
+                obj.createTime_ = clock;
                 
             end
         end

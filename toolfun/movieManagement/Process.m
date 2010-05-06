@@ -10,13 +10,18 @@ classdef Process < handle
     end
     properties(SetAccess = protected, GetAccess = public)
         owner_
-        procChanged_ % Whether existing process's pamameters are changed 
+        procChanged_ % procChanged_ = true if process is (1) outdated OR 
+                     % (2) the process is up to date but process's para 
+                     % are changed
+                     %
+                     % (1) If parent process is changed (true), then the
+                     %  children processes will also be set to 'true'
+                     % after exception array is returned by sanitycheck   
+                     % 
+                     % (2) Whether existing process's pamameters are changed 
                      % since last run. (if the process is outdated)
                      % changed - true, unchanged - false
-                     %
-                     % If parent process is changed (true), then the
-                     %  children processes will also be set to 'true'
-                     % after exception array is returned by sanitycheck
+
                      
         success_ % If the process is successfully run in the most recent 
                  % time
@@ -60,7 +65,7 @@ classdef Process < handle
         % Temp function
         function runProcess(obj) % throws exception
             pause(.5);
-            if abs(normrnd(1, 2)) > 10
+            if abs(normrnd(1, 2)) > 100
                 error('lccb:runtime:fatal',['T_T Runtime error occurs in step' ...
                     obj.name_ '... zz ZZZ\n\n']);
             end

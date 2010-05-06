@@ -48,31 +48,35 @@ end
 
 % --- Executes just before setupMovieDataGUI is made visible.
 function setupMovieDataGUI_OpeningFcn(hObject, eventdata, handles, varargin) %#ok<INUSL>
-% This function has no output args, see OutputFcn.
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to setupMovieDataGUI (see VARARGIN)
 
+userData = get(handles.figure1, 'UserData');
 % Choose default command line output for setupMovieDataGUI
 handles.output = hObject;
 
 % Set callback function of radio button group uipanel_1
- set(handles.uipanel_1, 'SelectionChangeFcn', @uipanel_1_SelectionChangeFcn);
+set(handles.uipanel_1, 'SelectionChangeFcn', @uipanel_1_SelectionChangeFcn);
 % Set radio button unchecked 
- set(handles.uipanel_1, 'SelectedObject', []);
+set(handles.uipanel_1, 'SelectedObject', []);
  
 % Set GUI data used to save MovieData object
-handles.MD = [ ];
+userData.MD = [ ];
 
 % Indicate the first package control panel the GUI will go to after 
 % MovieData is sucessfully created and MovieDate setup panel is destroied.
 % For future needs of multiple packages or multiple movie data input. 
 % These variables can be re-defined as input variables when MovieData 
 % setup panel is created.
-handles.firstPackageName = 'BioSensorsPackage';
-handles.firstPackageCtr = @BioSensorsPackage;
-handles.firstPackageGUI = @biosensorsPackageGUI;
+pp =1;
+switch pp
+    case 1
+userData.firstPackageName = 'BioSensorsPackage';
+userData.firstPackageCtr = @BioSensorsPackage;
+userData.firstPackageGUI = @biosensorsPackageGUI;
+    case 2
+userData.firstPackageName = 'TestPackage';
+userData.firstPackageCtr = @TestPackage;
+userData.firstPackageGUI = @biosensorsPackageGUI;        
+end
 
 % Load help icon from dialogicons.mat
 load lccbGuiIcons.mat
@@ -85,6 +89,7 @@ set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off');
 set(Img,'ButtonDownFcn',@help_ButtonDownFcn);
 
+set(handles.figure1,'UserData',userData);
 guidata(hObject, handles);
 
 % UIWAIT makes setupMovieDataGUI wait for user response (see UIRESUME)
@@ -105,6 +110,9 @@ function pushbutton_done_Callback(hObject, eventdata, handles) %#ok<*DEFNU>
 % hObject    handle to pushbutton_done (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+% Get User Data
+userData = get(handles.figure1,'UserData');
 
 if isempty (get(handles.uipanel_1, 'SelectedObject'));
     errordlg('Please select a method to choose input channels',...
@@ -153,7 +161,7 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
         % Catch: exception occurs - data is not saved.
         catch ME
             delete(MD);
-            handles.MD = [ ];
+            userData.MD = [ ];
             errordlg([ME.message 'Input data is not saved.'],...
                 'Channel Path & Movie Data Error','modal');
             return;
@@ -161,20 +169,21 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
 %         save([path file], 'MD');
 %       disp('Input data has been saved');
         % Save MovieDate as GUI data
-        handles.MD = MD;
+        userData.MD = MD;
+        set(handles.figure1,'UserData',userData);
         guidata(hObject, handles);
 
     case 'radiobutton_2'
         % Sanity check will be done in callback fcn of pushbutton_open 
         % Go to the first package
-        if isempty(handles.MD)
+        if isempty(userData.MD)
             errordlg(['Movie data has not been sucessfully loaded. Please' ...
                 ' click ''Open File...'' button to select a valid MAT file.'],...
                 'Movie Data Not Loaded','modal');
             return;
         end
         % handles to the same MovieData object
-        MD = handles.MD;
+        MD = userData.MD;
     otherwise
         error('User-defined: unexpected radio button has been selected');
 end
@@ -188,14 +197,14 @@ disp('Continue to the first package');
 packageExist = false;
 if isempty(MD.packages_)
     % create a new package object
-    MD.addPackage( handles.firstPackageCtr(MD) );
+    MD.addPackage( userData.firstPackageCtr(MD) );
     % Set the current package to the newly created package
     MD.setCrtPackage( MD.packages_{1} ) ;
 else
     % find existing package
 
     for i = 1: length(MD.packages_)
-        if strcmp(class(MD.packages_{i}), handles.firstPackageName)
+        if strcmp(class(MD.packages_{i}), userData.firstPackageName)
             % TODO: dlg box: previous package exists; Save package and
             % proceeds  
             
@@ -206,7 +215,7 @@ else
     end
     if ~packageExist
         % No same package is found.. create a new package object
-        MD.addPackage( handles.firstPackageCtr(MD) )
+        MD.addPackage( userData.firstPackageCtr(MD) )
         MD.setCrtPackage( MD.packages_{end} );
     end
 end
@@ -246,10 +255,15 @@ if ~packageExist && ~isempty(MD.processes_)
         end
     end
 end
-guidata(hObject, handles);
+
 % Start first package GUI and delete MovieData setup GUI
 save([MD.movieDataPath_ MD.movieDataFileName_], 'MD');
-handles.firstPackageGUI(MD);
+userData.firstPackageGUI(MD);
+
+% Save user data
+set(handles.figure1,'UserData', userData);
+guidata(hObject, handles);
+
 delete(handles.figure1);
 
 
@@ -353,9 +367,8 @@ end
 
 % --- Executes on button press in pushbutton_open.
 function pushbutton_open_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_open (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
+userData = get(handles.figure1, 'UserData');
 [filename, pathname] = uigetfile('*.mat','Select one MAT-file');
 if ~any([filename,pathname])
     return;
@@ -397,18 +410,22 @@ MD.sanityCheck( pathname,filename,false );
 catch ME
     % If don't pass sanity check, set MovieData unloaded
     delete(MD);
-    handles.MD = [ ];
+    userData.MD = [ ];
     errordlg([ME.message 'Movie data is not sucessfully loaded.'],...
                 'Channel Path & Movie Data Error','modal');   
     % Erase success notice
     set(handles.text_body8,'Visible','off');
+    set(handles.figure1,'UserData',userData);
     guidata(hObject, handles);
     
     return;
 end
         % Success Notice: Movie Data has been loaded
 set(handles.text_body8,'visible','on');
-handles.MD = MD;
+
+userData.MD = MD;
+
+set(handles.figure1,'UserData',userData);
 guidata(hObject,handles);
         
 function edit_ps_Callback(hObject, eventdata, handles)
@@ -498,6 +515,7 @@ guidata(hObject, handles);
 
 function userfcn_fade(handles, method, onoff)
 % Hightlight or fade selected method contents on input panel
+userData = get(handles.figure1,'UserData');
 switch method
     case 'method1'
         if onoff
@@ -537,7 +555,7 @@ switch method
                 get(handles.edit_notes,'String'));
             set(handles.edit_notes,'String',...
                 getappdata(handles.edit_notes,'backup2'));
-            if isempty(handles.MD)
+            if isempty(userData.MD)
                 set(handles.text_body8,'Visible','off');
             else
                 set(handles.text_body8,'Visible','on');
