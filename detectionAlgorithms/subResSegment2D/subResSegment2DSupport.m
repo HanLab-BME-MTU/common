@@ -1,5 +1,5 @@
 function [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,yC,sigmaPSF,l,theta,imSize)
-% [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,xC,sigmaPSF,l,theta,imSize)
+% [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,yC,sigmaPSF,l,theta,imSize)
 %
 % Compute the finite support of a diffraction-limited 2D segment given
 % its parameters.
