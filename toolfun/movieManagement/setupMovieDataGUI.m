@@ -66,6 +66,7 @@ userData.MD = [ ];
 % For future needs of multiple packages or multiple movie data input. 
 % These variables can be re-defined as input variables when MovieData 
 % setup panel is created.
+
 pp =1;
 switch pp
     case 1
@@ -165,7 +166,7 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
             errordlg([ME.message 'Input data is not saved.'],...
                 'Channel Path & Movie Data Error','modal');
             return;
-        end        
+        end
 %         save([path file], 'MD');
 %       disp('Input data has been saved');
         % Save MovieDate as GUI data
@@ -199,7 +200,8 @@ if isempty(MD.packages_)
     % create a new package object
     MD.addPackage( userData.firstPackageCtr(MD) );
     % Set the current package to the newly created package
-    MD.setCrtPackage( MD.packages_{1} ) ;
+    userData.crtPackage = MD.packages_{1};
+
 else
     % find existing package
 
@@ -207,8 +209,7 @@ else
         if strcmp(class(MD.packages_{i}), userData.firstPackageName)
             % TODO: dlg box: previous package exists; Save package and
             % proceeds  
-            
-            MD.setCrtPackage(MD.packages_{i});
+            userData.crtPackage = MD.packages_{i};
             packageExist = true;
             break;
         end
@@ -216,14 +217,14 @@ else
     if ~packageExist
         % No same package is found.. create a new package object
         MD.addPackage( userData.firstPackageCtr(MD) )
-        MD.setCrtPackage( MD.packages_{end} );
+        userData.crtPackage = MD.packages_{end};
     end
 end
 
 % II. Before going to the first package, secondly check if existing
 % processes can be recycled. New package has no processes in it.
 if ~packageExist && ~isempty(MD.processes_)
-    for i = 1: length(MD.crtPackage_.processClassNames_)
+    for i = 1: length(userData.crtPackage.processClassNames_)
         % ith process in package's process list
         % 'sameProcID' save the ID of existing processes in MovieData that 
         % could be recycled by current package. 
@@ -233,7 +234,7 @@ if ~packageExist && ~isempty(MD.processes_)
         for j = 1: length(MD.processes_)
             % jth available process in MovieData's process pool
            if strcmp(class(MD.processes_{j}), ...
-                        MD.crtPackage_.processClassNames_{i}) 
+                        userData.crtPackage.processClassNames_{i}) 
                 sameProcID = horzcat (sameProcID, j);
                 sameProcName = horzcat(sameProcName, ...
                                             {MD.processes_{j}.name_});
@@ -250,7 +251,7 @@ if ~packageExist && ~isempty(MD.processes_)
                  'OKString','Select','CancelString','New'); 
              if ok 
                  % Add process to current package
-                 MD.crtPackage_.setProcess(i,MD.processes_{sameProcID(select)});
+                 userData.crtPackage.setProcess(i,MD.processes_{sameProcID(select)});
              end
         end
     end
@@ -258,7 +259,7 @@ end
 
 % Start first package GUI and delete MovieData setup GUI
 save([MD.movieDataPath_ MD.movieDataFileName_], 'MD');
-userData.firstPackageGUI(MD);
+userData.firstPackageGUI(MD, userData.crtPackage);
 
 % Save user data
 set(handles.figure1,'UserData', userData);

@@ -25,6 +25,7 @@ classdef Process < handle
                      
         success_ % If the process is successfully run in the most recent 
                  % time
+        updated_
         notes_
         
        funName_
@@ -40,6 +41,7 @@ classdef Process < handle
                 obj.createTime_ = clock;
                 obj.procChanged_ = false;
                 obj.success_ = false;
+                obj.updated_ = true;
             end
         end
     end
@@ -61,11 +63,16 @@ classdef Process < handle
             % changed. changed 'true' or 'false'
            obj.procChanged_ =  changed;
         end
+        function setUpdated(obj, is)
+            % Set update status of the current process
+            % updated - true; outdated - false
+            obj.updated_ = is;
+        end
         
         % Temp function
         function runProcess(obj) % throws exception
             pause(.5);
-            if abs(normrnd(1, 2)) > 100
+            if abs(normrnd(1, 2)) > 2
                 error('lccb:runtime:fatal',['T_T Runtime error occurs in step' ...
                     obj.name_ '... zz ZZZ\n\n']);
             end

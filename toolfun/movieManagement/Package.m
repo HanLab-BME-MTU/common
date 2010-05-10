@@ -111,11 +111,14 @@ classdef Package < handle
                 else            
                     if obj.processes_{i}.success_ && ...
                             obj.processes_{i}.procChanged_
-
+                        
+                        % Set process's updated=false
+                        obj.processes_{i}.setUpdated (false);
+                        % Create an dependency error exception
                         ME = MException('lccb:paraChanged:warn',...
-                            ['Parameters of process ', ...
+                            ['The current step is out of date. Parameters of process ', ...
                             obj.processes_{i}.name_,' have been',...
-                            ' changed since previous run']);
+                            ' changed.']);
                         % Add para exception to the ith process
                         processExceptions{i} = horzcat(processExceptions{i}, ME);                           
                     end
@@ -155,10 +158,13 @@ classdef Package < handle
                     %    not exist
                     if obj.processes_{i}.success_ && ...
           ( ~isempty(processExceptions{j}) || isempty(obj.processes_{j}) )
-      
+                        
+                        % Set process's updated=false
+                        obj.processes_{i}.setUpdated (false);
+                        % Create a dependency error exception
                         ME = MException('lccb:depe:warn', ...
-   ['The current step is outdated since upriver steps have changed '...
-    'Please run again to keep the the result of this step up to date.']);
+   ['The current step is out of date because the predecessor steps this step depends on are out of date.'...
+    'Please run again to update your result.']);
                         % Add dependency exception to the ith process
                         processExceptions{i} = ...
                                 horzcat(processExceptions{i}, ME); 
