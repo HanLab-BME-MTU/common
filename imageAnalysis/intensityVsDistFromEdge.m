@@ -44,7 +44,7 @@ function [aVd,aStd,nPts,distVals] = intensityVsDistFromEdge(image,mask,distVals)
 %% ----------- Input ---------- %%
 
 image = double(image);
-mask = mask >0;
+mask = mask > 0;
 
 distX = bwdist(~mask);
 
@@ -54,12 +54,12 @@ end
 
 %% ----- Analysis ----- %%
 
-aVd = arrayfun(@(x)(mean(image(mask(:) & distX(:) >= distVals(x) & distX(:) < distVals(x+1)))),1:(length(distVals)-1));
+aVd = arrayfun(@(x)(mean(image(distX(:) >= distVals(x) & distX(:) < distVals(x+1)))),1:(length(distVals)-1));
 if nargout > 1
-    aStd = arrayfun(@(x)(std(image(mask(:) & distX(:) >= distVals(x) & distX(:) < distVals(x+1)))),1:(length(distVals)-1));
+    aStd = arrayfun(@(x)(std(image(distX(:) >= distVals(x) & distX(:) < distVals(x+1)))),1:(length(distVals)-1));
 end
 if nargout > 2
-    nPts = arrayfun(@(x)(numel(image(mask(:) & distX(:) >= distVals(x) & distX(:) < distVals(x+1)))),1:(length(distVals)-1));
+    nPts = arrayfun(@(x)(numel(image(distX(:) >= distVals(x) & distX(:) < distVals(x+1)))),1:(length(distVals)-1));
 end
 
 
