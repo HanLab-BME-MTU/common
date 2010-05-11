@@ -64,11 +64,10 @@ userData.mainFig = varargin{t+1};
 userData.procID = varargin{t+2};
 userData.handles_main = guidata(userData.mainFig);
 
-% Get main panel's user data
+% Get current package
 userData_main = get(userData.mainFig, 'UserData');
 userData.crtPackage = userData_main.crtPackage;
 
-MD = userData_main.MD;
 userData.crtProc = userData.crtPackage.processes_{userData.procID};
 
 eval ( [ 'userData.procConstr = @', ...
@@ -76,7 +75,7 @@ eval ( [ 'userData.procConstr = @', ...
 
 % Write introduction text
 set(handles.text_body1,'string',['Setting for process ', ...
-   userData.crtPackage.processClassNames_{userData.procID} ]);
+   userData.crtPackage.processClassNames_{userData.procID} ]); % No need
 
 % Set existing parameters, if there is any
 
@@ -183,8 +182,8 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 userData_main = get(userData.mainFig, 'UserData');
-
 MD = userData_main.MD;
+
 para = str2double(get(handles.edit_para, 'string'));
 % Check if input is blank
 if isnan(para)
@@ -194,6 +193,7 @@ if isnan(para)
 end
 
 pObj = userData.procConstr(MD, 'maskPath', 'funName', para);
+
 % Do process sanity check - only check pamameter error
 try
     pObj.sanityCheck;
@@ -203,6 +203,7 @@ catch ME
                 'Setting Error','modal');
     return;
 end
+
 % If process sanity check passes, set new parameters
 if isempty( userData.crtProc )
     % Add new process to both process lists of MovieData and current package

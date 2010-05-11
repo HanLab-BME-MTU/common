@@ -72,7 +72,7 @@ classdef Process < handle
         % Temp function
         function runProcess(obj) % throws exception
             pause(.5);
-            if abs(normrnd(1, 2)) > 2
+            if abs(normrnd(1, 2)) > 10
                 error('lccb:runtime:fatal',['T_T Runtime error occurs in step' ...
                     obj.name_ '... zz ZZZ\n\n']);
             end
