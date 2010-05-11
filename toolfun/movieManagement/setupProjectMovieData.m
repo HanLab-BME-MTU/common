@@ -70,7 +70,7 @@ for j = 1:nMovies
     cd([projectFolder filesep movieFolders(j).name]);
     
     %Check for an existing movieData
-    if forceReplace || ~exist('movieData.mat','file')
+    if forceReplace || ~exist([pwd 'movieData.mat'],'file')
     
         %Set this as the analysis folder
         movieData.analysisDirectory = pwd;    

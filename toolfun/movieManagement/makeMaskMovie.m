@@ -133,34 +133,36 @@ movieData.masks.movie.status = 0;
 mColors = {'r','g','b'};
 for j = 1:nImages    
     
-    for k = 1:nChanMov
-        
-        if j == 1 && k == 1
-            %Load an image to get the size
-            tmp = double(imread(maskFileNames{k}{j}));
-            currMasks = zeros([ size(tmp) nChanMov]);
-            currImage = zeros([ size(tmp) 3]);            
-            if showBkgrnd
-                currBackMasks = zeros([ size(tmp) nChanMov]);
-            end
-        end
+    currMasks = cell(1,3);
+    currImage = cell(1,3);
+    if showBkgrnd
+        currBackMasks=cell(1,3);
+    end
+    for k = 1:nChanMov                        
                                         
         %Load the mask
-        currMasks(:,:,k) = double(imread(maskFileNames{k}{j}));
+        currMasks{k} = double(imread(maskFileNames{k}{j}));
 
         %Load the image
-        currImage(:,:,k) = mat2gray(double(imread(imNames{k}{j})));
+        currImage{k} = mat2gray(double(imread(imNames{k}{j})));
         
         if showBkgrnd
             %Load the background masks if requested
-            currBackMasks(:,:,k) = double(imread([bkgrndMaskDir{k} filesep bkgrndMaskFileNames{k}(j).name]));
+            currBackMasks{k} = double(imread([bkgrndMaskDir{k} filesep bkgrndMaskFileNames{k}(j).name]));
         end
+    end
+    
+    %To get around pre-allocation...
+    currMasks = cat(3,currMasks{:});
+    currImage = cat(3,currImage{:});
+    if showBkgrnd
+        currBackMasks = cat(3,currBackMasks{:});
     end
    
     %Show image with mask overlay
     figure(figHan)
-    clf
-    image(currImage);                
+    clf    
+    imshow(currImage);    
     hold on
     axis off,axis image    
     for k = 1:nChanMov

@@ -24,9 +24,9 @@ function varargout = imageViewer(movieData,varargin)
 %
 %       ('OptionName' -> possible values)
 %
-%       ('Channel' -> character array)
+%       ('Channel' -> cell array of character array(s))
 %       This option should contain a character string representing the name
-%       of the channel to display (i.e. the name of the sub-directory for
+%       of the channel(s) to display (i.e. the name of the sub-directory for
 %       that channel's images)
 %       Optional. If not specified, the first channel alphabetically will
 %       be displayed.
@@ -60,7 +60,7 @@ function varargout = imageViewer(movieData,varargin)
 
 %% ----- Parameters ------ %%
 
-colStr = 'r'; %The color to use for overlays.
+colStr = {'r','g','b'}; %The color to use for overlays.
 
 
 %% ----------------- Input -------------- %%
@@ -79,20 +79,36 @@ movieData = setupMovieData(movieData);
 
 if isempty(chanName)
     iChan = 1; %Default is to use first channel. This is USUALLY the first alphabetically...
-    chanName = movieData.channelDirectory{1};
-else
-    %Find the index of the channel specified
-    iChan = find(strcmp(chanName,movieData.channelDirectory),1);
+    chanName = movieData.channelDirectory(1);
+    nChan = 1;
+else    
+    if ~iscell(chanName)
+        chanName = {chanName};
+    end    
+    nChan = length(chanName);
     
-    if isempty(iChan)
-        error(['Movie does not contain a channel named "' chanName ...
-            '" ! Check movieData and channel name!'])
+    if nChan > 3
+        error('ImageViewer.m can only display uo to 3 channels simultaneously! Please specify fewer channels!')
+    end
+    
+    iChan = zeros(1,nChan);
+    
+    for j = 1:nChan    
+        %Find the index of the channel(s) specified
+        tmp = find(strcmp(chanName{j},movieData.channelDirectory),1);
+
+        if isempty(tmp)
+            error(['Movie does not contain a channel named "' chanName{j} ...
+                '" ! Check movieData and channel name!'])
+        else
+            iChan(j) = tmp;
+        end
     end
 end    
 
 if isempty(iFrame)
     iFrame = 1;%Default is to display first frame
-elseif ~isnumeric(iFrame) || round(iFrame) ~= iFrame || iFrame > movieData.nImages(iChan)
+elseif ~isnumeric(iFrame) || round(iFrame) ~= iFrame || any(iFrame > movieData.nImages(iChan))
     error('Invalid frame number specified! Check frame number!')
 end
 
@@ -119,10 +135,17 @@ end
 %Get file names for images
 imNames = getMovieImageFileNames(movieData,iChan);
 
-%load the image
-currImage = imread(imNames{1}{iFrame});
+if nChan > 1
+    currImage = zeros([movieData.imSize(:,iChan(1))' 3]);
+    for j = 1:nChan
+        %load the image    
+        currImage(:,:,j) = mat2gray(imread(imNames{j}{iFrame}));
+    end
+else
+    currImage = imread(imNames{1}{iFrame});
+end
 
-%Display the image with scaled, gray colormap
+%Display the image
 imshow(currImage,[])
 
 %If the axes didn't exist before, get it's handle now
@@ -132,7 +155,7 @@ end
 
 %If requested, change the colormap
 if ~isempty(cMap)
-    colormap(cMap)
+    colormap(cMap)%This has no effect when displaying multiple channels
 end
 
 
@@ -140,11 +163,11 @@ end
 %% ---Draw the overlays---- %%
 
 %Draw the channel name
-text(20,20,chanName,'color',colStr,'interpreter','none');
+arrayfun(@(x)(text(20,20*x,chanName{x},'color',colStr{x},'interpreter','none')),1:nChan);
 
 %Draw the frame number
-text(20,50,[num2str((iFrame-1)*movieData.timeInterval_s) ' / ' ...
-    num2str((movieData.nImages(iChan)-1)*movieData.timeInterval_s) ' s' ],'color',colStr,'FontSize',12)
+text(20,80,[num2str((iFrame-1)*movieData.timeInterval_s) ' / ' ...
+    num2str((movieData.nImages(iChan)-1)*movieData.timeInterval_s) ' s' ],'color',colStr{1},'FontSize',12)
 
 %Get the current axes and turn hold on
 hold(axHandle,'on')
@@ -154,23 +177,25 @@ if ~isempty(overlayName)
 
         case 'mask'
 
-
-            if checkMovieMasks(movieData,iChan)
+            hasMasks = arrayfun(@(x)(checkMovieMasks(movieData,x)),iChan);
                 
-                maskNames = getMovieMaskFileNames(movieData,iChan);
-                
-                %Load the mask
-                currMask = imread(maskNames{1}{iFrame});
+            for j = 1:nChan
+                if hasMasks(j)
+                    
+                    maskNames = getMovieMaskFileNames(movieData,iChan(j));
 
-                %Convert the mask into a boundary
-                maskBounds = bwboundaries(currMask);
+                    %Load the mask
+                    currMask = imread(maskNames{1}{iFrame});
 
-                %Plot the boundar(ies)                
-                cellfun(@(x)(plot(x(:,2),x(:,1),colStr)),maskBounds);                
+                    %Convert the mask into a boundary
+                    maskBounds = bwboundaries(currMask);
 
-            else
-                disp('No valid masks for specified channel! Check movieData.masks and mask directory/files!')                
-            end                
+                    %Plot the boundar(ies)                
+                    cellfun(@(x)(plot(x(:,2),x(:,1),colStr{j})),maskBounds);                
+                else                                
+                    disp('No valid masks for specified channel(s)! Check movieData.masks and mask directory/files!')                
+                end                                    
+            end
             
         otherwise
             

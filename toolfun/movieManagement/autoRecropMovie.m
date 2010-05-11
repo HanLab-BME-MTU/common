@@ -1,17 +1,17 @@
 function movieData = autoRecropMovie(movieData,roiNumber)
 
-%{
-
-movieData = autoRecropMovie(movieData,roiNumber)
-
-This will use the ROI info saved in the movie's analysis directory to re-crop 
-the original images. This is useful when the original images have been re-processed
-in some way and you want the ROI to reflect these changes.
-
-The input movieData can be a single movieData structure or a cell array of movieDatas
-
-%}
-
+%
+% 
+% movieData = autoRecropMovie(movieData,roiNumber)
+% 
+% This will use the ROI info saved in the movie's analysis directory to re-crop 
+% the original images. This is useful when the original images have been re-processed
+% in some way and you want the ROI to reflect these changes.
+% 
+% The input movieData can be a single movieData structure or a cell array of movieDatas
+% 
+% 
+%
 %Hunter Elliott, 4/2009
 
 wasSingle = false;
@@ -26,7 +26,7 @@ nMovies = length(movieData);
 for iMov = 1:nMovies
     
 
-    movieData{iMov} = setupMovieData(movieData{iMov});
+    %movieData{iMov} = setupMovieData(movieData{iMov});
 
 
     try
@@ -71,7 +71,7 @@ for iMov = 1:nMovies
     catch errMess
 
         %TEMP - STORE ERROR IN MOVIEDATA, REMOVE IF OKAY ETC
-        disp(['Error recropping movie ' num2str(iMov)])
+        disp(['Error recropping movie ' num2str(iMov) ': ' errMess.message])
         
     end
             

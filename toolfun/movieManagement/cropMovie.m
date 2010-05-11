@@ -31,7 +31,7 @@ function movieData = cropMovie(movieData,cropPoly,cropChannels,viewChannels,pare
 
 %% ------ Parameters ------ %%%
 
-nFrames = 3;%Number of frames to preview for cropping
+nFrames = 1;%Number of frames to preview for cropping
 
 
 %% ----- Input ----- %%
@@ -65,6 +65,15 @@ movieData = setupMovieData(movieData,'ROI');
 nCrop = length(cropChannels);
 nView = length(viewChannels);
 
+if nView > 3
+    error('You can only view up to 3 channels during cropping!')
+end
+
+axHandles = zeros(1,nFrames);
+
+%Check if the movie has masks for the channels to be cropped
+hasMasks = arrayfun(@(x)(checkMovieMasks(movieData,x)),cropChannels);
+
 %If no polygon was input, ask the user to click one
 if nargin < 2 || isempty(cropPoly)
     
@@ -75,35 +84,28 @@ if nargin < 2 || isempty(cropPoly)
         if firstTime
             %First display images from the movie
             iFrames = round(linspace(1,movieData.nImages(cropChannels(1)),nFrames));
-            for j =  1:nFrames                        
-                for k = 1:nView
-                    subplot(nView,nFrames, (k-1)*nFrames + j )
-                    hold on
-                    if k == 1 && j == 1
-                        title(movieData.analysisDirectory)
-                    end
-
-                    axHandle = gca;
-                    imageViewer(movieData,'AxesHandle',axHandle,'Frame',iFrames(j)...
-                        ,'Channel',movieData.channelDirectory{viewChannels(k)})
-                    caxis(caxis ./ 1.8);
-
-                end        
-            end
-            colormap gray
+            for j =  1:nFrames                                        
+                axHandles(j) = subplot(1,nFrames,j);
+                hold on
+                if j == 1
+                    title(movieData.analysisDirectory,'Interpreter','none')
+                end
+                
+                imFig = imageViewer(movieData,'AxesHandle',axHandles(j),'Frame',iFrames(j)...
+                    ,'Channel',movieData.channelDirectory(viewChannels));
+                hold on;
+                
+            end            
             firstTime = false;
         end
-        %Let the user click a crop outline in the first image of first channel
-        subplot(nView,nFrames,1)        
-        pHan = impoly(gca);        
+        %Let the user click a crop outline in the first image of first channel             
+        pHan = impoly(axHandles(1));        
         cropPoly = getPosition(pHan);
         delete(pHan);
         %Now draw this polygon on all the frames
-        for j =  1:nFrames                        
-            for k = 1:nView
-                subplot(nView,nFrames, (k-1)*nFrames + j )                        
-                fill(cropPoly(:,1),cropPoly(:,2),'r','FaceAlpha',.15,'EdgeColor','r')                                
-            end        
+        for j =  1:nFrames
+            set(imFig,'CurrentAxes',axHandles(j))
+            fill(cropPoly(:,1),cropPoly(:,2),'r','FaceAlpha',.15,'EdgeColor','r')                                
         end
     
         %Ask the user if they like their crop or not        
@@ -126,7 +128,6 @@ end
 %% ------ Cropping ----- %%
 %Go through each requested channel and each image and crop them
 
-%TEMP - WHAT IF DIR NEEDS TO BE CREATED/NAMED get name from old dirs??
 
 if isempty(parentDir) % if no directory input...
     %Ask the user where they want to put the cropped images
@@ -152,6 +153,17 @@ wtBar = waitbar(0,'Please wait, cropping images....');
 %Get current image file names    
 imNames = getMovieImageFileNames(movieData,cropChannels);
 
+%Make a mask directory if needed
+if any(hasMasks)
+    mkdir([parentDir filesep 'masks']);
+    roiMovieData.masks.directory = [parentDir filesep 'masks' ];
+    roiMovieData.masks.dateTime = movieData.masks.dateTime;
+    roiMovieData.masks.iFrom = movieData.masks.iFrom;
+    roiMovieData.masks.status = movieData.masks.status;
+end
+
+
+
 %Go through the images
 for iChan = 1:nCrop
     
@@ -163,6 +175,15 @@ for iChan = 1:nCrop
     
     %Make the channel directory
     mkdir([roiMovieData.imageDirectory filesep roiMovieData.channelDirectory{cropChannels(iChan)}])
+    
+    %Make the mask directory if necessary
+    if hasMasks(iChan)                
+        roiMovieData.masks.channelDirectory{cropChannels(iChan)} = ...
+            movieData.channelDirectory{cropChannels(iChan)};
+        mkdir([roiMovieData.masks.directory filesep ... 
+            roiMovieData.masks.channelDirectory{cropChannels(iChan)}]);
+        maskNames = getMovieMaskFileNames(movieData,cropChannels(iChan));
+    end
     
     for iFrame = 1:nImages
         
@@ -183,10 +204,18 @@ for iChan = 1:nCrop
                                   max(1,floor(min(cropPoly(:,1) ) ))  : min(ceil(max(cropPoly(:,1) ) ),imageN));
         
         %Write it to the new image directory
-        iLastSep = max(regexp(imNames{1}{iImage},filesep));
-        imwrite(currIm,[roiMovieData.imageDirectory filesep roiMovieData.channelDirectory{cropChannels(iChan)} filesep 'crop_' imNames{iChan}{iFrame}(iLastSep:end)]);
+        iLastSep = max(regexp(imNames{iChan}{iFrame},filesep));
+        imwrite(currIm,[roiMovieData.imageDirectory filesep roiMovieData.channelDirectory{cropChannels(iChan)} filesep 'crop_' imNames{iChan}{iFrame}(iLastSep+1:end)]);
         
+        if hasMasks(iChan)
+            currMask = imread(maskNames{1}{iFrame});
+            currMask(~mask) = false;
+            currMask = currMask(max(1,floor(min(cropPoly(:,2) ) ))  : min(ceil(max(cropPoly(:,2) ) ),imageM), ...
+                                  max(1,floor(min(cropPoly(:,1) ) ))  : min(ceil(max(cropPoly(:,1) ) ),imageN));
+            iLastSep = max(regexp(maskNames{1}{iFrame},filesep));
+            imwrite(currMask,[roiMovieData.masks.directory filesep roiMovieData.masks.channelDirectory{cropChannels(iChan)} filesep 'crop_' maskNames{1}{iFrame}(iLastSep+1:end)]);
         
+        end
         waitbar( (nImages*(iChan-1) + iFrame ) / (nImages*nCrop),wtBar)
         
     end
@@ -202,28 +231,23 @@ close(wtBar);
 %Check if there is a movieData present in the ROI directory, and if not set
 %it up.
 
-if ~exist([parentDir filesep 'movieData.mat'],'file')
 
-    %Transfer basic movie info from parent images
-    roiMovieData.pixelSize_nm = movieData.pixelSize_nm;
-    roiMovieData.timeInterval_s = movieData.timeInterval_s;
-    roiMovieData.nImages = movieData.nImages;
-    roiMovieData.imageDirectory = [parentDir filesep 'images'];
 
-    if isfield(movieData,'stimulation')
-        roiMovieData.stimulation = movieData.stimulation;
-    end
+%Transfer basic movie info from parent images
+roiMovieData.pixelSize_nm = movieData.pixelSize_nm;
+roiMovieData.timeInterval_s = movieData.timeInterval_s;
+roiMovieData.nImages = movieData.nImages;
+roiMovieData.imageDirectory = [parentDir filesep 'images'];
 
-    %TEMP - assume that parent is analysis dir
-    roiMovieData.analysisDirectory = parentDir;
-
-else %Use the old movieData
-   tmp = load([parentDir filesep 'movieData.mat']);
-   roiMovieData = tmp.movieData;
-    
+if isfield(movieData,'stimulation')
+    roiMovieData.stimulation = movieData.stimulation;
 end
+
+%TEMP - assume that parent is analysis dir
+roiMovieData.analysisDirectory = parentDir;
+
 %Save the ROI's movieData
-roiMovieData = setupMovieData(roiMovieData);
+updateMovieData(roiMovieData);
 
 %Record that an ROI was cropped from the movie in the original movie's
 %movieData
@@ -264,8 +288,5 @@ movieData.ROI(iRoi).dateTime = datestr(now);
 
 %Save the input movieData
 updateMovieData(movieData)
-
-
-
 
 

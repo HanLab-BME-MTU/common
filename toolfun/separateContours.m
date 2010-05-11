@@ -12,7 +12,8 @@ function [contourArray,contourValues] = separateContours(contoursIn)
 %   as a 2xN matrix with the x and y cooridnates of each point on that
 %   contour.
 % 
-% 
+% See Also: cleanUpContours.m 
+%
 % Input:
 % 
 %   contoursIn - A 2xM contour matrix, as returned by contourc.m, contour.m
@@ -53,8 +54,8 @@ iContour = 1; %Counter for number of contours
 %Over-initialize the contour arrays, since at this point we don't know how
 %many contours there will be.
 nTotal = size(contoursIn,2); 
-contourArray = cell(nTotal/2,1);
-contourValues= zeros(nTotal/2,1);
+contourArray = cell(ceil(nTotal/2),1);
+contourValues = zeros(ceil(nTotal/2),1);
 
 while true
 
