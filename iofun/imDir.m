@@ -43,7 +43,7 @@ function [fileNames formatNum] = imDir(imDirectory,returnAll)
 
 %The list of supported file extensions. Feel free to add! (just update the
 %help also!)
-fExt = {'tif','TIF','STK','bmp','BMP','jpg','JPG'};
+fExt = {'tif','TIF','STK','bmp','BMP','jpg'};
 
 
 if nargin < 1 || isempty(imDirectory)
