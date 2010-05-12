@@ -59,7 +59,7 @@ classdef Package < handle
             %
             % INPUT:
             %   obj - package object
-            %   full - ture   check 1,2,3 steps 
+            %   full - true   check 1,2,3 steps 
             %          false  check 2,3 steps
             %   procID - A. Numeric array: id of processes for sanitycheck
             %            B. String 'all': all processes will do 
@@ -85,7 +85,7 @@ classdef Package < handle
             end
             
         if full
-            % 1 Step. Check if the process itself has a problem
+            % Step 1: Check if the process itself has a problem
             for i = procID
                 if isempty(obj.processes_{i})
                     continue;
@@ -99,10 +99,10 @@ classdef Package < handle
                 end
             end
         end
-            % 2 Step. 
+            % Step 2:
             % Determine the pamameters are changed if satisfying the 
             % following two conditions:
-            % A. Process has been successfully run (obj.success_ = ture)
+            % A. Process has been successfully run (obj.success_ = true)
             % B. Pamameters are changed (reported by uicontrols in setting
             % panel, and obj.procChanged_ field is 'true')
             for i = procID
@@ -124,8 +124,8 @@ classdef Package < handle
                     end
                 end 
             end
-            % 3 Step. Check if the processes that current process depends on
-            %    have problems   
+            % Step 3: Check if the processes that current process depends
+            % on have problems   
             for i = procID
                 if isempty(obj.processes_{i})
                     continue;
