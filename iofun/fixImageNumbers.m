@@ -1,10 +1,11 @@
 function fixImageNumbers(directory)
-% 
+%FIXIMAGENUMBERS pads zeros on metamorph-style image numbering so ls/dir return them correctly
+%
 % fixImageNumbers(directory)
 % 
 % This function goes through every numbered image file in the specified
-% directory and renames files which have an ending like _t1, _t2 etc. To
-% _t01, _t02 so that dir/ls returns them in the correct order.
+% directory and renames files which have a metamorph-style ending like _t1,
+% _t2 etc. To _t01, _t02 so that dir/ls returns them in the correct order.
 % 
 % Hunter Elliott, 11/2009
 %

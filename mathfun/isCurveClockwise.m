@@ -4,7 +4,8 @@ function isClockwise = isCurveClockwise(curveIn)
 % isClockwise = isCurveClockwise(curveIn)
 %
 % Returns true if the points in the closed, 2-D input curve run clockwise
-% or counter clockwise in a right-handed coordinate system.
+% or counter clockwise in a right-handed coordinate system. (Will be
+% reversed from matrix/image coordinates!)
 %
 % Input:
 % 

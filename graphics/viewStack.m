@@ -6,10 +6,12 @@ function viewStack(imageMat)
 % to any 3D matrix. The matrix is displayed in 3D with the intensity at
 % each point represented by it's opacity/transparency.
 % 
+% Input:
 % 
+%   imageMat - The 3D image matrix to view.
 % 
 % Hunter Elliott
-%
+% 1/2010
 
 
 if ndims(imageMat) ~= 3
@@ -18,10 +20,7 @@ end
 
 [M,N,P] = size(imageMat);
 
-%Normalize the image data
 imageMat = double(imageMat);
-%imageMat = mat2gray(imageMat);
-
 
 hold on
 set(gca,'color','k')

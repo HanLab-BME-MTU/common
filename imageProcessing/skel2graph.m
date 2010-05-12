@@ -1,9 +1,11 @@
-function [vertices,edges] = skel2graph(skelIn,nConn)
+function [vertices,edges,edgePaths] = skel2graph(skelIn,nConn)
 %SKEL2GRAPH converts a binary 3D skeleton matrix into a graph structure with nodes and edges 
 % 
 % [vertices,edges] = skel2graph(skelIn)
+%
+% [vertices,edges,edgePaths] = skel2graph(skelIn)
 % 
-% [vertices,edges] = skel2graph(skelIn,nConn)
+% [vertices,edges,edgePaths] = skel2graph(skelIn,nConn)
 % 
 % Input:
 % 
@@ -89,18 +91,28 @@ for j = 1:nVerts
 
 end
 
+if nargin > 2
+    edgePaths = cell(1,nEdges);
+end
 
 %Go through each edge...
 for j = 1:nEdges
             
     %Find vertices which this edge connects
     edges(j,:) = unique(vertMat(imdilate(edgeMat == j,nHood) & vertMat));           
-  
     
+    %If requested, return the coordinates of each point on this edge
+%     if nargout > 2
+%         Get the coord of one vertex 
+%         
+%         
+%         THIS DOESN"T SUPPORT 3D MATRICES - NEED TO WRITE OWN FUNC
+%         
+%         edgePaths{j} = bwtraceboundary(edgeMat == j & vertMat == edges(j,1),,'N');
+%     end
 end
-    
 
-%RETURN EDGE PATHS ALSO???
+
 
 
 if showPlots

@@ -40,9 +40,6 @@ if nargin < 4 || isempty(xType)
 end
 
 
-
-maxDisp = 20; %constraint for displacement - maximum number of pixels to displace
-
 switch xType
 
     case 'projective'    
@@ -55,6 +52,76 @@ switch xType
         iGuess(13) = 1;
     case 'translation'
         iGuess = [0 0];
+end
+
+%Bounds which are common to transformations
+xX = [-5 5]; %X translation
+yX = [-5 5]; %Y translation
+xSc = [.9 1.1]; %Scaling in x direction
+ySc = [.9 1.1]; %Scaling in y direction
+ySk = [-.1 .1]; %Y "skew"
+xSk = [-.1 .1]; %X "skew"
+        
+switch xType
+    
+    
+    case 'projective'
+        %Constraints for projective
+
+        xySc = [.9 1.1]; %Scaling in "z" - x&y simultaneously INVERTED - >1 decreses size!
+        
+        xL = [-1e-4 1e-4]; %X "lean" - perspective shift + moves right side of image in negative z
+        yL = [-1e-4 1e-4]; %Y "lean" - perspective shift + moves bottom side of image in negative z
+
+        Amin = [xSc(1),...
+                xSk(1),...
+                xX(1),....
+                ySk(1),...
+                ySc(1),...
+                yX(1),...
+                xL(1),...
+                yL(1),...
+                xySc(1)]';
+
+        Amax = [xSc(2),...
+                xSk(2),...
+                xX(2),....
+                ySk(2),...
+                ySc(2),...
+                yX(2),...
+                xL(2),...
+                yL(2),...
+                xySc(2)]';    
+    case 'polynomial'
+   
+        %Arbitrary small number for higher-order, non-linear terms
+        bS = 1e-5;
+        
+        Amin = [...
+            xX(1),yX(1); %X and Y translation            
+            xSc(1),ySk(1);%xScaling and y skewing
+            xSk(1),ySc(1); %x Skewing and yScaling
+            -bS, -bS; %bulging xy and yx
+            -bS,  -bS; %barrell x and arc y
+            -bS,  -bS; %arc x and barell y
+            -5*bS,  -5*bS;    %???? wierd higher order shit...
+            -10*bS,  -10*bS;
+            -100*bS, -100*bS;
+            -1000*bS,-1000*bS;];
+        
+      Amax = [...
+            xX(2),yX(2); %X and Y translation            
+            xSc(2),ySk(2);%xScaling and y skewing
+            xSk(2),ySc(2); %x Skewing and yScaling
+            bS, bS; %bulging xy and yx
+            bS,  bS; %barrell x and arc y
+            bS,  bS; %arc x and barell y
+            5*bS,  5*bS;    %???? wierd higher-order shit...
+            10*bS,  10*bS;
+            100*bS,  100*bS;
+            1000*bS, 1000*bS;];
+             
+        
 end
 
 %If the images are actually masks, scale them differently to avoid rounding
@@ -72,6 +139,10 @@ else
     baseImage = baseImage ./ max(baseImage(:));
     inputImage = inputImage - min(inputImage(:));
     inputImage = inputImage ./ max(inputImage(:));
+    
+    baseImage(baseImage == 0) = min(baseImage(baseImage>0));
+    inputImage(inputImage == 0) = min(inputImage(inputImage>0));
+    
 end
 
 
@@ -79,12 +150,18 @@ end
 %Create objective function for minimization
 objFun = @(x)tweakTransform(baseImage,inputImage,x);
 
-minOptions = optimset('MaxFunEvals',5e3);
+%minOptions = optimset('MaxFunEvals',5e3);
 tic;
 %Minimize the objective function to find optimal transform
 disp('Please wait, calculating transform...');
-[x,fval,exflag,output] = fmincon(objFun,iGuess(:),ones(1,length(iGuess(:))),maxDisp,[],[],[],[],[],minOptions);
+
+minOpts = optimset('TolFun',1e-8);
+
+
+[x,fval,exflag,output] = fmincon(objFun,iGuess(:),[],[],[],[],Amin,Amax,[],minOpts);
 %x = fminsearch(objFun,iGuess(:));
+%x = fminbnd(objFun,Amin,Amax);
+
 telaps = toc;
 if exflag > 0
     disp(['Finished. Took ' num2str(telaps/60) ' minutes.']);
@@ -112,25 +189,23 @@ end
 if showFigs
     
     
-    scrSize = get(0,'ScreenSize');
-    resFig = figure('position',[75 75 round(scrSize(3)-200) scrSize(4)-200]);
-    
+    fsFigure(.75);
     subplot(1,2,1)
-    imagesc(baseImage ./ inputImage)
-    title('Original Ratio'),axis image,caxis([.5 2]);
+    image(cat(3,mat2gray(baseImage),mat2gray(inputImage),zeros(size(inputImage))))
+    title('Original Overlay'),axis image
     newImage = imtransform(inputImage,optimalXform,'XData',[1 size(baseImage,2)],'YData',[1 size(baseImage,1)],'FillValues',1);
     subplot(1,2,2)
-    imagesc(baseImage ./ newImage)
-    title('Aligned Ratio'),axis image,caxis([.5 2]);
+    image(cat(3,mat2gray(baseImage),mat2gray(newImage),zeros(size(inputImage))))
+    title('Aligned Overlay'),axis image
     
 end
 
-function imProd = tweakTransform(baseImage,inImage,dX)
+function imErr = tweakTransform(baseImage,inImage,dX)
 
 %This function calculates the mean squared error between two images after
 %one is transformed by the transformation specifed by the vector dX. The
 %vector should be a vectorized version of the transformation matrix as used
-%by t imtransform. 
+%by imtransform.m 
 
 %Assemble the transformation matrix
 tMat = zeros(3);
@@ -157,18 +232,16 @@ elseif length(dX(:)) == 20;  %If polynomial transform
 end
 
 %Create the transform
-if strcmp(tType,'projective')
+if strcmp(tType,'projective') %THIS IS WASTEFUL! set tForm as global variable
     xForm = maketform('projective',tMat);
 else
-    xForm = cp2tform(ones(10,2),ones(10,2)+rand(10,2)/10,'polynomial',3);
+    xForm = cp2tform(ones(10,2),ones(10,2)+rand(10,2)/10,'polynomial',3); 
     xForm.tdata = tMat;
 end
 
 %Transform the input image with the new transformation
-inImage = imtransform(inImage,xForm,'XData',[1 size(baseImage,2)],'YData',[1 size(baseImage,1)],'FillValues',1);
+inImage = imtransform(inImage,xForm,'XData',[1 size(baseImage,2)],'YData',[1 size(baseImage,1)],'FillValues',NaN);
 
-%Calculate the product of the two images. Ignore a border around the edge
-%to prevent biasing by the filled-in pixels not present in image
-brdr = 20;
-imDiff = abs(baseImage(brdr:end-brdr,brdr:end-brdr) - inImage(brdr:end-brdr,brdr:end-brdr));
-imProd = sum(sum(imDiff ./ baseImage(brdr:end-brdr,brdr:end-brdr)));
+%Calculate the error between the two images. Ignore NaNs.
+%imErr = sqrt(nanmean(((baseImage(:) - inImage(:)) .^2 ) ./ baseImage(:) ));
+imErr = sqrt(nanmean(((baseImage(:) - inImage(:)) .^2 )));
