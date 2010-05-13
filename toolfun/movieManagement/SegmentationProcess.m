@@ -9,26 +9,28 @@ classdef SegmentationProcess < Process
     end
     
     methods (Access = public)
-        function obj = SegmentationProcess (owner, maskPaths, ...
-                funName, funParams)
-           % Construntor of class MaskProcess
+        function obj = SegmentationProcess (owner,funName, funParams,...
+                        maskPaths,outputDirectory)
+           % Constructor of class MaskProcess
            if nargin == 0
               super_args = {};
            else
                super_args{1} = owner;
                super_args{2} = 'Segmentation'; 
+               super_args{3} = outputDirectory;
            end
-           % Call the supercalss constructor with empty cell array (no
+           % Call the superclass constructor with empty cell array (no
            % argument) if nargin == 0
            obj = obj@Process(super_args{:});
            if nargin > 0
+              if ~isempty(maskPaths) && numel(maskPaths) ...
+                      ~= numel(owner.channelPath_) || ~iscell(maskPaths)
+                 error('lccb:set:fatal','Mask paths must be a cell-array of the same size as the number of image channels!\n\n'); 
+              end
               obj.maskPaths_ = maskPaths;
               obj.funName_ = funName;
-              if isnumeric (funParams)
-                obj.funParams_ = funParams;
-              else
-                obj.funParams_ = str2double(funParams);
-              end
+              obj.funParams_ = funParams;      
+              
            end
         end
         function sanityCheck(obj) % throw exception
@@ -39,10 +41,17 @@ classdef SegmentationProcess < Process
             % Check mask path for each channel
             % ... ...
         end
+        function setMaskPath(obj,chanNum,maskPath)           
+            if isnumeric(chanNum) && chanNum > 0 && chanNum < numel(owner.channelPaths_)
+                obj.maskPaths_{chanNum} = maskPath;
+            else
+                error('lccb:set:fatal','Invalid mask channel number for mask path!\n\n'); 
+            end
+        end
     end
     methods (Static)
         function text = getHelp(obj)
-           text = 'This is specific help text of segmentation process'; 
+           text = 'This process will create masks for the selected movie channels. These masks will be saved to a directory specified by the user as binary .tif files.'; 
         end
     end
 end

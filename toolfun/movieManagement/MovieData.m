@@ -92,7 +92,7 @@ classdef  MovieData < handle
                     % Exception: 
                     error('LCCB:SanMD:NoPath',...
                         ['One or more channel paths do not exist. '...
-                        'Please make sure the channel path/paths are corrent\n\n']);
+                        'Please make sure the channel path/paths are current\n\n']);
                 end
                 % Check the number of file extensions
                 [fileNames nofExt] = imDir(obj.channelPath_{i},true);
@@ -208,6 +208,20 @@ classdef  MovieData < handle
                 'Index of package exceeds dimension of packages_ array');
                 delete(obj.packages_{i});
                 obj.packages_{i} = package;
+        end
+        function fileNames = getImageFileNames(obj,iChan)
+            if isnumeric(iChan) && min(iChan)>0 && max(iChan) < ...
+                    numel(obj.channelPath_) && isequal(round(iChan),iChan)                
+                fileNames = cellfun(@(x)(imDir(x)),obj.channelPath_(iChan),'UniformOutput',false);
+                fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
+                nIm = cellfun(@(x)(length(x)),fileNames);
+                if ~all(nIm == obj.nFrames_)                    
+                    error('Incorrect number of images found in one or more channels!')
+                end                
+            else
+                error('Invalid channel numbers! Must be positive integers less than the number of image channels!')
+            end
+            
         end
 
     end

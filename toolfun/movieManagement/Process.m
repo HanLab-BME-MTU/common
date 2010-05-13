@@ -5,8 +5,9 @@ classdef Process < handle
     % SetAccess = private - cannot change the values of variables outside object
     % GetAccess = public - can get the values of variables outside object without
     % definging accessor functions
-       name_ 
-       createTime_  % Put down the time when process object is created
+       name_  %Process name
+       outputDirectory_ %Directory for storing results.
+       dateTime_  % Time process was last run
     end
     properties(SetAccess = protected, GetAccess = public)
         owner_
@@ -21,24 +22,26 @@ classdef Process < handle
                      % (2) Whether existing process's pamameters are changed 
                      % since last run. (if the process is outdated)
                      % changed - true, unchanged - false
-
+        
+        
                      
         success_ % If the process is successfully run in the most recent 
                  % time
         updated_
         notes_
         
-       funName_
-       funParams_        
+        funName_
+        funParams_        
     end
     methods (Access = protected)
-        function obj = Process(owner, name)
+        function obj = Process(owner, name, outputDirectory)
             % Constructor of class Process
             if nargin > 0
                 obj.owner_ = owner;
                 obj.name_ = name;
+                obj.outputDirectory_ = outputDirectory;
                 
-                obj.createTime_ = clock;
+                obj.dateTime_ = clock;
                 obj.procChanged_ = false;
                 obj.success_ = false;
                 obj.updated_ = true;
@@ -67,6 +70,10 @@ classdef Process < handle
             % Set update status of the current process
             % updated - true; outdated - false
             obj.updated_ = is;
+        end
+        function setDateTime(obj)
+            %The process has been re-run, update the time.
+            obj.dateTime_ = clock;
         end
         
         % Temp function

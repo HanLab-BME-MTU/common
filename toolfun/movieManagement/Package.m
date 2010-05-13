@@ -10,7 +10,10 @@ classdef Package < handle
     % 'SetAccess' attribute is set to private
         name_  % the name of instantiated package
         createTime_ % The time when object is created. Same output as 
-                    % function 'clock' 
+                    % function 'clock'
+        outputDirectory_ %The parent directory where results will be stored.
+                         %Individual processes will save their results to
+                         %sub-directories of this directory.
     end
     properties(SetAccess = protected, GetAccess = public)
         owner_ % The MovieData object this package belongs to
@@ -25,7 +28,8 @@ classdef Package < handle
     end
     
     methods (Access = protected)
-        function obj = Package(owner, name, depMatrix, processClassNames)
+        function obj = Package(owner, name, depMatrix, processClassNames,...
+                                outputDirectory)
             % Constructor of class Package
             
             if nargin > 0
@@ -33,6 +37,7 @@ classdef Package < handle
                 obj.owner_ = owner; 
                 obj.depMatrix_ = depMatrix;
                 obj.processClassNames_ = processClassNames;
+                obj.outputDirectory_ = outputDirectory;
                 
                 obj.processes_ = cell(1,length(processClassNames));
                 obj.createTime_ = clock;
