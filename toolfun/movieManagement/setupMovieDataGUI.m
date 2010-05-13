@@ -24,7 +24,7 @@ function varargout = setupMovieDataGUI(varargin)
 
 % Edit the above text to modify the response to help setupMovieDataGUI
 
-% Last Modified by GUIDE v2.5 23-Apr-2010 09:42:07
+% Last Modified by GUIDE v2.5 12-May-2010 22:27:12
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -50,11 +50,15 @@ end
 function setupMovieDataGUI_OpeningFcn(hObject, eventdata, handles, varargin) %#ok<INUSL>
 
 userData = get(handles.figure1, 'UserData');
+
 % Choose default command line output for setupMovieDataGUI
 handles.output = hObject;
 
+
+
 % Set callback function of radio button group uipanel_1
 set(handles.uipanel_1, 'SelectionChangeFcn', @uipanel_1_SelectionChangeFcn);
+
 % Set radio button unchecked 
 set(handles.uipanel_1, 'SelectedObject', []);
  
@@ -90,6 +94,20 @@ set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off');
 set(Img,'ButtonDownFcn',@help_ButtonDownFcn);
 
+% Save userdata
+set(handles.figure1,'UserData',userData);
+
+% If GUI is called by package control panel (called by menu 'New' or 'Open')
+if nargin > 3
+    t = find(strcmp(varargin,'mainFig'));
+    userData.mainFig = varargin{t+1};
+    
+    % Notify control panel that setupMovieData GUI is open
+    setappdata(userData.mainFig, 'setupMovieDataFlag', 1);
+
+end
+
+% Save userdata
 set(handles.figure1,'UserData',userData);
 guidata(hObject, handles);
 
@@ -122,31 +140,38 @@ if isempty (get(handles.uipanel_1, 'SelectedObject'));
 end
     
 switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
+    
     case 'radiobutton_1'
+        
         % Get input parameters channel path (cell array), pixel size and 
         % time interval
         channelPath = get(handles.listbox, 'string');
         pixelSize = get(handles.edit_ps, 'string');
         timeInterval = get(handles.edit_ti, 'string');
         notes = get(handles.edit_notes, 'string');
+        
         % Check if text box is empty
         if isempty(channelPath)
             errordlg('Please provide at least one channel path',...
                        'User Input Error','modal');
             return;
         end
+        
         if isempty(pixelSize) || ...
                 isempty(timeInterval)
             errordlg('Please provide pixel size and time interval values',...
                 'User Input Error','modal');
             return;
         end
+        
         % Ask the user where to save the movie data
         [file,path] = uiputfile('*.mat','Save Movie Infomation as',...
             'movieData.mat');
+        
         if ~any([file,path])
             return;
         end
+        
         % Creat the movieData object (try/catch block) -------------!!!
         try
         MD = MovieData(channelPath,pixelSize,timeInterval,path,file,notes);
@@ -167,6 +192,7 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
                 'Channel Path & Movie Data Error','modal');
             return;
         end
+        
 %         save([path file], 'MD');
 %       disp('Input data has been saved');
         % Save MovieDate as GUI data
@@ -175,6 +201,7 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
         guidata(hObject, handles);
 
     case 'radiobutton_2'
+        
         % Sanity check will be done in callback fcn of pushbutton_open 
         % Go to the first package
         if isempty(userData.MD)
@@ -183,8 +210,10 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
                 'Movie Data Not Loaded','modal');
             return;
         end
+        
         % handles to the same MovieData object
         MD = userData.MD;
+        
     otherwise
         error('User-defined: unexpected radio button has been selected');
 end
@@ -193,14 +222,16 @@ end
 % handle.MD and MD are handles of the same MovieData object. Use MD for
 % convenience
 disp('Continue to the first package');
+
 % I. Before going to the first package, firstly check if the first package
 % already exists    
 packageExist = false;
+
 if isempty(MD.packages_)
     % create a new package object
     MD.addPackage( userData.firstPackageCtr(MD) );
     % Set the current package to the newly created package
-    userData.crtPackage = MD.packages_{1};
+    userData.nextPackage = MD.packages_{1};
 
 else
     % find existing package
@@ -209,22 +240,23 @@ else
         if strcmp(class(MD.packages_{i}), userData.firstPackageName)
             % TODO: dlg box: previous package exists; Save package and
             % proceeds  
-            userData.crtPackage = MD.packages_{i};
+            userData.nextPackage = MD.packages_{i};
             packageExist = true;
             break;
         end
     end
+    
     if ~packageExist
         % No same package is found.. create a new package object
         MD.addPackage( userData.firstPackageCtr(MD) )
-        userData.crtPackage = MD.packages_{end};
+        userData.nextPackage = MD.packages_{end};
     end
 end
 
 % II. Before going to the first package, secondly check if existing
 % processes can be recycled. New package has no processes in it.
 if ~packageExist && ~isempty(MD.processes_)
-    for i = 1: length(userData.crtPackage.processClassNames_)
+    for i = 1: length(userData.nextPackage.processClassNames_)
         % ith process in package's process list
         % 'sameProcID' save the ID of existing processes in MovieData that 
         % could be recycled by current package. 
@@ -234,7 +266,7 @@ if ~packageExist && ~isempty(MD.processes_)
         for j = 1: length(MD.processes_)
             % jth available process in MovieData's process pool
            if strcmp(class(MD.processes_{j}), ...
-                        userData.crtPackage.processClassNames_{i}) 
+                        userData.nextPackage.processClassNames_{i}) 
                 sameProcID = horzcat (sameProcID, j);
                 sameProcName = horzcat(sameProcName, ...
                                             {MD.processes_{j}.name_});
@@ -251,20 +283,26 @@ if ~packageExist && ~isempty(MD.processes_)
                  'OKString','Select','CancelString','New'); 
              if ok 
                  % Add process to current package
-                 userData.crtPackage.setProcess(i,MD.processes_{sameProcID(select)});
+                 userData.nextPackage.setProcess(i,MD.processes_{sameProcID(select)});
              end
         end
     end
 end
 
-% Start first package GUI and delete MovieData setup GUI
+% Save MovieData
 save([MD.movieDataPath_ MD.movieDataFileName_], 'MD');
-userData.firstPackageGUI(MD, userData.crtPackage);
+
+if isfield(userData, 'mainFig');
+   delete(userData.mainFig); 
+end
+
+userData.firstPackageGUI(MD);
 
 % Save user data
 set(handles.figure1,'UserData', userData);
 guidata(hObject, handles);
 
+% Delete setupMovieData GUI
 delete(handles.figure1);
 
 
@@ -528,7 +566,7 @@ switch method
             set(handles.edit_ti,'Enable','on');
             set(handles.text_body2,'ForegroundColor','black');
             set(handles.text_body3,'ForegroundColor','black');
-            set(handles.pushbutton_done,'string','Save & Finish');
+            set(handles.pushbutton_done,'string','Save & Apply');
             set(handles.edit_notes, 'enable', 'on');
             % Save and reset text in Description text box
             setappdata(handles.edit_notes,'backup2',...
@@ -550,7 +588,7 @@ switch method
     case 'method2'
         if onoff
             set(handles.pushbutton_open,'Enable','on');
-            set(handles.pushbutton_done,'string','Finish');
+            set(handles.pushbutton_done,'string','Apply');
             % Save and reset text in Description text box
             setappdata(handles.edit_notes,'backup1',...
                 get(handles.edit_notes,'String'));
@@ -586,8 +624,8 @@ function menu_about_Callback(hObject, eventdata, handles)
 
 
 % --------------------------------------------------------------------
-function menu_help_lccb_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_help_lccb (see GCBO)
+function menu_about_lccb_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_about_lccb (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -731,3 +769,30 @@ function help_ButtonDownFcn(hObject, eventdata)
 % Call back function when help icon is clicked
 t = help('plot');
 helpdlg(t,'Help');
+
+
+% --- Executes on button press in pushbutton_cancel.
+function pushbutton_cancel_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_cancel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+delete(handles.figure1);
+
+
+% --- Executes when user attempts to close figure1.
+function figure1_CloseRequestFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: delete(hObject) closes the figure
+delete(hObject);
+
+
+% --- Executes during object deletion, before destroying properties.
+function figure1_DeleteFcn(hObject, eventdata, handles)
+userData = get(handles.figure1, 'UserData');
+
+if isfield(userData, 'mainFig');
+   setappdata(userData.mainFig, 'setupMovieDataFlag', 0); 
+end

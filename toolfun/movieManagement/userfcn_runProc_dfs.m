@@ -5,6 +5,7 @@ userData = get(handles.figure1, 'UserData');
 
 parentRun = [];
 parentIndex = find(userData.crtPackage.depMatrix_(i,:));
+
 % if current process i have dependency processes    
 if ~isempty(parentIndex)  
     for j = parentIndex

@@ -14,11 +14,8 @@ classdef  MovieData < handle
         movieDataPath_
         movieDataFileName_
         notes_
-        
         createTime_
-        
-        crtPackage_ = [ ]; % Handle of current package
-        crtProcess_ = [ ]; % Handle of current process
+
     end
 
     methods
@@ -199,10 +196,6 @@ classdef  MovieData < handle
                 delete(obj.processes_{i});
                 obj.processes_{i} = process;
         end
-        function setCrtProcess(obj, process)
-           % Set the current process to 'process'
-           obj.crtProcess_ = process;
-        end
         % Functions to manipulate package object array
         function addPackage(obj, newpackage)
             % Add a package to the packages_ array
@@ -215,10 +208,6 @@ classdef  MovieData < handle
                 'Index of package exceeds dimension of packages_ array');
                 delete(obj.packages_{i});
                 obj.packages_{i} = package;
-        end
-        function setCrtPackage(obj, package)
-           % Set the current package to 'package'
-           obj.crtPackage_ = package;
         end
 
     end
