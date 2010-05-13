@@ -292,11 +292,30 @@ end
 % Save MovieData
 save([MD.movieDataPath_ MD.movieDataFileName_], 'MD');
 
+% If package panel exist
 if isfield(userData, 'mainFig');
-   delete(userData.mainFig); 
-end
+   userData_main = get(userData.mainFig, 'userdata');
+   
 
-userData.firstPackageGUI(MD);
+    userData_main.MD = MD;
+    
+    % Handle of current package 
+    for i = 1: length(userData_main.MD.packages_)
+        if isa(userData_main.MD.packages_{i}, userData.firstPackageName)
+            userData_main.crtPackage = userData_main.MD.packages_{i};
+            break;
+        end
+    end
+    
+    % Dependency matrix is defined in BioSensorsPackage class
+    userData_main.dependM = userData_main.crtPackage.depMatrix_;
+    
+    set(userData.mainFig, 'userdata', userData_main)
+    % TODO .. package sanity check and enable/disable set-up
+else
+
+    userData.firstPackageGUI(MD);
+end
 
 % Save user data
 set(handles.figure1,'UserData', userData);
