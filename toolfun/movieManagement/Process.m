@@ -5,8 +5,7 @@ classdef Process < handle
     % SetAccess = private - cannot change the values of variables outside object
     % GetAccess = public - can get the values of variables outside object without
     % definging accessor functions
-       name_  %Process name
-       outputDirectory_ %Directory for storing results.
+       name_  %Process name       
        dateTime_  % Time process was last run
     end
     properties(SetAccess = protected, GetAccess = public)
@@ -25,8 +24,7 @@ classdef Process < handle
         
         
                      
-        success_ % If the process is successfully run in the most recent 
-                 % time
+        success_ % If the process has been successfully run 
         updated_
         notes_
         
@@ -34,13 +32,13 @@ classdef Process < handle
         funParams_        
     end
     methods (Access = protected)
-        function obj = Process(owner, name, outputDirectory)
+        function obj = Process(owner, name)
             % Constructor of class Process
             if nargin > 0
                 obj.owner_ = owner;
-                obj.name_ = name;
-                obj.outputDirectory_ = outputDirectory;
-                
+                if nargin > 1
+                    obj.name_ = name;                
+                end
                 obj.dateTime_ = clock;
                 obj.procChanged_ = false;
                 obj.success_ = false;

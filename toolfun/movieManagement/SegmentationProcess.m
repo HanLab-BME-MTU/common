@@ -10,31 +10,33 @@ classdef SegmentationProcess < Process
     
     methods (Access = public)
         function obj = SegmentationProcess (owner,funName, funParams,...
-                        maskPaths,outputDirectory)
-           % Constructor of class MaskProcess
+                        maskPaths)
+           % Constructor of class SegmentationProcess
            if nargin == 0
               super_args = {};
            else
                super_args{1} = owner;
-               super_args{2} = 'Segmentation'; 
-               super_args{3} = outputDirectory;
+               super_args{2} = mfilename('class');                
            end
-           % Call the superclass constructor with empty cell array (no
-           % argument) if nargin == 0
+           % Call the superclass constructor - these values are private
            obj = obj@Process(super_args{:});
-           if nargin > 0
+           if nargin > 1
+               obj.funName_ = funName;               
+           end
+           if nargin > 2
+              obj.funParams_ = funParams;              
+           end
+           if nargin > 3               
               if ~isempty(maskPaths) && numel(maskPaths) ...
                       ~= numel(owner.channelPath_) || ~iscell(maskPaths)
                  error('lccb:set:fatal','Mask paths must be a cell-array of the same size as the number of image channels!\n\n'); 
               end
-              obj.maskPaths_ = maskPaths;
-              obj.funName_ = funName;
-              obj.funParams_ = funParams;      
-              
+              obj.maskPaths_ = maskPaths;              
            end
         end
         function sanityCheck(obj) % throw exception
             % Sanity Check
+            %TEMP TEMP
             if obj.funParams_ < 0
                 error('lccb:set:fatal','Function parameter should be larger than 0.\n\n');
             end

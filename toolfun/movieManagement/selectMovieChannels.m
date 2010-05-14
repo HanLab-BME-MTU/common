@@ -43,16 +43,37 @@ else
 end
 
 
-if ~isfield(movieData,'channelDirectory') || length(movieData.channelDirectory) < 1
-    error('Invalid movieData! Please check movieData structure!')
+if isa(movieData,'MovieData')
+    %New moviedata
+    
+    chanList = movieData.channelPath_;
+    
+else
+    %Old movieData
+    
+    if ~isfield(movieData,'channelDirectory') || length(movieData.channelDirectory) < 1
+        error('Invalid movieData! Please check movieData structure!')
+    end
+
+    chanList = movieData.channelDirectory;
+
+
 end
 
-[iChannels,OK] = listdlg('PromptString',promptString,...
-                'SelectionMode',sMode,...
-                'ListString',movieData.channelDirectory,...
-                'ListSize',[600 600]);
+if length(chanList) == 1
+    iChannels = 1;
+    
+elseif length(chanList) > 1
 
-if isempty(iChannels) || ~OK
-    error('Must select at least one channel to continue!')
+    [iChannels,OK] = listdlg('PromptString',promptString,...
+                    'SelectionMode',sMode,...
+                    'ListString',chanList,...
+                    'ListSize',[600 600]);
+
+    if isempty(iChannels) || ~OK
+        error('Must select at least one channel to continue!')
+    end
+else
+   error('The input movieData does not contain any channels! Check moviedData!') 
 end
         
