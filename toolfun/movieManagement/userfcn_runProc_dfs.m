@@ -23,7 +23,8 @@ if ~isempty(parentIndex)
     end
 end
 try
-    userData.crtPackage.processes_{i}.runProcess; % throws exception
+    % -------- Run Process --------%
+    userData.crtPackage.processes_{i}.funName_(userData.MD); % throws exception
 catch ME
     userData.crtPackage.processes_{i}.setSuccess(false);
     userfcn_drawIcon(handles,'error',i,ME.message);
