@@ -44,7 +44,8 @@ classdef SegmentationProcess < Process
             % ... ...
         end
         function setMaskPath(obj,chanNum,maskPath)           
-            if isnumeric(chanNum) && chanNum > 0 && chanNum < numel(owner.channelPaths_)
+            if isnumeric(chanNum) && chanNum > 0 && ...
+                    chanNum <= numel(obj.owner_.channelPath_)
                 obj.maskPaths_{chanNum} = maskPath;
             else
                 error('lccb:set:fatal','Invalid mask channel number for mask path!\n\n'); 

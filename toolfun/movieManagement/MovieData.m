@@ -210,7 +210,7 @@ classdef  MovieData < handle
                 obj.packages_{i} = package;
         end
         function fileNames = getImageFileNames(obj,iChan)
-            if isnumeric(iChan) && min(iChan)>0 && max(iChan) < ...
+            if isnumeric(iChan) && min(iChan)>0 && max(iChan) <= ...
                     numel(obj.channelPath_) && isequal(round(iChan),iChan)                
                 fileNames = cellfun(@(x)(imDir(x)),obj.channelPath_(iChan),'UniformOutput',false);
                 fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
@@ -223,7 +223,9 @@ classdef  MovieData < handle
             end
             
         end
-
+        function saveMovieData(MD)            
+           save([MD.movieDataPath_ filesep MD.movieDataFileName_],'MD')
+        end
     end
 
     

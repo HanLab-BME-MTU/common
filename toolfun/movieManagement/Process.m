@@ -4,11 +4,11 @@ classdef Process < handle
     properties (SetAccess = private, GetAccess = public)
     % SetAccess = private - cannot change the values of variables outside object
     % GetAccess = public - can get the values of variables outside object without
-    % definging accessor functions
-       name_  %Process name       
+    % definging accessor functions              
        dateTime_  % Time process was last run
     end
     properties(SetAccess = protected, GetAccess = public)
+        name_  %Process name
         owner_
         procChanged_ % procChanged_ = true if process is (1) outdated OR 
                      % (2) the process is up to date but process's para 
