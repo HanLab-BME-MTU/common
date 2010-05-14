@@ -67,16 +67,11 @@ classdef Process < handle
             obj.dateTime_ = clock;
         end
         
-        % Temp function
-%         function runProcess(obj) % throws exception
-%             pause(.5);
-%             if abs(normrnd(1, 2)) > 10
-%                 error('lccb:runtime:fatal',['T_T Runtime error occurs in step' ...
-%                     obj.name_ '... zz ZZZ\n\n']);
-%             end
-%
-%            obj.funName_(obj.owner_)
-%         end
+        function runProcess(obj)
+        % Run the process!
+            obj.funName_(obj.owner_ );
+
+        end
     end
     methods (Abstract)
         sanityCheck(obj)
