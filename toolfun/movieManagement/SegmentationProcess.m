@@ -32,6 +32,8 @@ classdef SegmentationProcess < Process
                  error('lccb:set:fatal','Mask paths must be a cell-array of the same size as the number of image channels!\n\n'); 
               end
               obj.maskPaths_ = maskPaths;              
+           else
+               obj.maskPaths_ = cell(1,numel(owner.channelPath_));               
            end
         end
         function sanityCheck(obj) % throw exception
@@ -47,6 +49,21 @@ classdef SegmentationProcess < Process
             else
                 error('lccb:set:fatal','Invalid mask channel number for mask path!\n\n'); 
             end
+        end
+        function fileNames = getMaskFileNames(obj,iChan)
+            if isnumeric(iChan) && min(iChan)>0 && max(iChan) <= ...
+                    numel(obj.owner_.channelPath_) && isequal(round(iChan),iChan)                
+                fileNames = cellfun(@(x)(imDir(x)),obj.maskPaths_(iChan),'UniformOutput',false);
+                fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
+                nIm = cellfun(@(x)(length(x)),fileNames);
+                if ~all(nIm == obj.owner_.nFrames_)                    
+                    error('Incorrect number of masks found in one or more channels!')
+                end                
+            else
+                error('Invalid channel numbers! Must be positive integers less than the number of image channels!')
+            end    
+            
+            
         end
     end
     methods (Static)
