@@ -9,24 +9,24 @@ classdef SegmentationProcess < Process
     end
     
     methods (Access = public)
-        function obj = SegmentationProcess (owner,name,funName, funParams,...
+        function obj = SegmentationProcess (owner,funName, funParams,...
                         maskPaths)
            % Constructor of class SegmentationProcess
            if nargin == 0
               super_args = {};
            else
                super_args{1} = owner;
-               super_args{2} = name;                
+               super_args{2} = mfilename('class');                
            end
            % Call the superclass constructor - these values are private
            obj = obj@Process(super_args{:});
-           if nargin > 2
+           if nargin > 1
                obj.funName_ = funName;               
            end
-           if nargin > 3
+           if nargin > 2
               obj.funParams_ = funParams;              
            end
-           if nargin > 4               
+           if nargin > 3               
               if ~isempty(maskPaths) && numel(maskPaths) ...
                       ~= numel(owner.channelPath_) || ~iscell(maskPaths)
                  error('lccb:set:fatal','Mask paths must be a cell-array of the same size as the number of image channels!\n\n'); 
