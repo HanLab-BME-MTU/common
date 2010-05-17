@@ -1,4 +1,4 @@
-function [behaviorInWindows,tracksInWindows] = particleBehaviorInWindows(tracksFinal,...
+function [sptPropInWindow,tracksInWindow] = particleBehaviorInWindows(tracksFinal,...
     winPositions,winFrames,diffAnalysisRes,minLength)
 %PARTICLEBEHAVIORINWINDOWS averages single particle behavior in windows based on cell edge segmentation
 %
@@ -17,25 +17,29 @@ function [behaviorInWindows,tracksInWindows] = particleBehaviorInWindows(tracksF
 %                        analysis.
 %                        Optional. Default: 5.
 %
-%OUTPUT behaviorInWindows: 4-D matrix storing average particle behavior
-%                        property in each window. The dimensions are:
-%                        1 - window index perpendicular to cell edge.
-%                        2 - window index parallalel to cell edge.
-%                        3 - window index in time.
-%                        4 - property being averaged. They are the
-%                        following:
-%                        From track diffusion analysis ...
-%                           (1) Fraction of unclassified tracks.
-%                           (2) Among the classified tracks, fraction of confined.
-%                           (3) //, fraction of Brownian.
-%                           (4) //, fraction of directed.
-%                           (5) Average diffusion coefficient.
-%                           (6) Average confinement radius.
-%                       From the tracks directly ...
-%                           (7) Average frame-to-frame displacement.
-%                           (8) Single particle density.
-%                       Not implemented yet ...
-%                           (9) Merge/split events.
+%OUTPUT sptPropInWindow: Structure storing various single particle
+%                        properties, with the following fields:
+%               From the tracks directly ...
+%           .spDensity      : Single particle density.
+%           .f2fDisp        : Average frame-to-frame displacement.
+%               From track diffusion analysis ...
+%           .fracUnclass    : Fraction of unclassified tracks.
+%           .fracConf       : Among the classified tracks, fraction of confined.
+%           .fracBrown      : //, fraction of Brownian.
+%           .fracDir        : //, fraction of directed.
+%           .diffCoef       : Average diffusion coefficient.
+%           .confRad        : Average confinement radius.
+%                        Each field contains 2 sub-fields, "values" and
+%                        "numPoints" storing the values of the properties
+%                        and the number of points contributing to each
+%                        value, respectively.
+%                        Each of these fields is a 3-D matrix, of
+%                        dimensions (number of bands) x (number of windows)
+%                        x (number of window frames-1).
+%       tracksInWindow : Output of assignTracks2Windows. Cell array of
+%                        dimensions (number of bands) x (number of windows)
+%                        x (number of window frames-1) storing the track 
+%                        indices that fall in each window in each frame.
 %
 %REMARKS This code is designed for experiments where the particle
 %        trajectories are sampled much more frequently than the cell edge.
@@ -69,9 +73,6 @@ end
 %get the number of windows in each dimension
 [numWinPerp,numWinPara,numWinFrames] = size(winPositions);
 
-%define number of properties to be calculated
-numProperties = 8;
-
 %determine the number of SPT frames between window frames
 numSPTFrames = mean(diff(winFrames));
 
@@ -90,6 +91,9 @@ if isstruct(tracksFinal)
     tracksFinal = convStruct2MatIgnoreMS(inputStructure);
 end
 
+%divide the trajectories among the windows
+tracksInWindow = assignTracks2Windows(tracksFinal,winPositions,winFrames);
+
 %% Particle behavior pre-processing
 
 %From diffusion analysis ...
@@ -102,7 +106,7 @@ trajClass = trajClass(:,2);
 diffCoefGen = catStruct(1,'diffAnalysisRes.fullDim.genDiffCoef(:,3)');
 
 %get confinement radii
-confRad = catStruct(1,'diffAnalysisRes.confRadInfo.confRadius(:,1)');
+confRadAll = catStruct(1,'diffAnalysisRes.confRadInfo.confRadius(:,1)');
 
 %From tracks directly ...
 
@@ -142,11 +146,10 @@ end
 
 %% Calculate property values per window
 
-%divide the trajectories among the windows
-tracksInWindows = assignTracks2Windows(tracksFinal,winPositions,winFrames);
-
 %initialize output variables
-behaviorInWindows = NaN(numWinPerp,numWinPara,numWinFrames-1,numProperties);
+[spDensity,f2fDisp,fracUnclass,fracConf,fracBrown,fracDir,diffCoef,...
+    confRad] = deal(struct('values',NaN(numWinPerp,numWinPara,numWinFrames-1),...
+    'numPoints',zeros(numWinPerp,numWinPara,numWinFrames-1)));
 
 %go over all windows and calculate particle properties in each
 for iFrame = 1 : numWinFrames-1
@@ -154,41 +157,65 @@ for iFrame = 1 : numWinFrames-1
         for iPerp = 1 : numWinPerp
             
             %get the tracks belonging to this window
-            tracksCurrent = tracksInWindows{iPerp,iPara,iFrame};
+            tracksCurrent = tracksInWindow{iPerp,iPara,iFrame};
             numTracksCurrent = length(tracksCurrent);
             
             %if there are tracks in this window ...
             if numTracksCurrent ~= 0
                 
+                %From the tracks directly ...
+                
+                %calculate the average particle density
+                spDensity.values(iPerp,iPara,iFrame) = sum(trackLft(tracksCurrent)) / ...
+                    winSize(iPerp,iPara,iFrame) / numSPTFrames;
+                spDensity.numPoints(iPerp,iPara,iFrame) = numTracksCurrent;
+                
+                %calculate the average frame-to-frame displacement
+                f2fDisp.values(iPerp,iPara,iFrame) = nanmean(frame2frameDisp(tracksCurrent));
+                f2fDisp.numPoints(iPerp,iPara,iFrame) = numTracksCurrent;
+                
+                %From the diffusion analysis ...
+
                 %calculate the fraction of tracks in each motion category
                 trajClassCurrent = trajClass(tracksCurrent);
-                fracUnClass = length(find(isnan(trajClassCurrent)))/numTracksCurrent; %unclassified tracks
+                fracUnclass.values(iPerp,iPara,iFrame) = ...
+                    length(find(isnan(trajClassCurrent)))/numTracksCurrent; %unclassified tracks
+                fracUnclass.numPoints(iPerp,iPara,iFrame) = numTracksCurrent;
+
                 trajClassCurrent = trajClassCurrent(~isnan(trajClassCurrent)); %classified tracks
+                numTracksClass = length(trajClassCurrent);
                 if ~isempty(trajClassCurrent)
                     fracClass = hist(trajClassCurrent,(1:3))/length(trajClassCurrent);
-                else
-                    fracClass = NaN(1,3);
+                    fracConf.values(iPerp,iPara,iFrame) = fracClass(1);
+                    fracConf.numPoints(iPerp,iPara,iFrame) = numTracksClass;
+                    fracBrown.values(iPerp,iPara,iFrame) = fracClass(2);
+                    fracBrown.numPoints(iPerp,iPara,iFrame) = numTracksClass;
+                    fracDir.values(iPerp,iPara,iFrame) = fracClass(3);
+                    fracDir.numPoints(iPerp,iPara,iFrame) = numTracksClass;
                 end
                 
                 %calculate the average diffusion coefficient
-                diffCoefAve = nanmean(diffCoefGen(tracksCurrent));
+                tmpVec = diffCoefGen(tracksCurrent);
+                tmpVec = tmpVec(~isnan(tmpVec));
+                diffCoef.values(iPerp,iPara,iFrame) = mean(tmpVec);
+                diffCoef.numPoints(iPerp,iPara,iFrame) = length(tmpVec);
                 
                 %calculate the average confinement radius
-                confRadAve = nanmean(confRad(tracksCurrent));
-                
-                %calculate the average frame-to-frame displacement
-                f2fDispAve = nanmean(frame2frameDisp(tracksCurrent));
-                
-                %calculate the average particle density
-                partDensity = sum(trackLft(tracksCurrent)) / ...
-                    winSize(iPerp,iPara,iFrame) / numSPTFrames;
-                
-                %store all properties in output cell array
-                behaviorInWindows(iPerp,iPara,iFrame,:) = [fracUnClass ...
-                    fracClass diffCoefAve confRadAve f2fDispAve partDensity];
-            end
+                tmpVec = confRadAll(tracksCurrent);
+                tmpVec = tmpVec(~isnan(tmpVec));
+                confRad.values(iPerp,iPara,iFrame) = mean(tmpVec);
+                confRad.numPoints(iPerp,iPara,iFrame) = length(tmpVec);
+
+            end %(if numTracksCurrent ~= 0)
             
-        end
-    end
-end
+        end %(for iPerp = 1 : numWinPerp)
+    end %(for iPara = 1 : numWinPara)
+end %(for iFrame = 1 : numWinFrames-1)
+
+%store all properties in output structure
+sptPropInWindow = struct('spDensity',spDensity,'f2fDisp',f2fDisp,...
+    'fracUnclass',fracUnclass,'fracConf',fracConf,'fracBrown',fracBrown,...
+    'fracDir',fracDir,'diffCoef',diffCoef,'confRad',confRad);
+
+
 

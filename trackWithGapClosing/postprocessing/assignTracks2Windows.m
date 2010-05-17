@@ -1,8 +1,8 @@
-function tracksInWindows = assignTracks2Windows(tracksFinal,winPositions,...
+function tracksInWindow = assignTracks2Windows(tracksFinal,winPositions,...
     winFrames)
 %ASSIGNTRACKS2WINDOWS groups tracks into spatial and temporal windows derived from the cell edge
 %
-%SYNOPSIS tracksInWindows = assignTracks2Windows(tracksFinal,winPositions,...
+%SYNOPSIS tracksInWindow = assignTracks2Windows(tracksFinal,winPositions,...
 %    winFrames)
 %
 %INPUT  tracksFinal    : The tracks, either in structure format (e.g.
@@ -12,8 +12,8 @@ function tracksInWindows = assignTracks2Windows(tracksFinal,winPositions,...
 %                        Hunter's old windowing function.
 %       winFrames      : The frames at which there are windows.
 %
-%OUTPUT tracksInWindows: Cell array of dimensions (number of bands) x
-%                        (number of windows) x (number of window frames -1)
+%OUTPUT tracksInWindow : Cell array of dimensions (number of bands) x
+%                        (number of windows) x (number of window frames-1)
 %                        storing the track indices that fall in each window
 %                        in each frame.
 %
@@ -81,7 +81,7 @@ end
 
 %initialize cell array storing the grouping of tracks into windows for
 %each frame range
-tracksInWindows = cell(numWinPerp,numWinPara,numWinFrames-1);
+tracksInWindow = cell(numWinPerp,numWinPara,numWinFrames-1);
 
 %go over all window frames
 for iWinFrame = 1 : numWinFrames - 1
@@ -114,7 +114,7 @@ for iWinFrame = 1 : numWinFrames - 1
             indxWin = indxFrameRange(indxWin);
             
             %store track indices in cell array
-            tracksInWindows{iPerp,iPara,iWinFrame} = indxWin;
+            tracksInWindow{iPerp,iPara,iWinFrame} = indxWin;
             
         end
     end
