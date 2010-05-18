@@ -24,7 +24,7 @@ function varargout = setupMovieDataGUI(varargin)
 
 % Edit the above text to modify the response to help setupMovieDataGUI
 
-% Last Modified by GUIDE v2.5 12-May-2010 22:27:12
+% Last Modified by GUIDE v2.5 17-May-2010 15:03:56
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -75,11 +75,9 @@ pp =1;
 switch pp
     case 1
 userData.firstPackageName = 'BioSensorsPackage';
-userData.firstPackageCtr = @BioSensorsPackage;
 userData.firstPackageGUI = @biosensorsPackageGUI;
     case 2
 userData.firstPackageName = 'TestPackage';
-userData.firstPackageCtr = @TestPackage;
 userData.firstPackageGUI = @biosensorsPackageGUI;        
 end
 
@@ -138,7 +136,22 @@ if isempty (get(handles.uipanel_1, 'SelectedObject'));
         'Please select a method','modal');
     return;
 end
-    
+
+% Check output directory 
+outputDir = get(handles.edit_output, 'String');
+
+if isempty(outputDir)
+    errordlg('Please provide an output path to save your results', ...
+                    'User Input Error', 'modal');
+    return;    
+end
+
+if ~exist(outputDir, 'dir')
+    errordlg('Please provide an valid path to save your results', ...
+                    'User Input Error', 'modal');
+    return; 
+end
+
 switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
     
     case 'radiobutton_1'
@@ -174,7 +187,7 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
         
         % Creat the movieData object (try/catch block) -------------!!!
         try
-        MD = MovieData(channelPath,pixelSize,timeInterval,path,file,notes);
+        MD = MovieData(channelPath,pixelSize,timeInterval,path,file,notes,outputDir);
         catch ME
             errordlg([ME.message ' Input data is not saved.'],...
                 'User Input Error','modal');
@@ -193,16 +206,14 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
             return;
         end
         
-%         save([path file], 'MD');
-%       disp('Input data has been saved');
-        % Save MovieDate as GUI data
+        % Set MovieDate as GUI data
         userData.MD = MD;
         set(handles.figure1,'UserData',userData);
         guidata(hObject, handles);
 
     case 'radiobutton_2'
         
-        % Sanity check will be done in callback fcn of pushbutton_open 
+        % Movie Data sanity check has be done in callback fcn of pushbutton_open 
         % Go to the first package
         if isempty(userData.MD)
             errordlg(['Movie data has not been sucessfully loaded. Please' ...
@@ -211,108 +222,26 @@ switch get(get(handles.uipanel_1, 'SelectedObject'), 'tag')
             return;
         end
         
-        % handles to the same MovieData object
         MD = userData.MD;
         
     otherwise
         error('User-defined: unexpected radio button has been selected');
 end
 
-% Go to the first package, call the control panel window
-% handle.MD and MD are handles of the same MovieData object. Use MD for
-% convenience
-disp('Continue to the first package');
-
-% I. Before going to the first package, firstly check if the first package
-% already exists    
-packageExist = false;
-
-if isempty(MD.packages_)
-    % create a new package object
-    MD.addPackage( userData.firstPackageCtr(MD) );
-    % Set the current package to the newly created package
-    userData.nextPackage = MD.packages_{1};
-
-else
-    % find existing package
-
-    for i = 1: length(MD.packages_)
-        if strcmp(class(MD.packages_{i}), userData.firstPackageName)
-            % TODO: dlg box: previous package exists; Save package and
-            % proceeds  
-            userData.nextPackage = MD.packages_{i};
-            packageExist = true;
-            break;
-        end
-    end
-    
-    if ~packageExist
-        % No same package is found.. create a new package object
-        MD.addPackage( userData.firstPackageCtr(MD) )
-        userData.nextPackage = MD.packages_{end};
-    end
-end
-
-% II. Before going to the first package, secondly check if existing
-% processes can be recycled. New package has no processes in it.
-if ~packageExist && ~isempty(MD.processes_)
-    for i = 1: length(userData.nextPackage.processClassNames_)
-        % ith process in package's process list
-        % 'sameProcID' save the ID of existing processes in MovieData that 
-        % could be recycled by current package. 
-
-        sameProcID = [];
-        sameProcName = {};
-        for j = 1: length(MD.processes_)
-            % jth available process in MovieData's process pool
-           if strcmp(class(MD.processes_{j}), ...
-                        userData.nextPackage.processClassNames_{i}) 
-                sameProcID = horzcat (sameProcID, j);
-                sameProcName = horzcat(sameProcName, ...
-                                            {MD.processes_{j}.name_});
-           end
-        end
-        if ~isempty(sameProcID)
-            [select, ok] = listdlg('ListString', sameProcName, ...
-                 'SelectionMode','single','ListSize',[420 200], ...
-                 'Name','Select an existing process','PromptString', ...
-                 {['There are existing ',sameProcName{1},' processes saved during previous sessions. You can choose to:'],...
-                 '',...
-                 '1. Use one of the following existing processes by click ''Select''',...
-                 '2. click ''New'' to start over this process'} , ...
-                 'OKString','Select','CancelString','New'); 
-             if ok 
-                 % Add process to current package
-                 userData.nextPackage.setProcess(i,MD.processes_{sameProcID(select)});
-             end
-        end
-    end
-end
 
 % Save MovieData
 save([MD.movieDataPath_ MD.movieDataFileName_], 'MD');
 
-% If package panel exist
+% If setupMovieDataGUI is called from package panel 
 if isfield(userData, 'mainFig');
-   userData_main = get(userData.mainFig, 'userdata');
-   
+    
+    setappdata(userData.mainFig, 'setupMovieDataFlag', 0);
+    
+    delete(userData.mainFig);
+    userData.firstPackageGUI(MD)
 
-    userData_main.MD = MD;
     
-    % Handle of current package 
-    for i = 1: length(userData_main.MD.packages_)
-        if isa(userData_main.MD.packages_{i}, userData.firstPackageName)
-            userData_main.crtPackage = userData_main.MD.packages_{i};
-            break;
-        end
-    end
-    
-    % Dependency matrix is defined in BioSensorsPackage class
-    userData_main.dependM = userData_main.crtPackage.depMatrix_;
-    
-    set(userData.mainFig, 'userdata', userData_main)
-    % TODO .. package sanity check and enable/disable set-up
-else
+elseif get(handles.checkbox_continue, 'Value')
 
     userData.firstPackageGUI(MD);
 end
@@ -461,7 +390,10 @@ set(handles.edit_mat,'String',[pathname,filename]);
 set(handles.listbox_2,'String',MD.channelPath_);
 set(handles.edit_ps2,'String',MD.pixelSize_);
 set(handles.edit_ti2,'String',MD.timeInterval_);
-set(handles.edit_notes,'String',MD.notes_)
+set(handles.edit_notes,'String',MD.notes_);
+
+set(handles.edit_output,'String',MD.outputDirectory_);
+
 try
 % Sanity check of saved movie data 
 MD.sanityCheck( pathname,filename,false );       
@@ -812,6 +744,51 @@ delete(hObject);
 function figure1_DeleteFcn(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
 
-if isfield(userData, 'mainFig');
-   setappdata(userData.mainFig, 'setupMovieDataFlag', 0); 
+if isfield(userData, 'mainFig') && ishandle(userData.mainFig)
+
+        setappdata(userData.mainFig, 'setupMovieDataFlag', 0); 
+
 end
+
+
+% --- Executes on button press in checkbox_continue.
+function checkbox_continue_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_continue (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_continue
+
+
+
+function edit_output_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_output (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_output as text
+%        str2double(get(hObject,'String')) returns contents of edit_output as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_output_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_output (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in pushbutton_output.
+function pushbutton_output_Callback(hObject, eventdata, handles)
+
+pathname = uigetdir(pwd);
+if isnumeric(pathname)
+    return;
+end
+
+set(handles.edit_output, 'String', pathname);

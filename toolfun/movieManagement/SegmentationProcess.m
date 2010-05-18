@@ -9,24 +9,25 @@ classdef SegmentationProcess < Process
     end
     
     methods (Access = public)
-        function obj = SegmentationProcess (owner,funName, funParams,...
+        function obj = SegmentationProcess (owner,name,funName, funParams,...
                         maskPaths)
            % Constructor of class SegmentationProcess
            if nargin == 0
               super_args = {};
            else
                super_args{1} = owner;
-               super_args{2} = mfilename('class');                
+               super_args{2} = name;                
            end
            % Call the superclass constructor - these values are private
            obj = obj@Process(super_args{:});
-           if nargin > 1
-               obj.funName_ = funName;               
-           end
+
            if nargin > 2
+               obj.funName_ = funName;                              
+           end
+           if nargin > 3
               obj.funParams_ = funParams;              
            end
-           if nargin > 3               
+           if nargin > 4               
               if ~isempty(maskPaths) && numel(maskPaths) ...
                       ~= numel(owner.channelPath_) || ~iscell(maskPaths)
                  error('lccb:set:fatal','Mask paths must be a cell-array of the same size as the number of image channels!\n\n'); 
@@ -36,9 +37,31 @@ classdef SegmentationProcess < Process
                obj.maskPaths_ = cell(1,numel(owner.channelPath_));               
            end
         end
-        function sanityCheck(obj) % throw exception
+        function sanityCheck(obj) % throws exception
             % Sanity Check
-            disp('Sanity check passes');
+            
+            % Get output directory 
+            
+            for i = 1: length(obj.maskPaths_)
+                if ~isempty(obj.maskPaths_{i})
+                    if ~exist(obj.maskPaths_{i}, 'dir')
+                        error('lccb:set:fatal','Cannot find mask paths %s.\n\n', ...
+                                obj.maskPaths_{i});
+                    end
+                    
+                    % Number of raw image files
+                    fileNames = imDir(obj.owner_.channelPath_{i}, true);
+                    
+                    % Number of mask image files
+                    maskFileNames = imDir(obj.maskPaths_{i}, true);
+                    
+                    if length(fileNames) ~= length(maskFileNames)
+                        error('lccb:set:fatal', 'The number of masks in %s is inconsistent with the number of input images in %s.\n\n',...
+                            obj.maskPaths_{i}, obj.owner_.channelPath_{i});
+                    end
+                    
+                end
+            end
             % Check mask path for each channel
             % ... ...
         end

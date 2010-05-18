@@ -15,12 +15,14 @@ classdef  MovieData < handle
         movieDataFileName_
         notes_
         createTime_
+        
+        outputDirectory_
 
     end
 
     methods
         function obj = MovieData(channelPath, pixelSize, timeInterval,...
-                movieDataPath, movieDataFileName, notes) % throws exception
+                movieDataPath, movieDataFileName, notes, outputDir) % throws exception
             % MovieManager construntor
             if nargin > 0
                 
@@ -58,6 +60,9 @@ classdef  MovieData < handle
                 obj.notes_ = notes;
                 obj.createTime_ = clock;
                 
+                obj.outputDirectory_ = outputDir;
+               
+               
             end
         end
         % MovieData Sanity Check
@@ -88,7 +93,7 @@ classdef  MovieData < handle
             nFrames = zeros(length(obj.channelPath_),1);
             for i=1:length(obj.channelPath_)
                 % II. Check that every channelPath exists
-                if isempty( dir(obj.channelPath_{i}) )
+                if ~exist(obj.channelPath_{i}, 'dir')
                     % Exception: 
                     error('LCCB:SanMD:NoPath',...
                         ['One or more channel paths do not exist. '...

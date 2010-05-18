@@ -28,8 +28,8 @@ classdef Package < handle
     end
     
     methods (Access = protected)
-        function obj = Package(owner, name, depMatrix, processClassNames,...
-                                outputDirectory)
+        function obj = Package(owner, name, depMatrix, processClassNames, ...
+                outputDirectory)
             % Constructor of class Package
             
             if nargin > 0
@@ -79,12 +79,15 @@ classdef Package < handle
                 full = true;
                 procID = 1:nProcesses;
             end
+            
             if nargin < 3
                procID = 1:nProcesses ;
             end
+            
             if strcmp(procID,'all')
                 procID = 1:nProcesses;
             end
+            
             if any(procID > nProcesses)
                 error('User-defined: process id exceeds number of processes');
             end
@@ -121,8 +124,8 @@ classdef Package < handle
                         obj.processes_{i}.setUpdated (false);
                         % Create an dependency error exception
                         ME = MException('lccb:paraChanged:warn',...
-                            ['The current step is out of date. Parameters of process ', ...
-                            obj.processes_{i}.name_,' have been',...
+                            ['The current step is out of date. Parameters of step ', num2str(i),...
+                            ' ',obj.processes_{i}.name_,' have been',...
                             ' changed.']);
                         % Add para exception to the ith process
                         processExceptions{i} = horzcat(processExceptions{i}, ME);                           
@@ -168,7 +171,7 @@ classdef Package < handle
                         obj.processes_{i}.setUpdated (false);
                         % Create a dependency error exception
                         ME = MException('lccb:depe:warn', ...
-   ['The current step is out of date because the predecessor steps this step depends on are out of date.'...
+   ['The current step is out of date because the predecessor steps that this step depends on are out of date.'...
     'Please run again to update your result.']);
                         % Add dependency exception to the ith process
                         processExceptions{i} = ...
