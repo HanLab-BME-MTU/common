@@ -20,7 +20,7 @@ classdef  MovieData < handle
 
     end
 
-    methods
+    methods (Access = public)
         function obj = MovieData(channelPath, pixelSize, timeInterval,...
                 movieDataPath, movieDataFileName, notes, outputDir) % throws exception
             % MovieManager construntor
@@ -214,6 +214,11 @@ classdef  MovieData < handle
                 delete(obj.packages_{i});
                 obj.packages_{i} = package;
         end
+        
+        function setNotes (obj, text)
+            obj.notes_ = text;
+        end
+        
         function fileNames = getImageFileNames(obj,iChan)
             if isnumeric(iChan) && min(iChan)>0 && max(iChan) <= ...
                     numel(obj.channelPath_) && isequal(round(iChan),iChan)                
