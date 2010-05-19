@@ -98,10 +98,17 @@ set(handles.figure1,'UserData',userData);
 % If GUI is called by package control panel (called by menu 'New' or 'Open')
 if nargin > 3
     t = find(strcmp(varargin,'mainFig'));
+    if isempty(t)
+        error('User-defined: input error, correct statement: setupMovieDataGUI(''mainFig'',handles.figure1)');
+    end
     userData.mainFig = varargin{t+1};
     
     % Notify control panel that setupMovieData GUI is open
     setappdata(userData.mainFig, 'setupMovieDataFlag', 1);
+    
+    % 'Continue to package' checkbox set to invisible, which is an obvious
+    % case
+    set(handles.checkbox_continue, 'Visible', 'off');
 
 end
 
@@ -232,27 +239,45 @@ end
 % Save MovieData
 save([MD.movieDataPath_ MD.movieDataFileName_], 'MD');
 
-% If setupMovieDataGUI is called from package panel 
-if isfield(userData, 'mainFig');
+% If setupMovieDataGUI is called from package panel, and package GUI has
+% Movie Data loaded
+if isfield(userData, 'mainFig') && ...
+        isfield(get(userData.mainFig, 'Userdata'), 'MD')
     
-    setappdata(userData.mainFig, 'setupMovieDataFlag', 0);
+    userData_main = get(userData.mainFig, 'Userdata');
+    MD_main = userData_main.MD;
     
-    delete(userData.mainFig);
-    userData.firstPackageGUI(MD)
+    user_response = questdlg(['Before loading the new movie data, do you want to save the current progress to ',MD_main.movieDataFileName_,'?'], ...
+    'BioSensors Package Control Panel');
 
+    switch lower(user_response)
+        case 'yes'
+            save([MD_main.movieDataPath_ MD_main.movieDataFileName_], 'MD');
+            
+            setappdata(userData.mainFig, 'setupMovieDataFlag', 0);
+            delete(userData.mainFig);
+            userData.firstPackageGUI(MD);
+            
+            delete(handles.figure1);
+            
+        case 'no'
+            setappdata(userData.mainFig, 'setupMovieDataFlag', 0);
+            delete(userData.mainFig);
+            userData.firstPackageGUI(MD);    
+            
+            delete(handles.figure1);
+            
+        case 'cancel'
+            % Save user data
+            set(handles.figure1,'UserData', userData);
+            guidata(hObject, handles);
+    end
     
 elseif get(handles.checkbox_continue, 'Value')
 
     userData.firstPackageGUI(MD);
+    delete(handles.figure1);
 end
-
-% Save user data
-set(handles.figure1,'UserData', userData);
-guidata(hObject, handles);
-
-% Delete setupMovieData GUI
-delete(handles.figure1);
-
 
 
 
