@@ -282,7 +282,7 @@ if plotResults
     %plot mean and std of first fitted Gaussian in 3rd sub-plot
     subplot(4,1,3)
     hold on
-    if any(~isnan(allGaussMean))
+    if any(~isnan(allGaussMean(:)))
         plot(allGaussMean(1,:),'k')
         plot(allGaussStd(1,:),'r')
         axis([0 numFrames 0 1.1*max([allGaussMean(1,:) allGaussStd(1,:)])]);

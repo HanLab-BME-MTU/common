@@ -74,7 +74,7 @@ end
 [numWinPerp,numWinPara,numWinFrames] = size(winPositions);
 
 %determine the number of SPT frames between window frames
-numSPTFrames = mean(diff(winFrames));
+numSPTFrames = winFrames(2) - winFrames(1);
 
 %% Trajectory pre-processing
 
@@ -84,15 +84,18 @@ indx = chooseTracks(tracksFinal,criteria);
 tracksFinal = tracksFinal(indx,:);
 diffAnalysisRes = diffAnalysisRes(indx);
 
-%convert tracksFinal into matrix if it's a structure
-inputStructure = tracksFinal;
-if isstruct(tracksFinal)
-    clear tracksFinal
-    tracksFinal = convStruct2MatIgnoreMS(inputStructure);
-end
+% %convert tracksFinal into matrix if it's a structure
+% inputStructure = tracksFinal;
+% if isstruct(tracksFinal)
+%     clear tracksFinal
+%     tracksFinal = convStruct2MatIgnoreMS(inputStructure);
+% end
+
+%get number of trajectories
+numTracks = length(indx);
 
 %divide the trajectories among the windows
-tracksInWindow = assignTracks2Windows(tracksFinal,winPositions,winFrames);
+tracksInWindow = assignTracks2Windows(tracksFinal,winPositions,winFrames,1);
 
 %% Particle behavior pre-processing
 
@@ -110,15 +113,51 @@ confRadAll = catStruct(1,'diffAnalysisRes.confRadInfo.confRadius(:,1)');
 
 %From tracks directly ...
 
-%extract the x- and y-coordinates from the track matrix
-xCoord = tracksFinal(:,1:8:end);
-yCoord = tracksFinal(:,2:8:end);
-
-%calculate the average frame-to-frame displacemt per track
-frame2frameDisp = nanmean( sqrt( diff(xCoord,[],2).^2 + diff(yCoord,[],2).^2 ) ,2);
+%get the average frame-to-frame displacement
+if isstruct(tracksFinal) %if tracks are in structre format
+    
+    %reserve memory for frame-to-frame displacement
+    frame2frameDisp = NaN(length(trajClass),1);
+    
+    %initialize global segment index
+    iSeg = 0;
+    
+    %go over all compound tracks
+    for iTrack = 1 : numTracks
+        
+        %get current track's coordinates
+        trackCoordCurrent = tracksFinal(iTrack).tracksCoordAmpCG;
+        xCoord = trackCoordCurrent(:,1:8:end);
+        yCoord = trackCoordCurrent(:,2:8:end);
+        
+        %calculate average frame-to-frame displacement
+        f2fDispCurrent = nanmean( sqrt( diff(xCoord,[],2).^2 + diff(yCoord,[],2).^2 ) ,2);
+        
+        %get number of segments in this compound track
+        numSeg = length(f2fDispCurrent);
+        
+        %store in big vector
+        frame2frameDisp(iSeg+1:iSeg+numSeg) = f2fDispCurrent;
+        
+        %update global segment index
+        iSeg = iSeg + numSeg;
+        
+    end
+    
+    
+else %if tracks are in matrix format
+    
+    %extract the x- and y-coordinates from the track matrix
+    xCoord = tracksFinal(:,1:8:end);
+    yCoord = tracksFinal(:,2:8:end);
+    
+    %calculate the average frame-to-frame displacemt per track
+    frame2frameDisp = nanmean( sqrt( diff(xCoord,[],2).^2 + diff(yCoord,[],2).^2 ) ,2);
+    
+end
 
 %get the lifetime of each track
-trackLft = getTrackSEL(tracksFinal);
+trackLft = getTrackSEL(tracksFinal,1);
 trackLft = trackLft(:,3);
 
 %% Window pre-processing

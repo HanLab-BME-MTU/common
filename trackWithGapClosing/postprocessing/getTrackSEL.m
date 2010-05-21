@@ -1,4 +1,4 @@
-function trackSEL = getTrackSEL(trackedFeatureInfo)
+function trackSEL = getTrackSEL(trackedFeatureInfo,segmentSEL)
 %GETTRACKSEL outputs track start times, end times and lifetimes
 %
 %SYNOPSIS trackSEL = getTrackSEL(trackedFeatureInfo);
@@ -20,6 +20,15 @@ function trackSEL = getTrackSEL(trackedFeatureInfo)
 %                           the number of tracks (or compound tracks when
 %                           merging/splitting are considered). Contains the
 %                           fields:
+%           .tracksFeatIndxCG: Connectivity matrix of features between
+%                              frames, after gap closing. Number of rows
+%                              = number of track segments in compound
+%                              track. Number of columns = number of frames
+%                              the compound track spans. Zeros indicate
+%                              frames where track segments do not exist
+%                              (either because those frames are before the
+%                              segment starts or after it ends, or because
+%                              of losing parts of a segment.
 %           .tracksCoordAmpCG: The positions and amplitudes of the tracked
 %                              features, after gap closing. Number of rows
 %                              = number of track segments in compound
@@ -39,6 +48,11 @@ function trackSEL = getTrackSEL(trackedFeatureInfo)
 %                                   number - start is due to a split, end
 %                                   is due to a merge, number is the index
 %                                   of track segment for the merge/split.
+%       segmentSEL        : Relevant only for tracks in structure format. 1
+%                           to get the times for the segments inside the
+%                           compound tracks, 0 to get the times for each
+%                           overall compound track.
+%                           Optional. Default: 0.
 %
 %OUTPUT trackSEL          : An array with 3 columns and number of rows equal
 %                           to number of (compound) tracks. 1st column 
@@ -68,6 +82,13 @@ if nargin < 1
     return
 end
 
+if nargin < 2 || isempty(segmentSEL)
+    segmentSEL = 0;
+end
+if segmentSEL == 1 && ~isstruct(trackedFeatureInfo)
+    segmentSEL = 0;
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Track information extraction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,19 +101,72 @@ else
 end
 
 %alocate memory for output
-trackSEL = zeros(numTracks,3);
+if segmentSEL
+    trackSEL = NaN(10*numTracks,3);
+else
+    trackSEL = NaN(numTracks,3);
+end
 
 %if input is in structure format
 if isstruct(trackedFeatureInfo)
-
-    %find track start times
-    for i=1:numTracks
-        trackSEL(i,1) = trackedFeatureInfo(i).seqOfEvents(1,1);
-    end
-
-    %find track end times
-    for i=1:numTracks
-        trackSEL(i,2) = trackedFeatureInfo(i).seqOfEvents(end,1);
+    
+    if segmentSEL
+        
+        %initialize global segment index
+        iSegGlob = 0;
+        
+        %go over all compound tracks
+        for i=1:numTracks
+            
+            %get track's sequence of events
+            seqOfEvents = trackedFeatureInfo(i).seqOfEvents;
+            
+            %get number of segments
+            numSeg = size(seqOfEvents,1) / 2;
+            
+            %get the track segments' start times
+            trackST = seqOfEvents(seqOfEvents(:,2)==1,1);
+            
+            %get rows storing segment end information
+            segEndRows = seqOfEvents(seqOfEvents(:,2)==2,:);
+            
+            %sort the rows in ascending order of segment number
+            [~,indxSort] = sort(segEndRows(:,3));
+            segEndRows = segEndRows(indxSort,:);
+            
+            %extract the track segments' end times
+            trackET = segEndRows(:,1);
+            
+            %for ends resulting from merges, subtract 1 from end time to
+            %get the real track segment end time
+            trackET(~isnan(segEndRows(:,4))) = ...
+                trackET(~isnan(segEndRows(:,4))) - 1;
+                        
+            %store segment start and end times
+            trackSEL(iSegGlob+1:iSegGlob+numSeg,1) = trackST;
+            trackSEL(iSegGlob+1:iSegGlob+numSeg,2) = trackET;
+            
+            %update global segment index
+            iSegGlob = iSegGlob + numSeg;
+            
+        end
+        
+        %remove all extra rows in trackSEL
+        lastIndxKeep = find(~isnan(trackSEL(:,1)),1,'last');
+        trackSEL = trackSEL(1:lastIndxKeep,:);
+        
+    else
+        
+        %find track start times
+        for i=1:numTracks
+            trackSEL(i,1) = trackedFeatureInfo(i).seqOfEvents(1,1);
+        end
+        
+        %find track end times
+        for i=1:numTracks
+            trackSEL(i,2) = trackedFeatureInfo(i).seqOfEvents(end,1);
+        end
+        
     end
 
 else %if input is a matrix
