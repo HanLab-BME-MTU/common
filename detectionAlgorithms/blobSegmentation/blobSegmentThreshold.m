@@ -1,4 +1,4 @@
-function maskBlobs = blobSegmentThreshold(image,minSize,plotRes)
+function maskBlobs = blobSegmentThreshold(image,minSize,plotRes,mask)
 %BLOBSEGMENTTHRESHOLD segments blobs in 2D images via combination of Otsu and Rosin thresholding
 %
 %SYNOPSIS maskBlobs = blobSegmentThreshold(image,minSize,plotRes)
@@ -8,6 +8,8 @@ function maskBlobs = blobSegmentThreshold(image,minSize,plotRes)
 %                   Optional. Default: 20 pixels.
 %       plotRes   : 1 to plot segmentation results, 0 otherwise.
 %                   Optional. Default: 0.
+%       mask      : Binary mask. Optional. If not provided, the whole image
+%                   domain is segmented.
 %
 %OUTPUT maskBlobs : Mask of blobs. 1 inside blobs, 0 outside.
 %
@@ -36,6 +38,15 @@ if nargin < 3 || isempty(plotRes)
     plotRes = 0;
 end
 
+%mask
+if nargin < 4 || isempty(mask)
+    mask = ones(size(image));
+end
+
+if ~logical(mask)
+    error('Mask must be a logical image.');
+end
+    
 %% Segmentation
 
 %make sure that image is in double format
@@ -51,6 +62,9 @@ imageBackground = Gauss2D(image,10,1);
 %calculate noise-filtered and background-subtracted image
 imageFilteredMinusBackground = imageFiltered - imageBackground;
 
+%crop image
+imageFilteredMinusBackground = imageFilteredMinusBackground .* mask;
+
 %enhance features by performing a maximum filter
 [sizeX,sizeY] = size(imageFilteredMinusBackground);
 imageDilated = imageFilteredMinusBackground;
@@ -65,16 +79,20 @@ imageTmp(:,:,8) = [[zeros(sizeX-1,1) imageDilated(1:end-1,2:end)]; zeros(1,sizeY
 imageTmp(:,:,9) = [[imageDilated(1:end-1,1:end-1) zeros(sizeX-1,1)]; zeros(1,sizeY)];
 imageDilated = max(imageTmp,[],3);
 
-%get minumum and maximum pixel values in image
-minSignal = min(imageDilated(:));
-maxSignal = max(imageDilated(:));
+% Find non zero values (due to masking)
+nzInd = find(imageDilated);
 
-%normalize image between 0 and 1
-imageDilatedNorm = (imageDilated - minSignal)/(maxSignal - minSignal);
+%get minumum and maximum pixel values in image
+minSignal = min(imageDilated(nzInd));
+maxSignal = max(imageDilated(nzInd));
+
+%normalize non zero value between 0 and 1
+imageDilatedNorm = zeros(size(imageDilated));
+imageDilatedNorm(nzInd) = (imageDilated(nzInd) - minSignal) / (maxSignal - minSignal);
 
 %estimate the intensity level to use for thresholding the image
-level1 = graythresh(imageDilatedNorm); %Otsu
-[dummy, level2] = cutFirstHistMode(imageDilatedNorm(:),0); %Rosin
+level1 = graythresh(imageDilatedNorm(nzInd)); %Otsu
+[dummy, level2] = cutFirstHistMode(imageDilatedNorm(nzInd),0); %Rosin
 level = 0.33333*level1 + 0.66667*level2;
 
 %threshold the image

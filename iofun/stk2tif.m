@@ -17,10 +17,7 @@ function stk2tif(filename)
 %
 % Sylvain Berlemont, 20th Jan 2009
 
-if nargin~=1
-    error('Please enter a valid (common) file name for the output files');
-end
-if isempty(filename)
+if nargin~=1 || isempty(filename)
     error('Please enter a valid (common) file name for the output files');
 end
 
