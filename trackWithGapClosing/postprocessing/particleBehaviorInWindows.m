@@ -84,13 +84,6 @@ indx = chooseTracks(tracksFinal,criteria);
 tracksFinal = tracksFinal(indx,:);
 diffAnalysisRes = diffAnalysisRes(indx);
 
-% %convert tracksFinal into matrix if it's a structure
-% inputStructure = tracksFinal;
-% if isstruct(tracksFinal)
-%     clear tracksFinal
-%     tracksFinal = convStruct2MatIgnoreMS(inputStructure);
-% end
-
 %get number of trajectories
 numTracks = length(indx);
 
@@ -170,14 +163,20 @@ for iFrame = 1 : numWinFrames-1
     for iPara = 1 : numWinPara
         for iPerp = 1 : numWinPerp
             
-            %get the window boundaries
-            winX = [winPositions(iPerp,iPara,iFrame).outerBorder(1,:) ...
-                winPositions(iPerp,iPara,iFrame).innerBorder(1,end:-1:1)]';
-            winY = [winPositions(iPerp,iPara,iFrame).outerBorder(2,:) ...
-                winPositions(iPerp,iPara,iFrame).innerBorder(2,end:-1:1)]';
-            
-            %calculate the window size
-            winSize(iPerp,iPara,iFrame) = polyarea(winX,winY);
+            %if this window has a finite size
+            if ~isempty(winPositions(iPerp,iPara,iFrame).outerBorder) ...
+                    && ~isempty(winPositions(iPerp,iPara,iFrame).innerBorder)
+                
+                %get the window boundaries
+                winX = [winPositions(iPerp,iPara,iFrame).outerBorder(1,:) ...
+                    winPositions(iPerp,iPara,iFrame).innerBorder(1,end:-1:1)]';
+                winY = [winPositions(iPerp,iPara,iFrame).outerBorder(2,:) ...
+                    winPositions(iPerp,iPara,iFrame).innerBorder(2,end:-1:1)]';
+                
+                %calculate the window size
+                winSize(iPerp,iPara,iFrame) = polyarea(winX,winY);
+                
+            end
             
         end
     end

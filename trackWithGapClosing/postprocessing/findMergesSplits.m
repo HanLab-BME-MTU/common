@@ -1,5 +1,5 @@
 function [mergesInfo,splitsInfo,mergesInfoSpace,splitsInfoSpace] = ...
-    findMergesSplits(tracks,probDim,removePotArtifacts,plotRes)
+    findMergesSplits(tracks,probDim,removePotArtifacts,plotRes,calcTrackType)
 %FINDMERGESSPLITS finds the merges and splits in each track and gives back their time and location
 %
 %SYNOPSIS [mergesInfo,splitsInfo,mergesInfoSpace,splitsInfoSpace] = ...
@@ -32,20 +32,25 @@ function [mergesInfo,splitsInfo,mergesInfoSpace,splitsInfoSpace] = ...
 %       probDim   : 2 for 2D, 3 for 3D. Optional. Default: 2.
 %       removePotArtifacts: 1 to remove potentially artifactual merges and
 %                   splits, resulting for instance from detection
-%                   artifact, 0 otherwise. 
+%                   artifacts, 0 otherwise. 
 %                   Optional. Default: 1.
 %       plotRes   : 0 to not plot anything, 1 to make a spatial map of
 %                   merges and splits.
 %                   Optional. Default: 0.
+%       calcTrackType: Estimate track type based on asymmetry. 1 to
+%                   estimate, 0 to not estimate. 
+%                   Optional. Default: 1.
 %
 %OUTPUT mergesInfo     : 2D array where first column indicates track number,
 %                        second column indicates track type (1 linear, 0 o.w.),
 %                        third column indicates number of merges, and 
 %                        subsequent columns indicate merge times.
+%                        Track type will be 0 if calcTrackType = 0.
 %       splitsInfo     : 2D array where first column indicates track number,
 %                        second column indicates track type (1 linear, 0 o.w.),
 %                        third column indicates number of splits, and 
 %                        subsequence columns indicate split times.
+%                        Track type will be 0 if calcTrackType = 0.
 %       mergesInfoSpace: 2D array that is a continuation of mergesInfoTime,
 %                        storing the (x,y,[z])-coordinates of each merge.
 %                        Every row corresponds to the same row in
@@ -85,6 +90,10 @@ if probDim ~= 2
     plotRes = 0;
 end
 
+if nargin < 5 || isempty(calcTrackType)
+    calcTrackType = 1;
+end
+
 %get number of tracks
 numTracks = length(tracks);
 
@@ -92,7 +101,11 @@ numTracks = length(tracks);
 numSegments = getNumSegmentsPerTrack(tracks);
 
 %estimate track types
-trackType = getTrackType(tracks,probDim);
+if calcTrackType
+    trackType = getTrackType(tracks,probDim);
+else
+    trackType = zeros(numTracks,1);
+end
 
 % %convert tracks from structure to matrix format
 % tracksMat = convStruct2MatIgnoreMS(tracks);
@@ -155,7 +168,7 @@ for iTrack = 1 : numTracks
     %get the track segments that are split from
     splitSegment = seqOfEvents(indxSplit,4);
     
-    %get the coordinates of each merge
+    %get the coordinates of each split
     splitCoords = [];
     for iSplit = 1 : length(indxSplit)
         splitCoords = [splitCoords ...
@@ -196,7 +209,6 @@ if plotRes
         case 2
             plotMergeSplitPositions2D(tracks,mergesInfo,splitsInfo,...
                 mergesInfoSpace,splitsInfoSpace)
-        case 3
     end
 end
 

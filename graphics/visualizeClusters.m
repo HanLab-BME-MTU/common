@@ -1,6 +1,8 @@
 
 function visualizeClusters(receptorClusters,receptorPositions,plotScheme,circleSize,newFigure)
 
+%Khuloud Jaqaman 2009
+
 if newFigure
     figure
 end
