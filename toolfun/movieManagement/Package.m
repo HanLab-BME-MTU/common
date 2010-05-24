@@ -51,9 +51,9 @@ classdef Package < handle
             % which is not caused by algorithm itself.
             %
             % The following steps will be checked in this function
-            %   1. The process itself has a problem
-            %   2. The parameters in the process setting panel have changed
-            %   3. The process that current process depends on has a
+            %   I. The process itself has a problem
+            %   II. The parameters in the process setting panel have changed
+            %   III. The process that current process depends on has a
             %      problem
             %
             % OUTPUT:
@@ -93,7 +93,11 @@ classdef Package < handle
             end
             
         if full
-            % Step 1: Check if the process itself has a problem
+            
+            % I: Check if the process itself has a problem
+            %
+            % 1. Process sanity check
+            % 2. Input directory
             for i = procID
                 if isempty(obj.processes_{i})
                     continue;
@@ -104,10 +108,38 @@ classdef Package < handle
                         % Add process exception to the ith process
                         processExceptions{i} = horzcat(processExceptions{i}, ME);
                     end
+                    
+                    parentIndex = find(obj.depMatrix_(i,:));
+
+                    for j = parentIndex
+                        
+                        tmp =setdiff(obj.processes_{i}.funParams_.ChannelIndex, ...
+                                    obj.processes_{j}.funParams_.ChannelIndex);
+                                
+                        if ~isempty( obj.processes_{j} ) && ~isempty(tmp)
+                            
+                            if length(tmp) ==1
+
+                                ME = MException('lccb:input:fatal',...
+                                    ['Input directory ',obj.owner_.channelPath_{tmp},...
+                                    ' is not processed in previous steps. Plese include this directory in previous steps and run again.']);
+                            else
+                                
+                                ME = MException('lccb:input:fatal',...
+                                    ['More than one input directories ',...
+                                    'are not processed in previous steps. Plese include these directories in previous steps and run again.']);
+                            end
+                            processExceptions{i} = horzcat(processExceptions{i}, ME); 
+                            break;
+                        end
+                    end
+                    
                 end
+                
             end
         end
-            % Step 2:
+        
+            % II:
             % Determine the pamameters are changed if satisfying the 
             % following two conditions:
             % A. Process has been successfully run (obj.success_ = true)
@@ -125,14 +157,15 @@ classdef Package < handle
                         % Create an dependency error exception
                         ME = MException('lccb:paraChanged:warn',...
                             ['The current step is out of date. Parameters of step ', num2str(i),...
-                            ' ',obj.processes_{i}.name_,' have been',...
+                            ' (',obj.processes_{i}.name_,') have been',...
                             ' changed.']);
                         % Add para exception to the ith process
                         processExceptions{i} = horzcat(processExceptions{i}, ME);                           
                     end
                 end 
             end
-            % Step 3: Check if the processes that current process depends
+            
+            % III: Check if the processes that current process depends
             % on have problems   
             for i = procID
                 if isempty(obj.processes_{i})
@@ -144,6 +177,7 @@ classdef Package < handle
             end
         end
     end
+    
     methods (Access = private)
         function [processExceptions, processVisited] = dfs_(obj, ...
                 i,processExceptions,processVisited)
@@ -154,6 +188,7 @@ classdef Package < handle
             else
                 for j = parentIndex
                     if ~isempty(obj.processes_{j}) && ~processVisited(j)
+                        
                          [processExceptions, processVisited] = ...
                         obj.dfs_(j, processExceptions,processVisited);
                     end
@@ -165,14 +200,16 @@ classdef Package < handle
                     % 2. Parent process has error OR parent process does
                     %    not exist
                     if obj.processes_{i}.success_ && ...
-          ( ~isempty(processExceptions{j}) || isempty(obj.processes_{j}) )
+                            ( ~isempty(processExceptions{j}) || isempty(obj.processes_{j}) )
                         
                         % Set process's updated=false
                         obj.processes_{i}.setUpdated (false);
+                        
                         % Create a dependency error exception
                         ME = MException('lccb:depe:warn', ...
-   ['The current step is out of date because the predecessor steps that this step depends on are out of date.'...
-    'Please run again to update your result.']);
+                                ['The current step is out of date because the predecessor steps that this step depends on are out of date.'...
+                                 'Please run again to update your result.']);
+
                         % Add dependency exception to the ith process
                         processExceptions{i} = ...
                                 horzcat(processExceptions{i}, ME); 

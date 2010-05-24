@@ -25,9 +25,18 @@ end
 try
     userData.crtPackage.processes_{i}.runProcess; % throws exception
 catch ME
+    
+    errorText = sprintf...
+        ('Runtime error! You may report the following error information to us:\n\n Identifier: %s\n Message: %s\n Errorfcn: %s\n Errorline: %u',...
+        ME.identifier,ME.message,ME.stack(1).name,ME.stack(1).line');
+    
     userData.crtPackage.processes_{i}.setSuccess(false);
-    userfcn_drawIcon(handles,'error',i,ME.message);
-    rethrow(ME);
+    userfcn_drawIcon(handles,'error',i,errorText);
+    
+    ME2 = MException('lccb:runtime:fatal', errorText);
+        
+    ME2 = addCause(ME2, ME);
+    throw(ME2);
 end
 
 userData.crtPackage.processes_{i}.setSuccess(true);
