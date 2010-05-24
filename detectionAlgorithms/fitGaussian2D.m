@@ -40,9 +40,9 @@ estIdx(regexp('xyAsc', ['[' mode ']'])) = true;
 
 [y,x] = ndgrid(ya, xa);
 p = lsqnonlin(@costGaussian, prmVect(estIdx), [], [], opts, data, x, y, prmVect, estIdx, mask);
+prmVect(estIdx) = p;
 G = gaussian2D(x, y, prmVect);
 
-prmVect(estIdx) = p;
 
 
 function [v, J] = costGaussian(p, data, x, y, prmVect, estIdx, mask)
