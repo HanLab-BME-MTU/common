@@ -122,12 +122,12 @@ classdef Package < handle
 
                                 ME = MException('lccb:input:fatal',...
                                     ['Input directory ',obj.owner_.channelPath_{tmp},...
-                                    ' is not processed in previous steps. Plese include this directory in previous steps and run again.']);
+                                    ' is not included in ',num2str(j),' step. Plese include this directory in ',num2str(j),' step or delete this input directory in current step.']);
                             else
                                 
                                 ME = MException('lccb:input:fatal',...
                                     ['More than one input directories ',...
-                                    'are not processed in previous steps. Plese include these directories in previous steps and run again.']);
+                                    'are not included in ',num2str(j),' step. Plese include these directories in ',num2str(j),' step or delete these input directories in current step.']);
                             end
                             processExceptions{i} = horzcat(processExceptions{i}, ME); 
                             break;
