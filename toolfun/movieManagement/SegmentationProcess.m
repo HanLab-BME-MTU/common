@@ -39,8 +39,8 @@ classdef SegmentationProcess < Process
         end
         function sanityCheck(obj) % throws exception
             % Sanity Check
-            
-            % Get output directory 
+            % 1. Check that non-empty mask paths exist
+            % 2. Check number of mask = number of raw images
             
             for i = 1: length(obj.maskPaths_)
                 if ~isempty(obj.maskPaths_{i})
@@ -59,11 +59,8 @@ classdef SegmentationProcess < Process
                         error('lccb:set:fatal', 'The number of masks in %s is inconsistent with the number of input images in %s.\n\n',...
                             obj.maskPaths_{i}, obj.owner_.channelPath_{i});
                     end
-                    
                 end
             end
-            % Check mask path for each channel
-            % ... ...
         end
         function setMaskPath(obj,chanNum,maskPath)           
             if isnumeric(chanNum) && chanNum > 0 && ...

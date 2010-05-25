@@ -36,7 +36,8 @@ catch ME
     ME2 = MException('lccb:runtime:fatal', errorText);
         
     ME2 = addCause(ME2, ME);
-    throw(ME2);
+%     throw(ME2);
+    rethrow(ME) %%
 end
 
 userData.crtPackage.processes_{i}.setSuccess(true);

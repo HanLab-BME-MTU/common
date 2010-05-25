@@ -118,12 +118,12 @@ end
 
 
 %Get the indices of any previous background mask processes from this function                                                                              
-iProc = find(cellfun(@(x)(isa(x,'RefineMaskProcess')),movieData.processes_),1);                          
+iProc = find(cellfun(@(x)(isa(x,'MaskRefinementProcess')),movieData.processes_),1);                          
 
 %If the process doesn't exist, create it
 if isempty(iProc)
     iProc = numel(movieData.processes_)+1;
-    movieData.addProcess(RefineMaskProcess(movieData));                                                                                                 
+    movieData.addProcess(MaskRefinementProcess(movieData));                                                                                                 
 end
 
 nChan = length(movieData.channelPath_);
@@ -233,7 +233,7 @@ for iChan = 1:nChan
             
             %Call the edge-refinement function
             currMask = refineMaskEdges(currMask,currImage,...
-                p.MaxEdgeAdjust,p.MaxEdgeGap,p.preEdgeGrow);
+                p.MaxEdgeAdjust,p.MaxEdgeGap,p.PreEdgeGrow);
             
             
         end
