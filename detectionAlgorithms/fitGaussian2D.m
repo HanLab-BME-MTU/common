@@ -39,8 +39,13 @@ estIdx = false(1,5); % [x y A s c]
 estIdx(regexp('xyAsc', ['[' mode ']'])) = true;
 
 [y,x] = ndgrid(ya, xa);
-p = lsqnonlin(@costGaussian, prmVect(estIdx), [], [], opts, data, x, y, prmVect, estIdx, mask);
-prmVect(estIdx) = p;
+if sum(estIdx)==1 && estIdx(3)==1
+    prmVect = A_CF_Gaussian(data, x, y, prmVect);
+else
+    p = lsqnonlin(@costGaussian, prmVect(estIdx), [], [], opts, data, x, y, prmVect, estIdx, mask);
+    prmVect(estIdx) = p;
+end
+
 G = gaussian2D(x, y, prmVect);
 
 
@@ -73,15 +78,16 @@ g_dc = ones(N,1);
 J = [reshape(g_dxp, [N 1]) reshape(g_dyp, [N 1]) reshape(g_dA, [N 1]) reshape(g_ds, [N 1]) g_dc];
 
 
+function prmVect = A_CF_Gaussian(data, x, y, prmVect)
+r2 = (x-prmVect(1)).^2+(y-prmVect(2)).^2;
+g_dA = exp(-r2/(2*prmVect(4)^2));
+prmVect(3) = abs(sum(sum((data-prmVect(5)).*g_dA)) / sum(sum(g_dA.^2)));
+
 
 
 % Functions that should be incorporated: bi-variate fitting
 
-% function [A] = A_CF_Gaussian(xp, yp, sigma, c, data)
-% [x,y] = ndgrid(0:size(data,2)-1,0:size(data,1)-1);
-% r2 = (x-xp).^2+(y-yp).^2;
-% g_dA = exp(-r2/(2*sigma^2));
-% A = sum(sum((data-c).*g_dA)) / sum(sum(g_dA.^2));
+
 
 % Bi-variate
 % function [xp yp A sigma c] = bv_LvMrq_Gaussian(xp, yp, A, sigma, c, data, opts)
