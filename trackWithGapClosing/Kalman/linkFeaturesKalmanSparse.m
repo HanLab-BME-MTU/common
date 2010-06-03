@@ -292,15 +292,15 @@ for iFrame = 1 : numFrames-1
     numFeaturesFrame2 = movieInfo(iFrame+1).num; %in 2nd frame
 
     if numFeaturesFrame1 ~= 0 %if there are features in 1st frame
-
+        
         if numFeaturesFrame2 ~= 0 %if there are features in 2nd frame
             
             %calculate cost matrix
             % -- USER DEFINED FUNCTION -- %
             eval(['[costMat,propagationScheme,kalmanFilterInfoTmp,nonlinkMarker]'...
-                ' = ' costMatName '(movieInfo(iFrame:iFrame+1),'...
-                'kalmanFilterInfo(iFrame),costMatParam,nnDistFeatures(1:numFeaturesFrame1,:),'...
-                'probDim,prevCostStruct,featLifetime);'])
+                ' = ' costMatName '(movieInfo,kalmanFilterInfo(iFrame),'...
+                'costMatParam,nnDistFeatures(1:numFeaturesFrame1,:),'...
+                'probDim,prevCostStruct,featLifetime,trackedFeatureIndx,iFrame);'])
 
             % % %             %for paper - get number of potential links per feature
             % % %             numPotLinksPerFeature = [numPotLinksPerFeature; sum(...
@@ -556,177 +556,10 @@ clear costMat tmp
 
 %store feature positions and amplitudes in a matrix that also shows their connectivities
 %information is stored as [x y z a dx dy dz da] in image coordinate system
+%trackedFeatureInfo is in sparse format
+trackedFeatureInfo = coordAmpMatFromIndicesSparse(trackedFeatureIndx,movieInfo,...
+    numFrames,probDim);
 
-%reserve space for matrix
-trackedFeatureInfo = sparse(zeros(size(trackedFeatureIndx,1),8*numFrames));
-% trackedFeatureInfo = NaN(size(trackedFeatureIndx,1),8*numFrames);
-
-%for now, the matrix always has space for z, hence I have to treat 2D and
-%3D differently.
-%at some point I can change the postprocessing functions to handle 2D and
-%3D differently, and so I can save them differently, in which case I won't
-%need the if-else here.
-if probDim ==2
-
-    %go over all frames
-    for iFrame = 1 : numFrames
-
-        %find rows that have a feature index
-        indx1 = find(trackedFeatureIndx(:,iFrame)~=0);
-
-        %if there are detected features in this frame
-        if ~isempty(indx1)
-
-            %find the feature index
-            indx2 = trackedFeatureIndx(indx1,iFrame);
-
-            %store its information
-            trackedFeatureInfo(indx1,8*(iFrame-1)+1:8*iFrame) = ...
-                [movieInfo(iFrame).allCoord(indx2,1:2:2*probDim) ...
-                zeros(length(indx2),1) movieInfo(iFrame).amp(indx2,1) ...
-                movieInfo(iFrame).allCoord(indx2,2:2:2*probDim) ...
-                zeros(length(indx2),1) movieInfo(iFrame).amp(indx2,2)];
-
-        end
-
-    end
-
-else
-
-    %go over all frames
-    for iFrame = 1 : numFrames
-
-        %find rows that have a feature index
-        indx1 = find(trackedFeatureIndx(:,iFrame)~=0);
-
-        %if there are detected features in this frame
-        if ~isempty(indx1)
-
-            %find the feature index
-            indx2 = trackedFeatureIndx(indx1,iFrame);
-
-            %store its information
-            trackedFeatureInfo(indx1,8*(iFrame-1)+1:8*iFrame) = ...
-                [movieInfo(iFrame).allCoord(indx2,1:2:2*probDim) ...
-                movieInfo(iFrame).amp(indx2,1) ...
-                movieInfo(iFrame).allCoord(indx2,2:2:2*probDim) ...
-                movieInfo(iFrame).amp(indx2,2)];
-
-        end
-
-    end
-
-end
 
 %% %%%%% ~~ the end ~~ %%%%%
 
-
-%old stuff
-%
-% nnDistTracks = movieInfo(1).nnDist;
-%                 tmpNN2(indx2C) = nnDistTracks(indx1C);
-%                 tmpNN2(numFeaturesFrame2+1:end) = nnDistTracks(indx1U);
-%                 nnDistTracks = tmpNN2;
-%                 tmpNN = max(1,iFrame+1-nnWindow);
-%                 nnDistTracks(1:numFeaturesFrame2) = min(nnDistFeatures...
-%                     (1:numFeaturesFrame2,tmpNN:end),[],2);
-%                 tmpNN2(numFeaturesFrame2+1:end) = nnDistTracks;
-%                 nnDistTracks = tmpNN2;
-%                 nnDistTracks(1:numFeaturesFrame2) = movieInfo(iFrame+1).nnDist;
-%             tmpNN2(numFeaturesFrame2+1:end) = nnDistTracks;
-%             nnDistTracks = tmpNN2;
-%             nnDistTracks(1:numFeaturesFrame2) = movieInfo(iFrame+1).nnDist;
-
-
-%                 %assign space for new connectivity matrix,
-%                 %for matrix of nearest neighbors of connected features,
-%                 %and for matrix of linking costs
-%                 tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2-length(indx2C),iFrame+1);
-%                 tmpNN = NaN(size(tmp));
-%                 tmpCost = NaN(size(tmp));
-%
-%                 %fill in the feature numbers in 2nd frame and their nearest
-%                 %neighbor distances
-%                 tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
-%                 tmpNN(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
-%
-%                 %fill in the linking costs for features in 2nd frame that
-%                 %got linked to features in 1st frame
-%                 for i = 1 : length(indx2C)
-%                     tmpCost(indx2C(i),iFrame+1) = costMat(indx1C(i),indx2C(i));
-%                 end
-%
-%                 %shuffle existing tracks to get the correct connectivity with 2nd frame
-%                 %also shuffle nearest neighbor distances and previous linking costs
-%                 tmp(indx2C,1:iFrame) = trackedFeatureIndx(indx1C,:);
-%                 tmpNN(indx2C,1:iFrame) = nnDistFeatures(indx1C,:);
-%                 tmpCost(indx2C,1:iFrame) = prevCost(indx1C,:);
-%
-%                 %add rows of tracks that are not connected to points in 2nd frame
-%                 %also add nearest neighbor distances and previous linking costs
-%                 tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx(indx1U,:);
-%                 tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures(indx1U,:);
-%                 tmpCost(numFeaturesFrame2+1:end,1:iFrame) = prevCost(indx1U,:);
-%
-%                 %update the connectivity matrix "trackedFeatureIndx"
-%                 trackedFeatureIndx = tmp;
-%
-%                 %update the nearest neighbor distances of connected features
-%                 nnDistFeatures = tmpNN;
-%
-%                 %update the matrix of previous linking costs
-%                 prevCost = tmpCost;
-
-%                 %assign space for new connectivity matrix,
-%                 %for matrix of nearest neighbors of connected features,
-%                 %and for matrix of linking costs
-%                 tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2,iFrame+1);
-%                 tmpNN = NaN(size(tmp));
-%                 tmpCost = NaN(size(tmp));
-%
-%                 %fill in the feature numbers in 2nd frame and their nearest
-%                 %neighbor distances
-%                 tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
-%                 tmpNN(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
-%
-%                 %fill in the tracks upto 1st frame, their nearest
-%                 %neighbor distances and their linking costs
-%                 tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx;
-%                 tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures;
-%                 tmpCost(numFeaturesFrame2+1:end,1:iFrame) = prevCost;
-%
-%                 %update the connectivity matrix "trackedFeatureIndx"
-%                 trackedFeatureIndx = tmp;
-%
-%                 %update the nearest neighbor distances of connected features
-%                 nnDistFeatures = tmpNN;
-%
-%                 %update the matrix of previous linking costs
-%                 prevCost = tmpCost;
-
-%             %assign space for new connectivity matrix,
-%             %for matrix of nearest neighbors of connected features,
-%             %and for matrix of linking costs
-%             tmp = zeros(size(trackedFeatureIndx,1)+numFeaturesFrame2,iFrame+1);
-%             tmpNN = NaN(size(tmp));
-%             tmpCost = NaN(size(tmp));
-%
-%             %fill in the feature numbers in 2nd frame and their nearest
-%             %neighbor distances
-%             tmp(1:numFeaturesFrame2,iFrame+1) = (1:numFeaturesFrame2)';
-%             tmpNN(1:numFeaturesFrame2,iFrame+1) = movieInfo(iFrame+1).nnDist;
-%
-%             %fill in the tracks upto 1st frame, their nearest
-%             %neighbor distances and their linking costs
-%             tmp(numFeaturesFrame2+1:end,1:iFrame) = trackedFeatureIndx;
-%             tmpNN(numFeaturesFrame2+1:end,1:iFrame) = nnDistFeatures;
-%             tmpCost(numFeaturesFrame2+1:end,1:iFrame) = prevCost;
-%
-%             %update the connectivity matrix "trackedFeatureIndx"
-%             trackedFeatureIndx = tmp;
-%
-%             %update the nearest neighbor distances of connected features
-%             nnDistFeatures = tmpNN;
-%
-%             %update the matrix of previous linking costs
-%             prevCost = tmpCost;

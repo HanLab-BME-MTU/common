@@ -1,14 +1,16 @@
 function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
     errFlag] = costMatLinearMotionLink2(movieInfo,kalmanFilterInfoFrame1,...
-    costMatParam,nnDistFeatures,probDim,prevCost,featLifetime)
+    costMatParam,nnDistFeatures,probDim,prevCost,featLifetime,...
+    trackedFeatureIndx,currentFrame)
 %COSTMATLINEARMOTIONLINK2 provides a cost matrix for linking features based on competing linear motion models
 %
 %SYNOPSIS [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %     errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
-%     costMatParam,nnDistFeatures,probDim,prevCost,featLifetime)
+%     costMatParam,nnDistFeatures,probDim,prevCost,featLifetime,...
+%     trackedFeatureIndx,currentFrame)
 %
-%INPUT  movieInfo             : A 2x1 array (corresponding to the 2 frames of
-%                               interest) containing the fields:
+%INPUT  movieInfo             : An nx1 array (n = number of frames in
+%                               movie) containing the fields:
 %             .allCoord           : x,dx,y,dy,[z,dz] of features collected in one
 %                                   matrix.
 %             .amp                : Amplitudes of PSFs fitting detected features.
@@ -56,6 +58,11 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %             .max                : Maximum previous linking cost.
 %      featLifetime           : Lengths of tracks that features in
 %                               first frame belong to.
+%      trackedFeatureIndx     : The matrix of feature index connectivity up
+%                               to current frame.
+%                               Currently not used in this cost function.
+%      currentFrame           : Current frame that is being linked to the
+%                               next frame.
 %
 %OUTPUT costMat               : Cost matrix.
 %       propagationScheme     : Propagation scheme corresponding to each
@@ -121,6 +128,9 @@ end
 frameNum = size(nnDistFeatures,2);
 tmpNN = max(1,frameNum-nnWindow);
 nnDistTracks = min(nnDistFeatures(:,tmpNN:end),[],2);
+
+%extract the two frames of interest from movieInfo
+movieInfo = movieInfo(currentFrame:currentFrame+1);
 
 %% Motion propagation
 

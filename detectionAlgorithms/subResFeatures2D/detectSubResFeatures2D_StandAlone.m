@@ -15,20 +15,34 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %           .psfSigma     : Initial guess for standard deviation of point
 %                           spread function (in pixels).
 %           .testAlpha    : Alpha-values for statistical tests in
-%                           detectSubResFeatures2D. Optional.
+%                           detectSubResFeatures2D.
 %                           (See detectSubResFeatures2D for details).
+%                           Optional. Default values 0.05.s
 %           .visual       : 1 if user wants to view results; 0 otherwise.
 %                           Optional. Default: 0.
 %           .doMMF        : 1 if user wants to do mixture-model fitting, 0
-%                           otherwise. Optional. Default: 1.
-%           .bitDepth     : Camera bit depth. Optional. Default: 14.
+%                           otherwise.
+%                           Optional. Default: 1.
+%           .bitDepth     : Camera bit depth.
+%                           Optional. Default: 16.
 %           .alphaLocMax  : Alpha value for statistical test in local maxima
-%                           detection. Optional. default: 0.005.
+%                           detection.
+%                           Optional. default: 0.05.
+%                           --- alphaLocMax must be a row vector if
+%                           integWindow is a row vector. See description of
+%                           integWindow below.
 %           .numSigmaIter : Maximum number of iterations to perform when
 %                           trying to estimate PSF sigma. Input 0 for no
-%                           estimation. Optional. Default: 10.
+%                           estimation.
+%                           Optional. Default: 10.
 %           .integWindow  : Number of frames on each side of a frame
 %                           used for time integration.
+%                           Optional. Default: 0.
+%                           --- integWindow can be a row vector, in which
+%                           case alphaLocMax should be a row vector of the
+%                           same length. When integWindow is a row vector,
+%                           the initial local maxima detection is done by
+%                           using all specified integration windows.
 %       saveResults   : 0 if no saving is requested.
 %                       If saving is requested, structure with fields:
 %           .dir          : Directory where results should be saved.
@@ -135,17 +149,18 @@ end
 
 %get camera bit depth
 if ~isfield(detectionParam,'bitDepth') || isempty(detectionParam.bitDepth)
-    bitDepth = 14;
+    bitDepth = 16;
 else
     bitDepth = detectionParam.bitDepth;
 end
 
 %get alpha-value for local maxima detection
 if ~isfield(detectionParam,'alphaLocMax') || isempty(detectionParam.alphaLocMax)
-    alphaLocMax = 0.005;
+    alphaLocMax = 0.05;
 else
     alphaLocMax = detectionParam.alphaLocMax;
 end
+numAlphaLocMax = length(alphaLocMax);
 
 %check whether to estimate PSF sigma from the data
 if ~isfield(detectionParam,'numSigmaIter') || isempty(detectionParam.numSigmaIter)
@@ -154,10 +169,18 @@ else
     numSigmaIter = detectionParam.numSigmaIter;
 end
 
+%get integration time window
 if ~isfield(detectionParam,'integWindow')
-    integWindow = 2;
+    integWindow = 0;
 else
     integWindow = detectionParam.integWindow;
+end
+numIntegWindow = length(integWindow);
+
+%make sure that alphaLocMax is the same size as integWindow
+if numIntegWindow > numAlphaLocMax
+    alphaLocMax = [alphaLocMax ...
+        alphaLocMax(1)*ones(1,numIntegWindow-numAlphaLocMax)];
 end
 
 %determine where to save results
@@ -195,10 +218,10 @@ warningState = warning('off','all');
 
 %% General image information
 
-%get image incides and number of images
+%get image indices and number of images
 imageIndx = firstImageNum : lastImageNum;
 numImagesRaw = lastImageNum - firstImageNum + 1; %raw images
-numImagesInteg = numImagesRaw - 2 * integWindow; %integrated images
+numImagesInteg = repmat(numImagesRaw,1,numIntegWindow) - 2 * integWindow; %integrated images
 
 %read first image and get image size
 if exist([imageDir filenameBase enumString(imageIndx(1),:) '.tif'],'file')
@@ -237,143 +260,251 @@ imageLast5(imageLast5==0) = NaN;
 %initialize output structure
 localMaxima = repmat(struct('cands',[]),numImagesRaw,1);
 
-%initialize progress text
-progressText(0,'Detecting local maxima');
-
-for iImage = 1 : numImagesInteg
+for iWindow = 1 : numIntegWindow
     
-    %store raw images in array
-    imageRaw = NaN(imageSizeX,imageSizeY,1+2*integWindow);
-    for jImage = 1 : 1 + 2*integWindow
-        if imageExists(jImage+iImage-1)
-            imageRaw(:,:,jImage) = double(imread([imageDir filenameBase enumString(imageIndx(jImage+iImage-1),:) '.tif']));
+    %initialize progress text
+    progressText(0,['Detecting local maxima with integration window = ' num2str(integWindow(iWindow))]);
+    
+    for iImage = 1 : numImagesInteg(iWindow)
+        
+        %store raw images in array
+        imageRaw = NaN(imageSizeX,imageSizeY,1+2*integWindow(iWindow));
+        for jImage = 1 : 1 + 2*integWindow(iWindow)
+            if imageExists(jImage+iImage-1)
+                imageRaw(:,:,jImage) = double(imread([imageDir filenameBase enumString(imageIndx(jImage+iImage-1),:) '.tif']));
+            end
         end
-    end
-    
-    %replace zeros with NaNs
-    %zeros result from cropping that leads to curved boundaries
-    imageRaw(imageRaw==0) = NaN;
-    
-    %normalize images
-    imageRaw = imageRaw / (2^bitDepth-1);
-    
-    %integrate images
-    imageInteg = nanmean(imageRaw,3);
         
-    %filter integrated image
-    imageIntegF = Gauss2D(imageInteg,1);
-    
-    %use robustMean to get mean and std of background intensities
-    %in this method, the intensities of actual features will look like
-    %outliers, so we are effectively getting the mean and std of the background
-    %account for possible spatial heterogeneity by taking a spatial moving
-    %average
-    
-    %get integrated image background noise statistics
-    [bgMeanInteg,bgStdInteg] = ...
-        spatialMovAveBG(imageInteg,imageSizeX,imageSizeY);
-    
-    background = [];
-    
-    %clear some variables
-    clear imageInteg
-    
-    try
+        %replace zeros with NaNs
+        %zeros result from cropping that leads to curved boundaries
+        imageRaw(imageRaw==0) = NaN;
         
-        %call locmax2d to get local maxima in filtered image
-        fImg = locmax2d(imageIntegF,[3 3],1);
+        %normalize images
+        imageRaw = imageRaw / (2^bitDepth-1);
         
-        %get positions and amplitudes of local maxima
-        [localMaxPosX,localMaxPosY,localMaxAmp] = find(fImg);
-        localMax1DIndx = find(fImg(:));
+        %integrate images
+        imageInteg = nanmean(imageRaw,3);
         
-        %get background values corresponding to local maxima
-        bgMeanInteg1 = bgMeanInteg;
-        bgMeanMaxF = bgMeanInteg1(localMax1DIndx);
-        bgStdInteg1 = bgStdInteg;
-        bgStdMaxF = bgStdInteg1(localMax1DIndx);
-        bgMeanMax = bgMeanRaw(localMax1DIndx);
+        %filter integrated image
+        imageIntegF = Gauss2D(imageInteg,1);
         
-        %calculate the p-value corresponding to the local maxima's amplitudes
-        %assume that background intensity in integrated image is normally
-        %distributed with mean bgMeanMaxF and standard deviation bgStdMaxF
-        pValue = 1 - normcdf(localMaxAmp,bgMeanMaxF,bgStdMaxF);
+        %use robustMean to get mean and std of background intensities
+        %in this method, the intensities of actual features will look like
+        %outliers, so we are effectively getting the mean and std of the background
+        %account for possible spatial heterogeneity by taking a spatial moving
+        %average
         
-        %retain only those maxima with significant amplitude
-        keepMax = find(pValue < alphaLocMax);
-        localMaxPosX = localMaxPosX(keepMax);
-        localMaxPosY = localMaxPosY(keepMax);
-        localMaxAmp = localMaxAmp(keepMax);
-        bgMeanMax = bgMeanMax(keepMax);
-        pValue = pValue(keepMax);
-        numLocalMax = length(keepMax);
+        %get integrated image background noise statistics
+        [bgMeanInteg,bgStdInteg] = ...
+            spatialMovAveBG(imageInteg,imageSizeX,imageSizeY);
         
-        %construct cands structure
-        if numLocalMax == 0 %if there are no local maxima
+        background = [];
+        
+        %clear some variables
+        clear imageInteg
+        
+        try
             
-            cands = [];
-            emptyFrames = [emptyFrames; iImage+integWindow]; %#ok<AGROW>
+            %call locmax2d to get local maxima in filtered image
+            fImg = locmax2d(imageIntegF,[3 3],1);
             
-        else %if there are local maxima
+            %get positions and amplitudes of local maxima
+            [localMaxPosX,localMaxPosY,localMaxAmp] = find(fImg);
+            localMax1DIndx = find(fImg(:));
             
-            %define background mean and status
-            cands = repmat(struct('status',1,'IBkg',[],...
-                'Lmax',[],'amp',[],'pValue',[]),numLocalMax,1);
+            %get background values corresponding to local maxima
+            bgMeanInteg1 = bgMeanInteg;
+            bgMeanMaxF = bgMeanInteg1(localMax1DIndx);
+            bgStdInteg1 = bgStdInteg;
+            bgStdMaxF = bgStdInteg1(localMax1DIndx);
+            bgMeanMax = bgMeanRaw(localMax1DIndx);
             
-            %store maxima positions, amplitudes and p-values
-            for iMax = 1 : numLocalMax
-                cands(iMax).IBkg = bgMeanMax(iMax);
-                cands(iMax).Lmax = [localMaxPosX(iMax) localMaxPosY(iMax)];
-                cands(iMax).amp = localMaxAmp(iMax);
-                cands(iMax).pValue = pValue(iMax);
+            %calculate the p-value corresponding to the local maxima's amplitudes
+            %assume that background intensity in integrated image is normally
+            %distributed with mean bgMeanMaxF and standard deviation bgStdMaxF
+            pValue = 1 - normcdf(localMaxAmp,bgMeanMaxF,bgStdMaxF);
+            
+            %retain only those maxima with significant amplitude
+            keepMax = find(pValue < alphaLocMax(iWindow));
+            localMaxPosX = localMaxPosX(keepMax);
+            localMaxPosY = localMaxPosY(keepMax);
+            localMaxAmp = localMaxAmp(keepMax);
+            bgMeanMax = bgMeanMax(keepMax);
+            pValue = pValue(keepMax);
+            numLocalMax = length(keepMax);
+            
+            %construct cands structure
+            if numLocalMax == 0 %if there are no local maxima
+                
+                cands = [];
+                %                 emptyFrames = [emptyFrames; iImage+integWindow]; %#ok<AGROW>
+                
+            else %if there are local maxima
+                
+                %define background mean and status
+                cands = repmat(struct('status',1,'IBkg',[],...
+                    'Lmax',[],'amp',[],'pValue',[]),numLocalMax,1);
+                
+                %store maxima positions, amplitudes and p-values
+                for iMax = 1 : numLocalMax
+                    cands(iMax).IBkg = bgMeanMax(iMax);
+                    cands(iMax).Lmax = [localMaxPosX(iMax) localMaxPosY(iMax)];
+                    cands(iMax).amp = localMaxAmp(iMax);
+                    cands(iMax).pValue = pValue(iMax);
+                end
+                
             end
             
+            %add the cands of the current image to the rest - this is done
+            %for the raw images, not the integrated ones
+            localMaxima(iImage+integWindow(iWindow)).cands = ...
+                [localMaxima(iImage+integWindow(iWindow)).cands; cands];
+            
+        catch %#ok<CTCH>
+            
+            %             %if local maxima detection fails, make cands empty
+            %             localMaxima(iImage+integWindow).cands = [];
+            %
+            %             %add this frame to the array of frames with failed local maxima
+            %             %detection and to the array of empty frames
+            %             framesFailedLocMax = [framesFailedLocMax; iImage+integWindow]; %#ok<AGROW>
+            %             emptyFrames = [emptyFrames; iImage+integWindow]; %#ok<AGROW>
+            
         end
         
-        %add the cands of the current image to the rest - this is done
-        %for the raw images, not the integrated ones
-        localMaxima(iImage+integWindow).cands = cands;
+        %display progress
+        progressText(iImage/numImagesInteg(iWindow),['Detecting local maxima with integration window = ' num2str(integWindow(iWindow))]);
         
-    catch %#ok<CTCH>
+    end %(for iImage = 1 : numImagesInteg(iWindow))
+    
+    %assign local maxima for frames left out due to time integration
+    for iImage = 1 : integWindow(iWindow)
+        localMaxima(iImage).cands = [localMaxima(iImage).cands; ...
+            localMaxima(integWindow(iWindow)+1).cands];
+    end
+    for iImage = numImagesRaw-integWindow(iWindow)+1 : numImagesRaw
+        localMaxima(iImage).cands = [localMaxima(iImage).cands; ...
+            localMaxima(end-integWindow(iWindow)).cands];
+    end
+    
+    % if any(emptyFrames==integWindow(iWindow)+1)
+    %     emptyFrames = [emptyFrames; (1:integWindow)'];
+    % end
+    % if any(emptyFrames==numImagesRaw-integWindow)
+    %     emptyFrames = [emptyFrames; (numImagesRaw-integWindow+1:numImagesRaw)'];
+    % end
+    % if any(framesFailedLocMax==integWindow+1)
+    %     framesFailedLocMax = [framesFailedLocMax; (1:integWindow)'];
+    % end
+    % if any(framesFailedLocMax==numImagesRaw-integWindow)
+    %     framesFailedLocMax = [framesFailedLocMax; (numImagesRaw-integWindow+1:numImagesRaw)'];
+    % end
+    
+end %(for iWindow = 1 : numIntegWindow)
+
+%delete whatever local maxima were found in the frames that don't exist,
+%because they are clearly an artifact of time-integration
+for iFrame = (find(imageExists==0))'
+    localMaxima(iFrame).cands = [];
+end
+
+%go over all frames, remove redundant cands, and register empty frames
+progressText(0,'Removing redundant local maxima');
+for iImage = 1 : numImagesRaw
+    
+    %get the cands of this frame
+    candsCurrent = localMaxima(iImage).cands;
+    
+    %if there are no cands, register that this is an empty frame
+    if isempty(candsCurrent)
         
-        %if local maxima detection fails, make cands empty
-        localMaxima(iImage+integWindow).cands = [];
+        emptyFrames = [emptyFrames; iImage]; %#ok<AGROW>
         
-        %add this frame to the array of frames with failed local maxima
-        %detection and to the array of empty frames
-        framesFailedLocMax = [framesFailedLocMax; iImage+integWindow]; %#ok<AGROW>
-        emptyFrames = [emptyFrames; iImage+integWindow]; %#ok<AGROW>
+    else
+        
+        %get the local maxima positions in this frame
+        maxPos = vertcat(candsCurrent.Lmax);
+        
+        %find the unique local maxima positions
+        [~,indxUnique] = unique(maxPos,'rows');
+        
+        %keep only these unique cands
+        candsCurrent = candsCurrent(indxUnique);
+        maxPos = vertcat(candsCurrent.Lmax);
+        
+        %if there is more than one surviving cand
+        if size(maxPos,1) > 1
+            
+            %remove cands that are closer than 2*psfSigma to each other ...
+            
+            %first do that by clustering the cands ...
+            
+            %calculate the distances between cands
+            y = pdist(maxPos);
+            
+            %get the linkage between cands using maximum distance
+            Z = linkage(y,'complete');
+            
+            %cluster the cands and keep only 1 cand from each cluster
+            T = cluster(Z,'cutoff',2*psfSigma,'criterion','distance');
+            [~,cands2keep] = unique(T);
+            
+            %update list of cands
+            candsCurrent = candsCurrent(cands2keep);
+            maxPos = vertcat(candsCurrent.Lmax);
+            
+            %then refine that by removing cands one by one ...
+            
+            %calculate the distances between surviving cands
+            distBetweenCands = createDistanceMatrix(maxPos,maxPos);
+            
+            %find the minimum distance for each cand
+            distBetweenCandsSort = sort(distBetweenCands,2);
+            distBetweenCandsSort = distBetweenCandsSort(:,2:end);
+            minDistBetweenCands = distBetweenCandsSort(:,1);
+            
+            %find the minimum minimum distance
+            minMinDistBetweenCands = min(minDistBetweenCands);
+            
+            %if this distance is smaller than 2*psfSigma, remove the
+            % maximum with smallest average distance to its neighbors
+            while minMinDistBetweenCands <= (2 * psfSigma)
+                
+                %find the cands involved
+                candsInvolved = find(distBetweenCandsSort(:,1) == minMinDistBetweenCands);
+                
+                %determine which one of them has the smallest average distance
+                %to the other cands
+                aveDistCands = mean(distBetweenCandsSort(candsInvolved,:),2);
+                cand2remove = candsInvolved(aveDistCands==min(aveDistCands));
+                cands2keep = setdiff((1:size(maxPos,1))',cand2remove(1));
+                
+                %remove it from the list of cands
+                candsCurrent = candsCurrent(cands2keep);
+                maxPos = vertcat(candsCurrent.Lmax);
+                
+                %repeat the minimum distance calculation
+                if size(maxPos,1) > 1
+                    distBetweenCands = createDistanceMatrix(maxPos,maxPos);
+                    distBetweenCandsSort = sort(distBetweenCands,2);
+                    distBetweenCandsSort = distBetweenCandsSort(:,2:end);
+                    minDistBetweenCands = distBetweenCandsSort(:,1);
+                    minMinDistBetweenCands = min(minDistBetweenCands);
+                else
+                    minMinDistBetweenCands = 3 * psfSigma;
+                end
+                
+            end %(while minMinDistBetweenCands <= (2 * psfSigma))
+            
+        end %(if size(maxPos,1) > 1)
+        
+        localMaxima(iImage).cands = candsCurrent;
         
     end
     
     %display progress
-    progressText(iImage/numImagesInteg,'Detecting local maxima');
+    progressText(iImage/numImagesRaw,'Removing redundant local maxima');
     
-end
-
-%assign local maxima for frames left out due to time integration
-localMaxima(1:integWindow) = localMaxima(integWindow+1);
-localMaxima(end-integWindow+1:end) = localMaxima(end-integWindow);
-if any(emptyFrames==integWindow+1)
-    emptyFrames = [emptyFrames; (1:integWindow)'];
-end
-if any(emptyFrames==numImagesRaw-integWindow)
-    emptyFrames = [emptyFrames; (numImagesRaw-integWindow+1:numImagesRaw)'];
-end
-if any(framesFailedLocMax==integWindow+1)
-    framesFailedLocMax = [framesFailedLocMax; (1:integWindow)'];
-end
-if any(framesFailedLocMax==numImagesRaw-integWindow)
-    framesFailedLocMax = [framesFailedLocMax; (numImagesRaw-integWindow+1:numImagesRaw)'];
-end
-
-%add to the list of empty frames those frames that don't exist
-emptyFrames = unique([emptyFrames; find(imageExists==0)]);
-
-%delete whatever local maxima were found in the frames that don't exist,
-%because they are clearly an artifact of time-integration
-for iFrame = emptyFrames'
-    localMaxima(iFrame).cands = [];
 end
 
 %make a list of images that have local maxima

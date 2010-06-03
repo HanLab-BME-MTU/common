@@ -215,6 +215,53 @@ for i = 1 : numClusters
     bgAmpT = bgAmpAve;
     clusterPixels = clusters(i).pixels(:,1:2);
     
+    %remove superfluous maxima
+    if numMaximaT > 1
+        
+        %calculate the distances between all features
+        distBetweenMax = createDistanceMatrix(maximaPosT,maximaPosT);
+        
+        %find the minimum distance for each maximum
+        distBetweenMaxSort = sort(distBetweenMax,2);
+        distBetweenMaxSort = distBetweenMaxSort(:,2:end);
+        minDistBetweenMax = distBetweenMaxSort(:,1);
+        
+        %find the minimum minimum distance
+        minMinDistBetweenMax = min(minDistBetweenMax);
+        
+        %if this distance is smaller than 2*psfSigma, remove the maximum with
+        %smallest average distance to its neighbors
+        while minMinDistBetweenMax <= (2 * psfSigma)
+            
+            %find the two maxima involved
+            ijMax = find(distBetweenMaxSort(:,1) == minMinDistBetweenMax);
+            
+            %determine which one of them has the smaller average distance to
+            %the other maxima
+            aveDistIJ = mean(distBetweenMaxSort(ijMax,:),2);
+            max2remove = ijMax(aveDistIJ==min(aveDistIJ));
+            max2keep = setdiff((1:numMaximaT)',max2remove(1));
+            
+            %remove it from the cluster
+            numMaximaT = numMaximaT - 1;
+            maximaPosT = maximaPosT(max2keep,:);
+            maximaAmpT = maximaAmpT(max2keep,:);
+            
+            %repeat the minimum distance calculation
+            if numMaximaT > 1
+                distBetweenMax = createDistanceMatrix(maximaPosT,maximaPosT);
+                distBetweenMaxSort = sort(distBetweenMax,2);
+                distBetweenMaxSort = distBetweenMaxSort(:,2:end);
+                minDistBetweenMax = distBetweenMaxSort(:,1);
+                minMinDistBetweenMax = min(minDistBetweenMax);
+            else
+                minMinDistBetweenMax = 3 * psfSigma;
+            end
+            
+        end
+        
+    end
+    
     %crop part of image that is relevant to this fitting
     imageC = image(clusters(i).pixels(:,3));
     
@@ -273,6 +320,7 @@ for i = 1 : numClusters
             else %if p-value is larger, do not accept this fit and exit
                 fit = 0;
             end
+            
         end
         
         if fit %if this fit is accepted (which is the default if it's the first fit)
