@@ -660,7 +660,7 @@ for i=1:size(tokens,1)
             case 'Region'
                 mm(k).Region = sscanf(val, '%d x %d, offset at (%d, %d)')';
             otherwise
-                field  = regexprep(tok, ' ', '');
+                field = genvarname(regexprep(tok, ' ', ''));
                 if strcmp(val, 'Off')
                     eval(['mm(k).',field,'=0;']);
                 elseif strcmp(val, 'On')
