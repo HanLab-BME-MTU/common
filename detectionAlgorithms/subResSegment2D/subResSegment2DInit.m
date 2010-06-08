@@ -1,4 +1,4 @@
-function [params, ImBG] = getInitialSegmentParams(ima,mask,sigmaPSF,minSize)
+function [params, ImBG] = subResSegment2DInit(ima,mask,sigmaPSF,minSize)
 
 % Make sure image's class is double
 if ~isa(ima,'double')
