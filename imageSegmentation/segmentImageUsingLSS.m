@@ -73,7 +73,7 @@ bSplineCoeffs = bSplineCoeffs';
 
 bSplineCoeffs = bSplineCoeffs / max(abs(bSplineCoeffs(:)));
 
-% Update level set from B-spline coefficients
+% Upload the new down sampled level set from B-spline coefficients
 
 
 %% ------ Main loop ------- %%
