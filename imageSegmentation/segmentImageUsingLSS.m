@@ -55,23 +55,18 @@ tmp = phi;
 phi = zeros(newSize);
 phi(1:nrows,1:ncols) = tmp;
 
-% Downsample image
+% down sample image
 
 scaledImage = ima;
 
-for s = 0:h
-    % down sample each row of scaledImage and store it into tmp
-    
-    % down sample each column of tmp and store it into scaledImage
+for s = 1:h
+    scaledImage = imresize(scaledImage, .5);
 end
 
-% Compute the corresponding B-spline coefficients
-
+% Convert image to B-Spline coefficients
 bSplineCoeffs = scaledImage;
 
-% Compute the corresponding bspline coeff
-% TODO
-conv
+
 %% ------ Main loop ------- %%
 
 epsilon = 1;
@@ -101,51 +96,9 @@ while abs(energy - prevEnergy) > eps && iter < maxIter
         (nu / newSize^2) * normDPhi .* diracFunc;
     
     energy = sum(energyFunc(:));
-
+    
     
     iter = iter + 1;
 end
 
-function bSplineDownSampling(in)
 
-		// Initialization
-		int k, i, i1, i2;
-		int kk, kn, nred, n;
-		int ng = this.BsplineFilter.length;
-		nred = NxIn/2;
-		double Out[] = new double[nred];
-		// Main
-		n  = nred * 2;
-		kn = n - 1;			  
-		if ( ng < 2 ) { 
-			for (kk=0; kk<nred; kk++) {
-				k  = 2 * kk;
-				i2 = k + 1;
-				if (i2 > n-1) 
-					i2 = kn-i2;
-				Out[kk] = (In[k]+In[i2])/2.;
-			}
-		}    
-		else {
-			for (kk=0; kk<nred; kk++) {
-				k = 2 * kk;
-				Out[kk] = In[k]*this.BsplineFilter[0];
-				for (i=1; i<ng; i++) {
-					i1 = k-i;
-					i2 = k+i;
-					if (i1<0L) {
-						i1 = (-i1) % kn;
-						if (i1 > n-1) 
-							i1=kn-i1;
-					}
-					if (i2 > n-1L) {
-						i2 = i2 % kn;
-						if (i2 > n-1L) 
-							i2=kn-i2;
-					}
-					Out[kk] = Out[kk] + this.BsplineFilter[i]*(In[i1]+In[i2]);  
-				}
-			}
-		}
-		return Out;
-end
