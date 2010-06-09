@@ -13,7 +13,7 @@ end
 [nrows,ncols] = size(ima);
 p = nextpow2(max(nrows,ncols));
 
-if h >= p
+if h >= p + 1
     error('scale parameter h greater than image size.');
 end
 
@@ -55,16 +55,25 @@ tmp = phi;
 phi = zeros(newSize);
 phi(1:nrows,1:ncols) = tmp;
 
-% down sample image
+% down sample level set using a iterative bicubic method.
 
-scaledImage = ima;
+scaledPhi = phi;
 
 for s = 1:h
-    scaledImage = imresize(scaledImage, .5);
+    scaledPhi = imresize(scaledPhi, .5);
 end
 
-% Convert image to B-Spline coefficients
-bSplineCoeffs = scaledImage;
+% Initialize B-spline coefficients from scaled phi
+
+bSplineCoeffs = convertRowSignalToBSplineCoefficients(scaledPhi);
+bSplineCoeffs = convertRowSignalToBSplineCoefficients(bSplineCoeffs');
+bSplineCoeffs = bSplineCoeffs';
+
+% Normalize B-spline coefficients according to eq. 15
+
+bSplineCoeffs = bSplineCoeffs / max(abs(bSplineCoeffs(:)));
+
+% Update level set from B-spline coefficients
 
 
 %% ------ Main loop ------- %%
@@ -102,3 +111,31 @@ while abs(energy - prevEnergy) > eps && iter < maxIter
 end
 
 
+function in = convertRowSignalToBSplineCoefficients(in)
+
+n = size(in,1);
+
+z = sqrt(3) - 2;
+
+in = in * (1 - z) * (1 - 1 / z);
+
+z1 = z;
+zn = z^(n-1);
+sum = in(:,1) + zn * in(:,end);
+horizon = min(n, 2 + floor(log(1e-6) / log(abs(z))));
+
+zn = zn * zn;
+
+for i = 1:horizon-2
+    zn = zn / z;
+    sum = sum + (z1 + zn) * in(:,i);
+    z1 = z1 * z;
+end
+
+in(:,1) = sum / (1 - z^(2 * n - 2));
+
+in(:,2:end) = in(:,2:end) + z * in(:,1:end-1);
+
+in(:,end) = (z * in(:,end-1) + in(:,end)) * z / (z * z - 1);
+
+in(:,end-1:-1:1) = z * (in(:,end:-1:2) - in(:,end-1:-1:1));
