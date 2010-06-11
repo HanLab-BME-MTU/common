@@ -14,6 +14,8 @@ function Im = subResSegment2DImageModel(segmentParams, sigmaPSF, imSize)
 %
 % OUTPUT:
 % Im              : the image model of size imSize.
+%
+% Sylvain Berlemont, 2010
 
 [n,p] = size(params);
 

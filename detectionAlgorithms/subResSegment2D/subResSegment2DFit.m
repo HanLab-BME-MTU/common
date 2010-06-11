@@ -1,14 +1,15 @@
-function [F J] = subResSegment2DFit(x, I, sigmaPSF)
+function [F J] = subResSegment2DFit(segmentParmas, I, sigmaPSF)
 % This function computes I - Im, where I is an image and Im is an image
 % model defined by the sum of sub-resolution 2D segment model caracterize
-% by params x (see subResSegment2DImageModel() function for more details).
-% This function intends to be used as a function handler in lsqnonlin,
-% lsqlin, etc. optimization functions.
+% by params segmentParmas (see subResSegment2DImageModel() function for
+% more details). This function intends to be used as a function handler in
+% lsqnonlin, lsqlin, etc. optimization functions. The initialization of
+% segmentParams can be obtained by subResSegment2DInit function.
 %
-% [F J] = subResSegment2DFit(x, I, sigmaPSF)
+% [F J] = subResSegment2DFit(segmentParmas, I, sigmaPSF)
 %
 % Parameters:
-% x            a nx6 matrix where n is the number of segments and their
+% segmentParmas            a nx6 matrix where n is the number of segments and their
 %              parameters, i.e. xC, yC, A, l, t are stored column-wise
 %              (see subResSegment2D.m for more details)
 %
@@ -19,11 +20,13 @@ function [F J] = subResSegment2DFit(x, I, sigmaPSF)
 % Output:
 % F            F = model - I
 %
-% J            J is an MxN matrix where M = numel(I) and N = numel(x). This
-%              corresponds to the jacobian of I against x (see lsqnonlin for
+% J            J is an MxN matrix where M = numel(I) and N = numel(segmentParmas). This
+%              corresponds to the jacobian of I against segmentParmas (see lsqnonlin for
 %              mode details)
+%
+% Sylvain Berlemont, 2010
 
-[n p] = size(x);
+[n p] = size(segmentParmas);
 
 if p ~= 5
     error('Invalid number of segment parameters.');
@@ -40,11 +43,11 @@ nzIdx = cell(n,1);
 F = zeros(size(I));
 
 for i = 1:n
-    xC = x(i,1);
-    yC = x(i,2);
-    A = x(i,3);
-    l = x(i,4);
-    t = x(i,5);
+    xC = segmentParmas(i,1);
+    yC = segmentParmas(i,2);
+    A = segmentParmas(i,3);
+    l = segmentParmas(i,4);
+    t = segmentParmas(i,5);
     
     [xRange{i},yRange{i},nzIdx{i}] = subResSegment2DSupport(xC,yC,sigmaPSF,...
         l,t,[nrows,ncols]);
@@ -62,11 +65,11 @@ if nargout > 1
     val = cell(n,1);    
     
     for i = 1:n
-        xC = x(i,1);
-        yC = x(i,2);
-        A = x(i,3);
-        l = x(i,4);
-        t = x(i,5);
+        xC = segmentParmas(i,1);
+        yC = segmentParmas(i,2);
+        A = segmentParmas(i,3);
+        l = segmentParmas(i,4);
+        t = segmentParmas(i,5);
         
         % Compute all partial derivatives of F against segment parameters
         [dFdXc, dFdYc, dFdA, dFds, dFdl, dFdt] = ...
