@@ -159,37 +159,3 @@ while abs(energy - prevEnergy) > eps && iter < maxIter
 end
 
 BW = phi >= 0;
-
-
-% function in = convertRowSignalToBSplineCoefficients(in)
-% 
-% n = size(in,1);
-% 
-% z = sqrt(3) - 2;
-% 
-% in = in * (1 - z) * (1 - 1 / z);
-% 
-% z1 = z;
-% zn = z^(n-1);
-% sum = in(:,1) + zn * in(:,end);
-% horizon = min(n, 2 + floor(log(1e-6) / log(abs(z))));
-% 
-% zn = zn * zn;
-% 
-% for i = 1:horizon-2
-%     zn = zn / z;
-%     sum = sum + (z1 + zn) * in(:,i);
-%     z1 = z1 * z;
-% end
-% 
-% in(:,1) = sum / (1 - z^(2 * n - 2));
-% 
-% for i = 2:n
-%     in(:,i) = in(:,i) + z * in(:,i-1);
-% end
-% 
-% in(:,end) = (z * in(:,end-1) + in(:,end)) * z / (z * z - 1);
-% 
-% for i = n-1:-1:1
-%     in(:,i) = z * (in(:,i+1) - in(:,i));
-% end
