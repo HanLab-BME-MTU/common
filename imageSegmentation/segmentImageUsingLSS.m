@@ -56,12 +56,11 @@ phi = zeros(newSize);
 phi(1:nrows,1:ncols) = tmp;
 
 % STEP 2: define B3-spline sub-sampled filter for step 8 (using in eq. 13)
-x = -2^(h+1)+1:2^(h+1)-1;
-    
-b3h = (1/6) * x.^3 .* (x >= 0) - (4/6) * (x-1).^3 .* (x-1 >= 0) + ...
-    (x - 2).^3 .* (x-2 >= 0) - (4/6) * (x-3).^3 .* (x-3 >= 0) + ...
-    (1/6) * (x-4).^3 .* (x-4 >= 0);
 
+x = -2:2^-h:2;
+x = x(2:end-1);
+b3h = sum(cell2mat(arrayfun(@(j) ((-1)^j / 6) * nchoosek(4,j) * ...
+    (x + 2 - j).^3 .* (x + 2 - j >= 0), (0:4)', 'UniformOutput', false)));
 b3h = b3h / sum(b3h);
 
 % STEP 3: down sample level set using a iterative bicubic method.
