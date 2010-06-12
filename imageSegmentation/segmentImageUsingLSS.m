@@ -64,7 +64,6 @@ end
 
 % STEP 3: initialize B-spline coefficients from scaled phi
 BS = b3spline2D(scaledPhi);
-BS = b3spline2D(BS')';
 
 % STEP 4: normalize B-spline coefficients (eq. 15)
 BS = BS / max(abs(BS(:)));
@@ -95,20 +94,26 @@ while abs(energy - prevEnergy) > eps && iter < maxIter
     muOut = sum(sum(ima .* (1 - heavySide))) / sum(1 - heavySide(:));
     
     % Compute gradient magnitude of phi       
-    dX = b3spline2D(phi);
-    dY = b3spline2D(phi')';    
+    dX = b3spline1D(phi);
+    dY = b3spline1D(phi')';    
     [dX,dY] = gradient(dX,dY);
     normDPhi = sqrt(dX.^2 + dY.^2);
     
     % Compute energy function (eq. 17)
     % TODO: Don't forget to update nu / (# omega).
-    energyFunc = (ima - muIn).^2 .* heavySide + (ima - muOut).^2 .* ...
-        (1 - heavySide) + (nu / newSize^2) * normDPhi .* diracFunc;
+    
+    dataIn = (ima - muIn).^2;
+    dataOut = (ima - muOut).^2;
+    
+    energyFunc = dataIn .* heavySide + dataOut .* (1 - heavySide) + ...
+        (nu / newSize^2) * normDPhi .* diracFunc;
     
     energy = sum(energyFunc(:));
     
     % Compute image feature (eq. 19)
-    % TODO (+ normalize it)
+    div = dX / normDPhi + dY / normDPhi;
+    w = (dataIn.^2 - dataOut.^2 - nu * div) .* diracFunc;
+    w = w / max(abs(w(:)));
     
     % Convolve image feature with B3-spline kernel (eq. 13)
     % (ComputeMultiscaleConvolutionWithBsplineFunction.java +
