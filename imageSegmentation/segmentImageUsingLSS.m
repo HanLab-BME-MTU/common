@@ -84,25 +84,22 @@ phi = ib3spline2D(b3SplineCoeffs,size(phi));
 epsilon = 1;
 
 iter = 0;
-prevEnergy = 0;
+prevEnergy = +Inf;
 energy = +Inf;
 
-while abs(energy - prevEnergy) > eps && iter < maxIter
+while energy <= prevEnergy  && energy > eps && iter < maxIter
     
     % STEP 7: compute image feature (eq. 19)
-    
-    % Define heavy side and dirac functions
     heavySide = .5 + (1 / pi) * atan(phi / epsilon);
-    diracFunc = (1 / (pi * epsilon)) / (1 + (phi / epsilon).^2);
-    
-    % Compute image average in and out levelset
+    diracFunc = (1 / (pi * epsilon)) ./ (1 + (phi / epsilon).^2);
     muIn = sum(sum(ima .* heavySide)) / sum(heavySide(:));
-    muOut = sum(sum(ima .* (1 - heavySide))) / sum(1 - heavySide(:));
-   
+    muOut = sum(sum(ima .* (1 - heavySide))) / sum(1 - heavySide(:));   
     dataIn = (ima - muIn).^2;
     dataOut = (ima - muOut).^2;
-    
-    div = dX / normDPhi + dY / normDPhi;
+    dX = gradient(b3spline1D(phi));
+    dY = gradient(b3spline1D(phi'))';
+    normDPhi = sqrt(dX.^2 + dY.^2);
+    div = dX ./ normDPhi + dY ./ normDPhi;
     w = (dataIn.^2 - dataOut.^2 - nu * div) .* diracFunc;
     w = w / max(abs(w(:)));
     
@@ -126,12 +123,11 @@ while abs(energy - prevEnergy) > eps && iter < maxIter
 
         % define heavy side and dirac functions on newPhi
         newHeavySide = .5 + (1 / pi) * atan(newPhi / epsilon);
-        newDiracFunc = (1 / (pi * epsilon)) / (1 + (newPhi / epsilon).^2);
+        newDiracFunc = (1 / (pi * epsilon)) ./ (1 + (newPhi / epsilon).^2);
         
         % Compute new energy function using newPhi
-        dX = b3spline1D(newPhi);
-        dY = b3spline1D(newPhi')';
-        [dX,dY] = gradient(dX,dY);
+        dX = gradient(b3spline1D(newPhi));
+        dY = gradient(b3spline1D(newPhi'))';
         newNormDPhi = sqrt(dX.^2 + dY.^2);        
 
         newJ = dataIn .* newHeavySide + dataOut .* (1 - newHeavySide) + ...
