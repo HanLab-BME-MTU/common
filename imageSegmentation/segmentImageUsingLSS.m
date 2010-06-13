@@ -1,4 +1,4 @@
-function [BW,phi,iter] = segmentImageUsingLSS(ima, domain, phi, nu, h, maxIter)
+function [phi,iter] = evolveB3SplineLevelSet(ima, domain, phi, nu, h, maxIter)
 
 %% ------ Parse inputs --------- %%
 
@@ -49,14 +49,13 @@ ima(1:nrows,1:ncols) = tmp;
 tmp = domain;
 domain = logical(newSize);
 domain(1:nrows,1:ncols) = tmp;
-validDomainIdx = find(domain == true);
+validDomainIdx = find(domain == true); % TODO
 
 tmp = phi;
 phi = zeros(newSize);
 phi(1:nrows,1:ncols) = tmp;
 
 % STEP 2: define B3-spline sub-sampled filter for step 8 (using in eq. 13)
-
 x = -2:2^-h:2;
 x = x(2:end-1);
 b3h = sum(cell2mat(arrayfun(@(j) ((-1)^j / 6) * nchoosek(4,j) * ...
@@ -81,8 +80,10 @@ phi = ib3spline2D(b3SplineCoeffs,size(phi));
 
 %% ------ Main loop ------- %%
 
-epsilon = 1;
+% max iteration for the Gradient Descent Feedback Adjustment (GDFA)
+maxIterGDFA = 5;
 
+epsilon = 1;
 iter = 0;
 prevEnergy = +Inf;
 energy = +Inf;
@@ -100,7 +101,7 @@ while energy <= prevEnergy  && energy > eps && iter < maxIter
     dY = gradient(b3spline1D(phi'))';
     normDPhi = sqrt(dX.^2 + dY.^2);
     div = dX ./ normDPhi + dY ./ normDPhi;
-    w = (dataIn.^2 - dataOut.^2 - nu * div) .* diracFunc;
+    w = (dataIn - dataOut - nu * div) .* diracFunc;
     w = w / max(abs(w(:)));
     
     % STEP 8: compute energy gradient (eq. 13)
@@ -112,7 +113,7 @@ while energy <= prevEnergy  && energy > eps && iter < maxIter
     lambda = 1;
     iter2 = 0;
     
-    while energy <= newEnergy && iter2 < 5
+    while energy <= newEnergy && iter2 < maxIterGDFA
 
         % Compute new B3-spline coefficients
         newB3SplineCoeffs = b3SplineCoeffs - lambda * dJ;
@@ -131,7 +132,7 @@ while energy <= prevEnergy  && energy > eps && iter < maxIter
         newNormDPhi = sqrt(dX.^2 + dY.^2);        
 
         newJ = dataIn .* newHeavySide + dataOut .* (1 - newHeavySide) + ...
-            (nu / newSize^2) * newNormDPhi .* newDiracFunc;
+            nu * newNormDPhi .* newDiracFunc;
         
         newEnergy = sum(newJ(:));
         
@@ -140,8 +141,8 @@ while energy <= prevEnergy  && energy > eps && iter < maxIter
         iter2 = iter2 + 1;
     end
     
-    % if iter2 == 5, the main loop will stop
-    if iter2 ~= 5
+    % if iter2 == maxIterGDFA, the main loop will stop
+    if iter2 ~= maxIterGDFA
         phi = newPhi;
         b3SplineCoeffs = newB3SplineCoeffs;
     end
@@ -152,5 +153,3 @@ while energy <= prevEnergy  && energy > eps && iter < maxIter
     
     iter = iter + 1;
 end
-
-BW = phi >= 0;
