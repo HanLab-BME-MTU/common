@@ -1,4 +1,4 @@
-function [phi,iter] = evolveB3SplineLevelSet(ima, domain, phi, nu, h, maxIter)
+function [phi,iter] = evolveSplineB3LevelSet(ima, domain, phi, nu, h, maxIter)
 
 %% ------ Parse inputs --------- %%
 
