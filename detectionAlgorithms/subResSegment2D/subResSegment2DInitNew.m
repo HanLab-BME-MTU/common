@@ -1,12 +1,12 @@
-function [params, ImBG] = subResSegment2DInitNew(I,sigmaPSF,minSize)
+function [params, ImBG] = subResSegment2DInitNew(ima,mask,sigmaPSF,minSize)
 
 % Make sure image's class is double
-if ~isa(I,'double')
-    I = double(I);
+if ~isa(ima,'double')
+    ima = double(ima);
 end
 
 % Get a first coarse segmentation
-BW = logical(blobSegmentThreshold(I,minSize,1));
+BW = logical(blobSegmentThreshold(ima,minSize,0,mask));
 
 % Get the connected component properties
 CCstats = regionprops(BW, 'Orientation', 'PixelIdxList', 'BoundingBox');
@@ -14,7 +14,7 @@ CCstats = regionprops(BW, 'Orientation', 'PixelIdxList', 'BoundingBox');
 % Estimate amplitude
 
 % Estimate background intensity (TODO: 10 is arbitrary)
-ImBG = I - filterGauss2D(I,10);
+ImBG = ima - filterGauss2D(ima,10);
 
 amp0 = cellfun(@(idx) mean(ImBG(idx)), {CCstats(:).PixelIdxList});
 
@@ -28,20 +28,20 @@ gKernel = exp(-x.^2 / (2 * sigmaPSF^2));
 g0 = (1 / (sqrt(2 * pi) * sigmaPSF)) * gKernel;
 g1 = (- x ./ (sqrt(2 * pi) * sigmaPSF^3)) .* gKernel;
 g2 = (x.^2 - sigmaPSF^2) ./ (sqrt(2 * pi) * sigmaPSF^5) .* gKernel;
-% M=2 specific constant
+% M=2 specific constants
 a20 = sigmaPSF / (2 * sqrt(3 * pi));
 a22 = - sqrt(3 / (4 * pi)) * sigmaPSF;
 
 % Filter image with basis filters
-Ixx = conv2(g0,g2,I,'same');
-Ixy = conv2(g1,g1,I,'same');
-Iyy = conv2(g2,g0,I,'same');
+Ixx = conv2(g0,g2,ima,'same');
+Ixy = conv2(g1,g1,ima,'same');
+Iyy = conv2(g2,g0,ima,'same');
 
 Ixx = Ixx .* BW;
 Ixy = Ixy .* BW;
 Iyy = Iyy .* BW;
 
-% Radon angle range: this angle correspond to the orientation of the
+% Radon angle range: this angle corresponds to the orientation of the
 % projector, i.e. the line where the image will be projected on. It
 % corresponds then to the perpendicular of the projection orientation.
 thetaRadon = 0:179;
@@ -76,13 +76,13 @@ winSize = 2*ceil(2*sigmaPSF)+1;
 for iCC = 1:nCC    
     bb = ceil(CCstats(iCC).BoundingBox);
     
-    % The Radon origin is floor((size(I)+1)/2).
+    % The Radon origin is floor((size(ima)+1)/2).
     cRadon = floor((bb(:,3:4)+1)/2);
 
     % Get the footprint of the CC
     BWcrop = false(bb(4),bb(3));
     indGlobal = CCstats(iCC).PixelIdxList;
-    [y x] = ind2sub(size(I),indGlobal);
+    [y x] = ind2sub(size(ima),indGlobal);
     x = x - bb(1) + 1;
     y = y - bb(2) + 1;
     indLocal = sub2ind(size(BWcrop), y, x);

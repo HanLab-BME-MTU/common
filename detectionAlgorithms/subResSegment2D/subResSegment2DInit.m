@@ -6,11 +6,11 @@ if ~isa(ima,'double')
 end
 
 % Get a first coarse segmentation
-BW = logical(blobSegmentThreshold(ima,minSize,0,mask));
+BW = logical(blobSegmentThreshold(ima,minSize,1,mask));
 
 % Get the local orientations
 [R,T] = steerableFiltering(ima,2,sigmaPSF); % TODO: Use M=4
-R(R < 0) = 0; % Should not happen
+R(R < 0) = 0;
 R(BW == 0) = 0;
 
 % Get the connected component properties
@@ -40,10 +40,34 @@ options = optimset('Jacobian', 'on', 'MaxFunEvals', 1e4, 'MaxIter', 1e4,...
 
 % First initialize the orientation using the CC's one
 theta0 = -vertcat(CCstats(:).Orientation) * pi/180;
+
 % Then optimize it using the local response nonlsq fitting
-theta0 = arrayfun(@(i) lsqnonlin(@getOrientationCost, theta0(i),[],[],...
+[theta0, ~, res] = arrayfun(@(i) lsqnonlin(@getOrientationCost, theta0(i),[],[],...
     options, T(CCstats(i).PixelIdxList), R(CCstats(i).PixelIdxList)), ...
-    indCC);
+    indCC, 'UniformOutput', false);
+
+% We test the hypothesis that the residual of each CC is normally
+% distributed. res corresponds to the weighted distance of the arrow tip to
+% the main line passing through the CC and oriented along theta0. For
+% sample smaller than 20, we treat them differently.
+%
+% For sample bigger than 20, in case the sample is gaussian, we validate
+% the CC as segments. In case the sample is not gaussian it means that the
+% CC most likely contains either points or segments oriented along
+% different orientations or the CC doesn't contain enough data points. In
+% that case, we need to split the CC into pieces: we get local maxima that
+% lie within the the CC's footprint and on each location, we compare on
+% each local maxima the residual from a point detection and from a segment
+% detection.
+%
+% normalize residual so that each sample has a unit variance
+
+res = cellfun(@(x) x / std(x), res);
+
+validCC = cellfun(kstest, res);
+
+map = false(size(ima));
+validIdx = vertcat(CCstats(validCC == 1));
 
 % lsqnonlin could yield theta value outside [-pi/2, pi/2] due to the fact
 % we don't bound the optimization. Make sure theta0 is in [-pi/2,pi/2]

@@ -2,6 +2,8 @@ function [phi,iter] = evolveSplineB3LevelSet(ima, domain, phi, nu, h, maxIter)
 
 %% ------ Parse inputs --------- %%
 
+ima = double(ima);
+
 if nargin ~= 6
     error('Invalid number of input argument.');
 end
@@ -11,7 +13,7 @@ if h ~= floor(h) || h < 0
 end
 
 [nrows,ncols] = size(ima);
-p = nextpow2(max(nrows,ncols));
+p = nextpow2(min(nrows,ncols));
 
 if h >= p + 1
     error('scale parameter h greater than image size.');
@@ -40,20 +42,20 @@ end
 
 % STEP 1: resize image, phi and domain to a dyadic size
 
-newSize = 2^p;
-
-tmp = ima;
-ima = zeros(newSize);
-ima(1:nrows,1:ncols) = tmp;
-
-tmp = domain;
-domain = logical(newSize);
-domain(1:nrows,1:ncols) = tmp;
-validDomainIdx = find(domain == true); % TODO
-
-tmp = phi;
-phi = zeros(newSize);
-phi(1:nrows,1:ncols) = tmp;
+% newSize = 2^p;
+% 
+% tmp = ima;
+% ima = zeros(newSize);
+% ima(1:nrows,1:ncols) = tmp;
+% 
+% tmp = domain;
+% domain = false(newSize);
+% domain(1:nrows,1:ncols) = tmp;
+ind = find(domain == true);
+% 
+% tmp = phi;
+% phi = zeros(newSize);
+% phi(1:nrows,1:ncols) = tmp;
 
 % STEP 2: define B3-spline sub-sampled filter for step 8 (using in eq. 13)
 x = -2:2^-h:2;
@@ -88,18 +90,30 @@ iter = 0;
 prevEnergy = +Inf;
 energy = +Inf;
 
-while energy <= prevEnergy  && energy > eps && iter < maxIter
+hFig = figure;
+imagesc(ima); axis image; colormap gray; axis off; hold on;
+
+while energy <= prevEnergy  && energy > eps && iter < 2
+    
+    % DEBUG
+    hLayers = findall(get(gca, 'Children'), 'Tag', 'contour');
+    delete(hLayers);
+    edges = edge(phi > 0);
+    [y x] = ind2sub(size(phi),find(edges));
+    line(x,y,'LineStyle','none','Marker','.','Tag', 'contour');
+    refresh; figure(hFig);
+    % END OF DEBUG
     
     % STEP 7: compute image feature (eq. 19)
     heavySide = .5 + (1 / pi) * atan(phi / epsilon);
     diracFunc = (1 / (pi * epsilon)) ./ (1 + (phi / epsilon).^2);
-    muIn = sum(sum(ima .* heavySide)) / sum(heavySide(:));
-    muOut = sum(sum(ima .* (1 - heavySide))) / sum(1 - heavySide(:));   
+    muIn = sum(sum(ima(ind) .* heavySide(ind))) / sum(heavySide(ind));
+    muOut = sum(sum(ima(ind) .* (1 - heavySide(ind)))) / sum(1 - heavySide(ind));
     dataIn = (ima - muIn).^2;
     dataOut = (ima - muOut).^2;
     dX = gradient(b3spline1D(phi));
     dY = gradient(b3spline1D(phi'))';
-    normDPhi = sqrt(dX.^2 + dY.^2);
+    normDPhi = sqrt(dX.^2 + dY.^2) + eps;
     div = dX ./ normDPhi + dY ./ normDPhi;
     w = (dataIn - dataOut - nu * div) .* diracFunc;
     w = w / max(abs(w(:)));
@@ -153,3 +167,5 @@ while energy <= prevEnergy  && energy > eps && iter < maxIter
     
     iter = iter + 1;
 end
+
+%phi = phi(1:nrows,1:ncols);
