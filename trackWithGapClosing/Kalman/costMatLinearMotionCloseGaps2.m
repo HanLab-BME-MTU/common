@@ -638,7 +638,7 @@ for iPair = 1 : numPairs
         end
         
         %if the lifetime consideration does not make this link impossible
-        if ~isinf(cost12)
+        if isfinite(cost12)
             
             %penalize cost for gap length considerations
             cost12 = cost12 * gapPenalty^(timeGap-1);
