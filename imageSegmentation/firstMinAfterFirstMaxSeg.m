@@ -54,7 +54,7 @@ closureBrush = strel('disk',closureRadius);
 mask = imclose(cast(mask,'double'),closureBrush);
 mask = cast(mask,'logical');
 mask = double(imfill(double(mask),'holes'));
-mask(1,:) = 0;
+%mask(1,:) = 0;
 L2 = bwlabel(mask==0);
 s2  = regionprops(L2, 'Area','PixelIdxList');
 

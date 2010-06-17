@@ -1,4 +1,4 @@
-function [phi,iter] = evolveSplineB3LevelSet(ima, domain, phi, nu, h, maxIter)
+function [phi,mask,iter] = evolveSplineB3LevelSet(ima, domain, phi, nu, h, maxIter)
 
 %% ------ Parse inputs --------- %%
 
@@ -90,19 +90,19 @@ iter = 0;
 prevEnergy = +Inf;
 energy = +Inf;
 
-hFig = figure;
-imagesc(ima); axis image; colormap gray; axis off; hold on;
+% hFig = figure;
+% imagesc(ima); axis image; colormap gray; axis off; hold on;
 
-while energy <= prevEnergy  && energy > eps && iter < 2
+while energy <= prevEnergy  && energy > eps && iter < maxIter
     
-    % DEBUG
-    hLayers = findall(get(gca, 'Children'), 'Tag', 'contour');
-    delete(hLayers);
-    edges = edge(phi > 0);
-    [y x] = ind2sub(size(phi),find(edges));
-    line(x,y,'LineStyle','none','Marker','.','Tag', 'contour');
-    refresh; figure(hFig);
-    % END OF DEBUG
+%     % DEBUG
+%     hLayers = findall(get(gca, 'Children'), 'Tag', 'contour');
+%     delete(hLayers);
+%     edges = edge(phi > 0);
+%     [y x] = ind2sub(size(phi),find(edges));
+%     line(x,y,'LineStyle','none','Marker','.','Tag', 'contour');
+%     refresh; figure(hFig);
+%     % END OF DEBUG
     
     % STEP 7: compute image feature (eq. 19)
     heavySide = .5 + (1 / pi) * atan(phi / epsilon);
@@ -143,7 +143,7 @@ while energy <= prevEnergy  && energy > eps && iter < 2
         % Compute new energy function using newPhi
         dX = gradient(b3spline1D(newPhi));
         dY = gradient(b3spline1D(newPhi'))';
-        newNormDPhi = sqrt(dX.^2 + dY.^2);        
+        newNormDPhi = sqrt(dX.^2 + dY.^2);
 
         newJ = dataIn .* newHeavySide + dataOut .* (1 - newHeavySide) + ...
             nu * newNormDPhi .* newDiracFunc;
@@ -168,4 +168,38 @@ while energy <= prevEnergy  && energy > eps && iter < 2
     iter = iter + 1;
 end
 
-%phi = phi(1:nrows,1:ncols);
+% close(hFig);
+
+mask = phi > 0;
+
+% add border
+mask = padarray(mask, [1 1], 'replicate');
+ind = find(mask(1,:));
+if ~isempty(ind)
+    mask(1, 1:ind(end)) = true;
+end
+
+ind = find(mask(end,:));
+if ~isempty(ind)
+    mask(end, 1:ind(end)) = true;
+end
+
+ind = find(mask(:, 1));
+if ~isempty(ind)
+    mask(1:ind(end), 1) = true;
+end
+
+ind = find(mask(:, end));
+if ~isempty(ind)
+    mask(1:ind(end), end) = true;
+end
+
+mask = imfill(mask,'holes');
+
+mask = mask(2:end-1,2:end-1);
+
+% select the biggest area
+s = regionprops(mask,'Area','PixelIdxList');
+[~,ind] = max([s.Area]);
+mask = false(size(ima));
+mask(s(ind).PixelIdxList) = true;
