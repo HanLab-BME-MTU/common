@@ -6,7 +6,7 @@ if ~isa(ima,'double')
 end
 
 % Get a first coarse segmentation
-BW = logical(blobSegmentThreshold(ima,minSize,1,mask));
+BW = logical(blobSegmentThreshold(ima,minSize,0,mask));
 
 % Get the local orientations
 [R,T] = steerableFiltering(ima,2,sigmaPSF); % TODO: Use M=4
@@ -46,6 +46,8 @@ theta0 = -vertcat(CCstats(:).Orientation) * pi/180;
     options, T(CCstats(i).PixelIdxList), R(CCstats(i).PixelIdxList)), ...
     indCC, 'UniformOutput', false);
 
+theta0 = cell2mat(theta0);
+
 % We test the hypothesis that the residual of each CC is normally
 % distributed. res corresponds to the weighted distance of the arrow tip to
 % the main line passing through the CC and oriented along theta0. For
@@ -62,12 +64,12 @@ theta0 = -vertcat(CCstats(:).Orientation) * pi/180;
 %
 % normalize residual so that each sample has a unit variance
 
-res = cellfun(@(x) x / std(x), res);
-
-validCC = cellfun(kstest, res);
-
-map = false(size(ima));
-validIdx = vertcat(CCstats(validCC == 1));
+% res = cellfun(@(x) x / std(x), res, 'UniformOutput', false);
+% 
+% validCC = cellfun(kstest, res);
+% 
+% map = false(size(ima));
+% validIdx = vertcat(CCstats(validCC == 1));
 
 % lsqnonlin could yield theta value outside [-pi/2, pi/2] due to the fact
 % we don't bound the optimization. Make sure theta0 is in [-pi/2,pi/2]

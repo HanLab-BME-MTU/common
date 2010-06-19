@@ -660,6 +660,7 @@ for iFrame = 1 : size(xCoordMatAll,2)
     clf;
     switch showRaw
         case 1
+            
             axes('Position',[0 0 0.495 1]);
             imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
@@ -669,10 +670,44 @@ for iFrame = 1 : size(xCoordMatAll,2)
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
                 textDeltaCoord,num2str(iFrame+startend(1)-1),'Color','white');
             axes('Position',[0.505 0 0.495 1]);
-            imshow(imageStack,intensityMinMax);
-            xlim(imageRange(2,:));
-            ylim(imageRange(1,:));
-            hold on;
+            
+%             if iFrame == 137
+%                 load('/home/sb234/Projects/IF/Lynne/050810_vimentin-Paxillin/cell3/analysis/movieData.mat');
+%                 
+%                 maskPaths = cellfun(@(x) fullfile(movieData.masks.directory, x), movieData.masks.channelDirectory, 'UniformOutput' ,false);
+%                 maskFiles = cellfun(@(x) dir([x filesep '*.tif']), maskPaths, 'UniformOutput', false);
+% 
+% 
+%                 finalMask = false(movieData.imSize);
+%                 
+%                 for iChannel = 1:2
+%                     mask = imread(fullfile(maskPaths{iChannel},maskFiles{iChannel}(iFrame).name));
+%                     finalMask = xor(finalMask,mask);
+%                 end
+%                 
+%                 edges = edge(finalMask);
+%                 
+%                 % Read image channels
+%                 ima = imageStack;
+%                 ima = double(ima);
+%                 ima = (ima - min(ima(:))) / (max(ima(:)) - min(ima(:)));
+%                 ima(edges == 1) = 1;
+%                 
+%                 imaColor = repmat(ima,[1 1 3]);
+%                 %imaColor(:,:,1) = imaColor(:,:,1) + edges;
+%                 
+%                 % Display image
+%                 imshow(imaColor,[]); hold on;
+%                 xlim(imageRange(2,:));
+%                 ylim(imageRange(1,:));
+%                 hold on;
+%             else
+                imshow(imageStack,intensityMinMax);
+                xlim(imageRange(2,:));
+                ylim(imageRange(1,:));
+                hold on;
+%             end
+            
         case 2
             axes('Position',[0 0.505 1 0.495]);
             imshow(imageStack,intensityMinMax);

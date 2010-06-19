@@ -20,7 +20,7 @@ static void dispatch(const image<2, double> & ima,
   ////////////////////////////
 
   if (nlhs > 0) image2mxArray(f.res(), plhs[0]);
-  if (nlhs > 1) image2mxArray(f.theta(), plhs[1]);
+  if (nlhs > 1) image2mxArray(f.res(), plhs[1]);
 
   if (nlhs > 2)
     {
