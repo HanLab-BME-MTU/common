@@ -148,7 +148,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GENERATE_MASTER_OBJECT_FILE = YES;
 				HEADER_SEARCH_PATHS = (
-					"/Users/sylvain/Documents/MATLAB/projects/common/mex/include/c++/",
+					"/Users/sylvain/matlab/projects/common/mex/include/c++/",
 					/Applications/MATLAB_R2009b.app/extern/include,
 				);
 				INSTALL_PATH = /usr/local/lib;
@@ -182,7 +182,7 @@
 				GCC_MODEL_TUNING = G5;
 				GENERATE_MASTER_OBJECT_FILE = YES;
 				HEADER_SEARCH_PATHS = (
-					"/Users/sylvain/Documents/MATLAB/projects/common/mex/include/c++/",
+					"/Users/sylvain/matlab/projects/common/mex/include/c++/",
 					/Applications/MATLAB_R2009b.app/extern/include,
 				);
 				INSTALL_PATH = "$(PROJECT_DIR)";
