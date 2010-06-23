@@ -1,7 +1,8 @@
 #ifndef   	SOLVER_HPP
 # define   	SOLVER_HPP
 
-# include <cmath>
+//# include <cmath>
+# include <math.h>
 # include <cassert>
 # include <limits>
 
