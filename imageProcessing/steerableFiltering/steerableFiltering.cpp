@@ -1,5 +1,6 @@
 #include <mex.h>
 
+# define _USE_MATH_DEFINES
 #include <image.hpp>
 #include <mx_wrapper.hpp>
 #include <compute_nms.hpp>
