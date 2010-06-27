@@ -240,13 +240,18 @@ trackSegmentType = vertcat(diffAnalysisRes.classification);
 %       random/unclassified & 2D normal diffusion -> cyan
 %       random/unclassified & 2D super diffusion -> magenta
 %       random & too short to analyze 2D diffusion -> purple
-%       too short for any analysis -> black
+%       too short for any analysis -> black (or white if overlaying on an
+%       image)
 %
 %       If simplifyLin = 1, all linear groups will be colored red.
 %       If simplifyLin = 2, all linear groups + random&super-diffusive will
 %       be colored red.
 %
-trackSegmentColor = repmat([0 0 0],numTrackSegments,1);
+if isempty(image)
+    trackSegmentColor = repmat([0 0 0],numTrackSegments,1);
+else
+    trackSegmentColor = repmat([0.7 0.7 0.7],numTrackSegments,1);
+end
 indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 1);
 switch simplifyLin
     case 0
@@ -397,6 +402,12 @@ end %(if mergeSplit)
 %show confinement areas if requested
 if showConf
 
+    if isempty(image)
+        confColor = [0 0 0];
+    else
+        confColor = [0.7 0.7 0.7];
+    end
+    
     %generate circle to plot
     theta = (0:pi/10:2*pi); %angle
     xy = [cos(theta') sin(theta')]; %x and y-coordinates
@@ -408,7 +419,7 @@ if showConf
         %center of this track
         circleVal = xy .* trackSegmentConfRad(iTrack,1);
         plot(trackSegmentCenter(iTrack,1)+circleVal(:,1),...
-            trackSegmentCenter(iTrack,2)+circleVal(:,2),'k');
+            trackSegmentCenter(iTrack,2)+circleVal(:,2),'Color',confColor);
         
     end
     
@@ -426,7 +437,7 @@ if showConf
             + repmat(trackSegmentCenter(iTrack,:),5,1);
         
         %plot the rectangle
-        plot(cornerCoord(:,1),cornerCoord(:,2),'k');
+        plot(cornerCoord(:,1),cornerCoord(:,2),'Color',confColor);
 
     end
     
