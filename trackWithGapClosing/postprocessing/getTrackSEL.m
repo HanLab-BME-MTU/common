@@ -131,7 +131,7 @@ if isstruct(trackedFeatureInfo)
             segEndRows = seqOfEvents(seqOfEvents(:,2)==2,:);
             
             %sort the rows in ascending order of segment number
-            [~,indxSort] = sort(segEndRows(:,3));
+            [dummy,indxSort] = sort(segEndRows(:,3));
             segEndRows = segEndRows(indxSort,:);
             
             %extract the track segments' end times
