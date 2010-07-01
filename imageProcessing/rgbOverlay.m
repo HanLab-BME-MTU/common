@@ -7,9 +7,16 @@
 
 % Francois Aguet, June 2010.
 
-function img = rgbOverlay(img, overlay, ch)
+function out = rgbOverlay(img, overlayMask, ch)
 
-img = repmat(uint8(scaleContrast(img)), [1 1 3]);
-c = img(:,:,ch);
-c(overlay==max(overlay(:))) = 255;
-img(:,:,ch) = c;
+img = uint8(scaleContrast(img));
+idx = overlayMask~=0;
+
+out = repmat(img, [1 1 3]);
+img(idx) = 255;
+out(:,:,ch) = img;
+
+ch = setdiff(1:3, ch);
+img(idx) = 0;
+out(:,:,ch(1)) = img;
+out(:,:,ch(2)) = img;
