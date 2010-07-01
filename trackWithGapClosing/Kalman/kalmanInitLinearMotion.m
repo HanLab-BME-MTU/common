@@ -65,8 +65,6 @@ minSearchRadius = costMatParam.minSearchRadius;
 maxSearchRadius = costMatParam.maxSearchRadius;
 brownStdMult = costMatParam.brownStdMult;
 
-
-
 %check whether additional initialization parameters were input
 if isfield(costMatParam,'kalmanInitParam')
     initParam = costMatParam.kalmanInitParam;
@@ -141,8 +139,9 @@ kalmanFilterInfo.stateVec = [frameInfo.allCoord(:,1:2:end) velocityInit];
 
 %initialize state covariance matrix
 for iFeature = 1 : numFeatures
-    kalmanFilterInfo.stateCov(:,:,iFeature) = diag(...
-        [frameInfo.allCoord(iFeature,2:2:end).^2 4*ones(1,probDim)]);
+    posVar = frameInfo.allCoord(iFeature,2:2:end).^2;
+    posVar = max(eps,posVar);
+    kalmanFilterInfo.stateCov(:,:,iFeature) = diag([posVar 4*ones(1,probDim)]);
 end
 
 %initialize state noise variance
