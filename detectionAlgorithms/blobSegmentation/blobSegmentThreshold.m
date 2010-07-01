@@ -53,11 +53,10 @@ end
 image = double(image);
 
 %remove noise by filtering image with a Gaussian whose sigma = 1 pixel
-imageFiltered = Gauss2D(image,1,1);
+imageFiltered = filterGauss2D(image,1);
 
-%estimate background by filtering image with a Gaussian whose sigma = 10
-%pixels
-imageBackground = Gauss2D(image,10,1);
+%estimate background by filtering image with a Gaussian whose sigma = 10 pixels
+imageBackground = filterGauss2D(image,10);
 
 %calculate noise-filtered and background-subtracted image
 imageFilteredMinusBackground = imageFiltered - imageBackground;
