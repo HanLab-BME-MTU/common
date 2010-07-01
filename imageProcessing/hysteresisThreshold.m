@@ -19,7 +19,4 @@ labelsAboveT1 = labels.*im1;
 validLabels = unique(labelsAboveT1(:));
 validLabels = validLabels(2:end);
 
-out = zeros(size(image));
-for k = 1:length(validLabels)
-    out(labels==validLabels(k)) = 1;
-end
+out = ismember(labels, validLabels);
