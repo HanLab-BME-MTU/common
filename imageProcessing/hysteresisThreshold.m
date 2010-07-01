@@ -8,7 +8,7 @@ im2 = image;
 im2(im2<t2) = 0;
 im2(im2~=0) = 1;
 
-[labels ncomp] = bwlabel(im2, 8);
+labels = bwlabel(im2, 8);
 
 im1 = image;
 im1(im1<t1) = 0;
