@@ -1,4 +1,4 @@
-function [params, ImBG] = detectSubResSegment2D(ima,mask,sigmaPSF,minSize)
+function [params, ImBG] = detectSubResSegment2D(ima,mask,sigmaPSF,minSize,bitDepth)
 
 %% --- Initialization --- %%
 
@@ -7,6 +7,7 @@ if ~isa(ima,'double')
     ima = double(ima);
 end
 
+[nrows,ncols] = size(ima);
 
 %% --- Step 1 ---- %%
 
@@ -35,15 +36,25 @@ BW = logical(blobSegmentThreshold(filteredIma1,minSize,0,mask));
 hside = 2 * ceil(sigmaPSF) + 1;
 locMax = locmax2d(filteredIma2,[hside hside]);
 locMax(BW == false) = 0;
-ind = find(locMax ~= 0);
-[yP xP] = ind2sub(size(locMax), ind);
-ampP = ima(ind);
+indPSF = find(locMax ~= 0);
+nPSF = numel(indPSF);
 
 %% --- Step 4 ---- %%
 
-detectSubResFeatures2D(ima,cands,psfSigma,testAlpha,visual,...
-     0,bitDepth,saveResults,bgNoiseSigma)
+L = bwlabel(BW);
+CCstats = regionprops(BW,'PixelIdxList');
 
+cands(1:numel(indPSF)) = struct('Lmax',[],'IBkg',[],'status',[]);
+for iPSF = 1:nPSF
+    [y x] = ind2sub([nrows ncols], indPSF(iPSF));
+    cands(iPSF).Lmax = [y x];
+    cands(iPSF).IBkg = min(ima(CCstats(L(indPSF(iPSF))).PixelIdxList)) / (2^bitDepth-1);
+    cands(iPSF).status = true;
+end
+
+stdNoise = std(ima(BW == false & mask == true) / (2^bitDepth-1));
+
+finalPoints = detectSubResFeatures2D(ima,cands,sigmaPSF,[],0,0,bitDepth,0,stdNoise);
 
 %% --- Step 5 ---- %%
 

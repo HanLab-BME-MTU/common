@@ -30,7 +30,6 @@ function [clusters,errFlag] = findOverlapPSFs2D(cands,numPixelsX,numPixelsY,...
 %Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-clusters = [];
 errFlag = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -73,12 +72,9 @@ end
 %Clustering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%generate grid to create image
-[x,y] = meshgrid([1:numPixelsX],[1:numPixelsY]);
-
 %extract positions of significant local maxima from cands
 tmp = vertcat(cands.Lmax);
-cands2 = tmp(find([cands.status]==1),2:-1:1);
+cands2 = tmp([cands.status]==1,2:-1:1);
 tmp = (cands2(:,1)-1)*numPixelsY + cands2(:,2);
 maxPos0 = zeros(numPixelsY,numPixelsX);
 maxPos0(tmp) = 1;
@@ -107,6 +103,9 @@ imageN = image/max(image(:));
 %get connectivity between PSFs
 [L,nIsland] = bwlabel(imageN>0.001);
 
+% initialize clusters (SB)
+clusters(1:nIsland) = struct('numMaxima',[],'maximaPos',[],'maximaAmp',[],'pixels',[]);
+
 %find number of local maxima and their centers and amplitudes in each island
 for i=1:nIsland
     
@@ -114,7 +113,7 @@ for i=1:nIsland
     [rc] = find(L(:)==i);
     
     %find initial position of PSF centers in island (in pixels)
-    rcCenterL = rc(find(maxPos0(rc)==1));
+    rcCenterL = rc(maxPos0(rc)==1);
     rcCenter = [ceil(rcCenterL/numPixelsY) mod(rcCenterL,numPixelsY)];
     
     %determine initial number of PSFs in island
