@@ -18,7 +18,7 @@ filteredIma1(filteredIma1 < 0) = 0;
 filteredIma1(mask == false) = 0;
 
 % Filter image with 2-D laplacian filter
-filteredIma2 = filterLaplacian2D(ima,sigmaPSF);
+filteredIma2 = filterLoG(ima,sigmaPSF);
 filteredIma2(mask == false) = 0;
 
 %% --- Step 2 ---- %%
@@ -48,13 +48,18 @@ cands(1:numel(indPSF)) = struct('Lmax',[],'IBkg',[],'status',[]);
 for iPSF = 1:nPSF
     [y x] = ind2sub([nrows ncols], indPSF(iPSF));
     cands(iPSF).Lmax = [y x];
-    cands(iPSF).IBkg = min(ima(CCstats(L(indPSF(iPSF))).PixelIdxList)) / (2^bitDepth-1);
+    cands(iPSF).IBkg = mean(ima(CCstats(L(indPSF(iPSF))).PixelIdxList)) / (2^bitDepth-1);
     cands(iPSF).status = true;
 end
 
 stdNoise = std(ima(BW == false & mask == true) / (2^bitDepth-1));
 
-finalPoints = detectSubResFeatures2D(ima,cands,sigmaPSF,[],0,0,bitDepth,0,stdNoise);
+%alpha.alphaR = .05;
+alpha.alphaA = .01;
+% alpha.alphaD = .1;
+alpha.alphaF = 0;
+
+finalPoints = detectSubResFeatures2D(ima,cands,sigmaPSF,alpha,0,1,bitDepth,0,stdNoise);
 
 %% --- Step 5 ---- %%
 

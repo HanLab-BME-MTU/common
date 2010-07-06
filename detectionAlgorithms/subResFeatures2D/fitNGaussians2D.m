@@ -95,24 +95,27 @@ relIndxY = index(:,2) - minIndxY + 1;
 F = (sum(repmat(psfAmp,1,numPixel).*psfIntegX(relIndxX,:)'.*psfIntegY(relIndxY,:)',1))' ...
     + repmat(bgAmp,numPixel,1) - image;
 
-%calculate the derivative at all pixels
-J = ones(numPixel,3*numPSF+1); %(last column for background amplitude)
-J(:,1:3:3*numPSF) = repmat(psfAmp',numPixel,1).*(psfValueX(relIndxX,:)-...
-    psfValueX(relIndxX+1,:)).*psfIntegY(relIndxY,:); %w.r.t. x
-J(:,2:3:3*numPSF) = repmat(psfAmp',numPixel,1).*(psfValueY(relIndxY,:)-...
-    psfValueY(relIndxY+1,:)).*psfIntegX(relIndxX,:); %w.r.t. y
-J(:,3:3:3*numPSF) = psfIntegX(relIndxX,:).*psfIntegY(relIndxY,:); %w.r.t. amp
-
 %remove pixels with NaN (which means they are out of the cropped image
 %area)
 indxPixel = find(~isnan(image));
+
 F = F(indxPixel);
-J = J(indxPixel,:);
+
+if nargout > 1
+    %calculate the derivative at all pixels
+    J = ones(numPixel,3*numPSF+1); %(last column for background amplitude)
+    J(:,1:3:3*numPSF) = repmat(psfAmp',numPixel,1).*(psfValueX(relIndxX,:)-...
+        psfValueX(relIndxX+1,:)).*psfIntegY(relIndxY,:); %w.r.t. x
+    J(:,2:3:3*numPSF) = repmat(psfAmp',numPixel,1).*(psfValueY(relIndxY,:)-...
+        psfValueY(relIndxY+1,:)).*psfIntegX(relIndxX,:); %w.r.t. y
+    J(:,3:3:3*numPSF) = psfIntegX(relIndxX,:).*psfIntegY(relIndxY,:); %w.r.t. amp
+
+    %remove pixels with NaN (which means they are out of the cropped image
+    %area)
+    J = J(indxPixel,:);
+end
 
 %% ~~ the end ~~ 
-
-
-
 
 %% OLD CODE
 
