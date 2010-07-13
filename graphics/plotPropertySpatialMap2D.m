@@ -97,56 +97,163 @@ if ~isempty(diffAnalysisRes)
     diffAnalysisRes = diffAnalysisRes(indx);
 end
 
-%convert tracksFinal into matrix if it's a structure
+%save tracksFinal into a new variable name
 inputStructure = tracksFinal;
+
+% %convert tracksFinal into a matrix if it's input as a structure
+% if isstruct(tracksFinal)
+%     clear tracksFinal
+%     tracksFinal = convStruct2MatIgnoreMS(inputStructure);
+% end
+% 
+% %get number of trajectories
+% numTraj = size(tracksFinal,1);
+% 
+% %extract the x- and y-coordinates from the big matrix
+% xCoord = tracksFinal(:,1:8:end);
+% yCoord = tracksFinal(:,2:8:end);
+% 
+% %find x-coordinate limits
+% minXCoord = min(floor(min(xCoord(:))),0);
+% maxXCoord =  ceil(max(xCoord(:)));
+% 
+% %find y-coordinate limits
+% minYCoord = min(floor(min(yCoord(:))),0);
+% maxYCoord =  ceil(max(yCoord(:)));
+% 
+% %get the start, end and life time information of trajectories
+% trajSEL = getTrackSEL(tracksFinal);
+% 
+% %get the start, end and center position of trajectories
+% %also calculate the average frame-to-frame displacement
+% trajXCoord = NaN(numTraj,3);
+% trajYCoord = NaN(numTraj,3);
+% frame2frameDisp = NaN(numTraj,1);
+% for iTraj = 1 : numTraj
+% 
+%     %get current track's positions over its lifetime
+%     xCoordCurrent = xCoord(iTraj,trajSEL(iTraj,1):trajSEL(iTraj,2));
+%     yCoordCurrent = yCoord(iTraj,trajSEL(iTraj,1):trajSEL(iTraj,2));
+% 
+%     %calculate start, end and center positions
+%     startPos = [xCoordCurrent(1) yCoordCurrent(1)];
+%     endPos = [xCoordCurrent(end) yCoordCurrent(end)];
+%     centerPos = [nanmean(xCoordCurrent) nanmean(yCoordCurrent)];
+% 
+%     %assemble the position information, ordered as instructed for the input
+%     %variable positions2plot
+%     trajXCoord(iTraj,:) = [centerPos(1) startPos(1) endPos(1)];
+%     trajYCoord(iTraj,:) = [centerPos(2) startPos(2) endPos(2)];
+% 
+%     %calculate the average frame-to-frame displacement
+%     frame2frameDisp(iTraj) = nanmean(sqrt(diff(xCoordCurrent).^2+diff(yCoordCurrent).^2));
+% 
+% end
+
+%if tracksFinal is a structure ...
 if isstruct(tracksFinal)
-    clear tracksFinal
-    tracksFinal = convStruct2MatIgnoreMS(inputStructure);
+    
+    %get number of compound tracks
+    numCompTrack = length(tracksFinal);
+    
+    %get the number of segments per compound track
+    numTrackSeg = getNumSegmentsPerTrack(tracksFinal);
+    
+    %determine the location of the 1st segment of each compound track in
+    %the "big matrix" of all segments
+    segLoc = [1; cumsum(numTrackSeg(1:end-1))+1];
+    
+    %get the start, end and life time information of each segment
+    trajSEL = getTrackSEL(tracksFinal,1);
+    
+    %from this get total number of segments (called "traj")
+    numTraj = size(trajSEL,1);
+    
+    %get the start, end and center position of trajectories (segments)
+    %also calculate the average frame-to-frame displacement
+    trajXCoord = NaN(numTraj,3);
+    trajYCoord = NaN(numTraj,3);
+    frame2frameDisp = NaN(numTraj,1);
+    for iCompTrack = 1 : numCompTrack
+        
+        %get current compound track's information over its lifetime
+        infoCompTrack = tracksFinal(iCompTrack).tracksCoordAmpCG;
+        xCoordCompTrack = infoCompTrack(:,1:8:end);
+        yCoordCompTrack = infoCompTrack(:,2:8:end);
+        
+        %get "local" start, end and life times
+        segSEL = getTrackSEL(infoCompTrack);
+        
+        for iSegment = 1 : numTrackSeg(iCompTrack)
+            
+            %get current segment's positions over its lifetime
+            xCoordCurrent = xCoordCompTrack(iSegment,segSEL(iSegment,1):segSEL(iSegment,2));
+            yCoordCurrent = yCoordCompTrack(iSegment,segSEL(iSegment,1):segSEL(iSegment,2));
+            
+            %calculate start, end and center positions
+            startPos = [xCoordCurrent(1) yCoordCurrent(1)];
+            endPos = [xCoordCurrent(end) yCoordCurrent(end)];
+            centerPos = [nanmean(xCoordCurrent) nanmean(yCoordCurrent)];
+            
+            %assemble the position information, ordered as instructed for the input
+            %variable positions2plot
+            trajXCoord(segLoc(iCompTrack)+iSegment-1,:) = [centerPos(1) startPos(1) endPos(1)];
+            trajYCoord(segLoc(iCompTrack)+iSegment-1,:) = [centerPos(2) startPos(2) endPos(2)];
+            
+            %calculate the average frame-to-frame displacement
+            frame2frameDisp(segLoc(iCompTrack)+iSegment-1) = nanmean(sqrt(diff(xCoordCurrent).^2+diff(yCoordCurrent).^2));
+            
+        end
+    end
+    
+else %if tracksFinal is a matrix ...
+    
+    %get number of trajectories
+    numTraj = size(tracksFinal,1);
+    
+    %extract the x- and y-coordinates from the big matrix
+    xCoord = tracksFinal(:,1:8:end);
+    yCoord = tracksFinal(:,2:8:end);
+    
+    %get the start, end and life time information of trajectories
+    trajSEL = getTrackSEL(tracksFinal);
+    
+    %get the start, end and center position of trajectories
+    %also calculate the average frame-to-frame displacement
+    trajXCoord = NaN(numTraj,3);
+    trajYCoord = NaN(numTraj,3);
+    frame2frameDisp = NaN(numTraj,1);
+    for iTraj = 1 : numTraj
+        
+        %get current track's positions over its lifetime
+        xCoordCurrent = xCoord(iTraj,trajSEL(iTraj,1):trajSEL(iTraj,2));
+        yCoordCurrent = yCoord(iTraj,trajSEL(iTraj,1):trajSEL(iTraj,2));
+        
+        %calculate start, end and center positions
+        startPos = [xCoordCurrent(1) yCoordCurrent(1)];
+        endPos = [xCoordCurrent(end) yCoordCurrent(end)];
+        centerPos = [nanmean(xCoordCurrent) nanmean(yCoordCurrent)];
+        
+        %assemble the position information, ordered as instructed for the input
+        %variable positions2plot
+        trajXCoord(iTraj,:) = [centerPos(1) startPos(1) endPos(1)];
+        trajYCoord(iTraj,:) = [centerPos(2) startPos(2) endPos(2)];
+        
+        %calculate the average frame-to-frame displacement
+        frame2frameDisp(iTraj) = nanmean(sqrt(diff(xCoordCurrent).^2+diff(yCoordCurrent).^2));
+        
+    end
+    
 end
-
-%get number of trajectories
-numTraj = size(tracksFinal,1);
-
-%extract the x- and y-coordinates from the big matrix
-xCoord = tracksFinal(:,1:8:end);
-yCoord = tracksFinal(:,2:8:end);
 
 %find x-coordinate limits
-minXCoord = min(floor(min(xCoord(:))),0);
-maxXCoord =  ceil(max(xCoord(:)));
+minXCoord = min(floor(min(trajXCoord(:))),0);
+maxXCoord =  ceil(max(trajXCoord(:)));
 
 %find y-coordinate limits
-minYCoord = min(floor(min(yCoord(:))),0);
-maxYCoord =  ceil(max(yCoord(:)));
+minYCoord = min(floor(min(trajYCoord(:))),0);
+maxYCoord =  ceil(max(trajYCoord(:)));
 
-%get the start, end and life time information of trajectories
-trajSEL = getTrackSEL(tracksFinal);
-
-%get the start, end and center position of trajectories
-%also calculate the average frame-to-frame displacement
-trajXCoord = NaN(numTraj,3);
-trajYCoord = NaN(numTraj,3);
-frame2frameDisp = NaN(numTraj,1);
-for iTraj = 1 : numTraj
-
-    %get current track's positions over its lifetime
-    xCoordCurrent = xCoord(iTraj,trajSEL(iTraj,1):trajSEL(iTraj,2));
-    yCoordCurrent = yCoord(iTraj,trajSEL(iTraj,1):trajSEL(iTraj,2));
-
-    %calculate start, end and center positions
-    startPos = [xCoordCurrent(1) yCoordCurrent(1)];
-    endPos = [xCoordCurrent(end) yCoordCurrent(end)];
-    centerPos = [nanmean(xCoordCurrent) nanmean(yCoordCurrent)];
-
-    %assemble the position information, ordered as instructed for the input
-    %variable positions2plot
-    trajXCoord(iTraj,:) = [centerPos(1) startPos(1) endPos(1)];
-    trajYCoord(iTraj,:) = [centerPos(2) startPos(2) endPos(2)];
-
-    %calculate the average frame-to-frame displacement
-    frame2frameDisp(iTraj) = nanmean(sqrt(diff(xCoordCurrent).^2+diff(yCoordCurrent).^2));
-
-end
 
 %% Property extraction and pre-processing
 

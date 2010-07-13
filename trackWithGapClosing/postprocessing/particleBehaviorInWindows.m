@@ -2,7 +2,8 @@ function [sptPropInWindow,tracksInWindow] = particleBehaviorInWindows(tracksFina
     winPositions,winFrames,diffAnalysisRes,minLength)
 %PARTICLEBEHAVIORINWINDOWS averages single particle behavior in windows based on cell edge segmentation
 %
-%SYNOPSIS 
+%SYNOPSIS [sptPropInWindow,tracksInWindow] = particleBehaviorInWindows(tracksFinal,...
+%    winPositions,winFrames,diffAnalysisRes,minLength)
 %
 %INPUT  tracksFinal    : The tracks, either in structure format (e.g.
 %                        output of trackCloseGapsKalman) or in matrix
