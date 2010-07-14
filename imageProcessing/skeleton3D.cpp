@@ -73,13 +73,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray *prhs[])
     int sz, slsz, idx;
     sz = L * M * N;
     slsz = L * M;
-    
-    int nrDel; //number of deleted voxels
+        
     unsigned char volmat[sz]; //Volume for labelling borders, deleted voxels etc. Stored as char to minimize memory use
     unsigned char *vol = volmat;//Pointer to volume matrix 
     char dir; //Direction of deletion
-    int nrPasses; //Number of deletion passes           
-
+    //int nrPasses; //Number of deletion passes           
+    int nrDel; //number of deleted voxels
+    
     bool nb[3][3][3];  //Neighborhood of current point
     bool USn[3][3][3]; //Transformed neighborhoods
         
@@ -121,22 +121,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray *prhs[])
     for(idx=0; idx < sz; idx++) {
         if(matIn[idx] != 0){
             vol[idx] = OBJECT;
-            nnz++;
+            //nnz++;
         }
         else{
             vol[idx] = 0;
         }
     }
     
-    std::cout << "Number of object voxels = " << nnz << "\n";
+    //std::cout << "Number of object voxels = " << nnz << "\n";
 
     nrDel = 1;
-    nrPasses = 1;    
+    //nrPasses = 1;    
 
     //Loop through thinning until no more points can be deleted
     while(nrDel > 0) {
         
-        std::cout << "Pass" << nrPasses << "\n";
+        //std::cout << "Pass" << nrPasses << "\n";
         nrDel = 0;
         
         //Go through each direction and mark boundary points in that direction
@@ -216,9 +216,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray *prhs[])
                     // DOWN
                     markBoundaryInDirection(vol, L, M, N, DOWN);	
                     break;
-            }
-            
-            int nN = 0;
+            }                        
             
             //check each boundary point and remove it if it matches a template
             for(k=1; k < (N-1); k++) {
@@ -229,9 +227,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray *prhs[])
                         idx = k * slsz + j * L + i;
 	    
                         //If it is a border point
-                        if(vol[idx] == D_BORDER) {
-                            
-                            nN++;
+                        if(vol[idx] == D_BORDER) {                                                        
                             
                             // copy this point's neighborhood into buffer                              
                             CopyNeighborhoodInBuffer(vol, L, M, N, idx, nb);
@@ -262,8 +258,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray *prhs[])
             printf("done.\n");
         }//End direction loop
         
-    std::cout << "Number of deleted voxels : " <<nrDel << "\n";
-    nrPasses++;
+    //std::cout << "Number of deleted voxels : " <<nrDel << "\n";
+    //nrPasses++;
         
     }//End thinning loop
     
