@@ -125,6 +125,7 @@
 			E43A5B6D11EF9F530059F473 /* PBXTextBookmark */ = E43A5B6D11EF9F530059F473 /* PBXTextBookmark */;
 			E43A5B6E11EF9F530059F473 /* PBXTextBookmark */ = E43A5B6E11EF9F530059F473 /* PBXTextBookmark */;
 			E43A5B6F11EF9F530059F473 /* PBXTextBookmark */ = E43A5B6F11EF9F530059F473 /* PBXTextBookmark */;
+			E43A5B7411EFA0F20059F473 /* PBXTextBookmark */ = E43A5B7411EFA0F20059F473 /* PBXTextBookmark */;
 		};
 		sourceControlManager = E43A5AAD11EF76CA0059F473 /* Source Control */;
 		userBuildSettings = {
@@ -135,9 +136,9 @@
 	};
 	E43A5AAB11EF76CA0059F473 /* geodesicDistance.cpp */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {885, 2938}}";
-			sepNavSelRange = "{2166, 0}";
-			sepNavVisRange = "{1176, 762}";
+			sepNavIntBoundsRect = "{{0, 0}, {885, 2899}}";
+			sepNavSelRange = "{4694, 0}";
+			sepNavVisRange = "{3755, 939}";
 			sepNavWindowFrame = "{{504, 54}, {822, 824}}";
 		};
 	};
@@ -607,5 +608,15 @@
 		rType = 0;
 		vrLen = 762;
 		vrLoc = 1176;
+	};
+	E43A5B7411EFA0F20059F473 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = E43A5AAB11EF76CA0059F473 /* geodesicDistance.cpp */;
+		name = "geodesicDistance.cpp: 222";
+		rLen = 0;
+		rLoc = 4694;
+		rType = 0;
+		vrLen = 939;
+		vrLoc = 3755;
 	};
 }

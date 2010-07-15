@@ -295,7 +295,7 @@
 							<real>186</real>
 						</array>
 						<key>RubberWindowFrame</key>
-						<string>77 129 1154 726 0 0 1440 878 </string>
+						<string>76 130 1154 726 0 0 1440 878 </string>
 					</dict>
 					<key>Module</key>
 					<string>PBXSmartGroupTreeModule</string>
@@ -325,7 +325,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>E43A5B6F11EF9F530059F473</string>
+										<string>E43A5B7411EFA0F20059F473</string>
 										<key>history</key>
 										<array>
 											<string>E43A5B1611EF7D0E0059F473</string>
@@ -344,7 +344,7 @@
 								<key>Frame</key>
 								<string>{{0, 0}, {946, 499}}</string>
 								<key>RubberWindowFrame</key>
-								<string>77 129 1154 726 0 0 1440 878 </string>
+								<string>76 130 1154 726 0 0 1440 878 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
@@ -364,7 +364,7 @@
 								<key>Frame</key>
 								<string>{{0, 504}, {946, 181}}</string>
 								<key>RubberWindowFrame</key>
-								<string>77 129 1154 726 0 0 1440 878 </string>
+								<string>76 130 1154 726 0 0 1440 878 </string>
 							</dict>
 							<key>Module</key>
 							<string>XCDetailModule</string>
@@ -534,7 +534,7 @@
 		<string>/Users/sylvain/matlab/projects/common/imageAnalysis/geodesicDistance/geodesicDistance.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
-	<string>77 129 1154 726 0 0 1440 878 </string>
+	<string>76 130 1154 726 0 0 1440 878 </string>
 	<key>WindowToolsV3</key>
 	<array>
 		<dict>
