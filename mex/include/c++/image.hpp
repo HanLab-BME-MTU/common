@@ -642,6 +642,7 @@ public:
     return *this;
   }
 
+  T* data() { return data_; }
   const T* data() const { return data_; }
   const int*  size() const { return size_; }
 
