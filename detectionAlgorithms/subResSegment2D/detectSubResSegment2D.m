@@ -60,16 +60,19 @@ alpha.alphaA = .01;
 % alpha.alphaD = .1;
 alpha.alphaF = 0;
 
-finalPoints = detectSubResFeatures2D(ima,cands,sigmaPSF,alpha,0,1,bitDepth,0,stdNoise);
+% uncomment
+%finalPoints = detectSubResFeatures2D(ima,cands,sigmaPSF,alpha,0,1,bitDepth,0,stdNoise);
 
 %% --- Step 5 ---- %%
+
+winSize = 2*ceil(2*sigmaPSF)+1;
 
 thetaRadon = 0:179;
 theta = -thetaRadon*pi/180;
 ct = cos(theta);
 st = sin(theta);
 tt = tan(theta);
-
+tic;
 for iCC = 1:nCC    
     % Floor bounding box
     bb = ceil(CCstats(iCC).BoundingBox);
@@ -114,8 +117,8 @@ for iCC = 1:nCC
     
             % The integration of that distance transform along lines and restricted
             % to the CC's footprint will gives the center of each FA.
-            distAlong = radon(D,thetaRadon);
-            distAlong = distAlong(indMax) ./ L;
+            distAlong = radon(D,thetaRadon(iTheta));
+            distAlong = distAlong(ind) ./ L(ind);
             
             R = [ct(iTheta) st(iTheta); -st(iTheta) ct(iTheta)];
             pts = [distAside distAlong];
@@ -129,7 +132,7 @@ for iCC = 1:nCC
             % Store the orientation of each segment (note that theta is
             % perpendicular to the main segment's orientation. We add
             % pi/2 so the segment's orienation lies between [-pi/2 pi/2]
-            initialAngle = repmat(theta(iTheta) + pi/2, numel(initiPos), 1);
+            initialAngle = repmat(theta(iTheta) + pi/2, numel(initialPos), 1);
             
             % TODO: check initialization
             
@@ -145,7 +148,7 @@ for iCC = 1:nCC
         end
     end
 end
-
+toc
 %% --- Step 6 --- %%
 
 %% --- Step 7 --- %%
