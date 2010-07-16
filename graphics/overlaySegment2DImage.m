@@ -12,7 +12,7 @@ function overlaySegment2DImage(I, segmentParams)
 %
 % Sylvain Berlemont, 2010
 
-imagesc(I),colormap gray,axis image,axis off;
+%imagesc(I),colormap gray,axis image,axis off;
 
 hold on;
 
