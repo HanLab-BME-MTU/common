@@ -1,11 +1,9 @@
-function [vertices,edges,edgePaths] = skel2graph(skelIn,nConn)
+function [vertices,edges] = skel2graph(skelIn,nConn)
 %SKEL2GRAPH converts a binary 3D skeleton matrix into a graph structure with nodes and edges 
 % 
 % [vertices,edges] = skel2graph(skelIn)
 %
-% [vertices,edges,edgePaths] = skel2graph(skelIn)
-% 
-% [vertices,edges,edgePaths] = skel2graph(skelIn,nConn)
+%                        ... = skel2graph(skelIn,nConn)
 % 
 % Input:
 % 
@@ -23,7 +21,12 @@ function [vertices,edges,edgePaths] = skel2graph(skelIn,nConn)
 % 
 %   edges - An Nx2 matrix of the index of the vertices that each edge
 %   connects.
-% 
+%
+
+
+%   edgePaths - An Nx1 cell array containing the ordered coordinates of
+%   each point along each edge. NOTE: This will make the processing MUCH
+%   slower!
 % 
 % Hunter Elliott
 % 4/2/2010
@@ -59,8 +62,18 @@ vertMat = (nNeighbors == 1) & skelIn;
 %Find junction points
 junctionPoints = (nNeighbors > 2) & skelIn;
 
-%Combine the end-points and junctions and label them
-[vertMat,nVerts] = bwlabeln(vertMat | junctionPoints,nConn);
+%Label end-points first. This is done separately because it allows
+%recognition of "spurs" as endpoints - branches which are 1 voxel in
+%length. Otherwise these are combined with the adjacent vertex.
+[tmp,nEP] = bwlabeln(vertMat,nConn);
+
+%Label the junction points
+[vertMat,nJP] = bwlabeln(junctionPoints,nConn);
+
+%Combine them with the endpoints
+vertMat(vertMat(:)>0) = vertMat(vertMat(:)>0) + nEP;%Shift the labels
+vertMat(tmp(:)>0) = tmp(tmp(:)>0);%Add the endpoint labels. These override any junction-labels.
+nVerts = nJP+nEP;
 
 %Get edges
 edgeMat = nNeighbors == 2 & skelIn;
@@ -91,25 +104,45 @@ for j = 1:nVerts
 
 end
 
-if nargin > 2
-    edgePaths = cell(1,nEdges);
-end
+% if nargout > 2
+%     edgePaths = cell(nEdges,1);
+%     edgeInit = zeros(3*max(size(skelIn)),3); %Matrix for over-initializing edge paths    
+% end
 
 %Go through each edge...
 for j = 1:nEdges
             
     %Find vertices which this edge connects
-    edges(j,:) = unique(vertMat(imdilate(edgeMat == j,nHood) & vertMat));           
-    
-    %If requested, return the coordinates of each point on this edge
+    tmp = unique(vertMat(imdilate(edgeMat == j,nHood) & vertMat));           
+    if length(tmp) == 2
+        edges(j,:) = tmp;
+    elseif length(tmp) > 2
+        error('Problem with input matrix! Check that it is in fact a skeleton, and that it''s connectivity  matches the specified connectivity!')
+    end
+      
+%COMMENTED THIS OUT BECAUSE ITS REALLY SLOW AND FAILS IF THE SKELETON HAS LOOPS    
+%     %If requested, return the coordinates of each point on this edge. I'm
+%     %pretty sure there's a faster way to do this...???
 %     if nargout > 2
-%         Get the coord of one vertex 
-%         
-%         
-%         THIS DOESN"T SUPPORT 3D MATRICES - NEED TO WRITE OWN FUNC
-%         
-%         edgePaths{j} = bwtraceboundary(edgeMat == j & vertMat == edges(j,1),,'N');
-%     end
+%         %Get the coord of one vertex        
+%         iVert = 1;
+%         edgePaths{j} = edgeInit;        
+%         currPos = vertices(edges(j,1),:);
+%         while 1            
+%             tmpMask = false(size(skelIn));
+%             tmpMask(round(currPos(1)),round(currPos(2)),round(currPos(3))) = true;
+%             iNeighbors = find(imdilate(tmpMask,nHood) & (edgeMat == j));
+%             if length(iNeighbors) == 1
+%                 edgePaths{j}(iVert,:) = currPos;
+%                 iVert = iVert + 1;
+%                 [currPos(1),currPos(2),currPos(3)] = ind2sub(size(skelIn),iNeighbors);                
+%             else
+%                 break
+%             end
+%         end
+%         edgePaths{j} = edgePaths{j}(1:iVert-1,:);
+%    end
+
 end
 
 
@@ -118,20 +151,12 @@ end
 if showPlots
    
     fsFigure(.5);
-    title('Edges')    
-    hold on
-    spy3d(skelIn,'.k')
-    cols = jet(nEdges);    
-    arrayfun(@(x)(spy3d(edgeMat == x & skelIn,'.','color',cols(x,:),'MarkerSize',15)),1:nEdges)
-    
-    
-    fsFigure(.5);
-    title('Vertices')
-    hold on
-    spy3d(skelIn,'.k')
-    cols = jet(nVerts);    
-    arrayfun(@(x)(spy3d(vertMat == x & skelIn,'.','color',cols(x,:),'MarkerSize',15)),1:nVerts)
-    
+    title('Edges are points, vertices are circles')    
+    hold on    
+    cols = lines(nEdges);    
+    arrayfun(@(x)(spy3d(edgeMat == x & skelIn,'.','color',cols(x,:),'MarkerSize',5)),1:nEdges)            
+    cols = lines(nVerts);
+    arrayfun(@(x)(spy3d(vertMat == x & skelIn,'o','color',cols(x,:),'MarkerSize',5)),1:nVerts)    
     
 end
 
