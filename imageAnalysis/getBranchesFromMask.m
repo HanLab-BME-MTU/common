@@ -73,7 +73,7 @@ end
 
 %% ----- Parameters ----- %%
 
-showPlots = false; %Determines whether plots showing the branch locations 
+showPlots = true; %Determines whether plots showing the branch locations 
                    %and smoothed mask surface will be shown.
 gcThresh = 1/maxRadius^2;%#ok<NASGU> %Gaussian curvature value to threshold 
                          %at for detecting branch ends. This corresponds to
@@ -146,7 +146,7 @@ nEdges = size(edges,1);
 nVert = size(vertices,1);
 
 if showPlots        
-    patch(maskSurf,'FaceColor','none','EdgeAlpha',.1)    
+    %patch(maskSurf,'FaceColor','none','EdgeAlpha',.1)    
 end
 
 %Determine which vertices are end-points (branch tips)
@@ -226,7 +226,7 @@ isGoodEP  = (meanTipCurvature < mcThresh);
 %Find "depth" at each point within mask
 distX = bwdist(~maskIn);
 
-endDepth = arrayfun(@(x)(distX(round(vertices(x,1)),round(vertices(x,2)),round(vertices(x,3)) )),iEndPt(isGoodEP));
+endDepth = arrayfun(@(x)(distX(round(vertices(x,1)),round(vertices(x,2)),round(vertices(x,3)) )),iEndPt);
 startDepth = arrayfun(@(x)(distX(round(vertices(x,1)),round(vertices(x,2)),round(vertices(x,3)) )),iStartPt);
 
 %Remove branches whose start point is too deep.
@@ -243,11 +243,13 @@ branches.tipAvgCurvature.k1 = k1TipCurvature(isGoodEP);
 branches.tipAvgCurvature.k2 = k2TipCurvature(isGoodEP);
 branches.tipDepth = endDepth(isGoodEP);
 branches.startDepth = startDepth(isGoodEP);
-
+branches.startLocation = vertices(iStartPt(isGoodEP),:);
 
 if showPlots        
     
-    fsFigure(.5);
+    %fsFigure(.5);
+    clf
+    hold on
     patch(maskSurf,'FaceColor','flat','EdgeColor','none','FaceVertexCData',K,'AmbientStrength',.75,'FaceAlpha',.3)
     caxis([mean(K)-2*std(K) mean(K)+2*std(K)])
     hold on             
