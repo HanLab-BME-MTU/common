@@ -61,68 +61,93 @@ alpha.alphaA = .01;
 alpha.alphaF = 0;
 
 % uncomment
-finalPoints = detectSubResFeatures2D(ima,cands,sigmaPSF,alpha,0,1,bitDepth,0,stdNoise);
+%finalPoints = detectSubResFeatures2D(ima,cands,sigmaPSF,alpha,0,1,bitDepth,0,stdNoise);
 
 %% --- Step 5 ---- %%
+tic;
+% Possible optimization: instead of computed Radon transform of
+% filteredIma1 for every possible angle, use the Feature-adapted Radon
+% transform.
 
 winSize = 2*ceil(2*sigmaPSF)+1;
 
-thetaRadon = 0:4:179;
+thetaRadon = 0:179;
 theta = -thetaRadon*pi/180;
 ct = cos(theta);
 st = sin(theta);
-tt = tan(theta);
-tic;
-
-imagesc(segmentMask),colormap gray,axis image,axis off;
 
 for iCC = 1:nCC    
     % Floor bounding box
     bb = ceil(CCstats(iCC).BoundingBox);
 
+    % Expand bounding box so that every optimized segment model can fit
+    % into the expanded bounding box.
+    offset = 3 * sigmaPSF;
+    for i = 1:2
+        bb(i) = min(bb(i) - offset, 1);
+        if bb(i) + bb(i+2) + 2 * offset < ncols
+            bb(i+2) = bb(i+2) + 2 * offset;
+        else
+            bb(i+2) = ncols - bb(i) + 1;
+        end
+    end
+    
     % Get the footprint of the CC
     CC = zeros(bb(4),bb(3));
     [y x] = ind2sub([nrows ncols],CCstats(iCC).PixelIdxList);
-    x = x - bb(1) + 1;
-    y = y - bb(2) + 1;
+    x = x - bb(1) + 1 + offset;
+    y = y - bb(2) + 1 + offset;
     indLocal = sub2ind(size(CC), y, x);
     CC(indLocal) = 1;
+    
+    % Compute the Radon transform on the CC's footprint. It gives the
+    % length of each Radon lines.
+    [L xp] = radon(CC, thetaRadon);
+    
+    % Crop ima using bounding box and restrinct to CC's footprint
+    imaCC = zeros(bb(4),bb(3));
+    imaCC(indLocal) = ima(CCstats(iCC).PixelIdxList);
+    
+    % Compute the Radon transform on the crop image. averageRI correspond
+    % to the mean intensity of the image along the radon lines.
+    RI = radon(imaCC, thetaRadon);
+    averageRI = RI ./ (L + 1e-10);
     
     % Crop R using bounding box and restrinct to CC's footprint
     filteredCC1 = zeros(bb(4),bb(3));
     filteredCC1(indLocal) = filteredIma1(CCstats(iCC).PixelIdxList);
     
     % Compute the Radon transform on the crop filtered image
-    [RT xp] = radon(filteredCC1, thetaRadon);
-    
-    % Compute the Radon transform on the CC's footprint
-    L = radon(CC, thetaRadon);
+    RT = radon(filteredCC1, thetaRadon);
     
     % Compute the mean integral of R along the radon lines.
     averageRT = RT ./ (L + 1e-10);
     
     % The Radon origin is floor((size(BW)+1)/2).
     cRadon = floor((bb(3:4)+1)/2);
-    
-    hold on;
-    plot(bb(1) + cRadon(1) - 1, bb(2) + cRadon(2) - 1,'rx');
-    
+        
     % Compute the Radon transform of a function defines as the signed
     % distance from the perpendical axis passing through cRadon. The
     % orientation of that perpendical follows each radon orientation.
-    c1 = tt ./ sqrt(1 + tt.^2);
-    c2 = 1 ./ sqrt(1 + tt.^2);
     D1 = zeros(size(CC));
     D1(indLocal) = cRadon(1) - x;
     D2 = zeros(size(CC));
     D2(indLocal) = y - cRadon(2);
-    RD = bsxfun(@times, radon(D1, thetaRadon), c1) + bsxfun(@times, radon(D2, thetaRadon), c2);
+    RD = bsxfun(@times, radon(D1, thetaRadon), st) + bsxfun(@times, radon(D2, thetaRadon), ct);
     
-    for iTheta = 40%1:numel(thetaRadon)
+    locMax = locmax2d(averageRT,[winSize 1]);
+    locMax(averageRT <= 0) = 0;
+    
+    % TODO: try to get rid of that loop (is it faster?)
+    for iTheta = 1:numel(thetaRadon)
         
         % Get the local maxima
         ind = locmax1d(averageRT(:,iTheta), winSize);
         ind = ind(averageRT(ind,iTheta) > 0);
+        
+        if numel(ind) ~= nnz(locMax(:,iTheta))
+            ind
+        end
         
         if ~isempty(ind)
             distAside = xp(ind);           
@@ -130,23 +155,21 @@ for iCC = 1:nCC
             
             R = [ct(iTheta) st(iTheta); -st(iTheta) ct(iTheta)];
             pts = [distAside distAlong];
-            %pts = [distAside zeros(numel(ind), 1)];
             
-            % Centers of Segments = center of the CC + R(pts)
-            initialPos = repmat(bb(1:2) + cRadon - 1,numel(distAside),1) + pts * R;
-                       
-            % Store the length of each segment
-            initialLength = L(ind,iTheta);
+            % Store segment candidates parameters
+            paramsCC = zeros(numel(distAside), 6);
             
-            % Store the orientation of each segment (note that theta is
-            % perpendicular to the main segment's orientation. We add
-            % pi/2 so the segment's orienation lies between [-pi/2 pi/2]
-            initialAngle = repmat(theta(iTheta) + pi/2, numel(initialLength), 1);
+            paramsCC(:,1:2) = repmat(cRadon - 1,numel(distAside),1) + pts * R;
+            paramsCC(:,3) = averageRI(ind,iTheta);
+            paramsCC(:,4) = sigmaPSF;
+            paramsCC(:,5) = L(ind,iTheta);
+            paramsCC(:,6) = theta(iTheta) + pi/2;
+
+            % Generate the image model
+            M = subResSegment2DImageModel(paramsCC,size(CC));
             
-            % TODO: check initialization
-            
-            % Compute optimization lsqnonlin
-            % TODO
+            % Assume segmentImageModel ~ N(mu,sigma^2) where mu is the mean
+            % background intensity and sigma^2
             
             % Test the residual of each segment separatly (on the segment
             % support)
@@ -154,8 +177,6 @@ for iCC = 1:nCC
             
             % If resnorm is smaller than the one computed from a previous
             % angle, store the segments parameters
-            
-            overlaySegment2DImage([], [initialPos zeros(size(initialLength)) initialLength initialAngle]);
         end
     end
 end
@@ -165,3 +186,5 @@ toc
 %% --- Step 7 --- %%
 
 %% --- Step 8 --- %%
+
+params = [];

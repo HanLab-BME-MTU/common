@@ -1,14 +1,12 @@
-function Im = subResSegment2DImageModel(segmentParams, sigmaPSF, imSize)
+function Im = subResSegment2DImageModel(segmentParams, imSize)
 % Compute an image model which is the sum of sub-resolution 2D segments
 % defined by params (see subResSegment2D.m for more details).
 %
-% Im = subResSegment2DImageModel(params, sigmaPSF, imSize)
+% Im = subResSegment2DImageModel(params, imSize)
 %
 % INPUT:
-% segmentParams   : nx5 matrix where n is the number of segments and their
-%                 parameters, i.e. xC, yC, A, l, t are stored column-wise.
-%
-% sigmaPSF        : half width of the gaussian PSF model
+% segmentParams   : nx6 matrix where n is the number of segments and their
+%                   parameters (see subResSegment2D() for details)
 %
 % imSize          : image size
 %
@@ -17,9 +15,9 @@ function Im = subResSegment2DImageModel(segmentParams, sigmaPSF, imSize)
 %
 % Sylvain Berlemont, 2010
 
-[n,p] = size(params);
+[n,p] = size(segmentParams);
 
-if p ~= 5
+if p ~= 6
     error('Invalid number of segment parameters.');
 end
 
@@ -29,13 +27,14 @@ Im = zeros(imSize);
 for i = 1:n
     xC = segmentParams(i,1);
     yC = segmentParams(i,2);
-    A = segmentParams(i,3);
-    l = segmentParams(i,4);
-    t = segmentParams(i,5);
+    amp = segmentParams(i,3);
+    sigma = segmentParams(i,4);
+    l = segmentParams(i,5);
+    theta = segmentParams(i,6);
 
-    [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,yC,sigmaPSF,l,t,imSize);
+    [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,yC,sigma,l,theta,imSize);
 
-    S = subResSegment2D(xRange-xC,yRange-yC,A,sigmaPSF,l,t,nzIdx);
+    S = subResSegment2D(xRange-xC,yRange-yC,amp,sigma,l,theta,nzIdx);
     
     Im(yRange,xRange) = Im(yRange,xRange) + S;
 end

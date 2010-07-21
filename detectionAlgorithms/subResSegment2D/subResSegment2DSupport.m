@@ -1,5 +1,5 @@
-function [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,yC,sigmaPSF,l,theta,imSize)
-% [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,yC,sigmaPSF,l,theta,imSize)
+function [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,yC,sigma,l,theta,imSize)
+% [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,yC,sigma,l,theta,imSize)
 %
 % Compute the finite support of a diffraction-limited 2D segment given
 % its parameters.
@@ -7,7 +7,7 @@ function [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,yC,sigmaPSF,l,theta,i
 % parameters:
 % (xC,yC)            center of the segment
 %
-% sigmaPSF           half width of the gaussian PSF model
+% sigma              half width of segment
 %
 % l                  length of the segment
 %
@@ -32,7 +32,7 @@ l2 = l / 2;
 
 % Hypothenuse length, corresponding to the half-length diagonal of a
 % 2*(L2+d) long by 2d wide rectangle surrounding the segment.
-d = 4 * sigmaPSF;
+d = 3 * sigma;
 lh = sqrt(d.^2 + (l2 + d).^2);
 
 % Angle between a rectangle border and a diagonal of the rectangle
@@ -57,4 +57,13 @@ yMax = max(ceil(y));
 xRange = max(xMin,1):min(xMax,imSize(2));
 yRange = max(yMin,1):min(yMax,imSize(1));
 
+% % Faster solution (maybe...)
+% [X,Y] = meshgrid(xRange,yRange);
+% ct = cos(theta);
+% st = sin(theta);
+% D1 = abs(ct * (xC - X) + st * (Y - yC)); % Wrong !
+% D2 = abs(st * (xC - X) + ct * (Y - yC)); % Wrong !
+% nzIdx = find(D1 <= d & D2 <= l2 + d);
+
+% TODO: replace poly2mask call by 4 line intersections.
 nzIdx = find(poly2mask(x-xRange(1)+1,y-yRange(1)+1,length(yRange),length(xRange)));

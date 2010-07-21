@@ -1,18 +1,15 @@
-function [dFdXc dFdYc dFdA dFds dFdl dFdt] = ...
-    subResSegment2DJacobian(xRange, yRange,A, sigmaPSF, l, theta, nzIdx)
-% Partial derivatives of a sub-resolution 2D segment against each of its
-% parameter.
-% [dFdXc dFdXy dFdA dFds dFdl dFdt] =
-%           subResSegment2DJacobian(xRange, yRange, A, sigmaPSF, l, theta)
+function dF = subResSegment2DJacobian(xRange, yRange, amp, sigma, l, theta, nzIdx, paramSelector)
+% Partial derivatives of a sub-resolution 2D segment against its parameters.
+% dF = subResSegment2DJacobian(xRange, yRange, amp, sigma, l, theta, nzIdx, paramSelector)
 %
 % parameters:
 % (xRange, yRange)   2 vectors representing the 2-dimensional support of
 %                    the segment. This support can be determined using
 %                    subResSegment2DSupport() function.
 %
-% A                  amplitude of the segment
+% amp                amplitude of the segment
 %
-% sigmaPSF           half width of the gaussian PSF model.
+% sigma              half width of the gaussian PSF model.
 %
 % l                  length of the segment
 %
@@ -23,8 +20,10 @@ function [dFdXc dFdYc dFdA dFds dFdl dFdt] = ...
 %                    not provided, nzIdx = ones(N*M, 1). These indices can
 %                    be determined using subResSegment2DSupport() function.
 %
+% paramSelector      
+%
 % output:
-% dFdXc dFdXy dFdA dFds dFdl dFdt are NxM matrices. 
+% dF is a NxMxP matrix.
 %
 % Sylvain Berlemont, 2010
 
@@ -35,6 +34,12 @@ if nargin < 7 || isempty(nzIdx)
     nzIdx = ones(N*M, 1);
 end
 
+if nargin < 8 || isempty(paramSelector)
+    paramSelector = ones(6,1);
+end
+    
+P = nnz(paramSelector);
+
 ct = cos(theta);
 st = sin(theta);
 
@@ -42,12 +47,12 @@ st = sin(theta);
 X = X(nzIdx);
 Y = Y(nzIdx);
 
-s_1 = sigmaPSF^(-1);
-s_2 = sigmaPSF^(-2);
-s_3 = sigmaPSF^(-3);
+s_1 = sigma^(-1);
+s_2 = sigma^(-2);
+s_3 = sigma^(-3);
 
 C1 = (1/2).*exp((-1/2)*s_2.*(Y*ct-X*st).^2);
-C2 = erf(l / (2^(1/2) * sigmaPSF));
+C2 = erf(l / (2^(1/2) * sigma));
 C3 = erf((1/2).*2.^(-1/2)*s_1.*(l+2*X*ct+2*Y*st));
 C4 = erf((1/2).*2.^(-1/2)*s_1.*(l-2*X*ct-2*Y*st));
 C5 = exp((-1/8)*s_2.*(l-2*X*ct-2*Y*st).^2);
@@ -56,24 +61,46 @@ C7 = exp((-1/2).*l.^2*s_2);
 C8 = (2.*pi.^(-1)).^(1/2);
 C9 = (2.*pi).^(-1/2);
 
-dFdXc = zeros(N,M);
-dFdXc(nzIdx) = A*C1*s_2.*C2.^(-1).*(C5*C8*sigmaPSF*ct-C6*C8*sigmaPSF*ct+...
-    st*(C3+C4).*(X*st-Y*ct));
+dFuncs = [@dFdXc, @dFdYc, @dFdA, @dFds, @dFdl, @dFdt];
 
-dFdYc = zeros(N,M);
-dFdYc(nzIdx) = A*C1*s_2.*C2.^(-1).*(C5*C8*sigmaPSF*st-C6*C8*sigmaPSF*st+...
-    ct*(C3+C4).*(Y*ct-X*st));
+dF = zeros(N,M,P);
 
-dFdA = zeros(N,M);
-dFdA(nzIdx) = C1.*C2.^(-1).*(C3+C4);
+paramSet = 1:numel(paramSelector);
 
-dFds = zeros(N,M);
-dFds(nzIdx) = A*C1.*C2.^(-2).*(C7.*l.*C8*s_2.*(C3+C4)+s_3.*C2.*(C3+C4).*...
-    (Y*ct-X*st).^2+C9*s_2.*C2.*(C5.*(-l+2*X*ct+2*Y*st)-C6.*(l+2*X*ct+2*Y*st)));
+offset = 0;
 
-dFdl = zeros(N,M);
-dFdl(nzIdx) = A*C1.*C9*s_1.*C2.^(-2).*((C6+C5).*C2-2*C7.*(C3+C4));
+for iParam = paramSet(paramSelector)
+    dF(nzIdx + offset) = dFuncs(iParam);
+    
+    offset = offset + N * M;
+end
 
-dFdt = zeros(N,M);
-dFdt(nzIdx) = A*C1.*C2.^(-1).*(C5.*C9.*s_1.*(2*X*st-2*Y*ct)+C6.*C8*s_1.*...
-    (Y*ct-X*st)+s_2*(C3+C4).*(Y*ct-X*st).*(X*ct+Y*st));
+    function res = dFdXc
+        res = amp*C1*s_2.*C2.^(-1).*(C5*C8*sigma*ct-C6*C8*sigma*ct+...
+            st*(C3+C4).*(X*st-Y*ct));
+    end
+
+    function res = dFdYc
+        res = amp*C1*s_2.*C2.^(-1).*(C5*C8*sigma*st-C6*C8*sigma*st+...
+            ct*(C3+C4).*(Y*ct-X*st));
+    end
+
+    function res = dFdA
+        res = C1.*C2.^(-1).*(C3+C4);
+    end
+
+    function res = dFds
+        res = amp*C1.*C2.^(-2).*(C7.*l.*C8*s_2.*(C3+C4)+s_3.*C2.*(C3+C4).*...
+            (Y*ct-X*st).^2+C9*s_2.*C2.*(C5.*(-l+2*X*ct+2*Y*st)-C6.*...
+            (l+2*X*ct+2*Y*st)));
+    end
+
+    function res = dFdl
+        res = amp*C1.*C9*s_1.*C2.^(-2).*((C6+C5).*C2-2*C7.*(C3+C4));
+    end
+
+    function res = dFdt
+        res = amp*C1.*C2.^(-1).*(C5.*C9.*s_1.*(2*X*st-2*Y*ct)+C6.*C8*s_1.*...
+            (Y*ct-X*st)+s_2*(C3+C4).*(Y*ct-X*st).*(X*ct+Y*st));
+    end
+end
