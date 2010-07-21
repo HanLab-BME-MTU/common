@@ -23,7 +23,7 @@ else
 end
 
 hside = floor(winSize/2);
-xPad = padarray(x(:), hside);
+xPad = padarray(x(:), hside, +inf);
 nPad = length(xPad);
 
 xMax = arrayfun(@(pos) max(xPad(pos-hside:pos+hside)), hside+1:nPad-hside);

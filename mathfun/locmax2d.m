@@ -50,13 +50,10 @@ end
 
 % take only those positions where the max filter and the original image value
 % are equal -> this is a local maximum
-fImg(~(fImg == img)) = 0;
+fImg(fImg ~= img) = 0;
 
 % set image border to zero
 auxM = zeros(size(img));
 auxM(fix(mask(1)/2)+1:end-fix(mask(1)/2),fix(mask(2)/2)+1:end-fix(mask(2)/2)) = ...
     fImg(fix(mask(1)/2)+1:end-fix(mask(1)/2),fix(mask(2)/2)+1:end-fix(mask(2)/2));
 fImg=auxM;
-
-
-
