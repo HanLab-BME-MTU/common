@@ -27,7 +27,7 @@ function [F J] = subResSegment2DFit(varSegmentParams, I, fixSegmentParams, param
 %                   - pFix == ~nnz(paramSelector)
 %                   - size(varSegmentParams,2) + pFix == numel(paramSelector)
 %
-% paramSelector     (optional) a logical vector of size 6 where
+% paramSelector     (optional) a logical vector of size 7 where
 %                   paramSelector(i) == true means that ith segment
 %                   parameter will be optimized. By default all parameters
 %                   are involved in the optimization. The number of true
@@ -44,7 +44,7 @@ function [F J] = subResSegment2DFit(varSegmentParams, I, fixSegmentParams, param
 %
 % Sylvain Berlemont, 2010
 
-p = 6;
+p = 7;
 
 if nargin ~= 2 || nargin ~= 4
     error('Invalid number of input arguments.');
@@ -62,7 +62,7 @@ if nargin > 2
     end
     
     if numel(paramSelector) ~= p
-        error('paramSelector must be of size 6.');
+        error(['paramSelector must be of size ' num2str(p)]);
     end
     
     pFix = size(fixSegmentParams,2);
@@ -88,30 +88,12 @@ segmentParams(:,paramSet(paramSelector == false)) = fixSegmentParams;
 [nrows ncols] = size(I);
 
 m = nrows * ncols;
-    
-xRange = cell(n, 1);
-yRange = cell(n, 1);
-nzIdx = cell(n,1);
 
-F = zeros(size(I));
+% Get the image model
+[Im xRange yRange nzIdx] = subResSegment2DImageModel(segmentParams, [nrows ncols]);
 
-for i = 1:n
-    xC = segmentParams(i,1);
-    yC = segmentParams(i,2);
-    amp = segmentParams(i,3);
-    sigma = segmentParams(i,4);
-    l = segmentParams(i,5);
-    theta = segmentParams(i,6);
-    
-    [xRange{i},yRange{i},nzIdx{i}] = ...
-        subResSegment2DSupport(xC,yC,sigma,l,theta,[nrows,ncols]);
-
-    S = subResSegment2D(xRange{i}-xC,yRange{i}-yC,amp,sigma,l,theta,nzIdx{i});
-
-    F(yRange{i},xRange{i}) = F(yRange{i},xRange{i}) + S;
-end
-
-F = reshape(F - I, m, 1);
+% Compute F
+F = reshape(Im - I, m, 1);
 
 if nargout > 1
     indPixels = cell(n,1);

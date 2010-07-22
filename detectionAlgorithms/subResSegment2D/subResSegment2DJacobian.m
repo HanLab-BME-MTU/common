@@ -35,7 +35,7 @@ if nargin < 7 || isempty(nzIdx)
 end
 
 if nargin < 8 || isempty(paramSelector)
-    paramSelector = ones(6,1);
+    paramSelector = ones(7,1);
 end
     
 P = nnz(paramSelector);
@@ -61,7 +61,7 @@ C7 = exp((-1/2).*l.^2*s_2);
 C8 = (2.*pi.^(-1)).^(1/2);
 C9 = (2.*pi).^(-1/2);
 
-dFuncs = [@dFdXc, @dFdYc, @dFdA, @dFds, @dFdl, @dFdt];
+dFuncs = [@dFdXc, @dFdYc, @dFdA, @dFds, @dFdl, @dFdt @dFdBg];
 
 dF = zeros(N,M,P);
 
@@ -102,5 +102,9 @@ end
     function res = dFdt
         res = amp*C1.*C2.^(-1).*(C5.*C9.*s_1.*(2*X*st-2*Y*ct)+C6.*C8*s_1.*...
             (Y*ct-X*st)+s_2*(C3+C4).*(Y*ct-X*st).*(X*ct+Y*st));
+    end
+
+    function res = dFdBg
+        res = ones(N,M);
     end
 end

@@ -76,42 +76,21 @@ theta = -thetaRadon*pi/180;
 ct = cos(theta);
 st = sin(theta);
 
-for iCC = 1:nCC    
+for iCC = 1:nCC
     % Floor bounding box
     bb = ceil(CCstats(iCC).BoundingBox);
 
-    % Expand bounding box so that every optimized segment model can fit
-    % into the expanded bounding box.
-    offset = 3 * sigmaPSF;
-    for i = 1:2
-        bb(i) = min(bb(i) - offset, 1);
-        if bb(i) + bb(i+2) + 2 * offset < ncols
-            bb(i+2) = bb(i+2) + 2 * offset;
-        else
-            bb(i+2) = ncols - bb(i) + 1;
-        end
-    end
-    
     % Get the footprint of the CC
     CC = zeros(bb(4),bb(3));
     [y x] = ind2sub([nrows ncols],CCstats(iCC).PixelIdxList);
-    x = x - bb(1) + 1 + offset;
-    y = y - bb(2) + 1 + offset;
+    x = x - bb(1) + 1;
+    y = y - bb(2) + 1;
     indLocal = sub2ind(size(CC), y, x);
     CC(indLocal) = 1;
     
     % Compute the Radon transform on the CC's footprint. It gives the
     % length of each Radon lines.
     [L xp] = radon(CC, thetaRadon);
-    
-    % Crop ima using bounding box and restrinct to CC's footprint
-    imaCC = zeros(bb(4),bb(3));
-    imaCC(indLocal) = ima(CCstats(iCC).PixelIdxList);
-    
-    % Compute the Radon transform on the crop image. averageRI correspond
-    % to the mean intensity of the image along the radon lines.
-    RI = radon(imaCC, thetaRadon);
-    averageRI = RI ./ (L + 1e-10);
     
     % Crop R using bounding box and restrinct to CC's footprint
     filteredCC1 = zeros(bb(4),bb(3));
@@ -125,60 +104,69 @@ for iCC = 1:nCC
     
     % The Radon origin is floor((size(BW)+1)/2).
     cRadon = floor((bb(3:4)+1)/2);
-        
-    % Compute the Radon transform of a function defines as the signed
-    % distance from the perpendical axis passing through cRadon. The
-    % orientation of that perpendical follows each radon orientation.
+    
+    % Get the local maxima per column (for each orientation) of averageRT
+    locMax = locmax2d(averageRT,[winSize 1]);
+    locMax(averageRT <= 0) = 0;
+    locMax = locMax ~= 0;
+    
+    %% Compute initial value of the center's coordinates of each segment candidates
+    
+    % Compute the distance of each local maxima away from the main axis,
+    % for each main axis's orientation
+    distAside = bsxfun(@times,locMax,xp);
+    
+    % Compute the distance of each local maxima away form the secondary
+    % axis, for each secondary axis's orientation. For that, compute the
+    % Radon transform of a function defines as the signed distance from the
+    % perpendical axis passing through cRadon. The orientation of that
+    % perpendical follows each radon orientation.
     D1 = zeros(size(CC));
     D1(indLocal) = cRadon(1) - x;
     D2 = zeros(size(CC));
     D2(indLocal) = y - cRadon(2);
-    RD = bsxfun(@times, radon(D1, thetaRadon), st) + bsxfun(@times, radon(D2, thetaRadon), ct);
+    RD = bsxfun(@times, radon(D1, thetaRadon), st) + ...
+        bsxfun(@times, radon(D2, thetaRadon), ct);
     
-    locMax = locmax2d(averageRT,[winSize 1]);
-    locMax(averageRT <= 0) = 0;
+    distAlong = zeros(size(locMax));
+    distAlong(locMax) = RD(locMax) ./ L(locMax);
     
-    % TODO: try to get rid of that loop (is it faster?)
-    for iTheta = 1:numel(thetaRadon)
-        
-        % Get the local maxima
-        ind = locmax1d(averageRT(:,iTheta), winSize);
-        ind = ind(averageRT(ind,iTheta) > 0);
-        
-        if numel(ind) ~= nnz(locMax(:,iTheta))
-            ind
-        end
-        
-        if ~isempty(ind)
-            distAside = xp(ind);           
-            distAlong = RD(ind,iTheta) ./ L(ind,iTheta);
-            
-            R = [ct(iTheta) st(iTheta); -st(iTheta) ct(iTheta)];
-            pts = [distAside distAlong];
-            
-            % Store segment candidates parameters
-            paramsCC = zeros(numel(distAside), 6);
-            
-            paramsCC(:,1:2) = repmat(cRadon - 1,numel(distAside),1) + pts * R;
-            paramsCC(:,3) = averageRI(ind,iTheta);
-            paramsCC(:,4) = sigmaPSF;
-            paramsCC(:,5) = L(ind,iTheta);
-            paramsCC(:,6) = theta(iTheta) + pi/2;
-
-            % Generate the image model
-            M = subResSegment2DImageModel(paramsCC,size(CC));
-            
-            % Assume segmentImageModel ~ N(mu,sigma^2) where mu is the mean
-            % background intensity and sigma^2
-            
-            % Test the residual of each segment separatly (on the segment
-            % support)
-            % TODO
-            
-            % If resnorm is smaller than the one computed from a previous
-            % angle, store the segments parameters
-        end
+    segmentX = bsxfun(@times,distAside,ct) + bsxfun(@times,distAlong,-st);
+    segmentX(locMax) = bb(1) + cRadon(1) - 1 + segmentX(locMax);
+    segmentY = bsxfun(@times,distAside,st) + bsxfun(@times,distAlong, ct);
+    segmentY(locMax) = bb(2) + cRadon(2) - 1 + segmentY(locMax);
+    
+    %% Compute initial value of the amplitude of each segment %%
+    
+    % Crop ima using bounding box and restrinct to CC's footprint
+    imaCC = zeros(bb(4),bb(3));
+    imaCC(indLocal) = ima(CCstats(iCC).PixelIdxList);
+    
+    % Compute the Radon transform on the crop image. averageRI correspond
+    % to the mean intensity of the image along the radon lines.
+    RI = radon(imaCC, thetaRadon);
+    
+    segmentAmp = zeros(size(locMax));
+    segmentAmp(locMax) = RI(locMax) ./ L(locMax);
+    
+    %% Compute initial value of the length of each segment candidates
+    
+    segmentLength = zeros(size(locMax));
+    segmentLength(locMax) = L(locMax);
+    
+    %% Sequential Parameter Optimization
+    
+    for iTheta = 1:numel(theta)
+        % For each orientation, optimize the segment parameter one after
+        % the other
+    
+        % Keep orientation that minimize the norm of residual
     end
+    
+    %% Optimization of all parameters
+    
+    % After the optimization, test the residual using alphaR quantile and
+    % plot segment in 2 colors whether they pass the test or not.
 end
 toc
 %% --- Step 6 --- %%
