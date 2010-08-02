@@ -13,7 +13,7 @@ function C = pcombs(v)
 %   2  3
 %   4  3
 
-assert(min(v == unique(v)) == 1);
+assert(all(v == unique(v)));
 
 [I J] = meshgrid(v, v');
 I = triu(I, 1);
