@@ -46,7 +46,7 @@ end
 if isa(movieData,'MovieData')
     %New moviedata
     
-    chanList = movieData.channelPath_;
+    chanList = movieData.getChannelPaths_;
     
 else
     %Old movieData

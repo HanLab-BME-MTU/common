@@ -18,7 +18,7 @@ classdef SegmentationProcess3D < SegmentationProcess
                     %----Defaults----%
                     funParams.OutputDirectory = ...
                         [owner.outputDirectory_  filesep 'masks'];                          
-                    funParams.ChannelIndex = 1 : numel(owner.channelPath_);    
+                    funParams.ChannelIndex = 1 : numel(owner.channels_);    
                     funParams.Method = 'Otsu';
                     funParams.FixJumps = false; %Default is no jump suppression                    
                     funParams.PostProcess = false;                    

@@ -29,12 +29,12 @@ classdef SegmentationProcess < Process
            end
            if nargin > 4               
               if ~isempty(maskPaths) && numel(maskPaths) ...
-                      ~= numel(owner.channelPath_) || ~iscell(maskPaths)
+                      ~= numel(owner.channels_) || ~iscell(maskPaths)
                  error('lccb:set:fatal','Mask paths must be a cell-array of the same size as the number of image channels!\n\n'); 
               end
               obj.maskPaths_ = maskPaths;              
            else
-               obj.maskPaths_ = cell(1,numel(owner.channelPath_));               
+               obj.maskPaths_ = cell(1,numel(owner.channels_));               
            end
         end
         function sanityCheck(obj) % throws exception

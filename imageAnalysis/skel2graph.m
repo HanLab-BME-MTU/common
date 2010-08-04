@@ -37,7 +37,7 @@ function [vertices,edges] = skel2graph(skelIn,nConn)
 %NOTE: At some point this should be generalized to 2D or 3D. Also, the
 %exact paths the edges follow should be returned.
 
-showPlots = false;
+showPlots = true;
 
 if nargin < 2 || isempty(nConn)
     nConn = 26;

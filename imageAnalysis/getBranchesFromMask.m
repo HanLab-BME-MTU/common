@@ -146,7 +146,7 @@ nEdges = size(edges,1);
 nVert = size(vertices,1);
 
 if showPlots        
-    %patch(maskSurf,'FaceColor','none','EdgeAlpha',.1)    
+    patch(maskSurf,'FaceColor','none','EdgeAlpha',.1)    
 end
 
 %Determine which vertices are end-points (branch tips)
@@ -230,7 +230,7 @@ endDepth = arrayfun(@(x)(distX(round(vertices(x,1)),round(vertices(x,2)),round(v
 startDepth = arrayfun(@(x)(distX(round(vertices(x,1)),round(vertices(x,2)),round(vertices(x,3)) )),iStartPt);
 
 %Remove branches whose start point is too deep.
-isGoodEP(startDepth > (maxRadius/2)) = false;
+isGoodEP(startDepth > (maxRadius)) = false;
 
 %% ---------- Output ---------- %%
 
@@ -247,8 +247,8 @@ branches.startLocation = vertices(iStartPt(isGoodEP),:);
 
 if showPlots        
     
-    %fsFigure(.5);
-    clf
+    fsFigure(.5);
+    %clf
     hold on
     patch(maskSurf,'FaceColor','flat','EdgeColor','none','FaceVertexCData',K,'AmbientStrength',.75,'FaceAlpha',.3)
     caxis([mean(K)-2*std(K) mean(K)+2*std(K)])
