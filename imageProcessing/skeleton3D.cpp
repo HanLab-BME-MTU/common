@@ -3,7 +3,6 @@
 
 #include "skeleton3D.h"
 #include <stdlib.h>
-#include <iostream>
 
 int volNeighbors[27] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 
