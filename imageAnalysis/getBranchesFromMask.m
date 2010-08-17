@@ -63,7 +63,7 @@ if nargin < 3 || isempty(smSig)
                %surface curvature calculations.
 end
 
-if nargin < 4 || isempty(isoValue)
+if nargin < 4 || isempty(isoVal)
     isoVal = .25; %Value to use for isosurface of mask. 
                   %1/2 will best preserve size/volume of the original
                   %object, though a lower value will better preserve object
@@ -73,7 +73,7 @@ end
 
 %% ----- Parameters ----- %%
 
-showPlots = true; %Determines whether plots showing the branch locations 
+showPlots = false; %Determines whether plots showing the branch locations 
                    %and smoothed mask surface will be shown.
 gcThresh = 1/maxRadius^2;%#ok<NASGU> %Gaussian curvature value to threshold 
                          %at for detecting branch ends. This corresponds to
@@ -122,7 +122,8 @@ nFaces = numel(K);
 k1 = H + sqrt(H .^2 - K);
 k2 = H - sqrt(H .^2 - K);
 
-%We have curvature data for the faces, so we want their positions also.    
+%We have curvature data for the faces, so we want their positions also.
+%Average of the vertex locat ions gives us the barycenter of each face. 
 facePos = zeros(nFaces,3);
 facePos(:,1) = arrayfun(@(x)(mean(maskSurf.vertices(maskSurf.faces(x,:),1),1)),1:nFaces);
 facePos(:,2) = arrayfun(@(x)(mean(maskSurf.vertices(maskSurf.faces(x,:),2),1)),1:nFaces);
@@ -244,6 +245,8 @@ branches.tipAvgCurvature.k2 = k2TipCurvature(isGoodEP);
 branches.tipDepth = endDepth(isGoodEP);
 branches.startDepth = startDepth(isGoodEP);
 branches.startLocation = vertices(iStartPt(isGoodEP),:);
+branches.skeleton = skeleton;
+
 
 if showPlots        
     
