@@ -132,7 +132,11 @@ else
     
     % calculate std of the sample;
     if nargout > 1
-        stdSample=sqrt(nansum(res2,dim)./(nInliers-4));
+        % put NaN wherever there are not enough data points to calculate a
+        % standard deviation
+        goodIdx = sum(isfinite(res2),dim) > 4;
+        stdSample = NaN(size(goodIdx));
+        stdSample(goodIdx)=sqrt(nansum(res2(goodIdx),dim)./(nInliers(goodIdx)-4));
     end
     
     %====END LMS=========

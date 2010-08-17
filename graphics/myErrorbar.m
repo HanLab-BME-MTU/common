@@ -244,13 +244,12 @@ end
 
 %set the tag of all errorBar-objects to 'errorBar'
 set(h,'Tag','errorBar');
-try % try b/c I do not know when this feature was added
-    hasbehavior(h,'Legend',false);
-end
 
-% hAnnotation = get(h,'Annotation');
-% hLegendEntry = get(hAnnotation','LegendInformation');
-% set(hLegendEntry,'IconDisplayStyle','off')
+% make sure errorbar doesn't produce a legend entry
+for lineH = h'
+    set(get(get(lineH,'Annotation'),'LegendInformation'),...
+        'IconDisplayStyle','off');
+end
 
 
 if ~hold_state, hold off; end

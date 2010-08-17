@@ -12,8 +12,11 @@ function [uniqueEntries,numberOfOccurences,whereIdx] = countEntries(m,isRow, kee
 %                       of the uniqueEntries in the input array.
 %
 %OUTPUT uniqueEntries : unique(m)
+%                       if only one output argument is requested,
+%                       countEntries returns [uniqueEntries,#ofOcc]
 %       numberOfOccurences : how many times the unique entries appear in m
 %       whereIdx      : where in m do the entries appear? (m = uniqueEntries(whereIdx,:))
+%
 %
 %c: 11/03, jonas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -107,4 +110,8 @@ else %do it the complicated way
     
     %diff again for the numberOfOccurences: [3     4     2     1]
     numberOfOccurences = diff(changeValueIdx);
+end
+
+if nargout < 2
+    uniqueEntries = [uniqueEntries,numberOfOccurences];
 end

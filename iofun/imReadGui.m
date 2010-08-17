@@ -21,7 +21,7 @@ if nargin < 2 || isempty(title)
     title = 'imReadGui ...';
 end
 if nargin < 3 || isempty(filter)
-    filter = {'*.tif','Tiff-files';'*.*','All files'};
+    filter = {'*.tif;*.tiff','Tiff-files';'*.*','All files'};
 end
     
 

@@ -1,7 +1,7 @@
 function [u, sigmaU, goodIdx, plotAx] = robustExponentialFit2(Y, A, verbose, u0)
 %ROBUSTEXPONENTIALFIT2 robustly fits exponential functions in a more stable way than robusExponentialFit, but without additive constant
 %
-% SYNOPSIS: [u, sigmaU, goodIdx] = robustExponentialFit2(Y, A)
+% SYNOPSIS: [u, sigmaU, goodIdx] = robustExponentialFit2(Y, A, verbose, u0)
 %
 % INPUT Y: n-by-1 vector of function values. The code cannot handle mixed
 %           positive and negative values of Y. In that case, it will call
@@ -172,12 +172,12 @@ if verbose
         % make sure that the time is ordered when plotting the estimate
         plotData = [ut,yFit(:,i)];
         %plotData = sortrows(plotData,1);
-        plot(plotData(:,1),plotData(:,2),'Color',colorOrder(wraparound(i,[1;size(colorOrder,1)]),:))        
-        plot(t(pIdx),Y(pIdx)*ySign,'.','Color',colorOrder(wraparound(i,[1;size(colorOrder,1)]),:))
+        plot(plotAx,plotData(:,1),plotData(:,2),'Color',colorOrder(wraparound(i,[1;size(colorOrder,1)]),:))        
+        plot(plotAx,t(pIdx),Y(pIdx)*ySign,'.','Color',colorOrder(wraparound(i,[1;size(colorOrder,1)]),:))
 
     end
     badIdx = setdiff(1:lengthY,goodIdx);
-    plot(t(badIdx), Y(badIdx)*ySign,'ok',t(badIdx), Y(badIdx)*ySign,'+k');
+    plot(plotAx,t(badIdx), Y(badIdx)*ySign,'ok',t(badIdx), Y(badIdx)*ySign,'+k');
     
 else
     plotAx = [];

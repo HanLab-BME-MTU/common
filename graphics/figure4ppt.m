@@ -1,7 +1,7 @@
 function figure4ppt(figureH,whiteBg)
 %FIGURE4PPT formats a figure for export into powerpoint via copy figure
 %
-%SYNOPSIS   figure4ppt(figureH)
+%SYNOPSIS   figure4ppt(figureH,whiteBg)
 %
 %INPUT      figureH(opt): handle of figure to be formatted (default is current figure)
 %           whiteBg : Prepare for white background (i.e. no yellow)
@@ -46,6 +46,10 @@ if ~ishandle(figureH)
     error('input is not a valid handle')
 end
 
+fhList = figureH;
+
+for figureH = fhList(:)'
+
 %get handles
 figureHandles = get(figureH);
 
@@ -57,14 +61,20 @@ end
 %set figure background color to none
 set(figureH,'Color','none');
 
+% make fullscreen
+fullscreen(figureH)
+
 %find the axes
 childrenH = figureHandles.Children;
 
 % decide on color
-if whiteBg
+switch whiteBg
+    case 1
     color = [0 0 0]; % black lines
-else
+    case 0
     color = [1 1 0]; % yellow lines
+    case 2
+        color = [1 1 1]; % white lines
 end
 
 %there could be several axes! Therefore loop through all the handles and
@@ -89,9 +99,27 @@ for i = 1:length(childrenH)
         lineHList = findall(axesH,'Type','line');
         set(lineHList,'LineWidth',2);
         
+        if ~all(color == [0 0 0])
+        set(findall(axesH,'color','k'),'Color',[1,1,1])
+        end
+        
     end %if strcmp(get(childrenH(i),'Type'),'axes')
     
 end %for i = 1:length(childrenH)
 
+%set figure background color to none
+if ispc
+set(figureH,'Color','none');
+else
+    switch whiteBg
+        case 1
+            set(figureH,'Color','w')
+        case {0,2}
+            set(figureH,'Color','k')
+    end
+end
+
 %make figur topmost to show the result
 figure(figureH);
+
+end

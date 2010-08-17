@@ -1,4 +1,4 @@
-function ce = centroid3D(img,exponent)
+function ce = centroid3D(img,exponent,matrixCoords)
 % CENTROID compute the centroid of a gray value patch
 %
 % SYNOPSIS ce = centroid3D(img, exponent)
@@ -6,6 +6,8 @@ function ce = centroid3D(img,exponent)
 % INPUT img : an image 3D patch matrix
 %       exponent: (opt) if the image is large and noisy, increase the exponent to
 %                 get better results!
+%       matrixCoords : (opt) if 1, centroid is returned in matrix
+%                 coordinates. Default: 0
 % 
 % OUTPUT ce : vector with the centroid coordinates (in image coords!)
 %
@@ -16,21 +18,28 @@ function ce = centroid3D(img,exponent)
 if nargin < 2 || isempty(exponent)
     exponent = 1;
 end
+if nargin < 3 || isempty(matrixCoords)
+    matrixCoords = false;
+end
 
 [s1,s2,s3] = size(img);
 % reshape image only once
+%img = permute(img,[2,1,3]);
 img = img(:).^exponent;
-cx=0;
-cy=0;
-cz=0;
-% use meshgrid so that we get xyz in image coordinates
-[x,y,z] = meshgrid(1:s1,1:s2,1:s3);
+
+% use ndgrid so that we get xyz in matrix coordinates
+[x,y,z] = ndgrid(1:s1,1:s2,1:s3);
 % nansum in case there are masked regions
 cx = nansum(x(:).*img);
 cy = nansum(y(:).*img);
 cz = nansum(z(:).*img);
 
-ce = [cx, cy, cz]/nansum(img);
+% swap cy, cx so that we get image coordinates
+if matrixCoords
+    ce = [cx, cy, cz]/nansum(img);
+else
+    ce = [cy, cx, cz]/nansum(img);
+end
 
 % old code (replaced 10/05 by jonas)
 %
