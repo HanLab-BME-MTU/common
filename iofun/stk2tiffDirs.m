@@ -16,7 +16,7 @@ if (nargin == 0 || isempty(stkpath))
 end;
 
 stkpath = [stkpath filesep];
-stkList = dir([stkpath '*.stk']);
+stkList = [dir([stkpath '*.tif']) dir([stkpath '*.stk'])];
 
 N = length(stkList);
 
