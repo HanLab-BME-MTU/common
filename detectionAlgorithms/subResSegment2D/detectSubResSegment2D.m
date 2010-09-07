@@ -38,32 +38,12 @@ nCC = numel(CCstats);
 % (2 * ceil(3 * sigma) + 1) but it is too restrictive since some speckles
 % can be closer and somehow overlap with each other.
 hside = 2 * ceil(sigmaPSF) + 1;
-locMax = locmax2d(filteredIma2,[hside hside]);
-locMax(segmentMask == false) = 0;
-indPSF = find(locMax ~= 0);
+pointCands = locmax2d(filteredIma2,[hside hside]);
+pointCands(segmentMask == false) = 0;
+indPSF = find(pointCands ~= 0);
 nPSF = numel(indPSF);
 
-%% --- Step 4 ---- %%
-
-cands(1:numel(indPSF)) = struct('Lmax',[],'IBkg',[],'status',[]);
-for iPSF = 1:nPSF
-    [y x] = ind2sub([nrows ncols], indPSF(iPSF));
-    cands(iPSF).Lmax = [y x];
-    cands(iPSF).IBkg = mean(ima(CCstats(segmentLabels(indPSF(iPSF))).PixelIdxList)) / (2^bitDepth-1);
-    cands(iPSF).status = true;
-end
-
-stdNoise = std(ima(segmentMask == false & mask == true) / (2^bitDepth-1));
-
-%alpha.alphaR = .05;
-alpha.alphaA = .01;
-% alpha.alphaD = .1;
-alpha.alphaF = 0;
-
-% uncomment
-%finalPoints = detectSubResFeatures2D(ima,cands,sigmaPSF,alpha,0,1,bitDepth,0,stdNoise);
-
-%% --- Step 5 ---- %%
+%% --- Step 4 & 5 ---- %%
 tic;
 % Possible optimization: instead of computed Radon transform of
 % filteredIma1 for every possible angle, use the Feature-adapted Radon
@@ -86,6 +66,7 @@ for iCC = 1:nCC
     x = x - bb(1) + 1;
     y = y - bb(2) + 1;
     indLocal = sub2ind(size(CC), y, x);
+    areaCC = numel(indLocal);
     CC(indLocal) = 1;
     
     % Compute the Radon transform on the CC's footprint. It gives the
@@ -157,21 +138,92 @@ for iCC = 1:nCC
     segmentLength = zeros(size(locMax));
     segmentLength(locMax) = L(locMax);
     
-    %% Sequential Parameter Optimization
+    %% Point classification
     
+    % To choose the right orientation of the segment, we classify the
+    % local maxima detected in STEP 3 and choose the orientation that
+    % yields the bigger likelihood. We follow the paper "Finding
+    % Curvilinear Features in Spatial Point Patterns: Principal Curve
+    % Clustering with Noise", IEEE Transactions on PAMI, Vol 22, No 6,
+    % 2000. Derek C. and Adrian E. Raftery.
+    
+    % Crop the image of local maxima to the CC    
+    pointCandsCC = zeros(bb(4),bb(3));
+    pointCandsCC(indLocal) = pointCands(CCstats(iCC).PixelIdxList);
+    
+    % Find the point candidates
+    indPointCandsCC = find(pointCandsCC);
+    nPointCandsCC = numel(indPointCandsCC);
+    [y x] = ind2sub(size(pointCandsCC), indPointCandsCC);
+    x = x + bb(1);
+    y = y + bb(2);    
+    
+    totalLikelihood = zeros(numel(theta),1);
+    
+    pointClasses = zeros(numel(theta), nPointCandsCC);
+    
+    % For each orientation...
     for iTheta = 1:numel(theta)
-        % For each orientation, optimize the segment parameter one after
-        % the other
+        
+        ind = find(segmentX(:,iTheta));
+        
+        pX = bsxfun(@minus,segmentX(ind,iTheta),x');
+        pY = bsxfun(@minus,segmentY(ind,iTheta),y');
+
+        distAbout = bsxfun(@times,ct(iTheta), pX) + bsxfun(@times,st(iTheta), pY);
+        
+        likelihood = 1 / (sqrt(2 * pi) * sigmaPSF) * bsxfun(@times, ...
+            1 ./ (segmentLength(ind,iTheta)), exp(-.5 * distAbout.^2 / sigmaPSF));
     
-        % Keep orientation that minimize the norm of residual
+        likelihood = vertcat(likelihood, repmat(1/areaCC,1,nPointCandsCC));
+        
+        [~, I] = max(likelihood,[],1);
+        
+        pointClasses(iTheta,I ~= numel(ind) + 1) = ind(I(I ~= numel(ind) + 1));
+        
+        totalLikelihood(iTheta) = prod(sum(likelihood,1));
     end
     
-    %% Optimization of all parameters
+    imshow(ima,[]);
+    [~, iTheta] = max(totalLikelihood);
     
-    % After the optimization, test the residual using alphaR quantile and
-    % plot segment in 2 colors whether they pass the test or not.
+    ind = find(locMax(:,iTheta));
+             
+    params = horzcat(segmentX(ind,iTheta), ...
+        segmentY(ind,iTheta), ...
+        segmentAmp(ind,iTheta), ...
+        segmentLength(ind,iTheta), ...
+        ones(numel(ind),1) * (theta(iTheta) + pi/2));
+            
+    overlaySegment2DImage(ima,params);
+    [y x] = ind2sub(size(pointCands), find(pointCands));
+    plot(x, y, 'rx');
+    
+    hold off;
 end
 toc
+
+%% --- Step 5 ---- %%
+
+cands(1:numel(indPSF)) = struct('Lmax',[],'IBkg',[],'status',[]);
+for iPSF = 1:nPSF
+    [y x] = ind2sub([nrows ncols], indPSF(iPSF));
+    cands(iPSF).Lmax = [y x];
+    cands(iPSF).IBkg = mean(ima(CCstats(segmentLabels(indPSF(iPSF))).PixelIdxList)) / (2^bitDepth-1);
+    cands(iPSF).status = true;
+end
+
+stdNoise = std(ima(segmentMask == false & mask == true) / (2^bitDepth-1));
+
+%alpha.alphaR = .05;
+alpha.alphaA = .01;
+% alpha.alphaD = .1;
+alpha.alphaF = 0;
+
+% uncomment
+%finalPoints =
+%detectSubResFeatures2D(ima,cands,sigmaPSF,alpha,0,1,bitDepth,0,stdNoise);
+
 %% --- Step 6 --- %%
 
 %% --- Step 7 --- %%

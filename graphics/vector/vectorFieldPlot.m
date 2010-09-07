@@ -62,19 +62,8 @@ if size(F,2)==4
         h=figure;
     end
     
-    % Check for MATLAB version - quiver 7.0 is no longer compatible
-    %v=ver('MATLAB');
-    %pointPos=findstr(v.Version,'.');
-    %if ~isempty(pointPos)
-    %    v.Version=v.Version(1:pointPos(1)+1);
-    %end
-
-    % Plot scaled vector field and change the axis orientation to ij (see help on axis)
-    %if str2num(v.Version)<7
     quiver(F(:,2),F(:,1),F(:,4)-F(:,2),F(:,3)-F(:,1),0);
-    %else
-    % quiver('v6',F(:,2),F(:,1),F(:,4)-F(:,2),F(:,3)-F(:,1),0);
-    %end
+
     axis ij
     xlabel('x');
     ylabel('y');
@@ -126,8 +115,7 @@ elseif size(F,2)==3
     ylabel('y');
     zlabel('z');
     view(2)
-    colorbar
-    
+    colorbar   
 else
     
     error('Field is not a valid VECTOR or DIVERGENCE field.');
