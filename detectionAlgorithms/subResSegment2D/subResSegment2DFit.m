@@ -101,16 +101,16 @@ if nargout > 1
     val = cell(n,1);    
     
     for i = 1:n
-        xC = segmentParams(i,1);
-        yC = segmentParams(i,2);
+        x = segmentParams(i,1);
+        y = segmentParams(i,2);
         amp = segmentParams(i,3);
         sigma = segmentParams(i,4);
         l = segmentParams(i,5);
         theta = segmentParams(i,6);
         
         % Compute all partial derivatives of F against segment parameters
-        dF = subResSegment2DJacobian(xRange{i}-xC,yRange{i}-yC,amp,sigma,...
-            l,theta,nzIdx{i},paramSelector);
+        dF = subResSegment2DJacobian(x,y,amp,sigma,...
+            l,theta,xRange{i},yRange{i},nzIdx{i},paramSelector);
         
         [X Y] = meshgrid(xRange{i}, yRange{i});
         ind = sub2ind([nrows ncols], Y(:), X(:));

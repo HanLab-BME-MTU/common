@@ -5,7 +5,7 @@ function [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,yC,sigma,l,theta,imSi
 % its parameters.
 %
 % parameters:
-% (xC,yC)            center of the segment
+% (xC,yC)            center of the segment (in the image domain)
 %
 % sigma              half width of segment
 %

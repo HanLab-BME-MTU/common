@@ -38,17 +38,17 @@ nzIdx = cell(n,1);
 Im = zeros(imSize);
 
 for i = 1:n
-    xC = segmentParams(i,1);
-    yC = segmentParams(i,2);
+    x = segmentParams(i,1);
+    y = segmentParams(i,2);
     amp = segmentParams(i,3);
     sigma = segmentParams(i,4);
     l = segmentParams(i,5);
     theta = segmentParams(i,6);
     bg = segmentParams(i,7);
 
-    [xRange{i},yRange{i},nzIdx{i}] = subResSegment2DSupport(xC,yC,sigma,l,theta,imSize);
+    [xRange{i},yRange{i},nzIdx{i}] = subResSegment2DSupport(x,y,sigma,l,theta,imSize);
 
-    S = subResSegment2D(xRange-xC,yRange-yC,amp,sigma,l,theta,bg,nzIdx{i});
+    S = subResSegment2D(x,y,amp,sigma,l,theta,bg,xRange{i},yRange{i},nzIdx{i});
     
     Im(yRange{i},xRange{i}) = Im(yRange{i},xRange{i}) + S;
 end

@@ -24,7 +24,7 @@ filteredIma2(mask == false) = 0;
 %% --- Step 2 ---- %%
 
 % Segment filteredIma1
-% TODO: User LSM
+% TODO: Use LSM
 segmentMask = logical(blobSegmentThreshold(filteredIma1,minSize,0,mask));
 
 segmentLabels = bwlabel(segmentMask);
@@ -109,6 +109,9 @@ for iCC = 1:nCC
     locMax = locmax2d(averageRT,[winSize 1]);
     locMax(averageRT <= 0) = 0;
     locMax = locMax ~= 0;
+
+    % TODO: We can even make more tests here to discard unsignificant local
+    % maxima.
     
     %% Compute initial value of the center's coordinates of each segment candidates
     

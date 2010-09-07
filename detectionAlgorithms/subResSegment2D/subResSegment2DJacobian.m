@@ -1,11 +1,9 @@
-function dF = subResSegment2DJacobian(xRange, yRange, amp, sigma, l, theta, nzIdx, paramSelector)
+function dF = subResSegment2DJacobian(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx, paramSelector)
 % Partial derivatives of a sub-resolution 2D segment against its parameters.
-% dF = subResSegment2DJacobian(xRange, yRange, amp, sigma, l, theta, nzIdx, paramSelector)
+% dF = subResSegment2DJacobian((x, y, amp, sigma, l, theta, xRange, yRange,nzIdx, paramSelector)
 %
 % parameters:
-% (xRange, yRange)   2 vectors representing the 2-dimensional support of
-%                    the segment. This support can be determined using
-%                    subResSegment2DSupport() function.
+% (x,y)              position of the segment's center
 %
 % amp                amplitude of the segment
 %
@@ -14,6 +12,10 @@ function dF = subResSegment2DJacobian(xRange, yRange, amp, sigma, l, theta, nzId
 % l                  length of the segment
 %
 % theta              orientation of the segment
+%
+% (xRange, yRange)   2 vectors representing the 2-dimensional support of
+%                    the segment. This support can be determined using
+%                    subResSegment2DSupport() function.
 %
 % nzIdx              linear indices of a NxM matrix (N = numel(yRange) and
 %                    M = numel(xRange)) where the segment is not null. If
@@ -26,6 +28,9 @@ function dF = subResSegment2DJacobian(xRange, yRange, amp, sigma, l, theta, nzId
 % dF is a NxMxP matrix.
 %
 % Sylvain Berlemont, 2010
+
+xRange = xRange - x;
+yRange = yRange - y;
 
 N = numel(yRange);
 M = numel(xRange);
