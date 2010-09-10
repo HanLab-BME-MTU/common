@@ -95,6 +95,10 @@ m = nrows * ncols;
 % Compute F
 F = reshape(Im - I, m, 1);
 
+if any(isnan(F))
+    F;
+end
+
 if nargout > 1
     indPixels = cell(n,1);
     indParams = cell(n,1);

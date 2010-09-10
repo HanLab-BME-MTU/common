@@ -44,6 +44,10 @@ segmentMask = logical(blobSegmentThreshold(filteredIma1,minSize,0,mask));
 CCstats = regionprops(segmentMask,'PixelIdxList','BoundingBox');
 nCC = numel(CCstats);
 
+% Create background image (original image without segment areas)
+bkgImage = ima;
+bkgImage(segmentMask) = 0;
+
 % Define the final clusters
 clusters(1:nCC) = struct('avgBkg',[],'stdBkg',[],'segments',[],'points',[]);
 
@@ -69,14 +73,11 @@ thetaRadon = 0:179;
 theta = -thetaRadon*pi/180;
 ct = cos(theta);
 st = sin(theta);
-
-segments = cell(nCC,1);
-points = cell(nCC,1);
-
+tic;
 for iCC = 1:nCC
     % Floor bounding box
     bb = ceil(CCstats(iCC).BoundingBox);
-
+    
     % Get the footprint of the CC
     CC = zeros(bb(4),bb(3));
     [y x] = ind2sub([nrows ncols],CCstats(iCC).PixelIdxList);
@@ -85,6 +86,21 @@ for iCC = 1:nCC
     indLocal = sub2ind(size(CC), y, x);
     areaCC = numel(indLocal);
     CC(indLocal) = 1;
+    
+    %% Compute initial background value of the cluster
+    bkgImageCC = bkgImage(max(bb(2)-1,1):min(bb(2)+bb(4),nrows), ...
+        max(bb(1)-1,1):min(bb(1)+bb(3),ncols));
+    
+    bkgPixels = nonzeros(bkgImageCC);
+    
+    clusters(iCC).avgBkg = mean(bkgPixels);
+    clusters(iCC).stdBkg = std(bkgPixels);
+    
+    if isnan(clusters(iCC).avgBkg)
+        clusters(iCC).avgBkg
+    end
+    
+    %%
     
     % Compute the Radon transform on the CC's footprint. It gives the
     % length of each Radon lines.
@@ -137,13 +153,10 @@ for iCC = 1:nCC
     yCoord = bsxfun(@times,distAside,st) + bsxfun(@times,distAlong, ct);
     yCoord(locMax) = cRadon(2) + yCoord(locMax);
     
-    %% Compute initial amplitude of each segment and background value %%
+    %% Compute initial amplitude of each segment
     
     % Crop ima
     imaCC = ima(bb(2):bb(2)+bb(4)-1,bb(1):bb(1)+bb(3)-1);
-    
-    clusters(iCC).avgBkg = mean(imaCC(CC == false));
-    clusters(iCC).stdBkg = std(imaCC(CC == false));
     
     % Compute the Radon transform on the crop image. averageRI correspond
     % to the mean intensity of the image along the radon lines.
@@ -151,7 +164,7 @@ for iCC = 1:nCC
     
     amp = zeros(size(locMax));
     amp(locMax) = RI(locMax) ./ L(locMax);
-    
+
     %% Compute initial value of the length of each segment candidates
     
     length = zeros(size(locMax));
@@ -184,6 +197,7 @@ for iCC = 1:nCC
     c0 = repmat(1/areaCC,1, nPointCandsCC);
     
     % For each orientation...
+
     for iTheta = 1:numel(theta)
         
         ind = find(xCoord(:,iTheta));
@@ -217,33 +231,37 @@ for iCC = 1:nCC
         repmat(theta(iTheta) + pi/2, numel(ind), 1));
     
     %% --- STEP 5: Optimize segment candidates --- %%
-    %
-    % TODO
-    % optimize the length and amplitude
-    paramSelector = false(1,6);
-    paramSelector([3 5]) = true;
     
-    varSegmentParams = clusters(iCC).segments(:,paramSelector);
-    fixSegmentParams = clusters(iCC).segments(:,~paramSelector);
+    if ~isempty(clusters(iCC).segments)
+        % optimize the length and amplitude
+        paramSelector = false(1,6);
+        paramSelector([3 5]) = true;
+        
+        varSegmentParams = clusters(iCC).segments(:,paramSelector);
+        fixSegmentParams = clusters(iCC).segments(:,~paramSelector);
+        
+        fun = @(params) subResSegment2DFit(params, imaCC, clusters(iCC).avgBkg, ...
+            fixSegmentParams, paramSelector);
+        
+        varSegmentParams = lsqnonlin(fun, varSegmentParams,[],[],options);
+        
+        clusters(iCC).segments(:,paramSelector) = varSegmentParams;
+        
+        clusters(iCC).segments(:,1) = clusters(iCC).segments(:,1) + bb(1) - 1;
+        clusters(iCC).segments(:,2) = clusters(iCC).segments(:,2) + bb(2) - 1;
     
-    fun = @(params) subResSegment2DFit(params, imaCC, clusters(iCC).avgBkg, fixSegmentParams, paramSelector);
-     
-    [varSegmentParams, resnorm, residual] = ...
-        lsqnonlin(fun, varSegmentParams,[],[],options);
-    
-    clusters(iCC).segments(:,paramSelector) = varSegmentParams;
-
-    clusters(iCC).segments(:,1) = clusters(iCC).segments(:,1) + bb(1) - 1;
-    clusters(iCC).segments(:,2) = clusters(iCC).segments(:,2) + bb(2) - 1;
-
-    % Check the significance of optimized segments
-    % TODO
-    
-    % In case a segment becomes unsignificant, it needs to be removed from
-    % the list and any point candidate classified along such a segment
-    % needs to be reclassified as independent points (c0).
-    %
-    % TODO
+        % Check the significance of optimized segments: remove it when it
+        % is either to small or the difference between amplitude and
+        % background is unsignificant.
+        %
+        % TODO
+        
+        % In case a segment becomes unsignificant, it needs to be removed from
+        % the list and any point candidate classified along such a segment
+        % needs to be reclassified as independent points (c0).
+        %
+        % TODO
+    end
     
     %% --- STEP 6: Optimize point candidates --- %%
     
@@ -271,11 +289,11 @@ for iCC = 1:nCC
         clusters(iCC).points = [subResPts.xCoord subResPts.yCoord];
     end
 end
-
+toc
 %% DISPLAY
 
-S = cell2mat(arrayfun(@(iCC) clusters(iCC).segments, 1:nCC, 'UniformOutput', false));
-P = cell2mat(arrayfun(@(iCC) clusters(iCC).points, 1:nCC, 'UniformOutput', false));
+S = cell2mat(arrayfun(@(iCC) clusters(iCC).segments, (1:nCC)', 'UniformOutput', false));
+P = cell2mat(arrayfun(@(iCC) clusters(iCC).points, (1:nCC)', 'UniformOutput', false));
 
 if ~isempty(S)
     overlaySegment2DImage(ima,S);
