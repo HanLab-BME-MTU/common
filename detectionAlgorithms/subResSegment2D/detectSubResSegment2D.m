@@ -1,4 +1,4 @@
-function [segments, points, ImBG] = detectSubResSegment2D(ima,mask,sigmaPSF,minSize,bitDepth)
+function [clusters, ImBG] = detectSubResSegment2D(ima,mask,sigmaPSF,minSize,bitDepth)
 
 %% --- Initialization --- %%
 
@@ -8,6 +8,22 @@ if ~isa(ima,'double')
 end
 
 [nrows,ncols] = size(ima);
+
+% Parameters for detectSubResFeature2D
+
+%alpha.alphaR = .05;
+alpha.alphaA = .01;
+% alpha.alphaD = .1;
+alpha.alphaF = 0;
+
+% Parameters for subResSegment2DFit
+
+options = optimset('Jacobian', 'on', ...
+    'MaxFunEvals', 1000, ...
+    'MaxIter', 1000, ...
+    'Display', 'off', ...
+    'TolX', 1e-6, ...
+    'Tolfun', 1e-6);
 
 %% --- Step 1 ---- %%
 
@@ -24,12 +40,12 @@ filteredIma2(mask == false) = 0;
 %% --- Step 2 ---- %%
 
 % Segment filteredIma1
-% TODO: Use LSM
 segmentMask = logical(blobSegmentThreshold(filteredIma1,minSize,0,mask));
-
-segmentLabels = bwlabel(segmentMask);
 CCstats = regionprops(segmentMask,'PixelIdxList','BoundingBox');
 nCC = numel(CCstats);
+
+% Define the final clusters
+clusters(1:nCC) = struct('avgBkg',[],'stdBkg',[],'segments',[],'points',[]);
 
 %% --- Step 3 ---- %%
 
@@ -54,7 +70,6 @@ theta = -thetaRadon*pi/180;
 ct = cos(theta);
 st = sin(theta);
 
-% Define the final set
 segments = cell(nCC,1);
 points = cell(nCC,1);
 
@@ -117,32 +132,34 @@ for iCC = 1:nCC
     distAlong = zeros(size(locMax));
     distAlong(locMax) = RD(locMax) ./ L(locMax);
     
-    segmentX = bsxfun(@times,distAside,ct) + bsxfun(@times,distAlong,-st);
-    segmentX(locMax) = bb(1) + cRadon(1) - 1 + segmentX(locMax);
-    segmentY = bsxfun(@times,distAside,st) + bsxfun(@times,distAlong, ct);
-    segmentY(locMax) = bb(2) + cRadon(2) - 1 + segmentY(locMax);
+    xCoord = bsxfun(@times,distAside,ct) + bsxfun(@times,distAlong,-st);
+    xCoord(locMax) = cRadon(1) + xCoord(locMax);
+    yCoord = bsxfun(@times,distAside,st) + bsxfun(@times,distAlong, ct);
+    yCoord(locMax) = cRadon(2) + yCoord(locMax);
     
-    %% Compute initial value of the amplitude of each segment %%
+    %% Compute initial amplitude of each segment and background value %%
     
-    % Crop ima using bounding box and restrinct to CC's footprint
-    imaCC = zeros(bb(4),bb(3));
-    imaCC(indLocal) = ima(CCstats(iCC).PixelIdxList);
+    % Crop ima
+    imaCC = ima(bb(2):bb(2)+bb(4)-1,bb(1):bb(1)+bb(3)-1);
+    
+    clusters(iCC).avgBkg = mean(imaCC(CC == false));
+    clusters(iCC).stdBkg = std(imaCC(CC == false));
     
     % Compute the Radon transform on the crop image. averageRI correspond
     % to the mean intensity of the image along the radon lines.
     RI = radon(imaCC, thetaRadon);
     
-    segmentAmp = zeros(size(locMax));
-    segmentAmp(locMax) = RI(locMax) ./ L(locMax);
+    amp = zeros(size(locMax));
+    amp(locMax) = RI(locMax) ./ L(locMax);
     
     %% Compute initial value of the length of each segment candidates
     
-    segmentLength = zeros(size(locMax));
-    segmentLength(locMax) = L(locMax);
+    length = zeros(size(locMax));
+    length(locMax) = L(locMax);
     
     %% Point classification
     
-    % To choose the right orientation of the segment, we classify the
+    % To choose the right segment's orientation, we classify the
     % local maxima detected in STEP 3 and choose the orientation that
     % yields the largest likelihood. We follow the paper "Finding
     % Curvilinear Features in Spatial Point Patterns: Principal Curve
@@ -156,108 +173,120 @@ for iCC = 1:nCC
     % Find the point candidates
     indPointCandsCC = find(pointCandsCC);
     nPointCandsCC = numel(indPointCandsCC);
-    [y x] = ind2sub(size(pointCandsCC), indPointCandsCC);
-    % translate local coordinates into global ones
-    x = x + bb(1) - 1;
-    y = y + bb(2) - 1;    
+    [y x] = ind2sub(size(pointCandsCC), indPointCandsCC);   
     
     % Store BIC for each model (i.e. each orientation)
     bic = Inf(numel(theta),1);
     
     pointClasses = zeros(numel(theta), nPointCandsCC);
     
+    % Empty class
+    c0 = repmat(1/areaCC,1, nPointCandsCC);
+    
     % For each orientation...
     for iTheta = 1:numel(theta)
         
-        ind = find(segmentX(:,iTheta));
+        ind = find(xCoord(:,iTheta));
         
-        pX = bsxfun(@minus,segmentX(ind,iTheta),x');
-        pY = bsxfun(@minus,segmentY(ind,iTheta),y');
+        pX = bsxfun(@minus,xCoord(ind,iTheta),x');
+        pY = bsxfun(@minus,yCoord(ind,iTheta),y');
 
         distAbout = bsxfun(@times,ct(iTheta), pX) + bsxfun(@times,st(iTheta), pY);
         
-         likelihood = 1 / (sqrt(2 * pi) * sigmaPSF) * exp(-.5 * distAbout.^2 / sigmaPSF);
-%          likelihood = 1 / (sqrt(2 * pi) * sigmaPSF) * bsxfun(@times, ...
-%               1 ./ (segmentLength(ind,iTheta)), exp(-.5 * distAbout.^2 / sigmaPSF));
-    
-        likelihood = vertcat(likelihood, repmat(1/areaCC,1, nPointCandsCC));
+        likelihood = 1 / (sqrt(2 * pi) * sigmaPSF) * exp(-.5 * distAbout.^2 / sigmaPSF);
         
-        [~, I] = max(likelihood,[],1);
+        [~, I] = max([likelihood; c0],[],1);
         
         pointClasses(iTheta,I ~= numel(ind) + 1) = ind(I(I ~= numel(ind) + 1));
         
         % Number of model parameters
         k = 3 * numel(ind) + 1;
-%         k = 4 * numel(ind) + 1;
         
         bic(iTheta) = - 2 * log(prod(sum(likelihood,1))) + k * log(nPointCandsCC);
     end
     
-    [~, iTheta] = min(bic);
-    
+    % Find the most likely set of segment candidates
+    [~, iTheta] = min(bic);    
     ind = find(locMax(:,iTheta));
-              
-    % Store segments.
-    segments{iCC} = horzcat(segmentX(ind,iTheta), ...
-        segmentY(ind,iTheta), ...
-        segmentAmp(ind,iTheta), ...
-        segmentLength(ind,iTheta), ...
-        ones(numel(ind),1) * (theta(iTheta) + pi/2));
-        
-    % Store points that have been classified as independent points
+    
+    clusters(iCC).segments = horzcat(xCoord(ind,iTheta), ...
+        yCoord(ind,iTheta), ...
+        amp(ind,iTheta), ...
+        repmat(sigmaPSF, numel(ind), 1), ...
+        length(ind,iTheta), ...
+        repmat(theta(iTheta) + pi/2, numel(ind), 1));
+    
+    %% --- STEP 5: Optimize segment candidates --- %%
+    %
+    % TODO
+    % optimize the length and amplitude
+    paramSelector = false(1,6);
+    paramSelector([3 5]) = true;
+    
+    varSegmentParams = clusters(iCC).segments(:,paramSelector);
+    fixSegmentParams = clusters(iCC).segments(:,~paramSelector);
+    
+    fun = @(params) subResSegment2DFit(params, imaCC, clusters(iCC).avgBkg, fixSegmentParams, paramSelector);
+     
+    [varSegmentParams, resnorm, residual] = ...
+        lsqnonlin(fun, varSegmentParams,[],[],options);
+    
+    clusters(iCC).segments(:,paramSelector) = varSegmentParams;
+
+    clusters(iCC).segments(:,1) = clusters(iCC).segments(:,1) + bb(1) - 1;
+    clusters(iCC).segments(:,2) = clusters(iCC).segments(:,2) + bb(2) - 1;
+
+    % Check the significance of optimized segments
+    % TODO
+    
+    % In case a segment becomes unsignificant, it needs to be removed from
+    % the list and any point candidate classified along such a segment
+    % needs to be reclassified as independent points (c0).
+    %
+    % TODO
+    
+    %% --- STEP 6: Optimize point candidates --- %%
+    
+    % Find the point candidates
     ind = find(pointClasses(iTheta,:) == 0);
-    points{iCC} = [y(ind) x(ind)];
-end
-
-%% --- Step 5 ---- %%
-
-% Subpixellic point detection
-
-%alpha.alphaR = .05;
-alpha.alphaA = .01;
-% alpha.alphaD = .1;
-alpha.alphaF = 0;
-
-nPSF = cellfun(@numel,points);
-validCCs = find(nPSF);
-
-for iCC=validCCs
-    % Convert points to speckle candidate to comply with Khuloud format.
-    pts = points{iCC};
-    nPSF = size(pts,1);
     
-    cands(1:nPSF) = struct('Lmax',[],'IBkg',[],'status',[]);
-    
-    imaCC = ima(CCstats(iCC).PixelIdxList);
-    
-    IBkg = mean(imaCC) / (2^bitDepth-1);
-    
-    [cands(:).IBkg] = deal(IBkg);
-    [cands(:).status] = deal(true);
-    
-    for iPSF = 1:nPSF
-        cands(iPSF).Lmax = pts(iPSF,:);
+    if ~isempty(ind)
+        pts = [x(ind) y(ind)];
+        
+        % Convert points to speckle cands to comply with Khuloud format.
+        nPSF = numel(ind);
+        cands(1:nPSF) = struct('Lmax',[],'IBkg',[],'status',[]);
+        
+        [cands(:).IBkg] = deal(clusters(iCC).avgBkg);
+        [cands(:).status] = deal(true);
+        
+        for iPSF = 1:nPSF
+            cands(iPSF).Lmax = pts(iPSF,[2 1]);
+        end
+        
+        subResPts = detectSubResFeatures2D(imaCC,cands,sigmaPSF,alpha,0,1, ...
+            bitDepth,0,clusters(iCC).stdBkg);
+        
+        % Store the final set of independent points.
+        clusters(iCC).points = [subResPts.xCoord subResPts.yCoord];
     end
-
-    % TODO: Change this to make the noise estimation local
-    stdNoise = std(ima(segmentMask == false & mask == true) / (2^bitDepth-1));
-
-    points{iCC} = detectSubResFeatures2D(ima,cands,sigmaPSF,alpha,0,1,bitDepth,0,stdNoise);
 end
-
-%% --- Step 6 --- %%
-
-% optimize segments
 
 %% DISPLAY
 
-imshow(ima,[]); hold off;
+S = cell2mat(arrayfun(@(iCC) clusters(iCC).segments, 1:nCC, 'UniformOutput', false));
+P = cell2mat(arrayfun(@(iCC) clusters(iCC).points, 1:nCC, 'UniformOutput', false));
 
-S = cell2mat(segments);
-P = cell2mat(points);
+if ~isempty(S)
+    overlaySegment2DImage(ima,S);
+else
+    imshow(ima,[]);
+end
 
-overlaySegment2DImage(ima,S);
+hold on;
 
-plot(P(:,2),P(:,1),'r');
+if ~isempty(P)
+    plot(P(:,1),P(:,2),'r');
+end
 
 hold off;

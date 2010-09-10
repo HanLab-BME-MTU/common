@@ -1,6 +1,6 @@
 function dF = subResSegment2DJacobian(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx, paramSelector)
 % Partial derivatives of a sub-resolution 2D segment against its parameters.
-% dF = subResSegment2DJacobian((x, y, amp, sigma, l, theta, xRange, yRange,nzIdx, paramSelector)
+% dF = subResSegment2DJacobian(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx, paramSelector)
 %
 % parameters:
 % (x,y)              position of the segment's center
@@ -66,7 +66,7 @@ C7 = exp((-1/2).*l.^2*s_2);
 C8 = (2.*pi.^(-1)).^(1/2);
 C9 = (2.*pi).^(-1/2);
 
-dFuncs = [@dFdXc, @dFdYc, @dFdA, @dFds, @dFdl, @dFdt @dFdBg];
+dFuncs = {@dFdXc, @dFdYc, @dFdA, @dFds, @dFdl, @dFdt};
 
 dF = zeros(N,M,P);
 
@@ -75,7 +75,7 @@ paramSet = 1:numel(paramSelector);
 offset = 0;
 
 for iParam = paramSet(paramSelector)
-    dF(nzIdx + offset) = dFuncs(iParam);
+    dF(nzIdx + offset) = dFuncs{iParam}();
     
     offset = offset + N * M;
 end
@@ -109,7 +109,7 @@ end
             (Y*ct-X*st)+s_2*(C3+C4).*(Y*ct-X*st).*(X*ct+Y*st));
     end
 
-    function res = dFdBg
-        res = ones(N,M);
-    end
+%     function res = dFdBg
+%         res = ones(N,M);
+%     end
 end

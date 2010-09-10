@@ -1,11 +1,10 @@
-function F = subResSegment2D(x, y, amp, sigma, l, theta, bg, xRange, yRange, nzIdx)
+function F = subResSegment2D(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx)
 % sub-resolution 2D segment model defined by 6 parameters:
 %    xy      : position of the segment's center
 %    amp     : mean amplitude along the segment
 %    sigma   : half width of the segment
 %    l       : length
 %    theta   : orientation [-pi/2, pi/2)
-%    bg      : baseline value
 %
 % F = subResSegment2D(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx)
 %
@@ -20,8 +19,6 @@ function F = subResSegment2D(x, y, amp, sigma, l, theta, bg, xRange, yRange, nzI
 % l                  length of the segment
 %
 % theta              orientation of the segment
-%
-% bg                 baseline value of the segment
 %
 % (xRange, yRange)   2 vectors representing the 2-dimensional support of
 %                    the segment. This support can be determined using
@@ -61,4 +58,4 @@ F = zeros(N,M);
 
 F(nzIdx) = C0 * exp((-1/2).*sigma.^(-2).*(Y.*ct-X.*st).^2).*(...
     erf(C1.*(l+2.*X.*ct+2.*Y.*st))+...
-    erf(C1.*(l-2*X*ct-2*Y*st))) + bg;
+    erf(C1.*(l-2*X*ct-2*Y*st)));

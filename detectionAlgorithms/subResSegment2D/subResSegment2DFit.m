@@ -1,4 +1,4 @@
-function [F J] = subResSegment2DFit(varSegmentParams, I, fixSegmentParams, paramSelector)
+function [F J] = subResSegment2DFit(varSegmentParams, I, avgBkg, fixSegmentParams, paramSelector)
 % This function computes I - Im, where I is an image and Im is an image
 % model defined by the sum of sub-resolution 2D segment model caracterize
 % by params (the first and two last parameters). This function intends to
@@ -12,7 +12,7 @@ function [F J] = subResSegment2DFit(varSegmentParams, I, fixSegmentParams, param
 % varSegmentParams  a n by pVar matrix where n is the number of segments
 %                   and pVar is the number of parameters being optimized.
 %                   This is a sub-set of the whole set of segment
-%                   parameters (i.e. xC, yX, amp, sigma, l, theta). pVar is
+%                   parameters (i.e. x, y, amp, sigma, l, theta). pVar is
 %                   subject to the following requirements:
 %                   - pVar == nnz(paramSelector)
 %                   - pVar + size(fixSegmentParams,2) == numel(paramSelector)
@@ -44,9 +44,9 @@ function [F J] = subResSegment2DFit(varSegmentParams, I, fixSegmentParams, param
 %
 % Sylvain Berlemont, 2010
 
-p = 7;
+p = 6;
 
-if nargin ~= 2 || nargin ~= 4
+if nargin ~= 3 && nargin ~= 5
     error('Invalid number of input arguments.');
 end
 
@@ -82,15 +82,15 @@ end
 % Merge varSegmentParams and fixSegmentParams
 segmentParams = zeros(n,p);
 paramSet = 1:p;
-segmentParams(:,paramSet(paramSelector == true)) = varSegmentParams;
-segmentParams(:,paramSet(paramSelector == false)) = fixSegmentParams;
+segmentParams(:,paramSet(paramSelector)) = varSegmentParams;
+segmentParams(:,paramSet(~paramSelector)) = fixSegmentParams;
 
 [nrows ncols] = size(I);
 
 m = nrows * ncols;
 
 % Get the image model
-[Im xRange yRange nzIdx] = subResSegment2DImageModel(segmentParams, [nrows ncols]);
+[Im xRange yRange nzIdx] = subResSegment2DImageModel(segmentParams, avgBkg, [nrows ncols]);
 
 % Compute F
 F = reshape(Im - I, m, 1);
@@ -115,9 +115,9 @@ if nargout > 1
         [X Y] = meshgrid(xRange{i}, yRange{i});
         ind = sub2ind([nrows ncols], Y(:), X(:));
         
-        indPixels{i} = repmat(ind, p, 1);
+        indPixels{i} = repmat(ind, pVar, 1);
         indParams{i} = cell2mat(arrayfun(@(k) ones(numel(ind), 1) * i +...
-            k * n, (0:p-1)', 'UniformOutput', false));
+            k * n, (0:pVar-1)', 'UniformOutput', false));
 
         val{i} = dF(:);
     end
