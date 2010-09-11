@@ -25,7 +25,7 @@ options = optimset('Jacobian', 'on', ...
     'TolX', 1e-6, ...
     'Tolfun', 1e-6);
 
-%% --- Step 1 ---- %%
+%% --- Step 1: Image Filtering ---- %%
 
 % Filter image with 2nd order steerable filter
 % TODO: Use M=4 instead
@@ -37,21 +37,10 @@ filteredIma1(mask == false) = 0;
 filteredIma2 = filterLoG(ima,sigmaPSF);
 filteredIma2(mask == false) = 0;
 
-%% --- Step 2 ---- %%
+%% --- Step 2: Masks creation ---- %%
 
 % Segment filteredIma1
 segmentMask = logical(blobSegmentThreshold(filteredIma1,minSize,0,mask));
-CCstats = regionprops(segmentMask,'PixelIdxList','BoundingBox');
-nCC = numel(CCstats);
-
-% Create background image (original image without segment areas)
-bkgImage = ima;
-bkgImage(segmentMask) = 0;
-
-% Define the final clusters
-clusters(1:nCC) = struct('avgBkg',[],'stdBkg',[],'segments',[],'points',[]);
-
-%% --- Step 3 ---- %%
 
 % Get local maxima of filteredIma2 that belong to BW
 % Note: we could have set hside to the full size of an individual speckle
@@ -59,7 +48,25 @@ clusters(1:nCC) = struct('avgBkg',[],'stdBkg',[],'segments',[],'points',[]);
 % can be closer and somehow overlap with each other.
 hside = 2 * ceil(sigmaPSF) + 1;
 pointCands = locmax2d(filteredIma2,[hside hside]);
-pointCands(segmentMask == false) = 0;
+pointCands(~segmentMask) = 0;
+
+% Generate pointMask from pointCands
+pointDist = bwdist(pointCands ~= 0);
+pointMask = pointDist < hside;
+
+% Make the union of the segment and point masks
+unionMask = segmentMask | pointMask;
+
+% Compute property of connected components
+CCstats = regionprops(unionMask,'PixelIdxList','BoundingBox');
+nCC = numel(CCstats);
+
+% Define the resulting set of clusters
+clusters(1:nCC) = struct('avgBkg',[],'stdBkg',[],'segments',[],'points',[]);
+
+% Create background image (original image without feature areas)
+bkgImage = ima;
+bkgImage(unionMask) = 0;
 
 %% --- Step 4 ---- %%
 
@@ -88,6 +95,9 @@ for iCC = 1:nCC
     CC(indLocal) = 1;
     
     %% Compute initial background value of the cluster
+    
+    % we use a 1-pixel extended bounding box to have sufficient background
+    % pixels.
     bkgImageCC = bkgImage(max(bb(2)-1,1):min(bb(2)+bb(4),nrows), ...
         max(bb(1)-1,1):min(bb(1)+bb(3),ncols));
     
@@ -95,10 +105,6 @@ for iCC = 1:nCC
     
     clusters(iCC).avgBkg = mean(bkgPixels);
     clusters(iCC).stdBkg = std(bkgPixels);
-    
-    if isnan(clusters(iCC).avgBkg)
-        clusters(iCC).avgBkg
-    end
     
     %%
     
@@ -243,11 +249,14 @@ for iCC = 1:nCC
         fun = @(params) subResSegment2DFit(params, imaCC, clusters(iCC).avgBkg, ...
             fixSegmentParams, paramSelector);
         
+        disp(num2str(iCC));
+
         varSegmentParams = lsqnonlin(fun, varSegmentParams,[],[],options);
         
         clusters(iCC).segments(:,paramSelector) = varSegmentParams;
         
-        clusters(iCC).segments(:,1) = clusters(iCC).segments(:,1) + bb(1) - 1;
+        clusters(iCC).segments(:,1:2) = clusters(iCC).segments + ...
+            repmat(bb(1:2),numel(ind),1) - 1;
         clusters(iCC).segments(:,2) = clusters(iCC).segments(:,2) + bb(2) - 1;
     
         % Check the significance of optimized segments: remove it when it
@@ -281,12 +290,13 @@ for iCC = 1:nCC
         for iPSF = 1:nPSF
             cands(iPSF).Lmax = pts(iPSF,[2 1]);
         end
-        
+                
         subResPts = detectSubResFeatures2D(imaCC,cands,sigmaPSF,alpha,0,1, ...
             bitDepth,0,clusters(iCC).stdBkg);
         
         % Store the final set of independent points.
-        clusters(iCC).points = [subResPts.xCoord subResPts.yCoord];
+        clusters(iCC).points = [subResPts.xCoord subResPts.yCoord] + ...
+            repmat(bb(1:2),nPSF,1) - 1;
     end
 end
 toc
