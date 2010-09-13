@@ -10,16 +10,17 @@ function [F J] = subResSegment2DFit(varSegmentParams, I, avgBkg, fixSegmentParam
 %
 % Parameters:
 % varSegmentParams  a n by pVar matrix where n is the number of segments
-%                   and pVar is the number of parameters being optimized.
-%                   This is a sub-set of the whole set of segment
+%                   and pVar is the number of parameters being optimized
+%                   (excepted background value treated as a special case).
+%                   This variable is a sub-set of the whole set of segment
 %                   parameters (i.e. x, y, amp, sigma, l, theta). pVar is
 %                   subject to the following requirements:
-%                   - pVar == nnz(paramSelector)
-%                   - pVar + size(fixSegmentParams,2) == numel(paramSelector)
+%                   - pVar == nnz(paramSelector) - paramSelector(7)
+%                   - pVar + size(fixSegmentParams,2) == 6
 %
 % I                  image
 %
-% fixSegmetnParams  (optional) a n by pFixed matrix where n is the number
+% fixSegmetnParams  (optional) a n by pFix matrix where n is the number
 %                   of segments and pFix is the number of parameters not
 %                   being optimized. It is a sub-set of the whole set of
 %                   segment parameters (i.e. xC, yX, amp, sigma, l, theta).
@@ -31,8 +32,8 @@ function [F J] = subResSegment2DFit(varSegmentParams, I, avgBkg, fixSegmentParam
 %                   paramSelector(i) == true means that ith segment
 %                   parameter will be optimized. By default all parameters
 %                   are involved in the optimization. The number of true
-%                   elements must match the number of columns of
-%                   varSegmentParams ; the number of false elements must
+%                   elements must be equal to the number of columns of
+%                   varSegmentParams + 1 ; the number of false elements must
 %                   match the number of columnds of fixSegmentParams.
 %                   
 % Output:
@@ -56,7 +57,7 @@ if pVar > p
     error('Too many segment parameters.');
 end
 
-if nargin > 2
+if nargin > 3
     if ~islogical(paramSelector)
         error('paramSelector must be logical.');
     end
@@ -75,7 +76,7 @@ if nargin > 2
         error('1st and 3rd parameter size differ.');
     end
 else
-    fixSegmentParams = [];
+    fixSegmentParams = zeros(n,0);
     paramSelector = true(p,1);
 end
 

@@ -11,16 +11,16 @@ end
 
 % Parameters for detectSubResFeature2D
 
-%alpha.alphaR = .05;
-alpha.alphaA = .01;
-% alpha.alphaD = .1;
-alpha.alphaF = 0;
+% %alpha.alphaR = .05;
+% alpha.alphaA = .01;
+% % alpha.alphaD = .1;
+% alpha.alphaF = 0;
 
 % Parameters for subResSegment2DFit
 
 options = optimset('Jacobian', 'on', ...
-    'MaxFunEvals', 1000, ...
-    'MaxIter', 1000, ...
+    'MaxFunEvals', 500, ...
+    'MaxIter', 500, ...
     'Display', 'off', ...
     'TolX', 1e-6, ...
     'Tolfun', 1e-6);
@@ -226,19 +226,21 @@ for iCC = 1:nCC
     end
     
     % Find the most likely set of segment candidates
-    [~, iTheta] = min(bic);    
+    [~, iTheta] = min(bic);
     ind = find(locMax(:,iTheta));
-    
-    clusters(iCC).segments = horzcat(xCoord(ind,iTheta), ...
-        yCoord(ind,iTheta), ...
-        amp(ind,iTheta), ...
-        repmat(sigmaPSF, numel(ind), 1), ...
-        length(ind,iTheta), ...
-        repmat(theta(iTheta) + pi/2, numel(ind), 1));
+    nSegments = numel(ind);
     
     %% --- STEP 5: Optimize segment candidates --- %%
     
-    if ~isempty(clusters(iCC).segments)
+    if nSegments
+
+        clusters(iCC).segments = horzcat(xCoord(ind,iTheta), ...
+            yCoord(ind,iTheta), ...
+            amp(ind,iTheta), ...
+            repmat(sigmaPSF, nSegments, 1), ...
+            length(ind,iTheta), ...
+            repmat(theta(iTheta) + pi/2, nSegments, 1));
+    
         % optimize the length and amplitude
         paramSelector = false(1,6);
         paramSelector([3 5]) = true;
@@ -249,27 +251,21 @@ for iCC = 1:nCC
         fun = @(params) subResSegment2DFit(params, imaCC, clusters(iCC).avgBkg, ...
             fixSegmentParams, paramSelector);
         
+        lb = [zeros(nSegments,1) varSegmentParams(:,1) - 3 * clusters(iCC).stdBkg];
+        ub = varSegmentParams;
+        ub(:,2) = ub(:,2) + 3 * clusters(iCC).stdBkg;
+        
         disp(num2str(iCC));
-
-        varSegmentParams = lsqnonlin(fun, varSegmentParams,[],[],options);
+        
+        varSegmentParams = lsqnonlin(fun, varSegmentParams,ub,lb,options);
         
         clusters(iCC).segments(:,paramSelector) = varSegmentParams;
         
-        clusters(iCC).segments(:,1:2) = clusters(iCC).segments + ...
-            repmat(bb(1:2),numel(ind),1) - 1;
-        clusters(iCC).segments(:,2) = clusters(iCC).segments(:,2) + bb(2) - 1;
-    
-        % Check the significance of optimized segments: remove it when it
-        % is either to small or the difference between amplitude and
-        % background is unsignificant.
-        %
-        % TODO
-        
-        % In case a segment becomes unsignificant, it needs to be removed from
-        % the list and any point candidate classified along such a segment
-        % needs to be reclassified as independent points (c0).
-        %
-        % TODO
+        clusters(iCC).segments(:,1:2) = clusters(iCC).segments(:,1:2) + ...
+            repmat(bb(1:2),numel(ind),1) - 1;    
+
+        % Remove segment whose length <= 1
+        clusters(iCC).segments = clusters(iCC).segments(clusters(iCC).segments(:,5) > minSize,:);
     end
     
     %% --- STEP 6: Optimize point candidates --- %%
@@ -279,25 +275,26 @@ for iCC = 1:nCC
     
     if ~isempty(ind)
         pts = [x(ind) y(ind)];
-        
-        % Convert points to speckle cands to comply with Khuloud format.
-        nPSF = numel(ind);
-        cands(1:nPSF) = struct('Lmax',[],'IBkg',[],'status',[]);
-        
-        [cands(:).IBkg] = deal(clusters(iCC).avgBkg);
-        [cands(:).status] = deal(true);
-        
-        for iPSF = 1:nPSF
-            cands(iPSF).Lmax = pts(iPSF,[2 1]);
-        end
-                
-        subResPts = detectSubResFeatures2D(imaCC,cands,sigmaPSF,alpha,0,1, ...
-            bitDepth,0,clusters(iCC).stdBkg);
-        
-        % Store the final set of independent points.
-        clusters(iCC).points = [subResPts.xCoord subResPts.yCoord] + ...
-            repmat(bb(1:2),nPSF,1) - 1;
-    end
+%         
+%         % Convert points to speckle cands to comply with Khuloud format.
+%         nPSF = numel(ind);
+%         cands(1:nPSF) = struct('Lmax',[],'IBkg',[],'status',[]);
+%         
+%         [cands(:).IBkg] = deal(clusters(iCC).avgBkg);
+%         [cands(:).status] = deal(true);
+%         
+%         for iPSF = 1:nPSF
+%             cands(iPSF).Lmax = pts(iPSF,[2 1]);
+%         end
+%                 
+% %         subResPts = detectSubResFeatures2D(imaCC,cands,sigmaPSF,alpha,0,1, ...
+% %             bitDepth,0,clusters(iCC).stdBkg);
+% %         
+% %         % Store the final set of independent points.
+% %         clusters(iCC).points = [subResPts.xCoord' subResPts.yCoord'] + ...
+% %             repmat(bb(1:2),numel(subResPts.xCoord),1) - 1;
+clusters(iCC).points = pts + repmat(bb(1:2),size(pts,1),1) - 1;
+     end
 end
 toc
 %% DISPLAY
@@ -314,7 +311,7 @@ end
 hold on;
 
 if ~isempty(P)
-    plot(P(:,1),P(:,2),'r');
+    plot(P(:,1),P(:,2),'r.');
 end
 
 hold off;
