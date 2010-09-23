@@ -68,6 +68,7 @@ r2 = (x-xp).^2+(y-yp).^2;
 
 g_dA = exp(-r2/(2*s^2));
 g = A*g_dA;
+
 g_dxp = (x-xp)./s^2.*g;
 g_dyp = (y-yp)./s^2.*g;
 g_ds = r2/s^3.*g;
@@ -81,8 +82,8 @@ J = [reshape(g_dxp, [N 1]) reshape(g_dyp, [N 1]) reshape(g_dA, [N 1]) reshape(g_
 function prmVect = A_CF_Gaussian(data, x, y, prmVect)
 r2 = (x-prmVect(1)).^2+(y-prmVect(2)).^2;
 g_dA = exp(-r2/(2*prmVect(4)^2));
-prmVect(3) = abs(sum(sum((data-prmVect(5)).*g_dA)) / sum(sum(g_dA.^2)));
-
+%prmVect(3) = abs(sum(sum((data-prmVect(5)).*g_dA)) / sum(sum(g_dA.^2)));
+prmVect(3) = sum(sum((data-prmVect(5)).*g_dA)) / sum(sum(g_dA.^2));
 
 
 % Functions that should be incorporated: bi-variate fitting
