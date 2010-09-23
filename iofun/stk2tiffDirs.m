@@ -6,7 +6,7 @@ function stk2tiffDirs(stkpath)
 %
 % Input: path to directory containing STK files
 %
-% Francois Aguet, 01/20/2010
+% Francois Aguet, 09/01/2010
 
 if (nargin == 0 || isempty(stkpath))
    stkpath = uigetdir('Select directory containing the STK files:'); 
