@@ -1,3 +1,5 @@
+% Francois Aguet, March 2010
+
 function [frameInfo imgDenoised] = detectSpotsWT(img, S, dthreshold, postProcLevel)
 
 if nargin<2
