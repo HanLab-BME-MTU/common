@@ -37,6 +37,27 @@ function [probMotionType,motionChar,errFlag] = summarizeDiffAnRes(tracks,...
 %                    1-8 or 1-7&9 are in the not-linear category (1-8 are
 %                    used when asymmetry is checked for, 1-7&9 are used
 %                    when asymmetry is not checked for).
+%       motionChar : Structure summarizing motion characteristics.
+%                    Contains the fields "linear" and "notLinear". 
+%                       The field "linear" contains the sub-field "all"
+%                    (i.e. all trajectories classified as linear are lumped
+%                    together).
+%                       The field "notLinear" contains the sub-fields
+%                    "confined", "brownian" and "directed", showing the
+%                    characteristics of each of these motion categories.
+%                       For each of these sub-fields, there are two
+%                    sub-sub-fields: 
+%           .distribution: Nx4 array. Each column belongs to a separate
+%                          trajectory in the category. The columns
+%                          store the diffusion coefficient, the confinement
+%                          radius, the other confinement dimension in the
+%                          case of linear trajectories, and trajectory
+%                          lifetime.
+%           .meanStd     : 2x4 array. Columns are same as "distribution".
+%                          1st row is the mean, 2nd row is the standard
+%                          deviation.
+%           .median      : 1x4 array showing the median of the columns
+%                          in "distribution".
 %
 %Khuloud Jaqaman, March 2010
 
