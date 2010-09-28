@@ -1,3 +1,17 @@
+% [frameInfo imgDenoised] = detectSpotsWT(img, S, dthreshold, postProcLevel)
+%
+% Performs detection of local intensity clusters through a combination of 
+% multiscale products and denoising by iterative filtering from
+% significant coefficients:
+% Olivo-Marin, "Extraction of spots in biological images using multiscale products," Pattern Recoginition 35, pp. 1989-1996, 2002.
+% Starck et al., "Image Processing and Data Analysis," Section 2.3.4, p. 73
+%
+% INPUTS:   img             : input image (2D array)
+%           {S}             : postprocessing level.
+%           {dthreshold}    : minimum allowed distance of secondary maxima in large clusters
+%           {postProcLevel} : morphological post processing level for mask 
+
+% Parts of this function are based on code by Henry Jaqaman.
 % Francois Aguet, March 2010
 
 function [frameInfo imgDenoised] = detectSpotsWT(img, S, dthreshold, postProcLevel)
