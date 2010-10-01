@@ -260,6 +260,8 @@ frameInfo.nMaxima = nMaxima; % maxima per component
 frameInfo.labels = [labelVect; labelVect2(:)];
 frameInfo.nComp = nComp;
 
+frameInfo.maxI = maxI;
+frameInfo.minI = minI;
 
 
 % prepare fields for tracker
