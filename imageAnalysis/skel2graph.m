@@ -1,8 +1,8 @@
-function [vertices,edges] = skel2graph(skelIn,nConn)
+function [vertices,edges,edgePaths] = skel2graph(skelIn,nConn)
 %SKEL2GRAPH converts a binary 3D skeleton matrix into a graph structure with nodes and edges 
 % 
 % [vertices,edges] = skel2graph(skelIn)
-%
+% [vertices,edges,edgePaths] = skel2graph(skelIn)
 %                        ... = skel2graph(skelIn,nConn)
 % 
 % Input:
@@ -10,8 +10,9 @@ function [vertices,edges] = skel2graph(skelIn,nConn)
 %   skelIn - The binary, 3D matrix containing a skeleton (maximum width is
 %   1)
 % 
-%   nConn - Optional. The connectivity number to use (6,18 or 26)
-% 
+%   nConn - Optional. The connectivity number to use (6,18 or 26). 
+%           WARNING: I have only tested this function with 26-connected
+%           skeletons (the kind produced by skeleton3D)!!
 % 
 % Output:
 % 
@@ -22,29 +23,30 @@ function [vertices,edges] = skel2graph(skelIn,nConn)
 %   edges - An Nx2 matrix of the index of the vertices that each edge
 %   connects.
 %
-
-
 %   edgePaths - An Nx1 cell array containing the ordered coordinates of
-%   each point along each edge. NOTE: This will make the processing MUCH
-%   slower!
+%   each point along each edge. NOTE: Requesting this output will make the
+%   processing quite a bit slower!
 % 
 % Hunter Elliott
 % 4/2/2010
-
+%
 
 %% ---------- Input ----------- %%
 
-%NOTE: At some point this should be generalized to 2D or 3D. Also, the
-%exact paths the edges follow should be returned.
+%NOTE: At some point this should be generalized to handle both 2D and 3D.
 
 showPlots = false;
+
+if nargin < 1 || isempty(skelIn) || ~islogical(skelIn) || ndims(skelIn) ~= 3
+    error('The first input must be a 3D binary matrix containing a skeleton!')
+end
 
 if nargin < 2 || isempty(nConn)
     nConn = 26;
 end
 
 
-%Validate that the input mask is in fact a skeleton(not too thick?)??
+%Validate that the input mask is in fact a skeleton(not too thick?)??-HLE
 
 
 %% ------- Detection -----  %%
@@ -104,10 +106,10 @@ for j = 1:nVerts
 
 end
 
-% if nargout > 2
-%     edgePaths = cell(nEdges,1);
-%     edgeInit = zeros(3*max(size(skelIn)),3); %Matrix for over-initializing edge paths    
-% end
+if nargout > 2
+    edgePaths = cell(nEdges,1);
+    edgeInit = zeros(3*max(size(skelIn)),3); %Matrix for over-initializing edge paths    
+end
 
 %Go through each edge...
 for j = 1:nEdges
@@ -119,42 +121,71 @@ for j = 1:nEdges
     elseif length(tmp) > 2
         error('Problem with input matrix! Check that it is in fact a skeleton, and that it''s connectivity  matches the specified connectivity!')
     end
-      
-%COMMENTED THIS OUT BECAUSE ITS REALLY SLOW AND FAILS IF THE SKELETON HAS LOOPS    
-%     %If requested, return the coordinates of each point on this edge. I'm
-%     %pretty sure there's a faster way to do this...???
-%     if nargout > 2
-%         %Get the coord of one vertex        
-%         iVert = 1;
-%         edgePaths{j} = edgeInit;        
-%         currPos = vertices(edges(j,1),:);
-%         while 1            
-%             tmpMask = false(size(skelIn));
-%             tmpMask(round(currPos(1)),round(currPos(2)),round(currPos(3))) = true;
-%             iNeighbors = find(imdilate(tmpMask,nHood) & (edgeMat == j));
-%             if length(iNeighbors) == 1
-%                 edgePaths{j}(iVert,:) = currPos;
-%                 iVert = iVert + 1;
-%                 [currPos(1),currPos(2),currPos(3)] = ind2sub(size(skelIn),iNeighbors);                
-%             else
-%                 break
-%             end
-%         end
-%         edgePaths{j} = edgePaths{j}(1:iVert-1,:);
-%    end
+       
+    %If requested, return the coordinates of each point on this edge. I'm
+    %pretty sure there's a faster way to do this...???
+    if nargout > 2
+        %Get the coord of one vertex        
+        iVert = 1;
+        edgePaths{j} = edgeInit;
+        
+        %First, make sure it's not a spur
+        if ~any(edges(j,:)==0)
 
+            %Try to find a vertex that is a single voxel and use it as a start
+            %point for the edge path
+            if nnz(vertMat == edges(j,1)) == 1
+                currPos = round(vertices(edges(j,1),:));
+            elseif nnz(vertMat == edges(j,2)) == 1
+                currPos = round(vertices(edges(j,2),:));
+            else
+                %If both vertices are multi-voxel, we need to find an
+                %appropriate start-point.
+
+                %First, get coord of all edge points
+                iEdgePts = find(edgeMat == j);
+                edgeCoord = zeros(numel(iEdgePts),3);
+                [edgeCoord(:,1),edgeCoord(:,2),edgeCoord(:,3)] = ind2sub(size(skelIn),iEdgePts);
+                %Find the one closest to the first vertex
+                [~,iClosest] = min(arrayfun(@(x)(sqrt(sum((edgeCoord(x,:) - ...
+                                   vertices(edges(j,1),:)).^2))),1:numel(iEdgePts)));
+                currPos = edgeCoord(iClosest,:);
+            end
+            %"Walk" along the edge from this start point until we hit the end
+            iNeighbors = 1;
+            while numel(iNeighbors) == 1            
+                edgePaths{j}(iVert,:) = currPos;
+                tmpMask = false(size(skelIn));
+                tmpMask(round(currPos(1)),round(currPos(2)),round(currPos(3))) = true;
+                iNeighbors = find(imdilate(tmpMask,nHood) & (edgeMat == j));            
+                if numel(iNeighbors) == 1
+                    iVert = iVert + 1;
+                    %Delete the previous point to avoid loops/direction changes
+                    edgeMat(currPos(1),currPos(2),currPos(3)) = 0;                                
+                    [currPos(1),currPos(2),currPos(3)] = ind2sub(size(skelIn),iNeighbors);                
+                end
+            end
+            %Remove extra points from over-initialization.
+            edgePaths{j} = edgePaths{j}(1:iVert,:);
+        end
+    end
+   
 end
-
 
 
 
 if showPlots
    
-    fsFigure(.5);
-    title('Edges are points, vertices are circles')    
+    fsFigure(.5); %#ok<UNRCH>
+    cols = jet(nEdges);    
     hold on    
-    cols = lines(nEdges);    
-    arrayfun(@(x)(spy3d(edgeMat == x & skelIn,'.','color',cols(x,:),'MarkerSize',5)),1:nEdges)            
+    if nargout > 2
+        title('Edges are lines, vertices are circles')    
+        arrayfun(@(x)(plot3(edgePaths{x}(:,2),edgePaths{x}(:,1),edgePaths{x}(:,3),'color',cols(x,:))),1:nEdges)            
+    else
+        title('Edges are points, vertices are circles')    
+        arrayfun(@(x)(spy3d(edgeMat == x & skelIn,'.','color',cols(x,:),'MarkerSize',5)),1:nEdges)            
+    end
     cols = lines(nVerts);
     arrayfun(@(x)(spy3d(vertMat == x & skelIn,'o','color',cols(x,:),'MarkerSize',5)),1:nVerts)    
     
