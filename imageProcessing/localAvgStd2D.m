@@ -1,11 +1,11 @@
 % Computes the local average and standard deviation within a square window of side 'w'.
 
 % Francois Aguet
-% Last modified on 10/16/2009
+% Last modified on 10/14/2010
 
 function [avg sigma] = localAvgStd2D(image, w)
 
-if (isEven(w))
+if mod(w+1, 2)
     error('The window length w should be an odd integer.');
 end;
 
