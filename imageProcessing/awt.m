@@ -52,7 +52,7 @@ function F = convolve(I, k)
 k1 = 2^(k - 1);
 k2 = 2^k;
 
-tmp = padarrayXT(I, [k2 0], 'replicate');
+tmp = padarray(I, [k2 0], 'replicate');
 
 % Convolve the columns
 for i = k2+1:k2+N
@@ -60,7 +60,7 @@ for i = k2+1:k2+N
                    + tmp(i + k2, :) + tmp(i - k2, :);
 end
 
-tmp = padarrayXT(I * .0625, [0 k2], 'replicate');
+tmp = padarray(I * .0625, [0 k2], 'replicate');
 
 % Convolve the rows
 for i = k2+1:k2+M
