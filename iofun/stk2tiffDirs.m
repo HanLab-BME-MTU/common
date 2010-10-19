@@ -16,13 +16,16 @@ if (nargin == 0 || isempty(stkpath))
 end;
 
 stkpath = [stkpath filesep];
-stkList = [dir([stkpath '*.tif']) dir([stkpath '*.stk'])];
+stkList = [dir([stkpath '*.tif']) dir([stkpath '*.tiff']) dir([stkpath '*.stk'])];
 
 N = length(stkList);
 
 for k = 1:N
     fprintf('Converting: %s\n', stkList(k).name);
-    stkname = strrep(stkList(k).name(1:end-4), ' ', '_');
+    % find extension
+    extLength = strfind(stkList(k).name, '.');
+    extLength = length(stkList(k).name) - extLength + 1;    
+    stkname = strrep(stkList(k).name(1:end-extLength), ' ', '_');
     dirname = [stkpath stkname filesep];
     if ~(exist(dirname, 'dir')==7)
         mkdir(dirname);
