@@ -1,4 +1,8 @@
-function [clusters, ImBG] = detectSubResSegment2D(ima,mask,sigmaPSF,minSize,bitDepth)
+function [clusters, ImBG] = detectSubResSegment2D(ima,mask,sigmaPSF,minSize,bitDepth,display)
+
+if nargin <= 5 || isempty(display)
+    display = false;
+end
 
 %% --- Initialization --- %%
 
@@ -25,7 +29,7 @@ options = optimset('Jacobian', 'on', ...
     'TolX', 1e-6, ...
     'Tolfun', 1e-6);
 
-%% --- Step 1: Image Filtering ---- %%
+%% --- Step 1: Create Segment Mask ---- %%
 
 % Filter image with 2nd order steerable filter
 % TODO: Use M=4 instead
@@ -33,32 +37,62 @@ filteredIma1 = steerableFiltering(ima,2,sigmaPSF);
 filteredIma1(filteredIma1 < 0) = 0;
 filteredIma1(mask == false) = 0;
 
-% Filter image with 2-D laplacian filter
-filteredIma2 = filterLoG(ima,sigmaPSF);
-filteredIma2(mask == false) = 0;
-
-%% --- Step 2: Masks creation ---- %%
-
 % Segment filteredIma1
 segmentMask = logical(blobSegmentThreshold(filteredIma1,minSize,0,mask));
 
-% Get local maxima of filteredIma2 that belong to BW
-% Note: we could have set hside to the full size of an individual speckle
-% (2 * ceil(3 * sigma) + 1) but it is too restrictive since some speckles
-% can be closer and somehow overlap with each other.
-hside = 2 * ceil(sigmaPSF) + 1;
-pointCands = locmax2d(filteredIma2,[hside hside]);
-pointCands(~segmentMask) = 0;
+%% --- Step 2: Create Point Mask ---- %%
 
+% Filter image with 2-D laplacian filter
+filteredIma2 = filterLoG(ima,sigmaPSF);
+filteredIma2(~mask) = 0;
+
+% Filter image with a Gaussian filter to compute bkg value.
+filteredIma3 = Gauss2D(ima,sigmaPSF);
+filteredIma3(~mask) = 0;
+
+% Get local min/max of filteredIma2.
+hside = 3 * ceil(sigmaPSF) + 1;
+locMax = locmax2d(filteredIma2, [hside hside]);
+locMin = locmin2d(filteredIma2, [hside hside]);
+
+indMin = find(locMin);
+indMax = find(locMax);
+[yMin xMin] = ind2sub(size(locMin), indMin);
+[yMax xMax] = ind2sub(size(locMax), indMax);
+tri = delaunay(xMin,yMin);
+triangles = tsearch(xMin,yMin,tri,xMax,yMax);
+nnzIdx = ~isnan(triangles);
+tri2 = tri(triangles(nnzIdx),:);
+
+avgBkg = inf(size(indMax));
+avgBkg(nnzIdx) = mean(reshape(filteredIma3(indMin(tri2(:))), size(tri2)),2);
+stdNoise = std(ima(indMin));
+
+pointCands = zeros(size(locMax));
+indMax = indMax(ima(indMax) > avgBkg + 2 * stdNoise);
+pointCands(indMax) = filteredIma2(indMax);
+ 
+% figure
+% imshow(ima,[])
+% hold on;
+% ind = find(locMax);
+% [y x] = ind2sub(size(pointCands),ind);
+% plot(x,y,'b.')
+% ind = find(pointCands);
+% [y x] = ind2sub(size(pointCands),ind);
+% plot(x,y,'g.')
+% nnz(indMax)
+
+% DEPRECATED
 % Generate pointMask from pointCands
-pointDist = bwdist(pointCands ~= 0);
-pointMask = pointDist < hside;
-
-% Make the union of the segment and point masks
-unionMask = segmentMask | pointMask;
+% pointDist = bwdist(pointCands ~= 0);
+% pointMask = pointDist < hside;
+% 
+% % Make the union of the segment and point masks
+% unionMask = segmentMask | pointMask;
 
 % Compute property of connected components
-CCstats = regionprops(unionMask,'PixelIdxList','BoundingBox');
+CCstats = regionprops(segmentMask,'PixelIdxList','BoundingBox');
 nCC = numel(CCstats);
 
 % Define the resulting set of clusters
@@ -66,11 +100,11 @@ clusters(1:nCC) = struct('avgBkg',[],'stdBkg',[],'segments',[],'points',[]);
 
 % Create background image (original image without feature areas)
 bkgImage = ima;
-bkgImage(unionMask) = 0;
+bkgImage(segmentMask) = 0;
 
 %% --- Step 4 ---- %%
 
-% Possible optimization: instead of computed Radon transform of
+% TODO: Possible optimization: instead of computed Radon transform of
 % filteredIma1 for every possible angle, use the Feature-adapted Radon
 % transform.
 
@@ -82,6 +116,7 @@ ct = cos(theta);
 st = sin(theta);
 tic;
 for iCC = 1:nCC
+
     % Floor bounding box
     bb = ceil(CCstats(iCC).BoundingBox);
     
@@ -143,7 +178,7 @@ for iCC = 1:nCC
     % axis, for each secondary axis's orientation. For that, compute the
     % Radon transform of a function defines as the signed distance from the
     % perpendical axis passing through cRadon. The orientation of that
-    % perpendical follows each radon orientation.
+    % perpendical follows each radon orientation.plot(pointCands
     D1 = zeros(size(CC));
     D1(indLocal) = cRadon(1) - x;
     D2 = zeros(size(CC));
@@ -255,7 +290,7 @@ for iCC = 1:nCC
         ub = varSegmentParams;
         ub(:,2) = ub(:,2) + 3 * clusters(iCC).stdBkg;
         
-        disp(num2str(iCC));
+        %disp(num2str(iCC));
         
         varSegmentParams = lsqnonlin(fun, varSegmentParams,ub,lb,options);
         
@@ -265,7 +300,7 @@ for iCC = 1:nCC
             repmat(bb(1:2),numel(ind),1) - 1;    
 
         % Remove segment whose length <= 1
-        clusters(iCC).segments = clusters(iCC).segments(clusters(iCC).segments(:,5) > minSize,:);
+        %clusters(iCC).segments = clusters(iCC).segments(clusters(iCC).segments(:,5) > minSize,:);
     end
     
     %% --- STEP 6: Optimize point candidates --- %%
@@ -287,7 +322,8 @@ for iCC = 1:nCC
 %             cands(iPSF).Lmax = pts(iPSF,[2 1]);
 %         end
 %                 
-% %         subResPts = detectSubResFeatures2D(imaCC,cands,sigmaPSF,alpha,0,1, ...
+% %         subResPts =
+% detectSubResFeatures2D(imaCC,cands,sigmaPSF,alpha,0,1, ...
 % %             bitDepth,0,clusters(iCC).stdBkg);
 % %         
 % %         % Store the final set of independent points.
@@ -297,21 +333,28 @@ clusters(iCC).points = pts + repmat(bb(1:2),size(pts,1),1) - 1;
      end
 end
 toc
+
 %% DISPLAY
-
-S = cell2mat(arrayfun(@(iCC) clusters(iCC).segments, (1:nCC)', 'UniformOutput', false));
-P = cell2mat(arrayfun(@(iCC) clusters(iCC).points, (1:nCC)', 'UniformOutput', false));
-
-if ~isempty(S)
-    overlaySegment2DImage(ima,S);
-else
-    imshow(ima,[]);
+if display
+    S = cell2mat(arrayfun(@(iCC) clusters(iCC).segments, (1:nCC)', 'UniformOutput', false));
+    P = cell2mat(arrayfun(@(iCC) clusters(iCC).points, (1:nCC)', 'UniformOutput', false));
+    
+    if ~isempty(S)
+        overlaySegment2DImage(ima,S);
+    else
+        imshow(ima,[]);
+    end
+    
+    hold on;
+    
+    if ~isempty(P)
+        plot(P(:,1),P(:,2),'r.');
+    end
+    
+    % Display point
+    ind = find(pointCands);
+    [y x] = ind2sub(size(pointCands),ind);
+    plot(x,y,'r.');
+    
+    hold off;
 end
-
-hold on;
-
-if ~isempty(P)
-    plot(P(:,1),P(:,2),'r.');
-end
-
-hold off;

@@ -35,7 +35,7 @@ if nargin~=4
     error('4 input parameters expected.');
 end
 
-if prod(size(d0))~=1 & prod(size(d0))~=size(Pg,1)
+if numel(d0)~=1 && numel(d0) ~= size(Pg,1)
     error('The input parameter d0 must be a scalar or a (nx1) vector.');
 end
 
@@ -56,23 +56,18 @@ V=[M(:,3)-M(:,1) M(:,4)-M(:,2)];
 % Calculate distances
 D=createDistanceMatrix(Pg,Pi);
 
-% Correlation matrix (d0 may be a scalar or a vector)
-G=zeros(size(D));
-if size(d0)==[1 1]
-    G=exp(-D.^2./d0^2);
-else
-    for i=1:size(D,1)  
-        G(i,:)=exp(-D(i,:).^2./d0(i,1).^2);
-    end
-end
-clear D % Not needed any more
+%Correlation matrix (d0 may be a scalar or a vector)
+G = exp(-bsxfun(@rdivide, D, d0).^2);
+
+% Not needed any more
+clear D;
 
 % Interpolate
 Vi=[G*V(:,1) G*V(:,2)];
 
 % Normalize
 sG=sum(G,2);
-sG(find(sG==0))=1; % Prevent division by zero
+sG(sG==0)=1; % Prevent division by zero
 Vi=[Vi(:,1)./sG Vi(:,2)./sG];
 
 % Mi is the interpolated M
@@ -81,6 +76,6 @@ Mi=[Pg Pg+Vi];
 % Set all vectors outside the passed polygon to 0
 if ~isempty(polygon)
     index=inpolygon(Mi(:,1),Mi(:,2),polygon(:,2),polygon(:,1));
-    Mi(find(~index),3)=Mi(find(~index),1);
-    Mi(find(~index),4)=Mi(find(~index),2);
+    Mi(~index,3)=Mi(~index,1);
+    Mi(~index,4)=Mi(~index,2);
 end
