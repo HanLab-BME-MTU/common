@@ -17,20 +17,7 @@ function sigma = getGaussianPSFsigma(varargin)
 if nargin == 5
     
     [NA, M, pixelSize, lambda] = deal(varargin{:});
-    
-    % values from http://www.olympusfluoview.com/applications/fpcolorpalette.html
-    if ischar(lambda)
-        switch lambda
-            case 'GFP'
-                lambda = 509e-9;
-            case 'EGFP'
-                lambda = 507e-9;
-            case 'mCherry'
-                lambda = 610e-9;
-            otherwise
-                error('Shortcut not valid. Please enter wavelength in [nm].');
-        end
-    end
+    lambda = name2wavelength(lambda);    
     
     % Defaults use values corresponding to optimal imaging conditions
     p.ti0 = 0; % the working distance has no effect under ideal conditions
