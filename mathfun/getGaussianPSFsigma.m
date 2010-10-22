@@ -5,6 +5,7 @@
 %            pixelSize : physical pixel size of the CCD in [m]
 %            lambda    : emission maximum wavelength of the fluorophore in [m]
 %                        -or- fluorophore name
+%            {display} : Display PSF and its Gaussian approximation. Optional, default 'off'.
 %
 % Alternative input: p : parameter structure for PSF calculations (see psfVectorial).
 %
@@ -14,9 +15,8 @@
 
 function sigma = getGaussianPSFsigma(varargin)
 
-if nargin == 4
-    
-    [NA, M, pixelSize, lambda] = deal(varargin{:});
+if nargin >= 4
+    [NA, M, pixelSize, lambda] = deal(varargin{1:4});
     lambda = name2wavelength(lambda);    
     
     % Defaults use values corresponding to optimal imaging conditions
@@ -74,21 +74,22 @@ sigma = pG(4);
 %===============
 % Display
 %===============
-xa = (-ru+1:ru-1)*p.pixelSize/p.M*1e9;
-
-figure;
-subplot(1,2,1);
-imagesc(xa,xa,psf); colormap(gray(256)); axis image;
-title('PSF');
-xlabel('x [nm]');
-ylabel('y [nm]');
-
-subplot(1,2,2);
-imagesc(xa,xa,G); colormap(gray(256)); axis image;
-title('Gaussian approximation');
-xlabel('x [nm]');
-ylabel('y [nm]');
-
+if nargin==5
+    xa = (-ru+1:ru-1)*p.pixelSize/p.M*1e9;
+    
+    figure;
+    subplot(1,2,1);
+    imagesc(xa,xa,psf); colormap(gray(256)); axis image;
+    title('PSF');
+    xlabel('x [nm]');
+    ylabel('y [nm]');
+    
+    subplot(1,2,2);
+    imagesc(xa,xa,G); colormap(gray(256)); axis image;
+    title('Gaussian approximation');
+    xlabel('x [nm]');
+    ylabel('y [nm]');
+end
 
 
 
