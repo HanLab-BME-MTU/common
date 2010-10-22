@@ -3,7 +3,6 @@
 % INPUTS     NA        : numerical aperture of the objective
 %            pixelSize : physical pixel size of the CCD (typically around 6.5 µm)
 %            M         : magnification of the objective
-%            wD        : working distance of the objective
 %            lambda    : emission maximum wavelength of the fluorophore
 %
 % Alternative input: p : parameter structure for PSF calculations (see psfVectorial).
@@ -16,7 +15,7 @@ function sigma = getGaussianPSFsigma(varargin)
 
 if nargin == 5
     
-    [NA, pixelSize, M, wD, lambda] = deal(varargin{:});
+    [NA, pixelSize, M, lambda] = deal(varargin{:});
     
     % values from http://www.olympusfluoview.com/applications/fpcolorpalette.html
     if ischar(lambda)
@@ -33,7 +32,7 @@ if nargin == 5
     end
     
     % Defaults use values corresponding to optimal imaging conditions
-    p.ti0 = wD;
+    p.ti0 = 0; % the working distance has no effect under ideal conditions
     p.ni0 = 1.518;
     p.ni = 1.518;
     p.tg0 = 0.17e-3;
