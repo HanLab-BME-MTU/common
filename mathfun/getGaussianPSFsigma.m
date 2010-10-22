@@ -2,8 +2,9 @@
 %
 % INPUTS     NA        : numerical aperture of the objective
 %            M         : magnification of the objective
-%            pixelSize : physical pixel size of the CCD (typically around 6.5 µm)
-%            lambda    : emission maximum wavelength of the fluorophore
+%            pixelSize : physical pixel size of the CCD in [m]
+%            lambda    : emission maximum wavelength of the fluorophore in [m]
+%                        -or- fluorophore name
 %
 % Alternative input: p : parameter structure for PSF calculations (see psfVectorial).
 %
