@@ -14,7 +14,7 @@
 
 function sigma = getGaussianPSFsigma(varargin)
 
-if nargin == 5
+if nargin == 4
     
     [NA, M, pixelSize, lambda] = deal(varargin{:});
     lambda = name2wavelength(lambda);    
