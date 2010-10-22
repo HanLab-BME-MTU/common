@@ -1,8 +1,8 @@
 % getGaussianPSFsigma returns the standard deviation of the Gaussian approximation of an ideal PSF.
 %
 % INPUTS     NA        : numerical aperture of the objective
-%            pixelSize : physical pixel size of the CCD (typically around 6.5 µm)
 %            M         : magnification of the objective
+%            pixelSize : physical pixel size of the CCD (typically around 6.5 µm)
 %            lambda    : emission maximum wavelength of the fluorophore
 %
 % Alternative input: p : parameter structure for PSF calculations (see psfVectorial).
@@ -15,7 +15,7 @@ function sigma = getGaussianPSFsigma(varargin)
 
 if nargin == 5
     
-    [NA, pixelSize, M, lambda] = deal(varargin{:});
+    [NA, M, pixelSize, lambda] = deal(varargin{:});
     
     % values from http://www.olympusfluoview.com/applications/fpcolorpalette.html
     if ischar(lambda)
