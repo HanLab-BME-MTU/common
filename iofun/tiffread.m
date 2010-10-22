@@ -374,7 +374,7 @@ end
 
 
 %% distribute the MetaMorph info
-if isfield(TIF, 'MM_stack') && isfield(IMG, 'info') && ~isempty(IMG.info)
+if isfield(TIF, 'MM_stack') && isfield(IMG, 'info') && ~isempty(deblank(IMG.info))
     MM = parseMetamorphInfo(IMG.info, TIF.MM_stackCnt);
     for i = 1:numel(stack)
         stack(i).MM = MM(i);
