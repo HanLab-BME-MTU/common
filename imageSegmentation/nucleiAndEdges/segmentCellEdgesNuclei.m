@@ -41,15 +41,19 @@ imageN = double(imageN);
 imageC = double(imageC);
 
 %filter nuclei image with a large Gaussian
-imageNfilter = imfilter(imageN,fspecial('Gaussian',51,10),'symmetric');
+imageNfilter = imfilter(imageN,fspecial('Gaussian',13,2),'symmetric');
 
 %get nuclear masks by thresholding
-maskNuclei = double(blobSegmentThreshold(imageNfilter,500,plotRes));
+maskNuclei = double(blobSegmentThreshold(imageNfilter,50,plotRes));
 maskNucleiLabel = bwlabel(maskNuclei);
 
+% fImg = locmax2d(D,[7 7]);
+% [centersNucleiX,centersNucleiY] = find(fImg);
+% centersNuclei = [centersNucleiX centersNucleiY];
+
 %get the nuclear centers
-STATS = regionprops(maskNucleiLabel,'Centroid'); %#ok<MRPBW>
-centersNuclei = round(vertcat(STATS.Centroid));
+% STATS = regionprops(maskNucleiLabel,'Centroid'); %#ok<MRPBW>
+% centersNuclei = round(vertcat(STATS.Centroid));
 
 %% Cell edge segmentation by watershed
 
