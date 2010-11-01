@@ -78,7 +78,7 @@ numTracks = length(tracks);
 
 %assign track types based on track segment types
 %track type is taken as the type of the most dynamic segment
-%linear > Brownian > confined Brownian
+%linear > Brownian > confined
 trackType = NaN(numTracks,1);
 for iTrack = 1 : numTracks
     if any(diffAnalysisRes(iTrack).classification(:,1)==1)
@@ -346,7 +346,7 @@ for iType = 1 : 3
                 splitAfterMerge = 0;
             end
 
-            %if merge is not followed by a split, calculate merge-to-split time
+            %if merge is not followed by a split, calculate merge-to-end time
             if splitAfterMerge == 0
 
                 %get time of merge

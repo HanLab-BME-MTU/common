@@ -3,7 +3,8 @@ function [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D,...
     getAveDispEllipseAll2(xyzVel,brownStd,trackType,undetBrownStd,timeWindow,...
     brownStdMult,linStdMult,timeReachConfB,timeReachConfL,minSearchRadius,...
     maxSearchRadius,useLocalDensity,closestDistScale,maxStdMult,...
-    nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime,probDim,resLimit)
+    nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime,probDim,resLimit,...
+    brownScaling,linScaling)
 %GETAVEDISPELLIPSEALL2 determines the search ellipse and expected displacement along x and y of a particle undergoing 2D diffusion with drift
 %
 %SYNOPSIS [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D,...
@@ -12,6 +13,7 @@ function [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D,...
 %    brownStdMult,linStdMult,timeReachConfB,timeReachConfL,minSearchRadius,...
 %    maxSearchRadius,useLocalDensity,closestDistScale,maxStdMult,...
 %    nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime,probDim,resLimit)
+%    brownScaling,linScaling)
 %
 %INPUT  xyzVel         : Velocity in x, y and z (if 3D).
 %       brownStd       : Standard deviation of Brownian motion steps.
@@ -47,6 +49,12 @@ function [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D,...
 %       resLimit       : Resolution limit, in whatever space units are
 %                        being used.
 %                        Optional. Default: 0 (i.e. don't use).
+%       brownScaling   : Power by which Brownian part of search radius
+%                        inceases with time.
+%                        Optional. Default: 0.5.
+%       linScaling     : Power by which linear part of search radius
+%                        increases with time.
+%                        Optional. Default: 0.5.
 %
 %OUTPUT longVecS  : Vector defining long radius of search ellipse/ellipsoid at the
 %                   starts of tracks.
@@ -101,6 +109,14 @@ if nargin < 20 || isempty(resLimit)
     resLimit = 0;
 end
 
+if nargin < 21 || isempty(brownScaling)
+    brownScaling = [0.5 0.01];
+end
+
+if nargin < 22 || isempty(linScaling)
+    linScaling = [0.5 0.01];
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Determine expected displacement and search ellipse
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,12 +146,12 @@ end
 sqrtDim = sqrt(probDim);
 
 %put time scaling of linear motion in a vector
-timeScalingLin = [sqrt(1:timeReachConfL) sqrt(timeReachConfL) * ...
-    (2:timeWindow-timeReachConfL+1).^0.01];
+timeScalingLin = [(1:timeReachConfL).^linScaling(1) ...
+    (timeReachConfL)^linScaling(1) * (2:timeWindow-timeReachConfL+1).^linScaling(2)];
 
 %put time scaling of Brownian motion in a vector
-timeScalingBrown = [sqrt(1:timeReachConfB) sqrt(timeReachConfB) * ...
-    (2:timeWindow-timeReachConfB+1).^0.01];
+timeScalingBrown = [(1:timeReachConfB).^brownScaling(1) ...
+    (timeReachConfB)^brownScaling(1) * (2:timeWindow-timeReachConfB+1).^brownScaling(2)];
 
 %scale maxSearchRadius like Brownian motion (it's only imposed on the
 %Brownian aspect of tracks)

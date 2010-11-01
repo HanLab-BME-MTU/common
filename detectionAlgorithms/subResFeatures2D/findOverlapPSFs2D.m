@@ -79,6 +79,10 @@ tmp = (cands2(:,1)-1)*numPixelsY + cands2(:,2);
 maxPos0 = zeros(numPixelsY,numPixelsX);
 maxPos0(tmp) = 1;
 
+%extract the amplitudes of the significant local maxima
+tmp = vertcat(cands.amp);
+candsAmp = tmp([cands.status]==1);
+
 %generate PSF template 
 template = GaussMask2D(psfSigma,8*ceil(psfSigma)-1,[0 0]);
 [psfRange] = size(template,1);
@@ -86,6 +90,7 @@ psfRange = floor(psfRange/2);
 
 %place PSFs in image
 image = zeros(numPixelsY+2*psfRange,numPixelsX+2*psfRange);
+imageAmp = zeros(numPixelsY+2*psfRange,numPixelsX+2*psfRange);
 for i=1:size(cands2,1)    
     x0 = cands2(i,1)+psfRange;
     y0 = cands2(i,2)+psfRange;
@@ -94,8 +99,10 @@ for i=1:size(cands2,1)
     xmin = x0-psfRange;
     xmax = x0+psfRange;
     image(ymin:ymax,xmin:xmax) = image(ymin:ymax,xmin:xmax) + template;
+    imageAmp(ymin:ymax,xmin:xmax) = imageAmp(ymin:ymax,xmin:xmax) + template*candsAmp(i);
 end
 image = image(psfRange+1:end-psfRange,psfRange+1:end-psfRange);
+imageAmp = imageAmp(psfRange+1:end-psfRange,psfRange+1:end-psfRange);
 
 %normalize image
 imageN = image/max(image(:));
@@ -120,7 +127,7 @@ for i=1:nIsland
     numPSF0 = size(rcCenter,1);
 
     %determine initial amplitudes of PSFs
-    ampPSF0 = imageN(rcCenterL);
+    ampPSF0 = imageAmp(rcCenterL);
     
     %collect data in structure
     clusters(i).numMaxima = numPSF0;

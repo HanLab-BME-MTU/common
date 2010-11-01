@@ -37,7 +37,7 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                               be calcualted for different time gaps
 %                               based on the scaling factor of Brownian
 %                               motion (expanding it will make use of the
-%                               field .timeReachConfB).
+%                               fields .brownScaling and .timeReachConfB).
 %             .brownStdMult   : Factor multiplying Brownian
 %                               displacement std to get search radius.
 %                               Vector with number of entries equal to
@@ -46,12 +46,24 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %                               search radius. Vector with number of entries
 %                               equal to gapCloseParam.timeWindow (defined
 %                               below).
+%             .brownScaling   : Power with which the Brownian part of the
+%                               search radius scales with time. It has 2
+%                               elements, the first indicating the power
+%                               before timeReachConfB (see below) and the
+%                               second indicating the power after
+%                               timeReachConfB.
+%             .linScaling     : Power with which the Linear part of the
+%                               search radius scales with time. It has 2
+%                               elements, the first indicating the power
+%                               before timeReachConfL (see below) and the
+%                               second indicating the power after
+%                               timeReachConfL
 %             .timeReachConfB : Time gap for reaching confinement for
 %                               2D Brownian motion. For smaller time gaps,
 %                               expected displacement increases with
-%                               sqrt(time gap). For larger time gaps,
-%                               expected displacement increases slowly with
-%                               (time gap)^0.1.
+%                               (time gap)^brownScaling. For larger time gaps,
+%                               expected displacement increases slowly, with
+%                               (time gap)^0.01.
 %             .timeReachConfL : Time gap for reaching confinement for
 %                               linear motion. Time scaling similar to
 %                               timeReachConfB above.
@@ -158,10 +170,12 @@ linearMotion = costMatParam.linearMotion;
 minSearchRadius = costMatParam.minSearchRadius;
 maxSearchRadius = costMatParam.maxSearchRadius;
 brownStdMult = costMatParam.brownStdMult;
+brownScaling = costMatParam.brownScaling;
 timeReachConfB = costMatParam.timeReachConfB;
 lenForClassify = costMatParam.lenForClassify;
 useLocalDensity = costMatParam.useLocalDensity;
 linStdMult   = costMatParam.linStdMult;
+linScaling = costMatParam.linScaling;
 timeReachConfL = costMatParam.timeReachConfL;
 sin2AngleMax = (sin(costMatParam.maxAngleVV*pi/180))^2;
 sin2AngleMaxVD = 1;
@@ -275,7 +289,7 @@ meanDispAllTracks = nanmean(trackMeanDisp);
     noiseStd,trackType,undetBrownStd,timeWindow,brownStdMult,linStdMult,...
     timeReachConfB,timeReachConfL,minSearchRadius,maxSearchRadius,...
     useLocalDensity,closestDistScale,maxStdMult,nnDistLinkedFeat,nnWindow,...
-    trackStartTime,trackEndTime,probDim,resLimit);
+    trackStartTime,trackEndTime,probDim,resLimit,brownScaling,linScaling);
 
 %% Gap closing
 
@@ -334,14 +348,14 @@ cost  = zeros(numPairs,1); %cost value
 % timeGapAll = zeros(numPairs,1);
 
 %put time scaling of linear motion in a vector
-% timeScalingLin = [(1:timeReachConfL) timeReachConfL * ...
-%     (2:timeWindow-timeReachConfL+1).^0.02];
-timeScalingLin = ones(timeWindow,1);
+% timeScalingLin = ones(timeWindow,1);
+timeScalingLin = [(1:timeReachConfL).^linScaling(1) ...
+    (timeReachConfL)^linScaling(1) * (2:timeWindow-timeReachConfL+1).^linScaling(2)];
 
 %put time scaling of Brownian motion in a vector
-% timeScalingBrown = [(1:timeReachConfB) timeReachConfB * ...
-%     (2:timeWindow-timeReachConfB+1).^0.02];
-timeScalingBrown = ones(timeWindow,1);
+% timeScalingBrown = ones(timeWindow,1);
+timeScalingBrown = [(1:timeReachConfB).^brownScaling(1) ...
+    (timeReachConfB)^brownScaling(1) * (2:timeWindow-timeReachConfB+1).^brownScaling(2)];
 
 %go over all possible pairs of starts and ends
 for iPair = 1 : numPairs
@@ -605,9 +619,15 @@ for iPair = 1 : numPairs
     if possibleLink
         
         %calculate the average displacement for the two tracks combined
-        meanDisp2Tracks = nanmean([trackMeanDisp(iStart) ...
-            trackMeanDisp(iEnd)]);
-        meanDisp2Tracks(isnan(meanDisp2Tracks)) = meanDispAllTracks;
+        meanDispTrack1 = trackMeanDisp(iStart);
+        meanDispTrack1(isnan(meanDispTrack1)) = meanDispAllTracks;
+        meanDispTrack2 = trackMeanDisp(iEnd);
+        meanDispTrack2(isnan(meanDispTrack2)) = meanDispAllTracks;
+        meanDisp2Tracks = mean([meanDispTrack1 meanDispTrack2]);
+        
+        %         meanDisp2Tracks = nanmean([trackMeanDisp(iStart) ...
+        %             trackMeanDisp(iEnd)]);
+        %         meanDisp2Tracks(isnan(meanDisp2Tracks)) = meanDispAllTracks;
         
         %         %compare displacement magnitude to expected displacement in time
         %         %gap (=sqrt(time gap)*mean frame-to-frame displacement, assuming
@@ -620,16 +640,18 @@ for iPair = 1 : numPairs
         dispVecMag2 = dispVecMag ^ 2;
         if trackTypeE == 1 && trackTypeS == 1
             cost12 = dispVecMag2 * (1 + mean([sin2Angle sin2AngleE sin2AngleS])) ...
-                / timeScalingLin(timeGap) / (meanDisp2Tracks^2);
+                / (timeScalingLin(timeGap) * meanDisp2Tracks)^2;
         elseif trackTypeE == 1
             cost12 = dispVecMag2 * (1 + sin2AngleE) ...
-                / timeScalingLin(timeGap) / (meanDisp2Tracks^2);
+                / (mean([timeScalingLin(timeGap)*meanDispTrack2 ...
+                timeScalingBrown(timeGap)*meanDispTrack1]))^2;
         elseif trackTypeS == 1
             cost12 = dispVecMag2 * (1 + sin2AngleS) ...
-                / timeScalingLin(timeGap) / (meanDisp2Tracks^2);
+                / (mean([timeScalingLin(timeGap)*meanDispTrack1 ...
+                timeScalingBrown(timeGap)*meanDispTrack2]))^2;
         else
             cost12 = dispVecMag2 ...
-                / timeScalingBrown(timeGap) / (meanDisp2Tracks^2);
+                / (timeScalingBrown(timeGap) * meanDisp2Tracks)^2;
         end
         
         %penalize cost for lifetime considerations

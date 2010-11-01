@@ -1,145 +1,106 @@
-function behaviorInWindows = particleBehaviorVsEdgeMotion(tracksFinal,...
-    winPositions,winFrames,protrusionWin,diffAnalysisRes,minLength)
+function particleBehaviorVsEdgeMotion(protPerWindow,sptPropInWindow,prop2analyze,band2analyze)
 %PARTICLEBEHAVIORVSEDGEMOTION looks for correlation between particle behavior and cell edge protrusion activity
 %
 %SYNOPSIS 
 %
-%INPUT  tracksFinal    : The tracks, either in structure format (e.g.
-%                        output of trackCloseGapsKalman) or in matrix
-%                        format (e.g. output of trackWithGapClosing).
-%       winPositions   : The window edges for all time points, as output by
-%                        Hunter's old windowing function.
-%       winFrames      : The frames at which there are windows.
-%       protrusionWin  : Average protrusion vector per window (from
+%INPUT  protPerWindow  : Average protrusion vector per window (from
 %                        Hunter).
-%       diffAnalysisRes: Output of trackDiffusionAnalysis1.
-%                        Optional. If not input but needed, it will be
-%                        calculated within the code.
-%       minLength      : Minimum length of a trajectory to include in
-%                        analysis.
-%                        Optional. Default: 5.
+%       sptPropInWindow: Output of particleBehaviorInWindows.
+%       prop2analyze   : Cell array indicating properties to analyze. The
+%                        names must exactly match the field names in
+%                        sptPropInWindow.
+%                        Optional. Default: All properties.
+%       band2analyze   : Vector indicating which bands to analyze. Bands
+%                        arise from the division of a cell into windows and
+%                        run parallel to the cell edge. Band #1 is at the
+%                        cell edge.
+%                        Optional. Default: 1.
 %
 %OUTPUT 
 %
-%REMARKS This code is designed for experiments where the particle
-%        trajectories are sampled much more frequently than the cell edge.
-%        It assumes that particle lifetimes are much shorter than the time
-%        between cell edge frames.
 %
-%        For a different scenario where particle lifetimes are longer than
-%        the time between cell edge frames, the tracks should not be
-%        grouped like this. Rather, each track should get divided into
-%        several segments corresponding to the times between cell edge
-%        frames and each track segment should be analyzed separately.
-%        Something like that.
-%
-%Khuloud Jaqaman, May 2010
+%Khuloud Jaqaman, September 2010
 
 %% Input
 
-if nargin < 4
-    disp('--particleBehaviorVsEdgeMotion: Incorrect number of input arguments!');
-    return
+if nargin < 3 || isempty(prop2analyze)
+    prop2analyze = {'spDensity','f2fDisp','fracUnclass','fracConf',...
+        'fracBrown','fracDir','diffCoef','confRad'};
 end
 
-if nargin < 5 || isempty(diffAnalysisRes)
-    diffAnalysisRes = trackDiffusionAnalysis1(tracksFinal,1,2,0,0.05);
+if nargin < 4 || isempty(band2analyze)
+    band2analyze = 1;
 end
 
-if nargin < 6 || isempty(minLength)
-    minLength = 5;
-end
+%calculate number of properties and number of bands
+numProp2analyze = length(prop2analyze);
+numBands = length(band2analyze);
 
+%% Plot activity maps of individual properties
 
-%% Trajectory pre-processing
+%protrusion vectors
+figure
+protNormVecMag = protPerWindow.averageNormalComponent;
+imagesc(protNormVecMag);
+caxis([-1 1]*max(abs(protNormVecMag(:))))
+colorbar
+title('Protrusion Vectors')
+xlabel('Time (frames)')
+ylabel('Position along edge (window #)')
 
-%keep only trajectories longer than minLength
-criteria.lifeTime.min = minLength;
-indx = chooseTracks(tracksFinal,criteria);
-tracksFinal = tracksFinal(indx,:);
-diffAnalysisRes = diffAnalysisRes(indx);
-
-%convert tracksFinal into matrix if it's a structure
-inputStructure = tracksFinal;
-if isstruct(tracksFinal)
-    clear tracksFinal
-    tracksFinal = convStruct2MatIgnoreMS(inputStructure);
-end
-
-%% Particle behavior pre-processing
-
-%from diffusion analysis ...
-
-%get trajectory classifications
-trajClass = vertcat(diffAnalysisRes.classification);
-trajClass = trajClass(:,2);
-
-%get diffusion coefficients
-diffCoefGen = catStruct(1,'diffAnalysisRes.fullDim.genDiffCoef(:,3)');
-
-%get confinement radii
-confRad = catStruct(1,'diffAnalysisRes.confRadInfo.confRadius(:,1)');
-
-%calculate simple frame-to-frame displacements ...
-
-%extract the x- and y-coordinates from the track matrix
-xCoord = tracksFinal(:,1:8:end);
-yCoord = tracksFinal(:,2:8:end);
-
-%calculate the average frame-to-frame displacemt per track
-frame2frameDisp = nanmean( sqrt( diff(xCoord,[],2).^2 + diff(yCoord,[],2).^2 ) ,2);
-
-%% Calculate property values per window
-
-%divide the trajectories among the windows
-tracksInWindows = assignTracks2Windows(tracksFinal,winPositions,winFrames);
-
-%get the number of windows in each dimension
-[numWinPerp,numWinPara,numWinFrames] = size(winPositions);
-
-%define number of properties to be calculated
-numProperties = 7;
-
-%initialize output variables
-behaviorInWindows = NaN(numWinPerp,numWinPara,numWinFrames-1,numProperties);
-
-%go over all windows and calculate particle properties in each
-for iFrame = 1 : numWinFrames-1
-    for iPara = 1 : numWinPara
-        for iPerp = 1 : numWinPerp
+%go over requested properties
+cmap = [[0 0 0]; colormap];
+for iProp = 1 : numProp2analyze
+    
+    %get property name
+    propName = prop2analyze{iProp};
+    
+    %get current property
+    eval(['propCurrent = sptPropInWindow.' propName '.values;']);
+    
+    switch propName
+        
+        case {'spDensity','f2fDisp','diffCoef','confRad'}
             
-            %get the tracks belonging to this window
-            tracksCurrent = tracksInWindows{iPerp,iPara,iFrame};
-            numTracksCurrent = length(tracksCurrent);
-            
-            %if there are tracks in this window ...
-            if numTracksCurrent ~= 0
-                
-                %calculate the fraction of tracks in each motion category
-                trajClassCurrent = trajClass(tracksCurrent);
-                fracUnClass = length(find(isnan(trajClassCurrent)))/numTracksCurrent; %unclassified tracks
-                trajClassCurrent = trajClassCurrent(~isnan(trajClassCurrent)); %classified tracks
-                if ~isempty(trajClassCurrent)
-                    fracClass = hist(trajClassCurrent,(1:3))/length(trajClassCurrent);
-                else
-                    fracClass = NaN(1,3);
-                end
-                
-                %calculate the average diffusion coefficient
-                diffCoefAve = nanmean(diffCoefGen(tracksCurrent));
-                
-                %calculate the average confinement radius
-                confRadAve = nanmean(confRad(tracksCurrent));
-                
-                %calculate the average frame-to-frame displacement
-                f2fDispAve = nanmean(frame2frameDisp(tracksCurrent));
-                
-                %store all properties in output cell array
-                behaviorInWindows(iPerp,iPara,iFrame,:) = [fracUnClass ...
-                    fracClass diffCoefAve confRadAve f2fDispAve];
+            %go over all bands
+            for iBand = 1 : numBands
+                propCurrentBand = squeeze(propCurrent(band2analyze(iBand),:,:)); %#ok<NODEF>
+                minValue = min(propCurrentBand(:));
+                maxValue = prctile(propCurrentBand(:),99);
+                nanValue = minValue - (maxValue - minValue)/64;
+                propCurrentBand(isnan(propCurrentBand)) = nanValue;
+                figure
+                imagesc(propCurrentBand);
+                caxis([nanValue maxValue])
+                colormap(cmap);
+                colorbar
+                title(propName)
+                xlabel('Time (frames)')
+                ylabel('Position along edge (window #)')
             end
             
-        end
+        case {'fracUnclass','fracConf','fracBrown','fracDir'}
+            
+            %go over all bands
+            for iBand = 1 : numBands
+                propCurrentBand = squeeze(propCurrent(band2analyze(iBand),:,:)); %#ok<NODEF>
+                propCurrentBand(isnan(propCurrentBand)) = -1/64;
+                figure
+                imagesc(propCurrentBand);
+                caxis([-1/64 1])
+                colormap(cmap);
+                colorbar
+                title(propName)
+                xlabel('Time (frames)')
+                ylabel('Position along edge (window #)')
+            end
+            
     end
+    
 end
+
+
+
+
+
 

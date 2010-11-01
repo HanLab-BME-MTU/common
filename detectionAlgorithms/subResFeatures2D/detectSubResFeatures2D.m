@@ -277,8 +277,10 @@ for i = 1 : numClusters
         %collect initial guesses and lower and upper bounds of ...
         %feature positions
         x0 = maximaPosT; %initial guess
-        lb = repmat(min(clusterPixels),numMaximaT,1); %lower bound
-        ub = repmat(max(clusterPixels),numMaximaT,1); %upper bound
+        %         lb = repmat(min(clusterPixels),numMaximaT,1); %lower bound
+        %         ub = repmat(max(clusterPixels),numMaximaT,1); %upper bound
+        lb = x0-1; %lower bound
+        ub = x0+1; %upper bound
         %feature amplitudes
         x0 = [x0 maximaAmpT];
         lb(:,3) = 1e-5;
@@ -506,8 +508,10 @@ for i = 1 : numClusters
         %collect initial guesses and lower and upper bounds of ...
         %feature positions
         x0 = maximaPos(:,1:2); %initial guess
-        lb = repmat(min(clusterPixels),numMaxima,1); %lower bound
-        ub = repmat(max(clusterPixels),numMaxima,1); %upper bound
+        %         lb = repmat(min(clusterPixels),numMaxima,1); %lower bound
+        %         ub = repmat(max(clusterPixels),numMaxima,1); %upper bound
+        lb = x0-1; %lower bound
+        ub = x0+1; %upper bound
         %feature amplitudes
         x0 = [x0 maximaAmp(:,1)];
         lb(:,3) = 1e-5;

@@ -14,7 +14,7 @@ function [kalmanFilterInfoOut,errFlag] = kalmanGainLinearMotion(trackedFeatureIn
 %                            not connected to any previous features.
 %       frameInfo          : Structure with fields (for current frame):
 %             .allCoord        : x,dx,y,dy,[z,dz] of features collected in one
-%                                matrix.kalmanFunctions.
+%                                matrix.
 %             .amp             : Amplitudes of PSFs fitting detected features. 
 %                                1st column for values and 2nd column 
 %                                for standard deviations.

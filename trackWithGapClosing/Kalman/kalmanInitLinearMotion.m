@@ -36,6 +36,9 @@ function [kalmanFilterInfo,errFlag] = kalmanInitLinearMotion(frameInfo,...
 %                                   initial radius can be sufficiently big
 %                                   if features are moving quickly (ie
 %                                   faster than the max search radius)
+%                   .initVelocity : Initial velocity guess (vx, vy, [vz]),
+%                                   in whatever units coordinates are in
+%                                   per frame.
 %
 %OUTPUT kalmanFilterInfo: Structure with fields:
 %             .stateVec     : State vector for each feature.
@@ -67,12 +70,21 @@ brownStdMult = costMatParam.brownStdMult;
 
 %check whether additional initialization parameters were input
 if isfield(costMatParam,'kalmanInitParam')
+    
     initParam = costMatParam.kalmanInitParam;
+    
     if isfield(initParam,'convergePoint')
         convergePoint = initParam.convergePoint;
     else
         initParam.convergePoint = [];
         convergePoint = [];
+    end
+    
+    if isfield(initParam,'initVelocity')
+        initVelGuess = initParam.initVelocity;
+    else
+        initParam.initVelocity = [];
+        initVelGuess = [];
     end
     
     % calculate noiseVarInit from max search radius (if given) or from
@@ -96,8 +108,20 @@ if ~isempty(convergePoint)
         convergePoint = convergePoint';
     end
     nCol = size(convergePoint,2);
-    if nCol == probDim
+    if nCol ~= probDim
         disp('--kalmanInitLinearMotion: initParam.convergePoint of wrong dimension!');
+        errFlag = 1;
+    end
+end
+    
+if ~isempty(initVelGuess)
+    [nRow,nCol] = size(initVelGuess);
+    if nRow ~= 1 && nCol == 1
+        initVelGuess = initVelGuess';
+    end
+    nCol = size(initVelGuess,2);
+    if nCol ~= probDim
+        disp('--kalmanInitLinearMotion: initParam.initVelocity of wrong dimension!');
         errFlag = 1;
     end
 end
@@ -114,24 +138,32 @@ end
 numFeatures = frameInfo.num;
 
 %estimate initial velocity
-if isempty(convergePoint) %if there is no convergence point information
-
-    %assume zero initial velocity
-    velocityInit = zeros(numFeatures,probDim);
-
-else %if there is a convergence point
-
-    %assign initial speed
-    speedInit = 1;
-
-    %get displacement and distance of features from convergence point
-    displacement = repmat(convergePoint,numFeatures,1) - ...
-        frameInfo.allCoord(1:2:end);
-    distance = sqrt(sum(displacement.^2,2));
-
-    %calculate initial velocity
-    velocityInit = speedInit * displacement ./ repmat(distance,1,probDim);
-
+if isempty(initVelGuess) %if there is no initial guess for velocity
+    
+    if isempty(convergePoint) %if there is no convergence point information
+        
+        %assume zero initial velocity
+        velocityInit = zeros(numFeatures,probDim);
+        
+    else %if there is a convergence point
+        
+        %assign initial speed
+        speedInit = 1;
+        
+        %get displacement and distance of features from convergence point
+        displacement = repmat(convergePoint,numFeatures,1) - ...
+            frameInfo.allCoord(1:2:end);
+        distance = sqrt(sum(displacement.^2,2));
+        
+        %calculate initial velocity
+        velocityInit = speedInit * displacement ./ repmat(distance,1,probDim);
+        
+    end
+    
+else %if there is an initial guess for velocity
+    
+    velocityInit = repmat(initVelGuess,numFeatures,1);
+    
 end
 
 %initialize state vector

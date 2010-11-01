@@ -25,8 +25,9 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %                           Optional. Default: 1.
 %           .bitDepth     : Camera bit depth.
 %                           Optional. Default: 16.
-%           .alphaLocMax  : Alpha value for statistical test in local maxima
-%                           detection.
+%           .alphaLocMax  : Alpha-value for statistical test comparing the
+%                           amplitudes of local maxima to the local
+%                           background.
 %                           Optional. default: 0.05.
 %                           --- alphaLocMax must be a row vector if
 %                           integWindow is a row vector. See description of
@@ -43,6 +44,23 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %                           same length. When integWindow is a row vector,
 %                           the initial local maxima detection is done by
 %                           using all specified integration windows.
+%           .background   : Structure with fields
+%               .imageDir      : Directory where background images are
+%                                stored.
+%               .filenameBase  : Background images filename base.
+%               .alphaLocMaxAbs: Alpha-value for statistical test comparing
+%                                the amplitudes of local maxima to the
+%                                absolute background. Same dimensions as
+%                                alphaLocMax above.
+%                           If this structure is supplied, the code will
+%                           calculate a uniform background mean and std
+%                           using the specified background images. The code
+%                           assumes the same firstImageNum, lastImageNum
+%                           and digits4Enum as the images to be analyzed.
+%                           Optional. Default: Absolute background is not
+%                           calculated and the significance of local maxima
+%                           is assessed based on local background only.
+%                           Omit field or assign as [] to use default.
 %       saveResults   : 0 if no saving is requested.
 %                       If saving is requested, structure with fields:
 %           .dir          : Directory where results should be saved.
@@ -183,6 +201,15 @@ if numIntegWindow > numAlphaLocMax
         alphaLocMax(1)*ones(1,numIntegWindow-numAlphaLocMax)];
 end
 
+if ~isfield(detectionParam,'background')
+    absBG = 0;
+else
+    absBG = 1;
+    bgImageDir = detectionParam.background.imageDir;
+    bgImageBase = detectionParam.background.filenameBase;
+    alphaLocMaxAbs = detectionParam.background.alphaLocMaxAbs;
+end
+
 %determine where to save results
 if nargin < 3 || isempty(saveResults) %if nothing was input
     saveResDir = pwd;
@@ -248,12 +275,19 @@ imageLast5 = NaN(imageSizeX,imageSizeY,5);
 for iImage = last5start : numImagesRaw
     i = i + 1;
     if imageExists(iImage)
-        imageLast5(:,:,i) = imread([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif']);
+        imageLast5(:,:,i) = imread([imageDir filenameBase ...
+            enumString(imageIndx(iImage),:) '.tif']);
     end
 end
 imageLast5 = double(imageLast5) / (2^bitDepth-1);
 imageLast5(imageLast5==0) = NaN;
 [bgMeanRaw,bgStdRaw] = spatialMovAveBG(imageLast5,imageSizeX,imageSizeY);
+
+%get size of absolute background images if supplied
+if absBG
+    imageTmp = imread([bgImageDir bgImageBase enumString(imageIndx(1),:) '.tif']);
+    [bgSizeX,bgSizeY] = size(imageTmp);
+end
 
 %% Local maxima detection
 
@@ -271,7 +305,8 @@ for iWindow = 1 : numIntegWindow
         imageRaw = NaN(imageSizeX,imageSizeY,1+2*integWindow(iWindow));
         for jImage = 1 : 1 + 2*integWindow(iWindow)
             if imageExists(jImage+iImage-1)
-                imageRaw(:,:,jImage) = double(imread([imageDir filenameBase enumString(imageIndx(jImage+iImage-1),:) '.tif']));
+                imageRaw(:,:,jImage) = double(imread([imageDir filenameBase ...
+                    enumString(imageIndx(jImage+iImage-1),:) '.tif']));
             end
         end
         
@@ -297,6 +332,22 @@ for iWindow = 1 : numIntegWindow
         %get integrated image background noise statistics
         [bgMeanInteg,bgStdInteg] = ...
             spatialMovAveBG(imageInteg,imageSizeX,imageSizeY);
+        
+        %calculate absolute background mean and std if supplied
+        if absBG
+            bgRaw = NaN(bgSizeX,bgSizeY,1+2*integWindow(iWindow));
+            for jImage = 1 : 1 + 2*integWindow(iWindow)
+                if imageExists(jImage+iImage-1)
+                    bgRaw(:,:,jImage) = double(imread([bgImageDir bgImageBase ...
+                        enumString(imageIndx(jImage+iImage-1),:) '.tif']));
+                end
+            end
+            bgRaw(bgRaw==0) = NaN;
+            bgRaw = bgRaw / (2^bitDepth-1);
+            bgInteg = nanmean(bgRaw,3);
+            bgAbsMeanInteg = nanmean(bgInteg(:))*ones(imageSizeX,imageSizeY);
+            bgAbsStdInteg = nanstd(bgInteg(:))*ones(imageSizeX,imageSizeY);
+        end
         
         background = [];
         
@@ -324,8 +375,19 @@ for iWindow = 1 : numIntegWindow
             %distributed with mean bgMeanMaxF and standard deviation bgStdMaxF
             pValue = 1 - normcdf(localMaxAmp,bgMeanMaxF,bgStdMaxF);
             
+            if absBG
+                bgAbsMeanMaxF = bgAbsMeanInteg(localMax1DIndx);
+                bgAbsStdMaxF = bgAbsStdInteg(localMax1DIndx);
+                pValueAbs = 1 - normcdf(localMaxAmp,bgAbsMeanMaxF,bgAbsStdMaxF);
+            end
+            
             %retain only those maxima with significant amplitude
-            keepMax = find(pValue < alphaLocMax(iWindow));
+            if absBG
+                keepMax = find((pValue < alphaLocMax(iWindow)) & ...
+                    (pValueAbs < alphaLocMaxAbs));
+            else
+                keepMax = find(pValue < alphaLocMax(iWindow));
+            end
             localMaxPosX = localMaxPosX(keepMax);
             localMaxPosY = localMaxPosY(keepMax);
             localMaxAmp = localMaxAmp(keepMax);

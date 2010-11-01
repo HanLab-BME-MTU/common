@@ -58,6 +58,7 @@ if calcDir
     %find track's direction of motion as the eigenvector with the largest
     %eigenvalue
     prefDir = eigenVec(:,eigenVal==max(eigenVal));
+%     prefDir = eigenVec(:,eigenVal==min(eigenVal));
 
     if ~isempty(centerCoord)
 
