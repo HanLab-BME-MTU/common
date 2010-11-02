@@ -12,7 +12,7 @@
 #include "mex.h"
 #include "matrix.h"
 
-#define NARGIN 7
+#define NARGIN 6
 #define PI 3.14159265358979311599796346854
 
 using namespace std;
@@ -155,7 +155,7 @@ void psf(double *pixels, double x_p, double y_p, double z_p, double *z, int runi
     
     double w_exp;
     
-    // initialize arrays, nx: coarse scale!!
+    // initialize arrays, nx: coarse scale!
     int npixels = nx*ny*nz;
     for (index=0;index<npixels;index++) {
         pixels[index] = 0.0;
@@ -168,7 +168,7 @@ void psf(double *pixels, double x_p, double y_p, double z_p, double *z, int runi
         
         theta0 = p.alpha;
         L_theta(L_th, theta0, p, ci, z[k], z_p);
-        w_exp = abs(L_th[1]); // missing p.k0 !
+        w_exp = abs(L_th[1]); // missing p.k0!
         
         cst = 0.975;
         while (cst >= 0.9) {
@@ -179,8 +179,6 @@ void psf(double *pixels, double x_p, double y_p, double z_p, double *z, int runi
             cst -= 0.025;
         }
         w_exp *= p.k0;
-        //mexPrintf("w_exp: %f\n", w_exp);
-        //mexPrintf("Samples: %d\n", 4 * (int)(1.0 + p.alpha*w_exp/PI));
         
 		for (ri=0; ri<rMax; ri++) {
 
@@ -189,7 +187,6 @@ void psf(double *pixels, double x_p, double y_p, double z_p, double *z, int runi
 
             if (w_exp > constJ) {
                 nSamples = 4 * (int)(1.0 + p.alpha*w_exp/PI);
-                //nSamples = 10000;
             } else {
                 nSamples = 4 * (int)(1.0 + p.alpha*constJ/PI);
             }
@@ -199,7 +196,6 @@ void psf(double *pixels, double x_p, double y_p, double z_p, double *z, int runi
 
             step =  p.alpha/(double)nSamples;
             iconst = step/ud;
-            //iconst = step*step/ud;
 
             // Simpson's rule
             sum_I0 = 0.0;
@@ -367,11 +363,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     int runits;
     
 	// Check for proper number of arguments
-	//if (nrhs!=NARGIN) mexErrMsgTxt("There must be exactly 7 input arguments.");
-    //if ( !mxIsDouble(prhs[0]) || !mxIsDouble(prhs[1]) || !mxIsDouble(prhs[2]) || !mxIsDouble(prhs[4])) mexErrMsgTxt("x_p, y_p, z_p must be of type Double. Radial units must be an integer.");
-    //if ( !mxIsDouble(prhs[3]) ) mexErrMsgTxt("Input 'z' must be a Double array");
-    //if ( !mxIsStruct(prhs[5]) ) mexErrMsgTxt("Input 'p' must be a parameter vector");
-    //if ( !mxIsChar(prhs[6]) ) mexErrMsgTxt("Input 'mode' must be a string");
+	if (nrhs!=NARGIN) mexErrMsgTxt("There must be 6 input arguments: xp, yp, zp, z, ru, p.");
+    if ( !mxIsDouble(prhs[0]) || !mxIsDouble(prhs[1]) || !mxIsDouble(prhs[2]) || !mxIsDouble(prhs[4])) mexErrMsgTxt("'xp', 'yp', 'zp' must be of type Double; 'ru' must be an integer.");
+    if ( !mxIsDouble(prhs[3]) ) mexErrMsgTxt("Input 'z' must be a Double scalar or vector.");
+    if ( !mxIsStruct(prhs[5]) ) mexErrMsgTxt("Input 'p' must be a parameter structure.");
     
     int pIndex = 5; // index of parameter structure
     double *z;
