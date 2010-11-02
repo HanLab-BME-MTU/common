@@ -140,11 +140,11 @@ if nargin < 16 || isempty(firstImageFile)
 else
     if iscell(firstImageFile)
         [fpath,fname,fno,fext]=getFilenameBody(firstImageFile{1});
-        dirName=fpath;
+        dirName=[fpath,filesep];
         fName=[fname,fno,fext];
     elseif ischar(firstImageFile)
         [fpath,fname,fno,fext]=getFilenameBody(firstImageFile);
-        dirName=fpath;
+        dirName=[fpath,filesep];
         fName=[fname,fno,fext];
     end        
 end
