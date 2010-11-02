@@ -1,7 +1,7 @@
 function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
     saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,...
     imageRange,onlyTracks,classifyLft,diffAnalysisRes,intensityScale,...
-    colorTracks)
+    colorTracks,firstImageFile)
 %OVERLAYTRACKSMOVIENEW Overlays tracks obtained via trackCloseGapsKalman on movies with variable color-coding
 %
 %SYNPOSIS overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
@@ -71,6 +71,12 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %                       force-set to zero, regardless of input.
 %                       Option ignored if diffAnalysisRes is supplied.
 %                       Optional. Default: 0.
+%       firstImageFile: Name of the first image file in the folder of
+%                       images hat should be overlaid. The file has to be
+%                       the first image that has been analyzed even if not
+%                       plotted. If file is not specified [], user will be
+%                       prompted to select the first image.
+%                       Optional. Default: [].
 %
 %OUTPUT If movie is to be saved, the QT movie is written into directory
 %       where TIFFs are located
@@ -129,7 +135,19 @@ tracksLastFrame = max(allEvents(:,1));
 % startDir = pwd;
 
 %ask user for images
-[fName,dirName] = uigetfile('*.tif','specify first image in the stack - specify very first image, even if not to be plotted');
+if nargin < 16 || isempty(firstImageFile)
+    [fName,dirName] = uigetfile('*.tif','specify first image in the stack - specify very first image, even if not to be plotted');
+else
+    if iscell(firstImageFile)
+        [fpath,fname,fno,fext]=getFilenameBody(firstImageFile{1});
+        dirName=fpath;
+        fName=[fname,fno,fext];
+    elseif ischar(firstImageFile)
+        [fpath,fname,fno,fext]=getFilenameBody(firstImageFile);
+        dirName=fpath;
+        fName=[fname,fno,fext];
+    end        
+end
 
 %if input is valid ...
 if(isa(fName,'char') && isa(dirName,'char'))
