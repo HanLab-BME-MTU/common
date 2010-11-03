@@ -267,7 +267,7 @@ switch compOpt
         diffV = diag(varCovMatT1 + varCovMatT2);
 
         %calculate the test statistic
-        testStatistic = diffM./sqrt(diffV);
+        testStatistic = diffM'./sqrt(diffV);
 
         %get -log(p-value) assuming that each elemenet in testStatistic
         %follows a student t-distribution

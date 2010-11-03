@@ -539,7 +539,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 else
                     proceed = 0;
                 end
-
+                
                 
             case 'nl' % local minimization using Numerical Recipes' amoeba
                 
@@ -555,7 +555,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                     tr(i).observations = traj3d;
                 end
                 
-                model.trajOut = tr;                
+                model.trajOut = tr;
                 model.TOPOp = cat(1, 0, (param0(1:arOrder))');
                 model.maPARAMSp = (param0(arOrder+1:arOrder+maOrder))';
                 
@@ -564,7 +564,6 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 
                 model.topoBIN = cast(topoBIN, 'int32');
                 model.maBIN = cast(maBIN, 'int32');
-                
                 
                 try
                     [topo, ma, status] = carmaFitModel(model);
@@ -599,6 +598,12 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                     case 1
                 
                         proceed = 0;
+                        arParamK = [];
+                        maParamK = [];
+                        xParamK = [];
+                        wnVariance = [];
+                        wnVector = [];
+                        selectCrit = [];
                     
                     otherwise
                         disp('--armaxCoefKalman: carmaFitModel reports error.');
@@ -639,12 +644,12 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
 
         %get AR and MA coefficients from the partial AR and MA coefficients, respectively
         if ~isempty(arParamP)
-            [arParamK,errFlag] = levinsonDurbinExpoAR(arParamP);
+            arParamK = levinsonDurbinExpoAR(arParamP);
         else
             arParamK = [];
         end
         if ~isempty(maParamP)
-            [maParamK,errFlag] = levinsonDurbinExpoMA(maParamP);
+            maParamK = levinsonDurbinExpoMA(maParamP);
         else
             maParamK = [];
         end
@@ -682,7 +687,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
         wnVariance = (([trajOut2.weight].*numAvail)*wnVarianceSamp)/totAvail;        
         
         %get number of parameters estimated: arOrder AR coefficients, maOrder MA
-        %coefficients, xOrder+1``` X coefficients, and white noise variance
+        %coefficients, xOrder+1 X coefficients, and white noise variance
         numParam = arOrder + maOrder + xOrder + 2;
         
         %evaluate Akaike's Information Criterion

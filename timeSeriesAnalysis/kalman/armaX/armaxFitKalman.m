@@ -345,28 +345,31 @@ for k=size(modelParam,3):-1:1
                 for l=1:repeat_def
 
                     %assign model data
-                    arParamP0 = modelParam(i,j,k,l).arParamP0;
-                    maParamP0 = modelParam(i,j,k,l).maParamP0;
-                    xParam0   = modelParam(i,j,k,l).xParam0;
+                    arParamP01 = modelParam(i,j,k,l).arParamP0;
+                    maParamP01 = modelParam(i,j,k,l).maParamP0;
+                    xParam01   = modelParam(i,j,k,l).xParam0;
                     
                     %estimate ARMA coeffients and white noise variance
                     [arParamK1,maParamK1,xParamK1,arParamL1,maParamL1,...
                         xParamL1,varCovMatL1,varCovMatF1,wnVariance1,...
                         wnVector1,selectCrit1,pVCompKL1,pVPort1,errFlag1]...
-                        = armaxCoefKalman(trajOut,trajIn,arParamP0,...
-                        maParamP0,xParam0,[],minOpt);
+                        = armaxCoefKalman(trajOut,trajIn,arParamP01,...
+                        maParamP01,xParam01,[],minOpt);
 
 
-                    if ~isempty(selectCrit1)
+                    if ~isempty(pVPort1)
 
                         %get -2ln(likelihood) of estimated model
                         neg2LL1 = selectCrit1.aic - ...
-                            2*(length([arParamP0 maParamP0 xParam0])+1);
+                            2*(length([arParamP01 maParamP01 xParam01])+1);
 
                         %choose this as the best model if its
                         %-2ln(likelihood) is the smallest so far
                         if neg2LL1 < neg2LL
                             neg2LL     = neg2LL1;
+                            arParamP0  = arParamP01;
+                            maParamP0  = maParamP01;
+                            xParam0    = xParam01;
                             arParamK   = arParamK1;
                             maParamK   = maParamK1;
                             xParamK    = xParamK1;

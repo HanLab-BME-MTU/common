@@ -83,8 +83,8 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/home/kj35/tmpData/Martin2/2010_07_28_WT/2010_07_28_53/analysis/'; %directory where to save input and output
-saveResults.filename = 'tracksMod1DetectionAllMod5.mat'; %name of file where input and output are saved
+saveResults.dir = '/home/kj35/tmpData/Martin/2010_10_19_WT/WT1_20/analysis/'; %directory where to save input and output
+saveResults.filename = 'tracks1DetectionAll9.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
 %verbose
