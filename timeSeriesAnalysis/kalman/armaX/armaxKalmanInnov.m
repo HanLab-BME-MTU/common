@@ -190,6 +190,13 @@ for timePoint = max(xOrder+1,1):trajLength
         %make sure that matrix is symmetric
         stateCovMatT_T = (stateCovMatT_T+stateCovMatT_T')/2;
         
+        %make sure that there are no negative diagonal elements - a
+        %situation that can only happen because of numerical approximations
+        varVec = diag(stateCovMatT_T);
+        indxNeg = find(varVec<0);
+        indxNeg = indxNeg + (indxNeg-1)*size(stateCovMatT_T,1);
+        stateCovMatT_T(indxNeg) = abs(stateCovMatT_T(indxNeg));
+        
         %calculate white noise at this time point using 
         %wn(t+1) = x(t+1|t+1) - x(t+1|t) (Eq. 2.10 with j=1)
         wnVector(timePoint) = stateVecT_T(1) - stateVecT1_T(1);
