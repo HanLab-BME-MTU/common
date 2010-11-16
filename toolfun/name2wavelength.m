@@ -5,6 +5,14 @@
 
 function lambda = name2wavelength(name)
 
+if iscell(name)
+    lambda = cellfun(@(x) convert(x), name);
+else
+    lambda = convert(name);
+end
+
+function lambda = convert(name)
+
 switch name
     case 'CFP'
         lambda = 475e-9;
@@ -24,6 +32,8 @@ switch name
         lambda = 607e-9;
     case 'mCherry'
         lambda = 610e-9;
+    case 'TexasRed'
+        lambda = 615e-9;
     case 'Alexa647'
         lambda = 665e-9;
     otherwise
