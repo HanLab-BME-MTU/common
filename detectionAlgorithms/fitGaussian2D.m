@@ -11,6 +11,9 @@ function [prmVect, G] = fitGaussian2D(data, prmVect, mode, mask, origin)
 %
 % Francois Aguet, last modified May 2010
 
+if nargin<3
+    mode = 'xyAsc';
+end
 if nargin<4
     mask = [];
 end
@@ -37,12 +40,14 @@ opts = optimset('Jacobian', 'on', ...
 
 estIdx = false(1,5); % [x y A s c]
 estIdx(regexp('xyAsc', ['[' mode ']'])) = true;
+lb = [xa(1) ya(1) 0 0 0];
+ub = [xa(end) ya(end) Inf Inf Inf];
 
 [y,x] = ndgrid(ya, xa);
 if sum(estIdx)==1 && estIdx(3)==1
     prmVect = A_CF_Gaussian(data, x, y, prmVect);
 else
-    p = lsqnonlin(@costGaussian, prmVect(estIdx), [], [], opts, data, x, y, prmVect, estIdx, mask);
+    p = lsqnonlin(@costGaussian, prmVect(estIdx), lb(estIdx), ub(estIdx), opts, data, x, y, prmVect, estIdx, mask);
     prmVect(estIdx) = p;
 end
 
