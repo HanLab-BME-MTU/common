@@ -21,19 +21,17 @@ elseif numel(mask)==3
 end
 
 [ny,nx,nz] = size(img);
-lm = zeros(ny,nx,nz);
+lm2D = zeros(ny,nx,nz);
 
 for z = 1:nz
-    tmp = ordfilt2(img(:,:,z), wx*wy, mask);
-    tmp(tmp ~= img(:,:,z)) = 0;
-    lm(:,:,z) = tmp;    
+    lm2D(:,:,z) = ordfilt2(img(:,:,z), wx*wy, mask);  
 end
 
-img = zeros(ny,nx,nz);
+lm = zeros(ny,nx,nz);
 
 b = (wz-1)/2;
 for z = 1+b:nz-b
-    img(:,:,z) = max(lm(:,:,z-b:z+b), [], 3);
+    lm(:,:,z) = max(lm2D(:,:,z-b:z+b), [], 3);
 end
 
 lm(lm~=img) = 0;
