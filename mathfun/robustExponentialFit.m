@@ -106,5 +106,6 @@ if verbose
     subplot(2,1,2)
     stem(xData, yData-yinit,'.b')
     hold on
-    stem(xData,yData-yfit,'.r')
+    stem(xData, yData-yfit,'.r')
+    title('Residuals')
 end
