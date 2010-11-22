@@ -6,6 +6,8 @@
 function fileList = findFilesInSubDirs(topdir, filename)
 
 dirs = getSubDirs(topdir);
+dirs{end+1} = topdir;
+
 fileList = cell(1,length(dirs));
 for k = 1:length(dirs)
     tt = dir([dirs{k} filesep '*' filename '*']);
