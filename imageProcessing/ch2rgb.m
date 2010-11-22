@@ -5,7 +5,7 @@
 
 function imRGB = ch2rgb(R, G, B)
 
-imRGB = cat(3, scaleContrast(R), scaleContrast(G), scaleContrast(B));
+imRGB = cat(3, R, G, B);
 [ny, nx, ~] = size(imRGB);
 
 if isempty(R)
