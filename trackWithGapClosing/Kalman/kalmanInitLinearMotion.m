@@ -99,6 +99,7 @@ if isfield(costMatParam,'kalmanInitParam')
 else
     initParam.convergePoint = [];
     convergePoint = [];
+    initVelGuess = [];
     noiseVarInit = (mean([minSearchRadius maxSearchRadius]) / brownStdMult) ^ 2;
 end
 
