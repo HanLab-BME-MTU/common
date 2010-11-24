@@ -45,6 +45,8 @@
 %            p.NA = 1.4500
 %         p.alpha = asin(p.NA/p.Ni);
 %     p.pixelSize = 6.4500e-06
+%
+% Note: the fields of the parameter structure need to be declared in the order shown above.
 
 % Francois Aguet, last modified: 11/01/2010
 function vectorialPSF
