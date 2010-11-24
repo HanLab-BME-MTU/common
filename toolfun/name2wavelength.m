@@ -14,6 +14,8 @@ end
 function lambda = convert(name)
 
 switch name
+    case {'BFP', 'EBFP'}
+        lambda = 440e-9;
     case 'CFP'
         lambda = 475e-9;
     case 'EGFP'
