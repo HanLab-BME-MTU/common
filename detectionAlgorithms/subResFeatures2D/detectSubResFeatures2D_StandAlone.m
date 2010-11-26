@@ -146,7 +146,7 @@ psfSigma = detectionParam.psfSigma;
 
 %get statistical test alpha values
 if ~isfield(detectionParam,'testAlpha') || isempty(detectionParam.testAlpha)
-    testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05,'alphaF',0.05);
+    testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05,'alphaF',0);
 else
     testAlpha = detectionParam.testAlpha;
 end

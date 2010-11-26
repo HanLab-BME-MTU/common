@@ -280,7 +280,13 @@ for i = 1 : numClusters
         %         lb = repmat(min(clusterPixels),numMaximaT,1); %lower bound
         %         ub = repmat(max(clusterPixels),numMaximaT,1); %upper bound
         lb = x0-1; %lower bound
+        minPos = min(clusterPixels);
+        lb(lb(:,1)<minPos(1),1) = minPos(1);
+        lb(lb(:,2)<minPos(2),2) = minPos(2);
         ub = x0+1; %upper bound
+        maxPos = max(clusterPixels);
+        ub(ub(:,1)>maxPos(1),1) = maxPos(1);
+        ub(ub(:,2)>maxPos(2),2) = maxPos(2);
         %feature amplitudes
         x0 = [x0 maximaAmpT];
         lb(:,3) = 1e-5;
@@ -511,7 +517,13 @@ for i = 1 : numClusters
         %         lb = repmat(min(clusterPixels),numMaxima,1); %lower bound
         %         ub = repmat(max(clusterPixels),numMaxima,1); %upper bound
         lb = x0-1; %lower bound
+        minPos = min(clusterPixels);
+        lb(lb(:,1)<minPos(1),1) = minPos(1);
+        lb(lb(:,2)<minPos(2),2) = minPos(2);
         ub = x0+1; %upper bound
+        maxPos = max(clusterPixels);
+        ub(ub(:,1)>maxPos(1),1) = maxPos(1);
+        ub(ub(:,2)>maxPos(2),2) = maxPos(2);
         %feature amplitudes
         x0 = [x0 maximaAmp(:,1)];
         lb(:,3) = 1e-5;
