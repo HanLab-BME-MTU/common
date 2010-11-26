@@ -27,7 +27,7 @@ function [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,...
 %                     the alpha-value for asymmetry determination (can take
 %                     the values 0.2, 0.1, 0.05 and 0.01; see help of
 %                     asymDeterm2D3D for most up-to-date values allowed).
-%                     Optional. Default: [0.1 0.1]. If only one value is
+%                     Optional. Default: [0.05 0.1]. If only one value is
 %                     entered, it is taken as the alpha-value for MSS
 %                     analysis, whiel the alpha-value for asymmetry
 %                     analysis is given the default value.
@@ -123,7 +123,7 @@ if nargin < 4 || isempty(checkAsym)
 end
 
 if nargin < 5 || isempty(alphaValues)
-    alphaValues = [0.1 0.1];
+    alphaValues = [0.05 0.1];
 elseif length(alphaValues) == 1
     alphaValues = [alphaValues 0.1];
 end
