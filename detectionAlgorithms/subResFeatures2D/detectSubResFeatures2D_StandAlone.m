@@ -201,7 +201,7 @@ if numIntegWindow > numAlphaLocMax
         alphaLocMax(1)*ones(1,numIntegWindow-numAlphaLocMax)];
 end
 
-if ~isfield(detectionParam,'background')
+if ~isfield(detectionParam,'background') || isempty(detectionParam.background)
     absBG = 0;
 else
     absBG = 1;
