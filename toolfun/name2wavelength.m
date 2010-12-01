@@ -32,6 +32,8 @@ switch name
         lambda = 581e-9;
     case 'DsRed'
         lambda = 583e-9;
+    case 'TagRFP'
+        lambda = 584e-9;
     case 'Alexa568'
         lambda = 603e-9;
     case {'RFP', 'mRFP'}
