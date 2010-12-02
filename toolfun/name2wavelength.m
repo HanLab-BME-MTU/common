@@ -11,38 +11,39 @@ else
     lambda = convert(name);
 end
 
+
 function lambda = convert(name)
 
-switch name
-    case {'BFP', 'EBFP'}
+switch lower(name)
+    case {'bfp', 'ebfp'}
         lambda = 440e-9;
-    case 'CFP'
+    case 'cfp'
         lambda = 475e-9;
-    case 'EGFP'
+    case 'egfp'
         lambda = 507e-9;
-    case 'GFP'
+    case 'gfp'
         lambda = 509e-9;
-    case 'Alexa488'
+    case 'alexa488'
         lambda = 519e-9;
-    case 'YFP'
+    case 'yfp'
         lambda = 527e-9;
-    case 'Alexa555'
+    case 'alexa555'
         lambda = 565e-9;
-    case {'dTomato', 'tdTomato'}
+    case {'dtomato', 'tdtomato'}
         lambda = 581e-9;
-    case 'DsRed'
+    case 'dsred'
         lambda = 583e-9;
-    case 'TagRFP'
+    case 'tagrfp'
         lambda = 584e-9;
-    case 'Alexa568'
+    case 'alexa568'
         lambda = 603e-9;
-    case {'RFP', 'mRFP'}
+    case {'rfp', 'mrfp'}
         lambda = 607e-9;
-    case 'mCherry'
+    case 'mcherry'
         lambda = 610e-9;
-    case 'TexasRed'
+    case 'texasred'
         lambda = 615e-9;
-    case 'Alexa647'
+    case 'alexa647'
         lambda = 665e-9;
     otherwise
         if isnumeric(name)
