@@ -24,7 +24,7 @@ parameters.useLocalDensity = 0; %1 if you want to expand the search radius of is
 parameters.nnWindow = gapCloseParam.timeWindow; %number of frames before the current one where you want to look to see a feature's nearest neighbor in order to decide how isolated it is (in the initial linking step).
 
 % parameters.kalmanInitParam = []; %Kalman filter initialization parameters.
-parameters.kalmanInitParam.initVelocity = prefDir; %Kalman filter initialization parameters.
+parameters.kalmanInitParam.initVelocity = orientVec; %Kalman filter initialization parameters.
 
 %optional input
 parameters.diagnostics = [199]; %if you want to plot the histogram of linking distances up to certain frames, indicate their numbers; 0 or empty otherwise. Does not work for the first or last frame of a movie.
@@ -83,8 +83,8 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/home/kj35/tmpData/Martin/2010_10_19_WT/WT1_20/analysis/'; %directory where to save input and output
-saveResults.filename = 'tracks1DetectionAll9.mat'; %name of file where input and output are saved
+saveResults.dir = '/home/kj35/tmpData/Martin/2010_10_19_WT/WT1_1/analysis/'; %directory where to save input and output
+saveResults.filename = 'trackingIllustrate.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
 %verbose

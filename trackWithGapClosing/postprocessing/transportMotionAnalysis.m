@@ -1,9 +1,11 @@
 function [motionAnalysisWithErrBar,motionAnalysisNoErrBar,errFlag] = ...
     transportMotionAnalysis(tracks,refCoord,pixelSize,timeBetweenFrames,...
-        extractType,probDim,diffAnalysisAlphaValues,verbose)
+    extractType,probDim,diffAnalysisAlphaValues,verbose)
 %TRANSPORTMOTIONANALYSIS extracts the properties of motor-driven motion
 %
-%SYNOPSIS ...
+%SYNOPSIS [motionAnalysisWithErrBar,motionAnalysisNoErrBar,errFlag] = ...
+%    transportMotionAnalysis(tracks,refCoord,pixelSize,timeBetweenFrames,...
+%    extractType,probDim,diffAnalysisAlphaValues,verbose)
 %
 %INPUT  tracks      : -- EITHER --
 %                     Output of trackWithGapClosing (matrix),
@@ -12,7 +14,7 @@ function [motionAnalysisWithErrBar,motionAnalysisNoErrBar,errFlag] = ...
 %                     with merges/splits.
 %                     Cose assumes that coordinates are in pixels.
 %       refCoord    : Coordinates of reference point to assign
-%                     directionality, in pixels.
+%                     positive and negative directions, in pixels.
 %       pixelSize   : Pixel size, in whatever units user wants.
 %                     Optional. Default: 1.
 %       timeBetweenFrames: Time between frames, in whatever units user
@@ -32,7 +34,7 @@ function [motionAnalysisWithErrBar,motionAnalysisNoErrBar,errFlag] = ...
 %                     the alpha-value for asymmetry determination (can take
 %                     the values 0.2, 0.1, 0.05 and 0.01; see help of
 %                     asymDeterm2D3D for most up-to-date values allowed).
-%                     Optional. Default: [0.05 0.1]. If only one value is
+%                     Optional. Default: [0.05 0.2]. If only one value is
 %                     entered, it is taken as the alpha-value for MSS
 %                     analysis, while the alpha-value for asymmetry
 %                     analysis is given the default value.
@@ -40,16 +42,51 @@ function [motionAnalysisWithErrBar,motionAnalysisNoErrBar,errFlag] = ...
 %                     2 to show also plots of intermediate results.
 %                     Optional. Default: 1.
 %
-%OUTPUT motionAnalysis: Structure with fields "awayFromReferencePoint",
-%                       "towardReferencePoint" and "pause".
-%             .pause        :Has one subfield, "pauseTime" with a list of
-%                            pause times.
+%OUTPUT motionAnalysisWithErrBar: Structure storing the results of
+%                     analyzing the motion taking positional uncertainties
+%                     into account. Contains 3 fields:
+%             .awayFromReferencePoint: Contains the sub-fields
+%                  .instantSpeed: Instantaneous speed.
+%                  .runTime     : The time of each run.
+%                  .runLength   : The length of each run.
+%                  .averageSpeed: runLength / runTime.
+%                     Note that "runTime", "runLength" and "averageSpeed"
+%                     have the same number of values, while "instantSpeed"
+%                     is different.
+%             .towardReferencePoint  : Contains the same sub-fields as above.
+%             .pause                 : Contains 1 sub-field
+%                  .pauseTime"  : Duration of each pause.
+%                     Each of the above sub-fields is a structure array
+%                     with 10 entries, storing the results for
+%                     groups of trajectories. The groups are based on
+%                     motion type, and are the following:
+%                       (1) Linear + super-diffusion
+%                       (2) Linear + normal-diffusion
+%                       (3) Linear + sub-diffusion
+%                       (4) Linear + undetermined diffusion
+%                       (5) Not linear + super-diffusion
+%                       (6) Not linear + normal-diffusion
+%                       (7) Not linear + sub-diffusion
+%                       (8) All linear, i.e. 1+2+3+4
+%                       (9) All not linear, i.e. 5+6+7
+%                       (10) All trajectories, i.e. 1+2+3+4+5+6+7.
+%                     Each entry contains 2 sub-sub-fields:
+%                       .values: Listing the pause time values.
+%                       .stats : Showing the mean, median, std, min and max
+%                                of the distribution of values.
+%       motionAnalysisNoErrBar: Structure storing the results of analyzing
+%                     the motion ignoring positional uncertainties.
+%                     Contains the fields "awayFromReferencePoint" and
+%                     "towardReferencePoint". Inside them, there is only
+%                     the sub-fields "instantSpeed" and "runTime", which
+%                     are identical in organization to the fields with the
+%                     same names in "motionAnalysisWithErrBar".
 %
 %REMARK Output speeds and times will be in whatever units user enters for
 %pixel size and time between frames. If no units are entered, then the
 %output will be in pixels and frames.
 %
-%Khuloud Jaqaman, March 2008
+%Khuloud Jaqaman, December 2010
 
 %% Output
 
@@ -88,9 +125,9 @@ if nargin < 6 || isempty(probDim)
 end
 
 if nargin < 7 || isempty(diffAnalysisAlphaValues)
-    diffAnalysisAlphaValues = [0.05 0.1];
+    diffAnalysisAlphaValues = [0.05 0.2];
 elseif length(diffAnalysisAlphaValues) == 1
-    diffAnalysisAlphaValues = [diffAnalysisAlphaValues 0.1];
+    diffAnalysisAlphaValues = [diffAnalysisAlphaValues 0.2];
 end
 
 if nargin < 8 || isempty(verbose)
@@ -114,38 +151,38 @@ tracksInput = tracks;
 %thus this step is not necessary if the tracks were input as a matrix,
 %which by definition does not contain unresolved compound tracks.
 if isstruct(tracks)
-
+    
     %get number of input tracks from structure
     numInputTracks = length(tracksInput);
-
+    
     clear tracks
-
+    
     switch extractType
-
+        
         case 1 %retrieve every track segment separately
-
+            
             [tracks,dummy,compTrackStartRow,numSegments] = ...
                 convStruct2MatIgnoreMS(tracksInput);
-
+            
         case 2 %make the longest track possible, given all the merges and splits
-
+            
             disp('Sorry - not implement yet!')
             errFlag = 1;
             return
-
+            
     end
-
+    
 else
-
+    
     %get number of input tracks from matrix
     numInputTracks = size(tracksInput,1);
-
+    
     %indicate rows where tracks start (trivial in this case)
     compTrackStartRow = (1 : numInputTracks)';
-
+    
     %indicate number of segments in each track (1 for all tracks)
     numSegments = ones(numInputTracks,1);
-
+    
 end
 
 %get number of track segments to be analyzed
@@ -404,7 +441,7 @@ end
 
 if verbose >= 1
     plotTransportMotionAnalysisRes(motionAnalysisWithErrBar,10);
-end 
-    
+end
+
 %% ~~~ the end ~~~
 

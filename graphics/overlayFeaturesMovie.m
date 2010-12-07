@@ -1,11 +1,11 @@
 function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
     filterSigma,showRaw,intensityScale)
-%Overlays detected features obtained via detectSubResFeatures2D_Movie on movies
+%OVERLAYFEATURESMOVIE makes a movie of detected features overlaid on images
 %
 %SYNPOSIS overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
 %    filterSigma,showRaw,autoscaleImage)
 %
-%INPUT  movieInfo   : Output of detectSubResFeatures2D_Movie.
+%INPUT  movieInfo   : Output of detectSubResFeatures2D_StandAlone.
 %       startend    : Row vector indicating first and last frame to
 %                     include in movie. Format: [startframe endframe].
 %                     Optional. Default: [1 (maximum available frame)]
