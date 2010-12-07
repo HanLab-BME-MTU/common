@@ -946,7 +946,8 @@ for iFrame = 1 : size(xCoordMatAll,2)
     
     %add frame to movie if movie is saved
     if saveMovie
-        MakeQTMovie addaxes
+        %         MakeQTMovie addaxes
+        MakeQTMovie addfigure
     end
     
     %pause for a moment to see frame
