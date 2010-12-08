@@ -8,28 +8,30 @@ function [M minCost] = minWeightMatching(D, nonLinkMarker)
 % where V is the set of vertices 1...size(D,1) and E is the set of edges
 % defined by any D(i,j) non equal to nonLinkMarker. If D is sparse, there
 % is no need to specify nonLinkMarker. Keep in mind that if D is sparse, it
-% prevents to have weight strictly equal to 0. One way to address this is
+% prevents to have weights strictly equal to 0. One way to address this is
 % to assign a very small value (eps for instance) to null weights.
 %
-% G is an undirected graph which means D(i,j) == D(j,i). However, only the
-% lower triangular part of the matrix is taken into account, i.e. if there
+% G is an undirected graph which means D(i,j) == D(j,i). Only the lower
+% triangular part of the matrix is taken into account, i.e. if there
 % is an edge between vertex i and j, D(i,j), i > j must be defined.
 %
 % For each defined edge (i,j), D(i,j) >= 0
 %
 % Limitations: There is a cap on the number of vertices:
-% on 32-bit machine: #V < 2^15 = 32768. There is no reasonable limit on
+% on 32-bit machine: #V < 2^15 = 32768. There is no reachable cap on
 % 64-bit machine.
 %
 % This function uses 'blossom5' library located in the 'extern' project.
 %
 % References:
 %
-% (1) V. Kolmogorov. Blossom V: A new implementation of a minimum cost
+% (1) L. Lovasz an M. Plummer. Matching Theory. Springer Edition. 1986
+%
+% (2) V. Kolmogorov. Blossom V: A new implementation of a minimum cost
 % perfect matching algorithm. In Mathematical Programming Computation
 % (MPC), 1(1):43-67. July 2009.
 %
-% (2) G. Shafer. Weight Matchings in General Graphs. Diplomarbeit. May
+% (3) G. Shafer. Weight Matchings in General Graphs. Diplomarbeit. May
 % 2000.
 %
 % Sylvain Berlemont, Dec 2010
@@ -51,8 +53,6 @@ if ~issparse(D)
         error('nonLinkMarker must be strictly positive.');
     end
     
-    % Get the low triangular part of the matrix (we can't use find(tril(D))
-    % because it won't catch the 0 value in the upper triangular part.
     x = meshgrid(1:n);
     ind = find(x < x' & D ~= nonLinkMarker);
     [u, v] = ind2sub([n n], ind);
@@ -63,7 +63,7 @@ else
     nonLinkMarker = max(D(:)) + 1;
 end
 
-% expand the graph to G to G' (see section 1.5.1 in (2))
+% expand the graph to G to G' (see section 1.5.1 in (3))
 
 % lower left corner
 [x y] = meshgrid(n+1:2*n, 1:n);
