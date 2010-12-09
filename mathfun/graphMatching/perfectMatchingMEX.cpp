@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <mex.h>
 
 #include <blossom5/PerfectMatching.h>
@@ -51,14 +53,14 @@ void mexFunction(int nlhs, mxArray *plhs[],
   }
 	
   double* p = mxGetPr(prhs[1]);
-  double* q = mxGetPr(prhs[2]);
+  void* q = mxGetPr(prhs[2]);
 	
   PerfectMatching *pm = new PerfectMatching(node_num, edge_num);
 
   for (int e = 0; e < edge_num; ++e) {
     pm->AddEdge((int) p[e] - 1,
 		(int) p[edge_num + e] - 1,
-		(int) q[e]);
+		((int*) q)[e]);
   }
 	
   pm->Solve();

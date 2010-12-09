@@ -17,10 +17,6 @@ function [M minCost] = minWeightMatching(D, nonLinkMarker)
 %
 % For each defined edge (i,j), D(i,j) >= 0
 %
-% Limitations: There is a cap on the number of vertices:
-% on 32-bit machine: #V < 2^15 = 32768. There is no reachable cap on
-% 64-bit machine.
-%
 % This function uses 'blossom5' library located in the 'extern' project.
 %
 % References:
@@ -63,6 +59,9 @@ else
     nonLinkMarker = max(D(:)) + 1;
 end
 
+% Number of edges in the graph
+nE = numel(w);
+
 % expand the graph to G to G' (see section 1.5.1 in (3))
 
 % lower left corner
@@ -77,7 +76,7 @@ wEx = vertcat(w, w, ones(n^2,1) * nonLinkMarker);
 % maxInt is the biggest integer which can be represented by a double.
 % On 64-bit machine, the mantissa spans 52 bits, on 32-bit machine, it
 % spans 23 bits.
-is64 = ~isempty(strfind(computer,'64'));
+is64 = false;%~isempty(strfind(computer,'64'));
 
 if is64
     maxInt = 2^52-1;
@@ -100,9 +99,9 @@ end
 M = perfectMatchingMEX(2 * n, [uEx vEx], wExRescaled);
 M = logical(M);
 
-% Retain only edges that are in the perfect matching (M == 1) and where
-% both endpoints are in G (i.e. <= #E).
-M = [uEx(M(1:numel(w))), vEx(M(1:numel(w)))];
-
 % Compute the minimum cost of the matching
-minCost = sum(wEx(M(1:n)));
+minCost = sum(wEx(M(1:nE)));
+
+% Retain only edges that are in the perfect matching (M == 1) and where
+% both endpoints are in G (i.e. <= nE).
+M = [uEx(M(1:nE)), vEx(M(1:nE))];
