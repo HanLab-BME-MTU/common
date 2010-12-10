@@ -51,10 +51,7 @@ function branches = getBranchesFromMask(maskIn,maxRadius,smSig,isoVal)
 
 showPlots = true; %Determines whether plots showing the branch locations 
                    %and smoothed mask surface will be shown.
-gcThresh = 1/maxRadius^2;%#ok<NASGU> %Gaussian curvature value to threshold 
-                         %at for detecting branch ends. This corresponds to
-                         %the curvature of a sphere of radius maxRadius
-mcThresh = -1/maxRadius; %Mean curvature value to threshold at
+
 searchRad = 2; %radius to allow consideration of surface points for 
                %branch-tip curvature calcs. The curvature of any surface
                %points closer than this will be averaged to calculate the
@@ -82,6 +79,12 @@ if nargin < 4 || isempty(isoVal)
                   %topology, preventing small branches from being "smoothed
                   %away" or disconnected from body
 end
+
+
+gcThresh = 1/maxRadius^2;%Gaussian curvature value to threshold 
+                         %at for detecting branch ends. This corresponds to
+                         %the curvature of a sphere of radius maxRadius
+mcThresh = -1/maxRadius; %Mean curvature value to threshold at
 
 
 %% ------- Pre- Processing ------ %%

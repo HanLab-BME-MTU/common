@@ -1,21 +1,22 @@
-function xForm = transformFromBeadImages(baseImage,inputImage,xFormType,beadRad,showFigs)
+function xForm = getTransformFromBeadImages(baseImage,inputImage,xFormType,beadRad,showFigs)
 %TRANSFORMFROMBEADIMAGES calculates an alignment transform based on two bead images
 % 
 % xForm = transformFromBeadImages(baseImage,inputImage)
-% xForm = transformFromBeadImages(baseImage,inputImage,xFormType)
-% xForm = transformFromBeadImages(baseImage,inputImage,xFormType,beadRad)
+% xForm = transformFromBeadImages(baseImage,inputImage,xFormType,beadRad,showFigs)
 % 
 % This function is used to calculate a transform which can be used to align
 % images from two different cameras/channels on the same microscope. It
 % takes as input images of fluorescent beads taken from the two different
 % channels and returns a transform which can be used with imtransform.m to
 % align the two channels. This is accomplished by detecting bead locations
-% in each image and then using cp2tform.m
+% in each image and then using cp2tform.m The resulting transforms can
+% usually use some refinement. See calculateMovieTransform.m for a more
+% comprehensive alignment-transform creation.
 % 
 % ***NOTE*** This function expects that the beads will be sparse within the
 % image. That is, the vast majority of the image will be background, and
 % the maximum misalignment between the two images is much less than the
-% average spacing between beads (at least a factor of ten)
+% average spacing between beads.
 %
 % Input:
 % 
@@ -26,6 +27,8 @@ function xForm = transformFromBeadImages(baseImage,inputImage,xFormType,beadRad,
 %   transformation. When the resulting transform is applied to this image,
 %   it should align with the baseImage.
 % 
+% Optional Input:
+%
 %   xFormType - Character array. Optional. Specifies the type of transform
 %   to use to align the two images. Default is 'projective', but any type
 %   supported by imtransform.m can be used.
@@ -44,10 +47,6 @@ function xForm = transformFromBeadImages(baseImage,inputImage,xFormType,beadRad,
 % Hunter Elliott 
 % 10/2010
 %
-%% -------- Parameters ------------ %%
-
-spacingFactor = 10; %The spacing between beads in a single image must be at least this factor larger than the maximum bead mis-alignment between images.
-
 
 %% ------------ Input ----------- %%
 
@@ -69,7 +68,7 @@ if nargin < 4 || isempty(beadRad)
 end
 
 if nargin < 4 || isempty(showFigs)
-    showFigs = false;
+    showFigs = true;
 end
 
 %% ---------- Init -------------- %%
@@ -77,6 +76,10 @@ end
 %Determine filter size for local maxima detection
 fSize = round(beadRad*2+1);
 
+
+%Determine initial rmsd
+rmsdInit = sqrt(mean((double(baseImage(:)) - double(inputImage(:))).^2));
+disp(['Initial RMSD between images: ' num2str(rmsdInit)]);
 
 %% ---------- Detection --------- %%
 
@@ -106,46 +109,48 @@ disp('Determining bead correspondence between images...')
 
 %Number of spots detected in base image
 nDetBase = numel(xB);
-%Anonymous function for distance calcs
-dFun = @(x)(sqrt((x(1)-xI).^2 + (x(2)-yI).^2));
 
 minD = zeros(nDetBase,1);
-avgD = zeros(nDetBase,1);
-iClosest = zeros(nDetBase,1);
+xIc = zeros(nDetBase,1);%Corresponding points in input image
+yIc = zeros(nDetBase,1);
 
 for j = 1:nDetBase
 
     %Calculate distance from this point to all those in input image
-    currDists = dFun([xB(j) yB(j)]);
+    currDists = sqrt((xB(j)-xI) .^2 + (yB(j)-yI) .^2);
+    
+    %And to every point in the base image
+    currSameDist = sqrt((xB(j)-xB) .^2 + (yB(j)-yB) .^2);
     
     %find the closest point in the input image and it's distance
-    [minD(j),iClosest(j)] = min(currDists);
+    [minD(j),iClosest] = min(currDists);
     
-    %Find Average distance
-    avgD(j) = mean(currDists);
+    %Make sure there isn't a point in the base image which is closer
+    minDb = min(currSameDist(currSameDist>0));    
+    if minD(j) < minDb
+        %Assign this point as corresponding
+        xIc(j) = xI(iClosest);
+        yIc(j) = yI(iClosest);
+        
+        %Prevent duplicate assignment by removing it.
+        xI(iClosest) = [];
+        yI(iClosest) = [];                
+        
+    end
+    
             
         
 end
 
-%TEMP - compare average minimum distance and average spacing to determine quality of detection/image?- HLE
 
-%Get average spacing of all points
-avgD = mean(avgD);
+%Remove outliers at 95%, as these are probably bad assignments
+iOutlier = detectOutliers(minD,2);
 
-%Remove points which do not have a close detection in the input image
-xB(minD>(avgD/spacingFactor)) = [];
-iClosest(minD>(avgD/spacingFactor)) = [];
-yB(minD>(avgD/spacingFactor)) = [];
+xB(iOutlier) = [];
+yB(iOutlier) = [];
+xIc(iOutlier) = [];
+yIc(iOutlier) = [];
 
-%Make sure two beads in the second image werent assigned to the same bead
-%in the base image
-if numel(unique(iClosest)) ~= numel(iClosest)
-    error('Problem assigning beed correspondence! Beads may be too closely spaced relative to image misalignment!')
-end
-
-%Get ordered list of corresponding points for remaining detections
-xI = xI(iClosest);
-yI = yI(iClosest);
 
 %Now do sub-resulution detection for the selected points in each image
 disp('Performing sub-resolution position refinement...');
@@ -153,33 +158,37 @@ disp('Performing sub-resolution position refinement...');
 %Get window size for gaussian fitting.
 winSize = ceil(beadRad)+2;
 %Make sure none of the points are too close to the image border
-isOK = (xI - winSize) > 0 & (yI - winSize) > 0 & ...
-       (xI + winSize) <= M & (yI + winSize) <= M & ...
+isOK = (xIc - winSize) > 0 & (yIc - winSize) > 0 & ...
+       (xIc + winSize) <= M & (yIc + winSize) <= M & ...
        (xB - winSize) > 0 & (yB - winSize) > 0 & ...
        (xB + winSize) <= M & (yB + winSize) <= M;
-xI = xI(isOK);
-yI = yI(isOK);
+xIc = xIc(isOK);
+yIc = yIc(isOK);
 xB = xB(isOK);
 yB = yB(isOK);
 
 nBeads = numel(xB);
        
+
 for j = 1:nBeads
         
     %Get the sub-region of the image for readability/debugging    
-    imROI = double(inputImage(xI(j)-winSize:xI(j)+winSize,...
-                              yI(j)-winSize:yI(j)+winSize));
+    imROI = double(inputImage(xIc(j)-winSize:xIc(j)+winSize,...
+                              yIc(j)-winSize:yIc(j)+winSize));
     
     %Fit a gaussian to get the sub-pixel location of each bead.
     pVec = fitGaussian2D(imROI,...
-                    [0 0 double(inputImage(xI(j),yI(j))) ...
+                    [0 0 double(inputImage(xIc(j),yIc(j))) ...
                     beadRad/2 mean(double(inputImage(:)))],'xyAsc');
         
     %Make sure the fit converged, and then add it to the integer position
     if all(abs(pVec(1:2))) < winSize;                  
-        xI(j) = xI(j) + pVec(2);
-        yI(j) = yI(j) + pVec(1);
+        xIc(j) = xIc(j) + pVec(2);
+        yIc(j) = yIc(j) + pVec(1);
+    else
+        disp('unconverged!')
     end
+        
     
     %Get the sub-region of the image for readability/debugging  
     imROI = double(baseImage(xB(j)-winSize:xB(j)+winSize,...
@@ -190,21 +199,22 @@ for j = 1:nBeads
                 [0 0 double(baseImage(xB(j),yB(j))) ...
                  beadRad/2 mean(double(baseImage(:)))],'xyAsc');
         
-    if all(abs(pVec(1:2))) < winSize;                             
+    %Make sure it converged to somewhere within the window
+    if all(abs(pVec(1:2)) < winSize);                             
         xB(j) = xB(j) + pVec(2);
         yB(j) = yB(j) + pVec(1);
+    else
+        disp('unconverged!')
     end
      
 end
-
-
 
 %% ----------- Get Transform ---------- %%
 
 disp('Determining transformation...')
 
 %Use matlab built in function to determine transform
-xForm = cp2tform([yI xI],[yB xB],xFormType);
+xForm = cp2tform([yIc xIc],[yB xB],xFormType);
 
 
 if showFigs
@@ -212,13 +222,11 @@ if showFigs
     figure
     imshow(cat(3,mat2gray(baseImage),mat2gray(inputImage),zeros(size(baseImage))),[]);
     hold on
-    spy(bMax,'ro',beadRad*2+2)
-    spy(iMax,'go',beadRad*2+2)       
-    
-    for j = 1:nBeads
-       
-        plot([yI(j) yB(j)],[xI(j) xB(j)],'--b')                
-        
+
+    plot(yB,xB,'ro')
+    plot(yIc,xIc,'go')
+    for j = 1:nBeads                      
+        plot([yIc(j) yB(j)],[xIc(j) xB(j)],'--b')                        
     end
     
     legend('Base Image','Input Image','Correspondence');    
@@ -229,6 +237,11 @@ if showFigs
     image(cat(3,mat2gray(baseImage),mat2gray(xIn),zeros(size(baseImage))));
     axis off, axis image
     title('Aligned Image Overlay')
+    
+    rmsdFinal = sqrt(mean((double(baseImage(:)) - double(xIn(:))).^2));
+    disp(['Final RMSD between aligned images: ' num2str(rmsdFinal)]);
+    disp(['RMSD Change : ' num2str(rmsdFinal - rmsdInit)])
+    
     
 end
     
