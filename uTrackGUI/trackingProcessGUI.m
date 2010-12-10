@@ -106,6 +106,7 @@ userData.fun_cost_gap = {@costMatLinearMotionCloseGaps2GUI};
 
 userData.kalman_reserveMem = {'kalmanResMemLM'};
 userData.kalman_initialize = {'kalmanInitLinearMotion'};
+userData.fun_kalman_initialize = {@kalmanInitializationGUI};
 userData.kalman_calcGain = {'kalmanGainLinearMotion'};
 userData.kalman_timeReverse = {'kalmanReverseLinearMotion'};
 
@@ -167,11 +168,14 @@ end
 
 u1 = cell(1, length(get(handles.popupmenu_linking, 'String')));
 u2 = cell(1, length(get(handles.popupmenu_gapclosing, 'String')));
+
 u1{i1} = funParams.costMatrices(1).parameters;
 u2{i2} = funParams.costMatrices(2).parameters;
 
+
 set(handles.popupmenu_linking, 'Value', i1, 'UserData', u1)
 set(handles.popupmenu_gapclosing, 'Value', i2, 'UserData', u2)
+
 
 % kalmanFunctions
 i1 = find(strcmp(funParams.kalmanFunctions.reserveMem, userData.kalman_reserveMem));
@@ -291,11 +295,11 @@ end
 
 i_linking = get(handles.popupmenu_linking, 'Value');
 i_gapclosing = get(handles.popupmenu_gapclosing, 'Value');
-% i_kalman = get(handles.popupmenu_kalman_initialize, 'Value');
+i_kalman = get(handles.popupmenu_kalman_initialize, 'Value');
 
 u_linking = get(handles.popupmenu_linking, 'UserData');
 u_gapclosing = get(handles.popupmenu_gapclosing, 'UserData');
-% u_kalman = get(handles.popupmenu_kalman_initialize, 'UserData');
+u_kalman = get(handles.popupmenu_kalman_initialize, 'UserData');
 
 if isempty( u_linking{i_linking} )
     
@@ -341,12 +345,15 @@ elseif ~get(handles.checkbox_merging, 'Value') && ~get(handles.checkbox_splittin
     funParams.gapCloseParam.mergeSplit = 0;
 end
 
+funParams.saveResults.dir = userData.path;
+
 funParams.costMatrices(1).funcName = userData.cost_linking{i_linking};
 funParams.costMatrices(1).parameters = u_linking{i_linking};
 funParams.costMatrices(2).funcName = userData.cost_gapclosing{i_gapclosing};
 funParams.costMatrices(2).parameters = u_gapclosing{i_gapclosing};
 
-funParams.saveResults.dir = userData.path;
+funParams.kalmanFunctions.initialize = userData.kalman_initialize{i_kalman};
+funParams.costMatrices(1).parameters.kalmanInitParam = u_kalman{i_kalman};
 
 % Set up parameters effected by funParams.gapCloseParam.timeWindow
 funParams.costMatrices(2).parameters.brownStdMult = funParams.costMatrices(2).parameters.brownStdMult(1) * ones(funParams.gapCloseParam.timeWindow,1);
@@ -919,9 +926,20 @@ function checkbox_histogram_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in pushbutton_set_kalman.
 function pushbutton_set_kalman_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_set_kalman (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+%       userData.linkingFig - the handle of setting panel for linking set-up
+%       userData.gapclosingFig - the handle of setting panel for gap closing set-up
+%       userData.kalmanFig - the handle of setting panel for kalman filter
+%       initilization
+
+userData = get(handles.figure1, 'UserData');
+procID = get(handles.popupmenu_kalman_initialize, 'Value');
+if procID > length(userData.fun_kalman_initialize)
+    warndlg('Please select an option in the drop-down menu.','Error','modal')
+    return
+else
+    userData.kalmanFig = userData.fun_kalman_initialize{procID}('mainFig', handles.figure1, procID);
+end
+set(handles.figure1, 'UserData', userData);
 
 
 % --- Executes on button press in pushbutton_saveas.

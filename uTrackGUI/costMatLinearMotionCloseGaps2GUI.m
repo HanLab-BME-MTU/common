@@ -152,7 +152,7 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
 parameters = userData.parameters;
 
-if userData.crtProc.procChanged_ 
+% if userData.crtProc.procChanged_ 
     
     minSearchRadius = get(handles.edit_lower, 'String');
     maxSearchRadius = get(handles.edit_upper, 'String');
@@ -429,7 +429,7 @@ if userData.crtProc.procChanged_
     
     set(userData.handles_main.popupmenu_gapclosing, 'UserData', u)    
     
-end
+% end
 
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
