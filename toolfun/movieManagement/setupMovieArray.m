@@ -1,14 +1,14 @@
 function movieArray = setupMovieArray(parentDirectory)
-
+%SETUPMOVIEARRAY creates an array of MovieData objects by searching through a directory
 % 
 % movieArray = setupMovieArray;
 % 
 % movieArray = setupMovieArray(parentDirectory);
 % 
-% This function finds the movieData structure for every movie in the
-% specified parent directory. These movieData structures should be saved in
-% files named movieData.mat, and should be formatted as created by
-% setupMovieData.m
+% This function finds the MovieData object for every movie in the
+% specified parent directory. These MovieData objects should be saved in
+% files named MovieData.mat, and should be formatted as created by
+% setupMovieDataGUI.m
 % 
 % Input:
 % 
@@ -49,11 +49,21 @@ end
 %Load all of the movie data files and put them in an array
 nFiles = length(selectedFiles);
 
-movieArray = cell(1,nFiles);
+%movieArray = MovieData(1,nFiles); Not sure how to pre-allocate without
+%running into access problems to private fields...
 
+isGood = true(nFiles,1);
 for j = 1:nFiles
     
-    tmp = load(selectedFiles{j},'movieData');
-    movieArray{j} = tmp.movieData;
+    tmp = load(selectedFiles{j});
+    fNames = fieldnames(tmp);
+    if numel(fNames) > 1 || ~isa(tmp.(fNames{1}),'MovieData');
+        disp(['Invalid MovieData found at ' selectedFiles{j} ' - Not including in array! Please check this movieData.mat file!']);
+        isGood(j) = false;
+    else
+        movieArray(j) = tmp.(fNames{1});
+    end
     
 end
+
+movieArray = movieArray(isGood);

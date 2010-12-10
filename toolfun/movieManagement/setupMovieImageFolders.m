@@ -3,22 +3,29 @@ function setupMovieImageFolders(projectFolder,channelNames)
 % 
 % setupMovieImageFolders(projectFolder,channelNames) 
 % 
+% This function is designed to arrange the images for movies into
+% individual folders, one-per-channel of the movie. It expects that each
+% movie be in it's own folder, with all the image channels in that folder.
+%
 % Input:
 % 
-% projectFolder - A directory containing all the movies to setup folders
-% for. Each movie should be in it's own directory.
+% projectFolder - A parent directory containing all the movies to setup folders
+% for. Each movie should be in it's own sub-directory of this directory.
 % 
 % channelNames - The string to search for in each image name, and also the
-% name of the folder it will be moved to.
-% Optional. Default is basic FRET channels: CFP, FRET, DIC 
+% name of the folder it will be moved to. For instance, if channelNames was
+% input as {'CFP','FRET'}, then every image file with "CFP" in it's name
+% will be put in a folder called "CFP" and every file with "FRET" in it's
+% name will be put in a folder named "FRET"
 % 
 % 
-%Hunter Elliott 2/09
+%Hunter Elliott 2/2009
 %
 
 if nargin < 2 || isempty(channelNames)
-    channelNames = {'CFP','FRET','DIC'};%default is basic FRET channels
+    error('You must input both a folder and a channel-names array!')
 end
+
 nChan = length(channelNames);
 
 %Get the folders for each movie
@@ -27,6 +34,9 @@ movieFolders = movieFolders(arrayfun(@(x)(x.isdir && ... %Retain only the direct
     ~(strcmp(x.name,'.') || strcmp(x.name,'..'))),movieFolders)); 
 nMovies = length(movieFolders);
 
+if nMovies == 0
+    error('No valid movie folders found in specified parent directory!')
+end
 
 ogDir = pwd;%Store current location so we can switch back
 

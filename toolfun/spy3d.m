@@ -61,3 +61,6 @@ end
 view(3)
 %Set axes scaling
 axis image
+xlim([0 size(matIn,1)]);
+ylim([0 size(matIn,2)]);
+zlim([0 size(matIn,3)]);

@@ -1,5 +1,5 @@
 function varargout = imageViewer(movieData,varargin)
-
+%IMAGEVIEWER displays images from the input movie
 %
 % imageViewer(movieData)
 %
@@ -8,14 +8,15 @@ function varargout = imageViewer(movieData,varargin)
 % figHan = imageViewer(movieData)
 % 
 %
-% Displays an image from the input movie data at the specified
-% frame number and channel. If no frame number or channel is specified, the
-% first image in the first channel (alphabetically) is displayed.
+% Displays an image from the input movie data at the specified frame number
+% and channe, or if multiple channels are specified, displays an overlay of
+% these channels (up to 3). If no frame number or channel is specified, the
+% first image in the first channel is displayed.
 %
 % Input: 
 % 
-%   movieData - the structure describing the movie to view an image from,
-%   as created using setupMovieData.m
+%   movieData - the MovieData object describing the movie to view an image
+%   from, as created using setupMovieDataGUI.m
 % 
 %   'OptionName',optionValue - A string with an option name followed by the
 %   value for that option.
@@ -24,12 +25,10 @@ function varargout = imageViewer(movieData,varargin)
 %
 %       ('OptionName' -> possible values)
 %
-%       ('Channel' -> cell array of character array(s))
-%       This option should contain a character string representing the name
-%       of the channel(s) to display (i.e. the name of the sub-directory for
-%       that channel's images)
-%       Optional. If not specified, the first channel alphabetically will
-%       be displayed.
+%       ('ChannelIndex' -> positive integer scalar or vector) The index of
+%       the channel(s) to display image(s) from. This index corresponds to
+%       the channel's location in the array movieData.channels_.
+%       Optional. If not specified, channel 1 is displayed.
 %
 %       ('Frame' -> positive integer)
 %       This option specifies the frame number of the image to display.
@@ -38,11 +37,35 @@ function varargout = imageViewer(movieData,varargin)
 %       ('ColorMap' -> matlab colormap)
 %       This option specifies a matlab built-in colormap such as jet or
 %       cool to use when displaying the image.
+%       NOTE: When displaying multiple channels, this option has no effect.
 %       Optional. Default is gray.
+%
+%       ('Saturate' -> Positive scalar >= 0 and < 1) This specifies the
+%       fraction of the intensity values to allow to appear saturated in
+%       the displayed image. That is, if it is set to 0 the color scale
+%       will cover the entire range of the ratio values, from maximum to
+%       minimum (no saturation). If it is set to .05, then 95% of the data
+%       will fit between the max and min of the color scale, but values
+%       outside this range will be saturated. Smaller values for this
+%       parameter will make small variations in intensity areas easier to
+%       see, but will saturate very bright/dim areas. Default is 0 (no
+%       saturation).
 %
 %       ('AxesHandle' -> axes handle)
 %       The handle of the axes to display the image on.
 %       Optional. If not specified, a new figure is created.
+%
+%       ('ProcessIndex' -> Positive integer scalar)
+%       This specifies the index of the image processing process to display
+%       output from in the array movieData.processes_; This must be the
+%       index of a valide ImageProcessingProcess (or child), which has
+%       output images for the channels specified by ChannelIndex.
+%   
+%       ('SegProcessIndex' -> Positive integer scalar) This specifies the
+%       index of the segmentation process to display masks from, **if the
+%       mask overlay is enabled - see below**. This is only necessary if
+%       more than one segmentatin process exists. If not specified, and
+%       more than one segmentation process exists, the user will be asked.
 %
 %       ('Overlay' -> character array)
 %       A string containing the name of something to overlay on the image.
@@ -51,11 +74,33 @@ function varargout = imageViewer(movieData,varargin)
 %         Possible overlay options are:
 %
 %           'Mask' - Overlays the outline of the mask for the displayed
-%           image.
-%   
+%                    image. See SegProcessIndex option above.
+%
+%           'Windows' - If the movie has been windowed using
+%                       getMovieWindows.m then the windows for the
+%                       specified frame will be overlain on the image.
+%
+%           'Protrusion' - If the movie has had protrusion vectors
+%                          calculated using getMovieProtrusion.m, the
+%                          vectors for the specified frame will be
+%                          overlain on the image.
+%
+%       ('Tool'->true/false) If true, the imtool.m function will be used to
+%       display the image instead of imshow. This allows viewing pixel
+%       values, adjustment of contrast etc.
+%       Optional. Default is false.
+%
+% Output:
+% 
+%   The requested images will be displayed along with any requested
+%   overlay.
+% 
+%   figHandle - the handle to the figure the images were displayed on.
+% 
 %
 % Hunter Elliott
 % Revamped 1/2010
+% Rerevamped 6/2010 ;)
 %
 
 %% ----- Parameters ------ %%
@@ -70,122 +115,219 @@ if nargin < 1
 end
 
 %Check the movieData
-movieData = setupMovieData(movieData);
+if ~isa(movieData,'MovieData')
+    error('The first input must be a valid MovieData object! Check input!')
+end
 
 %Parse the optional inputs
-[chanName,iFrame,cMap,axHandle,overlayName] = parseInput(varargin);
+[iChan,iFrame,cMap,satAmt,axHandle,iProc,iSegProc,overlayName,useTool] = parseInput(varargin);
 
 %----Defaults----%
 
-if isempty(chanName)
-    iChan = 1; %Default is to use first channel. This is USUALLY the first alphabetically...
-    chanName = movieData.channelDirectory(1);
+if isempty(iChan)
+    iChan = 1; %Default is to use first channel.
     nChan = 1;
-else    
-    if ~iscell(chanName)
-        chanName = {chanName};
-    end    
-    nChan = length(chanName);
-    
-    if nChan > 3
-        error('ImageViewer.m can only display uo to 3 channels simultaneously! Please specify fewer channels!')
-    end
-    
-    iChan = zeros(1,nChan);
-    
-    for j = 1:nChan    
-        %Find the index of the channel(s) specified
-        tmp = find(strcmp(chanName{j},movieData.channelDirectory),1);
+else
+    nChan = length(iChan);
+end
 
-        if isempty(tmp)
-            error(['Movie does not contain a channel named "' chanName{j} ...
-                '" ! Check movieData and channel name!'])
-        else
-            iChan(j) = tmp;
-        end
-    end
-end    
+nChanTot = numel(movieData.channels_);
+
+if ~isnumeric(iChan) || max(iChan) > nChanTot || ...
+        min(iChan) < 1 || ~isequal(round(iChan),iChan)
+    error('Invalid channel indices! Please check the iChan option!')
+end
+
+if isempty(satAmt)
+    satAmt = 0;
+elseif satAmt < 0 || satAmt >= 1 || numel(satAmt) ~= 1
+    error('Invalid saturation parameter! Must be a single value greater than or equal to zero and less than 1!');
+end
+
+if nChan > 3
+    error('ImageViewer.m can only display up to 3 channels simultaneously! Please specify fewer channels!')
+end
 
 if isempty(iFrame)
     iFrame = 1;%Default is to display first frame
-elseif ~isnumeric(iFrame) || round(iFrame) ~= iFrame || any(iFrame > movieData.nImages(iChan))
-    error('Invalid frame number specified! Check frame number!')
+elseif ~isnumeric(iFrame) || round(iFrame) ~= iFrame || any(iFrame > movieData.nFrames_)
+    error('Invalid frame number specified! Check the "Frame" option!')
+end
+
+if isempty(useTool)
+    useTool = false;
 end
 
 %If no handle given, create figure
-if isempty(axHandle)
-    figHandle = figure;      
-elseif ishandle(axHandle)
-    %If axes handle given, get the figure handle for it
-    figHandle = get(axHandle,'Parent');
-else
-    error('Specified axes handle is not a valid handle!')
+if ~useTool
+    if isempty(axHandle)
+        figHandle = figure;      
+    elseif ishandle(axHandle)
+        %If axes handle given, get the figure handle for it
+        figHandle = get(axHandle,'Parent');
+    else
+        error('Specified axes handle is not a valid handle!')
+    end
 end
 
 
+%% --------- Init ------- %%
+
+%Load the image(s) to display
+
+currImage = cell(1,nChan);
+%Check the process
+if ~isempty(iProc)
+    nProc = numel(movieData.processes_);
+    if iProc <= nProc && iProc > 0 && round(iProc) == iProc       
+        
+        %Make sure that the process is an ImageProcessingProcess
+        if ~isa(movieData.processes_{iProc},'ImageProcessingProcess')
+            error('The process specified by ProcessIndex is not an ImageProcessingProcess!')
+        end       
+        %Check which channels have been processed
+        if ~all(movieData.processes_{iProc}.checkChannelOutput(iChan))            
+            error('The channels specified by ChannelIndex have not all been processed successfully by the process specified by ProcessIndex! Please check input!')
+        end
+    else
+        error('Invalid process index specified! Please check the ProcessIndex option!')
+    end    
+                
+    for j = 1:nChan
+        %load the image(s)    
+        currImage{j} = movieData.processes_{iProc}.loadOutImage(iChan(j),iFrame);                        
+    end      
+    
+else            
+    %Use the raw data as the image directories
+    imDirs = movieData.getChannelPaths(iChan); 
+    imNames = movieData.getImageFileNames(iChan);
+    
+    %Load the image(s).       
+    for j = 1:nChan
+        %load the image    
+        currImage{j} = imread([imDirs{j} filesep imNames{j}{iFrame}]);                    
+    end
+    
+end
+
+%% ------- Scale Image ------- %%
+%Scales muliple channels to similar ranges, and saturates some pixels if
+%saturation is enabled.
+
+for j = 1:nChan
+
+    if satAmt > 0
+        
+        %Find the max and minimum values to saturate at. we exclude zero
+        %values from the distribution in case the image has been background
+        %subtracted or masked           
+        [pdf,binX] = hist(double(currImage{j}(currImage{j}~=0)),1e4);
+        cdf = cumsum(pdf) ./ sum(pdf);
+        minVal = binX(find(cdf>(satAmt/2),1,'first'));
+        maxVal = binX(find(cdf>=(1-(satAmt/2)),1,'first'));                
+        
+        %We have to saturate it ourselves, because this is general to RGB
+        %and because imadjust.m fucks with all the values, not just the
+        %saturated ones.
+        currImage{j}(currImage{j}(:)>maxVal) = maxVal;
+        currImage{j}(currImage{j}(:)<minVal) = minVal;
+        
+    end
+    
+end
+
+if nChan > 1
+    
+    temp = zeros([size(currImage{1}) 3]);
+    for j = 1:nChan
+        %We need to scale between 0 and 1 for RGB display
+        temp(:,:,j) = mat2gray(currImage{j});
+    end
+    currImage = temp;    
+else    
+    currImage = currImage{1};
+end
 
 %% -------- Draw the image ---------%%
 
-%Make sure we are on the correct figure & axes
-figure(figHandle)
-if ~isempty(axHandle)
-    set(figHandle,'CurrentAxes',axHandle)
-end
-
-%Get file names for images
-imNames = getMovieImageFileNames(movieData,iChan);
-
-if nChan > 1
-    currImage = zeros([movieData.imSize(:,iChan(1))' 3]);
-    for j = 1:nChan
-        %load the image    
-        currImage(:,:,j) = mat2gray(imread(imNames{j}{iFrame}));
+%Make sure we are (still) on the correct figure & axes
+if ~useTool
+    figure(figHandle)
+    if ~isempty(axHandle)
+        set(figHandle,'CurrentAxes',axHandle)
     end
-else
-    currImage = imread(imNames{1}{iFrame});
 end
 
 %Display the image
-imshow(currImage,[])
+if useTool
+    imtool(currImage,[])
+else    
+    imshow(currImage,[])
+end
 
 %If the axes didn't exist before, get it's handle now
-if isempty(axHandle)
+if isempty(axHandle) && ~useTool
     axHandle = get(figHandle,'CurrentAxes');
 end
 
 %If requested, change the colormap
 if ~isempty(cMap)
-    colormap(cMap)%This has no effect when displaying multiple channels
+    colormap(cMap)%NOTE: This has no effect when displaying multiple channels
 end
-
 
 
 %% ---Draw the overlays---- %%
 
-%Draw the channel name
-arrayfun(@(x)(text(20,20*x,chanName{x},'color',colStr{x},'interpreter','none')),1:nChan);
+if ~useTool 
 
-%Draw the frame number
-text(20,80,[num2str((iFrame-1)*movieData.timeInterval_s) ' / ' ...
-    num2str((movieData.nImages(iChan)-1)*movieData.timeInterval_s) ' s' ],'color',colStr{1},'FontSize',12)
+    %Draw the channel name
+    arrayfun(@(x)(text(20,20*x,['Channel ' num2str(iChan(x))],'color',colStr{x},'interpreter','none')),1:nChan);
 
-%Get the current axes and turn hold on
-hold(axHandle,'on')
+    %Draw the frame number, or time in seconds if available
+    if ~isempty(movieData.timeInterval_)
+        text(20,80,[num2str((iFrame-1)*movieData.timeInterval_) ' / ' ...
+            num2str((movieData.nFrames_-1)*movieData.timeInterval_) ' s' ],'color',colStr{1},'FontSize',12)
+    else
+        text(20,80,[num2str(iFrame) ' / ' num2str(movieData.nFrames_)],...
+            'color',colStr{1},'FontSize',12)
+    end
+end
 
-if ~isempty(overlayName)
+if ~useTool && ~isempty(overlayName)
+    %Get the current axes and turn hold on
+    hold(axHandle,'on')
+
     switch overlayName
 
-        case 'mask'
-
-            hasMasks = arrayfun(@(x)(checkMovieMasks(movieData,x)),iChan);
+        case 'Mask'
+            
+            if isempty(iSegProc)            
+                %Find the segmentation process
+                iSegProc = movieData.getProcessIndex('SegmentationProcess',1,1);
+                
+                %Make sure the specified process is a valid segmentation
+                %process
+            elseif ~isa(movieData.processes_{iSegProc},'SegmentationProcess')
+                error('The process specified by SegProcessIndex is not a valid SegmentationProcess!')                
+            end
+            
+            if isempty(iSegProc)
+                error('Cannot display masks: MovieData does not have any SegmentationProcesses Please create masks first!');
+            end
+                        
+            %Check if the specific channels have masks/are okay
+            hasMasks = movieData.processes_{iSegProc}.checkChannelOutput(iChan);
                 
             for j = 1:nChan
                 if hasMasks(j)
                     
-                    maskNames = getMovieMaskFileNames(movieData,iChan(j));
+                    maskNames = movieData.processes_{iSegProc}.getOutMaskFileNames(iChan(j));
 
                     %Load the mask
-                    currMask = imread(maskNames{1}{iFrame});
+                    currMask = imread([ ...
+                        movieData.processes_{iSegProc}.outMaskPaths_{iChan(j)},...
+                        filesep maskNames{1}{iFrame}]);
 
                     %Convert the mask into a boundary
                     maskBounds = bwboundaries(currMask);
@@ -197,24 +339,55 @@ if ~isempty(overlayName)
                 end                                    
             end
             
+        case 'Windows'
+            
+            iWinProc = movieData.getProcessIndex('WindowingProcess',1,1);
+            
+            if isempty(iWinProc) || ~movieData.processes_{iWinProc}.checkChannelOutput;
+                error('The window overlay cannot be displayed because the movieData does not have a valid WindowingProcess! Please run windowing !')
+            end            
+            wins = movieData.processes_{iWinProc}.loadChannelOutput(iFrame);            
+            plotWindows(wins,'y');
+            
+        case 'Protrusion'
+            
+            iProtProc = movieData.getProcessIndex('ProtrusionProcess',1,1);
+            if isempty(iProtProc) || ~movieData.processes_{iProtProc}.checkChannelOutput
+                error('The protrusion overlay cannot be displayed because the movieData does not have a valid ProtrusionProcess!')
+            end
+            if iFrame == movieData.nFrames_
+                error('The last frame of the movie does not have protrusion data - cannot overlay!')
+            end
+            prots = movieData.processes_{iProtProc}.loadChannelOutput;
+            plot(prots.smoothedEdge{iFrame}(:,1),prots.smoothedEdge{iFrame}(:,2),'y')
+            quiver(prots.smoothedEdge{iFrame}(:,1),prots.smoothedEdge{iFrame}(:,2),...
+                    prots.protrusion{iFrame}(:,1),prots.protrusion{iFrame}(:,2),0);
+            
+            
         otherwise
             
             disp(['"' overlayName '" is not a recognized overlay type!'])
 
     end
+elseif useTool && ~isempty(overlayName)
+    error('Overlays are not allowed with the imtool is used for display! Disable the "Tool" option!')
 end
 
-if nargout > 0
+if nargout > 0 
     varargout{1} = figHandle;
 end
 
-function [chanName,iFrame,cMap,axHan,overlayName] = parseInput(argArray)
+function [iChan,iFrame,cMap,satAmt,axHan,iProc,iSegProc,overlayName,useTool] = parseInput(argArray)
 
-chanName = [];
+iChan = [];
 iFrame = [];
 cMap = [];
+satAmt = [];
 axHan = [];
+iProc = [];
+iSegProc = [];
 overlayName = [];
+useTool = [];
 
 if isempty(argArray)
     return
@@ -234,20 +407,32 @@ for i = 1:2:nArg
     switch argArray{i}
         
         
-        case 'Channel'
-            chanName = argArray{i+1};
-            
+        case 'ChannelIndex'
+            iChan = argArray{i+1};
+                        
         case 'Frame'
             iFrame = argArray{i+1};
 
         case 'ColorMap'
             cMap = argArray{i+1};
             
+        case 'Saturate'
+            satAmt = argArray{i+1};
+            
         case 'AxesHandle'
             axHan = argArray{i+1};
             
+        case 'ProcessIndex'
+            iProc = argArray{i+1};
+            
         case 'Overlay'
             overlayName = argArray{i+1};
+            
+        case 'SegProcessIndex'
+            iSegProc = argArray{i+1};
+            
+        case 'Tool'
+            useTool = argArray{i+1};
             
         otherwise
 

@@ -8,7 +8,8 @@ function iChannels = selectMovieChannels(movieData,multiple,promptString)
 %
 % Input:
 %
-%   movieData - Structure describing movie created with setupMovieData.m
+%   movieData - Object describing movie. An object of the 'MovieData'
+%   class.
 %
 %   multiple  - If true, multiple channels can be selected, if false, only
 %   one can be selected.
@@ -22,7 +23,12 @@ function iChannels = selectMovieChannels(movieData,multiple,promptString)
 %   iChannels - The integer index of the channels selected.
 %
 % Hunter Elliott, 10/2009
+% Revamped 5/2010
 %
+
+if ~isa(movieData,'MovieData')    
+    error('First input must be a valid MovieData object!')                
+end
 
 if nargin < 2 || isempty(multiple)
     multiple = true;
@@ -30,7 +36,7 @@ end
 
 if nargin < 3 || isempty(promptString)
     if multiple
-        promptString = 'Please select the channels:';        
+        promptString = 'Please select the channel(s):';        
     else
         promptString = 'Please select a channel:';        
     end    
@@ -42,23 +48,7 @@ else
     sMode = 'single';
 end
 
-
-if isa(movieData,'MovieData')
-    %New moviedata
-    
-    chanList = movieData.getChannelPaths_;
-    
-else
-    %Old movieData
-    
-    if ~isfield(movieData,'channelDirectory') || length(movieData.channelDirectory) < 1
-        error('Invalid movieData! Please check movieData structure!')
-    end
-
-    chanList = movieData.channelDirectory;
-
-
-end
+chanList = movieData.getChannelPaths;
 
 if length(chanList) == 1
     iChannels = 1;

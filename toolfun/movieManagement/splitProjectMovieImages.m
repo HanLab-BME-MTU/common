@@ -1,22 +1,19 @@
 function splitProjectMovieImages(projectDir)
-
 %SPLITMOVEIIMAGES splits multi-image .tif files into single tifs and places them in individual directories 
 % 
 % splitMovieImages(projectDir)
 % 
-% This function goes through every sub-directory of the directory projectDir
-% and if that directory contains image files, a sub-directory called
-% "Images" is created. Each image is then placed in a seperate sub-directory
-% of this Images directory which is named after the image, and if it is a
-% multi-page .tif file the pages are split into seperate, sequentially
-% named files.
+% This function goes through every sub-directory of the directory
+% projectDir and if that directory contains image files, a sub-directory
+% called "Images" is created. Each image is then placed in a seperate
+% sub-directory of this Image directory which is named after the image, and
+% if it is a multi-page .tif or STK file, the pages are split into
+% seperate, sequentially named files.
 % 
 % Input:
 % 
 %   projectDir - Parent directory containing sub-directories, each of
 %   which contains images.
-% 
-% 
 % 
 % 
 % Hunter Elliott
@@ -57,7 +54,14 @@ for i = 1:nSub
             mkdir([imageDir filesep im(j).name(1:end-4)])%Name the directory after the stack, removing the file extension
             
             %Load all the images
-            currIm = stackRead([projectDir filesep allSub(i).name filesep im(j).name]);
+            try
+                currIm = stackRead([projectDir filesep allSub(i).name filesep im(j).name]);
+            catch errMess
+                disp(['stackRead.m failed: ' errMess.message ' Trying tif3Dread.m instead...'])
+                %Tif3Dread is slower, but can open some files which the
+                %current stackRead version fails to open
+                currIm = tif3Dread([projectDir filesep allSub(i).name filesep im(j).name]);
+            end
             nIm = size(currIm,3); %Check number of images
             %Get number of digits for writing file names
             nDig = floor(log10(nIm)+1);

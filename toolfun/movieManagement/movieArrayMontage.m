@@ -51,7 +51,7 @@ for j = 1:nMovies
     subplot(gridSize,gridSize,j);%Switch to current plot
     axHandle = gca; %Get handle for current axes;
     try
-        imageViewer(movieArray{j},varargin{:},'AxesHandle',axHandle) %Show the image
+        imageViewer(movieArray(j),varargin{:},'AxesHandle',axHandle) %Show the image
         title(num2str(j));
     catch errMess
         text(0,0,'Problem with movie channel/frame...','color','w')
