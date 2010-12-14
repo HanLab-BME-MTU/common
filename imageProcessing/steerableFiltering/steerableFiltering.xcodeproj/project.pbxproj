@@ -95,7 +95,14 @@
 			isa = PBXProject;
 			buildConfigurationList = E41704BE107D4A0600E66CC3 /* Build configuration list for PBXProject "steerableFiltering" */;
 			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
 			hasScannedForEncodings = 0;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = E41704B9107D4A0600E66CC3;
 			productRefGroup = E41704CE107D4AA300E66CC3 /* Products */;
 			projectDirPath = "";

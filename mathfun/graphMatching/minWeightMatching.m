@@ -1,8 +1,9 @@
 function [M minCost] = minWeightMatching(D, nonLinkMarker)
-% this function resolve the minimum weight matching problem for a given
-% undirected graph G = (V, E). A matching M of G is a set of edges no two
-% of which share an endpoint. In other words, every vertex of the input
-% graph is at most linked with another vertex.
+% this function resolve the maximum weight matching problem for a given
+% undirected graph G = (V, E), where each edge in E has a weight d >= 0. A
+% matching M of G is a set of edges no two of which share an endpoint. In
+% other words, every vertex of the input graph is at most linked with
+% another vertex.
 %
 % D is a squared matrix that represents the undirected graph G = (V,E)
 % where V is the set of vertices 1...size(D,1) and E is the set of edges
@@ -45,21 +46,14 @@ end
 if ~issparse(D)
     if nargin < 2 || isempty(nonLinkMarker)
         error('nonLinkMarker value required when cost function is not sparse.');
-    elseif nonLinkMarker <= 0
-        error('nonLinkMarker must be strictly positive.');
     end
     
     x = meshgrid(1:n);
     ind = find(x < x' & D ~= nonLinkMarker);
     [u, v] = ind2sub([n n], ind);
-    w = D(ind);
-    
-    % force nonLinkMarker to be just above the largest valid weight
-    nonLinkMarker = max(w(:)) + 1;    
+    w = D(ind);  
 else
     [u, v, w] = find(tril(D));
-    
-    nonLinkMarker = max(D(:)) + 1;
 end
 
 % Number of edges in the graph
@@ -72,7 +66,7 @@ nE = numel(w);
 
 uEx = vertcat(u, u + n, x(:));
 vEx = vertcat(v, v + n, y(:));
-wEx = vertcat(w, w, ones(n^2,1) * nonLinkMarker);
+wEx = vertcat(w, w, 0);
 
 % translate double valued weights into integers.
 
@@ -99,7 +93,7 @@ else
 end
 
 % Solve minimum perfect matching problem
-M = perfectMatchingMEX(2 * n, [uEx vEx], wExRescaled);
+M = perfectMatchingMEX(2 * n, [uEx vEx], -wExRescaled);
 M = logical(M);
 
 % Compute the minimum cost of the matching
