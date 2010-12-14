@@ -4,7 +4,7 @@ classdef SkeletonizationProcess < ImageProcessingProcess
 % Hunter Elliott
 % 12/2010    
 %
-    properties (SetAccess = protected, GetAccess = public) 
+    properties (SetAccess = protected, GetAccess = public)
         
         
     end
@@ -19,19 +19,15 @@ classdef SkeletonizationProcess < ImageProcessingProcess
                 
                 super_args{1} = owner;
                 super_args{2} = 'Skeletonization';
-                super_args{3} = @detectMovieBranches;                               
+                super_args{3} = @skeletonizeMovie;                               
                 
                 if nargin < 2 || isempty(funParams)                                       
                     
                     %----Defaults----%      
                                         
                     funParams.ChannelIndex = 1;                    
-                    funParams.MaxRadius = [];%Use the defaults in getBranchesFromMask.m...
-                    funParams.SmoothSigma = [];
-                    funParams.IsoValue = [];
                     funParams.OutputDirectory = ...
-                        [owner.outputDirectory_  filesep 'branch_detection'];
-                    funParams.RunParallel = 0;
+                        [owner.outputDirectory_  filesep 'skeletonization'];                    
                     funParams.BatchMode = false;                                                      
                                     
                 end
@@ -40,7 +36,7 @@ classdef SkeletonizationProcess < ImageProcessingProcess
                                 
             end
             
-            obj = obj@ImageAnalysisProcess(super_args{:});
+            obj = obj@ImageProcessingProcess(super_args{:});
         end
                         
     end
