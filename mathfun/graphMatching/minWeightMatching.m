@@ -53,6 +53,9 @@ if ~issparse(D)
     ind = find(x < x' & D ~= nonLinkMarker);
     [u, v] = ind2sub([n n], ind);
     w = D(ind);
+    
+    % force nonLinkMarker to be just above the largest valid weight
+    nonLinkMarker = max(w(:)) + 1;    
 else
     [u, v, w] = find(tril(D));
     
