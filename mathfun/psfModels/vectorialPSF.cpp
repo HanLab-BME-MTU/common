@@ -2,7 +2,7 @@
 * See vectorialPSF.m for usage instructions.
 * Notations follow those in [F. Aguet, PhD Thesis, 2009].
 *
-* (c) Francois Aguet 2006-2010 (last modified 11/01/2010)
+* (c) Francois Aguet 2006-2010 (last modified Nov 1, 2010)
 */
 
 #include <stdlib.h>
@@ -212,13 +212,9 @@ void psf(double *pixels, double x_p, double y_p, double z_p, double *z, int runi
                 ngroot = sqrt(complex<double>(p.ng_2 - ni2sin2theta));
 
                 ts1ts2 = 4.0*p.ni*costheta*ngroot;
-                //ts1ts2 = 4.0*nsroot*ngroot;
                 tp1tp2 = ts1ts2;
                 tp1tp2 /= (p.ng*costheta + p.ni/p.ng*ngroot) * (p.ns/p.ng*ngroot + p.ng/p.ns*nsroot);
                 ts1ts2 /= (p.ni*costheta + ngroot) * (ngroot + nsroot);
-
-                //ts1ts2 = real(ts1ts2);
-                //tp1tp2 = real(tp1tp2);
                 
                 bessel_0 = 2.0*J0(constJ*sintheta)*sintheta*sqrtcostheta; // 2.0 factor : Simpson's rule
                 bessel_1 = 2.0*J1(constJ*sintheta)*sintheta*sqrtcostheta;
@@ -246,13 +242,9 @@ void psf(double *pixels, double x_p, double y_p, double z_p, double *z, int runi
                 ngroot = sqrt(complex<double>(p.ng_2 - ni2sin2theta));
 
                 ts1ts2 = 4.0*p.ni*costheta*ngroot;
-                //ts1ts2 = 4.0*nsroot*ngroot;
                 tp1tp2 = ts1ts2;
                 tp1tp2 /= (p.ng*costheta + p.ni/p.ng*ngroot) * (p.ns/p.ng*ngroot + p.ng/p.ns*nsroot);
                 ts1ts2 /= (p.ni*costheta + ngroot) * (ngroot + nsroot);
-
-                //ts1ts2 = real(ts1ts2);
-                //tp1tp2 = real(tp1tp2);
                 
                 bessel_0 = 4.0*J0(constJ*sintheta)*sintheta*sqrtcostheta; // 4.0 factor : Simpson's rule
                 bessel_1 = 4.0*J1(constJ*sintheta)*sintheta*sqrtcostheta;
@@ -278,13 +270,9 @@ void psf(double *pixels, double x_p, double y_p, double z_p, double *z, int runi
             ngroot = sqrt(complex<double>(p.ng_2 - p.NA_2));
 
             ts1ts2 = 4.0*p.ni*costheta*ngroot;
-            //ts1ts2 = 4.0*nsroot*ngroot;
             tp1tp2 = ts1ts2;
             tp1tp2 /= (p.ng*costheta + p.ni/p.ng*ngroot) * (p.ns/p.ng*ngroot + p.ng/p.ns*nsroot);
             ts1ts2 /= (p.ni*costheta + ngroot) * (ngroot + nsroot);
-
-            //ts1ts2 = real(ts1ts2);
-            //tp1tp2 = real(tp1tp2);
             
             bessel_0 = J0(constJ*sintheta)*sintheta*sqrtcostheta;
             bessel_1 = J1(constJ*sintheta)*sintheta*sqrtcostheta;
@@ -411,7 +399,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     } else {
         p.sf = 1;
         p.mode = 1;
-    }       
+    }
     
     
     int nx = 2*runits-1;
