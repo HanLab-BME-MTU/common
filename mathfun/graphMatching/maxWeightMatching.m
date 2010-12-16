@@ -1,4 +1,4 @@
-function [M minCost] = minWeightMatching(D, nonLinkMarker)
+function [M maxCost] = maxWeightMatching(D, nonLinkMarker)
 % this function resolve the maximum weight matching problem for a given
 % undirected graph G = (V, E), where each edge in E has a weight d >= 0. A
 % matching M of G is a set of edges no two of which share an endpoint. In
@@ -66,7 +66,7 @@ nE = numel(w);
 
 uEx = vertcat(u, u + n, x(:));
 vEx = vertcat(v, v + n, y(:));
-wEx = vertcat(w, w, 0);
+wEx = vertcat(w, w, zeros(n^2,1));
 
 % translate double valued weights into integers.
 
@@ -96,8 +96,8 @@ end
 M = perfectMatchingMEX(2 * n, [uEx vEx], -wExRescaled);
 M = logical(M);
 
-% Compute the minimum cost of the matching
-minCost = sum(wEx(M(1:nE)));
+% Compute the maximum cost of the matching
+maxCost = sum(wEx(M(1:nE)));
 
 % Retain only edges that are in the perfect matching (M == 1) and where
 % both endpoints are in G (i.e. <= nE).
