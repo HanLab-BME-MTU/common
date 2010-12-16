@@ -1,13 +1,13 @@
 function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
     saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,...
     imageRange,onlyTracks,classifyLft,diffAnalysisRes,intensityScale,...
-    colorTracks,firstImageFile)
+    colorTracks,firstImageFile,dir2saveMovie)
 %OVERLAYTRACKSMOVIENEW overlays tracks obtained via trackCloseGapsKalman on movies with variable color-coding schemes
 %
 %SYNPOSIS overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %    saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,...
 %    imageRange,onlyTracks,classifyLft,diffAnalysisRes,intensityScale,...
-%    colorTracks)
+%    colorTracks,firstImageFile,dir2saveMovie)
 %
 %INPUT  tracksFinal   : Output of trackCloseGapsKalman.
 %       startend      : Row vector indicating first and last frame to
@@ -72,14 +72,17 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %                       Option ignored if diffAnalysisRes is supplied.
 %                       Optional. Default: 0.
 %       firstImageFile: Name of the first image file in the folder of
-%                       images hat should be overlaid. The file has to be
+%                       images that should be overlaid. The file has to be
 %                       the first image that has been analyzed even if not
 %                       plotted. If file is not specified [], user will be
 %                       prompted to select the first image.
 %                       Optional. Default: [].
+%       dir2saveMovie:  Directory where to save output movie.
+%                       If not input, movie will be saved in directory where
+%                       images are located.
+%                       Optional. Default: [].
 %
-%OUTPUT If movie is to be saved, the QT movie is written into directory
-%       where TIFFs are located
+%OUTPUT the movie.
 %
 %REMARKS Color-coding:
 %        ** Without diffusion classification, all tracks have a neutral
@@ -278,12 +281,18 @@ else
     end
 end
 
+%check where to save resulting movie
+if saveMovie && (nargin < 17 || isempty(dir2saveMovie))
+    dir2saveMovie = dirName;
+end
+
 %define colors to loop through
 colorLoop = [1 0.7 0.7; 1 0 0; 0 1 0; 0 0 1; 1 1 0; 1 0 1; 0 1 1]; %colors: 'light pink',r,g,b,y,m,c
 
 %initialize QT movie if it is to be saved
 if saveMovie
-    evalString = ['MakeQTMovie start ''' fullfile(dirName,movieName) ''''];
+    %     evalString = ['MakeQTMovie start ''' fullfile(dirName,movieName) ''''];
+    evalString = ['MakeQTMovie start ''' fullfile(dir2saveMovie,movieName) ''''];
     eval(evalString);
 end
 

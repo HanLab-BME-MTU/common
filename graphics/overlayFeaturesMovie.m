@@ -1,9 +1,9 @@
 function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
-    filterSigma,showRaw,intensityScale)
+    filterSigma,showRaw,intensityScale,firstImageFile,dir2saveMovie)
 %OVERLAYFEATURESMOVIE makes a movie of detected features overlaid on images
 %
 %SYNPOSIS overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
-%    filterSigma,showRaw,autoscaleImage)
+%    filterSigma,showRaw,intensityScale,firstImageFile,dir2saveMovie)
 %
 %INPUT  movieInfo   : Output of detectSubResFeatures2D_StandAlone.
 %       startend    : Row vector indicating first and last frame to
@@ -25,9 +25,18 @@ function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
 %                     to have a fixed scale using minimum and maximum
 %                     intensities.
 %                     Optional. Default: 1.
+%       firstImageFile: Name of the first image file in the folder of
+%                     images that should be overlaid. The file has to be
+%                     the first image that has been analyzed even if not
+%                     plotted. If file is not specified [], user will be
+%                     prompted to select the first image.
+%                     Optional. Default: [].
+%       dir2saveMovie: Directory where to save output movie.
+%                     If not input, movie will be saved in directory where
+%                     images are located.
+%                     Optional. Default: [].
 %
-%OUTPUT If movie is to be saved, the QT movie is written into directory
-%       where TIFFs are located
+%OUTPUT the movie.
 %
 %Khuloud Jaqaman, August 2007
 
@@ -43,7 +52,19 @@ end
 % startDir = pwd;
 
 %ask user for images
-[fName,dirName] = uigetfile('*.tif','specify first image in the stack - specify very first image, even if not to be plotted');
+if nargin < 8 || isempty(firstImageFile)
+    [fName,dirName] = uigetfile('*.tif','specify first image in the stack - specify very first image, even if not to be plotted');
+else
+    if iscell(firstImageFile)
+        [fpath,fname,fno,fext]=getFilenameBody(firstImageFile{1});
+        dirName=[fpath,filesep];
+        fName=[fname,fno,fext];
+    elseif ischar(firstImageFile)
+        [fpath,fname,fno,fext]=getFilenameBody(firstImageFile);
+        dirName=[fpath,filesep];
+        fName=[fname,fno,fext];
+    end        
+end
 
 %if input is valid ...
 if(isa(fName,'char') && isa(dirName,'char'))
@@ -107,6 +128,11 @@ if nargin < 7 || isempty(intensityScale)
     intensityScale = 1;
 end
 
+%check where to save resulting movie
+if saveMovie && (nargin < 9 || isempty(dir2saveMovie))
+    dir2saveMovie = dirName;
+end
+
 %keep only the frames of interest
 outFileList = outFileList(frame2fileMap(startend(1)):frame2fileMap(startend(2)));
 frame2fileMap = frame2fileMap(startend(1):startend(2));
@@ -115,7 +141,8 @@ frame2fileMap(indxNotZero) = frame2fileMap(indxNotZero) - frame2fileMap(indxNotZ
 
 %initialize QT movie if it is to be saved
 if saveMovie
-    evalString = ['MakeQTMovie start ''' fullfile(dirName,movieName) ''''];
+    %     evalString = ['MakeQTMovie start ''' fullfile(dirName,movieName) ''''];
+    evalString = ['MakeQTMovie start ''' fullfile(dir2saveMovie,movieName) ''''];
     eval(evalString);
 end
 
