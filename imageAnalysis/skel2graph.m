@@ -13,6 +13,7 @@ function [vertices,edges,edgePaths] = skel2graph(skelIn,nConn)
 %   nConn - Optional. The connectivity number to use (6,18 or 26). 
 %           WARNING: I have only tested this function with 26-connected
 %           skeletons (the kind produced by skeleton3D)!!
+%           Optional. Default is 26.
 % 
 % Output:
 % 
@@ -46,7 +47,7 @@ if nargin < 2 || isempty(nConn)
 end
 
 
-%Validate that the input mask is in fact a skeleton(not too thick?)??-HLE
+%TEMP - should Validate that the input mask is in fact a skeleton(not too thick?)??-HLE
 
 
 %% ------- Detection -----  %%
@@ -65,7 +66,7 @@ vertMat = (nNeighbors == 1) & skelIn;
 junctionPoints = (nNeighbors > 2) & skelIn;
 
 %Label end-points first. This is done separately because it allows
-%recognition of "spurs" as endpoints - branches which are 1 voxel in
+%recognition of "spurs" as endpoints - "branches" which are 1 voxel in
 %length. Otherwise these are combined with the adjacent vertex.
 [tmp,nEP] = bwlabeln(vertMat,nConn);
 
@@ -174,7 +175,7 @@ end
 
 
 
-if showPlots
+if showPlots %shows plots of outputs, for debugging
    
     fsFigure(.5); %#ok<UNRCH>
     cols = jet(nEdges);    

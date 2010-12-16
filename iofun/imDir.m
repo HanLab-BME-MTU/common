@@ -1,5 +1,5 @@
 function [fileNames formatNum] = imDir(imDirectory,returnAll)
-%IMDIR is a wrapper for the dir command which searches only for common image file types
+%IMDIR is a wrapper for the dir command designed for finding only image files
 % 
 % fileNames = imDir(directory);
 % 
@@ -8,8 +8,16 @@ function [fileNames formatNum] = imDir(imDirectory,returnAll)
 % [fileNames formatNum] = imDir(...);
 %
 % This function will find all files in the specified directory with common
-% file extensions for images. They are returned in the same format as the
-% dir command.
+% file extensions for images. Additionally, the images will be re-ordered,
+% if necessary, so that the last number before the file extension is in
+% increasing order. This fixes the problem with the dir command returning
+% numbered images which are not zero-padded in the wrong order.
+%
+% For example, if a folder contains img1.tif, img2.tif ... img10.tif, the
+% dir command will return img1.tif, img10.tif, img2.tif ..., whereas this
+% function will return them in the correct order, with img10.tif last. This
+% only works with files where the image number is the last element of the
+% name before the file extension.
 % 
 % Input:
 % 
@@ -35,7 +43,8 @@ function [fileNames formatNum] = imDir(imDirectory,returnAll)
 %   fileNames - a structure containing the names and statistics for all the
 %   images found. This is the same as the output of the dir function.
 %
-%   formatNum - the number of specified extensions in the search directory 
+%   formatNum - If returnAll was enabled, this is the number of different
+%   image file extensions found in the directory 
 %
 % Hunter Elliott
 % 2/2010
@@ -43,7 +52,12 @@ function [fileNames formatNum] = imDir(imDirectory,returnAll)
 
 %The list of supported file extensions. Feel free to add! (just update the
 %help also!)
-fExt = {'tif','TIF','STK','bmp','BMP','jpg'};
+if ispc
+    %On PC, the dir command is non case-sensitive 
+    fExt = {'tif', 'stk', 'bmp', 'jpg'};
+else
+    fExt = {'tif','TIF','stk','STK','bmp','BMP','jpg','JPG'};
+end
 
 
 if nargin < 1 || isempty(imDirectory)
@@ -57,6 +71,7 @@ end
 fileNames = [];
 formatNum = 0;
 
+% ---- Get the file names by checking each extension.  ---- %
 for i = 1:length(fExt)
     
     tempfileNames = dir([imDirectory filesep '*.' fExt{i}]);
@@ -69,6 +84,16 @@ for i = 1:length(fExt)
         break
     end
 end
-   
 
+%  ---- Fix the order of the files if they are numbered.  ---- %
+
+%First, extract the number from the end of the file, if present
+fNums = arrayfun(@(x)(str2double(...
+    x.name(max(regexp(x.name(1:end-4),'\D'))+1:end-4))),fileNames);
+
+%The sort function handles NaNs, and will not re-order if the images are
+%not numbered.
+[dummy1,iX] = sort(fNums); %#ok<ASGLU>
+
+fileNames = fileNames(iX);
 
