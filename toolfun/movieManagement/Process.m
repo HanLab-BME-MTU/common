@@ -22,7 +22,10 @@ classdef Process < handle
         notes_
         
         funName_
-        funParams_        
+        funParams_ 
+        outParams_ % All output data or path
+        visualParams_  % Visualization parameters
+        
     end
     methods (Access = protected)
         function obj = Process(owner, name)
@@ -56,6 +59,15 @@ classdef Process < handle
         function setPara(obj, para)
             % Reset process' parameters
             obj.funParams_ = para;
+        end
+        
+        function setOutPara(obj, para)
+            % Reset process' parameters
+            obj.outParams_ = para;
+        end      
+
+        function setVisualParams(obj, para)
+            obj.visualParams_ = para;
         end
         
         function setProcChanged(obj, changed)
