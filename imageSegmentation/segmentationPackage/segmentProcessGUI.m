@@ -79,7 +79,8 @@ function segmentProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %                          process
 %
 
-set(handles.text_copyright, 'String', userfcn_copyright)
+[copyright openHelpFile] = userfcn_softwareConfig(handles);
+set(handles.text_copyright, 'String', copyright)
 
 userData = get(handles.figure1, 'UserData');
 % Choose default command line output for segmentProcessGUI
@@ -176,7 +177,11 @@ Img = image(userData.questIconData);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-set(Img, 'UserData', SegmentationProcess.getHelp(true))
+if openHelpFile
+    set(Img, 'UserData', struct('class', 'SegmentationProcess'))
+else
+    set(Img, 'UserData', SegmentationProcess.getHelp(true))
+end
 
 
 

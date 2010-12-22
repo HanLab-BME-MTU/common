@@ -66,7 +66,8 @@ function movieSelectorGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %   userData.relocateFig - handle of relocateMovieDataGUI
 %
 
-set(handles.text_copyright, 'String', userfcn_copyright)
+[copyright openHelpFile] = userfcn_softwareConfig(handles);
+set(handles.text_copyright, 'String', copyright)
 
 userData = get(handles.figure1, 'UserData');
 
@@ -104,7 +105,12 @@ set(hObject,'colormap',supermap);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-set(Img, 'UserData', MovieData.getHelp)
+
+if openHelpFile
+    set(Img, 'UserData', struct('class', 'MovieData'))
+else
+    set(Img, 'UserData', MovieData.getHelp)
+end
 
 % Save userdata
 set(handles.figure1,'UserData',userData);

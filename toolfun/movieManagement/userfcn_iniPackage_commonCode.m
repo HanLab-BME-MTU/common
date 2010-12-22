@@ -8,7 +8,8 @@ eval(['userData.optProcID =' packageName '.getOptionalProcessId;']);
 
 % Call package GUI error
 
-set(handles.text_copyright, 'String', userfcn_copyright)
+[copyright openHelpFile] = userfcn_softwareConfig(handles);
+set(handles.text_copyright, 'String', copyright)
 
 if nargin < 4
     error('User-defined: Please call biosensors control panel with a MovieData object. E.g. packageGUI(movieDataObject)');
@@ -133,8 +134,14 @@ axes(handles.axes_help);
 Img = image(questIconData); 
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
+% set(Img,'ButtonDownFcn',@userfcn_openHelp('UTrackPackage'));
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-set(Img, 'UserData', userData.crtPackage.getHelp)
+
+if openHelpFile
+    set(Img, 'UserData', struct('class', 'UTrackPackage'))
+else
+    set(Img, 'UserData', userData.crtPackage.getHelp)
+end
 
 % Set up process help
 for i = 1:l
@@ -146,7 +153,12 @@ for i = 1:l
     set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
     
     eval(['msg = ',userData.crtPackage.processClassNames_{i},'.getHelp;'])
-    set(Img, 'Userdata', msg)
+    
+    if openHelpFile
+        set(Img, 'UserData', struct('class', userData.crtPackage.processClassNames_{i}))
+    else
+        set(Img, 'Userdata', msg)
+    end
 
 end
 

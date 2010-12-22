@@ -63,7 +63,8 @@ function recycleProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % 
 % 
 
-set(handles.text_copyright, 'String', userfcn_copyright)
+[copyright] = userfcn_softwareConfig(handles);
+set(handles.text_copyright, 'String', copyright)
 
 userData = get(handles.figure1, 'UserData');
 % Choose default command line output for recycleProcessGUI
