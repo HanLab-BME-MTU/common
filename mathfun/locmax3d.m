@@ -38,6 +38,6 @@ lm(lm~=img) = 0;
 
 % also set xy-borders to zero
 b = (wx-1)/2;
-lm(:,[1:1+b end-b:end],:) = 0;
+lm(:,[1:b end-b+1:end],:) = 0;
 b = (wy-1)/2;
-lm([1:1+b end-b:end],:,:) = 0;
+lm([1:b end-b+1:end],:,:) = 0;
