@@ -1,6 +1,6 @@
 % h = vectorialPSF(xp, yp, zp, z, ru, p)
 %
-% Computes microscope PSFs using the model described in:
+% Computes the PSF of a microscope using the vectorial model described in:
 % Aguet et al., Opt. Express 17(8), 6829-6848 (2009)
 %
 %   INPUTS:
