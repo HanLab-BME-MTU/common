@@ -1,25 +1,19 @@
-function fImg=locmax2d(img,mask,keepFlat)
+function fImg = locmax2d(img, mask, keepFlat)
 %LOCALMAX searches for local maxima in an image
 %
-%    SYNOPSIS fImg=(img,mask)
+%    SYNOPSIS fImg = locmax2d(img, mask, keepFlat)
 %
 %    INPUT    img    image matrix
-%             mask   EITHER a vector [m n] that defines the operator window
-%                    dimensions (all ones).
-%                    OR a structural element, a matrix, that contains only
-%                    0/1. Structural elements such as discs can be defined
-%                    easily using the built-in matlab function "strel".
-%                    The input matrix must have an odd number of columns
-%                    and rows. 
+%             mask   EITHER a scalar that defines the window dimensions
+%                    OR a vector [m n] that defines the window dimensions
+%                    OR a binary (0/1) structural element (matrix).
+%                    Structural elements such as discs can be defined
+%                    using the built-in matlab function "strel".
+%                    The input matrix must have an odd number of columns and rows. 
 %             keepFlat Optional input variable to choose whether to remove
-%                      "flat" maxima or to keep them. Default is 0, to
-%                      remove them. - KJ
+%                      "flat" maxima or to keep them. Default is 0, to remove them.
 %
-%    OUTPUT   fImg   map with all the local maxima (zeros elsewhere);
-%                    the non-zero values contain the original value 
-%                    of the image at that place
-%
-% NOTE: convert fImg to uint8 or uint16 for optimal display!
+%    OUTPUT   fImg   image with local maxima (original values) and zeros elsewhere.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,9 +26,18 @@ if nargin<2
    error('Please define all parameters');
 end
 
+if numel(mask)==1
+    if mod(mask,2)==0
+        mask = mask + 1;
+    end
+    rows = mask;
+    cols = mask;
+    mask = ones(mask);
+    numEl = rows*cols;
+    
 % If mask is a vector with two entries, then, these two entries define the
 % number of rows and columns of a rectangular mask filled with ones:
-if length(mask(:))==2
+elseif length(mask(:))==2
     % make sure the mask elements are odd numbers (only then, the 
     % local max operator is properly defined)
     indx = find(~mod(mask,2));
@@ -94,7 +97,7 @@ end
 fImg(fImg ~= img) = 0;
 
 % set image border to zero
-auxM = zeros(size(img));
-auxM(fix(rows/2)+1:end-fix(rows/2),fix(cols/2)+1:end-fix(cols/2)) = ...
-    fImg(fix(rows/2)+1:end-fix(rows/2),fix(cols/2)+1:end-fix(cols/2));
-fImg=auxM;
+b = (cols-1)/2;
+fImg(:,[1:b end-b+1:end]) = 0;
+b = (rows-1)/2;
+fImg([1:b end-b+1:end],:) = 0;
