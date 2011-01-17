@@ -5,7 +5,7 @@ classdef DetectionProcess < Process
  
 properties(SetAccess = protected, GetAccess = public)
     
-    outParams_ % All output data or path
+%     outParams_ % All output data or path
     channelIndex_ % The index of channel to process
 end
 

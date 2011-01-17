@@ -5,7 +5,7 @@ classdef TrackingProcess < Process
 
 properties(SetAccess = protected, GetAccess = public)
     
-    outParams_ % All output data or path
+%     outParams_ % All output data or path
     channelIndex_ % The index of channel to process
     filename_ % file name of result data
 end
