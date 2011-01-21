@@ -63,7 +63,9 @@ prmVect(estIdx) = p;
 [g J] = gaussian2D(x, y, prmVect);
 J(:,estIdx==false) = []; % remove unneeded Jacobian components
 v = g - data;
-v(mask==1) = [];
+maskIdx = mask==1;
+v(maskIdx) = [];
+J(maskIdx, :) = [];
 
 
 function [g J] = gaussian2D(x, y, prmVect)
