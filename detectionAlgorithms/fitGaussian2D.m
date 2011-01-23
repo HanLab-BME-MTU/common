@@ -1,4 +1,4 @@
-function [prmVect, G] = fitGaussian2D(data, prmVect, mode, mask, xa, ya)
+function [prmVect, residuals, J, G] = fitGaussian2D(data, prmVect, mode, mask, xa, ya)
 %[prmVect, G] = fitGaussian2D(data, p, mode)
 %
 % Input: data: 2-D image array
@@ -49,7 +49,7 @@ ub = [xa(end) ya(end) Inf Inf Inf];
 if sum(estIdx)==1 && estIdx(3)==1
     prmVect = A_CF_Gaussian(data, x, y, prmVect);
 else
-    p = lsqnonlin(@costGaussian, prmVect(estIdx), lb(estIdx), ub(estIdx), opts, data, x, y, prmVect, estIdx, mask);
+    [p, ~, residuals, ~, ~, ~, J] = lsqnonlin(@costGaussian, prmVect(estIdx), lb(estIdx), ub(estIdx), opts, data, x, y, prmVect, estIdx, mask);
     prmVect(estIdx) = p;
 end
 
