@@ -363,7 +363,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // parameters
     if (nlhs > 0) {
         plhs[0] = mxCreateDoubleMatrix(1, 5, mxREAL);
-        memcpy(mxGetPr(plhs[0]), &(data.prmVect), 5*sizeof(double));
+        memcpy(mxGetPr(plhs[0]), data.prmVect, 5*sizeof(double));
     }
     
     // covariance matrix
