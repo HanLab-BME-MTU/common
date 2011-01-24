@@ -15,4 +15,8 @@ function fImg = locmin2d(img, mask, keepFlat)
 %
 %    OUTPUT   fImg   image with local minima (original values) and zeros elsewhere.
 
+if nargin < 3 || isempty(keepFlat)
+    keepFlat = 0;
+end
+
 fImg = -locmax2d(-img, mask, keepFlat);
