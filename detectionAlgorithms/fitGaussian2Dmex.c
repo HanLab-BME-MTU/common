@@ -2,7 +2,7 @@
  *
  * (c) Francois Aguet & Sylvain Berlemont, 2011 (last modified Jan 22, 2011)
  *
- * Compile with: mex -I/usr/local/include -lgsl fitGaussian2Dmex.c
+ * Compile with: mex -I/usr/local/include -lgsl -lgslcblas fitGaussian2Dmex.c
  */
 
 #include <stdlib.h>
