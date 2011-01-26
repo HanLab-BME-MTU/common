@@ -1,4 +1,4 @@
-/* [prmVect covarianceMatrix residuals Jacobian] = fitGaussian2Dmex(prmVect, initValues, mode);
+/* [prmVect prmStd covarianceMatrix residuals Jacobian] = fitGaussian2Dmex(prmVect, initValues, mode);
  *
  * (c) Francois Aguet & Sylvain Berlemont, 2011 (last modified Jan 22, 2011)
  *
