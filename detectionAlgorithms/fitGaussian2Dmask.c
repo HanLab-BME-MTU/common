@@ -98,7 +98,7 @@ int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
     for (i=0; i<dataStruct->np; ++i) {
         dataStruct->prmVect[dataStruct->estIdx[i]] = gsl_vector_get(x, i);
     }
-    
+
     double xp = dataStruct->prmVect[0];
     double yp = dataStruct->prmVect[1];
     double A = dataStruct->prmVect[2];
@@ -249,12 +249,10 @@ int MLalgo(struct dataStruct *data) {
     gsl_vector_view x = gsl_vector_view_array(data->x_init, p);
     
     const gsl_rng_type *type;
-    gsl_rng *r;
     
     gsl_rng_env_setup();
     
     type = gsl_rng_default;
-    r = gsl_rng_alloc(type);
     
     gsl_multifit_function_fdf f;
     f.f = &gaussian_f;
@@ -297,6 +295,82 @@ int MLalgo(struct dataStruct *data) {
     gsl_matrix_memcpy(data->J, s->J);
     
     gsl_multifit_fdfsolver_free(s);
+    return 0;
+}
+
+
+
+int main(void) {
+
+    
+    
+    int nx = 15;
+    int nx2 = nx*nx;
+    double* px;
+    px = (double*)malloc(sizeof(double)*nx2);
+    
+
+
+    int i;
+    // fill with noise
+    for (i=0; i<nx2; ++i) {
+        px[i] = rand();
+    }
+    
+    int np = 5;
+    
+    dataStruct_t data;
+    data.nx = nx;
+    data.np = 5;
+    data.pixels = px;
+    data.gx = (double*)malloc(sizeof(double)*nx);
+    data.gy = (double*)malloc(sizeof(double)*nx);
+
+    data.estIdx = (int*)malloc(sizeof(int)*np);
+    //memcpy(data.prmVect, mxGetPr(prhs[1]), 5*sizeof(double));    
+    data.dfunc = (pfunc_t*) malloc(sizeof(pfunc_t) * np);
+
+    // read mask/pixels
+    data.nValid = nx2;
+    data.idx = (int*)malloc(sizeof(int)*data.nValid);
+    int k = 0;
+    for (i=0; i<nx2; ++i) {
+        if (!mxIsNaN(data.pixels[i])) {
+            data.idx[k++] = i;
+        }
+    }
+    
+    data.prmVect[0] = 0;
+    data.prmVect[1] = 0;
+    data.prmVect[2] = 5;
+    data.prmVect[3] = 1;
+    data.prmVect[4] = 0;
+    
+    np = 0;
+    data.estIdx[np] = 0; data.dfunc[np++] = df_dx;
+    data.estIdx[np] = 1; data.dfunc[np++] = df_dy;
+    data.estIdx[np] = 2; data.dfunc[np++] = df_dA;
+    data.estIdx[np] = 3; data.dfunc[np++] = df_ds;
+    data.estIdx[np] = 4; data.dfunc[np++] = df_dc;
+    
+    data.x_init = (double*)malloc(sizeof(double)*np);
+    for (i=0; i<np; ++i) {
+        data.x_init[i] = data.prmVect[data.estIdx[i]];
+    }   
+    
+    MLalgo(&data);
+    
+    free(px);
+    free(data.gx);
+    free(data.gy);
+    free(data.estIdx);
+    free(data.dfunc);
+    free(data.idx);
+    free(data.x_init);
+    gsl_vector_free(data.residuals);
+    gsl_matrix_free(data.J);
+    
+    
     return 0;
 }
 
@@ -385,27 +459,42 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         memcpy(mxGetPr(plhs[0]), data.prmVect, 5*sizeof(double));
     }
     
-    // covariance matrix
+    // standard dev. of parameters & covariance matrix
     if (nlhs > 1) {
-        plhs[1] = mxCreateDoubleMatrix(np, np, mxREAL);
+        
         gsl_matrix *covar = gsl_matrix_alloc(np, np);
         gsl_multifit_covar(data.J, 0.0, covar);
-        // cov. matrix is symmetric, no need to transpose
-        memcpy(mxGetPr(plhs[1]), covar->data, np*np*sizeof(double));
+        double sigma_e = 0.0, e;
+        for (i=0; i<data.nValid; ++i) {
+            e = data.residuals->data[data.idx[i]];
+            sigma_e += e*e;
+        }
+        sigma_e /= data.nValid - data.np - 1;
+        plhs[1] = mxCreateDoubleMatrix(1, data.np, mxREAL);
+        double *prmStd = mxGetPr(plhs[1]);
+        for (i=0; i<data.np; ++i) {
+            prmStd[i] = sqrt(sigma_e*gsl_matrix_get(covar, i, i));
+        }
+        if (nlhs > 2) {
+            plhs[2] = mxCreateDoubleMatrix(np, np, mxREAL);
+            // cov. matrix is symmetric, no need to transpose
+            memcpy(mxGetPr(plhs[2]), covar->data, np*np*sizeof(double));
+        }
         free(covar);
+        
     }
     
     // residuals
-    if (nlhs > 2) {
-        plhs[2] = mxCreateDoubleMatrix(nx, nx, mxREAL);
-        memcpy(mxGetPr(plhs[2]), data.residuals->data, nx2*sizeof(double));
+    if (nlhs > 3) {
+        plhs[3] = mxCreateDoubleMatrix(nx, nx, mxREAL);
+        memcpy(mxGetPr(plhs[3]), data.residuals->data, nx2*sizeof(double));
     }
     
     // Jacobian
-    if (nlhs > 3) {
+    if (nlhs > 4) {
         // convert row-major double* data.J->data to column-major double*
-        plhs[3] = mxCreateDoubleMatrix(nx2, np, mxREAL);
-        double *J = mxGetPr(plhs[3]);
+        plhs[4] = mxCreateDoubleMatrix(nx2, np, mxREAL);
+        double *J = mxGetPr(plhs[4]);
         
         int p;
         for (p=0; p<np; ++p) {
@@ -415,13 +504,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         }
     }
     
+    free(mode);
     free(data.gx);
     free(data.gy);
-    free(data.dfunc);
-    free(data.x_init);
-    free(data.residuals);
-    free(data.J);
     free(data.estIdx);
+    free(data.dfunc);
     free(data.idx);
-    free(mode);
+    free(data.x_init);
+    gsl_vector_free(data.residuals);
+    gsl_matrix_free(data.J);
+    
+    
 }
