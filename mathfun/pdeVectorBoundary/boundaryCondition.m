@@ -11,7 +11,7 @@ function [q,g,h,r] = boundaryCondition(p,e,u,time)
 % Re-written 8/2010
 %
 
-%u and time are not used. They are for time-dependent and non-linear
+%time and u are not used. They are for time-dependent and non-linear
 %systems respectively.
 
 %h & r specify dirichlet boundary conditions.
@@ -31,6 +31,8 @@ global OBJ_BOUND;
 
 %Function value multiplier.
 h = ones(1,2*nE);
+h = [1 0 0 1]';
+h = repmat(h,1,2*nE);
 
 %Get parameter values for each edge requested         
 s(1:nE) = e(3,1:nE);
@@ -49,7 +51,7 @@ r(:,nE+1:2*nE) = ppval(BOUND_COND,adjustedPar(1+nE:2*nE));
 %Setting both to zero means dirichlet only
 
 %function value multiplier
-q = zeros(1,nE);
+q = zeros(4,nE);
 
 %Normal component of gradient at edge
-g = zeros(1,nE);
+g = zeros(2,nE);

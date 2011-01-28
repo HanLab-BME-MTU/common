@@ -2,18 +2,23 @@ function varargout = solvePDEVectorBoundary(xy,uv,pdePar,imgSize,meshQuality)
 %SOLVEPDEVECTORBOUNDARY solves the selected PDE using the input vectors as a boundary condition 
 % 
 %                     [X,Y] = solvePDEVectorBoundary(xy,uv)
-% [ux,px,ex,tx,uy,py,ey,ty] = solvePDEVectorBoundary(xy,uv)
+%                 [u,p,e,t] = solvePDEVectorBoundary(xy,uv)
 %                     ...   = solvePDEVectorBoundary(xy,uv,pdePar)
 %                     ...   = solvePDEVectorBoundary(xy,uv,pdePar,imSize)
 %                     ...   = solvePDEVectorBoundary(xy,uv,pdePar,imSize,meshQuality)
 % 
 % This function solves the selected partial differential equation (PDE)
 % over the area enclosed by the vectors x and y given the vector-valued
-% boundary conditions specified by the vectors u and v. The X and Y
-% components of the solution are solved separately as separate boundary
-% conditions. The solution are found using the matlab PDE toolbox. The PDE
-% must be of the form supported by the PDE toolbox function adaptmesh.m.
+% boundary conditions specified by the vectors u and v. The solution are
+% found using the matlab PDE toolbox. The PDE must be of the form supported
+% by the PDE toolbox function adaptmesh.m.
 % 
+% More specifically, the function finds the vector-valued solution u over
+% the two dimensional domain omega defined by the input polygon xy, given
+% the vector-valued Dirichlet boundary condition  u(omega) = uv. In the
+% matlab PDE toolbox, vector valued solutions are treated as systems of
+% equations. Therefore this corresponds to the solution of a system of
+% elliptic PDEs
 % 
 % Input:
 % 
@@ -24,24 +29,26 @@ function varargout = solvePDEVectorBoundary(xy,uv,pdePar,imgSize,meshQuality)
 % 
 %   uv - The 2xM or Mx2 vectors containing the x and y components of the
 %         boundary condition at each boundary point specified by xy.
-%         Must be the same length as xy.
+%         Must be the same size as xy.
 % 
-%   pdePar - 1x3 Vector specifying the parameters of the PDE to solve in
-%            the object interior. The elements of this vector correspond to
-%            the coefficients c, a and f used by the functions assembpde.m
-%            and adaptmesh.m. Optional. Default is [1 0 0];
+%   pdePar - 1x3 Cell array specifying the parameters of the PDE to solve
+%            in the object interior. The elements of this vector correspond
+%            to the coefficients c, a and f used by the functions
+%            assembpde.m and adaptmesh.m. See the help of assempde.m for
+%            details on these coefficients and their specification.
 %
 %   imgSize - A 1x2 positive integer vector containing the size of the area
 %             over which to solve the PDE. Areas outside of the area
 %             specified by x and y will have zero values. Only used if X,Y
 %             outputs are requested. Optional. If not specified, the X and
-%             Y matrices will be just large enough to fit area enclosed by
+%             Y matrices will be just large enough to fit area enc)losed by
 %             xy.
 %
 %   meshQualtiy - Integer scalar between 1-10. The quality of the
 %                 triangular mesh to use when solving the PDE. Large
 %                 numbers will DRASTICALLY increase computation time, while
-%                 decreasing error in the solution.
+%                 asymptotically decreasing error in the solution.
+%                 Optional. Default is 3.
 %
 %
 % Output:
@@ -54,10 +61,11 @@ function varargout = solvePDEVectorBoundary(xy,uv,pdePar,imgSize,meshQuality)
 %
 %      ------------------------ OR -----------------------------
 %
-%   [ux,px,ex,tx,uy,py,ey,ty] - The solution to the PDE on the triangular
-%           mesh used by the PDE toolbox. This contains the solution values
-%           u, vertex locations p, edge topology e and triangles t for the
-%           x and y components of the solution.
+%   [u,p,e,t] -  The solution to the PDE on the triangular
+%                mesh used by the PDE toolbox. This contains the solution
+%                values uv, vertex locations p, edge topology e and
+%                triangles t for the x and y components of the solution.
+%                See assempde.m for details on their format.
 %
 % Hunter Elliott
 % 8/2010
@@ -66,6 +74,10 @@ function varargout = solvePDEVectorBoundary(xy,uv,pdePar,imgSize,meshQuality)
 %% ----------- Input ---------- %%
 if nargin < 2 || isempty(xy) || isempty(uv)
     error('Must input boundary location xy and boundary condition uv!')
+end
+
+if nargin < 3 || isempty(pdePar)
+    error('You must specify the coefficients of the PDE you wish to solve!')
 end
 
 %Convert to Mx2 if input as 2xM
@@ -90,11 +102,6 @@ if nPts < 3 || size(uv,1) ~= nPts
     error('xy and uv must be matrices of the same size - Mx2 or 2xM where M >= 3!')
 end
 
-if nargin < 3 || isempty(pdePar)
-    pdePar = [1 0 0 ];
-elseif numel(pdePar) ~= 3
-    error('The input PDE parameters must be a 1x3 vector!')
-end
     
 if nargin < 4
     imgSize = [];
@@ -110,14 +117,18 @@ end
 %% --------- Init ----------- %%    
 
 %We use global variables for the boundary coord and values, because the PDE
-%toolbox is very strict about geometry and boundary condition inputs.
+%toolbox is very strict about geometry and boundary condition inputs (it
+%won't allow function handles or anonymous functions)
 global BOUND_COND
 global OBJ_BOUND
 
-%Check handedness of boundary and reverse if necessary. The boundary
-%function assumes correct handedness when determining object outside vs
-%inside
+%Check if curve specified by xy runs clockwise or counterclockwise
 
+%If it's not clockwise, we need to reverse it and the boundary conditions.
+if ~isCurveClockwise(xy);
+    xy = xy(:,end:-1:1);
+    uv = uv(:,end:-1:1);
+end
 
 %Fit interpolating spline to boundary.
 OBJ_BOUND = spline(linspace(0,1,nPts),xy');
@@ -131,12 +142,11 @@ if isempty(imgSize)
 end
 
 %% -------- Solve ---------- %%
-%Solves X and Y components of eqtn seperately
+%Use adaptmesh to both refine the FEM mesh and to solve the PDE.
 
+%Set global boundary condition variable to spline representation of uv
+BOUND_COND = spline(linspace(0,1,nPts),uv');
 
-% ------ X components ------ %
-
-BOUND_COND = spline(linspace(0,1,nPts),uv(:,1)'); %#ok<NASGU>
 %Initialize mesh
 [p,e,t] = initmesh('boundaryGeometry');
 
@@ -146,58 +156,38 @@ for j = 1:min(2,meshQuality)
 end
 p = jigglemesh(p,e,t,'Opt','minimum','Iter',meshQuality*20);
 
+
 %Do a few rounds of adaptive refinement
-[~,px,ex,tx] = adaptmesh('boundaryGeometry','boundaryCondition',...
-                         pdePar(1),pdePar(2),pdePar(3),...
+[~,p,e,t] = adaptmesh('boundaryGeometry','boundaryCondition',...
+                         pdePar{1},pdePar{2},pdePar{3},...
                          'Ngen',meshQuality,'Mesh',p,e,t);
 %Refine again
 for j = 1:min(1,ceil(meshQuality/2))
-    [px,ex,tx] = refinemesh('boundaryGeometry',px,ex,tx);   
+    [p,e,t] = refinemesh('boundaryGeometry',p,e,t);   
 end
-px = jigglemesh(px,ex,tx,'Opt','minimum','Iter',meshQuality*20);
+p = jigglemesh(p,e,t,'Opt','minimum','Iter',meshQuality*20);
 
 %Get the final solution with a few more rounds of refinement
-[uX,px,ex,tx] = adaptmesh('boundaryGeometry','boundaryCondition',...
-                           pdePar(1),pdePar(2),pdePar(3),...
-                           'Ngen',meshQuality,'Mesh',px,ex,tx);
-
-
-% ------- Y components --------- %
-
-BOUND_COND = spline(linspace(0,1,nPts),uv(:,2)');
-
-%Do a few rounds of adaptive refinement
-[~,py,ey,ty] = adaptmesh('boundaryGeometry','boundaryCondition',...
-                        pdePar(1),pdePar(2),pdePar(3),...
-                        'Ngen',meshQuality,'Mesh',p,e,t);
-%Refine again
-for j = 1:min(1,ceil(meshQuality/2))
-    [py,ey,ty] = refinemesh('boundaryGeometry',py,ey,ty);   
-end
-py = jigglemesh(py,ey,ty,'Opt','minimum','Iter',meshQuality*10);
-
-%Get final solution with a few more rounds of adaptive refinement
-[uY,py,ey,ty] = adaptmesh('boundaryGeometry','boundaryCondition',...
-                          pdePar(1),pdePar(2),pdePar(3),...
-                          'Ngen',meshQuality,'Mesh',py,ey,ty);
+[u,p,e,t] = adaptmesh('boundaryGeometry','boundaryCondition',...
+                           pdePar{1},pdePar{2},pdePar{3},...
+                           'Ngen',meshQuality,'Mesh',p,e,t);
 
 
 %% ------- Output ----- %%
 
 if nargout > 2
     %If the solution was requested in mesh form
-    varargout{1}=uX;
-    varargout{2}=px;
-    varargout{3}=ex;
-    varargout{4}=tx;
-    varargout{5}=uY;
-    varargout{6}=py;
-    varargout{7}=ey;
-    varargout{8}=ty;
+    varargout{1}=u;
+    varargout{2}=p;
+    varargout{3}=e;
+    varargout{4}=t;    
 else
     %Otherwise, interpolate the mesh solution to gridded data
-    varargout{1} = tri2grid(px,tx,uX,1:imgSize(1),1:imgSize(2));
-    varargout{2} = tri2grid(py,ty,uY,1:imgSize(1),1:imgSize(2));
+    nT = size(p,2);
+    %The PDE toolbox returns the x and y values in a single column vector
+    %sequentially.
+    varargout{1} = tri2grid(p,t,u(1:nT),1:imgSize(1),1:imgSize(2));
+    varargout{2} = tri2grid(p,t,u(nT+1:end),1:imgSize(1),1:imgSize(2));
 end
 
 

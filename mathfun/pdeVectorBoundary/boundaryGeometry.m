@@ -16,7 +16,7 @@ function [x,y] = boundaryGeometry(bs,s)
 %as an input
 global OBJ_BOUND;
 
-%Arbitrary? Pretty sure this is only for the piecewise case.
+%Arbitrary - for geometry specified in this way, this doesn't matter.
 nBoundSeg = 10;
 
 %If no arguments supplied, return the number of boundary segments. This is
@@ -26,19 +26,11 @@ if nargin == 0
     return
 end
 
+%Since we expect input curve to be clockwise, this will label inside 1.
+dirVec = [0 1];
+
 %Initialze d matrix which defines the boundary segments
 d = nan(4,nBoundSeg);
-
-%Check if curve runs clockwise or counterclockwise
-tstCurve = ppval(OBJ_BOUND,linspace(0,1,5e2));
-isClockwise = isCurveClockwise(tstCurve);
-
-%Adjust labelling so that inside is always labelled 1
-if isClockwise
-    dirVec = [0 1];
-else
-    dirVec = [1 0];
-end
 
 for j = 1:nBoundSeg
     %The parameter runs from 0 to 1 along the cell border.
@@ -53,7 +45,7 @@ if nargin == 1
 end
 
 %Adjust so points are evenly spaced by arc length. Only necessary 
-%if there are gaps in cell edge, remove if speed needed
+%if there are gaps in boundary, remove if speed needed
 iPars = linspace(0,1,OBJ_BOUND.pieces+1);
 currEdge = fnval(OBJ_BOUND,iPars);
 adjustedPar = pdearcl(iPars,currEdge,s,0,1);
