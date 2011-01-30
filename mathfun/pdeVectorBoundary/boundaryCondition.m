@@ -16,10 +16,10 @@ function [q,g,h,r] = boundaryCondition(p,e,u,time)
 
 %h & r specify dirichlet boundary conditions.
 
-if ~isempty(u) || ~isempty(time)
-    disp('objBoundary: not a time dependent boundary condition!')
-    return
-end
+% if ~isempty(u) || ~isempty(time)
+%     disp('objBoundary: not a time dependent boundary condition!')
+%     return
+% end
 
 %Determine number of edges requested
 nE = size(e,2);

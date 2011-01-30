@@ -1,4 +1,4 @@
-function varargout = solvePDEVectorBoundary(xy,uv,pdePar,imgSize,meshQuality)
+function varargout = solvePDEVectorBoundary(xy,uv,pdePar,imgSize,meshQuality,nonLin)
 %SOLVEPDEVECTORBOUNDARY solves the selected PDE using the input vectors as a boundary condition 
 % 
 %                     [X,Y] = solvePDEVectorBoundary(xy,uv)
@@ -49,6 +49,11 @@ function varargout = solvePDEVectorBoundary(xy,uv,pdePar,imgSize,meshQuality)
 %                 numbers will DRASTICALLY increase computation time, while
 %                 asymptotically decreasing error in the solution.
 %                 Optional. Default is 3.
+%
+%   nonLin - 'off' or 'on' If 'on', the non-linear solver will be used.
+%            This is required in cases where the PDE coefficients contain
+%            the value of the solution OR it's first derivative. Optional.
+%            Default is 'off' (use linear solver).
 %
 %
 % Output:
@@ -114,6 +119,10 @@ elseif (meshQuality <= 0) || (round(abs(meshQuality)) ~= meshQuality) ...
     error('Mesh quality must be a positive integer between 1 and 10!')
 end
 
+if nargin < 6 || isempty(nonLin)
+    nonLin = 'off';
+end
+
 %% --------- Init ----------- %%    
 
 %We use global variables for the boundary coord and values, because the PDE
@@ -156,11 +165,13 @@ for j = 1:min(2,meshQuality)
 end
 p = jigglemesh(p,e,t,'Opt','minimum','Iter',meshQuality*20);
 
+Ui = 1;%TEMP
 
 %Do a few rounds of adaptive refinement
-[~,p,e,t] = adaptmesh('boundaryGeometry','boundaryCondition',...
+[~,p,e,t] = adaptmeshHLE('boundaryGeometry','boundaryCondition',...
                          pdePar{1},pdePar{2},pdePar{3},...
-                         'Ngen',meshQuality,'Mesh',p,e,t);
+                         'Ngen',meshQuality,'Mesh',p,e,t,...
+                         'Nonlin',nonLin,'Init',Ui);
 %Refine again
 for j = 1:min(1,ceil(meshQuality/2))
     [p,e,t] = refinemesh('boundaryGeometry',p,e,t);   
@@ -168,9 +179,10 @@ end
 p = jigglemesh(p,e,t,'Opt','minimum','Iter',meshQuality*20);
 
 %Get the final solution with a few more rounds of refinement
-[u,p,e,t] = adaptmesh('boundaryGeometry','boundaryCondition',...
+[u,p,e,t] = adaptmeshHLE('boundaryGeometry','boundaryCondition',...
                            pdePar{1},pdePar{2},pdePar{3},...
-                           'Ngen',meshQuality,'Mesh',p,e,t);
+                           'Ngen',meshQuality,'Mesh',p,e,t,...
+                           'Nonlin',nonLin,'Init',Ui);
 
 
 %% ------- Output ----- %%

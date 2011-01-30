@@ -111,11 +111,13 @@ nImages = movieData.nFrames_;
 
 for iImage = 1:nImages
     
-    %Clear the axes so we don't build up a bunch of crap in the figure
-    cla(aHan);    
+    %Clear the axes so we don't build up a bunch of crap in the figure    
+    
+    cla(gca);                
+    
     
     imageViewer(movieData,'Frame',iImage,...
-                          'AxesHandle',aHan,imviewArgs{:});
+                          'AxesHandle',gca,imviewArgs{:});
                        
         
     if constRange
