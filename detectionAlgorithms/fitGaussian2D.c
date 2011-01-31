@@ -98,13 +98,13 @@ int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
     for (i=0; i<dataStruct->np; ++i) {
         dataStruct->prmVect[dataStruct->estIdx[i]] = gsl_vector_get(x, i);
     }
-
+    
     double xp = dataStruct->prmVect[0];
     double yp = dataStruct->prmVect[1];
     double A = dataStruct->prmVect[2];
     double sigma = dataStruct->prmVect[3];
     double c = dataStruct->prmVect[4];
-
+    
     double xi, yi;
     double d = 2.0*sigma*sigma;
     for (i=0; i<nx; ++i) {
@@ -121,7 +121,7 @@ int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
         idx = dataStruct->idx[i];
         divRes = div(idx, nx);
         gsl_vector_set(f, i, A*gx[divRes.quot]*gy[divRes.rem]+c - pixels[idx]);
-    }   
+    }
     return GSL_SUCCESS;
 }
 
@@ -145,7 +145,7 @@ int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J) {
     double yp = dataStruct->prmVect[1];
     double A = dataStruct->prmVect[2];
     double sigma = dataStruct->prmVect[3];
-        
+    
     double xi, yi;
     double sigma2 = sigma*sigma;
     double d = 2.0*sigma2;
@@ -181,7 +181,7 @@ int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J) {
 
 
 int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J) {
-
+    
     dataStruct_t *dataStruct = (dataStruct_t *)params;
     int nx = dataStruct->nx;
     int b = nx/2, i, k;
@@ -201,7 +201,7 @@ int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J
     double A = dataStruct->prmVect[2];
     double sigma = dataStruct->prmVect[3];
     double c = dataStruct->prmVect[4];
-        
+    
     double xi, yi;
     double sigma2 = sigma*sigma;
     double d = 2.0*sigma2;
@@ -298,10 +298,9 @@ int MLalgo(struct dataStruct *data) {
     return 0;
 }
 
-
-
+// compile with:
+//export LD_RUN_PATH=/Applications/MATLAB_R2010b.app/bin/maci64 && gcc -Wall -g -DARRAY_ACCESS_INLINING -I. -I/Applications/MATLAB_R2010b.app/extern/include -L/Applications/MATLAB_R2010b.app/bin/maci64 -lmx -lmex -lgsl -lgslcblas -lmat fitGaussian2Dmask.c
 int main(void) {
-
     
     
     int nx = 15;
@@ -309,8 +308,8 @@ int main(void) {
     double* px;
     px = (double*)malloc(sizeof(double)*nx2);
     
-
-
+    
+    
     int i;
     // fill with noise
     for (i=0; i<nx2; ++i) {
@@ -325,11 +324,10 @@ int main(void) {
     data.pixels = px;
     data.gx = (double*)malloc(sizeof(double)*nx);
     data.gy = (double*)malloc(sizeof(double)*nx);
-
+    
     data.estIdx = (int*)malloc(sizeof(int)*np);
-    //memcpy(data.prmVect, mxGetPr(prhs[1]), 5*sizeof(double));    
     data.dfunc = (pfunc_t*) malloc(sizeof(pfunc_t) * np);
-
+    
     // read mask/pixels
     data.nValid = nx2;
     data.idx = (int*)malloc(sizeof(int)*data.nValid);
@@ -356,20 +354,19 @@ int main(void) {
     data.x_init = (double*)malloc(sizeof(double)*np);
     for (i=0; i<np; ++i) {
         data.x_init[i] = data.prmVect[data.estIdx[i]];
-    }   
+    }
     
     MLalgo(&data);
     
-    free(px);
-    free(data.gx);
-    free(data.gy);
-    free(data.estIdx);
-    free(data.dfunc);
-    free(data.idx);
-    free(data.x_init);
-    gsl_vector_free(data.residuals);
     gsl_matrix_free(data.J);
-    
+    gsl_vector_free(data.residuals);
+    free(data.x_init);
+    free(data.idx);
+    free(data.dfunc);
+    free(data.estIdx);
+    free(data.gy);
+    free(data.gx);
+    free(px);
     
     return 0;
 }
@@ -377,7 +374,7 @@ int main(void) {
 
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-       
+    
     /* inputs:
      * image array
      * prmVect
@@ -419,15 +416,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     data.pixels = mxGetPr(prhs[0]);
     data.gx = (double*)malloc(sizeof(double)*nx);
     data.gy = (double*)malloc(sizeof(double)*nx);
-    //bzero(data.estIdx, 5);
     data.estIdx = (int*)malloc(sizeof(int)*np);
-    memcpy(data.prmVect, mxGetPr(prhs[1]), 5*sizeof(double));    
+    memcpy(data.prmVect, mxGetPr(prhs[1]), 5*sizeof(double));
     data.dfunc = (pfunc_t*) malloc(sizeof(pfunc_t) * np);
-
+    
     // read mask/pixels
     data.nValid = nx2;
     for (i=0; i<nx2; ++i) {
-       data.nValid -= (int)mxIsNaN(data.pixels[i]);
+        data.nValid -= (int)mxIsNaN(data.pixels[i]);
     }
     data.idx = (int*)malloc(sizeof(int)*data.nValid);
     int k = 0;
@@ -448,7 +444,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     data.x_init = (double*)malloc(sizeof(double)*np);
     for (i=0; i<np; ++i) {
         data.x_init[i] = data.prmVect[data.estIdx[i]];
-    }   
+    }
     
     MLalgo(&data);
     np = data.np;
@@ -504,15 +500,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         }
     }
     
-    free(mode);
-    free(data.gx);
-    free(data.gy);
-    free(data.estIdx);
-    free(data.dfunc);
-    free(data.idx);
-    free(data.x_init);
-    gsl_vector_free(data.residuals);
     gsl_matrix_free(data.J);
-    
-    
+    gsl_vector_free(data.residuals);
+    free(data.x_init);
+    free(data.idx);
+    free(data.dfunc);
+    free(data.estIdx);
+    free(data.gy);
+    free(data.gx);
+    free(mode);
 }
