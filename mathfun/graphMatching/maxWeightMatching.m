@@ -1,4 +1,4 @@
-function [M maxCost] = maxWeightMatching(D, nonLinkMarker)
+function [M maxCost] = maxWeightMatching(D, eps, nonLinkMarker)
 % this function resolve the maximum weight matching problem for a given
 % undirected graph G = (V, E), where each edge in E has a weight d >= 0. A
 % matching M of G is a set of edges no two of which share an endpoint. In
@@ -10,7 +10,9 @@ function [M maxCost] = maxWeightMatching(D, nonLinkMarker)
 % defined by any D(i,j) non equal to nonLinkMarker. If D is sparse, there
 % is no need to specify nonLinkMarker. Keep in mind that if D is sparse, it
 % prevents to have weights strictly equal to 0. One way to address this is
-% to assign a very small value (eps for instance) to null weights.
+% to assign a very small value eps to null weights. Except for that small
+% value which is most likely a double value (1e-12 for instance), EVERY
+% WEIGHT MUST BE INTEGER.
 %
 % G is an undirected graph which means D(i,j) == D(j,i). Only the lower
 % triangular part of the matrix is taken into account, i.e. if there
@@ -43,8 +45,17 @@ if any(D < 0)
   error('Weights must be >= 0');
 end
 
-if ~issparse(D)
-    if nargin < 2 || isempty(nonLinkMarker)
+if issparse(D)
+    if nargin < 2 || isemtpy(eps)
+        error('eps value required when cost function is sparse.');
+    end
+    
+    [u, v, w] = find(tril(D));
+    
+    % replace every element w == eps by 0.
+    w(w == eps) = 0;
+else
+    if nargin < 3 || isempty(nonLinkMarker)
         error('nonLinkMarker value required when cost function is not sparse.');
     end
     
@@ -52,9 +63,10 @@ if ~issparse(D)
     ind = find(x < x' & D ~= nonLinkMarker);
     [u, v] = ind2sub([n n], ind);
     w = D(ind);  
-else
-    [u, v, w] = find(tril(D));
 end
+
+% Assert every weight is an integer value
+assert(all(w == round(w)));
 
 % Number of edges in the graph
 nE = numel(w);
@@ -67,30 +79,6 @@ nE = numel(w);
 uEx = vertcat(u, u + n, x(:));
 vEx = vertcat(v, v + n, y(:));
 wEx = vertcat(w, w, zeros(n^2,1));
-
-% translate double valued weights into integers.
-
-% maxInt is the biggest integer which can be represented by a double.
-% On 64-bit machine, the mantissa spans 52 bits, on 32-bit machine, it
-% spans 23 bits.
-is64 = false;%~isempty(strfind(computer,'64'));
-
-if is64
-    maxInt = 2^52-1;
-else
-    maxInt = 2^23-1;
-end
-
-% rescale weights
-minW = min(wEx(:));
-maxW = max(wEx(:));
-wExRescaled = (wEx - minW) * maxInt ./ (maxW - minW);
-
-if is64
-    wExRescaled = int64(wExRescaled);
-else
-    wExRescaled = int32(wExRescaled);
-end
 
 % Solve minimum perfect matching problem
 M = perfectMatchingMEX(2 * n, [uEx vEx], -wExRescaled);
