@@ -11,8 +11,6 @@
 #include <string.h>
 #include <ctype.h> // tolower()
 
-#include <regex.h>
-
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_vector.h>
@@ -21,6 +19,10 @@
 
 #include "mex.h"
 #include "matrix.h"
+
+#define NPARAMS 5
+#define refMode "xyasc"
+
 
 typedef struct argStruct {
     double xi, yi, A, g, sigma2, sigma3;
@@ -36,7 +38,7 @@ typedef struct dataStruct {
     int *idx;
     int nValid; // number of non-NaN pixels
     double *x_init;
-    double prmVect[5];
+    double prmVect[NPARAMS];
     pfunc_t *dfunc;
     gsl_vector *residuals;
     gsl_matrix *J;
@@ -84,7 +86,7 @@ static int df_dc(gsl_matrix *J, int i, int k, argStruct_t *argStruct) {
 
 
 
-int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
+static int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
     
     dataStruct_t *dataStruct = (dataStruct_t *)params;
     int nx = dataStruct->nx;
@@ -127,7 +129,7 @@ int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
 
 
 
-int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J) {
+static int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J) {
     
     dataStruct_t *dataStruct = (dataStruct_t *)params;
     int nx = dataStruct->nx;
@@ -180,7 +182,7 @@ int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J) {
 
 
 
-int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J) {
+static int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J) {
     
     dataStruct_t *dataStruct = (dataStruct_t *)params;
     int nx = dataStruct->nx;
@@ -224,10 +226,11 @@ int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J
     for (i=0; i<dataStruct->nValid; ++i) {
         idx = dataStruct->idx[i];
         divRes = div(idx, nx);
-        gsl_vector_set(f, i, A*gx[divRes.quot]*gy[divRes.rem]+c - pixels[idx]);
+        
         argStruct.xi = divRes.quot-b - xp;
         argStruct.yi = divRes.rem-b - yp;
         argStruct.g = gx[divRes.quot]*gy[divRes.rem];
+        gsl_vector_set(f, i, A*argStruct.g+c - pixels[idx]);
         
         for (k=0; k<dataStruct->np; ++k)
             dataStruct->dfunc[k](J, i, k, &argStruct);
@@ -237,7 +240,7 @@ int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J
 
 
 
-int MLalgo(struct dataStruct *data) {
+static int MLalgo(struct dataStruct *data) {
     
     // declare solvers
     const gsl_multifit_fdfsolver_type *T;
@@ -386,7 +389,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // check inputs
     if (nrhs < 3) mexErrMsgTxt("Inputs should be: data, prmVect, mode.");
     if (!mxIsDouble(prhs[0])) mexErrMsgTxt("Data input must be double array.");
-    if (mxGetNumberOfElements(prhs[1])!=5 || !mxIsDouble(prhs[1])) mexErrMsgTxt("Incorrect parameter vector format.");
+    if (mxGetNumberOfElements(prhs[1])!=NPARAMS || !mxIsDouble(prhs[1])) mexErrMsgTxt("Incorrect parameter vector format.");
     if (!mxIsChar(prhs[2])) mexErrMsgTxt("Mode needs to be a string.");
     
     size_t nx = mxGetN(prhs[0]);
@@ -403,9 +406,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mode[i] = tolower(mode[i]);
     }
     
-    char *refMode = "xyasc";
     np = 0; // number of parameters to fit
-    for (i=0; i<5; ++i) {
+    for (i=0; i<NPARAMS; ++i) {
         if (strchr(mode, refMode[i])!=NULL) { np++; }
     }
     
@@ -417,7 +419,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     data.gx = (double*)malloc(sizeof(double)*nx);
     data.gy = (double*)malloc(sizeof(double)*nx);
     data.estIdx = (int*)malloc(sizeof(int)*np);
-    memcpy(data.prmVect, mxGetPr(prhs[1]), 5*sizeof(double));
+    memcpy(data.prmVect, mxGetPr(prhs[1]), NPARAMS*sizeof(double));
     data.dfunc = (pfunc_t*) malloc(sizeof(pfunc_t) * np);
     
     // read mask/pixels
@@ -451,8 +453,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     // parameters
     if (nlhs > 0) {
-        plhs[0] = mxCreateDoubleMatrix(1, 5, mxREAL);
-        memcpy(mxGetPr(plhs[0]), data.prmVect, 5*sizeof(double));
+        plhs[0] = mxCreateDoubleMatrix(1, NPARAMS, mxREAL);
+        memcpy(mxGetPr(plhs[0]), data.prmVect, NPARAMS*sizeof(double));
     }
     
     // standard dev. of parameters & covariance matrix
