@@ -423,6 +423,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     for (i=0; i<NPARAMS; ++i) {
         if (strchr(mode, refMode[i])!=NULL) { np++; }
     }
+    if (np==0) mexErrMsgTxt("Unknown mode.");
     
     // allocate
     data.nx = nx;
