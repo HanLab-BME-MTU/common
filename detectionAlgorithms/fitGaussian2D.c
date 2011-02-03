@@ -1,6 +1,6 @@
 /* [prmVect prmStd covarianceMatrix residuals Jacobian] = fitGaussian2Dmex(prmVect, initValues, mode);
  *
- * (c) Francois Aguet & Sylvain Berlemont, 2011 (last modified Jan 22, 2011)
+ * (c) Francois Aguet & Sylvain Berlemont, 2011 (last modified Feb 3, 2011)
  *
  * Compile with: mex -I/usr/local/include -lgsl -lgslcblas fitGaussian2Dmex.c
  */
