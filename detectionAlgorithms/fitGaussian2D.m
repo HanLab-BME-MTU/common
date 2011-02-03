@@ -12,7 +12,9 @@
 %    Inputs:     data : 2-D image array
 %             prmVect : parameter vector with order: [xp, yp, A, s, c]
 %                mode : string that defines parameters to be optimized; any among 'xyasc'
-%           {options} : vector [MaxIter TolFun TolX]; max. iterations, precision on f(x), precision on x
+%           {options} : vector [maxIter eAbs eRel]; max. iterations, tolerances. See GSL documentation.
+%
+%    Pixels in 'data' that are set to NaN are masked in the optimization.
 %
 %    Outputs: prmVect : parameter vector
 %              prmStd : parameter standard deviations
@@ -24,5 +26,3 @@
 % For Gaussian mixture fitting, use fitGaussianMixture2D()
 %
 % Example: [prmVect prmStd C res J] = fitGaussian2D(data, [0 0 max(data(:)) 1.5 min(data(:))], 'xyasc');
-
-% (c) Francois Aguet & Sylvain Berlemont, 2011

@@ -42,6 +42,7 @@ typedef struct dataStruct {
     pfunc_t *dfunc;
     gsl_vector *residuals;
     gsl_matrix *J;
+    double maxIter, eAbs, eRel;
 } dataStruct_t;
 
 
@@ -246,10 +247,7 @@ static int MLalgo(struct dataStruct *data) {
     const gsl_multifit_fdfsolver_type *T;
     gsl_multifit_fdfsolver *s;
     
-    // number of parameters to optimize
-    const size_t p = data->np;
-    
-    gsl_vector_view x = gsl_vector_view_array(data->x_init, p);
+    gsl_vector_view x = gsl_vector_view_array(data->x_init, data->np);
     
     const gsl_rng_type *type;
     
@@ -261,28 +259,32 @@ static int MLalgo(struct dataStruct *data) {
     f.f = &gaussian_f;
     f.df = &gaussian_df;
     f.fdf = &gaussian_fdf;
-    size_t n = data->nx;
-    n *= n;
-    f.n = n;
-    f.p = p;
+    f.n = data->nValid;
+    f.p = data->np;
     f.params = data;
     
     
     T = gsl_multifit_fdfsolver_lmsder;
-    s = gsl_multifit_fdfsolver_alloc(T, n, p);
+    s = gsl_multifit_fdfsolver_alloc(T, data->nValid, data->np);
     gsl_multifit_fdfsolver_set(s, &f, &x.vector);
     
-    int status;
+    int status, status2;
     int iter = 0;
+    gsl_vector *gradt = gsl_vector_alloc(data->np);
+    
     do {
         iter++;
         status = gsl_multifit_fdfsolver_iterate(s);
         if (status)
             break;
         
-        status = gsl_multifit_test_delta(s->dx, s->x, 1e-8, 1e-8);
+        status = gsl_multifit_test_delta(s->dx, s->x, data->eAbs, data->eRel);
+        gsl_multifit_gradient(s->J, s->f, gradt);
+        status2 = gsl_multifit_test_gradient(gradt, data->eAbs);
     }
-    while (status == GSL_CONTINUE && iter < 500);
+    while ((status == GSL_CONTINUE || status2 == GSL_CONTINUE) && iter < data->maxIter);
+    
+    gsl_vector_free(gradt);
     
     int i;
     for (i=0; i<data->np; ++i) {
@@ -290,11 +292,11 @@ static int MLalgo(struct dataStruct *data) {
     }
     
     // copy model
-    data->residuals = gsl_vector_alloc(n);
+    data->residuals = gsl_vector_alloc(data->nValid);
     gsl_vector_memcpy(data->residuals, s->f);
     
     // copy Jacobian
-    data->J = gsl_matrix_alloc(n, data->np);
+    data->J = gsl_matrix_alloc(data->nValid, data->np);
     gsl_matrix_memcpy(data->J, s->J);
     
     gsl_multifit_fdfsolver_free(s);
@@ -302,20 +304,17 @@ static int MLalgo(struct dataStruct *data) {
 }
 
 // compile with:
-//export LD_RUN_PATH=/Applications/MATLAB_R2010b.app/bin/maci64 && gcc -Wall -g -DARRAY_ACCESS_INLINING -I. -I/Applications/MATLAB_R2010b.app/extern/include -L/Applications/MATLAB_R2010b.app/bin/maci64 -lmx -lmex -lgsl -lgslcblas -lmat fitGaussian2Dmask.c
-int main(void) {
-    
+//export DYLD_LIBRARY_PATH=/Applications/MATLAB_R2010b.app/bin/maci64 && gcc -Wall -g -DARRAY_ACCESS_INLINING -I. -I/Applications/MATLAB_R2010b.app/extern/include -L/Applications/MATLAB_R2010b.app/bin/maci64 -lmx -lmex -lgsl -lgslcblas -lmat fitGaussian2D.c
+/*int main(void) {
     
     int nx = 15;
-    int nx2 = nx*nx;
+    int N = nx*nx;
     double* px;
-    px = (double*)malloc(sizeof(double)*nx2);
-    
-    
+    px = (double*)malloc(sizeof(double)*N);
     
     int i;
     // fill with noise
-    for (i=0; i<nx2; ++i) {
+    for (i=0; i<N; ++i) {
         px[i] = rand();
     }
     
@@ -332,10 +331,10 @@ int main(void) {
     data.dfunc = (pfunc_t*) malloc(sizeof(pfunc_t) * np);
     
     // read mask/pixels
-    data.nValid = nx2;
+    data.nValid = N;
     data.idx = (int*)malloc(sizeof(int)*data.nValid);
     int k = 0;
-    for (i=0; i<nx2; ++i) {
+    for (i=0; i<N; ++i) {
         if (!mxIsNaN(data.pixels[i])) {
             data.idx[k++] = i;
         }
@@ -372,7 +371,7 @@ int main(void) {
     free(px);
     
     return 0;
-}
+}*/
 
 
 
@@ -382,18 +381,32 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
      * image array
      * prmVect
      * mode
-     *
+     * {options}
      */
     
+    dataStruct_t data;
     
     // check inputs
     if (nrhs < 3) mexErrMsgTxt("Inputs should be: data, prmVect, mode.");
     if (!mxIsDouble(prhs[0])) mexErrMsgTxt("Data input must be double array.");
+    size_t nx = mxGetN(prhs[0]);
+    size_t ny = mxGetM(prhs[0]);
+    if (nx != ny) mexErrMsgTxt("Input should be a square image.");
+    int N = nx*ny;
     if (mxGetNumberOfElements(prhs[1])!=NPARAMS || !mxIsDouble(prhs[1])) mexErrMsgTxt("Incorrect parameter vector format.");
     if (!mxIsChar(prhs[2])) mexErrMsgTxt("Mode needs to be a string.");
+    if (nrhs < 4) {
+        data.maxIter = 500;
+        data.eAbs = 1e-8;
+        data.eRel = 1e-8;
+    } else {
+        if (!mxIsDouble(prhs[3]) || mxGetNumberOfElements(prhs[3])!=3) mexErrMsgTxt("Options must must be double array with 3 elements.");
+        double *options = mxGetPr(prhs[3]);
+        data.maxIter = options[0];
+        data.eAbs = options[1];
+        data.eRel = options[2];
+    }
     
-    size_t nx = mxGetN(prhs[0]);
-    int nx2 = nx*nx;
     
     // read mode input
     int np = mxGetNumberOfElements(prhs[2]);
@@ -412,7 +425,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     
     // allocate
-    dataStruct_t data;
     data.nx = nx;
     data.np = np;
     data.pixels = mxGetPr(prhs[0]);
@@ -423,18 +435,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     data.dfunc = (pfunc_t*) malloc(sizeof(pfunc_t) * np);
     
     // read mask/pixels
-    data.nValid = nx2;
-    for (i=0; i<nx2; ++i) {
+    data.nValid = N;
+    for (i=0; i<N; ++i) {
         data.nValid -= (int)mxIsNaN(data.pixels[i]);
     }
     data.idx = (int*)malloc(sizeof(int)*data.nValid);
-    int k = 0;
-    for (i=0; i<nx2; ++i) {
+    int *nanIdx = (int*)malloc(sizeof(int)*(N-data.nValid));
+    int k = 0, l = 0;
+    for (i=0; i<N; ++i) {
         if (!mxIsNaN(data.pixels[i])) {
             data.idx[k++] = i;
+        } else {
+            nanIdx[l++] = i;
         }
     }
-    
     
     np = 0;
     if (strchr(mode, 'x')!=NULL) {data.estIdx[np] = 0; data.dfunc[np++] = df_dx;}
@@ -449,7 +463,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     
     MLalgo(&data);
-    np = data.np;
     
     // parameters
     if (nlhs > 0) {
@@ -479,25 +492,32 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
             memcpy(mxGetPr(plhs[2]), covar->data, np*np*sizeof(double));
         }
         free(covar);
-        
     }
     
     // residuals
     if (nlhs > 3) {
         plhs[3] = mxCreateDoubleMatrix(nx, nx, mxREAL);
-        memcpy(mxGetPr(plhs[3]), data.residuals->data, nx2*sizeof(double));
+        double* res = mxGetPr(plhs[3]);
+        for (i=0; i<data.nValid; ++i) {
+            res[data.idx[i]] = data.residuals->data[i];
+        }
+        for (i=0; i<N-data.nValid; ++i) {
+            res[nanIdx[i]] = mxGetNaN();
+        }
     }
     
     // Jacobian
     if (nlhs > 4) {
         // convert row-major double* data.J->data to column-major double*
-        plhs[4] = mxCreateDoubleMatrix(nx2, np, mxREAL);
+        plhs[4] = mxCreateDoubleMatrix(N, np, mxREAL);
         double *J = mxGetPr(plhs[4]);
-        
-        int p;
-        for (p=0; p<np; ++p) {
-            for (i=0; i<nx2; ++i) {
-                J[i+p*nx2] = (data.J)->data[p + i*np];
+        int k;
+        for (k=0; k<np; ++k) {
+            for (i=0; i<data.nValid; ++i) {
+                J[data.idx[i]+k*N] = (data.J)->data[k + i*np];
+            }
+            for (i=0; i<N-data.nValid; ++i) {
+                J[nanIdx[i]+k*N] = mxGetNaN();
             }
         }
     }
