@@ -20,10 +20,10 @@
 #include "mex.h"
 #include "matrix.h"
 
-#define NPARAMS		7
-// r = sigmax
-// s = sigmay
-#define REFMODE		"xyarstc"
+#define SIGN(x)	(x > 0 ? 1 : (x < 0 ? -1 : 0))
+
+#define NPARAMS	7
+#define REFMODE	"xyarstc"	// r = sigma_x, s = sigma_y
 
 typedef struct argStruct
 {
@@ -53,7 +53,7 @@ typedef struct dataStruct
   gsl_matrix *J;
 } dataStruct_t;
 
-// -2 A gg (aa x + bb y)
+// 2 A gg (aa xi + bb yi)
 static int df_dx(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
   double xi = argStruct->xi;
@@ -63,12 +63,12 @@ static int df_dx(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double a = argStruct->a;
   double b = argStruct->b;
   
-  gsl_matrix_set(J, i, k, -2 * A * g * (a * xi + b * yi));
+  gsl_matrix_set(J, i, k, 2 * A * g * (a * xi + b * yi));
 	
   return 0;
 }
 
-// -2 A g (bb xi + cc yi)
+// 2 A g (bb xi + cc yi)
 static int df_dy(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
   double xi = argStruct->xi;
@@ -78,7 +78,7 @@ static int df_dy(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double b = argStruct->b;
   double c = argStruct->c;
 	
-  gsl_matrix_set(J, i, k, -2 * A * g * (b * xi + c * yi));
+  gsl_matrix_set(J, i, k, 2 * A * g * (b * xi + c * yi));
 	
   return 0;
 }
@@ -126,7 +126,7 @@ static int df_dsy(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   return 0;
 }
 
-// -((A g (sx^2 - sy^2) (xi yi c2t + (xi^2 - yi^2) ct st))/(sx^2 sy^2))
+// -((A g (sx^2 - sy^2) (xi yi c2t + (xi^2 - yi^2) ct st))/(sx^2-sy^2))
 static int df_dt(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
   double xi = argStruct->xi;
@@ -139,7 +139,8 @@ static int df_dt(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double sx2 = argStruct->sx2;
   double sy2 = argStruct->sy2;
 	
-  gsl_matrix_set(J, i, k, -((A * g * (sx2 - sy2) * (xi * yi * c2t + (xi * xi - yi - yi) * ct * st)) / (sx2 * sy2)));
+  gsl_matrix_set(J, i, k, -((A * g * (sx2 - sy2) *
+			     (xi * yi * c2t + (xi * xi - yi - yi) * ct * st)) / (sx2 * sy2)));
 	
   return 0;
 }
@@ -272,9 +273,8 @@ static int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_ma
   double *pixels = dataStruct->pixels;
     
   // update prmVect with new estimates
-  for (int i=0; i<dataStruct->np; ++i) {
+  for (int i=0; i<dataStruct->np; ++i)
     dataStruct->prmVect[dataStruct->estIdx[i]] = gsl_vector_get(x, i);
-  }
     
   double xp = dataStruct->prmVect[0];
   double yp = dataStruct->prmVect[1];
@@ -352,14 +352,12 @@ static int MLalgo(struct dataStruct *data)
   f.f = &gaussian_f;
   f.df = &gaussian_df;
   f.fdf = &gaussian_fdf;
-  size_t n = data->nx;
-  n *= n;
-  f.n = n;
+  f.n = data->nValid;
   f.p = p;
   f.params = data;
-    
+  
   T = gsl_multifit_fdfsolver_lmsder;
-  s = gsl_multifit_fdfsolver_alloc(T, n, p);
+  s = gsl_multifit_fdfsolver_alloc(T, data->nValid, data->np);
   gsl_multifit_fdfsolver_set(s, &f, &x.vector);
     
   int status;
@@ -369,7 +367,7 @@ static int MLalgo(struct dataStruct *data)
     status = gsl_multifit_fdfsolver_iterate(s);
     if (status)
       break;
-        
+
     status = gsl_multifit_test_delta(s->dx, s->x, 1e-8, 1e-8);
   }
   while (status == GSL_CONTINUE && iter < 500);
@@ -378,11 +376,11 @@ static int MLalgo(struct dataStruct *data)
     data->prmVect[data->estIdx[i]] = gsl_vector_get(s->x, i);
     
   // copy model
-  data->residuals = gsl_vector_alloc(n);
+  data->residuals = gsl_vector_alloc(data->nValid);
   gsl_vector_memcpy(data->residuals, s->f);
     
   // copy Jacobian
-  data->J = gsl_matrix_alloc(n, data->np);
+  data->J = gsl_matrix_alloc(data->nValid, data->np);
   gsl_matrix_memcpy(data->J, s->J);
     
   gsl_multifit_fdfsolver_free(s);
@@ -406,7 +404,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (!mxIsChar(prhs[2])) mexErrMsgTxt("Mode needs to be a string.");
 
   size_t nx = mxGetN(prhs[0]);
-  int nx2 = nx*nx;
+  size_t ny = mxGetM(prhs[0]);
+  if (nx != ny) mexErrMsgTxt("Input should be a square image.");
+  int N = nx*nx;
 
   // read mode input
   int np = mxGetNumberOfElements(prhs[2]);
@@ -421,6 +421,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   for (int i = 0; i < NPARAMS; ++i)
     if (strchr(mode, REFMODE[i])!=NULL) { np++; }
 
+  if (!np)
+    mexErrMsgTxt("Unknown mode.");
+
   // allocate
   dataStruct_t data;
   data.nx = nx;
@@ -431,15 +434,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   data.dfunc = (pfunc_t*) malloc(sizeof(pfunc_t) * np);
 
   // read mask/pixels
-  data.nValid = nx2;
-  for (int i=0; i<nx2; ++i)
+  data.nValid = N;
+  for (int i=0; i<N; ++i)
     data.nValid -= (int)mxIsNaN(data.pixels[i]);
 
   data.idx = (int*)malloc(sizeof(int)*data.nValid);
-  int k = 0;
-  for (int i=0; i<nx2; ++i)
+  int *nanIdx = (int*)malloc(sizeof(int)*(N-data.nValid));
+  int k = 0, l = 0;
+  for (int i=0; i<N; ++i)
     if (!mxIsNaN(data.pixels[i]))
       data.idx[k++] = i;
+    else
+      nanIdx[l++] = i;
     
   np = 0;
   if (strchr(mode, 'x')!=NULL) {data.estIdx[np] = 0; data.dfunc[np++] = df_dx;}
@@ -460,9 +466,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nlhs > 0)
     {
       // Make sure the angle parameter lies in -pi/2...pi/2
-      //float x = data.prmVect[5];
-      //x = x - fmodl(x + M_PI_2,M_PI)*M_PI - M_PI_2;
-      //data.prmVect[5] = x;
+      float x = data.prmVect[5];
+      x = fmodl(x + M_PI_2,M_PI);
+      x -= SIGN(x) * M_PI_2;
+      data.prmVect[5] = x;
 
       plhs[0] = mxCreateDoubleMatrix(1, NPARAMS, mxREAL);
       memcpy(mxGetPr(plhs[0]), data.prmVect, NPARAMS * sizeof(double));
@@ -497,25 +504,30 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nlhs > 3)
     {
       plhs[3] = mxCreateDoubleMatrix(nx, nx, mxREAL);
-      memcpy(mxGetPr(plhs[3]), data.residuals->data, nx2*sizeof(double));
+      double* res = mxGetPr(plhs[3]);
+      for (int i=0; i<data.nValid; ++i)
+	res[data.idx[i]] = data.residuals->data[i];
+      for (int i=0; i<N-data.nValid; ++i)
+	res[nanIdx[i]] = mxGetNaN();
     }
     
   // Jacobian
   if (nlhs > 4)
     {
       // convert row-major double* data.J->data to column-major double*
-      plhs[4] = mxCreateDoubleMatrix(nx2, np, mxREAL);
+      plhs[4] = mxCreateDoubleMatrix(N, np, mxREAL);
       double *J = mxGetPr(plhs[4]);
         
       for (int p=0; p<np; ++p)
-	for (int i=0; i<nx2; ++i)
-	  J[i+p*nx2] = (data.J)->data[p + i*np];
+	for (int i=0; i<N; ++i)
+	  J[i+p*N] = (data.J)->data[p + i*np];
     }
     
   free(mode);
   free(data.estIdx);
   free(data.dfunc);
   free(data.idx);
+  free(nanIdx);
   free(data.x_init);
   gsl_vector_free(data.residuals);
   gsl_matrix_free(data.J);
@@ -524,63 +536,63 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 // Compile line:
 // export DYLD_LIBRARY_PATH=/Applications/MATLAB_R2010b.app/bin/maci64 && gcc -std=c99 -Wall -g -DARRAY_ACCESS_INLINING -I. -I/Applications/MATLAB_R2010b.app/extern/include -L/Applications/MATLAB_R2010b.app/bin/maci64 -lmx -lmex -lgsl -lgslcblas -lmat fitAnisoGaussian2D.c
 
-int main(void) {
+/* int main(void) { */
     
-  int nx = 15;
-  int nx2 = nx*nx;
-  double* px;
-  px = (double*)malloc(sizeof(double)*nx2);
+/*   int nx = 15; */
+/*   int N = nx*nx; */
+/*   double* px; */
+/*   px = (double*)malloc(sizeof(double)*N); */
     
-  // fill with noise
-  for (int i=0; i<nx2; ++i)
-    px[i] = rand();
+/*   // fill with noise */
+/*   for (int i=0; i<N; ++i) */
+/*     px[i] = rand(); */
     
-  dataStruct_t data;
-  data.nx = nx;
-  data.np = NPARAMS;
-  data.pixels = px;
+/*   dataStruct_t data; */
+/*   data.nx = nx; */
+/*   data.np = NPARAMS; */
+/*   data.pixels = px; */
 	
-  data.estIdx = (int*)malloc(sizeof(int) * NPARAMS);
-  data.dfunc = (pfunc_t*) malloc(sizeof(pfunc_t) * NPARAMS);
+/*   data.estIdx = (int*)malloc(sizeof(int) * NPARAMS); */
+/*   data.dfunc = (pfunc_t*) malloc(sizeof(pfunc_t) * NPARAMS); */
 	
-  // read mask/pixels
-  data.nValid = nx2;
-  data.idx = (int*)malloc(sizeof(int)*data.nValid);
-  int k = 0;
-  for (int i=0; i<nx2; ++i)
-    if (!mxIsNaN(data.pixels[i]))
-      data.idx[k++] = i;
+/*   // read mask/pixels */
+/*   data.nValid = N; */
+/*   data.idx = (int*)malloc(sizeof(int)*data.nValid); */
+/*   int k = 0; */
+/*   for (int i=0; i<N; ++i) */
+/*     if (!mxIsNaN(data.pixels[i])) */
+/*       data.idx[k++] = i; */
     
-  data.prmVect[0] = 0;
-  data.prmVect[1] = 0;
-  data.prmVect[2] = 5;
-  data.prmVect[3] = 1;
-  data.prmVect[4] = 1;
-  data.prmVect[5] = 0;
-  data.prmVect[6] = 0;
+/*   data.prmVect[0] = 0; */
+/*   data.prmVect[1] = 0; */
+/*   data.prmVect[2] = 5; */
+/*   data.prmVect[3] = 1; */
+/*   data.prmVect[4] = 1; */
+/*   data.prmVect[5] = 0; */
+/*   data.prmVect[6] = 0; */
 	
-  data.estIdx[0] = 0; data.dfunc[0] = df_dx;
-  data.estIdx[1] = 1; data.dfunc[1] = df_dy;
-  data.estIdx[2] = 2; data.dfunc[2] = df_dA;
-  data.estIdx[3] = 3; data.dfunc[3] = df_dsx;
-  data.estIdx[4] = 4; data.dfunc[4] = df_dsy;
-  data.estIdx[5] = 5; data.dfunc[5] = df_dt;
-  data.estIdx[6] = 6; data.dfunc[6] = df_dC;
+/*   data.estIdx[0] = 0; data.dfunc[0] = df_dx; */
+/*   data.estIdx[1] = 1; data.dfunc[1] = df_dy; */
+/*   data.estIdx[2] = 2; data.dfunc[2] = df_dA; */
+/*   data.estIdx[3] = 3; data.dfunc[3] = df_dsx; */
+/*   data.estIdx[4] = 4; data.dfunc[4] = df_dsy; */
+/*   data.estIdx[5] = 5; data.dfunc[5] = df_dt; */
+/*   data.estIdx[6] = 6; data.dfunc[6] = df_dC; */
     
-  data.x_init = (double*)malloc(sizeof(double)*NPARAMS);
-  for (int i=0; i<NPARAMS; ++i)
-    data.x_init[i] = data.prmVect[data.estIdx[i]];
+/*   data.x_init = (double*)malloc(sizeof(double)*NPARAMS); */
+/*   for (int i=0; i<NPARAMS; ++i) */
+/*     data.x_init[i] = data.prmVect[data.estIdx[i]]; */
     
-  MLalgo(&data);
+/*   MLalgo(&data); */
     
-  free(px);
-  free(data.estIdx);
-  free(data.dfunc);
-  free(data.idx);
-  free(data.x_init);
-  gsl_vector_free(data.residuals);
-  gsl_matrix_free(data.J);
+/*   free(px); */
+/*   free(data.estIdx); */
+/*   free(data.dfunc); */
+/*   free(data.idx); */
+/*   free(data.x_init); */
+/*   gsl_vector_free(data.residuals); */
+/*   gsl_matrix_free(data.J); */
     
-  return 0;
-}
+/*   return 0; */
+/* } */
 
