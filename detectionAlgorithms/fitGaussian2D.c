@@ -303,77 +303,6 @@ static int MLalgo(struct dataStruct *data) {
     return 0;
 }
 
-// compile with:
-//export DYLD_LIBRARY_PATH=/Applications/MATLAB_R2010b.app/bin/maci64 && gcc -Wall -g -DARRAY_ACCESS_INLINING -I. -I/Applications/MATLAB_R2010b.app/extern/include -L/Applications/MATLAB_R2010b.app/bin/maci64 -lmx -lmex -lgsl -lgslcblas -lmat fitGaussian2D.c
-/*int main(void) {
-    
-    int nx = 15;
-    int N = nx*nx;
-    double* px;
-    px = (double*)malloc(sizeof(double)*N);
-    
-    int i;
-    // fill with noise
-    for (i=0; i<N; ++i) {
-        px[i] = rand();
-    }
-    
-    int np = 5;
-    
-    dataStruct_t data;
-    data.nx = nx;
-    data.np = 5;
-    data.pixels = px;
-    data.gx = (double*)malloc(sizeof(double)*nx);
-    data.gy = (double*)malloc(sizeof(double)*nx);
-    
-    data.estIdx = (int*)malloc(sizeof(int)*np);
-    data.dfunc = (pfunc_t*) malloc(sizeof(pfunc_t) * np);
-    
-    // read mask/pixels
-    data.nValid = N;
-    data.idx = (int*)malloc(sizeof(int)*data.nValid);
-    int k = 0;
-    for (i=0; i<N; ++i) {
-        if (!mxIsNaN(data.pixels[i])) {
-            data.idx[k++] = i;
-        }
-    }
-    
-    data.prmVect[0] = 0;
-    data.prmVect[1] = 0;
-    data.prmVect[2] = 5;
-    data.prmVect[3] = 1;
-    data.prmVect[4] = 0;
-    
-    np = 0;
-    data.estIdx[np] = 0; data.dfunc[np++] = df_dx;
-    data.estIdx[np] = 1; data.dfunc[np++] = df_dy;
-    data.estIdx[np] = 2; data.dfunc[np++] = df_dA;
-    data.estIdx[np] = 3; data.dfunc[np++] = df_ds;
-    data.estIdx[np] = 4; data.dfunc[np++] = df_dc;
-    
-    data.x_init = (double*)malloc(sizeof(double)*np);
-    for (i=0; i<np; ++i) {
-        data.x_init[i] = data.prmVect[data.estIdx[i]];
-    }
-    
-    MLalgo(&data);
-    
-    gsl_matrix_free(data.J);
-    gsl_vector_free(data.residuals);
-    free(data.x_init);
-    free(data.idx);
-    free(data.dfunc);
-    free(data.estIdx);
-    free(data.gy);
-    free(data.gx);
-    free(px);
-    
-    return 0;
-}*/
-
-
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
@@ -526,6 +455,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     gsl_matrix_free(data.J);
     gsl_vector_free(data.residuals);
     free(data.x_init);
+    free(nanIdx);
     free(data.idx);
     free(data.dfunc);
     free(data.estIdx);
@@ -533,3 +463,74 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     free(data.gx);
     free(mode);
 }
+
+
+// compile with:
+//export DYLD_LIBRARY_PATH=/Applications/MATLAB_R2010b.app/bin/maci64 && gcc -Wall -g -DARRAY_ACCESS_INLINING -I. -I/Applications/MATLAB_R2010b.app/extern/include -L/Applications/MATLAB_R2010b.app/bin/maci64 -lmx -lmex -lgsl -lgslcblas -lmat fitGaussian2D.c
+/*int main(void) {
+    
+    int nx = 15;
+    int N = nx*nx;
+    double* px;
+    px = (double*)malloc(sizeof(double)*N);
+    
+    int i;
+    // fill with noise
+    for (i=0; i<N; ++i) {
+        px[i] = rand();
+    }
+    
+    int np = 5;
+    
+    dataStruct_t data;
+    data.nx = nx;
+    data.np = 5;
+    data.pixels = px;
+    data.gx = (double*)malloc(sizeof(double)*nx);
+    data.gy = (double*)malloc(sizeof(double)*nx);
+    
+    data.estIdx = (int*)malloc(sizeof(int)*np);
+    data.dfunc = (pfunc_t*) malloc(sizeof(pfunc_t) * np);
+    
+    // read mask/pixels
+    data.nValid = N;
+    data.idx = (int*)malloc(sizeof(int)*data.nValid);
+    int k = 0;
+    for (i=0; i<N; ++i) {
+        if (!mxIsNaN(data.pixels[i])) {
+            data.idx[k++] = i;
+        }
+    }
+    
+    data.prmVect[0] = 0;
+    data.prmVect[1] = 0;
+    data.prmVect[2] = 5;
+    data.prmVect[3] = 1;
+    data.prmVect[4] = 0;
+    
+    np = 0;
+    data.estIdx[np] = 0; data.dfunc[np++] = df_dx;
+    data.estIdx[np] = 1; data.dfunc[np++] = df_dy;
+    data.estIdx[np] = 2; data.dfunc[np++] = df_dA;
+    data.estIdx[np] = 3; data.dfunc[np++] = df_ds;
+    data.estIdx[np] = 4; data.dfunc[np++] = df_dc;
+    
+    data.x_init = (double*)malloc(sizeof(double)*np);
+    for (i=0; i<np; ++i) {
+        data.x_init[i] = data.prmVect[data.estIdx[i]];
+    }
+    
+    MLalgo(&data);
+    
+    gsl_matrix_free(data.J);
+    gsl_vector_free(data.residuals);
+    free(data.x_init);
+    free(data.idx);
+    free(data.dfunc);
+    free(data.estIdx);
+    free(data.gy);
+    free(data.gx);
+    free(px);
+    
+    return 0;
+}*/
