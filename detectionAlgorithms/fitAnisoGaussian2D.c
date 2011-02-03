@@ -460,6 +460,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	// parameters
 	if (nlhs > 0)
 	{
+		// Make sure the angle parameter lies in -pi/2...pi/2
+		float x = data.prmVect[5];
+		x = x - fmodl(x + M_PI_2,M_PI)*M_PI - M_PI_2;
+		data.prmVect[5] = x;
+
 		plhs[0] = mxCreateDoubleMatrix(1, NPARAMS, mxREAL);
 		memcpy(mxGetPr(plhs[0]), data.prmVect, NPARAMS * sizeof(double));
 	}
