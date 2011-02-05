@@ -20,7 +20,11 @@
 %    Outputs: prmVect : parameter vector
 %              prmStd : parameter standard deviations
 %                   C : covariance matrix
-%                 res : residuals
+%                 res : structure with fields:
+%                         .data : residuals
+%                         .pval : p-value of the Kolmogorov-Smirnov test (normal dist.)
+%                         .mean : mean of the residuals
+%                         .std  : standard deviation of the residuals
 %                   J : Jacobian
 %
 % Axis conventions: image processing, see meshgrid

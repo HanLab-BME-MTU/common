@@ -19,6 +19,8 @@
 
 #include "mex.h"
 #include "matrix.h"
+#include "stats.h"
+
 
 #define refMode "xyasc"
 
@@ -520,14 +522,32 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     // residuals
     if (nlhs > 3) {
-        plhs[3] = mxCreateDoubleMatrix(nx, nx, mxREAL);
-        double* res = mxGetPr(plhs[3]);
+        const char *fieldnames[] = {"data", "pval", "mean", "std"};
+        mwSize dims[2] = {1, 1};
+        plhs[3] = mxCreateStructArray(2, dims, 4, fieldnames);        
+        mxArray *val = mxCreateDoubleMatrix(nx, nx, mxREAL);
+        double* res = mxGetPr(val);
+        
+        double mean = 0.0, std = 0.0, tmp;
         for (i=0; i<data.nValid; ++i) {
             res[data.idx[i]] = data.residuals->data[i];
+            mean += data.residuals->data[i];
         }
+        mean /= data.nValid;
+        for (i=0; i<data.nValid; ++i) {
+            tmp = data.residuals->data[i] - mean;
+            std += tmp*tmp;
+        }
+        std = sqrt(std/(data.nValid-1));
         for (i=0; i<N-data.nValid; ++i) {
             res[nanIdx[i]] = mxGetNaN();
         }
+        
+        double pval = ksone(res, data.nValid, mean, std);
+        mxSetFieldByNumber(plhs[3], 0, 0, val);   
+        mxSetFieldByNumber(plhs[3], 0, 1, mxCreateDoubleScalar(pval));
+        mxSetFieldByNumber(plhs[3], 0, 2, mxCreateDoubleScalar(mean));
+        mxSetFieldByNumber(plhs[3], 0, 3, mxCreateDoubleScalar(std));
     }
     
     // Jacobian
