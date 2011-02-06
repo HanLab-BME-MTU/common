@@ -139,7 +139,7 @@ set(handles.edit_probDim, 'String', num2str(funParams.probDim))
 set(handles.checkbox_verbose, 'Value', funParams.verbose)
 
 % gapCloseParam
-set(handles.edit_maxgap, 'String', num2str(funParams.gapCloseParam.timeWindow))
+set(handles.edit_maxgap, 'String', num2str(funParams.gapCloseParam.timeWindow - 1))
 set(handles.edit_minlength, 'String', num2str(funParams.gapCloseParam.minTrackLen))
 set(handles.checkbox_histogram, 'Value', funParams.gapCloseParam.diagnostics)
 set(handles.checkbox_overwrite, 'Value', userData.crtProc.overwrite_)
@@ -283,7 +283,7 @@ elseif isnan(str2double(timeWindow)) || str2double(timeWindow) < 0 || floor(str2
     return
     
 else
-    timeWindow = str2double(timeWindow);
+    timeWindow = str2double(timeWindow) + 1;
 end
 
 if isempty( minTrackLen )

@@ -149,6 +149,15 @@ set(handles.edit_min, 'String', num2str(visualParams.startend(1)))
 set(handles.edit_max, 'String', num2str(visualParams.startend(2)))
 set(handles.edit_filtersigma, 'String', num2str(visualParams.filterSigma))
 
+% Set default movie name as the name of result MAT file
+if isempty(visualParams.movieName)
+     fName = userData.crtProc.funParams_.saveResults.filename;
+     [x1 x2 x3 x4] = getFilenameBody(fName);
+     visualParams.movieName = x2;
+     userData.crtProc.setVisualParams(visualParams)
+     visualParams = userData.crtProc.visualParams_;
+end
+
 if ~visualParams.saveMovie
     
     set(handles.checkbox_save, 'Value', 0)
@@ -397,14 +406,25 @@ function checkbox_save_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox_save
+userData = get(handles.figure1, 'UserData');
 
 if get(hObject, 'Value')
 
     set(handles.text_filename, 'Enable', 'on')
-    set(handles.edit_filename, 'Enable', 'on')
+    
     set(handles.text_mov, 'Enable', 'on')
     set(handles.pushbutton_path, 'Enable', 'on')
-    set(handles.edit_path, 'Enable', 'on')
+    if isempty(get(handles.edit_path, 'String'))
+        set(handles.edit_path, 'Enable', 'on', userData.crtProc.visualParams_.dir2saveMovie)
+    else
+        set(handles.edit_path, 'Enable', 'on')
+    end
+    
+    if isempty(get(handles.edit_filename, 'String'))
+        set(handles.edit_filename, 'Enable', 'on', 'String', userData.crtProc.visualParams_.movieName)
+    else
+        set(handles.edit_filename, 'Enable', 'on')
+    end
 else
     set(handles.text_filename, 'Enable', 'off')
     set(handles.edit_filename, 'Enable', 'off')

@@ -142,8 +142,8 @@ methods(Access = public)
         obj.visualParams_.otmn.startend = [1 owner.nFrames_];
         obj.visualParams_.otmn.dragtailLength = 5;
         obj.visualParams_.otmn.saveMovie = 0;
-        obj.visualParams_.otmn.movieName = 'trackingMovie';
-        obj.visualParams_.otmn.dir2saveMovie = owner.channels_(1).channelPath_;
+        obj.visualParams_.otmn.movieName = [];
+        obj.visualParams_.otmn.dir2saveMovie = funParams.saveResults.dir;
         obj.visualParams_.otmn.filterSigma = 0;
         obj.visualParams_.otmn.classifyGaps = 1;
         obj.visualParams_.otmn.highlightES = 1;
@@ -209,8 +209,8 @@ methods(Access = public)
             end
             
             % Test (commentable)
-            movieInfo, obj.funParams_.costMatrices, obj.funParams_.gapCloseParam, ...
-                obj.funParams_.kalmanFunctions, obj.funParams_.probDim, obj.funParams_.saveResults, obj.funParams_.verbose
+%             movieInfo, obj.funParams_.costMatrices, obj.funParams_.gapCloseParam, ...
+%                 obj.funParams_.kalmanFunctions, obj.funParams_.probDim, obj.funParams_.saveResults, obj.funParams_.verbose
             
             % Call function
             [obj.outParams_{i}.tracksFinal, obj.outParams_{i}.kalmanInfoLink, obj.outParams_{i}.errFlag] = ...

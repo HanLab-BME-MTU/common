@@ -160,6 +160,12 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+if ~get(handles.radiobutton_1, 'Value') && ~get(handles.radiobutton_2, 'Value')
+    
+    delete(handles.figure1);
+    return
+end
+
 userData = get(handles.figure1, 'UserData');
 kalmanInitParam = userData.kalmanInitParam;
 

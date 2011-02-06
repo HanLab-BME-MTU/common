@@ -26,7 +26,7 @@ end
 try
     userData.crtPackage.processes_{i}.runProcess; % throws exception
 catch ME
-%     rethrow(ME) %%%%%
+    rethrow(ME) %%%%
     % Determine if it is an unexpected error
     idSplit = regexp(ME.identifier, ':', 'split');
     

@@ -578,11 +578,11 @@ try
     
 catch ME
     
-%     set(handles.pushbutton_run, 'Enable', 'on') %%%%%
-%     set(handles.checkbox_forcerun, 'Enable', 'on') %%%%%
-%     set(handles.checkbox_runall, 'Enable', 'on') %%%%%
-%     set(handles.text_status, 'Visible', 'off') %%%%%
-%     throw(ME) %%%%%
+    set(handles.pushbutton_run, 'Enable', 'on') %%%%%
+    set(handles.checkbox_forcerun, 'Enable', 'on') %%%%%
+    set(handles.checkbox_runall, 'Enable', 'on') %%%%%
+    set(handles.text_status, 'Visible', 'off') %%%%%
+    throw(ME) %%%%%
     
     % Save the error into movie Exception cell array
     movieException{x} = ME;

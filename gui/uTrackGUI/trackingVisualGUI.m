@@ -139,7 +139,7 @@ set(handles.text_movie, 'String', str)
 % text_framenum
 set(handles.text1_framenum, 'String', ['( Tracks availabe from frame ',num2str(userData.firstframe),' to ',num2str(userData.lastframe),' )'])
 set(handles.text3_framenum, 'String', ['( Tracks availabe from frame ',num2str(userData.firstframe),' to ',num2str(userData.lastframe),' )'])
-set(handles.text2_tracknum, 'String', ['out of totally ',num2str(length(userData.crtProc.outParams_{chan}.tracksFinal)),' tracks'])
+set(handles.text2_tracknum, 'String', ['out of ',num2str(length(userData.crtProc.outParams_{chan}.tracksFinal)),' tracks'])
 
 % popupmenu set-up
 colorStr = {'Color-code Time (G->B->R)', 'Rotate Through 7 Colors', 'Rotate Through 23 Colors','Black', 'Blue', 'Red'};
@@ -193,6 +193,15 @@ set(handles.edit3_max, 'String', num2str(visualParams.otmn.startend(2)))
 set(handles.edit3_dragtailLength, 'String', num2str(visualParams.otmn.dragtailLength))
 set(handles.edit3_filterSigma, 'String', num2str(visualParams.otmn.filterSigma))
 
+% Set default movie name as the name of result MAT file
+if isempty(visualParams.otmn.movieName)
+
+     fName = userData.crtProc.funParams_.saveResults.filename;
+     [x1 x2 x3 x4] = getFilenameBody(fName);
+     visualParams.otmn.movieName = x2;
+     userData.crtProc.setVisualParams(visualParams)
+     visualParams = userData.crtProc.visualParams_;
+end
 
 if ~visualParams.otmn.saveMovie
     
@@ -294,6 +303,8 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_done (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+delete(handles.figure1)
 
 
 % --- Executes on button press in pushbutton3_display.
@@ -494,7 +505,7 @@ set(handles.figure1, 'UserData', userData);
 
 overlayTracksMovieNew(userData.crtProc.outParams_{userData.chan}.tracksFinal, ...
     visualParams.otmn.startend, visualParams.otmn.dragtailLength, visualParams.otmn.saveMovie, ...
-    visualParams.otmn.movieName, visualParams.otmn.filterSigma, visualParams.otmn.classifyGaps, ...
+    [visualParams.otmn.movieName '.mov'], visualParams.otmn.filterSigma, visualParams.otmn.classifyGaps, ...
     visualParams.otmn.highlightES, visualParams.otmn.showRaw, visualParams.otmn.imageRange, ...
     visualParams.otmn.onlyTracks, visualParams.otmn.classifyLft, visualParams.otmn.diffAnalysisRes, ...
     visualParams.otmn.intensityScale, visualParams.otmn.colorTracks, visualParams.otmn.firstImageFile, ...
@@ -555,13 +566,26 @@ function checkbox3_save_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox3_save
 
+userData = get(handles.figure1, 'UserData');
+
 if get(hObject, 'Value')
 
     set(handles.text3_filename, 'Enable', 'on')
-    set(handles.edit3_filename, 'Enable', 'on')
     set(handles.text3_mov, 'Enable', 'on')
     set(handles.pushbutton3_path, 'Enable', 'on')
-    set(handles.edit3_path, 'Enable', 'on')
+    
+    if isempty(get(handles.edit3_path, 'String'))
+        set(handles.edit3_path, 'Enable', 'on', 'String', userData.crtProc.visualParams_.otmn.dir2saveMovie)
+    else
+        set(handles.edit3_path, 'Enable', 'on')
+    end
+    
+    if isempty(get(handles.edit3_filename, 'String'))
+        set(handles.edit3_filename, 'Enable', 'on', 'String', userData.crtProc.visualParams_.otmn.movieName)
+    else
+        set(handles.edit3_filename, 'Enable', 'on')
+    end
+    
 else
     set(handles.text3_filename, 'Enable', 'off')
     set(handles.edit3_filename, 'Enable', 'off')

@@ -266,7 +266,7 @@ end
 userData.path = path;
 userData.file = file;
 
-str = [path file];
+str = [path  file];
 if length(str)>100
     str = ['... ' str(end-50:end)];
 end
