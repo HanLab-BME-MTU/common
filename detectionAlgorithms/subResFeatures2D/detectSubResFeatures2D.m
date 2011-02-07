@@ -482,7 +482,8 @@ for i = 1 : numClusters
                     %positioned at the pixel with maximum residual
                     numMaximaT = numMaxima + 1; %update number of maxima
                     maximaAmpT = [maximaAmp(:,1); mean(maximaAmp(:,1))]; %signal amplitude
-                    coord = clusterPixels(residuals==max(residuals),:); %position of new kernel
+                    indxMaxRes = find(residuals==max(residuals)); %index of pixel with maximum residuals
+                    coord = clusterPixels(indxMaxRes(1),:); %position of new kernel (using indxMaxRes(1) avoids crashing if it so happens that two pixels have the exact same value which happens to be the maximum value - it has happened!!!)
                     maximaPosT = [maximaPos(:,1:2); coord]; %signal positions
                     bgAmpT = bgAmp(1); %background amplitude
                     
