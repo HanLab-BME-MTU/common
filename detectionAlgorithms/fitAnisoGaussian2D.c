@@ -90,7 +90,7 @@ static int df_dA(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   return 0;
 }
 
-// (A g (xi ct - yi st)^2)/sx^3
+// (A g (xi ct + yi st)^2)/sx^3
 static int df_dsx(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
   double xi = argStruct->xi;
@@ -101,14 +101,14 @@ static int df_dsx(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double st = argStruct->st;
   double sx3 = argStruct->sx3;
 	
-  double r = xi * ct - yi * st;
+  double r = xi * ct + yi * st;
 	
   gsl_matrix_set(J, i, k, A * g * r * r / sx3);
 	
   return 0;
 }
 
-// (A g (yi ct + xi st)^2)/sy^3
+// (A g (yi ct - xi st)^2)/sy^3
 static int df_dsy(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
   double xi = argStruct->xi;
@@ -119,14 +119,14 @@ static int df_dsy(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double st = argStruct->st;
   double sy3 = argStruct->sy3;
 	
-  double r = yi * ct + xi * st;
+  double r = yi * ct - xi * st;
 	
   gsl_matrix_set(J, i, k, A * g * r * r / sy3);
 	
   return 0;
 }
 
-// -((A g (sx^2 - sy^2) (xi yi c2t + (xi^2 - yi^2) ct st))/(sx^2-sy^2))
+// -((A g (sx^2 - sy^2) (-2 xi yi c2t + (xi^2 - yi^2) s2t)) / (2 sx^2 sy^2))
 static int df_dt(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
   double xi = argStruct->xi;
@@ -136,11 +136,13 @@ static int df_dt(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double ct = argStruct->ct;
   double st = argStruct->st;
   double c2t = argStruct->c2t;
+  double s2t = argStruct->s2t;
   double sx2 = argStruct->sx2;
   double sy2 = argStruct->sy2;
 	
   gsl_matrix_set(J, i, k, -((A * g * (sx2 - sy2) *
-			     (xi * yi * c2t + (xi * xi - yi - yi) * ct * st)) / (sx2 * sy2)));
+			     (-2 * xi * yi * c2t +
+			      (xi * xi - yi * yi) * s2t)) / (2 * sx2 * sy2)));
 	
   return 0;
 }
@@ -168,8 +170,8 @@ static int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f)
   double xp = dataStruct->prmVect[0];
   double yp = dataStruct->prmVect[1];
   double A = dataStruct->prmVect[2];
-  double sx = dataStruct->prmVect[3];
-  double sy = dataStruct->prmVect[4];
+  double sx = fabs(dataStruct->prmVect[3]);
+  double sy = fabs(dataStruct->prmVect[4]);
   double t = dataStruct->prmVect[5];
   double C = dataStruct->prmVect[6];
 
@@ -181,7 +183,7 @@ static int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f)
 	
   double xi, yi;
   double a = ct * ct / (2 * sx2) + st * st / (2 * sy2);
-  double b = -s2t / (4 * sx2) + s2t / (4 * sy2);
+  double b = s2t / (4 * sx2) - s2t / (4 * sy2);
   double c = st * st / (2 * sx2) + ct * ct / (2 * sy2);
     
   div_t divRes;
@@ -215,8 +217,8 @@ static int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J)
   double xp = dataStruct->prmVect[0];
   double yp = dataStruct->prmVect[1];
   double A = dataStruct->prmVect[2];
-  double sx = dataStruct->prmVect[3];
-  double sy = dataStruct->prmVect[4];
+  double sx = fabs(dataStruct->prmVect[3]);
+  double sy = fabs(dataStruct->prmVect[4]);
   double t = dataStruct->prmVect[5];
 	
   double xi, yi;
@@ -227,7 +229,7 @@ static int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J)
   double sx2 = sx * sx;
   double sy2 = sy * sy;
   double a = ct * ct / (2 * sx2) + st * st / (2 * sy2);
-  double b = -s2t / (4 * sx2) + s2t / (4 * sy2);
+  double b = s2t / (4 * sx2) - s2t / (4 * sy2);
   double c = st * st / (2 * sx2) + ct * ct / (2 * sy2);
 
   argStruct_t argStruct;
@@ -279,8 +281,8 @@ static int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_ma
   double xp = dataStruct->prmVect[0];
   double yp = dataStruct->prmVect[1];
   double A = dataStruct->prmVect[2];
-  double sx = dataStruct->prmVect[3];
-  double sy = dataStruct->prmVect[4];
+  double sx = fabs(dataStruct->prmVect[3]);
+  double sy = fabs(dataStruct->prmVect[4]);
   double t = dataStruct->prmVect[5];
   double C = dataStruct->prmVect[6];
 	
@@ -292,7 +294,7 @@ static int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_ma
   double sx2 = sx * sx;
   double sy2 = sy * sy;
   double a = ct * ct / (2 * sx2) + st * st / (2 * sy2);
-  double b = -s2t / (4 * sx2) + s2t / (4 * sy2);
+  double b = s2t / (4 * sx2) - s2t / (4 * sy2);
   double c = st * st / (2 * sx2) + ct * ct / (2 * sy2);
 	
   argStruct_t argStruct;
@@ -466,10 +468,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nlhs > 0)
     {
       // Make sure the angle parameter lies in -pi/2...pi/2
-      float x = data.prmVect[5];
-      x = fmodl(x + M_PI_2,M_PI);
-      x -= SIGN(x) * M_PI_2;
-      data.prmVect[5] = x;
+      float tmp = data.prmVect[5];
+      tmp = fmodl(tmp + M_PI_2,M_PI);
+      tmp -= SIGN(tmp) * M_PI_2;
+      data.prmVect[5] = tmp;
+
+      // Make sure sigma_x and sigma_y are positive
+      data.prmVect[3] = fabs(data.prmVect[3]);
+      data.prmVect[4] = fabs(data.prmVect[4]);
 
       plhs[0] = mxCreateDoubleMatrix(1, NPARAMS, mxREAL);
       memcpy(mxGetPr(plhs[0]), data.prmVect, NPARAMS * sizeof(double));
