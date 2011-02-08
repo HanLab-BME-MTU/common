@@ -63,8 +63,8 @@ static int df_dx(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double a = argStruct->a;
   double b = argStruct->b;
   
-  gsl_matrix_set(J, i, k, 2 * A * g * (a * xi + b * yi));
-	
+  gsl_matrix_set(J, i, k, 2 * A * g * (a * xi + b * yi));	
+
   return 0;
 }
 
@@ -377,10 +377,10 @@ static int MLalgo(struct dataStruct *data)
   for (int i=0; i<data->np; ++i)
     data->prmVect[data->estIdx[i]] = gsl_vector_get(s->x, i);
     
-  // copy model
+  // copy residual
   data->residuals = gsl_vector_alloc(data->nValid);
   gsl_vector_memcpy(data->residuals, s->f);
-    
+
   // copy Jacobian
   data->J = gsl_matrix_alloc(data->nValid, data->np);
   gsl_matrix_memcpy(data->J, s->J);
@@ -448,7 +448,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       data.idx[k++] = i;
     else
       nanIdx[l++] = i;
-    
+
   np = 0;
   if (strchr(mode, 'x')!=NULL) {data.estIdx[np] = 0; data.dfunc[np++] = df_dx;}
   if (strchr(mode, 'y')!=NULL) {data.estIdx[np] = 1; data.dfunc[np++] = df_dy;}
@@ -489,7 +489,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       double sigma_e = 0.0, e;
       for (int i=0; i<data.nValid; ++i)
 	{
-	  e = data.residuals->data[data.idx[i]];
+	  e = gsl_vector_get(data.residuals, i);
 	  sigma_e += e*e;
 	}
       sigma_e /= data.nValid - data.np - 1;
@@ -512,7 +512,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       plhs[3] = mxCreateDoubleMatrix(nx, nx, mxREAL);
       double* res = mxGetPr(plhs[3]);
       for (int i=0; i<data.nValid; ++i)
-	res[data.idx[i]] = data.residuals->data[i];
+	res[data.idx[i]] = gsl_vector_get(data.residuals,i);
       for (int i=0; i<N-data.nValid; ++i)
 	res[nanIdx[i]] = mxGetNaN();
     }
@@ -520,13 +520,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // Jacobian
   if (nlhs > 4)
     {
-      // convert row-major double* data.J->data to column-major double*
+      // convert row-major double* data.J to column-major double*
       plhs[4] = mxCreateDoubleMatrix(N, np, mxREAL);
       double *J = mxGetPr(plhs[4]);
-        
-      for (int p=0; p<np; ++p)
-	for (int i=0; i<N; ++i)
-	  J[i+p*N] = (data.J)->data[p + i*np];
+      int k;
+      for (k=0; k<np; ++k)
+	{
+	  for (int i=0; i<data.nValid; ++i)
+	    J[data.idx[i]+k*N] = gsl_matrix_get(data.J, i, k);
+	  for (int i=0; i<N-data.nValid; ++i)
+	    J[nanIdx[i]+k*N] = mxGetNaN();
+	}
     }
     
   free(mode);
