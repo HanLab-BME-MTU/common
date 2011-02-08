@@ -347,7 +347,7 @@ if ~useTool && ~isempty(overlayName)
                 error('The window overlay cannot be displayed because the movieData does not have a valid WindowingProcess! Please run windowing !')
             end            
             wins = movieData.processes_{iWinProc}.loadChannelOutput(iFrame);            
-            plotWindows(wins,'y');
+            plotWindows(wins,'r');
             
         case 'Protrusion'
             
