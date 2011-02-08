@@ -211,7 +211,7 @@ end
 
 str = [funParams.saveResults.dir file];
 if length(str)>100
-    str = ['... ' str(end-50:end)];
+    str = ['...' str(end-100:end)];
 end
 set(handles.text_path, 'String', str)
 
@@ -984,7 +984,7 @@ end
 
 str = [path file];
 if length(str)>100
-    str = ['... ' str(end-50:end)];
+    str = ['...' str(end-100:end)];
 end
 set(handles.text_path, 'String', str)
 
