@@ -353,7 +353,7 @@ int MLalgo(struct dataStruct *data) {
         data->prmVect[data->estIdx[i]] = gsl_vector_get(s->x, i);
     }
     
-    // copy model
+    // copy residuals
     data->residuals = gsl_vector_alloc(n);
     gsl_vector_memcpy(data->residuals, s->f);
     
@@ -502,7 +502,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         gsl_multifit_covar(data.J, 0.0, covar);
         double sigma_e = 0.0, e;
         for (i=0; i<data.nValid; ++i) {
-            e = data.residuals->data[data.idx[i]];
+            e = gsl_vector_get(data.residuals, i);
             sigma_e += e*e;
         }
         sigma_e /= data.nValid - data.np - 1;
@@ -530,12 +530,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         
         double mean = 0.0, std = 0.0, tmp;
         for (i=0; i<data.nValid; ++i) {
-            res[data.idx[i]] = data.residuals->data[i];
-            mean += data.residuals->data[i];
+            tmp = gsl_vector_get(data.residuals, i);
+            res[data.idx[i]] = tmp;
+            mean += tmp;
         }
         mean /= data.nValid;
         for (i=0; i<data.nValid; ++i) {
-            tmp = data.residuals->data[i] - mean;
+            tmp = gsl_vector_get(data.residuals, i) - mean;
             std += tmp*tmp;
         }
         std = sqrt(std/(data.nValid-1));
@@ -558,7 +559,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         int k;
         for (k=0; k<np; ++k) {
             for (i=0; i<data.nValid; ++i) {
-                J[data.idx[i]+k*N] = (data.J)->data[k + i*np];
+                J[data.idx[i]+k*N] = gsl_matrix_get(data.J, i, k);
             }
             for (i=0; i<N-data.nValid; ++i) {
                 J[nanIdx[i]+k*N] = mxGetNaN();
