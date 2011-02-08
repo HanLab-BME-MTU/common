@@ -202,7 +202,14 @@ set(handles.popupmenu_kalman_reverse, 'Value', i4)
 userData.path = funParams.saveResults.dir;
 userData.file = userData.crtProc.filename_;
 
-str = [funParams.saveResults.dir userData.crtProc.filename_];
+% Show the actual file name on GUI
+i = userData.crtProc.channelIndex_(1);
+file = ['Channel_' num2str(i) '_' userData.crtProc.filename_];
+if ~userData.crtProc.overwrite_
+    file = enumFileName(userData.path, file);
+end
+
+str = [funParams.saveResults.dir file];
 if length(str)>100
     str = ['... ' str(end-50:end)];
 end
@@ -967,6 +974,13 @@ end
 
 userData.path = path;
 userData.file = file;
+
+% Show the actual file name on GUI
+i = userData.crtProc.channelIndex_(1);
+file = ['Channel_' num2str(i) '_' file];
+if ~userData.crtProc.overwrite_
+    file = enumFileName(path, file);
+end
 
 str = [path file];
 if length(str)>100

@@ -298,6 +298,39 @@ function pushbutton_show_1_Callback(hObject, eventdata, handles)
 procID = 1;
 userData = get(handles.figure1, 'UserData');
 
+% ----------------------------------
+crtProc = userData.crtPackage.processes_{procID};
+% Make sure output exists
+chan = [];
+for i = 1:length(userData.MD(userData.id).channels_)
+    
+    if ~isempty(crtProc.outParams_{i})
+        chan = i; 
+        break
+    end
+end
+
+if isempty(chan)
+   warndlg('The current step does not have any output yet.','No Output','modal');
+   return
+end
+
+% Make sure detection output is valid
+firstframe = [];
+for i = 1:length(crtProc.outParams_{chan}.movieInfo)
+   
+    if ~isempty(crtProc.outParams_{chan}.movieInfo(i).amp)
+        firstframe = i;
+        break
+    end
+end
+
+if isempty(firstframe)
+    warndlg('The detection result is empty. There is nothing to visualize.','Empty Output','modal');
+   return
+end
+% -------------------------------------
+
 if isfield(userData, 'resultFig') && ishandle(userData.resultFig)
     
     delete(userData.resultDet)
@@ -336,6 +369,32 @@ function pushbutton_show_2_Callback(hObject, eventdata, handles)
 
 procID = 2;
 userData = get(handles.figure1, 'UserData');
+
+% ----------------------------------------------
+crtProc = userData.crtPackage.processes_{procID};
+% Make sure output exists
+chan = [];
+for i = 1:length(userData.MD(userData.id).channels_)
+    
+    if ~isempty(crtProc.outParams_{i})
+        chan = i; 
+        break
+    end
+end
+
+if isempty(chan)
+   warndlg('The current step does not have any output yet.','No Output','modal');
+   return
+end
+
+% Make sure detection output is valid
+
+if isempty(crtProc.outParams_{chan}.tracksFinal)
+    warndlg('The tracking result is empty. There is nothing to visualize.','Empty Output','modal');
+    return
+end
+
+% --------------------------------------------------
 
 if isfield(userData, 'resultFig') && ishandle(userData.resultFig)
     

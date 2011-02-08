@@ -98,6 +98,12 @@ userData.chan = chan;
 
 % Make sure detection output is valid
 
+if isempty(userData.crtProc.outParams_{chan}.tracksFinal)
+   error('User-defined: there is no detection information in the output variable.') 
+end
+
+
+
 allEvents = vertcat(userData.crtProc.outParams_{chan}.tracksFinal.seqOfEvents);
 userData.firstframe = min(allEvents(:,1));
 userData.lastframe = max(allEvents(:,1));

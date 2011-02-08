@@ -96,7 +96,9 @@ for i = 1:length(userData.MD.channels_)
     end
 end
 
-assert(~isempty(chan), 'User-defined: the process does not have output yet.')
+if isempty(chan)
+   error('User-defined: the process does not have output yet.') 
+end
 
 % Make sure detection output is valid
 firstframe = [];
@@ -108,7 +110,11 @@ for i = 1:length(userData.crtProc.outParams_{chan}.movieInfo)
     end
 end
 
-assert(~isempty(firstframe), 'User-defined: there is no detection information in the output variable.')
+if isempty(firstframe)
+   error('User-defined: there is no detection information in the output variable.') 
+end
+
+
 
 userData.chan = chan;
 userData.firstframe = firstframe;
