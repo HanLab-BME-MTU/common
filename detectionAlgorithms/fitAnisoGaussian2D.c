@@ -383,8 +383,10 @@ static int MLalgo(struct dataStruct *data)
 
   // copy Jacobian
   data->J = gsl_matrix_alloc(data->nValid, data->np);
+
   gsl_matrix_memcpy(data->J, s->J);
     
+
   gsl_multifit_fdfsolver_free(s);
 	
   return 0;
