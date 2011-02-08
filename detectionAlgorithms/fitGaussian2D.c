@@ -409,8 +409,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         gsl_multifit_covar(data.J, 0.0, covar);
         double sigma_e = 0.0, e;
         for (i=0; i<data.nValid; ++i) {
-	  e = gsl_vector_get(data.residuals,i);
-	  sigma_e += e*e;
+            e = gsl_vector_get(data.residuals, i);
+            sigma_e += e*e;
         }
         sigma_e /= data.nValid - data.np - 1;
         plhs[1] = mxCreateDoubleMatrix(1, data.np, mxREAL);
@@ -430,18 +430,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     if (nlhs > 3) {
         const char *fieldnames[] = {"data", "pval", "mean", "std"};
         mwSize dims[2] = {1, 1};
-        plhs[3] = mxCreateStructArray(2, dims, 4, fieldnames);        
+        plhs[3] = mxCreateStructArray(2, dims, 4, fieldnames);
         mxArray *val = mxCreateDoubleMatrix(nx, nx, mxREAL);
         double* res = mxGetPr(val);
         
         double mean = 0.0, std = 0.0, tmp;
         for (i=0; i<data.nValid; ++i) {
-	  res[data.idx[i]] = gsl_vector_get(data.residuals,i);
-            mean += data.residuals->data[i];
+            tmp = gsl_vector_get(data.residuals, i);
+            res[data.idx[i]] = tmp;
+            mean += tmp;
         }
         mean /= data.nValid;
         for (i=0; i<data.nValid; ++i) {
-            tmp = gsl_vector_get(data.residuals,i) - mean;
+            tmp = gsl_vector_get(data.residuals, i) - mean;
             std += tmp*tmp;
         }
         std = sqrt(std/(data.nValid-1));
@@ -464,7 +465,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         int k;
         for (k=0; k<np; ++k) {
             for (i=0; i<data.nValid; ++i) {
-	      J[data.idx[i]+k*N] = gsl_matrix_get(data.J,i,k);
+                J[data.idx[i]+k*N] = gsl_matrix_get(data.J, i, k);
             }
             for (i=0; i<N-data.nValid; ++i) {
                 J[nanIdx[i]+k*N] = mxGetNaN();
