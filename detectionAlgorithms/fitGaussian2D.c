@@ -292,7 +292,7 @@ static int MLalgo(struct dataStruct *data) {
         data->prmVect[data->estIdx[i]] = gsl_vector_get(s->x, i);
     }
     
-    // copy model
+    // copy residual
     data->residuals = gsl_vector_alloc(data->nValid);
     gsl_vector_memcpy(data->residuals, s->f);
     
