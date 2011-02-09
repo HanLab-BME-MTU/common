@@ -641,8 +641,7 @@ function pushbutton_new_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_new (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-
+cropStack([]);
 
 function edit_av_background_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_av_background (see GCBO)
