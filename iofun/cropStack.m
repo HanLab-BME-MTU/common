@@ -1,4 +1,4 @@
-function area=cropStack(area,output_path,first_image_path,num_images_to_crop)
+function [area, output_path]=cropStack(area,output_path,first_image_path,num_images_to_crop)
 % cropStack lets the user crop a region of interest from an image stack
 %
 % SYNOPSIS   area=cropStackk(area,output_path,first_image_path,num_images_to_crop)
@@ -64,6 +64,7 @@ if nargin<3 || isempty(first_image_path)
         n=length(outFileList);
     else
         area=[];
+        output_path = [];
         return
     end
 else
