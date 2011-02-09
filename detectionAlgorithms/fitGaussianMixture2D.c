@@ -516,7 +516,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
             // cov. matrix is symmetric, no need to transpose
             memcpy(mxGetPr(plhs[2]), covar->data, np*np*sizeof(double));
         }
-        free(covar);
+        gsl_matrix_free(covar);
         
     }
     
