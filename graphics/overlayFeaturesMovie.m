@@ -196,6 +196,7 @@ switch intensityScale
 end
 
 %go over all specified frames
+figure
 for iFrame = 1 : length(movieInfo)
     
     if frame2fileMap(iFrame) ~= 0 %if frame exists

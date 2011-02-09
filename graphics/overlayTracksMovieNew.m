@@ -673,6 +673,7 @@ switch intensityScale
 end
 
 %go over all specified frames
+figure
 for iFrame = 1 : size(xCoordMatAll,2)
     
     if frame2fileMap(iFrame) ~= 0 %if frame exists
