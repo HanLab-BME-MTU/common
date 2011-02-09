@@ -165,7 +165,7 @@ for j = 1:min(2,meshQuality)
 end
 p = jigglemesh(p,e,t,'Opt','minimum','Iter',meshQuality*20);
 
-Ui = 1;%TEMP
+Ui = 1;%Initial guess for solution.
 
 %Do a few rounds of adaptive refinement
 [~,p,e,t] = adaptmeshHLE('boundaryGeometry','boundaryCondition',...

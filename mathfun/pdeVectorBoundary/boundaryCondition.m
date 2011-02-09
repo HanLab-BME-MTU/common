@@ -11,15 +11,7 @@ function [q,g,h,r] = boundaryCondition(p,e,u,time)
 % Re-written 8/2010
 %
 
-%time and u are not used. They are for time-dependent and non-linear
-%systems respectively.
-
 %h & r specify dirichlet boundary conditions.
-
-% if ~isempty(u) || ~isempty(time)
-%     disp('objBoundary: not a time dependent boundary condition!')
-%     return
-% end
 
 %Determine number of edges requested
 nE = size(e,2);
