@@ -1,4 +1,4 @@
-function [gamma,errFlag] = crossCorr(traj1,traj2,maxLag)
+function [gamma,errFlag] = crossCorr(traj1,traj2,maxLag,normVar)
 %CROSSCORR calculates the cross-correlation (at lag 0) between 2 series which might have missing observations
 %
 %SYNOPSIS [gamma,errFlag] = crossCorr(traj1,traj2,maxLag)
@@ -9,6 +9,8 @@ function [gamma,errFlag] = crossCorr(traj1,traj2,maxLag)
 %                     std) representing a single trajectory. Missing 
 %                     points should be indicated with NaN.
 %       maxLag      : Maximu lag to calculate cross-correlation.
+%       normVar     : 1 to normalize the variance of each time series
+%                     individually, 0 to calculate a collective variance.
 %
 %OUTPUT gamma       : 2*maxLag+1-by-2 array of the normalized
 %                     cross-correlation and its std.
@@ -103,6 +105,10 @@ if sum(trajLength1((trajLength1>maxLag))-maxLag) < 3*maxLag
     errFlag = 1;
 end
 
+if nargin < 4 || isempty(normVar)
+    normVar = 0;
+end
+
 if errFlag
     disp('--crossCorr: Please fix input data!');
     return
@@ -111,16 +117,25 @@ end
 %% Crosscorrelation calculation
 
 %shift each trajectory to make its mean zero
+%also normalize variance if requested
 for iTraj = 1 : numTraj1
     observations = traj1(iTraj).observations(:,1);
     trajMean = nanmean(observations);
     observations = observations - trajMean;
+    if normVar
+        trajStd = nanstd(observations);
+        observations = observations / trajStd;
+    end
     traj1(iTraj).observations(:,1) = observations;
 end
 for iTraj = 1 : numTraj2
     observations = traj2(iTraj).observations(:,1);
     trajMean = nanmean(observations);
     observations = observations - trajMean;
+    if normVar
+        trajStd = nanstd(observations);
+        observations = observations / trajStd;
+    end
     traj2(iTraj).observations(:,1) = observations;
 end
 

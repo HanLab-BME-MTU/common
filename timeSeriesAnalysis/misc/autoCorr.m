@@ -1,4 +1,4 @@
-function [gamma,errFlag] = autoCorr(traj,maxLag,correct)
+function [gamma,errFlag] = autoCorr(traj,maxLag,correct,normVar)
 %AUTOCORR calculates the unbiased autocorrelation function of a time series with missing observations
 %
 %SYNOPSIS [gamma,errFlag] = autoCorr(traj,maxLag,correct)
@@ -14,6 +14,8 @@ function [gamma,errFlag] = autoCorr(traj,maxLag,correct)
 %                   n :if correcting by taking the 1st difference at lag n
 %                     (reduces traj length!).
 %                   Default: -1.
+%       normVar: 1 to normalize the variance of each time series
+%                individually, 0 to calculate a collective variance.
 %
 %OUTPUT gamma  : Unbiased autocorrelation function of series,
 %                where gamma(i) is the autocorrelation at lag i-1.
@@ -86,6 +88,10 @@ if sum(trajLength((trajLength>maxLag))-maxLag) < 3*maxLag
     errFlag = 1;
 end
 
+if nargin < 4 || isempty(normVar)
+    normVar = 0;
+end
+
 if errFlag
     if nargout == 2
         disp('--autoCorr: Please fix input data!');
@@ -122,25 +128,25 @@ for i=1:numTraj
             trajLength(i) = trajLength(i) - correct;
     end
 
-    %get trajectory mean
-    trajMean(i) = nanmean(traj(i).observations(:,1));
-
+    %substract each trajectory's mean and divide by standard deviation if
+    %requested
+    trajMean1 = nanmean(traj(i).observations(:,1));
+    if normVar
+        trajStd1 = nanstd(traj(i).observations(:,1));
+        traj(i).observations(:,1) = (traj(i).observations(:,1) - trajMean1) / trajStd1;
+    else
+        traj(i).observations(:,1) = traj(i).observations(:,1) - trajMean1;
+    end
+    
 end
-
-% %shift trajectories so that the overall compound trajectory has a mean = 0
-% meanAll = nanmean(vertcat(traj.observations));
-% meanAll = meanAll(1);
-% for i=1:numTraj
-%     trajMean(i) = meanAll;
-% end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Autocorrelation function calculation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%calculate unnormalized autocorrelation function for lags 0 through maxLag
+%calculate potentially unnormalized autocorrelation function for lags 0 through maxLag
 gamma = zeros(maxLag+1,2);
-for lag = 0:maxLag %for each lag
+for lag = 0 : maxLag %for each lag
 
     vecMult = [];
     for j = 1:numTraj %go over all trajectories
@@ -150,8 +156,8 @@ for lag = 0:maxLag %for each lag
             vec1 = traj(j).observations(1:end-lag,1);
             vec2 = traj(j).observations(lag+1:end,1);
 
-            %multiply mean-subtracted vectors
-            vecMult = [vecMult; (vec1-trajMean(j)).*(vec2-trajMean(j))];
+            %multiply vectors
+            vecMult = [vecMult; vec1.*vec2];
 
         end
     end
@@ -159,7 +165,6 @@ for lag = 0:maxLag %for each lag
     %calculate autocorrelation function (omit pairs with missing observations)
     vecMult = vecMult(~isnan(vecMult));
     gamma(lag+1,:) = [mean(vecMult) std(vecMult)/sqrt(length(vecMult))];
-    %     gamma(lag+1) = nansum(vecMult)/(length(vecMult)-1);
 
 end
 
