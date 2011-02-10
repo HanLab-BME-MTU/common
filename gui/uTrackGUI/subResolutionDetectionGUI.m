@@ -776,8 +776,8 @@ end
 %% Alpha-value for Local Maxima Detection: alphaLoc
 temp = cellfun(@(x)~isempty(x), alphaLocMax);
 if all(~temp)
-    missPara = strcat(missPara, sprintf('Alpha-value for Local Maxima Detection\n'));
-    alphaLoc = [];
+    missPara = horzcat(missPara, sprintf('Alpha-value for Local Maxima Detection\n'));
+    alphaLoc = 0.05; % default
     
 elseif any(cellfun(@(x)isnan(str2double(x)), alphaLocMax(temp))) || any(cellfun(@(x)(str2double(x) < 0), alphaLocMax(temp)))
     errordlg('Please provide a valid value to parameter "Alpha-value for Local Maxima Detection".','Error','modal')
@@ -791,8 +791,8 @@ end
 temp = cellfun(@(x)~isempty(x), integWindow);
 if get(handles.checkbox_rollingwindow, 'Value')
     if isempty(alphaLoc)
-        missPara = strcat(missPara, sprintf('Window Size\n'));
-        integWin = (1-1)/2;
+        missPara = horzcat(missPara, sprintf('Window Size\n'));
+        integWin = (1-1)/2; % default
         
     elseif length(find(temp)) ~= length(alphaLoc)
         errordlg('The length of parameter "Camera Bit Depth" must be the same with parameter "Alpha-value for Local Maxima Detection".','Error','modal')
@@ -820,8 +820,8 @@ end
 
 if get(handles.checkbox_mmf, 'Value')
     if isempty( alphaR )
-        missPara = strcat(missPara, sprintf('Alpha Residual\n'));
-        alphaR = []; 
+        missPara = horzcat(missPara, sprintf('Alpha Residual\n'));
+        alphaR = 0.05; % default
         
     elseif isnan(str2double(alphaR)) || str2double(alphaR) < 0
         errordlg('Please provide a valid value to parameter "Alpha Residuals".','Error','modal')
@@ -837,8 +837,8 @@ end
 %% AlphaA
 
 if isempty( alphaA )
-    missPara = strcat(missPara, sprintf('Alpha Amplitude\n'));
-    alphaA = []; 
+    missPara = horzcat(missPara, sprintf('Alpha Amplitude\n'));
+    alphaA = 0.05; % default
         
 elseif isnan(str2double(alphaA)) || str2double(alphaA) < 0
     errordlg('Please provide a valid value to parameter "Alpha Amplitude".','Error','modal')
@@ -851,8 +851,8 @@ end
 %% AlphaD
 
 if isempty( alphaD )
-    missPara = strcat(missPara, sprintf('Alpha Distance\n'));
-    alphaD = []; 
+    missPara = horzcat(missPara, sprintf('Alpha Distance\n'));
+    alphaD = 0.05; % default 
         
 elseif isnan(str2double(alphaD)) || str2double(alphaD) < 0
     errordlg('Please provide a valid value to parameter "Alpha Distance".','Error','modal')
@@ -865,8 +865,8 @@ end
 %% AlphaF
 
 if isempty( alphaF )
-    missPara = strcat(missPara, sprintf('Alpha Final\n'));
-    alphaD = []; 
+    missPara = horzcat(missPara, sprintf('Alpha Final\n'));
+    alphaF = 0; % default
         
 elseif isnan(str2double(alphaF)) || str2double(alphaF) < 0
     errordlg('Please provide a valid value to parameter "Alpha Final".','Error','modal')
@@ -880,8 +880,8 @@ end
 
 if get(handles.checkbox_iteration, 'Value')
     if isempty( numSigmaIter )
-        missPara = strcat(missPara, sprintf('Maximum Number of Interations\n'));
-        numSigmaIter = []; 
+        missPara = horzcat(missPara, sprintf('Maximum Number of Interations\n'));
+        numSigmaIter = 0; % default 
 
     elseif isnan(str2double(numSigmaIter)) || str2double(numSigmaIter) < 0 ...
             || floor(str2double(numSigmaIter)) ~= ceil(str2double(numSigmaIter))
@@ -900,8 +900,8 @@ end
 
 if get(handles.checkbox_background, 'Value')
     if isempty( alphaLocMaxAbs )
-        missPara = strcat(missPara, sprintf('Background Alpha-value \n'));
-        alphaLocMaxAbs = []; 
+        missPara = horzcat(missPara, sprintf('Background Alpha-value \n'));
+        alphaLocMaxAbs = 0.001; % default 
 
     elseif isnan(str2double(alphaLocMaxAbs)) || str2double(alphaLocMaxAbs) < 0 
         errordlg('Please provide a valid value to parameter "Background Alpha-value".','Error','modal')
@@ -922,6 +922,9 @@ if get(handles.checkbox_background, 'Value')
         errordlg('Please specify a background image directory.','Error','modal')
         return
     end    
+    if ~strcmp(bg_dir(end), filesep)
+        bg_dir = [bg_dir filesep];
+    end
     
 else
     bg_dir = [];
@@ -930,10 +933,10 @@ end
 %% Frame Index: minid, maxid
 
 if isempty( minid )
-    errordlg('Please specify the minimum index of frame.','Error','modal')
+    errordlg('Please specify the first frame to detect.','Error','modal')
     return
         
-elseif isnan(str2double(minid)) || str2double(minid) < 0 ...
+elseif isnan(str2double(minid)) || str2double(minid) <= 0 ...
         || floor(str2double(minid)) ~= ceil(str2double(minid))
     errordlg('Please provide a valid value to parameter "Minimum Frame Index".','Error','modal')
     return   
@@ -946,7 +949,7 @@ if isempty( maxid )
     errordlg('Please specify the maximum index of frame.','Error','modal')
     return
         
-elseif isnan(str2double(maxid)) || str2double(maxid) < 0 ...
+elseif isnan(str2double(maxid)) || str2double(maxid) <= 0 ...
         || floor(str2double(maxid)) ~= ceil(str2double(maxid))
     errordlg('Please provide a valid value to parameter "Maximum Frame Index".','Error','modal')
     return   
@@ -958,6 +961,10 @@ end
 if minid > maxid
     errordlg('Minimum frame index is larger than maximum frame index.','Error','modal')
     return       
+elseif maxid > userData.crtProc.owner_.nFrames_
+    
+    errordlg('Frame index exceeds the number of frames.', 'Error', 'modal')
+    return
 end
 
 
@@ -1048,7 +1055,7 @@ guidata(hObject,handles);
 % Notice user if any parameters are missing
 if ~isempty(missPara)
     
-    text = sprintf('The following pamameters are not given and will use default values.\n\nDefaults:\n%s \n\nDo you want to finish setting and use the dafault values?', missPara);
+    text = sprintf('The following parameters are not given and will use default values.\n\nDefaults:\n%s \n\nDo you want to finish setting and use the dafault values?', missPara);
     user_response = questdlg(text, 'Default Settings', 'Cancel', 'Finish', 'Finish');
     
     if strcmpi(user_response, 'cancel')

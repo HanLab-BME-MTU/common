@@ -14,6 +14,9 @@ function filename = enumFileName(directory, filename)
 % 12/2010
 
 if ~exist(directory,'dir')
+    inputbase = regexp(filename, '.mat','split');
+    inputbase = inputbase{1};
+    filename = [inputbase '1.mat'];
     return
 end
 

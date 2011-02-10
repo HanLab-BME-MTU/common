@@ -45,7 +45,7 @@ classdef SubResolutionProcess < DetectionProcess
                 funParams.detectionParam.doMMF = 0;
                 funParams.detectionParam.testAlpha = struct('alphaR', .05,'alphaA', .05, 'alphaD', .05,'alphaF',0);
                 funParams.detectionParam.numSigmaIter = 0;
-                funParams.detectionParam.visual = 1;
+                funParams.detectionParam.visual = 0;
                 funParams.detectionParam.background = []; 
                 
                 % saveResults
