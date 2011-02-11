@@ -123,7 +123,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 }
 
 // Compile this file with the following command:
-// export LD_RUN_PATH=/usr/local/Matlab/bin/glnxa64 && g++ -g -DARRAY_ACCESS_INLINING -I. -L/usr/local/Matlab/bin/glnxa64 -I../../mex/include/c++/ -I/usr/local/Matlab/extern/include steerableFiltering.cpp -lmx -lmex
+// export LD_RUN_PATH=/usr/local/Matlab/bin/glnxa64 && g++ -ansi -Wall
+// -g -DARRAY_ACCESS_INLINING -I. -L/usr/local/Matlab/bin/glnxa64 -I../../mex/include/c++/ -I/usr/local/Matlab/extern/include steerableFiltering.cpp -lmx -lmex
 
 // debug
 int main()
