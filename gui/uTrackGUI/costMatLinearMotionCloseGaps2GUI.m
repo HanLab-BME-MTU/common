@@ -413,11 +413,11 @@ parameters = userData.parameters;
         
         % maxAngleVV
         if isempty( maxAngleVV )
-            errordlg('Parameter "Time to Reach Confinement" is requied by the algorithm.','Error','modal')
+            errordlg('Parameter "Maximum Angle Between Linear Track Segments" is requied by the algorithm.','Error','modal')
             return
 
         elseif isnan(str2double(maxAngleVV)) || str2double(maxAngleVV) < 0
-            errordlg('Please provide a valid value to parameter "Time to Reach Confinement".','Error','modal')
+            errordlg('Please provide a valid value to parameter "Maximum Angle Between Linear Track Segments".','Error','modal')
             return
         else
             maxAngleVV = str2double(maxAngleVV);

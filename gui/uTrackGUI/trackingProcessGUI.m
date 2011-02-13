@@ -270,11 +270,11 @@ timeWindow = get(handles.edit_maxgap, 'String');
 minTrackLen = get(handles.edit_minlength, 'String');
 
 if isempty( probDim )
-    errordlg('Parameter "Problem Dimentionality" is requied by the algorithm.','Error','modal')
+    errordlg('Parameter "Problem Dimensionality" is required by the algorithm.','Error','modal')
     return
     
 elseif isnan(str2double(probDim)) || str2double(probDim) < 0 || floor(str2double(probDim)) ~= ceil(str2double(probDim))
-    errordlg('Please provide a valid value to parameter "Problem Dimentionality".','Error','modal')
+    errordlg('Please provide a valid value to parameter "Problem Dimensionality".','Error','modal')
     return
     
 else
@@ -282,7 +282,7 @@ else
 end
 
 if isempty( timeWindow )
-    errordlg('Parameter "Maximum Gap to Close" is requied by the algorithm.','Error','modal')
+    errordlg('Parameter "Maximum Gap to Close" is required by the algorithm.','Error','modal')
     return
     
 elseif isnan(str2double(timeWindow)) || str2double(timeWindow) < 0 || floor(str2double(timeWindow)) ~= ceil(str2double(timeWindow))
@@ -294,7 +294,7 @@ else
 end
 
 if isempty( minTrackLen )
-    errordlg('Parameter "Minimum Length of Track Segment from First Step to use in Second Step" is requied by the algorithm.','Error','modal')
+    errordlg('Parameter "Minimum Length of Track Segment from First Step to use in Second Step" is required by the algorithm.','Error','modal')
     return
     
 elseif isnan(str2double(minTrackLen)) || str2double(minTrackLen) < 0 || floor(str2double(minTrackLen)) ~= ceil(str2double(minTrackLen))

@@ -141,19 +141,19 @@ methods(Access = public)
         
         obj.visualParams_.otmn.startend = [1 owner.nFrames_];
         obj.visualParams_.otmn.dragtailLength = 5;
-        obj.visualParams_.otmn.saveMovie = 0;
+        obj.visualParams_.otmn.saveMovie = 1;
         obj.visualParams_.otmn.movieName = [];
         obj.visualParams_.otmn.dir2saveMovie = funParams.saveResults.dir;
         obj.visualParams_.otmn.filterSigma = 0;
-        obj.visualParams_.otmn.classifyGaps = 1;
-        obj.visualParams_.otmn.highlightES = 1;
+        obj.visualParams_.otmn.classifyGaps = 0;
+        obj.visualParams_.otmn.highlightES = 0;
         obj.visualParams_.otmn.showRaw = 0;
         obj.visualParams_.otmn.imageRange = []; % TO DO in GUI
         obj.visualParams_.otmn.onlyTracks = 0;
-        obj.visualParams_.otmn.classifyLft = 1;
+        obj.visualParams_.otmn.classifyLft = 0;
         obj.visualParams_.otmn.diffAnalysisRes = [];
         obj.visualParams_.otmn.intensityScale = 1;
-        obj.visualParams_.otmn.colorTracks = 0;
+        obj.visualParams_.otmn.colorTracks = 1;
         file = owner.getImageFileNames(1);
         obj.visualParams_.otmn.firstImageFile = [owner.channels_(1).channelPath_ filesep file{1}{1}];        
     end

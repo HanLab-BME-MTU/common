@@ -200,14 +200,14 @@ set(handles.edit3_dragtailLength, 'String', num2str(visualParams.otmn.dragtailLe
 set(handles.edit3_filterSigma, 'String', num2str(visualParams.otmn.filterSigma))
 
 % Set default movie name as the name of result MAT file
-if isempty(visualParams.otmn.movieName)
+% if isempty(visualParams.otmn.movieName)
 
      fName = userData.crtProc.funParams_.saveResults.filename;
      [x1 x2 x3 x4] = getFilenameBody(fName);
-     visualParams.otmn.movieName = x2;
+     visualParams.otmn.movieName = [x2 x3];
      userData.crtProc.setVisualParams(visualParams)
      visualParams = userData.crtProc.visualParams_;
-end
+% end
 
 if ~visualParams.otmn.saveMovie
     
@@ -219,6 +219,7 @@ if ~visualParams.otmn.saveMovie
     set(handles.edit3_path, 'Enable', 'off')
     
 else
+    set(handles.checkbox3_save, 'Value', 1)
     set(handles.edit3_filename, 'String', visualParams.otmn.movieName)
     set(handles.edit3_path, 'String', visualParams.otmn.dir2saveMovie)
     
@@ -229,6 +230,14 @@ set(handles.checkbox3_colorTracks, 'Value',  visualParams.otmn.colorTracks)
 set(handles.checkbox3_classifyGaps, 'Value',  visualParams.otmn.classifyGaps)
 set(handles.checkbox3_highlightES, 'Value',  visualParams.otmn.highlightES)
 set(handles.checkbox3_classifyLft, 'Value',  visualParams.otmn.classifyLft)
+
+if visualParams.otmn.onlyTracks || visualParams.otmn.colorTracks
+    
+    set(handles.checkbox3_classifyGaps, 'Value', 0, 'Enable', 'off')
+    set(handles.checkbox3_highlightES, 'Value', 0, 'Enable', 'off')
+    set(handles.checkbox3_classifyLft, 'Value', 0, 'Enable', 'off')
+    set(handles.text44, 'Enable', 'off')    
+end
 
 if ~isempty(visualParams.otmn.imageRange)
     
@@ -335,11 +344,11 @@ maxy = get(handles.edit3_maxy, 'String');
 
 % min
 if isempty( min )
-    errordlg('Parameter "Frames to Included in Movie" is requied by the algorithm.','Error','modal')
+    errordlg('Parameter "Minimum Frame Number" is requied by the algorithm.','Error','modal')
     return
 
 elseif isnan(str2double(min)) || str2double(min) < 0
-    errordlg('Please provide a valid value to parameter "Frames to Included in Movie".','Error','modal')
+    errordlg('Please provide a valid value to parameter "Minimum Frame Number".','Error','modal')
     return
 else
     min = str2double(min);
@@ -347,15 +356,15 @@ end
     
 % max
 if isempty( max )
-    errordlg('Parameter "Frames to Included in Movie" is requied by the algorithm.','Error','modal')
+    errordlg('Parameter "Maximum Frame Number" is requied by the algorithm.','Error','modal')
     return
 
 elseif isnan(str2double(max)) || str2double(max) < 0 
-    errordlg('Please provide a valid value to parameter "Frames to Included in Movie".','Error','modal')
+    errordlg('Please provide a valid value to parameter "Maximum Frame Number".','Error','modal')
     return
     
 elseif str2double(max) > userData.MD.nFrames_
-    errordlg('Parameter "Frames to Included in Movie" can not be larger than the total number of frames.','Error','modal')
+    errordlg('Parameter "Maximum Frame Number" can not be larger than the total number of frames.','Error','modal')
     return
     
 elseif str2double(max) < min
@@ -380,11 +389,11 @@ end
 
 % dragtailLength
 if isempty( dragtailLength )
-    errordlg('Parameter "Filter Sigma" is requied by the algorithm.','Error','modal')
+    errordlg('Parameter "Dragtail Length" is requied by the algorithm.','Error','modal')
     return
 
 elseif isnan(str2double(dragtailLength)) || str2double(dragtailLength) < 0
-    errordlg('Please provide a valid value to parameter "Filter Sigma".','Error','modal')
+    errordlg('Please provide a valid value to parameter "Dragtail Length".','Error','modal')
     return
 else
     dragtailLength = str2double(dragtailLength);
@@ -693,12 +702,14 @@ if get(hObject, 'Value')
     set(handles.checkbox3_classifyGaps, 'Value', 0, 'Enable', 'off')
     set(handles.checkbox3_highlightES, 'Value', 0, 'Enable', 'off')
     set(handles.checkbox3_classifyLft, 'Value', 0, 'Enable', 'off')
+    set(handles.text44, 'Enable', 'off')
     
 elseif ~get(handles.checkbox3_colorTracks, 'Value')
     
     set(handles.checkbox3_classifyGaps, 'Enable', 'on')
     set(handles.checkbox3_highlightES, 'Enable', 'on')
     set(handles.checkbox3_classifyLft, 'Enable', 'on')    
+    set(handles.text44, 'Enable', 'on')
 end
 
 
@@ -715,12 +726,15 @@ if get(hObject, 'Value')
     set(handles.checkbox3_classifyGaps, 'Value', 0, 'Enable', 'off')
     set(handles.checkbox3_highlightES, 'Value', 0, 'Enable', 'off')
     set(handles.checkbox3_classifyLft, 'Value', 0, 'Enable', 'off')
-    
+    set(handles.text44, 'Enable', 'off')
+
 elseif ~get(handles.checkbox3_onlyTracks, 'Value')
     
     set(handles.checkbox3_classifyGaps, 'Enable', 'on')
     set(handles.checkbox3_highlightES, 'Enable', 'on')
     set(handles.checkbox3_classifyLft, 'Enable', 'on')    
+    set(handles.text44, 'Enable', 'on')
+
 end
 
 
@@ -823,7 +837,12 @@ function pushbutton3_path_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+path = uigetdir(get(handles.edit_path, 'String'), 'Select a Path...');
+if path == 0
+    return;
+end
 
+set(handles.edit3_path, 'String', path)
 
 function edit3_path_Callback(hObject, eventdata, handles)
 % hObject    handle to edit3_path (see GCBO)
@@ -1042,11 +1061,11 @@ filename = get(handles.edit1_image, 'String');
 
 % min
 if isempty( min )
-    errordlg('Parameter "Frames to Included in Movie" is requied by the algorithm.','Error','modal')
+    errordlg('Parameter "Minimum Frame Number" is requied by the algorithm.','Error','modal')
     return
 
 elseif isnan(str2double(min)) || str2double(min) < 0
-    errordlg('Please provide a valid value to parameter "Frames to Included in Movie".','Error','modal')
+    errordlg('Please provide a valid value to parameter "Minimum Frame Number".','Error','modal')
     return
 else
     min = str2double(min);
@@ -1054,15 +1073,15 @@ end
     
 % max
 if isempty( max )
-    errordlg('Parameter "Frames to Included in Movie" is requied by the algorithm.','Error','modal')
+    errordlg('Parameter "Maximum Frame Number" is requied by the algorithm.','Error','modal')
     return
 
 elseif isnan(str2double(max)) || str2double(max) < 0 
-    errordlg('Please provide a valid value to parameter "Frames to Included in Movie".','Error','modal')
+    errordlg('Please provide a valid value to parameter "Maximum Frame Number".','Error','modal')
     return
     
 elseif str2double(max) > userData.MD.nFrames_
-    errordlg('Parameter "Frames to Included in Movie" can not be larger than the total number of frames.','Error','modal')
+    errordlg('Parameter "Maximum Frame Number" can not be larger than the total number of frames.','Error','modal')
     return
     
 elseif str2double(max) < min
@@ -1075,11 +1094,11 @@ end
 
 % dx
 if isempty( dx )
-    errordlg('Parameter "Frames to Included in Movie" is requied by the algorithm.','Error','modal')
+    errordlg('Parameter "dX" is requied by the algorithm.','Error','modal')
     return
 
 elseif isnan(str2double(dx)) || str2double(dx) < 0
-    errordlg('Please provide a valid value to parameter "Frames to Included in Movie".','Error','modal')
+    errordlg('Please provide a valid value to parameter "dX".','Error','modal')
     return
 else
     dx = str2double(dx);
@@ -1087,11 +1106,11 @@ end
 
 % dy
 if isempty( dy )
-    errordlg('Parameter "Frames to Included in Movie" is requied by the algorithm.','Error','modal')
+    errordlg('Parameter "dY" is requied by the algorithm.','Error','modal')
     return
 
 elseif isnan(str2double(dy)) || str2double(dy) < 0
-    errordlg('Please provide a valid value to parameter "Frames to Included in Movie".','Error','modal')
+    errordlg('Please provide a valid value to parameter "dY".','Error','modal')
     return
 else
     dy = str2double(dy);

@@ -156,13 +156,13 @@ set(handles.edit_max, 'String', num2str(visualParams.startend(2)))
 set(handles.edit_filtersigma, 'String', num2str(visualParams.filterSigma))
 
 % Set default movie name as the name of result MAT file
-if isempty(visualParams.movieName)
+% if isempty(visualParams.movieName)
      fName = userData.crtProc.funParams_.saveResults.filename;
      [x1 x2 x3 x4] = getFilenameBody(fName);
-     visualParams.movieName = x2;
+     visualParams.movieName = [x2 x3];
      userData.crtProc.setVisualParams(visualParams)
      visualParams = userData.crtProc.visualParams_;
-end
+% end
 
 if ~visualParams.saveMovie
     
@@ -320,6 +320,11 @@ visualParams.saveMovie = get(handles.checkbox_save, 'Value');
 
 if visualParams.saveMovie
     
+    if isempty(filename) || isempty(path)
+       errordlg('Please specify a file name and directory to save the Quick time movie.','Error','modal')
+       return
+    end
+    
     visualParams.movieName = filename;
     visualParams.dir2saveMovie = path;
 end
@@ -421,7 +426,7 @@ if get(hObject, 'Value')
     set(handles.text_mov, 'Enable', 'on')
     set(handles.pushbutton_path, 'Enable', 'on')
     if isempty(get(handles.edit_path, 'String'))
-        set(handles.edit_path, 'Enable', 'on', userData.crtProc.visualParams_.dir2saveMovie)
+        set(handles.edit_path, 'Enable', 'on', 'String',userData.crtProc.visualParams_.dir2saveMovie)
     else
         set(handles.edit_path, 'Enable', 'on')
     end

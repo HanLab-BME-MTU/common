@@ -80,12 +80,13 @@ classdef SubResolutionProcess < DetectionProcess
             obj.visualParams_.startend = [1 owner.nFrames_];
             obj.visualParams_.saveMovie = 1;
             obj.visualParams_.movieName = [];
+            obj.visualParams_.dir2saveMovie = funParams.saveResults.dir;            
             obj.visualParams_.filterSigma = 0;
             obj.visualParams_.showRaw = 0;
             obj.visualParams_.intensityScale = 1;
             file = owner.getImageFileNames(1);
             obj.visualParams_.firstImageFile = [owner.channels_(1).channelPath_ filesep file{1}{1}];
-            obj.visualParams_.dir2saveMovie = funParams.saveResults.dir;
+
             
             % Get file name base and digits for enumeration
             [obj.filenameBase_ obj.digits4Enum_] = SubResolutionProcess.getFilenameBody(owner);
