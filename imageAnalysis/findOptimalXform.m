@@ -1,11 +1,13 @@
-function optimalXform = findOptimalXform(baseImage,inputImage,showFigs,xType)
+function optimalXform = findOptimalXform(baseImage,inputImage,showFigs,xType,iGuess)
 %FINDOPTIMALXFORM finds a transform which maximizes the agreement between the input images
 %
 % optimalXform = findOptimalXform(baseImage,inputImage,showFigs,xType)
 %
 % This function finds a transform which maximizes the agreement between the
 % input and base images by transforming the input image. This transform can
-% then be used to register two channels in a movie.
+% then be used to register two channels in a movie. The transform is
+% determined by minimization of the RMSD between the base image and the
+% transformed input image. Masks may also be used instead of images.
 % 
 % Input:
 % 
@@ -13,23 +15,48 @@ function optimalXform = findOptimalXform(baseImage,inputImage,showFigs,xType)
 % 
 %  inputImage - The image to transform to match the base image.
 %
-%  showFigs - True or false. If true, figures will be show.
+%  showFigs - True or false. If true, figures showing the alignment before
+%  and after the transformation will be shown.
 %
-%  xType - A characted string describing the transformation type to use to
-%  align the two images. Default is 'projective'
+%  xType - A character string describing the transformation type to use to
+%  align the two images. Default is 'projective'. See cp2tform help for
+%  more info on the transformation types.
 % 
 %       Available Transformation Types:
 %
-%           'projective' - Projective transformation.
+%           'projective' - Projective transformation. Allows rotation,
+%           change in perspective, translation, shear. This does everything
+%           an affine transform can do and more.
 %
-%           'projectiveH' - Homogeneous projective transformation
+%           'polynomial' - Non-linear, 3rd order polynomial transform.
+%           Allows everything that projective does, in addition to the
+%           possiblility of introducing curvature.
 %
-%           'polynomial' - Non-linear, polynomial transform
+%   iGuess - The matrix containing the initial guess for the alignment
+%   transform. For the projective transform this is a 3x3 matrix, while for
+%   the polynomial transform this is a 10x2 matrix. Optional. IF not input,
+%   the identity transform is used as the initial guess.
 %
-%           'translation' - X-Y translation only.
 %
-%Hunter Elliott, 2008
+% Output:
 %
+%   optimalXform - The transform which minimizes the RMSD between the input
+%   and base image. This is a transform structure, as used by imtransform.m
+%
+%
+% Hunter Elliott, 2008
+% Rewritten 11/2010
+%
+
+%% ------ Input ----- %%
+
+if nargin < 2 || isempty(baseImage) || isempty(inputImage)
+    error('You must input a base and input image!')
+end
+
+if ~isequal(size(baseImage),size(inputImage))
+    error('The base and input images must be the same size!')
+end
 
 if nargin < 3 || isempty(showFigs)
     showFigs = 0;
@@ -39,90 +66,27 @@ if nargin < 4 || isempty(xType)
     xType = 'projective';
 end
 
+if nargin < 5 || isempty(iGuess)
+    %If no initial guess given, use identity transform.
+    switch xType
 
-switch xType
+        case 'projective'    
+            iGuess = eye(3);            
+        case 'polynomial'
+            
+              iGuess = zeros(6,2);
+              iGuess(2,1) = 1;
+              iGuess(3,2) = 1;
 
-    case 'projective'    
-        iGuess = eye(3);        
-    case 'projectiveH' %homogeneous projective transform
-        iGuess = [1 0 0 0 1 0];                
-    case 'polynomial'
-        iGuess = zeros(10,2);
-        iGuess(2) = 1;
-        iGuess(13) = 1;
-    case 'translation'
-        iGuess = [0 0];
+        otherwise
+            error(['"' xType '" is not a supported transformation type!'])
+            
+    end
 end
 
-%Bounds which are common to transformations
-xX = [-5 5]; %X translation
-yX = [-5 5]; %Y translation
-xSc = [.9 1.1]; %Scaling in x direction
-ySc = [.9 1.1]; %Scaling in y direction
-ySk = [-.1 .1]; %Y "skew"
-xSk = [-.1 .1]; %X "skew"
-        
-switch xType
-    
-    
-    case 'projective'
-        %Constraints for projective
+%% -------- Init -------- %%
 
-        xySc = [.9 1.1]; %Scaling in "z" - x&y simultaneously INVERTED - >1 decreses size!
-        
-        xL = [-1e-4 1e-4]; %X "lean" - perspective shift + moves right side of image in negative z
-        yL = [-1e-4 1e-4]; %Y "lean" - perspective shift + moves bottom side of image in negative z
 
-        Amin = [xSc(1),...
-                xSk(1),...
-                xX(1),....
-                ySk(1),...
-                ySc(1),...
-                yX(1),...
-                xL(1),...
-                yL(1),...
-                xySc(1)]';
-
-        Amax = [xSc(2),...
-                xSk(2),...
-                xX(2),....
-                ySk(2),...
-                ySc(2),...
-                yX(2),...
-                xL(2),...
-                yL(2),...
-                xySc(2)]';    
-    case 'polynomial'
-   
-        %Arbitrary small number for higher-order, non-linear terms
-        bS = 1e-5;
-        
-        Amin = [...
-            xX(1),yX(1); %X and Y translation            
-            xSc(1),ySk(1);%xScaling and y skewing
-            xSk(1),ySc(1); %x Skewing and yScaling
-            -bS, -bS; %bulging xy and yx
-            -bS,  -bS; %barrell x and arc y
-            -bS,  -bS; %arc x and barell y
-            -5*bS,  -5*bS;    %???? wierd higher order shit...
-            -10*bS,  -10*bS;
-            -100*bS, -100*bS;
-            -1000*bS,-1000*bS;];
-        
-      Amax = [...
-            xX(2),yX(2); %X and Y translation            
-            xSc(2),ySk(2);%xScaling and y skewing
-            xSk(2),ySc(2); %x Skewing and yScaling
-            bS, bS; %bulging xy and yx
-            bS,  bS; %barrell x and arc y
-            bS,  bS; %arc x and barell y
-            5*bS,  5*bS;    %???? wierd higher-order shit...
-            10*bS,  10*bS;
-            100*bS,  100*bS;
-            1000*bS, 1000*bS;];
-             
-        
-end
 
 %If the images are actually masks, scale them differently to avoid rounding
 %effects
@@ -133,55 +97,57 @@ if islogical(baseImage) && islogical(inputImage)
     inputImage = inputImage ./ 2 + .1;    
 else
     %Normalize the images
-    baseImage = cast(baseImage,'double');
-    inputImage = cast(inputImage,'double');
-    baseImage = baseImage - min(baseImage(:));
-    baseImage = baseImage ./ max(baseImage(:));
-    inputImage = inputImage - min(inputImage(:));
-    inputImage = inputImage ./ max(inputImage(:));
-    
-    baseImage(baseImage == 0) = min(baseImage(baseImage>0));
-    inputImage(inputImage == 0) = min(inputImage(inputImage>0));
-    
+    baseImage = mat2gray(baseImage);
+    inputImage = mat2gray(inputImage);    
 end
 
-
+%% ------ Transform optimization ------ %%
 
 %Create objective function for minimization
-objFun = @(x)tweakTransform(baseImage,inputImage,x);
 
-%minOptions = optimset('MaxFunEvals',5e3);
+%Create a dummy transformation structure which the optimization will tweak
+%the parameters of. This prevents us having to create a transformation each
+%time the objective function is evaluated.
+if strcmp(xType,'projective')
+    dumXf = maketform('projective',eye(3));
+else
+    dumXf = cp2tform(ones(10,2),ones(10,2)+rand(10,2)/10,'polynomial',2);     
+end
+
+objFun = @(x)tweakTransform(baseImage,inputImage,dumXf,x);
+
+%Check initial RMSD
+rmsdInit = objFun(iGuess(:));
+
 tic;
 %Minimize the objective function to find optimal transform
 disp('Please wait, calculating transform...');
 
-minOpts = optimset('TolFun',1e-8);
+minOpts = optimset('TolFun',1e-10,'MaxFunEvals',5e3);
 
+[x,rmsdFinal,exFlag,output] = fminsearch(objFun,iGuess(:),minOpts);
 
-[x,fval,exflag,output] = fmincon(objFun,iGuess(:),[],[],[],[],Amin,Amax,[],minOpts);
-%x = fminsearch(objFun,iGuess(:));
-%x = fminbnd(objFun,Amin,Amax);
 
 telaps = toc;
-if exflag > 0
-    disp(['Finished. Took ' num2str(telaps/60) ' minutes.']);
+if exFlag > 0
+     disp(['Finished. Took ' num2str(telaps/60) ' minutes.']);
+     disp([num2str(output.iterations) ' iterations, ' num2str(output.funcCount) ' function evaluations.'])
+     disp(['Initial RMSD : ' num2str(rmsdInit) ', final RMSD: ' num2str(rmsdFinal)]);
 else
     disp('Optimization failed!')
     optimalXform = [];
     return
 end
 
+%Convert parameter vector back to transformation matrix
+tMat = zeros(size(iGuess));
+tMat(:) = x(:);        
 
-if strcmp(xType,'translation')
-    tMat = eye(3);
-    tMat(3,1:2) = x(:)';    
-else
-    tMat = zeros(size(iGuess));
-    tMat(:) = x(:);        
-end
-if strcmp(xType,'projective') || strcmp(xType,'translation')
+%Convert it to transform structure
+if strcmp(xType,'projective')
     optimalXform = maketform('projective',tMat);
 else
+    %There HAS to be a better way to do this????!!!!??
     optimalXform = cp2tform(ones(10,2),ones(10,2)+rand(10,2)/10,'polynomial',3);
     optimalXform.tdata = tMat;
 end
@@ -200,48 +166,23 @@ if showFigs
     
 end
 
-function imErr = tweakTransform(baseImage,inImage,dX)
+function imErr = tweakTransform(baseImage,inImage,dumXf,dX)
 
 %This function calculates the mean squared error between two images after
 %one is transformed by the transformation specifed by the vector dX. The
 %vector should be a vectorized version of the transformation matrix as used
 %by imtransform.m 
 
-%Assemble the transformation matrix
-tMat = zeros(3);
 
-%If limited to homogenous matrices and projective transformations
-
-%Check the number of parameters input and use this to determine the
-%transformation type.
-if length(dX(:)) == 2
-    tMat = eye(3);
-    tMat(3,1:2) = dX(:)';
-    tType = 'projective';    
-elseif length(dX(:)) == 6
-    tMat(3,3) = 1;
-    tMat(1:6) = dX(:);
-    tType = 'projective';
-elseif length(dX(:)) == 9;   %If non-homogenous allowed in proj. xform
-    tMat(:) = dX(:);
-    tType = 'projective';
-elseif length(dX(:)) == 20;  %If polynomial transform
-    tType = 'polynomial';
-    tMat = zeros(10,2);
-    tMat(:) = dX(:);
-end
-
-%Create the transform
-if strcmp(tType,'projective') %THIS IS WASTEFUL! set tForm as global variable
-    xForm = maketform('projective',tMat);
-else
-    xForm = cp2tform(ones(10,2),ones(10,2)+rand(10,2)/10,'polynomial',3); 
-    xForm.tdata = tMat;
+%Create the transform with the current parameters
+if numel(dX) == 9    
+    dumXf = maketform('projective',reshape(dX,3,3));
+elseif numel(dX) == 12
+    dumXf.tdata(:) = dX(:);    
 end
 
 %Transform the input image with the new transformation
-inImage = imtransform(inImage,xForm,'XData',[1 size(baseImage,2)],'YData',[1 size(baseImage,1)],'FillValues',NaN);
+inImage = imtransform(inImage,dumXf,'XData',[1 size(baseImage,2)],'YData',[1 size(baseImage,1)],'FillValues',NaN);
 
-%Calculate the error between the two images. Ignore NaNs.
-%imErr = sqrt(nanmean(((baseImage(:) - inImage(:)) .^2 ) ./ baseImage(:) ));
+%Calculate the RMSD between the two images. Ignore NaNs.
 imErr = sqrt(nanmean(((baseImage(:) - inImage(:)) .^2 )));

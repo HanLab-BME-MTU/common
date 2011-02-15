@@ -72,7 +72,7 @@ classdef ImageAnalysisProcess < Process
             end
             
             for j = 1:nChan
-               if ~exist(filePath{j},'dir')
+               if ~exist(filePath{j},'dir') && ~exist(filePath{j},'file')
                    error('lccb:set:fatal',...
                        ['The directory specified for output for channel ' ...
                        num2str(chanNum(j)) ' is invalid!']) 
