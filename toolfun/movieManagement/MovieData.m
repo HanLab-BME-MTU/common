@@ -273,7 +273,7 @@ classdef  MovieData < handle
                 else
                     warning(['More than ' num2str(nDesired) ' ' ...
                         procName 'es were found! Returning most recent process(es)!'])
-                    iProc = iProc(end:(end-nDesired+1));
+                    iProc = iProc(end:-1:(end-nDesired+1));
                 end                                
             end
             
