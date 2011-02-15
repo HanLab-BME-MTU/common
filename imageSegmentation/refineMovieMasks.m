@@ -339,7 +339,31 @@ for iChan = 1:nChanThresh
         
         % ------ Hole-Filling ----- %
         if p.FillHoles
-            currMask = imfill(currMask,'holes');
+            
+            %If the mask touches the image border, we want to close holes
+            %which are on the image border. We do this by adding a border
+            %of ones on the sides where the mask touches.
+            if any([currMask(1,:) currMask(end,:) currMask(:,1)' currMask(:,end)'])                
+                m = movieData.imSize(1);
+                n = movieData.imSize(2);            
+                %Add a border of 1s
+                tmpIm = vertcat(true(1,n+2),[true(m,1) ...
+                                currMask true(m,1)],true(1,n+2));
+                
+                %Find holes - the largest "hole" is considered to be the
+                %background and ignored.
+                cc = bwconncomp(~tmpIm);                                
+                holeAreas = cellfun(@(x)(numel(x)),cc.PixelIdxList);
+                [~,iBiggest] = max(holeAreas);                                
+                tmpIm = imfill(tmpIm,'holes');
+                tmpIm(cc.PixelIdxList{iBiggest}) = false;
+                currMask = tmpIm(2:end-1,2:end-1);
+            else                        
+                currMask = imfill(currMask,'holes');
+            end
+
+            
+            
         end
         
         %Write the refined mask to file
