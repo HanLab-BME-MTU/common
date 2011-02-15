@@ -344,8 +344,8 @@ for iChan = 1:nChanThresh
             %which are on the image border. We do this by adding a border
             %of ones on the sides where the mask touches.
             if any([currMask(1,:) currMask(end,:) currMask(:,1)' currMask(:,end)'])                
-                m = movieData.imSize(1);
-                n = movieData.imSize(2);            
+                m = movieData.imSize_(2);
+                n = movieData.imSize_(1);            
                 %Add a border of 1s
                 tmpIm = vertcat(true(1,n+2),[true(m,1) ...
                                 currMask true(m,1)],true(1,n+2));
@@ -358,9 +358,9 @@ for iChan = 1:nChanThresh
                 tmpIm = imfill(tmpIm,'holes');
                 tmpIm(cc.PixelIdxList{iBiggest}) = false;
                 currMask = tmpIm(2:end-1,2:end-1);
-            else                        
-                currMask = imfill(currMask,'holes');
-            end
+             else                        
+                 currMask = imfill(currMask,'holes');
+             end
 
             
             
