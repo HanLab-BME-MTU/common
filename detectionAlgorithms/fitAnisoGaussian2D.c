@@ -353,17 +353,17 @@ static int MLalgo(struct dataStruct *data)
     
   type = gsl_rng_default;
     
-  gsl_multifit_function_fdf f;
-  f.f = &f;
-  f.df = &df;
-  f.fdf = &fdf;
-  f.n = data->nValid;
-  f.p = p;
-  f.params = data;
+  gsl_multifit_function_fdf fit;
+  fit.f = &f;
+  fit.df = &df;
+  fit.fdf = &fdf;
+  fit.n = data->nValid;
+  fit.p = p;
+  fit.params = data;
   
   T = gsl_multifit_fdfsolver_lmsder;
   s = gsl_multifit_fdfsolver_alloc(T, data->nValid, data->np);
-  gsl_multifit_fdfsolver_set(s, &f, &x.vector);
+  gsl_multifit_fdfsolver_set(s, &fit, &x.vector);
     
   int status;
   int iter = 0;
@@ -388,7 +388,6 @@ static int MLalgo(struct dataStruct *data)
   data->J = gsl_matrix_alloc(data->nValid, data->np);
 
   gsl_matrix_memcpy(data->J, s->J);
-    
 
   gsl_multifit_fdfsolver_free(s);
 	
