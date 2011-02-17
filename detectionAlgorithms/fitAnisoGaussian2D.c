@@ -153,7 +153,7 @@ static int df_dC(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   return 0;
 }
 
-static int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f)
+static int f(const gsl_vector *x, void *params, gsl_vector *f)
 {
   dataStruct_t *dataStruct = (dataStruct_t *)params;
   int i,idx;
@@ -202,7 +202,7 @@ static int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f)
   return GSL_SUCCESS;
 }
 
-static int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J)
+static int df(const gsl_vector *x, void *params, gsl_matrix *J)
 {
   dataStruct_t *dataStruct = (dataStruct_t *)params;
   int i,idx,k;
@@ -266,7 +266,7 @@ static int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J)
   return GSL_SUCCESS;
 }
 
-static int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
+static int fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
 {
   dataStruct_t *dataStruct = (dataStruct_t *)params;
   int i, idx, k;
@@ -354,9 +354,9 @@ static int MLalgo(struct dataStruct *data)
   type = gsl_rng_default;
     
   gsl_multifit_function_fdf f;
-  f.f = &gaussian_f;
-  f.df = &gaussian_df;
-  f.fdf = &gaussian_fdf;
+  f.f = &f;
+  f.df = &df;
+  f.fdf = &fdf;
   f.n = data->nValid;
   f.p = p;
   f.params = data;
