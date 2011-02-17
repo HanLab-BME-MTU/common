@@ -105,16 +105,19 @@ for idx = 1:coordDim
 end
 
 if coordDim == 2
+    
     % 2 Dimension rotation.
     %Rotation.
     %Rotation of the coordinate. x' = xcos@ - ysin@. y' = xsin@ + ycos@.
     tmpX = coordList(:,1) .* cosd(rotation) - coordList(:,2) .* sind(rotation);
     tmpY = coordList(:,1) .* sind(rotation) + coordList(:,2) .* cosd(rotation);
     
-    %Translation back to original coordinate.
+    %Translation back to original center.
     tmpX = tmpX(:,1) + center(:,1);
     tmpY = tmpY(:,1) + center(:,2);
+    
 elseif coordDim == 3
+    
     % 3 Dimension rotation.
     %Rotation of the coordinate.
     c1 = cos(alp); c2 = cos(bet); c3 = cos(delt);
@@ -129,7 +132,16 @@ elseif coordDim == 3
     tmpX = coordList(:,1) .* l1 + coordList(:,2) .* l2 + coordList(:,3) .* l3;
     tmpY = coordList(:,1) .* m1 + coordList(:,2) .* m2 + coordList(:,3) .* m3;
     tmpZ = coordList(:,1) .* n1 + coordList(:,3) .* n2 + coordList(:,3) .* n3;
+
+    %Translation back to original center - KJ addition to make
+    %consistent with 2D case
+    %otherwise the code returns nonsense
+    tmpX = tmpX(:,1) + center(:,1);
+    tmpY = tmpY(:,1) + center(:,2);
+    tmpZ = tmpZ(:,1) + center(:,3);
+    
 end
+
 %Translation back to center.
 for idx = 1:coordDim
     coordList(:,idx) = coordList(:,idx) + center(:,idx);
@@ -140,6 +152,7 @@ if coordDim == 2
 elseif coordDim == 3
     coordList = [tmpX(:), tmpY(:), tmpZ(:)];
 end
+
 % convert coordList to 0/1
 coordList = (coordList - center)./sigma;
 

@@ -1,7 +1,11 @@
-function [parameters,sigmaParameters,Q,chiSquared,degreesOfFreedom,residualImage,resAndGauss] = GaussFitND(intensities, coordList, fitParameters, parameters, isNormed, fitOptions)
+function [parameters,sigmaParameters,Q,chiSquared,degreesOfFreedom,...
+    residualImage,resAndGauss] = GaussFitND(intensities, coordList, ...
+    fitParameters, parameters, isNormed, fitOptions)
 %GAUSSFITND fits one or several N-D Gaussians to an input intensity distribution
 %
-% SYNOPSIS: [parameters,Q,chiSquared,degreesOfFreedom] = GaussFitND(intensities, coordList, fitParameters, initialGuess, isNormed)
+% SYNOPSIS: [parameters,sigmaParameters,Q,chiSquared,degreesOfFreedom,...
+%    residualImage,resAndGauss] = GaussFitND(intensities, coordList, ...
+%    fitParameters, parameters, isNormed, fitOptions)
 %
 % INPUT intensities: Vector with the image intensities. Alternatively, you
 %               can supply the n-d image directly.
