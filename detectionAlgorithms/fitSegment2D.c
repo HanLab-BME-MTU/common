@@ -23,13 +23,12 @@
 #define SIGN(x)	(x > 0 ? 1 : (x < 0 ? -1 : 0))
 
 #define NPARAMS	7
-#define REFMODE	"xyasltc"	/* s = sigma aside the segment,
-				   l = length of the segment */
+#define REFMODE	"xyalstc"
 
 typedef struct argStruct
 {
   double xi, yi;
-  double A, s, l;
+  double A, l, s;
   double ct, st;
   double s1, s2;
   double c1, c2, c3, c4, c5;
@@ -233,8 +232,8 @@ static int f(const gsl_vector *x, void *params, gsl_vector *f)
   double xp = dataStruct->prmVect[0];
   double yp = dataStruct->prmVect[1];
   double A = dataStruct->prmVect[2];
-  double s = fabs(dataStruct->prmVect[3]);
-  double l = fabs(dataStruct->prmVect[4]);
+  double l = fabs(dataStruct->prmVect[3]);
+  double s = fabs(dataStruct->prmVect[4]);
   double t = dataStruct->prmVect[5];
   double C = dataStruct->prmVect[6];
 
@@ -280,8 +279,8 @@ static int df(const gsl_vector *x, void *params, gsl_matrix *J)
   double xp = dataStruct->prmVect[0];
   double yp = dataStruct->prmVect[1];
   double A = dataStruct->prmVect[2];
-  double s = fabs(dataStruct->prmVect[3]);
-  double l = fabs(dataStruct->prmVect[4]);
+  double l = fabs(dataStruct->prmVect[3]);
+  double s = fabs(dataStruct->prmVect[4]);
   double t = dataStruct->prmVect[5];
 	
   double xi, yi, tmp;
@@ -342,8 +341,8 @@ static int fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
   double xp = dataStruct->prmVect[0];
   double yp = dataStruct->prmVect[1];
   double A = dataStruct->prmVect[2];
-  double s = fabs(dataStruct->prmVect[3]);
-  double l = fabs(dataStruct->prmVect[4]);
+  double l = fabs(dataStruct->prmVect[3]);
+  double s = fabs(dataStruct->prmVect[4]);
   double t = dataStruct->prmVect[5];
   double C = dataStruct->prmVect[6];
 	
@@ -511,8 +510,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (strchr(mode, 'x')!=NULL) {data.estIdx[np] = 0; data.dfunc[np++] = df_dx;}
   if (strchr(mode, 'y')!=NULL) {data.estIdx[np] = 1; data.dfunc[np++] = df_dy;}
   if (strchr(mode, 'a')!=NULL) {data.estIdx[np] = 2; data.dfunc[np++] = df_dA;}
-  if (strchr(mode, 's')!=NULL) {data.estIdx[np] = 3; data.dfunc[np++] = df_ds;}
-  if (strchr(mode, 'l')!=NULL) {data.estIdx[np] = 4; data.dfunc[np++] = df_dl;}
+  if (strchr(mode, 'l')!=NULL) {data.estIdx[np] = 3; data.dfunc[np++] = df_dl;}
+  if (strchr(mode, 's')!=NULL) {data.estIdx[np] = 4; data.dfunc[np++] = df_ds;}
   if (strchr(mode, 't')!=NULL) {data.estIdx[np] = 5; data.dfunc[np++] = df_dt;}
   if (strchr(mode, 'c')!=NULL) {data.estIdx[np] = 6; data.dfunc[np++] = df_dC;}
     
@@ -661,8 +660,8 @@ int main(int argc, char** argv)
   data.estIdx[0] = 0; data.dfunc[0] = df_dx;
   data.estIdx[1] = 1; data.dfunc[1] = df_dy;
   data.estIdx[2] = 2; data.dfunc[2] = df_dA;
-  data.estIdx[3] = 3; data.dfunc[3] = df_ds;
-  data.estIdx[4] = 4; data.dfunc[4] = df_dl;
+  data.estIdx[3] = 3; data.dfunc[3] = df_dl;
+  data.estIdx[4] = 4; data.dfunc[4] = df_ds;
   data.estIdx[5] = 5; data.dfunc[5] = df_dt;
   data.estIdx[6] = 6; data.dfunc[6] = df_dC;
     
