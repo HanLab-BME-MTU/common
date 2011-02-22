@@ -58,7 +58,7 @@ void mPower(double *A, int eA, double *V, int *eV, int m, int n)
 double K(int n, double d) {
     int k, m, i, j, g, eH, eQ;
     double h, s, *H, *Q;
-    //OMIT NEXT LINE IF YOU REQUIRE >7 DIGIT ACCURACY IN THE RIGHT TAIL
+    /* OMIT NEXT LINE IF YOU REQUIRE >7 DIGIT ACCURACY IN THE RIGHT TAIL */
     s=d*d*n; if(s>7.24||(s>3.76&&n>99)) return 1-2*exp(-(2.000071+.331/sqrt(n)+1.409/n)*s);
     k = (int)(n*d)+1;
     m=2*k-1;
@@ -99,7 +99,7 @@ double K(int n, double d) {
 
 
 
-// Adapted from "Numerical Recipes in C" 3rd ed.
+/* Adapted from "Numerical Recipes in C" 3rd ed. */
 double pks(double z) {
     if (z < 0.0)
         mexErrMsgTxt("z value for KS dist. must be positive.");
@@ -107,15 +107,15 @@ double pks(double z) {
         return 0.0;
     double z2 = z*z;
     if (z < 1.18) {
-        double y = exp(-1.23370055013616983/z2); // exp(-pi^2/(8*z^2))
-        return 2.506628274631 / z * (y + pow(y,9) + pow(y,25) + pow(y,49)); // sqrt(2*pi)
+        double y = exp(-1.23370055013616983/z2); /* exp(-pi^2/(8*z^2)) */
+        return 2.506628274631 / z * (y + pow(y,9) + pow(y,25) + pow(y,49)); /* sqrt(2*pi) */
     } else {
         double x = exp(-2*z2);
         return 1.0 - 2.0*(x - pow(x,4) - pow(x,9));
     }
 }
 
-// Q_ks = 1 - P_ks
+/* Q_ks = 1 - P_ks */
 double qks(double z) {
     if (z < 0.0)
         mexErrMsgTxt("z value for KS dist. must be positive.");
@@ -123,8 +123,8 @@ double qks(double z) {
         return 1.0;
     double z2 = z*z;
     if (z < 1.18) {
-        double y = exp(-1.23370055013616983/z2); // exp(-pi^2/(8*z^2))
-        return 1.0 - 2.506628274631 / z * (y + pow(y,9) + pow(y,25) + pow(y,49)); // sqrt(2*pi)
+        double y = exp(-1.23370055013616983/z2); /* exp(-pi^2/(8*z^2)) */
+        return 1.0 - 2.506628274631 / z * (y + pow(y,9) + pow(y,25) + pow(y,49)); /* sqrt(2*pi) */
     } else {
         double x = exp(-2*z2);
         return 2.0*(x - pow(x,4) - pow(x,9));
@@ -146,7 +146,7 @@ int compDouble(const void *x, const void *y) {
 }
 
 
-// adapted from Numerical Recipes in C
+/* adapted from Numerical Recipes in C */
 double ksone(double *data, int N, double mu, double sigma) {
     
     double *sdata = (double*)malloc(sizeof(double)*N);
@@ -160,7 +160,7 @@ double ksone(double *data, int N, double mu, double sigma) {
     double dt, fn, fo = 0.0;
     
     for (j=0; j<N; ++j) {
-        fn = (j+1.0)/N; // CDF
+        fn = (j+1.0)/N; /* CDF */
         normCDF = 0.5 * (1.0 + erf((sdata[j]-mu)/(sqrt(2)*sigma)));
         
         dt = fmax(fabs(fo - normCDF), fabs(fn - normCDF));
@@ -169,11 +169,7 @@ double ksone(double *data, int N, double mu, double sigma) {
         fo = fn;
     }
     free(sdata);
-    //return 1.0 - K(N,D); // this is a much more accurate solution, but also much slower
+    /* return 1.0 - K(N,D); this is a much more accurate solution, but also much slower */
     double en = sqrt(N);
     return qks((en + 0.12 + 0.11/en)*D);
 }
-
-
-
-
