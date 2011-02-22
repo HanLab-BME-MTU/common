@@ -46,7 +46,7 @@ if any(D < 0)
 end
 
 if issparse(D)
-    if nargin < 2 || isemtpy(eps)
+    if nargin < 2 || isempty(eps)
         error('eps value required when cost function is sparse.');
     end
     

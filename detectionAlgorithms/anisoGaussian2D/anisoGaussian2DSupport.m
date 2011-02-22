@@ -1,38 +1,36 @@
-function [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigma,l,theta,imSize)
-% [xRange,yRange,nzIdx] = subResSegment2DSupport(x0,y0,sigma,l,theta,imSize)
+function [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigmaX,sigmaY,theta,imSize)
+% [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigmaX,sigmaY,theta,imSize)
 %
-% Compute the finite support of a diffraction-limited 2D segment given
+% Compute the finite support of an anisotropic Gaussian 2D model given
 % its parameters.
 %
 % parameters:
-% (x0,y0)            center of the segment (in the image domain)
+% (x0,y0)            center of the model (in the image domain)
 %
-% sigma              half width of segment
+% sigmaX             dispersion along the main axis
 %
-% l                  length of the segment
+% sigmaY             dispersion aside the main axis
 %
-% theta              orientation of the segment
+% theta              orientation of the model 
 %
 % imSize             image size
 %
 % output:
 % (xRange, yRange)   2 vectors representing the 2-dimensional support of
-%                    the segment in the image domain 1:size(imSize,1) x
+%                    the model in the image domain 1:size(imSize,1) x
 %                    1:size(imSize,2).
 %
 % nzIdx              linear indices where pixel value is not zero. These
-%                    indices are local and are intended to be passed to
-%                    subResSegment2D() and subResSegment2DJacobian()
-%                    functions.
+%                    indices are local.
 %
-% Sylvain Berlemont, 2010
+% Sylvain Berlemont, 2011
 
-% half length of the segment
-l2 = l / 2;
+% half length along the main axis
+l2 = 3 * sigmaX;
 
 % Hypothenuse length, corresponding to the half-length diagonal of a
-% 2*(L2+d) long by 2d wide rectangle surrounding the segment.
-d = 3 * sigma;
+% 2*(l2+d) long by 2d wide rectangle surrounding the segment.
+d = 3 * sigmaY;
 lh = sqrt(d.^2 + (l2 + d).^2);
 
 % Angle between a rectangle border and a diagonal of the rectangle
@@ -57,13 +55,13 @@ yMax = max(ceil(y));
 xRange = max(xMin,1):min(xMax,imSize(2));
 yRange = max(yMin,1):min(yMax,imSize(1));
 
-% % Faster solution (maybe...)
-% [X,Y] = meshgrid(xRange,yRange);
-% ct = cos(theta);
-% st = sin(theta);
-% D1 = abs(ct * (x0 - X) + st * (Y - y0)); % Wrong !
-% D2 = abs(st * (x0 - X) + ct * (Y - y0)); % Wrong !
-% nzIdx = find(D1 <= d & D2 <= l2 + d);
-
-% TODO: replace poly2mask call by 4 line intersections.
-nzIdx = find(poly2mask(x-xRange(1)+1,y-yRange(1)+1,length(yRange),length(xRange)));
+% find pixel indices of the model support
+[X,Y] = meshgrid(xRange,yRange);
+ct = cos(theta);
+st = sin(theta);
+D1 = abs((Y - y0) * ct + (-X + x0) * st);
+D2 = abs((X - x0) * ct + (Y - y0) * st);
+% truncate numbers towards zeros with 10 decimals to avoid numerical errors
+D1 = fix(D1 * 1e10) * 1e-10;
+D2 = fix(D2 * 1e10) * 1e-10;
+nzIdx = find(D1 <= d & D2 <= l2 + d);

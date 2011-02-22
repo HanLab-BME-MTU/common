@@ -56,13 +56,13 @@ yMax = max(ceil(y));
 xRange = max(xMin,1):min(xMax,imSize(2));
 yRange = max(yMin,1):min(yMax,imSize(1));
 
-% % Faster solution (maybe...)
-% [X,Y] = meshgrid(xRange,yRange);
-% ct = cos(theta);
-% st = sin(theta);
-% D1 = abs(ct * (x0 - X) + st * (Y - y0)); % Wrong !
-% D2 = abs(st * (x0 - X) + ct * (Y - y0)); % Wrong !
-% nzIdx = find(D1 <= d & D2 <= l2 + d);
-
-% TODO: replace poly2mask call by 4 line intersections.
-nzIdx = find(poly2mask(x-xRange(1)+1,y-yRange(1)+1,length(yRange),length(xRange)));
+% find pixel indices of the model support
+[X,Y] = meshgrid(xRange,yRange);
+ct = cos(theta);
+st = sin(theta);
+D1 = abs((Y - y0) * ct + (-X + x0) * st);
+D2 = abs((X - x0) * ct + (Y - y0) * st);
+% truncate numbers towards zeros with 10 decimals to avoid numerical errors
+D1 = fix(D1 * 1e10) * 1e-10;
+D2 = fix(D2 * 1e10) * 1e-10;
+nzIdx = find(D1 <= d & D2 <= l2 + d);
