@@ -1,11 +1,11 @@
-function [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,yC,sigma,l,theta,imSize)
-% [xRange,yRange,nzIdx] = subResSegment2DSupport(xC,yC,sigma,l,theta,imSize)
+function [xRange,yRange,nzIdx] = subResSegment2DSupport(x0,y0,sigma,l,theta,imSize)
+% [xRange,yRange,nzIdx] = subResSegment2DSupport(x0,y0,sigma,l,theta,imSize)
 %
 % Compute the finite support of a diffraction-limited 2D segment given
 % its parameters.
 %
 % parameters:
-% (xC,yC)            center of the segment (in the image domain)
+% (x0,y0)            center of the segment (in the image domain)
 %
 % sigma              half width of segment
 %
@@ -42,8 +42,8 @@ s1 = [1 1 -1 -1];
 s2 = [1 -1 1 -1];
 
 % xy-coordinates of the 4 rectangle's corners.
-x = xC + s1 .* cos(theta + s2 * at) * lh;
-y = yC + s1 .* sin(theta + s2 * at) * lh;
+x = x0 + s1 .* cos(theta + s2 * at) * lh;
+y = y0 + s1 .* sin(theta + s2 * at) * lh;
 
 % truncate numbers towards zero with 10 decimals.
 x = fix(x * 1e10) * 1e-10;
@@ -61,8 +61,8 @@ yRange = max(yMin,1):min(yMax,imSize(1));
 % [X,Y] = meshgrid(xRange,yRange);
 % ct = cos(theta);
 % st = sin(theta);
-% D1 = abs(ct * (xC - X) + st * (Y - yC)); % Wrong !
-% D2 = abs(st * (xC - X) + ct * (Y - yC)); % Wrong !
+% D1 = abs(ct * (x0 - X) + st * (Y - y0)); % Wrong !
+% D2 = abs(st * (x0 - X) + ct * (Y - y0)); % Wrong !
 % nzIdx = find(D1 <= d & D2 <= l2 + d);
 
 % TODO: replace poly2mask call by 4 line intersections.
