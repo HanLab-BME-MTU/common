@@ -1,4 +1,4 @@
-function F = subResSegment2D(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx)
+function F = segment2D(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx)
 % sub-resolution 2D segment model defined by 6 parameters:
 %    xy      : position of the segment's center
 %    amp     : mean amplitude along the segment
@@ -6,7 +6,7 @@ function F = subResSegment2D(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx)
 %    l       : length
 %    theta   : orientation [-pi/2, pi/2)
 %
-% F = subResSegment2D(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx)
+% F = segment2D(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx)
 %
 % parameters:
 %
@@ -22,12 +22,12 @@ function F = subResSegment2D(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx)
 %
 % (xRange, yRange)   2 vectors representing the 2-dimensional support of
 %                    the segment. This support can be determined using
-%                    subResSegment2DSupport() function.
+%                    segment2DSupport() function.
 %
 % nzIdx              linear indices of a NxM matrix (N = numel(yRange) and
 %                    M = numel(xRange)) where the model is defined. If not
 %                    provided, nzIdx = 1:N*M. These indices can be
-%                    determined using subResSegment2DSupport() function.
+%                    determined using segment2DSupport() function.
 %
 % output:
 % F                  the model defined on a NxM matrix.

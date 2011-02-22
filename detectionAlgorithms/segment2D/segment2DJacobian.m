@@ -1,6 +1,6 @@
-function dF = subResSegment2DJacobian(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx, paramSelector)
+function dF = segment2DJacobian(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx, paramSelector)
 % Partial derivatives of a sub-resolution 2D segment against its parameters.
-% dF = subResSegment2DJacobian(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx, paramSelector)
+% dF = segment2DJacobian(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx, paramSelector)
 %
 % parameters:
 % (x,y)              position of the segment's center
@@ -15,12 +15,12 @@ function dF = subResSegment2DJacobian(x, y, amp, sigma, l, theta, xRange, yRange
 %
 % (xRange, yRange)   2 vectors representing the 2-dimensional support of
 %                    the segment. This support can be determined using
-%                    subResSegment2DSupport() function.
+%                    segment2DSupport() function.
 %
 % nzIdx              linear indices of a NxM matrix (N = numel(yRange) and
 %                    M = numel(xRange)) where the segment is not null. If
 %                    not provided, nzIdx = ones(N*M, 1). These indices can
-%                    be determined using subResSegment2DSupport() function.
+%                    be determined using segment2DSupport() function.
 %
 % paramSelector      
 %

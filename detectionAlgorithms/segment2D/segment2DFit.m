@@ -1,12 +1,12 @@
-function [F J] = subResSegment2DFit(varSegmentParams, I, avgBkg, fixSegmentParams, paramSelector)
+function [F J] = segment2DFit(varSegmentParams, I, avgBkg, fixSegmentParams, paramSelector)
 % This function computes I - Im, where I is an image and Im is an image
 % model defined by the sum of sub-resolution 2D segment model caracterize
 % by params (the first and two last parameters). This function intends to
 % be used as a function handler in lsqnonlin, lsqlin, etc. optimization
 % functions. The initialization of segmentParams can be obtained by
-% subResSegment2DInit function.
+% segment2DInit function.
 %
-% [F J] = subResSegment2DFit(varSegmentParams, I, fixSegmentParams, paramSelector)
+% [F J] = segment2DFit(varSegmentParams, I, fixSegmentParams, paramSelector)
 %
 % Parameters:
 % varSegmentParams  a n by pVar matrix where n is the number of segments
@@ -91,7 +91,7 @@ segmentParams(:,paramSet(~paramSelector)) = fixSegmentParams;
 m = nrows * ncols;
 
 % Get the image model
-[Im xRange yRange nzIdx] = subResSegment2DImageModel(segmentParams, avgBkg, [nrows ncols]);
+[Im xRange yRange nzIdx] = segment2DImageModel(segmentParams, avgBkg, [nrows ncols]);
 
 % Compute F
 F = reshape(Im - I, m, 1);
@@ -110,7 +110,7 @@ if nargout > 1
         theta = segmentParams(i,6);
         
         % Compute all partial derivatives of F against segment parameters
-        dF = subResSegment2DJacobian(x,y,amp,sigma,...
+        dF = segment2DJacobian(x,y,amp,sigma,...
             l,theta,xRange{i},yRange{i},nzIdx{i},paramSelector);
         
         [X Y] = meshgrid(xRange{i}, yRange{i});

@@ -1,5 +1,5 @@
-function [xRange,yRange,nzIdx] = segment2DSupport(x0,y0,sigma,l,theta,imSize)
-% [xRange,yRange,nzIdx] = segment2DSupport(x0,y0,sigma,l,theta,imSize)
+function [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigma,l,theta,imSize)
+% [xRange,yRange,nzIdx] = subResSegment2DSupport(x0,y0,sigma,l,theta,imSize)
 %
 % Compute the finite support of a diffraction-limited 2D segment given
 % its parameters.
@@ -22,7 +22,8 @@ function [xRange,yRange,nzIdx] = segment2DSupport(x0,y0,sigma,l,theta,imSize)
 %
 % nzIdx              linear indices where pixel value is not zero. These
 %                    indices are local and are intended to be passed to
-%                    segment2D() and segment2DJacobian() functions.
+%                    subResSegment2D() and subResSegment2DJacobian()
+%                    functions.
 %
 % Sylvain Berlemont, 2010
 

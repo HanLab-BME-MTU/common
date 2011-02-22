@@ -1,12 +1,12 @@
-function [Im, xRange, yRange, nzIdx] = subResSegment2DImageModel(segmentParams, avgBkg, imSize)
+function [Im, xRange, yRange, nzIdx] = segment2DImageModel(segmentParams, avgBkg, imSize)
 % Compute an image model which is the sum of sub-resolution 2D segments
-% defined by params (see subResSegment2D.m for more details).
+% defined by params (see segment2D.m for more details).
 %
-% [Im, xRange, yRange, nzIdx] = subResSegment2DImageModel(segmentParams, imSize)
+% [Im, xRange, yRange, nzIdx] = segment2DImageModel(segmentParams, imSize)
 %
 % INPUT:
 % segmentParams      nx6 matrix where n is the number of segments and their
-%                    parameters (see subResSegment2D() for details)
+%                    parameters (see segment2D() for details)
 %
 % imSize             image size
 %
@@ -19,8 +19,7 @@ function [Im, xRange, yRange, nzIdx] = subResSegment2DImageModel(segmentParams, 
 %
 % nzIdx              linear indices where pixel value is not zero. These
 %                    indices are local and are intended to be passed to
-%                    subResSegment2D() and subResSegment2DJacobian()
-%                    functions.
+%                    segment2D() and segment2DJacobian() functions.
 %
 % Sylvain Berlemont, 2010
 
@@ -45,9 +44,9 @@ for i = 1:n
     l = segmentParams(i,5);
     theta = segmentParams(i,6);
 
-    [xRange{i},yRange{i},nzIdx{i}] = subResSegment2DSupport(x,y,sigma,l,theta,imSize);
+    [xRange{i},yRange{i},nzIdx{i}] = segment2DSupport(x,y,sigma,l,theta,imSize);
 
-    S = subResSegment2D(x,y,amp,sigma,l,theta,xRange{i},yRange{i},nzIdx{i});
+    S = segment2D(x,y,amp,sigma,l,theta,xRange{i},yRange{i},nzIdx{i});
     
     Im(yRange{i},xRange{i}) = Im(yRange{i},xRange{i}) + S;
 end

@@ -1,4 +1,4 @@
-function [clusters, ImBG] = detectSubResSegment2D(ima,mask,sigmaPSF,minSize,bitDepth,display)
+function [clusters, ImBG] = detectSegment2D(ima,mask,sigmaPSF,minSize,bitDepth,display)
 
 if nargin <= 5 || isempty(display)
     display = false;
@@ -20,7 +20,7 @@ end
 % % alpha.alphaD = .1;
 % alpha.alphaF = 0;
 
-% Parameters for subResSegment2DFit
+% Parameters for segment2DFit
 
 options = optimset('Jacobian', 'on', ...
     'MaxFunEvals', 500, ...
@@ -283,7 +283,7 @@ for iCC = 1:nCC
         varSegmentParams = clusters(iCC).segments(:,paramSelector);
         fixSegmentParams = clusters(iCC).segments(:,~paramSelector);
         
-        fun = @(params) subResSegment2DFit(params, imaCC, clusters(iCC).avgBkg, ...
+        fun = @(params) segment2DFit(params, imaCC, clusters(iCC).avgBkg, ...
             fixSegmentParams, paramSelector);
         
         lb = [zeros(nSegments,1) varSegmentParams(:,1) - 3 * clusters(iCC).stdBkg];
