@@ -1,4 +1,4 @@
-function [xRange,yRange,nzIdx] = segment2DSupport(x0,y0,sigma,l,theta,imSize)
+function [xRange,yRange,nzIdx] = segment2DSupport(x0,y0,l,sigma,theta,imSize,kSigma)
 % [xRange,yRange,nzIdx] = segment2DSupport(x0,y0,sigma,l,theta,imSize)
 %
 % Compute the finite support of a diffraction-limited 2D segment given
@@ -7,13 +7,15 @@ function [xRange,yRange,nzIdx] = segment2DSupport(x0,y0,sigma,l,theta,imSize)
 % parameters:
 % (x0,y0)            center of the segment (in the image domain)
 %
-% sigma              half width of segment
-%
 % l                  length of the segment
+%
+% sigma              half width of segment
 %
 % theta              orientation of the segment
 %
 % imSize             image size
+%
+% kSigma             cutoff in number of standard deviations
 %
 % output:
 % (xRange, yRange)   2 vectors representing the 2-dimensional support of
@@ -31,7 +33,7 @@ l2 = l / 2;
 
 % Hypothenuse length, corresponding to the half-length diagonal of a
 % 2*(L2+d) long by 2d wide rectangle surrounding the segment.
-d = 3 * sigma;
+d = kSigma * sigma;
 lh = sqrt(d.^2 + (l2 + d).^2);
 
 % Angle between a rectangle border and a diagonal of the rectangle

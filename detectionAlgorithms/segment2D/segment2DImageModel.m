@@ -44,9 +44,9 @@ for i = 1:n
     l = segmentParams(i,5);
     theta = segmentParams(i,6);
 
-    [xRange{i},yRange{i},nzIdx{i}] = segment2DSupport(x,y,sigma,l,theta,imSize);
+    [xRange{i},yRange{i},nzIdx{i}] = segment2DSupport(x,y,l,sigma,theta,imSize);
 
-    S = segment2D(x,y,amp,sigma,l,theta,xRange{i},yRange{i},nzIdx{i});
+    S = segment2D(x,y,amp,l,sigma,theta,xRange{i},yRange{i},nzIdx{i});
     
     Im(yRange{i},xRange{i}) = Im(yRange{i},xRange{i}) + S;
 end

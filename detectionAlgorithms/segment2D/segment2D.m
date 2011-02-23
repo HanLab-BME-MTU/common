@@ -1,12 +1,12 @@
-function F = segment2D(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx)
+function F = segment2D(x, y, amp, l, sigma, theta, xRange, yRange, nzIdx)
 % sub-resolution 2D segment model defined by 6 parameters:
 %    xy      : position of the segment's center
 %    amp     : mean amplitude along the segment
-%    sigma   : half width of the segment
 %    l       : length
+%    sigma   : half width of the segment
 %    theta   : orientation [-pi/2, pi/2)
 %
-% F = segment2D(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx)
+% F = segment2D(x, y, amp, l, sigma, theta, xRange, yRange, nzIdx)
 %
 % parameters:
 %
@@ -14,9 +14,9 @@ function F = segment2D(x, y, amp, sigma, l, theta, xRange, yRange, nzIdx)
 %
 % amp                amplitude of the segment
 %
-% sigma              half width of the segment
-%
 % l                  length of the segment
+%
+% sigma              half width of the segment
 %
 % theta              orientation of the segment
 %

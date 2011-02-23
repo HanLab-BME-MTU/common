@@ -1,4 +1,4 @@
-function [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigmaX,sigmaY,theta,imSize)
+function [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigmaX,sigmaY,theta,imSize,kSigma)
 % [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigmaX,sigmaY,theta,imSize)
 %
 % Compute the finite support of an anisotropic Gaussian 2D model given
@@ -15,6 +15,8 @@ function [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigmaX,sigmaY,thet
 %
 % imSize             image size
 %
+% kSigma             cutoff in number of standard deviations
+%
 % output:
 % (xRange, yRange)   2 vectors representing the 2-dimensional support of
 %                    the model in the image domain 1:size(imSize,1) x
@@ -26,11 +28,11 @@ function [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigmaX,sigmaY,thet
 % Sylvain Berlemont, 2011
 
 % half length along the main axis
-l2 = 3 * sigmaX;
+l2 = kSigma * sigmaX;
 
 % Hypothenuse length, corresponding to the half-length diagonal of a
 % 2*(l2+d) long by 2d wide rectangle surrounding the segment.
-d = 3 * sigmaY;
+d = kSigma * sigmaY;
 lh = sqrt(d.^2 + (l2 + d).^2);
 
 % Angle between a rectangle border and a diagonal of the rectangle
