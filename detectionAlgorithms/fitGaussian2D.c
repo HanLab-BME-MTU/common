@@ -1,15 +1,15 @@
 /* [prmVect prmStd covarianceMatrix residuals Jacobian] = fitGaussian2Dmex(prmVect, initValues, mode);
  *
- * (c) Francois Aguet & Sylvain Berlemont, 2011 (last modified Feb 3, 2011)
+ * (c) Francois Aguet & Sylvain Berlemont, 2011 (last modified Feb 23, 2011)
  *
- * Compile with: mex -I/usr/local/include -lgsl -lgslcblas fitGaussian2D.c
+ * Compile with: mex -I/usr/local/include -I../mex/include -lgsl -lgslcblas fitGaussian2D.c
  */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include <ctype.h> // tolower()
+#include <ctype.h>
 
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
@@ -37,7 +37,7 @@ typedef struct dataStruct {
     double *gx, *gy;
     int *estIdx;
     int *idx;
-    int nValid; // number of non-NaN pixels
+    int nValid; /* number of non-NaN pixels */
     double *x_init;
     double prmVect[NPARAMS];
     pfunc_t *dfunc;
@@ -98,7 +98,7 @@ static int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
     double *gx = dataStruct->gx;
     double *gy = dataStruct->gy;
     
-    // update prmVect with new estimates
+    /* update prmVect with new estimates */
     for (i=0; i<dataStruct->np; ++i) {
         dataStruct->prmVect[dataStruct->estIdx[i]] = gsl_vector_get(x, i);
     }
@@ -140,7 +140,7 @@ static int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J) {
     double *gx = dataStruct->gx;
     double *gy = dataStruct->gy;
     
-    // update prmVect with new estimates
+    /* update prmVect with new estimates */
     for (i=0; i<dataStruct->np; ++i) {
         dataStruct->prmVect[dataStruct->estIdx[i]] = gsl_vector_get(x, i);
     }
@@ -194,7 +194,7 @@ static int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_ma
     double *gx = dataStruct->gx;
     double *gy = dataStruct->gy;
     
-    // update prmVect with new estimates
+    /* update prmVect with new estimates */
     for (i=0; i<dataStruct->np; ++i) {
         dataStruct->prmVect[dataStruct->estIdx[i]] = gsl_vector_get(x, i);
     }
@@ -244,7 +244,7 @@ static int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_ma
 
 static int MLalgo(struct dataStruct *data) {
     
-    // declare solvers
+    /* declare solvers */
     const gsl_multifit_fdfsolver_type *T;
     gsl_multifit_fdfsolver *s;
     
@@ -292,11 +292,11 @@ static int MLalgo(struct dataStruct *data) {
         data->prmVect[data->estIdx[i]] = gsl_vector_get(s->x, i);
     }
     
-    // copy residual
+    /* copy residuals */
     data->residuals = gsl_vector_alloc(data->nValid);
     gsl_vector_memcpy(data->residuals, s->f);
     
-    // copy Jacobian
+    /* copy Jacobian */
     data->J = gsl_matrix_alloc(data->nValid, data->np);
     gsl_matrix_memcpy(data->J, s->J);
     
@@ -317,7 +317,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     dataStruct_t data;
     
-    // check inputs
+    /* check inputs */
     if (nrhs < 3) mexErrMsgTxt("Inputs should be: data, prmVect, mode.");
     if (!mxIsDouble(prhs[0])) mexErrMsgTxt("Data input must be double array.");
     size_t nx = mxGetN(prhs[0]);
@@ -339,7 +339,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     
     
-    // read mode input
+    /* read mode input */
     int np = mxGetNumberOfElements(prhs[2]);
     char *mode;
     mode = (char*)malloc(sizeof(char)*(np+1));
@@ -350,13 +350,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mode[i] = tolower(mode[i]);
     }
     
-    np = 0; // number of parameters to fit
+    np = 0; /* number of parameters to fit */
     for (i=0; i<NPARAMS; ++i) {
         if (strchr(mode, refMode[i])!=NULL) { np++; }
     }
     if (np==0) mexErrMsgTxt("Unknown mode.");
     
-    // allocate
+    /* allocate */
     data.nx = nx;
     data.np = np;
     data.pixels = mxGetPr(prhs[0]);
@@ -366,7 +366,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     memcpy(data.prmVect, mxGetPr(prhs[1]), NPARAMS*sizeof(double));
     data.dfunc = (pfunc_t*) malloc(sizeof(pfunc_t) * np);
     
-    // read mask/pixels
+    /* read mask/pixels */
     data.nValid = N;
     for (i=0; i<N; ++i) {
         data.nValid -= (int)mxIsNaN(data.pixels[i]);
@@ -396,13 +396,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     MLalgo(&data);
     
-    // parameters
+    /* parameters */
     if (nlhs > 0) {
         plhs[0] = mxCreateDoubleMatrix(1, NPARAMS, mxREAL);
         memcpy(mxGetPr(plhs[0]), data.prmVect, NPARAMS*sizeof(double));
     }
     
-    // standard dev. of parameters & covariance matrix
+    /* standard dev. of parameters & covariance matrix */
     if (nlhs > 1) {
         
         gsl_matrix *covar = gsl_matrix_alloc(np, np);
@@ -420,13 +420,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         }
         if (nlhs > 2) {
             plhs[2] = mxCreateDoubleMatrix(np, np, mxREAL);
-            // cov. matrix is symmetric, no need to transpose
+            /* cov. matrix is symmetric, no need to transpose */
             memcpy(mxGetPr(plhs[2]), covar->data, np*np*sizeof(double));
         }
         gsl_matrix_free(covar);
     }
     
-    // residuals
+    /* residuals */
     if (nlhs > 3) {
         const char *fieldnames[] = {"data", "pval", "mean", "std"};
         mwSize dims[2] = {1, 1};
@@ -457,9 +457,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mxSetFieldByNumber(plhs[3], 0, 3, mxCreateDoubleScalar(std));
     }
     
-    // Jacobian
+    /* Jacobian */
     if (nlhs > 4) {
-        // convert row-major double* data.J->data to column-major double*
+        /* convert row-major double* data.J->data to column-major double* */
         plhs[4] = mxCreateDoubleMatrix(N, np, mxREAL);
         double *J = mxGetPr(plhs[4]);
         int k;
@@ -489,8 +489,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 
 
-// compile with:
-//export DYLD_LIBRARY_PATH=/Applications/MATLAB_R2010b.app/bin/maci64 && gcc -Wall -g -DARRAY_ACCESS_INLINING -I. -I/Applications/MATLAB_R2010b.app/extern/include -L/Applications/MATLAB_R2010b.app/bin/maci64 -lmx -lmex -lgsl -lgslcblas -lmat fitGaussian2D.c
+/* compile with:
+ * export DYLD_LIBRARY_PATH=/Applications/MATLAB_R2010b.app/bin/maci64 && gcc -Wall -g -DARRAY_ACCESS_INLINING -I. -I/Applications/MATLAB_R2010b.app/extern/include -L/Applications/MATLAB_R2010b.app/bin/maci64 -lmx -lmex -lgsl -lgslcblas -lmat fitGaussian2D.c
+*/
+
 /*int main(void) {
     
     int nx = 15;
