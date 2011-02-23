@@ -38,7 +38,7 @@ typedef int(*pfunc_t)(gsl_matrix*, int, int, argStruct_t*);
 
 typedef struct dataStruct
 {
-  int nx, np;
+  int nx, ny, np;
   double *pixels;
   int *estIdx;
   int *idx;
@@ -220,7 +220,9 @@ static int f(const gsl_vector *x, void *params, gsl_vector *f)
   dataStruct_t *dataStruct = (dataStruct_t *)params;
   int i,idx;
   int nx = dataStruct->nx;
+  int ny = dataStruct->ny;
   int nx_div2 = nx >> 1;
+  int ny_div2 = ny >> 1;
     
   double *pixels = dataStruct->pixels;
     
@@ -248,10 +250,10 @@ static int f(const gsl_vector *x, void *params, gsl_vector *f)
   for (i=0; i < dataStruct->nValid; ++i)
     {
       idx = dataStruct->idx[i];
-      divRes = div(idx, nx);
+      divRes = div(idx, ny);
 	  
       xi = divRes.quot-nx_div2-xp;
-      yi = divRes.rem-nx_div2-yp;
+      yi = divRes.rem-ny_div2-yp;
 	  
       tmp = yi * ct - xi * st;
       c1 = exp((-1/2) * s2 * tmp * tmp);
@@ -269,7 +271,9 @@ static int df(const gsl_vector *x, void *params, gsl_matrix *J)
   dataStruct_t *dataStruct = (dataStruct_t *)params;
   int i,idx,k;
   int nx = dataStruct->nx;
+  int ny = dataStruct->ny;
   int nx_div2 = nx >> 1;
+  int ny_div2 = ny >> 1;
     
   /* update prmVect with new estimates */
   for (i=0; i<dataStruct->np; ++i) {
@@ -303,10 +307,10 @@ static int df(const gsl_vector *x, void *params, gsl_matrix *J)
   for (i=0; i<dataStruct->nValid; ++i)
     {
       idx = dataStruct->idx[i];
-      divRes = div(idx, nx);
+      divRes = div(idx, ny);
 		
-      xi = divRes.quot-nx_div2-xp;
-      yi = divRes.rem-nx_div2-yp;
+      xi = divRes.quot-ny_div2-xp;
+      yi = divRes.rem-ny_div2-yp;
 		
       argStruct.xi = xi;
       argStruct.yi = yi;
@@ -330,7 +334,9 @@ static int fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
   dataStruct_t *dataStruct = (dataStruct_t *)params;
   int i, idx, k;
   int nx = dataStruct->nx;
+  int ny = dataStruct->ny;
   int nx_div2 = nx >> 1;
+  int ny_div2 = ny >> 1;
     
   double *pixels = dataStruct->pixels;
     
@@ -366,10 +372,10 @@ static int fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
   for (i=0; i<dataStruct->nValid; ++i)
     {
       idx = dataStruct->idx[i];
-      divRes = div(idx, nx);
+      divRes = div(idx, ny);
 		
-      xi = divRes.quot-nx_div2-xp;
-      yi = divRes.rem-nx_div2-yp;
+      xi = divRes.quot-ny_div2-xp;
+      yi = divRes.rem-ny_div2-yp;
 		
       argStruct.xi = xi;
       argStruct.yi = yi;
@@ -464,8 +470,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   size_t nx = mxGetN(prhs[0]);
   size_t ny = mxGetM(prhs[0]);
-  if (nx != ny) mexErrMsgTxt("Input should be a square image.");
-  int N = nx*nx;
+  int N = nx*ny;
 
   /* read mode input */
   int np = mxGetNumberOfElements(prhs[2]);
@@ -486,6 +491,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   /* allocate */
   dataStruct_t data;
   data.nx = nx;
+  data.ny = ny;
   data.np = np;
   data.pixels = mxGetPr(prhs[0]);
   data.estIdx = (int*)malloc(sizeof(int)*np);
@@ -566,7 +572,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   /* residuals */
   if (nlhs > 3)
     {
-      plhs[3] = mxCreateDoubleMatrix(nx, nx, mxREAL);
+      plhs[3] = mxCreateDoubleMatrix(ny, nx, mxREAL);
       double* res = mxGetPr(plhs[3]);
       for (i=0; i<data.nValid; ++i)
 	res[data.idx[i]] = gsl_vector_get(data.residuals,i);
