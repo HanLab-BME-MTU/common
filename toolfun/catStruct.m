@@ -138,6 +138,14 @@ if strmatch(topLevelName,'out')
     clear out
 end
 
+% check whether out is empty
+emptyInput = eval(sprintf('isempty(%s);',topLevelName));
+if emptyInput
+    out = [];
+    return
+end
+
+
 % decide whether we can go easy or not
 if numberOfLevels == 1 & isempty(separator) & isempty(rangeString)
     % string check

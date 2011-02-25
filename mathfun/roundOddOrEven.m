@@ -18,9 +18,9 @@ function out=roundOddOrEven(x,oddOrEven,infOrZero)
 switch nargin
     case 1
         oddOrEven='odd';
-        infOrZero='';
+        infOrZero='close';
     case 2
-        infOrZero='';
+        infOrZero='close';
         if ~strcmp(oddOrEven,'odd')&~strcmp(oddOrEven,'even')
             error('wrong input for oddOrEven');
             return
