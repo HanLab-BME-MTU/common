@@ -711,6 +711,53 @@ function edit_maxgap_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of edit_maxgap as text
 %        str2double(get(hObject,'String')) returns contents of edit_maxgap as a double
 
+maxgap = get(handles.edit_maxgap, 'String');
+if isempty( maxgap )
+    warndlg('Parameter "Maximum Gap to Close" is required by the algorithm.','Warning','modal')
+    
+elseif isnan(str2double(maxgap)) || str2double(maxgap) < 0 || floor(str2double(maxgap)) ~= ceil(str2double(maxgap))
+    errordlg('Please provide a valid value to parameter "Maximum Gap to Close".','Warning','modal')
+    
+else
+    timeWindow = str2double(maxgap) + 1; % Retrieve the new value for the time window
+
+    % Retrieve the parameters of the linking and gap closing matrices
+    u_linking = get(handles.popupmenu_linking, 'UserData');
+    linkingID = get(handles.popupmenu_linking, 'Value');
+    linkingParameters = u_linking{linkingID};
+    u_gapclosing = get(handles.popupmenu_gapclosing, 'UserData');
+    gapclosingID = get(handles.popupmenu_gapclosing, 'Value');
+    gapclosingParameters = u_gapclosing{gapclosingID};
+
+    % Check for changes
+    linkingnnWindowChange=(linkingParameters.nnWindow~=timeWindow);
+    gapclosingnnWindowChange=(gapclosingParameters.nnWindow~=timeWindow);
+    gapclosingtimeReachConfBChange=(gapclosingParameters.timeReachConfB~=timeWindow);
+    gapclosingtimeReachConfLChange=(gapclosingParameters.timeReachConfL~=timeWindow);
+
+    if linkingnnWindowChange || gapclosingnnWindowChange ||...
+            gapclosingtimeReachConfBChange || gapclosingtimeReachConfLChange
+        % Optional: asks the user if the time window value should be propagated
+        % to the linking and gap closing matrics
+        modifyParameters=questdlg('Do you want to propagate the changes in the maximum number of gaps to close?',...
+           'Parameters update','Yes','No','Yes');
+        if strcmp(modifyParameters,'Yes')
+            % Save changes
+            linkingParameters.nnWindow=timeWindow;
+            gapclosingParameters.nnWindow=timeWindow;
+            gapclosingParameters.timeReachConfB=timeWindow;
+            gapclosingParameters.timeReachConfL=timeWindow;
+            
+            u_linking{linkingID} = linkingParameters;
+            u_gapclosing{gapclosingID} = gapclosingParameters;
+            
+            set(handles.popupmenu_linking, 'UserData', u_linking)
+            set(handles.popupmenu_gapclosing, 'UserData', u_gapclosing)
+            guidata(hObject,handles);
+        end
+    end
+end
+
 
 % --- Executes during object creation, after setting all properties.
 function edit_maxgap_CreateFcn(hObject, eventdata, handles)

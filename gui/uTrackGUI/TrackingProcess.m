@@ -69,14 +69,14 @@ methods(Access = public)
             parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the gap closing and merging/splitting step.
             parameters.nnWindow = funParams.gapCloseParam.timeWindow; %number of frames before/after the current one where you want to look for a track's nearest neighbor at its end/start (in the gap closing step).
             parameters.brownScaling = [0.5 0.01]; %power for scaling the Brownian search radius with time, before and after timeReachConfB (next parameter).
-            parameters.timeReachConfB = 5; %before timeReachConfB, the search radius grows with time with the power in brownScaling(1); after timeReachConfB it grows with the power in brownScaling(2).
+            parameters.timeReachConfB = funParams.gapCloseParam.timeWindow; %before timeReachConfB, the search radius grows with time with the power in brownScaling(1); after timeReachConfB it grows with the power in brownScaling(2).
             parameters.ampRatioLimit = [0.5 2]; % (FLAG + VALUES small-big value) for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
 
             % If parameters.linearMotion = 1
             parameters.lenForClassify = 5; %minimum track segment length to classify it as linear or random.
             parameters.linStdMult = 3*ones(funParams.gapCloseParam.timeWindow,1); %multiplication factor to calculate linear search radius from standard deviation.
             parameters.linScaling = [1 0.01]; %power for scaling the linear search radius with time (similar to brownScaling).
-            parameters.timeReachConfL = 5; %similar to timeReachConfB, but for the linear part of the motion.
+            parameters.timeReachConfL = funParams.gapCloseParam.timeWindow; %similar to timeReachConfB, but for the linear part of the motion.
             parameters.maxAngleVV = 30; %maximum angle between the directions of motion of two tracks that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
             % ---------------------------------
             

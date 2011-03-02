@@ -171,7 +171,7 @@ if userData.crtProc.procChanged_
     
     % lower
     if isempty( lower )
-        errordlg('Parameter "Lower Bound" is requied by the algorithm.','Error','modal')
+        errordlg('Parameter "Lower Bound" is required by the algorithm.','Error','modal')
         return
 
     elseif isnan(str2double(lower)) || str2double(lower) < 0
@@ -183,7 +183,7 @@ if userData.crtProc.procChanged_
     
     % Upper
     if isempty( upper )
-        errordlg('Parameter "Upper Bound" is requied by the algorithm.','Error','modal')
+        errordlg('Parameter "Upper Bound" is required by the algorithm.','Error','modal')
         return
 
     elseif isnan(str2double(upper)) || str2double(upper) < 0 
@@ -200,7 +200,7 @@ if userData.crtProc.procChanged_
     
     % brownStdMult
     if isempty( brownStdMult )
-        errordlg('Parameter "Multiplication Factor for Search Radius Calculation" is requied by the algorithm.','Error','modal')
+        errordlg('Parameter "Multiplication Factor for Search Radius Calculation" is required by the algorithm.','Error','modal')
         return
 
     elseif isnan(str2double(brownStdMult)) || str2double(brownStdMult) < 0
@@ -212,7 +212,7 @@ if userData.crtProc.procChanged_
     
     % nnWindow
     if isempty( nnWindow )
-        errordlg('Parameter "Number of Frames for Nearest Neighbor Distance Calculation" is requied by the algorithm.','Error','modal')
+        errordlg('Parameter "Number of Frames for Nearest Neighbor Distance Calculation" is required by the algorithm.','Error','modal')
         return
 
     elseif isnan(str2double(nnWindow)) || str2double(nnWindow) < 0
