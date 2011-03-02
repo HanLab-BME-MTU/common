@@ -1,9 +1,9 @@
 function plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
-    newFigure,image,showConf,simplifyLin)
+    newFigure,image,showConf,simplifyLin,offset)
 %PLOTTRACKSDIFFANALYSIS2D plots tracks in 2D highlighting the different diffusion types
 %
 %SYNOPSIS plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,...
-%    newFigure,image,showConf,simplifyLin)
+%    newFigure,image,showConf,simplifyLin,offset)
 %
 %INPUT  trackedFeatureInfo: -- EITHER -- 
 %                           Output of trackWithGapClosing:
@@ -59,6 +59,8 @@ function plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,.
 %                           the overall linear category;
 %                           0 to keep each group separate.
 %                           Optional. Default: 0.
+%       offset            : [dx,dy] that is to be added to the coordinates.
+%                           Optional. Default: [0,0]
 %
 %OUTPUT The plot.
 %       Color coding:
@@ -132,6 +134,11 @@ end
 %check whether to simplify color-coding of linear tracks
 if nargin < 7 || isempty(simplifyLin)
     simplifyLin = 0;
+end
+
+%check whether there is an offset
+if nargin < 8 || isempty(offset)
+    offset = [0 0];
 end
 
 %exit if there are problems in input variables
@@ -212,8 +219,8 @@ else %if tracks are not input in structure format
 end
 
 %get the x,y-coordinates of features in all tracks
-tracksX = trackedFeatureInfo(:,1:8:end)';
-tracksY = trackedFeatureInfo(:,2:8:end)';
+tracksX = trackedFeatureInfo(:,1:8:end)' + offset(1);
+tracksY = trackedFeatureInfo(:,2:8:end)' + offset(2);
 
 %find x-coordinate limits
 minXCoord = min(floor(min(tracksX(:))),0);

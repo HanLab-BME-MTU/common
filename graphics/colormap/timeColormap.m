@@ -1,9 +1,12 @@
-function cmap = timeColormap(nTimepoints)
+function cmap = timeColormap(nTimepoints,colorseq)
 %TIMECOLORMAP is Khuloud's time color map
 %
 % SYNOPSIS: cmap = timeColormap(nTimepoints)
 %
 % INPUT nTimepoints: (opt) length of colormap. Default: 64
+%       colorseq   : (opt) string indicating sequence of colors to use. 
+%                    Any permutation of red,green and blue, e.g. rgb, gbr, etc.
+%                    Default: gbr.
 %
 % OUTPUT cmap : nTimepoints-by-3 colormap that changes from green to blue to red
 %
@@ -19,19 +22,54 @@ function cmap = timeColormap(nTimepoints)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% input
+%% input
 if nargin < 1 || isempty(nTimepoints)
     nTimepoints = 64;
 end
 
-% make colormap
+%allow variation in sequence of colors - KJ
+if nargin < 2 || isempty(colorseq)
+    colorseq = 'gbr';
+end
+
+%determine color sequence based on input
+colorCode = zeros(nTimepoints,3,3);
+for i=1:3
+    colorTmp = colorseq(i);
+    switch colorTmp
+        case 'r'
+            colorCode(:,:,i) = repmat([1 0 0],nTimepoints,1);
+        case 'g'
+            colorCode(:,:,i) = repmat([0 1 0],nTimepoints,1);
+        case 'b'
+            colorCode(:,:,i) = repmat([0 0 1],nTimepoints,1);
+    end
+end
+
+%% make colormap
+
+%old code replaced with new code to allow flexibility in color sequence - KJ
+%
+% %get the fraction of each color in each time interval to be plotted
+% numTimePlotOver2 = ceil((nTimepoints-1)/2); %needed to change blue color over time
+% redVariation = (0:nTimepoints-1)'/(nTimepoints-1);
+% greenVariation = (nTimepoints-1:-1:0)'/(nTimepoints-1);
+% blueVariation = [(0:numTimePlotOver2-1)'/(numTimePlotOver2);...
+%     (nTimepoints-numTimePlotOver2-1:-1:0)'/(nTimepoints-numTimePlotOver2)];
+% 
+% %get the overall color per time interval
+% cmap = [redVariation greenVariation blueVariation];
 
 %get the fraction of each color in each time interval to be plotted
-numTimePlotOver2 = ceil((nTimepoints-1)/2); %needed to change blue color over time
-redVariation = (0:nTimepoints-1)'/(nTimepoints-1);
-greenVariation = (nTimepoints-1:-1:0)'/(nTimepoints-1);
-blueVariation = [(0:numTimePlotOver2-1)'/(numTimePlotOver2);...
-    (nTimepoints-numTimePlotOver2-1:-1:0)'/(nTimepoints-numTimePlotOver2)];
+colorVariation = zeros(nTimepoints,3,3);
+numTimePlotOver2 = ceil((nTimepoints-1)/2); %needed to change the middle color over time
+colorVariation(:,:,1) = repmat((nTimepoints-1:-1:0)'/(nTimepoints-1),1,3);
+colorVariation(:,:,2) = repmat([(0:numTimePlotOver2-1)'/(numTimePlotOver2);...
+    (nTimepoints-numTimePlotOver2-1:-1:0)'/(nTimepoints-numTimePlotOver2)],1,3);
+colorVariation(:,:,3) = repmat((0:nTimepoints-1)'/(nTimepoints-1),1,3);
 
 %get the overall color per time interval
-cmap = [redVariation greenVariation blueVariation];
+cmap = sum(colorCode .* colorVariation, 3);
+
+
+%% ~~~ the end ~~~
