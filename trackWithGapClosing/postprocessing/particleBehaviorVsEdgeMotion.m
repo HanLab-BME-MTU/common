@@ -1,4 +1,4 @@
-function particleBehaviorVsEdgeMotion(protPerWindow,sptPropInWindow,prop2analyze,band2analyze)
+function particleBehaviorVsEdgeMotion(protPerWindow,sptPropInWindow,prop2analyze,band2analyze) %#ok<INUSL>
 %PARTICLEBEHAVIORVSEDGEMOTION looks for correlation between particle behavior and cell edge protrusion activity
 %
 %SYNOPSIS 
@@ -65,8 +65,12 @@ for iProp = 1 : numProp2analyze
             %go over all bands
             for iBand = 1 : numBands
                 propCurrentBand = squeeze(propCurrent(band2analyze(iBand),:,:)); %#ok<NODEF>
-                minValue = min(propCurrentBand(:));
-                maxValue = prctile(propCurrentBand(:),99);
+                valuesNoNaNs = propCurrentBand(:);
+                valuesNoNaNs = valuesNoNaNs(~isnan(valuesNoNaNs));
+                minValue = prctile(valuesNoNaNs,1);
+                maxValue = prctile(valuesNoNaNs,99);
+                %                 minValue = min(propCurrentBand(:));
+                %                 maxValue = max(propCurrentBand(:));
                 nanValue = minValue - (maxValue - minValue)/64;
                 propCurrentBand(isnan(propCurrentBand)) = nanValue;
                 figure

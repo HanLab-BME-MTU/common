@@ -1,8 +1,8 @@
-function [sptPropInWindow,tracksInWindow] = particleBehaviorInWindows(tracksFinal,...
+function [sptPropInWindow,tracksInWindow,windowSize] = particleBehaviorInWindows(tracksFinal,...
     winPositions,winFrames,diffAnalysisRes,minLength)
 %PARTICLEBEHAVIORINWINDOWS averages single particle behavior in windows based on cell edge segmentation
 %
-%SYNOPSIS [sptPropInWindow,tracksInWindow] = particleBehaviorInWindows(tracksFinal,...
+%SYNOPSIS [sptPropInWindow,tracksInWindow,winSize] = particleBehaviorInWindows(tracksFinal,...
 %    winPositions,winFrames,diffAnalysisRes,minLength)
 %
 %INPUT  tracksFinal    : The tracks, either in structure format (e.g.
@@ -41,6 +41,10 @@ function [sptPropInWindow,tracksInWindow] = particleBehaviorInWindows(tracksFina
 %                        dimensions (number of bands) x (number of windows)
 %                        x (number of window frames-1) storing the track 
 %                        indices that fall in each window in each frame.
+%       windowSize     : 3-D matrix of dimensions (number of bands) x (number
+%                        of windows) x (number of window frames - 1)
+%                        storing the size of each window. NaN indicates a
+%                        window of zero size.
 %
 %REMARKS This code is designed for experiments where the particle
 %        trajectories are sampled much more frequently than the cell edge.
@@ -164,7 +168,8 @@ for iFrame = 1 : numWinFrames-1
     for iPara = 1 : numWinPara
         for iPerp = 1 : numWinPerp
             
-            %if this window has a finite size
+            %if this window has proper boundaries (reflecting a finite
+            %size) ...
             if ~isempty(winPositions(iPerp,iPara,iFrame).outerBorder) ...
                     && ~isempty(winPositions(iPerp,iPara,iFrame).innerBorder)
                 
@@ -182,6 +187,12 @@ for iFrame = 1 : numWinFrames-1
         end
     end
 end
+%make sure that there are no zeros
+winSize(winSize==0) = NaN;
+
+%copy winSize into the output variable windowSize and convert NaNs to zeros
+windowSize = winSize;
+windowSize(isnan(windowSize)) = 0;
 
 %% Calculate property values per window
 
