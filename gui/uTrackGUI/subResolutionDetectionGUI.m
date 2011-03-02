@@ -831,7 +831,7 @@ if get(handles.checkbox_mmf, 'Value')
         alphaR = str2double(alphaR);
     end
 else
-    alphaR = [];
+    alphaR = .05;
 end
 
 %% AlphaA

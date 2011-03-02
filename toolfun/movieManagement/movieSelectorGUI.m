@@ -370,7 +370,7 @@ elseif ~isempty(structM2)
     type = 'MovieList';
     
 else
-    errordlg('No movie data or moie list is found in selected MAT-file.',...
+    errordlg('No movie data or movie list is found in selected MAT-file.',...
             'MAT File Error','modal');
     return
 end

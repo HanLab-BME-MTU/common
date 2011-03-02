@@ -118,14 +118,14 @@ methods(Access = public)
         % Tool 1: plotTracks2D
         
         obj.visualParams_.pt2D.timeRange = [1 owner.nFrames_];
-        obj.visualParams_.pt2D.colorTime = 'k';
+        obj.visualParams_.pt2D.colorTime = '3';
         obj.visualParams_.pt2D.markerType = 'none';
-        obj.visualParams_.pt2D.indicateSE = 1;
+        obj.visualParams_.pt2D.indicateSE = 0;
         obj.visualParams_.pt2D.newFigure = 1;
         obj.visualParams_.pt2D.image = [];
         obj.visualParams_.pt2D.imageDir = []; % Not in original function
         obj.visualParams_.pt2D.flipXY = 0;
-        obj.visualParams_.pt2D.ask4sel = 1;
+        obj.visualParams_.pt2D.ask4sel = 0;
         obj.visualParams_.pt2D.offset = [0 0];
         
         % Tool 2: plotCompTrack
@@ -147,7 +147,7 @@ methods(Access = public)
         obj.visualParams_.otmn.filterSigma = 0;
         obj.visualParams_.otmn.classifyGaps = 0;
         obj.visualParams_.otmn.highlightES = 0;
-        obj.visualParams_.otmn.showRaw = 0;
+        obj.visualParams_.otmn.showRaw = 1;
         obj.visualParams_.otmn.imageRange = []; % TO DO in GUI
         obj.visualParams_.otmn.onlyTracks = 0;
         obj.visualParams_.otmn.classifyLft = 0;

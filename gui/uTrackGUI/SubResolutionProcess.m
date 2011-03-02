@@ -82,7 +82,7 @@ classdef SubResolutionProcess < DetectionProcess
             obj.visualParams_.movieName = [];
             obj.visualParams_.dir2saveMovie = funParams.saveResults.dir;            
             obj.visualParams_.filterSigma = 0;
-            obj.visualParams_.showRaw = 0;
+            obj.visualParams_.showRaw = 1;
             obj.visualParams_.intensityScale = 1;
             file = owner.getImageFileNames(1);
             obj.visualParams_.firstImageFile = [owner.channels_(1).channelPath_ filesep file{1}{1}];

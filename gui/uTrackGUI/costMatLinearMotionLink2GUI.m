@@ -268,8 +268,22 @@ if userData.crtProc.procChanged_
     % set linearMotion to gap closing cost function "costMatLinearMotionCloseGaps2"
     u_gapclosing = get(userData.handles_main.popupmenu_gapclosing, 'UserData');
     u_gapclosing{strcmp('costMatLinearMotionCloseGaps2', userData.userData_main.cost_gapclosing)}.linearMotion = parameters.linearMotion;
-    set(userData.handles_main.popupmenu_gapclosing, 'UserData', u_gapclosing)
+    gapclosingParameters = u_gapclosing{userData.procID};
     
+    % Check consistency of search radius parameters with gap closing
+    isminSearchRadiusConsistent=(gapclosingParameters.minSearchRadius==lower);
+    ismaxSearchRadiusConsistent=(gapclosingParameters.maxSearchRadius==upper);
+    if ~isminSearchRadiusConsistent || ~ismaxSearchRadiusConsistent
+        modifyGapClosingParameters=questdlg('Do you want to use the search radius bounds for the gap closing?',...
+           'Parameters update','Yes','No','Yes');
+        if strcmp(modifyGapClosingParameters,'Yes')
+            gapclosingParameters.minSearchRadius=lower;
+            gapclosingParameters.maxSearchRadius=upper;
+            u_gapclosing{userData.procID} = gapclosingParameters;
+        end
+    end
+    
+    set(userData.handles_main.popupmenu_gapclosing, 'UserData', u_gapclosing)
     
 end
 

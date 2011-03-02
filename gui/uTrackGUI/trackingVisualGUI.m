@@ -150,11 +150,11 @@ set(handles.text2_tracknum, 'String', ['out of ',num2str(length(userData.crtProc
 % popupmenu set-up
 colorStr = {'Color-code Time (G->B->R)', 'Rotate Through 7 Colors', 'Rotate Through 23 Colors','Black', 'Blue', 'Red'};
 colorUserData = {'1','2','3','k','b','r'};
-set(handles.popupmenu1_color, 'Value', 4, 'String', colorStr, 'UserData', colorUserData)
+set(handles.popupmenu1_color, 'String', colorStr, 'UserData', colorUserData)
 
 markerStr = {'Plus (+)', 'Circle (o)', 'Asterisk (*)','Point (.)', 'Cross (x)', 'Square', 'Diamond', 'none'};
 markerUserData = {'+','o','*','.','x','square', 'diamond', 'none'};
-set(handles.popupmenu1_marker, 'Value', length(markerStr), 'String', markerStr, 'UserData', markerUserData)
+set(handles.popupmenu1_marker, 'String', markerStr, 'UserData', markerUserData)
 
 
 
