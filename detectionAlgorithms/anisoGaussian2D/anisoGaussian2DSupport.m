@@ -25,16 +25,16 @@ function [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigmaX,sigmaY,thet
 %
 % Sylvain Berlemont, 2011
 
-% half length along the main axis
+% half length and width
 l2 = kSigma * sigmaX;
+w2 = kSigma * sigmaY;
 
 % Hypothenuse length, corresponding to the half-length diagonal of a
-% 2*(l2+d) long by 2d wide rectangle surrounding the segment.
-d = kSigma * sigmaY;
-lh = sqrt(d.^2 + (l2 + d).^2);
+% l2 x w2 rectangle surrounding the feature.
+lh = sqrt(l2^2 + w2^2);
 
 % Angle between a rectangle border and a diagonal of the rectangle
-at = atan(d ./ (l2 + d));
+at = atan2(w2,l2);
 
 s1 = [1 1 -1 -1];
 s2 = [1 -1 1 -1];
@@ -64,4 +64,4 @@ D2 = abs((X - x0) * ct + (Y - y0) * st);
 % truncate numbers towards zeros with 10 decimals to avoid numerical errors
 D1 = fix(D1 * 1e10) * 1e-10;
 D2 = fix(D2 * 1e10) * 1e-10;
-nzIdx = find(D1 <= d & D2 <= l2 + d);
+nzIdx = find(D1 <= w2 & D2 <= l2);

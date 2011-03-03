@@ -1,4 +1,4 @@
-%FITANISOGAUSSIAN2D Fit a 2-D Anisotropic Gaussian function to data in a square image window.
+%FITANISOGAUSSIAN2D Fit a 2-D Anisotropic Gaussian function to data in an image window.
 %    [prmVect prmStd C res J] = fitGaussian2D(data, prmVect, mode, options)
 %
 %    Symbols: xp : x-position
@@ -24,6 +24,6 @@
 %
 % Axis conventions: image processing, see meshgrid
 %
-% Example: [prmVect prmStd C res J] = fitGaussian2D(data, [0 0 max(data(:)) 1.5 1.5 pi/6 min(data(:))], 'xyarstc');
+% Example: [prmVect prmStd C res J] = fitAnisoGaussian2D(data, [0 0 max(data(:)) 1.5 1.5 pi/6 min(data(:))], 'xyarstc');
 
-% (c) Francois Aguet & Sylvain Berlemont, 2011
+% (c) Sylvain Berlemont, 2011

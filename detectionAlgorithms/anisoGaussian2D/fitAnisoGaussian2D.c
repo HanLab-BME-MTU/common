@@ -157,10 +157,11 @@ static int f(const gsl_vector *x, void *params, gsl_vector *f)
 {
   dataStruct_t *dataStruct = (dataStruct_t *)params;
   int i,idx;
+
   int nx = dataStruct->nx;
   int ny = dataStruct->ny;
-  int nx_div2 = nx >> 1;
-  int ny_div2 = ny >> 1;
+  int nx_div2 = (nx-1) >> 1;
+  int ny_div2 = (ny-1) >> 1;
     
   double *pixels = dataStruct->pixels;
   
@@ -208,10 +209,11 @@ static int df(const gsl_vector *x, void *params, gsl_matrix *J)
 {
   dataStruct_t *dataStruct = (dataStruct_t *)params;
   int i,idx,k;
+
   int nx = dataStruct->nx;
   int ny = dataStruct->ny;
-  int nx_div2 = nx >> 1;
-  int ny_div2 = ny >> 1;
+  int nx_div2 = (nx-1) >> 1;
+  int ny_div2 = (ny-1) >> 1;
     
   /* update prmVect with new estimates */
   for (i=0; i<dataStruct->np; ++i) {
@@ -274,10 +276,11 @@ static int fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
 {
   dataStruct_t *dataStruct = (dataStruct_t *)params;
   int i, idx, k;
+
   int nx = dataStruct->nx;
   int ny = dataStruct->ny;
-  int nx_div2 = nx >> 1;
-  int ny_div2 = ny >> 1;
+  int nx_div2 = (nx-1) >> 1;
+  int ny_div2 = (ny-1) >> 1;
     
   double *pixels = dataStruct->pixels;
     
@@ -327,7 +330,7 @@ static int fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
 		
       xi = divRes.quot-nx_div2-xp;
       yi = divRes.rem-ny_div2-yp;
-		
+
       argStruct.xi = xi;
       argStruct.yi = yi;
       argStruct.g = exp(-a * xi * xi - yi * (2 * b * xi + c * yi));
@@ -474,9 +477,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     {
       /* Make sure the angle parameter lies in -pi/2...pi/2 */
       float tmp = data.prmVect[5];
-      tmp = fmodl(tmp + M_PI_2,M_PI);
-      tmp -= SIGN(tmp) * M_PI_2;
-      data.prmVect[5] = tmp;
+      if (tmp > M_PI_2 || tmp < -M_PI_2)
+	{
+	  tmp = fmodl(tmp + M_PI_2,M_PI);
+	  tmp -= SIGN(tmp) * M_PI_2;
+	  data.prmVect[5] = tmp;
+	}
 
       /* Make sure sigma_x and sigma_y are positive */
       data.prmVect[3] = fabs(data.prmVect[3]);
