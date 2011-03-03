@@ -118,7 +118,7 @@ static int df_dy(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 
 /*
   c1 * C7 * s * (c2+c3);
- */
+*/
 static int df_dA(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
   double s = argStruct->s;
@@ -173,7 +173,7 @@ static int df_dl(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double c4 = argStruct->c4;
   double c5 = argStruct->c5;
 	
-  gsl_matrix_set(J, i, k, (1/2) * A * c1 * (c4 + c5));
+  gsl_matrix_set(J, i, k, .5 * A * c1 * (c4 + c5));
 	
   return 0;
 }
@@ -221,8 +221,8 @@ static int f(const gsl_vector *x, void *params, gsl_vector *f)
   int i,idx;
   int nx = dataStruct->nx;
   int ny = dataStruct->ny;
-  int nx_div2 = nx >> 1;
-  int ny_div2 = ny >> 1;
+  int nx_div2 = (nx-1) >> 1;
+  int ny_div2 = (ny-1) >> 1;
     
   double *pixels = dataStruct->pixels;
     
@@ -256,9 +256,9 @@ static int f(const gsl_vector *x, void *params, gsl_vector *f)
       yi = divRes.rem-ny_div2-yp;
 	  
       tmp = yi * ct - xi * st;
-      c1 = exp((-1/2) * s2 * tmp * tmp);
-      c2 = erf((1/2) * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
-      c3 = erf((1/2) * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));      
+      c1 = exp(-.5 * s2 * tmp * tmp);
+      c2 = erf(.5 * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
+      c3 = erf(.5 * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));      
 
       gsl_vector_set(f, i, A * c1 * C7 * s * (c2 + c3) + C - pixels[idx]);
     }
@@ -272,8 +272,8 @@ static int df(const gsl_vector *x, void *params, gsl_matrix *J)
   int i,idx,k;
   int nx = dataStruct->nx;
   int ny = dataStruct->ny;
-  int nx_div2 = nx >> 1;
-  int ny_div2 = ny >> 1;
+  int nx_div2 = (nx-1) >> 1;
+  int ny_div2 = (ny-1) >> 1;
     
   /* update prmVect with new estimates */
   for (i=0; i<dataStruct->np; ++i) {
@@ -309,15 +309,15 @@ static int df(const gsl_vector *x, void *params, gsl_matrix *J)
       idx = dataStruct->idx[i];
       divRes = div(idx, ny);
 		
-      xi = divRes.quot-ny_div2-xp;
+      xi = divRes.quot-nx_div2-xp;
       yi = divRes.rem-ny_div2-yp;
 		
       argStruct.xi = xi;
       argStruct.yi = yi;
       tmp = yi * ct - xi * st;
-      argStruct.c1 = exp((-1/2) * s2 * tmp * tmp);
-      argStruct.c2 = erf((1/2) * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
-      argStruct.c3 = erf((1/2) * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));
+      argStruct.c1 = exp(-.5 * s2 * tmp * tmp);
+      argStruct.c2 = erf(.5 * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
+      argStruct.c3 = erf(.5 * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));
       tmp = l - 2 * xi * ct - 2 * yi * st;
       argStruct.c4 = exp((-1/8) * s2 * tmp * tmp);
       tmp = l + 2 * xi * ct + 2 * yi * st;
@@ -335,8 +335,8 @@ static int fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
   int i, idx, k;
   int nx = dataStruct->nx;
   int ny = dataStruct->ny;
-  int nx_div2 = nx >> 1;
-  int ny_div2 = ny >> 1;
+  int nx_div2 = (nx-1) >> 1;
+  int ny_div2 = (ny-1) >> 1;
     
   double *pixels = dataStruct->pixels;
     
@@ -355,8 +355,8 @@ static int fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
   double xi, yi, tmp;
   double ct = cos(t);
   double st = sin(t);
-  double s1 = 1 / s;
-  double s2 = 1/ (s * s);
+  double s1 = 1.0 / s;
+  double s2 = 1.0 / (s * s);
 
   argStruct_t argStruct;
   argStruct.A = A;
@@ -374,15 +374,15 @@ static int fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
       idx = dataStruct->idx[i];
       divRes = div(idx, ny);
 		
-      xi = divRes.quot-ny_div2-xp;
+      xi = divRes.quot-nx_div2-xp;
       yi = divRes.rem-ny_div2-yp;
 		
       argStruct.xi = xi;
       argStruct.yi = yi;
       tmp = yi * ct - xi * st;
-      argStruct.c1 = exp((-1/2) * s2 * tmp * tmp);
-      argStruct.c2 = erf((1/2) * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
-      argStruct.c3 = erf((1/2) * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));
+      argStruct.c1 = exp(-.5 * s2 * tmp * tmp);
+      argStruct.c2 = erf(.5 * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
+      argStruct.c3 = erf(.5 * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));
       tmp = l - 2 * xi * ct - 2 * yi * st;
       argStruct.c4 = exp((-1/8) * s2 * tmp * tmp);
       tmp = l + 2 * xi * ct + 2 * yi * st;
@@ -435,7 +435,7 @@ static int MLalgo(struct dataStruct *data)
     status = gsl_multifit_fdfsolver_iterate(s);
     if (status)
       break;
-
+    
     status = gsl_multifit_test_delta(s->dx, s->x, 1e-8, 1e-8);
   }
   while (status == GSL_CONTINUE && iter < 500);
@@ -532,9 +532,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     {
       /* Make sure the angle parameter lies in -pi/2...pi/2 */
       float tmp = data.prmVect[5];
-      tmp = fmodl(tmp + M_PI_2,M_PI);
-      tmp -= SIGN(tmp) * M_PI_2;
-      data.prmVect[5] = tmp;
+      if (tmp > M_PI_2 || tmp < -M_PI_2)
+	{      
+	  tmp = fmodl(tmp + M_PI_2,M_PI);
+	  tmp -= SIGN(tmp) * M_PI_2;
+	  data.prmVect[5] = tmp;
+	}
 
       /* Make sure sigma and length are positive */
       data.prmVect[3] = fabs(data.prmVect[3]);
