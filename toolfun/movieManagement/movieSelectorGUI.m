@@ -142,6 +142,12 @@ if isempty( get(handles.listbox_movie, 'String') )
    warndlg('Please select at least one movie to continue.', 'Movie Selector', 'modal')
    return
 end
+
+if isempty(get(handles.uipanel_package, 'SelectedObject'))
+   warndlg('Please select a package to continue.', 'Movie Selector', 'modal')
+   return
+end
+
 userData = get(handles.figure1, 'userdata');
 switch get(get(handles.uipanel_package, 'SelectedObject'), 'tag')
 

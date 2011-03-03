@@ -49,20 +49,16 @@ while keepGoin
     
     %Find dependencies of current list
     newFiles = depfun(funList{:},'-toponly','-quiet');
-    
-    %Find the toolbox entries, excluding the stuff that comes with matlab
-    isToolBox = find(cellfun(@(x)(~isempty(regexp(x,'toolbox','ONCE'))),newFiles));    
-    
-    %Find toolbox name in path
-    iTBname = cellfun(@(x)(regexp(x,'toolbox','once')),newFiles(isToolBox));    
-    %And the next fileseparator after the toolbox name
-    iTBfs = arrayfun(@(x)(regexp(newFiles{isToolBox(x)}(iTBname(x)+8:end),filesep,'once')),1:numel(isToolBox));
-    
+
+    %Toolbox files should be named '*/toolbox/name_of_toolbox/*'
+    toolboxToken =[filesep 'toolbox' filesep '(\w+).*?' filesep];
+    foundTokens=cellfun(@(x)regexp(x,toolboxToken,'tokens','once'),newFiles,'UniformOutput',false);
+
     %Store any toolboxes from this round
-    currTBs = arrayfun(@(x)newFiles{isToolBox(x)}(iTBname(x)+8:iTBname(x)+6+iTBfs(x)),1:numel(isToolBox),'UniformOutput',false)';        
-    toolBoxes = vertcat(toolBoxes,unique(currTBs));
+    toolBoxes= vertcat(toolBoxes,unique([foundTokens{:}])');
     
-    %Remove the toolboxes so they won't be searched next round        
+    %Remove the toolboxes so they won't be searched next round
+    isToolBox=~cellfun(@isempty,foundTokens);
     newFiles(isToolBox) = [];    
        
     if ~isempty(newFiles)
