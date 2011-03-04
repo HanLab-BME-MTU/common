@@ -50,12 +50,13 @@ Y = Y(nzIdx);
 
 ct = cos(theta);
 st = sin(theta);
-
-C0 = (1/2).*amp.*erf(2.^(-1/2).*l.*sigma.^(-1)).^(-1);
-C1 = (1/2).*2.^(-1/2).*sigma.^(-1);
+    
+C0 = (1/2).*2.^(-1/2).*sigma.^(-1);
+C1 = exp(-.5 * sigma^(-2) * (Y * ct - X * st).^2);
+C2 = erf(C0 * (l + 2 * X * ct + 2 * Y * st));
+C3 = erf(C0 * (l - 2 * X * ct - 2 * Y * st));
+C7 = (pi/2)^(1/2);
 
 F = zeros(N,M);
 
-F(nzIdx) = C0 * exp((-1/2).*sigma.^(-2).*(Y.*ct-X.*st).^2).*(...
-    erf(C1.*(l+2.*X.*ct+2.*Y.*st))+...
-    erf(C1.*(l-2*X*ct-2*Y*st)));
+F(nzIdx) = amp * C1 .* C7 .* sigma .* (C2 + C3);

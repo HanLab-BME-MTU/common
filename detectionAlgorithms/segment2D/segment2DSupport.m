@@ -1,5 +1,5 @@
-function [xRange,yRange,nzIdx] = segment2DSupport(x0,y0,l,sigma,theta,imSize,kSigma)
-% [xRange,yRange,nzIdx] = segment2DSupport(x0,y0,sigma,l,theta,imSize)
+function [xRange,yRange,nzIdx] = segment2DSupport(x0,y0,l,sigma,theta,kSigma,imSize)
+% [xRange,yRange,nzIdx] = segment2DSupport(x0,y0,sigma,l,theta,kSigma)
 %
 % Compute the finite support of a diffraction-limited 2D segment given
 % its parameters.
@@ -13,9 +13,9 @@ function [xRange,yRange,nzIdx] = segment2DSupport(x0,y0,l,sigma,theta,imSize,kSi
 %
 % theta              orientation of the segment
 %
-% imSize             image size
-%
 % kSigma             cutoff in number of standard deviations
+%
+% imSize             imSize = [nx ny]. Image size
 %
 % output:
 % (xRange, yRange)   2 vectors representing the 2-dimensional support of
@@ -55,8 +55,8 @@ xMax = max(ceil(x));
 yMin = min(floor(y));
 yMax = max(ceil(y));
 
-xRange = max(xMin,1):min(xMax,imSize(2));
-yRange = max(yMin,1):min(yMax,imSize(1));
+xRange = max(xMin,1):min(xMax,imSize(1));
+yRange = max(yMin,1):min(yMax,imSize(2));
 
 % find pixel indices of the model support
 [X,Y] = meshgrid(xRange,yRange);

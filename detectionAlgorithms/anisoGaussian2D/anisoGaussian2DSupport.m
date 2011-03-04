@@ -1,4 +1,4 @@
-function [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigmaX,sigmaY,theta,kSigma)
+function [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigmaX,sigmaY,theta,kSigma,imSize)
 % [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigmaX,sigmaY,theta,kSigma)
 %
 % Compute the finite support of an anisotropic Gaussian 2D model given
@@ -14,6 +14,8 @@ function [xRange,yRange,nzIdx] = anisoGaussian2DSupport(x0,y0,sigmaX,sigmaY,thet
 % theta              orientation of the model 
 %
 % kSigma             cutoff in number of standard deviations
+%
+% imSize             imSize = [nx ny]. Image size
 %
 % output:
 % (xRange, yRange)   2 vectors representing the 2-dimensional support of
@@ -52,8 +54,8 @@ xMax = max(ceil(x));
 yMin = min(floor(y));
 yMax = max(ceil(y));
 
-xRange = xMin:xMax;
-yRange = yMin:yMax;
+xRange = max(xMin,1):min(xMax,imSize(1));
+yRange = max(yMin,1):min(yMax,imSize(2));
 
 % find pixel indices of the model support
 [X,Y] = meshgrid(xRange,yRange);
