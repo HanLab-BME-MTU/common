@@ -141,30 +141,4 @@ classdef SegmentationProcess < Process
 
     end
     
-    methods (Static)
-        function text = getHelp(all)
-            %Note: This help is designed for the GUI, and is a simplified
-            %and shortened version of the help which can be found in the
-            %function.
-            if nargin < 1  % Static method does not have object as input
-                all = false;
-            end
-            description = 'This process provides a series of segmentation methods to create masks for the movie which seperate objects (e.g. cells) from the background. Masks are binary images which contain 1 where there is an object of interest (cell), and 0 where there is background.';       
-            paramList = {'Input Channels',...
-                         'Settings', ...
-                         'Post-Processing'};
-                         
-            paramDesc = {'This allows you to select which channels you want to create masks for. Select the channels by clicking on them in the "Available Input Channels" box and then clicking "Select->" to move them to the "Selected Channels" box. You can un-select a channel by clicking the "Delete" button',...
-                         'Click this drop-down box to select a method to segment your images. Click the ''Setting'' button to customize your settings.',...
-                         'Post-process (and hopefully improve) the masks for selected channels of the movie. Click ''Setting'' button to customize your settins. This is generally not needed, but can be used in situations where the masks have problems. This is done by removing small background objects, filling any holes in masks, and so on. For more details, see the Settings help for each parameter. The refined masks will replace the existing masks.'};
-            if all
-                text = makeHelpText(description,paramList,paramDesc);
-            else
-                text = makeHelpText(description);
-            end
-             
-        end
-    end    
-    
-    
 end

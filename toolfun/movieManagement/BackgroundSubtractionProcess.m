@@ -76,27 +76,6 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
         end
         
     end
-    methods (Static)
-        function text = getHelp(all)
-            %Note: This help is designed for the GUI, and is a simplified
-            %and shortened version of the help which can be found in the
-            %function.
-            if nargin < 1  % Static method does not have object as input
-                all = false;
-            end
-            description = 'Different fluorescence channels and imaging conditions can result in variable background fluorescence - that is, fluorescence in areas where there is no fluorophore. To correct for variations in this background level between channels (and between images) the average background intensity is subtracted from each image. The background area is determined using the background masks, which were created beforehand.';
-            paramList = {'Input Channels',...
-                         'Background Mask Channels'};                         
-                         
-            paramDesc = {'This allows you to select which channels you want to perform background subtraction on. This should be applied to all channels that are going to be used for ratioing or bleedthrough correction. Select the channels by clicking on them in the "Available Input Channels" box and then clicking "Select->" to move them to the "Selected Channels" box. You can un-select a channel by clicking the "Delete" button',...
-                         'This allows you to select which channels to take background masks from for background subtraction. The default is to use the masks from the same channel that is being correced. However, in the case that one channel has poor quality masks, you may use masks from a different channel to perform background subtraction on that channel. As long as both channels are spatially aligned to within the background mask growth radius, this is a valid alternative.'};
-            if all
-                text = makeHelpText(description,paramList,paramDesc);
-            else
-                text = makeHelpText(description);
-            end
-             
-        end
-    end
+
 end                                   
             

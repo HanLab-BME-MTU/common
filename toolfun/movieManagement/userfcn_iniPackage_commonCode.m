@@ -138,9 +138,7 @@ set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 
 if openHelpFile
-    set(Img, 'UserData', struct('class', 'UTrackPackage'))
-else
-    set(Img, 'UserData', userData.crtPackage.getHelp)
+    set(Img, 'UserData', struct('class', packageName))
 end
 
 % Set up process help
@@ -151,13 +149,9 @@ for i = 1:l
     set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
         'visible','off','YDir','reverse');  
     set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-    
-    eval(['msg = ',userData.crtPackage.processClassNames_{i},'.getHelp;'])
-    
+        
     if openHelpFile
         set(Img, 'UserData', struct('class', userData.crtPackage.processClassNames_{i}))
-    else
-        set(Img, 'Userdata', msg)
     end
 
 end

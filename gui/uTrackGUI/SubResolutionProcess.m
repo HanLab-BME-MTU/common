@@ -145,24 +145,6 @@ classdef SubResolutionProcess < DetectionProcess
             
         end    
         
-        
-        function text = getHelp(all)
-            %Note: This help is designed for the GUI, and is a simplified
-            %and shortened version of the help which can be found in the
-            %function.
-            if nargin < 1  % Static method does not have object as input
-                all = false;
-            end
-            description = 'This is help of detection.';            
-            paramList = {''};
-                         
-            paramDesc = {''};
-            if all
-                text = makeHelpText(description,paramList,paramDesc);
-            else
-                text = makeHelpText(description);
-            end
-             
-        end
     end
+    
 end

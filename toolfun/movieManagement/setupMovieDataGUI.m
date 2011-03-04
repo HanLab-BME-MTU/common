@@ -102,7 +102,7 @@ set(hObject,'colormap',supermap);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-set(Img, 'UserData', MovieData.getHelp)
+set(Img, 'UserData', struct('class','MovieData'));
 
 % Save userdata
 set(handles.figure1,'UserData',userData);

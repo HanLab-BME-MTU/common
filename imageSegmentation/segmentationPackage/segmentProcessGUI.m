@@ -178,9 +178,7 @@ set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 if openHelpFile
-    set(Img, 'UserData', struct('class', 'SegmentationProcess'))
-else
-    set(Img, 'UserData', SegmentationProcess.getHelp(true))
+    set(Img, 'UserData', struct('class',class(userData.crtPackage)))
 end
 
 

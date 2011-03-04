@@ -54,11 +54,6 @@ methods (Access = public)
 
 end
 methods (Static)
-    
-        function text = getHelp()
-            % Function return a string of help text
-            text = 'This package provides a series of methods to create masks for the movie which seperate objects (e.g. cells) from the background. Masks are binary images which contain 1 where there is an object of interest (cell), and 0 where there is background.';
-        end
         
         function m = getDependencyMatrix()
             % Get dependency matrix

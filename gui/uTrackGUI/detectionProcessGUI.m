@@ -155,8 +155,6 @@ set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 if openHelpFile
     set(Img, 'UserData', struct('class', 'DetectionProcess'))
-else
-    set(Img, 'UserData', userData.crtProc.getHelp(true))
 end
 
 

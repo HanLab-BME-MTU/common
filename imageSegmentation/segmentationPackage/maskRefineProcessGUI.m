@@ -155,7 +155,7 @@ Img = image(userData.questIconData);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-set(Img, 'UserData', userData.crtProc.getHelp(true))
+set(Img, 'UserData',  struct('class',class(userData.crtProc)))
 
 % ----------------------------------------------------------------
 

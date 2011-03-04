@@ -173,9 +173,4 @@ classdef Channel < handle
         
     end
     
-    methods (Static)
-        function text = getHelp()
-           text = sprintf('This is the help for channel set-up');
-        end
-    end    
 end

@@ -93,9 +93,7 @@ set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 
 if openHelpFile
-    set(Img, 'UserData', struct('class', 'MovieData'))
-else
-    set(Img, 'UserData', MovieData.getHelp)
+    set(Img, 'UserData', struct('class', 'NewMovieData'))
 end
 
 if nargin > 3

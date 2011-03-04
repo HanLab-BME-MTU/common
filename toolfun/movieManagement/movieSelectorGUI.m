@@ -108,8 +108,6 @@ set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 
 if openHelpFile
     set(Img, 'UserData', struct('class', 'MovieData'))
-else
-    set(Img, 'UserData', MovieData.getHelp)
 end
 
 % Save userdata

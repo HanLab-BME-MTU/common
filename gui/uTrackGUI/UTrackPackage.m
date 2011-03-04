@@ -56,11 +56,6 @@ methods (Access = public)
 end
 methods (Static)
     
-        function text = getHelp()
-            % Function return a string of help text
-            text = 'This is the help of U-Track Package.';
-        end
-        
         function m = getDependencyMatrix()
             % Get dependency matrix
                m = [0 0;

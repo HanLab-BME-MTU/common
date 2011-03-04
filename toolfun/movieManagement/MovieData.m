@@ -354,10 +354,4 @@ classdef  MovieData < handle
         end
     end
     
-    methods (Static)
-        function text = getHelp()
-           text = sprintf('Select Movie Data:\n\nYou can either create new movie data or open existing movie data (or movie data list). Multiple movie data is supported in this release. To review the details of a movie, select a movie data and click "Detail" button.\n\n\nMovie Data List:\n\nMovie data list is a list of movie data you want to specify and process together. The current movie data in the listbox can be saved as a movie data list by clicking "Save as Movie Data List" button.  The movie data list will be saved as a MAT file. To load the multiple movie data at once, just open the saved movie data list MAT file. Note that movie data list only copies the directories of movie data instead of the movie data itself.\n\n\nPackage:\n\nYou can select one of the packages to process your data. Click "Apply" to go to package control panel.'); 
-        end
-    end
-    
 end

@@ -192,33 +192,5 @@ classdef TransformationProcess < ImageProcessingProcess
         
     end
     
-    
-    
-    methods (Static)
-        function text = getHelp(all)
-            %Note: This help is designed for the GUI, and is a simplified
-            %and shortened version of the help which can be found in the
-            %function.
-            if nargin < 1  % Static method does not have object as input
-                all = false;
-            end
-            description = 'This process can be used to align or "register" the images in different channels. Spatial misalignment between image channels is primarily an issue when multiple cameras are used to acquire the different images, but is occasionally still an issue near the edges of images taken with a single camera, primarily due to chromatic aberration. Misalignment between the channels can cause serious artifacts in the ratio image, especially near the edge of the fluorescent objects. This function can transform one image so that it aligns with the other, eliminating these artifacts. First, a transform must be created using the function calculateMovieTransform.m - see the user''s manual for more details. For normal ratio imaging, the localization channel and activation channels (e.g. Donor and FRET) must be aligned. If bleedthrough correction is to be performed, the bleed channels should also be aligned with the activation channel. Alignment between pairs of channels may be visually verified by clicking the "Result" button.';
-            paramList = {'Input Channels',...
-                         'Transformation Data',...
-                         'Mask Transformation'};
-                         
-                         
-            paramDesc = {'This allows you to select which channels you want to transform. This should be applied to ONE of the two channels that are going to be used for ratioing (usually the numerator, or FRET channel). Additionally, if bleedthrough correction is to be applied, any channels that will be used in this correction may need to be transformed.',...
-                         'This allows you to specify the location of a file which contains the transformation to be applied to the images in each input channel. If only one file is specified, it will be used for all selected channels. Alternatively, one transformation file per-channel may be specified. This transformation is usually determined using alignment images taken in each channel, either of a grid micrometer, or multispectral beads, and can be created from these type of images using calculateMovieTransform.m - see the user''s manual for more details.',...
-                         'If this box is checked, the masks for the channel to be transformed will also be transformed. This is generally recommended, especially if the ratios are to be masked later on.'};
-                         
-            if all
-                text = makeHelpText(description,paramList,paramDesc);
-            else
-                text = makeHelpText(description);
-            end
-             
-        end
-    end    
 end
 
