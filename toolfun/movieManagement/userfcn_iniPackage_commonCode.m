@@ -12,7 +12,7 @@ eval(['userData.optProcID =' packageName '.getOptionalProcessId;']);
 set(handles.text_copyright, 'String', copyright)
 
 if nargin < 4
-    error('User-defined: Please call biosensors control panel with a MovieData object. E.g. packageGUI(movieDataObject)');
+    error('User-defined: Please call package control panel with a MovieData object. E.g. packageGUI(movieDataObject)');
 end
 
 % ----------------------------- Load MovieData ----------------------------

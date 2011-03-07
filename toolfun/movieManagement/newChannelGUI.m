@@ -85,7 +85,7 @@ set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 if openHelpFile
-    set(Img, 'UserData', struct('class', 'Channel'))
+    set(Img, 'UserData', struct('class', 'newChannelGUI'))
 end
 
 if nargin > 3

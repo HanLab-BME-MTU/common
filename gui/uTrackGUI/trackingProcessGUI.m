@@ -271,7 +271,8 @@ if isempty( probDim )
     errordlg('Parameter "Problem Dimensionality" is required by the algorithm.','Error','modal')
     return
     
-elseif isnan(str2double(probDim)) || str2double(probDim) < 0 || floor(str2double(probDim)) ~= ceil(str2double(probDim))
+%elseif isnan(str2double(probDim)) || str2double(probDim) < 0 || floor(str2double(probDim)) ~= ceil(str2double(probDim))
+elseif str2double(probDim)~=2 && str2double(probDim)~= 3
     errordlg('Please provide a valid value to parameter "Problem Dimensionality".','Error','modal')
     return
     

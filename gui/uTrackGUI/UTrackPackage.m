@@ -16,7 +16,7 @@ methods (Access = public)
                                 
                % Process CLASS NAME string (same length as dependency matrix)
                % Must be accurate process class name
-               super_args{4} = {'SubResolutionProcess', ...
+               super_args{4} = {'DetectionProcess', ...
                                 'TrackingProcess'};
                             
                super_args{5} = [outputDir filesep 'UTrackPackage'];

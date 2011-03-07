@@ -20,6 +20,7 @@ function makeuTrackPackage(outDir,packageDir,comDir)
 % 12/2010
 %
 % Modified by Sebastien Besson
+% 03/2011
 
 if nargin < 1 || isempty(outDir)    
     outDir = uigetdir(pwd,'Select output dir:');
@@ -31,13 +32,15 @@ if nargin < 3 || isempty(comDir)
     comDir = uigetdir(pwd,'Select common dir:');
 end
 
+    
 disp('Getting file list...')
 
 %Get m files from package directory
-packageFuns = dir([packageDir filesep '*.m']);
-packageFuns = {packageFuns(:).name}';
-%Remove this function from the list. Fucking recursion.
-packageFuns(strcmp(packageFuns,mfilename)) = [];
+packageFuns={'/home/sb286/Documents/MATLAB/common/gui/uTrackGUI/uTrackPackageGUI.m'};
+% packageFuns = dir([packageDir filesep '*.m']);
+% packageFuns = {packageFuns(:).name}';
+% %Remove this function from the list. Fucking recursion.
+% packageFuns(strcmp(packageFuns,mfilename)) = [];
 
 
 %Get everything these depend on also
@@ -91,13 +94,22 @@ end
 packageFunsDirs=unique(cellfun(@getFilenameBody,packageFuns,'UniformOutput',false));
 isFunsDocDir=cellfun(@(x) exist([x filesep 'doc'],'dir')==7,packageFunsDirs);
 
-docDir=[outDir 'doc'];
+docDir=[outDir filesep 'doc'];
 if ~exist(docDir,'dir')
     mkdir(docDir)
 end
-% TO FINISH
-% for j = isFunsDocDir
-%     dir();
-%     iLFS = max(regexp(allFiles{j},filesep));
-% end
+
+allDocFiles={};
+packageDocsDirs=cellfun(@(x) [x filesep 'doc'],{packageFunsDirs{isFunsDocDir}},'UniformOutput',false);
+for j = 1:length(packageDocsDirs)
+	docList=dir([packageDocsDirs{j} filesep '*.pdf']);
+    docFiles=arrayfun(@(x)([packageDocsDirs{j} filesep x.name]),docList,'UniformOutput',false);
+    allDocFiles=vertcat(allDocFiles,docFiles);
+end
+
+for nfile=1:length(allDocFiles)
+    iLFS = max(regexp(allDocFiles{nfile},filesep));
+    copyfile(allDocFiles{nfile},[docDir filesep allDocFiles{nfile}(iLFS+1:end)]);
+end
+    
 disp(['Finished. Wrote package to ' outDir])

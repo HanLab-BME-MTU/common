@@ -87,11 +87,24 @@ userData.ML = [ ];
 userData.userDir = pwd;
 
 % Indicate the first package control panel the GUI will go to after 
-% MovieData is sucessfully created and MovieDate setup panel is destroied.
+% MovieData is sucessfully created and MovieDate setup panel is destroyed.
 userData.firstPackageGUI = { @segmentationPackageGUI, ...
                              @biosensorsPackageGUI, ...
                              @uTrackPackageGUI};
-                                
+                         
+% Grey out radio buttons linking to non-existing packages
+% Must be improved using dynamical loading
+if ~exist('segmentationPackageGUI'), set(handles.radiobutton_package_1,'Enable','off'); end
+if ~exist('biosensorsPackageGUI'), set(handles.radiobutton_package_2,'Enable','off'); end
+if ~exist('uTrackPackageGUI'), set(handles.radiobutton_package_3,'Enable','off'); end
+                        
+% TO BE IMPLEMENTED SOON: dynamical implementation of the package control
+% panel -- need to agree on a convention for naming packages/GUIs/docs
+% packageList={'SegmentationPackage','BioSensorsPackage','UTrackPackage'};
+% isValidPackage=logical(cellfun(@(x) exist(x,'class'),packageList));
+% packageGUI=cellfun(@(x) str2func([x 'GUI']),packageList(isValidPackage),'UniformOutput',false);
+% userData.firstPackageGUI = packageGUI;
+
 % Load help icon from dialogicons.mat
 load lccbGuiIcons.mat
 supermap(1,:) = get(hObject,'color');
