@@ -199,11 +199,12 @@ static int df_dt(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double c4 = argStruct->c4;
   double c5 = argStruct->c5;
 
+  double tmp = yi * ct - xi * st;
+
   gsl_matrix_set(J, i, k, 
 		 s1 * A * c1 * C7 *
-		 ((c2 + c3) * (yi * ct - xi * st) * 
-		  (xi * ct + yi * st) + s * (c4 * (2 * xi * st - 2 * yi * ct) + 2 * c5 *
-					     (yi * ct - xi * st)) * C8));
+		 ((c2 + c3) * tmp * (xi * ct + yi * st) + s *
+		  (c4 * (2 * xi * st - 2 * yi * ct) + 2 * c5 * tmp) * C8));
   
   return 0;
 }
@@ -212,6 +213,7 @@ static int df_dt(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 static int df_dC(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
   gsl_matrix_set(J, i, k, 1);
+
   return 0;
 }
 
@@ -242,8 +244,8 @@ static int f(const gsl_vector *x, void *params, gsl_vector *f)
   double xi, yi, tmp, c1, c2, c3;
   double ct = cos(t);
   double st = sin(t);
-  double s1 = 1 / s;
-  double s2 = 1/ (s * s);
+  double s1 = 1.0 / s;
+  double s2 = 1.0 / (s * s);
 
   div_t divRes;
 	
@@ -290,8 +292,8 @@ static int df(const gsl_vector *x, void *params, gsl_matrix *J)
   double xi, yi, tmp;
   double ct = cos(t);
   double st = sin(t);
-  double s1 = 1 / s;
-  double s2 = 1/ (s * s);
+  double s1 = 1.0 / s;
+  double s2 = 1.0 / (s * s);
 
   argStruct_t argStruct;
   argStruct.A = A;
@@ -319,9 +321,9 @@ static int df(const gsl_vector *x, void *params, gsl_matrix *J)
       argStruct.c2 = erf(.5 * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
       argStruct.c3 = erf(.5 * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));
       tmp = l - 2 * xi * ct - 2 * yi * st;
-      argStruct.c4 = exp((-1/8) * s2 * tmp * tmp);
+      argStruct.c4 = exp(-.125 * s2 * tmp * tmp);
       tmp = l + 2 * xi * ct + 2 * yi * st;
-      argStruct.c5 = exp((-1/8) * s2 * tmp * tmp);
+      argStruct.c5 = exp(-.125 * s2 * tmp * tmp);
 		
       for (k=0; k<dataStruct->np; ++k)
 	dataStruct->dfunc[k](J, i, k, &argStruct);
@@ -384,9 +386,9 @@ static int fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
       argStruct.c2 = erf(.5 * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
       argStruct.c3 = erf(.5 * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));
       tmp = l - 2 * xi * ct - 2 * yi * st;
-      argStruct.c4 = exp((-1/8) * s2 * tmp * tmp);
+      argStruct.c4 = exp(-.125 * s2 * tmp * tmp);
       tmp = l + 2 * xi * ct + 2 * yi * st;
-      argStruct.c5 = exp((-1/8) * s2 * tmp * tmp);
+      argStruct.c5 = exp(-.125 * s2 * tmp * tmp);
 
       gsl_vector_set(f, i, A * argStruct.c1 * C7 * s *
 		     (argStruct.c2 + argStruct.c3) + C - pixels[idx]);
