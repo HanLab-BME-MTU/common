@@ -20,7 +20,7 @@
 #include "mex.h"
 #include "matrix.h"
 
-#define SIGN(x)	(x > 0 ? 1 : (x < 0 ? -1 : 0))
+#define SIGN(x)	(x > 0 ? 1 : (x < 0 ? -1.0 : 0.0))
 
 #define NPARAMS	7
 #define REFMODE	"xyalstc"
@@ -433,6 +433,9 @@ static int MLalgo(struct dataStruct *data)
   int status;
   int iter = 0;
   do {
+    
+    printf("%d\t%f\n",iter,gsl_vector_get(s->x,0));
+
     iter++;
     status = gsl_multifit_fdfsolver_iterate(s);
     if (status)

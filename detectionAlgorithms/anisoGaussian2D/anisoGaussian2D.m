@@ -35,7 +35,7 @@ yRange = yRange - y0;
 N = numel(yRange);
 M = numel(xRange);
 
-if nargin < 10 || isempty(nzIdx)
+if nargin < 9 || isempty(nzIdx)
     nzIdx = 1:N*M;
 end
 

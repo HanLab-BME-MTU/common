@@ -20,7 +20,7 @@
 #include "mex.h"
 #include "matrix.h"
 
-#define SIGN(x)	(x > 0 ? 1 : (x < 0 ? -1 : 0))
+#define SIGN(x)	(x > 0 ? 1 : (x < 0 ? -1.0 : 0.0))
 
 #define NPARAMS	7
 #define REFMODE	"xyarstc"	/* r = sigma_x (along the feature),
