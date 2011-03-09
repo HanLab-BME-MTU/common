@@ -340,7 +340,7 @@ else
 end
 
 user_response = questdlg('Do you want to save the current progress?', ...
-    'BioSensors Package Control Panel');
+    'Segmentation Package Control Panel');
 switch lower(user_response)
     case 'yes'
         for i = 1: length(userData.MD)

@@ -87,23 +87,20 @@ userData.ML = [ ];
 userData.userDir = pwd;
 
 % Indicate the first package control panel the GUI will go to after 
-% MovieData is sucessfully created and MovieDate setup panel is destroyed.
-userData.firstPackageGUI = { @segmentationPackageGUI, ...
-                             @biosensorsPackageGUI, ...
-                             @uTrackPackageGUI};
-                         
+% MovieData is sucessfully created and MovieData setup panel is destroyed.
+
+% List available packages                       
+packageList={'SegmentationPackage','BiosensorsPackage','UTrackPackage'};
+isValidPackage=logical(cellfun(@(x) exist(x,'class'),packageList));
+if isempty(isValidPackage), warndlg('No package found!','Movie Selector','modal'); end
+% Convert the first letter of the package to lowercase
+packageGUIList=regexprep(packageList(isValidPackage),'(\<[A-Z])','${lower($1)}');
+packageGUIList=cellfun(@(x) str2func([x 'GUI']),packageGUIList,'UniformOutput',false);
+userData.firstPackageGUI = packageGUIList;
+
 % Grey out radio buttons linking to non-existing packages
-% Must be improved using dynamical loading
-if ~exist('segmentationPackageGUI'), set(handles.radiobutton_package_1,'Enable','off'); end
-if ~exist('biosensorsPackageGUI'), set(handles.radiobutton_package_2,'Enable','off'); end
-if ~exist('uTrackPackageGUI'), set(handles.radiobutton_package_3,'Enable','off'); end
-                        
-% TO BE IMPLEMENTED SOON: dynamical implementation of the package control
-% panel -- need to agree on a convention for naming packages/GUIs/docs
-% packageList={'SegmentationPackage','BioSensorsPackage','UTrackPackage'};
-% isValidPackage=logical(cellfun(@(x) exist(x,'class'),packageList));
-% packageGUI=cellfun(@(x) str2func([x 'GUI']),packageList(isValidPackage),'UniformOutput',false);
-% userData.firstPackageGUI = packageGUI;
+invalidRadioButtons = arrayfun(@(x) findobj('Tag',['radiobutton_package_' num2str(x)]),find(~isValidPackage));
+set(invalidRadioButtons,'Enable','off');
 
 % Load help icon from dialogicons.mat
 load lccbGuiIcons.mat

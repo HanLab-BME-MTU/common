@@ -1,5 +1,5 @@
 classdef SegmentationPackage < Package
-% A concrete process for BioSensor Package
+% A concrete process for Segmentation Package
     
 methods (Access = public)
     function obj = SegmentationPackage (owner,outputDir)

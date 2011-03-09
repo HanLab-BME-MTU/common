@@ -1,5 +1,5 @@
 classdef UTrackPackage < Package
-% A concrete process for BioSensor Package
+% A concrete process for UTrack Package
     
 methods (Access = public)
     function obj = UTrackPackage (owner,outputDir)

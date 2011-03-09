@@ -711,7 +711,7 @@ if ~isempty(temp)
     end
     
 elseif length(movieRun) > 1 
-    userData.iconHelpFig = helpdlg('All your movie data has been processed successfully.', 'Biosensors Package');
+    userData.iconHelpFig = helpdlg('All your movie data has been processed successfully.', 'UTrack Package');
     set(handles.figure1, 'UserData', userData)
 end
 
@@ -788,7 +788,7 @@ else
 end
 
 user_response = questdlg('Do you want to save the current progress?', ...
-    'BioSensors Package Control Panel');
+    'UTrack Package Control Panel');
 switch lower(user_response)
     case 'yes'
         for i = 1: length(userData.MD)

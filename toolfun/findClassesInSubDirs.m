@@ -1,9 +1,27 @@
-%fileList = findClassesInSubDirs(topdir)
-% Finds all user-defined classes in all subdirectories of 'topdir'.
+function classList = findClassesInSubDirs(topdir)
 
-% Sebastien Besson, March 9, 2011
-
-function classList = findCla ssesInSubDirs(topdir)
+%FINDCLASSESINSUBDIRS find allclasses defined below a top directory
+%subdirectories
+% 
+% classList = findClassesInSubDirs(topdir)
+% 
+% Finds recursively all the m-files in the subdirectories of an initial
+% directory which name corresponds to a class. Returns a cell array with
+% the name of all found classes.
+%
+% Input:
+% 
+%   topdir - a string containing the path of the initial directory.
+% 
+% Output:
+% 
+%   classList - a cell array of character strings containing the name(s) of
+%   the found classes.
+%
+%
+% Sebastien Besson
+% 3/2011
+%
 
 dirs = getSubDirs(topdir);
 dirs{end+1} = topdir;
