@@ -67,9 +67,6 @@ void mexFunction(int nlhs, mxArray *plhs[],
   p1[0] = *ptr++;
   p1[1] = *ptr;
   
-  std::cout << p0 << std::endl;
-  std::cout << p1 << std::endl;
-  
   ///////////////////////
   // Compute bresenham //
   ///////////////////////
