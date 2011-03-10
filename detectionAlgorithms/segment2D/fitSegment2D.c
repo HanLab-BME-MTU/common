@@ -30,8 +30,8 @@ typedef struct argStruct
   double xi, yi;
   double A, l, s;
   double ct, st;
-  double s1, s2;
-  double c1, c2, c3, c4, c5;
+  double s1, s2, s3;
+  double c1, c2, c3, c4, c5, c6;
 } argStruct_t;
 
 typedef int(*pfunc_t)(gsl_matrix*, int, int, argStruct_t*);
@@ -56,23 +56,23 @@ typedef struct dataStruct
   c3 = erf((1/2)*2^(-1/2)*s1*(l-2*X*ct-2*Y*st));
   c4 = exp((-1/8)*s2*(l-2*X*ct-2*Y*st)^2);
   c5 = exp((-1/8)*s2*(l+2*X*ct+2*Y*st)^2);
+  c6 = erf(l / (2 2^(1/2) s))
 */
 
-#define C6	0.797884560802865	/* C6 = (2/pi)^(1/2) */
-#define C7	1.253314137315500	/* C7 = (pi/2)^(1/2) */
+#define C7	0.797884560802865	/* C7 = (2/pi)^(1/2) */
 #define C8	0.398942280401433	/* C8 = (2*pi)^(-1/2) */
 
 /*
-  s1 * A * c1 * C7 * ((c4 - c5) * C6 * s * ct +
-  (c2 + c3) * st * (xi * st - yi * ct))
+  A * c1 * ((c4 - c5) * C7 * s * ct + (c2 + c3) * st *
+  (xi * st - yi * ct)) * (1/2) * s2 / c6
 */
 static int df_dx(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
   double xi = argStruct->xi;
   double yi = argStruct->yi;
-  double s1 = argStruct->s1;
   double A = argStruct->A;
   double s = argStruct->s;
+  double s2 = argStruct->s2;
   double ct = argStruct->ct;
   double st = argStruct->st;
 
@@ -81,23 +81,24 @@ static int df_dx(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double c3 = argStruct->c3;
   double c4 = argStruct->c4;
   double c5 = argStruct->c5;
-  
+  double c6 = argStruct->c6;
+
   gsl_matrix_set(J, i, k,
-		 s1 * A * c1 * C7 * ((c4 - c5) * C6 * s * ct +
-				     (c2 + c3) * st * (xi * st - yi * ct)));
+		 A * c1 * ((c4 - c5) * C7 * s * ct + (c2 + c3) * st *
+			   (xi * st - yi * ct)) * .5 * s2 / c6);
   
   return 0;
 }
 
 /*
-  s1 * A * c1 * C7 * ((c4 - c5) * C6 * s * st +
-  (c2 + c3) * ct * (yi * ct - xi * st))
+  A * c1 * ((c4 - c5) * C7 * s * st + ct * (c2 + c3) *
+  (yi * ct - xi * st)) * (1/2) * s2 / c6
 */
 static int df_dy(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
   double xi = argStruct->xi;
   double yi = argStruct->yi;
-  double s1 = argStruct->s1;
+  double s2 = argStruct->s2;
   double A = argStruct->A;
   double s = argStruct->s;
   double ct = argStruct->ct;
@@ -108,16 +109,17 @@ static int df_dy(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double c3 = argStruct->c3;
   double c4 = argStruct->c4;
   double c5 = argStruct->c5;
+  double c6 = argStruct->c6;
 
-  gsl_matrix_set(J, i, k, 
-		 s1 * A * c1 * C7 * ((c4 - c5) * C6 * s * st +
-				     (c2 + c3) * ct * (yi * ct - xi * st)));
+  gsl_matrix_set(J, i, k,
+		 A * c1 * ((c4 - c5) * C7 * s * st + ct * (c2 + c3) *
+			   (yi * ct - xi * st)) * .5 * s2 / c6);
   
   return 0;
 }
 
 /*
-  c1 * C7 * s * (c2+c3);
+  c1 * (c2 + c3) * .5 / c6
 */
 static int df_dA(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
@@ -125,23 +127,26 @@ static int df_dA(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double c1 = argStruct->c1;
   double c2 = argStruct->c2;
   double c3 = argStruct->c3;
+  double c6 = argStruct->c6;
 
-  gsl_matrix_set(J, i, k, c1 * C7 * s * (c2+c3));
+  gsl_matrix_set(J, i, k, c1 * (c2 + c3) * .5 / c6);
 
   return 0;
 }
 
 /*
-  A * c1 * C7 * ((c2+c3) * (1 + (yi * ct - xi * st)^2 *
-  s2) + (c4 * (-l + 2 * xi * ct + 2 * yi * st) - c5 * (l + 2 * xi * ct
-  + 2 * yi * st)) * s1 * C8);
+  (s3 / (4 * c6^2)) * A * c1 * (exp(-l^2 * s2 / 8) * l * C7 * s *
+  (c2 + c3) + 2 * c6 * (c2 + c3) * (yi * ct - xi * st)^2 + C7 * s *
+  c6 * c4 * (-l + 2 * xi * ct + 2 * yi * st) - c5 * (l + 2 * xi * ct +
+  2 * yi * st))
 */
 static int df_ds(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
   double xi = argStruct->xi;
   double yi = argStruct->yi;
-  double s1 = argStruct->s1;
+  double s = argStruct->s;
   double s2 = argStruct->s2;
+  double s3 = argStruct->s3;
   double A = argStruct->A;
   double l = argStruct->l;
   double ct = argStruct->ct;
@@ -152,36 +157,48 @@ static int df_ds(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double c3 = argStruct->c3;
   double c4 = argStruct->c4;
   double c5 = argStruct->c5;
+  double c6 = argStruct->c6;
 
   double tmp = yi * ct - xi * st;
 
-  gsl_matrix_set(J, i, k, A * c1 * C7 *
-		 ((c2+c3) * (1 + tmp * tmp * s2) +
-		  (c4 * (-l + 2 * xi * ct + 2 * yi * st) - 
-		   c5 * (l + 2 * xi * ct + 2 * yi * st)) * s1 * C8));
+  gsl_matrix_set(J, i, k, 
+		 (s3 / (4 * c6 * c6)) * A * c1 *
+		 (exp(-l * l * s2 / 8) * l * C7 * s *
+		  (c2 + c3) + 2 * c6 * (c2 + c3) * tmp * tmp + C7 * s *
+		  c6 * c4 * (-l + 2 * xi * ct + 2 * yi * st) - c5 *
+		  (l + 2 * xi * ct + 2 * yi * st)));
   
   return 0;
 }
 
 /*
-  (1/2) * A * c1 * (c4 + c5)
+  A * c1 * ((c4 + c5) * c6 - exp(-l^2 * s2 / 8) * (c2 + c3)) * C8 * s1
+  * (1/2) / c6^2
 */
 static int df_dl(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
   double A = argStruct->A;
+  double l = argStruct->l;
+  double s1 = argStruct->s1;
+  double s2 = argStruct->s2;
   double c1 = argStruct->c1;
+  double c2 = argStruct->c2;
+  double c3 = argStruct->c3;
   double c4 = argStruct->c4;
   double c5 = argStruct->c5;
+  double c6 = argStruct->c6;
 	
-  gsl_matrix_set(J, i, k, .5 * A * c1 * (c4 + c5));
-	
+  gsl_matrix_set(J, i, k, 
+		 .5 * A * c1 * ((c4 + c5) * c6 - exp(-l * l * s2 / 8) *
+				(c2 + c3)) * C8 * s1 / (c6 * c6));
+  
   return 0;
 }
 
 /*
-  s1 * A * c1 * C7 * ((c2 + c3) * (yi * ct - xi * st) * (xi *
-  ct + yi * st) + s * (c4 * (2 * xi * st - 2 * yi * ct) + 2 * c5 *
-  (yi * ct - xi * st)) * C8)
+  (s2 * (1/2) / c6) * A * c1 * (c4 * C7 * s * (xi * st - yi * ct) + c5
+  * C7 * s * (yi * ct - xi * st) + (c2 + c3) * (yi * ct - xi * st) *
+  (xi * ct + yi * st))
 */
 static int df_dt(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
 {
@@ -190,6 +207,7 @@ static int df_dt(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double s1 = argStruct->s1;
   double A = argStruct->A;
   double s = argStruct->s;
+  double s2 = argStruct->s2;
   double ct = argStruct->ct;
   double st = argStruct->st;
 
@@ -198,13 +216,14 @@ static int df_dt(gsl_matrix *J, int i, int k, argStruct_t *argStruct)
   double c3 = argStruct->c3;
   double c4 = argStruct->c4;
   double c5 = argStruct->c5;
+  double c6 = argStruct->c6;
 
   double tmp = yi * ct - xi * st;
 
-  gsl_matrix_set(J, i, k, 
-		 s1 * A * c1 * C7 *
-		 ((c2 + c3) * tmp * (xi * ct + yi * st) + s *
-		  (c4 * (2 * xi * st - 2 * yi * ct) + 2 * c5 * tmp) * C8));
+  gsl_matrix_set(J, i, k,
+		 (.5 * s2 / c6) * A * c1 * (yi * ct - xi * st) *
+		 (s * C7 * c5 + (c2 + c3) * (xi * ct + yi * st) -
+		  c4 * C7 * s));
   
   return 0;
 }
@@ -241,7 +260,7 @@ static int f(const gsl_vector *x, void *params, gsl_vector *f)
   double t = dataStruct->prmVect[5];
   double C = dataStruct->prmVect[6];
 
-  double xi, yi, tmp, c1, c2, c3;
+  double xi, yi, tmp, c1, c2, c3, c6;
   double ct = cos(t);
   double st = sin(t);
   double s1 = 1.0 / s;
@@ -261,8 +280,9 @@ static int f(const gsl_vector *x, void *params, gsl_vector *f)
       c1 = exp(-.5 * s2 * tmp * tmp);
       c2 = erf(.5 * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
       c3 = erf(.5 * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));      
+      c6 = erf(.5 * l * M_SQRT1_2 * s1);
 
-      gsl_vector_set(f, i, A * c1 * C7 * s * (c2 + c3) + C - pixels[idx]);
+      gsl_vector_set(f, i, .5 * A * c1 * (c2 + c3) / c6 + C - pixels[idx]);
     }
 	
   return GSL_SUCCESS;
@@ -324,7 +344,8 @@ static int df(const gsl_vector *x, void *params, gsl_matrix *J)
       argStruct.c4 = exp(-.125 * s2 * tmp * tmp);
       tmp = l + 2 * xi * ct + 2 * yi * st;
       argStruct.c5 = exp(-.125 * s2 * tmp * tmp);
-		
+      argStruct.c6 = erf(.5 * l * M_SQRT1_2 * s1);
+	
       for (k=0; k<dataStruct->np; ++k)
 	dataStruct->dfunc[k](J, i, k, &argStruct);
     }
@@ -389,9 +410,11 @@ static int fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
       argStruct.c4 = exp(-.125 * s2 * tmp * tmp);
       tmp = l + 2 * xi * ct + 2 * yi * st;
       argStruct.c5 = exp(-.125 * s2 * tmp * tmp);
+      argStruct.c6 = erf(.5 * l * M_SQRT1_2 * s1);
 
-      gsl_vector_set(f, i, A * argStruct.c1 * C7 * s *
-		     (argStruct.c2 + argStruct.c3) + C - pixels[idx]);
+      gsl_vector_set(f, i, .5 * A * argStruct.c1 *
+		     (argStruct.c2 + argStruct.c3) /
+		     argStruct.c6 + C - pixels[idx]);
         
       for (k=0; k<dataStruct->np; ++k)
 	dataStruct->dfunc[k](J, i, k, &argStruct);
@@ -434,8 +457,6 @@ static int MLalgo(struct dataStruct *data)
   int iter = 0;
   do {
     
-    printf("%d\t%f\n",iter,gsl_vector_get(s->x,0));
-
     iter++;
     status = gsl_multifit_fdfsolver_iterate(s);
     if (status)

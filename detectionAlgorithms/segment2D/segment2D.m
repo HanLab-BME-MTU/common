@@ -51,12 +51,12 @@ Y = Y(nzIdx);
 ct = cos(theta);
 st = sin(theta);
     
-C0 = (1/2).*2.^(-1/2).*sigma.^(-1);
+C0 = .5*2^(-1/2)*sigma^(-1);
 C1 = exp(-.5 * sigma^(-2) * (Y * ct - X * st).^2);
 C2 = erf(C0 * (l + 2 * X * ct + 2 * Y * st));
 C3 = erf(C0 * (l - 2 * X * ct - 2 * Y * st));
-C7 = (pi/2)^(1/2);
+C6 = erf(l * C0);
 
 F = zeros(N,M);
 
-F(nzIdx) = amp * C1 .* C7 .* sigma .* (C2 + C3);
+F(nzIdx) = .5 * amp * C1 .* (C2 + C3) ./ C6;
