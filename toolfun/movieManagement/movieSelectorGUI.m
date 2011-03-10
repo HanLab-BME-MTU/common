@@ -74,10 +74,6 @@ userData = get(handles.figure1, 'UserData');
 % Choose default command line output for setupMovieDataGUI
 handles.output = hObject;
 
-
-% set(handles.radiobutton_package_3, 'Visible', 'off')  %%%%%%%%%%%%%%%%%%
-
-
 % Set callback function of radio button group uipanel_package
 set(handles.uipanel_package, 'SelectionChangeFcn', @uipanel_package_SelectionChangeFcn);
  
@@ -86,19 +82,20 @@ userData.MD = [ ];
 userData.ML = [ ];
 userData.userDir = pwd;
 
-% Indicate the first package control panel the GUI will go to after 
-% MovieData is sucessfully created and MovieData setup panel is destroyed.
-
-% List available packages                       
+% Generate package GUI list from package list
 packageList={'SegmentationPackage','BiosensorsPackage','UTrackPackage'};
-isValidPackage=logical(cellfun(@(x) exist(x,'class'),packageList));
-if isempty(isValidPackage), warndlg('No package found!','Movie Selector','modal'); end
-% Convert the first letter of the package to lowercase
-packageGUIList=regexprep(packageList(isValidPackage),'(\<[A-Z])','${lower($1)}');
+packageGUIList=regexprep(packageList,'(\<[A-Z])','${lower($1)}');
 packageGUIList=cellfun(@(x) str2func([x 'GUI']),packageGUIList,'UniformOutput',false);
 userData.firstPackageGUI = packageGUIList;
 
-% Grey out radio buttons linking to non-existing packages
+% Check packages availability and load their associated GUIs in userData
+isValidPackage=logical(cellfun(@(x) exist(x,'class'),packageList));
+if isempty(isValidPackage), 
+    warndlg('No package found! Please make sure you properly added the installation directory to the path (see user''s manual).',...
+        'Movie Selector','modal'); 
+end
+
+% Grey out radio buttons corresponding to non-available packages
 invalidRadioButtons = arrayfun(@(x) findobj('Tag',['radiobutton_package_' num2str(x)]),find(~isValidPackage));
 set(invalidRadioButtons,'Enable','off');
 
@@ -117,7 +114,7 @@ set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 
 if openHelpFile
-    set(Img, 'UserData', struct('class', 'MovieData'))
+    set(Img, 'UserData', struct('class',mfilename));
 end
 
 % Save userdata
@@ -146,6 +143,8 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_done (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+% Check the presence 
 if isempty( get(handles.listbox_movie, 'String') )
    warndlg('Please select at least one movie to continue.', 'Movie Selector', 'modal')
    return
@@ -156,23 +155,14 @@ if isempty(get(handles.uipanel_package, 'SelectedObject'))
    return
 end
 
+% Retrieve the ID of the selected button and call the appropriate
 userData = get(handles.figure1, 'userdata');
-switch get(get(handles.uipanel_package, 'SelectedObject'), 'tag')
+selectedPackageTag=get(get(handles.uipanel_package, 'SelectedObject'), 'tag');
+packageID=str2double(selectedPackageTag(end));
 
-    
-    case 'radiobutton_package_1'
-        userData.firstPackageGUI{1}(userData.MD)
-        delete(handles.figure1)
-        
-    case 'radiobutton_package_2'
-        userData.firstPackageGUI{2}(userData.MD)
-        delete(handles.figure1)
-        
-    case 'radiobutton_package_3'
-        userData.firstPackageGUI{3}(userData.MD)
-        delete(handles.figure1)        
-        
-end
+userData.firstPackageGUI{packageID}(userData.MD);
+delete(handles.figure1);
+
 
 % --- Executes on selection change in listbox_movie.
 function listbox_movie_Callback(hObject, eventdata, handles)
