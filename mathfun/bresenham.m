@@ -2,7 +2,7 @@ function P = bresenham(p0, p1,conn)
 %BRESENHAM computes the integer positions on a line between the
 % positions xS and xE
 %
-% SYNOPSIS P=bresenham(p0,p1)
+% SYNOPSIS P=bresenham(p0,p1,conn)
 %
 % INPUT p0 : coordinate of line start point
 %       p1 : coordinate of line end point
