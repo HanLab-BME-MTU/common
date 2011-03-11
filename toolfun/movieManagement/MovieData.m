@@ -157,8 +157,11 @@ classdef  MovieData < handle
             % MAT file has been rename, move or copy to another location.
             if nargin > 1
                 
-                if  ~strcmp(obj.movieDataPath_, movieDataPath)
-                    obj.movieDataPath_ = movieDataPath;
+                % Remove ending file separators if any for comparing
+                path1 = regexprep(obj.movieDataPath_,[filesep '(\>)'],'');
+                path2 = regexprep(movieDataPath,[filesep '(\>)'],'');
+                if  ~strcmp(path1, path2)
+                    obj.relocateMovieData(movieDataPath);                    
                 end
             
                 if  ~strcmp(obj.movieDataFileName_, movieDataFileName)
@@ -293,13 +296,68 @@ classdef  MovieData < handle
                 obj.packages_{i} = package;
         end
         
+
+        %Function to automatically relocate movie paths assuming the
+        %internal architecture of the project is conserved
+        function relocateMovieData(obj,newMovieDataPath)
+            %Convert file separators in case there has been a change of OS
+            oldMovieDataPath = rReplace(obj.movieDataPath_,'/|\',filesep);
+            
+            %Convert file separators in case there has been a change of OS
+            oldMovieDataPath = regexprep(oldMovieDataPath,[filesep '(\>)'],'');
+            newMovieDataPath = regexprep(newMovieDataPath,[filesep '(\>)'],'');
+            
+            %Compare old and new movie paths to detect common branch
+            maxNumEl=min(numel(oldMovieDataPath),numel(newMovieDataPath));
+            strComp = (oldMovieDataPath(end:-1:end-maxNumEl+1)==newMovieDataPath(end:-1:end-maxNumEl+1));
+
+            %Find the old and new root directories
+            sizeCommonBranch=find(~strComp,1); 
+            oldRootDir=oldMovieDataPath(1:end-sizeCommonBranch+1);
+            newRootDir=newMovieDataPath(1:end-sizeCommonBranch+1);
+
+            %Generate new channel names
+            newChannelPaths = arrayfun(@(x) relocatePath(x.channelPath_,oldRootDir,newRootDir),obj.channels_,'Unif',false);
+            changedChannelPaths=find(~arrayfun(@isempty,newChannelPaths));
+            
+            %Generate new output directory
+            newOutputDir = relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
+            changedOutputDir = ~isempty(newOutputDir) && ~(obj.outputDirectory_==newOutputDir);
+           
+            %Ask for relocation
+            confirmRelocate = questdlg('The location of some elements of the movie data has changed. Should I replace the locations of these elements?',...
+                'Movie Data Relocate','Yes','No','More details...','Yes');
+            
+            switch confirmRelocate
+                case 'Yes'
+                    for i=changedChannelPaths, obj.channels_(i).setChannelPath(newChannelPaths(i)); end
+                    if changedOutputDir, obj.setOutputDirectory(newOutputDirectory); end
+                case 'More details...'
+                    relocateInfo = sprintf('This is the list of changes to be applied:\n');
+                    %%% TO WORK ON next week
+%                    relocateInfo=[relocateInfo sprintf('Channel %g: %s  \n',changedChannelPaths,newChannelPaths)];
+                    if changedOutputDir, 
+                        relocateInfo=[relocateInfo sprintf('OutputDirectory: %s  \n',obj.OutputDirectory_)];
+                    end
+                    helpdlg(relocateInfo);
+                otherwise
+            end
+            
+            %Relocate movie data
+            obj.setMovieDataPath(newMovieDataPath);
+        end
+        
         function setMovieDataPath(obj, path)
-            obj.movieDataPath_ = path;
+            obj.movieDataPath_ = regexprep(path,[filesep '(\>)'],''); % remove ending separator if any
         end
         
         function setMovieDataFileName(obj, file)
             obj.movieDataFileName_ = file;
-        end        
+        end
+        
+        function setOutputDirectory(obj, outputDir)
+            obj.outputDirectory = regexprep(outputDir,[filesep '(\>)'],''); % remove ending separator if any
+        end
         
         function setNotes (obj, text)
             obj.notes_ = text;

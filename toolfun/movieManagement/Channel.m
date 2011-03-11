@@ -65,7 +65,13 @@ classdef Channel < handle
             if isempty(obj.channelPath_)
                 obj.channelPath_ = chanPath;
             else
-                error('This channel''s path has already been set and cannot be changed!');
+                % Check the calling function
+                stack = dbstack;
+                if  strcmp(stack(2).name,'MovieData.relocateMovieData')
+                    obj.channelPath_ = chanPath;
+                else
+                    error('This channel''s path has already been set and cannot be changed!');
+                end
             end
         end
         function setExcitationWavelength(obj, data)
