@@ -34,10 +34,12 @@ end
 oldFilesep=unique(regexp(oldRootDir,'/|\','match','once'));
 newFilesep=unique(regexp(newRootDir,'/|\','match','once'));
 
-% Remove ending separators in the paths if any
-oldPath=regexprep(oldPath,['\' oldFilesep '(\>)'],'');
-oldRootDir=regexprep(oldRootDir,['\' oldFilesep '\>'],'');
-newRootDir=regexprep(newRootDir,['\' newFilesep '(\>)'],'');
+% Remove ending separators in the paths
+endingOldFilesepToken = [regexptranslate('escape',oldFilesep) '$'];
+endingNewFilesepToken = [regexptranslate('escape',newFilesep) '$'];
+oldPath=regexprep(oldPath,endingOldFilesepToken,'');
+oldRootDir=regexprep(oldRootDir,endingOldFilesepToken,'');
+newRootDir=regexprep(newRootDir,endingNewFilesepToken,'');
 
 % Generate the new path and replace the extra file separator
 newPath=regexprep(oldPath,regexptranslate('escape',oldRootDir),regexptranslate('escape',newRootDir));

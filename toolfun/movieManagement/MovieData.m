@@ -158,7 +158,7 @@ classdef  MovieData < handle
             if nargin > 1
                 
                 % Remove ending file separators if any for comparing
-                endingFilesepToken = [regexptranslate('escape',filesep) '(\>)'];
+                endingFilesepToken = [regexptranslate('escape',filesep) '$'];
                 path1 = regexprep(obj.movieDataPath_,endingFilesepToken,'');
                 path2 = regexprep(movieDataPath,endingFilesepToken,'');
                 if  ~strcmp(path1, path2)
@@ -305,7 +305,7 @@ classdef  MovieData < handle
             oldMovieDataPath = rReplace(obj.movieDataPath_,'/|\',filesep);
             
             %Remove ending separators
-            endingFilesepToken = [regexptranslate('escape',filesep) '(\>)'];
+            endingFilesepToken = [regexptranslate('escape',filesep) '$'];
             oldMovieDataPath = regexprep(oldMovieDataPath,endingFilesepToken,'');
             newMovieDataPath = regexprep(newMovieDataPath,endingFilesepToken,'');
             
@@ -352,7 +352,7 @@ classdef  MovieData < handle
         
         function setMovieDataPath(obj, path)
             % Remove ending separator in the movie data path
-            endingFilesepToken = [regexptranslate('escape',filesep) '(\>)'];
+            endingFilesepToken = [regexptranslate('escape',filesep) '$'];
             obj.movieDataPath_ = regexprep(path,endingFilesepToken,''); 
         end
         
@@ -362,7 +362,7 @@ classdef  MovieData < handle
         
         function setOutputDirectory(obj, outputDir)
             % Remove ending separator in the output directory
-            endingFilesepToken = [regexptranslate('escape',filesep) '(\>)'];
+            endingFilesepToken = [regexptranslate('escape',filesep) '$'];
             obj.outputDirectory_ = regexprep(outputDir,endingFilesepToken,'');
         end
         
