@@ -30,18 +30,17 @@ elseif ~strcmp(oldPath(1:numel(oldRootDir)),oldRootDir);
     return;
 end
 
-% Identify old and new separators
-oldFilesep=unique(regexp(oldRootDir,'/|\','match','once'));
-newFilesep=unique(regexp(newRootDir,'/|\','match','once'));
+% Get file separators of old and new root directories as regular
+% expressions
+oldFilesep=getFilesep(oldRootDir);
+newFilesep=getFilesep(newRootDir);
 
 % Remove ending separators in the paths
-endingOldFilesepToken = [regexptranslate('escape',oldFilesep) '$'];
-endingNewFilesepToken = [regexptranslate('escape',newFilesep) '$'];
-oldPath=regexprep(oldPath,endingOldFilesepToken,'');
-oldRootDir=regexprep(oldRootDir,endingOldFilesepToken,'');
-newRootDir=regexprep(newRootDir,endingNewFilesepToken,'');
+oldPath=regexprep(oldPath,[oldFilesep '$'],'');
+oldRootDir=regexprep(oldRootDir,[oldFilesep '$'],'');
+newRootDir=regexprep(newRootDir,[newFilesep '$'],'');
 
-% Generate the new path and replace the extra file separator
+% Generate the new path and replace the wrong file separators
 newPath=regexprep(oldPath,regexptranslate('escape',oldRootDir),regexptranslate('escape',newRootDir));
 newPath=regexprep(newPath,oldFilesep,newFilesep);
 

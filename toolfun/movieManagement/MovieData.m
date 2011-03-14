@@ -301,19 +301,19 @@ classdef  MovieData < handle
         %Function to automatically relocate movie paths assuming the
         %internal architecture of the project is conserved
         function relocateMovieData(obj,newMovieDataPath)
-            %Convert file separators in case there has been a change of OS
+            %Convert temporarily all path using the local fileseps (for comparison)
             oldMovieDataPath = rReplace(obj.movieDataPath_,'/|\',filesep);
             
-            %Remove ending separators
+            %Remove ending file separators
             endingFilesepToken = [regexptranslate('escape',filesep) '$'];
             oldMovieDataPath = regexprep(oldMovieDataPath,endingFilesepToken,'');
             newMovieDataPath = regexprep(newMovieDataPath,endingFilesepToken,'');
             
-            %Compare old and new movie paths to detect common branch
+            %Compare old and new movie paths to detect common tree
             maxNumEl=min(numel(oldMovieDataPath),numel(newMovieDataPath));
             strComp = (oldMovieDataPath(end:-1:end-maxNumEl+1)==newMovieDataPath(end:-1:end-maxNumEl+1));
 
-            %Find the old and new root directories
+            %Extract the old and new root directories
             sizeCommonBranch=find(~strComp,1); 
             oldRootDir=obj.movieDataPath_(1:end-sizeCommonBranch+1);
             newRootDir=newMovieDataPath(1:end-sizeCommonBranch+1);
