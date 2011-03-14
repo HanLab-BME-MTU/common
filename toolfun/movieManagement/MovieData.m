@@ -303,9 +303,10 @@ classdef  MovieData < handle
             %Convert file separators in case there has been a change of OS
             oldMovieDataPath = rReplace(obj.movieDataPath_,'/|\',filesep);
             
-            %Convert file separators in case there has been a change of OS
-            oldMovieDataPath = regexprep(oldMovieDataPath,[filesep '(\>)'],'');
-            newMovieDataPath = regexprep(newMovieDataPath,[filesep '(\>)'],'');
+            %Remove ending separators
+            endingFilesepToken = [regexptranslate('escape',filesep) '(\>)'];
+            oldMovieDataPath = regexprep(oldMovieDataPath,endingFilesepToken,'');
+            newMovieDataPath = regexprep(newMovieDataPath,endingFilesepToken,'');
             
             %Compare old and new movie paths to detect common branch
             maxNumEl=min(numel(oldMovieDataPath),numel(newMovieDataPath));
@@ -321,25 +322,26 @@ classdef  MovieData < handle
             changedChannelPaths=find(~arrayfun(@isempty,newChannelPaths));
             
             %Generate new output directory
-            newOutputDir = relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
-            changedOutputDir = ~isempty(newOutputDir) && ~(obj.outputDirectory_==newOutputDir);
+            newOutputDirectory = relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
+            changedOutputDir = ~isempty(newOutputDirectory) && ~(strcmp(obj.outputDirectory_,newOutputDirectory));
            
             %Ask for relocation
             confirmRelocate = questdlg('The location of some elements of the movie data has changed. Should I replace the locations of these elements?',...
-                'Movie Data Relocate','Yes','No','More details...','Yes');
+                 'Movie Data Relocate','Yes','No','Yes');
+%                 'Movie Data Relocate','Yes','No','More details...','Yes');
             
             switch confirmRelocate
                 case 'Yes'
-                    for i=changedChannelPaths, obj.channels_(i).setChannelPath(newChannelPaths(i)); end
+                    for i=changedChannelPaths, obj.channels_(i).setChannelPath(newChannelPaths{i}); end
                     if changedOutputDir, obj.setOutputDirectory(newOutputDirectory); end
-                case 'More details...'
-                    relocateInfo = sprintf('This is the list of changes to be applied:\n');
-                    %%% TO WORK ON next week
-%                    relocateInfo=[relocateInfo sprintf('Channel %g: %s  \n',changedChannelPaths,newChannelPaths)];
-                    if changedOutputDir, 
-                        relocateInfo=[relocateInfo sprintf('OutputDirectory: %s  \n',obj.OutputDirectory_)];
-                    end
-                    helpdlg(relocateInfo);
+%                 case 'More details...'
+%                     relocateInfo = sprintf('This is the list of changes to be applied:\n');
+%                     %%% TO WORK ON next week
+% %                    relocateInfo=[relocateInfo sprintf('Channel %g: %s  \n',changedChannelPaths,newChannelPaths)];
+%                     if changedOutputDir, 
+%                         relocateInfo=[relocateInfo sprintf('OutputDirectory: %s  \n',obj.outputDirectory_)];
+%                     end
+%                     helpdlg(relocateInfo);
                 otherwise
             end
             
@@ -356,7 +358,7 @@ classdef  MovieData < handle
         end
         
         function setOutputDirectory(obj, outputDir)
-            obj.outputDirectory = regexprep(outputDir,[filesep '(\>)'],''); % remove ending separator if any
+            obj.outputDirectory_ = regexprep(outputDir,[filesep '(\>)'],''); % remove ending separator if any
         end
         
         function setNotes (obj, text)
