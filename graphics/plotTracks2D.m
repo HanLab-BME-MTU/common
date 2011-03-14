@@ -528,16 +528,16 @@ if indicateSE %if user wants to indicate starts and ends
         %place circles at track starts and squares at track ends if they happen to
         %be in the plotting region of interest
         switch colorTime
-            case '1'
+            case {'1','2','3'}
                 indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
                 plot(axH,startInfo(indx,1),startInfo(indx,2),'k','LineStyle','none','marker','o');
                 indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
                 plot(axH,endInfo(indx,1),endInfo(indx,2),'k','LineStyle','none','marker','square');
-            case '2'
-                indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
-                plot(axH,startInfo(indx,1),startInfo(indx,2),'k','LineStyle','none','marker','o');
-                indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
-                plot(axH,endInfo(indx,1),endInfo(indx,2),'k','LineStyle','none','marker','square');
+                %             case '2'
+                %                 indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
+                %                 plot(axH,startInfo(indx,1),startInfo(indx,2),'k','LineStyle','none','marker','o');
+                %                 indx = find(endInfo(:,3)>=timeRange(1) & endInfo(:,3)<=timeRange(2));
+                %                 plot(axH,endInfo(indx,1),endInfo(indx,2),'k','LineStyle','none','marker','square');
             otherwise
                 indx = find(startInfo(:,3)>=timeRange(1) & startInfo(:,3)<=timeRange(2));
                 plot(axH,startInfo(indx,1),startInfo(indx,2),colorTime,...
