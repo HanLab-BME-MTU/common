@@ -158,8 +158,9 @@ classdef  MovieData < handle
             if nargin > 1
                 
                 % Remove ending file separators if any for comparing
-                path1 = regexprep(obj.movieDataPath_,[filesep '(\>)'],'');
-                path2 = regexprep(movieDataPath,[filesep '(\>)'],'');
+                endingFilesepToken = [regexptranslate('escape',filesep) '(\>)'];
+                path1 = regexprep(obj.movieDataPath_,endingFilesepToken,'');
+                path2 = regexprep(movieDataPath,endingFilesepToken,'');
                 if  ~strcmp(path1, path2)
                     obj.relocateMovieData(movieDataPath);                    
                 end
@@ -314,7 +315,7 @@ classdef  MovieData < handle
 
             %Find the old and new root directories
             sizeCommonBranch=find(~strComp,1); 
-            oldRootDir=oldMovieDataPath(1:end-sizeCommonBranch+1);
+            oldRootDir=obj.movieDataPath_(1:end-sizeCommonBranch+1);
             newRootDir=newMovieDataPath(1:end-sizeCommonBranch+1);
 
             %Generate new channel names
@@ -350,7 +351,9 @@ classdef  MovieData < handle
         end
         
         function setMovieDataPath(obj, path)
-            obj.movieDataPath_ = regexprep(path,[filesep '(\>)'],''); % remove ending separator if any
+            % Remove ending separator in the movie data path
+            endingFilesepToken = [regexptranslate('escape',filesep) '(\>)'];
+            obj.movieDataPath_ = regexprep(path,endingFilesepToken,''); 
         end
         
         function setMovieDataFileName(obj, file)
@@ -358,7 +361,9 @@ classdef  MovieData < handle
         end
         
         function setOutputDirectory(obj, outputDir)
-            obj.outputDirectory_ = regexprep(outputDir,[filesep '(\>)'],''); % remove ending separator if any
+            % Remove ending separator in the output directory
+            endingFilesepToken = [regexptranslate('escape',filesep) '(\>)'];
+            obj.outputDirectory_ = regexprep(outputDir,endingFilesepToken,'');
         end
         
         function setNotes (obj, text)
