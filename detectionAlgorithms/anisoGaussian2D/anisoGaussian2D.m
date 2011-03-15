@@ -20,12 +20,7 @@ function F = anisoGaussian2D(x0, y0, amp, sigmaX, sigmaY, theta, xRange, yRange,
 % imSize             image size
 %
 % output:
-% (xRange, yRange)   2 vectors representing the 2-dimensional support of
-%                    the model in the image domain 1:size(imSize,1) x
-%                    1:size(imSize,2).
-%
-% nzIdx              linear indices where pixel value is not zero. These
-%                    indices are local.
+% F                  the model defined on nzIdx pixels.
 %
 % Sylvain Berlemont, 2011
 
@@ -54,5 +49,4 @@ a = ct2 / (2 * sx2) + st2 / (2 * sy2);
 b = s2t / (4 * sx2) - s2t / (4 * sy2);
 c = st2 / (2 * sx2) + ct2 / (2 * sy2);
 
-F = zeros(N,M);
-F(nzIdx) = amp * exp(-(a * X.^2 + 2 * b * X .* Y + c * Y.^2));
+F = amp * exp(-(a * X.^2 + 2 * b * X .* Y + c * Y.^2));

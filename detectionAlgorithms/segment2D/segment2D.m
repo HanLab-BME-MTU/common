@@ -30,7 +30,7 @@ function F = segment2D(x, y, amp, l, sigma, theta, xRange, yRange, nzIdx)
 %                    determined using segment2DSupport() function.
 %
 % output:
-% F                  the model defined on a NxM matrix.
+% F                  the model defined on nzIdx pixels.
 %
 % Sylvain Berlemont, 2010
 
@@ -57,6 +57,4 @@ C2 = erf(C0 * (l + 2 * X * ct + 2 * Y * st));
 C3 = erf(C0 * (l - 2 * X * ct - 2 * Y * st));
 C6 = erf(l * C0);
 
-F = zeros(N,M);
-
-F(nzIdx) = .5 * amp * C1 .* (C2 + C3) ./ C6;
+F = .5 * amp * C1 .* (C2 + C3) ./ C6;
