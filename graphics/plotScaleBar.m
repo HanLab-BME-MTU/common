@@ -1,4 +1,4 @@
-%plotScaleBar(width, h, varargin) adds a scale bar to a figure.
+%plotScaleBar(width, varargin) adds a scale bar to a figure.
 %
 % Inputs:  width : width of the scale bar, in x-axis units.
 %              h : axes handle. If empty, current axes ('gca') are used.
@@ -16,20 +16,21 @@
 % Francois Aguet, March 14 2011
 
 
-function plotScaleBar(width, h, varargin)
+function plotScaleBar(width, varargin)
 
 % fixed parameters
 b = 40;
-
 
 if mod(length(varargin),2)~=0
     error('Optional arguments need to be entered as pairs.');
 end
 
-if nargin<2 || isempty(h)
+idx = find(strcmpi(varargin, 'Handle'));
+if ~isempty(idx)
+    h = varargin{idx+1};
+else
     h = gca;
 end
-
 
 idx = find(strcmpi(varargin, 'location'));
 if ~isempty(idx)
