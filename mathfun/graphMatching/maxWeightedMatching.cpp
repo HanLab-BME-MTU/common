@@ -4,6 +4,7 @@
 
 #include <lemon/smart_graph.h>
 #include <lemon/matching.h>
+#include <lemon/lgf_writer.h>
 
 // Command line to compile on Mac OS X:
 // mex maxWeightedMatching.cpp
@@ -71,6 +72,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   WeightMap weight_map(g);
   
+  GraphWriter<SmartGraph> graphWriter(g, std::cout);
+
   for (int i = 0; i < num_edges; ++i)
     {
       int u = p[i] - 1;
@@ -89,9 +92,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   mxLogical *r = mxGetLogicals(plhs[0]);
 
-  int i = 0;
   for(SmartGraph::EdgeIt e(g); e != INVALID; ++e)
-    r[i++] = matching.matching(e);
-  
+    r[SmartGraph::id(e)] = matching.matching(e);
+
   g.clear();
 }
