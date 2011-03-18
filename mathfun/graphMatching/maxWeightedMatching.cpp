@@ -2,7 +2,8 @@
 
 #include <mex.h>
 
-#include <lemon/list_graph.h>
+#include <lemon/smart_graph.h>
+#include <lemon/matching.h>
 
 // Command line to compile on Mac OS X:
 // mex maxWeightedMatching.cpp
@@ -13,15 +14,84 @@
 using namespace lemon;
 using namespace std;
 
+// plhs[0] = M
+
+// prhs[0] = numVertices
+// prhs[1] = edges
+// prhs[2] = weights
+
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-	ListDigraph g;
+  // Read input arguments
 	
-	ListDigraph::Node u = g.addNode();
-	ListDigraph::Node v = g.addNode();
-	ListDigraph::Arc  a = g.addArc(u, v);
+  if (nrhs != 3) {
+    mexErrMsgTxt("3 input arguments required.");
+  }
 	
-	cout << "Hello World! This is LEMON library here." << endl;
-	cout << "We have a directed graph with " << countNodes(g) << " nodes "
-	<< "and " << countArcs(g) << " arc." << endl;
+  if (nlhs > 1) {
+    mexErrMsgTxt("Too many output arguments.");
+  }
+	
+  int num_nodes = (int) *mxGetPr(prhs[0]);
+	
+  int ndim = mxGetNumberOfDimensions(prhs[2]);
+	
+  if (ndim != 2) {
+    mexErrMsgTxt("Invalid number of dimensions.");
+  }
+	
+  const mwSize* size = mxGetDimensions(prhs[1]);
+	
+  int num_edges = size[0];
+
+  if (size[1] != 2) {
+    mexErrMsgTxt("Invalid number of columns for the 2nd argument.");
+  }
+
+  size = mxGetDimensions(prhs[2]);
+	
+  if (size[0] != num_edges) {
+    mexErrMsgTxt("Invalid number of elements for the 3rd argument.");
+  }
+	
+  SmartGraph g;
+
+  g.reserveNode(num_nodes);
+  g.reserveEdge(num_edges);
+
+  std::vector<SmartGraph::Node> nodes;
+
+  for (int i = 0; i < num_nodes; ++i)
+    nodes.push_back(g.addNode());
+
+  double* p = mxGetPr(prhs[1]);
+  double* q = mxGetPr(prhs[2]);
+
+  typedef SmartGraph::EdgeMap<double> WeightMap;
+
+  WeightMap weight_map(g);
+  
+  for (int i = 0; i < num_edges; ++i)
+    {
+      int u = p[i] - 1;
+      int v = p[num_edges + i] - 1;
+
+      SmartGraph::Edge e = g.addEdge(nodes[u], nodes[v]);
+
+      weight_map[e] = q[i];
+    }
+
+  MaxWeightedMatching<SmartGraph, WeightMap> matching(g, weight_map);
+
+  matching.run();
+
+  plhs[0] = mxCreateLogicalMatrix(num_edges, 1);
+
+  mxLogical *r = mxGetLogicals(plhs[0]);
+
+  int i = 0;
+  for(SmartGraph::EdgeIt e(g); e != INVALID; ++e)
+    r[i++] = matching.matching(e);
+  
+  g.clear();
 }
