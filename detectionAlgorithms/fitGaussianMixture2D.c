@@ -106,7 +106,7 @@ int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
     }
     
     double xp, yp, A, xi, yi;
-    double sigma = data->prmVect[np-2];
+    double sigma = fabs(data->prmVect[np-2]);
     double d = 2.0*sigma*sigma;
     double c = data->prmVect[np-1];
     
@@ -167,7 +167,7 @@ int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J) {
     }
     
     double xp, yp, xi, yi;
-    double sigma = data->prmVect[data->np-2];
+    double sigma = fabs(data->prmVect[data->np-2]);
     double sigma2 = sigma*sigma;
     double d = 2.0*sigma2;
     
@@ -238,7 +238,7 @@ int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J
     }
     
     double xp, yp, xi, yi, A;
-    double sigma = data->prmVect[data->np-2];
+    double sigma = fabs(data->prmVect[data->np-2]);
     double sigma2 = sigma*sigma;
     double d = 2.0*sigma2;
     double c = data->prmVect[data->np-1];
