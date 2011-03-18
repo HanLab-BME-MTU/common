@@ -81,7 +81,7 @@ vEx = vertcat(v, v + n, y(:));
 wEx = vertcat(w, w, zeros(n^2,1));
 
 % Solve minimum perfect matching problem
-M = perfectMatchingMEX(2 * n, [uEx vEx], -wExRescaled);
+M = minPerfectMatchingMEX(2 * n, [uEx vEx], -wEx);
 M = logical(M);
 
 % Compute the maximum cost of the matching

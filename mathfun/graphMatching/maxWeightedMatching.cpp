@@ -60,15 +60,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   g.reserveNode(num_nodes);
   g.reserveEdge(num_edges);
 
-  std::vector<SmartGraph::Node> nodes;
-
   for (int i = 0; i < num_nodes; ++i)
-    nodes.push_back(g.addNode());
-
+    g.addNode();
+  
   double* p = mxGetPr(prhs[1]);
   double* q = mxGetPr(prhs[2]);
 
-  typedef SmartGraph::EdgeMap<double> WeightMap;
+  typedef SmartGraph::EdgeMap<int> WeightMap;
 
   WeightMap weight_map(g);
   
@@ -76,12 +74,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   for (int i = 0; i < num_edges; ++i)
     {
-      int u = p[i] - 1;
-      int v = p[num_edges + i] - 1;
+      SmartGraph::Node u = SmartGraph::nodeFromId(p[i] - 1);
+      SmartGraph::Node v = SmartGraph::nodeFromId(p[num_edges + i] - 1);
 
-      SmartGraph::Edge e = g.addEdge(nodes[u], nodes[v]);
+      SmartGraph::Edge e = g.addEdge(u,v);
 
-      weight_map[e] = q[i];
+      weight_map[e] = (int) q[i];
     }
 
   MaxWeightedMatching<SmartGraph, WeightMap> matching(g, weight_map);
