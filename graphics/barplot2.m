@@ -1,21 +1,17 @@
 %BOXPLOT2 Box plot grouping multiple sets/categories of data, with error bars and SEM.
 %
 % INPUTS:   prm : cell array of matrices that contain the box properties:
-%                 row 1: mean or median
-%                 row 2: optional, SEM
-%                 row 2/3: 25th percentile, bottom of box
-%                 row 3/4: 75th percentile, top of box
-%                 row 4/5: optional, bottom whisker
-%                 row 5/6: optional, top whisker
+%                 row 1: height
+%                 row 2: optional, error bars
 %        colors : Nx3 matrix of colors, where N is the number of bars
 %       xLabels : cell array of strings, labels for each bar
 %        yLabel : string, y-axis label
 %
-% Example: boxplot2({[3 4; 0.2 0.2; 2 3; 4 5; 0.5 0.5; 0.5 0.5]});
+% Example: barplot2({[3 4; 0.5 0.5]}, [], {'Class A', 'Class B'});
 
-% Francois Aguet, 22 Feb 2011
+% Francois Aguet, 18 March 2011
 
-function boxplot2(prm, colors, xLabels, yLabel)
+function barplot2(prm, colors, xLabels, yLabel)
 
 fsize = 16;
 
@@ -41,60 +37,25 @@ for k = 1:ng
     nb = size(prm{k},2);
     
     xa{k} = (1:nb) + (k-1)*(nb + dg);
-    plotSEM = mod(size(prm{k},1),2)==0;
+
+    height = prm{k}(1,:);   
     
-    mu = prm{k}(1,:);
-    if plotSEM
-        p25 = prm{k}(3,:);
-        p75 = prm{k}(4,:);
-    else
-        p25 = prm{k}(2,:);
-        p75 = prm{k}(3,:);
-    end
-    
-    
-    
-    % whiskers (plot first to mask bar at '0')
-    if plotSEM && size(prm{k},1)>4
-        w1 = prm{k}(5,:);
-        w2 = prm{k}(6,:);
-        plotWhiskers = 1;
-    elseif size(prm{k},1)>3
-        w1 = prm{k}(4,:);
-        w2 = prm{k}(5,:);
-        plotWhiskers = 1;
-    else
-        plotWhiskers = 0;
-    end
-    
-    if plotWhiskers
-        he = errorbar(xa{k}, p25, w1, zeros(size(mu)), 'k', 'LineStyle', 'none', 'LineWidth', 2);
-        setErrorbarStyle(he);
-        he = errorbar(xa{k}, p75, zeros(size(mu)), w2, 'k', 'LineStyle', 'none', 'LineWidth', 2);
-        setErrorbarStyle(he);
-    end
-    
-    % the box
+    % bars
     lb = xa{k} - bw/2;
     rb = xa{k} + bw/2;
     xv = [lb; rb; rb; lb; lb; rb];
-    yv = [p75; p75; p25; p25; p75; p75];
-    %patch(xv, yv, 'r', 'LineWidth', 2);
+    yv = [height; height; zeros(1,nb); zeros(1,nb); height; height];
 
     for b = 1:nb
         patch(xv(:,b), yv(:,b), colors(b+(k-1)*nb,:), 'LineWidth', 2);
     end
     
-    
-    % mean/median line
-    line([lb; rb], [mu; mu], 'Color', [0 0 0], 'LineWidth', 3);
-    
-    % SEM
-    if plotSEM
-        sigma = prm{k}(2,:);
-        he = errorbar(xa{k}, mu, sigma, 'k', 'LineStyle', 'none', 'LineWidth', 2);
-        setErrorbarStyle(he, 0.15);
+    % error bars
+    if size(prm{k},1)>1
+        he = errorbar(xa{k}, height, prm{k}(2,:), 'k', 'LineStyle', 'none', 'LineWidth', 2);
+        setErrorbarStyle(he);
     end
+
 end
 
 box off;
