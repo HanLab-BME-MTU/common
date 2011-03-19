@@ -13,7 +13,7 @@ function [cleanContours,iClean] = cleanUpContours(contoursIn,nPtsMin)
 %   pixel of the image which was contoured. (I'm not sure why this is...)
 %   This function removes these points. Also, they may contain very short
 %   contours which surround a single pixel. These contours will be removed
-%   if the are shorter than nPtsMin. Finally, contours which intersect
+%   if they are shorter than nPtsMin. Finally, contours which intersect
 %   themselves will be seperated into two, non-intersecting contours. This
 %   happens only in rare circumstances, where the isovalue passes directly
 %   through a saddle point.
@@ -81,15 +81,18 @@ cleanContours = cleanContours(iClean)';
 nPall = nPall(iClean);
 
 
-%Check if the contour intersects itself, excluding the first point because
-%closed contours meet there.
+%Check if the contour intersects itself
 i1 = cell(1,nContours);
 i2 = cell(1,nContours);
 %Only check contours larger than nMinSplit
 [~,~,i1(nPall>nMinSplit),i2(nPall>nMinSplit)]  = cellfun(@(x)(...
-                              intersections(x(1,2:end),x(2,2:end))),...
+                              intersections(x(1,:),x(2,:))),...
                               cleanContours(nPall>nMinSplit),'UniformOutput',false);
 
+%Exclude the first point because closed contours meet there.
+i1 = cellfun(@(x)(x(x~=1)),i1,'UniformOutput',false);
+i2 = cellfun(@(x)(x(x~=1)),i2,'UniformOutput',false);
+                          
 iSelfInt = find(cellfun(@(x)(~isempty(x)),i1));
 
 if ~isempty(iSelfInt)
