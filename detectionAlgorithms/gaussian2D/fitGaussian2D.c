@@ -2,7 +2,9 @@
  *
  * (c) Francois Aguet & Sylvain Berlemont, 2011 (last modified Feb 23, 2011)
  *
- * Compile with: mex -I/usr/local/include -I../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a fitGaussian2D.c
+ * Compililation:
+ * Mac/Linux: mex -I/usr/local/include -I../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a fitGaussian2D.c
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP" -I"C:\include\gsl-1.14" -I"..\..\mex\include" "..\..\mex\lib\gsl.lib" "..\..\mex\lib\cblas.lib" -output fitGaussian2D fitGaussian2D.c
  */
 
 #include <stdlib.h>
@@ -25,7 +27,7 @@
 #define refMode "xyasc"
 
 
-typedef struct argStruct {
+typedef struct aStruct {
     double xi, yi, A, g, sigma2, sigma3;
 } argStruct_t;
 
@@ -320,8 +322,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     /* check inputs */
     if (nrhs < 3) mexErrMsgTxt("Inputs should be: data, prmVect, mode.");
     if (!mxIsDouble(prhs[0])) mexErrMsgTxt("Data input must be double array.");
-    size_t nx = mxGetN(prhs[0]);
-    size_t ny = mxGetM(prhs[0]);
+    int nx = (int)mxGetN(prhs[0]);
+    int ny = (int)mxGetM(prhs[0]);
     if (nx != ny) mexErrMsgTxt("Input should be a square image.");
     int N = nx*ny;
     if (mxGetNumberOfElements(prhs[1])!=NPARAMS || !mxIsDouble(prhs[1])) mexErrMsgTxt("Incorrect parameter vector format.");
@@ -340,7 +342,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     
     /* read mode input */
-    int np = mxGetNumberOfElements(prhs[2]);
+    int np = (int)mxGetNumberOfElements(prhs[2]);
     char *mode;
     mode = (char*)malloc(sizeof(char)*(np+1));
     mxGetString(prhs[2], mode, np+1);
