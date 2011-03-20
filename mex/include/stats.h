@@ -1,10 +1,18 @@
 /* Collection of functions for computing statistical tests
  *
- * (c) Francois Aguet, 2011 (last modified Feb 5, 2011)
+ * (c) Francois Aguet, 2011 (last modified Mar 20, 2011)
  * */
 
-
 #include <math.h>
+
+#if defined(_WIN32) || defined(_WIN64)
+    #define fmax max
+    #define fmin min
+    #define erf gsl_sf_erf
+    #include <minmax.h>
+    #include <gsl/gsl_sf_erf.h>
+#endif
+
 
 
 /* Code from:
@@ -59,7 +67,7 @@ double K(int n, double d) {
     int k, m, i, j, g, eH, eQ;
     double h, s, *H, *Q;
     /* OMIT NEXT LINE IF YOU REQUIRE >7 DIGIT ACCURACY IN THE RIGHT TAIL */
-    s=d*d*n; if(s>7.24||(s>3.76&&n>99)) return 1-2*exp(-(2.000071+.331/sqrt(n)+1.409/n)*s);
+    s=d*d*n; if(s>7.24||(s>3.76&&n>99)) return 1-2*exp(-(2.000071+.331/sqrt((double)n)+1.409/n)*s);
     k = (int)(n*d)+1;
     m=2*k-1;
     h=k-n*d;
@@ -161,7 +169,7 @@ double ksone(double *data, int N, double mu, double sigma) {
     
     for (j=0; j<N; ++j) {
         fn = (j+1.0)/N; /* CDF */
-        normCDF = 0.5 * (1.0 + erf((sdata[j]-mu)/(sqrt(2)*sigma)));
+        normCDF = 0.5 * (1.0 + erf((sdata[j]-mu)/(sqrt(2.0)*sigma)));
         
         dt = fmax(fabs(fo - normCDF), fabs(fn - normCDF));
         if (dt > D)
@@ -170,6 +178,6 @@ double ksone(double *data, int N, double mu, double sigma) {
     }
     free(sdata);
     /* return 1.0 - K(N,D); this is a much more accurate solution, but also much slower */
-    double en = sqrt(N);
+    double en = sqrt((double)N);
     return qks((en + 0.12 + 0.11/en)*D);
 }
