@@ -213,7 +213,7 @@ for iChan = 1:nChanThresh
             if iImage == 1
                 allThresholds{iChan}(iImage) = currThresh; %Nothing to compare 1st frame to
             else
-                if abs(currThresh / allThresholds{iChan}(find(~isnan(allThresholds{iChan}),1,'last'))-1) > p.MaxJump
+                if abs(currThresh / allThresholds{iChan}(find(~isnan(allThresholds{iChan}),1,'last'))-1) > (p.MaxJump-1)
                     %If the change was too large, don't store this threshold
                     %and use the most recent good value
                     allThresholds{iChan}(iImage) = NaN;

@@ -129,6 +129,9 @@ classdef ImageAnalysisProcess < Process
             
             
         end
+        function out = loadChannelOutput(obj)                        
+            
+        end
         
         function OK = checkChannelOutput(obj,iChan)
             

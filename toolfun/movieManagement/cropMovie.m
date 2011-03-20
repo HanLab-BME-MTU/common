@@ -1,13 +1,16 @@
-function movieData = cropMovie(movieData,cropPoly,cropChannels,viewChannels,parentDir)
-
+function movieData = cropMovie(movieData,paramIn)
+%CROPMOVIE allows the user to crop the images in the channel(s) of the movie described by the input movieData
 %
-% movieData = cropMovie(movieData, cropPoly)
+% Syntax:
+%
+% movieData = cropMovie(movieData);
+% movieData = cropMovie(movieData,paramIn)
 % 
-% This creates a ROI in theinput movie using the input polygon to create a
-% mask. If no polygon is input, the user is asked to create one by clicking
-% with the mouse
+% Description:
 % 
-% 
+% This function allows the user to select a sub-region of the image(s) in
+% the channel(s) of the input movie and NEED TO FINISH
+%
 % Input: 
 %
 %   cropPoly - The polygon to use to crop  the movie. Optional. If not
@@ -22,16 +25,18 @@ function movieData = cropMovie(movieData,cropPoly,cropChannels,viewChannels,pare
 %   parentDir   -   The directory to write the cropped images and the new
 %   movieData to.
 % 
-% %Hunter Elliott, 3/2009
+% Hunter Elliott,
+% Re-Written 2/2011
 % 
 
 
+%STILL IN PROCESS OF CONVERTING - STOPPED HERE
 
 
 
 %% ------ Parameters ------ %%%
 
-nFrames = 1;%Number of frames to preview for cropping
+nFrames = 3;%Number of frames to preview for cropping
 
 
 %% ----- Input ----- %%
