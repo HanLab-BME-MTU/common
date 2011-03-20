@@ -85,13 +85,14 @@ nPall = nPall(iClean);
 i1 = cell(1,nContours);
 i2 = cell(1,nContours);
 %Only check contours larger than nMinSplit
+%Exclude the first point because closed contours meet there.
 [~,~,i1(nPall>nMinSplit),i2(nPall>nMinSplit)]  = cellfun(@(x)(...
-                              intersections(x(1,:),x(2,:))),...
+                              intersections(x(1,2:end),x(2,2:end))),...
                               cleanContours(nPall>nMinSplit),'UniformOutput',false);
 
-%Exclude the first point because closed contours meet there.
-i1 = cellfun(@(x)(x(x~=1)),i1,'UniformOutput',false);
-i2 = cellfun(@(x)(x(x~=1)),i2,'UniformOutput',false);
+%Correct for the fact that the first point was excluded
+i1 = cellfun(@(x)(x+1),i1,'UniformOutput',false);
+i2 = cellfun(@(x)(x+1),i2,'UniformOutput',false);
                           
 iSelfInt = find(cellfun(@(x)(~isempty(x)),i1));
 
