@@ -294,6 +294,6 @@ if ~isempty(temp)
     end
     
 elseif length(movieRun) > 1 
-    userData.iconHelpFig = helpdlg('All your movies have been processed successfully.', 'Biosensors Package');
+    userData.iconHelpFig = helpdlg('All your movies have been processed successfully.', [userData.crtPackage.name 'Package']);
     set(handles.figure1, 'UserData', userData)
 end

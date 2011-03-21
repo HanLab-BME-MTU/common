@@ -25,7 +25,7 @@ userfcn_resetGUI(handles)
 
 % Set movie data path
 set(handles.edit_path, 'String', ...
-    [userData.MD(userData.id).movieDataPath_ userData.MD(userData.id).movieDataFileName_ ])
+    [userData.MD(userData.id).movieDataPath_ filesep userData.MD(userData.id).movieDataFileName_ ])
 
 
 % ----------------------------- Initialize --------------------------------

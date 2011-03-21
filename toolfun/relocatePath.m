@@ -24,6 +24,7 @@ function newPath = relocatePath(oldPath,oldRootDir,newRootDir)
 %
 
 % Check the old root directory is contained within the old path
+newPath='';
 if numel(oldPath)<numel(oldRootDir)
     return
 elseif ~strcmp(oldPath(1:numel(oldRootDir)),oldRootDir);

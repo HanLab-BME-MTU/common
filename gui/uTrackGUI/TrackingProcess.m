@@ -2,6 +2,7 @@ classdef TrackingProcess < Process
 % A class definition for a generic tracking process.
 %
 % Chuangang Ren, 11/2010
+% Modified by Sebastien Besson 03/2011
 
 properties(SetAccess = protected, GetAccess = public)
     
@@ -20,7 +21,7 @@ methods(Access = public)
             super_args = {};
         else
             super_args{1} = owner;
-            super_args{2} = 'Sub-Resolution';
+            super_args{2} = 'Tracking';
         end
         obj = obj@Process(super_args{:});
         
@@ -97,6 +98,7 @@ methods(Access = public)
             
             funParams.saveResults.dir = [outputDir  filesep 'Tracking' filesep]; %directory where to save input and output
             funParams.saveResults.filename = []; % Note: channel-specific
+            funParams.saveResults.export = 0; %FLAG allow additional export of the tracking results into matrix
             
             % --------------- Others ----------------
             
@@ -204,7 +206,7 @@ methods(Access = public)
             end
             
             if ~obj.overwrite_
-                % file name enumaration
+                % file name enumeration
                 obj.funParams_.saveResults.filename = enumFileName(obj.funParams_.saveResults.dir, obj.funParams_.saveResults.filename);
             end
             
@@ -216,6 +218,21 @@ methods(Access = public)
             [obj.outParams_{i}.tracksFinal, obj.outParams_{i}.kalmanInfoLink, obj.outParams_{i}.errFlag] = ...
                 obj.funName_(movieInfo, obj.funParams_.costMatrices, obj.funParams_.gapCloseParam, ...
                 obj.funParams_.kalmanFunctions, obj.funParams_.probDim, obj.funParams_.saveResults, obj.funParams_.verbose);
+            
+             % Optional export
+             if obj.funParams_.saveResults.export
+                if ~obj.funParams_.gapCloseParam.mergeSplit
+                    [M.trackedFeatureInfo M.trackedFeatureIndx]=...
+                        convStruct2MatNoMS(obj.outParams_{i}.tracksFinal);
+                else
+                    [M.trackedFeatureInfo M.trackedFeatureIndx,M.trackStartRow,M.numSegments]=...
+                        convStruct2MatIgnoreMS(obj.outParams_{i}.tracksFinal);
+                end
+                
+                matResultsSaveFile=[obj.funParams_.saveResults.dir filesep obj.funParams_.saveResults.filename(1:end-4) '_mat.mat'];
+                save(matResultsSaveFile,'-struct','M');
+                clear M;
+             end
             
         end
         

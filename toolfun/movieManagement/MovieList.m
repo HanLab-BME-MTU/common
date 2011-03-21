@@ -23,7 +23,7 @@ classdef MovieList < handle
                     
                 elseif isa(movieDataFile, 'MovieData')
                     for i = 1: length(movieDataFile)
-                       obj.movieDataFile_{end+1} = [movieDataFile(i).movieDataPath_ movieDataFile(i).movieDataFileName_]; 
+                       obj.movieDataFile_{end+1} = [movieDataFile(i).movieDataPath_ filesep movieDataFile(i).movieDataFileName_]; 
                     end
                 else
                     error('User-defined: Please provide a cell array of file directory or an array of MovieData object.')
@@ -70,16 +70,15 @@ classdef MovieList < handle
             %       
             %       MDList - cell array of Movie Data objects 
             %
-            movieDataFile = obj.movieDataFile_;
             
             if nargin < 2
                 userIndex = 'all';
             end
             
             if strcmp(userIndex, 'all')
-                index = 1:length(movieDataFile);
+                index = 1:length(obj.movieDataFile_);
 
-            elseif max(userIndex) <= length(movieDataFile)
+            elseif max(userIndex) <= length(obj.movieDataFile_)
                 index = userIndex;
             else
                 error('User-defined: user index exceed the length of movie data list.')                
@@ -87,11 +86,26 @@ classdef MovieList < handle
             
             movieException = cell(1, length(index));
             MDList = cell(1, length(index));
+            askUser=true;
 
-            if nargin > 2
-                
-                if  ~strcmp(obj.movieListPath_, movieListPath)
-                    obj.movieListPath_ = movieListPath;
+            if nargin > 2  
+            % Check if the path and filename stored in the movieList are the same
+            % as the ones provided in argument. They can differ if the movieList
+            % MAT file has been renamed, move or copy to another location.
+
+                endingFilesepToken = [regexptranslate('escape',filesep) '$'];
+                oldPath = regexprep(obj.movieListPath_,endingFilesepToken,'');
+                newPath = regexprep(movieListPath,endingFilesepToken,'');
+                if  ~strcmp(oldPath, newPath)
+                    relocateMsg=sprintf(['The movie list located in \n%s\n has been relocated to \n%s.\n'...
+                        'Should I try to relocate the movie data in the list as well?'],oldPath,newPath);
+                    confirmRelocate = questdlg(relocateMsg,'Movie Data','Yes to all','Yes','No','Yes');
+                    if strcmp(confirmRelocate(1:3),'Yes')
+                        obj.relocateMovieList(movieListPath); 
+                        askUser = (strcmp(confirmRelocate,'Yes'));
+                    else
+                        obj.setMovieListPath(movieListPath);
+                    end
                 end
             
                 if  ~strcmp(obj.movieListFileName_, movieListFileName)
@@ -104,14 +118,14 @@ classdef MovieList < handle
                 
             % Exception 1: MovieData file does not exist  
             
-                if ~exist(movieDataFile{index(i)}, 'file')
+                if ~exist(obj.movieDataFile_{index(i)}, 'file')
                     movieException{i} = MException('lccb:ml:nofile', 'File does not exist.');
                     continue
                 end
                 
             % Exception 2: Fail to open .mat file                
                 try
-                    pre = whos('-file', movieDataFile{index(i)});
+                    pre = whos('-file', obj.movieDataFile_{index(i)});
                 catch ME
                     movieException{i} = MException('lccb:ml:notopen', 'Fail to open file. Make sure it is a MAT file.');
                     continue
@@ -127,8 +141,8 @@ classdef MovieList < handle
                         continue                        
                         
                     case 1
-                        load(movieDataFile{index(i)}, '-mat', structMD.name)
-                        eval(['MDList{', num2str(i), '} = ' structMD.name ';'])
+                        data = load(obj.movieDataFile_{index(i)}, '-mat', structMD.name);
+                        MDList{i}=data.(structMD.name);
                         
                         
             % Exception 4: More than one MovieData objects in .mat file
@@ -142,7 +156,8 @@ classdef MovieList < handle
             % Exception 5: Movie Data Sanity Check 
             
                 try 
-                    MDList{i}.sanityCheck
+                    [path filename ext]=fileparts(obj.movieDataFile_{index(i)});
+                    MDList{i}.sanityCheck(path,[filename ext],askUser)
                     
                 catch ME
                     movieException{i} = MException('lccb:ml:sanitycheck', ME.message);
@@ -225,10 +240,56 @@ classdef MovieList < handle
             end
         end
 
+        function setMovieListPath(obj, path)
+            % Set the path to the MAT file containing the movie list
+            endingFilesepToken = [regexptranslate('escape',filesep) '$'];
+            obj.movieListPath_ = regexprep(path,endingFilesepToken,''); 
+        end
+        
+        
+        function relocateMovieList(obj,newMovieListPath)
+            % Relocate all movie data files in movie list if applicable
+            
+            %Convert temporarily all paths using the local file separator.
+            %Remove ending separators 
+            oldMovieListPath = rReplace(obj.movieListPath_,'/|\',filesep);
+            endingFilesepToken = [regexptranslate('escape',filesep) '$'];
+            oldMovieListPath = regexprep(oldMovieListPath,endingFilesepToken,'');
+            newMovieListPath = regexprep(newMovieListPath,endingFilesepToken,'');
+            
+            %Compare old and new movie paths, detect common tree and
+            %extract the old and new root directories
+            maxNumEl=min(numel(oldMovieListPath),numel(newMovieListPath));
+            strComp = (oldMovieListPath(end:-1:end-maxNumEl+1)==newMovieListPath(end:-1:end-maxNumEl+1));
+            sizeCommonBranch=find(~strComp,1); 
+            oldRootDir=obj.movieListPath_(1:end-sizeCommonBranch+1);
+            newRootDir=newMovieListPath(1:end-sizeCommonBranch+1);
+
+            %Guess paths of movie data files using the old and new root
+            newMovieDataPaths = cellfun(@(x) relocatePath(x,oldRootDir,newRootDir),obj.movieDataFile_,'Unif',false);
+            changedMovieDataPaths=(~cellfun(@isempty,newMovieDataPaths));           
+
+%             confirmRelocate = questdlg('The location of some movie data has changed. Should I replace the locations of these elements?',...
+%                  'Movie List Relocate','Yes','No','Yes');
+
+%             if strcmp(confirmRelocate,'Yes')
+            obj.editMovieDataFile(changedMovieDataPaths,newMovieDataPaths)
+%             end
+
+           
+            obj.setMovieListPath(newMovieListPath);
+        end
             
         function saveMovieList(ML)
-           % Save movie data to disk. 
-           save([ML.movieListPath_ ML.movieListFileName_],'ML')
+           % Save movie list to disk. Save a backup of existing copy if
+           % applicable.
+           
+           if exist([ML.movieListPath_ filesep ML.movieListFileName_],'file');
+               copyfile([ML.movieListPath_ filesep ML.movieListFileName_],...
+                    [ML.movieListPath_ filesep ML.movieListFileName_(1:end-3) 'old'])
+           end
+          
+           save([ML.movieListPath_ filesep ML.movieListFileName_],'ML')
         end
         
     end

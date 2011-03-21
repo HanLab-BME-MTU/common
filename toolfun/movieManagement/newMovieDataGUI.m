@@ -135,7 +135,7 @@ if nargin > 3
         set(handles.edit_output, 'Enable', 'on')
         set(handles.uipanel_notes, 'Title', 'Notes (Editable and will be saved)')
         set(handles.text_body_1, 'Visible', 'on')
-        set(handles.edit_path, 'Visible','on', 'String', [userData.MD.movieDataPath_ userData.MD.movieDataFileName_])
+        set(handles.edit_path, 'Visible','on', 'String', [userData.MD.movieDataPath_ filesep userData.MD.movieDataFileName_])
         
         % GUI setting - parameters
         set(handles.edit_output, 'String', userData.MD.outputDirectory_)

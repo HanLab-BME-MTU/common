@@ -99,6 +99,17 @@ end
 invalidRadioButtons = arrayfun(@(x) findobj('Tag',['radiobutton_package_' num2str(x)]),find(~isValidPackage));
 set(invalidRadioButtons,'Enable','off');
 
+% Test a package preselection and update the corresponding radio button
+if nargin > 3, 
+    preSelectedPackage=find(strcmp(packageList,varargin{1})); 
+end
+if exist('preSelectedPackage','var')
+    preSelectedIndx= num2str(preSelectedPackage);
+    if ~isempty(preSelectedIndx)
+        set(findobj('Tag',['radiobutton_package_' preSelectedIndx]),'Value',1.0);
+    end
+end
+
 % Load help icon from dialogicons.mat
 load lccbGuiIcons.mat
 supermap(1,:) = get(hObject,'color');
@@ -427,6 +438,10 @@ switch type
         healthMD = [];
         
         [movieException, MDList] = M.sanityCheck(index, pathname, filename );
+        
+        % Reload movie data filenames in case they have been relocated
+        % during sanity check
+        movieDataFile = M.movieDataFile_;
         
         % Explore cell array 'movieException'
         for i = 1: length(movieException)

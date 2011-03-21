@@ -22,7 +22,7 @@ function varargout = trackingProcessGUI(varargin)
 
 % Edit the above text to modify the response to help trackingProcessGUI
 
-% Last Modified by GUIDE v2.5 15-Dec-2010 15:20:55
+% Last Modified by GUIDE v2.5 17-Mar-2011 13:09:15
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -201,6 +201,7 @@ set(handles.popupmenu_kalman_reverse, 'Value', i4)
 
 userData.path = funParams.saveResults.dir;
 userData.file = userData.crtProc.filename_;
+set(handles.checkbox_export, 'Value', funParams.saveResults.export)
 
 % Show the actual file name on GUI
 i = userData.crtProc.channelIndex_(1);
@@ -357,6 +358,7 @@ elseif ~get(handles.checkbox_merging, 'Value') && ~get(handles.checkbox_splittin
 end
 
 funParams.saveResults.dir = userData.path;
+funParams.saveResults.export = get(handles.checkbox_export, 'Value');
 
 funParams.costMatrices(1).funcName = userData.cost_linking{i_linking};
 funParams.costMatrices(1).parameters = u_linking{i_linking};
@@ -1123,3 +1125,19 @@ function checkbox_overwrite_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox_overwrite
+
+
+% --- Executes on button press in checkbox_export.
+function checkbox_export_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_export (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_export
+if get(hObject,'Value')
+    exportMsg=sprintf('The output matrices resulting from this process might be very large. Be cautious if you have large movies');
+    if any([get(handles.checkbox_merging, 'Value') get(handles.checkbox_splitting, 'Value')])
+        exportMsg =[exportMsg sprintf('\n \nAny merging and splitting information will be lost in the exported format.')];
+    end
+    warndlg(exportMsg,'Warning','modal')
+end

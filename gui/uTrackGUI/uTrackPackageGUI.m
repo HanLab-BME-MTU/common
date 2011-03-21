@@ -92,9 +92,6 @@ function uTrackPackageGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %                         loaded to GUI before 
 %
 
-
-packageName = 'UTrackPackage';
-
 % Load movie data and recycle processes
 userfcn_iniPackage_commonCode;
 
@@ -108,6 +105,11 @@ function varargout = uTrackPackageGUI_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
+
+% In case the GUI has been called without argument
+if (isfield(handles,'startMovieSelectorGUI') && handles.startMovieSelectorGUI)
+    menu_file_open_Callback(hObject, eventdata, handles)
+end
 
 
 % --- Executes on button press in pushbutton_done.
@@ -923,12 +925,12 @@ end
 function menu_file_open_Callback(hObject, eventdata, handles)
 % Call back function of 'New' in menu bar
 userData = get(handles.figure1,'Userdata');
-
-        for i = 1: length(userData.MD)
-            userData.MD(i).saveMovieData
-        end
-
-movieSelectorGUI
+if isfield(userData,'MD')
+    for i = 1: length(userData.MD)
+        userData.MD(i).saveMovieData
+    end
+end
+movieSelectorGUI(handles.packageName);
 delete(handles.figure1)
 
 

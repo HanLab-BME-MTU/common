@@ -1,6 +1,10 @@
 % Not a function, Code segment
 
+stack = dbstack;
+guiname=stack(4).name;
+packageName=regexprep(guiname(1:end-3),'(\<[a-z])','${upper($1)}');
 
+% if  strcmp(stack(2).name,'MovieData.relocateMovieData')
 handles.output = hObject;
 userData = get(handles.figure1,'UserData');
 
@@ -12,7 +16,11 @@ eval(['userData.optProcID =' packageName '.getOptionalProcessId;']);
 set(handles.text_copyright, 'String', copyright)
 
 if nargin < 4
-    error('User-defined: Please call package control panel with a MovieData object. E.g. packageGUI(movieDataObject)');
+    handles.startMovieSelectorGUI=true;
+    handles.packageName = packageName;
+    guidata(hObject, handles);
+    return
+%     error('User-defined: Please call package control panel with a MovieData object. E.g. packageGUI(movieDataObject)');
 end
 
 % ----------------------------- Load MovieData ----------------------------

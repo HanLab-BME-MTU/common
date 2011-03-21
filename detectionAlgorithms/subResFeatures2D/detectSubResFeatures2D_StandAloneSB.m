@@ -1,11 +1,11 @@
 function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
-    detectSubResFeatures2D_StandAlone(movieParam,detectionParam,saveResults)
+    detectSubResFeatures2D_StandAloneSB(movieData,paramsIn)
 %DETECTSUBRESFEATURES2D_STANDALONE detects subresolution features in a series of images
 %
 %SYNOPSIS [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %    detectSubResFeatures2D_StandAlone(movieParam,detectionParam,saveResults)
 %
-%INPUT  movieParam    : Structure with fields
+%INPUT  movieData
 %           .imageDir     : Directory where images are stored.
 %           .filenameBase : Filename base.
 %           .firstImageNum: Numerical index of first image in movie.
@@ -129,69 +129,77 @@ psfSigma = [];
 %% Input + initialization
 
 %check whether correct number of input arguments was used
-if nargin < 2
-    disp('--detectSubResFeatures2D_StandAlone: Incorrect number of input arguments!');
-    return
+if nargin < 1 || ~isa(movieData,'MovieData')   
+    error('The first input must be a valid MovieData object!');        
 end
 
-%get movie parameters
-imageDir = movieParam.imageDir;
-filenameBase = movieParam.filenameBase;
-firstImageNum = movieParam.firstImageNum;
-lastImageNum = movieParam.lastImageNum;
-digits4Enum = movieParam.digits4Enum;
+if nargin < 2 || isempty(paramsIn)
+    paramsIn = [];  
+end
+
+%Check if the movie has been windowed before
+iProc = movieData.getProcessIndex('SubResolutionProcess',1,false);
+if isempty(iProc)
+    iProc = numel(movieData.processes_)+1;
+    movieData.addProcess(SubResolutionProcess(movieData));
+end
+
+%Parse input, store in parameter structure
+p=parseProcessParams(movieData.processes_{iProc});
+
+%% --------- Init ----------
 
 %get initial guess of PSF sigma
-psfSigma = detectionParam.psfSigma;
+psfSigma = p.detectionParam.psfSigma;
 
 %get statistical test alpha values
-if ~isfield(detectionParam,'testAlpha') || isempty(detectionParam.testAlpha)
+if ~isfield(p.detectionParam,'testAlpha') || isempty(p.detectionParam.testAlpha)
     testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05,'alphaF',0);
 else
-    testAlpha = detectionParam.testAlpha;
+    testAlpha = p.detectionParam.testAlpha;
 end
 
 %get visualization option
-if ~isfield(detectionParam,'visual') || isempty(detectionParam.visual)
+if ~isfield(p.detectionParam,'visual') || isempty(p.detectionParam.visual)
     visual = 0;
 else
-    visual = detectionParam.visual;
+    visual = p.detectionParam.visual;
 end
 
 %check whether to do MMF
-if ~isfield(detectionParam,'doMMF') || isempty(detectionParam.doMMF)
+if ~isfield(p.detectionParam,'doMMF') || isempty(p.detectionParam.doMMF)
     doMMF = 1;
 else
-    doMMF = detectionParam.doMMF;
+    doMMF = p.detectionParam.doMMF;
 end
 
 %get camera bit depth
-if ~isfield(detectionParam,'bitDepth') || isempty(detectionParam.bitDepth)
+if ~isfield(p.detectionParam,'bitDepth') || isempty(p.detectionParam.bitDepth)
     bitDepth = 16;
 else
-    bitDepth = detectionParam.bitDepth;
+    bitDepth = p.detectionParam.bitDepth;
 end
 
 %get alpha-value for local maxima detection
-if ~isfield(detectionParam,'alphaLocMax') || isempty(detectionParam.alphaLocMax)
+if ~isfield(p.detectionParam,'alphaLocMax') || isempty(p.detectionParam.alphaLocMax)
     alphaLocMax = 0.05;
 else
-    alphaLocMax = detectionParam.alphaLocMax;
+    alphaLocMax = p.detectionParam.alphaLocMax;
 end
 numAlphaLocMax = length(alphaLocMax);
 
 %check whether to estimate PSF sigma from the data
-if ~isfield(detectionParam,'numSigmaIter') || isempty(detectionParam.numSigmaIter)
+if ~isfield(p.detectionParam,'numSigmaIter') || isempty(p.detectionParam.numSigmaIter)
     numSigmaIter = 10;
 else
-    numSigmaIter = detectionParam.numSigmaIter;
+    numSigmaIter = p.detectionParam.numSigmaIter;
 end
 
 %get integration time window
-if ~isfield(detectionParam,'integWindow')
+if ~isfield(p.detectionParam,'integWindow')
     integWindow = 0;
 else
-    integWindow = detectionParam.integWindow;
+    integWindow = p.detectionParam.integWindow;
 end
 numIntegWindow = length(integWindow);
 
@@ -201,39 +209,39 @@ if numIntegWindow > numAlphaLocMax
         alphaLocMax(1)*ones(1,numIntegWindow-numAlphaLocMax)];
 end
 
-if ~isfield(detectionParam,'background') || isempty(detectionParam.background)
+if ~isfield(p.detectionParam,'background') || isempty(p.detectionParam.background)
     absBG = 0;
 else
     absBG = 1;
-    bgImageDir = detectionParam.background.imageDir;
-    bgImageBase = detectionParam.background.filenameBase;
-    alphaLocMaxAbs = detectionParam.background.alphaLocMaxAbs;
+    bgImageDir = p.detectionParam.background.imageDir;
+    bgImageBase = p.detectionParam.background.filenameBase;
+    alphaLocMaxAbs = p.detectionParam.background.alphaLocMaxAbs;
 end
 
 %determine where to save results
-if nargin < 3 || isempty(saveResults) %if nothing was input
+if isempty(p.saveResults) %if nothing was input
     saveResDir = pwd;
     saveResFile = 'detectedFeatures';
-    saveResults.dir = pwd;
+    p.saveResults.dir = pwd;
 else
-    if isstruct(saveResults)
-        if ~isfield(saveResults,'dir') || isempty(saveResults.dir)
+    if isstruct(p.saveResults)
+        if ~isfield(p.saveResults,'dir') || isempty(p.saveResults.dir)
             saveResDir = pwd;
         else
-            saveResDir = saveResults.dir;
+            saveResDir = p.saveResults.dir;
         end
-        if ~isfield(saveResults,'filename') || isempty(saveResults.filename)
+        if ~isfield(p.saveResults,'filename') || isempty(p.saveResults.filename)
             saveResFile = 'detectedFeatures';
         else
-            saveResFile = saveResults.filename;
+            saveResFile = p.saveResults.filename;
         end
     else
-        saveResults = 0;
+        p.saveResults = 0;
     end
 end
 
-%store the string version of the numerical index of each image
-enumString = getStringIndx(digits4Enum);
+% %store the string version of the numerical index of each image
+% enumString = getStringIndx(digits4Enum);
 
 %initialize some variables
 emptyFrames = [];
@@ -244,36 +252,35 @@ framesFailedMMF = [];
 warningState = warning('off','all');
 
 %% General image information
+imDirs = movieData.getChannelPaths(channelIndex_);
+imNames = movieData.getImageFileNames(channelIndex_);
 
 %get image indices and number of images
-imageIndx = firstImageNum : lastImageNum;
+% imageIndx = firstImageNum : lastImageNum;
+imageIndx = 1 : movieData.nFrames_;
 numImagesRaw = lastImageNum - firstImageNum + 1; %raw images
 numImagesInteg = repmat(numImagesRaw,1,numIntegWindow) - 2 * integWindow; %integrated images
 
-% list images in the image directory
-imageNames=imDir(imageDir);
-[dummy dummy imageIndices]=cellfun(@getFilenameBody,{imageNames(:).name},'UniformOutput',false);
-imageIndices=str2double(imageIndices);
-
 %read first image and get image size
 % if exist([imageDir filenameBase enumString(imageIndx(1),:) '.tif'],'file')
-if ~isempty(imageNames)
-%    imageTmp = imread([imageDir filenameBase enumString(imageIndx(1),:) '.tif']);
-    imageTmp = imread([imageDir imageNames(1).name]);
-else
-    disp('First image does not exist! Exiting ...');
-    return
-end
-[imageSizeX,imageSizeY] = size(imageTmp);
-clear imageTmp
+%     imageTmp = imread([imageDir filenameBase enumString(imageIndx(1),:) '.tif']);
+% else
+%     disp('First image does not exist! Exiting ...');
+%     return
+% end
+% [imageSizeX,imageSizeY] = size(imageTmp);
+% imSize_
+% clear imageTmp
+imageSizeX=movieData.imSize_(1);
+imageSizeY=movieData.imSize_(2);
 
 %check which images exist and which don't
-% imageExists = zeros(numImagesRaw,1);
-% for iImage = 1 : numImagesRaw
-%     if exist([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif'],'file')
-%         imageExists(iImage) = 1;
-%     end
-% end
+imageExists = zeros(numImagesRaw,1);
+for iImage = 1 : numImagesRaw
+    if exist([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif'],'file')
+        imageExists(iImage) = 1;
+    end
+end
 
 %calculate background properties at movie end
 last5start = max(numImagesRaw-4,1);
@@ -312,6 +319,8 @@ for iWindow = 1 : numIntegWindow
         imageRaw = NaN(imageSizeX,imageSizeY,1+2*integWindow(iWindow));
         for jImage = 1 : 1 + 2*integWindow(iWindow)
             if imageExists(jImage+iImage-1)
+%                 imageRaw(:,:,jImage) = double(imread([imageDir filenameBase ...
+%                     enumString(imageIndx(jImage+iImage-1),:) '.tif']));
                 imageRaw(:,:,jImage) = double(imread([imageDir filenameBase ...
                     enumString(imageIndx(jImage+iImage-1),:) '.tif']));
             end
@@ -821,58 +830,13 @@ movieInfo(firstImageNum:lastImageNum,1) = tmptmp;
 
 %save results
 if isstruct(saveResults)
-    save([saveResDir filesep saveResFile],'movieParam','detectionParam',...
+    save([saveResDir filesep saveResFile],'movieParam','p.detectionParam',...
         'movieInfo','exceptions','localMaxima','background','psfSigma');
 end
 
 %go back to original warnings state
 warning(warningState);
 
-
-%% Subfunction 1
-
-function enumString = getStringIndx(digits4Enum)
-
-switch digits4Enum
-    case 4
-        enumString = repmat('0',9999,4);
-        for i = 1 : 9
-            enumString(i,:) = ['000' num2str(i)];
-        end
-        for i = 10 : 99
-            enumString(i,:) = ['00' num2str(i)];
-        end
-        for i = 100 : 999
-            enumString(i,:) = ['0' num2str(i)];
-        end
-        for i = 1000 : 9999
-            enumString(i,:) = num2str(i);
-        end
-    case 3
-        enumString = repmat('0',999,3);
-        for i = 1 : 9
-            enumString(i,:) = ['00' num2str(i)];
-        end
-        for i = 10 : 99
-            enumString(i,:) = ['0' num2str(i)];
-        end
-        for i = 100 : 999
-            enumString(i,:) = num2str(i);
-        end
-    case 2
-        enumString = repmat('0',99,2);
-        for i = 1 : 9
-            enumString(i,:) = ['0' num2str(i)];
-        end
-        for i = 10 : 99
-            enumString(i,:) = num2str(i);
-        end
-    case 1
-        enumString = repmat('0',9,1);
-        for i = 1 : 9
-            enumString(i,:) = num2str(i);
-        end
-end
 
 %% Subfunction 2
 
@@ -1045,4 +1009,3 @@ end
 % %         bgStdMaxF = bgStdF1(localMax1DIndx);
 % %         bgMean1 = bgMean(:,:,iImage);
 % %         bgMeanMax = bgMean1(localMax1DIndx);
-

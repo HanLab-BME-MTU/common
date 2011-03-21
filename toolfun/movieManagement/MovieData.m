@@ -43,15 +43,15 @@ classdef  MovieData < handle
                 
                 if isa(channels(1), 'Channel')
                     obj.channels_ = channels;
-                else
-                    error ('User-defined: Input channels should be of class ''Channel''')
-                end
+               else
+                    error('lccb:MovieData:Constructor','Input channels should be of class ''Channel''');
+               end
                 
                 if nargin > 1
                     if isempty(outputDirectory) || ischar(outputDirectory)
                         obj.outputDirectory_ = outputDirectory;
                     else
-                        error ('User-defined: Output directory should be a string')
+                        error ('lccb:MovieData:Constructor','Output directory should be a string')
                     end
                 end
                 
@@ -59,7 +59,7 @@ classdef  MovieData < handle
                     if isempty(movieDataPath) || ischar(movieDataPath)
                         obj.movieDataPath_ = movieDataPath;
                     else
-                        error('User-defined: Movie Data path should be a string')
+                        error('lccb:MovieData:Constructor','Movie Data path should be a string')
                     end
                 end
                 
@@ -67,7 +67,7 @@ classdef  MovieData < handle
                     if isempty(movieDataFileName) || ischar(movieDataFileName)
                         obj.movieDataFileName_ = movieDataFileName;
                     else
-                        error('User-defined: Movie Data file name should be a string')
+                        error('lccb:MovieData:Constructor','Movie Data file name should be a string')
                     end
                 end
                 
@@ -82,7 +82,7 @@ classdef  MovieData < handle
                     elseif ~isnan(str2double(pixelSize)) && str2double(pixelSize)>0
                         obj.pixelSize_ = str2double(pixelSize);
                     else
-                        error('Pixel size should be a numeric and larger than zero')
+                        error('lccb:MovieData:Constructor','Pixel size should be a numeric and larger than zero')
                     end
                 end
                 
@@ -92,7 +92,7 @@ classdef  MovieData < handle
                     elseif ~isnan(str2double(timeInterval)) && str2double(timeInterval)>0
                         obj.timeInterval_ = str2double(timeInterval);                        
                     else
-                       error('Time interval should be a numeric and larger than zero') 
+                       error('lccb:MovieData:Constructor','Time interval should be a numeric and larger than zero') 
                     end
                 end
                 
@@ -102,7 +102,7 @@ classdef  MovieData < handle
                     elseif ~isnan(str2double(numAperature)) && str2double(numAperature)>0
                         obj.numAperature_ = str2double(numAperature);                        
                     else
-                       error('Numerical aperature should be a numeric and larger than zero') 
+                       error('lccb:MovieData:Constructor','Numerical aperature should be a numeric and larger than zero') 
                     end                    
                 end
                 
@@ -112,7 +112,7 @@ classdef  MovieData < handle
                     elseif ~isnan(str2double(camBitdepth)) && str2double(camBitdepth)>0 && ~mod(str2double(camBitdepth),2)
                         obj.camBitdepth_ = str2double(camBitdepth);                         
                     else
-                       error('Invalid value for Camera Bit-depth. Should be a numeric larger than zero and multiple of 2.') 
+                       error('lccb:MovieData:Constructor','Invalid value for Camera Bit-depth. Should be a numeric larger than zero and multiple of 2.') 
                     end                      
                 end
                 
@@ -122,7 +122,7 @@ classdef  MovieData < handle
                     elseif ~isnan(str2double(magnification)) && str2double(magnification)>0
                         obj.magnification_ = str2double(magnification);                        
                     else
-                       error('Magnification should be a numeric and larger than zero') 
+                       error('lccb:MovieData:Constructor','Magnification should be a numeric and larger than zero') 
                     end
                 end     
                 
@@ -132,18 +132,18 @@ classdef  MovieData < handle
                     elseif ~isnan(str2double(binning)) && str2double(binning)>0
                         obj.binning_ = str2double(binning);                        
                     else
-                       error('Binning should be a numeric and larger than zero') 
+                       error('lccb:MovieData:Constructor','Binning should be a numeric and larger than zero') 
                     end
                 end                  
                 
             else
-                error('User-defined: Please provide at least channel parameters to create a MovieData object')
+                error('lccb:MovieData:Constructor','Please provide at least channel parameters to create a MovieData object')
             end
             
             obj.createTime_ = clock;
         end
 
-        function sanityCheck(obj, movieDataPath, movieDataFileName)
+        function sanityCheck(obj, movieDataPath, movieDataFileName,askUser)
         % 1. Sanity check (user input, input channels, image files)
         % 2. Assignments to 4 properties:
         %       movieDataPath_
@@ -151,18 +151,33 @@ classdef  MovieData < handle
         %       nFrames_
         %       imSize_
            
+            % Ask user by default for relocation
+            if nargin < 4, askUser = true; end
             
             % Check if the path and filename stored in the movieData are the same
             % as the ones provided in argument. They can differ if the movieData
-            % MAT file has been rename, move or copy to another location.
+            % MAT file has been renamed, move or copy to another location.
             if nargin > 1
                 
-                % Remove ending file separators if any for comparing
+                %Remove ending file separators if any
                 endingFilesepToken = [regexptranslate('escape',filesep) '$'];
                 path1 = regexprep(obj.movieDataPath_,endingFilesepToken,'');
                 path2 = regexprep(movieDataPath,endingFilesepToken,'');
                 if  ~strcmp(path1, path2)
-                    obj.relocateMovieData(movieDataPath);                    
+                    
+                    if askUser
+                        relocateMsg=sprintf(['The movie data located in \n%s\n has been relocated to \n%s\n.'...
+                            'Should I try to relocate the components of the movie data as well?'],path1,path2);
+                        confirmRelocate = questdlg(relocateMsg,'Movie Data','Yes','No','Yes');
+                    else
+                        confirmRelocate = 'Yes';
+                    end
+                    
+                    if strcmp(confirmRelocate,'Yes')
+                        obj.relocateMovieData(movieDataPath); 
+                    else
+                        obj.setMovieDataPath(newMovieDataPath);
+                    end
                 end
             
                 if  ~strcmp(obj.movieDataFileName_, movieDataFileName)
@@ -301,6 +316,8 @@ classdef  MovieData < handle
         %Function to automatically relocate movie paths assuming the
         %internal architecture of the project is conserved
         function relocateMovieData(obj,newMovieDataPath)
+            % Relocate all components of movie data if applicable
+            
             %Convert temporarily all path using the local fileseps (for comparison)
             oldMovieDataPath = rReplace(obj.movieDataPath_,'/|\',filesep);
             
@@ -318,40 +335,40 @@ classdef  MovieData < handle
             oldRootDir=obj.movieDataPath_(1:end-sizeCommonBranch+1);
             newRootDir=newMovieDataPath(1:end-sizeCommonBranch+1);
 
-            %Generate new channel names
             newChannelPaths = arrayfun(@(x) relocatePath(x.channelPath_,oldRootDir,newRootDir),obj.channels_,'Unif',false);
-            changedChannelPaths=find(~arrayfun(@isempty,newChannelPaths));
+            changedChannelPaths=find(~cellfun(@isempty,newChannelPaths));
+            for i=changedChannelPaths, obj.channels_(i).setChannelPath(newChannelPaths{i}); end
             
-            %Generate new output directory
             newOutputDirectory = relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
             changedOutputDir = ~isempty(newOutputDirectory) && ~(strcmp(obj.outputDirectory_,newOutputDirectory));
-           
-            %Ask for relocation
-            confirmRelocate = questdlg('The location of some elements of the movie data has changed. Should I replace the locations of these elements?',...
-                 'Movie Data Relocate','Yes','No','Yes');
-%                 'Movie Data Relocate','Yes','No','More details...','Yes');
+            if changedOutputDir, obj.setOutputDirectory(newOutputDirectory); end
             
-            switch confirmRelocate
-                case 'Yes'
-                    for i=changedChannelPaths, obj.channels_(i).setChannelPath(newChannelPaths{i}); end
-                    if changedOutputDir, obj.setOutputDirectory(newOutputDirectory); end
-%                 case 'More details...'
-%                     relocateInfo = sprintf('This is the list of changes to be applied:\n');
-%                     %%% TO WORK ON next week
-% %                    relocateInfo=[relocateInfo sprintf('Channel %g: %s  \n',changedChannelPaths,newChannelPaths)];
-%                     if changedOutputDir, 
-%                         relocateInfo=[relocateInfo sprintf('OutputDirectory: %s  \n',obj.outputDirectory_)];
-%                     end
-%                     helpdlg(relocateInfo);
-                otherwise
+            %Modify the processes directories. At this point there are two 
+            %ways of storing the output directory TO BE MERGED
+            funParams=cellfun(@(x) x.funParams_,obj.processes_,'Unif',false);
+            proc1 = find(cellfun(@(x) isfield(x,'OutputDirectory'),funParams));
+            newProcDirs1=cellfun(@(x) relocatePath(x.OutputDirectory,oldRootDir,newRootDir),...
+                funParams(proc1),'Unif',false);
+            changedProcDirs1 = find(~cellfun(@isempty,newProcDirs1));
+            for i=changedProcDirs1, 
+                funParams{proc1(i)}.OutputDirectory=newProcDirs1{i};
+                obj.processes_{proc1(i)}.setPara(funParams{proc1(i)}); 
             end
             
-            %Relocate movie data
+            proc2 = find(cellfun(@(x) isfield(x,'saveResults'),funParams));
+            newProcDirs2=cellfun(@(x) relocatePath(x.saveResults.dir,oldRootDir,newRootDir),...
+                funParams(proc2),'Unif',false);
+            changedProcDirs2 = find(~cellfun(@isempty,newProcDirs2));
+            for i=changedProcDirs2, 
+                funParams{proc2(i)}.saveResults.dir=newProcDirs2{i};
+                obj.processes_{proc2(i)}.setPara(funParams{proc2(i)}); 
+            end
+            
             obj.setMovieDataPath(newMovieDataPath);
         end
         
         function setMovieDataPath(obj, path)
-            % Remove ending separator in the movie data path
+            % Set the path to the movie data MAT file
             endingFilesepToken = [regexptranslate('escape',filesep) '$'];
             obj.movieDataPath_ = regexprep(path,endingFilesepToken,''); 
         end
@@ -361,7 +378,6 @@ classdef  MovieData < handle
         end
         
         function setOutputDirectory(obj, outputDir)
-            % Remove ending separator in the output directory
             endingFilesepToken = [regexptranslate('escape',filesep) '$'];
             obj.outputDirectory_ = regexprep(outputDir,endingFilesepToken,'');
         end
@@ -417,6 +433,7 @@ classdef  MovieData < handle
            end
            save([MD.movieDataPath_ filesep MD.movieDataFileName_],'MD')
         end
+
     end
     
 end
