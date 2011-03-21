@@ -68,7 +68,7 @@ if (p.mode == 1)
     psf = vertcat(psf{:});
 end
 
-[pG G] = fitGaussian2D(psf, [0 0 1 1 0], 'As');
+[pG, ~, ~, res] = fitGaussian2D(psf, [0 0 1 1 0], 'As');
 sigma = pG(4);
 
 %===============
@@ -85,7 +85,7 @@ if nargin==5
     ylabel('y [nm]');
     
     subplot(1,2,2);
-    imagesc(xa,xa,G); colormap(gray(256)); axis image;
+    imagesc(xa,xa, psf+res.data); colormap(gray(256)); axis image;
     title('Gaussian approximation');
     xlabel('x [nm]');
     ylabel('y [nm]');
