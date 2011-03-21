@@ -14,10 +14,10 @@ costMatrices(1).funcName = 'costMatLinearMotionLink2';
 
 %parameters
 
-parameters.linearMotion = 0; %use linear motion Kalman filter.
+parameters.linearMotion = 1; %use linear motion Kalman filter.
 
 parameters.minSearchRadius = 2; %minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
-parameters.maxSearchRadius = 4.5; %maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
+parameters.maxSearchRadius = 5; %maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
 parameters.brownStdMult = 3; %multiplication factor to calculate search radius from standard deviation.
 
 parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the linking (initial tracking) step.
@@ -27,7 +27,7 @@ parameters.kalmanInitParam = []; %Kalman filter initialization parameters.
 % parameters.kalmanInitParam.initVelocity = orientVec; %Kalman filter initialization parameters.
 
 %optional input
-parameters.diagnostics = []; %if you want to plot the histogram of linking distances up to certain frames, indicate their numbers; 0 or empty otherwise. Does not work for the first or last frame of a movie.
+parameters.diagnostics = [147]; %if you want to plot the histogram of linking distances up to certain frames, indicate their numbers; 0 or empty otherwise. Does not work for the first or last frame of a movie.
 
 costMatrices(1).parameters = parameters;
 clear parameters
@@ -40,13 +40,13 @@ costMatrices(2).funcName = 'costMatLinearMotionCloseGaps2';
 %parameters
 
 %needed all the time
-parameters.linearMotion = 0; %use linear motion Kalman filter.
+parameters.linearMotion = 1; %use linear motion Kalman filter.
 
 parameters.minSearchRadius = 2; %minimum allowed search radius.
-parameters.maxSearchRadius = 4.5; %maximum allowed search radius.
+parameters.maxSearchRadius = 5; %maximum allowed search radius.
 parameters.brownStdMult = 3*ones(gapCloseParam.timeWindow,1); %multiplication factor to calculate Brownian search radius from standard deviation.
 
-parameters.brownScaling = [0.25 0.01]; %power for scaling the Brownian search radius with time, before and after timeReachConfB (next parameter).
+parameters.brownScaling = [0.5 0.01]; %power for scaling the Brownian search radius with time, before and after timeReachConfB (next parameter).
 parameters.timeReachConfB = gapCloseParam.timeWindow; %before timeReachConfB, the search radius grows with time with the power in brownScaling(1); after timeReachConfB it grows with the power in brownScaling(2).
 
 parameters.ampRatioLimit = [0.7 4]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
@@ -58,7 +58,7 @@ parameters.nnWindow = gapCloseParam.timeWindow; %number of frames before/after t
 
 parameters.linStdMult = 3*ones(gapCloseParam.timeWindow,1); %multiplication factor to calculate linear search radius from standard deviation.
 
-parameters.linScaling = [0.25 0.01]; %power for scaling the linear search radius with time (similar to brownScaling).
+parameters.linScaling = [0.5 0.01]; %power for scaling the linear search radius with time (similar to brownScaling).
 parameters.timeReachConfL = gapCloseParam.timeWindow; %similar to timeReachConfB, but for the linear part of the motion.
 
 parameters.maxAngleVV = 45; %maximum angle between the directions of motion of two tracks that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
@@ -83,8 +83,8 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/home/kj35/orchestra/groups/lccb-receptors/Galbraiths/data/alphaVandCellEdge/110114/Cs1_CHO02/Cs1_CHO02A/analysisAlphaV/'; %directory where to save input and output
-saveResults.filename = 'tracksTest8DetectionAll1_800Frames.mat'; %name of file where input and output are saved
+saveResults.dir = '/home/kj35/orchestra/groups/lccb-receptors/Grinstein/Nico/2011-02-28_CD36Tubulin/CD36Tubulin_1/images/mov_03_every3rd/'; %directory where to save input and output
+saveResults.filename = 'tracksAll1.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
 %verbose
@@ -95,56 +95,16 @@ probDim = 2;
 
 %% tracking function call
 
-[tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(402:1200),...
+[tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...
     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
 
-% saveResults.filename = 'tracks3Detection1_Frames0001to1200.mat';
-% [tracksFinal01,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1:1200),...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-% 
-% saveResults.filename = 'tracks2Detection1_Frames1201to2400.mat';
-% [tracksFinal02,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1201:2400),...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-% 
-% saveResults.filename = 'tracks2Detection1_Frames2401to3600.mat';
-% [tracksFinal03,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(2401:3600),...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-% 
-% saveResults.filename = 'tracks2Detection1_Frames3601to4800.mat';
-% [tracksFinal04,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(3601:4800),...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-% 
-% saveResults.filename = 'tracks2Detection1_Frames4801to6000.mat';
-% [tracksFinal05,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(4801:6000),...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-% 
-% saveResults.filename = 'tracks2Detection1_Frames6001to6800.mat';
-% [tracksFinal06,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(6001:6800),...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% for startFrame = 1 : 400 : 6800
+%     endFrame = startFrame + 399;
+%     saveResults.filename = ['tracks8Detection2_Frames' sprintf('%04i',startFrame) 'to' sprintf('%04i',endFrame) '.mat'];
+%     disp(startFrame)
+%     [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(...
+%         movieInfo(startFrame:endFrame),costMatrices,gapCloseParam,...
+%         kalmanFunctions,probDim,saveResults,verbose);
+% end
 
-% saveResults.filename = 'tracks1Detection2Frames7201to8200.mat';
-% [tracksFinal07,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(7201:8200),...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-% 
-% saveResults.filename = 'tracks1Detection2Frames4201to4800.mat';
-% [tracksFinal08,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(4201:4800),...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-% 
-% saveResults.filename = 'tracks1Detection2Frames4801to5400.mat';
-% [tracksFinal09,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(4801:5400),...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-% 
-% saveResults.filename = 'tracks1Detection2Frames5401to6000.mat';
-% [tracksFinal10,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(5401:6000),...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-% 
-% saveResults.filename = 'tracks1Detection2Frames6001to6600.mat';
-% [tracksFinal11,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(6001:6600),...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-% 
-% saveResults.filename = 'tracks1Detection2Frames6601to7200.mat';
-% [tracksFinal12,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(6601:7200),...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%% ~~~ the end ~~~

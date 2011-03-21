@@ -319,7 +319,10 @@ if newFigure
     figure
 
     if ~isempty(image) %if user supplied an image
-        imshow(image,[]); %plot the image
+        tmpImage = image(image~=0);
+        minImage = min(tmpImage);
+        maxImage = max(tmpImage);
+        imshow(image,[minImage maxImage]); %plot the image
     else %if user did not supply an image
         imshow(ones(maxYCoord,maxXCoord),[]); %plot an empty image
     end

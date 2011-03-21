@@ -691,6 +691,15 @@ if numSigmaIter
                         parameters(iFeat,:) = GaussFitND(imageCropped,[],...
                             fitParameters,initGuess);
                         
+%                         %just to test whether GaussFitND works either way
+%                         %the answer is yes
+%                         [imSizeY,imSizeX] = size(imageCropped);
+%                         coord4fitX = repmat((1:imSizeX)',imSizeY,1);
+%                         coord4fitY = repmat((1:imSizeY),imSizeX,1);
+%                         coord4fitY = coord4fitY(:);
+%                         parameters2(iFeat,:) = GaussFitND(imageCropped(:),[coord4fitX coord4fitY],...
+%                             fitParameters,initGuess);
+                    
                     else %otherwise assign NaN
                         
                         parameters(iFeat,:) = NaN;

@@ -7,7 +7,7 @@ function [F,J] = fitNGaussians2D(x0,image,index,psfSigma)
 %                 background noise.
 %       image   : Image part being analyzed.
 %       index   : x,y-indices of pixels considered.
-%       psfSigma: Standard deviation of point spread function (nm).
+%       psfSigma: Standard deviation of point spread function (in pixels).
 
 %OUTPUT F       : Residuals from fitting an image with supplied
 %                 Gaussians.

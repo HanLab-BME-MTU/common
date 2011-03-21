@@ -106,9 +106,11 @@ idx = find([stats.Area] > minSize);
 %output final blob mask
 maskLines = ismember(labels, idx);
 
-% %dilate masks
-% SE = strel('square',3);
-% maskLines = imdilate(maskLines,SE);
+%dilate masks and erode masks
+SE = strel('square',5);
+maskLines = imdilate(maskLines,SE);
+SE = strel('square',3);
+maskLines = imerode(maskLines,SE);
 
 %% Plotting
 
