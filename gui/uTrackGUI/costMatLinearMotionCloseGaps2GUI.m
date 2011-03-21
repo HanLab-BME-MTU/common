@@ -22,7 +22,7 @@ function varargout = costMatLinearMotionCloseGaps2GUI(varargin)
 
 % Edit the above text to modify the response to help costMatLinearMotionCloseGaps2GUI
 
-% Last Modified by GUIDE v2.5 08-Dec-2010 17:49:35
+% Last Modified by GUIDE v2.5 21-Mar-2011 17:13:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -81,7 +81,7 @@ if parameters.linearMotion
     arrayfun(@(x)eval(['set(handles.text_linear_',num2str(x),', ''Enable'', ''on'')']), 1:7)
     set(handles.edit_lenForClassify , 'Enable', 'on')
     set(handles.edit_linStdMult , 'Enable', 'on')
-    set(handles.edit_timeReachConfL , 'Enable', 'on')
+    set(handles.edit_gapLengthTransitionL , 'Enable', 'on')
     set(handles.edit_before_2 , 'Enable', 'on')
     set(handles.edit_after_2 , 'Enable', 'on')
     set(handles.edit_maxAngleVV , 'Enable', 'on')
@@ -90,7 +90,7 @@ if parameters.linearMotion
     set(handles.edit_linStdMult, 'String', num2str(parameters.linStdMult(1)))
     set(handles.edit_before_2, 'String', num2str(parameters.linScaling(1)))
     set(handles.edit_after_2, 'String', num2str(parameters.linScaling(2)))
-    set(handles.edit_timeReachConfL, 'String', num2str(parameters.timeReachConfL))  
+    set(handles.edit_gapLengthTransitionL, 'String', num2str(parameters.timeReachConfL-1))  
     set(handles.edit_maxAngleVV, 'String', num2str(parameters.maxAngleVV))    
 end
 
@@ -101,7 +101,7 @@ set(handles.checkbox_useLocalDensity, 'Value', parameters.useLocalDensity)
 set(handles.edit_nnWindow, 'String', num2str(parameters.nnWindow))
 set(handles.edit_before, 'String', num2str(parameters.brownScaling(1)))
 set(handles.edit_after, 'String', num2str(parameters.brownScaling(2)))
-set(handles.edit_timeReachConfB, 'String', num2str(parameters.timeReachConfB))
+set(handles.edit_gapLengthTransitionB, 'String', num2str(parameters.timeReachConfB-1))
 
 if isempty(parameters.ampRatioLimit) || (length(parameters.ampRatioLimit) ==1 && parameters.ampRatioLimit == 0)
     
@@ -183,7 +183,7 @@ parameters = userData.parameters;
     nnWindow = get(handles.edit_nnWindow, 'String');
     brownScaling_1 = get(handles.edit_before, 'String'); 
     brownScaling_2 = get(handles.edit_after, 'String'); 
-    timeReachConfB = get(handles.edit_timeReachConfB, 'String'); 
+    gapLengthTransitionB = get(handles.edit_gapLengthTransitionB, 'String'); 
     ampRatioLimit_1 = get(handles.edit_min, 'String'); 
     ampRatioLimit_2 = get(handles.edit_max, 'String'); 
     resLimit = get(handles.edit_resLimit, 'String'); 
@@ -193,7 +193,7 @@ parameters = userData.parameters;
     linStdMult = get(handles.edit_linStdMult, 'String'); 
     linScaling_1 = get(handles.edit_before_2, 'String'); 
     linScaling_2 = get(handles.edit_after_2, 'String');    
-    timeReachConfL = get(handles.edit_timeReachConfL, 'String'); 
+    gapLengthTransitionL = get(handles.edit_gapLengthTransitionL, 'String'); 
     maxAngleVV = get(handles.edit_maxAngleVV, 'String'); 
     
     % lower
@@ -251,11 +251,11 @@ parameters = userData.parameters;
     
     % brownScaling
     if isempty( brownScaling_1 )
-        errordlg('Parameter "Scaling Power Before Confinement" is requied by the algorithm.','Error','modal')
+        errordlg('Parameter "Scaling Power in Fast Expansion Phase" is requied by the algorithm.','Error','modal')
         return
 
     elseif isnan(str2double(brownScaling_1)) || str2double(brownScaling_1) < 0
-        errordlg('Please provide a valid value to parameter "Scaling Power Before Confinement".','Error','modal')
+        errordlg('Please provide a valid value to parameter "Scaling Power in Fast Expansion Phase".','Error','modal')
         return
     else
         brownScaling_1 = str2double(brownScaling_1);
@@ -263,11 +263,11 @@ parameters = userData.parameters;
     
     % brownScaling
     if isempty( brownScaling_2 )
-        errordlg('Parameter "Scaling Power After Confinement" is requied by the algorithm.','Error','modal')
+        errordlg('Parameter "Scaling Power in Slow Expansion Phase" is requied by the algorithm.','Error','modal')
         return
 
     elseif isnan(str2double(brownScaling_2)) || str2double(brownScaling_2) < 0
-        errordlg('Please provide a valid value to parameter "Scaling Power After Confinement".','Error','modal')
+        errordlg('Please provide a valid value to parameter "Scaling Power in Slow Expansion Phase".','Error','modal')
         return
     else
         brownScaling_2 = str2double(brownScaling_2);
@@ -275,16 +275,16 @@ parameters = userData.parameters;
     
     brownScaling = [brownScaling_1 brownScaling_2];
     
-    % timeReachConfB
-    if isempty( timeReachConfB )
-        errordlg('Parameter "Time to Reach Confinement" is requied by the algorithm.','Error','modal')
+    % gapLengthTransitionB
+    if isempty( gapLengthTransitionB )
+        errordlg('Parameter "Gap length to transition from Fast to Slow Expansion" is requied by the algorithm.','Error','modal')
         return
 
-    elseif isnan(str2double(timeReachConfB)) || str2double(timeReachConfB) < 0
-        errordlg('Please provide a valid value to parameter "Time to Reach Confinement".','Error','modal')
+    elseif isnan(str2double(gapLengthTransitionB)) || str2double(gapLengthTransitionB) < 0
+        errordlg('Please provide a valid value to parameter "Gap length to transition from Fast to Slow Expansion".','Error','modal')
         return
     else
-        timeReachConfB = str2double(timeReachConfB);
+        gapLengthTransitionB = str2double(gapLengthTransitionB);
     end      
      
     % ampRatioLimit
@@ -375,11 +375,11 @@ parameters = userData.parameters;
         
         % linScaling_1
         if isempty( linScaling_1 )
-            errordlg('Parameter "Scaling Power Before Confinement" is requied by the algorithm.','Error','modal')
+            errordlg('Parameter "Scaling Power in Fast Expansion Phase" is requied by the algorithm.','Error','modal')
             return
 
         elseif isnan(str2double(linScaling_1)) || str2double(linScaling_1) < 0
-            errordlg('Please provide a valid value to parameter "Scaling Power Before Confinement".','Error','modal')
+            errordlg('Please provide a valid value to parameter "Scaling Power in Fast Expansion Phase".','Error','modal')
             return
         else
             linScaling_1 = str2double(linScaling_1);
@@ -387,11 +387,11 @@ parameters = userData.parameters;
 
         % linScaling_1
         if isempty( linScaling_2 )
-            errordlg('Parameter "Scaling Power Before Confinement" is requied by the algorithm.','Error','modal')
+            errordlg('Parameter "Scaling Power in Slow Expansion Phase" is requied by the algorithm.','Error','modal')
             return
 
         elseif isnan(str2double(linScaling_2)) || str2double(linScaling_2) < 0
-            errordlg('Please provide a valid value to parameter "Scaling Power Before Confinement".','Error','modal')
+            errordlg('Please provide a valid value to parameter "Scaling Power in Slow Expansion Phase".','Error','modal')
             return
         else
             linScaling_2 = str2double(linScaling_2);
@@ -399,16 +399,16 @@ parameters = userData.parameters;
 
         linScaling = [linScaling_1 linScaling_2];  
         
-        % timeReachConfL
-        if isempty( timeReachConfL )
-            errordlg('Parameter "Time to Reach Confinement" is requied by the algorithm.','Error','modal')
+        % gapLengthTransitionL
+        if isempty( gapLengthTransitionL )
+            errordlg('Parameter "Gap length to transition from Fast to Slow Expansion" is requied by the algorithm.','Error','modal')
             return
 
-        elseif isnan(str2double(timeReachConfL)) || str2double(timeReachConfL) < 0
-            errordlg('Please provide a valid value to parameter "Time to Reach Confinement".','Error','modal')
+        elseif isnan(str2double(gapLengthTransitionL)) || str2double(gapLengthTransitionL) < 0
+            errordlg('Please provide a valid value to parameter "Gap length to transition from Fast to Slow Expansion".','Error','modal')
             return
         else
-            timeReachConfL = str2double(timeReachConfL);
+            gapLengthTransitionL = str2double(gapLengthTransitionL);
         end      
         
         % maxAngleVV
@@ -433,7 +433,7 @@ parameters = userData.parameters;
     parameters.useLocalDensity = get(handles.checkbox_useLocalDensity, 'Value');
     parameters.nnWindow = nnWindow;
     parameters.brownScaling = brownScaling;
-    parameters.timeReachConfB = timeReachConfB;
+    parameters.timeReachConfB = gapLengthTransitionB+1;
     parameters.ampRatioLimit = ampRatioLimit;
     parameters.resLimit = resLimit;
     parameters.gapPenalty = gapPenalty;
@@ -443,7 +443,7 @@ parameters = userData.parameters;
         parameters.lenForClassify = lenForClassify;
         parameters.linStdMult = linStdMult;
         parameters.linScaling = linScaling;
-        parameters.timeReachConfL = timeReachConfL;
+        parameters.timeReachConfL = gapLengthTransitionL+1;
         parameters.maxAngleVV = maxAngleVV;
     end
     
@@ -823,18 +823,18 @@ end
 
 
 
-function edit_timeReachConfB_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_timeReachConfB (see GCBO)
+function edit_gapLengthTransitionB_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_gapLengthTransitionB (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit_timeReachConfB as text
-%        str2double(get(hObject,'String')) returns contents of edit_timeReachConfB as a double
+% Hints: get(hObject,'String') returns contents of edit_gapLengthTransitionB as text
+%        str2double(get(hObject,'String')) returns contents of edit_gapLengthTransitionB as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit_timeReachConfB_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_timeReachConfB (see GCBO)
+function edit_gapLengthTransitionB_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_gapLengthTransitionB (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -1145,18 +1145,18 @@ end
 
 
 
-function edit_timeReachConfL_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_timeReachConfL (see GCBO)
+function edit_gapLengthTransitionL_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_gapLengthTransitionL (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit_timeReachConfL as text
-%        str2double(get(hObject,'String')) returns contents of edit_timeReachConfL as a double
+% Hints: get(hObject,'String') returns contents of edit_gapLengthTransitionL as text
+%        str2double(get(hObject,'String')) returns contents of edit_gapLengthTransitionL as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit_timeReachConfL_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_timeReachConfL (see GCBO)
+function edit_gapLengthTransitionL_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_gapLengthTransitionL (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
