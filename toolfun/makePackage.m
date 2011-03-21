@@ -97,7 +97,7 @@ if ~exist(docDir,'dir'), mkdir(docDir); end
 nDocFiles = numel(packageDocFiles);
 disp(['Copying all '  num2str(nDocFiles) ' files ...'])
 
-for nfile=1:numel(nDocFiles)
+for nfile=1:numel(packageDocFiles)
     iLFS = max(regexp(packageDocFiles{nfile},filesep));
     copyfile(packageDocFiles{nfile},[docDir filesep packageDocFiles{nfile}(iLFS+1:end)]);
 end
