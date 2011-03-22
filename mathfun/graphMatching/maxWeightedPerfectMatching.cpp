@@ -7,10 +7,10 @@
 #include <lemon/lgf_writer.h>
 
 // Command line to compile on Mac OS X:
-// mex maxWeightedMatching.cpp
+// mex maxWeightedPerfectMatching.cpp
 
 // Command line to compile on Linux:
-// mex maxWeightedMatching.cpp
+// mex maxWeightedPerfectMatching.cpp
 
 using namespace lemon;
 using namespace std;
