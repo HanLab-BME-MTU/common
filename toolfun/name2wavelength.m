@@ -49,6 +49,7 @@ switch lower(name)
         if isnumeric(name)
             lambda = name;
         else
-            error('Shortcut not valid. Please enter wavelength in [nm].');
+            lambda = NaN;
+            %error('Shortcut not valid. Please enter wavelength in [nm].');
         end
 end
