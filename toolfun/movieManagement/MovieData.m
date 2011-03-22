@@ -403,6 +403,7 @@ classdef  MovieData < handle
             end
             
         end
+        
         function chanPaths = getChannelPaths(obj,iChan)
             %Returns the directories for the selected channels as a cell
             %array or character strings

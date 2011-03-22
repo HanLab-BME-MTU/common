@@ -1,18 +1,18 @@
 classdef SubResolutionProcess < DetectionProcess
-    %
-    % Chuangang Ren
-    % 11/2010
+% A subclass of the detection process
+% Chuangang Ren
+% 11/2010
 
     properties(SetAccess = protected, GetAccess = public)
 
-        filenameBase_ % cell array storing the base of file name 
-        digits4Enum_ % cell array stroring the number of digits for frame enumeration (1-4)
-        filename_ % file name of result data
+        filenameBase_   % cell array storing the base of file name 
+        digits4Enum_    % cell array stroring the number of digits for frame enumeration (1-4)
+        filename_       % file name of result data
     end    
     
     methods (Access = public)
         function obj = SubResolutionProcess(owner, outputDir, channelIndex, funParams )
-
+        % Constructor of the SubResolutionProcess
             super_args{1} = owner;
             super_args{2} = 'Sub-Resolution';
             super_args{3} = @detectSubResFeatures2D_StandAlone;
@@ -93,8 +93,9 @@ classdef SubResolutionProcess < DetectionProcess
             obj.filename_ = 'detection_result.mat';
         end    
         
-        % Set result file name
+        
         function setFileName(obj, name)
+        % Set result file name
            obj.filename_ = name; 
         end
         

@@ -1,30 +1,33 @@
 classdef Process < handle 
 % Defines the abstract class Process from which every user-defined process 
 % will inherit.
+
     properties (SetAccess = private, GetAccess = public)
     % SetAccess = private - cannot change the values of variables outside object
     % GetAccess = public - can get the values of variables outside object without
-    % definging accessor functions              
+    % defigning accessor functions
+    
        dateTime_  % Time process was last run
     end
     properties(SetAccess = protected, GetAccess = public)
-        name_  %Process name
-        owner_
-        procChanged_ % Whether process parameter has been changed 
-                     % 
-                     % changed - true, unchanged - false
+        name_           % Process name
+        owner_          % Movie data object owning the process
+        procChanged_    % Whether process parameter has been changed 
+                        % 
+                        % changed - true, unchanged - false
         
         
                      
         success_ % If the process has been successfully run 
         updated_ % If the parameter of parent process is changed
                  % updated_ - false, not changed updated_ - true
-        notes_
+                 
+        notes_          % Process notes
         
-        funName_
-        funParams_ 
-        outParams_ % All output data or path
-        visualParams_  % Visualization parameters
+        funName_        % Function running the process
+        funParams_      % Parameters for running the process
+        outParams_      % All output data or path
+        visualParams_   % Visualization parameters
         
     end
     methods (Access = protected)
@@ -35,7 +38,7 @@ classdef Process < handle
                 if isa(owner,'MovieData')
                     obj.owner_ = owner;
                 else
-                    error('The owner of a process must always be a MovieData object!')
+                    error('lccb:Process:Constructor','The owner of a process must always be a MovieData object!')
                 end
                 
                 if nargin > 1
@@ -120,6 +123,11 @@ classdef Process < handle
     end
     methods (Abstract)
         sanityCheck(obj)
+% Common input and output path methods - to be implemented
+%         paths = getInFilePath(obj);
+%         paths = getOutFilePath(obj);
+%         setInFilePath(obj,paths);
+%         setOutFilePath(obj,paths);
         % More abstract classed goes here
         % ... ...
     end
