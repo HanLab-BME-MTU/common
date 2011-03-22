@@ -22,7 +22,7 @@ function varargout = subResolutionDetectionGUI(varargin)
 
 % Edit the above text to modify the response to help subResolutionDetectionGUI
 
-% Last Modified by GUIDE v2.5 08-Dec-2010 17:49:03
+% Last Modified by GUIDE v2.5 22-Mar-2011 13:25:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -1045,6 +1045,8 @@ userData.crtProc.setPara(funParams);
 % Save result file name
 userData.crtProc.setFileName(userData.file)
 
+% Set Overwrite flag
+userData.crtProc.setOverwrite(get(handles.checkbox_overwrite, 'Value'))
 
 % Save user data
 set(handles.figure1, 'UserData', userData);
@@ -1198,3 +1200,12 @@ function figure1_KeyPressFcn(hObject, eventdata, handles)
 if strcmp(eventdata.Key, 'return')
     pushbutton_done_Callback(handles.pushbutton_done, [], handles);
 end
+
+
+% --- Executes on button press in checkbox_overwrite.
+function checkbox_overwrite_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_overwrite (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_overwrite

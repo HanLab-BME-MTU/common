@@ -62,6 +62,8 @@ function uTrackPackageGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %       userdata.statusM - GUI status matrix
 %       userData.optProcID - optional process ID
 %
+%       userData.applytoall - array of boolean
+%
 %       userData.passIconData - pass icon image data
 %       userData.errorIconData - error icon image data
 %       userData.warnIconData - warning icon image data

@@ -12,7 +12,7 @@ function info = userfcn_copyright (type)
 % Chuangang Ren
 % 11/2010
 
-str_year = '2010';
+str_year = '2011';
 str_version = '2.0';
 
 if nargin < 1

@@ -139,10 +139,12 @@ else
     
     set(handles.popupmenu_1, 'Value', find(strcmp(userData.procName, class(userData.crtProc))) )
     set(handles.pushbutton_set_1, 'Enable', 'on')
-    set(handles.checkbox_overwrite, 'Value', userData.crtProc.overwrite_)
+%     set(handles.checkbox_overwrite, 'Value', userData.crtProc.overwrite_)
     
 end
 
+set(handles.checkbox_applytoall, 'Value', userData_main.applytoall(userData.procID));
+ 
 % ----------------------Set up help icon------------------------
 
 % Set up help icon
@@ -192,6 +194,9 @@ if id == length(get(handles.popupmenu_1, 'String'))
     errordlg('Please select a method to segment your data.','Setting Error','modal')
     return 
 end
+
+
+
 
 sameprocess = false;
 
@@ -250,8 +255,24 @@ end
 % Set channels
 userData.crtProc.setChannelIndex(channelIndex)
 
-% Set Overwrite flag
-userData.crtProc.setOverwrite(get(handles.checkbox_overwrite, 'Value'))
+% Remove background if settings are copied to other movies
+
+if get(handles.checkbox_applytoall, 'Value')
+    confirmApplytoAll = questdlg(['You are about to copy the current process settings to all movies.'...
+        ' Previous settings as wellas  absolute background information will be lost. Do you want to continue?'],...
+        'Apply settings to all movies','Yes','No','Yes');
+    
+    if strcmp(confirmApplytoAll,'Yes'),
+        % Remove background information
+        funParams = userData.crtProc.funParams_;
+        funParams.detectionParam.background = [];
+        userData.crtProc.setPara(funParams);
+    else
+        set(handles.checkbox_applytoall,'Value',0.0);            
+        return
+    end
+end
+
 
 % -------------------------- Assign process ----------------------------
 % If this is not the original process, set the process to package
@@ -298,90 +319,86 @@ userData_main = get(userData.mainFig, 'UserData');
 % -------------------- Apply setting to all movies ------------------------
 
 if get(handles.checkbox_applytoall, 'Value')
+    for x = 1: length(userData_main.MD)
 
-for x = 1: length(userData_main.MD)
-    
-   if x == userData_main.id
-      continue 
-   end
-   
-   % set segmentation process' parameters:
-   % ChannelIndex - all channels
-   % funParams.saveResults.dir - result directory
-   % 
-   
-   % Channel Index
-   l = length(userData_main.MD(x).channels_);
-   temp = arrayfun(@(x)(x > l),channelIndex, 'UniformOutput', true );
-   channelIndex_ = channelIndex(logical(~temp));
-   
-   % output dir
-   funParams.saveResults.dir = [userData_main.package(x).outputDirectory_  filesep userData.crtProc.name_];
-   
-   
-   
-   
-   % if new process, create a new process with funParas and add to
-   % MovieData and package's process list
-   if isempty(userData_main.package(x).processes_{userData.procID})
-       
-       process = userData.procConstr{id}(userData_main.MD(x), userData_main.package(x).outputDirectory_, channelIndex_, funParams);
-       process.setFileName(userData.crtProc.filename_)
-       userData_main.MD(x).addProcess( process )
-       userData_main.package(x).setProcess(userData.procID, process )
-       
-   % If process exists, same method, replace the funParams with the new one
-   % If mask refinement exist, 
-   elseif isa( userData_main.package(x).processes_{userData.procID}, userData.procName{id} )
-       
-       userData_main.package(x).processes_{userData.procID}.setPara(funParams)
-       userData_main.package(x).processes_{userData.procID}.setChannelIndex(channelIndex_)
-       userData_main.package(x).processes_{userData.procID}.setFileName(userData.crtProc.filename_)
-       
-   % if process exists, differenct method
-   else
-       
-        % Delete segmentation process
-        userData_main.MD(x).deleteProcess(userData_main.package(x).processes_{userData.procID})
-        userData_main.package(x).setProcess(userData.procID, [ ])     
-       
-        % Add new segmentation process to package and movie data
-        process = userData.procConstr{id}(userData_main.MD(x), userData_main.package(x).outputDirectory_, channelIndex_,funParams);
-        process.setFileName(userData.crtProc.filename_)
-        userData_main.MD(x).addProcess( process )
-        userData_main.package(x).setProcess(userData.procID, process )       
-   end
+        if x == userData_main.id
+          continue 
+        end
 
-   
-   % If current process is changed, then assume funParams are changed in
-   % all movies
-   if userData.crtProc.procChanged_ 
-       
-       userData_main.package(x).processes_{userData.procID}.setProcChanged(true);
-   end
-   
-   userData_main.package(x).processes_{userData.procID}.setOverwrite(get(handles.checkbox_overwrite, 'Value'))
-   
-    % Do sanity check - only check changed parameters
-    procEx = userData_main.package(x).sanityCheck(false,'all');
+        % set segmentation process' parameters:
+        % ChannelIndex - all channels
+        % funParams.saveResults.dir - result directory
+        % 
 
-    % Record the exceptions
-    for i = 1: length(procEx)
-       if ~isempty(procEx{i})
-           % Record the icon and message to user data
-           userData_main.statusM(x).IconType{userData.procID} = 'warn';
-           userData_main.statusM(x).Msg{i} = procEx{i}(1).message;
+        % Channel Index
+        l = length(userData_main.MD(x).channels_);
+        temp = arrayfun(@(x)(x > l),channelIndex, 'UniformOutput', true );
+        channelIndex_ = channelIndex(logical(~temp));
+
+        % Set output dir to default
+        funParams.saveResults.dir = [userData_main.package(x).outputDirectory_  filesep userData.crtProc.name_];
+
+
+        % if new process, create a new process with funParas and add to
+        % MovieData and package's process list
+        if isempty(userData_main.package(x).processes_{userData.procID})
+
+            process = userData.procConstr{id}(userData_main.MD(x), userData_main.package(x).outputDirectory_, channelIndex_, funParams);
+            process.setFileName(userData.crtProc.filename_)
+            userData_main.MD(x).addProcess( process )
+            userData_main.package(x).setProcess(userData.procID, process )
+
+        % If process exists, same method, replace the funParams with the new one
+        % If mask refinement exist, 
+        elseif isa( userData_main.package(x).processes_{userData.procID}, userData.procName{id} )
+
+            userData_main.package(x).processes_{userData.procID}.setPara(funParams)
+            userData_main.package(x).processes_{userData.procID}.setChannelIndex(channelIndex_)
+            userData_main.package(x).processes_{userData.procID}.setFileName(userData.crtProc.filename_)
+
+        % if process exists, differenct method
+        else
+
+            % Delete segmentation process
+            userData_main.MD(x).deleteProcess(userData_main.package(x).processes_{userData.procID})
+            userData_main.package(x).setProcess(userData.procID, [ ])     
+
+            % Add new segmentation process to package and movie data
+            process = userData.procConstr{id}(userData_main.MD(x), userData_main.package(x).outputDirectory_, channelIndex_,funParams);
+            process.setFileName(userData.crtProc.filename_)
+            userData_main.MD(x).addProcess( process )
+            userData_main.package(x).setProcess(userData.procID, process )       
        end
-    end   
-end
 
-% Save user data
-set(userData.mainFig, 'UserData', userData_main)
+
+       % If current process is changed, then assume funParams are changed in
+       % all movies
+       if userData.crtProc.procChanged_ 
+
+           userData_main.package(x).processes_{userData.procID}.setProcChanged(true);
+       end
+
+%            userData_main.package(x).processes_{userData.procID}.setOverwrite(get(handles.checkbox_overwrite, 'Value'))
+
+        % Do sanity check - only check changed parameters
+        procEx = userData_main.package(x).sanityCheck(false,'all');
+
+        % Record the exceptions
+        for i = 1: length(procEx)
+            if ~isempty(procEx{i})
+               % Record the icon and message to user data
+               userData_main.statusM(x).IconType{userData.procID} = 'warn';
+               userData_main.statusM(x).Msg{i} = procEx{i}(1).message;
+            end
+        end   
+    end
 
 end
 % -------------------------------------------------------------------------
 
 % Save user data
+userData_main.applytoall(userData.procID)=get(handles.checkbox_applytoall,'Value');
+set(userData.mainFig, 'UserData', userData_main)
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 delete(handles.figure1);

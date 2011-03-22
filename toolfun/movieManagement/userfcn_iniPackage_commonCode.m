@@ -1,10 +1,15 @@
-% Not a function, Code segment
+%Package GUI initialization - should be called at the opening of the
+%corresponding GUI
 
+%Reed package name 
 stack = dbstack;
+if ~strcmp(stack(2).name(end-9:end),'OpeningFcn'), 
+    error('lccb:Package:Initialization',[mfilename ' should be called at the GUI opening'])
+end
 guiname=stack(4).name;
 packageName=regexprep(guiname(1:end-3),'(\<[a-z])','${upper($1)}');
 
-% if  strcmp(stack(2).name,'MovieData.relocateMovieData')
+
 handles.output = hObject;
 userData = get(handles.figure1,'UserData');
 
@@ -15,23 +20,24 @@ eval(['userData.optProcID =' packageName '.getOptionalProcessId;']);
 [copyright openHelpFile] = userfcn_softwareConfig(handles);
 set(handles.text_copyright, 'String', copyright)
 
+%If package GUI supplied without argument, saves a boolean which will be
+%read by packageNameGUI_OutputFcn
 if nargin < 4
     handles.startMovieSelectorGUI=true;
     handles.packageName = packageName;
     guidata(hObject, handles);
     return
-%     error('User-defined: Please call package control panel with a MovieData object. E.g. packageGUI(movieDataObject)');
 end
 
 % ----------------------------- Load MovieData ----------------------------
 
 MD = varargin{1};
-len = length(MD);
-packageExist = zeros(1, len);
+nMovies = numel(MD);
+packageExist = zeros(1, nMovies);
 % I. Before loading MovieData, firstly check if the current package exists
 
 
-for x = 1:len
+for x = 1:nMovies
     
     packageExist(x) = false;
 
@@ -54,11 +60,11 @@ end
 
 % ------------- Check if existing processes can be recycled ---------------
 
-existProcess = cell(1, len);
+existProcess = cell(1, nMovies);
 processClassNames = userData.package(1).processClassNames_;
 
 % Multiple movies loop
-for x = 1:len
+for x = 1:nMovies
 
     if ~packageExist(x) && ~isempty(MD(x).processes_)
     
@@ -116,9 +122,10 @@ userData.MD = MD;
 eval(['userData.dependM =  ' packageName '.getDependencyMatrix;'])
 
 l = size(userData.dependM, 1);
-userData.statusM = repmat( struct('IconType', {cell(1,l)}, 'Msg', {cell(1,l)}, 'Checked', zeros(1,l), 'Visited', false), 1, len);
+userData.statusM = repmat( struct('IconType', {cell(1,l)}, 'Msg', {cell(1,l)}, 'Checked', zeros(1,l), 'Visited', false), 1, nMovies);
 
-
+% Initialize the apply to all checkboxes
+userData.applytoall=zeros(l,1);
 
 % -----------------------Load and set up icons----------------------------
 
