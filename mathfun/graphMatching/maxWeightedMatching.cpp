@@ -66,7 +66,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   double* p = mxGetPr(prhs[1]);
   double* q = mxGetPr(prhs[2]);
 
-  typedef SmartGraph::EdgeMap<int> WeightMap;
+  typedef SmartGraph::EdgeMap<double> WeightMap;
 
   WeightMap weight_map(g);
   
