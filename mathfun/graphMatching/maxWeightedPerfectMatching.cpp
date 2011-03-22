@@ -35,7 +35,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	
   int num_nodes = (int) *mxGetPr(prhs[0]);
 	
-  if (num_nodes&1) {
+  if (num_nodes & 1) {
     mexErrMsgTxt("Even number of nodes required.");
   }
   

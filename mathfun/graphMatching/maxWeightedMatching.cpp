@@ -6,12 +6,6 @@
 #include <lemon/matching.h>
 #include <lemon/lgf_writer.h>
 
-// Command line to compile on Mac OS X:
-// mex maxWeightedMatching.cpp
-
-// Command line to compile on Linux:
-// mex maxWeightedMatching.cpp
-
 using namespace lemon;
 using namespace std;
 
@@ -79,7 +73,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
       SmartGraph::Edge e = g.addEdge(u,v);
 
-      weight_map[e] = (int) q[i];
+      weight_map[e] = q[i];
     }
 
   MaxWeightedMatching<SmartGraph, WeightMap> matching(g, weight_map);
