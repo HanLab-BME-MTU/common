@@ -59,29 +59,57 @@ end
 %Get everything these functions depend on also
 packageFuns = depfun_notoolbox(packageFuns);
 
-% Find associated documentation files
-[packageFunsPaths packageFunsNames]=cellfun(@fileparts,packageFuns,'UniformOutput',false);
-isDocFile = logical(cellfun(@(x,y) exist([x filesep 'doc' filesep y '.pdf'],'file'),...
-    packageFunsPaths,packageFunsNames));
-packageDocFiles = cellfun(@(x,y) [x filesep 'doc' filesep y '.pdf'],...
-    packageFunsPaths(isDocFile),packageFunsNames(isDocFile),'UniformOutput',false);
-
 %Check and display toolbox dependency
 disp('Checking toolbox dependency...')
 tbs = toolboxesUsed(packageFuns);
 disp('The package uses the following toolboxes:')
 disp(tbs)
 
-% Check for the presence of GUI fig files and append them
+% Additional functions can be found under three types of format:
+%   * GUIs may have associated *.fig
+%   * Processes and GUIs may have associated *.pdf
+%   * Mex-files can be found under many format depending on the OS
+% Split functions into paths, filenames and extensions for search
+[packageFunsPaths packageFunsNames packageFunsExt]=...
+    cellfun(@fileparts,packageFuns,'UniformOutput',false);
+
+
+% Find associated documentation files
+isDocFile = logical(cellfun(@(x,y) exist([x filesep 'doc' filesep y '.pdf'],'file'),...
+    packageFunsPaths,packageFunsNames));
+packageDocs = cellfun(@(x,y) [x filesep 'doc' filesep y '.pdf'],...
+    packageFunsPaths(isDocFile),packageFunsNames(isDocFile),'UniformOutput',false);
+
+% Get GUI-associated fig files
 isGUIFile =logical(cellfun(@(x) exist([x(1:end-2) '.fig'],'file'),packageFuns));
 packageFigs = cellfun(@(x) [x(1:end-2) '.fig'],packageFuns(isGUIFile),'UniformOutput',false);
 
+
+% Add all versions of MEX files
+uniquePackageFunsExt = unique(packageFunsExt);
+matExt={'.fig';'.m';'.mat'};
+matExtIndx = ismember(uniquePackageFunsExt,matExt);
+mexExt=uniquePackageFunsExt(~matExtIndx);
+mexFunsIndx = find(ismember(packageFunsExt,mexExt));
+packageMexFunsNames=arrayfun(@(x)  dir([packageFunsPaths{x} filesep packageFunsNames{x} '.*']),...
+    mexFunsIndx,'Unif',false);
+
+packageMexFunsPaths=packageFunsPaths(mexFunsIndx);
+packageMexFuns= arrayfun(@(x) strcat([packageMexFunsPaths{x} filesep],{packageMexFunsNames{x}.name}'),1:numel(mexFunsIndx),'Unif',false)
+packageMexFuns =vertcat(packageMexFuns{:});
+
+
+% Add icons
 packageIcons =  which('lccbGuiIcons.mat');
-% Add icon files
-packageFiles=vertcat(packageFuns,packageFigs,packageIcons);
+
+% Concatenate all files but the documentation
+packageFiles=vertcat(packageFuns,packageFigs,packageIcons,packageMexFuns);
 
 % Create package output directory if non-existing
-if ~exist(outDir,'dir'), mkdir(outDir); end
+if ~exist(outDir,'dir'), 
+    disp('Creating release directory...')
+    mkdir(outDir); 
+end
 
 nFiles = numel(packageFiles);
 disp(['Copying all '  num2str(nFiles) ' files ...'])
@@ -92,14 +120,17 @@ end
 
 % Create doc output directory if non-existing
 docDir=[outDir filesep 'doc'];
-if ~exist(docDir,'dir'), mkdir(docDir); end
+if ~exist(docDir,'dir'), 
+    disp('Creating documentation directory...')
+    mkdir(docDir); 
+end
 
-nDocFiles = numel(packageDocFiles);
+nDocFiles = numel(packageDocs);
 disp(['Copying all '  num2str(nDocFiles) ' files ...'])
 
-for nfile=1:numel(packageDocFiles)
-    iLFS = max(regexp(packageDocFiles{nfile},filesep));
-    copyfile(packageDocFiles{nfile},[docDir filesep packageDocFiles{nfile}(iLFS+1:end)]);
+for nfile=1:numel(packageDocs)
+    iLFS = max(regexp(packageDocs{nfile},filesep));
+    copyfile(packageDocs{nfile},[docDir filesep packageDocs{nfile}(iLFS+1:end)]);
 end
     
 disp(['Finished. Wrote package to ' outDir])

@@ -451,7 +451,7 @@ if get(handles.checkbox_applytoall, 'Value')
        channelIndex_ = channelIndex(logical(~temp));   
 
        % output dir
-       funParams.saveResults.dir = [userData_main.package(x).outputDirectory_  filesep userData.crtProc.name_ filesep];
+       funParams.saveResults.dir = [userData_main.package(x).outputDirectory_  filesep userData.crtProc.name_];
 
        % if new process, create a new process with funParas and add to
        % MovieData and package's process list

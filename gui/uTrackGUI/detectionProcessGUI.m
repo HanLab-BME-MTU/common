@@ -336,7 +336,7 @@ if get(handles.checkbox_applytoall, 'Value')
         channelIndex_ = channelIndex(logical(~temp));
 
         % Set output dir to default
-        funParams.saveResults.dir = [userData_main.package(x).outputDirectory_  filesep userData.crtProc.name_];
+        funParams.saveResults.dir = [userData_main.package(x).outputDirectory_  filesep 'Sub_Resolution_Detection'];
 
 
         % if new process, create a new process with funParas and add to
