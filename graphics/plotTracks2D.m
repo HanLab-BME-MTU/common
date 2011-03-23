@@ -1,5 +1,5 @@
 function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
-    indicateSE,newFigure,image,flipXY,ask4sel,offset)
+    indicateSE,newFigure,image,flipXY,ask4sel,offset,minLength)
 %PLOTTRACKS2D plots a group of tracks in 2D and allows user to click on them and extract track information
 %
 %SYNOPSIS plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
@@ -75,6 +75,8 @@ function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
 %                           Optional. Default: 1.
 %       offset            : [dx,dy] that is to be added to the coordinates.
 %                           Optional. Default: [0,0]
+%       minLength         : Minimum length of tracks to be ploted.
+%                           Optional. Default: 1.
 %
 %OUTPUT The plot.
 %
@@ -88,6 +90,16 @@ function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
 if nargin < 1
     disp('--plotTracks2D: Incorrect number of input arguments!');
     return
+end
+
+%keep only tracks with minimum requested length
+if nargin < 11 || isempty(minLength)
+    minLength = 1;
+end
+if minLength > 1
+    criteria.lifeTime.min = minLength;
+    indx = chooseTracks(trackedFeatureInfo,criteria);
+    trackedFeatureInfo = trackedFeatureInfo(indx,:);
 end
 
 %get number of tracks and number of time points
@@ -169,7 +181,7 @@ if nargin < 10 || isempty(offset)
     offset = [0,0];
 end
 
-%exit if there are problem in input variables
+%exit if there are problems in input variables
 if errFlag
     disp('--plotTracks2D: Please fix input data!');
     return

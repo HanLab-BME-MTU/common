@@ -1,7 +1,7 @@
 function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
     saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,...
     imageRange,onlyTracks,classifyLft,diffAnalysisRes,intensityScale,...
-    colorTracks,firstImageFile,dir2saveMovie)
+    colorTracks,firstImageFile,dir2saveMovie,minLength)
 %OVERLAYTRACKSMOVIENEW overlays tracks obtained via trackCloseGapsKalman on movies with variable color-coding schemes
 %
 %SYNPOSIS overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
@@ -81,6 +81,8 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %                       If not input, movie will be saved in directory where
 %                       images are located.
 %                       Optional. Default: [].
+%       minLength     : Minimum length of tracks to be ploted.
+%                       Optional. Default: 1.
 %
 %OUTPUT the movie.
 %
@@ -127,6 +129,16 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 if nargin < 1
     disp('--overlayTracksMovieNew: Incorrect number of input arguments!');
     return
+end
+
+%keep only tracks with minimum requested length
+if nargin < 18 || isempty(minLength)
+    minLength = 1;
+end
+if minLength > 1
+    criteria.lifeTime.min = minLength;
+    indx = chooseTracks(tracksFinal,criteria);
+    tracksFinal = tracksFinal(indx,:);
 end
 
 %get first and last frames where there are tracks
