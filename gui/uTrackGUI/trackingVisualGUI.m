@@ -22,7 +22,7 @@ function varargout = trackingVisualGUI(varargin)
 
 % Edit the above text to modify the response to help trackingVisualGUI
 
-% Last Modified by GUIDE v2.5 21-Dec-2010 15:47:14
+% Last Modified by GUIDE v2.5 23-Mar-2011 11:15:41
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -338,6 +338,7 @@ minx = get(handles.edit3_minx, 'String');
 maxx = get(handles.edit3_maxx, 'String');
 miny = get(handles.edit3_miny, 'String');
 maxy = get(handles.edit3_maxy, 'String');
+minLength = get(handles.edit3_minLength, 'String');
 
 
 % --------------- Check User Input ----------------
@@ -459,6 +460,19 @@ end
 imageRange = [minx maxx ; miny maxy];
 
 end
+
+% minLength
+if isempty( minLength )
+    errordlg('Parameter "Ignore tracks shorter than" is required by the algorithm.','Error','modal')
+    return
+
+elseif isnan(str2double(minLength)) || str2double(minLength) < 0
+    errordlg('Please provide a valid value to parameter "Ignore tracks shorter than"".','Error','modal')
+    return
+else
+    minLength = str2double(minLength);
+end    
+
 % -------- Set parameter --------
 
 visualParams = userData.crtProc.visualParams_;
@@ -466,6 +480,7 @@ visualParams = userData.crtProc.visualParams_;
 visualParams.otmn.startend = [min max];
 visualParams.otmn.dragtailLength = dragtailLength;
 visualParams.otmn.saveMovie = get(handles.checkbox3_save, 'Value');
+visualParams.otmn.minLength = minLength;
 
 if visualParams.otmn.saveMovie
     
@@ -524,7 +539,7 @@ overlayTracksMovieNew(userData.crtProc.outParams_{userData.chan}.tracksFinal, ..
     visualParams.otmn.highlightES, visualParams.otmn.showRaw, visualParams.otmn.imageRange, ...
     visualParams.otmn.onlyTracks, visualParams.otmn.classifyLft, visualParams.otmn.diffAnalysisRes, ...
     visualParams.otmn.intensityScale, visualParams.otmn.colorTracks, visualParams.otmn.firstImageFile, ...
-    visualParams.otmn.dir2saveMovie)
+    visualParams.otmn.dir2saveMovie,visualParams.otmn.minLength)
 
 
 
@@ -1058,6 +1073,7 @@ max = get(handles.edit1_max, 'String');
 dx = get(handles.edit1_offset1, 'String');
 dy = get(handles.edit1_offset2, 'String');
 filename = get(handles.edit1_image, 'String');
+minLength = get(handles.edit1_minLength, 'String');
 
 % min
 if isempty( min )
@@ -1121,6 +1137,18 @@ if ~isempty(filename) && ~exist(filename, 'file')
     return    
 end
 
+% minLength
+if isempty( minLength )
+    errordlg('Parameter "Ignore tracks shorter than" is required by the algorithm.','Error','modal')
+    return
+
+elseif isnan(str2double(minLength)) || str2double(minLength) < 0
+    errordlg('Please provide a valid value to parameter "Ignore tracks shorter than"".','Error','modal')
+    return
+else
+    minLength = str2double(minLength);
+end    
+
 % -------- Set parameter --------
 
 % Tool 1: plotTrakcs2D
@@ -1137,6 +1165,7 @@ visualParams.pt2D.indicateSE = get(handles.checkbox1_indicateSE, 'Value');
 visualParams.pt2D.newFigure = get(handles.checkbox1_newFigure, 'Value');
 visualParams.pt2D.flipXY = get(handles.checkbox1_flipXY, 'Value');
 visualParams.pt2D.ask4sel = get(handles.checkbox1_ask4sel, 'Value');
+visualParams.pt2D.minLength = minLength;
 
 visualParams.pt2D.offset = [dx dy];
 
@@ -1162,7 +1191,8 @@ plotTracks2D(userData.crtProc.outParams_{userData.chan}.tracksFinal, ...
         visualParams.pt2D.timeRange, visualParams.pt2D.colorTime, ...
         visualParams.pt2D.markerType, visualParams.pt2D.indicateSE, ...
         visualParams.pt2D.newFigure, visualParams.pt2D.image, ...
-        visualParams.pt2D.flipXY, visualParams.pt2D.ask4sel, visualParams.pt2D.offset)
+        visualParams.pt2D.flipXY, visualParams.pt2D.ask4sel,...
+        visualParams.pt2D.offset,visualParams.pt2D.minLength);
 
 
 
@@ -1466,3 +1496,23 @@ set(handles.edit3_minx, 'String', '');
 set(handles.edit3_miny, 'String', '');
 set(handles.edit3_maxx, 'String', '');
 set(handles.edit3_maxy, 'String', '');
+
+
+
+function edit3_minLength_Callback(hObject, eventdata, handles)
+% hObject    handle to edit3_minLength (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit3_minLength as text
+%        str2double(get(hObject,'String')) returns contents of edit3_minLength as a double
+
+
+
+function edit1_minLength_Callback(hObject, eventdata, handles)
+% hObject    handle to edit1_minLength (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit1_minLength as text
+%        str2double(get(hObject,'String')) returns contents of edit1_minLength as a double

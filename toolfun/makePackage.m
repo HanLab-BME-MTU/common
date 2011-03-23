@@ -48,8 +48,7 @@ packageFuns(strcmp(packageFuns,mfilename)) = [];
 
 %Add the few odd files that are in other areas of common
 if any(strcmp(packageList,'UTrackPackage'))
-    packageFuns = vertcat(packageFuns,{'kalmanResMemLM.m';'kalmanInitLinearMotion.m';...
-        'kalmanGainLinearMotion';'kalmanReverseLinearMotion';'costMatLinearMotionLink2';'costMatLinearMotionCloseGaps2'});
+    packageFuns = vertcat(packageFuns,{});
 end
 
 if any(strcmp(packageList,'BiosensorsPackage'))
@@ -91,11 +90,14 @@ matExt={'.fig';'.m';'.mat'};
 matExtIndx = ismember(uniquePackageFunsExt,matExt);
 mexExt=uniquePackageFunsExt(~matExtIndx);
 mexFunsIndx = find(ismember(packageFunsExt,mexExt));
-packageMexFunsNames=arrayfun(@(x)  dir([packageFunsPaths{x} filesep packageFunsNames{x} '.*']),...
-    mexFunsIndx,'Unif',false);
 
+% List all files in the same folder as found MEX-files
+packageMexList=arrayfun(@(x)  dir([packageFunsPaths{x} filesep '*.*']),...
+    mexFunsIndx,'Unif',false);
 packageMexFunsPaths=packageFunsPaths(mexFunsIndx);
-packageMexFuns= arrayfun(@(x) strcat([packageMexFunsPaths{x} filesep],{packageMexFunsNames{x}.name}'),1:numel(mexFunsIndx),'Unif',false)
+packageMexFunsNames = @(x) strcat([packageMexFunsPaths{x} filesep],...
+    {packageMexList{x}(~[packageMexList{x}.isdir]).name}');
+packageMexFuns = arrayfun(@(x) packageMexFunsNames(x),1:numel(mexFunsIndx),'Unif',false);
 packageMexFuns =vertcat(packageMexFuns{:});
 
 
@@ -106,10 +108,8 @@ packageIcons =  which('lccbGuiIcons.mat');
 packageFiles=vertcat(packageFuns,packageFigs,packageIcons,packageMexFuns);
 
 % Create package output directory if non-existing
-if ~exist(outDir,'dir'), 
-    disp('Creating release directory...')
-    mkdir(outDir); 
-end
+disp('Creating/cleaning release directory...')
+mkClrDir(outDir);
 
 nFiles = numel(packageFiles);
 disp(['Copying all '  num2str(nFiles) ' files ...'])
@@ -119,11 +119,9 @@ for j = 1:nFiles
 end
 
 % Create doc output directory if non-existing
+disp('Creating/cleaning release directory...')
 docDir=[outDir filesep 'doc'];
-if ~exist(docDir,'dir'), 
-    disp('Creating documentation directory...')
-    mkdir(docDir); 
-end
+mkClrDir(docDir);
 
 nDocFiles = numel(packageDocs);
 disp(['Copying all '  num2str(nDocFiles) ' files ...'])

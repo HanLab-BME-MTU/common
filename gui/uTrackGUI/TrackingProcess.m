@@ -94,6 +94,17 @@ methods(Access = public)
             funParams.kalmanFunctions.calcGain    = 'kalmanGainLinearMotion';
             funParams.kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
             
+            
+            % -------------- Function handles ----------------------
+            % Function handles are here to allow generic detection by 
+            % makePackage function for now
+            % To be used late in the code to replace eval statements
+            funParams.costMatrices(1).funName = @costMatLinearMotionLink2;
+            funParams.costMatrices(2).funName = @costMatLinearMotionCloseGaps2; 
+            funParams.kalmanFunctions.reserveMemFunName  = @kalmanResMemLM;
+            funParams.kalmanFunctions.initializeFunName  = @kalmanInitLinearMotion;
+            funParams.kalmanFunctions.calcGainFunName    = @kalmanGainLinearMotion;
+            funParams.kalmanFunctions.timeReverseFunName = @kalmanReverseLinearMotion;
             % --------------- saveResults ----------------
             
             funParams.saveResults.dir = [outputDir  filesep 'Tracking' filesep]; %directory where to save input and output
@@ -129,6 +140,7 @@ methods(Access = public)
         obj.visualParams_.pt2D.flipXY = 0;
         obj.visualParams_.pt2D.ask4sel = 0;
         obj.visualParams_.pt2D.offset = [0 0];
+        obj.visualParams_.pt2D.minLength = 1;
         
         % Tool 2: plotCompTrack
         
@@ -156,6 +168,7 @@ methods(Access = public)
         obj.visualParams_.otmn.diffAnalysisRes = [];
         obj.visualParams_.otmn.intensityScale = 1;
         obj.visualParams_.otmn.colorTracks = 1;
+        obj.visualParams_.otmn.minLength = 1;
         file = owner.getImageFileNames(1);
         obj.visualParams_.otmn.firstImageFile = [owner.channels_(1).channelPath_ filesep file{1}{1}];        
     end
