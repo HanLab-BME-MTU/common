@@ -13,8 +13,8 @@ function makePackage(outDir)
 %   outDir - The directory to copy all the package files to.
 %
 %
-% Sebastien Besson
-% 03/2011
+% $LastChangedBy::                  $
+% $LastChangedDate::                 $
 
 % List of all available packages
 fullPackageList={'SegmentationPackage';'BiosensorsPackage';'UTrackPackage'};
