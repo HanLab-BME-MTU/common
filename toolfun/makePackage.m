@@ -13,8 +13,7 @@ function makePackage(outDir)
 %   outDir - The directory to copy all the package files to.
 %
 %
-% $LastChangedBy::                                                  $  
-% $LastChangedDate::                                                $
+% $Author$Date: 2011-03-23 $
 
 % List of all available packages
 fullPackageList={'SegmentationPackage';'BiosensorsPackage';'UTrackPackage'};
@@ -117,6 +116,8 @@ for j = 1:nFiles
     iLFS = max(regexp(packageFiles{j},filesep));
     copyfile(packageFiles{j},[outDir filesep packageFiles{j}(iLFS+1:end)]);
 end
+
+% Substitute license
 
 % Create doc output directory if non-existing
 disp('Creating/cleaning release directory...')
