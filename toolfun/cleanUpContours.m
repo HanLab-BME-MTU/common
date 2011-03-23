@@ -96,7 +96,12 @@ i2 = cellfun(@(x)(x+1),i2,'UniformOutput',false);
                           
 iSelfInt = find(cellfun(@(x)(~isempty(x)),i1));
 
+
 if ~isempty(iSelfInt)
+
+    %Check which contours are closed - we need to insure these stay closed
+    %after contour splitting
+    isClosed = cellfun(@(x)(sqrt(sum( (x(:,1)-x(:,end)) .^2 ))),cleanContours)<distThreshold;
 
     iClean = arrayfun(@(x)(x),iClean,'UniformOutput',false)';
     
@@ -104,6 +109,18 @@ if ~isempty(iSelfInt)
 
         c1 = cleanContours{j}(:,max(ceil(i1{j})):min(floor(i2{j})));
         c2 = cleanContours{j}(:,[1:min(floor(i1{j})) max(ceil(i2{j})):end]);
+        
+        %If the parent contour was closed, ensure that the resulting split
+        %contours are also
+        if isClosed(j)
+           if ~all(c1(:,1) ~= c1(:,end))
+               c1 = [c1 c1(:,1)]; %#ok<AGROW>
+           end
+           if ~all(c2(:,1) ~= c2(:,end))
+               c2 = [c2 c2(:,1)]; %#ok<AGROW>
+           end
+        end
+        
 
         %This is a little trick to keep the indices correct/contours in
         %order
