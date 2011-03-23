@@ -8,13 +8,13 @@ function makePackage(outDir)
 % assumes you have checked out all the files from the SVN repository, and
 % that they are all in your matlab path.
 % 
-% Input:
+% INPUT:
 % 
 %   outDir - The directory to copy all the package files to.
 %
 %
-% $LastChangedBy::                  $
-% $LastChangedDate::                 $
+% $LastChangedBy::                          $
+% $LastChangedDate::                        $
 
 % List of all available packages
 fullPackageList={'SegmentationPackage';'BiosensorsPackage';'UTrackPackage'};
