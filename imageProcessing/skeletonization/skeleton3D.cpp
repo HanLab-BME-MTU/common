@@ -73,7 +73,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray *prhs[])
     sz = L * M * N;
     slsz = L * M;
         
-    unsigned char volmat[sz]; //Volume for labelling borders, deleted voxels etc. Stored as char to minimize memory use
+    unsigned char *volmat = (unsigned char*) malloc(sz * sizeof(unsigned char)); //Volume for labelling borders, deleted voxels etc. Stored as char to minimize memory use
     unsigned char *vol = volmat;//Pointer to volume matrix 
     char dir; //Direction of deletion
     //int nrPasses; //Number of deletion passes           
@@ -254,7 +254,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray *prhs[])
                     vol[idx] = OBJECT;
             }
             
-            printf("done.\n");
+            //printf("done.\n");
         }//End direction loop
         
     //std::cout << "Number of deleted voxels : " <<nrDel << "\n";
@@ -268,6 +268,6 @@ for(idx=0; idx < sz; idx++) {
     if(vol[idx] != 0) 
         skel[idx] = 1;
 }
-    
+    free(volmat);
 }//End mexFunction
 
