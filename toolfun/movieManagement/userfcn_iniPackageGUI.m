@@ -15,7 +15,7 @@ end
    
 assert(logical(exist(packageName,'class')),'No package found');
     
-packageName=regexprep(guiname(1:end-3),'(\<[a-z])','${upper($1)}');
+% packageName=regexprep(guiname(1:end-3),'(\<[a-z])','${upper($1)}');
 
 
 handles.output = hObject;
@@ -30,7 +30,7 @@ set(handles.text_copyright, 'String', copyright)
 
 %If package GUI supplied without argument, saves a boolean which will be
 %read by packageNameGUI_OutputFcn
-if nargin < 4
+if nargin < 5
     handles.startMovieSelectorGUI=true;
     handles.packageName = packageName;
     guidata(hObject, handles);
@@ -39,7 +39,7 @@ end
 
 % ----------------------------- Load MovieData ----------------------------
 
-MD = varargin{1};
+MD = varargin{2};
 nMovies = numel(MD);
 packageExist = zeros(1, nMovies);
 % I. Before loading MovieData, firstly check if the current package exists
@@ -165,19 +165,19 @@ if openHelpFile
 end
 
 % Set up process help
-for i = 1:l
-
-    eval (['axes(handles.axes_help_' num2str(i) ')'])
-    Img = image(questIconData);
-    set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
-        'visible','off','YDir','reverse');  
-    set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-        
-    if openHelpFile
-        set(Img, 'UserData', struct('class', userData.crtPackage.processClassNames_{i}))
-    end
-
-end
+% for i = 1:l
+% 
+%     eval (['axes(handles.axes_help_' num2str(i) ')'])
+%     Img = image(questIconData);
+%     set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
+%         'visible','off','YDir','reverse');  
+%     set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
+%         
+%     if openHelpFile
+%         set(Img, 'UserData', struct('class', userData.crtPackage.processClassNames_{i}))
+%     end
+% 
+% end
 
 % --------------------------Other GUI settings-----------------------------
 
@@ -197,14 +197,21 @@ if length(userData.MD) == 1
     set(handles.checkbox_runall, 'Visible', 'off')
     set(handles.pushbutton_left, 'Enable', 'off')
     set(handles.pushbutton_right, 'Enable', 'off')   
-    set(handles.checkbox_all, 'Visible', 'off', 'Value', 0)
+%     set(handles.checkbox_all, 'Visible', 'off', 'Value', 0)
 else
     set(handles.checkbox_runall, 'Visible', 'on')
 end
 
+
+% Set web links in menu
+set(handles.menu_about_gpl,'UserData','http://www.gnu.org/licenses/gpl.html')
+set(handles.menu_about_lccb,'UserData','http://lccb.hms.harvard.edu/')
+set(handles.menu_about_lccbsoftware,'UserData','http://lccb.hms.harvard.edu/software.html')
+ 
 % Update handles structure
 set(handles.figure1,'UserData',userData);
 guidata(hObject, handles);
 
-userfcn_updateGUI(handles, 'initialize')
- 
+% userfcn_updateGUI(handles, 'initialize')
+
+

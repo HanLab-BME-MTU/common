@@ -13,7 +13,7 @@ function makePackage(outDir)
 %   outDir - The directory to copy all the package files to.
 %
 %
-% $Author$Date: 2011-03-23 $
+% $LastChangedBy$ $LastChangedDate$
 
 % List of all available packages
 fullPackageList={'SegmentationPackage';'BiosensorsPackage';'UTrackPackage'};
@@ -71,7 +71,6 @@ disp(tbs)
 [packageFunsPaths packageFunsNames packageFunsExt]=...
     cellfun(@fileparts,packageFuns,'UniformOutput',false);
 
-
 % Find associated documentation files
 isDocFile = logical(cellfun(@(x,y) exist([x filesep 'doc' filesep y '.pdf'],'file'),...
     packageFunsPaths,packageFunsNames));
@@ -81,7 +80,6 @@ packageDocs = cellfun(@(x,y) [x filesep 'doc' filesep y '.pdf'],...
 % Get GUI-associated fig files
 isGUIFile =logical(cellfun(@(x) exist([x(1:end-2) '.fig'],'file'),packageFuns));
 packageFigs = cellfun(@(x) [x(1:end-2) '.fig'],packageFuns(isGUIFile),'UniformOutput',false);
-
 
 % Add all versions of MEX files
 uniquePackageFunsExt = unique(packageFunsExt);
@@ -99,9 +97,8 @@ packageMexFunsNames = @(x) strcat([packageMexFunsPaths{x} filesep],...
 packageMexFuns = arrayfun(@(x) packageMexFunsNames(x),1:numel(mexFunsIndx),'Unif',false);
 packageMexFuns =vertcat(packageMexFuns{:});
 
-
 % Add icons
-packageIcons =  which('lccbGuiIcons.mat');
+packageIcons = which('lccbGuiIcons.mat');
 
 % Concatenate all files but the documentation
 packageFiles=vertcat(packageFuns,packageFigs,packageIcons,packageMexFuns);
@@ -117,10 +114,8 @@ for j = 1:nFiles
     copyfile(packageFiles{j},[outDir filesep packageFiles{j}(iLFS+1:end)]);
 end
 
-% Substitute license
-
 % Create doc output directory if non-existing
-disp('Creating/cleaning release directory...')
+disp('Creating/cleaning release documentation directory...')
 docDir=[outDir filesep 'doc'];
 mkClrDir(docDir);
 

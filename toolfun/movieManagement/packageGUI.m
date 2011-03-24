@@ -1,35 +1,35 @@
-function varargout = uTrackPackageGUI(varargin)
-% UTRACKPACKAGEGUI M-file for uTrackPackageGUI.fig
-%      UTRACKPACKAGEGUI, by itself, creates a new UTRACKPACKAGEGUI or raises the existing
+function varargout = packageGUI(varargin)
+% PACKAGEGUI M-file for packageGUI.fig
+%      PACKAGEGUI, by itself, creates a new PACKAGEGUI or raises the existing
 %      singleton*.
 %
-%      H = UTRACKPACKAGEGUI returns the handle to a new UTRACKPACKAGEGUI or the handle to
+%      H = PACKAGEGUI returns the handle to a new PACKAGEGUI or the handle to
 %      the existing singleton*.
 %
-%      UTRACKPACKAGEGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in UTRACKPACKAGEGUI.M with the given input arguments.
+%      PACKAGEGUI('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in PACKAGEGUI.M with the given input arguments.
 %
-%      UTRACKPACKAGEGUI('Property','Value',...) creates a new UTRACKPACKAGEGUI or raises the
+%      PACKAGEGUI('Property','Value',...) creates a new PACKAGEGUI or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before uTrackPackageGUI_OpeningFcn gets called.  An
+%      applied to the GUI before packageGUI_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to uTrackPackageGUI_OpeningFcn via varargin.
+%      stop.  All inputs are passed to packageGUI_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help uTrackPackageGUI
+% Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 28-Nov-2010 15:51:53
+% Last Modified by GUIDE v2.5 24-Mar-2011 11:06:56
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @uTrackPackageGUI_OpeningFcn, ...
-                   'gui_OutputFcn',  @uTrackPackageGUI_OutputFcn, ...
+                   'gui_OpeningFcn', @packageGUI_OpeningFcn, ...
+                   'gui_OutputFcn',  @packageGUI_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -44,10 +44,10 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before uTrackPackageGUI is made visible.
-function uTrackPackageGUI_OpeningFcn(hObject, eventdata, handles, varargin)
+% --- Executes just before packageGUI is made visible.
+function packageGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %
-% uTrackPackageGUI(MD)   MD: MovieData object
+% packageGUI(MD)   MD: MovieData object
 %
 % Useful tools
 %
@@ -95,14 +95,12 @@ function uTrackPackageGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %
 
 % Load movie data and recycle processes
-if nargin < 4
-    package='UTrackPAckage'
-else
-    userfcn_iniPackageGUI;
-end
+
+userfcn_iniPackageGUI;
+
 
 % --- Outputs from this function are returned to the command line.
-function varargout = uTrackPackageGUI_OutputFcn(hObject, eventdata, handles) 
+function varargout = packageGUI_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -252,16 +250,6 @@ function popupmenu_movie_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
-
-
-function edit_path_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_path (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_path as text
-%        str2double(get(hObject,'String')) returns contents of edit_path as a double
 
 
 % --- Executes during object creation, after setting all properties.
@@ -723,61 +711,6 @@ elseif length(movieRun) > 1
 end
 
 
-% --- Executes on button press in checkbox_forcerun.
-function checkbox_forcerun_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_forcerun (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox_forcerun
-
-
-% --- Executes on button press in checkbox_runall.
-function checkbox_runall_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_runall (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox_runall
-
-
-% --- Executes on button press in checkbox_all.
-function checkbox_all_Callback(hObject, eventdata, handles)
-
-% userData = get(handles.figure1, 'UserData');
-% l = size(userData.dependM, 1);
-
-% switch get(hObject,'value')
-%     case 1
-%         userfcn_enable(1:length(userData.dependM(:,1)),'on',handles,true);
-        
-        % track checked status
-%         for x = 1: length(userData.MD)
-%             userData.statusM(x).Checked = ones(1, l);
-%         end
-        
-%     case 0
-%         k = [];
-%         for i = 1: size(userData.dependM, 1)
-%             if ~isempty(userData.crtPackage.processes_{i}) && ...
-%                 userData.crtPackage.processes_{i}.success_ 
-%                 k = [k, i];
-%             end
-%             eval( ['set(handles.checkbox_',num2str(i),',''value'',0)']  );
-%         end
-%         tempDependM = userData.dependM;
-%         tempDependM(:,k) = zeros(size(userData.dependM,1),length(k));
-%         userfcn_enable(find(any(tempDependM,2)),'off',handles,true);
-%         
-%         % track checked status
-%         for x = 1: length(userData.MD)
-%             userData.statusM(x).Checked = zeros(1, l);
-%         end        
-        
-% end
-
-% set(handles.figure1, 'UserData', userData)
-
 
 % --- Executes when user attempts to close figure1.
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
@@ -879,22 +812,9 @@ end
 
 
 % --------------------------------------------------------------------
-function menu_file_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_file (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+function menu_about_Callback(hObject, eventdata, handles)
 
-
-% --------------------------------------------------------------------
-function menu_help_lccb_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_help_lccb (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
-function menu_about_update_Callback(hObject, eventdata, handles)
-status = web('http://lccb.hms.harvard.edu/software.html', '-browser');
+status = web(get(hObject,'UserData'), '-browser');
 if status
     switch status
         case 1
@@ -956,3 +876,10 @@ function menu_file_exit_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 delete(handles.figure1);
+
+
+% --- Executes on mouse press over figure background.
+function figure1_ButtonDownFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
