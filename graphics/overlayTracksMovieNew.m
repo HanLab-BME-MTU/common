@@ -442,6 +442,10 @@ for iTrack = 1 : numTracks
     
 end %(for iTrack = 1 : numTracks)
 
+%shift coordinate to account for cropped region of interest
+xCoordMatAll = xCoordMatAll - (imageRange(2,1)-1);
+yCoordMatAll = yCoordMatAll - (imageRange(1,1)-1);
+
 %find gaps in tracks
 gapInfo = findTrackGaps(tracksFinal);
 
@@ -705,6 +709,23 @@ for iFrame = 1 : size(xCoordMatAll,2)
         
     end
     
+    %crop to region of interest
+    imageStack = imageStack(imageRange(1,1):imageRange(1,2),...
+        imageRange(2,1):imageRange(2,2),:);
+    
+    %     tmp = double(imageStack(:,:,1));
+    %     minTmp = min(tmp(:));
+    %     maxTmp = max(tmp(:));
+    %     tmp = (tmp - minTmp)/(maxTmp - minTmp);
+    %     imageStack(:,:,1) = uint8(tmp*255);
+    %
+    %     tmp = double(imageStack(:,:,2));
+    %     minTmp = min(tmp(:));
+    %     maxTmp = max(tmp(:));
+    %     tmp = (tmp - minTmp)/(maxTmp - minTmp);
+    %     imageStack(:,:,2) = uint8(tmp*255);
+    %     imageStack(:,:,3) = imageStack(:,:,2);
+    
     %plot image in current frame and show frame number
     clf;
     switch showRaw
@@ -712,75 +733,51 @@ for iFrame = 1 : size(xCoordMatAll,2)
             
             axes('Position',[0 0 0.495 1]);
             imshow(imageStack,intensityMinMax);
-            xlim(imageRange(2,:));
-            ylim(imageRange(1,:));
+            %             xlim(imageRange(2,:));
+            %             ylim(imageRange(1,:));
             hold on;
             textDeltaCoord = min(diff(imageRange,[],2))/20;
-            text(imageRange(2,1)+textDeltaCoord,imageRange(1,1)+...
+            %             text(imageRange(2,1)+textDeltaCoord,imageRange(1,1)+...
+            %                 textDeltaCoord,num2str(iFrame+startend(1)-1),...
+            %                 'Color','white','FontSize',18);
+            text(textDeltaCoord,...
                 textDeltaCoord,num2str(iFrame+startend(1)-1),...
                 'Color','white','FontSize',18);
             axes('Position',[0.505 0 0.495 1]);
-            
-%             if iFrame == 137
-%                 load('/home/sb234/Projects/IF/Lynne/050810_vimentin-Paxillin/cell3/analysis/movieData.mat');
-%                 
-%                 maskPaths = cellfun(@(x) fullfile(movieData.masks.directory, x), movieData.masks.channelDirectory, 'UniformOutput' ,false);
-%                 maskFiles = cellfun(@(x) dir([x filesep '*.tif']), maskPaths, 'UniformOutput', false);
-% 
-% 
-%                 finalMask = false(movieData.imSize);
-%                 
-%                 for iChannel = 1:2
-%                     mask = imread(fullfile(maskPaths{iChannel},maskFiles{iChannel}(iFrame).name));
-%                     finalMask = xor(finalMask,mask);
-%                 end
-%                 
-%                 edges = edge(finalMask);
-%                 
-%                 % Read image channels
-%                 ima = imageStack;
-%                 ima = double(ima);
-%                 ima = (ima - min(ima(:))) / (max(ima(:)) - min(ima(:)));
-%                 ima(edges == 1) = 1;
-%                 
-%                 imaColor = repmat(ima,[1 1 3]);
-%                 %imaColor(:,:,1) = imaColor(:,:,1) + edges;
-%                 
-%                 % Display image
-%                 imshow(imaColor,[]); hold on;
-%                 xlim(imageRange(2,:));
-%                 ylim(imageRange(1,:));
-%                 hold on;
-%             else
-                imshow(imageStack,intensityMinMax);
-                xlim(imageRange(2,:));
-                ylim(imageRange(1,:));
-                hold on;
-%             end
+            imshow(imageStack,intensityMinMax);
+            %             xlim(imageRange(2,:));
+            %             ylim(imageRange(1,:));
+            hold on;
             
         case 2
             axes('Position',[0 0.505 1 0.495]);
             imshow(imageStack,intensityMinMax);
-            xlim(imageRange(2,:));
-            ylim(imageRange(1,:));
+            %             xlim(imageRange(2,:));
+            %             ylim(imageRange(1,:));
             hold on;
             textDeltaCoord = min(diff(imageRange,[],2))/20;
-            text(imageRange(2,1)+textDeltaCoord,imageRange(1,1)+...
+            %             text(imageRange(2,1)+textDeltaCoord,imageRange(1,1)+...
+            %                 textDeltaCoord,num2str(iFrame+startend(1)-1),...
+            %                 'Color','white','FontSize',18);
+            text(textDeltaCoord,...
                 textDeltaCoord,num2str(iFrame+startend(1)-1),...
                 'Color','white','FontSize',18);
             axes('Position',[0 0 1 0.495]);
             imshow(imageStack,intensityMinMax);
-            xlim(imageRange(2,:));
-            ylim(imageRange(1,:));
+            %             xlim(imageRange(2,:));
+            %             ylim(imageRange(1,:));
             hold on;
         otherwise
             axes('Position',[0 0 1 1]);
             imshow(imageStack,intensityMinMax);
-            xlim(imageRange(2,:));
-            ylim(imageRange(1,:));
+            %             xlim(imageRange(2,:));
+            %             ylim(imageRange(1,:));
             hold on;
             textDeltaCoord = min(diff(imageRange,[],2))/20;
-            text(imageRange(2,1)+textDeltaCoord,imageRange(1,1)+...
+            %             text(imageRange(2,1)+textDeltaCoord,imageRange(1,1)+...
+            %                 textDeltaCoord,num2str(iFrame+startend(1)-1),...
+            %                 'Color','white','FontSize',18);
+            text(textDeltaCoord,...
                 textDeltaCoord,num2str(iFrame+startend(1)-1),...
                 'Color','white','FontSize',18);
     end
