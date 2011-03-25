@@ -129,11 +129,11 @@ userData.MD = MD;
 % machanism in package GUI
 eval(['userData.dependM =  ' packageName '.getDependencyMatrix;'])
 
-l = size(userData.dependM, 1);
-userData.statusM = repmat( struct('IconType', {cell(1,l)}, 'Msg', {cell(1,l)}, 'Checked', zeros(1,l), 'Visited', false), 1, nMovies);
+nProc = size(userData.dependM, 1);
+userData.statusM = repmat( struct('IconType', {cell(1,nProc)}, 'Msg', {cell(1,nProc)}, 'Checked', zeros(1,nProc), 'Visited', false), 1, nMovies);
 
 % Initialize the apply to all checkboxes
-userData.applytoall=zeros(l,1);
+userData.applytoall=zeros(nProc,1);
 
 % -----------------------Load and set up icons----------------------------
 
@@ -157,27 +157,51 @@ axes(handles.axes_help);
 Img = image(questIconData); 
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
-% set(Img,'ButtonDownFcn',@userfcn_openHelp('UTrackPackage'));
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 
 if openHelpFile
     set(Img, 'UserData', struct('class', packageName))
 end
+% --------------------------Set up processes------------------------------
 
-% Set up process help
-% for i = 1:l
-% 
-%     eval (['axes(handles.axes_help_' num2str(i) ')'])
-%     Img = image(questIconData);
-%     set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
-%         'visible','off','YDir','reverse');  
-%     set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-%         
-%     if openHelpFile
-%         set(Img, 'UserData', struct('class', userData.crtPackage.processClassNames_{i}))
-%     end
-% 
-% end
+templateTag{1} = 'checkbox_';
+templateTag{2} = 'axes_icon_';
+templateTag{3} = 'pushbutton_show_';
+templateTag{4} = 'pushbutton_set_';
+templateTag{5} = 'axes_help_';
+procTag=templateTag;
+for i = 1:nProc
+    %%%%%%USE COPYOBJ %%%%%%%copyobj
+    for j=1:length(templateTag)
+        procTag{j}=[templateTag{j} num2str(i)];
+        handles.(procTag{j}) = copyobj(handles.(templateTag{j}),handles.panel_proc);
+        set(handles.(procTag{j}),'Position',...
+            get(handles.(templateTag{j}),'Position')-(i-1)*[0 40 0 0]);
+    end
+  
+    processName=userData.crtPackage.processClassNames_{i};
+    checboxString = ['Step ' num2str(i) ':' regexprep(processName,'([A-Z])',' $1')];
+    set(handles.(procTag{1}),'String',checboxString)
+    
+    axes(handles.(procTag{5}));
+    Img = image(questIconData);
+    set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
+        'visible','off','YDir','reverse');  
+    set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
+        
+    if openHelpFile
+        set(Img, 'UserData', struct('class', processName))
+    end
+end
+
+set(handles.figure1,'Position',...
+            get(handles.figure1,'Position')+(nProc-1)*[0 0 0 40])
+set(handles.panel_proc,'Position',...
+            get(handles.panel_proc,'Position')+(nProc-1)*[0 0 0 40])
+
+cellfun(@(x)delete(handles.(x)),templateTag)
+handles = rmfield(handles,templateTag);
+
 
 % --------------------------Other GUI settings-----------------------------
 
@@ -211,7 +235,8 @@ set(handles.menu_about_lccbsoftware,'UserData','http://lccb.hms.harvard.edu/soft
 % Update handles structure
 set(handles.figure1,'UserData',userData);
 guidata(hObject, handles);
+    set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 
-% userfcn_updateGUI(handles, 'initialize')
+userfcn_updateGUI(handles, 'initialize')
 
 

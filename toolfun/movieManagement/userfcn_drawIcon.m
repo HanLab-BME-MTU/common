@@ -42,7 +42,7 @@ switch type
         
     case 'clear'
         for i = ID
-            eval( [ 'cla(handles.axes_icon_' ,num2str(i), ');' ])
+            cla(handles.(['axes_icon_' ,num2str(i)]));
             if savetogui
                % Save icon and message to user data
                userData.statusM(userData.id).IconType{i} = [];

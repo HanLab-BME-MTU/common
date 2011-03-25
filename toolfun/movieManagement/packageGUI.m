@@ -22,7 +22,7 @@ function varargout = packageGUI(varargin)
 
 % Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 24-Mar-2011 11:06:56
+% Last Modified by GUIDE v2.5 25-Mar-2011 09:31:56
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -96,6 +96,7 @@ function packageGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Load movie data and recycle processes
 
+
 userfcn_iniPackageGUI;
 
 
@@ -158,26 +159,31 @@ set(handles.text_body3, 'Visible', 'on')
 pause(1)
 set(handles.text_body3, 'Visible', 'off')
 
-% --- Executes on button press in pushbutton_left.
-function pushbutton_left_Callback(hObject, eventdata, handles)
-% userData.id
-% userData.crtPackage
-%
+
+function switchMovie_Callback(hObject, eventdata, handles)
+
 userData = get(handles.figure1, 'UserData');
-l = length(userData.MD);
+nMovies = length(userData.MD);
 
-userData.statusM(userData.id).Checked = userfcn_saveCheckbox(handles);
-
-userData.id = userData.id - 1;
-
-if userData.id < 1
-   userData.id = l;
+switch get(hObject,'Tag')
+    case 'pushbutton_left'
+        newMovieId = userData.id - 1;
+    case 'pushbutton_right'
+        newMovieId = userData.id + 1;
+    case 'popupmenu_movie'
+        newMovieId = get(hObject, 'Value');
+    otherwise
 end
 
+if (newMovieId==userData.id), return; end
+
+% Save previous movie checkboxes
+userData.statusM(userData.id).Checked = userfcn_saveCheckbox(handles);
+
+% Set up new movie GUI parameters
+userData.id = mod(newMovieId-1,nMovies)+1;
 userData.crtPackage = userData.package(userData.id);
 set(handles.figure1, 'UserData', userData)
-
-% Set up movie explorer
 set(handles.popupmenu_movie, 'Value', userData.id)
 
 % Set up GUI
@@ -187,108 +193,35 @@ else
    userfcn_updateGUI(handles, 'initialize') 
 end
 
-% --- Executes on button press in pushbutton_right.
-function pushbutton_right_Callback(hObject, eventdata, handles)
-userData = get(handles.figure1, 'UserData');
-l = length(userData.MD);
-
-userData.statusM(userData.id).Checked = userfcn_saveCheckbox(handles);
-
-userData.id = userData.id + 1;
-
-if userData.id > l
-   userData.id = mod(userData.id, l);
-end
-
-userData.crtPackage = userData.package(userData.id);
-set(handles.figure1, 'UserData', userData)
-
-% Set up movie explorer
-set(handles.popupmenu_movie, 'Value', userData.id)
-
-% Set up GUI
-if userData.statusM(userData.id).Visited
-   userfcn_updateGUI(handles, 'refresh') 
-else
-   userfcn_updateGUI(handles, 'initialize') 
-end
-
-
-% --- Executes on selection change in popupmenu_movie.
-function popupmenu_movie_Callback(hObject, eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-
-if get(hObject, 'Value') == userData.id
-   return 
-end
-
-l = length(userData.MD);
-userData.statusM(userData.id).Checked = userfcn_saveCheckbox(handles);
-
-userData.id = get(hObject, 'Value');
-userData.crtPackage = userData.package(userData.id);
-set(handles.figure1, 'UserData', userData)
-
-% Set up GUI
-if userData.statusM(userData.id).Visited
-   userfcn_updateGUI(handles, 'refresh') 
-else
-   userfcn_updateGUI(handles, 'initialize') 
-end
-
-
-
-% --- Executes during object creation, after setting all properties.
-function popupmenu_movie_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu_movie (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes during object creation, after setting all properties.
-function edit_path_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_path (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in checkbox_1.
-function checkbox_1_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_1 (see GCBO)
+% --- Executes on button press in checkbox_.
+function checkbox_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_ (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox_1
-userfcn_checkAllMovies(1, get(hObject,'value'), handles);
-userfcn_lampSwitch(1, get(hObject,'value'), handles);
+% Hint: get(hObject,'Value') returns toggle state of checkbox_
+props=get(hObject,{'Value','Tag'});
+procStatus=props{1};
+procID = str2double(props{2}(length('checkbox_')+1:end));
+userfcn_checkAllMovies(procID, procStatus, handles);
+userfcn_lampSwitch(procID, procStatus, handles);
 
 
-% --- Executes on button press in pushbutton_set_1.
-function pushbutton_set_1_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_set_1 (see GCBO)
+% --- Executes on button press in pushbutton_set_.
+function pushbutton_set_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_set_ (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 userData = get(handles.figure1, 'UserData');
-procID = 1;
+prop=get(hObject,'Tag');
+procID = str2double(prop(length('pushbutton_set_')+1:end));
+% procID = 1;
 userData.setFig(procID) = detectionProcessGUI('mainFig',handles.figure1,procID);
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 
-% --- Executes on button press in pushbutton_show_1.
-function pushbutton_show_1_Callback(hObject, eventdata, handles)
+% --- Executes on button press in pushbutton_show_.
+function pushbutton_show__Callback(hObject, eventdata, handles)
 
 procID = 1;
 userData = get(handles.figure1, 'UserData');
@@ -336,16 +269,6 @@ end
 
 set(handles.figure1, 'UserData', userData);
 
-
-% --- Executes on button press in checkbox_2.
-function checkbox_2_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox_2
-userfcn_checkAllMovies(2, get(hObject,'value'), handles);
-userfcn_lampSwitch(2, get(hObject,'value'), handles);
 
 % --- Executes on button press in pushbutton_set_2.
 function pushbutton_set_2_Callback(hObject, eventdata, handles)
@@ -829,23 +752,6 @@ end
 
 
 % --------------------------------------------------------------------
-function menu_about_lccb_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_about_lccb (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-status = web('http://lccb.hms.harvard.edu/', '-browser');
-if status
-    switch status
-        case 1
-            msg = 'System default web browser is not found.';
-        case 2
-            msg = 'System default web browser is found but could not be launched.';
-        otherwise
-            msg = 'Fail to open browser for unknown reason.';
-    end
-    warndlg(msg,'Fail to open browser','modal');
-end
-% --------------------------------------------------------------------
 
 function menu_file_open_Callback(hObject, eventdata, handles)
 % Call back function of 'New' in menu bar
@@ -876,10 +782,3 @@ function menu_file_exit_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 delete(handles.figure1);
-
-
-% --- Executes on mouse press over figure background.
-function figure1_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to figure1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
