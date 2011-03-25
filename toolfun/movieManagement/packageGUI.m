@@ -203,6 +203,7 @@ function checkbox_Callback(hObject, eventdata, handles)
 props=get(hObject,{'Value','Tag'});
 procStatus=props{1};
 procID = str2double(props{2}(length('checkbox_')+1:end));
+
 userfcn_checkAllMovies(procID, procStatus, handles);
 userfcn_lampSwitch(procID, procStatus, handles);
 
@@ -214,9 +215,14 @@ function pushbutton_set_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 userData = get(handles.figure1, 'UserData');
 prop=get(hObject,'Tag');
-procID = str2double(prop(length('pushbutton_set_')+1:end));
+procID = str2double(prop(length('pushbutton_set_')+1:end))
 % procID = 1;
-userData.setFig(procID) = detectionProcessGUI('mainFig',handles.figure1,procID);
+
+
+crtProc=userData.crtPackage.processClassNames_{procID};
+crtProcGUI=str2func([regexprep(crtProc,'(\<[A-Z])','${lower($1)}') 'GUI']);
+
+userData.setFig(procID) = crtProcGUI('mainFig',handles.figure1,procID);
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 
@@ -269,18 +275,6 @@ end
 
 set(handles.figure1, 'UserData', userData);
 
-
-% --- Executes on button press in pushbutton_set_2.
-function pushbutton_set_2_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_set_2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-userData = get(handles.figure1, 'UserData');
-procID = 2;
-% userData.setFig(procID) = segmentProcessGUI('mainFig',handles.figure1,procID);
-userData.setFig(procID) = trackingProcessGUI('mainFig',handles.figure1,procID);
-set(handles.figure1, 'UserData', userData);
-guidata(hObject,handles);
 
 % --- Executes on button press in pushbutton_show_2.
 function pushbutton_show_2_Callback(hObject, eventdata, handles)
@@ -727,10 +721,10 @@ if strcmp(eventdata.Key, 'return')
     pushbutton_done_Callback(handles.pushbutton_done, [], handles);
 end
 if strcmp(eventdata.Key, 'leftarrow')
-    pushbutton_left_Callback(handles.pushbutton_left, [], handles);
+    switchMovie_Callback(handles.pushbutton_left, [], handles);
 end
 if strcmp(eventdata.Key, 'rightarrow')
-    pushbutton_right_Callback(handles.pushbutton_right, [], handles);
+    switchMovie_Callback(handles.pushbutton_right, [], handles);
 end
 
 

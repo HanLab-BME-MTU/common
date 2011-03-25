@@ -78,7 +78,8 @@ function movieDataVisualizationGUI_OpeningFcn(hObject, eventdata, handles, varar
 %     handles.pixelProcess - 1xn array. Handles of items under image menu
 %     handles.overlayProcess - 1xn array. Handles of the items under overlay menu
 
-set(handles.text_copyright, 'String', userfcn_copyright)
+[copyright openHelpFile] = userfcn_softwareConfig(handles);
+set(handles.text_copyright, 'String', copyright);
 
 userData = get(handles.figure1, 'UserData');
 % Choose default command line output for movieDataVisualizationGUI

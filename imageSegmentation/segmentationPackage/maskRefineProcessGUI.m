@@ -62,7 +62,8 @@ function maskRefineProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %       userData.helpFig - help figure
 %
 
-set(handles.text_copyright, 'String', userfcn_copyright)
+[copyright openHelpFile] = userfcn_softwareConfig(handles);
+set(handles.text_copyright, 'String', copyright);
 
 userData = get(handles.figure1, 'UserData');
 % Choose default command line output for segmentationProcessGUI

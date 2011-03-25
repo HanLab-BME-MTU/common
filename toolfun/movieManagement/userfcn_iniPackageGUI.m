@@ -12,12 +12,8 @@ packageName=varargin{1};
 if isa(packageName,'function_handle')
     packageName=func2str(packageName);
 end
-   
 assert(logical(exist(packageName,'class')),'No package found');
     
-% packageName=regexprep(guiname(1:end-3),'(\<[a-z])','${upper($1)}');
-
-
 handles.output = hObject;
 userData = get(handles.figure1,'UserData');
 
@@ -26,7 +22,7 @@ eval(['userData.optProcID =' packageName '.getOptionalProcessId;']);
 % Call package GUI error
 
 [copyright openHelpFile] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright)
+set(handles.text_copyright, 'String', copyright);
 
 %If package GUI supplied without argument, saves a boolean which will be
 %read by packageNameGUI_OutputFcn
@@ -170,17 +166,24 @@ templateTag{3} = 'pushbutton_show_';
 templateTag{4} = 'pushbutton_set_';
 templateTag{5} = 'axes_help_';
 procTag=templateTag;
+set(handles.figure1,'Position',...
+    get(handles.figure1,'Position')+(nProc-1)*[0 0 0 40])
+set(handles.panel_movie,'Position',...
+    get(handles.panel_movie,'Position')+(nProc-1)*[0 40 0 0])
+set(handles.panel_proc,'Position',...
+    get(handles.panel_proc,'Position')+(nProc-1)*[0 0 0 40])
+        
 for i = 1:nProc
-    %%%%%%USE COPYOBJ %%%%%%%copyobj
+
     for j=1:length(templateTag)
         procTag{j}=[templateTag{j} num2str(i)];
         handles.(procTag{j}) = copyobj(handles.(templateTag{j}),handles.panel_proc);
-        set(handles.(procTag{j}),'Position',...
-            get(handles.(templateTag{j}),'Position')-(i-1)*[0 40 0 0]);
+        set(handles.(procTag{j}),'Tag',procTag{j},'Position',...
+            get(handles.(templateTag{j}),'Position')+(nProc-i)*[0 40 0 0]);
     end
   
     processName=userData.crtPackage.processClassNames_{i};
-    checboxString = ['Step ' num2str(i) ':' regexprep(processName,'([A-Z])',' $1')];
+    checboxString = [' Step ' num2str(i) ':' regexprep(processName,'([A-Z])',' $1')];
     set(handles.(procTag{1}),'String',checboxString)
     
     axes(handles.(procTag{5}));
@@ -193,11 +196,6 @@ for i = 1:nProc
         set(Img, 'UserData', struct('class', processName))
     end
 end
-
-set(handles.figure1,'Position',...
-            get(handles.figure1,'Position')+(nProc-1)*[0 0 0 40])
-set(handles.panel_proc,'Position',...
-            get(handles.panel_proc,'Position')+(nProc-1)*[0 0 0 40])
 
 cellfun(@(x)delete(handles.(x)),templateTag)
 handles = rmfield(handles,templateTag);
