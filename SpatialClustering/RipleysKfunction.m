@@ -237,7 +237,7 @@ else
         % in situ with Ripley's edge correction
         if ~isempty(corrMat)
             cpx = round(m2(i,1)); cpy = round(m2(i,2));
-            corrmat(i,:)= corrMat(cpx,cpy,:);
+            corrmat(i,:)= corrMat(max(cpx,1),max(cpy,1),:);
         else
             % x- and y-distances of this center point (the parent point) from the
             % nearest edge 
