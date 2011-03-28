@@ -852,7 +852,7 @@ function pushbutton3_path_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-path = uigetdir(get(handles.edit_path, 'String'), 'Select a Path...');
+path = uigetdir(get(handles.edit3_path, 'String'), 'Select a Path...');
 if path == 0
     return;
 end
