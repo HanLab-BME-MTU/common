@@ -34,7 +34,8 @@ function [vertices,edges,edgePaths] = skel2graph(skelIn,nConn)
 
 %% ---------- Input ----------- %%
 
-%NOTE: At some point this should be generalized to handle both 2D and 3D.
+%NOTE: At some point this should be generalized to handle both 2D and
+%3D.-HLE
 
 showPlots = false;
 
