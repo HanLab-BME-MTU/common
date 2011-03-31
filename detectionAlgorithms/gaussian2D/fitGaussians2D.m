@@ -153,16 +153,16 @@ for p = 1:np
             stdVect = zeros(1,5);
             stdVect(estIdx) = prmStd;
             
-            output.x_pstd = stdVect(1);
-            output.y_pstd = stdVect(2);
-            output.A_pstd = stdVect(3);
-            output.s_pstd = stdVect(4);
-            output.c_pstd = stdVect(5);
+            output.x_pstd(p) = stdVect(1);
+            output.y_pstd(p) = stdVect(2);
+            output.A_pstd(p) = stdVect(3);
+            output.s_pstd(p) = stdVect(4);
+            output.c_pstd(p) = stdVect(5);
             
-            output.c_maskStd = bgStd;
-            output.c_resStd = res.std;
+            output.c_maskStd(p) = bgStd;
+            output.c_resStd(p) = res.std;
             output.pval_KS(p) = res.pval;
-            output.pval_A = NaN; % to be added
+            output.pval_A(p) = NaN; % to be added
             
         end
     end
