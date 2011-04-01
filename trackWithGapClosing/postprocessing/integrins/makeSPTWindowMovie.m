@@ -1,7 +1,7 @@
 function makeSPTWindowMovie(movieData,sptPropInWindow,propName,iBands,iWindows,iChan,movieName) %#ok<INUSL>
 
 if nargin < 7 || isempty(movieName)
-    movieName = 'windowTestingMovie';
+    movieName = ['windows_' propName];
 end
 
 if nargin < 6 || isempty(iChan)
@@ -100,8 +100,12 @@ for iThresh = 1 : numThresh
 end
 
 cmap1 = [1 1 1; colormap(jet(101))];
+close
 
 %% Make movie
+
+%open a figure window that fills the screen
+figure('units','normalized','position',[0 0 1 1])
 
 for iImage = 1:nImages
     
@@ -109,7 +113,7 @@ for iImage = 1:nImages
     
     % START LEFT PANEL
     
-    axes('Position',[0 0 0.495 1]);
+    axes('Position',[0 0.1 0.495 0.9]);
     
     hold on
     
@@ -156,7 +160,7 @@ for iImage = 1:nImages
     end
     
     %Draw the time
-    text(10,20,[num2str((iImage-1)*movieData.timeInterval_s) ' s'],'color','w','FontSize',16)
+    text(10,20,[num2str((iImage-1)*movieData.timeInterval_s) ' s'],'color','w','FontSize',32)
     
     axis fill,axis image
     set(gca,'color','w');
@@ -165,7 +169,7 @@ for iImage = 1:nImages
     
     % START RIGHT PANEL
     
-    axes('Position',[0.505 0 0.495 1]);
+    axes('Position',[0.505 0.1 0.495 0.9]);
     
     hold on
     
@@ -206,13 +210,25 @@ for iImage = 1:nImages
         
     end
     
-    %Draw the time
-    text(10,20,[num2str((iImage-1)*movieData.timeInterval_s) ' s'],'color','w','FontSize',16)
-    
     axis fill,axis image
     set(gca,'color','w');
     
     % END RIGHT PANEL
+    
+    % START COLOR LEGEND
+    
+    axes('Position',[0.55 0.04 0.4 0.015],'Ytick',zeros(1,0),...
+        'XTick',[thresholdVal(1) thresholdVal(end)],'Fontsize',24);
+    
+    hold on
+    
+    for iThresh = 1 : 101
+        plot(thresholdVal(iThresh)*[1 1],[1 2],'color',cmap1(iThresh+1,:),'LineWidth',4)
+    end
+    xlim([thresholdVal(1) thresholdVal(end)])
+    title(['Color legend for ' propName],'Fontsize',24)
+
+    % END COLOR LEGEND
     
     if iImage == 1
         MakeQTMovie('start',[movieData.analysisDirectory filesep movieName '.mov'])
