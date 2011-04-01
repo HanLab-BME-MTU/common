@@ -70,12 +70,14 @@ public:
 		       vector<n, T> & closest,
 		       unsigned dim = 0) const
   {
+    unsigned next_dim = (dim + 1) & (n - 1);
+
     if (lt_)
       {
 	// top-down
 	double min_dist = query[dim] < (*pt_)[dim] ?
-	  lt_->closest_point(query, closest, (dim + 1) & (n - 1)) :
-	  gt_->closest_point(query, closest, (dim + 1) & (n - 1));
+	  lt_->closest_point(query, closest, next_dim) :
+	  gt_->closest_point(query, closest, next_dim);
 
 	// bottom-up
 
@@ -89,7 +91,7 @@ public:
 		vector<n, T> tmp_closest;
 		double tmp_dist = gt_->closest_point(query,
 						     tmp_closest,
-						     (dim + 1) & (n - 1));
+						     next_dim);
 		if (tmp_dist < min_dist)
 		  {
 		    closest = tmp_closest;
@@ -107,7 +109,7 @@ public:
 		vector<n, T> tmp_closest;
 		double tmp_dist = lt_->closest_point(query,
 						     tmp_closest,
-						     (dim + 1) & (n - 1));
+						     next_dim);
 
 		if (tmp_dist < min_dist)
 		  {
@@ -123,6 +125,42 @@ public:
       {
 	closest = *pt_;
 	return dist(query, *pt_);
+      }
+  }
+  
+  // F is a binary operator
+  template <typename F>
+  void ball_query(const vector<n,T> & center,
+		  const double radius,
+		  F & f,
+		  unsigned dim = 0) const
+  {
+    unsigned next_dim = (dim + 1) & (n - 1);
+
+    if (lt_)
+      {
+	double d = center[dim] - (*pt_)[dim];
+
+	if (d > 0)
+	  {
+	    if (d < radius)
+	      lt_->ball_query(center, radius, f, next_dim);
+	    gt_->ball_query(center, radius, f, next_dim);
+	  }
+	else
+	  {
+	    if (-d < radius)
+	      gt_->ball_query(center, radius, f, next_dim);
+	    lt_->ball_query(center, radius, f, next_dim);
+	  }
+      }
+    else
+      {
+	// this kdtree is a leaf
+	double d = dist(center, *pt_);
+
+	if (d <= radius)
+	  f(d, *pt_);
       }
   }
 
