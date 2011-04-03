@@ -18,7 +18,7 @@ public:
 	virtual void visit(const KDLeaf<N, T> & leaf) = 0;
 };
 
-# include <kdtree.hpp>
+# include <KDTree.hpp>
 
 template <unsigned N, typename T>
 class ClosestPointVisitor : public KDTreeVisitor<N, T>
