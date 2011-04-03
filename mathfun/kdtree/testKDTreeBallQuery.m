@@ -4,7 +4,7 @@ X = rand(5000,2);
 C = [.5 .5];
 R = .2;
 
-[idx,d] = kDTreeBallQuery(X,C,R);
+[idx,d] = KDTreeBallQuery(X,C,R);
 
 plot(X(:,1),X(:,2), 'b.');
 hold on;
