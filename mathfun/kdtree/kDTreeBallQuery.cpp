@@ -53,14 +53,38 @@ static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *d_ptr, 
   // Write output
   if (nlhs > 0)
     {
+			const mwSize size[2] = {res_list.size(), 1};
+			plhs[0] = mxCreateCellArray(2, size);
+			
+			int cnt = 0;
+			for (typename std::list<typename KDTree<K, double>::set_type>::const_iterator it = res_list.begin(); it != res_list.end(); ++it, ++cnt)
+			{
+				mxArray * pArray = mxCreateDoubleMatrix(it->size(), 1, mxREAL);
+				double * p = mxGetPr(pArray);
+				
+				for (typename KDTree<K, double>::set_type::const_iterator it2 = it->begin(); it2 != it->end(); ++it2)
+					*p++ = it2->second + 1;
+				
+				mxSetCell(plhs[0], cnt, pArray);
+			}
     }
 
   if (nlhs > 1)
     {
-    }
-
-  if (nlhs > 2)
-    {
+			const mwSize size[2] = {res_list.size(), 1};
+			plhs[1] = mxCreateCellArray(2, size);
+			
+			int cnt = 0;
+			for (typename std::list<typename KDTree<K, double>::set_type>::const_iterator it = res_list.begin(); it != res_list.end(); ++it, ++cnt)
+			{
+				mxArray * pArray = mxCreateDoubleMatrix(it->size(), 1, mxREAL);
+				double * p = mxGetPr(pArray);
+				
+				for (typename KDTree<K, double>::set_type::const_iterator it2 = it->begin(); it2 != it->end(); ++it2)
+					*p++ = it2->first;
+				
+				mxSetCell(plhs[1], cnt, pArray);
+			}
     }
 }
 
@@ -72,7 +96,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
   if (nrhs != 3)
     mexErrMsgTxt("Three input arguments required.");
 
-  if (nlhs > 3)
+  if (nlhs > 2)
     mexErrMsgTxt("Too many output arguments.");
 
   int k = mxGetN(prhs[0]);
@@ -91,8 +115,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
   switch (k)
     {
-    case 2: dispatch<2>(n, m, x_ptr, c_ptr, d_ptr, nlhs, plhs); break;
-    case 3: dispatch<3>(n, m, x_ptr, c_ptr, d_ptr, nlhs, plhs); break;
-    default: mexErrMsgTxt("Dimension not implemented.");
+			case 2: dispatch<2>(n, m, x_ptr, c_ptr, d_ptr, nlhs, plhs); break;
+			case 3: dispatch<3>(n, m, x_ptr, c_ptr, d_ptr, nlhs, plhs); break;
+			default: mexErrMsgTxt("Dimension not implemented.");
     }  
 }
