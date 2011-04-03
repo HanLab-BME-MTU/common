@@ -5,70 +5,49 @@
 #include <vector>
 
 #include <vector.hpp>
-#include <kdtree.hpp>
+#include <KDTree.hpp>
 
 template <unsigned K>
-class result_set
-{
-public:
-  typedef typename std::multimap<double, vector<K,double> > result_type;
-
-public:
-  result_set()
-  {
-  }
-
-  void operator()(double key, const vector<K,double> & value)
-  {
-    m_.insert(std::make_pair(key, value));
-  }
-
-  const result_type & set() const { return m_; }
-
-private:
-  result_type m_;
-};
-
-template <unsigned K>
-static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *d_ptr,
-		     int nlhs, mxArray *plhs[])
+static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *d_ptr, int nlhs, mxArray *plhs[])
 {
   // Read parameters
-  std::vector< vector<K, double> > X;
+	typename KDTree<K, double>::points_type X;
 
-  vector<K, double> v;
+	typename KDTree<K, double>::point_type v;
 
   for (int i = 0; i < n; ++i)
     {
       for (int k = 0; k < K; ++k)
-	v[k] = x_ptr[i + (n * k)];
+				v[k] = x_ptr[i + (n * k)];
       X.push_back(v);
     }
 
-  std::vector< vector<K, double> > C;
+	typename KDTree<K, double>::points_type C;
+
   std::vector<double> R;
 
   for (int i = 0; i < m; ++i)
     {
       for (int k = 0; k < K; ++k)
-	v[k] = c_ptr[i + (m * k)];
+				v[k] = c_ptr[i + (m * k)];
       C.push_back(v);
       R.push_back(d_ptr[i]);
     }
 
   // Build kd-tree
-  kdtree<K, double>* tree = new kdtree<K, double>(X.begin(), X.end());
+  KDTree<K, double> kdtree(X);
 
   // Compute queries
-  std::list<typename result_set<K>::result_type> res;
-
+  std::list<typename KDTree<K, double>::set_type > res_list;
+	typename KDTree<K, double>::set_type res;
+	
   for (int i = 0; i < m; ++i)
     {
-      result_set<K> f;
+      kdtree.ball_query(C[i], R[i], res);
 
-      tree->ball_query(C[i], R[i], f);
-
-      res.push_back(f.set());
+      res_list.push_back(res);
+			
+			res.clear();
     }
 
   // Write output
