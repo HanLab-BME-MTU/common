@@ -77,7 +77,7 @@ public:
 				// The closest point has been found in the gt_ child. See
 				// whether there isn't any closer point in the lt_ child
 				// within min_dist from the closest point.
-				if (query[k2] - value < res.first)
+				if (query[k] - value < res.first)
 				{
 					pair_type res2 = closest_point(query, idx_lt, k2);
 					
