@@ -133,6 +133,44 @@ public:
 	  res.insert(std::make_pair(d, tree_[idx]));
       }
   }
+
+  void range_query(const point_type & center, const point_type & hside, set_type & res, unsigned idx = 0, unsigned k = 0) const
+  {
+    unsigned idx_lt = (idx << 1) + 1;
+    unsigned idx_gt = (idx << 1) + 2;
+    unsigned k2 = (k + 1) & (N - 1);
+
+    if (tree_[idx_lt] != -1)
+      {
+	double value = points_[tree_[idx]][k];
+
+	double d = center[k] - value;
+
+	if (d > 0)
+	  {
+	    if (d < hside[k])
+	      range_query(center, hside, res, idx_lt, k2);
+	    range_query(center, hside, res, idx_gt, k2);
+	  }
+	else
+	  {
+	    if (-d < hside[k])
+	      range_query(center, hside, res, idx_gt, k2);
+	    range_query(center, hside, res, idx_lt, k2);
+	  }
+      }
+    else
+      {
+	//idx is a leaf
+	bool isInside = true;
+
+	for (int i = 0; i < N; ++i)
+	  isInside &= fabs(center[i] - points_[tree_[idx]][i]) <= hside[i];
+
+	if (isInside)
+	  res.insert(std::make_pair(dist(center, points_[tree_[idx]]), tree_[idx]));
+      }
+  }
 	
 private:
   void build_(const idx_iterator_type & first,
