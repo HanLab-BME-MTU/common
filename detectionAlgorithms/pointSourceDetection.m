@@ -1,3 +1,14 @@
+%[pstruct, mask, imgLM, imgLoG] = pointSourceDetection(img, sigma, mode)
+%
+% Inputs :      img : input image
+%             sigma : standard deviation of the Gaussian PSF
+%            {mode} : parameters to estimate, default 'xyAc'
+%
+% Outputs:  pstruct : output structure with Gaussian parameters, standard deviations, p-values
+%              mask : mask of significant (in amplitude) pixels
+%             imgLM : image of local maxima
+%            imgLoG : Laplacian of Gaussian filtered image
+
 % Francois Aguet, April 2-5 2011
 
 function [pstruct, mask, imgLM, imgLoG] = pointSourceDetection(img, sigma, mode)
@@ -64,3 +75,12 @@ lmIdx = sub2ind(size(img), lmy, lmx);
 
 % run localization on local maxima
 pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), mode);
+
+% eliminate isignificant amplitudes
+idx = [pstruct.pval_Ar] > 0.95;
+
+fnames = fieldnames(pstruct);
+for k = 1:length(fnames)
+    pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
+end
+pstruct.isPSF = pstruct.pval_KS > 0.05;
