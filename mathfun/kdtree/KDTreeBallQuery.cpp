@@ -11,14 +11,14 @@ template <unsigned K>
 static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *d_ptr, int nlhs, mxArray *plhs[])
 {
   // Read parameters
-	typename KDTree<K, double>::points_type X;
-
-	typename KDTree<K, double>::point_type v;
-
+  typename KDTree<K, double>::points_type X;
+  
+  typename KDTree<K, double>::point_type v;
+  
   for (int i = 0; i < n; ++i)
     {
       for (int k = 0; k < K; ++k)
-				v[k] = x_ptr[i + (n * k)];
+	v[k] = x_ptr[i + (n * k)];
       X.push_back(v);
     }
 
