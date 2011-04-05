@@ -14,9 +14,15 @@ u = ones(1,length(x));
 
 imgXT = padarrayXT(img, [w w], 'symmetric');
 
+% convolutions
 fg = conv2(g', g, imgXT, 'valid');
 fu = conv2(u', u, imgXT, 'valid');
 fu2 = conv2(u', u, imgXT.^2, 'valid');
+
+% Laplacian of Gaussian
+gx2 = g.*x.^2;
+imgLoG = 2*fg/sigma^2 - (conv2(g, gx2, imgXT, 'valid')+conv2(gx2, g, imgXT, 'valid'))/sigma^4;
+imgLoG = imgLoG / (2*pi*sigma^2);
 
 g = g'*g;
 n = numel(g);
@@ -52,7 +58,6 @@ mask = pval > 0.95;
 % mask = bwmorph(mask,'dilate');
 
 % local maxima
-imgLoG = filterLoG(img, sigma);
 imgLM = locmax2d(imgLoG, 5) .* mask;
 [lmy, lmx] = find(imgLM~=0);
 lmIdx = sub2ind(size(img), lmy, lmx);
