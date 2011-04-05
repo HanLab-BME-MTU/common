@@ -7,6 +7,10 @@
 
 # include <vector.hpp>
 
+#ifndef UNIX || MAC
+double log2(double n) { return log(n) / log(2.0); }
+#endif
+
 template <unsigned N, typename T>
 class KDTree
 {
