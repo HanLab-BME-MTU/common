@@ -3,7 +3,7 @@
  * (c) Francois Aguet & Sylvain Berlemont, 2011 (last modified Feb 23, 2011)
  *
  * Compilation:
- * Mac/Linux: mex -I/usr/local/include -I../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a fitGaussian2D.c
+ * Mac/Linux: mex -I/usr/local/include -I../../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a fitGaussian2D.c
  * Windows: mex COMPFLAGS="$COMPFLAGS /TP" -I"C:\include\gsl-1.14" -I"..\..\mex\include" "..\..\mex\lib\gsl.lib" "..\..\mex\lib\cblas.lib" -output fitGaussian2D fitGaussian2D.c
  */
 
@@ -201,7 +201,6 @@ static int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_ma
         dataStruct->prmVect[dataStruct->estIdx[i]] = gsl_vector_get(x, i);
     }
     
-    
     double xp = dataStruct->prmVect[0];
     double yp = dataStruct->prmVect[1];
     double A = dataStruct->prmVect[2];
@@ -293,6 +292,7 @@ static int MLalgo(struct dataStruct *data) {
     for (i=0; i<data->np; ++i) {
         data->prmVect[data->estIdx[i]] = gsl_vector_get(s->x, i);
     }
+    data->prmVect[3] = fabs(data->prmVect[3]);
     
     /* copy residuals */
     data->residuals = gsl_vector_alloc(data->nValid);
