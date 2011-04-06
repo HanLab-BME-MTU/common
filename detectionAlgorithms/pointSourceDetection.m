@@ -3,18 +3,33 @@
 % Inputs :      img : input image
 %             sigma : standard deviation of the Gaussian PSF
 %            {mode} : parameters to estimate, default 'xyAc'
+%           {alpha} : 
 %
 % Outputs:  pstruct : output structure with Gaussian parameters, standard deviations, p-values
 %              mask : mask of significant (in amplitude) pixels
 %             imgLM : image of local maxima
 %            imgLoG : Laplacian of Gaussian filtered image
 
-% Francois Aguet, April 2-5 2011
+% Francois Aguet, April 2-6 2011
 
-function [pstruct, mask, imgLM, imgLoG] = pointSourceDetection(img, sigma, mode)
+function [pstruct, mask, imgLM, imgLoG] = pointSourceDetection(img, sigma, varargin)
 
-if nargin<3
+if mod(length(varargin),2)~=0
+    error('Optional arguments need to be entered as pairs.');
+end
+
+idx = find(strcmpi(varargin, 'Mode'));
+if ~isempty(idx)
+    mode = varargin{idx+1};
+else
     mode = 'xyAc';
+end
+
+idx = find(strcmpi(varargin, 'alpha'));
+if ~isempty(idx)
+    alpha = varargin{idx+1};
+else
+    alpha = 0.05;
 end
 
 % Gaussian kernel
@@ -56,7 +71,7 @@ sigma_A = sqrt(sigma_e2*C(1,1));
 % standard deviation of residuals
 sigma_res = sqrt((RSS - (A_est*gsum+n*c_est - fu)/n)/(n-1));
 
-kLevel = norminv(0.95,0,1);
+kLevel = norminv(1 - alpha/2,0,1);
 
 SE_sigma_c = sigma_res/sqrt(2*(n-1)) * kLevel;
 df2 = (n-1) * (sigma_A.^2 + SE_sigma_c.^2).^2 ./ (sigma_A.^4 + SE_sigma_c.^4);
@@ -78,6 +93,18 @@ if ~isempty(lmIdx)
     
     % eliminate isignificant amplitudes
     idx = [pstruct.pval_Ar] > 0.95;
+    
+    % eliminate duplicate positions (resulting from localization)
+    np = length(pstruct.x);
+    pM = [pstruct.x' pstruct.y'];
+    idxKD = KDTreeBallQuery(pM, pM, 0.25*ones(np,1));
+    idxKD = idxKD(cellfun(@(x) length(x)>1, idxKD));    
+
+    for k = 1:length(idxKD);
+        RSS = pstruct.RSS(idxKD{k});
+        idx(idxKD{k}(RSS ~= min(RSS))) = 0;
+    end
+
     
     fnames = fieldnames(pstruct);
     for k = 1:length(fnames)
