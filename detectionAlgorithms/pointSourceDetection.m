@@ -68,7 +68,7 @@ pval = tcdf(real(T), df2);
 mask = pval > 0.95;
 
 % local maxima
-imgLM = locmax2d(imgLoG, 5) .* mask;
+imgLM = locmax2d(imgLoG, 2*ceil(sigma)+1) .* mask;
 [lmy, lmx] = find(imgLM~=0);
 lmIdx = sub2ind(size(img), lmy, lmx);
 
