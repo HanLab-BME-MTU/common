@@ -164,7 +164,7 @@ public:
 	//idx is a leaf
 	bool isInside = true;
 
-	for (int i = 0; i < N; ++i)
+	for (unsigned i = 0; i < N; ++i)
 	  isInside &= fabs(center[i] - points_[tree_[idx]][i]) <= hside[i];
 
 	if (isInside)

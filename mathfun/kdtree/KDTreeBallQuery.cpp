@@ -17,7 +17,7 @@ static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *d_ptr, 
   
   for (int i = 0; i < n; ++i)
     {
-      for (int k = 0; k < K; ++k)
+      for (unsigned k = 0; k < K; ++k)
 	v[k] = x_ptr[i + (n * k)];
       X.push_back(v);
     }
@@ -28,7 +28,7 @@ static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *d_ptr, 
 
   for (int i = 0; i < m; ++i)
     {
-      for (int k = 0; k < K; ++k)
+      for (unsigned k = 0; k < K; ++k)
 	v[k] = c_ptr[i + (m * k)];
       C.push_back(v);
       R.push_back(d_ptr[i]);
@@ -105,9 +105,9 @@ void mexFunction(int nlhs, mxArray *plhs[],
   if (nlhs > 2)
     mexErrMsgTxt("Too many output arguments.");
 
-  int k = mxGetN(prhs[0]);
-  int n = mxGetM(prhs[0]);
-  int m = mxGetM(prhs[1]);
+  size_t k = mxGetN(prhs[0]);
+  size_t n = mxGetM(prhs[0]);
+  size_t m = mxGetM(prhs[1]);
 
   if (k != mxGetN(prhs[1]))
     mexErrMsgTxt("X and C must have the same number of columns.");
