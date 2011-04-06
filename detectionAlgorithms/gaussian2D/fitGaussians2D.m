@@ -17,14 +17,14 @@
 %                  A : estimated amplitudes
 %                  s : estimated standard deviations of the PSF
 %                  c : estimated background intensities
-%        
+%
 %             x_pstd : standard deviations, estimated by error propagation
 %             y_pstd :
 %             A_pstd :
 %             s_pstd :
 %             c_pstd :
-%            sigma_r : standard deviation of the background (residual) 
-%         SE_sigma_r : standard error of sigma_r 
+%            sigma_r : standard deviation of the background (residual)
+%         SE_sigma_r : standard error of sigma_r
 %            pval_KS : p-value of the Kolomogorv-Smirnov test on the residuals (p > 0.05 -> Gaussian)
 %            pval_Ar : p-value of an amplitude vs. background noise test (p > 0.95 -> significant amplitude)
 %
@@ -32,15 +32,15 @@
 % Usage for a single-channel img with mask and fixed sigma:
 % fitGaussians2D(img, x_v, y_v, 'sigma', sigma_v, 'mask', mask);
 
-% Francois Aguet, March 28 2011 (last modified: April 4 2011)
+% Francois Aguet, March 28 2011 (last modified: April 5 2011)
 
 function pStruct = fitGaussians2D(img, x, y, A, sigma, c, mode, varargin)
 
 np = length(x);
 
 pStruct = struct('x', [], 'y', [], 'A', [], 's', [], 'c', [],...
-                'x_pstd', [], 'y_pstd', [], 'A_pstd', [], 's_pstd', [], 'c_pstd', [],...
-                'sigma_r', [], 'SE_sigma_r', [], 'pval_KS', [], 'pval_Ar', []);
+    'x_pstd', [], 'y_pstd', [], 'A_pstd', [], 's_pstd', [], 'c_pstd', [],...
+    'sigma_r', [], 'SE_sigma_r', [], 'RSS', [], 'pval_KS', [], 'pval_Ar', []);
 
 xi = round(x);
 yi = round(y);
@@ -50,21 +50,28 @@ if mod(length(varargin),2)~=0
     error('Optional arguments need to be entered as pairs.');
 end
 
+idx = find(strcmpi(varargin, 'alpha'));
+if ~isempty(idx)
+    alpha = varargin{idx+1};
+else
+    alpha = 0.05;
+end
+
 idx = find(strcmpi(varargin, 'mask'));
 if ~isempty(idx)
     mask = varargin{idx+1};
     labels = bwlabel(mask);
 else
-    %mask = [];
     labels = zeros(size(img));
 end
 
-kLevel = norminv(0.95,0,1);
+kLevel = norminv(1-alpha/2,0,1); % ~2 std above background
+
 iRange = [squeeze(min(min(img))) squeeze(max(max(img)))];
 
 estIdx = regexpi('xyAsc', ['[' mode ']']);
 
-             
+
 % initialize pStruct arrays
 pStruct.x = NaN(1,np);
 pStruct.y = NaN(1,np);
@@ -75,13 +82,14 @@ pStruct.x_pstd = NaN(1,np);
 pStruct.y_pstd = NaN(1,np);
 pStruct.A_pstd = NaN(1,np);
 % if fitSigma
-    pStruct.s = NaN(1,np);
-    pStruct.s_pstd = NaN(1,np);
+pStruct.s = NaN(1,np);
+pStruct.s_pstd = NaN(1,np);
 % end
 pStruct.c = NaN(1,np);
 pStruct.c_pstd = NaN(1,np);
 pStruct.sigma_r = NaN(1,np);
 pStruct.SE_sigma_r = NaN(1,np);
+pStruct.RSS = NaN(1,np);
 
 pStruct.pval_Ar = NaN(1,np);
 pStruct.pval_KS = NaN(1,np);
@@ -109,10 +117,10 @@ annularMask(r<=w4 & r>=w3) = 1;
 
 
 for p = 1:np
-
+    
     % ignore points in border
     if (xi(p)>w4 && xi(p)<=nx-w4 && yi(p)>w4 && yi(p)<=ny-w4)
- 
+        
         % label mask
         maskWindow = labels(yi(p)-w4:yi(p)+w4, xi(p)-w4:xi(p)+w4);
         maskWindow(maskWindow==maskWindow(w4+1,w4+1)) = 0;
@@ -132,7 +140,7 @@ for p = 1:np
         
         % standard deviation of the background within annular mask
         %bgStd = nanstd(window(annularMask==1));
-       
+        
         npx = sum(isfinite(window(:)));
         
         % fit
@@ -144,7 +152,7 @@ for p = 1:np
         
         [prm, prmStd, ~, res] = fitGaussian2D(window, [0 0 A_init sigma(p) c_init], mode);
         %K = corrFromC(C,ij,ii,jj);
-
+        
         dx = prm(1);
         dy = prm(2);
         
@@ -167,26 +175,34 @@ for p = 1:np
             pStruct.c_pstd(p) = stdVect(5);
             
             pStruct.sigma_r(p) = res.std;
+            pStruct.RSS(p) = res.RSS;
             
             SE_sigma_r = res.std/sqrt(2*(npx-1)) * kLevel;
             pStruct.SE_sigma_r(p) = SE_sigma_r;
             pStruct.pval_KS(p) = res.pval;
             
             sigma_A = stdVect(3);
-            A_est = prm(3);        
+            A_est = prm(3);
             df2 = (npx-1) * (sigma_A.^2 + SE_sigma_r.^2).^2 ./ (sigma_A.^4 + SE_sigma_r.^4);
             scomb = sqrt((sigma_A.^2 + SE_sigma_r.^2)/npx);
-            T = (A_est - res.std*kLevel) ./ scomb;            
+            T = (A_est - res.std*kLevel) ./ scomb;
             pStruct.pval_Ar(p) = tcdf(T, df2);
-            
         end
     end
 end
 
+% remove NaN values
+idx = ~isnan([pStruct.x]);
+fnames = fieldnames(pStruct);
+for k = 1:length(fnames)
+    pStruct.(fnames{k}) = pStruct.(fnames{k})(idx);
+end
+
+
 % function K = corrFromC(C,ij,ii,jj)
 % n = size(C,1);
 % K = zeros(n,n);
-% 
+%
 % K(ij) = C(ij) ./ sqrt(C(ii).*C(jj));
 % remaining components are redundant
 % K = K + K';
