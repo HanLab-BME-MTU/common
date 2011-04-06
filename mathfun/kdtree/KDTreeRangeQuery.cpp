@@ -62,13 +62,16 @@ static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *h_ptr, 
       int cnt = 0;
       for (typename std::list<typename KDTree<K, double>::set_type>::const_iterator it = res_list.begin(); it != res_list.end(); ++it, ++cnt)
 	{
-	  mxArray * pArray = mxCreateDoubleMatrix(it->size(), 1, mxREAL);
-	  double * p = mxGetPr(pArray);
+	  if (it->size())
+	    {
+	      mxArray * pArray = mxCreateDoubleMatrix(it->size(), 1, mxREAL);
+	      double * p = mxGetPr(pArray);
 				
-	  for (typename KDTree<K, double>::set_type::const_iterator it2 = it->begin(); it2 != it->end(); ++it2)
-	    *p++ = it2->second + 1;
+	      for (typename KDTree<K, double>::set_type::const_iterator it2 = it->begin(); it2 != it->end(); ++it2)
+		*p++ = it2->second + 1;
 				
-	  mxSetCell(plhs[0], cnt, pArray);
+	      mxSetCell(plhs[0], cnt, pArray);
+	    }
 	}
     }
 
@@ -80,13 +83,16 @@ static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *h_ptr, 
       int cnt = 0;
       for (typename std::list<typename KDTree<K, double>::set_type>::const_iterator it = res_list.begin(); it != res_list.end(); ++it, ++cnt)
 	{
-	  mxArray * pArray = mxCreateDoubleMatrix(it->size(), 1, mxREAL);
-	  double * p = mxGetPr(pArray);
+	  if (it->size())
+	    {
+	      mxArray * pArray = mxCreateDoubleMatrix(it->size(), 1, mxREAL);
+	      double * p = mxGetPr(pArray);
 				
-	  for (typename KDTree<K, double>::set_type::const_iterator it2 = it->begin(); it2 != it->end(); ++it2)
-	    *p++ = it2->first;
+	      for (typename KDTree<K, double>::set_type::const_iterator it2 = it->begin(); it2 != it->end(); ++it2)
+		*p++ = it2->first;
 				
-	  mxSetCell(plhs[1], cnt, pArray);
+	      mxSetCell(plhs[1], cnt, pArray);
+	    }
 	}
     }
 }

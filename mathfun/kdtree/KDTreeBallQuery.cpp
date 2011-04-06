@@ -22,14 +22,14 @@ static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *d_ptr, 
       X.push_back(v);
     }
 
-	typename KDTree<K, double>::points_type C;
+  typename KDTree<K, double>::points_type C;
 
   std::vector<double> R;
 
   for (int i = 0; i < m; ++i)
     {
       for (int k = 0; k < K; ++k)
-				v[k] = c_ptr[i + (m * k)];
+	v[k] = c_ptr[i + (m * k)];
       C.push_back(v);
       R.push_back(d_ptr[i]);
     }
@@ -39,7 +39,7 @@ static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *d_ptr, 
 
   // Compute queries
   std::list<typename KDTree<K, double>::set_type > res_list;
-	typename KDTree<K, double>::set_type res;
+  typename KDTree<K, double>::set_type res;
 	
   for (int i = 0; i < m; ++i)
     {
@@ -47,44 +47,50 @@ static void dispatch(int n, int m, double *x_ptr, double *c_ptr, double *d_ptr, 
 
       res_list.push_back(res);
 			
-			res.clear();
+      res.clear();
     }
 
   // Write output
   if (nlhs > 0)
     {
-			const mwSize size[2] = {res_list.size(), 1};
-			plhs[0] = mxCreateCellArray(2, size);
+      const mwSize size[2] = {res_list.size(), 1};
+      plhs[0] = mxCreateCellArray(2, size);
 			
-			int cnt = 0;
-			for (typename std::list<typename KDTree<K, double>::set_type>::const_iterator it = res_list.begin(); it != res_list.end(); ++it, ++cnt)
-			{
-				mxArray * pArray = mxCreateDoubleMatrix(it->size(), 1, mxREAL);
-				double * p = mxGetPr(pArray);
+      int cnt = 0;
+      for (typename std::list<typename KDTree<K, double>::set_type>::const_iterator it = res_list.begin(); it != res_list.end(); ++it, ++cnt)
+	{
+	  if (it->size())
+	    {
+	      mxArray * pArray = mxCreateDoubleMatrix(it->size(), 1, mxREAL);
+	      double * p = mxGetPr(pArray);
 				
-				for (typename KDTree<K, double>::set_type::const_iterator it2 = it->begin(); it2 != it->end(); ++it2)
-					*p++ = it2->second + 1;
+	      for (typename KDTree<K, double>::set_type::const_iterator it2 = it->begin(); it2 != it->end(); ++it2)
+		*p++ = it2->second + 1;
 				
-				mxSetCell(plhs[0], cnt, pArray);
-			}
+	      mxSetCell(plhs[0], cnt, pArray);
+	    }
+	}
     }
 
   if (nlhs > 1)
     {
-			const mwSize size[2] = {res_list.size(), 1};
-			plhs[1] = mxCreateCellArray(2, size);
+      const mwSize size[2] = {res_list.size(), 1};
+      plhs[1] = mxCreateCellArray(2, size);
 			
-			int cnt = 0;
-			for (typename std::list<typename KDTree<K, double>::set_type>::const_iterator it = res_list.begin(); it != res_list.end(); ++it, ++cnt)
-			{
-				mxArray * pArray = mxCreateDoubleMatrix(it->size(), 1, mxREAL);
-				double * p = mxGetPr(pArray);
+      int cnt = 0;
+      for (typename std::list<typename KDTree<K, double>::set_type>::const_iterator it = res_list.begin(); it != res_list.end(); ++it, ++cnt)
+	{
+	  if (it->size())
+	    {
+	      mxArray * pArray = mxCreateDoubleMatrix(it->size(), 1, mxREAL);
+	      double * p = mxGetPr(pArray);
 				
-				for (typename KDTree<K, double>::set_type::const_iterator it2 = it->begin(); it2 != it->end(); ++it2)
-					*p++ = it2->first;
+	      for (typename KDTree<K, double>::set_type::const_iterator it2 = it->begin(); it2 != it->end(); ++it2)
+		*p++ = it2->first;
 				
-				mxSetCell(plhs[1], cnt, pArray);
-			}
+	      mxSetCell(plhs[1], cnt, pArray);
+	    }
+	}
     }
 }
 
@@ -115,8 +121,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
   switch (k)
     {
-			case 2: dispatch<2>(n, m, x_ptr, c_ptr, d_ptr, nlhs, plhs); break;
-			case 3: dispatch<3>(n, m, x_ptr, c_ptr, d_ptr, nlhs, plhs); break;
-			default: mexErrMsgTxt("Dimension not implemented.");
+    case 2: dispatch<2>(n, m, x_ptr, c_ptr, d_ptr, nlhs, plhs); break;
+    case 3: dispatch<3>(n, m, x_ptr, c_ptr, d_ptr, nlhs, plhs); break;
+    default: mexErrMsgTxt("Dimension not implemented.");
     }  
 }
