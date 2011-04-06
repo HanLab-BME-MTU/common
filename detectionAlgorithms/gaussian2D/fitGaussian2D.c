@@ -322,8 +322,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     /* check inputs */
     if (nrhs < 3) mexErrMsgTxt("Inputs should be: data, prmVect, mode.");
     if (!mxIsDouble(prhs[0])) mexErrMsgTxt("Data input must be double array.");
-    int nx = (int)mxGetN(prhs[0]);
-    int ny = (int)mxGetM(prhs[0]);
+    size_t nx = mxGetN(prhs[0]);
+    size_t ny = mxGetM(prhs[0]);
     if (nx != ny) mexErrMsgTxt("Input should be a square image.");
     int N = nx*ny;
     if (mxGetNumberOfElements(prhs[1])!=NPARAMS || !mxIsDouble(prhs[1])) mexErrMsgTxt("Incorrect parameter vector format.");
