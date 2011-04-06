@@ -53,7 +53,7 @@ sigma_e2 = RSS/(n-3);
 
 sigma_A = sqrt(sigma_e2*C(1,1));
 
-% std(residuals)
+% standard deviation of residuals
 sigma_res = sqrt((RSS - (A_est*gsum+n*c_est - fu)/n)/(n-1));
 
 kLevel = norminv(0.95,0,1);
@@ -66,21 +66,32 @@ pval = tcdf(real(T), df2);
 
 % mask of admissible positions for local maxima
 mask = pval > 0.95;
-% mask = bwmorph(mask,'dilate');
 
 % local maxima
 imgLM = locmax2d(imgLoG, 5) .* mask;
 [lmy, lmx] = find(imgLM~=0);
 lmIdx = sub2ind(size(img), lmy, lmx);
 
-% run localization on local maxima
-pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), mode);
-
-% eliminate isignificant amplitudes
-idx = [pstruct.pval_Ar] > 0.95;
-
-fnames = fieldnames(pstruct);
-for k = 1:length(fnames)
-    pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
+if ~isempty(lmIdx)
+    % run localization on local maxima
+    pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), mode);
+    
+    % eliminate isignificant amplitudes
+    idx = [pstruct.pval_Ar] > 0.95;
+    
+    fnames = fieldnames(pstruct);
+    for k = 1:length(fnames)
+        pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
+    end
+    pstruct.isPSF = pstruct.pval_KS > 0.05;
+else
+    pstruct = [];
 end
-pstruct.isPSF = pstruct.pval_KS > 0.05;
+
+
+% T = A_est ./ sigma_A;
+% pval = tcdf(T,numel(img) - 2 - 1);
+% hval = pval > 0.95;
+% 
+% figure; imagesc(hval); colormap(gray(2)); axis image;
+% figure; imagesc(mask); colormap(gray(2)); axis image;
