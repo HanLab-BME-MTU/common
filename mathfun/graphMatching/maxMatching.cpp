@@ -4,13 +4,6 @@
 
 #include <lemon/smart_graph.h>
 #include <lemon/matching.h>
-#include <lemon/lgf_writer.h>
-
-// Command line to compile on Mac OS X:
-// mex maxWeightedMatching.cpp
-
-// Command line to compile on Linux:
-// mex maxWeightedMatching.cpp
 
 using namespace lemon;
 using namespace std;

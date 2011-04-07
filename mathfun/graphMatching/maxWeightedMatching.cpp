@@ -4,7 +4,6 @@
 
 #include <lemon/smart_graph.h>
 #include <lemon/matching.h>
-#include <lemon/lgf_writer.h>
 
 using namespace lemon;
 using namespace std;
@@ -64,8 +63,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   WeightMap weight_map(g);
   
-  GraphWriter<SmartGraph> graphWriter(g, std::cout);
-
   for (int i = 0; i < num_edges; ++i)
     {
       SmartGraph::Node u = SmartGraph::nodeFromId(p[i] - 1);
