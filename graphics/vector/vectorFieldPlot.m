@@ -1,7 +1,7 @@
-function h=vectorFieldPlot(F,handle,polygon,scale)
+function h=vectorFieldPlot(F,h,polygon,scale)
 % vectorFieldPlot scales and displays a vector field or its divergence
 %
-% SYNOPSIS   h=vectorFieldPlot(F,handle,polygon,scale)
+% SYNOPSIS   h=vectorFieldPlot(F,h,polygon,scale)
 %
 % INPUT      F      : either a...
 %                      VECTOR FIELD M stored in a (nx4)-matrix of the 
@@ -10,8 +10,8 @@ function h=vectorFieldPlot(F,handle,polygon,scale)
 %                      DIVERGENCE divM stored in a (nx3)-matrix of the form
 %                         [y0 x0 div]n, (where (y0,x0) is the base of the vector
 %                         and div its divergence).
-%            handle : handle of a previous vector field plot for overlapping
-%                     (set handle to 0 is you want to draw on a new figure).
+%            h : handle of a previous vector field plot for overlapping
+%                     (set h to 0 is you want to draw on a new figure).
 %                     This parameter is ignored for divergence field plots.
 %            polygon: (optional - pass polygon=[] to disable). The vector
 %                     field to be plotted can be cropped to remove vectors 
@@ -22,7 +22,7 @@ function h=vectorFieldPlot(F,handle,polygon,scale)
 %                     Set polygon=[x y] to use with vectorFieldPlot.
 %            scale  : (optional) defines the scaling factor for F
 %
-% OUTPUT     h     : handle of the figure
+% OUTPUT     h : handle of the figure
 %
 % REMARK     Up to 5 vector fields can bo plotted on top of each other (by passing the handle 'h' returned by
 %            the previous call to h=vectorFieldPlot(F,h,...) as input) and will be colored in the following order:
@@ -41,39 +41,35 @@ end
 % Set all vectors outside the passed polygon to 0
 if ~isempty(polygon)
     index=inpolygon(F(:,1),F(:,2),polygon(:,2),polygon(:,1));
-    F(find(~index),3)=F(find(~index),1);
-    F(find(~index),4)=F(find(~index),2);
+    F(~index,3)=F(~index,1);
+    F(~index,4)=F(~index,2);
 end
 
 if size(F,2)==4
     
     % Remove all incomplete lines
-    F=F(find(F(:,1)~=0 & F(:,3)~=0),:);
+    F=F(F(:,1)~=0 & F(:,3)~=0,:);
     
     % Use manual scaling instead of quiver scaling which is field-dependent
     if scale~=1
-        F(:,3:4)=[F(:,1:2)+scale*(F(:,3:4)-F(:,1:2))];
+        F(:,3:4)=F(:,1:2)+scale*(F(:,3:4)-F(:,1:2));
     end
     
-    if handle~=0
-        h=figure(handle);
-        hold on;
-    else
-        h=figure;
+    if ~ishandle(h)
+        h = figure('Visible', 'off');
     end
     
-    quiver(F(:,2),F(:,1),F(:,4)-F(:,2),F(:,3)-F(:,1),0);
-
-    axis ij
-    xlabel('x');
-    ylabel('y');
+    hAxes = findobj(h,'Type','axes');
+    hold(hAxes,'on');
+    quiver(hAxes, F(:,2),F(:,1),F(:,4)-F(:,2),F(:,3)-F(:,1),0);
+    axis ij;
     
     % Get handles of all plots present in the figure
-    plotHandles=findall(h,'Type','Line');
+    plotHandles=findobj(hAxes,'Type','Line');
     nPlots=length(plotHandles);
     
     % Check is an image exists in the current axis
-    imgHandle=findall(h,'Type','Image');
+    imgHandle=findobj(hAxes,'Type','Image');
     
     if isempty(imgHandle)
         % Prepare up to five different colors for multiple overlapping
