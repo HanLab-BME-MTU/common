@@ -30,12 +30,15 @@ if nargin<2 || isempty(colors);
     colors(:,1) = rand(1,nbars);
     colors = hsv2rgb(colors);
 end
+if size(colors,1)==1
+    colors = repmat(colors, [nbars 1]);
+end
+
 ng = length(prm);
 
 xa = cell(1,ng);
 
-figure('PaperPositionMode', 'auto');
-axes('Position', [0.13 0.2 0.775 0.75]);
+set(gca, 'Position', [0.13 0.2 0.775 0.75]);
 hold on;
 for k = 1:ng
     nb = size(prm{k},2);
@@ -51,8 +54,6 @@ for k = 1:ng
         p25 = prm{k}(2,:);
         p75 = prm{k}(3,:);
     end
-    
-    
     
     % whiskers (plot first to mask bar at '0')
     if plotSEM && size(prm{k},1)>4
@@ -96,6 +97,7 @@ for k = 1:ng
         setErrorbarStyle(he, 0.15);
     end
 end
+hold off;
 
 box off;
 xa = [xa{:}];
