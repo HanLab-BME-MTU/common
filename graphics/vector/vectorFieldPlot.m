@@ -55,12 +55,13 @@ if size(F,2)==4
         F(:,3:4)=F(:,1:2)+scale*(F(:,3:4)-F(:,1:2));
     end
     
-    if ~ishandle(h)
+    if h == 0 || ~ishandle(h)
         h = figure('Visible', 'off');
     end
     
     hAxes = findobj(h,'Type','axes');
     hold(hAxes,'on');
+    
     quiver(hAxes, F(:,2),F(:,1),F(:,4)-F(:,2),F(:,3)-F(:,1),0);
     axis ij;
     
