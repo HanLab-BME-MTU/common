@@ -56,6 +56,9 @@ function res=houghTransform(im,RHO_MAX,THETA_MAX)
 %        does not crash when there is one/zero feature points
 %
 
+fprintf(2, 'Warning: this function is deprecated and should no longer be used.\nUse ''hough'' instead.\n');
+
+
 if (nargin~=3 | nargout~=1)
 	fprintf(1,'Correct use: res=hough2(im,RHO_MAX,THETA_MAX).\n');
 	error('Exiting...\n');

@@ -25,6 +25,8 @@ function J = imaffine(I,A,ctr,i0,md)
 %
 % SEE ALSO imrotate, imresize, imshift, interpol2
 
+fprintf(2, 'Warning: this function is deprecated and should no longer be used.\nUse ''imtransform'' instead.\n');
+
 tUint8 = 0;
 
 if isa(I,'uint8')

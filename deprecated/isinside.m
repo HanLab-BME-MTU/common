@@ -15,6 +15,9 @@ function ans = isinside(smallRect,rect,clip)
 % OUTPUT ans : dependent on clip either a new rectangular area
 %              or a boolean answer
 %
+
+fprintf(2, 'Warning: this function is deprecated and should no longer be used.\n');
+
 if(nargin < 3)
    clip = 0;
 end;

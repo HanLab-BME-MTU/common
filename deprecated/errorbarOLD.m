@@ -26,6 +26,9 @@ function hh = errorbar(x, y, l,u,symbol)
 %   $Revision: 5.17 $  $Date: 2000/06/02 04:30:46 $
 %   $Revision:6.0 CB-BMMG 03-06-2002
 
+fprintf(2, 'Warning: this function is deprecated and should no longer be used.\nUse ''errorbar'' instead.\n');
+
+
 if min(size(x))==1,
   npt = length(x);
   x = x(:);

@@ -1,4 +1,4 @@
-function out=Gauss3D(x,sigma,fSze);
+function out=Gauss3D(x,sigma,fSze)
 % Gauss3D	apply a 3 dimensional gauss filter
 %
 %    out=Gauss3D(x,sigma,fSze);
@@ -11,6 +11,9 @@ function out=Gauss3D(x,sigma,fSze);
 %    OUTPUT: out   filtered data
 
 % c: 11/01/00 dT
+
+fprintf(2, 'Warning: this function is deprecated and should no longer be used.\nUse ''filterGauss3D'' instead.\n');
+
 
 % fastGauss3D brings equivalent result and is faster
 out=fastGauss3D(x,sigma,fSze); % no border correction!

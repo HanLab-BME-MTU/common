@@ -25,6 +25,8 @@ function array = addBorder(array,border,nanMask)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+fprintf(2, 'Warning: this function is deprecated and should no longer be used.\nUse ''padarray'' or ''padarrayXT'' instead.\n');
+
 % test input
 if nargin < 2 || isempty(array) || isempty(border)
     error('please supply at least two non-empty input arguments')

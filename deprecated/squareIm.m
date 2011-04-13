@@ -20,6 +20,9 @@ function I = squareIm(fg,bg,side,ctr,dim,nse)
 %          the map in the current axis
 
 % check the compatibility of the parameters
+
+fprintf(2, 'Warning: this function is deprecated and should no longer be used.\n');
+
 sideEven = mod(side,2);
 if(sideEven)
    error('side parameter NOT even');
