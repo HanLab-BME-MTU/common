@@ -1,44 +1,50 @@
 %BOXPLOT2 Box plot grouping multiple sets/categories of data, with error bars and SEM.
 %
-% INPUTS:   prm : cell array of matrices that contain the box properties:
+% INPUTS:   prm : matrix or cell array of matrices that contain the box properties:
 %                 row 1: mean or median
 %                 row 2: optional, SEM
 %                 row 2/3: 25th percentile, bottom of box
 %                 row 3/4: 75th percentile, top of box
 %                 row 4/5: optional, bottom whisker
 %                 row 5/6: optional, top whisker
-%        colors : Nx3 matrix of colors, where N is the number of bars
+%         color : Nx3 matrix of colors, where N is the number of bars
 %       xLabels : cell array of strings, labels for each bar
 %        yLabel : string, y-axis label
 %
 % Example: boxplot2({[3 4; 0.2 0.2; 2 3; 4 5; 0.5 0.5; 0.5 0.5]});
 
 % Francois Aguet, 22 Feb 2011
+% Last modified: 12 April 2011
 
-function boxplot2(prm, colors, xLabels, yLabel)
+function boxplot2(prm, color, varargin)
+
+if isnumeric(prm)
+    prm = {prm};
+end
+nbars = sum(cellfun(@(x) size(x,2), prm));
+
+ip = inputParser;
+ip.CaseSensitive = false;
+ip.addRequired('prm', @iscell);
+ip.addOptional('color', hsv2rgb([rand(nbars,1) ones(nbars,2)]));
+ip.addParamValue('xlabel', [], @ischar);
+ip.addParamValue('xlabels', [], @(x) all(cellfun(@(y) ischar(y), x)));
+ip.addParamValue('ylabel', [], @ischar);
+ip.parse(prm, color, varargin{:});
+
+
+if size(color,1)==1
+    color = repmat(color, [nbars 1]);
+end
 
 fsize = 16;
-
 bw = 0.8; % bar width
 dx = (1-bw)/2;
-
 dg = 4*dx;
 
-nbars = sum(cellfun(@(x) size(x,2), prm));
-if nargin<2 || isempty(colors);
-    colors = ones(nbars,3);
-    colors(:,1) = rand(1,nbars);
-    colors = hsv2rgb(colors);
-end
-if size(colors,1)==1
-    colors = repmat(colors, [nbars 1]);
-end
-
 ng = length(prm);
-
 xa = cell(1,ng);
 
-set(gca, 'Position', [0.13 0.2 0.775 0.75]);
 hold on;
 for k = 1:ng
     nb = size(prm{k},2);
@@ -83,7 +89,7 @@ for k = 1:ng
     %patch(xv, yv, 'r', 'LineWidth', 2);
 
     for b = 1:nb
-        patch(xv(:,b), yv(:,b), colors(b+(k-1)*nb,:), 'LineWidth', 2);
+        patch(xv(:,b), yv(:,b), color(b+(k-1)*nb,:), 'LineWidth', 2);
     end
     
     
@@ -104,33 +110,57 @@ xa = [xa{:}];
 set(gca, 'FontName', 'Helvetica', 'FontSize', fsize, 'LineWidth', 1.5,...
     'XTick', xa, 'XLim', [0.5-dx/2 xa(end)+0.5+dx/2]);
 
+YLim = get(gca, 'YLim');
+set(gca, 'Ylim', [0, YLim(2)+1]);
 
 width = diff(get(gca, 'XLim'));
 height = diff(get(gca, 'YLim'));
 
 % get height of default text bounding box
 h = text(0, 0, ' ', 'FontName', 'Helvetica', 'FontSize', fsize);
-extent = get(h, 'extent');
-extent = extent(4)/sqrt(2)/2 * width/height;
+textHeight = get(h, 'extent');
+textHeight = textHeight(4);
+extent = textHeight/sqrt(2)/2 * width/height;
 delete(h);
 
+
 % x label
-if nargin>2 && length(xLabels)==nbars
+if ~isempty(ip.Results.xlabels)
     set(gca, 'XTickLabel', []);
-    arrayfun(@(k) text(xa(k)-extent,-0.01*height, xLabels{k},...
+    xlabels = arrayfun(@(k) text(xa(k)-extent,-0.01*height, ip.Results.xlabels{k},...
         'VerticalAlignment', 'Top', 'HorizontalAlignment', 'Right',...
         'Rotation', 45, 'FontName', 'Helvetica', 'FontSize', fsize), 1:length(xa));
+    
+    maxHeight = max(cellfun(@(x) x(4), arrayfun(@(x) get(x, 'extent'), xlabels, 'UniformOutput', false)));
 else
     set(gca, 'XTickLabel', 1:nbars);
+    maxHeight = 0;
 end
+
+if ~isempty(ip.Results.xlabel)
+    hx = xlabel(ip.Results.xlabel, 'FontName', 'Helvetica', 'FontSize', fsize);
+    
+    position = get(hx, 'Position');
+    xlabelHeight = get(hx, 'extent');
+    xlabelHeight = xlabelHeight(4) - position(2);
+    position(2) = position(2) - 0.02*height - maxHeight;
+    set(hx, 'Position', position);
+else
+    xlabelHeight = 0;
+end
+
+% set final axis position
+total = (height*1.01 + maxHeight + xlabelHeight) * 1.05;
+position = get(gca, 'Position');
+position([2 4]) = [height*0.02+maxHeight+xlabelHeight height]/total;
+set(gca, 'Position', position);
 
 % y label
-if nargin>3 && ~isempty(ylabel)
-    ylabel(yLabel, 'FontName', 'Helvetica', 'FontSize', fsize);
+if ~isempty(ip.Results.ylabel)
+    ylabel(ip.Results.ylabel, 'FontName', 'Helvetica', 'FontSize', fsize);
 end
 
-YLim = get(gca, 'YLim');
-set(gca, 'Ylim', [0, YLim(2)+1]);
+
 
 
 function setErrorbarStyle(he, de)
