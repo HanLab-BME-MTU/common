@@ -16,8 +16,8 @@ function [x,y] = boundaryGeometry(bs,s)
 %as an input
 global OBJ_BOUND;
 
-%Arbitrary - for geometry specified in this way, this doesn't matter.
-nBoundSeg = 10;
+%One segment per edge segment to avoid problems with strange geometries.
+nBoundSeg = OBJ_BOUND.pieces;
 
 %If no arguments supplied, return the number of boundary segments. This is
 %standard for geometry m file

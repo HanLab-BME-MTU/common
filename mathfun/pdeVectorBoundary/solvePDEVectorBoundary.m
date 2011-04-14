@@ -114,8 +114,8 @@ end
 
 if nargin < 5 || isempty(meshQuality)
     meshQuality = 3;
-elseif (meshQuality <= 0) || (round(abs(meshQuality)) ~= meshQuality) ...
-        || meshQuality > 10
+elseif (meshQuality <= 0) || (round(abs(meshQuality)) ~= meshQuality) || ...
+    meshQuality > 10
     error('Mesh quality must be a positive integer between 1 and 10!')
 end
 
@@ -159,32 +159,15 @@ BOUND_COND = spline(linspace(0,1,nPts),uv');
 %Initialize mesh
 [p,e,t] = initmesh('boundaryGeometry');
 
-%Refine and jiggle some before starting adaptive refinement.
-for j = 1:min(2,meshQuality)
-    [p,e,t] = refinemesh('boundaryGeometry',p,e,t);   
-end
-p = jigglemesh(p,e,t,'Opt','minimum','Iter',meshQuality*20);
-
 Ui = 1;%Initial guess for solution.
 
-%Do a few rounds of adaptive refinement
-[~,p,e,t] = adaptmeshHLE('boundaryGeometry','boundaryCondition',...
+%Do the specified number of rounds of adaptive refinement
+[u,p,e,t] = adaptmeshHLE('boundaryGeometry','boundaryCondition',...
                          pdePar{1},pdePar{2},pdePar{3},...
                          'Ngen',meshQuality,'Mesh',p,e,t,...
                          'Nonlin',nonLin,'Init',Ui);
-%Refine again
-for j = 1:min(1,ceil(meshQuality/2))
-    [p,e,t] = refinemesh('boundaryGeometry',p,e,t);   
-end
-p = jigglemesh(p,e,t,'Opt','minimum','Iter',meshQuality*20);
-
-%Get the final solution with a few more rounds of refinement
-[u,p,e,t] = adaptmeshHLE('boundaryGeometry','boundaryCondition',...
-                           pdePar{1},pdePar{2},pdePar{3},...
-                           'Ngen',meshQuality,'Mesh',p,e,t,...
-                           'Nonlin',nonLin,'Init',Ui);
-
-
+                     
+                     
 %% ------- Output ----- %%
 
 if nargout > 2
