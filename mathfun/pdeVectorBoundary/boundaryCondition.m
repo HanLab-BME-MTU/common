@@ -22,13 +22,16 @@ global OBJ_BOUND;
 %DIRICHLET CONSTRAINTS
 
 %Function value multiplier.
-h = ones(1,2*nE);
 h = [1 0 0 1]';
 h = repmat(h,1,2*nE);
 
 %Get parameter values for each edge requested         
 s(1:nE) = e(3,1:nE);
 s(1+nE:2*nE) = e(4,1:nE);
+%Sometimes the pdetoolbox requests very small negative numbers (1e-20) we
+%convert these to zero since the spline is undefined at negative parameter
+%values
+s(s<0) = 0;
 
 %Now convert these to points spaced by arc length
 iPars = linspace(0,1,OBJ_BOUND.pieces+1);
