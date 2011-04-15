@@ -21,7 +21,7 @@ function I = squareIm(fg,bg,side,ctr,dim,nse)
 
 % check the compatibility of the parameters
 
-fprintf(2, 'Warning: this function is deprecated and should no longer be used.\n');
+fprintf(2, 'Warning: ''squareIm'' is deprecated and should no longer be used.\n');
 
 sideEven = mod(side,2);
 if(sideEven)

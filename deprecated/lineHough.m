@@ -16,7 +16,7 @@ function [r,alpha,hMap] = lineHough(magn,ori,smplRate,stdAlpha)
 %                  for any point x on the line
 %        hMap    : full map of the Hough transformation.
 
-fprintf(2, 'Warning: this function is deprecated and should no longer be used.\nUse ''hough'' instead.\n');
+fprintf(2, 'Warning: ''lineHough'' is deprecated and should no longer be used.\nUse ''hough'' instead.\n');
 
 if(nargin < 3)
    smplRate = [1,1/180*pi];

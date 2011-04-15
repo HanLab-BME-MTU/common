@@ -12,7 +12,7 @@ function out=Gauss3D(x,sigma,fSze)
 
 % c: 11/01/00 dT
 
-fprintf(2, 'Warning: this function is deprecated and should no longer be used.\nUse ''filterGauss3D'' instead.\n');
+fprintf(2, 'Warning: ''Gauss3D'' is deprecated and should no longer be used.\nUse ''filterGauss3D'' instead.\n');
 
 
 % fastGauss3D brings equivalent result and is faster

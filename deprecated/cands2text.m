@@ -1,4 +1,4 @@
-fprintf(2, 'Warning: this function is deprecated and should no longer be used.\n');
+fprintf(2, 'Warning: ''cands2text'' is deprecated and should no longer be used.\n');
 
 defaultFileName = '*.mat';    
  [firstCandsName, firstCandsPath] = uigetfile('.mat', 'Please select the first speckle/vesicle data file', defaultFileName);

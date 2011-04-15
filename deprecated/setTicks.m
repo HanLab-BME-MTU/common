@@ -9,7 +9,7 @@ function setTicks(x,y,fmt)
 %
 % the change of the current ticks can be suppressed by entering []
 
-fprintf(2, 'Warning: this function is deprecated and should no longer be used.\n');
+fprintf(2, 'Warning: ''setTicks'' is deprecated and should no longer be used.\n');
 
 if(~isempty(x))
    for i = 1:length(x)

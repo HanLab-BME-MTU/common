@@ -16,7 +16,7 @@ function ans = isinside(smallRect,rect,clip)
 %              or a boolean answer
 %
 
-fprintf(2, 'Warning: this function is deprecated and should no longer be used.\n');
+fprintf(2, 'Warning: ''isinside'' is deprecated and should no longer be used.\n');
 
 if(nargin < 3)
    clip = 0;

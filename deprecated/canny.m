@@ -47,7 +47,7 @@ function [e,ax,ay,as2,thresh] = canny(varargin)
 % Katharina Quirin, 2002
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-fprintf(2, 'Warning: this function is deprecated and should no longer be used.\nUse ''edge'' with the ''Canny'' option instead.\n');
+fprintf(2, 'Warning: ''canny'' is deprecated and should no longer be used.\nUse ''edge'' with the ''Canny'' option instead.\n');
 
 
 [a,thresh,sigma,c] = parse_inputs(varargin{:});

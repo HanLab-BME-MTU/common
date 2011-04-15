@@ -1,4 +1,4 @@
-function hh = errorbar(x, y, l,u,symbol)
+function hh = errorbarOLD(x, y, l,u,symbol)
 %ERRORBAR Error bar plot.
 %   ERRORBAR(X,Y,L,U) plots the graph of vector X vs. vector Y with
 %   error bars specified by the vectors L and U.  L and U contain the
@@ -26,7 +26,7 @@ function hh = errorbar(x, y, l,u,symbol)
 %   $Revision: 5.17 $  $Date: 2000/06/02 04:30:46 $
 %   $Revision:6.0 CB-BMMG 03-06-2002
 
-fprintf(2, 'Warning: this function is deprecated and should no longer be used.\nUse ''errorbar'' instead.\n');
+fprintf(2, 'Warning: ''errorbarOLD'' is deprecated and should no longer be used.\nUse ''errorbar'' instead.\n');
 
 
 if min(size(x))==1,

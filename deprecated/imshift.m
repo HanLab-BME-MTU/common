@@ -22,7 +22,7 @@ function J = imshift(I,d,i0,md)
 %
 % SEE ALSO imrotate, imresize, interp2
 
-fprintf(2, 'Warning: this function is deprecated and should no longer be used.\nUse ''imtransform'' instead.\n');
+fprintf(2, 'Warning: ''imshift'' is deprecated and should no longer be used.\nUse ''imtransform'' instead.\n');
 
 
 dim = size(I);

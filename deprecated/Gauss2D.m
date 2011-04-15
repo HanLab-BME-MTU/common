@@ -14,7 +14,7 @@ function [out,M]=Gauss2D(x,sigma,symmetric)
 
 % bug fix: AP - 10.07.02
 
-fprintf(2, 'Warning: this function is deprecated and should no longer be used.\nUse ''filterGauss2D'' instead.\n');
+fprintf(2, 'Warning: ''Gauss2D'' is deprecated and should no longer be used.\nUse ''filterGauss2D'' instead.\n');
 
 
 if nargin < 3 || isempty(symmetric)

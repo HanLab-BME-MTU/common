@@ -1,4 +1,4 @@
-function [out_corrected,M]=Gauss2DBorder(x,sigma);
+function [out_corrected,M]=Gauss2DBorder(x,sigma)
 % Gauss2DBorder	apply a 2 dimensional gauss filter on enlarged image
 %
 %    [out_corrected,M]=Gauss2DBorder(x,sigma);
@@ -14,7 +14,7 @@ function [out_corrected,M]=Gauss2DBorder(x,sigma);
 % Added correction for image boarder effects
 % Matthias Machacek 04/05/04
 
-fprintf(2, 'Warning: this function is deprecated and should no longer be used.\nUse ''filterGauss2D'' instead.\n');
+fprintf(2, 'Warning: ''Gauss2DBorder'' is deprecated and should no longer be used.\nUse ''filterGauss2D'' instead.\n');
 
 
 R = ceil(3*sigma);   % cutoff radius of the gaussian kernel 
