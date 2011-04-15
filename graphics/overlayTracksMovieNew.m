@@ -1,7 +1,7 @@
 function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
     saveMovie,movieName,filterSigma,classifyGaps,highlightES,showRaw,...
     imageRange,onlyTracks,classifyLft,diffAnalysisRes,intensityScale,...
-    colorTracks,firstImageFile,dir2saveMovie,minLength)
+    colorTracks,firstImageFile,dir2saveMovie,minLength,plotFullScreen)
 %OVERLAYTRACKSMOVIENEW overlays tracks obtained via trackCloseGapsKalman on movies with variable color-coding schemes
 %
 %SYNPOSIS overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
@@ -83,6 +83,9 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %                       Optional. Default: [].
 %       minLength     : Minimum length of tracks to be ploted.
 %                       Optional. Default: 1.
+%       plotFullScreen: 1 the figure will be sized to cover the whole
+%                       screen. In this way the movie will be of highest
+%                       possible quality. default is 0.
 %
 %OUTPUT the movie.
 %
@@ -139,6 +142,10 @@ if minLength > 1
     criteria.lifeTime.min = minLength;
     indx = chooseTracks(tracksFinal,criteria);
     tracksFinal = tracksFinal(indx,:);
+end
+
+if nargin < 19 || isempty(plotFullScreen)
+    plotFullScreen = 0;
 end
 
 %get first and last frames where there are tracks
@@ -689,7 +696,13 @@ switch intensityScale
 end
 
 %go over all specified frames
-figure
+if plotFullScreen
+    scrsz = get(0,'ScreenSize');
+    h     = figure();
+    set(h,'Position',scrsz);
+else
+    figure
+end
 for iFrame = 1 : size(xCoordMatAll,2)
     
     if frame2fileMap(iFrame) ~= 0 %if frame exists
