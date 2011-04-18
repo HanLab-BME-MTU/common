@@ -41,7 +41,7 @@ end
 ru = 8;
 psf = vectorialPSF(0,0,0,0,ru,p);
 
-[pG, ~, ~, res] = fitGaussian2D(psf, [0 0 1 1 0], 'As');
+[pG, ~, ~, res] = fitGaussian2D(psf, [0 0 max(psf(:)) 1 0], 'As');
 sigma = pG(4);
 
 
