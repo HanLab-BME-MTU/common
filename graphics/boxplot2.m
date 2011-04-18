@@ -14,9 +14,9 @@
 % Example: boxplot2({[3 4; 0.2 0.2; 2 3; 4 5; 0.5 0.5; 0.5 0.5]});
 
 % Francois Aguet, 22 Feb 2011
-% Last modified: 12 April 2011
+% Last modified: 18 April 2011
 
-function boxplot2(prm, color, varargin)
+function boxplot2(prm, varargin)
 
 if isnumeric(prm)
     prm = {prm};
@@ -26,12 +26,12 @@ nbars = sum(cellfun(@(x) size(x,2), prm));
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('prm', @iscell);
-ip.addOptional('color', hsv2rgb([rand(nbars,1) ones(nbars,2)]));
+ip.addOptional('color', hsv2rgb([rand(nbars,1) ones(nbars,2)]), @(x) isfloat(x) & ~isempty(x));
 ip.addParamValue('xlabel', [], @ischar);
 ip.addParamValue('xlabels', [], @(x) all(cellfun(@(y) ischar(y), x)));
 ip.addParamValue('ylabel', [], @ischar);
-ip.parse(prm, color, varargin{:});
-
+ip.parse(prm, varargin{:});
+color = ip.Results.color;
 
 if size(color,1)==1
     color = repmat(color, [nbars 1]);
