@@ -1,22 +1,22 @@
 % Overlays a color mask on a grayscale input image.
 %
 % Inputs:
-%         img     : Grayscale input image
-%         overlay : Overlay mask. Nonzero elements replace values in channel 'ch'
-%         ch      : channel number {1,2,3}
+%         img          : Grayscale input image.
+%         mask         : Overlay mask. Nonzero elements are colored.
+%         overlayColor : 3-element RGB vector.
+%         {iRange}     : dynamic range of 'img'.
 
-% Francois Aguet, June 2010.
+% Francois Aguet, April 2011.
 
-function out = rgbOverlay(img, overlayMask, ch)
+function imgRGB = rgbOverlay(img, mask, overlayColor, iRange)
 
-img = uint8(scaleContrast(img));
-idx = overlayMask~=0;
+if nargin<4
+    iRange = [];
+end
 
-out = repmat(img, [1 1 3]);
-img(idx) = 255;
-out(:,:,ch) = img;
-
-ch = setdiff(1:3, ch);
-img(idx) = 0;
-out(:,:,ch(1)) = img;
-out(:,:,ch(2)) = img;
+[chR chG chB] = deal(scaleContrast(img, iRange));
+maskIdx = mask~=0;
+chR(maskIdx) = chR(maskIdx)*overlayColor(1);
+chG(maskIdx) = chG(maskIdx)*overlayColor(2);
+chB(maskIdx) = chB(maskIdx)*overlayColor(3);
+imgRGB = uint8(cat(3, chR, chG, chB));
