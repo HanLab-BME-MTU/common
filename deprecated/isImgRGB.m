@@ -27,6 +27,8 @@ function y=isImgRGB(x)
 %   Original Copyright 1993-2003 The MathWorks, Inc.  
 %   $Revision: 1.15.4.2 $  $Date: 2003/08/23 05:52:55 $
 
+fprintf(2, 'Warning: ''isImgRGB'' is deprecated and should no longer be used.\nUse the built-in ''imfinfo'' instead.\n');
+
 y = size(x,3)==3;
 if y
    if isa(x, 'logical')
