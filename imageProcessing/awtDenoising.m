@@ -57,8 +57,9 @@ if includeLoBand
     Irec = W(:, :, nBands + 1);
 end
 
+madFactor = nSigma / norminv(0.75, 0, 1);
 for k = 1:nBands
     S = W(:, :, k);
-    S(abs(S) < nSigma * 1.49 * mad(S(:), 1)) = 0;
+    S(abs(S) < madFactor * mad(S(:), 1)) = 0;
     Irec = Irec + S;
 end
