@@ -1,4 +1,4 @@
-function [prmVect, residuals, J, G] = fitGaussian2Dlsqnonlin(data, prmVect, mode, mask, xa, ya)
+function [prmVect, prmStd, C, res, J] = fitGaussian2Dlsqnonlin(data, prmVect, mode, mask, xa, ya)
 %[prmVect, G] = fitGaussian2D(data, p, mode)
 %
 % Input: data: 2-D image array
@@ -37,8 +37,8 @@ opts = optimset('Jacobian', 'on', ...
     'MaxIter', 1e4, ...
     'Display', 'off', ...
     'TolX', 1e-8, ...
-    'Tolfun', 1e-8,...
-    'Algorithm', 'levenberg-marquardt');
+    'Tolfun', 1e-8);%,...
+    %'Algorithm', 'levenberg-marquardt');
 
 
 estIdx = false(1,5); % [x y A s c]
@@ -50,12 +50,16 @@ ub = [xa(end) ya(end) Inf Inf Inf];
 if sum(estIdx)==1 && estIdx(3)==1
     prmVect = A_CF_Gaussian(data, x, y, prmVect);
 else
-    [p, ~, residuals, ~, ~, ~, J] = lsqnonlin(@costGaussian, prmVect(estIdx), lb(estIdx), ub(estIdx), opts, data, x, y, prmVect, estIdx, mask);
-    %[p, ~, residuals, ~, ~, ~, J] = lsqnonlin(@costGaussian, prmVect(estIdx), [], [], opts, data, x, y, prmVect, estIdx, mask);
+    [p, resnorm, res, ~, ~, ~, J] = lsqnonlin(@costGaussian, prmVect(estIdx), lb(estIdx), ub(estIdx), opts, data, x, y, prmVect, estIdx, mask);
+    %[p, ~, res, ~, ~, ~, J] = lsqnonlin(@costGaussian, prmVect(estIdx), [], [], opts, data, x, y, prmVect, estIdx, mask);
     prmVect(estIdx) = p;
 end
 
-G = gaussian2D(x, y, prmVect);
+sigma2 = resnorm / (numel(data) - sum(estIdx) - 1);
+J = full(J);
+C = inv(J'*J);
+prmStd = sqrt(sigma2*diag(C));
+
 
 
 
