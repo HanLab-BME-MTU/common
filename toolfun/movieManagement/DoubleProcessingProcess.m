@@ -68,7 +68,7 @@ classdef DoubleProcessingProcess < ImageProcessingProcess
                        ['The directory specified for channel ' ...
                        num2str(chanNum(j)) ' does not contain any images!!']) 
                    else                       
-                       obj.inImagePaths_{chanNum(j)} = imagePath{j};                
+                       obj.inFilePaths_{1,chanNum(j)} = imagePath{j};                
                    end
                end
             end                        
@@ -76,8 +76,16 @@ classdef DoubleProcessingProcess < ImageProcessingProcess
         
         function fileNames = getOutImageFileNames(obj,iChan)
             if obj.checkChannelOutput(iChan)
-                fileNames = cellfun(@(x)(dir([x filesep '*.mat'])),obj.outImagePaths_(iChan),'UniformOutput',false);
+                fileNames = cellfun(@(x)(dir([x filesep '*.mat'])),obj.outFilePaths_(1,iChan),'UniformOutput',false);                
                 fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
+                nChan = numel(iChan);
+                for j = 1:nChan
+                    %Sort the files by the trailing numbers
+                    fNums = cellfun(@(x)(str2double(...
+                            x(max(regexp(x(1:end-4),'\D'))+1:end-4))),fileNames{j});
+                    [~,iX] = sort(fNums);
+                    fileNames{j} = fileNames{j}(iX);                    
+                end
                 nIm = cellfun(@(x)(length(x)),fileNames);
                 if ~all(nIm == obj.owner_.nFrames_)                    
                     error('Incorrect number of images found in one or more channels!')
@@ -95,10 +103,10 @@ classdef DoubleProcessingProcess < ImageProcessingProcess
                 fileNames = cell(1,nChan);
                 for j = 1:nChan
                     %First check for regular image inputs
-                    fileNames{j} = imDir(obj.inImagePaths_{iChan(j)});                   
+                    fileNames{j} = imDir(obj.inFilePaths_{1,iChan(j)});                   
                     if isempty(fileNames{j})
                         %If none found, check for .mat image inputs
-                        fileNames{j} = dir([obj.inImagePaths_{iChan(j)} filesep '*.mat']);                                                                        
+                        fileNames{j} = dir([obj.inFilePaths_{1,inFilePaths_iChan(j)} filesep '*.mat']);                                                                        
                     end
                     fileNames{j} = arrayfun(@(x)(x.name),fileNames{j},'UniformOutput',false);                                    
                     nIm = length(fileNames{j});
@@ -123,7 +131,7 @@ classdef DoubleProcessingProcess < ImageProcessingProcess
            
            OK =  arrayfun(@(x)(x <= nChanTot && ...
                              x > 0 && isequal(round(x),x) && ...
-                             (length(dir([obj.outImagePaths_{x} filesep '*.mat']))...
+                             (length(dir([obj.outFilePaths_{1,x} filesep '*.mat']))...
                              == obj.owner_.nFrames_)),iChan);
         end   
         function outIm = loadOutImage(obj,iChan,iFrame)
@@ -143,7 +151,7 @@ classdef DoubleProcessingProcess < ImageProcessingProcess
             %get the image names
             imNames = getOutImageFileNames(obj,iChan);
             
-            outIm = load([obj.outImagePaths_{iChan} ...
+            outIm = load([obj.outFilePaths_{1,iChan} ...
                 filesep imNames{1}{iFrame}]);
             fNames = fieldnames(outIm);
             if numel(fNames) > 1 || isempty(fNames)

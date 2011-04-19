@@ -123,6 +123,7 @@ for iImage = 1:nImages
     if constRange
         if iImage == 1
             clim = caxis;
+            imviewArgs(end+1:end+2) = {'Saturate',0}; %Disable saturation after first frame if constant scale is enabled.
         else
             caxis(clim);
         end
