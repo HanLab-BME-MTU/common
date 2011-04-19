@@ -107,7 +107,7 @@ double K(int n, double d) {
 
 
 
-/* Adapted from "Numerical Recipes in C" 3rd ed. */
+/* Adapted from "Numerical Recipes in C" 3rd ed. pp. 334-335 & 736-738 */
 double pks(double z) {
     if (z < 0.0)
         mexErrMsgTxt("z value for KS dist. must be positive.");
