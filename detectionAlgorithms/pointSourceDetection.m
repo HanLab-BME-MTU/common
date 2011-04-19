@@ -14,23 +14,16 @@
 
 function [pstruct, mask, imgLM, imgLoG] = pointSourceDetection(img, sigma, varargin)
 
-if mod(length(varargin),2)~=0
-    error('Optional arguments need to be entered as pairs.');
-end
-
-idx = find(strcmpi(varargin, 'Mode'));
-if ~isempty(idx)
-    mode = varargin{idx+1};
-else
-    mode = 'xyAc';
-end
-
-idx = find(strcmpi(varargin, 'alpha'));
-if ~isempty(idx)
-    alpha = varargin{idx+1};
-else
-    alpha = 0.05;
-end
+% Parse inputs
+ip = inputParser;
+ip.CaseSensitive = false;
+ip.addRequired('img', @isnumeric);
+ip.addRequired('sigma', @isscalar);
+ip.addParamValue('Mode', 'xyAc', @ischar);
+ip.addParamValue('alpha', 0.05, @isscalar);
+ip.parse(img, sigma, varargin{:});
+mode = ip.Results.Mode;
+alpha = ip.Results.alpha;
 
 % Gaussian kernel
 w = ceil(4*sigma);
@@ -38,9 +31,8 @@ x = -w:w;
 g = exp(-x.^2/(2*sigma^2));
 u = ones(1,length(x));
 
-imgXT = padarrayXT(img, [w w], 'symmetric');
-
 % convolutions
+imgXT = padarrayXT(img, [w w], 'symmetric');
 fg = conv2(g', g, imgXT, 'valid');
 fu = conv2(u', u, imgXT, 'valid');
 fu2 = conv2(u', u, imgXT.^2, 'valid');
@@ -50,12 +42,13 @@ gx2 = g.*x.^2;
 imgLoG = 2*fg/sigma^2 - (conv2(g, gx2, imgXT, 'valid')+conv2(gx2, g, imgXT, 'valid'))/sigma^4;
 imgLoG = imgLoG / (2*pi*sigma^2);
 
+% 2-D kernel
 g = g'*g;
 n = numel(g);
-
 gsum = sum(g(:));
 g2sum = sum(g(:).^2);
 
+% solution to linear system
 A_est = (fg - gsum*fu/n) / (g2sum - gsum^2/n);
 c_est = (fu - A_est*gsum)/n;
 
@@ -71,7 +64,7 @@ sigma_A = sqrt(sigma_e2*C(1,1));
 % standard deviation of residuals
 sigma_res = sqrt((RSS - (A_est*gsum+n*c_est - fu)/n)/(n-1));
 
-kLevel = norminv(1 - alpha/2,0,1);
+kLevel = norminv(1-alpha/2.0, 0, 1);
 
 SE_sigma_c = sigma_res/sqrt(2*(n-1)) * kLevel;
 df2 = (n-1) * (sigma_A.^2 + SE_sigma_c.^2).^2 ./ (sigma_A.^4 + SE_sigma_c.^4);
@@ -82,14 +75,30 @@ pval = tcdf(real(T), df2);
 % mask of admissible positions for local maxima
 mask = pval > 0.95;
 
-% local maxima
-imgLM = locmax2d(imgLoG, 2*ceil(sigma)+1) .* mask;
+% all local max
+allMax = locmax2d(imgLoG, 2*ceil(sigma)+1);
+
+% local maxima above threshold in image domain
+imgLM = allMax .* mask;
+
+% -> set threshold in LoG domain
+logThreshold = min(imgLoG(imgLM~=0));
+logMask = imgLoG >= logThreshold;
+
+% combine masks
+mask = mask | logMask;
+
+% re-select local maxima
+imgLM = allMax .* mask;
+
+
 [lmy, lmx] = find(imgLM~=0);
 lmIdx = sub2ind(size(img), lmy, lmx);
 
+
 if ~isempty(lmIdx)
     % run localization on local maxima
-    pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), mode);
+    pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), mode, 'mask', mask, 'alpha', alpha);
     
     % eliminate isignificant amplitudes
     idx = [pstruct.pval_Ar] > 0.95;
@@ -98,13 +107,12 @@ if ~isempty(lmIdx)
     np = length(pstruct.x);
     pM = [pstruct.x' pstruct.y'];
     idxKD = KDTreeBallQuery(pM, pM, 0.25*ones(np,1));
-    idxKD = idxKD(cellfun(@(x) length(x)>1, idxKD));    
-
+    idxKD = idxKD(cellfun(@(x) length(x)>1, idxKD)); 
+    
     for k = 1:length(idxKD);
         RSS = pstruct.RSS(idxKD{k});
         idx(idxKD{k}(RSS ~= min(RSS))) = 0;
     end
-
     
     fnames = fieldnames(pstruct);
     for k = 1:length(fnames)

@@ -65,7 +65,7 @@ else
     labels = zeros(size(img));
 end
 
-kLevel = norminv(1-alpha/2,0,1); % ~2 std above background
+kLevel = norminv(1-alpha/2.0, 0, 1); % ~2 std above background
 
 iRange = [squeeze(min(min(img))) squeeze(max(max(img)))];
 
@@ -177,8 +177,9 @@ for p = 1:np
             pStruct.sigma_r(p) = res.std;
             pStruct.RSS(p) = res.RSS;
             
-            SE_sigma_r = res.std/sqrt(2*(npx-1)) * kLevel;
-            pStruct.SE_sigma_r(p) = SE_sigma_r;
+            pStruct.SE_sigma_r(p) = res.std/sqrt(2*(npx-1));
+            SE_sigma_r = pStruct.SE_sigma_r(p) * kLevel;
+            
             pStruct.pval_KS(p) = res.pval;
             
             sigma_A = stdVect(3);
