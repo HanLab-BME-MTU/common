@@ -847,7 +847,9 @@ for i = 1:length(MD.processes_)
         overlayProcess = cat(2, overlayProcess, {MD.processes_{i}});
         
     else
-        error('User-defined: Not a supported process for display.')
+        % warning('lccb:movieDataVisualization','User-defined: Not a supported process for display.')
+        % Not a valid process for display
+        continue;
     end    
 
 end
@@ -1082,9 +1084,9 @@ userData = get(handles.figure1, 'UserData');
 value = get(hObject, 'Value');
 
 % If frame index is not an integer
-if floor(value) ~= value
+if round(value) ~= value
     
-    value = floor(value);
+    value = round(value);
     set(handles.slider_frame, 'Value', value)
 end
 
