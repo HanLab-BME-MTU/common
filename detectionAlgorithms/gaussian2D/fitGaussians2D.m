@@ -100,8 +100,8 @@ w3 = ceil(3*sigma_max);
 w4 = ceil(4*sigma_max);
 
 % mask template: ring with inner radius w3, outer radius w4
-[x,y] = meshgrid(-w4:w4);
-r = sqrt(x.^2+y.^2);
+[xm,ym] = meshgrid(-w4:w4);
+r = sqrt(xm.^2+ym.^2);
 annularMask = zeros(size(r));
 annularMask(r<=w4 & r>=w3) = 1;
 
@@ -149,8 +149,8 @@ for p = 1:np
         else
             A_init = A(p);
         end
-        
-        [prm, prmStd, ~, res] = fitGaussian2D(window, [0 0 A_init sigma(p) c_init], mode);
+
+        [prm, prmStd, ~, res] = fitGaussian2D(window, [x(p)-xi(p) y(p)-yi(p) A_init sigma(p) c_init], mode);
         %K = corrFromC(C,ij,ii,jj);
         
         dx = prm(1);
