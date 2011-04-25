@@ -51,8 +51,8 @@ nContours = length(contoursIn);
 
 %Get the coordinates of the image border in a  clock-wise fashion, starting
 %at origin.
-borderCoord = vertcat([1:N ones(1,M)*N N-1:-1:2 ones(1,M-1)],...
-                      [ones(1,N) 2:M ones(1,N)*M M-1:-1:2]);
+borderCoord = vertcat([1:(N-1)      ones(1,M-1)*N  N:-1:2         ones(1,M-1)],...
+                      [ones(1,N-1)  1:(M-1)        ones(1,N-1)*M  M:-1:2]);
     
 nB = length(borderCoord);                  
                   
@@ -65,11 +65,11 @@ for j = 1:nContours
     
     %Verify that this contour needs closure by checking that the first
     %point touches the image border.
-    iTouchStart = find(arrayfun(@(x)(all(borderCoord(:,x) == round(contoursIn{j}(:,1)))),1:nB));    
+    iTouchStart = find(arrayfun(@(x)(all(borderCoord(:,x) == round(contoursIn{j}(:,1)))),1:nB),1,'first');    
     
     if ~isempty(iTouchStart)
         %Find where the last point touches the border
-        iTouchEnd = find(arrayfun(@(x)(all(borderCoord(:,x) == round(contoursIn{j}(:,end)))),1:nB));               
+        iTouchEnd = find(arrayfun(@(x)(all(borderCoord(:,x) == round(contoursIn{j}(:,end)))),1:nB),1,'last');
         
         %Check which direction the values increase in
         iBefore = max(mod(iTouchEnd-1,nB),1);%Use modulus in case it starts near the origin
