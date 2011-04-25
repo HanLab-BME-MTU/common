@@ -3,7 +3,7 @@ tmpD = repmat(struct('field',[]),17,1);
 tmpT = tmpD;
 
 j = 0;
-for startFrame = 1 : 400 : 7200
+for startFrame = 1 : 400 : 6800
     endFrame = startFrame + 399;
     
     %get tracks for this time interval
@@ -11,10 +11,10 @@ for startFrame = 1 : 400 : 7200
     load(tracksFileName);
     
     %do diffusion analysis
-    diffAnalysisRes = trackDiffusionAnalysis1(tracksFinal,1,2,0,0.05,0,0);
+    diffAnalysisRes = trackDiffusionAnalysis1(tracksFinal,1,2,1,[0.05 0.1],0,0);
     
     %save diffusion analysis of this time interval
-    diffFileName = ['diffAnalysis_Frames' sprintf('%04i',startFrame) 'to' sprintf('%04i',endFrame) '.mat'];
+    diffFileName = ['diffAnalysis2_Frames' sprintf('%04i',startFrame) 'to' sprintf('%04i',endFrame) '.mat'];
     save(diffFileName,'diffAnalysisRes');
     
     %shift the time stored in tracksFinal to reflect the real time
@@ -32,8 +32,8 @@ end
 
 %save combined diffusion analysis
 diffAnalysisRes = vertcat(tmpD.field);
-save('diffAnalysisAllFrames','diffAnalysisRes');
+save('diffAnalysis2AllFrames','diffAnalysisRes');
 
-%save combined tracks
-tracksFinal = vertcat(tmpT.field);
-save('tracks8Detection2AllFrames','tracksFinal');
+% %save combined tracks
+% tracksFinal = vertcat(tmpT.field);
+% save('tracks8Detection2AllFrames','tracksFinal');

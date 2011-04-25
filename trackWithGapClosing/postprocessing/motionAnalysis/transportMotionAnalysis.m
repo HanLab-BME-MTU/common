@@ -1,6 +1,6 @@
 function [motionAnalysisWithErrBar,motionAnalysisNoErrBar,errFlag] = ...
     transportMotionAnalysis(tracks,refCoord,pixelSize,timeBetweenFrames,...
-    extractType,probDim,diffAnalysisAlphaValues,verbose)
+    extractType,probDim,diffAnalysisAlphaValues,verbose,minLength)
 %TRANSPORTMOTIONANALYSIS extracts the properties of motor-driven motion
 %
 %SYNOPSIS [motionAnalysisWithErrBar,motionAnalysisNoErrBar,errFlag] = ...
@@ -40,6 +40,8 @@ function [motionAnalysisWithErrBar,motionAnalysisNoErrBar,errFlag] = ...
 %                     analysis is given the default value.
 %       verbose     : 0 to make no plots, 1 to show plots of final results,
 %                     2 to show also plots of intermediate results.
+%                     Optional. Default: 1.
+%       minLength   : Minimum length of tracks to analyze. 
 %                     Optional. Default: 1.
 %
 %OUTPUT motionAnalysisWithErrBar: Structure storing the results of
@@ -134,12 +136,21 @@ if nargin < 8 || isempty(verbose)
     verbose = 1;
 end
 
+if nargin < 9 || isempty(minLength)
+    minLength = 1;
+end
+
 if errFlag
     disp('--transportMotionAnalysis: Please fix input variables');
     return
 end
 
 %% Track extraction for analysis
+
+%keep for analysis only tracks of minimum length
+criteria.lifeTime.min = minLength;
+indxKeep = chooseTracks(tracks,criteria);
+tracks = tracks(indxKeep);
 
 %store input tracks in a new variable
 tracksInput = tracks;
@@ -261,6 +272,7 @@ for iType = indxGoodType'
     
     runLengthPosTmp = [];
     runLengthNegTmp = [];
+    numReversalsTmp = [];
     for iTrack = 1 : numTracksPerType(iType)
         
         %get dataListGroup from output of trajectoryAnalysis
@@ -286,11 +298,18 @@ for iType = indxGoodType'
         end
         runLengthNegTmp = [runLengthNegTmp; -tmptmp];
         
+        %calculate number of transitions in this trajectory
+        trajHist = dataListG(:,3);
+        trajHist = trajHist(trajHist==1|trajHist==2);
+        trajHistDiff = diff(trajHist);
+        numReversalsTmp = [numReversalsTmp; length(find(trajHistDiff~=0))];
+        
     end
     
     %save data from all tracks belonging to this motion type
     runLengthPos(iType).values = runLengthPosTmp;
     runLengthNeg(iType).values = runLengthNegTmp;
+    numReversals(iType).values = numReversalsTmp;
     
     
     %calculate the average speed for each run
@@ -312,6 +331,7 @@ awayFromRefPoint = struct('instantSpeed',runTimePos,'runTime',runTimePos,...
     'runLength',runTimePos,'averageSpeed',runTimePos);
 towardRefPoint = awayFromRefPoint;
 pauseInfo = struct('pauseTime',runTimePos);
+reversalInfo = struct('numPerTraj',[]);
 for iType = indxGoodType'
     awayFromRefPoint.instantSpeed(iType).values = statsJExpanded(iType).growthSpeeds/60;
     awayFromRefPoint.runTime(iType).values = statsJExpanded(iType).growthTimes;
