@@ -192,13 +192,6 @@ for p = 1:np
     end
 end
 
-% remove NaN values
-idx = ~isnan([pStruct.x]);
-fnames = fieldnames(pStruct);
-for k = 1:length(fnames)
-    pStruct.(fnames{k}) = pStruct.(fnames{k})(idx);
-end
-
 
 % function K = corrFromC(C,ij,ii,jj)
 % n = size(C,1);

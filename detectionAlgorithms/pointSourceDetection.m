@@ -100,6 +100,13 @@ if ~isempty(lmIdx)
     % run localization on local maxima
     pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), mode, 'mask', mask, 'alpha', alpha);
     
+    % remove NaN values
+    idx = ~isnan([pstruct.x]);
+    fnames = fieldnames(pstruct);
+    for k = 1:length(fnames)
+        pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
+    end
+    
     % eliminate isignificant amplitudes
     idx = [pstruct.pval_Ar] > 0.95;
     
