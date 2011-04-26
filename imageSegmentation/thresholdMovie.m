@@ -180,7 +180,7 @@ for iChan = 1:nChanThresh
 
         %KJ: filter image before thesholding if requested
         if p.GaussFilterSigma > 0
-            currImage = Gauss2D(double(currImage),p.GaussFilterSigma,1);
+            currImage = filterGauss2D(double(currImage),p.GaussFilterSigma);
         end
 
         
