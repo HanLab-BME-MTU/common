@@ -102,9 +102,12 @@ end
 
 %Make the figure for display and get the axes handles
 figHan = figure;
-aHan = gca;
-
 nImages = movieData.nFrames_;
+
+%Check if protrusion overlay was requested and disable warning
+if any(strcmp('Protrusion',imviewArgs))
+    warning('off','MovieManagement:ImageViewer:noProtrusion');
+end
 
 %% ------ Movie Making ----- %%
 
@@ -139,7 +142,7 @@ for iImage = 1:nImages
             MakeQTMovie('start',[movieData.outputDirectory_ filesep fName '.mov'])
             MakeQTMovie('quality',.9)
         end   
-        MakeQTMovie('addaxes')    
+        MakeQTMovie('addfigure')    
     end
     
     if makeAvi
@@ -157,15 +160,20 @@ if makeMov
 end
 if makeAvi
     if isunix
-        movie2avi(movieFrames,[movieData.outputDirectory_ filesep movieName]);
+        movie2avi(movieFrames,[movieData.outputDirectory_ filesep fName]);
     else
-        movie2avi(movieFrames,[movieData.outputDirectory_ filesep movieName],'compression','Cinepak');        
+        movie2avi(movieFrames,[movieData.outputDirectory_ filesep fName],'compression','Cinepak');        
     end
 end
 
 
 if ishandle(figHan)%Make sure the user hasn't closed it already.
     close(figHan);
+end
+
+%Re-enable the warning for protrusion
+if any(strcmp('Protrusion',imviewArgs))
+    warning('on','MovieManagement:ImageViewer:noProtrusion');
 end
 
 

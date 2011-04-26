@@ -356,7 +356,8 @@ if ~useTool && ~isempty(overlayName)
                 error('The protrusion overlay cannot be displayed because the movieData does not have a valid ProtrusionProcess!')
             end
             if iFrame == movieData.nFrames_
-                disp('Last frame does not have protrusion vectors, can''t display protrusion overlay.')
+                warning('MovieManagement:ImageViewer:noProtrusion',...
+                    'Last frame does not have protrusion vectors, can''t display protrusion overlay.')
             else
                 prots = movieData.processes_{iProtProc}.loadChannelOutput;
                 plot(prots.smoothedEdge{iFrame}(:,1),prots.smoothedEdge{iFrame}(:,2),'y')
