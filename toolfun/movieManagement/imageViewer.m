@@ -326,7 +326,7 @@ if ~useTool && ~isempty(overlayName)
 
                     %Load the mask
                     currMask = imread([ ...
-                        movieData.processes_{iSegProc}.outMaskPaths_{iChan(j)},...
+                        movieData.processes_{iSegProc}.outFilePaths_{iChan(j)},...
                         filesep maskNames{1}{iFrame}]);
 
                     %Convert the mask into a boundary
@@ -356,13 +356,13 @@ if ~useTool && ~isempty(overlayName)
                 error('The protrusion overlay cannot be displayed because the movieData does not have a valid ProtrusionProcess!')
             end
             if iFrame == movieData.nFrames_
-                error('The last frame of the movie does not have protrusion data - cannot overlay!')
+                disp('Last frame does not have protrusion vectors, can''t display protrusion overlay.')
+            else
+                prots = movieData.processes_{iProtProc}.loadChannelOutput;
+                plot(prots.smoothedEdge{iFrame}(:,1),prots.smoothedEdge{iFrame}(:,2),'y')
+                quiver(prots.smoothedEdge{iFrame}(:,1),prots.smoothedEdge{iFrame}(:,2),...
+                        prots.protrusion{iFrame}(:,1),prots.protrusion{iFrame}(:,2),0);
             end
-            prots = movieData.processes_{iProtProc}.loadChannelOutput;
-            plot(prots.smoothedEdge{iFrame}(:,1),prots.smoothedEdge{iFrame}(:,2),'y')
-            quiver(prots.smoothedEdge{iFrame}(:,1),prots.smoothedEdge{iFrame}(:,2),...
-                    prots.protrusion{iFrame}(:,1),prots.protrusion{iFrame}(:,2),0);
-            
             
         otherwise
             
