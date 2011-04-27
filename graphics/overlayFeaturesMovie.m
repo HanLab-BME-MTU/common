@@ -206,7 +206,7 @@ for iFrame = 1 : length(movieInfo)
         
         %filter images if requested
         if filterSigma
-            imageStack = Gauss2D(imageStack,filterSigma);
+            imageStack = filterGauss2D(imageStack,filterSigma);
         end
         
     else %otherwise

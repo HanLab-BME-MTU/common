@@ -712,7 +712,7 @@ for iFrame = 1 : size(xCoordMatAll,2)
         
         %filter images if requested
         if filterSigma
-            imageStack = Gauss2D(imageStack,filterSigma);
+            imageStack = filterGauss2D(imageStack,filterSigma);
         end
         
     else %otherwise

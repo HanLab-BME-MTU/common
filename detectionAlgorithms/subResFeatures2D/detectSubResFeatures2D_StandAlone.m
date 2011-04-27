@@ -321,8 +321,7 @@ for iWindow = 1 : numIntegWindow
         imageInteg = nanmean(imageRaw,3);
         
         %filter integrated image
-        %         imageIntegF = Gauss2D(imageInteg,1);
-        imageIntegF = Gauss2D(imageInteg,min(1,psfSigma));
+        imageIntegF = filterGauss2D(imageInteg,min(1,psfSigma));
         
         %use robustMean to get mean and std of background intensities
         %in this method, the intensities of actual features will look like

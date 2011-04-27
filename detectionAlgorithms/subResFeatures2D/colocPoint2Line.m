@@ -143,7 +143,7 @@ respDilate = imdilate(resp,SE);
 %% point detection
 
 %filter pointImage
-pointImageF = Gauss2D(pointImage,1);
+pointImageF = filterGauss2D(pointImage,1);
 
 %get background information
 [bgMean,bgStd] = spatialMovAveBG(pointImageF,size(pointImageF,1),size(pointImageF,2));

@@ -33,7 +33,7 @@ end
 thismask = double(thismask);
 
 %remove noise by filtering image with a Gaussian whose sigma in [pixel] = sigmaGauss 
-imageFiltered = Gauss2D(thismask,sigmaGauss,1);
+imageFiltered = filterGauss2D(thismask,sigmaGauss);
 
 %get minumum and maximum pixel values in image
 minSignal = min(imageFiltered(:));

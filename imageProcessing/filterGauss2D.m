@@ -1,7 +1,7 @@
 function [out, G] = filterGauss2D(image, sigma, borderCondition)
-% Gauss2D :	filters an image with a 2-D Gaussian mask
+% filterGauss2D :	filters an image with a 2-D Gaussian mask
 %
-%    [out, G] = Gauss2D(image, sigma, borderCondition);
+%    [out, G] = filterGauss2D(image, sigma, borderCondition);
 %
 %    INPUT: image           : 2-D input array
 %           sigma           : standard deviation of the Gaussian
