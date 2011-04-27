@@ -71,14 +71,14 @@ classdef  MovieData < hgsetget
         end
         
         function set.outputDirectory_(obj, value)
-            endingFilesepToken = ['(' regexptranslate('escape',filesep) '\>)'];
+            endingFilesepToken = [regexptranslate('escape',filesep) '$'];
             value = regexprep(value,endingFilesepToken,'');
             obj.checkPropertyValue('outputDirectory_',value);
             obj.outputDirectory_=value;
         end
         
         function set.movieDataPath_(obj, value)
-            endingFilesepToken = ['(' regexptranslate('escape',filesep) '\>)'];
+            endingFilesepToken = [regexptranslate('escape',filesep) '$'];
             value = regexprep(value,endingFilesepToken,'');
             obj.checkPropertyValue('movieDataPath_',value);
             obj.movieDataPath_=value;
@@ -180,7 +180,7 @@ classdef  MovieData < hgsetget
             if nargin > 1
                 
                 %Remove ending file separators if any
-                endingFilesepToken = ['(' regexptranslate('escape',filesep) '\>)'];
+                endingFilesepToken = [regexptranslate('escape',filesep) '$'];
                 path1 = regexprep(obj.movieDataPath_,endingFilesepToken,'');
                 path2 = regexprep(movieDataPath,endingFilesepToken,'');
                 if  ~strcmp(path1, path2)
@@ -386,7 +386,7 @@ classdef  MovieData < hgsetget
             oldMovieDataPath = rReplace(obj.movieDataPath_,'/|\',filesep);
             
             %Remove ending file separators
-            endingFilesepToken = ['(' regexptranslate('escape',filesep) '\>)'];
+            endingFilesepToken = [regexptranslate('escape',filesep) '$'];
             oldMovieDataPath = regexprep(oldMovieDataPath,endingFilesepToken,'');
             newMovieDataPath = regexprep(newMovieDataPath,endingFilesepToken,'');
             
