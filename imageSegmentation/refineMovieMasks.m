@@ -159,6 +159,7 @@ if isempty(p.SegProcessIndex)
         %than one
         segProcList =  movieData.getProcessIndex('SegmentationProcess',Inf,0);
         segProcList(segProcList == iProc) = []; %Don't count this process
+        iSegProc=1;
         if numel(segProcList) > 1
             procNames = cellfun(@(x)(x.name_),...
                         movieData.processes_(segProcList),'UniformOutput',false);
