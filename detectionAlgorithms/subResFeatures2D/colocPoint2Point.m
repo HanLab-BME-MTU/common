@@ -1,11 +1,11 @@
-function [fracPointsOverlap,pValue,numPoints12,fracPointsOverlapRand] = ...
+function [fracPointsOverlap,pValue,colocType,numPoints12,fracPointsOverlapRand] = ...
     colocPoint2Point(pointImageRef,pointImageColoc,pointDetectInput,...
     colocRadius,numRepTestRand,doPlot)
 %COLOCPOINT2POINT estimates the colocalization fraction and its significance between two sets of points
 %
-%SYNOPSIS [fracPointsOverlap,pValue,numPoints,fracPointsOverlapRand] = ...
-%    colocPoint2Point(pointImage1,pointImage2,pointDetectInput1,pointDetectInput2,...
-%    numRepTestRand,doPlot)
+%SYNOPSIS [fracPointsOverlap,pValue,colocType,numPoints12,fracPointsOverlapRand] = ...
+%    colocPoint2Point(pointImageRef,pointImageColoc,pointDetectInput,...
+%    colocRadius,numRepTestRand,doPlot)
 %
 %INPUT  pointImageRef   : Image of reference objects to be colocalized
 %                         against.
@@ -17,9 +17,9 @@ function [fracPointsOverlap,pValue,numPoints12,fracPointsOverlapRand] = ...
 %                         maxima detection in the two images.
 %                       OR
 %                         2x1 structure array containing the fields
-%                         .xCoord and .yCoord (i.e. the output of
-%                         detectSubResFeatures2D_StandAlone, basically
-%                         movieInfo) for both images.
+%                         .xCoord and .yCoord for both images 
+%                         (i.e. concatenated movieInfo, the output of
+%                         detectSubResFeatures2D_StandAlone).
 %                       Optional. Default: alphaLocMax = 0.05 for both
 %                       images.
 %       colocRadius     : Radius to look for colocalization, in pixels.
@@ -36,14 +36,21 @@ function [fracPointsOverlap,pValue,numPoints12,fracPointsOverlapRand] = ...
 %                         points on top of pointImageRef, one showing the
 %                         detected lines on top of pointImageColoc, and one
 %                         showing the detected points on top of each other.
+%                         In the thrid figure, points considered
+%                         colocalized will be in green, those not
+%                         colocalized will be in red.
 %                         Optional. Default: 1.
 %
 %OUTPUT fracPointsOverlap    : Fraction of points in pointImageColoc
 %                              colocalizing with points in pointImageRef.
+%                              Fraction is relative to total number of
+%                              points in pointImageColoc.
 %       pValue               : P-value indicating the significance of the
 %                              observed colocalization fraction. P-value
 %                              calculated from the distribution of
 %                              perchance colocalization fractions.
+%       colocType            : 'attract'/'repel' to indicate that fraction
+%                              of colocalizatoin indicates attraction/repulsion.
 %       numPoints12          : Number of detected points in both images.
 %       fracPointsOverlapRand: Distribution of perchance colocalization
 %                              fractions.
@@ -138,7 +145,7 @@ for iImage = 1 : 2
     else %or extract positions from movieInfo
         
         eval(['movieInfo = movieInfo' num2str(iImage) ';'])
-        positions = round([movieInfo.xCoord(:,1) movieInfo.yCoord(:,1)]);
+        positions = round([movieInfo.yCoord(:,1) movieInfo.xCoord(:,1)]);
         
     end
     
@@ -163,7 +170,10 @@ SE = strel('disk',colocRadius);
 image1Circles = imdilate(image1Circles,SE);
 
 %look at fraction of points in image 2 colocalizing with points in image 1
+indxColoc = find(image1Circles(positions2_1D)==1);
+indxNotColoc = setdiff(1:numPoints12(2),indxColoc);
 fracPointsOverlap = length(find(image1Circles(positions2_1D)==1))/numPoints12(2);
+fracPointsOverlap = length(indxColoc)/numPoints12(2);
 
 %% Test significance of colocalization by randomizing positions
 
@@ -181,10 +191,18 @@ for iRep = 1 : numRep
         (:,iRep))==1))/numPoints12(2);
 end
 
-%calculate p-value as fraction of random colocalizations whose value is
-%greater than the experimentally observed colocalization
-pValue = length(find(fracPointsOverlapRand>=fracPointsOverlap))/numRep;
+%calculate mean random colocalization fraction
+medianColocRand = median(fracPointsOverlapRand);
 
+%calculate p-value and type of colocalization
+if fracPointsOverlap > medianColocRand
+    pValue = length(find(fracPointsOverlapRand>=fracPointsOverlap))/numRep;
+    colocType = 'attract';
+else
+    pValue = length(find(fracPointsOverlapRand<=fracPointsOverlap))/numRep;
+    colocType = 'repel';
+end
+    
 %% Plot if requested
 
 if doPlot
@@ -205,7 +223,8 @@ if doPlot
     figure('Name','Colocalization')
     imshow(image1Circles,[])
     hold on
-    plot(positions2(:,2),positions2(:,1),'r.')
+    plot(positions2(indxColoc,2),positions2(indxColoc,1),'g.')
+    plot(positions2(indxNotColoc,2),positions2(indxNotColoc,1),'r.')
     
 end
 
