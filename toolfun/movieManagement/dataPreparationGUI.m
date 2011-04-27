@@ -178,6 +178,7 @@ else
 end
 
 % Launch a dialog window asking the user for the new channel directory name
+propNames = {'excitationWavelength_','emissionWavelength_','exposureTime_'};
 prompt = {'Enter the channel as it is encoded in the image names',...
 'Enter the channel directory name - optional',...
 'Enter the excitation wavelength (in nm) - optional',...
@@ -185,34 +186,48 @@ prompt = {'Enter the channel as it is encoded in the image names',...
 'Enter the exposure time (in s) - optional'};
 num_lines = 1;
 if newChannel
-    propertyList=inputdlg(prompt,'Create new channel',num_lines);
+    inputData=inputdlg(prompt,'Create new channel',num_lines);
 else
     dlg_title = ['Rename channel ' num2str(userData.selectedChannel)];
-    defaultValues={userData.channels(userData.selectedChannel).name,...
-        userData.channels(userData.selectedChannel).string,...
+    defaultValues={userData.channels(userData.selectedChannel).string,...
+        userData.channels(userData.selectedChannel).name,...
         num2str(userData.channels(userData.selectedChannel).properties.excitationWavelength_),...
         num2str(userData.channels(userData.selectedChannel).properties.emissionWavelength_),...
         num2str(userData.channels(userData.selectedChannel).properties.exposureTime_)};
-    propertyList=inputdlg(prompt,dlg_title,num_lines,defaultValues);
+    inputData=inputdlg(prompt,dlg_title,num_lines,defaultValues);
 end
 
-if isempty(propertyList), return; end
-% If no channel directory is supplied, use the name
-if isempty(propertyList{2}), propertyList{2}=propertyList{1}; end
+if isempty(inputData), return; end
+% If no channel directory name is supplied, use the channel string name
+if isempty(inputData{2}), inputData{2}=inputData{1}; end
 
-% Update the channel information
+% Update the channel string and 
 if newChannel
     % Add a new channel structure and update the channel index
-    userData.channels(end+1).name=propertyList{1};
+    userData.channels(end+1).name=inputData{2};
     userData.channels(end).exportMD = 1;
+    userData.channels(end).string='';
+    userData.channels(end).properties.excitationWavelength_=[];
+    userData.channels(end).properties.emissionWavelength_=[];
+    userData.channels(end).properties.exposureTime_=[];
     userData.selectedChannel = numel(userData.channels);
 else
-    userData.channels(userData.selectedChannel).name=propertyList{1};
+    userData.channels(userData.selectedChannel).name=inputData{2};
 end
-userData.channels(userData.selectedChannel).string=propertyList{2};
-userData.channels(userData.selectedChannel).properties.excitationWavelength_=str2num(propertyList{3});
-userData.channels(userData.selectedChannel).properties.emissionWavelength_=str2num(propertyList{4});
-userData.channels(userData.selectedChannel).properties.exposureTime_=str2num(propertyList{5});
+userData.channels(userData.selectedChannel).string=inputData{1};
+
+% Manage input properties
+propList=inputData(3:end);
+if ~isempty(propList),
+    % Check for property values validity
+    propValues = cellfun(@str2num,propList','Unif',false);
+    validProperties = Channel.checkValue(propNames,propValues);
+    
+    % Affect valid, non-multiple properties values
+    for i= find(validProperties)
+        userData.channels(userData.selectedChannel).properties.(propNames{i})=propValues{i};
+    end
+end
 
 % Save data and update graphics
 set(handles.figure1,'UserData',userData);
@@ -354,39 +369,31 @@ if isempty(userData.movies), return; end
 selectedMovie = get(handles.listbox_movies,'Value');
 propNames = {'pixelSize_','timeInterval_','numAperture_','camBitdepth_'};
 
+% Input dialog common properties
+dlg_title = 'Movie edition';
+num_lines = 1;
+prompt = {...
+    'Enter the movie directory name:',...
+    'Enter the pixel size (in nm) - optional',...
+    'Enter the time interval (in s) - optional',...
+    'Enter the numerical aperture - optional',...
+    'Enter the camera bit depth - optional',...
+    };
+
+% Test for single or multiple selection
 if numel(selectedMovie)==1
-    prompt = {...
-        'Enter the movie directory name:',...
-        'Enter the pixel size (in nm) - optional',...
-        'Enter the time interval (in s) - optional',...
-        'Enter the numerical aperture - optional',...
-        'Enter the camera bit depth - optional',...
-        };
-    dlg_title = 'Movie edition';
-    num_lines = 1;
     defaultValues={...
         userData.movies(selectedMovie).name,...
         num2str(userData.movies(selectedMovie).properties.pixelSize_),...
         num2str(userData.movies(selectedMovie).properties.timeInterval_),...
         num2str(userData.movies(selectedMovie).properties.numAperture_),...
         num2str(userData.movies(selectedMovie).properties.camBitdepth_)};
-    propertyList=inputdlg(prompt,dlg_title,num_lines,defaultValues);
-    if isempty(propertyList), return; end
-    
-    userData.movies(selectedMovie).name=propertyList{1};
-    userData.movies(selectedMovie).properties.pixelSize_=str2num(propertyList{2});
-    userData.movies(selectedMovie).properties.timeInterval_=str2num(propertyList{3});
-    userData.movies(selectedMovie).properties.numAperture_=str2num(propertyList{4});
-    userData.movies(selectedMovie).properties.camBitdepth_=str2num(propertyList{5});
+    inputData=inputdlg(prompt,dlg_title,num_lines,defaultValues);
+        
+    % Update the movie name and store the list of properties in propList
+    userData.movies(selectedMovie).name=inputData{1};
+    propList=inputData(2:end);
 else
-     prompt = {...
-        'Enter the pixel size (in nm) - optional',...
-        'Enter the time interval (in s) - optional',...
-        'Enter the numerical aperture - optional',...
-        'Enter the camera bit depth - optional',...
-        };
-    dlg_title = 'Movie edition';
-    num_lines = 1;
     
     % Initialize default values
     nProps = numel(propNames);
@@ -404,15 +411,23 @@ else
             defaultValues{i}='(multiple)';
         end
     end
-    propertyList=inputdlg(prompt,dlg_title,num_lines,defaultValues);
-    if isempty(propertyList), return; end
+    % Remove the movie name from the prompt list and store answer in
+    % propList
+    propList=inputdlg(prompt(2:end),dlg_title,num_lines,defaultValues);
     
-    % Filter out multiple outputs
-    validOutput=~strcmp(propertyList,'(multiple)');
-    for i= find(validOutput)'
-        for j=selectedMovie
-            userData.movies(j).properties.(propNames{i})=str2num(propertyList{i});
-        end
+end
+
+if isempty(propList), return; end
+% Check multiple properties
+nonMultipleOutput=~strcmp(propList','(multiple)');
+% Check for property values validity
+propValues = cellfun(@str2num,propList','Unif',false);
+validProperties = MovieData.checkValue(propNames,propValues);
+
+% Affect valid, non-multiple properties values 
+for i= find(nonMultipleOutput & validProperties)
+    for j=selectedMovie
+        userData.movies(j).properties.(propNames{i})=propValues{i};
     end
 end
 

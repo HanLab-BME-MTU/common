@@ -221,6 +221,11 @@ classdef Channel < hgsetget
             % OUTPUT:
             %    checkValue - a boolean containing the result of the test
             
+            if iscell(property)
+                checkValue=cellfun(@(x,y) Channel.checkValue(x,y),property,value);
+                return
+            end
+            
             switch property                
                 case {'emissionWavelength_','excitationWavelength_'}
                     checkTest=@(x) isnumeric(x) && x>=300 && x<=800;
