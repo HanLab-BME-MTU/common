@@ -354,13 +354,15 @@ end
 
 % Create path object and save it to userData
 try
-    userData.channels = cat(2, userData.channels, Channel(path));
+    newChannel= Channel(path);
+    newChannel.sanityCheck();
 catch ME
     errormsg = sprintf('%s.\n\nPlease check this is valid channel.',ME.message);
     errordlg(errormsg,'Channel Error','modal');
     return
 end
 
+userData.channels = cat(2, userData.channels, newChannel);
 % Refresh listbox_channel
 contents{end+1} = path;
 set(handles.listbox_channel,'string',contents);
