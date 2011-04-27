@@ -206,7 +206,7 @@ if onoff
     % Check if image has already existed
     if isempty(userData.hImage) || ~ishandle(userData.hImage)
 
-        currImage = zeros([userData.MD.imSize_([2 1]) 3]);
+        currImage = zeros([userData.MD.imSize_ 3]);
     else
 
         currImage = get(userData.hImage, 'CData');
@@ -314,7 +314,7 @@ if onoff
                 maskNames = segProcess.getOutMaskFileNames(j);
 
                 %Load the mask
-                currMask = imread([ segProcess.outMaskPaths_{j} filesep maskNames{1}{userData.iFrame}]);
+                currMask = imread([ segProcess.outFilePaths_{j} filesep maskNames{1}{userData.iFrame}]);
 
                 %Convert the mask into a boundary
                 maskBounds = bwboundaries(currMask);
@@ -641,7 +641,7 @@ else
     
     % Check off last image
     if ~isempty( userData.overlay )
-        eval(['set(handles.' userData.overlay ', ''Checked'', ''off'')'])
+        set(handles.(userData.overlay),'Checked','off')
     end    
     userData.overlay = get(hObject, 'tag');
     

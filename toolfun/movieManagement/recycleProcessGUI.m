@@ -337,7 +337,7 @@ id = get(handles.listbox_1, 'Value');
 userData_list1 = get(handles.listbox_1, 'UserData');
 process = userData_list1{id};
 
-% if newMovieDataGUI exist
+% if movieDataGUI exist
 if isfield(userData, 'detailFig') && ishandle(userData.detailFig)
     delete(userData.detailFig)
 end

@@ -1,4 +1,4 @@
-classdef TrackingProcess < Process
+classdef TrackingProcess < DataProcessingProcess
 % A class definition for a generic tracking process.
 %
 % Chuangang Ren, 11/2010
@@ -23,7 +23,7 @@ methods(Access = public)
             super_args{1} = owner;
             super_args{2} = 'Tracking';
         end
-        obj = obj@Process(super_args{:});
+        obj = obj@DataProcessingProcess(super_args{:});
         
         if nargin < 2 || isempty(outputDir)
             outputDir = owner.outputDirectory_ ;
@@ -120,7 +120,6 @@ methods(Access = public)
         
         obj.funParams_ = funParams;
         
-        obj.outParams_ = cell(1, length(owner.channels_));
         obj.channelIndex_ = channelIndex;
         obj.filename_ = 'tracking_result.mat';
         
@@ -196,21 +195,16 @@ methods(Access = public)
        obj.overwrite_ = i;
     end
     
-    function runProcess(obj)
-    % Run the process!
-        iDetection = find(cellfun(@(x)(isa(x,'DetectionProcess')), obj.owner_.processes_),1);
+    function run(obj)
+        % Run the process!
         
-        if isempty(iDetection)
-           error('The detection step has not been set up yet.') 
-        end
-        
-        if any(cellfun(@(x)isempty(x), obj.owner_.processes_{iDetection}.outParams_(obj.channelIndex_)))
-           error('One or more channels specified has not been processed by detection step.') 
-        end
-        
+        iDetection = obj.owner_.getProcessIndex('DetectionProcess',1,0);
+        obj.owner_.processes_{iDetection}.checkChannelOutput(obj.channelIndex_);
+        obj.setInFilePaths(obj.owner_.processes_{iDetection}.outFilePaths_);
         
         for i = obj.channelIndex_
-            movieInfo = obj.owner_.processes_{iDetection}.outParams_{i}.movieInfo;
+            
+            load(obj.inFilePaths_{i},'movieInfo');
             obj.funParams_.saveResults.filename = ['Channel_' num2str(i) '_' obj.filename_];
             
             %Check/create directory
@@ -223,35 +217,71 @@ methods(Access = public)
                 obj.funParams_.saveResults.filename = enumFileName(obj.funParams_.saveResults.dir, obj.funParams_.saveResults.filename);
             end
             
+            
             % Test (commentable)
-%             movieInfo, obj.funParams_.costMatrices, obj.funParams_.gapCloseParam, ...
-%                 obj.funParams_.kalmanFunctions, obj.funParams_.probDim, obj.funParams_.saveResults, obj.funParams_.verbose
+            %             movieInfo, obj.funParams_.costMatrices, obj.funParams_.gapCloseParam, ...
+            %                 obj.funParams_.kalmanFunctions, obj.funParams_.probDim, obj.funParams_.saveResults, obj.funParams_.verbose
             
-            % Call function
-            [obj.outParams_{i}.tracksFinal, obj.outParams_{i}.kalmanInfoLink, obj.outParams_{i}.errFlag] = ...
-                obj.funName_(movieInfo, obj.funParams_.costMatrices, obj.funParams_.gapCloseParam, ...
+            % Call function - return tracksFinal for reuse in the export
+            % feature
+            tracksFinal = obj.funName_(movieInfo, obj.funParams_.costMatrices, obj.funParams_.gapCloseParam,...
                 obj.funParams_.kalmanFunctions, obj.funParams_.probDim, obj.funParams_.saveResults, obj.funParams_.verbose);
+
+            obj.setOutFilePath(i,[obj.funParams_.saveResults.dir filesep obj.funParams_.saveResults.filename]);
             
-             % Optional export
-             if obj.funParams_.saveResults.export
+            % Optional export
+            if obj.funParams_.saveResults.export
                 if ~obj.funParams_.gapCloseParam.mergeSplit
                     [M.trackedFeatureInfo M.trackedFeatureIndx]=...
-                        convStruct2MatNoMS(obj.outParams_{i}.tracksFinal);
+                        convStruct2MatNoMS(tracksFinal);
                 else
                     [M.trackedFeatureInfo M.trackedFeatureIndx,M.trackStartRow,M.numSegments]=...
-                        convStruct2MatIgnoreMS(obj.outParams_{i}.tracksFinal);
+                        convStruct2MatIgnoreMS(tracksFinal);
                 end
                 
                 matResultsSaveFile=[obj.funParams_.saveResults.dir filesep obj.funParams_.saveResults.filename(1:end-4) '_mat.mat'];
                 save(matResultsSaveFile,'-struct','M');
                 clear M;
-             end
+            end
             
         end
         
 %         [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...
 %             costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
         
+    end
+    
+    function hfigure = resultDisplay(obj,fig,procID)
+        % Display the output of the process
+        
+        % Copied and pasted from the old uTrackPackageGUI
+        % but there is definitely some optimization to do
+        % Check for movie output before loading the GUI
+        chan = [];
+        for i = 1:length(obj.owner_.channels_)
+            if obj.checkChannelOutput(i)
+                chan = i;
+                break
+            end
+        end
+        
+        if isempty(chan)
+            warndlg('The current step does not have any output yet.','No Output','modal');
+            return
+        end
+        
+        % Make sure detection output is valid
+        load(obj.outFilePaths_{chan},'tracksFinal');
+        if isempty(tracksFinal)
+            warndlg('The tracking result is empty. There is nothing to visualize.','Empty Output','modal');
+            return
+        end
+        
+        if isa(obj, 'Process')
+            hfigure = trackingVisualGUI('mainFig', fig, procID);
+        else
+            error('User-defined: the input is not a Process object.')
+        end
     end
 
     

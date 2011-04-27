@@ -20,6 +20,8 @@
 %     radii - an Nx1 vector specifying the distances from each query point to
 %     find input points, e.g. the radii of the spheres whithin which input
 %     points will be found.
+%     NOTE: This value should be of class double, or strange behavior may
+%     occur.
 % 
 % 
 % Output:

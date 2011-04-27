@@ -83,14 +83,14 @@ for i = 1: l
     % processes
     if userData.statusM(userData.id).Checked(i)
         k(i) = 1;
-        eval([ 'set(handles.checkbox_',num2str(i),', ''Value'',1, ''Enable'', ''on'')' ])
+        set(handles.(['checkbox_',num2str(i)]),'Value',1,'Enable','on');
         userfcn_lampSwitch(i, 1, handles)
     end      
     
     % Bold the Name of Existing Process 
 
    if ~isempty(userData.crtPackage.processes_{i})
-       eval([ 'set(handles.checkbox_',num2str(i),', ''FontWeight'',''bold'')' ]);
+       set(handles.(['checkbox_',num2str(i)]),'FontWeight','bold');
    end
 
     
@@ -101,7 +101,7 @@ for i = 1: l
    if ~isempty(userData.crtPackage.processes_{i}) && ...
       userData.crtPackage.processes_{i}.success_ 
        k(i) = 1;
-       eval([ 'set(handles.pushbutton_show_',num2str(i),', ''enable'', ''on'');']);
+       set(handles.(['pushbutton_show_',num2str(i)]),'Enable','on');
    end
    
 end

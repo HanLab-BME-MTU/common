@@ -1,15 +1,15 @@
 function varargout = thresholdProcessGUI(varargin)
-% THRESHOLDPROCESSGUI M-file for thresholdProcessGUI.fig
-%      THRESHOLDPROCESSGUI, by itself, creates a new THRESHOLDPROCESSGUI or raises the existing
+% thresholdProcessGUI M-file for thresholdProcessGUI.fig
+%      thresholdProcessGUI, by itself, creates a new thresholdProcessGUI or raises the existing
 %      singleton*.
 %
-%      H = THRESHOLDPROCESSGUI returns the handle to a new THRESHOLDPROCESSGUI or the handle to
+%      H = thresholdProcessGUI returns the handle to a new thresholdProcessGUI or the handle to
 %      the existing singleton*.
 %
-%      THRESHOLDPROCESSGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in THRESHOLDPROCESSGUI.M with the given input arguments.
+%      thresholdProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in thresholdProcessGUI.M with the given input arguments.
 %
-%      THRESHOLDPROCESSGUI('Property','Value',...) creates a new THRESHOLDPROCESSGUI or raises the
+%      thresholdProcessGUI('Property','Value',...) creates a new thresholdProcessGUI or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
 %      applied to the GUI before thresholdProcessGUI_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
@@ -22,7 +22,7 @@ function varargout = thresholdProcessGUI(varargin)
 
 % Edit the above text to modify the response to help thresholdProcessGUI
 
-% Last Modified by GUIDE v2.5 02-Sep-2010 14:49:59
+% Last Modified by GUIDE v2.5 25-Apr-2011 17:52:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -46,17 +46,14 @@ end
 
 % --- Executes just before thresholdProcessGUI is made visible.
 function thresholdProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
-% userData.set1Fig = thresholdProcessGUI('mainFig', handles.figure1, procID);
-%
 % Available tools 
 % UserData data:
 %       userData.mainFig - handle of main figure
-%       userData.handles_main - 'handles' of main setting panel
+%       userData.handles_main - 'handles' of main figure
 %       userData.procID - The ID of process in the current package
 %       userData.crtProc - handle of current process
 %       userData.crtPackage - handles of current package
 %       userData.procConstr - constructor of current process
-%       userData.channelIndex - the array of index for channels
 %
 %       userData.questIconData - help icon image information
 %       userData.colormap - color map information
@@ -66,7 +63,7 @@ function thresholdProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 set(handles.text_copyright, 'String', copyright)
 
 userData = get(handles.figure1, 'UserData');
-% Choose default command line output for segmentationProcessGUI
+% Choose default command line output for thresholdProcessGUI
 handles.output = hObject;
 
 % Get main figure handle and process id
@@ -74,57 +71,81 @@ t = find(strcmp(varargin,'mainFig'));
 userData.mainFig = varargin{t+1};
 userData.procID = varargin{t+2};
 userData.handles_main = guidata(userData.mainFig);
-userData.channelIndex = get(userData.handles_main.listbox_2, 'UserData');
 
 % Get current package and process
 userData_main = get(userData.mainFig, 'UserData');
 userData.crtPackage = userData_main.crtPackage;
+userData.crtProc = userData.crtPackage.processes_{userData.procID};
 
 % Get current process constructer
-userData.procConstr = userData_main.procConstr{userData.procID};
+eval ( [ 'userData.procConstr = @', ...
+    userData.crtPackage.processClassNames_{userData.procID},';']);
 
-% Get current process
-if ~isempty(userData_main.crtProc) && isa(userData_main.crtProc, userData_main.procName{userData.procID})
-    userData.crtProc = userData_main.crtProc;
-    
-elseif ~isempty(userData_main.segProc{userData.procID})
-    userData.crtProc = userData_main.segProc{userData.procID};
-    
-else
-    % Create new process and handle the process to user data and
-    % array of segmentation process in main setting panel    
-    userData.crtProc = userData.procConstr(userData_main.MD, userData.crtPackage.outputDirectory_);
-    userData_main.segProc{userData.procID} = userData.crtProc;
+% If process does not exist, create a default one in user data.
+if isempty(userData.crtProc)
+    userData.crtProc = userData.procConstr(userData_main.MD(userData_main.id), ...
+                                userData.crtPackage.outputDirectory_);
 end
-
 
 % Get icon infomation
 userData.questIconData = userData_main.questIconData;
 userData.colormap = userData_main.colormap;
 
-
-% ---------------------- Parameter Setup -------------------------
+% ---------------------- Channel Setup -------------------------
 
 funParams = userData.crtProc.funParams_;
 
-if isempty(funParams.ThresholdValue)
-    if funParams.MaxJump
-       set(handles.checkbox_max, 'Value', 1);
-       set(handles.edit_jump, 'Enable', 'on', 'String',...
-                num2str(funParams.MaxJump));
-    end
-else
-    set(handles.text_body3, 'Enable', 'on')
-    set(handles.edit_coef, 'Enable', 'on')
-    set(handles.pushbutton_add, 'Enable', 'on')
-    set(handles.pushbutton_up, 'Enable', 'on')
-    set(handles.pushbutton_down, 'Enable', 'on')
-    set(handles.pushbutton_coef_delete, 'Enable', 'on')
-    set(handles.listbox_coef1, 'Enable', 'on')
+% Set up available input channels
+set(handles.listbox_1, 'String', {userData_main.MD(userData_main.id).channels_.channelPath_},...
+        'Userdata', 1: length(userData_main.MD(userData_main.id).channels_));
     
+% Set up selected input data channels and channel index
+parentI = find( userData.crtPackage.depMatrix_(userData.procID,:) );
+
+if isempty(parentI) || ~isempty( userData.crtPackage.processes_{userData.procID} )
+    
+    % If process has no dependency, or process already exists, display saved channels 
+    set(handles.listbox_2, 'String', ...
+        {userData_main.MD(userData_main.id).channels_(funParams.ChannelIndex).channelPath_}, ...
+        'Userdata',funParams.ChannelIndex);
+    
+elseif isempty( userData.crtPackage.processes_{userData.procID} )
+    % If new process
+        empty = false;
+        for i = parentI
+           if isempty(userData.crtPackage.processes_{i})
+               empty = true;
+               break;
+           end
+        end
+            
+        if ~empty
+
+            % If all dependent processes exist
+            channelIndex = userData.crtPackage.processes_{parentI(1)}.funParams_.ChannelIndex;
+            for i = 2: length(parentI)
+                channelIndex = intersect(channelIndex, ...
+                    userData.crtPackage.processes_{parentI(i)}.funParams_.ChannelIndex);
+            end  
+            
+            if ~isempty(channelIndex)
+                set(handles.listbox_2, 'String', ...
+                    {userData_main.MD(userData_main.id).channels(channelIndex).channelPath_}, ...
+                    'Userdata',channelIndex);    
+            end
+        end
+end
+
+% ---------------------- Parameter Setup -------------------------
+
+if isempty(funParams.ThresholdValue) && funParams.MaxJump
+    set(handles.checkbox_max, 'Value', 1);
+    set(handles.edit_jump, 'Enable', 'on', 'String',num2str(funParams.MaxJump));
+    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
+else
+    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
     set(handles.checkbox_auto, 'Value', 0)
     set(handles.checkbox_max, 'Enable', 'off')
-    
     
     threshold = cell(1, length(funParams.ThresholdValue));
     
@@ -132,9 +153,33 @@ else
        threshold{i} = funParams.ThresholdValue(i); 
     end
     
-    set(handles.listbox_coef1, 'String', threshold)
+    set(handles.listbox_thresholdValues, 'String', threshold)
 end
 
+% Save the image directories and names (for threshold preview)
+userData.imageFileNames = userData_main.MD(userData_main.id).getImageFileNames();
+userData.imDirs  = userData_main.MD(userData_main.id).getChannelPaths();
+
+% Read the first image and update the sliders max value and steps
+props=get(handles.listbox_2,{'String','Value'});
+userData.chanIndx = find(strcmp(props{1}{props{2}},userData.imDirs));
+userData.imIndx=1;
+
+% Initialize the image number slider and eidt
+nIm=numel(userData.imageFileNames{userData.chanIndx});
+set(handles.slider_imageNumber,'Value',userData.imIndx,'Min',1,...
+    'Max',nIm,'SliderStep',[1/double(nIm)  10/double(nIm)]);
+set(handles.edit_imageNumber,'Value',userData.imIndx);
+
+% Load the first image and update the threshold slide
+userData.imData = imread([userData.imDirs{userData.chanIndx} filesep...
+    userData.imageFileNames{userData.chanIndx}{userData.imIndx}]);
+maxThresholdValue=max(max(userData.imData));
+thresholdStep = 1/double(maxThresholdValue);
+userData.thresholdValue=0;
+set(handles.edit_threshold,'String',userData.thresholdValue);
+set(handles.slider_threshold,'Value',userData.thresholdValue,'Max',maxThresholdValue,...
+    'SliderStep',[thresholdStep  10*thresholdStep]);
 
 % ----------------------Set up help icon------------------------
 
@@ -160,6 +205,7 @@ uicontrol(handles.pushbutton_done);
 guidata(hObject, handles);
 
 
+
 % --- Outputs from this function are returned to the command line.
 function varargout = thresholdProcessGUI_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
@@ -173,19 +219,23 @@ varargout{1} = handles.output;
 
 % --- Executes on button press in pushbutton_cancel.
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_cancel (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-userData = get(handles.figure1, 'UserData');
+% Delete figure
 delete(handles.figure1);
+
 
 % --- Executes on button press in pushbutton_done.
 function pushbutton_done_Callback(hObject, eventdata, handles)
 % Call back function of 'Apply' button
-
 userData = get(handles.figure1, 'UserData');
+userData_main = get(userData.mainFig, 'UserData');
+
 
 % -------- Check user input --------
+
+if isempty(get(handles.listbox_2, 'String'))
+   errordlg('Please select at least one input channel from ''Available Channels''.','Setting Error','modal') 
+    return;
+end
 
 if get(handles.checkbox_auto, 'value')
     if get(handles.checkbox_max, 'Value')
@@ -197,11 +247,11 @@ if get(handles.checkbox_auto, 'value')
         end    
     end
 else
-    threshold = get(handles.listbox_coef1, 'String');
+    threshold = get(handles.listbox_thresholdValues, 'String');
     if isempty(threshold)
        errordlg('Please provide at least one threshold value.','Setting Error','modal')
        return
-    elseif length(threshold) ~= 1 && length(threshold) ~= length(userData.channelIndex)
+    elseif length(threshold) ~= 1 && length(threshold) ~= length(get(handles.listbox_2, 'String'))
        errordlg('Please provide the same number of threshold values as the input channels.','Setting Error','modal')
        return
     else
@@ -213,11 +263,38 @@ else
     end
 end
    
+
+% -------- Process Sanity check --------
+% ( only check underlying data )
+
+try
+    userData.crtProc.sanityCheck;
+catch ME
+
+    errordlg([ME.message 'Please double check your data.'],...
+                'Setting Error','modal');
+    return;
+end
+
+%---------Check if channel indexs are changed---------
+
+channelIndex = get (handles.listbox_2, 'Userdata');
+funParams = userData.crtProc.funParams_;
+
+if ~isempty( setdiff(channelIndex, funParams.ChannelIndex) ) ...
+    || ~isempty( setdiff(funParams.ChannelIndex, channelIndex) )
+
+    % If channel indexs are changed, set procChanged to true
+    userData.crtProc.setProcChanged(true);
+end
+    
 % -------- Set parameter --------
 
-funParams = userData.crtProc.funParams_;
-    
 if userData.crtProc.procChanged_ 
+    
+    % Get parameter
+    
+    funParams.ChannelIndex = channelIndex;
 
     if get(handles.checkbox_auto, 'value')
         % if automatic thresholding
@@ -230,7 +307,7 @@ if userData.crtProc.procChanged_
     else
         % if fixed thresholding
         if length(threshold) == 1
-            funParams.ThresholdValue = repmat(threshold, [1 length(userData.channelIndex)]);
+            funParams.ThresholdValue = repmat(threshold, [1 length(channelIndex)]);
         else
             funParams.ThresholdValue = threshold;
         end
@@ -238,71 +315,236 @@ if userData.crtProc.procChanged_
     % Set parameters
     userData.crtProc.setPara(funParams);
     
+
 end
+
+
+% --------------------------------------------------
+
+
+% If this is a brand new process, attach current process to MovieData and 
+% package's process list 
+if isempty( userData.crtPackage.processes_{userData.procID} )
+    
+    % Add new process to both process lists of MovieData and current package
+    userData_main.MD(userData_main.id).addProcess( userData.crtProc );
+    userData.crtPackage.setProcess(userData.procID, userData.crtProc);
+    
+    % Set font weight of process name bold
+    eval([ 'set(userData.handles_main.checkbox_',...
+            num2str(userData.procID),', ''FontWeight'',''bold'')' ]);
+end
+
+% ----------------------Sanity Check (II, III check)----------------------
+
+% Do sanity check - only check changed parameters
+procEx = userData.crtPackage.sanityCheck(false,'all');
+
+% Return user data !!!
+set(userData.mainFig, 'UserData', userData_main)
+
+% Draw some bugs on the wall 
+for i = 1: length(procEx)
+   if ~isempty(procEx{i})
+       % Draw warning label on the i th process
+       userfcn_drawIcon(userData.handles_main,'warn',i,procEx{i}(1).message, true) % user data is retrieved, updated and submitted
+   end
+end
+% Refresh user data !!
+userData_main = get(userData.mainFig, 'UserData');
+
+
+% -------------------- Apply setting to all movies ------------------------
+
+if get(handles.checkbox_applytoall, 'Value')
+
+for x = 1: length(userData_main.MD)
+    
+   if x == userData_main.id
+      continue 
+   end
+   
+   % Customize funParams to other movies 
+   % ChannelIndex - all channels
+   % OutputDirectory - pacakge output directory
+       
+   l = length(userData_main.MD(x).channels_);
+   temp = arrayfun(@(x)(x > l),channelIndex, 'UniformOutput', true );
+   funParams.ChannelIndex = channelIndex(logical(~temp));
+   
+   if get(handles.checkbox_auto, 'value')
+       
+       funParams.ThresholdValue = [ ];
+   else
+        if length(threshold) == 1
+            funParams.ThresholdValue = repmat(threshold, [1 length(funParams.ChannelIndex)]);
+        else
+            funParams.ThresholdValue = threshold(logical(~temp));
+        end
+   end
+   
+   funParams.OutputDirectory  = [userData_main.package(x).outputDirectory_  filesep 'masks'];
+   
+   % if new process, create a new process with funParas and add to
+   % MovieData and package's process list
+   if isempty(userData_main.package(x).processes_{userData.procID})
+       
+       process = userData.procConstr(userData_main.MD(x), userData_main.package(x).outputDirectory_, funParams);
+       userData_main.MD(x).addProcess( process )
+       userData_main.package(x).setProcess(userData.procID, process )
+       
+   % if process exist, replace the funParams with the new one
+   else
+       userData_main.package(x).processes_{userData.procID}.setPara(funParams)
+   end
+   
+   % If current process is changed, then assume funParams are changed in
+   % all movies
+   if userData.crtProc.procChanged_ 
+       
+       userData_main.package(x).processes_{userData.procID}.setProcChanged(true);
+   end
+   
+    % Do sanity check - only check changed parameters
+    procEx = userData_main.package(x).sanityCheck(false,'all');
+
+    % Draw some bugs on the wall 
+    for i = 1: length(procEx)
+       if ~isempty(procEx{i})
+           % Record the icon and message to user data
+           userData_main.statusM(x).IconType{userData.procID} = 'warn';
+           userData_main.statusM(x).Msg{i} = procEx{i}(1).message;
+       end
+    end   
+end
+
+% Save user data
+set(userData.mainFig, 'UserData', userData_main)
+
+end
+% -------------------------------------------------------------------------
 
 % Save user data
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 delete(handles.figure1);
 
+% --- Executes on button press in checkbox_all.
+function checkbox_all_Callback(hObject, eventdata, handles)
 
+% Hint: get(hObject,'Value') returns toggle state of checkbox_all
+contents1 = get(handles.listbox_1, 'String');
+
+chanIndex1 = get(handles.listbox_1, 'Userdata');
+chanIndex2 = get(handles.listbox_2, 'Userdata');
+
+% Return if listbox1 is empty
+if isempty(contents1)
+    return;
+end
+
+switch get(hObject,'Value')
+    case 1
+        set(handles.listbox_2, 'String', contents1);
+        chanIndex2 = chanIndex1;
+    case 0
+        set(handles.listbox_2, 'String', {}, 'Value',1);
+        chanIndex2 = [ ];
+end
+set(handles.listbox_2, 'UserData', chanIndex2);
+
+% --- Executes on button press in pushbutton_select.
+function pushbutton_select_Callback(hObject, eventdata, handles)
+% call back function of 'select' button
+
+contents1 = get(handles.listbox_1, 'String');
+contents2 = get(handles.listbox_2, 'String');
+id = get(handles.listbox_1, 'Value');
+
+% If channel has already been added, return;
+chanIndex1 = get(handles.listbox_1, 'Userdata');
+chanIndex2 = get(handles.listbox_2, 'Userdata');
+
+for i = id
+    if any(strcmp(contents1{i}, contents2) )
+        continue;
+    else
+        contents2{end+1} = contents1{i};
+        
+        chanIndex2 = cat(2, chanIndex2, chanIndex1(i));
+
+    end
+end
+
+set(handles.listbox_2, 'String', contents2, 'Userdata', chanIndex2);
+
+
+% --- Executes on button press in pushbutton_delete.
+function pushbutton_delete_Callback(hObject, eventdata, handles)
+% Call back function of 'delete' button
+contents = get(handles.listbox_2,'String');
+id = get(handles.listbox_2,'Value');
+
+% Return if list is empty
+if isempty(contents) || isempty(id)
+    return;
+end
+
+% Delete selected item
+contents(id) = [ ];
+
+% Delete userdata
+chanIndex2 = get(handles.listbox_2, 'Userdata');
+chanIndex2(id) = [ ];
+set(handles.listbox_2, 'Userdata', chanIndex2);
+
+% Point 'Value' to the second last item in the list once the 
+% last item has been deleted
+if (id >length(contents) && id>1)
+    set(handles.listbox_2,'Value',length(contents));
+end
+% Refresh listbox
+set(handles.listbox_2,'String',contents);
 
 
 % --- Executes on button press in checkbox_auto.
 function checkbox_auto_Callback(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of checkbox_auto
 switch get(hObject, 'Value')
     case 0
-        set(handles.text_body3, 'Enable', 'on')
-        set(handles.edit_coef, 'Enable', 'on')
-        set(handles.pushbutton_add, 'Enable', 'on')
-        set(handles.pushbutton_up, 'Enable', 'on')
-        set(handles.pushbutton_down, 'Enable', 'on')
-        set(handles.pushbutton_coef_delete, 'Enable', 'on')
-        set(handles.listbox_coef1, 'Enable', 'on')
-        
-        
+        set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
         set(handles.checkbox_max, 'Enable', 'off', 'Value', 0);
         set(handles.edit_jump, 'Enable', 'off');
        
     case 1
-        set(handles.text_body3, 'Enable', 'off')
-        set(handles.edit_coef, 'Enable', 'off')
-        set(handles.pushbutton_add, 'Enable', 'off')
-        set(handles.pushbutton_up, 'Enable', 'off')
-        set(handles.pushbutton_down, 'Enable', 'off')
-        set(handles.pushbutton_coef_delete, 'Enable', 'off')
-        set(handles.listbox_coef1, 'Enable', 'off')        
-        
-        set(handles.checkbox_max, 'Enable', 'on');
-                
-        
+        set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off') 
+        set(handles.checkbox_max, 'Enable', 'on');   
 end
 userData = get(handles.figure1, 'UserData');
 userData.crtProc.setProcChanged(true);
-
 
 
 function edit_jump_Callback(hObject, eventdata, handles)
-
+% Report to process object that the parameters are changed
 userData = get(handles.figure1, 'UserData');
 userData.crtProc.setProcChanged(true);
 
 
-% --- Executes during object creation, after setting all properties.
-function edit_jump_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_jump (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
+% --- Executes during object deletion, before destroying properties.
+function figure1_DeleteFcn(hObject, eventdata, handles)
+% Notify the package GUI that the setting panel is closed
+userData = get(handles.figure1, 'UserData');
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+if isfield(userData, 'helpFig') && ishandle(userData.helpFig)
+   delete(userData.helpFig) 
 end
 
+set(handles.figure1, 'UserData', userData);
+guidata(hObject,handles);
 
 % --- Executes on button press in checkbox_max.
 function checkbox_max_Callback(hObject, eventdata, handles)
+
 
 switch get(hObject, 'value')
     case 0
@@ -315,49 +557,52 @@ userData = get(handles.figure1, 'UserData');
 userData.crtProc.setProcChanged(true);
 
 
-% --- Executes on selection change in listbox_coef1.
-function listbox_coef1_Callback(hObject, eventdata, handles)
-% hObject    handle to listbox_coef1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
+
+% --- Executes on key press with focus on pushbutton_done and none of its controls.
+function pushbutton_done_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to pushbutton_done (see GCBO)
+% eventdata  structure with the following fields (see UICONTROL)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
 % handles    structure with handles and user data (see GUIDATA)
+if strcmp(eventdata.Key, 'return')
+    pushbutton_done_Callback(handles.pushbutton_done, [], handles);
+end
 
-% Hints: contents = cellstr(get(hObject,'String')) returns listbox_coef1 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from listbox_coef1
 
-
-% --- Executes during object creation, after setting all properties.
-function listbox_coef1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to listbox_coef1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+% --- Executes on key press with focus on figure1 and none of its controls.
+function figure1_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  structure with the following fields (see FIGURE)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
+if strcmp(eventdata.Key, 'return')
+    pushbutton_done_Callback(handles.pushbutton_done, [], handles);
 end
 
 
 % --- Executes on button press in pushbutton_coef_delete.
 function pushbutton_coef_delete_Callback(hObject, eventdata, handles)
-
 % Call back function of 'delete' button
-contents = get(handles.listbox_coef1,'String');
+contents = get(handles.listbox_thresholdValues,'String');
 % Return if list is empty
 if isempty(contents)
     return;
 end
-id = get(handles.listbox_coef1,'Value');
+id = get(handles.listbox_thresholdValues,'Value');
 
 % Delete selected item
 contents(id) = [ ];
 
 % Refresh listbox
-set(handles.listbox_coef1,'String',contents);
+set(handles.listbox_thresholdValues,'String',contents);
 % Point 'Value' to the second last item in the list once the 
 % last item has been deleted
 if (id>length(contents) && id>1)
-    set(handles.listbox_coef1,'Value',length(contents));
+    set(handles.listbox_thresholdValues,'Value',length(contents));
 end
 
 userData = get(handles.figure1, 'UserData');
@@ -367,8 +612,8 @@ userData.crtProc.setProcChanged(true);
 % --- Executes on button press in pushbutton_up.
 function pushbutton_up_Callback(hObject, eventdata, handles)
 % % call back of 'Up' button
-id = get(handles.listbox_coef1,'Value');
-contents = get(handles.listbox_coef1,'String');
+id = get(handles.listbox_thresholdValues,'Value');
+contents = get(handles.listbox_thresholdValues,'String');
 
 % Return if list is empty
 if isempty(contents) || isempty(id) || id == 1
@@ -379,8 +624,8 @@ temp = contents{id};
 contents{id} = contents{id-1};
 contents{id-1} = temp;
 
-set(handles.listbox_coef1, 'string', contents);
-set(handles.listbox_coef1, 'value', id-1);
+set(handles.listbox_thresholdValues, 'string', contents);
+set(handles.listbox_thresholdValues, 'value', id-1);
 
 userData = get(handles.figure1, 'UserData');
 userData.crtProc.setProcChanged(true);
@@ -389,8 +634,8 @@ userData.crtProc.setProcChanged(true);
 % --- Executes on button press in pushbutton_down.
 function pushbutton_down_Callback(hObject, eventdata, handles)
 % Call back of 'Down' button
-id = get(handles.listbox_coef1,'Value');
-contents = get(handles.listbox_coef1,'String');
+id = get(handles.listbox_thresholdValues,'Value');
+contents = get(handles.listbox_thresholdValues,'String');
 
 % Return if list is empty
 if isempty(contents) || isempty(id) || id == length(contents)
@@ -401,8 +646,8 @@ temp = contents{id};
 contents{id} = contents{id+1};
 contents{id+1} = temp;
 
-set(handles.listbox_coef1, 'string', contents);
-set(handles.listbox_coef1, 'value', id+1);
+set(handles.listbox_thresholdValues, 'string', contents);
+set(handles.listbox_thresholdValues, 'value', id+1);
 
 userData = get(handles.figure1, 'UserData');
 userData.crtProc.setProcChanged(true);
@@ -410,44 +655,165 @@ userData.crtProc.setProcChanged(true);
 
 % --- Executes on button press in pushbutton_add.
 function pushbutton_add_Callback(hObject, eventdata, handles)
-set(handles.listbox_coef1, 'Value', 1);
-text = get(handles.edit_coef, 'String');
-if isempty(text)
-    return;
-end
+
+set(handles.listbox_thresholdValues, 'Value', 1);
+text = get(handles.edit_threshold, 'String');
+if isempty(text), return; end
 
 if isnan(str2double(text)) || str2double(text) < 0 
     errordlg('Please provide a valid coefficient. Coefficient must be positive.','Setting Error','modal');
     return;
 end
 
-contents = get(handles.listbox_coef1, 'String');
+contents = get(handles.listbox_thresholdValues, 'String');
 contents{end + 1} = text;
-set(handles.listbox_coef1, 'String', contents)
-set(handles.edit_coef, 'String', '')
+set(handles.listbox_thresholdValues, 'String', contents)
+% set(handles.edit_threshold, 'String', '')
 
 userData = get(handles.figure1, 'UserData');
 userData.crtProc.setProcChanged(true);
 
 
+% --- Executes on button press in checkbox_preview.
+function checkbox_preview_Callback(hObject, eventdata, handles)
 
-function edit_coef_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_coef (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_coef as text
-%        str2double(get(hObject,'String')) returns contents of edit_coef as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit_coef_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_coef (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+if get(handles.checkbox_preview,'Value'), 
+    update_data(hObject,eventdata,handles); 
+else
+    userData = get(handles.figure1, 'UserData');
+    if isfield(userData, 'previewFig') && ishandle(userData.previewFig)
+        delete(userData.previewFig);
+    end
+    % Save data and update graphics
+    set(handles.figure1,'UserData',userData);
+    guidata(hObject, handles);
 end
+
+function threshold_edition(hObject,eventdata, handles)
+
+userData = get(handles.figure1, 'UserData');
+
+% Retrieve the valuye of the selected threshold
+if strcmp(get(hObject,'Tag'),'edit_threshold')
+    thresholdValue = str2double(get(handles.edit_threshold, 'String'));
+else
+    thresholdValue = get(handles.slider_threshold, 'Value');
+end
+thresholdValue=round(thresholdValue);
+
+% Check the validity of the supplied threshold
+if isnan(thresholdValue) || thresholdValue < 0 || thresholdValue > get(handles.slider_threshold,'Max')
+    warndlg('Please provide a valid coefficient.','Setting Error','modal');
+    thresholdValue=userData.thresholdValue;
+end
+
+set(handles.slider_threshold,'Value',thresholdValue);
+set(handles.edit_threshold,'String',thresholdValue);
+    
+% Save data and update graphics
+set(handles.figure1,'UserData',userData);
+guidata(hObject, handles);
+update_data(hObject,eventdata,handles);
+
+
+function imageNumber_edition(hObject,eventdata, handles)
+
+% Retrieve the value of the selected image
+if strcmp(get(hObject,'Tag'),'edit_imageNumber')
+    imageNumber = str2double(get(handles.edit_imageNumber, 'String'));
+else
+    imageNumber = get(handles.slider_imageNumber, 'Value');
+end
+imageNumber=round(imageNumber);
+
+% Check the validity of the supplied threshold
+if isnan(imageNumber) || imageNumber < 0 || imageNumber > get(handles.slider_imageNumber,'Max')
+    warndlg('Please provide a valid coefficient.','Setting Error','modal');
+end
+
+set(handles.slider_imageNumber,'Value',imageNumber);
+set(handles.edit_imageNumber,'String',imageNumber);
+
+% Save data and update graphics
+guidata(hObject, handles);
+update_data(hObject,eventdata,handles);
+
+
+function update_data(hObject,eventdata, handles)
+
+userData = get(handles.figure1, 'UserData');
+
+% Retrieve the channex index
+props=get(handles.listbox_2,{'String','Value'});
+chanIndx = find(strcmp(props{1}{props{2}},userData.imDirs));
+imIndx = get(handles.slider_imageNumber,'Value');
+thresholdValue = get(handles.slider_threshold, 'Value');
+
+% Load a new image in case the image number or channel has been changed
+if (chanIndx~=userData.chanIndx) ||  (imIndx~=userData.imIndx)
+    userData.imData=imread([userData.imDirs{chanIndx} filesep...
+        userData.imageFileNames{chanIndx}{imIndx}]);
+    
+    % Get the value of the new maximum threshold
+    maxThresholdValue=max(max(userData.imData));
+    % Update the threshold Value if above th new maximum
+    thresholdValue=min(thresholdValue,maxThresholdValue);
+    
+    set(handles.slider_threshold,'Value',thresholdValue,'Max',maxThresholdValue,...
+        'SliderStep',[1/double(maxThresholdValue)  10/double(maxThresholdValue)]);
+    set(handles.edit_threshold,'String',thresholdValue);
+    
+    userData.updateImage=1;
+    userData.chanIndx=chanIndx;
+    userData.imIndx=imIndx;
+else
+    userData.updateImage=0;
+end
+
+% Check if the threshold map should be refreshed
+if  (thresholdValue~=userData.thresholdValue);
+    userData.thresholdValue = thresholdValue;
+    userData.updateThreshold=1;
+else
+    userData.updateThreshold=0;
+end
+
+% Save the data
+set(handles.figure1, 'UserData', userData);
+guidata(hObject,handles);
+
+% Load the graphic callback if applicable
+if get(handles.checkbox_preview,'Value') && ~get(handles.checkbox_auto,'Value'),
+    update_graphics(hObject,handles);
+end
+
+
+function update_graphics(hObject, handles)
+
+userData = get(handles.figure1, 'UserData');
+
+% Create figure if non-existing or closed
+if ~isfield(userData, 'previewFig') || ~ishandle(userData.previewFig)
+    userData.previewFig = figure;
+    userData.newFigure = 1;
+else
+    figure(userData.previewFig);
+    userData.newFigure = 1;
+end
+
+% Retrieve the handle of the figures image
+imHandle =get(get(userData.previewFig,'Children'),'Children');
+if userData.newFigure || userData.updateImage || isempty(imHandle)
+    imagesc(userData.imData);
+    axis off;
+    imHandle =get(get(userData.previewFig,'Children'),'Children');
+end
+
+% Preview the tresholded umage using the alphaData mapping
+if userData.newFigure || userData.updateThreshold
+    set(imHandle,'AlphaData',userData.imData>userData.thresholdValue,...
+        'AlphaDataMapping','none');
+end
+
+set(handles.figure1, 'UserData', userData);
+guidata(hObject,handles);

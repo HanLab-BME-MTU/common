@@ -128,11 +128,12 @@ for j = 1:nEdges
     %pretty sure there's a faster way to do this...???
     if nargout > 2
         %Get the coord of one vertex        
-        iVert = 1;
-        edgePaths{j} = edgeInit;
+        iVert = 1;        
         
         %First, make sure it's not a spur
         if ~any(edges(j,:)==0)
+            
+            edgePaths{j} = edgeInit;
 
             %Try to find a vertex that is a single voxel and use it as a start
             %point for the edge path

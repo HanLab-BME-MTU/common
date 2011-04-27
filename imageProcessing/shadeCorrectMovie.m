@@ -143,7 +143,7 @@ else
     for j = 1:nChanCorr
         if hasDarkCorr(j)
             movieData.processes_{iProc}.setInImagePath(p.ChannelIndex(j),...
-                movieData.processes_{iDarkProc}.outImagePaths_{p.ChannelIndex(j)});    
+                movieData.processes_{iDarkProc}.outFilePaths_{1,p.ChannelIndex(j)});    
         else
             warning(['No dark-current correction for channel ' num2str(p.ChannelIndex(j)) ' : using raw images. This is not recommended!!'])
             movieData.processes_{iProc}.setInImagePath(p.ChannelIndex(j),...
@@ -159,7 +159,7 @@ end
 if isempty(p.ShadeImageDirectories)
     
     %Check if the paths have been specified before
-    if isempty(movieData.processes_{iProc}.correctionImagePaths_)
+    if all(cellfun(@isempty,movieData.processes_{iProc}.inFilePaths_(2,:)))
         %If not, ask the user.
         stPath = pwd;
         p.ShadeImageDirectories = cell(1,nChanCorr);
@@ -179,7 +179,7 @@ if isempty(p.ShadeImageDirectories)
     else
         %Use the existing paths
         disp('Using previously specified correction image directories...')
-        p.ShadeImageDirectories = movieData.processes_{iProc}.correctionImagePaths_(p.ChannelIndex);        
+        p.ShadeImageDirectories = movieData.processes_{iProc}.inFilePaths_(2,p.ChannelIndex);        
     end
 else
     
@@ -295,9 +295,9 @@ end
 %Go through each image and apply the appropriate shade correction
 for iChan = 1:nChanCorr
     
-    inDir  = movieData.processes_{iProc}.inImagePaths_{p.ChannelIndex(iChan)};    
-    outDir = movieData.processes_{iProc}.outImagePaths_{p.ChannelIndex(iChan)};    
-    corrDir = movieData.processes_{iProc}.correctionImagePaths_{p.ChannelIndex(iChan)};
+    inDir  = movieData.processes_{iProc}.inFilePaths_{1,p.ChannelIndex(iChan)};    
+    outDir = movieData.processes_{iProc}.outFilePaths_{1,p.ChannelIndex(iChan)};    
+    corrDir = movieData.processes_{iProc}.inFilePaths_{2,p.ChannelIndex(iChan)};
 
     disp(['Shade correcting channel ' num2str(p.ChannelIndex(iChan)) '...'])
     disp(['Correcting images from "' inDir '", resulting images will be stored in "' outDir '"']);     
@@ -350,7 +350,7 @@ end
 %Log the correction in the movieData object and save it
 
 movieData.processes_{iProc}.setDateTime;
-movieData.saveMovieData;
+movieData.save;
 
 disp('Finished Correcting!')
 

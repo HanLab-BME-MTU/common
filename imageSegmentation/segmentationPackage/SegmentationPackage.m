@@ -16,7 +16,8 @@ methods (Access = public)
                                 
                % Process CLASS NAME string (same length as dependency matrix)
                % Must be accurate process class name
-               super_args{4} = {'SegmentationProcess'};
+               super_args{4} = {'ThresholdProcess',...
+                   'MaskRefinementProcess'};
                             
                super_args{5} = [outputDir filesep 'SegmentationPackage'];
                 
@@ -57,7 +58,8 @@ methods (Static)
         
         function m = getDependencyMatrix()
             % Get dependency matrix
-               m = 0;
+               m = [0 0; % SegmentationProcess
+                   1 0]; % MaskRefinementProcess
         end        
         
         function id = getOptionalProcessId()

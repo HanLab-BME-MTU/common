@@ -93,7 +93,7 @@ for j = 1:nChan
     for k = 1:numel(p.ProcessIndex)
         if movieData.processes_{p.ProcessIndex(k)}.checkChannelOutput(p.ChannelIndex(j));
             imNames(j) = movieData.processes_{p.ProcessIndex(k)}.getOutImageFileNames(p.ChannelIndex(j));            
-            imDirs{j} = movieData.processes_{p.ProcessIndex(k)}.outImagePaths_{p.ChannelIndex(j)};
+            imDirs{j} = movieData.processes_{p.ProcessIndex(k)}.outFilePaths_{1,p.ChannelIndex(j)};
             break
         end
         if k == numel(p.ProcessIndex)
@@ -103,7 +103,7 @@ for j = 1:nChan
     end
 end
 
-maskDirs = movieData.processes_{p.SegProcessIndex}.outMaskPaths_(p.MaskChannelIndex);
+maskDirs = movieData.processes_{p.SegProcessIndex}.outFilePaths_(p.MaskChannelIndex);
 maskNames = movieData.processes_{p.SegProcessIndex}.getOutMaskFileNames(p.MaskChannelIndex);
 
 

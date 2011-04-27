@@ -22,7 +22,7 @@ function varargout = packageGUI(varargin)
 
 % Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 25-Mar-2011 09:31:56
+% Last Modified by GUIDE v2.5 29-Mar-2011 11:31:40
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -72,8 +72,6 @@ function packageGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %
 %       userData.setFig - array of handles of (multiple) setting figures (may not exist)
 %       userData.resultFig - array of handles of (multiple) result figures (may not exist)
-%       userData.setupMovieDataFig - handle of (single) setupMovieData figure (may not exist)
-%       userData.overviewFig - handles of (single) overviewMovieDataGUI figure (may not exist)
 %       userData.packageHelpFig - handle of (single) help figure (may not exist)
 %       userData.iconHelpFig - handle of (single) help figures (may not exist)
 %       userData.processHelpFig - handle of (multiple) help figures (may not exist) 
@@ -95,8 +93,6 @@ function packageGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %
 
 % Load movie data and recycle processes
-
-
 userfcn_iniPackageGUI;
 
 
@@ -110,8 +106,9 @@ function varargout = packageGUI_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
-% In case the GUI has been called without argument
-if (isfield(handles,'startMovieSelectorGUI') && handles.startMovieSelectorGUI)
+% In case the package GUI has been called without argument
+userData = get(handles.figure1, 'UserData');
+if (isfield(userData,'startMovieSelectorGUI') && userData.startMovieSelectorGUI)
     menu_file_open_Callback(hObject, eventdata, handles)
 end
 
@@ -121,10 +118,10 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_done (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-userData = get(handles.figure1, 'UserData');
-for i = 1: length(userData.MD)
-    userData.MD(i).saveMovieData
-end
+% userData = get(handles.figure1, 'UserData');
+% for i = 1: length(userData.MD)
+%     userData.MD(i).save
+% end
 delete(handles.figure1);
 
 % --- Executes on button press in pushbutton_status.
@@ -135,12 +132,12 @@ function pushbutton_status_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
-% if newMovieDataGUI exist
+% if movieDataGUI exist
 if isfield(userData, 'overviewFig') && ishandle(userData.overviewFig)
     delete(userData.overviewFig)
 end
 
-userData.overviewFig = newMovieDataGUI('mainFig',handles.figure1, 'overview', userData.MD(userData.id));
+userData.overviewFig = movieDataGUI(userData.MD(userData.id));
 set(handles.figure1, 'UserData', userData);
 
 % --- Executes on button press in pushbutton_save.
@@ -152,7 +149,7 @@ function pushbutton_save_Callback(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
 
 for i = 1: length(userData.MD)
-    userData.MD(i).saveMovieData
+    userData.MD(i).save
 end
 
 set(handles.text_body3, 'Visible', 'on')
@@ -193,131 +190,6 @@ else
    userfcn_updateGUI(handles, 'initialize') 
 end
 
-% --- Executes on button press in checkbox_.
-function checkbox_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_ (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox_
-props=get(hObject,{'Value','Tag'});
-procStatus=props{1};
-procID = str2double(props{2}(length('checkbox_')+1:end));
-
-userfcn_checkAllMovies(procID, procStatus, handles);
-userfcn_lampSwitch(procID, procStatus, handles);
-
-
-% --- Executes on button press in pushbutton_set_.
-function pushbutton_set_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_set_ (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-userData = get(handles.figure1, 'UserData');
-prop=get(hObject,'Tag');
-procID = str2double(prop(length('pushbutton_set_')+1:end))
-% procID = 1;
-
-
-crtProc=userData.crtPackage.processClassNames_{procID};
-crtProcGUI=str2func([regexprep(crtProc,'(\<[A-Z])','${lower($1)}') 'GUI']);
-
-userData.setFig(procID) = crtProcGUI('mainFig',handles.figure1,procID);
-set(handles.figure1, 'UserData', userData);
-guidata(hObject,handles);
-
-% --- Executes on button press in pushbutton_show_.
-function pushbutton_show__Callback(hObject, eventdata, handles)
-
-procID = 1;
-userData = get(handles.figure1, 'UserData');
-
-% ----------------------------------
-crtProc = userData.crtPackage.processes_{procID};
-% Make sure output exists
-chan = [];
-for i = 1:length(userData.MD(userData.id).channels_)
-    
-    if ~isempty(crtProc.outParams_{i})
-        chan = i; 
-        break
-    end
-end
-
-if isempty(chan)
-   warndlg('The current step does not have any output yet.','No Output','modal');
-   return
-end
-
-% Make sure detection output is valid
-firstframe = [];
-for i = 1:length(crtProc.outParams_{chan}.movieInfo)
-   
-    if ~isempty(crtProc.outParams_{chan}.movieInfo(i).amp)
-        firstframe = i;
-        break
-    end
-end
-
-if isempty(firstframe)
-    warndlg('The detection result is empty. There is nothing to visualize.','Empty Output','modal');
-   return
-end
-% -------------------------------------
-
-if isfield(userData, 'resultFig') && ishandle(userData.resultFig)
-    
-    delete(userData.resultDet)
-end
-%     userData.resultDet = userData.crtPackage.processes_{procID}.showResult;
-    userData.resultDet = detectionVisualGUI('mainFig', handles.figure1, procID);
-
-
-set(handles.figure1, 'UserData', userData);
-
-
-% --- Executes on button press in pushbutton_show_2.
-function pushbutton_show_2_Callback(hObject, eventdata, handles)
-
-procID = 2;
-userData = get(handles.figure1, 'UserData');
-
-% ----------------------------------------------
-crtProc = userData.crtPackage.processes_{procID};
-% Make sure output exists
-chan = [];
-for i = 1:length(userData.MD(userData.id).channels_)
-    
-    if ~isempty(crtProc.outParams_{i})
-        chan = i; 
-        break
-    end
-end
-
-if isempty(chan)
-   warndlg('The current step does not have any output yet.','No Output','modal');
-   return
-end
-
-% Make sure detection output is valid
-
-if isempty(crtProc.outParams_{chan}.tracksFinal)
-    warndlg('The tracking result is empty. There is nothing to visualize.','Empty Output','modal');
-    return
-end
-
-% --------------------------------------------------
-
-if isfield(userData, 'resultFig') && ishandle(userData.resultFig)
-    
-    delete(userData.resultDet)
-end
-%     userData.resultDet = userData.crtPackage.processes_{procID}.showResult;
-    userData.resultDet = trackingVisualGUI('mainFig', handles.figure1, procID);
-
-
-set(handles.figure1, 'UserData', userData);
-
 
 % --- Executes on button press in pushbutton_run.
 function pushbutton_run_Callback(hObject, eventdata, handles)
@@ -326,308 +198,7 @@ function pushbutton_run_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 % userfcn_pushbutton_run_common
 
-
-% This is a common section of code called by pushbutton_run_Callback
-% when user click the "Run" button on package control panels.
-%
-% Chuangang Ren
-% 11/2010
-
-userData = get(handles.figure1,'UserData');
-
-movieRun = []; % id of movie to run
-numMD = length(userData.MD); % number of movies
-
-
-% Get check box status of current movie and update user data
-userData.statusM(userData.id).Checked = userfcn_saveCheckbox(handles);
-set(handles.figure1, 'UserData', userData)
-
-% Determine the movie(s) to be processed
-if ~get(handles.checkbox_runall, 'Value')
-    
-    if any(userData.statusM(userData.id).Checked)
-       movieRun = cat(2, movieRun, userData.id);
-    end
-else
-    
-    % Check other movies
-    for i = 0:numMD-1
-        k = mod( userData.id + i, numMD);
-        if k == 0 
-            k = numMD; 
-        end
-    
-        if any(userData.statusM(k).Checked)
-            movieRun = cat(2, movieRun, k);
-        end
-    end     
-end
-
-if isempty(movieRun)
-    warndlg('No step is selected, please select a step to process.','No Step Selected','modal');
-    return
-end
-
-
-
-% ----------------------- Pre-processing examination ----------------------
-
-
-% movie exception (same length of movie data)
-movieException = cell(1, numMD);
-
-procCheck = cell(1, numMD);%  id of checked processes 
-procRun = cell(1, numMD);%  id of processes to run
-optionalProcID = cell(1, numMD);% id of first-time-run optional process
-
-for x = movieRun
-    
-
-procCheck{x} = find(userData.statusM(x).Checked); 
-
-% Check if process exist
-for i = procCheck{x}
-    if isempty (userData.package(x).processes_{i})
-        
-        ME = MException('lccb:run:setup', 'Step %d is not set up yet. Tip: when step is set up successfully, the step name becomes bold.',i);
-        movieException{x} = cat(2, movieException{x}, ME);
-        
-    end    
-end
-
-if ~isempty(  movieException{x} )
-   continue 
-end
-
-% Check if selected processes have alrady be successfully run
-% If force run, re-run every process that is checked
-if ~get(handles.checkbox_forcerun, 'Value')
-
-    k = true;
-    for i = procCheck{x}
-
-        if  ~( userData.package(x).processes_{i}.success_ && ...
-            ~userData.package(x).processes_{i}.procChanged_ ) || ...
-            ~userData.package(x).processes_{i}.updated_
-        
-            k = false;
-            procRun{x} = cat(2, procRun{x}, i);
-        end
-    end
-    if k
-        movieRun = setdiff(movieRun, x);
-        continue
-    end
-else
-    procRun{x} = procCheck{x};
-end
-
-
-
-% Package full sanity check. Sanitycheck every checked process
-procEx = userData.package(x).sanityCheck(true, procRun{x});
-
-% Return user data !!!
-set(handles.figure1, 'UserData', userData)
-
-for i = procRun{x}
-   if ~isempty(procEx{i})
-       
-       % Check if there is fatal error in exception array
-       if strcmp(procEx{i}(1).identifier, 'lccb:set:fatal') || ...
-               strcmp(procEx{i}(1).identifier, 'lccb:input:fatal')
-           
-           % Sanity check error - switch GUI to the x th movie 
-           if x ~= userData.id
-             set(handles.popupmenu_movie, 'Value', x)
-             popupmenu_movie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
-           end
-           
-           userfcn_drawIcon(handles,'error', i, procEx{i}(1).message, true); % user data is retrieved, updated and submitted
-           
-           ME = MException('lccb:run:sanitycheck', 'Step %d %s: \n%s', i,userData.package(x).processes_{i}.name_, procEx{i}(1).message);
-           movieException{x} = cat(2, movieException{x}, ME);
-           
-       end
-   end
-end
-
-% Refresh user data !!!
-userData = get(handles.figure1, 'UserData');
-
-
-end
-
-% --------------------- pre-processing examination ends -------------------
-
-% Ok, now all evils are in movieException (1 x movielength  cell array), if there is any
-% if yes - abort program and popup a error report
-% if no - continue to process movie data
-if isempty(movieRun)
-    warndlg('All selected steps have been processed successfully. Please check the ''Force Run'' check box if you want to re-process the successful steps.','No Step Selected','modal');
-    return
-end
-
-temp = find(~cellfun(@(x)isempty(x), movieException, 'UniformOutput', true));
-
-if ~isempty(temp)
-    msg = [];
-    for i = 1:length(temp)
-        if i == 1
-            msg = strcat(msg, sprintf('Movie %d - %s:', temp(i), userData.MD(temp(i)).movieDataFileName_));
-        else
-            msg = strcat(msg, sprintf('\n\n\nMovie %d - %s:', temp(i), userData.MD(temp(i)).movieDataFileName_));
-        end
-        for j = 1:length(movieException{temp(i)})
-            msg = strcat(msg, sprintf('\n-- %s', movieException{temp(i)}(j).message));
-        end
-
-    end
-    msg = strcat(msg, sprintf('\n\n\nPlease solve the above problems before continuing. The Movie(s) couldn’t be processed.'));
-    titlemsg = sprintf('Processing could not be continued for the following reasons:');
-    
-    % if msgboxGUI exist
-    if isfield(userData, 'msgboxGUI') && ishandle(userData.msgboxGUI)
-        delete(userData.msgboxGUI)
-    end    
-    
-    userData.msgboxGUI = msgboxGUI('title',titlemsg,'text', msg);
-    return
-    
-end
-
-% ------------------------ Start Processing -------------------------------
-kk = 0;
-for x = movieRun
-    
-kk = kk+1;    
-if x ~= userData.id
-    
-    set(handles.popupmenu_movie, 'Value', x)
-    set(handles.figure1, 'UserData', userData)
-    
-    popupmenu_movie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
-    userData = get(handles.figure1, 'UserData');
-end
-    
-% Find first-time-run optional process ID
-for i = intersect(procRun{x}, userData.optProcID);
-    if ~userData.package(x).processes_{i}.success_
-        optionalProcID{x} = cat(2, optionalProcID{x}, i);
-    end
-end
-
-% Set all running processes' sucess = false; 
-for i = procRun{x}
-    userData.crtPackage.processes_{i}.setSuccess(false);
-end
-
-% Clear icons of selected processes
-% Return user data !!!
-set(handles.figure1, 'UserData', userData)
-userfcn_drawIcon(handles,'clear',procRun{x},'',true); % user data is retrieved, updated and submitted
-% Refresh user data !!!
-userData = get(handles.figure1, 'UserData');
-
-% Disable 'Run' button
-set(handles.pushbutton_run, 'Enable', 'off')
-set(handles.checkbox_forcerun, 'Enable', 'off')
-set(handles.checkbox_runall, 'Enable', 'off')
-set(handles.text_status, 'Visible', 'on')
-
-% Run algorithms!
-try
-    % Return user data !!!
-    set(handles.figure1, 'UserData', userData)
-    
-    for i = procRun{x}
-        set(handles.text_status, 'String', sprintf('Step %d - Processing %d of totally %d movies ...', i, kk, length(movieRun)) )
-        userfcn_runProc_dfs(i, procRun{x}, handles); % user data is retrieved, updated and submitted
-
-    end
-    
-catch ME
-    
-    set(handles.pushbutton_run, 'Enable', 'on') %%%%%
-    set(handles.checkbox_forcerun, 'Enable', 'on') %%%%%
-    set(handles.checkbox_runall, 'Enable', 'on') %%%%%
-    set(handles.text_status, 'Visible', 'off') %%%%%
-    throw(ME) %%%%%
-    
-    % Save the error into movie Exception cell array
-    movieException{x} = ME;
-    
-    procRun{x} = procRun{x}(procRun{x} < i);
-    optionalProcID{x} = optionalProcID{x}(optionalProcID{x} < i);
-    
-    
-end
-
-% Refresh user data !!!
-userData = get(handles.figure1, 'UserData');
-set(handles.pushbutton_run, 'Enable', 'on')
-set(handles.checkbox_forcerun, 'Enable', 'on')
-set(handles.checkbox_runall, 'Enable', 'on')
-set(handles.text_status, 'Visible', 'off')
-
-
-
-% ------- Check optional processes ----------
-
-% Return user data !!!
-set(handles.figure1, 'UserData', userData)
-% In here, optionalProcID are successfuly first-time-run optional process ID
-if ~isempty(optionalProcID{x})
-    
-    procEx = userData.crtPackage.checkOptionalProcess(procRun{x}, optionalProcID{x});
-    
-    for i = 1:size(userData.dependM, 1)
-        if ~isempty(procEx{i})
-            
-            userfcn_drawIcon(handles,'warn',i,procEx{i}(1).message, true); % user data is retrieved, updated and submitted
-        
-        end
-    end
-end
-
-end
-
-% ----------------------------- Create error report ---------------------------------------
-
-
-temp = find(~cellfun(@(x)isempty(x), movieException, 'UniformOutput', true));
-
-if ~isempty(temp)
-    msg = [];
-    for i = 1:length(temp)
-        if i == 1
-            msg = strcat(msg, sprintf('Movie %d - %s:\n\n%s', ...
-                temp(i), userData.MD(temp(i)).movieDataFileName_, movieException{x}.message));
-        else
-            msg = strcat(msg, sprintf('\n\n\nMovie %d - %s:\n\n%s', ...
-                temp(i), userData.MD(temp(i)).movieDataFileName_, movieException{x}.message));
-        end
-    end
-   
-    msg = strcat(msg, sprintf('\n\n\nPlease verify your settings are correct. Feel free to contact us if you have question regarding this error.\n\nPlease help us improve the software by clearly reporting the scenario when this error occurs, and the above error information to us (error information is also displayed in Matlab command line).\nFor contact information please refer to the following URL:\n\nlccb.hms.harvard.edu/software.html'));
-
-    % if msgboxGUI exist
-    if isfield(userData, 'msgboxGUI') && ishandle(userData.msgboxGUI)
-        delete(userData.msgboxGUI)
-    end   
-    if length(temp) == 1
-        userData.msgboxGUI = msgboxGUI('title','The processing of following movie is terminated by run time error:','text', msg); 
-    else
-        userData.msgboxGUI = msgboxGUI('title','The processing of following movies are terminated by run time errors:','text', msg); 
-    end
-    
-elseif length(movieRun) > 1 
-    userData.iconHelpFig = helpdlg('All your movie data has been processed successfully.', 'UTrack Package');
-    set(handles.figure1, 'UserData', userData)
-end
-
-
+userfcn_pushbutton_run_common
 
 % --- Executes when user attempts to close figure1.
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
@@ -649,7 +220,7 @@ user_response = questdlg('Do you want to save the current progress?', ...
 switch lower(user_response)
     case 'yes'
         for i = 1: length(userData.MD)
-            userData.MD(i).saveMovieData
+            userData.MD(i).save
         end
         delete(handles.figure1);
     case 'no'
@@ -662,50 +233,16 @@ end
 function figure1_DeleteFcn(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
-% setFlag = getappdata(hObject, 'setFlag');
 
-% Delete setting figures (multiple)
-if isfield(userData, 'setFig')
-    for i = 1: length(userData.setFig)
-        if userData.setFig(i)~=0 && ishandle(userData.setFig(i))
-            delete(userData.setFig(i))
-        end
-    end
-end
-
-% Close result figures (multiple)
-if isfield(userData, 'resultFig') && userData.resultFig~=0 && ishandle(userData.resultFig)
-
-	delete(userData.resultFig(i))
-end
-
-% If open, delete MovieData Overview GUI figure (single)
-if isfield(userData, 'setupMovieDataFig') && ishandle(userData.setupMovieDataFig)
-   delete(userData.setupMovieDataFig) 
-end
-
-% If open, delete MovieData Overview GUI figure (single)
-if isfield(userData, 'overviewFig') && ishandle(userData.overviewFig)
-   delete(userData.overviewFig) 
-end
-
-% Delete pre-defined package help dialog (single)
-if isfield(userData, 'packageHelpFig') && ishandle(userData.packageHelpFig)
-   delete(userData.packageHelpFig) 
-end
-
-% Delete pre-defined icon help dialog (single)
-if isfield(userData, 'iconHelpFig') && ishandle(userData.iconHelpFig)
-   delete(userData.iconHelpFig) 
-end
-
-% Delete pre-defined process help dialogssetting figures (multiple)
-if isfield(userData, 'processHelpFig')
-    for i = 1: length(userData.processHelpFig)
-        if userData.processHelpFig(i)~=0 && ishandle(userData.processHelpFig(i))
-            delete(userData.processHelpFig(i))
-        end
-    end
+% Find all figures stored in userData and delete them
+if isempty(userData), return; end
+userDataFields=fieldnames(userData);
+isFig = ~cellfun(@isempty,regexp(userDataFields,'Fig$'));
+userDataFigs = userDataFields(isFig);
+for i=1:numel(userDataFigs)
+     figHandles = userData.(userDataFigs{i});
+     validFigHandles = figHandles(ishandle(figHandles)&logical(figHandles));     
+     delete(validFigHandles);
 end
 
 % msgboxGUI used for error reports
@@ -752,10 +289,10 @@ function menu_file_open_Callback(hObject, eventdata, handles)
 userData = get(handles.figure1,'Userdata');
 if isfield(userData,'MD')
     for i = 1: length(userData.MD)
-        userData.MD(i).saveMovieData
+        userData.MD(i).save
     end
 end
-movieSelectorGUI(handles.packageName);
+movieSelectorGUI(userData.packageName);
 delete(handles.figure1)
 
 
@@ -763,7 +300,7 @@ delete(handles.figure1)
 function menu_file_save_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
-userData.MD(userData.id).saveMovieData
+userData.MD(userData.id).save
 
 set(handles.text_body3, 'Visible', 'on')
 pause(1)
@@ -776,3 +313,81 @@ function menu_file_exit_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 delete(handles.figure1);
+
+
+% --- Executes on button press in pushbutton_clear.
+function pushbutton_clear_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_clear (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+userData = get(handles.figure1, 'UserData');
+props=get(hObject,{'Value','Tag'});
+procStatus=props{1};
+procID = str2double(props{2}(length('pushbutton_clear_')+1:end));
+
+for x = 1: length(userData.MD)
+    userData.MD(x).deleteProcess(userData.package(x).processes_{procID})
+end
+
+
+set(handles.figure1, 'UserData', userData);
+
+userfcn_checkAllMovies(procID, procStatus, handles);
+userfcn_lampSwitch(procID, procStatus, handles);
+
+% --- Executes on button press in pushbutton_show.
+function pushbutton_show_Callback(hObject, ~, handles)
+
+userData = get(handles.figure1, 'UserData');
+prop=get(hObject,'Tag');
+procID = str2double(prop(length('pushbutton_show_')+1:end));
+
+if isfield(userData, 'resultFig') && ishandle(userData.resultFig)
+    delete(userData.resultFig)
+end
+
+
+% Super-lame way to call the different resultDisplayGUI inputs
+% Should work for the moment!
+% Modifications should be added to the resultDisplay methods (should be
+% generic!!!!)
+if isa(userData.crtPackage,'UTrackPackage')
+    userData.resultFig = userData.crtPackage.processes_{procID}.resultDisplay(handles.figure1,procID);
+else
+    userData.resultFig = userData.crtPackage.processes_{procID}.resultDisplay();
+end
+    
+set(handles.figure1, 'UserData', userData);
+
+
+% --- Executes on button press in pushbutton_set.
+function pushbutton_set_Callback(hObject, ~, handles)
+% hObject    handle to pushbutton_set (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+userData = get(handles.figure1, 'UserData');
+prop=get(hObject,'Tag');
+procID = str2double(prop(length('pushbutton_set_')+1:end));
+
+%Guess associated proces GUI from process name
+crtProc=userData.crtPackage.processClassNames_{procID};
+crtProcGUI=str2func([regexprep(crtProc,'(\<[A-Z])','${lower($1)}') 'GUI']);
+
+userData.setFig(procID) = crtProcGUI('mainFig',handles.figure1,procID);
+set(handles.figure1, 'UserData', userData);
+guidata(hObject,handles);
+
+
+% --- Executes on button press in checkbox.
+function checkbox_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox
+props=get(hObject,{'Value','Tag'});
+procStatus=props{1};
+procID = str2double(props{2}(length('checkbox_')+1:end));
+
+userfcn_checkAllMovies(procID, procStatus, handles);
+userfcn_lampSwitch(procID, procStatus, handles);

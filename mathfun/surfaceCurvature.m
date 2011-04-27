@@ -12,10 +12,11 @@ function [K,H] = surfaceCurvature(S,N)
 % 
 % Input: 
 % 
-%   surface - The surface to calculate curvature on, using the FV
-%   (Faces/vertices format) used by patch, isosurface etc.
+%   surface - The surface to calculate curvature on, using the FV format
+%   (Faces/vertices) used by patch, isosurface etc.
 % 
-%   normals - The normals of the surface at each vertex. 
+%   normals - The normals of the surface at each vertex. These normals need
+%   not be of unit length.
 % 
 %   Example:
 %   To calculate the local curvature of an isosurface of an image, use the
@@ -41,6 +42,11 @@ function [K,H] = surfaceCurvature(S,N)
 %   mean curvature at each face.
 % 
 %
+% References:
+%
+% [1] Theisel et al, "Normal Based Estimation of the Curvature Tensor for
+% Triangular Meshes", Proceeeding of the Computer Graphics and
+% Applications, 12th pacific Conference (PG '04)
 % 
 %Hunter Elliott 
 %3/2010
@@ -50,11 +56,15 @@ if nargin < 2 || isempty(S) || isempty(N)
     error('Must input surface mesh and surface normals!')
 end
 
+if ~isfield(S,'vertices') || ~isfield(S,'faces')
+    error('The input surface must be a structure using the FV format, with a field named vertices and a field named faces!')
+end
+
 %Number of faces
 nTri = size(S.faces,1);
 
 %Barycentric coordinates for location of interpolated normal
-abc = ones(1,3) * 1/3; %This will estimate curvature at the center of each face.
+abc = ones(1,3) * 1/3; %This will estimate curvature at the barycenter of each face.
 
 %Init array for curvature values
 K = zeros(nTri,1);
@@ -75,7 +85,7 @@ for i = 1:nTri
     %Triangle normal
     m = cross(X(2,:)-X(1,:),X(3,:)-X(2,:));
     
-    %Gaussian curvature
+    %Gaussian curvature - formula (12) in ref [1]
     K(i) = det(n) / (dot(ni,ni)*dot(ni,m));
     
            
@@ -84,8 +94,8 @@ for i = 1:nTri
         cross(n(2,:),X(1,:)-X(3,:))+...
         cross(n(3,:),X(2,:)-X(1,:));
     
-    %Mean curvature
-    H(i) = .5*dot(ni,h) / (norm(ni)*dot(ni,m));
+    %Mean curvature - formula 
+    H(i) = .5*dot(ni,h) / (sqrt(dot(ni,ni))*dot(ni,m));
               
 end
 

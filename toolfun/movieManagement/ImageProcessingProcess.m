@@ -7,12 +7,6 @@ classdef ImageProcessingProcess < Process
     %
     % Hunter Elliott, 5/2010
     %
-    properties (SetAccess = protected, GetAccess = public)
-        
-        outImagePaths_ %Location of processed images for each channel.
-        inImagePaths_ %Location of images which were processed. May or may not be the original, raw images.        
-        
-    end
     
     methods (Access = public)
         
@@ -39,20 +33,20 @@ classdef ImageProcessingProcess < Process
               if ~isempty(inImagePaths) && numel(inImagePaths) ...
                       ~= numel(owner.channels_) || ~iscell(inImagePaths)
                  error('lccb:set:fatal','Input image paths must be a cell-array of the same size as the number of image channels!\n\n'); 
-              end
-              obj.inImagePaths_ = inImagePaths;              
+              end         
+                obj.inFilePaths_ = inImagePaths;
             else
                 %Default is to use raw images as input.
-                obj.inImagePaths_ = owner.getChannelPaths;               
+                obj.inFilePaths_ = owner.getChannelPaths;               
             end                        
             if nargin > 5               
-              if ~isempty(outImagePaths) && numel(outImagePaths) ...
-                      ~= numel(owner.channels_) || ~iscell(outImagePaths)
-                 error('lccb:set:fatal','Output image paths must be a cell-array of the same size as the number of image channels!\n\n'); 
-              end
-              obj.outImagePaths_ = outImagePaths;              
+                if ~isempty(outImagePaths) && numel(outImagePaths) ... 
+                        ~= numel(owner.channels_) || ~iscell(outImagePaths)
+                    error('lccb:set:fatal','Output image paths must be a cell-array of the same size as the number of image channels!\n\n'); 
+                end
+                obj.outFilePaths_ = outImagePaths;              
             else
-                obj.outImagePaths_ = cell(1,numel(owner.channels_));               
+                obj.outFilePaths_ = cell(1,numel(owner.channels_));               
             end
             
         end
@@ -77,7 +71,7 @@ classdef ImageProcessingProcess < Process
                        ['The directory specified for channel ' ...
                        num2str(chanNum(j)) ' is invalid!']) 
                else
-                   obj.outImagePaths_{chanNum(j)} = imagePath{j};                
+                   obj.outFilePaths_{1,chanNum(j)} = imagePath{j};                
                end
             end
             
@@ -90,7 +84,7 @@ classdef ImageProcessingProcess < Process
             end
             
             for j = 1:numel(chanNum)
-                obj.outImagePaths_{chanNum(j)} = [];
+                obj.outFilePaths_{1,chanNum(j)} = [];
             end
         end
         function setInImagePath(obj,chanNum,imagePath)
@@ -119,14 +113,14 @@ classdef ImageProcessingProcess < Process
                        ['The directory specified for channel ' ...
                        num2str(chanNum(j)) ' does not contain any images!!']) 
                    else                       
-                       obj.inImagePaths_{chanNum(j)} = imagePath{j};                
+                       obj.inFilePaths_{1,chanNum(j)} = imagePath{j};                
                    end
                end
             end                        
         end
         function fileNames = getOutImageFileNames(obj,iChan)
             if obj.checkChannelOutput(iChan)
-                fileNames = cellfun(@(x)(imDir(x)),obj.outImagePaths_(iChan),'UniformOutput',false);
+                fileNames = cellfun(@(x)(imDir(x)),obj.outFilePaths_(1,iChan),'UniformOutput',false);
                 fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
                 nIm = cellfun(@(x)(length(x)),fileNames);
                 if ~all(nIm == obj.owner_.nFrames_)                    
@@ -140,7 +134,7 @@ classdef ImageProcessingProcess < Process
         end
         function fileNames = getInImageFileNames(obj,iChan)
             if obj.checkChanNum(iChan)
-                fileNames = cellfun(@(x)(imDir(x)),obj.inImagePaths_(iChan),'UniformOutput',false);
+                fileNames = cellfun(@(x)(imDir(x)),obj.inFilePaths_(1,iChan),'UniformOutput',false);
                 fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
                 nIm = cellfun(@(x)(length(x)),fileNames);
                 if ~all(nIm == obj.owner_.nFrames_)                    
@@ -163,7 +157,7 @@ classdef ImageProcessingProcess < Process
            
            OK =  arrayfun(@(x)(x <= nChanTot && ...
                              x > 0 && isequal(round(x),x) && ...
-                             ~isempty(imDir(obj.outImagePaths_{x}))),iChan);
+                             ~isempty(imDir(obj.outFilePaths_{1,x}))),iChan);
         end
         
         
@@ -194,7 +188,7 @@ classdef ImageProcessingProcess < Process
             %get the image names
             imNames = getOutImageFileNames(obj,iChan);
             
-            outIm = imread([obj.outImagePaths_{iChan} ...
+            outIm = imread([obj.outFilePaths_{1,iChan} ...
                 filesep imNames{1}{iFrame}]);
             
         end

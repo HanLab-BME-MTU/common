@@ -6,12 +6,6 @@ classdef ImageCorrectionProcess < ImageProcessingProcess
     %Hunter Elliott, 5/2010
     %
     
-    properties (SetAccess = private, GetAccess = public)
-        
-        %Paths for the images used in calculating/performing the correction.
-        correctionImagePaths_ = {};
-        
-    end
     
     methods (Access = public)
         
@@ -44,7 +38,9 @@ classdef ImageCorrectionProcess < ImageProcessingProcess
             obj = obj@ImageProcessingProcess(super_args{:});
             
             if nargin > 6
-                obj.correctionImagePaths_ = correctionImagePaths;
+                obj.inFilePaths_(2,:) = correctionImagePaths;
+            else
+                obj.inFilePaths_(2,:) = cell(1,numel(owner.channels_));
             end
             
         end                 
@@ -62,7 +58,7 @@ classdef ImageCorrectionProcess < ImageProcessingProcess
             end
             for j = 1:nChan
                 if exist(imagePaths{j},'dir') && numel(imDir(imagePaths{j})) > 0
-                    obj.correctionImagePaths_{iChan(j)} = imagePaths{j};
+                    obj.inFilePaths_{2,iChan(j)} = imagePaths{j};
                 else
                    error(['The correction image path specified for channel ' num2str(iChan(j)) ' was not a valid image-containing directory!']) 
                 end
@@ -71,7 +67,7 @@ classdef ImageCorrectionProcess < ImageProcessingProcess
         
         function fileNames = getCorrectionImageFileNames(obj,iChan)
             if obj.checkChanNum(iChan)
-                fileNames = cellfun(@(x)(imDir(x)),obj.correctionImagePaths_(iChan),'UniformOutput',false);
+                fileNames = cellfun(@(x)(imDir(x)),obj.inFilePaths_(2,iChan),'UniformOutput',false);
                 fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
                 nIm = cellfun(@(x)(length(x)),fileNames);
                 if any(nIm == 0)
@@ -98,7 +94,9 @@ classdef ImageCorrectionProcess < ImageProcessingProcess
                    tmp = load([obj.funParams_.OutputDirectory filesep corrImNames(j).name]);
                    tmpF = fieldnames(tmp);
                    imagesc(tmp.(tmpF{1}));
-                   colorbar,axis image,axis off,colormap(jet(2^16)) %Use hi-res colormap to avoid apparent stratification
+                   % Use default colormap (higher resolution  unsupported
+                   % by Windows)
+                   colorbar,axis image,axis off,%colormap(jet(2^16)) %Use hi-res colormap to avoid apparent stratification
                    title(['Processed ' obj.name_ ' Image, Channel ' corrImNames(j).name(end-4) ]);
                end
 

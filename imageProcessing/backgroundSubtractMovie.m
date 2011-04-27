@@ -129,8 +129,8 @@ if isempty(iBMProc) || isempty(iSCProc)
     error('Background masking and shade correction have not yet been performed on this movie! Please run first!!')
 else        
     %Check which channels have background masks, shade correction
-    hasBM = cellfun(@(x)(~isempty(x)),movieData.processes_{iBMProc}.outMaskPaths_);
-    hasSC = cellfun(@(x)(~isempty(x)),movieData.processes_{iSCProc}.outImagePaths_);
+    hasBM = cellfun(@(x)(~isempty(x)),movieData.processes_{iBMProc}.outFilePaths_);
+    hasSC = cellfun(@(x)(~isempty(x)),movieData.processes_{iSCProc}.outFilePaths_);
     
     %Check that these are the same
     if ~all(hasSC(p.ChannelIndex))
@@ -146,10 +146,10 @@ else
     for j = 1:nChanCorr
         
         movieData.processes_{iProc}.setCorrectionImagePath(p.ChannelIndex(j),...
-                movieData.processes_{iBMProc}.outMaskPaths_{p.MaskChannelIndex(j)});               
+                movieData.processes_{iBMProc}.outFilePaths_{p.MaskChannelIndex(j)});               
         
         movieData.processes_{iProc}.setInImagePath(p.ChannelIndex(j),...
-            movieData.processes_{iSCProc}.outImagePaths_{p.ChannelIndex(j)});    
+            movieData.processes_{iSCProc}.outFilePaths_{1,p.ChannelIndex(j)});    
         
     end
 end
@@ -200,9 +200,9 @@ backgroundValues = cell(1,nChan);
 %Go through each image and apply the appropriate shade correction
 for iChan = 1:nChanCorr
     
-    inDir  = movieData.processes_{iProc}.inImagePaths_{p.ChannelIndex(iChan)};    
-    outDir = movieData.processes_{iProc}.outImagePaths_{p.ChannelIndex(iChan)};    
-    corrDir = movieData.processes_{iProc}.correctionImagePaths_{p.ChannelIndex(iChan)};
+    inDir  = movieData.processes_{iProc}.inFilePaths_{1,p.ChannelIndex(iChan)};    
+    outDir = movieData.processes_{iProc}.outFilePaths_{1,p.ChannelIndex(iChan)};    
+    corrDir = movieData.processes_{iProc}.inFilePaths_{2,p.ChannelIndex(iChan)};
     
     bakNames = movieData.processes_{iBMProc}.getOutMaskFileNames(p.MaskChannelIndex(iChan));
 
@@ -265,7 +265,7 @@ end
 %Log the correction in the movieData object and save it
 
 movieData.processes_{iProc}.setDateTime;
-movieData.saveMovieData;
+movieData.save;
 
 disp('Finished Correcting!')
 

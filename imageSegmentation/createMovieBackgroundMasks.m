@@ -154,7 +154,7 @@ for j = 1:nChanBack;
     iP = p.SegProcessIndex(find(hasMasks(j,:),1));
     
     movieData.processes_{iProc}.setInMaskPath(p.ChannelIndex(j),...
-        movieData.processes_{iP}.outMaskPaths_(p.ChannelIndex(j)));
+        movieData.processes_{iP}.outFilePaths_(p.ChannelIndex(j)));
     
     %Create string for current directory
     currDir = [p.OutputDirectory filesep 'BackgroundMasks_channel_' num2str(p.ChannelIndex(j))];    
@@ -177,7 +177,7 @@ disp('Starting background mask creation...')
 
 
 maskFileNames = movieData.processes_{iProc}.getInMaskFileNames(p.ChannelIndex);
-maskDirs = movieData.processes_{iProc}.inMaskPaths_(p.ChannelIndex);
+maskDirs = movieData.processes_{iProc}.inFilePaths_(p.ChannelIndex);
 
 nMasks = movieData.nFrames_;
 nMaskTot = nMasks * nChanBack;
@@ -189,7 +189,7 @@ end
 for iChan = 1:nChanBack
         
     
-    currBkgrndMaskDir = movieData.processes_{iProc}.outMaskPaths_{p.ChannelIndex(iChan)};                  
+    currBkgrndMaskDir = movieData.processes_{iProc}.outFilePaths_{p.ChannelIndex(iChan)};                  
     
     
     disp(['Creating background masks for channel ' num2str(p.ChannelIndex(iChan)) '...']);
@@ -227,7 +227,7 @@ end
 %% ------ Log processing in moviedata and save ---- %%
 
 movieData.processes_{iProc}.setDateTime;
-movieData.saveMovieData; %Save the new movieData to disk
+movieData.save; %Save the new movieData to disk
 
 
 disp('Finished creating background masks!')

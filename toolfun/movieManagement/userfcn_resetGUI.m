@@ -14,6 +14,6 @@ userfcn_drawIcon(handles, 'clear', 1:l);
 userfcn_enable(1:l, 'on', handles)
 
 for i = 1:l
-    eval(['set(handles.checkbox_' num2str(i) ', ''FontWeight'', ''normal'', ''Value'', 0) '])
-    eval(['set(handles.pushbutton_show_' num2str(i) ', ''Enable'', ''off'') '])
+    set(handles.(['checkbox_',num2str(i)]),'FontWeight','normal','Value',0);
+    set(handles.(['pushbutton_show_',num2str(i)]),'Enable','off');
 end

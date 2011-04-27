@@ -109,7 +109,8 @@ function varargout = uTrackPackageGUI_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 % In case the GUI has been called without argument
-if (isfield(handles,'startMovieSelectorGUI') && handles.startMovieSelectorGUI)
+userData = get(handles.figure1, 'UserData');
+if (isfield(userData,'startMovieSelectorGUI') && userData.startMovieSelectorGUI)
     menu_file_open_Callback(hObject, eventdata, handles)
 end
 
@@ -121,7 +122,7 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 userData = get(handles.figure1, 'UserData');
 for i = 1: length(userData.MD)
-    userData.MD(i).saveMovieData
+    userData.MD(i).save
 end
 delete(handles.figure1);
 
@@ -133,12 +134,12 @@ function pushbutton_status_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
-% if newMovieDataGUI exist
+% if movieDataGUI exist
 if isfield(userData, 'overviewFig') && ishandle(userData.overviewFig)
     delete(userData.overviewFig)
 end
 
-userData.overviewFig = newMovieDataGUI('mainFig',handles.figure1, 'overview', userData.MD(userData.id));
+userData.overviewFig = movieDataGUI(userData.MD(userData.id));
 set(handles.figure1, 'UserData', userData);
 
 % --- Executes on button press in pushbutton_save.
@@ -150,7 +151,7 @@ function pushbutton_save_Callback(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
 
 for i = 1: length(userData.MD)
-    userData.MD(i).saveMovieData
+    userData.MD(i).save
 end
 
 set(handles.text_body3, 'Visible', 'on')
@@ -307,8 +308,7 @@ crtProc = userData.crtPackage.processes_{procID};
 % Make sure output exists
 chan = [];
 for i = 1:length(userData.MD(userData.id).channels_)
-    
-    if ~isempty(crtProc.outParams_{i})
+    if crtProc.checkChannelOutput(i)
         chan = i; 
         break
     end
@@ -320,10 +320,11 @@ if isempty(chan)
 end
 
 % Make sure detection output is valid
+load(crtProc.outFilePaths_{chan},'movieInfo');
 firstframe = [];
-for i = 1:length(crtProc.outParams_{chan}.movieInfo)
+for i = 1:length(movieInfo)
    
-    if ~isempty(crtProc.outParams_{chan}.movieInfo(i).amp)
+    if ~isempty(movieInfo(i).amp)
         firstframe = i;
         break
     end
@@ -363,7 +364,6 @@ function pushbutton_set_2_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 userData = get(handles.figure1, 'UserData');
 procID = 2;
-% userData.setFig(procID) = segmentProcessGUI('mainFig',handles.figure1,procID);
 userData.setFig(procID) = trackingProcessGUI('mainFig',handles.figure1,procID);
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
@@ -379,8 +379,7 @@ crtProc = userData.crtPackage.processes_{procID};
 % Make sure output exists
 chan = [];
 for i = 1:length(userData.MD(userData.id).channels_)
-    
-    if ~isempty(crtProc.outParams_{i})
+    if crtProc.checkChannelOutput(i)
         chan = i; 
         break
     end
@@ -392,8 +391,8 @@ if isempty(chan)
 end
 
 % Make sure detection output is valid
-
-if isempty(crtProc.outParams_{chan}.tracksFinal)
+load(crtProc.outFilePaths_{chan},'tracksFinal');
+if isempty(tracksFinal)
     warndlg('The tracking result is empty. There is nothing to visualize.','Empty Output','modal');
     return
 end
@@ -796,7 +795,7 @@ user_response = questdlg('Do you want to save the current progress?', ...
 switch lower(user_response)
     case 'yes'
         for i = 1: length(userData.MD)
-            userData.MD(i).saveMovieData
+            userData.MD(i).save
         end
         delete(handles.figure1);
     case 'no'
@@ -929,10 +928,10 @@ function menu_file_open_Callback(hObject, eventdata, handles)
 userData = get(handles.figure1,'Userdata');
 if isfield(userData,'MD')
     for i = 1: length(userData.MD)
-        userData.MD(i).saveMovieData
+        userData.MD(i).save
     end
 end
-movieSelectorGUI(handles.packageName);
+movieSelectorGUI(userData.packageName);
 delete(handles.figure1)
 
 
@@ -940,7 +939,7 @@ delete(handles.figure1)
 function menu_file_save_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
-userData.MD(userData.id).saveMovieData
+userData.MD(userData.id).save
 
 set(handles.text_body3, 'Visible', 'on')
 pause(1)

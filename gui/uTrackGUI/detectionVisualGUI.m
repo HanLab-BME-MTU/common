@@ -89,8 +89,7 @@ userData.crtProc = userData.crtPackage.processes_{userData.procID};
 % Make sure output exists
 chan = [];
 for i = 1:length(userData.MD.channels_)
-    
-    if ~isempty(userData.crtProc.outParams_{i})
+    if userData.crtProc.checkChannelOutput(i)
         chan = i; 
         break
     end
@@ -100,11 +99,12 @@ if isempty(chan)
    error('User-defined: the process does not have output yet.') 
 end
 
+load(userData.crtProc.outFilePaths_{chan},'movieInfo');
 % Make sure detection output is valid
 firstframe = [];
-for i = 1:length(userData.crtProc.outParams_{chan}.movieInfo)
+for i = 1:length(movieInfo)
    
-    if ~isempty(userData.crtProc.outParams_{chan}.movieInfo(i).amp)
+    if ~isempty(movieInfo(i).amp)
         firstframe = i;
         break
     end
@@ -115,10 +115,10 @@ if isempty(firstframe)
 end
 
 
-
+userData.movieInfo=movieInfo;
 userData.chan = chan;
 userData.firstframe = firstframe;
-userData.lastframe = length(userData.crtProc.outParams_{chan}.movieInfo);
+userData.lastframe = length(userData.movieInfo);
 
 userData.toolName = {'overlayFeaturesMovie'};
 
@@ -356,7 +356,7 @@ set(handles.figure1, 'UserData', userData);
 
 % Display result
 
-overlayFeaturesMovie(userData.crtProc.outParams_{userData.chan}.movieInfo, ...
+overlayFeaturesMovie(userData.movieInfo, ...
     visualParams.startend, visualParams.saveMovie,[visualParams.movieName '.mov'],...
     visualParams.filterSigma,visualParams.showRaw,visualParams.intensityScale, ...
     visualParams.firstImageFile, visualParams.dir2saveMovie)

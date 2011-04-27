@@ -112,7 +112,14 @@ for i = procRun{x}
            % Sanity check error - switch GUI to the x th movie 
            if x ~= userData.id
              set(handles.popupmenu_movie, 'Value', x)
-             popupmenu_movie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
+             % Quick fix for callback incompatibility betwen packageGUI and
+             % oldpackageGUIs - to be solved before release
+             stack = dbstack;
+             if strcmp(stack(4).name,'packageGUI')
+                switchMovie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
+             else
+                 popupmenu_movie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
+             end
            end
            
            userfcn_drawIcon(handles,'error', i, procEx{i}(1).message, true); % user data is retrieved, updated and submitted
@@ -177,8 +184,16 @@ if x ~= userData.id
     
     set(handles.popupmenu_movie, 'Value', x)
     set(handles.figure1, 'UserData', userData)
-    
-    popupmenu_movie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
+    % Quick fix for callback incompatibility betwen packageGUI and
+    % oldpackageGUIs - to be solved before release
+    stack = dbstack;
+    if strcmp(stack(4).name,'packageGUI')
+        switchMovie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
+    else
+        popupmenu_movie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
+    end
+
+%     popupmenu_movie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
     userData = get(handles.figure1, 'UserData');
 end
     
@@ -294,6 +309,6 @@ if ~isempty(temp)
     end
     
 elseif length(movieRun) > 1 
-    userData.iconHelpFig = helpdlg('All your movies have been processed successfully.', [userData.crtPackage.name 'Package']);
+    userData.iconHelpFig = helpdlg('All your movies have been processed successfully.', [userData.crtPackage.name_ 'Package']);
     set(handles.figure1, 'UserData', userData)
 end

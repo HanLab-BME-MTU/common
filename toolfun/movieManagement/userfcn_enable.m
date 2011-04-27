@@ -20,24 +20,19 @@ if nargin < 4
 end
 
 for i = index(:)'
-    eval (['set(handles.checkbox_', num2str(i),...
-                                        ',''enable'',''',onoff,''')']);
-    eval (['set(handles.pushbutton_set_', num2str(i),...
-                                        ',''enable'',''',onoff,''')']);
-                                    
+    set(handles.(['checkbox_',num2str(i)]),'Enable',onoff);
+    set(handles.(['pushbutton_set_',num2str(i)]),'Enable',onoff);                                    
 end
+
 if check
     switch onoff
         case 'on'
-            for i = 1: length(index)
-                eval( ['set(handles.checkbox_',...
-                    num2str(index(i)),',''value'',1);'] );
-            end
+            value=1;
         case 'off'
-            for i = 1: length(index)
-                 eval( ['set(handles.checkbox_',...
-                    num2str(index(i)),',''value'',0);'] );           
-            end
+            value=0;
+    end
+    for i = 1: length(index)
+        set(handles.(['checkbox_',num2str(index(i))]),'Value',value);
     end
 
 end

@@ -167,7 +167,7 @@ classdef TransformationProcess < ImageProcessingProcess
             compName = obj.owner_.getImageFileNames(iComp);
             compIm1 = imread([compDir filesep compName{1}{1}]);
             
-            xDir = obj.outImagePaths_{iXchan};
+            xDir = obj.outFilePaths_{1,iXchan};
             xName = obj.getOutImageFileNames(iXchan);
             xIm1 = imread([xDir filesep xName{1}{1}]);
             

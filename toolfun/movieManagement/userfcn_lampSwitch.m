@@ -27,7 +27,7 @@ else
             for i = 1: length(subindex)
                parentI = find(M(subindex(i),:));
                for j = 1: length(parentI)
-                   if eval(['get(handles.checkbox_', num2str(parentI(j)),',''value'')']) ||...
+                   if get(handles.(['checkbox_' num2str(parentI(j))]),'Value') ||...
                            ( ~isempty(userData.crtPackage.processes_{parentI(j)}) && ...
                            userData.crtPackage.processes_{parentI(j)}.success_ ) ||...
                            j == index
@@ -45,8 +45,7 @@ else
                % The following code will probably not be executed
                % Leave it here just in case design is changed
                % ------------------------------------------ %
-               if eval(['get(handles.checkbox_', ...
-                                      num2str(subindex(i)),',''value'')'])
+               if get(handles.(['checkbox_' num2str(subindex(i))]),'Value')
                     userfcn_lampSwitch(subindex(i),1,handles)
                % ------------------------------------------ %
                else

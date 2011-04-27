@@ -1,6 +1,9 @@
 classdef Process < handle 
 % Defines the abstract class Process from which every user-defined process 
 % will inherit.
+%
+% A process 
+% 
 
     properties (SetAccess = private, GetAccess = public)
     % SetAccess = private - cannot change the values of variables outside object
@@ -26,8 +29,10 @@ classdef Process < handle
         
         funName_        % Function running the process
         funParams_      % Parameters for running the process
-        outParams_      % All output data or path
         visualParams_   % Visualization parameters
+        
+        inFilePaths_    % Path to the process input
+        outFilePaths_   % Path to the process output
         
     end
     methods (Access = protected)
@@ -64,11 +69,6 @@ classdef Process < handle
             obj.funParams_ = para;
         end
         
-        function setOutPara(obj, para)
-            % Reset process' parameters
-            obj.outParams_ = para;
-        end      
-
         function setVisualParams(obj, para)
             obj.visualParams_ = para;
         end
@@ -115,19 +115,33 @@ classdef Process < handle
                              x > 0 && isequal(round(x),x)),iFrame);
         end
         
-        function runProcess(obj)
+        function run(obj)
         % Run the process!
             obj.funName_(obj.owner_ );
         end
         
+        function paths=getInFilePaths(obj)
+        % Get input file paths
+            paths = obj.inFilePaths_;
+        end
+        
+        function setInFilePaths(obj,paths)
+        %  Set input file paths
+            obj.inFilePaths_=paths;
+        end
+        
+        function paths=getOutFilePaths(obj)
+        % Get output file paths
+            paths = obj.outFilePaths_;
+        end
+        
+        function setOutFilePaths(obj,paths)
+        % Set output file paths
+            obj.outFilePaths_ = paths;
+        end
     end
     methods (Abstract)
         sanityCheck(obj)
-% Common input and output path methods - to be implemented
-%         paths = getInFilePath(obj);
-%         paths = getOutFilePath(obj);
-%         setInFilePath(obj,paths);
-%         setOutFilePath(obj,paths);
         % More abstract classed goes here
         % ... ...
     end

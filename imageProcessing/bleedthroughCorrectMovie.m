@@ -143,7 +143,7 @@ if isempty(p.BleedChannelIndex)
 end
 
 %Check which channels have been background subtracted
-iHasBS  = find(cellfun(@(x)(~isempty(x)),movieData.processes_{iBSProc}.outImagePaths_));
+iHasBS  = find(cellfun(@(x)(~isempty(x)),movieData.processes_{iBSProc}.outFilePaths_));
 
 %Make sure that the bleed channels and the channel to be corrected have
 %been background subtracted
@@ -193,7 +193,7 @@ disp('Starting bleedthrough correction...')
 
 %Set the input and output images of the bleedthrough correction process    
 
-inDir = movieData.processes_{iBSProc}.outImagePaths_{p.ChannelIndex}; %input images to be corrected
+inDir = movieData.processes_{iBSProc}.outFilePaths_{1,p.ChannelIndex}; %input images to be corrected
 outDir = [p.OutputDirectory filesep dName num2str(p.ChannelIndex)]; %Corrected images
 
 mkClrDir(outDir);
@@ -207,7 +207,7 @@ inNames =  movieData.processes_{iProc}.getInImageFileNames(p.ChannelIndex);
 bleedImNames = movieData.processes_{iBSProc}.getOutImageFileNames(p.BleedChannelIndex);
 
 %Get the directories of the bleedthrough images for readability
-bleedImDir = movieData.processes_{iBSProc}.outImagePaths_(p.BleedChannelIndex);
+bleedImDir = movieData.processes_{iBSProc}.outFilePaths_(1,p.BleedChannelIndex);
 
 %Log the bleed images in the movieData
 movieData.processes_{iProc}.setCorrectionImagePath(p.BleedChannelIndex,bleedImDir);
@@ -285,7 +285,7 @@ disp('Saving results...')
 %Log the correction in the movieData object and save it
 
 movieData.processes_{iProc}.setDateTime;
-movieData.saveMovieData;
+movieData.save;
 
 
 disp('Finished Correcting!')

@@ -4,16 +4,11 @@ classdef MaskProcessingProcess < SegmentationProcess
     %create masks.
     %
     
-    properties (SetAccess = private,GetAccess = public)
-    
-       inMaskPaths_ %Mask directories which were used as input.              
-        
-    end
     
     methods(Access = public)
         
         function obj = MaskProcessingProcess(owner,name,funName, funParams,...
-                                             inMaskPaths,outMaskPaths)
+                                             inFilePaths,outFilePaths)
            % Constructor of class MaskProcessingProcess
            if nargin == 0
               super_args = {};
@@ -28,20 +23,20 @@ classdef MaskProcessingProcess < SegmentationProcess
                super_args{4} = funParams;
            end
            if nargin > 5
-               super_args{5} = outMaskPaths;
+               super_args{5} = outFilePaths;
            end
            
            % Call the superclass constructor - these values are private
            obj = obj@SegmentationProcess(super_args{:});
            
            if nargin > 4               
-              if ~isempty(inMaskPaths) && numel(inMaskPaths) ...
-                      ~= numel(owner.channels_) || ~iscell(inMaskPaths)
+              if ~isempty(inFilePaths) && numel(inFilePaths) ...
+                      ~= numel(owner.channels_) || ~iscell(inFilePaths)
                  error('lccb:set:fatal','Mask paths must be a cell-array of the same size as the number of image channels!\n\n'); 
               end
-              obj.inMaskPaths_ = inMaskPaths;              
+              obj.inFilePaths_ = inFilePaths;              
            else
-               obj.inMaskPaths_ = cell(1,numel(owner.channels_));               
+               obj.inFilePaths_ = cell(1,numel(owner.channels_));               
            end
         end
 %         function sanityCheck(obj) % throws exception
@@ -49,19 +44,19 @@ classdef MaskProcessingProcess < SegmentationProcess
 %             % 1. Check that non-empty mask paths exist
 %             % 2. Check number of mask = number of raw images
 %             
-%             for i = 1:length(obj.inMaskPaths_)
-%                 if ~isempty(obj.inMaskPaths_{i})
-%                     if ~exist(obj.inMaskPaths_{i}, 'dir')
+%             for i = 1:length(obj.inFilePaths_)
+%                 if ~isempty(obj.inFilePaths_{i})
+%                     if ~exist(obj.inFilePaths_{i}, 'dir')
 %                         error('lccb:set:fatal','Cannot find mask paths %s.\n\n', ...
-%                                 obj.inMaskPaths_{i});
+%                                 obj.inFilePaths_{i});
 %                     end                                        
 %                     
 %                     % Number of mask image files
-%                     maskFileNames = imDir(obj.inMaskPaths_{i}, true);
+%                     maskFileNames = imDir(obj.inFilePaths_{i}, true);
 %                     
 %                     if length(maskFileNames) ~= obj.owner_.nFrames_;
 %                         error('lccb:set:fatal', 'Invalid mask input directory: The number of masks in %s is inconsistent with the number of input images in %s.\n\n',...
-%                             obj.inMaskPaths_{i}, obj.owner_.getChannelPaths(i);
+%                             obj.inFilePaths_{i}, obj.owner_.getChannelPaths(i);
 %                     end
 %                 end
 %             end
@@ -75,7 +70,7 @@ classdef MaskProcessingProcess < SegmentationProcess
                 for j = 1:nChan
                     if exist(maskPaths{j},'dir') && ....
                             length(imDir(maskPaths{j})) == obj.owner_.nFrames_;
-                        obj.inMaskPaths_{iChan(j)} = maskPaths{j};
+                        obj.inFilePaths_{iChan(j)} = maskPaths{j};
                     else
                         error(['lccb:set:fatal','Invalid input mask path for channel ' num2str(iChan(j))]);
                     end
@@ -86,7 +81,7 @@ classdef MaskProcessingProcess < SegmentationProcess
         end
         function fileNames = getInMaskFileNames(obj,iChan)
             if all(obj.checkChanNum(iChan))
-                fileNames = cellfun(@(x)(imDir(x)),obj.inMaskPaths_(iChan),'UniformOutput',false);
+                fileNames = cellfun(@(x)(imDir(x)),obj.inFilePaths_(iChan),'UniformOutput',false);
                 fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
                 nIm = cellfun(@(x)(length(x)),fileNames);
                 if ~all(nIm == obj.owner_.nFrames_)                    

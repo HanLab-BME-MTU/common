@@ -16,9 +16,10 @@ function image = tif3Dread(filename)
 %   image - The 3D matrix containing the concatenated images.
 %
 % NOTE: This function is semi-redundant with stackRead.m. The only
-% difference is that it supports the matlab-default .tif compression, while
-% stackRead.m does not. However, stackRead.m is faster so use that unless
-% you are dealing with compressed multi-page .tifs.
+% difference is that it supports all the compression formats used by
+% imwrite.m, and stackRead.m does not. However, stackRead.m is faster so
+% use that unless you are dealing with compressed multi-page .tifs which
+% have been created in matlab.
 %
 % Hunter Elliott
 % 1/2010
@@ -32,11 +33,31 @@ if ~exist(filename,'file')
     error('Specified file does not exist!');
 end
 
-%get the indices of each page in the selected .tif file
-i = 1:length(imfinfo(filename));
+%Get the file information
+info = imfinfo(filename);
+nPages = numel(info);
 
-%Load them all
-image = arrayfun(@(x)(imread(filename,x)),i,'UniformOutput',false);
+if nPages <= 1
+    error('Either the specified image file is not a valid 3D image, or this function does not support the format! Check the file, or try using stackRead.m!')
+end
 
-%Concatenate them into a 3D array
-image = cat(3,image{:});
+%Initialize the image array to the correct size and class
+imSize = [info(1).Height info(1).Width nPages];
+
+if info(1).BitDepth == 1    
+    %Special case for logical - zeros.m doesn't support initialization of binary arrays.
+    image = false(imSize);    
+elseif any(info(1).BitDepth == [8 16 32 64])
+    %Initialze in the correct class
+    image = zeros(imSize,['uint' num2str(info(1).BitDepth)]);
+else
+    %If not recognized, just use double
+    image = zeros(imSize);
+end
+
+for i=1:nPages
+   
+    %Load the image and add it to the array
+    image(:,:,i) = imread(filename,i,'Info',info);
+    
+end

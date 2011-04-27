@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 15-Aug-2010 13:34:44
+% Last Modified by GUIDE v2.5 15-Apr-2011 12:34:13
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -82,14 +82,19 @@ userData.MD = [ ];
 userData.ML = [ ];
 userData.userDir = pwd;
 
+if nargin>3, 
+    userData.testMode=true;
+    set(handles.figure1,'Name',[get(handles.figure1,'Name') ' (test mode)']);
+end
+
 % Generate package GUI list from package list
-packageList={'SegmentationPackage','BiosensorsPackage','UTrackPackage'};
-packageGUIList=regexprep(packageList,'(\<[A-Z])','${lower($1)}');
+userData.packageList={'SegmentationPackage','BiosensorsPackage','UTrackPackage'};
+packageGUIList=regexprep(userData.packageList,'(\<[A-Z])','${lower($1)}');
 packageGUIList=cellfun(@(x) str2func([x 'GUI']),packageGUIList,'UniformOutput',false);
 userData.firstPackageGUI = packageGUIList;
 
 % Check packages availability and load their associated GUIs in userData
-isValidPackage=logical(cellfun(@(x) exist(x,'class'),packageList));
+isValidPackage=logical(cellfun(@(x) exist(x,'class'),userData.packageList));
 if isempty(isValidPackage), 
     warndlg('No package found! Please make sure you properly added the installation directory to the path (see user''s manual).',...
         'Movie Selector','modal'); 
@@ -101,7 +106,7 @@ set(invalidRadioButtons,'Enable','off');
 
 % Test a package preselection and update the corresponding radio button
 if nargin > 3, 
-    preSelectedPackage=find(strcmp(packageList,varargin{1})); 
+    preSelectedPackage=find(strcmp(userData.packageList,varargin{1})); 
 end
 if exist('preSelectedPackage','var')
     preSelectedIndx= num2str(preSelectedPackage);
@@ -171,7 +176,11 @@ userData = get(handles.figure1, 'userdata');
 selectedPackageTag=get(get(handles.uipanel_package, 'SelectedObject'), 'tag');
 packageID=str2double(selectedPackageTag(end));
 
-userData.firstPackageGUI{packageID}(userData.MD);
+if isfield(userData,'testMode')
+    packageGUI(str2func(userData.packageList{packageID}),userData.MD);
+else
+    userData.firstPackageGUI{packageID}(userData.MD);
+end
 delete(handles.figure1);
 
 
@@ -211,11 +220,26 @@ function pushbutton_new_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 userData = get(handles.figure1, 'UserData');
 
-% if newMovieDataGUI exist
+% if movieDataGUI exist
 if isfield(userData, 'newFig') && ishandle(userData.newFig)
     delete(userData.newFig)
 end
-userData.newFig = newMovieDataGUI('mainFig',handles.figure1);
+userData.newFig = movieDataGUI('mainFig',handles.figure1);
+set(handles.figure1,'UserData',userData);
+
+
+% --- Executes on button press in pushbutton_prepare.
+function pushbutton_prepare_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_prepare (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+userData = get(handles.figure1, 'UserData');
+
+% if movieDataGUI exist
+if isfield(userData, 'newFig') && ishandle(userData.newFig)
+    delete(userData.newFig)
+end
+userData.newFig = dataPreparationGUI('mainFig',handles.figure1);
 set(handles.figure1,'UserData',userData);
 
 
@@ -264,12 +288,12 @@ if isempty(get(handles.listbox_movie, 'String'))
 end
 userData = get(handles.figure1, 'UserData');
 
-% if newMovieDataGUI exist
+% if movieDataGUI exist
 if isfield(userData, 'newFig') && ishandle(userData.newFig)
     delete(userData.newFig)
 end
 
-userData.newFig = newMovieDataGUI('mainFig',handles.figure1, 'overview', userData.MD(get(handles.listbox_movie, 'value')));
+userData.newFig = movieDataGUI(userData.MD(get(handles.listbox_movie, 'value')));
 set(handles.figure1,'UserData',userData);
 
 
@@ -398,9 +422,10 @@ if length(structM)>1
     return
 else
     % Load MovieData or MovieList object in .mat file
-    load([pathname filename],'-mat',structM.name);
+    S=load([pathname filename],'-mat',structM.name);
     % Name/Rename MovieData obj as 'MD'
-    eval(['M =' structM.name ';']);
+    M= S.(structM.name);
+    clear S;
 end
 
 switch type
@@ -413,7 +438,7 @@ switch type
             if isfield(userData, 'newFig') && ishandle(userData.newFig)
                 delete(userData.newFig)
             end
-            userData.newFig = newMovieDataGUI('mainFig',handles.figure1, 'overview', M);
+            userData.newFig = M.edit();
             msg = sprintf('Movie Data: %s\n\nError: %s\n\nMovie data is not successfully loaded. Please refer to movie detail and adjust your data.', [pathname filename],ME.message);
             errordlg(msg, 'Movie Data Error','modal'); 
             return

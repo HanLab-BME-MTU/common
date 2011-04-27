@@ -41,6 +41,12 @@ end
 
 P = size(matIn,3);
 
+%Get axis hold state
+ogHold = ishold(gca);
+if ~ogHold
+    %If hold wasn't on, clear before plotting.
+    cla;
+end
 hold on
 
 for p = 1:P
@@ -64,3 +70,7 @@ axis image
 xlim([0 size(matIn,1)]);
 ylim([0 size(matIn,2)]);
 zlim([0 size(matIn,3)]);
+%Return the original hold state if we've changed it.
+if ~ogHold
+    hold off
+end

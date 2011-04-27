@@ -165,8 +165,8 @@ xForms = movieData.processes_{iProc}.getTransformation(p.ChannelIndex);
 
 %Get original image size. Mask pixels that are transformed out of this
 %area will be omitted to preserve this size
-m = movieData.imSize_(1);
-n = movieData.imSize_(2);
+n = movieData.imSize_(1);
+m = movieData.imSize_(2);
 
 nImages = movieData.nFrames_;   
 nImTot = nImages * nChanX;
@@ -182,9 +182,9 @@ for j = 1:nChanX;
     iP = p.SegProcessIndex(find(hasMasks(j,:),1));
     
     movieData.processes_{iProc}.setInMaskPath(p.ChannelIndex(j),...
-        movieData.processes_{iP}.outMaskPaths_(p.ChannelIndex(j)));
+        movieData.processes_{iP}.outFilePaths_(p.ChannelIndex(j)));
     
-    maskDirs(j) = movieData.processes_{iP}.outMaskPaths_(p.ChannelIndex(j));
+    maskDirs(j) = movieData.processes_{iP}.outFilePaths_(p.ChannelIndex(j));
     maskNames(j) = movieData.processes_{iP}.getOutMaskFileNames(p.ChannelIndex(j));
     
     %Create string for current directory
@@ -250,7 +250,7 @@ end
 %Store parameters/settings in movieData structure
 
 movieData.processes_{iProc}.setDateTime;
-movieData.saveMovieData; %Save the new movieData to disk
+movieData.save; %Save the new movieData to disk
 
 disp('Finished transforming masks!')
 

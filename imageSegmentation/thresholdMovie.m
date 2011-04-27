@@ -147,7 +147,7 @@ nImages = movieData.nFrames_;
 nImTot = nImages * nChanThresh;
 
 %Get mask and image directories
-maskDirs  = movieData.processes_{iProc}.outMaskPaths_(p.ChannelIndex);
+maskDirs  = movieData.processes_{iProc}.outFilePaths_(p.ChannelIndex);
 imDirs  = movieData.getChannelPaths(p.ChannelIndex);
     
 
@@ -261,7 +261,7 @@ end
 
 
 movieData.processes_{iProc}.setDateTime;
-movieData.saveMovieData; %Save the new movieData to disk
+movieData.save; %Save the new movieData to disk
 
 
 disp('Finished thresholding!')

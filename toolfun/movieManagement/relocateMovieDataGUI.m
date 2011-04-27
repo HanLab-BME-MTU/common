@@ -57,7 +57,7 @@ function relocateMovieDataGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % userData.mainFig - handle of movie selector GUI
 % userData.handles_main - 'handles' of movie selector GUI
 %
-% userData.newFig - handle of newMovieDataGUI
+% userData.newFig - handle of movieDataGUI
 % 
 % userData.userDir - default open directory
 % 
@@ -288,7 +288,7 @@ catch ME
         delete(userData.newFig)
     end
 
-    userData.newFig = newMovieDataGUI('mainFig',handles.figure1, 'overview', MD);
+    userData.newFig = movieDataGUI(MD);
     msg = sprintf('Movie Data: %s\n\nError: %s\n\nMovie data is not successfully loaded. Please refer to movie detail, adjust your data and try again.', [pathname filename], ME.message);
     errordlg(msg, 'Movie Data Error','modal'); 
     return

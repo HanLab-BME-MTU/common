@@ -24,7 +24,7 @@ if ~isempty(parentIndex)
 end
 
 try
-    userData.crtPackage.processes_{i}.runProcess; % throws exception
+    userData.crtPackage.processes_{i}.run(); % throws exception
 catch ME
     rethrow(ME) %%%%
     % Determine if it is an unexpected error
@@ -83,6 +83,6 @@ if l
                                 'Current step is processed successfully', true); % user data is retrieved, updated and submitted
 end
 
-eval([ 'set(handles.pushbutton_show_',num2str(i),', ''enable'', ''on'');']);
+set(handles.(['pushbutton_show_',num2str(i)]),'Enable','on');
 
 

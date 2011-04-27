@@ -49,11 +49,12 @@ classdef SubResolutionProcess < DetectionProcess
                 funParams.detectionParam.background = []; 
                 
                 % saveResults
+%                 funParams.OutputDirectory = [outputDir  filesep 'Sub_Resolution_Detection' filesep];
                 funParams.saveResults.dir = [outputDir  filesep 'Sub_Resolution_Detection' filesep];
                 funParams.saveResults.filename = []; % Note: channel-specific
                 
                 % Set up psfSigma and bitDepth
-                na = owner.numAperature_;
+                na = owner.numAperture_;
                 ps = owner.pixelSize_;
                 wl = owner.channels_(1).emissionWavelength_;
                 bd = owner.camBitdepth_;
@@ -99,7 +100,21 @@ classdef SubResolutionProcess < DetectionProcess
            obj.filename_ = name; 
         end
         
-        function runProcess(obj)
+        function OK = checkChannelOutput(obj,iChan)
+            
+            %Checks if the selected channels have valid output files
+            nChanTot = numel(obj.owner_.channels_);
+            if nargin < 2 || isempty(iChan)
+                iChan = 1:nChanTot;
+            end
+            %Makes sure there's at least one .mat file in the speified
+            %directory
+            OK =  arrayfun(@(x)(x <= nChanTot && ...
+                x > 0 && isequal(round(x),x) && ...
+                exist(obj.outFilePaths_{x},'file')),iChan);
+        end
+        
+        function run(obj)
         % Run the process!
             for i = obj.channelIndex_
                 
@@ -118,12 +133,11 @@ classdef SubResolutionProcess < DetectionProcess
                     obj.funParams_.saveResults.filename = enumFileName(obj.funParams_.saveResults.dir, obj.funParams_.saveResults.filename);
                 end
                 
+                
                 % Test (commentable)
 %                 obj.funParams_.movieParam,obj.funParams_.detectionParam,obj.funParams_.saveResults
-
-                [obj.outParams_{i}.movieInfo, obj.outParams_{i}.exceptions, obj.outParams_{i}.localMaxima, ...
-                    obj.outParams_{i}.background, obj.outParams_{i}.psfSigma] = ...
-                    obj.funName_(obj.funParams_.movieParam, obj.funParams_.detectionParam, obj.funParams_.saveResults );
+                obj.funName_(obj.funParams_.movieParam, obj.funParams_.detectionParam, obj.funParams_.saveResults);
+                obj.setOutFilePath(i,[obj.funParams_.saveResults.dir filesep obj.funParams_.saveResults.filename]);
             end
         end
         

@@ -157,18 +157,18 @@ if isempty(p.SegProcessIndex)
     else        
         %We need to exclude this function's process, and ask user if more
         %than one
-        iSegProc = find(cellfun(@(x)(isa(x,'SegmentationProcess')),movieData.processes_));
-        iSegProc(iSegProc == iProc) = []; %Don't count this process
-        if numel(iSegProc) > 1
+        segProcList =  movieData.getProcessIndex('SegmentationProcess',Inf,0);
+        segProcList(segProcList == iProc) = []; %Don't count this process
+        if numel(segProcList) > 1
             procNames = cellfun(@(x)(x.name_),...
-                        movieData.processes_(iSegProc),'UniformOutput',false);
+                        movieData.processes_(segProcList),'UniformOutput',false);
             iSegProc = listdlg('ListString',procNames,...
                                'SelectionMode','multiple',...
                                'ListSize',[400 400],...
                                'PromptString','Select the segmentation process(es) to use:');
             
         end
-        p.SegProcessIndex = iSegProc;        
+        p.SegProcessIndex = segProcList(iSegProc);        
     end
 end
 
@@ -234,7 +234,7 @@ for j = 1:nChanThresh;
     %Get the first seg process with masks for this channel
     iP = p.SegProcessIndex(find(hasMasks(j,:),1));    
     maskNames(j) = movieData.processes_{iP}.getOutMaskFileNames(p.ChannelIndex(j));
-    inMaskDir(j) = movieData.processes_{iP}.outMaskPaths_(p.ChannelIndex(j));
+    inMaskDir(j) = movieData.processes_{iP}.outFilePaths_(p.ChannelIndex(j));
     
     %Create string for current directory
     currDir = [p.OutputDirectory filesep dName num2str(p.ChannelIndex(j))];
@@ -344,8 +344,8 @@ for iChan = 1:nChanThresh
             %which are on the image border. We do this by adding a border
             %of ones on the sides where the mask touches.
             if any([currMask(1,:) currMask(end,:) currMask(:,1)' currMask(:,end)'])                
-                m = movieData.imSize_(2);
-                n = movieData.imSize_(1);            
+                m = movieData.imSize_(1);
+                n = movieData.imSize_(2);            
                 %Add a border of 1s
                 tmpIm = vertcat(true(1,n+2),[true(m,1) ...
                                 currMask true(m,1)],true(1,n+2));
@@ -389,7 +389,7 @@ end
 %Store parameters/settings in movieData structure
 
 movieData.processes_{iProc}.setDateTime;
-movieData.saveMovieData; %Save the new movieData to disk
+movieData.save; %Save the new movieData to disk
 
 disp('Finished refining masks!')
 

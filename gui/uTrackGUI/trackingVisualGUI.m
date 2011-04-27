@@ -86,8 +86,7 @@ userData.crtProc = userData.crtPackage.processes_{userData.procID};
 % Get channel index
 chan = [];
 for i = 1:length(userData.MD.channels_)
-    
-    if ~isempty(userData.crtProc.outParams_{i})
+    if userData.crtProc.checkChannelOutput(i)
         chan = i; 
         break
     end
@@ -97,14 +96,14 @@ assert(~isempty(chan), 'User-defined: the process does not have output yet.')
 userData.chan = chan;
 
 % Make sure detection output is valid
-
-if isempty(userData.crtProc.outParams_{chan}.tracksFinal)
+load(userData.crtProc.outFilePaths_{chan},'tracksFinal');
+if isempty(tracksFinal)
    error('User-defined: there is no detection information in the output variable.') 
 end
 
+userData.tracksFinal = tracksFinal;
 
-
-allEvents = vertcat(userData.crtProc.outParams_{chan}.tracksFinal.seqOfEvents);
+allEvents = vertcat(userData.tracksFinal.seqOfEvents);
 userData.firstframe = min(allEvents(:,1));
 userData.lastframe = max(allEvents(:,1));
 
@@ -145,7 +144,7 @@ set(handles.text_movie, 'String', str)
 % text_framenum
 set(handles.text1_framenum, 'String', ['( Tracks availabe from frame ',num2str(userData.firstframe),' to ',num2str(userData.lastframe),' )'])
 set(handles.text3_framenum, 'String', ['( Tracks availabe from frame ',num2str(userData.firstframe),' to ',num2str(userData.lastframe),' )'])
-set(handles.text2_tracknum, 'String', ['out of ',num2str(length(userData.crtProc.outParams_{chan}.tracksFinal)),' tracks'])
+set(handles.text2_tracknum, 'String', ['out of ',num2str(length(userData.tracksFinal)),' tracks'])
 
 % popupmenu set-up
 colorStr = {'Color-code Time (G->B->R)', 'Rotate Through 7 Colors', 'Rotate Through 23 Colors','Black', 'Blue', 'Red'};
@@ -419,7 +418,7 @@ if isnan(str2double(maxx)) || str2double(maxx) < 0
     errordlg('Please provide a valid value to image range "max X".','Error','modal')
     return
     
-elseif str2double(maxx) > userData.MD.imSize_(2)
+elseif str2double(maxx) > userData.MD.imSize_(1)
     errordlg('Image range "max X" can not be larger than the width of image.','Error','modal')
     return
     
@@ -444,7 +443,7 @@ if isnan(str2double(maxy)) || str2double(maxy) < 0
     errordlg('Please provide a valid value to image range "max Y".','Error','modal')
     return
     
-elseif str2double(maxy) > userData.MD.imSize_(1)
+elseif str2double(maxy) > userData.MD.imSize_(2)
     errordlg('Image range "max Y" can not be larger than the width of image.','Error','modal')
     return
     
@@ -533,7 +532,7 @@ set(handles.figure1, 'UserData', userData);
 
 
 
-overlayTracksMovieNew(userData.crtProc.outParams_{userData.chan}.tracksFinal, ...
+overlayTracksMovieNew(userData.tracksFinal, ...
     visualParams.otmn.startend, visualParams.otmn.dragtailLength, visualParams.otmn.saveMovie, ...
     [visualParams.otmn.movieName '.mov'], visualParams.otmn.filterSigma, visualParams.otmn.classifyGaps, ...
     visualParams.otmn.highlightES, visualParams.otmn.showRaw, visualParams.otmn.imageRange, ...
@@ -816,7 +815,7 @@ elseif isnan(str2double(trackid)) || str2double(trackid) < 0
     errordlg('Please provide a valid value to parameter "Track Number".','Error','modal')
     return
     
-elseif str2double(trackid) > length(userData.crtProc.outParams_{userData.chan}.tracksFinal)
+elseif str2double(trackid) > length(userData.tracksFinal)
     errordlg('Parameter "Track Number" can not be larger than the total number of tracks.','Error','modal')
     return
    
@@ -839,7 +838,7 @@ visualParams.pct.inOneFigure = get(handles.checkbox2_inOneFigure, 'Value');
 userData.crtProc.setVisualParams(visualParams)
 set(handles.figure1, 'UserData', userData);
 
-plotCompTrack(userData.crtProc.outParams_{userData.chan}.tracksFinal(visualParams.pct.trackid), ...
+plotCompTrack(userData.tracksFinal(visualParams.pct.trackid), ...
     visualParams.pct.plotX, visualParams.pct.plotY, visualParams.pct.plotA, ...
     visualParams.pct.inOneFigure, visualParams.pct.plotAggregState)
 
@@ -1187,7 +1186,7 @@ set(handles.figure1, 'UserData', userData);
 %         visualParams.pt2D.flipXY, visualParams.pt2D.ask4sel, visualParams.pt2D.offset, visualParams.pt2D.imageDir
     
 % Call function
-plotTracks2D(userData.crtProc.outParams_{userData.chan}.tracksFinal, ...
+plotTracks2D(userData.tracksFinal, ...
         visualParams.pt2D.timeRange, visualParams.pt2D.colorTime, ...
         visualParams.pt2D.markerType, visualParams.pt2D.indicateSE, ...
         visualParams.pt2D.newFigure, visualParams.pt2D.image, ...

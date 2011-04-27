@@ -46,7 +46,6 @@ end
 
 % --- Executes just before detectionProcessGUI is made visible.
 function detectionProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
-% userData.setFig(procID) = segmentProcessGUI('mainFig',handles.figure1, procID);
 %
 % Available tools 
 % UserData data:
@@ -79,7 +78,7 @@ function detectionProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 set(handles.text_copyright, 'String', copyright)
 
 userData = get(handles.figure1, 'UserData');
-% Choose default command line output for segmentProcessGUI
+% Choose default command line output for detectionProcessGUI
 handles.output = hObject;
 
 % Get main figure handle and process id

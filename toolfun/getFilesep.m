@@ -19,12 +19,19 @@ pathSep=unique(regexp(path,'/|\','match'));
 
 %Deal with special cases where pathSep is not exactly '/' or '\'
 if isempty(pathSep)
+    % Linux path may be:
+    % 1 - root path '' without separator
+    % 2 - home directory path '~'
+    isLinux = @(x) isempty(path) || strcmp(path,'~');
+    % Windows path may be:
+    % 1 - drive letter with colon e.g. C:
+    % 2 -  drive letter without colon e.g. H
+    isWindow = @(x) ~isempty(regexp(x,'^[A-Z]$','once')) ||...
+        ~isempty(regexp(x,'^[A-Z]:$','once'));
     
-    if isempty(path) % root path '/' without separator
+    if isLinux(path)
         pathSep='/';
-    elseif strcmp(path,'~') % Home directory '~' under Linux environment
-        pathSep='/';
-    elseif regexp(path,'[A-Z]:') % drive name e.g. 'C:\' without separator
+    elseif isWindow(path)
         pathSep='\';
     else
         errordlg(['Error!! Cannot identify the nature of path: ' path]);

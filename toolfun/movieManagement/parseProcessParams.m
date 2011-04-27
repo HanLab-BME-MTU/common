@@ -1,7 +1,9 @@
-function paramOut = parseProcessParams(procOb,paramIn)
+function [paramOut,unrecParam] = parseProcessParams(procOb,paramIn,asCell)
 %PARSEPROCESSPARAMS parses the parameters of the input process object
 % 
 % [paramOut] = parseProcessParams(procObj,paramIn)
+% [paramOut,unrecParam] = parseProcessParams(procObj,paramIn)
+% [paramOut,unrecParam] = parseProcessParams(procObj,paramIn,asCell)
 % 
 % This function returns the individual parameters that are specified in the
 % input process object's field "funParams" If the input parameter structure
@@ -9,6 +11,9 @@ function paramOut = parseProcessParams(procOb,paramIn)
 % override any values in procOb.funParams_. They will be stored in the
 % procOb and returned as outputs.
 % 
+% Additionally, the function can also return a structure specifying the
+% input parameters which were input but were NOT in the process object.
+%
 % Input:
 %   
 %   procOb - An object of the class Process.m
@@ -18,10 +23,26 @@ function paramOut = parseProcessParams(procOb,paramIn)
 %   parameters, replacing those stored in procOb. Optional. If not input,
 %   all the values in procOb.funParams_ will be returned instead.
 %
+%   asCell - If true, and the unrecognized parameters are requested, the
+%   unregonized parameters will be returned as a cell-array instead of a
+%   structure, in the format:
+%
+%   {'FieldName1',fieldValue1,'FieldName2',fieldValue2,...
+%
+%   This format may be useful for passing unrecognized input fields to
+%   another function which uses varargin. If false, the unrecognized
+%   parameters will be returned as a structure.
+%   Optional. Default is False.
+%
 % Output:
 %
 %   paramOut - A structure containing the new parameters. Additionally the
 %   parameters will be updated in the object.
+%
+%   unrecParam - A structure or cell array containing the unrecognized
+%   parameter fields and values. These are "unrecognized" because they are
+%   in the unput parameter structure, but are not in the process object.
+%   These may be user errors, or parameters to pass to a sub-function.
 %
 % Hunter Elliott
 % 5/2010
@@ -33,11 +54,16 @@ if nargin < 1 || isempty(procOb) || ~isa(procOb,'Process')
 end
 
 if nargin < 2
+    %If no input, just return the process parameters.
     paramIn = [];
 end
 
 if ~(isstruct(procOb.funParams_) || isobject(procOb.funParams_)) 
     error('The funParams_ field of the input object must be a structure or object containing fields with parameter values!')
+end
+
+if nargin < 3 || isempty(asCell)
+    asCell = false;
 end
 
 %Get the list of parameter names from the process object
@@ -56,4 +82,51 @@ for j = 1:nPar
         paramOut.(paramList{j}) = procOb.funParams_.(paramList{j});                    
     end        
 end
+
+%If requested, pass the parameters which input but are NOT actual function
+%params
+if nargout > 1 
+    
+    if ~isempty(paramIn)
+        
+        inParamList = fieldnames(paramIn);
+        nIn = numel(inParamList);
+
+        if asCell
+            unrecParam = cell(1,2*nIn);
+            isUR = false(1,2*nIn);
+        end
+
+        for j = 1:nIn
+            if ~any(strcmp(inParamList{j},paramList))
+                if asCell
+                    isUR(2*j-1:2*j) = true;%Keep track of unrecognized fields, so we can pass empty field values also.
+                    unrecParam{2*j} = paramIn.(inParamList{j});
+                    unrecParam{2*j-1} = inParamList{j};                
+                else
+                    unrecParam.(inParamList{j}) = paramIn.(inParamList{j}); 
+                end
+                %Remove this parameter from the recognized parameter
+                %structure
+                paramOut = rmfield(paramOut,inParamList{j});                
+            end    
+        end
+
+        if asCell
+            %Remove empty cells, but preserve empty field values
+            unrecParam = unrecParam(isUR);        
+        end
+    end
+    %Make sure we return empty if no unrecognized parameters were found
+    if ~exist('unrecParam','var')
+        if asCell
+            unrecParam = {};
+        else            
+            unrecParam = [];
+        end
+    end
+        
+end
+
+%Store the parameters in the process object
 procOb.setPara(paramOut);

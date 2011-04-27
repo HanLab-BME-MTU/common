@@ -1,19 +1,13 @@
 classdef ImageAnalysisProcess < Process
 %A class definition for a generic image analysis process. That is, a
-%process which takes in images and produces some other (non-image) form 
-%of output. This generic class expects there to be one file per frame, per
-%channel with each channel in a separate directory.
+%process which takes in images and produces some other (non-image) form of
+%output. This generic class expects the output to be one file per frame,
+%per channel with each channel in a separate directory.
 %
 %
 % Hunter Elliott, 7/2010
 %
-    properties (SetAccess = protected, GetAccess = public)
-        
-        outFilePaths_ %Location of result file(s) for each channel.
-        inImagePaths_ %Location of images which were processed. May or may not be the original, raw images.        
-        
-    end
-    
+
     methods (Access = public)
         
         function obj = ImageAnalysisProcess(owner,name,funName,funParams,...
@@ -35,15 +29,21 @@ classdef ImageAnalysisProcess < Process
                obj.funParams_ = funParams;              
             end
             
+            %Initialize in and out file paths to a cell array to avoid
+            %conversion errors.
+            nChan = numel(owner.channels_);
+            obj.inFilePaths_ = cell(1,nChan);
+            obj.outFilePaths_ = cell(1,nChan);
+            
             if nargin > 4
               if ~isempty(inImagePaths) && numel(inImagePaths) ...
                       ~= numel(owner.channels_) || ~iscell(inImagePaths)
                  error('lccb:set:fatal','Input image paths must be a cell-array of the same size as the number of image channels!\n\n'); 
-              end
-              obj.inImagePaths_ = inImagePaths;              
+              end              
+              obj.inFilePaths_(1,:) = inImagePaths;              
             else
                 %Default is to use raw images as input.
-                obj.inImagePaths_ = owner.getChannelPaths;               
+                obj.inFilePaths_(1,:) = owner.getChannelPaths;               
             end                        
             if nargin > 5               
               if ~isempty(outFilePaths) && numel(outFilePaths) ...
@@ -109,7 +109,7 @@ classdef ImageAnalysisProcess < Process
                        ['The directory specified for channel ' ...
                        num2str(chanNum(j)) ' does not contain any images!!']) 
                    else                       
-                       obj.inImagePaths_{chanNum(j)} = imagePath{j};                
+                       obj.inFilePaths_{1,chanNum(j)} = imagePath{j};                
                    end
                end
             end                        
@@ -117,7 +117,7 @@ classdef ImageAnalysisProcess < Process
         
         function fileNames = getInImageFileNames(obj,iChan)
             if obj.checkChanNum(iChan)
-                fileNames = cellfun(@(x)(imDir(x)),obj.inImagePaths_(iChan),'UniformOutput',false);
+                fileNames = cellfun(@(x)(imDir(x)),obj.inFilePaths_(1,iChan),'UniformOutput',false);
                 fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
                 nIm = cellfun(@(x)(length(x)),fileNames);
                 if ~all(nIm == obj.owner_.nFrames_)                    
@@ -145,11 +145,11 @@ classdef ImageAnalysisProcess < Process
            OK =  arrayfun(@(x)(x <= nChanTot && ...
                              x > 0 && isequal(round(x),x) && ...
                              exist(obj.outFilePaths_{x},'dir') && ...
-                             ~isempty(dir([obj.outFilePaths_{x} filesep '*.mat']))),iChan);
+                             numel(dir([obj.outFilePaths_{x} filesep '*.mat']))==obj.owner_.nFrames_),iChan);
         end
         
-        function figHan = showResult(obj)
-            %There is no generic showResult method for this class
+        function figHan = resultDisplay(obj)
+            %There is no generic resultDisplay method for this class yet
             figHan = [];            
             
         end

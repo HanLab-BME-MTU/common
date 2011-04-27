@@ -313,12 +313,12 @@ if isrgb  % If RGB image
    if onoff  % If turn on RGB image
        if isempty(userData.hImage) || ~ishandle(userData.hImage) 
           
-           currImage = zeros([userData.MD.imSize_([2 1]) 3]);
+           currImage = zeros([userData.MD.imSize_ 3]);
        else
            currImage = get(userData.hImage, 'CData');
            
            if length(size(currImage)) < 3               
-               currImage = zeros([userData.MD.imSize_([2 1]) 3]);
+               currImage = zeros([userData.MD.imSize_ 3]);
            end
        end
        
@@ -479,7 +479,7 @@ if onoff  % Turn overlay on
             maskNames = process.getOutMaskFileNames(iChan);
                 
             %Load the mask
-            currMask = imread([ process.outMaskPaths_{iChan} filesep maskNames{1}{userData.iFrame}]);
+            currMask = imread([ process.outFilePaths_{iChan} filesep maskNames{1}{userData.iFrame}]);
                 
             %Convert the mask into a boundary
             maskBounds = bwboundaries(currMask);  

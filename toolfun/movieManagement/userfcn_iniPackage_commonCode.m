@@ -12,7 +12,7 @@ packageName=regexprep(guiname(1:end-3),'(\<[a-z])','${upper($1)}');
 
 handles.output = hObject;
 userData = get(handles.figure1,'UserData');
-
+userData.packageName=packageName;
 eval(['userData.optProcID =' packageName '.getOptionalProcessId;']);
 
 % Call package GUI error
@@ -23,8 +23,8 @@ set(handles.text_copyright, 'String', copyright)
 %If package GUI supplied without argument, saves a boolean which will be
 %read by packageNameGUI_OutputFcn
 if nargin < 4
-    handles.startMovieSelectorGUI=true;
-    handles.packageName = packageName;
+    userData.startMovieSelectorGUI=true;
+    set(handles.figure1,'UserData',userData);
     guidata(hObject, handles);
     return
 end

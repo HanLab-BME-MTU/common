@@ -8,16 +8,29 @@ if ~strcmp(stack(2).name(end-9:end),'OpeningFcn'),
 end
 guiname=stack(4).name;
 
-packageName=varargin{1};
-if isa(packageName,'function_handle')
-    packageName=func2str(packageName);
+if isempty(varargin)
+    error('lccb:packageGUI',sprintf('%s must be called with at least one valid argument',mfilename));
 end
-assert(logical(exist(packageName,'class')),'No package found');
-    
+
+if isa(varargin{1},'function_handle')
+    packageHandle=varargin{1};
+    packageName=func2str(varargin{1});
+elseif isa(varargin{1},'char')
+    packageName=varargin{1};
+    packageHandle=str2func(varargin{1});
+else
+    packageName=class(varargin{1});
+    packageHandle=str2func(packageName);
+end
+
+assert(logical(exist(packageName,'class')),sprintf('%s is not a valid class',packageName));
+assert(any(strcmp(superclasses(packageName),'Package')),sprintf('%s is not a valid Package class',packageName));
+      
 handles.output = hObject;
 userData = get(handles.figure1,'UserData');
+userData.packageName = packageName;
 
-eval(['userData.optProcID =' packageName '.getOptionalProcessId;']);
+userData.optProcID =eval([userData.packageName,'.getOptionalProcessId']);
 
 % Call package GUI error
 
@@ -27,8 +40,8 @@ set(handles.text_copyright, 'String', copyright);
 %If package GUI supplied without argument, saves a boolean which will be
 %read by packageNameGUI_OutputFcn
 if nargin < 5
-    handles.startMovieSelectorGUI=true;
-    handles.packageName = packageName;
+    userData.startMovieSelectorGUI=true;
+    set(handles.figure1,'UserData',userData);
     guidata(hObject, handles);
     return
 end
@@ -56,7 +69,7 @@ for x = 1:nMovies
     
     if ~packageExist(x)
         % No same package is found.. create a new package object
-        eval(['MD(x).addPackage( ' packageName '(MD(x), MD(x).outputDirectory_) )'])
+        MD(x).addPackage(packageHandle(MD(x), MD(x).outputDirectory_)) 
         userData.package(x) = MD(x).packages_{end};
     end
 
@@ -123,7 +136,7 @@ userData.MD = MD;
 % Dependency matrix is defined in Package class
 % Make a copy of dependency matrix here to control enable/disable 
 % machanism in package GUI
-eval(['userData.dependM =  ' packageName '.getDependencyMatrix;'])
+userData.dependM = eval([packageName,'.getDependencyMatrix']);
 
 nProc = size(userData.dependM, 1);
 userData.statusM = repmat( struct('IconType', {cell(1,nProc)}, 'Msg', {cell(1,nProc)}, 'Checked', zeros(1,nProc), 'Visited', false), 1, nMovies);
@@ -160,11 +173,13 @@ if openHelpFile
 end
 % --------------------------Set up processes------------------------------
 
-templateTag{1} = 'checkbox_';
-templateTag{2} = 'axes_icon_';
-templateTag{3} = 'pushbutton_show_';
-templateTag{4} = 'pushbutton_set_';
-templateTag{5} = 'axes_help_';
+% List of template process uicontrols to expand
+templateTag{1} = 'checkbox';
+templateTag{2} = 'axes_icon';
+templateTag{3} = 'pushbutton_show';
+templateTag{4} = 'pushbutton_set';
+templateTag{5} = 'pushbutton_clear';
+templateTag{6} = 'axes_prochelp';
 procTag=templateTag;
 set(handles.figure1,'Position',...
     get(handles.figure1,'Position')+(nProc-1)*[0 0 0 40])
@@ -172,11 +187,12 @@ set(handles.panel_movie,'Position',...
     get(handles.panel_movie,'Position')+(nProc-1)*[0 40 0 0])
 set(handles.panel_proc,'Position',...
     get(handles.panel_proc,'Position')+(nProc-1)*[0 0 0 40])
-        
-for i = 1:nProc
+set(handles.text_status, 'Position',...
+    get(handles.text_status,'Position')+(nProc-1)*[0 40 0 0])      
 
+for i = 1:nProc
     for j=1:length(templateTag)
-        procTag{j}=[templateTag{j} num2str(i)];
+        procTag{j}=[templateTag{j} '_' num2str(i)];
         handles.(procTag{j}) = copyobj(handles.(templateTag{j}),handles.panel_proc);
         set(handles.(procTag{j}),'Tag',procTag{j},'Position',...
             get(handles.(templateTag{j}),'Position')+(nProc-i)*[0 40 0 0]);
@@ -186,7 +202,7 @@ for i = 1:nProc
     checboxString = [' Step ' num2str(i) ':' regexprep(processName,'([A-Z])',' $1')];
     set(handles.(procTag{1}),'String',checboxString)
     
-    axes(handles.(procTag{5}));
+    axes(handles.(procTag{6}));
     Img = image(questIconData);
     set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
         'visible','off','YDir','reverse');  
@@ -200,10 +216,21 @@ end
 cellfun(@(x)delete(handles.(x)),templateTag)
 handles = rmfield(handles,templateTag);
 
+optTag = 'text_optional';
+for i = userData.optProcID
+    procOptTag=[optTag '_' num2str(i)];
+    handles.(procOptTag) = copyobj(handles.(optTag),handles.panel_proc);
+    set(handles.(procOptTag),'Tag',procOptTag,'Position',...
+        get(handles.(optTag),'Position')+(nProc-i)*[0 40 0 0]);
+end
+
+delete(handles.(optTag));
+handles = rmfield(handles,optTag);
 
 % --------------------------Other GUI settings-----------------------------
 
-% set text body
+% set titles
+set(handles.figure1, 'Name',['Control Panel - ' userData.crtPackage.name_]);
 set(handles.text_body1, 'string',[userData.crtPackage.name_ ' Package']);
 
 % Set movie explorer
@@ -233,7 +260,7 @@ set(handles.menu_about_lccbsoftware,'UserData','http://lccb.hms.harvard.edu/soft
 % Update handles structure
 set(handles.figure1,'UserData',userData);
 guidata(hObject, handles);
-    set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
+set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 
 userfcn_updateGUI(handles, 'initialize')
 
