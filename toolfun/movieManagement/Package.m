@@ -1,4 +1,4 @@
-classdef Package < handle 
+classdef Package < hgsetget 
     % Defines the abstract class Package from which every user-defined packages
     % will inherit. This class cannot be instantiated.
     
@@ -6,11 +6,7 @@ classdef Package < handle
         createTime_ % The time when object is created.
     end
     
-    properties (SetAccess = private, GetAccess = public)
-    % SetAccess = private - cannot change the values of variables outside object
-    % GetAccess = public - can get the values of variables outside object without
-    % defining accessor functions
-    %
+    properties (SetAccess = private)
     % Objects of sub-class of Package cannot change variable values since 
     % 'SetAccess' attribute is set to private
         name_  % the name of instantiated package
@@ -19,7 +15,7 @@ classdef Package < handle
                          %sub-directories of this directory.
     end
  
-    properties(SetAccess = protected, GetAccess = public)
+    properties(SetAccess = protected)
         owner_ % The MovieData object this package belongs to
         processes_ % Cell array containing all processes who will be used in this package
         processClassNames_ % Must have accurate process class name

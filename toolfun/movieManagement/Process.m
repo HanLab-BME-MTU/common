@@ -1,31 +1,25 @@
-classdef Process < handle 
-% Defines the abstract class Process from which every user-defined process 
-% will inherit.
-%
-% A process 
-% 
-
-    properties (SetAccess = private, GetAccess = public)
-    % SetAccess = private - cannot change the values of variables outside object
-    % GetAccess = public - can get the values of variables outside object without
-    % defigning accessor functions
+classdef Process < hgsetget
+    % Defines the abstract class Process from which every user-defined process
+    % will inherit.
+    %
     
-       dateTime_  % Time process was last run
-    end
-    properties(SetAccess = protected, GetAccess = public)
+    properties (SetAccess = private, GetAccess = public)
         name_           % Process name
         owner_          % Movie data object owning the process
-        procChanged_    % Whether process parameter has been changed 
-                        % 
-                        % changed - true, unchanged - false
+        dateTime_       % Time process was last run
+    end
+    
+    properties  (SetAccess = protected)
+        % Whether process parameter has been changed
+        %
+        % changed - true, unchanged - false
+        procChanged_    
         
+        success_ % If the process has been successfully run
         
-                     
-        success_ % If the process has been successfully run 
-        updated_ % If the parameter of parent process is changed
-                 % updated_ - false, not changed updated_ - true
-                 
-        notes_          % Process notes
+        % If the parameter of parent process is changed
+        % updated_ - false, not changed updated_ - true
+        updated_ 
         
         funName_        % Function running the process
         funParams_      % Parameters for running the process
@@ -33,13 +27,16 @@ classdef Process < handle
         
         inFilePaths_    % Path to the process input
         outFilePaths_   % Path to the process output
-        
+
+    end
+    properties        
+        notes_          % Process notes
     end
     methods (Access = protected)
         function obj = Process(owner, name)
             % Constructor of class Process
             if nargin > 0
-                %Make sure the owner is a MovieData object                
+                %Make sure the owner is a MovieData object
                 if isa(owner,'MovieData')
                     obj.owner_ = owner;
                 else
@@ -47,7 +44,7 @@ classdef Process < handle
                 end
                 
                 if nargin > 1
-                    obj.name_ = name;                
+                    obj.name_ = name;
                 end
                 obj.dateTime_ = clock;
                 obj.procChanged_ = false;
@@ -57,12 +54,7 @@ classdef Process < handle
         end
     end
     
-    methods(Access = public)
-        
-        function setNotes(obj, text)
-            % Set the note of process
-            obj.notes_ = text;
-        end
+    methods
         
         function setPara(obj, para)
             % Reset process' parameters
@@ -76,7 +68,7 @@ classdef Process < handle
         function setProcChanged(obj, changed)
             % Set the status that if process's parameters have been
             % changed. changed 'true' or 'false'
-           obj.procChanged_ =  changed;
+            obj.procChanged_ =  changed;
         end
         
         function setUpdated(obj, is)
@@ -86,9 +78,10 @@ classdef Process < handle
         end
         
         function setSuccess(obj, is)
-           % Set the success status of process
-           obj.success_ = is;
+            % Set the success status of process
+            obj.success_ = is;
         end
+        
         
         function setDateTime(obj)
             %The process has been re-run, update the time.
@@ -96,47 +89,38 @@ classdef Process < handle
         end
         
         function OK = checkChanNum(obj,iChan)
-           %Checks that the selected channel numbers are valid for this
-           %movieData. Specific processes can override this to add more checks.           
-           if nargin < 2 || isempty(iChan)
+            %Checks that the selected channel numbers are valid for this
+            %movieData. Specific processes can override this to add more checks.
+            if nargin < 2 || isempty(iChan)
                 error('You must specify a channel number!')
-           end
-           
-           OK = arrayfun(@(x)(x <= numel(obj.owner_.channels_) && ...
-                             x > 0 && isequal(round(x),x)),iChan);
+            end
+            
+            OK = arrayfun(@(x)(x <= numel(obj.owner_.channels_) && ...
+                x > 0 && isequal(round(x),x)),iChan);
         end
         
         function OK = checkFrameNum(obj,iFrame)
-            if nargin < 2 || isempty(iFrame)               
-                error('You must specify a frame number!')       
+            if nargin < 2 || isempty(iFrame)
+                error('You must specify a frame number!')
             end
             
             OK = arrayfun(@(x)(x <= obj.owner_.nFrames_ && ...
-                             x > 0 && isequal(round(x),x)),iFrame);
+                x > 0 && isequal(round(x),x)),iFrame);
         end
         
         function run(obj)
-        % Run the process!
+            % Run the process!
             obj.funName_(obj.owner_ );
         end
         
-        function paths=getInFilePaths(obj)
-        % Get input file paths
-            paths = obj.inFilePaths_;
-        end
-        
         function setInFilePaths(obj,paths)
-        %  Set input file paths
+            %  Set input file paths
             obj.inFilePaths_=paths;
         end
         
-        function paths=getOutFilePaths(obj)
-        % Get output file paths
-            paths = obj.outFilePaths_;
-        end
         
         function setOutFilePaths(obj,paths)
-        % Set output file paths
+            % Set output file paths
             obj.outFilePaths_ = paths;
         end
     end
