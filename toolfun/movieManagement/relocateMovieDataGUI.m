@@ -151,7 +151,7 @@ assert(length(userData.MD) == length(contentlist2), 'User-defined: GUI error, th
 
 % Assign new movie data path
 userData.ML.editMovieDataFile(userData_list2, contentlist2)
-userData.ML.saveMovieList
+userData.ML.save;
 
 % Ask if user want to keep or remove un-relocated movie data
 if ~isempty(contentlist1)
@@ -165,7 +165,7 @@ if ~isempty(contentlist1)
     if strcmpi(user_response, 'remove movie(s)')
         
         userData.ML.removeMovieDataFile(userData_list1)
-        userData.ML.saveMovieList
+        userData.ML.save;
         
     end
     

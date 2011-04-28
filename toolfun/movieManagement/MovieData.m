@@ -40,7 +40,7 @@ classdef  MovieData < hgsetget
     end
 
     methods
-        %% Set/Get methods
+        %% Constructor
         function obj = MovieData(channels,outputDirectory,varargin)
             % Constructor of the MovieData object
             %

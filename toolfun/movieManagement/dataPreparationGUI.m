@@ -728,7 +728,7 @@ for iMovie=1:nMovies
         end
         
         % Save the movie data
-        MD.save
+        MD.save;
         
         % Update main window components and controls if applicable
         if isfield(userData,'mainFig')

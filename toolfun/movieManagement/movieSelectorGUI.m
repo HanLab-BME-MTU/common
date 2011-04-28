@@ -521,7 +521,7 @@ switch type
                     if strcmpi( user_response2, 'remove movie(s)')
 
                             M.removeMovieDataFile(index(reloadME));
-                            M.saveMovieList
+                            M.save();
                             msg = sprintf('The following movie(s) have been removed from movielist %s.\n%s', filename, filemsg);
                             msgbox(msg, 'Help', 'help', 'modal');
                     end
@@ -675,4 +675,6 @@ catch ME
     return
 end
 
-ML.saveMovieList
+% Run the save method (should launch the dialog box asking for the object 
+% path and filename)
+ML.save();
