@@ -227,6 +227,19 @@ end
 delete(handles.(optTag));
 handles = rmfield(handles,optTag);
 
+
+% --------------------------Create tools menu-----------------------------
+
+if ~isempty(userData.crtPackage.tools_)
+    handles.menu_tools = uimenu(handles.figure1,'Label','Tools','Position',2);
+    for i=1:length(userData.crtPackage.tools_)
+        toolMenuTag=['menu_tools_' num2str(i)];
+        handles.(toolMenuTag) = uimenu(handles.menu_tools,...
+            'Label',userData.crtPackage.tools_(i).name,...
+            'Callback',@menu_tools_Callback,'Tag',toolMenuTag);
+    end
+end
+
 % --------------------------Other GUI settings-----------------------------
 
 % set titles

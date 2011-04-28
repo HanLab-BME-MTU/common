@@ -308,12 +308,24 @@ set(handles.text_body3, 'Visible', 'off')
 
 
 % --------------------------------------------------------------------
-function menu_file_exit_Callback(hObject, eventdata, handles)
+function menu_file_exit_Callback(~, ~, handles)
 % hObject    handle to menu_file_exit (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 delete(handles.figure1);
 
+% --------------------------------------------------------------------
+function menu_tools_Callback(hObject, eventdata)
+
+handles =guidata(hObject);
+userData = get(handles.figure1, 'UserData');
+prop=get(hObject,'Tag');
+toolID = str2double(prop(length('menu_tools_')+1:end));
+
+toolHandle=userData.crtPackage.tools_(toolID).funHandle;
+userData.toolFig(toolID) = toolHandle('mainFig',handles.figure1);
+
+set(handles.figure1, 'UserData', userData);
 
 % --- Executes on button press in pushbutton_clear.
 function pushbutton_clear_Callback(hObject, eventdata, handles)

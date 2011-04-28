@@ -1,6 +1,11 @@
 classdef Package < handle 
-% Defines the abstract class Package from which every user-defined packages 
-% will inherit. This class cannot be instantiated.
+    % Defines the abstract class Package from which every user-defined packages
+    % will inherit. This class cannot be instantiated.
+    
+    properties(SetAccess = immutable)
+        createTime_ % The time when object is created.
+    end
+    
     properties (SetAccess = private, GetAccess = public)
     % SetAccess = private - cannot change the values of variables outside object
     % GetAccess = public - can get the values of variables outside object without
@@ -9,27 +14,29 @@ classdef Package < handle
     % Objects of sub-class of Package cannot change variable values since 
     % 'SetAccess' attribute is set to private
         name_  % the name of instantiated package
-        createTime_ % The time when object is created. Same output as 
-                    % function 'clock'
         outputDirectory_ %The parent directory where results will be stored.
                          %Individual processes will save their results to
                          %sub-directories of this directory.
     end
+ 
     properties(SetAccess = protected, GetAccess = public)
         owner_ % The MovieData object this package belongs to
-        % Cell array containing all processes who will be used in this package
-        processes_ 
+        processes_ % Cell array containing all processes who will be used in this package
         processClassNames_ % Must have accurate process class name
                            % List of processes required by the package, 
                            % Cell array - same order and number of elements
                            % as processes in dependency matrix
         depMatrix_ % Processes' dependency matrix
-        notes_ % The notes users put down
+        tools_ % Array of external tools
+        
     end
     
+    properties
+        notes_ % The notes users put down
+    end
     methods (Access = protected)
         function obj = Package(owner, name, depMatrix, processClassNames, ...
-                outputDirectory)
+                outputDirectory,varargin)
             % Constructor of class Package
             
             if nargin > 0
@@ -39,6 +46,13 @@ classdef Package < handle
                 obj.processClassNames_ = processClassNames;
                 obj.outputDirectory_ = outputDirectory;
                 
+                nVarargin = numel(varargin);
+                if nVarargin > 1 && mod(nVarargin,2)==0
+                    for i=1 : 2 : nVarargin-1
+                        obj.(varargin{i}) = varargin{i+1};
+                    end
+                end
+            
                 obj.processes_ = cell(1,length(processClassNames));
                 obj.createTime_ = clock;
             end
@@ -209,9 +223,6 @@ classdef Package < handle
             
         end
         
-        function setNotes (obj, text)
-            obj.notes_ = text;
-        end
     end
     
     methods (Abstract)
