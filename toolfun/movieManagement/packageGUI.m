@@ -75,7 +75,6 @@ function packageGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %       userData.packageHelpFig - handle of (single) help figure (may not exist)
 %       userData.iconHelpFig - handle of (single) help figures (may not exist)
 %       userData.processHelpFig - handle of (multiple) help figures (may not exist) 
-%       userData.msgboxGUI - handle of message box
 %       
 %
 % NOTE:
@@ -95,7 +94,6 @@ function packageGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % Load movie data and recycle processes
 userfcn_iniPackageGUI;
 
-
 % --- Outputs from this function are returned to the command line.
 function varargout = packageGUI_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
@@ -114,7 +112,7 @@ end
 
 
 % --- Executes on button press in pushbutton_done.
-function pushbutton_done_Callback(hObject, eventdata, handles)
+function pushbutton_done_Callback(~, ~, handles)
 % hObject    handle to pushbutton_done (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -125,7 +123,7 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 delete(handles.figure1);
 
 % --- Executes on button press in pushbutton_status.
-function pushbutton_status_Callback(hObject, eventdata, handles)
+function pushbutton_status_Callback(~, ~, handles)
 % hObject    handle to pushbutton_status (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -141,7 +139,7 @@ userData.overviewFig = movieDataGUI(userData.MD(userData.id));
 set(handles.figure1, 'UserData', userData);
 
 % --- Executes on button press in pushbutton_save.
-function pushbutton_save_Callback(hObject, eventdata, handles)
+function pushbutton_save_Callback(~, ~, handles)
 % hObject    handle to pushbutton_save (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -157,7 +155,7 @@ pause(1)
 set(handles.text_body3, 'Visible', 'off')
 
 
-function switchMovie_Callback(hObject, eventdata, handles)
+function switchMovie_Callback(hObject, ~, handles)
 
 userData = get(handles.figure1, 'UserData');
 nMovies = length(userData.MD);
@@ -216,7 +214,7 @@ else
 end
 
 user_response = questdlg('Do you want to save the current progress?', ...
-    'UTrack Package Control Panel');
+    'Package Control Panel');
 switch lower(user_response)
     case 'yes'
         for i = 1: length(userData.MD)
@@ -284,7 +282,7 @@ end
 
 % --------------------------------------------------------------------
 
-function menu_file_open_Callback(hObject, eventdata, handles)
+function menu_file_open_Callback(~, ~, handles)
 % Call back function of 'New' in menu bar
 userData = get(handles.figure1,'Userdata');
 if isfield(userData,'MD')
@@ -297,7 +295,7 @@ delete(handles.figure1)
 
 
 % --------------------------------------------------------------------
-function menu_file_save_Callback(hObject, eventdata, handles)
+function menu_file_save_Callback(~, ~, handles)
 
 userData = get(handles.figure1, 'UserData');
 userData.MD(userData.id).save;
