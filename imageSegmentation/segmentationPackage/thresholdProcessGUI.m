@@ -138,10 +138,13 @@ end
 
 % ---------------------- Parameter Setup -------------------------
 
-if isempty(funParams.ThresholdValue) && funParams.MaxJump
-    set(handles.checkbox_max, 'Value', 1);
-    set(handles.edit_jump, 'Enable', 'on', 'String',num2str(funParams.MaxJump));
+if isempty(funParams.ThresholdValue)
+    set(handles.checkbox_auto, 'Value', 1);
     set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
+    if funParams.MaxJump
+        set(handles.checkbox_max, 'Value', 1);
+        set(handles.edit_jump, 'Enable', 'on', 'String',num2str(funParams.MaxJump));
+    end
 else
     set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
     set(handles.checkbox_auto, 'Value', 0)
@@ -537,6 +540,10 @@ userData = get(handles.figure1, 'UserData');
 
 if isfield(userData, 'helpFig') && ishandle(userData.helpFig)
    delete(userData.helpFig) 
+end
+
+if isfield(userData, 'previewFig') && ishandle(userData.previewFig)
+   delete(userData.previewFig) 
 end
 
 set(handles.figure1, 'UserData', userData);
