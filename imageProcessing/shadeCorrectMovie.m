@@ -261,7 +261,7 @@ for iChan = 1:nChanCorr
     
     %Gaussian filter
     if p.GaussFilterSigma >= 1
-        shadeIm{iChan} = Gauss2D(shadeIm{iChan},p.GaussFilterSigma,'symmetric');
+        shadeIm{iChan} = filterGauss2D(shadeIm{iChan},p.GaussFilterSigma,'symmetric');
     end
     
     if any(shadeIm{iChan} == 0)
