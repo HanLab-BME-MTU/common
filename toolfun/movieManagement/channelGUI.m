@@ -22,7 +22,7 @@ function varargout = channelGUI(varargin)
 
 % Edit the above text to modify the response to help channelGUI
 
-% Last Modified by GUIDE v2.5 22-Apr-2011 22:47:07
+% Last Modified by GUIDE v2.5 29-Apr-2011 15:52:43
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -135,11 +135,15 @@ arrayfun(@(x)(['Channel ' num2str(x)]), 1:length(userData.channels), 'UniformOut
 set(handles.popupmenu_channel, 'Value', userData.selectedChannel)
 
 % Set up channel path and properties
-set(handles.text_path, 'String', userData.channels(userData.selectedChannel).channelPath_);
+set(handles.text_path, 'String', userData.channels(userData.selectedChannel).channelPath_)
 for i=1:numel(userData.propNames)
     propHandle = handles.(['edit_' userData.propNames{i}(1:end-1)]);
-    set(propHandle,'String',...
-        num2str(userData.properties(userData.selectedChannel).(userData.propNames{i})));
+    propValue = userData.properties(userData.selectedChannel).(userData.propNames{i});
+    if ~isempty(propValue)
+        set(propHandle,'String',num2str(propValue),'Enable','off');
+    else
+        set(propHandle,'String','','Enable','on')
+    end
 end
 
 % Update handles structure
@@ -181,8 +185,13 @@ userData.selectedChannel=get(hObject,'Value');
 set(handles.text_path, 'String', userData.channels(userData.selectedChannel).channelPath_)
 for i=1:numel(userData.propNames)
     propHandle = handles.(['edit_' userData.propNames{i}(1:end-1)]);
-    set(propHandle,'String',...
-        num2str(userData.properties(userData.selectedChannel).(userData.propNames{i})));
+    channelValue = userData.channels(userData.selectedChannel).(userData.propNames{i});
+    propValue = userData.properties(userData.selectedChannel).(userData.propNames{i});
+    if ~isempty(channelValue)
+        set(propHandle,'String',num2str(propValue),'Enable','off');
+    else
+        set(propHandle,'String',num2str(propValue),'Enable','on')
+    end
 end
 
 set(handles.figure1,'UserData',userData)
