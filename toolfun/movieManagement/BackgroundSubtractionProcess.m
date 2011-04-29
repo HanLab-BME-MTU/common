@@ -60,16 +60,21 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
            %Load and display the averaged correction images
            corrImNames = dir([obj.funParams_.OutputDirectory filesep '*subtraction_values*.mat']);
            if ~isempty(corrImNames)
-
+               % Retrieve the main figure UserData
+               userData=get(h,'UserData');
                for j = 1:numel(corrImNames)
-                   figure
+                   % Create a figure and attach it to the main figure
+                   % userData
+                   userData.correctionFig(j) =figure;
                    tmp = load([obj.funParams_.OutputDirectory filesep corrImNames(j).name]);
                    tmpF = fieldnames(tmp);
                    plot(tmp.(tmpF{1}));
                    xlabel('Frame Number')
                    ylabel('Subtracted Background Value, A.U.')
-                   title(['Bacground Subtraction Values, Channel ' corrImNames(j).name(end-4) ]);
+                   title(['Background Subtraction Values, Channel ' corrImNames(j).name(end-4) ]);
                end
+               % Save the UserData
+               set(h, 'UserData', userData);
 
            end
 

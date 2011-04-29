@@ -22,7 +22,7 @@ function varargout = thresholdProcessGUI(varargin)
 
 % Edit the above text to modify the response to help thresholdProcessGUI
 
-% Last Modified by GUIDE v2.5 29-Apr-2011 10:19:07
+% Last Modified by GUIDE v2.5 29-Apr-2011 15:44:23
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -167,11 +167,12 @@ props=get(handles.listbox_2,{'String','Value'});
 userData.chanIndx = find(strcmp(props{1}{props{2}},userData.imDirs));
 userData.imIndx=1;
 
-% Initialize the image number slider and eidt
-nIm=numel(userData.imageFileNames{userData.chanIndx});
-set(handles.slider_imageNumber,'Value',userData.imIndx,'Min',1,...
-    'Max',nIm,'SliderStep',[1/double(nIm)  10/double(nIm)]);
-set(handles.edit_imageNumber,'Value',userData.imIndx);
+% Initialize the frame number slider and eidt
+nFrames=numel(userData.imageFileNames{userData.chanIndx});
+set(handles.slider_frameNumber,'Value',userData.imIndx,'Min',1,...
+    'Max',nFrames,'SliderStep',[1/double(nFrames)  10/double(nFrames)]);
+set(handles.text_nFrames,'String',['/ ' num2str(nFrames)]);
+set(handles.edit_frameNumber,'Value',userData.imIndx);
 
 % Load the first image and update the threshold slide
 userData.imData = imread([userData.imDirs{userData.chanIndx} filesep...
@@ -530,10 +531,11 @@ switch get(hObject, 'Value')
         set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
         set(handles.checkbox_max, 'Enable', 'off', 'Value', 0);
         set(handles.edit_jump, 'Enable', 'off');
-       
+        set(handles.checkbox_applytoall, 'Value',0);
+        update_data(hObject,eventdata,handles);
     case 1
         set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off') 
-        set(handles.checkbox_max, 'Enable', 'on');   
+        set(handles.checkbox_max, 'Enable', 'on');           
 end
 userData = get(handles.figure1, 'UserData');
 userData.crtProc.setProcChanged(true);
@@ -661,19 +663,19 @@ function imageNumber_edition(hObject,eventdata, handles)
 
 % Retrieve the value of the selected image
 if strcmp(get(hObject,'Tag'),'edit_imageNumber')
-    imageNumber = str2double(get(handles.edit_imageNumber, 'String'));
+    imageNumber = str2double(get(handles.edit_frameNumber, 'String'));
 else
-    imageNumber = get(handles.slider_imageNumber, 'Value');
+    imageNumber = get(handles.slider_frameNumber, 'Value');
 end
 imageNumber=round(imageNumber);
 
 % Check the validity of the supplied threshold
-if isnan(imageNumber) || imageNumber < 0 || imageNumber > get(handles.slider_imageNumber,'Max')
+if isnan(imageNumber) || imageNumber < 0 || imageNumber > get(handles.slider_frameNumber,'Max')
     warndlg('Please provide a valid coefficient.','Setting Error','modal');
 end
 
-set(handles.slider_imageNumber,'Value',imageNumber);
-set(handles.edit_imageNumber,'String',imageNumber);
+set(handles.slider_frameNumber,'Value',imageNumber);
+set(handles.edit_frameNumber,'String',imageNumber);
 
 % Save data and update graphics
 guidata(hObject, handles);
@@ -714,7 +716,7 @@ end
 % Retrieve the channex index
 props=get(handles.listbox_2,{'String','Value'});
 chanIndx = find(strcmp(props{1}{props{2}},userData.imDirs));
-imIndx = get(handles.slider_imageNumber,'Value');
+imIndx = get(handles.slider_frameNumber,'Value');
 thresholdValue = get(handles.slider_threshold, 'Value');
 
 % Load a new image in case the image number or channel has been changed

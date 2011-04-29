@@ -93,7 +93,7 @@ classdef ImageCorrectionProcess < ImageProcessingProcess
                for j = 1:numel(corrImNames)
                    % Create a figure and attach it to the main figure
                    % userData
-                   userData.hCorrectionFig(j) =figure;
+                   userData.correctionFig(j) =figure;
                    tmp = load([obj.funParams_.OutputDirectory filesep corrImNames(j).name]);
                    tmpF = fieldnames(tmp);
                    imagesc(tmp.(tmpF{1}));
