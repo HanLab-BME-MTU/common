@@ -22,7 +22,7 @@ function varargout = thresholdProcessGUI(varargin)
 
 % Edit the above text to modify the response to help thresholdProcessGUI
 
-% Last Modified by GUIDE v2.5 25-Apr-2011 17:52:25
+% Last Modified by GUIDE v2.5 29-Apr-2011 10:19:07
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -145,18 +145,17 @@ if isempty(funParams.ThresholdValue)
         set(handles.checkbox_max, 'Value', 1);
         set(handles.edit_jump, 'Enable', 'on', 'String',num2str(funParams.MaxJump));
     end
+    nSelectedChannels  = numel(get(handles.listbox_2, 'String'));
+    set(handles.listbox_thresholdValues, 'String',...
+        num2cell(zeros(1,nSelectedChannels)));
+    userData.thresholdValue=0;
 else
     set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
     set(handles.checkbox_auto, 'Value', 0)
-    set(handles.checkbox_max, 'Enable', 'off')
-    
-    threshold = cell(1, length(funParams.ThresholdValue));
-    
-    for i = 1:length(funParams.ThresholdValue)
-       threshold{i} = funParams.ThresholdValue(i); 
-    end
-    
-    set(handles.listbox_thresholdValues, 'String', threshold)
+    set(handles.checkbox_max, 'Enable', 'off') 
+    set(handles.listbox_thresholdValues, 'String', num2cell(funParams.ThresholdValue))
+    userData.thresholdValue=funParams.ThresholdValue(1);
+
 end
 
 % Save the image directories and names (for threshold preview)
@@ -179,7 +178,7 @@ userData.imData = imread([userData.imDirs{userData.chanIndx} filesep...
     userData.imageFileNames{userData.chanIndx}{userData.imIndx}]);
 maxThresholdValue=max(max(userData.imData));
 thresholdStep = 1/double(maxThresholdValue);
-userData.thresholdValue=0;
+
 set(handles.edit_threshold,'String',userData.thresholdValue);
 set(handles.slider_threshold,'Value',userData.thresholdValue,'Max',maxThresholdValue,...
     'SliderStep',[thresholdStep  10*thresholdStep]);
@@ -450,11 +449,15 @@ switch get(hObject,'Value')
     case 1
         set(handles.listbox_2, 'String', contents1);
         chanIndex2 = chanIndex1;
+        thresholdValues =zeros(1,numel(chanIndex1));
     case 0
         set(handles.listbox_2, 'String', {}, 'Value',1);
         chanIndex2 = [ ];
+        thresholdValues = [];
 end
 set(handles.listbox_2, 'UserData', chanIndex2);
+set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues))
+update_data(hObject,eventdata,handles);
 
 % --- Executes on button press in pushbutton_select.
 function pushbutton_select_Callback(hObject, eventdata, handles)
@@ -467,19 +470,22 @@ id = get(handles.listbox_1, 'Value');
 % If channel has already been added, return;
 chanIndex1 = get(handles.listbox_1, 'Userdata');
 chanIndex2 = get(handles.listbox_2, 'Userdata');
+thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
 
 for i = id
     if any(strcmp(contents1{i}, contents2) )
         continue;
     else
         contents2{end+1} = contents1{i};
-        
+        thresholdValues(end+1) = 0;
         chanIndex2 = cat(2, chanIndex2, chanIndex1(i));
 
     end
 end
 
 set(handles.listbox_2, 'String', contents2, 'Userdata', chanIndex2);
+set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues))
+update_data(hObject,eventdata,handles);
 
 
 % --- Executes on button press in pushbutton_delete.
@@ -501,14 +507,20 @@ chanIndex2 = get(handles.listbox_2, 'Userdata');
 chanIndex2(id) = [ ];
 set(handles.listbox_2, 'Userdata', chanIndex2);
 
+% Update thresholdValues
+thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+thresholdValues(id) = [];
+set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
+
 % Point 'Value' to the second last item in the list once the 
 % last item has been deleted
 if (id >length(contents) && id>1)
     set(handles.listbox_2,'Value',length(contents));
+    set(handles.listbox_thresholdValues,'Value',length(contents));
 end
 % Refresh listbox
 set(handles.listbox_2,'String',contents);
-
+update_data(hObject,eventdata,handles);
 
 % --- Executes on button press in checkbox_auto.
 function checkbox_auto_Callback(hObject, eventdata, handles)
@@ -577,7 +589,6 @@ if strcmp(eventdata.Key, 'return')
     pushbutton_done_Callback(handles.pushbutton_done, [], handles);
 end
 
-
 % --- Executes on key press with focus on figure1 and none of its controls.
 function figure1_KeyPressFcn(hObject, eventdata, handles)
 % hObject    handle to figure1 (see GCBO)
@@ -591,91 +602,14 @@ if strcmp(eventdata.Key, 'return')
 end
 
 
-% --- Executes on button press in pushbutton_coef_delete.
-function pushbutton_coef_delete_Callback(hObject, eventdata, handles)
-% Call back function of 'delete' button
-contents = get(handles.listbox_thresholdValues,'String');
-% Return if list is empty
-if isempty(contents)
-    return;
-end
-id = get(handles.listbox_thresholdValues,'Value');
+% --- Executes on button press in pushbutton_set_threshold.
+function pushbutton_set_threshold_Callback(hObject, eventdata, handles)
 
-% Delete selected item
-contents(id) = [ ];
-
-% Refresh listbox
-set(handles.listbox_thresholdValues,'String',contents);
-% Point 'Value' to the second last item in the list once the 
-% last item has been deleted
-if (id>length(contents) && id>1)
-    set(handles.listbox_thresholdValues,'Value',length(contents));
-end
-
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
-
-
-% --- Executes on button press in pushbutton_up.
-function pushbutton_up_Callback(hObject, eventdata, handles)
-% % call back of 'Up' button
-id = get(handles.listbox_thresholdValues,'Value');
-contents = get(handles.listbox_thresholdValues,'String');
-
-% Return if list is empty
-if isempty(contents) || isempty(id) || id == 1
-    return;
-end
-
-temp = contents{id};
-contents{id} = contents{id-1};
-contents{id-1} = temp;
-
-set(handles.listbox_thresholdValues, 'string', contents);
-set(handles.listbox_thresholdValues, 'value', id-1);
-
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
-
-
-% --- Executes on button press in pushbutton_down.
-function pushbutton_down_Callback(hObject, eventdata, handles)
-% Call back of 'Down' button
-id = get(handles.listbox_thresholdValues,'Value');
-contents = get(handles.listbox_thresholdValues,'String');
-
-% Return if list is empty
-if isempty(contents) || isempty(id) || id == length(contents)
-    return;
-end
-
-temp = contents{id};
-contents{id} = contents{id+1};
-contents{id+1} = temp;
-
-set(handles.listbox_thresholdValues, 'string', contents);
-set(handles.listbox_thresholdValues, 'value', id+1);
-
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
-
-
-% --- Executes on button press in pushbutton_add.
-function pushbutton_add_Callback(hObject, eventdata, handles)
-
-set(handles.listbox_thresholdValues, 'Value', 1);
-text = get(handles.edit_threshold, 'String');
-if isempty(text), return; end
-
-if isnan(str2double(text)) || str2double(text) < 0 
-    errordlg('Please provide a valid coefficient. Coefficient must be positive.','Setting Error','modal');
-    return;
-end
-
-contents = get(handles.listbox_thresholdValues, 'String');
-contents{end + 1} = text;
-set(handles.listbox_thresholdValues, 'String', contents)
-% set(handles.edit_threshold, 'String', '')
+newThresholdValue = get(handles.slider_threshold,'Value');
+indx = get(handles.listbox_2,'Value');
+thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+thresholdValues(indx) = newThresholdValue;
+set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
 
 userData = get(handles.figure1, 'UserData');
 userData.crtProc.setProcChanged(true);
@@ -750,6 +684,33 @@ function update_data(hObject,eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
+if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_2') || strcmp(get(hObject,'Tag'),'listbox_thresholdValues')
+    % Check if changes have been at the list box level
+    linkedListBoxes = {'listbox_2','listbox_thresholdValues'};
+    checkLinkBox = strcmp(get(hObject,'Tag'),linkedListBoxes);
+    if any(checkLinkBox)
+        value = get(handles.(linkedListBoxes{checkLinkBox}),'Value');
+        set(handles.(linkedListBoxes{~checkLinkBox}),'Value',value);
+    else
+        value = get(handles.listbox_2,'Value');
+    end
+    thresholdString = get(handles.listbox_thresholdValues,'String');
+    if ~isempty(thresholdString)
+        thresholdValue = str2double(thresholdString{value});
+    else
+        thresholdValue=0;
+    end
+    set(handles.edit_threshold,'String',thresholdValue);
+    set(handles.slider_threshold,'Value',thresholdValue);
+    if isempty(thresholdString),
+        if isfield(userData, 'previewFig'), delete(userData.previewFig); end
+        set(handles.figure1, 'UserData', userData);
+        guidata(hObject,handles);
+        return
+    end
+end
+
+
 % Retrieve the channex index
 props=get(handles.listbox_2,{'String','Value'});
 chanIndx = find(strcmp(props{1}{props{2}},userData.imDirs));
@@ -789,38 +750,32 @@ end
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 
-% Load the graphic callback if applicable
+% Update graphics if applicable
 if get(handles.checkbox_preview,'Value') && ~get(handles.checkbox_auto,'Value'),
-    update_graphics(hObject,handles);
-end
 
-
-function update_graphics(hObject, handles)
-
-userData = get(handles.figure1, 'UserData');
-
-% Create figure if non-existing or closed
-if ~isfield(userData, 'previewFig') || ~ishandle(userData.previewFig)
-    userData.previewFig = figure;
-    userData.newFigure = 1;
-else
-    figure(userData.previewFig);
-    userData.newFigure = 1;
-end
-
-% Retrieve the handle of the figures image
-imHandle =get(get(userData.previewFig,'Children'),'Children');
-if userData.newFigure || userData.updateImage || isempty(imHandle)
-    imagesc(userData.imData);
-    axis off;
+    % Create figure if non-existing or closed
+    if ~isfield(userData, 'previewFig') || ~ishandle(userData.previewFig)
+        userData.previewFig = figure;
+        userData.newFigure = 1;
+    else
+        figure(userData.previewFig);
+        userData.newFigure = 1;
+    end
+    
+    % Retrieve the handle of the figures image
     imHandle =get(get(userData.previewFig,'Children'),'Children');
+    if userData.newFigure || userData.updateImage || isempty(imHandle)
+        imagesc(userData.imData);
+        axis off;
+        imHandle =get(get(userData.previewFig,'Children'),'Children');
+    end
+    
+    % Preview the tresholded umage using the alphaData mapping
+    if userData.newFigure || userData.updateThreshold
+        set(imHandle,'AlphaData',userData.imData>userData.thresholdValue,...
+            'AlphaDataMapping','none');
+    end
+    
+    set(handles.figure1, 'UserData', userData);
+    guidata(hObject,handles);
 end
-
-% Preview the tresholded umage using the alphaData mapping
-if userData.newFigure || userData.updateThreshold
-    set(imHandle,'AlphaData',userData.imData>userData.thresholdValue,...
-        'AlphaDataMapping','none');
-end
-
-set(handles.figure1, 'UserData', userData);
-guidata(hObject,handles);
