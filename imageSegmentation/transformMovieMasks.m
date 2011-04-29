@@ -37,12 +37,14 @@ function movieData = transformMovieMasks(movieData,paramsIn)
 %
 %       ('SegProcessIndex' -> Positive integer scalar or vector) Optional.
 %       This specifies SegmentationProcess(s) to use masks from by its
-%       index in the array movieData.processes_; If input as a vector,
-%       masks will be used from the process specified by the first element,
-%       and if not available for a specific channel, then from the next
-%       process etc. If not input, and multiple SegmentationProcesses are
-%       present, the user will be asked to select one, unless batch mode is
-%       enabled in which case there will be an error.  
+%       index in the array movieData.processes_; For each channel, masks
+%       will be used from the last process specified which has valid masks
+%       for that channel. That is if SegProcessIndex = [1 4] and both
+%       processes 1 and 4 have masks for a given channel, then the masks
+%       from process 4 will be used. If not input, and multiple
+%       SegmentationProcesses are present, the user will be asked to select
+%       one, unless batch mode is enabled in which case an error will be
+%       generated.
 %
 %       ('TransformFilePaths' -> Cell array of Character strings) A cell
 %       array specifying The FULL path and filename of the .mat file
@@ -104,14 +106,31 @@ if isempty(p.SegProcessIndex)
     if p.BatchMode
         %If batch mode, just get all the seg processes
         p.SegProcessIndex = movieData.getProcessIndex('SegmentationProcess',Inf,0);            
-    else
-        %Otherwise, ask the user 
-        p.SegProcessIndex = movieData.getProcessIndex('SegmentationProcess',1,1);
+        p.SegProcessIndex(p.SegProcessIndex == iProc) = [];
+        if numel(p.SegProcessIndex) > 1
+            error('In batch mode you must specify the SegProcessIndex if more than one SegmentationProcess is available!')
+        end            
+    else        
+        %We need to exclude this function's process, and ask user if more
+        %than one
+        segProcList =  movieData.getProcessIndex('SegmentationProcess',Inf,0);
+        segProcList(segProcList == iProc) = []; %Don't count this process
+        iSegProc=1;
+        if numel(segProcList) > 1
+            procNames = cellfun(@(x)(x.name_),...
+                        movieData.processes_(segProcList),'UniformOutput',false);
+            iSegProc = listdlg('ListString',procNames,...
+                               'SelectionMode','multiple',...
+                               'ListSize',[400 400],...
+                               'PromptString','Select the segmentation process(es) to use:');
+            
+        end
+        p.SegProcessIndex = segProcList(iSegProc);        
     end
 end
 
 if isempty(p.SegProcessIndex) 
-    error('This function requires that the input movie has already been segmented - no valid SegmentationProcesses were found!')
+    error('This function requires that the input movie has already been segmented and that a valid SegmentationProcesses be specified!')
 end
 
 
@@ -178,8 +197,8 @@ maskNames = cell(1,nChanX);
 
 for j = 1:nChanX;
     
-    %Get the first seg process with masks for this channel
-    iP = p.SegProcessIndex(find(hasMasks(j,:),1));
+    %Get the most recent seg process with masks for this channel
+    iP = p.SegProcessIndex(find(hasMasks(j,:),1,'last'));
     
     movieData.processes_{iProc}.setInMaskPath(p.ChannelIndex(j),...
         movieData.processes_{iP}.outFilePaths_(p.ChannelIndex(j)));
@@ -213,6 +232,7 @@ disp('Starting mask transformation...')
 for iChan = 1:nChanX
 
     disp(['Transforming masks for channel ' num2str(p.ChannelIndex(iChan)) '...']);
+    disp(['Using masks from ' maskDirs{iChan}])
     
     if ~p.BatchMode        
         waitbar((iChan-1)*nImages / nImTot,wtBar,['Please wait, transforming masks for channel ' num2str(p.ChannelIndex(iChan)) ' ...']);        

@@ -29,13 +29,15 @@ function movieData = refineMovieMasks(movieData,paramsIn)
 %       will be asked to select from the available channels
 %
 %       ('SegProcessIndex' -> Positive integer scalar or vector) Optional.
-%       This specifies SegmentationProcess(s) to refine masks from by its
-%       index in the array movieData.processes_; If input as a vector,
-%       masks will be used from the process specified by the first element,
-%       and if not available for a specific channel, then from the next
-%       process etc. If not input, and multiple SegmentationProcesses are
-%       present, the user will be asked to select one, unless batch mode is
-%       enabled in which case there will be an error.  
+%       This specifies SegmentationProcess(s) to use masks from by its
+%       index in the array movieData.processes_; For each channel, masks
+%       will be used from the last process specified which has valid masks
+%       for that channel. That is if SegProcessIndex = [1 4] and both
+%       processes 1 and 4 have masks for a given channel, then the masks
+%       from process 4 will be used. If not input, and multiple
+%       SegmentationProcesses are present, the user will be asked to select
+%       one, unless batch mode is enabled in which case an error will be
+%       generated.
 %
 %       ('OutputDirectory' -> character string)
 %       Optional. A character string specifying the directory to save the
@@ -154,6 +156,10 @@ if isempty(p.SegProcessIndex)
     if p.BatchMode
         %If batch mode, just get all the seg processes
         p.SegProcessIndex = movieData.getProcessIndex('SegmentationProcess',Inf,0);            
+        p.SegProcessIndex(p.SegProcessIndex == iProc) = [];
+        if numel(p.SegProcessIndex) > 1
+            error('In batch mode you must specify the SegProcessIndex if more than one SegmentationProcess is available!')
+        end            
     else        
         %We need to exclude this function's process, and ask user if more
         %than one
@@ -174,7 +180,7 @@ if isempty(p.SegProcessIndex)
 end
 
 if isempty(p.SegProcessIndex) 
-    error('This function requires that the input movie has already been segmented - no valid SegmentationProcesses were found!')
+    error('This function requires that the input movie has already been segmented and that a valid SegmentationProcesses be specified!')
 end
 
 nProc = numel(p.SegProcessIndex);
@@ -197,7 +203,6 @@ if p.ClosureRadius < 0 || ~isequal(round(p.ClosureRadius),p.ClosureRadius)
     error('The closure radius must be a non-negative integer!!')
 end
 
-%...TEMPORARY - MORE PARAMETER CHECKS NEEDED!! - HLE
 
 %Make sure all the selected channels have foreground masks.
 if any(~sum(hasMasks,2))
@@ -232,8 +237,8 @@ outMaskDir = cell(1,nChanThresh);
 maskNames = cell(1,nChanThresh);
 for j = 1:nChanThresh;    
     
-    %Get the first seg process with masks for this channel
-    iP = p.SegProcessIndex(find(hasMasks(j,:),1));    
+    %Get the most recent seg process with masks for this channel
+    iP = p.SegProcessIndex(find(hasMasks(j,:),1,'last'));    
     maskNames(j) = movieData.processes_{iP}.getOutMaskFileNames(p.ChannelIndex(j));
     inMaskDir(j) = movieData.processes_{iP}.outFilePaths_(p.ChannelIndex(j));
     
