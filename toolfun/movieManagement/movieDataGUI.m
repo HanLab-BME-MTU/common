@@ -393,7 +393,7 @@ end
 % --- Executes on button press in pushbutton_output.
 function pushbutton_output_Callback(hObject, eventdata, handles)
 
-pathname = uigetdir(pwd);
+pathname = uigetdir(pwd,'Select a directory to store the processes output');
 if isnumeric(pathname)
     return;
 end
