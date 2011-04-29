@@ -770,10 +770,11 @@ if get(handles.checkbox_preview,'Value') && ~get(handles.checkbox_auto,'Value'),
         imHandle =get(get(userData.previewFig,'Children'),'Children');
     end
     
-    % Preview the tresholded umage using the alphaData mapping
+    % Preview the tresholding output using the alphaData mapping
     if userData.newFigure || userData.updateThreshold
-        set(imHandle,'AlphaData',userData.imData>userData.thresholdValue,...
-            'AlphaDataMapping','none');
+        alphamask=ones(size(userData.imData));
+        alphamask(userData.imData<=userData.thresholdValue)=.4;
+        set(imHandle,'AlphaData',alphamask,'AlphaDataMapping','none');
     end
     
     set(handles.figure1, 'UserData', userData);
