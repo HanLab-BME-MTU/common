@@ -1284,6 +1284,19 @@ function figure1_DeleteFcn(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
+% Find all userData field emptying with Fig
+userDataFields=fieldnames(userData);
+isFig = ~cellfun(@isempty,regexp(userDataFields,'Fig$'));
+userDataFigs = userDataFields(isFig);
+
+% Delete fields
+for i=1:numel(userDataFigs)
+     figHandles = userData.(userDataFigs{i});
+     validFigHandles = figHandles(ishandle(figHandles)&logical(figHandles));     
+     delete(validFigHandles);
+end
+
+
 if isfield(userData, 'hFigure') && ~isempty(userData.hFigure) && ishandle(userData.hFigure)
    delete(userData.hFigure) 
 end

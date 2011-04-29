@@ -88,9 +88,12 @@ classdef ImageCorrectionProcess < ImageProcessingProcess
            %Load and display the averaged correction images
            corrImNames = dir([obj.funParams_.OutputDirectory filesep '*correction_image*.mat']);
            if ~isempty(corrImNames)
-
+               % Retrieve the main figure UserData
+               userData=get(h,'UserData');
                for j = 1:numel(corrImNames)
-                   figure
+                   % Create a figure and attach it to the main figure
+                   % userData
+                   userData.hCorrectionFig(j) =figure;
                    tmp = load([obj.funParams_.OutputDirectory filesep corrImNames(j).name]);
                    tmpF = fieldnames(tmp);
                    imagesc(tmp.(tmpF{1}));
@@ -99,7 +102,8 @@ classdef ImageCorrectionProcess < ImageProcessingProcess
                    colorbar,axis image,axis off,%colormap(jet(2^16)) %Use hi-res colormap to avoid apparent stratification
                    title(['Processed ' obj.name_ ' Image, Channel ' corrImNames(j).name(end-4) ]);
                end
-
+               % Save the UserData
+               set(h, 'UserData', userData);
            end
 
         end
