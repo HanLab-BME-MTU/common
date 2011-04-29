@@ -4,7 +4,9 @@ if get(handles.checkbox_all, 'Value')
     
     userData = get(handles.figure1, 'UserData');
     for x = setdiff(1:length(userData.MD), userData.id)
-
+        % Recalls the userData that may have been updated by the
+        % checkAllMovies function
+        userData=get(handles.figure1, 'UserData')
         userData.statusM(x).Checked(index) = value;
         set(handles.figure1, 'UserData', userData)
 
