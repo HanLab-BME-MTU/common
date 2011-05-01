@@ -24,9 +24,12 @@
 %                         .pval : p-value of the Kolmogorov-Smirnov test (normal dist.)
 %                         .mean : mean of the residuals
 %                         .std  : standard deviation of the residuals
+%                         .RSS  : residual sum of squares
 %                   J : Jacobian
 %
 % Axis conventions: image processing, see meshgrid
 % For Gaussian mixture fitting, use fitGaussianMixture2D()
 %
 % Example: [prmVect prmStd C res J] = fitGaussian2D(data, [0 0 max(data(:)) 1.5 min(data(:))], 'xyasc');
+
+% Francois Aguet, 2011 (last modified May 1, 2011)
