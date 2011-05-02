@@ -1,5 +1,5 @@
 function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
-    filterSigma,showRaw,intensityScale,firstImageFile,dir2saveMovie)
+    filterSigma,showRaw,intensityScale,firstImageFile,dir2saveMovie,movieType)
 %OVERLAYFEATURESMOVIE makes a movie of detected features overlaid on images
 %
 %SYNPOSIS overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
@@ -35,21 +35,24 @@ function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
 %                     If not input, movie will be saved in directory where
 %                     images are located.
 %                     Optional. Default: [].
+%       movieType   : 'mov' to make a Quicktime movie using MakeQTMovie,
+%                     'avi' to make AVI movie using Matlab's movie2avi,
+%                     'mp4_unix', 'avi_unix' to make an MP4 or AVI movie
+%                     using ImageMagick and ffmpeg. These options works
+%                     only under linux or mac.
+%                     Optional. Default: 'mov'.
 %
 %OUTPUT the movie.
 %
 %Khuloud Jaqaman, August 2007
 
-%% input
+%% input - basic
 
 %check whether correct number of input arguments was used
 if nargin < 1
     disp('--overlayFeaturesMovie: Incorrect number of input arguments!');
     return
 end
-
-%record directory before start of function
-% startDir = pwd;
 
 %ask user for images
 if nargin < 8 || isempty(firstImageFile)
@@ -63,7 +66,7 @@ else
         [fpath,fname,fno,fext]=getFilenameBody(firstImageFile);
         dirName=[fpath,filesep];
         fName=[fname,fno,fext];
-    end        
+    end
 end
 
 %if input is valid ...
@@ -103,6 +106,28 @@ else
     startend(2) = min(startend(2),numFrames); %make sure that last frame does not exceed real last frame
 end
 
+%keep only the frames of interest
+outFileList = outFileList(frame2fileMap(startend(1)):frame2fileMap(startend(2)));
+frame2fileMap = frame2fileMap(startend(1):startend(2));
+indxNotZero = find(frame2fileMap~=0);
+frame2fileMap(indxNotZero) = frame2fileMap(indxNotZero) - frame2fileMap(indxNotZero(1)) + 1;
+
+%retain only the movieInfo of the frames of interest
+if isempty(movieInfo)
+    movieInfo = repmat(struct('xCoord',[],'yCoord',[],'amp',[]),...
+        startend(2)-startend(1)+1,1);
+else
+    movieInfo = movieInfo(startend(1):startend(2));
+end
+
+%get number of frames in movie to be made
+numFramesMovie = diff(startend) + 1;
+
+%get image size
+imageRange = [1 isx; 1 isy];
+
+%% input - additional parameters
+
 %check whether to save movie
 if nargin < 3 || isempty(saveMovie)
     saveMovie = 0;
@@ -110,7 +135,7 @@ end
 
 %check name for saving movie
 if saveMovie && (nargin < 4 || isempty(movieName))
-    movieName = 'featuresMovie.mov';
+    movieName = 'featuresMovie';
 end
 
 %check whether to use filtered images
@@ -118,7 +143,7 @@ if nargin < 5 || isempty(filterSigma)
     filterSigma = 0;
 end
 
-%check whether to put raw movie adjacent to movie with tracks overlaid
+%check whether to put raw movie adjacent to movie with tracks features
 if nargin < 6 || isempty(showRaw)
     showRaw = 0;
 end
@@ -133,34 +158,19 @@ if saveMovie && (nargin < 9 || isempty(dir2saveMovie))
     dir2saveMovie = dirName;
 end
 
-%keep only the frames of interest
-outFileList = outFileList(frame2fileMap(startend(1)):frame2fileMap(startend(2)));
-frame2fileMap = frame2fileMap(startend(1):startend(2));
-indxNotZero = find(frame2fileMap~=0);
-frame2fileMap(indxNotZero) = frame2fileMap(indxNotZero) - frame2fileMap(indxNotZero(1)) + 1;
-
-%initialize QT movie if it is to be saved
-if saveMovie
-    %     evalString = ['MakeQTMovie start ''' fullfile(dirName,movieName) ''''];
-    evalString = ['MakeQTMovie start ''' fullfile(dir2saveMovie,movieName) ''''];
-    eval(evalString);
+%decide on movie type
+if nargin < 10 || isempty(movieType)
+    movieType = 'mov';
 end
-
-%retain only the movieInfo of the frames of interest
-if isempty(movieInfo)
-    movieInfo = repmat(struct('xCoord',[],'yCoord',[],'amp',[]),...
-        startend(2)-startend(1)+1,1);
-else
-    movieInfo = movieInfo(startend(1):startend(2));
-end
-
-%get image size
-imageRange = [1 isx; 1 isy];
 
 %% make movie
 
-% %go to directory where movie will be saved
-% cd(dirName);
+%initialize movie if it is to be saved
+if saveMovie
+    movieVar = struct('cdata',[],'colormap',[]);
+    movieVar = movieInfrastructure('initialize',movieType,dir2saveMovie,...
+        movieName,numFramesMovie,movieVar,[]);
+end
 
 %go over all specified frames and find minimum and maximum intensity in all
 %of them combined
@@ -168,9 +178,9 @@ switch intensityScale
     case 0
         intensityMinMax = [];
     case 1
-        meanIntensity = zeros(length(movieInfo),1);
+        meanIntensity = zeros(numFramesMovie,1);
         stdIntensity = meanIntensity;
-        for iFrame = 1 : length(movieInfo)
+        for iFrame = 1 : numFramesMovie
             if frame2fileMap(iFrame) ~= 0
                 imageStack = double(imread(outFileList{frame2fileMap(iFrame)}));
                 meanIntensity(iFrame) = mean(imageStack(:));
@@ -181,9 +191,9 @@ switch intensityScale
         stdIntensity = mean(stdIntensity);
         intensityMinMax = [meanIntensity-2*stdIntensity meanIntensity+6*stdIntensity];
     case 2
-        minIntensity = zeros(length(movieInfo),1);
+        minIntensity = zeros(numFramesMovie,1);
         maxIntensity = minIntensity;
-        for iFrame = 1 : length(movieInfo)
+        for iFrame = 1 : numFramesMovie
             if frame2fileMap(iFrame) ~= 0
                 imageStack = double(imread(outFileList{frame2fileMap(iFrame)}));
                 minIntensity(iFrame) = min(imageStack(:));
@@ -197,7 +207,7 @@ end
 
 %go over all specified frames
 figure
-for iFrame = 1 : length(movieInfo)
+for iFrame = 1 : numFramesMovie
     
     if frame2fileMap(iFrame) ~= 0 %if frame exists
         
@@ -261,14 +271,13 @@ for iFrame = 1 : length(movieInfo)
     
     %plot features
     if ~isempty(movieInfo(iFrame).xCoord)
-        %         plot(movieInfo(iFrame).xCoord(:,1),movieInfo(iFrame).yCoord(:,1),'ro','MarkerSize',4);
         plot(movieInfo(iFrame).xCoord(:,1),movieInfo(iFrame).yCoord(:,1),'ro','MarkerSize',2);
     end
     
     %add frame to movie if movie is saved
     if saveMovie
-        %         MakeQTMovie addaxes
-        MakeQTMovie addfigure
+        movieVar = movieInfrastructure('addFrame',movieType,dir2saveMovie,...
+            movieName,numFramesMovie,movieVar,iFrame);
     end
     
     %pause for a moment to see frame
@@ -277,11 +286,10 @@ for iFrame = 1 : length(movieInfo)
 end
 
 %finish movie
-if saveMovie==1
-    MakeQTMovie finish
+if saveMovie
+    movieInfrastructure('finalize',movieType,dir2saveMovie,...
+        movieName,numFramesMovie,movieVar,[]);
 end
 
-%% change directory back to original
-% cd(startDir);
-
 %% ~~~ end ~~~
+
