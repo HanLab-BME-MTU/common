@@ -2,6 +2,10 @@ classdef Package < hgsetget
     % Defines the abstract class Package from which every user-defined packages
     % will inherit. This class cannot be instantiated.
     
+    properties(SetAccess = immutable)
+        createTime_ % The time when object is created.
+    end
+    
     properties (SetAccess = private)
     % Objects of sub-class of Package cannot change variable values since 
     % 'SetAccess' attribute is set to private
@@ -9,7 +13,6 @@ classdef Package < hgsetget
         outputDirectory_ %The parent directory where results will be stored.
                          %Individual processes will save their results to
                          %sub-directories of this directory.
-        createTime_ % The time when object is created.
     end
  
     properties(SetAccess = protected)
