@@ -21,6 +21,7 @@ ip.addRequired('img', @isnumeric);
 ip.addRequired('sigma', @isscalar);
 ip.addParamValue('Mode', 'xyAc', @ischar);
 ip.addParamValue('alpha', 0.05, @isscalar);
+ip.addParamValue('mask', [], @isnumeric);
 ip.parse(img, sigma, varargin{:});
 mode = ip.Results.Mode;
 alpha = ip.Results.alpha;
@@ -90,6 +91,11 @@ mask = mask | logMask;
 
 % re-select local maxima
 imgLM = allMax .* mask;
+
+% apply cell shape mask
+if ~isempty(ip.Results.mask)
+    imgLM(ip.Results.mask == 0) = 0;
+end
 
 
 [lmy, lmx] = find(imgLM~=0);
