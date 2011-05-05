@@ -1,4 +1,4 @@
-function [cutoffIndex, cutoffValue, sp, axesH] = cutFirstHistMode(varargin)
+function [cutoffIndex, cutoffValue, sp, axesH,maxBinValue] = cutFirstHistMode(varargin)
 %CUTFIRSTHISTMODE finds the end of the first mode of a histogram using unimodal thresholding (Rosin).
 %
 % cutFirstHistMode is an implementation of the algorithm presented in "uni-
