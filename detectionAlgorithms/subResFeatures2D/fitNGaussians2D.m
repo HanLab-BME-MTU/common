@@ -15,6 +15,7 @@ function [F,J] = fitNGaussians2D(x0,image,index,psfSigma)
 %       errFlag : 0 if function executes normally, 1 otherwise.
 
 %Khuloud Jaqaman, August 2005
+% just a comment
 
 %% Output
 

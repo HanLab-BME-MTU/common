@@ -677,10 +677,10 @@ if showPlot
     hold on
     for i = 1 : numGauss
         plot(binCenterP,distrIndGauss(i,:) * sum(isfinite(observations))/...
-            numObservations,'g--','LineWidth',1.5)
+            numObservations,'g--','LineWidth',2.5)
     end
     plot(binCenterP,distrNGauss * sum(isfinite(observations))/...
-        numObservations,'r-.','LineWidth',1.5)
+        numObservations,'r','LineWidth',2.5)
     xlabel('Observation values')
     ylabel('Counts')
     
@@ -689,7 +689,7 @@ if showPlot
     subplot(1,2,2);
     plot(binCenter,cumHist,'k.')
     hold on
-    plot(binCenter,cumDistrNGauss,'r','LineWidth',1.5)
+    plot(binCenter,cumDistrNGauss,'r','LineWidth',2.5)
     xlabel('Observation values')
     ylabel('Cumulative counts')
 

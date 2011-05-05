@@ -4,9 +4,9 @@ function [frame, xv, yv, sv, Av] = simGaussianSpots(nx, ny, sigma, varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('nx');
-ip.addRequired('ny');
-ip.addRequired('sigma');
+ip.addRequired('nx',@isnumeric);
+ip.addRequired('ny',@isnumeric);
+ip.addRequired('sigma',@isnumeric);
 ip.addParamValue('x', []);
 ip.addParamValue('y', []);
 ip.addParamValue('A', []);
@@ -42,11 +42,9 @@ end
 
 frame = c*ones(ny, nx);
 
-
 [~, idx] = sort(xv+yv*nx); % sort spots according to row position
 xv = xv(idx);
 yv = yv(idx);
-
 
 for k = 1:np
     xi = round(xv(k));

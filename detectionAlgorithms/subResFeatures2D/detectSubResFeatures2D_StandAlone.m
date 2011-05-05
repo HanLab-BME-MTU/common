@@ -495,7 +495,7 @@ for iImage = 1 : numImagesRaw
         maxPos = vertcat(candsCurrent.Lmax);
         
         %if there is more than one surviving cand
-        if size(maxPos,1) > 1
+        %%if size(maxPos,1) > 1
             
             %remove cands that are closer than 2*psfSigma to each other ...
             
@@ -514,6 +514,8 @@ for iImage = 1 : numImagesRaw
             %update list of cands
             candsCurrent = candsCurrent(cands2keep);
             maxPos = vertcat(candsCurrent.Lmax);
+
+	  if size(maxPos,1) > 1
             
             %then refine that by removing cands one by one ...
             
