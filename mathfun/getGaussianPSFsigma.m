@@ -13,30 +13,32 @@
 
 function sigma = getGaussianPSFsigma(NA, M, pixelSize, lambda, varargin)
 
-if mod(length(varargin),2)~=0
-    error('Optional arguments need to be entered as pairs.');
-end
+ip = inputParser;
+ip.CaseSensitive = false;
+ip.addRequired('NA', @isscalar);
+ip.addRequired('M', @isscalar);
+ip.addRequired('pixelSize', @isscalar);
+ip.addRequired('lambda', @isscalar);
+ip.addParamValue('Display', 'on', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
+ip.parse(NA, M, pixelSize, lambda, varargin{:});
 
-if nargin >= 4
-    lambda = name2wavelength(lambda);    
-    
-    % Defaults use values corresponding to optimal imaging conditions
-    p.ti0 = 0; % the working distance has no effect under ideal conditions
-    p.ni0 = 1.518;
-    p.ni = 1.518;
-    p.tg0 = 0.17e-3;
-    p.tg = 0.17e-3;
-    p.ng0 = 1.515;
-    p.ng = 1.515;
-    p.ns = 1.00;
-    p.lambda = lambda;
-    p.M = M;
-    p.NA = NA;
-    p.alpha = asin(p.NA/p.ni);
-    p.pixelSize = pixelSize;
-else
-    p = varargin{1};
-end
+lambda = name2wavelength(lambda);
+
+% Defaults use values corresponding to optimal imaging conditions
+p.ti0 = 0; % working distance has no effect under ideal conditions
+p.ni0 = 1.518;
+p.ni = 1.518;
+p.tg0 = 0.17e-3;
+p.tg = 0.17e-3;
+p.ng0 = 1.515;
+p.ng = 1.515;
+p.ns = 1.33;
+p.lambda = lambda;
+p.M = M;
+p.NA = NA;
+p.alpha = asin(p.NA/p.ni);
+p.pixelSize = pixelSize;
+
 
 ru = 8;
 psf = vectorialPSF(0,0,0,0,ru,p);
