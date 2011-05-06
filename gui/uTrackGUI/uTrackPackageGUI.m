@@ -610,9 +610,9 @@ for i = intersect(procRun{x}, userData.optProcID);
 end
 
 % Set all running processes' sucess = false; 
-for i = procRun{x}
-    userData.crtPackage.processes_{i}.setSuccess(false);
-end
+% for i = procRun{x}
+%     userData.crtPackage.processes_{i}.setSuccess(false);
+% end
 
 % Clear icons of selected processes
 % Return user data !!!
