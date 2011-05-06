@@ -1,6 +1,6 @@
-function maskBlobs = blobSegmentThreshold4AQLM(image,thresholdMethod,...
-    filterNoise,filterBackground,minSize,plotRes)
-%BLOBSEGMENTTHRESHOLD segments blobs in 2D images via various thresholding methods
+function maskBlobs = blobSegmentThresholdGeneral(image,thresholdMethod,...
+    filterNoise,filterBackground,minSize,plotRes,saveDir,plotName)
+%BLOBSEGMENTTHRESHOLDGENERAL segments blobs in 2D images via various thresholding methods
 %
 %SYNOPSIS maskBlobs = blobSegmentThreshold(image,minSize,plotRes)
 %
@@ -15,6 +15,10 @@ function maskBlobs = blobSegmentThreshold4AQLM(image,thresholdMethod,...
 %                   Optional. Default: 20 pixels.
 %       plotRes   : 1 to plot segmentation results, 0 otherwise.
 %                   Optional. Default: 0.
+%       saveDir   : Directory where to save plots.
+%                   Only needed if plotRes = 1.
+%       plotName  : Image name for plotting.
+%                   Only needed if plotRes = 1.
 %
 %OUTPUT maskBlobs : Mask of blobs. 1 inside blobs, 0 outside.
 %
@@ -119,21 +123,27 @@ switch thresholdMethod
         try
             level = graythresh(imageDilatedNorm(nzInd));
         catch %#ok<CTCH>
-            disp('Method failed to determine a threshold. Exiting code.')
+            disp(['Method failed to determine a threshold (otsu, noise ' ...
+                num2str(filterNoise) ', background ' ...
+                num2str(filterBackground) '). Exiting code.'])
             return
         end
     case 'rosin'
         try
             [dummy,level] = cutFirstHistMode(imageDilatedNorm(nzInd),0); %#ok<ASGLU>
         catch %#ok<CTCH>
-            disp('Method failed to determine a threshold. Exiting code.')
+            disp(['Method failed to determine a threshold (rosin, noise ' ...
+                num2str(filterNoise) ', background ' ...
+                num2str(filterBackground) '). Exiting code.'])
             return
         end
     case 'minmax'
         try
             level = thresholdFluorescenceImage(imageDilatedNorm(nzInd));
         catch %#ok<CTCH>
-            disp('Method failed to determine a threshold. Exiting code.')
+            disp(['Method failed to determine a threshold (minmax, noise ' ...
+                num2str(filterNoise) ', background ' ...
+                num2str(filterBackground) '). Exiting code.'])
             return
         end
 end
@@ -155,33 +165,47 @@ maskBlobs = ismember(labels, idx);
 %% Plotting
 
 if plotRes
-
+    
     %get the blob edges from the final blob mask
     edgesBlobs = double(edge(maskBlobs));
-
+    
     %scale the original image to be between 0 and 1
     imageScaled = (image - min(image(:))) / (max(image(:)) - min(image(:)));
-
+    
     %give the edge pixels a value of zero in the original image
     imageScaled(edgesBlobs==1) = 0;
-
+    
     %construct a 3-layered image to show blob edges on top of
     %original image
     image3Color = repmat(imageScaled,[1 1 3]);
     image3Color(:,:,1) = image3Color(:,:,1) + edgesBlobs;
     
     %plot image
-    figure('Name',thresholdMethod), hold on
+    figHandle1 = figure('Name',[plotName '_segmentation_' ...
+        thresholdMethod '_noise' num2str(filterNoise) ...
+        '_background' num2str(filterBackground)]);
+    hold on
     subplot(1,2,1)
     imshow(image,[])
     subplot(1,2,2)
     imshow(image3Color,[]);
+    saveas(figHandle1,fullfile(saveDir,[plotName '_segmentation_' ...
+        thresholdMethod '_noise' num2str(filterNoise) ...
+        '_background' num2str(filterBackground)]),'fig');
     
     %also plot intensity histogram and threshold
     n = histogram(imageDilatedNorm(nzInd),[],0);
-    figure('Name',thresholdMethod), hold on
+    figHandle2 = figure('Name',[plotName '_histogram_' ...
+        thresholdMethod '_noise' num2str(filterNoise) ...
+        '_background' num2str(filterBackground)]);
+    hold on
     histogram(imageDilatedNorm(nzInd),[],0);
     plot(level*[1 1],[0 max(n)],'r','LineWidth',2)
+    saveas(figHandle2,fullfile(saveDir,[plotName '_histogram_' ...
+        thresholdMethod '_noise' num2str(filterNoise) ...
+        '_background' num2str(filterBackground)]),'fig');
+    
+    close all
     
 end
 
