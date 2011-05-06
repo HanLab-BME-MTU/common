@@ -161,10 +161,14 @@ end
 %If no handle given, create figure
 if ~useTool
     if isempty(axHandle)
-        figHandle = gcf;      
+        figHandle = gcf;        
+        handleInput = false;
+        clf(figHandle);
     elseif ishandle(axHandle)
         %If axes handle given, get the figure handle for it
         figHandle = get(axHandle,'Parent');
+        cla(axHandle);
+        handleInput = true;
     else
         error('Specified axes handle is not a valid handle!')
     end
@@ -262,8 +266,14 @@ end
 %Display the image
 if useTool
     imtool(currImage,[])
-else    
+elseif ~handleInput
+    %If we created a figure, size it to fit the image.
     imshow(currImage,[])
+else
+    %If the user input it, use their image size
+    imagesc(currImage);
+    axis image, axis off, colormap gray
+    set(axHandle, 'Units', 'normalized', 'Position', [0 0 1 1]);
 end
 
 %If the axes didn't exist before, get it's handle now

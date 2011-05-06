@@ -100,8 +100,6 @@ end
 
 %% ------------- Init ----------------- %%
 
-%Make the figure for display and get the axes handles
-figHan = figure;
 nImages = movieData.nFrames_;
 
 %Check if protrusion overlay was requested and disable warning
@@ -113,14 +111,9 @@ end
 
 
 for iImage = 1:nImages
+       
     
-    %Clear the axes so we don't build up a bunch of crap in the figure    
-    
-    cla(gca);                
-    
-    
-    imageViewer(movieData,'Frame',iImage,...
-                          'AxesHandle',gca,imviewArgs{:});
+    figHan = imageViewer(movieData,'Frame',iImage,imviewArgs{:});
                        
         
     if constRange
