@@ -243,7 +243,7 @@ methods(Access = public)
                 save(matResultsSaveFile,'-struct','M');
                 clear M;
             end
-            
+            obj.owner_.save();
         end
         
 %         [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...

@@ -138,6 +138,7 @@ classdef SubResolutionProcess < DetectionProcess
 %                 obj.funParams_.movieParam,obj.funParams_.detectionParam,obj.funParams_.saveResults
                 obj.funName_(obj.funParams_.movieParam, obj.funParams_.detectionParam, obj.funParams_.saveResults);
                 obj.setOutFilePath(i,[obj.funParams_.saveResults.dir filesep obj.funParams_.saveResults.filename]);
+                obj.owner_.save();
             end
         end
         

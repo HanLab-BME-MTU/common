@@ -22,7 +22,7 @@ function varargout = packageGUI(varargin)
 
 % Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 29-Mar-2011 11:31:40
+% Last Modified by GUIDE v2.5 06-May-2011 13:46:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -111,17 +111,6 @@ if (isfield(userData,'startMovieSelectorGUI') && userData.startMovieSelectorGUI)
 end
 
 
-% --- Executes on button press in pushbutton_done.
-function pushbutton_done_Callback(~, ~, handles)
-% hObject    handle to pushbutton_done (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% userData = get(handles.figure1, 'UserData');
-% for i = 1: length(userData.MD)
-%     userData.MD(i).save;
-% end
-delete(handles.figure1);
-
 % --- Executes on button press in pushbutton_status.
 function pushbutton_status_Callback(~, ~, handles)
 % hObject    handle to pushbutton_status (see GCBO)
@@ -138,21 +127,17 @@ end
 userData.overviewFig = movieDataGUI(userData.MD(userData.id));
 set(handles.figure1, 'UserData', userData);
 
-% --- Executes on button press in pushbutton_save.
-function pushbutton_save_Callback(~, ~, handles)
-% hObject    handle to pushbutton_save (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
+% --- Executes on Save button press or File>Save
+function save_Callback(~, ~, handles)
 userData = get(handles.figure1, 'UserData');
 
 for i = 1: length(userData.MD)
     userData.MD(i).save;
 end
 
-set(handles.text_body3, 'Visible', 'on')
+set(handles.text_saveStatus, 'Visible', 'on')
 pause(1)
-set(handles.text_body3, 'Visible', 'off')
+set(handles.text_saveStatus, 'Visible', 'off')
 
 
 function switchMovie_Callback(hObject, ~, handles)
@@ -253,7 +238,7 @@ end
 function figure1_KeyPressFcn(hObject, eventdata, handles)
 
 if strcmp(eventdata.Key, 'return')
-    pushbutton_done_Callback(handles.pushbutton_done, [], handles);
+    exit_Callback(handles.pushbutton_exit, [], handles);
 end
 if strcmp(eventdata.Key, 'leftarrow')
     switchMovie_Callback(handles.pushbutton_left, [], handles);
@@ -295,21 +280,8 @@ delete(handles.figure1)
 
 
 % --------------------------------------------------------------------
-function menu_file_save_Callback(~, ~, handles)
+function exit_Callback(~, ~, handles)
 
-userData = get(handles.figure1, 'UserData');
-userData.MD(userData.id).save;
-
-set(handles.text_body3, 'Visible', 'on')
-pause(1)
-set(handles.text_body3, 'Visible', 'off')
-
-
-% --------------------------------------------------------------------
-function menu_file_exit_Callback(~, ~, handles)
-% hObject    handle to menu_file_exit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 delete(handles.figure1);
 
 % --------------------------------------------------------------------
@@ -357,7 +329,7 @@ if isfield(userData, 'resultFig') && ishandle(userData.resultFig)
 end
 
 
-% Super-lame way to call the different resultDisplayGUI inputs
+% Lame way to call the different resultDisplayGUI inputs
 % Should work for the moment!
 % Modifications should be added to the resultDisplay methods (should be
 % generic!!!!)
