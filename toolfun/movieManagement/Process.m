@@ -77,12 +77,6 @@ classdef Process < hgsetget
             obj.updated_ = is;
         end
         
-        function setSuccess(obj, is)
-            % Set the success status of process
-            obj.success_ = is;
-        end
-        
-        
         function setDateTime(obj)
             %The process has been re-run, update the time.
             obj.dateTime_ = clock;
@@ -110,7 +104,16 @@ classdef Process < hgsetget
         
         function run(obj)
             % Run the process!
-            obj.funName_(obj.owner_ );
+            obj.success_=false;
+            try
+                obj.funName_(obj.owner_ );
+            catch runException
+                throw(runException)
+            end
+            obj.success_=true;
+            obj.procChanged_=false;
+            obj.setDateTime;
+            obj.owner_.save;
         end
         
         function setInFilePaths(obj,paths)

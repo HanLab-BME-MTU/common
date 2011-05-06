@@ -217,11 +217,6 @@ methods(Access = public)
                 obj.funParams_.saveResults.filename = enumFileName(obj.funParams_.saveResults.dir, obj.funParams_.saveResults.filename);
             end
             
-            
-            % Test (commentable)
-            %             movieInfo, obj.funParams_.costMatrices, obj.funParams_.gapCloseParam, ...
-            %                 obj.funParams_.kalmanFunctions, obj.funParams_.probDim, obj.funParams_.saveResults, obj.funParams_.verbose
-            
             % Call function - return tracksFinal for reuse in the export
             % feature
             tracksFinal = obj.funName_(movieInfo, obj.funParams_.costMatrices, obj.funParams_.gapCloseParam,...
