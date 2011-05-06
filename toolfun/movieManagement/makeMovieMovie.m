@@ -107,6 +107,14 @@ if any(strcmp('Protrusion',imviewArgs))
     warning('off','MovieManagement:ImageViewer:noProtrusion');
 end
 
+%If the user didn't specify an axes handle, we need to pass one to avoid
+%creating new figures for each frame
+if ~any(strcmp('AxesHandle',imviewArgs))
+    figHan = figure;
+    axHan = gca;
+    imviewArgs = [imviewArgs 'AxesHandle',axHan];
+end
+
 %% ------ Movie Making ----- %%
 
 

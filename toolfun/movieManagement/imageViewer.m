@@ -161,9 +161,8 @@ end
 %If no handle given, create figure
 if ~useTool
     if isempty(axHandle)
-        figHandle = gcf;        
-        handleInput = false;
-        clf(figHandle);
+        figHandle = figure;        
+        handleInput = false;       
     elseif ishandle(axHandle)
         %If axes handle given, get the figure handle for it
         figHandle = get(axHandle,'Parent');
