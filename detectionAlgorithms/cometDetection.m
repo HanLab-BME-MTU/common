@@ -20,13 +20,13 @@ ip.CaseSensitive = false;
 ip.addRequired('img', @isnumeric);
 ip.addRequired('mask', @islogical);
 ip.addRequired('sigma', @isscalar);
-ip.addParamValue('Mode', 'xyArtc', @ischar);
+ip.addParamValue('mode', 'xyArtc', @ischar);
 ip.addParamValue('alpha', 0.05, @isscalar);
 ip.addParamValue('kSigma', 3, @isscalar);
 ip.addParamValue('minDist', .25, @isscalar);
 
 ip.parse(img, mask, sigma, varargin{:});
-mode = ip.Results.Mode;
+mode = ip.Results.mode;
 alpha = ip.Results.alpha;
 kSigma = ip.Results.kSigma;
 minDist = ip.Results.minDist;
