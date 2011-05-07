@@ -325,22 +325,9 @@ if isempty( u_gapclosing{i_gapclosing} )
     errordlg('Plese set up the selected cost function for "Step 2: gap closing, mergin and splitting".','Error','modal')
 end
 
-%---------Check if channel indexs are changed---------
-
-channelIndex = get (handles.listbox_2, 'Userdata');
-
-if ~isempty( setdiff(channelIndex, userData.crtProc.channelIndex_) ) ...
-    || ~isempty( setdiff(userData.crtProc.channelIndex_, channelIndex) )
-
-    % If channel indexs are changed, set procChanged to true
-    userData.crtProc.setProcChanged(true);
-end
-
 % -------- Set parameter --------
-
+channelIndex = get (handles.listbox_2, 'Userdata');
 funParams = userData.crtProc.funParams_;
-
-% Set channels
 userData.crtProc.setChannelIndex(channelIndex)
 
 funParams.probDim = probDim;
@@ -467,13 +454,6 @@ if get(handles.checkbox_applytoall, 'Value')
 
        userData_main.package(x).processes_{userData.procID}.setFileName(userData.crtProc.filename_)
        userData_main.package(x).processes_{userData.procID}.setOverwrite(get(handles.checkbox_overwrite, 'Value'))
-
-       % If current process is changed, then assume funParams are changed in
-       % all movies
-       if userData.crtProc.procChanged_ 
-
-           userData_main.package(x).processes_{userData.procID}.setProcChanged(true);
-       end
 
         % Do sanity check - only check changed parameters
         procEx = userData_main.package(x).sanityCheck(false,'all');

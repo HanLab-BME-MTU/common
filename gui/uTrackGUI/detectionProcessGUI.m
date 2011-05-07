@@ -240,16 +240,6 @@ end
 
 channelIndex = get (handles.listbox_2, 'Userdata');
 funParams = userData.crtProc.funParams_;
-
-if sameprocess
-    
-    if ~isempty( setdiff(channelIndex, userData.crtProc.channelIndex_) ) ...
-        || ~isempty( setdiff(userData.crtProc.channelIndex_, channelIndex) )
-
-        % If channel indexs are changed, set procChanged to true
-        userData.crtProc.setProcChanged(true);
-    end
-end
     
 % Set channels
 userData.crtProc.setChannelIndex(channelIndex)
@@ -367,14 +357,6 @@ if get(handles.checkbox_applytoall, 'Value')
             process.setFileName(userData.crtProc.filename_)
             userData_main.MD(x).addProcess( process )
             userData_main.package(x).setProcess(userData.procID, process )       
-       end
-
-
-       % If current process is changed, then assume funParams are changed in
-       % all movies
-       if userData.crtProc.procChanged_ 
-
-           userData_main.package(x).processes_{userData.procID}.setProcChanged(true);
        end
 
 %            userData_main.package(x).processes_{userData.procID}.setOverwrite(get(handles.checkbox_overwrite, 'Value'))

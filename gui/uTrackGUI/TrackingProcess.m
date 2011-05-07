@@ -182,7 +182,10 @@ methods(Access = public)
         if any(index > length(obj.owner_.channels_))
            error ('User-defined: channel index is larger than the number of channels.') 
         end
-        obj.channelIndex_ = index;
+        if ~isequal(obj.channelIndex_,index)
+            obj.channelIndex_ = index;
+            obj.procChanged_=true;
+        end
     end    
     
     % Set result file name
@@ -201,7 +204,7 @@ methods(Access = public)
         iDetection = obj.owner_.getProcessIndex('DetectionProcess',1,0);
         obj.owner_.processes_{iDetection}.checkChannelOutput(obj.channelIndex_);
         obj.setInFilePaths(obj.owner_.processes_{iDetection}.outFilePaths_);
-        
+        obj.success_=false;
         for i = obj.channelIndex_
             
             load(obj.inFilePaths_{i},'movieInfo');
@@ -238,8 +241,12 @@ methods(Access = public)
                 save(matResultsSaveFile,'-struct','M');
                 clear M;
             end
-            obj.owner_.save();
+
         end
+        obj.success_=true;
+        obj.procChanged_=false;
+        obj.setDateTime;
+        obj.owner_.save;
         
 %         [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...
 %             costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);

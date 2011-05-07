@@ -51,7 +51,10 @@ methods(Access = public)
         if any(index > length(obj.owner_.channels_))
            error ('User-defined: channel index is larger than the number of channels.') 
         end
-        obj.channelIndex_ = index;
+        if ~isequal(obj.channelIndex_,index)
+            obj.channelIndex_ = index;
+            obj.procChanged_=true;
+        end
     end
     
     function hfigure = resultDisplay(obj,fig,procID)

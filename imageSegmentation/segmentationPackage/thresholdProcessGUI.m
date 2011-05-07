@@ -279,48 +279,32 @@ catch ME
     return;
 end
 
-%---------Check if channel indexs are changed---------
-
-channelIndex = get (handles.listbox_2, 'Userdata');
-funParams = userData.crtProc.funParams_;
-
-if ~isempty( setdiff(channelIndex, funParams.ChannelIndex) ) ...
-    || ~isempty( setdiff(funParams.ChannelIndex, channelIndex) )
-
-    % If channel indexs are changed, set procChanged to true
-    userData.crtProc.setProcChanged(true);
-end
-    
 % -------- Set parameter --------
 
-if userData.crtProc.procChanged_ 
-    
-    % Get parameter
-    
-    funParams.ChannelIndex = channelIndex;
+funParams = userData.crtProc.funParams_;
 
-    if get(handles.checkbox_auto, 'value')
-        % if automatic thresholding
-        funParams.ThresholdValue = [ ];
-        if get(handles.checkbox_max, 'value')
-            funParams.MaxJump = str2double(get(handles.edit_jump,'String'));
-        else
-            funParams.MaxJump = 0;
-        end
+% Get parameter
+channelIndex = get (handles.listbox_2, 'Userdata');
+funParams.ChannelIndex = channelIndex;
+
+if get(handles.checkbox_auto, 'value')
+    % if automatic thresholding
+    funParams.ThresholdValue = [ ];
+    if get(handles.checkbox_max, 'value')
+        funParams.MaxJump = str2double(get(handles.edit_jump,'String'));
     else
-        % if fixed thresholding
-        if length(threshold) == 1
-            funParams.ThresholdValue = repmat(threshold, [1 length(channelIndex)]);
-        else
-            funParams.ThresholdValue = threshold;
-        end
+        funParams.MaxJump = 0;
     end
-    % Set parameters
-    userData.crtProc.setPara(funParams);
-    
-
+else
+    % if fixed thresholding
+    if length(threshold) == 1
+        funParams.ThresholdValue = repmat(threshold, [1 length(channelIndex)]);
+    else
+        funParams.ThresholdValue = threshold;
+    end
 end
-
+% Set parameters
+userData.crtProc.setPara(funParams);
 
 % --------------------------------------------------
 
@@ -401,12 +385,6 @@ for x = 1: length(userData_main.MD)
        userData_main.package(x).processes_{userData.procID}.setPara(funParams)
    end
    
-   % If current process is changed, then assume funParams are changed in
-   % all movies
-   if userData.crtProc.procChanged_ 
-       
-       userData_main.package(x).processes_{userData.procID}.setProcChanged(true);
-   end
    
     % Do sanity check - only check changed parameters
     procEx = userData_main.package(x).sanityCheck(false,'all');
@@ -537,14 +515,6 @@ switch get(hObject, 'Value')
         set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off') 
         set(handles.checkbox_max, 'Enable', 'on');           
 end
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
-
-
-function edit_jump_Callback(hObject, eventdata, handles)
-% Report to process object that the parameters are changed
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
 
 
 % --- Executes during object deletion, before destroying properties.
@@ -574,8 +544,6 @@ switch get(hObject, 'value')
         set(handles.edit_jump, 'Enable', 'on');
 end
 
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
 
 
 
@@ -612,9 +580,6 @@ indx = get(handles.listbox_2,'Value');
 thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
 thresholdValues(indx) = newThresholdValue;
 set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
-
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
 
 
 % --- Executes on button press in checkbox_preview.

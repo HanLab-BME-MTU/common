@@ -116,6 +116,8 @@ classdef SubResolutionProcess < DetectionProcess
         
         function run(obj)
         % Run the process!
+            obj.success_=false;
+
             for i = obj.channelIndex_
                 
                 obj.funParams_.movieParam.imageDir = [obj.owner_.channels_(i).channelPath_ filesep];
@@ -138,8 +140,11 @@ classdef SubResolutionProcess < DetectionProcess
 %                 obj.funParams_.movieParam,obj.funParams_.detectionParam,obj.funParams_.saveResults
                 obj.funName_(obj.funParams_.movieParam, obj.funParams_.detectionParam, obj.funParams_.saveResults);
                 obj.setOutFilePath(i,[obj.funParams_.saveResults.dir filesep obj.funParams_.saveResults.filename]);
-                obj.owner_.save();
             end
+            obj.success_=true;
+            obj.procChanged_=false;
+            obj.setDateTime;
+            obj.owner_.save;
         end
         
     end

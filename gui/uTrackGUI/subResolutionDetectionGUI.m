@@ -1019,13 +1019,6 @@ end
 
 if get(handles.checkbox_background, 'Value')
     
-    % If background image dir is changed, set process "changed"
-    if ~(isfield(funParams.detectionParam.background, 'imageDir') && ...
-            strcmp(funParams.detectionParam.background.imageDir, bg_dir))
-
-        userData.crtProc.setProcChanged(true);
-    end
-    
     funParams.detectionParam.background.imageDir = bg_dir;
     funParams.detectionParam.background.alphaLocMaxAbs = alphaLocMaxAbs;
     funParams.detectionParam.background.filenameBase = filenameBase;

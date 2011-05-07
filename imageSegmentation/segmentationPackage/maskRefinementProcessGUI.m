@@ -280,51 +280,38 @@ catch ME
     return;
 end
 
-%---------Check if channel indexs are changed---------
+% -------- Set parameter --------
 
 channelIndex = get (handles.listbox_2, 'Userdata');
 funParams = userData.crtProc.funParams_;
+funParams.ChannelIndex = channelIndex;
 
-if ~isempty( setdiff(channelIndex, funParams.ChannelIndex) ) ...
-    || ~isempty( setdiff(funParams.ChannelIndex, channelIndex) )
-
-    % If channel indexs are changed, set procChanged to true
-    userData.crtProc.setProcChanged(true);
-end
-    
-% -------- Set parameter --------
-
-if userData.crtProc.procChanged_ 
-    
-    % Get parameter
-    funParams.ChannelIndex = channelIndex;
-    
-    if get(handles.checkbox_cleanup, 'Value')
-        funParams.MaskCleanUp = true;
-        funParams.MinimumSize = str2double(get(handles.edit_1, 'String'));
-        funParams.ClosureRadius = str2double(get(handles.edit_2, 'String'));
-        funParams.ObjectNumber = str2double(get(handles.edit_3, 'String'));
-        if get(handles.checkbox_fillholes, 'Value')
-            funParams.FillHoles = true;
-        else
-            funParams.FillHoles = false;
-        end
+if get(handles.checkbox_cleanup, 'Value')
+    funParams.MaskCleanUp = true;
+    funParams.MinimumSize = str2double(get(handles.edit_1, 'String'));
+    funParams.ClosureRadius = str2double(get(handles.edit_2, 'String'));
+    funParams.ObjectNumber = str2double(get(handles.edit_3, 'String'));
+    if get(handles.checkbox_fillholes, 'Value')
+        funParams.FillHoles = true;
     else
-        funParams.MaskCleanUp = false;
+        funParams.FillHoles = false;
     end
-    
-    if get(handles.checkbox_edge, 'Value')
-        funParams.EdgeRefinement = true;
-        funParams.MaxEdgeAdjust = str2double(get(handles.edit_4, 'String'));
-        funParams.MaxEdgeGap = str2double(get(handles.edit_5, 'String'));
-        funParams.PreEdgeGrow = str2double(get(handles.edit_6, 'String'));
-    else
-        funParams.EdgeRefinement = false;
-    end
-       
-    % Set parameters
-    userData.crtProc.setPara(funParams);
+else
+    funParams.MaskCleanUp = false;
 end
+
+if get(handles.checkbox_edge, 'Value')
+    funParams.EdgeRefinement = true;
+    funParams.MaxEdgeAdjust = str2double(get(handles.edit_4, 'String'));
+    funParams.MaxEdgeGap = str2double(get(handles.edit_5, 'String'));
+    funParams.PreEdgeGrow = str2double(get(handles.edit_6, 'String'));
+else
+    funParams.EdgeRefinement = false;
+end
+
+% Set parameters
+userData.crtProc.setPara(funParams);
+
 
 % --------------------------------------------------
 
@@ -398,12 +385,6 @@ for x = 1: length(userData_main.MD)
        userData_main.package(x).processes_{userData.procID}.setPara(funParams)
    end
    
-   % If current process is changed, then assume funParams are changed in
-   % all movies
-   if userData.crtProc.procChanged_ 
-       
-       userData_main.package(x).processes_{userData.procID}.setProcChanged(true);
-   end
    
     % Do sanity check - only check changed parameters
     procEx = userData_main.package(x).sanityCheck(false,'all');
@@ -429,28 +410,6 @@ set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 delete(handles.figure1);
 
-
-% --- Executes on selection change in listbox_1.
-function listbox_1_Callback(hObject, eventdata, handles)
-% hObject    handle to listbox_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns listbox_1 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from listbox_1
-
-
-% --- Executes during object creation, after setting all properties.
-function listbox_1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to listbox_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 % --- Executes on button press in checkbox_all.
@@ -533,34 +492,9 @@ end
 set(handles.listbox_2,'String',contents);
 
 
-% --- Executes on selection change in listbox_2.
-function listbox_2_Callback(hObject, eventdata, handles)
-% hObject    handle to listbox_2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns listbox_2 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from listbox_2
-
-
-% --- Executes during object creation, after setting all properties.
-function listbox_2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to listbox_2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
 % --- Executes on button press in checkbox_cleanup.
 function checkbox_cleanup_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkbox_auto
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
 
 switch get(hObject, 'Value')
     case 0
@@ -582,78 +516,9 @@ switch get(hObject, 'Value')
 end
 
 
-
-function edit_1_Callback(hObject, eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
-
-
-% --- Executes during object creation, after setting all properties.
-function edit_1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function edit_2_Callback(hObject, eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
-
-
-% --- Executes during object creation, after setting all properties.
-function edit_2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function edit_3_Callback(hObject, eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
-
-
-% --- Executes during object creation, after setting all properties.
-function edit_3_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_3 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in checkbox_fillholes.
-function checkbox_fillholes_Callback(hObject, eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
-
-
 % --- Executes on button press in checkbox_edge.
 function checkbox_edge_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkbox_auto
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
 
 switch get(hObject, 'Value')
     case 0
@@ -671,66 +536,6 @@ switch get(hObject, 'Value')
         set(handles.edit_5,'Enable','on');
         set(handles.text_para6, 'Enable', 'on');
         set(handles.edit_6,'Enable','on');    
-end
-
-
-
-function edit_4_Callback(hObject, eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
-
-
-% --- Executes during object creation, after setting all properties.
-function edit_4_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_4 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function edit_5_Callback(hObject, eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
-
-
-% --- Executes during object creation, after setting all properties.
-function edit_5_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_5 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function edit_6_Callback(hObject, eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-userData.crtProc.setProcChanged(true);
-
-
-% --- Executes during object creation, after setting all properties.
-function edit_6_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_6 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
 end
 
 

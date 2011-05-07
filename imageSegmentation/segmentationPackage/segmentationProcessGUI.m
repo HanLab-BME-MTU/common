@@ -270,23 +270,9 @@ end
 %---------Check if channel indexs are changed---------
 funParams = userData.crtProc.funParams_;
 threshold = funParams.ThresholdValue;
-
-if sameprocess
-    
-    if ~isempty( setdiff(channelIndex, funParams.ChannelIndex) ) ...
-        || ~isempty( setdiff(funParams.ChannelIndex, channelIndex) )
-
-        % If channel indexs are changed, set procChanged to true
-        userData.crtProc.setProcChanged(true);
-    end
-end
-    
-% -------- Set channels --------
-
-    
+   
 % Get parameter
 funParams.ChannelIndex = channelIndex;
-
 
 % Set parameters
 userData.crtProc.setPara(funParams);
@@ -363,13 +349,6 @@ if get(handles.checkbox_post, 'Value')
     
     userData.crtProc.maskRefineProcess_.setPara(funParams_MR);
     
-    
-    % If parameters in mask refinement is changed, then assume segmentation
-    % is changed too
-    if userData.crtProc.maskRefineProcess_.procChanged_
-       
-        userData.crtProc.setProcChanged(true);
-    end
     
     
 % If do not do post processing    
@@ -497,16 +476,6 @@ for x = 1: length(userData_main.MD)
    % Delete and clear attached mask refinement process    
            userData_main.MD(x).deleteProcess(userData_main.package(x).processes_{userData.procID}.maskRefineProcess_)
            userData_main.package(x).processes_{userData.procID}.clearMaskRefineProcess  
-   end
-   
-   
-
-   
-   % If current process is changed, then assume funParams are changed in
-   % all movies
-   if userData.crtProc.procChanged_ 
-       
-       userData_main.package(x).processes_{userData.procID}.setProcChanged(true);
    end
    
     % Do sanity check - only check changed parameters

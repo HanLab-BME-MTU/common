@@ -58,17 +58,14 @@ classdef Process < hgsetget
         
         function setPara(obj, para)
             % Reset process' parameters
-            obj.funParams_ = para;
+            if ~isequal(obj.funParams_,para)
+                obj.funParams_ = para;
+                obj.procChanged_=true;
+            end
         end
         
         function setVisualParams(obj, para)
             obj.visualParams_ = para;
-        end
-        
-        function setProcChanged(obj, changed)
-            % Set the status that if process's parameters have been
-            % changed. changed 'true' or 'false'
-            obj.procChanged_ =  changed;
         end
         
         function setUpdated(obj, is)
