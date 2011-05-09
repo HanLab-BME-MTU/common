@@ -232,7 +232,7 @@ classdef  MovieData < hgsetget
             else
                 obj.imSize_ = [height(1) width(1)];
             end
-
+            obj.save();
         end
         
         %% Functions to manipulate process object array

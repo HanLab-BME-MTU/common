@@ -167,7 +167,6 @@ classdef MovieList < hgsetget
                 try
                     [path filename ext]=fileparts(obj.movieDataFile_{index(i)});
                     MDList{i}.sanityCheck(path,[filename ext],askUser);
-                    MDList{i}.save();
                 catch ME
                     movieException{i} = MException('lccb:ml:sanitycheck', ME.message);
                     continue                    
