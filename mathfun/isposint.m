@@ -10,8 +10,4 @@ function isit = isposint(in)
 % Hunter Elliott
 % 4/2011
 %
-if nargin > 0 && isnumeric(in) && in > 0 && isequal(abs(round(in)),in)
-    isit = true;
-else
-    isit = false;
-end
+isit = isnumeric(in) & in > 0 & abs(round(in)) == in;
