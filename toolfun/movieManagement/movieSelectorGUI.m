@@ -432,7 +432,7 @@ switch type
     case 'MovieData'
         
         try 
-            M.sanityCheck(pathname, filename)
+            M.sanityCheck(pathname, filename);
         catch ME
             
             if isfield(userData, 'newFig') && ishandle(userData.newFig)
@@ -447,6 +447,15 @@ switch type
         contentlist{end+1} = [pathname filename];
         
     case 'MovieList'
+        
+        try
+            M.sanityCheck('all', pathname, filename);
+        catch ME
+            msg = sprintf('Movie List: %s\n\nError: %s\n\nMovie list is not successfully loaded. Please refer to movie detail and adjust your data.', [pathname filename],ME.message);
+            errordlg(msg, 'Movie List Error','modal'); 
+            return
+        end
+
         % Find duplicate movie data in list box
         movieDataFile = M.movieDataFile_;
         index = 1: length(movieDataFile);
@@ -461,12 +470,10 @@ switch type
         reloadME = [];
         errorME = [];
         healthMD = [];
-        
-        [movieException, MDList] = M.sanityCheck(index, pathname, filename );
-        
+                
         % Reload movie data filenames in case they have been relocated
-        % during sanity check
-        movieDataFile = M.movieDataFile_;
+        % during sanity check        
+        [movieException, MDList] = M.sanityCheck(index);
         
         % Explore cell array 'movieException'
         for i = 1: length(movieException)

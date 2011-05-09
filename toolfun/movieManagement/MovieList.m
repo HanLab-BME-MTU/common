@@ -1,3 +1,5 @@
+% MovieList
+% A class to handle a list of MovieData objects
 classdef MovieList < hgsetget
     
     properties (SetAccess = protected, GetAccess = public)
@@ -164,15 +166,14 @@ classdef MovieList < hgsetget
                 
                 try
                     [path filename ext]=fileparts(obj.movieDataFile_{index(i)});
-                    MDList{i}.sanityCheck(path,[filename ext],askUser)
-                    
+                    MDList{i}.sanityCheck(path,[filename ext],askUser);
+                    MDList{i}.save();
                 catch ME
                     movieException{i} = MException('lccb:ml:sanitycheck', ME.message);
-                    continue
-                    
+                    continue                    
                 end
             end
-            
+            obj.save();
         end
         
         function removeMovieDataFile (obj, index)
@@ -246,8 +247,6 @@ classdef MovieList < hgsetget
                 end
             end
         end
-        
-
         
         
         function relocateMovieList(obj,newMovieListPath)
