@@ -60,7 +60,11 @@ classdef Process < hgsetget
             % Reset process' parameters
             if ~isequal(obj.funParams_,para)
                 obj.funParams_ = para;
-                obj.procChanged_=true;
+                % Update procChanged_ flag if movie is not relocated
+                stack = dbstack;
+                if ~strcmp(stack(2).name,'MovieData.relocate'), 
+                    obj.procChanged_=true;
+                end
             end
         end
         
