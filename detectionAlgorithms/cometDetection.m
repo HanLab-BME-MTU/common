@@ -56,8 +56,8 @@ P = zeros(size(y, 1), 7);
 P(:,1) = x;
 P(:,2) = y;
 P(:,3) = img(indMax);
-P(:,4) = sigma;     % sigmaX
-P(:,5) = sigma; % sigmaY
+P(:,4) = sigma;         % sigmaX
+P(:,5) = sigma;         % sigmaY
 P(:,6) = T(indMax);
 
 % Subresolution detection
