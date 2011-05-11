@@ -159,7 +159,7 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
-if userData.crtProc.procChanged_ 
+% if userData.crtProc.procChanged_ 
     
     lower = get(handles.edit_lower, 'String');
     upper = get(handles.edit_upper, 'String');
@@ -285,7 +285,7 @@ if userData.crtProc.procChanged_
     
     set(userData.handles_main.popupmenu_gapclosing, 'UserData', u_gapclosing)
     
-end
+% end
 
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
