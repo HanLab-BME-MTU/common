@@ -199,8 +199,8 @@ for i = 1:nProc
     end
   
     processName=userData.crtPackage.processClassNames_{i};
-    checboxString = [' Step ' num2str(i) ':' regexprep(processName,'([A-Z])',' $1')];
-    set(handles.(procTag{1}),'String',checboxString)
+    checkboxString = [' Step ' num2str(i) ':' regexprep(processName,'([A-Z])',' $1')];
+    set(handles.(procTag{1}),'String',checkboxString)
     
     axes(handles.(procTag{6}));
     Img = image(questIconData);

@@ -509,41 +509,6 @@ function pushbutton_cancel_Callback(hObject, eventdata, handles)
 delete(handles.figure1);
 
 
-% --- Executes on button press in checkbox_applytoall.
-function checkbox_applytoall_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_applytoall (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox_applytoall
-
-
-% --- Executes on button press in checkbox_post.
-function checkbox_post_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_post (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-if get(handles.checkbox_post, 'Value')
-    set(handles.pushbutton_set_2, 'Enable', 'on')
-else
-    set(handles.pushbutton_set_2, 'Enable', 'off')
-end
-
-% --- Executes on button press in pushbutton_set_2.
-function pushbutton_set_2_Callback(hObject, eventdata, handles)
-
-if ~get(handles.checkbox_post, 'Value')
-    return
-end
-
-set2Fig = maskRefineProcessGUI('mainFig',handles.figure1);
-userData = get(handles.figure1, 'UserData');
-userData.set2Fig = set2Fig;
-set(handles.figure1, 'UserData', userData);
-guidata(hObject,handles);
-
-
-
 % --- Executes on selection change in popupmenu_1.
 function popupmenu_1_Callback(hObject, eventdata, handles)
 % hObject    handle to popupmenu_1 (see GCBO)
@@ -559,20 +524,6 @@ else
     set(handles.pushbutton_set_1, 'Enable', 'on')
 end
 
-
-% --- Executes during object creation, after setting all properties.
-function popupmenu_1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
 % --- Executes on button press in pushbutton_set_1.
 function pushbutton_set_1_Callback(hObject, eventdata, handles)
 
@@ -583,29 +534,6 @@ userData = get(handles.figure1, 'UserData');
 userData.set1Fig = set1Fig;
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
-
-
-% --- Executes on selection change in listbox_1.
-function listbox_1_Callback(hObject, eventdata, handles)
-% hObject    handle to listbox_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns listbox_1 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from listbox_1
-
-
-% --- Executes during object creation, after setting all properties.
-function listbox_1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to listbox_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 % --- Executes on button press in checkbox_all.
@@ -685,30 +613,6 @@ if (id >length(contents) && id>1)
 end
 % Refresh listbox
 set(handles.listbox_2,'String',contents);
-
-
-% --- Executes on selection change in listbox_2.
-function listbox_2_Callback(hObject, eventdata, handles)
-% hObject    handle to listbox_2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns listbox_2 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from listbox_2
-
-
-% --- Executes during object creation, after setting all properties.
-function listbox_2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to listbox_2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
