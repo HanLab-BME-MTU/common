@@ -1,9 +1,10 @@
 %[pstruct, mask, imgLM, imgLoG] = pointSourceDetection(img, sigma, mode)
 %
-% Inputs :      img : input image
-%             sigma : standard deviation of the Gaussian PSF
-%            {mode} : parameters to estimate, default 'xyAc'
-%           {alpha} : 
+% Inputs :         img : input image
+%                sigma : standard deviation of the Gaussian PSF
+%       {'mode', mode} : parameters to estimate, default 'xyAc'
+%     {'alpha', alpha} : 
+%       {'mask', mask} : 
 %
 % Outputs:  pstruct : output structure with Gaussian parameters, standard deviations, p-values
 %              mask : mask of significant (in amplitude) pixels

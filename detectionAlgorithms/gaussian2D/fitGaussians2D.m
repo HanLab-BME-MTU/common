@@ -40,6 +40,7 @@ np = length(x);
 
 pStruct = struct('x', [], 'y', [], 'A', [], 's', [], 'c', [],...
     'x_pstd', [], 'y_pstd', [], 'A_pstd', [], 's_pstd', [], 'c_pstd', [],...
+    'x_init', [], 'y_init', [],...
     'sigma_r', [], 'SE_sigma_r', [], 'RSS', [], 'pval_KS', [], 'pval_Ar', []);
 
 xi = round(x);
@@ -76,17 +77,18 @@ estIdx = regexpi('xyAsc', ['[' mode ']']);
 pStruct.x = NaN(1,np);
 pStruct.y = NaN(1,np);
 pStruct.A = NaN(1,np);
-
+pStruct.s = NaN(1,np);
+pStruct.c = NaN(1,np);
 
 pStruct.x_pstd = NaN(1,np);
 pStruct.y_pstd = NaN(1,np);
 pStruct.A_pstd = NaN(1,np);
-% if fitSigma
-pStruct.s = NaN(1,np);
 pStruct.s_pstd = NaN(1,np);
-% end
-pStruct.c = NaN(1,np);
 pStruct.c_pstd = NaN(1,np);
+
+pStruct.x_init = reshape(xi, [1 np]);
+pStruct.y_init = reshape(yi, [1 np]);
+
 pStruct.sigma_r = NaN(1,np);
 pStruct.SE_sigma_r = NaN(1,np);
 pStruct.RSS = NaN(1,np);
