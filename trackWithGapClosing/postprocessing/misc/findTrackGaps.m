@@ -78,11 +78,17 @@ end
 if isstruct(trackedFeatureInfo) %if tracks are in structure format
     numTracks = length(trackedFeatureInfo);
     tmp = vertcat(trackedFeatureInfo.seqOfEvents);
+    if isempty(tmp)
+        return
+    end
     numTimePoints = max(tmp(:,1));
     clear tmp
 else %if tracks are in matrix format
     [numTracks,numTimePoints] = size(trackedFeatureInfo);
     numTimePoints = numTimePoints/8;
+    if numTimePoints == 0
+        return
+    end
 end
 
 %put tracks into big matrix if the input is in structure format
