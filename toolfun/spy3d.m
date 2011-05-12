@@ -66,9 +66,9 @@ end
 %Set the viewpoint to 3d
 view(3)
 %Set axes scaling
-axis image
-xlim([0 size(matIn,1)]);
-ylim([0 size(matIn,2)]);
+axis equal
+xlim([0 size(matIn,2)]);
+ylim([0 size(matIn,1)]);
 zlim([0 size(matIn,3)]);
 %Return the original hold state if we've changed it.
 if ~ogHold
