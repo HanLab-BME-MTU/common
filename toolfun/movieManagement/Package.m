@@ -10,9 +10,6 @@ classdef Package < hgsetget
     % Objects of sub-class of Package cannot change variable values since 
     % 'SetAccess' attribute is set to private
         name_  % the name of instantiated package
-        outputDirectory_ %The parent directory where results will be stored.
-                         %Individual processes will save their results to
-                         %sub-directories of this directory.
     end
  
     properties(SetAccess = protected)
@@ -26,9 +23,24 @@ classdef Package < hgsetget
         tools_ % Array of external tools
         
     end
-    
+
     properties
         notes_ % The notes users put down
+        outputDirectory_ %The parent directory where results will be stored.
+                         %Individual processes will save their results to
+                         %sub-directories of this directory.
+    end
+
+    methods
+        function set.outputDirectory_(obj,value)
+            endingFilesepToken = [regexptranslate('escape',filesep) '$'];
+            value = regexprep(value,endingFilesepToken,'');
+            stack = dbstack;
+            if strcmp(stack(3).name,'MovieData.relocate'), 
+                error(['This channel''s ' propertyName ' has been set previously and cannot be changed!']);
+            end
+            obj.outputDirectory_=value;
+        end
     end
     methods (Access = protected)
         function obj = Package(owner, name, depMatrix, processClassNames, ...
