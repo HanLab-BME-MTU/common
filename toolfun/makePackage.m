@@ -98,8 +98,10 @@ packageMexFuns = arrayfun(@(x) packageMexFunsNames(x),1:numel(mexFunsIndx),'Unif
 packageMexFuns =vertcat(packageMexFuns{:});
 
 % Remove C-files
-cFiles=~cellfun(@isempty,regexp(packageMexFuns,'.c$','once'));
-packageMexFuns(cFiles)=[];
+if ~isempty(packageMexFuns)
+    cFiles=~cellfun(@isempty,regexp(packageMexFuns,'.c$','once'));
+    packageMexFuns(cFiles)=[];
+end
 
 % Add icons
 packageIcons = which('lccbGuiIcons.mat');
