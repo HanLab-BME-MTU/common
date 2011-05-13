@@ -190,7 +190,7 @@ userData = get(handles.figure1, 'UserData');
         errordlg('Please provide a valid value to parameter "Upper Bound".','Error','modal')
         return
         
-    elseif str2double(upper) <= lower
+    elseif str2double(upper) < lower
         errordlg('"Upper Bound" should be larger than "Lower Bound".','Error','modal')
         return
         

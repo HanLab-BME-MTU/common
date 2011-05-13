@@ -296,26 +296,26 @@ toolHandle=userData.crtPackage.tools_(toolID).funHandle;
 userData.toolFig(toolID) = toolHandle('mainFig',handles.figure1);
 
 set(handles.figure1, 'UserData', userData);
-
-% --- Executes on button press in pushbutton_clear.
-function pushbutton_clear_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_clear (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-userData = get(handles.figure1, 'UserData');
-props=get(hObject,{'Value','Tag'});
-procStatus=props{1};
-procID = str2double(props{2}(length('pushbutton_clear_')+1:end));
-
-for x = 1: length(userData.MD)
-    userData.MD(x).deleteProcess(userData.package(x).processes_{procID})
-end
-
-
-set(handles.figure1, 'UserData', userData);
-
-userfcn_checkAllMovies(procID, procStatus, handles);
-userfcn_lampSwitch(procID, procStatus, handles);
+% 
+% % --- Executes on button press in pushbutton_clear.
+% function pushbutton_clear_Callback(hObject, eventdata, handles)
+% % hObject    handle to pushbutton_clear (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% userData = get(handles.figure1, 'UserData');
+% props=get(hObject,{'Value','Tag'});
+% procStatus=props{1};
+% procID = str2double(props{2}(length('pushbutton_clear_')+1:end));
+% 
+% for x = 1: length(userData.MD)
+%     userData.MD(x).deleteProcess(userData.package(x).processes_{procID})
+% end
+% 
+% 
+% set(handles.figure1, 'UserData', userData);
+% 
+% userfcn_checkAllMovies(procID, procStatus, handles);
+% userfcn_lampSwitch(procID, procStatus, handles);
 
 % --- Executes on button press in pushbutton_show.
 function pushbutton_show_Callback(hObject, ~, handles)

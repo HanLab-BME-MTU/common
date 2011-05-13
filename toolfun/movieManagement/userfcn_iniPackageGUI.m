@@ -178,8 +178,8 @@ templateTag{1} = 'checkbox';
 templateTag{2} = 'axes_icon';
 templateTag{3} = 'pushbutton_show';
 templateTag{4} = 'pushbutton_set';
-templateTag{5} = 'pushbutton_clear';
-templateTag{6} = 'axes_prochelp';
+templateTag{5} = 'axes_prochelp';
+% templateTag{6} = 'pushbutton_clear'; To be implemented someday?
 procTag=templateTag;
 set(handles.figure1,'Position',...
     get(handles.figure1,'Position')+(nProc-1)*[0 0 0 40])
@@ -202,7 +202,7 @@ for i = 1:nProc
     checkboxString = [' Step ' num2str(i) ':' regexprep(processName,'([A-Z])',' $1')];
     set(handles.(procTag{1}),'String',checkboxString)
     
-    axes(handles.(procTag{6}));
+    set(handles.figure1,'CurrentAxes',handles.(procTag{5}));
     Img = image(questIconData);
     set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
         'visible','off','YDir','reverse');  

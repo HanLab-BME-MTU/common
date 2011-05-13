@@ -170,7 +170,6 @@ set(handles.popupmenu1_color, 'Value', find(strcmp(colorUserData, visualParams.p
 set(handles.popupmenu1_marker, 'Value', find(strcmp(markerUserData, visualParams.pt2D.markerType)))
 
 set(handles.checkbox1_indicateSE, 'Value', visualParams.pt2D.indicateSE)
-set(handles.checkbox1_newFigure, 'Value', visualParams.pt2D.newFigure)
 set(handles.checkbox1_flipXY, 'Value', visualParams.pt2D.flipXY)
 set(handles.checkbox1_ask4sel, 'Value', visualParams.pt2D.ask4sel)
 
@@ -968,31 +967,6 @@ function checkbox1_indicateSE_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkbox1_indicateSE
 
 
-% --- Executes on button press in checkbox1_newFigure.
-function checkbox1_newFigure_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox1_newFigure (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox1_newFigure
-
-if get(hObject, 'Value')
-   
-    set(handles.text1_image, 'Enable', 'on')
-    set(handles.pushbutton1_image, 'Enable', 'on')
-    set(handles.edit1_image, 'Enable', 'on')
-    set(handles.text1_image2, 'Visible', 'off')
-    
-else
-    
-    set(handles.text1_image, 'Enable', 'off')
-    set(handles.pushbutton1_image, 'Enable', 'off')
-    set(handles.edit1_image, 'Enable', 'off')
-    set(handles.text1_image2, 'Visible', 'on')
-    
-end
-
-
 
 
 % --- Executes on button press in checkbox1_flipXY.
@@ -1161,14 +1135,13 @@ visualParams.pt2D.colorTime = colorUserData{get(handles.popupmenu1_color, 'Value
 visualParams.pt2D.markerType = markerUserData{get(handles.popupmenu1_marker, 'Value')};
 
 visualParams.pt2D.indicateSE = get(handles.checkbox1_indicateSE, 'Value');
-visualParams.pt2D.newFigure = get(handles.checkbox1_newFigure, 'Value');
 visualParams.pt2D.flipXY = get(handles.checkbox1_flipXY, 'Value');
 visualParams.pt2D.ask4sel = get(handles.checkbox1_ask4sel, 'Value');
 visualParams.pt2D.minLength = minLength;
 
 visualParams.pt2D.offset = [dx dy];
 
-if ~get(handles.checkbox1_newFigure, 'Value') || isempty(filename)
+if isempty(filename)
    
     visualParams.pt2D.imageDir = [];
     visualParams.pt2D.image = [];    

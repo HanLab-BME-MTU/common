@@ -217,7 +217,7 @@ parameters = userData.parameters;
         errordlg('Please provide a valid value to parameter "Upper Bound".','Error','modal')
         return
         
-    elseif str2double(maxSearchRadius) <= minSearchRadius
+    elseif str2double(maxSearchRadius) < minSearchRadius
         errordlg('"Upper Bound" should be larger than "Lower Bound".','Error','modal')
         return
         
