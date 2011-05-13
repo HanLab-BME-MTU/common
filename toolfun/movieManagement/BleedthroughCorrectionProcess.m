@@ -48,6 +48,8 @@ classdef BleedthroughCorrectionProcess < ImageCorrectionProcess
             end
             
             obj = obj@ImageCorrectionProcess(super_args{:});
+            obj.setFunc_ = @bleedthroughCorrectionProcessGUI; % FOr analyzability/ to be implemented
+
         end   
         
     end

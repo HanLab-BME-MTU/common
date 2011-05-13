@@ -28,6 +28,7 @@ classdef ThresholdProcess < SegmentationProcess
             end
             
             obj = obj@SegmentationProcess(super_args{:});
+            obj.setFunc_ = @thresholdProcessGUI; % FOr analyzability/ to be implemented
         end               
             
     end

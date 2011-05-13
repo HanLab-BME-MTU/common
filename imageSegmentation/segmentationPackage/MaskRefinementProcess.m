@@ -37,7 +37,8 @@ classdef MaskRefinementProcess < MaskProcessingProcess
             end
             
             obj = obj@MaskProcessingProcess(super_args{:});
-            
+            obj.setFunc_ = @maskRefinementProcessGUI; % FOr analyzability/ to be implemented
+
         end                  
         
         

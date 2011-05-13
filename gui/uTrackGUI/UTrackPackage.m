@@ -16,14 +16,17 @@ methods (Access = public)
                                 
                % Process CLASS NAME string (same length as dependency matrix)
                % Must be accurate process class name
-               super_args{4} = {'DetectionProcess', ...
-                                'TrackingProcess'};
+               uTrackClasses = {
+                   @DetectionProcess,...
+                   @TrackingProcess};
+               super_args{4} = cellfun(@func2str,biosensorsClasses,...
+                   'UniformOutput',false);
                             
                super_args{5} = [outputDir filesep 'UTrackPackage'];
                 
            end
            % Call the superclass constructor 
-           obj = obj@Package(super_args{:});
+           obj = obj@Package(super_args{:},'processClassHandles_',uTrackClasses);
     end
     
     function processExceptions = sanityCheck(obj,full,procID) % throws Exception Cell Array
@@ -66,6 +69,12 @@ methods (Static)
             % Get the optional process id
             id = [];
         end
+        
+        function varargout = start(varargin)
+            % Start the package GUI
+            varargout{1} = uTrackPackageGUI(varargin{:});
+        end
+        
 end
     
 end

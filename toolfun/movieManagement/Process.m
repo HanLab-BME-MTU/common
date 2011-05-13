@@ -10,20 +10,17 @@ classdef Process < hgsetget
     end
     
     properties  (SetAccess = protected)
-        % Whether process parameter has been changed
-        %
-        % changed - true, unchanged - false
-        procChanged_    
-        
-        success_ % If the process has been successfully run
-        
+        % Success/Uptodate flags
+        procChanged_   % Whether process parameter has been changed     
+        success_       % If the process has been successfully run
         % If the parameter of parent process is changed
         % updated_ - false, not changed updated_ - true
         updated_ 
         
         funName_        % Function running the process
         funParams_      % Parameters for running the process
-        visualParams_   % Visualization parameters
+        visualParams_   % Visualization parameters    
+        setFunc_        % Handle to the  GUI set the parameters
         
         inFilePaths_    % Path to the process input
         outFilePaths_   % Path to the process output
@@ -117,11 +114,15 @@ classdef Process < hgsetget
             obj.owner_.save;
         end
         
+        function h=set(obj,varargin)
+            % Set the process parameters
+            h = obj.setFunc_(varargin{:});
+        end
+        
         function setInFilePaths(obj,paths)
             %  Set input file paths
             obj.inFilePaths_=paths;
         end
-        
         
         function setOutFilePaths(obj,paths)
             % Set output file paths

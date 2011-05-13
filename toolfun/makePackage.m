@@ -17,6 +17,12 @@ function makePackage(outDir)
 
 % List of all available packages
 fullPackageList={'SegmentationPackage';'BiosensorsPackage';'UTrackPackage'};
+isValidPackage=logical(cellfun(@(x) exist(x,'class'),fullPackageList));
+if isempty(isValidPackage), 
+    warndlg('No package found! Please make sure you properly added the installation directory to the path (see user''s manual).',...
+        'Movie Selector','modal'); 
+end
+fullPackageList=fullPackageList(isValidPackage);
 
 % Ask the user which packages to include
 [packageIndx,ok] = listdlg('PromptString','Select the package(s) to compile:',...
@@ -44,15 +50,6 @@ packageFuns=vertcat(packageFuns{:});
 packageFuns = {packageFuns(:).name}';
 %Remove this function from the list if present (but it shouldn't!)
 packageFuns(strcmp(packageFuns,mfilename)) = [];
-
-%Add the few odd files that are in other areas of common
-if any(strcmp(packageList,'UTrackPackage'))
-    packageFuns = vertcat(packageFuns,{});
-end
-
-if any(strcmp(packageList,'BiosensorsPackage'))
-    packageFuns = vertcat(packageFuns,{'refineMovieMasks.m','separateNumberedFiles.m'}');
-end
 
 %Get everything these functions depend on also
 packageFuns = depfun_notoolbox(packageFuns);

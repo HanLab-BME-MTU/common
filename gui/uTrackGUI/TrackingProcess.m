@@ -169,7 +169,9 @@ methods(Access = public)
         obj.visualParams_.otmn.colorTracks = 1;
         obj.visualParams_.otmn.minLength = 1;
         file = owner.getImageFileNames(1);
-        obj.visualParams_.otmn.firstImageFile = [owner.channels_(1).channelPath_ filesep file{1}{1}];        
+        obj.visualParams_.otmn.firstImageFile = [owner.channels_(1).channelPath_ filesep file{1}{1}];
+        
+        obj.setFunc_ = @trackingProcessGUI;
     end
     
     function sanityCheck(obj) 

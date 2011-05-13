@@ -51,6 +51,7 @@ classdef TransformationProcess < ImageProcessingProcess
             if nargin > 5                
                 setTransformFilePath(transformFilePath);
             end
+            obj.setFunc_ = @transformationProcessGUI; % FOr analyzability/ to be implemented
             
         end                 
         

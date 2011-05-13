@@ -49,6 +49,8 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
             end
             
             obj = obj@ImageCorrectionProcess(super_args{:});
+            obj.setFunc_ = @backgroundSubtractionProcessGUI; % FOr analyzability/ to be implemented
+
         end   
         function h = resultDisplay(obj)
            %Overrides default display so subtracted value plots can be

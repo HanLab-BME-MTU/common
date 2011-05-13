@@ -15,6 +15,7 @@ classdef Package < hgsetget
     properties(SetAccess = protected)
         owner_ % The MovieData object this package belongs to
         processes_ % Cell array containing all processes who will be used in this package
+        processClassHandles_ % 
         processClassNames_ % Must have accurate process class name
                            % List of processes required by the package, 
                            % Cell array - same order and number of elements
@@ -230,12 +231,16 @@ classdef Package < hgsetget
             end
             
         end
+     
         
     end
-    
+        
     methods (Abstract)
         sanityCheck(obj)
-
         % More abstract methods go here
+    end
+
+    methods(Static,Abstract)
+        start
     end
 end
