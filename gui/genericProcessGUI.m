@@ -81,7 +81,7 @@ userData.crtProc = userData.crtPackage.processes_{userData.procID};
 crtProcName = userData.crtPackage.processClassNames_{userData.procID};
 userData.procConstr = str2func(crtProcName);
 procString = [' Step ' num2str(userData.procID) ':' regexprep(crtProcName,'([A-Z])',' $1')];
-set(handles.processName,'String',procString)
+set(handles.text_processName,'String',procString)
     
 % If process does not exist, create a default one in user data.
 if isempty(userData.crtProc)
