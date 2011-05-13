@@ -308,7 +308,13 @@ if ~isempty(temp)
         userData.msgboxGUI = msgboxGUI('title','The processing of following movies are terminated by run time errors:','text', msg); 
     end
     
-elseif length(movieRun) > 1 
-    userData.iconHelpFig = helpdlg('All your movies have been processed successfully.', [userData.crtPackage.name_ 'Package']);
+else
+    if length(movieRun) > 1
+        successMsg = 'All your movies have been processed successfully.';
+    else
+        successMsg = 'Your movie has been processed successfully.';
+    end
+    
+    userData.iconHelpFig = helpdlg(successMsg, [userData.crtPackage.name_ 'Package']);
     set(handles.figure1, 'UserData', userData)
 end

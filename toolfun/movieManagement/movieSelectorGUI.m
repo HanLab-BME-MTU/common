@@ -58,7 +58,7 @@ function movieSelectorGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %   userData.colormap - color map (used for )
 %   userData.questIconData - image data of question icon
 %
-%   userData.firstPackageGUI - the name of package GUI
+%   userData.packageGUI - the name of package GUI
 %
 %   userData.newFig - handle of new movie set-up GUI
 %   userData.iconHelpFig - handle of help dialog
@@ -82,16 +82,11 @@ userData.MD = [ ];
 userData.ML = [ ];
 userData.userDir = pwd;
 
-if nargin>3, 
-    userData.testMode=true;
-    set(handles.figure1,'Name',[get(handles.figure1,'Name') ' (test mode)']);
-end
-
 % Generate package GUI list from package list
 userData.packageList={'SegmentationPackage','BiosensorsPackage','UTrackPackage'};
 packageGUIList=regexprep(userData.packageList,'(\<[A-Z])','${lower($1)}');
 packageGUIList=cellfun(@(x) str2func([x 'GUI']),packageGUIList,'UniformOutput',false);
-userData.firstPackageGUI = packageGUIList;
+userData.packageGUI = packageGUIList;
 
 % Check packages availability and load their associated GUIs in userData
 isValidPackage=logical(cellfun(@(x) exist(x,'class'),userData.packageList));
@@ -176,11 +171,8 @@ userData = get(handles.figure1, 'userdata');
 selectedPackageTag=get(get(handles.uipanel_package, 'SelectedObject'), 'tag');
 packageID=str2double(selectedPackageTag(end));
 
-if isfield(userData,'testMode')
-    packageGUI(str2func(userData.packageList{packageID}),userData.MD);
-else
-    userData.firstPackageGUI{packageID}(userData.MD);
-end
+userData.packageGUI{packageID}(userData.MD);
+
 delete(handles.figure1);
 
 
