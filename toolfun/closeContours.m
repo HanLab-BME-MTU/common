@@ -96,12 +96,12 @@ for j = 1:nContours
             if iTouchEnd < iTouchStart
 
                 %Add these border points to the contour in normal order
-                closedContours{j} = [contoursIn{j} borderCoord(:,iTouchEnd+1:iTouchStart)];
+                closedContours{j} = [contoursIn{j} borderCoord(:,iTouchEnd+1:iTouchStart-1)];
 
             elseif iTouchEnd > iTouchStart
-                %Add the border points in reverse order, looping past the
+                %Add the border points in normal order, looping past the
                 %origin
-                closedContours{j} = [contoursIn{j} borderCoord(:,iTouchEnd+1:end) borderCoord(:,1:iTouchStart)];
+                closedContours{j} = [contoursIn{j} borderCoord(:,iTouchEnd+1:end) borderCoord(:,1:iTouchStart-1)];
                 
             end%If they are equal, we don't want to do anything - this curve just touches the border at one point. 
             
@@ -109,13 +109,13 @@ for j = 1:nContours
             %Check if the border used crosses the origin
             if iTouchEnd > iTouchStart
 
-                %Add these border points to the contour in normal order
-                closedContours{j} = [contoursIn{j} borderCoord(:,iTouchEnd-1:-1:iTouchStart)];
+                %Add these border points to the contour in reverse order
+                closedContours{j} = [contoursIn{j} borderCoord(:,iTouchEnd-1:-1:iTouchStart+1)];
 
             elseif iTouchEnd < iTouchStart
                 %Add the border points in reverse order, looping past the
                 %origin
-                closedContours{j} = [contoursIn{j} borderCoord(:,iTouchEnd-1:-1:1) borderCoord(:,end:-1:iTouchStart)];
+                closedContours{j} = [contoursIn{j} borderCoord(:,iTouchEnd-1:-1:1) borderCoord(:,end:-1:iTouchStart+1)];
                 
             end%If they are equal, we don't want to do anything - this curve just touches the border at one point. 
             
