@@ -32,6 +32,11 @@ function closedContours = closeContours(contoursIn,matIn)
 % 4/2010
 % 
 
+%% -------- Parameters ---------- %%
+
+nChk = 5;
+
+
 %% ----- Input ----- %%
 
 if nargin < 2 || isempty(matIn) || isempty(contoursIn)
@@ -72,10 +77,14 @@ for j = 1:nContours
         iTouchEnd = find(arrayfun(@(x)(all(borderCoord(:,x) == round(contoursIn{j}(:,end)))),1:nB),1,'last');
         
         %Check which direction the values increase in
-        iBefore = max(mod(iTouchEnd-1,nB),1);%Use modulus in case it starts near the origin
-        iAfter = max(mod(iTouchEnd+1,nB),1);
-        if matIn(borderCoord(2,iBefore),borderCoord(1,iBefore)) < ...
-                matIn(borderCoord(2,iAfter),borderCoord(1,iAfter)) 
+        iBefore = mod(iTouchEnd-nChk:iTouchEnd-1,nB);%Use modulus in case it starts near the origin
+        iAfter = mod(iTouchEnd+1:iTouchEnd+nChk,nB);
+        iBefore(iBefore==0) = nB;
+        iAfter(iAfter==0) = nB;
+        iBefore = sub2ind(size(matIn),borderCoord(2,iBefore),borderCoord(1,iBefore));%Convert these to matrix indices
+        iAfter = sub2ind(size(matIn),borderCoord(2,iAfter),borderCoord(1,iAfter));
+        
+        if max(matIn(iBefore)) < max(matIn(iAfter))
             incClockwise = true;
         else
             incClockwise = false;                                    
