@@ -231,16 +231,17 @@ classdef Package < hgsetget
             end
             
         end
-     
         
     end
         
     methods (Abstract)
         sanityCheck(obj)
-        % More abstract methods go here
     end
 
     methods(Static,Abstract)
         start
+        getDependencyMatrix
+        getOptionalProcessId
     end
+    
 end
