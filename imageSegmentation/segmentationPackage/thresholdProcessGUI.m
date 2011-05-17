@@ -155,7 +155,6 @@ else
     set(handles.checkbox_max, 'Enable', 'off') 
     set(handles.listbox_thresholdValues, 'String', num2cell(funParams.ThresholdValue))
     userData.thresholdValue=funParams.ThresholdValue(1);
-
 end
 
 % Save the image directories and names (for threshold preview)

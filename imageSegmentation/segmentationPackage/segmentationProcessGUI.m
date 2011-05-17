@@ -60,8 +60,6 @@ function segmentationProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin
 %
 %       userData.segProc - cell array of segmentation processes, created
 %                          after setting up segmentation processes
-%       userData.maskRefineProc - 1x1 mask refinement process, created
-%                                 after setting up post-processing
 %
 %
 %       userData.procSetting - cell array of set-up GUIs of available
@@ -98,29 +96,26 @@ userData.MD = userData_main.MD(userData_main.id);  % Get the current Movie Data
 userData.crtPackage = userData_main.crtPackage;
 userData.crtProc = userData.crtPackage.processes_{userData.procID};
 
+% Get current process constructor
+crtProcName = userData.crtPackage.processClassNames_{userData.procID};
+userData.procConstr = str2func(crtProcName);
+procString = [' Step ' num2str(userData.procID) ':' regexprep(crtProcName,'([A-Z])',' $1')];
+set(handles.text_processName,'String',procString);
+figString = [' Setting - ' regexprep(crtProcName,'([A-Z])',' $1')];
+set(handles.figure1,'Name',figString);
+
 % Get current process constructer, set-up GUIs and mask refinement process
 % constructor
      
+
 userData.procSetting = {@thresholdProcessGUI};
 userData.procName = {'ThresholdProcess'};                  
 userData.procConstr = {@ThresholdProcess};
 popupMenuProcName = {'Thresholding Segmentation',...
                      'Choose ...'};
 
-% Initialize segProc and maskRefinProc in user data
+% Initialize segProc in user data
 userData.segProc = cell(1, length(userData.procName));
-
-userData.maskRefineName = 'MaskRefinementProcess';
-userData.maskRefineConstr = @MaskRefinementProcess;
-
-userData.maskRefineProc = [ ]; 
-
-
-% If process does not exist, create a default one in user data.
-% if isempty(userData.crtProc)
-%     userData.crtProc = userData.procConstr(userData_main.MD(userData_main.id), ...
-%                                 userData.crtPackage.outputDirectory_);
-% end
 
 % Get icon infomation
 userData.questIconData = userData_main.questIconData;
