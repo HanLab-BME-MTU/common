@@ -289,37 +289,6 @@ userData_main = get(userData.mainFig, 'UserData');
 
 % -------- Check user input --------
 
-if isempty(get(handles.listbox_selectedChannels, 'String'))
-    errordlg('Please select at least one input channel from ''Available Channels''.','Setting Error','modal')
-    return;
-end
-
-if get(handles.checkbox_auto, 'value')
-    if get(handles.checkbox_max, 'Value')
-        % If both checkbox are checked
-        if isnan(str2double(get(handles.edit_jump, 'String'))) ...
-                || str2double(get(handles.edit_jump, 'String')) < 0
-            errordlg('Please provide a valid input for ''Maximum threshold jump''.','Setting Error','modal');
-            return;
-        end    
-    end
-else
-    threshold = get(handles.listbox_thresholdValues, 'String');
-    if isempty(threshold)
-       errordlg('Please provide at least one threshold value.','Setting Error','modal')
-       return
-    elseif length(threshold) ~= 1 && length(threshold) ~= length(get(handles.listbox_selectedChannels, 'String'))
-       errordlg('Please provide the same number of threshold values as the input channels.','Setting Error','modal')
-       return
-    else
-        threshold = str2double(threshold);
-        if any(isnan(threshold)) || any(threshold < 0)
-            errordlg('Please provide valid threshold values. Threshold cannot be a negative number.','Setting Error','modal')
-            return            
-        end
-    end
-end
-   
 
 % -------- Process Sanity check --------
 % ( only check underlying data )
@@ -393,17 +362,7 @@ if get(handles.checkbox_applytoall, 'Value')
         temp = arrayfun(@(x)(x > l),channelIndex, 'UniformOutput', true );
         funParams.ChannelIndex = channelIndex(logical(~temp));
         
-        if get(handles.checkbox_auto, 'value')
-            
-            funParams.ThresholdValue = [ ];
-        else
-            if length(threshold) == 1
-                funParams.ThresholdValue = repmat(threshold, [1 length(funParams.ChannelIndex)]);
-            else
-                funParams.ThresholdValue = threshold(logical(~temp));
-            end
-        end
-        
+
         funParams.OutputDirectory  = [userData_main.package(x).outputDirectory_  filesep 'masks'];
         
         % if new process, create a new process with funParas and add to
