@@ -20,16 +20,16 @@ if ~any(M(:,index))
    % if no follower exists, return.
         return;
 else
-    subindex = find(M(:,index));
+    childProcesses = find(M(:,index));
     switch value
         % Checkbox is selected
         case 1
-            for i = 1: length(subindex)
-               parentI = find(M(subindex(i),:));
-               for j = 1: length(parentI)
-                   if get(handles.(['checkbox_' num2str(parentI(j))]),'Value') ||...
-                           ( ~isempty(userData.crtPackage.processes_{parentI(j)}) && ...
-                           userData.crtPackage.processes_{parentI(j)}.success_ ) ||...
+            for i = 1: length(childProcesses)
+               requiredParentProcesses = find(M(childProcesses(i),:)==1);
+               for j = 1: length(requiredParentProcesses)
+                   if get(handles.(['checkbox_' num2str(requiredParentProcesses(j))]),'Value') ||...
+                           ( ~isempty(userData.crtPackage.processes_{requiredParentProcesses(j)}) && ...
+                           userData.crtPackage.processes_{requiredParentProcesses(j)}.success_ ) ||...
                            j == index
                        
                        k = true; % ok
@@ -45,12 +45,12 @@ else
                % The following code will probably not be executed
                % Leave it here just in case design is changed
                % ------------------------------------------ %
-               if get(handles.(['checkbox_' num2str(subindex(i))]),'Value')
-                    userfcn_lampSwitch(subindex(i),1,handles)
+               if get(handles.(['checkbox_' num2str(childProcesses(i))]),'Value')
+                    userfcn_lampSwitch(childProcesses(i),1,handles)
                % ------------------------------------------ %
                else
-                    % Turn on the subindex checkbox
-                    userfcn_enable (subindex(i),'on',handles);
+                    % Turn on the childProcesses checkbox
+                    userfcn_enable (childProcesses(i),'on',handles);
                end
             end
         % Checkbox is unselected
@@ -60,11 +60,14 @@ else
                    && userData.crtPackage.processes_{index}.success_
                 return;
             else
-                for i =1:length(subindex)
+                for i =1:length(childProcesses)
+                    % Check the childProcess requires the unselected
+                    % process
+                    if M(childProcesses(i),index)==2, continue; end
                     % Turn off and uncheck the follower checkboxes
-                    userfcn_enable(subindex(i),'off',handles,true);
+                    userfcn_enable(childProcesses(i),'off',handles,true);
                 
-                    userfcn_lampSwitch(subindex(i),0,handles);
+                    userfcn_lampSwitch(childProcesses(i),0,handles);
                 end
             end
         otherwise
