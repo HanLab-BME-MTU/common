@@ -3,7 +3,7 @@
 * Notations follow those in [F. Aguet, PhD Thesis, 2009].
 *
 * Compilation:
-* Windows: mex -I"..\..\mex\include" vectorialPSF.cpp
+* Windows: mex vectorialPSF.cpp
 * (c) Francois Aguet 2006-2010 (last modified Nov 1, 2010)
 */
 
