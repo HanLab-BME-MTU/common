@@ -20,8 +20,13 @@ userData = get(handles.figure1, 'UserData');
 l = size(userData.dependM, 1);
 k = zeros(1,l);
 
-% reset GUI
-userfcn_resetGUI(handles)
+% Reset GUI
+userfcn_drawIcon(handles, 'clear', 1:l);
+userfcn_enable(1:l, 'on', handles)
+for i = 1:l
+    set(handles.(['checkbox_',num2str(i)]),'FontWeight','normal','Value',0);
+    set(handles.(['pushbutton_show_',num2str(i)]),'Enable','off');
+end
 
 % Set movie data path
 set(handles.edit_path, 'String', ...
