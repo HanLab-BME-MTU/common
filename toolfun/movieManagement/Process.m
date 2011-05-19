@@ -128,6 +128,12 @@ classdef Process < hgsetget
             % Set output file paths
             obj.outFilePaths_ = paths;
         end
+        
+        function package = getPackage(obj)
+            % Retrieve package to which the process is associated
+             validPackage = cellfun(@(x) find(cellfun(@(y) isequal(y,obj),x.processes_)),obj.owner_.packages_);
+             package = obj.owner_.packages_{validPackage};
+        end
     end
     methods (Abstract)
         sanityCheck(obj)
