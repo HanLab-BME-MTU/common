@@ -5,7 +5,7 @@
  * Compilation:
  * Mac/Linux: mex -I/usr/local/include -lgsl -lgslcblas fitGaussianMixture2D.c
  * Mac/Linux (statix): mex -I/usr/local/include -I../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a fitGaussianMixture2D.c
- * Windows: mex COMPFLAGS="$COMPFLAGS /TP" -I"..\..\..\extern\mex\include\gsl-1.14" -I"..\..\mex\include" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output fitGaussianMixture2D fitGaussianMixture2D.c
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\gsl-1.14" -I"..\..\mex\include" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output fitGaussianMixture2D fitGaussianMixture2D.c
  */
 
 
