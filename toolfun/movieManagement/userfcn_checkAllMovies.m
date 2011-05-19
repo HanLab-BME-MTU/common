@@ -1,4 +1,4 @@
-function userfcn_checkAllMovies(index, value, handles)
+function userfcn_checkAllMovies(procID, value, handles)
 
 if get(handles.checkbox_all, 'Value')
     
@@ -7,22 +7,22 @@ if get(handles.checkbox_all, 'Value')
         % Recalls the userData that may have been updated by the
         % checkAllMovies function
         userData=get(handles.figure1, 'UserData');
-        userData.statusM(x).Checked(index) = value;
+        userData.statusM(x).Checked(procID) = value;
         set(handles.figure1, 'UserData', userData)
 
-        dfs_checkAllMovies(index, value, handles, x)
+        dfs_checkAllMovies(procID, value, handles, x)
     end
 end
 
 
-function dfs_checkAllMovies(index, value, handles, x)
+function dfs_checkAllMovies(procID, value, handles, x)
 
     userData = get(handles.figure1, 'UserData');
     M = userData.dependM;
     
     if value  % If check
 
-            parentI = find(M(index, :));
+            parentI = find(M(procID, :)==1);
             parentI = parentI(:)';
             
             if isempty(parentI)
@@ -45,25 +45,21 @@ function dfs_checkAllMovies(index, value, handles, x)
 
     else % If uncheck
             
-            subindex = find(M(:,index));
-            subindex = subindex(:)';
+            childProcesses = find(M(:,procID));
+            childProcesses = childProcesses(:)';
             
-            if isempty(subindex) || ...
-                (~isempty(userData.package(x).processes_{index}) ...
-                   && userData.package(x).processes_{index}.success_)
+            if isempty(childProcesses) || ...
+                (~isempty(userData.package(x).processes_{procID}) ...
+                   && userData.package(x).processes_{procID}.success_)
                 return;
             else
-                for i = subindex
-                    
-                    if userData.statusM(x).Checked(i)
-                        
+                for i = childProcesses   
+                    if userData.statusM(x).Checked(i)    
                         userData.statusM(x).Checked(i) = 0;
                         set(handles.figure1, 'UserData', userData)
                         dfs_checkAllMovies(i, value, handles, x)                        
                     end
                 end
             end        
-
-
     end
 

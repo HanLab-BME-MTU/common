@@ -110,7 +110,7 @@ tempDependM = userData.dependM;
 tempDependM(:,logical(k)) = zeros(l, nnz(k));
 
 % Checkbox enable/disable set up
-userfcn_enable(find (any(tempDependM,2)), 'off',handles);
+userfcn_enable(find (any(tempDependM==1,2)), 'off',handles);
 
 
 if strcmp(type, 'initialize')
