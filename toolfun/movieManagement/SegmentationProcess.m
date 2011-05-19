@@ -82,7 +82,6 @@ classdef SegmentationProcess < Process
         end
         
         function hfigure = resultDisplay(obj)
-        % Call resultDisplayGUI to show result
         
             if isa(obj, 'Process')
                 hfigure = movieDataVisualizationGUI(obj.owner_, obj);

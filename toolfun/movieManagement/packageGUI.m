@@ -248,9 +248,6 @@ if isfield(userData, 'resultFig') && ishandle(userData.resultFig)
     delete(userData.resultFig)
 end
 
-
-% Lame way to call the different resultDisplayGUI inputs
-% Should work for the moment!
 % Modifications should be added to the resultDisplay methods (should be
 % generic!!!!)
 if isa(userData.crtPackage,'UTrackPackage')
