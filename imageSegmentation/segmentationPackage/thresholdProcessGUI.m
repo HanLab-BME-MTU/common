@@ -135,6 +135,7 @@ elseif isempty( userData.crtPackage.processes_{userData.procID} )
             end
         end
 end
+set(handles.checkbox_applytoall, 'Value', userData_main.applytoall(userData.procID));
 
 % ---------------------- Parameter Setup -------------------------
 
@@ -339,6 +340,17 @@ end
 % Refresh user data !!
 userData_main = get(userData.mainFig, 'UserData');
 
+% Pop-up dialog box if copying
+if get(handles.checkbox_applytoall, 'Value')
+    confirmApplytoAll = questdlg(['You are about to copy the current process settings to all movies.'...
+        ' Previous settings will be lost. Do you want to continue?'],...
+        'Apply settings to all movies','Yes','No','Yes');
+    
+    if ~strcmp(confirmApplytoAll,'Yes'),
+        set(handles.checkbox_applytoall,'Value',0.0);            
+        return
+    end
+end
 
 % -------------------- Apply setting to all movies ------------------------
 
@@ -405,6 +417,8 @@ end
 % -------------------------------------------------------------------------
 
 % Save user data
+userData_main.applytoall(userData.procID)=get(handles.checkbox_applytoall,'Value');
+set(userData.mainFig, 'UserData', userData_main)
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 delete(handles.figure1);

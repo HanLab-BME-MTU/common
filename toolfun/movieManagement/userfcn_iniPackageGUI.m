@@ -9,7 +9,7 @@ end
 guiname=stack(4).name;
 
 if isempty(varargin)
-    error('lccb:packageGUI',sprintf('%s must be called with at least one valid argument',mfilename));
+    error('lccb:packageGUI','%s must be called with at least one valid argument',mfilename);
 end
 
 if isa(varargin{1},'function_handle')
@@ -142,7 +142,11 @@ nProc = size(userData.dependM, 1);
 userData.statusM = repmat( struct('IconType', {cell(1,nProc)}, 'Msg', {cell(1,nProc)}, 'Checked', zeros(1,nProc), 'Visited', false), 1, nMovies);
 
 % Initialize the apply to all checkboxes
-userData.applytoall=zeros(nProc,1);
+if nMovies>1
+    userData.applytoall=ones(nProc,1);
+else
+    userData.applytoall=zeros(nProc,1);
+end
 
 % -----------------------Load and set up icons----------------------------
 
@@ -162,7 +166,7 @@ set(hObject,'colormap',supermap);
 userData.colormap = supermap;
 
 % Set up package help. 
-axes(handles.axes_help);
+set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(questIconData); 
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
