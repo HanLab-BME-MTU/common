@@ -105,10 +105,18 @@ for x = 1:nMovies
     
     if ~packageExist(x)
         % No same package is found.. create a new package object
-        MD(x).addPackage(packageHandle(MD(x), MD(x).outputDirectory_)) 
+        MD(x).addPackage(packageHandle(MD(x), MD(x).outputDirectory_));
         userData.package(x) = MD(x).packages_{end};
     end
-
+    try
+        userData.package(x).sanityCheck;
+    catch ME
+        errordlg(ME.message);
+        userData.startMovieSelectorGUI=true;
+        set(handles.figure1,'UserData',userData);
+        guidata(hObject, handles);
+        return
+    end
 end
 
 % ------------- Check if existing processes can be recycled ---------------

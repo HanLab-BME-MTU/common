@@ -4,6 +4,13 @@ function packageGUI_RunFcn(hObject,eventdata,handles)
 %
 % Chuangang Ren 11/2010
 % Sebastien Besson 5/2011
+
+ip = inputParser;
+ip.addRequired('hObject',@ishandle);
+ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
+ip.addRequired('handles',@isstruct);
+ip.parse(hObject,eventdata,handles);
+
 userData = get(handles.figure1,'UserData');
 
 movieRun = []; % id of movie to run
@@ -39,8 +46,6 @@ if isempty(movieRun)
     warndlg('No step is selected, please select a step to process.','No Step Selected','modal');
     return
 end
-
-
 
 % ----------------------- Pre-processing examination ----------------------
 
