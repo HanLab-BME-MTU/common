@@ -1,9 +1,9 @@
 %initialize temporary structures
-tmpD = repmat(struct('field',[]),17,1);
+tmpD = repmat(struct('field',[]),18,1);
 tmpT = tmpD;
 
 j = 0;
-for startFrame = 1 : 400 : 6800
+for startFrame = 1 : 400 : 7200
     endFrame = startFrame + 399;
     
     %get tracks for this time interval
