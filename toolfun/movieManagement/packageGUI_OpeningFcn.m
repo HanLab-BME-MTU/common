@@ -1,30 +1,66 @@
-%Package GUI initialization - should be called at the opening of the
-%corresponding GUI
+function packageGUI_OpeningFcn(hObject,eventdata,handles,packageName,varargin)
+% Callback called at the opening of packageGUI
+%
+% packageGUI(MD)   MD: MovieData object
+%
+% Useful tools
+%
+% User Data:
+%
+%       userData.MD - array of MovieData object
+%       userData.package - array of package (same length with userData.MD)
+%       userData.crtPackage - the package of current MD
+%       userData.id - the id of current MD on board
+%
+%       userData.dependM - dependency matrix
+%       userdata.statusM - GUI status matrix
+%       userData.optProcID - optional process ID
+%       userData.applytoall - array of boolean
+%
+%       userData.passIconData - pass icon image data
+%       userData.errorIconData - error icon image data
+%       userData.warnIconData - warning icon image data
+%       userData.questIconData - help icon image data
+%       userData.colormap - color map
+%
+%       userData.setFig - array of handles of (multiple) setting figures (may not exist)
+%       userData.resultFig - array of handles of (multiple) result figures (may not exist)
+%       userData.packageHelpFig - handle of (single) help figure (may not exist)
+%       userData.iconHelpFig - handle of (single) help figures (may not exist)
+%       userData.processHelpFig - handle of (multiple) help figures (may not exist) 
+%       
+%
+% NOTE:
+%   
+%   userData.statusM - 1 x m stucture array, m is the number of Movie Data 
+%                      this user data is used to save the status of movies
+%                      when GUI is switching between different movie(s)
+%                   
+%   	fields: IconType - the type of status icons, 'pass', 'warn', 'error'
+%               Msg - the message displayed when clicking status icons
+%               Checked - 1 x n logical array, n is the number of processes
+%                         used to save value of check box of each process
+%               Visited - logical true or false, if the movie has been
+%                         loaded to GUI before 
+% Sebastien Besson 5/2011
 
-%Reed package name 
-stack = dbstack;
-if ~strcmp(stack(2).name(end-9:end),'OpeningFcn'), 
-    error('lccb:Package:Initialization',[mfilename ' should be called at the GUI opening'])
-end
-guiname=stack(4).name;
+ip = inputParser;
+ip.addRequired('hObject',@ishandle);
+ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
+ip.addRequired('handles',@isstruct);
+ip.addRequired('packageName',@(x) isa(x,'char') || isa(x,'function_handle'));
+ip.addOptional('MD',[],@(x) isa(x,'MovieData'));
+ip.parse(hObject,eventdata,handles,packageName,varargin{:});
+MD=ip.Results.MD;
 
-if isempty(varargin)
-    error('lccb:packageGUI','%s must be called with at least one valid argument',mfilename);
-end
-
-if isa(varargin{1},'function_handle')
-    packageHandle=varargin{1};
-    packageName=func2str(varargin{1});
-elseif isa(varargin{1},'char')
-    packageName=varargin{1};
-    packageHandle=str2func(varargin{1});
-else
-    packageName=class(varargin{1});
+if isa(packageName,'function_handle')
+    packageHandle=packageName;
+    packageName=func2str(packageName);
+elseif isa(packageName,'char')
     packageHandle=str2func(packageName);
 end
 
-assert(logical(exist(packageName,'class')),sprintf('%s is not a valid class',packageName));
-assert(any(strcmp(superclasses(packageName),'Package')),sprintf('%s is not a valid Package class',packageName));
+assert(any(strcmp(superclasses(packageName),'Package')),sprintf('%s is not a valid Package',packageName));
       
 handles.output = hObject;
 userData = get(handles.figure1,'UserData');
@@ -39,7 +75,7 @@ set(handles.text_copyright, 'String', copyright);
 
 %If package GUI supplied without argument, saves a boolean which will be
 %read by packageNameGUI_OutputFcn
-if nargin < 5
+if isempty(MD)
     userData.startMovieSelectorGUI=true;
     set(handles.figure1,'UserData',userData);
     guidata(hObject, handles);
@@ -48,7 +84,7 @@ end
 
 % ----------------------------- Load MovieData ----------------------------
 
-MD = varargin{2};
+% MD = varargin{2};
 nMovies = numel(MD);
 packageExist = zeros(1, nMovies);
 % I. Before loading MovieData, firstly check if the current package exists
@@ -140,13 +176,6 @@ userData.dependM = eval([packageName,'.getDependencyMatrix']);
 
 nProc = size(userData.dependM, 1);
 userData.statusM = repmat( struct('IconType', {cell(1,nProc)}, 'Msg', {cell(1,nProc)}, 'Checked', zeros(1,nProc), 'Visited', false), 1, nMovies);
-
-% Initialize the apply to all checkboxes
-if nMovies>1
-    userData.applytoall=ones(nProc,1);
-else
-    userData.applytoall=zeros(nProc,1);
-end
 
 % -----------------------Load and set up icons----------------------------
 
@@ -258,14 +287,15 @@ end
 set(handles.popupmenu_movie, 'String', msg, 'Value', userData.id);
 
 % If only one movie loaded
-
 if length(userData.MD) == 1
     set(handles.checkbox_runall, 'Visible', 'off')
     set(handles.pushbutton_left, 'Enable', 'off')
     set(handles.pushbutton_right, 'Enable', 'off')   
-%     set(handles.checkbox_all, 'Visible', 'off', 'Value', 0)
+    set(handles.checkbox_all, 'Visible', 'off', 'Value', 0)
+    userData.applytoall=zeros(nProc,1);
 else
     set(handles.checkbox_runall, 'Visible', 'on')
+    userData.applytoall=ones(nProc,1);
 end
 
 
@@ -282,3 +312,4 @@ set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 userfcn_updateGUI(handles, 'initialize')
 
 
+end

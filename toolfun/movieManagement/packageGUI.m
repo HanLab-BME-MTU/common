@@ -43,57 +43,6 @@ else
 end
 % End initialization code - DO NOT EDIT
 
-
-% --- Executes just before packageGUI is made visible.
-function packageGUI_OpeningFcn(hObject, eventdata, handles, varargin)
-%
-% packageGUI(MD)   MD: MovieData object
-%
-% Useful tools
-%
-% User Data:
-%
-%       userData.MD - array of MovieData object
-%       userData.package - array of package (same length with userData.MD)
-%       userData.crtPackage - the package of current MD
-%       userData.id - the id of current MD on board
-%
-%       userData.dependM - dependency matrix
-%       userdata.statusM - GUI status matrix
-%       userData.optProcID - optional process ID
-%
-%       userData.applytoall - array of boolean
-%
-%       userData.passIconData - pass icon image data
-%       userData.errorIconData - error icon image data
-%       userData.warnIconData - warning icon image data
-%       userData.questIconData - help icon image data
-%       userData.colormap - color map
-%
-%       userData.setFig - array of handles of (multiple) setting figures (may not exist)
-%       userData.resultFig - array of handles of (multiple) result figures (may not exist)
-%       userData.packageHelpFig - handle of (single) help figure (may not exist)
-%       userData.iconHelpFig - handle of (single) help figures (may not exist)
-%       userData.processHelpFig - handle of (multiple) help figures (may not exist) 
-%       
-%
-% NOTE:
-%   
-%   userData.statusM - 1 x m stucture array, m is the number of Movie Data 
-%                      this user data is used to save the status of movies
-%                      when GUI is switching between different movie(s)
-%                   
-%   	fields: IconType - the type of status icons, 'pass', 'warn', 'error'
-%               Msg - the message displayed when clicking status icons
-%               Checked - 1 x n logical array, n is the number of processes
-%                         used to save value of check box of each process
-%               Visited - logical true or false, if the movie has been
-%                         loaded to GUI before 
-%
-
-% Load movie data and recycle processes
-userfcn_iniPackageGUI;
-
 % --- Outputs from this function are returned to the command line.
 function varargout = packageGUI_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
