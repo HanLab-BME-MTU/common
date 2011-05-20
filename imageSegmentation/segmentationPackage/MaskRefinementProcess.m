@@ -11,7 +11,7 @@ classdef MaskRefinementProcess < MaskProcessingProcess
                 nChan = numel(owner.channels_);
                 
                 super_args{1} = owner;
-                super_args{2} = 'Mask Refinement';
+                super_args{2} = MaskRefinementProcess.getName;
                 super_args{3} = @refineMovieMasks;                               
                 
                 if nargin < 3 || isempty(funParams)                                       
@@ -40,9 +40,11 @@ classdef MaskRefinementProcess < MaskProcessingProcess
             obj.setFunc_ = @maskRefinementProcessGUI; % FOr analyzability/ to be implemented
 
         end                  
-        
-        
-        
+    end
+    methods(Static)
+        function name =getName()
+            name = 'Mask Refinement';
+        end
     end
 end
     

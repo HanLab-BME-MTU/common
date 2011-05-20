@@ -9,7 +9,7 @@ classdef ThresholdProcess < SegmentationProcess
                 super_args = {};
             else
                 super_args{1} = owner;
-                super_args{2} = 'Thresholding';
+                super_args{2} = ThresholdProcess.getName;
                 super_args{3} = @thresholdMovie;                           
                 
                 if nargin < 3 || isempty(funParams)                                       
@@ -32,4 +32,10 @@ classdef ThresholdProcess < SegmentationProcess
         end               
             
     end
+    methods (Static)
+        function name = getName()
+            name = 'Thresholding';
+        end
+    end
+        
 end

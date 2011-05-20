@@ -15,7 +15,7 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
                 nChan = numel(owner.channels_);
                 
                 super_args{1} = owner;
-                super_args{2} = 'Background Subtraction';
+                super_args{2} = BackgroundSubtractionProcess.getName;
                 super_args{3} = @backgroundSubtractMovie;                               
                 
                 if nargin < 3 || isempty(funParams)                                       
@@ -82,6 +82,11 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
 
         end
         
+    end
+    methods (Static)
+        function name =getName()
+            name = 'Background Subtraction';
+        end
     end
 
 end                                   

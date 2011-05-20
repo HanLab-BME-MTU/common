@@ -140,4 +140,7 @@ classdef Process < hgsetget
         % More abstract classed goes here
         % ... ...
     end
+    methods (Static,Abstract)
+        getName
+    end
 end

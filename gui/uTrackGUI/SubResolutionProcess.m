@@ -14,7 +14,7 @@ classdef SubResolutionProcess < DetectionProcess
         function obj = SubResolutionProcess(owner, outputDir, channelIndex, funParams )
         % Constructor of the SubResolutionProcess
             super_args{1} = owner;
-            super_args{2} = 'Sub-Resolution';
+            super_args{2} = SubResolutionProcess.getName;
             super_args{3} = @detectSubResFeatures2D_StandAlone;
             
             if nargin < 2 || isempty(outputDir)
@@ -167,7 +167,9 @@ classdef SubResolutionProcess < DetectionProcess
             end
             
         end    
-        
+        function name = getName()
+            name = 'Sub-Resolution Detection';
+        end
     end
     
 end

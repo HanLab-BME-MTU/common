@@ -19,7 +19,7 @@ classdef TransformationProcess < ImageProcessingProcess
             else
 
                 super_args{1} = owner;
-                super_args{2} = 'Transformation';
+                super_args{2} = TransformationProcess.getName;
                 super_args{3} = @transformMovie;
                 
                 if nargin < 3 || isempty(funParams)                                                        
@@ -191,6 +191,11 @@ classdef TransformationProcess < ImageProcessingProcess
                 
         end
         
+    end
+    methods(Static)
+        function name =getName()
+            name = 'Transformation';
+        end
     end
     
 end

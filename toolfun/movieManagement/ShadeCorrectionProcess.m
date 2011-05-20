@@ -16,7 +16,7 @@ classdef ShadeCorrectionProcess < ImageCorrectionProcess
                 nChan = numel(owner.channels_);
                 
                 super_args{1} = owner;
-                super_args{2} = 'Shade Correction';
+                super_args{2} = ShadeCorrectionProcess.getName;
                 super_args{3} = @shadeCorrectMovie;                               
                 
                 if nargin < 3 || isempty(funParams)                                       
@@ -86,6 +86,12 @@ classdef ShadeCorrectionProcess < ImageCorrectionProcess
                     end
                 end
             end
+        end
+        
+    end
+    methods(Static)
+        function name =getName()
+            name = 'Shade Correction';
         end
         
     end

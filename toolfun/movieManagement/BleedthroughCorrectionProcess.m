@@ -14,7 +14,7 @@ classdef BleedthroughCorrectionProcess < ImageCorrectionProcess
             else                
                 
                 super_args{1} = owner;
-                super_args{2} = 'Bleedthrough Correction';
+                super_args{2} = BleedthroughCorrectionProcess.getName;
                 super_args{3} = @bleedthroughCorrectMovie;                               
                 
                 if nargin < 3 || isempty(funParams)                                       
@@ -52,6 +52,11 @@ classdef BleedthroughCorrectionProcess < ImageCorrectionProcess
 
         end   
         
+    end
+    methods (Static)
+        function name =getName()
+            name = 'Bleedthrough Correction';
+        end
     end
 
 end                                   

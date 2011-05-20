@@ -225,8 +225,9 @@ for i = 1:nProc
             get(handles.(templateTag{j}),'Position')+(nProc-i)*[0 40 0 0]);
     end
   
-    processName=userData.crtPackage.processClassNames_{i};
-    checkboxString = [' Step ' num2str(i) ':' regexprep(processName,'([A-Z])',' $1')];
+    processClassName = userData.crtPackage.processClassNames_{i};
+    processName=eval([processClassName '.getName']);
+    checkboxString = [' Step ' num2str(i) ': ' processName];
     set(handles.(procTag{1}),'String',checkboxString)
     
     set(handles.figure1,'CurrentAxes',handles.(procTag{5}));
@@ -236,7 +237,7 @@ for i = 1:nProc
     set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
         
     if openHelpFile
-        set(Img, 'UserData', struct('class', processName))
+        set(Img, 'UserData', struct('class', processClassName))
     end
 end
 

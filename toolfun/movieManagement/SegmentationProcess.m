@@ -90,5 +90,9 @@ classdef SegmentationProcess < Process
             end
         end
     end
-    
+        methods(Static)
+        function name =getName()
+            name = 'Segmentation';
+        end
+    end
 end

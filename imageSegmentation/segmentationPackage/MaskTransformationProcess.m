@@ -11,7 +11,7 @@ classdef MaskTransformationProcess < MaskProcessingProcess
                 nChan = numel(owner.channels_);
                 
                 super_args{1} = owner;
-                super_args{2} = 'Mask Transformation';
+                super_args{2} = MaskTransformationProcess.getName;
                 super_args{3} = @transformMovieMasks;                               
                 
                 if nargin < 2 || isempty(funParams)                                       
@@ -95,6 +95,10 @@ classdef MaskTransformationProcess < MaskProcessingProcess
         end        
         
     end
-    
+    methods(Static)
+        function name =getName()
+            name = 'Mask Transformation';
+        end
+    end
 end
     

@@ -97,11 +97,12 @@ userData.crtPackage = userData_main.crtPackage;
 userData.crtProc = userData.crtPackage.processes_{userData.procID};
 
 % Get current process constructor
-crtProcName = userData.crtPackage.processClassNames_{userData.procID};
-userData.procConstr = str2func(crtProcName);
-procString = [' Step ' num2str(userData.procID) ':' regexprep(crtProcName,'([A-Z])',' $1')];
+crtProcClassName = userData.crtPackage.processClassNames_{userData.procID};
+userData.procConstr = str2func(crtProcClassName);
+crtProcName = eval([crtProcClassName '.getName']);
+procString = [' Step ' num2str(userData.procID) ': ' crtProcName];
 set(handles.text_processName,'String',procString);
-figString = [' Setting - ' regexprep(crtProcName,'([A-Z])',' $1')];
+figString = [' Setting - ' crtProcName];
 set(handles.figure1,'Name',figString);
 
 % Get current process constructer, set-up GUIs and mask refinement process
