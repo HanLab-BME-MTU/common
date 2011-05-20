@@ -150,7 +150,7 @@ nImTot = nImages * nChanThresh;
 maskDirs  = movieData.processes_{iProc}.outFilePaths_(p.ChannelIndex);
 imDirs  = movieData.getChannelPaths(p.ChannelIndex);
     
-
+threshMethod = movieData.processes_{iProc}.getMethods(p.MethodIndx).func;
 %% ----- Thresholding ----- %%
 
 if ~p.BatchMode
@@ -186,7 +186,7 @@ for iChan = 1:nChanThresh
         
         if isempty(p.ThresholdValue)
             try
-                currThresh = thresholdFluorescenceImage(currImage);             
+                currThresh = threshMethod(currImage);             
             catch %#ok<CTCH>
                 %If auto-threshold selection fails, and jump-correction is
                 %enabled, force use of previous threshold

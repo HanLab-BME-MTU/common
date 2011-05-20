@@ -21,7 +21,8 @@ classdef ThresholdProcess < SegmentationProcess
                     funParams.ChannelIndex = 1 : numel(owner.channels_);                                                           
                     funParams.MaxJump = 0; %Default is no jump suppression
                     funParams.GaussFilterSigma = 0; %Default is no filtering.
-                    funParams.BatchMode = false;                                              
+                    funParams.BatchMode = false;    
+                    funParams.MethodIndx = 1;     
                 end
                 %Make sure the input parameters are legit??
                 super_args{4} = funParams;                    
@@ -35,6 +36,21 @@ classdef ThresholdProcess < SegmentationProcess
     methods (Static)
         function name = getName()
             name = 'Thresholding';
+        end
+        
+        function methods = getMethods(varargin)
+            thresholdingMethods(1).name = 'MinMax';
+            thresholdingMethods(1).func = @thresholdFluorescenceImage;
+            thresholdingMethods(2).name = 'Otsu';
+            thresholdingMethods(2).func = @thresholdOtsu;
+            thresholdingMethods(3).name = 'Rosin';
+            thresholdingMethods(3).func = @thresholdRosin;            
+
+            ip=inputParser;
+            ip.addOptional('index',1:length(thresholdingMethods),@isvector);
+            ip.parse(varargin{:});
+            index = ip.Results.index;
+            methods=thresholdingMethods(index);
         end
     end
         

@@ -78,14 +78,20 @@ userData.crtPackage = userData_main.crtPackage;
 userData.crtProc = userData.crtPackage.processes_{userData.procID};
 
 % Get current process constructer
-eval ( [ 'userData.procConstr = @', ...
-    userData.crtPackage.processClassNames_{userData.procID},';']);
-
+crtProcClassName = userData.crtPackage.processClassNames_{userData.procID};
+userData.procConstr = str2func(crtProcClassName);
+crtProcName = eval([crtProcClassName '.getName']);
+procString = [' Step ' num2str(userData.procID) ': ' crtProcName];
+set(handles.text_processName,'String',procString);
+figString = [' Setting - ' crtProcName];
+set(handles.figure1,'Name',figString);
+    
 % If process does not exist, create a default one in user data.
 if isempty(userData.crtProc)
     userData.crtProc = userData.procConstr(userData_main.MD(userData_main.id), ...
                                 userData.crtPackage.outputDirectory_);
 end
+
 
 % Get icon infomation
 userData.questIconData = userData_main.questIconData;
@@ -139,22 +145,31 @@ set(handles.checkbox_applytoall, 'Value', userData_main.applytoall(userData.proc
 
 % ---------------------- Parameter Setup -------------------------
 
+threshMethods = userData.crtProc.getMethods();
+set(handles.popupmenu_thresholdingMethod,'String',{threshMethods(:).name},...
+    'Value',funParams.MethodIndx);
+
 if isempty(funParams.ThresholdValue)
+   
     set(handles.checkbox_auto, 'Value', 1);
+    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','on');
     set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
     if funParams.MaxJump
         set(handles.checkbox_max, 'Value', 1);
         set(handles.edit_jump, 'Enable', 'on', 'String',num2str(funParams.MaxJump));
+    else
+        set(handles.edit_jump, 'Enable', 'off');
     end
+    set(handles.edit_GaussFilterSigma,'String',funParams.GaussFilterSigma);
     nSelectedChannels  = numel(get(handles.listbox_2, 'String'));
     set(handles.listbox_thresholdValues, 'String',...
         num2cell(zeros(1,nSelectedChannels)));
     userData.thresholdValue=0;
 else
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
-    set(handles.checkbox_auto, 'Value', 0)
-    set(handles.checkbox_max, 'Enable', 'off') 
-    set(handles.listbox_thresholdValues, 'String', num2cell(funParams.ThresholdValue))
+    set(handles.checkbox_auto, 'Value', 0);
+    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on');
+    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
+    set(handles.listbox_thresholdValues, 'String', num2cell(funParams.ThresholdValue));
     userData.thresholdValue=funParams.ThresholdValue(1);
 end
 
@@ -241,6 +256,12 @@ if isempty(get(handles.listbox_2, 'String'))
 end
 
 if get(handles.checkbox_auto, 'value')
+    if isnan(str2double(get(handles.edit_GaussFilterSigma, 'String'))) ...
+            || str2double(get(handles.edit_GaussFilterSigma, 'String')) < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_GaussFilterSigma,'String') '''.'],'Setting Error','modal');
+        return;
+    end
     if get(handles.checkbox_max, 'Value')
         % If both checkbox are checked
         if isnan(str2double(get(handles.edit_jump, 'String'))) ...
@@ -290,6 +311,8 @@ funParams.ChannelIndex = channelIndex;
 if get(handles.checkbox_auto, 'value')
     % if automatic thresholding
     funParams.ThresholdValue = [ ];
+    funParams.MethodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
+    funParams.GaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma,'String'));
     if get(handles.checkbox_max, 'value')
         funParams.MaxJump = str2double(get(handles.edit_jump,'String'));
     else
@@ -519,14 +542,19 @@ function checkbox_auto_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkbox_auto
 switch get(hObject, 'Value')
     case 0
+        set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
         set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
-        set(handles.checkbox_max, 'Enable', 'off', 'Value', 0);
-        set(handles.edit_jump, 'Enable', 'off');
+        set(handles.checkbox_max, 'Value', 0);
         set(handles.checkbox_applytoall, 'Value',0);
         update_data(hObject,eventdata,handles);
     case 1
-        set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off') 
-        set(handles.checkbox_max, 'Enable', 'on');           
+        set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','on');
+        set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off'); 
+        if ~get(handles.checkbox_max,'Value'), set(handles.edit_jump,'Enable','off'); end
+        userData = get(handles.figure1, 'UserData');
+        if ~isfield(userData, 'previewFig') || ishandle(userData.previewFig)
+            delete(userData.previewFig);
+        end
 end
 
 
@@ -558,28 +586,16 @@ switch get(hObject, 'value')
 end
 
 
-
-
 % --- Executes on key press with focus on pushbutton_done and none of its controls.
 function pushbutton_done_KeyPressFcn(hObject, eventdata, handles)
-% hObject    handle to pushbutton_done (see GCBO)
-% eventdata  structure with the following fields (see UICONTROL)
-%	Key: name of the key that was pressed, in lower case
-%	Character: character interpretation of the key(s) that was pressed
-%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
-% handles    structure with handles and user data (see GUIDATA)
+
 if strcmp(eventdata.Key, 'return')
     pushbutton_done_Callback(handles.pushbutton_done, [], handles);
 end
 
 % --- Executes on key press with focus on figure1 and none of its controls.
 function figure1_KeyPressFcn(hObject, eventdata, handles)
-% hObject    handle to figure1 (see GCBO)
-% eventdata  structure with the following fields (see FIGURE)
-%	Key: name of the key that was pressed, in lower case
-%	Character: character interpretation of the key(s) that was pressed
-%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
-% handles    structure with handles and user data (see GUIDATA)
+
 if strcmp(eventdata.Key, 'return')
     pushbutton_done_Callback(handles.pushbutton_done, [], handles);
 end
