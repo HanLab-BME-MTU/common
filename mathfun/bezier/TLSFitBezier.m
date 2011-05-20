@@ -56,19 +56,20 @@ m = size(X,1);
 t = linspace(0,1,m)';
 
 % Solve the non-linear optimization on t
-Cnj = arrayfun(@(j) nchoosek(n,j), 0:n);
-[t, ~, res] = lsqnonlin(@(t) r(t, X, Cnj, n), t, zeros(size(t)), ones(size(t)), opts);
+Cnk = diag([1 cumprod(n:-1:1) ./ cumprod(1:n)]);
+fun = @(t) r(t, X, Cnk, n);
+[t, ~, res] = lsqnonlin(fun, t, zeros(size(t)), ones(size(t)), opts);
 
 % Compute the control points
-B = bsxfun(@times, bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0), Cnj);
+B = (bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0)) * Cnk;
 x = B \ X(:,1);
 y = B \ X(:,2);
 P = [x y];
 
-function F = r(t, X, Cnj, n)
+function F = r(t, X, Cnk, n)
     
-% Compute Berstein Matrix
-B = bsxfun(@times, bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0), Cnj);
+% Compute Bernstein Matrix
+B = (bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0)) * Cnk;
 
 % Compute the QR decomposition of B
 % Q1 is a m x (n+1) matrix
@@ -78,4 +79,5 @@ Q1 = qr(B,0);
 % Q2 * Q2' is a m x m matrix
 Q2Q2t = eye(numel(t)) - Q1 * Q1';
 
-F = sqrt((Q2Q2t * X(:,1)).^2 + (Q2Q2t * X(:,2)).^2);
+F = sqrt(sum((Q2Q2t * X).^2,2));
+

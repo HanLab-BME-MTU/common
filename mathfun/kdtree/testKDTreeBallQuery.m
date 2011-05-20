@@ -1,6 +1,6 @@
 function testKDTreeBallQuery
 
-X = rand(100000,2);
+X = rand(1000000,2);
 C = [.5 .5];
 R = .2;
 
