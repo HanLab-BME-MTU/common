@@ -1,9 +1,9 @@
-function [trackType,xyzVel,noiseStd,trackCenter,trackMeanDisp,trackScheme,...
+function [trackType,xyzVel,noiseStd,trackCenter,trackMeanDisp,motionDir,...
     errFlag] = estimTrackTypeParamEndosomes(trackedFeatIndx,trackedFeatInfo,...
     kalmanFilterInfo,lenForClassify,probDim)
 %ESTIMTRACKTYPEPARAMLM2 ...
 %
-%SYNOPSIS [trackType,xyzVel,noiseStd,trackCenter,trackScheme,...
+%SYNOPSIS [trackType,xyzVel,noiseStd,trackCenter,motionDir,...
 %    errFlag] = estimTrackTypeParamLM(trackedFeatIndx,trackedFeatInfo,...
 %    kalmanFilterInfo,lenForClassify,probDim)
 %
@@ -32,10 +32,10 @@ function [trackType,xyzVel,noiseStd,trackCenter,trackMeanDisp,trackScheme,...
 %       noiseStd
 %       trackCenter
 %       trackMeanDisp
-%       trackScheme
+%       motionDir
 %       errFlag         : 0 if function executes normally, 1 otherwise.
 %
-%Khuloud Jaqaman, April 2007
+%Khuloud Jaqaman, May 2011
 
 %% Output
 
@@ -43,14 +43,14 @@ trackType = [];
 xyzVel = [];
 noiseStd = [];
 trackCenter = [];
-trackScheme = [];
+motionDir = [];
 errFlag = 0;
 
 %% Input
 
 %check whether correct number of input arguments was used
-if nargin ~= nargin('estimTrackTypeParamLM2')
-    disp('--estimTrackTypeParamLM2: Incorrect number of input arguments!');
+if nargin ~= nargin('estimTrackTypeParamEndosomes')
+    disp('--estimTrackTypeParamEndosomes: Incorrect number of input arguments!');
     return
 end
 
@@ -65,7 +65,7 @@ xyzVel = zeros(numTracksLink,probDim);
 noiseStd = zeros(numTracksLink,1);
 trackCenter = zeros(numTracksLink,probDim);
 trackMeanDisp = NaN(numTracksLink,1);
-trackScheme = 3*ones(numTracksLink,2);
+motionDir = zeros(numTracksLink,probDim,2);
 
 %get the start times, end times and lifetimes of all tracks
 trackSEL = getTrackSEL(trackedFeatInfo);
@@ -148,13 +148,37 @@ for iTrack = 1 : numTracksLink
                 iTrack)).noiseVar(1,1,trackedFeatIndx(iTrack,...
                 trackEndTime(iTrack))));
             
-            %assign track scheme
-            trackScheme(iTrack,:) = [kalmanFilterInfo(trackStartTime(...
+            %assign motion direction at start
+            trackScheme = kalmanFilterInfo(trackStartTime(...
                 iTrack)).scheme(trackedFeatIndx(iTrack,...
-                trackStartTime(iTrack)),2) ...
-                kalmanFilterInfo(trackEndTime(...
+                trackStartTime(iTrack)),2);
+            switch trackScheme
+                case 1 %forward
+                    velMag = sqrt(sum(xyzVel(iTrack,:).^2));
+                    motionDir(iTrack,:,1) = xyzVel(iTrack,:)/velMag;
+                case 2 %backward
+                    velMag = sqrt(sum(xyzVel(iTrack,:).^2));
+                    motionDir(iTrack,:,1) = -xyzVel(iTrack,:)/velMag;
+                case 3
+                    %do nothing, since default is zero, indicating no
+                    %direction
+            end
+            
+            %assign motion direction at end
+            trackScheme = kalmanFilterInfo(trackEndTime(...
                 iTrack)).scheme(trackedFeatIndx(iTrack,...
-                trackEndTime(iTrack)),1)];
+                trackEndTime(iTrack)),1);
+            switch trackScheme
+                case 1 %forward
+                    velMag = sqrt(sum(xyzVel(iTrack,:).^2));
+                    motionDir(iTrack,:,2) = xyzVel(iTrack,:)/velMag;
+                case 2 %backward
+                    velMag = sqrt(sum(xyzVel(iTrack,:).^2));
+                    motionDir(iTrack,:,2) = -xyzVel(iTrack,:)/velMag;
+                case 3
+                    %do nothing, since default is zero, indicating no
+                    %direction
+            end
             
         case 0 %if track is Brownian
             
@@ -166,8 +190,7 @@ for iTrack = 1 : numTracksLink
                 iTrack)).noiseVar(1,1,trackedFeatIndx(iTrack,...
                 trackEndTime(iTrack))));
             
-            %force track scheme = 3, which it already has from
-            %initialization
+            %force motion direction = 0, the default
             
         otherwise %if track is undetermined
             
@@ -179,8 +202,7 @@ for iTrack = 1 : numTracksLink
             %and search radius
             noiseStd(iTrack) = 1;
             
-            %force track scheme = 3, which it already has from
-            %initialization
+            %force motion direction = 0, the default
             
     end %(switch overallType)
     

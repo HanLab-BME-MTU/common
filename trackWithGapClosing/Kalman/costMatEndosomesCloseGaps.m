@@ -144,7 +144,7 @@ function [costMat,nonlinkMarker,indxMerge,numMerge,indxSplit,numSplit,...
 %
 %REMARKS
 %
-%Khuloud Jaqaman, April 2007
+%Khuloud Jaqaman, May 2011
 
 %% Output
 
@@ -254,16 +254,16 @@ end
 
 %determine the types, velocities, noise stds, centers, mean displacements
 %and state and end schemes of all tracks
-[trackType,xyzVel,noiseStd,trackCenter,trackMeanDisp,trackScheme] = ...
+[trackType,xyzVel,noiseStd,trackCenter,trackMeanDisp,motionDir] = ...
     estimTrackTypeParamEndosomes(trackedFeatIndx,trackedFeatInfo,...
     kalmanFilterInfo,lenForClassify,probDim);
 
 %if by chance some tracks are labeled linear when linearMotion=0, make them
 %not linear
-%also make their trackScheme all 3
+%also make their motion direction 0
 if linearMotion ~= 1
     trackType(trackType==1) = 0;
-    trackScheme(:) = 3;
+    motionDir(:) = 0;
 end
 
 %find the 10th percentile of the noise standard deviation in order to use
@@ -288,11 +288,13 @@ meanDispAllTracks = nanmean(trackMeanDisp);
 %determine the search areas of all tracks
 [longVecSAll,longVecEAll,shortVecSAll,shortVecEAll,shortVecS3DAll,...
     shortVecE3DAll,longVecSAllMS,longVecEAllMS,shortVecSAllMS,shortVecEAllMS,...
-    shortVecS3DAllMS,shortVecE3DAllMS] = getAveDispEllipseAll2(xyzVel,...
-    noiseStd,trackType,undetBrownStd,timeWindow,brownStdMult,linStdMult,...
-    timeReachConfB,timeReachConfL,minSearchRadius,maxSearchRadius,...
-    useLocalDensity,closestDistScale,maxStdMult,nnDistLinkedFeat,nnWindow,...
-    trackStartTime,trackEndTime,probDim,resLimit,brownScaling,linScaling);
+    shortVecS3DAllMS,shortVecE3DAllMS,longRedVecSAll,longRedVecEAll,...
+    longRedVecSAllMS,longRedVecEAllMS] = getAveDispEllipseAllEndosomes(...
+    xyzVel,noiseStd,trackType,undetBrownStd,timeWindow,brownStdMult,...
+    linStdMult,timeReachConfB,timeReachConfL,minSearchRadius,...
+    maxSearchRadius,useLocalDensity,closestDistScale,maxStdMult,...
+    nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime,probDim,...
+    resLimit,brownScaling,linScaling);
 
 %% Gap closing
 
@@ -374,12 +376,30 @@ for iPair = 1 : numPairs
     trackTypeS = trackType(iStart);
     trackTypeE = trackType(iEnd);
     
+    %calculate the vector connecting the end of track iEnd to the
+    %start of track iStart and compute its magnitude
+    dispVec = coordEnd(iEnd,:) - coordStart(iStart,:);
+    dispVecMag = norm(dispVec);
+    
+    %determine whether the connecting vector is parallel or anti-parallel
+    %to the tracks' directions of motion
+    parallelToS = (dispVec * motionDir(iStart,:,1)') > 0;
+    parallelToE = (dispVec * motionDir(iEnd,:,1)') > 0;
+
     %determine the search area of track iStart
-    longVecS = longVecSAll(:,timeGap,iStart);
+    if parallelToS
+        longVecS = longVecSAll(:,timeGap,iStart);
+    else
+        longVecS = longRedVecSAll(:,timeGap,iStart);
+    end
     shortVecS = shortVecSAll(:,timeGap,iStart);
 
     %determine the search area of track iEnd
-    longVecE = longVecEAll(:,timeGap,iEnd);
+    if parallelToE
+        longVecE = longVecEAll(:,timeGap,iEnd);
+    else
+        longVecE = longRedVecEAll(:,timeGap,iEnd);
+    end
     shortVecE = shortVecEAll(:,timeGap,iEnd);
 
     %calculate the magnitudes of the long and short search vectors
@@ -388,12 +408,7 @@ for iPair = 1 : numPairs
     shortVecMagS = norm(shortVecS);
     longVecMagE = norm(longVecE);
     shortVecMagE = norm(shortVecE);
-
-    %calculate the vector connecting the end of track iEnd to the
-    %start of track iStart and compute its magnitude
-    dispVec = coordEnd(iEnd,:) - coordStart(iStart,:);
-    dispVecMag = norm(dispVec);
-
+    
     %project the connecting vector onto the long and short vectors
     %of track iStart and take absolute value
     projStartLong = abs(dispVec * longVecS) / longVecMagS;
@@ -761,20 +776,28 @@ if mergeSplit > 0
                 iEnd = indxEnd2(iPair);
                 iMerge = indxMerge2(iPair);
 
-                %determine the search ellipse of track iEnd
-                longVecE = longVecEAllMS(:,1,iEnd);
-                shortVecE = shortVecEAllMS(:,1,iEnd);
-
-                %calculate the magnitudes of the long and short search vectors
-                %of the end
-                longVecMagE = sqrt(longVecE' * longVecE);
-                shortVecMagE = sqrt(shortVecE' * shortVecE);
-
                 %calculate the vector connecting the end of track iEnd to the
                 %point of merging and compute its magnitude
                 dispVec = coordEnd(iEnd,:) - full(trackedFeatInfo(iMerge,...
                     timeIndx+1:timeIndx+probDim));
                 dispVecMag = sqrt(dispVec * dispVec');
+                
+                %determine whether the connecting vector is parallel or anti-parallel
+                %to the ending track's directions of motion
+                parallelToE = (dispVec * motionDir(iEnd,:,1)') > 0;
+                
+                %determine the search area of track iEnd
+                if parallelToE
+                    longVecE = longVecEAllMS(:,1,iEnd);
+                else
+                    longVecE = longRedVecEAllMS(:,1,iEnd);
+                end
+                shortVecE = shortVecEAllMS(:,1,iEnd);
+                
+                %calculate the magnitudes of the long and short search vectors
+                %of the end
+                longVecMagE = sqrt(longVecE' * longVecE);
+                shortVecMagE = sqrt(shortVecE' * shortVecE);
 
                 %project the connecting vector onto the long and short vectors
                 %of track iEnd and take absolute value
@@ -1015,20 +1038,28 @@ if mergeSplit > 0
                 iStart = indxStart2(iPair);
                 iSplit = indxSplit2(iPair);
 
-                %determine the search ellipse of track iStart
-                longVecS = longVecSAllMS(:,1,iStart);
-                shortVecS = shortVecSAllMS(:,1,iStart);
+                %calculate the vector connecting the start of track iStart to the
+                %point of splitting and compute its magnitude
+                dispVec = coordStart(iStart,:) - full(trackedFeatInfo(iSplit,...
+                    timeIndx+1:timeIndx+probDim));
+                dispVecMag = sqrt(dispVec * dispVec');
+                
+                %determine whether the connecting vector is parallel or anti-parallel
+                %to the starting track's directions of motion
+                parallelToS = (dispVec * motionDir(iStart,:,1)') > 0;
+                
+                %determine the search area of track iStart
+                if parallelToS
+                    longVecS = longVecSAllMS(:,1,iEnd);
+                else
+                    longVecS = longRedVecSAllMS(:,1,iEnd);
+                end
+                shortVecS = shortVecSAllMS(:,1,iEnd);
 
                 %calculate the magnitudes of the long and short search vectors
                 %of the start
                 longVecMagS = sqrt(longVecS' * longVecS);
                 shortVecMagS = sqrt(shortVecS' * shortVecS);
-
-                %calculate the vector connecting the end of track iStart to the
-                %point of splitting and compute its magnitude
-                dispVec = coordStart(iStart,:) - full(trackedFeatInfo(iSplit,...
-                    timeIndx+1:timeIndx+probDim));
-                dispVecMag = sqrt(dispVec * dispVec');
 
                 %project the connecting vector onto the long and short vectors
                 %of track iStart and take absolute value

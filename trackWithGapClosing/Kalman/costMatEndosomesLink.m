@@ -83,7 +83,7 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %REMARKS Three competing linear motion models: 1, 2 and 3.
 %        1: forward drift, 2: backward drift, 3: zero drift (Brownian).
 %
-%Khuloud Jaqaman, March 2007
+%Khuloud Jaqaman, May 2011
 
 %% Output
 
