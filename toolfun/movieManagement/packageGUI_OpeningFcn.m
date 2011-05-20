@@ -117,7 +117,7 @@ processClassNames = userData.package(1).processClassNames_;
 % Multiple movies loop
 for i = 1:nMovies
 
-    if ~packageIndx{i} && ~isempty(MD(i).processes_)
+    if isempty(packageIndx{i}) && ~isempty(MD(i).processes_)
     
         classname = cellfun(@(z)class(z), MD(i).processes_, 'UniformOutput', false);
 
