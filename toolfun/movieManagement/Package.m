@@ -147,7 +147,7 @@ classdef Package < hgsetget
             procID = ip.Results.procID;
             if strcmp(procID,'all'), procID = 1:nProcesses;end
             
-            validProc = find(~cellfun(@isempty,obj.processes_(procID)));
+            validProc = procID(~cellfun(@isempty,obj.processes_(procID)));
             if full 
                 % I: Check if the process itself has a problem
                 %
@@ -168,7 +168,7 @@ classdef Package < hgsetget
             % A. Process has been successfully run (obj.success_ = true)
             % B. Pamameters are changed (reported by uicontrols in setting
             % panel, and obj.procChanged_ field is 'true')
-            changedProcesses = find(cellfun(@(x) x.success_ && x.procChanged_,obj.processes_(validProc)));
+            changedProcesses = validProc(cellfun(@(x) x.success_ && x.procChanged_,obj.processes_(validProc)));
             for i = changedProcesses                    
                 % Set process's updated=false
                 obj.processes_{i}.setUpdated(false);
