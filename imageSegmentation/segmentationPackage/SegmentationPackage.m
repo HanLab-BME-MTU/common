@@ -1,72 +1,42 @@
 classdef SegmentationPackage < Package
-% A concrete process for Segmentation Package
+    % A concrete process for Segmentation Package
     
-methods (Access = public)
-    function obj = SegmentationPackage (owner,outputDir)
-           % Construntor of class MaskProcess
-           if nargin == 0
-              super_args = {};
-           else
-               % Owner: MovieData object
-               super_args{1} = owner;
-               super_args{2} = 'Segmentation'; 
-               % Dependency Matrix (same length as process class name
-               % string)
-               super_args{3} = SegmentationPackage.getDependencyMatrix;
-                                
-               % Process CLASS NAME string (same length as dependency matrix)
-               % Must be accurate process class name
-               segmentationClasses = {
-                   @ThresholdProcess,...
-                   @MaskRefinementProcess};
-               super_args{4} = cellfun(@func2str,segmentationClasses,...
-                   'UniformOutput',false);
-                            
-               super_args{4} = {'ThresholdProcess',...
-                   'MaskRefinementProcess'};
-                            
-               super_args{5} = [outputDir filesep 'SegmentationPackage'];
+    methods (Access = public)
+        function obj = SegmentationPackage (owner,outputDir)
+            % Construntor of class MaskProcess
+            if nargin == 0
+                super_args = {};
+            else
+                % Owner: MovieData object
+                super_args{1} = owner;
+                super_args{2} = 'Segmentation';
+                % Dependency Matrix (same length as process class name
+                % string)
+                super_args{3} = SegmentationPackage.getDependencyMatrix;
                 
-           end
-           % Call the superclass constructor 
-           obj = obj@Package(super_args{:},'processClassHandles_',segmentationClasses);
+                % Process CLASS NAME string (same length as dependency matrix)
+                % Must be accurate process class name
+                segmentationClasses = {
+                    @ThresholdProcess,...
+                    @MaskRefinementProcess};
+                super_args{4} = cellfun(@func2str,segmentationClasses,...
+                    'UniformOutput',false);
+                
+                super_args{5} = [outputDir filesep 'SegmentationPackage'];
+                
+            end
+            % Call the superclass constructor
+            obj = obj@Package(super_args{:},'processClassHandles_',segmentationClasses);
+        end
+        
     end
-    
-    function processExceptions = sanityCheck(obj,full,procID) % throws Exception Cell Array
-        % Sanity Check
-        % full package panity check: true or false
-        nProcesses = length(obj.processClassNames_);
-            
-        if nargin < 2
-            full = true;
-            procID = 1:nProcesses;
-        end
-            
-        if nargin < 3
-           procID = 1:nProcesses ;
-        end
-            
-        if strcmp(procID,'all')
-            procID = 1:nProcesses;
-        end
-            
-        if any(procID > nProcesses)
-            error('User-defined: process id exceeds number of processes');
-        end
-            
-        processExceptions = obj.checkProcesses(full,procID);  % throws Exception Cell Array
-                     
-    end
-    
-
-end
-methods (Static)
+    methods (Static)
         
         function m = getDependencyMatrix()
             % Get dependency matrix
-               m = [0 0; % SegmentationProcess
-                   1 0]; % MaskRefinementProcess
-        end        
+            m = [0 0; % SegmentationProcess
+                1 0]; % MaskRefinementProcess
+        end
         
         function id = getOptionalProcessId()
             % Get the optional process id
@@ -77,7 +47,7 @@ methods (Static)
             % Start the package GUI
             varargout{1} = segmentationPackageGUI(varargin{:});
         end
-end
+    end
     
 end
 

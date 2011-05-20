@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 15-Apr-2011 12:34:13
+% Last Modified by GUIDE v2.5 19-May-2011 17:30:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -82,32 +82,23 @@ userData.MD = [ ];
 userData.ML = [ ];
 userData.userDir = pwd;
 
-% Generate package GUI list from package list
-userData.packageList={'SegmentationPackage','BiosensorsPackage','UTrackPackage'};
-packageGUIList=regexprep(userData.packageList,'(\<[A-Z])','${lower($1)}');
-packageGUIList=cellfun(@(x) str2func([x 'GUI']),packageGUIList,'UniformOutput',false);
-userData.packageGUI = packageGUIList;
-
-% Check packages availability and load their associated GUIs in userData
-isValidPackage=logical(cellfun(@(x) exist(x,'class'),userData.packageList));
+% Check packages availability
+packageRadioButtons  = get(handles.uipanel_package,'Children');
+packageList = get(packageRadioButtons,'UserData');
+isValidPackage=logical(cellfun(@(x) exist(x,'class'),packageList));
 if isempty(isValidPackage), 
     warndlg('No package found! Please make sure you properly added the installation directory to the path (see user''s manual).',...
         'Movie Selector','modal'); 
 end
 
 % Grey out radio buttons corresponding to non-available packages
-invalidRadioButtons = arrayfun(@(x) findobj('Tag',['radiobutton_package_' num2str(x)]),find(~isValidPackage));
+invalidRadioButtons = packageRadioButtons(~isValidPackage);
 set(invalidRadioButtons,'Enable','off');
 
 % Test a package preselection and update the corresponding radio button
 if nargin > 3, 
-    preSelectedPackage=find(strcmp(userData.packageList,varargin{1})); 
-end
-if exist('preSelectedPackage','var')
-    preSelectedIndx= num2str(preSelectedPackage);
-    if ~isempty(preSelectedIndx)
-        set(findobj('Tag',['radiobutton_package_' preSelectedIndx]),'Value',1.0);
-    end
+    preSelectedPackage=strcmp(packageList,varargin{1}); 
+    set(packageRadioButtons(preSelectedPackage),'Value',1.0);
 end
 
 % Load help icon from dialogicons.mat
@@ -117,7 +108,7 @@ supermap(1,:) = get(hObject,'color');
 userData.colormap = supermap;
 userData.questIconData = questIconData;
 
-axes(handles.axes_help);
+set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(questIconData);
 set(hObject,'colormap',supermap);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
@@ -168,10 +159,8 @@ end
 
 % Retrieve the ID of the selected button and call the appropriate
 userData = get(handles.figure1, 'userdata');
-selectedPackageTag=get(get(handles.uipanel_package, 'SelectedObject'), 'tag');
-packageID=str2double(selectedPackageTag(end));
-
-userData.packageGUI{packageID}(userData.MD);
+selectedPackage=get(get(handles.uipanel_package, 'SelectedObject'),'UserData');
+packageGUI(selectedPackage,userData.MD);
 
 delete(handles.figure1);
 
@@ -288,54 +277,6 @@ end
 userData.newFig = movieDataGUI(userData.MD(get(handles.listbox_movie, 'value')));
 set(handles.figure1,'UserData',userData);
 
-
-function uipanel_package_SelectionChangeFcn(hObject, eventdata)
-
-% function userfcn_display(handles, method)
-% Function to enable/disable uicontrols
-
-% userData = get(handles.figure1,'UserData');
-
-% switch method
-%     case 'method1'
-        
-        % Enable 'New Movie Data'
-%         set(handles.pushbutton_new, 'Enable', 'on')
-%          set(handles.pushbutton_detail, 'Enable', 'on')
-%         set(handles.pushbutton_delete, 'Enable', 'on')
-%         set(handles.listbox_movie, 'Enable', 'on', 'BackgroundColor','white');
-
-        
-        % Disable 'Existing Movie Data'
-%         set(handles.pushbutton_open, 'Enable', 'off')
-%         set(handles.pushbutton_detail_load, 'Enable', 'off')
-%         set(handles.listbox_load, 'Enable', 'off', 'BackgroundColor',[.95 .95 .95]);  
-        
-%         set(handles.pushbutton_done,'string','Save & Apply');
-       
-        
-%     case 'method2'
-        
-        % Enable 'Existing Movie Data'
-%         set(handles.pushbutton_open, 'Enable', 'on')
-%         set(handles.pushbutton_detail_load, 'Enable', 'on')
-%         set(handles.listbox_load, 'Enable', 'on', 'BackgroundColor','white');
-        
-        % Disable 'New Movie Data'
-%         set(handles.pushbutton_new, 'Enable', 'off')
-%         set(handles.pushbutton_detail, 'Enable', 'off')
-%         set(handles.pushbutton_delete, 'Enable', 'off')
-%         set(handles.listbox_movie, 'Enable', 'off', 'BackgroundColor',[.95 .95 .95])
-        
-%         set(handles.pushbutton_done,'string','Apply');
-       
-        
-%     otherwise
-%         error('User-defined: Error using function userfcn_display')
-% end
-            
-
-
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
 % Delete function
@@ -344,9 +285,9 @@ userData = get(handles.figure1, 'UserData');
 
 % Delete new window
 if isfield(userData, 'newFig')
-        if userData.newFig~=0 && ishandle(userData.newFig)
-            delete(userData.newFig)
-        end
+    if userData.newFig~=0 && ishandle(userData.newFig)
+        delete(userData.newFig)
+    end
 end
 
 if isfield(userData, 'iconHelpFig') && ishandle(userData.iconHelpFig)
@@ -358,7 +299,6 @@ end
 if isfield(userData, 'relocateFig') && ishandle(userData.relocateFig)
    delete(userData.relocateFig)
 end
-
 
 
 % --- Executes on button press in pushbutton_open.
@@ -677,3 +617,13 @@ end
 % Run the save method (should launch the dialog box asking for the object 
 % path and filename)
 ML.save();
+
+
+% --- Executes when selected object is changed in uipanel_package.
+function uipanel_package_SelectionChangeFcn(hObject, eventdata, handles)
+% hObject    handle to the selected object in uipanel_package 
+% eventdata  structure with the following fields (see UIBUTTONGROUP)
+%	EventName: string 'SelectionChanged' (read only)
+%	OldValue: handle of the previously selected object or empty if none was selected
+%	NewValue: handle of the currently selected object
+% handles    structure with handles and user data (see GUIDATA)

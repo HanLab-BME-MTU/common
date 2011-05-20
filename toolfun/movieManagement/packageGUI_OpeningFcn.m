@@ -15,7 +15,7 @@ function packageGUI_OpeningFcn(hObject,eventdata,handles,packageName,varargin)
 %       userData.dependM - dependency matrix
 %       userdata.statusM - GUI status matrix
 %       userData.optProcID - optional process ID
-%       userData.applytoall - array of boolean
+%       userData.applytoall - array of boolean for batch movie set up
 %
 %       userData.passIconData - pass icon image data
 %       userData.errorIconData - error icon image data
@@ -66,7 +66,6 @@ handles.output = hObject;
 userData = get(handles.figure1,'UserData');
 userData.packageName = packageName;
 
-userData.optProcID =eval([userData.packageName,'.getOptionalProcessId']);
 
 % Call package GUI error
 
@@ -86,36 +85,27 @@ end
 
 % MD = varargin{2};
 nMovies = numel(MD);
-packageExist = zeros(1, nMovies);
+packageIndx = cell(1, nMovies);
+
 % I. Before loading MovieData, firstly check if the current package exists
-
-
-for x = 1:nMovies
-    
-    packageExist(x) = false;
-
-    for i = 1: length(MD(x).packages_)
-        if isa(MD(x).packages_{i}, packageName)
-
-            userData.package(x) = MD(x).packages_{i};
-            packageExist(x) = true;
-            break;
+for i = 1:nMovies
+    % Check for existing packages and create them if false
+    packageIndx{i} = find(cellfun(@(x) isa(x,packageName),MD(i).packages_),1);
+    if packageIndx{i}
+        userData.package(i) = MD(i).packages_{packageIndx{i}};
+    else
+        MD(i).addPackage(packageHandle(MD(i), MD(i).outputDirectory_));
+        userData.package(i) = MD(i).packages_{end};
+        % Sanity check to check basic dependencies are satisfied
+        try
+            userData.package(i).sanityCheck(true,'all');
+        catch ME
+            errordlg(ME.message);
+            userData.startMovieSelectorGUI=true;
+            set(handles.figure1,'UserData',userData);
+            guidata(hObject, handles);
+            return
         end
-    end
-    
-    if ~packageExist(x)
-        % No same package is found.. create a new package object
-        MD(x).addPackage(packageHandle(MD(x), MD(x).outputDirectory_));
-        userData.package(x) = MD(x).packages_{end};
-    end
-    try
-        userData.package(x).sanityCheck;
-    catch ME
-        errordlg(ME.message);
-        userData.startMovieSelectorGUI=true;
-        set(handles.figure1,'UserData',userData);
-        guidata(hObject, handles);
-        return
     end
 end
 
@@ -125,11 +115,11 @@ existProcess = cell(1, nMovies);
 processClassNames = userData.package(1).processClassNames_;
 
 % Multiple movies loop
-for x = 1:nMovies
+for i = 1:nMovies
 
-    if ~packageExist(x) && ~isempty(MD(x).processes_)
+    if ~packageIndx{i} && ~isempty(MD(i).processes_)
     
-        classname = cellfun(@(z)class(z), MD(x).processes_, 'UniformOutput', false);
+        classname = cellfun(@(z)class(z), MD(i).processes_, 'UniformOutput', false);
 
         existProcessForm = cellfun(@(z)strcmp(z, classname), processClassNames, 'uniformoutput', false );
         existProcessId = find(cellfun(@(z)any(z), existProcessForm));
@@ -137,8 +127,8 @@ for x = 1:nMovies
         if ~isempty (existProcessId)
             % Get recycle processes 
         
-            for i = existProcessId
-                existProcess{x} = horzcat(existProcess{x},  MD(x).processes_(existProcessForm{i}) );
+            for j = existProcessId
+                existProcess{i} = horzcat(existProcess{i},  MD(i).processes_(existProcessForm{j}) );
             end
 
         end
@@ -172,16 +162,12 @@ if ~isempty(existProcessMovieId)
         
 end
 
-
+% Initialize userdata
 userData.id = 1;
 userData.crtPackage = userData.package(userData.id);
 userData.MD = MD;
-
-% Dependency matrix is defined in Package class
-% Make a copy of dependency matrix here to control enable/disable 
-% machanism in package GUI
-userData.dependM = eval([packageName,'.getDependencyMatrix']);
-
+userData.dependM = userData.package(userData.id).getDependencyMatrix;
+userData.optProcID =userData.package(userData.id).getOptionalProcessId;
 nProc = size(userData.dependM, 1);
 userData.statusM = repmat( struct('IconType', {cell(1,nProc)}, 'Msg', {cell(1,nProc)}, 'Checked', zeros(1,nProc), 'Visited', false), 1, nMovies);
 
@@ -294,7 +280,7 @@ for i = 1: length(userData.MD)
 end
 set(handles.popupmenu_movie, 'String', msg, 'Value', userData.id);
 
-% If only one movie loaded
+% Set option depen
 if length(userData.MD) == 1
     set(handles.checkbox_runall, 'Visible', 'off')
     set(handles.pushbutton_left, 'Enable', 'off')

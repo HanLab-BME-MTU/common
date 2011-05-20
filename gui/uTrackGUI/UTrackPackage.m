@@ -27,34 +27,7 @@ methods (Access = public)
            end
            % Call the superclass constructor 
            obj = obj@Package(super_args{:},'processClassHandles_',uTrackClasses);
-    end
-    
-    function processExceptions = sanityCheck(obj,full,procID) % throws Exception Cell Array
-        % Sanity Check
-        % full package panity check: true or false
-        nProcesses = length(obj.processClassNames_);
-            
-        if nargin < 2
-            full = true;
-            procID = 1:nProcesses;
-        end
-            
-        if nargin < 3
-           procID = 1:nProcesses ;
-        end
-            
-        if strcmp(procID,'all')
-            procID = 1:nProcesses;
-        end
-            
-        if any(procID > nProcesses)
-            error('User-defined: process id exceeds number of processes');
-        end
-            
-        processExceptions = obj.checkProcesses(full,procID);  % throws Exception Cell Array
-                     
-    end
-    
+    end 
 
 end
 methods (Static)

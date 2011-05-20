@@ -66,9 +66,47 @@ classdef Package < hgsetget
                 obj.createTime_ = clock;
             end
         end
-        function processExceptions = checkProcesses(obj, full, procID) 
-            % checkProcesses is called by package's sanitycheck. It returns
-            % a cell array of exceptions. Keep in mind, make sure all process 
+        
+        function [processExceptions, processVisited] = dfs_(obj, ...
+                i,processExceptions,processVisited)
+            processVisited(i) = true;
+            parentIndex = find(obj.depMatrix_(i,:));
+            if isempty(parentIndex), return;  end
+            for j = parentIndex
+                if ~isempty(obj.processes_{j}) && ~processVisited(j)
+                    
+                    [processExceptions, processVisited] = ...
+                        obj.dfs_(j, processExceptions,processVisited);
+                end
+                % If j th process has an exception, add an exception to
+                % the exception list of i th process. Since i th
+                % process depends on the j th process
+                % Exception is created when satisfy:
+                % 1. Process is successfully run in the most recent time
+                % 2. Parent process has error OR parent process does
+                %    not exist
+                if obj.processes_{i}.success_ && ...
+                        ( ~isempty(processExceptions{j}) || isempty(obj.processes_{j}) )
+                    
+                    % Set process's updated=false
+                    obj.processes_{i}.setUpdated (false);
+                    
+                    % Create a dependency error exception
+                    ME = MException('lccb:depe:warn', ...
+                        ['The current step is out of date because step ',num2str(j),'. ',obj.processes_{j}.name_,', which the current step depends on, is out of date.'...
+                        'Please run again to update your result.']);
+                    % Add dependency exception to the ith process
+                    processExceptions{i} = horzcat(processExceptions{i}, ME);
+                end
+            end
+            
+        end
+    end
+    methods (Access = public)
+        
+        function processExceptions = sanityCheck(obj, varargin)
+            % sanityCheck is called by package's sanitycheck. It returns
+            % a cell array of exceptions. Keep in mind, make sure all process
             % objects of processes checked in the GUI exist before running
             % package sanitycheck. Otherwise, it will cause a runtime error
             % which is not caused by algorithm itself.
@@ -87,44 +125,35 @@ classdef Package < hgsetget
             %
             % INPUT:
             %   obj - package object
-            %   full - true   check 1,2,3 steps 
+            %   full - true   check 1,2,3 steps
             %          false  check 2,3 steps
             %   procID - A. Numeric array: id of processes for sanitycheck
-            %            B. String 'all': all processes will do 
-            %                                      sanity check 
+            %            B. String 'all': all processes will do
+            %                                      sanity check
             %
-
+            
             nProcesses = length(obj.processClassNames_);
             processExceptions = cell(1,nProcesses);
             processVisited = false(1,nProcesses);
             
-            if nargin < 2
-                full = true;
-                procID = 1:nProcesses;
-            end
+            ip = inputParser;
+            ip.CaseSensitive = false;
+            ip.addRequired('obj');
+            ip.addOptional('full',true, @(x) islogical(x));
+            ip.addOptional('procID',1:nProcesses,@(x) (isvector(x) && ~any(x>nProcesses)) || strcmp(x,'all'));
+            ip.parse(obj,varargin{:});
             
-            if nargin < 3
-               procID = 1:nProcesses ;
-            end
+            full = ip.Results.full;
+            procID = ip.Results.procID;
+            if strcmp(procID,'all'), procID = 1:nProcesses;end
             
-            if strcmp(procID,'all')
-                procID = 1:nProcesses;
-            end
-            
-            if any(procID > nProcesses)
-                error('User-defined: process id exceeds number of processes');
-            end
-            
-        if full
-            
-            % I: Check if the process itself has a problem
-            %
-            % 1. Process sanity check
-            % 2. Input directory
-            for i = procID
-                if isempty(obj.processes_{i})
-                    continue;
-                else
+            validProc = find(~cellfun(@isempty,obj.processes_(procID)));
+            if full 
+                % I: Check if the process itself has a problem
+                %
+                % 1. Process sanity check
+                % 2. Input directory  
+                for i = validProc
                     try
                         obj.processes_{i}.sanityCheck;
                     catch ME
@@ -132,86 +161,33 @@ classdef Package < hgsetget
                         processExceptions{i} = horzcat(processExceptions{i}, ME);
                     end
                 end
-                
             end
-        end
-        
-            % II:
-            % Determine the pamameters are changed if satisfying the 
+            
+            % II: Determine the parameters are changed if satisfying the
             % following two conditions:
             % A. Process has been successfully run (obj.success_ = true)
             % B. Pamameters are changed (reported by uicontrols in setting
             % panel, and obj.procChanged_ field is 'true')
-            for i = procID
-                if isempty(obj.processes_{i})
-                    continue;
-                else            
-                    if obj.processes_{i}.success_ && ...
-                            obj.processes_{i}.procChanged_
-                        
-                        % Set process's updated=false
-                        obj.processes_{i}.setUpdated (false);
-                        % Create an dependency error exception
-                        ME = MException('lccb:paraChanged:warn',...
-                            'The current step is out of date because the channels or parameters have been changed.');
-                        % Add para exception to the ith process
-                        processExceptions{i} = horzcat(processExceptions{i}, ME);                           
-                    end
-                end 
+            changedProcesses = find(cellfun(@(x) x.success_ && x.procChanged_,obj.processes_(validProc)));
+            for i = changedProcesses                    
+                % Set process's updated=false
+                obj.processes_{i}.setUpdated(false);
+                % Create an dependency error exception
+                ME = MException('lccb:paraChanged:warn',...
+                    'The current step is out of date because the channels or parameters have been changed.');
+                % Add para exception to the ith process
+                processExceptions{i} = horzcat(processExceptions{i}, ME);
             end
             
             % III: Check if the processes that current process depends
-            % on have problems   
-            for i = procID
-                if isempty(obj.processes_{i})
-                    continue;
-                elseif ~processVisited(i)
-                   [processExceptions, processVisited]= ...
-                            obj.dfs_(i, processExceptions, processVisited);
+            % on have problems
+            for i = validProc
+                if ~processVisited(i)
+                    [processExceptions, processVisited]= ...
+                        obj.dfs_(i, processExceptions, processVisited);
                 end
             end
         end
-
-    
-        function [processExceptions, processVisited] = dfs_(obj, ...
-                i,processExceptions,processVisited)
-            processVisited(i) = true;
-            parentIndex = find(obj.depMatrix_(i,:));
-            if isempty(parentIndex)
-                return;
-            end
-            for j = parentIndex
-                if ~isempty(obj.processes_{j}) && ~processVisited(j)
-                        
-                     [processExceptions, processVisited] = ...
-                    obj.dfs_(j, processExceptions,processVisited);
-                end
-                % If j th process has an exception, add an exception to
-                % the exception list of i th process. Since i th
-                % process depends on the j th process
-                % Exception is created when satisfy:
-                % 1. Process is successfully run in the most recent time
-                % 2. Parent process has error OR parent process does
-                %    not exist
-                if obj.processes_{i}.success_ && ...
-                        ( ~isempty(processExceptions{j}) || isempty(obj.processes_{j}) )
-                    
-                    % Set process's updated=false
-                    obj.processes_{i}.setUpdated (false);
-                    
-                    % Create a dependency error exception
-                    ME = MException('lccb:depe:warn', ...
-                            ['The current step is out of date because step ',num2str(j),'. ',obj.processes_{j}.name_,', which the current step depends on, is out of date.'...
-                             'Please run again to update your result.']);
-                    % Add dependency exception to the ith process
-                    processExceptions{i} = ...
-                            horzcat(processExceptions{i}, ME); 
-                end
-            end
-            
-        end
-    end
-    methods (Access = public)
         
         function setDepMatrix(obj,row,col,value)
             % row and col could be array
@@ -234,9 +210,6 @@ classdef Package < hgsetget
         
     end
         
-    methods (Abstract)
-        sanityCheck(obj)
-    end
 
     methods(Static,Abstract)
         start
