@@ -73,11 +73,13 @@ B = (bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0)) * Cnk;
 
 % Compute the QR decomposition of B
 % Q1 is a m x (n+1) matrix
-Q1 = qr(B,0);
+%Q1 = qr(B,0);
 
 % Q2 is a m x (m - n + 1) matrix
 % Q2 * Q2' is a m x m matrix
-Q2Q2t = eye(numel(t)) - Q1 * Q1';
+%Q2Q2t = eye(numel(t)) - Q1 * Q1';
 
-F = sqrt(sum((Q2Q2t * X).^2,2));
+PP = eye(numel(t)) - B * pinv(B);
+
+F = sqrt(sum((PP * X).^2,2));
 
