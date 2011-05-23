@@ -510,10 +510,17 @@ classdef  MovieData < hgsetget
            flag=1;
         end
         
+        
         function setFig = edit(obj)
             setFig = movieDataGUI(obj);
         end
 
+        function reset(obj)
+            % Reset the movieData object
+            obj.processes_=[];
+            obj.packages_=[];
+        end
+        
     end
     methods(Static)
         function checkValue=checkValue(property,value)

@@ -22,7 +22,7 @@ function varargout = segmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help segmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 19-Apr-2011 16:54:06
+% Last Modified by GUIDE v2.5 23-May-2011 14:10:02
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -97,8 +97,8 @@ userData.crtPackage = userData_main.crtPackage;
 userData.crtProc = userData.crtPackage.processes_{userData.procID};
 
 % Get current process constructor
-crtProcClassName = userData.crtPackage.processClassNames_{userData.procID};
-userData.procConstr = str2func(crtProcClassName);
+userData.procConstr = @SegmentationProcess;
+crtProcClassName = func2str(userData.procConstr);
 crtProcName = eval([crtProcClassName '.getName']);
 procString = [' Step ' num2str(userData.procID) ': ' crtProcName];
 set(handles.text_processName,'String',procString);
@@ -108,7 +108,7 @@ set(handles.figure1,'Name',figString);
 % Get current process constructer, set-up GUIs and mask refinement process
 % constructor
      
-
+userData.procConst = eval([crtProcClassName '.getMethods']);
 userData.procSetting = {@thresholdProcessGUI};
 userData.procName = {'ThresholdProcess'};                  
 userData.procConstr = {@ThresholdProcess};
@@ -124,7 +124,7 @@ userData.colormap = userData_main.colormap;
 
 % ---------------------- Channel and Parameter Setup  -------------------
 
-set(handles.popupmenu_1, 'String', popupMenuProcName)
+set(handles.popupmenu_segmentationMethods, 'String', popupMenuProcName)
 
 % Set up available input channels
 set(handles.listbox_1, 'String', {userData.MD.channels_.channelPath_},...
@@ -137,7 +137,7 @@ if isempty(userData.crtProc)
         'Userdata', 1);
     
     % Set up pop-up menu
-    set(handles.popupmenu_1, 'Value', length(get(handles.popupmenu_1, 'String')))
+    set(handles.popupmenu_segmentationMethods, 'Value', length(get(handles.popupmenu_segmentationMethods, 'String')))
     
 else
     
@@ -149,17 +149,9 @@ else
         'Userdata',funParams.ChannelIndex);
     
 
-    set(handles.popupmenu_1, 'Value', find(strcmp(userData.procName, class(userData.crtProc))) )
-
-    
-    set(handles.pushbutton_set_1, 'Enable', 'on')
-    
-    % Set up post-processing
-    if isempty(userData.crtProc.maskRefineProcess_)
-        
-       set(handles.checkbox_post, 'Value', 0)
-       set(handles.pushbutton_set_2, 'Enable', 'off')
-    end
+    set(handles.popupmenu_segmentationMethods, 'Value', find(strcmp(userData.procName, class(userData.crtProc))) )
+ 
+    set(handles.pushbutton_set, 'Enable', 'on')
     
 end
 
@@ -199,22 +191,15 @@ function varargout = segmentationProcessGUI_OutputFcn(hObject, eventdata, handle
 varargout{1} = handles.output;
 
 
-% --- Executes on button press in pushbutton_preview.
-function pushbutton_preview_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_preview (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
 % --- Executes on button press in pushbutton_done.
 function pushbutton_done_Callback(hObject, eventdata, handles)
 % Call back function of 'Apply' button
 userData = get(handles.figure1, 'UserData');
 userData_main = get(userData.mainFig, 'UserData');
 
-id = get(handles.popupmenu_1, 'Value');
+id = get(handles.popupmenu_segmentationMethods, 'Value');
 
-if id == length(get(handles.popupmenu_1, 'String'))
+if id == length(get(handles.popupmenu_segmentationMethods, 'String'))
     errordlg('Please select a method to segment your data.','Setting Error','modal')
     return 
 end
@@ -505,31 +490,28 @@ function pushbutton_cancel_Callback(hObject, eventdata, handles)
 delete(handles.figure1);
 
 
-% --- Executes on selection change in popupmenu_1.
-function popupmenu_1_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu_1 (see GCBO)
+% --- Executes on selection change in popupmenu_segmentationMethods.
+function popupmenu_segmentationMethods_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_segmentationMethods (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_1 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu_1
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_segmentationMethods contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_segmentationMethods
 content = get(hObject, 'string');
 if get(hObject, 'Value') == length(content)
-    set(handles.pushbutton_set_1, 'Enable', 'off')
+    set(handles.pushbutton_set, 'Enable', 'off')
 else
-    set(handles.pushbutton_set_1, 'Enable', 'on')
+    set(handles.pushbutton_set, 'Enable', 'on')
 end
 
-% --- Executes on button press in pushbutton_set_1.
-function pushbutton_set_1_Callback(hObject, eventdata, handles)
+% --- Executes on button press in pushbutton_set.
+function pushbutton_set_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
-procID = get(handles.popupmenu_1, 'Value');
-set1Fig = userData.procSetting{procID}('mainFig',handles.figure1,procID);
-userData = get(handles.figure1, 'UserData');
-userData.set1Fig = set1Fig;
-set(handles.figure1, 'UserData', userData);
-guidata(hObject,handles);
+segProcID = get(handles.popupmenu_segmentationMethods, 'Value');
+userData.procSetting{segProcID}('mainFig',userData.mainFig,userData.procID);
+delete(handles.figure1);
 
 
 % --- Executes on button press in checkbox_all.
@@ -621,9 +603,4 @@ userData = get(handles.figure1, 'UserData');
 % Delete setting panel(single)
 if isfield(userData, 'set1Fig') && ishandle(userData.set1Fig)
    delete(userData.set1Fig) 
-end
-
-% Delete post-processing panel(single)
-if isfield(userData, 'set2Fig') && ishandle(userData.set2Fig)
-   delete(userData.set2Fig) 
 end

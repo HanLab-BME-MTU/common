@@ -77,9 +77,9 @@ userData_main = get(userData.mainFig, 'UserData');
 userData.crtPackage = userData_main.crtPackage;
 userData.crtProc = userData.crtPackage.processes_{userData.procID};
 
-% Get current process constructer
-crtProcClassName = userData.crtPackage.processClassNames_{userData.procID};
-userData.procConstr = str2func(crtProcClassName);
+% Current process constructer
+userData.procConstr = @ThresholdProcess;
+crtProcClassName = func2str(userData.procConstr);
 crtProcName = eval([crtProcClassName '.getName']);
 procString = [' Step ' num2str(userData.procID) ': ' crtProcName];
 set(handles.text_processName,'String',procString);
