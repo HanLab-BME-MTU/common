@@ -517,8 +517,8 @@ classdef  MovieData < hgsetget
 
         function reset(obj)
             % Reset the movieData object
-            obj.processes_=[];
-            obj.packages_=[];
+            obj.processes_={};
+            obj.packages_={};
         end
         
     end
