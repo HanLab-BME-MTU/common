@@ -1,4 +1,4 @@
-function Y = render_bezier(P, t)
+function Y = renderBezier(P, t)
 
 n = size(P, 1) - 1;
 B = bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0);
