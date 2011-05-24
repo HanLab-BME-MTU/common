@@ -34,12 +34,16 @@ classdef Package < hgsetget
 
     methods
         function set.outputDirectory_(obj,value)
+            
+            if isequal(obj.outputDirectory_,value), return; end
+            if ~isempty(obj.outputDirectory_), 
+                stack = dbstack;
+                if strcmp(stack(3).name,'MovieData.relocate'),
+                    error(['This channel''s ' propertyName ' has been set previously and cannot be changed!']);
+                end
+            end
             endingFilesepToken = [regexptranslate('escape',filesep) '$'];
             value = regexprep(value,endingFilesepToken,'');
-            stack = dbstack;
-            if strcmp(stack(3).name,'MovieData.relocate'), 
-                error(['This channel''s ' propertyName ' has been set previously and cannot be changed!']);
-            end
             obj.outputDirectory_=value;
         end
     end
