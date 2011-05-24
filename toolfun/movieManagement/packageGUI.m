@@ -59,13 +59,8 @@ if (isfield(userData,'startMovieSelectorGUI') && userData.startMovieSelectorGUI)
     menu_file_open_Callback(hObject, eventdata, handles)
 end
 
-
 % --- Executes on button press in pushbutton_status.
 function pushbutton_status_Callback(~, ~, handles)
-% hObject    handle to pushbutton_status (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 userData = get(handles.figure1, 'UserData');
 
 % if movieDataGUI exist
@@ -125,11 +120,6 @@ end
 
 % --- Executes when user attempts to close figure1.
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
-% hObject    handle to figure1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: delete(hObject) closes the figure
 userData = get(handles.figure1,'Userdata');
 if isfield(userData, 'MD')
     MD = userData.MD;
@@ -261,30 +251,22 @@ set(handles.figure1, 'UserData', userData);
 
 % --- Executes on button press in pushbutton_set.
 function pushbutton_set_Callback(hObject, ~, handles)
-% hObject    handle to pushbutton_set (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 userData = get(handles.figure1, 'UserData');
 prop=get(hObject,'Tag');
 procID = str2double(prop(length('pushbutton_set_')+1:end));
 
-%Guess associated proces GUI from process name
+% Read GUI handle from the associated process static method
 crtProc=userData.crtPackage.processClassNames_{procID};
-% crtProcGUI=str2func([regexprep(crtProc,'(\<[A-Z])','${lower($1)}') 'GUI']);
 crtProcGUI =eval([crtProc '.GUI']);
 
 userData.setFig(procID) = crtProcGUI('mainFig',handles.figure1,procID);
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 
-
 % --- Executes on button press in checkbox.
 function checkbox_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox
 props=get(hObject,{'Value','Tag'});
 procStatus=props{1};
 procID = str2double(props{2}(length('checkbox_')+1:end));
