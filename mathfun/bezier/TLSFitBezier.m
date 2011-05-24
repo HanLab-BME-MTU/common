@@ -44,7 +44,7 @@ tolX = ip.Results.TolX;
 tolFun = ip.Results.TolFun;
 
 % Define options of lsqnonlin algorithm
-opts = optimset('Jacobian', 'off', ...
+opts = optimset('Jacobian', 'on', ...
   'MaxFunEvals', maxFunEvals, ...
   'MaxIter', maxIter, ...
   'Display', display, ...
@@ -57,7 +57,8 @@ t = linspace(0,1,m)';
 
 % Solve the non-linear optimization on t
 Cnk = diag([1 cumprod(n:-1:1) ./ cumprod(1:n)]);
-fun = @(t) r(t, X, Cnk, n);
+Cn_1k = diag([1 cumprod(n-1:-1:1) ./ cumprod(1:n-1)]);
+fun = @(t) r(t, X, Cnk, Cn_1k, n);
 [t, ~, res] = lsqnonlin(fun, t, zeros(size(t)), ones(size(t)), opts);
 
 % Compute the control points
@@ -65,16 +66,35 @@ B = (bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0)) * Cnk;
 [Q1 R11] = qr(B,0);
 P = R11 \ (Q1' * X);
 
-function F = r(t, X, Cnk, n)
+function [F J] = r(t, X, Cnk, Cn_1k, n)
     
+[m dim] = size(X);
+
 % Compute Bernstein Matrix
 B = (bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0)) * Cnk;
 
-% Compute the QR decomposition of B.
-% Note: qr function needs 2 output arguments to behave without ambiguity
-% (see help qr).
-[Q1 ~] = qr(B,0);
-PP = eye(numel(t)) - Q1 * Q1';
+% Compute residual = (Id - Bn * pinv(Bn)) * X
+[Q1 R11 EE] = qr(B,0);
+Q2Q2t = eye(m) - Q1 * Q1';
+r = Q2Q2t * X;
+F = r(:);
 
-F = sqrt(sum((PP * X).^2,2));
+if nargout > 1
+  % Compute the Benstein Matrix of order n-1
+  Bn_1 = (bsxfun(@power, t, 0:n-1) .* bsxfun(@power, 1 - t, n-1:-1:0)) * Cn_1k;
+  
+  % Compute derivative of B against t
+  z = zeros(m,1);
+  Bt = n * ([z Bn_1] - [Bn_1 z]);
+  
+  % Compute P
+  E = zeros(n + 1);
+  E(sub2ind(size(E), EE, 1:(n+1))) = 1;
+  P = Bt * E * (R11 \ Q1');
 
+  % Compute Jacobian Matrix
+  J = zeros(m * dim, m);
+  for d = 1:dim
+    J((d-1) * m + 1:d * m,:) = -(Q2Q2t * diag(P * X(:,d)) + P' * diag(r(:,d)));
+  end
+end

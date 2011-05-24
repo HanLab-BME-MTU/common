@@ -1,9 +1,11 @@
 function testTLSFitBezier(n)
 
-x = 0:pi/20:2 * pi;
-y = sin(x) + rand(size(x)) * .1;
+x = linspace(0,2 * pi, 50);
+y = sin(x) + rand(size(x)) * .5;
 plot(x,y,'ro');
+tic;
 [P, t, res] = TLSFitBezier([x' y'], n);
+toc
 disp(sqrt(sum(res.^2)));
 C = renderBezier(P, t);
 hold on;
