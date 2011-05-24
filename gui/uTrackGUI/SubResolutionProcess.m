@@ -92,8 +92,6 @@ classdef SubResolutionProcess < DetectionProcess
             % Get file name base and digits for enumeration
             [obj.filenameBase_ obj.digits4Enum_] = SubResolutionProcess.getFilenameBody(owner);
             obj.filename_ = 'detection_result.mat';
-            
-            obj.setFunc_ = @subResolutionProcessGUI;
         end    
         
         
@@ -169,6 +167,9 @@ classdef SubResolutionProcess < DetectionProcess
         end    
         function name = getName()
             name = 'Sub-Resolution Detection';
+        end
+        function h = GUI()
+            h = subResolutionProcessGUI;
         end
     end
     

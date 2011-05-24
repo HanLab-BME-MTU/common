@@ -104,6 +104,9 @@ classdef DetectionProcess < ImageAnalysisProcess
         function name = getName()
             name = 'Detection';
         end
+        function h = GUI()
+            h= @detectionProcessGUI;
+        end
     end
 
 end

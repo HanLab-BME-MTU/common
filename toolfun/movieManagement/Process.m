@@ -20,7 +20,6 @@ classdef Process < hgsetget
         funName_        % Function running the process
         funParams_      % Parameters for running the process
         visualParams_   % Visualization parameters    
-        setFunc_        % Handle to the  GUI set the parameters
         
         inFilePaths_    % Path to the process input
         outFilePaths_   % Path to the process output
@@ -114,10 +113,6 @@ classdef Process < hgsetget
             obj.owner_.save;
         end
         
-        function h=set(obj,varargin)
-            % Set the process parameters
-            h = obj.setFunc_(varargin{:});
-        end
         
         function setInFilePaths(obj,paths)
             %  Set input file paths
@@ -142,5 +137,6 @@ classdef Process < hgsetget
     end
     methods (Static,Abstract)
         getName
+        GUI
     end
 end

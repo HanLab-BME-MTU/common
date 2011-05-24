@@ -52,8 +52,6 @@ classdef ShadeCorrectionProcess < ImageCorrectionProcess
             end
             
             obj = obj@ImageCorrectionProcess(super_args{:});
-            obj.setFunc_ = @shadeCorrectionProcessGUI; % FOr analyzability/ to be implemented
-
         end  
         
         function sanityCheck(obj)
@@ -93,7 +91,9 @@ classdef ShadeCorrectionProcess < ImageCorrectionProcess
         function name =getName()
             name = 'Shade Correction';
         end
-        
+        function h = GUI()
+            h= @shadeCorrectionProcessGUI;
+        end
     end
     
 end                                   

@@ -29,7 +29,6 @@ classdef ThresholdProcess < SegmentationProcess
             end
             
             obj = obj@SegmentationProcess(super_args{:});
-            obj.setFunc_ = @thresholdProcessGUI; % FOr analyzability/ to be implemented
         end               
             
     end
@@ -37,7 +36,9 @@ classdef ThresholdProcess < SegmentationProcess
         function name = getName()
             name = 'Thresholding';
         end
-        
+        function h = GUI()
+            h= @thresholdProcessGUI;
+        end
         function methods = getMethods(varargin)
             thresholdingMethods(1).name = 'MinMax';
             thresholdingMethods(1).func = @thresholdFluorescenceImage;
@@ -52,6 +53,7 @@ classdef ThresholdProcess < SegmentationProcess
             index = ip.Results.index;
             methods=thresholdingMethods(index);
         end
+        
     end
         
 end

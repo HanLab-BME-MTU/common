@@ -270,7 +270,8 @@ procID = str2double(prop(length('pushbutton_set_')+1:end));
 
 %Guess associated proces GUI from process name
 crtProc=userData.crtPackage.processClassNames_{procID};
-crtProcGUI=str2func([regexprep(crtProc,'(\<[A-Z])','${lower($1)}') 'GUI']);
+% crtProcGUI=str2func([regexprep(crtProc,'(\<[A-Z])','${lower($1)}') 'GUI']);
+crtProcGUI =eval([crtProc '.GUI']);
 
 userData.setFig(procID) = crtProcGUI('mainFig',handles.figure1,procID);
 set(handles.figure1, 'UserData', userData);

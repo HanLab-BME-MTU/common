@@ -94,6 +94,9 @@ classdef SegmentationProcess < Process
         function name =getName()
             name = 'Segmentation';
         end
+        function h = GUI()
+            h= @segmentationProcessGUI;
+        end
         function methods = getMethods()
             methods = {@Segmentation};
         end

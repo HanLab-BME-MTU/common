@@ -48,14 +48,15 @@ classdef BleedthroughCorrectionProcess < ImageCorrectionProcess
             end
             
             obj = obj@ImageCorrectionProcess(super_args{:});
-            obj.setFunc_ = @bleedthroughCorrectionProcessGUI; % FOr analyzability/ to be implemented
-
         end   
         
     end
     methods (Static)
         function name =getName()
             name = 'Bleedthrough Correction';
+        end
+        function h = GUI()
+            h= @bleedthroughCorrectionProcessGUI;
         end
     end
 

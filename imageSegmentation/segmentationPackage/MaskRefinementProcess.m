@@ -37,13 +37,14 @@ classdef MaskRefinementProcess < MaskProcessingProcess
             end
             
             obj = obj@MaskProcessingProcess(super_args{:});
-            obj.setFunc_ = @maskRefinementProcessGUI; % FOr analyzability/ to be implemented
-
         end                  
     end
     methods(Static)
         function name =getName()
             name = 'Mask Refinement';
+        end
+        function h = GUI()
+            h= @maskRefinementProcessGUI;
         end
     end
 end
