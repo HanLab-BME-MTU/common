@@ -119,20 +119,8 @@ for iFeature = 1:numel(xmin)
     px = floor(floor(size(crop)/2)+1+params(1:2));
     isValid = all(px>=1) & all(px<=size(crop));
     if isValid
-        isValid = mask(px(2),px(1));
+        isValid = mask(px(1),px(2));
     end
-%     w
-%     ct = cos(params(6));
-%     st = sin(params(6));
-%     D1 = abs(params(2) * ct + params(1) * st);
-%     D2 = abs(params(1) * ct + params(2) * st);
-%     % truncate numbers towards zeros with 10 decimals to avoid numerical errors
-%     D1 = fix(D1 * 1e10) * 1e-10;
-%     D2 = fix(D2 * 1e10) * 1e-10;
-%     isValid = (D1 <= hside && D2 <= hside);
-    %     isValid = max(abs(params(1:2))) < hside;
-    % ADD TEST FOR THE VALIDITY OF THE DETECTED COMET
-    % CHECK RANGE + NON-NAN PIXELS
     
     % TEST: sigmaX > 1
     isValid = isValid & params(4) > 1;
