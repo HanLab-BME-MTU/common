@@ -1,10 +1,13 @@
-% featuresInfo = cometDetection(img, mask, sigma, mode)
+% featuresInfo = cometDetection(img, mask, psfSigma, mode)
 %
 % Inputs :      img : input image
 %              mask : cell mask
-%             sigma : standard deviation of the Gaussian PSF
+%             psfSigma : standard deviation of the Gaussian PSF
 %            {mode} : parameters to estimate, default 'xyArtc'
-%           {alpha} : 
+%           {alpha} : alpha-values for statistical test
+%           {kSigma} : alpha-values for statistical test
+%           {minDist} : minimum distance betwen detected features
+%           {filterSigma} : sigma for the steerable filter
 %
 % Outputs:  featuresInfo : output structure with anisotropic Gaussian
 %                          parameters, standard deviations (compatible with
@@ -12,38 +15,40 @@
 %
 % Sylvain Berlemont, April 2011
 
-function featuresInfo = cometDetection(img, mask, sigma, varargin)
+function featuresInfo = cometDetection(img, mask, psfSigma, varargin)
 
 % Parse inputs
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('img', @isnumeric);
 ip.addRequired('mask', @islogical);
-ip.addRequired('sigma', @isscalar);
+ip.addRequired('psfSigma', @isscalar);
 ip.addParamValue('mode', 'xyArtc', @ischar);
 ip.addParamValue('alpha', 0.05, @isscalar);
 ip.addParamValue('kSigma', 3, @isscalar);
 ip.addParamValue('minDist', .25, @isscalar);
+ip.addParamValue('filterSigma',psfSigma*sqrt(2), @isscalar);
 
-ip.parse(img, mask, sigma, varargin{:});
+ip.parse(img, mask, psfSigma, varargin{:});
 mode = ip.Results.mode;
 alpha = ip.Results.alpha;
 kSigma = ip.Results.kSigma;
 minDist = ip.Results.minDist;
+filterSigma =ip.Results.filterSigma;
 
 img = double(img);
 [nrows ncols] = size(img);
 
 % Filter image with laplacian
-bandPassIso = filterLoG(img,sigma);
+bandPassIso = filterLoG(img,psfSigma);
 bandPassIso(bandPassIso < 0) = 0;
 bandPassIso(~mask) = 0;
 
 % Filter image with steerable filter
-[~,T] = steerableFiltering(img,2,sigma);
+[R,T] = steerableFiltering(img,2,filterSigma);
  
 % Compute the local maxima of the bandpass filtered images
-locMaxIso = locmax2d(bandPassIso, [5 5]);
+locMaxIso = locmax2d(R, [5 5]);
  
 bw = blobSegmentThreshold(bandPassIso,0,0,mask);
 
@@ -56,17 +61,30 @@ P = zeros(size(y, 1), 7);
 P(:,1) = x;
 P(:,2) = y;
 P(:,3) = img(indMax);
-P(:,4) = sigma;         % sigmaX
-P(:,5) = sigma;         % sigmaY
+P(:,4) = 2*psfSigma;       % sigmaX
+P(:,5) = psfSigma;         % sigmaY
 P(:,6) = T(indMax);
 
-% Subresolution detection
-hside = ceil(kSigma * sigma);
-npx = (2 * hside + 1)^2;
-xmin = x - hside;
-xmax = x + hside;
-ymin = y - hside;
-ymax = y + hside;
+% % Subresolution detection
+% hside = ceil(kSigma * psfSigma);
+% npx = (2 * hside + 1)^2;
+% xmin = x - hside;
+% xmax = x + hside;
+% ymin = y - hside;
+% ymax = y + hside;
+
+PP =num2cell(P,1);
+
+[xRange,yRange,nzIdx] = arrayfun(@(x0,y0,sigmaX,sigmaY,theta)...
+    anisoGaussian2DSupport(x0,y0,sigmaX,sigmaY,theta,kSigma,[ncols nrows]),...
+    PP{[1 2 4 5 6]},'UniformOutput',false);
+% hside = ceil(kSigma * psfSigma);
+% npx = (2 * hside + 1)^2;
+xmin = cellfun(@min,xRange);
+xmax = cellfun(@max,xRange);
+ymin = cellfun(@min,yRange);
+ymax = cellfun(@max,yRange);
+npx = cellfun(@numel,nzIdx);
 
 isValid = find(xmin >= 1 & xmax <= ncols & ymin >= 1 & ymax <= nrows);
 
@@ -84,8 +102,12 @@ kLevel = norminv(1 - alpha / 2.0, 0, 1); % ~2 std above background
 success = false(numel(xmin),1);
 
 for iFeature = 1:numel(xmin)
-        
+    
+    mask = false(length(yRange{iFeature}),length(xRange{iFeature}));
+    mask(nzIdx{iFeature})=true;
     crop = img(ymin(iFeature):ymax(iFeature), xmin(iFeature):xmax(iFeature));
+    crop(~mask)=NaN;
+    
     P(iFeature,7) = min(crop(:)); % background
     P(iFeature,3) = P(iFeature,3) - P(iFeature,7); % amplitude above background
         
@@ -94,27 +116,43 @@ for iFeature = 1:numel(xmin)
         P(iFeature,6), P(iFeature,7)], mode);
         
     % TEST: position must remain in a confined area
-    isValid = max(abs(params(1:2))) < hside;
+    px = floor(floor(size(crop)/2)+1+params(1:2));
+    isValid = all(px>=1) & all(px<=size(crop));
+    if isValid
+        isValid = mask(px(2),px(1));
+    end
+%     w
+%     ct = cos(params(6));
+%     st = sin(params(6));
+%     D1 = abs(params(2) * ct + params(1) * st);
+%     D2 = abs(params(1) * ct + params(2) * st);
+%     % truncate numbers towards zeros with 10 decimals to avoid numerical errors
+%     D1 = fix(D1 * 1e10) * 1e-10;
+%     D2 = fix(D2 * 1e10) * 1e-10;
+%     isValid = (D1 <= hside && D2 <= hside);
+    %     isValid = max(abs(params(1:2))) < hside;
+    % ADD TEST FOR THE VALIDITY OF THE DETECTED COMET
+    % CHECK RANGE + NON-NAN PIXELS
     
     % TEST: sigmaX > 1
     isValid = isValid & params(4) > 1;
     
     % TEST: goodness-of-fit
-    stdRes = std(res(:));
-    [~, pval] = kstest(res(:) ./ stdRes, [], alpha);
+    stdRes = std(res(~isnan(res)));
+    [~, pval] = kstest(res(~isnan(res)) ./ stdRes, [], alpha);
     isValid = isValid & pval > alpha;
 
     % TEST: amplitude
-    SE_sigma_r = (stdRes / sqrt(2*(npx-1))) * kLevel;
-    sigma_A = stdParams(3);
+    SE_psfSigma_r = (stdRes / sqrt(2*(npx(iFeature)-1))) * kLevel;
+    psfSigma_A = stdParams(3);
     A_est = params(3);
-    df2 = (npx - 1) * (sigma_A.^2 + SE_sigma_r.^2).^2 ./ (sigma_A.^4 + SE_sigma_r.^4);
-    scomb = sqrt((sigma_A.^2 + SE_sigma_r.^2) / npx);
+    df2 = (npx(iFeature) - 1) * (psfSigma_A.^2 + SE_psfSigma_r.^2).^2 ./ (psfSigma_A.^4 + SE_psfSigma_r.^4);
+    scomb = sqrt((psfSigma_A.^2 + SE_psfSigma_r.^2) / npx(iFeature));
     T = (A_est - stdRes * kLevel) ./ scomb;    
     isValid = isValid & (1 - tcdf(T, df2)) < alpha;
   
     % TEST: extreme value of 
-    isValid = isValid & params(4) < 10 * sigma;
+    isValid = isValid & params(4) < 10 * psfSigma;
     
     success(iFeature) = isValid;
     
