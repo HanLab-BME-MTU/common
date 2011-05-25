@@ -217,14 +217,23 @@ indxRemove = setdiff(1:numTrackSegments,indxKeep)';
 tracksRemove = tracks(indxRemove,:);
 tracks = tracks(indxKeep,:);
 
+if isempty(tracks)
+    disp('No tracks to analyze. Exiting ...')
+    return
+end
+
 %retain only the diffusion analysis results of the tracks to keep
 diffAnalysisRes = diffAnalysisRes(indxKeep);
 trackClass = trackClass(indxKeep,:);
 
 %show tracks kept and tracks removed for visual assessment
 if verbose >= 2
-    figure('Name','Removed tracks')
-    plotTracks2D(tracksRemove,[],'2',[],0,0,[],0,0);
+    if ~isempty(tracksRemove)
+        figure('Name','Removed tracks')
+        plotTracks2D(tracksRemove,[],'2',[],0,0,[],0,0);
+    else
+        disp('No tracks removed');
+    end
     figure('Name','Retained tracks to be analyzed')
     plotTracks2D(tracks,[],'2',[],0,0,[],0,0);
     hold on
@@ -282,21 +291,25 @@ for iType = indxGoodType'
         [dummy,posGroups] = trajectoryAnalysisMainCalcStatsFindGroups(dataListG,1);
         
         %calculate run lengths in these intervals
-        tmptmp = [];
-        for iInt = 1 : size(posGroups,1)
-            tmptmp = [tmptmp; sum(dataListG(posGroups(iInt,1):posGroups(iInt,2),9))];
+        if ~isempty(dummy)
+            tmptmp = [];
+            for iInt = 1 : size(posGroups,1)
+                tmptmp = [tmptmp; sum(dataListG(posGroups(iInt,1):posGroups(iInt,2),9))];
+            end
+            runLengthPosTmp = [runLengthPosTmp; tmptmp];
         end
-        runLengthPosTmp = [runLengthPosTmp; tmptmp];
         
         %get intervals toward reference point
         [dummy,negGroups] = trajectoryAnalysisMainCalcStatsFindGroups(dataListG,2);
         
         %calculate run lengths in these intervals
-        tmptmp = [];
-        for iInt = 1 : size(negGroups,1)
-            tmptmp = [tmptmp; sum(dataListG(negGroups(iInt,1):negGroups(iInt,2),9))];
+        if ~isempty(dummy)
+            tmptmp = [];
+            for iInt = 1 : size(negGroups,1)
+                tmptmp = [tmptmp; sum(dataListG(negGroups(iInt,1):negGroups(iInt,2),9))];
+            end
+            runLengthNegTmp = [runLengthNegTmp; -tmptmp];
         end
-        runLengthNegTmp = [runLengthNegTmp; -tmptmp];
         
         %calculate number of transitions in this trajectory
         trajHist = dataListG(:,3);
@@ -331,7 +344,7 @@ awayFromRefPoint = struct('instantSpeed',runTimePos,'runTime',runTimePos,...
     'runLength',runTimePos,'averageSpeed',runTimePos);
 towardRefPoint = awayFromRefPoint;
 pauseInfo = struct('pauseTime',runTimePos);
-reversalInfo = struct('numPerTraj',[]);
+% reversalInfo = struct('numPerTraj',[]);
 for iType = indxGoodType'
     awayFromRefPoint.instantSpeed(iType).values = statsJExpanded(iType).growthSpeeds/60;
     awayFromRefPoint.runTime(iType).values = statsJExpanded(iType).growthTimes;

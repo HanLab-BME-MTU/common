@@ -1,7 +1,8 @@
 function [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D,...
     longVecSMS,longVecEMS,shortVecSMS,shortVecEMS,shortVecS3DMS,...
     shortVecE3DMS,longRedVecS,longRedVecE,longRedVecSMS,longRedVecEMS] = ...
-    getAveDispEllipseAllEndosomes(xyzVel,brownStd,trackType,undetBrownStd,...
+    getAveDispEllipseAllEndosomes(...
+    xyzVel,brownStd,trackType,undetBrownStd,...
     timeWindow,brownStdMult,linStdMult,timeReachConfB,timeReachConfL,...
     minSearchRadius,maxSearchRadius,useLocalDensity,closestDistScale,...
     maxStdMult,nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime,...
@@ -11,7 +12,8 @@ function [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D,...
 %SYNOPSIS [longVecS,longVecE,shortVecS,shortVecE,shortVecS3D,shortVecE3D,...
 %    longVecSMS,longVecEMS,shortVecSMS,shortVecEMS,shortVecS3DMS,...
 %    shortVecE3DMS,longRedVecS,longRedVecE,longRedVecSMS,longRedVecEMS] = ...
-%    getAveDispEllipseAllEndosomes(xyzVel,brownStd,trackType,undetBrownStd,...
+%    getAveDispEllipseAllEndosomes(...
+%    xyzVel,brownStd,trackType,undetBrownStd,...
 %    timeWindow,brownStdMult,linStdMult,timeReachConfB,timeReachConfL,...
 %    minSearchRadius,maxSearchRadius,useLocalDensity,closestDistScale,...
 %    maxStdMult,nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime,...
@@ -158,8 +160,8 @@ timeScalingLinF = [(1:timeReachConfL).^linScaling(1) ...
     (timeReachConfL)^linScaling(1) * (2:timeWindow-timeReachConfL+1).^linScaling(2)];
 
 %put time scaling of backward linear motion in a vector
-timeScalingLinB = [(1:timeReachConfL).^0.5 ...
-    (timeReachConfL)^0.5 * (2:timeWindow-timeReachConfL+1).^linScaling(2)];
+timeScalingLinB = [(1:timeReachConfL).^(linScaling(1)/4) ...
+    (timeReachConfL)^(linScaling(1)/4) * (2:timeWindow-timeReachConfL+1).^linScaling(2)];
 
 %put time scaling of Brownian motion in a vector
 timeScalingBrown = [(1:timeReachConfB).^brownScaling(1) ...
@@ -202,7 +204,7 @@ for iTrack = 1 : numTracks
             %obtain vector(s) perpendicular to direction of motion
             if probDim == 2 %in 2D case, 1 vector needed
                 perpendicular = [-directionMotion(2) directionMotion(1)]';
-            else %in 3D case, 2 vectors are needed
+            else %in 3D case, 2 vectors needed
                 perpendicular = [-directionMotion(2) directionMotion(1) 0]';
                 perpendicular = perpendicular / (sqrt(perpendicular'*perpendicular));
                 perpendicular3D = cross(directionMotion,perpendicular);
@@ -343,13 +345,13 @@ for iTrack = 1 : numTracks
             if probDim == 3
                 shortVecS13D = repmat(shortVecSMagTmp,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
                 shortVecE13D = repmat(shortVecEMagTmp,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
-                shortVecS3D(:,:,iTrack) = shortVecS13D;
-                shortVecE3D(:,:,iTrack) = shortVecE13D;
+                shortVecS3D(:,:,iTrack) = shortVecS13D; %#ok<AGROW>
+                shortVecE3D(:,:,iTrack) = shortVecE13D; %#ok<AGROW>
                 %do the same for merging and splitting
                 shortVecS13DMS = repmat(shortVecSMagTmpMS,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
                 shortVecE13DMS = repmat(shortVecEMagTmpMS,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
-                shortVecS3DMS(:,:,iTrack) = shortVecS13DMS;
-                shortVecE3DMS(:,:,iTrack) = shortVecE13DMS;
+                shortVecS3DMS(:,:,iTrack) = shortVecS13DMS; %#ok<AGROW>
+                shortVecE3DMS(:,:,iTrack) = shortVecE13DMS; %#ok<AGROW>
             end
 
         case 0
@@ -442,10 +444,10 @@ for iTrack = 1 : numTracks
             %them
             if probDim == 3
                 shortVecS13D = repmat(vecMagTmp,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
-                shortVecS3D(:,:,iTrack) = shortVecS13D;
+                shortVecS3D(:,:,iTrack) = shortVecS13D; %#ok<AGROW>
                 %repeat for merging and splitting
                 shortVecS13DMS = repmat(vecMagTmpMS,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
-                shortVecS3DMS(:,:,iTrack) = shortVecS13DMS;
+                shortVecS3DMS(:,:,iTrack) = shortVecS13DMS; %#ok<AGROW>
             end
 
             %get magnitude and direction of both vectors at track ends
@@ -472,10 +474,10 @@ for iTrack = 1 : numTracks
             %them
             if probDim == 3
                 shortVecE13D = repmat(vecMagTmp,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
-                shortVecE3D(:,:,iTrack) = shortVecE13D;
+                shortVecE3D(:,:,iTrack) = shortVecE13D; %#ok<AGROW>
                 %repear for merging and splitting
                 shortVecE13DMS = repmat(vecMagTmpMS,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
-                shortVecE3DMS(:,:,iTrack) = shortVecE13DMS;
+                shortVecE3DMS(:,:,iTrack) = shortVecE13DMS; %#ok<AGROW>
             end
 
             %save values for this track
@@ -588,10 +590,10 @@ for iTrack = 1 : numTracks
             %construct additional short vectors for 3D problems
             if probDim == 3
                 shortVecS13D = repmat(vecMagTmp,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
-                shortVecS3D(:,:,iTrack) = shortVecS13D;
+                shortVecS3D(:,:,iTrack) = shortVecS13D; %#ok<AGROW>
                 %repeat for merging and splitting
                 shortVecS13DMS = repmat(vecMagTmpMS,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
-                shortVecS3DMS(:,:,iTrack) = shortVecS13DMS;
+                shortVecS3DMS(:,:,iTrack) = shortVecS13DMS; %#ok<AGROW>
             end
 
             %get magnitude and direction of both vectors at track ends
@@ -617,10 +619,10 @@ for iTrack = 1 : numTracks
             %construct additional short vectors for 3D problems
             if probDim == 3
                 shortVecE13D = repmat(vecMagTmp,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
-                shortVecE3D(:,:,iTrack) = shortVecE13D;
+                shortVecE3D(:,:,iTrack) = shortVecE13D; %#ok<AGROW>
                 %repeat for merging and splitting
                 shortVecE13DMS = repmat(vecMagTmpMS,probDim,1) .* repmat(perpendicular3D,1,timeWindow);
-                shortVecE3DMS(:,:,iTrack) = shortVecE13DMS;
+                shortVecE3DMS(:,:,iTrack) = shortVecE13DMS; %#ok<AGROW>
             end
             
             %save values for this track

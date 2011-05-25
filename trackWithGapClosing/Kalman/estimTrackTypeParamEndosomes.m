@@ -152,13 +152,15 @@ for iTrack = 1 : numTracksLink
             trackScheme = kalmanFilterInfo(trackStartTime(...
                 iTrack)).scheme(trackedFeatIndx(iTrack,...
                 trackStartTime(iTrack)),2);
+            velStart = kalmanFilterInfo(trackStartTime(...
+                iTrack)).stateVec(trackedFeatIndx(iTrack,...
+                trackStartTime(iTrack)),probDim+1:2*probDim);
+            velMag = sqrt(sum(velStart.^2));
             switch trackScheme
                 case 1 %forward
-                    velMag = sqrt(sum(xyzVel(iTrack,:).^2));
-                    motionDir(iTrack,:,1) = xyzVel(iTrack,:)/velMag;
+                    motionDir(iTrack,:,1) = velStart/velMag;
                 case 2 %backward
-                    velMag = sqrt(sum(xyzVel(iTrack,:).^2));
-                    motionDir(iTrack,:,1) = -xyzVel(iTrack,:)/velMag;
+                    motionDir(iTrack,:,1) = -velStart/velMag;
                 case 3
                     %do nothing, since default is zero, indicating no
                     %direction
