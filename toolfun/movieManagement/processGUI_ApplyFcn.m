@@ -10,11 +10,7 @@ ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
 ip.addRequired('funParams',@isstruct);
-ip.parse(hObject,eventdata,handles);
-
-% Call back function of 'Apply' button
-userData = get(handles.figure1, 'UserData');
-userData_main = get(userData.mainFig, 'UserData');
+ip.parse(hObject,eventdata,handles,funParams);
 
 
 if get(handles.checkbox_applytoall, 'Value')
@@ -27,10 +23,13 @@ if get(handles.checkbox_applytoall, 'Value')
         return
     end
 end
+
+% Call back function of 'Apply' button
+userData = get(handles.figure1, 'UserData');
 userData.crtProc.setPara(funParams);
  
 % --------------------------------------------------
-
+userData_main = get(userData.mainFig, 'UserData');
 % If this is a brand new process, attach current process to MovieData and 
 % package's process list 
 if isempty(userData.crtPackage.processes_{userData.procID})
@@ -63,7 +62,6 @@ end
 userData_main = get(userData.mainFig, 'UserData');
 
 % -------------------- Apply setting to all movies ------------------------
-
 if get(handles.checkbox_applytoall, 'Value')
 
     for x = 1: length(userData_main.MD)

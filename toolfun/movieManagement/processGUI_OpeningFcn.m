@@ -85,7 +85,5 @@ end
 % ----------------------------------------------------------------
 
 % Update user data and GUI data
-set(userData.mainFig, 'UserData', userData_main);
 set(hObject, 'UserData', userData);
-
 end
