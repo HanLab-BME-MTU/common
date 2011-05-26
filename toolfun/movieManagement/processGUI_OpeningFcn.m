@@ -1,30 +1,57 @@
-function processGUI_OpeningFcn(hObject, eventdata, handles, varargin)
+function processGUI_OpeningFcn(hObject, eventdata, handles, string,varargin)
+% Common initialization of concrete process GUIs
+%
+%       userData.mainFig - handle of main figure
+%       userData.handles_main - 'handles' of main figure
+%       userData.procID - The ID of process in the current package
+%       userData.crtProc - handle of current process
+%       userData.crtPackage - handles of current package
+%       userData.procConstr - constructor of current process
+%
+%       userData.questIconData - help icon image information
+%       userData.colormap - color map information
+%
+% Sebastien Besson May 2011
 
+% Check input
+ip = inputParser;
+ip.addRequired('hObject',@ishandle);
+ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
+ip.addRequired('handles',@isstruct);
+ip.addRequired('string',@(x) isequal(x,'mainFig'));
+ip.addOptional('mainFig',[],@ishandle);
+ip.addOptional('procID',[],@isscalar);
+ip.addOptional('process',[],@(x) isa(x,'function_handle'));
+ip.parse(hObject,eventdata,handles,string,varargin{:});
+
+% Retrieve userData and read function input 
+userData = get(handles.figure1, 'UserData');
+userData.mainFig=ip.Results.mainFig;
+userData.procID = ip.Results.procID;
+userData.procConstr=ip.Results.process;
+
+% Set up copyright statement
 [copyright openHelpFile] = userfcn_softwareConfig(handles);
 set(handles.text_copyright, 'String', copyright)
 
-userData = get(handles.figure1, 'UserData');
-% Choose default command line output for thresholdProcessGUI
-handles.output = hObject;
-
-% Get main figure handle and process id
-t = find(strcmp(varargin,'mainFig'));
-userData.mainFig = varargin{t+1};
-userData.procID = varargin{t+2};
+% Get current package, movie data and process
 userData.handles_main = guidata(userData.mainFig);
-
-% Get current package and process
 userData_main = get(userData.mainFig, 'UserData');
+userData.MD = userData_main.MD(userData_main.id);
 userData.crtPackage = userData_main.crtPackage;
 userData.crtProc = userData.crtPackage.processes_{userData.procID};
 
-% Get current process constructer
-userData.procConstr = ...
-    str2func(userData.crtPackage.processClassNames_{userData.procID});
+% Get current process constructor
+crtProcClassName = func2str(userData.procConstr);
+crtProcName = eval([crtProcClassName '.getName']);
+procString = [' Step ' num2str(userData.procID) ': ' crtProcName];
+set(handles.text_processName,'String',procString);
+figString = [' Setting - ' crtProcName];
+set(handles.figure1,'Name',figString);
 
 % If process does not exist, create a default one in user data.
 if isempty(userData.crtProc)
-    userData.crtProc = userData.procConstr(userData_main.MD(userData_main.id), ...
+    userData.crtProc = userData.procConstr(userData.MD, ...
         userData.crtPackage.outputDirectory_);
 end
 
@@ -32,58 +59,21 @@ end
 userData.questIconData = userData_main.questIconData;
 userData.colormap = userData_main.colormap;
 
-% ---------------------- Channel Setup -------------------------
-
-funParams = userData.crtProc.funParams_;
-
-% Set up available input channels
-set(handles.listbox_1, 'String', {userData_main.MD(userData_main.id).channels_.channelPath_},...
-    'Userdata', 1: length(userData_main.MD(userData_main.id).channels_));
-
-% Set up selected input data channels and channel index
-parentI = find( userData.crtPackage.depMatrix_(userData.procID,:) );
-
-if isempty(parentI) || ~isempty( userData.crtPackage.processes_{userData.procID} )
-    
-    % If process has no dependency, or process already exists, display saved channels
-    set(handles.listbox_2, 'String', ...
-        {userData_main.MD(userData_main.id).channels_(funParams.ChannelIndex).channelPath_}, ...
-        'Userdata',funParams.ChannelIndex);
-    
-elseif isempty( userData.crtPackage.processes_{userData.procID} )
-    % If new process
-    empty = false;
-    for i = parentI
-        if isempty(userData.crtPackage.processes_{i})
-            empty = true;
-            break;
-        end
-    end
-    
-    if ~empty
-        
-        % If all dependent processes exist
-        channelIndex = userData.crtPackage.processes_{parentI(1)}.funParams_.ChannelIndex;
-        for i = 2: length(parentI)
-            channelIndex = intersect(channelIndex, ...
-                userData.crtPackage.processes_{parentI(i)}.funParams_.ChannelIndex);
-        end
-        
-        if ~isempty(channelIndex)
-            set(handles.listbox_2, 'String', ...
-                {userData_main.MD(userData_main.id).channels(channelIndex).channelPath_}, ...
-                'Userdata',channelIndex);
-        end
-    end
+% Check for multiple movies else
+if numel(userData_main.MD) ==1
+    set(handles.checkbox_applytoall,'Value',0,'Visible','off');
+else
+    set(handles.checkbox_applytoall, 'Value',...
+        userData_main.applytoall(userData.procID));
 end
-set(handles.checkbox_applytoall, 'Value', userData_main.applytoall(userData.procID));
+uicontrol(handles.pushbutton_done);
 
 % ----------------------Set up help icon------------------------
 
 % Set up help icon
 set(hObject,'colormap',userData.colormap);
 % Set up package help. Package icon is tagged as '0'
-axes(handles.axes_help);
+set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(userData.questIconData);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
@@ -97,8 +87,5 @@ end
 % Update user data and GUI data
 set(userData.mainFig, 'UserData', userData_main);
 set(hObject, 'UserData', userData);
-
-uicontrol(handles.pushbutton_done);
-guidata(hObject, handles);
 
 end
