@@ -198,18 +198,18 @@ classdef Package < hgsetget
             obj.depMatrix_(row, col) = value;
         end
             
-        function setProcess (obj, i, newProcess)
+        function setProcess(obj, i, newProcess)
             % set the i th process of obj.processes_ to newprocess
             % If newProcess = [ ], clear the process in package process
             % list
-            assert(i<=length(obj.processClassNames_),'UserDefined Error: i exceeds obj.processes length');
-            if isa(newProcess, 'Process') || isempty(newProcess)
-                
+            assert(i<=length(obj.processClassNames_),...
+                'UserDefined Error: i exceeds obj.processes length');
+            if isa(newProcess,obj.processClassNames_{i}) ||...
+                    isempty(newProcess)      
                 obj.processes_{i} = newProcess;
             else
                 error('User-defined: input should be Process object or empty.')
             end
-            
         end
         
     end
