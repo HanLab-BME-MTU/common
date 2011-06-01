@@ -22,7 +22,7 @@ function varargout = maskRefinementProcessGUI(varargin)
 
 % Edit the above text to modify the response to help maskRefinementProcessGUI
 
-% Last Modified by GUIDE v2.5 24-Aug-2010 11:11:35
+% Last Modified by GUIDE v2.5 01-Jun-2011 16:59:46
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -46,96 +46,49 @@ end
 
 % --- Executes just before maskRefinementProcessGUI is made visible.
 function maskRefinementProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
-% Available tools 
-% UserData data:
-%       userData.mainFig - handle of main figure
-%       userData.handles_main - 'handles' of main figure
-%       userData.procID - The ID of process in the current package
-%       userData.crtProc - handle of current process
-%       userData.crtPackage - handles of current package
-%       userData.procConstr - constructor of current process
-%
-%       userData.questIconData - help icon image information
-%       userData.colormap - color map information
-%
 
-[copyright openHelpFile] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright)
 
-userData = get(handles.figure1, 'UserData');
-% Choose default command line output for maskRefinementProcessGUI
-handles.output = hObject;
-
-% Get main figure handle and process id
-t = find(strcmp(varargin,'mainFig'));
-userData.mainFig = varargin{t+1};
-userData.procID = varargin{t+2};
-userData.handles_main = guidata(userData.mainFig);
-
-% Get current package and process
-userData_main = get(userData.mainFig, 'UserData');
-userData.crtPackage = userData_main.crtPackage;
-userData.crtProc = userData.crtPackage.processes_{userData.procID};
-
-% Get current process constructer
-eval ( [ 'userData.procConstr = @', ...
-    userData.crtPackage.processClassNames_{userData.procID},';']);
-
-% If process does not exist, create a default one in user data.
-if isempty(userData.crtProc)
-    userData.crtProc = userData.procConstr(userData_main.MD(userData_main.id), ...
-                                userData.crtPackage.outputDirectory_);
-end
-
-% Get icon infomation
-userData.questIconData = userData_main.questIconData;
-userData.colormap = userData_main.colormap;
+processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},...
+    @MaskRefinementProcess);
 
 % ---------------------- Channel Setup -------------------------
-
+userData = get(handles.figure1, 'UserData');
 funParams = userData.crtProc.funParams_;
 
+
 % Set up available input channels
-set(handles.listbox_1, 'String', {userData_main.MD(userData_main.id).channels_.channelPath_},...
-        'Userdata', 1: length(userData_main.MD(userData_main.id).channels_));
+set(handles.listbox_availableChannels,...
+    'String',userData.MD.getChannelPaths(), ...
+    'UserData',1:numel(userData.MD.channels_));  
     
 % Set up selected input data channels and channel index
-parentI = find( userData.crtPackage.depMatrix_(userData.procID,:) );
+parentProc = find(userData.crtPackage.depMatrix_(userData.procID,:));
 
-if isempty(parentI) || ~isempty( userData.crtPackage.processes_{userData.procID} )
-    
-    % If process has no dependency, or process already exists, display saved channels 
-    set(handles.listbox_2, 'String', ...
-        {userData_main.MD(userData_main.id).channels_(funParams.ChannelIndex).channelPath_}, ...
-        'Userdata',funParams.ChannelIndex);
-    
-elseif isempty( userData.crtPackage.processes_{userData.procID} )
-    % If new process
-        empty = false;
-        for i = parentI
-           if isempty(userData.crtPackage.processes_{i})
-               empty = true;
-               break;
-           end
+if isempty(parentProc) || ~isempty(userData.crtPackage.processes_{userData.procID})
+    % If process has no dependency, or process already exists
+    channelString =userData.MD.getChannelPaths(funParams.ChannelIndex);
+    channelIndex = funParams.ChannelIndex;
+        
+elseif isempty(userData.crtPackage.processes_{userData.procID})
+    % Check existence of all parent processes
+    emptyParentProc = any(cellfun(@isempty,...
+        userData.crtPackage.processes_(parentProc)));
+    channelIndex = 1:numel(userData.MD.channels_);
+    if ~emptyParentProc
+        parentChannelIndex = @(x) userData.crtPackage.processes_{x}.funParams_.ChannelIndex;
+        for i = parentProc
+            channelIndex = intersect(channelIndex,parentChannelIndex(i));
         end
-            
-        if ~empty
-
-            % If all dependent processes exist
-            channelIndex = userData.crtPackage.processes_{parentI(1)}.funParams_.ChannelIndex;
-            for i = 2: length(parentI)
-                channelIndex = intersect(channelIndex, ...
-                    userData.crtPackage.processes_{parentI(i)}.funParams_.ChannelIndex);
-            end  
-            
-            if ~isempty(channelIndex)
-                set(handles.listbox_2, 'String', ...
-                    {userData_main.MD(userData_main.id).channels_(channelIndex).channelPath_}, ...
-                    'Userdata',channelIndex);    
-            end
-        end
+    end
+    if ~isempty(channelIndex)
+        channelString = userData.MD.getChannelPaths(channelIndex);
+    else
+        channelString = {};
+    end
 end
 
+set(handles.listbox_selectedChannels,'String',channelString,...
+    'UserData',channelIndex);  
 
     
 % ---------------------- Parameter Setup -----------------------
@@ -148,14 +101,8 @@ if funParams.MaskCleanUp
     set(handles.edit_2, 'String',num2str(funParams.ClosureRadius))
     set(handles.edit_3, 'String',num2str(funParams.ObjectNumber))
 else
-    set(handles.checkbox_cleanup, 'Value', 0)
-    set(handles.checkbox_fillholes, 'Value', 0, 'Enable','off')
-    set(handles.text_para1, 'Enable', 'off');
-    set(handles.text_para2, 'Enable', 'off');
-    set(handles.text_para3, 'Enable', 'off');
-    set(handles.edit_1, 'Enable', 'off');
-    set(handles.edit_2, 'Enable', 'off');
-    set(handles.edit_3, 'Enable', 'off');
+    set([handles.checkbox_cleanup handles.checkbox_fillholes], 'Value', 0);
+    set(get(handles.uipanel_cleanup,'Children'),'Enable','off');
 end
 
 if funParams.EdgeRefinement
@@ -170,27 +117,9 @@ if funParams.EdgeRefinement
 end
     
 
-% ----------------------Set up help icon------------------------
-
-% Set up help icon
-set(hObject,'colormap',userData.colormap);
-% Set up package help. Package icon is tagged as '0'
-axes(handles.axes_help);
-Img = image(userData.questIconData); 
-set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
-    'visible','off','YDir','reverse');
-set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-if openHelpFile
-    set(Img, 'UserData', struct('class',class(userData.crtProc)))
-end
-
-% ----------------------------------------------------------------
-
 % Update user data and GUI data
-set(userData.mainFig, 'UserData', userData_main);
+handles.output = hObject;
 set(handles.figure1, 'UserData', userData);
-
-uicontrol(handles.pushbutton_done)
 guidata(hObject, handles);
 
 
@@ -222,7 +151,7 @@ userData_main = get(userData.mainFig, 'UserData');
 
 % -------- Check user input --------
 
-if isempty(get(handles.listbox_2, 'String'))
+if isempty(get(handles.listbox_selectedChannels, 'String'))
    errordlg('Please select at least one input channel from ''Available Channels''.','Setting Error','modal') 
     return;
 end
@@ -282,7 +211,7 @@ end
 
 % -------- Set parameter --------
 
-channelIndex = get (handles.listbox_2, 'Userdata');
+channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
 funParams = userData.crtProc.funParams_;
 funParams.ChannelIndex = channelIndex;
 
@@ -416,10 +345,10 @@ delete(handles.figure1);
 function checkbox_all_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox_all
-contents1 = get(handles.listbox_1, 'String');
+contents1 = get(handles.listbox_availableChannels, 'String');
 
-chanIndex1 = get(handles.listbox_1, 'Userdata');
-chanIndex2 = get(handles.listbox_2, 'Userdata');
+chanIndex1 = get(handles.listbox_availableChannels, 'Userdata');
+chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
 
 % Return if listbox1 is empty
 if isempty(contents1)
@@ -428,26 +357,26 @@ end
 
 switch get(handles.checkbox_all,'Value')
     case 1
-        set(handles.listbox_2, 'String', contents1);
+        set(handles.listbox_selectedChannels, 'String', contents1);
         chanIndex2 = chanIndex1;
     case 0
-        set(handles.listbox_2, 'String', {}, 'Value',1);
+        set(handles.listbox_selectedChannels, 'String', {}, 'Value',1);
         chanIndex2 = [ ];
 end
-set(handles.listbox_2, 'UserData', chanIndex2);
+set(handles.listbox_selectedChannels, 'UserData', chanIndex2);
 
 
 % --- Executes on button press in pushbutton_select.
 function pushbutton_select_Callback(hObject, eventdata, handles)
 % call back function of 'select' button
 
-contents1 = get(handles.listbox_1, 'String');
-contents2 = get(handles.listbox_2, 'String');
-id = get(handles.listbox_1, 'Value');
+contents1 = get(handles.listbox_availableChannels, 'String');
+contents2 = get(handles.listbox_selectedChannels, 'String');
+id = get(handles.listbox_availableChannels, 'Value');
 
 % If channel has already been added, return;
-chanIndex1 = get(handles.listbox_1, 'Userdata');
-chanIndex2 = get(handles.listbox_2, 'Userdata');
+chanIndex1 = get(handles.listbox_availableChannels, 'Userdata');
+chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
 
 for i = id
     if any(strcmp(contents1{i}, contents2) )
@@ -460,15 +389,15 @@ for i = id
     end
 end
 
-set(handles.listbox_2, 'String', contents2, 'Userdata', chanIndex2);
+set(handles.listbox_selectedChannels, 'String', contents2, 'Userdata', chanIndex2);
 
 
 
 % --- Executes on button press in pushbutton_delete.
 function pushbutton_delete_Callback(hObject, eventdata, handles)
 % Call back function of 'delete' button
-contents = get(handles.listbox_2,'String');
-id = get(handles.listbox_2,'Value');
+contents = get(handles.listbox_selectedChannels,'String');
+id = get(handles.listbox_selectedChannels,'Value');
 
 % Return if list is empty
 if isempty(contents) || isempty(id)
@@ -479,40 +408,27 @@ end
 contents(id) = [ ];
 
 % Delete userdata
-chanIndex2 = get(handles.listbox_2, 'Userdata');
+chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
 chanIndex2(id) = [ ];
-set(handles.listbox_2, 'Userdata', chanIndex2);
+set(handles.listbox_selectedChannels, 'Userdata', chanIndex2);
 
 % Point 'Value' to the second last item in the list once the 
 % last item has been deleted
 if (id >length(contents) && id>1)
-    set(handles.listbox_2,'Value',length(contents));
+    set(handles.listbox_selectedChannels,'Value',length(contents));
 end
 % Refresh listbox
-set(handles.listbox_2,'String',contents);
+set(handles.listbox_selectedChannels,'String',contents);
 
 
 % --- Executes on button press in checkbox_cleanup.
 function checkbox_cleanup_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkbox_auto
 
-switch get(hObject, 'Value')
-    case 0
-        set(handles.text_para1, 'Enable', 'off');
-        set(handles.edit_1,'Enable','off');
-        set(handles.text_para2, 'Enable', 'off');
-        set(handles.edit_2,'Enable','off');
-        set(handles.text_para3, 'Enable', 'off');
-        set(handles.edit_3,'Enable','off');
-        set(handles.checkbox_fillholes,'Enable','off');          
-    case 1
-        set(handles.text_para1, 'Enable', 'on');
-        set(handles.edit_1,'Enable','on');
-        set(handles.text_para2, 'Enable', 'on');
-        set(handles.edit_2,'Enable','on');
-        set(handles.text_para3, 'Enable', 'on');
-        set(handles.edit_3,'Enable','on');
-        set(handles.checkbox_fillholes,'Enable','on');        
+if get(hObject, 'Value')
+    set(get(handles.uipanel_cleanup,'Children'),'Enable','on');
+else
+    set(get(handles.uipanel_cleanup,'Children'),'Enable','off');
 end
 
 
@@ -520,22 +436,10 @@ end
 function checkbox_edge_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkbox_auto
 
-switch get(hObject, 'Value')
-    case 0
-        set(handles.text_para4, 'Enable', 'off');
-        set(handles.edit_4,'Enable','off');
-        set(handles.text_para5, 'Enable', 'off');
-        set(handles.edit_5,'Enable','off');
-        set(handles.text_para6, 'Enable', 'off');
-        set(handles.edit_6,'Enable','off');
-        
-    case 1
-        set(handles.text_para4, 'Enable', 'on');
-        set(handles.edit_4,'Enable','on');
-        set(handles.text_para5, 'Enable', 'on');
-        set(handles.edit_5,'Enable','on');
-        set(handles.text_para6, 'Enable', 'on');
-        set(handles.edit_6,'Enable','on');    
+if get(hObject, 'Value')
+    set(get(handles.uipanel_edge,'Children'),'Enable','on');
+else
+    set(get(handles.uipanel_edge,'Children'),'Enable','off');
 end
 
 
@@ -575,12 +479,3 @@ function pushbutton_done_KeyPressFcn(hObject, eventdata, handles)
 if strcmp(eventdata.Key, 'return')
     pushbutton_done_Callback(handles.pushbutton_done, [], handles);
 end
-
-
-% --- Executes on button press in checkbox_applytoall.
-function checkbox_applytoall_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_applytoall (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox_applytoall

@@ -17,7 +17,7 @@ classdef MaskRefinementProcess < MaskProcessingProcess
                 if nargin < 3 || isempty(funParams)                                       
                     
                     %----Defaults----%                                            
-                    funParams.ChannelIndex = 1:nChan; %Default is to attempt to refine masks for all channels
+                    funParams.ChannelIndex = 1:numel(owner.channels_); 
                     funParams.SegProcessIndex = []; %No default.
                     funParams.OutputDirectory = ...
                         [outputDir  filesep 'refined_masks'];      

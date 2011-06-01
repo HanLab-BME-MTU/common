@@ -122,8 +122,8 @@ else
 end
 
 % Save the image directories and names (for threshold preview)
-userData.imageFileNames = userData_main.MD(userData_main.id).getImageFileNames();
-userData.imDirs  = userData_main.MD(userData_main.id).getChannelPaths();
+userData.imageFileNames = userData.MD.getImageFileNames();
+userData.imDirs  = userData.MD.getChannelPaths();
 
 % Read the first image and update the sliders max value and steps
 props=get(handles.listbox_selectedChannels,{'String','Value'});
@@ -149,7 +149,6 @@ set(handles.slider_threshold,'Value',userData.thresholdValue,...
     'SliderStep',[thresholdStep  10*thresholdStep]);
 
 % Update user data and GUI data
-set(userData.mainFig, 'UserData', userData_main);
 handles.output = hObject;
 set(hObject, 'UserData', userData);
 guidata(hObject, handles);
@@ -175,8 +174,6 @@ delete(handles.figure1);
 function pushbutton_done_Callback(hObject, eventdata, handles)
 % Call back function of 'Apply' button
 userData = get(handles.figure1, 'UserData');
-userData_main = get(userData.mainFig, 'UserData');
-
 
 % -------- Check user input --------
 
