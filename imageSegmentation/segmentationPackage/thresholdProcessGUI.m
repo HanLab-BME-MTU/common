@@ -22,7 +22,7 @@ function varargout = thresholdProcessGUI(varargin)
 
 % Edit the above text to modify the response to help thresholdProcessGUI
 
-% Last Modified by GUIDE v2.5 29-Apr-2011 15:44:23
+% Last Modified by GUIDE v2.5 01-Jun-2011 14:49:46
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -46,102 +46,50 @@ end
 
 % --- Executes just before thresholdProcessGUI is made visible.
 function thresholdProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
-% Available tools 
-% UserData data:
-%       userData.mainFig - handle of main figure
-%       userData.handles_main - 'handles' of main figure
-%       userData.procID - The ID of process in the current package
-%       userData.crtProc - handle of current process
-%       userData.crtPackage - handles of current package
-%       userData.procConstr - constructor of current process
-%
-%       userData.questIconData - help icon image information
-%       userData.colormap - color map information
-%
 
-[copyright openHelpFile] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright)
+processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},...
+    @ThresholdProcess);
 
-userData = get(handles.figure1, 'UserData');
-% Choose default command line output for thresholdProcessGUI
-handles.output = hObject;
-
-% Get main figure handle and process id
-t = find(strcmp(varargin,'mainFig'));
-userData.mainFig = varargin{t+1};
-userData.procID = varargin{t+2};
-userData.handles_main = guidata(userData.mainFig);
-
-% Get current package and process
-userData_main = get(userData.mainFig, 'UserData');
-userData.crtPackage = userData_main.crtPackage;
-userData.crtProc = userData.crtPackage.processes_{userData.procID};
-
-% Current process constructer
-userData.procConstr = @ThresholdProcess;
-crtProcClassName = func2str(userData.procConstr);
-crtProcName = eval([crtProcClassName '.getName']);
-procString = [' Step ' num2str(userData.procID) ': ' crtProcName];
-set(handles.text_processName,'String',procString);
-figString = [' Setting - ' crtProcName];
-set(handles.figure1,'Name',figString);
-    
-% If process does not exist, create a default one in user data.
-if isempty(userData.crtProc)
-    userData.crtProc = userData.procConstr(userData_main.MD(userData_main.id), ...
-                                userData.crtPackage.outputDirectory_);
-end
-
-
-% Get icon infomation
-userData.questIconData = userData_main.questIconData;
-userData.colormap = userData_main.colormap;
 
 % ---------------------- Channel Setup -------------------------
-
+userData = get(handles.figure1, 'UserData');
 funParams = userData.crtProc.funParams_;
 
 % Set up available input channels
-set(handles.listbox_1, 'String', {userData_main.MD(userData_main.id).channels_.channelPath_},...
-        'Userdata', 1: length(userData_main.MD(userData_main.id).channels_));
+set(handles.listbox_availableChannels,...
+    'String',userData.MD.getChannelPaths(), ...
+    'UserData',1:numel(userData.MD.channels_));  
     
 % Set up selected input data channels and channel index
-parentI = find( userData.crtPackage.depMatrix_(userData.procID,:) );
+parentProc = find(userData.crtPackage.depMatrix_(userData.procID,:));
 
-if isempty(parentI) || ~isempty( userData.crtPackage.processes_{userData.procID} )
+if isempty(parentProc) || ~isempty(userData.crtPackage.processes_{userData.procID})
+    % If process has no dependency, or process already exists
+    channelString =userData.MD.getChannelPaths(funParams.ChannelIndex);
+    channelIndex = funParams.ChannelIndex;
+        
+elseif isempty(userData.crtPackage.processes_{userData.procID})
+    % Check existence of all parent processes
+    emptyParentProc = any(cellfun(@isempty,...
+        userData.crtPackage.processes_(parentProc)));
     
-    % If process has no dependency, or process already exists, display saved channels 
-    set(handles.listbox_2, 'String', ...
-        {userData_main.MD(userData_main.id).channels_(funParams.ChannelIndex).channelPath_}, ...
-        'Userdata',funParams.ChannelIndex);
-    
-elseif isempty( userData.crtPackage.processes_{userData.procID} )
-    % If new process
-        empty = false;
-        for i = parentI
-           if isempty(userData.crtPackage.processes_{i})
-               empty = true;
-               break;
-           end
+    if ~emptyParentProc
+        parentChannelIndex = @(x) userData.crtPackage.processes_{x}.funParams_.ChannelIndex;
+        channelIndex = 1:numel(userData.MD.channels_);
+        for i = parentProc
+            channelIndex = intersect(channelIndex,parentChannelIndex(i));
         end
-            
-        if ~empty
-
-            % If all dependent processes exist
-            channelIndex = userData.crtPackage.processes_{parentI(1)}.funParams_.ChannelIndex;
-            for i = 2: length(parentI)
-                channelIndex = intersect(channelIndex, ...
-                    userData.crtPackage.processes_{parentI(i)}.funParams_.ChannelIndex);
-            end  
-            
-            if ~isempty(channelIndex)
-                set(handles.listbox_2, 'String', ...
-                    {userData_main.MD(userData_main.id).channels(channelIndex).channelPath_}, ...
-                    'Userdata',channelIndex);    
-            end
+        
+        if ~isempty(channelIndex)
+            channelString = userData.MD.getChannelPaths(channelIndex);
+        else
+            channelString = {};
         end
+    end
 end
-set(handles.checkbox_applytoall, 'Value', userData_main.applytoall(userData.procID));
+
+set(handles.listbox_selectedChannels,'String',channelString,...
+    'UserData',channelIndex);  
 
 % ---------------------- Parameter Setup -------------------------
 
@@ -156,12 +104,12 @@ if isempty(funParams.ThresholdValue)
     set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
     if funParams.MaxJump
         set(handles.checkbox_max, 'Value', 1);
-        set(handles.edit_jump, 'Enable', 'on', 'String',num2str(funParams.MaxJump));
+        set(handles.edit_jump, 'Enable','on','String',funParams.MaxJump);
     else
         set(handles.edit_jump, 'Enable', 'off');
     end
     set(handles.edit_GaussFilterSigma,'String',funParams.GaussFilterSigma);
-    nSelectedChannels  = numel(get(handles.listbox_2, 'String'));
+    nSelectedChannels  = numel(get(handles.listbox_selectedChannels, 'String'));
     set(handles.listbox_thresholdValues, 'String',...
         num2cell(zeros(1,nSelectedChannels)));
     userData.thresholdValue=0;
@@ -178,7 +126,7 @@ userData.imageFileNames = userData_main.MD(userData_main.id).getImageFileNames()
 userData.imDirs  = userData_main.MD(userData_main.id).getChannelPaths();
 
 % Read the first image and update the sliders max value and steps
-props=get(handles.listbox_2,{'String','Value'});
+props=get(handles.listbox_selectedChannels,{'String','Value'});
 userData.chanIndx = find(strcmp(props{1}{props{2}},userData.imDirs));
 userData.imIndx=1;
 
@@ -196,33 +144,15 @@ maxThresholdValue=max(max(userData.imData));
 thresholdStep = 1/double(maxThresholdValue);
 
 set(handles.edit_threshold,'String',userData.thresholdValue);
-set(handles.slider_threshold,'Value',userData.thresholdValue,'Max',maxThresholdValue,...
+set(handles.slider_threshold,'Value',userData.thresholdValue,...
+    'Max',maxThresholdValue,...
     'SliderStep',[thresholdStep  10*thresholdStep]);
-
-% ----------------------Set up help icon------------------------
-
-% Set up help icon
-set(hObject,'colormap',userData.colormap);
-% Set up package help. Package icon is tagged as '0'
-axes(handles.axes_help);
-Img = image(userData.questIconData); 
-set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
-    'visible','off','YDir','reverse');
-set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-if openHelpFile
-    set(Img, 'UserData', struct('class',class(userData.crtProc)))
-end
-
-% ----------------------------------------------------------------
 
 % Update user data and GUI data
 set(userData.mainFig, 'UserData', userData_main);
+handles.output = hObject;
 set(hObject, 'UserData', userData);
-
-uicontrol(handles.pushbutton_done);
 guidata(hObject, handles);
-
-
 
 % --- Outputs from this function are returned to the command line.
 function varargout = thresholdProcessGUI_OutputFcn(hObject, eventdata, handles) 
@@ -250,7 +180,7 @@ userData_main = get(userData.mainFig, 'UserData');
 
 % -------- Check user input --------
 
-if isempty(get(handles.listbox_2, 'String'))
+if isempty(get(handles.listbox_selectedChannels, 'String'))
    errordlg('Please select at least one input channel from ''Available Channels''.','Setting Error','modal') 
     return;
 end
@@ -275,7 +205,7 @@ else
     if isempty(threshold)
        errordlg('Please provide at least one threshold value.','Setting Error','modal')
        return
-    elseif length(threshold) ~= 1 && length(threshold) ~= length(get(handles.listbox_2, 'String'))
+    elseif length(threshold) ~= 1 && length(threshold) ~= length(get(handles.listbox_selectedChannels, 'String'))
        errordlg('Please provide the same number of threshold values as the input channels.','Setting Error','modal')
        return
     else
@@ -305,7 +235,7 @@ end
 funParams = userData.crtProc.funParams_;
 
 % Get parameter
-channelIndex = get (handles.listbox_2, 'Userdata');
+channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
 
 if get(handles.checkbox_auto, 'value')
@@ -319,141 +249,19 @@ if get(handles.checkbox_auto, 'value')
         funParams.MaxJump = 0;
     end
 else
-    % if fixed thresholding
-    if length(threshold) == 1
-        funParams.ThresholdValue = repmat(threshold, [1 length(channelIndex)]);
-    else
-        funParams.ThresholdValue = threshold;
-    end
-end
-% Set parameters
-userData.crtProc.setPara(funParams);
-
-% --------------------------------------------------
-
-
-% If this is a brand new process, attach current process to MovieData and 
-% package's process list 
-if isempty( userData.crtPackage.processes_{userData.procID} )
-    
-    % Add new process to both process lists of MovieData and current package
-    userData_main.MD(userData_main.id).addProcess( userData.crtProc );
-    userData.crtPackage.setProcess(userData.procID, userData.crtProc);
-    
-    % Set font weight of process name bold
-    eval([ 'set(userData.handles_main.checkbox_',...
-            num2str(userData.procID),', ''FontWeight'',''bold'')' ]);
+    funParams.ThresholdValue = threshold;
 end
 
-% ----------------------Sanity Check (II, III check)----------------------
-
-% Do sanity check - only check changed parameters
-procEx = userData.crtPackage.sanityCheck(false,'all');
-
-% Return user data !!!
-set(userData.mainFig, 'UserData', userData_main)
-
-% Draw some bugs on the wall 
-for i = 1: length(procEx)
-   if ~isempty(procEx{i})
-       % Draw warning label on the i th process
-       userfcn_drawIcon(userData.handles_main,'warn',i,procEx{i}(1).message, true) % user data is retrieved, updated and submitted
-   end
-end
-% Refresh user data !!
-userData_main = get(userData.mainFig, 'UserData');
-
-% Pop-up dialog box if copying
-if get(handles.checkbox_applytoall, 'Value')
-    confirmApplytoAll = questdlg(['You are about to copy the current process settings to all movies.'...
-        ' Previous settings will be lost. Do you want to continue?'],...
-        'Apply settings to all movies','Yes','No','Yes');
-    
-    if ~strcmp(confirmApplytoAll,'Yes'),
-        set(handles.checkbox_applytoall,'Value',0.0);            
-        return
-    end
-end
-
-% -------------------- Apply setting to all movies ------------------------
-
-if get(handles.checkbox_applytoall, 'Value')
-
-for x = 1: length(userData_main.MD)
-    
-   if x == userData_main.id
-      continue 
-   end
-   
-   % Customize funParams to other movies 
-   % ChannelIndex - all channels
-   % OutputDirectory - pacakge output directory
-       
-   l = length(userData_main.MD(x).channels_);
-   temp = arrayfun(@(x)(x > l),channelIndex, 'UniformOutput', true );
-   funParams.ChannelIndex = channelIndex(logical(~temp));
-   
-   if get(handles.checkbox_auto, 'value')
-       
-       funParams.ThresholdValue = [ ];
-   else
-        if length(threshold) == 1
-            funParams.ThresholdValue = repmat(threshold, [1 length(funParams.ChannelIndex)]);
-        else
-            funParams.ThresholdValue = threshold(logical(~temp));
-        end
-   end
-   
-   funParams.OutputDirectory  = [userData_main.package(x).outputDirectory_  filesep 'masks'];
-   
-   % if new process, create a new process with funParas and add to
-   % MovieData and package's process list
-   if isempty(userData_main.package(x).processes_{userData.procID})
-       
-       process = userData.procConstr(userData_main.MD(x), userData_main.package(x).outputDirectory_, funParams);
-       userData_main.MD(x).addProcess( process )
-       userData_main.package(x).setProcess(userData.procID, process )
-       
-   % if process exist, replace the funParams with the new one
-   else
-       userData_main.package(x).processes_{userData.procID}.setPara(funParams)
-   end
-   
-   
-    % Do sanity check - only check changed parameters
-    procEx = userData_main.package(x).sanityCheck(false,'all');
-
-    % Draw some bugs on the wall 
-    for i = 1: length(procEx)
-       if ~isempty(procEx{i})
-           % Record the icon and message to user data
-           userData_main.statusM(x).IconType{i} = 'warn';
-           userData_main.statusM(x).Msg{i} = procEx{i}(1).message;
-       end
-    end   
-end
-
-% Save user data
-set(userData.mainFig, 'UserData', userData_main)
-
-end
-% -------------------------------------------------------------------------
-
-% Save user data
-userData_main.applytoall(userData.procID)=get(handles.checkbox_applytoall,'Value');
-set(userData.mainFig, 'UserData', userData_main)
-set(handles.figure1, 'UserData', userData);
-guidata(hObject,handles);
-delete(handles.figure1);
+processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
 
 % --- Executes on button press in checkbox_all.
 function checkbox_all_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox_all
-contents1 = get(handles.listbox_1, 'String');
+contents1 = get(handles.listbox_availableChannels, 'String');
 
-chanIndex1 = get(handles.listbox_1, 'Userdata');
-chanIndex2 = get(handles.listbox_2, 'Userdata');
+chanIndex1 = get(handles.listbox_availableChannels, 'Userdata');
+chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
 
 % Return if listbox1 is empty
 if isempty(contents1)
@@ -462,15 +270,15 @@ end
 
 switch get(hObject,'Value')
     case 1
-        set(handles.listbox_2, 'String', contents1);
+        set(handles.listbox_selectedChannels, 'String', contents1);
         chanIndex2 = chanIndex1;
         thresholdValues =zeros(1,numel(chanIndex1));
     case 0
-        set(handles.listbox_2, 'String', {}, 'Value',1);
+        set(handles.listbox_selectedChannels, 'String', {}, 'Value',1);
         chanIndex2 = [ ];
         thresholdValues = [];
 end
-set(handles.listbox_2, 'UserData', chanIndex2);
+set(handles.listbox_selectedChannels, 'UserData', chanIndex2);
 set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues))
 update_data(hObject,eventdata,handles);
 
@@ -478,13 +286,13 @@ update_data(hObject,eventdata,handles);
 function pushbutton_select_Callback(hObject, eventdata, handles)
 % call back function of 'select' button
 
-contents1 = get(handles.listbox_1, 'String');
-contents2 = get(handles.listbox_2, 'String');
-id = get(handles.listbox_1, 'Value');
+contents1 = get(handles.listbox_availableChannels, 'String');
+contents2 = get(handles.listbox_selectedChannels, 'String');
+id = get(handles.listbox_availableChannels, 'Value');
 
 % If channel has already been added, return;
-chanIndex1 = get(handles.listbox_1, 'Userdata');
-chanIndex2 = get(handles.listbox_2, 'Userdata');
+chanIndex1 = get(handles.listbox_availableChannels, 'Userdata');
+chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
 thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
 
 for i = id
@@ -498,7 +306,7 @@ for i = id
     end
 end
 
-set(handles.listbox_2, 'String', contents2, 'Userdata', chanIndex2);
+set(handles.listbox_selectedChannels, 'String', contents2, 'Userdata', chanIndex2);
 set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues))
 update_data(hObject,eventdata,handles);
 
@@ -506,8 +314,8 @@ update_data(hObject,eventdata,handles);
 % --- Executes on button press in pushbutton_delete.
 function pushbutton_delete_Callback(hObject, eventdata, handles)
 % Call back function of 'delete' button
-contents = get(handles.listbox_2,'String');
-id = get(handles.listbox_2,'Value');
+contents = get(handles.listbox_selectedChannels,'String');
+id = get(handles.listbox_selectedChannels,'Value');
 
 % Return if list is empty
 if isempty(contents) || isempty(id)
@@ -518,9 +326,9 @@ end
 contents(id) = [ ];
 
 % Delete userdata
-chanIndex2 = get(handles.listbox_2, 'Userdata');
+chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
 chanIndex2(id) = [ ];
-set(handles.listbox_2, 'Userdata', chanIndex2);
+set(handles.listbox_selectedChannels, 'Userdata', chanIndex2);
 
 % Update thresholdValues
 thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
@@ -530,11 +338,11 @@ set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
 % Point 'Value' to the second last item in the list once the 
 % last item has been deleted
 if (id >length(contents) && id>1)
-    set(handles.listbox_2,'Value',length(contents));
+    set(handles.listbox_selectedChannels,'Value',length(contents));
     set(handles.listbox_thresholdValues,'Value',length(contents));
 end
 % Refresh listbox
-set(handles.listbox_2,'String',contents);
+set(handles.listbox_selectedChannels,'String',contents);
 update_data(hObject,eventdata,handles);
 
 % --- Executes on button press in checkbox_auto.
@@ -605,7 +413,7 @@ end
 function pushbutton_set_threshold_Callback(hObject, eventdata, handles)
 
 newThresholdValue = get(handles.slider_threshold,'Value');
-indx = get(handles.listbox_2,'Value');
+indx = get(handles.listbox_selectedChannels,'Value');
 thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
 thresholdValues(indx) = newThresholdValue;
 set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
@@ -688,7 +496,7 @@ if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_2') || strcmp(get(hObject,'T
         value = get(handles.(linkedListBoxes{checkLinkBox}),'Value');
         set(handles.(linkedListBoxes{~checkLinkBox}),'Value',value);
     else
-        value = get(handles.listbox_2,'Value');
+        value = get(handles.listbox_selectedChannels,'Value');
     end
     thresholdString = get(handles.listbox_thresholdValues,'String');
     if ~isempty(thresholdString)
@@ -708,7 +516,7 @@ end
 
 
 % Retrieve the channex index
-props=get(handles.listbox_2,{'String','Value'});
+props=get(handles.listbox_selectedChannels,{'String','Value'});
 chanIndx = find(strcmp(props{1}{props{2}},userData.imDirs));
 imIndx = get(handles.slider_frameNumber,'Value');
 thresholdValue = get(handles.slider_threshold, 'Value');
