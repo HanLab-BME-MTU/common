@@ -1,4 +1,4 @@
-function thresholdValue = thresholdFluorescenceImage(imageIn,showPlots)
+function thresholdValue = thresholdFluorescenceImage(imageIn,showPlots,noisy)
 
 %
 % thresholdValue = thresholdFluorescenceImage(imageIn)
@@ -20,7 +20,15 @@ function thresholdValue = thresholdFluorescenceImage(imageIn,showPlots)
 %   showPlots - If true, a plot of the histogram and an overlay of the mask
 %   on the image will be shown. The overlay plot only works if the image is
 %   2D.
-% 
+%   
+%   noisy = 0/1. If 1 the drop from the first maximum to the first minimum
+%                must exceed the MAD of the difference between
+%                the extrema values. Otherwise the first maximum/minimum
+%                pair is rejected and the next is considered. This is only
+%                a reasonable constraint if the spline fit yields many
+%                extrema (bumpy spline) and needs to be smoothed (at least
+%                10 max and min respectively). 
+%                
 % 
 % Output:
 % 
@@ -55,12 +63,24 @@ histExtVals = fnval(histSpline,histExtrema);
 %Determine whether each extrema is maximum or minimum
 isMax = fnval(fnder(histSpline,2),histExtrema) < 0;
 
-
-%Fint the lowest-intensity maximum, assume this is the background peak.
+%Find the lowest-intensity maximum, assume this is the background peak.
 iBackMax = find(isMax,1,'first');
 
 %Find the first minimum after this maximum. This is used as the threshold.
 iSep = iBackMax + 1;
+
+% we don't pick minima where the difference between background maximum and
+% minimum is marginal:
+if nargin>2 && noisy && numel(histExtVals)>20
+    extVal= fnval(histSpline,histExtrema);
+    extDiff=(extVal(2:end)-extVal(1:end-1));
+    madDiff=mad(abs(extDiff));
+    
+    while iBackMax<=length(histExtrema) && (extVal(iBackMax)-extVal(iBackMax+1))<madDiff
+        iBackMax=iBackMax+2;
+        iSep = iBackMax + 1;
+    end
+end
 
 if iSep > length(histExtrema);
     error('Could not automatically determine a threshold value!');
@@ -69,9 +89,8 @@ end
 thresholdValue = histExtrema(iSep);
 minVal = histExtVals(iSep);
 
-imageMask = imageIn >= thresholdValue;
-
 if showPlots    
+    imageMask = imageIn >= thresholdValue;
     histFig = figure;
     fnplt(histSpline)    
     hold on

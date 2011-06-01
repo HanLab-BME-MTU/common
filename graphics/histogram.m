@@ -173,7 +173,8 @@ else
     % when using too many data points, the spline fits very locally, and
     % the derivatives can still be huge. Good results can be obtained with
     % 500-1000 points. Use 1000 for now
-    step = max(floor(nData/1000),1);
+    myFactor=1000;
+    step = max(floor(nData/myFactor),1);
     xData2 = xData(1:step:end);
     yData2 = yData(1:step:end);
     
