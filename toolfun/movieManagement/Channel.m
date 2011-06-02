@@ -1,6 +1,9 @@
 classdef Channel < hgsetget
     %  Class definition of channel class
-    
+    properties (SetAccess = protected)
+        psfSigma_                  % standard deviation of the psf
+    end
+        
     properties 
         
         % ---- Used Image Parameters ---- %
@@ -157,6 +160,13 @@ classdef Channel < hgsetget
             % Check the validity of each channel and return pixel size and time
             % interval parameters
             
+            % Check input
+            ip = inputParser;
+            ip.addRequired('obj',@(x) isa(x,'Channel'));
+            ip.addOptional('owner',obj.owner_,@(x) isa(x,'MovieData'));
+            ip.parse(obj,owner)
+            obj.owner_=owner;
+            
             % Exception: channel path does not exist
             assert(logical(exist(obj.channelPath_, 'dir')), ...
                 'Channel path specified is not a valid directory! Please double check the channel path!')
@@ -178,33 +188,36 @@ classdef Channel < hgsetget
             end
             
             % Check the consistency of image size in current channel
-            imInfo = arrayfun(@(x)imfinfo([obj.channelPath_ filesep x.name]), fileNames, 'UniformOutput', false);
-            imSize2(1,:) = cellfun(@(x)(x.Width), imInfo, 'UniformOutput', true);
-            imSize2(2,:) = cellfun(@(x)(x.Height), imInfo, 'UniformOutput', true);
+            imInfo = arrayfun(@(x)imfinfo([obj.channelPath_ filesep x.name]),...
+                fileNames, 'UniformOutput', false);
+            width = unique(cellfun(@(x)(x.Width), imInfo));
+            height = unique(cellfun(@(x)(x.Height), imInfo));
             
             % Exception: Image sizes are inconsistent in the
             % current channel.
+            assert(isscalar(width) && isscalar(height),...
+                ['Image sizes are inconsistent in: \n\n%s\n\n'...
+                'Please make sure all the images have the same size.'],obj.channelPath_);
             
-            assert(max(imSize2(1,:))==min(imSize2(1,:)) && ...
-                max(imSize2(2,:))==min(imSize2(2,:)), ...
-                'Image sizes are inconsistent in: \n\n%s\n\nPlease make sure all the images have the same size.',obj.channelPath_)
-            
-            width = imSize2(1);
-            height = imSize2(2);
-            
-            if nargin>1
-                if isempty(obj.owner_), 
-                    obj.owner_=owner; 
-                else
-                    assert(obj.owner_==owner,'Channel object can only be owned by one MovieData object');
-                end
-                
+            if isempty(obj.psfSigma_) && ~isempty(obj.owner_)
+                obj.calculatePSFSigma(obj.owner_.numAperture_,obj.owner_.pixelSize_);
             end
-                
+               
         end
         
     end
     
+    methods(Access=protected)
+        function calculatePSFSigma(obj,numAperture,pixelSize)
+            if isempty(numAperture) || isempty(pixelSize), return; end
+            if strcmp(obj.imageType_,'Widefield')
+                obj.psfSigma_ =.21*obj.emissionWavelength_/(numAperture*pixelSize);
+            else
+                obj.psfSigma_ = getGaussianPSFsigma(numAperture,1,...
+                    pixelSize*1e-9,obj.emissionWavelength_*1e-9);
+            end
+        end
+    end
     methods(Static)
         function checkValue=checkValue(property,value)
             % Test the validity of a property value
@@ -238,5 +251,6 @@ classdef Channel < hgsetget
             end
             checkValue = isempty(value) || checkTest(value);
         end
+        
     end
 end
