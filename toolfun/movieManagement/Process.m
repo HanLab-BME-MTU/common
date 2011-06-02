@@ -56,11 +56,7 @@ classdef Process < hgsetget
             % Reset process' parameters
             if ~isequal(obj.funParams_,para)
                 obj.funParams_ = para;
-                % Update procChanged_ flag if movie is not relocated
-                stack = dbstack;
-                if ~strcmp(stack(2).name,'MovieData.relocate'), 
-                    obj.procChanged_=true;
-                end
+                obj.procChanged_=true;
             end
         end
         
@@ -129,6 +125,20 @@ classdef Process < hgsetget
             isOwner=@(x)~isempty(cellfun(@(y) isequal(y,obj),x.processes_));
             validPackage = cellfun(isOwner,obj.owner_.packages_);
             package = obj.owner_.packages_{validPackage};
+        end
+        
+        function relocate(obj,oldRootDir,newRootDir)
+            % Relocate all paths in various fields of process
+            %
+            % Sebastien Besson, 5/2011
+            
+            relocateFields ={'inFilePaths_','outFilePaths_',...
+                'funParams_','visualParams_'};
+            for i=1:numel(relocateFields)
+                obj.(relocateFields{i}) = relocatePath(obj.(relocateFields{i}),...
+                    oldRootDir,newRootDir);
+            end
+            
         end
     end
     methods (Abstract)

@@ -402,26 +402,21 @@ classdef  MovieData < hgsetget
 
             % Relocate movie data and channel paths
             for i=1:numel(obj.channels_),
-                obj.channels_(i).channelPath_=relocatePath(obj.channels_(i).channelPath_,oldRootDir,newRootDir);
+                obj.channels_(i).channelPath_=...
+                    relocatePath(obj.channels_(i).channelPath_,oldRootDir,newRootDir);
             end
             obj.outputDirectory_=relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
             obj.movieDataPath_=newMovieDataPath;
             
             % Relocate paths in processes input/output as well as function 
             % and visual parameters 
-            for i=1:numel(obj.processes_), 
-                newInFilePaths = relocatePath(obj.processes_{i}.inFilePaths_,oldRootDir,newRootDir);
-                obj.processes_{i}.setInFilePaths(newInFilePaths);
-                newOutFilePaths = relocatePath(obj.processes_{i}.outFilePaths_,oldRootDir,newRootDir);
-                obj.processes_{i}.setOutFilePaths(newOutFilePaths);
-                newFunParams = relocatePath(obj.processes_{i}.funParams_,oldRootDir,newRootDir);
-                obj.processes_{i}.setPara(newFunParams);
-                newVisualParams = relocatePath(obj.processes_{i}.visualParams_,oldRootDir,newRootDir);
-                obj.processes_{i}.setVisualParams(newVisualParams);
+            for i=1:numel(obj.processes_),
+                obj.processes_{i}.relocate(oldRootDir,newRootDir);
             end
 
             for i=1:numel(obj.packages_),
-                obj.packages_{i}.outputDirectory_=relocatePath(obj.packages_{i}.outputDirectory_,oldRootDir,newRootDir);
+                obj.packages_{i}.outputDirectory_=...
+                    relocatePath(obj.packages_{i}.outputDirectory_,oldRootDir,newRootDir);
             end
             
         end

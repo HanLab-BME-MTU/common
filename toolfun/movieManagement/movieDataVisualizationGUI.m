@@ -22,7 +22,7 @@ function varargout = movieDataVisualizationGUI(varargin)
 
 % Edit the above text to modify the response to help movieDataVisualizationGUI
 
-% Last Modified by GUIDE v2.5 17-Nov-2010 14:35:33
+% Last Modified by GUIDE v2.5 02-Jun-2011 08:56:32
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -1029,18 +1029,6 @@ drawingFigure(handles, 'pixel', 'on')
 
 
 
-% --- Executes during object creation, after setting all properties.
-function popupmenu_gray_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu_gray (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 
 % --- Executes on selection change in popupmenu_colormap.
 function popupmenu_colormap_Callback(hObject, eventdata, handles)
@@ -1055,19 +1043,6 @@ userData = get(handles.figure1, 'UserData');
 
 colormapStr = get(handles.popupmenu_colormap, 'String');
 colormap(get(userData.hFigure, 'CurrentAxes'), colormapStr{get(handles.popupmenu_colormap, 'Value')})
-
-
-% --- Executes during object creation, after setting all properties.
-function popupmenu_colormap_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu_colormap (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 % --- Executes on slider movement.
@@ -1112,20 +1087,6 @@ drawingFigure(handles, 'overlay', 'on', 1:3)
 
 userData = get(handles.figure1, 'UserData');
 title(get(userData.hFigure, 'CurrentAxes'), [num2str(userData.iFrame) ' / ' num2str(userData.nFrames)])
-
-
-% --- Executes during object creation, after setting all properties.
-function slider_frame_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider_frame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
-
-
 
 function edit_frame_Callback(hObject, eventdata, handles)
 
@@ -1276,7 +1237,6 @@ end
 
 set(handles.radiobutton_1, 'Enable', type)
 set(handles.radiobutton_2, 'Enable', type)
-% set(handles.popupmenu_overlay, 'Enable', type)
 
 
 % --- Executes during object deletion, before destroying properties.
@@ -1284,7 +1244,7 @@ function figure1_DeleteFcn(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
-% Find all userData field emptying with Fig
+% Find all userData field ending with Fig
 userDataFields=fieldnames(userData);
 isFig = ~cellfun(@isempty,regexp(userDataFields,'Fig$'));
 userDataFigs = userDataFields(isFig);
@@ -1299,27 +1259,4 @@ end
 
 if isfield(userData, 'hFigure') && ~isempty(userData.hFigure) && ishandle(userData.hFigure)
    delete(userData.hFigure) 
-end
-
-
-
-function edit_path_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_path (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_path as text
-%        str2double(get(hObject,'String')) returns contents of edit_path as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit_path_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_path (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
 end
