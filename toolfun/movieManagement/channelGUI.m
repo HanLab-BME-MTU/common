@@ -76,7 +76,7 @@ supermap(1,:) = get(hObject,'color');
 userData.colormap = supermap;
 userData.questIconData = questIconData;
 
-axes(handles.axes_help);
+set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(questIconData);
 set(hObject,'colormap',supermap);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
@@ -120,12 +120,18 @@ else
     error('User-defined: No proper input.')
 end
 
+% Set up imaging mode pop-up menu
+modeString = vertcat({''},Channel.getImagingModes());
+set(handles.popupmenu_imageType,'String',modeString);
+
 % Read channel initial properties and store them in a structure
-userData.propNames={'excitationWavelength_','emissionWavelength_','exposureTime_'};
+propNames={'excitationWavelength_','emissionWavelength_',...
+    'exposureTime_','imageType_'};
+userData.isNumProp = @(x) x<4;
 for i=1:numel(userData.channels)
-    for j=1:numel(userData.propNames)
-        propName= userData.propNames{j};
-        userData.properties(i).(propName)=userData.channels(i).(propName);
+    for j=1:numel(propNames)
+        userData.properties(i).(propNames{j})=...
+            userData.channels(i).(propNames{j});
     end
 end
 
@@ -135,15 +141,21 @@ arrayfun(@(x)(['Channel ' num2str(x)]), 1:length(userData.channels), 'UniformOut
 set(handles.popupmenu_channel, 'Value', userData.selectedChannel)
 
 % Set up channel path and properties
+set(handles.figure1,'Visible','on');
 set(handles.text_path, 'String', userData.channels(userData.selectedChannel).channelPath_)
-for i=1:numel(userData.propNames)
-    propHandle = handles.(['edit_' userData.propNames{i}(1:end-1)]);
-    propValue = userData.properties(userData.selectedChannel).(userData.propNames{i});
-    if ~isempty(propValue)
-        set(propHandle,'String',num2str(propValue),'Enable','off');
+for i=1:numel(propNames)
+    propValue = userData.properties(userData.selectedChannel).(propNames{i});
+    if userData.isNumProp(i)
+        propHandle = handles.(['edit_' propNames{i}(1:end-1)]);
+        guiProp = 'String';
+        guiValue = propValue;
     else
-        set(propHandle,'String','','Enable','on')
+        propHandle = handles.(['popupmenu_' propNames{i}(1:end-1)]);
+        guiProp = 'Value';
+        guiValue = find(cellfun(@(x)isequal(x,propValue),get(propHandle,'String')));
     end
+    if ~isempty(propValue), enableState='inactive'; else enableState='on'; end
+    set(propHandle,guiProp,guiValue,'Enable',enableState);
 end
 
 % Update handles structure
@@ -165,34 +177,47 @@ function popupmenu_channel_Callback(hObject, ~, handles)
 userData = get(handles.figure1, 'UserData');
 if get(hObject,'Value') == userData.selectedChannel, return; end
 
-% Retrieve handles and names of non-empty edit fields
-propHandles = cellfun(@(x) handles.(['edit_' x(1:end-1)]),userData.propNames);
-propStrings =get(propHandles,'String');
-validProps = ~cellfun(@isempty,propStrings);
-propNames=userData.propNames(validProps);
-propHandles=propHandles(validProps);
-
-% Save properties in the structure array
-if ~isempty(propNames)
-    for i=1:numel(propNames)
-        userData.properties(userData.selectedChannel).(propNames{i})=...
-            str2double(get(propHandles(i),'String'));
+% Retrieve handles and names  and save them
+propNames = fieldnames(userData.properties(1));
+for i=1:numel(propNames)
+    if userData.isNumProp(i)
+        propHandle = handles.(['edit_' propNames{i}(1:end-1)]);
+        guiValue = str2num(get(propHandle,'String'));
+    else
+        propHandle = handles.(['popupmenu_' propNames{i}(1:end-1)]);
+        choices = get(propHandle,'String');
+        guiValue = choices{get(propHandle,'Value')};
     end
+    userData.properties(userData.selectedChannel).(propNames{i})=...
+        guiValue;
 end
 
 % Update the selected channel path and properties
+propNames = fieldnames(userData.properties(1));
 userData.selectedChannel=get(hObject,'Value'); 
 set(handles.text_path, 'String', userData.channels(userData.selectedChannel).channelPath_)
-for i=1:numel(userData.propNames)
-    propHandle = handles.(['edit_' userData.propNames{i}(1:end-1)]);
-    channelValue = userData.channels(userData.selectedChannel).(userData.propNames{i});
-    propValue = userData.properties(userData.selectedChannel).(userData.propNames{i});
+for i=1:numel(propNames)
+    channelValue = userData.channels(userData.selectedChannel).(propNames{i});
     if ~isempty(channelValue)
-        set(propHandle,'String',num2str(propValue),'Enable','off');
+        propValue = channelValue;
+        enableState = 'inactive';
     else
-        set(propHandle,'String',num2str(propValue),'Enable','on')
+        propValue = userData.properties(userData.selectedChannel).(propNames{i});
+        enableState = 'on';
     end
+    
+    if userData.isNumProp(i)
+        propHandle = handles.(['edit_' propNames{i}(1:end-1)]);
+        guiProp = 'String';
+        guiValue = propValue;
+    else
+        propHandle = handles.(['popupmenu_' propNames{i}(1:end-1)]);
+        guiProp = 'Value';
+        guiValue = find(cellfun(@(x)isequal(x,propValue),get(propHandle,'String')));
+    end
+    set(propHandle,guiProp,guiValue,'Enable',enableState);
 end
+
 
 set(handles.figure1,'UserData',userData)
 
@@ -227,18 +252,18 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
 
 % Retrieve names and handles of non-empty fields
-propHandles = cellfun(@(x) handles.(['edit_' x(1:end-1)]),userData.propNames);
-propStrings =get(propHandles,'String');
-validProps = ~cellfun(@isempty,propStrings);
-propNames=userData.propNames(validProps);
-propHandles=propHandles(validProps);
-
-% Save properties in the structure array
-if ~isempty(propNames)
-    for i=1:numel(propNames)
-        userData.properties(userData.selectedChannel).(propNames{i})=...
-            str2double(get(propHandles(i),'String'));
+propNames = fieldnames(userData.properties(1));
+for i=1:numel(propNames)
+    if userData.isNumProp(i)
+        propHandle = handles.(['edit_' propNames{i}(1:end-1)]);
+        guiValue = str2num(get(propHandle,'String'));
+    else
+        propHandle = handles.(['popupmenu_' propNames{i}(1:end-1)]);
+        choices = get(propHandle,'String');
+        guiValue = choices{get(propHandle,'Value')};
     end
+    userData.properties(userData.selectedChannel).(propNames{i})=...
+        guiValue;
 end
 
 % Set properties to channel objects

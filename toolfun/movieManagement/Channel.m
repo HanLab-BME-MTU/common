@@ -156,7 +156,7 @@ classdef Channel < hgsetget
         %Verifies that the channel specification is valid, and returns
         %properties of the channel
         
-        function [width height nFrames] = sanityCheck(obj,owner)
+        function [width height nFrames] = sanityCheck(obj,varargin)
             % Check the validity of each channel and return pixel size and time
             % interval parameters
             
@@ -164,8 +164,8 @@ classdef Channel < hgsetget
             ip = inputParser;
             ip.addRequired('obj',@(x) isa(x,'Channel'));
             ip.addOptional('owner',obj.owner_,@(x) isa(x,'MovieData'));
-            ip.parse(obj,owner)
-            obj.owner_=owner;
+            ip.parse(obj,varargin{:})
+            obj.owner_=ip.Results.owner;
             
             % Exception: channel path does not exist
             assert(logical(exist(obj.channelPath_, 'dir')), ...
@@ -244,12 +244,18 @@ classdef Channel < hgsetget
                     checkTest=@(x) isnumeric(x) && x>=300 && x<=800;
                 case 'exposureTime_'
                     checkTest=@(x) isnumeric(x) && x>0;
-                case {'imageType_','excitationType_','fluorophore_','notes_','channelPath_'}
+                case {'excitationType_','fluorophore_','notes_','channelPath_'}
                     checkTest=@(x) ischar(x);
+                case 'imageType_'
+                    checkTest = @(x) any(strcmp(x,Channel.getImagingModes));
                 case {'owner_'}
                     checkTest= @(x) isa(x,'MovieData');
             end
             checkValue = isempty(value) || checkTest(value);
+        end
+        
+        function modes=getImagingModes()
+            modes={'Widefield';'TIRF';'Confocal'};
         end
         
     end
