@@ -1,9 +1,11 @@
 function processGUI_OpeningFcn(hObject, eventdata, handles, string,varargin)
 % Common initialization of concrete process GUIs
 %
+% This function fills various fields of the userData 
 %       userData.mainFig - handle of main figure
 %       userData.handles_main - 'handles' of main figure
 %       userData.procID - The ID of process in the current package
+%       userData.crtProc - handle of current movieData
 %       userData.crtProc - handle of current process
 %       userData.crtPackage - handles of current package
 %       userData.procConstr - constructor of current process
@@ -14,6 +16,10 @@ function processGUI_OpeningFcn(hObject, eventdata, handles, string,varargin)
 % Sebastien Besson May 2011
 
 % Check input
+% The mainFig and procID should always be present
+% procCOnstr and procName should only be present if the concrete process
+% initation is delegated from an abstract class. Else the constructor will
+% be directly read from the package constructor list.
 ip = inputParser;
 ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
@@ -21,14 +27,16 @@ ip.addRequired('handles',@isstruct);
 ip.addRequired('string',@(x) isequal(x,'mainFig'));
 ip.addOptional('mainFig',[],@ishandle);
 ip.addOptional('procID',[],@isscalar);
-ip.addOptional('process',[],@(x) isa(x,'function_handle'));
+ip.addParamValue('procConstr',[],@(x) isa(x,'function_handle'));
+ip.addParamValue('procName','',@ischar);
 ip.parse(hObject,eventdata,handles,string,varargin{:});
 
 % Retrieve userData and read function input 
 userData = get(handles.figure1, 'UserData');
 userData.mainFig=ip.Results.mainFig;
 userData.procID = ip.Results.procID;
-userData.procConstr=ip.Results.process;
+userData.procConstr=ip.Results.procConstr;
+crtProcName = ip.Results.procName;
 
 % Set up copyright statement
 [copyright openHelpFile] = userfcn_softwareConfig(handles);
@@ -41,9 +49,14 @@ userData.MD = userData_main.MD(userData_main.id);
 userData.crtPackage = userData_main.crtPackage;
 userData.crtProc = userData.crtPackage.processes_{userData.procID};
 
-% Get current process constructor
-crtProcClassName = func2str(userData.procConstr);
-crtProcName = eval([crtProcClassName '.getName']);
+% If constructor is not inherited from abstract class, read it from package
+if isempty(userData.procConstr)
+    userData.procConstr = userData.crtPackage.processClassHandles_{userData.procID};
+    crtProcClassName = userData.crtPackage.processClassNames_{userData.procID};
+    crtProcName = eval([crtProcClassName '.getName']);
+end
+
+% Set process names in the text box and figure title
 procString = [' Step ' num2str(userData.procID) ': ' crtProcName];
 set(handles.text_processName,'String',procString);
 figString = [' Setting - ' crtProcName];

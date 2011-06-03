@@ -3,7 +3,7 @@ classdef SegmentationProcess < Process
 %
 % Sebastien Besson 4/2011
 
-    methods (Access = public)
+    methods (Access = protected)
         function obj = SegmentationProcess(owner,name,funName, funParams,...
                         outFilePaths)
            % Constructor of class SegmentationProcess
@@ -33,7 +33,8 @@ classdef SegmentationProcess < Process
                obj.outFilePaths_ = cell(1,numel(owner.channels_));               
            end
         end
-        
+    end
+    methods          
         function sanityCheck(obj) % throws exception
         end
         
@@ -98,7 +99,7 @@ classdef SegmentationProcess < Process
             h= @segmentationProcessGUI;
         end
         function methods = getMethods()
-            methods = {@Segmentation};
+            methods = {@ThresholdProcess};
         end
     end
 end

@@ -97,8 +97,7 @@ userData.crtPackage = userData_main.crtPackage;
 userData.crtProc = userData.crtPackage.processes_{userData.procID};
 
 % Get current process constructor
-userData.procConstr = @SegmentationProcess;
-crtProcClassName = func2str(userData.procConstr);
+crtProcClassName = userData.crtPackage.processClassNames_{userData.procID};
 crtProcName = eval([crtProcClassName '.getName']);
 procString = [' Step ' num2str(userData.procID) ': ' crtProcName];
 set(handles.text_processName,'String',procString);
@@ -108,12 +107,19 @@ set(handles.figure1,'Name',figString);
 % Get current process constructer, set-up GUIs and mask refinement process
 % constructor
      
-userData.procConst = eval([crtProcClassName '.getMethods']);
-userData.procSetting = {@thresholdProcessGUI};
-userData.procName = {'ThresholdProcess'};                  
-userData.procConstr = {@ThresholdProcess};
-popupMenuProcName = {'Thresholding Segmentation',...
-                     'Choose ...'};
+userData.procConstr = eval([crtProcClassName '.getMethods']);
+% userData.procConstr = {@ThresholdProcess};
+userData.procName = cellfun(@func2str,userData.procConstr,...
+    'UniformOutput',false);
+popupMenuProcName = vertcat(cellfun(@(x) eval([x '.getName']),userData.procName,...
+    'UniformOutput',false),{'Choose a segmentation method'});
+
+% userData.procName = cellfun(@func2str,userData.procConstr,...
+%     'UniformOutput',false);
+% userData.procName = {'ThresholdProcess'};                  
+% 
+% popupMenuProcName = {'Thresholding Segmentation',...
+%                      'Choose ...'};
 
 % Initialize segProc in user data
 userData.segProc = cell(1, length(userData.procName));
@@ -510,7 +516,11 @@ function pushbutton_set_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 segProcID = get(handles.popupmenu_segmentationMethods, 'Value');
-userData.procSetting{segProcID}('mainFig',userData.mainFig,userData.procID);
+crtProcName = userData.procName{segProcID};
+crtProcGUI =eval([crtProcName '.GUI']);
+crtProcGUI('mainFig',userData.mainFig,userData.procID,...
+    'procConstr',userData.procConstr{segProcID},...
+    'procName',crtProcName);
 delete(handles.figure1);
 
 

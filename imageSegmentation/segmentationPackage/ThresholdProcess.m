@@ -13,16 +13,7 @@ classdef ThresholdProcess < SegmentationProcess
                 super_args{3} = @thresholdMovie;                           
                 
                 if nargin < 3 || isempty(funParams)                                       
-                    
-                    %----Defaults----%
-                    funParams.OutputDirectory = ...
-                        [outputDir  filesep 'masks'];      
-                    funParams.ThresholdValue = []; %Default is to use automatic threshold selection                    
-                    funParams.ChannelIndex = 1 : numel(owner.channels_);                                                           
-                    funParams.MaxJump = 0; %Default is no jump suppression
-                    funParams.GaussFilterSigma = 0; %Default is no filtering.
-                    funParams.BatchMode = false;    
-                    funParams.MethodIndx = 1;     
+                    funParams = ThresholdProcess.getDefaultParams(owner,outputDir);
                 end
                 %Make sure the input parameters are legit??
                 super_args{4} = funParams;                    
@@ -54,6 +45,16 @@ classdef ThresholdProcess < SegmentationProcess
             methods=thresholdingMethods(index);
         end
         
+        function funParams = getDefaultParams(owner,outputDir)
+            %----Defaults----%
+            funParams.OutputDirectory = [outputDir  filesep 'masks'];
+            funParams.ThresholdValue = []; % automatic threshold selection
+            funParams.ChannelIndex = 1:numel(owner.channels_);
+            funParams.MaxJump = 0; %Default is no jump suppression
+            funParams.GaussFilterSigma = 0; %Default is no filtering.
+            funParams.BatchMode = false;
+            funParams.MethodIndx = 1;
+        end
     end
         
 end

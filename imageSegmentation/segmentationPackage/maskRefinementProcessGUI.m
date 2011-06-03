@@ -48,8 +48,7 @@ end
 function maskRefinementProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
 
-processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},...
-    @MaskRefinementProcess);
+processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:});
 
 % ---------------------- Channel Setup -------------------------
 userData = get(handles.figure1, 'UserData');

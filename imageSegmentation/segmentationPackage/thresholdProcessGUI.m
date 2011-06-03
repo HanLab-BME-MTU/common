@@ -47,8 +47,7 @@ end
 % --- Executes just before thresholdProcessGUI is made visible.
 function thresholdProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
-processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},...
-    @ThresholdProcess);
+processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:});
 
 
 % ---------------------- Channel Setup -------------------------
