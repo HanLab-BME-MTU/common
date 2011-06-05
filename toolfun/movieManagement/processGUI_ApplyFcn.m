@@ -26,7 +26,10 @@ end
 
 % Call back function of 'Apply' button
 userData = get(handles.figure1, 'UserData');
-userData.crtProc.setPara(funParams);
+
+ % Override the parameters and set them
+mergedParams=parseProcessParams(userData.crtProc,funParams);
+userData.crtProc.setPara(mergedParams);
  
 % --------------------------------------------------
 userData_main = get(userData.mainFig, 'UserData');
@@ -64,37 +67,31 @@ userData_main = get(userData.mainFig, 'UserData');
 % -------------------- Apply setting to all movies ------------------------
 if get(handles.checkbox_applytoall, 'Value')
 
-    for x = 1: length(userData_main.MD)
-        
-        if x == userData_main.id
-            continue
+    moviesId = setdiff(1:numel(userData_main.MD),userData_main.id);
+    for i = moviesId
+                
+        % if package process is empty, create a new process with default 
+        % parameters and add to MovieData and package's process list
+        if isempty(userData_main.package(i).processes_{userData.procID})            
+            process = userData.procConstr(userData_main.MD(i), ...
+                userData_main.package(i).outputDirectory_);
+            userData_main.MD(i).addProcess(process);
+            userData_main.package(i).setProcess(userData.procID, process);            
         end
-        
-        % Customize funParams to other movies
-        % OutputDirectory - package output directory      
-        funParams.OutputDirectory  = [userData_main.package(x).outputDirectory_  filesep 'masks'];
-        % if new process, create a new process with funParas and add to
-        % MovieData and package's process list
-        if isempty(userData_main.package(x).processes_{userData.procID})            
-            process = userData.procConstr(userData_main.MD(x), ...
-                userData_main.package(x).outputDirectory_, funParams);
-            userData_main.MD(x).addProcess(process);
-            userData_main.package(x).setProcess(userData.procID, process);            
-        else
-            % if process exist, replace the funParams with the new one
-            userData_main.package(x).processes_{userData.procID}.setPara(funParams)
-        end
-        
+ 
+        % Override the parameters and set them
+        mergedParams = parseProcessParams(process,funParams);
+        userData_main.package(i).processes_{userData.procID}.setPara(mergedParams);   
         
         % Do sanity check - only check changed parameters
-        procEx = userData_main.package(x).sanityCheck(false,'all');
+        procEx = userData_main.package(i).sanityCheck(false,'all');
         
         % Draw some bugs on the wall
         validProcEx = find(~cellfun(@isempty,procEx));
-        for i = validProcEx
+        for j = validProcEx
             % Record the icon and message to user data
-            userData_main.statusM(x).IconType{i} = 'warn';
-            userData_main.statusM(x).Msg{i} = procEx{i}(1).message;
+            userData_main.statusM(i).IconType{j} = 'warn';
+            userData_main.statusM(i).Msg{j} = procEx{j}(1).message;
         end
     end
     
@@ -103,8 +100,9 @@ if get(handles.checkbox_applytoall, 'Value')
 end
 % -------------------------------------------------------------------------
 
-% Save user data
+% Store the applytoall choice for this particular process
 userData_main.applytoall(userData.procID)=get(handles.checkbox_applytoall,'Value');
+% Save user data
 set(userData.mainFig, 'UserData', userData_main)
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);

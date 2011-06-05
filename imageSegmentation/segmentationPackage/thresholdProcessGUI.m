@@ -226,14 +226,9 @@ catch ME
     return;
 end
 
-% -------- Set parameter --------
-
-funParams = userData.crtProc.funParams_;
-
-% Get parameter
+% Retrieve GUI-defined parameters
 channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
-
 if get(handles.checkbox_auto, 'value')
     % if automatic thresholding
     funParams.ThresholdValue = [ ];
