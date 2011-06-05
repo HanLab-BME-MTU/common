@@ -145,8 +145,6 @@ delete(handles.figure1);
 function pushbutton_done_Callback(hObject, eventdata, handles)
 % Call back function of 'Apply' button
 userData = get(handles.figure1, 'UserData');
-userData_main = get(userData.mainFig, 'UserData');
-
 
 % -------- Check user input --------
 
@@ -208,10 +206,8 @@ catch ME
     return;
 end
 
-% -------- Set parameter --------
-
+% Retrieve GUI-defined parameters
 channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
-funParams = userData.crtProc.funParams_;
 funParams.ChannelIndex = channelIndex;
 
 if get(handles.checkbox_cleanup, 'Value')
@@ -237,108 +233,8 @@ else
     funParams.EdgeRefinement = false;
 end
 
-% Set parameters
-userData.crtProc.setPara(funParams);
-
-
-% --------------------------------------------------
-
-% If this is a brand new process, attach current process to MovieData and 
-% package's process list 
-if isempty( userData.crtPackage.processes_{userData.procID} )
-    
-    % Add new process to both process lists of MovieData and current package
-    userData_main.MD(userData_main.id).addProcess( userData.crtProc );
-    userData.crtPackage.setProcess(userData.procID, userData.crtProc);
-    
-    % Customized to Biosensors Package (hard coded)
-    userData.crtPackage.setDepMatrix(7, userData.procID, 1);
-    userData.crtPackage.setDepMatrix(9, userData.procID, 1);        
-    
-    % Set font weight of process name bold
-    eval([ 'set(userData.handles_main.checkbox_',...
-            num2str(userData.procID),', ''FontWeight'',''bold'')' ]);
-end
-
-% ----------------------Sanity Check (II, III check)----------------------
-
-% Do sanity check - only check changed parameters
-procEx = userData.crtPackage.sanityCheck(false,'all');
-
-% Return user data !!!
-set(userData.mainFig, 'UserData', userData_main)
-
-% Draw some bugs on the wall 
-for i = 1: length(procEx)
-   if ~isempty(procEx{i})
-       % Draw warning label on the i th process
-       userfcn_drawIcon(userData.handles_main,'warn',i,procEx{i}(1).message, true); % user data is retrieved, updated and submitted
-   end
-end
-
-% Refresh user data !!
-userData_main = get(userData.mainFig, 'UserData');
-
-
-% -------------------- Apply setting to all movies ------------------------
-
-if get(handles.checkbox_applytoall, 'Value')
-    
-for x = 1: length(userData_main.MD)
-    
-   if x == userData_main.id
-      continue 
-   end
-   
-   % Customize funParams to other movies 
-   % ChannelIndex - all channels
-   % OutputDirectory - pacakge output directory
-
-       l = length(userData_main.MD(x).channels_);
-       temp = arrayfun(@(x)(x > l),channelIndex, 'UniformOutput', true );
-       funParams.ChannelIndex = channelIndex(logical(~temp));
-   
-   funParams.OutputDirectory  = [userData_main.package(x).outputDirectory_  filesep 'refined_masks'];
-   
-   % if new process, create a new process with funParas and add to
-   % MovieData and package's process list
-   if isempty(userData_main.package(x).processes_{userData.procID})
-       
-       process = userData.procConstr(userData_main.MD(x), userData_main.package(x).outputDirectory_, funParams);
-       userData_main.MD(x).addProcess( process )
-       userData_main.package(x).setProcess(userData.procID, process )
-       
-   % if process exist, replace the funParams with the new one
-   else
-       userData_main.package(x).processes_{userData.procID}.setPara(funParams)
-   end
-   
-   
-    % Do sanity check - only check changed parameters
-    procEx = userData_main.package(x).sanityCheck(false,'all');
-
-    % Draw some bugs on the wall 
-    for i = 1: length(procEx)
-       if ~isempty(procEx{i})
-           % Record the icon and message to user data
-           userData_main.statusM(x).IconType{i} = 'warn';
-           userData_main.statusM(x).Msg{i} = procEx{i}(1).message;
-       end
-    end   
-end
-
-% Save user data
-set(userData.mainFig, 'UserData', userData_main)
-
-end
-% -------------------------------------------------------------------------
-
-% Save user data
-set(handles.figure1, 'UserData', userData);
-guidata(hObject,handles);
-delete(handles.figure1);
-
-
+% Set parameters and update main window
+processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
 
 % --- Executes on button press in checkbox_all.
 function checkbox_all_Callback(hObject, eventdata, handles)
