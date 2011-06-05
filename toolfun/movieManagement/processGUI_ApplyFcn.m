@@ -27,9 +27,8 @@ end
 % Call back function of 'Apply' button
 userData = get(handles.figure1, 'UserData');
 
- % Override the parameters and set them
-mergedParams=parseProcessParams(userData.crtProc,funParams);
-userData.crtProc.setPara(mergedParams);
+ % Override the parameters with the GUI set-up ones
+parseProcessParams(userData.crtProc,funParams);
  
 % --------------------------------------------------
 userData_main = get(userData.mainFig, 'UserData');
@@ -76,12 +75,11 @@ if get(handles.checkbox_applytoall, 'Value')
             process = userData.procConstr(userData_main.MD(i), ...
                 userData_main.package(i).outputDirectory_);
             userData_main.MD(i).addProcess(process);
-            userData_main.package(i).setProcess(userData.procID, process);            
+            userData_main.package(i).setProcess(userData.procID, process);
         end
- 
-        % Override the parameters and set them
-        mergedParams = parseProcessParams(process,funParams);
-        userData_main.package(i).processes_{userData.procID}.setPara(mergedParams);   
+        
+        % Override the parameters with the GUI defeined
+        parseProcessParams(process,funParams);
         
         % Do sanity check - only check changed parameters
         procEx = userData_main.package(i).sanityCheck(false,'all');
