@@ -189,16 +189,8 @@ for x = movieRun
         
         set(handles.popupmenu_movie, 'Value', x)
         set(handles.figure1, 'UserData', userData)
-        % Quick fix for callback incompatibility betwen packageGUI and
-        % oldpackageGUIs - to be solved before release
-        stack = dbstack;
-        if strcmp(stack(4).name,'packageGUI')
-            switchMovie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
-        else
-            popupmenu_movie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
-        end
-        
-        %     popupmenu_movie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
+        % Update the movie pop-up menu in the main package GUI
+        packageGUI('switchMovie_Callback',handles.popupmenu_movie, [], handles)
         userData = get(handles.figure1, 'UserData');
     end
     
@@ -208,11 +200,6 @@ for x = movieRun
             optionalProcID{x} = cat(2, optionalProcID{x}, i);
         end
     end
-    
-    % Set all running processes' sucess = false;
-    % for i = procRun{x}
-    %     userData.crtPackage.processes_{i}.setSuccess(false);
-    % end
     
     % Clear icons of selected processes
     % Return user data !!!
@@ -240,19 +227,11 @@ for x = movieRun
         
     catch ME
         
-        %     set(handles.pushbutton_run, 'Enable', 'on') %%%%%
-        %     set(handles.checkbox_forcerun, 'Enable', 'on') %%%%%
-        %     set(handles.checkbox_runall, 'Enable', 'on') %%%%%
-        %     set(handles.text_status, 'Visible', 'off') %%%%%
-        %     throw(ME) %%%%%
-        
         % Save the error into movie Exception cell array
         movieException{x} = ME;
         
         procRun{x} = procRun{x}(procRun{x} < i);
-        optionalProcID{x} = optionalProcID{x}(optionalProcID{x} < i);
-        
-        
+        optionalProcID{x} = optionalProcID{x}(optionalProcID{x} < i); 
     end
     
     % Refresh user data !!!
@@ -261,8 +240,6 @@ for x = movieRun
     set(handles.checkbox_forcerun, 'Enable', 'on')
     set(handles.checkbox_runall, 'Enable', 'on')
     set(handles.text_status, 'Visible', 'off')
-    
-    
     
     % ------- Check optional processes ----------
     
@@ -285,7 +262,6 @@ for x = movieRun
 end
 
 % ----------------------------- Create error report ---------------------------------------
-
 
 temp = find(~cellfun(@(x)isempty(x), movieException, 'UniformOutput', true));
 
