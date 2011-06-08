@@ -1,4 +1,5 @@
 function len = lengthBezier(P,t0,t1)
+% function len = lengthBezier(P,t0,t1)
 % lengthBezier computes the length of a 3D Bezier curve. By specifying a 
 % parametrization interval with the optional inputs the length of a segment
 % can be computed.
