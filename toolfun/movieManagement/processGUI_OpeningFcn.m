@@ -29,6 +29,7 @@ ip.addOptional('mainFig',[],@ishandle);
 ip.addOptional('procID',[],@isscalar);
 ip.addParamValue('procConstr',[],@(x) isa(x,'function_handle'));
 ip.addParamValue('procName','',@ischar);
+ip.addParamValue('initChannel',0,@isscalar);
 ip.parse(hObject,eventdata,handles,string,varargin{:});
 
 % Retrieve userData and read function input 
@@ -37,6 +38,7 @@ userData.mainFig=ip.Results.mainFig;
 userData.procID = ip.Results.procID;
 userData.procConstr=ip.Results.procConstr;
 crtProcName = ip.Results.procName;
+initChannel = ip.Results.initChannel;
 
 % Set up copyright statement
 [copyright openHelpFile] = userfcn_softwareConfig(handles);
@@ -95,8 +97,119 @@ if openHelpFile
     set(Img, 'UserData', struct('class',class(userData.crtProc)))
 end
 
-% ----------------------------------------------------------------
-
 % Update user data and GUI data
 set(hObject, 'UserData', userData);
+% ----------------------------------------------------------------
+if ~initChannel, return; end
+
+funParams = userData.crtProc.funParams_;
+
+% Set up available input channels
+set(handles.listbox_availableChannels,'String',userData.MD.getChannelPaths(), ...
+    'UserData',1:numel(userData.MD.channels_));
+
+% Set up selected input data channels and channel index
+parentProc = find(userData.crtPackage.depMatrix_(userData.procID,:));
+
+if isempty(parentProc) || ~isempty(userData.crtPackage.processes_{userData.procID})
+    % If process has no dependency, or process already exists
+    channelString =userData.MD.getChannelPaths(funParams.ChannelIndex);
+    channelIndex = funParams.ChannelIndex;
+    
+elseif isempty(userData.crtPackage.processes_{userData.procID})
+    % Check existence of all parent processes
+    emptyParentProc = any(cellfun(@isempty,...
+        userData.crtPackage.processes_(parentProc)));
+    channelIndex = 1:numel(userData.MD.channels_);
+    if ~emptyParentProc
+        parentChannelIndex = @(x) userData.crtPackage.processes_{x}.funParams_.ChannelIndex;
+        for i = parentProc
+            channelIndex = intersect(channelIndex,parentChannelIndex(i));
+        end
+    end
+    if ~isempty(channelIndex)
+        channelString = userData.MD.getChannelPaths(channelIndex);
+    else
+        channelString = {};
+    end
 end
+
+set(handles.listbox_selectedChannels,'String',channelString,...
+    'UserData',channelIndex);
+
+% Set default channels callback function
+set(handles.checkbox_all,'Callback',@(hObject,eventdata)...
+    checkallChannels(hObject,eventdata,guidata(hObject)));
+set(handles.pushbutton_select,'Callback',@(hObject,eventdata)...
+    selectChannel(hObject,eventdata,guidata(hObject)));
+set(handles.pushbutton_delete,'Callback',@(hObject,eventdata)...
+    deleteChannel(hObject,eventdata,guidata(hObject)));
+
+% --- Executes on button press in checkbox_all.
+function checkallChannels(hObject, ~, handles)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_all
+availableChannels = get(handles.listbox_availableChannels, 'String');
+availableChannelsIndx = get(handles.listbox_availableChannels, 'Userdata');
+selectedChannelsIndx = get(handles.listbox_selectedChannels, 'Userdata');
+
+% Return if listbox1 is empty
+if isempty(availableChannels), return; end
+
+if get(hObject,'Value')
+    set(handles.listbox_selectedChannels, 'String', availableChannels);
+    selectedChannelsIndx = availableChannelsIndx;
+else
+    set(handles.listbox_selectedChannels, 'String', {}, 'Value',1);
+    selectedChannelsIndx = [ ];
+end
+set(handles.listbox_selectedChannels, 'UserData', selectedChannelsIndx);
+
+% --- Executes on button press in pushbutton_select.
+function selectChannel(hObject, eventdata, handles)
+% call back function of 'select' button
+
+availableChannels = get(handles.listbox_availableChannels, 'String');
+selectedChannels = get(handles.listbox_selectedChannels, 'String');
+id = get(handles.listbox_availableChannels, 'Value');
+
+% If channel has already been added, return;
+availableChannelsIndx = get(handles.listbox_availableChannels, 'Userdata');
+selectedChannelsIndx = get(handles.listbox_selectedChannels, 'Userdata');
+
+for i = id
+    if any(strcmp(availableChannels{i}, selectedChannels) )
+        continue;
+    else
+        selectedChannels{end+1} = availableChannels{i};
+        selectedChannelsIndx = cat(2, selectedChannelsIndx, availableChannelsIndx(i));
+    end
+end
+
+set(handles.listbox_selectedChannels, 'String', selectedChannels, 'Userdata', selectedChannelsIndx);
+
+
+% --- Executes on button press in pushbutton_delete.
+function deleteChannel(hObject, eventdata, handles)
+% Call back function of 'delete' button
+selectedChannels = get(handles.listbox_selectedChannels,'String');
+id = get(handles.listbox_selectedChannels,'Value');
+
+% Return if list is empty
+if isempty(selectedChannels) || isempty(id),return; end
+
+% Delete selected item
+selectedChannels(id) = [ ];
+
+% Delete userdata
+selectedChannelsIndx = get(handles.listbox_selectedChannels, 'Userdata');
+selectedChannelsIndx(id) = [ ];
+set(handles.listbox_selectedChannels, 'Userdata', selectedChannelsIndx);
+
+% Point 'Value' to the second last item in the list once the 
+% last item has been deleted
+if (id >length(selectedChannels) && id>1)
+    set(handles.listbox_selectedChannels,'Value',length(selectedChannels));
+end
+% Refresh listbox
+set(handles.listbox_selectedChannels,'String',selectedChannels);
