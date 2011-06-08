@@ -148,13 +148,13 @@ public:
 
 	if (d > 0)
 	  {
-	    if (d < hside[k])
+	    if (d <= hside[k])
 	      range_query(center, hside, res, idx_lt, k2);
 	    range_query(center, hside, res, idx_gt, k2);
 	  }
 	else
 	  {
-	    if (-d < hside[k])
+	    if (-d <= hside[k])
 	      range_query(center, hside, res, idx_gt, k2);
 	    range_query(center, hside, res, idx_lt, k2);
 	  }
