@@ -113,13 +113,13 @@ public:
 			
 	if (d > 0)
 	  {
-	    if (d < radius)
+	    if (d <= radius)
 	      ball_query(center, radius, res, idx_lt, k2);
 	    ball_query(center, radius, res, idx_gt, k2);
 	  }
 	else
 	  {
-	    if (-d < radius)
+	    if (-d <= radius)
 	      ball_query(center, radius, res, idx_gt, k2);
 	    ball_query(center, radius, res, idx_lt, k2);
 	  }			
