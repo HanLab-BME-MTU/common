@@ -148,6 +148,5 @@ classdef Process < hgsetget
     end
     methods (Static,Abstract)
         getName
-        GUI
     end
 end
