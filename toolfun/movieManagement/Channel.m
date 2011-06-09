@@ -209,6 +209,7 @@ classdef Channel < hgsetget
     
     methods(Access=protected)
         function calculatePSFSigma(obj,numAperture,pixelSize)
+            if isempty(obj.emissionWavelength_); return; end
             if isempty(numAperture) || isempty(pixelSize), return; end
             if strcmp(obj.imageType_,'Widefield')
                 obj.psfSigma_ =.21*obj.emissionWavelength_/(numAperture*pixelSize);
