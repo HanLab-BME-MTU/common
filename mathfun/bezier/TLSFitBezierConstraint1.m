@@ -1,4 +1,4 @@
-function [P t res] = TLSFitBezier(X, n, varargin)
+function [P t res] = TLSFitBezierConstraint1(X, n, varargin)
 % TLSFitBezier computes the best total least squares fit of a nth-degree
 % Bezier curve to a set of ordered data points.
 %
@@ -54,6 +54,7 @@ opts = optimset('Jacobian', 'on', ...
 % Define initial vector of nodes t0
 [m d] = size(X);
 t = linspace(0,1,m)';
+t = t(2:end-1);
 
 % Solve the non-linear optimization on t
 Cnk = diag([1 cumprod(n:-1:1) ./ cumprod(1:n)]);
@@ -62,6 +63,7 @@ fun = @(t) r(t, X, Cnk, Cn_1k, n);
 [t, ~, res] = lsqnonlin(fun, t, zeros(size(t)), ones(size(t)), opts);
 
 % Compute the control points
+t = [0; t; 1];
 B = (bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0)) * Cnk;
 [Q1 R11] = qr(B,0);
 P = R11 \ (Q1' * X);
@@ -72,6 +74,9 @@ res = sqrt(sum(reshape(res, [m, d]).^2, 2));
 function [F J] = r(t, X, Cnk, Cn_1k, n)
     
 [m dim] = size(X);
+
+% Append t1 and tm
+t = [0; t; 1];
 
 % Compute Bernstein Matrix
 B = (bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0)) * Cnk;
@@ -89,6 +94,8 @@ if nargout > 1
   % Compute derivative of B against t
   z = zeros(m,1);
   Bt = n * ([z Bn_1] - [Bn_1 z]);
+  Bt(1, :) = 0;
+  Bt(end, :) = 0;
   
   % Compute P
   E = zeros(n + 1);
@@ -96,8 +103,9 @@ if nargout > 1
   P = Bt * E * (R11 \ Q1');
 
   % Compute Jacobian Matrix
-  J = zeros(m * dim, m);
+  J = zeros(m * dim, m - 2);
   for d = 1:dim
-    J((d-1) * m + 1:d * m,:) = -(Q2Q2t * diag(P * X(:,d)) + P' * diag(r(:,d)));
+    tmp = -(Q2Q2t * diag(P * X(:,d)) + P' * diag(r(:,d)));
+    J((d-1) * m + 1:d * m,:) = tmp(:, 2:end-1);
   end
 end
