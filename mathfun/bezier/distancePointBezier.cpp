@@ -18,7 +18,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     
     // Check number of output arguments
-    if (nlhs > 1) {
+    if (nlhs > 2) {
         mexErrMsgTxt("Too many output arguments.");
     }
     
@@ -43,7 +43,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // Variables
     double *cP; // Control points
     double *point; // Point
-    double *distance; // Minimal distance between the point and the Bezier curve
+    double *distanceMin; // Minimal distance between the point and the Bezier curve
+    double *tDistMin; // Value of the parameter corresponding to the minimal distance
     double t0, t1; // Parametrization interval
     
     // Associate inputs
@@ -60,7 +61,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     // Associate outputs
     plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
-    distance = mxGetPr(plhs[0]);
+    distanceMin = mxGetPr(plhs[0]);
+    
+    plhs[1] = mxCreateDoubleMatrix(1, 1, mxREAL);
+    tDistMin = mxGetPr(plhs[1]);
     
     // =====================
     // Linear Bezier curve
@@ -106,7 +110,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         double distance_t1 = distPointToPointOnLinBez(a, b, t1, point);
         
         // Determine the closest end point
-        double distanceMin = ( distance_t0 > distance_t1 ) ? distance_t1 : distance_t0;
+        if ( distance_t0 > distance_t1 ) {
+            *distanceMin = distance_t1;
+            *tDistMin = t1;
+        } else {
+            *distanceMin = distance_t0;
+            *tDistMin = t0;
+        }
         
         // Check if the closest point is a point on the curve
         if (outZeroReal > t0 && outZeroReal < t1) {
@@ -114,11 +124,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
             double distance_t = distPointToPointOnLinBez(a, b, t, point);
             
             // Determine the closest end point
-            distanceMin = ( distanceMin > distance_t ) ? distance_t : distanceMin;
+            if ( *distanceMin > distance_t ) {
+                *distanceMin = distance_t;
+                *tDistMin = t;
+            }
         }
         
         // Set the output value
-        *distance = sqrt(distanceMin);
+        *distanceMin = sqrt(*distanceMin);
     }
     
     // =====================
@@ -178,7 +191,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         double distance_t1 = distPointToPointOnQuadBez(a, b, c, t1, point);
         
         // Determine the closest end point
-        double distanceMin = ( distance_t0 > distance_t1 ) ? distance_t1 : distance_t0;
+        if ( distance_t0 > distance_t1 ) {
+            *distanceMin = distance_t1;
+            *tDistMin = t1;
+        } else {
+            *distanceMin = distance_t0;
+            *tDistMin = t0;
+        }
         
         // Check if the closest point is a point on the curve
         for (int i=0;i<degree;i++) {
@@ -187,12 +206,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                 double distance_t = distPointToPointOnQuadBez(a, b, c, t, point);
                 
                 // Determine the closest end point
-                distanceMin = ( distanceMin > distance_t ) ? distance_t : distanceMin;
+                if ( *distanceMin > distance_t ) {
+                    *distanceMin = distance_t;
+                    *tDistMin = t;
+                }
             }
         }
         
         // Set the output value
-        *distance = sqrt(distanceMin);
+        *distanceMin = sqrt(*distanceMin);
     }
     
     // =====================
@@ -260,7 +282,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         double distance_t1 = distPointToPointOnCubBez(a, b, c, d, t1, point);
         
         // Determine the closest end point
-        double distanceMin = ( distance_t0 > distance_t1 ) ? distance_t1 : distance_t0;
+        if ( distance_t0 > distance_t1 ) {
+            *distanceMin = distance_t1;
+            *tDistMin = t1;
+        } else {
+            *distanceMin = distance_t0;
+            *tDistMin = t0;
+        }
         
         // Check if the closest point is a point on the curve
         for (int i=0;i<degree;i++) {
@@ -269,12 +297,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                 double distance_t = distPointToPointOnCubBez(a, b, c, d, t, point);
                 
                 // Determine the closest end point
-                distanceMin = ( distanceMin > distance_t ) ? distance_t : distanceMin;
+                if ( *distanceMin > distance_t ) {
+                    *distanceMin = distance_t;
+                    *tDistMin = t;
+                }
             }
         }
-        
+
         // Set the output value
-        *distance = sqrt(distanceMin);
+        *distanceMin = sqrt(*distanceMin);
     }
 }
 

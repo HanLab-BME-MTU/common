@@ -1,5 +1,5 @@
-function dist = distancePointBezier(cP,P,t0,t1)
-% function dist = distancePointBezier(cP,P,t0,t1)
+function [dist,t] = distancePointBezier(cP,P,t0,t1)
+% function [dist,t] = distancePointBezier(cP,P,t0,t1)
 % distancePointBezier computes the distance between a point and a linear,
 % quadratic or cubic 3D Bezier curve. By specifying a parametrization 
 % interval with the optional inputs the distance to a segment
@@ -15,5 +15,6 @@ function dist = distancePointBezier(cP,P,t0,t1)
 %
 % Outputs:
 % dist              The distance to the Bezier curve
+% t                 The corresponding curve parameter
 %
 % Pascal Berard, May 2011
