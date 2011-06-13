@@ -140,6 +140,16 @@ classdef Process < hgsetget
             end
             
         end
+        
+                
+        function hfigure = resultDisplay(obj)
+            
+            if isa(obj, 'Process')
+                hfigure = movieDataVisualizationGUI(obj.owner_, obj);
+            else
+                error('User-defined: the input is not a Process object.')
+            end
+        end
     end
     methods (Abstract)
         sanityCheck(obj)

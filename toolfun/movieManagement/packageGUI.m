@@ -234,7 +234,7 @@ userData = get(handles.figure1, 'UserData');
 prop=get(hObject,'Tag');
 procID = str2double(prop(length('pushbutton_show_')+1:end));
 
-if isfield(userData, 'resultFig') && ishandle(userData.resultFig)
+if isfield(userData, 'resultFig') & ishandle(userData.resultFig)
     delete(userData.resultFig)
 end
 

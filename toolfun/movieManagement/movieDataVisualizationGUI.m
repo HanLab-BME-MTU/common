@@ -126,14 +126,18 @@ if nargin > 3
     end
     
     % handles saves handles of submenu
-    handles.pixelProcess = arrayfun(@(x)uimenu(handles.menu_image,'Label',pixelProcess{x}.name_,'Callback',@submenu_image_Callback, 'UserData', x+1), 1:length(pixelProcess) );
+    handles.pixelProcess = arrayfun(@(x)uimenu(handles.menu_image,...
+        'Label',pixelProcess{x}.name_,'Callback',@submenu_image_Callback,...
+        'UserData', x+1), 1:length(pixelProcess) );
     handles.pixelProcess = [handles.menu_image_raw handles.pixelProcess];
    
     if length(handles.pixelProcess) > 1
        set(handles.pixelProcess(2), 'Separator', 'on') % Add seperator
     end
     
-    handles.overlayProcess = arrayfun(@(x)uimenu(handles.menu_overlay,'Label',overlayProcess{x}.name_,'Callback',@submenu_overlay_Callback, 'UserData', x), 1:length(overlayProcess) );
+    handles.overlayProcess = arrayfun(@(x)uimenu(handles.menu_overlay,'Label',...
+        overlayProcess{x}.name_,'Callback',@submenu_overlay_Callback,...
+        'UserData', x), 1:length(overlayProcess) );
     guidata(hObject, handles)
     
     % If input process
@@ -216,16 +220,9 @@ function drawingFigure(handles, type, onoff, layer, varargin)
 userData = get(handles.figure1, 'UserData');
 
 % If no layer, assume gray-scale
-if nargin < 4
-    layer = 1;
-end
+if nargin < 4, layer = 1; end
 
-if strcmp(onoff, 'on')
-    
-    onoff = 1;
-else
-    onoff = 0;
-end
+if strcmp(onoff, 'on'), onoff = 1; else onoff = 0; end
 
 % If the handle of the figure is invalid
 if isempty(userData.hFigure) || ~ishandle(userData.hFigure)
@@ -263,8 +260,8 @@ switch lower(type)
         error('User-defined: Invalid input.')
 end
 
-   colormapStr = get(handles.popupmenu_colormap, 'String');
-   colormap(get(userData.hFigure, 'CurrentAxes'), colormapStr{get(handles.popupmenu_colormap, 'Value')})
+colormapStr = get(handles.popupmenu_colormap, 'String');
+colormap(get(userData.hFigure, 'CurrentAxes'), colormapStr{get(handles.popupmenu_colormap, 'Value')})
 
 
 
@@ -419,9 +416,7 @@ set(handles.figure1, 'UserData', userData)
 function dispOverlay(hfigure, handles, onoff, layer, varargin)
 
 % If no layer input, assume it's rgb
-if nargin < 4
-     layer = 1:3;
-end
+if nargin < 4, layer = 1:3; end
 
 userData = get(handles.figure1, 'UserData');
 
@@ -460,7 +455,7 @@ elseif isempty(userData.iOverlay) % If no overlay selected, then skip drawing ov
     layer = [];
 end
         
-    
+overlayProcessClasses = {'SegmentationProcess','SpeckleDetectionProcess'};
 if onoff  % Turn overlay on
         
         
@@ -475,21 +470,35 @@ if onoff  % Turn overlay on
         hOverlay = userData.hOverlay{userData.iOverlay}{iChan};
             
         if isempty(hOverlay) || ~all(ishandle(hOverlay))  % No overlay handles or the handles are invalid
+            
+            % Very very lame way to do it (but i need to visualize...)
+            % Should be externalized in a class
+            if isa(process,'SegmentationProcess')
+                maskNames = process.getOutMaskFileNames(iChan);
                 
-            maskNames = process.getOutMaskFileNames(iChan);
+                %Load the mask
+                currMask = imread([ process.outFilePaths_{iChan} filesep maskNames{1}{userData.iFrame}]);
                 
-            %Load the mask
-            currMask = imread([ process.outFilePaths_{iChan} filesep maskNames{1}{userData.iFrame}]);
+                %Convert the mask into a boundary
+                maskBounds = bwboundaries(currMask);
                 
-            %Convert the mask into a boundary
-            maskBounds = bwboundaries(currMask);  
-                
-            if isrgb
-                userData.hOverlay{userData.iOverlay}{iChan} = ...
+                if isrgb
+                    userData.hOverlay{userData.iOverlay}{iChan} = ...
                         cellfun(@(x)(plot(x(:,2),x(:,1),userData.colStr{j})),maskBounds);
-            else
-                userData.hOverlay{userData.iOverlay}{iChan} = ...
-                    cellfun(@(x)(plot(x(:,2),x(:,1),'white')), maskBounds);   
+                else
+                    userData.hOverlay{userData.iOverlay}{iChan} = ...
+                        cellfun(@(x)(plot(x(:,2),x(:,1),'white')), maskBounds);
+                end
+            elseif isa(process,'SpeckleDetectionProcess');
+                cands = process.loadChannelOutput(iChan,userData.iFrame);
+                validCands = vertcat(cands{1}([cands{1}.status]==1).Lmax);
+                if ishandle(userData.hOverlay{userData.iOverlay}{iChan})
+                    set(userData.hOverlay{userData.iOverlay}{iChan},...
+                        'XData',validCands(:,2),'XYData',validCands(:,1));
+                else
+                    userData.hOverlay{userData.iOverlay}{iChan} = ...
+                        plot(validCands(:,2),validCands(:,1),'or');
+                end
             end
                 
         else
@@ -824,38 +833,43 @@ overlayProcess = {};
 
 assert( isa(MD, 'MovieData'), 'User-defined: Input must be a MovieData object.')
 
-if isempty(MD.processes_)
-   return 
-end
+if isempty(MD.processes_), return; end
 
-for i = 1:length(MD.processes_)
-    
-    % If not a valid process for display
-    if isempty(MD.processes_{i}) || ~isa(MD.processes_{i}, 'Process') || ~any( MD.processes_{i}.checkChannelOutput )
-       continue 
-    end
-    
-    % Classify the process
-    if isa(MD.processes_{i}, 'ImageProcessingProcess') || isa(MD.processes_{i}, 'MaskUtilityProcess')
-        
-        % If pixel process
-        imageProcess = cat(2, imageProcess, {MD.processes_{i}});
-        
-    elseif isa(MD.processes_{i}, 'SegmentationProcess')
-        
-        % If overlay process
-        overlayProcess = cat(2, overlayProcess, {MD.processes_{i}});
-        
-    else
-        % warning('lccb:movieDataVisualization','User-defined: Not a supported process for display.')
-        % Not a valid process for display
-        continue;
-    end    
+imageProcessClasses = {'ImageProcessingProcess','SpeedMapsProcess'};
+overlayProcessClasses = {'SegmentationProcess','SpeckleDetectionProcess'};
 
-end
+isImageProcess  = cellfun(@(x) any(cellfun(@(y) isa(x,y),...
+    imageProcessClasses)),MD.processes_);
+isOverlayProcess  = cellfun(@(x) any(cellfun(@(y) isa(x,y),...
+    overlayProcessClasses)),MD.processes_);
+imageProcess = MD.processes_(isImageProcess);
+overlayProcess = MD.processes_(isOverlayProcess);
+% for i = 1:length(MD.processes_)
+%     
+%     % If not a valid process for display
+%     if isempty(MD.processes_{i}) || ~isa(MD.processes_{i}, 'Process') || ~any( MD.processes_{i}.checkChannelOutput )
+%        continue 
+%     end
+%     
+%     % Classify the process
+%     if isa(MD.processes_{i}, 'ImageProcessingProcess')
+%         
+%         % If pixel process
+%         imageProcess = cat(2, imageProcess, {MD.processes_{i}});
+%         
+%     elseif isa(MD.processes_{i}, 'SegmentationProcess')
+%         
+%         % If overlay process
+%         overlayProcess = cat(2, overlayProcess, {MD.processes_{i}});
+%         
+%     else
+%         % warning('lccb:movieDataVisualization','User-defined: Not a supported process for display.')
+%         % Not a valid process for display
+%         continue;
+%     end    
+% 
+% end
     
-    
-
 
 % --- Outputs from this function are returned to the command line.
 function varargout = movieDataVisualizationGUI_OutputFcn(hObject, eventdata, handles) 
@@ -866,26 +880,6 @@ function varargout = movieDataVisualizationGUI_OutputFcn(hObject, eventdata, han
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
-
-
-% --------------------------------------------------------------------
-function menu_image_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_image (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
-function menu_overlay_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_overlay (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% --------------------------------------------------------------------
-function menu_image_raw_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_image_raw (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
 % --- Executes on selection change in popupmenu_overlay.
@@ -900,124 +894,6 @@ set(handles.figure1, 'UserData', userData)
 drawingFigure(handles, 'overlay', 'on',1)
 
 
-% --- Executes during object creation, after setting all properties.
-function popupmenu_overlay_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu_overlay (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in checkbox_red.
-function checkbox_red_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_red (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox_red
-
-
-% --- Executes on button press in checkbox_green.
-function checkbox_green_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_green (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox_green
-
-
-% --- Executes on button press in checkbox_blue.
-function checkbox_blue_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_blue (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox_blue
-
-
-% --- Executes on selection change in popupmenu_red.
-function popupmenu_red_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu_red (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_red contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu_red
-
-
-% --- Executes during object creation, after setting all properties.
-function popupmenu_red_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu_red (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on selection change in popupmenu_green.
-function popupmenu_green_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu_green (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_green contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu_green
-
-
-% --- Executes during object creation, after setting all properties.
-function popupmenu_green_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu_green (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on selection change in popupmenu_blue.
-function popupmenu_blue_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu_blue (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_blue contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu_blue
-
-
-% --- Executes during object creation, after setting all properties.
-function popupmenu_blue_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu_blue (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in checkbox_gray.
-function checkbox_gray_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_gray (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox_gray
-
-
 % --- Executes on selection change in popupmenu_gray.
 function popupmenu_gray_Callback(hObject, eventdata, handles)
 
@@ -1026,9 +902,6 @@ userData.grayPixelChan = userData.iPixelChan(get(hObject, 'Value'));
 set(handles.figure1, 'UserData', userData)
 
 drawingFigure(handles, 'pixel', 'on')
-
-
-
 
 % --- Executes on selection change in popupmenu_colormap.
 function popupmenu_colormap_Callback(hObject, eventdata, handles)
@@ -1047,12 +920,6 @@ colormap(get(userData.hFigure, 'CurrentAxes'), colormapStr{get(handles.popupmenu
 
 % --- Executes on slider movement.
 function slider_frame_Callback(hObject, eventdata, handles)
-% hObject    handle to slider_frame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'Value') returns position of slider
-%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
 userData = get(handles.figure1, 'UserData');
 
@@ -1130,19 +997,6 @@ drawingFigure(handles, 'pixel', 'on', 1:3)
 userData = get(handles.figure1, 'UserData');
 title(get(userData.hFigure, 'CurrentAxes'), [num2str(userData.iFrame) ' / ' num2str(userData.nFrames)])
 
-
-% --- Executes during object creation, after setting all properties.
-function edit_frame_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_frame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 function uipanel_display_SelectionChangeFcn(hObject, eventdata)
 % Call back function of radion button group uipanel_display
 handles = guidata(hObject); 
@@ -1206,8 +1060,6 @@ switch get(eventdata.NewValue,'Tag')   % Get Tag of selected object
         drawingFigure(handles, 'overlay', 'off', 1:3, 'hideRGBoverlay')
         drawingFigure(handles, 'overlay', 'on')
 end
-
-
 
 
 function guifcn_rgbcheckbox_color(hObject, handles)
