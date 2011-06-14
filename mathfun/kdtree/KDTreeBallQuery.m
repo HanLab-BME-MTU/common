@@ -1,6 +1,6 @@
 %KDTREEBALLQUERY finds all of the points which are within the specified radius of the query points
 % 
-% idx = KDTreeBallQuery(inPts,queryPts,radii)
+% [idx, dist] = KDTreeBallQuery(inPts,queryPts,radii)
 % 
 % This function returns the indices of the input points which are within
 % the specified radii of the query points. Supports 2D or 3D point sets. In
@@ -30,7 +30,6 @@
 %   the input points which are within the n-th radii of the n-th query
 %   point.
 % 
-
-
-
-
+%   dist - Nx1 cell array, the n-th element of which gives the corresponding 
+%   distances between the input points and the n-th query point.
+%
