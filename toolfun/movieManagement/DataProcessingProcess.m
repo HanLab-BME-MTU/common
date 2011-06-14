@@ -145,12 +145,6 @@ classdef DataProcessingProcess < Process
                              exist(obj.outFilePaths_{x},'file')),iChan);
         end
         
-        function figHan = resultDisplay(obj)
-            %There is no generic resultDisplay method for this class yet
-            figHan = [];            
-            
-        end
-               
             
         function sanityCheck(obj)
             

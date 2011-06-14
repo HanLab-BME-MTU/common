@@ -455,7 +455,6 @@ elseif isempty(userData.iOverlay) % If no overlay selected, then skip drawing ov
     layer = [];
 end
         
-overlayProcessClasses = {'SegmentationProcess','SpeckleDetectionProcess'};
 if onoff  % Turn overlay on
         
         
@@ -499,6 +498,11 @@ if onoff  % Turn overlay on
                     userData.hOverlay{userData.iOverlay}{iChan} = ...
                         plot(validCands(:,2),validCands(:,1),'or');
                 end
+            elseif isa(process,'FlowTrackingProcess');
+                flow = process.loadChannelOutput(iChan,userData.iFrame);
+                userData.hOverlay{userData.iOverlay}{iChan} =...
+                    quiver(flow{1}(:, 2),flow{1}(:, 1),...
+                    flow{1}(:, 4), flow{1}(:, 3));
             end
                 
         else
@@ -836,7 +840,8 @@ assert( isa(MD, 'MovieData'), 'User-defined: Input must be a MovieData object.')
 if isempty(MD.processes_), return; end
 
 imageProcessClasses = {'ImageProcessingProcess','SpeedMapsProcess'};
-overlayProcessClasses = {'SegmentationProcess','SpeckleDetectionProcess'};
+overlayProcessClasses = {'SegmentationProcess','SpeckleDetectionProcess',...
+    'FlowTrackingProcess'};
 
 isImageProcess  = cellfun(@(x) any(cellfun(@(y) isa(x,y),...
     imageProcessClasses)),MD.processes_);
