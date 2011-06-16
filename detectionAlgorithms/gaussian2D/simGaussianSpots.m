@@ -1,6 +1,26 @@
-% Francois Aguet, last modified April 20 2011
-
 function [frame, xv, yv, sv, Av] = simGaussianSpots(nx, ny, sigma, varargin)
+% SIMGAUSSIANSPOTS generates a given number of 2D Gaussians in an image.
+% The generated Gaussian signals do not overlap with the image boundaries.
+%
+%   Usage: [frame,xv,yv,sv,Av]=simGaussianSpots(nx,ny,sigma,varargin)
+%   Input:
+%           nx -> image size in x direction
+%           ny -> image size in y direction
+%           sigma -> 2D Gaussian standard deviation (in pixels)
+%       varargin may include:
+%           x -> x coordinates of centers of 2D Gaussians (can be subpixel)
+%           y -> y coordinates of centers of 2D Gaussians (can be subpixel)
+%           A -> amplitudes of 2D Gaussians
+%           npoints -> number of 2D Gaussian to be generated
+%           background -> value of background
+%
+%   Output:
+%           frame -> image with 2D Gaussian signals
+%           xv -> x coordinates of centers of Gaussians (can be subpixel)
+%           vy -> y coordinates of centers of Gaussians (can be subpixel)
+%           sv -> vector of standard deviation
+%           Av -> vector of amplitudes
+%
 
 ip = inputParser;
 ip.CaseSensitive = false;
@@ -20,9 +40,30 @@ xv = ip.Results.x;
 yv = ip.Results.y;
 Av = ip.Results.A;
 
+if length(xv) ~= length(yv)
+    error('''x'' and ''y'' must be of same size');
+end
+
+if ~isempty(xv)
+    np=length(xv);
+end
+
 % feature vectors
 sv = sigma*ones(1,np);
 wv = ceil(4*sv);
+
+% discard signals too near to image boundaries
+if ~isempty(xv)
+    idx=xv > max(wv)+1 & xv < nx-max(wv)-1;
+    idy=yv > max(wv)+1 & yv < ny-max(wv)-1;
+    id=idx & idy;
+    tmp=length(xv) - sum(id);
+    disp(['number of discarded points: ' num2str(tmp)] );
+    xv=xv(id);
+    yv=yv(id);
+    sv=sv(id);
+    np=length(xv);
+end
 
 w_max = 2*max(wv)+1;
 if (w_max>nx || w_max>ny)
@@ -57,3 +98,5 @@ for k = 1:np
     g = Av(k) * exp(-r2/(2*sv(k)^2));
     frame(yi-wi:yi+wi,xi-wi:xi+wi) = frame(yi-wi:yi+wi,xi-wi:xi+wi) + g;
 end
+
+% Francois Aguet, last modified April 20 2011
