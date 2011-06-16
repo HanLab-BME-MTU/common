@@ -4,7 +4,7 @@
 
 // Compilation: mex -I. distancePointBezier.cpp
 
-#include "rpoly.cpp" // http://www.crbond.com/download/misc/rpoly.cpp
+#include "rpoly_ak1.cpp" // http://www.akiti.ca/rpoly_ak1_Intro.html
 
 double distPointToPointOnLinBez(double *a, double *b, double t, double *point);
 double distPointToPointOnQuadBez(double *a, double *b, double *c, double t, double *point);
@@ -181,8 +181,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         double outZeroReal[3];
         double outZeroImag[3];
         int info[3];
-        int nRoots;
-        nRoots = rpoly(polyCoeff, degree, outZeroReal, outZeroImag, info);
+        rpoly_ak1(polyCoeff, &degree, outZeroReal, outZeroImag);
         
         // Evaluate the Bezier curve at the beginning
         double distance_t0 = distPointToPointOnQuadBez(a, b, c, t0, point);
@@ -272,8 +271,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         double outZeroReal[5];
         double outZeroImag[5];
         int info[5];
-        int nRoots;
-        nRoots = rpoly(polyCoeff, degree, outZeroReal, outZeroImag, info);
+        rpoly_ak1(polyCoeff, &degree, outZeroReal, outZeroImag);
         
         // Evaluate the Bezier curve at the beginning
         double distance_t0 = distPointToPointOnCubBez(a, b, c, d, t0, point);
