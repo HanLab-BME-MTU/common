@@ -56,7 +56,8 @@ varargout{1} = handles.output;
 % In case the package GUI has been called without argument
 userData = get(handles.figure1, 'UserData');
 if (isfield(userData,'startMovieSelectorGUI') && userData.startMovieSelectorGUI)
-    menu_file_open_Callback(hObject, eventdata, handles)
+    movieSelectorGUI('packageName',userData.packageName,'MD',userData.MD);
+    delete(handles.figure1)
 end
 
 % --- Executes on button press in pushbutton_status.
@@ -177,7 +178,6 @@ if strcmp(eventdata.Key, 'rightarrow')
     switchMovie_Callback(handles.pushbutton_right, [], handles);
 end
 
-
 % --------------------------------------------------------------------
 function menu_about_Callback(hObject, eventdata, handles)
 
@@ -194,20 +194,13 @@ if status
     warndlg(msg,'Fail to open browser','modal');
 end
 
-
 % --------------------------------------------------------------------
-
 function menu_file_open_Callback(~, ~, handles)
 % Call back function of 'New' in menu bar
 userData = get(handles.figure1,'Userdata');
-if isfield(userData,'MD')
-    for i = 1: length(userData.MD)
-        userData.MD(i).save;
-    end
-end
-movieSelectorGUI(userData.packageName);
+if isfield(userData,'MD'), arrayfun(@(x) x.save,userData.MD); end
+movieSelectorGUI('packageName',userData.packageName);
 delete(handles.figure1)
-
 
 % --------------------------------------------------------------------
 function exit_Callback(~, ~, handles)

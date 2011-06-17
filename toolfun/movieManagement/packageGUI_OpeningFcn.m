@@ -1,7 +1,7 @@
 function packageGUI_OpeningFcn(hObject,eventdata,handles,packageName,varargin)
 % Callback called at the opening of packageGUI
 %
-% packageGUI(MD)   MD: MovieData object
+% packageGUI_OpeningFcn(packageName,MD)   MD: MovieData object
 %
 % Useful tools
 %
@@ -51,30 +51,30 @@ ip.addRequired('handles',@isstruct);
 ip.addRequired('packageName',@(x) isa(x,'char') || isa(x,'function_handle'));
 ip.addOptional('MD',[],@(x) isa(x,'MovieData'));
 ip.parse(hObject,eventdata,handles,packageName,varargin{:});
-MD=ip.Results.MD;
+
 
 if isa(packageName,'function_handle')
-    packageHandle=packageName;
+    packageConstr=packageName;
     packageName=func2str(packageName);
 elseif isa(packageName,'char')
-    packageHandle=str2func(packageName);
+    packageConstr=str2func(packageName);
 end
 
-assert(any(strcmp(superclasses(packageName),'Package')),sprintf('%s is not a valid Package',packageName));
+assert(any(strcmp(superclasses(packageName),'Package')),...
+    sprintf('%s is not a valid Package',packageName));
       
 handles.output = hObject;
 userData = get(handles.figure1,'UserData');
 userData.packageName = packageName;
-
+userData.MD=ip.Results.MD;
 
 % Call package GUI error
-
 [copyright openHelpFile] = userfcn_softwareConfig(handles);
 set(handles.text_copyright, 'String', copyright);
 
 %If package GUI supplied without argument, saves a boolean which will be
 %read by packageNameGUI_OutputFcn
-if isempty(MD)
+if isempty(userData.MD)
     userData.startMovieSelectorGUI=true;
     set(handles.figure1,'UserData',userData);
     guidata(hObject, handles);
@@ -82,44 +82,44 @@ if isempty(MD)
 end
 
 % ----------------------------- Load MovieData ----------------------------
-
-% MD = varargin{2};
-nMovies = numel(MD);
+nMovies = numel(userData.MD);
 packageIndx = cell(1, nMovies);
 
 % I. Before loading MovieData, firstly check if the current package exists
 for i = 1:nMovies
     % Check for existing packages and create them if false
-    packageIndx{i} = find(cellfun(@(x) isa(x,packageName),MD(i).packages_),1);
+    packageIndx{i} = find(cellfun(@(x) isa(x,packageName),...
+        userData.MD(i).packages_),1);
     if packageIndx{i}
-        userData.package(i) = MD(i).packages_{packageIndx{i}};
+        userData.package(i) = userData.MD(i).packages_{packageIndx{i}};
     else
-        MD(i).addPackage(packageHandle(MD(i), MD(i).outputDirectory_));
-        userData.package(i) = MD(i).packages_{end};
+        userData.MD(i).addPackage(packageConstr(userData.MD(i),...
+            userData.MD(i).outputDirectory_));
+        userData.package(i) = userData.MD(i).packages_{end};
         % Sanity check to check basic dependencies are satisfied
-        try
-            userData.package(i).sanityCheck(true,'all');
-        catch ME
-            errordlg(ME.message);
-            userData.startMovieSelectorGUI=true;
-            set(handles.figure1,'UserData',userData);
-            guidata(hObject, handles);
-            return
-        end
+    end
+    try
+        userData.package(i).sanityCheck(true,'all');
+    catch ME
+        errordlg(ME.message,'Package initialization','modal');
+        userData.startMovieSelectorGUI=true;
+        set(handles.figure1,'UserData',userData);
+        guidata(hObject, handles);
+        return
     end
 end
 
 % ------------- Check if existing processes can be recycled ---------------
-
 existProcess = cell(1, nMovies);
 processClassNames = userData.package(1).processClassNames_;
 
 % Multiple movies loop
 for i = 1:nMovies
 
-    if isempty(packageIndx{i}) && ~isempty(MD(i).processes_)
+    if isempty(packageIndx{i}) && ~isempty(userData.MD(i).processes_)
     
-        classname = cellfun(@(z)class(z), MD(i).processes_, 'UniformOutput', false);
+        classname = cellfun(@(z)class(z), userData.MD(i).processes_,...
+            'UniformOutput', false);
 
         existProcessForm = cellfun(@(z)strcmp(z, classname), processClassNames, 'uniformoutput', false );
         existProcessId = find(cellfun(@(z)any(z), existProcessForm));
@@ -128,7 +128,7 @@ for i = 1:nMovies
             % Get recycle processes 
         
             for j = existProcessId
-                existProcess{i} = horzcat(existProcess{i},  MD(i).processes_(existProcessForm{j}) );
+                existProcess{i} = horzcat(existProcess{i}, userData.MD(i).processes_(existProcessForm{j}) );
             end
 
         end
@@ -152,20 +152,15 @@ if ~isempty(existProcessMovieId)
     user_response = questdlg(msg, 'Recycle Existing Steps',  'No', 'Yes','Yes');
     
     if strcmpi( user_response , 'Yes')
-
-        for x = existProcessMovieId
-            
+        for x = existProcessMovieId           
             recycleProcessGUI(existProcess{x}, userData.package(x), 'mainFig', handles.figure1)
         end
-    end
-        
-        
+    end      
 end
 
 % Initialize userdata
 userData.id = 1;
 userData.crtPackage = userData.package(userData.id);
-userData.MD = MD;
 userData.dependM = userData.package(userData.id).getDependencyMatrix;
 userData.optProcID =userData.package(userData.id).getOptionalProcessId;
 nProc = size(userData.dependM, 1);

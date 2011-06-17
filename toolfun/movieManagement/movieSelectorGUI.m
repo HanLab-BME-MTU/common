@@ -64,7 +64,14 @@ function movieSelectorGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %   userData.iconHelpFig - handle of help dialog
 %   userData.msgboxGUI - handle of message box GUI
 %   userData.relocateFig - handle of relocateMovieDataGUI
-%
+
+ip = inputParser;
+ip.addRequired('hObject',@ishandle);
+ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
+ip.addRequired('handles',@isstruct);
+ip.addParamValue('packageName','',@ischar);
+ip.addParamValue('MD',[],@(x) isempty(x) || isa(x,'MovieData'));
+ip.parse(hObject,eventdata,handles,varargin{:});
 
 [copyright openHelpFile] = userfcn_softwareConfig(handles);
 set(handles.text_copyright, 'String', copyright)
@@ -74,9 +81,6 @@ userData = get(handles.figure1, 'UserData');
 % Choose default command line output for setupMovieDataGUI
 handles.output = hObject;
 
-% Set callback function of radio button group uipanel_package
-set(handles.uipanel_package, 'SelectionChangeFcn', @uipanel_package_SelectionChangeFcn);
- 
 % other user data set-up
 userData.MD = [ ];
 userData.ML = [ ];
@@ -90,15 +94,27 @@ if isempty(isValidPackage),
     warndlg('No package found! Please make sure you properly added the installation directory to the path (see user''s manual).',...
         'Movie Selector','modal'); 
 end
+set(handles.uipanel_package,'SelectionChangeFcn','');
 
 % Grey out radio buttons corresponding to non-available packages
 invalidRadioButtons = packageRadioButtons(~isValidPackage);
 set(invalidRadioButtons,'Enable','off');
+if ~isempty(ip.Results.packageName)
+    preSelectedPackage=strcmp(packageList,ip.Results.packageName);
+    set(packageRadioButtons(preSelectedPackage),'Value',1.0);
+end
 
 % Test a package preselection and update the corresponding radio button
-if nargin > 3, 
-    preSelectedPackage=strcmp(packageList,varargin{1}); 
-    set(packageRadioButtons(preSelectedPackage),'Value',1.0);
+if ~isempty(ip.Results.MD)
+    userData.MD=ip.Results.MD;
+    nMovies = numel(userData.MD);
+    contentlist =  arrayfun(@(x) [x.movieDataPath_ filesep ...
+        x.movieDataFileName_],userData.MD,'UniformOutput',false);
+    
+    % Refresh movie list box in movie selector panel
+    set(handles.listbox_movie, 'String', contentlist,'Value',1);
+    title = sprintf('Movie List: %s/%s movie(s)',1,num2str(nMovies));
+    set(handles.text_movie_1, 'String', title)
 end
 
 % Load help icon from dialogicons.mat
@@ -115,14 +131,11 @@ set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 
-if openHelpFile
-    set(Img, 'UserData', struct('class',mfilename));
-end
+if openHelpFile, set(Img, 'UserData', struct('class',mfilename)); end
 
 % Save userdata
 set(handles.figure1,'UserData',userData);
 guidata(hObject, handles);
-
 
 % --- Outputs from this function are returned to the command line.
 function varargout = movieSelectorGUI_OutputFcn(hObject, eventdata, handles) 
@@ -134,24 +147,18 @@ function varargout = movieSelectorGUI_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
-
 % --- Executes on button press in pushbutton_cancel.
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
 delete(handles.figure1)
 
-
 % --- Executes on button press in pushbutton_done.
 function pushbutton_done_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_done (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Check the presence 
-if isempty( get(handles.listbox_movie, 'String') )
+% Check a movie and a package are selected
+if isempty(get(handles.listbox_movie, 'String'))
    warndlg('Please select at least one movie to continue.', 'Movie Selector', 'modal')
    return
 end
-
 if isempty(get(handles.uipanel_package, 'SelectedObject'))
    warndlg('Please select a package to continue.', 'Movie Selector', 'modal')
    return
@@ -160,80 +167,52 @@ end
 % Retrieve the ID of the selected button and call the appropriate
 userData = get(handles.figure1, 'userdata');
 selectedPackage=get(get(handles.uipanel_package, 'SelectedObject'),'UserData');
+close(handles.figure1);
 packageGUI(selectedPackage,userData.MD);
-
-delete(handles.figure1);
 
 
 % --- Executes on selection change in listbox_movie.
 function listbox_movie_Callback(hObject, eventdata, handles)
 
 contentlist = get(handles.listbox_movie, 'String');
-
 if isempty(contentlist)
     title = sprintf('Movie List: 0/0 movie(s)');
-    set(handles.text_movie_1, 'String', title)
 else
-    title = sprintf('Movie List: %s/%s movie(s)', num2str(get(handles.listbox_movie, 'Value')), num2str(length(contentlist)));
-    set(handles.text_movie_1, 'String', title)    
+    title = sprintf('Movie List: %s/%s movie(s)',...
+        num2str(get(handles.listbox_movie, 'Value')),...
+        num2str(length(contentlist)));
 end
-
-% Hints: contents = cellstr(get(hObject,'String')) returns listbox_movie contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from listbox_movie
-
-
-% --- Executes during object creation, after setting all properties.
-function listbox_movie_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to listbox_movie (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+set(handles.text_movie_1, 'String', title)
 
 % --- Executes on button press in pushbutton_new.
 function pushbutton_new_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_new (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 userData = get(handles.figure1, 'UserData');
 
-% if movieDataGUI exist
+% if movieDataGUI exist, delete it
 if isfield(userData, 'newFig') && ishandle(userData.newFig)
     delete(userData.newFig)
 end
 userData.newFig = movieDataGUI('mainFig',handles.figure1);
 set(handles.figure1,'UserData',userData);
 
-
 % --- Executes on button press in pushbutton_prepare.
 function pushbutton_prepare_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_prepare (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-userData = get(handles.figure1, 'UserData');
 
-% if movieDataGUI exist
+userData = get(handles.figure1, 'UserData');
+% if preparation GUI exist, delete it
 if isfield(userData, 'newFig') && ishandle(userData.newFig)
     delete(userData.newFig)
 end
 userData.newFig = dataPreparationGUI('mainFig',handles.figure1);
 set(handles.figure1,'UserData',userData);
 
-
 % --- Executes on button press in pushbutton_delete.
 function pushbutton_delete_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'Userdata');
-
 contentlist = get(handles.listbox_movie,'String');
 % Return if list is empty
-if isempty(contentlist)
-    return;
-end
+if isempty(contentlist), return;end
 num = get(handles.listbox_movie,'Value');
 
 % Delete channel object
@@ -253,36 +232,33 @@ if isempty(contentlist)
     title = sprintf('Movie List: 0/0 movie(s)');
     set(handles.text_movie_1, 'String', title)
 else
-    title = sprintf('Movie List: %s/%s movie(s)', num2str(get(handles.listbox_movie, 'Value')), num2str(length(contentlist)));
+    title = sprintf('Movie List: %s/%s movie(s)',...
+        num2str(get(handles.listbox_movie, 'Value')),...
+        num2str(length(contentlist)));
     set(handles.text_movie_1, 'String', title)    
 end
 
 set(handles.figure1, 'Userdata', userData)
 guidata(hObject, handles);
 
-
-
 % --- Executes on button press in pushbutton_detail.
 function pushbutton_detail_Callback(hObject, eventdata, handles)
-if isempty(get(handles.listbox_movie, 'String'))
-    return
-end
+
+% Return if no movie 
+if isempty(get(handles.listbox_movie, 'String')), return; end
 userData = get(handles.figure1, 'UserData');
 
-% if movieDataGUI exist
+% if movieDataGUI exist, delete it
 if isfield(userData, 'newFig') && ishandle(userData.newFig)
     delete(userData.newFig)
 end
-
 userData.newFig = movieDataGUI(userData.MD(get(handles.listbox_movie, 'value')));
 set(handles.figure1,'UserData',userData);
 
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
-% Delete function
 
 userData = get(handles.figure1, 'UserData');
-
 % Delete new window
 if isfield(userData, 'newFig')
     if userData.newFig~=0 && ishandle(userData.newFig)
@@ -378,8 +354,7 @@ switch type
         userData.MD = cat(2, userData.MD, M);
         contentlist{end+1} = [pathname filename];
         
-    case 'MovieList'
-        
+    case 'MovieList'        
         try
             M.sanityCheck('all', pathname, filename);
         catch ME
@@ -399,25 +374,11 @@ switch type
             return
         end
         
-        reloadME = [];
-        errorME = [];
-        healthMD = [];
-                
         % Reload movie data filenames in case they have been relocated
         % during sanity check        
         [movieException, MDList] = M.sanityCheck(index);
-        
-        % Explore cell array 'movieException'
-        for i = 1: length(movieException)
-            
-            if isempty(movieException{i}) 
-                healthMD = cat(2, healthMD, i);
-            elseif strcmp(movieException{i}.identifier, 'lccb:ml:nofile' );
-                reloadME = cat(2, reloadME, i);
-            else
-                errorME = cat(2, errorME, i);
-            end
-        end
+        errorME = find(~cellfun(@isempty,moviException));
+        healthMD = find(cellfun(@isempty,moviException));
         
         % Error movie index
         if ~isempty(errorME)
@@ -437,68 +398,21 @@ switch type
                 userData.MD = cat(2, userData.MD, MDList{i});
             end
             contentlist = cat(2, contentlist', movieDataFile(index(healthMD)) );
-        end
-        
-        % Reload movie index
-        if ~isempty(reloadME)
-            filemsg = '';
-            for i = reloadME
-                filemsg = cat(2, filemsg, sprintf('\n%s', movieDataFile{index(i)} ) );
-            end
-            
-            % Ask user if relocate the movie data files
-            msg = sprintf('Cannot find file(s):\n%s\n\nDo you want to relocate the above files?', filemsg);
-            user_response = questdlg(msg, 'Movie Listbox', 'Yes','No','Yes');
-            
-            switch lower(user_response)
-                case 'yes'
-                    userData.relocateFig = relocateMovieDataGUI(M, index(reloadME), 'mainFig', handles.figure1);
-                case 'no'
-                    msg = sprintf('Do you want to keep or remove the unfound movie(s) in movielist %s?\n%s', filename, filemsg);
-                    user_response2 = questdlg(msg, 'Movie Listbox', 'Keep Movie(s)', 'Remove Movie(s)', 'Keep Movie(s)');
-                    
-                    if strcmpi( user_response2, 'remove movie(s)')
-
-                            M.removeMovieDataFile(index(reloadME));
-                            M.save();
-                            msg = sprintf('The following movie(s) have been removed from movielist %s.\n%s', filename, filemsg);
-                            msgbox(msg, 'Help', 'help', 'modal');
-                    end
-            end
-            
-        end        
-        
+        end             
     otherwise
         error('User-defined: varable ''type'' does not have an approprate value.')
 end
 
 % Refresh movie list box in movie selector panel
-
 set(handles.listbox_movie, 'String', contentlist, 'Value', length(contentlist))
 title = sprintf('Movie List: %s/%s movie(s)', num2str(get(handles.listbox_movie, 'Value')), num2str(length(contentlist)));
 set(handles.text_movie_1, 'String', title)
 
-
 set(handles.figure1, 'UserData', userData);
 
-
-% --------------------------------------------------------------------
-function menu_file_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_file (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
 function menu_about_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_about (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-
-% --------------------------------------------------------------------
-function menu_about_update_Callback(hObject, eventdata, handles)
-status = web('http://lccb.hms.harvard.edu/software.html', '-browser');
+status = web(get(hObject,'UserData'), '-browser');
 if status
     switch status
         case 1
@@ -510,43 +424,10 @@ if status
     end
     warndlg(msg,'Fail to open browser','modal');
 end
-
-
-% --------------------------------------------------------------------
-function menu_about_lccb_Callback(hObject, eventdata, handles)
-status = web('http://lccb.hms.harvard.edu/', '-browser');
-if status
-    switch status
-        case 1
-            msg = 'System default web browser is not found.';
-        case 2
-            msg = 'System default web browser is found but could not be launched.';
-        otherwise
-            msg = 'Fail to open browser for unknown reason.';
-    end
-    warndlg(msg,'Fail to open browser','modal');
-end
-
-
-% --------------------------------------------------------------------
-function menu_file_new_Callback(hObject, eventdata, handles)
-
-pushbutton_new_Callback(handles.pushbutton_new, [], handles)
-
-
-% --------------------------------------------------------------------
-function menu_file_open_Callback(hObject, eventdata, handles)
-
-pushbutton_open_Callback(handles.pushbutton_open, [], handles)
-
 
 % --------------------------------------------------------------------
 function menu_file_quit_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_file_quit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 delete(handles.figure1)
-
 
 % --- Executes on button press in pushbutton_deleteall.
 function pushbutton_deleteall_Callback(hObject, eventdata, handles)
@@ -554,30 +435,23 @@ userData = get(handles.figure1, 'Userdata');
 
 contentlist = get(handles.listbox_movie,'String');
 % Return if list is empty
-if isempty(contentlist)
-    return;
-end
+if isempty(contentlist), return; end
  
-user_response = questdlg(['Are you sure to delete all the ' num2str(length(contentlist)) ' movie(s) in the listbox?'], ...
+user_response = questdlg(['Are you sure to delete all the '...
+    num2str(length(contentlist)) ' movie(s) in the listbox?'], ...
     'Movie Listbox', 'Yes','No','Yes');
 
-if strcmpi('no', user_response)
-    return
-end
+if strcmpi('no', user_response), return; end
 
 % Delete channel object
 userData.MD = [];
 
 % Refresh listbox_channel
-contentlist = {};
-set(handles.listbox_movie,'String',contentlist, 'Value',1);
-
-    title = sprintf('Movie List: 0/0 movie(s)');
-    set(handles.text_movie_1, 'String', title)
+set(handles.listbox_movie,'String',{}, 'Value',1);
+set(handles.text_movie_1, 'String','Movie List: 0/0 movie(s)')
 
 set(handles.figure1, 'Userdata', userData)
 guidata(hObject, handles);
-
 
 % --- Executes on button press in pushbutton_save.
 function pushbutton_save_Callback(hObject, eventdata, handles)
@@ -617,13 +491,3 @@ end
 % Run the save method (should launch the dialog box asking for the object 
 % path and filename)
 ML.save();
-
-
-% --- Executes when selected object is changed in uipanel_package.
-function uipanel_package_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uipanel_package 
-% eventdata  structure with the following fields (see UIBUTTONGROUP)
-%	EventName: string 'SelectionChanged' (read only)
-%	OldValue: handle of the previously selected object or empty if none was selected
-%	NewValue: handle of the currently selected object
-% handles    structure with handles and user data (see GUIDATA)
