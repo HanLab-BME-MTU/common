@@ -424,21 +424,19 @@ classdef  MovieData < hgsetget
 
         function fileNames = getImageFileNames(obj,iChan)
             % Retrieve the names of the images in a specific channel
+            
             if nargin < 2 || isempty(iChan)
                 iChan = 1:numel(obj.channels_);
             end            
-            if isnumeric(iChan) && min(iChan)>0 && max(iChan) <= ...
-                    numel(obj.channels_) && isequal(round(iChan),iChan)                
-                fileNames = arrayfun(@(x)(imDir(obj.channels_(iChan(x)).channelPath_)),1:numel(iChan),'UniformOutput',false);
-                fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
-                nIm = cellfun(@(x)(length(x)),fileNames);
-                if ~all(nIm == obj.nFrames_)                    
-                    error('Incorrect number of images found in one or more channels!')
-                end                
-            else
+            if ~ismember(iChan,1:numel(obj.channels_)),
                 error('Invalid channel numbers! Must be positive integers less than the number of image channels!')
             end
-            
+            % Delegates the method to the classes
+            fileNames = arrayfun(@getImageFileNames,obj.channels_(iChan),...
+                'UniformOutput',false);
+            if ~all(cellfun(@numel,fileNames) == obj.nFrames_)
+                error('Incorrect number of images found in one or more channels!')
+            end
         end
         
         function chanPaths = getChannelPaths(obj,iChan)

@@ -20,7 +20,7 @@ classdef Channel < hgsetget
         neutralDensityFilter_       % Neutral Density Filter
         incidentAngle_              % Incident Angle - for TIRF (degrees)
         filterType_                 % Filter Type
-        fluorophore_                % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
+        fluorophore_                % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)       
     end
     
     properties(SetAccess=protected) 
@@ -203,6 +203,14 @@ classdef Channel < hgsetget
                 obj.calculatePSFSigma(obj.owner_.numAperture_,obj.owner_.pixelSize_);
             end
                
+        end
+        
+        function fileNames = getImageFileNames(obj,iFrame)
+            fileNames = arrayfun(@(x) x.name,imDir(obj.channelPath_),...
+                'UniformOutput',false);
+            if nargin>1
+                fileNames=fileNames{iFrame};
+            end
         end
         
     end
