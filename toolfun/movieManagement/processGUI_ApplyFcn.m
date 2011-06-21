@@ -72,14 +72,15 @@ if get(handles.checkbox_applytoall, 'Value')
         % if package process is empty, create a new process with default 
         % parameters and add to MovieData and package's process list
         if isempty(userData_main.package(i).processes_{userData.procID})            
-            process = userData.procConstr(userData_main.MD(i), ...
+            newProcess = userData.procConstr(userData_main.MD(i), ...
                 userData_main.package(i).outputDirectory_);
-            userData_main.MD(i).addProcess(process);
-            userData_main.package(i).setProcess(userData.procID, process);
+            userData_main.MD(i).addProcess(newProcess);
+            userData_main.package(i).setProcess(userData.procID, newProcess);
         end
-        
+
         % Override the parameters with the GUI defeined
-        parseProcessParams(process,funParams);
+        parseProcessParams(userData_main.package(i).processes_{userData.procID},...
+            funParams);
         
         % Do sanity check - only check changed parameters
         procEx = userData_main.package(i).sanityCheck(false,'all');
