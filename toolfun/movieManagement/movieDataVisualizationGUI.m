@@ -502,7 +502,7 @@ if onoff  % Turn overlay on
                 flow = process.loadChannelOutput(iChan,userData.iFrame);
                 userData.hOverlay{userData.iOverlay}{iChan} =...
                     quiver(flow{1}(:, 2),flow{1}(:, 1),...
-                    flow{1}(:, 4), flow{1}(:, 3));
+                    flow{1}(:, 4)-flow{1}(:, 2), flow{1}(:, 3)-flow{1}(:, 1));
             end
                 
         else
