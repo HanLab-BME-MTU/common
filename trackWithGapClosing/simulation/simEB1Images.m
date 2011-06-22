@@ -34,6 +34,7 @@ function [movieInfoGT,tracksGT,errFlag] = simEB1Images(imSize,pixelSize,...
 
 movieInfoGT = [];
 tracksGT = [];
+errFlag = 0;
 
 %% Input
 
@@ -91,7 +92,7 @@ end
 %% Image generation
 
 %reserve memory for movieInfoGT
-movieInfoGT = repmat(struct('xCoord',[],'yCoord',[],'orient',[]),numFrames,1);
+movieInfoGT = repmat(struct('xCoord',[],'yCoord',[],'orient',[],'amp',[]),numFrames,1);
 
 %calculate number of digits for image enumeration
 numDigits = num2str(ceil(log10(numFrames))+1);
@@ -109,9 +110,10 @@ for iFrame = 1 : numFrames
     orientFrame = orientEB1(~isnan(xCoordFrame));
     xCoordFrame = xCoordFrame(~isnan(xCoordFrame));
     yCoordFrame = yCoordFrame(~isnan(yCoordFrame));
-    movieInfoGT(iFrame).xCoord = [xCoordFrame zeros(size(xCoordFrame))];
-    movieInfoGT(iFrame).yCoord = [yCoordFrame zeros(size(xCoordFrame))];
+    movieInfoGT(iFrame).xCoord = [xCoordFrame 0.5*ones(size(xCoordFrame))];
+    movieInfoGT(iFrame).yCoord = [yCoordFrame 0.5*ones(size(xCoordFrame))];
     movieInfoGT(iFrame).orient = [orientFrame zeros(size(xCoordFrame))];
+    movieInfoGT(iFrame).amp = [ones(size(xCoordFrame)) 0.1*ones(size(xCoordFrame))];
     
     %get number of features in this frame
     numFeat = length(xCoordFrame);
@@ -144,7 +146,6 @@ end
 
 %reserve memory for tracksGT
 %tracksFeatIndxCG is not filled for now
-%the amplitude information is also missing
 tracksGT = repmat(struct('tracksFeatIndxCG',[],'tracksCoordAmpCG',[],'seqOfEvents',[]),numMTs,1);
 
 %store the track information for each EB1 comet
@@ -152,8 +153,16 @@ for iMT = 1 : numMTs
 
     %get this track's position information
     tracksCoordAmpCG = NaN(1,numFrames*8);
-    tracksCoordAmpCG(1:8:end) = positionEB1(:,1,iMT);
-    tracksCoordAmpCG(2:8:end) = positionEB1(:,2,iMT);
+    goodIndx = find(~isnan(positionEB1(:,1,iMT)));
+    goodTimes = (find(~isnan(positionEB1(:,1,iMT)))-1) * 8;
+    tracksCoordAmpCG(goodTimes+1) = positionEB1(goodIndx,1,iMT);
+    tracksCoordAmpCG(goodTimes+2) = positionEB1(goodIndx,2,iMT);
+    tracksCoordAmpCG(goodTimes+3) = 0;
+    tracksCoordAmpCG(goodTimes+4) = 1;
+    tracksCoordAmpCG(goodTimes+5) = 0.5;
+    tracksCoordAmpCG(goodTimes+6) = 0.5;
+    tracksCoordAmpCG(goodTimes+7) = 0;
+    tracksCoordAmpCG(goodTimes+8) = 0.1;
 
     %find the start and end time of this track
     trackSEL = getTrackSEL(tracksCoordAmpCG);
