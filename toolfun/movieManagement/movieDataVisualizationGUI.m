@@ -498,7 +498,7 @@ if onoff  % Turn overlay on
                     userData.hOverlay{userData.iOverlay}{iChan} = ...
                         plot(validCands(:,2),validCands(:,1),'or');
                 end
-            elseif isa(process,'FlowTrackingProcess');
+            elseif isa(process,'FlowTrackingProcess') || isa(process,'FlowAnalysisProcess');
                 flow = process.loadChannelOutput(iChan,userData.iFrame);
                 userData.hOverlay{userData.iOverlay}{iChan} =...
                     quiver(flow{1}(:, 2),flow{1}(:, 1),...
@@ -839,9 +839,9 @@ assert( isa(MD, 'MovieData'), 'User-defined: Input must be a MovieData object.')
 
 if isempty(MD.processes_), return; end
 
-imageProcessClasses = {'ImageProcessingProcess','SpeedMapsProcess'};
+imageProcessClasses = {'ImageProcessingProcess','SpeedMapsProcess','KineticAnalysisProcess'};
 overlayProcessClasses = {'SegmentationProcess','SpeckleDetectionProcess',...
-    'FlowTrackingProcess'};
+    'FlowTrackingProcess','FlowAnalysisProcess'};
 
 isImageProcess  = cellfun(@(x) any(cellfun(@(y) isa(x,y),...
     imageProcessClasses)),MD.processes_);
