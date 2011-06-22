@@ -562,7 +562,6 @@ for iImage = 1 : numImagesRaw
                 
             end %(if size(maxPos,1) > 1)
             
-  	end %(if size(maxPos,1) > 1)
         end %(if size(maxPos,1) > 1)
         
         localMaxima(iImage).cands = candsCurrent;
