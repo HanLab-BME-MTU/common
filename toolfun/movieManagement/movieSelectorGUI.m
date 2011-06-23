@@ -377,8 +377,8 @@ switch type
         % Reload movie data filenames in case they have been relocated
         % during sanity check        
         [movieException, MDList] = M.sanityCheck(index);
-        errorME = find(~cellfun(@isempty,moviException));
-        healthMD = find(cellfun(@isempty,moviException));
+        errorME = find(~cellfun(@isempty,movieException));
+        healthMD = find(cellfun(@isempty,movieException));
         
         % Error movie index
         if ~isempty(errorME)
