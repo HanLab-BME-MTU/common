@@ -13,7 +13,7 @@ double distPointToPointOnCubBez(double *a, double *b, double *c, double *d, doub
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     // Check number of input arguments
-    if (nrhs != 2 && nrhs !=4) {
+    if (nrhs != 2 && nrhs != 4) {
         mexErrMsgTxt("2 or 4 input arguments required.");
     }
     
