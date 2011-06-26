@@ -50,8 +50,7 @@ sigma = pG(4);
 %===============
 % Display
 %===============
-idx = find(strcmpi(varargin, 'Display'));
-if ~isempty(idx) && strcmpi(varargin{idx+1}, 'on')
+if strcmpi(ip.Results.Display, 'on')
     xa = (-ru+1:ru-1)*p.pixelSize/p.M*1e9;
     
     figure;
@@ -66,4 +65,5 @@ if ~isempty(idx) && strcmpi(varargin{idx+1}, 'on')
     title('Gaussian approximation');
     xlabel('x [nm]');
     ylabel('y [nm]');
+    linkaxes;
 end
