@@ -1,4 +1,4 @@
-function stk2tiffDirs(stkpath)
+function stk2tiffDirs(varargin)
 %
 % function stk2tiffDirs(stkpath)
 %
@@ -8,12 +8,20 @@ function stk2tiffDirs(stkpath)
 %
 % Francois Aguet, 09/01/2010
 
-if (nargin == 0 || isempty(stkpath))
+
+ip = inputParser;
+ip.CaseSensitive = false;
+ip.addRequired('path');
+ip.addParamValue('Crop', 'off', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
+ip.parse(varargin{:});
+stkpath = ip.Results.path;
+
+if isempty(stkpath)
    stkpath = uigetdir('Select directory containing the STK files:'); 
    if (stkpath == 0)
        return;
-   end;
-end;
+   end
+end
 
 stkpath = [stkpath filesep];
 stkList = [dir([stkpath '*.tif']) dir([stkpath '*.tiff']) dir([stkpath '*.stk'])];
@@ -22,16 +30,22 @@ N = length(stkList);
 
 for k = 1:N
     fprintf('Converting: %s\n', stkList(k).name);
-    % find extension
-    extLength = strfind(stkList(k).name, '.');
-    extLength = length(stkList(k).name) - extLength + 1;    
-    stkname = strrep(stkList(k).name(1:end-extLength), ' ', '_');
+    [~,stkname] = fileparts(stkList(k).name);
     dirname = [stkpath stkname filesep];
-    if ~(exist(dirname, 'dir')==7)
-        mkdir(dirname);
-    end;
+    [~,~] = mkdir(dirname);
+    
     stack = stackRead([stkpath stkList(k).name]);
-    nf = size(stack,3);    
+    
+    if strcmpi(ip.Results.Crop, 'on')
+       h = figure;
+       imagesc(stack(:,:,1)); colormap(gray(256)); axis image;
+       hr = imrect();
+       pos = round(wait(hr));
+       close(h);
+       stack = stack(pos(2):pos(2)+pos(4), pos(1):pos(1)+pos(3),:);
+    end
+    
+    nf = size(stack,3);  
     for z = 1:nf
         imwrite(stack(:,:,z), [dirname stkname '_' num2str(z, ['%0' num2str(length(num2str(nf))) 'd']) '.tif'], 'tif');
     end;
