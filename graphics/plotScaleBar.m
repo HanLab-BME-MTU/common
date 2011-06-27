@@ -21,48 +21,21 @@ function plotScaleBar(width, varargin)
 % fixed parameters
 b = 40;
 
-if mod(length(varargin),2)~=0
-    error('Optional arguments need to be entered as pairs.');
-end
+ip = inputParser;
+ip.CaseSensitive = false;
+ip.addRequired('width', @isscalar);
+ip.addParamValue('Handle', gca, @ishandle)
+ip.addParamValue('Location', 'southwest', @ischar);
+ip.addParamValue('Label', [], @ischar);
+ip.addParamValue('FontName', 'Helvetica', @ischar);
+ip.addParamValue('FontSize', 10, @isscalar);
+ip.parse(width, varargin{:});
+label = ip.Results.Label;
+fontName = ip.Results.FontName;
+fontSize = ip.Results.FontSize;
 
-idx = find(strcmpi(varargin, 'Handle'));
-if ~isempty(idx)
-    h = varargin{idx+1};
-else
-    h = gca;
-end
-
-idx = find(strcmpi(varargin, 'location'));
-if ~isempty(idx)
-    location = lower(varargin{idx+1});
-else
-    location = 'southwest';
-end
-
-idx = find(strcmpi(varargin, 'Label'));
-if ~isempty(idx)
-    label = varargin{idx+1};
-else
-    label = [];
-end
-
-idx = find(strcmpi(varargin, 'FontName'));
-if ~isempty(idx)
-    fontName = varargin{idx+1};
-else
-    fontName = 'Helvetica';
-end
-
-idx = find(strcmpi(varargin, 'FontSize'));
-if ~isempty(idx)
-    fontSize = varargin{idx+1};
-else
-    fontSize = 12;
-end
-
-
-XLim = get(h, 'XLim');
-YLim = get(h, 'YLim');
+XLim = get(ip.Results.Handle, 'XLim');
+YLim = get(ip.Results.Handle, 'YLim');
 
 lx = diff(XLim);
 ly = diff(YLim);
@@ -80,43 +53,37 @@ else
     textHeight = 0;
 end
 
+
+textProps = {'Color', 'w',...
+                'VerticalAlignment', 'Top',...
+                'HorizontalAlignment', 'Center',...
+                'FontName', fontName, 'FontSize', fontSize};%, 'FontUnits', 'normalized'};
+
 hold on;
 set(gcf, 'InvertHardcopy', 'off');
-switch location
+switch ip.Results.Location
     case 'northeast'
         fill([lx-width lx lx lx-width]-dx, [height height 0 0]+dx,...
             [1 1 1]*0.9999, 'EdgeColor', 'none');
         if ~isempty(label)
-            text(lx-dx-width/2, dx+height, label, 'Color', 'w',...
-                'VerticalAlignment', 'Top',...
-                'HorizontalAlignment', 'Center',...
-                'FontName', fontName, 'FontSize', fontSize);
+            text(lx-dx-width/2, dx+height, label, textProps{:});
         end
     case 'southeast'
         patch([lx-width lx lx lx-width]-dx, [ly ly ly-height ly-height]-max(dx,textHeight),...
             [1 1 1]*0.9999, 'EdgeColor', 'none');
         if ~isempty(label)
-            text(lx-dx-width/2, ly-max(dx,0.9*textHeight), label, 'Color', 'w',...
-                'VerticalAlignment', 'Top',...
-                'HorizontalAlignment', 'Center',...
-                'FontName', fontName, 'FontSize', fontSize);
+            text(lx-dx-width/2, ly-max(dx,0.9*textHeight), label, textProps{:});
         end
     case 'southwest'
         fill([0 width width 0]+dx, [ly ly ly-height ly-height]-max(dx,textHeight),...
             [1 1 1]*0.9999, 'EdgeColor', 'none');
         if ~isempty(label)
-            text(dx+width/2, ly-max(dx,0.9*textHeight), label, 'Color', 'w',...
-                'VerticalAlignment', 'Top',...
-                'HorizontalAlignment', 'Center',...
-                'FontName', fontName, 'FontSize', fontSize);
+            text(dx+width/2, ly-max(dx,0.9*textHeight), label, textProps{:});
         end
     case 'northwest'
         fill([0 width width 0]+dx, [height height 0 0]+dx,...
             [1 1 1]*0.9999, 'EdgeColor', 'none');
         if ~isempty(label)
-            text(dx+width/2, dx+height, label, 'Color', 'w',...
-                'VerticalAlignment', 'Top',...
-                'HorizontalAlignment', 'Center',...
-                'FontName', fontName, 'FontSize', fontSize);
+            text(dx+width/2, dx+height, label, textProps{:});
         end
 end
