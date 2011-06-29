@@ -36,20 +36,24 @@ typedef struct argStruct {
 typedef int(*pfunc_t)(double*, int, argStruct_t*);
 
 typedef struct dataStruct {
-    int nx, np, ng, nDF, step;
-    double *pixels;
-    double *buffer;
-    double *gx, *gy;
-    int *estIdx;
-    int *idx;
-    int nValid; // number of non-NaN pixels
-    double *x_init;
-    double *prmVect;
-    pfunc_t *dfunc;
+    int nx;               // width/height of input
+    int np;               // # input parameters
+    int ng;               // # gaussians in mixture
+    int nDF;              // # of parameters to optimize
+    int step;             // increment in parameter vector; i.e., 3 if 'xyA', 2 if 'xy' etc.
+    double *pixels;       // input array
+    double *buffer;       // buffer array for calculations
+    double *gx, *gy;      // 1-D separated components of a Gaussian: exp(-(x-x0)^2/(2*sigma^2))
+    int *estIdx;          // indexes of prmVect that will be optimized
+    int *idx;             // index of non-NaN pixels
+    int nValid;           // number of non-NaN pixels
+    double *x_init;       // initial values for optimization
+    double *prmVect;      // parameter vector: 3*ng+2: x1, y1, A1, ... xn, yn, An, sigma, background
+    pfunc_t *dfunc;       // function pointer for derivatives
     gsl_vector *residuals;
-    gsl_matrix *J;
-    double *Jbuffer;
-    double maxIter, eAbs, eRel;
+    gsl_matrix *J;        // Jacobian matrix
+    double *Jbuffer;      // buffer for double output
+    double maxIter, eAbs, eRel; // optimiser settings, see GSL doc.
 } dataStruct_t;
 
 
@@ -157,7 +161,7 @@ int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J) {
     dataStruct_t *data = (dataStruct_t *)params;
     // initialize Jacobian
     int nJ = data->nDF * data->nValid;
-    memset(data->Jbuffer, 2.54, nJ*sizeof(double));
+    memset(data->Jbuffer, 0.0, nJ*sizeof(double));
     
     int nx = data->nx;
     int b = nx/2, i, k;
