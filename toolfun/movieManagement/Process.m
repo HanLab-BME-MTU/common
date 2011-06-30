@@ -23,7 +23,8 @@ classdef Process < hgsetget
         
         inFilePaths_    % Path to the process input
         outFilePaths_   % Path to the process output
-
+        
+        displayMethod_  % Cell array
     end
     properties        
         notes_          % Process notes
@@ -141,20 +142,41 @@ classdef Process < hgsetget
             
         end
         
-                
         function hfigure = resultDisplay(obj)
-            
-            if isa(obj, 'Process')
-                hfigure = movieDataVisualizationGUI(obj.owner_, obj);
-            else
-                error('User-defined: the input is not a Process object.')
-            end
+            hfigure = movieDataVisualizationGUI(obj.owner_, obj);    
         end
+        
+        function h=draw(obj,iChan,iFrame,varargin)
+            %
+            outputList = obj.getDrawableOutput();
+            ip = inputParser;
+            ip.addRequired('obj',@(x) isa(x,'Process'));
+            ip.addRequired('iChan',@isnumeric);
+            ip.addRequired('iFrame',@isnumeric);
+            ip.addParamValue('output',outputList(1).var,@(x)ischar(x) && ...
+            	ismember(x,{drawableOutputList.var}));
+            ip.parse(obj,iChan,iFrame,varargin{:})
+			
+            data=obj.loadChannelOutput(iChan,iFrame,ip.Results.output);
+            iOutput=1;
+            if ~isempty(outputList(iOutput).formatData),
+                data=outputList(iOutput).formatData(data);
+            end
+            try
+                assert(~isempty(obj.displayMethod_{iOutput,iChan}));
+            catch ME
+                obj.displayMethod_{iOutput,iChan}=...
+                    outputList(iOutput).defaultDisplayMethod();
+            end
+            
+            % Delegate to the corresponding method
+            tag = [obj.getName '_' num2str(iChan)];
+            h=obj.displayMethod_{iOutput,iChan}.draw(data,tag,varargin{:});
+        end
+        
     end
     methods (Abstract)
         sanityCheck(obj)
-        % More abstract classed goes here
-        % ... ...
     end
     methods (Static,Abstract)
         getName

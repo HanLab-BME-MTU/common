@@ -82,25 +82,26 @@ classdef SegmentationProcess < Process
             
         end
         
-        function mask = loadChannelOutput(obj,iChan,varargin)      
+        function mask = loadChannelOutput(obj,iChan,iFrame,varargin)      
             % Input check
             ip =inputParser;
             ip.addRequired('obj',@(x) isa(x,'SegmentationProcess'));
             ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
-            ip.addOptional('iFrame',1:obj.owner_.nFrames_,...
-                @(x) ismember(x,1:obj.owner_.nFrames_));
-            ip.parse(obj,iChan,varargin{:})
-            iFrame = ip.Results.iFrame;
+            ip.addRequired('iFrame',@(x) ismember(x,1:obj.owner_.nFrames_));
+            ip.addOptional('output',[],@ischar);            
+            ip.parse(obj,iChan,iFrame,varargin{:})
+
             
             % Data loading
-            mask=cell(size(iChan));
-            for i=iChan
-                maskNames = obj.getOutMaskFileNames(i);
-                mask{i} = arrayfun(@(j) imread([process.outFilePaths_{i} filesep...
-                    maskNames{1}{j}]),iFrame);
-            end
+            maskNames = obj.getOutMaskFileNames(iChan);
+            mask =imread([obj.outFilePaths_{iChan} filesep maskNames{1}{iFrame}]);
+%             mask=cell(size(iChan));
+%             for i=iChan
+%                 maskNames = obj.getOutMaskFileNames(i);
+%                 mask{i} = arrayfun(@(j) imread([obj.outFilePaths_{i} filesep...
+%                     maskNames{1}{j}]),iFrame,'Unif',0);
+%             end
         end
-
     end
     methods(Static)
         function name =getName()
@@ -112,5 +113,21 @@ classdef SegmentationProcess < Process
         function methods = getMethods()
             methods = {@ThresholdProcess};
         end
+        
+        function output = getDrawableOutput()
+            output(1).name='Masks';
+            output(1).var='';
+            output(1).formatData=@getMaskBoundaries;
+            output(1).defaultDisplayMethod=@LineDisplay;
+        end
+        
     end
+end
+
+function boundaries = getMaskBoundaries(mask)
+
+b=bwboundaries(mask);
+b2 =cellfun(@(x) vertcat(x,[NaN NaN]),b,'Unif',false);
+boundaries =vertcat(b2{:});
+
 end

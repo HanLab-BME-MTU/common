@@ -20,7 +20,9 @@ classdef Channel < hgsetget
         neutralDensityFilter_       % Neutral Density Filter
         incidentAngle_              % Incident Angle - for TIRF (degrees)
         filterType_                 % Filter Type
-        fluorophore_                % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)       
+        fluorophore_                % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)  
+        
+        displayMethod_ = ImageDisplay;
     end
     
     properties(SetAccess=protected) 
@@ -212,6 +214,12 @@ classdef Channel < hgsetget
                 fileNames=fileNames{iFrame};
             end
         end
+        function h = draw(obj,iFrame,varargin)
+            imageName = obj.getImageFileNames(iFrame);
+            image = double(imread([obj.channelPath_ filesep imageName]));
+            h = obj.displayMethod_.draw(image,'channels',varargin{:});
+        end
+        
         
     end
     
