@@ -2,9 +2,13 @@
 
 % Francois Aguet, February 2011
 
-function colors = getHuesFromMarkers(markers)
+function colors = getFluorophoreHues(markers)
 
-hue = arrayfun(@(x) rgb2hsv(wavelength2rgb(name2wavelength(x))), markers, 'UniformOutput', false);
+if ischar(markers)
+    markers = {markers};
+end
+
+hue = arrayfun(@(x) rgb2hsv(wavelength2rgb(x)), name2wavelength(markers), 'UniformOutput', false);
 hue = vertcat(hue{:});
 hue = hue(:,1);
 
@@ -18,7 +22,7 @@ switch N
         D = (hue-hueV).^2;
         colors = hueV(D==min(D));
     case 2
-        hueV = [120 0]/360; % green red
+        hueV = [120 0]/360; % green/red only
         D = (hue(1)-hueV).^2;
         [~,idx] = sort(D);
         colors = arrayfun(@(x) hueV(x), idx);
