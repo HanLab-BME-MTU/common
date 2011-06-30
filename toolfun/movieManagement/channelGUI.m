@@ -22,7 +22,7 @@ function varargout = channelGUI(varargin)
 
 % Edit the above text to modify the response to help channelGUI
 
-% Last Modified by GUIDE v2.5 29-Apr-2011 15:52:43
+% Last Modified by GUIDE v2.5 30-Jun-2011 15:53:11
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -120,13 +120,15 @@ else
     error('User-defined: No proper input.')
 end
 
-% Set up imaging mode pop-up menu
+% Set up imaging mode and flurophore pop-up menu
 modeString = vertcat({''},Channel.getImagingModes());
 set(handles.popupmenu_imageType,'String',modeString);
+fluorophoreString = horzcat({''},Channel.getFluorophores());
+set(handles.popupmenu_fluorophore,'String',fluorophoreString);
 
 % Read channel initial properties and store them in a structure
 propNames={'excitationWavelength_','emissionWavelength_',...
-    'exposureTime_','imageType_'};
+    'exposureTime_','imageType_','fluorophore_'};
 userData.isNumProp = @(x) x<4;
 for i=1:numel(userData.channels)
     for j=1:numel(propNames)
@@ -152,7 +154,8 @@ for i=1:numel(propNames)
     else
         propHandle = handles.(['popupmenu_' propNames{i}(1:end-1)]);
         guiProp = 'Value';
-        guiValue = find(cellfun(@(x)isequal(x,propValue),get(propHandle,'String')));
+        guiValue = find(strcmpi(propValue,get(propHandle,'String')));
+        if isempty(guiValue), guiValue=1; end
     end
     if ~isempty(propValue), enableState='inactive'; else enableState='on'; end
     set(propHandle,guiProp,guiValue,'Enable',enableState);
@@ -213,7 +216,8 @@ for i=1:numel(propNames)
     else
         propHandle = handles.(['popupmenu_' propNames{i}(1:end-1)]);
         guiProp = 'Value';
-        guiValue = find(cellfun(@(x)isequal(x,propValue),get(propHandle,'String')));
+        guiValue = find(strcmpi(propValue,get(propHandle,'String')));
+        if isempty(guiValue), guiValue=1; end
     end
     set(propHandle,guiProp,guiValue,'Enable',enableState);
 end
@@ -279,3 +283,18 @@ function figure1_KeyPressFcn(~, eventdata, handles)
 if strcmp(eventdata.Key, 'return')
     pushbutton_done_Callback(handles.pushbutton_done, [], handles);
 end
+
+
+% --- Executes on selection change in popupmenu_fluorophore.
+function popupmenu_fluorophore_Callback(hObject, eventdata, handles)
+
+% Retrieve selected fluorophore name
+props=get(hObject,{'String','Value'});
+fluorophore = props{1}{props{2}};
+isFluorophoreValid = ~isempty(fluorophore);
+isLambdaEditable = strcmp(get(handles.edit_emissionWavelength,'Enable'),'on');
+if ~isFluorophoreValid || ~isLambdaEditable,return; end
+
+% Set the value of the emission wavelength
+lambda = name2wavelength(fluorophore)*1e9;   
+set(handles.edit_emissionWavelength,'String',lambda);

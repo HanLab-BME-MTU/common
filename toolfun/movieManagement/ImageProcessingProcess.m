@@ -196,8 +196,36 @@ classdef ImageProcessingProcess < Process
             
         end
         
+        function outIm = loadChannelOutput(obj,iChan,iFrame,varargin)
+            % Input check
+            ip =inputParser;
+            ip.addRequired('obj',@(x) isa(x,'ImageProcessingProcess'));
+            ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
+            ip.addRequired('iFrame',@(x) ismember(x,1:obj.owner_.nFrames_));
+            ip.addOptional('output',[],@ischar);            
+            ip.parse(obj,iChan,iFrame,varargin{:})
+
+            
+            % Data loadingi
+            imNames = obj.getOutImageFileNames(iChan);
+            outIm = imread([obj.outFilePaths_{1,iChan} ...
+                filesep imNames{1}{iFrame}]);
+%             mask=cell(size(iChan));
+%             for i=iChan
+%                 maskNames = obj.getOutMaskFileNames(i);
+%                 mask{i} = arrayfun(@(j) imread([obj.outFilePaths_{i} filesep...
+%                     maskNames{1}{j}]),iFrame,'Unif',0);
+%             end
+        end
         
-        
+    end
+    methods(Static)
+        function output = getDrawableOutput()
+            output(1).name='Images';
+            output(1).var='';
+            output(1).formatData=[];
+            output(1).defaultDisplayMethod=@ImageDisplay;
+        end
         
     end
     

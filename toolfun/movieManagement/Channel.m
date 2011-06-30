@@ -20,7 +20,7 @@ classdef Channel < hgsetget
         neutralDensityFilter_       % Neutral Density Filter
         incidentAngle_              % Incident Angle - for TIRF (degrees)
         filterType_                 % Filter Type
-        fluorophore_                % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)  
+        fluorophore_=''               % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)  
         
         displayMethod_ = ImageDisplay;
     end
@@ -214,10 +214,29 @@ classdef Channel < hgsetget
                 fileNames=fileNames{iFrame};
             end
         end
+        
+        function color = getColor(obj)
+
+            if ~isempty(obj.emissionWavelength_),
+                color = wavelength2rgb(obj.emissionWavelength_*1e-9);
+            else
+                color =[1 1 1]; % Set to grayscale by default
+            end
+        end
+        
         function h = draw(obj,iFrame,varargin)
+            
+%             
+%             frame = zeros(obj.Im,nx,3);
+%             idxRGB = getRGBindex(data.markers);
+%             for c = 1:nCh
+%                 frame(:,:,idxRGB(c)) = scaleContrast(double(imread(data.framePaths{c}{frameIdx})), ip.Results.iRange{c});
+%             end
             imageName = obj.getImageFileNames(iFrame);
             image = double(imread([obj.channelPath_ filesep imageName]));
-            h = obj.displayMethod_.draw(image,'channels',varargin{:});
+            
+            h = obj.displayMethod_.draw(image,'channels',...
+                'Color',obj.getColor(),varargin{:});
         end
         
         
@@ -261,10 +280,12 @@ classdef Channel < hgsetget
                     checkTest=@(x) isnumeric(x) && x>=300 && x<=800;
                 case 'exposureTime_'
                     checkTest=@(x) isnumeric(x) && x>0;
-                case {'excitationType_','fluorophore_','notes_','channelPath_'}
+                case {'excitationType_','notes_','channelPath_'}
                     checkTest=@(x) ischar(x);
                 case 'imageType_'
-                    checkTest = @(x) any(strcmp(x,Channel.getImagingModes));
+                    checkTest = @(x) any(strcmpi(x,Channel.getImagingModes));
+                case {'fluorophore_'}
+                    checkTest= @(x)  any(strcmpi(x,Channel.getFluorophores));
                 case {'owner_'}
                     checkTest= @(x) isa(x,'MovieData');
             end
@@ -273,6 +294,11 @@ classdef Channel < hgsetget
         
         function modes=getImagingModes()
             modes={'Widefield';'TIRF';'Confocal'};
+        end
+        
+        function fluorophores=getFluorophores()
+            fluorPropStruct= getFluorPropStruct();
+            fluorophores={fluorPropStruct.name};
         end
         
     end
