@@ -83,60 +83,64 @@ allMax = locmax2d(imgLoG, 2*ceil(sigma)+1);
 % local maxima above threshold in image domain
 imgLM = allMax .* mask;
 
-% -> set threshold in LoG domain
-logThreshold = min(imgLoG(imgLM~=0));
-logMask = imgLoG >= logThreshold;
-
-% combine masks
-mask = mask | logMask;
-
-% re-select local maxima
-imgLM = allMax .* mask;
-
-% apply cell shape mask
-if ~isempty(ip.Results.mask)
-    imgLM(ip.Results.mask == 0) = 0;
-end
-
-
-[lmy, lmx] = find(imgLM~=0);
-lmIdx = sub2ind(size(img), lmy, lmx);
-
-
-if ~isempty(lmIdx)
-    % run localization on local maxima
-    pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), mode, 'mask', mask, 'alpha', alpha);
+if sum(imgLM(:))~=0 % no local maxima found, likely a background image
     
-    % remove NaN values
-    idx = ~isnan([pstruct.x]);
-    fnames = fieldnames(pstruct);
-    for k = 1:length(fnames)
-        pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
+    % -> set threshold in LoG domain
+    logThreshold = min(imgLoG(imgLM~=0));
+    logMask = imgLoG >= logThreshold;
+    
+    % combine masks
+    mask = mask | logMask;
+    
+    % re-select local maxima
+    imgLM = allMax .* mask;
+    
+    % apply cell shape mask
+    if ~isempty(ip.Results.mask)
+        imgLM(ip.Results.mask == 0) = 0;
     end
     
-    % eliminate isignificant amplitudes
-    idx = [pstruct.pval_Ar] > 0.95;
     
-    % eliminate duplicate positions (resulting from localization)
-    np = length(pstruct.x);
-    pM = [pstruct.x' pstruct.y'];
-    idxKD = KDTreeBallQuery(pM, pM, 0.25*ones(np,1));
-    idxKD = idxKD(cellfun(@(x) length(x)>1, idxKD)); 
+    [lmy, lmx] = find(imgLM~=0);
+    lmIdx = sub2ind(size(img), lmy, lmx);
     
-    for k = 1:length(idxKD);
-        RSS = pstruct.RSS(idxKD{k});
-        idx(idxKD{k}(RSS ~= min(RSS))) = 0;
+    
+    if ~isempty(lmIdx)
+        % run localization on local maxima
+        pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), mode, 'mask', mask, 'alpha', alpha);
+        
+        % remove NaN values
+        idx = ~isnan([pstruct.x]);
+        fnames = fieldnames(pstruct);
+        for k = 1:length(fnames)
+            pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
+        end
+        
+        % eliminate isignificant amplitudes
+        idx = [pstruct.pval_Ar] > 0.95;
+        
+        % eliminate duplicate positions (resulting from localization)
+        np = length(pstruct.x);
+        pM = [pstruct.x' pstruct.y'];
+        idxKD = KDTreeBallQuery(pM, pM, 0.25*ones(np,1));
+        idxKD = idxKD(cellfun(@(x) length(x)>1, idxKD));
+        
+        for k = 1:length(idxKD);
+            RSS = pstruct.RSS(idxKD{k});
+            idx(idxKD{k}(RSS ~= min(RSS))) = 0;
+        end
+        
+        fnames = fieldnames(pstruct);
+        for k = 1:length(fnames)
+            pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
+        end
+        pstruct.isPSF = pstruct.pval_KS > 0.05;
+    else
+        pstruct = [];
     end
-    
-    fnames = fieldnames(pstruct);
-    for k = 1:length(fnames)
-        pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
-    end
-    pstruct.isPSF = pstruct.pval_KS > 0.05;
 else
     pstruct = [];
 end
-
 
 % T = A_est ./ sigma_A;
 % pval = tcdf(T,numel(img) - 2 - 1);
