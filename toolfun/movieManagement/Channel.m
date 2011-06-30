@@ -225,18 +225,33 @@ classdef Channel < hgsetget
         end
         
         function h = draw(obj,iFrame,varargin)
-            
+           
+            if numel(obj)>3, error('Max. 3 channels in RGB mode.'); end
+            if numel(obj)>1
+                for iChan=1:numel(obj)
+                    imageName = obj(iChan).getImageFileNames(iFrame);
+                    rawData = double(imread([obj(iChan).channelPath_ filesep imageName]));
+                    data(:,:,iChan)=rawData/max(rawData(:));
+                end
+            else
+                imageName = obj.getImageFileNames(iFrame);
+                rawData = double(imread([obj.channelPath_ filesep imageName]));
+                data=repmat(rawData/max(rawData(:)),[1 1 3]);
+                color = obj.getColor;
+                for i=1:3
+                    data(:,:,i)=data(:,:,i)*color(i);
+                end
+            end
 %             
 %             frame = zeros(obj.Im,nx,3);
 %             idxRGB = getRGBindex(data.markers);
 %             for c = 1:nCh
 %                 frame(:,:,idxRGB(c)) = scaleContrast(double(imread(data.framePaths{c}{frameIdx})), ip.Results.iRange{c});
 %             end
-            imageName = obj.getImageFileNames(iFrame);
-            image = double(imread([obj.channelPath_ filesep imageName]));
+%             imageName = obj.getImageFileNames(iFrame);
+%             image = double(imread([obj.channelPath_ filesep imageName]));
             
-            h = obj.displayMethod_.draw(image,'channels',...
-                'Color',obj.getColor(),varargin{:});
+            h = obj(1).displayMethod_.draw(data,'channels',varargin{:});
         end
         
         

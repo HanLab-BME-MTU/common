@@ -6,11 +6,11 @@ classdef ImageDisplay < MovieDataDisplay
     end
     methods
         function h=initDraw(obj,data,tag,varargin)
-            h=imshow(obj.formatData(data),varargin{:});
+            h=imshow(data,varargin{:});
             set(h,'Tag',tag);
         end
         function updateDraw(obj,h,data)
-            set(h,'CData',obj.formatData(data))
+            set(h,'CData',data)
         end
         function additionalInputParsing(obj,ip)
             ip.addParamValue('Color',obj.color,@isvector);
@@ -21,16 +21,7 @@ classdef ImageDisplay < MovieDataDisplay
         end
         
     end 
-    
-    methods(Access=protected)
-        function rgbData=formatData(obj,data)
-            data =double(data);
-            rgbData=repmat(data/max(data(:)),[1 1 3]);
-            for  i=1:3
-                rgbData(:,:,i)=rgbData(:,:,i)*obj.color(i);
-            end
-        end
-    end
+   
  
     methods (Static)
         function f=dataCheck()
