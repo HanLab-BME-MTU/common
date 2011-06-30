@@ -128,6 +128,7 @@ end
 
 %% check for isolated features
 allFrames = 1:numFrames;
+trackedFeatureInfoMiss2 =trackedFeatureInfoMiss;
 for iTrack =1:size(trackedFeatureInfoMiss)
     
     features =~isnan(trackedFeatureInfoMiss(iTrack,(0:numFrames-1)*8+1));
@@ -135,9 +136,19 @@ for iTrack =1:size(trackedFeatureInfoMiss)
     isIsolatedFeature = @(x) ~features(x-1) && features(x) && ~features(x+1);
     isolatedFeatPos =positions(arrayfun(isIsolatedFeature,positions));
     for i = isolatedFeatPos
-        trackedFeatureInfoMiss(iTrack,(i-1)*8+1:i*8)= NaN;
+        trackedFeatureInfoMiss(iTrack,(i-2)*8+1:(i-1)*8)= ...
+            trackedFeatureInfo(iTrack,(i-2)*8+1:(i-1)*8);
+         trackedFeatureInfoMiss(iTrack,(i)*8+1:(i+1)*8)= ...
+            trackedFeatureInfo(iTrack,(i)*8+1:(i+1)*8);       
     end
-    nGaps = nGaps + length(isolatedFeatPos);
+end
+for iTrack =1:size(trackedFeatureInfoMiss)
+    
+    features =~isnan(trackedFeatureInfoMiss(iTrack,(0:numFrames-1)*8+1));
+    positions = 2:numFrames-1;
+    isIsolatedFeature = @(x) ~features(x-1) && features(x) && ~features(x+1);
+    isolatedFeatPos =positions(arrayfun(isIsolatedFeature,positions));
+    assert(isempty(isolatedFeatPos));
 end
 percentMissingGT=nGaps/numFrames;
 %% construct movieInfo
