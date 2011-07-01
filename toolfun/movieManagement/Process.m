@@ -156,6 +156,7 @@ classdef Process < hgsetget
             ip.addRequired('iFrame',@isnumeric);
             ip.addParamValue('output',outputList(1).var,@(x)ischar(x) && ...
             	ismember(x,{drawableOutputList.var}));
+            ip.KeepUnmatched = true;
             ip.parse(obj,iChan,iFrame,varargin{:})
 			
             data=obj.loadChannelOutput(iChan,iFrame,'output',ip.Results.output);
