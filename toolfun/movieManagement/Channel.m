@@ -228,6 +228,7 @@ classdef Channel < hgsetget
            
             if numel(obj)>3, error('Max. 3 channels in RGB mode.'); end
             if numel(obj)>1
+                data = zeros([obj(1).owner_.imSize_ 3]);
                 for iChan=1:numel(obj)
                     imageName = obj(iChan).getImageFileNames(iFrame);
                     rawData = double(imread([obj(iChan).channelPath_ filesep imageName]));

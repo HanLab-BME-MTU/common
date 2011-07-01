@@ -161,6 +161,28 @@ classdef DoubleProcessingProcess < ImageProcessingProcess
             
         end
 
+        function outIm = loadChannelOutput(obj,iChan,iFrame,varargin)
+            
+            ip =inputParser;
+            ip.addRequired('obj',@(x) isa(x,'ImageProcessingProcess'));
+            ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
+            ip.addRequired('iFrame',@(x) ismember(x,1:obj.owner_.nFrames_));
+            ip.addOptional('output',[],@ischar);            
+            ip.parse(obj,iChan,iFrame,varargin{:})
+            
+            %get the image names
+            imNames = getOutImageFileNames(obj,iChan);
+            outIm = load([obj.outFilePaths_{1,iChan} ...
+                filesep imNames{1}{iFrame}]);
+            fNames = fieldnames(outIm);
+            if numel(fNames) > 1 || isempty(fNames)
+                error(['The file for image ' num2str(iFrame) ' in channel ' num2str(iChan) ' is invalid! Check images...'])
+            end
+            outIm = outIm.(fNames{1});
+            
+        end
+
+
     end
     
 end

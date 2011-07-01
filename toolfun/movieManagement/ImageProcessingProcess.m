@@ -210,12 +210,6 @@ classdef ImageProcessingProcess < Process
             imNames = obj.getOutImageFileNames(iChan);
             outIm = imread([obj.outFilePaths_{1,iChan} ...
                 filesep imNames{1}{iFrame}]);
-%             mask=cell(size(iChan));
-%             for i=iChan
-%                 maskNames = obj.getOutMaskFileNames(i);
-%                 mask{i} = arrayfun(@(j) imread([obj.outFilePaths_{i} filesep...
-%                     maskNames{1}{j}]),iFrame,'Unif',0);
-%             end
         end
         
     end
@@ -223,7 +217,7 @@ classdef ImageProcessingProcess < Process
         function output = getDrawableOutput()
             output(1).name='Images';
             output(1).var='';
-            output(1).formatData=[];
+            output(1).formatData=@mat2gray;
             output(1).defaultDisplayMethod=@ImageDisplay;
         end
         
