@@ -147,8 +147,9 @@ classdef Process < hgsetget
         end
         
         function h=draw(obj,iChan,iFrame,varargin)
-            %
-            if ~ismember('getDrawableOutput',methods(obj)), return; end
+            % Function to draw process output (template method)
+            
+            if ~ismember('getDrawableOutput',methods(obj)), h=[]; return; end
             outputList = obj.getDrawableOutput();
             ip = inputParser;
             ip.addRequired('obj',@(x) isa(x,'Process'));
