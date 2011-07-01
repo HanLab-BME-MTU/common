@@ -490,7 +490,7 @@ if onoff  % Turn overlay on
                 end
             elseif isa(process,'SpeckleDetectionProcess');
                 cands = process.loadChannelOutput(iChan,userData.iFrame);
-                validCands = vertcat(cands{1}([cands{1}.status]==1).Lmax);
+                validCands = vertcat(cands([cands.status]==1).Lmax);
                 if ishandle(userData.hOverlay{userData.iOverlay}{iChan})
                     set(userData.hOverlay{userData.iOverlay}{iChan},...
                         'XData',validCands(:,2),'XYData',validCands(:,1));
@@ -501,8 +501,8 @@ if onoff  % Turn overlay on
             elseif isa(process,'FlowTrackingProcess') || isa(process,'FlowAnalysisProcess');
                 flow = process.loadChannelOutput(iChan,userData.iFrame);
                 userData.hOverlay{userData.iOverlay}{iChan} =...
-                    quiver(flow{1}(:, 2),flow{1}(:, 1),...
-                    flow{1}(:, 4)-flow{1}(:, 2), flow{1}(:, 3)-flow{1}(:, 1));
+                    quiver(flow(:, 2),flow(:, 1),...
+                    flow(:, 4)-flow(:, 2), flow(:, 3)-flow(:, 1));
             end
                 
         else
