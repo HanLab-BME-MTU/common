@@ -148,6 +148,7 @@ classdef Process < hgsetget
         
         function h=draw(obj,iChan,iFrame,varargin)
             %
+            if ~ismember('getDrawableOutput',methods(obj)), return; end
             outputList = obj.getDrawableOutput();
             ip = inputParser;
             ip.addRequired('obj',@(x) isa(x,'Process'));
@@ -157,7 +158,7 @@ classdef Process < hgsetget
             	ismember(x,{drawableOutputList.var}));
             ip.parse(obj,iChan,iFrame,varargin{:})
 			
-            data=obj.loadChannelOutput(iChan,iFrame,ip.Results.output);
+            data=obj.loadChannelOutput(iChan,iFrame,'output',ip.Results.output);
             iOutput=1;
             if ~isempty(outputList(iOutput).formatData),
                 data=outputList(iOutput).formatData(data);

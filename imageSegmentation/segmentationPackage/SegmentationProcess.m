@@ -88,7 +88,7 @@ classdef SegmentationProcess < Process
             ip.addRequired('obj',@(x) isa(x,'SegmentationProcess'));
             ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
             ip.addRequired('iFrame',@(x) ismember(x,1:obj.owner_.nFrames_));
-            ip.addOptional('output',[],@ischar);            
+            ip.addParamValue('output',[],@ischar);            
             ip.parse(obj,iChan,iFrame,varargin{:})
 
             
