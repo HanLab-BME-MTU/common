@@ -155,12 +155,12 @@ classdef Process < hgsetget
             ip.addRequired('iChan',@isnumeric);
             ip.addRequired('iFrame',@isnumeric);
             ip.addParamValue('output',outputList(1).var,@(x)ischar(x) && ...
-            	ismember(x,{drawableOutputList.var}));
+            	ismember(x,{outputList.var}));
             ip.KeepUnmatched = true;
             ip.parse(obj,iChan,iFrame,varargin{:})
 			
             data=obj.loadChannelOutput(iChan,iFrame,'output',ip.Results.output);
-            iOutput=1;
+            iOutput= find(strcmp(ip.Results.output,{outputList.var}));
             if ~isempty(outputList(iOutput).formatData),
                 data=outputList(iOutput).formatData(data);
             end
@@ -173,7 +173,8 @@ classdef Process < hgsetget
             
             % Delegate to the corresponding method
             tag = [obj.getName '_' num2str(iChan)];
-            h=obj.displayMethod_{iOutput,iChan}.draw(data,tag,varargin{:});
+            drawArgs={};
+            h=obj.displayMethod_{iOutput,iChan}.draw(data,tag,drawArgs{:});
         end
         
     end
