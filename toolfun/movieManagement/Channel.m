@@ -229,7 +229,9 @@ classdef Channel < hgsetget
             ip = inputParser;
             ip.addRequired('obj',@(x) isa(x,'Channel'));
             ip.addRequired('iFrame',@isscalar);
-            ip.addParamValue('color',obj.getColor,@(x) isequal(size(x),[1 3]));
+            if numel(obj)==1
+                ip.addParamValue('color',obj.getColor,@(x) isequal(size(x),[1 3]));
+            end
             ip.addParamValue('hAxes',gca,@ishandle);
             ip.parse(obj,iFrame,varargin{:})
             
