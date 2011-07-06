@@ -22,7 +22,9 @@ ip.addRequired('lambda', @(x) ischar(x) | isscalar(x))
 ip.addParamValue('Display', 'off', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
 ip.parse(NA, M, pixelSize, lambda, varargin{:});
 
-lambda = name2wavelength(lambda);
+if ischar(lambda)
+    lambda = name2wavelength(lambda);
+end
 
 % Defaults use values corresponding to optimal imaging conditions
 p.ti0 = 0; % working distance has no effect under ideal conditions
