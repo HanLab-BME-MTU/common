@@ -20,7 +20,8 @@ function [frame, xv, yv, sv, Av] = simGaussianSpots(nx, ny, sigma, varargin)
 %           vy -> y coordinates of centers of Gaussians (can be subpixel)
 %           sv -> vector of standard deviation
 %           Av -> vector of amplitudes
-%
+
+% Francois Aguet, last modified June 30 2011
 
 ip = inputParser;
 ip.CaseSensitive = false;
@@ -32,6 +33,7 @@ ip.addParamValue('y', []);
 ip.addParamValue('A', []);
 ip.addParamValue('npoints', 1);
 ip.addParamValue('background', 0);
+ip.addParamValue('verbose', 'off', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
 ip.parse(nx, ny, sigma, varargin{:});
 
 np = ip.Results.npoints;
@@ -56,9 +58,10 @@ wv = ceil(4*sv);
 if ~isempty(xv)
     idx=xv > max(wv)+1 & xv < nx-max(wv)-1;
     idy=yv > max(wv)+1 & yv < ny-max(wv)-1;
-    id=idx & idy;
-    tmp=length(xv) - sum(id);
-    disp(['number of discarded points: ' num2str(tmp)] );
+    id=idx & idy;    
+    if strcmpi(ip.Results.verbose, 'on')
+        fprintf('Number of discarded points: %d\n', length(xv) - sum(id));
+    end
     xv=xv(id);
     yv=yv(id);
     sv=sv(id);
@@ -98,5 +101,3 @@ for k = 1:np
     g = Av(k) * exp(-r2/(2*sv(k)^2));
     frame(yi-wi:yi+wi,xi-wi:xi+wi) = frame(yi-wi:yi+wi,xi-wi:xi+wi) + g;
 end
-
-% Francois Aguet, last modified April 20 2011
