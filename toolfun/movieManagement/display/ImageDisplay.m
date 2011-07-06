@@ -8,6 +8,12 @@ classdef ImageDisplay < MovieDataDisplay
         function h=initDraw(obj,data,tag,varargin)
             h=imshow(data,varargin{:});
             set(h,'Tag',tag);
+            
+            % Clean existing image and set image at the bottom of the stack
+            child=get(get(h,'Parent'),'Children');
+            imChild = child(strcmp(get(child,'Type'),'image'));
+            delete(imChild(imChild~=h));
+            uistack(h,'bottom');
         end
         function updateDraw(obj,h,data)
             set(h,'CData',data)

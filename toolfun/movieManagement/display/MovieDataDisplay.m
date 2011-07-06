@@ -1,6 +1,7 @@
 classdef MovieDataDisplay < handle
     % Abstract class for displaying image processing output
     % Based on the template method
+    % Sebastien Besson, July 2011
     
     methods
         function h=draw(obj,data,tag,varargin)
@@ -36,6 +37,5 @@ classdef MovieDataDisplay < handle
     end
     methods (Static,Abstract)
         dataCheck()
-
     end           
 end
