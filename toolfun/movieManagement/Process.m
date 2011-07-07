@@ -23,11 +23,11 @@ classdef Process < hgsetget
         
         inFilePaths_    % Path to the process input
         outFilePaths_   % Path to the process output
-        
-        displayMethod_  % Cell array
+
     end
     properties        
         notes_          % Process notes
+        displayMethod_  % Cell array
     end
     methods (Access = protected)
         function obj = Process(owner, name)

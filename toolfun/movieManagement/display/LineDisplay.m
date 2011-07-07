@@ -6,6 +6,14 @@ classdef LineDisplay < MovieDataDisplay
         Color='r';        
     end
     methods
+        function obj=LineDisplay(varargin)
+            nVarargin = numel(varargin);
+            if nVarargin > 1 && mod(nVarargin,2)==0
+                for i=1 : 2 : nVarargin-1
+                    obj.(varargin{i}) = varargin{i+1};
+                end
+            end
+        end
         function h=initDraw(obj,data,tag,varargin)
             h=plot(data(:,2),data(:,1),varargin{:});
             set(h,'Tag',tag,'Color',obj.Color,'Marker',obj.Marker,...
