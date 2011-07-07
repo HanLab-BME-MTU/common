@@ -184,5 +184,15 @@ classdef DoubleProcessingProcess < ImageProcessingProcess
 
 
     end
+    methods(Static)
+        function output = getDrawableOutput()
+            output(1).name='Ratio images';
+            output(1).var='';
+            output(1).formatData=@mat2gray;
+            output(1).type='image';
+            output(1).defaultDisplayMethod=@(x)ImageDisplay('Colormap','jet');
+        end
+        
+    end
     
 end

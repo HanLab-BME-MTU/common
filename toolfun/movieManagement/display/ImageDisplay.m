@@ -2,9 +2,17 @@ classdef ImageDisplay < MovieDataDisplay
     %Abstract class for displaying image processing output
     properties
         color = [1 1 1];
-        colormap
+        Colormap ='gray';
     end
     methods
+        function obj=ImageDisplay(varargin)
+            nVarargin = numel(varargin);
+            if nVarargin > 1 && mod(nVarargin,2)==0
+                for i=1 : 2 : nVarargin-1
+                    obj.(varargin{i}) = varargin{i+1};
+                end
+            end
+        end
         function h=initDraw(obj,data,tag,varargin)
             h=imshow(data,varargin{:});
             set(h,'Tag',tag);
@@ -14,6 +22,10 @@ classdef ImageDisplay < MovieDataDisplay
             imChild = child(strcmp(get(child,'Type'),'image'));
             delete(imChild(imChild~=h));
             uistack(h,'bottom');
+            
+            % Set the colormap
+            colormap(get(h,'Parent'),obj.Colormap);
+%             set(get(get(h,'Parent'),'Parent'),'Colormap',obj.colormap);
         end
         function updateDraw(obj,h,data)
             set(h,'CData',data)

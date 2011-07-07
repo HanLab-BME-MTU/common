@@ -219,6 +219,7 @@ classdef ImageProcessingProcess < Process
             output(1).name='Images';
             output(1).var='';
             output(1).formatData=@mat2gray;
+            output(1).type='image';
             output(1).defaultDisplayMethod=@ImageDisplay;
         end
         

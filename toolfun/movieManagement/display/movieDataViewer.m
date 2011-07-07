@@ -76,10 +76,10 @@ set(handles.uipanel_overlay,'Position',...
 % Classify processes
 validProcID= find(cellfun(@(x) ismember('getDrawableOutput',methods(x)),userData.MD.processes_));
 validProc=userData.MD.processes_(validProcID);
-isImageProc =cellfun(@(x) isequal(@ImageDisplay,x.getDrawableOutput.defaultDisplayMethod),validProc);
+isImageProc =cellfun(@(x) any(strcmp(x.getDrawableOutput.type,'image')),validProc);
 imageProc=validProc(isImageProc);
 imageProcId = validProcID(isImageProc);
-isOverlayProc =cellfun(@(x) ~isequal(@ImageDisplay,x.getDrawableOutput.defaultDisplayMethod),validProc);
+isOverlayProc =cellfun(@(x) any(strcmp(x.getDrawableOutput.type,'overlay')),validProc);
 overlayProc=validProc(isOverlayProc);
 overlayProcId = validProcID(isOverlayProc);
 
@@ -220,7 +220,7 @@ if strcmp(imageTag,'radiobutton_channels')
     chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
     userData.MD.channels_(chanList).draw(frameNr);
 else
-    tokens = regexp(imageTag,'radiobutton_process(\d)_output(\d)_channel(\d)','tokens');
+    tokens = regexp(imageTag,'radiobutton_process(\d+)_output(\d+)_channel(\d+)','tokens');
     procID=str2double(tokens{1}{1});
     outputList = userData.MD.processes_{procID}.getDrawableOutput;
     output = outputList(str2double(tokens{1}{2})).var;
@@ -238,12 +238,14 @@ figure(userData.drawFig);
 tokens = regexp(overlayTag,'checkbox_process(\d+)_output(\d+)_channel(\d+)','tokens');
 procID=str2double(tokens{1}{1});
 outputList = userData.MD.processes_{procID}.getDrawableOutput;
-output = outputList(str2double(tokens{1}{2})).var;
+iOutput = str2double(tokens{1}{2});
+output = outputList(iOutput).var;
 iChan = str2double(tokens{1}{3});
 if get(hObject,'Value')
     userData.MD.processes_{procID}.draw(iChan,frameNr,'output',output);
 else
-    h=findobj('Tag',[userData.MD.processes_{procID}.getName '_' num2str(iChan)]);
+    h=findobj('Tag',[userData.MD.processes_{procID}.getName '_channel'...
+        num2str(iChan) '_output' num2str(iOutput)]);
     if ~isempty(h), delete(h); end
 end
 
@@ -258,7 +260,7 @@ overlayTags=arrayfun(@(x) get(x,'Tag'),overlayBoxes(checkedBoxes),...
     'UniformOutput',false);
 for i=1:numel(overlayTags)
     overlayTag=overlayTags{i};
-    tokens = regexp(overlayTag,'checkbox_process(\d)_output(\d)_channel(\d)','tokens');
+    tokens = regexp(overlayTag,'checkbox_process(\d+)_output(\d+)_channel(\d+)','tokens');
     procID=str2double(tokens{1}{1});
     outputList = userData.MD.processes_{procID}.getDrawableOutput;
     output = outputList(str2double(tokens{1}{2})).var;

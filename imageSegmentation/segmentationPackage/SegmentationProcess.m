@@ -118,6 +118,7 @@ classdef SegmentationProcess < Process
             output(1).name='Masks';
             output(1).var='';
             output(1).formatData=@getMaskBoundaries;
+            output(1).type='overlay';
             output(1).defaultDisplayMethod=@LineDisplay;
         end
         

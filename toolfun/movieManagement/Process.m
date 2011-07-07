@@ -173,7 +173,7 @@ classdef Process < hgsetget
             end
             
             % Delegate to the corresponding method
-            tag = [obj.getName '_' num2str(iChan)];
+            tag = [obj.getName '_channel' num2str(iChan) '_output' num2str(iOutput)];
             drawArgs={};
             h=obj.displayMethod_{iOutput,iChan}.draw(data,tag,drawArgs{:});
         end
