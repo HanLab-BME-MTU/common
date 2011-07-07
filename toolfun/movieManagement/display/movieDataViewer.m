@@ -76,10 +76,10 @@ set(handles.uipanel_overlay,'Position',...
 % Classify processes
 validProcID= find(cellfun(@(x) ismember('getDrawableOutput',methods(x)),userData.MD.processes_));
 validProc=userData.MD.processes_(validProcID);
-isImageProc =cellfun(@(x) any(strcmp(x.getDrawableOutput.type,'image')),validProc);
+isImageProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'image')),validProc);
 imageProc=validProc(isImageProc);
 imageProcId = validProcID(isImageProc);
-isOverlayProc =cellfun(@(x) any(strcmp(x.getDrawableOutput.type,'overlay')),validProc);
+isOverlayProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'overlay')),validProc);
 overlayProc=validProc(isOverlayProc);
 overlayProcId = validProcID(isOverlayProc);
 
@@ -138,7 +138,7 @@ hPosition2=10;
 nProc = numel(overlayProc);
 for i=nProc:-1:1;
     output=overlayProc{i}.getDrawableOutput;
-%     channels = imageProc{i}.checkChannelOuput;
+    validChan = overlayProc{i}.checkChannelOutput;
     for j=numel(output):-1:1
         createOutputText(parentPanel,overlayProcId(i),j,hPosition2,output(j).name);
         arrayfun(@(x) createChannelBox(parentPanel,overlayProcId(i),j,x,hPosition2,validChan(x)),...
