@@ -102,6 +102,15 @@ classdef SegmentationProcess < Process
 %                     maskNames{1}{j}]),iFrame,'Unif',0);
 %             end
         end
+        function output = getDrawableOutput(obj)
+            output(1).name='Masks';
+            output(1).var='';
+            output(1).formatData=@getMaskBoundaries;
+            output(1).type='overlay';
+            colors = hsv(numel(obj.owner_.channels_));
+            output(1).defaultDisplayMethod=@(x) LineDisplay('Color',colors(x,:));
+        end
+        
     end
     methods(Static)
         function name =getName()
@@ -112,14 +121,6 @@ classdef SegmentationProcess < Process
         end
         function methods = getMethods()
             methods = {@ThresholdProcess};
-        end
-        
-        function output = getDrawableOutput()
-            output(1).name='Masks';
-            output(1).var='';
-            output(1).formatData=@getMaskBoundaries;
-            output(1).type='overlay';
-            output(1).defaultDisplayMethod=@LineDisplay;
         end
         
     end

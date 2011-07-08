@@ -169,7 +169,7 @@ classdef Process < hgsetget
                 assert(~isempty(obj.displayMethod_{iOutput,iChan}));
             catch ME
                 obj.displayMethod_{iOutput,iChan}=...
-                    outputList(iOutput).defaultDisplayMethod();
+                    outputList(iOutput).defaultDisplayMethod(iChan);
             end
             
             % Delegate to the corresponding method

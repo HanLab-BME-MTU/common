@@ -166,7 +166,9 @@ userData.MD.channels_.draw(1);
 set(handles.edit_movie,'String',[userData.MD.movieDataPath_ filesep...
     userData.MD.movieDataFileName_]);
 set(handles.edit_frame,'String',1);
-set(handles.slider_frame,'Value',1,'Min',1,'Max',userData.MD.nFrames_);
+set(handles.slider_frame,'Value',1,'Min',1,'Max',userData.MD.nFrames_,...
+    'SliderStep',[1/double(userData.MD.nFrames_)  5/double(userData.MD.nFrames_)]);
+set(handles.text_frameMax,'String',userData.MD.nFrames_);
 
 % Choose default command line output for movieDataViewer
 handles.output = hObject;

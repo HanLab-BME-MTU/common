@@ -1,8 +1,9 @@
 classdef ImageDisplay < MovieDataDisplay
     %Abstract class for displaying image processing output
     properties
-        color = [1 1 1];
         Colormap ='gray';
+        Colorbar ='off';
+        CLim = [];
     end
     methods
         function obj=ImageDisplay(varargin)
@@ -14,28 +15,45 @@ classdef ImageDisplay < MovieDataDisplay
             end
         end
         function h=initDraw(obj,data,tag,varargin)
+            % Plot the image and associate the tag
             h=imshow(data,varargin{:});
             set(h,'Tag',tag);
             
             % Clean existing image and set image at the bottom of the stack
-            child=get(get(h,'Parent'),'Children');
+            hAxes = get(h,'Parent');
+            child=get(hAxes,'Children');
             imChild = child(strcmp(get(child,'Type'),'image'));
             delete(imChild(imChild~=h));
             uistack(h,'bottom');
             
             % Set the colormap
-            colormap(get(h,'Parent'),obj.Colormap);
-%             set(get(get(h,'Parent'),'Parent'),'Colormap',obj.colormap);
+            colormap(hAxes,obj.Colormap);
+            
+            % Set the colorbar
+            hCbar = findobj(get(hAxes,'Parent'),'Tag','Colorbar');
+            if strcmp(obj.Colorbar,'on') && isempty(hCbar)
+                colorbar('peer',hAxes);
+            elseif strcmp(obj.Colorbar,'off') && ~isempty(hCbar)
+                colorbar(hCbar,'delete');
+            end
+            
+            % Set the color limits
+            if ~isempty(obj.CLim),set(hAxes,'CLim',obj.CLim); end
         end
         function updateDraw(obj,h,data)
             set(h,'CData',data)
         end
+        
         function additionalInputParsing(obj,ip)
-            ip.addParamValue('Color',obj.color,@isvector);
+            ip.addParamValue('Colormap',obj.Colormap,@ischar);
+            ip.addParamValue('Colorbar',obj.Colorbar,@ischar);
+            ip.addParamValue('CLim',obj.CLim,@(x) isempty(x) ||isvector(x));
         end
         
        function setProperties(obj,ip)
-            obj.color=ip.Results.Color;
+            obj.Colormap=ip.Results.Colormap;
+            obj.Colorbar=ip.Results.Colorbar;
+            obj.CLim=ip.Results.CLim;
         end
         
     end 

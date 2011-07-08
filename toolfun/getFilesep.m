@@ -11,35 +11,24 @@ function regexpFilesep=getFilesep(path)
 %   (to be used in regexp-like function
 %
 %
-% Sebastien Besson, 03/2011
+% Sebastien Besson, July 2011
 %
    
 % Find all separators in the path name
 pathSep=unique(regexp(path,'/|\','match'));
+if numel(pathSep)>1, error(['Error!! OS conflict in path: ' path]); end
 
-%Deal with special cases where pathSep is not exactly '/' or '\'
+%Deal with special cases
 if isempty(pathSep)
-    % Linux path may be:
-    % 1 - root path '' without separator
-    % 2 - home directory path '~'
-    isLinux = @(x) isempty(path) || strcmp(path,'~');
-    % Windows path may be:
-    % 1 - drive letter with colon e.g. C:
-    % 2 -  drive letter without colon e.g. H
-    isWindow = @(x) ~isempty(regexp(x,'^[A-Z]$','once')) ||...
-        ~isempty(regexp(x,'^[A-Z]:$','once'));
+    % Linux path may be root path '' or home directory path '~'
+    isLinux = @(x) logical(isempty(x) || strcmp(x,'~'));
+    % Windows path may be a drive letter with or without colon e.g. C:, H
+    isWindow = @(x) logical(~isempty(regexp(x,'^[A-Z]:?$','match')));
     
-    if isLinux(path)
-        pathSep='/';
-    elseif isWindow(path)
-        pathSep='\';
-    else
-        errordlg(['Error!! Cannot identify the nature of path: ' path]);
-        return
+    pathSep = char(isLinux(path)*'/'+isWindow(path)*'\');
+    if strcmp(pathSep,char(0)),
+        error(['Error!! Cannot identify the nature of path: ' path]);
     end
-elseif numel(pathSep)>1
-    errordlg(['Error!! OS conflict in path: ' path]);
-    return
 else pathSep=pathSep{1};
 end
 

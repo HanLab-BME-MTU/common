@@ -1,6 +1,6 @@
 classdef MovieDataDisplay < handle
-    % Abstract class for displaying image processing output
-    % Based on the template method
+    % Abstract class for displaying MovieData components output
+    % Delegates drawing methods to the concrete classes
     % Sebastien Besson, July 2011
     
     methods
