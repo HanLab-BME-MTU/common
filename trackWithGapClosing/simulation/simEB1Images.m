@@ -2,8 +2,8 @@ function [movieInfoGT,tracksGT,errFlag] = simEB1Images(imSize,pixelSize,...
     mtDensity,SNR,ampAboveBG,samplingRate,totalTime,mtSimParam,ebCometParam,saveInfo)
 %simEB1Images generates images of EB1 comets on MTs undergoing dynamic instability
 %
-%[posGT,tracksGT,errFlag] = simEB1Images(imSize,pixelSize,mtDensity,...
-%    SNR,samplingRate,totalTime,mtSimParam)
+%[movieInfoGT,tracksGT,errFlag] = simEB1Images(imSize,pixelSize,...
+%    mtDensity,SNR,ampAboveBG,samplingRate,totalTime,mtSimParam,ebCometParam,saveInfo)
 %
 %INPUT  imSize      : Image size in x = y, in pixels.
 %       pixelSize   : Pixel size, in micrometers.
@@ -23,7 +23,7 @@ function [movieInfoGT,tracksGT,errFlag] = simEB1Images(imSize,pixelSize,...
 
 %
 %OUTPUT movieInfoGT : Ground truth positions in movieInfo format.
-%       tracksGT    : ground truth tracks in tracksFinal format.
+%       tracksGT    : Ground truth tracks in tracksFinal format.
 %       errFlag     : 0 if function executes normally, 1 otherwise.
 %       The code also generates a series of images that get named and
 %       stored as indicated in saveInfo.
