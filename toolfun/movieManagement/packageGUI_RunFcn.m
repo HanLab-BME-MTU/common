@@ -32,12 +32,6 @@ movieRun=movieList(hasValidProc);
 procCheck=arrayfun(@(x) find(userData.statusM(x).Checked),movieRun,...
     'UniformOutput',false);
 
-% Get unset processes
-isProcSet=@(x,y)~isempty(userData.package(x).processes_{procCheck{x}(y)});
-% unsetProc = arrayfun(@(x) cellfun(@isempty,userData.package(x).processes_(procCheck{x}),...
-%     movieRun);
-
-
 % Throw warning dialog if no movie
 if isempty(movieRun)
     warndlg('No step is selected, please select a step to process.',...
@@ -51,7 +45,6 @@ end
 movieException = cell(1, nMovies);
 procRun = cell(1, nMovies);%  id of processes to run
 optionalProcID = cell(1, nMovies);% id of first-time-run optional process
-
 
 % Find unset processes
 isProcSet=@(x,y)~isempty(userData.package(x).processes_{y});
@@ -69,23 +62,7 @@ for i = invalidMovies
 end
 
 validMovies=movieRun(arrayfun(isMovieProcSet,movieRun));
-for iMovie = validMovies
-    
-    % Check if process exist
-%     unsetProc = cellfun(@isempty,userData.package(iMovie).processes_(procCheck{iMovie}));
-%     for i = procCheck{iMovie}
-%         if isempty (userData.package(iMovie).processes_{i})
-%             
-%             ME = MException('lccb:run:setup', 'Step %d is not set up yet.\n Tip: when step is set up successfully, the step name becomes bold.',i);
-%             movieException{iMovie} = cat(2, movieException{iMovie}, ME);
-%             
-%         end
-%     end
-%     
-%     if ~isempty(  movieException{iMovie} )
-%         continue
-%     end
-%     
+for iMovie = validMovies   
     % Check if selected processes have alrady be successfully run
     % If force run, re-run every process that is checked
     if ~get(handles.checkbox_forcerun, 'Value')
@@ -116,28 +93,25 @@ for iMovie = validMovies
     
     % Return user data !!!
     set(handles.figure1, 'UserData', userData)
-    
-    for i = procRun{iMovie}
-        if ~isempty(procEx{i})
+    invalidProcEx = procRun{iMovie}(~cellfun(@isempty,procEx(procRun{iMovie})));
+    for i = invalidProcEx
+        % Check if there is fatal error in exception array
+        if strcmp(procEx{i}(1).identifier, 'lccb:set:fatal') || ...
+                strcmp(procEx{i}(1).identifier, 'lccb:input:fatal')
             
-            % Check if there is fatal error in exception array
-            if strcmp(procEx{i}(1).identifier, 'lccb:set:fatal') || ...
-                    strcmp(procEx{i}(1).identifier, 'lccb:input:fatal')
-                
-                % Sanity check error - switch GUI to the x th movie
-                if iMovie ~= userData.id
-                    set(handles.popupmenu_movie, 'Value', iMovie)
-                    % Quick fix for callback incompatibility betwen packageGUI and
-                    % oldpackageGUIs - to be solved before release
-                    switchMovie_Callback(handles.popupmenu_movie, [], handles)
-                end
-                
-                userfcn_drawIcon(handles,'error', i, procEx{i}(1).message, true); % user data is retrieved, updated and submitted
-                
-                ME = MException('lccb:run:sanitycheck', 'Step %d %s: \n%s', i,userData.package(iMovie).processes_{i}.name_, procEx{i}(1).message);
-                movieException{iMovie} = cat(2, movieException{iMovie}, ME);
-                
+            % Sanity check error - switch GUI to the x th movie
+            if iMovie ~= userData.id
+                set(handles.popupmenu_movie, 'Value', iMovie)
+                % Update the movie pop-up menu in the main package GUI
+                packageGUI('switchMovie_Callback',handles.popupmenu_movie, [], handles)
             end
+            
+            userfcn_drawIcon(handles,'error', i, procEx{i}(1).message, true);
+            
+            ME = MException('lccb:run:sanitycheck','Step %d %s: \n%s',...
+                i,userData.package(iMovie).processes_{i}.name_, procEx{i}(1).message);
+            movieException{iMovie} = cat(2, movieException{iMovie}, ME);
+                
         end
     end
     
@@ -147,8 +121,7 @@ for iMovie = validMovies
     
 end
 
-% --------------------- pre-processing examination ends -------------------
-
+%% Report exceptions
 % Ok, now all evils are in movieException (1 x movielength  cell array), if there is any
 % if yes - abort program and popup a error report
 % if no - continue to process movie data
@@ -165,7 +138,7 @@ if ~isempty(temp)
         if i == 1
             msg = strcat(msg, sprintf('Movie %d - %s:', temp(i), userData.MD(temp(i)).movieDataFileName_));
         else
-            msg = strcat(msg, sprintf('\n\n\nMovie %d - %s:', temp(i), userData.MD(temp(i)).movieDataFileName_));
+            msg = strcat(msg, sprintf('\n\nMovie %d - %s:', temp(i), userData.MD(temp(i)).movieDataFileName_));
         end
         for j = 1:length(movieException{temp(i)})
             msg = strcat(msg, sprintf('\n-- %s', movieException{temp(i)}(j).message));
@@ -312,7 +285,13 @@ function userfcn_runProc_dfs (i, procRun, handles)  % throws exception
 userData = get(handles.figure1, 'UserData');
 
 parentRun = [];
-parentIndex = find(userData.crtPackage.depMatrix_(i,:));
+requiredParentIndex = find(userData.crtPackage.depMatrix_(i,:)==1);
+optionalParentIndex = find(userData.crtPackage.depMatrix_(i,:)==2);
+
+% Remove empty optional processes from the list of parentIndex
+validOptionalParentIndex = optionalParentIndex(~cellfun(@isempty,...
+    userData.crtPackage.processes_(optionalParentIndex)));
+parentIndex=sort([requiredParentIndex,validOptionalParentIndex]);
 
 % if current process i have dependency processes    
 if ~isempty(parentIndex)  
@@ -334,30 +313,7 @@ end
 try
     userData.crtPackage.processes_{i}.run(); % throws exception
 catch ME
-    rethrow(ME) %%%%
-    % Determine if it is an unexpected error
-%     idSplit = regexp(ME.identifier, ':', 'split');
-%     
-%     if isempty(idSplit{1}) || strcmp(idSplit{1}, 'lccb')
-%         errorText = sprintf('Step %d - %s: Runtime error \n%s',i, userData.crtPackage.processes_{i}.name_, ME.message);
-%     else
-%     
-%         errorText = sprintf...
-%         ('Step %d - %s: Unexpected runtime error \nIdentifier: %s\nMessage: %s\nErrorfcn: %s\nErrorline: %u',...
-%         i, userData.crtPackage.processes_{i}.name_, ME.identifier, ME.message, ME.stack(1).name, ME.stack(1).line);
-%         
-%         display(sprintf('\n??? %s', errorText))
-%     end
-%     
-%     
-% 
-%     set(handles.figure1, 'UserData', userData)
-%     userfcn_drawIcon(handles,'error',i,errorText, true); % user data is retrieved, updated and submitted
-%     userData = get(handles.figure1, 'UserData');
-%     
-%     ME2 = MException('lccb:runtime:fatal', errorText);
-%     ME2 = addCause(ME2, ME);
-%     throw(ME2);
+    rethrow(ME)
 end
 
 % After successfully processed, determine if dependent processes are updated.
@@ -374,7 +330,7 @@ for k = parentIndex
        userData.crtPackage.processes_{i}.setUpdated(false);
        userfcn_drawIcon(handles,'warn',i,...
          ['Current step is processed successfully. But it is found to be out of date.'...
-              'Please make sure the dependent steps are up to date.'], true); % user data is retrieved, updated and submitted
+              'Please make sure the dependent steps are up to date.'], true);
       l = false;
        break
    end
@@ -383,7 +339,7 @@ end
 if l
     userData.crtPackage.processes_{i}.setUpdated(true);
     userfcn_drawIcon(handles,'pass',i,...
-                                'Current step is processed successfully', true); % user data is retrieved, updated and submitted
+        'Current step is processed successfully', true);
 end
 
 set(handles.(['pushbutton_show_',num2str(i)]),'Enable','on');

@@ -87,11 +87,11 @@ classdef Package < hgsetget
                 % process depends on the j th process
                 % Exception is created when satisfy:
                 % 1. Process is successfully run in the most recent time
-                % 2. Parent process has error OR parent process does
+                % 2. Parent process has error OR required parent process does
                 %    not exist
-                if obj.processes_{i}.success_ && ...
-                        ( ~isempty(processExceptions{j}) || isempty(obj.processes_{j}) )
-                    
+                hasError=@(j) ~isempty(processExceptions{j});
+                emptyRequiredProc=@(j) isempty(obj.processes_{j}) && obj.depMatrix_(i,j)==1;
+                if obj.processes_{i}.success_ && ( hasError(j) || emptyRequiredProc(j))
                     % Set process's updated=false
                     obj.processes_{i}.setUpdated (false);
                     
