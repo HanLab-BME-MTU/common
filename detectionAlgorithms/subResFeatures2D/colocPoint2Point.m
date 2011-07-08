@@ -195,13 +195,14 @@ end
 medianColocRand = median(fracPointsOverlapRand);
 
 %calculate p-value and type of colocalization
-if fracPointsOverlap > medianColocRand
+if fracPointsOverlap >= medianColocRand
     pValue = length(find(fracPointsOverlapRand>=fracPointsOverlap))/numRep;
     colocType = 'attract';
 else
     pValue = length(find(fracPointsOverlapRand<=fracPointsOverlap))/numRep;
     colocType = 'repel';
 end
+pValue = min(pValue,0.5);
     
 %% Plot if requested
 
