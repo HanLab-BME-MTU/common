@@ -1,16 +1,23 @@
-function [movieInfo,tracksSimMiss] = genMovieInfoFromTracks2(tracksSim,percentMissing)
+function [movieInfo,tracksSimMiss] = genMovieInfoFromTracks2(tracksSim,percentMissing,percentFP)
 %GENMOVIEINFOFROMTRACKS2 generates a list of detected features per frame from supplied tracks
 %
-%SYNOPSIS [movieInfo,tracksSimMiss] = genMovieInfoFromTracks2(tracksSim,percentMissing)
+%SYNOPSIS [movieInfo,tracksSimMiss] = genMovieInfoFromTracks2(tracksSim,percentMissing,percentFP)
 %
 %INPUT  tracksSim     : Output of simulateMimickCD36_MS.
 %       percentMissing: Percentage of missing features in movie.
+%       percentFP     : Percentage of false detecton positives, relative to
+%                       original number of features.
+%                       Optional. Default: 0.
 %
 %OUTPUT movieInfo: List of detected features per frame, in the format
 %                  required for the input of trackWithGapClosing and
 %                  trackCloseGapsKalman.
 %
 %Khuloud Jaqaman, October 2007
+
+if nargin < 3 || isempty(percentFP)
+    percentFP = 0;
+end
 
 %get number of frames in movie
 seqOfEvents = vertcat(tracksSim.seqOfEvents);
@@ -21,6 +28,9 @@ numTracks = length(tracksSim);
 
 %define standard deviation of missing features
 missStd = 0.1*percentMissing;
+
+%define standard deviation of false positives
+fpStd = 0.1*percentFP;
 
 %pre-allocate memory for movieInfo
 movieInfo = repmat(struct('xCoord',[],'yCoord',[],'amp',[]),numFrames,1);
@@ -96,8 +106,13 @@ for iTrack = 1 : numTracks
 
 end
 
-%% in each frame, delete "percentMissing+-std" of the features that can be deleted and store information in movieInfo
-%(i.e. features not just before/after a merge/split)
+%determine maximum coordinate values for false positive features
+xCoordMax = max(max(trackedFeatureInfo(:,1:8:end)));
+yCoordMax = max(max(trackedFeatureInfo(:,2:8:end)));
+
+%% in each frame, delete "percentMissing+-std" of the features that can be deleted (i.e. features not just before/after a merge/split)
+%% also add false positives
+%% and store information in movieInfo
 
 %go over all frames ...
 for iFrame = 1 : numFrames
@@ -105,12 +120,15 @@ for iFrame = 1 : numFrames
     %find number of features in this frame
     numFeat = length(find(~isnan(trackedFeatureInfo(:,(iFrame-1)*8+1))));
     
+    %determine number of features to delete
+    numFeatDelete = round((percentMissing+randn(1)*missStd)*numFeat/100);
+    
+    %determine number of false positive features
+    numFalsePositive = round((percentFP+randn(1)*fpStd)*numFeat/100);
+
     %find indices of features that can be deleted in this frame
     indxCanDelete = find(trackedFeatureInfo(:,(iFrame-1)*8+1)>0);
     
-    %determine number of features to delete
-    numFeatDelete = round((percentMissing+randn(1)*missStd)*numFeat/100);
-
     %randomly choose which features to delete
     if length(indxCanDelete) > numFeatDelete
         deleteIndx = randsample(indxCanDelete,numFeatDelete);
@@ -125,11 +143,16 @@ for iFrame = 1 : numFrames
     coord = trackedFeatureInfo(:,(iFrame-1)*8+1:(iFrame-1)*8+4);
     coord = abs(coord(~isnan(coord(:,1)),:));
     numFeat = size(coord,1);
+    
+    %generate false positive features
+    xCoordFP = rand(numFalsePositive,1)*xCoordMax;
+    yCoordFP = rand(numFalsePositive,1)*yCoordMax;
+    ampFP = mean(coord(:,4))*ones(numFalsePositive,1);
 
     %store feature information in movieInfo
-    movieInfo(iFrame).xCoord = [coord(:,1) zeros(numFeat,1)];
-    movieInfo(iFrame).yCoord = [coord(:,2) zeros(numFeat,1)];
-    movieInfo(iFrame).amp    = [coord(:,4) zeros(numFeat,1)];
+    movieInfo(iFrame).xCoord = [[coord(:,1); xCoordFP] zeros(numFeat+numFalsePositive,1)];
+    movieInfo(iFrame).yCoord = [[coord(:,2); yCoordFP] zeros(numFeat+numFalsePositive,1)];
+    movieInfo(iFrame).amp    = [[coord(:,4); ampFP] zeros(numFeat+numFalsePositive,1)];
 
 end
 
