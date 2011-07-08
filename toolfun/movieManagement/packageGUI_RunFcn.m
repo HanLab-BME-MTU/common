@@ -11,103 +11,113 @@ ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
 ip.parse(hObject,eventdata,handles);
 
-userData = get(handles.figure1,'UserData');
-
-movieRun = []; % id of movie to run
-numMD = length(userData.MD); % number of movies
-
+%% Initialization
 
 % Get check box status of current movie and update user data
+userData = get(handles.figure1,'UserData');
 userData.statusM(userData.id).Checked = userfcn_saveCheckbox(handles);
 set(handles.figure1, 'UserData', userData)
 
 % Determine the movie(s) to be processed
-if ~get(handles.checkbox_runall, 'Value')
-    
-    if any(userData.statusM(userData.id).Checked)
-        movieRun = cat(2, movieRun, userData.id);
-    end
+nMovies = length(userData.MD); % number of movies
+if get(handles.checkbox_runall, 'Value')
+    movieList = circshift(1:nMovies,[0 -(userData.id-1)]);
 else
-    
-    % Check other movies
-    for i = 0:numMD-1
-        k = mod( userData.id + i, numMD);
-        if k == 0
-            k = numMD;
-        end
-        
-        if any(userData.statusM(k).Checked)
-            movieRun = cat(2, movieRun, k);
-        end
-    end
+    movieList=userData.id;
 end
+% Get the list of valid movies (with processes to run)
+hasValidProc = arrayfun(@(x) any(userData.statusM(x).Checked),movieList);
+movieRun=movieList(hasValidProc);
 
+procCheck=arrayfun(@(x) find(userData.statusM(x).Checked),movieRun,...
+    'UniformOutput',false);
+
+% Get unset processes
+isProcSet=@(x,y)~isempty(userData.package(x).processes_{procCheck{x}(y)});
+% unsetProc = arrayfun(@(x) cellfun(@isempty,userData.package(x).processes_(procCheck{x}),...
+%     movieRun);
+
+
+% Throw warning dialog if no movie
 if isempty(movieRun)
-    warndlg('No step is selected, please select a step to process.','No Step Selected','modal');
+    warndlg('No step is selected, please select a step to process.',...
+        'No Step Selected','modal');
     return
 end
 
-% ----------------------- Pre-processing examination ----------------------
-
+%% Pre-processing examination
 
 % movie exception (same length of movie data)
-movieException = cell(1, numMD);
+movieException = cell(1, nMovies);
+procRun = cell(1, nMovies);%  id of processes to run
+optionalProcID = cell(1, nMovies);% id of first-time-run optional process
 
-procCheck = cell(1, numMD);%  id of checked processes
-procRun = cell(1, numMD);%  id of processes to run
-optionalProcID = cell(1, numMD);% id of first-time-run optional process
 
-for x = movieRun
-    
-    
-    procCheck{x} = find(userData.statusM(x).Checked);
+% Find unset processes
+isProcSet=@(x,y)~isempty(userData.package(x).processes_{y});
+isMovieProcSet = @(x) all(arrayfun(@(y)isProcSet(x,y),procCheck{x}));
+invalidMovies=movieRun(~arrayfun(isMovieProcSet,movieRun));
+
+for i = invalidMovies
+    invalidProc = procCheck{i}(arrayfun(@(y)~isProcSet(i,y),procCheck{i}));
+    for j=invalidProc
+        ME = MException('lccb:run:setup', ['Step %d : %s is not set up yet.\n'...
+            'Tip: when step is set up successfully, the step name becomes bold.'],j,...
+            eval([userData.package(i).processClassNames_{j} '.getName']));
+        movieException{i} = cat(2, movieException{i}, ME);
+    end
+end
+
+validMovies=movieRun(arrayfun(isMovieProcSet,movieRun));
+for iMovie = validMovies
     
     % Check if process exist
-    for i = procCheck{x}
-        if isempty (userData.package(x).processes_{i})
-            
-            ME = MException('lccb:run:setup', 'Step %d is not set up yet. Tip: when step is set up successfully, the step name becomes bold.',i);
-            movieException{x} = cat(2, movieException{x}, ME);
-            
-        end
-    end
-    
-    if ~isempty(  movieException{x} )
-        continue
-    end
-    
+%     unsetProc = cellfun(@isempty,userData.package(iMovie).processes_(procCheck{iMovie}));
+%     for i = procCheck{iMovie}
+%         if isempty (userData.package(iMovie).processes_{i})
+%             
+%             ME = MException('lccb:run:setup', 'Step %d is not set up yet.\n Tip: when step is set up successfully, the step name becomes bold.',i);
+%             movieException{iMovie} = cat(2, movieException{iMovie}, ME);
+%             
+%         end
+%     end
+%     
+%     if ~isempty(  movieException{iMovie} )
+%         continue
+%     end
+%     
     % Check if selected processes have alrady be successfully run
     % If force run, re-run every process that is checked
     if ~get(handles.checkbox_forcerun, 'Value')
         
         k = true;
-        for i = procCheck{x}
+        for i = procCheck{iMovie}
             
-            if  ~( userData.package(x).processes_{i}.success_ && ...
-                    ~userData.package(x).processes_{i}.procChanged_ ) || ...
-                    ~userData.package(x).processes_{i}.updated_
+            if  ~( userData.package(iMovie).processes_{i}.success_ && ...
+                    ~userData.package(iMovie).processes_{i}.procChanged_ ) || ...
+                    ~userData.package(iMovie).processes_{i}.updated_
                 
                 k = false;
-                procRun{x} = cat(2, procRun{x}, i);
+                procRun{iMovie} = cat(2, procRun{iMovie}, i);
             end
         end
         if k
-            movieRun = setdiff(movieRun, x);
+            movieRun = setdiff(movieRun, iMovie);
             continue
         end
     else
-        procRun{x} = procCheck{x};
+        procRun{iMovie} = procCheck{iMovie};
     end
     
     
     
     % Package full sanity check. Sanitycheck every checked process
-    procEx = userData.package(x).sanityCheck(true, procRun{x});
+    procEx = userData.package(iMovie).sanityCheck(true, procRun{iMovie});
     
     % Return user data !!!
     set(handles.figure1, 'UserData', userData)
     
-    for i = procRun{x}
+    for i = procRun{iMovie}
         if ~isempty(procEx{i})
             
             % Check if there is fatal error in exception array
@@ -115,22 +125,17 @@ for x = movieRun
                     strcmp(procEx{i}(1).identifier, 'lccb:input:fatal')
                 
                 % Sanity check error - switch GUI to the x th movie
-                if x ~= userData.id
-                    set(handles.popupmenu_movie, 'Value', x)
+                if iMovie ~= userData.id
+                    set(handles.popupmenu_movie, 'Value', iMovie)
                     % Quick fix for callback incompatibility betwen packageGUI and
                     % oldpackageGUIs - to be solved before release
-                    stack = dbstack;
-                    if strcmp(stack(4).name,'packageGUI')
-                        switchMovie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
-                    else
-                        popupmenu_movie_Callback(handles.popupmenu_movie, [], handles) % user data retrieved, updated and submitted
-                    end
+                    switchMovie_Callback(handles.popupmenu_movie, [], handles)
                 end
                 
                 userfcn_drawIcon(handles,'error', i, procEx{i}(1).message, true); % user data is retrieved, updated and submitted
                 
-                ME = MException('lccb:run:sanitycheck', 'Step %d %s: \n%s', i,userData.package(x).processes_{i}.name_, procEx{i}(1).message);
-                movieException{x} = cat(2, movieException{x}, ME);
+                ME = MException('lccb:run:sanitycheck', 'Step %d %s: \n%s', i,userData.package(iMovie).processes_{i}.name_, procEx{i}(1).message);
+                movieException{iMovie} = cat(2, movieException{iMovie}, ME);
                 
             end
         end
@@ -167,7 +172,7 @@ if ~isempty(temp)
         end
         
     end
-    msg = strcat(msg, sprintf('\n\n\nPlease solve the above problems before continuing. The Movie(s) couldn’t be processed.'));
+    msg = strcat(msg, sprintf('\n\n\nPlease solve the above problems before continuing. The Movie(s) could not be processed.'));
     titlemsg = sprintf('Processing could not be continued for the following reasons:');
     
     % if msgboxGUI exist

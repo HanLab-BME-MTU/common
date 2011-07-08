@@ -274,4 +274,4 @@ end
 function figure1_DeleteFcn(hObject, eventdata, handles)
 
 userData=get(handles.figure1,'UserData');
-if ishandle(userData.drawFig), delete(userData.drawFig);end
+try delete(userData.drawFig);end
