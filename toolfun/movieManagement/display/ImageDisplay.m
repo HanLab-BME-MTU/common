@@ -4,6 +4,7 @@ classdef ImageDisplay < MovieDataDisplay
         Colormap ='gray';
         Colorbar ='off';
         CLim = [];
+        Units='';
     end
     methods
         function obj=ImageDisplay(varargin)
@@ -32,7 +33,9 @@ classdef ImageDisplay < MovieDataDisplay
             % Set the colorbar
             hCbar = findobj(get(hAxes,'Parent'),'Tag','Colorbar');
             if strcmp(obj.Colorbar,'on') && isempty(hCbar)
-                colorbar('peer',hAxes);
+                set(gca,'CLimMode','auto');
+                hCBar = colorbar('peer',hAxes);
+                ylabel(hCBar,obj.Units);
             elseif strcmp(obj.Colorbar,'off') && ~isempty(hCbar)
                 colorbar(hCbar,'delete');
             end

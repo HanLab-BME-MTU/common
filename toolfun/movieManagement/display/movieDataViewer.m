@@ -122,7 +122,7 @@ uicontrol(parentPanel,'Style','radio','Position',[10 hPosition1 200 20],...
 arrayfun(@(i) uicontrol(parentPanel,'Style','checkbox',...
     'Position',[200+30*i hPosition1 20 20],...
     'Tag',['checkbox_channel' num2str(i)],'Value',1,...
-    'Callback',@(h,event) redrawImage(h,event,guidata(h))),...
+    'Callback',@(h,event) checkChannel(h,event,guidata(h))),...
     1:numel(userData.MD.channels_));
 hPosition1=hPosition1+20;
 arrayfun(@(i) uicontrol(parentPanel,'Style','text',...
@@ -205,10 +205,26 @@ else
 end
 frameNumber=round(frameNumber);
 frameNumber = min(max(frameNumber,1),userData.MD.nFrames_);
+
+% Set the slider and editboxes values
 set(handles.edit_frame,'String',frameNumber);
 set(handles.slider_frame,'Value',frameNumber);
+
+% Update the image ad overlays
 redrawOverlays(hObject, eventdata, handles);
 redrawImage(hObject, eventdata, handles);
+
+function checkChannel(hObject,event,handles)
+% Specific function for channels checkboxes to avoid 0 or more than 4 channels
+channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
+chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
+if numel(chanList)==0
+    set(hObject,'Value',1);
+elseif numel(chanList)>4
+   set(hObject,'Value',0); 
+end
+
+redrawImage(hObject,event,handles)
 
 function redrawImage(hObject, eventdata, handles)
 userData=get(handles.figure1,'UserData');
