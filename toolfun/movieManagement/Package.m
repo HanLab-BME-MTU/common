@@ -74,7 +74,15 @@ classdef Package < hgsetget
         function [processExceptions, processVisited] = dfs_(obj, ...
                 i,processExceptions,processVisited)
             processVisited(i) = true;
-            parentIndex = find(obj.depMatrix_(i,:));
+            requiredParentIndex = find(obj.depMatrix_(i,:)==1);
+            optionalParentIndex = find(obj.depMatrix_(i,:)==2);
+            
+            % Remove empty optional processes from the list of parentIndex
+            validOptionalParentIndex = optionalParentIndex(~cellfun(@isempty,...
+                obj.processes_(optionalParentIndex)));
+            parentIndex=sort([requiredParentIndex,validOptionalParentIndex]);
+            
+%             parentIndex = find(obj.depMatrix_(i,:));
             if isempty(parentIndex), return;  end
             for j = parentIndex
                 if ~isempty(obj.processes_{j}) && ~processVisited(j)
@@ -89,17 +97,19 @@ classdef Package < hgsetget
                 % 1. Process is successfully run in the most recent time
                 % 2. Parent process has error OR required parent process does
                 %    not exist
-                hasError=@(j) ~isempty(processExceptions{j});
-                emptyRequiredProc=@(j) isempty(obj.processes_{j}) && obj.depMatrix_(i,j)==1;
-                if obj.processes_{i}.success_ && ( hasError(j) || emptyRequiredProc(j))
+                hasException=@(j) ~isempty(processExceptions{j});
+                emptyProc=@(j) isempty(obj.processes_{j}) && obj.depMatrix_(i,j)==1;
+                newOptProc=@(j) obj.depMatrix_(i,j)==2 && ~obj.processes_{j}.success_;
+                if obj.processes_{i}.success_ && ...
+                        (hasException(j) || emptyProc(j) || newOptProc(j))
                     % Set process's updated=false
                     obj.processes_{i}.setUpdated (false);
                     
                     % Create a dependency error exception
                     ME = MException('lccb:depe:warn', ...
-                        ['The current step is out of date because step ',...
-                        num2str(j),'. ', eval([obj.processClassNames_{j} '.getName']),...
-                        ', which the current step depends on, is out of date.'...
+                        ['The current step is out of date because Step ',...
+                        num2str(j),': ', eval([obj.processClassNames_{j} '.getName']),...
+                        ', which the current step depends on, is out of date. '...
                         'Please run again to update your result.']);
                     % Add dependency exception to the ith process
                     processExceptions{i} = horzcat(processExceptions{i}, ME);

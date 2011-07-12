@@ -49,10 +49,12 @@ if strcmp(type, 'initialize')
        if ~isempty(procEx{i})
 
            if strcmp(procEx{i}(1).identifier, 'lccb:set:fatal')
-               userfcn_drawIcon(handles,'error',i,procEx{i}(1).message, true); % user data is retrieved, updated and submitted
+               statusType='error';
            else
-               userfcn_drawIcon(handles,'warn',i,procEx{i}(1).message, true); % user data is retrieved, updated and submitted
+               statusType='warn';
            end
+           userfcn_drawIcon(handles,statusType,i,...
+                    sprintf('%s\n',procEx{i}(:).message), true);
 
        else
            if ~isempty(userData.crtPackage.processes_{i}) && ...

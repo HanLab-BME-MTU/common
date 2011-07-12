@@ -133,19 +133,19 @@ end
 temp = find(~cellfun(@(x)isempty(x), movieException, 'UniformOutput', true));
 
 if ~isempty(temp)
-    msg = [];
+    logMsg=cell(1,numel(temp));
     for i = 1:length(temp)
-        if i == 1
-            msg = strcat(msg, sprintf('Movie %d - %s:', temp(i), userData.MD(temp(i)).movieDataFileName_));
-        else
-            msg = strcat(msg, sprintf('\n\nMovie %d - %s:', temp(i), userData.MD(temp(i)).movieDataFileName_));
-        end
+        logMsg{i} = [logMsg{i}, sprintf('Movie %d - %s:\n', temp(i), ...
+            userData.MD(temp(i)).movieDataFileName_)];
+            
         for j = 1:length(movieException{temp(i)})
-            msg = strcat(msg, sprintf('\n-- %s', movieException{temp(i)}(j).message));
+            logMsg{i} = [logMsg{i}, sprintf('-- %s\n', ...
+                movieException{temp(i)}(j).message)];
         end
-        
+        logMsg{i}=['' sprintf('%s\n',logMsg{i})];
     end
-    msg = strcat(msg, sprintf('\n\n\nPlease solve the above problems before continuing. The Movie(s) could not be processed.'));
+    msg = [logMsg{:} 'Please solve the above problems before continuing.' ...
+        sprintf('\nThe Movie(s) could not be processed.')];
     titlemsg = sprintf('Processing could not be continued for the following reasons:');
     
     % if msgboxGUI exist
@@ -155,7 +155,6 @@ if ~isempty(temp)
     
     userData.msgboxGUI = msgboxGUI('title',titlemsg,'text', msg);
     return
-    
 end
 
 % ------------------------ Start Processing -------------------------------
@@ -223,7 +222,7 @@ for x = movieRun
     
     % Return user data !!!
     set(handles.figure1, 'UserData', userData)
-    % In here, optionalProcID are successfuly first-time-run optional process ID
+    % In here, optionalProcID are successfully first-time-run optional process ID
     if ~isempty(optionalProcID{x})
         
         procEx = userData.crtPackage.checkOptionalProcess(procRun{x}, optionalProcID{x});
@@ -239,10 +238,8 @@ for x = movieRun
     
 end
 
-% ----------------------------- Create error report ---------------------------------------
-
-temp = find(~cellfun(@(x)isempty(x), movieException, 'UniformOutput', true));
-
+%% Create error report 
+temp = find(~cellfun(@isempty, movieException));
 if ~isempty(temp)
     msg = [];
     for i = 1:length(temp)

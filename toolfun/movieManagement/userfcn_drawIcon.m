@@ -59,7 +59,7 @@ end
 
 for i = ID
     
-    axes(handles.(['axes_icon_',num2str(i)]));
+    set(handles.figure1,'CurrentAxes',handles.(['axes_icon_',num2str(i)]));
     Img = image(iconData);
     set(gca, 'Tag', ['axes_icon_' num2str(i)], 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'), 'visible','off','YDir','reverse' )
     set(Img,'ButtonDownFcn',@icon_ButtonDownFcn)

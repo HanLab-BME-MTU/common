@@ -58,7 +58,7 @@ validProcEx = find(~cellfun(@isempty,procEx));
 for i = validProcEx
     % Draw warning label on the i th process
     userfcn_drawIcon(userData.handles_main,'warn',i,...
-        procEx{i}(1).message, true)
+       sprintf('%s\n',procEx{i}(:).message), true)
 end
 % Refresh user data !!
 userData_main = get(userData.mainFig, 'UserData');
@@ -90,7 +90,7 @@ if get(handles.checkbox_applytoall, 'Value')
         for j = validProcEx
             % Record the icon and message to user data
             userData_main.statusM(i).IconType{j} = 'warn';
-            userData_main.statusM(i).Msg{j} = procEx{j}(1).message;
+            userData_main.statusM(i).Msg{j} = sprintf('%s\n',procEx{j}(:).message);
         end
     end
     

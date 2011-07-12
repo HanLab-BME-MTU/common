@@ -27,6 +27,7 @@ function packageGUI_OpeningFcn(hObject,eventdata,handles,packageName,varargin)
 %       userData.resultFig - array of handles of (multiple) result figures (may not exist)
 %       userData.packageHelpFig - handle of (single) help figure (may not exist)
 %       userData.iconHelpFig - handle of (single) help figures (may not exist)
+%       userData.statusFig - handle of (multiple) status figures (may not exist)
 %       userData.processHelpFig - handle of (multiple) help figures (may not exist) 
 %       
 %

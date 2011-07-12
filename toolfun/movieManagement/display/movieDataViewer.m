@@ -74,7 +74,8 @@ set(handles.uipanel_overlay,'Position',...
     get(handles.uipanel_overlay,'Position')+(nChan-1)*[30 0 30 0])
 
 % Classify processes
-validProcID= find(cellfun(@(x) ismember('getDrawableOutput',methods(x)),userData.MD.processes_));
+validProcID= find(cellfun(@(x) ismember('getDrawableOutput',methods(x)) &...
+    x.success_,userData.MD.processes_));
 validProc=userData.MD.processes_(validProcID);
 isImageProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'image')),validProc);
 imageProc=validProc(isImageProc);

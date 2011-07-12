@@ -62,9 +62,11 @@ else
                 end
 
             else % Process status icon
-
-                userData.iconHelpFig = msgbox(get(hObject,'UserData'), ...
-                    'Help', 'custom', get(hObject,'CData'), userData.colormap, 'replace');            
+                procID = str2double(splitTag{3});
+                procName =userData.crtPackage.processes_{str2double(splitTag{3})}.getName;
+                userData.statusFig(procID) = msgbox(get(hObject,'UserData'), ...
+                    [procName ' status'], 'custom', get(hObject,'CData'), ...
+                    userData.colormap, 'replace');            
             end
 
     else
