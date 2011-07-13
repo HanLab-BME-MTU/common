@@ -212,8 +212,9 @@ set(handles.edit_frame,'String',frameNumber);
 set(handles.slider_frame,'Value',frameNumber);
 
 % Update the image ad overlays
-redrawOverlays(hObject, eventdata, handles);
 redrawImage(hObject, eventdata, handles);
+redrawOverlays(hObject, eventdata, handles);
+
 
 function checkChannel(hObject,event,handles)
 % Specific function for channels checkboxes to avoid 0 or more than 4 channels

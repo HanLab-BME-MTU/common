@@ -27,6 +27,7 @@ classdef ImageDisplay < MovieDataDisplay
             delete(imChild(imChild~=h));
             uistack(h,'bottom');
             
+            axis manual
             % Set the colormap
             colormap(hAxes,obj.Colormap);
             
