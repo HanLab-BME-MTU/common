@@ -1,4 +1,14 @@
-# include <mex.h>
+ /* [idx, dist] = KDTreeBallQuery(inPts,queryPts,radii);
+ *
+ * (c) Sylvain Berlemont, 2011 (last modified Jul 14, 2011)
+ *
+ * Compilation:
+ * Mac/Linux: mex -I.  -I../../mex/include/c++ -I../../../extern/mex/include/ KDTreeBallQuery.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I "."-I"..\..\mex\include\c++" -I"..\..\..\extern\mex\include\" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output KDTreeBallQuery KDTreeBallQuery.cpp
+ */
+
+
+#include <mex.h>
 
 #include <list>
 #include <map>
@@ -112,17 +122,28 @@ void mexFunction(int nlhs, mxArray *plhs[],
   if (k != mxGetN(prhs[1]))
     mexErrMsgTxt("X and C must have the same number of columns.");
 
-  if (m != mxGetM(prhs[2]))
-    mexErrMsgTxt("C and R must have the same number of rows.");
+  if (m != mxGetM(prhs[2]) && mxGetM(prhs[2])!=1)
+    mexErrMsgTxt("C and R must have the same number of rows or R must be a scalar.");
 
   double *x_ptr = mxGetPr(prhs[0]);
   double *c_ptr = mxGetPr(prhs[1]);
-  double *d_ptr = mxGetPr(prhs[2]);
+  double *d_ptr;
+  if (m == mxGetM(prhs[2]))
+    d_ptr = mxGetPr(prhs[2]);
+  else
+    {d_ptr = new double[m];
+    for(int i = 0; i < m; ++i) {d_ptr[i] = mxGetScalar(prhs[2]);}
+    }
 
   switch (k)
     {
+    case 1: dispatch<1>(n, m, x_ptr, c_ptr, d_ptr, nlhs, plhs); break;
     case 2: dispatch<2>(n, m, x_ptr, c_ptr, d_ptr, nlhs, plhs); break;
     case 3: dispatch<3>(n, m, x_ptr, c_ptr, d_ptr, nlhs, plhs); break;
     default: mexErrMsgTxt("Dimension not implemented.");
     }  
+  
+  if (m != mxGetM(prhs[2]))
+    delete[] d_ptr;
+  
 }
