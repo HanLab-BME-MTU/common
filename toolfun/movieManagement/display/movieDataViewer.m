@@ -57,12 +57,11 @@ ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
 ip.addOptional('MD',[],@(x) isa(x,'MovieData'));
-ip.addOptional('procID',[],@isscalar);
+ip.addOptional('procId',0,@isscalar);
 ip.parse(hObject,eventdata,handles,varargin{:});
 
 userData=get(handles.figure1);
 userData.MD=ip.Results.MD;
-userData.procID=ip.Results.procID;
 nChan=numel(userData.MD.channels_);
 
 % Expand the window for checkboxes
@@ -74,15 +73,15 @@ set(handles.uipanel_overlay,'Position',...
     get(handles.uipanel_overlay,'Position')+(nChan-1)*[30 0 30 0])
 
 % Classify processes
-validProcID= find(cellfun(@(x) ismember('getDrawableOutput',methods(x)) &...
+validProcId= find(cellfun(@(x) ismember('getDrawableOutput',methods(x)) &...
     x.success_,userData.MD.processes_));
-validProc=userData.MD.processes_(validProcID);
+validProc=userData.MD.processes_(validProcId);
 isImageProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'image')),validProc);
 imageProc=validProc(isImageProc);
-imageProcId = validProcID(isImageProc);
+imageProcId = validProcId(isImageProc);
 isOverlayProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'overlay')),validProc);
 overlayProc=validProc(isOverlayProc);
-overlayProcId = validProcID(isOverlayProc);
+overlayProcId = validProcId(isOverlayProc);
 
 % Create series of image processes
 createProcText= @(panel,i,j,pos,name) uicontrol(panel,'Style','text',...
@@ -122,7 +121,7 @@ uicontrol(parentPanel,'Style','radio','Position',[10 hPosition1 200 20],...
     'HorizontalAlignment','left','FontWeight','bold');
 arrayfun(@(i) uicontrol(parentPanel,'Style','checkbox',...
     'Position',[200+30*i hPosition1 20 20],...
-    'Tag',['checkbox_channel' num2str(i)],'Value',1,...
+    'Tag',['checkbox_channel' num2str(i)],'Value',i<3,...
     'Callback',@(h,event) checkChannel(h,event,guidata(h))),...
     1:numel(userData.MD.channels_));
 hPosition1=hPosition1+20;
@@ -163,7 +162,6 @@ cellfun(@(x)set(handles.(x),'Position',get(handles.(x),'Position')+...
     [0 hPos 0 0]),components);
 
 userData.drawFig=figure;
-userData.MD.channels_.draw(1);
 set(handles.edit_movie,'String',[userData.MD.movieDataPath_ filesep...
     userData.MD.movieDataFileName_]);
 set(handles.edit_frame,'String',1);
@@ -171,12 +169,24 @@ set(handles.slider_frame,'Value',1,'Min',1,'Max',userData.MD.nFrames_,...
     'SliderStep',[1/double(userData.MD.nFrames_)  5/double(userData.MD.nFrames_)]);
 set(handles.text_frameMax,'String',userData.MD.nFrames_);
 
+% 
+if ismember(ip.Results.procId,validProcId)
+    h=findobj(handles.figure1,'-regexp','Tag',['(\w)_process' num2str(ip.Results.procId) ...
+        '_output(\d+)_channel(\d+)']);
+    set(h,'Value',1);
+end
+
 % Choose default command line output for movieDataViewer
 handles.output = hObject;
 
 % Update handles structure
 guidata(hObject, handles);
 set(handles.figure1,'UserData',userData);
+
+% Update the image ad overlays
+redrawImage(hObject, eventdata, handles);
+redrawOverlays(hObject, eventdata, handles);
+
 
 % UIWAIT makes movieDataViewer wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -235,17 +245,19 @@ frameNr=get(handles.slider_frame,'Value');
 imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
 
 figure(userData.drawFig);
+channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
 if strcmp(imageTag,'radiobutton_channels')
-    channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
+    set(channelBoxes,'Enable','on');
     chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
     userData.MD.channels_(chanList).draw(frameNr);
 else
+    set(channelBoxes,'Enable','off');
     tokens = regexp(imageTag,'radiobutton_process(\d+)_output(\d+)_channel(\d+)','tokens');
-    procID=str2double(tokens{1}{1});
-    outputList = userData.MD.processes_{procID}.getDrawableOutput;
+    procId=str2double(tokens{1}{1});
+    outputList = userData.MD.processes_{procId}.getDrawableOutput;
     output = outputList(str2double(tokens{1}{2})).var;
     iChan = str2double(tokens{1}{3});
-    userData.MD.processes_{procID}.draw(iChan,frameNr,'output',output);
+    userData.MD.processes_{procId}.draw(iChan,frameNr,'output',output);
 end
 
 function checkOverlay(hObject, eventdata, handles)
@@ -256,15 +268,15 @@ overlayTag = get(hObject,'Tag');
 
 figure(userData.drawFig);
 tokens = regexp(overlayTag,'checkbox_process(\d+)_output(\d+)_channel(\d+)','tokens');
-procID=str2double(tokens{1}{1});
-outputList = userData.MD.processes_{procID}.getDrawableOutput;
+procId=str2double(tokens{1}{1});
+outputList = userData.MD.processes_{procId}.getDrawableOutput;
 iOutput = str2double(tokens{1}{2});
 output = outputList(iOutput).var;
 iChan = str2double(tokens{1}{3});
 if get(hObject,'Value')
-    userData.MD.processes_{procID}.draw(iChan,frameNr,'output',output);
+    userData.MD.processes_{procId}.draw(iChan,frameNr,'output',output);
 else
-    h=findobj('Tag',[userData.MD.processes_{procID}.getName '_channel'...
+    h=findobj('Tag',[userData.MD.processes_{procId}.getName '_channel'...
         num2str(iChan) '_output' num2str(iOutput)]);
     if ~isempty(h), delete(h); end
 end
@@ -281,12 +293,12 @@ overlayTags=arrayfun(@(x) get(x,'Tag'),overlayBoxes(checkedBoxes),...
 for i=1:numel(overlayTags)
     overlayTag=overlayTags{i};
     tokens = regexp(overlayTag,'checkbox_process(\d+)_output(\d+)_channel(\d+)','tokens');
-    procID=str2double(tokens{1}{1});
-    outputList = userData.MD.processes_{procID}.getDrawableOutput;
+    procId=str2double(tokens{1}{1});
+    outputList = userData.MD.processes_{procId}.getDrawableOutput;
     output = outputList(str2double(tokens{1}{2})).var;
     iChan = str2double(tokens{1}{3});
 
-    userData.MD.processes_{procID}.draw(iChan,frameNr,'output',output);
+    userData.MD.processes_{procId}.draw(iChan,frameNr,'output',output);
 end
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
