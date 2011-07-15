@@ -13,6 +13,8 @@ function outDir = dirPC2Unix(inDir,unixDrive)
 % See also: dirUnix2PC.
 % Author: Lin Ji, Mar, 2005
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 if ~iscell(inDir)
    outDir = {inDir};
 else

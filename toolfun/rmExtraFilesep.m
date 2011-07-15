@@ -8,6 +8,8 @@ function outDir = rmExtraFilesep(inDir,varargin)
 %
 % Author: Lin Ji, Oct, 2005.
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 %Default filesep.
 filesepChar = filesep;
 

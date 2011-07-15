@@ -5,6 +5,8 @@ function drive = getDriveName(path)
 %    The input 'path' has to be full path. It can be either Unix or PC format.
 %    If no valid 'drive' has been found, [] is returned;
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 drive = [];
 if strcmp(path(1),'/') || strcmp(path(1),'~') %HLE - added case for home directory
    %Consider it as Unix directory.

@@ -24,6 +24,8 @@ function outDir = dirUnix2PC(inDir,winDrive,varargin)
 % See also: dirPC2Unix.
 % Author: Lin Ji, Mar, 2005.
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 %Default parameter:
 unixMntDrive = {};
 
