@@ -15,6 +15,7 @@ classdef ImageDisplay < MovieDataDisplay
                 end
             end
         end
+        
         function h=initDraw(obj,data,tag,varargin)
             % Plot the image and associate the tag
             h=imshow(data,varargin{:});
@@ -22,6 +23,8 @@ classdef ImageDisplay < MovieDataDisplay
             
             % Clean existing image and set image at the bottom of the stack
             hAxes = get(h,'Parent');
+            set(hAxes,'XLim',[0 size(data,2)],'YLim',[0 size(data,1)],...
+                'Position',[0 0 1 1]);
             child=get(hAxes,'Children');
             imChild = child(strcmp(get(child,'Type'),'image'));
             delete(imChild(imChild~=h));

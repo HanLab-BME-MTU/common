@@ -244,11 +244,24 @@ frameNr=get(handles.slider_frame,'Value');
 
 imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
 
-figure(userData.drawFig);
+if ishandle(userData.drawFig), 
+    figure(userData.drawFig); 
+else 
+    %Create a figure
+    sz=get(0,'ScreenSize');
+    ratios = [sz(3)/userData.MD.imSize_(2) sz(4)/userData.MD.imSize_(1)];
+    hFig = figure('Position',[sz(3)*.2 sz(4)*.2 ...
+        .6*min(ratios)*size(data,2) .6*min(ratios)*size(data,1)]);
+    
+    %Create the associate axes
+    hAxes = axes('Parent',hFig,'XLim',[0 size(data,2)],'YLim',[0 size(data,1)],...
+        'Position',[0 0 1 1]);
+end
+
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
 if strcmp(imageTag,'radiobutton_channels')
     set(channelBoxes,'Enable','on');
-    chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
+    chanList=arrayfun(@(x)get(x,'Value'),channelBoxes);
     userData.MD.channels_(chanList).draw(frameNr);
 else
     set(channelBoxes,'Enable','off');
@@ -266,7 +279,7 @@ frameNr=get(handles.slider_frame,'Value');
 
 overlayTag = get(hObject,'Tag');
 
-figure(userData.drawFig);
+if ishandle(userData.drawFig), figure(userData.drawFig); end
 tokens = regexp(overlayTag,'checkbox_process(\d+)_output(\d+)_channel(\d+)','tokens');
 procId=str2double(tokens{1}{1});
 outputList = userData.MD.processes_{procId}.getDrawableOutput;

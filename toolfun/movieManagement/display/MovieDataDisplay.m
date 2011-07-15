@@ -15,17 +15,18 @@ classdef MovieDataDisplay < handle
             ip.addParamValue('hAxes',gca,@ishandle);
             obj.additionalInputParsing(ip);
             ip.parse(obj,data,tag,varargin{:});
-            set(ip.Results.hAxes,'NextPlot','add');
-            
             obj.setProperties(ip);
-            % Get the component handle
-            h = findobj(ip.Results.hAxes,'-regexp','Tag',tag);
-
-            % Call adapted draw function
+            
+            % Retrieve the axes handle and call the create figure method 
+            hAxes = ip.Results.hAxes;
+            set(hAxes,'NextPlot','add');
+            
+            % Get the component handle and call the adapted draw function
+            h = findobj(hAxes,'-regexp','Tag',tag);
             if ~isempty(h) && ishandle(h)
                 obj.updateDraw(h,data);
             else
-                h=obj.initDraw(data,tag,'Parent',ip.Results.hAxes);
+                h=obj.initDraw(data,tag,'Parent',hAxes);
             end
         end
     end

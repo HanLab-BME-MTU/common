@@ -181,19 +181,24 @@ classdef DoubleProcessingProcess < ImageProcessingProcess
             outIm = outIm.(fNames{1});
             
         end
-
-
-    end
-    methods(Static)
-        function output = getDrawableOutput()
+        function output = getDrawableOutput(obj)
             output(1).name='Ratio images';
             output(1).var='';
             output(1).formatData=@mat2gray;
             output(1).type='image';
             output(1).defaultDisplayMethod=@(x)ImageDisplay('Colormap','jet',...
-                'Colorbar','on');
+                'Colorbar','on','Units','','CLim',obj.getIntensityLimits(x));
         end
-        
+
+    end
+    methods (Access=protected)
+        function limits = getIntensityLimits(obj,iChan)
+            ratioImages=arrayfun(@(x)loadChannelOutput(obj,iChan,x),1:obj.owner_.nFrames_,...
+                'UniformOutput',false);
+            allRatioImages = vertcat(ratioImages{:});
+            limits=[min(allRatioImages(:)) max(allRatioImages(:))];
+        end   
     end
     
+      
 end
