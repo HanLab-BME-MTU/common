@@ -11,7 +11,7 @@ function stk2tiffDirs(varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('path');
+ip.addOptional('path', [], @(x) ischar(x) || isempty(x));
 ip.addParamValue('Crop', 'off', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
 ip.parse(varargin{:});
 stkpath = ip.Results.path;
