@@ -90,31 +90,32 @@ createProcText= @(panel,i,j,pos,name) uicontrol(panel,'Style','text',...
 createOutputText= @(panel,i,j,pos,text) uicontrol(panel,'Style','text',...
     'Position',[40 pos 200 20],'Tag',['text_process' num2str(i) '_output'...
     num2str(j)],'String',text,'HorizontalAlignment','left');
-enableState = @(x) strtrim(char('on '*logical(x)+'off'*~logical(x)));
-createChannelButton= @(panel,i,j,k,pos,value) uicontrol(panel,'Style','radio',...
+createChannelButton= @(panel,i,j,k,pos) uicontrol(panel,'Style','radio',...
     'Position',[200+30*k pos 20 20],'Tag',['radiobutton_process' num2str(i) '_output'...
-    num2str(j) '_channel' num2str(k)],'Visible',enableState(value));
-createChannelBox= @(panel,i,j,k,pos,value) uicontrol(panel,'Style','checkbox',...
+    num2str(j) '_channel' num2str(k)]);
+createChannelBox= @(panel,i,j,k,pos) uicontrol(panel,'Style','checkbox',...
     'Position',[200+30*k pos 20 20],'Tag',['checkbox_process' num2str(i) '_output'...
-    num2str(j) '_channel' num2str(k)],'Visible',enableState(value),...
+    num2str(j) '_channel' num2str(k)],...
     'Callback',@(h,event) checkOverlay(h,event,guidata(h)));
 
 % Create image panel
 parentPanel=handles.uipanel_image;
 nProc = numel(imageProc);
 hPosition1=10;
-for i=nProc:-1:1;
-    output=imageProc{i}.getDrawableOutput;
-    validChan = imageProc{i}.checkChannelOutput;
-    for j=numel(output):-1:1
-        createOutputText(parentPanel,imageProcId(i),j,hPosition1,output(j).name);
-        arrayfun(@(x) createChannelButton(parentPanel,imageProcId(i),j,x,hPosition1,validChan(x)),...
-            1:numel(validChan));
+for iProc=nProc:-1:1;
+    output=imageProc{iProc}.getDrawableOutput;
+    validChan = imageProc{iProc}.checkChannelOutput;
+    for iOutput=numel(output):-1:1
+        createOutputText(parentPanel,imageProcId(iProc),iOutput,hPosition1,output(iOutput).name);
+        arrayfun(@(x) createChannelButton(parentPanel,imageProcId(iProc),iOutput,x,hPosition1),...
+            find(validChan));
         hPosition1=hPosition1+20;
     end
-    createProcText(parentPanel,imageProcId(i),j,hPosition1,imageProc{i}.getName);
+    createProcText(parentPanel,imageProcId(iProc),iOutput,hPosition1,imageProc{iProc}.getName);
     hPosition1=hPosition1+20;
 end
+
+% Create channels contorols
 hPosition1=hPosition1+10;
 uicontrol(parentPanel,'Style','radio','Position',[10 hPosition1 200 20],...
     'Tag','radiobutton_channels','String','Channels','Value',1,...
@@ -136,16 +137,16 @@ set(parentPanel,'Position',get(parentPanel,'Position')+ [0 0 0 hPosition1],...
 parentPanel=handles.uipanel_overlay;
 hPosition2=10;
 nProc = numel(overlayProc);
-for i=nProc:-1:1;
-    output=overlayProc{i}.getDrawableOutput;
-    validChan = overlayProc{i}.checkChannelOutput;
-    for j=numel(output):-1:1
-        createOutputText(parentPanel,overlayProcId(i),j,hPosition2,output(j).name);
-        arrayfun(@(x) createChannelBox(parentPanel,overlayProcId(i),j,x,hPosition2,validChan(x)),...
-            1:numel(validChan));
+for iProc=nProc:-1:1;
+    output=overlayProc{iProc}.getDrawableOutput;
+    validChan = overlayProc{iProc}.checkChannelOutput;
+    for iOutput=numel(output):-1:1
+        createOutputText(parentPanel,overlayProcId(iProc),iOutput,hPosition2,output(iOutput).name);
+        arrayfun(@(x) createChannelBox(parentPanel,overlayProcId(iProc),iOutput,x,hPosition2),...
+            find(validChan));
         hPosition2=hPosition2+20;
     end
-    createProcText(parentPanel,overlayProcId(i),j,hPosition2,overlayProc{i}.getName);
+    createProcText(parentPanel,overlayProcId(iProc),iOutput,hPosition2,overlayProc{iProc}.getName);
     hPosition2=hPosition2+20;
 end
 arrayfun(@(i) uicontrol(parentPanel,'Style','text',...
@@ -161,7 +162,7 @@ components={'text_copyright','uipanel_movie'};
 cellfun(@(x)set(handles.(x),'Position',get(handles.(x),'Position')+...
     [0 hPos 0 0]),components);
 
-userData.drawFig=figure;
+userData.drawFig=-1;
 set(handles.edit_movie,'String',[userData.MD.movieDataPath_ filesep...
     userData.MD.movieDataFileName_]);
 set(handles.edit_frame,'String',1);
@@ -169,12 +170,15 @@ set(handles.slider_frame,'Value',1,'Min',1,'Max',userData.MD.nFrames_,...
     'SliderStep',[1/double(userData.MD.nFrames_)  5/double(userData.MD.nFrames_)]);
 set(handles.text_frameMax,'String',userData.MD.nFrames_);
 
-% 
+% Auto select input process
 if ismember(ip.Results.procId,validProcId)
     h=findobj(handles.figure1,'-regexp','Tag',['(\w)_process' num2str(ip.Results.procId) ...
         '_output(\d+)_channel(\d+)']);
     set(h,'Value',1);
 end
+
+copyright = userfcn_softwareConfig(handles);
+set(handles.text_copyright, 'String', copyright);
 
 % Choose default command line output for movieDataViewer
 handles.output = hObject;
@@ -187,10 +191,8 @@ set(handles.figure1,'UserData',userData);
 redrawImage(hObject, eventdata, handles);
 redrawOverlays(hObject, eventdata, handles);
 
-
 % UIWAIT makes movieDataViewer wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
-
 
 % --- Outputs from this function are returned to the command line.
 function varargout = movieDataViewer_OutputFcn(hObject, eventdata, handles) 
@@ -227,7 +229,7 @@ redrawOverlays(hObject, eventdata, handles);
 
 
 function checkChannel(hObject,event,handles)
-% Specific function for channels checkboxes to avoid 0 or more than 4 channels
+% Callback of channels checkboxes to avoid 0 or more than 4 channels
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
 chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
 if numel(chanList)==0
@@ -250,13 +252,14 @@ else
     %Create a figure
     sz=get(0,'ScreenSize');
     ratios = [sz(3)/userData.MD.imSize_(2) sz(4)/userData.MD.imSize_(1)];
-    hFig = figure('Position',[sz(3)*.2 sz(4)*.2 ...
-        .6*min(ratios)*size(data,2) .6*min(ratios)*size(data,1)]);
+    userData.drawFig = figure('Position',[sz(3)*.2 sz(4)*.2 ...
+        .6*min(ratios)*userData.MD.imSize_(2) .6*min(ratios)*userData.MD.imSize_(1)]);
     
     %Create the associate axes
-    hAxes = axes('Parent',hFig,'XLim',[0 size(data,2)],'YLim',[0 size(data,1)],...
-        'Position',[0 0 1 1]);
+    axes('Parent',userData.drawFig,'XLim',[0 userData.MD.imSize_(2)],'YLim',[0 userData.MD.imSize_(1)],...
+        'Position',[0.05 0.05 .9 .9]);
 end
+set(handles.figure1,'UserData',userData);
 
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
 if strcmp(imageTag,'radiobutton_channels')
@@ -265,6 +268,7 @@ if strcmp(imageTag,'radiobutton_channels')
     userData.MD.channels_(chanList).draw(frameNr);
 else
     set(channelBoxes,'Enable','off');
+    % Retrieve the id, process nr and channel nr of the selected imageProc
     tokens = regexp(imageTag,'radiobutton_process(\d+)_output(\d+)_channel(\d+)','tokens');
     procId=str2double(tokens{1}{1});
     outputList = userData.MD.processes_{procId}.getDrawableOutput;
@@ -280,6 +284,7 @@ frameNr=get(handles.slider_frame,'Value');
 overlayTag = get(hObject,'Tag');
 
 if ishandle(userData.drawFig), figure(userData.drawFig); end
+ % Retrieve the id, process nr and channel nr of the selected imageProc
 tokens = regexp(overlayTag,'checkbox_process(\d+)_output(\d+)_channel(\d+)','tokens');
 procId=str2double(tokens{1}{1});
 outputList = userData.MD.processes_{procId}.getDrawableOutput;
@@ -313,6 +318,8 @@ for i=1:numel(overlayTags)
 
     userData.MD.processes_{procId}.draw(iChan,frameNr,'output',output);
 end
+
+
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
 

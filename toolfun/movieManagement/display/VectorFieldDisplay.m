@@ -1,7 +1,8 @@
 classdef VectorFieldDisplay < MovieDataDisplay
     %Conrete class for displaying flow
     properties
-        Color='k';        
+        Color='k';  
+        scale=1;
     end
     methods
         function obj=VectorFieldDisplay(varargin)
