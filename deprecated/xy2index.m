@@ -23,6 +23,8 @@ function [indexList] = xy2index(x,y,L,W,unit)
 % DATE: 12-Apr-2006
 %
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 if nargin<5
     unit=1;
 end

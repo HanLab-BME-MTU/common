@@ -30,18 +30,20 @@ function D = createSparseDistanceMatrix(M,N,threshold,varargin)
 %
 %                   Distances: dij = sqrt( (yj-yi)^2 + (xj-xi)^2 + (zj-zi)^2 )
 %
-%            threshold : only the distances dij between the two set of points M and N
-%                        which are <= threshold are stored in the (sparse) distance matrix
+%            threshold : only the distances dij between the two set of points 
+%                        M and N which are below the threshold are stored in 
+%                        the (sparse) distance matrix
 %
 %            eps       : (optional, default value eps = 1e-10)
-%                        By definition, sparse matrices contain only non-zero elements.
-%                        The sparse matrix returned by createSparseDistanceMatrix contains 
+%                        By definition, sparse matrices contain only non-zero 
+%                        elements.
+%                        The sparse matrix returned by the function contains 
 %                        only the distances dij <= threshold. For this reason,
-%                        any distance dij > threshold, which is therefore NOT stored in D, is
-%                        considered to be equal to 0 by Matlab. 
+%                        any distance dij > threshold, which is therefore NOT 
+%                        stored in D, is considered to be equal to 0 by Matlab. 
 %                        To be able to distinguish the two cases: dij = 0 from
-%                        dij > threshold, all zero distances are replaced in D by a
-%                        small number, eps (default eps=1e-10).
+%                        dij > threshold, all zero distances are replaced in D 
+%                        by a small number, eps (default eps=1e-10).
 %                        Thus the command:
 % 
 %                           find(D==eps) returns the indices of all zero distances,
@@ -60,8 +62,10 @@ ip.addRequired('threshold',@isscalar);
 ip.addOptional('epsilon',1e-10,@isscalar);
 ip.parse(M,N,threshold,varargin{:})
 
-% Query the points using the  below the threshold
+% Query the points below the threshold using the KDTree
 [points,distances]=KDTreeBallQuery(N,M,threshold);
+
+% Generate the list of indices to create the sparse matrix
 points1=points;
 nzInd=find(~cellfun(@isempty,points));
 for i=nzInd', points1{i}(:)=i;end

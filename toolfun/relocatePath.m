@@ -1,30 +1,23 @@
 function newPath = relocatePath(oldPath,oldRootDir,newRootDir)
-% RELOCATEPATH relocates all paths in a given input
-%
+% RELOCATEPATH relocates a path to a new location accounting for OS changes
 % 
 % Input:
 % 
-%   oldpath - The element to be relocated by the function. The function
-%   currently supports three types of input:
-%       1 - a string
-%       2 - a structure or structure array 
-%       3 - a cell array
+%   oldpath - The path(s) to be relocated. Can be a strig, a cell array or a 
+%   structure array
 % 
 %   oldrootdir - A string containing the root directory of the path which
-%   will be substituted by this function. This can be any portion of the
+%   will be substituted by this function. Can be any part of the
 %   oldpath.
 % 
 %   newrootdir - A string containing the new root directory (belonging or
 %   not to the same OS).
 % 
-% 
 % Output: 
 %
-%   newpath - The function output depends of the type of input
-%       1 - a string containing the name of the relocated path 
-%       2 - a structure or structure array where all string fields have
-%       been relocated
-%       3 - a cell array where all strings have been relocated 
+%   newpath - Depending on the type of input, a string containing the name of
+%   the relocated path , a structure or structure array where all path+--*- fields
+%   have been relocated or a cell array where all paths have been relocated 
 %
 % Sebastien Besson, 03/2011
 %
