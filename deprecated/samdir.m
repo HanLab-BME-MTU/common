@@ -6,6 +6,8 @@ function success = samdir(dir1,dir2)
 %    identical. 'dir1' and 'dir2' are two strings referring to
 %    two directories. 
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 if ~isdir(dir1) || ~isdir(dir2)
    success = 0;
    return;
