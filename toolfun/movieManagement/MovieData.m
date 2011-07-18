@@ -366,39 +366,15 @@ classdef  MovieData < hgsetget
         function relocate(obj,newMovieDataPath)
             % Relocate all paths of the movie data object
             %
-            % This function automatically relocates channel and processes 
-            % paths assuming the internal architecture of the project is 
-            % conserved. 
-            % It compares the newMovieDataPath and the stored movieDataPath
-            % to guess the new root directory (accouting for OS changes).
-            % It then uses the relocatePath function to relocate the
-            % channels and output directory paths as well as the internal
-            % processes paths (input/ouput, function and visual parameters)
+            % This function automatically relocates the channel, processes 
+            % and package paths assuming the internal architecture of the 
+            % project is conserved. 
             %
-            % Input:
-            %
-            %   newMovieDataPath - the new location of the movie data
-            %   MAT file
             % 
             % Sebastien Besson, 4/2011
             
-            %Convert temporarily all path using the local fileseps (for comparison)
-            oldMovieDataPath = rReplace(obj.movieDataPath_,'/|\',filesep);
-            
-            %Remove ending file separators
-            endingFilesepToken = [regexptranslate('escape',filesep) '$'];
-            oldMovieDataPath = regexprep(oldMovieDataPath,endingFilesepToken,'');
-            newMovieDataPath = regexprep(newMovieDataPath,endingFilesepToken,'');
-            
-            %Compare old and new movie paths to detect common tree
-            maxNumEl=min(numel(oldMovieDataPath),numel(newMovieDataPath));
-            strComp = (oldMovieDataPath(end:-1:end-maxNumEl+1)==newMovieDataPath(end:-1:end-maxNumEl+1));
-
-            %Extract the old and new root directories
-            sizeCommonBranch=find(~strComp,1); 
-            if isempty(sizeCommonBranch), sizeCommonBranch=maxNumEl+1; end
-            oldRootDir=obj.movieDataPath_(1:end-sizeCommonBranch+1);
-            newRootDir=newMovieDataPath(1:end-sizeCommonBranch+1);
+            [oldRootDir newRootDir]=getRelocationDirs(obj.movieDataPath_,...
+                newMovieDataPath);
 
             % Relocate movie data and channel paths
             for i=1:numel(obj.channels_),

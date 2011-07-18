@@ -105,7 +105,8 @@ hPosition1=10;
 for iProc=nProc:-1:1;
     output=imageProc{iProc}.getDrawableOutput;
     validChan = imageProc{iProc}.checkChannelOutput;
-    for iOutput=numel(output):-1:1
+    validOutput = find(strcmp({output.type},'image'));
+    for iOutput=validOutput(end:-1:1)
         createOutputText(parentPanel,imageProcId(iProc),iOutput,hPosition1,output(iOutput).name);
         arrayfun(@(x) createChannelButton(parentPanel,imageProcId(iProc),iOutput,x,hPosition1),...
             find(validChan));
@@ -115,7 +116,7 @@ for iProc=nProc:-1:1;
     hPosition1=hPosition1+20;
 end
 
-% Create channels contorols
+% Create channels controls
 hPosition1=hPosition1+10;
 uicontrol(parentPanel,'Style','radio','Position',[10 hPosition1 200 20],...
     'Tag','radiobutton_channels','String','Channels','Value',1,...
@@ -140,7 +141,8 @@ nProc = numel(overlayProc);
 for iProc=nProc:-1:1;
     output=overlayProc{iProc}.getDrawableOutput;
     validChan = overlayProc{iProc}.checkChannelOutput;
-    for iOutput=numel(output):-1:1
+    validOutput = find(strcmp({output.type},'overlay'));
+    for iOutput=validOutput(end:-1:1)
         createOutputText(parentPanel,overlayProcId(iProc),iOutput,hPosition2,output(iOutput).name);
         arrayfun(@(x) createChannelBox(parentPanel,overlayProcId(iProc),iOutput,x,hPosition2),...
             find(validChan));
