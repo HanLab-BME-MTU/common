@@ -266,7 +266,7 @@ set(handles.figure1,'UserData',userData);
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
 if strcmp(imageTag,'radiobutton_channels')
     set(channelBoxes,'Enable','on');
-    chanList=arrayfun(@(x)get(x,'Value'),channelBoxes);
+    chanList=logical(arrayfun(@(x)get(x,'Value'),channelBoxes));
     userData.MD.channels_(chanList).draw(frameNr);
 else
     set(channelBoxes,'Enable','off');

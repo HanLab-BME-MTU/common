@@ -184,7 +184,7 @@ classdef DoubleProcessingProcess < ImageProcessingProcess
         function output = getDrawableOutput(obj)
             output(1).name='Ratio images';
             output(1).var='';
-            output(1).formatData=@mat2gray;
+            output(1).formatData=[];
             output(1).type='image';
             output(1).defaultDisplayMethod=@(x)ImageDisplay('Colormap','jet',...
                 'Colorbar','on','Units','','CLim',obj.getIntensityLimits(x));

@@ -162,14 +162,6 @@ classdef ImageProcessingProcess < Process
         end
         
         
-        function hfigure = resultDisplay(obj)
-        
-            if isa(obj, 'Process')
-                hfigure = movieDataVisualizationGUI(obj.owner_, obj);
-            else
-                error('User-defined: the input is not a Process object.')
-            end
-        end
         
         function outIm = loadOutImage(obj,iChan,iFrame)
             
