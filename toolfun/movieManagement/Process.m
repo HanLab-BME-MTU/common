@@ -143,7 +143,8 @@ classdef Process < hgsetget
         end
         
         function hfigure = resultDisplay(obj)
-            hfigure = movieDataVisualizationGUI(obj.owner_, obj);    
+            hfigure = movieDataViewer(obj.owner_, ...
+                find(cellfun(@(x)isequal(x,obj),obj.owner_.processes_)));    
         end
         
         function h=draw(obj,iChan,iFrame,varargin)
