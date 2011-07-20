@@ -47,7 +47,7 @@ p_std = sqrt(diag(C)/(numel(data)-length(p) - 1));
 
 % the last Gaussian is constrained; compute variance and append
 covA = triu(C(3:3:end,3:3:end));
-std_An = sqrt(sum(covA)/(numel(data)-length(p) - 1));
+std_An = sqrt(sum(covA(:))/(numel(data)-length(p) - 1));
 p_std = [p_std; std_An]';
 
 mu = [p(1:3:end); p_std(1:3:end)];
