@@ -4,10 +4,9 @@
  *
  * Compilation:
  * Mac/Linux: mex -I/usr/local/include -lgsl -lgslcblas fitGaussianMixture2D.c
- * Mac/Linux (statix): mex -I/usr/local/include -I../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a fitGaussianMixture2D.c
+ * Mac/Linux (statix): mex -I/usr/local/include -I../../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a fitGaussianMixture2D.c
  * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\gsl-1.14" -I"..\..\mex\include" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output fitGaussianMixture2D fitGaussianMixture2D.c
  */
-
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -36,24 +35,30 @@ typedef struct argStruct {
 typedef int(*pfunc_t)(double*, int, argStruct_t*);
 
 typedef struct dataStruct {
-    int nx;               // width/height of input
-    int np;               // # input parameters
-    int ng;               // # gaussians in mixture
-    int nDF;              // # of parameters to optimize
-    int step;             // increment in parameter vector; i.e., 3 if 'xyA', 2 if 'xy' etc.
-    double *pixels;       // input array
-    double *buffer;       // buffer array for calculations
-    double *gx, *gy;      // 1-D separated components of a Gaussian: exp(-(x-x0)^2/(2*sigma^2))
-    int *estIdx;          // indexes of prmVect that will be optimized
-    int *idx;             // index of non-NaN pixels
-    int nValid;           // number of non-NaN pixels
-    double *x_init;       // initial values for optimization
-    double *prmVect;      // parameter vector: 3*ng+2: x1, y1, A1, ... xn, yn, An, sigma, background
-    pfunc_t *dfunc;       // function pointer for derivatives
+    int nx;               /* width/height of input */
+    int np;               /* # input parameters */
+    int ng;               /* # gaussians in mixture */
+    int nDF;              /* # of parameters to optimize */
+    int step;             /* increment in parameter vector; 
+			   *  i.e., 3 if 'xyA', 2 if 'xy' etc.
+			   */
+    double *pixels;       /* input array */
+    double *buffer;       /* buffer array for calculations */
+    double *gx, *gy;      /* 1-D separated components of a Gaussian: 
+			   *  exp(-(x-x0)^2/(2*sigma^2))
+			   */
+    int *estIdx;          /* indexes of prmVect that will be optimized */
+    int *idx;             /* index of non-NaN pixels */
+    int nValid;           /* number of non-NaN pixels */
+    double *x_init;       /* initial values for optimization */
+    double *prmVect;      /* parameter vector: 3*ng+2: 
+			   *  x1, y1, A1, ... xn, yn, An, sigma, background
+			   */
+    pfunc_t *dfunc;       /* function pointer for derivatives */
     gsl_vector *residuals;
-    gsl_matrix *J;        // Jacobian matrix
-    double *Jbuffer;      // buffer for double output
-    double maxIter, eAbs, eRel; // optimiser settings, see GSL doc.
+    gsl_matrix *J;        /* Jacobian matrix */
+    double *Jbuffer;      /* buffer for double output */
+    double maxIter, eAbs, eRel; /* optimiser settings, see GSL doc. */
 } dataStruct_t;
 
 
@@ -539,7 +544,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         double* res = mxGetPr(val);
         
         //double mean = 0.0, std = 0.0, tmp;
-        double mean = 0.0, std = 0.0, tmpi, RSS=0.0;
+        double mean = 0.0, std = 0.0, tmp, RSS=0.0;
         for (i=0; i<data.nValid; ++i) {
             tmp = gsl_vector_get(data.residuals, i);
             res[data.idx[i]] = tmp;
@@ -595,8 +600,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     free(data.gx);
     free(mode);
 }
-
-
 
 //export DYLD_LIBRARY_PATH=/Applications/MATLAB_R2010b.app/bin/maci64 && gcc -Wall -g -DARRAY_ACCESS_INLINING -I. -I/Applications/MATLAB_R2010b.app/extern/include -L/Applications/MATLAB_R2010b.app/bin/maci64 -lmx -lmex -lgsl -lgslcblas -lmat fitGaussianMixture2D.c
 /* int main(void) {

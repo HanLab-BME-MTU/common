@@ -21,7 +21,7 @@ ip.CaseSensitive = false;
 ip.addRequired('img', @isnumeric);
 ip.addRequired('sigma', @isscalar);
 ip.addParamValue('Mode', 'xyAc', @ischar);
-ip.addParamValue('alpha', 0.05, @isscalar);
+ip.addParamValue('alpha', 0.001, @isscalar);
 ip.addParamValue('mask', [], @isnumeric);
 ip.parse(img, sigma, varargin{:});
 mode = ip.Results.Mode;
@@ -102,8 +102,7 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
     
     
     [lmy, lmx] = find(imgLM~=0);
-    lmIdx = sub2ind(size(img), lmy, lmx);
-    
+    lmIdx = sub2ind(size(img), lmy, lmx);    
     
     if ~isempty(lmIdx)
         % run localization on local maxima
