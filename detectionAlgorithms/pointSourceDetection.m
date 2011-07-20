@@ -21,7 +21,7 @@ ip.CaseSensitive = false;
 ip.addRequired('img', @isnumeric);
 ip.addRequired('sigma', @isscalar);
 ip.addParamValue('Mode', 'xyAc', @ischar);
-ip.addParamValue('alpha', 0.001, @isscalar);
+ip.addParamValue('alpha', 0.05, @isscalar);
 ip.addParamValue('mask', [], @isnumeric);
 ip.parse(img, sigma, varargin{:});
 mode = ip.Results.Mode;
