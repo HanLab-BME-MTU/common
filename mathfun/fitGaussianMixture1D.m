@@ -18,9 +18,10 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('data', @isvector);
 ip.addRequired('n', @isscalar);
+ip.addParamValue('Init', [], @isvector);
 ip.addParamValue('Display', 'on', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
 ip.parse(data, n, varargin{:});
-
+init = ip.Results.Init;
 
 opts = optimset('Jacobian', 'off', ...
     'MaxFunEvals', 1e4, ...
@@ -31,14 +32,14 @@ opts = optimset('Jacobian', 'off', ...
 
 [f_ecdf, x_ecdf] = ecdf(data);
 
-
-mu_init = cumsum(ones(1,n)/(n+1))*2*mean(data);
-sigma_init = std(data)/sqrt(n)*ones(1,n);
-A_init = ones(1,n)/n;
-init = reshape([mu_init; sigma_init; A_init], [1 3*n]);
-init = init(1:end-1);
-
-[p,resnorm,~,~,~,~,J] = lsqnonlin(@cost, init, [], [], opts, x_ecdf, f_ecdf);
+if isempty(init)
+    mu_init = cumsum(ones(1,n)/(n+1))*2*mean(data);
+    sigma_init = std(data)/sqrt(n)*ones(1,n);
+    A_init = ones(1,n)/n;
+    init = reshape([mu_init; sigma_init; A_init], [1 3*n]);
+end
+    
+[p,resnorm,~,~,~,~,J] = lsqnonlin(@cost, init(1:end-1), [], [], opts, x_ecdf, f_ecdf);
 
 % covariance matrix, error propagation
 C = resnorm*full(inv(J'*J));
