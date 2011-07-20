@@ -1,4 +1,5 @@
-% getGaussianPSFsigma returns the standard deviation of the Gaussian approximation of an ideal PSF.
+% getGaussianPSFsigma returns the standard deviation of the Gaussian
+% approximation of an ideal PSF in pixel
 %
 % INPUTS     NA        : numerical aperture of the objective
 %            M         : magnification of the objective

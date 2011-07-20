@@ -530,17 +530,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     // residuals
     if (nlhs > 3) {
-        const char *fieldnames[] = {"data", "pval", "mean", "std"};
+        //const char *fieldnames[] = {"data", "pval", "mean", "std"};
+        const char *fieldnames[] = {"data", "pval", "mean", "std","RSS"};
         mwSize dims[2] = {1, 1};
-        plhs[3] = mxCreateStructArray(2, dims, 4, fieldnames);        
+        //plhs[3] = mxCreateStructArray(2, dims, 4, fieldnames);        
+        plhs[3] = mxCreateStructArray(2, dims, 5, fieldnames);        
         mxArray *val = mxCreateDoubleMatrix(nx, nx, mxREAL);
         double* res = mxGetPr(val);
         
-        double mean = 0.0, std = 0.0, tmp;
+        //double mean = 0.0, std = 0.0, tmp;
+        double mean = 0.0, std = 0.0, tmpi, RSS=0.0;
         for (i=0; i<data.nValid; ++i) {
             tmp = gsl_vector_get(data.residuals, i);
             res[data.idx[i]] = tmp;
             mean += tmp;
+	    // next line is new
+	    RSS += tmp*tmp;
         }
         mean /= data.nValid;
         for (i=0; i<data.nValid; ++i) {
@@ -557,6 +562,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mxSetFieldByNumber(plhs[3], 0, 1, mxCreateDoubleScalar(pval));
         mxSetFieldByNumber(plhs[3], 0, 2, mxCreateDoubleScalar(mean));
         mxSetFieldByNumber(plhs[3], 0, 3, mxCreateDoubleScalar(std));
+	// next line is new
+        mxSetFieldByNumber(plhs[3], 0, 4, mxCreateDoubleScalar(RSS));
     }
     
     // Jacobian
