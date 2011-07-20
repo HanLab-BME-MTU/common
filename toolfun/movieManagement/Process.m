@@ -27,7 +27,9 @@ classdef Process < hgsetget
     end
     properties        
         notes_          % Process notes
-        displayMethod_  % Cell array
+    end
+    properties (Transient=true)
+        displayMethod_  % Cell array of display methods
     end
     methods (Access = protected)
         function obj = Process(owner, name)

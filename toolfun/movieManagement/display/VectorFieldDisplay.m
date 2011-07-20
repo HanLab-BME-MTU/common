@@ -14,8 +14,9 @@ classdef VectorFieldDisplay < MovieDataDisplay
             end
         end
         function h=initDraw(obj,data,tag,varargin)
-            h=quiver(data(:, 2),data(:, 1),data(:, 4)-data(:, 2),...
-                data(:, 3)-data(:, 1),'-','Color',obj.Color,varargin{:});
+            h=quiver(data(:, 2),data(:, 1),obj.scale*(data(:, 4)-data(:, 2)),...
+                obj.scale*(data(:, 3)-data(:, 1)),'-',...
+                'Color',obj.Color,varargin{:});
             set(h,'Tag',tag);
         end
         function setProperties(obj,ip)
@@ -23,10 +24,12 @@ classdef VectorFieldDisplay < MovieDataDisplay
         end
         function updateDraw(obj,h,data)
             set(h,'XData',data(:,2),'YData',data(:,1),...
-                'UData',data(:, 4)-data(:, 2),'VData',data(:, 3)-data(:, 1))
+                'UData',obj.scale*(data(:, 4)-data(:, 2)),...
+                'VData',obj.scale*(data(:, 3)-data(:, 1)))
         end
         function additionalInputParsing(obj,ip)
             ip.addParamValue('Color',obj.Color,@(x)ischar(x) ||isvector(x));
+            ip.addParamValue('scale',obj.scale,@isscalar);
         end 
     end    
     

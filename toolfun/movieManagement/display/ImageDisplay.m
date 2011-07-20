@@ -23,26 +23,28 @@ classdef ImageDisplay < MovieDataDisplay
             
             % Clean existing image and set image at the bottom of the stack
             hAxes = get(h,'Parent');
-            set(hAxes,'XLim',[0 size(data,2)],'YLim',[0 size(data,1)],...
-                'Position',[0 0 1 1]);
             child=get(hAxes,'Children');
             imChild = child(strcmp(get(child,'Type'),'image'));
             delete(imChild(imChild~=h));
             uistack(h,'bottom');
             
-            axis manual
             % Set the colormap
             colormap(hAxes,obj.Colormap);
             
             % Set the colorbar
             hCbar = findobj(get(hAxes,'Parent'),'Tag','Colorbar');
-            if strcmp(obj.Colorbar,'on') && isempty(hCbar)
-                set(gca,'CLimMode','auto');
-                hCBar = colorbar('peer',hAxes);
-                ylabel(hCBar,obj.Units);
-            elseif strcmp(obj.Colorbar,'off') && ~isempty(hCbar)
-                colorbar(hCbar,'delete');
+            if strcmp(obj.Colorbar,'on')
+                axis image
+                if isempty(hCbar)
+                    hCBar = colorbar('peer',hAxes);
+                    ylabel(hCBar,obj.Units);
+                end
+            else
+                if ~isempty(hCbar),colorbar(hCbar,'delete'); end
+                set(hAxes,'XLim',[0 size(data,2)],'YLim',[0 size(data,1)],...
+                'Position',[0 0 1 1]);
             end
+
             
             % Set the color limits
             if ~isempty(obj.CLim),set(hAxes,'CLim',obj.CLim); end
