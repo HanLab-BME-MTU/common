@@ -13,10 +13,7 @@ function [cleanContours,iClean] = cleanUpContours(contoursIn,nPtsMin)
 %   pixel of the image which was contoured. (I'm not sure why this is...)
 %   This function removes these points. Also, they may contain very short
 %   contours which surround a single pixel. These contours will be removed
-%   if they are shorter than nPtsMin. Finally, contours which intersect
-%   themselves will be seperated into two, non-intersecting contours. This
-%   happens only in rare circumstances, where the isovalue passes directly
-%   through a saddle point.
+%   if they are shorter than nPtsMin.
 % 
 % 
 % Input:
@@ -56,12 +53,9 @@ end
 %% ----- Parameters ----- %%
 
 %threshold for considering two points on a contour redundant
-distThreshold = .5;
+distThreshold = .1;
 
 nContours = length(contoursIn);
-
-%Minimum length of contours to consider splitting
-nMinSplit = nPtsMin*3;
 
 %% ------ Clean Up----- %%
 
@@ -78,62 +72,4 @@ iClean = find(nPall >= nPtsMin);
 
 %Return only these long contours
 cleanContours = cleanContours(iClean)';
-nPall = nPall(iClean);
 
-
-%Check if the contour intersects itself
-i1 = cell(1,nContours);
-i2 = cell(1,nContours);
-%Only check contours larger than nMinSplit
-%Exclude the first point because closed contours meet there.
-[~,~,i1(nPall>nMinSplit),i2(nPall>nMinSplit)]  = cellfun(@(x)(...
-                              intersectionsHLE(x(1,2:end),x(2,2:end))),...
-                              cleanContours(nPall>nMinSplit),'UniformOutput',false);
-
-%Correct for the fact that the first point was excluded
-i1 = cellfun(@(x)(x+1),i1,'UniformOutput',false);
-i2 = cellfun(@(x)(x+1),i2,'UniformOutput',false);
-                          
-iSelfInt = find(cellfun(@(x)(~isempty(x)),i1));
-
-
-if ~isempty(iSelfInt)
-
-    %Check which contours are closed - we need to insure these stay closed
-    %after contour splitting
-    isClosed = cellfun(@(x)(sqrt(sum( (x(:,1)-x(:,end)) .^2 ))),cleanContours)<distThreshold;
-
-    iClean = arrayfun(@(x)(x),iClean,'UniformOutput',false)';
-    
-    for j = iSelfInt
-
-        c1 = cleanContours{j}(:,max(ceil(i1{j})):min(floor(i2{j})));
-        c2 = cleanContours{j}(:,[1:min(floor(i1{j})) max(ceil(i2{j})):end]);
-        
-        %If the parent contour was closed, ensure that the resulting split
-        %contours are also
-        if isClosed(j)
-           if ~all(c1(:,1) ~= c1(:,end))
-               c1 = [c1 c1(:,1)]; %#ok<AGROW>
-           end
-           if ~all(c2(:,1) ~= c2(:,end))
-               c2 = [c2 c2(:,1)]; %#ok<AGROW>
-           end
-        end
-        
-
-        %This is a little trick to keep the indices correct/contours in
-        %order
-        cleanContours{j} = cell(1,2);
-        cleanContours{j}{1} = c1;
-        cleanContours{j}{2} = c2;
-        iClean{j} = ones(1,2) .* iClean{j};        
-    end
-    cleanContours = cat(2,cleanContours{:});
-    iClean = cat(2,iClean{:});
-end
-
-%Get rid of contours that were split into 'too small' contours
-nPall = cellfun(@(x)(size(x,2)),cleanContours);
-cleanContours = cleanContours(nPall>=nPtsMin)';
-iClean = iClean(nPall>=nPtsMin);
