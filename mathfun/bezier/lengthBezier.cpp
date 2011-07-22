@@ -5,9 +5,15 @@
 
 using namespace Wm5;
 
-// Wild Magic: from http://www.geometrictools.com/Downloads/Downloads.html
-// Compile in RELEASE mode!
-// mex -I. -IC:\Users\PB93\Downloads\WildMagic5p5\GeometricTools\WildMagic5\SDK\Include -LC:\Users\PB93\Downloads\WildMagic5p5\GeometricTools\WildMagic5\SDK\Library\Release\ -lWm5Core90 -lWm5Mathematics90 lengthBezier.cpp
+// Get Wild Magic: from http://www.geometrictools.com/Downloads/Downloads.html
+
+// Windows: Compile WildMagic in 64 bit RELEASE mode with Visual Studio!
+// Windows: mex -I. -IC:\Users\PB93\Downloads\WildMagic5p5\GeometricTools\WildMagic5\SDK\Include -LC:\Users\PB93\Downloads\WildMagic5p5\GeometricTools\WildMagic5\SDK\Library\Release\ -lWm5Core90 -lWm5Mathematics90 lengthBezier.cpp
+
+// Linux: 1. Remove lines in WildMagic5/makefile.wm5 to compile only LibCore and LibMathematics
+// Linux: 2. Modify "CFLAGS := -c -D__LINUX__" in WildMagic5/LibCore/makeprj.wm5 WildMagic5/LibMathematics/makeprj.wm5 to "CFLAGS := -c -D__LINUX__ -fPIC"
+// Linux: 3. Compile in RELEASE mode: make CFG=Release -f makefile.wm5
+// Linux: mex -I. -I/home/pb93/Downloads/GeometricTools/WildMagic5/SDK/Include -L/home/pb93/Downloads/GeometricTools/WildMagic5/SDK/Library/Release -lWm5Core -lWm5Mathematics lengthBezier.cpp
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
