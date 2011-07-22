@@ -58,13 +58,16 @@ opts = optimset('Jacobian', 'on', ...
     'Tolfun', tolFun, ...
     'DerivativeCheck','off');
 
+% Equation to solve with the LS approach
+% diag([w(:,1);w(:,2)])*[u;v] = diag([w(:,1);w(:,2)])*[Bn,0;0,Bn]*[x;y]
+
 % Define initial vector of nodes t0
 [m dim] = size(X);
 t = linspace(0,1,m)';
 t = t(2:end-1);
 
 % Compute the weights diagonal matrix
-WX = w.*X; % Weighted data points
+wX = w.*X; % Weighted data points
 W = zeros(m,m,dim);
 for i=1:dim
     W(:,:,i) = diag(w(:,i));
@@ -73,7 +76,7 @@ end
 % Solve the non-linear optimization on t
 Cnk = diag([1 cumprod(n:-1:1) ./ cumprod(1:n)]);
 Cn_1k = diag([1 cumprod(n-1:-1:1) ./ cumprod(1:n-1)]);
-fun = @(t) r(t, WX, W, Cnk, Cn_1k, n);
+fun = @(t) r(t, wX, W, Cnk, Cn_1k, n);
 [t, ~, res] = lsqnonlin(fun, t, zeros(size(t)), ones(size(t)), opts);
 
 % Compute the control points
@@ -84,7 +87,7 @@ P = zeros(n+1,dim);
 for i=1:dim
     WB = W(:,:,i)*B;
     [Q1 R11] = qr(WB,0);
-    P(:,i) = R11 \ (Q1' * WX(:,i));
+    P(:,i) = R11 \ (Q1' * wX(:,i));
 end
 
 % Compute unweighted residuals
@@ -92,9 +95,9 @@ res = res./w(:);
 
 end % main function
 
-function [F J] = r(t, WX, W, Cnk, Cn_1k, n)
+function [F J] = r(t, wX, W, Cnk, Cn_1k, n)
 
-[m dim] = size(WX);
+[m dim] = size(wX);
 
 % Append t1 and tm
 t = [0; t; 1];
@@ -113,7 +116,7 @@ for i=1:dim
     WB(:,:,i) = W(:,:,i)*B;
     [Q1(:,:,i) R11(:,:,i) EE(:,:,i)] = qr(WB(:,:,i),0);
     Q2Q2t(:,:,i) = eye(m) - Q1(:,:,i) * Q1(:,:,i)';
-    r(:,i) = Q2Q2t(:,:,i) * WX(:,i);
+    r(:,i) = Q2Q2t(:,:,i) * wX(:,i);
 end
 F = r(:);
 
@@ -140,7 +143,7 @@ if nargout > 1
     % Compute Jacobian Matrix   
     J = zeros(m * dim, m - 2);
     for d = 1:dim
-        tmp = -(Q2Q2t(:,:,d) * diag(P(:,:,d) * WX(:,d)) + P(:,:,d)' * diag(r(:,d)));
+        tmp = -(Q2Q2t(:,:,d) * diag(P(:,:,d) * wX(:,d)) + P(:,:,d)' * diag(r(:,d)));
         J((d-1) * m + 1:d * m,:) = tmp(:, 2:end-1);
     end  
 end
