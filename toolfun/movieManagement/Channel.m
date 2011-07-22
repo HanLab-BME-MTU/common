@@ -22,13 +22,16 @@ classdef Channel < hgsetget
         filterType_                 % Filter Type
         fluorophore_=''               % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)  
         
-        displayMethod_ = ImageDisplay;
     end
     
     properties(SetAccess=protected) 
         % ---- Object Params ---- %
         
         owner_                      % MovieData object which owns this channel 
+    end
+    
+    properties(Transient=true)
+        displayMethod_  = ImageDisplay;
     end
     
     methods
