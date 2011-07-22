@@ -46,9 +46,26 @@ imagePanel = uibuttongroup(mainFig,'Position',[0 0 1/2 1],...
     'Title','Image','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
     'Units','pixels','Tag','uipanel_image');
 
+% Create global image controls
+hPosition1=10;
+uicontrol(imagePanel,'Style','checkbox',...
+    'Position',[20 hPosition1 100 20],'Tag','checkbox_autoscale',...
+    'String',' Autoscale','HorizontalAlignment','left','FontWeight','bold');
+uicontrol(imagePanel,'Style','edit','Position',[120 hPosition1 50 20],...
+    'String','','BackgroundColor','white','Tag','edit_cmin',...
+    'Callback',@(h,event) setClim(h,event,guidata(h)));
+uicontrol(imagePanel,'Style','edit','Position',[200 hPosition1 50 20],...
+    'String','','BackgroundColor','white','Tag','edit_cmax',...
+    'Callback',@(h,event) setClim(h,event,guidata(h)));
+
+hPosition1=hPosition1+20;
+uicontrol(imagePanel,'Style','text',...
+    'Position',[10 hPosition1 200 20],'Tag','text_imagescale',...
+    'String','Scale','HorizontalAlignment','left','FontWeight','bold');
+hPosition1=hPosition1+20;
+
 % Create image processes controls
 nProc = numel(imageProc);
-hPosition1=10;
 for iProc=nProc:-1:1;
     output=imageProc{iProc}.getDrawableOutput;
     validChan = imageProc{iProc}.checkChannelOutput;
@@ -224,6 +241,31 @@ end
 
 redrawImage(hObject,event,handles)
 
+
+function setClim(hObject,event,handles)
+userData=get(handles.figure1,'UserData');
+imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
+
+clim=[str2double(get(handles.edit_cmin,'String')) ...
+    str2double(get(handles.edit_cmax,'String'))];
+
+if strcmp(imageTag,'radiobutton_channels')
+    chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
+    userData.MD.channels_(chanList(1)).displayMethod_.CLim=cLim;
+else
+    % Retrieve the id, process nr and channel nr of the selected imageProc
+    tokens = regexp(imageTag,'radiobutton_process(\d+)_output(\d+)_channel(\d+)','tokens');
+    procId=str2double(tokens{1}{1});
+    iOutput = str2double(tokens{1}{2});
+    iChan = str2double(tokens{1}{3});
+    userData.MD.processes_{procId}.displayMethod_{iOutput,iChan}.CLim=clim;
+end
+
+if ishandle(userData.drawFig)
+    child=get(userData.drawFig,'Children');
+    set(child(strcmp(get(child,'Type'),'axes')),'Clim',clim);
+end
+
 function redrawImage(hObject, eventdata, handles)
 userData=get(handles.figure1,'UserData');
 frameNr=get(handles.slider_frame,'Value');
@@ -248,17 +290,29 @@ set(handles.figure1,'UserData',userData);
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
 if strcmp(imageTag,'radiobutton_channels')
     set(channelBoxes,'Enable','on');
-    chanList=logical(arrayfun(@(x)get(x,'Value'),channelBoxes));
+    chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
     userData.MD.channels_(chanList).draw(frameNr);
+    clim=userData.MD.channels_(chanList(1)).displayMethod_.CLim;
 else
     set(channelBoxes,'Enable','off');
     % Retrieve the id, process nr and channel nr of the selected imageProc
     tokens = regexp(imageTag,'radiobutton_process(\d+)_output(\d+)_channel(\d+)','tokens');
     procId=str2double(tokens{1}{1});
     outputList = userData.MD.processes_{procId}.getDrawableOutput;
-    output = outputList(str2double(tokens{1}{2})).var;
+    iOutput = str2double(tokens{1}{2});
+    output = outputList(iOutput).var;
     iChan = str2double(tokens{1}{3});
     userData.MD.processes_{procId}.draw(iChan,frameNr,'output',output);
+    clim=userData.MD.processes_{procId}.displayMethod_{iOutput,iChan}.CLim;
+end
+
+% Set the autoscale
+set(handles.checkbox_autoscale,'Value',isempty(clim));
+if isempty(clim)
+    set([handles.edit_cmin handles.edit_cmax],'Enable','off');
+else
+    set(handles.edit_cmin,'Enable','on','String',clim(1));
+    set(handles.edit_cmax,'Enable','on','String',clim(2));
 end
 
 function checkOverlay(hObject, eventdata, handles)
