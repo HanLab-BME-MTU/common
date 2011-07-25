@@ -25,7 +25,7 @@ ip.addRequired('mask', @islogical);
 ip.addRequired('psfSigma', @isscalar);
 ip.addParamValue('mode', 'xyArtc', @ischar);
 ip.addParamValue('alpha', 0.05, @isscalar);
-ip.addParamValue('kSigma', 3, @isscalar);
+ip.addParamValue('kSigma', 4, @isscalar);
 ip.addParamValue('minDist', .25, @isscalar);
 ip.addParamValue('filterSigma',psfSigma*sqrt(2), @isscalar);
 
@@ -51,6 +51,7 @@ bandPassIso(~mask) = 0;
 locMaxIso = locmax2d(R, [5 5]);
  
 bw = blobSegmentThreshold(bandPassIso,0,0,mask);
+labels=bwlabel(bw);
 
 locMaxIso(~bw) = 0;
 
@@ -102,11 +103,16 @@ kLevel = norminv(1 - alpha / 2.0, 0, 1); % ~2 std above background
 success = false(numel(xmin),1);
 
 for iFeature = 1:numel(xmin)
+    mask =labels(ymin(iFeature):ymax(iFeature), xmin(iFeature):xmax(iFeature));
+    mask(mask==labels(yRange{iFeature}(fix(end/2)),xRange{iFeature}(fix(end/2)))) = 0;
     
-    mask = false(length(yRange{iFeature}),length(xRange{iFeature}));
-    mask(nzIdx{iFeature})=true;
+    anisoMask = false(length(yRange{iFeature}),length(xRange{iFeature}));
+    anisoMask(nzIdx{iFeature})=true;
+    anisoMask(mask~=0)=false;
+    npx(iFeature)=nnz(anisoMask);
     crop = img(ymin(iFeature):ymax(iFeature), xmin(iFeature):xmax(iFeature));
-    crop(~mask)=NaN;
+    crop(~anisoMask)=NaN;
+
     
     P(iFeature,7) = min(crop(:)); % background
     P(iFeature,3) = P(iFeature,3) - P(iFeature,7); % amplitude above background
@@ -119,7 +125,7 @@ for iFeature = 1:numel(xmin)
     px = floor(floor(size(crop)/2)+1+params(1:2));
     isValid = all(px>=1) & all(px<=size(crop));
     if isValid
-        isValid = mask(px(1),px(2));
+        isValid = anisoMask(px(1),px(2));
     end
     
     % TEST: sigmaX > 1
