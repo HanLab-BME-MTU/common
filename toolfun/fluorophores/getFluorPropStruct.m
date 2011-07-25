@@ -40,3 +40,5 @@ s(17).name = 'texasred';
 s(17).lambda_em = 615e-9;
 s(18).name = 'alexa647';
 s(18).lambda_em = 665e-9;
+s(18).name = 'fluosphere605';
+s(18).lambda_em = 605e-9;
