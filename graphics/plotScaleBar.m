@@ -8,6 +8,9 @@
 %                  'FontName'
 %                  'FontSize'
 %
+% Ouput: hScalebar : handle to the patch graphic object and text graphic
+%                    object if applicable
+%
 % Example: plotScalebar(500, [], 'Label', '500 nm', 'Location', 'SouthEast');
 %
 %
@@ -17,7 +20,7 @@
 % Francois Aguet, March 14 2011 (last modified 07/21/2011)
 
 
-function plotScaleBar(width, varargin)
+function hScaleBar=plotScaleBar(width, varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
@@ -66,27 +69,27 @@ hold on;
 set(gcf, 'InvertHardcopy', 'off');
 switch ip.Results.Location
     case 'northeast'
-        fill([lx-width lx lx lx-width]-dx, [height height 0 0]+dx,...
+        hScaleBar(1) = fill([lx-width lx lx lx-width]-dx, [height height 0 0]+dx,...
             color, 'EdgeColor', 'none');
         if ~isempty(label)
-            text(lx-dx-width/2, dx+height, label, textProps{:});
+            hScaleBar(2) = text(lx-dx-width/2, dx+height, label, textProps{:});
         end
     case 'southeast'
-        fill([lx-width lx lx lx-width]-dx, [ly ly ly-height ly-height]-max(dx,textHeight),...
+        hScaleBar(1) = fill([lx-width lx lx lx-width]-dx, [ly ly ly-height ly-height]-max(dx,textHeight),...
             color, 'EdgeColor', 'none');
         if ~isempty(label)
-            text(lx-dx-width/2, ly-max(dx,0.95*textHeight), label, textProps{:});
+            hScaleBar(2) = text(lx-dx-width/2, ly-max(dx,0.95*textHeight), label, textProps{:});
         end
     case 'southwest'
-        fill([0 width width 0]+dx, [ly ly ly-height ly-height]-max(dx,textHeight),...
+        hScaleBar(1) = fill([0 width width 0]+dx, [ly ly ly-height ly-height]-max(dx,textHeight),...
             color, 'EdgeColor', 'none');
         if ~isempty(label)
-            text(dx+width/2, ly-max(dx,0.95*textHeight), label, textProps{:});
+            hScaleBar(2) = text(dx+width/2, ly-max(dx,0.95*textHeight), label, textProps{:});
         end
     case 'northwest'
-        fill([0 width width 0]+dx, [height height 0 0]+dx,...
+        hScaleBar(1) = fill([0 width width 0]+dx, [height height 0 0]+dx,...
             color, 'EdgeColor', 'none');
         if ~isempty(label)
-            text(dx+width/2, dx+height, label, textProps{:});
+            hScaleBar(2) = text(dx+width/2, dx+height, label, textProps{:});
         end
 end

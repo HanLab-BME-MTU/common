@@ -36,8 +36,9 @@ classdef ImageDisplay < MovieDataDisplay
             if strcmp(obj.Colorbar,'on')
                 axis image
                 if isempty(hCbar)
-                    hCBar = colorbar('peer',hAxes);
-                    ylabel(hCBar,obj.Units);
+                    set(hAxes,'Position',[0.05 0.05 .9 .9]);   
+                    hCBar = colorbar('peer',hAxes,'FontSize',12);
+                    ylabel(hCBar,obj.Units,'FontSize',12);
                 end
             else
                 if ~isempty(hCbar),colorbar(hCbar,'delete'); end

@@ -6,9 +6,9 @@ ip.addOptional('procId',0,@isscalar);
 ip.parse(varargin{:});
 
 % Chek
-h=findobj(0,'Name','MovieDataViewer');
+h=findobj(0,'Name','MovieData Viewer');
 if ~isempty(h), delete(h); end
-mainFig=figure('Name','MovieDataViewer','Position',[0 0 200 200],...
+mainFig=figure('Name','MovieData Viewer','Position',[0 0 200 200],...
     'NumberTitle','off','Tag','figure1','Toolbar','none','MenuBar','none',...
     'Color',get(0,'defaultUicontrolBackgroundColor'),...
     'DeleteFcn', @(h,event) deleteViewer(h,event,guidata(h)));
@@ -49,6 +49,17 @@ imagePanel = uibuttongroup(mainFig,'Position',[0 0 1/2 1],...
 % Create global image controls
 hPosition1=10;
 uicontrol(imagePanel,'Style','checkbox',...
+    'Position',[20 hPosition1 100 20],'Tag','checkbox_imageScaleBar',...
+    'String',' Scale bar','HorizontalAlignment','left','FontWeight','bold',...
+    'Callback',@(h,event) setScaleBar(h,event,guidata(h)));
+uicontrol(imagePanel,'Style','edit','Position',[120 hPosition1 50 20],...
+    'String','1','BackgroundColor','white','Tag','edit_scaleBarLabel',...
+    'Callback',@(h,event) setScaleBar(h,event,guidata(h)));
+uicontrol(imagePanel,'Style','text','Position',[180 hPosition1 70 20],...
+    'String','microns','HorizontalAlignment','left');
+
+hPosition1=hPosition1+30;
+uicontrol(imagePanel,'Style','checkbox',...
     'Position',[20 hPosition1 100 20],'Tag','checkbox_autoscale',...
     'String',' Autoscale','HorizontalAlignment','left','FontWeight','bold');
 uicontrol(imagePanel,'Style','edit','Position',[120 hPosition1 50 20],...
@@ -60,8 +71,8 @@ uicontrol(imagePanel,'Style','edit','Position',[200 hPosition1 50 20],...
 
 hPosition1=hPosition1+20;
 uicontrol(imagePanel,'Style','text',...
-    'Position',[10 hPosition1 200 20],'Tag','text_imagescale',...
-    'String','Scale','HorizontalAlignment','left','FontWeight','bold');
+    'Position',[10 hPosition1 200 20],'Tag','text_imageoptions',...
+    'String','Options','HorizontalAlignment','left','FontWeight','bold');
 hPosition1=hPosition1+20;
 
 % Create image processes controls
@@ -242,6 +253,22 @@ end
 redrawImage(hObject,event,handles)
 
 
+function setScaleBar(hObject,event,handles)
+userData=get(handles.figure1,'UserData');
+
+% Set the scaleBar
+h=findobj('Tag','imageScaleBar');
+if ~isempty(h), delete(h); end
+
+if get(handles.checkbox_imageScaleBar,'Value') && ishandle(userData.drawFig)
+    figure(userData.drawFig)
+    scale = str2double(get(handles.edit_scaleBarLabel,'String'));
+    hScaleBar = plotScaleBar(scale *1000/userData.MD.pixelSize_,...
+        'Label', [num2str(scale) ' \mum'],'FontSize',15);
+    set(hScaleBar,'Tag','imageScaleBar'); 
+end
+
+
 function setClim(hObject,event,handles)
 userData=get(handles.figure1,'UserData');
 imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
@@ -266,6 +293,7 @@ if ishandle(userData.drawFig)
     set(child(strcmp(get(child,'Type'),'axes')),'Clim',clim);
 end
 
+
 function redrawImage(hObject, eventdata, handles)
 userData=get(handles.figure1,'UserData');
 frameNr=get(handles.slider_frame,'Value');
@@ -282,8 +310,8 @@ else
         .6*min(ratios)*userData.MD.imSize_(2) .6*min(ratios)*userData.MD.imSize_(1)]);
     
     %Create the associate axes
-    axes('Parent',userData.drawFig,'XLim',[0 userData.MD.imSize_(2)],'YLim',[0 userData.MD.imSize_(1)],...
-        'Position',[0.05 0.05 .9 .9]);
+    axes('Parent',userData.drawFig,'XLim',[0 userData.MD.imSize_(2)],...
+        'YLim',[0 userData.MD.imSize_(1)],'Position',[0.05 0.05 .9 .9]);
 end
 set(handles.figure1,'UserData',userData);
 
@@ -315,6 +343,11 @@ else
     set(handles.edit_cmax,'Enable','on','String',clim(2));
 end
 
+% Set the scaleBar
+if get(handles.checkbox_imageScaleBar,'Value')
+    setScaleBar(hObject,eventdata,handles)
+end
+    
 function checkOverlay(hObject, eventdata, handles)
 userData=get(handles.figure1,'UserData');
 frameNr=get(handles.slider_frame,'Value');
