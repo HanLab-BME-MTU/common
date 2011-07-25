@@ -14,6 +14,7 @@ classdef MovieDataDisplay < handle
             ip.addRequired('tag',@ischar);
             ip.addParamValue('hAxes',gca,@ishandle);
             obj.additionalInputParsing(ip);
+            ip.KeepUnmatched = true; % Allow unmatched arguments
             ip.parse(obj,data,tag,varargin{:});
             obj.setProperties(ip);
             

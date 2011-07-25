@@ -14,13 +14,15 @@ classdef VectorFieldDisplay < MovieDataDisplay
             end
         end
         function h=initDraw(obj,data,tag,varargin)
+            if isempty(obj.scale),autoscale='on'; else autoscale='off'; end
             h=quiver(data(:, 2),data(:, 1),obj.scale*(data(:, 4)-data(:, 2)),...
-                obj.scale*(data(:, 3)-data(:, 1)),'-',...
+                obj.scale*(data(:, 3)-data(:, 1)),0,'-','Autoscale',autoscale,...
                 'Color',obj.Color,varargin{:});
             set(h,'Tag',tag);
         end
         function setProperties(obj,ip)
             obj.Color=ip.Results.Color;
+            obj.scale=ip.Results.scale;
         end
         function updateDraw(obj,h,data)
             set(h,'XData',data(:,2),'YData',data(:,1),...

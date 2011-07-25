@@ -11,7 +11,7 @@ if ~isempty(h), delete(h); end
 mainFig=figure('Name','MovieData Viewer','Position',[0 0 200 200],...
     'NumberTitle','off','Tag','figure1','Toolbar','none','MenuBar','none',...
     'Color',get(0,'defaultUicontrolBackgroundColor'),...
-    'DeleteFcn', @(h,event) deleteViewer(h,event,guidata(h)));
+    'DeleteFcn', @(h,event) deleteViewer(guidata(h)));
 userData=get(mainFig,'UserData');
 userData.MD=ip.Results.MD;
 
@@ -39,42 +39,42 @@ createChannelButton= @(panel,i,j,k,pos) uicontrol(panel,'Style','radio',...
 createChannelBox= @(panel,i,j,k,pos) uicontrol(panel,'Style','checkbox',...
     'Position',[200+30*k pos 20 20],'Tag',['checkbox_process' num2str(i) '_output'...
     num2str(j) '_channel' num2str(k)],...
-    'Callback',@(h,event) checkOverlay(h,event,guidata(h)));
+    'Callback',@(h,event) redrawOverlay(h,guidata(h)));
 
 %% Create image panel
 imagePanel = uibuttongroup(mainFig,'Position',[0 0 1/2 1],...
     'Title','Image','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
     'Units','pixels','Tag','uipanel_image');
 
-% Create global image controls
+% Create image option controls
 hPosition1=10;
 uicontrol(imagePanel,'Style','checkbox',...
     'Position',[20 hPosition1 100 20],'Tag','checkbox_imageScaleBar',...
-    'String',' Scale bar','HorizontalAlignment','left','FontWeight','bold',...
-    'Callback',@(h,event) setScaleBar(h,event,guidata(h)));
+    'String',' Scale bar','HorizontalAlignment','left',...
+    'Callback',@(h,event) setScaleBar(guidata(h),'imageScaleBar'));
 uicontrol(imagePanel,'Style','edit','Position',[120 hPosition1 50 20],...
-    'String','1','BackgroundColor','white','Tag','edit_scaleBarLabel',...
-    'Callback',@(h,event) setScaleBar(h,event,guidata(h)));
+    'String','1','BackgroundColor','white','Tag','edit_imageScaleBar',...
+    'Callback',@(h,event) setScaleBar(guidata(h),'imageScaleBar'));
 uicontrol(imagePanel,'Style','text','Position',[180 hPosition1 70 20],...
     'String','microns','HorizontalAlignment','left');
 
 hPosition1=hPosition1+30;
 uicontrol(imagePanel,'Style','checkbox',...
     'Position',[20 hPosition1 100 20],'Tag','checkbox_autoscale',...
-    'String',' Autoscale','HorizontalAlignment','left','FontWeight','bold');
+    'String',' Autoscale','HorizontalAlignment','left');
 uicontrol(imagePanel,'Style','edit','Position',[120 hPosition1 50 20],...
     'String','','BackgroundColor','white','Tag','edit_cmin',...
-    'Callback',@(h,event) setClim(h,event,guidata(h)));
+    'Callback',@(h,event) setClim(guidata(h)));
 uicontrol(imagePanel,'Style','edit','Position',[200 hPosition1 50 20],...
     'String','','BackgroundColor','white','Tag','edit_cmax',...
-    'Callback',@(h,event) setClim(h,event,guidata(h)));
+    'Callback',@(h,event) setClim(guidata(h)));
 
 hPosition1=hPosition1+20;
 uicontrol(imagePanel,'Style','text',...
     'Position',[10 hPosition1 200 20],'Tag','text_imageoptions',...
     'String','Options','HorizontalAlignment','left','FontWeight','bold');
-hPosition1=hPosition1+20;
 
+hPosition1=hPosition1+50;
 % Create image processes controls
 nProc = numel(imageProc);
 for iProc=nProc:-1:1;
@@ -99,25 +99,46 @@ uicontrol(imagePanel,'Style','radio','Position',[10 hPosition1 200 20],...
 arrayfun(@(i) uicontrol(imagePanel,'Style','checkbox',...
     'Position',[200+30*i hPosition1 20 20],...
     'Tag',['checkbox_channel' num2str(i)],'Value',i<3,...
-    'Callback',@(h,event) checkChannel(h,event,guidata(h))),...
+    'Callback',@(h,event) redrawChannel(h,guidata(h))),...
     1:numel(userData.MD.channels_));
 hPosition1=hPosition1+20;
 arrayfun(@(i) uicontrol(imagePanel,'Style','text',...
     'Position',[200+30*i hPosition1 20 20],...
     'Tag',['text_channel' num2str(i)],'String',i),...
     1:numel(userData.MD.channels_));
-a=get(get(imagePanel,'Children'),'Position');
-P=vertcat(a{:});
-imagePanelSize = [max(P(:,1)+P(:,3))+20 max(P(:,2)+P(:,4))+20];
-% Resize panel
-set(imagePanel,'Position',[10 10 imagePanelSize(1) imagePanelSize(2)],...
-    'SelectionChangeFcn',@(h,event) redrawImage(h,event,guidata(h)))
 
 %% Create overlay panel
 overlayPanel = uipanel(mainFig,'Position',[1/2 0 1/2 1],...
     'Title','Overlay','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
     'Units','pixels','Tag','uipanel_overlay');
+
+% Create image option controls
 hPosition2=10;
+uicontrol(overlayPanel,'Style','checkbox',...
+    'Position',[20 hPosition2 100 20],'Tag','checkbox_vectorFieldScaleBar',...
+    'String',' Scale bar','HorizontalAlignment','left',...
+    'Callback',@(h,event) setScaleBar(guidata(h),'vectorFieldScaleBar'));
+uicontrol(overlayPanel,'Style','edit','Position',[120 hPosition2 50 20],...
+    'String','1000','BackgroundColor','white','Tag','edit_vectorFieldScaleBar',...
+    'Callback',@(h,event) setScaleBar(guidata(h),'vectorFieldScaleBar'));
+uicontrol(overlayPanel,'Style','text','Position',[180 hPosition2 70 20],...
+    'String','nm/min','HorizontalAlignment','left');
+
+hPosition2=hPosition2+30;
+uicontrol(overlayPanel,'Style','text',...
+    'Position',[20 hPosition2 100 20],'Tag','text_vectorFieldScale',...
+    'String',' Vector scale','HorizontalAlignment','left');
+uicontrol(overlayPanel,'Style','edit','Position',[120 hPosition2 50 20],...
+    'String','10','BackgroundColor','white','Tag','edit_vectorFieldScale',...
+    'Callback',@(h,event) redrawOverlays(guidata(h)));
+
+hPosition2=hPosition2+20;
+uicontrol(overlayPanel,'Style','text',...
+    'Position',[10 hPosition2 200 20],'Tag','text_vectorFieldOptions',...
+    'String','Vector field options','HorizontalAlignment','left','FontWeight','bold');
+hPosition2=hPosition2+50;
+
+
 nProc = numel(overlayProc);
 for iProc=nProc:-1:1;
     output=overlayProc{iProc}.getDrawableOutput;
@@ -142,9 +163,6 @@ arrayfun(@(i) uicontrol(overlayPanel,'Style','text',...
 a=get(get(imagePanel,'Children'),'Position');
 P=vertcat(a{:});
 imagePanelSize = [max(P(:,1)+P(:,3))+20 max(P(:,2)+P(:,4))+20];
-% Resize panel
-set(imagePanel,'Position',[10 10 imagePanelSize(1) imagePanelSize(2)],...
-    'SelectionChangeFcn',@(h,event) redrawImage(h,event,guidata(h)))
 % Get overlay panel size
 a=get(get(overlayPanel,'Children'),'Position');
 P=vertcat(a{:});
@@ -156,7 +174,7 @@ panelsHeight = max(imagePanelSize(2),overlayPanelSize(2));
 % Resize panel
 set(imagePanel,'Position',[10 panelsHeight-imagePanelSize(2)+10 ...
     imagePanelSize(1) imagePanelSize(2)],...
-    'SelectionChangeFcn',@(h,event) redrawImage(h,event,guidata(h)))
+    'SelectionChangeFcn',@(h,event) redrawImage(guidata(h)))
 set(overlayPanel,'Position',[10+imagePanelSize(1)+10 panelsHeight-overlayPanelSize(2)+10 ...
     overlayPanelSize(1) overlayPanelSize(2)])
 
@@ -172,7 +190,7 @@ uicontrol(parentPanel,'Style','text','Position',[10 10 50 15],...
 uicontrol(parentPanel,'Style','edit','Position',[70 10 30 20],...
     'String','1','Tag','edit_frame','BackgroundColor','white',...
     'HorizontalAlignment','left',...
-    'Callback',@(h,event) frameEdition(h,event,guidata(h)));
+    'Callback',@(h,event) redrawScene(h,guidata(h)));
 uicontrol(parentPanel,'Style','text','Position',[100 10 40 15],...
     'HorizontalAlignment','left',...
     'String',['/' num2str(userData.MD.nFrames_)],'Tag','text_frameMax');
@@ -182,7 +200,7 @@ uicontrol(parentPanel,'Style','slider',...
     'Value',1,'Min',1,'Max',userData.MD.nFrames_,...
     'SliderStep',[1/double(userData.MD.nFrames_)  5/double(userData.MD.nFrames_)],...
     'Tag','slider_frame','BackgroundColor','white',...
-    'Callback',@(h,event) frameEdition(h,event,guidata(h)));
+    'Callback',@(h,event) redrawScene(h,guidata(h)));
 
 uicontrol(parentPanel,'Style','text','Position',[10 40 40 20],...
     'String','Movie','Tag','text_movie');
@@ -214,14 +232,11 @@ userData.drawFig=-1;
 set(handles.figure1,'UserData',userData);
 
 % Update the image and overlays
-redrawImage(handles.figure1, [], handles);
-redrawOverlays(handles.figure1, [], handles);
+redrawScene(handles.figure1, handles);
 
-% --- Executes on slider movement.
-function frameEdition(hObject, eventdata, handles)
+function redrawScene(hObject, handles)
 
 userData = get(handles.figure1, 'UserData');
-
 % Retrieve the value of the selected image
 if strcmp(get(hObject,'Tag'),'edit_frame')
     frameNumber = str2double(get(handles.edit_frame, 'String'));
@@ -235,13 +250,26 @@ frameNumber = min(max(frameNumber,1),userData.MD.nFrames_);
 set(handles.edit_frame,'String',frameNumber);
 set(handles.slider_frame,'Value',frameNumber);
 
-% Update the image ad overlays
-redrawImage(hObject, eventdata, handles);
-redrawOverlays(hObject, eventdata, handles);
+% Update the image and overlays
+redrawImage(handles);
+redrawOverlays(handles);
+
+function createFigure(handles)
+userData = get(handles.figure1,'UserData');
+%Create a figure
+sz=get(0,'ScreenSize');
+ratios = [sz(3)/userData.MD.imSize_(2) sz(4)/userData.MD.imSize_(1)];
+userData.drawFig = figure('Position',[sz(3)*.2 sz(4)*.2 ...
+    .6*min(ratios)*userData.MD.imSize_(2) .6*min(ratios)*userData.MD.imSize_(1)]);
+
+%Create the associate axes
+axes('Parent',userData.drawFig,'XLim',[0 userData.MD.imSize_(2)],...
+    'YLim',[0 userData.MD.imSize_(1)],'Position',[0.05 0.05 .9 .9]);
+set(handles.figure1,'UserData',userData);
 
 
-function checkChannel(hObject,event,handles)
-% Callback of channels checkboxes to avoid 0 or more than 4 channels
+function redrawChannel(hObject,handles)
+% Callback for channels checkboxes to avoid 0 or more than 4 channels
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
 chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
 if numel(chanList)==0
@@ -250,26 +278,32 @@ elseif numel(chanList)>4
    set(hObject,'Value',0); 
 end
 
-redrawImage(hObject,event,handles)
+redrawImage(handles)
 
-
-function setScaleBar(hObject,event,handles)
-userData=get(handles.figure1,'UserData');
-
-% Set the scaleBar
-h=findobj('Tag','imageScaleBar');
+function setScaleBar(handles,type)
+% Remove existing scalebar of given type if any
+h=findobj('Tag',type);
 if ~isempty(h), delete(h); end
 
-if get(handles.checkbox_imageScaleBar,'Value') && ishandle(userData.drawFig)
-    figure(userData.drawFig)
-    scale = str2double(get(handles.edit_scaleBarLabel,'String'));
-    hScaleBar = plotScaleBar(scale *1000/userData.MD.pixelSize_,...
-        'Label', [num2str(scale) ' \mum'],'FontSize',15);
-    set(hScaleBar,'Tag','imageScaleBar'); 
+% If checked, adds a new scalebar using the width as a label input
+userData=get(handles.figure1,'UserData');
+if ~get(handles.(['checkbox_' type]),'Value') || ~ishandle(userData.drawFig),
+    return 
 end
+figure(userData.drawFig)
+scale = str2double(get(handles.(['edit_' type]),'String'));
+if strcmp(type,'imageScaleBar')
+    width = scale *1000/userData.MD.pixelSize_;
+    label = [num2str(scale) ' \mum'];
+else
+    displayScale = str2double(get(handles.edit_vectorFieldScale,'String'));
+    width = scale*displayScale/(userData.MD.pixelSize_/userData.MD.timeInterval_*60);
+    label= [num2str(scale) ' nm/min'];
+end
+hScaleBar = plotScaleBar(width,'Label',label,'FontSize',15);
+set(hScaleBar,'Tag',type);
 
-
-function setClim(hObject,event,handles)
+function setClim(handles)
 userData=get(handles.figure1,'UserData');
 imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
 
@@ -294,7 +328,7 @@ if ishandle(userData.drawFig)
 end
 
 
-function redrawImage(hObject, eventdata, handles)
+function redrawImage(handles)
 userData=get(handles.figure1,'UserData');
 frameNr=get(handles.slider_frame,'Value');
 
@@ -303,17 +337,8 @@ imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
 if ishandle(userData.drawFig), 
     figure(userData.drawFig); 
 else 
-    %Create a figure
-    sz=get(0,'ScreenSize');
-    ratios = [sz(3)/userData.MD.imSize_(2) sz(4)/userData.MD.imSize_(1)];
-    userData.drawFig = figure('Position',[sz(3)*.2 sz(4)*.2 ...
-        .6*min(ratios)*userData.MD.imSize_(2) .6*min(ratios)*userData.MD.imSize_(1)]);
-    
-    %Create the associate axes
-    axes('Parent',userData.drawFig,'XLim',[0 userData.MD.imSize_(2)],...
-        'YLim',[0 userData.MD.imSize_(1)],'Position',[0.05 0.05 .9 .9]);
+    createFigure(handles);
 end
-set(handles.figure1,'UserData',userData);
 
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
 if strcmp(imageTag,'radiobutton_channels')
@@ -343,18 +368,35 @@ else
     set(handles.edit_cmax,'Enable','on','String',clim(2));
 end
 
-% Set the scaleBar
-if get(handles.checkbox_imageScaleBar,'Value')
-    setScaleBar(hObject,eventdata,handles)
+% Reset the scaleBar
+if get(handles.checkbox_imageScaleBar,'Value'), 
+    setScaleBar(handles,'imageScaleBar'); 
+end
+
+function redrawOverlays(handles)
+overlayBoxes = findobj(handles.uipanel_overlay,'-regexp','Tag','checkbox_process*');
+checkedBoxes = logical(arrayfun(@(x) get(x,'Value'),overlayBoxes));
+overlayTags=arrayfun(@(x) get(x,'Tag'),overlayBoxes(checkedBoxes),...
+    'UniformOutput',false);
+for i=1:numel(overlayTags)
+    redrawOverlay(handles.(overlayTags{i}),handles)
+end
+
+% Reset the scaleBar
+if get(handles.checkbox_vectorFieldScaleBar,'Value'), 
+    setScaleBar(handles,'vectorFieldScaleBar');
 end
     
-function checkOverlay(hObject, eventdata, handles)
+function redrawOverlay(hObject,handles)
 userData=get(handles.figure1,'UserData');
 frameNr=get(handles.slider_frame,'Value');
 
 overlayTag = get(hObject,'Tag');
-
-if ishandle(userData.drawFig), figure(userData.drawFig); end
+if ishandle(userData.drawFig), 
+    figure(userData.drawFig); 
+else
+    redrawScene(hObject, handles); return;
+end
  % Retrieve the id, process nr and channel nr of the selected imageProc
 tokens = regexp(overlayTag,'checkbox_process(\d+)_output(\d+)_channel(\d+)','tokens');
 procId=str2double(tokens{1}{1});
@@ -363,36 +405,15 @@ iOutput = str2double(tokens{1}{2});
 output = outputList(iOutput).var;
 iChan = str2double(tokens{1}{3});
 if get(hObject,'Value')
-    userData.MD.processes_{procId}.draw(iChan,frameNr,'output',output);
+    userData.MD.processes_{procId}.draw(iChan,frameNr,'output',output,...
+        'scale',str2double(get(handles.edit_vectorFieldScale,'String')));
 else
     h=findobj('Tag',[userData.MD.processes_{procId}.getName '_channel'...
         num2str(iChan) '_output' num2str(iOutput)]);
     if ~isempty(h), delete(h); end
 end
 
-function redrawOverlays(hObject, eventdata, handles)
-userData=get(handles.figure1,'UserData');
-frameNr=get(handles.slider_frame,'Value');
-
-figure(userData.drawFig);
-overlayBoxes = findobj(handles.uipanel_overlay,'Style','checkbox');
-checkedBoxes = logical(arrayfun(@(x) get(x,'Value'),overlayBoxes));
-overlayTags=arrayfun(@(x) get(x,'Tag'),overlayBoxes(checkedBoxes),...
-    'UniformOutput',false);
-for i=1:numel(overlayTags)
-    overlayTag=overlayTags{i};
-    tokens = regexp(overlayTag,'checkbox_process(\d+)_output(\d+)_channel(\d+)','tokens');
-    procId=str2double(tokens{1}{1});
-    outputList = userData.MD.processes_{procId}.getDrawableOutput;
-    output = outputList(str2double(tokens{1}{2})).var;
-    iChan = str2double(tokens{1}{3});
-
-    userData.MD.processes_{procId}.draw(iChan,frameNr,'output',output);
-end
-
-
-% --- Executes during object deletion, before destroying properties.
-function deleteViewer(hObject, eventdata, handles)
+function deleteViewer(handles)
 
 userData=get(handles.figure1,'UserData');
 if isfield(userData, 'drawFig') && ishandle(userData.drawFig), 
