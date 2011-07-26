@@ -18,7 +18,7 @@
 %       When printing, use 'depsc' instead.
 
 % Francois Aguet, March 14 2011 (last modified 07/21/2011)
-
+% Sebastien Besson, July 2011
 
 function hScaleBar=plotScaleBar(width, varargin)
 
@@ -52,13 +52,16 @@ if ~isempty(label)
         fontSize = 1.5*height;        
     end
     % get height of default text bounding box
-    h = text(0, 0, ' ', 'FontUnits', 'pixels', 'FontName', fontName, 'FontSize', fontSize);
+    h = text(0, 0, label,'FontName', fontName, 'FontSize', fontSize);
     extent = get(h, 'extent');
     textHeight = extent(4) + height;
+    textWidth = extent(3);
     delete(h);
 else
     textHeight = 0;
+    textWidth =0;
 end
+dx=max(dx,(width+textWidth)/2);
 
 textProps = {'Color', color,...
                 'VerticalAlignment', 'Top',...
@@ -67,29 +70,15 @@ textProps = {'Color', color,...
 
 hold on;
 set(gcf, 'InvertHardcopy', 'off');
-switch ip.Results.Location
-    case 'northeast'
-        hScaleBar(1) = fill([lx-width lx lx lx-width]-dx, [height height 0 0]+dx,...
-            color, 'EdgeColor', 'none');
-        if ~isempty(label)
-            hScaleBar(2) = text(lx-dx-width/2, dx+height, label, textProps{:});
-        end
-    case 'southeast'
-        hScaleBar(1) = fill([lx-width lx lx lx-width]-dx, [ly ly ly-height ly-height]-max(dx,textHeight),...
-            color, 'EdgeColor', 'none');
-        if ~isempty(label)
-            hScaleBar(2) = text(lx-dx-width/2, ly-max(dx,0.95*textHeight), label, textProps{:});
-        end
-    case 'southwest'
-        hScaleBar(1) = fill([0 width width 0]+dx, [ly ly ly-height ly-height]-max(dx,textHeight),...
-            color, 'EdgeColor', 'none');
-        if ~isempty(label)
-            hScaleBar(2) = text(dx+width/2, ly-max(dx,0.95*textHeight), label, textProps{:});
-        end
-    case 'northwest'
-        hScaleBar(1) = fill([0 width width 0]+dx, [height height 0 0]+dx,...
-            color, 'EdgeColor', 'none');
-        if ~isempty(label)
-            hScaleBar(2) = text(dx+width/2, dx+height, label, textProps{:});
-        end
+
+if ~isempty(strfind(ip.Results.Location,'north')), y0=dx; else y0=ly-height-max(dx,textHeight); end
+if ~isempty(strfind(ip.Results.Location,'east')), x0=lx-width-dx; else x0=dx; end
+
+% Create scalebar and optional text
+hScaleBar(1) = fill([x0 x0+width x0+width x0],[y0+height y0+height y0 y0],...
+    color, 'EdgeColor', 'none');
+if ~isempty(label)
+    hScaleBar(2) = text(x0+width/2, y0+height, label, textProps{:});
 end
+
+
