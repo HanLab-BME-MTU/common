@@ -17,14 +17,14 @@
 % Note: there is a bug in '-depsc2' as of Matlab2010b, which misprints patches.
 %       When printing, use 'depsc' instead.
 
-% Francois Aguet, March 14 2011 (last modified 07/21/2011)
-% Sebastien Besson, July 2011
+% Francois Aguet, March 14 2011 (last modified 07/26/2011)
 
-function hScaleBar=plotScaleBar(width, varargin)
+function hScaleBar = plotScaleBar(width, varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('width', @isscalar);
+ip.addRequired('width', @isscalar); % same units as axes
+ip.addOptional('height', width/10, @isscalar); % height of the scale bar
 ip.addParamValue('Handle', gca, @ishandle)
 ip.addParamValue('Location', 'southwest', @(x) any(strcmpi(x, {'northeast', 'southeast', 'southwest', 'northwest'})));
 ip.addParamValue('Label', [], @(x) ischar(x) || isempty(x));
@@ -37,6 +37,8 @@ label = ip.Results.Label;
 fontName = ip.Results.FontName;
 fontSize = ip.Results.FontSize;
 color = ip.Results.Color;
+height = ip.Results.height;
+location = lower(ip.Results.Location);
 
 XLim = get(ip.Results.Handle, 'XLim');
 YLim = get(ip.Results.Handle, 'YLim');
@@ -44,41 +46,61 @@ YLim = get(ip.Results.Handle, 'YLim');
 lx = diff(XLim);
 ly = diff(YLim);
 
-height = width/10; % height of the scale bar
-dx = ly/20;
+dx = ly/20; % distance from border
 
 if ~isempty(label)
     if isempty(fontSize)
-        fontSize = 1.5*height;        
+        fontSize = 3*height/ly; % normalized units        
     end
     % get height of default text bounding box
-    h = text(0, 0, label,'FontName', fontName, 'FontSize', fontSize);
-    extent = get(h, 'extent');
-    textHeight = extent(4) + height;
+    h = text(0, 0, label, 'FontUnits', 'normalized', 'FontName', fontName, 'FontSize', fontSize);
+    extent = get(h, 'extent'); % units: pixels
+    textHeight = extent(4);
     textWidth = extent(3);
     delete(h);
 else
     textHeight = 0;
-    textWidth =0;
+    textWidth = 0;
 end
-dx=max(dx,(width+textWidth)/2);
-
-textProps = {'Color', color,...
-                'VerticalAlignment', 'Top',...
-                'HorizontalAlignment', 'Center',...
-                'FontName', fontName, 'FontSize', fontSize};
 
 hold on;
 set(gcf, 'InvertHardcopy', 'off');
 
-if ~isempty(strfind(ip.Results.Location,'north')), y0=dx; else y0=ly-height-max(dx,textHeight); end
-if ~isempty(strfind(ip.Results.Location,'east')), x0=lx-width-dx; else x0=dx; end
 
-% Create scalebar and optional text
-hScaleBar(1) = fill([x0 x0+width x0+width x0],[y0+height y0+height y0 y0],...
-    color, 'EdgeColor', 'none');
-if ~isempty(label)
-    hScaleBar(2) = text(x0+width/2, y0+height, label, textProps{:});
+if ~isempty(strfind(location, 'north'))
+    y0 = dx;
+else
+    y0 = ly-height-1.2*textHeight;
+end
+if ~isempty(strfind(location, 'east'))
+    x0 = lx-width-dx;
+else
+    x0 = dx;
 end
 
 
+% text alignment if > scalebar width
+if textWidth > width
+    if ~isempty(strfind(ip.Results.Location, 'west'))
+        halign = 'left';
+        tx = x0;
+    else
+        halign = 'right';
+        tx = x0+width;
+    end
+else
+    halign = 'center';
+    tx = x0+width/2;
+end
+
+
+textProps = {'Color', color, 'FontUnits', 'normalized',...
+    'FontName', fontName, 'FontSize', fontSize,...
+    'VerticalAlignment', 'Top',...
+    'HorizontalAlignment', halign};
+
+hScaleBar(1) = fill([x0 x0+width x0+width x0], [y0+height y0+height y0 y0],...
+    color, 'EdgeColor', 'none');
+if ~isempty(label)
+    hScaleBar(2) = text(tx, y0+height, label, textProps{:});
+end
