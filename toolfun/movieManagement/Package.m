@@ -100,22 +100,27 @@ classdef Package < hgsetget
                 hasException=@(j) ~isempty(processExceptions{j});
                 emptyProc=@(j) isempty(obj.processes_{j}) && obj.depMatrix_(i,j)==1;
                 newOptProc=@(j) obj.depMatrix_(i,j)==2 && ~obj.processes_{j}.success_;
-                if obj.processes_{i}.success_ && ...
-                        (hasException(j) || emptyProc(j) || newOptProc(j))
+                if obj.processes_{i}.success_ && (hasException(j) || emptyProc(j) || newOptProc(j))
                     % Set process's updated=false
                     obj.processes_{i}.setUpdated (false);
                     
                     % Create a dependency error exception
-                    ME = MException('lccb:depe:warn', ...
-                        ['The current step is out of date because Step ',...
-                        num2str(j),': ', eval([obj.processClassNames_{j} '.getName']),...
-                        ', which the current step depends on, is out of date. '...
-                        'Please run again to update your result.']);
+                    statusMsg1 =['The step ' num2str(i),': ' obj.processes_{i}.getName...
+                        ' is out of date because '];
+                    statusMsg3 = '\nPlease run again to update your result.';
+                    if newOptProc(j)
+                        statusMsg2 = ['the optional step ' num2str(j),': ', eval([obj.processClassNames_{j} '.getName']),...
+                        ', changes the input data of current step.'];
+                    else
+                        statusMsg2 = ['the step ' num2str(j),': ', eval([obj.processClassNames_{j} '.getName']),...
+                        ', which the current step depends on, is out of date.'];
+                    end
+                    ME = MException('lccb:depe:warn', [statusMsg1 statusMsg2 statusMsg3]);
                     % Add dependency exception to the ith process
                     processExceptions{i} = horzcat(processExceptions{i}, ME);
                 end
             end
-            
+              
         end
     end
     methods (Access = public)
@@ -189,8 +194,8 @@ classdef Package < hgsetget
                 % Set process's updated=false
                 obj.processes_{i}.setUpdated(false);
                 % Create an dependency error exception
-                ME = MException('lccb:paraChanged:warn',...
-                    'The current step is out of date because the channels or parameters have been changed.');
+                ME = MException('lccb:paraChanged:warn',['The step ' num2str(i),': ' obj.processes_{i}.getName...
+                        ' is out of date because the channels or parameters have been changed.']);
                 % Add para exception to the ith process
                 processExceptions{i} = horzcat(processExceptions{i}, ME);
             end
@@ -223,7 +228,6 @@ classdef Package < hgsetget
                 error('User-defined: input should be Process object or empty.')
             end
         end
-        
     end
         
 

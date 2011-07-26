@@ -223,13 +223,14 @@ for x = movieRun
     % Return user data !!!
     set(handles.figure1, 'UserData', userData)
     % In here, optionalProcID are successfully first-time-run optional process ID
-    if ~isempty(optionalProcID{x})
+    % SB: checkOptionalProcess is now handled in sanityCheck. This is a
+    % quick fix to keeep compatibility with biosensors package
+    if ~isempty(optionalProcID{x}) && ismember('checkOptionalProcess',methods(userData.crtPackage))
         
         procEx = userData.crtPackage.checkOptionalProcess(procRun{x}, optionalProcID{x});
         
         for i = 1:size(userData.dependM, 1)
             if ~isempty(procEx{i})
-                
                 userfcn_drawIcon(handles,'warn',i,procEx{i}(1).message, true); % user data is retrieved, updated and submitted
                 
             end

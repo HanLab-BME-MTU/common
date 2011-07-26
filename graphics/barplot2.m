@@ -2,7 +2,7 @@
 %
 % INPUTS:   prm : cell array of matrices that contain the box properties:
 %                 row 1: height
-%                 row 2: optional, error bars
+%                 rows 2+: optional, error bars
 %        colors : Nx3 matrix of colors, where N is the number of bars
 %       xLabels : cell array of strings, labels for each bar
 %        yLabel : string, y-axis label
@@ -99,9 +99,10 @@ for k = 1:ng
     end
     
     % error bars
-    if size(prm{k},1)>1
+%     if size(prm{k},1)>1
+    for i=2:size(prm{k},1)
         %he = errorbar(xa{k}, height, prm{k}(2,:), 'k', 'LineStyle', 'none', 'LineWidth', 2);
-        he = errorbar(xa{k}, height, zeros(size(xa{k})), prm{k}(2,:), 'k', 'LineStyle', 'none', 'LineWidth', 2);
+        he = errorbar(xa{k}, height, zeros(size(xa{k})), prm{k}(i,:), 'k', 'LineStyle', 'none', 'LineWidth', 2);
         setErrorbarStyle(he);
     end
 
