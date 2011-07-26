@@ -6,9 +6,9 @@ ip.addOptional('procId',0,@isscalar);
 ip.parse(varargin{:});
 
 % Chek
-h=findobj(0,'Name','MovieData Viewer');
+h=findobj(0,'Name','Movie Viewer');
 if ~isempty(h), delete(h); end
-mainFig=figure('Name','MovieData Viewer','Position',[0 0 200 200],...
+mainFig=figure('Name','Movie Viewer','Position',[0 0 200 200],...
     'NumberTitle','off','Tag','figure1','Toolbar','none','MenuBar','none',...
     'Color',get(0,'defaultUicontrolBackgroundColor'),'Resize','off',...
     'DeleteFcn', @(h,event) deleteViewer(guidata(h)));
@@ -245,6 +245,15 @@ set(handles.figure1,'UserData',userData);
 % Update the image and overlays
 redrawScene(handles.figure1, handles);
 
+function playMovie(hObject,handles)
+
+userData = get(handles.figure1, 'UserData');
+for i=1:userData.MD.nFrames_
+    set(handles.slider_frame, 'Value',i);
+    redrawScene(hObject, handles);
+    drawnow;
+end
+
 function redrawScene(hObject, handles)
 
 userData = get(handles.figure1, 'UserData');
@@ -271,7 +280,8 @@ userData = get(handles.figure1,'UserData');
 sz=get(0,'ScreenSize');
 ratios = [sz(3)/userData.MD.imSize_(2) sz(4)/userData.MD.imSize_(1)];
 userData.drawFig = figure('Position',[sz(3)*.2 sz(4)*.2 ...
-    .6*min(ratios)*userData.MD.imSize_(2) .6*min(ratios)*userData.MD.imSize_(1)]);
+    .6*min(ratios)*userData.MD.imSize_(2) .6*min(ratios)*userData.MD.imSize_(1)],...
+    'Name','Figure','NumberTitle','off');
 
 %Create the associate axes
 axes('Parent',userData.drawFig,'XLim',[0 userData.MD.imSize_(2)],...

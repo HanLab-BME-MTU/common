@@ -147,20 +147,11 @@ classdef ImageAnalysisProcess < Process
                              exist(obj.outFilePaths_{x},'dir') && ...
                              numel(dir([obj.outFilePaths_{x} filesep '*.mat']))==obj.owner_.nFrames_),iChan);
         end
-        
-        function figHan = resultDisplay(obj)
-            %There is no generic resultDisplay method for this class yet
-            figHan = [];            
-            
-        end
-               
-            
+
         function sanityCheck(obj)
             
         end
-        
-        
-        
+
         
     end
     
