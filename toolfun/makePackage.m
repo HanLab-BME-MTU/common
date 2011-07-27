@@ -16,7 +16,8 @@ function makePackage(outDir)
 % Sebastien Besson, 4/2011
 
 % List of all available packages
-fullPackageList={'SegmentationPackage';'BiosensorsPackage';'UTrackPackage'};
+fullPackageList={'SegmentationPackage';'BiosensorsPackage';'UTrackPackage',...
+    'QFSMPackage'};
 isValidPackage=logical(cellfun(@(x) exist(x,'class'),fullPackageList));
 if isempty(isValidPackage), 
     warndlg('No package found! Please make sure you properly added the installation directory to the path (see user''s manual).',...

@@ -2,7 +2,7 @@ function mainFig = movieDataViewer(varargin)
 
 ip = inputParser;
 ip.addRequired('MD',@(x) isa(x,'MovieData'));
-ip.addOptional('procId',0,@isscalar);
+ip.addOptional('procId',0,@isnumeric);
 ip.parse(varargin{:});
 
 % Chek
@@ -230,9 +230,11 @@ set(mainFig,'Position',[sz(3)/50 (sz(4)-figHeight)/2 figWidth figHeight]);
 
 % Auto select input process
 if ismember(ip.Results.procId,validProcId)
-    h=findobj(mainFig,'-regexp','Tag',['(\w)_process' ...
-        num2str(ip.Results.procId)  '_output1_channel(\d+)']);
-    set(h,'Value',1);
+    for i=ip.Results.procId
+        h=findobj(mainFig,'-regexp','Tag',['(\w)_process' ...
+            num2str(i)  '_output1_channel(\d+)']);
+        set(h,'Value',1);
+    end
 end
 
 % Update handles structure
@@ -244,15 +246,34 @@ set(handles.figure1,'UserData',userData);
 
 % Update the image and overlays
 redrawScene(handles.figure1, handles);
+playMovie(handles.figure1,handles)
 
 function playMovie(hObject,handles)
 
 userData = get(handles.figure1, 'UserData');
-for i=1:userData.MD.nFrames_
-    set(handles.slider_frame, 'Value',i);
+nf = userData.MD.nFrames_;
+nf=10;
+fmt = ['%0' num2str(ceil(log10(nf))) 'd'];
+fpath = [userData.MD.movieDataPath_ filesep 'frames' filesep];
+mkClrDir(fpath);
+mpath = [userData.MD.movieDataPath_ filesep 'movie' filesep];
+mkClrDir(mpath);
+fprintf('Generating movie frames:     ');
+for f=1:nf
+    set(handles.slider_frame, 'Value',f);
     redrawScene(hObject, handles);
     drawnow;
+    print(userData.drawFig, '-dpng', '-loose', ['-r' num2str(1*72)], [fpath 'frame' num2str(f, fmt) '.png']);
+    fprintf('\b\b\b\b%3d%%', round(100*f/(nf)));
 end
+fprintf('\n');
+
+% Generate movie
+fprintf('Generating movie... ');
+fr = num2str(15);
+cmd = ['ffmpeg -loglevel quiet -y -r ' fr ' -i ' fpath 'frame' fmt '.png' ' -r ' fr ' -b 50000k -bt 20000k ' mpath 'movie.mp4 > /dev/null 2>&1' ];
+system(cmd);
+fprintf('done.\n');
 
 function redrawScene(hObject, handles)
 
@@ -279,9 +300,19 @@ userData = get(handles.figure1,'UserData');
 %Create a figure
 sz=get(0,'ScreenSize');
 ratios = [sz(3)/userData.MD.imSize_(2) sz(4)/userData.MD.imSize_(1)];
-userData.drawFig = figure('Position',[sz(3)*.2 sz(4)*.2 ...
-    .6*min(ratios)*userData.MD.imSize_(2) .6*min(ratios)*userData.MD.imSize_(1)],...
+nx=.6*min(ratios)*userData.MD.imSize_(2);
+ny=.6*min(ratios)*userData.MD.imSize_(1);
+userData.drawFig = figure('Position',[sz(3)*.2 sz(4)*.2 nx ny],...
     'Name','Figure','NumberTitle','off');
+
+% figure options for movie export
+% iptsetpref('ImshowBorder','tight');
+set(userData.drawFig, 'InvertHardcopy', 'off');
+set(userData.drawFig, 'PaperUnits', 'Points');
+set(userData.drawFig, 'PaperSize', [nx ny]);
+set(userData.drawFig, 'PaperPosition', [0 0 nx ny]); % very important
+%  set(userData.drawFig,'DefaultLineLineSmoothing','on');
+% set(userData.drawFig,'DefaultPatchLineSmoothing','on');
 
 %Create the associate axes
 axes('Parent',userData.drawFig,'XLim',[0 userData.MD.imSize_(2)],...
@@ -321,7 +352,7 @@ else
     width = scale*displayScale/(userData.MD.pixelSize_/userData.MD.timeInterval_*60);
     label= [num2str(scale) ' nm/min'];
 end
-hScaleBar = plotScaleBar(width,'Label',label,'FontSize',15);
+hScaleBar = plotScaleBar(width,'Label',label);
 set(hScaleBar,'Tag',type);
 
 function setClim(handles)
