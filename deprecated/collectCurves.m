@@ -27,6 +27,8 @@ function collectionFigure = collectCurves(figureHandles, recolor, showLegend,var
 % 11/07 - support for bars (ML7)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 %------------
 % test input
 %------------

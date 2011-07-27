@@ -311,8 +311,8 @@ set(userData.drawFig, 'InvertHardcopy', 'off');
 set(userData.drawFig, 'PaperUnits', 'Points');
 set(userData.drawFig, 'PaperSize', [nx ny]);
 set(userData.drawFig, 'PaperPosition', [0 0 nx ny]); % very important
-%  set(userData.drawFig,'DefaultLineLineSmoothing','on');
-% set(userData.drawFig,'DefaultPatchLineSmoothing','on');
+ set(userData.drawFig,'DefaultLineLineSmoothing','on');
+set(userData.drawFig,'DefaultPatchLineSmoothing','on');
 
 %Create the associate axes
 axes('Parent',userData.drawFig,'XLim',[0 userData.MD.imSize_(2)],...

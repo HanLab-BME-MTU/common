@@ -10,6 +10,8 @@ function hideErrorbars(figH)
 % c: 05/04 jonas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 % is there a figure
 if nargin == 0 | isempty(figH)
     figH = get(0,'CurrentFigure');
