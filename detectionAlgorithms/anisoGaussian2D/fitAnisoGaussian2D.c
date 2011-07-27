@@ -19,6 +19,7 @@
 
 #include "mex.h"
 #include "matrix.h"
+#include "stats.h"
 
 #define SIGN(x)	(x > 0 ? 1 : (x < 0 ? -1.0 : 0.0))
 
@@ -518,6 +519,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
     
   /* residuals */
+  /* comment by US 
   if (nlhs > 3)
     {
       plhs[3] = mxCreateDoubleMatrix(ny, nx, mxREAL);
@@ -527,6 +529,36 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       for (i=0; i<N-data.nValid; ++i)
 	res[nanIdx[i]] = mxGetNaN();
     }
+    */
+
+  if(nlhs > 3){
+    const char *fieldnames[]={"data","pval","mean","std","RSS"};
+    mwSize dims[2]={1,1};
+    plhs[3]=mxCreateStructArray(2,dims,5,fieldnames);
+    mxArray *val=mxCreateDoubleMatrix(nx,ny,mxREAL);
+    double *res=mxGetPr(val);
+
+    double mean=0.0, std=0.0, tmp, RSS=0.0;
+    for(i=0;i<data.nValid;++i){
+      tmp=gsl_vector_get(data.residuals,i);
+      res[data.idx[i]]=tmp;
+      mean+=tmp;
+      RSS+=tmp*tmp;
+    }
+    std=sqrt((RSS-mean*mean/data.nValid)/(data.nValid-1));
+    mean/=data.nValid;
+
+    for(i=0;i<N-data.nValid;++i)
+      res[nanIdx[i]]=mxGetNaN();
+
+    double pval=ksone(res,data.nValid,mean,std);
+
+    mxSetFieldByNumber(plhs[3],0,0,val);
+    mxSetFieldByNumber(plhs[3],0,1,mxCreateDoubleScalar(pval));
+    mxSetFieldByNumber(plhs[3],0,2,mxCreateDoubleScalar(mean));
+    mxSetFieldByNumber(plhs[3],0,3,mxCreateDoubleScalar(std));
+    mxSetFieldByNumber(plhs[3],0,4,mxCreateDoubleScalar(RSS));
+  }
     
   /* Jacobian */
   if (nlhs > 4)
