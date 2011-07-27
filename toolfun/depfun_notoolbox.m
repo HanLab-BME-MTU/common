@@ -1,7 +1,7 @@
-function funList = depfun_notoolbox(funList)
+function depList = depfun_notoolbox(funList)
 %DEPFUN_NOTOOLBOX find dependencies of the input m-files, excluding toolbox and matlab built-in functions
 % 
-% funList = depfun_notoolbox(funList)
+% depList = depfun_notoolbox(funList)
 % 
 % Returns a cell array with the paths of every m file which the input list
 % of m files calls / depends on, including object classes, but excluding
@@ -17,48 +17,26 @@ function funList = depfun_notoolbox(funList)
 % 
 % Output:
 % 
-%   funList - A cell array of character strings containing the full path
+%   depList - A cell array of character strings containing the full path
 %   and file name of all the m-files the input funlist depends on.
 %
-%
-% Hunter Elliott
-% 6/2010
-%
+% Hunter Elliott 6/2010
+% Sebastien Besson July 2011
 
-%Make sure funList is a column
-funList = funList(:);
-nFinit = numel(funList);
-nFilesNew = nFinit;
+% Get the initial set of file dependencies
+depList=cellfun(@which,funList(:),'UniformOutput',false);
 
-keepGoin = true;
-firstTime = true;
-
-while keepGoin
-    
+while true
     %Find dependencies of current list
-    newFiles = depfun(funList{:},'-toponly','-quiet');
+    newFiles = depfun(depList{:},'-toponly','-quiet');
         
-    
     %Remove all the toolbox entries
-    newFiles = newFiles(cellfun(@(x)(isempty(regexp(x,'toolbox','ONCE'))),newFiles));    
+    newFiles = newFiles(cellfun(@(x)(isempty(regexp(x,'toolbox','once'))),newFiles));    
     
-    if ~isempty(newFiles) && ~firstTime        
-        funList = vertcat(funList,newFiles);
-        funList = unique(funList);        
-    elseif firstTime
-        firstTime = false;
-        %Don't include the input list, as these will be duplicated
-        funList = newFiles;
-    else
-        keepGoin = false;
-    end
+    % Update the dependencies file list
+    nFilesOld=numel(depList);
+    depList = unique(vertcat(depList,newFiles));
     
-    nFilesOld = nFilesNew;
-    nFilesNew = numel(funList);
-    
-    if nFilesOld == nFilesNew
-        keepGoin = false;
-    end
-    
-    
+    % Break if no new file or the same set of files is found
+    if isempty(newFiles) || nFilesOld==numel(depList), return; end
 end
