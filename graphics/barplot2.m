@@ -2,15 +2,21 @@
 %
 % INPUTS:   prm : cell array of matrices that contain the box properties:
 %                 row 1: height
-%                 rows 2+: optional, error bars
-%        colors : Nx3 matrix of colors, where N is the number of bars
-%       xLabels : cell array of strings, labels for each bar
-%        yLabel : string, y-axis label
+%                 row 2: optional, error bars
+%         color : cell array colors, each containing a Nx3 matrix. Colors cycle through matrix.
 %
-% Example: barplot2({[3 4; 0.5 0.5]}, 'xlabels', {'Class A', 'Class B'});
+%       Options : see function content
+%
+% Example: 
+%
+% figure
+% barplot2({[3 4 2 3; 0.5 0.5 0.3 0.2], [3 4 2 3; 0.5 0.5 0.3 0.2]},...
+%     'xlabels', arrayfun(@(k) ['label ' num2str(k)], 1:8, 'UniformOutput', false),...
+%     'xlabel', 'x label', 'ErrorBarPosition', 'top', 'ylabel', 'y label',...
+%     'FontSize', 16, 'XLabelFontSize', 20);
+% set(gca, 'YLim', [0 5]);
 
-% Francois Aguet, 18 March 2011
-% Last modified: 8 May 2011
+% Francois Aguet, 18 March 2011 (Last modified: 26 July 2011)
 
 function barplot2(prm, varargin)
 
@@ -18,58 +24,40 @@ if isnumeric(prm)
     prm = {prm};
 end
 
-ng = length(prm);
-nb = cellfun(@(c) size(c, 2), prm);
-
+ng = length(prm); % # of groups
+nb = cellfun(@(c) size(c, 2), prm); % # bars in each group
 
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('prm', @iscell);
 ip.addOptional('color', []);
 ip.addParamValue('EdgeColor', []);
-ip.addParamValue('Group', 'on', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
-ip.addParamValue('GroupLabels', 'on', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
-ip.addParamValue('GroupDistance', 1, @isscalar);
+ip.addParamValue('GroupDistance', 0.5, @isscalar);
 ip.addParamValue('xlabel', [], @ischar);
-ip.addParamValue('xlabels', [], @(x) all(cellfun(@(y) ischar(y), x)));
+ip.addParamValue('xlabels', arrayfun(@(k) num2str(k), 1:sum(nb), 'UniformOutput', false), @(x) iscell(x) && (numel(x)==sum(nb)||numel(x)==ng));
 ip.addParamValue('ylabel', [], @ischar);
 ip.addParamValue('BarWidth', 0.8, @isscalar); 
-ip.addParamValue('Rotate', 'off', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
+ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('ErrorBarPosition', 'top',  @(x) strcmpi(x, 'top') | strcmpi(x, 'both'));
+ip.addParamValue('ErrorBarWidth', 0.2, @(x) 0<x && x<=1);
+ip.addParamValue('Handle', gca, @ishandle);
+ip.addParamValue('FontName', 'Helvetica', @ischar); % specific
+ip.addParamValue('FontSize', 16, @isscalar);
+ip.addParamValue('XLabelFontSize', 18, @isscalar);
 ip.parse(prm, varargin{:});
 color = ip.Results.color;
-ecolor = ip.Results.EdgeColor;
-
-
-if strcmpi(ip.Results.Group, 'on')
-    grouped = true;
-else
-    grouped = false;
-end
+edgeColor = ip.Results.EdgeColor;
+ha = ip.Results.Handle;
 
 
 if isempty(color)
-    if grouped
-        color = arrayfun(@(k) hsv2rgb([rand(1,1) ones(1,2)]), 1:ng, 'UniformOutput', false);
-    else
-        color = arrayfun(@(k) hsv2rgb([rand(nb(k),1) ones(nb(k),2)]), 1:ng, 'UniformOutput', false);
-    end
+    color = arrayfun(@(k) [0.7 0.9 1], 1:ng, 'UniformOutput', false);
 end
 
-if isempty(ecolor)
-    if grouped
-        ecolor = arrayfun(@(k) [0 0 0], 1:ng, 'UniformOutput', false);
-    else
-        ecolor = [0 0 0];
-    end
+if isempty(edgeColor)
+    edgeColor = arrayfun(@(k) [0 0.7 1], 1:ng, 'UniformOutput', false);
 end
 
-    
-% if size(color,1)==1
-%     color = repmat(color, [totalbars 1]);
-% end
-
-lfont = {'FontName', 'Helvetica', 'FontSize', 16};
 
 bw = ip.Results.BarWidth;
 dg = ip.Results.GroupDistance; % distance between groups, in bar widths
@@ -79,90 +67,64 @@ xa = cell(1,ng);
 hold on;
 for k = 1:ng
     
+    
     xa{k} = (1:nb(k));
     if k > 1
         xa{k} = xa{k} + xa{k-1}(end) + dg;
     end
-
-    height = prm{k}(1,:);   
+    height = prm{k}(1,:);
     
+    % error bars, if top only
+    if size(prm{k},1)>1 && strcmpi(ip.Results.ErrorBarPosition, 'top')
+        he = errorbar(xa{k}, height, zeros(size(xa{k})), prm{k}(2,:), 'k', 'LineStyle', 'none', 'LineWidth', 2);
+        setErrorbarStyle(he, ip.Results.ErrorBarWidth, ip.Results.ErrorBarPosition);
+    end
+        
     % bars
     lb = xa{k} - bw/2;
     rb = xa{k} + bw/2;
     xv = [lb; rb; rb; lb; lb; rb];
     yv = [height; height; zeros(1,nb(k)); zeros(1,nb(k)); height; height];
 
-    if grouped
-        arrayfun(@(b) patch(xv(:,b), yv(:,b), color{k}, 'EdgeColor', ecolor{k}, 'LineWidth', 2), 1:nb(k));
-    else
-        arrayfun(@(b) patch(xv(:,b), yv(:,b), color{b}, 'EdgeColor', ecolor, 'LineWidth', 2), 1:nb(k));
-    end
+    arrayfun(@(b) patch(xv(:,b), yv(:,b), color{k}(mod(b,size(color{k},1))+1,:),...
+        'EdgeColor', edgeColor{k}(mod(b,size(edgeColor{k},1))+1,:), 'LineWidth', 2), 1:nb(k));
     
-    % error bars
-%     if size(prm{k},1)>1
-    for i=2:size(prm{k},1)
-        %he = errorbar(xa{k}, height, prm{k}(2,:), 'k', 'LineStyle', 'none', 'LineWidth', 2);
-        he = errorbar(xa{k}, height, zeros(size(xa{k})), prm{k}(i,:), 'k', 'LineStyle', 'none', 'LineWidth', 2);
-        setErrorbarStyle(he);
+    % error bars, if two-sided
+    if size(prm{k},1)>1 && strcmpi(ip.Results.ErrorBarPosition, 'both')
+        he = errorbar(xa{k}, height, prm{k}(2,:), 'k', 'LineStyle', 'none', 'LineWidth', 2);
+        setErrorbarStyle(he, ip.Results.ErrorBarWidth, ip.Results.ErrorBarPosition);
     end
-
 end
 hold off;
 box off;
 
-groupCenters = arrayfun(@(k) (xa{k}(1) + xa{k}(end))/2, 1:ng);
 
+
+if numel(ip.Results.xlabels)==ng
+    la = arrayfun(@(k) (xa{k}(1) + xa{k}(end))/2, 1:ng);
+else
+    la = [xa{:}];
+end
+
+% position of the bars
 xa = [xa{:}];
-set(gca, lfont{:}, 'LineWidth', 1.5,...
-    'XTick', xa, 'XLim', [0 xa(end)+1]);
 
+afont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.FontSize};
+lfont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.XLabelFontSize};
 
-width = diff(get(gca, 'XLim'));
-height = diff(get(gca, 'YLim'));
-
-% get height of default text bounding box
-h = text(0, 0, ' ', lfont{:});
-textHeight = get(h, 'extent');
-textHeight = textHeight(4);
-extent = textHeight/sqrt(2)/2 * width/height;
-delete(h);
+set(ha, afont{:}, 'LineWidth', 1.5,...
+    'XTick', la, 'XTickLabel', ip.Results.xlabels, 'XLim', [0 xa(end)+1],...
+    'TickDir', 'out', 'Layer', 'top');
 
 
 % x label
-if ~isempty(ip.Results.xlabels)
-    set(gca, 'XTickLabel', []);
-    xlabels = arrayfun(@(k) text(xa(k)-extent,-0.01*height, ip.Results.xlabels{k},...
-        'VerticalAlignment', 'Top', 'HorizontalAlignment', 'Right',...
-        'Rotation', 45, lfont{:}), 1:length(xa));
-    
-    maxHeight = max(cellfun(@(x) x(4), arrayfun(@(x) get(x, 'extent'), xlabels, 'UniformOutput', false)));
-else
-    if strcmp(ip.Results.GroupLabels, 'on')
-        set(gca, 'XTick', groupCenters, 'XTickLabel', 1:ng);
-    else
-        set(gca, 'XTickLabel', 1:sum(nb));
-    end
-    maxHeight = 0;
-end
-
 if ~isempty(ip.Results.xlabel)
-    hx = xlabel(ip.Results.xlabel, lfont{:});
-    
-    position = get(hx, 'Position');
-    xlabelHeight = get(hx, 'extent');
-    xlabelHeight = xlabelHeight(4) - position(2);
-    position(2) = position(2) - 0.02*height - maxHeight;
-    set(hx, 'Position', position);
-else
-    xlabelHeight = 0;
+    xlabel(ip.Results.xlabel, lfont{:});
 end
 
-% set final axis position
-if strcmpi(ip.Results.Rotate, 'on')
-    total = (height*1.01 + maxHeight + xlabelHeight) * 1.05;
-    position = get(gca, 'Position');
-    position([2 4]) = [height*0.02+maxHeight+xlabelHeight height]/total;
-    set(gca, 'Position', position);
+% x labels
+if ip.Results.Angle ~= 0
+    rotateXTickLabels(ha, 'Angle', ip.Results.Angle);
 end
 
 % y label
@@ -170,10 +132,13 @@ if ~isempty(ip.Results.ylabel)
     ylabel(ip.Results.ylabel, lfont{:});
 end
 
+% re-plot axis on top
+% axes('Position', get(ha, 'Position'), 'Box', 'off', 'XTick', [], 'YTick', [],...
+%     'HitTest','off', 'Color', 'none', 'LineWidth', 1.5);
 
 
 
-function setErrorbarStyle(he, de)
+function setErrorbarStyle(he, de, pos)
 if nargin<2
     de = 0.2;
 end
@@ -181,7 +146,12 @@ end
 he = get(he, 'Children');
 xd = get(he(2), 'XData');
 xd(4:9:end) = xd(1:9:end) - de;
-xd(7:9:end) = xd(1:9:end) - de;
 xd(5:9:end) = xd(1:9:end) + de;
-xd(8:9:end) = xd(1:9:end) + de;
+if strcmpi(pos, 'top')
+    xd(7:9:end) = xd(1:9:end);
+    xd(8:9:end) = xd(1:9:end);
+else
+    xd(7:9:end) = xd(1:9:end) - de;
+    xd(8:9:end) = xd(1:9:end) + de;
+end
 set(he(2), 'XData', xd);

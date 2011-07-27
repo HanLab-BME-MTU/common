@@ -20,6 +20,10 @@ xlabelExtent = get(hx, 'Extent');
 
 xa = get(ha, 'XTick');
 xla = get(ha, 'XTickLabel');
+if ischar(xla) % if singleton labels
+    whos xla
+    xla = mat2cell(xla, ones(1,length(xa)), 1);
+end
 set(ha, 'XTickLabel', []);
 
 fontName = get(ha, 'FontName');
@@ -59,7 +63,7 @@ sp = xlh+maxHeightN-pos(2);% - textHeight/height*pos(4);
 hfig = get(ha, 'Parent');
 fpos = get(hfig, 'Position');
 fpos(4) = fpos(4)*(1+sp);
-set(hfig, 'Position', fpos);
+set(hfig, 'Position', fpos, 'PaperPositionMode', 'auto');
 
 newAxesHeight = pos(4)/(1+sp);
 newTopMargin = (1-pos(2)-pos(4))/(1+sp);
