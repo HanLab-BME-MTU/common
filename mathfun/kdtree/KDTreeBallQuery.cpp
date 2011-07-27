@@ -4,7 +4,7 @@
  *
  * Compilation:
  * Mac/Linux: mex -I.  -I../../mex/include/c++ -I../../../extern/mex/include/ KDTreeBallQuery.cpp
- * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I "."-I"..\..\mex\include\c++" -I"..\..\..\extern\mex\include\" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output KDTreeBallQuery KDTreeBallQuery.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"." -I"..\..\mex\include\c++" -I"..\..\..\extern\mex\include\" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output KDTreeBallQuery KDTreeBallQuery.cpp
  */
 
 
