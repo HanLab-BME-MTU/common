@@ -21,6 +21,7 @@ function pt = getpt(varargin)
 %   Callback syntaxes:
 %       getpt('ButtonDown')
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
 
 global GETPT_FIG GETPT_AX GETPT_H1
 global GETPT_PT1 

@@ -28,6 +28,7 @@ function [x,y] = getsegment(varargin)
 %        getsegment('SecondButtonDown')
 %        getsegment('ButtonMotion')
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
 
 global GETLINE_FIG GETLINE_AX GETLINE_H1 GETLINE_H2
 global GETLINE_X GETLINE_Y

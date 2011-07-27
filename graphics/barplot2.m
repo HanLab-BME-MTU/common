@@ -18,7 +18,7 @@
 
 % Francois Aguet, 18 March 2011 (Last modified: 26 July 2011)
 
-function barplot2(prm, varargin)
+function he= barplot2(prm, varargin)
 
 if isnumeric(prm)
     prm = {prm};
