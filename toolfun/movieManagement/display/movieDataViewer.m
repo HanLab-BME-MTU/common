@@ -246,7 +246,7 @@ set(handles.figure1,'UserData',userData);
 
 % Update the image and overlays
 redrawScene(handles.figure1, handles);
-playMovie(handles.figure1,handles)
+% playMovie(handles.figure1,handles)
 
 function playMovie(hObject,handles)
 
