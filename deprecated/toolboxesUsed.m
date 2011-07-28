@@ -24,6 +24,7 @@ function toolBoxes = toolboxesUsed(funList)
 % 12/2010
 %
 
+fprintf(2, ['Warning: ''' mfilename ''' is deprecated and should no longer be used. Use getFunDependencies instead.\n']);
 
 if nargin < 1 || isempty(funList)    
     error('Come on, what the fuck? You have to input SOMETHING!')

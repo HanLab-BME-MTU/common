@@ -13,7 +13,7 @@ function makePackage(outDir)
 %   outDir - The directory to copy all the package files to.
 %
 %
-% Sebastien Besson, 4/2011
+% Sebastien Besson, July 2011
 
 % List of all available packages
 fullPackageList={'SegmentationPackage';'BiosensorsPackage';'UTrackPackage',...
@@ -52,14 +52,10 @@ packageFuns = {packageFuns(:).name}';
 %Remove this function from the list if present (but it shouldn't!)
 packageFuns(strcmp(packageFuns,mfilename)) = [];
 
-%Get everything these functions depend on also
-packageFuns = depfun_notoolbox(packageFuns);
-
-%Check and display toolbox dependency
-disp('Checking toolbox dependency...')
-tbs = toolboxesUsed(packageFuns);
+%Get all the function dependencies and display toolboxes
+[packageFuns toolboxesUsed] = getFunDependencies(packageFuns);
 disp('The package uses the following toolboxes:')
-disp(tbs)
+disp(toolboxesUsed)
 
 %% Additional files can be found under four types of format:
 %   * GUIs may have associated *.fig
@@ -77,7 +73,7 @@ isDocFile = logical(cellfun(@(x,y) exist([x filesep 'doc' filesep y '.pdf'],'fil
 packageDocs = cellfun(@(x,y) [x filesep 'doc' filesep y '.pdf'],...
     packageFunsPaths(isDocFile),packageFunsNames(isDocFile),'UniformOutput',false);
 
-% Get GUI FIG files
+% Get GUI fig files
 isGUIFile =logical(cellfun(@(x) exist([x(1:end-2) '.fig'],'file'),packageFuns));
 packageFigs = cellfun(@(x) [x(1:end-2) '.fig'],packageFuns(isGUIFile),'UniformOutput',false);
 
@@ -104,7 +100,7 @@ if ~isempty(packageMexFuns)
     packageMexFuns(cFiles)=[];
 end
 
-% Add icons
+% Add lccb icons
 packageIcons = which('lccbGuiIcons.mat');
 
 % Concatenate all files but the documentation

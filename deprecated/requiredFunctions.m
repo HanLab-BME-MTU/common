@@ -29,6 +29,8 @@ function [listOfFunctions, toolboxes, neededFunctions] = requiredFunctions(funct
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+fprintf(2, ['Warning: ''' mfilename ''' is deprecated and should no longer be used. Use getFunDependencies instead.\n']);
+
 % modify input
 if ~iscell(functionList)
     functionList = {functionList};
