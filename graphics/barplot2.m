@@ -49,6 +49,8 @@ ip.addParamValue('Handle', gca, @ishandle);
 ip.addParamValue('FontName', 'Helvetica', @ischar); % specific
 ip.addParamValue('AxisFontSize', 16, @isscalar);
 ip.addParamValue('LabelFontSize', 20, @isscalar);
+ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
+ip.addParamValue('X', [], @(x) numel(x)==ng); 
 ip.parse(prm, varargin{:});
 
 errorBars = ip.Results.errorbars;
@@ -64,23 +66,31 @@ end
 bw = ip.Results.BarWidth;
 dg = ip.Results.GroupDistance; % distance between groups, in bar widths
 
+% x-coords for groups
+xa = cell(1,ng);
+if isempty(ip.Results.X)
+    xa{1} = 1:nb;
+    for k = 2:ng
+        xa{k} = xa{1} + xa{k-1}(end) + dg;
+    end
+else
+    dx = min(diff(ip.Results.X));
+    for k = 1:ng
+        w = (nb-1)/2;
+        xa{k} = ip.Results.X(k) + (k-1)*dg + (-w:w)*dx/nb;
+    end
+end
+
 if isempty(ip.Results.BorderWidth)
     border = (bw+dg)/2;
 else
     border = ip.Results.BorderWidth;
 end
 
-xa = cell(1,ng);
 
 hold on;
 for k = 1:ng
-    
-    % x-coords for this group
-    xa{k} = 1:nb;
-    if k > 1
-        xa{k} = xa{k} + xa{k-1}(end) + dg;
-    end
-    
+
     height = prm(k,:);
     
     
@@ -143,7 +153,7 @@ ylabel(ip.Results.YLabel, lfont{:});
 
 % x labels
 if ip.Results.Angle ~= 0
-    rotateXTickLabels(ha, 'Angle', ip.Results.Angle);
+    rotateXTickLabels(ha, 'Angle', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter);
 end
 
 % re-plot axis on top
