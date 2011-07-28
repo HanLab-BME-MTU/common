@@ -12,6 +12,7 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('ha', @ishandle);
 ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
+ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
 ip.parse(ha, varargin{:});
 
 hx = get(ha, 'XLabel');
@@ -46,7 +47,7 @@ delete(h);
 ht = arrayfun(@(k) text(xa(k)-shift, YLim(1)-0.01*height, xla{k},...
     'FontName', fontName, 'FontSize', fontSize,...
     'Units', 'data', 'VerticalAlignment', 'top', 'HorizontalAlignment', 'right',...
-    'Rotation', ip.Results.Angle),...
+    'Rotation', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter),...
     1:length(xa), 'UniformOutput', false);
 
 % largest extent
