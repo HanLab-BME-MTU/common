@@ -15,45 +15,41 @@ function makePackage(outDir)
 %
 % Sebastien Besson, July 2011
 
-% List of all available packages
-fullPackageList={'SegmentationPackage';'BiosensorsPackage';'UTrackPackage',...
-    'QFSMPackage'};
-isValidPackage=logical(cellfun(@(x) exist(x,'class'),fullPackageList));
-if isempty(isValidPackage), 
-    warndlg('No package found! Please make sure you properly added the installation directory to the path (see user''s manual).',...
-        'Movie Selector','modal'); 
-end
-fullPackageList=fullPackageList(isValidPackage);
+% List available packages
+packages(5)=struct('name','','initFiles','','additionalFiles','');
+packages(1).name='Segmentation';
+packages(1).initFiles={'SegmentationPackage'};
+packages(2).name='Biosensors';
+packages(2).initFiles={'BiosensorsPackage'};
+packages(3).name='U-Track';
+packages(3).initFiles={'UTrackPackage'};
+packages(4).name='QFSM';
+packages(4).initFiles={'QFSMPackage'};
+for i=1:4, packages(i).additionalFiles = {'lccbGUIicons.mat'}; end
+packages(5).name='plusTipTracker';
+packages(5).initFiles={'plusTipGetTracks';'plusTipSeeTracks';...
+    'plusTipParamSweepGUI';'plusTipGroupAnalysis'};
+packages(5).additionalFiles = {'pTT_logo_sm.png';'help_icon.png'};
 
-% Ask the user which packages to include
-[packageIndx,ok] = listdlg('PromptString','Select the package(s) to compile:',...
-    'SelectionMode','multiple','ListString',fullPackageList);
-if ~ok, return; end
-packageList = fullPackageList(packageIndx);
+% Retrieve the list of valid packages
+isValidPackage=@(x)all(cellfun(@(y)exist(y,'file'),packages(x).initFiles));
+validPackages=arrayfun(isValidPackage,1:numel(packages));
+packages(~validPackages)=[];
+if isempty(packages), error('No package found'); end
 
-% Retrieve the full path of the corresponding packages
-packageLocation=cellfun(@which,packageList,'UniformOutput',false);
-if any(cellfun(@isempty,packageLocation)),
-    errordlg('Could not locate on of the selected packages.')
-    return;
-end
-packageDir=cellfun(@fileparts,packageLocation,'UniformOutput',false);
- 
+% Ask the user which packages to build
+[packageIndx,status] = listdlg('PromptString','Select the package(s) to build:',...
+    'SelectionMode','multiple','ListString',{packages(:).name});
+if ~status, return; end
+packages=packages(packageIndx);
+
 % Ask for the output directory if not supplied
 if nargin < 1 || isempty(outDir)    
     outDir = uigetdir(pwd,'Select output dir:');
 end
     
-%% Get m files from packages directory
-disp('Getting file list...')
-packageFuns= cellfun(@(x) dir([x filesep '*.m']),packageDir,'UniformOutput',false);
-packageFuns=vertcat(packageFuns{:});
-packageFuns = {packageFuns(:).name}';
-%Remove this function from the list if present (but it shouldn't!)
-packageFuns(strcmp(packageFuns,mfilename)) = [];
-
 %Get all the function dependencies and display toolboxes
-[packageFuns toolboxesUsed] = getFunDependencies(packageFuns);
+[packageFuns toolboxesUsed] = getFunDependencies(vertcat(packages.initFiles));
 disp('The package uses the following toolboxes:')
 disp(toolboxesUsed)
 
@@ -84,8 +80,7 @@ matExtIndx = ismember(uniquePackageFunsExt,matExt);
 mexExt=uniquePackageFunsExt(~matExtIndx);
 mexFunsIndx = find(ismember(packageFunsExt,mexExt));
 
-% Retrieve all mex-files
-% List all files in the same folder as these found MEX-files
+% Get all files in the same folder as these found MEX-files
 packageMexList=arrayfun(@(x)  dir([packageFunsPaths{x} filesep '*.*']),...
     mexFunsIndx,'Unif',false);
 packageMexFunsPaths=packageFunsPaths(mexFunsIndx);
@@ -100,10 +95,10 @@ if ~isempty(packageMexFuns)
     packageMexFuns(cFiles)=[];
 end
 
-% Add lccb icons
-packageIcons = which('lccbGuiIcons.mat');
+% Add additional files (not included in dependencies)
+packageIcons = unique(cellfun(@which,vertcat(packages.additionalFiles),'UniformOutput',false));
 
-% Concatenate all files but the documentation
+% Concatenate all matlab files but the documentation
 packageFiles=vertcat(packageFuns,packageFigs,packageIcons,packageMexFuns);
 
 %% Export package files

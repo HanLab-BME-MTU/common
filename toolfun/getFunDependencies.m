@@ -56,7 +56,8 @@ end
 
 % Matlab toolbox files are named '*/toolbox/name_of_toolbox/*'
 allDepFiles = depfun(depList{:},'-toponly','-quiet');
-foundTokens=regexp(allDepFiles,['toolbox' filesep '(\w+)' filesep],'tokens','once');
+toolboxToken = ['toolbox' regexptranslate('escape',filesep) '(\w+)' regexptranslate('escape',filesep)];
+foundTokens=regexp(allDepFiles,toolboxToken,'tokens','once');
 toolboxes= unique(vertcat(foundTokens{:}));
 
 % Remove the "toolboxes" that come with MATLAB by default
