@@ -48,38 +48,69 @@ imagePanel = uibuttongroup(mainFig,'Position',[0 0 1/2 1],...
 
 % Create image option controls
 hPosition1=10;
+if isempty(userData.MD.timeInterval_),
+    timeStampStatus = 'off';
+else
+    timeStampStatus = 'on';
+end
+uicontrol(imagePanel,'Style','checkbox',...
+    'Position',[10 hPosition1 200 20],'Tag','checkbox_timeStamp',...
+    'String',' Time stamp','HorizontalAlignment','left','FontWeight','bold',...
+    'Enable',timeStampStatus,...
+    'Callback',@(h,event) setTimeStamp(guidata(h)));
+uicontrol(imagePanel,'Style','popupmenu','Position',[150 hPosition1 120 20],...
+    'String',{'NorthEast', 'SouthEast', 'SouthWest', 'NorthWest'},'Value',4,...
+    'Tag','popupmenu_timeStampLocation',...
+    'Enable',timeStampStatus,...
+    'Callback',@(h,event) setTimeStamp(guidata(h)));
+
+hPosition1=hPosition1+30;
 if isempty(userData.MD.pixelSize_),
     scaleBarStatus = 'off';
 else
     scaleBarStatus = 'on';
 end
-uicontrol(imagePanel,'Style','checkbox',...
-    'Position',[20 hPosition1 100 20],'Tag','checkbox_imageScaleBar',...
-    'String',' Scale bar','HorizontalAlignment','left',...
-    'Enable',scaleBarStatus,...
-    'Callback',@(h,event) setScaleBar(guidata(h),'imageScaleBar'));
-uicontrol(imagePanel,'Style','edit','Position',[120 hPosition1 50 20],...
+uicontrol(imagePanel,'Style','edit','Position',[40 hPosition1 50 20],...
     'String','1','BackgroundColor','white','Tag','edit_imageScaleBar',...
     'Enable',scaleBarStatus,...
     'Callback',@(h,event) setScaleBar(guidata(h),'imageScaleBar'));
-uicontrol(imagePanel,'Style','text','Position',[180 hPosition1 70 20],...
+uicontrol(imagePanel,'Style','text','Position',[100 hPosition1-2 70 20],...
     'String','microns','HorizontalAlignment','left');
+
+uicontrol(imagePanel,'Style','checkbox',...
+    'Position',[180 hPosition1 100 20],'Tag','checkbox_imageScaleBarLabel',...
+    'String',' Show label','HorizontalAlignment','left',...
+    'Enable',scaleBarStatus,...
+    'Callback',@(h,event) setScaleBar(guidata(h),'imageScaleBar'));
 
 hPosition1=hPosition1+30;
 uicontrol(imagePanel,'Style','checkbox',...
-    'Position',[20 hPosition1 100 20],'Tag','checkbox_autoscale',...
-    'String',' Autoscale','HorizontalAlignment','left');
-uicontrol(imagePanel,'Style','edit','Position',[120 hPosition1 50 20],...
+    'Position',[10 hPosition1 200 20],'Tag','checkbox_imageScaleBar',...
+    'String',' Scalebar','HorizontalAlignment','left','FontWeight','bold',...
+    'Enable',scaleBarStatus,...
+    'Callback',@(h,event) setScaleBar(guidata(h),'imageScaleBar'));
+uicontrol(imagePanel,'Style','popupmenu','Position',[150 hPosition1 120 20],...
+    'String',{'NorthEast', 'SouthEast', 'SouthWest', 'NorthWest'},'Value',3,...
+    'Tag','popupmenu_imageScaleBarLocation','Enable',scaleBarStatus,...
+    'Callback',@(h,event) setScaleBar(guidata(h),'imageScaleBar'));
+
+hPosition1=hPosition1+30;
+uicontrol(imagePanel,'Style','text','Position',[20 hPosition1-2 50 20],...
+    'String','Cmin','HorizontalAlignment','left');
+uicontrol(imagePanel,'Style','edit','Position',[70 hPosition1 50 20],...
     'String','','BackgroundColor','white','Tag','edit_cmin',...
     'Callback',@(h,event) setClim(guidata(h)));
+uicontrol(imagePanel,'Style','text','Position',[150 hPosition1-2 50 20],...
+    'String','Cmax','HorizontalAlignment','left');
 uicontrol(imagePanel,'Style','edit','Position',[200 hPosition1 50 20],...
     'String','','BackgroundColor','white','Tag','edit_cmax',...
     'Callback',@(h,event) setClim(guidata(h)));
 
 hPosition1=hPosition1+20;
-uicontrol(imagePanel,'Style','text',...
-    'Position',[10 hPosition1 200 20],'Tag','text_imageoptions',...
-    'String','Options','HorizontalAlignment','left','FontWeight','bold');
+uicontrol(imagePanel,'Style','checkbox',...
+    'Position',[10 hPosition1 200 20],'Tag','checkbox_autoscale',...
+    'String','Autoscale','HorizontalAlignment','left','FontWeight','bold',...
+    'Callback',@(h,event) setClim(guidata(h)));
 
 hPosition1=hPosition1+50;
 % Create image processes controls
@@ -311,8 +342,8 @@ set(userData.drawFig, 'InvertHardcopy', 'off');
 set(userData.drawFig, 'PaperUnits', 'Points');
 set(userData.drawFig, 'PaperSize', [nx ny]);
 set(userData.drawFig, 'PaperPosition', [0 0 nx ny]); % very important
- set(userData.drawFig,'DefaultLineLineSmoothing','on');
-set(userData.drawFig,'DefaultPatchLineSmoothing','on');
+%  set(userData.drawFig,'DefaultLineLineSmoothing','on');
+% set(userData.drawFig,'DefaultPatchLineSmoothing','on');
 
 %Create the associate axes
 axes('Parent',userData.drawFig,'XLim',[0 userData.MD.imSize_(2)],...
@@ -346,14 +377,43 @@ figure(userData.drawFig)
 scale = str2double(get(handles.(['edit_' type]),'String'));
 if strcmp(type,'imageScaleBar')
     width = scale *1000/userData.MD.pixelSize_;
-    label = [num2str(scale) ' \mum'];
+    if get(handles.(['checkbox_' type 'Label']),'Value')
+        label = [num2str(scale) ' \mum'];
+    else
+        label='';
+    end
+    props=get(handles.(['popupmenu_' type 'Location']),{'String','Value'});
+    location=props{1}{props{2}};
 else
     displayScale = str2double(get(handles.edit_vectorFieldScale,'String'));
     width = scale*displayScale/(userData.MD.pixelSize_/userData.MD.timeInterval_*60);
     label= [num2str(scale) ' nm/min'];
+    location='SouthEast';
 end
-hScaleBar = plotScaleBar(width,'Label',label);
+hScaleBar = plotScaleBar(width,'Label',label,'Location',location);
 set(hScaleBar,'Tag',type);
+
+
+function setTimeStamp(handles)
+% Remove existing scalebar of given type if any
+h=findobj('Tag','timeStamp');
+if ~isempty(h), delete(h); end
+
+% If checked, adds a new scalebar using the width as a label input
+userData=get(handles.figure1,'UserData');
+if ~get(handles.checkbox_timeStamp,'Value') || ~ishandle(userData.drawFig),
+    return 
+end
+figure(userData.drawFig)
+frameNr=get(handles.slider_frame,'Value');
+width = userData.MD.imSize_(2)/20;
+time= (frameNr-1)*userData.MD.timeInterval_;
+p=sec2struct(time);
+props=get(handles.popupmenu_timeStampLocation,{'String','Value'});
+location=props{1}{props{2}};
+hTimeStamp = plotScaleBar(width,'Label',p.str,'Location',location);
+set(hTimeStamp,'Tag','timeStamp');
+delete(hTimeStamp(1))
 
 function setClim(handles)
 userData=get(handles.figure1,'UserData');
@@ -363,6 +423,7 @@ clim=[str2double(get(handles.edit_cmin,'String')) ...
     str2double(get(handles.edit_cmax,'String'))];
 
 if strcmp(imageTag,'radiobutton_channels')
+    channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
     chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
     userData.MD.channels_(chanList(1)).displayMethod_.CLim=cLim;
 else
@@ -386,12 +447,11 @@ frameNr=get(handles.slider_frame,'Value');
 
 imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
 
-if ishandle(userData.drawFig), 
-    figure(userData.drawFig); 
-else 
+if ~ishandle(userData.drawFig), 
     createFigure(handles);
+else
+    figure(userData.drawFig);
 end
-
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
 if strcmp(imageTag,'radiobutton_channels')
     set(channelBoxes,'Enable','on');
@@ -421,9 +481,8 @@ else
 end
 
 % Reset the scaleBar
-if get(handles.checkbox_imageScaleBar,'Value'), 
-    setScaleBar(handles,'imageScaleBar'); 
-end
+setScaleBar(handles,'imageScaleBar'); 
+setTimeStamp(handles); 
 
 function redrawOverlays(handles)
 overlayBoxes = findobj(handles.uipanel_overlay,'-regexp','Tag','checkbox_process*');
