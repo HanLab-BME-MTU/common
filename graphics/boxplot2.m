@@ -13,41 +13,56 @@
 %
 % Example: boxplot2({[3 4; 0.2 0.2; 2 3; 4 5; 0.5 0.5; 0.5 0.5]});
 
-% Francois Aguet, 22 Feb 2011
-% Last modified: 18 April 2011
+% Francois Aguet, 22 Feb 2011 (Last modified: 27 July 2011)
 
 function boxplot2(prm, varargin)
 
 if isnumeric(prm)
     prm = {prm};
 end
-nbars = sum(cellfun(@(x) size(x,2), prm));
+
+ng = length(prm); % # of groups
+nb = cellfun(@(c) size(c, 2), prm); % # bars in each group
 
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('prm', @iscell);
-ip.addOptional('color', hsv2rgb([rand(nbars,1) ones(nbars,2)]), @(x) isfloat(x) & ~isempty(x));
+ip.addOptional('color', []);
+ip.addParamValue('EdgeColor', []);
+ip.addParamValue('GroupDistance', 0.5, @isscalar);
 ip.addParamValue('xlabel', [], @ischar);
-ip.addParamValue('xlabels', [], @(x) all(cellfun(@(y) ischar(y), x)));
+ip.addParamValue('xlabels', arrayfun(@(k) num2str(k), 1:sum(nb), 'UniformOutput', false), @(x) iscell(x) && (numel(x)==sum(nb)||numel(x)==ng));
 ip.addParamValue('ylabel', [], @ischar);
+ip.addParamValue('BarWidth', 0.8, @isscalar); 
+ip.addParamValue('BorderWidth', 0.8, @isscalar); 
+ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
+ip.addParamValue('ErrorBarWidth', 0.2, @(x) 0<x && x<=1);
+ip.addParamValue('Handle', gca, @ishandle);
+ip.addParamValue('FontName', 'Helvetica', @ischar); % specific
+ip.addParamValue('FontSize', 16, @isscalar);
+ip.addParamValue('XLabelFontSize', 18, @isscalar);
+ip.addParamValue('YLim', [], @(x) numel(x)==2);
 ip.parse(prm, varargin{:});
 color = ip.Results.color;
+edgeColor = ip.Results.EdgeColor;
+ha = ip.Results.Handle;
 
-if size(color,1)==1
-    color = repmat(color, [nbars 1]);
+if isempty(color)
+    color = arrayfun(@(k) [0.7 0.9 1], 1:ng, 'UniformOutput', false);
 end
 
-fsize = 16;
-bw = 0.8; % bar width
-dx = (1-bw)/2;
-dg = 4*dx;
+if isempty(edgeColor)
+    edgeColor = arrayfun(@(k) [0 0.7 1], 1:ng, 'UniformOutput', false);
+end
 
-ng = length(prm);
+bw = ip.Results.BarWidth;
+dg = ip.Results.GroupDistance; % distance between groups, in bar widths
+
 xa = cell(1,ng);
 
 hold on;
 for k = 1:ng
-    nb = size(prm{k},2);
+    %nb = size(prm{k},2);
     
     xa{k} = (1:nb) + (k-1)*(nb + dg);
     plotSEM = mod(size(prm{k},1),2)==0;
@@ -76,9 +91,9 @@ for k = 1:ng
     
     if plotWhiskers
         he = errorbar(xa{k}, p25, w1, zeros(size(mu)), 'k', 'LineStyle', 'none', 'LineWidth', 2);
-        setErrorbarStyle(he);
+        setErrorbarStyle(he, 'bottom', ip.Results.ErrorBarWidth);
         he = errorbar(xa{k}, p75, zeros(size(mu)), w2, 'k', 'LineStyle', 'none', 'LineWidth', 2);
-        setErrorbarStyle(he);
+        setErrorbarStyle(he, 'top', ip.Results.ErrorBarWidth);
     end
     
     % the box
@@ -86,12 +101,9 @@ for k = 1:ng
     rb = xa{k} + bw/2;
     xv = [lb; rb; rb; lb; lb; rb];
     yv = [p75; p75; p25; p25; p75; p75];
-    %patch(xv, yv, 'r', 'LineWidth', 2);
-
-    for b = 1:nb
-        patch(xv(:,b), yv(:,b), color(b+(k-1)*nb,:), 'LineWidth', 2);
-    end
     
+    arrayfun(@(b) patch(xv(:,b), yv(:,b), color{k}(mod(b,size(color{k},1))+1,:),...
+        'EdgeColor', edgeColor{k}(mod(b,size(edgeColor{k},1))+1,:), 'LineWidth', 2), 1:nb(k));
     
     % mean/median line
     line([lb; rb], [mu; mu], 'Color', [0 0 0], 'LineWidth', 3);
@@ -104,74 +116,37 @@ for k = 1:ng
     end
 end
 hold off;
-
 box off;
+
+if numel(ip.Results.xlabels)==ng
+    la = arrayfun(@(k) (xa{k}(1) + xa{k}(end))/2, 1:ng);
+else
+    la = [xa{:}];
+end
+
 xa = [xa{:}];
-set(gca, 'FontName', 'Helvetica', 'FontSize', fsize, 'LineWidth', 1.5,...
-    'XTick', xa, 'XLim', [0.5-dx/2 xa(end)+0.5+dx/2]);
 
-YLim = get(gca, 'YLim');
-set(gca, 'Ylim', [0, YLim(2)+1]);
+afont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.FontSize};
+lfont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.XLabelFontSize};
 
-width = diff(get(gca, 'XLim'));
-height = diff(get(gca, 'YLim'));
-
-% get height of default text bounding box
-h = text(0, 0, ' ', 'FontName', 'Helvetica', 'FontSize', fsize);
-textHeight = get(h, 'extent');
-textHeight = textHeight(4);
-extent = textHeight/sqrt(2)/2 * width/height;
-delete(h);
-
+set(ha, afont{:}, 'LineWidth', 1.5,...
+    'XTick', la, 'XTickLabel', ip.Results.xlabels, 'XLim', [1-ip.Results.BorderWidth xa(end)+ip.Results.BorderWidth],...
+    'TickDir', 'out', 'Layer', 'top');
+if ~isempty(ip.Results.YLim);
+    set(ha, 'YLim', ip.Results.YLim);
+end
 
 % x label
-if ~isempty(ip.Results.xlabels)
-    set(gca, 'XTickLabel', []);
-    xlabels = arrayfun(@(k) text(xa(k)-extent,-0.01*height, ip.Results.xlabels{k},...
-        'VerticalAlignment', 'Top', 'HorizontalAlignment', 'Right',...
-        'Rotation', 45, 'FontName', 'Helvetica', 'FontSize', fsize), 1:length(xa));
-    
-    maxHeight = max(cellfun(@(x) x(4), arrayfun(@(x) get(x, 'extent'), xlabels, 'UniformOutput', false)));
-else
-    set(gca, 'XTickLabel', 1:nbars);
-    maxHeight = 0;
-end
-
 if ~isempty(ip.Results.xlabel)
-    hx = xlabel(ip.Results.xlabel, 'FontName', 'Helvetica', 'FontSize', fsize);
-    
-    position = get(hx, 'Position');
-    xlabelHeight = get(hx, 'extent');
-    xlabelHeight = xlabelHeight(4) - position(2);
-    position(2) = position(2) - 0.02*height - maxHeight;
-    set(hx, 'Position', position);
-else
-    xlabelHeight = 0;
+    xlabel(ip.Results.xlabel, lfont{:});
 end
 
-% set final axis position
-total = (height*1.01 + maxHeight + xlabelHeight) * 1.05;
-position = get(gca, 'Position');
-position([2 4]) = [height*0.02+maxHeight+xlabelHeight height]/total;
-set(gca, 'Position', position);
+% x labels
+if ip.Results.Angle ~= 0
+    rotateXTickLabels(ha, 'Angle', ip.Results.Angle);
+end
 
 % y label
 if ~isempty(ip.Results.ylabel)
-    ylabel(ip.Results.ylabel, 'FontName', 'Helvetica', 'FontSize', fsize);
+    ylabel(ip.Results.ylabel, lfont{:});
 end
-
-
-
-
-function setErrorbarStyle(he, de)
-if nargin<2
-    de = 0.2;
-end
-
-he = get(he, 'Children');
-xd = get(he(2), 'XData');
-xd(4:9:end) = xd(1:9:end) - de;
-xd(7:9:end) = xd(1:9:end) - de;
-xd(5:9:end) = xd(1:9:end) + de;
-xd(8:9:end) = xd(1:9:end) + de;
-set(he(2), 'XData', xd);

@@ -21,8 +21,7 @@ xlabelExtent = get(hx, 'Extent');
 xa = get(ha, 'XTick');
 xla = get(ha, 'XTickLabel');
 if ischar(xla) % if singleton labels
-    whos xla
-    xla = mat2cell(xla, ones(1,length(xa)), 1);
+    xla = num2cell(xla);
 end
 set(ha, 'XTickLabel', []);
 
