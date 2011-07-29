@@ -405,21 +405,26 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         memcpy(mxGetPr(plhs[0]), data.prmVect, NPARAMS*sizeof(double));
     }
     
+    double RSS = 0.0;
+    double* resValid;
+    if (nlhs > 1) {
+        resValid = malloc(data.nValid*sizeof(double));
+        for (i=0; i<data.nValid; ++i) {
+            resValid[i] = gsl_vector_get(data.residuals, i);
+            RSS += resValid[i]*resValid[i];
+        }
+    }
+    
     /* standard dev. of parameters & covariance matrix */
     if (nlhs > 1) {
         
         gsl_matrix *covar = gsl_matrix_alloc(np, np);
         gsl_multifit_covar(data.J, 0.0, covar);
-        double sigma_e = 0.0, e;
-        for (i=0; i<data.nValid; ++i) {
-            e = gsl_vector_get(data.residuals, i);
-            sigma_e += e*e;
-        }
-        sigma_e /= data.nValid - data.np - 1;
+        double iRSS = RSS/(data.nValid - data.np - 1);
         plhs[1] = mxCreateDoubleMatrix(1, data.np, mxREAL);
         double *prmStd = mxGetPr(plhs[1]);
         for (i=0; i<data.np; ++i) {
-            prmStd[i] = sqrt(sigma_e*gsl_matrix_get(covar, i, i));
+            prmStd[i] = sqrt(iRSS*gsl_matrix_get(covar, i, i));
         }
         if (nlhs > 2) {
             plhs[2] = mxCreateDoubleMatrix(np, np, mxREAL);
@@ -437,12 +442,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mxArray *val = mxCreateDoubleMatrix(nx, nx, mxREAL);
         double* res = mxGetPr(val);
         
-        double mean = 0.0, std = 0.0, tmp, RSS = 0.0;
+        double mean = 0.0, std = 0.0, tmp;
         for (i=0; i<data.nValid; ++i) {
-            tmp = gsl_vector_get(data.residuals, i);
-            res[data.idx[i]] = tmp;
-            mean += tmp;
-            RSS += tmp*tmp;
+            res[data.idx[i]] = resValid[i];
+            mean += resValid[i];
         }
         std = sqrt((RSS-mean*mean/data.nValid)/(data.nValid-1));
         mean /= data.nValid;
@@ -451,7 +454,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
             res[nanIdx[i]] = mxGetNaN();
         }
         
-        double pval = ksone(res, data.nValid, mean, std);
+        double pval = ksone(resValid, data.nValid, mean, std);
         mxSetFieldByNumber(plhs[3], 0, 0, val);
         mxSetFieldByNumber(plhs[3], 0, 1, mxCreateDoubleScalar(pval));
         mxSetFieldByNumber(plhs[3], 0, 2, mxCreateDoubleScalar(mean));
@@ -475,6 +478,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         }
     }
     
+    free(resValid);
     gsl_matrix_free(data.J);
     gsl_vector_free(data.residuals);
     free(data.x_init);

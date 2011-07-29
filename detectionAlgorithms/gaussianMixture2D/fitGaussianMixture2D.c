@@ -236,7 +236,7 @@ int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J
     dataStruct_t *data = (dataStruct_t *)params;
     // initialize Jacobian
     int nJ = data->nDF * data->nValid;
-    memset(data->Jbuffer, 2.54, nJ*sizeof(double));
+    memset(data->Jbuffer, 0.0, nJ*sizeof(double));
     
     int nx = data->nx;
     int b = nx/2, i, k;
@@ -508,21 +508,26 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         memcpy(mxGetPr(plhs[0]), data.prmVect, np*sizeof(double));
     }
     
+    double RSS = 0.0;
+    double* resValid;
+    if (nlhs > 1) {
+        resValid = malloc(data.nValid*sizeof(double));
+        for (i=0; i<data.nValid; ++i) {
+            resValid[i] = gsl_vector_get(data.residuals, i);
+            RSS += resValid[i]*resValid[i];
+        }
+    }
+    
     // standard dev. of parameters & covariance matrix
     if (nlhs > 1) {
         
         gsl_matrix *covar = gsl_matrix_alloc(np, np);
         gsl_multifit_covar(data.J, 0.0, covar);
-        double sigma_e = 0.0, e;
-        for (i=0; i<data.nValid; ++i) {
-            e = gsl_vector_get(data.residuals, i);
-            sigma_e += e*e;
-        }
-        sigma_e /= data.nValid - data.np - 1;
+        double iRSS = RSS/(data.nValid - data.np - 1);
         plhs[1] = mxCreateDoubleMatrix(1, data.np, mxREAL);
         double *prmStd = mxGetPr(plhs[1]);
         for (i=0; i<data.np; ++i) {
-            prmStd[i] = sqrt(sigma_e*gsl_matrix_get(covar, i, i));
+            prmStd[i] = sqrt(iRSS*gsl_matrix_get(covar, i, i));
         }
         if (nlhs > 2) {
             plhs[2] = mxCreateDoubleMatrix(np, np, mxREAL);
@@ -535,29 +540,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     // residuals
     if (nlhs > 3) {
-        //const char *fieldnames[] = {"data", "pval", "mean", "std"};
-        const char *fieldnames[] = {"data", "pval", "mean", "std","RSS"};
+        const char *fieldnames[] = {"data", "pval", "mean", "std", "RSS"};
         mwSize dims[2] = {1, 1};
-        //plhs[3] = mxCreateStructArray(2, dims, 4, fieldnames);        
         plhs[3] = mxCreateStructArray(2, dims, 5, fieldnames);        
         mxArray *val = mxCreateDoubleMatrix(nx, nx, mxREAL);
         double* res = mxGetPr(val);
         
-        //double mean = 0.0, std = 0.0, tmp;
-        double mean = 0.0, std = 0.0, tmp, RSS=0.0;
+        double mean = 0.0, std = 0.0, tmp;
         for (i=0; i<data.nValid; ++i) {
-            tmp = gsl_vector_get(data.residuals, i);
-            res[data.idx[i]] = tmp;
-            mean += tmp;
-	    // next line is new
-	    RSS += tmp*tmp;
+            res[data.idx[i]] = resValid[i];
+            mean += resValid[i];
         }
+        std = sqrt((RSS-mean*mean/data.nValid)/(data.nValid-1));
         mean /= data.nValid;
-        for (i=0; i<data.nValid; ++i) {
-            tmp = gsl_vector_get(data.residuals, i) - mean;
-            std += tmp*tmp;
-        }
-        std = sqrt(std/(data.nValid-1));
+       
         for (i=0; i<N-data.nValid; ++i) {
             res[nanIdx[i]] = mxGetNaN();
         }
@@ -567,7 +563,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mxSetFieldByNumber(plhs[3], 0, 1, mxCreateDoubleScalar(pval));
         mxSetFieldByNumber(plhs[3], 0, 2, mxCreateDoubleScalar(mean));
         mxSetFieldByNumber(plhs[3], 0, 3, mxCreateDoubleScalar(std));
-	// next line is new
         mxSetFieldByNumber(plhs[3], 0, 4, mxCreateDoubleScalar(RSS));
     }
     
@@ -587,6 +582,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         }
     }
     
+    free(resValid);
     gsl_matrix_free(data.J);
     gsl_vector_free(data.residuals);
     free(data.Jbuffer);
