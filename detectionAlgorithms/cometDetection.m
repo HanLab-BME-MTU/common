@@ -131,18 +131,18 @@ for iFeature = 1:numel(xmin)
     % TEST: sigmaX > 1
     isValid = isValid & params(4) > 1;
     
-    % TEST: goodness-of-fit
-    stdRes = std(res(~isnan(res)));
-    [~, pval] = kstest(res(~isnan(res)) ./ stdRes, [], alpha);
-    isValid = isValid & pval > alpha;
+%     TEST: goodness-of-fit
+%     stdRes = std(res.data(~isnan(res.data)));
+%     [~, pval] = kstest(res.data(~isnan(res.data)) ./ stdRes, [], alpha);
+    isValid = isValid & res.pval > alpha;
 
     % TEST: amplitude
-    SE_psfSigma_r = (stdRes / sqrt(2*(npx(iFeature)-1))) * kLevel;
+    SE_psfSigma_r = (res.std / sqrt(2*(npx(iFeature)-1))) * kLevel;
     psfSigma_A = stdParams(3);
     A_est = params(3);
     df2 = (npx(iFeature) - 1) * (psfSigma_A.^2 + SE_psfSigma_r.^2).^2 ./ (psfSigma_A.^4 + SE_psfSigma_r.^4);
     scomb = sqrt((psfSigma_A.^2 + SE_psfSigma_r.^2) / npx(iFeature));
-    T = (A_est - stdRes * kLevel) ./ scomb;    
+    T = (A_est - res.std * kLevel) ./ scomb;    
     isValid = isValid & (1 - tcdf(T, df2)) < alpha;
   
     % TEST: extreme value of 
@@ -165,7 +165,7 @@ for iFeature = 1:numel(xmin)
     stdP(iFeature,6) = stdParams(5);
     stdP(iFeature,7) = stdParams(6);
     
-    stdR(iFeature) = stdRes;
+    stdR(iFeature) = res.std;
 end
 
 P = P(success,:);

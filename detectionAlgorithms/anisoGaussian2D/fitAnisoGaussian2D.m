@@ -20,11 +20,11 @@
 %              prmStd : parameter standard deviations
 %                   C : covariance matrix
 %                 res : structure with fields
-%		    	.data : residuals
-%		    	.pval : p value of KS test (normally distributed)
-%		    	.mean : mean of residuals
-%		    	.std  : standard deviation of residuals
-%		    	.RSS  : residual sum-of-squares
+%		    	          .data : residuals
+%		    	          .pval : p value of KS test (normally distributed)
+%		    	          .mean : mean of residuals
+%		    	          .std  : standard deviation of residuals
+%		    	          .RSS  : residual sum-of-squares
 %                 J : Jacobian
 %
 % Axis conventions: image processing, see meshgrid

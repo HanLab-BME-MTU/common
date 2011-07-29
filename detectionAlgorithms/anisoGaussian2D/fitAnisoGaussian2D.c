@@ -1,8 +1,10 @@
 /* [prmVect prmStd covarianceMatrix residuals Jacobian] = fitAnisoGaussian2D(prmVect, initValues, mode);
  *
- * (c) Sylvain Berlemont, 2011 (last modified Jan 22, 2011)
+ * (c) Sylvain Berlemont, 2011 (last modified Jul 29, 2011)
  *
- * Compile with: mex -I/usr/local/include -lgsl -lgslcblas fitAnisoGaussian2D.c
+ * Compilation:
+ * Mac/Linux: mex -I/usr/local/include -I../../mex/include -lgsl -lgslcblas fitAnisoGaussian2D.c
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\gsl-1.14" -I"..\..\mex\include" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output fitAnisoGaussian2D fitAnisoGaussian2D.c
  */
 
 #include <stdlib.h>
@@ -493,71 +495,57 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       memcpy(mxGetPr(plhs[0]), data.prmVect, NPARAMS * sizeof(double));
     }
     
+  double RSS = 0.0;
+  double* resValid = NULL;
   /* standard dev. of parameters & covariance matrix */
-  if (nlhs > 1)
-    {
+
+  if (nlhs > 1) {
+      resValid = malloc(data.nValid*sizeof(double));
+      for (i=0; i<data.nValid; ++i) {
+          resValid[i] = gsl_vector_get(data.residuals, i);
+          RSS += resValid[i]*resValid[i];
+      }
       gsl_matrix *covar = gsl_matrix_alloc(np, np);
       gsl_multifit_covar(data.J, 0.0, covar);
-      double sigma_e = 0.0, e;
-      for (i=0; i<data.nValid; ++i)
-	{
-	  e = gsl_vector_get(data.residuals, i);
-	  sigma_e += e*e;
-	}
-      sigma_e /= data.nValid - data.np - 1;
+      double iRSS = RSS/(data.nValid - data.np - 1);
       plhs[1] = mxCreateDoubleMatrix(1, data.np, mxREAL);
       double *prmStd = mxGetPr(plhs[1]);
       for (i=0; i<data.np; ++i)
-	prmStd[i] = sqrt(sigma_e*gsl_matrix_get(covar, i, i));
-      if (nlhs > 2)
-	{
-	  plhs[2] = mxCreateDoubleMatrix(np, np, mxREAL);
-	  /* cov. matrix is symmetric, no need to transpose */
-	  memcpy(mxGetPr(plhs[2]), covar->data, np*np*sizeof(double));
-	}
+          prmStd[i] = sqrt(iRSS*gsl_matrix_get(covar, i, i));
+      if (nlhs > 2) {
+          plhs[2] = mxCreateDoubleMatrix(np, np, mxREAL);
+          /* cov. matrix is symmetric, no need to transpose */
+          memcpy(mxGetPr(plhs[2]), covar->data, np*np*sizeof(double));
+      }
       gsl_matrix_free(covar);
-    }
-    
+  }
+  
   /* residuals */
-  /* comment by US 
-  if (nlhs > 3)
-    {
-      plhs[3] = mxCreateDoubleMatrix(ny, nx, mxREAL);
-      double* res = mxGetPr(plhs[3]);
-      for (i=0; i<data.nValid; ++i)
-	res[data.idx[i]] = gsl_vector_get(data.residuals,i);
-      for (i=0; i<N-data.nValid; ++i)
-	res[nanIdx[i]] = mxGetNaN();
-    }
-    */
-
   if(nlhs > 3){
-    const char *fieldnames[]={"data","pval","mean","std","RSS"};
-    mwSize dims[2]={1,1};
-    plhs[3]=mxCreateStructArray(2,dims,5,fieldnames);
-    mxArray *val=mxCreateDoubleMatrix(nx,ny,mxREAL);
-    double *res=mxGetPr(val);
-
-    double mean=0.0, std=0.0, tmp, RSS=0.0;
-    for(i=0;i<data.nValid;++i){
-      tmp=gsl_vector_get(data.residuals,i);
-      res[data.idx[i]]=tmp;
-      mean+=tmp;
-      RSS+=tmp*tmp;
-    }
-    std=sqrt((RSS-mean*mean/data.nValid)/(data.nValid-1));
-    mean/=data.nValid;
-
-    for(i=0;i<N-data.nValid;++i)
-      res[nanIdx[i]]=mxGetNaN();
-
-    double pval=ksone(res,data.nValid,mean,std);
-
-    mxSetFieldByNumber(plhs[3],0,0,val);
-    mxSetFieldByNumber(plhs[3],0,1,mxCreateDoubleScalar(pval));
-    mxSetFieldByNumber(plhs[3],0,2,mxCreateDoubleScalar(mean));
-    mxSetFieldByNumber(plhs[3],0,3,mxCreateDoubleScalar(std));
-    mxSetFieldByNumber(plhs[3],0,4,mxCreateDoubleScalar(RSS));
+      const char *fieldnames[]={"data", "pval", "mean", "std", "RSS"};
+      mwSize dims[2]={1, 1};
+      plhs[3]=mxCreateStructArray(2, dims, 5, fieldnames);
+      mxArray *val=mxCreateDoubleMatrix(nx, ny, mxREAL);
+      double *res=mxGetPr(val);
+      
+      double mean=0.0, std=0.0;
+      for(i=0;i<data.nValid;++i){
+          res[data.idx[i]]=resValid[i];
+          mean+=resValid[i];
+      }
+      std=sqrt((RSS-mean*mean/data.nValid)/(data.nValid-1));
+      mean/=data.nValid;
+      
+      for(i=0;i<N-data.nValid;++i) {
+          res[nanIdx[i]]=mxGetNaN();
+      }
+      
+      double pval=ksone(resValid, data.nValid, mean, std);
+      mxSetFieldByNumber(plhs[3], 0, 0, val);
+      mxSetFieldByNumber(plhs[3], 0, 1, mxCreateDoubleScalar(pval));
+      mxSetFieldByNumber(plhs[3], 0, 2, mxCreateDoubleScalar(mean));
+      mxSetFieldByNumber(plhs[3], 0, 3, mxCreateDoubleScalar(std));
+      mxSetFieldByNumber(plhs[3], 0, 4, mxCreateDoubleScalar(RSS));
   }
     
   /* Jacobian */
@@ -584,6 +572,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   free(data.dfunc);
   free(data.estIdx);
   free(mode);
+  free(resValid);
 }
 
 /* Compile line for MAX OSX: */
