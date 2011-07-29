@@ -508,19 +508,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         memcpy(mxGetPr(plhs[0]), data.prmVect, np*sizeof(double));
     }
     
+    // standard dev. of parameters & covariance matrix
     double RSS = 0.0;
-    double* resValid;
+    double* resValid = NULL;
     if (nlhs > 1) {
         resValid = malloc(data.nValid*sizeof(double));
         for (i=0; i<data.nValid; ++i) {
             resValid[i] = gsl_vector_get(data.residuals, i);
             RSS += resValid[i]*resValid[i];
         }
-    }
-    
-    // standard dev. of parameters & covariance matrix
-    if (nlhs > 1) {
-        
         gsl_matrix *covar = gsl_matrix_alloc(np, np);
         gsl_multifit_covar(data.J, 0.0, covar);
         double iRSS = RSS/(data.nValid - data.np - 1);
@@ -535,7 +531,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
             memcpy(mxGetPr(plhs[2]), covar->data, np*np*sizeof(double));
         }
         gsl_matrix_free(covar);
-        
     }
     
     // residuals
@@ -546,7 +541,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mxArray *val = mxCreateDoubleMatrix(nx, nx, mxREAL);
         double* res = mxGetPr(val);
         
-        double mean = 0.0, std = 0.0, tmp;
+        double mean = 0.0, std = 0.0;
         for (i=0; i<data.nValid; ++i) {
             res[data.idx[i]] = resValid[i];
             mean += resValid[i];
