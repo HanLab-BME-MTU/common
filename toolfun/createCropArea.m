@@ -9,7 +9,7 @@ function [area]=createCropArea(show_Image_path)
 %
 % INPUT: 
 % show_Image_path   Full path to the image in which you want to define the
-%                   crop area
+%                   crop area, or a matrix representing the image.
 %
 % OUTPUT:
 % area              ROI that is in the format understood by the function
@@ -18,7 +18,12 @@ function [area]=createCropArea(show_Image_path)
 % This function is based on code from cropStack. Achim Besser, 2010.
 
 % Read first image
-imgOne=double(imread(show_Image_path));
+if ischar(show_Image_path)
+    imgOne=double(imread(show_Image_path));
+else
+    imgOne=show_Image_path;
+end
+    
 
 h=figure;
 set(h,'NumberTitle','off');
