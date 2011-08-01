@@ -158,13 +158,12 @@ classdef Process < hgsetget
             ip.addRequired('obj',@(x) isa(x,'Process'));
             ip.addRequired('iChan',@isnumeric);
             ip.addRequired('iFrame',@isnumeric);
-            ip.addParamValue('output',outputList(1).var,@(x)ischar(x) && ...
-            	ismember(x,{outputList.var}));
+            ip.addParamValue('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
             ip.KeepUnmatched = true;
             ip.parse(obj,iChan,iFrame,varargin{:})
 			
             data=obj.loadChannelOutput(iChan,iFrame,'output',ip.Results.output);
-            iOutput= find(strcmp(ip.Results.output,{outputList.var}));
+            iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
             if ~isempty(outputList(iOutput).formatData),
                 data=outputList(iOutput).formatData(data);
             end
