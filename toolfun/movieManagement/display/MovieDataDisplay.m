@@ -24,7 +24,7 @@ classdef MovieDataDisplay < handle
             
             % Get the component handle and call the adapted draw function
             h = findobj(hAxes,'-regexp','Tag',tag);
-            if ~isempty(h) && ishandle(h)
+            if ~isempty(h) & ishandle(h)
                 obj.updateDraw(h,data);
             else
                 h=obj.initDraw(data,tag,'Parent',hAxes);

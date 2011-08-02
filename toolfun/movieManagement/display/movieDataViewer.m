@@ -25,6 +25,9 @@ imageProcId = validProcId(isImageProc);
 isOverlayProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'overlay')),validProc);
 overlayProc=validProc(isOverlayProc);
 overlayProcId = validProcId(isOverlayProc);
+isMovieOverlayProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'movieOverlay')),validProc);
+movieOverlayProc=validProc(isMovieOverlayProc);
+movieOverlayProcId = validProcId(isMovieOverlayProc);
 
 % Create series of anonymous function to generate process controls
 createProcText= @(panel,i,j,pos,name) uicontrol(panel,'Style','text',...
@@ -40,6 +43,9 @@ createChannelBox= @(panel,i,j,k,pos) uicontrol(panel,'Style','checkbox',...
     'Position',[200+30*k pos 20 20],'Tag',['checkbox_process' num2str(i) '_output'...
     num2str(j) '_channel' num2str(k)],...
     'Callback',@(h,event) redrawOverlay(h,guidata(h)));
+createMovieOverlayBox= @(panel,i,j,pos,name) uicontrol(panel,'Style','checkbox',...
+    'Position',[40 pos 200 20],'Tag',['checkbox_process' num2str(i) '_output'...
+    num2str(j)],'String',[' ' name],'Callback',@(h,event) redrawOverlay(h,guidata(h)));
 
 %% Create image panel
 imagePanel = uibuttongroup(mainFig,'Position',[0 0 1/2 1],...
@@ -195,6 +201,17 @@ uicontrol(overlayPanel,'Style','text',...
     'String','Vector field options','HorizontalAlignment','left','FontWeight','bold');
 hPosition2=hPosition2+50;
 
+nProc = numel(movieOverlayProc);
+for iProc=nProc:-1:1;
+    output=movieOverlayProc{iProc}.getDrawableOutput;
+    validOutput = find(strcmp({output.type},'movieOverlay'));
+    for iOutput=validOutput(end:-1:1)
+        createMovieOverlayBox(overlayPanel,movieOverlayProcId(iProc),iOutput,hPosition2,output(iOutput).name);
+        hPosition2=hPosition2+20;
+    end
+    createProcText(overlayPanel,movieOverlayProcId(iProc),iOutput,hPosition2,movieOverlayProc{iProc}.getName);
+    hPosition2=hPosition2+20;
+end
 
 nProc = numel(overlayProc);
 for iProc=nProc:-1:1;
@@ -280,7 +297,7 @@ set(mainFig,'Position',[sz(3)/50 (sz(4)-figHeight)/2 figWidth figHeight]);
 if ismember(ip.Results.procId,validProcId)
     for i=ip.Results.procId
         h=findobj(mainFig,'-regexp','Tag',['(\w)_process' ...
-            num2str(i)  '_output1_channel(\d+)']);
+            num2str(i)  '_output1*']);
         set(h,'Value',1);
     end
 end
@@ -522,18 +539,29 @@ else
     redrawScene(hObject, handles); return;
 end
  % Retrieve the id, process nr and channel nr of the selected imageProc
-tokens = regexp(overlayTag,'checkbox_process(\d+)_output(\d+)_channel(\d+)','tokens');
+tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)','tokens');
 procId=str2double(tokens{1}{1});
 outputList = userData.MD.processes_{procId}.getDrawableOutput;
 iOutput = str2double(tokens{1}{2});
 output = outputList(iOutput).var;
-iChan = str2double(tokens{1}{3});
+
+tokens = regexp(overlayTag,'_channel(\d+)$','tokens');
+if ~isempty(tokens)
+    iChan = str2double(tokens{1}{1});
+    inputArgs={iChan,frameNr};
+    graphicTag =[userData.MD.processes_{procId}.getName '_channel'...
+        num2str(iChan) '_output' num2str(iOutput)];
+else
+    inputArgs={frameNr};
+    graphicTag = [userData.MD.processes_{procId}.getName '_output' num2str(iOutput)];
+    
+end
+
 if get(hObject,'Value')
-    userData.MD.processes_{procId}.draw(iChan,frameNr,'output',output,...
+    userData.MD.processes_{procId}.draw(inputArgs{:},'output',output,...
         'scale',str2double(get(handles.edit_vectorFieldScale,'String')));
 else
-    h=findobj('Tag',[userData.MD.processes_{procId}.getName '_channel'...
-        num2str(iChan) '_output' num2str(iOutput)]);
+    h=findobj('Tag',graphicTag);
     if ~isempty(h), delete(h); end
 end
 
