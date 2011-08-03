@@ -1,10 +1,11 @@
 classdef CircleDisplay < MovieDataDisplay
-    %Concreate display class for displaying points or lines
+    %Concrete display class for displaying errors as circles
+    % Adapated from fsmVectorAnalysis
     properties
         Color='r';        
     end
     methods
-        function obj=LineDisplay(varargin)
+        function obj=CircleDisplay(varargin)
             nVarargin = numel(varargin);
             if nVarargin > 1 && mod(nVarargin,2)==0
                 for i=1 : 2 : nVarargin-1
@@ -13,48 +14,35 @@ classdef CircleDisplay < MovieDataDisplay
             end
         end
         function h=initDraw(obj,data,tag,varargin)
-            % Calculate sin and cos vectors to display circles
-            ang=0:pi/4:2*pi;
-            sn_small=sin(ang);
-            cs_small=cos(ang);
-            ang=0:pi/10:2*pi;
-            sn_med=sin(ang);
-            cs_med=cos(ang);
-            ang=0:pi/100:2*pi;
-            sn_large=sin(ang);
-            cs_large=cos(ang);
-            
-            smallInd = data(:,3)<=2;
-            largeInd = data(:,3)>10;
-            medInd=~smallInd&&~largeInd;
-            h(1)=plot(data(smallInd,2)+data(smallInd,3)*sn_small,...
-                data(smallInd,1)+data(smallInd,3)*cs_small,'.');
-            h(2)=plot(data(medInd,2)+data(medInd,3)*sn_med,...
-                data(medInd,1)+data(medInd,3)*cs_med,'r.');
-            h(3)=plot(data(largeInd,2)+data(largeInd,3)*sn_large,...
-                data(largeInd,1)+data(largeInd,3)*cs_large,'.');
-            set(h,'Tag',tag,'Color',obj.Color);
+            % Convert data into circles
+            [x,y] = genCircles(data);       
+       
+            % Plot circles and set tag
+            h=plot(x', y','.','Color',obj.Color);
+            set(h,'Tag',tag);
         end
         function updateDraw(obj,h,data)
-            ang=0:pi/4:2*pi;
-            sn_small=sin(ang);
-            cs_small=cos(ang);
-            ang=0:pi/10:2*pi;
-            sn_med=sin(ang);
-            cs_med=cos(ang);
-            ang=0:pi/100:2*pi;
-            sn_large=sin(ang);
-            cs_large=cos(ang);
+            % Retrieve the tag
+            tag=get(h(1),'Tag');
             
-            smallInd = data(:,3)<=2;
-            largeInd = data(:,3)>10;
-            medInd=~smallInd&&~largeInd;        
-            set(h(1),'XData',data(smallInd,2)+data(smallInd,3)*sn_small,...
-                'YData',data(smallInd,1)+data(smallInd,3)*cs_small);
-            set(h(2),'XData',data(medInd,2)+data(medInd,3)*sn_med,...
-                'YData',data(medInd,1)+data(medInd,3)*cs_med);
-            set(h(3),'XData',data(largeInd,2)+data(largeInd,3)*sn_large,...
-                'YData',data(largeInd,1)+data(largeInd,3)*cs_large);
+            % Convert data into circles
+            [x,y] = genCircles(data);            
+            
+            % Delete extra plots handles
+            delete(h(size(x,1)+1:end));
+            h(size(x,1)+1:end)=[];
+            
+            % Update existing handles
+            for i=1:min(numel(h),size(x,1))
+                set(h(i),'Xdata',x(i,:),'YData',y(i,:));
+            end
+            
+            % Plot additional circles
+            addIndx= min(numel(h),size(x,1))+1:size(x,1);
+            h(addIndx)=plot(x(addIndx,:)', y(addIndx,:)','.','Color',obj.Color);
+            
+            % Set tag
+            set(h,'Tag',tag);
         end
         function additionalInputParsing(obj,ip)
             ip.addParamValue('Color',obj.Color,@ischar);
@@ -66,7 +54,17 @@ classdef CircleDisplay < MovieDataDisplay
     
     methods (Static)
         function f=dataCheck()
-            f=@isnumeric;
+            f=@(x)isnumeric(x) & size(x,2)>=3 ;
         end
     end    
+end
+
+function [x,y] = genCircles(data)
+ang=0:pi/100:2*pi;
+sn=sin(ang);
+cs=cos(ang);
+
+x=repmat(data(:,2),1,size(sn,2))+data(:,3)*sn;
+y=repmat(data(:,1),1,size(cs,2))+data(:,3)*cs;
+
 end
