@@ -297,7 +297,7 @@ set(mainFig,'Position',[sz(3)/50 (sz(4)-figHeight)/2 figWidth figHeight]);
 if ismember(ip.Results.procId,validProcId)
     for i=ip.Results.procId
         h=findobj(mainFig,'-regexp','Tag',['(\w)_process' ...
-            num2str(i)  '_output1*']);
+            num2str(i)  '_output1.*']);
         set(h,'Value',1);
     end
 end
