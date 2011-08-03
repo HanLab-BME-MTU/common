@@ -1,3 +1,12 @@
+/* [pts, values] = gradientDescent(F,X,Y);
+ *
+ * Sylvain Berlemont, 2010 (last modified Aug 3, 2011)
+ *
+ * Compilation:
+ * Mac/Linux: mex -I.  -I../../mex/include/c++ -I../../../extern/mex/include/ gradientDescent.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"." -I"..\..\mex\include\c++" -I"..\..\..\extern\mex\include\" -output gradientDescent gradientDescent.cpp
+ */
+
 #include <mex.h>
 
 #include <vector>
@@ -5,7 +14,6 @@
 #include <image.hpp>
 #include <mx_wrapper.hpp>
 
-// Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"." -I"..\..\mex\include\c++" -I"..\..\..\extern\mex\include\" -output gradientDescent gradientDescent.cpp
 
 static void gradientDescent(const image<2,double> & f,
 			    const vector<2,double>& start,
