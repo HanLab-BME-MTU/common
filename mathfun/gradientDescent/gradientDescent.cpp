@@ -5,6 +5,8 @@
 #include <image.hpp>
 #include <mx_wrapper.hpp>
 
+// Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"." -I"..\..\mex\include\c++" -I"..\..\..\extern\mex\include\" -output gradientDescent gradientDescent.cpp
+
 static void gradientDescent(const image<2,double> & f,
 			    const vector<2,double>& start,
 			    std::vector< vector<2, double> > & pts,
