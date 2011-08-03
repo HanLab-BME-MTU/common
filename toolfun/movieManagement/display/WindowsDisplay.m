@@ -6,7 +6,7 @@ classdef WindowsDisplay < MovieDataDisplay
         showNum=5;
     end
     methods
-        function obj=VectorFieldDisplay(varargin)
+        function obj=WindowsDisplay(varargin)
             nVarargin = numel(varargin);
             if nVarargin > 1 && mod(nVarargin,2)==0
                 for i=1 : 2 : nVarargin-1
@@ -16,45 +16,19 @@ classdef WindowsDisplay < MovieDataDisplay
         end
         function h=initDraw(obj,data,tag,varargin)
             
-            W=cellfun(@(x) cellfun(@(y) [y{:}],x,'Unif',false),...
-                data,'Unif',false);
-            W=horzcat(W{:});
+            [W,j,k] = prepareData(data);
             
-            j=arrayfun(@(x) repmat(x,1,numel(data{x})),1:numel(data),'Unif',false);
-            j=horzcat(j{:});
-            k=cellfun(@(x) 1:numel(x),data,'Unif',false);
-            k=horzcat(k{:});
+            % Plot the windows as patches
+            hw=cellfun(@(w)patch(w(1,:),w(2,:),obj.Color,...
+                'FaceAlpha',obj.FaceAlpha),W);
             
-            h=zeros(1,numel(W));
-            for i=1:numel(W)
-                h(i) = patch(W{i}(1,:),W{i}(2,:),obj.Color,...
-                                'FaceAlpha',obj.FaceAlpha);
-            end
-            
-            index = find(mod(j,obj.showNum)==0 & mod(k,obj.showNum)==0);
-            for i=index
-                text(W{i}(1,1),W{i}(2,1),[num2str(j(i)) ',' num2str(k(i))]);
-            end
-%             for j = 1:numel(data)
-%                 for k = 1:numel(data{j})
-%                     if ~isempty(data{j}{k})
-%                         currWin = [data{j}{k}{:}];
-%                         if ~isempty(currWin)
-%                             
-%                             h(j,k)=patch(currWin(1,:),currWin(2,:),obj.Color,...
-%                                 'FaceAlpha',obj.FaceAlpha);
-%                             
-% %                             if showNum && mod(j,showNum)==0 && mod(k,showNum) == 0
-% %                                 text(currWin(1,1),currWin(2,1),[num2str(j) ',' num2str(k)])
-% %                             end
-%                         end
-%                     end
-%                 end
-%             end
-%             h=quiver(data(:, 2),data(:, 1),obj.scale*(data(:, 4)-data(:, 2)),...
-%                 obj.scale*(data(:, 3)-data(:, 1)),0,'-','Autoscale',autoscale,...
-%                 'Color',obj.Color,varargin{:});
-            set(nonzeros(h),'Tag',tag);
+            % Find indices of thes windows numbers to plot
+            textInd = find(mod(j,obj.showNum)==0 & mod(k,obj.showNum)==0);            
+            ht = arrayfun(@(i)text(W{i}(1,1),W{i}(2,1),...
+                [num2str(j(i)) ',' num2str(k(i))]),textInd);
+
+            h=nonzeros([hw ht]);
+            set(h,'Tag',tag); 
         end
         function setProperties(obj,ip)
             obj.Color=ip.Results.Color;
@@ -63,24 +37,45 @@ classdef WindowsDisplay < MovieDataDisplay
         function updateDraw(obj,h,data)
             tag=get(h(1),'Tag');
             
-            % Concatenate windows
-            W=cellfun(@(x) cellfun(@(y) [y{:}],x,'Unif',false),...
-                data,'Unif',false);
-            W=horzcat(W{:});
+            [W,j,k] = prepareData(data);
             
-            % Delete additional
-            delete(h(numel(W)+1:end));
-            h(numel(W)+1:end)=[];
+            hw=h(strcmp(get(h,'Type'),'patch'));
+            ht=h(strcmp(get(h,'Type'),'text'));
             
-            for i=1:min(numel(h),numel(W))
-                set(h(i),'Xdata',W{i}(1,:),'YData',W{i}(2,:));
+            % Delete extra windows
+            delete(hw(numel(W)+1:end));
+            hw(numel(W)+1:end)=[];
+            
+            % Update existing windows
+            for i=1:min(numel(hw),numel(W))
+                set(hw(i),'Xdata',W{i}(1,:),'YData',W{i}(2,:));
             end
             
-            for i=min(numel(h),numel(W))+1:numel(W)
-                h(i) = patch(W{i}(1,:),W{i}(2,:),obj.Color,...
-                               'FaceAlpha',obj.FaceAlpha);
+            % Plot additional windows
+            addWindows= min(numel(hw),numel(W))+1:numel(W);
+            hw(addWindows)=cellfun(@(w)patch(w(1,:),w(2,:),obj.Color,...
+                'FaceAlpha',obj.FaceAlpha),W(addWindows));
+            
+            %Retrieve text index
+            textInd = find(mod(j,obj.showNum)==0 & mod(k,obj.showNum)==0);
+            % Delete extra text objects
+            delete(ht(numel(textInd)+1:end));
+            ht(numel(textInd)+1:end)=[];
+             
+            % Update existing text objects
+            for i=1:min(numel(ht),numel(textInd))
+                wInd=textInd(i);
+                set(ht(i),'Position',[W{wInd}(1,1) W{wInd}(2,1) 0],...
+                    'String',[num2str(j(wInd)) ',' num2str(k(wInd))]);
             end
-            set(nonzeros(h),'Tag',tag);
+            
+            % Plot additional text objects
+            addText= min(numel(ht),numel(textInd))+1:numel(textInd);
+            ht(addText) = arrayfun(@(i)text(W{i}(1,1),W{i}(2,1),...
+                [num2str(j(i)) ',' num2str(k(i))]),textInd(addText));
+            
+            h=nonzeros([hw(:); ht(:)]);
+            set(h,'Tag',tag); 
 
         end
         function additionalInputParsing(obj,ip)
@@ -95,4 +90,17 @@ classdef WindowsDisplay < MovieDataDisplay
             f=@iscell;
         end
     end    
+end
+
+function [W,j,k] = prepareData(data)
+% Concatenate the windows
+W=cellfun(@(x) cellfun(@(y) [y{:}],x,'Unif',false),...
+    data,'Unif',false);
+W=horzcat(W{:});
+
+% Create corresponding indices for labeling
+j=arrayfun(@(x) repmat(x,1,numel(data{x})),1:numel(data),'Unif',false);
+j=horzcat(j{:});
+k=cellfun(@(x) 1:numel(x),data,'Unif',false);
+k=horzcat(k{:});
 end
