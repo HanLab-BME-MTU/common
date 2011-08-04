@@ -142,6 +142,8 @@ end
 %Fit interpolating spline to boundary.
 OBJ_BOUND = spline(linspace(0,1,nPts),xy');
 
+OBJ_BOUND.ptsPerBS = 10;
+
 %If the image size wasn't input, make sure the range includes the whole
 %cell
 if isempty(imgSize)
@@ -181,8 +183,8 @@ else
     nT = size(p,2);
     %The PDE toolbox returns the x and y values in a single column vector
     %sequentially.
-    varargout{1} = tri2grid(p,t,u(1:nT),1:imgSize(1),1:imgSize(2));
-    varargout{2} = tri2grid(p,t,u(nT+1:end),1:imgSize(1),1:imgSize(2));
+    varargout{1} = tri2grid(p,t,u(1:nT),1:imgSize(2),1:imgSize(1));
+    varargout{2} = tri2grid(p,t,u(nT+1:end),1:imgSize(2),1:imgSize(1));
 end
 
 
