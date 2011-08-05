@@ -2,7 +2,8 @@ classdef VectorFieldDisplay < MovieDataDisplay
     %Conrete class for displaying flow
     properties
         Color='k';  
-        scale=1;
+        vectorScale=1;
+        vectorCMap=[];
     end
     methods
         function obj=VectorFieldDisplay(varargin)
@@ -14,24 +15,56 @@ classdef VectorFieldDisplay < MovieDataDisplay
             end
         end
         function h=initDraw(obj,data,tag,varargin)
-            if isempty(obj.scale),autoscale='on'; else autoscale='off'; end
-            h=quiver(data(:, 2),data(:, 1),obj.scale*(data(:, 4)-data(:, 2)),...
-                obj.scale*(data(:, 3)-data(:, 1)),0,'-','Autoscale',autoscale,...
-                'Color',obj.Color,varargin{:});
+            if isempty(obj.vectorScale),autoscale='on'; else autoscale='off'; end
+  
+            if ~isempty(obj.vectorCMap) 
+                nColors = size(obj.vectorCMap,1);
+                intensity = sqrt((data(:, 4)-data(:, 2)).^2+(data(:, 3)-data(:, 1)).^2);
+                maxIntensity=max(intensity(:));
+                vColor = floor(intensity/maxIntensity*(nColors-1)+0.5)+1;
+ 
+                h=arrayfun(@(x) quiver(data(vColor==x, 2),data(vColor==x, 1),...
+                    obj.vectorScale*(data(vColor==x, 4)-data(vColor==x, 2)),...
+                    obj.vectorScale*(data(vColor==x, 3)-data(vColor==x, 1)),0,...
+                    '-','Autoscale',autoscale,...
+                    'Color',obj.vectorCMap(x,:),varargin{:}), 1:nColors);   
+            else
+                
+                h=quiver(data(:, 2),data(:, 1),obj.vectorScale*(data(:, 4)-data(:, 2)),...
+                    obj.vectorScale*(data(:, 3)-data(:, 1)),0,'-','Autoscale',autoscale,...
+                    'Color',obj.Color,varargin{:});
+         
+            end
+               
             set(h,'Tag',tag);
         end
         function setProperties(obj,ip)
             obj.Color=ip.Results.Color;
-            obj.scale=ip.Results.scale;
+            obj.vectorScale=ip.Results.vectorScale;
         end
         function updateDraw(obj,h,data)
-            set(h,'XData',data(:,2),'YData',data(:,1),...
-                'UData',obj.scale*(data(:, 4)-data(:, 2)),...
-                'VData',obj.scale*(data(:, 3)-data(:, 1)))
+            if ~isempty(obj.vectorCMap)
+                nColors = size(obj.Color,1);
+                intensity = sqrt((data(:, 4)-data(:, 2)).^2+(data(:, 3)-data(:, 1)).^2);
+                maxIntensity=max(intensity(:));
+                vColor = floor(intensity/maxIntensity*(nColors-1)+0.5)+1;
+ 
+                arrayfun(@(x) set(h(x),'XData',data(vColor==x, 2),...
+                    'YData',data(vColor==x, 1),...
+                    'UData',obj.vectorScale*(data(vColor==x, 4)-data(vColor==x, 2)),...
+                    'VData',obj.vectorScale*(data(vColor==x, 3)-data(vColor==x, 1)),...
+                    'Color',obj.vectorCMap(x,:)),1:nColors);
+            else
+                set(h,'XData',data(:,2),'YData',data(:,1),...
+                    'UData',obj.vectorScale*(data(:, 4)-data(:, 2)),...
+                    'VData',obj.vectorScale*(data(:, 3)-data(:, 1)))
+             end
+            
+            
         end
         function additionalInputParsing(obj,ip)
             ip.addParamValue('Color',obj.Color,@(x)ischar(x) ||isvector(x));
-            ip.addParamValue('scale',obj.scale,@isscalar);
+            ip.addParamValue('vectorScale',obj.vectorScale,@isscalar);      
         end 
     end    
     

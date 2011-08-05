@@ -559,7 +559,7 @@ end
 
 if get(hObject,'Value')
     userData.MD.processes_{procId}.draw(inputArgs{:},'output',output,...
-        'scale',str2double(get(handles.edit_vectorFieldScale,'String')));
+        'vectorScale',str2double(get(handles.edit_vectorFieldScale,'String')));
 else
     h=findobj('Tag',graphicTag);
     if ~isempty(h), delete(h); end

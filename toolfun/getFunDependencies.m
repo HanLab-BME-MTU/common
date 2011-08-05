@@ -24,7 +24,8 @@ function [depList toolboxes] = getFunDependencies(funList)
 %
 %   toolBoxes - A cell array of character strings containing the name of
 %   the matlab toolboxes which the depList depends on.
-%
+
+% Hunter Elliott,  June 2010
 % Sebastien Besson, July 2011
 % Based on depfun_notoolbox.m and toolboxesUsed.m
 
