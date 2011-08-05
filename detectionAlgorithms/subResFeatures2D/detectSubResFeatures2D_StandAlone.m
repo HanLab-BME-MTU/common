@@ -14,6 +14,9 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %       detectionParam: Structure with fields
 %           .psfSigma     : Initial guess for standard deviation of point
 %                           spread function (in pixels).
+%           .calcMethod   : 'g' for Gaussian fitting, 'c' for centroid
+%                           calculation.
+%                           Optional. Default: 'g'.
 %           .testAlpha    : Alpha-values for statistical tests in
 %                           detectSubResFeatures2D.
 %                           (See detectSubResFeatures2D for details).
@@ -90,7 +93,7 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %                       structure array of length = number of local maxima
 %                       in each frame, containing the fields:
 %             .IBkg       : Mean background intensity around local maximum.
-%             .Lmax       : Position of local maximum.
+%             .Lmax       : Position of local maximum (in matrix coordinates).
 %             .amp        : Amplitude of local maximum.
 %             .pValue     : P-value of local maximum in statistical test
 %                           determining its significance.
@@ -143,6 +146,13 @@ digits4Enum = movieParam.digits4Enum;
 
 %get initial guess of PSF sigma
 psfSigma = detectionParam.psfSigma;
+
+%get position calculation method
+if ~isfield(detectionParam,'calcMethod')
+    calcMethod = 'g';
+else
+    calcMethod = detectionParam.calcMethod;
+end
 
 %get statistical test alpha values
 if ~isfield(detectionParam,'testAlpha') || isempty(detectionParam.testAlpha)
@@ -694,15 +704,15 @@ if numSigmaIter
                         parameters(iFeat,:) = GaussFitND(imageCropped,[],...
                             fitParameters,initGuess);
                         
-%                         %just to test whether GaussFitND works either way
-%                         %the answer is yes
-%                         [imSizeY,imSizeX] = size(imageCropped);
-%                         coord4fitX = repmat((1:imSizeX)',imSizeY,1);
-%                         coord4fitY = repmat((1:imSizeY),imSizeX,1);
-%                         coord4fitY = coord4fitY(:);
-%                         parameters2(iFeat,:) = GaussFitND(imageCropped(:),[coord4fitX coord4fitY],...
-%                             fitParameters,initGuess);
-                    
+                        %                         %just to test whether GaussFitND works either way
+                        %                         %the answer is yes
+                        %                         [imSizeY,imSizeX] = size(imageCropped);
+                        %                         coord4fitX = repmat((1:imSizeX)',imSizeY,1);
+                        %                         coord4fitY = repmat((1:imSizeY),imSizeX,1);
+                        %                         coord4fitY = coord4fitY(:);
+                        %                         parameters2(iFeat,:) = GaussFitND(imageCropped(:),[coord4fitX coord4fitY],...
+                        %                             fitParameters,initGuess);
+                        
                     else %otherwise assign NaN
                         
                         parameters(iFeat,:) = NaN;
@@ -770,7 +780,11 @@ clear movieInfo
 movieInfo = repmat(struct('xCoord',[],'yCoord',[],'amp',[]),numImagesRaw,1);
 
 %initialize progress display
-progressText(0,'Mixture-model fitting');
+if strcmp(calcMethod,'g')
+    progressText(0,'Mixture-model fitting');
+else
+    progressText(0,'Centroid calculation');
+end
 
 %go over all non-empty images ...
 for iImage = goodImages
@@ -782,8 +796,14 @@ for iImage = goodImages
     try %try to detect features in this frame
         
         %fit with mixture-models
-        featuresInfo = detectSubResFeatures2D(imageRaw,...
-            localMaxima(iImage).cands,psfSigma,testAlpha,visual,doMMF,1,0,mean(bgStdRaw(:)));
+        if strcmp(calcMethod,'g')
+            featuresInfo = detectSubResFeatures2D(imageRaw,...
+                localMaxima(iImage).cands,psfSigma,testAlpha,visual,...
+                doMMF,1,0,mean(bgStdRaw(:)));
+        else
+            featuresInfo = centroidSubResFeatures2D(imageRaw,...
+                localMaxima(iImage).cands,psfSigma,visual,1,0);
+        end
         
         %save results
         movieInfo(iImage) = featuresInfo;
@@ -805,7 +825,11 @@ for iImage = goodImages
     end
     
     %display progress
-    progressText(iImage/numImagesRaw,'Mixture-model fitting');
+    if strcmp(calcMethod,'g')
+        progressText(iImage/numImagesRaw,'Mixture-model fitting');
+    else
+        progressText(iImage/numImagesRaw,'Centroid calculation');
+    end
     
 end
 
