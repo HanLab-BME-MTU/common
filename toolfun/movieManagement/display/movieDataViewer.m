@@ -15,7 +15,7 @@ mainFig=figure('Name','Movie Viewer','Position',[0 0 200 200],...
 userData=get(mainFig,'UserData');
 userData.MD=ip.Results.MD;
 
-% Classify processes by type (image or overlay)
+% Classify movieData processes by type (image or overlay)
 validProcId= find(cellfun(@(x) ismember('getDrawableOutput',methods(x)) &...
     x.success_,userData.MD.processes_));
 validProc=userData.MD.processes_(validProcId);
@@ -47,12 +47,13 @@ createMovieOverlayBox= @(panel,i,j,pos,name) uicontrol(panel,'Style','checkbox',
     'Position',[40 pos 200 20],'Tag',['checkbox_process' num2str(i) '_output'...
     num2str(j)],'String',[' ' name],'Callback',@(h,event) redrawOverlay(h,guidata(h)));
 
-%% Create image panel
+%% Image panel creation
 imagePanel = uibuttongroup(mainFig,'Position',[0 0 1/2 1],...
     'Title','Image','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
     'Units','pixels','Tag','uipanel_image');
 
-% Create image option controls
+% First create image option (timestamp, scalebar, image scaling)
+% Timestamp
 hPosition1=10;
 if isempty(userData.MD.timeInterval_),
     timeStampStatus = 'off';
@@ -62,14 +63,13 @@ end
 uicontrol(imagePanel,'Style','checkbox',...
     'Position',[10 hPosition1 200 20],'Tag','checkbox_timeStamp',...
     'String',' Time stamp','HorizontalAlignment','left','FontWeight','bold',...
-    'Enable',timeStampStatus,...
-    'Callback',@(h,event) setTimeStamp(guidata(h)));
+    'Enable',timeStampStatus,'Callback',@(h,event) setTimeStamp(guidata(h)));
 uicontrol(imagePanel,'Style','popupmenu','Position',[150 hPosition1 120 20],...
     'String',{'NorthEast', 'SouthEast', 'SouthWest', 'NorthWest'},'Value',4,...
-    'Tag','popupmenu_timeStampLocation',...
-    'Enable',timeStampStatus,...
+    'Tag','popupmenu_timeStampLocation','Enable',timeStampStatus,...
     'Callback',@(h,event) setTimeStamp(guidata(h)));
 
+% Scalebar
 hPosition1=hPosition1+30;
 if isempty(userData.MD.pixelSize_),
     scaleBarStatus = 'off';
@@ -82,7 +82,6 @@ uicontrol(imagePanel,'Style','edit','Position',[40 hPosition1 50 20],...
     'Callback',@(h,event) setScaleBar(guidata(h),'imageScaleBar'));
 uicontrol(imagePanel,'Style','text','Position',[100 hPosition1-2 70 20],...
     'String','microns','HorizontalAlignment','left');
-
 uicontrol(imagePanel,'Style','checkbox',...
     'Position',[180 hPosition1 100 20],'Tag','checkbox_imageScaleBarLabel',...
     'String',' Show label','HorizontalAlignment','left',...
@@ -100,6 +99,7 @@ uicontrol(imagePanel,'Style','popupmenu','Position',[150 hPosition1 120 20],...
     'Tag','popupmenu_imageScaleBarLocation','Enable',scaleBarStatus,...
     'Callback',@(h,event) setScaleBar(guidata(h),'imageScaleBar'));
 
+% Colormap control
 hPosition1=hPosition1+30;
 uicontrol(imagePanel,'Style','text','Position',[20 hPosition1-2 50 20],...
     'String','Cmin','HorizontalAlignment','left');
@@ -111,15 +111,14 @@ uicontrol(imagePanel,'Style','text','Position',[150 hPosition1-2 50 20],...
 uicontrol(imagePanel,'Style','edit','Position',[200 hPosition1 50 20],...
     'String','','BackgroundColor','white','Tag','edit_cmax',...
     'Callback',@(h,event) setClim(guidata(h)));
-
 hPosition1=hPosition1+20;
 uicontrol(imagePanel,'Style','checkbox',...
     'Position',[10 hPosition1 200 20],'Tag','checkbox_autoscale',...
     'String','Autoscale','HorizontalAlignment','left','FontWeight','bold',...
     'Callback',@(h,event) setClim(guidata(h)));
 
+% Create controls for switching between process image output
 hPosition1=hPosition1+50;
-% Create image processes controls
 nProc = numel(imageProc);
 for iProc=nProc:-1:1;
     output=imageProc{iProc}.getDrawableOutput;
@@ -135,7 +134,7 @@ for iProc=nProc:-1:1;
     hPosition1=hPosition1+20;
 end
 
-% Create channels controls
+% Create controls for selecting channels (raw image)
 hPosition1=hPosition1+10;
 uicontrol(imagePanel,'Style','radio','Position',[10 hPosition1 200 20],...
     'Tag','radiobutton_channels','String',' Channels','Value',1,...
@@ -151,12 +150,12 @@ arrayfun(@(i) uicontrol(imagePanel,'Style','text',...
     'Tag',['text_channel' num2str(i)],'String',i),...
     1:numel(userData.MD.channels_));
 
-%% Create overlay panel
+%% OVerlay panel creation
 overlayPanel = uipanel(mainFig,'Position',[1/2 0 1/2 1],...
     'Title','Overlay','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
     'Units','pixels','Tag','uipanel_overlay');
 
-% Create image option controls
+% First create overlay option (vectorField)
 hPosition2=10;
 if isempty(userData.MD.pixelSize_) || isempty(userData.MD.timeInterval_),
     scaleBarStatus = 'off';
@@ -169,7 +168,6 @@ uicontrol(overlayPanel,'Style','edit','Position',[40 hPosition2 50 20],...
     'Callback',@(h,event) setScaleBar(guidata(h),'vectorFieldScaleBar'));
 uicontrol(overlayPanel,'Style','text','Position',[100 hPosition2-2 70 20],...
     'String','nm/min','HorizontalAlignment','left');
-
 uicontrol(overlayPanel,'Style','checkbox',...
     'Position',[180 hPosition2 100 20],'Tag','checkbox_vectorFieldScaleBarLabel',...
     'String',' Show label','HorizontalAlignment','left',...
@@ -199,8 +197,9 @@ hPosition2=hPosition2+20;
 uicontrol(overlayPanel,'Style','text',...
     'Position',[10 hPosition2 200 20],'Tag','text_vectorFieldOptions',...
     'String','Vector field options','HorizontalAlignment','left','FontWeight','bold');
-hPosition2=hPosition2+50;
 
+% Create controls for selecting movie-specific overlays
+hPosition2=hPosition2+50;
 nProc = numel(movieOverlayProc);
 for iProc=nProc:-1:1;
     output=movieOverlayProc{iProc}.getDrawableOutput;
@@ -213,6 +212,7 @@ for iProc=nProc:-1:1;
     hPosition2=hPosition2+20;
 end
 
+% Create controls for selecting channel-specific overlays
 nProc = numel(overlayProc);
 for iProc=nProc:-1:1;
     output=overlayProc{iProc}.getDrawableOutput;
@@ -232,16 +232,10 @@ arrayfun(@(i) uicontrol(overlayPanel,'Style','text',...
     'Tag',['text_channel' num2str(i)],'String',i),...
     1:numel(userData.MD.channels_));
 
-%% Resize panels
-% Get image panel size
-a=get(get(imagePanel,'Children'),'Position');
-P=vertcat(a{:});
-imagePanelSize = [max(P(:,1)+P(:,3))+20 max(P(:,2)+P(:,4))+20];
-% Get overlay panel size
-a=get(get(overlayPanel,'Children'),'Position');
-P=vertcat(a{:});
-overlayPanelSize = [max(P(:,1)+P(:,3))+20 max(P(:,2)+P(:,4))+20];
 
+%% Get image/overlay panel size and resize them
+imagePanelSize = getPanelSize(imagePanel);
+overlayPanelSize = getPanelSize(overlayPanel);
 panelsLength = imagePanelSize(1)+overlayPanelSize(1)+10;
 panelsHeight = max(imagePanelSize(2),overlayPanelSize(2));
 
@@ -253,47 +247,66 @@ set(overlayPanel,'Position',[10+imagePanelSize(1)+10 panelsHeight-overlayPanelSi
     overlayPanelSize(1) overlayPanelSize(2)])
 
 %% Create movie panel
-
-parentPanel = uipanel(mainFig,...
+moviePanel = uipanel(mainFig,...
     'Title','','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
     'Units','pixels','Tag','uipanel_movie','BorderType','none');
-set(parentPanel,'Position',[10 panelsHeight+10 panelsLength 100]);
 
-uicontrol(parentPanel,'Style','text','Position',[10 10 50 15],...
+% Create control button for exporting figures and movie (cf Francois' GUI)
+hPosition=10;
+uicontrol(moviePanel, 'Style', 'pushbutton', 'String', 'Print figures',...
+    'Tag','printButton','Position', [10 hPosition 100 20],...
+    'Callback',@(h,event) printFigure(guidata(h)));
+
+handles.movieButton = uicontrol(moviePanel, 'Style', 'pushbutton', ...
+    'String', 'Make movie',...
+    'Position', [150 hPosition 100 20],...
+    'Callback', @(h,event) makeMovie(h,guidata(h)));
+
+% Create controls for scrollling through the movie 
+hPosition = hPosition+30;
+uicontrol(moviePanel,'Style','text','Position',[10 hPosition 50 15],...
     'String','Frame','Tag','text_frame','HorizontalAlignment','left');
-uicontrol(parentPanel,'Style','edit','Position',[70 10 30 20],...
+uicontrol(moviePanel,'Style','edit','Position',[70 hPosition 30 20],...
     'String','1','Tag','edit_frame','BackgroundColor','white',...
     'HorizontalAlignment','left',...
     'Callback',@(h,event) redrawScene(h,guidata(h)));
-uicontrol(parentPanel,'Style','text','Position',[100 10 40 15],...
+uicontrol(moviePanel,'Style','text','Position',[100 hPosition 40 15],...
     'HorizontalAlignment','left',...
     'String',['/' num2str(userData.MD.nFrames_)],'Tag','text_frameMax');
 
-uicontrol(parentPanel,'Style','slider',...
-    'Position',[150 10 panelsLength-160 20],...
+uicontrol(moviePanel,'Style','slider',...
+    'Position',[150 hPosition panelsLength-160 20],...
     'Value',1,'Min',1,'Max',userData.MD.nFrames_,...
     'SliderStep',[1/double(userData.MD.nFrames_)  5/double(userData.MD.nFrames_)],...
     'Tag','slider_frame','BackgroundColor','white',...
     'Callback',@(h,event) redrawScene(h,guidata(h)));
 
-uicontrol(parentPanel,'Style','text','Position',[10 40 40 20],...
+% Create movie location edit box
+hPosition = hPosition+30;
+uicontrol(moviePanel,'Style','text','Position',[10 hPosition 40 20],...
     'String','Movie','Tag','text_movie');
-uicontrol(parentPanel,'Style','edit','Position',[60 40 panelsLength-70 20],...
+uicontrol(moviePanel,'Style','edit','Position',[60 hPosition panelsLength-70 20],...
     'String',[userData.MD.movieDataPath_ filesep userData.MD.movieDataFileName_],...
     'HorizontalAlignment','left','BackgroundColor','white','Tag','edit_movie');
 
-uicontrol(parentPanel,'Style','text','Position',[10 70 panelsLength 20],...
+% Add copyrigth
+hPosition = hPosition+30;
+uicontrol(moviePanel,'Style','text','Position',[10 hPosition panelsLength 20],...
     'String',userfcn_softwareConfig(),'Tag','text_copyright',...
     'HorizontalAlignment','left');
 
+% Get overlay panel size
+moviePanelSize = getPanelSize(moviePanel);
+moviePanelHeight =moviePanelSize(2);
+set(moviePanel,'Position',[10 panelsHeight+10 panelsLength moviePanelHeight]);
 
 %% Resize panels and figure
 sz=get(0,'ScreenSize');
 figWidth = panelsLength+20;
-figHeight = panelsHeight+110;
+figHeight = panelsHeight+moviePanelHeight;
 set(mainFig,'Position',[sz(3)/50 (sz(4)-figHeight)/2 figWidth figHeight]);
 
-% Auto select input process
+% Auto check input process
 if ismember(ip.Results.procId,validProcId)
     for i=ip.Results.procId
         h=findobj(mainFig,'-regexp','Tag',['(\w)_process' ...
@@ -302,26 +315,33 @@ if ismember(ip.Results.procId,validProcId)
     end
 end
 
-% Update handles structure
+% Update handles structure and attach it to the main figure
 handles = guihandles(mainFig);
 guidata(handles.figure1, handles);
 
+% Set the figure handle to -1 by default
 userData.drawFig=-1;
 set(handles.figure1,'UserData',userData);
 
 % Update the image and overlays
 redrawScene(handles.figure1, handles);
-% playMovie(handles.figure1,handles)
 
-function playMovie(hObject,handles)
+function size = getPanelSize(hPanel)
+
+a=get(get(hPanel,'Children'),'Position');
+P=vertcat(a{:});
+size = [max(P(:,1)+P(:,3))+20 max(P(:,2)+P(:,4))+20];
+
+
+function makeMovie(hObject,handles)
 
 userData = get(handles.figure1, 'UserData');
 nf = userData.MD.nFrames_;
-nf=10;
+
 fmt = ['%0' num2str(ceil(log10(nf))) 'd'];
-fpath = [userData.MD.movieDataPath_ filesep 'frames' filesep];
+fpath = [userData.MD.movieDataPath_ filesep 'Frames' filesep];
 mkClrDir(fpath);
-mpath = [userData.MD.movieDataPath_ filesep 'movie' filesep];
+mpath = [userData.MD.movieDataPath_ filesep 'Movie' filesep];
 mkClrDir(mpath);
 fprintf('Generating movie frames:     ');
 for f=1:nf
@@ -360,8 +380,10 @@ set(handles.slider_frame,'Value',frameNumber);
 redrawImage(handles);
 redrawOverlays(handles);
 
+
 function createFigure(handles)
 userData = get(handles.figure1,'UserData');
+
 %Create a figure
 sz=get(0,'ScreenSize');
 ratios = [sz(3)/userData.MD.imSize_(2) sz(4)/userData.MD.imSize_(1)];
@@ -371,7 +393,7 @@ userData.drawFig = figure('Position',[sz(3)*.2 sz(4)*.2 nx ny],...
     'Name','Figure','NumberTitle','off');
 
 % figure options for movie export
-% iptsetpref('ImshowBorder','tight');
+iptsetpref('ImshowBorder','tight');
 set(userData.drawFig, 'InvertHardcopy', 'off');
 set(userData.drawFig, 'PaperUnits', 'Points');
 set(userData.drawFig, 'PaperSize', [nx ny]);
@@ -383,7 +405,6 @@ set(userData.drawFig, 'PaperPosition', [0 0 nx ny]); % very important
 axes('Parent',userData.drawFig,'XLim',[0 userData.MD.imSize_(2)],...
     'YLim',[0 userData.MD.imSize_(1)],'Position',[0.05 0.05 .9 .9]);
 set(handles.figure1,'UserData',userData);
-
 
 function redrawChannel(hObject,handles)
 % Callback for channels checkboxes to avoid 0 or more than 4 channels
@@ -398,7 +419,7 @@ end
 redrawImage(handles)
 
 function setScaleBar(handles,type)
-% Remove existing scalebar of given type if any
+% Remove existing scalebar of given type
 h=findobj('Tag',type);
 if ~isempty(h), delete(h); end
 
@@ -423,9 +444,8 @@ location=props{1}{props{2}};
 hScaleBar = plotScaleBar(width,'Label',label,'Location',location);
 set(hScaleBar,'Tag',type);
 
-
 function setTimeStamp(handles)
-% Remove existing scalebar of given type if any
+% Remove existing timestamp of given type
 h=findobj('Tag','timeStamp');
 if ~isempty(h), delete(h); end
 
@@ -474,14 +494,16 @@ end
 function redrawImage(handles)
 userData=get(handles.figure1,'UserData');
 frameNr=get(handles.slider_frame,'Value');
-
 imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
 
+% Get the figure handle or create one 
 if ~ishandle(userData.drawFig), 
     createFigure(handles);
 else
     figure(userData.drawFig);
 end
+
+% Use corresponding method depending on input type
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
 if strcmp(imageTag,'radiobutton_channels')
     set(channelBoxes,'Enable','on');
@@ -519,8 +541,8 @@ overlayBoxes = findobj(handles.uipanel_overlay,'-regexp','Tag','checkbox_process
 checkedBoxes = logical(arrayfun(@(x) get(x,'Value'),overlayBoxes));
 overlayTags=arrayfun(@(x) get(x,'Tag'),overlayBoxes(checkedBoxes),...
     'UniformOutput',false);
-for i=1:numel(overlayTags)
-    redrawOverlay(handles.(overlayTags{i}),handles)
+for i=1:numel(overlayTags),
+ redrawOverlay(handles.(overlayTags{i}),handles)
 end
 
 % Reset the scaleBar
@@ -531,8 +553,9 @@ end
 function redrawOverlay(hObject,handles)
 userData=get(handles.figure1,'UserData');
 frameNr=get(handles.slider_frame,'Value');
-
 overlayTag = get(hObject,'Tag');
+
+% Get figure handle or recreate figure
 if ishandle(userData.drawFig), 
     figure(userData.drawFig); 
 else
@@ -545,6 +568,7 @@ outputList = userData.MD.processes_{procId}.getDrawableOutput;
 iOutput = str2double(tokens{1}{2});
 output = outputList(iOutput).var;
 
+% Discriminate between channel-specific processes annd movie processes
 tokens = regexp(overlayTag,'_channel(\d+)$','tokens');
 if ~isempty(tokens)
     iChan = str2double(tokens{1}{1});
@@ -557,6 +581,7 @@ else
     
 end
 
+% Draw or delete the overlay depending on the checkbox value
 if get(hObject,'Value')
     userData.MD.processes_{procId}.draw(inputArgs{:},'output',output,...
         'vectorScale',str2double(get(handles.edit_vectorFieldScale,'String')));

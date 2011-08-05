@@ -15,10 +15,11 @@ function [oldRootDir,newRootDir,commonDir] = getRelocationDirs(oldPath,newPath)
 %
 %   commonDir - A string containing the common architecture
 %
-%
+% See also: relocatePath
+
+
 % Sebastien Besson, July 2011
 %
-% See also: relocatePath
 
 % Check input
 ip = inputParser;

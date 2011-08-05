@@ -19,37 +19,35 @@ function newPath = relocatePath(oldPath,oldRootDir,newRootDir)
 %   the relocated path , a structure or structure array where all path+--*- fields
 %   have been relocated or a cell array where all paths have been relocated 
 %
+% See also: getRelocationDirs, getFilesep
+
 % Sebastien Besson, 03/2011
 %
 
 % Check argument number and type
-if nargin < 3  
-    error('Three non-empty inputs required!')
-end
-
-if ~ischar(oldRootDir) || ~ischar(newRootDir)
-    error('Inputs 2 and 3 must be character strings!')
-end
+ip = inputParser;
+ip.addRequired(oldPath,@(x) ischar(x) || iscell(x) || isstruct(x))
+ip.addRequired(oldRootDir,@ischar);
+ip.addRequired(newRootDir,@ischar);
+ip.parse(oldPath,oldRootDir,newRootDir);
 
 % Return the input by default (no relocation)
 newPath=oldPath;
 if (isempty(oldRootDir) && isempty(newRootDir)), return; end
 
-% Recursive function call if input is structure array or cell array
+% Call function recursively if input is structure array or cell array
 if isstruct(oldPath)    
-    newPath = arrayfun(@(x) structfun(@(y) relocatePath(y,oldRootDir,newRootDir),x,'UniformOutput',false),oldPath);
+    newPath = arrayfun(@(s) structfun(@(x) relocatePath(x,oldRootDir,newRootDir),...
+        s,'UniformOutput',false),oldPath);
     return
 elseif iscell(oldPath)
-    newPath=cellfun(@(x) relocatePath(x,oldRootDir,newRootDir),oldPath,'UniformOutput',false);
+    newPath=cellfun(@(x) relocatePath(x,oldRootDir,newRootDir),oldPath,...
+        'UniformOutput',false);
     return
 end
-
 % Check the old root directory is contained within the old path
-if numel(oldPath)<numel(oldRootDir)
-    return
-elseif ~strcmp(oldPath(1:numel(oldRootDir)),oldRootDir);
-    return;
-end
+nElements = min(numel(oldPath),numel(oldRootDir));
+if ~strcmp(oldPath(1:nElements),oldRootDir), return; end
 
 % Get file separators of old and new root directories as regular
 % expressions

@@ -3,22 +3,23 @@ function regexpFilesep=getFilesep(path)
 % regular expression
 %
 % 
-%   path - A string containing the path which should be replaced
+% INPUT
+%   path - A string containing the path which file separator should be
+%   found
 %
-% Output: 
-%   regexpFilesep - 
-% Input:The file separator formatted as a regular expression
-%   (to be used in regexp-like function
+% OUTPUT 
+%   regexpFilesep - the file separator formatted as a regular expression
+%   (to be used in regexpfunction )
 %
-%
+
 % Sebastien Besson, July 2011
 %
    
-% Find all separators in the path name
+% Find all file separators in the path name
 pathSep=unique(regexp(path,'/|\','match'));
 if numel(pathSep)>1, error(['Error!! OS conflict in path: ' path]); end
 
-%Deal with special cases
+%Deal with special cases (no file separator found)
 if isempty(pathSep)
     % Linux path may be root path '' or home directory path '~'
     isLinux = @(x) logical(isempty(x) || strcmp(x,'~'));
