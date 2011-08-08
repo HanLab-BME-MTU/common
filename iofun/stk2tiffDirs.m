@@ -11,7 +11,7 @@ function stk2tiffDirs(varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addOptional('path', [], @(x) ischar(x) || isempty(x));
+ip.addOptional('path', [], @(x) ischar(x) || isempty(x) || iscell(x));
 ip.addParamValue('Crop', 'off', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
 ip.parse(varargin{:});
 stkpath = ip.Results.path;
@@ -21,6 +21,12 @@ if isempty(stkpath)
    if (stkpath == 0)
        return;
    end
+end
+
+% Recursive call if input is cell array
+if iscell(stkpath), 
+    cellfun(@(x)stk2tiffDirs(x,varargin{:}),stkpath);
+    return
 end
 
 stkpath = [stkpath filesep];

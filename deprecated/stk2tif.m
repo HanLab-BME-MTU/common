@@ -17,7 +17,7 @@ function stk2tif(filename)
 %
 % Sylvain Berlemont, 20th Jan 2009
 
-fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used. Use stk2tiffDirs instead.\n']);
 
 if nargin~=1 || isempty(filename)
     error('Please enter a valid (common) file name for the output files');
