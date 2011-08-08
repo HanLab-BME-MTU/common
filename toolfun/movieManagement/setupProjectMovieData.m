@@ -1,4 +1,4 @@
-function setupProjectMovieData(projectFolder,pixSize,timeInterval,forceReplace)
+function setupProjectMovieData(projectFolder,pixSize,timeInterval,forceReplace,identString)
 %SETUPPROJECTMOVIEDATA sets up the movieData for a collection of movies with the same properties.
 %
 % setupProjectMovieData(projectFolder,pixSize,timeInterval)
@@ -7,7 +7,9 @@ function setupProjectMovieData(projectFolder,pixSize,timeInterval,forceReplace)
 %
 % This function takes movie folders (which must be set up as done in
 % setMosetupProjectImageFolders.m) and creates their movieData using the
-% same pixel size and time interval on each.
+% same pixel size and time interval on each. It assumes that each folder in
+% the project directory contains one movie, and that the images for that
+% movie are in a sub-directory titled "images"
 %
 %
 % Input:
@@ -24,6 +26,11 @@ function setupProjectMovieData(projectFolder,pixSize,timeInterval,forceReplace)
 %   processing that has been logged in the movieData.
 %   Optional. Default is false.
 %
+%   identString - A string identifying specific movie folders
+%   (sub-directories of the project folder) to setup movieData for. Only
+%   sub-folders with this identifying string somewhere in their name will
+%   have movieData created. Optional. If not input, all sub-folders will be
+%   used.
 % 
 % Output: 
 % 
@@ -52,8 +59,12 @@ if nargin < 4 || isempty(forceReplace)
     forceReplace = false;
 end
 
+if nargin < 5 || isempty(identString)
+    identString = [];
+end
+
 %Get the folders for each movie
-movieFolders = dir([projectFolder filesep]);
+movieFolders = dir([projectFolder filesep '*' identString '*']);
 movieFolders = movieFolders(arrayfun(@(x)(x.isdir && ... %Retain only the directories. Do it this way so it works on linux and PC
     ~(strcmp(x.name,'.') || strcmp(x.name,'..'))),movieFolders)); 
 
@@ -100,7 +111,8 @@ for j = 1:nMovies
             end
             
             %Create the movieData            
-            MD = MovieData(chans,currDir,currDir,'movieData.mat',[],pixSize,timeInterval);
+            MD = MovieData(chans,currDir,'movieDataPath_',currDir,...
+                'movieDataFileName_','movieData.mat','pixelSize_',pixSize,'timeInterval_',timeInterval);
             
             try
                 %Make sure everything is legit before saving

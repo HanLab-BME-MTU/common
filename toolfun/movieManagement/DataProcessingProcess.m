@@ -1,6 +1,6 @@
 classdef DataProcessingProcess < Process
 %A class definition for a generic data processing process. That is, a
-%process which takes in 
+%process which takes in non-image files and outputs non-image files.
 %
 % Sebastien Besson 4/2011
 %
