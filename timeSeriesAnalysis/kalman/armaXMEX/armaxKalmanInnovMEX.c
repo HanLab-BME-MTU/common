@@ -1,3 +1,8 @@
+/*
+ * Compilation:
+ * Mac/Linux: mex armaxKalmanInnovMEX.c
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -output armaxKalmanInnovMEX armaxKalmanInnovMEX.cpp
+ */
 
 #include "mex.h"
 #include "matrix.h"

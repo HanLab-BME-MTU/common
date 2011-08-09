@@ -23,6 +23,11 @@
    by R. Jonker and A. Volgenant, University of Amsterdam.
 
 *************************************************************************/
+/* 
+ * Compilation:
+ * Mac/Linux: mex  mexLap.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -output mexLap mexLap.cpp
+ */
 
 #ifdef WINDOWS
 # include <Windows.h>

@@ -1,3 +1,8 @@
+/*
+ * Compilation:
+ * Mac/Linux: mex calcKalmanInnovationsCARMA_MEX.c
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -output calcKalmanInnovationsCARMA_MEX calcKalmanInnovationsCARMA_MEX.cpp
+ */
 
 #include "mex.h"
 #include "matrix.h"

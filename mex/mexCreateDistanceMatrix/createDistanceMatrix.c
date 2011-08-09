@@ -1,19 +1,21 @@
-/* ------------------------------------------------------- */
-/*                                                         */
-/* createDistanceMatrix [MATLAB C-MEX]                     */
-/*                                                         */
-/* ------------------------------------------------------- */
-/*                                                         */
-/* Files:                                                  */
-/*                                                         */
-/*     createDistanceMatrix.c - MEX interface              */
-/*     distmat.h              - function prototypes        */
-/*     distmat.c              - function definitions       */
-/*                                                         */
-/* See createDistanceMatrix.m for detailed help.           */
-/*                                                         */
-/* First version: Aaron Ponti - 02/08/28                   */
-/* ------------------------------------------------------- */
+/*
+ *  createDistanceMatrix [MATLAB C-MEX]
+ *
+ *
+ * Files:
+ *
+ * createDistanceMatrix.c - MEX interface
+ * distmat.h              - function prototypes
+ * distmat.c              - function definitions
+ *
+ * See createDistanceMatrix.m for detailed help.
+ *
+ * First version: Aaron Ponti - 02/08/28
+ *
+ * Compilation:
+ * Mac/Linux: mex distmat.c  -output createDistanceMatrix createDistanceMatrix.c
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" distmat.c -output createDistanceMatrix createDistanceMatrix.cpp
+ */
 
 #include "mex.h"
 #include "distmat.h"

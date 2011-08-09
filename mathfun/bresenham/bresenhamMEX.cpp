@@ -1,5 +1,8 @@
-// Compilation command:
-// mex -I. -I../../mex/include/c++/ bresenhamMEX.cpp
+/* 
+ * Compilation:
+ * Mac/Linux: mex -I. -I../../mex/include/c++/ bresenhamMEX.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"." -I"..\..\..\extern\mex\include\gsl-1.14" -I"..\..\mex\include" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output fitGaussian2D fitGaussian2D.c
+ */
 
 #include <iterator>
 #include <vector>

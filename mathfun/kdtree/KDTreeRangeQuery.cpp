@@ -3,8 +3,8 @@
  * (c) Sylvain Berlemont, 2011 (last modified Jul 14, 2011)
  *
  * Compilation:
- * Mac/Linux: mex -I.  -I../../mex/include/c++ -I../../../extern/mex/include/ KDTreeRangeQuery.cpp
- * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"." -I"..\..\mex\include\c++" -I"..\..\..\extern\mex\include\" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output fitGaussian2D fitGaussian2D.c
+ * Mac/Linux: mex -I.  -I../../mex/include/c++ KDTreeRangeQuery.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"." -I"..\..\mex\include\c++" -output KDTreeRangeQuery KDTreeRangeQuery.c
  */
 
 # include <mex.h>

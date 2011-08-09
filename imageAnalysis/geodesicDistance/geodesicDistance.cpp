@@ -1,3 +1,11 @@
+/*
+ *
+ * Compilation:
+ * Mac/Linux: mex -I/usr/local/include -I../../mex/include/c++ /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a geodesicDistance.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\gsl-1.14" -I"..\..\mex\include\c++" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output geodesicDistance geodesicDistance.cpp
+ */
+
+
 #include <mex.h>
 
 #include <image.hpp>

@@ -1,3 +1,10 @@
+/*
+ *
+ * Compilation:
+ * Mac/Linux: mex -I/usr/local/include  skeleton3D.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -output skeleton3D skeleton3D.cpp
+ */
+
 #include "mex.h"
 #include "matrix.h"
 

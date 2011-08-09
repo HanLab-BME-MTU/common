@@ -1,3 +1,8 @@
+/*
+ * Compilation:
+ * Mac/Linux: mex neg2LnLikelihoodXMEX.c
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -output neg2LnLikelihoodXMEX neg2LnLikelihoodXMEX.cpp
+ */
 
 #include "mex.h"
 #include "matrix.h"

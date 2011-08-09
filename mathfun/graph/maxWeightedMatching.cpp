@@ -1,3 +1,9 @@
+/* 
+ * Compilation:
+ * Mac/Linux: mex  -I../../../extern/mex/include/lemon maxWeightedMatching.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\lemon-1.21" -output maxWeightedMatching maxWeightedMatching.cpp
+ */
+
 #include <iostream>
 
 #include <mex.h>

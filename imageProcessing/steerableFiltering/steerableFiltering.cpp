@@ -1,5 +1,7 @@
-// Compilation command:
-// mex -I. -I../../mex/include/c++/ steerableFiltering.cpp
+/* Compilation:
+ * Mac/Linux: mex -I. -I../../mex/include/c++ steerableFiltering.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"." -I"..\..\mex\include\c++"  -output steerableFiltering steerableFiltering.cpp
+ */
 
 #include <mex.h>
 

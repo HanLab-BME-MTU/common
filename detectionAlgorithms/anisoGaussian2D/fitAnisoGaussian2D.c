@@ -4,6 +4,7 @@
  *
  * Compilation:
  * Mac/Linux: mex -I/usr/local/include -I../../mex/include -lgsl -lgslcblas fitAnisoGaussian2D.c
+ * Mac/Linux (static): mex -I/usr/local/include -I../../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a fitAnisoGaussian2D.c
  * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\gsl-1.14" -I"..\..\mex\include" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output fitAnisoGaussian2D fitAnisoGaussian2D.c
  */
 

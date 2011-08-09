@@ -3,8 +3,8 @@
  * Sylvain Berlemont, 2010 (last modified Aug 3, 2011)
  *
  * Compilation:
- * Mac/Linux: mex -I.  -I../../mex/include/c++ -I../../../extern/mex/include/ gradientDescent.cpp
- * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"." -I"..\..\mex\include\c++" -I"..\..\..\extern\mex\include\" -output gradientDescent gradientDescent.cpp
+ * Mac/Linux: mex -I.  -I../../mex/include/c++ gradientDescent.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"." -I"..\..\mex\include\c++" -output gradientDescent gradientDescent.cpp
  */
 
 #include <mex.h>

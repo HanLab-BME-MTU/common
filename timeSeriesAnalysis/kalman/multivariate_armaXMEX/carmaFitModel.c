@@ -4,6 +4,8 @@
  * The mexFunction is designed to be called by armaxCoefKalman.m, if
  * option 'nl' (Numerical Recipes local minimizer) is chosen.
  * Hunter Elliott, Pei-hsin Hsu
+ *
+ * Compilation: see makeNL
  */
 
 #include <stdio.h>

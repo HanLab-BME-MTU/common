@@ -1,12 +1,16 @@
-/* MATLAB C-MEX 
+/* MATLAB C-MEX
+ *
+ * createDistanceMatrix.c *
+ *
+ * First version: Aaron Ponti - 02/11/26
+ *
+ * See createDiffMatrix.m for detailed help.
+ *
+ * Compilation:
+ * Mac/Linux: mex  createDiffMatrix.c
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -output createDiffMatrix createDiffMatrix.cpp
+ */
 
-  * createDistanceMatrix.c *
-
-  First version: Aaron Ponti - 02/11/26
-
-  See createDiffMatrix.m for detailed help.
-
-*/
 
 #include "mex.h"
 
