@@ -1,35 +1,35 @@
 classdef SubResolutionProcess < DetectionProcess
-% A subclass of the detection process
-% Chuangang Ren
-% 11/2010
-
+    % A subclass of the detection process
+    % Chuangang Ren
+    % 11/2010
+    
     properties(SetAccess = protected, GetAccess = public)
-
-        filenameBase_   % cell array storing the base of file name 
+        
+        filenameBase_   % cell array storing the base of file name
         digits4Enum_    % cell array stroring the number of digits for frame enumeration (1-4)
         filename_       % file name of result data
-    end    
+    end
     
     methods (Access = public)
         function obj = SubResolutionProcess(owner, outputDir, channelIndex, funParams )
-        % Constructor of the SubResolutionProcess
+            % Constructor of the SubResolutionProcess
             super_args{1} = owner;
             super_args{2} = SubResolutionProcess.getName;
             super_args{3} = @detectSubResFeatures2D_StandAlone;
             
             if nargin < 2 || isempty(outputDir)
                 outputDir = owner.outputDirectory_ ; % package folder
-            end                
+            end
             
             if nargin < 3 || isempty(channelIndex) % Default channel Index
                 channelIndex = 1:length(owner.channels_);
             end
             
             super_args{4} = channelIndex;
-
             
-            if nargin < 4 || isempty(funParams)  % Default funParams                         
-                    
+            
+            if nargin < 4 || isempty(funParams)  % Default funParams
+                
                 % movieParam
                 funParams.movieParam.imageDir = owner.channels_(channelIndex(1)).channelPath_; % Note: channel-specific
                 funParams.movieParam.filenameBase = []; % Note: channel-specific
@@ -38,18 +38,18 @@ classdef SubResolutionProcess < DetectionProcess
                 funParams.movieParam.digits4Enum = []; % Note: channel-specific
                 
                 % detectionParam
-%                 funParams.detectionParam.psfSigma = [];
-%                 funParams.detectionParam.bitDepth = owner.camBitdepth_;
+                %                 funParams.detectionParam.psfSigma = [];
+                %                 funParams.detectionParam.bitDepth = owner.camBitdepth_;
                 funParams.detectionParam.alphaLocMax = .05;
                 funParams.detectionParam.integWindow = 0;
                 funParams.detectionParam.doMMF = 0;
                 funParams.detectionParam.testAlpha = struct('alphaR', .05,'alphaA', .05, 'alphaD', .05,'alphaF',0);
                 funParams.detectionParam.numSigmaIter = 0;
                 funParams.detectionParam.visual = 0;
-                funParams.detectionParam.background = []; 
+                funParams.detectionParam.background = [];
                 
                 % saveResults
-%                 funParams.OutputDirectory = [outputDir  filesep 'Sub_Resolution_Detection' filesep];
+                %                 funParams.OutputDirectory = [outputDir  filesep 'Sub_Resolution_Detection' filesep];
                 funParams.saveResults.dir = [outputDir  filesep 'Sub_Resolution_Detection' filesep];
                 funParams.saveResults.filename = []; % Note: channel-specific
                 
@@ -72,32 +72,32 @@ classdef SubResolutionProcess < DetectionProcess
                 end
                 
             end
-
+            
             super_args{5} = funParams;
-
-            obj = obj@DetectionProcess(super_args{:});    
+            
+            obj = obj@DetectionProcess(super_args{:});
             
             % Visual parameters ( Default: channel 1 )
             obj.visualParams_.startend = [1 owner.nFrames_];
             obj.visualParams_.saveMovie = 1;
             obj.visualParams_.movieName = [];
-            obj.visualParams_.dir2saveMovie = funParams.saveResults.dir;            
+            obj.visualParams_.dir2saveMovie = funParams.saveResults.dir;
             obj.visualParams_.filterSigma = 0;
             obj.visualParams_.showRaw = 1;
             obj.visualParams_.intensityScale = 1;
             file = owner.getImageFileNames(1);
             obj.visualParams_.firstImageFile = [owner.channels_(1).channelPath_ filesep file{1}{1}];
-
+            
             
             % Get file name base and digits for enumeration
             [obj.filenameBase_ obj.digits4Enum_] = SubResolutionProcess.getFilenameBody(owner);
             obj.filename_ = 'detection_result.mat';
-        end    
+        end
         
         
         function setFileName(obj, name)
-        % Set result file name
-           obj.filename_ = name; 
+            % Set result file name
+            obj.filename_ = name;
         end
         
         function OK = checkChannelOutput(obj,iChan)
@@ -115,9 +115,9 @@ classdef SubResolutionProcess < DetectionProcess
         end
         
         function run(obj)
-        % Run the process!
+            % Run the process!
             obj.success_=false;
-
+            
             for i = obj.channelIndex_
                 
                 obj.funParams_.movieParam.imageDir = [obj.owner_.channels_(i).channelPath_ filesep];
@@ -137,7 +137,7 @@ classdef SubResolutionProcess < DetectionProcess
                 
                 
                 % Test (commentable)
-%                 obj.funParams_.movieParam,obj.funParams_.detectionParam,obj.funParams_.saveResults
+                %                 obj.funParams_.movieParam,obj.funParams_.detectionParam,obj.funParams_.saveResults
                 obj.funName_(obj.funParams_.movieParam, obj.funParams_.detectionParam, obj.funParams_.saveResults);
                 obj.setOutFilePath(i,[obj.funParams_.saveResults.dir filesep obj.funParams_.saveResults.filename]);
             end
@@ -146,7 +146,7 @@ classdef SubResolutionProcess < DetectionProcess
             obj.setDateTime;
             obj.owner_.save;
         end
-            function hfigure = resultDisplay(obj,fig,procID)
+        function hfigure = resultDisplay(obj,fig,procID)
             % Display the output of the process
             
             % Copied and pasted from the old uTrackPackageGUI
@@ -187,6 +187,39 @@ classdef SubResolutionProcess < DetectionProcess
                 error('User-defined: the input is not a Process object.')
             end
         end
+        function varargout = loadChannelOutput(obj,iChan,varargin)
+            
+            % Input check
+            outputList = {'movieInfo'};
+            ip =inputParser;
+            ip.addRequired('obj',@(x) isa(x,'SubResolutionProcess'));
+            ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
+            ip.addOptional('iFrame',1:obj.owner_.nFrames_,...
+                @(x) ismember(x,1:obj.owner_.nFrames_));
+            ip.addParamValue('output',outputList{1},@(x) all(ismember(x,outputList)));
+            ip.parse(obj,iChan,varargin{:})
+            iFrame = ip.Results.iFrame;
+            output = ip.Results.output;
+            if ischar(output),output={output}; end
+            
+            % Data loading
+            s = load(obj.outFilePaths_{iChan},output{:});
+           
+            if numel(ip.Results.iFrame)>1,
+                varargout{1}=s.(output{1});
+            else
+                varargout{1}=s.(output{1})(iFrame);
+            end
+        end
+        function output = getDrawableOutput(obj)
+            colors = hsv(numel(obj.owner_.channels_));
+            output(1).name='Sub-resolution objects';
+            output(1).var='movieInfo';
+            output(1).formatData=@(x) horzcat(x.yCoord(:,1),x.xCoord(:,1));
+            output(1).type='overlay';
+            output(1).defaultDisplayMethod=@(x) LineDisplay('Marker','o',...
+                'LineStyle','none','Color',colors(x,:));
+        end
         
     end
     methods (Static)
@@ -205,7 +238,7 @@ classdef SubResolutionProcess < DetectionProcess
                 digits4Enum{i} = length(digits4Enum{i});
             end
             
-        end    
+        end
         function name = getName()
             name = 'Sub-Resolution Detection';
         end
