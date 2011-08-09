@@ -170,6 +170,8 @@ classdef  MovieData < hgsetget
         %       movieDataFileName_
         %       nFrames_
         %       imSize_
+        % **NOTE**: The movieData will be saved to disk if the sanity check
+        % is successfully completed.
            
             % Ask user by default for relocation
             if nargin < 4, askUser = true; end
