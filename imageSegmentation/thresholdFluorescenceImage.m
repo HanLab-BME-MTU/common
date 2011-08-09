@@ -3,7 +3,7 @@ function thresholdValue = thresholdFluorescenceImage(imageIn,showPlots,noisy)
 %
 % thresholdValue = thresholdFluorescenceImage(imageIn)
 % 
-% thresholdValue = thresholdFluorescenceImage(imageIn,showPlots)
+% thresholdValue = thresholdFluorescenceImage(imageIn,showPlots,noisy)
 % 
 % This function selects a threshold for the input fluorescence image by
 % analyzing the image's intensity distribution. This requires good signal-

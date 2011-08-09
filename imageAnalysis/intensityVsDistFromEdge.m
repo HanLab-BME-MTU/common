@@ -7,7 +7,8 @@ function [aVd,aStd,nPts,distVals] = intensityVsDistFromEdge(image,mask,distVals)
 % 
 % This function analyzes how the intensity in the input image varies with
 % distance from the edge of the mask. This is accomplished via the distance
-% transform.
+% transform. Positive distances are inside the mask, negative distances are
+% outside the mask.
 % 
 % Input:
 % 
@@ -16,8 +17,8 @@ function [aVd,aStd,nPts,distVals] = intensityVsDistFromEdge(image,mask,distVals)
 %   mask - The mask containing the area to analyze.
 % 
 %   distVals - The distance values to average between.
-%              Optional. If not input, every integer distance will be
-%              averaged.
+%              Optional. If not input, every positive integer distance will
+%              be averaged.
 % 
 % 
 % 
@@ -35,8 +36,6 @@ function [aVd,aStd,nPts,distVals] = intensityVsDistFromEdge(image,mask,distVals)
 %   distVals - The distance intervals used for averaging.
 % 
 % 
-% 
-% 
 % Hunter Elliott
 % 4/2010
 %
@@ -49,17 +48,30 @@ mask = mask > 0;
 distX = bwdist(~mask);
 
 if nargin < 3 || isempty(distVals)
-    distVals = 1:max(distX(:));    
+    distVals = 0:max(distX(:));    
+end
+
+%Separate the positive and negative distances as these will use different
+%distance transforms.
+posDistVals = distVals(distVals>=0);
+negDistVals = [distVals(distVals<0) min(posDistVals)];
+
+if numel(negDistVals) > 1
+    distX2 = -bwdist(mask);
 end
 
 %% ----- Analysis ----- %%
 
-aVd = arrayfun(@(x)(mean(image(distX(:) >= distVals(x) & distX(:) < distVals(x+1)))),1:(length(distVals)-1));
+aVd = arrayfun(@(x)(mean(image(distX2(:) ~=0 & distX2(:) >= negDistVals(x) & distX2(:) < negDistVals(x+1)))),1:(length(negDistVals)-1));
+aVd = [aVd arrayfun(@(x)(mean(image(distX(:) ~= 0 & distX(:) > posDistVals(x) & distX(:) <= posDistVals(x+1)))),1:(length(posDistVals)-1))];
+
 if nargout > 1
-    aStd = arrayfun(@(x)(std(image(distX(:) >= distVals(x) & distX(:) < distVals(x+1)))),1:(length(distVals)-1));
+    aStd = arrayfun(@(x)(std(image(distX2(:) ~=0 & distX2(:) >= negDistVals(x) & distX2(:) < negDistVals(x+1)))),1:(length(negDistVals)-1));
+    aStd = [aStd arrayfun(@(x)(std(image(distX(:) ~= 0 & distX(:) > posDistVals(x) & distX(:) <= posDistVals(x+1)))),1:(length(posDistVals)-1))];
 end
 if nargout > 2
-    nPts = arrayfun(@(x)(numel(image(distX(:) >= distVals(x) & distX(:) < distVals(x+1)))),1:(length(distVals)-1));
+    nPts = arrayfun(@(x)(numel(image(distX2(:) ~=0 & distX2(:) >= negDistVals(x) & distX2(:) < negDistVals(x+1)))),1:(length(negDistVals)-1));
+    nPts = [nPts arrayfun(@(x)(numel(image(distX(:) ~= 0 & distX(:) > posDistVals(x) & distX(:) <= posDistVals(x+1)))),1:(length(posDistVals)-1))];
 end
 
 
