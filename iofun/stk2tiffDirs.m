@@ -15,6 +15,7 @@ ip.addOptional('path', [], @(x) ischar(x) || isempty(x) || iscell(x));
 ip.addParamValue('Crop', 'off', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
 ip.parse(varargin{:});
 stkpath = ip.Results.path;
+crop = ip.Results.Crop;
 
 if isempty(stkpath)
    stkpath = uigetdir('Select directory containing the STK files:'); 
@@ -25,7 +26,7 @@ end
 
 % Recursive call if input is cell array
 if iscell(stkpath), 
-    cellfun(@(x)stk2tiffDirs(x,varargin{:}),stkpath);
+    cellfun(@(x)stk2tiffDirs(x,'Crop',crop),stkpath);
     return
 end
 
