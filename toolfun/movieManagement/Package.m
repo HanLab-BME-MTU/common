@@ -71,57 +71,55 @@ classdef Package < hgsetget
             end
         end
         
-        function [processExceptions, processVisited] = dfs_(obj, ...
-                i,processExceptions,processVisited)
-            processVisited(i) = true;
-            requiredParentIndex = find(obj.depMatrix_(i,:)==1);
-            optionalParentIndex = find(obj.depMatrix_(i,:)==2);
+        function [processExceptions, processVisited] = checkParentSanity(obj, ...
+                procID,processExceptions,processVisited)
+            % Check the dependencies sanity and return processExceptions
             
-            % Remove empty optional processes from the list of parentIndex
-            validOptionalParentIndex = optionalParentIndex(~cellfun(@isempty,...
-                obj.processes_(optionalParentIndex)));
-            parentIndex=sort([requiredParentIndex,validOptionalParentIndex]);
+            processVisited(procID) = true;
             
-%             parentIndex = find(obj.depMatrix_(i,:));
+            % Get the parent processes and remove empty optional processes
+            parentIndex = obj.getParent(procID);
             if isempty(parentIndex), return;  end
-            for j = parentIndex
-                if ~isempty(obj.processes_{j}) && ~processVisited(j)
-                    
+            
+            for parentID = parentIndex
+                % Recursively call dependencies check for unvisited processes
+                if ~isempty(obj.processes_{parentID}) && ~processVisited(parentID)
                     [processExceptions, processVisited] = ...
-                        obj.dfs_(j, processExceptions,processVisited);
+                        obj.checkParentSanity(parentID, processExceptions,processVisited);
                 end
-                % If j th process has an exception, add an exception to
-                % the exception list of i th process. Since i th
-                % process depends on the j th process
-                % Exception is created when satisfy:
-                % 1. Process is successfully run in the most recent time
-                % 2. Parent process has error OR required parent process does
-                %    not exist
-                hasException=@(j) ~isempty(processExceptions{j});
-                emptyProc=@(j) isempty(obj.processes_{j}) && obj.depMatrix_(i,j)==1;
-                newOptProc=@(j) obj.depMatrix_(i,j)==2 && ~obj.processes_{j}.success_;
-                if obj.processes_{i}.success_ && (hasException(j) || emptyProc(j) || newOptProc(j))
+                
+                % Check parent process validity and add exception if 
+                % 1 - parent process is empty
+                % 2 - parent process has at least one exception
+                % 3 - required parent proc is not run successfully    
+                isValidParent = @(x) ~isempty(x) && isempty(processExceptions{x}) && ...
+                    obj.processes_{x}.success_;
+                
+                if obj.processes_{procID}.success_ && ~isValidParent(parentID)
                     % Set process's updated=false
-                    obj.processes_{i}.setUpdated (false);
+                    obj.processes_{procID}.setUpdated (false);
                     
                     % Create a dependency error exception
-                    statusMsg1 =['The step ' num2str(i),': ' obj.processes_{i}.getName...
+                    statusMsg1 =['The step ' num2str(procID),': ' obj.processes_{procID}.getName...
                         ' is out of date because '];
                     statusMsg3 = '\nPlease run again to update your result.';
-                    if newOptProc(j)
-                        statusMsg2 = ['the optional step ' num2str(j),': ', eval([obj.processClassNames_{j} '.getName']),...
+                    % Customized error message for first-time run optional processes
+                    if obj.depMatrix_(procID,parentID)==2 && ~obj.processes_{parentID}.success_
+                        statusMsg2 = ['the optional step ' num2str(parentID),...
+                            ': ', eval([obj.processClassNames_{parentID} '.getName']),...
                         ', changes the input data of current step.'];
                     else
-                        statusMsg2 = ['the step ' num2str(j),': ', eval([obj.processClassNames_{j} '.getName']),...
+                        statusMsg2 = ['the step ' num2str(parentID),': ',...
+                            eval([obj.processClassNames_{parentID} '.getName']),...
                         ', which the current step depends on, is out of date.'];
                     end
                     ME = MException('lccb:depe:warn', [statusMsg1 statusMsg2 statusMsg3]);
                     % Add dependency exception to the ith process
-                    processExceptions{i} = horzcat(processExceptions{i}, ME);
+                    processExceptions{procID} = horzcat(processExceptions{procID}, ME);
                 end
-            end
-              
+            end   
         end
+        
     end
     methods (Access = public)
         
@@ -205,7 +203,7 @@ classdef Package < hgsetget
             for i = validProc
                 if ~processVisited(i)
                     [processExceptions, processVisited]= ...
-                        obj.dfs_(i, processExceptions, processVisited);
+                        obj.checkParentSanity(i, processExceptions, processVisited);
                 end
             end
         end
@@ -228,6 +226,19 @@ classdef Package < hgsetget
                 error('User-defined: input should be Process object or empty.')
             end
         end
+        
+        function parentID = getParent(obj,procID)
+            % Returns the list of valid parents for a given process
+            
+            % By default, get the required parent processes as well as
+            % all non-empty optional parent processes
+            reqParentIndex = find(obj.depMatrix_(procID,:)==1);
+            optParentIndex = find(obj.depMatrix_(procID,:)==2);
+            isValidOptParent = ~cellfun(@isempty,obj.processes_(optParentIndex));
+            validOptParentIndex = optParentIndex(isValidOptParent);
+            parentID=sort([reqParentIndex,validOptParentIndex]);
+        end
+        
     end
         
 
