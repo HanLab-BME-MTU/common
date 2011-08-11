@@ -1,16 +1,16 @@
 function userfcn_lampSwitch(index, value, handles)
 % GUI tool function: control the enable/disable value of uicontrols when
-% user check/unchecked the checkboxes of processes. The enable/disable 
+% user check/unchecked the checkboxes of processes. The enable/disable
 % value of uicontrols depends on package's dependency matrix - dependM
 %
-% Input: 
+% Input:
 %   index - the index of current checkbox
 %   value - 1: checked   0: unchecked
-%   handles - the "handles" of package control panel movie 
+%   handles - the "handles" of package control panel movie
 %
-%
-% Chuangang Ren
-% 08/2010
+
+% Chuangang Ren, 08/2010
+% Sebastien Besson, Aug 2011
 
 userData = get(handles.figure1, 'UserData');
 M = userData.dependM;
@@ -18,62 +18,43 @@ M = userData.dependM;
 % if no follower exists, return.
 if ~any(M(:,index)),return; end
 
-childProcesses = find(M(:,index));
-switch value
-    % Checkbox is selected
-    case 1
-        for i = 1: length(childProcesses)
-            requiredParentProcesses = find(M(childProcesses(i),:)==1);
-            for j = 1: length(requiredParentProcesses)
-                if get(handles.(['checkbox_' num2str(requiredParentProcesses(j))]),'Value') ||...
-                        ( ~isempty(userData.crtPackage.processes_{requiredParentProcesses(j)}) && ...
-                        userData.crtPackage.processes_{requiredParentProcesses(j)}.success_ ) ||...
-                        j == index
-                    
-                    k = true; % ok
-                    
-                else
-                    k = false; % not ok
-                    break
-                end
-            end
-            if ~k
-                continue;
-            end
-            % The following code will probably not be executed
-            % Leave it here just in case design is changed
-            % ------------------------------------------ %
-            if get(handles.(['checkbox_' num2str(childProcesses(i))]),'Value')
-                userfcn_lampSwitch(childProcesses(i),1,handles)
-                % ------------------------------------------ %
-            else
-                % Turn on the childProcesses checkbox
-                userfcn_enable (childProcesses(i),'on',handles);
-            end
-        end
-        % Checkbox is unselected
-    case 0
-        % If success = 1, release checkbox dependency enable/disable control
-        if ~isempty(userData.crtPackage.processes_{index}) ...
-                && userData.crtPackage.processes_{index}.success_
-            return;
+% Look at the dependent processes
+childProcesses = find(M(:,index)==1);
+
+isProcSuccess = @(x) ~isempty(userData.crtPackage.processes_{x}) && ...
+        userData.crtPackage.processes_{x}.success_;
+
+if value
+    % Child processes can be enabled if each of their required parents meet
+    % one on the following
+    % 1 - they are checked
+    % 2 - they have been successfully run
+    % 3 - they are the current process (redundancy with condition 1???)
+    
+    isProcChecked = @(x) get(handles.(['checkbox_' num2str(x)]),'Value');
+    isCurrentProc = @(x) x==index;
+    reqParentProc = @(proc) find(M(proc,:)==1);
+    isChildProcValid = @(proc) all(arrayfun(@(x) isProcChecked(x) ||...
+        isProcSuccess(x) || isCurrentProc(x),reqParentProc(proc)));
+    
+    validChildProc = childProcesses(arrayfun(isChildProcValid,childProcesses));
+    for childProc = validChildProc'
+        % The following code will probably not be executed
+        % Leave it here just in case design is changed
+        if get(handles.(['checkbox_' num2str(childProc)]),'Value')
+            userfcn_lampSwitch(childProc,1,handles)
         else
-            for i =1:length(childProcesses)
-                % Check the childProcess requires the unselected
-                % process
-                if M(childProcesses(i),index)==2, continue; end
-                % Turn off and uncheck the follower checkboxes
-                userfcn_enable(childProcesses(i),'off',handles,true);
-                
-                userfcn_lampSwitch(childProcesses(i),0,handles);
-            end
+            % Turn on the childProcesses checkbox
+            userfcn_enable(childProc,'on',handles);
         end
-    otherwise
-        error(['User-defined error: unexpected value of ''value'' property',...
-            'in checkbox object']);
+    end
+    
+elseif ~isProcSuccess(index)
+    % Process is unchecked and have not been run successfully
+    for i =1:length(childProcesses)
+        % Turn off and uncheck the follower checkboxes
+        userfcn_enable(childProcesses(i),'off',handles,true);
+        userfcn_lampSwitch(childProcesses(i),0,handles);
+    end   
 end
-
-
-
-
 
