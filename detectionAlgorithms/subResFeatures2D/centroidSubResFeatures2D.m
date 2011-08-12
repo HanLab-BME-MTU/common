@@ -127,8 +127,8 @@ for i = 1 : numLocMax
     %store information in structure "detectedFeatures" - coordinates are
     %converted to image coordinate system, for consistency with
     %detectSubResFeatures2D
-    detectedFeatures.xCoord(i,:) = [ce(2) 0.5];
-    detectedFeatures.yCoord(i,:) = [ce(1) 0.5];
+    detectedFeatures.xCoord(i,:) = [ce(2) 0.2];
+    detectedFeatures.yCoord(i,:) = [ce(1) 0.2];
     detectedFeatures.amp(i,:) = [locMaxAmp(i)-bgAmp(i) 0];
     
 end
