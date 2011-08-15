@@ -29,7 +29,8 @@ end
 hasValidProc = arrayfun(@(x) any(userData.statusM(x).Checked),movieList);
 movieRun=movieList(hasValidProc);
 
-procCheck=arrayfun(@(x) find(userData.statusM(x).Checked),movieRun,...
+procCheck=cell(1,numel(nMovies));
+procCheck(movieRun)=arrayfun(@(x) find(userData.statusM(x).Checked),movieRun,...
     'UniformOutput',false);
 
 % Throw warning dialog if no movie
