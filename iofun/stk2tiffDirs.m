@@ -1,10 +1,17 @@
 function stk2tiffDirs(varargin)
+% stktiffDirs splits STKs in input directory into folders with TIFF files.
+% 
+% Synopsis:    stk2tiffDirs(path)
+%              stk2tiffDirs(path,'Crop','on')
 %
-% function stk2tiffDirs(stkpath)
+% Input:
+%      path : optional - path to the directory containing STK files. Can be
+%      a string or a cell array of strings. If not input, the user will be
+%      asked to select a folder.
 %
-% Splits STKs in input directory into folders with TIFF files.
-%
-% Input: path to directory containing STK files
+%      Optional parameter/value pairs
+%           Crop ('on'/'off') :  if 'on', a window will open asking the
+%           user to select the region to crop.
 %
 % Francois Aguet, 09/01/2010
 
