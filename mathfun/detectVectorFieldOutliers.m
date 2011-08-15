@@ -40,6 +40,11 @@ ip.parse(data,varargin{:})
 threshold=ip.Results.threshold;
 epsilon=ip.Results.epsilon;
 
+% Filter out NaN from the initial data (but keep the index for the
+% outliers)
+ind=find(~isnan(data(:,3)));
+data=data(ind,:);
+
 % Generate a Delaunay tessellation
 tri=DelaunayTri(data(:,1),data(:,2));
 
@@ -74,4 +79,4 @@ normFluct = arrayfun(@(x) abs(localVel{x}-medianVel{x})./(medianRes{x}+epsilon),
 r=cellfun(@norm, normFluct);
 
 % Filter outliers using threshold
-outlierIndex = find(r>threshold);
+outlierIndex = ind(r>threshold);
