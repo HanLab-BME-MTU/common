@@ -83,12 +83,15 @@ maxPos0(tmp) = 1;
 tmp = vertcat(cands.amp);
 candsAmp = tmp([cands.status]==1);
 
-%generate PSF template 
-template = GaussMask2D(psfSigma,8*ceil(psfSigma)-1,[0 0]);
-[psfRange] = size(template,1);
-psfRange = floor(psfRange/2);
+%generate local maximum mask 
+% template = GaussMask2D(psfSigma,8*ceil(psfSigma)-1,[0 0]);
+% [psfRange] = size(template,1);
+tmpSize = round(7*psfSigma);
+tmpSize = tmpSize + (1-mod(tmpSize,2));
+template = ones(tmpSize);
+psfRange = floor(tmpSize/2);
 
-%place PSFs in image
+%place local maximum masks in image
 image = zeros(numPixelsY+2*psfRange,numPixelsX+2*psfRange);
 imageAmp = zeros(numPixelsY+2*psfRange,numPixelsX+2*psfRange);
 for i=1:size(cands2,1)    
@@ -104,11 +107,13 @@ end
 image = image(psfRange+1:end-psfRange,psfRange+1:end-psfRange);
 imageAmp = imageAmp(psfRange+1:end-psfRange,psfRange+1:end-psfRange);
 
-%normalize image
-imageN = image/max(image(:));
+% %normalize image
+% imageN = image/max(image(:));
+% 
+% %get connectivity between PSFs
+% [L,nIsland] = bwlabel(imageN>0.001);
 
-%get connectivity between PSFs
-[L,nIsland] = bwlabel(imageN>0.001);
+[L,nIsland] = bwlabel(image>0);
 
 % initialize clusters (SB)
 clusters(1:nIsland) = struct('numMaxima',[],'maximaPos',[],'maximaAmp',[],'pixels',[]);
