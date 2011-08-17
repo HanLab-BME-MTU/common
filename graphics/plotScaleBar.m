@@ -55,11 +55,11 @@ if ~isempty(label)
     % get height of default text bounding box
     h = text(0, 0, label, 'FontUnits', 'normalized', 'FontName', fontName, 'FontSize', fontSize);
     extent = get(h, 'extent'); % units: pixels
-    textHeight = extent(4);
+    textHeight = 1.2*extent(4);
     textWidth = extent(3);
     delete(h);
 else
-    textHeight = 0;
+    textHeight = dx;
     textWidth = 0;
 end
 
@@ -70,7 +70,7 @@ set(gcf, 'InvertHardcopy', 'off');
 if ~isempty(strfind(location, 'north'))
     y0 = dx;
 else
-    y0 = ly-height-1.2*textHeight;
+    y0 = ly-height-textHeight;
 end
 if ~isempty(strfind(location, 'east'))
     x0 = lx-width-dx;
