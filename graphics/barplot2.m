@@ -50,7 +50,8 @@ ip.addParamValue('FontName', 'Helvetica', @ischar); % specific
 ip.addParamValue('AxisFontSize', 16, @isscalar);
 ip.addParamValue('LabelFontSize', 20, @isscalar);
 ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
-ip.addParamValue('X', [], @(x) numel(x)==ng); 
+ip.addParamValue('X', [], @(x) numel(x)==ng);
+ip.addParamValue('AdjustFigure', true, @islogical);
 ip.parse(prm, varargin{:});
 
 errorBars = ip.Results.errorbars;
@@ -153,7 +154,8 @@ ylabel(ip.Results.YLabel, lfont{:});
 
 % x labels
 if ip.Results.Angle ~= 0
-    rotateXTickLabels(ha, 'Angle', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter);
+    rotateXTickLabels(ha, 'Angle', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter,...
+        'AdjustFigure', ip.Results.AdjustFigure);
 end
 
 % re-plot axis on top

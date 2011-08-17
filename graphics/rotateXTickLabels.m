@@ -13,6 +13,7 @@ ip.CaseSensitive = false;
 ip.addRequired('ha', @ishandle);
 ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
+ip.addParamValue('AdjustFigure', true, @islogical);
 ip.parse(ha, varargin{:});
 
 hx = get(ha, 'XLabel');
@@ -58,18 +59,20 @@ maxHeightN = maxHeight/height * pos(4); % data units -> normalized
 
 xlh = xlabelExtent(4)/height * pos(4); % x-label height in normalized units
 
-% space needed: xlh+maxHeightN-pos(2)
-sp = xlh+maxHeightN-pos(2);% - textHeight/height*pos(4);
-hfig = get(ha, 'Parent');
-fpos = get(hfig, 'Position');
-fpos(4) = fpos(4)*(1+sp);
-set(hfig, 'Position', fpos, 'PaperPositionMode', 'auto');
-
-newAxesHeight = pos(4)/(1+sp);
-newTopMargin = (1-pos(2)-pos(4))/(1+sp);
-pos(2) = 1 - newTopMargin - newAxesHeight;
-pos(4) = newAxesHeight;
-set(ha, 'Position', pos);
+if ip.Results.AdjustFigure
+    % space needed: xlh+maxHeightN-pos(2)
+    sp = xlh+maxHeightN-pos(2);% - textHeight/height*pos(4);
+    hfig = get(ha, 'Parent');
+    fpos = get(hfig, 'Position');
+    fpos(4) = fpos(4)*(1+sp);
+    set(hfig, 'Position', fpos, 'PaperPositionMode', 'auto');
+    
+    newAxesHeight = pos(4)/(1+sp);
+    newTopMargin = (1-pos(2)-pos(4))/(1+sp);
+    pos(2) = 1 - newTopMargin - newAxesHeight;
+    pos(4) = newAxesHeight;
+    set(ha, 'Position', pos);
+end
 
 % shift x-label
 pos = get(hx, 'Position');
