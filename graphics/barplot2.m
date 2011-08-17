@@ -46,7 +46,7 @@ ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('ErrorBarPosition', 'top',  @(x) strcmpi(x, 'top') | strcmpi(x, 'both'));
 ip.addParamValue('ErrorBarWidth', 0.2, @(x) 0<x && x<=1);
 ip.addParamValue('Handle', gca, @ishandle);
-ip.addParamValue('FontName', 'Helvetica', @ischar); % specific
+ip.addParamValue('FontName', 'Helvetica', @ischar);
 ip.addParamValue('AxisFontSize', 16, @isscalar);
 ip.addParamValue('LabelFontSize', 20, @isscalar);
 ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
