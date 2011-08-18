@@ -86,6 +86,7 @@ candsAmp = tmp([cands.status]==1);
 %generate local maximum mask 
 % template = GaussMask2D(psfSigma,8*ceil(psfSigma)-1,[0 0]);
 % [psfRange] = size(template,1);
+% psfRange = floor(psfRange/2);
 tmpSize = round(7*psfSigma);
 tmpSize = tmpSize + (1-mod(tmpSize,2));
 template = ones(tmpSize);
@@ -113,6 +114,7 @@ imageAmp = imageAmp(psfRange+1:end-psfRange,psfRange+1:end-psfRange);
 % %get connectivity between PSFs
 % [L,nIsland] = bwlabel(imageN>0.001);
 
+%get connectivity between local maximum masks
 [L,nIsland] = bwlabel(image>0);
 
 % initialize clusters (SB)
