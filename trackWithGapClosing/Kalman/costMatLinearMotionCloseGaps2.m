@@ -635,7 +635,7 @@ for iPair = 1 : numPairs
         %         %allow potential link only if ratio is <= 10
         %         ratioDisp2MeanDisp = dispVecMag / (meanDisp2Tracks*sqrt(timeGap));
         %         if ratioDisp2MeanDisp <= 2
-        
+
         %calculate the cost of linking
         dispVecMag2 = dispVecMag ^ 2;
         if trackTypeE == 1 && trackTypeS == 1
@@ -778,22 +778,40 @@ if mergeSplit > 0
                 projEndLong = abs(dispVec * longVecE) / longVecMagE;
                 projEndShort = abs(dispVec * shortVecE) / shortVecMagE;
 
-                %get the amplitude at the end of track iEnd
-                ampE = ampEnd(iEnd);
+                %                 %get the amplitude at the end of track iEnd
+                %                 ampE = ampEnd(iEnd);
 
-                %get the amplitude of the merging track at the point of merging
-                %and the point before it
-                ampM = full(trackedFeatInfo(iMerge,8*endTime+4)); %at point of merging
-                ampM1 = full(trackedFeatInfo(iMerge,8*(endTime-1)+4)); %just before merging
+                %get the amplitude of track iEnd before its end - take the
+                %last 5 points
+                indxBefore = 8*(endTime-1)+4 - 8*(0:4);
+                indxBefore = indxBefore(indxBefore > 1);
+                ampE = nanmean(full(trackedFeatInfo(iEnd,indxBefore)));
+
+                %                 %get the amplitude of the merging track at the point of merging
+                %                 %and the point before it
+                %                 ampM = full(trackedFeatInfo(iMerge,8*endTime+4)); %at point of merging
+                %                 ampM1 = full(trackedFeatInfo(iMerge,8*(endTime-1)+4)); %just before merging
+
+                %get the amplitude of the merging track before and after
+                %merging - take 5 points on each side
+                ampM1 = nanmean(full(trackedFeatInfo(iMerge,indxBefore))); %before merging
+                indxAfter = 8*endTime+4 + 8*(0:4);
+                indxAfter = indxAfter(indxAfter < 8*numFrames);
+                ampM = nanmean(full(trackedFeatInfo(iMerge,indxAfter))); %after merging
 
                 %calculate the ratio of the amplitude after merging to the sum
                 %of the amplitudes before merging
                 ampRatio = ampM / (ampE + ampM1);
                 
-                %if amplitude is not to be used, make all amplitude related
-                %variables 1
+                %calculate the individual ratios
+                ampRatioIndME = ampM / ampE;
+                ampRatioIndMM1 = ampM / ampM1;
+                
+                %if amplitude is not to be used, give amplitude-related
+                %variables dummy values
                 if ~useAmp
                     [ampRatio,ampM,ampM1] = deal(1);
+                    [ampRatioIndME,ampRatioIndMM1] = deal(1.1);
                 end
 
                 %decide whether this is a possible link based on displacement,
@@ -828,6 +846,7 @@ if mergeSplit > 0
                         projEndShort <= shortVecMagE && ...
                         projEndShort3D <= shortVecMagE3D && ...
                         ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio && ...
+                        ampRatioIndME > 1 && ampRatioIndMM1 > 1 && ...
                         sin2AngleE <= sin2AngleMaxVD;
 
                 else %if ending track is Brownian or undetermined
@@ -838,7 +857,8 @@ if mergeSplit > 0
                     %look at displacement and amplitude ratio only (no
                     %directionality)
                     possibleLink = dispVecMag <= longVecMagE && ...
-                        ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio;
+                        ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio && ...
+                        ampRatioIndME > 1 && ampRatioIndMM1 > 1;
 
                 end
 
@@ -1031,23 +1051,38 @@ if mergeSplit > 0
                 %of track iStart and take absolute value
                 projStartLong = abs(dispVec * longVecS) / longVecMagS;
                 projStartShort = abs(dispVec * shortVecS) / shortVecMagS;
+                
+                %get the amplitude of track iStart after its start - take
+                %the first 5 points
+                indxAfter = 8*(startTime-1)+4 + 8*(0:4);
+                indxAfter = indxAfter(indxAfter < 8*numFrames);
+                ampS = nanmean(full(trackedFeatInfo(iStart,indxAfter)));
 
-                %get the amplitude at the start of track iStart
-                ampS = ampStart(iStart);
+                %                 %get the amplitude of the splitting track at the point of splitting
+                %                 %and the point before it
+                %                 ampSp1 = full(trackedFeatInfo(iSplit,8*(startTime-1)+4)); %at point of splitting
+                %                 ampSp = full(trackedFeatInfo(iSplit,8*(startTime-2)+4)); %just before splitting
 
-                %get the amplitude of the splitting track at the point of splitting
-                %and the point before it
-                ampSp1 = full(trackedFeatInfo(iSplit,8*(startTime-1)+4)); %at point of splitting
-                ampSp = full(trackedFeatInfo(iSplit,8*(startTime-2)+4)); %just before splitting
+                %get the amplitude of the splitting track after and before
+                %splitting - take 5 points on each side
+                ampSp1 = nanmean(full(trackedFeatInfo(iSplit,indxAfter))); %after splitting
+                indxBefore = 8*(startTime-2)+4 - 8*(0:4);
+                indxBefore = indxBefore(indxBefore > 1);
+                ampSp = nanmean(full(trackedFeatInfo(iSplit,indxBefore))); %before splitting
 
                 %calculate the ratio of the amplitude before splitting to the sum
                 %of the amplitudes after splitting
                 ampRatio = ampSp / (ampS + ampSp1);
 
-                %if amplitude is not to be used, make all amplitude related
-                %variables 1
+                %calculate the individual ratios
+                ampRatioIndSpS = ampSp / ampS;
+                ampRatioIndSpSp1 = ampSp / ampSp1;
+                
+                %if amplitude is not to be used, give amplitude-related
+                %variables dummy values
                 if ~useAmp
                     [ampRatio,ampSp,ampSp1] = deal(1);
+                    [ampRatioIndSpS,ampRatioIndSpSp1] = deal(1.1);
                 end
 
                 %decide whether this is a possible link based on displacement,
@@ -1082,6 +1117,7 @@ if mergeSplit > 0
                         projStartShort <= shortVecMagS && ...
                         projStartShort3D <= shortVecMagS3D && ...
                         ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio && ...
+                        ampRatioIndSpS > 1 && ampRatioIndSpSp1 > 1 && ...
                         sin2AngleS <= sin2AngleMaxVD;
                 else
 
@@ -1091,7 +1127,8 @@ if mergeSplit > 0
                     %look at displacement and amplitude ratio only (no
                     %directionality)
                     possibleLink = dispVecMag <= longVecMagS && ...
-                        ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio;
+                        ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio && ...
+                        ampRatioIndSpS > 1 && ampRatioIndSpSp1 > 1;
 
                 end
 

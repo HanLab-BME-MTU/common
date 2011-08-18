@@ -951,7 +951,8 @@ for iFrame = 1 : numFramesMovie
         
         %white circles: detected feature in the middle of track with status 2
         points2plot = find(pointStatus(:,iFrame)==3);
-        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wo','MarkerSize',5);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'ro','MarkerSize',5);
+        %         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wo','MarkerSize',5);
         %         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wo','MarkerSize',2);
         
         %green circles: detected feature just after birth

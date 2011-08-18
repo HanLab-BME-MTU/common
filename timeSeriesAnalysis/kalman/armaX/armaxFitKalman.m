@@ -182,7 +182,7 @@ else
     orderValX_def = -1:3; %X order values
 end
 
-repeat_def = 100; %times to repeat local minimization if initial guess not supplied
+repeat_def = 50; %times to repeat local minimization if initial guess not supplied
 
 minOpt_def = 'nl'; %minimization option
 
@@ -437,3 +437,4 @@ warning(warningState);
 
 
 %%%%% ~~ the end ~~ %%%%%
+

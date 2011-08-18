@@ -1,10 +1,10 @@
 
 %% movie information
-movieParam.imageDir = '/home/kj35/orchestra/groups/lccb-receptors/codeTesting/'; %directory where images are
-movieParam.filenameBase = 'test'; %image file name base
+movieParam.imageDir = '/home/kj35/files/LCCB/receptors/superres/images/'; %directory where images are
+movieParam.filenameBase = 'TSP'; %image file name base
 movieParam.firstImageNum = 1; %number of first image in movie
-movieParam.lastImageNum = 1; %number of last image in movie
-movieParam.digits4Enum = 1; %number of digits used for frame enumeration (1-4).
+movieParam.lastImageNum = 10; %number of last image in movie
+movieParam.digits4Enum = 5; %number of digits used for frame enumeration (1-4).
 
 %% detection parameters
 detectionParam.psfSigma = 1.5; %point spread function sigma (in pixels)

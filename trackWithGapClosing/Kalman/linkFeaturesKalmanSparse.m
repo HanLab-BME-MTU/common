@@ -279,9 +279,12 @@ featLifetime = ones(movieInfo(1).num,1);
 % % % %for paper - get number of potential link per feature
 % % % numPotLinksPerFeature = [];
 
-%get number of particles in whole movie, to get a worst-case scenario
+%get number of particles in whole movie and calculate a worst-case scenario
 %number of tracks
-numTracksWorstCase = round(sum(numFeatures)/4);
+%it can be that the final number of tracks is even larger than this worst
+%case scenario. Every time the auxiliary matrices (defined below) run out
+%of rows, another "numTracksWorstCase" rows are added to them.
+numTracksWorstCase = round(sum(numFeatures)/10);
 
 %initialize auxiliary matrices for storing information related to tracks
 %that end in the middle of the movie
@@ -332,11 +335,24 @@ for iFrame = 1 : numFrames-1
                 %find existing tracks that are not connected to features in 2nd frame
                 numExistTracks = size(trackedFeatureIndx,1);
                 indx1U = setdiff(1:numExistTracks,indx1C);
-
+                numRows = length(indx1U);
+                
+                %determine where to store these tracks in auxiliary matrix
+                %extend auxiliary matrices if necessary
+                rowStart = rowEnd - numRows + 1;
+                if rowStart <= 1
+                    trackedFeatureIndxAux = [zeros(numTracksWorstCase,numFrames); ...
+                        trackedFeatureIndxAux];
+                    nnDistFeaturesAux = [NaN(numTracksWorstCase,numFrames); ...
+                        nnDistFeaturesAux];
+                    prevCostAux = [NaN(numTracksWorstCase,numFrames); ...
+                        prevCostAux];
+                    rowEnd = rowEnd + numTracksWorstCase;
+                    rowStart = rowStart + numTracksWorstCase;
+                end
+                
                 %move rows of tracks that are not connected to points in
                 %2nd frame to auxilary matrix
-                numRows = length(indx1U);
-                rowStart = rowEnd - numRows + 1;
                 trackedFeatureIndxAux(rowStart:rowEnd,1:iFrame) = trackedFeatureIndx(indx1U,:);
                 
                 %assign space for new connectivity matrix
@@ -400,10 +416,24 @@ for iFrame = 1 : numFrames-1
                 end
                 
             else %if there are no potential links
-
-                %move tracks upto 1st frame to auxiliary matrix
+                
+                %determine where to store the tracks up to 1st frame in
+                %auxiliary matrix
+                %extend auxiliary matrices if necessary
                 numRows = size(trackedFeatureIndx,1);
                 rowStart = rowEnd - numRows + 1;
+                if rowStart <= 1
+                    trackedFeatureIndxAux = [zeros(numTracksWorstCase,numFrames); ...
+                        trackedFeatureIndxAux];
+                    nnDistFeaturesAux = [NaN(numTracksWorstCase,numFrames); ...
+                        nnDistFeaturesAux];
+                    prevCostAux = [NaN(numTracksWorstCase,numFrames); ...
+                        prevCostAux];
+                    rowEnd = rowEnd + numTracksWorstCase;
+                    rowStart = rowStart + numTracksWorstCase;
+                end
+                
+                %move tracks upto 1st frame to auxiliary matrix
                 trackedFeatureIndxAux(rowStart:rowEnd,1:iFrame) = trackedFeatureIndx;
 
                 %assign space for new connectivity matrix
@@ -450,9 +480,23 @@ for iFrame = 1 : numFrames-1
             
         else %if there are no features in 2nd frame
             
-            %move tracks upto 1st frame to auxiliary matrix
+            %determine where to store the tracks up to 1st frame in
+            %auxiliary matrix
+            %extend auxiliary matrices if necessary
             numRows = size(trackedFeatureIndx,1);
             rowStart = rowEnd - numRows + 1;
+            if rowStart <= 1
+                trackedFeatureIndxAux = [zeros(numTracksWorstCase,numFrames); ...
+                    trackedFeatureIndxAux];
+                nnDistFeaturesAux = [NaN(numTracksWorstCase,numFrames); ...
+                    nnDistFeaturesAux];
+                prevCostAux = [NaN(numTracksWorstCase,numFrames); ...
+                    prevCostAux];
+                rowEnd = rowEnd + numTracksWorstCase;
+                rowStart = rowStart + numTracksWorstCase;
+            end
+            
+            %move tracks upto 1st frame to auxiliary matrix
             trackedFeatureIndxAux(rowStart:rowEnd,1:iFrame) = trackedFeatureIndx;
             
             %update the connectivity matrix "trackedFeatureIndx"
@@ -545,6 +589,16 @@ end %(for iFrame=1:numFrames-1)
 %add information from last frame to auxiliary matrices
 numRows = size(trackedFeatureIndx,1);
 rowStart = rowEnd - numRows + 1;
+if rowStart <= 1
+    trackedFeatureIndxAux = [zeros(numRows,numFrames); ...
+        trackedFeatureIndxAux];
+    nnDistFeaturesAux = [NaN(numRows,numFrames); ...
+        nnDistFeaturesAux];
+    prevCostAux = [NaN(numRows,numFrames); ...
+        prevCostAux];
+    rowEnd = rowEnd + numRows;
+    rowStart = rowStart + numRows;
+end
 trackedFeatureIndxAux(rowStart:rowEnd,:) = trackedFeatureIndx;
 nnDistFeaturesAux(rowStart:rowEnd,:) = nnDistFeatures;
 prevCostAux(rowStart:rowEnd,:) = prevCost;
