@@ -408,6 +408,7 @@ for i = 1 : numClusters
                 
                 %determine which kernels to keep
                 indxBad = find(pValue == pValueMax);
+                indxBad = indxBad(1);
                 indx = setdiff(1:numMaxima,indxBad);
                 
                 %remove the information of the kernel to be discarded
@@ -502,6 +503,8 @@ for i = 1 : numClusters
                 
                 %find pair with maximum p-value
                 [indx1,indx2] = find(pValue==pValueMax);
+                indx1 = indx1(1);
+                indx2 = indx2(1);
                 
                 %out of this pair, identify maximum with smaller amplitude
                 ampBoth = maximaAmp([indx1 indx2],1);
