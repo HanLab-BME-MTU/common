@@ -253,6 +253,19 @@ costMat(costMat>searchRadius) = NaN;
 %square the cost matrix to make the cost = distance squared
 costMat = costMat.^2;
 
+%% Amplitude factor
+
+% %put feature amplitudes from both frames in vectors
+% amp1 = movieInfo(1).amp(:,1);
+% amp2 = movieInfo(2).amp(:,1);
+% 
+% %make a matrix of amplitude costs
+% ampCost = repmat(amp1,1,numFeaturesFrame2)./repmat(amp2',numFeaturesFrame1,1);
+% ampCost(ampCost<1) = 1./ampCost(ampCost<1);
+% 
+% %multiply distance cost by amplitude cost
+% costMat = costMat .* ampCost;
+
 %% Cost scaling
 
 % %scale the cost of each potential link by kalmanStd^2 in order to normalize
