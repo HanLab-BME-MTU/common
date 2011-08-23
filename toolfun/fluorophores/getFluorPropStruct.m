@@ -42,3 +42,7 @@ s(18).name = 'alexa647';
 s(18).lambda_em = 665e-9;
 s(18).name = 'fluosphere605';
 s(18).lambda_em = 605e-9;
+s(19).name = 'cy3';
+s(19).lambda_em = 570e-9;
+s(20).name = 'cy5';
+s(20).lambda_em = 670e-9;
