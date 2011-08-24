@@ -42,6 +42,7 @@ ip.addParamValue('XLabels', arrayfun(@(k) num2str(k), 1:sum(ng), 'UniformOutput'
 ip.addParamValue('YLabel', ' ', @ischar);
 ip.addParamValue('YLim', [], @(x) numel(x)==2);
 ip.addParamValue('BarWidth', 0.8, @isscalar); 
+ip.addParamValue('LineWidth', 2, @isscalar);
 ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('ErrorBarPosition', 'top',  @(x) strcmpi(x, 'top') | strcmpi(x, 'both'));
 ip.addParamValue('ErrorBarWidth', 0.2, @(x) 0<x && x<=1);
@@ -98,7 +99,7 @@ for k = 1:ng
     % errorbars, if top only
     if ~isempty(errorBars) && strcmpi(ip.Results.ErrorBarPosition, 'top')
         he = errorbar(xa{k}, height, zeros(size(xa{k})), errorBars(k,:),...
-            'k', 'LineStyle', 'none', 'LineWidth', 2, 'HandleVisibility', 'off');
+            'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
         setErrorbarStyle(he, ip.Results.ErrorBarPosition, ip.Results.ErrorBarWidth);
     end
         
@@ -115,13 +116,13 @@ for k = 1:ng
             ci = k;
         end
         patch(xv(:,b), yv(:,b), color(ci,:), 'EdgeColor', edgeColor(ci,:),...
-        'LineWidth', 2);
+        'LineWidth', ip.Results.LineWidth);
     end
    
     % errorbars, if two-sided
     if ~isempty(errorBars) && strcmpi(ip.Results.ErrorBarPosition, 'both')
         he = errorbar(xa{k}, height, errorBars(k,:),...
-            'k', 'LineStyle', 'none', 'LineWidth', 2, 'HandleVisibility', 'off');
+            'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
         setErrorbarStyle(he, ip.Results.ErrorBarPosition, ip.Results.ErrorBarWidth);
     end
 end
