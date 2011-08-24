@@ -312,14 +312,14 @@ end
 
 %% Link between frames
 
-%if self-adaptive, link in multiple rounds
+% if self-adaptive, link in multiple rounds
 if selfAdaptive
 
     %get initial track segments by linking features between consecutive frames
     if verbose
         disp('Linking features forwards ...');
     end
-    [dummy,dummy,kalmanInfoLink,dummy,linkingCosts] = linkFeaturesKalmanSparse(...
+    [tmp,dummy,kalmanInfoLink,dummy,linkingCosts] = linkFeaturesKalmanSparse(...
         movieInfo,costMatrices(1).funcName,costMatrices(1).parameters,...
         kalmanFunctions,probDim,[],[],verbose);
     clear dummy
@@ -363,7 +363,7 @@ else %if not self-adaptive, link in one round only
         disp('Linking features ...');
     end
     [tracksFeatIndxLink,tracksCoordAmpLink,dummy,nnDistLinkedFeat,...
-        dummy,errFlag] = linkFeaturesKalman(movieInfo,costMatrices(1).funcName,...
+        dummy,errFlag] = linkFeaturesKalmanSparse(movieInfo,costMatrices(1).funcName,...
         costMatrices(1).parameters,kalmanFunctions,probDim,[],[],verbose);
     kalmanInfoLink = [];
     clear dummy

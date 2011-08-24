@@ -1,4 +1,5 @@
-function [movieInfo,tracksSimMiss] = genMovieInfoFromTracks2(tracksSim,percentMissing,percentFP)
+function [movieInfo,tracksSimMiss,percentMissingActual] = genMovieInfoFromTracks2(tracksSim,...
+    percentMissing,percentFP,minSegLength)
 %GENMOVIEINFOFROMTRACKS2 generates a list of detected features per frame from supplied tracks
 %
 %SYNOPSIS [movieInfo,tracksSimMiss] = genMovieInfoFromTracks2(tracksSim,percentMissing,percentFP)
@@ -8,6 +9,8 @@ function [movieInfo,tracksSimMiss] = genMovieInfoFromTracks2(tracksSim,percentMi
 %       percentFP     : Percentage of false detecton positives, relative to
 %                       original number of features.
 %                       Optional. Default: 0.
+%       minSegLength  : Minimum length of a track segment between two gaps.
+%                       Optional. Default: 1.
 %
 %OUTPUT movieInfo: List of detected features per frame, in the format
 %                  required for the input of trackWithGapClosing and
@@ -17,6 +20,10 @@ function [movieInfo,tracksSimMiss] = genMovieInfoFromTracks2(tracksSim,percentMi
 
 if nargin < 3 || isempty(percentFP)
     percentFP = 0;
+end
+
+if nargin < 4 || isempty(minSegLength)
+    minSegLength = 1;
 end
 
 %get number of frames in movie
@@ -106,13 +113,16 @@ for iTrack = 1 : numTracks
 
 end
 
-%determine maximum coordinate values for false positive features
-xCoordMax = max(max(trackedFeatureInfo(:,1:8:end)));
-yCoordMax = max(max(trackedFeatureInfo(:,2:8:end)));
+% %determine maximum coordinate values for false positive features
+% xCoordMax = max(max(trackedFeatureInfo(:,1:8:end)));
+% yCoordMax = max(max(trackedFeatureInfo(:,2:8:end)));
 
 %% in each frame, delete "percentMissing+-std" of the features that can be deleted (i.e. features not just before/after a merge/split)
 %% also add false positives
 %% and store information in movieInfo
+
+%initialize vector for output
+percentMissingActual = zeros(numFrames,1);
 
 %go over all frames ...
 for iFrame = 1 : numFrames
@@ -135,7 +145,23 @@ for iFrame = 1 : numFrames
     else
         deleteIndx = indxCanDelete;
     end
-
+    
+    %prevent some deletions if they generate segments between gaps that are
+    %shorter than the minimum allowed segment length
+    if minSegLength > 1 && ~isempty(deleteIndx)
+        colIndx = iFrame-minSegLength : iFrame - 1;
+        colIndx = colIndx(colIndx >= 1);
+        if length(colIndx) < minSegLength
+            deleteIndx = [];
+        else
+            tracksMatChunk = trackedFeatureInfo(deleteIndx,(colIndx-1)*8+1);
+            badIndx = find(isnan(tracksMatChunk(:,1))&all(~isnan(tracksMatChunk(:,2:end)),2));
+            goodIndx = setdiff(1:length(deleteIndx),badIndx);
+            deleteIndx = deleteIndx(goodIndx);
+        end
+    end
+    percentMissingActual(iFrame) = 100*length(deleteIndx)/numFeat;
+    
     %delete features by making their coordinates NaN
     trackedFeatureInfo(deleteIndx,(iFrame-1)*8+1:iFrame*8) = NaN;
     
@@ -144,9 +170,17 @@ for iFrame = 1 : numFrames
     coord = abs(coord(~isnan(coord(:,1)),:));
     numFeat = size(coord,1);
     
+    %calculate the coordinate limits for false positives
+    xCoordMin = min(coord(:,1));
+    xCoordMax = max(coord(:,1));
+    yCoordMin = min(coord(:,2));
+    yCoordMax = max(coord(:,2));
+    
     %generate false positive features
-    xCoordFP = rand(numFalsePositive,1)*xCoordMax;
-    yCoordFP = rand(numFalsePositive,1)*yCoordMax;
+    %     xCoordFP = rand(numFalsePositive,1)*xCoordMax;
+    %     yCoordFP = rand(numFalsePositive,1)*yCoordMax;
+    xCoordFP = rand(numFalsePositive,1)*(xCoordMax-xCoordMin)+xCoordMin;
+    yCoordFP = rand(numFalsePositive,1)*(yCoordMax-yCoordMin)+yCoordMin;    
     ampFP = mean(coord(:,4))*ones(numFalsePositive,1);
 
     %store feature information in movieInfo
@@ -155,6 +189,9 @@ for iFrame = 1 : numFrames
     movieInfo(iFrame).amp    = [[coord(:,4); ampFP] zeros(numFeat+numFalsePositive,1)];
 
 end
+
+%take average for output
+percentMissingActual = mean(percentMissingActual);
 
 %% construct tracksSimMiss which includes NaNs for "closed gaps"
 
