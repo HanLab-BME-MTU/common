@@ -118,11 +118,12 @@ for i = 1 : numLocMax
     maxCoord2 = min(midPixel(2) + psfHalfRange,numPixelsY);
     imageLocMax = image(minCoord1:maxCoord1,minCoord2:maxCoord2);
     
-    %calculate centroid in small image
+    %calculate centroid in small image - notice that centroid comes back in
+    %image coordinate system
     ce = centroid2D(imageLocMax);
     
     %shift to coordinates in overall image
-    ce = ce + midPixel - psfHalfRange - 1;
+    ce = ce(2:-1:1) + midPixel - psfHalfRange - 1;
     
     %store information in structure "detectedFeatures" - coordinates are
     %converted to image coordinate system, for consistency with
