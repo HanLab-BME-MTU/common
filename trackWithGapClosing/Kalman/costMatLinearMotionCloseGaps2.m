@@ -707,6 +707,20 @@ for iPair = 1 : numPairs
             %penalize cost for gap length considerations
             cost12 = cost12 * gapPenalty^(timeGap-1);
             
+            %             %penalize cost for the length of the two segments if the
+            %             %shorter of the two is shorter than lenForClassify
+            %             startSegLength = trackEndTime(iStart) - trackStartTime(iStart) + 1;
+            %             endSegLength = trackEndTime(iEnd) - trackStartTime(iEnd) + 1;
+            %             lengthPenalty = max(1,lenForClassify/min(startSegLength,endSegLength));
+            %             cost12 = cost12 * lengthPenalty;
+            
+            %             %penalize cost for gap length considerations
+            %             %take into account segment lengths
+            %             startSegLength = trackEndTime(iStart) - trackStartTime(iStart) + 1;
+            %             endSegLength = trackEndTime(iEnd) - trackStartTime(iEnd) + 1;
+            %             exponent = timeGap - 1 - min(startSegLength,endSegLength);
+            %             cost12 = cost12 * gapPenalty^exponent;
+            
             %add this cost to the list of costs
             cost(iPair) = cost12;
             %             timeGapAll(iPair) = timeGap;
@@ -935,18 +949,26 @@ if mergeSplit > 0
                     if ~isempty(lftCdf)
                         cost12 = cost12 / oneMinusLftCdf(trackEndTime(iMerge)-trackStartTime(iEnd)+2);
                     end
-
+                    
                     %if the lifetime consideration does not make this link impossible
                     if ~isinf(cost12)
-
+                        
+                        %                         %penalize cost for the length of the two segments if the
+                        %                         %shorter of the two is shorter than lenForClassify
+                        %                         endSegLength = trackEndTime(iEnd) - trackStartTime(iEnd) + 1;
+                        %                         mergeSegLength = trackEndTime(iMerge) - trackStartTime(iMerge) + 1;
+                        %                         lengthPenalty = max(1,lenForClassify/min(mergeSegLength,endSegLength));
+                        %                         cost12 = cost12 * lengthPenalty;
+                        
                         %add this cost to the list of costs
                         costMS(iPair) = cost12;
-
+                        
                         %check whether the track being merged with has had
                         %something possibly merging with it in this same frame
                         prevAppearance = find(indxMSMS == iMerge);
 
                         %if this track in this frame did not appear before ...
+                        %THIS SECTION IS OUTDATED
                         if isempty(prevAppearance)
 
                             %increase the "merge index" by one
@@ -1218,23 +1240,30 @@ if mergeSplit > 0
                     if ~isempty(lftCdf)
                         cost12 = cost12 / oneMinusLftCdf(trackEndTime(iStart)-trackStartTime(iSplit)+2);
                     end
-
+                    
                     %if the lifetime consideration does not make this link impossible
                     if ~isinf(cost12)
-
+                        
+                        %                         %penalize cost for the length of the two segments if the
+                        %                         %shorter of the two is shorter than lenForClassify
+                        %                         startSegLength = trackEndTime(iStart) - trackStartTime(iStart) + 1;
+                        %                         splitSegLength = trackEndTime(iSplit) - trackStartTime(iSplit) + 1;
+                        %                         lengthPenalty = max(1,lenForClassify/min(startSegLength,splitSegLength));
+                        %                         cost12 = cost12 * lengthPenalty;
+                        
                         %add this cost to the list of costs
                         costMS(iPair) = cost12;
-
+                        
                         %check whether the track being split from has had something
                         %possibly splitting from it in this same frame
                         prevAppearance = find(indxMSMS == iSplit);
 
                         %if this track in this frame did not appear before ...
                         if isempty(prevAppearance)
-
+                            
                             %increase the "split index" by one
                             numSplit = numSplit + 1;
-
+                            
                             %save the splitting track's number
                             indxMSMS(iPair) = iSplit;
 
@@ -1338,14 +1367,22 @@ tmp = (costMat~=0);
 numPotAssignRow = full(sum(tmp,2));
 numPotAssignCol = full(sum(tmp)');
 numPotAssignColAll = sum(numPotAssignCol);
-% numPartCol = length(find(numPotAssignCol));
+numPotAssignRowAll = sum(numPotAssignRow);
 numPartCol = length(numPotAssignCol) * 2;
 extraCol = (numPotAssignColAll-numPartCol)/numPotAssignColAll;
-numPotAssignRowAll = sum(numPotAssignRow);
-% numPartRow = length(find(numPotAssignRow));
 numPartRow = length(numPotAssignRow) * 2;
 extraRow = (numPotAssignRowAll-numPartRow)/numPotAssignRowAll;
 prctile2use = min(100, 100 - mean([extraRow extraCol])*100);
+% prctile2use = min(90, 100 - mean([extraRow extraCol])*100);
+% prctile2use = 100 - mean([extraRow extraCol])*100;
+% if prctile2use >= 100
+%     numPartCol = length(numPotAssignCol);
+%     extraCol = (numPotAssignColAll-numPartCol)/numPotAssignColAll;
+%     numPartRow = length(numPotAssignRow);
+%     extraRow = (numPotAssignRowAll-numPartRow)/numPotAssignRowAll;
+%     prctile2use = min(100,100 - mean([extraRow extraCol])*100);
+% end
+% fprintf('birth death cost percentile: %2i \n',prctile2use)
 costBD = 1.05*prctile(cost(:),prctile2use);
 
 % costBD = prctile(cost,90);
