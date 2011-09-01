@@ -1,9 +1,11 @@
-function [P t res] = TLSFitBezier(X, n, varargin)
+function [P t res] = TLSFitBezierFullParameters(data, n, varargin)
 % TLSFitBezier computes the best total least squares fit of a nth-degree
-% Bezier curve to a set of ordered data points.
+% Bezier curve to a set of ordered data points. As oppose to the function
+% TLSFitBezier, the optimization is performed on the variable t1, ..., tm,
+% x0, ..., xn, y0, ... yn.
 %
 % Required Inputs:
-% X              A m x d array representing a set of d-dimensional points
+% data           A m x d array representing a set of d-dimensional points
 % n              Degree of the Bezier curve.
 % 
 % Optional Inputs:
@@ -23,20 +25,20 @@ function [P t res] = TLSFitBezier(X, n, varargin)
 % res            A m x 1 array of residue, i.e the orthogonal distance
 %                between a data point and the fitted curve.
 %
-% Sylvain Berlemont, May 2011
+% Sylvain Berlemont, August 2011
 
 % Parse inputs
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('X', @isnumeric);
+ip.addRequired('data', @isnumeric);
 ip.addRequired('n', @(n) n > 0);
 ip.addParamValue('MaxFunEvals', 1e4, @isscalar);
 ip.addParamValue('MaxIter', 1e4, @isscalar);
-ip.addParamValue('Display', 'off', @isstring);
+ip.addParamValue('Display', 'on', @isstring);
 ip.addParamValue('TolX', 1e-8, @isscalar);
 ip.addParamValue('TolFun', 1e-8, @isscalar);
 
-ip.parse(X, n, varargin{:});
+ip.parse(data, n, varargin{:});
 maxFunEvals = ip.Results.MaxFunEvals;
 maxIter = ip.Results.MaxIter;
 display = ip.Results.Display;
@@ -44,7 +46,7 @@ tolX = ip.Results.TolX;
 tolFun = ip.Results.TolFun;
 
 % Define options of lsqnonlin algorithm
-opts = optimset('Jacobian', 'on', ...
+opts = optimset('Jacobian', 'off', ...
   'MaxFunEvals', maxFunEvals, ...
   'MaxIter', maxIter, ...
   'Display', display, ...
@@ -52,35 +54,45 @@ opts = optimset('Jacobian', 'on', ...
   'Tolfun', tolFun);
 
 % Define initial vector of nodes t0
-[m d] = size(X);
+[m dim] = size(data);
 t = linspace(0,1,m)';
 
-% Solve the non-linear optimization on t
+% Compute an initial set of control points
 Cnk = diag([1 cumprod(n:-1:1) ./ cumprod(1:n)]);
-Cn_1k = diag([1 cumprod(n-1:-1:1) ./ cumprod(1:n-1)]);
-fun = @(t) r(t, X, Cnk, Cn_1k, n);
-[t, ~, res] = lsqnonlin(fun, t, zeros(size(t)), ones(size(t)), opts);
-
-% Compute the control points
 B = (bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0)) * Cnk;
 [Q1 R11] = qr(B,0);
-P = R11 \ (Q1' * X);
+P = R11 \ (Q1' * data);
+
+% Define the initial set of parameters
+X = [t; P(:)];
+
+% Solve the non-linear optimization on t
+Cn_1k = diag([1 cumprod(n-1:-1:1) ./ cumprod(1:n-1)]);
+fun = @(X) r(X, data, Cnk, Cn_1k, n);
+lb = [zeros(size(t)); -inf(size(P(:)))];
+ub = [ones(size(t)); +inf(size(P(:)))];
+[X, ~, res] = lsqnonlin(fun, X, lb, ub, opts);
+
+t = X(1:m);
+
+P = reshape(X(m+1:end), [n+1, dim]);
 
 % Reshape residual
-res = sqrt(sum(reshape(res, [m, d]).^2, 2));
+res = sqrt(sum(reshape(res, [m, dim]).^2, 2));
 
-function [F J] = r(t, X, Cnk, Cn_1k, n)
+function [F J] = r(X, data, Cnk, Cn_1k, n)
     
-[m dim] = size(X);
+[m dim] = size(data);
+
+t = X(1:m);
+P = reshape(X(m+1:end), [n+1,dim]);
 
 % Compute Bernstein Matrix
 B = (bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0)) * Cnk;
 
-% Compute residual = (Id - Bn * pinv(Bn)) * X
-[Q1 R11 EE] = qr(B,0);
-Q2Q2t = eye(m) - Q1 * Q1';
-r = Q2Q2t * X;
-F = r(:);
+% Compute the residual
+F = data - B * P;
+F = F(:);
 
 if nargout > 1
   % Compute the Benstein Matrix of order n-1
@@ -90,14 +102,9 @@ if nargout > 1
   z = zeros(m,1);
   Bt = n * ([z Bn_1] - [Bn_1 z]);
   
-  % Compute P
-  E = zeros(n + 1);
-  E(sub2ind(size(E), EE, 1:(n+1))) = 1;
-  P = Bt * E * (R11 \ Q1');
-
-  % Compute Jacobian Matrix
-  J = zeros(m * dim, m);
-  for d = 1:dim
-    J((d-1) * m + 1:d * m,:) = -(Q2Q2t * diag(P * X(:,d)) + P' * diag(r(:,d)));
-  end
+  J11 = diag(-Bt * P(:,1));
+  J21 = diag(-Bt * P(:,2));
+  
+  z = zeros(m, n+1);
+  J = [J11, -B, z; J21, z, -B];
 end

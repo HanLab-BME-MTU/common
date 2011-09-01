@@ -7,7 +7,7 @@ function [P t res] = TLSFitBezierConstraint1(X, n, varargin)
 % n              Degree of the Bezier curve.
 % 
 % Optional Inputs:
-% MaxFunEvals    Aaximum number of fonctional evaluations during lsqnonlin.
+% MaxFunEvals    Maximum number of fonctional evaluations during lsqnonlin.
 % MaxIter        Maximum number of interations during lsqnonlin.
 % Display        Verbose mode during lsqnonlin.
 % TolX           Tolerance on the solution (i.e. t) during lsqnonlin.

@@ -6,7 +6,7 @@ y = sin(x) + rand(size(x)) * .05;
 plot(x,y,'ro');
 tic;
 [P1, t1] = TLSFitBezier([x' y'], n);
-[P2, t2] = TLSFitBezierConstraint1([x' y'], n);
+[P2, t2] = TLSFitBezierFullParameters([x' y'], n);
 toc
 C1 = renderBezier(P1, t1);
 C2 = renderBezier(P2, t2);
@@ -29,9 +29,9 @@ fprintf(1, 'dot product at end point (unconstraint) = %E\n', dot);
 u = [x(1) - P2(1,1), y(1) - P2(1,2)];
 v = [P2(2, 1) - P2(1, 1), P2(2, 2) - P2(1, 2)];
 dot = sum(u .* v) ./ (sqrt(sum(u.^2)) * sqrt(sum(v.^2)));
-fprintf(1, 'dot product at start point (constraint) = %E\n', dot);
+fprintf(1, 'dot product at start point (full param) = %E\n', dot);
 
 u = [x(m) - P2(n+1,1), y(m) - P2(n+1,2)];
 v = [P2(n+1, 1) - P2(n, 1), P1(n+1, 2) - P2(n, 2)];
 dot = sum(u .* v) ./ (sqrt(sum(u.^2)) * sqrt(sum(v.^2)));
-fprintf(1, 'dot product at end point (constraint) = %E\n', dot);
+fprintf(1, 'dot product at end point (full param) = %E\n', dot);
