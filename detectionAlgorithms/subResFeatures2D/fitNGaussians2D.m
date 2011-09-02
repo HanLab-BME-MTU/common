@@ -13,9 +13,11 @@ function [F,J] = fitNGaussians2D(x0,image,index,psfSigma)
 %                 Gaussians.
 %       J       : The Jacobian matrix of F.
 %       errFlag : 0 if function executes normally, 1 otherwise.
-
+%
+%REMARKS F = model image - real image, important to know if the sign of the
+%residuals matters.
+%
 %Khuloud Jaqaman, August 2005
-% just a comment
 
 %% Output
 

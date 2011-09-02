@@ -223,7 +223,7 @@ end
 %determine where to save results
 if nargin < 3 || isempty(saveResults) %if nothing was input
     saveResDir = pwd;
-    saveResFile = 'detectedFeatures';
+    saveResFile = 'detectedFeatures.mat';
     saveResults.dir = pwd;
 else
     if isstruct(saveResults)
@@ -233,7 +233,7 @@ else
             saveResDir = saveResults.dir;
         end
         if ~isfield(saveResults,'filename') || isempty(saveResults.filename)
-            saveResFile = 'detectedFeatures';
+            saveResFile = 'detectedFeatures.mat';
         else
             saveResFile = saveResults.filename;
         end

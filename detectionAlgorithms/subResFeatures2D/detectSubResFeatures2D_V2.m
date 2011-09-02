@@ -293,6 +293,7 @@ for i = 1 : numClusters
             lsqnonlin(@fitNGaussians2D,x0,lb,ub,options,imageC,...
             clusterPixels,psfSigma);
         jacMatT = full(jacMatT);
+        residualsT = -residualsT; %minus sign so that residuals = real image - model image
         
         %check whether addition of 1 PSF has significantly improved the fit
         if firstFit %if this is the first fit
@@ -431,6 +432,7 @@ for i = 1 : numClusters
                     lsqnonlin(@fitNGaussians2D,x0,lb,ub,options,imageC,...
                     clusterPixels,psfSigma);
                 jacMat = full(jacMat);
+                residuals = -residuals; %minus sign so that residuals = real image - model image
                 
                 %calculate the parameters' variance-covariance matrix and get their
                 %uncertainties
@@ -537,6 +539,7 @@ for i = 1 : numClusters
                     lsqnonlin(@fitNGaussians2D,x0,lb,ub,options,imageC,...
                     clusterPixels,psfSigma);
                 jacMat = full(jacMat);
+                residuals = -residuals; %minus sign so that residuals = real image - model image
 
                 %calculate the parameters' variance-covariance matrix and get their
                 %uncertainties
@@ -616,6 +619,7 @@ for i = 1 : numClusters
             lsqnonlin(@fitNGaussians2D,x0,lb,ub,options,imageC,...
             clusterPixels,psfSigma);
         jacMat = full(jacMat);
+        residuals = -residuals; %minus sign so that residuals = real image - model image
         
         %calculate the parameters' variance-covariance matrix and get their
         %uncertainties

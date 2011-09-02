@@ -1,9 +1,11 @@
 function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
-    filterSigma,showRaw,intensityScale,firstImageFile,dir2saveMovie,movieType)
+    filterSigma,showRaw,intensityScale,firstImageFile,dir2saveMovie,...
+    movieType,plotFullScreen)
 %OVERLAYFEATURESMOVIE makes a movie of detected features overlaid on images
 %
 %SYNPOSIS overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
-%    filterSigma,showRaw,intensityScale,firstImageFile,dir2saveMovie)
+%    filterSigma,showRaw,intensityScale,firstImageFile,dir2saveMovie,...
+%    movieType,plotFullScreen)
 %
 %INPUT  movieInfo   : Output of detectSubResFeatures2D_StandAlone.
 %       startend    : Row vector indicating first and last frame to
@@ -41,6 +43,9 @@ function overlayFeaturesMovie(movieInfo,startend,saveMovie,movieName,...
 %                     using ImageMagick and ffmpeg. These options works
 %                     only under linux or mac.
 %                     Optional. Default: 'mov'.
+%       plotFullScreen: 1 the figure will be sized to cover the whole
+%                       screen. In this way the movie will be of highest
+%                       possible quality. default is 0.
 %
 %OUTPUT the movie.
 %
@@ -163,6 +168,11 @@ if nargin < 10 || isempty(movieType)
     movieType = 'mov';
 end
 
+%check whether to use full screen for plotting
+if nargin < 11 || isempty(plotFullScreen)
+    plotFullScreen = 0;
+end
+
 %% make movie
 
 %initialize movie if it is to be saved
@@ -206,7 +216,13 @@ switch intensityScale
 end
 
 %go over all specified frames
-figure
+if plotFullScreen
+    scrsz = get(0,'ScreenSize');
+    h     = figure();
+    set(h,'Position',scrsz);
+else
+    figure
+end
 for iFrame = 1 : numFramesMovie
     
     if frame2fileMap(iFrame) ~= 0 %if frame exists

@@ -25,6 +25,7 @@ for iPixelX = startPixelX : 11 : endPixelX
         imageLocal = imageLocal(~isnan(imageLocal));
         if ~isempty(imageLocal)
             [bgMean1,bgStd1] = robustMean(imageLocal(:));
+            bgStd1 = max(bgStd1,eps);
         else
             bgMean1 = NaN;
             bgStd1 = NaN;
