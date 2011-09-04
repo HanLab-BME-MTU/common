@@ -244,6 +244,7 @@ classdef Package < hgsetget
 
     methods(Static,Abstract)
         start
+        getName
         getDependencyMatrix
         getOptionalProcessId
     end

@@ -9,7 +9,7 @@ classdef SegmentationPackage < Package
             else
                 % Owner: MovieData object
                 super_args{1} = owner;
-                super_args{2} = 'Segmentation';
+                super_args{2} = SegmentationPackage.getName;
                 % Dependency Matrix (same length as process class name
                 % string)
                 super_args{3} = SegmentationPackage.getDependencyMatrix;
@@ -41,6 +41,10 @@ classdef SegmentationPackage < Package
         function id = getOptionalProcessId()
             % Get the optional process id
             id = [];
+        end
+        
+        function name = getName()
+            name = 'Segmentation';
         end
         
         function varargout = start(varargin)

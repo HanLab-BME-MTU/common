@@ -9,7 +9,7 @@ methods (Access = public)
            else
                % Owner: MovieData object
                super_args{1} = owner;
-               super_args{2} = 'U-Track'; 
+               super_args{2} = UTrackPackage.getName; 
                % Dependency Matrix (same length as process class name
                % string)
                super_args{3} = UTrackPackage.getDependencyMatrix;
@@ -41,6 +41,10 @@ methods (Static)
         function id = getOptionalProcessId()
             % Get the optional process id
             id = [];
+        end
+        
+        function name = getName()
+            name = 'U-Track';
         end
         
         function varargout = start(varargin)

@@ -267,8 +267,8 @@ end
 % --------------------------Other GUI settings-----------------------------
 
 % set titles
-set(handles.figure1, 'Name',['Control Panel - ' userData.crtPackage.name_]);
-set(handles.text_body1, 'string',[userData.crtPackage.name_ ' Package']);
+set(handles.figure1, 'Name',['Control Panel - ' userData.crtPackage.getName]);
+set(handles.text_packageName,'String',userData.crtPackage.getName);
 
 % Set movie explorer
 msg = {};
