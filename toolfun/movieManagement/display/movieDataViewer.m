@@ -417,7 +417,7 @@ channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
 chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
 if numel(chanList)==0
     set(hObject,'Value',1);
-elseif numel(chanList)>4
+elseif numel(chanList)>3
    set(hObject,'Value',0); 
 end
 

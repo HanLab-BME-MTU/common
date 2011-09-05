@@ -45,7 +45,7 @@ classdef TrackingProcess < DataProcessingProcess
                 % --------------- costMatrices ----------------
                 
                 % Linking:
-                funParams.costMatrices(1).funcName = 'costMatLinearMotionLink2';
+                funParams.costMatrices(1).funcName = func2str(@costMatLinearMotionLink2);
                 
                 parameters.linearMotion = 0; %FLAG use linear motion Kalman filter.
                 parameters.minSearchRadius = 2; %minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
@@ -60,7 +60,7 @@ classdef TrackingProcess < DataProcessingProcess
                 clear parameters
                 
                 % Gap Closing:
-                funParams.costMatrices(2).funcName = 'costMatLinearMotionCloseGaps2';
+                funParams.costMatrices(2).funcName = func2str(@costMatLinearMotionCloseGaps2);
                 parameters.linearMotion = 0; %use linear motion Kalman filter.
                 
                 parameters.minSearchRadius = 2; %minimum allowed search radius.
@@ -89,22 +89,12 @@ classdef TrackingProcess < DataProcessingProcess
                 
                 % --------------- kalmanFunctions ----------------
                 
-                funParams.kalmanFunctions.reserveMem  = 'kalmanResMemLM';
-                funParams.kalmanFunctions.initialize  = 'kalmanInitLinearMotion';
-                funParams.kalmanFunctions.calcGain    = 'kalmanGainLinearMotion';
-                funParams.kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
+                funParams.kalmanFunctions.reserveMem  = func2str(@kalmanResMemLM);
+                funParams.kalmanFunctions.initialize  = func2str(@kalmanInitLinearMotion);
+                funParams.kalmanFunctions.calcGain    = func2str(@kalmanGainLinearMotion);
+                funParams.kalmanFunctions.timeReverse = func2str(@kalmanReverseLinearMotion);
                 
-                
-                % -------------- Function handles ----------------------
-                % Function handles are here to allow generic detection by
-                % makePackage function for now
-                % To be used late in the code to replace eval statements
-                funParams.costMatrices(1).funName = @costMatLinearMotionLink2;
-                funParams.costMatrices(2).funName = @costMatLinearMotionCloseGaps2;
-                funParams.kalmanFunctions.reserveMemFunName  = @kalmanResMemLM;
-                funParams.kalmanFunctions.initializeFunName  = @kalmanInitLinearMotion;
-                funParams.kalmanFunctions.calcGainFunName    = @kalmanGainLinearMotion;
-                funParams.kalmanFunctions.timeReverseFunName = @kalmanReverseLinearMotion;
+
                 % --------------- saveResults ----------------
                 
                 funParams.saveResults.dir = [outputDir  filesep 'Tracking' filesep]; %directory where to save input and output
