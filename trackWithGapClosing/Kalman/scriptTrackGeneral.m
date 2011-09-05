@@ -1,8 +1,8 @@
 
 %% general gap closing parameters
-gapCloseParam.timeWindow = 20; %maximum allowed time gap (in frames) between a track segment end and a track segment start that allows linking them.
-gapCloseParam.mergeSplit = 0; %1 if merging and splitting are to be considered, 2 if only merging is to be considered, 3 if only splitting is to be considered, 0 if no merging or splitting are to be considered.
-gapCloseParam.minTrackLen = 1; %minimum length of track segments from linking to be used in gap closing.
+gapCloseParam.timeWindow = 7; %maximum allowed time gap (in frames) between a track segment end and a track segment start that allows linking them.
+gapCloseParam.mergeSplit = 1; %1 if merging and splitting are to be considered, 2 if only merging is to be considered, 3 if only splitting is to be considered, 0 if no merging or splitting are to be considered.
+gapCloseParam.minTrackLen = 2; %minimum length of track segments from linking to be used in gap closing.
 
 %optional input:
 gapCloseParam.diagnostics = 1; %1 to plot a histogram of gap lengths in the end; 0 or empty otherwise.
@@ -10,14 +10,14 @@ gapCloseParam.diagnostics = 1; %1 to plot a histogram of gap lengths in the end;
 %% cost matrix for frame-to-frame linking
 
 %function name
-costMatrices(1).funcName = 'costMatLinearMotionLink3';
+costMatrices(1).funcName = 'costMatLinearMotionLink2';
 
 %parameters
 
 parameters.linearMotion = 0; %use linear motion Kalman filter.
 
-parameters.minSearchRadius = 1; %minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
-parameters.maxSearchRadius = 1; %maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
+parameters.minSearchRadius = 2; %minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
+parameters.maxSearchRadius = 6; %maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
 parameters.brownStdMult = 3; %multiplication factor to calculate search radius from standard deviation.
 
 parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the linking (initial tracking) step.
@@ -27,7 +27,7 @@ parameters.kalmanInitParam = []; %Kalman filter initialization parameters.
 % parameters.kalmanInitParam.initVelocity = 1.5*orientVec; %Kalman filter initialization parameters.
 
 %optional input
-parameters.diagnostics = []; %if you want to plot the histogram of linking distances up to certain frames, indicate their numbers; 0 or empty otherwise. Does not work for the first or last frame of a movie.
+parameters.diagnostics = 1000; %if you want to plot the histogram of linking distances up to certain frames, indicate their numbers; 0 or empty otherwise. Does not work for the first or last frame of a movie.
 
 costMatrices(1).parameters = parameters;
 clear parameters
@@ -35,33 +35,31 @@ clear parameters
 %% cost matrix for gap closing
 
 %function name
-costMatrices(2).funcName = 'costMatLinearMotionCloseGaps3';
+costMatrices(2).funcName = 'costMatLinearMotionCloseGaps2';
 
 %parameters
 
 %needed all the time
 parameters.linearMotion = 0; %use linear motion Kalman filter.
 
-parameters.minSearchRadius = 1; %minimum allowed search radius.
-parameters.maxSearchRadius = 1; %maximum allowed search radius.
+parameters.minSearchRadius = 2; %minimum allowed search radius.
+parameters.maxSearchRadius = 6; %maximum allowed search radius.
 parameters.brownStdMult = 3*ones(gapCloseParam.timeWindow,1); %multiplication factor to calculate Brownian search radius from standard deviation.
 
-parameters.brownScaling = [0 0]; %power for scaling the Brownian search radius with time, before and after timeReachConfB (next parameter).
-parameters.timeReachConfB = 1; %before timeReachConfB, the search radius grows with time with the power in brownScaling(1); after timeReachConfB it grows with the power in brownScaling(2).
-% parameters.timeReachConfB = gapCloseParam.timeWindow; %before timeReachConfB, the search radius grows with time with the power in brownScaling(1); after timeReachConfB it grows with the power in brownScaling(2).
+parameters.brownScaling = [0.25 0.01]; %power for scaling the Brownian search radius with time, before and after timeReachConfB (next parameter).
+parameters.timeReachConfB = gapCloseParam.timeWindow; %before timeReachConfB, the search radius grows with time with the power in brownScaling(1); after timeReachConfB it grows with the power in brownScaling(2).
 
-parameters.ampRatioLimit = [0.8 1.2]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
+parameters.ampRatioLimit = [0.7 4]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
 
-parameters.lenForClassify = 10; %minimum track segment length to classify it as linear or random.
+parameters.lenForClassify = 5; %minimum track segment length to classify it as linear or random.
 
 parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the gap closing and merging/splitting step.
 parameters.nnWindow = gapCloseParam.timeWindow; %number of frames before/after the current one where you want to look for a track's nearest neighbor at its end/start (in the gap closing step).
 
 parameters.linStdMult = 3*ones(gapCloseParam.timeWindow,1); %multiplication factor to calculate linear search radius from standard deviation.
 
-parameters.linScaling = [0.75 0.0001]; %power for scaling the linear search radius with time (similar to brownScaling).
-parameters.timeReachConfL = 5; %similar to timeReachConfB, but for the linear part of the motion.
-% parameters.timeReachConfL = gapCloseParam.timeWindow; %similar to timeReachConfB, but for the linear part of the motion.
+parameters.linScaling = [0.25 0.01]; %power for scaling the linear search radius with time (similar to brownScaling).
+parameters.timeReachConfL = gapCloseParam.timeWindow; %similar to timeReachConfB, but for the linear part of the motion.
 
 parameters.maxAngleVV = 30; %maximum angle between the directions of motion of two tracks that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
 
@@ -85,8 +83,8 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/home/kj35/files/LCCB/receptors/endoCells/AnindyaChanda/20110822_Monodispersion/10_7/Field2/Analysis/'; %directory where to save input and output
-saveResults.filename = 'tracksAll1.mat'; %name of file where input and output are saved
+saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/farnesylAndCellEdge/110829_Cs1C1_CHO_Farn/analysisFarn/'; %directory where to save input and output
+% saveResults.filename = 'tracks1All01.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
 %verbose
@@ -97,8 +95,16 @@ probDim = 2;
 
 %% tracking function call
 
-[tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...
-    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+
+for i = 1 : 2
+    movieInfoTmp((i-1)*1200+1:i*1200) = movieInfo((i-1)*1200+1:i*1200);
+    saveResults.filename = ['tracks1All01_' sprintf('%02i',i) '.mat'];
+    [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
+        costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+    clear movieInfoTmp
+end
 
 % for startFrame = 1 : 400 : 48000
 %     endFrame = startFrame + 399;

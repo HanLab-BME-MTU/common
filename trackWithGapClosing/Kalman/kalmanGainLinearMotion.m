@@ -186,6 +186,11 @@ for iFeature = 1 : numFeatures
 
     end %(if iFeaturePrev ~= 0 ... else ...)
 
+    %under all circumstances, fill in the real position of each particle
+    tmpState = kalmanFilterInfoOut(iFrame).stateVec(iFeature,:);
+    tmpState(1:probDim) = frameInfo.allCoord(iFeature,1:2:end);
+    kalmanFilterInfoOut(iFrame).stateVec(iFeature,:) = tmpState;
+    
 end %(for iFeature = 1 : numFeatures)
 
 
