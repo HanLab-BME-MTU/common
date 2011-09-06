@@ -1,4 +1,4 @@
-function closedContours = closeContours(contoursIn,matIn)
+function closedContours = closeContours(contoursIn,matIn,shiftVal)
 %CLOSECONTOURS takes the input  open contours and closes them by filling in the gaps where they meet the image border
 %
 % closedContours = closeContours(contoursIn,matIn)
@@ -15,14 +15,19 @@ function closedContours = closeContours(contoursIn,matIn)
 % separated using separateContours.m Any input contours which are already
 % closed will be un-affected.
 % 
-% Input: 
+% Required Input: 
 % 
 %   contoursIn - A 1xM cell array of the M input contours, as returned by
 %                separateContours.m
 % 
 %   matIn -    The matrix the contours were derived from. 
 % 
+% Optional Input:
 % 
+%   shiftVal - If greater than zero, the closed contour values at the
+%   matrix border will be shifted this far outside the matrix. Optional.
+%   Default is 0 (no shift). Must be less than .5.
+%
 % Output:
 % 
 %   closedContours - A 1xM array of the closed contours. 
@@ -47,6 +52,10 @@ if ~iscell(contoursIn)
     error('The input contours must be separated into a cell array! Try using separateContours.m!')
 end
 
+if nargin < 3 || isempty(shiftVal)
+    shiftVal = 0;
+end
+
 
 %% -----  Init ----- %%
 
@@ -56,8 +65,14 @@ nContours = length(contoursIn);
 
 %Get the coordinates of the image border in a  clock-wise fashion, starting
 %at origin.
-borderCoord = vertcat([1:(N-1)      ones(1,M-1)*N  N:-1:2         ones(1,M-1)],...
-                      [ones(1,N-1)  1:(M-1)        ones(1,N-1)*M  M:-1:2]);
+if shiftVal ==0%Do this as an if/else to help readability    
+    borderCoord = vertcat([1:(N-1)      ones(1,M-1)*N  N:-1:2         ones(1,M-1)],...
+                          [ones(1,N-1)  1:(M-1)        ones(1,N-1)*M  M:-1:2]);
+else
+    %Do this as an if/else to help readability
+    borderCoord = vertcat([1:N              ones(1,M)*N+shiftVal  N:-1:1                  ones(1,M)-shiftVal],...
+                          [ones(1,N)-shiftVal  1:(M)                ones(1,N)*M+shiftVal  M:-1:1]);
+end
     
 nB = length(borderCoord);                  
                   
@@ -70,19 +85,19 @@ for j = 1:nContours
     
     %Verify that this contour needs closure by checking that the first
     %point touches the image border.
-    iTouchStart = find(arrayfun(@(x)(all(borderCoord(:,x) == round(contoursIn{j}(:,1)))),1:nB),1,'first');    
+    iTouchStart = find(arrayfun(@(x)(all(round(borderCoord(:,x)) == round(contoursIn{j}(:,1)))),1:nB),1,'first');    
     
     if ~isempty(iTouchStart)
         %Find where the last point touches the border
-        iTouchEnd = find(arrayfun(@(x)(all(borderCoord(:,x) == round(contoursIn{j}(:,end)))),1:nB),1,'last');
+        iTouchEnd = find(arrayfun(@(x)(all(round(borderCoord(:,x)) == round(contoursIn{j}(:,end)))),1:nB),1,'last');
         
         %Check which direction the values increase in
         iBefore = mod(iTouchEnd-nChk:iTouchEnd-1,nB);%Use modulus in case it starts near the origin
         iAfter = mod(iTouchEnd+1:iTouchEnd+nChk,nB);
         iBefore(iBefore==0) = nB;
         iAfter(iAfter==0) = nB;
-        iBefore = sub2ind(size(matIn),borderCoord(2,iBefore),borderCoord(1,iBefore));%Convert these to matrix indices
-        iAfter = sub2ind(size(matIn),borderCoord(2,iAfter),borderCoord(1,iAfter));
+        iBefore = sub2ind(size(matIn),round(borderCoord(2,iBefore)),round(borderCoord(1,iBefore)));%Convert these to matrix indices
+        iAfter = sub2ind(size(matIn),round(borderCoord(2,iAfter)),round(borderCoord(1,iAfter)));
         
         if max(matIn(iBefore)) < max(matIn(iAfter))
             incClockwise = true;
