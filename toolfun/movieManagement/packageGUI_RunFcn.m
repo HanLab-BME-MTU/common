@@ -56,7 +56,7 @@ for i = invalidMovies
     invalidProc = procCheck{i}(arrayfun(@(y)~isProcSet(i,y),procCheck{i}));
     for j=invalidProc
         ME = MException('lccb:run:setup', ['Step %d : %s is not set up yet.\n'...
-            'Tip: when step is set up successfully, the step name becomes bold.'],j,...
+            '\nTip: when step is set up successfully, the step name becomes bold.'],j,...
             eval([userData.package(i).processClassNames_{j} '.getName']));
         movieException{i} = cat(2, movieException{i}, ME);
     end
@@ -122,49 +122,22 @@ for iMovie = validMovies
     
 end
 
-%% Report exceptions
-% Ok, now all evils are in movieException (1 x movielength  cell array), if there is any
-% if yes - abort program and popup a error report
-% if no - continue to process movie data
+%% Pre-processing exception report
 if isempty(movieRun)
     warndlg('All selected steps have been processed successfully. Please check the ''Force Run'' check box if you want to re-process the successful steps.','No Step Selected','modal');
     return
 end
 
-temp = find(~cellfun(@(x)isempty(x), movieException, 'UniformOutput', true));
+status = generateReport(movieException,userData,'preprocessing');
+if ~status, return; end
 
-if ~isempty(temp)
-    logMsg=cell(1,numel(temp));
-    for i = 1:length(temp)
-        logMsg{i} = [logMsg{i}, sprintf('Movie %d - %s:\n', temp(i), ...
-            userData.MD(temp(i)).movieDataFileName_)];
-            
-        for j = 1:length(movieException{temp(i)})
-            logMsg{i} = [logMsg{i}, sprintf('-- %s\n', ...
-                movieException{temp(i)}(j).message)];
-        end
-        logMsg{i}=['' sprintf('%s\n',logMsg{i})];
-    end
-    msg = [logMsg{:} 'Please solve the above problems before continuing.' ...
-        sprintf('\nThe Movie(s) could not be processed.')];
-    titlemsg = sprintf('Processing could not be continued for the following reasons:');
-    
-    % if msgboxGUI exist
-    if isfield(userData, 'msgboxGUI') && ishandle(userData.msgboxGUI)
-        delete(userData.msgboxGUI)
-    end
-    
-    userData.msgboxGUI = msgboxGUI('title',titlemsg,'text', msg);
-    return
-end
-
-% ------------------------ Start Processing -------------------------------
+%% Start processing
 kk = 0;
 for x = movieRun
     
     kk = kk+1;
     if x ~= userData.id
-        
+        % Update the movie pop-up menu in the main package GUI
         set(handles.popupmenu_movie, 'Value', x)
         set(handles.figure1, 'UserData', userData)
         % Update the movie pop-up menu in the main package GUI
@@ -198,7 +171,8 @@ for x = movieRun
         set(handles.figure1, 'UserData', userData)
         
         for i = procRun{x}
-            set(handles.text_status, 'String', sprintf('Step %d - Processing %d of %d movies total ...', i, kk, length(movieRun)) )
+            set(handles.text_status, 'String', ...
+                sprintf('Step %d - Processing %d of %d movies total ...', i, kk, length(movieRun)) )
             userfcn_runProc_dfs(i, procRun{x}, handles); % user data is retrieved, updated and submitted
             
         end
@@ -206,7 +180,10 @@ for x = movieRun
     catch ME
         
         % Save the error into movie Exception cell array
-        movieException{x} = ME;
+        ME2 = MException('lccb:run:error','Step %d: %s\n%s',...
+            i,userData.package(x).processes_{i}.getName);
+        movieException{x} = cat(2, movieException{x}, ME2);
+        movieException{x}=movieException{x}.addCause(ME);
         
         procRun{x} = procRun{x}(procRun{x} < i);
         optionalProcID{x} = optionalProcID{x}(optionalProcID{x} < i); 
@@ -240,42 +217,17 @@ for x = movieRun
     
 end
 
-%% Create error report 
-temp = find(~cellfun(@isempty, movieException));
-if ~isempty(temp)
-    msg = [];
-    for i = 1:length(temp)
-        if i == 1
-            msg = strcat(msg, sprintf('Movie %d - %s:\n\n%s', ...
-                temp(i), userData.MD(temp(i)).movieDataFileName_, movieException{x}.message));
-        else
-            msg = strcat(msg, sprintf('\n\n\nMovie %d - %s:\n\n%s', ...
-                temp(i), userData.MD(temp(i)).movieDataFileName_, movieException{x}.message));
-        end
-    end
-    
-    msg = strcat(msg, sprintf('\n\n\nPlease verify your settings are correct. Feel free to contact us if you have question regarding this error.\n\nPlease help us improve the software by clearly reporting the scenario when this error occurs, and the above error information to us (error information is also displayed in Matlab command line).\nFor contact information please refer to the following URL:\n\nlccb.hms.harvard.edu/software.html'));
-    
-    % if msgboxGUI exist
-    if isfield(userData, 'msgboxGUI') && ishandle(userData.msgboxGUI)
-        delete(userData.msgboxGUI)
-    end
-    if length(temp) == 1
-        userData.msgboxGUI = msgboxGUI('title','The processing of following movie is terminated by run time error:','text', msg);
-    else
-        userData.msgboxGUI = msgboxGUI('title','The processing of following movies are terminated by run time errors:','text', msg);
-    end
-    
-else
-    if length(movieRun) > 1
-        successMsg = 'All your movies have been processed successfully.';
-    else
-        successMsg = 'Your movie has been processed successfully.';
-    end
-    
-    userData.iconHelpFig = helpdlg(successMsg, [userData.crtPackage.name_ 'Package']);
+%% Post-processing exception report
+status = generateReport(movieException,userData,'postprocessing');
+if status
+    successMsg = 'Your movie(s) have been processed successfully.';
+    userData.iconHelpFig = helpdlg(successMsg, [userData.crtPackage.getName]);
     set(handles.figure1, 'UserData', userData)
 end
+
+% Delete waitbars
+hWaitbar = findall(0,'type','figure','tag','TMWWaitbar');
+delete(hWaitbar);
 end
 
 function userfcn_runProc_dfs (i, procRun, handles)  % throws exception
@@ -342,4 +294,61 @@ if l
 end
 
 set(handles.(['pushbutton_show_',num2str(i)]),'Enable','on');
+end
+
+function status = generateReport(movieException,userData,type)
+
+% Check exception status
+errorMovies = find(~cellfun(@isempty, movieException, 'UniformOutput', true));
+status =1;
+
+if isempty(errorMovies), return; end
+status = 0;
+
+% Format log messages from movieException
+logMsg = cell(size(movieException));
+for i = errorMovies
+    logMsg{i} = [logMsg{i}, sprintf('Movie %d - %s:\n', errorMovies(i), ...
+        [userData.MD(i).movieDataPath_ filesep userData.MD(i).movieDataFileName_])];
+    
+    for j = 1:length(movieException{i})
+        logMsg{i} = [logMsg{i}, sprintf('-- %s\n', movieException{i}(j).message)];
+        if ~isempty(movieException{i}(j).cause)
+            logMsg{i} = [logMsg{i}, movieException{i}(j).cause{1}.getReport('basic')];
+        end
+    end
+    logMsg{i}=['' sprintf('%s\n\n',logMsg{i})];
+end
+
+% Add report information
+if strcmpi(type,'preprocessing'), 
+    additionalText=['Please solve the above problems before continuing.'...
+        '\n\nThe movie(s) could not be processed.'];
+elseif strcmpi(type,'postprocessing'), 
+    additionalText=...
+        ['Please verify your settings are correct. '...
+        'Feel free to contact us if you have question regarding this error.'...
+        '\n\nPlease help us improve the software by clearly reporting the '...
+        'scenario when this error occurs, and the above error information '...
+        'to us (error information is also displayed in Matlab command line).'...
+        '\n\nFor contact information please refer to the following URL:'...
+        '\nhttp://lccb.hms.harvard.edu/software.html'];
+
+end
+msg = [logMsg{:}, sprintf(additionalText)];
+
+% Create title
+title='The processing of following movie(s)';
+if strcmpi(type,'sanitycheck'), 
+    title=[title ' could not be continued:'];
+elseif  strcmpi(type,'run'), 
+    title=[title ' was terminated by run time error:'];
+end
+
+% Check messagebox existence and generate report
+if isfield(userData, 'msgboxGUI') && ishandle(userData.msgboxGUI)
+    delete(userData.msgboxGUI)
+end
+userData.msgboxGUI = msgboxGUI('title',title,'text', msg);
+
 end

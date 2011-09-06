@@ -104,7 +104,7 @@ classdef Process < hgsetget
             try
                 obj.funName_(obj.owner_ );
             catch runException
-                throw(runException)
+                rethrow(runException)
             end
             obj.success_=true;
             obj.procChanged_=false;

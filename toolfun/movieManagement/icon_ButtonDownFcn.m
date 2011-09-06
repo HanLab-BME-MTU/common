@@ -36,7 +36,7 @@ else
         % Help dialog from setting panel
         if ~isempty(userData.crtProc)
             userData.helpFig = msgboxGUI('Text', sprintf([get(hObject,'UserData'), ...
-                '\n', copyright ]),'Title',['Help - ' userData.crtProc.name_] );
+                '\n', copyright ]),'Title',['Help - ' userData.crtProc.getName] );
         else
             userData.helpFig = msgboxGUI('Text', sprintf([get(hObject,'UserData'), ...
                 '\n', copyright ]),'Title','Help');
