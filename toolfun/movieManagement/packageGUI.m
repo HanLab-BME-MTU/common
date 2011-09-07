@@ -22,7 +22,7 @@ function varargout = packageGUI(varargin)
 
 % Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 19-May-2011 11:33:41
+% Last Modified by GUIDE v2.5 07-Sep-2011 08:47:17
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -266,3 +266,20 @@ procID = str2double(props{2}(length('checkbox_')+1:end));
 
 userfcn_checkAllMovies(procID, procStatus, handles);
 userfcn_lampSwitch(procID, procStatus, handles);
+
+
+% --------------------------------------------------------------------
+function menu_debug_start_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_debug_start (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+status = get(hObject,'Checked');
+if strcmp(status,'on'), 
+    newstatus = 'off'; 
+    dbclear if caught error
+else
+    newstatus='on';
+    dbstop if caught error
+end
+set(hObject,'Checked',newstatus);

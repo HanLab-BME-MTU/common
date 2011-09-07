@@ -22,7 +22,7 @@ function varargout = msgboxGUI(varargin)
 
 % Edit the above text to modify the response to help msgboxGUI
 
-% Last Modified by GUIDE v2.5 08-Jun-2010 13:35:17
+% Last Modified by GUIDE v2.5 07-Sep-2011 08:37:05
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -59,33 +59,28 @@ function msgboxGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %       'name'-> Name of dialog box
 %
 
-userData = get(handles.figure1, 'UserData');
 % Choose default command line output for msgboxGUI
 handles.output = hObject;
 
-if nargin > 3
-    for i = 1:2:(nargin-3)
-        switch lower(varargin{i})
-            case 'text'
-                set(handles.edit_1, 'String', varargin{i+1})
-            case 'name'
-                set(hObject, 'Name', varargin{i+1})
-            case 'title'
-                set(handles.text_title, 'string', varargin{i+1})
-            otherwise
-                error('User-defined: error calling msgboxGUI. Refer to msgboxGUI.m')
-        end
-    end
-end
+% Parse input
+ip = inputParser;
+ip.CaseSensitive=false;
+ip.addRequired('hObject',@ishandle);
+ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
+ip.addRequired('handles',@isstruct);
+ip.addParamValue('text','',@ischar);
+ip.addParamValue('name','',@ischar);
+ip.addParamValue('title','',@ischar);
+ip.parse(hObject,eventdata,handles,varargin{:});
+
+% Apply input
+set(hObject, 'Name',ip.Results.name)
+set(handles.edit_text, 'String',ip.Results.text)
+set(handles.text_title, 'string',ip.Results.title)
 
 % Update handles structure
-set(handles.figure1, 'Userdata',userData)
 uicontrol(handles.pushbutton_done)
 guidata(hObject, handles);
-
-% UIWAIT makes msgboxGUI wait for user response (see UIRESUME)
-% uiwait(handles.figure1);
-
 
 % --- Outputs from this function are returned to the command line.
 function varargout = msgboxGUI_OutputFcn(hObject, eventdata, handles) 
@@ -96,29 +91,6 @@ function varargout = msgboxGUI_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
-
-
-
-function edit_1_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit_1 as text
-%        str2double(get(hObject,'String')) returns contents of edit_1 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit_1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 % --- Executes on button press in pushbutton_done.
@@ -134,6 +106,4 @@ function figure1_WindowKeyPressFcn(hObject, eventdata, handles)
 %	Character: character interpretation of the key(s) that was pressed
 %	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
 % handles    structure with handles and user data (see GUIDATA)
-if strcmp(eventdata.Key, 'return')
-    delete(hObject)
-end
+if strcmp(eventdata.Key, 'return'), delete(hObject); end

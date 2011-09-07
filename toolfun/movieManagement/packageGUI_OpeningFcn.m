@@ -43,8 +43,10 @@ function packageGUI_OpeningFcn(hObject,eventdata,handles,packageName,varargin)
 %                         used to save value of check box of each process
 %               Visited - logical true or false, if the movie has been
 %                         loaded to GUI before 
-% Sebastien Besson 5/2011
 
+% Sebastien Besson May 2011 (last modified Sep 2011()
+
+% Input check
 ip = inputParser;
 ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
@@ -54,6 +56,7 @@ ip.addOptional('MD',[],@(x) isa(x,'MovieData'));
 ip.parse(hObject,eventdata,handles,packageName,varargin{:});
 
 
+% Generate the package constructor
 if isa(packageName,'function_handle')
     packageConstr=packageName;
     packageName=func2str(packageName);

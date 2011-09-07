@@ -308,13 +308,13 @@ status = 0;
 % Format log messages from movieException
 logMsg = cell(size(movieException));
 for i = errorMovies
-    logMsg{i} = [logMsg{i}, sprintf('Movie %d - %s:\n', errorMovies(i), ...
+    logMsg{i} = [logMsg{i}, sprintf('Movie %d - %s:\n\n', errorMovies(i), ...
         [userData.MD(i).movieDataPath_ filesep userData.MD(i).movieDataFileName_])];
     
     for j = 1:length(movieException{i})
         logMsg{i} = [logMsg{i}, sprintf('-- %s\n', movieException{i}(j).message)];
         if ~isempty(movieException{i}(j).cause)
-            logMsg{i} = [logMsg{i}, movieException{i}(j).cause{1}.getReport('basic')];
+            logMsg{i} = [logMsg{i}, movieException{i}(j).cause{1}.getReport('basic','hyperlinks','off')];
         end
     end
     logMsg{i}=['' sprintf('%s\n\n',logMsg{i})];
@@ -339,9 +339,9 @@ msg = [logMsg{:}, sprintf(additionalText)];
 
 % Create title
 title='The processing of following movie(s)';
-if strcmpi(type,'sanitycheck'), 
+if strcmpi(type,'preprocessing'), 
     title=[title ' could not be continued:'];
-elseif  strcmpi(type,'run'), 
+elseif  strcmpi(type,'postprocessing'), 
     title=[title ' was terminated by run time error:'];
 end
 
@@ -349,6 +349,6 @@ end
 if isfield(userData, 'msgboxGUI') && ishandle(userData.msgboxGUI)
     delete(userData.msgboxGUI)
 end
-userData.msgboxGUI = msgboxGUI('title',title,'text', msg);
+userData.msgboxGUI = msgboxGUI('title',title,'text', msg,'name','Error report');
 
 end
