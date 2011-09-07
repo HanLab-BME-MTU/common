@@ -1,9 +1,11 @@
 function packageGUI_RunFcn(hObject,eventdata,handles)
+% Run the selected processes in the packageGUI interface
+%
 % This is a common section of code called by pushbutton_run_Callback
 % when user click the "Run" button on package control panels.
-%
+
 % Chuangang Ren 11/2010
-% Sebastien Besson 5/2011
+% Sebastien Besson 5/2011 (last modified Sep 2011)
 
 ip = inputParser;
 ip.addRequired('hObject',@ishandle);
@@ -180,7 +182,7 @@ for x = movieRun
     catch ME
         
         % Save the error into movie Exception cell array
-        ME2 = MException('lccb:run:error','Step %d: %s\n%s',...
+        ME2 = MException('lccb:run:error','Step %d: %s',...
             i,userData.package(x).processes_{i}.getName);
         movieException{x} = cat(2, movieException{x}, ME2);
         movieException{x}=movieException{x}.addCause(ME);
@@ -204,17 +206,14 @@ for x = movieRun
     % SB: checkOptionalProcess is now handled in sanityCheck. This is a
     % quick fix to keeep compatibility with biosensors package
     if ~isempty(optionalProcID{x}) && ismember('checkOptionalProcess',methods(userData.crtPackage))
-        
-        procEx = userData.crtPackage.checkOptionalProcess(procRun{x}, optionalProcID{x});
-        
+        procEx = userData.crtPackage.checkOptionalProcess(procRun{x}, optionalProcID{x}); 
         for i = 1:size(userData.dependM, 1)
             if ~isempty(procEx{i})
                 userfcn_drawIcon(handles,'warn',i,procEx{i}(1).message, true); % user data is retrieved, updated and submitted
                 
             end
         end
-    end
-    
+    end 
 end
 
 %% Post-processing exception report
@@ -297,6 +296,7 @@ set(handles.(['pushbutton_show_',num2str(i)]),'Enable','on');
 end
 
 function status = generateReport(movieException,userData,type)
+% Generate report from movie exception cell array
 
 % Check exception status
 errorMovies = find(~cellfun(@isempty, movieException, 'UniformOutput', true));
@@ -305,19 +305,25 @@ status =1;
 if isempty(errorMovies), return; end
 status = 0;
 
-% Format log messages from movieException
-logMsg = cell(size(movieException));
+% Create log message
+basicLogMsg = cell(size(movieException));
+extendedLogMsg = cell(size(movieException));
 for i = errorMovies
-    logMsg{i} = [logMsg{i}, sprintf('Movie %d - %s:\n\n', errorMovies(i), ...
-        [userData.MD(i).movieDataPath_ filesep userData.MD(i).movieDataFileName_])];
+    % Format movie log message
+    basicLogMsg{i} = sprintf('Movie %d - %s:\n\n', errorMovies(i), ...
+        [userData.MD(i).movieDataPath_ filesep userData.MD(i).movieDataFileName_]);
+    extendedLogMsg{i}=basicLogMsg{i};
     
+    % Read exception message and add causes message if any
     for j = 1:length(movieException{i})
-        logMsg{i} = [logMsg{i}, sprintf('-- %s\n', movieException{i}(j).message)];
+        basicLogMsg{i} = [basicLogMsg{i} sprintf('-- %s\n', movieException{i}(j).getReport)];
+        extendedLogMsg{i} = [extendedLogMsg{i} sprintf('-- %s\n\n', movieException{i}(j).message)];
         if ~isempty(movieException{i}(j).cause)
-            logMsg{i} = [logMsg{i}, movieException{i}(j).cause{1}.getReport('basic','hyperlinks','off')];
+            extendedLogMsg{i} = [extendedLogMsg{i}, movieException{i}(j).cause{1}.getReport('extended','hyperlinks','off')];
         end
     end
-    logMsg{i}=['' sprintf('%s\n\n',logMsg{i})];
+    basicLogMsg{i}=sprintf('%s\n',basicLogMsg{i});
+    extendedLogMsg{i}=sprintf('%s\n',extendedLogMsg{i});
 end
 
 % Add report information
@@ -335,7 +341,8 @@ elseif strcmpi(type,'postprocessing'),
         '\nhttp://lccb.hms.harvard.edu/software.html'];
 
 end
-msg = [logMsg{:}, sprintf(additionalText)];
+basicReport = [basicLogMsg{:}, sprintf(additionalText)];
+extendedReport =[extendedLogMsg{:}, sprintf(additionalText)];
 
 % Create title
 title='The processing of following movie(s)';
@@ -345,10 +352,15 @@ elseif  strcmpi(type,'postprocessing'),
     title=[title ' was terminated by run time error:'];
 end
 
-% Check messagebox existence and generate report
+% Check messagebox existence and generate report using msgboxGUI
 if isfield(userData, 'msgboxGUI') && ishandle(userData.msgboxGUI)
     delete(userData.msgboxGUI)
 end
-userData.msgboxGUI = msgboxGUI('title',title,'text', msg,'name','Error report');
-
+if isequal(basicReport,extendedReport)
+    userData.msgboxGUI = msgboxGUI('title',title,'text', basicReport,...
+        'name','Error report');
+else
+    userData.msgboxGUI = msgboxGUI('title',title,'text', basicReport,...
+        'extendedText',extendedReport,'name','Error report');
+end
 end

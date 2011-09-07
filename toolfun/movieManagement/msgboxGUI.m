@@ -22,7 +22,7 @@ function varargout = msgboxGUI(varargin)
 
 % Edit the above text to modify the response to help msgboxGUI
 
-% Last Modified by GUIDE v2.5 07-Sep-2011 08:37:05
+% Last Modified by GUIDE v2.5 07-Sep-2011 11:43:10
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -69,6 +69,7 @@ ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
 ip.addParamValue('text','',@ischar);
+ip.addParamValue('extendedText','',@ischar);
 ip.addParamValue('name','',@ischar);
 ip.addParamValue('title','',@ischar);
 ip.parse(hObject,eventdata,handles,varargin{:});
@@ -77,6 +78,15 @@ ip.parse(hObject,eventdata,handles,varargin{:});
 set(hObject, 'Name',ip.Results.name)
 set(handles.edit_text, 'String',ip.Results.text)
 set(handles.text_title, 'string',ip.Results.title)
+
+if ~isempty(ip.Results.extendedText),
+    userData = get(handles.figure1,'UserData');
+    set(handles.pushbutton_extendedText,'Visible','on');
+    userData.text = ip.Results.text;
+    userData.extendedText=ip.Results.extendedText;
+    userData.type='basic';
+    set(handles.figure1,'UserData',userData);
+end
 
 % Update handles structure
 uicontrol(handles.pushbutton_done)
@@ -107,3 +117,23 @@ function figure1_WindowKeyPressFcn(hObject, eventdata, handles)
 %	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
 % handles    structure with handles and user data (see GUIDATA)
 if strcmp(eventdata.Key, 'return'), delete(hObject); end
+
+
+% --- Executes on button press in pushbutton_extendedText.
+function pushbutton_extendedText_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_extendedText (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+userData=get(handles.figure1,'UserData');
+if strcmp(userData.type,'basic')
+    userData.type='extended';
+    set(handles.edit_text, 'String',userData.extendedText);
+    set(hObject,'String','See basic report...');
+else 
+    userData.type='basic';
+    set(handles.edit_text, 'String',userData.text);
+    set(hObject,'String','See extended report...');
+end
+set(handles.figure1,'UserData',userData);
+guidata(hObject,handles);
