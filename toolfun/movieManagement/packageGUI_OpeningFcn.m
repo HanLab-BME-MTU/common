@@ -85,6 +85,17 @@ if isempty(userData.MD)
     return
 end
 
+% Singleton control
+try assert(~userData.init)
+catch ME
+    if strcmpi(ME.identifier,'MATLAB:nonExistentField');
+        userData.init=true;
+    else
+        return
+    end
+end
+
+
 % ----------------------------- Load MovieData ----------------------------
 nMovies = numel(userData.MD);
 packageIndx = cell(1, nMovies);

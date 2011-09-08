@@ -113,7 +113,7 @@ if ~isempty(ip.Results.MD)
     
     % Refresh movie list box in movie selector panel
     set(handles.listbox_movie, 'String', contentlist,'Value',1);
-    title = sprintf('Movie List: %s/%s movie(s)',1,num2str(nMovies));
+    title = sprintf('Movie List: %g/%g movie(s)',1,nMovies);
     set(handles.text_movie_1, 'String', title)
 end
 
