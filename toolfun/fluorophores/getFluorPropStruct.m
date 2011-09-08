@@ -1,4 +1,5 @@
 % Values from http://www.olympusfluoview.com/applications/fpcolorpalette.html
+% Alexa Fluors: http://www.invitrogen.com/site/us/en/home/References/Molecular-Probes-The-Handbook/Technical-Notes-and-Product-Highlights/The-Alexa-Fluor-Dye-Series.html
 
 % Francois Aguet, October 2010
 
@@ -46,3 +47,5 @@ s(19).name = 'cy3';
 s(19).lambda_em = 570e-9;
 s(20).name = 'cy5';
 s(20).lambda_em = 670e-9;
+s(21).name = 'alexa568';
+s(21).lambda_em = 603e-9;
