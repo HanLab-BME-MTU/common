@@ -1,7 +1,7 @@
 function [out] = filterGauss3D(input, sigma, borderCondition)
 % filterGauss2D :	filters a data volume with a 3-D Gaussian mask
 %
-%    [out, G] = filterGauss3D(image, sigma, borderCondition);
+%     out = filterGauss3D(image, sigma, borderCondition);
 %
 %    INPUT: image           : 3-D input array
 %           sigma           : standard deviation of the Gaussian
