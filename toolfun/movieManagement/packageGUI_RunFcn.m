@@ -341,8 +341,35 @@ elseif strcmpi(type,'postprocessing'),
         '\nhttp://lccb.hms.harvard.edu/software.html'];
 
 end
+
+% Display general MATLAB installation information as a header
+% Copied from ver.m
+
+% find platform OS
+if ispc
+   platform = [system_dependent('getos'),' ',system_dependent('getwinsys')];
+elseif ismac
+    [fail, input] = unix('sw_vers');
+    if ~fail
+        platform = strrep(input, 'ProductName:', '');
+        platform = strrep(platform, sprintf('\t'), '');
+        platform = strrep(platform, sprintf('\n'), ' ');
+        platform = strrep(platform, 'ProductVersion:', ' Version: ');
+        platform = strrep(platform, 'BuildVersion:', 'Build: ');
+    else
+        platform = system_dependent('getos');
+    end
+else    
+   platform = system_dependent('getos');
+end
+   
+% display platform type
+matlabInfo = sprintf(['MATLAB Version %s\nMATLAB License Number: %s\n'...
+    'Operating System: %s\nJava VM Version: %s\n'],...
+    version,license,platform,char(strread(version('-java'),'%s',1,'delimiter','\n'))); %#ok<REMFF1>
+
 basicReport = [basicLogMsg{:}, sprintf(additionalText)];
-extendedReport =[extendedLogMsg{:}, sprintf(additionalText)];
+extendedReport =[matlabInfo, extendedLogMsg{:}, sprintf(additionalText)];
 
 % Create title
 title='The processing of following movie(s)';
