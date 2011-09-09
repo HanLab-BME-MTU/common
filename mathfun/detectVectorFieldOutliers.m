@@ -39,7 +39,7 @@ ip.addOptional('weighted' ,0,@isscalar);
 ip.addParamValue('epsilon',.1,@isscalar);
 ip.parse(data,varargin{:})
 threshold=ip.Results.threshold;
-weighted=ip.Results.addOptional;
+weighted=ip.Results.weighted;
 epsilon=ip.Results.epsilon;
 
 % Filter out NaN from the initial data (but keep the index for the
