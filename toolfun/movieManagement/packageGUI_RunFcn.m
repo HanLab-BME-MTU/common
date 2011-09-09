@@ -317,7 +317,7 @@ for i = errorMovies
     % Read exception message and add causes message if any
     for j = 1:length(movieException{i})
         basicLogMsg{i} = [basicLogMsg{i} sprintf('-- %s\n',...
-            movieException{i}(j).getReport,'hyperlinks','off')];
+            movieException{i}(j).getReport('extended','hyperlinks','off'))];
         extendedLogMsg{i} = [extendedLogMsg{i} sprintf('-- %s\n\n', movieException{i}(j).message)];
         if ~isempty(movieException{i}(j).cause)
             extendedLogMsg{i} = [extendedLogMsg{i},...
