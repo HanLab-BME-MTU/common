@@ -3,7 +3,7 @@ function [trajectoryOut, linFit] = removeLinearTrend(trajectory,sigmaTrajectory,
 %   by doing a robust linear fit and subsequent subtraction. Furthermore,
 %   it sets the mean to zero.
 %
-% SYNOPSIS  outTrajectory = removeLinearTrend(trajectory, sigmaTrajectory)
+% SYNOPSIS  outTrajectory = removeLinearTrend(trajectory, sigmaTrajectory, robust)
 %
 % INPUT     trajectory     : any 1D data series vector. Can contain NaNs
 %           sigmaTrajectory: (optional) The corresponding uncertainties
