@@ -7,7 +7,7 @@ function [outlierIndex, r] = detectVectorFieldOutliers(data,varargin)
 % This function detects outliers within a vectorial field using an extended
 % version of the 'median test' of Westerweel et al. 1994, adapted for PTV.
 % After constructing a Delaunay tessellation, the algorithm calculates the
-% normalized fluctuation with respect to the neighborood median residual
+% normalized fluctuation with respect to the neighborhood median residual
 % for each vertex. A threshold is then applied to this quantity to extract
 % the outliers.
 %
@@ -35,9 +35,11 @@ function [outlierIndex, r] = detectVectorFieldOutliers(data,varargin)
 ip=inputParser;
 ip.addRequired('data',@(x) size(x,2)==4);
 ip.addOptional('threshold',2,@isscalar);
+ip.addOptional('weighted' ,0,@isscalar);
 ip.addParamValue('epsilon',.1,@isscalar);
 ip.parse(data,varargin{:})
 threshold=ip.Results.threshold;
+weighted=ip.Results.addOptional;
 epsilon=ip.Results.epsilon;
 
 % Filter out NaN from the initial data (but keep the index for the
@@ -52,6 +54,9 @@ tri=DelaunayTri(data(:,1),data(:,2));
 edges= tri.edges;
 dp=(data(edges(:,2),1:2)-data(edges(:,1),1:2));
 D= sqrt(sum(dp.^2,2));
+if ~weighted
+    D=ones(size(D));
+end
 
 % Convert the edge list into an adjacency list 
 nodes = unique([edges(:,1)' edges(:,2)']);
@@ -70,10 +75,10 @@ d =arrayfun(@(x)D(E{x}),options{:});
 localVel=arrayfun(@(x)data(x,3:4)/(median(d{x})+epsilon),options{:});
 neighVel=arrayfun(@(x)data(N{x},3:4)./repmat(d{x}+epsilon,1,2),options{:});
 
-% Get median weighted neighborood velocity
+% Get median weighted neighborhood velocity
 medianVel=cellfun(@median,neighVel,'Unif',false);
 
-% Calculate normalized fluctuation using neighborood residuals
+% Calculate normalized fluctuation using neighborhood residuals
 medianRes=arrayfun(@(x) median(abs(neighVel{x}-repmat(medianVel{x},size(neighVel{x},1),1))),options{:});
 normFluct = arrayfun(@(x) abs(localVel{x}-medianVel{x})./(medianRes{x}+epsilon),options{:});
 r=cellfun(@norm, normFluct);
