@@ -4,7 +4,9 @@ function [d2X,d2Y,d2Z] = surfaceFilterGauss3D(input, sigma, borderCondition)
 %    [d2X,d2Y,d2Z] = surfaceFilterGauss3D(image, sigma, borderCondition);
 %
 %       Filters the input matrix using partial second derivatives of a gaussian,
-%       giving a filtered "surface" image.
+%       giving a filtered "surface" image. Note that the second derivatives
+%       of the gaussian are inverted so that the response is positive at
+%       bright surfaces and negative at troughs.
 %
 %    INPUT: image           : 3-D input array
 %           sigma           : standard deviation of the Gaussian to use
@@ -24,14 +26,13 @@ if nargin < 3 || isempty(borderCondition)
     borderCondition = 'symmetric';
 end
 
-w = ceil(3*sigma); % cutoff radius of the gaussian kernel
+w = ceil(5*sigma); % cutoff radius of the gaussian kernel
 x = -w:w;
 g = exp(-x.^2/(2*sigma^2));
-d2g = (x.^2-1) / sigma^2 .* exp(-x.^2/(2*sigma^2));
+d2g = -(x.^2/sigma^2 - 1) / sigma^2 .* exp(-x.^2/(2*sigma^2));
 gSum = sum(g);
 g = g/gSum;
 d2g = d2g/gSum;
-d2g = d2g - sum(d2g);
 
 d2X = convn(padarrayXT(input, [w w w], borderCondition), d2g, 'valid');
 d2X = convn(d2X, g', 'valid');
