@@ -108,30 +108,27 @@ funParams = userData.crtProc.funParams_;
 set(handles.listbox_availableChannels,'String',userData.MD.getChannelPaths(), ...
     'UserData',1:numel(userData.MD.channels_));
 
-% Set up selected input data channels and channel index
-parentProc = find(userData.crtPackage.depMatrix_(userData.procID,:));
+channelIndex = funParams.ChannelIndex;
 
-if isempty(parentProc) || ~isempty(userData.crtPackage.processes_{userData.procID})
-    % If process has no dependency, or process already exists
-    channelString =userData.MD.getChannelPaths(funParams.ChannelIndex);
-    channelIndex = funParams.ChannelIndex;
-    
-elseif isempty(userData.crtPackage.processes_{userData.procID})
+% Find any parent process
+parentProc = find(userData.crtPackage.depMatrix_(userData.procID,:));
+if isempty(userData.crtPackage.processes_{userData.procID}) && ~isempty(parentProc)
     % Check existence of all parent processes
-    emptyParentProc = any(cellfun(@isempty,...
-        userData.crtPackage.processes_(parentProc)));
-    channelIndex = 1:numel(userData.MD.channels_);
+    emptyParentProc = any(cellfun(@isempty,userData.crtPackage.processes_(parentProc)));
     if ~emptyParentProc
+        % Intersect channel index with channel index of parent processes
         parentChannelIndex = @(x) userData.crtPackage.processes_{x}.funParams_.ChannelIndex;
         for i = parentProc
             channelIndex = intersect(channelIndex,parentChannelIndex(i));
         end
     end
-    if ~isempty(channelIndex)
-        channelString = userData.MD.getChannelPaths(channelIndex);
-    else
-        channelString = {};
-    end
+   
+end
+
+if ~isempty(channelIndex)
+    channelString = userData.MD.getChannelPaths(channelIndex);
+else
+    channelString = {};
 end
 
 set(handles.listbox_selectedChannels,'String',channelString,...
