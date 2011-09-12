@@ -409,7 +409,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     double RSS = 0.0;
     double* resValid = NULL;
     if (nlhs > 1) {    
-        resValid = malloc(data.nValid*sizeof(double));
+        resValid = (double*)malloc(data.nValid*sizeof(double));
         for (i=0; i<data.nValid; ++i) {
             resValid[i] = gsl_vector_get(data.residuals, i);
             RSS += resValid[i]*resValid[i];
