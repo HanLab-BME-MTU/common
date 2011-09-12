@@ -1,12 +1,12 @@
 /*
-* See vectorialPSF.m for usage instructions.
-* Notations follow those in [F. Aguet, PhD Thesis, 2009].
-*
-* Compilation:
-* Mac/Linux: mex vectorialPSF.cpp
-* Windows: mex COMPFLAGS="$COMPFLAGS /MT" vectorialPSF.cpp
-* (c) Francois Aguet 2006-2010 (last modified Nov 1, 2010)
-*/
+ * See vectorialPSF.m for usage instructions.
+ * Notations follow those in [F. Aguet, PhD Thesis, 2009].
+ *
+ * Compilation:
+ * Mac/Linux: mex vectorialPSF.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /MT" vectorialPSF.cpp
+ * (c) Francois Aguet 2006-2010 (last modified Nov 1, 2010)
+ */
 
 #include <stdlib.h>
 #include <math.h>
