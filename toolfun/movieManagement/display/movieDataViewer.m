@@ -15,7 +15,8 @@ mainFig=figure('Name','Movie Viewer','Position',[0 0 200 200],...
 userData=get(mainFig,'UserData');
 userData.MD=ip.Results.MD;
 
-% Classify movieData processes by type (image or overlay)
+% Classify movieData processes by type (image, overlay, movie overlay or
+% graph)
 validProcId= find(cellfun(@(x) ismember('getDrawableOutput',methods(x)) &...
     x.success_,userData.MD.processes_));
 validProc=userData.MD.processes_(validProcId);
@@ -28,6 +29,9 @@ overlayProcId = validProcId(isOverlayProc);
 isMovieOverlayProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'movieOverlay')),validProc);
 movieOverlayProc=validProc(isMovieOverlayProc);
 movieOverlayProcId = validProcId(isMovieOverlayProc);
+isGraphProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'graph')),validProc);
+graphProc=validProc(isGraphProc);
+graphProcId = validProcId(isGraphProc);
 
 % Create series of anonymous function to generate process controls
 createProcText= @(panel,i,j,pos,name) uicontrol(panel,'Style','text',...
@@ -239,11 +243,59 @@ arrayfun(@(i) uicontrol(overlayPanel,'Style','text',...
     1:numel(userData.MD.channels_));
 
 
+%% Add additional panel for independent graphs
+if ~isempty(graphProc)
+    graphPanel = uipanel(mainFig,'Position',[0 0 1 1],...
+        'Title','Overlay','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
+        'Units','pixels','Tag','uipanel_graph');
+    
+    % Create controls for selecting movie-specific overlays
+    hPosition3=10;
+    nProc = numel(graphProc);
+    for iProc=nProc:-1:1;
+        output=graphProc{iProc}.getDrawableOutput;
+        validOutput = find(strcmp({output.type},'graph'));
+        for iOutput=validOutput(end:-1:1)
+            createMovieOverlayBox(graphPanel,graphProcId(iProc),iOutput,hPosition3,output(iOutput).name);
+            hPosition3=hPosition3+20;
+        end
+        createProcText(graphPanel,graphProcId(iProc),iOutput,hPosition3,graphProc{iProc}.getName);
+        hPosition3=hPosition3+20;
+    end
+%     
+%     % Create controls for selecting channel-specific overlays
+%     nProc = numel(overlayProc);
+%     for iProc=nProc:-1:1;
+%         output=overlayProc{iProc}.getDrawableOutput;
+%         validChan = overlayProc{iProc}.checkChannelOutput;
+%         validOutput = find(strcmp({output.type},'overlay'));
+%         for iOutput=validOutput(end:-1:1)
+%             createOutputText(overlayPanel,overlayProcId(iProc),iOutput,hPosition2,output(iOutput).name);
+%             arrayfun(@(x) createChannelBox(overlayPanel,overlayProcId(iProc),iOutput,x,hPosition2),...
+%                 find(validChan));
+%             hPosition2=hPosition2+20;
+%         end
+%         createProcText(overlayPanel,overlayProcId(iProc),iOutput,hPosition2,overlayProc{iProc}.getName);
+%         hPosition2=hPosition2+20;
+%     end
+    
+    uicontrol(graphPanel,'Style','text','Position',[120 hPosition3 100 20],...
+        'Tag','text_channels','String','Channels');
+    arrayfun(@(i) uicontrol(graphPanel,'Style','text',...
+        'Position',[200+30*i hPosition3 20 20],...
+        'Tag',['text_channel' num2str(i)],'String',i),...
+        1:numel(userData.MD.channels_));
+    graphPanelSize = getPanelSize(graphPanel);
+else
+    graphPanelSize= [0 0];
+end
+
+
 %% Get image/overlay panel size and resize them
 imagePanelSize = getPanelSize(imagePanel);
 overlayPanelSize = getPanelSize(overlayPanel);
-panelsLength = imagePanelSize(1)+overlayPanelSize(1)+10;
-panelsHeight = max(imagePanelSize(2),overlayPanelSize(2));
+panelsLength = imagePanelSize(1)+overlayPanelSize(1)+graphPanelSize(1)+10;
+panelsHeight = max([imagePanelSize(2),overlayPanelSize(2),graphPanelSize(2)]);
 
 % Resize panel
 set(imagePanel,'Position',[10 panelsHeight-imagePanelSize(2)+10 ...
@@ -251,6 +303,11 @@ set(imagePanel,'Position',[10 panelsHeight-imagePanelSize(2)+10 ...
     'SelectionChangeFcn',@(h,event) redrawImage(guidata(h)))
 set(overlayPanel,'Position',[10+imagePanelSize(1)+10 panelsHeight-overlayPanelSize(2)+10 ...
     overlayPanelSize(1) overlayPanelSize(2)])
+if ~isequal(graphPanelSize,[0 0])
+    set(graphPanel,'Position',[10+imagePanelSize(1)+overlayPanelSize(1)+10 ...
+        panelsHeight-graphPanelSize(2)+10 ...
+        graphPanelSize(1) graphPanelSize(2)])
+end
 
 %% Create movie panel
 moviePanel = uipanel(mainFig,...
@@ -259,9 +316,6 @@ moviePanel = uipanel(mainFig,...
 
 % Create control button for exporting figures and movie (cf Francois' GUI)
 hPosition=10;
-uicontrol(moviePanel, 'Style', 'pushbutton', 'String', 'Print figures',...
-    'Tag','printButton','Position', [10 hPosition 100 20],...
-    'Callback',@(h,event) printFigure(guidata(h)));
 
 handles.movieButton = uicontrol(moviePanel, 'Style', 'pushbutton', ...
     'String', 'Make movie',...
@@ -510,6 +564,8 @@ end
 
 % Use corresponding method depending on input type
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
+[~,index]=sort(get(channelBoxes,'Tag'));
+channelBoxes =channelBoxes(index);
 if strcmp(imageTag,'radiobutton_channels')
     set(channelBoxes,'Enable','on');
     chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));

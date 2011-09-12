@@ -1,8 +1,8 @@
 function [outlierIndex, r] = detectVectorFieldOutliers(data,varargin)
-% detectVectorFieldOutlier detect and return the outliers in a vector field
+% detectVectorFieldOutliers detect and return the outliers in a vector field
 %
-% Synopsis:        outlierIdx = detectOutliers(data)
-%                  [outlierIdx,r] = detectOutliers(data,2)
+% Synopsis:        outlierIdx = detectVectorFieldOutliers(data)
+%                  [outlierIdx,r] = detectVectorFieldOutliers(data,2)
 %
 % This function detects outliers within a vectorial field using an extended
 % version of the 'median test' of Westerweel et al. 1994, adapted for PTV.
@@ -17,6 +17,9 @@ function [outlierIndex, r] = detectVectorFieldOutliers(data,varargin)
 %
 %      threshold (optional) - a threshold for the detection criterion.
 %      Usually values are between 2-4 depending on the stringency.
+%
+%      weighted (optional) - a boolean. If true, neighbors influence is
+%      weighted using their relative distance to the central point.
 %
 % Output
 %      outlierIndx - the index of the outlier along the first dimension of
