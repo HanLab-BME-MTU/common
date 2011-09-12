@@ -1,7 +1,7 @@
 /* 
  * Compilation:
  * Mac/Linux: mex  -I../../../extern/mex/include/lemon minWeightMaxCardinalityMatching.cpp
- * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\lemon-1.21" -output minWeightMaxCardinalityMatching minWeightMaxCardinalityMatching.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\lemon-1.2.1" -output minWeightMaxCardinalityMatching minWeightMaxCardinalityMatching.cpp
  */
 
 #include <iostream>

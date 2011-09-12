@@ -1,7 +1,7 @@
 /* 
  * Compilation:
  * Mac/Linux: mex  -I../../../extern/mex/include/lemon maxMatching.cpp
- * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\lemon-1.21" -output maxMatching maxMatching.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\lemon-1.2.1" -output maxMatching maxMatching.cpp
  */
 
 #include <iostream>

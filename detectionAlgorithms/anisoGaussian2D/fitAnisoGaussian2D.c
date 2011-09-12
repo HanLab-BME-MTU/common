@@ -500,7 +500,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   /* standard dev. of parameters & covariance matrix */
 
   if (nlhs > 1) {
-      resValid = malloc(data.nValid*sizeof(double));
+      resValid = (double*)malloc(data.nValid*sizeof(double));
       for (i=0; i<data.nValid; ++i) {
           resValid[i] = gsl_vector_get(data.residuals, i);
           RSS += resValid[i]*resValid[i];
@@ -612,9 +612,9 @@ int main(int argc, char** argv)
 	
   /* read mask/pixels */
   data.nValid = N;
-  for (i=0; i<N; ++i)
-    data.nValid -= isnan(data.pixels[i]);
-
+  for (i=0; i<N; ++i) {
+    data.nValid -= (int)mxIsNaN(data.pixels[i]);
+  }
   data.idx = (int*)malloc(sizeof(int)*data.nValid);
   int *nanIdx = (int*)malloc(sizeof(int)*(N-data.nValid));
 

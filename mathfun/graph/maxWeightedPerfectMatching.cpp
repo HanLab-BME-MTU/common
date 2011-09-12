@@ -1,7 +1,7 @@
 /* 
  * Compilation:
  * Mac/Linux: mex  -I../../../extern/mex/include/lemon maxWeightedPerfectMatching.cpp
- * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\lemon-1.21" -output maxWeightedPerfectMatching maxWeightedPerfectMatching.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\lemon-1.2.1" -output maxWeightedPerfectMatching maxWeightedPerfectMatching.cpp
  */
 
 #include <iostream>

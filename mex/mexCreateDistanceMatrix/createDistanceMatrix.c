@@ -14,7 +14,7 @@
  *
  * Compilation:
  * Mac/Linux: mex distmat.c  -output createDistanceMatrix createDistanceMatrix.c
- * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" distmat.c -output createDistanceMatrix createDistanceMatrix.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" distmat.c -output createDistanceMatrix createDistanceMatrix.c
  */
 
 #include "mex.h"

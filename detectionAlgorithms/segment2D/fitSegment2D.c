@@ -17,6 +17,7 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_multifit_nlin.h>
+#include <gsl/gsl_sf_erf.h>
 
 #include "mex.h"
 #include "matrix.h"
@@ -279,9 +280,9 @@ static int f(const gsl_vector *x, void *params, gsl_vector *f)
 	  
       tmp = yi * ct - xi * st;
       c1 = exp(-.5 * s2 * tmp * tmp);
-      c2 = erf(.5 * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
-      c3 = erf(.5 * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));      
-      c6 = erf(.5 * l * M_SQRT1_2 * s1);
+      c2 = gsl_sf_erf(.5 * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
+      c3 = gsl_sf_erf(.5 * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));      
+      c6 = gsl_sf_erf(.5 * l * M_SQRT1_2 * s1);
 
       gsl_vector_set(f, i, .5 * A * c1 * (c2 + c3) / c6 + C - pixels[idx]);
     }
@@ -339,13 +340,13 @@ static int df(const gsl_vector *x, void *params, gsl_matrix *J)
       argStruct.yi = yi;
       tmp = yi * ct - xi * st;
       argStruct.c1 = exp(-.5 * s2 * tmp * tmp);
-      argStruct.c2 = erf(.5 * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
-      argStruct.c3 = erf(.5 * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));
+      argStruct.c2 = gsl_sf_erf(.5 * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
+      argStruct.c3 = gsl_sf_erf(.5 * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));
       tmp = l - 2 * xi * ct - 2 * yi * st;
       argStruct.c4 = exp(-.125 * s2 * tmp * tmp);
       tmp = l + 2 * xi * ct + 2 * yi * st;
       argStruct.c5 = exp(-.125 * s2 * tmp * tmp);
-      argStruct.c6 = erf(.5 * l * M_SQRT1_2 * s1);
+      argStruct.c6 = gsl_sf_erf(.5 * l * M_SQRT1_2 * s1);
 	
       for (k=0; k<dataStruct->np; ++k)
 	dataStruct->dfunc[k](J, i, k, &argStruct);
@@ -405,13 +406,13 @@ static int fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J)
       argStruct.yi = yi;
       tmp = yi * ct - xi * st;
       argStruct.c1 = exp(-.5 * s2 * tmp * tmp);
-      argStruct.c2 = erf(.5 * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
-      argStruct.c3 = erf(.5 * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));
+      argStruct.c2 = gsl_sf_erf(.5 * M_SQRT1_2 * s1 * (l + 2 * xi * ct + 2 * yi * st));
+      argStruct.c3 = gsl_sf_erf(.5 * M_SQRT1_2 * s1 * (l - 2 * xi * ct - 2 * yi * st));
       tmp = l - 2 * xi * ct - 2 * yi * st;
       argStruct.c4 = exp(-.125 * s2 * tmp * tmp);
       tmp = l + 2 * xi * ct + 2 * yi * st;
       argStruct.c5 = exp(-.125 * s2 * tmp * tmp);
-      argStruct.c6 = erf(.5 * l * M_SQRT1_2 * s1);
+      argStruct.c6 = gsl_sf_erf(.5 * l * M_SQRT1_2 * s1);
 
       gsl_vector_set(f, i, .5 * A * argStruct.c1 *
 		     (argStruct.c2 + argStruct.c3) /
@@ -673,9 +674,10 @@ int main(int argc, char** argv)
 	
   /* read mask/pixels */
   data.nValid = N;
-  for (i=0; i<N; ++i)
-    data.nValid -= isnan(data.pixels[i]);
-
+  for (i=0; i<N; ++i){
+    data.nValid -= (int)mxIsNaN(data.pixels[i]);
+  }
+  
   data.idx = (int*)malloc(sizeof(int)*data.nValid);
   int *nanIdx = (int*)malloc(sizeof(int)*(N-data.nValid));
 

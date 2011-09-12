@@ -61,7 +61,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
   // shuffles the set of points. If X is not use after the kdtree
   // construction, this copy becomes useless.
   std::vector< vector<3, double> > X_tmp(X);
-  kdtree<3, double>* tree = new kdtree<3, double>(X_tmp.begin(), X_tmp.end());
+  KDTree<3, double>* tree = new kdtree<3, double>(X_tmp.begin(), X_tmp.end());
 
   // Resolve ICP
 
