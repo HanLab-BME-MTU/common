@@ -3,8 +3,7 @@
  * (c) Francois Aguet, 07/12/2011 (last modified Jul 14, 2011). Adapted from SteerableJ package, 2008.
  *
  * Compilation:
- * Mac/Linux: 
- * mex -I/usr/local/include -I../../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a steerableDetector.cpp
+ * Mac/Linux: mex -I/usr/local/include -I../../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a steerableDetector.cpp
  * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\gsl-1.14" -I"..\..\mex\include" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output steerableDetector steerableDetector.cpp
  */
 
