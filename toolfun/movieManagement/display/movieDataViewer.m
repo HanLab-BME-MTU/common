@@ -6,9 +6,9 @@ ip.addOptional('procId',0,@isnumeric);
 ip.parse(varargin{:});
 
 % Chek
-h=findobj(0,'Name','Movie Viewer');
+h=findobj(0,'Name','Viewer');
 if ~isempty(h), delete(h); end
-mainFig=figure('Name','Movie Viewer','Position',[0 0 200 200],...
+mainFig=figure('Name','Viewer','Position',[0 0 200 200],...
     'NumberTitle','off','Tag','figure1','Toolbar','none','MenuBar','none',...
     'Color',get(0,'defaultUicontrolBackgroundColor'),'Resize','off',...
     'DeleteFcn', @(h,event) deleteViewer(guidata(h)));
@@ -40,16 +40,19 @@ createProcText= @(panel,i,j,pos,name) uicontrol(panel,'Style','text',...
 createOutputText= @(panel,i,j,pos,text) uicontrol(panel,'Style','text',...
     'Position',[40 pos 200 20],'Tag',['text_process' num2str(i) '_output'...
     num2str(j)],'String',text,'HorizontalAlignment','left');
-createChannelButton= @(panel,i,j,k,pos) uicontrol(panel,'Style','radio',...
+createProcButton= @(panel,i,j,k,pos) uicontrol(panel,'Style','radio',...
     'Position',[200+30*k pos 20 20],'Tag',['radiobutton_process' num2str(i) '_output'...
     num2str(j) '_channel' num2str(k)]);
-createChannelBox= @(panel,i,j,k,pos) uicontrol(panel,'Style','checkbox',...
+createProcBox= @(panel,i,j,k,pos) uicontrol(panel,'Style','checkbox',...
     'Position',[200+30*k pos 20 20],'Tag',['checkbox_process' num2str(i) '_output'...
     num2str(j) '_channel' num2str(k)],...
     'Callback',@(h,event) redrawOverlay(h,guidata(h)));
 createMovieOverlayBox= @(panel,i,j,pos,name) uicontrol(panel,'Style','checkbox',...
     'Position',[40 pos 200 20],'Tag',['checkbox_process' num2str(i) '_output'...
     num2str(j)],'String',[' ' name],'Callback',@(h,event) redrawOverlay(h,guidata(h)));
+createGraphBox= @(panel,i,j,pos,name) uicontrol(panel,'Style','checkbox',...
+    'Position',[40 pos 200 20],'Tag',['checkbox_process' num2str(i) '_output'...
+    num2str(j)],'String',[' ' name],'Callback',@(h,event) redrawGraph(h,guidata(h)));
 
 %% Image panel creation
 imagePanel = uibuttongroup(mainFig,'Position',[0 0 1/2 1],...
@@ -130,7 +133,7 @@ for iProc=nProc:-1:1;
     validOutput = find(strcmp({output.type},'image'));
     for iOutput=validOutput(end:-1:1)
         createOutputText(imagePanel,imageProcId(iProc),iOutput,hPosition1,output(iOutput).name);
-        arrayfun(@(x) createChannelButton(imagePanel,imageProcId(iProc),iOutput,x,hPosition1),...
+        arrayfun(@(x) createProcButton(imagePanel,imageProcId(iProc),iOutput,x,hPosition1),...
             find(validChan));
         hPosition1=hPosition1+20;
     end
@@ -227,7 +230,7 @@ for iProc=nProc:-1:1;
     validOutput = find(strcmp({output.type},'overlay'));
     for iOutput=validOutput(end:-1:1)
         createOutputText(overlayPanel,overlayProcId(iProc),iOutput,hPosition2,output(iOutput).name);
-        arrayfun(@(x) createChannelBox(overlayPanel,overlayProcId(iProc),iOutput,x,hPosition2),...
+        arrayfun(@(x) createProcBox(overlayPanel,overlayProcId(iProc),iOutput,x,hPosition2),...
             find(validChan));
         hPosition2=hPosition2+20;
     end
@@ -246,7 +249,7 @@ arrayfun(@(i) uicontrol(overlayPanel,'Style','text',...
 %% Add additional panel for independent graphs
 if ~isempty(graphProc)
     graphPanel = uipanel(mainFig,'Position',[0 0 1 1],...
-        'Title','Overlay','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
+        'Title','Graph','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
         'Units','pixels','Tag','uipanel_graph');
     
     % Create controls for selecting movie-specific overlays
@@ -256,7 +259,7 @@ if ~isempty(graphProc)
         output=graphProc{iProc}.getDrawableOutput;
         validOutput = find(strcmp({output.type},'graph'));
         for iOutput=validOutput(end:-1:1)
-            createMovieOverlayBox(graphPanel,graphProcId(iProc),iOutput,hPosition3,output(iOutput).name);
+            createGraphBox(graphPanel,graphProcId(iProc),iOutput,hPosition3,output(iOutput).name);
             hPosition3=hPosition3+20;
         end
         createProcText(graphPanel,graphProcId(iProc),iOutput,hPosition3,graphProc{iProc}.getName);
@@ -271,7 +274,7 @@ if ~isempty(graphProc)
 %         validOutput = find(strcmp({output.type},'overlay'));
 %         for iOutput=validOutput(end:-1:1)
 %             createOutputText(overlayPanel,overlayProcId(iProc),iOutput,hPosition2,output(iOutput).name);
-%             arrayfun(@(x) createChannelBox(overlayPanel,overlayProcId(iProc),iOutput,x,hPosition2),...
+%             arrayfun(@(x) createProcBox(overlayPanel,overlayProcId(iProc),iOutput,x,hPosition2),...
 %                 find(validChan));
 %             hPosition2=hPosition2+20;
 %         end
@@ -294,6 +297,7 @@ end
 %% Get image/overlay panel size and resize them
 imagePanelSize = getPanelSize(imagePanel);
 overlayPanelSize = getPanelSize(overlayPanel);
+moviePanelsLength = imagePanelSize(1)+overlayPanelSize(1)+10;
 panelsLength = imagePanelSize(1)+overlayPanelSize(1)+graphPanelSize(1)+10;
 panelsHeight = max([imagePanelSize(2),overlayPanelSize(2),graphPanelSize(2)]);
 
@@ -335,7 +339,7 @@ uicontrol(moviePanel,'Style','text','Position',[100 hPosition 40 15],...
     'String',['/' num2str(userData.MD.nFrames_)],'Tag','text_frameMax');
 
 uicontrol(moviePanel,'Style','slider',...
-    'Position',[150 hPosition panelsLength-160 20],...
+    'Position',[150 hPosition moviePanelsLength-160 20],...
     'Value',1,'Min',1,'Max',userData.MD.nFrames_,...
     'SliderStep',[1/double(userData.MD.nFrames_)  5/double(userData.MD.nFrames_)],...
     'Tag','slider_frame','BackgroundColor','white',...
@@ -345,20 +349,20 @@ uicontrol(moviePanel,'Style','slider',...
 hPosition = hPosition+30;
 uicontrol(moviePanel,'Style','text','Position',[10 hPosition 40 20],...
     'String','Movie','Tag','text_movie');
-uicontrol(moviePanel,'Style','edit','Position',[60 hPosition panelsLength-70 20],...
+uicontrol(moviePanel,'Style','edit','Position',[60 hPosition moviePanelsLength-70 20],...
     'String',[userData.MD.movieDataPath_ filesep userData.MD.movieDataFileName_],...
     'HorizontalAlignment','left','BackgroundColor','white','Tag','edit_movie');
 
 % Add copyrigth
 hPosition = hPosition+30;
-uicontrol(moviePanel,'Style','text','Position',[10 hPosition panelsLength 20],...
+uicontrol(moviePanel,'Style','text','Position',[10 hPosition moviePanelsLength 20],...
     'String',userfcn_softwareConfig(),'Tag','text_copyright',...
     'HorizontalAlignment','left');
 
 % Get overlay panel size
 moviePanelSize = getPanelSize(moviePanel);
 moviePanelHeight =moviePanelSize(2);
-set(moviePanel,'Position',[10 panelsHeight+10 panelsLength moviePanelHeight]);
+set(moviePanel,'Position',[10 panelsHeight+10 moviePanelsLength moviePanelHeight]);
 
 %% Resize panels and figure
 sz=get(0,'ScreenSize');
@@ -381,6 +385,7 @@ guidata(handles.figure1, handles);
 
 % Set the figure handle to -1 by default
 userData.drawFig=-1;
+userData.graphFig=-1;
 set(handles.figure1,'UserData',userData);
 
 % Update the image and overlays
@@ -440,29 +445,38 @@ set(handles.slider_frame,'Value',frameNumber);
 redrawImage(handles);
 redrawOverlays(handles);
 
-function createFigure(handles)
+function getFigure(handles,type)
 userData = get(handles.figure1,'UserData');
+
+fig = findobj(0,'-regexp','Name',type);
+if ~isempty(fig), figure(fig); return; end
 
 %Create a figure
 sz=get(0,'ScreenSize');
 ratios = [sz(3)/userData.MD.imSize_(2) sz(4)/userData.MD.imSize_(1)];
 nx=.6*min(ratios)*userData.MD.imSize_(2);
 ny=.6*min(ratios)*userData.MD.imSize_(1);
-userData.drawFig = figure('Position',[sz(3)*.2 sz(4)*.2 nx ny],...
-    'Name','Figure','NumberTitle','off');
+h = figure('Position',[sz(3)*.2 sz(4)*.2 nx ny],...
+    'Name',type,'NumberTitle','off');
 
 % figure options for movie export
 iptsetpref('ImshowBorder','tight');
-set(userData.drawFig, 'InvertHardcopy', 'off');
-set(userData.drawFig, 'PaperUnits', 'Points');
-set(userData.drawFig, 'PaperSize', [nx ny]);
-set(userData.drawFig, 'PaperPosition', [0 0 nx ny]); % very important
+set(h, 'InvertHardcopy', 'off');
+set(h, 'PaperUnits', 'Points');
+set(h, 'PaperSize', [nx ny]);
+set(h, 'PaperPosition', [0 0 nx ny]); % very important
 %  set(userData.drawFig,'DefaultLineLineSmoothing','on');
 % set(userData.drawFig,'DefaultPatchLineSmoothing','on');
 
 %Create the associate axes
-axes('Parent',userData.drawFig,'XLim',[0 userData.MD.imSize_(2)],...
-    'YLim',[0 userData.MD.imSize_(1)],'Position',[0.05 0.05 .9 .9]);
+if strcmp(type,'Movie')
+    set(h,'Name','Movie');
+    axes('Parent',h,'XLim',[0 userData.MD.imSize_(2)],...
+        'YLim',[0 userData.MD.imSize_(1)],'Position',[0.05 0.05 .9 .9]);
+    userData.drawFig=h;
+else
+    userData.graphFig=h;
+end
 set(handles.figure1,'UserData',userData);
 
 function redrawChannel(hObject,handles)
@@ -551,16 +565,12 @@ end
 
 
 function redrawImage(handles)
-userData=get(handles.figure1,'UserData');
 frameNr=get(handles.slider_frame,'Value');
 imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
 
-% Get the figure handle or create one 
-if ~ishandle(userData.drawFig), 
-    createFigure(handles);
-else
-    figure(userData.drawFig);
-end
+% Get the figure handle
+getFigure(handles,'Movie');
+userData=get(handles.figure1,'UserData');
 
 % Use corresponding method depending on input type
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
@@ -655,9 +665,45 @@ else
     if ~isempty(h), delete(h); end
 end
 
+function redrawGraph(hObject,handles)
+overlayTag = get(hObject,'Tag');
+userData=get(handles.figure1,'UserData');
+
+ % Retrieve the id, process nr and channel nr of the selected imageProc
+tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)','tokens');
+procId=str2double(tokens{1}{1});
+outputList = userData.MD.processes_{procId}.getDrawableOutput;
+iOutput = str2double(tokens{1}{2});
+output = outputList(iOutput).var;
+
+% Discriminate between channel-specific processes annd movie processes
+tokens = regexp(overlayTag,'_channel(\d+)$','tokens');
+if ~isempty(tokens)
+    iChan = str2double(tokens{1}{1});
+    inputArgs={iChan};
+else
+    inputArgs={};
+end
+
+% Draw or delete the overlay depending on the checkbox value
+if get(hObject,'Value')
+    getFigure(handles,outputList(iOutput).name);
+    userData.MD.processes_{procId}.draw(inputArgs{:},'output',output,...
+        'vectorScale',str2double(get(handles.edit_vectorFieldScale,'String')));
+else
+    if ~isempty(userData.graphFig), delete(userData.graphFig); end
+end
+
+
+
+
 function deleteViewer(handles)
 
 userData=get(handles.figure1,'UserData');
+
 if isfield(userData, 'drawFig') && ishandle(userData.drawFig), 
     delete(userData.drawFig); 
+end
+if isfield(userData, 'graphFig') && ishandle(userData.drawFig), 
+    delete(userData.graphFig); 
 end
