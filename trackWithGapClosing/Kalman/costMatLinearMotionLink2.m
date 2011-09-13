@@ -141,14 +141,19 @@ numSchemes = 3;
 vecSize = 2 * probDim;
 
 %construct transition matrices
-if linearMotion
-    transMat(:,:,1) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
-    transMat(:,:,2) = eye(vecSize) + diag(-ones(probDim,1),probDim); %backward drift transition matrix
-    transMat(:,:,3) = eye(vecSize); %zero drift transition matrix
-else
-    transMat(:,:,3) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
-    transMat(:,:,2) = eye(vecSize) + diag(-ones(probDim,1),probDim); %backward drift transition matrix
-    transMat(:,:,1) = eye(vecSize); %zero drift transition matrix
+switch linearMotion
+    case 1
+        transMat(:,:,1) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
+        transMat(:,:,2) = eye(vecSize) + diag(-ones(probDim,1),probDim); %backward drift transition matrix
+        transMat(:,:,3) = eye(vecSize); %zero drift transition matrix
+    case 0
+        transMat(:,:,3) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
+        transMat(:,:,2) = eye(vecSize) + diag(-ones(probDim,1),probDim); %backward drift transition matrix
+        transMat(:,:,1) = eye(vecSize); %zero drift transition matrix
+    case 2
+        transMat(:,:,1) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
+        transMat(:,:,2) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift again
+        transMat(:,:,3) = eye(vecSize); %zero drift transition matrix
 end
 
 %construct observation matrix

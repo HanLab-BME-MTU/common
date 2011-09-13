@@ -185,8 +185,11 @@ for iTrack = 1 : numTracks
             [dummy,indx] = sort(seqOfEvents(:,1));
             seqOfEvents = seqOfEvents(indx,:);
             
-            %remove any events that take place after the end of the track
-            seqOfEvents = seqOfEvents(seqOfEvents(:,1)<=vis_endframe(iTrack),:);
+            %if any merge events take place after the end of the track
+            %convert them into simple ends
+            indxBad = find(seqOfEvents(:,1) > vis_endframe(iTrack));
+            seqOfEvents(indxBad,1) = vis_endframe(iTrack);
+            seqOfEvents(indxBad,4) = NaN;
 
         end
         
@@ -281,48 +284,37 @@ for iTrack = 1 : numTracks
         tracksCoordAmpCG = NaN(numSplits+1,8*cnf);
         
         %info of main track
-        %intensity info will be modified later if there are splits and
-        %merges
+        %intensity info will be modified if there are splits and merges
         tracksCoordAmpCG(1,1:8:end) = xyvecTraj(:,1);
         tracksCoordAmpCG(1,2:8:end) = xyvecTraj(:,2);
         tracksCoordAmpCG(1,4:8:end) = intVecTraj;
-
-        %position and intensity info of splits
+        
+        %info of splits/merges
         for iSplit = 1 : numSplits
             
+            iSegment = seqOfEvents(indxSplits(iSplit),3);
+            
             %find merging time
-            timeMerge = seqOfEvents(seqOfEvents(:,3)==(iSplit+1) & seqOfEvents(:,2)==2,1);
+            timeMerge = seqOfEvents(seqOfEvents(:,3)==iSegment & seqOfEvents(:,2)==2 & ~isnan(seqOfEvents(:,4)),1);
             if isempty(timeMerge)
                 timeMerge = vis_endframe(iTrack)+1;
             end
-            splitDuration = timeMerge - timeSplit;
             
-            %assign positions during the split-to-merge time
-            mainTrackPos = xyvecTraj(timeSplits(iSplit)-vis_startframe(iTrack)+1:...
-                timeMerge-vis_startframe(iTrack),:);
-            posMS = mainTrackPos + randn(splitDuration,2)*0.1;
-            
-            %assign intensities
-            intVecMS = intVecTraj(timeSplits(iSplit)-vis_startframe(iTrack)+1:...
-                timeMerge-vis_startframe(iTrack)) .* (rand(splitDuration,...
-                1)*0.2+0.4);
-            intVecTraj(timeSplits(iSplit)-vis_startframe(iTrack)+1:...
-                timeMerge-vis_startframe(iTrack)) = ...
-                intVecTraj(timeSplits(iSplit)-vis_startframe(iTrack)+1:...
-                timeMerge-vis_startframe(iTrack)) .* (rand(splitDuration,...
-                1)*0.2+0.4);            
-        
-        %info for merging/splitting branches
-        for iMS = 1 : numMS
-            iSegment = seqOfEvents(indxMS(iMS),3);
-            tracksCoordAmpCG(iSegment,(timeMS(iMS)-vis_startframe(iTrack))*8+1:...
-                (timeMS(iMS)-vis_startframe(iTrack))*8+2) = posMS(iMS,:);
-            tracksCoordAmpCG(iSegment,(timeMS(iMS)-vis_startframe(iTrack))*8+4:...
-                (timeMS(iMS)-vis_startframe(iTrack))*8+4) = intVecMS(iMS);
+            %store information
+            tracksCoordAmpCG(1,(timeSplits(iSplit)-vis_startframe(iTrack))*8+4:8:...
+                (timeMerge-1-vis_startframe(iTrack))*8) = ...
+                tracksCoordAmpCG(1,(timeSplits(iSplit)-vis_startframe(iTrack))*8+4:8:...
+                (timeMerge-1-vis_startframe(iTrack))*8) / 2;
+            tracksCoordAmpCG(iSegment,(timeSplits(iSplit)-vis_startframe(iTrack))*8+1:...
+                (timeMerge-1-vis_startframe(iTrack))*8) = ...
+                tracksCoordAmpCG(1,(timeSplits(iSplit)-vis_startframe(iTrack))*8+1:...
+                (timeMerge-1-vis_startframe(iTrack))*8);
         end
-
+        
+        tracksCoordAmpCG(2:end,:) = tracksCoordAmpCG(2:end,:) + randn(numSplits,8*cnf)*0.05;
+        
     else %no merges and splits
-
+        
         tracksCoordAmpCG = NaN(1,8*cnf);
         tracksCoordAmpCG(1,1:8:end) = xyvecTraj(:,1);
         tracksCoordAmpCG(1,2:8:end) = xyvecTraj(:,2);

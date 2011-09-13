@@ -1,11 +1,11 @@
 function [fracLinksCorrect,fracLinksWrong,fracGapsCorrect,fracGapsWrong,...
-    fracLinksFP,fracGapsFP] = summTrackPerformance(resultsSim)
+    fracLinksFP,fracGapsFP,aveRatioDisp2NNDist,ratioAveNNDist2MaxDisp] = summTrackPerformance(resultsSim)
 
 n3 = size(resultsSim,3);
 
 if n3 == 1 %simulation with no false positives
     
-    nMiss = size(resultsSim,1);
+    [nMiss,nRun] = size(resultsSim);
     
     [fracLinksCorrect,fracLinksWrong,fracGapsCorrect,fracGapsWrong] = ...
         deal(NaN(nMiss,1));
@@ -25,10 +25,33 @@ if n3 == 1 %simulation with no false positives
         fracGapsWrong(i) = length(find(tmp1(:,2)==1))/size(tmp2,1);
     end
     
+    tracks = resultsSim(1,1).tracksSimMiss;
+    tracks = convStruct2MatNoMS(tracks);
+    [numTrack,numFrames] = size(tracks);
+    numFrames = numFrames/8;
+    nnDist = NaN(numTrack,numFrames-1,nRun);
+    displacement = NaN(numTrack,numFrames-1,nRun);
+    for i = 1 : nRun
+        tracks = resultsSim(1,i).tracksSimMiss;
+        tracks = convStruct2MatNoMS(tracks);
+        xCoord = tracks(:,1:8:end);
+        yCoord = tracks(:,2:8:end);
+        displacement(:,:,i) = sqrt((diff(xCoord,[],2)).^2 + (diff(yCoord,[],2)).^2);
+        for j = 1 : numFrames-1
+            indxGood = find(~isnan(xCoord(:,j)));
+            nnDistFrame = createDistanceMatrix([xCoord(indxGood,j) ...
+                yCoord(indxGood,j)],[xCoord(indxGood,j) yCoord(indxGood,j)]);
+            nnDistFrame = sort(nnDistFrame,2);
+            nnDist(indxGood,j,i) = nnDistFrame(:,2);
+        end
+    end
+    aveRatioDisp2NNDist = displacement ./ nnDist;
+    aveRatioDisp2NNDist = nanmean(aveRatioDisp2NNDist(:));
+    ratioAveNNDist2MaxDisp = nanmean(nnDist(:)) / max(displacement(:));
+    
 else %simulation with false positives
     
-    nFP = size(resultsSim,1);
-    nMiss = size(resultsSim,2);
+    [nFP,nMiss,nRun] = size(resultsSim);
     
     [fracLinksCorrect,fracLinksWrong,fracGapsCorrect,fracGapsWrong,...
         fracLinksFP,fracGapsFP] = deal(NaN(nMiss,nFP));
@@ -51,5 +74,29 @@ else %simulation with false positives
             fracGapsFP(j,i) = length(find(tmp1(:,2)==2))/size(tmp2,1);
         end
     end
+    
+    tracks = resultsSim(1,1,1).tracksSimMiss;
+    tracks = convStruct2MatNoMS(tracks);
+    [numTrack,numFrames] = size(tracks);
+    numFrames = numFrames/8;
+    nnDist = NaN(numTrack,numFrames-1,nRun);
+    displacement = NaN(numTrack,numFrames-1,nRun);
+    for i = 1 : nRun
+        tracks = resultsSim(1,1,i).tracksSimMiss;
+        tracks = convStruct2MatNoMS(tracks);
+        xCoord = tracks(:,1:8:end);
+        yCoord = tracks(:,2:8:end);
+        displacement(:,:,i) = sqrt((diff(xCoord,[],2)).^2 + (diff(yCoord,[],2)).^2);
+        for j = 1 : numFrames-1
+            indxGood = find(~isnan(xCoord(:,j)));
+            nnDistFrame = createDistanceMatrix([xCoord(indxGood,j) ...
+                yCoord(indxGood,j)],[xCoord(indxGood,j) yCoord(indxGood,j)]);
+            nnDistFrame = sort(nnDistFrame,2);
+            nnDist(indxGood,j,i) = nnDistFrame(:,2);
+        end
+    end
+    aveRatioDisp2NNDist = displacement ./ nnDist;
+    aveRatioDisp2NNDist = nanmean(aveRatioDisp2NNDist(:));
+    ratioAveNNDist2MaxDisp = nanmean(nnDist(:)) / max(displacement(:));
     
 end

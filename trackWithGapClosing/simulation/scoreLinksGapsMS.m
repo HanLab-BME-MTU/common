@@ -249,7 +249,7 @@ if mergeSplit
     %initialize number of correct splits
     numCorrectSplits = 0;
     
-    %get number of merges in ground truth and tracking results
+    %get number of splits in ground truth and tracking results
     numSplit0 = size(xyCoordS0,1);
     numSplit1 = size(xyCoordS1,1);
         
@@ -271,8 +271,8 @@ if mergeSplit
         if ~isempty(indxGT)
             
             %get coordinates of splitting features in ground truth
-            xyCoordSAft01 = xyCoordM0(indxGT,4:5);
-            xyCoordSAft02 = xyCoordM0(indxGT,6:7);
+            xyCoordSAft01 = xyCoordS0(indxGT,4:5);
+            xyCoordSAft02 = xyCoordS0(indxGT,6:7);
             
             %find how many tracking and ground truth coordinates are equivalent
             numEquiv = size(intersect([xyCoordSAft11; xyCoordSAft12],...
