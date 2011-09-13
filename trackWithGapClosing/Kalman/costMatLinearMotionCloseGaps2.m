@@ -371,6 +371,11 @@ for iPair = 1 : numPairs
     trackTypeS = trackType(iStart);
     trackTypeE = trackType(iEnd);
     
+    %calculate the vector connecting the end of track iEnd to the
+    %start of track iStart and compute its magnitude
+    dispVec = coordEnd(iEnd,:) - coordStart(iStart,:);
+    dispVecMag = norm(dispVec);
+
     %determine the search area of track iStart
     longVecS = longVecSAll(:,timeGap,iStart);
     shortVecS = shortVecSAll(:,timeGap,iStart);
@@ -385,11 +390,6 @@ for iPair = 1 : numPairs
     shortVecMagS = norm(shortVecS);
     longVecMagE = norm(longVecE);
     shortVecMagE = norm(shortVecE);
-
-    %calculate the vector connecting the end of track iEnd to the
-    %start of track iStart and compute its magnitude
-    dispVec = coordEnd(iEnd,:) - coordStart(iStart,:);
-    dispVecMag = norm(dispVec);
 
     %project the connecting vector onto the long and short vectors
     %of track iStart and take absolute value
@@ -814,6 +814,12 @@ if mergeSplit > 0
                 iEnd = indxEnd2(iPair);
                 iMerge = indxMerge2(iPair);
 
+                %calculate the vector connecting the end of track iEnd to the
+                %point of merging and compute its magnitude
+                dispVec = coordEnd(iEnd,:) - full(trackedFeatInfo(iMerge,...
+                    timeIndx+1:timeIndx+probDim));
+                dispVecMag = sqrt(dispVec * dispVec');
+
                 %determine the search ellipse of track iEnd
                 longVecE = longVecEAllMS(:,1,iEnd);
                 shortVecE = shortVecEAllMS(:,1,iEnd);
@@ -822,12 +828,6 @@ if mergeSplit > 0
                 %of the end
                 longVecMagE = sqrt(longVecE' * longVecE);
                 shortVecMagE = sqrt(shortVecE' * shortVecE);
-
-                %calculate the vector connecting the end of track iEnd to the
-                %point of merging and compute its magnitude
-                dispVec = coordEnd(iEnd,:) - full(trackedFeatInfo(iMerge,...
-                    timeIndx+1:timeIndx+probDim));
-                dispVecMag = sqrt(dispVec * dispVec');
 
                 %project the connecting vector onto the long and short vectors
                 %of track iEnd and take absolute value
@@ -1109,6 +1109,12 @@ if mergeSplit > 0
                 iStart = indxStart2(iPair);
                 iSplit = indxSplit2(iPair);
 
+                %calculate the vector connecting the end of track iStart to the
+                %point of splitting and compute its magnitude
+                dispVec = coordStart(iStart,:) - full(trackedFeatInfo(iSplit,...
+                    timeIndx+1:timeIndx+probDim));
+                dispVecMag = sqrt(dispVec * dispVec');
+
                 %determine the search ellipse of track iStart
                 longVecS = longVecSAllMS(:,1,iStart);
                 shortVecS = shortVecSAllMS(:,1,iStart);
@@ -1117,12 +1123,6 @@ if mergeSplit > 0
                 %of the start
                 longVecMagS = sqrt(longVecS' * longVecS);
                 shortVecMagS = sqrt(shortVecS' * shortVecS);
-
-                %calculate the vector connecting the end of track iStart to the
-                %point of splitting and compute its magnitude
-                dispVec = coordStart(iStart,:) - full(trackedFeatInfo(iSplit,...
-                    timeIndx+1:timeIndx+probDim));
-                dispVecMag = sqrt(dispVec * dispVec');
 
                 %project the connecting vector onto the long and short vectors
                 %of track iStart and take absolute value
@@ -1259,6 +1259,7 @@ if mergeSplit > 0
                         prevAppearance = find(indxMSMS == iSplit);
 
                         %if this track in this frame did not appear before ...
+                        %THIS SECTION IS OUTDATED
                         if isempty(prevAppearance)
                             
                             %increase the "split index" by one
