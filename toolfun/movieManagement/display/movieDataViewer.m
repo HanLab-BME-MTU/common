@@ -11,7 +11,7 @@ if ~isempty(h), delete(h); end
 mainFig=figure('Name','Viewer','Position',[0 0 200 200],...
     'NumberTitle','off','Tag','figure1','Toolbar','none','MenuBar','none',...
     'Color',get(0,'defaultUicontrolBackgroundColor'),'Resize','off',...
-    'DeleteFcn', @(h,event) deleteViewer(guidata(h)));
+    'DeleteFcn', @(h,event) deleteViewer());
 userData=get(mainFig,'UserData');
 userData.MD=ip.Results.MD;
 
@@ -29,6 +29,9 @@ overlayProcId = validProcId(isOverlayProc);
 isMovieOverlayProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'movieOverlay')),validProc);
 movieOverlayProc=validProc(isMovieOverlayProc);
 movieOverlayProcId = validProcId(isMovieOverlayProc);
+isMovieGraphProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'movieGraph')),validProc);
+movieGraphProc=validProc(isMovieGraphProc);
+movieGraphProcId = validProcId(isMovieGraphProc);
 isGraphProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'graph')),validProc);
 graphProc=validProc(isGraphProc);
 graphProcId = validProcId(isGraphProc);
@@ -43,16 +46,13 @@ createOutputText= @(panel,i,j,pos,text) uicontrol(panel,'Style','text',...
 createProcButton= @(panel,i,j,k,pos) uicontrol(panel,'Style','radio',...
     'Position',[200+30*k pos 20 20],'Tag',['radiobutton_process' num2str(i) '_output'...
     num2str(j) '_channel' num2str(k)]);
-createProcBox= @(panel,i,j,k,pos) uicontrol(panel,'Style','checkbox',...
+createChannelBox= @(panel,i,j,k,pos,varargin) uicontrol(panel,'Style','checkbox',...
     'Position',[200+30*k pos 20 20],'Tag',['checkbox_process' num2str(i) '_output'...
-    num2str(j) '_channel' num2str(k)],...
-    'Callback',@(h,event) redrawOverlay(h,guidata(h)));
-createMovieOverlayBox= @(panel,i,j,pos,name) uicontrol(panel,'Style','checkbox',...
+    num2str(j) '_channel' num2str(k)],varargin{:});
+createMovieBox= @(panel,i,j,pos,name,varargin) uicontrol(panel,'Style','checkbox',...
     'Position',[40 pos 200 20],'Tag',['checkbox_process' num2str(i) '_output'...
-    num2str(j)],'String',[' ' name],'Callback',@(h,event) redrawOverlay(h,guidata(h)));
-createGraphBox= @(panel,i,j,pos,name) uicontrol(panel,'Style','checkbox',...
-    'Position',[40 pos 200 20],'Tag',['checkbox_process' num2str(i) '_output'...
-    num2str(j)],'String',[' ' name],'Callback',@(h,event) redrawGraph(h,guidata(h)));
+    num2str(j)],'String',[' ' name],varargin{:});
+
 
 %% Image panel creation
 imagePanel = uibuttongroup(mainFig,'Position',[0 0 1/2 1],...
@@ -215,7 +215,8 @@ for iProc=nProc:-1:1;
     output=movieOverlayProc{iProc}.getDrawableOutput;
     validOutput = find(strcmp({output.type},'movieOverlay'));
     for iOutput=validOutput(end:-1:1)
-        createMovieOverlayBox(overlayPanel,movieOverlayProcId(iProc),iOutput,hPosition2,output(iOutput).name);
+        createMovieBox(overlayPanel,movieOverlayProcId(iProc),iOutput,hPosition2,output(iOutput).name,...
+            'Callback',@(h,event) redrawOverlay(h,guidata(h)));
         hPosition2=hPosition2+20;
     end
     createProcText(overlayPanel,movieOverlayProcId(iProc),iOutput,hPosition2,movieOverlayProc{iProc}.getName);
@@ -230,8 +231,8 @@ for iProc=nProc:-1:1;
     validOutput = find(strcmp({output.type},'overlay'));
     for iOutput=validOutput(end:-1:1)
         createOutputText(overlayPanel,overlayProcId(iProc),iOutput,hPosition2,output(iOutput).name);
-        arrayfun(@(x) createProcBox(overlayPanel,overlayProcId(iProc),iOutput,x,hPosition2),...
-            find(validChan));
+        arrayfun(@(x) createChannelBox(overlayPanel,overlayProcId(iProc),iOutput,x,hPosition2,...
+            'Callback',@(h,event) redrawOverlay(h,guidata(h))),find(validChan));
         hPosition2=hPosition2+20;
     end
     createProcText(overlayPanel,overlayProcId(iProc),iOutput,hPosition2,overlayProc{iProc}.getName);
@@ -254,33 +255,34 @@ if ~isempty(graphProc)
     
     % Create controls for selecting movie-specific overlays
     hPosition3=10;
+    nProc = numel(movieGraphProc);
+    for iProc=nProc:-1:1;
+        output=movieGraphProc{iProc}.getDrawableOutput;
+        validOutput = find(strcmp({output.type},'movieGraph'));
+        for iOutput=validOutput(end:-1:1)
+            createMovieBox(graphPanel,movieGraphProcId(iProc),iOutput,hPosition3,...
+                output(iOutput).name,'Callback',@(h,event) redrawGraph(h,guidata(h)));
+            hPosition3=hPosition3+20;
+        end
+        createProcText(graphPanel,movieGraphProcId(iProc),iOutput,hPosition3,movieGraphProc{iProc}.getName);
+        hPosition3=hPosition3+20;
+    end
+    
+    % Create controls for selecting channel-specific overlays
     nProc = numel(graphProc);
     for iProc=nProc:-1:1;
         output=graphProc{iProc}.getDrawableOutput;
+        validChan = graphProc{iProc}.checkChannelOutput;
         validOutput = find(strcmp({output.type},'graph'));
         for iOutput=validOutput(end:-1:1)
-            createGraphBox(graphPanel,graphProcId(iProc),iOutput,hPosition3,output(iOutput).name);
+            createOutputText(graphPanel,graphProcId(iProc),iOutput,hPosition3,output(iOutput).name);
+            arrayfun(@(x) createChannelBox(graphPanel,graphProcId(iProc),iOutput,x,hPosition3,...
+                'Callback',@(h,event) redrawGraph(h,guidata(h))),find(validChan));
             hPosition3=hPosition3+20;
         end
         createProcText(graphPanel,graphProcId(iProc),iOutput,hPosition3,graphProc{iProc}.getName);
         hPosition3=hPosition3+20;
     end
-%     
-%     % Create controls for selecting channel-specific overlays
-%     nProc = numel(overlayProc);
-%     for iProc=nProc:-1:1;
-%         output=overlayProc{iProc}.getDrawableOutput;
-%         validChan = overlayProc{iProc}.checkChannelOutput;
-%         validOutput = find(strcmp({output.type},'overlay'));
-%         for iOutput=validOutput(end:-1:1)
-%             createOutputText(overlayPanel,overlayProcId(iProc),iOutput,hPosition2,output(iOutput).name);
-%             arrayfun(@(x) createProcBox(overlayPanel,overlayProcId(iProc),iOutput,x,hPosition2),...
-%                 find(validChan));
-%             hPosition2=hPosition2+20;
-%         end
-%         createProcText(overlayPanel,overlayProcId(iProc),iOutput,hPosition2,overlayProc{iProc}.getName);
-%         hPosition2=hPosition2+20;
-%     end
     
     uicontrol(graphPanel,'Style','text','Position',[120 hPosition3 100 20],...
         'Tag','text_channels','String','Channels');
@@ -385,7 +387,6 @@ guidata(handles.figure1, handles);
 
 % Set the figure handle to -1 by default
 userData.drawFig=-1;
-userData.graphFig=-1;
 set(handles.figure1,'UserData',userData);
 
 % Update the image and overlays
@@ -445,19 +446,19 @@ set(handles.slider_frame,'Value',frameNumber);
 redrawImage(handles);
 redrawOverlays(handles);
 
-function getFigure(handles,type)
-userData = get(handles.figure1,'UserData');
+function getFigure(handles,figName)
 
-fig = findobj(0,'-regexp','Name',type);
-if ~isempty(fig), figure(fig); return; end
+h = findobj(0,'-regexp','Name',figName);
+if ~isempty(h), figure(h); return; end
 
 %Create a figure
+userData = get(handles.figure1,'UserData');
 sz=get(0,'ScreenSize');
 ratios = [sz(3)/userData.MD.imSize_(2) sz(4)/userData.MD.imSize_(1)];
 nx=.6*min(ratios)*userData.MD.imSize_(2);
 ny=.6*min(ratios)*userData.MD.imSize_(1);
 h = figure('Position',[sz(3)*.2 sz(4)*.2 nx ny],...
-    'Name',type,'NumberTitle','off');
+    'Name',figName,'NumberTitle','off','Tag','viewerFig');
 
 % figure options for movie export
 iptsetpref('ImshowBorder','tight');
@@ -468,26 +469,20 @@ set(h, 'PaperPosition', [0 0 nx ny]); % very important
 %  set(userData.drawFig,'DefaultLineLineSmoothing','on');
 % set(userData.drawFig,'DefaultPatchLineSmoothing','on');
 
-%Create the associate axes
-if strcmp(type,'Movie')
-    set(h,'Name','Movie');
+%Create the associate axes for the movie figure
+if strcmp(figName,'Movie')
     axes('Parent',h,'XLim',[0 userData.MD.imSize_(2)],...
         'YLim',[0 userData.MD.imSize_(1)],'Position',[0.05 0.05 .9 .9]);
     userData.drawFig=h;
-else
-    userData.graphFig=h;
 end
 set(handles.figure1,'UserData',userData);
 
 function redrawChannel(hObject,handles)
+
 % Callback for channels checkboxes to avoid 0 or more than 4 channels
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
-chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
-if numel(chanList)==0
-    set(hObject,'Value',1);
-elseif numel(chanList)>3
-   set(hObject,'Value',0); 
-end
+nChan=numel(find(arrayfun(@(x)get(x,'Value'),channelBoxes)));
+if nChan==0, set(hObject,'Value',1); elseif nChan>3, set(hObject,'Value',0); end
 
 redrawImage(handles)
 
@@ -594,7 +589,7 @@ else
     clim=userData.MD.processes_{procId}.displayMethod_{iOutput,iChan}.CLim;
 end
 
-% Set the autoscale
+% Set the autoscale properties
 set(handles.checkbox_autoscale,'Value',isempty(clim));
 if isempty(clim)
     userData = get(handles.figure1,'UserData');
@@ -669,41 +664,35 @@ function redrawGraph(hObject,handles)
 overlayTag = get(hObject,'Tag');
 userData=get(handles.figure1,'UserData');
 
- % Retrieve the id, process nr and channel nr of the selected imageProc
+ % Retrieve the id, process nr and channel nr of the selected graphProc
 tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)','tokens');
 procId=str2double(tokens{1}{1});
 outputList = userData.MD.processes_{procId}.getDrawableOutput;
 iOutput = str2double(tokens{1}{2});
 output = outputList(iOutput).var;
 
-% Discriminate between channel-specific processes annd movie processes
+% Discriminate between channel-specific and movie processes
 tokens = regexp(overlayTag,'_channel(\d+)$','tokens');
 if ~isempty(tokens)
     iChan = str2double(tokens{1}{1});
     inputArgs={iChan};
+    figName = [outputList(iOutput).name ' - Channel ' num2str(iChan)];
 else
     inputArgs={};
+    figName = outputList(iOutput).name;
 end
 
-% Draw or delete the overlay depending on the checkbox value
+% Draw or delete the graph figure depending on the checkbox value
 if get(hObject,'Value')
-    getFigure(handles,outputList(iOutput).name);
+    getFigure(handles,figName);
     userData.MD.processes_{procId}.draw(inputArgs{:},'output',output,...
         'vectorScale',str2double(get(handles.edit_vectorFieldScale,'String')));
 else
-    if ~isempty(userData.graphFig), delete(userData.graphFig); end
+    h=findobj(0,'-regexp','Name',figName);
+    if ~isempty(h), delete(h); end
 end
 
+function deleteViewer()
 
-
-
-function deleteViewer(handles)
-
-userData=get(handles.figure1,'UserData');
-
-if isfield(userData, 'drawFig') && ishandle(userData.drawFig), 
-    delete(userData.drawFig); 
-end
-if isfield(userData, 'graphFig') && ishandle(userData.drawFig), 
-    delete(userData.graphFig); 
-end
+h = findobj(0,'-regexp','Tag','viewerFig');
+if ~isempty(h), delete(h); end
