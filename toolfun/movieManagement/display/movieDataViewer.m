@@ -569,7 +569,7 @@ userData=get(handles.figure1,'UserData');
 
 % Use corresponding method depending on input type
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
-[~,index]=sort(get(channelBoxes,'Tag'));
+[~,index]=sort(arrayfun(@(x) get(x,'Tag'),channelBoxes,'UniformOutput',false));
 channelBoxes =channelBoxes(index);
 if strcmp(imageTag,'radiobutton_channels')
     set(channelBoxes,'Enable','on');
