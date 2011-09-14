@@ -63,7 +63,7 @@ else
     textWidth = 0;
 end
 
-hold on;
+hold(ip.Results.Handle, 'on');
 set(gcf, 'InvertHardcopy', 'off');
 
 
@@ -93,14 +93,16 @@ else
     tx = x0+width/2;
 end
 
-
 textProps = {'Color', color, 'FontUnits', 'normalized',...
     'FontName', fontName, 'FontSize', fontSize,...
     'VerticalAlignment', 'Top',...
     'HorizontalAlignment', halign};
 
+x0 = x0+XLim(1);
+y0 = y0+YLim(1);
+
 hScaleBar(1) = fill([x0 x0+width x0+width x0], [y0+height y0+height y0 y0],...
-    color, 'EdgeColor', 'none');
+    color, 'EdgeColor', 'none', 'Parent', ip.Results.Handle);
 if ~isempty(label)
     hScaleBar(2) = text(tx, y0+height, label, textProps{:});
 end
