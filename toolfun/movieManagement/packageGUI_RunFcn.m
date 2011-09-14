@@ -310,7 +310,7 @@ basicLogMsg = cell(size(movieException));
 extendedLogMsg = cell(size(movieException));
 for i = errorMovies
     % Format movie log message
-    basicLogMsg{i} = sprintf('Movie %d - %s:\n\n', errorMovies(i), ...
+    basicLogMsg{i} = sprintf('Movie %d - %s:\n\n', i, ...
         [userData.MD(i).movieDataPath_ filesep userData.MD(i).movieDataFileName_]);
     extendedLogMsg{i}=basicLogMsg{i};
     

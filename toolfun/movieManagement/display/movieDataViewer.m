@@ -422,7 +422,7 @@ fprintf('\n');
 % Generate movie
 fprintf('Generating movie... ');
 fr = num2str(15);
-cmd = ['ffmpeg -loglevel quiet -y -r ' fr ' -i ' fpath 'frame' fmt '.png' ' -r ' fr ' -b 50000k -bt 20000k ' mpath 'movie.mp4 > /dev/null 2>&1' ];
+cmd = ['ffmpeg -y -r ' fr ' -i ' fpath 'frame' fmt '.png' ' -r ' fr ' -b 50000k -bt 20000k ' mpath 'movie.mp4 > /dev/null 2>&1' ];
 system(cmd);
 fprintf('done.\n');
 
