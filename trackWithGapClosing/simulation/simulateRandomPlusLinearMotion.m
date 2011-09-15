@@ -295,23 +295,23 @@ for iTrack = 1 : numTracks
             iSegment = seqOfEvents(indxSplits(iSplit),3);
             
             %find merging time
-            timeMerge = seqOfEvents(seqOfEvents(:,3)==iSegment & seqOfEvents(:,2)==2 & ~isnan(seqOfEvents(:,4)),1);
-            if isempty(timeMerge)
-                timeMerge = vis_endframe(iTrack)+1;
+            timeEnd = seqOfEvents(seqOfEvents(:,3)==iSegment & seqOfEvents(:,2)==2 & ~isnan(seqOfEvents(:,4)),1) - 1;
+            if isempty(timeEnd)
+                timeEnd = vis_endframe(iTrack);
             end
             
             %store information
             tracksCoordAmpCG(1,(timeSplits(iSplit)-vis_startframe(iTrack))*8+4:8:...
-                (timeMerge-1-vis_startframe(iTrack))*8) = ...
+                (timeEnd-vis_startframe(iTrack)+1)*8) = ...
                 tracksCoordAmpCG(1,(timeSplits(iSplit)-vis_startframe(iTrack))*8+4:8:...
-                (timeMerge-1-vis_startframe(iTrack))*8) / 2;
+                (timeEnd-vis_startframe(iTrack)+1)*8) / 2;
             tracksCoordAmpCG(iSegment,(timeSplits(iSplit)-vis_startframe(iTrack))*8+1:...
-                (timeMerge-1-vis_startframe(iTrack))*8) = ...
+                (timeEnd-vis_startframe(iTrack)+1)*8) = ...
                 tracksCoordAmpCG(1,(timeSplits(iSplit)-vis_startframe(iTrack))*8+1:...
-                (timeMerge-1-vis_startframe(iTrack))*8);
+                (timeEnd-vis_startframe(iTrack)+1)*8);
         end
         
-        tracksCoordAmpCG(2:end,:) = tracksCoordAmpCG(2:end,:) + randn(numSplits,8*cnf)*0.05;
+        %         tracksCoordAmpCG(2:end,:) = tracksCoordAmpCG(2:end,:) + randn(numSplits,8*cnf)*0.05;
         
     else %no merges and splits
         
