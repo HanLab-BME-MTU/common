@@ -47,5 +47,3 @@ s(19).name = 'cy3';
 s(19).lambda_em = 570e-9;
 s(20).name = 'cy5';
 s(20).lambda_em = 670e-9;
-s(21).name = 'alexa568';
-s(21).lambda_em = 603e-9;
