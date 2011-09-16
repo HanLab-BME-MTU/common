@@ -1,16 +1,22 @@
-% Performs hysteresis thresholding.
+%out = hysteresisThreshold(img, t1, t2) performs hysteresis thresholding.
+%
+% Inputs:  img : input image
+%           t1 : high threshold
+%           t2 : low threshold
+%
+% Outputs: out : binary mask
 
 % Francois Aguet, June 30, 2010
 
-function out = hysteresisThreshold(image, t1, t2)
+function out = hysteresisThreshold(img, t1, t2)
 
-im2 = image;
+im2 = img;
 im2(im2<t2) = 0;
 im2(im2~=0) = 1;
 
 labels = bwlabel(im2, 8);
 
-im1 = image;
+im1 = img;
 im1(im1<t1) = 0;
 im1(im1~=0) = 1;
 

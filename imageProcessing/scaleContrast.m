@@ -1,3 +1,12 @@
+%out = scaleContrast(in, rangeIn, rangeOut) adjusts the contrast of the input
+%
+% Inputs:
+%         in : input signal
+%    rangeIn : input range. If empty, [min(in(:)) max(in(:))]
+%   rangeOut : output range
+
+% Francois Aguet (Last modified: 03/22/2011)
+
 function out = scaleContrast(in, rangeIn, rangeOut)
 
 if nargin<2 || isempty(rangeIn)

@@ -22,4 +22,4 @@ A1 = interp2(xi, yi, resXT, x+sin(th), y-cos(th));
 A2 = interp2(xi, yi, resXT, x-sin(th), y+cos(th));
 
 nms = res;
-nms(res<=A1 | res<=A2) = 0;
+nms(res<A1 | res<A2) = 0;
