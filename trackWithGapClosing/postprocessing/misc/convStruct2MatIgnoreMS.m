@@ -1,5 +1,5 @@
 function [trackedFeatureInfo,trackedFeatureIndx,trackStartRow,numSegments,aggregStateMat] = ...
-    convStruct2MatIgnoreMS(tracksFinal)
+    convStruct2MatIgnoreMS(tracksFinal,startFirstFrame)
 %CONVSTRUCT2MATIGNOREMS converts tracks from structure format to matrix format, ignoring merges/splits.
 %
 %SYNPOSIS [trackedFeatureInfo,trackedFeatureIndx,trackStartRow,numSegments] = ...
@@ -7,6 +7,10 @@ function [trackedFeatureInfo,trackedFeatureIndx,trackStartRow,numSegments,aggreg
 %
 %INPUT  tracksFinal: Output of trackCloseGapsKalman, when run with
 %                    gapCloseParam.mergeSplit = 1.
+%       startFirstFrame: 1 to start martix at first frame where there are
+%                    tracks, 0 otherwise. Thepoint is to avoid many empty
+%                    columns before any tracks start.
+%                    Optional. Default: 0.
 %OUTPUT trackedFeatureInfo, trackedFeatureIndx: Output of trackWithGapClosing.
 %                    Every segment in tracksFinal becomes a separate track.
 %       trackStartRow: Row where each compound track starts in
@@ -26,6 +30,10 @@ else
     aggregStateMat = [];
 end
 
+if nargin < 2 || isempty(startFirstFrame)
+    startFirstFrame = 0;
+end
+
 %% conversion
 
 %get number of tracks
@@ -34,6 +42,15 @@ numTracks = length(tracksFinal);
 %get number of time points
 tmp = vertcat(tracksFinal.seqOfEvents);
 numTimePoints = max(tmp(:,1));
+
+%get first frame where there are tracks and modify number of time points if
+%startFirstFrame = 1
+if startFirstFrame
+    firstFrame = min(tmp(:,1));
+    numTimePoints = numTimePoints - firstFrame + 1;
+else
+    firstFrame = 1;
+end
 
 %get number of segments making each track
 numSegments = zeros(numTracks,1);
@@ -61,8 +78,8 @@ end
 
 %put all tracks together in a matrix
 for iTrack = 1 : numTracks
-    startTime = tracksFinal(iTrack).seqOfEvents(1,1);
-    endTime   = tracksFinal(iTrack).seqOfEvents(end,1);
+    startTime = tracksFinal(iTrack).seqOfEvents(1,1) - firstFrame + 1;
+    endTime   = tracksFinal(iTrack).seqOfEvents(end,1) - firstFrame + 1;
     trackedFeatureInfo(trackStartRow(iTrack):trackStartRow(iTrack)+...
         numSegments(iTrack)-1,8*(startTime-1)+1:8*endTime) = ...
         tracksFinal(iTrack).tracksCoordAmpCG;

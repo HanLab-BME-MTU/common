@@ -167,11 +167,11 @@ if isstruct(tracks)
         case 1 %retrieve every track segment separately
 
             [tracks,dummy,compTrackStartRow,numSegments] = ...
-                convStruct2MatIgnoreMS(tracksInput);
-
+                convStruct2MatIgnoreMS(tracksInput,1);
+            
         case 2 %make the longest track possible, given all the merges and splits
 
-            disp('Sorry - not implement yet!')
+            disp('Sorry - not implemented yet!')
             errFlag = 1;
             return
 

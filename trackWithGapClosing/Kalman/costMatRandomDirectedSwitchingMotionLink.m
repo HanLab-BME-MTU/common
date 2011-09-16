@@ -1,13 +1,13 @@
 function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
-    errFlag] = costMatLinearMotionLink2(movieInfo,kalmanFilterInfoFrame1,...
+    errFlag] = costMatRandomDirectedSwitchingMotionLink(movieInfo,kalmanFilterInfoFrame1,...
     costMatParam,nnDistFeatures,probDim,prevCost,featLifetime,...
     trackedFeatureIndx,currentFrame)
-%COSTMATLINEARMOTIONLINK2 provides a cost matrix for linking features based on competing linear motion models
+%costMatRandomDirectedSwitchingMotionLink provides a cost matrix for linking features based on competing linear motion models
 %
 %SYNOPSIS [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
-%     errFlag] = costMatLinearMotionLink(movieInfo,kalmanFilterInfoFrame1,...
-%     costMatParam,nnDistFeatures,probDim,prevCost,featLifetime,...
-%     trackedFeatureIndx,currentFrame)
+%    errFlag] = costMatRandomDirectedSwitchingMotionLink(movieInfo,kalmanFilterInfoFrame1,...
+%    costMatParam,nnDistFeatures,probDim,prevCost,featLifetime,...
+%    trackedFeatureIndx,currentFrame)
 %
 %INPUT  movieInfo             : An nx1 array (n = number of frames in
 %                               movie) containing the fields:
@@ -27,8 +27,12 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %             .noiseVar           : Variance of state noise for each
 %                                   feature in 1st frame.
 %      costMatParam           : Structure with fields:
-%             .linearMotion       : 1 to propagate using a linear motion
-%                                   model, 0 otherwise.
+%             .linearMotion       : 0 for only random motion;
+%                                   1 for random + directed motion;
+%                                   2 for random + directed motion with the
+%                                   possibility of instantaneous switching
+%                                   to opposite direction (but same speed),
+%                                   i.e. something like 1D diffusion.
 %             .minSearchRadius    : Minimum allowed search radius.
 %             .maxSearchRadius    : Maximum allowed search radius.
 %             .brownStdMult       : Factor multiplying Brownian
@@ -96,8 +100,8 @@ errFlag = [];
 %% Input
 
 %check whether correct number of input arguments was used
-if nargin ~= nargin('costMatLinearMotionLink2')
-    disp('--costMatLinearMotionLink2: Incorrect number of input arguments!');
+if nargin ~= nargin('costMatRandomDirectedSwitchingMotionLink')
+    disp('--costMatRandomDirectedSwitchingMotionLink: Incorrect number of input arguments!');
     errFlag  = 1;
     return
 end
@@ -134,9 +138,6 @@ movieInfo = movieInfo(currentFrame:currentFrame+1);
 
 %% Motion propagation
 
-%specify number of propagation schemes used
-numSchemes = 3;
-
 %calculate vector sizes
 vecSize = 2 * probDim;
 
@@ -144,19 +145,22 @@ vecSize = 2 * probDim;
 switch linearMotion
     
     case 0 %only random motion
+        
         transMat(:,:,1) = eye(vecSize); %zero drift transition matrix
-        transMat(:,:,2) = eye(vecSize) + diag(-ones(probDim,1),probDim); %backward drift transition matrix
-        transMat(:,:,3) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
+        numSchemes = 1;
         
-    case 1 %random motion + directed movement that can switch to opposite direction at any moment
+    case 1 %random motion + directed motion
+        
+        transMat(:,:,1) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
+        transMat(:,:,2) = eye(vecSize); %zero drift transition matrix
+        numSchemes = 2;
+        
+    case 2 %random motion + directed motion that can switch to opposite direction at any moment
+        
         transMat(:,:,1) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
         transMat(:,:,2) = eye(vecSize) + diag(-ones(probDim,1),probDim); %backward drift transition matrix
         transMat(:,:,3) = eye(vecSize); %zero drift transition matrix
-        
-    case 2 %random motion + directed movement that does not switch to opposite direction
-        transMat(:,:,1) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift transition matrix
-        transMat(:,:,2) = eye(vecSize) + diag(ones(probDim,1),probDim); %forward drift again
-        transMat(:,:,3) = eye(vecSize); %zero drift transition matrix
+        numSchemes = 3;
         
 end
 
@@ -203,13 +207,13 @@ for iFeature = 1 : numFeaturesFrame1
     
 end
 
-%get the propagated positions of features in 1st frame based on the three propagation schemes
+%get the propagated positions of features in 1st frame based on the different propagation schemes
 propagatedPos = kalmanFilterInfoFrame2.obsVec;
 
 %put the coordinates of features in the 2nd frame in one matrix
 coord2 = movieInfo(2).allCoord(:,1:2:end);
 
-%calculate the cost matrices for all three propagation schemes
+%calculate the cost matrices for all propagation schemes
 for iScheme = 1 : numSchemes
     
     %put the propagated x and y coordinates of features from 1st frame in
@@ -323,21 +327,7 @@ end
 if ~isnan(prevCostMax) && prevCostMax ~= 0
     maxCost = 1.05*prevCostMax;
 else
-    
-    %     tmp = ~isnan(costMat);
-    %     numPotAssignRow = full(sum(tmp,2));
-    %     numPotAssignCol = full(sum(tmp)');
-    %     numPotAssignColAll = sum(numPotAssignCol);
-    %     numPartCol = length(find(numPotAssignCol));
-    %     extraCol = (numPotAssignColAll-numPartCol)/numPotAssignColAll;
-    %     numPotAssignRowAll = sum(numPotAssignRow);
-    %     numPartRow = length(find(numPotAssignRow));
-    %     extraRow = (numPotAssignRowAll-numPartRow)/numPotAssignRowAll;
-    %     prctile2use = 100 - mean([extraRow extraCol])*100;
-    %     maxCost = max(prctile(costMat(:),prctile2use),eps);
-    
     maxCost = 1.05*max(prctile(costMat(:),100),eps);
-    
 end
 
 deathCost = maxCost * ones(numFeaturesFrame1,1);

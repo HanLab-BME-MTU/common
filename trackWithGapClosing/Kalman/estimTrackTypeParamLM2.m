@@ -1,4 +1,4 @@
-function [trackType,xyzVel,noiseStd,trackCenter,trackMeanDisp,errFlag] = ...
+function [trackType,xyzVel,noiseStd,trackCenter,trackMeanDispMag,errFlag] = ...
     estimTrackTypeParamLM2(trackedFeatIndx,trackedFeatInfo,...
     kalmanFilterInfo,lenForClassify,probDim)
 %ESTIMTRACKTYPEPARAMLM2 ...
@@ -31,7 +31,7 @@ function [trackType,xyzVel,noiseStd,trackCenter,trackMeanDisp,errFlag] = ...
 %       xyzVel
 %       noiseStd
 %       trackCenter
-%       trackMeanDisp
+%       trackMeanDispMag
 %       errFlag         : 0 if function executes normally, 1 otherwise.
 %
 %Khuloud Jaqaman, April 2007
@@ -62,7 +62,7 @@ trackType = NaN(numTracksLink,1);
 xyzVel = zeros(numTracksLink,probDim);
 noiseStd = zeros(numTracksLink,1);
 trackCenter = zeros(numTracksLink,probDim);
-trackMeanDisp = NaN(numTracksLink,1);
+trackMeanDispMag = NaN(numTracksLink,1);
 
 %get the start times, end times and lifetimes of all tracks
 trackSEL = getTrackSEL(trackedFeatInfo);
@@ -81,18 +81,18 @@ if probDim == 2
     % % %     asymThresh = [[NaN NaN 3.5 2 1.5 1.4 1.3 1.2 1.2 1.1 1.1 1.1 1.1 1.1 1.1 ...
     % % %         1.05 1.05 1.05 1.05 1.05]'; ones(numFrames-20,1)];
     %90th percentile:
-    % % %     asymThresh = [[NaN NaN 5 2.7 2.1 1.8 1.7 1.6 1.5 1.45 1.45 1.4 1.4 ...
-    % % %         1.4 1.4 1.4 1.4 1.35 1.35 1.35]'; 1.3*ones(numFrames-20,1)];
+    asymThresh = [[NaN NaN 5 2.7 2.1 1.8 1.7 1.6 1.5 1.45 1.45 1.4 1.4 ...
+        1.4 1.4 1.4 1.4 1.35 1.35 1.35]'; 1.3*ones(numFrames-20,1)];
     % % %     %99th percentile:
-    asymThresh = [[NaN NaN 9 5 3.5 3 2.7 2.5 2.4 2.4 2.3 2.2 ...
-        2.2 2.2 2.2 2.2 2.2 2.2 2.2 2.2]'; 2.1*ones(numFrames-20,1)];
+    % % %     asymThresh = [[NaN NaN 9 5 3.5 3 2.7 2.5 2.4 2.4 2.3 2.2 ...
+    % % %         2.2 2.2 2.2 2.2 2.2 2.2 2.2 2.2]'; 2.1*ones(numFrames-20,1)];
 else
     %90th percentile:
-    % % %     asymThresh = [[NaN NaN 2.9 1.9 1.5 1.4 1.3 1.3 1.2 1.2 1.2 1.2 ...
-    % % %         1.2 1.2 1.2]'; 1.1*ones(numFrames-15,1)];
+    asymThresh = [[NaN NaN 2.9 1.9 1.5 1.4 1.3 1.3 1.2 1.2 1.2 1.2 ...
+        1.2 1.2 1.2]'; 1.1*ones(numFrames-15,1)];
     % % %     %99th percentile:
-    asymThresh = [[NaN NaN 5.5 3 2.5 2.3 2 2 1.9 1.9 1.9 1.8 1.8 ...
-        1.8 1.7]'; 1.7*ones(numFrames-15,1)];
+    % % %     asymThresh = [[NaN NaN 5.5 3 2.5 2.3 2 2 1.9 1.9 1.9 1.8 1.8 ...
+    % % %         1.8 1.7]'; 1.7*ones(numFrames-15,1)];
 end
 
 %go over all tracks
@@ -106,9 +106,9 @@ for iTrack = 1 : numTracksLink
     %calculate the track's center of mass
     trackCenter(iTrack,:) = mean(currentTrack);
     
-    %calculate the track's displacement
+    %calculate the track's mean displacement
     if size(currentTrack,1) > 1
-        trackMeanDisp(iTrack) = mean(sqrt(sum(diff(currentTrack,1,1).^2,2)));
+        trackMeanDispMag(iTrack) = mean(sqrt(sum(diff(currentTrack,1,1).^2,2)));
     end
     
     %assign default value of track type (NaN implies track is too short to

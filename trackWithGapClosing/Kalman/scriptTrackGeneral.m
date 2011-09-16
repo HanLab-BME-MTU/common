@@ -47,7 +47,8 @@ parameters.maxSearchRadius = 6; %maximum allowed search radius.
 parameters.brownStdMult = 3*ones(gapCloseParam.timeWindow,1); %multiplication factor to calculate Brownian search radius from standard deviation.
 
 parameters.brownScaling = [0.25 0.01]; %power for scaling the Brownian search radius with time, before and after timeReachConfB (next parameter).
-parameters.timeReachConfB = gapCloseParam.timeWindow; %before timeReachConfB, the search radius grows with time with the power in brownScaling(1); after timeReachConfB it grows with the power in brownScaling(2).
+parameters.timeReachConfB = 3; %before timeReachConfB, the search radius grows with time with the power in brownScaling(1); after timeReachConfB it grows with the power in brownScaling(2).
+% parameters.timeReachConfB = gapCloseParam.timeWindow; %before timeReachConfB, the search radius grows with time with the power in brownScaling(1); after timeReachConfB it grows with the power in brownScaling(2).
 
 parameters.ampRatioLimit = [0.7 4]; %for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
 
@@ -83,9 +84,9 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/farnesylAndCellEdge/110829_Cs1C1_CHO_Farn/analysisFarn/'; %directory where to save input and output
+% saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/farnesylAndCellEdge/110829_Cs1C1_CHO_Farn/analysisFarn/'; %directory where to save input and output
 % saveResults.filename = 'tracks1All01.mat'; %name of file where input and output are saved
-% saveResults = 0; %don't save results
+saveResults = 0; %don't save results
 
 %verbose
 verbose = 1;
@@ -95,16 +96,16 @@ probDim = 2;
 
 %% tracking function call
 
-% [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+[tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1:500),...
+    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
 
-for i = 1 : 2
-    movieInfoTmp((i-1)*1200+1:i*1200) = movieInfo((i-1)*1200+1:i*1200);
-    saveResults.filename = ['tracks1All01_' sprintf('%02i',i) '.mat'];
-    [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
-        costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-    clear movieInfoTmp
-end
+% for i = 1 : 2
+%     movieInfoTmp((i-1)*1200+1:i*1200) = movieInfo((i-1)*1200+1:i*1200);
+%     saveResults.filename = ['tracks1All01_' sprintf('%02i',i) '.mat'];
+%     [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
+%         costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+%     clear movieInfoTmp
+% end
 
 % for startFrame = 1 : 400 : 48000
 %     endFrame = startFrame + 399;
