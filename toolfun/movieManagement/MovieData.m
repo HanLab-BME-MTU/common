@@ -244,37 +244,40 @@ classdef  MovieData < hgsetget
         end
         
         function deleteProcess(obj, process)
-           % Delete and clear given process object in movie data's process array
-           %
-           % Input:
-           %        process - Process object or index of process to be
-           %                  deleted in movie data's process list
-
+            % Delete and clear given process object in movie data's process array
+            %
+            % Input:
+            %        process - Process object or index of process to be
+            %                  deleted in movie data's process list
+            
+            % Check input
             if isa(process, 'Process')
-                
-                id = find(cellfun(@(x)isequal(x, process), obj.processes_));
-                if isempty(id)
-                    error('User-defined: The given process is not in current movie data''s process list.')
-
-                elseif length(id) ~=1
-                   error('User-defined: There should be one identical maskrefinement processes exists in movie data''s process list.') 
-                end                
-                
-            % Make sure process is a integer index   
-            elseif isnumeric(process) && process == round(process)...
-                    && process>0 && process<=length(obj.processes_)
-                
-                id = process;
+                pid = find(cellfun(@(x)isequal(x, process), obj.processes_));
+                if isempty(pid)
+                    error('User-defined: The given process is not in current movie processes list.')
+                elseif length(pid) ~=1
+                    error('User-defined: More than one process of this type exists in movie processes list.')
+                end
+  
+                % Make sure process is a integer index
+            elseif isnumeric(process) && ismember(process,1:numel(obj.processes_))
+                pid = process;
             else
-                error('Please provide a Process object or a valid process index of movie data''s process list.')
+                error('Please provide a Process object or a valid process index of movie data processes list.')
+            end
+            
+            % Unassociate process in corresponding packages
+            for i=1:numel(obj.packages_)
+                procID = find(cellfun(@(x)isequal(x,obj.processes_{pid}), ...
+                    obj.packages_{i}.processes_));
+                if ~isempty(procID), obj.packages_{i}.setProcess(procID,[]); end
             end
             
             % Delete and clear the process object
-            delete(obj.processes_{id})
-            obj.processes_(id) = [ ];
-            
+            delete(obj.processes_{pid})
+            obj.processes_(pid) = [ ];  
         end
-            
+        
         function iProc = getProcessIndex(obj,procName,nDesired,askUser)
             %Find the index of a process or processes with given class name
             
@@ -319,37 +322,6 @@ classdef  MovieData < hgsetget
             end
         end
         
-        function runProcess(obj, process)
-           % Run given process object in movie data's process array
-           %
-           % Input:
-           %        process - Process object or index of process to be
-           %                  deleted in movie data's process list
-
-            if isa(process, 'Process')
-                
-                id = find(cellfun(@(x)isequal(x, process), obj.processes_));
-                if isempty(id)
-                    error('User-defined: The given process is not in current movie data''s process list.')
-
-                elseif length(id) ~=1
-                   error('User-defined: There should be one identical maskrefinement processes exists in movie data''s process list.') 
-                end                
-                
-            % Make sure process is a integer index   
-            elseif isnumeric(process) && process == round(process)...
-                    && process>0 && process<=length(obj.processes_)
-                
-                id = process;
-            else
-                error('Please provide a Process object or a valid process index of movie data''s process list.')
-            end
-            
-            % Run the selected process object
-            obj.processes_(id).run();
-            
-        end
-
         %% Functions to manipulate package object array
         function addPackage(obj, newpackage)
             % Add a package to the packages_ array
