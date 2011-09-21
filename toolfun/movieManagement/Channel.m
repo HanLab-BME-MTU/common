@@ -308,7 +308,7 @@ classdef Channel < hgsetget
                     checkTest=@(x) isnumeric(x) && x>=300 && x<=800;
                 case 'exposureTime_'
                     checkTest=@(x) isnumeric(x) && x>0;
-                case {'excitationType_','notes_','channelPath_'}
+                case {'excitationType_','notes_','channelPath_','filterType_'}
                     checkTest=@(x) ischar(x);
                 case 'imageType_'
                     checkTest = @(x) any(strcmpi(x,Channel.getImagingModes));
