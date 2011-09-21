@@ -38,7 +38,7 @@ function [outlierIndex, r] = detectVectorFieldOutliers(data,varargin)
 ip=inputParser;
 ip.addRequired('data',@(x) size(x,2)==4);
 ip.addOptional('threshold',2,@isscalar);
-ip.addOptional('weighted' ,0,@isscalar);
+ip.addOptional('weighted' ,1,@isscalar);
 ip.addParamValue('epsilon',.1,@isscalar);
 ip.parse(data,varargin{:})
 threshold=ip.Results.threshold;
