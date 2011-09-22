@@ -7,9 +7,7 @@ classdef Channel < hgsetget
     properties 
         
         % ---- Used Image Parameters ---- %
-        
-        channelPath_                % Channel path (directory containing image(s))
-        excitationWavelength_       % Excitation wavelength (nm)
+                excitationWavelength_       % Excitation wavelength (nm)
         emissionWavelength_         % Emission wavelength (nm)
         exposureTime_               % Exposure time (ms)
         imageType_                  % e.g. Widefield, TIRF, Confocal etc.
@@ -26,7 +24,7 @@ classdef Channel < hgsetget
     
     properties(SetAccess=protected) 
         % ---- Object Params ---- %
-        
+        channelPath_                % Channel path (directory containing image(s))
         owner_                      % MovieData object which owns this channel 
     end
     

@@ -5,7 +5,12 @@ classdef  MovieData < hgsetget
     
         nFrames_                % Number of frames
         imSize_                 % Image size 1x2 array[height width]
-       
+               
+        % Progress data
+        channels_ = [];         % Channel object array
+        processes_ = {};        % Process object cell array
+        packages_ = {};         % Package object cell array
+
     end
     properties (SetAccess = immutable)
         createTime_             % Time movie data is created
@@ -14,9 +19,7 @@ classdef  MovieData < hgsetget
     properties
     % User defined data
         
-        % ---- Used params ----
-        
-        channels_ = [];         % Channel object array    
+        % ---- Used params ---- 
         outputDirectory_        % The default output directory for all processes
         movieDataPath_          % The path where the movie data is saved
         movieDataFileName_      % The name under which the movie data is saved
@@ -31,11 +34,6 @@ classdef  MovieData < hgsetget
         
         magnification_
         binning_
-        
-    % Progress data
-    
-        processes_ = {};        % Process object cell array
-        packages_ = {};         % Package object cell array
 
     end
 

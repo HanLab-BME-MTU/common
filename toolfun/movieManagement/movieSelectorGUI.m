@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 19-May-2011 17:30:24
+% Last Modified by GUIDE v2.5 22-Sep-2011 15:27:28
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -85,6 +85,7 @@ handles.output = hObject;
 userData.MD = [ ];
 userData.ML = [ ];
 userData.userDir = pwd;
+userData.newFig=1;
 
 % Check packages availability
 packageRadioButtons  = get(handles.uipanel_package,'Children');
@@ -186,12 +187,10 @@ set(handles.text_movie_1, 'String', title)
 
 % --- Executes on button press in pushbutton_new.
 function pushbutton_new_Callback(hObject, eventdata, handles)
-userData = get(handles.figure1, 'UserData');
 
+userData = get(handles.figure1, 'UserData');
 % if movieDataGUI exist, delete it
-if isfield(userData, 'newFig') && ishandle(userData.newFig)
-    delete(userData.newFig)
-end
+if ishandle(userData.newFig), delete(userData.newFig); end
 userData.newFig = movieDataGUI('mainFig',handles.figure1);
 set(handles.figure1,'UserData',userData);
 
@@ -245,14 +244,13 @@ guidata(hObject, handles);
 function pushbutton_detail_Callback(hObject, eventdata, handles)
 
 % Return if no movie 
-if isempty(get(handles.listbox_movie, 'String')), return; end
-userData = get(handles.figure1, 'UserData');
+props=get(handles.listbox_movie, {'String','Value'});
+if isempty(props{1}), return; end
 
+userData = get(handles.figure1, 'UserData');
 % if movieDataGUI exist, delete it
-if isfield(userData, 'newFig') && ishandle(userData.newFig)
-    delete(userData.newFig)
-end
-userData.newFig = movieDataGUI(userData.MD(get(handles.listbox_movie, 'value')));
+if ishandle(userData.newFig), delete(userData.newFig); end
+userData.newFig = movieDataGUI(userData.MD(props{2}));
 set(handles.figure1,'UserData',userData);
 
 % --- Executes during object deletion, before destroying properties.
@@ -491,3 +489,17 @@ end
 % Run the save method (should launch the dialog box asking for the object 
 % path and filename)
 ML.save();
+
+
+% --------------------------------------------------------------------
+function menu_tools_crop_Callback(hObject, eventdata, handles)
+
+% Return if no movie 
+props=get(handles.listbox_movie, {'String','Value'});
+if isempty(props{1}), return; end
+
+userData = get(handles.figure1, 'UserData');
+% if movieDataGUI exist, delete it
+if ishandle(userData.newFig), delete(userData.newFig); end
+userData.newFig = cropMovieGUI(userData.MD(props{2}),'mainFig',handles.figure1);
+set(handles.figure1,'UserData',userData);
