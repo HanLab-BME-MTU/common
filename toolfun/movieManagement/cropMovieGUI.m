@@ -22,7 +22,7 @@ function varargout = cropMovieGUI(varargin)
 
 % Edit the above text to modify the response to help cropMovieGUI
 
-% Last Modified by GUIDE v2.5 22-Sep-2011 15:25:06
+% Last Modified by GUIDE v2.5 22-Sep-2011 15:49:58
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -259,51 +259,72 @@ set(handles.edit_outputDirectory,'String',pathname);
 set(handles.figure1,'UserData',userData);
 guidata(hObject, handles);
 
+
+% --- Executes on button press in pushbutton_addfile.
+function pushbutton_addfile_Callback(hObject, eventdata, handles)
+
+userData = get(handles.figure1, 'UserData');
+[filename, pathname]=uigetfile({'*.tif;*.TIF;*.stk;*.STK;*.bmp;*.BMP;*.jpg;*.JPG',...
+    'Image files (*.tif,*.stk,*.bmp,*.jpg)'},...
+    'Select the reference frame',userData.MD.movieDataPath_);
+
+% Test uigetdir output and store its results
+if isequal(pathname,0) || isequal(filename,0), return; end
+files = get(handles.listbox_additionalFiles,'String');
+if any(strcmp([pathname filename],files)),return; end
+files{end+1} = [pathname filename];
+set(handles.listbox_additionalFiles,'String',files,'Value',numel(files));
+
+% --- Executes on button press in pushbutton_removeFile.
+function pushbutton_removeFile_Callback(hObject, eventdata, handles)
+
+props = get(handles.listbox_additionalFiles,{'String','Value'});
+if isempty(props{1}), return; end
+files= props{1};
+files(props{2})=[];
+set(handles.listbox_additionalFiles,'String',files,'Value',props{2}-1);
+
 % --- Executes on button press in pushbutton_crop.
 function pushbutton_crop_Callback(hObject, eventdata, handles)
 
-% Check user input
 userData = get(handles.figure1, 'UserData');
-
-% Read cropRoi if window is still visible
+% Read cropRoi if crop window is still visible
 if userData.imRectHandle.isvalid
     userData.cropROI=getPosition(userData.imRectHandle);
 end
-
+% Check valid output directory
 outputDirectory = get(handles.edit_outputDirectory,'String');
 if isempty(outputDirectory),
     errordlg('Please select an output directory','Error','modal');
 end
 
+% Create log message
 wtBar = waitbar(0,'Initializing');
-
-
-disp('Cropping and saving images...')
 logMsg = @(chan) ['Please wait, cropping images for channel ' num2str(chan)];
 timeMsg = @(t) ['\nEstimated time remaining: ' num2str(round(t)) 's'];
 tic;
 
+% Read channel information (number of frames, channel names)
 nFrames = userData.MD.nFrames_;
 nChan = numel(userData.MD.channels_);
 nTot = nChan*nFrames;
 inImage = @(chan,frame) [userData.imDirs{chan} filesep...
     userData.imageFileNames{chan}{frame}];
 
-% Create new channel names
+% Create new channel directory names for image writing
 [~,chanNames]=cellfun(@fileparts,userData.imDirs,'UniformOutput',false);
-
 userData.newImDirs = cellfun(@(x) [outputDirectory filesep x],chanNames,...
     'UniformOutput',false);
 outImage = @(chan,frame) [userData.newImDirs{chan} filesep...
     userData.imageFileNames{chan}{frame}];
 
-% channelProps=fieldnames(userData.MD.channels_);
+% Read public access channel properties
 m=?Channel;
 channelFieldsAccess=cellfun(@(x) x.SetAccess,m.Properties,'Unif',false);
 channelPublicFields= cellfun(@(x) strcmpi(x,'public'),channelFieldsAccess);
 
+%Copy channel images
 for i = 1:nChan
-    % Log display
     disp('Results will be saved under:')
     disp(userData.newImDirs{i});
     mkClrDir(userData.newImDirs{i});
@@ -313,11 +334,10 @@ for i = 1:nChan
     s= struct(userData.MD.channels_(i));
     fields=fieldnames(s);    
     set(channels(i),rmfield(s,fields(~channelPublicFields)));
+    
     for j= 1:nFrames
-        % Read crop and save
+        % Read original image, crop it and save it
         imwrite(imcrop(imread(inImage(i,j)),userData.cropROI), outImage(i,j));
-        
-        % Update the waitbar
         if mod(j,5)==1 && feature('ShowFigureWindows')
             tj=toc;
             nj = (i-1)*nFrames+ j;
@@ -325,8 +345,22 @@ for i = 1:nChan
         end
     end
 end
+
+% Crop and write additional files at the base of the ouput directory
+additionalFiles= get(handles.listbox_additionalFiles,'String');
+if ~isempty(additionalFiles)
+    waitbar(nj/nTot,wtBar,'Please wait, croppping additional files...');
+    for i = 1:numel(additionalFiles)
+        [~,fileName,fileExt]=fileparts(additionalFiles{i});
+
+        % Read original image, crop it and save it
+        imwrite(imcrop(imread(additionalFiles{i}),userData.cropROI),...
+            [outputDirectory filesep fileName fileExt]);
+    end
+end
 close(wtBar);
 
+% Read public access & unchanged movie properties
 m=?MovieData;
 movieFieldsAccess=cellfun(@(x) x.SetAccess,m.Properties,'Unif',false);
 moviePublicFields= cellfun(@(x) strcmpi(x,'public'),movieFieldsAccess);
@@ -339,6 +373,8 @@ MD=MovieData(channels,outputDirectory,'movieDataPath_',outputDirectory,...
 s= struct(userData.MD);
 fields=fieldnames(s);
 set(MD,rmfield(s,fields(~moviePublicFields | movieChangedFields)));
+
+% Perform sanityCheck
 MD.sanityCheck
 
 % If new MovieData was created (from movieSelectorGUI)
@@ -370,3 +406,4 @@ if userData.mainFig ~=-1,
 end
 % Delete current window
 delete(handles.figure1)
+
