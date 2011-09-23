@@ -1,4 +1,4 @@
-function [P t res] = TLSFitBezierWeightedConstrainedCP(data, w, n, varargin)
+function [P t res] = TLSFitBezierWeightedConstrainedCP2(data, w, n, varargin)
 %
 % WORK IN PROGRESS!
 %
@@ -46,7 +46,8 @@ ip.parse(data, n, varargin{:});
 maxFunEvals = ip.Results.MaxFunEvals;
 % maxIter = ip.Results.MaxIter;
 maxIter = 10;
-display = ip.Results.Display;
+% display = ip.Results.Display;
+display = 'off';
 tolX = ip.Results.TolX;
 tolFun = ip.Results.TolFun;
 
@@ -68,32 +69,48 @@ optsLin = optimset('Jacobian', 'on', ...
     'LargeScale', 'off', ...
     'Tolfun', tolFun);
 
-% Define initial vector of nodes t0
 [m dim] = size(data);
+Cnk = diag([1 cumprod(n:-1:1) ./ cumprod(1:n)]);
+
+% Fit a linear Bezier curve
+[x0,a,~,~] = ls3dline(data); % TODO: Replace with a weighted TLS fit
+[minPoint,maxPoint,~,~,~] = projectionPointsLineMinMax(data,x0',a');
+
+% Compute the constraints
+planeNormal = (maxPoint-minPoint);
+planePoints = repmat(minPoint,n+1,1) + repmat(1/n*(0:n)',1,dim) .* repmat(planeNormal,n+1,1);
+d = planePoints * planeNormal';
+
+% Degree of freedom reduction constraints
+Aeq_row = [planeNormal; zeros(n,dim)];
+Aeq_row = Aeq_row(:)';
+Aeq = Aeq_row;
+for k=1:n
+    Aeq = [Aeq; circshift(Aeq_row,[0,k])];
+end
+beq = d;
+
+% Define initial vector of nodes t0
 t = linspace(0,1,m)';
 
 % Compute the weights diagonal matrix
 W = sparse(diag(w(:)));
 
 % Compute an initial set of control points
-Cnk = diag([1 cumprod(n:-1:1) ./ cumprod(1:n)]);
-
-P(1,:) = data(1,:);
-P(n+1,:) = data(end,:);
-P(2:n,:) = repmat(P(1,:),n-1,1) + repmat(1/n*(1:n-1)',1,dim) .* repmat((P(n+1,:)-P(1,:)),n-1,1);
+P = planePoints;
 
 resnormOld = -1;
-minRad = 5; % Minimal curvature radius
+minRad = 2000; % Minimal curvature radius
 
 for i=1:maxIter
     % Solve the non-linear optimization on t
     Cn_1k = diag([1 cumprod(n-1:-1:1) ./ cumprod(1:n-1)]);
     fun = @(t) r(t, data, W, Cnk, Cn_1k, n, P);
-    t = t(2:end-1);
-    lb = zeros(size(t));
-    ub = ones(size(t));
+    %     lb = zeros(size(t));
+    %     ub = ones(size(t));
+    lb = [];
+    ub = [];
     [t, ~, res] = lsqnonlin(fun, t, lb, ub, opts);
-    t = [0; t; 1];
     
     % Compute Bernstein Matrix
     B = (bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0)) * Cnk;
@@ -101,49 +118,49 @@ for i=1:maxIter
     
     % Solve the linear optimization on P
     if n ~= 1
-        planeNormal = (P(n+1,:)-P(1,:));
-        planePoints = repmat(P(1,:),n-1,1) + repmat(1/n*(1:n-1)',1,dim) .* repmat(planeNormal,n-1,1);
-        d = planePoints * planeNormal';
-        
-        % Degree of freedom reduction constraints
-        Aeq_row = [zeros(1,dim); planeNormal; zeros(n-1,dim)];
-        Aeq_row = Aeq_row(:)';
-        Aeq = Aeq_row;
-        for k=1:n-2
-            Aeq = [Aeq; circshift(Aeq_row,[0,k])];
-        end
-        beq = d;
-        
         % Pseudo curvature constraints
         alpha = minRad - sqrt(minRad^2-0.25*norm(planeNormal)^2);
         
-        ub = inf(n+1,dim);
-        ub(2:end-1,:) = planePoints+alpha;
+        ub = planePoints+alpha;
         ub = ub(:);
-        lb = -inf(n+1,dim);
-        lb(2:end-1,:) = planePoints-alpha;
+        lb = planePoints-alpha;
         lb = lb(:);
         
-        % TODO: Not yet 3D
-        %     [I J K] = meshgrid([1,-1],[1,-1],[1,-1]);
-        %     C = [I(:), J(:), K(:)];
-        [I J] = meshgrid([1,-1],[1,-1]);
-        C = [I(:), J(:)];
+        % TODO: Generalize to n dimensions
+        if dim == 2
+            [I J] = meshgrid([1,-1],[1,-1]);
+            C = [I(:), J(:)];
+        elseif dim == 3
+            [I J K] = meshgrid([1,-1],[1,-1],[1,-1]);
+            C = [I(:), J(:), K(:)];
+        end
         
         block = zeros(2^dim,(n+1)*dim);
-        block(:,2:n+1:dim*(n+1)+1) = C;
+        block(:,1:n+1:dim*(n+1)) = C;
         A = block;
-        for d=1:n-2
+        for d=1:n
             A = [A; circshift(block,[0,d])];
         end
         
-        b = sum(reshape(repmat(planePoints',2^dim,1),dim,2^dim*(n-1))'.*repmat(C,n-1,1),2)+sqrt(2)*alpha;
-
-        C = W*[B z; z B];
+        b = sum(reshape(repmat(planePoints',2^dim,1),dim,2^dim*(n+1))'.*repmat(C,n+1,1),2)+sqrt(2)*alpha;
+        
+        % TODO: Generalize to n dimensions
+        if dim == 2
+            C = W*[B z; z B];
+        elseif dim == 3
+            C = W*[B z z; z B z; z z B];
+        end
+        
         d = W*data(:);
         [P, resnorm, res] = lsqlin(C, d, A, b, Aeq, beq, lb, ub, P(:), optsLin);
     else
-        C = W*[B z; z B];
+        % TODO: Generalize to n dimensions
+        if dim == 2
+            C = W*[B z; z B];
+        elseif dim == 3
+            C = W*[B z z; z B z; z z B];
+        end
+        
         d = W*data(:);
         [P, resnorm, res] = lsqlin(C, d, [], [], [], [], [], [], P(:), optsLin);
     end
@@ -155,11 +172,11 @@ for i=1:maxIter
     % Solve the non-linear optimization on t
     Cn_1k = diag([1 cumprod(n-1:-1:1) ./ cumprod(1:n-1)]);
     fun = @(t) r(t, data, W, Cnk, Cn_1k, n, P);
-    t = t(2:end-1);
-    lb = zeros(size(t));
-    ub = ones(size(t));
+    %     lb = zeros(size(t));
+    %     ub = ones(size(t));
+    lb = [];
+    ub = [];
     [t, ~, res] = lsqnonlin(fun, t, lb, ub, opts);
-    t = [0; t; 1];
     
     % ---
     
@@ -171,15 +188,15 @@ for i=1:maxIter
     end
 end
 
+% Truncate Bezier curve
+[P,t] = truncateBezier(P,min(t),max(t),t);
+
 % Reshape residual
-res = sqrt(sum(reshape(res, [m, dim]).^2, 2));
+% res = sqrt(sum(reshape(res, [m, dim]).^2, 2));
 
 function [F J] = r(t, data, W, Cnk, Cn_1k, n, P)
 
 [m dim] = size(data);
-
-% Append t1 and tm
-t = [0; t; 1];
 
 % Compute Bernstein Matrix
 B = (bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0)) * Cnk;
@@ -195,14 +212,18 @@ if nargout > 1
     % Compute derivative of B against t
     z = zeros(m,1);
     Bt = n * ([z Bn_1] - [Bn_1 z]);
-    % Bt(1, :) = 0;
-    % Bt(end, :) = 0;
     
-    % TODO: Only 2D for now! 
-    J11 = W(1:m,1:m)*diag(-Bt * P(:,1));
-    J21 = W(m+1:end,m+1:end)*diag(-Bt * P(:,2));
-
-    z = zeros(m, n+1);
-    J = [J11(:,2:end-1); J21(:,2:end-1)];
+    % TODO: Generalize to n dimensions
+    if dim == 2
+        J11 = W(1:m,1:m)*diag(-Bt * P(:,1));
+        J21 = W(m+1:end,m+1:end)*diag(-Bt * P(:,2));
+        J = [J11; J21];
+        
+    elseif dim == 3
+        J11 = W(1:m,1:m)*diag(-Bt * P(:,1));
+        J21 = W(m+1:2*m,m+1:2*m)*diag(-Bt * P(:,2));
+        J31 = W(2*m+1:end,2*m+1:end)*diag(-Bt * P(:,3));
+        J = [J11; J21; J31];
+    end
 end
 
