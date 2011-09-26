@@ -15,7 +15,8 @@ classdef FigFileDisplay < MovieDataDisplay
             % Plot the image and associate the tag
             s=load(data,'-mat');
             fields=fieldnames(s);
-            struct2handle(s.(fields{1}).children,gcf);
+            h=gcf;
+            struct2handle(s.(fields{1}).children,h);
             set(h,'Tag',tag);
         end
         function updateDraw(obj,h,data)
