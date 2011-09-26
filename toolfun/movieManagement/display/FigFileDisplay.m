@@ -13,16 +13,16 @@ classdef FigFileDisplay < MovieDataDisplay
         
         function h=initDraw(obj,data,tag,varargin)
             % Plot the image and associate the tag
-            s=load(data,'-mat');
-            fields=fieldnames(s);
-            h=gcf;
-            struct2handle(s.(fields{1}).children,h);
+            h=gcf;         
+            clf;
+            h2= hgload(data, struct('visible','off'));
+            copyobj(get(h2,'Children'),h);
             set(h,'Tag',tag);
         end
         function updateDraw(obj,h,data)
-            s=load(data,'-mat');
-            fields=fieldnames(s);
-            struct2handle(s.(fields(1)).children,h);
+            h2= hgload(data, struct('visible','off'));
+            copyobj(get(h2,'Children'),h);
+            
         end
         
         function additionalInputParsing(obj,ip)
