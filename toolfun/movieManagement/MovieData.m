@@ -350,8 +350,7 @@ classdef  MovieData < hgsetget
 
             % Relocate movie data and channel paths
             for i=1:numel(obj.channels_),
-                obj.channels_(i).channelPath_=...
-                    relocatePath(obj.channels_(i).channelPath_,oldRootDir,newRootDir);
+                obj.channels_(i).relocate(oldRootDir,newRootDir);
             end
             obj.outputDirectory_=relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
             obj.movieDataPath_=newMovieDataPath;

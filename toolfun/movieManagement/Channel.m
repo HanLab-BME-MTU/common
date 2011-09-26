@@ -119,6 +119,13 @@ classdef Channel < hgsetget
             setFig = channelGUI(obj);
         end
 
+        function relocate(obj,oldRootDir,newRootDir)
+
+            % Relocate channel path
+            obj.channelPath_=  relocatePath(obj.channelPath_,oldRootDir,newRootDir);
+            
+        end
+        
         function checkPropertyValue(obj,property, value)
             % Check if a property/value pair can be set up
             % 
@@ -139,7 +146,7 @@ classdef Channel < hgsetget
             elseif strcmp(property,'channelPath_')
                 % Allow relocation of channelPath_
                 stack = dbstack;
-                if strcmp(stack(3).name,'MovieData.relocate'), propertyCheck=1; end
+                if strcmp(stack(3).name,'Channel.relocate'), propertyCheck=1; end
             end
             
             if ~propertyCheck
