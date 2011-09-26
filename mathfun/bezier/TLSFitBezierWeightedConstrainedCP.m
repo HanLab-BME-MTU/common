@@ -96,7 +96,7 @@ t = linspace(0,1,m)';
 % Compute the weights diagonal matrix
 W = sparse(diag(w(:)));
 
-% Compute an initial set of control points
+% Initial set of control points
 P = planePoints;
 
 resnormOld = -1;
@@ -120,11 +120,7 @@ for i=1:maxIter
     if n ~= 1
         % Pseudo curvature constraints
         len = norm(planeNormal);
-        if len < 2*minRad
-            alpha = minRad - sqrt(minRad^2-0.25*len^2);
-        else
-            alpha =  len/2+(len-2*minRad)*0.5;
-        end
+        alpha = boundingBoxSize(len,minRad);
         
         ub = planePoints+alpha;
         ub = ub(:);
@@ -186,7 +182,7 @@ for i=1:maxIter
     % ---
     
     if resnorm-resnormOld < tolFun
-        disp('Exit criterion satisfied!');
+        % disp('Exit criterion is satisfied!');
         break;
     else
         resnormOld = resnorm;
