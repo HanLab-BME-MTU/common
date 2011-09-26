@@ -16,7 +16,7 @@ n1=length(pop1);
 n2=length(pop2);
 
 % get union of the two populations
-bigPop=[pop1; pop2];
+bigPop=[pop1(:); pop2(:)];
 
 % get absolute value of the difference between the actual population means
 deltaPop=abs(mean(pop1)-mean(pop2));
