@@ -100,7 +100,7 @@ W = sparse(diag(w(:)));
 P = planePoints;
 
 resnormOld = -1;
-minRad = 2000; % Minimal curvature radius
+minRad = 100; % Minimal curvature radius
 
 for i=1:maxIter
     % Solve the non-linear optimization on t
@@ -119,7 +119,12 @@ for i=1:maxIter
     % Solve the linear optimization on P
     if n ~= 1
         % Pseudo curvature constraints
-        alpha = minRad - sqrt(minRad^2-0.25*norm(planeNormal)^2);
+        len = norm(planeNormal);
+        if len < 2*minRad
+            alpha = minRad - sqrt(minRad^2-0.25*len^2);
+        else
+            alpha =  len/2+(len-2*minRad)*0.5;
+        end
         
         ub = planePoints+alpha;
         ub = ub(:);
@@ -190,6 +195,9 @@ end
 
 % Truncate Bezier curve
 [P,t] = truncateBezier(P,min(t),max(t),t);
+
+% Compute unweighted residuals
+res = res./w(:);
 
 % Reshape residual
 % res = sqrt(sum(reshape(res, [m, dim]).^2, 2));
