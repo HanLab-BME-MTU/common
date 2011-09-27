@@ -1,4 +1,4 @@
-function [P t res] = TLSFitBezierWeightedConstrainedCP2(data, w, n, varargin)
+function [P t res] = TLSFitBezierWeightedConstrainedCP(data, w, n, varargin)
 %
 % WORK IN PROGRESS!
 %
