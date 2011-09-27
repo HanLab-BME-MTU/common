@@ -125,50 +125,32 @@ for i = 1:nMovies
 end
 
 % ------------- Check if existing processes can be recycled ---------------
-existProcess = cell(1, nMovies);
+recyclableProc = cell(1, nMovies);
 processClassNames = userData.package(1).processClassNames_;
 
 % Multiple movies loop
 for i = 1:nMovies
-
     if isempty(packageIndx{i}) && ~isempty(userData.MD(i).processes_)
-    
-        classname = cellfun(@(z)class(z), userData.MD(i).processes_,...
-            'UniformOutput', false);
-
-        existProcessForm = cellfun(@(z)strcmp(z, classname), processClassNames, 'uniformoutput', false );
-        existProcessId = find(cellfun(@(z)any(z), existProcessForm));
-    
-        if ~isempty (existProcessId)
-            % Get recycle processes 
-        
-            for j = existProcessId
-                existProcess{i} = horzcat(existProcess{i}, userData.MD(i).processes_(existProcessForm{j}) );
-            end
-
-        end
-    
+        recyclableProcIndx = cellfun(@(x) cellfun(@(y)isa(y,x),...
+            userData.MD(i).processes_),processClassNames,'UniformOutput',false);
+        recyclableProc{i}=userData.MD(i).processes_(any(vertcat(recyclableProcIndx{:}),1));
     end
 end
 
-existProcessMovieId = find( cellfun(@(z)(~isempty(z)), existProcess));
+recyclableProcMovie = find(~cellfun(@isempty, recyclableProc));
 
-if ~isempty(existProcessMovieId)
-    % Get messages
-    procMsg = [];
-    for i = 1:length(existProcess{existProcessMovieId(1)})
-        procMsg = [procMsg sprintf('%s Step\n', existProcess{existProcessMovieId(1)}{i}.name_)];
-    end
-
-    msg = sprintf('Record indicates that the following steps are availabe for %s package: \n\n%s\nDo you want to load and re-use these steps in %s package?', ...
-                   userData.package(1).name_, procMsg, userData.package(1).name_);
-                  
+if ~isempty(recyclableProcMovie)
+                      
     % Ask user if to recycle
-    user_response = questdlg(msg, 'Recycle Existing Steps',  'No', 'Yes','Yes');
+    msg = ['Record indicates that existing process steps are availabe for %s package:'...
+        '\n\nDo you want to load and re-use these steps in %s package?'];
+    user_response = questdlg(sprintf(msg,userData.package(1).name_,...
+        userData.package(1).name_,userData.package(1).name_),...
+        'Recycle Existing Steps','No','Yes','Yes');
     
-    if strcmpi( user_response , 'Yes')
-        for x = existProcessMovieId           
-            recycleProcessGUI(existProcess{x}, userData.package(x), 'mainFig', handles.figure1)
+    if strcmpi(user_response,'Yes')
+        for i = recyclableProcMovie           
+            recycleProcessGUI(recyclableProc{i}, userData.package(i),'mainFig', handles.figure1)
         end
     end      
 end

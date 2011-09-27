@@ -50,35 +50,35 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
             
             obj = obj@ImageCorrectionProcess(super_args{:});
         end   
-        function h = resultDisplay(obj)
-           %Overrides default display so subtracted value plots can be
-           %shown
-
-           %First, just show the corrected images with the viewer
-           h = movieDataVisualizationGUI(obj.owner_,obj);
-
-           %Load and display the averaged correction images
-           corrImNames = dir([obj.funParams_.OutputDirectory filesep '*subtraction_values*.mat']);
-           if ~isempty(corrImNames)
-               % Retrieve the main figure UserData
-               userData=get(h,'UserData');
-               for j = 1:numel(corrImNames)
-                   % Create a figure and attach it to the main figure
-                   % userData
-                   userData.correctionFig(j) =figure;
-                   tmp = load([obj.funParams_.OutputDirectory filesep corrImNames(j).name]);
-                   tmpF = fieldnames(tmp);
-                   plot(tmp.(tmpF{1}));
-                   xlabel('Frame Number')
-                   ylabel('Subtracted Background Value, A.U.')
-                   title(['Background Subtraction Values, Channel ' corrImNames(j).name(end-4) ]);
-               end
-               % Save the UserData
-               set(h, 'UserData', userData);
-
-           end
-
-        end
+%         function h = resultDisplay(obj)
+%            %Overrides default display so subtracted value plots can be
+%            %shown
+% 
+%            %First, just show the corrected images with the viewer
+%            h = movieDataVisualizationGUI(obj.owner_,obj);
+% 
+%            %Load and display the averaged correction images
+%            corrImNames = dir([obj.funParams_.OutputDirectory filesep '*subtraction_values*.mat']);
+%            if ~isempty(corrImNames)
+%                % Retrieve the main figure UserData
+%                userData=get(h,'UserData');
+%                for j = 1:numel(corrImNames)
+%                    % Create a figure and attach it to the main figure
+%                    % userData
+%                    userData.correctionFig(j) =figure;
+%                    tmp = load([obj.funParams_.OutputDirectory filesep corrImNames(j).name]);
+%                    tmpF = fieldnames(tmp);
+%                    plot(tmp.(tmpF{1}));
+%                    xlabel('Frame Number')
+%                    ylabel('Subtracted Background Value, A.U.')
+%                    title(['Background Subtraction Values, Channel ' corrImNames(j).name(end-4) ]);
+%                end
+%                % Save the UserData
+%                set(h, 'UserData', userData);
+% 
+%            end
+% 
+%         end
         
     end
     methods (Static)
@@ -87,6 +87,15 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
         end
         function h = GUI()
             h= @backgroundSubtractionProcessGUI;
+        end
+        
+        function output = getDrawableOutput()
+            output = ImageProcessingProcess.getDrawableOutput();
+%             output(2).name='Background Subtraction Values';
+%             output(2).var='bkgValues';
+%             output(2).formatData=[];
+%             output(2).type='graph';
+%             output(2).defaultDisplayMethod=@FigFileDisplay;
         end
     end
 

@@ -214,6 +214,15 @@ for j = 1:nChanCorr;
 
 end
 
+% Set the path of the processed correction images
+outFilePaths=movieData.processes_{iProc}.outFilePaths_;
+for j = 1:nChanCorr;
+    outFilePaths{2,p.ChannelIndex(j)} = [p.OutputDirectory filesep saveName ...
+        num2str(p.ChannelIndex(j)) '.mat'];
+end
+movieData.processes_{iProc}.setOutFilePaths(outFilePaths);
+
+
 %Get the shade image file names.
 shadeImNames = movieData.processes_{iProc}.getCorrectionImageFileNames(p.ChannelIndex);
 %Get image file names for input images (dark-current corrected images)
@@ -343,8 +352,9 @@ disp('Saving results...')
 
 %Save the averaged/filtered shade images
 for i = 1:nChanCorr
+    outCorrPath = movieData.processes_{iProc}.outFilePaths_{2,p.ChannelIndex(i)}; 
     processedShadeImage = shadeIm{i}; %#ok<NASGU> %Get this element of save array because the save function sucks.
-    save([p.OutputDirectory filesep saveName num2str(p.ChannelIndex(i)) '.mat'],'processedShadeImage');
+    save(outCorrPath,'processedShadeImage');
 end
 
 %Log the correction in the movieData object and save it

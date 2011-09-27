@@ -22,7 +22,7 @@ function varargout = recycleProcessGUI(varargin)
 
 % Edit the above text to modify the response to help recycleProcessGUI
 
-% Last Modified by GUIDE v2.5 24-Sep-2010 13:47:24
+% Last Modified by GUIDE v2.5 27-Sep-2011 11:06:56
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -56,48 +56,57 @@ function recycleProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %
 % User Data:
 % 
-% userData.process - the array of processes for recycle
-% userData.pacakge - the package where the processes would be attached to
+% userData.recyclableProc - the array of processes for recycle
+% userData.package - the package where the processes would be attached to
 % 
 % userData.mainFig - handle of movie selector GUI
 % 
 % 
+% Input check
+ip = inputParser;
+ip.addRequired('hObject',@ishandle);
+ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
+ip.addRequired('handles',@isstruct);
+ip.addRequired('process',@(x) all(cellfun(@(y) isa(y,'Process'),x)));
+ip.addRequired('package',@(x) isa(x,'Package'));
+ip.addParamValue('mainFig',-1,@ishandle);
+ip.parse(hObject,eventdata,handles,varargin{:})
+
+% Store input
+userData = get(handles.figure1, 'UserData');
+userData.recyclableProc =ip.Results.process  ; 
+userData.package = ip.Results.package;
+userData.mainFig=ip.Results.mainFig;
+userData.previewFig = -1;
 
 [copyright] = userfcn_softwareConfig(handles);
 set(handles.text_copyright, 'String', copyright)
 
-userData = get(handles.figure1, 'UserData');
 % Choose default command line output for recycleProcessGUI
 handles.output = hObject;
+    
+% GUI set-up
+set(handles.text_package, 'String', userData.package.getName)
+set(handles.text_movie, 'String', ...
+    [userData.package.owner_.movieDataPath_ filesep userData.package.owner_.movieDataFileName_])
 
-
-if nargin > 3
-    
-    assert( all( cellfun(@(x)isa(x, 'Process'), varargin{1}) ), 'User-defined: The first input must be a cell array containing Process objects.')
-    userData.process = varargin{1};
-    
-    assert(isa(varargin{2}, 'Package'), 'User-defined: The second input must be a Package object where the processes would be attached to.')
-    userData.package = varargin{2};
-    
-    t = find(strcmp(varargin, 'mainFig'));
-    assert( ~isempty(t), 'User-defined: Need to pass the handle of main figure as input.')
-    userData.mainFig = varargin{t+1};
-
-    
-    % GUI set-up
-    set(handles.text_package, 'String', userData.package.name_)
-    set(handles.text_movie, 'String', [userData.package.owner_.movieDataPath_ userData.package.owner_.movieDataFileName_])
-    
-    string = cell(1, length(userData.process));
-    for i = 1: length(userData.process)
-        string{i} = [96+i '. ' userData.process{i}.name_ ' Step'];
-    end
-    set(handles.listbox_1, 'String', string, 'UserData', userData.process)
-    
-else
-    error('User-defined: Not enough input arguments.')
+% Create recyclable processes list
+nProc = numel(userData.recyclableProc);
+string = cell(1,nProc);
+for i = 1:nProc
+    string{i} = userData.recyclableProc{i}.getName;
 end
+set(handles.listbox_processes, 'String',string, 'UserData',1:nProc)
 
+% Create package processes list
+nProc = numel(userData.package.processes_);
+string = cell(1,nProc);
+for i = 1:nProc
+    processClassName = userData.package.processClassNames_{i};
+    processName=eval([processClassName '.getName']);
+    string{i} = [' Step ' num2str(i) ': ' processName];
+end
+set(handles.listbox_package, 'String', string,'UserData',cell(1,nProc));
 
 set(handles.figure1,'UserData',userData)
 
@@ -123,10 +132,6 @@ delete(handles.figure1)
 
 % --- Executes on button press in pushbutton_cancel.
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_cancel (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-userData = get(handles.figure1, 'UserData');
 
 uiresume(handles.figure1)
 
@@ -137,178 +142,76 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 % Add the processes to the new package
 userData = get(handles.figure1, 'UserData');
 
-userData_list2 = get(handles.listbox_2, 'UserData');
+procIds = get(handles.listbox_package, 'UserData');
+validPackageProc=~cellfun(@isempty,procIds);
 
-if isempty(userData_list2)
-    errordlg('No step is selected.', 'modal')
-    return 
+if isempty(find(validPackageProc,1)), uiresume(handles.figure1); end
+
+for i = find(validPackageProc)
+    userData.package.setProcess(i,userData.recyclableProc{procIds{i}});
 end
-
-processClassNames = userData.package.processClassNames_;
-
-check = [];
-
-for i = 1: length(userData_list2)
-       
-    id = find(cellfun(@(x)isa(userData_list2{i}, x),processClassNames ));
-    
-    if length(id) > 1
-        % Special cases: Mask Refinement Process
-        if isa(userData_list2{i}, 'MaskRefinementProcess')
-            
-            id = find(cellfun(@(x)strcmp(x, 'MaskRefinementProcess'),processClassNames ));
-            userData.package.setProcess(id, userData_list2{i})
-        else
-            error('User-defined: process belongs to more than 1 classes in package''s process list.')
-        end
-        
-    elseif length(id) ==1
-        % General cases: child class, specific class
-        userData.package.setProcess(id, userData_list2{i})
-    else
-        error('User-defined: Inapproprate process class in listbox2.')
-    end
-    
-    % At last, double check to make sure package.processes_{id} is set no
-    % more than once
-    check = cat(2, check, id);
-    if length(check) ~= length(unique(check))
-        error('User-defined: one of the process list value in current package is changed more than once in this session.')
-    end
-end
-
 
 uiresume(handles.figure1)
-
-% --- Executes on selection change in listbox_1.
-function listbox_1_Callback(hObject, eventdata, handles)
-% hObject    handle to listbox_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns listbox_1 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from listbox_1
-
-
-% --- Executes during object creation, after setting all properties.
-function listbox_1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to listbox_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 
 % --- Executes on button press in pushbutton_add.
 function pushbutton_add_Callback(hObject, eventdata, handles)
 
+% Test if ther is any process to dispatch
+processString = get(handles.listbox_processes, 'String');
+if isempty(processString), return; end
 
-contentlist1 = get(handles.listbox_1, 'String');
-contentlist2 = get(handles.listbox_2, 'String');
+% Load process list and get corresponding process id
+userData=get(handles.figure1,'UserData');
+props = get(handles.listbox_processes, {'UserData','Value'});
+procIds=props{1};
+procIndex = props{2};
+procId=procIds(procIndex);
+process= userData.recyclableProc{procId};
 
-if isempty(contentlist1)
-    return
+% Find associated  package process
+packId = find(cellfun(@(x) isa(process,x),userData.package.processClassNames_));
+if ~isempty(packId) 
+   % Update package process and pids
+   props = get(handles.listbox_package, {'String','UserData'});
+   packageString = props{1};
+   props{2}{packId}=procId;
+   packageString{packId} = ['<html><b> ' packageString{packId} '</b></html>'];
+   set(handles.listbox_package, 'String',packageString','UserData',props{2});
+   
+   % Remove process from the list
+   processString(procIndex) = [];
+   procIds(procIndex) = [];
+   % Set the highlighted value
+   if (procIndex > length(processString) && procIndex > 1)
+       set(handles.listbox_processes, 'Value', length(processString));
+   end
+   set(handles.listbox_processes, 'String', processString, 'UserData', procIds)
 end
-
-userData_list1 = get(handles.listbox_1, 'UserData');
-userData_list2 = get(handles.listbox_2, 'UserData');
-
-id = get(handles.listbox_1, 'value');
-
-if ~isempty(userData_list2)
-
-% Avoid adding the same class of objects
-if isa(userData_list1{id}, 'SegmentationProcess') && ~isa(userData_list1{1}, 'MaskRefinementProcess')
-
-    if any(xor (cellfun(@(x)isa(x, 'SegmentationProcess'), userData_list2), ...
-            cellfun(@(x)isa(x, 'MaskRefinementProcess'), userData_list2)))
-       
-        errordlg('Segmentation step has already been selected.', 'modal')
-        return
-    end    
-else
-    
-    temp = class(userData_list1{id});
-    if any(cellfun(@(x)isa(x, temp), userData_list2) )
-       
-        errordlg('This step has already been selected.', 'modal')
-        return
-    end
-    
-end
-
-end
-
-contentlist2{end+1} = contentlist1{id};
-userData_list2{end +1} = userData_list1{id};
-
-contentlist1(id) = [];
-userData_list1(id) = [];
-
-if (id > length(contentlist1) && id > 1)
-    set(handles.listbox_1, 'Value', length(contentlist1));
-end
-
-set(handles.listbox_1, 'String', contentlist1, 'UserData', userData_list1)
-set(handles.listbox_2, 'String', contentlist2, 'UserData', userData_list2)
-
-
-
-% --- Executes on selection change in listbox_2.
-function listbox_2_Callback(hObject, eventdata, handles)
-% hObject    handle to listbox_2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns listbox_2 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from listbox_2
-
-
-% --- Executes during object creation, after setting all properties.
-function listbox_2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to listbox_2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 
 % --- Executes on button press in pushbutton_remove.
 function pushbutton_remove_Callback(hObject, eventdata, handles)
 
-contentlist1 = get(handles.listbox_1, 'String');
-contentlist2 = get(handles.listbox_2, 'String');
+% Find package process id and return if empty
+props = get(handles.listbox_package,{'UserData','Value','String'});
+procIds =props{1};
+procId = procIds{props{2}};
+if isempty(procId), return; end
 
-if isempty(contentlist2)
-    return
-end
+% Remove pid from the package id list and update package string
+userData=get(handles.figure1,'UserData');
+packageString = props{3};
+procIds(props{2})=[];
+processClassName = userData.package.processClassNames_{props{2}};
+processName=eval([processClassName '.getName']);
+packageString{props{2}} = [' Step ' num2str(props{2}) ': ' processName];
+set(handles.listbox_package,'String',packageString,'UserData',procIds);
 
-userData_list1 = get(handles.listbox_1, 'UserData');
-userData_list2 = get(handles.listbox_2, 'UserData');
-
-id = get(handles.listbox_2, 'value');
-
-contentlist1{end + 1} = contentlist2{id};
-userData_list1{end+1} = userData_list2{id};
-
-contentlist2(id) = [];
-userData_list2(id) = [];
-
-if (id > length(contentlist2) && id > 1)
-    set(handles.listbox_2, 'Value', length(contentlist2));
-end
-
-set(handles.listbox_1, 'String', contentlist1, 'UserData', userData_list1)
-set(handles.listbox_2, 'String', contentlist2, 'UserData', userData_list2)
-
+% Add process to the process list
+props = get(handles.listbox_processes, {'UserData','String'});
+procIds=props{1};
+processString = props{2};
+processString{end+1} = userData.recyclableProc{procId}.getName;
+set(handles.listbox_processes,'String',processString,'UserData',[procIds procId]);
 
 % --- Executes when user attempts to close figure1.
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
@@ -324,51 +227,25 @@ else
     delete(handles.figure1);
 end
 
+% --- Executes on button press in pushbutton_preview.
+function pushbutton_preview_Callback(hObject, eventdata, handles)
 
-% --- Executes on button press in pushbutton_detail.
-function pushbutton_detail_Callback(hObject, eventdata, handles)
+% Test if ther is any process to preview
+processString = get(handles.listbox_processes, 'String');
+if isempty(processString), return; end
 
-if isempty(get(handles.listbox_1, 'String'))
-    return
-end
-userData = get(handles.figure1, 'UserData');
+% Load process list and get corresponding process id
+userData=get(handles.figure1,'UserData');
+props = get(handles.listbox_processes, {'UserData','Value'});
+procIds=props{1};
+procIndex = props{2};
+procId=procIds(procIndex);
 
-id = get(handles.listbox_1, 'Value');
-userData_list1 = get(handles.listbox_1, 'UserData');
-process = userData_list1{id};
-
-% if movieDataGUI exist
-if isfield(userData, 'detailFig') && ishandle(userData.detailFig)
-    delete(userData.detailFig)
-end
-
-switch class(process)
-    
-    case 'ThresholdProcess'
-        
-        userData.detailFig = viewThresholdProcessGUI(process, 'mainFig', handles.figure1);
-        
-    case 'MaskRefinementProcess'
-        
-        userData.detailFig = viewMaskRefinementProcessGUI(process, 'mainFig', handles.figure1);
-        
-    otherwise
-        
-        msg = sprintf('The selected % step cannot be previewed at this time.', class(process.name_));
-        errordlg(msg, 'modal');
-        return
-end
-
-set(handles.figure1,'UserData',userData);
-
+userData.previewFig = userData.recyclableProc{procId}.resultDisplay();
 
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
-% hObject    handle to figure1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
 userData = get(handles.figure1, 'UserData');
 
-if isfield(userData, 'detailFig') && ishandle(userData.detailFig)
-   delete(userData.detailFig) 
-end
+if ishandle(userData.previewFig), delete(userData.detailFig);  end
