@@ -474,9 +474,7 @@ end
 [file,path] = uiputfile('*.mat','Find a place to save your movie data',...
              [movieListPath filesep movieListFileName]);
          
-if ~any([file,path])
-    return
-end
+if ~any([file,path]), return; end
 
 try
     ML = MovieList(contentList, path, file);
@@ -486,10 +484,8 @@ catch ME
     return
 end
 
-% Run the save method (should launch the dialog box asking for the object 
-% path and filename)
+% Save the movie list
 ML.save();
-
 
 % --------------------------------------------------------------------
 function menu_tools_crop_Callback(hObject, eventdata, handles)

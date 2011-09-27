@@ -276,6 +276,28 @@ classdef  MovieData < hgsetget
             obj.processes_(pid) = [ ];  
         end
         
+        function deletePackage(obj, package)
+            % Check input
+            if isa(package, 'Package')
+                pid = find(cellfun(@(x)isequal(x, package), obj.packages_));
+                if isempty(pid)
+                    error('User-defined: The given package is not in current movie processes list.')
+                elseif length(pid) ~=1
+                    error('User-defined: More than one process of this type exists in movie processes list.')
+                end
+  
+                % Make sure process is a integer index
+            elseif isnumeric(package) && ismember(package,1:numel(obj.packages_))
+                pid = package;
+            else
+                error('Please provide a Package object or a valid package index of movie data processes list.')
+            end
+            
+            % Delete and clear the process object
+            delete(obj.packages_{pid})
+            obj.packages_(pid) = [ ];  
+        end
+        
         function iProc = getProcessIndex(obj,procName,nDesired,askUser)
             %Find the index of a process or processes with given class name
             

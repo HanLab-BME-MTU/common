@@ -45,7 +45,7 @@ end
 
 
 % --- Executes just before movieDataGUI is made visible.
-function movieDataGUI_OpeningFcn(hObject, ~, handles, varargin)
+function movieDataGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %
 % movieDataGUI('mainFig', handles.figure1) - call from movieSelector
 % movieDataGUI(MD) - MovieData viewer
@@ -67,12 +67,23 @@ function movieDataGUI_OpeningFcn(hObject, ~, handles, varargin)
 %
 %
 
+% Input check
+ip = inputParser;
+ip.addRequired('hObject',@ishandle);
+ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
+ip.addRequired('handles',@isstruct);
+ip.addOptional('MD',[],@(x) isa(x,'MovieData'));
+ip.addParamValue('mainFig',-1,@ishandle);
+ip.parse(hObject,eventdata,handles,varargin{:})
+
+% Store inpu
+userData = get(handles.figure1, 'UserData');
+userData.MD=ip.Results.MD;
+userData.mainFig=ip.Results.mainFig;
+
 [copyright openHelpFile] = userfcn_softwareConfig(handles);
 set(handles.text_copyright, 'String', copyright)
 
-userData = get(handles.figure1, 'UserData');
-% Choose default command line output for movieDataGUI
-handles.output = hObject;
 
 % Set channel object array
 userData.channels = [];
@@ -84,7 +95,7 @@ supermap(1,:) = get(hObject,'color');
 userData.colormap = supermap;
 userData.questIconData = questIconData;
 
-axes(handles.axes_help);
+set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(questIconData);
 set(hObject,'colormap',supermap);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
@@ -95,56 +106,35 @@ if openHelpFile
     set(Img, 'UserData', struct('class', mfilename))
 end
 
-if nargin > 3
-    if any(strcmp(varargin, 'mainFig'))
-        t = find(strcmp(varargin,'mainFig'));
-        %     if isempty(t)
-        %         error('User-defined: input error, correct statement: movieDataGUI(''mainFig'',handles.figure1)');
-        %     end
-        userData.mainFig = varargin{t+1};
-        userData.handles_main = guidata(userData.mainFig);
+
+if ~isempty(userData.MD),
+    userData.channels = userData.MD.channels_;
         
+    % Channel listbox
+    cPath=arrayfun(@(x) x.channelPath_,userData.channels,'UniformOutput',false);
+    set(handles.listbox_channel, 'String', cPath)
     
-    elseif isa(varargin{1}, 'MovieData')
-        
-        userData.MD=varargin{1};
-        userData.channels = userData.MD.channels_;
-        
-        % Channel listbox
-        cPath=arrayfun(@(x) x.channelPath_,userData.channels,'UniformOutput',false);
-        set(handles.listbox_channel, 'String', cPath)
-        
-        % GUI setting
-        set(handles.pushbutton_delete, 'Enable', 'off')
-        set(handles.pushbutton_add, 'Enable', 'off')
-        % set(handles.pushbutton_cancel, 'Enable', 'off')
-        % set(handles.pushbutton_setting_chan, 'String', 'Advanced Channel Setting (Editable)')
-        set(handles.pushbutton_output, 'Enable', 'off')
-        
-        set(hObject, 'Name', 'Movie Detail')
-        set(handles.edit_path,'String', [userData.MD.movieDataPath_ filesep userData.MD.movieDataFileName_])
-        set(handles.edit_output, 'String', userData.MD.outputDirectory_)
-        set(handles.edit_notes, 'String', userData.MD.notes_)
-        
-        % GUI setting - parameters
-        propNames={'pixelSize_','timeInterval_','numAperture_','camBitdepth_'};
-        validProps = ~cellfun(@(x) isempty(userData.MD.(x)),propNames);
-        
-        propNames=propNames(validProps);
-        cellfun(@(x) set(handles.(['edit_' x(1:end-1)]),'Enable','off',...
-                'String',userData.MD.(x)),propNames)
-        
-%     end
-%     elseif isa(varargin{1}(1), 'Channel')
-        
-    end
+    % GUI setting
+    set(handles.pushbutton_delete, 'Enable', 'off')
+    set(handles.pushbutton_add, 'Enable', 'off')
+    set(handles.pushbutton_output, 'Enable', 'off')
     
+    set(hObject, 'Name', 'Movie Detail')
+    set(handles.edit_path,'String', [userData.MD.movieDataPath_ filesep userData.MD.movieDataFileName_])
+    set(handles.edit_output, 'String', userData.MD.outputDirectory_)
+    set(handles.edit_notes, 'String', userData.MD.notes_)
     
-% else
-%     error('User-defined: For now this new movie data GUI can only be called from movieDataSelector.')
+    % GUI setting - parameters
+    propNames={'pixelSize_','timeInterval_','numAperture_','camBitdepth_'};
+    validProps = ~cellfun(@(x) isempty(userData.MD.(x)),propNames);
     
+    propNames=propNames(validProps);
+    cellfun(@(x) set(handles.(['edit_' x(1:end-1)]),'Enable','off',...
+        'String',userData.MD.(x)),propNames)    
 end
 
+% Choose default command line output for movieDataGUI
+handles.output = hObject;
 
 % Update handles structure
 set(handles.figure1,'UserData',userData)
@@ -178,7 +168,6 @@ function pushbutton_done_Callback(~, ~, handles)
 
 userData = get(handles.figure1,'UserData');
 
-
 % Verify channels are given
 if ~isfield(userData, 'channels') || isempty(userData.channels)
     errordlg('Please provide at least one channel path.',...
@@ -192,7 +181,6 @@ end
 
 % Check output path
 outputDir = get(handles.edit_output, 'String');
-
 if isempty(outputDir) || ~exist(outputDir, 'dir')
     errordlg('Please provide a valid output path to save your results.', ...
                'Empty Output Path', 'modal');
@@ -215,7 +203,7 @@ if ~isempty(get(handles.edit_notes, 'String'))
     movieOptions=horzcat(movieOptions,'notes_',get(handles.edit_notes, 'String'));
 end
 
-if isfield(userData, 'MD')
+if ~isempty(userData.MD);
     % Overview mode - edit existing MovieDat
     try
         set(userData.MD,movieOptions{:});
@@ -252,12 +240,13 @@ end
 MD.save(); 
 
 % If new MovieData was created (from movieSelectorGUI)
-if ~isfield(userData, 'MD'), 
+if ishandle(userData.mainFig), 
     % Retrieve main window userData
     userData_main = get(userData.mainFig, 'UserData');
     
     % Check if files in movie list are saved in the same file
-    contentlist = get(userData.handles_main.listbox_movie, 'String');
+    handles_main = guidata(userData.mainFig);
+    contentlist = get(handles_main.listbox_movie, 'String');
     movieDataFullPath = [MD.movieDataPath_ filesep MD.movieDataFileName_];
     if any(strcmp(movieDataFullPath, contentlist))
         errordlg('Cannot overwrite a movie data file which is already in the movie list. Please choose another file name or another path.','Error','modal');
@@ -270,9 +259,9 @@ if ~isfield(userData, 'MD'),
     % Refresh movie list box in movie selector panel
     contentlist{end+1} = movieDataFullPath;
     nMovies = length(contentlist);
-    set(userData.handles_main.listbox_movie, 'String', contentlist, 'Value', nMovies)
+    set(handles_main.listbox_movie, 'String', contentlist, 'Value', nMovies)
     title = sprintf('Movie List: %s/%s movie(s)', num2str(nMovies), num2str(nMovies));
-    set(userData.handles_main.text_movie_1, 'String', title)
+    set(handles_main.text_movie_1, 'String', title)
     
     % Save the main window data
     set(userData.mainFig, 'UserData', userData_main)
@@ -309,9 +298,7 @@ userData = get(handles.figure1, 'Userdata');
 
 contents = get(handles.listbox_channel,'String');
 % Return if list is empty
-if isempty(contents)
-    return;
-end
+if isempty(contents), return; end
 num = get(handles.listbox_channel,'Value');
 
 % Delete channel object
@@ -337,13 +324,17 @@ function pushbutton_add_Callback(hObject, eventdata, handles)
 set(handles.listbox_channel, 'Value', 1)
 
 userData = get(handles.figure1, 'UserData');
-userData_main = get(userData.handles_main.figure1, 'UserData');
-
-path = uigetdir(userData_main.userDir, 'Add Channels ...');
-if path == 0
-    return;
+if ishandle(userData.mainFig), 
+    handles_main = guidata(userData.mainFig);
+    userData_main = get(handles_main.figure1, 'UserData');
+    userDir =userData_main.userDir;
+else
+    userDir=pwd;
 end
-% Input validation function ...
+
+path = uigetdir(userDir, 'Add Channels ...');
+if path == 0, return; end
+
 % Get current list
 contents = get(handles.listbox_channel,'String');
 if any(strcmp(contents,path))
@@ -373,10 +364,13 @@ dir = sepDir{1};
 for i = 2: length(sepDir)-1
     dir = [dir filesep sepDir{i}];
 end
-userData_main.userDir = dir;
+
+if ishandle(userData.mainFig), 
+    userData_main.userDir = dir;
+    set(handles_main.figure1, 'UserData', userData_main)
+end
 
 set(handles.figure1, 'Userdata', userData)
-set(userData.handles_main.figure1, 'UserData', userData_main)
 guidata(hObject, handles);
 
 
@@ -394,9 +388,7 @@ end
 function pushbutton_output_Callback(hObject, eventdata, handles)
 
 pathname = uigetdir(pwd,'Select a directory to store the processes output');
-if isnumeric(pathname)
-    return;
-end
+if isnumeric(pathname), return; end
 
 set(handles.edit_output, 'String', pathname);
 
@@ -406,9 +398,7 @@ function pushbutton_setting_chan_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
-if isempty(userData.channels) 
-    return
-end
+if isempty(userData.channels), return; end
 assert( isa(userData.channels(1), 'Channel'), 'User-defined: Not a valid ''Channel'' object');
 
 userData.setChannelFig = channelGUI('mainFig', handles.figure1, 'modal');
