@@ -1,4 +1,4 @@
-function P = bresenham(p0, p1,conn)
+function P = bresenham(p0, p1, conn)
 %BRESENHAM computes the integer positions on a line between the
 % positions xS and xE
 %
@@ -7,10 +7,10 @@ function P = bresenham(p0, p1,conn)
 % INPUT p0 : coordinate of line start point
 %       p1 : coordinate of line end point
 %     conn : connectivity of the line. The connectivity is either 4 or 8.
-%            The default is conn=8 (if conn is not specified). For a 
+%            The default is conn=8 (if conn is not specified). For a
 %            c4-connected line enter conn=4.
-% 
-% OUTPUT P : nx2 matrix with the coordinates of all the 
+%
+% OUTPUT P : nx2 matrix with the coordinates of all the
 %            integer positions on the line
 %
 % Sylvain Berlemont, 2009
@@ -61,8 +61,8 @@ for d = 1:l+1
 end
 
 % This is code added by Achim, 2010. Note that
-% exchanging the order of p0 and p1 gives different results, because the 
-% P from above is not symmetric. The code that follows should give 
+% exchanging the order of p0 and p1 gives different results, because the
+% P from above is not symmetric. The code that follows should give
 % symmetric results:
 if nargin>2 && conn==4
     n=size(P,1);
@@ -73,7 +73,7 @@ if nargin>2 && conn==4
         dxy=P(i+1,:)-P(i,:);
         if sum(abs(dxy))==2 % if there is a shift in x and y:
             % create new point with the x component of the first point and
-            % the y component of the second point, or vice verca. 
+            % the y component of the second point, or vice verca.
             % The if statement makes it symmetric (p0 <-> p1):
             if P(i,1)>P(i+1,1)
                 xPt=[P(i,1)   P(i+1,2)];
@@ -88,15 +88,10 @@ if nargin>2 && conn==4
             P=newP;
             clear newP;
             
-            % the length has also changed now (important for the 
+            % the length has also changed now (important for the
             % termination of the loop):
-            n=length(P);           
-        end        
+            n=length(P);
+        end
         i=i+1;
     end
-else
-    display('Only connectivity=4 is treated, nothing has been done')
-    return
-end
-
 end
