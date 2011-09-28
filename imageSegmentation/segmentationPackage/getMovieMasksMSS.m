@@ -67,8 +67,8 @@ if ~all(segProc.checkChanNum(p.ChannelIndex))
 end
 
 %Read various constants
-imDirs  = movieData.getChannelPaths(p.ChannelIndex);
-imageFileNames = movieData.getImageFileNames(p.ChannelIndex);
+imDirs  = movieData.getChannelPaths();
+imageFileNames = movieData.getImageFileNames();
 nFrames=movieData.nFrames_;
 
 % Set up the input directories (input images)
@@ -104,7 +104,7 @@ timeMsg = @(t) ['\nEstimated time remaining: ' num2str(round(t)) 's'];
 tic;
 nChan = length(p.ChannelIndex);
 nTot = nChan*nFrames;
-for i=p.ChannelIndex
+for i=1:numel(p.ChannelIndex)
     iChan = p.ChannelIndex(i);
     % Log display
     disp(logMsg(iChan))
