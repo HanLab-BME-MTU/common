@@ -64,24 +64,34 @@ set(handles.text_processName,'String',procString);
 figString = [' Setting - ' crtProcName];
 set(handles.figure1,'Name',figString);
 
-% If process does not exist, create a default one in user data.
-if isempty(userData.crtProc)
-    userData.crtProc = userData.procConstr(userData.MD, ...
-        userData.crtPackage.outputDirectory_);
-end
+
 
 % Get icon infomation
 userData.questIconData = userData_main.questIconData;
 userData.colormap = userData_main.colormap;
 
-% Check for multiple movies else
-if numel(userData_main.MD) ==1
-    set(handles.checkbox_applytoall,'Value',0,'Visible','off');
-else
-    set(handles.checkbox_applytoall, 'Value',...
-        userData_main.applytoall(userData.procID));
+% If process does not exist, create a default one in user data.
+if isempty(userData.crtProc)
+    try
+        userData.crtProc = userData.procConstr(userData.MD, ...
+            userData.crtPackage.outputDirectory_);
+    catch ME
+        if ~isequal(ME.identifier,'MATLAB:class:MethodRestricted')
+            rethrow(ME);
+        end
+    end
 end
-uicontrol(handles.pushbutton_done);
+
+% Check for multiple movies else
+if isfield(handles,'checkbox_applytoall')
+    if numel(userData_main.MD) ==1
+        set(handles.checkbox_applytoall,'Value',0,'Visible','off');
+    else
+        set(handles.checkbox_applytoall, 'Value',...
+            userData_main.applytoall(userData.procID));
+    end
+    uicontrol(handles.pushbutton_done);
+end
 
 % ----------------------Set up help icon------------------------
 
