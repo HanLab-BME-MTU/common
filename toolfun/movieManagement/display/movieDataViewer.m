@@ -546,15 +546,17 @@ clim=[str2double(get(handles.edit_cmin,'String')) ...
 if strcmp(imageTag,'radiobutton_channels')
     channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
     chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
-    userData.MD.channels_(chanList(1)).displayMethod_.CLim=cLim;
+    displayMethod= userData.MD.channels_(chanList(1)).displayMethod_;
 else
     % Retrieve the id, process nr and channel nr of the selected imageProc
     tokens = regexp(imageTag,'radiobutton_process(\d+)_output(\d+)_channel(\d+)','tokens');
     procId=str2double(tokens{1}{1});
     iOutput = str2double(tokens{1}{2});
     iChan = str2double(tokens{1}{3});
-    userData.MD.processes_{procId}.displayMethod_{iOutput,iChan}.CLim=clim;
+    displayMethod =userData.MD.processes_{procId}.displayMethod_{iOutput,iChan};
 end
+
+displayMethod.CLim=clim;
 
 if ishandle(userData.drawFig)
     child=get(userData.drawFig,'Children');
