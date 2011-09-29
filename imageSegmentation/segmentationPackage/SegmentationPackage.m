@@ -28,6 +28,33 @@ classdef SegmentationPackage < Package
             % Call the superclass constructor
             obj = obj@Package(super_args{:},'processClassHandles_',segmentationClasses);
         end
+
+        function processExceptions = sanityCheck(obj,varargin)
+            
+            % Check that the channels have a psf function
+            nProc = length(obj.processClassNames_);
+            ip = inputParser;
+            ip.CaseSensitive = false;
+            ip.addRequired('obj');
+            ip.addOptional('full',true, @(x) islogical(x));
+            ip.addOptional('procID',1:nProc,@(x) all(ismember(x,1:nProc)) || strcmp(x,'all'));
+            ip.parse(obj,varargin{:});
+            full = ip.Results.full;
+            procID = ip.Results.procID;
+            if strcmp(procID,'all'), procID = 1:nProc;end
+            
+            if full
+                validProc = procID(~cellfun(@isempty,obj.processes_(procID)));
+                if all(ismember([1 2],validProc))
+                    % Find the segmentation process index and set it in the
+                    % mask refinement process
+                    funParams.SegProcessIndex = find(cellfun(@(x) isequal(x,obj.processes_{1}),...
+                        obj.owner_.processes_));
+                    parseProcessParams(obj.processes_{2},funParams);
+                end
+            end
+            processExceptions = sanityCheck@Package(obj,varargin{:});
+        end
         
     end
     methods (Static)

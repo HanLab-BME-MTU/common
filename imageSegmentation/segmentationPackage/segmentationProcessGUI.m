@@ -80,22 +80,22 @@ userData = get(handles.figure1, 'UserData');
 % Get current process constructer, set-up GUIs and mask refinement process
 % constructor
      
-segMethods = eval([func2str(userData.procConstr) '.getMaskMethods']);
-userData.subProcConstr = {segMethods.procConstr};
-userData.subProcGUI = {segMethods.procGUI};
-userData.subProcName = {segMethods.name};
-popupMenuProcName = vertcat(userData.subProcName',{'Choose a segmentation method'});
+userData.subProcClassNames = eval([func2str(userData.procConstr) '.getConcreteClasses']);
+userData.subProcConstr = cellfun(@(x) str2func(x),userData.subProcClassNames,'Unif',0);
+userData.subProcGUI = cellfun(@(x) eval([x '.GUI']),userData.subProcClassNames,'Unif',0);
+subProcNames = cellfun(@(x) eval([x '.getName']),userData.subProcClassNames,'Unif',0);
+popupMenuProcName = vertcat(subProcNames,{'Choose a segmentation method'});
 
 % Set up input channel list box
 if isempty(userData.crtProc)
-    value = numel(segMethods)+1;
-    set(handles.pushbutton_set, 'Enable', 'off')
+    value = numel(userData.subProcClassNames)+1;
+    set(handles.pushbutton_set, 'Enable', 'off');
 else
-    value = find(strcmp(userData.crtProc.getName,userData.subProcName));
+    value = find(strcmp(userData.crtProc.getName,subProcNames));
 end
 
 existSubProc = @(proc) any(cellfun(@(x) isa(x,proc),userData.MD.processes_));
-for i=find(cellfun(@(x)existSubProc(func2str(x)),userData.subProcConstr))
+for i=find(cellfun(existSubProc,userData.subProcClassNames'))
   popupMenuProcName{i} = ['<html><b>' popupMenuProcName{i} '</b></html>'];
 end
 
@@ -150,7 +150,7 @@ segProcID = get(handles.popupmenu_segmentationMethods, 'Value');
 subProcGUI =userData.subProcGUI{segProcID};
 subProcGUI('mainFig',userData.mainFig,userData.procID,...
     'procConstr',userData.subProcConstr{segProcID},...
-    'procName',userData.subProcName{segProcID});
+    'procClassName',userData.subProcClassNames{segProcID});
 delete(handles.figure1);
 
 

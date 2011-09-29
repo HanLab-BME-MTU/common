@@ -119,13 +119,10 @@ classdef SegmentationProcess < Process
         function h = GUI()
             h= @segmentationProcessGUI;
         end
-        function methods = getMaskMethods()
-            methods(1).name =  ThresholdProcess.getName;
-            methods(1).procConstr =  @ThresholdProcess;
-            methods(1).procGUI =  ThresholdProcess.GUI;
-            methods(2).name =  MSSSegmentationProcess.getName;
-            methods(2).procConstr =  @MSSSegmentationProcess;
-            methods(2).procGUI =  MSSSegmentationProcess.GUI;
+        function procClasses = getConcreteClasses()
+            procClasses = ...
+                {'ThresholdProcess';
+                'MSSSegmentationProcess'};
         end
         
     end
