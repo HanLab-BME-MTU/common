@@ -100,7 +100,7 @@ W = sparse(diag(w(:)));
 P = planePoints;
 
 resnormOld = -1;
-minRad = 100; % Minimal curvature radius
+minRad = 800; % Minimal curvature radius
 
 for i=1:maxIter
     % Solve the non-linear optimization on t
