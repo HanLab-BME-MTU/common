@@ -22,7 +22,7 @@ function varargout = cropMovieGUI(varargin)
 
 % Edit the above text to modify the response to help cropMovieGUI
 
-% Last Modified by GUIDE v2.5 22-Sep-2011 15:49:58
+% Last Modified by GUIDE v2.5 30-Sep-2011 15:09:12
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -70,7 +70,6 @@ set(handles.listbox_selectedChannels,'String',userData.MD.getChannelPaths(), ...
     'UserData',1:numel(userData.MD.channels_));
 
 % Save the image directories and names (for cropping preview)
-
 userData.imageFileNames = userData.MD.getImageFileNames();
 userData.imDirs  = userData.MD.getChannelPaths();
 userData.nFrames = userData.MD.nFrames_;
@@ -89,7 +88,9 @@ userData.imData=mat2gray(imread([userData.imDirs{userData.chanIndx} filesep...
         userData.imageFileNames{userData.chanIndx}{userData.imIndx}]));
     
 set(handles.listbox_selectedChannels,'Callback',@(h,event) update_data(h,event,guidata(h)));
-    
+set(handles.edit_firstFrame,'String',1);
+set(handles.edit_lastFrame,'String',userData.nFrames);
+
 % Choose default command line output for cropMovieGUI
 handles.output = hObject;
 
@@ -288,15 +289,22 @@ set(handles.listbox_additionalFiles,'String',files,'Value',props{2}-1);
 function pushbutton_crop_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
-% Read cropRoi if crop window is still visible
-if userData.imRectHandle.isvalid
-    userData.cropROI=getPosition(userData.imRectHandle);
-end
+
 % Check valid output directory
 outputDirectory = get(handles.edit_outputDirectory,'String');
 if isempty(outputDirectory),
     errordlg('Please select an output directory','Error','modal');
 end
+
+% Read cropROI if crop window is still visible
+if userData.imRectHandle.isvalid
+    userData.cropROI=getPosition(userData.imRectHandle);
+end
+
+% Read cropTOI
+firstFrame = str2double(get(handles.edit_firstFrame,'String'));
+lastFrame = str2double(get(handles.edit_lastFrame,'String'));
+cropTOI=firstFrame:lastFrame;
 
 additionalFiles= get(handles.listbox_additionalFiles,'String');
 if isempty(additionalFiles)
@@ -306,7 +314,8 @@ else
 end
     
 % Call the crop routine
-MD = cropMovie(userData.MD,userData.cropROI,outputDirectory,filesArgs{:});   
+MD = cropMovie(userData.MD,outputDirectory,'cropROI',userData.cropROI,...
+    'cropTOI',croiTOI,filesArgs{:});   
 
 % If new MovieData was created (from movieSelectorGUI)
 if userData.mainFig ~=-1, 
@@ -338,3 +347,20 @@ end
 % Delete current window
 delete(handles.figure1)
 
+
+function edit_firstFrame_Callback(hObject, eventdata, handles)
+userData = get(handles.figure1, 'UserData');
+firstFrame = str2double(get(handles.edit_firstFrame,'String'));
+lastFrame = str2double(get(handles.edit_lastFrame,'String'));
+if ~ismember(firstFrame,1:userData.nFrames) || firstFrame>lastFrame    
+    set(handles.edit_firstFrame,'String',1)
+end
+
+function edit_lastFrame_Callback(hObject, eventdata, handles)
+
+userData = get(handles.figure1, 'UserData');
+firstFrame = str2double(get(handles.edit_firstFrame,'String'));
+lastFrame = str2double(get(handles.edit_lastFrame,'String'));
+if ~ismember(lastFrame,1:userData.nFrames) || firstFrame>lastFrame     
+    set(handles.edit_lastFrame,'String',userData.nFrames)
+end

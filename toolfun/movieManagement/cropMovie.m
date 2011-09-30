@@ -1,46 +1,50 @@
-function croppedMovieData = cropMovie(movieData,cropROI,varargin)
+function croppedMovieData = cropMovie(movieData,outputDirectory,varargin)
 %CROPMOVIE allows the user to crop the movie
 %
 % Syntax:
-% croppedMovieData = cropMovie(movieData,cropRoi);
-% croppedMovieData = cropMovie(movieData,cropRoi,newOutputDir,'additionalFiles',additionalFiles)
+% croppedMovieData = cropMovie(movieData,outputDir,'cropROI',[x y nx ny]);
+% croppedMovieData = cropMovie(movieData,outputDir,'cropROI',[x y nx ny],
+% 'cropTOI',1:tmax,'additionalFiles',additionalFiles);
 % 
 % Description:
 % 
 % This function crops the channels of the input movie as well as any
-% specified additional file according to the selected roi. The cropped
-% channels are saved in a new directory and a new movie data is generated
-% using the same settings as the original one losing any performed process
+% specified additional file according to the selected region of interests. 
+% The cropped channels are saved in a new directory and a new movie data is
+% generated  using the same settings as the original one. All processes
+% applied on the movie are lost by the operation.x
 %
 % Input: 
 %
 %   movieData - The MovieData object to be cropped
 % 
-%   cropROI - a four-element position vector [xmin ymin width height] that
-%             specifies the size and position of the cropping rectangle.
-% 
 %   outputDirectory - (optional) A string containing the path where the
 %   cropped movie should be saved. If not input, a dialog box will ask the
 %   user to select a directory
+%
+%   cropROI - a four-element position vector [xmin ymin width height] that
+%             specifies the size and position of the region of interest.
+%
+%   cropTOI - a vector that specifies the time of interest
 %   
 %   additionalFiles - (optional,param/value) a cell array of paths
 %   corresponding to additional images to be cropped using the same region.
 
 % Sebastien Besson, Sep 2011
 
+warning('off','MATLAB:structOnObject');
 
 % Input check
 ip= inputParser;
 ip.addRequired('movieData',@(x) isa(x,'MovieData'));
-ip.addRequired('cropROI',@(x) isvector(x) && numel(x)==4);
-ip.addOptional('outputDirectory','',@ischar)
+ip.addRequired('outputDirectory',@ischar);
+ip.addParamValue('cropROI',[1 1 movieData.imSize_(end:-1:1)],@(x) isvector(x) && numel(x)==4);
+ip.addParamValue('cropTOI',1:movieData.nFrames_,@isvector);
 ip.addParamValue('additionalFiles',{},@(x) iscell);
-ip.parse(movieData,cropROI,varargin{:});
+ip.parse(movieData,outputDirectory,varargin{:});
+cropROI=ip.Results.cropROI;
+cropTOI=ip.Results.cropTOI;
 additionalFiles=ip.Results.additionalFiles;
-if isempty(ip.Results.outputDirectory)
-    outputDirectory = uigetdir(pwd,'Select output directory for cropped Movie');
-    if isequal(outputDirectory,0), return; end
-end
 
 % Create log message
 if feature('ShowFigureWindows')
@@ -51,11 +55,10 @@ if feature('ShowFigureWindows')
 end
 
 % Read channel information (number of frames, channel names)
-nFrames = movieData.nFrames_;
 imDirs = movieData.getChannelPaths();
 imageFileNames = movieData.getImageFileNames();
 nChan = numel(movieData.channels_);
-nTot = nChan*nFrames;
+nTot = nChan*numel(cropTOI);
 inImage = @(chan,frame) [imDirs{chan} filesep imageFileNames{chan}{frame}];
 
 % Create new channel directory names for image writing
@@ -84,12 +87,13 @@ for i = 1:nChan
     fields=fieldnames(s);    
     set(channels(i),rmfield(s,fields(~channelPublicFields)));
     
-    for j= 1:nFrames
+    for j= 1:numel(cropTOI)
+        tj=cropTOI(j);
         % Read original image, crop it and save it
-        imwrite(imcrop(imread(inImage(i,j)),cropROI), outImage(i,j));
+        imwrite(imcrop(imread(inImage(i,tj)),cropROI), outImage(i,j));
         if mod(j,5)==1 && ishandle(wtBar)
             tj=toc;
-            nj = (i-1)*nFrames+ j;
+            nj = (i-1)*numel(cropTOI)+ j;
             waitbar(nj/nTot,wtBar,sprintf([logMsg(i) timeMsg(tj*nTot/nj-tj)]));
         end
     end
