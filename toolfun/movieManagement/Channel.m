@@ -37,30 +37,23 @@ classdef Channel < hgsetget
         function obj = Channel(channelPath, varargin)
             % Constructor of channel object
             %
-            % INPUT  
-            %
+            % Input:  
             %    channelPath (required) - the absolute path where the channel images are stored
             %
-            %    'PropertyName',propertyValue - A string with an option name followed by the
-            %    value for that option.
-            %    Possible Option Names are the Channel fieldnames
-            %
-            %
-            % OUTPUT
-            %
-            %    obj - an object of class Channel
-            %
+            %    'PropertyName',propertyValue - A string with an valid channel property followed by the
+            %    value.
 
-            obj.channelPath_ = channelPath;
-
-            % Construct the Channel object
-            nVarargin = numel(varargin);
-            if nVarargin > 1 && mod(nVarargin,2)==0
-                for i=1 : 2 : nVarargin-1
-                    obj.(varargin{i}) = varargin{i+1};
+            if nargin>0 
+                obj.channelPath_ = channelPath;
+                
+                % Construct the Channel object
+                nVarargin = numel(varargin);
+                if nVarargin > 1 && mod(nVarargin,2)==0
+                    for i=1 : 2 : nVarargin-1
+                        obj.(varargin{i}) = varargin{i+1};
+                    end
                 end
             end
-            
         end
         
         % ------- Set / Get Methods ----- %

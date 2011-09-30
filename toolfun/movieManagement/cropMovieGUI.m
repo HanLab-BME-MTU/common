@@ -298,84 +298,15 @@ if isempty(outputDirectory),
     errordlg('Please select an output directory','Error','modal');
 end
 
-% Create log message
-wtBar = waitbar(0,'Initializing');
-logMsg = @(chan) ['Please wait, cropping images for channel ' num2str(chan)];
-timeMsg = @(t) ['\nEstimated time remaining: ' num2str(round(t)) 's'];
-tic;
-
-% Read channel information (number of frames, channel names)
-nFrames = userData.MD.nFrames_;
-nChan = numel(userData.MD.channels_);
-nTot = nChan*nFrames;
-inImage = @(chan,frame) [userData.imDirs{chan} filesep...
-    userData.imageFileNames{chan}{frame}];
-
-% Create new channel directory names for image writing
-[~,chanNames]=cellfun(@fileparts,userData.imDirs,'UniformOutput',false);
-userData.newImDirs = cellfun(@(x) [outputDirectory filesep x],chanNames,...
-    'UniformOutput',false);
-outImage = @(chan,frame) [userData.newImDirs{chan} filesep...
-    userData.imageFileNames{chan}{frame}];
-
-% Read public access channel properties
-m=?Channel;
-channelFieldsAccess=cellfun(@(x) x.SetAccess,m.Properties,'Unif',false);
-channelPublicFields= cellfun(@(x) strcmpi(x,'public'),channelFieldsAccess);
-
-%Copy channel images
-for i = 1:nChan
-    disp('Results will be saved under:')
-    disp(userData.newImDirs{i});
-    mkClrDir(userData.newImDirs{i});
-    
-    % Create channel object and copy public properties
-    channels(i)=Channel(userData.newImDirs{i});
-    s= struct(userData.MD.channels_(i));
-    fields=fieldnames(s);    
-    set(channels(i),rmfield(s,fields(~channelPublicFields)));
-    
-    for j= 1:nFrames
-        % Read original image, crop it and save it
-        imwrite(imcrop(imread(inImage(i,j)),userData.cropROI), outImage(i,j));
-        if mod(j,5)==1 && feature('ShowFigureWindows')
-            tj=toc;
-            nj = (i-1)*nFrames+ j;
-            waitbar(nj/nTot,wtBar,sprintf([logMsg(i) timeMsg(tj*nTot/nj-tj)]));
-        end
-    end
-end
-
-% Crop and write additional files at the base of the ouput directory
 additionalFiles= get(handles.listbox_additionalFiles,'String');
-if ~isempty(additionalFiles)
-    waitbar(nj/nTot,wtBar,'Please wait, croppping additional files...');
-    for i = 1:numel(additionalFiles)
-        [~,fileName,fileExt]=fileparts(additionalFiles{i});
-
-        % Read original image, crop it and save it
-        imwrite(imcrop(imread(additionalFiles{i}),userData.cropROI),...
-            [outputDirectory filesep fileName fileExt]);
-    end
+if isempty(additionalFiles)
+    filesArgs={};
+else
+    filesArgs={'additionalFiles',additionalFiles};
 end
-close(wtBar);
-
-% Read public access & unchanged movie properties
-m=?MovieData;
-movieFieldsAccess=cellfun(@(x) x.SetAccess,m.Properties,'Unif',false);
-moviePublicFields= cellfun(@(x) strcmpi(x,'public'),movieFieldsAccess);
-changedFields = {'outputDirectory_','movieDataPath_','movieDataFileName_'};
-movieChangedFields= cellfun(@(x) any(strcmpi(x.Name,changedFields)),m.Properties);
-
-% Create movieData object and copy public properties
-MD=MovieData(channels,outputDirectory,'movieDataPath_',outputDirectory,...
-    'movieDataFileName_','movieData.mat');
-s= struct(userData.MD);
-fields=fieldnames(s);
-set(MD,rmfield(s,fields(~moviePublicFields | movieChangedFields)));
-
-% Perform sanityCheck
-MD.sanityCheck
+    
+% Call the crop routine
+MD = cropMovie(userData.MD,userData.cropROI,outputDirectory,filesArgs{:});   
 
 % If new MovieData was created (from movieSelectorGUI)
 if userData.mainFig ~=-1, 

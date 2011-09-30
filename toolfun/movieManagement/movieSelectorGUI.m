@@ -63,7 +63,6 @@ function movieSelectorGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %   userData.newFig - handle of new movie set-up GUI
 %   userData.iconHelpFig - handle of help dialog
 %   userData.msgboxGUI - handle of message box GUI
-%   userData.relocateFig - handle of relocateMovieDataGUI
 
 ip = inputParser;
 ip.addRequired('hObject',@ishandle);
@@ -85,7 +84,7 @@ handles.output = hObject;
 userData.MD = [ ];
 userData.ML = [ ];
 userData.userDir = pwd;
-userData.newFig=1;
+userData.newFig=-1;
 
 % Check packages availability
 packageRadioButtons  = get(handles.uipanel_package,'Children');
@@ -199,9 +198,7 @@ function pushbutton_prepare_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 % if preparation GUI exist, delete it
-if isfield(userData, 'newFig') && ishandle(userData.newFig)
-    delete(userData.newFig)
-end
+if ishandle(userData.newFig), delete(userData.newFig); end
 userData.newFig = dataPreparationGUI('mainFig',handles.figure1);
 set(handles.figure1,'UserData',userData);
 
@@ -495,7 +492,6 @@ props=get(handles.listbox_movie, {'String','Value'});
 if isempty(props{1}), return; end
 
 userData = get(handles.figure1, 'UserData');
-% if movieDataGUI exist, delete it
 if ishandle(userData.newFig), delete(userData.newFig); end
 userData.newFig = cropMovieGUI(userData.MD(props{2}),'mainFig',handles.figure1);
 set(handles.figure1,'UserData',userData);

@@ -1,4 +1,4 @@
-function movieData = cropMovie(movieData,paramIn)
+function movieData = cropMovieOld(movieData,paramIn)
 %CROPMOVIE allows the user to crop the images in the channel(s) of the movie described by the input movieData
 %
 % Syntax:
