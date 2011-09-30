@@ -234,17 +234,17 @@ classdef Channel < hgsetget
         
         function h = draw(obj,iFrame,varargin)
            
+            % Input check
             ip = inputParser;
-            ip.addRequired('obj',@(x) isa(x,'Channel'));
+            ip.addRequired('obj',@(x) isa(x,'Channel') || numel(x)<=3);
             ip.addRequired('iFrame',@isscalar);
-            if numel(obj)==1
-                ip.addParamValue('color',obj.getColor,@(x) isequal(size(x),[1 3]));
-            end
             ip.addParamValue('hAxes',gca,@ishandle);
+            ip.addParamValue('Color',obj(1).getColor,@(x) isequal(size(x),[1 3]));
             ip.parse(obj,iFrame,varargin{:})
             
-            if numel(obj)>3, error('Max. 3 channels in RGB mode.'); end
+            
             if numel(obj)>1
+                % Multi-channel display
                 data = zeros([obj(1).owner_.imSize_ 3]);
                 for iChan=1:numel(obj)
                     imageName = obj(iChan).getImageFileNames(iFrame);
@@ -252,10 +252,11 @@ classdef Channel < hgsetget
                     data(:,:,iChan)=rawData/max(rawData(:));
                 end
             else
+                % Signle channel display
                 imageName = obj.getImageFileNames(iFrame);
                 rawData = double(imread([obj.channelPath_ filesep imageName]));
                 data=repmat(rawData/max(rawData(:)),[1 1 3]);
-                color=ip.Results.color;
+                color=ip.Results.Color;
                 for i=1:3
                     data(:,:,i)=data(:,:,i)*color(i);
                 end
