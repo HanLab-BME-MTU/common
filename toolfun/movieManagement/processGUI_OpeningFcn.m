@@ -28,7 +28,7 @@ ip.addRequired('string',@(x) isequal(x,'mainFig'));
 ip.addOptional('mainFig',[],@ishandle);
 ip.addOptional('procID',[],@isscalar);
 ip.addParamValue('procConstr',[],@(x) isa(x,'function_handle'));
-ip.addParamValue('procName','',@ischar);
+ip.addParamValue('procClassName','',@ischar);
 ip.addParamValue('initChannel',0,@isscalar);
 ip.parse(hObject,eventdata,handles,string,varargin{:});
 
@@ -37,7 +37,7 @@ userData = get(handles.figure1, 'UserData');
 userData.mainFig=ip.Results.mainFig;
 userData.procID = ip.Results.procID;
 userData.procConstr=ip.Results.procConstr;
-crtProcName = ip.Results.procName;
+crtProcClassName = ip.Results.procClassName;
 initChannel = ip.Results.initChannel;
 
 % Set up copyright statement
@@ -49,13 +49,20 @@ userData.handles_main = guidata(userData.mainFig);
 userData_main = get(userData.mainFig, 'UserData');
 userData.MD = userData_main.MD(userData_main.id);
 userData.crtPackage = userData_main.crtPackage;
-userData.crtProc = userData.crtPackage.processes_{userData.procID};
 
 % If constructor is not inherited from abstract class, read it from package
 if isempty(userData.procConstr)
     userData.procConstr = userData.crtPackage.processClassHandles_{userData.procID};
     crtProcClassName = userData.crtPackage.processClassNames_{userData.procID};
-    crtProcName = eval([crtProcClassName '.getName']);
+end
+
+% Retrieve crtProc if procID step of the package is set up AND is the same
+% class as the current process
+crtProcName = eval([crtProcClassName '.getName']);
+if isa(userData.crtPackage.processes_{userData.procID},crtProcClassName)    
+    userData.crtProc = userData.crtPackage.processes_{userData.procID};
+else
+    userData.crtProc =[];
 end
 
 % Set process names in the text box and figure title
