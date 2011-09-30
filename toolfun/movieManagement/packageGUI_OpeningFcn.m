@@ -297,7 +297,5 @@ set(handles.figure1,'UserData',userData);
 guidata(hObject, handles);
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 
-userfcn_updateGUI(handles, 'initialize')
-
-
+packageGUI_RefreshFcn(handles, 'initialize')
 end

@@ -113,9 +113,9 @@ set(handles.popupmenu_movie, 'Value', userData.id)
 
 % Set up GUI
 if userData.statusM(userData.id).Visited
-   userfcn_updateGUI(handles, 'refresh') 
+   packageGUI_RefreshFcn(handles, 'refresh') 
 else
-   userfcn_updateGUI(handles, 'initialize') 
+   packageGUI_RefreshFcn(handles, 'initialize') 
 end
 
 

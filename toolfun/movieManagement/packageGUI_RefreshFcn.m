@@ -1,5 +1,4 @@
-
-function userfcn_updateGUI(handles, type)
+function packageGUI_RefreshFcn(handles, type)
 % GUI tool function: this function is called by movie explorer when 
 % switching between differenct movies. 
 % 
@@ -9,12 +8,14 @@ function userfcn_updateGUI(handles, type)
 %              'refresh': used when movie had already been loaded to GUI
 %
 %
-% Chuangang Ren
-% 08/2010
+% Chuangang Ren 08/2010
 
-if ~any(strcmp(type, {'initialize' 'refresh'}))
-    error('User-defined: Error calling userfcn_updateGUI, type should be ''initialize'' or ''refresh''')
-end
+% Input check
+ip = inputParser;
+ip.addRequired('handles',@isstruct);
+ip.addRequired('type',@(x) any(strcmp(x,{'initialize','refresh'})));
+ip.parse(handles,type)
+
 
 userData = get(handles.figure1, 'UserData');
 l = size(userData.dependM, 1);
@@ -38,7 +39,6 @@ set(handles.edit_path, 'String', ...
 if strcmp(type, 'initialize')
 
     % Package Sanity Check
-
     procEx = userData.crtPackage.sanityCheck(true, 'all');
 
     for i = 1: l
@@ -47,9 +47,11 @@ if strcmp(type, 'initialize')
         set(handles.figure1, 'UserData', userData)
 
        if ~isempty(procEx{i})
-
+           
            if strcmp(procEx{i}(1).identifier, 'lccb:set:fatal')
                statusType='error';
+           elseif isequal(procEx{i}.identifier, 'lccb:setup:clear')
+               statusType='clear';
            else
                statusType='warn';
            end
@@ -92,25 +94,21 @@ for i = 1: l
         k(i) = 1;
         set(handles.(['checkbox_',num2str(i)]),'Value',1,'Enable','on');
         userfcn_lampSwitch(i, 1, handles)
-    end      
+    end
     
-    % Bold the Name of Existing Process 
-
-   if ~isempty(userData.crtPackage.processes_{i})
-       set(handles.(['checkbox_',num2str(i)]),'FontWeight','bold');
-   end
-
+    % Bold the Name of Existing Process
     
-    % Set Up Uicontrols Enable/Disable
-
-   % If process's sucess = 1, release the process from GUI enable/disable
-   % control
-   if ~isempty(userData.crtPackage.processes_{i}) && ...
-      userData.crtPackage.processes_{i}.success_ 
-       k(i) = 1;
-       set(handles.(['pushbutton_show_',num2str(i)]),'Enable','on');
-   end
-   
+    if ~isempty(userData.crtPackage.processes_{i})
+        set(handles.(['checkbox_',num2str(i)]),'FontWeight','bold');
+        % Set Up Uicontrols Enable/Disable
+        
+        % If process's sucess = 1, allow output visualizatoin
+        if userData.crtPackage.processes_{i}.success_
+            k(i) = 1;
+            set(handles.(['pushbutton_show_',num2str(i)]),'Enable','on');
+        end
+    end
+    
 end
 
 tempDependM = userData.dependM;
@@ -121,8 +119,6 @@ userfcn_enable(find (any(tempDependM==1,2)), 'off',handles);
 
 
 if strcmp(type, 'initialize')
-    
     userData.statusM(userData.id).Visited = true;
     set(handles.figure1, 'UserData', userData)
-
 end
