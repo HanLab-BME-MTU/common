@@ -1,4 +1,4 @@
-function testDistanceBezier()
+function distancePointBezierTest()
 
 clc;
 clear all;

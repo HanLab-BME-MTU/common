@@ -1,4 +1,4 @@
-function [P t res] = TLSFitBezierWeightedConstrainedCP(data, w, n, varargin)
+function [P t res] = TLSFitBezierWeightedConstrainedCP(data, w, n, maxCurvature, varargin)
 %
 % WORK IN PROGRESS!
 %
@@ -100,7 +100,7 @@ W = sparse(diag(w(:)));
 P = planePoints;
 
 resnormOld = -1;
-minRad = 800; % Minimal curvature radius
+minRad = 1/maxCurvature; % Minimal curvature radius
 
 for i=1:maxIter
     % Solve the non-linear optimization on t
