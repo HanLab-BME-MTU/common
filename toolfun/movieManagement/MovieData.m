@@ -46,20 +46,21 @@ classdef  MovieData < hgsetget
             %    channels - a Channel object or an array of Channels
             %    outputDirectory - a string containing the output directory
             %    OPTIONAL - a set of options under the property/key format 
-            
-            % Required input fields
-            obj.channels_ = channels;
-            obj.outputDirectory_ = outputDirectory;
-
-            % Construct the Channel object
-            nVarargin = numel(varargin);
-            if nVarargin > 1 && mod(nVarargin,2)==0
-                for i=1 : 2 : nVarargin-1
-                    obj.(varargin{i}) = varargin{i+1};
+            if nargin>0
+                % Required input fields
+                obj.channels_ = channels;
+                obj.outputDirectory_ = outputDirectory;
+                
+                % Construct the Channel object
+                nVarargin = numel(varargin);
+                if nVarargin > 1 && mod(nVarargin,2)==0
+                    for i=1 : 2 : nVarargin-1
+                        obj.(varargin{i}) = varargin{i+1};
+                    end
                 end
+                
+                obj.createTime_ = clock;
             end
-            
-            obj.createTime_ = clock;
         end
 
         %% Set/Get methods
