@@ -40,7 +40,7 @@ ip.addRequired('movieData',@(x) isa(x,'MovieData'));
 ip.addRequired('outputDirectory',@ischar);
 ip.addParamValue('cropROI',[1 1 movieData.imSize_(end:-1:1)],@(x) isvector(x) && numel(x)==4);
 ip.addParamValue('cropTOI',1:movieData.nFrames_,@isvector);
-ip.addParamValue('additionalFiles',{},@(x) iscell);
+ip.addParamValue('additionalFiles',{},@iscell);
 ip.parse(movieData,outputDirectory,varargin{:});
 cropROI=ip.Results.cropROI;
 cropTOI=ip.Results.cropTOI;
