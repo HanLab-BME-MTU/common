@@ -12,10 +12,10 @@ function makePackage(outDir)
 % 
 %   outDir - The directory to copy all the package files to.
 %
-%
-% Sebastien Besson, July 2011
 
-% List available packages
+% Sebastien Besson, July 2011 (last modified: Oct 3, 2011)
+
+% List available packages and additional files required for running them
 packages(5)=struct('name','','initFiles','','additionalFiles','');
 packages(1).name='Segmentation';
 packages(1).initFiles={'SegmentationPackage'};
@@ -31,7 +31,7 @@ packages(5).initFiles={'plusTipGetTracks';'plusTipSeeTracks';...
     'plusTipParamSweepGUI';'plusTipGroupAnalysis'};
 packages(5).additionalFiles = {'pTT_logo_sm.png';'help_icon.png'};
 
-% Retrieve the list of valid packages
+% List all valid packages on the machine
 isValidPackage=@(x)all(cellfun(@(y)exist(y,'file'),packages(x).initFiles));
 validPackages=arrayfun(isValidPackage,1:numel(packages));
 packages(~validPackages)=[];
@@ -73,15 +73,10 @@ packageDocs = cellfun(@(x,y) [x filesep 'doc' filesep y '.pdf'],...
 isGUIFile =logical(cellfun(@(x) exist([x(1:end-2) '.fig'],'file'),packageFuns));
 packageFigs = cellfun(@(x) [x(1:end-2) '.fig'],packageFuns(isGUIFile),'UniformOutput',false);
 
-% List all files which are neither M-files nor FIG-files nor MAT-files
-uniquePackageFunsExt = unique(packageFunsExt);
-matExt={'.fig';'.m';'.mat'};
-matExtIndx = ismember(uniquePackageFunsExt,matExt);
-mexExt=uniquePackageFunsExt(~matExtIndx);
-mexFunsIndx = find(ismember(packageFunsExt,mexExt));
-
-% Get all files in the same folder as these found MEX-files
-packageMexList=arrayfun(@(x)  dir([packageFunsPaths{x} filesep '*.*']),...
+% List all mex files in the package
+mexFunsExt={'.dll';'.mexglx';'.mexmaci';'.mexmaci64';'.mexa64';'.mexw64'};
+mexFunsIndx= find(ismember(packageFunsExt,mexFunsExt));
+packageMexList=arrayfun(@(x)  dir([packageFunsPaths{x} filesep packageFunsNames{x} '.*']),...
     mexFunsIndx,'Unif',false);
 packageMexFunsPaths=packageFunsPaths(mexFunsIndx);
 packageMexFunsNames = @(x) strcat([packageMexFunsPaths{x} filesep],...
@@ -89,10 +84,13 @@ packageMexFunsNames = @(x) strcat([packageMexFunsPaths{x} filesep],...
 packageMexFuns = arrayfun(@(x) packageMexFunsNames(x),1:numel(mexFunsIndx),'Unif',false);
 packageMexFuns =vertcat(packageMexFuns{:});
 
-% Remove C-files
+% Remove additional compilation files
 if ~isempty(packageMexFuns)
-    cFiles=~cellfun(@isempty,regexp(packageMexFuns,'.c$','once'));
-    packageMexFuns(cFiles)=[];
+    compFunsExt = {'.c';'.cpp';'.h';'.nb';'.m'};
+    for i=1:numel(compFunsExt)
+        indx = ~cellfun(@isempty,regexp(packageMexFuns,[compFunsExt{i} '$'],'once'));
+        packageMexFuns(indx)=[];
+    end
 end
 
 % Add additional files (not included in dependencies)
