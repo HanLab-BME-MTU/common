@@ -30,12 +30,11 @@ end
 
 %Removing mean and linear trend******
 X = X - repmat(mean(X),nobs,1);
-X=detrend(X,'linear');
+X = detrend(X,'linear');
 %************************************
 
-Coh=mscohere(X(:,1),X(:,2),[],[],[],Fs);%Coherence
-CrPS=cpsd(X(:,1),X(:,2),[],[],[],Fs);%Cross Spectrum
-Teta=angle(CrPS);%Cross-Spectrum angles
-CpCoh=sqrt(Coh).*exp(-1i*Teta);%Complex coherence
-
-out=-imag(sum( conj(CpCoh(1:end-1)).*CpCoh(2:end) ) );
+Coh   = mscohere(X(:,1),X(:,2),[],[],[],Fs);%Coherence
+CrPS  = cpsd(X(:,1),X(:,2),[],[],[],Fs);%Cross Spectrum
+Teta  = angle(CrPS);%Cross-Spectrum angles
+CpCoh = sqrt(Coh).*exp(-1i*Teta);%Complex coherence
+out   = -imag(sum( conj(CpCoh(1:end-1)).*CpCoh(2:end) ) );
