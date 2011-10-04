@@ -1,4 +1,4 @@
-function pValue=permTest(pop1,pop2)
+function [status,pValue]=permTest(pop1,pop2,alpha,varargin)
 % permTest performs a permutation test for means, returning the one-sided p-value
 %
 % the idea is to sample n1 and n2 values (with replacement) from the union
@@ -9,6 +9,15 @@ function pValue=permTest(pop1,pop2)
 % the one-sided p-value is then the proportion of sampled permutations
 % where the difference in means was greater than or equal to the absolute
 % value of the difference between the population means.
+
+% input check
+ip = inputParser;
+ip.addRequired('pop1',@isnumeric);
+ip.addRequired('pop2',@isnumeric);
+ip.addRequired('alpha',@iscalar);
+ip.addOptional('tail','both',@(x) any(strcmpi(x,{'both','right'})));
+ip.parse(pop1,pop2,alpha,varargin{:})
+tail=ip.Results.tail;
 
 nReps=1000;
 
@@ -35,6 +44,11 @@ end
 %pValue = sum(abs(delta)>deltaPop)/nReps;
 
 % calculate the one-sided p-value
-pValue = 1-normcdf(deltaPop,mean(delta),std(delta));
+if strcmpi(tail,'both')
+    pValue = 2*(1-normcdf(deltaPop,mean(delta),std(delta)));
+else
+    pValue = 1-normcdf(deltaPop,mean(delta),std(delta));
+end
 
+status = pValue<=alpha;
 %figure; hist(delta,25)

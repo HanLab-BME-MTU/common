@@ -198,7 +198,7 @@ switch whichTest
             kstest2(data1-groupMeans(1,1,2), data2-groupMeans(2,1,2));
     case 20
         % compare means: permutation test
-        pValue=permTest(data1,data2);
+        [~,pValue] = permTest(data1, data2, 0.05, 'both');
     case 21
         % compare distributions: calibrated KS-test
         pValue=distribTest(data1,data2); % here pValue is really the confidence value
