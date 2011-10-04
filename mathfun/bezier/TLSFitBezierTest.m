@@ -1,4 +1,4 @@
-function testTLSFitBezier(n)
+function TLSFitBezierTest(n)
 
 m = 60;
 x = linspace(0,2 * pi, m);

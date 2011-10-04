@@ -45,7 +45,7 @@ ip.addParamValue('TolFun', 1e-8, @isscalar);
 ip.parse(data, n, varargin{:});
 maxFunEvals = ip.Results.MaxFunEvals;
 % maxIter = ip.Results.MaxIter;
-maxIter = 10;
+maxIter = 100;
 % display = ip.Results.Display;
 display = 'off';
 tolX = ip.Results.TolX;
@@ -72,42 +72,44 @@ optsLin = optimset('Jacobian', 'on', ...
 [m dim] = size(data);
 Cnk = diag([1 cumprod(n:-1:1) ./ cumprod(1:n)]);
 
-% Fit a linear Bezier curve
-[x0,a,~,~] = ls3dline(data); % TODO: Replace with a weighted TLS fit
+% Fit a line
+% TODO: Replace with a weighted TLS fit
+[x0,a,~,~] = ls3dline(data); 
 [minPoint,maxPoint,~,~,~] = projectionPointsLineMinMax(data,x0',a');
 
-% Compute the constraints
+% Compute the planar constraints
 planeNormal = (maxPoint-minPoint);
 planePoints = repmat(minPoint,n+1,1) + repmat(1/n*(0:n)',1,dim) .* repmat(planeNormal,n+1,1);
 d = planePoints * planeNormal';
 
-% Degree of freedom reduction constraints
 Aeq_row = [planeNormal; zeros(n,dim)];
 Aeq_row = Aeq_row(:)';
-Aeq = Aeq_row;
+Aeq = zeros(n+1,(n+1)*dim);
+Aeq(1,:) = Aeq_row;
 for k=1:n
-    Aeq = [Aeq; circshift(Aeq_row,[0,k])];
+    Aeq(k+1,:) = circshift(Aeq_row,[0,k]);
 end
 beq = d;
 
-% Define initial vector of nodes t0
+% Define initial node vector t
 t = linspace(0,1,m)';
+
+% Initial control points P
+P = planePoints;
 
 % Compute the weights diagonal matrix
 W = sparse(diag(w(:)));
 
-% Initial set of control points
-P = planePoints;
+% Minimal curvature radius
+minRad = 1/maxCurvature; 
 
+% Value of the objective function
 resnormOld = -1;
-minRad = 1/maxCurvature; % Minimal curvature radius
 
 for i=1:maxIter
     % Solve the non-linear optimization on t
     Cn_1k = diag([1 cumprod(n-1:-1:1) ./ cumprod(1:n-1)]);
     fun = @(t) r(t, data, W, Cnk, Cn_1k, n, P);
-    %     lb = zeros(size(t));
-    %     ub = ones(size(t));
     lb = [];
     ub = [];
     [t, ~, res] = lsqnonlin(fun, t, lb, ub, opts);
@@ -118,9 +120,13 @@ for i=1:maxIter
     
     % Solve the linear optimization on P
     if n ~= 1
-        % Pseudo curvature constraints
-        len = norm(planeNormal);
-        alpha = boundingBoxSize(len,minRad);
+        % Deviation constraints
+        len = norm(planeNormal);        
+        if len < 2*minRad
+            alpha = minRad - sqrt(minRad^2-0.25*len^2);
+        else
+            alpha =  len/2;
+        end
         
         ub = planePoints+alpha;
         ub = ub(:);
@@ -138,9 +144,10 @@ for i=1:maxIter
         
         block = zeros(2^dim,(n+1)*dim);
         block(:,1:n+1:dim*(n+1)) = C;
-        A = block;
+        A = zeros((n+1)*2^dim,(n+1)*dim);
+        A(1:2^dim,:) = block;
         for d=1:n
-            A = [A; circshift(block,[0,d])];
+            A(d*2^dim+1:(d+1)*2^dim,:) = circshift(block,[0,d]);
         end
         
         b = sum(reshape(repmat(planePoints',2^dim,1),dim,2^dim*(n+1))'.*repmat(C,n+1,1),2)+sqrt(2)*alpha;
@@ -168,21 +175,14 @@ for i=1:maxIter
     
     P = reshape(P(1:end), [n+1,dim]);
     
-    % ---
-    
     % Solve the non-linear optimization on t
     Cn_1k = diag([1 cumprod(n-1:-1:1) ./ cumprod(1:n-1)]);
     fun = @(t) r(t, data, W, Cnk, Cn_1k, n, P);
-    %     lb = zeros(size(t));
-    %     ub = ones(size(t));
     lb = [];
     ub = [];
     [t, ~, res] = lsqnonlin(fun, t, lb, ub, opts);
     
-    % ---
-    
     if resnorm-resnormOld < tolFun
-        % disp('Exit criterion is satisfied!');
         break;
     else
         resnormOld = resnorm;
@@ -205,7 +205,7 @@ function [F J] = r(t, data, W, Cnk, Cn_1k, n, P)
 % Compute Bernstein Matrix
 B = (bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0)) * Cnk;
 
-% Compute the residual
+% Compute the residuals
 F = data - B * P;
 F = W * F(:);
 
@@ -217,12 +217,12 @@ if nargout > 1
     z = zeros(m,1);
     Bt = n * ([z Bn_1] - [Bn_1 z]);
     
+    % Compute the Jacobian matrix
     % TODO: Generalize to n dimensions
     if dim == 2
         J11 = W(1:m,1:m)*diag(-Bt * P(:,1));
         J21 = W(m+1:end,m+1:end)*diag(-Bt * P(:,2));
         J = [J11; J21];
-        
     elseif dim == 3
         J11 = W(1:m,1:m)*diag(-Bt * P(:,1));
         J21 = W(m+1:2*m,m+1:2*m)*diag(-Bt * P(:,2));

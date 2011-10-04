@@ -1,4 +1,4 @@
-function testTLSFitBezierWeightedConstraint1()
+function TLSFitBezierWeightedConstraint1Test()
 clc;
 clear all;
 
