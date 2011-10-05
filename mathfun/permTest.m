@@ -14,7 +14,7 @@ function [status,pValue]=permTest(pop1,pop2,alpha,varargin)
 ip = inputParser;
 ip.addRequired('pop1',@isnumeric);
 ip.addRequired('pop2',@isnumeric);
-ip.addRequired('alpha',@iscalar);
+ip.addRequired('alpha',@isscalar);
 ip.addOptional('tail','both',@(x) any(strcmpi(x,{'both','right'})));
 ip.parse(pop1,pop2,alpha,varargin{:})
 tail=ip.Results.tail;
