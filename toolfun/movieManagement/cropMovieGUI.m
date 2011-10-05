@@ -283,7 +283,7 @@ props = get(handles.listbox_additionalFiles,{'String','Value'});
 if isempty(props{1}), return; end
 files= props{1};
 files(props{2})=[];
-set(handles.listbox_additionalFiles,'String',files,'Value',props{2}-1);
+set(handles.listbox_additionalFiles,'String',files,'Value',max(1,props{2}-1));
 
 % --- Executes on button press in pushbutton_crop.
 function pushbutton_crop_Callback(hObject, eventdata, handles)
