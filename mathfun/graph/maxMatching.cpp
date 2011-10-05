@@ -15,7 +15,6 @@ using namespace lemon;
 using namespace std;
 
 // plhs[0] = M
-
 // prhs[0] = numVertices
 // prhs[1] = edges
 
