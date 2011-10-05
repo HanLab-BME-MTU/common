@@ -32,11 +32,36 @@
 % Usage for a single-channel img with mask and fixed sigma:
 % fitGaussians2D(img, x_v, y_v, 'sigma', sigma_v, 'mask', mask);
 
-% Francois Aguet, March 28 2011 (last modified: April 5 2011)
+% Francois Aguet, March 28 2011 (last modified: August 30 2011)
 
 function pStruct = fitGaussians2D(img, x, y, A, sigma, c, mode, varargin)
 
+% Parse inputs
+ip = inputParser;
+ip.CaseSensitive = false;
+ip.addRequired('img', @isnumeric);
+ip.addRequired('x');
+ip.addRequired('y');
+ip.addRequired('A');
+ip.addRequired('sigma');
+ip.addRequired('c');
+ip.addOptional('mode', 'xyAc', @ischar);
+ip.addParamValue('Alpha', 0.05, @isscalar);
+ip.addParamValue('Mask', [], @islogical);
+ip.parse(img, x, y, A, sigma, c, mode, varargin{:});
+
 np = length(x);
+sigma = ip.Results.sigma;
+if numel(sigma)==1
+    sigma = sigma*ones(1,np);
+end
+mode = ip.Results.mode;
+alpha = ip.Results.Alpha;
+if ~isempty(ip.Results.Mask)
+    labels = bwlabel(ip.Results.Mask);
+else
+    labels = zeros(size(img));
+end
 
 pStruct = struct('x', [], 'y', [], 'A', [], 's', [], 'c', [],...
     'x_pstd', [], 'y_pstd', [], 'A_pstd', [], 's_pstd', [], 'c_pstd', [],...
@@ -46,25 +71,6 @@ pStruct = struct('x', [], 'y', [], 'A', [], 's', [], 'c', [],...
 xi = round(x);
 yi = round(y);
 [ny,nx] = size(img);
-
-if mod(length(varargin),2)~=0
-    error('Optional arguments need to be entered as pairs.');
-end
-
-idx = find(strcmpi(varargin, 'alpha'));
-if ~isempty(idx)
-    alpha = varargin{idx+1};
-else
-    alpha = 0.05;
-end
-
-idx = find(strcmpi(varargin, 'mask'));
-if ~isempty(idx)
-    mask = varargin{idx+1};
-    labels = bwlabel(mask);
-else
-    labels = zeros(size(img));
-end
 
 kLevel = norminv(1-alpha/2.0, 0, 1); % ~2 std above background
 
@@ -158,7 +164,7 @@ for p = 1:np
         dx = prm(1);
         dy = prm(2);
         
-        % eliminate points where localization failed or which are close to image border
+        % exclude points where localization failed
         if (dx > -w2 && dx < w2 && dy > -w2 && dy < w2 && prm(3)<2*diff(iRange))
             
             pStruct.x(p) = xi(p) + dx;
