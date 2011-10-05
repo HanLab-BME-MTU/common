@@ -315,7 +315,7 @@ end
     
 % Call the crop routine
 MD = cropMovie(userData.MD,outputDirectory,'cropROI',userData.cropROI,...
-    'cropTOI',croiTOI,filesArgs{:});   
+    'cropTOI',cropTOI,filesArgs{:});   
 
 % If new MovieData was created (from movieSelectorGUI)
 if userData.mainFig ~=-1, 
