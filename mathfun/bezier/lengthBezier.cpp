@@ -68,5 +68,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     // BezierCurve3d accepts responsibility for deleting the input arrays
     
+    printf("Length internal: %f\n",*length);
+    
 }
 
