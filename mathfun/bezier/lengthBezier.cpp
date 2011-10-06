@@ -64,11 +64,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     // Create the Bezier curve, compute its length and set it as output
     BezierCurve3d bezierCurve = BezierCurve3d(nControlPoints-1, cPVector);
-    *length = abs(bezierCurve.GetLength(t0, t1));
+    *length = fabs(bezierCurve.GetLength(t0, t1));
     
     // BezierCurve3d accepts responsibility for deleting the input arrays
-    
-    printf("Length internal: %f\n",*length);
     
 }
 
