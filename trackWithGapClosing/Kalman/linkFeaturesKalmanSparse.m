@@ -640,6 +640,14 @@ clear costMat tmp
 trackedFeatureInfo = coordAmpMatFromIndicesSparse(trackedFeatureIndx,movieInfo,...
     numFrames,probDim);
 
+%take absolute value of all noise variances - this takes care of the
+%negative variances used to indicate first appearances
+if selfAdaptive && ~usePriorInfo
+    for iFrame = 1 : numFrames
+        kalmanFilterInfo(iFrame).noiseVar = abs(kalmanFilterInfo(iFrame).noiseVar);
+    end
+end
+
 
 %% %%%%% ~~ the end ~~ %%%%%
 

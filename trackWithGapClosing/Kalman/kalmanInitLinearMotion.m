@@ -91,16 +91,17 @@ if isfield(costMatParam,'kalmanInitParam')
     % min/max search radii
     if isfield(initParam,'searchRadiusFirstIteration')
         searchRadiusFirstIteration = initParam.searchRadiusFirstIteration;
-        noiseVarInit = (searchRadiusFirstIteration/brownStdMult)^2/probDim;
+        noiseVarInit = -(searchRadiusFirstIteration/brownStdMult)^2 / probDim; %negative to flag as first appearance
     else
-        noiseVarInit = (mean([minSearchRadius maxSearchRadius]) / brownStdMult) ^ 2;
+        noiseVarInit = (maxSearchRadius / brownStdMult) ^ 2 / probDim;
+        %         noiseVarInit = (mean([minSearchRadius maxSearchRadius]) / brownStdMult) ^ 2 / probDim;
     end
 
 else
     initParam.convergePoint = [];
     convergePoint = [];
     initVelGuess = [];
-    noiseVarInit = (mean([minSearchRadius maxSearchRadius]) / brownStdMult) ^ 2;
+    noiseVarInit = (mean([minSearchRadius maxSearchRadius]) / brownStdMult) ^ 2 / probDim;
 end
 
 if ~isempty(convergePoint)

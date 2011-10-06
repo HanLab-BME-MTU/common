@@ -1,10 +1,10 @@
-function [trackType,xyzVel,noiseStd,trackCenter,trackMeanDispMag,errFlag] = ...
-    estimTrackTypeParamLM2(trackedFeatIndx,trackedFeatInfo,...
+function [trackType,xyzVelS,xyzVelE,noiseStd,trackCenter,trackMeanDispMag,...
+    errFlag] = estimTrackTypeParamRDS(trackedFeatIndx,trackedFeatInfo,...
     kalmanFilterInfo,lenForClassify,probDim)
-%ESTIMTRACKTYPEPARAMLM2 ...
+%estimTrackTypeParamRDS ...
 %
-%SYNOPSIS [trackType,xyzVel,noiseStd,trackCenter,errFlag] = ...
-%    estimTrackTypeParamLM(trackedFeatIndx,trackedFeatInfo,...
+%SYNOPSIS [trackType,xyzVelS,xyzVelE,noiseStd,trackCenter,trackMeanDispMag,...
+%    errFlag] = estimTrackTypeParamRDS(trackedFeatIndx,trackedFeatInfo,...
 %    kalmanFilterInfo,lenForClassify,probDim)
 %
 %INPUT  trackedFeatIndx : Connectivity matrix of features between time
@@ -28,7 +28,8 @@ function [trackType,xyzVel,noiseStd,trackCenter,trackMeanDispMag,errFlag] = ...
 %       probDim        : Problem dimensionality. 2 (for 2D) or 3 (for 3D).
 %
 %OUTPUT trackType
-%       xyzVel
+%       xyzVelS
+%       xyzVelE
 %       noiseStd
 %       trackCenter
 %       trackMeanDispMag
@@ -39,7 +40,8 @@ function [trackType,xyzVel,noiseStd,trackCenter,trackMeanDispMag,errFlag] = ...
 %% Output
 
 trackType = [];
-xyzVel = [];
+xyzVelS = [];
+xyzVelE = [];
 noiseStd = [];
 trackCenter = [];
 errFlag = 0;
@@ -47,8 +49,8 @@ errFlag = 0;
 %% Input
 
 %check whether correct number of input arguments was used
-if nargin ~= nargin('estimTrackTypeParamLM2')
-    disp('--estimTrackTypeParamLM2: Incorrect number of input arguments!');
+if nargin ~= nargin('estimTrackTypeParamRDS')
+    disp('--estimTrackTypeParamRDS: Incorrect number of input arguments!');
     return
 end
 
@@ -59,7 +61,8 @@ end
 
 %reserve memory for output variables
 trackType = NaN(numTracksLink,1);
-xyzVel = zeros(numTracksLink,probDim);
+xyzVelS = zeros(numTracksLink,probDim);
+xyzVelE = zeros(numTracksLink,probDim);
 noiseStd = zeros(numTracksLink,1);
 trackCenter = zeros(numTracksLink,probDim);
 trackMeanDispMag = NaN(numTracksLink,1);
@@ -136,7 +139,10 @@ for iTrack = 1 : numTracksLink
         case 1 %if track is directed
             
             %assign velocity
-            xyzVel(iTrack,:) = kalmanFilterInfo(trackEndTime(...
+            xyzVelS(iTrack,:) = kalmanFilterInfo(trackStartTime(...
+                iTrack)).stateVec(trackedFeatIndx(iTrack,...
+                trackStartTime(iTrack)),probDim+1:2*probDim);
+            xyzVelE(iTrack,:) = kalmanFilterInfo(trackEndTime(...
                 iTrack)).stateVec(trackedFeatIndx(iTrack,...
                 trackEndTime(iTrack)),probDim+1:2*probDim);
             

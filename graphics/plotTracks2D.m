@@ -387,6 +387,8 @@ switch colorTime
             obsAvail = find(~isnan(tracksXP(:,i)));
             plot(axH,tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
             plot(axH,tracksXP(:,i),tracksYP(:,i),colorTime,'marker',markerType);
+            %             plot(axH,tracksXP(obsAvail,i),tracksYP(obsAvail,i),':','Color',[0.7 0.7 0.7]);
+            %             plot(axH,tracksXP(:,i),tracksYP(:,i),'marker',markerType,'Color',[0.7 0.7 0.7]);
         end
 
 end %(switch colorTime)
@@ -420,6 +422,8 @@ if mergeSplit
             %plot split as a dash-dotted line
             plot(axH,[tracksX(timeSplit,rowS) tracksX(timeSplit-1,rowSp)], ...
                 [tracksY(timeSplit,rowS) tracksY(timeSplit-1,rowSp)],'k-.');
+            %             plot(axH,[tracksX(timeSplit,rowS) tracksX(timeSplit-1,rowSp)], ...
+            %                 [tracksY(timeSplit,rowS) tracksY(timeSplit-1,rowSp)],'-.','Color',[0.7 0.7 0.7]);
 
         end
 
@@ -438,6 +442,8 @@ if mergeSplit
             %plot merge as a dashed line
             plot(axH,[tracksX(timeMerge-1,rowE) tracksX(timeMerge,rowM)], ...
                 [tracksY(timeMerge-1,rowE) tracksY(timeMerge,rowM)],'k--');
+            %             plot(axH,[tracksX(timeMerge-1,rowE) tracksX(timeMerge,rowM)], ...
+            %                 [tracksY(timeMerge-1,rowE) tracksY(timeMerge,rowM)],'--','Color',[0.7 0.7 0.7]);
 
         end
 

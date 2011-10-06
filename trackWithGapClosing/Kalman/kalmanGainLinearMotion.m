@@ -92,6 +92,12 @@ end
 
 %% Gain calculation and update
 
+%take absolute value of all noise variances - this takes care of the
+%negative variances used to indicate first appearances
+for iFrame = 1 : length(kalmanFilterInfoIn)
+    kalmanFilterInfoIn(iFrame).noiseVar = abs(kalmanFilterInfoIn(iFrame).noiseVar);
+end
+
 %copy kalmanFilterInfoIn into kalmanFilterInfoOut
 kalmanFilterInfoOut = kalmanFilterInfoIn;
 

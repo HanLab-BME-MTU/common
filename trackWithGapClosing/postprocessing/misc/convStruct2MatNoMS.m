@@ -34,7 +34,7 @@ for iTrack = 1 : numTracks
     startTime = tracksFinal(iTrack).seqOfEvents(1,1);
     endTime   = tracksFinal(iTrack).seqOfEvents(end,1);
     trackedFeatureInfo(iTrack,8*(startTime-1)+1:8*endTime) = ...
-        tracksFinal(iTrack).tracksCoordAmpCG;
+        tracksFinal(iTrack).tracksCoordAmpCG(1,:);
 end
 
 if nargout == 2
@@ -47,7 +47,7 @@ if nargout == 2
         startTime = tracksFinal(iTrack).seqOfEvents(1,1);
         endTime   = tracksFinal(iTrack).seqOfEvents(end,1);
         trackedFeatureIndx(iTrack,startTime:endTime) = ...
-            tracksFinal(iTrack).tracksFeatIndxCG;
+            tracksFinal(iTrack).tracksFeatIndxCG(1,:);
     end
     
 end

@@ -68,9 +68,6 @@ end
 %reserve memory for matrix of tracks
 trackedFeatureInfo = NaN(trackStartRow(end)+numSegments(end)-1,8*numTimePoints);
 
-%reserve memory for matrix of feature indices
-trackedFeatureIndx = zeros(trackStartRow(end)+numSegments(end)-1,numTimePoints);
-
 %reserve memory for matrix of aggregation state
 if calcAggregation
     aggregStateMat = NaN(trackStartRow(end)+numSegments(end)-1,numTimePoints);
@@ -83,14 +80,27 @@ for iTrack = 1 : numTracks
     trackedFeatureInfo(trackStartRow(iTrack):trackStartRow(iTrack)+...
         numSegments(iTrack)-1,8*(startTime-1)+1:8*endTime) = ...
         tracksFinal(iTrack).tracksCoordAmpCG;
-    trackedFeatureIndx(trackStartRow(iTrack):trackStartRow(iTrack)+...
-        numSegments(iTrack)-1,startTime:endTime) = ...
-        tracksFinal(iTrack).tracksFeatIndxCG;
     if calcAggregation
         aggregStateMat(trackStartRow(iTrack):trackStartRow(iTrack)+...
             numSegments(iTrack)-1,startTime:endTime) = ...
             tracksFinal(iTrack).aggregState;
     end
+end
+
+if nargout >= 2
+    
+    %reserve memory for matrix of feature indices
+    trackedFeatureIndx = zeros(trackStartRow(end)+numSegments(end)-1,numTimePoints);
+    
+    %put indices in matrix
+    for iTrack = 1 : numTracks
+        startTime = tracksFinal(iTrack).seqOfEvents(1,1) - firstFrame + 1;
+        endTime   = tracksFinal(iTrack).seqOfEvents(end,1) - firstFrame + 1;
+        trackedFeatureIndx(trackStartRow(iTrack):trackStartRow(iTrack)+...
+            numSegments(iTrack)-1,startTime:endTime) = ...
+            tracksFinal(iTrack).tracksFeatIndxCG;
+    end
+    
 end
 
 %% ~~~ the end ~~~

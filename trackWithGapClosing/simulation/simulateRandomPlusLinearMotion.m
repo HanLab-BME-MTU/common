@@ -110,14 +110,20 @@ while numTracksTmp < numTracks
     %hence calculate ending frame
     startframeTmp = startframeTmp(1:numAttempts);
     endframeTmp = startframeTmp + lifetimeTmp - 1;
+    
+    %make sure that starts and ends are within the movie time
+    startframeTmp = max(startframeTmp,1);
+    endframeTmp = min(endframeTmp,numF);
+    lifetimeTmp = endframeTmp - startframeTmp + 1;
 
     %retain only tracks that end after frame 1
-    indxKeep = find(endframeTmp >= 1);
+    %also retain only tracks that are at least 2 frames long
+    indxKeep = find(endframeTmp >= 1 & lifetimeTmp >= 2);
     numKeep = length(indxKeep);
     startframeTmp = startframeTmp(indxKeep);
     lifetimeTmp = lifetimeTmp(indxKeep);
     endframeTmp = endframeTmp(indxKeep);
-
+    
     %retain only the first numTracks tracks if there are that many
     startframe = [startframe; startframeTmp(1:min(numKeep,numTracks))];
     lifetime = [lifetime; lifetimeTmp(1:min(numKeep,numTracks))];
@@ -173,23 +179,43 @@ for iTrack = 1 : numTracks
         %if there are merges and splits
         if numMS > 0
 
-            %assign times when neighbor appears
-            timeMS = randsample((vis_startframe(iTrack)+2:2:vis_endframe(iTrack)-2)',numMS);
-
-            %add merges and splits to the sequence of events
-            seqOfEvents = [seqOfEvents; ...
-                [timeMS(1:numMS) ones(numMS,1) (1:numMS)'+1 ones(numMS,1)]; ... %all the splits
-                [timeMS(1:numMS)+6 2*ones(numMS,1) (1:numMS)'+1 ones(numMS,1)]]; %all the merges
-
-            %sort sequence of events in ascending order of time
-            [dummy,indx] = sort(seqOfEvents(:,1));
-            seqOfEvents = seqOfEvents(indx,:);
+            %get time points available for splitting
+            availableTimes = (vis_startframe(iTrack)+6:vis_endframe(iTrack)-14)';
             
-            %if any merge events take place after the end of the track
-            %convert them into simple ends
-            indxBad = find(seqOfEvents(:,1) > vis_endframe(iTrack));
-            seqOfEvents(indxBad,1) = vis_endframe(iTrack);
-            seqOfEvents(indxBad,4) = NaN;
+            if length(availableTimes) >= numMS
+                
+                %assign splitting times
+                if length(availableTimes)==1
+                    timeSplit = availableTimes;
+                else
+                    timeSplit = randsample(availableTimes,numMS);
+                end
+                
+                %assign merging times
+                timeMerge = timeSplit + 8;
+%                 timeMerge = timeSplit + round(rand(numMS,1)*3+5);
+                
+                %if any merges take place after the end of the track, remove
+                %both split and merge
+                indxGood = find(timeMerge < vis_endframe(iTrack));
+                timeSplit = timeSplit(indxGood);
+                timeMerge = timeMerge(indxGood);
+                numMS = length(indxGood);
+                
+                if numMS > 0
+                    
+                    %add merges and splits to the sequence of events
+                    seqOfEvents = [seqOfEvents; ...
+                        [timeSplit ones(numMS,1) (1:numMS)'+1 ones(numMS,1)]; ... %all the splits
+                        [timeMerge 2*ones(numMS,1) (1:numMS)'+1 ones(numMS,1)]]; %all the merges
+                    
+                    %sort sequence of events in ascending order of time
+                    [dummy,indx] = sort(seqOfEvents(:,1));
+                    seqOfEvents = seqOfEvents(indx,:);
+                    
+                end
+                
+            end
 
         end
         
@@ -201,6 +227,9 @@ for iTrack = 1 : numTracks
 end %(for iTrack = 1 : numTracks)
 
 %%   create trajectories for all objects in the list, and store them in tracksSim
+
+%initialize vector to store indices of tracks to remove in the end
+trackGood = ones(numTracks,1);
 
 %go over all objects ...
 for iTrack = 1 : numTracks
@@ -264,7 +293,49 @@ for iTrack = 1 : numTracks
         
     end %(if cnf > 1)
     
-    xyvecTraj = xyvecTraj + repmat(xystart,cnf,1); %add initial position
+    %add initial position
+    xyvecTraj = xyvecTraj + repmat(xystart,cnf,1);
+    
+    %find first point outside of the image area
+    indxBad = find( xyvecTraj(:,1)>lx | xyvecTraj(:,1)<1 | ...
+        xyvecTraj(:,2)>ly | xyvecTraj(:,2)<1,1,'first');
+    
+    %if there are points outside the image area
+    if ~isempty(indxBad)
+        
+        %remove them
+        xyvecTraj = xyvecTraj(1:indxBad-1,:);
+        
+        %update lifetime
+        cnf = size(xyvecTraj,1);
+        
+        %if lifetime is still larger than one
+        if cnf > 1
+            
+            %update lifetime and end frame
+            vis_lifetime(iTrack) = cnf;
+            vis_endframe(iTrack) = vis_startframe(iTrack) + cnf - 1;
+            
+            %update sequence of events to remove any events happening after
+            %the end of the track
+            indxBad = find(seqOfEvents(:,1)>vis_endframe(iTrack));
+            seqOfEvents(indxBad,1) = vis_endframe(iTrack);
+            seqOfEvents(indxBad,4) = NaN;
+            indxBadStart = seqOfEvents(seqOfEvents(:,1)==vis_endframe(iTrack)&...
+                seqOfEvents(:,2)==1,3);
+            for i = indxBadStart'
+                seqOfEvents(seqOfEvents(:,3)==i,:) = [];
+            end
+            tracksSim(iTrack).seqOfEvents = seqOfEvents;
+            
+        else
+            
+            trackGood(iTrack) = 0;
+            seqOfEvents = seqOfEvents(seqOfEvents(:,3)==1,:);
+            
+        end %(if cnf > 1)
+        
+    end %(if ~isempty(indxBad))
     
     %assign track intensity
     intVecTraj = [startInt(iTrack); intVec(1)+intVec(2)*randn(cnf-1,1)];
@@ -294,7 +365,7 @@ for iTrack = 1 : numTracks
             
             iSegment = seqOfEvents(indxSplits(iSplit),3);
             
-            %find merging time
+            %find merging/ending time
             timeEnd = seqOfEvents(seqOfEvents(:,3)==iSegment & seqOfEvents(:,2)==2 & ~isnan(seqOfEvents(:,4)),1) - 1;
             if isempty(timeEnd)
                 timeEnd = vis_endframe(iTrack);
@@ -311,8 +382,6 @@ for iTrack = 1 : numTracks
                 (timeEnd-vis_startframe(iTrack)+1)*8);
         end
         
-        %         tracksCoordAmpCG(2:end,:) = tracksCoordAmpCG(2:end,:) + randn(numSplits,8*cnf)*0.05;
-        
     else %no merges and splits
         
         tracksCoordAmpCG = NaN(1,8*cnf);
@@ -322,10 +391,14 @@ for iTrack = 1 : numTracks
         
     end
 
-    %savetrack in structure
+    %save track in structure
     tracksSim(iTrack).tracksCoordAmpCG = tracksCoordAmpCG;
 
 end
+
+%keep only good tracks
+tracksSim = tracksSim(trackGood==1);
+numTracks = length(tracksSim);
 
 %%   make simMPM out of tracksFinal
 

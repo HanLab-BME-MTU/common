@@ -63,31 +63,49 @@ end
 trackedFeatureInfo = NaN*ones(trackStartRow(end)+numSegments(end)-1,8*numFrames);
 
 for iTrack = 1 : numTracks
-
+    
     %get track's sequence of events and coordinates
     seqOfEvents = tracksSim(iTrack).seqOfEvents;
     tracksCoordAmpCG = tracksSim(iTrack).tracksCoordAmpCG;
-
+    
     %get track's start time and end time
     startTime = seqOfEvents(1,1);
     endTime = seqOfEvents(end,1);
-
-    %find starts and ends of segments making this compound track
-    indxSE = find(isnan(seqOfEvents(:,4)))';
     
-    %go over all starts/ends
-    for iSE = indxSE
+    %find starts of segments making this compound track
+    indxStart = find( seqOfEvents(:,2)==1 & isnan(seqOfEvents(:,4)) )';
+    
+    %go over all starts
+    for iSE = indxStart
         
-        %get frame of start/end and track segment involved
+        %get frame of start and track segment involved
         frameSE = seqOfEvents(iSE,1);
         segment1 = seqOfEvents(iSE,3);
         
-        %make the coordinates at the start/end negative
-        tracksCoordAmpCG(segment1,(frameSE-startTime)*8+1:(frameSE-startTime+1)*8) = ...
-            -abs(tracksCoordAmpCG(segment1,(frameSE-startTime)*8+1:(frameSE-startTime+1)*8));
+        %make the coordinates at the start negative
+        %also make the coordinate of the frame just after negative
+        tracksCoordAmpCG(segment1,(frameSE-startTime)*8+1:(frameSE-startTime+2)*8) = ...
+            -abs(tracksCoordAmpCG(segment1,(frameSE-startTime)*8+1:(frameSE-startTime+2)*8));
         
     end
+    
+    %find ends of segments making this compound track
+    indxEnd = find( seqOfEvents(:,2)==2 & isnan(seqOfEvents(:,4)) )';
+    
+    %go over all ends
+    for iSE = indxEnd
         
+        %get frame of end and track segment involved
+        frameSE = seqOfEvents(iSE,1);
+        segment1 = seqOfEvents(iSE,3);
+        
+        %make the coordinates at the end negative
+        %also make the coordinate of the frame just before negative
+        tracksCoordAmpCG(segment1,(frameSE-startTime-1)*8+1:(frameSE-startTime+1)*8) = ...
+            -abs(tracksCoordAmpCG(segment1,(frameSE-startTime-1)*8+1:(frameSE-startTime+1)*8));
+        
+    end
+    
     %find merges and splits happening in this compound track
     indxMS = find(~isnan(seqOfEvents(:,4)))';
 
@@ -98,12 +116,15 @@ for iTrack = 1 : numTracks
         frameMS = seqOfEvents(iMS,1);
         segment1 = seqOfEvents(iMS,3);
         segment2 = seqOfEvents(iMS,4);
+        
+        numCol = size(tracksCoordAmpCG,2);
 
         %make the coordinates just before/after a merge/split negative
-        tracksCoordAmpCG(segment1,(frameMS-startTime-1)*8+1:(frameMS-startTime+1)*8) = ...
-            -abs(tracksCoordAmpCG(segment1,(frameMS-startTime-1)*8+1:(frameMS-startTime+1)*8));
-        tracksCoordAmpCG(segment2,(frameMS-startTime-1)*8+1:(frameMS-startTime+1)*8) = ...
-            -abs(tracksCoordAmpCG(segment2,(frameMS-startTime-1)*8+1:(frameMS-startTime+1)*8));
+        %go 2 frames before and 2 frames after
+        tracksCoordAmpCG(segment1,(frameMS-startTime-2)*8+1:min(numCol,(frameMS-startTime+2)*8)) = ...
+            -abs(tracksCoordAmpCG(segment1,(frameMS-startTime-2)*8+1:min(numCol,(frameMS-startTime+2)*8)));
+        tracksCoordAmpCG(segment2,(frameMS-startTime-2)*8+1:min(numCol,(frameMS-startTime+2)*8)) = ...
+            -abs(tracksCoordAmpCG(segment2,(frameMS-startTime-2)*8+1:min(numCol,(frameMS-startTime+2)*8)));
 
     end
 

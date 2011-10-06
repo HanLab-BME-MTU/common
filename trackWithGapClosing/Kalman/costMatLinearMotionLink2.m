@@ -178,7 +178,7 @@ for iFeature = 1 : numFeaturesFrame1
     %get state vector and its covariance matrix of feature in 1st frame
     stateOld = kalmanFilterInfoFrame1.stateVec(iFeature,:)';
     stateCovOld = kalmanFilterInfoFrame1.stateCov(:,:,iFeature);
-    noiseVar = kalmanFilterInfoFrame1.noiseVar(:,:,iFeature);
+    noiseVar = abs(kalmanFilterInfoFrame1.noiseVar(:,:,iFeature));
     
     %go over all possible propagation schemes
     for iScheme = 1 : numSchemes
@@ -227,8 +227,11 @@ end
 
 %% Search radius
 
+%determine which features are not first appearances
+notFirstAppearance = squeeze(kalmanFilterInfoFrame1.noiseVar(1,1,:)) >= 0;
+
 %get the Kalman standard deviation of all features in frame 1
-kalmanStd = sqrt(probDim * squeeze(kalmanFilterInfoFrame1.noiseVar(1,1,:)));
+kalmanStd = sqrt(probDim * abs(squeeze(kalmanFilterInfoFrame1.noiseVar(1,1,:))));
 
 %copy brownStdMult into vector
 stdMultInd = repmat(brownStdMult,numFeaturesFrame1,1);
@@ -250,8 +253,8 @@ end
 %get the search radius of each feature in frame 1 and make sure it falls
 %within reasonable limits
 searchRadius = stdMultInd .* kalmanStd;
-searchRadius(searchRadius>maxSearchRadius) = maxSearchRadius;
-searchRadius(searchRadius<minSearchRadius) = minSearchRadius;
+searchRadius((searchRadius>maxSearchRadius)&notFirstAppearance) = maxSearchRadius;
+searchRadius((searchRadius<minSearchRadius)&notFirstAppearance) = minSearchRadius;
 
 %replicate the search radius to compare to cost matrix
 searchRadius = repmat(searchRadius,1,numFeaturesFrame2);

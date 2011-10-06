@@ -1,5 +1,8 @@
-function [fracLinksCorrect,fracLinksWrong,fracGapsCorrect,fracGapsWrong,...
-    fracLinksFP,fracGapsFP,aveRatioDisp2NNDist,ratioAveNNDist2MaxDisp] = summTrackPerformance(resultsSim)
+function [fracLinksCorrect,fracLinksWrong,fracLinksFP,...
+    fracGapsCorrect,fracGapsWrong,fracGapsFP,...
+    fracMSCorrect,fracMSWrongAndFP,...
+    aveRatioDisp2NNDist,ratioAveNNDist2MaxDisp] ...
+    = summTrackPerformance(resultsSim)
 
 n3 = size(resultsSim,3);
 
@@ -53,8 +56,10 @@ else %simulation with false positives
     
     [nFP,nMiss,nRun] = size(resultsSim);
     
-    [fracLinksCorrect,fracLinksWrong,fracGapsCorrect,fracGapsWrong,...
-        fracLinksFP,fracGapsFP] = deal(NaN(nMiss,nFP));
+    [fracLinksCorrect,fracLinksWrong,fracLinksFP,...
+        fracGapsCorrect,fracGapsWrong,fracGapsFP...
+        fracMSCorrect,fracMSWrongAndFP] ...
+        = deal(NaN(nMiss,nFP));
     
     for i = 1 : nFP
         for j = 1 : nMiss
@@ -75,6 +80,14 @@ else %simulation with false positives
         end
     end
     
+    for i = 1 : nFP
+        for j = 1 : nMiss
+            tmp = vertcat(resultsSim(i,j,:).mergeSplitStats0);
+            fracMSCorrect(j,i) = sum(tmp(:,3))/sum(tmp(:,1));
+            fracMSWrongAndFP(j,i) = (sum(tmp(:,2))-sum(tmp(:,3)))/sum(tmp(:,1));
+        end
+    end
+    
     tracks = resultsSim(1,1,1).tracksSimMiss;
     tracks = convStruct2MatNoMS(tracks);
     [numTrack,numFrames] = size(tracks);
@@ -86,7 +99,8 @@ else %simulation with false positives
         tracks = convStruct2MatNoMS(tracks);
         xCoord = tracks(:,1:8:end);
         yCoord = tracks(:,2:8:end);
-        displacement(:,:,i) = sqrt((diff(xCoord,[],2)).^2 + (diff(yCoord,[],2)).^2);
+        numRow = size(xCoord,1);
+        displacement(1:numRow,:,i) = sqrt((diff(xCoord,[],2)).^2 + (diff(yCoord,[],2)).^2);
         for j = 1 : numFrames-1
             indxGood = find(~isnan(xCoord(:,j)));
             nnDistFrame = createDistanceMatrix([xCoord(indxGood,j) ...
@@ -95,6 +109,8 @@ else %simulation with false positives
             nnDist(indxGood,j,i) = nnDistFrame(:,2);
         end
     end
+    displacement(displacement==0) = NaN;
+    nnDist(nnDist==0) = NaN;
     aveRatioDisp2NNDist = displacement ./ nnDist;
     aveRatioDisp2NNDist = nanmean(aveRatioDisp2NNDist(:));
     ratioAveNNDist2MaxDisp = nanmean(nnDist(:)) / max(displacement(:));

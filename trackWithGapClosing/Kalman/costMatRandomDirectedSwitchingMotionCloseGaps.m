@@ -183,7 +183,7 @@ linStdMult   = costMatParam.linStdMult;
 linScaling = costMatParam.linScaling;
 timeReachConfL = costMatParam.timeReachConfL;
 sin2AngleMax = (sin(costMatParam.maxAngleVV*pi/180))^2;
-sin2AngleMaxVD = 1;
+sin2AngleMaxVD = 0.5;
 nnWindow = costMatParam.nnWindow;
 if useLocalDensity
     closestDistScale = 2;
@@ -259,7 +259,7 @@ end
 
 %determine the types, velocities, noise stds, centers and mean
 %displacements of all tracks
-[trackType,xyzVel,noiseStd,trackCenter,trackMeanDispMag] = estimTrackTypeParamLM2(...
+[trackType,xyzVelS,xyzVelE,noiseStd,trackCenter,trackMeanDispMag] = estimTrackTypeParamRDS(...
     trackedFeatIndx,trackedFeatInfo,kalmanFilterInfo,lenForClassify,probDim);
 
 %if by chance some tracks are labeled linear when linearMotion=0, make them
@@ -288,13 +288,22 @@ noiseStd(indx) = trackMeanDispMag(indx)/sqrt(2);
 meanDispAllTracks = nanmean(trackMeanDispMag);
 
 %determine the search areas of all tracks
-[longVecSAll,longVecEAll,shortVecSAll,shortVecEAll,shortVecS3DAll,...
-    shortVecE3DAll,longVecSAllMS,longVecEAllMS,shortVecSAllMS,shortVecEAllMS,...
-    shortVecS3DAllMS,shortVecE3DAllMS] = getAveDispEllipseAll2(xyzVel,...
-    noiseStd,trackType,undetBrownStd,timeWindow,brownStdMult,linStdMult,...
-    timeReachConfB,timeReachConfL,minSearchRadius,maxSearchRadius,...
-    useLocalDensity,closestDistScale,maxStdMult,nnDistLinkedFeat,nnWindow,...
-    trackStartTime,trackEndTime,probDim,resLimit,brownScaling,linScaling);
+[longVecSAll,longVecEAll,...
+    shortVecSAll,shortVecEAll,...
+    shortVecS3DAll,shortVecE3DAll,...
+    longVecSAllMS,longVecEAllMS,...
+    shortVecSAllMS,shortVecEAllMS,...
+    shortVecS3DAllMS,shortVecE3DAllMS,...
+    longRedVecSAll,longRedVecEAll,...
+    longRedVecSAllMS,longRedVecEAllMS] = ...
+    ...
+    getSearchRegionRDS(...
+    ...
+    xyzVelS,xyzVelE,noiseStd,trackType,undetBrownStd,timeWindow,...
+    brownStdMult,linStdMult,timeReachConfB,timeReachConfL,...
+    minSearchRadius,maxSearchRadius,useLocalDensity,closestDistScale,...
+    maxStdMult,nnDistLinkedFeat,nnWindow,trackStartTime,trackEndTime,...
+    probDim,resLimit,brownScaling,linScaling,linearMotion);
 
 %% Gap closing
 
@@ -307,26 +316,32 @@ indxStart2 = [];
 %get the absolute upper limit of acceptable displacements in one frame
 %as the maximum of (maximum velocity multiplied by probDim*linStdMult(1),
 %maxSearchRadiusCG)
-maxDispAllowed = max(max(xyzVel(:)) * probDim * linStdMult(1), ...
-    maxSearchRadius);
+maxDispAllowed = max( max( abs([xyzVelS(:);xyzVelE(:)]) ) * probDim * linStdMult(1) * 3, ...
+    maxSearchRadius );
+% maxDispAllowed10 = 10 * maxDispAllowed;
 
 %go over all frames until the one before last
 for iFrame = 1 : numFrames - 1
-
+    
     %find tracks that end in this frame
     endsToConsider = tracksPerFrame(iFrame).ends;
     
     for jFrame = iFrame + 1 : min(iFrame+timeWindow,numFrames)
-
+        
         %find tracks that start in this frame
         startsToConsider = tracksPerFrame(jFrame).starts;
-
+        
         %calculate the distance between ends and starts
         dispMat2 = createDistanceMatrix(coordEnd(endsToConsider,:),...
             coordStart(startsToConsider,:));
         
         %find possible pairs
-        [indxEnd3,indxStart3] = find(dispMat2 <= maxDispAllowed * sqrt(jFrame-iFrame));
+        %         if (jFrame-iFrame) <= 2
+        %             [indxEnd3,indxStart3] = find(dispMat2 <= (maxDispAllowed10 * sqrt(jFrame-iFrame)));
+        %         else
+        tmpFrame = jFrame-iFrame;
+        [indxEnd3,indxStart3] = find(dispMat2 <= (maxDispAllowed * tmpFrame));
+        %         end
         if size(indxEnd3,1) == 1
             indxEnd3 = indxEnd3';
             indxStart3 = indxStart3';
@@ -350,7 +365,6 @@ clear dispMat2 maxDispAllowed
 indx1 = zeros(numPairs,1); %row number in cost matrix
 indx2 = zeros(numPairs,1); %column number in cost matrix
 cost  = zeros(numPairs,1); %cost value
-% timeGapAll = zeros(numPairs,1);
 
 %put time scaling of linear motion in a vector
 % timeScalingLin = ones(timeWindow,1);
@@ -362,6 +376,9 @@ timeScalingLin = [(1:timeReachConfL).^linScaling(1) ...
 timeScalingBrown = [(1:timeReachConfB).^brownScaling(1) ...
     (timeReachConfB)^brownScaling(1) * (2:timeWindow-timeReachConfB+1).^brownScaling(2)];
 
+% timeGapAll = [];
+% timeGapAll2 = [];
+
 %go over all possible pairs of starts and ends
 for iPair = 1 : numPairs
     
@@ -371,6 +388,7 @@ for iPair = 1 : numPairs
     
     %determine the time gap between them
     timeGap = trackStartTime(iStart) - trackEndTime(iEnd);
+    %     timeGapAll2 = [timeGapAll2; timeGap];
 
     %get the types of the two tracks
     trackTypeS = trackType(iStart);
@@ -378,15 +396,28 @@ for iPair = 1 : numPairs
     
     %calculate the vector connecting the end of track iEnd to the
     %start of track iStart and compute its magnitude
-    dispVec = coordEnd(iEnd,:) - coordStart(iStart,:);
+    dispVec = coordStart(iStart,:) - coordEnd(iEnd,:);
     dispVecMag = norm(dispVec);
 
+    %determine whether the connecting vector is parallel or anti-parallel
+    %to the tracks' directions of motion
+    parallelToS = (dispVec * xyzVelS(iStart,:,1)') > 0;
+    parallelToE = (dispVec * xyzVelE(iEnd,:,1)') > 0;
+    
     %determine the search area of track iStart
-    longVecS = longVecSAll(:,timeGap,iStart);
+    if linearMotion == 1 && ~parallelToS
+        longVecS = longRedVecSAll(:,timeGap,iStart);
+    else
+        longVecS = longVecSAll(:,timeGap,iStart);
+    end
     shortVecS = shortVecSAll(:,timeGap,iStart);
-
+        
     %determine the search area of track iEnd
-    longVecE = longVecEAll(:,timeGap,iEnd);
+    if linearMotion == 1 && ~parallelToE
+        longVecE = longRedVecEAll(:,timeGap,iEnd);
+    else
+        longVecE = longVecEAll(:,timeGap,iEnd);
+    end
     shortVecE = shortVecEAll(:,timeGap,iEnd);
 
     %calculate the magnitudes of the long and short search vectors
@@ -422,19 +453,26 @@ for iPair = 1 : numPairs
     end
     
     %calculate the vector connecting the centers of the two tracks
-    cen2cenVec = trackCenter(iStart,:) - trackCenter(iEnd,:);
+    %     cen2cenVec = trackCenter(iStart,:) - trackCenter(iEnd,:);
+    cen2cenVec = dispVec;
     cen2cenVecMag = sqrt(cen2cenVec * cen2cenVec');
     
     %decide whether this is a possible link based on the types of
     %the two tracks
     switch trackTypeE
+        
         case 1 %if end is directed
+            
             switch trackTypeS
+                
                 case 1 %if start is directed
                     
+                    %calculate the cosine of the angle between velocity
+                    %vectors
+                    cosAngle = longVecE' * longVecS / (longVecMagE * longVecMagS);
+                    
                     %calculate the square sine of the angle between velocity vectors
-                    sin2Angle = 1 - (longVecE' * longVecS / ...
-                        (longVecMagE * longVecMagS))^2;
+                    sin2Angle = 1 - cosAngle^2;
                     
                     %calculate the square sine of the angle between each
                     %motion direction vector and the center-to-center vector
@@ -443,118 +481,184 @@ for iPair = 1 : numPairs
                     sin2AngleS = 1 - (cen2cenVec * longVecS / ...
                         (longVecMagS * cen2cenVecMag))^2;
 
-                    %check whether the end of track iEnd is within the search
-                    %rectangle of the start of track iStart and vice versa,
-                    %whether the angle between the two directions of motion
-                    %is within acceptable bounds, and whether the angle
-                    %between directions of motion and vector connecting end
-                    %and start is within acceptable bounds
-                    possibleLink = ((projEndLong <= longVecMagE && ...
-                        projEndShort <= shortVecMagE && ...
-                        projEndShort3D <= shortVecMagE3D) && ...
-                        (projStartLong <= longVecMagS && ...
-                        projStartShort <= shortVecMagS && ...
-                        projStartShort3D <= shortVecMagS3D)) && ...
-                        sin2Angle <= sin2AngleMax && ...
-                        (sin2AngleE <= sin2AngleMaxVD && ...
-                        sin2AngleS <= sin2AngleMaxVD);
+                    %check whether 
+                    %(1) the end of track iEnd is within the search
+                    %rectangle of the start of track iStart,
+                    %(2) the start of track iStart is within the search
+                    %rectangle of the end of track iEnd,
+                    %(3) the angle between the two directions of motion
+                    %is within acceptable bounds, and 
+                    %(4) the angle between directions of motion and vector
+                    %connecting end and start is within acceptable bounds
+                    possibleLink = ...
+                        ((projEndLong <= longVecMagE) && ...
+                        (projEndShort <= shortVecMagE) && ...
+                        (projEndShort3D <= shortVecMagE3D)) && ...
+                        ...
+                        ((projStartLong <= longVecMagS) && ...
+                        (projStartShort <= shortVecMagS) && ...
+                        (projStartShort3D <= shortVecMagS3D)) && ...
+                        ...
+                        (sin2Angle <= sin2AngleMax) && ...
+                        ...
+                        ((sin2AngleE <= sin2AngleMaxVD) && ...
+                        (sin2AngleS <= sin2AngleMaxVD));
+                    
+                    %for directed motion without switching, only allow
+                    %links between tracks moving in the same direction
+                    if linearMotion == 1
+                        possibleLink = possibleLink && (cosAngle >= 0);
+                    end
                     
                 case 0 %if start is Brownian
 
                     %calculate the square sine of the angle between the
-                    %end's motion direction vector and the displacement vector
+                    %end's motion direction vector and the center-to-center
+                    %vector
                     sin2AngleE = 1 - (cen2cenVec * longVecE / ...
                         (longVecMagE * cen2cenVecMag))^2;
 
-                    %check whether the start of track iStart is within the
-                    %search rectangle of the end of track iEnd, whether the
-                    %end of track iEnd is within the search disc of the start
-                    %of track iStart, and whether the angle between directions 
-                    %of motion and vector connecting end and start is 
-                    %within acceptable bounds
-                    possibleLink = ((projEndLong <= longVecMagE && ...
-                        projEndShort <= shortVecMagE && ...
-                        projEndShort3D <= shortVecMagE3D) && ...
-                        dispVecMag <= longVecMagS) && ...
-                        sin2AngleE <= sin2AngleMaxVD;
+                    %check whether
+                    %(1) the start of track iStart is within the
+                    %search rectangle of the end of track iEnd
+                    %(2) the end of track iEnd is within the search disc
+                    %of the start of track iStart, and
+                    %(3) the angle between end's direction of motion and
+                    %vector connecting end and start is within acceptable
+                    %bounds
+                    possibleLink = ...
+                        ((projEndLong <= longVecMagE) && ...
+                        (projEndShort <= shortVecMagE) && ...
+                        (projEndShort3D <= shortVecMagE3D)) && ...
+                        ...
+                        (dispVecMag <= longVecMagS) && ...
+                        ...
+                        (sin2AngleE <= sin2AngleMaxVD);
 
                 otherwise %if start is undetermined
 
                     %calculate the square sine of the angle between the
-                    %end's motion direction vector and the displacement vector
+                    %end's motion direction vector and the center-to-center
+                    %vector
                     sin2AngleE = 1 - (cen2cenVec * longVecE / ...
                         (longVecMagE * cen2cenVecMag))^2;
 
-                    %check whether the start of track iStart is within the search
-                    %rectangle of the end of track iEnd, and whether the 
-                    %angle between directions of motion and vector
-                    %connecting end and start is within acceptable bounds
-                    possibleLink = (projEndLong <= longVecMagE && ...
-                        projEndShort <= shortVecMagE && ...
-                        projEndShort3D <= shortVecMagE3D) && ...
-                        sin2AngleE <= sin2AngleMaxVD;
-
-            end
+                    %check whether
+                    %(1) the start of track iStart is within the search
+                    %rectangle of the end of track iEnd,
+                    %(2) the end of track iEnd is within the search disc
+                    %of the start of track iStart, and -- NO MORE
+                    %(3) the angle between end's direction of motion and
+                    %vector connecting end and start is within acceptable
+                    %bounds
+                    possibleLink = ...
+                        ((projEndLong <= longVecMagE) && ...
+                        (projEndShort <= shortVecMagE) && ...
+                        (projEndShort3D <= shortVecMagE3D)) && ...
+                        ...
+                        (sin2AngleE <= sin2AngleMaxVD);
+                    %                         ...
+                    %                         (dispVecMag <= longVecMagS) && ...
+                    
+            end %(switch trackTypeS)
+            
         case 0 %if end is Brownian
+            
             switch trackTypeS
+                
                 case 1 %if start is directed
-
+                    
                     %calculate the square sine of the angle between the
-                    %start's motion direction vector and the displacement vector
+                    %start's motion direction vector and the
+                    %center-to-center vector
                     sin2AngleS = 1 - (cen2cenVec * longVecS / ...
                         (longVecMagS * cen2cenVecMag))^2;
-
-                    %check whether the end of track iEnd is within the search
-                    %rectangle of the start of track iStart, whether the
-                    %start of track iStart is within the search disc of the
-                    %end of track iEnd, and whether the angle between
-                    %directions of motion and vector connecting end and
-                    %start is within acceptable bounds
-                    possibleLink = ((projStartLong <= longVecMagS && ...
-                        projStartShort <= shortVecMagS && ...
-                        projStartShort3D <= shortVecMagS3D) && ...
-                        dispVecMag <= longVecMagE) && ...
-                        sin2AngleS <= sin2AngleMaxVD;
-
+                    
+                    %check whether
+                    %(1) the end of track iEnd is within the search
+                    %rectangle of the start of track iStart,
+                    %(2) the start of track iStart is within the search
+                    %disc of the end of track iEnd, and
+                    %(3) the angle between start's direction of motion and
+                    %vector connecting end and start is within acceptable
+                    %bounds
+                    possibleLink = ...
+                        (dispVecMag <= longVecMagE) && ...
+                        ...
+                        ((projStartLong <= longVecMagS) && ...
+                        (projStartShort <= shortVecMagS) && ...
+                        (projStartShort3D <= shortVecMagS3D)) && ...
+                        ...
+                        (sin2AngleS <= sin2AngleMaxVD);
+                    
                 case 0 %if start is Brownian
-
+                    
                     %check whether the end of track iEnd is within the search
                     %disc of the start of track iStart and vice versa
-                    possibleLink = (dispVecMag <= longVecMagE) && ...
+                    possibleLink = ...
+                        (dispVecMag <= longVecMagE) && ...
                         (dispVecMag <= longVecMagS);
-
+                    
                 otherwise %if start is undetermined
-
-                    %check whether the start of track iStart is within the search
-                    %disc of the end of track iEnd
-                    possibleLink = dispVecMag <= longVecMagE;
-
-            end
+                    
+                    %check whether the end of track iEnd is within the search
+                    %disc of the start of track iStart and vice versa -- NO
+                    %MORE START
+                    possibleLink = ...
+                        (dispVecMag <= longVecMagE); % && ...
+                    %                         (dispVecMag <= longVecMagS);
+                    
+            end %(switch trackTypeS)
+            
         otherwise %if end is undetermined
-
+            
             switch trackTypeS
+                
                 case 1 %if start is directed
-
+                    
                     %calculate the square sine of the angle between the
-                    %start's motion direction vector and the displacement vector
+                    %start's motion direction vector and the
+                    %center-to-center vector
                     sin2AngleS = 1 - (cen2cenVec * longVecS / ...
                         (longVecMagS * cen2cenVecMag))^2;
-
-                    %check whether the end of track iEnd is within the search
-                    %rectangle of the start of track iStart
-                    possibleLink = (projStartLong <= longVecMagS && ...
-                        projStartShort <= shortVecMagS && ...
-                        projStartShort3D <= shortVecMagS3D) && ...
-                        sin2AngleS <= sin2AngleMaxVD;
-
-                otherwise %if start is Brownian or undetermined
-
-                    %check whether the end of track iEnd is within the search
-                    %disc of the start of track iStart
-                    possibleLink = dispVecMag <= longVecMagS;
                     
-            end
-    end
+                    %check whether
+                    %(1) the end of track iEnd is within the search
+                    %rectangle of the start of track iStart,
+                    %(2) the start of track iStart is within the search
+                    %disc of the end of track iEnd, and -- NO MORE
+                    %(3) the angle between start's direction of motion and
+                    %vector connecting end and start is within acceptable
+                    %bounds
+                    possibleLink = ...
+                        ((projStartLong <= longVecMagS) && ...
+                        (projStartShort <= shortVecMagS) && ...
+                        (projStartShort3D <= shortVecMagS3D)) && ...
+                        ...
+                        (sin2AngleS <= sin2AngleMaxVD);
+                    %                         (dispVecMag <= longVecMagE) && ...
+                    %                         ...
+                    
+                case 0 %if start is Brownian
+                    
+                    %check whether the end of track iEnd is within the search
+                    %disc of the start of track iStart and vice versa -- NO
+                    %MORE END
+                    possibleLink = ...
+                        (dispVecMag <= longVecMagS);
+                    %                         (dispVecMag <= longVecMagE) && ...
+                    
+                otherwise %if start is undetermined
+                    
+                    %check whether the end of track iEnd is within the search
+                    %disc of the start of track iStart and vice versa
+                    possibleLink = ...
+                        (dispVecMag <= longVecMagE) && ...
+                        (dispVecMag <= longVecMagS);
+                    
+            end %(switch trackTypeS)
+            
+    end %(switch trackTypeE)
     
     %if this is a possible link ...
     if possibleLink
@@ -571,17 +675,21 @@ for iPair = 1 : numPairs
         if trackTypeE == 1 && trackTypeS == 1
             cost12 = dispVecMag2 * (1 + mean([sin2Angle sin2AngleE sin2AngleS])) ...
                 / (timeScalingLin(timeGap) * meanDisp2Tracks)^2;
+            %                 / (meanDisp2Tracks)^2;
         elseif trackTypeE == 1
             cost12 = dispVecMag2 * (1 + sin2AngleE) ...
                 / (mean([timeScalingLin(timeGap)*meanDispTrack2 ...
-                timeScalingBrown(timeGap)*meanDisp2Tracks]))^2;
+                timeScalingBrown(timeGap)*meanDispTrack1]))^2;
+            %                 / (meanDisp2Tracks)^2;
         elseif trackTypeS == 1
             cost12 = dispVecMag2 * (1 + sin2AngleS) ...
                 / (mean([timeScalingLin(timeGap)*meanDispTrack1 ...
-                timeScalingBrown(timeGap)*meanDisp2Tracks]))^2;
+                timeScalingBrown(timeGap)*meanDispTrack2]))^2;
+            %                 / (meanDisp2Tracks)^2;
         else
             cost12 = dispVecMag2 ...
                 / (timeScalingBrown(timeGap) * meanDisp2Tracks)^2;
+            %                 / (meanDisp2Tracks)^2;
         end
         
         %penalize cost for lifetime considerations
@@ -595,17 +703,17 @@ for iPair = 1 : numPairs
             %penalize cost for gap length considerations
             cost12 = cost12 * gapPenalty^(timeGap-1);
             
+            %store time gap
+            %             timeGapAll = [timeGapAll; timeGap];
+            
             %add this cost to the list of costs
             cost(iPair) = cost12;
-            %             timeGapAll(iPair) = timeGap;
             
             %specify the location of this pair in the cost matrix
             indx1(iPair) = iEnd; %row number
             indx2(iPair) = iStart; %column number
             
         end
-        
-        %         end %(if dispVecMag <= meanDisp2Tracks*sqrt(timeGap)*10)
         
     end %(if possibleLink)
     
@@ -616,8 +724,6 @@ possiblePairs = find(indx1 ~= 0);
 indx1 = indx1(possiblePairs);
 indx2 = indx2(possiblePairs);
 cost  = cost(possiblePairs);
-
-% timeGapAll = timeGapAll(possiblePairs);
 
 clear possiblePairs
 
@@ -637,8 +743,8 @@ if mergeSplit > 0
     %get the absolute upper limit of acceptable displacements in one frame
     %as the maximum of (maximum velocity multiplied by probDim*linStdMult(1),
     %maxSearchRadiusCG)
-    maxDispAllowed = max(max(xyzVel(:)) * probDim * linStdMult(1), ...
-        maxSearchRadius);
+    maxDispAllowed = max( max( abs([xyzVelS(:);xyzVelE(:)]) ) * probDim * linStdMult(1), ...
+        maxSearchRadius );
     maxDispAllowed = max(maxDispAllowed,resLimit);
 
     %costs of merging
@@ -690,12 +796,20 @@ if mergeSplit > 0
 
                 %calculate the vector connecting the end of track iEnd to the
                 %point of merging and compute its magnitude
-                dispVec = coordEnd(iEnd,:) - full(trackedFeatInfo(iMerge,...
-                    timeIndx+1:timeIndx+probDim));
+                dispVec = full(trackedFeatInfo(iMerge,timeIndx+1:timeIndx+probDim)) ...
+                    - coordEnd(iEnd,:);
                 dispVecMag = sqrt(dispVec * dispVec');
 
-                %determine the search ellipse of track iEnd
-                longVecE = longVecEAllMS(:,1,iEnd);
+                %determine whether the connecting vector is parallel or anti-parallel
+                %to the ending track's direction of motion
+                parallelToE = (dispVec * xyzVelE(iEnd,:,1)') > 0;
+                
+                %determine the search area of track iEnd
+                if linearMotion == 1 && ~parallelToE
+                    longVecE = longRedVecEAllMS(:,1,iEnd);
+                else
+                    longVecE = longVecEAllMS(:,1,iEnd);
+                end
                 shortVecE = shortVecEAllMS(:,1,iEnd);
 
                 %calculate the magnitudes of the long and short search vectors
@@ -754,7 +868,8 @@ if mergeSplit > 0
                     end
 
                     %calculate the vector connecting the centers of the two tracks
-                    cen2cenVec = trackCenter(iEnd,:) - trackCenter(iMerge,:);
+                    %                     cen2cenVec = trackCenter(iEnd,:) - trackCenter(iMerge,:);
+                    cen2cenVec = dispVec;
                     cen2cenVecMag = sqrt(cen2cenVec * cen2cenVec');
 
                     %calculate the square sine of the angle between the
@@ -973,8 +1088,16 @@ if mergeSplit > 0
                     timeIndx+1:timeIndx+probDim));
                 dispVecMag = sqrt(dispVec * dispVec');
 
-                %determine the search ellipse of track iStart
-                longVecS = longVecSAllMS(:,1,iStart);
+                %determine whether the connecting vector is parallel or anti-parallel
+                %to the starting track's direction of motion
+                parallelToS = (dispVec * xyzVelS(iStart,:,1)') > 0;
+                
+                %determine the search area of track iStart
+                if linearMotion == 1 && ~parallelToS
+                    longVecS = longRedVecSAllMS(:,1,iStart);
+                else
+                    longVecS = longVecSAllMS(:,1,iStart);
+                end
                 shortVecS = shortVecSAllMS(:,1,iStart);
 
                 %calculate the magnitudes of the long and short search vectors
@@ -1033,7 +1156,8 @@ if mergeSplit > 0
                     end
 
                     %calculate the vector connecting the centers of the two tracks
-                    cen2cenVec = trackCenter(iStart,:) - trackCenter(iSplit,:);
+                    %                     cen2cenVec = trackCenter(iStart,:) - trackCenter(iSplit,:);
+                    cen2cenVec = dispVec;
                     cen2cenVecMag = sqrt(cen2cenVec * cen2cenVec');
 
                     %calculate the square sine of the angle between the
@@ -1060,7 +1184,8 @@ if mergeSplit > 0
                         ampRatio >= minAmpRatio && ampRatio <= maxAmpRatio && ...
                         ampRatioIndSpS > 1 && ampRatioIndSpSp1 > 1 && ...
                         abs(ampRatio-1) < abs(ampRatioIndSpSp1-1);
-                else
+                    
+                else %if starting track is Brownian or undetermined
 
                     %assign the dummy value of zero to sin2AngleS
                     sin2AngleS = 0;
@@ -1219,6 +1344,7 @@ extraCol = (numPotAssignColAll-numPartCol)/numPotAssignColAll;
 numPartRow = length(numPotAssignRow) * 2;
 extraRow = (numPotAssignRowAll-numPartRow)/numPotAssignRowAll;
 prctile2use = min(100, 100 - mean([extraRow extraCol])*100);
+
 costBD = 1.05*prctile(cost(:),prctile2use);
 
 %get the cost for the lower right block
