@@ -1,4 +1,5 @@
 function Y = renderBezier(P, t)
+% function Y = renderBezier(P, t)
 % renderBezier evaluates the Bezier curve at the positions defined by the 
 % node vector t.
 %

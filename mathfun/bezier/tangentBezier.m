@@ -1,4 +1,5 @@
 function [T,normalT] = tangentBezier(P, t)
+% function [T,normalT] = tangentBezier(P, t)
 % tangentBezier computes the unnormalized and normalized tangent vector at 
 % the positions defined by the node vector t.
 %
