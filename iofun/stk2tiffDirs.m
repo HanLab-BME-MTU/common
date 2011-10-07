@@ -20,9 +20,21 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addOptional('path', [], @(x) ischar(x) || isempty(x) || iscell(x));
 ip.addParamValue('Crop', 'off', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
+ip.addParamValue('Channels', 1, @isscalar);
+ip.addParamValue('ChannelOrder', 'interleaved', @(x) any(strcmpi(x, {'interleaved', 'consecutive'})));
+ip.addParamValue('ChannelNames', cell(1));
 ip.parse(varargin{:});
 stkpath = ip.Results.path;
 crop = ip.Results.Crop;
+nc = ip.Results.Channels;
+cdir = ip.Results.ChannelNames;
+if nc>1
+    if isempty(cdir{1})
+        cdir = arrayfun(@(i) ['c' num2str(i) filesep], 1:nc, 'UniformOutput', false);
+    else
+        cdir = cellfun(@(i) [i filesep], cdir, 'UniformOutput', false);
+    end
+end
 
 if isempty(stkpath)
    stkpath = uigetdir('Select directory containing the STK files:'); 
@@ -42,12 +54,11 @@ stkList = [dir([stkpath '*.tif']) dir([stkpath '*.tiff']) dir([stkpath '*.stk'])
 
 N = length(stkList);
 
+
+
 for k = 1:N
     fprintf('Converting: %s\n', stkList(k).name);
     [~,stkname] = fileparts(stkList(k).name);
-    dirname = [stkpath stkname filesep];
-    [~,~] = mkdir(dirname);
-    
     stack = stackRead([stkpath stkList(k).name]);
     
     if strcmpi(ip.Results.Crop, 'on')
@@ -59,8 +70,19 @@ for k = 1:N
        stack = stack(pos(2):pos(2)+pos(4), pos(1):pos(1)+pos(3),:);
     end
     
-    nf = size(stack,3);  
-    for z = 1:nf
-        imwrite(stack(:,:,z), [dirname stkname '_' num2str(z, ['%0' num2str(length(num2str(nf))) 'd']) '.tif'], 'tif');
-    end;
-end;
+    nf = size(stack,3) / nc;
+    if strcmpi(ip.Results.ChannelOrder, 'interleaved')
+        idx = @(c,f) c+(f-1)*nc;
+    else % consecutive channels
+        idx = @(c,f) f+(c-1)*nf;
+    end
+    
+    fmt = ['%0' num2str(length(num2str(nf))) 'd'];
+    for c = 1:nc
+        destdir = [stkpath stkname filesep cdir{c}];
+        [~,~] = mkdir(destdir);
+        for f = 1:nf
+            imwrite(stack(:,:,idx(c,f)), [destdir stkname '_' num2str(f, fmt) '.tif'], 'tif');
+        end
+    end
+end
