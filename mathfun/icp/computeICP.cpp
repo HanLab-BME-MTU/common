@@ -5,8 +5,11 @@
 # include <vector.hpp>
 # include <matrix.hpp>
 # include <quaternion.hpp>
-# include <kdtree.hpp>
+# include <KDTree.hpp>
 # include <jacobi.hpp>
+
+// Compilation line:
+// mex -I. -I../kdtree -I../../mex/include/c++ computeICP.cpp
 
 void mexFunction(int nlhs, mxArray *plhs[],
 		 int nrhs, const mxArray *prhs[])
@@ -56,12 +59,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
   double tol = *mxGetPr(prhs[3]);
 
   // Build the kd-tree
-
-  // Note: we copy the set X into Xtmp since the kdtree construction
-  // shuffles the set of points. If X is not use after the kdtree
-  // construction, this copy becomes useless.
-  std::vector< vector<3, double> > X_tmp(X);
-  KDTree<3, double>* tree = new kdtree<3, double>(X_tmp.begin(), X_tmp.end());
+  KDTree<3, double> kdtree(X);
 
   // Resolve ICP
 
@@ -87,7 +85,12 @@ void mexFunction(int nlhs, mxArray *plhs[],
   double dk_old = std::numeric_limits<double>::max();
   double dk = 0;
   for (int i = 0; i < n_data; ++i)
-    dk += tree->closest_point(Pk[i], Y[i]);
+    {
+      KDTree<3,double>::pair_type pair = kdtree.closest_point(Pk[i]);
+
+      dk += pair.first;
+      Y[i] = X[pair.second];
+    }
   dk /= (double) n_data;
   
   while (iter++ < max_iter && fabs(dk) > eps && (dk_old - dk) / dk > tol)
@@ -149,7 +152,12 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
       dk = 0;
       for (int i = 0; i < n_data; ++i)
-	dk += tree->closest_point(Pk[i], Y[i]);
+	{
+	  KDTree<3,double>::pair_type pair = kdtree.closest_point(Pk[i]);
+
+	  dk += pair.first;
+	  Y[i] = X[pair.second];
+	}
       dk /= (double) n_data;
     }
 
@@ -174,8 +182,4 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	}	
 		
     }
-	
-  // Clear kd-tree
-
-  delete tree;
 }
