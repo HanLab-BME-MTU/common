@@ -75,13 +75,9 @@ set(handles.figure1, 'UserData', userData);
 % --- Executes on Save button press or File>Save
 function save_Callback(~, ~, handles)
 userData = get(handles.figure1, 'UserData');
-
-for i = 1: length(userData.MD)
-    userData.MD(i).save;
-end
-
 set(handles.text_saveStatus, 'Visible', 'on')
-pause(1)
+arrayfun(@save,userData.MD);
+pause(.3)
 set(handles.text_saveStatus, 'Visible', 'off')
 
 
@@ -129,19 +125,12 @@ else
     return;
 end
 
-user_response = questdlg('Do you want to save the current progress?', ...
+saveRes = questdlg('Do you want to save the current progress?', ...
     'Package Control Panel');
-switch lower(user_response)
-    case 'yes'
-        for i = 1: length(userData.MD)
-            userData.MD(i).save;
-        end
-        delete(handles.figure1);
-    case 'no'
-        delete(handles.figure1);
-    case 'cancel'
-end
 
+if strcmpi(saveRes,'yes'), arrayfun(@save,userData.MD); end
+if strcmpi(saveRes,'cancel'), return; end
+delete(handles.figure1);
 
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
@@ -208,7 +197,6 @@ function exit_Callback(~, ~, handles)
 delete(handles.figure1);
 
 
-
 % --- Executes on button press in pushbutton_show.
 function pushbutton_show_Callback(hObject, ~, handles)
 
@@ -229,7 +217,6 @@ else
 end
     
 set(handles.figure1, 'UserData', userData);
-
 
 % --- Executes on button press in pushbutton_set.
 function pushbutton_set_Callback(hObject, ~, handles)
@@ -256,12 +243,8 @@ procID = str2double(props{2}(length('checkbox_')+1:end));
 userfcn_checkAllMovies(procID, procStatus, handles);
 userfcn_lampSwitch(procID, procStatus, handles);
 
-
 % --------------------------------------------------------------------
 function menu_debug_start_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_debug_start (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 status = get(hObject,'Checked');
 if strcmp(status,'on'), 
