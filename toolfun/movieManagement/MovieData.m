@@ -276,20 +276,36 @@ classdef  MovieData < hgsetget
             delete(obj.processes_{pid})
             obj.processes_(pid) = [ ];  
         end
-        function replaceProcess(obj, i, newprocess)
-            % Add a process to the processes_ array
+        function replaceProcess(obj, pid, newprocess)
+            % Input check
             ip=inputParser;
             ip.addRequired('obj');
-            ip.addRequired('i',@(x) isscalar(x) && ismember(x,1:numel(obj.processes_)));
+            ip.addRequired('pid',@(x) isscalar(x) && ismember(x,1:numel(obj.processes_)) || isa(x,'Process'));
             ip.addRequired('newprocess',@(x) isa(x,'Process'));
-            ip.parse(obj, i, newprocess);
-            [parentPackage procID] = obj.processes_{i}.getPackage;
-            if ~isempty(parentPackage)
-                % Check the new process is compatible with the parent class
-                check = isa(newprocess,parentPackage.processClassNames_(procID));
-                if ~check, error('Package compatibility prevents process replacement'); end
+            ip.parse(obj, pid, newprocess);
+            
+            % Retrieve process index if input is of process type
+            if isa(pid, 'Process')
+                pid = find(cellfun(@(x)isequal(x, pid), obj.processes_));
+                assert(numel(pid)==1)
             end
-            obj.processes_{i} = newprocess;
+            
+            % Check new process is compatible with the parent package
+            [parentPackage procID] = obj.processes_{pid}.getPackage;        
+            if ~isempty(parentPackage)
+                checkNewProcessClass = @(x) isa(newprocess,x.getProcessClassNames{procID});
+                if ~all(arrayfun(checkNewProcessClass,parentPackage))
+                        error('Package compatibility prevents process replacement');
+                end
+            end
+            
+            % Delete old process and replace it by the new one
+            oldprocess=obj.processes_{pid};
+            obj.processes_{pid} = newprocess;
+            delete(oldprocess);
+            if ~isempty(parentPackage), 
+                arrayfun(@(x) x.setProcess(procID,newprocess),parentPackage); 
+            end
         end
         
         function deletePackage(obj, package)
