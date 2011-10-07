@@ -276,6 +276,21 @@ classdef  MovieData < hgsetget
             delete(obj.processes_{pid})
             obj.processes_(pid) = [ ];  
         end
+        function replaceProcess(obj, i, newprocess)
+            % Add a process to the processes_ array
+            ip=inputParser;
+            ip.addRequired('obj');
+            ip.addRequired('i',@(x) isscalar(x) && ismember(x,1:numel(obj.processes_)));
+            ip.addRequired('newprocess',@(x) isa(x,'Process'));
+            ip.parse(obj, i, newprocess);
+            [parentPackage procID] = obj.processes_{i}.getPackage;
+            if ~isempty(parentPackage)
+                % Check the new process is compatible with the parent class
+                check = isa(newprocess,parentPackage.processClassNames_(procID));
+                if ~check, error('Package compatibility prevents process replacement'); end
+            end
+            obj.processes_{i} = newprocess;
+        end
         
         function deletePackage(obj, package)
             % Check input

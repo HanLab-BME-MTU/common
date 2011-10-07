@@ -1,4 +1,4 @@
-classdef MaskProcessingProcess < SegmentationProcess
+classdef MaskProcessingProcess < MaskProcess
     %Generic class definition for processes which use / post-process / edit
     %masks which have already been created, but do not themselves directly
     %create masks.
@@ -27,7 +27,7 @@ classdef MaskProcessingProcess < SegmentationProcess
            end
            
            % Call the superclass constructor - these values are private
-           obj = obj@SegmentationProcess(super_args{:});
+           obj = obj@MaskProcess(super_args{:});
            
            if nargin > 4               
               if ~isempty(inFilePaths) && numel(inFilePaths) ...

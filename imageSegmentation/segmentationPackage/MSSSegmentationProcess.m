@@ -26,6 +26,10 @@ classdef MSSSegmentationProcess < SegmentationProcess
         end               
             
     end
+    methods
+        function sanityCheck(obj)
+        end
+    end
     methods (Static)
         function name = getName()
             name = 'Multi-scale segmentation';
