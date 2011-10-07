@@ -102,7 +102,7 @@ set(handles.listbox_processes, 'String',string, 'UserData',1:nProc)
 nProc = numel(userData.package.processes_);
 string = cell(1,nProc);
 for i = 1:nProc
-    processClassName = userData.package.processClassNames_{i};
+    processClassName = userData.package.getProcessClassNames{i};
     processName=eval([processClassName '.getName']);
     string{i} = [' Step ' num2str(i) ': ' processName];
 end
@@ -169,7 +169,7 @@ procId=procIds(procIndex);
 process= userData.recyclableProc{procId};
 
 % Find associated  package process
-packId = find(cellfun(@(x) isa(process,x),userData.package.processClassNames_));
+packId = find(cellfun(@(x) isa(process,x),userData.package.getProcessClassNames));
 if ~isempty(packId) 
    % Update package process and pids
    props = get(handles.listbox_package, {'String','UserData'});
@@ -201,7 +201,7 @@ if isempty(procId), return; end
 userData=get(handles.figure1,'UserData');
 packageString = props{3};
 procIds(props{2})=[];
-processClassName = userData.package.processClassNames_{props{2}};
+processClassName = userData.package.getProcessClassNames{props{2}};
 processName=eval([processClassName '.getName']);
 packageString{props{2}} = [' Step ' num2str(props{2}) ': ' processName];
 set(handles.listbox_package,'String',packageString,'UserData',procIds);

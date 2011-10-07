@@ -96,7 +96,7 @@ userData.crtProc = userData.crtPackage.processes_{userData.procID};
 
 % Get current process constructer
 eval ( [ 'userData.procConstr = @', ...
-    userData.crtPackage.processClassNames_{userData.procID},';']);
+    userData.crtPackage.getProcessClassNames{userData.procID},';']);
 
 % Set cost function and kalman options
 userData.cost_linking = {'costMatLinearMotionLink2'};

@@ -5,24 +5,11 @@ classdef Package < hgsetget
     properties(SetAccess = immutable)
         createTime_ % The time when object is created.
     end
-    
-    properties (SetAccess = private)
-    % Objects of sub-class of Package cannot change variable values since 
-    % 'SetAccess' attribute is set to private
-        name_  % the name of instantiated package
-    end
- 
+
     properties(SetAccess = protected)
         owner_ % The MovieData object this package belongs to
         processes_ % Cell array containing all processes who will be used in this package
-        processClassHandles_ % 
-        processClassNames_ % Must have accurate process class name
-                           % List of processes required by the package, 
-                           % Cell array - same order and number of elements
-                           % as processes in dependency matrix
-        depMatrix_ % Processes' dependency matrix
-        tools_ % Array of external tools
-        
+        depMatrix_ % Processes' dependency matrix        
     end
 
     properties
@@ -48,15 +35,12 @@ classdef Package < hgsetget
         end
     end
     methods (Access = protected)
-        function obj = Package(owner, name, depMatrix, processClassNames, ...
-                outputDirectory,varargin)
+        function obj = Package(owner, depMatrix, outputDirectory,varargin)
             % Constructor of class Package
             
             if nargin > 0
-                obj.name_ = name;
                 obj.owner_ = owner; 
                 obj.depMatrix_ = depMatrix;
-                obj.processClassNames_ = processClassNames;
                 obj.outputDirectory_ = outputDirectory;
                 
                 nVarargin = numel(varargin);
@@ -66,7 +50,7 @@ classdef Package < hgsetget
                     end
                 end
             
-                obj.processes_ = cell(1,length(processClassNames));
+                obj.processes_ = cell(1,length(obj.getProcessClassNames));
                 obj.createTime_ = clock;
             end
         end
@@ -106,11 +90,11 @@ classdef Package < hgsetget
                     % Customized error message for first-time run optional processes
                     if obj.depMatrix_(procID,parentID)==2 && ~obj.processes_{parentID}.success_
                         statusMsg2 = ['the optional step ' num2str(parentID),...
-                            ': ', eval([obj.processClassNames_{parentID} '.getName']),...
+                            ': ', eval([obj.getProcessClassNames{parentID} '.getName']),...
                         ', changes the input data of current step.'];
                     else
                         statusMsg2 = ['the step ' num2str(parentID),': ',...
-                            eval([obj.processClassNames_{parentID} '.getName']),...
+                            eval([obj.getProcessClassNames{parentID} '.getName']),...
                         ', which the current step depends on, is out of date.'];
                     end
                     ME = MException('lccb:depe:warn', [statusMsg1 statusMsg2 statusMsg3]);
@@ -138,7 +122,7 @@ classdef Package < hgsetget
             %
             % OUTPUT:
             %   processExceptions - a cell array with same length of
-            % processClassNames_. It collects all the exceptions found in
+            % processes. It collects all the exceptions found in
             % sanity check. Exceptions of i th process will be saved in
             % processExceptions{i}
             %
@@ -151,7 +135,7 @@ classdef Package < hgsetget
             %                                      sanity check
             %
             
-            nProcesses = length(obj.processClassNames_);
+            nProcesses = length(obj.getProcessClassNames);
             processExceptions = cell(1,nProcesses);
             processVisited = false(1,nProcesses);
             
@@ -217,9 +201,9 @@ classdef Package < hgsetget
             % set the i th process of obj.processes_ to newprocess
             % If newProcess = [ ], clear the process in package process
             % list
-            assert(i<=length(obj.processClassNames_),...
+            assert(i<=length(obj.getProcessClassNames),...
                 'UserDefined Error: i exceeds obj.processes length');
-            if isa(newProcess,obj.processClassNames_{i}) ||...
+            if isa(newProcess,obj.getProcessClassNames{i}) ||...
                     isempty(newProcess)      
                 obj.processes_{i} = newProcess;
             else
@@ -241,12 +225,19 @@ classdef Package < hgsetget
         
     end
         
+    methods(Static)
+        function tools = getTools()
+            tools=[];
+        end
+    end 
 
     methods(Static,Abstract)
-        start
+        GUI
         getName
         getDependencyMatrix
         getOptionalProcessId
+        getProcessClassNames
+        getDefaultProcessConstructors
     end
     
 end

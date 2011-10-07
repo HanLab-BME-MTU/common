@@ -126,7 +126,7 @@ end
 
 % ------------- Check if existing processes can be recycled ---------------
 recyclableProc = cell(1, nMovies);
-processClassNames = userData.package(1).processClassNames_;
+processClassNames = userData.package(1).getProcessClassNames;
 
 % Multiple movies loop
 for i = 1:nMovies
@@ -142,10 +142,10 @@ recyclableProcMovie = find(~cellfun(@isempty, recyclableProc));
 if ~isempty(recyclableProcMovie)
                       
     % Ask user if to recycle
-    msg = ['Record indicates that existing process steps are availabe for %s package:'...
-        '\n\nDo you want to load and re-use these steps in %s package?'];
-    user_response = questdlg(sprintf(msg,userData.package(1).name_,...
-        userData.package(1).name_,userData.package(1).name_),...
+    msg = ['Record indicates that existing processes are recyclable for %s package:'...
+        '\n\nDo you want to load and re-use these steps?'];
+    user_response = questdlg(sprintf(msg,userData.package(1).getName,...
+        userData.package(1).getName),...
         'Recycle Existing Steps','No','Yes','Yes');
     
     if strcmpi(user_response,'Yes')
@@ -217,7 +217,7 @@ for i = 1:nProc
             get(handles.(templateTag{j}),'Position')+(nProc-i)*[0 40 0 0]);
     end
   
-    processClassName = userData.crtPackage.processClassNames_{i};
+    processClassName = userData.crtPackage.getProcessClassNames{i};
     processName=eval([processClassName '.getName']);
     checkboxString = [' Step ' num2str(i) ': ' processName];
     set(handles.(procTag{1}),'String',checkboxString)
@@ -250,13 +250,13 @@ handles = rmfield(handles,optTag);
 
 % --------------------------Create tools menu-----------------------------
 
-if ~isempty(userData.crtPackage.tools_)
+if ~isempty(userData.crtPackage.getTools)
     handles.menu_tools = uimenu(handles.figure1,'Label','Tools','Position',2);
-    for i=1:length(userData.crtPackage.tools_)
+    for i=1:length(userData.crtPackage.getTools)
         toolMenuTag=['menu_tools_' num2str(i)];
         handles.(toolMenuTag) = uimenu(handles.menu_tools,...
-            'Label',userData.crtPackage.tools_(i).name,...
-            'Callback',@menu_tools_Callback,'Tag',toolMenuTag);
+            'Label',userData.crtPackage.getTools(i).name,...
+            'Callback',@(h,event)menu_tools_Callback(h),'Tag',toolMenuTag);
     end
 end
 
@@ -298,4 +298,19 @@ guidata(hObject, handles);
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 
 packageGUI_RefreshFcn(handles, 'initialize')
+end
+
+
+% --------------------------------------------------------------------
+function menu_tools_Callback(hObject)
+
+handles =guidata(hObject);
+userData = get(handles.figure1, 'UserData');
+prop=get(hObject,'Tag');
+toolID = str2double(prop(length('menu_tools_')+1:end));
+
+toolHandle=userData.crtPackage.getTools(toolID).funHandle;
+userData.toolFig(toolID) = toolHandle('mainFig',handles.figure1);
+
+set(handles.figure1, 'UserData', userData);
 end

@@ -207,18 +207,7 @@ function exit_Callback(~, ~, handles)
 
 delete(handles.figure1);
 
-% --------------------------------------------------------------------
-function menu_tools_Callback(hObject, eventdata)
 
-handles =guidata(hObject);
-userData = get(handles.figure1, 'UserData');
-prop=get(hObject,'Tag');
-toolID = str2double(prop(length('menu_tools_')+1:end));
-
-toolHandle=userData.crtPackage.tools_(toolID).funHandle;
-userData.toolFig(toolID) = toolHandle('mainFig',handles.figure1);
-
-set(handles.figure1, 'UserData', userData);
 
 % --- Executes on button press in pushbutton_show.
 function pushbutton_show_Callback(hObject, ~, handles)
@@ -250,7 +239,7 @@ prop=get(hObject,'Tag');
 procID = str2double(prop(length('pushbutton_set_')+1:end));
 
 % Read GUI handle from the associated process static method
-crtProc=userData.crtPackage.processClassNames_{procID};
+crtProc=userData.crtPackage.getProcessClassNames{procID};
 crtProcGUI =eval([crtProc '.GUI']);
 
 userData.setFig(procID) = crtProcGUI('mainFig',handles.figure1,procID);

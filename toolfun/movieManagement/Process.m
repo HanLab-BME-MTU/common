@@ -1,3 +1,4 @@
+
 classdef Process < hgsetget
     % Defines the abstract class Process from which every user-defined process
     % will inherit.

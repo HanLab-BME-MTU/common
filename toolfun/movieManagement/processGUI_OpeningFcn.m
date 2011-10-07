@@ -52,8 +52,8 @@ userData.crtPackage = userData_main.crtPackage;
 
 % If constructor is not inherited from abstract class, read it from package
 if isempty(userData.procConstr)
-    userData.procConstr = userData.crtPackage.processClassHandles_{userData.procID};
-    crtProcClassName = userData.crtPackage.processClassNames_{userData.procID};
+    userData.procConstr = userData.crtPackage.getDefaultProcessConstructors{userData.procID};
+    crtProcClassName = userData.crtPackage.getProcessClassNames{userData.procID};
 end
 
 % Retrieve crtProc if procID step of the package is set up AND is the same

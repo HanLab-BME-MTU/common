@@ -59,7 +59,7 @@ for i = invalidMovies
     for j=invalidProc
         ME = MException('lccb:run:setup', ['Step %d : %s is not set up yet.\n'...
             '\nTip: when step is set up successfully, the step name becomes bold.'],j,...
-            eval([userData.package(i).processClassNames_{j} '.getName']));
+            eval([userData.package(i).getProcessClassNames{j} '.getName']));
         movieException{i} = cat(2, movieException{i}, ME);
     end
 end

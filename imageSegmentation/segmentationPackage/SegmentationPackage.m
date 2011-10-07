@@ -13,26 +13,16 @@ classdef SegmentationPackage < Package
                 % Dependency Matrix (same length as process class name
                 % string)
                 super_args{3} = SegmentationPackage.getDependencyMatrix;
-                
-                % Process CLASS NAME string (same length as dependency matrix)
-                % Must be accurate process class name
-                segmentationClasses = {
-                    @SegmentationProcess,...
-                    @MaskRefinementProcess};
-                super_args{4} = cellfun(@func2str,segmentationClasses,...
-                    'UniformOutput',false);
-                
-                super_args{5} = [outputDir filesep 'SegmentationPackage'];
-                
+                super_args{4} = [outputDir filesep 'SegmentationPackage'];
             end
             % Call the superclass constructor
-            obj = obj@Package(super_args{:},'processClassHandles_',segmentationClasses);
+            obj = obj@Package(super_args{:});
         end
 
         function processExceptions = sanityCheck(obj,varargin)
             
             % Check that the channels have a psf function
-            nProc = length(obj.processClassNames_);
+            nProc = length(obj.getProcessClassNames);
             ip = inputParser;
             ip.CaseSensitive = false;
             ip.addRequired('obj');
@@ -74,9 +64,25 @@ classdef SegmentationPackage < Package
             name = 'Segmentation';
         end
         
-        function varargout = start(varargin)
+        function varargout = GUI(varargin)
             % Start the package GUI
             varargout{1} = segmentationPackageGUI(varargin{:});
+        end
+        
+        function procConstr = getDefaultProcessConstructors(index)
+            segProcConstr = {
+                @SegmentationProcess,...
+                @MaskRefinementProcess};
+            
+            if nargin==0, index=1:numel(segProcConstr); end
+            procConstr=segProcConstr(index);
+        end
+        function classes = getProcessClassNames(index)
+            segClasses = {
+                'SegmentationProcess',...
+                'MaskRefinementProcess'};
+            if nargin==0, index=1:numel(segClasses); end
+            classes=segClasses(index);
         end
     end
     

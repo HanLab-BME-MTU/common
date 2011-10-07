@@ -49,13 +49,13 @@ else
                 if length(splitTag) < 3
                     % Package help
                     userData.packageHelpFig = msgbox(sprintf(get(hObject,'UserData')), ...
-                        ['Help - ' userData.crtPackage.name_], 'custom', get(hObject,'CData'), userData.colormap, 'replace');
+                        ['Help - ' userData.crtPackage.getName], 'custom', get(hObject,'CData'), userData.colormap, 'replace');
                 else
                     % Process help
                     procID = str2double(splitTag{3});
                     if ~isnan(procID)
 
-                        procName = regexp(userData.crtPackage.processClassNames_{procID}, 'Process','split');
+                        procName = regexp(userData.crtPackage.getProcessClassNames{procID}, 'Process','split');
                         userData.processHelpFig(procID) = msgbox(sprintf(get(hObject,'UserData')), ...
                          ['Help - ' procName{1}], 'custom', get(hObject,'CData'), userData.colormap, 'replace');
                     end
