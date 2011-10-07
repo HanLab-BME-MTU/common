@@ -16,7 +16,7 @@ classdef SegmentationPackage < Package
             obj = obj@Package(super_args{:});
         end
 
-        function processExceptions = sanityCheck(obj,varargin)
+        function [status processExceptions] = sanityCheck(obj,varargin)
             
             % Check that the channels have a psf function
             nProc = length(obj.getProcessClassNames);
@@ -40,7 +40,7 @@ classdef SegmentationPackage < Package
                     parseProcessParams(obj.processes_{2},funParams);
                 end
             end
-            processExceptions = sanityCheck@Package(obj,varargin{:});
+            [status processExceptions] = sanityCheck@Package(obj,varargin{:});
         end
         
     end

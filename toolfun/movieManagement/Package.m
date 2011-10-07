@@ -107,7 +107,7 @@ classdef Package < hgsetget
     end
     methods (Access = public)
         
-        function processExceptions = sanityCheck(obj, varargin)
+        function [status processExceptions] = sanityCheck(obj, varargin)
             % sanityCheck is called by package's sanitycheck. It returns
             % a cell array of exceptions. Keep in mind, make sure all process
             % objects of processes checked in the GUI exist before running
@@ -136,6 +136,7 @@ classdef Package < hgsetget
             %
             
             nProcesses = length(obj.getProcessClassNames);
+            status = false(1,nProcesses);
             processExceptions = cell(1,nProcesses);
             processVisited = false(1,nProcesses);
             
@@ -190,6 +191,12 @@ classdef Package < hgsetget
                         obj.checkParentSanity(i, processExceptions, processVisited);
                 end
             end
+            
+            % Return array of boolean
+            saneProc = validProc(cellfun(@isempty,processExceptions(validProc)) &...
+                cellfun(@(x) x.success_ && ~x.procChanged_,obj.processes_(validProc)));
+            status(saneProc)=true;
+            
         end
         
         function setDepMatrix(obj,row,col,value)

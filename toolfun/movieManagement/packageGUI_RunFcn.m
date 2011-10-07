@@ -92,7 +92,7 @@ for iMovie = validMovies
     
     
     % Package full sanity check. Sanitycheck every checked process
-    procEx = userData.package(iMovie).sanityCheck(true, procRun{iMovie});
+    [status procEx] = userData.package(iMovie).sanityCheck(true, procRun{iMovie});
     
     % Return user data !!!
     set(handles.figure1, 'UserData', userData)

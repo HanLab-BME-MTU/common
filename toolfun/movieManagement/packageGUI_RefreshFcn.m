@@ -39,40 +39,31 @@ set(handles.edit_path, 'String', ...
 if strcmp(type, 'initialize')
 
     % Package Sanity Check
-    procEx = userData.crtPackage.sanityCheck(true, 'all');
+    [status procEx] = userData.crtPackage.sanityCheck(true, 'all');
 
-    for i = 1: l
-
-        % Return user data !!!
-        set(handles.figure1, 'UserData', userData)
-
-       if ~isempty(procEx{i})
-           
-           if strcmp(procEx{i}(1).identifier, 'lccb:set:fatal')
-               statusType='error';
-           elseif isequal(procEx{i}.identifier, 'lccb:setup:clear')
-               statusType='clear';
-           else
-               statusType='warn';
-           end
-           userfcn_drawIcon(handles,statusType,i,...
-                    sprintf('%s\n',procEx{i}(:).message), true);
-
-       else
-           if ~isempty(userData.crtPackage.processes_{i}) && ...
-              userData.crtPackage.processes_{i}.success_ && ...
-               ~userData.crtPackage.processes_{i}.procChanged_ && ...
-               userData.crtPackage.processes_{i}.updated_
-
-               userfcn_drawIcon(handles,'pass',i,'Current step was processed successfully', true) ; % user data is retrieved, updated and submitted
-
-           end
-       end
-
-       % Refresh user data !!!
-        userData = get(handles.figure1, 'UserData');
+    % Draw successful processes
+    for i=find(status)
+        userfcn_drawIcon(handles,'pass',i,'Current step was processed successfully', true);
     end
     
+    % Clear unsuccesful processes
+    for i=find(~status)
+        userfcn_drawIcon(handles,'clear',i,'', true);
+    end
+    
+    % Draw warnings
+    validProcEx = find(~cellfun(@isempty,procEx));
+    for i = validProcEx
+        if strcmp(procEx{i}(1).identifier, 'lccb:set:fatal')
+            statusType='error';
+        else
+            statusType='warn';
+        end
+        userfcn_drawIcon(handles,statusType,i,...
+            sprintf('%s\n',procEx{i}(:).message), true);
+    end
+
+
 % ----------------------------- Refresh -----------------------------------    
 elseif strcmp(type, 'refresh')
     for i = 1: l

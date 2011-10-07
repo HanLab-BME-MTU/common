@@ -289,7 +289,7 @@ end
 % ----------------------Sanity Check (II, III check)----------------------
 
 % Do sanity check - only check changed parameters
-procEx = userData.crtPackage.sanityCheck(false,'all');
+[status procEx] = userData.crtPackage.sanityCheck(false,'all');
 
 % Return user data !!!
 set(userData.mainFig, 'UserData', userData_main)
@@ -362,7 +362,7 @@ if get(handles.checkbox_applytoall, 'Value')
 %            userData_main.package(x).processes_{userData.procID}.setOverwrite(get(handles.checkbox_overwrite, 'Value'))
 
         % Do sanity check - only check changed parameters
-        procEx = userData_main.package(x).sanityCheck(false,'all');
+        [status procEx] = userData_main.package(x).sanityCheck(false,'all');
 
         % Record the exceptions
         for i = 1: length(procEx)

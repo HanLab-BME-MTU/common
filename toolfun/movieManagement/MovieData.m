@@ -291,11 +291,14 @@ classdef  MovieData < hgsetget
             end
             
             % Check new process is compatible with the parent package
-            [parentPackage procID] = obj.processes_{pid}.getPackage;        
-            if ~isempty(parentPackage)
-                checkNewProcessClass = @(x) isa(newprocess,x.getProcessClassNames{procID});
-                if ~all(arrayfun(checkNewProcessClass,parentPackage))
+            [packageID procID] = obj.processes_{pid}.getPackage;        
+            if ~isempty(packageID)
+                for i=1:numel(packageID)
+                    checkNewProcClass = isa(newprocess,...
+                        obj.packages_{packageID(i)}.getProcessClassNames{procID(i)});
+                    if ~checkNewProcClass
                         error('Package compatibility prevents process replacement');
+                    end
                 end
             end
             
@@ -303,8 +306,10 @@ classdef  MovieData < hgsetget
             oldprocess=obj.processes_{pid};
             obj.processes_{pid} = newprocess;
             delete(oldprocess);
-            if ~isempty(parentPackage), 
-                arrayfun(@(x) x.setProcess(procID,newprocess),parentPackage); 
+            if ~isempty(packageID), 
+                for i=1:numel(packageID)
+                    obj.packages_{packageID(i)}.setProcess(procID(i),newprocess);
+                end
             end
         end
         

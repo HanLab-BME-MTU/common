@@ -124,12 +124,12 @@ classdef Process < hgsetget
             obj.outFilePaths_ = paths;
         end
         
-        function [package procID] = getPackage(obj)
+        function [packageID procID] = getPackage(obj)
             % Retrieve package to which the process is associated
             isOwner=@(x)cellfun(@(y) isequal(y,obj),x.processes_);
             validPackage = cellfun(@(x) any(isOwner(x)),obj.owner_.packages_);
-            package = obj.owner_.packages_{validPackage};
-            procID=find(isOwner(package));
+            packageID = find(validPackage);
+            procID= cellfun(@(x) find(isOwner(x)),obj.owner_.packages_(validPackage));
         end
         
         function relocate(obj,oldRootDir,newRootDir)

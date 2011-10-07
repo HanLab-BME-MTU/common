@@ -111,8 +111,9 @@ for i = 1:nMovies
         userData.MD(i).addPackage(packageConstr(userData.MD(i),...
             userData.MD(i).outputDirectory_));
         userData.package(i) = userData.MD(i).packages_{end};
-        % Sanity check to check basic dependencies are satisfied
     end
+    
+    % Run sanity check to check basic dependencies are satisfied
     try
         userData.package(i).sanityCheck(true,'all');
     catch ME
