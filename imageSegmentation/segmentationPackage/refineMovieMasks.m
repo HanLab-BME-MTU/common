@@ -29,13 +29,13 @@ function movieData = refineMovieMasks(movieData,paramsIn)
 %       will be asked to select from the available channels
 %
 %       ('SegProcessIndex' -> Positive integer scalar or vector) Optional.
-%       This specifies SegmentationProcess(s) to use masks from by its
+%       This specifies MaskProcess(s) to use masks from by its
 %       index in the array movieData.processes_; For each channel, masks
 %       will be used from the last process specified which has valid masks
 %       for that channel. That is if SegProcessIndex = [1 4] and both
 %       processes 1 and 4 have masks for a given channel, then the masks
 %       from process 4 will be used. If not input, and multiple
-%       SegmentationProcesses are present, the user will be asked to select
+%       MaskProcesses are present, the user will be asked to select
 %       one, unless batch mode is enabled in which case an error will be
 %       generated.
 %
@@ -155,15 +155,15 @@ nChanThresh = length(p.ChannelIndex);
 if isempty(p.SegProcessIndex)    
     if p.BatchMode
         %If batch mode, just get all the seg processes
-        p.SegProcessIndex = movieData.getProcessIndex('SegmentationProcess',Inf,0);            
+        p.SegProcessIndex = movieData.getProcessIndex('MaskProcess',Inf,0);            
         p.SegProcessIndex(p.SegProcessIndex == iProc) = [];
         if numel(p.SegProcessIndex) > 1
-            error('In batch mode you must specify the SegProcessIndex if more than one SegmentationProcess is available!')
+            error('In batch mode you must specify the SegProcessIndex if more than one MaskProcess is available!')
         end            
     else        
         %We need to exclude this function's process, and ask user if more
         %than one
-        segProcList =  movieData.getProcessIndex('SegmentationProcess',Inf,0);
+        segProcList =  movieData.getProcessIndex('MaskProcess',Inf,0);
         segProcList(segProcList == iProc) = []; %Don't count this process
         iSegProc=1;
         if numel(segProcList) > 1
@@ -180,7 +180,7 @@ if isempty(p.SegProcessIndex)
 end
 
 if isempty(p.SegProcessIndex) 
-    error('This function requires that the input movie has already been segmented and that a valid SegmentationProcesses be specified!')
+    error('This function requires that the input movie has already been segmented and that a valid MaskProcesses be specified!')
 end
 
 nProc = numel(p.SegProcessIndex);
@@ -188,9 +188,9 @@ hasMasks = false(nChanThresh,nProc);
 %Check every specified process for masks
 for j = 1:nProc
 
-    %Make sure the specified process is a SegmentationProcess
-    if ~isa(movieData.processes_{p.SegProcessIndex(j)},'SegmentationProcess')
-        error(['The process specified by SegProcessIndex(' num2str(j) ') is not a SegmentationProcess!'])
+    %Make sure the specified process is a MaskProcess
+    if ~isa(movieData.processes_{p.SegProcessIndex(j)},'MaskProcess')
+        error(['The process specified by SegProcessIndex(' num2str(j) ') is not a MaskProcess!'])
     end
 
     %Check which channels have masks from this process

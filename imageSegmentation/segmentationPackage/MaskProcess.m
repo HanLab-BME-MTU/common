@@ -5,7 +5,7 @@ classdef MaskProcess < Process
     
     methods (Access = protected)
         function obj = MaskProcess(owner,name,funName, funParams,outFilePaths)
-            % Constructor of class SegmentationProcess
+            % Constructor of class MaskProcess
             if nargin == 0
                 super_args = {};
             else
@@ -83,7 +83,7 @@ classdef MaskProcess < Process
         function mask = loadChannelOutput(obj,iChan,iFrame,varargin)      
             % Input check
             ip =inputParser;
-            ip.addRequired('obj',@(x) isa(x,'SegmentationProcess'));
+            ip.addRequired('obj');
             ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
             ip.addRequired('iFrame',@(x) ismember(x,1:obj.owner_.nFrames_));
             ip.addParamValue('output',[],@ischar);            
