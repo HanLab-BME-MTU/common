@@ -126,11 +126,11 @@ end
 
 if isempty(p.SegProcessIndex)
     if ~p.BatchMode
-        p.SegProcessIndex = movieData.getProcessIndex('SegmentationProcess',1,1);
+        p.SegProcessIndex = movieData.getProcessIndex('MaskProcess',1,1);
     else
-        p.SegProcessIndex = movieData.getProcessIndex('SegmentationProcess',Inf,0);
+        p.SegProcessIndex = movieData.getProcessIndex('MaskProcess',Inf,0);
         if numel(p.SegProcessIndex) > 1
-            error('If batch mode is not enabled and the SegProcessIndex is not specified, the movie cannot have more than one SegmentationProcess!')
+            error('If batch mode is not enabled and the SegProcessIndex is not specified, the movie cannot have more than one MaskProcess!')
         end
     end
 end
@@ -142,7 +142,7 @@ elseif any(p.MaskChannelIndex) > numel(movieData.channels_) || ...
     error('Invalid MaskChannelIndex : you must specify one valid mask channel index for every channel which is assessed!')
 end
 
-if isempty(p.SegProcessIndex) || ~isa(movieData.processes_{p.SegProcessIndex},'SegmentationProcess') ...
+if isempty(p.SegProcessIndex) || ~isa(movieData.processes_{p.SegProcessIndex},'MaskProcess') ...
         || ~all(movieData.processes_{p.SegProcessIndex}.checkChannelOutput(p.MaskChannelIndex))
     warning('ImageAssessment:noMasks','A valid segmentation process for the specified channels was not present and specified by the user: some statistics will not be calculated!')
     hasMasks = false;
@@ -156,7 +156,7 @@ if isempty(p.BackSegProcessIndex)
     else
         p.BackSegProcessIndex = movieData.getProcessIndex('BackgroundMasksProcess',Inf,0);
         if numel(p.BackSegProcessIndex) > 1
-            error('If batch mode is not enabled and the SegProcessIndex is not specified, the movie cannot have more than one SegmentationProcess!')
+            error('If batch mode is not enabled and the SegProcessIndex is not specified, the movie cannot have more than one MaskProcess!')
         end
     end
 end
