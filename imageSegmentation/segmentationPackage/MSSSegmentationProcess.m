@@ -3,7 +3,7 @@ classdef MSSSegmentationProcess < SegmentationProcess
     
     % Sebastien Besson
     
-    methods (Access = public)
+    methods
         function obj = MSSSegmentationProcess(owner,outputDir, funParams)
             
             if nargin == 0
@@ -24,11 +24,7 @@ classdef MSSSegmentationProcess < SegmentationProcess
             
             obj = obj@SegmentationProcess(super_args{:});
         end               
-            
-    end
-    methods
-        function sanityCheck(obj)
-        end
+
     end
     methods (Static)
         function name = getName()
