@@ -266,10 +266,11 @@ classdef  MovieData < hgsetget
             end
             
             % Unassociate process in corresponding packages
-            for i=1:numel(obj.packages_)
-                procID = find(cellfun(@(x)isequal(x,obj.processes_{pid}), ...
-                    obj.packages_{i}.processes_));
-                if ~isempty(procID), obj.packages_{i}.setProcess(procID,[]); end
+            [packageID procID] = obj.processes_{pid}.getPackage;        
+            if ~isempty(packageID)
+                for i=1:numel(packageID)
+                    obj.packages_{packageID(i)}.setProcess(procID(i),[]);
+                end
             end
             
             % Delete and clear the process object
