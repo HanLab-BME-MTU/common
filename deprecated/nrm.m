@@ -12,6 +12,8 @@ function B=nrm(A,d)
 %
 % OUTPUT   B : normalized A (with class change)
 
+fprintf(2, ['Warning: ''' mfilename ''' is deprecated and should no longer be used. Use scaleContrast instead.\n']);
+
 % By default, return a [0..1] double matrix
 if nargin==1
     d=1;

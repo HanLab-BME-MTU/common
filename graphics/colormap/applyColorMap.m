@@ -74,10 +74,10 @@ dfltCMap=[   0         0         1.0000; % Blue
              1.0000         0         0]; % Red
 
 % Check input parameters
-if nargin<4 | nargin>5
+if nargin<4 || nargin>5
     error('The function expects 4 or 5 parameters.');
 end
-if nargin==4 | (nargin==5 & isempty(convFactor))
+if nargin==4 || (nargin==5 && isempty(convFactor))
     convFactor=dfltConvFactor;
 end
 
@@ -87,9 +87,9 @@ if isempty(range)
     range=dfltRange;
     classCase=1;
 else
-    if range(1)==0 & range(2)>0
+    if range(1)==0 && range(2)>0
         classCase=2;
-    elseif sign(range(1))~=sign(range(2)) & abs(range(1))==abs(range(2))
+    elseif sign(range(1))~=sign(range(2)) && abs(range(1))==abs(range(2))
         classCase=1;  
     else
         fprintf(1,'Range not valid. Using the default range [%d %d].',dfltRange);
@@ -105,28 +105,28 @@ end
 if isempty(cmap)
     cmap=dfltCMap;
 end
-if size(cmap,2)~=3 | size(cmap,3)~=1
+if size(cmap,2)~=3 || size(cmap,3)~=1
     error('The colormap must be an nx3 matrix where n corresponds to the number of classes spanned by range');
 end    
     
 % Check that range and colormap match
-if length([range(1):range(2)])~=size(cmap,1)
+if length(range(1):range(2))~=size(cmap,1)
     error('Range and colormap dimensions do not match');
 end
     
 % Render img lighter (if needed)
 minImgI = min(img(:));
 maxImgI = max(img(:));
-if minImgI==0.5 & maxImgI==1
+if minImgI==0.5 && maxImgI==1
     % The image was already treated
 elseif minImgI < maxImgI
-    img=0.5+nrm(img,1)/2;  
+    img=0.5+scaleContrast(img,[],[0 1])/2;  
 end
 
 % Make sure the scores are in the passed range and are 'integer'
 scores=round(scores*convFactor);
-scores(find(scores<range(1)))=range(1);
-scores(find(scores>range(2)))=range(2);
+scores(scores<range(1))=range(1);
+scores(scores>range(2))=range(2);
 
 switch classCase
     case 1 % Range symmetric around 0
