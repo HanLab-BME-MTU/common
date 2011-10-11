@@ -2,12 +2,13 @@ function [cMask]=crclMask(imL,imW,centerYX,radius,nRands)
 %
 % DESCRIPTION: Creates mask of circle with given center and radius
 %
-% SYNOPSIS: [cMask]=crclMask(im,centerYX,radius)
+% SYNOPSIS: [cMask]=crclMask(imL,imW,centerYX,radius,nRands)
 %
 % INPUT: 
-%        im         : image matrix
+%        imL,imW    : image length and width
 %        centerYX   : (row, col) index for the circle center
-%        radius      : circle radius
+%        radius     : circle radius
+%        nRands     : number of random trials to paint out the circle
 %
 % OUTPUT: 
 %        cMask   : im-sized matrix with values from 0-1, depending on
