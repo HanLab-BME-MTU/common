@@ -47,50 +47,11 @@ end
 % --- Executes just before maskRefinementProcessGUI is made visible.
 function maskRefinementProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
+processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',1);
 
-processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:});
-
-% ---------------------- Channel Setup -------------------------
+% Parameters setup 
 userData = get(handles.figure1, 'UserData');
 funParams = userData.crtProc.funParams_;
-
-
-% Set up available input channels
-set(handles.listbox_availableChannels,...
-    'String',userData.MD.getChannelPaths(), ...
-    'UserData',1:numel(userData.MD.channels_));  
-    
-% Set up selected input data channels and channel index
-parentProc = find(userData.crtPackage.depMatrix_(userData.procID,:));
-
-if isempty(parentProc) || ~isempty(userData.crtPackage.processes_{userData.procID})
-    % If process has no dependency, or process already exists
-    channelString =userData.MD.getChannelPaths(funParams.ChannelIndex);
-    channelIndex = funParams.ChannelIndex;
-        
-elseif isempty(userData.crtPackage.processes_{userData.procID})
-    % Check existence of all parent processes
-    emptyParentProc = any(cellfun(@isempty,...
-        userData.crtPackage.processes_(parentProc)));
-    channelIndex = 1:numel(userData.MD.channels_);
-    if ~emptyParentProc
-        parentChannelIndex = @(x) userData.crtPackage.processes_{x}.funParams_.ChannelIndex;
-        for i = parentProc
-            channelIndex = intersect(channelIndex,parentChannelIndex(i));
-        end
-    end
-    if ~isempty(channelIndex)
-        channelString = userData.MD.getChannelPaths(channelIndex);
-    else
-        channelString = {};
-    end
-end
-
-set(handles.listbox_selectedChannels,'String',channelString,...
-    'UserData',channelIndex);  
-
-    
-% ---------------------- Parameter Setup -----------------------
 
 if funParams.MaskCleanUp
     if ~funParams.FillHoles
@@ -115,7 +76,6 @@ if funParams.EdgeRefinement
     
 end
     
-
 % Update user data and GUI data
 handles.output = hObject;
 set(handles.figure1, 'UserData', userData);
@@ -235,85 +195,6 @@ end
 
 % Set parameters and update main window
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
-
-% --- Executes on button press in checkbox_all.
-function checkbox_all_Callback(hObject, eventdata, handles)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox_all
-contents1 = get(handles.listbox_availableChannels, 'String');
-
-chanIndex1 = get(handles.listbox_availableChannels, 'Userdata');
-chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
-
-% Return if listbox1 is empty
-if isempty(contents1)
-    return;
-end
-
-switch get(handles.checkbox_all,'Value')
-    case 1
-        set(handles.listbox_selectedChannels, 'String', contents1);
-        chanIndex2 = chanIndex1;
-    case 0
-        set(handles.listbox_selectedChannels, 'String', {}, 'Value',1);
-        chanIndex2 = [ ];
-end
-set(handles.listbox_selectedChannels, 'UserData', chanIndex2);
-
-
-% --- Executes on button press in pushbutton_select.
-function pushbutton_select_Callback(hObject, eventdata, handles)
-% call back function of 'select' button
-
-contents1 = get(handles.listbox_availableChannels, 'String');
-contents2 = get(handles.listbox_selectedChannels, 'String');
-id = get(handles.listbox_availableChannels, 'Value');
-
-% If channel has already been added, return;
-chanIndex1 = get(handles.listbox_availableChannels, 'Userdata');
-chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
-
-for i = id
-    if any(strcmp(contents1{i}, contents2) )
-        continue;
-    else
-        contents2{end+1} = contents1{i};
-        
-        chanIndex2 = cat(2, chanIndex2, chanIndex1(i));
-
-    end
-end
-
-set(handles.listbox_selectedChannels, 'String', contents2, 'Userdata', chanIndex2);
-
-
-
-% --- Executes on button press in pushbutton_delete.
-function pushbutton_delete_Callback(hObject, eventdata, handles)
-% Call back function of 'delete' button
-contents = get(handles.listbox_selectedChannels,'String');
-id = get(handles.listbox_selectedChannels,'Value');
-
-% Return if list is empty
-if isempty(contents) || isempty(id)
-    return;
-end
-
-% Delete selected item
-contents(id) = [ ];
-
-% Delete userdata
-chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
-chanIndex2(id) = [ ];
-set(handles.listbox_selectedChannels, 'Userdata', chanIndex2);
-
-% Point 'Value' to the second last item in the list once the 
-% last item has been deleted
-if (id >length(contents) && id>1)
-    set(handles.listbox_selectedChannels,'Value',length(contents));
-end
-% Refresh listbox
-set(handles.listbox_selectedChannels,'String',contents);
 
 
 % --- Executes on button press in checkbox_cleanup.

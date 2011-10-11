@@ -128,7 +128,7 @@ set(handles.listbox_availableChannels,'String',userData.MD.getChannelPaths(), ..
 channelIndex = funParams.ChannelIndex;
 
 % Find any parent process
-parentProc = find(userData.crtPackage.depMatrix_(userData.procID,:));
+parentProc = userData.crtPackage.getParent(userData.procID);
 if isempty(userData.crtPackage.processes_{userData.procID}) && ~isempty(parentProc)
     % Check existence of all parent processes
     emptyParentProc = any(cellfun(@isempty,userData.crtPackage.processes_(parentProc)));
@@ -165,7 +165,6 @@ function checkallChannels(hObject, ~, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkbox_all
 availableChannels = get(handles.listbox_availableChannels, 'String');
 availableChannelsIndx = get(handles.listbox_availableChannels, 'Userdata');
-selectedChannelsIndx = get(handles.listbox_selectedChannels, 'Userdata');
 
 % Return if listbox1 is empty
 if isempty(availableChannels), return; end
