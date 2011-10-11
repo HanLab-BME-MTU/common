@@ -26,7 +26,7 @@ end
 % end
 
 % check to make sure the input path doesn't contain white space
-whiteSpaceIdx=regexp(temp,['\s'],'start')';
+whiteSpaceIdx=regexp(temp,'\s','start')';
 if ~isempty(whiteSpaceIdx)
     error('formatPath: input directory name must not include spaces')
 end
@@ -65,7 +65,7 @@ while doneFlag==0
         doneFlag=1;
     else
         if tryNum<=3
-            currentDir=uigetdir(pwd,'Select a directory above project directory');
+            currentDir=uigetdir(pwd,['Select a directory above project directory ' oldPath]);
             cd(currentDir)
             currentDir=[currentDir filesep];
         else
