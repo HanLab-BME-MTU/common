@@ -36,6 +36,11 @@ isGraphProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'graph')),validP
 graphProc=validProc(isGraphProc);
 graphProcId = validProcId(isGraphProc);
 
+% Special class for correlation process
+isCorrProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'correlationGraph')),validProc);
+corrProc=validProc(isCorrProc);
+corrProcId = validProcId(isCorrProc);
+
 % Create series of anonymous function to generate process controls
 createProcText= @(panel,i,j,pos,name) uicontrol(panel,'Style','text',...
     'Position',[10 pos 250 20],'Tag',['text_process' num2str(i)],...
@@ -52,6 +57,9 @@ createChannelBox= @(panel,i,j,k,pos,varargin) uicontrol(panel,'Style','checkbox'
 createMovieBox= @(panel,i,j,pos,name,varargin) uicontrol(panel,'Style','checkbox',...
     'Position',[40 pos 200 20],'Tag',['checkbox_process' num2str(i) '_output'...
     num2str(j)],'String',[' ' name],varargin{:});
+createProcProcBox= @(panel,i,j,k,pos,varargin) uicontrol(panel,'Style','checkbox',...
+    'Position',[200+30*k pos 20 20],'Tag',['checkbox_process' num2str(i) '_output'...
+    num2str(j) '_output' num2str(k)],varargin{:});
 
 
 %% Image panel creation
@@ -267,8 +275,27 @@ if ~isempty(graphProc) || ~isempty(movieGraphProc)
         'Title','Graph','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
         'Units','pixels','Tag','uipanel_graph');
     
-    % Create controls for selecting movie-specific overlays
+    % Create controls for selecting correaltion
     hPosition3=10;
+    nProc = numel(corrProc);
+    for iProc=nProc:-1:1;
+        output=corrProc{iProc}.getInput;
+        nOutput=numel(output);
+        for i=nOutput:-1:1
+            createOutputText(graphPanel,corrProcId(iProc),i,hPosition3,output(i).name);
+            for j=1:i
+                createProcProcBox(graphPanel,corrProcId(iProc),i,j,hPosition3,...
+                    'Callback',@(h,event) redrawCorrelationGraph(h,guidata(h)));
+            end
+            hPosition3=hPosition3+20;
+        end
+        createProcText(graphPanel,corrProcId(iProc),i,hPosition3,corrProc{iProc}.getName);
+        hPosition3=hPosition3+20;
+    end
+    
+    
+    % Create controls for selecting movie-specific overlays
+    
     nProc = numel(movieGraphProc);
     for iProc=nProc:-1:1;
         output=movieGraphProc{iProc}.getDrawableOutput;
@@ -684,11 +711,11 @@ else
 end
 
 function redrawGraph(hObject,handles)
-overlayTag = get(hObject,'Tag');
+graphTag = get(hObject,'Tag');
 userData=get(handles.figure1,'UserData');
 
 % Retrieve the id, process nr and channel nr of the selected graphProc
-tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)','tokens');
+tokens = regexp(graphTag,'^checkbox_process(\d+)_output(\d+)','tokens');
 procId=str2double(tokens{1}{1});
 outputList = userData.MD.processes_{procId}.getDrawableOutput;
 iOutput = str2double(tokens{1}{2});
@@ -710,6 +737,32 @@ if get(hObject,'Value')
     h = getFigure(handles,figName);
     userData.MD.processes_{procId}.draw(inputArgs{:},'output',output,...
         'vectorScale',str2double(get(handles.edit_vectorFieldScale,'String')));
+    set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
+else
+    h=findobj(0,'-regexp','Name',figName);
+    if ~isempty(h), delete(h); end
+end
+
+function redrawCorrelationGraph(hObject,handles)
+overlayTag = get(hObject,'Tag');
+userData=get(handles.figure1,'UserData');
+
+% Retrieve the id, process nr and channel nr of the selected graphProc
+tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)_output(\d+)','tokens');
+procId=str2double(tokens{1}{1});
+input = userData.MD.processes_{procId}.getInput;
+i = str2double(tokens{1}{2});
+j = str2double(tokens{1}{3});
+
+if i==j
+    figName = ['Autocorrelation ' input(i).name];
+else
+    figName = ['Cross-correlation ' input(i).name ' ' input(j).name];
+end
+% Draw or delete the graph figure depending on the checkbox value
+if get(hObject,'Value')
+    h = getFigure(handles,figName);
+    userData.MD.processes_{procId}.draw(i,j);
     set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 else
     h=findobj(0,'-regexp','Name',figName);
