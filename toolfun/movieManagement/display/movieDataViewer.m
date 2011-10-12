@@ -344,7 +344,7 @@ handles.movieButton = uicontrol(moviePanel, 'Style', 'pushbutton', ...
     'Position', [150 hPosition 100 20],...
     'Callback', @(h,event) makeMovie(h,guidata(h)));
 
-% Create controls for scrollling through the movie 
+% Create controls for scrollling through the movie
 hPosition = hPosition+30;
 uicontrol(moviePanel,'Style','text','Position',[10 hPosition 50 15],...
     'String','Frame','Tag','text_frame','HorizontalAlignment','left');
@@ -462,7 +462,7 @@ set(handles.slider_frame,'Value',frameNumber);
 redrawImage(handles);
 redrawOverlays(handles);
 
-function getFigure(handles,figName)
+function h= getFigure(handles,figName)
 
 h = findobj(0,'-regexp','Name',figName);
 if ~isempty(h), figure(h); return; end
@@ -510,7 +510,7 @@ if ~isempty(h), delete(h); end
 % If checked, adds a new scalebar using the width as a label input
 userData=get(handles.figure1,'UserData');
 if ~get(handles.(['checkbox_' type]),'Value') || ~ishandle(userData.drawFig),
-    return 
+    return
 end
 figure(userData.drawFig)
 scale = str2double(get(handles.(['edit_' type]),'String'));
@@ -536,7 +536,7 @@ if ~isempty(h), delete(h); end
 % If checked, adds a new scalebar using the width as a label input
 userData=get(handles.figure1,'UserData');
 if ~get(handles.checkbox_timeStamp,'Value') || ~ishandle(userData.drawFig),
-    return 
+    return
 end
 figure(userData.drawFig)
 frameNr=get(handles.slider_frame,'Value');
@@ -626,8 +626,8 @@ else
 end
 
 % Reset the scaleBar
-setScaleBar(handles,'imageScaleBar'); 
-setTimeStamp(handles); 
+setScaleBar(handles,'imageScaleBar');
+setTimeStamp(handles);
 
 function redrawOverlays(handles)
 overlayBoxes = findobj(handles.uipanel_overlay,'-regexp','Tag','checkbox_process*');
@@ -635,26 +635,26 @@ checkedBoxes = logical(arrayfun(@(x) get(x,'Value'),overlayBoxes));
 overlayTags=arrayfun(@(x) get(x,'Tag'),overlayBoxes(checkedBoxes),...
     'UniformOutput',false);
 for i=1:numel(overlayTags),
- redrawOverlay(handles.(overlayTags{i}),handles)
+    redrawOverlay(handles.(overlayTags{i}),handles)
 end
 
 % Reset the scaleBar
-if get(handles.checkbox_vectorFieldScaleBar,'Value'), 
+if get(handles.checkbox_vectorFieldScaleBar,'Value'),
     setScaleBar(handles,'vectorFieldScaleBar');
 end
-    
+
 function redrawOverlay(hObject,handles)
 userData=get(handles.figure1,'UserData');
 frameNr=get(handles.slider_frame,'Value');
 overlayTag = get(hObject,'Tag');
 
 % Get figure handle or recreate figure
-if ishandle(userData.drawFig), 
-    figure(userData.drawFig); 
+if ishandle(userData.drawFig),
+    figure(userData.drawFig);
 else
     redrawScene(hObject, handles); return;
 end
- % Retrieve the id, process nr and channel nr of the selected imageProc
+% Retrieve the id, process nr and channel nr of the selected imageProc
 tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)','tokens');
 procId=str2double(tokens{1}{1});
 outputList = userData.MD.processes_{procId}.getDrawableOutput;
@@ -687,7 +687,7 @@ function redrawGraph(hObject,handles)
 overlayTag = get(hObject,'Tag');
 userData=get(handles.figure1,'UserData');
 
- % Retrieve the id, process nr and channel nr of the selected graphProc
+% Retrieve the id, process nr and channel nr of the selected graphProc
 tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)','tokens');
 procId=str2double(tokens{1}{1});
 outputList = userData.MD.processes_{procId}.getDrawableOutput;
@@ -707,13 +707,17 @@ end
 
 % Draw or delete the graph figure depending on the checkbox value
 if get(hObject,'Value')
-    getFigure(handles,figName);
+    h = getFigure(handles,figName);
     userData.MD.processes_{procId}.draw(inputArgs{:},'output',output,...
         'vectorScale',str2double(get(handles.edit_vectorFieldScale,'String')));
+    set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 else
     h=findobj(0,'-regexp','Name',figName);
     if ~isempty(h), delete(h); end
 end
+
+function closeGraphFigure(hObject)
+set(hObject,'Value',0);
 
 function deleteViewer()
 
