@@ -711,11 +711,11 @@ else
 end
 
 function redrawGraph(hObject,handles)
-graphTag = get(hObject,'Tag');
+overlayTag = get(hObject,'Tag');
 userData=get(handles.figure1,'UserData');
 
 % Retrieve the id, process nr and channel nr of the selected graphProc
-tokens = regexp(graphTag,'^checkbox_process(\d+)_output(\d+)','tokens');
+tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)','tokens');
 procId=str2double(tokens{1}{1});
 outputList = userData.MD.processes_{procId}.getDrawableOutput;
 iOutput = str2double(tokens{1}{2});
