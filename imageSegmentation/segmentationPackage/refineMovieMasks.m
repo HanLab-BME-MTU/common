@@ -358,7 +358,7 @@ for iChan = 1:nChanThresh
                 
                 %Find holes - the largest "hole" is considered to be the
                 %background and ignored.
-                cc = bwconncomp(~tmpIm);                                
+                cc = bwconncomp(~tmpIm,4);                                
                 holeAreas = cellfun(@(x)(numel(x)),cc.PixelIdxList);
                 [~,iBiggest] = max(holeAreas);                                
                 tmpIm = imfill(tmpIm,'holes');
