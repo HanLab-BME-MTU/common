@@ -54,8 +54,8 @@ static void dispatch(int n, int m, double *x_ptr, double *y_ptr, int nlhs, mxArr
     {
       pair = kdtree.closest_point(Y[i]);
 
-      idx[i] = pair.first;
-      dist[i] = pair.second;
+      dist[i] = pair.first;
+      idx[i] = pair.second;
     }
 
   // Write output
@@ -70,8 +70,8 @@ static void dispatch(int n, int m, double *x_ptr, double *y_ptr, int nlhs, mxArr
 
   if (nlhs > 1)
     {
-      plhs[0] = mxCreateDoubleMatrix(m, 1, mxREAL);
-      double * p = mxGetPr(plhs[0]);
+      plhs[1] = mxCreateDoubleMatrix(m, 1, mxREAL);
+      double * p = mxGetPr(plhs[1]);
 				
       for (typename std::vector<unsigned>::const_iterator it = dist.begin(); it != dist.end(); ++it)
 	*p++ = *it;

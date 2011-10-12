@@ -1,6 +1,6 @@
 %KDTREECLOSESTPOINT for every query point in queryPts, find the closest point belonging to inPts
 % 
-% [idx, dist] = KDTreeClosestPoint(inPts,queryPts,radii)
+% [idx, dist] = KDTreeClosestPoint(inPts,queryPts)
 % 
 % This function returns the index of the input point closest to each inPts.
 % Supports 1D, 2D or 3D point sets.

@@ -401,7 +401,7 @@ end
 % ----------------------Sanity Check (II, III check)----------------------
 
 % Do sanity check - only check changed parameters
-procEx = userData.crtPackage.sanityCheck(false,'all');
+[status procEx] = userData.crtPackage.sanityCheck(false,'all');
 
 % Return user data !!!
 set(userData.mainFig, 'UserData', userData_main)
