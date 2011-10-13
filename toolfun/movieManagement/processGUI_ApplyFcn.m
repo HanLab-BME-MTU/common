@@ -48,26 +48,8 @@ end
  % Override the parameters with the GUI set-up ones
 parseProcessParams(userData.crtProc,funParams);
  
-% ----------------------Sanity Check (II, III check)----------------------
-
-% Do sanity check - only check changed parameters
-[status procEx] = userData.crtPackage.sanityCheck(false,'all');
-
-% Draw some bugs on the wall 
-for i=find(status)
-    userfcn_drawIcon(userData.handles_main,'pass',i,'Current step was processed successfully', true);
-end
-
-for i=find(~status)
-    userfcn_drawIcon(userData.handles_main,'clear',i,'', true);
-end
-
-validProcEx = find(~cellfun(@isempty,procEx));
-for i = validProcEx
-    % Draw warning label on the i th process
-    userfcn_drawIcon(userData.handles_main,'warn',i,...
-       sprintf('%s\n',procEx{i}(:).message), true)
-end
+% Refresh main screen
+packageGUI_RefreshFcn(userData.handles_main,'refresh')
 
 userData_main = get(userData.mainFig, 'UserData');
 
@@ -98,31 +80,7 @@ for i = moviesId
     % Override the parameters with the GUI defeined
     parseProcessParams(userData_main.package(i).processes_{userData.procID},...
         funParams);
-    
-    % Do sanity check - only check changed parameters
-    [status procEx] = userData_main.package(i).sanityCheck(false,'all');
-    
-    for j=find(status)
-        userData_main.statusM(i).IconType{j} = 'pass';
-        userData_main.statusM(i).Msg{j} ='Current step was processed successfully';
-    end
-    
-    for j=find(~status)
-        userData_main.statusM(i).IconType{j} = 'clear';
-        userData_main.statusM(i).Msg{j} ='Current step was processed successfully';
-    end
-
-    % Draw some bugs on the wall
-    validProcEx = find(~cellfun(@isempty,procEx));
-    for j = validProcEx
-        % Record the icon and message to user data
-        userData_main.statusM(i).IconType{j} = 'warn';
-        userData_main.statusM(i).Msg{j} = sprintf('%s\n',procEx{j}(:).message);
-    end
 end
-
-
-% -------------------------------------------------------------------------
 
 % Store the applytoall choice for this particular process
 userData_main.applytoall(userData.procID)=get(handles.checkbox_applytoall,'Value');

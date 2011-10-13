@@ -18,13 +18,13 @@ ip.parse(handles,type)
 
 
 userData = get(handles.figure1, 'UserData');
-l = size(userData.dependM, 1);
-k = zeros(1,l);
+nProc = size(userData.dependM, 1);
+k = zeros(1,nProc);
 
 % Reset GUI
-userfcn_drawIcon(handles, 'clear', 1:l);
-userfcn_enable(1:l, 'on', handles)
-for i = 1:l
+userfcn_drawIcon(handles, 'clear', 1:nProc);
+userfcn_enable(1:nProc, 'on', handles)
+for i = 1:nProc
     set(handles.(['checkbox_',num2str(i)]),'FontWeight','normal','Value',0);
     set(handles.(['pushbutton_show_',num2str(i)]),'Enable','off');
 end
@@ -34,50 +34,37 @@ set(handles.edit_path, 'String', ...
     [userData.MD(userData.id).movieDataPath_ filesep userData.MD(userData.id).movieDataFileName_ ])
 
 
-% ----------------------------- Initialize --------------------------------
+% Run sanityCheck on package 
+if strcmp(type, 'initialize'), full=true; else full=false; end
+[status procEx] = userData.crtPackage.sanityCheck(full, 'all');
 
-if strcmp(type, 'initialize')
+% Draw successful processes
+for i=find(status)
+    userfcn_drawIcon(handles,'pass',i,'Current step was processed successfully', true);
+    set(handles.(['pushbutton_show_',num2str(i)]),'Enable','on');
+end
 
-    % Package Sanity Check
-    [status procEx] = userData.crtPackage.sanityCheck(true, 'all');
+% Clear unsuccesful processes
+for i=find(~status)
+    userfcn_drawIcon(handles,'clear',i,'', true);
+end
 
-    % Draw successful processes
-    for i=find(status)
-        userfcn_drawIcon(handles,'pass',i,'Current step was processed successfully', true);
+% Draw warnings
+validProcEx = find(~cellfun(@isempty,procEx));
+for i = validProcEx
+    if strcmp(procEx{i}(1).identifier, 'lccb:set:fatal')
+        statusType='error';
+    else
+        statusType='warn';
     end
-    
-    % Clear unsuccesful processes
-    for i=find(~status)
-        userfcn_drawIcon(handles,'clear',i,'', true);
-    end
-    
-    % Draw warnings
-    validProcEx = find(~cellfun(@isempty,procEx));
-    for i = validProcEx
-        if strcmp(procEx{i}(1).identifier, 'lccb:set:fatal')
-            statusType='error';
-        else
-            statusType='warn';
-        end
-        userfcn_drawIcon(handles,statusType,i,...
-            sprintf('%s\n',procEx{i}(:).message), true);
-    end
+    userfcn_drawIcon(handles,statusType,i,...
+        sprintf('%s\n',procEx{i}(:).message), true);
+end
 
 
-% ----------------------------- Refresh -----------------------------------    
-elseif strcmp(type, 'refresh')
-    for i = 1: l
-    
-       % Draw icons
-       if ~isempty(userData.statusM(userData.id).IconType{i})
-            userfcn_drawIcon(handles, userData.statusM(userData.id).IconType{i}, i, userData.statusM(userData.id).Msg{i}, false);
-       end
-
-    end
-end  
 % -------------------------------------------------------------------------
 
-for i = 1: l
+for i = 1: nProc
     
     % If process is checked, check and enable the process and enable decendent
     % processes
@@ -96,14 +83,13 @@ for i = 1: l
         % If process's sucess = 1, allow output visualizatoin
         if userData.crtPackage.processes_{i}.success_
             k(i) = 1;
-            set(handles.(['pushbutton_show_',num2str(i)]),'Enable','on');
         end
     end
     
 end
 
 tempDependM = userData.dependM;
-tempDependM(:,logical(k)) = zeros(l, nnz(k));
+tempDependM(:,logical(k)) = zeros(nProc, nnz(k));
 
 % Checkbox enable/disable set up
 userfcn_enable(find (any(tempDependM==1,2)), 'off',handles);
