@@ -1,3 +1,12 @@
+ /* [T R] = computeICP(X1, X2, numIter, tol)
+ *
+ * (c) Sylvain Berlemont, 2011 (last modified Oct 7, 2011)
+ *
+ * Compilation:
+ * Mac/Linux: mex -I. -I../kdtree -I../../mex/include/c++ computeICP.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP" -I"." -I"..\kdtree" -I"..\..\mex\include\c++" -output computeICP computeICP.cpp
+ */
+
 # include <mex.h>
 
 # include <vector>
