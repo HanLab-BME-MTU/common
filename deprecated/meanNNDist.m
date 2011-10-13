@@ -8,6 +8,8 @@ function f = meanNNDist(M);
 %
 % c: 20/9/99	dT
 
+fprintf(2, ['Warning: ''' mfilename ''' is deprecated and should no longer be used. Use KDTreeClosestPoint instead.\n']);
+
 % compute the distance matrix
 [rows,cols]=size(M);
 for i = 1:rows
