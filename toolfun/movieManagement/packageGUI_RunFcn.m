@@ -47,7 +47,6 @@ end
 % movie exception (same length of movie data)
 movieException = cell(1, nMovies);
 procRun = cell(1, nMovies);%  id of processes to run
-optionalProcID = cell(1, nMovies);% id of first-time-run optional process
 
 % Find unset processes
 isProcSet=@(x,y)~isempty(userData.package(x).processes_{y});
@@ -147,13 +146,6 @@ for x = movieRun
         userData = get(handles.figure1, 'UserData');
     end
     
-    % Find first-time-run optional process ID
-    for i = intersect(procRun{x}, userData.optProcID);
-        if ~userData.package(x).processes_{i}.success_
-            optionalProcID{x} = cat(2, optionalProcID{x}, i);
-        end
-    end
-    
     % Clear icons of selected processes
     % Return user data !!!
     set(handles.figure1, 'UserData', userData)
@@ -188,7 +180,6 @@ for x = movieRun
         movieException{x}=movieException{x}.addCause(ME);
         
         procRun{x} = procRun{x}(procRun{x} < i);
-        optionalProcID{x} = optionalProcID{x}(optionalProcID{x} < i); 
     end
     
     % Refresh user data !!!
@@ -198,22 +189,9 @@ for x = movieRun
     set(handles.checkbox_runall, 'Enable', 'on')
     set(handles.text_status, 'Visible', 'off')
     
-    % ------- Check optional processes ----------
     
     % Return user data !!!
     set(handles.figure1, 'UserData', userData)
-    % In here, optionalProcID are successfully first-time-run optional process ID
-    % SB: checkOptionalProcess is now handled in sanityCheck. This is a
-    % quick fix to keeep compatibility with biosensors package
-    if ~isempty(optionalProcID{x}) && ismember('checkOptionalProcess',methods(userData.crtPackage))
-        procEx = userData.crtPackage.checkOptionalProcess(procRun{x}, optionalProcID{x}); 
-        for i = 1:size(userData.dependM, 1)
-            if ~isempty(procEx{i})
-                userfcn_drawIcon(handles,'warn',i,procEx{i}(1).message, true); % user data is retrieved, updated and submitted
-                
-            end
-        end
-    end 
 end
 
 %% Post-processing exception report

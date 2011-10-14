@@ -205,11 +205,6 @@ classdef Package < hgsetget
             
         end
         
-        function setDepMatrix(obj,row,col,value)
-            % row and col could be array
-            obj.depMatrix_(row, col) = value;
-        end
-            
         function setProcess(obj, i, newProcess)
             % set the i th process of obj.processes_ to newprocess
             % If newProcess = [ ], clear the process in package process
@@ -248,7 +243,6 @@ classdef Package < hgsetget
         GUI
         getName
         getDependencyMatrix
-        getOptionalProcessId
         getProcessClassNames
         getDefaultProcessConstructors
     end

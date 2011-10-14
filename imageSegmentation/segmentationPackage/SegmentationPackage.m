@@ -15,7 +15,7 @@ classdef SegmentationPackage < Package
             % Call the superclass constructor
             obj = obj@Package(super_args{:});
         end
-
+        
         function [status processExceptions] = sanityCheck(obj,varargin)
             
             % Check that the channels have a psf function
@@ -46,20 +46,18 @@ classdef SegmentationPackage < Package
     end
     methods (Static)
         
-        function m = getDependencyMatrix()
-            % Get dependency matrix
-            m = [0 0; % SegmentationProcess
-                1 0]; % MaskRefinementProcess
-        end
-        
-        function id = getOptionalProcessId()
-            % Get the optional process id
-            id = [];
-        end
-        
         function name = getName()
             name = 'Segmentation';
         end
+        
+        function m = getDependencyMatrix(i,j)
+            m = [0 0; % SegmentationProcess
+                1 0]; % MaskRefinementProcess
+            if nargin<2, j=1:size(m,2); end
+            if nargin<1, i=1:size(m,1); end
+            m=m(i,j);
+        end
+        
         
         function varargout = GUI(varargin)
             % Start the package GUI
@@ -82,6 +80,5 @@ classdef SegmentationPackage < Package
             classes=segClasses(index);
         end
     end
-    
 end
 

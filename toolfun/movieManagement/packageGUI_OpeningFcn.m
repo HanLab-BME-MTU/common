@@ -159,7 +159,7 @@ end
 userData.id = 1;
 userData.crtPackage = userData.package(userData.id);
 userData.dependM = userData.package(userData.id).getDependencyMatrix;
-userData.optProcID =userData.package(userData.id).getOptionalProcessId;
+userData.optProcID =find(sum(userData.dependM==2,1));
 nProc = size(userData.dependM, 1);
 userData.statusM = repmat( struct('IconType', {cell(1,nProc)}, 'Msg', {cell(1,nProc)}, 'Checked', zeros(1,nProc), 'Visited', false), 1, nMovies);
 
