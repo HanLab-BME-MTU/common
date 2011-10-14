@@ -240,7 +240,7 @@ function pushbutton_select_projectDir_Callback(hObject, ~, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 userData = get(handles.figure1, 'UserData');
-pathname = uigetdir('Select project folder', userData.projectDir);
+pathname = uigetdir(userData.projectDir,'Select project folder');
 
 % Test uigetdir output, reinitalize the movies if any, store the project
 % directory and the output directory (project directory by default)
