@@ -450,19 +450,20 @@ nf = userData.MD.nFrames_;
 fmt = ['%0' num2str(ceil(log10(nf))) 'd'];
 fpath = [userData.MD.movieDataPath_ filesep 'Frames' filesep];
 mkClrDir(fpath);
-mpath = [userData.MD.movieDataPath_ filesep 'Movie' filesep];
-mkClrDir(mpath);
 fprintf('Generating movie frames:     ');
 for f=1:nf
     set(handles.slider_frame, 'Value',f);
     redrawScene(hObject, handles);
     drawnow;
     print(userData.drawFig, '-dpng', '-loose', ['-r' num2str(1*72)], [fpath 'frame' num2str(f, fmt) '.png']);
+    print(userData.drawFig, '-dtiff', '-loose', ['-r' num2str(1*72)], [fpath 'frame' num2str(f, fmt) '.tif']);
     fprintf('\b\b\b\b%3d%%', round(100*f/(nf)));
 end
 fprintf('\n');
 
 % Generate movie
+mpath = [userData.MD.movieDataPath_ filesep 'Movie' filesep];
+mkClrDir(mpath);
 fprintf('Generating movie... ');
 fr = num2str(15);
 cmd = ['ffmpeg -y -r ' fr ' -i ' fpath 'frame' fmt '.png' ' -r ' fr ' -b 50000k -bt 20000k ' mpath 'movie.mp4 > /dev/null 2>&1' ];
