@@ -12,7 +12,7 @@ classdef Process < hgsetget
     
     properties  (SetAccess = protected)
         % Success/Uptodate flags
-        procChanged_   % Whether process parameter has been changed     
+        procChanged_   % Whether process parameters have been changed     
         success_       % If the process has been successfully run
         % If the parameter of parent process is changed
         % updated_ - false, not changed updated_ - true
@@ -108,6 +108,7 @@ classdef Process < hgsetget
                 rethrow(runException)
             end
             obj.success_=true;
+            obj.updated_=true;
             obj.procChanged_=false;
             obj.setDateTime;
             obj.owner_.save;

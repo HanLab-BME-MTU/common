@@ -240,6 +240,11 @@ props=get(hObject,{'Value','Tag'});
 procStatus=props{1};
 procID = str2double(props{2}(length('checkbox_')+1:end));
 
+userData=get(handles.figure1, 'UserData');
+userData.statusM(userData.id).Checked(procID) = procStatus;
+set(handles.figure1, 'UserData', userData)
+
+
 userfcn_checkAllMovies(procID, procStatus, handles);
 userfcn_lampSwitch(procID, procStatus, handles);
 

@@ -265,34 +265,8 @@ try
 catch ME
     rethrow(ME)
 end
-
-% After successfully processed, determine if dependent processes are updated.
-% If no, set current process updated = false, and draw warning icon
-% if yes, set current process updated = true, and draw pass icon
-l = true;
-
-% Return user data !!!
-set(handles.figure1, 'UserData', userData)
-
-for k = parentIndex
-   if ~userData.crtPackage.processes_{k}.updated_ 
-           
-       userData.crtPackage.processes_{i}.setUpdated(false);
-       userfcn_drawIcon(handles,'warn',i,...
-         ['Current step is processed successfully. But it is found to be out of date.'...
-              'Please make sure the dependent steps are up to date.'], true);
-      l = false;
-       break
-   end
-end
-
-if l
-    userData.crtPackage.processes_{i}.setUpdated(true);
-    userfcn_drawIcon(handles,'pass',i,...
-        'Current step is processed successfully', true);
-end
-
-set(handles.(['pushbutton_show_',num2str(i)]),'Enable','on');
+% Refresh wall status
+packageGUI_RefreshFcn(handles,'initialize');
 end
 
 function status = generateReport(movieException,userData,type)

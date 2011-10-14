@@ -38,11 +38,7 @@ if ~isequal(userData.crtPackage.processes_{userData.procID},userData.crtProc)
     else
         userData.MD.replaceProcess(userData.crtPackage.processes_{userData.procID},userData.crtProc);
     end
-
        
-    % Set font weight of process name bold
-    set(userData.handles_main.(['checkbox_' num2str(userData.procID)]),...
-            'FontWeight','bold');
 end
 
  % Override the parameters with the GUI set-up ones
