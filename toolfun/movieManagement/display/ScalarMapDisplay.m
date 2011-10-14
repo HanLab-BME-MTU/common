@@ -25,22 +25,13 @@ classdef ScalarMapDisplay < MovieDataDisplay
         
         function h=initDraw(obj,data,tag,varargin)
             
-            if size(data,3)>1    
+            if size(data,3)>1           
                 dataSlice = squeeze(data(:,1,:));
-                h=imagesc(dataSlice,varargin{:});
-                mainFig = get(get(h,'Parent'),'Parent');
-                obj.slider = uicontrol(mainFig,'Style','slider',...
-                    'Position',[20 20 30 250],...
-                    'Value',1,'Min',1,'Max',size(data,2),...
-                    'SliderStep',[1/(size(data,2)-1)  5/(size(data,2)-1)],...
-                    'Tag','slider_depth','BackgroundColor','white',...
-                    'Callback',@(hObject,event) updateDraw(obj,h,data));
-                set(h,'AlphaData',~isnan(dataSlice))
             else
-                h=imagesc(data,varargin{:});
-                set(h,'alphadata',~isnan(data))
+                dataSlice=data;
             end
-
+            h=imagesc(dataSlice,varargin{:});
+            set(h,'AlphaData',~isnan(dataSlice))
             % Plot the image and associate the tag
 
             set(h,'Tag',tag,'UserData',data);
@@ -74,8 +65,32 @@ classdef ScalarMapDisplay < MovieDataDisplay
             if ~isempty(obj.CLim),set(hAxes,'CLim',obj.CLim); end
                         
             % Set the color limits
-            if ~isempty(obj.Labels{1}),xlabel(obj.Labels{1}); end
-            if ~isempty(obj.Labels{2}),ylabel(obj.Labels{2}); end
+            if ~isempty(obj.Labels{1}),xlabel(obj.Labels{1},'Parent',hAxes); end
+            if size(data,3)>1   
+                if ~isempty(obj.Labels{3}),ylabel(obj.Labels{3},'Parent',hAxes); end
+            else
+                if ~isempty(obj.Labels{2}),ylabel(obj.Labels{2},'Parent',hAxes); end
+            end
+            
+            if size(data,3)>1
+                axesPos = get(get(h,'Parent'),'Position');
+                mainFig = get(get(h,'Parent'),'Parent');
+                obj.slider = uicontrol(mainFig,'Style','slider',...
+                    'Position',[axesPos(1)/2 axesPos(2) axesPos(3)/20 axesPos(4)],...
+                    'Units','normalized',...
+                    'Value',1,'Min',1,'Max',size(data,2),...
+                    'SliderStep',[1/(size(data,2)-1)  5/(size(data,2)-1)],...
+                    'Tag','slider_depth','BackgroundColor','white',...
+                    'Callback',@(hObject,event) updateDraw(obj,h,data));
+                if ~isempty(obj.Labels{2}),
+                    hp = uipanel(mainFig,...
+                    'Position',[axesPos(1)/4 axesPos(2) axesPos(3)/20 axesPos(4)],...
+                    'Units','normalized','BorderType','none',...
+                    'BackgroundColor',get(gcf,'Color')); 
+                    ha = axes('Parent',hp,'Visible','off');
+                    text(0,1/3,obj.Labels{2},'Parent',ha,'rotation',90)
+                end
+            end
         end
 
         function updateDraw(obj,h,data)
