@@ -8,8 +8,7 @@ classdef Package < hgsetget
 
     properties(SetAccess = protected)
         owner_ % The MovieData object this package belongs to
-        processes_ % Cell array containing all processes who will be used in this package
-        depMatrix_ % Processes' dependency matrix        
+        processes_ % Cell array containing all processes who will be used in this package 
     end
 
     properties
@@ -35,12 +34,11 @@ classdef Package < hgsetget
         end
     end
     methods (Access = protected)
-        function obj = Package(owner, depMatrix, outputDirectory,varargin)
+        function obj = Package(owner, outputDirectory,varargin)
             % Constructor of class Package
             
             if nargin > 0
                 obj.owner_ = owner; 
-                obj.depMatrix_ = depMatrix;
                 obj.outputDirectory_ = outputDirectory;
                 
                 nVarargin = numel(varargin);
@@ -89,7 +87,7 @@ classdef Package < hgsetget
                     ' is out of date. '];
                 
                 for parentID=parentIndex(invalidParent)
-                    if obj.depMatrix_(procID,parentID)==2 && ~obj.processes_{parentID}.success_
+                    if obj.getDependencyMatrix(procID,parentID)==2 && ~obj.processes_{parentID}.success_
                         statusMsg = [statusMsg '\nbecause the optional step ' num2str(parentID),...
                             ': ', eval([obj.getProcessClassNames{parentID} '.getName']),...
                             ', changes the input data of current step.'];
@@ -148,7 +146,8 @@ classdef Package < hgsetget
             processExceptions = cell(1,nProc);
             processVisited = false(1,nProc);
             
-            % Inpi
+            assert(isequal(nProc,numel(obj.processes_)));
+            % Input check
             ip = inputParser;
             ip.CaseSensitive = false;
             ip.addRequired('obj');
@@ -224,8 +223,8 @@ classdef Package < hgsetget
             
             % By default, get the required parent processes as well as
             % all non-empty optional parent processes
-            reqParentIndex = find(obj.depMatrix_(procID,:)==1);
-            optParentIndex = find(obj.depMatrix_(procID,:)==2);
+            reqParentIndex = find(obj.getDependencyMatrix(procID,:)==1);
+            optParentIndex = find(obj.getDependencyMatrix(procID,:)==2);
             isValidOptParent = ~cellfun(@isempty,obj.processes_(optParentIndex));
             validOptParentIndex = optParentIndex(isValidOptParent);
             parentID=sort([reqParentIndex,validOptParentIndex]);

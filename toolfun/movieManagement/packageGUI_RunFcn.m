@@ -213,29 +213,20 @@ function userfcn_runProc_dfs (i, procRun, handles)  % throws exception
 userData = get(handles.figure1, 'UserData');
 
 parentRun = [];
-requiredParentIndex = find(userData.crtPackage.depMatrix_(i,:)==1);
-optionalParentIndex = find(userData.crtPackage.depMatrix_(i,:)==2);
-
-% Remove empty optional processes from the list of parentIndex
-validOptionalParentIndex = optionalParentIndex(~cellfun(@isempty,...
-    userData.crtPackage.processes_(optionalParentIndex)));
-parentIndex=sort([requiredParentIndex,validOptionalParentIndex]);
+parentID=userData.crtPackage.getParent(i);
 
 % if current process i have dependency processes    
-if ~isempty(parentIndex)  
-    for j = parentIndex
-        % if parent process is one of the processes need to be run
-        % if parent process has already run successfully
-        if any(j == procRun) && ~userData.crtPackage.processes_{j}.success_
-            parentRun = horzcat(parentRun,j); %#ok<AGROW>
-        end
+for j = parentID
+    % if parent process is one of the processes need to be run
+    % if parent process has already run successfully
+    if any(j == procRun) && ~userData.crtPackage.processes_{j}.success_
+        parentRun = horzcat(parentRun,j); %#ok<AGROW>
     end
-    % if above assumptions are yes, recursively run parent process' dfs fcn
-    if ~isempty(parentRun)
-        for j = parentRun
-            userfcn_runProc_dfs (j, procRun, handles)
-        end
-    end
+end
+
+% if above assumptions are yes, recursively run parent process' dfs fcn
+for j = parentRun
+    userfcn_runProc_dfs (j, procRun, handles)
 end
 
 try
@@ -243,6 +234,7 @@ try
 catch ME
     rethrow(ME)
 end
+
 % Refresh wall status
 packageGUI_RefreshFcn(handles,'initialize');
 end

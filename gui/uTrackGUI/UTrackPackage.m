@@ -8,9 +8,8 @@ classdef UTrackPackage < Package
                 super_args = {};
             else
                 % Owner: MovieData object
-                super_args{1} = owner;
-                super_args{2} = UTrackPackage.getDependencyMatrix;               
-                super_args{3} = [outputDir filesep 'UTrackPackage'];
+                super_args{1} = owner;              
+                super_args{2} = [outputDir filesep 'UTrackPackage'];
                 
             end
             % Call the superclass constructor

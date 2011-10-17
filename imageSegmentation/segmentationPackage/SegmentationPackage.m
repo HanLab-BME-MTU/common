@@ -9,8 +9,7 @@ classdef SegmentationPackage < Package
             else
                 % Owner: MovieData object
                 super_args{1} = owner;
-                super_args{2} = SegmentationPackage.getDependencyMatrix;
-                super_args{3} = [outputDir filesep 'SegmentationPackage'];
+                super_args{2} = [outputDir filesep 'SegmentationPackage'];
             end
             % Call the superclass constructor
             obj = obj@Package(super_args{:});
