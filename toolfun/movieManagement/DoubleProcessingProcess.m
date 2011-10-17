@@ -182,7 +182,7 @@ classdef DoubleProcessingProcess < ImageProcessingProcess
             
         end
         function output = getDrawableOutput(obj)
-            output(1).name='Ratio images';
+            output(1).name='Activity images';
             output(1).var='';
             output(1).formatData=[];
             output(1).type='image';

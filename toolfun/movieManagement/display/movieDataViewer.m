@@ -756,9 +756,9 @@ i = str2double(tokens{1}{2});
 j = str2double(tokens{1}{3});
 
 if i==j
-    figName = ['Autocorrelation ' input(i).name];
+    figName = [input(i).name ' autocorrelation'];
 else
-    figName = ['Cross-correlation ' input(i).name ' ' input(j).name];
+    figName = [input(i).name '-' input(j).name ' cross-correlation'];
 end
 % Draw or delete the graph figure depending on the checkbox value
 if get(hObject,'Value')
