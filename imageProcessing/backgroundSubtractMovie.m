@@ -129,8 +129,8 @@ if isempty(iBMProc) || isempty(iSCProc)
     error('Background masking and shade correction have not yet been performed on this movie! Please run first!!')
 else        
     %Check which channels have background masks, shade correction
-    hasBM = cellfun(@(x)(~isempty(x)),movieData.processes_{iBMProc}.outFilePaths_);
-    hasSC = cellfun(@(x)(~isempty(x)),movieData.processes_{iSCProc}.outFilePaths_);
+    hasBM = cellfun(@(x)(~isempty(x)),movieData.processes_{iBMProc}.outFilePaths_(1,:));
+    hasSC = cellfun(@(x)(~isempty(x)),movieData.processes_{iSCProc}.outFilePaths_(1,:));
     
     %Check that these are the same
     if ~all(hasSC(p.ChannelIndex))

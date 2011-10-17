@@ -22,7 +22,7 @@ function varargout = thresholdProcessGUI(varargin)
 
 % Edit the above text to modify the response to help thresholdProcessGUI
 
-% Last Modified by GUIDE v2.5 01-Jun-2011 14:49:46
+% Last Modified by GUIDE v2.5 17-Oct-2011 14:59:34
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -47,11 +47,42 @@ end
 % --- Executes just before thresholdProcessGUI is made visible.
 function thresholdProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
-processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',1);
+processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',0);
 
 % ---------------------- Channel Setup -------------------------
 userData = get(handles.figure1, 'UserData');
 funParams = userData.crtProc.funParams_;
+
+% Set up available input channels
+set(handles.listbox_availableChannels,'String',userData.MD.getChannelPaths(), ...
+    'UserData',1:numel(userData.MD.channels_));
+
+channelIndex = funParams.ChannelIndex;
+
+% Find any parent process
+parentProc = userData.crtPackage.getParent(userData.procID);
+if isempty(userData.crtPackage.processes_{userData.procID}) && ~isempty(parentProc)
+    % Check existence of all parent processes
+    emptyParentProc = any(cellfun(@isempty,userData.crtPackage.processes_(parentProc)));
+    if ~emptyParentProc
+        % Intersect channel index with channel index of parent processes
+        parentChannelIndex = @(x) userData.crtPackage.processes_{x}.funParams_.ChannelIndex;
+        for i = parentProc
+            channelIndex = intersect(channelIndex,parentChannelIndex(i));
+        end
+    end
+   
+end
+
+if ~isempty(channelIndex)
+    channelString = userData.MD.getChannelPaths(channelIndex);
+else
+    channelString = {};
+end
+
+set(handles.listbox_selectedChannels,'String',channelString,...
+    'UserData',channelIndex);
+
 
 threshMethods = userData.crtProc.getMethods();
 set(handles.popupmenu_thresholdingMethod,'String',{threshMethods(:).name},...
@@ -206,6 +237,97 @@ end
 
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
 
+% --- Executes on button press in checkbox_all.
+function checkbox_all_Callback(hObject, eventdata, handles)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_all
+contents1 = get(handles.listbox_availableChannels, 'String');
+
+chanIndex1 = get(handles.listbox_availableChannels, 'Userdata');
+chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
+
+% Return if listbox1 is empty
+if isempty(contents1)
+    return;
+end
+
+switch get(hObject,'Value')
+    case 1
+        set(handles.listbox_selectedChannels, 'String', contents1);
+        chanIndex2 = chanIndex1;
+        thresholdValues =zeros(1,numel(chanIndex1));
+    case 0
+        set(handles.listbox_selectedChannels, 'String', {}, 'Value',1);
+        chanIndex2 = [ ];
+        thresholdValues = [];
+end
+set(handles.listbox_selectedChannels, 'UserData', chanIndex2);
+set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues))
+update_data(hObject,eventdata,handles);
+
+% --- Executes on button press in pushbutton_select.
+function pushbutton_select_Callback(hObject, eventdata, handles)
+% call back function of 'select' button
+
+contents1 = get(handles.listbox_availableChannels, 'String');
+contents2 = get(handles.listbox_selectedChannels, 'String');
+id = get(handles.listbox_availableChannels, 'Value');
+
+% If channel has already been added, return;
+chanIndex1 = get(handles.listbox_availableChannels, 'Userdata');
+chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
+thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+
+for i = id
+    if any(strcmp(contents1{i}, contents2) )
+        continue;
+    else
+        contents2{end+1} = contents1{i};
+        thresholdValues(end+1) = 0;
+        chanIndex2 = cat(2, chanIndex2, chanIndex1(i));
+
+    end
+end
+
+set(handles.listbox_selectedChannels, 'String', contents2, 'Userdata', chanIndex2);
+set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues))
+update_data(hObject,eventdata,handles);
+
+
+% --- Executes on button press in pushbutton_delete.
+function pushbutton_delete_Callback(hObject, eventdata, handles)
+% Call back function of 'delete' button
+contents = get(handles.listbox_selectedChannels,'String');
+id = get(handles.listbox_selectedChannels,'Value');
+
+% Return if list is empty
+if isempty(contents) || isempty(id)
+    return;
+end
+
+% Delete selected item
+contents(id) = [ ];
+
+% Delete userdata
+chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
+chanIndex2(id) = [ ];
+set(handles.listbox_selectedChannels, 'Userdata', chanIndex2);
+
+% Update thresholdValues
+thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
+thresholdValues(id) = [];
+set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
+
+% Point 'Value' to the second last item in the list once the 
+% last item has been deleted
+if (id >length(contents) && id>1)
+    set(handles.listbox_selectedChannels,'Value',length(contents));
+    set(handles.listbox_thresholdValues,'Value',length(contents));
+end
+% Refresh listbox
+set(handles.listbox_selectedChannels,'String',contents);
+update_data(hObject,eventdata,handles);
+
 % --- Executes on button press in checkbox_auto.
 function checkbox_auto_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkbox_auto
@@ -351,7 +473,7 @@ userData = get(handles.figure1, 'UserData');
 
 if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_2') || strcmp(get(hObject,'Tag'),'listbox_thresholdValues')
     % Check if changes have been at the list box level
-    linkedListBoxes = {'listbox_2','listbox_thresholdValues'};
+    linkedListBoxes = {'listbox_selectedChannels','listbox_thresholdValues'};
     checkLinkBox = strcmp(get(hObject,'Tag'),linkedListBoxes);
     if any(checkLinkBox)
         value = get(handles.(linkedListBoxes{checkLinkBox}),'Value');
