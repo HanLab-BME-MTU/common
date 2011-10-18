@@ -47,19 +47,31 @@ classdef  MovieData < hgsetget
             %    outputDirectory - a string containing the output directory
             %    OPTIONAL - a set of options under the property/key format 
             if nargin>0
-                % Required input fields
-                obj.channels_ = channels;
-                obj.outputDirectory_ = outputDirectory;
-                
-                % Construct the Channel object
-                nVarargin = numel(varargin);
-                if nVarargin > 1 && mod(nVarargin,2)==0
-                    for i=1 : 2 : nVarargin-1
-                        obj.(varargin{i}) = varargin{i+1};
+                if nargin==1 && ischar(channels)
+                    % Load the movieData from a file
+                    movieFullPath=channels;
+                    vars = whos('-file', movieFullPath);
+                    vars = vars(strcmp({vars(:).class},'MovieData'));
+                    s=load(movieFullPath,'-mat',vars.name);
+                    obj= s.(vars.name);
+                    [moviePath,movieName,movieExt]=fileparts(movieFullPath);
+                    obj.sanityCheck(moviePath,[movieName movieExt]);
+                    return
+                else
+                    % Required input fields
+                    obj.channels_ = channels;
+                    obj.outputDirectory_ = outputDirectory;
+                    
+                    % Construct the Channel object
+                    nVarargin = numel(varargin);
+                    if nVarargin > 1 && mod(nVarargin,2)==0
+                        for i=1 : 2 : nVarargin-1
+                            obj.(varargin{i}) = varargin{i+1};
+                        end
                     end
+                    
+                    obj.createTime_ = clock;
                 end
-                
-                obj.createTime_ = clock;
             end
         end
 
