@@ -11,12 +11,19 @@ classdef MovieList < hgsetget
     end
     
     methods
-        function obj = MovieList(movieDataFile, movieListPath, movieListFileName)
+        function obj = MovieList(movieDataFile, varargin)
             % Constructor for the MovieList object
             
-            % movieDataFile: a cell array of file directory
-            %                an array of MovieData object
             if nargin > 0
+                % Input check
+                ip = inputParser;
+                ip.addRequired('movieDataFile',@(x) iscellstr(x) || isa(movieDataFile, 'MovieData') || ischar(x));
+                ip.addOptional('movieListPath','',@ischar);
+                ip.addOptional('movieListFileName','',@ischar);
+                ip.parse(movieDataFile, varargin{:});
+                obj.movieListPath_=ip.Results.movieListPath;
+                obj.movieListFileName_=ip.Results.movieListFileName;
+                
                 if iscellstr(movieDataFile)
                     if size(movieDataFile, 2) >= size(movieDataFile, 1)
                         obj.movieDataFile_ = movieDataFile;
@@ -28,25 +35,18 @@ classdef MovieList < hgsetget
                     for i = 1: length(movieDataFile)
                         obj.movieDataFile_{end+1} = [movieDataFile(i).movieDataPath_ filesep movieDataFile(i).movieDataFileName_];
                     end
-                else
-                    error('User-defined: Please provide a cell array of file directory or an array of MovieData object.')
+                elseif ischar(movieDataFile)
+                    vars = whos('-file', movieDataFile);
+                    MLvars = vars(strcmp({vars(:).class},'MovieList'));
+                    s=load(movieDataFile,'-mat',MLvars.name);
+                    obj= s.(MLvars.name);
+                    [listPath,listName,lisExt]=fileparts(movieDataFile);
+                    obj.sanityCheck('all',listPath,[listName lisExt]);
+                    return
                 end
                 
-                if nargin > 1
-                    if isempty(movieListPath) || ischar(movieListPath)
-                        obj.movieListPath_ = movieListPath;
-                    else
-                        error('User-defined: Movie list path should be a string');
-                    end
-                end
-                
-                if nargin > 2
-                    if isempty(movieListFileName) || ischar(movieListFileName)
-                        obj.movieListFileName_ = movieListFileName;
-                    else
-                        error('User-defined: Movie list file name should be a string');
-                    end
-                end
+                obj.movieListPath_=ip.Results.movieListPath;
+                obj.movieListFileName_=ip.Results.movieListFileName;
                 
             else
                 error('User-defined: Please provide movie data file path to creat a movie list.')
