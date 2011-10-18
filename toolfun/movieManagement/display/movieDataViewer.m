@@ -415,14 +415,22 @@ figWidth = panelsLength+20;
 figHeight = panelsHeight+moviePanelHeight;
 set(mainFig,'Position',[sz(3)/50 (sz(4)-figHeight)/2 figWidth figHeight]);
 
+
+% Update handles structure and attach it to the main figure
+handles = guihandles(mainFig);
+guidata(handles.figure1, handles);
+
+% Set the figure handle to -1 by default
+userData.drawFig=-1;
+set(handles.figure1,'UserData',userData);
+
+%% Set up default parameters
 % Auto check input process
-if ismember(ip.Results.procId,validProcId)
-    for i=ip.Results.procId
-        h=findobj(mainFig,'-regexp','Tag',['(\w)_process' ...
-            num2str(i)  '_output1.*']);
-        set(h,'Value',1);
-    end
+for i=intersect(ip.Results.procId,validProcId)
+    h=findobj(mainFig,'-regexp','Tag',['(\w)_process' num2str(i)  '_output1.*']);
+    set(h,'Value',1);
 end
+
 
 % Update handles structure and attach it to the main figure
 handles = guihandles(mainFig);
@@ -492,7 +500,7 @@ redrawOverlays(handles);
 
 function h= getFigure(handles,figName)
 
-h = findobj(0,'-regexp','Name',figName);
+h = findobj(0,'-regexp','Name',['^' figName '$']);
 if ~isempty(h), figure(h); return; end
 
 %Create a figure
@@ -758,15 +766,19 @@ j = str2double(tokens{1}{3});
 if i==j
     figName = [input(i).name ' autocorrelation'];
 else
-    figName = [input(i).name '-' input(j).name ' cross-correlation'];
+    figName = [input(i).name ' - ' input(j).name ' cross-correlation'];
 end
+if isa(userData.MD.processes_{procId},'CorrelationAveragingProcess')
+    figName =['Averaged ' figName];
+end
+
 % Draw or delete the graph figure depending on the checkbox value
 if get(hObject,'Value')
     h = getFigure(handles,figName);
     userData.MD.processes_{procId}.draw(i,j);
     set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 else
-    h=findobj(0,'-regexp','Name',figName);
+    h=findobj(0,'-regexp','Name',['^' figName '$']);
     if ~isempty(h), delete(h); end
 end
 
