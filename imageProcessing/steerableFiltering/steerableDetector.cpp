@@ -43,12 +43,12 @@ static int getTemplateN(int M) {
 }
 
 
-double* getWeights(int M) {
+double* getWeights(int M, double sigma) {
     double* alpha;
     switch (M) {
         case 1:
             alpha = new double[1];
-            alpha[0] = -0.797884560802865;
+            alpha[0] = -sqrt(2.0/PI);
             break;
         case 2:
             alpha = new double[2];
@@ -239,7 +239,7 @@ void computeBaseTemplates(double* input, int nx, int ny, int M, double sigma, do
 
 
 // Point responses
-double pointRespM1(int i, double angle, double* alpha, double** templates) {
+/*double pointRespM1(int i, double angle, double* alpha, double** templates) {
     
     double cosT = cos(angle);
     double sinT = sin(angle);
@@ -248,9 +248,9 @@ double pointRespM1(int i, double angle, double* alpha, double** templates) {
     double gyi = templates[1][i];
     double a11 = alpha[0];
     
-    double result = a11 * (cosT*gyi - sinT*gxi);
+    double result = a11 * (cosT*gxi + sinT*gyi);
     return result;
-}
+}*/
 
 
 double pointRespM2(int i, double angle, double* alpha, double** templates) {
@@ -265,8 +265,8 @@ double pointRespM2(int i, double angle, double* alpha, double** templates) {
     double a22 = alpha[1];
     
     double result = cosT*cosT*(a22*gyyi + a20*gxxi)
-    + cosT*sinT*2.0*(a20-a22)*gxyi
-    + sinT*sinT*(a22*gxxi + a20*gyyi);
+                  + cosT*sinT*2.0*(a20-a22)*gxyi
+                  + sinT*sinT*(a22*gxxi + a20*gyyi);
     return result;
 }
 
@@ -285,16 +285,16 @@ double pointRespM3(int i, double angle, double* alpha, double** templates) {
     double gxyyi = templates[4][i];
     double gyyyi = templates[5][i];
     
-    double a11 = alpha[0];
-    double a31 = alpha[1];
-    double a33 = alpha[2];
+    double a10 = alpha[0];
+    double a30 = alpha[1];
+    double a32 = alpha[2];
     
-    double result = cosT*a11*gyi
-            - sinT*a11*gxi
-            + cosT2*cosT * (a31*gxxyi + a33*gyyyi)
-            - sinT2*sinT * (a31*gxyyi + a33*gxxxi)
-            - cosT2*sinT * (3.0*a33*gxyyi - 2.0*a31*gxyyi + a31*gxxxi )
-            + cosT*sinT2 * (3.0*a33*gxxyi - 2.0*a31*gxxyi + a31*gyyyi );
+    double result = a10*(sinT*gyi + cosT*gxi)
+            + sinT2*sinT*(a30*gyyyi + a32*gxxyi)
+            + cosT*sinT2*(a32*gxxxi + (3.0*a30-2.0*a32)*gxyyi)
+            + cosT2*sinT*(a32*gyyyi + (3.0*a30-2.0*a32)*gxxyi)
+            + cosT2*cosT*(a32*gxyyi + a30*gxxxi);
+    
     return result;
 }
 
@@ -341,6 +341,10 @@ double pointRespM5(int i, double angle, double* alpha, double** templates) {
     double sinT2 = sinT*sinT;
     double cosT3 = cosT2*cosT;
     double sinT3 = sinT2*sinT;
+    double sinT4 = sinT2*sinT2;
+    double cosT4 = cosT2*cosT2;
+    double sinT5 = sinT2*sinT3;
+    double cosT5 = cosT2*cosT3;
     
     double gxi = templates[0][i];
     double gyi = templates[1][i];
@@ -355,19 +359,42 @@ double pointRespM5(int i, double angle, double* alpha, double** templates) {
     double gxyyyyi = templates[10][i];
     double gyyyyyi = templates[11][i];
     
-    double a11 = alpha[0];
-    double a31 = alpha[1];
-    double a33 = alpha[2];
-    double a51 = alpha[3];
-    double a53 = alpha[4];
+    double a10 = alpha[0];
+    double a30 = alpha[1];
+    double a32 = alpha[2];
+    double a52 = alpha[3];
+    double a54 = alpha[4];
     
-    double result = cosT2*cosT3 * (a11*gyi + a31*gxxyi + a33*gyyyi + a51*gxxxxyi + a53*gxxyyyi)
+    /*double result = cosT2*cosT3 * (a11*gyi + a31*gxxyi + a33*gyyyi + a51*gxxxxyi + a53*gxxyyyi)
     + cosT2*cosT2*sinT * (-a11*gxi - a31*gxxxi - (3.0*a33-2.0*a31)*gxyyi + a51*(4.0*gxxxyyi - gxxxxxi) + a53*(2.0*gxyyyyi - 3.0*gxxxyyi))
     + cosT3*sinT2 * ( 2.0*a11*gyi + (3.0*a33-a31)*gxxyi + (a33+a31)*gyyyi + a51*(6.0*gxxyyyi-4.0*gxxxxyi) + a53*(gyyyyyi-6.0*gxxyyyi+3.0*gxxxxyi))
     + cosT2*sinT3 * (-2.0*a11*gxi - (3.0*a33-a31)*gxyyi - (a33+a31)*gxxxi - a51*(6.0*gxxxyyi-4.0*gxyyyyi) - a53*(gxxxxxi-6.0*gxxxyyi+3.0*gxyyyyi))
     + cosT*sinT2*sinT2 * ( a11*gyi + a31*gyyyi + (3.0*a33-2.0*a31)*gxxyi - a51*(4.0*gxxyyyi - gyyyyyi) - a53*(2.0*gxxxxyi - 3.0*gxxyyyi))
-    - sinT2*sinT3 * (a11*gxi + a31*gxyyi + a33*gxxxi + a51*gxyyyyi + a53*gxxxyyi);
+    - sinT2*sinT3 * (a11*gxi + a31*gxyyi + a33*gxxxi + a51*gxyyyyi + a53*gxxxyyi);*/
     
+    /*double result = a10*sinT*gyi + a30*sinT3*gyyyi + a32*sinT3*gxxyi
+            + a52*sinT5*gxxyyyi + cosT5*(a54*gxyyyyi + a52*gxxxyyi) + a54*sinT5*gxxxxyi
+            + cosT4*sinT*(a54*gyyyyyi + 3.0*a52*gxxyyyi - 4.0*a54*gxxyyyi - 2.0*a52*gxxxxyi)
+            + cosT2*(a32*sinT*gyyyi + a52*sinT3*gyyyyyi + 3.0*a30*sinT*gxxyi - 2.0*a32*sinT*gxxyi
+            - 6.0*a52*sinT3*gxxyyyi + 6.0*a54*sinT3*gxxyyyi + 3.0*a52*sinT3*gxxxxyi - 4.0*a54*sinT3*gxxxxyi)
+            + cosT3*(a32*gxyyi + 3.0*a52*sinT2*gxyyyyi - 4.0*a54*sinT2*gxyyyyi + a30*gxxxi
+            - 6.0*a52*sinT2*gxxxyyi + 6.0*a54*sinT2*gxxxyyi + a52*sinT2*gxxxxxi)
+            + cosT*(a10*gxi + 3.0*a30*sinT2*gxyyi - 2.0*a32*sinT2*gxyyi - 2.0*a52*sinT4*gxyyyyi
+            + a32*sinT2*gxxxi + 3.0*a52*sinT4*gxxxyyi - 4.0*a54*sinT4*gxxxyyi + a54*sinT4*gxxxxxi);*/
+    
+    double result = a10*sinT*gyi
+            + sinT3*(a30*gyyyi + a32*gxxyi)
+            + sinT5*(a52*gxxyyyi + a54*gxxxxyi)
+            + cosT5*(a54*gxyyyyi + a52*gxxxyyi) 
+            + cosT4*sinT*(a54*gyyyyyi + 3.0*a52*gxxyyyi - 4.0*a54*gxxyyyi - 2.0*a52*gxxxxyi)
+            
+            + cosT2*(a32*sinT*gyyyi + a52*sinT3*gyyyyyi + 3.0*a30*sinT*gxxyi - 2.0*a32*sinT*gxxyi
+            - 6.0*a52*sinT3*gxxyyyi + 6.0*a54*sinT3*gxxyyyi + 3.0*a52*sinT3*gxxxxyi - 4.0*a54*sinT3*gxxxxyi)
+            + cosT3*(a32*gxyyi + 3.0*a52*sinT2*gxyyyyi - 4.0*a54*sinT2*gxyyyyi + a30*gxxxi
+            - 6.0*a52*sinT2*gxxxyyi + 6.0*a54*sinT2*gxxxyyi + a52*sinT2*gxxxxxi)
+            + cosT*(a10*gxi + 3.0*a30*sinT2*gxyyi - 2.0*a32*sinT2*gxyyi - 2.0*a52*sinT4*gxyyyyi
+            + a32*sinT2*gxxxi + 3.0*a52*sinT4*gxxxyyi - 4.0*a54*sinT4*gxxxyyi + a54*sinT4*gxxxxxi);
+
     return result;
 }
 
@@ -412,15 +439,15 @@ void filterM1(double** templates, int nx, int ny, double* alpha, double* respons
             orientation[i] = 0.0;
         } else {
             if (gyi == 0.0) {
-                tRoots[0] = PI/2.0;
-                tRoots[1] = opposite(tRoots[0]);
+                tRoots[0] = 0.0;
+                tRoots[1] = PI;
             } else {
-                tRoots[0] = atan(-gxi/gyi);
+                tRoots[0] = atan(gyi/gxi);
                 tRoots[1] = opposite(tRoots[0]);
             }
             orientation[i] = tRoots[0];
-            response[i] = cos(tRoots[0])*a11*gyi - sin(tRoots[0])*a11*gxi;
-            temp = cos(tRoots[1])*a11*gyi - sin(tRoots[1])*a11*gxi;
+            response[i] = a11 * (cos(tRoots[0])*gxi + sin(tRoots[0])*gyi);
+            temp = a11 * (cos(tRoots[1])*gxi + sin(tRoots[1])*gyi);
             if (temp > response[i]) {
                 response[i] = temp;
                 orientation[i] = tRoots[1];
@@ -506,27 +533,44 @@ void filterM3(double** templates, int nx, int ny, double* alpha, double* respons
     double* gxyy = templates[4];
     double* gyyy = templates[5];
     
-    double a11 = alpha[0];
+    /*double a11 = alpha[0];
     double a31 = alpha[1];
-    double a33 = alpha[2];
+    double a33 = alpha[2];*/
+    
+    double a10 = alpha[0];
+    double a30 = alpha[1];
+    double a32 = alpha[2];
     
     double A, B, C, D;
     
-    double a1 = 2.0*a31-3.0*a33;
-    double a2 = 6.0*a33-7.0*a31;
-    double g1, g2;
+    //double a1 = 2.0*a31-3.0*a33;
+    //double a2 = 6.0*a33-7.0*a31;
+    //double g1, g2;
     
     int nr, nt, deg;
     
+    // Derivative of the steering function           
+    /*sinT3 * (-a10*gxi - 3.0*a30*gxyyi + 2.0*a32*gxyyi - a32*gxxxi)
+    + sinT2*cosT * (a10*gyi + 3.0*a30*gyyyi - 2.0*a32*gyyyi - 6.0*a30*gxxyi + 7.0*a32*gxxyi)
+    + cosT2*sinT * (-a10*gxi + 6.0*a32*gxyyi - 7.0*a32*gxyyi - 2.0*a30*gxxxi + 2.0*a32*gxxxi)
+    + cosT3 * (a10*gyi + a32*gyyyi*3.0*a30*gxxyi-3.0*a32*gxxyi);*/
+    
+    
+    
     for (int i=0;i<nx*ny;++i) {
         
-        g1 = -a11*gy[i];
+        /*g1 = -a11*gy[i];
         g2 = -a11*gx[i];
         
         A = g1 - a31*gyyy[i] + a1*gxxy[i];
         B = g2 + a2*gxyy[i] + a1*gxxx[i];
         C = g1 + a2*gxxy[i] + a1*gyyy[i];
-        D = g2 - a31*gxxx[i] + a1*gxyy[i];
+        D = g2 - a31*gxxx[i] + a1*gxyy[i];*/
+        
+        A = -a10*gx[i] + (2.0*a32- 3.0*a30)*gxyy[i] - a32*gxxx[i];
+        B =  a10*gy[i] + (3.0*a30-2.0*a32)*gyyy[i] - (6.0*a30-7.0*a32)*gxxy[i];
+        C = -a10*gx[i] + (2.0*a32-3.0*a30)*gxxx[i] + (6.0*a30-7.0*a32)*gxyy[i]; 
+        D =  a10*gy[i] + a32*gyyy[i] + (3.0*a30-2.0*a32)*gxxy[i];
         
         A = approxZero(A);
         B = approxZero(B);
@@ -797,13 +841,19 @@ void filterM5(double** templates, int nx, int ny, double* alpha, double* respons
     double* gxyyyy = templates[10];
     double* gyyyyy = templates[11];
 
-    double a11 = alpha[0];
+    /*double a11 = alpha[0];
     double a31 = alpha[1];
     double a33 = alpha[2];
     double a51 = alpha[3];
-    double a53 = alpha[4];
+    double a53 = alpha[4];*/
+    
+    double a10 = alpha[0];
+    double a30 = alpha[1];
+    double a32 = alpha[2];
+    double a52 = alpha[3];
+    double a54 = alpha[4];
         
-    double a1 = 2.0*a31 - 3.0*a33;
+    /*double a1 = 2.0*a31 - 3.0*a33;
     double a2 = 4.0*a51 - 3.0*a53;
     double a3 = 6.0*a33 - 7.0*a31;
     double a4 = 12.0*a51 - 17.0*a53;
@@ -812,7 +862,7 @@ void filterM5(double** templates, int nx, int ny, double* alpha, double* respons
     double a7 = a31 - 3.0*a33;
     double a8 = 30.0*a53 - 34.0*a51;
     double a53x2 = 2.0*a53;
-    double a11x2 = 2.0*a11;
+    double a11x2 = 2.0*a11;*/
     
     double A, B, C, D, E, F;
     int nr, nt, deg;
@@ -820,12 +870,27 @@ void filterM5(double** templates, int nx, int ny, double* alpha, double* respons
     
     for (int i=0;i<nx*ny;++i) {
         
-        A = -a11*gy[i] + a1*gxxy[i] - a31*gyyy[i] + a53x2*gxxxxy[i] + a2*gxxyyy[i] - a51*gyyyyy[i];
+        /*A = -a11*gy[i] + a1*gxxy[i] - a31*gyyy[i] + a53x2*gxxxxy[i] + a2*gxxyyy[i] - a51*gyyyyy[i];
         B = -a11*gx[i] + a1*gxxx[i] + a53x2*gxxxxx[i] + a3*gxyy[i] + a4*gxxxyy[i] + a5*gxyyyy[i];
         C = -a11x2*gy[i] + a6*gxxy[i] + a4*gxxxxy[i] + a7*gyyy[i] + a8*gxxyyy[i] + a2*gyyyyy[i];
         D = -a11x2*gx[i] + a7*gxxx[i] + a2*gxxxxx[i] + a6*gxyy[i] + a8*gxxxyy[i] + a4*gxyyyy[i];
         E = -a11*gy[i] + a3*gxxy[i] + a5*gxxxxy[i] + a1*gyyy[i] + a4*gxxyyy[i] + a53x2*gyyyyy[i];
-        F = -a11*gx[i] + a1*gxyy[i] - a31*gxxx[i] - a51*gxxxxx[i]  + a2*gxxxyy[i] + a53x2*gxyyyy[i];
+        F = -a11*gx[i] + a1*gxyy[i] - a31*gxxx[i] - a51*gxxxxx[i]  + a2*gxxxyy[i] + a53x2*gxyyyy[i];*/
+                
+        /*  sinT5 * (-a10*gx[i] + (2.0*a32-3.0*a30)*gxyy[i] - a32*gxxx[i] + (4.0*a54-3.0*a52)*gxxxyy[i] + 2.0*a52*gxyyyy[i] -a54*gxxxxx[i])
+        + cosT5 * ( a10*gy[i] + (3.0*a30-2.0*a32)*gxxy[i] + a32*gyyy[i] + (3.0*a52-4.0*a54)*gxxyyy[i] - 2.0*a52*gxxxxy[i]+ a54*gyyyyy[i])
+        + cosT*sinT4 * ( a10*gy[i] + (3.0*a30-2.0*a32)*gyyy[i] + (7.0*a32-6.0*a30)*gxxy[i] - 2.0*a52*gyyyyy[i] + (17.0*a52-12.0*a54)*gxxyyy[i] + (13.0*a54-6.0*a52)*gxxxxy[i])
+        + cosT4*sinT * (-a10*gx[i] + (2.0*a32-3.0*a30)*gxxx[i] + (6.0*a30-7.0*a32)*gxyy[i] + 2.0*a52*gxxxxx[i] + (12.0*a54-17.0*a52)*gxxxyy[i] + (6.0*a52-13.0*a54)*gxyyyy[i])       
+        + cosT3*sinT2 * ( 2.0*a10*gy[i] + (5.0*a32-3.0*a30)*gxxy[i] + (3.0*a30-a32)*gyyy[i] + (17.0*a52-12.0*a54)*gxxxxy[i] + (34.0*a54-30.0*a52)*gxxyyy[i] + (3.0*a52-4.0*a54)*gyyyyy[i])
+        + cosT2*sinT3 * (-2.0*a10*gx[i] + (3.0*a30-5.0*a32)*gxyy[i] + (a32-3.0*a30)*gxxx[i] + (12.0*a54-17.0*a52)*gxyyyy[i] + (30.0*a52-34.0*a54)*gxxxyy[i] + (4.0*a54-3.0*a52)*gxxxxx[i]);*/
+        
+        A = -a10*gx[i] + (2.0*a32-3.0*a30)*gxyy[i] - a32*gxxx[i] + (4.0*a54-3.0*a52)*gxxxyy[i] + 2.0*a52*gxyyyy[i] -a54*gxxxxx[i];
+        B = a10*gy[i] + (3.0*a30-2.0*a32)*gyyy[i] + (7.0*a32-6.0*a30)*gxxy[i] - 2.0*a52*gyyyyy[i] + (17.0*a52-12.0*a54)*gxxyyy[i] + (13.0*a54-6.0*a52)*gxxxxy[i];
+        C = -2.0*a10*gx[i] + (3.0*a30-5.0*a32)*gxyy[i] + (a32-3.0*a30)*gxxx[i] + (12.0*a54-17.0*a52)*gxyyyy[i] + (30.0*a52-34.0*a54)*gxxxyy[i] + (4.0*a54-3.0*a52)*gxxxxx[i];
+        D = 2.0*a10*gy[i] + (5.0*a32-3.0*a30)*gxxy[i] + (3.0*a30-a32)*gyyy[i] + (17.0*a52-12.0*a54)*gxxxxy[i] + (34.0*a54-30.0*a52)*gxxyyy[i] + (3.0*a52-4.0*a54)*gyyyyy[i];
+        E = -a10*gx[i] + (2.0*a32-3.0*a30)*gxxx[i] + (6.0*a30-7.0*a32)*gxyy[i] + 2.0*a52*gxxxxx[i] + (12.0*a54-17.0*a52)*gxxxyy[i] + (6.0*a52-13.0*a54)*gxyyyy[i];
+        F = a10*gy[i] + (3.0*a30-2.0*a32)*gxxy[i] + a32*gyyy[i] + (3.0*a52-4.0*a54)*gxxyyy[i] - 2.0*a52*gxxxxy[i]+ a54*gyyyyy[i];
+     
         
         A = approxZero(A);
         B = approxZero(B);
@@ -994,8 +1059,8 @@ void computeNMS(double* response, double* orientation, double* nms, int nx, int 
     div_t divRes;
     for (int i=0;i<nx*ny;++i) {
         divRes = div(i, nx);
-        ux = -sin(orientation[i]); //cos(angle + pi/2)
-        uy = cos(orientation[i]);
+        ux = cos(orientation[i]);
+        uy = sin(orientation[i]);        
         v1 = interp(response, nx, ny, divRes.rem+ux, divRes.quot+uy);
         v2 = interp(response, nx, ny, divRes.rem-ux, divRes.quot-uy);
         if (v1 > response[i] || v2 > response[i]) {
@@ -1035,6 +1100,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     size_t ny = mxGetM(prhs[0]);
     int N = nx*ny;
     
+    int L = 2*(int)(4.0*sigma)+1; // support of the Gaussian kernels
+    
+    if (L>nx || L>ny) {
+        mexPrintf("Sigma must be smaller than %.2f\n", (fmin(nx,ny)-1)/8.0);
+        mexErrMsgTxt("Sigma value results in filter support that is larger than image.");
+    }
+    
     double* input = mxGetPr(prhs[0]);
     double* pixels = (double*)malloc(sizeof(double)*N);
     
@@ -1062,7 +1134,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     // Compute the templates used in the steerable filterbank
     computeBaseTemplates(pixels, nx, ny, M, sigma, templates);
-    double* alpha = getWeights(M);
+    double* alpha = getWeights(M, sigma);
 
     
     // apply filter
@@ -1129,6 +1201,23 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                 p[z*N + divRes.quot+divRes.rem*ny] = templates[z][i];
             }
         }
+        /*int nx = 100;
+        int ny = nx;
+        double sigma = 4.0;
+        int w = ceil(4.0*sigma);        
+        plhs[3] = mxCreateDoubleMatrix(nx, nx, mxREAL);
+        double* gx = mxGetPr(plhs[3]);
+        double theta = PI/3;
+        for (int x=0;x<nx;++x) {
+            for (int y=0;y<ny;++y) {
+                gx[y+x*ny] = -(x-w)/sigma/sigma*exp(-((x-w)*(x-w)+(y-w)*(y-w))/(2.0*sigma*sigma))*cos(theta)
+                    -(y-w)/sigma/sigma*exp(-((x-w)*(x-w)+(y-w)*(y-w))/(2.0*sigma*sigma)) * sin(theta);
+            }
+        */
+        
+        
+        
+        
     }    
     
     
@@ -1173,7 +1262,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     // Compute the templates used in the steerable filterbank
     computeBaseTemplates(pixels, nx, ny, M, sigma, templates);
-    double* alpha = getWeights(M);
+    double* alpha = getWeights(M, sigma);
 
     
     // apply filter
