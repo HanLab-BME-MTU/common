@@ -301,8 +301,6 @@ classdef MovieList < hgsetget
             if isempty(ML.movieListPath_) || isempty(ML.movieListFileName_)
                 if ~isempty(ML.movieListPath_),
                     defaultDir=ML.movieListPath_;
-                elseif ~isempty(ML.outputDirectory_)
-                    defaultDir=ML.outputDirectory_;
                 else
                     defaultDir =pwd;
                 end
