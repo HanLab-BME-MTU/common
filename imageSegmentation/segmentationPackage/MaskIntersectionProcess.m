@@ -30,56 +30,7 @@ classdef MaskIntersectionProcess < MaskProcessingProcess
             obj = obj@MaskProcessingProcess(super_args{:});
             
         end  
-
-        
-        %Checks if a particular channel has masks
-        function maskStatus = checkChannelOutput(obj)
-            maskStatus = checkChannelOutput@MaskProcessingProcess(obj,1);
-        end
-        
-        function mask = loadChannelOutput(obj,iFrame,varargin)
-            mask = loadChannelOutput@MaskProcessingProcess(obj,1,iFrame,varargin{:});
-        end
-        
-        function h=draw(obj,iFrame,varargin)
-            % Function to draw process output (template method)
-            
-            if ~ismember('getDrawableOutput',methods(obj)), h=[]; return; end
-            outputList = obj.getDrawableOutput();
-            ip = inputParser;
-            ip.addRequired('obj',@(x) isa(x,'Process'));
-            ip.addRequired('iFrame',@isnumeric);
-            ip.addParamValue('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
-            ip.KeepUnmatched = true;
-            ip.parse(obj,iFrame,varargin{:})
-			
-            data=obj.loadChannelOutput(iFrame,'output',ip.Results.output);
-            iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
-            if ~isempty(outputList(iOutput).formatData),
-                data=outputList(iOutput).formatData(data);
-            end
-            try
-                assert(~isempty(obj.displayMethod_{iOutput}));
-            catch ME
-                obj.displayMethod_{iOutput}=...
-                    outputList(iOutput).defaultDisplayMethod();
-            end
-            
-            % Delegate to the corresponding method
-            tag = [obj.getName '_output' num2str(iOutput)];
-            drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
-                2*numel(fieldnames(ip.Unmatched)),1);
-            h=obj.displayMethod_{iOutput}.draw(data,tag,drawArgs{:});
-        end
-        
-        function output = getDrawableOutput(obj)
-            output=getDrawableOutput@MaskProcessingProcess(obj);
-            output(1).type='movieOverlay';
-            output(1).defaultDisplayMethod=@LineDisplay;
-        end
-        
-        
-        
+    
         
     end
     methods(Static)

@@ -3,7 +3,7 @@ classdef MaskTransformationProcess < MaskProcessingProcess
     
     
     methods(Access = public)        
-        function obj = MaskTransformationProcess(owner,funParams)
+        function obj = MaskTransformationProcess(owner,outputDir,funParams)
             
             if nargin == 0
                 super_args = {};
@@ -14,13 +14,12 @@ classdef MaskTransformationProcess < MaskProcessingProcess
                 super_args{2} = MaskTransformationProcess.getName;
                 super_args{3} = @transformMovieMasks;                               
                 
-                if nargin < 2 || isempty(funParams)                                       
+                if nargin < 3 || isempty(funParams)                                       
                     
                     %----Defaults----%                                            
                     funParams.ChannelIndex = 1:nChan; %Default is to transform masks for all channels
                     funParams.SegProcessIndex = []; %No default...
-                    funParams.OutputDirectory = ...
-                        [owner.outputDirectory_  filesep 'transformed_masks'];      
+                    funParams.OutputDirectory = [outputDir filesep 'transformed_masks'];      
                     funParams.TransformFilePaths = cell(1,numel(owner.channels_));%No default...
                     funParams.BatchMode = false;                                              
                     

@@ -120,23 +120,48 @@ if isempty(p.SegProcessIndex)
     error('This function requires that the input movie has already been segmented and that a valid MaskProcesses be specified!')
 end
 
-segProc = movieData.processes_{p.SegProcessIndex};
-if ~all(segProc.checkChannelOutput(p.ChannelIndex))
+nChan = numel(p.ChannelIndex);
+if isscalar(p.SegProcessIndex),
+    p.SegProcessIndex = p.SegProcessIndex *ones(nChan,1);
+else
+    assert(numel(p.SegProcessIndex) == nChan);    
+end
+
+
+hasMasks = false(nChan,1);
+segProc=cell(nChan,1);
+%Check every specified process for masks
+for j = 1:nChan
+
+    %Make sure the specified process is a MaskProcess
+    if ~isa(movieData.processes_{p.SegProcessIndex(j)},'MaskProcess')
+        error(['The process specified by SegProcessIndex(' num2str(j) ') is not a MaskProcess!'])
+    end
+    
+    segProc{j} = movieData.processes_{p.SegProcessIndex(j)};
+    %Check which channels have masks from this process
+    hasMasks(j) = segProc{j}.checkChannelOutput(p.ChannelIndex(j));        
+end
+
+%Make sure all the selected channels have foreground masks.
+if ~all(hasMasks)
     error(['The mask process has not been run for all selected channels! '...
         'Please apply a valid mask process before running mask intersection!']);
 end
+
        
 % Set up the input directories
 inFilePaths = cell(1,numel(movieData.channels_));
-for j = p.ChannelIndex
-    inFilePaths{1,j} = segProc.outFilePaths_{1,j};
+for j = 1:nChan
+    inFilePaths{1,j} = segProc{j}.outFilePaths_{1,p.ChannelIndex(j)};
 end
 maskIntProc.setInFilePaths(inFilePaths);
     
 % Set up the output directory
-outputDir{1} = [p.OutputDirectory filesep 'intersected_masks'];
-mkClrDir(outputDir{1});
-maskIntProc.setOutFilePaths(outputDir);
+outFilePaths = cell(1,numel(movieData.channels_));
+outFilePaths{1} = p.OutputDirectory;
+mkClrDir(outFilePaths{1});
+maskIntProc.setOutFilePaths(outFilePaths);
 
 
 %% ---------------- Mask Intersection --------------- %%
@@ -148,14 +173,14 @@ if ishandle(wtBar), waitbar(0,wtBar,'Creating mask intersection...'); end
 nFrames = movieData.nFrames_;
 
 %Create string for current directory
-maskNames = segProc.getOutMaskFileNames(p.ChannelIndex);
-inMask=@(i,frame) [segProc.outFilePaths_{p.ChannelIndex(i)} filesep maskNames{i}{frame}];
+maskNames = arrayfun(@(i)segProc{i}.getOutMaskFileNames(p.ChannelIndex(i)),1:nChan);
+inMask=@(i,frame) [segProc{i}.outFilePaths_{p.ChannelIndex(i)} filesep maskNames{i}{frame}];
 
 %Format string for zero-padding file names
 fString = ['%0' num2str(floor(log10(nFrames))+1) '.f'];
 numStr = @(frame) num2str(frame,fString);
 % Anonymous functions for reading input/output
-outMask=@(frame) [outputDir{1} filesep 'intersected_mask_' numStr(frame) '.tif'];
+outMask=@(frame) [outFilePaths{1} filesep 'intersected_mask_' numStr(frame) '.tif'];
 
 % Redefine mask names
 for j= 1:nFrames
