@@ -134,7 +134,7 @@ if ~status, return; end
 
 %% Start processing
 kk = 0;
-if get(handles.menu_debug_enter,'Checked'), dbstop if caught error; end
+if strcmp(get(handles.menu_debug_enter,'Checked'),'on'), dbstop if caught error; end
 for x = movieRun
     
     kk = kk+1;
@@ -194,7 +194,7 @@ for x = movieRun
     % Return user data !!!
     set(handles.figure1, 'UserData', userData)
 end
-if get(handles.menu_debug_enter,'Checked'), dbclear if caught error; end
+if strcmp(get(handles.menu_debug_enter,'Checked'),'on'), dbclear if caught error; end
 
 %% Post-processing exception report
 status = generateReport(movieException,userData,'postprocessing');
