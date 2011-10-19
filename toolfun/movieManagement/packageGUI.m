@@ -22,7 +22,7 @@ function varargout = packageGUI(varargin)
 
 % Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 07-Sep-2011 08:47:17
+% Last Modified by GUIDE v2.5 19-Oct-2011 14:16:02
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -153,7 +153,6 @@ if isfield(userData, 'msgboxGUI') && ishandle(userData.msgboxGUI)
    delete(userData.msgboxGUI) 
 end
 
-
 % --- Executes on key press with focus on figure1 and none of its controls.
 function figure1_KeyPressFcn(hObject, eventdata, handles)
 
@@ -249,14 +248,8 @@ userfcn_checkAllMovies(procID, procStatus, handles);
 userfcn_lampSwitch(procID, procStatus, handles);
 
 % --------------------------------------------------------------------
-function menu_debug_start_Callback(hObject, eventdata, handles)
+function menu_debug_enter_Callback(hObject, eventdata, handles)
 
 status = get(hObject,'Checked');
-if strcmp(status,'on'), 
-    newstatus = 'off'; 
-    dbclear if caught error
-else
-    newstatus='on';
-    dbstop if caught error
-end
+if strcmp(status,'on'), newstatus = 'off'; else newstatus='on'; end
 set(hObject,'Checked',newstatus);
