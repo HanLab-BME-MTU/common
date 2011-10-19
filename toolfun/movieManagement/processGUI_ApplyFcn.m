@@ -1,4 +1,4 @@
-function processGUI_ApplyFcn(hObject, eventdata, handles,funParams)
+function processGUI_ApplyFcn(hObject, eventdata, handles,funParams,varargin)
 %processGUI_ApplyFcn is a callback called when setting concrete process GUIs
 %
 %
@@ -9,9 +9,10 @@ ip = inputParser;
 ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
-ip.addRequired('funParams',@isstruct);
-ip.parse(hObject,eventdata,handles,funParams);
-
+ip.addRequired('funParams',@isstruct)
+ip.addOptional('settingFcn',{},@iscell);
+ip.parse(hObject,eventdata,handles,funParams,varargin{:});
+settingFcn=ip.Results.settingFcn;
 
 if get(handles.checkbox_applytoall, 'Value')
     confirmApplytoAll = questdlg(...
@@ -76,6 +77,10 @@ for i = moviesId
     % Override the parameters with the GUI defeined
     parseProcessParams(userData_main.package(i).processes_{userData.procID},...
         funParams);
+    
+    for j=1:numel(settingFcn)
+        settingFcn{j}(userData_main.package(i).processes_{userData.procID});
+    end
 end
 
 % Store the applytoall choice for this particular process
