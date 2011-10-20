@@ -748,7 +748,7 @@ if get(hObject,'Value')
         'vectorScale',str2double(get(handles.edit_vectorFieldScale,'String')));
     set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 else
-    h=findobj(0,'-regexp','Name',figName);
+    h=findobj(0,'-regexp','Name',['^' figName '$']);
     if ~isempty(h), delete(h); end
 end
 
