@@ -152,15 +152,17 @@ end
        
 % Set up the input directories
 inFilePaths = cell(1,numel(movieData.channels_));
-for j = 1:nChan
-    inFilePaths{1,j} = segProc{j}.outFilePaths_{1,p.ChannelIndex(j)};
+for j = p.ChannelIndex
+    inFilePaths{1,j} = segProc{j}.outFilePaths_{1,j};
 end
 maskIntProc.setInFilePaths(inFilePaths);
     
 % Set up the output directory
 outFilePaths = cell(1,numel(movieData.channels_));
-outFilePaths{1} = p.OutputDirectory;
-mkClrDir(outFilePaths{1});
+for j = p.ChannelIndex
+    outFilePaths{1,j} =  p.OutputDirectory;
+end
+mkClrDir(p.OutputDirectory);
 maskIntProc.setOutFilePaths(outFilePaths);
 
 
@@ -180,7 +182,7 @@ inMask=@(i,frame) [segProc{i}.outFilePaths_{p.ChannelIndex(i)} filesep maskNames
 fString = ['%0' num2str(floor(log10(nFrames))+1) '.f'];
 numStr = @(frame) num2str(frame,fString);
 % Anonymous functions for reading input/output
-outMask=@(frame) [outFilePaths{1} filesep 'intersected_mask_' numStr(frame) '.tif'];
+outMask=@(frame) [p.OutputDirectory filesep 'intersected_mask_' numStr(frame) '.tif'];
 
 % Redefine mask names
 for j= 1:nFrames
