@@ -7,7 +7,9 @@ classdef Process < hgsetget
     properties (SetAccess = private, GetAccess = public)
         name_           % Process name
         owner_          % Movie data object owning the process
-        dateTime_       % Time process was last run
+        createTime_     % Time process was created  
+        startTime_      % Time process was last started
+        finishTime_     % Time process was last run
     end
     
     properties  (SetAccess = protected)
@@ -46,7 +48,7 @@ classdef Process < hgsetget
                 if nargin > 1
                     obj.name_ = name;
                 end
-                obj.dateTime_ = clock;
+                obj.createTime_ = clock;
                 obj.procChanged_ = false;
                 obj.success_ = false;
                 obj.updated_ = true;
@@ -76,7 +78,7 @@ classdef Process < hgsetget
         
         function setDateTime(obj)
             %The process has been re-run, update the time.
-            obj.dateTime_ = clock;
+            obj.finishTime_ = clock;
         end
         
         function OK = checkChanNum(obj,iChan)
@@ -102,6 +104,7 @@ classdef Process < hgsetget
         function run(obj)
             % Run the process!
             obj.success_=false;
+            obj.startTime_ = clock;
             try
                 obj.funName_(obj.owner_ );
             catch runException
@@ -110,7 +113,7 @@ classdef Process < hgsetget
             obj.success_=true;
             obj.updated_=true;
             obj.procChanged_=false;
-            obj.setDateTime;
+            obj.finishTime_ = clock;
             obj.owner_.save;
         end
         

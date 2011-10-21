@@ -2,12 +2,14 @@ function processGUI_OpeningFcn(hObject, eventdata, handles, string,varargin)
 % Common initialization of concrete process GUIs
 %
 % This function fills various fields of the userData 
-%       userData.mainFig - handle of main figure
+%       userData.mainFig - handle to the main figure
 %       userData.handles_main - 'handles' of main figure
 %       userData.procID - The ID of process in the current package
-%       userData.crtProc - handle of current movieData
-%       userData.crtProc - handle of current process
-%       userData.crtPackage - handles of current package
+%       userData.MD - current movieData object
+%       userData.crtProc - current process
+%       userData.crtPackage - current package
+%       userData.crtProcClassName - current process class
+%       (as defined by the package: can be superclass)
 %       userData.procConstr - constructor of current process
 %
 %       userData.questIconData - help icon image information
@@ -37,7 +39,7 @@ userData = get(handles.figure1, 'UserData');
 userData.mainFig=ip.Results.mainFig;
 userData.procID = ip.Results.procID;
 userData.procConstr=ip.Results.procConstr;
-crtProcClassName = ip.Results.procClassName;
+userData.crtProcClassName = ip.Results.procClassName;
 initChannel = ip.Results.initChannel;
 
 % Set up copyright statement
@@ -53,13 +55,13 @@ userData.crtPackage = userData_main.crtPackage;
 % If constructor is not inherited from abstract class, read it from package
 if isempty(userData.procConstr)
     userData.procConstr = userData.crtPackage.getDefaultProcessConstructors{userData.procID};
-    crtProcClassName = userData.crtPackage.getProcessClassNames{userData.procID};
+    userData.crtProcClassName = userData.crtPackage.getProcessClassNames{userData.procID};
 end
 
 % Retrieve crtProc if procID step of the package is set up AND is the same
 % class as the current process
-crtProcName = eval([crtProcClassName '.getName']);
-if isa(userData.crtPackage.processes_{userData.procID},crtProcClassName)    
+crtProcName = eval([userData.crtProcClassName '.getName']);
+if isa(userData.crtPackage.processes_{userData.procID},userData.crtProcClassName)    
     userData.crtProc = userData.crtPackage.processes_{userData.procID};
 else
     userData.crtProc =[];
