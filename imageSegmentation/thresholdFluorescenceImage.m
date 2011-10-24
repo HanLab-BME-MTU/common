@@ -91,17 +91,18 @@ minVal = histExtVals(iSep);
 
 if showPlots    
     imageMask = imageIn >= thresholdValue;
-    histFig = figure;
-    fnplt(histSpline)    
+    histFig = fsFigure(.5);
+    hist(imageIn(:),500)
     hold on
+    fnplt(histSpline,'r')        
     plot(histExtrema,histExtVals,'ok')
     plot(thresholdValue,minVal,'xr')
     
     if ndims(imageIn) == 2    
         maskFig = figure;
-        imagesc(imageIn);
+        imshow(imageIn,[]);
         hold on
-        contour(imageMask,'w')
-        colormap hot    
+        %contour(imageMask,[.5 .5],'w')
+        spy(bwperim(imageMask))        
     end
 end
