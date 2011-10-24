@@ -45,7 +45,7 @@ bandPassIso(bandPassIso < 0) = 0;
 bandPassIso(~mask) = 0;
 
 % Filter image with steerable filter
-[R,T] = steerableFiltering(img,2,filterSigma);
+[R,T] = steerableDetector(img,2,filterSigma);
  
 % Compute the local maxima of the bandpass filtered images
 locMaxIso = locmax2d(R, [5 5]);
@@ -64,7 +64,7 @@ P(:,2) = y;
 P(:,3) = img(indMax);
 P(:,4) = 2*psfSigma;       % sigmaX
 P(:,5) = psfSigma;         % sigmaY
-P(:,6) = T(indMax);
+P(:,6) = T(indMax)+pi/2;
 
 % % Subresolution detection
 % hside = ceil(kSigma * psfSigma);

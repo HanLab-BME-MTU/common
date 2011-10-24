@@ -5,7 +5,7 @@ function packageGUI_RunFcn(hObject,eventdata,handles)
 % when user click the "Run" button on package control panels.
 
 % Chuangang Ren 11/2010
-% Sebastien Besson 5/2011 (last modified Sep 2011)
+% Sebastien Besson 5/2011 (last modified Oct 2011)
 
 ip = inputParser;
 ip.addRequired('hObject',@ishandle);
@@ -86,9 +86,7 @@ for iMovie = validMovies
         end
     else
         procRun{iMovie} = procCheck{iMovie};
-    end
-    
-    
+    end    
     
     % Package full sanity check. Sanitycheck every checked process
     [status procEx] = userData.package(iMovie).sanityCheck(true, procRun{iMovie});
@@ -119,8 +117,6 @@ for iMovie = validMovies
     
     % Refresh user data !!!
     userData = get(handles.figure1, 'UserData');
-    
-    
 end
 
 %% Pre-processing exception report
@@ -133,15 +129,15 @@ status = generateReport(movieException,userData,'preprocessing');
 if ~status, return; end
 
 %% Start processing
-kk = 0;
 if strcmp(get(handles.menu_debug_enter,'Checked'),'on'), dbstop if caught error; end
-for x = movieRun
-    
-    kk = kk+1;
-    if x ~= userData.id
+for i=1:length(movieRun)
+    iMovie = movieRun(i);
+   
+    if iMovie ~= userData.id
         % Update the movie pop-up menu in the main package GUI
-        set(handles.popupmenu_movie, 'Value', x)
         set(handles.figure1, 'UserData', userData)
+        set(handles.popupmenu_movie, 'Value', iMovie)
+        
         % Update the movie pop-up menu in the main package GUI
         packageGUI('switchMovie_Callback',handles.popupmenu_movie, [], handles)
         userData = get(handles.figure1, 'UserData');
@@ -150,7 +146,7 @@ for x = movieRun
     % Clear icons of selected processes
     % Return user data !!!
     set(handles.figure1, 'UserData', userData)
-    userfcn_drawIcon(handles,'clear',procRun{x},'',true); % user data is retrieved, updated and submitted
+    userfcn_drawIcon(handles,'clear',procRun{iMovie},'',true); % user data is retrieved, updated and submitted
     % Refresh user data !!!
     userData = get(handles.figure1, 'UserData');
     
@@ -165,22 +161,21 @@ for x = movieRun
         % Return user data !!!
         set(handles.figure1, 'UserData', userData)
         
-        for i = procRun{x}
+        for procID = procRun{iMovie}
             set(handles.text_status, 'String', ...
-                sprintf('Step %d - Processing %d of %d movies total ...', i, kk, length(movieRun)) )
-            userfcn_runProc_dfs(i, procRun{x}, handles); % user data is retrieved, updated and submitted
-            
+                sprintf('Step %d - Processing %d of %d movies total ...', procID, i, length(movieRun)) )
+            userfcn_runProc_dfs(procID, procRun{iMovie}, handles); % user data is retrieved, updated and submitted
         end
         
     catch ME
         
         % Save the error into movie Exception cell array
         ME2 = MException('lccb:run:error','Step %d: %s',...
-            i,userData.package(x).processes_{i}.getName);
-        movieException{x} = cat(2, movieException{x}, ME2);
-        movieException{x}=movieException{x}.addCause(ME);
+            procID,userData.package(iMovie).processes_{procID}.getName);
+        movieException{x} = cat(2, movieException{iMovie}, ME2);
+        movieException{x}=movieException{iMovie}.addCause(ME);
         
-        procRun{x} = procRun{x}(procRun{x} < i);
+        procRun{iMovie} = procRun{iMovie}(procRun{iMovie} < procID);
     end
     
     % Refresh user data !!!
@@ -189,8 +184,7 @@ for x = movieRun
     set(handles.checkbox_forcerun, 'Enable', 'on')
     set(handles.checkbox_runall, 'Enable', 'on')
     set(handles.text_status, 'Visible', 'off')
-    
-    
+
     % Return user data !!!
     set(handles.figure1, 'UserData', userData)
 end
@@ -209,15 +203,15 @@ hWaitbar = findall(0,'type','figure','tag','TMWWaitbar');
 delete(hWaitbar);
 end
 
-function userfcn_runProc_dfs (i, procRun, handles)  % throws exception
+function userfcn_runProc_dfs (procID, procRun, handles)  % throws exception
 
 % Set user Data
 userData = get(handles.figure1, 'UserData');
 
 parentRun = [];
-parentID=userData.crtPackage.getParent(i);
+parentID=userData.crtPackage.getParent(procID);
 
-% if current process i have dependency processes    
+% if current process procID have dependency processes    
 for j = parentID
     % if parent process is one of the processes need to be run
     % if parent process has already run successfully
@@ -232,7 +226,7 @@ for j = parentRun
 end
 
 try
-    userData.crtPackage.processes_{i}.run(); % throws exception
+    userData.crtPackage.processes_{procID}.run(); % throws exception
 catch ME
     rethrow(ME)
 end

@@ -1,4 +1,8 @@
 function [R T NMS FBANK] = steerableFiltering(I, M, sigmaPSF) %#ok<STOUT,INUSD>
+
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used. Use steerableDetector instead.\n']);
+
+[R T NMS FBANK] = steerableDetector (I, M, sigmaPSF);
 % [R T NMS FBANK] = steerableFiltering(I, M, sigmaPSF)
 %
 % This function implements the article:
