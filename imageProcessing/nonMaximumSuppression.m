@@ -16,10 +16,10 @@ resXT = padarrayXT(res, [1 1], 'symmetric');
 [xi,yi] = meshgrid(0:nx+1, 0:ny+1);
 
 % +1 interp
-A1 = interp2(xi, yi, resXT, x+sin(th), y-cos(th));
+A1 = interp2(xi, yi, resXT, x+cos(th), y+sin(th));
 
 % -1 interp
-A2 = interp2(xi, yi, resXT, x-sin(th), y+cos(th));
+A2 = interp2(xi, yi, resXT, x-cos(th), y-sin(th));
 
 nms = res;
 nms(res<A1 | res<A2) = 0;
