@@ -37,12 +37,14 @@ for i=1:nvar
     if or(h(1,i),~h(2,i))
         switch method
             case 'ar'
+                
                 ts       = iddata(TS(:,i),[],1);
                 model    = arxstruc(ts,ts,[1:max_order]');
                 bestM    = selstruc(model,'aic');
                 finalM   = ar(ts,bestM(1));
                 IR       = polydata(finalM);
                 out(:,i) = filter(IR,1,TS(:,i));
+                
             case 'imf'
                 imf = empiricalModeDecomp( TS(:,i) ) ;
                 
@@ -51,16 +53,18 @@ for i=1:nvar
                     nTs   = TS(:,i) - trend;
                     h     = kpsstest(nTs);
                     if ~h
+                        
                         out(:,i) = nTs;
-                        disp('Changed 1')
                         break;
+                        
                     end
                 end
                 
                 if h
-                    disp('Changed 2')
+                    
                     out(:,i) = preWhitening(TS(:,i),1);
-                    h = kpsstest(out(:,i));
+                    h        = kpsstest(out(:,i));
+                    
                 end
         end
     end

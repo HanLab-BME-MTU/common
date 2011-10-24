@@ -20,9 +20,11 @@ function imf = empiricalModeDecomp(X)
 %
 %Marco Vilela, 2011
 
-[npoint,nvar] = size(X);
-if nvar == 1
-    X=X';
+[nvar,npoint] = size(X);
+
+if nvar > npoint
+    X = X';
+    npoint = length(X);
 end
 
 xTest   = X;
@@ -50,9 +52,11 @@ while ~isempty( findpeaks( xTest ) )
        imf{end+1} = x1;
    end
    
-   xTest      = xTest - imf{cc};
-   clear ensImf;cc = cc + 1;
+   xTest = xTest - imf{cc};
+   cc    = cc + 1;
+   clear ensImf;
 end
+
 imf{end+1} = xTest;
 
 
