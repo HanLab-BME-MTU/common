@@ -33,8 +33,8 @@ ip.addParamValue('GroupDistance', 0.5, @isscalar);
 ip.addParamValue('xlabel', [], @ischar);
 ip.addParamValue('xlabels', arrayfun(@(k) num2str(k), 1:sum(nb), 'UniformOutput', false), @(x) iscell(x) && (numel(x)==sum(nb)||numel(x)==ng));
 ip.addParamValue('ylabel', [], @ischar);
-ip.addParamValue('BarWidth', 0.8, @isscalar); 
-ip.addParamValue('BorderWidth', 0.8, @isscalar); 
+ip.addParamValue('BarWidth', 0.8, @isscalar);
+ip.addParamValue('BorderWidth', 0.8, @isscalar);
 ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('ErrorBarWidth', 0.2, @(x) 0<x && x<=1);
 ip.addParamValue('Handle', gca, @ishandle);
@@ -42,6 +42,8 @@ ip.addParamValue('FontName', 'Helvetica', @ischar); % specific
 ip.addParamValue('FontSize', 16, @isscalar);
 ip.addParamValue('XLabelFontSize', 18, @isscalar);
 ip.addParamValue('YLim', [], @(x) numel(x)==2);
+ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
+ip.addParamValue('AdjustFigure', true, @islogical);
 ip.parse(prm, varargin{:});
 color = ip.Results.color;
 edgeColor = ip.Results.EdgeColor;
@@ -143,7 +145,8 @@ end
 
 % x labels
 if ip.Results.Angle ~= 0
-    rotateXTickLabels(ha, 'Angle', ip.Results.Angle);
+    rotateXTickLabels(ha, 'Angle', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter,...
+        'AdjustFigure', ip.Results.AdjustFigure);
 end
 
 % y label
