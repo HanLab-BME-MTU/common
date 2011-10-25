@@ -313,11 +313,11 @@ if ~useTool && ~isempty(overlayName)
             
             if isempty(iSegProc)            
                 %Find the segmentation process
-                iSegProc = movieData.getProcessIndex('SegmentationProcess',1,1);
+                iSegProc = movieData.getProcessIndex('MaskProcess',1,1);
                 
                 %Make sure the specified process is a valid segmentation
                 %process
-            elseif ~isa(movieData.processes_{iSegProc},'SegmentationProcess')
+            elseif ~isa(movieData.processes_{iSegProc},'MaskProcess')
                 error('The process specified by SegProcessIndex is not a valid SegmentationProcess!')                
             end
             
