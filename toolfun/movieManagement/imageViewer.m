@@ -318,11 +318,11 @@ if ~useTool && ~isempty(overlayName)
                 %Make sure the specified process is a valid segmentation
                 %process
             elseif ~isa(movieData.processes_{iSegProc},'MaskProcess')
-                error('The process specified by SegProcessIndex is not a valid SegmentationProcess!')                
+                error('The process specified by SegProcessIndex is not a valid MaskProcess!')                
             end
             
             if isempty(iSegProc)
-                error('Cannot display masks: MovieData does not have any SegmentationProcesses Please create masks first!');
+                error('Cannot display masks: MovieData does not have any MaskProcesses Please create masks first!');
             end
                         
             %Check if the specific channels have masks/are okay

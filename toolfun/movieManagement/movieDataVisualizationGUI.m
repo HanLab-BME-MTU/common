@@ -472,7 +472,7 @@ if onoff  % Turn overlay on
             
             % Very very lame way to do it (but i need to visualize...)
             % Should be externalized in a class
-            if isa(process,'SegmentationProcess')
+            if isa(process,'MaskProcess')
                 maskNames = process.getOutMaskFileNames(iChan);
                 
                 %Load the mask
@@ -840,7 +840,7 @@ assert( isa(MD, 'MovieData'), 'User-defined: Input must be a MovieData object.')
 if isempty(MD.processes_), return; end
 
 imageProcessClasses = {'ImageProcessingProcess','SpeedMapsProcess','KineticAnalysisProcess'};
-overlayProcessClasses = {'SegmentationProcess','SpeckleDetectionProcess',...
+overlayProcessClasses = {'MaskProcess','SpeckleDetectionProcess',...
     'FlowTrackingProcess','FlowAnalysisProcess'};
 
 isImageProcess  = cellfun(@(x) any(cellfun(@(y) isa(x,y),...
