@@ -172,8 +172,8 @@ for i=1:length(movieRun)
         % Save the error into movie Exception cell array
         ME2 = MException('lccb:run:error','Step %d: %s',...
             procID,userData.package(iMovie).processes_{procID}.getName);
-        movieException{x} = cat(2, movieException{iMovie}, ME2);
-        movieException{x}=movieException{iMovie}.addCause(ME);
+        movieException{iMovie} = cat(2, movieException{iMovie}, ME2);
+        movieException{iMovie}=movieException{iMovie}.addCause(ME);
         
         procRun{iMovie} = procRun{iMovie}(procRun{iMovie} < procID);
     end
