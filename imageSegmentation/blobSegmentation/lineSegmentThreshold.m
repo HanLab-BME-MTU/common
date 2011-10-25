@@ -54,7 +54,7 @@ image = double(image);
 
 %remove noise by filtering image with a Gaussian whose sigma = 1 pixel
 % imageFiltered = filterGauss2D(image,1);
-[imageFiltered,~,NMS] = steerableFiltering(image,2,2);
+[imageFiltered,~,NMS] = steerableDetector(image,2,2);
 imageFiltered = imageFiltered .* NMS;
 
 %crop image

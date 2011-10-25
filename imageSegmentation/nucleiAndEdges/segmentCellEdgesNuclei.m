@@ -58,6 +58,7 @@ maskNucleiLabel = bwlabel(maskNuclei);
 %% Cell edge segmentation by watershed
 
 %filter cadherin image
+fprintf(2,['Warning: '' steerableFiltering '' is deprecated and should no longer be used. Use steerableDetector instead.\n']);
 imageCfilter = steerableFiltering(imageC,2,10);
 
 %make image of nuclear centers to initialize the watershed
