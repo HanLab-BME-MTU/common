@@ -90,9 +90,9 @@ for k = 1:ng
     end
     
     if plotWhiskers
-        he = errorbar(xa{k}, p25, w1, zeros(size(mu)), 'k', 'LineStyle', 'none', 'LineWidth', 2);
+        he = errorbar(xa{k}, p25, w1-p25, zeros(size(mu)), 'k', 'LineStyle', 'none', 'LineWidth', 2);
         setErrorbarStyle(he, 'bottom', ip.Results.ErrorBarWidth);
-        he = errorbar(xa{k}, p75, zeros(size(mu)), w2, 'k', 'LineStyle', 'none', 'LineWidth', 2);
+        he = errorbar(xa{k}, p75, zeros(size(mu)), w2-p75, 'k', 'LineStyle', 'none', 'LineWidth', 2);
         setErrorbarStyle(he, 'top', ip.Results.ErrorBarWidth);
     end
     
