@@ -1,4 +1,4 @@
-function imf = empiricalModeDecomp(X)
+function [imf,flag] = empiricalModeDecomp(X)
 % This function calculates a set of intrinsic mode function from the input
 % signal X
 %
@@ -27,33 +27,49 @@ if nvar > npoint
     npoint = length(X);
 end
 
+%xTest   = [X(1) X X(end)];%That is because the matlab spline function sucks
 xTest   = X;
 imf     = [];
-Snumber = [4 8];%The HHT and it's applications, Chapter 1, p,9
-cc      = 1;
+fImf    = [];
+Snumber = [4 12];%The HHT and it's applications, Chapter 1, p,9
+count1  = 1;
 
 while ~isempty( findpeaks( xTest ) )
    x1      = xTest;
    ensImf  = zeros(Snumber(2),npoint);
+   
    if sum( getEnvelope(-x1) ) ~= 0 && sum( getEnvelope(x1) ) ~= 0
+       flag    = 0;
        %Creating a ensemble of IMF for each level
+       count2 = 1;
        for i=1:Snumber(2)
            upperE = getEnvelope(x1);
            lowerE = -getEnvelope(-x1);
            x1     = x1 - mean([upperE;lowerE]);
            
-           if imfTest(x1)
+           if imfTest( x1 )
                ensImf(i,:) = x1;
+               flag        = 1;
+               idx(count2) = i;
+               count2      = count2 +1;
            end
            
        end
-       imf{end+1} = mean( ensImf( Snumber(1):end, : ) );
+       
+       if flag
+           imf{end+1} = mean( ensImf( idx, : ) );
+           %imf{end+1} = mean( ensImf( Snumber(1):end,2:end-1) );
+       else
+           break;
+       end
+       
    else
+       %imf{end+1}  = x1(2:end-1);
        imf{end+1} = x1;
    end
    
-   xTest = xTest - imf{cc};
-   cc    = cc + 1;
+   xTest  = xTest - imf{count1};
+   count1 = count1 + 1;
    clear ensImf;
 end
 
@@ -78,4 +94,9 @@ function env = getEnvelope(In)
 %% calculate the time series envelope 
 npoint = length(In);
 [~,p]  = findpeaks(In);
-env    = spline([0 p npoint+1],[0 In(p) 0],1:npoint);
+%env    = spline([0 p npoint+1],[0 In(p) 0],1:npoint);
+if ~isempty(p)
+    env    = spline([0 p npoint+1],[0 In(p) mean(In(end-1:end))],1:npoint);
+else
+    env = 0;
+end

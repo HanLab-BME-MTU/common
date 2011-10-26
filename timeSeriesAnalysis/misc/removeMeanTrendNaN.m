@@ -18,7 +18,7 @@ workTS      = cell(1,nvar);
 interval    = cell(1,nvar);
 %***********************
 for i=1:nvar
-    
+    i
     xi          = find(isnan(TS(:,i)));
     [nanB,nanL] = findBlock(xi,1);
     exclude     = [];

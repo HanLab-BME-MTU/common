@@ -46,17 +46,20 @@ for i=1:nvar
                 out(:,i) = filter(IR,1,TS(:,i));
                 
             case 'imf'
-                imf = empiricalModeDecomp( TS(:,i) ) ;
+                [imf, flag] = empiricalModeDecomp( TS(:,i) ) ;
                 
-                for j=1:length(imf)/2
-                    trend = sum( cat(1, imf{ end-j:end } ) )';
-                    nTs   = TS(:,i) - trend;
-                    h     = kpsstest(nTs);
-                    if ~h
-                        
-                        out(:,i) = nTs;
-                        break;
-                        
+                range       = length( find( cellfun(@(x) ~vratiotest(x) || kpsstest(x) ,imf ) ) );
+                if flag
+                    for j=1:range
+                        trend = sum( cat(1, imf{ end-j:end } ) )';
+                        nTs   = TS(:,i) - trend;
+                        h     = kpsstest(nTs);
+                        if ~h
+                            
+                            out(:,i) = nTs;
+                            break;
+                            
+                        end
                     end
                 end
                 
