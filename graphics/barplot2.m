@@ -51,7 +51,7 @@ ip.addParamValue('FontName', 'Helvetica', @ischar);
 ip.addParamValue('AxisFontSize', 16, @isscalar);
 ip.addParamValue('LabelFontSize', 20, @isscalar);
 ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
-ip.addParamValue('X', [], @(x) numel(x)==ng);
+ip.addParamValue('X', [], @(x) numel(x)==ng); % cell array of x-coordinates (groups only)
 ip.addParamValue('AdjustFigure', true, @islogical);
 ip.parse(prm, varargin{:});
 

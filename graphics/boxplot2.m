@@ -26,26 +26,28 @@ nb = cellfun(@(c) size(c, 2), prm); % # bars in each group
 
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('prm', @iscell);
-ip.addOptional('color', []);
+ip.addRequired('prm');
+ip.addOptional('Color', []);
 ip.addParamValue('EdgeColor', []);
 ip.addParamValue('GroupDistance', 0.5, @isscalar);
-ip.addParamValue('xlabel', [], @ischar);
-ip.addParamValue('xlabels', arrayfun(@(k) num2str(k), 1:sum(nb), 'UniformOutput', false), @(x) iscell(x) && (numel(x)==sum(nb)||numel(x)==ng));
-ip.addParamValue('ylabel', [], @ischar);
+ip.addParamValue('BorderWidth', [], @isscalar); 
+ip.addParamValue('XLabel', [], @ischar);
+ip.addParamValue('XLabels', arrayfun(@(k) num2str(k), 1:sum(ng), 'UniformOutput', false), @(x) iscell(x) && (numel(x)==sum(nb)||numel(x)==ng));
+ip.addParamValue('YLabel', ' ', @ischar);
+ip.addParamValue('YLim', [], @(x) numel(x)==2);
 ip.addParamValue('BarWidth', 0.8, @isscalar);
-ip.addParamValue('BorderWidth', 0.8, @isscalar);
+ip.addParamValue('LineWidth', 2, @isscalar);
 ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('ErrorBarWidth', 0.2, @(x) 0<x && x<=1);
 ip.addParamValue('Handle', gca, @ishandle);
-ip.addParamValue('FontName', 'Helvetica', @ischar); % specific
-ip.addParamValue('FontSize', 16, @isscalar);
-ip.addParamValue('XLabelFontSize', 18, @isscalar);
-ip.addParamValue('YLim', [], @(x) numel(x)==2);
+ip.addParamValue('FontName', 'Helvetica', @ischar);
+ip.addParamValue('AxisFontSize', 16, @isscalar);
+ip.addParamValue('LabelFontSize', 20, @isscalar);
 ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
+ip.addParamValue('X', [], @(x) numel(x)==ng); % cell array of x-coordinates (groups only)
 ip.addParamValue('AdjustFigure', true, @islogical);
 ip.parse(prm, varargin{:});
-color = ip.Results.color;
+color = ip.Results.Color;
 edgeColor = ip.Results.EdgeColor;
 ha = ip.Results.Handle;
 
@@ -60,7 +62,28 @@ end
 bw = ip.Results.BarWidth;
 dg = ip.Results.GroupDistance; % distance between groups, in bar widths
 
+% xa = cell(1,ng);
+% x-coords for groups
 xa = cell(1,ng);
+if isempty(ip.Results.X)
+    xa{1} = 1:nb;
+    for k = 2:ng
+        xa{k} = xa{1} + xa{k-1}(end) + dg;
+    end
+else
+    dx = min(diff(ip.Results.X));
+    for k = 1:ng
+        w = (nb-1)/2;
+        xa{k} = ip.Results.X(k) + (k-1)*dg + (-w:w)*dx/nb;
+    end
+end
+
+if isempty(ip.Results.BorderWidth)
+    border = (bw+dg)/2;
+else
+    border = ip.Results.BorderWidth;
+end
+
 
 hold on;
 for k = 1:ng
@@ -92,9 +115,9 @@ for k = 1:ng
     end
     
     if plotWhiskers
-        he = errorbar(xa{k}, p25, w1-p25, zeros(size(mu)), 'k', 'LineStyle', 'none', 'LineWidth', 2);
+        he = errorbar(xa{k}, p25, w1-p25, zeros(size(mu)), 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth);
         setErrorbarStyle(he, 'bottom', ip.Results.ErrorBarWidth);
-        he = errorbar(xa{k}, p75, zeros(size(mu)), w2-p75, 'k', 'LineStyle', 'none', 'LineWidth', 2);
+        he = errorbar(xa{k}, p75, zeros(size(mu)), w2-p75, 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth);
         setErrorbarStyle(he, 'top', ip.Results.ErrorBarWidth);
     end
     
@@ -105,10 +128,10 @@ for k = 1:ng
     yv = [p75; p75; p25; p25; p75; p75];
     
     arrayfun(@(b) patch(xv(:,b), yv(:,b), color{k}(mod(b,size(color{k},1))+1,:),...
-        'EdgeColor', edgeColor{k}(mod(b,size(edgeColor{k},1))+1,:), 'LineWidth', 2), 1:nb(k));
+        'EdgeColor', edgeColor{k}(mod(b,size(edgeColor{k},1))+1,:), 'LineWidth', ip.Results.LineWidth), 1:nb(k));
     
     % mean/median line
-    line([lb; rb], [mu; mu], 'Color', [0 0 0], 'LineWidth', 3);
+    line([lb; rb], [mu; mu], 'Color', [0 0 0], 'LineWidth', ip.Results.LineWidth);
     
     % SEM
     if plotSEM
@@ -120,27 +143,28 @@ end
 hold off;
 box off;
 
-if numel(ip.Results.xlabels)==ng
+if numel(ip.Results.XLabels)==ng
     la = arrayfun(@(k) (xa{k}(1) + xa{k}(end))/2, 1:ng);
 else
     la = [xa{:}];
 end
 
+% position of the bars
 xa = [xa{:}];
 
-afont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.FontSize};
-lfont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.XLabelFontSize};
+afont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.AxisFontSize};
+lfont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.LabelFontSize};
 
 set(ha, afont{:}, 'LineWidth', 1.5,...
-    'XTick', la, 'XTickLabel', ip.Results.xlabels, 'XLim', [1-ip.Results.BorderWidth xa(end)+ip.Results.BorderWidth],...
+    'XTick', la, 'XTickLabel', ip.Results.XLabels, 'XLim', [xa(1)-border xa(end)+border],...
     'TickDir', 'out', 'Layer', 'top');
 if ~isempty(ip.Results.YLim);
     set(ha, 'YLim', ip.Results.YLim);
 end
 
 % x label
-if ~isempty(ip.Results.xlabel)
-    xlabel(ip.Results.xlabel, lfont{:});
+if ~isempty(ip.Results.XLabel)
+    xlabel(ip.Results.XLabel, lfont{:});
 end
 
 % x labels
@@ -150,6 +174,6 @@ if ip.Results.Angle ~= 0
 end
 
 % y label
-if ~isempty(ip.Results.ylabel)
-    ylabel(ip.Results.ylabel, lfont{:});
+if ~isempty(ip.Results.YLabel)
+    ylabel(ip.Results.YLabel, lfont{:});
 end
