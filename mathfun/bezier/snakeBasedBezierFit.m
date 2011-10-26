@@ -53,6 +53,9 @@ opts = optimset('Algorithm', 'trust-region-reflective', ...
   'TolX', tolX, ...
   'Tolfun', tolFun);
 
+% Array of function handlers for regularization term computation
+regFuncs = {@computeRegTermN1, @computeRegTermN2, @computeRegTermN3};
+
 %% Compute an initial solution
 [m d] = size(data);
 pDim = d * (n+1) + (m-2);
@@ -61,6 +64,9 @@ pDim = d * (n+1) + (m-2);
 T = linspace(0,1,m)';
 % Compute the initial control points
 Cnk = diag([1 cumprod(n:-1:1) ./ cumprod(1:n)]);
+Cn_1k = diag([1 cumprod(n-1:-1:1) ./ cumprod(1:n-1)]);
+Cn_2k = diag([1 cumprod(n-2:-1:1) ./ cumprod(1:n-2)]);
+
 B = (bsxfun(@power, T, 0:n) .* bsxfun(@power, 1 - T, n:-1:0)) * Cnk;
 [Q1 R11] = qr(B,0);
 C = R11 \ (Q1' * data);
@@ -117,6 +123,7 @@ C6 = (bsxfun(@times, bsxfun(@plus, k, l - 1), binom_n_1_k) .* bsxfun(@plus, ...
 
 %% Optimization
 X = fmincon(@fun,X,[],[],[],[],lb,ub,[],opts);
+% [X,fval,exitflag,output,lambda,grad,hessian] = fmincon(@fun,X,[],[],[],[],lb,ub,[],opts);
 
 % Compute the residual
 T = [0; X(d * (n + 1) + 1:end); 1];
@@ -137,12 +144,13 @@ res = sqrt(sum((B * C - data).^2,2));
     % Compute the data fidelity term
     dataFidelity = sum(sum((data - B * C).^2, 2));
     
-    % Compute the regularization term
-    regularization = sum(sum(diff(C,1,1),2));
-    
-    F = dataFidelity + beta * regularization;
+    % Append the regularization term
+    F = dataFidelity + beta * regFuncs{n}(C);
     
     if nargout > 1
+      % Compute the Bernstein matrix of order n-1
+      Bn_1 = (bsxfun(@power, T, 0:n-1) .* bsxfun(@power, 1 - T, n-1:-1:0)) * Cn_1k;
+    
       % Compute the first term of dF/dxk. dFdC is a (n+1) x d matrix where
       % dFdC(k,l) = 1st term of the derivative of F with respect to the lth
       % coordinate of the kth control point.
@@ -171,10 +179,13 @@ res = sqrt(sum((B * C - data).^2,2));
       
       % Compute dF/dtk
       G(d * (n + 1) + 1:end) = 2 * n * sum((B(2:end-1,:) * C - ...
-        data(2:end-1,:)) .* (B(2:end-1,1:end-1) * diff(C,1,1)),2);
+        data(2:end-1,:)) .* (Bn_1(2:end-1,:) * diff(C,1,1)),2);
     end
     
     if nargout > 2
+      % Compute the Bernstein matrix of order n-2
+      Bn_2 = (bsxfun(@power, T, 0:n-2) .* bsxfun(@power, 1 - T, n-2:-1:0)) * Cn_2k;
+
       H = zeros(pDim);
       
       % Compute d2Fdxkdxl
@@ -224,10 +235,38 @@ res = sqrt(sum((B * C - data).^2,2));
       end
       
       % Compute d2Fdt2
-      H(d * (n + 1) + 1:end, d * (n + 1) + 1:end) = diag(...
-        sum((B(2:end-1,1:end-1) * diff(C,1,1)).^2, 2) + n * (n-1) * ...
-        sum((B(2:end-1,:) * C - data(2:end-1,:)) .* (B(2:end-1,1:end-2) * ...
+      H(d * (n + 1) + 1:end, d * (n + 1) + 1:end) = 2 * diag(...
+        n^2 * sum((Bn_1(2:end-1,:) * diff(C,1,1)).^2, 2) + n * (n-1) * ...
+        sum((B(2:end-1,:) * C - data(2:end-1,:)) .* (Bn_2(2:end-1,:) * ...
         diff(C,2,1)),2));
     end
   end
+end
+
+function reg = computeRegTermN1(C)
+
+CC = num2cell(C);
+[x0, x1, y0, y1] = CC{:};
+
+reg = (x0 - x1)^2 + (y0 - y1)^2;
+end
+
+function reg = computeRegTermN2(C)
+
+CC = num2cell(C);
+[x0, x1, x2, y0, y1, y2] = CC{:};
+
+reg = (4/3) * (x0^2 + x1^2 - x1 * x2 + x2^2 - x0 * (x1 + x2) + y0^2 - ...
+  y0 * y1 + y1^2 - (y0 + y1) * y2 + y2^2);
+end
+
+function reg = computeRegTermN3(C)
+
+CC = num2cell(C);
+[x0, x1, x2, x3, y0, y1, y2, y3] = CC{:};
+
+reg = .6 * (3 * x0^2 + 2 * x1^2 + 2 * x2^2 + x1 * (x2 - 2 * x3) - ...
+  3 * x2 * x3 + 3 * x3^2 - x0 * (3 * x1 + 2 * x2 + x3) + 3 * y0^2 - ...
+  3 * y0 * y1 + 2 * y1^2 - 2 * y0 * y2 + y1 * y2 + 2 * y2^2 - ...
+  (y0 + 2 * y1 + 3 * y2) * y3 + 3 * y3^2);
 end
