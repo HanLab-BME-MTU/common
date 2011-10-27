@@ -13,6 +13,7 @@
 
 #include "mex.h"
 #include "conv2D.h"
+#include "stats.h"
 
 #define PI 3.141592653589793
 #define TOL 1e-12
