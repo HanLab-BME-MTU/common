@@ -24,7 +24,7 @@ switch plotScheme
     case 1
         plot(receptorPositions(clusterMembers,1),receptorPositions(clusterMembers,2),'LineStyle','none','Marker','o','Color',[0.5 0.5 0.5]);
     case 2
-        plotcircle(receptorPositions(clusterMembers,:),circleSize*ones(length(clusterMembers),1),'Color',[0.5 0.5 0.5]);
+        plotcircle(receptorPositions(clusterMembers,:),circleSize*ones(length(clusterMembers),1),'EdgeColor',[0.5 0.5 0.5]);
 end
 
 %define color sequence for labeling clusters
@@ -52,7 +52,7 @@ switch plotScheme
             clusterMembers = receptorClusters(clusterSize==iClusterSize,1:iClusterSize);
             if ~isempty(clusterMembers)
                 clusterMembers = clusterMembers(:);
-                plotcircle(receptorPositions(clusterMembers,:),circleSize*ones(length(clusterMembers),1),'Color',colorSymbols(iClusterSize-1));
+                plotcircle(receptorPositions(clusterMembers,:),circleSize*ones(length(clusterMembers),1),'EdgeColor',colorSymbols(iClusterSize-1));
             end
         end
 end
