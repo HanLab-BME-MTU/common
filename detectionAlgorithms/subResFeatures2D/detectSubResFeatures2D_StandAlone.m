@@ -506,77 +506,77 @@ for iImage = 1 : numImagesRaw
         
         %keep only these unique cands
         candsCurrent = candsCurrent(indxUnique);
-        maxPos = vertcat(candsCurrent.Lmax);
-        
-        %if there is more than one surviving cand
-        if size(maxPos,1) > 1
-            
-            %remove cands that are closer than 2*psfSigma to each other ...
-            
-            %first do that by clustering the cands ...
-            
-            %calculate the distances between cands
-            y = pdist(maxPos);
-            
-            %get the linkage between cands using maximum distance
-            Z = linkage(y,'complete');
-            
-            %cluster the cands and keep only 1 cand from each cluster
-            T = cluster(Z,'cutoff',2*psfSigma,'criterion','distance');
-            [~,cands2keep] = unique(T);
-            
-            %update list of cands
-            candsCurrent = candsCurrent(cands2keep);
-            maxPos = vertcat(candsCurrent.Lmax);
-            
-            if size(maxPos,1) > 1
-                
-                %then refine that by removing cands one by one ...
-                
-                %calculate the distances between surviving cands
-                distBetweenCands = createDistanceMatrix(maxPos,maxPos);
-                
-                %find the minimum distance for each cand
-                distBetweenCandsSort = sort(distBetweenCands,2);
-                distBetweenCandsSort = distBetweenCandsSort(:,2:end);
-                minDistBetweenCands = distBetweenCandsSort(:,1);
-                
-                %find the minimum minimum distance
-                minMinDistBetweenCands = min(minDistBetweenCands);
-                
-                %if this distance is smaller than 2*psfSigma, remove the
-                % maximum with smallest average distance to its neighbors
-                while minMinDistBetweenCands <= (2 * psfSigma)
-                    
-                    %find the cands involved
-                    candsInvolved = find(distBetweenCandsSort(:,1) == minMinDistBetweenCands);
-                    
-                    %determine which one of them has the smallest average distance
-                    %to the other cands
-                    aveDistCands = mean(distBetweenCandsSort(candsInvolved,:),2);
-                    cand2remove = candsInvolved(aveDistCands==min(aveDistCands));
-                    cands2keep = setdiff((1:size(maxPos,1))',cand2remove(1));
-                    
-                    %remove it from the list of cands
-                    candsCurrent = candsCurrent(cands2keep);
-                    maxPos = vertcat(candsCurrent.Lmax);
-                    
-                    %repeat the minimum distance calculation
-                    if size(maxPos,1) > 1
-                        distBetweenCands = createDistanceMatrix(maxPos,maxPos);
-                        distBetweenCandsSort = sort(distBetweenCands,2);
-                        distBetweenCandsSort = distBetweenCandsSort(:,2:end);
-                        minDistBetweenCands = distBetweenCandsSort(:,1);
-                        minMinDistBetweenCands = min(minDistBetweenCands);
-                    else
-                        minMinDistBetweenCands = 3 * psfSigma;
-                    end
-                    
-                end %(while minMinDistBetweenCands <= (2 * psfSigma))
-                
-            end %(if size(maxPos,1) > 1)
-            
-        end %(if size(maxPos,1) > 1)
+        %         maxPos = vertcat(candsCurrent.Lmax);
+        %
+        %         %if there is more than one surviving cand
+        %         if size(maxPos,1) > 1
+        %
+        %             %remove cands that are closer than 2*psfSigma to each other ...
+        %
+        %             %first do that by clustering the cands ...
+        %
+        %             %calculate the distances between cands
+        %             y = pdist(maxPos);
+        %
+        %             %get the linkage between cands using maximum distance
+        %             Z = linkage(y,'complete');
+        %
+        %             %cluster the cands and keep only 1 cand from each cluster
+        %             T = cluster(Z,'cutoff',2*psfSigma,'criterion','distance');
+        %             [~,cands2keep] = unique(T);
+        %
+        %             %update list of cands
+        %             candsCurrent = candsCurrent(cands2keep);
+        %             maxPos = vertcat(candsCurrent.Lmax);
+        %
+        %             if size(maxPos,1) > 1
+        %
+        %                 %then refine that by removing cands one by one ...
+        %
+        %                 %calculate the distances between surviving cands
+        %                 distBetweenCands = createDistanceMatrix(maxPos,maxPos);
+        %
+        %                 %find the minimum distance for each cand
+        %                 distBetweenCandsSort = sort(distBetweenCands,2);
+        %                 distBetweenCandsSort = distBetweenCandsSort(:,2:end);
+        %                 minDistBetweenCands = distBetweenCandsSort(:,1);
+        %
+        %                 %find the minimum minimum distance
+        %                 minMinDistBetweenCands = min(minDistBetweenCands);
+        %
+        %                 %if this distance is smaller than 2*psfSigma, remove the
+        %                 % maximum with smallest average distance to its neighbors
+        %                 while minMinDistBetweenCands <= (2 * psfSigma)
+        %
+        %                     %find the cands involved
+        %                     candsInvolved = find(distBetweenCandsSort(:,1) == minMinDistBetweenCands);
+        %
+        %                     %determine which one of them has the smallest average distance
+        %                     %to the other cands
+        %                     aveDistCands = mean(distBetweenCandsSort(candsInvolved,:),2);
+        %                     cand2remove = candsInvolved(aveDistCands==min(aveDistCands));
+        %                     cands2keep = setdiff((1:size(maxPos,1))',cand2remove(1));
+        %
+        %                     %remove it from the list of cands
+        %                     candsCurrent = candsCurrent(cands2keep);
+        %                     maxPos = vertcat(candsCurrent.Lmax);
+        %
+        %                     %repeat the minimum distance calculation
+        %                     if size(maxPos,1) > 1
+        %                         distBetweenCands = createDistanceMatrix(maxPos,maxPos);
+        %                         distBetweenCandsSort = sort(distBetweenCands,2);
+        %                         distBetweenCandsSort = distBetweenCandsSort(:,2:end);
+        %                         minDistBetweenCands = distBetweenCandsSort(:,1);
+        %                         minMinDistBetweenCands = min(minDistBetweenCands);
+        %                     else
+        %                         minMinDistBetweenCands = 3 * psfSigma;
+        %                     end
+        %
+        %                 end %(while minMinDistBetweenCands <= (2 * psfSigma))
+        %
+        %             end %(if size(maxPos,1) > 1)
+        %
+        %         end %(if size(maxPos,1) > 1)
         
         localMaxima(iImage).cands = candsCurrent;
         

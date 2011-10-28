@@ -221,51 +221,51 @@ for i = 1 : numClusters
     clusterPixels = clusters(i).pixels(:,1:2);
     
     %% remove superfluous maxima
-    if numMaximaT > 1
-        
-        %calculate the distances between all features
-        distBetweenMax = createDistanceMatrix(maximaPosT,maximaPosT);
-        
-        %find the minimum distance for each maximum
-        distBetweenMaxSort = sort(distBetweenMax,2);
-        distBetweenMaxSort = distBetweenMaxSort(:,2:end);
-        minDistBetweenMax = distBetweenMaxSort(:,1);
-        
-        %find the minimum minimum distance
-        minMinDistBetweenMax = min(minDistBetweenMax);
-        
-        %if this distance is smaller than 2*psfSigma, remove the maximum with
-        %smallest average distance to its neighbors
-        while minMinDistBetweenMax <= (2 * psfSigma)
-            
-            %find the two maxima involved
-            ijMax = find(distBetweenMaxSort(:,1) == minMinDistBetweenMax);
-            
-            %determine which one of them has the smaller average distance to
-            %the other maxima
-            aveDistIJ = mean(distBetweenMaxSort(ijMax,:),2);
-            max2remove = ijMax(aveDistIJ==min(aveDistIJ));
-            max2keep = setdiff((1:numMaximaT)',max2remove(1));
-            
-            %remove it from the cluster
-            numMaximaT = numMaximaT - 1;
-            maximaPosT = maximaPosT(max2keep,:);
-            maximaAmpT = maximaAmpT(max2keep,:);
-            
-            %repeat the minimum distance calculation
-            if numMaximaT > 1
-                distBetweenMax = createDistanceMatrix(maximaPosT,maximaPosT);
-                distBetweenMaxSort = sort(distBetweenMax,2);
-                distBetweenMaxSort = distBetweenMaxSort(:,2:end);
-                minDistBetweenMax = distBetweenMaxSort(:,1);
-                minMinDistBetweenMax = min(minDistBetweenMax);
-            else
-                minMinDistBetweenMax = 3 * psfSigma;
-            end
-            
-        end
-        
-    end
+    %     if numMaximaT > 1
+    %
+    %         %calculate the distances between all features
+    %         distBetweenMax = createDistanceMatrix(maximaPosT,maximaPosT);
+    %
+    %         %find the minimum distance for each maximum
+    %         distBetweenMaxSort = sort(distBetweenMax,2);
+    %         distBetweenMaxSort = distBetweenMaxSort(:,2:end);
+    %         minDistBetweenMax = distBetweenMaxSort(:,1);
+    %
+    %         %find the minimum minimum distance
+    %         minMinDistBetweenMax = min(minDistBetweenMax);
+    %
+    %         %if this distance is smaller than 2*psfSigma, remove the maximum with
+    %         %smallest average distance to its neighbors
+    %         while minMinDistBetweenMax <= (2 * psfSigma)
+    %
+    %             %find the two maxima involved
+    %             ijMax = find(distBetweenMaxSort(:,1) == minMinDistBetweenMax);
+    %
+    %             %determine which one of them has the smaller average distance to
+    %             %the other maxima
+    %             aveDistIJ = mean(distBetweenMaxSort(ijMax,:),2);
+    %             max2remove = ijMax(aveDistIJ==min(aveDistIJ));
+    %             max2keep = setdiff((1:numMaximaT)',max2remove(1));
+    %
+    %             %remove it from the cluster
+    %             numMaximaT = numMaximaT - 1;
+    %             maximaPosT = maximaPosT(max2keep,:);
+    %             maximaAmpT = maximaAmpT(max2keep,:);
+    %
+    %             %repeat the minimum distance calculation
+    %             if numMaximaT > 1
+    %                 distBetweenMax = createDistanceMatrix(maximaPosT,maximaPosT);
+    %                 distBetweenMaxSort = sort(distBetweenMax,2);
+    %                 distBetweenMaxSort = distBetweenMaxSort(:,2:end);
+    %                 minDistBetweenMax = distBetweenMaxSort(:,1);
+    %                 minMinDistBetweenMax = min(minDistBetweenMax);
+    %             else
+    %                 minMinDistBetweenMax = 3 * psfSigma;
+    %             end
+    %
+    %         end
+    %
+    %     end
     
     %% attempt first fit and iterative mixture-model fitting if requested
 
@@ -294,6 +294,7 @@ for i = 1 : numClusters
             clusterPixels,psfSigma);
         jacMatT = full(jacMatT);
         residualsT = -residualsT; %minus sign so that residuals = real image - model image
+        residVarT = (sum(residualsT.^2)/numDegFreeT);
         
         %check whether addition of 1 PSF has significantly improved the fit
         if firstFit %if this is the first fit
@@ -303,11 +304,10 @@ for i = 1 : numClusters
         else %if this is not the first fit
             
             %get test statistic, which is F-distributed
-            testStat = (sum(residualsT.^2)/numDegFreeT)/...
-                (sum(residuals.^2)/numDegFree);
+            testStat = residVarT/residVar;
             
             %get p-value of test statistic
-            pValue = fcdf(testStat,numDegFreeT,numDegFree);
+            pValue = fcdf(testStat,numDegFree,numDegFreeT);
             
             %compare p-value to alpha
             %1-sided F-test: H0: F=1, H1: F<1
@@ -326,11 +326,12 @@ for i = 1 : numClusters
             numDegFree = numDegFreeT;
             solution = solutionT;
             residuals = residualsT;
+            residVar = residVarT;
             jacMat = jacMatT;
             
             %calculate the parameters' variance-covariance matrix and get their
             %uncertainties
-            varCovMat = inv(jacMat'*jacMat)*sum(residuals.^2)/numDegFree;
+            varCovMat = residVar * inv(jacMat'*jacMat);
             standDevVec = sqrt(diag(varCovMat));
             
             %if nothing weird happened in the fit...
@@ -389,7 +390,7 @@ for i = 1 : numClusters
         
         %1-sided t-test: H0: T=0, H1: T>0
         %calculate test statistic (t-distributed)
-        testStat = maximaAmp(:,1)./maximaAmp(:,2);
+        testStat = maximaAmp(:,1)./sqrt((maximaAmp(:,2).^2+residVar));
         
         %get p-value
         pValue = 1-tcdf(testStat,numDegFree);
@@ -433,10 +434,11 @@ for i = 1 : numClusters
                     clusterPixels,psfSigma);
                 jacMat = full(jacMat);
                 residuals = -residuals; %minus sign so that residuals = real image - model image
+                residVar = sum(residuals.^2)/numDegFree;
                 
                 %calculate the parameters' variance-covariance matrix and get their
                 %uncertainties
-                varCovMat = inv(jacMat'*jacMat)*sum(residuals.^2)/numDegFree;
+                varCovMat = residVar * inv(jacMat'*jacMat);
                 standDevVec = sqrt(diag(varCovMat));
                 
                 %if nothing weird happened in the fit...
@@ -462,7 +464,7 @@ for i = 1 : numClusters
                     
                     %1-sided t-test: H0: T=0, H1: T>0
                     %calculate test statistic (t-distributed)
-                    testStat = maximaAmp(:,1)./maximaAmp(:,2);
+                    testStat = maximaAmp(:,1)./sqrt((maximaAmp(:,2).^2+residVar));
                     
                     %get p-value
                     pValue = 1-tcdf(testStat,numDegFree);
@@ -540,10 +542,11 @@ for i = 1 : numClusters
                     clusterPixels,psfSigma);
                 jacMat = full(jacMat);
                 residuals = -residuals; %minus sign so that residuals = real image - model image
+                residVar = sum(residuals.^2)/numDegFree;
 
                 %calculate the parameters' variance-covariance matrix and get their
                 %uncertainties
-                varCovMat = inv(jacMat'*jacMat)*sum(residuals.^2)/numDegFree;
+                varCovMat = residVar * inv(jacMat'*jacMat);
                 standDevVec = sqrt(diag(varCovMat));
                 
                 %if nothing weird happened in the fit...
@@ -620,10 +623,11 @@ for i = 1 : numClusters
             clusterPixels,psfSigma);
         jacMat = full(jacMat);
         residuals = -residuals; %minus sign so that residuals = real image - model image
+        residVar = sum(residuals.^2)/numDegFree;
         
         %calculate the parameters' variance-covariance matrix and get their
         %uncertainties
-        varCovMat = inv(jacMat'*jacMat)*sum(residuals.^2)/numDegFree;
+        varCovMat = residVar * inv(jacMat'*jacMat);
         standDevVec = sqrt(diag(varCovMat));
         
         %extract estimate and std of background intensity and
