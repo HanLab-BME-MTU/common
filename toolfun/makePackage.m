@@ -28,7 +28,7 @@ packages(4).initFiles={'QFSMPackage'};
 for i=1:4, packages(i).additionalFiles = {'lccbGUIicons.mat'}; end
 packages(5).name='plusTipTracker';
 packages(5).initFiles={'plusTipGetTracks';'plusTipSeeTracks';...
-    'plusTipParamSweepGUI';'plusTipGroupAnalysis'};
+    'plusTipParamSweepGUI';'plusTipGroupAnalysis';'plusTipPoolGapsForReclass'};
 packages(5).additionalFiles = {'pTT_logo_sm.png';'help_icon.png'};
 
 % List all valid packages on the machine
