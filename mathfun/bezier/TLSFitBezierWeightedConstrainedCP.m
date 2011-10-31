@@ -197,6 +197,7 @@ res = res./w(:);
 
 % Reshape residual
 % res = sqrt(sum(reshape(res, [m, dim]).^2, 2));
+res = reshape(res, [m, dim]);
 
 function [F J] = r(t, data, W, Cnk, Cn_1k, n, P)
 
