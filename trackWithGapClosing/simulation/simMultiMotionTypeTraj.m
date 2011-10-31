@@ -19,7 +19,7 @@ function [traj,trackMatrix,trajTransDiffClass,errFlag] = ...
 %                      radius range [space units].
 %       driftVelRange: Row vector with 2 entries indicating drift speed
 %                      range [space units/unit time]. Direction chosen
-%                      randomly by algorith.
+%                      randomly by algorithm.
 %       durationRange: 3-by-2 array indicating range of time spent in each
 %                      motion category. 1st row: confined diffusion; 2nd
 %                      row: free diffusion; 3rd row: drift. 1st column:
