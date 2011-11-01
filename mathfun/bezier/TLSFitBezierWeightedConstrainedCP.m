@@ -1,16 +1,13 @@
 function [P t res] = TLSFitBezierWeightedConstrainedCP(data, w, n, maxCurvature, varargin)
-%
-% WORK IN PROGRESS!
-%
-
-% TLSFitBezier computes the best total least squares fit of a nth-degree
-% Bezier curve to a set of ordered data points. As oppose to the function
-% TLSFitBezier, the optimization is performed on the variable t1, ..., tm,
-% x0, ..., xn, y0, ... yn.
+% TLSFitBezierWeightedConstrainedCP computes the best total least squares 
+% fit of a nth-degree Bezier curve to a set of ordered data points. 
 %
 % Required Inputs:
 % data           A m x d array representing a set of d-dimensional points
 % n              Degree of the Bezier curve.
+% w              A m x d array representing the weights of the different
+%                components of the points
+% maxCurvature   An approximative value of the maximum curvature
 %
 % Optional Inputs:
 % MaxFunEvals    Maximum number of fonctional evaluations during lsqnonlin.
@@ -26,10 +23,10 @@ function [P t res] = TLSFitBezierWeightedConstrainedCP(data, w, n, maxCurvature,
 % t              A m x 1 array of parameter value for each input points. t
 %                belongs to [0, 1].
 %
-% res            A m x 1 array of residue, i.e the orthogonal distance
+% res            A m x 3 array of residue, i.e the components of the distance
 %                between a data point and the fitted curve.
 %
-% Sylvain Berlemont, August 2011
+% Pascal Berard, October 2011
 
 % Parse inputs
 ip = inputParser;
@@ -44,8 +41,7 @@ ip.addParamValue('TolFun', 1e-8, @isscalar);
 
 ip.parse(data, n, varargin{:});
 maxFunEvals = ip.Results.MaxFunEvals;
-% maxIter = ip.Results.MaxIter;
-maxIter = 100;
+maxIter = ip.Results.MaxIter;
 % display = ip.Results.Display;
 display = 'off';
 tolX = ip.Results.TolX;
@@ -73,9 +69,9 @@ optsLin = optimset('Jacobian', 'on', ...
 Cnk = diag([1 cumprod(n:-1:1) ./ cumprod(1:n)]);
 
 % Fit a line
-% TODO: Replace with a weighted TLS fit
-[x0,a,~,~] = ls3dline(data); 
-[minPoint,maxPoint,~,~,~] = projectionPointsLineMinMax(data,x0',a');
+P = TLSFitBezierWeightedConstraint1(data,w,1);
+minPoint = P(1,:);
+maxPoint = P(end,:);
 
 % Compute the planar constraints
 planeNormal = (maxPoint-minPoint);
@@ -112,7 +108,7 @@ for i=1:maxIter
     fun = @(t) r(t, data, W, Cnk, Cn_1k, n, P);
     lb = [];
     ub = [];
-    [t, ~, res] = lsqnonlin(fun, t, lb, ub, opts);
+    [t, ~, ~] = lsqnonlin(fun, t, lb, ub, opts);
     
     % Compute Bernstein Matrix
     B = (bsxfun(@power, t, 0:n) .* bsxfun(@power, 1 - t, n:-1:0)) * Cnk;
@@ -160,7 +156,7 @@ for i=1:maxIter
         end
         
         d = W*data(:);
-        [P, resnorm, res] = lsqlin(C, d, A, b, Aeq, beq, lb, ub, P(:), optsLin);
+        [P, resnorm, ~] = lsqlin(C, d, A, b, Aeq, beq, lb, ub, P(:), optsLin);
     else
         % TODO: Generalize to n dimensions
         if dim == 2
@@ -170,24 +166,24 @@ for i=1:maxIter
         end
         
         d = W*data(:);
-        [P, resnorm, res] = lsqlin(C, d, [], [], [], [], [], [], P(:), optsLin);
+        [P, resnorm, ~] = lsqlin(C, d, [], [], [], [], [], [], P(:), optsLin);
     end
     
-    P = reshape(P(1:end), [n+1,dim]);
-    
-    % Solve the non-linear optimization on t
-    Cn_1k = diag([1 cumprod(n-1:-1:1) ./ cumprod(1:n-1)]);
-    fun = @(t) r(t, data, W, Cnk, Cn_1k, n, P);
-    lb = [];
-    ub = [];
-    [t, ~, res] = lsqnonlin(fun, t, lb, ub, opts);
-    
+    P = reshape(P(:), [n+1,dim]);
+
     if resnorm-resnormOld < tolFun
         break;
     else
         resnormOld = resnorm;
     end
 end
+
+% Solve the non-linear optimization on t
+Cn_1k = diag([1 cumprod(n-1:-1:1) ./ cumprod(1:n-1)]);
+fun = @(t) r(t, data, W, Cnk, Cn_1k, n, P);
+lb = [];
+ub = [];
+[t, ~, res] = lsqnonlin(fun, t, lb, ub, opts);
 
 % Truncate Bezier curve
 [P,t] = truncateBezier(P,min(t),max(t),t);
@@ -196,7 +192,6 @@ end
 res = res./w(:);
 
 % Reshape residual
-% res = sqrt(sum(reshape(res, [m, dim]).^2, 2));
 res = reshape(res, [m, dim]);
 
 function [F J] = r(t, data, W, Cnk, Cn_1k, n, P)

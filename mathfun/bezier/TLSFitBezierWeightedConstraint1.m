@@ -77,7 +77,8 @@ end
 Cnk = diag([1 cumprod(n:-1:1) ./ cumprod(1:n)]);
 Cn_1k = diag([1 cumprod(n-1:-1:1) ./ cumprod(1:n-1)]);
 fun = @(t) r(t, wX, W, Cnk, Cn_1k, n);
-[t, ~, res] = lsqnonlin(fun, t, zeros(size(t)), ones(size(t)), opts);
+% [t, ~, res] = lsqnonlin(fun, t, zeros(size(t)), ones(size(t)), opts);
+[t, ~, res] = lsqnonlin(fun, t, [], [], opts);
 
 % Compute the control points
 t = [0; t; 1];
@@ -90,8 +91,14 @@ for i=1:dim
     P(:,i) = R11 \ (Q1' * wX(:,i));
 end
 
+% Truncate Bezier curve
+[P,t] = truncateBezier(P,min(t),max(t),t);
+
 % Compute unweighted residuals
 res = res./w(:);
+
+% Reshape residual
+res = reshape(res, [m, dim]);
 
 end % main function
 
