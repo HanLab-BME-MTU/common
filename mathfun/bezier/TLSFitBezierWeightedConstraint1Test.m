@@ -49,8 +49,8 @@ plot(x,y,'ro');
 tic;
 % w = ones(size(data));
 w = [1000*ones(size(data,1),1),1000*ones(size(data,1),1)];
-% [P3, t3] = TLSFitBezierWeightedConstraint1(data, w, n);
-[P3, t3] = TLSFitBezierWeightedConstrainedCP([data data(:,1)], [w w(:,1)], 3, 1/30);
+[P3, t3] = TLSFitBezierWeightedConstraint1(data, w, n);
+% [P3, t3] = TLSFitBezierWeightedConstrainedCP([data data(:,1)], [w w(:,1)], 3, 1/30);
 toc;
 
 C3 = renderBezier(P3, sort(t3));
