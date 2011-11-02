@@ -342,7 +342,8 @@ trackStatus  = (trackSEL(:,1) == tracksFirstFrame) + (trackSEL(:,2) == tracksLas
 %give all tracks same classification if lifetime classification not
 %requested
 if classifyLft == 0
-    trackStatus(:) = 2;
+%     trackStatus(:) = 2;
+    trackStatus(:) = 0;
 end
 
 %get number of segments making each track
@@ -894,14 +895,14 @@ for iFrame = 1 : numFramesMovie
         
         %color individual tracks randomly if requested
         if colorTracks == 1
-            plot(xCoord2plot1,yCoord2plot1,'Color',[1 0.7 0],'LineWidth',1); %orange
-            plot(xCoord2plot2,yCoord2plot2,'Color','r','LineWidth',1); %[1 0 0]
-            plot(xCoord2plot3,yCoord2plot3,'Color','g','LineWidth',1); %[0 1 0]
-            plot(xCoord2plot4,yCoord2plot4,'Color','y','LineWidth',1); %[1 1 0]
-            plot(xCoord2plot5,yCoord2plot5,'Color','b','LineWidth',1); %[0 0 1]
-            plot(xCoord2plot6,yCoord2plot6,'Color','c','LineWidth',1); %[0 1 1]
-            plot(xCoord2plot7,yCoord2plot7,'Color','m','LineWidth',1); %[1 0 1]
-            plot(xCoord2plot8,yCoord2plot8,'Color',[0.6 0 1],'LineWidth',1); %purple
+            plot(xCoord2plot1,yCoord2plot1,'Color',[1 0.7 0],'LineWidth',2); %orange
+            plot(xCoord2plot2,yCoord2plot2,'Color','r','LineWidth',2); %[1 0 0]
+            plot(xCoord2plot3,yCoord2plot3,'Color','g','LineWidth',2); %[0 1 0]
+            plot(xCoord2plot4,yCoord2plot4,'Color','y','LineWidth',2); %[1 1 0]
+            plot(xCoord2plot5,yCoord2plot5,'Color','b','LineWidth',2); %[0 0 1]
+            plot(xCoord2plot6,yCoord2plot6,'Color','c','LineWidth',2); %[0 1 1]
+            plot(xCoord2plot7,yCoord2plot7,'Color','m','LineWidth',2); %[1 0 1]
+            plot(xCoord2plot8,yCoord2plot8,'Color',[0.6 0 1],'LineWidth',2); %purple
         end
         
         %color-code dragtail based on diffusion analysis if supplied
