@@ -11,7 +11,7 @@ function hdrMergeFile()
 %find directories containing dim and bright images
 dimDir = uigetdir('', 'Select Folder containing Dim images');
 brightDir = uigetdir('', 'Select Folder containing Bright images');
-
+outputDir = uigetdir('', 'Select Output Folder');
 % %for troubleshooting only
 % dimDir = '/home/jdt2/Desktop/IFproject/110915/D1_006/w2491_VimDim';
 % brightDir = '/home/jdt2/Desktop/IFproject/110915/D1_006/w3491_VimBright';
@@ -42,11 +42,14 @@ if nDim == nBright
     disp(['There are ', num2str(nDim), ' files in both folders. Win!']);
     %make new directory for output images
     %go up one directory
-    upDir = [dimDir filesep '..'];
-    cd(upDir);
-    %make new directory for merged images
-    mkdir('hdrMergedImages');
-    cd('hdrMergedImages');
+%     upDir = [dimDir filesep '..'];
+%     cd(upDir);
+%     make new directory for merged images
+%    mkdir('hdrMergedImages');
+%     cd('hdrMergedImages');
+    mkdir([outputDir filesep 'combinedMysteryScaledTIFFs']);
+    mkdir([outputDir filesep 'logMysteryTIFFs']);
+    mkdir([outputDir filesep 'logImageScaledTIFFs']);
     %loop through images
     for j = 1:nDim
         nextDimFile = [dimDir filesep dimNames{j}];
@@ -63,19 +66,19 @@ if nDim == nBright
         %attempt to write images
         maxNumMyst = max(combinedMystery(:));
         combinedMysteryScaled = scaleContrast(combinedMystery, [0 maxNumMyst], [0 255]);
-        outputName = ['hdrMerge_combMyst_' num2str(j) '.TIF'];
+        outputName = [outputDir filesep 'combinedMysteryScaledTIFFs' filesep 'hdrMerge_combMyst_' num2str(j) '.TIF'];
         imwrite(uint8(combinedMysteryScaled), outputName, 'tiff');
         
         maxNumLog = max(logMystery(:));
         minNumLog = min(logMystery(:));
         logMysteryScaled = scaleContrast(logMystery, [minNumLog maxNumLog], [0 255]);
-        outputNameLog= ['hdrMerge_logMyst_', num2str(j) '.TIF'];
+        outputNameLog= [outputDir filesep 'logMysteryTIFFs' filesep 'hdrMerge_logMyst_', num2str(j) '.TIF'];
         imwrite(uint8(logMysteryScaled), outputNameLog, 'tiff');
         
         maxNumLogIm = max(logImage(:));
         minNumLogIm = min(logImage(:));
         logImageScaled = scaleContrast(logImage, [minNumLogIm maxNumLogIm], [0 255]);
-        outputNameLogIm= ['hdrMerge_logImage_', num2str(j) '.TIF'];
+        outputNameLogIm= [outputDir filesep 'logImageScaledTIFFs' filesep 'hdrMerge_logImage_', num2str(j) '.TIF'];
         imwrite(uint8(logImageScaled), outputNameLogIm, 'tiff');
 %         imtool(logImageScaled,[]);
     end
