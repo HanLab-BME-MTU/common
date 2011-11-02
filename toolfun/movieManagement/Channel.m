@@ -3,11 +3,11 @@ classdef Channel < hgsetget
     properties (SetAccess = protected)
         psfSigma_                  % standard deviation of the psf
     end
-        
-    properties 
+    
+    properties
         
         % ---- Used Image Parameters ---- %
-                excitationWavelength_       % Excitation wavelength (nm)
+        excitationWavelength_       % Excitation wavelength (nm)
         emissionWavelength_         % Emission wavelength (nm)
         exposureTime_               % Exposure time (ms)
         imageType_                  % e.g. Widefield, TIRF, Confocal etc.
@@ -18,14 +18,14 @@ classdef Channel < hgsetget
         neutralDensityFilter_       % Neutral Density Filter
         incidentAngle_              % Incident Angle - for TIRF (degrees)
         filterType_                 % Filter Type
-        fluorophore_=''               % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)  
+        fluorophore_=''               % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
         
     end
     
-    properties(SetAccess=protected) 
+    properties(SetAccess=protected)
         % ---- Object Params ---- %
         channelPath_                % Channel path (directory containing image(s))
-        owner_                      % MovieData object which owns this channel 
+        owner_                      % MovieData object which owns this channel
     end
     
     properties(Transient=true)
@@ -33,17 +33,17 @@ classdef Channel < hgsetget
     end
     
     methods
-                
+        
         function obj = Channel(channelPath, varargin)
             % Constructor of channel object
             %
-            % Input:  
+            % Input:
             %    channelPath (required) - the absolute path where the channel images are stored
             %
             %    'PropertyName',propertyValue - A string with an valid channel property followed by the
             %    value.
-
-            if nargin>0 
+            
+            if nargin>0
                 obj.channelPath_ = channelPath;
                 
                 % Construct the Channel object
@@ -62,7 +62,7 @@ classdef Channel < hgsetget
             obj.checkPropertyValue('channelPath_',value);
             obj.channelPath_=value;
         end
-
+        
         function set.excitationWavelength_(obj, value)
             obj.checkPropertyValue('excitationWavelength_',value);
             obj.excitationWavelength_=value;
@@ -107,13 +107,13 @@ classdef Channel < hgsetget
             obj.checkPropertyValue('owner_',value);
             obj.owner_=value;
         end
-
+        
         function setFig = edit(obj)
             setFig = channelGUI(obj);
         end
-
+        
         function relocate(obj,oldRootDir,newRootDir)
-
+            
             % Relocate channel path
             obj.channelPath_=  relocatePath(obj.channelPath_,oldRootDir,newRootDir);
             
@@ -121,35 +121,20 @@ classdef Channel < hgsetget
         
         function checkPropertyValue(obj,property, value)
             % Check if a property/value pair can be set up
-            % 
-            % Returns an error if either the property is unchangeable or
-            % the value is invalid.
-            %
-            % INPUT:
-            %    property - a valid Channel property name (string)
-            %
-            %    value - the property value to be checked
-            %
             
-            % Test if the property is writable
-            propertyCheck =0;
-            if strcmp(property,{'notes_'}), propertyCheck=1;
-            elseif isempty(obj.(property)), propertyCheck=1; 
-            elseif isequal(obj.(property),value), return;               
-            elseif strcmp(property,'channelPath_')
-                % Allow relocation of channelPath_
-                stack = dbstack;
-                if strcmp(stack(3).name,'Channel.relocate'), propertyCheck=1; end
+            if isequal(obj.(property),value), return; end
+            
+            if  ~isempty(obj.(property)),
+                % Test if the property is writable
+                if ~obj.checkProperty(property)
+                    propertyName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
+                    error(['The channel''s ' propertyName ' has been set previously and cannot be changed!']);
+                end
             end
             
-            if ~propertyCheck
-                propertyName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
-                error(['This channel''s ' propertyName ' has been set previously and cannot be changed!']);
-            end
             
             % Test if the value is valid
-            valueCheck=obj.checkValue(property,value);
-            if ~valueCheck
+            if ~obj.checkValue(property,value)
                 propertyName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
                 error(['The supplied ' propertyName ' is invalid!']);
             end
@@ -205,7 +190,7 @@ classdef Channel < hgsetget
             if isempty(obj.psfSigma_) && ~isempty(obj.owner_)
                 obj.calculatePSFSigma(obj.owner_.numAperture_,obj.owner_.pixelSize_);
             end
-               
+            
         end
         
         function fileNames = getImageFileNames(obj,iFrame)
@@ -217,7 +202,7 @@ classdef Channel < hgsetget
         end
         
         function color = getColor(obj)
-
+            
             if ~isempty(obj.emissionWavelength_),
                 color = wavelength2rgb(obj.emissionWavelength_*1e-9);
             else
@@ -226,7 +211,7 @@ classdef Channel < hgsetget
         end
         
         function h = draw(obj,iFrame,varargin)
-           
+            
             % Input check
             ip = inputParser;
             ip.addRequired('obj',@(x) isa(x,'Channel') || numel(x)<=3);
@@ -254,14 +239,14 @@ classdef Channel < hgsetget
                     data(:,:,i)=data(:,:,i)*color(i);
                 end
             end
-%             
-%             frame = zeros(obj.Im,nx,3);
-%             idxRGB = getRGBindex(data.markers);
-%             for c = 1:nCh
-%                 frame(:,:,idxRGB(c)) = scaleContrast(double(imread(data.framePaths{c}{frameIdx})), ip.Results.iRange{c});
-%             end
-%             imageName = obj.getImageFileNames(iFrame);
-%             image = double(imread([obj.channelPath_ filesep imageName]));
+            %
+            %             frame = zeros(obj.Im,nx,3);
+            %             idxRGB = getRGBindex(data.markers);
+            %             for c = 1:nCh
+            %                 frame(:,:,idxRGB(c)) = scaleContrast(double(imread(data.framePaths{c}{frameIdx})), ip.Results.iRange{c});
+            %             end
+            %             imageName = obj.getImageFileNames(iFrame);
+            %             image = double(imread([obj.channelPath_ filesep imageName]));
             
             h = obj(1).displayMethod_.draw(data,'channels','hAxes',ip.Results.hAxes);
         end
@@ -282,6 +267,17 @@ classdef Channel < hgsetget
         end
     end
     methods(Static)
+        function status = checkProperty(property)
+            % Returns true/false if the non-empty property is writable
+            status = false;
+            if strcmp(property,'channelPath_');
+                stack = dbstack;
+                if any(cellfun(@(x)strcmp(x,'Channel.relocate'),{stack.name})),
+                    status  =true;
+                end
+            end
+        end
+        
         function checkValue=checkValue(property,value)
             % Test the validity of a property value
             %
@@ -302,7 +298,7 @@ classdef Channel < hgsetget
                 return
             end
             
-            switch property                
+            switch property
                 case {'emissionWavelength_','excitationWavelength_'}
                     checkTest=@(x) isnumeric(x) && x>=300 && x<=800;
                 case 'exposureTime_'

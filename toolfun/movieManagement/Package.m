@@ -1,12 +1,9 @@
 classdef Package < hgsetget 
     % Defines the abstract class Package from which every user-defined packages
     % will inherit. This class cannot be instantiated.
-    
-    properties(SetAccess = immutable)
-        createTime_ % The time when object is created.
-    end
 
     properties(SetAccess = protected)
+        createTime_ % The time when object is created.
         owner_ % The MovieData object this package belongs to
         processes_ % Cell array containing all processes who will be used in this package 
     end
@@ -18,21 +15,6 @@ classdef Package < hgsetget
                          %sub-directories of this directory.
     end
 
-    methods
-        function set.outputDirectory_(obj,value)
-            
-            if isequal(obj.outputDirectory_,value), return; end
-            if ~isempty(obj.outputDirectory_), 
-                stack = dbstack;
-                if strcmp(stack(3).name,'MovieData.relocate'),
-                    error(['This channel''s ' propertyName ' has been set previously and cannot be changed!']);
-                end
-            end
-            endingFilesepToken = [regexptranslate('escape',filesep) '$'];
-            value = regexprep(value,endingFilesepToken,'');
-            obj.outputDirectory_=value;
-        end
-    end
     methods (Access = protected)
         function obj = Package(owner, outputDirectory,varargin)
             % Constructor of class Package
@@ -108,7 +90,21 @@ classdef Package < hgsetget
         end
         
     end
-    methods (Access = public)
+    methods
+        
+        function set.outputDirectory_(obj,value)
+            if isequal(obj.outputDirectory_,value), return; end
+            if ~isempty(obj.outputDirectory_), 
+                stack = dbstack;
+                if ~strcmp(stack(3).name,'MovieObject.relocate'),
+                    error(['This channel''s ' propertyName ' has been set previously and cannot be changed!']);
+                end
+            end
+            endingFilesepToken = [regexptranslate('escape',filesep) '$'];
+            value = regexprep(value,endingFilesepToken,'');
+            obj.outputDirectory_=value;
+        end
+        
         
         function [status processExceptions] = sanityCheck(obj, varargin)
             % sanityCheck is called by package's sanitycheck. It returns
@@ -228,6 +224,10 @@ classdef Package < hgsetget
             isValidOptParent = ~cellfun(@isempty,obj.processes_(optParentIndex));
             validOptParentIndex = optParentIndex(isValidOptParent);
             parentID=sort([reqParentIndex,validOptParentIndex]);
+        end
+        
+        function relocate(obj,oldRootDir,newRootDir)
+            obj.outputDirectory_ = relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
         end
         
     end
