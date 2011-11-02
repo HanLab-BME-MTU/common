@@ -81,24 +81,22 @@ classdef Process < hgsetget
             obj.finishTime_ = clock;
         end
         
-        function OK = checkChanNum(obj,iChan)
+        function status = checkChanNum(obj,iChan)
             %Checks that the selected channel numbers are valid for this
             %movieData. Specific processes can override this to add more checks.
             if nargin < 2 || isempty(iChan)
                 error('You must specify a channel number!')
             end
             
-            OK = arrayfun(@(x)(x <= numel(obj.owner_.channels_) && ...
-                x > 0 && isequal(round(x),x)),iChan);
+            status = ismember(iChan,1:numel(obj.owner_.channels_));
         end
         
-        function OK = checkFrameNum(obj,iFrame)
+        function status = checkFrameNum(obj,iFrame)
             if nargin < 2 || isempty(iFrame)
                 error('You must specify a frame number!')
             end
             
-            OK = arrayfun(@(x)(x <= obj.owner_.nFrames_ && ...
-                x > 0 && isequal(round(x),x)),iFrame);
+            status = ismember(iFrame,1:numel(obj.owner_.nFrames_));
         end
         
         function run(obj)

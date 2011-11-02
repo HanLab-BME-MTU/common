@@ -15,6 +15,9 @@ function [crds,varargout] = plotrect(rect,opt)
 %
 % SEE ALSO plot
 
+fprintf(2, ['Warning: ''' mfilename ''' is deprecated and should no longer be used. Use Matlab built-in rectangle instead.\n']);
+
+
 if nargout > 2
    error('Too many output arguments. See help plotrect.');
 end
