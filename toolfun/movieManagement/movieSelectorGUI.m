@@ -85,6 +85,8 @@ userData.MD = [ ];
 userData.ML = [ ];
 userData.userDir = pwd;
 userData.newFig=-1;
+userData.msgboxGUI=-1;
+userData.iconHelpFig =-1;
 
 % Check packages availability
 packageRadioButtons  = get(handles.uipanel_package,'Children');
@@ -255,109 +257,43 @@ function figure1_DeleteFcn(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 % Delete new window
-if isfield(userData, 'newFig')
-    if userData.newFig~=0 && ishandle(userData.newFig)
-        delete(userData.newFig)
-    end
-end
 
-if isfield(userData, 'iconHelpFig') && ishandle(userData.iconHelpFig)
-   delete(userData.iconHelpFig) 
-end
-if isfield(userData, 'msgboxGUI') && ishandle(userData.msgboxGUI)
-   delete(userData.msgboxGUI)
-end
-if isfield(userData, 'relocateFig') && ishandle(userData.relocateFig)
-   delete(userData.relocateFig)
-end
-
+if ishandle(userData.newFig), delete(userData.newFig); end
+if ishandle(userData.iconHelpFig), delete(userData.iconHelpFig); end
+if ishandle(userData.msgboxGUI), delete(userData.msgboxGUI); end
 
 % --- Executes on button press in pushbutton_open.
 function pushbutton_open_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
-[filename, pathname] = uigetfile('*.mat','Select Movie Data MAT file', userData.userDir);
-if ~any([filename pathname])
-    return;
-else
-    userData.userDir = pathname;
-end
+[filename, pathname] = uigetfile('*.mat','Select a movie MAT file', ...
+    userData.userDir);
+if ~any([filename pathname]), return; end
+userData.userDir = pathname;
 
 % Check if reselect the movie data that is already in the listbox
 contentlist = get(handles.listbox_movie, 'String');
 
 if any(strcmp([pathname filename], contentlist))
-    errordlg('This movie data has already been selected.','Error','modal');
+    errordlg('This movie has already been selected.','Error','modal');
     return
 end
 
 try
-    pre = whos('-file', [pathname filename]);  % - Exception: fail to access .mat file
+    M = MovieObject.load([pathname filename]);
 catch ME
-    errordlg(ME.message,'Fail to open MAT file.','modal');
-    return;
-end
-
-% Find MovieData object in .mat file before loading it
-structM1 = pre( logical(strcmp({pre(:).class},'MovieData')) );
-structM2 = pre( logical(strcmp({pre(:).class},'MovieList')) );
-
-if ~isempty(structM1)
-    structM = structM1;
-    type = 'MovieData';
-    
-elseif ~isempty(structM2)
-    structM = structM2;
-    type = 'MovieList';
-    
-else
-    errordlg('No movie data or movie list is found in selected MAT-file.',...
-            'MAT File Error','modal');
+    msg = sprintf('Movie: %s\n\nError: %s\n\nMovie is not successfully loaded. Please refer to movie detail and adjust your data.', [pathname filename],ME.message);
+    errordlg(msg, 'Movie error','modal');
     return
 end
 
-if length(structM)>1
-    
-    % Exception - multiple movies saved in one MAT file
-    errordlg('The selected MAT-file contains more than one movie data or movie list.',...
-            'MAT File Error','modal');
-    return
-else
-    % Load MovieData or MovieList object in .mat file
-    S=load([pathname filename],'-mat',structM.name);
-    % Name/Rename MovieData obj as 'MD'
-    M= S.(structM.name);
-    clear S;
-end
-
-switch type
+switch class(M)
     case 'MovieData'
-        
-        try 
-            M.sanityCheck(pathname, filename);
-        catch ME
-            
-            if isfield(userData, 'newFig') && ishandle(userData.newFig)
-                delete(userData.newFig)
-            end
-            userData.newFig = M.edit();
-            msg = sprintf('Movie Data: %s\n\nError: %s\n\nMovie data is not successfully loaded. Please refer to movie detail and adjust your data.', [pathname filename],ME.message);
-            errordlg(msg, 'Movie Data Error','modal'); 
-            return
-        end
         userData.MD = cat(2, userData.MD, M);
         contentlist{end+1} = [pathname filename];
         
     case 'MovieList'        
-        try
-            M.sanityCheck('all', pathname, filename);
-        catch ME
-            msg = sprintf('Movie List: %s\n\nError: %s\n\nMovie list is not successfully loaded. Please refer to movie detail and adjust your data.', [pathname filename],ME.message);
-            errordlg(msg, 'Movie List Error','modal'); 
-            return
-        end
-
         % Find duplicate movie data in list box
         movieDataFile = M.movieDataFile_;
         index = 1: length(movieDataFile);
@@ -371,7 +307,8 @@ switch type
         
         % Reload movie data filenames in case they have been relocated
         % during sanity check        
-        [movieException, MDList] = M.sanityCheck(index);
+        movieException = M.sanityCheck();
+        movieException = movieException(index);
         errorME = find(~cellfun(@isempty,movieException));
         healthMD = find(cellfun(@isempty,movieException));
         
@@ -388,11 +325,9 @@ switch type
         
         % Healthy Movie Data
         if ~isempty(healthMD)
-            userData.ML = cat(2, userData.ML, M);
-            for i = healthMD
-                userData.MD = cat(2, userData.MD, MDList{i});
-            end
-            contentlist = cat(2, contentlist', movieDataFile(index(healthMD)) );
+            userData.ML = horzcat(userData.ML, M);
+            userData.MD = horzcat(userData.MD,M.movies_{index(healthMD)});
+            contentlist = horzcat(contentlist',M.movieDataFile_(index(healthMD)));
         end             
     otherwise
         error('User-defined: varable ''type'' does not have an approprate value.')
@@ -468,13 +403,18 @@ else
 end
 
 % Ask user where to save the movie data file
-[file,path] = uiputfile('*.mat','Find a place to save your movie data',...
+[filename,path] = uiputfile('*.mat','Find a place to save your movie list',...
              [movieListPath filesep movieListFileName]);
          
-if ~any([file,path]), return; end
+if ~any([filename,path]), return; end
+
+% Ask user where to select the output directory of the
+outputDir = uigetdir(path,'Select a directory to store the processes output');
+if isequal(outputDir,0), return; end
 
 try
-    ML = MovieList(contentList, path, file);
+    ML = MovieList(contentList, outputDir,'movieListPath_', path,...
+        'movieListFileName_', filename);
 catch ME
     msg = sprintf('%s\n\nMovie list is not saved.', ME.message);
     errordlg(msg, 'Movie List Error', 'modal')

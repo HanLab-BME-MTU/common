@@ -52,7 +52,7 @@ ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
 ip.addRequired('packageName',@(x) isa(x,'char') || isa(x,'function_handle'));
-ip.addOptional('MD',[],@(x) isa(x,'MovieData'));
+ip.addOptional('MD',[],@(x) isa(x,'MovieObject'));
 ip.parse(hObject,eventdata,handles,packageName,varargin{:});
 
 
