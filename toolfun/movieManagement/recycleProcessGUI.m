@@ -87,8 +87,7 @@ handles.output = hObject;
     
 % GUI set-up
 set(handles.text_package, 'String', userData.package.getName)
-set(handles.text_movie, 'String', ...
-    [userData.package.owner_.movieDataPath_ filesep userData.package.owner_.movieDataFileName_])
+set(handles.text_movie, 'String', [userData.package.owner_.getPath filesep userData.package.owner_.getFilename])
 
 % Create recyclable processes list
 nProc = numel(userData.recyclableProc);

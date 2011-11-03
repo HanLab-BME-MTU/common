@@ -27,7 +27,7 @@ nProc = size(userData.dependM, 1);
 
 % Set movie data path
 set(handles.edit_path, 'String', ...
-    [userData.MD(userData.id).movieDataPath_ filesep userData.MD(userData.id).movieDataFileName_ ])
+    [userData.MD(userData.id).getPath filesep userData.MD(userData.id).getFilename])
 
 % Bold the Name of Existing Process
 setupProc = ~cellfun(@isempty,userData.crtPackage.processes_);
@@ -39,10 +39,6 @@ for i=find(~setupProc)
     set(handles.(['checkbox_',num2str(i)]),'FontWeight','normal');
     set(handles.(['pushbutton_show_',num2str(i)]),'Enable','off');
 end
-
-% Set movie data path
-set(handles.edit_path, 'String', ...
-    [userData.MD(userData.id).movieDataPath_ filesep userData.MD(userData.id).movieDataFileName_ ])
 
 
 % Run sanityCheck on package 

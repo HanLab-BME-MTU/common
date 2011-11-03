@@ -39,10 +39,10 @@ classdef Process < hgsetget
             % Constructor of class Process
             if nargin > 0
                 %Make sure the owner is a MovieData object
-                if isa(owner,'MovieData')
+                if isa(owner,'MovieObject')
                     obj.owner_ = owner;
                 else
-                    error('lccb:Process:Constructor','The owner of a process must always be a MovieData object!')
+                    error('lccb:Process:Constructor','The owner of a process must always be a movie object!')
                 end
                 
                 if nargin > 1

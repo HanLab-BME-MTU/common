@@ -251,7 +251,7 @@ extendedLogMsg = cell(size(movieException));
 for i = errorMovies
     % Format movie log message
     basicLogMsg{i} = sprintf('Movie %d - %s:\n\n', i, ...
-        [userData.MD(i).movieDataPath_ filesep userData.MD(i).movieDataFileName_]);
+        [userData.MD(i).getPath filesep userData.MD(i).getFilename]);
     extendedLogMsg{i}=basicLogMsg{i};
     
     % Read exception message and add causes message if any

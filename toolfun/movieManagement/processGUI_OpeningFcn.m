@@ -141,7 +141,6 @@ if isempty(userData.crtPackage.processes_{userData.procID}) && ~isempty(parentPr
             channelIndex = intersect(channelIndex,parentChannelIndex(i));
         end
     end
-   
 end
 
 if ~isempty(channelIndex)
@@ -162,7 +161,7 @@ set(handles.pushbutton_delete,'Callback',@(hObject,eventdata)...
     deleteChannel(hObject,eventdata,guidata(hObject)));
 
 % --- Executes on button press in checkbox_all.
-function checkallChannels(hObject, ~, handles)
+function checkallChannels(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox_all
 availableChannels = get(handles.listbox_availableChannels, 'String');
@@ -186,20 +185,15 @@ function selectChannel(hObject, eventdata, handles)
 
 availableChannels = get(handles.listbox_availableChannels, 'String');
 selectedChannels = get(handles.listbox_selectedChannels, 'String');
-id = get(handles.listbox_availableChannels, 'Value');
+chanID = get(handles.listbox_availableChannels, 'Value');
 
 % If channel has already been added, return;
 availableChannelsIndx = get(handles.listbox_availableChannels, 'Userdata');
 selectedChannelsIndx = get(handles.listbox_selectedChannels, 'Userdata');
 
-for i = id
-    if any(strcmp(availableChannels{i}, selectedChannels) )
-        continue;
-    else
-        selectedChannels{end+1} = availableChannels{i};
-        selectedChannelsIndx = cat(2, selectedChannelsIndx, availableChannelsIndx(i));
-    end
-end
+newChanID = chanID(~ismember(availableChannels(chanID),selectedChannels));
+selectedChannels = horzcat(selectedChannels,availableChannels(newChanID)');
+selectedChannelsIndx = horzcat(selectedChannelsIndx, availableChannelsIndx(newChanID)');
 
 set(handles.listbox_selectedChannels, 'String', selectedChannels, 'Userdata', selectedChannelsIndx);
 
@@ -208,23 +202,16 @@ set(handles.listbox_selectedChannels, 'String', selectedChannels, 'Userdata', se
 function deleteChannel(hObject, eventdata, handles)
 % Call back function of 'delete' button
 selectedChannels = get(handles.listbox_selectedChannels,'String');
-id = get(handles.listbox_selectedChannels,'Value');
+chanID = get(handles.listbox_selectedChannels,'Value');
 
 % Return if list is empty
-if isempty(selectedChannels) || isempty(id),return; end
+if isempty(selectedChannels) || isempty(chanID),return; end
 
-% Delete selected item
-selectedChannels(id) = [ ];
-
-% Delete userdata
+% Update string
 selectedChannelsIndx = get(handles.listbox_selectedChannels, 'Userdata');
-selectedChannelsIndx(id) = [ ];
-set(handles.listbox_selectedChannels, 'Userdata', selectedChannelsIndx);
+selectedChannels(chanID) = [ ];
+selectedChannelsIndx(chanID) = [ ];
 
-% Point 'Value' to the second last item in the list once the 
-% last item has been deleted
-if (id >length(selectedChannels) && id>1)
-    set(handles.listbox_selectedChannels,'Value',length(selectedChannels));
-end
-% Refresh listbox
-set(handles.listbox_selectedChannels,'String',selectedChannels);
+set(handles.listbox_selectedChannels,'String',selectedChannels,...
+    'Userdata', selectedChannelsIndx,...
+    'Value',max(1,min(length(selectedChannels),chanID)));
