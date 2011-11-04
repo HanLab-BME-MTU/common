@@ -25,13 +25,8 @@ classdef ScalarMapDisplay < MovieDataDisplay
         
         function h=initDraw(obj,data,tag,varargin)
             
-            if size(data,3)>1           
-                dataSlice = squeeze(data(:,1,:));
-            else
-                dataSlice=data;
-            end
-            h=imagesc(dataSlice,varargin{:});
-            set(h,'AlphaData',~isnan(dataSlice))
+            h=imagesc(data(:,:,1),varargin{:});
+            set(h,'AlphaData',~isnan(data(:,:,1)))
             % Plot the image and associate the tag
 
             set(h,'Tag',tag,'UserData',data);
@@ -72,14 +67,15 @@ classdef ScalarMapDisplay < MovieDataDisplay
                 if ~isempty(obj.Labels{2}),ylabel(obj.Labels{2},'Parent',hAxes); end
             end
             
-            if size(data,3)>1
-                axesPos = get(get(h,'Parent'),'Position');
+            nz=size(data,3);
+            if nz>1
+                 axesPos = get(get(h,'Parent'),'Position');
                 mainFig = get(get(h,'Parent'),'Parent');
+                set(mainFig,'Toolbar','figure');
                 obj.slider = uicontrol(mainFig,'Style','slider',...
                     'Units','normalized',...
                     'Position',[axesPos(1)/2 axesPos(2) axesPos(3)/20 axesPos(4)],...
-                    'Value',1,'Min',1,'Max',size(data,2),...
-                    'SliderStep',[1/(size(data,2)-1)  5/(size(data,2)-1)],...
+                    'Value',1,'Min',1,'Max',nz,'SliderStep',[1/(nz-1)  5/(nz-1)],...
                     'Tag','slider_depth','BackgroundColor','white',...
                     'Callback',@(hObject,event) updateDraw(obj,h,data));
                 if ~isempty(obj.Labels{2}),
@@ -96,12 +92,12 @@ classdef ScalarMapDisplay < MovieDataDisplay
         function updateDraw(obj,h,data)
             if size(data,3)>1
                 depth = round(get(obj.slider,'Value'));
-                dataSlice=squeeze(data(:,depth,:));
-                set(h,'CData',dataSlice);
-                set(h,'AlphaData',~isnan(dataSlice));
             else
-                set(h,'CData',data);
+                depth=1;
             end
+            set(h,'CData',data(:,:,depth));
+            set(h,'AlphaData',~isnan(data(:,:,depth)));
+            
         end
             
             
