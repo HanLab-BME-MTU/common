@@ -91,11 +91,9 @@ function env = getEnvelope(In)
 %% calculate the time series envelope 
 npoint = length(In);
 [~,p]  = findpeaks(In);
-%env    = spline([0 p npoint+1],[0 In(p) 0],1:npoint);
+
 if ~isempty(p)
-   % env    = spline([0 p npoint+1],[0 In(p) mean(In(end-1:end))],1:npoint);
-    
    env =  spline([0 p npoint+1],[mean(In(1:2)) In(p) mean(In(end-1:end))],1:npoint);
 else
-    env = 0;
+   env = 0;
 end
