@@ -30,7 +30,6 @@ end
 %xTest   = [X(1) X X(end)];%That is because the matlab spline function sucks
 xTest   = X;
 imf     = [];
-fImf    = [];
 Snumber = [4 12];%The HHT and it's applications, Chapter 1, p,9
 count1  = 1;
 
@@ -45,7 +44,7 @@ while ~isempty( findpeaks( xTest ) )
        for i=1:Snumber(2)
            upperE = getEnvelope(x1);
            lowerE = -getEnvelope(-x1);
-           x1     = x1 - mean([upperE;lowerE]);
+           x1     = x1 - nanmean([upperE;lowerE]);
            
            if imfTest( x1 )
                ensImf(i,:) = x1;
@@ -57,14 +56,12 @@ while ~isempty( findpeaks( xTest ) )
        end
        
        if flag
-           imf{end+1} = mean( ensImf( idx, : ) );
-           %imf{end+1} = mean( ensImf( Snumber(1):end,2:end-1) );
+           imf{end+1} = nanmean( ensImf( idx, : ) );
        else
            break;
        end
        
    else
-       %imf{end+1}  = x1(2:end-1);
        imf{end+1} = x1;
    end
    
@@ -96,7 +93,9 @@ npoint = length(In);
 [~,p]  = findpeaks(In);
 %env    = spline([0 p npoint+1],[0 In(p) 0],1:npoint);
 if ~isempty(p)
-    env    = spline([0 p npoint+1],[0 In(p) mean(In(end-1:end))],1:npoint);
+   % env    = spline([0 p npoint+1],[0 In(p) mean(In(end-1:end))],1:npoint);
+    
+   env =  spline([0 p npoint+1],[mean(In(1:2)) In(p) mean(In(end-1:end))],1:npoint);
 else
     env = 0;
 end
