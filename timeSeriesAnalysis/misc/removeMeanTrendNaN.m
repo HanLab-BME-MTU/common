@@ -1,4 +1,4 @@
-function [outTS,outInt] = removeMeanTrendNaN(TS)
+function [outTS,outInt,varRm] = removeMeanTrendNaN(TS)
 %Removes mean, trend and NaN from input time series TS
 %
 %Synopsis:
@@ -9,7 +9,8 @@ function [outTS,outInt] = removeMeanTrendNaN(TS)
 %Output:
 %       outTS{# of variables}(# of good points)  - cell array with a continuous time series points
 %       interval - good points interval    
-%
+%       varRm    - variable removed - all points are NaN
+
 %Marco Vilela, 2011
 
 
@@ -65,5 +66,6 @@ for i=1:nvar
     
 end
 
-outTS  = workTS(idx)';
-outInt = interval(idx)'; 
+outTS   = workTS(idx)';
+outInt  = interval(idx)'; 
+varRm   = find(idx == 0);
