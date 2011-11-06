@@ -1,4 +1,4 @@
-function [outTS,interval] = removeMeanTrendNaN(TS)
+function [outTS,outInt] = removeMeanTrendNaN(TS)
 %Removes mean, trend and NaN from input time series TS
 %
 %Synopsis:
@@ -16,14 +16,16 @@ function [outTS,interval] = removeMeanTrendNaN(TS)
 [nobs,nvar] = size(TS);
 workTS      = cell(1,nvar);
 interval    = cell(1,nvar);
-%***********************
+idx         = false(1,nobs);
+
+
 for i=1:nvar
-    i
+    
     xi          = find(isnan(TS(:,i)));
     [nanB,nanL] = findBlock(xi,1);
     exclude     = [];
     
-    for j=1:length(nanB)
+    for j=1:length(nanB)%excluding gaps larger than 2 points and extremes (1 and N points)
         
         if nanL(j) > 2 || ~isempty(intersect(nanB{j},nobs)) || ~isempty(intersect(nanB{j},1))
             
@@ -34,30 +36,34 @@ for i=1:nvar
         
     end
     
-    if ~isempty(xi)
+    if ~isempty(xi)%After excluding points, xi is a vector of 1 NaN block
         
         x         = find(~isnan(TS(:,i)));
         [fB,fL]   = findBlock(union(x,xi));
         [~,idxB]  = max(fL);
         workTS{i} = TS(fB{idxB},i);
+        
         workTS{i}(isnan(workTS{i})) = ...
             interp1(intersect(x,fB{idxB}),TS(intersect(x,fB{idxB}),i),intersect(xi,fB{idxB}),'spline');
-        
-    elseif length(exclude) < nobs
-        
-        [fB,fL]   = findBlock(setdiff(1:nobs,exclude));
-        [~,idxB]  = max(fL);
-        workTS{i} = TS(fB{idxB},i);
-        
-    end
-    
-    if length(exclude) < nobs
         
         interval{i} = fB{idxB};
         workTS{i}   = workTS{i} - repmat(mean(workTS{i}),sum(~isnan(workTS{i})),1);
         workTS{i}   = preWhitening(workTS{i});
+        idx(i)      = 1;
+        
+    elseif length(exclude) < nobs
+        
+        [fB,fL]     = findBlock(setdiff(1:nobs,exclude));
+        [~,idxB]    = max(fL);
+        workTS{i}   = TS(fB{idxB},i);
+        interval{i} = fB{idxB};
+        workTS{i}   = workTS{i} - repmat(mean(workTS{i}),sum(~isnan(workTS{i})),1);
+        workTS{i}   = preWhitening(workTS{i});
+        idx(i)      = 1;
         
     end
+    
 end
 
-outTS = workTS(cellfun(@(x) ~isempty(x),workTS))';
+outTS  = workTS(idx)';
+outInt = interval(idx)'; 
