@@ -99,12 +99,12 @@ classdef Process < hgsetget
             status = ismember(iFrame,1:numel(obj.owner_.nFrames_));
         end
         
-        function run(obj)
+        function run(obj,varargin)
             % Run the process!
             obj.success_=false;
             obj.startTime_ = clock;
             try
-                obj.funName_(obj.owner_ );
+                obj.funName_(obj.owner_,varargin{:});
             catch runException
                 rethrow(runException)
             end
