@@ -30,6 +30,7 @@ classdef Channel < hgsetget
     
     properties(Transient=true)
         displayMethod_  = ImageDisplay;
+        fileNames_;
     end
     
     methods
@@ -168,7 +169,6 @@ classdef Channel < hgsetget
                     
                 case 1
                     nFrames = length(fileNames);
-                    
                 otherwise
                     % Exception: More than one type of image
                     % files are in the current specific channel
@@ -186,7 +186,8 @@ classdef Channel < hgsetget
             assert(isscalar(width) && isscalar(height),...
                 ['Image sizes are inconsistent in: \n\n%s\n\n'...
                 'Please make sure all the images have the same size.'],obj.channelPath_);
-            
+            obj.fileNames_ = arrayfun(@(x) x.name,fileNames,'UniformOutput',false);
+
             if isempty(obj.psfSigma_) && ~isempty(obj.owner_)
                 obj.calculatePSFSigma(obj.owner_.numAperture_,obj.owner_.pixelSize_);
             end
@@ -194,11 +195,19 @@ classdef Channel < hgsetget
         end
         
         function fileNames = getImageFileNames(obj,iFrame)
-            fileNames = arrayfun(@(x) x.name,imDir(obj.channelPath_),...
-                'UniformOutput',false);
+            if ~isempty(obj.fileNames_)
+                fileNames = obj.fileNames_;
+            else                
+                fileNames = arrayfun(@(x) x.name,imDir(obj.channelPath_),...
+                    'UniformOutput',false);
+            end
             if nargin>1
                 fileNames=fileNames{iFrame};
             end
+        end
+        
+        function data = loadImage(obj,iFrame)
+            data = double(imread([obj.channelPath_ filesep obj.fileNames_{iFrame}]));
         end
         
         function color = getColor(obj)
@@ -225,14 +234,12 @@ classdef Channel < hgsetget
                 % Multi-channel display
                 data = zeros([obj(1).owner_.imSize_ 3]);
                 for iChan=1:numel(obj)
-                    imageName = obj(iChan).getImageFileNames(iFrame);
-                    rawData = double(imread([obj(iChan).channelPath_ filesep imageName]));
+                    rawData = obj(iChan).loadImage(iFrame);
                     data(:,:,iChan)=rawData/max(rawData(:));
                 end
             else
-                % Signle channel display
-                imageName = obj.getImageFileNames(iFrame);
-                rawData = double(imread([obj.channelPath_ filesep imageName]));
+                % Single channel display
+                rawData = obj.loadImage(iFrame);
                 data=repmat(rawData/max(rawData(:)),[1 1 3]);
                 color=ip.Results.Color;
                 for i=1:3
