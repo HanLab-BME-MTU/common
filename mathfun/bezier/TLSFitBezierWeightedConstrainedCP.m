@@ -194,7 +194,7 @@ end
 
 % Compute unweighted residuals
 res = res./w(:);
-res = reshape(res,[m, dim]);
+% res = reshape(res,[m, dim]);
 
 % Reshape residual
 % res = sqrt(sum(reshape(res, [m, dim]).^2, 2));
