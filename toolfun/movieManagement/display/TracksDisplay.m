@@ -22,7 +22,7 @@ classdef TracksDisplay < MovieDataDisplay
                 h(i)=plot(data.x{i}(max(1,end-obj.dragtailLength):end),...
                     data.y{i}(max(1,end-obj.dragtailLength):end),varargin{:});
             end
-            set(h,'Tag',tag,'Linestyle',obj.Linestyle,'Color'); 
+            set(h,'Tag',tag,'LineStyle',obj.Linestyle,'Color',obj.Color); 
             
             if isfield(data,'label')  && obj.showLabel
                 ht=-ones(nTracks,1);
@@ -70,13 +70,13 @@ classdef TracksDisplay < MovieDataDisplay
         end
         function setProperties(obj,ip)
             obj.Color=ip.Results.Color;
-            obj.LineStyle=ip.Results.LineStyle;
+            obj.Linestyle=ip.Results.Linestyle;
             obj.dragtailLength=ip.Results.dragtailLength;
             obj.showLabel=ip.Results.showLabel;
         end
         function additionalInputParsing(obj,ip)
             ip.addParamValue('Color',obj.Color,@(x)ischar(x) ||isvector(x));
-            ip.addParamValue('LineStyle',obj.LineStyle,@ischar);
+            ip.addParamValue('Linestyle',obj.Linestyle,@ischar);
             ip.addParamValue('dragtailLength',obj.dragtailLength,@isscalar);
             ip.addParamValue('showLabel',obj.showLabel,@isscalar);
         end 
