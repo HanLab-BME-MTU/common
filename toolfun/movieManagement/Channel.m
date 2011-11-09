@@ -122,7 +122,6 @@ classdef Channel < hgsetget
         
         function checkPropertyValue(obj,property, value)
             % Check if a property/value pair can be set up
-            
             if isequal(obj.(property),value), return; end
             
             if  ~isempty(obj.(property)),
@@ -132,7 +131,6 @@ classdef Channel < hgsetget
                     error(['The channel''s ' propertyName ' has been set previously and cannot be changed!']);
                 end
             end
-            
             
             % Test if the value is valid
             if ~obj.checkValue(property,value)
@@ -189,7 +187,7 @@ classdef Channel < hgsetget
             obj.fileNames_ = arrayfun(@(x) x.name,fileNames,'UniformOutput',false);
 
             if isempty(obj.psfSigma_) && ~isempty(obj.owner_)
-                obj.calculatePSFSigma(obj.owner_.numAperture_,obj.owner_.pixelSize_);
+                obj.calculatePSFSigma();
             end
             
         end
@@ -235,42 +233,34 @@ classdef Channel < hgsetget
                 data = zeros([obj(1).owner_.imSize_ 3]);
                 for iChan=1:numel(obj)
                     rawData = obj(iChan).loadImage(iFrame);
-                    data(:,:,iChan)=rawData/max(rawData(:));
+                    data(:,:,iChan)=scaleContrast(rawData,[],[0 1]);
                 end
             else
                 % Single channel display
                 rawData = obj.loadImage(iFrame);
-                data=repmat(rawData/max(rawData(:)),[1 1 3]);
+                data=repmat(scaleContrast(rawData,[],[0 1]),[1 1 3]);
                 color=ip.Results.Color;
                 for i=1:3
                     data(:,:,i)=data(:,:,i)*color(i);
                 end
-            end
-            %
-            %             frame = zeros(obj.Im,nx,3);
-            %             idxRGB = getRGBindex(data.markers);
-            %             for c = 1:nCh
-            %                 frame(:,:,idxRGB(c)) = scaleContrast(double(imread(data.framePaths{c}{frameIdx})), ip.Results.iRange{c});
-            %             end
-            %             imageName = obj.getImageFileNames(iFrame);
-            %             image = double(imread([obj.channelPath_ filesep imageName]));
-            
+            end  
             h = obj(1).displayMethod_.draw(data,'channels','hAxes',ip.Results.hAxes);
-        end
-        
-        
+        end          
     end
     
     methods(Access=protected)
-        function calculatePSFSigma(obj,numAperture,pixelSize)
-            if isempty(obj.emissionWavelength_); return; end
-            if isempty(numAperture) || isempty(pixelSize), return; end
-            if strcmp(obj.imageType_,'Widefield')
-                obj.psfSigma_ =.21*obj.emissionWavelength_/(numAperture*pixelSize);
-            else
-                obj.psfSigma_ = getGaussianPSFsigma(numAperture,1,...
-                    pixelSize*1e-9,obj.emissionWavelength_*1e-9);
+        function calculatePSFSigma(obj)
+            % Read parameters for psf sigma calculation
+            emissionWavelength=obj.emissionWavelength_*1e-9;
+            numAperture=obj.owner_.numAperture_;
+            pixelSize=obj.owner_.pixelSize_*1e-9;
+            if isempty(emissionWavelength) || isempty(numAperture) || isempty(pixelSize), 
+                return; 
             end
+            
+            obj.psfSigma_ = getGaussianPSFsigma(numAperture,1,pixelSize,emissionWavelength);
+%             obj.psfSigma_ =.21*obj.emissionWavelength/(numAperture*pixelSize);
+
         end
     end
     methods(Static)
