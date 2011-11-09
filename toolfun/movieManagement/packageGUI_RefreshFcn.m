@@ -9,6 +9,7 @@ function packageGUI_RefreshFcn(handles, type)
 %
 %
 % Chuangang Ren 08/2010
+% Sebastien Besson (last modified Nov 2011)
 
 % Input check
 ip = inputParser;
@@ -16,20 +17,14 @@ ip.addRequired('handles',@isstruct);
 ip.addRequired('type',@(x) any(strcmp(x,{'initialize','refresh'})));
 ip.parse(handles,type)
 
-
 userData = get(handles.figure1, 'UserData');
 nProc = size(userData.dependM, 1);
-
-% Reset GUI
-% userfcn_drawIcon(handles, 'clear', 1:nProc);
-% userfcn_enable(1:nProc, 'on', handles)
-
 
 % Set movie data path
 set(handles.edit_path, 'String', ...
     [userData.MD(userData.id).getPath filesep userData.MD(userData.id).getFilename])
 
-% Bold the Name of Existing Process
+% Bold the name of set-up processes
 setupProc = ~cellfun(@isempty,userData.crtPackage.processes_);
 for i=find(setupProc)
     set(handles.(['checkbox_',num2str(i)]),'FontWeight','bold');
@@ -40,25 +35,32 @@ for i=find(~setupProc)
     set(handles.(['pushbutton_show_',num2str(i)]),'Enable','off');
 end
 
+% Allow visualization of successfully run processes
+successProc = false(size(setupProc));
+successProc(setupProc) = cellfun(@(x) x.success_,userData.crtPackage.processes_(setupProc));
+for i=find(successProc)
+    set(handles.(['pushbutton_show_',num2str(i)]),'Enable','on');
+end
+for i=find(~successProc)
+    set(handles.(['pushbutton_show_',num2str(i)]),'Enable','off');
+end
 
 % Run sanityCheck on package 
 % if strcmp(type, 'initialize'), full=true; else full=false; end
 [status procEx] = userData.crtPackage.sanityCheck(true, 'all');
 
-% Draw successful processes
+% Draw pass icons for sane processes
 for i=find(status)
     userfcn_drawIcon(handles,'pass',i,'Current step was processed successfully', true);
-    set(handles.(['pushbutton_show_',num2str(i)]),'Enable','on');
 end
 
-% Clear unsuccesful processes
-for i=find(~status)
+% Clear icons for processes with false status and no exception (empty proc)
+for i=find(~status & cellfun(@isempty,procEx))
     userfcn_drawIcon(handles,'clear',i,'', true);
 end
 
-% Draw warnings
-validProcEx = find(~cellfun(@isempty,procEx));
-for i = validProcEx
+% Draw warnings for processes with exceptions
+for i = find(~cellfun(@isempty,procEx));
     if strcmp(procEx{i}(1).identifier, 'lccb:set:fatal')
         statusType='error';
     else
@@ -69,19 +71,18 @@ for i = validProcEx
 end
 
 
-% If process is checked, check and enable the process and enable decendent
-% processes
+% Set processes checkbox value
 for i = find(~userData.statusM(userData.id).Checked)
     set(handles.(['checkbox_',num2str(i)]),'Value',0);
 end
 
 for i = find(userData.statusM(userData.id).Checked)
-     set(handles.(['checkbox_',num2str(i)]),'Value',1,'Enable','on');
+     set(handles.(['checkbox_',num2str(i)]),'Value',1);
      userfcn_lampSwitch(i, 1, handles)
 end
 
 % Checkbox enable/disable set up
-k=status | userData.statusM(userData.id).Checked;
+k= successProc | userData.statusM(userData.id).Checked;
 tempDependM = userData.dependM;
 tempDependM(:,logical(k)) = zeros(nProc, nnz(k));
 userfcn_enable(find (any(tempDependM==1,2)), 'off',handles);
