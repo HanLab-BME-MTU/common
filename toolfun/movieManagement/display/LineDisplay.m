@@ -3,7 +3,9 @@ classdef LineDisplay < MovieDataDisplay
     properties
         Marker = 'none';
         LineStyle = '-'
-        Color='r';        
+        Color='r';
+        XLabel='';
+        YLabel='';
     end
     methods
         function obj=LineDisplay(varargin)
@@ -18,6 +20,10 @@ classdef LineDisplay < MovieDataDisplay
             h=plot(data(:,2),data(:,1),varargin{:});
             set(h,'Tag',tag,'Color',obj.Color,'Marker',obj.Marker,...
                 'Linestyle',obj.LineStyle);
+            
+            if ~isempty(obj.XLabel),xlabel(obj.XLabel,varargin{:}); end
+            if ~isempty(obj.YLabel),ylabel(obj.YLabel,varargin{:}); end
+            
         end
         function updateDraw(obj,h,data)
             set(h,'XData',data(:,2),'YData',data(:,1))
@@ -26,11 +32,15 @@ classdef LineDisplay < MovieDataDisplay
             ip.addParamValue('Color',obj.Color,@ischar);
             ip.addParamValue('Marker',obj.Marker,@ischar);
             ip.addParamValue('LineStyle',obj.LineStyle,@ischar);  
+            ip.addParamValue('XLabel',obj.XLabel,@ischar); 
+            ip.addParamValue('YLabel',obj.YLabel,@ischar); 
         end 
         function setProperties(obj,ip)
             obj.Color=ip.Results.Color;
             obj.Marker=ip.Results.Marker;
             obj.LineStyle=ip.Results.LineStyle;
+            obj.XLabel=ip.Results.XLabel;
+            obj.YLabel=ip.Results.YLabel;
         end
     end    
     

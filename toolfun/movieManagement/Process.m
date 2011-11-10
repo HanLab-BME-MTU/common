@@ -126,6 +126,11 @@ classdef Process < hgsetget
             obj.outFilePaths_ = paths;
         end
         
+        function time = getProcessingTime(obj)
+            %The process has been re-run, update the time.
+            time=sec2struct(24*3600*(datenum(obj.finishTime_)-datenum(obj.startTime_)));
+        end
+        
         function [packageID procID] = getPackage(obj)
             % Retrieve package to which the process is associated
             isOwner=@(x)cellfun(@(y) isequal(y,obj),x.processes_);

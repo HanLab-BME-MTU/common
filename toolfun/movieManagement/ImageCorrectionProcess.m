@@ -139,38 +139,7 @@ classdef ImageCorrectionProcess < ImageProcessingProcess
             else
                 h=draw@ImageProcessingProcess(obj,iChan,varargin{1},varargin{2:end});
             end
-
         end
-        
-                   
-%         function h = resultDisplay(obj)
-%            %Overrides default display so averaged correction images can be displayed
-% 
-%            %First, just show the corrected images with the viewer
-%            h = movieDataVisualizationGUI(obj.owner_,obj);
-% 
-%            %Load and display the averaged correction imagesaveraged correction images
-%            corrImNames = dir([obj.funParams_.OutputDirectory filesep '*correction_image*.mat']);
-%            if ~isempty(corrImNames)
-%                % Retrieve the main figure UserData
-%                userData=get(h,'UserData');
-%                for j = 1:numel(corrImNames)
-%                    % Create a figure and attach it to the main figure
-%                    % userData
-%                    userData.correctionFig(j) =figure;
-%                    tmp = load([obj.funParams_.OutputDirectory filesep corrImNames(j).name]);
-%                    tmpF = fieldnames(tmp);
-%                    imagesc(tmp.(tmpF{1}));
-%                    % Use default colormap (higher resolution  unsupported
-%                    % by Windows)
-%                    colorbar,axis image,axis off,%colormap(jet(2^16)) %Use hi-res colormap to avoid apparent stratification
-%                    title(['Processed ' obj.name_ ' Image, Channel ' corrImNames(j).name(end-4) ]);
-%                end
-%                % Save the UserData
-%                set(h, 'UserData', userData);
-%            end
-
-%         end
     end
     methods(Static)
         function output = getDrawableOutput()

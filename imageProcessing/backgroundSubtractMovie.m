@@ -159,21 +159,21 @@ end
 %corrected in the movieData.
 
 
+outFilePaths = cell(2,nChan);
 for j = 1:nChanCorr;
     
     %Create string for current directory
-    currDir = [p.OutputDirectory filesep dName num2str(p.ChannelIndex(j))];    
+    outFilePaths{1,j} = [p.OutputDirectory filesep dName num2str(p.ChannelIndex(j))];    
     
     %Check/create directory (checking avoids warning about existing
     %directory)
-    mkClrDir(currDir);
-    
-    %Save this in the process object
-    movieData.processes_{iProc}.setOutImagePath(p.ChannelIndex(j),currDir);
+    mkClrDir(outFilePaths{1,j});
        
-    
+    outFilePaths{2,j} = [p.OutputDirectory filesep saveName num2str(p.ChannelIndex(j)) '.mat'];   
 end
 
+%Save this in the process object
+movieData.processes_{iProc}.setOutFilePaths(outFilePaths);
 
 %Get image file names for input images (shade corrected images)
 inNames =  movieData.processes_{iProc}.getInImageFileNames(p.ChannelIndex);
@@ -258,7 +258,7 @@ disp('Saving results...')
 %Save the values that were subtracted from each frame.
 for i = 1:nChanCorr
    subtractedValues = backgroundValues{i}; %#ok<NASGU>
-   save([p.OutputDirectory filesep saveName num2str(p.ChannelIndex(i)) '.mat'],'subtractedValues');
+   save(movieData.processes_{iProc}.outFilePaths_{2,p.ChannelIndex(iChan)},'subtractedValues');
 end
 
 

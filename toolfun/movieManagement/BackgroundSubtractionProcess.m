@@ -4,11 +4,11 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
     %
     %Hunter Elliott, 5/2010
     %
-
+    
     methods (Access = public)
         
         function obj = BackgroundSubtractionProcess(owner,outputDir,funParams,backgroundMaskPaths,...
-                                              inImagePaths,outImagePaths)
+                inImagePaths,outImagePaths)
             if nargin == 0
                 super_args = {};
             else
@@ -16,26 +16,26 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
                 
                 super_args{1} = owner;
                 super_args{2} = BackgroundSubtractionProcess.getName;
-                super_args{3} = @backgroundSubtractMovie;                               
+                super_args{3} = @backgroundSubtractMovie;
                 
-                if nargin < 3 || isempty(funParams)                                       
+                if nargin < 3 || isempty(funParams)
                     
-                    %----Defaults----%      
+                    %----Defaults----%
                     funParams.OutputDirectory = ...
-                        [outputDir  filesep 'background_subtracted_images'];                      
-                    funParams.ChannelIndex = 1:nChan;                    
+                        [outputDir  filesep 'background_subtracted_images'];
+                    funParams.ChannelIndex = 1:nChan;
                     funParams.MaskChannelIndex = funParams.ChannelIndex;
-                    funParams.BatchMode = false;                                                                                
-
+                    funParams.BatchMode = false;
+                    
                     
                 end
                 
-                super_args{4} = funParams;    
+                super_args{4} = funParams;
                 
-                if nargin > 3           
+                if nargin > 3
                     %Set the correction image paths to the background mask paths
                     %input.
-                    super_args{7} = backgroundMaskPaths;                
+                    super_args{7} = backgroundMaskPaths;
                 end
                 
                 if nargin > 4
@@ -44,41 +44,49 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
                 
                 if nargin > 5
                     super_args{6} = outImagePaths;
-                end                
+                end
                 
             end
             
             obj = obj@ImageCorrectionProcess(super_args{:});
-        end   
-%         function h = resultDisplay(obj)
-%            %Overrides default display so subtracted value plots can be
-%            %shown
-% 
-%            %First, just show the corrected images with the viewer
-%            h = movieDataVisualizationGUI(obj.owner_,obj);
-% 
-%            %Load and display the averaged correction images
-%            corrImNames = dir([obj.funParams_.OutputDirectory filesep '*subtraction_values*.mat']);
-%            if ~isempty(corrImNames)
-%                % Retrieve the main figure UserData
-%                userData=get(h,'UserData');
-%                for j = 1:numel(corrImNames)
-%                    % Create a figure and attach it to the main figure
-%                    % userData
-%                    userData.correctionFig(j) =figure;
-%                    tmp = load([obj.funParams_.OutputDirectory filesep corrImNames(j).name]);
-%                    tmpF = fieldnames(tmp);
-%                    plot(tmp.(tmpF{1}));
-%                    xlabel('Frame Number')
-%                    ylabel('Subtracted Background Value, A.U.')
-%                    title(['Background Subtraction Values, Channel ' corrImNames(j).name(end-4) ]);
-%                end
-%                % Save the UserData
-%                set(h, 'UserData', userData);
-% 
-%            end
-% 
-%         end
+        end
+        
+        function h = draw(obj,iChan,varargin)
+            
+            outputList = obj.getDrawableOutput();
+            drawBkgValues = any(strcmpi('bkgValues',varargin));
+            
+            if drawBkgValues
+                % Input check
+                ip =inputParser;
+                ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
+                ip.addParamValue('output',[],@ischar);
+                ip.KeepUnmatched = true;
+                ip.parse(iChan,varargin{:})
+                
+                % Load average corrected image
+                tmp = load(obj.outFilePaths_{2,iChan});
+                tmpFields=fieldnames(tmp);
+                data(:,1)=tmp.(tmpFields{1});
+                data(:,2)=1:size(data,1);
+                
+                iOutput= 2;
+                try
+                    assert(~isempty(obj.displayMethod_{iOutput,iChan}));
+                catch ME
+                    obj.displayMethod_{iOutput,iChan}=...
+                        outputList(iOutput).defaultDisplayMethod(iChan);
+                end
+                
+                % Delegate to the corresponding method
+                tag = [obj.getName '_channel' num2str(iChan) '_output' num2str(iOutput)];
+                drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
+                    2*numel(fieldnames(ip.Unmatched)),1);
+                h=obj.displayMethod_{iOutput,iChan}.draw(data,tag,drawArgs{:});
+            else
+                h=draw@ImageProcessingProcess(obj,iChan,varargin{1},varargin{2:end});
+            end
+        end
         
     end
     methods (Static)
@@ -91,13 +99,12 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
         
         function output = getDrawableOutput()
             output = ImageProcessingProcess.getDrawableOutput();
-%             output(2).name='Background Subtraction Values';
-%             output(2).var='bkgValues';
-%             output(2).formatData=[];
-%             output(2).type='graph';
-%             output(2).defaultDisplayMethod=@FigFileDisplay;
+            output(2).name='Background values';
+            output(2).var='bkgValues';
+            output(2).formatData=[];
+            output(2).type='graph';
+            output(2).defaultDisplayMethod=@(x)LineDisplay('Color',[0 0 0],...
+                'XLabel','Frame Number','YLabel','Subtracted Background Value, A.U.');
         end
     end
-
-end                                   
-            
+end
