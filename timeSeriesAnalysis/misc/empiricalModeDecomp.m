@@ -32,7 +32,7 @@ xTest   = X;
 imf     = [];
 Snumber = [4 12];%The HHT and it's applications, Chapter 1, p,9
 count1  = 1;
-
+flag    = [];
 while ~isempty( findpeaks( xTest ) )
    x1      = xTest;
    ensImf  = zeros(Snumber(2),npoint);

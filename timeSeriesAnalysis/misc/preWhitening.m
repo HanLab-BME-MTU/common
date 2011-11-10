@@ -31,8 +31,8 @@ h           = inf(2,nvar);
 
 for i=1:nvar
     
-    h(1,i) = kpsstest(TS(:,i));%Ho is stationary
-    h(2,i) = vratiotest(TS(:,i));%Ho is a random walk
+    h(1,i) = kpsstest(TS(:,i));%Ho is stationary - 0 
+    h(2,i) = vratiotest(TS(:,i),'alpha',0.01);%Ho is a random walk - 1
     
     if or(h(1,i),~h(2,i))
         switch method
@@ -48,10 +48,11 @@ for i=1:nvar
             case 'imf'
                 [imf, flag] = empiricalModeDecomp( TS(:,i) ) ;
                 
-                range       = length( find( cellfun(@(x) ~vratiotest(x) || kpsstest(x) ,imf ) ) );
+                %range       = length( find( cellfun(@(x) ~vratiotest(x) || kpsstest(x) ,imf ) ) );
+                range       =  find( cellfun(@(x) ~vratiotest(x) || kpsstest(x) ,imf ) ) ;
                 if flag
-                    for j=1:range
-                        trend = sum( cat(1, imf{ end-j:end } ) )';
+                    for j=numel(range)-1:-1:1
+                        trend = sum( cat(1, imf{ range(j:end)} ) )';
                         nTs   = TS(:,i) - trend;
                         h     = kpsstest(nTs);
                         if ~h

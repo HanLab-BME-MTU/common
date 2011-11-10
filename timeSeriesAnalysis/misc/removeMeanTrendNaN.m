@@ -51,8 +51,8 @@ for i=1:nvar
         workTS{i}   = workTS{i} - repmat(mean(workTS{i}),sum(~isnan(workTS{i})),1);
         workTS{i}   = preWhitening(workTS{i});
         idx(i)      = 1;
-        
-    elseif length(exclude) < nobs
+         
+    elseif (nobs - length(exclude) ) >= 4
         
         [fB,fL]     = findBlock(setdiff(1:nobs,exclude));
         [~,idxB]    = max(fL);
