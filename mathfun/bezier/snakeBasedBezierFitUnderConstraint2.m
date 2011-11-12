@@ -1,11 +1,12 @@
-function [C,T,res,lambda1,lambda2] = snakeBasedBezierFitUnderConstraint(data,n,beta,varargin)
+function [C,T,res,lambda] = snakeBasedBezierFitUnderConstraint2(data,n,beta,maxDist,varargin)
 % snakeBasedBezierFit computes the optimal n^th Bezier curves that fits
 % the data points using a constrainted snake-based functional.
 %
 % Required Inputs:
 % data           A m x d array representing a set of d-dimensional points
 % n              Degree of the Bezier curve.
-% beta           Regularization wegiht parameter.
+% beta           Regularization weight parameter.
+% maxDist        Maximum distance between first data point and extremities
 %
 % Optional Inputs:
 % MaxFunEvals    Maximum number of fonctional evaluations during lsqnonlin.
@@ -19,10 +20,10 @@ function [C,T,res,lambda1,lambda2] = snakeBasedBezierFitUnderConstraint(data,n,b
 % C:         Control points of the optimal Bezier curve. a (n+1)xd matrix
 % T:         a mx1 vector
 % res:       a mx1 residual vector
-% lambda1    Lagrangian multiplier for G1 constraint
-% lambda2    Lagrangian multiplier for G2 constraint
+% lambda     a structure lambda whose fields contain the Lagrange
+%            multipliers at the solution [C;T]
 %
-% Sylvain Berlemont, Oct. 2011
+% Sylvain Berlemont, Nov. 2011
 
 %% Parse inputs
 ip = inputParser;
@@ -30,14 +31,15 @@ ip.CaseSensitive = false;
 ip.addRequired('data', @isnumeric);
 ip.addRequired('n', @(n) n > 0);
 ip.addRequired('beta', @(beta) beta >= 0);
-ip.addParamValue('Algorithm', 'trust-region-reflective', @isstr);
+ip.addRequired('maxDist', @(maxDist) maxDist >= 0);
+ip.addParamValue('Algorithm', 'sqp', @isstr);
 ip.addParamValue('MaxFunEvals', 1e4, @isscalar);
 ip.addParamValue('MaxIter', 1e4, @isscalar);
 ip.addParamValue('Display', 'off', @isstr);
 ip.addParamValue('TolX', 1e-8, @isscalar);
 ip.addParamValue('TolFun', 1e-8, @isscalar);
 
-ip.parse(data, n, beta, varargin{:});
+ip.parse(data, n, beta, maxDist, varargin{:});
 algorithm = ip.Results.Algorithm;
 maxFunEvals = ip.Results.MaxFunEvals;
 maxIter = ip.Results.MaxIter;
@@ -51,7 +53,8 @@ opts = optimset('Algorithm', algorithm, ...
   'Display', display, ...
   'FunValCheck', 'off', ...
   'GradObj', 'on', ...
-  'Hessian', 'on', ...
+  'GradConstr', 'on', ...
+  'Hessian', 'off', ...
   'MaxFunEvals', maxFunEvals, ...
   'MaxIter', maxIter, ...
   'TolX', tolX, ...
@@ -65,8 +68,7 @@ regFuncs = {@computeRegTermN1, @computeRegTermN2, @computeRegTermN3};
 % dimension of the problem is equal to
 % - number of control point coordinates: d * (n+1)
 % - number of nodes without the first and last ones: m-2
-% - number of constraints: 2
-pDim = d * (n+1) + (m-2) + 2;
+pDim = d * (n+1) + (m-2);
 
 % Compute the initial nodes
 T = linspace(0,1,m)';
@@ -78,16 +80,16 @@ Cn_2k = diag([1 cumprod(n-2:-1:1) ./ cumprod(1:n-2)]);
 B = (bsxfun(@power, T, 0:n) .* bsxfun(@power, 1 - T, n:-1:0)) * Cnk;
 [Q1 R11] = qr(B,0);
 C = R11 \ (Q1' * data);
-% Note we do not optimize t1 and tm since t1=0 and tm = 1 in any case.
-% TODO: initial value for lambda1 and lambda2 = 1. Is it good?
-X = [C(:);T(2:end-1);1;1];
+% Note we do not optimize t1 and tm since t1=0 and tm=1 in all cases.
+X = [C(:);T(2:end-1)];
 
 % Constraints for T value in [0,1]
 lb = -inf(size(X));
 ub = +inf(size(X));
-lb(d * (n+1) + 1:end-2) = 0;
-ub(d * (n+1) + 1:end-2) = 1;
-lb(end-1:end) = 1;
+lb(d * (n+1) + 1:end) = 0;
+ub(d * (n+1) + 1:end) = 1;
+
+maxDist2 = maxDist^2;
 
 %% Pre-compute various constants
 j = (0:n-1)';
@@ -132,15 +134,12 @@ C6 = (bsxfun(@times, bsxfun(@plus, k, l - 1), binom_n_1_k) .* bsxfun(@plus, ...
   .* factorial(bsxfun(@plus, 2 * n - k, -l - 2)) / fact_2n_1;
 
 %% Optimization
-X = fmincon(@fun,X,[],[],[],[],lb,ub,[],opts);
-%[X,~,~,~,~,~,H] = fmincon(@fun,X,[],[],[],[],lb,ub,[],opts);
+[X,~,~,~,lambda] = fmincon(@fun,X,[],[],[],[],lb,ub,@fcon,opts);
 
 % Compute the residual
-T = [0; X(d * (n + 1) + 1:end-2); 1];
+T = [0; X(d * (n + 1) + 1:end); 1];
 B = (bsxfun(@power, T, 0:n) .* bsxfun(@power, 1 - T, n:-1:0)) * Cnk;
 res = sqrt(sum((B * C - data).^2,2));
-lambda1 = X(end-1);
-lambda2 = X(end);
 
   function [F, G, H] = fun(X)
     
@@ -148,11 +147,7 @@ lambda2 = X(end);
     C = reshape(X(1:d * (n + 1)), n + 1, d);
     
     % Retrieve the nodes from X and add t0 and tm
-    T = [0; X(d * (n + 1) + 1:end-2); 1];
-    
-    % Retrieve lambda1 and lambda2
-    lambda1 = X(end-1);
-    lambda2 = X(end);
+    T = [0; X(d * (n + 1) + 1:end); 1];
     
     % Compute the Bernstein matrix
     B = (bsxfun(@power, T, 0:n) .* bsxfun(@power, 1 - T, n:-1:0)) * Cnk;
@@ -160,14 +155,8 @@ lambda2 = X(end);
     % Compute the data fidelity term
     dataFidelity = sum(sum((data - B * C).^2, 2));
     
-    % Compute the 2 constraints
-    dp1 = sum((C(2,:) - C(1,:)) .* (data(1,:) - C(1,:)), 2); 
-    dp2 = sum((C(n,:) - C(n+1,:)) .* (data(m,:) - C(n+1,:)), 2);
-    G1 = dp1^2;
-    G2 = dp2^2;
-    
     % Append the regularization term and the contraints
-    F = dataFidelity + beta * regFuncs{n}(C) + lambda1 * G1 + lambda2 * G2;
+    F = dataFidelity + beta * regFuncs{n}(C);
     
     if nargout > 1
       % Compute the Bernstein matrix of order n-1
@@ -198,29 +187,10 @@ lambda2 = X(end);
       
       G(1:d * (n + 1)) = dFdC1(:) + reshape([dFdC2_k0; dFdC2_k; dFdC2_kn], ...
         d * (n + 1), 1);
-      
-      % Add the constraint's contributions
-      
-      % dL/dxk, k = 0
-      G((0:(d-1)) * (n+1) + 1) = G((0:(d-1)) * (n+1) + 1) + lambda1 * ...
-        2 * (2 * C(1,:) - C(2,:) - data(1,:))' * dp1;
-      % dL/dxk, k = 1
-      G((0:(d-1)) * (n+1) + 2) = G((0:(d-1)) * (n+1) + 2) + lambda1 * ...
-        2 * (data(1,:) - C(1,:))' * dp1;
-      % dL/dxk, k = n-1
-      G((1:d) * (n+1) - 1) = G((1:d) * (n+1) - 1) + lambda2 * ...
-        2 * (data(m,:) - C(n+1,:))' * dp2;
-      % dL/dxk, k = n
-      G((1:d) * (n+1)) = G((1:d) * (n+1)) + lambda2 * ...
-        2 * (2 * C(n+1,:) - C(n,:) - data(m,:))' * dp2;
     
       % Compute dL/dtk
-      G(d * (n + 1) + 1:end-2) = 2 * n * sum((B(2:end-1,:) * C - ...
+      G(d * (n + 1) + 1:end) = 2 * n * sum((B(2:end-1,:) * C - ...
         data(2:end-1,:)) .* (Bn_1(2:end-1,:) * diff(C,1,1)),2);
-      
-      % Compute dL/dlambda1 and dL/dlambda2
-      G(end-1) = G1;
-      G(end) = G2;
     end
     
     if nargout > 2
@@ -255,94 +225,13 @@ lambda2 = X(end);
       blks = cell(d,1);
       [blks{:}] = deal(H(1:n+1,1:n+1));
       H(1:d * (n+1), 1:d * (n+1)) = blkdiag(blks{:});
-
-      % Add the contraint's contributions in d2L/dxkdxl
-      
-      % k = 0, l = 0
-      H(1:n+1:d*(n+1),1:n+1:d*(n+1)) = H(1:n+1:d*(n+1),1:n+1:d*(n+1)) + ...
-        diag(lambda1 * (2 * (data(1,:) - 2 * C(1,:) + C(2,:)).^2 + 4 * dp1));
-      
-      % k = 1, l = 0
-      H(2:n+1:d*(n+1),1:n+1:d*(n+1)) = H(2:n+1:d*(n+1),1:n+1:d*(n+1)) - ...
-        diag(2 * lambda1 * ((data(1,:) - C(1,:)) .* (data(1,:) - 2 * C(1,:) + ...
-        C(2,:)) + dp1));
-      
-      % k = 1, l = 1
-      H(2:n+1:d*(n+1),2:n+1:d*(n+1)) = H(2:n+1:d*(n+1),2:n+1:d*(n+1)) + ...
-        diag(2 * lambda1 * (data(1,:) - C(1,:)).^2);
-      
-      % k = n-1, l = n-1
-      H(n:n+1:d*(n+1),n:n+1:d*(n+1)) = H(n:n+1:d*(n+1),n:n+1:d*(n+1)) + ...
-        diag(2 * lambda2 * (data(m,:) - C(n+1,:)).^2);
-      
-      % k = n-1, l = n
-      H((1:d) * (n+1),n:n+1:d*(n+1)) = H((1:d) * (n+1),n:n+1:d*(n+1)) - ...
-        diag(2 * lambda2 * ((data(m,:) - C(n+1,:)) .* (data(m,:) - 2 * ...
-        C(n+1,:) + C(n,:)) + dp2));
-      
-      % k = n, l = n
-      H((1:d) * (n+1),(1:d) * (n+1)) = H((1:d) * (n+1),(1:d) * (n+1)) + ...
-        diag(lambda2 * (2 * (data(m,:) - 2 * C(n+1,:) + C(n,:)).^2 + ...
-        4 * dp2));
-      
-      % Compute d2F/dxkdyl. In each case below, there are d(d-1)/2 values
-      % to compute. Example in 2D, we have dxdy, in 3D we have dxdy, dxdz,
-      % dydz, ...
-      pp = pcombs(1:d);
-      d1 = pp(:,1);
-      d2 = pp(:,2);
-      % ii and jj correspond to the indices of H which represent
-      % d2L/dC(d1)_0 dC(d2)_0. Example in 2D, it corresponds to d2L/dx0dy0.
-      % In 3D, it corresponds to d2L/dx0dy0, d2L/dx0dz0, d2L/dy0dz0.
-      ii = (d2-1)*(n+1)+1;
-      jj = (d1-1)*(n+1)+1;
-      
-      % k = 0, l = 0
-      ind = sub2ind(size(H),ii,jj);
-      H(ind) = lambda1 * 2 * (2 * C(1,d1) - C(2,d1) - data(1,d1)) .* ...
-        (2 * C(1,d2) - C(2,d2) - data(1,d2));
-      
-      % k = 0, l = 1
-      ind = sub2ind(size(H),ii+1,jj);
-      H(ind) = lambda1 * 2 * (2 * C(1,d1) - C(2,d1) - data(1,d1)) .* ...
-        (data(1,d2) - C(1,d2));
-      
-      % k = 1, l = 0
-      ind = sub2ind(size(H),ii,jj+1);
-      H(ind) = lambda1 * 2 * (data(1,d1) - C(1,d1)) .* ...
-        (2 * C(1,d2) - C(2,d2) - data(1,d2));
-      
-      % k = 1, l = 1
-      ind = sub2ind(size(H),ii+1,jj+1);
-      H(ind) = lambda1 * 2 * (data(1,d1) - C(1,d1)) .* ...
-        (data(1,d2) - C(1,d2));
-      
-      % k = n-1, l = n-1
-      ind = sub2ind(size(H),ii+n-1,jj+n-1);
-      H(ind) = lambda2 * 2 * (data(m,d1) - C(n+1,d1)) .* ...
-        (data(m,d2) - C(n+1,d2));
-      
-      % k = n-1, l = n
-      ind = sub2ind(size(H),ii+n,jj+n-1);
-      H(ind) = lambda2 * 2 * (data(m,d1) - C(n+1,d1)) .* ...
-        (2 * C(n+1,d2) - C(n,d2) - data(m,d2));
-      
-      % k = n, l = n-1
-      ind = sub2ind(size(H),ii+n-1,jj+n);
-      H(ind) = lambda2 * 2 * (2 * C(n+1,d1) - C(n,d1) - data(m,d1)) .* ...
-        (data(m,d2) - C(n+1,d2));
-      
-      % k = n, l = n
-      ind = sub2ind(size(H),ii+n,jj+n);
-      H(ind) = lambda2 * 2 * (2 * C(n+1,d1) - C(n,d1) - data(m,d1)) .* ...
-        (2 * C(n+1,d2) - C(n,d2) - data(m,d2));
       
       % Compute d2Fdtdx
       for iDim = 1:d      
         offset = (iDim - 1) * (n + 1) + 1;
         
         % d2Fdtdx is a m x (n+1) matrix
-        H(end-m+1:end-2, offset:offset+n) = 2 * B(2:end-1,:) .* ...
+        H(end-m+3:end, offset:offset+n) = 2 * B(2:end-1,:) .* ...
           (sum(bsxfun(@times, bsxfun(@rdivide, bsxfun(@minus, bsxfun(@plus, ...
           permute(0:n, [3, 1, 2]), 0:n), 2 * n * T(2:end-1)), T(2:end-1) .* ...
           (1-T(2:end-1))), permute(bsxfun(@times, B(2:end-1,:), C(:,iDim)'), ...
@@ -352,21 +241,42 @@ lambda2 = X(end);
       end
       
       % Compute d2Fdt2
-      H(d * (n + 1) + 1:end-2, d * (n + 1) + 1:end-2) = 2 * diag(...
+      H(d * (n + 1) + 1:end, d * (n + 1) + 1:end) = 2 * diag(...
         n^2 * sum((Bn_1(2:end-1,:) * diff(C,1,1)).^2, 2) + n * (n-1) * ...
         sum((B(2:end-1,:) * C - data(2:end-1,:)) .* (Bn_2(2:end-1,:) * ...
         diff(C,2,1)),2));
-      
-      % Compute d2Ldxdlambda1
-      H(end-1,1:n+1:d*(n+1)) = 2 * (2 * C(1,:) - C(2,:) - data(1,:)) * dp1;     
-      H(end-1,2:n+1:d*(n+1)) = 2 * (data(1,:) - C(1,:)) * dp1;
-      
-      % Compute d2Ldxdlambda2
-      H(end,n:n+1:d*(n+1)) = 2 * (data(m,:) - C(n+1,:)) * dp2;      
-      H(end,(1:d) * (n+1)) = 2 * (2 * C(n+1,:) - C(n,:) - data(m,:)) * dp2;
-      
+            
       % assign the upper triangular part of H
       H = tril(H) + tril(H,-1)';
+    end
+  end
+
+  function [CON CONEQ CG CEQG] = fcon(X)
+    % Retrieve the control point coordinates from X
+    C = reshape(X(1:d * (n + 1)), n + 1, d);
+
+    d1 = sum((data(1,:) - C(1,:)).^2) - maxDist2;
+    d2 = sum((data(m,:) - C(n+1,:)).^2) - maxDist2;
+    
+    CON = [d1, d2];
+        
+    % There is no equality constraint.
+    CONEQ = [];
+    
+    if nargout > 2
+      CG = zeros(pDim,2);
+      
+      % Compute dG1/dxk
+      
+      % k = 0
+      CG((0:(d-1)) * (n+1) + 1,1) = -2 * (data(1,:) - C(1,:))';
+      
+      % Compute dG2/dxk
+      
+      % k = n
+      CG((1:d) * (n+1),2) =  -2 * (data(m,:) - C(n+1,:))';
+      
+      CEQG = [];
     end
   end
 end
