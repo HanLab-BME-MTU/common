@@ -1,37 +1,37 @@
 classdef CorrelationCalculationProcess < CorrelationProcess
-    % Process which
+    % A concrete process for calculating correlation of sampled processes
     %
     % Sebastien Besson, Oct 2011
 
     methods (Access = public)
         
-        function obj = CorrelationCalculationProcess(owner,outputDir,funParams)
+        function obj = CorrelationCalculationProcess(owner,varargin)
             
             if nargin == 0
                 super_args = {};
-            else
+            else               
+                % Input check
+                ip = inputParser;
+                ip.addRequired('owner',@(x) isa(x,'MovieObject'));
+                ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+                ip.addOptional('funParams',[],@isstruct);
+                ip.parse(owner,varargin{:});
+                outputDir = ip.Results.outputDir;
+                funParams = ip.Results.funParams;
                 
-                super_args{1} = owner;
-                
+                % Define arguments for superclass constructor
+                super_args{1} = owner;       
                 super_args{2} = CorrelationCalculationProcess.getName;
-                super_args{3} = @calculateMovieCorrelation;
-                
-                if nargin < 3 || isempty(funParams)
-                    funParams.OutputDirectory = [outputDir  filesep 'correlation'];
-                    if isa(owner,'MovieList')
-                        funParams.MovieIndex=1:numel(owner.movies_);
-                    end
-                    funParams.ProcessName=CorrelationProcess.getCorrelationProcesses;
-                end
-                
-                super_args{4} = funParams;
-                
+                super_args{3} = @calculateMovieCorrelation;                
+                if isempty(funParams)
+                    funParams=CorrelationCalculationProcess.getDefaultParams(owner,outputDir);
+                end                
+                super_args{4} = funParams;                
             end
             
             obj = obj@CorrelationProcess(super_args{:});
         end
-        
-        
+              
         
         function varargout = loadChannelOutput(obj,i,j,varargin)
             % Check input
@@ -63,7 +63,6 @@ classdef CorrelationCalculationProcess < CorrelationProcess
             output(1).type='correlationGraph';
             output(1).defaultDisplayMethod = @CorrelationMeshDisplay;
         end
-        
     end
     
     methods (Static)
@@ -77,10 +76,21 @@ classdef CorrelationCalculationProcess < CorrelationProcess
             procNames = {'WindowSamplingProcess';
                 'ProtrusionSamplingProcess'};
         end
+        function funParams = getDefaultParams(owner,varargin)
+            % Input check
+            ip=inputParser;
+            ip.addRequired('owner',@(x) isa(x,'MovieObject'));
+            ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+            ip.parse(owner, varargin{:})
+            outputDir=ip.Results.outputDir;
+            
+            % Set default parameters
+            if isa(owner,'MovieList'), funParams.MovieIndex=1:numel(owner.movies_); end
+            funParams.OutputDirectory = [outputDir  filesep 'correlation'];
+            funParams.ProcessName=CorrelationProcess.getCorrelationProcesses;
+        end
     end
-    
 end
-
 
 function data =formatCorrelationData(data)
 data.X=data.lags;

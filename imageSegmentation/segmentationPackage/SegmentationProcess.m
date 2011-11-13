@@ -1,6 +1,6 @@
 classdef SegmentationProcess < MaskProcess
     % An abstract superclass of all segmentation processes
-    %
+
     % Sebastien Besson 4/2011
     
     methods (Access = protected)

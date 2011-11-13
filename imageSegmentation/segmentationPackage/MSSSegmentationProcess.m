@@ -1,30 +1,36 @@
 classdef MSSSegmentationProcess < SegmentationProcess
-    %A process for segmenting via multi-scale steerable segmentation
+    %A concrete process for segmenting using multi-scale steerable filters
     
-    % Sebastien Besson
+    % Sebastien Besson, Sep 2011 (last modified Nov 2011)
     
     methods
-        function obj = MSSSegmentationProcess(owner,outputDir, funParams)
+        function obj = MSSSegmentationProcess(owner,varargin)
             
             if nargin == 0
                 super_args = {};
             else
+                % Input check
+                ip = inputParser;
+                ip.addRequired('owner',@(x) isa(x,'MovieData'));
+                ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+                ip.addOptional('funParams',[],@isstruct);
+                ip.parse(owner,varargin{:});
+                outputDir = ip.Results.outputDir;
+                funParams = ip.Results.funParams;
+                
+                % Define arguments for superclass constructor
                 super_args{1} = owner;
                 super_args{2} = MSSSegmentationProcess.getName;
-                super_args{3} = @getMovieMasksMSS;                           
-                
-                if nargin < 3 || isempty(funParams)    
-                    funParams.ChannelIndex = 1:numel(owner.channels_);
-                    funParams.OutputDirectory = [outputDir  filesep 'MSSMasks'];
-                    funParams.Scales = [1 2 4]; %Default is no jump suppression
-                    funParams.FilterOrder = 3;
+                super_args{3} = @getMovieMasksMSS;
+                if isempty(funParams)
+                    funParams=MSSSegmentationProcess.getDefaultParams(owner,outputDir);
                 end
-                super_args{4} = funParams;                    
+                super_args{4} = funParams;
             end
             
             obj = obj@SegmentationProcess(super_args{:});
-        end               
-
+        end
+        
     end
     methods (Static)
         function name = getName()
@@ -33,6 +39,20 @@ classdef MSSSegmentationProcess < SegmentationProcess
         function h = GUI()
             h= @mssSegmentationProcessGUI;
         end
-    end
         
+        function funParams = getDefaultParams(owner,varargin)
+            % Input check
+            ip=inputParser;
+            ip.addRequired('owner',@(x) isa(x,'MovieData'));
+            ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+            ip.parse(owner, varargin{:})
+            outputDir=ip.Results.outputDir;
+            
+            % Set default parameters
+            funParams.ChannelIndex = 1:numel(owner.channels_);
+            funParams.OutputDirectory = [outputDir  filesep 'MSSMasks'];
+            funParams.Scales = [1 2 4]; %Default is no jump suppression
+            funParams.FilterOrder = 3;
+        end
+    end
 end
