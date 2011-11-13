@@ -3,23 +3,27 @@ classdef MaskRefinementProcess < MaskProcessingProcess
     
     
     methods(Access = public)        
-        function obj = MaskRefinementProcess(owner,outputDir,funParams)
+        function obj = MaskRefinementProcess(owner,varargin)
             
             if nargin == 0
                 super_args = {};
             else
-                nChan = numel(owner.channels_);
+                % Input check
+                ip = inputParser;
+                ip.addRequired('owner',@(x) isa(x,'MovieData'));
+                ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+                ip.addOptional('funParams',[],@isstruct);
+                ip.parse(owner,varargin{:});
+                outputDir = ip.Results.outputDir;
+                funParams = ip.Results.funParams;
                 
+                % Define arguments for superclass constructor
                 super_args{1} = owner;
                 super_args{2} = MaskRefinementProcess.getName;
                 super_args{3} = @refineMovieMasks;                               
-                
-                if nargin < 3 || isempty(funParams)                                       
-                    funParams = MaskRefinementProcess.getDefaultParams(owner,outputDir);
-
-                                            
+                if isempty(funParams)                                       
+                    funParams = MaskRefinementProcess.getDefaultParams(owner,outputDir);                               
                 end
-                %Make sure the input parameters are legit??
                 super_args{4} = funParams;                    
             end
             
@@ -34,7 +38,14 @@ classdef MaskRefinementProcess < MaskProcessingProcess
             h= @maskRefinementProcessGUI;
         end
         
-        function funParams = getDefaultParams(owner,outputDir)
+        function funParams = getDefaultParams(owner,varargin)
+            % Input check
+            ip=inputParser;
+            ip.addRequired('owner',@(x) isa(x,'MovieData'));
+            ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+            ip.parse(owner, varargin{:});
+            outputDir=ip.Results.outputDir;
+            
             % Define default process parameters
             funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.SegProcessIndex = []; %No default.

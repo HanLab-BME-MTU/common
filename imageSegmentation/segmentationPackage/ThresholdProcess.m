@@ -3,25 +3,33 @@ classdef ThresholdProcess < SegmentationProcess
     %thresholdMovie.m
     
     methods (Access = public)
-        function obj = ThresholdProcess(owner,outputDir, funParams)
+        function obj = ThresholdProcess(owner,varargin)
             
             if nargin == 0
                 super_args = {};
             else
+                % Input check
+                ip = inputParser;
+                ip.addRequired('owner',@(x) isa(x,'MovieData'));
+                ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+                ip.addOptional('funParams',[],@isstruct);
+                ip.parse(owner,varargin{:});
+                outputDir = ip.Results.outputDir;
+                funParams = ip.Results.funParams;
+                
+                % Define arguments for superclass constructor
                 super_args{1} = owner;
                 super_args{2} = ThresholdProcess.getName;
-                super_args{3} = @thresholdMovie;                           
-                
-                if nargin < 3 || isempty(funParams)                                       
+                super_args{3} = @thresholdMovie;
+                if isempty(funParams)
                     funParams = ThresholdProcess.getDefaultParams(owner,outputDir);
                 end
-                %Make sure the input parameters are legit??
-                super_args{4} = funParams;                    
+                super_args{4} = funParams;
             end
             
             obj = obj@SegmentationProcess(super_args{:});
-        end               
-            
+        end
+        
     end
     methods (Static)
         function name = getName()
@@ -36,8 +44,8 @@ classdef ThresholdProcess < SegmentationProcess
             thresholdingMethods(2).name = 'Otsu';
             thresholdingMethods(2).func = @thresholdOtsu;
             thresholdingMethods(3).name = 'Rosin';
-            thresholdingMethods(3).func = @thresholdRosin;            
-
+            thresholdingMethods(3).func = @thresholdRosin;
+            
             ip=inputParser;
             ip.addOptional('index',1:length(thresholdingMethods),@isvector);
             ip.parse(varargin{:});
@@ -45,16 +53,22 @@ classdef ThresholdProcess < SegmentationProcess
             methods=thresholdingMethods(index);
         end
         
-        function funParams = getDefaultParams(owner,outputDir)
-            %----Defaults----%
+        function funParams = getDefaultParams(owner,varargin)
+            % Input check
+            ip=inputParser;
+            ip.addRequired('owner',@(x) isa(x,'MovieData'));
+            ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+            ip.parse(owner, varargin{:})
+            outputDir=ip.Results.outputDir;
+            
+            % Set default parameters
+            funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.OutputDirectory = [outputDir  filesep 'masks'];
             funParams.ThresholdValue = []; % automatic threshold selection
-            funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.MaxJump = 0; %Default is no jump suppression
             funParams.GaussFilterSigma = 0; %Default is no filtering.
             funParams.BatchMode = false;
             funParams.MethodIndx = 1;
         end
     end
-        
 end

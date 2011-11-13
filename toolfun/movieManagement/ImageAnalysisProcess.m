@@ -1,32 +1,32 @@
 classdef ImageAnalysisProcess < Process
-%A class definition for a generic image analysis process. That is, a
-%process which takes in images and produces some other (non-image) form of
-%output. This generic class expects the output to be one file per frame,
-%per channel with each channel in a separate directory.
-%
-%
-% Hunter Elliott, 7/2010
-%
-
+    %A class definition for a generic image analysis process. That is, a
+    %process which takes in images and produces some other (non-image) form of
+    %output. This generic class expects the output to be one file per frame,
+    %per channel with each channel in a separate directory.
+    %
+    %
+    % Hunter Elliott, 7/2010
+    %
+    
     methods (Access = public)
         
         function obj = ImageAnalysisProcess(owner,name,funName,funParams,...
-                                            inImagePaths,outFilePaths)
-                                          
+                inImagePaths,outFilePaths)
+            
             if nargin == 0;
                 super_args = {};
             else
                 super_args{1} = owner;
-                super_args{2} = name;                
+                super_args{2} = name;
             end
             
             obj = obj@Process(super_args{:});
             
             if nargin > 2
-                obj.funName_ = funName;                              
+                obj.funName_ = funName;
             end
             if nargin > 3
-               obj.funParams_ = funParams;              
+                obj.funParams_ = funParams;
             end
             
             %Initialize in and out file paths to a cell array to avoid
@@ -36,23 +36,23 @@ classdef ImageAnalysisProcess < Process
             obj.outFilePaths_ = cell(1,nChan);
             
             if nargin > 4
-              if ~isempty(inImagePaths) && numel(inImagePaths) ...
-                      ~= numel(owner.channels_) || ~iscell(inImagePaths)
-                 error('lccb:set:fatal','Input image paths must be a cell-array of the same size as the number of image channels!\n\n'); 
-              end              
-              obj.inFilePaths_(1,:) = inImagePaths;              
+                if ~isempty(inImagePaths) && numel(inImagePaths) ...
+                        ~= numel(owner.channels_) || ~iscell(inImagePaths)
+                    error('lccb:set:fatal','Input image paths must be a cell-array of the same size as the number of image channels!\n\n');
+                end
+                obj.inFilePaths_(1,:) = inImagePaths;
             else
                 %Default is to use raw images as input.
-                obj.inFilePaths_(1,:) = owner.getChannelPaths;               
-            end                        
-            if nargin > 5               
-              if ~isempty(outFilePaths) && numel(outFilePaths) ...
-                      ~= numel(owner.channels_) || ~iscell(outFilePaths)
-                 error('lccb:set:fatal','Output File paths must be a cell-array of the same size as the number of image channels!\n\n'); 
-              end
-              obj.outFilePaths_ = outFilePaths;              
+                obj.inFilePaths_(1,:) = owner.getChannelPaths;
+            end
+            if nargin > 5
+                if ~isempty(outFilePaths) && numel(outFilePaths) ...
+                        ~= numel(owner.channels_) || ~iscell(outFilePaths)
+                    error('lccb:set:fatal','Output File paths must be a cell-array of the same size as the number of image channels!\n\n');
+                end
+                obj.outFilePaths_ = outFilePaths;
             else
-                obj.outFilePaths_ = cell(1,numel(owner.channels_));               
+                obj.outFilePaths_ = cell(1,numel(owner.channels_));
             end
             
         end
@@ -60,7 +60,7 @@ classdef ImageAnalysisProcess < Process
         function setOutFilePath(obj,chanNum,filePath)
             
             if ~obj.checkChanNum(chanNum)
-                error('lccb:set:fatal','Invalid image channel number for file path!\n\n'); 
+                error('lccb:set:fatal','Invalid image channel number for file path!\n\n');
             end
             
             if ~iscell(filePath)
@@ -72,13 +72,13 @@ classdef ImageAnalysisProcess < Process
             end
             
             for j = 1:nChan
-               if ~exist(filePath{j},'dir') && ~exist(filePath{j},'file')
-                   error('lccb:set:fatal',...
-                       ['The directory specified for output for channel ' ...
-                       num2str(chanNum(j)) ' is invalid!']) 
-               else
-                   obj.outFilePaths_{chanNum(j)} = filePath{j};                
-               end
+                if ~exist(filePath{j},'dir') && ~exist(filePath{j},'file')
+                    error('lccb:set:fatal',...
+                        ['The directory specified for output for channel ' ...
+                        num2str(chanNum(j)) ' is invalid!'])
+                else
+                    obj.outFilePaths_{chanNum(j)} = filePath{j};
+                end
             end
             
             
@@ -86,7 +86,7 @@ classdef ImageAnalysisProcess < Process
         function setInImagePath(obj,chanNum,imagePath)
             
             if ~obj.checkChanNum(chanNum)
-                error('lccb:set:fatal','Invalid image channel number for image path!\n\n'); 
+                error('lccb:set:fatal','Invalid image channel number for image path!\n\n');
             end
             
             if ~iscell(imagePath)
@@ -98,21 +98,21 @@ classdef ImageAnalysisProcess < Process
             end
             
             for j = 1:nChan
-               if ~exist(imagePath{j},'dir')
-                   error('lccb:set:fatal',...
-                       ['The directory specified for channel ' ...
-                       num2str(chanNum(j)) ' is invalid!']) 
-               
-               else
-                   if isempty(imDir(imagePath{j}))
-                       error('lccb:set:fatal',...
-                       ['The directory specified for channel ' ...
-                       num2str(chanNum(j)) ' does not contain any images!!']) 
-                   else                       
-                       obj.inFilePaths_{1,chanNum(j)} = imagePath{j};                
-                   end
-               end
-            end                        
+                if ~exist(imagePath{j},'dir')
+                    error('lccb:set:fatal',...
+                        ['The directory specified for channel ' ...
+                        num2str(chanNum(j)) ' is invalid!'])
+                    
+                else
+                    if isempty(imDir(imagePath{j}))
+                        error('lccb:set:fatal',...
+                            ['The directory specified for channel ' ...
+                            num2str(chanNum(j)) ' does not contain any images!!'])
+                    else
+                        obj.inFilePaths_{1,chanNum(j)} = imagePath{j};
+                    end
+                end
+            end
         end
         
         function fileNames = getInImageFileNames(obj,iChan)
@@ -120,39 +120,31 @@ classdef ImageAnalysisProcess < Process
                 fileNames = cellfun(@(x)(imDir(x)),obj.inFilePaths_(1,iChan),'UniformOutput',false);
                 fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
                 nIm = cellfun(@(x)(length(x)),fileNames);
-                if ~all(nIm == obj.owner_.nFrames_)                    
+                if ~all(nIm == obj.owner_.nFrames_)
                     error('Incorrect number of images found in one or more channels!')
-                end                
+                end
             else
                 error('Invalid channel numbers! Must be positive integers less than the number of image channels!')
-            end    
+            end
             
             
         end
-        function out = loadChannelOutput(obj)                        
+        function out = loadChannelOutput(obj)
             
         end
         
-        function OK = checkChannelOutput(obj,iChan)
+        function status = checkChannelOutput(obj,varargin)
+            % Input check
+            ip =inputParser;
+            ip.addOptional('iChan',1:numel(obj.owner_.channels_),...
+                @(x) ismember(x,1:numel(obj.owner_.channels_)));
+            ip.parse(varargin{:});
+            iChan=ip.Results.iChan;
             
-           %Checks if the selected channels have valid output files
-           nChanTot = numel(obj.owner_.channels_);
-           if nargin < 2 || isempty(iChan)
-               iChan = 1:nChanTot;
-           end
-           %Makes sure there's at least one .mat file in the speified
-           %directory
-           OK =  arrayfun(@(x)(x <= nChanTot && ...
-                             x > 0 && isequal(round(x),x) && ...
-                             exist(obj.outFilePaths_{x},'dir') && ...
-                             numel(dir([obj.outFilePaths_{x} filesep '*.mat']))==obj.owner_.nFrames_),iChan);
+            %Makes sure there's at least one output file per channel
+            status =  arrayfun(@(x) (exist(obj.outFilePaths_{1,x},'dir') && ...
+                numel(dir([obj.outFilePaths_{1,x} filesep '*.mat']))==obj.owner_.nFrames_),iChan);
         end
-
-        function sanityCheck(obj)
-            
-        end
-
         
     end
-    
 end

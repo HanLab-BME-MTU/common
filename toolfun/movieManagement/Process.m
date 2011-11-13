@@ -98,6 +98,21 @@ classdef Process < hgsetget
             
             status = ismember(iFrame,1:numel(obj.owner_.nFrames_));
         end
+   
+%         TO BE IMPLEMENTED - generic process sanityCheck
+%         function sanityCheck(obj)
+%             crtParams=obj.funParams_;
+%             defaultParams = obj.getDefaultParams(obj.owner_);
+%             
+%             crtFields = fieldnames(crtParams);
+%             defaultFields = fieldnames(defaultParams);
+%             status = ismember(defaultFields,crtFields)
+%             for i=find(~status)
+%                  crtParams.(defaultFields{i})=defautParams.(defaultFields{i});
+%             end
+%             obj.setPara(crtParams);
+%
+%         end
         
         function run(obj,varargin)
             % Run the process!

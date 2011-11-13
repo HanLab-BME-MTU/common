@@ -130,29 +130,21 @@ classdef DataProcessingProcess < Process
             
         end
         
-        function OK = checkChannelOutput(obj,iChan)
-            
-           %Checks if the selected channels have valid output files
-           nChanTot = numel(obj.owner_.channels_);
-           if nargin < 2 || isempty(iChan)
-               iChan = 1:nChanTot;
-           end
-           
-           %Makes sure there's at least one .mat file in the speified
-           %directory
-           OK =  arrayfun(@(x)(x <= nChanTot && ...
-                             x > 0 && isequal(round(x),x) && ...
-                             exist(obj.outFilePaths_{x},'file')),iChan);
+        function status = checkChannelOutput(obj,varargin)
+           % Input check
+           ip =inputParser;
+           ip.addOptional('iChan',1:numel(obj.owner_.channels_),...
+               @(x) ismember(x,1:numel(obj.owner_.channels_)));
+           ip.parse(varargin{:});
+           iChan=ip.Results.iChan;
+
+           %Makes sure there's at least one output file per channel
+           status =  arrayfun(@(x) exist(obj.outFilePaths_{1,x},'file'),iChan);
         end
         
             
         function sanityCheck(obj)
             
-        end
-        
-        
-        
-        
-    end
-    
+        end               
+    end    
 end
