@@ -1,4 +1,4 @@
-function [C,T,res,lambda] = snakeBasedBezierFitUnderConstraint2(data,n,beta,maxDist,varargin)
+function [C,T,res,lambda] = snakeBasedBezierFitUnderConstraint(data,n,beta,maxDist,varargin)
 % snakeBasedBezierFit computes the optimal n^th Bezier curves that fits
 % the data points using a constrainted snake-based functional.
 %
