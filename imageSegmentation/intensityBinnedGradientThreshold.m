@@ -43,7 +43,7 @@ function threshold = intensityBinnedGradientThreshold(im,binSize,sigma,smoothPar
 % 8/2011
 %
 
-showPlots = true;%Plots for testing/debugging
+showPlots = false;%Plots for testing/debugging
 
 if nargin < 1 || isempty(im) || ndims(im) < 2 || ndims(im) > 3
     error('The first input must be a 2D or 3D image!!');

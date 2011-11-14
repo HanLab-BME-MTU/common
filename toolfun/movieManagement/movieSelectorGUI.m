@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 22-Sep-2011 15:27:28
+% Last Modified by GUIDE v2.5 14-Nov-2011 13:46:47
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;

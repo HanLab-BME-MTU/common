@@ -45,6 +45,8 @@ classdef ThresholdProcess < SegmentationProcess
             thresholdingMethods(2).func = @thresholdOtsu;
             thresholdingMethods(3).name = 'Rosin';
             thresholdingMethods(3).func = @thresholdRosin;
+            thresholdingMethods(4).name = 'Gradient-based';
+            thresholdingMethods(4).func = @intensityBinnedGradientThreshold;
             
             ip=inputParser;
             ip.addOptional('index',1:length(thresholdingMethods),@isvector);
