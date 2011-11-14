@@ -1,4 +1,4 @@
-function [out,trend]=preWhitening(TS,method)
+function [out,trend,imf]=preWhitening(TS,method)
 %This function removes any deterministic component from the input time
 %series TS
 %
@@ -10,7 +10,9 @@ function [out,trend]=preWhitening(TS,method)
 %
 %Output
 %       out   - detrend time series
-%       trend - well, this is the trend
+%       trend - this is the sum of all derterministic components of the
+%               signal
+%       imf   - cell array with the intrinsic mode functions
 %
 %Reference
 %Z. Wu, N. E. Huang, S. R. Long and C.-K. Peng, On the trend, detrending, and the
@@ -23,13 +25,14 @@ if nargin < 2
     method = 'imf';
 end
 
-[nobs,nvar] = size(TS);
+[nObs,nVar] = size(TS);
 max_order   = 8;
 trend       = [];
 out         = TS;
-h           = inf(2,nvar);
+imf         = [];
+h           = inf(2,nVar);
 
-for i=1:nvar
+for i=1:nVar
     
     h(1,i) = kpsstest(TS(:,i));%Ho is stationary - 0 
     h(2,i) = vratiotest(TS(:,i),'alpha',0.01);%Ho is a random walk - 1
@@ -47,12 +50,10 @@ for i=1:nvar
                 
             case 'imf'
                 [imf, flag] = empiricalModeDecomp( TS(:,i) ) ;
-                
-                %range       = length( find( cellfun(@(x) ~vratiotest(x) || kpsstest(x) ,imf ) ) );
                 range       =  find( cellfun(@(x) ~vratiotest(x) || kpsstest(x) ,imf ) ) ;
                 if flag
                     for j=numel(range)-1:-1:1
-                        trend = sum( cat(1, imf{ range(j:end)} ) )';
+                        trend = sum(cell2mat(imf( range(j:end)) ),2);
                         nTs   = TS(:,i) - trend;
                         h     = kpsstest(nTs);
                         if ~h
@@ -73,4 +74,4 @@ for i=1:nvar
         end
     end
 end
-out = out - repmat(mean(out),nobs,1);
+out = out - repmat(mean(out),nObs,1);

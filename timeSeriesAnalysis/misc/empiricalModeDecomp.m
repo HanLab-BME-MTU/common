@@ -8,7 +8,9 @@ function [imf,flag] = empiricalModeDecomp(X)
 % Input:
 %       X - 1-D column vector - time series
 %Output
-%       imf - intrinsic mode functions
+%       imf  - intrinsic mode functions
+%       flag - 1 when is Ok; 0 when the spline is fucked up and no imf is
+%              found
 %
 %References:
 %
@@ -20,14 +22,13 @@ function [imf,flag] = empiricalModeDecomp(X)
 %
 %Marco Vilela, 2011
 
-[nvar,npoint] = size(X);
+[nObs,nVar] = size(X);
 
-if nvar > npoint
+if nVar > nObs
     X = X';
-    npoint = length(X);
+    nObs = length(X);
 end
 
-%xTest   = [X(1) X X(end)];%That is because the matlab spline function sucks
 xTest   = X;
 imf     = [];
 Snumber = [4 12];%The HHT and it's applications, Chapter 1, p,9
@@ -35,19 +36,19 @@ count1  = 1;
 flag    = [];
 while ~isempty( findpeaks( xTest ) )
    x1      = xTest;
-   ensImf  = zeros(Snumber(2),npoint);
+   ensImf  = zeros(nObs,Snumber(2));
    
    if sum( getEnvelope(-x1) ) ~= 0 && sum( getEnvelope(x1) ) ~= 0
        flag    = 0;
        %Creating a ensemble of IMF for each level
        count2 = 1;
        for i=1:Snumber(2)
-           upperE = getEnvelope(x1);
-           lowerE = -getEnvelope(-x1);
-           x1     = x1 - nanmean([upperE;lowerE]);
+           upperE = getEnvelope(x1)';
+           lowerE = -getEnvelope(-x1)';
+           x1     = x1 - nanmean([upperE lowerE],2);
            
            if imfTest( x1 )
-               ensImf(i,:) = x1;
+               ensImf(:,i) = x1;
                flag        = 1;
                idx(count2) = i;
                count2      = count2 +1;
@@ -56,7 +57,7 @@ while ~isempty( findpeaks( xTest ) )
        end
        
        if flag
-           imf{end+1} = nanmean( ensImf( idx, : ) );
+           imf{end+1} = nanmean( ensImf( :, idx ), 2 );
        else
            break;
        end
@@ -93,7 +94,7 @@ npoint = length(In);
 [~,p]  = findpeaks(In);
 
 if ~isempty(p)
-   env =  spline([0 p npoint+1],[mean(In(1:2)) In(p) mean(In(end-1:end))],1:npoint);
+   env =  spline([0;p;npoint+1],[mean(In(1:2));In(p);mean(In(end-1:end))],1:npoint);
 else
    env = 0;
 end

@@ -8,7 +8,8 @@ function [workTS,interval,varUsed] = removeMeanTrendNaN(TS)
 %
 %Output:
 %       outTS{# of variables}(# of good points)  - cell array with a continuous time series points
-%       interval - good points interval    
+%       interval - final interval = initial - (NaN blocks + outliers)  
+%       trend    - sum of all deterministic component of the signal within the output interval  
 %       varUsed  - Index of variable with some information
 
 %Marco Vilela, 2011
@@ -26,7 +27,7 @@ for i=1:nvar
     [nanB,nanL] = findBlock(xi,1);
     exclude     = [];
     
-    for j=1:length(nanB)%excluding gaps larger than 2 points and extremes (1 and N points)
+    for j = 1:length(nanB)%excluding gaps larger than 2 points and extremes (1 and N points)
         
         if nanL(j) > 2 || ~isempty(intersect(nanB{j},nobs)) || ~isempty(intersect(nanB{j},1))
             
@@ -52,7 +53,7 @@ for i=1:nvar
         workTS{i}   = preWhitening(workTS{i});
         idx(i)      = 1;
          
-    elseif (nobs - length(exclude) ) >= 4
+    elseif (nobs - length(exclude) ) >= 4 % forced by the spline used in preWhitening
         
         [fB,fL]     = findBlock(setdiff(1:nobs,exclude));
         [~,idxB]    = max(fL);
