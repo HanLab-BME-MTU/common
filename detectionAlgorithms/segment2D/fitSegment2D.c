@@ -2,7 +2,7 @@
  *
  * (c) Sylvain Berlemont, 2011 (last modified Jan 22, 2011)
  *
- * Mac/Linux: mex -I/usr/local/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a fitSegment2D.c
+ * Mac/Linux: mex -I../../mex/include -I/usr/local/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a fitSegment2D.c
  * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\gsl-1.14" -I"..\..\mex\include" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output fitSegment2D fitSegment2D.c
  */
 
