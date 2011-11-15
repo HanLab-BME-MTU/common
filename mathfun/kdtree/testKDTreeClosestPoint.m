@@ -32,33 +32,38 @@ function time =testKDTreeClosestPoint(varargin)
 ip =inputParser;
 ip.addOptional('nInPts',1e4,@isscalar);
 ip.addOptional('nQueryPts',1e4,@isscalar);
-ip.addOptional('dim',3,@(x)isscalar(x) || ismember(x,1:3));
-ip.addParamValue('N',1000,@isscalar);
+ip.addOptional('dim',3,@(x) isscalar(x) || ismember(x,1:3));
+ip.addParamValue('N',100,@isscalar);
 ip.parse(varargin{:});
+nInPts = ip.Results.nInPts;
+nQueryPts = ip.Results.nQueryPts;
+dim = ip.Results.dim;
+N= ip.Results.N;
 
-% Initialize input and query points
-X = rand(ip.Results.nInPts,ip.Results.dim,ip.Results.N);
-C = rand(ip.Results.nQueryPts,ip.Results.dim,ip.Results.N);
 
 % Using KDTreeClosestPoint
 if feature('ShowFigureWindows')
     fprintf(['Running %d repetitions of KDTreeClosestPoint and createDistanceMatrix'...
         'for %d input points and %d query points of dimension %d\n'],...
-        ip.Results.N,ip.Results.nInPts,ip.Results.nQueryPts,ip.Results.dim);
+        N,nInPts,nQueryPts,dim);
 end
 
 fullTestClock = tic;
 
 % Initialize time output
-time1 = zeros(ip.Results.N,1);
-time2 = zeros(ip.Results.N,1);
-for i=1:ip.Results.N
+time1 = zeros(N,1);
+time2 = zeros(N,1);
+parfor i=1:ip.Results.N
+    % Initialize input and query points
+    X = rand(nInPts,dim);
+    C = rand(nQueryPts,dim);
+    
     KDTreeClock = tic;
-    [idx,d] = KDTreeClosestPoint(X(:,:,i),C(:,:,i));
+    [idx,d] = KDTreeClosestPoint(X,C);
     time1(i)=toc(KDTreeClock);
     
     distanceMatrixClock = tic;
-    D = createDistanceMatrix(X(:,:,i),C(:,:,i));
+    D = createDistanceMatrix(X,C);
     [d2,idx2] = min(D,[],1);
     time2(i)=toc(distanceMatrixClock);
     
