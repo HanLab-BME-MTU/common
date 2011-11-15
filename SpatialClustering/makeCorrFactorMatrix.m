@@ -32,7 +32,7 @@ corrFacVector = nan*zeros(lx,ly,ld);
 corrFacMatrix = nan*zeros(sx,sy,ld);   
 
 % if mask is entered, calculate euclidian distance map
-if nargin==4
+if nargin==4 && ~all(mask(:))
     edistmat = bwdist(1-mask);
 end
 
@@ -42,7 +42,7 @@ for i=1:lx
         py = ygrid(i,k);
         
         % calculate correction factor (vector) for this x,y position
-        if (nargin<4) 
+        if (nargin<4) || all(mask(:))
             % if there is no mask, correction is based on rectangular
             % geometry; in this case, if the 'mirror' position already 
             % exists, use this value
@@ -58,6 +58,7 @@ for i=1:lx
             else
                 corrFacVector(i,k,:) = circumferenceCorrFactor(px,py,dist,sx,sy);
             end
+            
         % else if there's a mask, use it for calculation
         else
             % comment/uncomment between versions as desired

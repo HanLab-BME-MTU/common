@@ -26,8 +26,8 @@ function[corfac]=circumferenceCorrFactor(xx,yy,rr,msx,msy)
 % while xx and yy are the point coordinates, x and y are the *distances* from
 % the nearest edge of the image in that direction; e.g. x=xx for a point close
 % to the left edge, and x=(msx-xx) for a point close to the right edge 
-x=min(xx,(msx-xx));
-y=min(yy,(msy-yy));
+%x=min(xx,(msx-xx));
+%y=min(yy,(msy-yy));
 
 %xo and yo are, conversely, the maximum distance to the image edge
 xo=max(xx,(msx-xx));
