@@ -254,10 +254,12 @@ parseProcessParams(corrProc,p);
 input = corrProc.getInput;
 nInput = numel(input);
 
+alphamask = .2*ones(397,120);
+alphamask(userData.crtProc.funParams_.SliceIndex{movieID},:)=1;
 hAxes = -ones(nInput,1);
 h = -ones(nInput,1);
 for i=1:nInput;
-    hAxes(i) = axes('Position',[(i-1)/nInput 0 1/nInput 1]);
+    hAxes(i) = axes('Position',[(i-1)/nInput 0.1 1/nInput .8]);
     axesArgs={'hAxes',hAxes(i)};
     procID=input(i).processIndex;
     if ~isempty(input(i).channelIndex)
@@ -267,10 +269,23 @@ for i=1:nInput;
     end
     h(i) = userData.MD.movies_{movieID}.processes_{procID}.draw(chanArgs{:},axesArgs{:});
     hCbar = findobj(userData.previewFig,'Tag','Colorbar');
-    delete(hCbar);
+    delete(hCbar);    
+    
+    set(h(i),'AlphaData',alphamask,'AlphaDataMapping','none',...
+        'ButtonDownFcn',@(h,event)editSlices(h,event,guidata(hObject)));
+%     xLim = get(gca,'XLim');
+%     r(i) = imrect(gca, [xLim(1) 10 xLim(2) 100]);
+%     addNewPositionCallback(r(i),@(p) title(mat2str(p,3)));
+%     fcn = makeConstrainToRectFcn('imrect',xLim,get(gca,'YLim'));
+%     setPositionConstraintFcn(r(i),fcn);
+%     
 end
 set(userData.previewFig,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 set(handles.figure1, 'UserData', userData);
+
+function editSlices(hObject)
+set(hObject,'Value',0);   
+
  
 function closeGraphFigure(hObject)
 set(hObject,'Value',0);   

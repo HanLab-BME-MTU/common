@@ -112,25 +112,20 @@ else
     userData.thresholdValue=funParams.ThresholdValue(1);
 end
 
-% Save the image directories and names (for threshold preview)
-userData.imageFileNames = userData.MD.getImageFileNames();
-userData.imDirs  = userData.MD.getChannelPaths();
-
 % Read the first image and update the sliders max value and steps
-props=get(handles.listbox_selectedChannels,{'String','Value'});
-userData.chanIndx = find(strcmp(props{1}{props{2}},userData.imDirs));
+props=get(handles.listbox_selectedChannels,{'UserData','Value'});
+userData.chanIndx = props{1}(props{2});
 userData.imIndx=1;
 
 % Initialize the frame number slider and eidt
-nFrames=numel(userData.imageFileNames{userData.chanIndx});
+nFrames=userData.MD.nFrames_;
 set(handles.slider_frameNumber,'Value',userData.imIndx,'Min',1,...
     'Max',nFrames,'SliderStep',[1/double(nFrames)  10/double(nFrames)]);
 set(handles.text_nFrames,'String',['/ ' num2str(nFrames)]);
 set(handles.edit_frameNumber,'Value',userData.imIndx);
 
 % Load the first image and update the threshold slide
-userData.imData = imread([userData.imDirs{userData.chanIndx} filesep...
-    userData.imageFileNames{userData.chanIndx}{userData.imIndx}]);
+userData.imData = userData.MD.channels_(userData.chanIndx).loadImage(userData.imIndx);
 maxThresholdValue=max(max(userData.imData));
 thresholdStep = 1/double(maxThresholdValue);
 
@@ -499,18 +494,17 @@ end
 
 
 % Retrieve the channex index
-props=get(handles.listbox_selectedChannels,{'String','Value'});
-chanIndx = find(strcmp(props{1}{props{2}},userData.imDirs));
+props=get(handles.listbox_selectedChannels,{'UserData','Value'});
+chanIndx = props{1}(props{2});
 imIndx = get(handles.slider_frameNumber,'Value');
 thresholdValue = get(handles.slider_threshold, 'Value');
 
 % Load a new image in case the image number or channel has been changed
 if (chanIndx~=userData.chanIndx) ||  (imIndx~=userData.imIndx)
-    userData.imData=imread([userData.imDirs{chanIndx} filesep...
-        userData.imageFileNames{chanIndx}{imIndx}]);
+    userData.imData=userData.MD.channels_(chanIndx).loadImage(imIndx);
     
     % Get the value of the new maximum threshold
-    maxThresholdValue=max(max(userData.imData));
+    maxThresholdValue=max(userData.imData(:));
     % Update the threshold Value if above th new maximum
     thresholdValue=min(thresholdValue,maxThresholdValue);
     
@@ -550,11 +544,14 @@ if get(handles.checkbox_preview,'Value') && ~get(handles.checkbox_auto,'Value'),
     end
     
     % Retrieve the handle of the figures image
-    imHandle =get(get(userData.previewFig,'Children'),'Children');
+    imHandle = findobj(userData.previewFig,'Type','image');
     if userData.newFigure || userData.updateImage || isempty(imHandle)
-        imagesc(userData.imData);
-        axis off;
-        imHandle =get(get(userData.previewFig,'Children'),'Children');
+         if isempty(imHandle)
+            imHandle=imagesc(userData.imData);
+            axis off;
+        else
+            set(imHandle,'CData',userData.imData);
+         end
     end
     
     % Preview the tresholding output using the alphaData mapping
