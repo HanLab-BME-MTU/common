@@ -100,7 +100,7 @@ classdef  MovieObject < hgsetget
             
             % Retrieve process index if input is of process type
             if isa(pid, 'Process')
-                pid = getProcessIndex(obj,1,Inf,false);
+                pid = find(cellfun(@(x)(isequal(x,pid)),obj.processes_));
                 assert(isscalar(pid))
             end
             

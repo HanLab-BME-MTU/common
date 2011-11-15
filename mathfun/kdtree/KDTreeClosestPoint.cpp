@@ -46,7 +46,7 @@ static void dispatch(int n, int m, double *x_ptr, double *y_ptr, int nlhs, mxArr
 
   // Compute queries
   std::vector<unsigned> idx(m);
-  std::vector<unsigned> dist(m);
+  std::vector<double> dist(m);
 
   typename KDTree<K,double>::pair_type pair;
 	
@@ -73,7 +73,7 @@ static void dispatch(int n, int m, double *x_ptr, double *y_ptr, int nlhs, mxArr
       plhs[1] = mxCreateDoubleMatrix(m, 1, mxREAL);
       double * p = mxGetPr(plhs[1]);
 				
-      for (typename std::vector<unsigned>::const_iterator it = dist.begin(); it != dist.end(); ++it)
+      for (typename std::vector<double>::const_iterator it = dist.begin(); it != dist.end(); ++it)
 	*p++ = *it;
     }
 }

@@ -8,8 +8,8 @@ function testKDTreeBallQuery
 
 % Generate random input and query points
 dim=2;
-nInPts= 1000000;
-nQueryPts =100;
+nInPts= 10000;
+nQueryPts =1000;
 X = rand(nInPts,dim);
 C = [[.5 .5]; rand(nQueryPts-1,2)];
 R = .2;

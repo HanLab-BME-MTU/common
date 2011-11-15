@@ -1,14 +1,14 @@
 function testKDTreeClosestPoint
-% This function test the KDTreeClosestPoint.
+% Test the validity of the KDTreeClosestPoint.
 %
 % See KDTreeClosestPoint.m for details.
 %
 % Sebastien Besson, Oct 2011
 
 % Generate random input and query points
-dim=2;
-nInPts= 1000000;
-nQueryPts =100;
+dim=3;
+nInPts= 10000;
+nQueryPts =10000;
 X = rand(nInPts,dim);
 C = rand(nQueryPts,dim);
 
