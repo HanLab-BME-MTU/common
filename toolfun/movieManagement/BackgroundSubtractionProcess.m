@@ -12,22 +12,13 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
             if nargin == 0
                 super_args = {};
             else
-                nChan = numel(owner.channels_);
                 
                 super_args{1} = owner;
                 super_args{2} = BackgroundSubtractionProcess.getName;
                 super_args{3} = @backgroundSubtractMovie;
                 
                 if nargin < 3 || isempty(funParams)
-                    
-                    %----Defaults----%
-                    funParams.OutputDirectory = ...
-                        [outputDir  filesep 'background_subtracted_images'];
-                    funParams.ChannelIndex = 1:nChan;
-                    funParams.MaskChannelIndex = funParams.ChannelIndex;
-                    funParams.BatchMode = false;
-                    
-                    
+                    funParams=BackgroundSubtractionProcess.getDefaultParams(owner,outputDir);
                 end
                 
                 super_args{4} = funParams;
@@ -105,6 +96,21 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
             output(2).type='graph';
             output(2).defaultDisplayMethod=@(x)LineDisplay('Color',[0 0 0],...
                 'XLabel','Frame Number','YLabel','Subtracted Background Value, A.U.');
+        end
+        
+        function funParams = getDefaultParams(owner,varargin)
+            % Input check
+            ip=inputParser;
+            ip.addRequired('owner',@(x) isa(x,'MovieData'));
+            ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+            ip.parse(owner, varargin{:})
+            outputDir=ip.Results.outputDir;
+            
+            % Set default parameters
+            funParams.OutputDirectory =  [outputDir  filesep 'background_subtracted_images'];
+            funParams.ChannelIndex = 1:numel(owner.channels_);
+            funParams.MaskChannelIndex = funParams.ChannelIndex;
+            funParams.BatchMode = false;
         end
     end
 end

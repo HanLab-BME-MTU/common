@@ -1,4 +1,4 @@
-function testKDTreeBallQuery
+function testKDTreeBallQuery----
 % This function test the KDTreeBallQuery.
 %
 % See KDTreeBallQuery.m for details.

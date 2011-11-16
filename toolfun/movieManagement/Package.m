@@ -56,7 +56,7 @@ classdef Package < hgsetget
             % 1 - parent process is empty
             % 2 - parent process has at least one exception
             % 3 - required parent proc is not run successfully
-            isValidParent = @(x) ~isempty(x) && isempty(processExceptions{x}) && ...
+            isValidParent = @(x) ~isempty(obj.processes_{x}) && isempty(processExceptions{x}) && ...
                 obj.processes_{x}.success_;
             invalidParent= ~arrayfun(isValidParent,parentIndex);
                 

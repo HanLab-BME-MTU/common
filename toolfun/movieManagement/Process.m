@@ -96,23 +96,22 @@ classdef Process < hgsetget
                 error('You must specify a frame number!')
             end
             
-            status = ismember(iFrame,1:numel(obj.owner_.nFrames_));
+            status = ismember(iFrame,1:obj.owner_.nFrames_);
         end
    
-%         TO BE IMPLEMENTED - generic process sanityCheck
-%         function sanityCheck(obj)
-%             crtParams=obj.funParams_;
-%             defaultParams = obj.getDefaultParams(obj.owner_);
-%             
-%             crtFields = fieldnames(crtParams);
-%             defaultFields = fieldnames(defaultParams);
-%             status = ismember(defaultFields,crtFields)
-%             for i=find(~status)
-%                  crtParams.(defaultFields{i})=defautParams.(defaultFields{i});
-%             end
-%             obj.setPara(crtParams);
-%
-%         end
+        function sanityCheck(obj)
+            crtParams=obj.funParams_;
+            defaultParams = obj.getDefaultParams(obj.owner_);
+            
+            crtFields = fieldnames(crtParams);
+            defaultFields = fieldnames(defaultParams);
+            status = ~ismember(defaultFields,crtFields);
+            for i=find(status)'
+                 crtParams.(defaultFields{i})=defautParams.(defaultFields{i});
+            end
+            obj.setPara(crtParams);
+
+        end
         
         function run(obj,varargin)
             % Run the process!
@@ -206,10 +205,9 @@ classdef Process < hgsetget
         end
         
     end
-    methods (Abstract)
-        sanityCheck(obj)
-    end
+
     methods (Static,Abstract)
+        getDefaultParams
         getName
     end
 end

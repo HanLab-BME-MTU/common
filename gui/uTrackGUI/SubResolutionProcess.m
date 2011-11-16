@@ -29,48 +29,7 @@ classdef SubResolutionProcess < DetectionProcess
             
             
             if nargin < 4 || isempty(funParams)  % Default funParams
-                
-                % movieParam
-                funParams.movieParam.imageDir = owner.channels_(channelIndex(1)).channelPath_; % Note: channel-specific
-                funParams.movieParam.filenameBase = []; % Note: channel-specific
-                funParams.movieParam.firstImageNum = 1;
-                funParams.movieParam.lastImageNum = owner.nFrames_;
-                funParams.movieParam.digits4Enum = []; % Note: channel-specific
-                
-                % detectionParam
-                %                 funParams.detectionParam.psfSigma = [];
-                %                 funParams.detectionParam.bitDepth = owner.camBitdepth_;
-                funParams.detectionParam.alphaLocMax = .05;
-                funParams.detectionParam.integWindow = 0;
-                funParams.detectionParam.doMMF = 0;
-                funParams.detectionParam.testAlpha = struct('alphaR', .05,'alphaA', .05, 'alphaD', .05,'alphaF',0);
-                funParams.detectionParam.numSigmaIter = 0;
-                funParams.detectionParam.visual = 0;
-                funParams.detectionParam.background = [];
-                
-                % saveResults
-                %                 funParams.OutputDirectory = [outputDir  filesep 'Sub_Resolution_Detection' filesep];
-                funParams.saveResults.dir = [outputDir  filesep 'Sub_Resolution_Detection' filesep];
-                funParams.saveResults.filename = []; % Note: channel-specific
-                
-                % Set up psfSigma and bitDepth
-                na = owner.numAperture_;
-                ps = owner.pixelSize_;
-                wl = owner.channels_(1).emissionWavelength_;
-                bd = owner.camBitdepth_;
-                
-                if ~isempty( na ) && ~isempty( ps ) && ~isempty( wl )
-                    funParams.detectionParam.psfSigma = 0.21*wl/na/ps;
-                else
-                    funParams.detectionParam.psfSigma = [];
-                end
-                
-                if ~isempty(bd)
-                    funParams.detectionParam.bitDepth = bd;
-                else
-                    funParams.detectionParam.bitDepth = [];
-                end
-                
+                funParams = SubResolutionProcess.getDefaultParams(owner,outputDir);
             end
             
             super_args{5} = funParams;
@@ -245,6 +204,58 @@ classdef SubResolutionProcess < DetectionProcess
         function h = GUI()
             h = subResolutionProcessGUI;
         end
+        function funParams = getDefaultParams(owner,varargin)
+            % Input check
+            ip=inputParser;
+            ip.addRequired('owner',@(x) isa(x,'MovieData'));
+            ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+            ip.parse(owner, varargin{:})
+            outputDir=ip.Results.outputDir;
+            
+            % Set default parameters
+            % movieParam
+            funParams.movieParam.imageDir = owner.channels_(1).channelPath_; % Note: channel-specific
+            funParams.movieParam.filenameBase = []; % Note: channel-specific
+            funParams.movieParam.firstImageNum = 1;
+            funParams.movieParam.lastImageNum = owner.nFrames_;
+            funParams.movieParam.digits4Enum = []; % Note: channel-specific
+            
+            % detectionParam
+            %                 funParams.detectionParam.psfSigma = [];
+            %                 funParams.detectionParam.bitDepth = owner.camBitdepth_;
+            funParams.detectionParam.alphaLocMax = .05;
+            funParams.detectionParam.integWindow = 0;
+            funParams.detectionParam.doMMF = 0;
+            funParams.detectionParam.testAlpha = struct('alphaR', .05,'alphaA', .05, 'alphaD', .05,'alphaF',0);
+            funParams.detectionParam.numSigmaIter = 0;
+            funParams.detectionParam.visual = 0;
+            funParams.detectionParam.background = [];
+            
+            % saveResults
+            %                 funParams.OutputDirectory = [outputDir  filesep 'Sub_Resolution_Detection' filesep];
+            funParams.saveResults.dir = [outputDir  filesep 'Sub_Resolution_Detection' filesep];
+            funParams.saveResults.filename = []; % Note: channel-specific
+            
+            % Set up psfSigma and bitDepth
+            na = owner.numAperture_;
+            ps = owner.pixelSize_;
+            wl = owner.channels_(1).emissionWavelength_;
+            bd = owner.camBitdepth_;
+            
+            if ~isempty( na ) && ~isempty( ps ) && ~isempty( wl )
+                funParams.detectionParam.psfSigma = 0.21*wl/na/ps;
+            else
+                funParams.detectionParam.psfSigma = [];
+            end
+            
+            if ~isempty(bd)
+                funParams.detectionParam.bitDepth = bd;
+            else
+                funParams.detectionParam.bitDepth = [];
+            end
+            
+        end
+
     end
     
 end

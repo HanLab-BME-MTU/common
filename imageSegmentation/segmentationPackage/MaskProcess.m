@@ -34,8 +34,6 @@ classdef MaskProcess < Process
         end
     end
     methods
-        function sanityCheck(obj) % throws exception
-        end
 
         %Checks if a particular channel has masks
         function maskStatus = checkChannelOutput(obj,iChan)

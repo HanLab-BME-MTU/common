@@ -129,13 +129,7 @@ classdef ImageAnalysisProcess < Process
             
             
         end
-        function out = loadChannelOutput(obj)
-            
-        end
-        
-        function sanityCheck(obj)
-        end
-        
+  
         function status = checkChannelOutput(obj,varargin)
             % Input check
             ip =inputParser;

@@ -184,10 +184,7 @@ classdef ImageProcessingProcess < Process
                 filesep imNames{1}{iFrame}]);
             
         end
-            
-        function sanityCheck(obj)
-            
-        end
+           
         
         function outIm = loadChannelOutput(obj,iChan,iFrame,varargin)
             % Input check

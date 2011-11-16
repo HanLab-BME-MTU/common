@@ -37,8 +37,6 @@ classdef DetectionProcess < ImageAnalysisProcess
             
         end
         
-        function sanityCheck(obj)
-        end
         
         % Set overwrite
         function setOverwrite (obj, i)

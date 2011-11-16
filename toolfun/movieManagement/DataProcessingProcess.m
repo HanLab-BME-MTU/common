@@ -126,9 +126,6 @@ classdef DataProcessingProcess < Process
             
             
         end
-        function out = loadChannelOutput(obj)                        
-            
-        end
         
         function status = checkChannelOutput(obj,varargin)
            % Input check
@@ -141,10 +138,6 @@ classdef DataProcessingProcess < Process
            %Makes sure there's at least one output file per channel
            status =  arrayfun(@(x) exist(obj.outFilePaths_{1,x},'file'),iChan);
         end
-        
-            
-        function sanityCheck(obj)
-            
-        end               
+             
     end    
 end

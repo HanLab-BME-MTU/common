@@ -18,15 +18,7 @@ classdef BleedthroughCorrectionProcess < ImageCorrectionProcess
                 super_args{3} = @bleedthroughCorrectMovie;                               
                 
                 if nargin < 3 || isempty(funParams)                                       
-                    
-                    %----Defaults----%      
-                    funParams.OutputDirectory = ...
-                        [outputDir  filesep 'bleedthrough_corrected_images'];                      
-                    funParams.ChannelIndex = [];%No default
-                    funParams.BleedChannelIndex = [];%No default
-                    funParams.BleedCoefficients = [];%No default
-                    funParams.BatchMode = false;                                                                                
-                                     
+                    funParams=BleedthroughCorrectionProcess.getDefaultParams(owner,outputDir);
                 end
                 
                 super_args{4} = funParams;    
@@ -58,7 +50,20 @@ classdef BleedthroughCorrectionProcess < ImageCorrectionProcess
         function h = GUI()
             h= @bleedthroughCorrectionProcessGUI;
         end
-    end
-
-end                                   
+        function funParams = getDefaultParams(owner,varargin)
+            % Input check
+            ip=inputParser;
+            ip.addRequired('owner',@(x) isa(x,'MovieData'));
+            ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+            ip.parse(owner, varargin{:})
+            outputDir=ip.Results.outputDir;
             
+            % Set default parameters
+            funParams.OutputDirectory = [outputDir  filesep 'bleedthrough_corrected_images'];
+            funParams.ChannelIndex = [];%No default
+            funParams.BleedChannelIndex = [];%No default
+            funParams.BleedCoefficients = [];%No default
+            funParams.BatchMode = false;      
+        end
+    end
+end                                           

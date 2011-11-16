@@ -175,8 +175,12 @@ for iChan = 1:nChanThresh
     for iImage = 1:nImages
         
 
-        %Load the current image        
-        currImage = imread([imDirs{iChan} filesep imageFileNames{iChan}{iImage}]);
+        %Load the current image
+        if isempty(p.ProcessIndex)
+            currImage = imread([imDirs{iChan} filesep imageFileNames{iChan}{iImage}]);
+        else
+            currImage = movieData.processes_{p.ProcessIndex}.loadOutImage(iChan,iImage);
+        end
 
         %KJ: filter image before thesholding if requested
         if p.GaussFilterSigma > 0
