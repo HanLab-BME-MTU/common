@@ -173,36 +173,65 @@ public:
   }
 	
 private:
-  void build_(const idx_iterator_type & first,
-	      const idx_iterator_type & last,
-	      unsigned idx = 0,
-	      unsigned k = 0)
-  {
-    unsigned idx_lt = (idx << 1) + 1;
-    unsigned idx_gt = (idx << 1) + 2;
+//  void build_(const idx_iterator_type & first,
+//	      const idx_iterator_type & last,
+//	      unsigned idx = 0,
+//	      unsigned k = 0)
+//  {
+//    unsigned idx_lt = (idx << 1) + 1;
+//    unsigned idx_gt = (idx << 1) + 2;
+//
+//    if (last - first > 1)
+//      {
+//	unsigned k2 = (k + 1) & (N - 1);
+//
+//	// sort the vector of points along the kth coordinate
+//	sort(first, last, Cmp_(points_, k));
+//      
+//    	// take the median as the split value
+//	idx_iterator_type median = first + (last - first) / 2;
+//	tree_[idx] = *median;
+//			
+//	// build children
+//	build_(first, median, idx_lt, k2);
+//	build_(median, last, idx_gt, k2);
+//      }
+//    else
+//      {
+//	tree_[idx] = *first;
+//	tree_[idx_lt] = -1;
+//	tree_[idx_gt] = -1;
+//      }
+//  }
+    
+    void build_(const idx_iterator_type & first,
+                const idx_iterator_type & last,
+                unsigned idx = 0,
+                unsigned k = 0)
+    {
+        unsigned idx_lt = (idx << 1) + 1;
+        unsigned idx_gt = (idx << 1) + 2;
+        
+        if (last - first > 1)
+        {
+            unsigned k2 = (k + 1) & (N - 1);
+            
+            // find the median value:
+            idx_iterator_type median = first + (last - first) / 2;
+            nth_element (first, median, last, Cmp_(points_, k));
+            tree_[idx] = *median;
 
-    if (last - first > 1)
-      {
-	unsigned k2 = (k + 1) & (N - 1);
-
-	// sort the vector of points along the kth coordinate
-	sort(first, last, Cmp_(points_, k));
-      
-    	// take the median as the split value
-	idx_iterator_type median = first + (last - first) / 2;
-	tree_[idx] = *median;
-			
-	// build children
-	build_(first, median, idx_lt, k2);
-	build_(median, last, idx_gt, k2);
-      }
-    else
-      {
-	tree_[idx] = *first;
-	tree_[idx_lt] = -1;
-	tree_[idx_gt] = -1;
-      }
-  }
+            // build children
+            build_(first, median, idx_lt, k2);
+            build_(median, last, idx_gt, k2);            
+        }
+        else
+        {
+            tree_[idx] = *first;
+            tree_[idx_lt] = -1;
+            tree_[idx_gt] = -1;            
+        }
+    }
 	
 private:
   struct Incr_
