@@ -131,7 +131,7 @@ classdef DataProcessingProcess < Process
            % Input check
            ip =inputParser;
            ip.addOptional('iChan',1:numel(obj.owner_.channels_),...
-               @(x) ismember(x,1:numel(obj.owner_.channels_)));
+               @(x) all(obj.checkChanNum(x)));
            ip.parse(varargin{:});
            iChan=ip.Results.iChan;
 
