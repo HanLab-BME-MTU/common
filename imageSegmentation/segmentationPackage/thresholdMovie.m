@@ -108,7 +108,6 @@ thresProc= movieData.processes_{iProc};
 p = parseProcessParams(movieData.processes_{iProc},paramsIn);
 
 nChan = numel(movieData.channels_);
-imDirs  = movieData.getChannelPaths(p.ChannelIndex);
 
 if max(p.ChannelIndex) > nChan || min(p.ChannelIndex)<1 || ~isequal(round(p.ChannelIndex),p.ChannelIndex)
     error('Invalid channel numbers specified! Check ChannelIndex input!!')
@@ -133,7 +132,7 @@ disp('Starting thresholding...')
 inFilePaths = cell(1,numel(movieData.channels_));
 for i = p.ChannelIndex
     if isempty(p.ProcessIndex)
-        inFilePaths{1,i} = imDirs{i};
+        inFilePaths{1,i} = movieData.getChannelPaths{i};
     else
        inFilePaths{1,i} = movieData.processes_{p.ProcessIndex}.outFilePaths_{1,i}; 
     end
