@@ -56,8 +56,8 @@ classdef Package < hgsetget
             % 1 - parent process is empty
             % 2 - parent process has at least one exception
             % 3 - required parent proc is not run successfully
-            isValidParent = @(x) ~isempty(obj.processes_{x}) && isempty(processExceptions{x}) && ...
-                obj.processes_{x}.success_;
+            isValidParent = @(x) ~isempty(obj.processes_{x}) && ...
+                isempty(processExceptions{x}) && obj.processes_{x}.success_;
             invalidParent= ~arrayfun(isValidParent,parentIndex);
                 
             if obj.processes_{procID}.success_ && ...
@@ -138,11 +138,7 @@ classdef Package < hgsetget
             %
             
             nProc = length(obj.getProcessClassNames);
-            status = false(1,nProc);
-            processExceptions = cell(1,nProc);
-            processVisited = false(1,nProc);
-            
-            assert(isequal(nProc,numel(obj.processes_)));
+
             % Input check
             ip = inputParser;
             ip.CaseSensitive = false;
@@ -150,12 +146,21 @@ classdef Package < hgsetget
             ip.addOptional('full',true, @(x) islogical(x));
             ip.addOptional('procID',1:nProc,@(x) (isvector(x) && ~any(x>nProc)) || strcmp(x,'all'));
             ip.parse(obj,varargin{:});
-            
             full = ip.Results.full;
             procID = ip.Results.procID;
             if strcmp(procID,'all'), procID = 1:nProc;end
             
+            % Check processes are consistent with process class names
+            assert(isequal(nProc,numel(obj.processes_)),'Wrong number of processes');
             validProc = procID(~cellfun(@isempty,obj.processes_(procID)));
+            validClassCheck = arrayfun(@(x) isa(obj.processes_{x},obj.getProcessClassNames{x}),validProc);
+            assert(all(validClassCheck),'Some processes do not agree with package classes definition');
+            
+            % Initialize process output
+            status = false(1,nProc);
+            processExceptions = cell(1,nProc);
+            processVisited = false(1,nProc);
+            
             if full 
                 % I: Check if the process itself has a problem
                 %

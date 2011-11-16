@@ -103,11 +103,12 @@ end
 
 thresProc= movieData.processes_{iProc};
 
-nChan = numel(movieData.channels_);
-imDirs  = movieData.getChannelPaths(p.ChannelIndex);
 
 %Parse input, store in parameter structure
 p = parseProcessParams(movieData.processes_{iProc},paramsIn);
+
+nChan = numel(movieData.channels_);
+imDirs  = movieData.getChannelPaths(p.ChannelIndex);
 
 if max(p.ChannelIndex) > nChan || min(p.ChannelIndex)<1 || ~isequal(round(p.ChannelIndex),p.ChannelIndex)
     error('Invalid channel numbers specified! Check ChannelIndex input!!')
