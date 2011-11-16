@@ -58,7 +58,7 @@ classdef MaskProcess < Process
         end
         function setOutMaskPath(obj,chanNum,maskPath)
             if obj.checkChanNum(chanNum)
-                obj.outFilePaths_{chanNum} = maskPath;
+                obj.outFilePaths_{1,chanNum} = maskPath;
             else
                 error('lccb:set:fatal','Invalid mask channel number for mask path!\n\n');
             end

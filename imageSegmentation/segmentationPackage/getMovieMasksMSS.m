@@ -68,13 +68,16 @@ end
 
 %Read various constants
 imDirs  = movieData.getChannelPaths();
-imageFileNames = movieData.getImageFileNames();
 nFrames=movieData.nFrames_;
 
 % Set up the input directories (input images)
 inFilePaths = cell(1,numel(movieData.channels_));
 for i = p.ChannelIndex
-    inFilePaths{1,i} = imDirs{i};
+    if isempty(p.ProcessIndex)
+        inFilePaths{1,i} = imDirs{i};
+    else
+       inFilePaths{1,i} = movieData.processes_{p.ProcessIndex}.outFilePaths_{1,i}; 
+    end
 end
 segProc.setInFilePaths(inFilePaths);
     
@@ -95,7 +98,6 @@ fString = ['%0' num2str(floor(log10(nFrames))+1) '.f'];
 numStr = @(frame) num2str(frame,fString);
 
 % Anonymous functions for reading input/output
-inImage=@(chan,frame) [imDirs{chan} filesep imageFileNames{chan}{frame}];
 outMask=@(chan,frame) [outputDir{chan} filesep 'mask_' numStr(frame) '.tif'];
 
 
@@ -116,7 +118,13 @@ for i=1:numel(p.ChannelIndex)
     
     for j=1:nFrames
         % Read image apply mask and save the output
-        currImage = double(imread(inImage(iChan,j)));
+        %Load the current image
+        if isempty(p.ProcessIndex)
+            currImage = movieData.channels_(iChan).loadImage(j);
+        else
+            currImage = movieData.processes_{p.ProcessIndex}.loadOutImage(iChan,j);
+        end
+        
         mask=getCellMaskMSS(currImage,'Scales',p.Scales,'FilterOrder',p.FilterOrder);        
         imwrite(mask,outMask(iChan,j));
 

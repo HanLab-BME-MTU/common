@@ -51,6 +51,7 @@ classdef MSSSegmentationProcess < SegmentationProcess
             % Set default parameters
             funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.OutputDirectory = [outputDir  filesep 'MSSMasks'];
+            funParams.ProcessIndex = [];%Default is to use raw images
             funParams.Scales = [1 2 4]; %Default is no jump suppression
             funParams.FilterOrder = 3;
         end

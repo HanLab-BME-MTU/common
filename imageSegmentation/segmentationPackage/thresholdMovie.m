@@ -101,7 +101,10 @@ if isempty(iProc)
     movieData.addProcess(ThresholdProcess(movieData,movieData.outputDirectory_));                                                                                                 
 end
 
+thresProc= movieData.processes_{iProc};
+
 nChan = numel(movieData.channels_);
+imDirs  = movieData.getChannelPaths(p.ChannelIndex);
 
 %Parse input, store in parameter structure
 p = parseProcessParams(movieData.processes_{iProc},paramsIn);
@@ -121,10 +124,20 @@ if ~isempty(p.ThresholdValue)
 end
 
 
-
 %% --------------- Init ---------------%%
 
 disp('Starting thresholding...')
+
+% Set up the input directories (input images)
+inFilePaths = cell(1,numel(movieData.channels_));
+for i = p.ChannelIndex
+    if isempty(p.ProcessIndex)
+        inFilePaths{1,i} = imDirs{i};
+    else
+       inFilePaths{1,i} = movieData.processes_{p.ProcessIndex}.outFilePaths_{1,i}; 
+    end
+end
+thresProc.setInFilePaths(inFilePaths);
 
 %Set up the mask directories as sub-directories of the output directory
 for j = 1:nChanThresh;
@@ -132,7 +145,7 @@ for j = 1:nChanThresh;
     %Create string for current directory
     currDir = [p.OutputDirectory filesep dName num2str(p.ChannelIndex(j))];    
     %Save this in the process object
-    movieData.processes_{iProc}.setOutMaskPath(p.ChannelIndex(j),currDir);
+    thresProc.setOutMaskPath(p.ChannelIndex(j),currDir);
    
     %Check/create directory
     mkClrDir(currDir)               
@@ -147,10 +160,10 @@ nImages = movieData.nFrames_;
 nImTot = nImages * nChanThresh;
 
 %Get mask and image directories
-maskDirs  = movieData.processes_{iProc}.outFilePaths_(p.ChannelIndex);
+maskDirs  = thresProc.outFilePaths_(p.ChannelIndex);
 imDirs  = movieData.getChannelPaths(p.ChannelIndex);
     
-threshMethod = movieData.processes_{iProc}.getMethods(p.MethodIndx).func;
+threshMethod = thresProc.getMethods(p.MethodIndx).func;
 %% ----- Thresholding ----- %%
 
 if ~p.BatchMode
@@ -264,12 +277,8 @@ end
 
 
 
-movieData.processes_{iProc}.setDateTime;
+thresProc.setDateTime;
 movieData.save; %Save the new movieData to disk
 
 
 disp('Finished thresholding!')
-
-
-
-
