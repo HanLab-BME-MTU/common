@@ -134,7 +134,7 @@ uicontrol(imagePanel,'Style','checkbox',...
 hPosition1=hPosition1+30;
 uicontrol(imagePanel,'Style','checkbox',...
     'Position',[10 hPosition1 200 20],'Tag','checkbox_grayscale',...
-    'String',' Grayscale mono-channel',...
+    'String',' Grayscale mono-channel','Value',1,...
     'HorizontalAlignment','left',...
     'Callback',@(h,event) redrawImage(guidata(h)));
 
@@ -652,8 +652,8 @@ end
 set(handles.checkbox_autoscale,'Value',isempty(clim));
 if isempty(clim)
     userData = get(handles.figure1,'UserData');
-    child=get(userData.drawFig,'Children');
-    clim=get(child(strcmp(get(child,'Type'),'axes')),'Clim');
+    hAxes=findobj(userData.drawFig,'Type','axes','-not','Tag','Colorbar');
+    clim=get(hAxes,'Clim');
     set(handles.edit_cmin,'Enable','off','String',clim(1));
     set(handles.edit_cmax,'Enable','off','String',clim(2));
 else
