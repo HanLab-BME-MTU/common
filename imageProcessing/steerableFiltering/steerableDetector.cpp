@@ -416,7 +416,6 @@ void filterM1(double** templates, int nx, int ny, double* alpha, double* respons
     
     double* tRoots = new double[2];
     double gxi, gyi;
-    double temp;
     
     for (int i=0;i<nx*ny;++i) {
         gxi = approxZero(gx[i]);
@@ -632,7 +631,7 @@ void filterM4(double** templates, int nx, int ny, double* alpha, double* respons
     double a42 = alpha[3];
     double a44 = alpha[4];
     
-    double g1, g2, g3;
+    //double g1, g2, g3;
     double A, B, C, D, E;
     
     /*double a1 = 2.0*a44-a42;
@@ -1033,8 +1032,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mexErrMsgTxt("Sigma must be a strictly positive scalar value.");
     double sigma = *mxGetPr(prhs[2]);
         
-    size_t nx = mxGetN(prhs[0]); // cols
-    size_t ny = mxGetM(prhs[0]);
+    int nx = (int)mxGetN(prhs[0]); // cols
+    int ny = (int)mxGetM(prhs[0]);
     int N = nx*ny;
     
     int L = 2*(int)(4.0*sigma)+1; // support of the Gaussian kernels
