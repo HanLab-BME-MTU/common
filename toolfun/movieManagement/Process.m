@@ -107,7 +107,7 @@ classdef Process < hgsetget
             defaultFields = fieldnames(defaultParams);
             status = ~ismember(defaultFields,crtFields);
             for i=find(status)'
-                 crtParams.(defaultFields{i})=defautParams.(defaultFields{i});
+                 crtParams.(defaultFields{i})=defaultParams.(defaultFields{i});
             end
             obj.setPara(crtParams);
 
