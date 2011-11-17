@@ -891,7 +891,7 @@ for iFrame = 1 : numFramesMovie
         
         %plot basic tracks
         plot([xCoord2plot0(1,:); xCoord2plot0],[yCoord2plot0(1,:); yCoord2plot0],...
-            'Color',[1 0.7 0.7],'LineWidth',1); %light pink; the artificial repetition of the first line is for avoiding a mess in the first frame when tracks are not color-coded individually
+            'Color',[1 0.7 0.7],'LineWidth',2); %light pink; the artificial repetition of the first line is for avoiding a mess in the first frame when tracks are not color-coded individually
         
         %color individual tracks randomly if requested
         if colorTracks == 1
