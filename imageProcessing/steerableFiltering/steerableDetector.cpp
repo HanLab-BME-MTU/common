@@ -51,7 +51,7 @@ double* getWeights(int M, double sigma) {
     switch (M) {
         case 1:
             alpha = new double[1];
-            alpha[0] = -sqrt(2.0/PI);
+            alpha[0] = sqrt(2.0/PI);
             break;
         case 2:
             alpha = new double[2];
@@ -423,26 +423,8 @@ void filterM1(double** templates, int nx, int ny, double* alpha, double* respons
         gyi = approxZero(gy[i]);
         
         orientation[i] = atan2(gyi,gxi);
-        
-        /*if ( gxi==0.0 && gyi==0.0 ) {
-            response[i] = 0.0;
-            orientation[i] = 0.0;
-        } else {
-            if (gyi == 0.0) {
-                tRoots[0] = 0.0;
-                tRoots[1] = PI;
-            } else {
-                tRoots[0] = atan(gyi/gxi);
-                tRoots[1] = opposite(tRoots[0]);
-            }
-            orientation[i] = tRoots[0];
-            response[i] = a11 * (cos(tRoots[0])*gxi + sin(tRoots[0])*gyi);
-            temp = a11 * (cos(tRoots[1])*gxi + sin(tRoots[1])*gyi);
-            if (temp > response[i]) {
-                response[i] = temp;
-                orientation[i] = tRoots[1];
-            }
-        }*/
+        //response[i] = a11 * (cos(orientation[i])*gxi + sin(orientation[i])*gyi);
+        response[i] = a11*sqrt(gxi*gxi + gyi*gyi);
     }
     delete[] tRoots;
 }
