@@ -42,6 +42,26 @@ public:
     build_(indices.begin(), indices.end());
   }
 
+  KDTree(const points_type & points, const std::vector<int> & tree)
+  {
+    int n = points_.size();
+
+    if (n == 0)
+      return;
+
+    // n must be less than 2^32 - 1 since indices are stored on signed int
+    assert(n <= std::numeric_limits<int>::max());
+
+    int h = (int) ceil(log2(n)) + 1;
+    int nnodes = (1 << (h+1)) - 1;
+
+    // input tree must at least has the correct size
+    assert(tree.size() == nnodes);
+
+    tree_ = new int[nnodes];
+    std::copy(tree.begin(), tree.end(), tree_);
+  }
+
   ~KDTree()
   {
     delete[] tree_;
