@@ -53,7 +53,9 @@ if isa(movieObject,'MovieList')
         corrProc = movieData.processes_{iProc};
         parseProcessParams(movieData.processes_{iProc},movieParams);
         corrProc.run();
-    end    
+    end   
+    
+    % Here comes the bootstrapping stuff
     return;
 end    
 
@@ -79,12 +81,13 @@ end
 
 % %Check that there is a valid output
 signalPreProc = movieObject.processes_{iSignalPreProc};
-% if ~signalPreProc.checkChannelOutput(1:nInput)
-%     error(['Each channel must have speckles !' ...
-%         'Please apply speckle detection to all needed channels before'...
-%         'running speckle tracking!'])
-% end
+if ~signalPreProc.checkChannelOutput(1:nInput)
+    error(['Each time series must have been preprocessesd !' ...
+        'Please apply pre-processing to all time series before '...
+        'running correlation calculatino!'])
+end
 
+% Load input
 inFilePaths = cell(nInput,1);
 data = cell(nInput,1);
 range = cell(nInput,1);
@@ -108,29 +111,19 @@ mkClrDir(p.OutputDirectory);
 corrProc.setOutFilePaths(outFilePaths);
 
 %% --------------- Correlation calculation ---------------%%% 
-
 disp('Starting calculating correlation...')
 
-% Check input have the same size
-allSizes =cellfun(@size,inData,'Unif',false);
-nSlices = unique(cellfun(@(x) x(1),allSizes));
-nBands = cellfun(@(x) x(2),allSizes);
-nPoints = unique(cellfun(@(x) x(3),allSizes));
-% nBands(2)=1;
-assert(isscalar(nSlices));
-assert(isscalar(nPoints));
 %At least 50 points are needed to calculate the ACF
 %Number of lags <= N/4;
 %Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
-minP     = 50;
 nLagsMax =round(nPoints/4);
-data=cell(nInput,1);
-range=cell(nInput,1);
 
 logMsg = @(i) ['Please wait, calculating ' input(i).name ' autocorrelation'];
 timeMsg = @(t) ['\nEstimated time remaining: ' num2str(round(t)) 's'];
 tic;
 
+
+% Calculate autocorrelation
 for iInput=1:nInput
     disp(logMsg(iInput));
     % Initialize autocorrelation function and bounds
@@ -139,24 +132,7 @@ for iInput=1:nInput
     bounds = nan(2,nSlices,nBands(iInput));
     if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
     
-    for iBand=1:nBands(iInput)
-        % Initialize data and range for the corresponding band
-        data{iInput}{iBand}=cell(nSlices,1);
-        range{iInput}{iBand}=cell(nSlices,1);
-       
-        % Get data and remove outliers
-        rawData =squeeze(inData{iInput}(:,iBand,:));
-        rawData(detectOutliers(rawData,5)) = NaN;
-        
-        %% Percentage of NaN
-        validSlices = (nPoints-sum(isnan(rawData),2))>=minP;
-        
-        [data{iInput}{iBand}(validSlices) ,range{iInput}{iBand}(validSlices)] = ...
-            removeMeanTrendNaN(rawData(validSlices,:)');
-        
-        % Calculate autocorelation
-        %         for iSlice=1:nSlices
-        %             if length(data{iInput}{iBand}{iSlice}) >= minP
+    for iBand=find(~cellfun(@isempty,data{iInput}))
         
         for iSlice=find(validSlices)'
             nLags = round(length(data{iInput}{iBand}{iSlice})/4);

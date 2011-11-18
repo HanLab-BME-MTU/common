@@ -1,5 +1,5 @@
 function preprocessMovieSignal(movieObject,varargin)
-% preprocessMovieSignal preprocess time series from the protrusion and activity maps
+% PREPROCESSMOVIESIGNAL preprocess time series from the sampled maps
 %
 % SYNOPSIS preprocessMovieSignal(movieObject,paramsIn)
 %
@@ -12,7 +12,8 @@ function preprocessMovieSignal(movieObject,varargin)
 %
 
 % Marco Vilela, Sep 2011
-% Sebastien Besson, Nov 2011
+% Sebastien Besson, Nov 2011 
+
 %% ----------- Input ----------- %%
 
 %Check input
@@ -23,7 +24,7 @@ ip.addOptional('paramsIn',[], @isstruct);
 ip.parse(movieObject,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
-%Get the indices of any previous stage drift processes                                                                     
+%Get the indices of any previous  signal preprocessing process                                                                  
 iProc = movieObject.getProcessIndex('SignalPreprocessingProcess',1,0);
 
 %If the process doesn't exist, create it
@@ -38,7 +39,7 @@ signalPreProc = movieObject.processes_{iProc};
 %Parse input, store in parameter structure
 p = parseProcessParams(signalPreProc,paramsIn);
 
-% Delegates correlation processes to movies if object is a movieList 
+% Delegates signal preprocessing proces to movies if object is a movieList 
 if isa(movieObject,'MovieList')
     movieParams.ProcessName=p.ProcessName;
     for i =1:numel(p.MovieIndex);
@@ -64,6 +65,7 @@ else
     wtBar=-1;
 end
 
+% Load input files
 input = signalPreProc.getInput;
 nInput=numel(input);
 inFilePaths = cell(nInput,1);
@@ -74,12 +76,12 @@ for i=1:nInput
         inFilePaths{i,:} = proc.outFilePaths_{1};
         inData{i} = proc.loadChannelOutput('output',input(i).var);
         inData{i} = reshape(inData{i},size(inData{i},1),1,size(inData{i},2));
-        
     else
         inFilePaths{i,:} = proc.outFilePaths_{1,input(i).channelIndex};
         inData{i} = proc.loadChannelOutput(input(i).channelIndex,'output',input(i).var);
     end
 end
+signalPreProc.setInFilePaths(inFilePaths);
 
 % Set up output files
 outFilePaths=cell(1,nInput);
@@ -89,8 +91,7 @@ end
 mkClrDir(p.OutputDirectory);
 signalPreProc.setOutFilePaths(outFilePaths);
 
-%% --------------- Correlation calculation ---------------%%% 
-
+%% --------------- Signal pre-processing ---------------%%% 
 disp('Starting preprocessing signal...')
 
 % Check input have the same size
@@ -98,34 +99,35 @@ allSizes =cellfun(@size,inData,'Unif',false);
 nSlices = unique(cellfun(@(x) x(1),allSizes));
 nBands = cellfun(@(x) x(2),allSizes);
 nPoints = unique(cellfun(@(x) x(3),allSizes));
-% nBands(2)=1;
-assert(isscalar(nSlices));
-assert(isscalar(nPoints));
+assert(isscalar(nSlices) && isscalar(nPoints));
+
 %At least 50 points are needed to calculate the ACF
 %Number of lags <= N/4;
 %Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
 minP     = 50;
 
-
-logMsg = @(iInput,iBand) ['Please wait, preprocessing signal of ' input(iInput).name...
-    ' for band ' num2str(iBand)];
+% Create log messages
+logMsg = @(iInput,iBand) ['Please wait, preprocessing signal of ' input(iInput).name];
 timeMsg = @(t) ['\nEstimated time remaining: ' num2str(round(t)) 's'];
 tic;
+nBandsTot = sum(nBamds);
 
-for iInput=1:nInput
+for iInput=1:nInput    
+    % Show log
+    disp(logMsg(iInput));
+    if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
     
-    disp(logMsg(iInput,1));
-    if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput,1)); end
+    % Initialize output
     data= cell(nBands(iInput),1);
     range=cell(nBands(iInput),1);
-    inputData = inData{iInput};
+    
     for iBand=1:nBands(iInput)
-        % Initialize data and range for the corresponding band
+        % Initialize band data and range for the corresponding band
         data{iBand}=cell(nSlices,1);
         range{iBand}=cell(nSlices,1);
        
-        % Get data and remove outliers
-        rawData =squeeze(inputData(:,iBand,:));
+        % Get band data and remove outliers
+        rawData =squeeze(inData{iInput}(:,iBand,:));
         rawData(detectOutliers(rawData,p.kSigma)) = NaN;
         
         %% Percentage of NaN
@@ -133,12 +135,17 @@ for iInput=1:nInput
         
         [data{iBand}(validSlices) ,range{iBand}(validSlices)] = ...
             removeMeanTrendNaN(rawData(validSlices,:)');
-        if ishandle(wtBar), waitbar(iBand/nBands(iInput),wtBar,logMsg(iInput,iBand)); end
+        
+                
+        % Update waitbar
+        if ishandle(wtBar), 
+            tj=toc;
+            nj = sum(nBands(1:iInput-1))+ iBand;
+            waitbar(nj/nBandsTot,wtBar,sprintf([logMsg(iInput) timeMsg(tj*nBandsTot/nj-tj)]));
+        end   
     end
     save(outFilePaths{1,iInput},'data','range');  
 end
 
-
 disp('Finished preprocessing signal...')
 if ishandle(wtBar), close(wtBar); end
-
