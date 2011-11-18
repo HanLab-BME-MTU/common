@@ -68,7 +68,7 @@ set(handles.listbox_selectedMovies,'String',movieString,...
     'UserData',movieIndex);
 
 % Set up available input processes
-allProc = userData.crtProc.getCorrelationProcesses();
+allProc = userData.crtProc.getTimeSeriesProcesses();
 allProcString = cellfun(@(x) eval([x '.getName']),allProc,'UniformOutput',false);
 set(handles.listbox_availableProcesses,'String',allProcString,'UserData',allProc);
 

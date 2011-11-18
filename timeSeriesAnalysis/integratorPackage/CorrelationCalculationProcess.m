@@ -85,14 +85,16 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
             outputDir=ip.Results.outputDir;
             
             % Set default parameters
-            if isa(owner,'MovieList'), funParams.MovieIndex=1:numel(owner.movies_); end
             funParams.OutputDirectory = [outputDir  filesep 'correlation'];
             funParams.ProcessName=TimeSeriesProcess.getTimeSeriesProcesses;
-            winProc =cellfun(@(x) x.processes_{x.getProcessIndex('WindowingProcess',1)},...
-                owner.movies_,'UniformOutput',false);
-            funParams.BandMin=1;
-            funParams.BandMax=min(cellfun(@(x) x.nBandMax_,winProc));
-            funParams.SliceIndex=cellfun(@(x) 1:x.nSliceMax_,winProc,'UniformOutput',false);
+            if isa(owner,'MovieList'), 
+                funParams.MovieIndex=1:numel(owner.movies_);
+                winProc =cellfun(@(x) x.processes_{x.getProcessIndex('WindowingProcess',1)},...
+                    owner.movies_,'UniformOutput',false);
+                funParams.BandMin=1;
+                funParams.BandMax=min(cellfun(@(x) x.nBandMax_,winProc));
+                funParams.SliceIndex=cellfun(@(x) 1:x.nSliceMax_,winProc,'UniformOutput',false);
+            end
         end
     end
 end
