@@ -151,9 +151,9 @@ for i=1:length(movieRun)
     userData = get(handles.figure1, 'UserData');
     
     % Disable 'Run' button
-    set(handles.pushbutton_run, 'Enable', 'off')
-    set(handles.checkbox_forcerun, 'Enable', 'off')
-    set(handles.checkbox_runall, 'Enable', 'off')
+%     set(handles.pushbutton_run, 'Enable', 'off')
+%     set(handles.checkbox_forcerun, 'Enable', 'off')
+%     set(handles.checkbox_runall, 'Enable', 'off')
     set(handles.text_status, 'Visible', 'on')
     
     % Run algorithms!

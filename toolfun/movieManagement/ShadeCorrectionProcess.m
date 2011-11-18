@@ -45,7 +45,7 @@ classdef ShadeCorrectionProcess < ImageCorrectionProcess
         end
         
         function sanityCheck(obj)
-            sanityCheck@ImageCorrection(obj)
+            sanityCheck@ImageCorrectionProcess(obj)
             % Sanity check will check the correction images
             for i = obj.funParams_.ChannelIndex
                 if ~isempty(obj.inFilePaths_{2,i})
@@ -96,7 +96,7 @@ classdef ShadeCorrectionProcess < ImageCorrectionProcess
             % Set default parameters
             funParams.OutputDirectory = [outputDir  filesep 'shade_corrected_images'];
             funParams.ShadeImageDirectories = []; %No default for this! It will be handled differently...
-            funParams.ChannelIndex = 1:nChan;
+            funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.MedianFilter = true;
             funParams.GaussFilterSigma = 0;
             funParams.Normalize = 1;

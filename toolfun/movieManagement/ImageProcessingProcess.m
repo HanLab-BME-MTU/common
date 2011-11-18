@@ -147,18 +147,14 @@ classdef ImageProcessingProcess < Process
             
         end
         
-        function OK = checkChannelOutput(obj,iChan)
+        function status = checkChannelOutput(obj,iChan)
             
            %Checks if the selected channels have valid output images          
            nChanTot = numel(obj.owner_.channels_);
-           if nargin < 2 || isempty(iChan)
-               iChan = 1:nChanTot;
-           end
-           
-           OK =  arrayfun(@(x)(x <= nChanTot && ...
-                             x > 0 && isequal(round(x),x) && ...
-                             exist(obj.outFilePaths_{1,x},'dir') && ...
-                             ~isempty(imDir(obj.outFilePaths_{1,x}))),iChan);
+           if nargin < 2 || isempty(iChan), iChan = 1:nChanTot; end
+           assert(all(ismember(iChan, 1:nChanTot)));
+           status =  arrayfun(@(x) exist(obj.outFilePaths_{1,x},'dir') && ...
+               ~isempty(imDir(obj.outFilePaths_{1,x})),iChan);
         end
         
         
