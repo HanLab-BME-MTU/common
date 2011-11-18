@@ -113,17 +113,19 @@ timeMsg = @(t) ['\nEstimated time remaining: ' num2str(round(t)) 's'];
 tic;
 
 for iInput=1:nInput
+    
     disp(logMsg(iInput,1));
     if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput,1)); end
-    data= cell(nBands(iInput));
-    range=cell(nBands(iInput));
+    data= cell(nBands(iInput),1);
+    range=cell(nBands(iInput),1);
+    inputData = inData{iInput};
     for iBand=1:nBands(iInput)
         % Initialize data and range for the corresponding band
         data{iBand}=cell(nSlices,1);
         range{iBand}=cell(nSlices,1);
        
         % Get data and remove outliers
-        rawData =squeeze(inData{iInput}(:,iBand,:));
+        rawData =squeeze(inputData(:,iBand,:));
         rawData(detectOutliers(rawData,p.kSigma)) = NaN;
         
         %% Percentage of NaN

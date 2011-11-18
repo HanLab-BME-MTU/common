@@ -22,7 +22,7 @@ function varargout = correlationCalculationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help correlationCalculationProcessGUI
 
-% Last Modified by GUIDE v2.5 07-Nov-2011 16:03:19
+% Last Modified by GUIDE v2.5 18-Nov-2011 17:06:46
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -75,6 +75,9 @@ set(handles.listbox_availableProcesses,'String',allProcString);
 procString = funParams.ProcessName;
 set(handles.listbox_selectedProcesses,'String',procString);
 
+set(handles.edit_BandMin,'String',funParams.BandMin);
+set(handles.edit_BandMax,'String',funParams.BandMax);
+userData.previewFig=-1;
 % Choose default command line output for correlationCalculationProcessGUI
 handles.output = hObject;
 
@@ -234,6 +237,59 @@ end
 % Refresh listbox
 set(handles.listbox_selectedMovies,'String',selectedMovies);
 
+% --- Executes on button press in checkbox_selectSlices.
+function checkbox_selectSlices_Callback(hObject, eventdata, handles)
+
+userData=get(handles.figure1,'UserData');
+if ishandle(userData.previewFig), delete(userData.previewFig); end
+if ~get(hObject,'Value'), return; end
+
+movieProps = get(handles.listbox_selectedMovies,{'UserData','Value'});
+movieID=movieProps{1}(movieProps{2});
+p.ProcessName = get(handles.listbox_selectedProcesses,'String');
+userData.previewFig=figure;
+
+corrProc = CorrelationCalculationProcess(userData.MD.movies_{movieID},'');
+parseProcessParams(corrProc,p);
+input = corrProc.getInput;
+nInput = numel(input);
+
+alphamask = .2*ones(397,120);
+alphamask(userData.crtProc.funParams_.SliceIndex{movieID},:)=1;
+hAxes = -ones(nInput,1);
+h = -ones(nInput,1);
+for i=1:nInput;
+    hAxes(i) = axes('Position',[(i-1)/nInput 0.1 1/nInput .8]);
+    axesArgs={'hAxes',hAxes(i)};
+    procID=input(i).processIndex;
+    if ~isempty(input(i).channelIndex)
+        chanArgs={input(i).channelIndex};
+    else
+        chanArgs={};
+    end
+    h(i) = userData.MD.movies_{movieID}.processes_{procID}.draw(chanArgs{:},axesArgs{:});
+    hCbar = findobj(userData.previewFig,'Tag','Colorbar');
+    delete(hCbar);    
+    
+    set(h(i),'AlphaData',alphamask,'AlphaDataMapping','none',...
+        'ButtonDownFcn',@(h,event)editSlices(h,event,guidata(hObject)));
+%     xLim = get(gca,'XLim');
+%     r(i) = imrect(gca, [xLim(1) 10 xLim(2) 100]);
+%     addNewPositionCallback(r(i),@(p) title(mat2str(p,3)));
+%     fcn = makeConstrainToRectFcn('imrect',xLim,get(gca,'YLim'));
+%     setPositionConstraintFcn(r(i),fcn);
+%     
+end
+set(userData.previewFig,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
+set(handles.figure1, 'UserData', userData);
+
+function editSlices(hObject)
+set(hObject,'Value',0);   
+
+ 
+function closeGraphFigure(hObject)
+set(hObject,'Value',0);   
+
 
 % --- Executes on button press in pushbutton_done.
 function pushbutton_done_Callback(hObject, eventdata, handles)
@@ -249,9 +305,24 @@ if isempty(get(handles.listbox_selectedProcesses, 'String'))
     return;
 end
 
+bandMin = str2double(get(handles.edit_BandMin,'String'));
+if isnan(bandMin) || bandMin<1
+    errordlg('Please enter a valid value for the layer of cells to be used',...
+        'Setting error','modal');
+    return;
+end
+
+bandMax = str2double(get(handles.edit_BandMax,'String'));
+if isnan(bandMax) 
+    errordlg('Please enter a valid value for the maximum layer of cells to be used',...
+        'Setting error','modal');
+    return;
+end
 
 funParams.MovieIndex = get(handles.listbox_selectedMovies, 'Userdata');
 funParams.ProcessName = get(handles.listbox_selectedProcesses, 'String');
+funParams.BandMin=bandMin;
+funParams.BandMax=bandMax;
 
 % Process Sanity check ( only check underlying data )
 userData = get(handles.figure1, 'UserData');

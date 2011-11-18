@@ -57,6 +57,8 @@ if isa(movieObject,'MovieList')
     return;
 end    
 
+
+
 %% --------------- Initialization ---------------%%
 if feature('ShowFigureWindows')
     [~,movieName]=fileparts(movieObject.getPath);
@@ -67,20 +69,30 @@ end
 
 input = corrProc.getInput;
 nInput=numel(input);
+
+% Test the presence and output validity of the speckle detection process
+iSignalPreProc =movieObject.getProcessIndex('SignalPreprocessingProcess',1,1);     
+if isempty(iSignalPreProc)
+    error([SignalPreprocessingProcess.getName ' has not yet been performed'...
+    'on this movie! Please run first!!']);
+end        
+
+% %Check that there is a valid output
+signalPreProc = movieObject.processes_{iSignalPreProc};
+% if ~signalPreProc.checkChannelOutput(1:nInput)
+%     error(['Each channel must have speckles !' ...
+%         'Please apply speckle detection to all needed channels before'...
+%         'running speckle tracking!'])
+% end
+
 inFilePaths = cell(nInput,1);
-inData = cell(nInput,1);
-for i=1:nInput
-    proc = movieObject.processes_{input(i).processIndex};
-    if isempty(input(i).channelIndex)
-        inFilePaths{i,:} = proc.outFilePaths_{1};
-        inData{i} = proc.loadChannelOutput('output',input(i).var);
-        inData{i} = reshape(inData{i},size(inData{i},1),1,size(inData{i},2));
-        
-    else
-        inFilePaths{i,:} = proc.outFilePaths_{1,input(i).channelIndex};
-        inData{i} = proc.loadChannelOutput(input(i).channelIndex,'output',input(i).var);
-    end
+data = cell(nInput,1);
+range = cell(nInput,1);
+for iInput=1:nInput
+    inFilePaths{1,iInput} = signalPreProc.outFilePaths_{1,iInput};
+    [data{iInput},range{iInput}] = signalPreProc.loadChannelOutput(iInput);
 end
+corrProc.setInFilePaths(inFilePaths)
 
 % Set up output files
 outFilePaths=cell(nInput,nInput);

@@ -1,4 +1,4 @@
-classdef SignalPreprocessingProcess < CorrelationProcess
+classdef SignalPreprocessingProcess < TimeSeriesProcess
     % A concrete process for pre-processing time series
     %
     % Sebastien Besson, Oct 2011
@@ -29,31 +29,30 @@ classdef SignalPreprocessingProcess < CorrelationProcess
                 super_args{4} = funParams;                
             end
             
-            obj = obj@CorrelationProcess(super_args{:});
+            obj = obj@TimeSeriesProcess(super_args{:});
         end
               
-%         
-%         function varargout = loadChannelOutput(obj,i,j,varargin)
-%             % Check input
-%             outputList={'','corrFun','bounds','lags'};
-%             ip=inputParser;
-%             ip.addRequired('obj');
-%             ip.addRequired('i',@isscalar);
-%             ip.addRequired('j',@isscalar);
-%             ip.addParamValue('output',outputList{1},@(x) all(ismember(x,outputList)));
-%             ip.parse(obj,i,j,varargin{:});
-%             output=ip.Results.output;
-%             if ischar(output), output={output}; end
-%             
-%             s=load(obj.outFilePaths_{i,j},output{:});
-%             for j=1:numel(output)
-%                 if strcmp(output{j},'')
-%                     varargout{j}=s;
-%                 else
-%                     varargout{j} = s.(output{j});
-%                 end
-%             end
-%         end
+        
+        function varargout = loadChannelOutput(obj,i,varargin)
+            % Check input
+            outputList={'data','range'};
+            ip=inputParser;
+            ip.addRequired('obj');
+            ip.addRequired('i',@isscalar);
+            ip.addParamValue('output',outputList{1},@(x) all(ismember(x,outputList)));
+            ip.parse(obj,i,varargin{:});
+            output=ip.Results.output;
+            if ischar(output), output={output}; end
+            
+            s=load(obj.outFilePaths_{1,i},output{:});
+            for j=1:numel(output)
+                if strcmp(output{j},'')
+                    varargout{j}=s;
+                else
+                    varargout{j} = s.(output{j});
+                end
+            end
+        end
 %         
 %         
 %         function output = getDrawableOutput(obj)
@@ -72,7 +71,7 @@ classdef SignalPreprocessingProcess < CorrelationProcess
         function h =GUI()
             h = @signalPreprocessingProcessGUI;
         end
-        function procNames = getCorrelationProcesses()
+        function procNames = getTimeSeriesProcesses()
             procNames = {'WindowSamplingProcess';
                 'ProtrusionSamplingProcess'};
         end
@@ -87,7 +86,7 @@ classdef SignalPreprocessingProcess < CorrelationProcess
             % Set default parameters
             if isa(owner,'MovieList'), funParams.MovieIndex=1:numel(owner.movies_); end
             funParams.OutputDirectory = [outputDir  filesep 'preprocessedSignal'];
-            funParams.ProcessName=SignalPreprocessingProcess.getCorrelationProcesses;
+            funParams.ProcessName=SignalPreprocessingProcess.getTimeSeriesProcesses;
             funParams.kSigma=5;
         end
     end

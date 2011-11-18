@@ -1,4 +1,4 @@
-classdef CorrelationCalculationProcess < CorrelationProcess
+classdef CorrelationCalculationProcess < TimeSeriesProcess
     % A concrete process for calculating correlation of sampled processes
     %
     % Sebastien Besson, Oct 2011
@@ -29,7 +29,7 @@ classdef CorrelationCalculationProcess < CorrelationProcess
                 super_args{4} = funParams;                
             end
             
-            obj = obj@CorrelationProcess(super_args{:});
+            obj = obj@TimeSeriesProcess(super_args{:});
         end
               
         
@@ -72,14 +72,14 @@ classdef CorrelationCalculationProcess < CorrelationProcess
         function h =GUI()
             h = @correlationCalculationProcessGUI;
         end
-        function procNames = getCorrelationProcesses()
+        function procNames = getTimeSeriesProcesses()
             procNames = {'WindowSamplingProcess';
                 'ProtrusionSamplingProcess'};
         end
         function funParams = getDefaultParams(owner,varargin)
             % Input check
             ip=inputParser;
-            ip.addRequired('owner',@(x) isa(x,'MovieObject'));
+            ip.addRequired('owner',@(x) isa(x,'MovieList'));
             ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
             ip.parse(owner, varargin{:})
             outputDir=ip.Results.outputDir;
@@ -87,7 +87,12 @@ classdef CorrelationCalculationProcess < CorrelationProcess
             % Set default parameters
             if isa(owner,'MovieList'), funParams.MovieIndex=1:numel(owner.movies_); end
             funParams.OutputDirectory = [outputDir  filesep 'correlation'];
-            funParams.ProcessName=CorrelationProcess.getCorrelationProcesses;
+            funParams.ProcessName=TimeSeriesProcess.getTimeSeriesProcesses;
+            winProc =cellfun(@(x) x.processes_{x.getProcessIndex('WindowingProcess',1)},...
+                owner.movies_,'UniformOutput',false);
+            funParams.BandMin=1;
+            funParams.BandMax=min(cellfun(@(x) x.nBandMax_,winProc));
+            funParams.SliceIndex=cellfun(@(x) 1:x.nSliceMax_,winProc,'UniformOutput',false);
         end
     end
 end

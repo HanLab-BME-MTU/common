@@ -33,10 +33,9 @@ classdef IntegratorPackage < Package
         
         function m = getDependencyMatrix(i,j)
             
-            m = [0 0 0 0; %1SignalPreprocessingProcess
-                1 0 0 0;  %2 CorrelationCalculationProcess
-                0 1 0 0;  %3 CorrelationBootstrappingProcess
-                1 0 0 0;];%4 EventAlignerProcess
+            m = [0 0 0; %1SignalPreprocessingProcess
+                1 0 0;  %2 CorrelationCalculationProcess
+                1 0 0;];%3 EventAlignerProcess
             
             if nargin<2, j=1:size(m,2); end
             if nargin<1, i=1:size(m,1); end
@@ -60,7 +59,6 @@ classdef IntegratorPackage < Package
             integratorProcConstr = {
                 @SignalPreprocessingProcess,...
                 @CorrelationCalculationProcess,...
-                @CorrelationBootstrappingProcess,...
                 @EventAlignerProcess};
             
             if nargin==0, index=1:numel(integratorProcConstr); end
@@ -69,8 +67,7 @@ classdef IntegratorPackage < Package
         function classes = getProcessClassNames(index)
             integratorClasses = {
                 'SignalPreprocessingProcess',...
-                'CorrelationCalculationProcess',...
-                'CorrelationBootstrappingProcess',...
+                'CorrelationCalculationProcess',.....
                 'EventAlignerProcess'};
             if nargin==0, index=1:numel(integratorClasses); end
             classes=integratorClasses(index);
