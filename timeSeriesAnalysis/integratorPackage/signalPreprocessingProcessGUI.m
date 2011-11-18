@@ -68,12 +68,14 @@ set(handles.listbox_selectedMovies,'String',movieString,...
     'UserData',movieIndex);
 
 % Set up available input processes
-allProcString = userData.crtProc.getCorrelationProcesses();
-set(handles.listbox_availableProcesses,'String',allProcString);
+allProc = userData.crtProc.getCorrelationProcesses();
+allProcString = cellfun(@(x) eval([x '.getName']),allProc,'UniformOutput',false);
+set(handles.listbox_availableProcesses,'String',allProcString,'UserData',allProc);
 
 % Set up selected input processes
-procString = funParams.ProcessName;
-set(handles.listbox_selectedProcesses,'String',procString);
+selProc = funParams.ProcessName;
+selProcString = cellfun(@(x) eval([x '.getName']),selProc,'UniformOutput',false);
+set(handles.listbox_selectedProcesses,'String',selProcString,'UserData',selProc);
 
 set(handles.edit_kSigma,'String',funParams.kSigma);
 
@@ -127,114 +129,61 @@ if strcmp(eventdata.Key, 'return')
     pushbutton_done_Callback(handles.pushbutton_done, [], handles);
 end
 
-% --- Executes on button press in checkbox_allProcesses.
-function checkbox_allProcesses_Callback(hObject, ~, handles)
-
-availableProcesses = get(handles.listbox_availableProcesses, 'String');
-if isempty(availableProcesses), return; end
-
-if get(hObject,'Value')
-    set(handles.listbox_selectedProcesses, 'String', availableProcesses);
-else
-    set(handles.listbox_selectedProcesses, 'String', {}, 'Value',1);
-end
-
-% --- Executes on button press in pushbutton_selectProcesses.
-function pushbutton_selectProcesses_Callback(hObject, eventdata, handles)
-% call back function of 'select' button
-
-availableProcesses = get(handles.listbox_availableProcesses, 'String');
-selectedProcesses = get(handles.listbox_selectedProcesses, 'String');
-procID = get(handles.listbox_availableProcesses, 'Value');
-
-newProcID = procID(~ismember(availableProcesses(procID),selectedProcesses));
-selectedProcesses = vertcat(selectedProcesses,availableProcesses(newProcID));
-
-set(handles.listbox_selectedProcesses, 'String', selectedProcesses);
-
-
-% --- Executes on button press in pushbutton_deleteProcesses.
-function pushbutton_deleteProcesses_Callback(hObject, eventdata, handles)
-% Call back function of 'delete' button
-selectedProcesses = get(handles.listbox_selectedProcesses,'String');
-procID = get(handles.listbox_selectedProcesses,'Value');
-
-% Return if list is empty
-if isempty(selectedProcesses) || isempty(procID),return; end
-
-% Refresh listbox
-selectedProcesses(procID) = [ ];
-set(handles.listbox_selectedProcesses,'String',selectedProcesses,...
-    'Value',max(1,min(length(selectedProcesses),procID)));
-
-
 % --- Executes on button press in checkbox_allMovies.
-function checkbox_allMovies_Callback(hObject, eventdata, handles)
+function checkbox_all_Callback(hObject, eventdata, handles)
 
+% Identify listbox and retrieve handles
+tokens = regexp(get(hObject,'Tag'),'^checkbox_all(.*)$','tokens');
+listbox_available= handles.(['listbox_available' tokens{1}{1}]);
+listbox_selected= handles.(['listbox_selected' tokens{1}{1}]);
 
-availableMovies = get(handles.listbox_availableMovies, 'String');
-if isempty(availableMovies), return; end
-
-availableMoviesIndex = get(handles.listbox_availableMovies, 'Userdata');
+% Retrieve available properties
+availableProps = get(listbox_available, {'String','UserData'});
+if isempty(availableProps{1}), return; end
 
 if get(hObject,'Value')
-    set(handles.listbox_selectedMovies, 'String', availableMovies);
-    selectedMoviesIndex = availableMoviesIndex;
+    set(listbox_selected, 'String', availableProps{1},'UserData',availableProps{2});
 else
-    set(handles.listbox_selectedMovies, 'String', {}, 'Value',1);
-    selectedMoviesIndex = [ ];
+    set(listbox_selected, 'String', {}, 'UserData',[], 'Value',1);
 end
-set(handles.listbox_selectedMovies, 'UserData', selectedMoviesIndex);
-
 
 % --- Executes on button press in pushbutton_selectMovies.
-function pushbutton_selectMovies_Callback(hObject, eventdata, handles)
+function pushbutton_select_Callback(hObject, eventdata, handles)
 
-% call back function of 'select' button
-availableMovies = get(handles.listbox_availableMovies, 'String');
-selectedMovies = get(handles.listbox_selectedMovies, 'String');
-id = get(handles.listbox_availableMovies, 'Value');
+% Identify listbox and retrieve handles
+tokens = regexp(get(hObject,'Tag'),'^pushbutton_select(.*)$','tokens');
+listbox_available= handles.(['listbox_available' tokens{1}{1}]);
+listbox_selected= handles.(['listbox_selected' tokens{1}{1}]);
 
-% If channel has already been added, return;
-availableMovieIndex = get(handles.listbox_availableMovies, 'Userdata');
-selectedMovieIndex = get(handles.listbox_selectedMovies, 'Userdata');
+% Get handles properties
+availableProps = get(listbox_available, {'String','UserData'});
+selectedProps = get(listbox_selected, {'String','UserData'});
+ID = get(listbox_available, 'Value');
 
-for i = id
-    if any(strcmp(availableMovies{i}, selectedMovies) )
-        continue;
-    else
-        selectedMovies{end+1} = availableMovies{i};
-        selectedMovieIndex = cat(2, selectedMovieIndex, availableMovieIndex(i));
-    end
-end
+% Update selected listbox properties
+newChanID = ID(~ismember(availableProps{1}(ID),selectedProps{1}));
+selectedString = horzcat(selectedProps{1},availableProps{1}(newChanID)');
+selectedData = horzcat(selectedProps{2}, availableProps{2}(newChanID)');
 
-set(handles.listbox_selectedMovies, 'String', selectedMovies,...
-    'Userdata', selectedMovieIndex);
+set(listbox_selected, 'String', selectedString, 'Userdata', selectedData);
+
 
 % --- Executes on button press in pushbutton_deleteMovies.
-function pushbutton_deleteMovies_Callback(hObject, eventdata, handles)
-% Call back function of 'delete' button
-selectedMovies = get(handles.listbox_selectedMovies,'String');
-id = get(handles.listbox_selectedMovies,'Value');
+function pushbutton_delete_Callback(hObject, eventdata, handles)
 
-% Return if list is empty
-if isempty(selectedMovies) || isempty(id),return; end
+% Identify listbox and retrieve handles
+tokens = regexp(get(hObject,'Tag'),'^pushbutton_delete(.*)$','tokens');
+listbox_selected= handles.(['listbox_selected' tokens{1}{1}]);
+
+% Get selected properties and returin if empty
+selectedProps = get(listbox_selected, {'String','UserData','Value'});
+if isempty(selectedProps{1}) || isempty(selectedProps{3}),return; end
 
 % Delete selected item
-selectedMovies(id) = [ ];
-
-% Delete userdata
-selectedMovieIndex = get(handles.listbox_selectedMovies, 'Userdata');
-selectedMovieIndex(id) = [ ];
-set(handles.listbox_selectedMovies, 'Userdata', selectedMovieIndex);
-
-% Point 'Value' to the second last item in the list once the 
-% last item has been deleted
-if (id >length(selectedMovies) && id>1)
-    set(handles.listbox_selectedMovies,'Value',length(selectedMovies));
-end
-% Refresh listbox
-set(handles.listbox_selectedMovies,'String',selectedMovies);
+selectedProps{1}(selectedProps{3}) = [ ];
+selectedProps{2}(selectedProps{3}) = [ ];
+set(listbox_selected, 'String', selectedProps{1},'UserData',selectedProps{2},...
+    'Value',max(1,min(selectedProps{3},numel(selectedProps{1}))));
 
 
 % --- Executes on button press in pushbutton_done.
@@ -252,8 +201,8 @@ if isempty(get(handles.listbox_selectedProcesses, 'String'))
 end
 
 
-funParams.MovieIndex = get(handles.listbox_selectedMovies, 'Userdata');
-funParams.ProcessName = get(handles.listbox_selectedProcesses, 'String');
+funParams.MovieIndex = get(handles.listbox_selectedMovies, 'UserData');
+funParams.ProcessName = get(handles.listbox_selectedProcesses,'UserData');
 
 kSigma = str2double(get(handles.edit_kSigma,'String'));
 if isnan(kSigma) || ~ismember(kSigma,1:10)

@@ -163,55 +163,40 @@ set(handles.pushbutton_delete,'Callback',@(hObject,eventdata)...
 % --- Executes on button press in checkbox_all.
 function checkallChannels(hObject, eventdata, handles)
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox_all
-availableChannels = get(handles.listbox_availableChannels, 'String');
-availableChannelsIndx = get(handles.listbox_availableChannels, 'Userdata');
+% Retrieve available channels properties
+availableProps = get(handles.listbox_availableChannels, {'String','UserData'});
+if isempty(availableProps{1}), return; end
 
-% Return if listbox1 is empty
-if isempty(availableChannels), return; end
-
+% Update selected channels
 if get(hObject,'Value')
-    set(handles.listbox_selectedChannels, 'String', availableChannels);
-    selectedChannelsIndx = availableChannelsIndx;
+    set(handles.listbox_selectedChannels, 'String', availableProps{1},...
+        'UserData',availableProps{2});
 else
-    set(handles.listbox_selectedChannels, 'String', {}, 'Value',1);
-    selectedChannelsIndx = [ ];
+    set(handles.listbox_selectedChannels, 'String', {}, 'UserData',[], 'Value',1);
 end
-set(handles.listbox_selectedChannels, 'UserData', selectedChannelsIndx);
 
 % --- Executes on button press in pushbutton_select.
 function selectChannel(hObject, eventdata, handles)
-% call back function of 'select' button
 
-availableChannels = get(handles.listbox_availableChannels, 'String');
-selectedChannels = get(handles.listbox_selectedChannels, 'String');
-chanID = get(handles.listbox_availableChannels, 'Value');
+% Retrieve  channels properties
+availableProps = get(handles.listbox_availableChannels, {'String','UserData','Value'});
+selectedProps = get(handles.listbox_selectedChannels, {'String','UserData'});
 
-% If channel has already been added, return;
-availableChannelsIndx = get(handles.listbox_availableChannels, 'Userdata');
-selectedChannelsIndx = get(handles.listbox_selectedChannels, 'Userdata');
-
-newChanID = chanID(~ismember(availableChannels(chanID),selectedChannels));
-selectedChannels = horzcat(selectedChannels,availableChannels(newChanID)');
-selectedChannelsIndx = horzcat(selectedChannelsIndx, availableChannelsIndx(newChanID)');
-
-set(handles.listbox_selectedChannels, 'String', selectedChannels, 'Userdata', selectedChannelsIndx);
-
+% Find new elements and set them to the selected listbox
+newID = availableProps{3}(~ismember(availableProps{1}(availableProps{3}),selectedProps{1}));
+selectedChannels = horzcat(selectedProps{1},availableProps{1}(newID)');
+selectedData = horzcat(selectedProps{2}, availableProps{2}(newID)');
+set(handles.listbox_selectedChannels, 'String', selectedChannels, 'UserData', selectedData);
 
 % --- Executes on button press in pushbutton_delete.
 function deleteChannel(hObject, eventdata, handles)
-% Call back function of 'delete' button
-selectedChannels = get(handles.listbox_selectedChannels,'String');
-chanID = get(handles.listbox_selectedChannels,'Value');
 
-% Return if list is empty
-if isempty(selectedChannels) || isempty(chanID),return; end
+% Get selected properties and returin if empty
+selectedProps = get(handles.listbox_selectedChannels, {'String','UserData','Value'});
+if isempty(selectedProps{1}) || isempty(selectedProps{3}),return; end
 
-% Update string
-selectedChannelsIndx = get(handles.listbox_selectedChannels, 'Userdata');
-selectedChannels(chanID) = [ ];
-selectedChannelsIndx(chanID) = [ ];
-
-set(handles.listbox_selectedChannels,'String',selectedChannels,...
-    'Userdata', selectedChannelsIndx,...
-    'Value',max(1,min(length(selectedChannels),chanID)));
+% Delete selected item
+selectedProps{1}(selectedProps{3}) = [ ];
+selectedProps{2}(selectedProps{3}) = [ ];
+set(handles.listbox_selectedChannels, 'String', selectedProps{1},'UserData',selectedProps{2},...
+    'Value',max(1,min(selectedProps{3},numel(selectedProps{1}))));
