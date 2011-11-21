@@ -32,7 +32,6 @@ ip.addRequired('data', @isnumeric);
 ip.addRequired('n', @(n) n > 0);
 ip.addRequired('beta', @(beta) beta >= 0);
 ip.addRequired('maxDist', @(maxDist) maxDist >= 0);
-ip.addParamValue('Algorithm', 'sqp', @isstr);
 ip.addParamValue('MaxFunEvals', 1e4, @isscalar);
 ip.addParamValue('MaxIter', 1e4, @isscalar);
 ip.addParamValue('Display', 'off', @isstr);
@@ -40,7 +39,6 @@ ip.addParamValue('TolX', 1e-8, @isscalar);
 ip.addParamValue('TolFun', 1e-8, @isscalar);
 
 ip.parse(data, n, beta, maxDist, varargin{:});
-algorithm = ip.Results.Algorithm;
 maxFunEvals = ip.Results.MaxFunEvals;
 maxIter = ip.Results.MaxIter;
 display = ip.Results.Display;
@@ -48,20 +46,22 @@ tolX = ip.Results.TolX;
 tolFun = ip.Results.TolFun;
 
 %% Setup the optimization algorithm
-opts = optimset('Algorithm', algorithm, ...
+opts = optimset('Algorithm', 'interior-point', ...
   'DerivativeCheck', 'off', ...
   'Display', display, ...
   'FunValCheck', 'off', ...
   'GradObj', 'on', ...
   'GradConstr', 'on', ...
-  'Hessian', 'off', ...
+  'Hessian', 'user-supplied', ...
+  'HessFcn', @hessianfcn, ...
   'MaxFunEvals', maxFunEvals, ...
   'MaxIter', maxIter, ...
   'TolX', tolX, ...
   'Tolfun', tolFun);
 
 % Array of function handlers for regularization term computation
-regFuncs = {@computeRegTermN1, @computeRegTermN2, @computeRegTermN3};
+regFuncs = {@computeRegTermN1D2, @computeRegTermN2D2, @computeRegTermN3D2;...
+  @computeRegTermN1D3, @computeRegTermN2D3, @computeRegTermN3D3};
 
 %% Compute an initial solution
 [m d] = size(data);
@@ -141,7 +141,7 @@ T = [0; X(d * (n + 1) + 1:end); 1];
 B = (bsxfun(@power, T, 0:n) .* bsxfun(@power, 1 - T, n:-1:0)) * Cnk;
 res = sqrt(sum((B * C - data).^2,2));
 
-  function [F, G, H] = fun(X)
+  function [F, G] = fun(X)
     
     % Retrieve the control point coordinates from X
     C = reshape(X(1:d * (n + 1)), n + 1, d);
@@ -156,7 +156,7 @@ res = sqrt(sum((B * C - data).^2,2));
     dataFidelity = sum(sum((data - B * C).^2, 2));
     
     % Append the regularization term and the contraints
-    F = dataFidelity + beta * regFuncs{n}(C);
+    F = dataFidelity + beta * regFuncs{d-1,n}(C);
     
     if nargout > 1
       % Compute the Bernstein matrix of order n-1
@@ -191,64 +191,77 @@ res = sqrt(sum((B * C - data).^2,2));
       % Compute dL/dtk
       G(d * (n + 1) + 1:end) = 2 * n * sum((B(2:end-1,:) * C - ...
         data(2:end-1,:)) .* (Bn_1(2:end-1,:) * diff(C,1,1)),2);
+    end    
+  end
+
+  function H = hessianfcn(X, lambda)
+    
+    % Retrieve the control point coordinates from X
+    C = reshape(X(1:d * (n + 1)), n + 1, d);
+    
+    % Retrieve the nodes from X and add t0 and tm
+    T = [0; X(d * (n + 1) + 1:end); 1];
+    
+    % Compute the Bernstein matrix
+    B = (bsxfun(@power, T, 0:n) .* bsxfun(@power, 1 - T, n:-1:0)) * Cnk;
+    
+    % Compute the Bernstein matrix of order n-1
+    Bn_1 = (bsxfun(@power, T, 0:n-1) .* bsxfun(@power, 1 - T, n-1:-1:0)) * Cn_1k;
+    
+    % Compute the Bernstein matrix of order n-2
+    Bn_2 = (bsxfun(@power, T, 0:n-2) .* bsxfun(@power, 1 - T, n-2:-1:0)) * Cn_2k;
+    
+    H = zeros(pDim);
+    
+    % Compute d2F/dxkdxl
+    
+    % k = 0, l = 0
+    H(1,1) = 2 * sum(B(:,1).^2) + 2 * beta * n^2 / (2 * n - 1);
+    
+    % k = 0, l = n
+    H(n+1,1) = 2 * sum(B(:,1) .* B(:,end)) - 2 * beta * n^2 * ...
+      fact_n_1^2 / fact_2n_1;
+    
+    % k = n, l = n
+    H(n+1,n+1) = 2 * sum(B(:,end).^2) + 2 * beta * n^2 / (2 * n - 1);
+    
+    % k = 0, 0 < l < n
+    H(2:n,1) = 2 * sum(bsxfun(@times, B(:,1), B(:,2:n)), 1) - ...
+      2 * beta * n^2 * C4;
+    
+    % k = n, 0 < l < n
+    H(n+1,2:n) = 2 * sum(bsxfun(@times, B(:,end), B(:,2:n)), 1) + ...
+      2 * beta * n^2 * C5;
+    
+    % 0 < k < n, 0 < l < n
+    H(2:n, 2:n) = 2 * B(:,2:end-1)' * B(:,2:end-1) + 2 * beta * n^2 * C6;
+    
+    blks = cell(d,1);
+    [blks{:}] = deal(H(1:n+1,1:n+1));
+    H(1:d * (n+1), 1:d * (n+1)) = blkdiag(blks{:});
+    
+    % Compute d2Fdtdx
+    for iDim = 1:d
+      offset = (iDim - 1) * (n + 1) + 1;
+      
+      % d2Fdtdx is a m x (n+1) matrix
+      H(end-m+3:end, offset:offset+n) = 2 * B(2:end-1,:) .* ...
+        (sum(bsxfun(@times, bsxfun(@rdivide, bsxfun(@minus, bsxfun(@plus, ...
+        permute(0:n, [3, 1, 2]), 0:n), 2 * n * T(2:end-1)), T(2:end-1) .* ...
+        (1-T(2:end-1))), permute(bsxfun(@times, B(2:end-1,:), C(:,iDim)'), ...
+        [1, 3, 2])), 3) - bsxfun(@times, bsxfun(@rdivide, bsxfun(@minus, ...
+        0:n, n * T(2:end-1)), T(2:end-1) .* (1-T(2:end-1))), ...
+        data(2:end-1,iDim)));
     end
     
-    if nargout > 2
-      % Compute the Bernstein matrix of order n-2
-      Bn_2 = (bsxfun(@power, T, 0:n-2) .* bsxfun(@power, 1 - T, n-2:-1:0)) * Cn_2k;
-
-      H = zeros(pDim);
-      
-      % Compute d2F/dxkdxl
-      
-      % k = 0, l = 0
-      H(1,1) = 2 * sum(B(:,1).^2) + 2 * beta * n^2 / (2 * n - 1);
-      
-      % k = 0, l = n
-      H(n+1,1) = 2 * sum(B(:,1) .* B(:,end)) - 2 * beta * n^2 * ...
-        fact_n_1^2 / fact_2n_1;
-      
-      % k = n, l = n
-      H(n+1,n+1) = 2 * sum(B(:,end).^2) + 2 * beta * n^2 / (2 * n - 1);
-      
-      % k = 0, 0 < l < n
-      H(2:n,1) = 2 * sum(bsxfun(@times, B(:,1), B(:,2:n)), 1) - ...
-        2 * beta * n^2 * C4;
-      
-      % k = n, 0 < l < n
-      H(n+1,2:n) = 2 * sum(bsxfun(@times, B(:,end), B(:,2:n)), 1) + ...
-        2 * beta * n^2 * C5;
-      
-      % 0 < k < n, 0 < l < n
-      H(2:n, 2:n) = 2 * B(:,2:end-1)' * B(:,2:end-1) + 2 * beta * n^2 * C6;
-      
-      blks = cell(d,1);
-      [blks{:}] = deal(H(1:n+1,1:n+1));
-      H(1:d * (n+1), 1:d * (n+1)) = blkdiag(blks{:});
-      
-      % Compute d2Fdtdx
-      for iDim = 1:d      
-        offset = (iDim - 1) * (n + 1) + 1;
-        
-        % d2Fdtdx is a m x (n+1) matrix
-        H(end-m+3:end, offset:offset+n) = 2 * B(2:end-1,:) .* ...
-          (sum(bsxfun(@times, bsxfun(@rdivide, bsxfun(@minus, bsxfun(@plus, ...
-          permute(0:n, [3, 1, 2]), 0:n), 2 * n * T(2:end-1)), T(2:end-1) .* ...
-          (1-T(2:end-1))), permute(bsxfun(@times, B(2:end-1,:), C(:,iDim)'), ...
-          [1, 3, 2])), 3) - bsxfun(@times, bsxfun(@rdivide, bsxfun(@minus, ...
-          0:n, n * T(2:end-1)), T(2:end-1) .* (1-T(2:end-1))), ...
-          data(2:end-1,iDim)));
-      end
-      
-      % Compute d2Fdt2
-      H(d * (n + 1) + 1:end, d * (n + 1) + 1:end) = 2 * diag(...
-        n^2 * sum((Bn_1(2:end-1,:) * diff(C,1,1)).^2, 2) + n * (n-1) * ...
-        sum((B(2:end-1,:) * C - data(2:end-1,:)) .* (Bn_2(2:end-1,:) * ...
-        diff(C,2,1)),2));
-            
-      % assign the upper triangular part of H
-      H = tril(H) + tril(H,-1)';
-    end
+    % Compute d2Fdt2
+    H(d * (n + 1) + 1:end, d * (n + 1) + 1:end) = 2 * diag(...
+      n^2 * sum((Bn_1(2:end-1,:) * diff(C,1,1)).^2, 2) + n * (n-1) * ...
+      sum((B(2:end-1,:) * C - data(2:end-1,:)) .* (Bn_2(2:end-1,:) * ...
+      diff(C,2,1)),2));
+    
+    % assign the upper triangular part of H
+    H = tril(H) + tril(H,-1)';
   end
 
   function [CON CONEQ CG CEQG] = fcon(X)
@@ -281,7 +294,7 @@ res = sqrt(sum((B * C - data).^2,2));
   end
 end
 
-function reg = computeRegTermN1(C)
+function reg = computeRegTermN1D2(C)
 
 CC = num2cell(C);
 [x0, x1, y0, y1] = CC{:};
@@ -289,7 +302,15 @@ CC = num2cell(C);
 reg = (x0 - x1)^2 + (y0 - y1)^2;
 end
 
-function reg = computeRegTermN2(C)
+function reg = computeRegTermN1D3(C)
+
+CC = num2cell(C);
+[x0, x1, y0, y1, z0, z1] = CC{:};
+
+reg = (x0 - x1)^2 + (y0 - y1)^2 + (z0 - z1)^2;
+end
+
+function reg = computeRegTermN2D2(C)
 
 CC = num2cell(C);
 [x0, x1, x2, y0, y1, y2] = CC{:};
@@ -298,7 +319,17 @@ reg = (4/3) * (x0^2 + x1^2 - x1 * x2 + x2^2 - x0 * (x1 + x2) + y0^2 - ...
   y0 * y1 + y1^2 - (y0 + y1) * y2 + y2^2);
 end
 
-function reg = computeRegTermN3(C)
+function reg = computeRegTermN2D3(C)
+
+CC = num2cell(C);
+[x0, x1, x2, y0, y1, y2, z0, z1, z2] = CC{:};
+
+reg = (4/3) * (x0^2 + x1^2 - x1 * x2 + x2^2 - x0 * (x1 + x2) + y0^2 - ... 
+  y0 * y1 + y1^2 - (y0 + y1) * y2 + y2^2 + z0^2 - z0 * z1 + z1^2 - ...
+  (z0 + z1) * z2 + z2^2);
+end
+
+function reg = computeRegTermN3D2(C)
 
 CC = num2cell(C);
 [x0, x1, x2, x3, y0, y1, y2, y3] = CC{:};
@@ -307,4 +338,17 @@ reg = .6 * (3 * x0^2 + 2 * x1^2 + 2 * x2^2 + x1 * (x2 - 2 * x3) - ...
   3 * x2 * x3 + 3 * x3^2 - x0 * (3 * x1 + 2 * x2 + x3) + 3 * y0^2 - ...
   3 * y0 * y1 + 2 * y1^2 - 2 * y0 * y2 + y1 * y2 + 2 * y2^2 - ...
   (y0 + 2 * y1 + 3 * y2) * y3 + 3 * y3^2);
+end
+
+function reg = computeRegTermN3D3(C)
+
+CC = num2cell(C);
+[x0, x1, x2, x3, y0, y1, y2, y3, z0, z1, z2, z3] = CC{:};
+
+reg = .6 * (3 * x0^2 + 2 * x1^2 + 2 * x2^2 + x1 * (x2 - 2 * x3) - ...
+  3 * x2 * x3 + 3 * x3^2 - x0 * (3 * x1 + 2 * x2 + x3) + 3 * y0^2 - ...
+  3 * y0 * y1 + 2 * y1^2 - 2 * y0 * y2 + y1 * y2 + 2 * y2^2 - ...
+  (y0 + 2 * y1 + 3 * y2) * y3 + 3 * y3^2 + 3 * z0^2 - 3 * z0 * z1 + ...
+  2 * z1^2 - 2 * z0 * z2 + z1 * z2 + 2 * z2^2 - (z0 + 2 * z1 + 3 * z2) * ...
+  z3 + 3 * z3^2);
 end
