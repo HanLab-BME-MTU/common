@@ -8,14 +8,9 @@ classdef ImageDisplay < MovieDataDisplay
     end
     methods
         function obj=ImageDisplay(varargin)
-            nVarargin = numel(varargin);
-            if nVarargin > 1 && mod(nVarargin,2)==0
-                for i=1 : 2 : nVarargin-1
-                    obj.(varargin{i}) = varargin{i+1};
-                end
-            end
+            obj@MovieDataDisplay(varargin{:});
         end
-        
+            
         function h=initDraw(obj,data,tag,varargin)
             % Plot the image and associate the tag
             h=imshow(data,varargin{:});
@@ -56,23 +51,20 @@ classdef ImageDisplay < MovieDataDisplay
             set(h,'CData',data)
         end
         
-        function additionalInputParsing(obj,ip)
-            ip.addParamValue('Colormap',obj.Colormap,@ischar);
-            ip.addParamValue('Colorbar',obj.Colorbar,@ischar);
-            ip.addParamValue('CLim',obj.CLim,@(x) isempty(x) ||isvector(x));
-        end
-        
-       function setProperties(obj,ip)
-            obj.Colormap=ip.Results.Colormap;
-            obj.Colorbar=ip.Results.Colorbar;
-            obj.CLim=ip.Results.CLim;
-        end
-        
     end 
-   
  
     methods (Static)
-        function f=dataCheck()
+         function params=getParamValidators()
+            params(1).name='Colormap';
+            params(1).validator=@ischar;
+            params(2).name='Colorbar';
+            params(2).validator=@(x) any(strcmp(x,{'on','off'}));
+            params(3).name='CLim';
+            params(3).validator=@isvector;
+            params(4).name='Units';
+            params(4).validator=@ischar;
+        end
+        function f=getDataValidator()
             f=@isnumeric;
         end
     end    

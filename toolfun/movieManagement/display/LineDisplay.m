@@ -8,13 +8,9 @@ classdef LineDisplay < MovieDataDisplay
         YLabel='';
     end
     methods
+                
         function obj=LineDisplay(varargin)
-            nVarargin = numel(varargin);
-            if nVarargin > 1 && mod(nVarargin,2)==0
-                for i=1 : 2 : nVarargin-1
-                    obj.(varargin{i}) = varargin{i+1};
-                end
-            end
+            obj@MovieDataDisplay(varargin{:})
         end
         function h=initDraw(obj,data,tag,varargin)
             h=plot(data(:,2),data(:,1),varargin{:});
@@ -28,24 +24,22 @@ classdef LineDisplay < MovieDataDisplay
         function updateDraw(obj,h,data)
             set(h,'XData',data(:,2),'YData',data(:,1))
         end
-        function additionalInputParsing(obj,ip)
-            ip.addParamValue('Color',obj.Color,@ischar);
-            ip.addParamValue('Marker',obj.Marker,@ischar);
-            ip.addParamValue('LineStyle',obj.LineStyle,@ischar);  
-            ip.addParamValue('XLabel',obj.XLabel,@ischar); 
-            ip.addParamValue('YLabel',obj.YLabel,@ischar); 
-        end 
-        function setProperties(obj,ip)
-            obj.Color=ip.Results.Color;
-            obj.Marker=ip.Results.Marker;
-            obj.LineStyle=ip.Results.LineStyle;
-            obj.XLabel=ip.Results.XLabel;
-            obj.YLabel=ip.Results.YLabel;
-        end
     end    
     
     methods (Static)
-        function f=dataCheck()
+        function params=getParamValidators()
+            params(1).name='Color';
+            params(1).validator=@ischar;
+            params(2).name='Marker';
+            params(2).validator=@ischar;
+            params(3).name='LineStyle';
+            params(3).validator=@ischar;
+            params(4).name='XLabel';
+            params(4).validator=@ischar;
+            params(5).name='YLabel';
+            params(5).validator=@ischar;
+        end
+        function f=getDataValidator()
             f=@isnumeric;
         end
     end    

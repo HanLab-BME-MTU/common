@@ -11,12 +11,7 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
     end
     methods
         function obj=MeshDisplay(varargin)
-            nVarargin = numel(varargin);
-            if nVarargin > 1 && mod(nVarargin,2)==0
-                for i=1 : 2 : nVarargin-1
-                    obj.(varargin{i}) = varargin{i+1};
-                end
-            end
+            obj@MovieDataDisplay(varargin{:})
         end
         function h=initDraw(obj,data,tag,varargin)
   
@@ -86,22 +81,20 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
                 dline  = repmat(data.bounds(2,:,zdepth,zdepth2),nx,1);
                 set(h(3),'XData',data.X(:,:,zdepth,zdepth2),'ZData',dline);
             end
-
-        end
-        function additionalInputParsing(obj,ip)
-            ip.addParamValue('Color',obj.Color,@ischar);
-            ip.addParamValue('Marker',obj.Marker,@ischar);
-            ip.addParamValue('LineStyle',obj.LineStyle,@ischar);  
-        end 
-        function setProperties(obj,ip)
-            obj.Color=ip.Results.Color;
-            obj.Marker=ip.Results.Marker;
-            obj.LineStyle=ip.Results.LineStyle;
         end
     end    
     
     methods (Static)
-        function f=dataCheck()
+        function params=getParamValidators()
+            params(1).name='Color';
+            params(1).validator=@ischar;
+            params(2).name='Marker';
+            params(2).validator=@ischar;
+            params(3).name='Marker';
+            params(3).validator=@ischar;
+        end
+        
+        function f=getDataValidator()
             f=@isstruct;
         end
     end    

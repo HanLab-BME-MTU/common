@@ -4,23 +4,17 @@ classdef ScalarMapDisplay < MovieDataDisplay
         Colormap='jet';
         Colorbar ='on';
         CLim = [];
-        ScaleLabel='';
+        Units='';
         Labels={'',''};
         depthDim=3;
     end
     properties (SetAccess = protected)
         slider;
     end
-    
-    
+
     methods
         function obj=ScalarMapDisplay(varargin)
-            nVarargin = numel(varargin);
-            if nVarargin > 1 && mod(nVarargin,2)==0
-                for i=1 : 2 : nVarargin-1
-                    obj.(varargin{i}) = varargin{i+1};
-                end
-            end
+            obj@MovieDataDisplay(varargin{:});
         end
         
         function h=initDraw(obj,data,tag,varargin)
@@ -46,9 +40,9 @@ classdef ScalarMapDisplay < MovieDataDisplay
             if strcmp(obj.Colorbar,'on')
                 axis image
                 if isempty(hCbar)
-%                     set(hAxes,'Position',[0.05 0.05 .9 .9]);   
+                    set(hAxes,'Position',[0.05 0.05 .9 .9]);   
                     hCBar = colorbar('peer',hAxes,'FontSize',12);
-                    ylabel(hCBar,obj.ScaleLabel,'FontSize',12);
+                    ylabel(hCBar,obj.Units,'FontSize',12);
                 end
             else
                 if ~isempty(hCbar),colorbar(hCbar,'delete'); end
@@ -99,27 +93,22 @@ classdef ScalarMapDisplay < MovieDataDisplay
             end
             set(h,'CData',data(:,:,depth));
             set(h,'AlphaData',~isnan(data(:,:,depth)));
-            
         end
             
-            
-        function additionalInputParsing(obj,ip)
-            ip.addParamValue('Colormap',obj.Colormap,@ischar);
-            ip.addParamValue('Colorbar',obj.Colorbar,@ischar);
-            ip.addParamValue('CLim',obj.CLim,@(x) isempty(x) ||isvector(x));
-        end
-        
-       function setProperties(obj,ip)
-            obj.Colormap=ip.Results.Colormap;
-            obj.Colorbar=ip.Results.Colorbar;
-            obj.CLim=ip.Results.CLim;
-        end
-        
     end 
-   
- 
     methods (Static)
-        function f=dataCheck()
+        function params=getParamValidators()
+            params(1).name='Colormap';
+            params(1).validator=@ischar;
+            params(2).name='Colorbar';
+            params(2).validator=@(x) any(strcmp(x,{'on','off'}));
+            params(3).name='CLim';
+            params(3).validator=@isvector;
+            params(4).name='Units';
+            params(4).validator=@ischar;
+        end
+
+        function f=getDataValidator()
             f=@isnumeric;
         end
     end    

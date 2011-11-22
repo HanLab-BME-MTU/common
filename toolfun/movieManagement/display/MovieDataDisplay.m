@@ -4,19 +4,34 @@ classdef MovieDataDisplay < handle
     % Sebastien Besson, July 2011
     
     methods
+        function obj=MovieDataDisplay(varargin)
+            nVarargin = numel(varargin);
+            if nVarargin > 1 && mod(nVarargin,2)==0
+                for i=1 : 2 : nVarargin-1
+                    obj.(varargin{i}) = varargin{i+1};
+                end
+            end
+        end
+        
         function h=draw(obj,data,tag,varargin)
             % Template method to draw a movie data component
             
             % Check input
+            
             ip =inputParser;
             ip.addRequired('obj',@(x) isa(x,'MovieDataDisplay'));
-            ip.addRequired('data',obj.dataCheck());
+            ip.addRequired('data',obj.getDataValidator());
             ip.addRequired('tag',@ischar);
             ip.addParamValue('hAxes',gca,@ishandle);
-            obj.additionalInputParsing(ip);
+            params = obj.getParamValidators;
+            for i=1:numel(params)
+                ip.addParamValue(params(i).name,obj.(params(i).name),params(i).validator);
+            end
             ip.KeepUnmatched = true; % Allow unmatched arguments
             ip.parse(obj,data,tag,varargin{:});
-            obj.setProperties(ip);
+            for i=1:numel(params)
+                obj.(params(i).name)=ip.Results.(params(i).name);
+            end
             
             % Retrieve the axes handle and call the create figure method 
             hAxes = ip.Results.hAxes;
@@ -32,12 +47,11 @@ classdef MovieDataDisplay < handle
         end
     end
     methods(Abstract)
-        setProperties(obj,ip)
-        additionalInputParsing(obj,ip)
         initDraw(obj,data,tag,varargin)
         updateDraw(obj,h,data,varargin)
     end
     methods (Static,Abstract)
-        dataCheck()
+        getDataValidator()
+        getParamValidators()
     end           
 end

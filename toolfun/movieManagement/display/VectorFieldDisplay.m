@@ -8,13 +8,9 @@ classdef VectorFieldDisplay < MovieDataDisplay
     end
     methods
         function obj=VectorFieldDisplay(varargin)
-            nVarargin = numel(varargin);
-            if nVarargin > 1 && mod(nVarargin,2)==0
-                for i=1 : 2 : nVarargin-1
-                    obj.(varargin{i}) = varargin{i+1};
-                end
-            end
+            obj@MovieDataDisplay(varargin{:});
         end
+        
         function h=initDraw(obj,data,tag,varargin)
             if isempty(obj.vectorScale),autoscale='on'; else autoscale='off'; end
   
@@ -42,27 +38,27 @@ classdef VectorFieldDisplay < MovieDataDisplay
                
             set(h,'Tag',tag);
         end
-        function setProperties(obj,ip)
-            obj.Color=ip.Results.Color;
-            obj.vectorScale=ip.Results.vectorScale;
-            obj.Colormap=ip.Results.Colormap;
-%             obj.CLim= ip.Results.CLim;
-        end
+
         function updateDraw(obj,h,data)
             tag=get(h(1),'Tag');
             delete(h);
             obj.initDraw(data,tag);
         end
-        function additionalInputParsing(obj,ip)
-            ip.addParamValue('Color',obj.Color,@(x)ischar(x) ||isvector(x));
-            ip.addParamValue('vectorScale',obj.vectorScale,@isscalar); 
-            ip.addParamValue('Colormap',obj.Colormap,@(x) isempty(x) || isnumeric(x));
-%             ip.addParamValue('CLim',obj.CLim,@(x) isempty(x) || isnumeric(x));
-        end 
     end    
     
     methods (Static)
-        function f=dataCheck()
+         function params=getParamValidators()
+            params(1).name='Color';
+            params(1).validator=@(x)ischar(x) ||isvector(x);
+            params(2).name='vectorScale';
+            params(2).validator=@isscalar;
+            params(3).name='Colormap';
+            params(3).validator=@(x) ischar(x) || isnumeric(x);
+            params(4).name='CLim';
+            params(4).validator=@isvector;
+        end
+
+        function f=getDataValidator()
             f=@isnumeric;
         end
     end    

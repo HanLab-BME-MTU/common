@@ -68,22 +68,21 @@ classdef TracksDisplay < MovieDataDisplay
             end
             set(ht,'Tag',tag); 
         end
-        function setProperties(obj,ip)
-            obj.Color=ip.Results.Color;
-            obj.Linestyle=ip.Results.Linestyle;
-            obj.dragtailLength=ip.Results.dragtailLength;
-            obj.showLabel=ip.Results.showLabel;
-        end
-        function additionalInputParsing(obj,ip)
-            ip.addParamValue('Color',obj.Color,@(x)ischar(x) ||isvector(x));
-            ip.addParamValue('Linestyle',obj.Linestyle,@ischar);
-            ip.addParamValue('dragtailLength',obj.dragtailLength,@isscalar);
-            ip.addParamValue('showLabel',obj.showLabel,@isscalar);
-        end 
     end    
     
     methods (Static)
-        function f=dataCheck()
+        function params=getParamValidators()
+            params(1).name='Color';
+            params(1).validator=@(x)ischar(x) ||isvector(x);
+            params(2).name='Linestyle';
+            params(2).validator=@ischar;
+            params(3).name='dragtailLength';
+            params(3).validator=@isscalar;
+            params(4).name='showLabel';
+            params(4).validator=@isscalar;
+        end
+
+        function f=getDataValidator() 
             f=@isstruct;
         end
     end    

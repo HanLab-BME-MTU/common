@@ -3,12 +3,7 @@ classdef FigFileDisplay < MovieDataDisplay
     
     methods
         function obj=FigFileDisplay(varargin)
-            nVarargin = numel(varargin);
-            if nVarargin > 1 && mod(nVarargin,2)==0
-                for i=1 : 2 : nVarargin-1
-                    obj.(varargin{i}) = varargin{i+1};
-                end
-            end
+            obj@MovieDataDisplay(varargin{:})
         end
         
         function h=initDraw(obj,data,tag,varargin)
@@ -22,21 +17,14 @@ classdef FigFileDisplay < MovieDataDisplay
         function updateDraw(obj,h,data)
             h2= hgload(data, struct('visible','off'));
             copyobj(get(h2,'Children'),h);
-            
-        end
-        
-        function additionalInputParsing(obj,ip)
-        end
-        
-        function setProperties(obj,ip)
-            
-        end
-        
+        end  
     end 
-   
- 
+
     methods (Static)
-        function f=dataCheck()
+        function params=getParamValidators()
+            params=[];
+        end
+        function f=getDataValidator()
             f=@ischar;
         end
     end    

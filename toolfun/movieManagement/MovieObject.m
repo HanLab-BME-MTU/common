@@ -78,10 +78,12 @@ classdef  MovieObject < hgsetget
             end
             
             % Unassociate process in corresponding packages
-            [packageID procID] = obj.processes_{pid}.getPackage;
-            if ~isempty(packageID)
-                for i=1:numel(packageID)
-                    obj.packages_{packageID(i)}.setProcess(procID(i),[]);
+            if ~isempty(obj.processes_{pid})
+                [packageID procID] = obj.processes_{pid}.getPackage;
+                if ~isempty(packageID)
+                    for i=1:numel(packageID)
+                        obj.packages_{packageID(i)}.setProcess(procID(i),[]);
+                    end
                 end
             end
             
