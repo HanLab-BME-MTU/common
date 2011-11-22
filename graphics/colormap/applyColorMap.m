@@ -148,8 +148,14 @@ end
 img3C(:,:,1)=img; img3C(:,:,2)=img; img3C(:,:,3)=img;
 
 % Apply color
-for k=1:length(y)
-    img3C(y(k),x(k),1)=img3C(y(k),x(k),1)*cmap(pixClasses(y(k),x(k)),1);
-    img3C(y(k),x(k),2)=img3C(y(k),x(k),2)*cmap(pixClasses(y(k),x(k)),2);
-    img3C(y(k),x(k),3)=img3C(y(k),x(k),3)*cmap(pixClasses(y(k),x(k)),3);
+ind = sub2ind(size(img),y,x);
+for i=1:3
+    index= ind+(i-1)*numel(img);
+    img3C(index)=img3C(index).*cmap(pixClasses(ind),i);
 end
+
+% for k=1:length(y)
+%     img3C(y(k),x(k),1)=img3C(y(k),x(k),1)*cmap(pixClasses(y(k),x(k)),1);
+%     img3C(y(k),x(k),2)=img3C(y(k),x(k),2)*cmap(pixClasses(y(k),x(k)),2);
+%     img3C(y(k),x(k),3)=img3C(y(k),x(k),3)*cmap(pixClasses(y(k),x(k)),3);
+% end
