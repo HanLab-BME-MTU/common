@@ -92,7 +92,8 @@ ub(d * (n+1) + 1:end) = 1;
 maxDist2 = maxDist^2;
 
 %% Optimization
-[X,~,~,~,lambda] = fmincon(@fun,X,[],[],[],[],lb,ub,@fcon,opts);
+% [X,~,~,~,lambda] = fmincon(@fun,X,[],[],[],[],lb,ub,@fcon,opts);
+[X,~,~,~,lambda] = fmincon(@fun,X,[],[],[],[],lb,ub,[],opts);
 
 % Compute the residual
 T = [0; X(d * (n + 1) + 1:end); 1];
