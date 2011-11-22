@@ -40,7 +40,7 @@ classdef ScalarMapDisplay < MovieDataDisplay
             if strcmp(obj.Colorbar,'on')
                 axis image
                 if isempty(hCbar)
-                    set(hAxes,'Position',[0.05 0.05 .9 .9]);   
+%                     set(hAxes,'Position',[0.05 0.05 .9 .9]);   
                     hCBar = colorbar('peer',hAxes,'FontSize',12);
                     ylabel(hCBar,obj.Units,'FontSize',12);
                 end
@@ -92,7 +92,7 @@ classdef ScalarMapDisplay < MovieDataDisplay
                 depth=1;
             end
             set(h,'CData',data(:,:,depth));
-            set(h,'AlphaData',~isnan(data(:,:,depth)));
+%             set(h,'AlphaData',~isnan(data(:,:,depth)));
         end
             
     end 

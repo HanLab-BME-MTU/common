@@ -39,7 +39,7 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
             ip=inputParser;
             ip.addRequired('obj');
             ip.addRequired('i',@isscalar);
-            ip.addParamValue('output',outputList{1},@(x) all(ismember(x,outputList)));
+            ip.addParamValue('output',outputList,@(x) all(ismember(x,outputList)));
             ip.parse(obj,i,varargin{:});
             output=ip.Results.output;
             if ischar(output), output={output}; end
@@ -53,6 +53,10 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
                 end
             end
         end
+        
+        function status = checkChannelOutput(obj,i)
+            status = cellfun(@(x)exist(x,'file'),obj.outFilePaths_(1,i));
+        end  
 %         
 %         
 %         function output = getDrawableOutput(obj)

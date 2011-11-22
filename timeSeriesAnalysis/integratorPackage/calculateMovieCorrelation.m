@@ -73,15 +73,22 @@ input = corrProc.getInput;
 nInput=numel(input);
 
 % Test the presence and output validity of the speckle detection process
-iSignalPreProc =movieObject.getProcessIndex('SignalPreprocessingProcess',1,1);     
-if isempty(iSignalPreProc)
+iSignalPreproc =movieObject.getProcessIndex('SignalPreprocessingProcess',1,1);     
+if isempty(iSignalPreproc)
     error([SignalPreprocessingProcess.getName ' has not yet been performed'...
     'on this movie! Please run first!!']);
 end        
 
 % %Check that there is a valid output
-signalPreProc = movieObject.processes_{iSignalPreProc};
-if ~signalPreProc.checkChannelOutput(1:nInput)
+signalPreproc = movieObject.processes_{iSignalPreproc};
+preprocInput =signalPreproc.getInput;
+preprocIndex=zeros(nInput,1);
+for i=1:nInput
+    index = find(arrayfun(@(x) isequal(input(i),x),preprocInput));
+    assert(isscalar(index))
+    preprocIndex(i) = index;
+end
+if ~signalPreproc.checkChannelOutput(preprocIndex)
     error(['Each time series must have been preprocessesd !' ...
         'Please apply pre-processing to all time series before '...
         'running correlation calculatino!'])
@@ -92,8 +99,8 @@ inFilePaths = cell(nInput,1);
 data = cell(nInput,1);
 range = cell(nInput,1);
 for iInput=1:nInput
-    inFilePaths{1,iInput} = signalPreProc.outFilePaths_{1,iInput};
-    [data{iInput},range{iInput}] = signalPreProc.loadChannelOutput(iInput);
+    inFilePaths{1,iInput} = signalPreproc.outFilePaths_{1,preprocIndex(iInput)};
+    [data{iInput},range{iInput}] = signalPreproc.loadChannelOutput(preprocIndex(iInput));
 end
 corrProc.setInFilePaths(inFilePaths)
 
@@ -116,7 +123,11 @@ disp('Starting calculating correlation...')
 %At least 50 points are needed to calculate the ACF
 %Number of lags <= N/4;
 %Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
-nLagsMax =round(nPoints/4);
+minP     = 50;
+
+nLagsMax =round(movieObject.nFrames_/4);
+nBands =cellfun(@numel,data);
+nSlices = numel(data{1}{1});
 
 logMsg = @(i) ['Please wait, calculating ' input(i).name ' autocorrelation'];
 timeMsg = @(t) ['\nEstimated time remaining: ' num2str(round(t)) 's'];
@@ -132,15 +143,14 @@ for iInput=1:nInput
     bounds = nan(2,nSlices,nBands(iInput));
     if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
     
-    for iBand=find(~cellfun(@isempty,data{iInput}))
-        
-        for iSlice=find(validSlices)'
+    for iBand=find(~cellfun(@isempty,data{iInput}))'
+        for iSlice=find(~cellfun(@isempty,data{iInput}{iBand}))'
             nLags = round(length(data{iInput}{iBand}{iSlice})/4);
             [corrFun(1:nLags+1,iSlice,iBand),lags(1:nLags+1,iSlice,iBand),...
                 bounds(:,iSlice,iBand)] = autocorr(data{iInput}{iBand}{iSlice},nLags);
 %             end
         end
-        if ishandle(wtBar), waitbar(iBand/nBands(iInput),wtBar,logMsg(iInput)); end
+        if ishandle(wtBar), waitbar(iBand/nBands(iInput),wtBar); end
     end
     lags =lags*movieObject.timeInterval_; %#ok<NASGU>
     save(outFilePaths{iInput,iInput},'corrFun','bounds','lags');  
@@ -174,6 +184,7 @@ for iInput1=1:nInput
                     end
                 end
             end
+            if ishandle(wtBar), waitbar(iBand1/nBands(iInput1),wtBar); end
         end
         lags=lags*movieObject.timeInterval_; %#ok<NASGU>
         save(outFilePaths{iInput1,iInput2},'corrFun','bounds','lags');

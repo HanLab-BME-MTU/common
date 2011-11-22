@@ -1,8 +1,8 @@
 function mainFig = movieDataViewer(varargin)
 
 ip = inputParser;
-ip.addRequired('MD',@(x) isa(x,'MovieData'));
-ip.addOptional('procId',0,@isnumeric);
+ip.addRequired('MO',@(x) isa(x,'MovieObject'));
+ip.addOptional('procId',[],@isnumeric);
 ip.parse(varargin{:});
 
 % Chek
@@ -13,7 +13,14 @@ mainFig=figure('Name','Viewer','Position',[0 0 200 200],...
     'Color',get(0,'defaultUicontrolBackgroundColor'),'Resize','off',...
     'DeleteFcn', @(h,event) deleteViewer());
 userData=get(mainFig,'UserData');
-userData.MD=ip.Results.MD;
+if isa(ip.Results.MO,'MovieList')
+    userData.ML=ip.Results.MO;
+    userData.MD=ip.Results.MO.movies_{1};
+    procId = userData.MD.getProcessIndex(class(userData.ML.processes_{ip.Results.procId}));
+else
+    userData.MD=ip.Results.MO;
+    procId=ip.Results.procId;
+end
 
 % Classify movieData processes by type (image, overlay, movie overlay or
 % graph)
@@ -426,7 +433,7 @@ set(handles.figure1,'UserData',userData);
 
 %% Set up default parameters
 % Auto check input process
-for i=intersect(ip.Results.procId,validProcId)
+for i=intersect(procId,validProcId)
     h=findobj(mainFig,'-regexp','Tag',['(\w)_process' num2str(i)  '_output1.*']);
     set(h,'Value',1);
 end

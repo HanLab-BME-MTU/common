@@ -77,7 +77,9 @@ set(handles.listbox_selectedProcesses,'String',procString);
 
 set(handles.edit_BandMin,'String',funParams.BandMin);
 set(handles.edit_BandMax,'String',funParams.BandMax);
+userData.SliceIndex=funParams.SliceIndex;
 userData.previewFig=-1;
+
 % Choose default command line output for correlationCalculationProcessGUI
 handles.output = hObject;
 
@@ -202,11 +204,15 @@ input = corrProc.getInput;
 nInput = numel(input);
 
 alphamask = .2*ones(397,120);
-alphamask(userData.crtProc.funParams_.SliceIndex{movieID},:)=1;
+alphamask(userData.SliceIndex{movieID},:)=1;
 hAxes = -ones(nInput,1);
 h = -ones(nInput,1);
+userData2.mainFig=handles.figure1;
+userData2.alphamask = alphamask;
+userData2.crtAxes=[];
 for i=1:nInput;
-    hAxes(i) = axes('Position',[(i-1)/nInput 0.1 1/nInput .8]);
+    hAxes(i) = axes('Position',[(i-1)/nInput 0.1 1/nInput .8],'HitTest','on',...
+        'ButtonDownFcn',@(h,event)editSliceIndex(h,event,guidata(h)));
     axesArgs={'hAxes',hAxes(i)};
     procID=input(i).processIndex;
     if ~isempty(input(i).channelIndex)
@@ -217,17 +223,69 @@ for i=1:nInput;
     h(i) = userData.MD.movies_{movieID}.processes_{procID}.draw(chanArgs{:},axesArgs{:});
     hCbar = findobj(userData.previewFig,'Tag','Colorbar');
     delete(hCbar);    
-    
-    set(h(i),'AlphaData',alphamask,'AlphaDataMapping','none',...
-        'ButtonDownFcn',@(h,event)editSlices(h,event,guidata(hObject)));
- 
+    set(h(i),'HitTest','off','AlphaData',alphamask,'AlphaDataMapping','none');
 end
-set(userData.previewFig,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
+
+set(userData.previewFig,'UserData',userData2,....
+    'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 set(handles.figure1, 'UserData', userData);
 
-function editSlices(hObject)
-set(hObject,'Value',0);   
 
+function editSliceIndex(src,eventdata,handles)
+
+
+point = get(src,'CurrentPoint');
+windowIndex=ceil(point(1,2));
+
+f =  get(src,'Parent');
+userData = get(f,'UserData');
+userData.crtAxes=src;
+userData.windowStart=windowIndex;
+if any(userData.alphamask(windowIndex,:))
+    userData.alphavalue=0;
+else
+    userData.alphavalue=1;
+end
+% userData.alphamask(windowIndex,:)=.2;
+h=findobj(f,'Type','Image');
+set(h,'AlphaData',userData.alphamask);
+set(f,'UserData',userData,'WindowButtonMotionFcn',@moveSliceIndex,...
+    'WindowButtonUpFcn',@releaseSliceIndex);
+% some operations
+% 
+% % Update handles structure
+% guidata(src,handles);
+% set(hObject,'Value',0);   
+
+function moveSliceIndex(src,event)
+
+userData = get(src,'UserData');
+point = get(userData.crtAxes,'CurrentPoint');
+windowIndex=ceil(point(1,2));
+if windowIndex>=userData.windowStart
+    windowRange=userData.windowStart:windowIndex;
+else
+    windowRange=windowIndex:userData.windowStart;
+end
+userData.alphamask(windowRange,:)=userData.alphavalue;
+h=findobj(src,'Type','Image');
+set(h,'AlphaData',userData.alphamask);
+% set(src,'UserData',userData);
+
+function releaseSliceIndex(src,event)
+userData = get(src,'UserData');
+point = get(userData.crtAxes,'CurrentPoint');
+windowIndex=ceil(point(1,2));
+if windowIndex>=userData.windowStart
+    windowRange=userData.windowStart:windowIndex;
+else
+    windowRange=windowIndex:userData.windowStart;
+end
+userData.alphamask(windowRange,:)=userData.alphavalue;
+h=findobj(src,'Type','Image');
+set(h,'AlphaData',userData.alphamask);
+set(src,'UserData',userData);
+set(src,'WindowButtonMotionFcn',[],'WindowButtonUpFcn',[]);
  
 function closeGraphFigure(hObject)
 set(hObject,'Value',0);   
