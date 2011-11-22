@@ -4,31 +4,26 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
         Marker = 'none';
         LineStyle = '-';
         LineWidth = 2;
-        Color='r';   
+        Color='r';
         Input1 ='';
         Input2 ='';
     end
     methods
         function obj=MeshDisplay(varargin)
-            nVarargin = numel(varargin);
-            if nVarargin > 1 && mod(nVarargin,2)==0
-                for i=1 : 2 : nVarargin-1
-                    obj.(varargin{i}) = varargin{i+1};
-                end
-            end
+            obj@MovieDataDisplay(varargin{:});
         end
         function h=initDraw(obj,data,tag,varargin)
             
             % define small and large fonts
             sfont = {'FontName', 'Helvetica', 'FontSize', 18};
             lfont = {'FontName', 'Helvetica', 'FontSize', 22};
-
+            
             nx = size(data.avgCorrFun,1);
             h(1)=plot(data.lags,data.avgCorrFun,'Line',obj.LineStyle,...
                 'LineWidth',obj.LineWidth);
             hold on
             h(2)=errorbar(data.lags,data.avgCorrFun,data.steCorrFun,'LineWidth', 2);
-
+            
             xLim=[min(data.lags) max(data.lags)];
             yLim =[min(data.avgCorrFun-data.steCorrFun) max(data.avgCorrFun+data.steCorrFun)];
             xlabel('Lag (s)',lfont{:})
@@ -39,7 +34,7 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
                 
                 upline  = repmat(data.avgBounds(1,:),nx,1);
                 h(3)=plot(data.lags,upline,'Linewidth',2,'Color','r');
-                 
+                
                 dline  = repmat(data.avgBounds(2,:),nx,1);
                 h(4)=plot(data.lags,dline,'Linewidth',2,'Color','r');
             end
@@ -64,25 +59,25 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
             cla
             obj.initDraw(data,tag);
         end
-        function additionalInputParsing(obj,ip)
-            ip.addParamValue('Color',obj.Color,@ischar);
-            ip.addParamValue('Marker',obj.Marker,@ischar);
-            ip.addParamValue('LineStyle',obj.LineStyle,@ischar);  
-            ip.addParamValue('Input1',obj.Input1,@ischar);  
-            ip.addParamValue('Input2',obj.Input2,@ischar);  
-        end 
-        function setProperties(obj,ip)
-            obj.Color=ip.Results.Color;
-            obj.Marker=ip.Results.Marker;
-            obj.LineStyle=ip.Results.LineStyle;
-            obj.Input1=ip.Results.Input1;
-            obj.Input2=ip.Results.Input2;
-        end
-    end    
+        
+    end
     
     methods (Static)
-        function f=dataCheck()
+        function params=getParamValidators()
+            params(1).name='Color';
+            params(1).validator=@ischar;
+            params(2).name='Marker';
+            params(2).validator=@ischar;
+            params(3).name='LineStyle';
+            params(3).validator=@ischar;
+            params(4).name='Input1';
+            params(4).validator=@ischar;
+            params(5).name='Input2';
+            params(5).validator=@ischar;
+        end
+        
+        function f=getDataValidator()
             f=@isstruct;
         end
-    end    
+    end
 end

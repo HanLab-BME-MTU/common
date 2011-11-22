@@ -10,7 +10,7 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
         slider2;
     end
     methods
-        function obj=MeshDisplay(varargin)
+        function obj=CorrelationMeshDisplay(varargin)
             obj@MovieDataDisplay(varargin{:})
         end
         function h=initDraw(obj,data,tag,varargin)
@@ -21,9 +21,9 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
             if ~isfield(data,'Y'), data.Y= repmat(1:ny,nx,1); end
             h(1)=mesh(data.X(:,:,1,1),data.Y,data.Z(:,:,1,1),'FaceColor','interp');
            
-            xlabel('Lag (s)')
-            ylabel('Window number')
-            zlabel('Correlation')
+            xlabel('Lag (s)');
+            ylabel('Window number');
+            zlabel('Correlation');
             
             if ~isempty(data.bounds)
                 hold on
@@ -90,7 +90,7 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
             params(1).validator=@ischar;
             params(2).name='Marker';
             params(2).validator=@ischar;
-            params(3).name='Marker';
+            params(3).name='LineStyle';
             params(3).validator=@ischar;
         end
         
