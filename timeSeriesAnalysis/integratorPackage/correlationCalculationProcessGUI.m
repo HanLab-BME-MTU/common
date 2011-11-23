@@ -251,17 +251,15 @@ h=findobj(f,'Type','Image');
 set(h,'AlphaData',userData.alphamask);
 set(f,'UserData',userData,'WindowButtonMotionFcn',@moveSliceIndex,...
     'WindowButtonUpFcn',@releaseSliceIndex);
-% some operations
-% 
-% % Update handles structure
-% guidata(src,handles);
-% set(hObject,'Value',0);   
+   
 
 function moveSliceIndex(src,event)
 
 userData = get(src,'UserData');
 point = get(userData.crtAxes,'CurrentPoint');
 windowIndex=ceil(point(1,2));
+yLim=ceil(get(userData.crtAxes','YLim'));
+windowIndex=max(min(yLim(2),windowIndex),yLim(1));
 if windowIndex>=userData.windowStart
     windowRange=userData.windowStart:windowIndex;
 else
@@ -276,6 +274,8 @@ function releaseSliceIndex(src,event)
 userData = get(src,'UserData');
 point = get(userData.crtAxes,'CurrentPoint');
 windowIndex=ceil(point(1,2));
+yLim=ceil(get(userData.crtAxes','YLim'));
+windowIndex=max(min(yLim(2),windowIndex),yLim(1));
 if windowIndex>=userData.windowStart
     windowRange=userData.windowStart:windowIndex;
 else
