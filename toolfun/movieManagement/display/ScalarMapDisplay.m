@@ -2,6 +2,7 @@ classdef ScalarMapDisplay < MovieDataDisplay
     %Abstract class for displaying image processing output
     properties
         Colormap='jet';
+        NaNColor = [1 1 1];
         Colorbar ='on';
         CLim = [];
         Units='';
@@ -18,11 +19,13 @@ classdef ScalarMapDisplay < MovieDataDisplay
         end
         
         function h=initDraw(obj,data,tag,varargin)
+            % Create extended cmap (for NaNs)
+            cmap = [obj.NaNColor;colormap(obj.Colormap)];
+            imData= data(:,:,1);
+            imData(isnan(imData)) = 0;
+            h=imagesc(imData,varargin{:});
             
-            h=imagesc(data(:,:,1),varargin{:});
-            set(h,'AlphaData',~isnan(data(:,:,1)))
             % Plot the image and associate the tag
-
             set(h,'Tag',tag,'UserData',data);
             
             % Clean existing image and set image at the bottom of the stack
@@ -33,14 +36,14 @@ classdef ScalarMapDisplay < MovieDataDisplay
             uistack(h,'bottom');
             
             % Set the colormap
-            colormap(hAxes,obj.Colormap);
+            colormap(hAxes,cmap);
             
             % Set the colorbar
             hCbar = findobj(get(hAxes,'Parent'),'Tag','Colorbar');
             if strcmp(obj.Colorbar,'on')
                 axis image
                 if isempty(hCbar)
-%                     set(hAxes,'Position',[0.05 0.05 .9 .9]);   
+                    %  set(hAxes,'Position',[0.05 0.05 .9 .9]);
                     hCBar = colorbar('peer',hAxes,'FontSize',12);
                     ylabel(hCBar,obj.Units,'FontSize',12);
                 end
@@ -77,7 +80,7 @@ classdef ScalarMapDisplay < MovieDataDisplay
 %                     axesPos(4)],...
                 
                 if ~isempty(obj.Labels{2}),
-                    hp = uicontrol(mainFig, 'Style','text', 'Units','normalized',...
+                    uicontrol(mainFig, 'Style','text', 'Units','normalized',...
                     'Position',[axesPos(1) 1-.03 axesPos(3) .03],...
                     'String',obj.Labels{2},...
                     'BackgroundColor',get(gcf,'Color')); 
@@ -91,8 +94,11 @@ classdef ScalarMapDisplay < MovieDataDisplay
             else
                 depth=1;
             end
-            set(h,'CData',data(:,:,depth));
-%             set(h,'AlphaData',~isnan(data(:,:,depth)));
+            
+            imData= data(:,:,depth);
+            imData(isnan(imData)) = 0;
+
+            set(h,'CData',imData);      
         end
             
     end 
@@ -106,6 +112,8 @@ classdef ScalarMapDisplay < MovieDataDisplay
             params(3).validator=@isvector;
             params(4).name='Units';
             params(4).validator=@ischar;
+            params(5).name='NaNColor';
+            params(5).validator=@(x) isequal(size(x),[1 3]);
         end
 
         function f=getDataValidator()

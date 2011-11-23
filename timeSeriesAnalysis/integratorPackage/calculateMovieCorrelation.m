@@ -43,7 +43,7 @@ p = parseProcessParams(corrProc,paramsIn);
 if isa(movieObject,'MovieList')
     movieParams.ProcessName=p.ProcessName;
     for i =1:numel(p.MovieIndex);
-        movieData = movieObject.movies_{i};
+        movieData = movieObject.movies_{p.MovieIndex(i)};
         iProc = movieData.getProcessIndex('CorrelationCalculationProcess',1,0);
         if isempty(iProc)
             iProc = numel(movieData.processes_)+1;

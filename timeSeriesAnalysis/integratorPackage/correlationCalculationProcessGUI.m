@@ -112,6 +112,8 @@ if isfield(userData, 'helpFig') && ishandle(userData.helpFig)
    delete(userData.helpFig) 
 end
 
+if ishandle(userData.previewFig), delete(userData.helpFig); end
+
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 
@@ -190,8 +192,11 @@ set(listbox_selected, 'String', selectedProps{1},'UserData',selectedProps{2},...
 function checkbox_selectSlices_Callback(hObject, eventdata, handles)
 
 userData=get(handles.figure1,'UserData');
-if ishandle(userData.previewFig), delete(userData.previewFig); end
-if ~get(hObject,'Value'), return; end
+
+if ~get(hObject,'Value'), 
+    if ishandle(userData.previewFig), delete(userData.previewFig); end
+    return; 
+end
 
 movieProps = get(handles.listbox_selectedMovies,{'UserData','Value'});
 movieID=movieProps{1}(movieProps{2});
@@ -203,13 +208,13 @@ parseProcessParams(corrProc,p);
 input = corrProc.getInput;
 nInput = numel(input);
 
-alphamask = .2*ones(397,120);
+alphamask = zeros(397,120);
 alphamask(userData.SliceIndex{movieID},:)=1;
 hAxes = -ones(nInput,1);
 h = -ones(nInput,1);
-userData2.mainFig=handles.figure1;
-userData2.alphamask = alphamask;
-userData2.crtAxes=[];
+userData_fig.mainFig=handles.figure1;
+userData_fig.alphamask = alphamask;
+userData_fig.crtAxes=[];
 for i=1:nInput;
     hAxes(i) = axes('Position',[(i-1)/nInput 0.1 1/nInput .8],'HitTest','on',...
         'ButtonDownFcn',@(h,event)editSliceIndex(h,event,guidata(h)));
@@ -225,9 +230,10 @@ for i=1:nInput;
     delete(hCbar);    
     set(h(i),'HitTest','off','AlphaData',alphamask,'AlphaDataMapping','none');
 end
+linkaxes(hAxes);
 
-set(userData.previewFig,'UserData',userData2,....
-    'DeleteFcn',@(h,event)closeGraphFigure(hObject));
+set(userData.previewFig,'UserData',userData_fig,....
+    'DeleteFcn',@(h,event)closeGraphFigure(h,event));
 set(handles.figure1, 'UserData', userData);
 
 
@@ -287,8 +293,20 @@ set(h,'AlphaData',userData.alphamask);
 set(src,'UserData',userData);
 set(src,'WindowButtonMotionFcn',[],'WindowButtonUpFcn',[]);
  
-function closeGraphFigure(hObject)
-set(hObject,'Value',0);   
+function closeGraphFigure(src,event)
+userData = get(src,'UserData');
+userData_main =get(userData.mainFig,'UserData');
+handles_main = guidata(userData.mainFig);
+
+
+movieProps = get(handles_main.listbox_selectedMovies,{'UserData','Value'});
+movieID=movieProps{1}(movieProps{2});
+
+userData_main.SliceIndex{movieID}=find(sum(userData.alphamask,2))';
+
+
+set(userData.mainFig,'UserData',userData_main);
+set(handles_main.checkbox_selectSlices,'Value',0);   
 
 
 % --- Executes on button press in pushbutton_done.
