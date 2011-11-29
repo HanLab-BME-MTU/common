@@ -53,7 +53,7 @@ classdef RectangleDisplay < MovieDataDisplay
             params(4).name='Curvature';
             params(4).validator=@isvector;
         end
-        function f=dataValidator()
+        function f=getDataValidator()
             f=@(x) isempty(x) || size(x,2)==4 ;
         end
     end    
