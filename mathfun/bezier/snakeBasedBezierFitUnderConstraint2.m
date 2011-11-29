@@ -1,4 +1,4 @@
-function [C,T,res,lambda] = snakeBasedBezierFitUnderConstraint2(data,n,beta,maxDist,varargin)
+function [C,T,res,SigmaC,lambda] = snakeBasedBezierFitUnderConstraint2(data,n,beta,varargin)
 % snakeBasedBezierFit computes the optimal n^th Bezier curves that fits
 % the data points using a constrainted snake-based functional.
 %
@@ -6,9 +6,11 @@ function [C,T,res,lambda] = snakeBasedBezierFitUnderConstraint2(data,n,beta,maxD
 % data           A m x d array representing a set of d-dimensional points
 % n              Degree of the Bezier curve.
 % beta           Regularization weight parameter.
-% maxDist        Maximum distance between first data point and extremities
 %
 % Optional Inputs:
+% SigmaX         A d x d matrix which represents the variance-covariance
+%                matrix of the localization precision of the data. Right
+%                now, only the diagonal of the matrix is used.
 % MaxFunEvals    Maximum number of fonctional evaluations during lsqnonlin.
 % MaxIter        Maximum number of interations during lsqnonlin.
 % Display        Verbose mode during lsqnonlin.
@@ -19,7 +21,9 @@ function [C,T,res,lambda] = snakeBasedBezierFitUnderConstraint2(data,n,beta,maxD
 %
 % C:         Control points of the optimal Bezier curve. a (n+1)xd matrix
 % T:         a mx1 vector
-% res:       a mx1 residual vector
+% res:       a mxd residual vector.
+% SigmaC:    a d x d matrix representing the variance-covariance matrix of
+%            the distance of the data to the curve.
 % lambda     a structure lambda whose fields contain the Lagrange
 %            multipliers at the solution [C;T]
 %
@@ -32,6 +36,7 @@ ip.addRequired('data', @(data) isnumeric(data) && size(data,2) > 1);
 ip.addRequired('n', @(n) n > 0);
 ip.addRequired('beta', @(beta) beta >= 0);
 ip.addRequired('maxDist', @(maxDist) maxDist >= 0);
+ip.addParamValue('SigmaX', eye(size(data,2)), @isnumeric);
 ip.addParamValue('Algorithm', 'interior-point', @isstr);
 ip.addParamValue('MaxFunEvals', 1e4, @isscalar);
 ip.addParamValue('MaxIter', 1e4, @isscalar);
@@ -39,7 +44,8 @@ ip.addParamValue('Display', 'off', @isstr);
 ip.addParamValue('TolX', 1e-8, @isscalar);
 ip.addParamValue('TolFun', 1e-8, @isscalar);
 
-ip.parse(data, n, beta, maxDist, varargin{:});
+ip.parse(data, n, beta, varargin{:});
+SigmaX = ip.Results.SigmaX;
 algorithm = ip.Results.Algorithm;
 maxFunEvals = ip.Results.MaxFunEvals;
 maxIter = ip.Results.MaxIter;
@@ -67,7 +73,8 @@ regFuncs = {@computeRegTermN1D2, @computeRegTermN2D2, @computeRegTermN3D2;...
 %% Compute an initial solution
 [m d] = size(data);
 
-beta = beta / m;
+% Weight beta
+beta = beta * m * sqrt(det(SigmaX));
 
 % dimension of the problem is equal to
 % - number of control point coordinates: d * (n+1)
@@ -91,8 +98,6 @@ ub = +inf(size(X));
 lb(d * (n+1) + 1:end) = 0;
 ub(d * (n+1) + 1:end) = 1;
 
-maxDist2 = maxDist^2;
-
 %% Optimization
 % [X,~,~,~,lambda] = fmincon(@fun,X,[],[],[],[],lb,ub,@fcon,opts);
 [X,~,~,~,lambda] = fmincon(@fun,X,[],[],[],[],lb,ub,[],opts);
@@ -100,7 +105,8 @@ maxDist2 = maxDist^2;
 % Compute the residual
 T = [0; X(d * (n + 1) + 1:end); 1];
 B = (bsxfun(@power, T, 0:n) .* bsxfun(@power, 1 - T, n:-1:0)) * Cnk;
-res = sqrt(sum((B * C - data).^2,2));
+res = B * C - data;
+SigmaC = cov(res);
 
   function F = fun(X)
     
@@ -118,35 +124,6 @@ res = sqrt(sum((B * C - data).^2,2));
     
     % Append the regularization term and the contraints
     F = dataFidelity + beta * regFuncs{d-1,n}(C);
-  end
-
-  function [CON CONEQ CG CEQG] = fcon(X)
-    % Retrieve the control point coordinates from X
-    C = reshape(X(1:d * (n + 1)), n + 1, d);
-
-    d1 = sum((data(1,:) - C(1,:)).^2) - maxDist2;
-    d2 = sum((data(m,:) - C(n+1,:)).^2) - maxDist2;
-    
-    CON = [d1, d2];
-        
-    % There is no equality constraint.
-    CONEQ = [];
-    
-    if nargout > 2
-      CG = zeros(pDim,2);
-      
-      % Compute dG1/dxk
-      
-      % k = 0
-      CG((0:(d-1)) * (n+1) + 1,1) = -2 * (data(1,:) - C(1,:))';
-      
-      % Compute dG2/dxk
-      
-      % k = n
-      CG((1:d) * (n+1),2) =  -2 * (data(m,:) - C(n+1,:))';
-      
-      CEQG = [];
-    end
   end
 end
 
