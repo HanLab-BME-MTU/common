@@ -89,6 +89,7 @@ frame = c*ones(ny, nx);
 [~, idx] = sort(xv+yv*nx); % sort spots according to row position
 xv = xv(idx);
 yv = yv(idx);
+Av = Av(idx);
 
 for k = 1:np
     xi = round(xv(k));
