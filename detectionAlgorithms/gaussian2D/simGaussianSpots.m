@@ -38,9 +38,9 @@ ip.parse(nx, ny, sigma, varargin{:});
 
 np = ip.Results.npoints;
 c = ip.Results.background;
-xv = ip.Results.x;
-yv = ip.Results.y;
-Av = ip.Results.A;
+xv = ip.Results.x(:);
+yv = ip.Results.y(:);
+Av = ip.Results.A(:);
 
 if length(xv) ~= length(yv)
     error('''x'' and ''y'' must be of same size');
@@ -51,46 +51,42 @@ if ~isempty(xv)
 end
 
 % feature vectors
-sv = sigma*ones(1,np);
+sv = sigma*ones(np,1);
 wv = ceil(4*sv);
-
-% discard signals too near to image boundaries
-if ~isempty(xv)
-    idx=xv > max(wv)+1 & xv < nx-max(wv)-1;
-    idy=yv > max(wv)+1 & yv < ny-max(wv)-1;
-    id=idx & idy;    
-    if strcmpi(ip.Results.verbose, 'on')
-        fprintf('Number of discarded points: %d\n', length(xv) - sum(id));
-    end
-    xv=xv(id);
-    yv=yv(id);
-    sv=sv(id);
-    np=length(xv);
-end
 
 w_max = 2*max(wv)+1;
 if (w_max>nx || w_max>ny)
-    error('Dimensions are too small.');
+    error('Image dimensions are too small.');
 end
 
-if isempty(xv)
-    xv = (nx-2*wv-1).*rand(1,np) + wv+1;
-    yv = (ny-2*wv-1).*rand(1,np) + wv+1;
-elseif length(xv)~=length(yv)
+if length(xv)~=length(yv)
     error('''x'' and ''y'' must be of same length.');
 end
 
+% discard signals close to image border
+if ~isempty(xv)
+    idx = xv <= wv | yv <= wv | xv > nx-wv | yv > ny-wv;
+    xv(idx) = [];
+    yv(idx) = [];
+    Av(idx) = [];
+    sv(idx) = [];
+    if strcmpi(ip.Results.verbose, 'on')
+        fprintf('Number of discarded points: %d\n', numel(idx));
+    end
+    np = length(xv);
+else
+    xv = (nx-2*wv-1).*rand(np,1) + wv+1;
+    yv = (ny-2*wv-1).*rand(np,1) + wv+1;
+    [~, idx] = sort(xv+yv*nx); % sort spots according to row position
+    xv = xv(idx);
+    yv = yv(idx);
+end
+
 if isempty(Av)
-    Av = ones(1,np);
+    Av = ones(np,1);
 end
 
 frame = c*ones(ny, nx);
-
-[~, idx] = sort(xv+yv*nx); % sort spots according to row position
-xv = xv(idx);
-yv = yv(idx);
-Av = Av(idx);
-
 for k = 1:np
     xi = round(xv(k));
     yi = round(yv(k));
