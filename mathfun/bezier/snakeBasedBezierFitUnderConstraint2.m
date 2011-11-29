@@ -67,6 +67,8 @@ regFuncs = {@computeRegTermN1D2, @computeRegTermN2D2, @computeRegTermN3D2;...
 %% Compute an initial solution
 [m d] = size(data);
 
+beta = beta / m;
+
 % dimension of the problem is equal to
 % - number of control point coordinates: d * (n+1)
 % - number of nodes without the first and last ones: m-2
