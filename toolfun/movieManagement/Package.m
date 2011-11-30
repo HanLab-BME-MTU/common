@@ -185,7 +185,7 @@ classdef Package < hgsetget
             for i = changedProc                    
                 % Add a changed parameter exception
                 ME = MException('lccb:paraChanged:warn',['The step ' num2str(i),': ' obj.processes_{i}.getName...
-                        ' is out of date because the channels or parameters have been changed.']);
+                        ' is out of date because the parameters have been changed.']);
                 processExceptions{i} = horzcat(processExceptions{i}, ME);
             end
                         

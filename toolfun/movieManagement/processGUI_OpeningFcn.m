@@ -50,6 +50,7 @@ set(handles.text_copyright, 'String', copyright)
 userData.handles_main = guidata(userData.mainFig);
 userData_main = get(userData.mainFig, 'UserData');
 userData.MD = userData_main.MD(userData_main.id);
+if isa(userData.MD,'MovieList'),userData.ML=userData.MD; end
 userData.crtPackage = userData_main.crtPackage;
 
 % If constructor is not inherited from abstract class, read it from package
@@ -73,7 +74,9 @@ set(handles.text_processName,'String',procString);
 figString = [' Setting - ' crtProcName];
 set(handles.figure1,'Name',figString);
 
-
+% Initialize help, preview figure
+userData.helpFig=-1;
+userData.previewFig=-1;
 
 % Get icon infomation
 userData.questIconData = userData_main.questIconData;
@@ -184,8 +187,8 @@ selectedProps = get(handles.listbox_selectedChannels, {'String','UserData'});
 
 % Find new elements and set them to the selected listbox
 newID = availableProps{3}(~ismember(availableProps{1}(availableProps{3}),selectedProps{1}));
-selectedChannels = horzcat(selectedProps{1},availableProps{1}(newID)');
-selectedData = horzcat(selectedProps{2}, availableProps{2}(newID)');
+selectedChannels = horzcat(selectedProps{1}',availableProps{1}(newID)');
+selectedData = horzcat(selectedProps{2}, availableProps{2}(newID));
 set(handles.listbox_selectedChannels, 'String', selectedChannels, 'UserData', selectedData);
 
 % --- Executes on button press in pushbutton_delete.

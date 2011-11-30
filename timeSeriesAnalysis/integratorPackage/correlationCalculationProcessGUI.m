@@ -53,27 +53,29 @@ userData=get(handles.figure1,'UserData');
 funParams = userData.crtProc.funParams_;
 
 % Set up available input channels
-set(handles.listbox_availableMovies,'String',userData.MD.movieDataFile_, ...
-    'UserData',1:numel(userData.MD.movies_));
+set(handles.listbox_availableMovies,'String',userData.ML.movieDataFile_, ...
+    'UserData',1:numel(userData.ML.movies_));
 
 movieIndex = funParams.MovieIndex;
 
 if ~isempty(movieIndex)
-    movieString = userData.MD.movieDataFile_(movieIndex);
+    movieString = userData.ML.movieDataFile_(movieIndex);
 else
     movieString = {};
 end
 
 set(handles.listbox_selectedMovies,'String',movieString,...
-    'UserData',movieIndex);
+    'UserData',movieIndex,'Callback',@(h,event)update_preview(h,event,guidata(h)));
 
 % Set up available input processes
-allProcString = userData.crtProc.getTimeSeriesProcesses();
-set(handles.listbox_availableProcesses,'String',allProcString);
+allProc = userData.crtProc.getTimeSeriesProcesses();
+allProcString = cellfun(@(x) eval([x '.getName']),allProc,'UniformOutput',false);
+set(handles.listbox_availableProcesses,'String',allProcString,'UserData',allProc);
 
 % Set up selected input processes
-procString = funParams.ProcessName;
-set(handles.listbox_selectedProcesses,'String',procString);
+selProc = funParams.ProcessName;X
+selProcString = cellfun(@(x) eval([x '.getName']),selProc,'UniformOutput',false);
+set(handles.listbox_selectedProcesses,'String',selProcString,'UserData',selProc);
 
 set(handles.edit_BandMin,'String',funParams.BandMin);
 set(handles.edit_BandMax,'String',funParams.BandMax);
@@ -108,11 +110,8 @@ function figure1_DeleteFcn(hObject, ~, handles)
 % Notify the package GUI that the setting panel is closed
 userData = get(handles.figure1, 'UserData');
 
-if isfield(userData, 'helpFig') && ishandle(userData.helpFig)
-   delete(userData.helpFig) 
-end
-
-if ishandle(userData.previewFig), delete(userData.helpFig); end
+if ishandle(userData.helpFig), delete(userData.helpFig); end
+if ishandle(userData.previewFig), delete(userData.previewFig); end
 
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
@@ -165,8 +164,8 @@ ID = get(listbox_available, 'Value');
 
 % Update selected listbox properties
 newChanID = ID(~ismember(availableProps{1}(ID),selectedProps{1}));
-selectedString = horzcat(selectedProps{1},availableProps{1}(newChanID)');
-selectedData = horzcat(selectedProps{2}, availableProps{2}(newChanID)');
+selectedString = vertcat(selectedProps{1},availableProps{1}(newChanID));
+selectedData = horzcat(selectedProps{2}, availableProps{2}(newChanID));
 
 set(listbox_selected, 'String', selectedString, 'Userdata', selectedData);
 
@@ -187,29 +186,46 @@ selectedProps{1}(selectedProps{3}) = [ ];
 selectedProps{2}(selectedProps{3}) = [ ];
 set(listbox_selected, 'String', selectedProps{1},'UserData',selectedProps{2},...
     'Value',max(1,min(selectedProps{3},numel(selectedProps{1}))));
+update_preview(hObject, eventdata, handles)
 
 % --- Executes on button press in checkbox_selectSlices.
-function checkbox_selectSlices_Callback(hObject, eventdata, handles)
+function update_preview(hObject, eventdata, handles)
 
 userData=get(handles.figure1,'UserData');
 
-if ~get(hObject,'Value'), 
+% Delete figure if checkbox is unselected
+if ~get(handles.checkbox_selectSlices,'Value') 
     if ishandle(userData.previewFig), delete(userData.previewFig); end
     return; 
 end
 
-movieProps = get(handles.listbox_selectedMovies,{'UserData','Value'});
-movieID=movieProps{1}(movieProps{2});
-p.ProcessName = get(handles.listbox_selectedProcesses,'String');
-userData.previewFig=figure;
+if isequal(hObject,handles.checkbox_selectSlices)
+    % Create new figure
+    userData.previewFig=figure;
+else
+    % Save slice index of current movie and clear figure
+    figure(userData.previewFig);
+    userData_fig=get(userData.previewFig,'UserData');
+    userData.SliceIndex{userData.movieID}=logical(sum(userData_fig.alphamask,2));
+    clf(userData.previewFig)
+end
 
-corrProc = CorrelationCalculationProcess(userData.MD.movies_{movieID},'');
+
+% Retrieve movie id and process names
+movieProps = get(handles.listbox_selectedMovies,{'UserData','Value'});
+userData.movieID=movieProps{1}(movieProps{2});
+p.ProcessName = get(handles.listbox_selectedProcesses,'UserData');
+
+% Retrieve input 
+corrProc = CorrelationCalculationProcess(userData.ML.movies_{userData.movieID},'');
 parseProcessParams(corrProc,p);
 input = corrProc.getInput;
 nInput = numel(input);
 
-alphamask = zeros(397,120);
-alphamask(userData.SliceIndex{movieID},:)=1;
+
+% Create a mask using the slice index
+alphamask = repmat(userData.SliceIndex{userData.movieID},1,...
+    userData.ML.movies_{userData.movieID}.nFrames_);
 hAxes = -ones(nInput,1);
 h = -ones(nInput,1);
 userData_fig.mainFig=handles.figure1;
@@ -225,7 +241,7 @@ for i=1:nInput;
     else
         chanArgs={};
     end
-    h(i) = userData.MD.movies_{movieID}.processes_{procID}.draw(chanArgs{:},axesArgs{:});
+    h(i) = userData.ML.movies_{userData.movieID}.processes_{procID}.draw(chanArgs{:},axesArgs{:});
     hCbar = findobj(userData.previewFig,'Tag','Colorbar');
     delete(hCbar);    
     set(h(i),'HitTest','off','AlphaData',alphamask,'AlphaDataMapping','none');
@@ -247,11 +263,8 @@ f =  get(src,'Parent');
 userData = get(f,'UserData');
 userData.crtAxes=src;
 userData.windowStart=windowIndex;
-if any(userData.alphamask(windowIndex,:))
-    userData.alphavalue=0;
-else
-    userData.alphavalue=1;
-end
+userData.alphavalue = ~userData.alphamask(windowIndex,1);
+
 % userData.alphamask(windowIndex,:)=.2;
 h=findobj(f,'Type','Image');
 set(h,'AlphaData',userData.alphamask);
@@ -297,12 +310,7 @@ function closeGraphFigure(src,event)
 userData = get(src,'UserData');
 userData_main =get(userData.mainFig,'UserData');
 handles_main = guidata(userData.mainFig);
-
-
-movieProps = get(handles_main.listbox_selectedMovies,{'UserData','Value'});
-movieID=movieProps{1}(movieProps{2});
-
-userData_main.SliceIndex{movieID}=find(sum(userData.alphamask,2))';
+userData_main.SliceIndex{userData_main.movieID}=logical(sum(userData.alphamask,2));
 
 
 set(userData.mainFig,'UserData',userData_main);
@@ -337,10 +345,18 @@ if isnan(bandMax)
     return;
 end
 
-funParams.MovieIndex = get(handles.listbox_selectedMovies, 'Userdata');
-funParams.ProcessName = get(handles.listbox_selectedProcesses, 'String');
+funParams.MovieIndex = get(handles.listbox_selectedMovies, 'UserData');
+funParams.ProcessName = get(handles.listbox_selectedProcesses, 'UserData');
 funParams.BandMin=bandMin;
 funParams.BandMax=bandMax;
+
+userData = get(handles.figure1, 'UserData');
+if ishandle(userData.previewFig)
+    userData_fig=get(userData.previewFig,'UserData');
+    userData.SliceIndex{userData.movieID}=logical(sum(userData_fig.alphamask,2));
+    delete(userData.previewFig)
+end
+funParams.SliceIndex=userData.SliceIndex;
 
 % Process Sanity check ( only check underlying data )
 userData = get(handles.figure1, 'UserData');

@@ -75,10 +75,6 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
         function h =GUI()
             h = @signalPreprocessingProcessGUI;
         end
-        function procNames = getTimeSeriesProcesses()
-            procNames = {'WindowSamplingProcess';
-                'ProtrusionSamplingProcess'};
-        end
         function funParams = getDefaultParams(owner,varargin)
             % Input check
             ip=inputParser;

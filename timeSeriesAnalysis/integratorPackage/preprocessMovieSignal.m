@@ -110,7 +110,7 @@ minP     = 50;
 logMsg = @(iInput,iBand) ['Please wait, preprocessing signal of ' input(iInput).name];
 timeMsg = @(t) ['\nEstimated time remaining: ' num2str(round(t)) 's'];
 tic;
-nBandsTot = sum(nBamds);
+nBandsTot = sum(nBands);
 
 for iInput=1:nInput    
     % Show log

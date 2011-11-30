@@ -162,8 +162,8 @@ ID = get(listbox_available, 'Value');
 
 % Update selected listbox properties
 newChanID = ID(~ismember(availableProps{1}(ID),selectedProps{1}));
-selectedString = horzcat(selectedProps{1},availableProps{1}(newChanID)');
-selectedData = horzcat(selectedProps{2}, availableProps{2}(newChanID)');
+selectedString = vertcat(selectedProps{1},availableProps{1}(newChanID));
+selectedData = horzcat(selectedProps{2}, availableProps{2}(newChanID));
 
 set(listbox_selected, 'String', selectedString, 'Userdata', selectedData);
 

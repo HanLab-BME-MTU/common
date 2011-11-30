@@ -55,6 +55,7 @@ classdef TimeSeriesProcess < Process
             
             % List input
             procInNr = cellfun(@numel,channelIndex)+cellfun(@isempty,channelIndex);
+            if isempty(procInNr), input=[], return; end
             input(sum(procInNr))=struct();
             for i=1:nProc
                 for j=1:procInNr(i)

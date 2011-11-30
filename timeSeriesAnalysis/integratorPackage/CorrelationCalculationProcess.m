@@ -93,7 +93,7 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
                     owner.movies_,'UniformOutput',false);
                 funParams.BandMin=1;
                 funParams.BandMax=min(cellfun(@(x) x.nBandMax_,winProc));
-                funParams.SliceIndex=cellfun(@(x) 1:x.nSliceMax_,winProc,'UniformOutput',false);
+                funParams.SliceIndex=cellfun(@(x) ones(x.nSliceMax_,1),winProc,'UniformOutput',false);
             end
         end
     end
