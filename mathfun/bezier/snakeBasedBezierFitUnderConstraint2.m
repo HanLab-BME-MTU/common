@@ -118,6 +118,7 @@ SigmaC = cov(res);
     B = (bsxfun(@power, T, 0:n) .* bsxfun(@power, 1 - T, n:-1:0)) * Cnk;
     
     % Compute the data fidelity term
+    V = data - B * C;
     dataFidelity = sum(sum((V / SigmaX) .* V, 2));
     
     % Append the regularization term and the contraints
