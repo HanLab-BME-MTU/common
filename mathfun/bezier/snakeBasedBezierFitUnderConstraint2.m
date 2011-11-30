@@ -9,8 +9,7 @@ function [C,T,res,SigmaC,lambda] = snakeBasedBezierFitUnderConstraint2(data,n,be
 %
 % Optional Inputs:
 % SigmaX         A d x d matrix which represents the variance-covariance
-%                matrix of the localization precision of the data. Right
-%                now, only the diagonal of the matrix is used.
+%                matrix of the localization precision of the data.
 % MaxFunEvals    Maximum number of fonctional evaluations during lsqnonlin.
 % MaxIter        Maximum number of interations during lsqnonlin.
 % Display        Verbose mode during lsqnonlin.
@@ -76,10 +75,10 @@ regFuncs = {@computeRegTermN1D2, @computeRegTermN2D2, @computeRegTermN3D2;...
 % Weight beta
 beta = beta * m * sqrt(det(SigmaX));
 
-% dimension of the problem is equal to
+% Number of parameters of the fitting problem is equal to
 % - number of control point coordinates: d * (n+1)
 % - number of nodes without the first and last ones: m-2
-pDim = d * (n+1) + (m-2);
+% pDim = d * (n+1) + (m-2);
 
 % Compute the initial nodes
 T = linspace(0,1,m)';
@@ -99,7 +98,6 @@ lb(d * (n+1) + 1:end) = 0;
 ub(d * (n+1) + 1:end) = 1;
 
 %% Optimization
-% [X,~,~,~,lambda] = fmincon(@fun,X,[],[],[],[],lb,ub,@fcon,opts);
 [X,~,~,~,lambda] = fmincon(@fun,X,[],[],[],[],lb,ub,[],opts);
 
 % Compute the residual
@@ -120,7 +118,7 @@ SigmaC = cov(res);
     B = (bsxfun(@power, T, 0:n) .* bsxfun(@power, 1 - T, n:-1:0)) * Cnk;
     
     % Compute the data fidelity term
-    dataFidelity = sum(sum((data - B * C).^2, 2));
+    dataFidelity = sum(sum((V / SigmaX) .* V, 2));
     
     % Append the regularization term and the contraints
     F = dataFidelity + beta * regFuncs{d-1,n}(C);
