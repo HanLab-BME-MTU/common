@@ -73,7 +73,7 @@ allProcString = cellfun(@(x) eval([x '.getName']),allProc,'UniformOutput',false)
 set(handles.listbox_availableProcesses,'String',allProcString,'UserData',allProc);
 
 % Set up selected input processes
-selProc = funParams.ProcessName;X
+selProc = funParams.ProcessName;
 selProcString = cellfun(@(x) eval([x '.getName']),selProc,'UniformOutput',false);
 set(handles.listbox_selectedProcesses,'String',selProcString,'UserData',selProc);
 
