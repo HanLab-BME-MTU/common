@@ -34,7 +34,6 @@ ip.CaseSensitive = false;
 ip.addRequired('data', @(data) isnumeric(data) && size(data,2) > 1);
 ip.addRequired('n', @(n) n > 0);
 ip.addRequired('beta', @(beta) beta >= 0);
-ip.addRequired('maxDist', @(maxDist) maxDist >= 0);
 ip.addParamValue('SigmaX', eye(size(data,2)), @isnumeric);
 ip.addParamValue('Algorithm', 'interior-point', @isstr);
 ip.addParamValue('MaxFunEvals', 1e4, @isscalar);
