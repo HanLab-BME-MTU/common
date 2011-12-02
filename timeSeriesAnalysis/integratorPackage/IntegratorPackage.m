@@ -59,7 +59,7 @@ classdef IntegratorPackage < Package
             integratorProcConstr = {
                 @SignalPreprocessingProcess,...
                 @CorrelationCalculationProcess,...
-                @EventAlignerProcess};
+                @EventAlignmentProcess};
             
             if nargin==0, index=1:numel(integratorProcConstr); end
             procConstr=integratorProcConstr(index);
@@ -68,7 +68,7 @@ classdef IntegratorPackage < Package
             integratorClasses = {
                 'SignalPreprocessingProcess',...
                 'CorrelationCalculationProcess',.....
-                'EventAlignerProcess'};
+                'EventAlignmentProcess'};
             if nargin==0, index=1:numel(integratorClasses); end
             classes=integratorClasses(index);
         end
