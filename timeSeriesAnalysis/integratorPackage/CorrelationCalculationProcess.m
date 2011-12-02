@@ -1,7 +1,7 @@
 classdef CorrelationCalculationProcess < TimeSeriesProcess
     % A concrete process for calculating correlation of sampled processes
     %
-    % Sebastien Besson, Oct 2011
+    % Sebastien Besson, Oct 2011 (last modified Dec 2011)
 
     methods (Access = public)
         
@@ -75,6 +75,7 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
             output(2).formatData=@formatBootstrappedCorrelationData;
             output(2).type='correlationGraph';
             output(2).defaultDisplayMethod = @CorrelationGraphDisplay;
+            if isa(obj.owner_,'MovieList'), output=output(2); end
         end
     end
     
@@ -84,10 +85,6 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
         end
         function h =GUI()
             h = @correlationCalculationProcessGUI;
-        end
-        function procNames = getTimeSeriesProcesses()
-            procNames = {'WindowSamplingProcess';
-                'ProtrusionSamplingProcess'};
         end
         function funParams = getDefaultParams(owner,varargin)
             % Input check
@@ -128,6 +125,3 @@ data.lags=squeeze(nanmean(data.lags,2));
 data.avgCorrFun=data.bootstrapCorrFun;
 data.steCorrFun=data.bootstrapSteCorrFun;
 end
-
-
-

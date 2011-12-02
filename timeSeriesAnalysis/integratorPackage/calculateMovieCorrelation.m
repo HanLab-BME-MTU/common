@@ -56,8 +56,9 @@ if isa(movieObject,'MovieList')
         corrProc = movieData.processes_{iProc};
         parseProcessParams(movieData.processes_{iProc},movieParams);
         corrProc.run();
-        return
-    end   
+        
+    end  
+    return
 end    
 
 
@@ -202,8 +203,8 @@ for iInput1=1:nInput
         lags=lags*movieObject.timeInterval_; %#ok<NASGU>
         
         % Stupid bootstrapping-like function to test the grapical output
-        bootstrapCorrFun=nan(nLagsMax+1,nBands(iInput1),nBands(iInput2));
-        bootstrapSteCorrFun=nan(nLagsMax+1,nBands(iInput1),nBands(iInput2));
+        bootstrapCorrFun=nan(2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
+        bootstrapSteCorrFun=nan(2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
         for iBand1=p.BandMin:min(nBands(iInput1),p.BandMax)
             for iBand2=p.BandMin:min(nBands(iInput2),p.BandMax)                
                 bootstrapCorrFun(:,iBand1,iBand2) = nanmean(corrFun(:,:,iBand1,iBand2),2);

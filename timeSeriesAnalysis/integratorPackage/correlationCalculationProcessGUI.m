@@ -201,7 +201,7 @@ end
 
 if isequal(hObject,handles.checkbox_selectSlices)
     % Create new figure
-    userData.previewFig=figure;
+    userData.previewFig=figure('NumberTitle','off','Name','Select/unselect the windows of interest');
 else
     % Save slice index of current movie and clear figure
     figure(userData.previewFig);
@@ -274,45 +274,61 @@ set(f,'UserData',userData,'WindowButtonMotionFcn',@moveSliceIndex,...
 
 function moveSliceIndex(src,event)
 
+% Retrieve current point
 userData = get(src,'UserData');
 point = get(userData.crtAxes,'CurrentPoint');
 windowIndex=ceil(point(1,2));
-yLim=ceil(get(userData.crtAxes','YLim'));
+
+% Scale within the axes limits and the mask range
+yLim=floor(get(userData.crtAxes','YLim'));
 windowIndex=max(min(yLim(2),windowIndex),yLim(1));
+windowIndex=max(min(size(userData.alphamask,1),windowIndex),1);
+
+% Update selected range
 if windowIndex>=userData.windowStart
     windowRange=userData.windowStart:windowIndex;
 else
     windowRange=windowIndex:userData.windowStart;
 end
+ 
+% Update graphic alpha mask
 userData.alphamask(windowRange,:)=userData.alphavalue;
-h=findobj(src,'Type','Image');
-set(h,'AlphaData',userData.alphamask);
-% set(src,'UserData',userData);
+set(findobj(src,'Type','Image'),'AlphaData',userData.alphamask);
 
 function releaseSliceIndex(src,event)
+
+% Retrieve current point
 userData = get(src,'UserData');
 point = get(userData.crtAxes,'CurrentPoint');
-windowIndex=ceil(point(1,2));
-yLim=ceil(get(userData.crtAxes','YLim'));
+windowIndex=floor(point(1,2));
+
+% Scale within the axes limits and the mask range
+yLim=floor(get(userData.crtAxes','YLim'));
 windowIndex=max(min(yLim(2),windowIndex),yLim(1));
+windowIndex=max(min(size(userData.alphamask,1),windowIndex),1);
+
+% Update selected range
 if windowIndex>=userData.windowStart
     windowRange=userData.windowStart:windowIndex;
 else
     windowRange=windowIndex:userData.windowStart;
 end
+ 
+% Update graphic alpha mask
 userData.alphamask(windowRange,:)=userData.alphavalue;
-h=findobj(src,'Type','Image');
-set(h,'AlphaData',userData.alphamask);
+set(findobj(src,'Type','Image'),'AlphaData',userData.alphamask);
+
+% Save data in the figure
 set(src,'UserData',userData);
 set(src,'WindowButtonMotionFcn',[],'WindowButtonUpFcn',[]);
  
 function closeGraphFigure(src,event)
+
+% Update SliceIndex parameters in main process figure
 userData = get(src,'UserData');
 userData_main =get(userData.mainFig,'UserData');
 handles_main = guidata(userData.mainFig);
 userData_main.SliceIndex{userData_main.movieID}=logical(sum(userData.alphamask,2));
-
-
 set(userData.mainFig,'UserData',userData_main);
 set(handles_main.checkbox_selectSlices,'Value',0);   
 

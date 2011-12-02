@@ -92,7 +92,7 @@ end
 % end
 
 % Load input files
-input = evenProc.getInput;
+input = eventProc.getInput;
 nInput=numel(input);
 inFilePaths = cell(nInput,1);
 inData = cell(nInput,1);
@@ -128,35 +128,36 @@ nFrames = movieObject.nFrames_;
 nLagsMax =round(nFrames/4);
 
 logMsg = @(i) ['Please wait, aligning ' input(i).name];
-timeMsg = @(t) ['\nEstimated time remaining: ' num2str(roundsignalPreProc(t)) 's'];
 tic;
 
 % Retrieve event times master process events
-eventData=inData{1};
+nWindows=size(inData{1},1);
 eventTimes = NaN(nWindows+1,1);
-for iWindow=2:nWindows
-    [~,eventTime]=max(eventData(nLagsMax:nFrames-nLagsMax));
-    if (eventTime~=1) && (eventTime~=(Frames-2*nLagsMax+1));
-        eventTimes(iWindow)=eventTime+nLagsMax-1;
-    end
-end
+
+eventData =squeeze(inData{1}(:,1,:));
+[~,time]=max(eventData(:,nLagsMax:nFrames-nLagsMax),[],2);
+validTimes= (time>1) & (time<(nFrames-2*nLagsMax+1));
+eventTimes(validTimes)=time(validTimes)+nLagsMax-1;
+
+
 
 % Align maps with regards to these events
-alignedData = cell(nInput);
+alignedData = cell(nInput,1);
 for iInput=1:nInput
-    alignedData{iInput} =  nan(1,2*nFrames+1);
+    inputSize = size(inData{iInput});
+    alignedData{iInput} =  nan(inputSize(1),inputSize(2),2*nFrames+1);
 end 
 if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
 
+disp(logMsg(iInput));
 for iWindow=find(~isnan(eventTimes))'
-    disp(logMsg(iInput));
     range = (nFrames+2-eventTimes(iWindow)):(2*nFrames+1-eventTimes(iWindow));
     for iInput=1:nInput
-        alignedData{iInput}(iWindow,range)=inData{iInput}(iWindow,:);
+        alignedData{iInput}(iWindow,:,range)=inData{iInput}(iWindow,:,:);
     end
-    save(outFilePaths,'alignedData');  
+%     save(outFilePaths,'alignedData');  
 end
-
+    save(outFilePaths,'alignedData');  
 disp('Finished aligning events...')
 if ishandle(wtBar), close(wtBar); end
 
