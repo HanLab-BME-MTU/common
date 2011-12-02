@@ -36,8 +36,8 @@ res2 = residuals .^ 2;
 %calculate the median of the squared residuals
 medRes2 = nanmedian(res2);
 
-%define parameter to remove outliers
-magicNumber2 = 1.4826^2;
+%define parameter to remove outliers (see Rousseeuw 1987, p. 202)
+magicNumber2 = 1/norminv(.75)^2;
 
 %calculate test-statistic values
 testValue = res2 / (magicNumber2 * medRes2);
