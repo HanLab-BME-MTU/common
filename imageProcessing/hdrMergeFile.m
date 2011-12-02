@@ -54,6 +54,7 @@ if nDim == nBright
     for j = 1:nDim
         nextDimFile = [dimDir filesep dimNames{j}];
         nextBrightFile = [brightDir filesep brightNames{j}];
+        [path, body, time, ext] = getFilenameBody(dimNames{j});
         dimIm = double(imread(nextDimFile));
         brightIm = double(imread(nextBrightFile));
         [combinedMystery, logMystery, logImage] = highDynamicRangeMerge(dimIm, brightIm);
@@ -66,19 +67,19 @@ if nDim == nBright
         %attempt to write images
         maxNumMyst = max(combinedMystery(:));
         combinedMysteryScaled = scaleContrast(combinedMystery, [0 maxNumMyst], [0 255]);
-        outputName = [outputDir filesep 'combinedMysteryScaledTIFFs' filesep 'hdrMerge_combMyst_' num2str(j) '.TIF'];
+        outputName = [outputDir filesep 'combinedMysteryScaledTIFFs' filesep 'hdrMerge_combMyst_' time '.TIF'];
         imwrite(uint8(combinedMysteryScaled), outputName, 'tiff');
         
         maxNumLog = max(logMystery(:));
         minNumLog = min(logMystery(:));
         logMysteryScaled = scaleContrast(logMystery, [minNumLog maxNumLog], [0 255]);
-        outputNameLog= [outputDir filesep 'logMysteryTIFFs' filesep 'hdrMerge_logMyst_', num2str(j) '.TIF'];
+        outputNameLog= [outputDir filesep 'logMysteryTIFFs' filesep 'hdrMerge_logMyst_', time '.TIF'];
         imwrite(uint8(logMysteryScaled), outputNameLog, 'tiff');
         
         maxNumLogIm = max(logImage(:));
         minNumLogIm = min(logImage(:));
         logImageScaled = scaleContrast(logImage, [minNumLogIm maxNumLogIm], [0 255]);
-        outputNameLogIm= [outputDir filesep 'logImageScaledTIFFs' filesep 'hdrMerge_logImage_', num2str(j) '.TIF'];
+        outputNameLogIm= [outputDir filesep 'logImageScaledTIFFs' filesep 'hdrMerge_logImage_', time '.TIF'];
         imwrite(uint8(logImageScaled), outputNameLogIm, 'tiff');
 %         imtool(logImageScaled,[]);
     end
