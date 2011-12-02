@@ -1,8 +1,8 @@
 function mismatchRgbMerge()
-%This function reads in two directories for files to be overlaid where
-%there are different numbers of timepoints in the two images. It overlays
-%the channel with less time points at the matching time and each
-%consecutive time frame until another matching time point is found.
+%This function is designed to make RGB images of two channels where there
+%are different numbers of time points for each. It reads in two directories
+%and overlays the channel with less time points at the matching time and
+%each consecutive time frame until another matching time point is found.
 
 %-Jessica Tytell December 2, 2011
 
