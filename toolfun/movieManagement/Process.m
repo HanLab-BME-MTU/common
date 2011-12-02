@@ -168,7 +168,7 @@ classdef Process < hgsetget
         end
         
         function hfigure = resultDisplay(obj)
-            hfigure = movieDataViewer(obj.owner_, ...
+            hfigure = movieViewer(obj.owner_, ...
                 find(cellfun(@(x)isequal(x,obj),obj.owner_.processes_)));    
         end
         

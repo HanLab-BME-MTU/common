@@ -9,7 +9,7 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
         Input2 ='';
     end
     methods
-        function obj=MeshDisplay(varargin)
+        function obj=CorrelationGraphDisplay(varargin)
             obj@MovieDataDisplay(varargin{:});
         end
         function h=initDraw(obj,data,tag,varargin)
@@ -18,14 +18,18 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
             sfont = {'FontName', 'Helvetica', 'FontSize', 18};
             lfont = {'FontName', 'Helvetica', 'FontSize', 22};
             
-            nx = size(data.avgCorrFun,1);
-            h(1)=plot(data.lags,data.avgCorrFun,'Line',obj.LineStyle,...
-                'LineWidth',obj.LineWidth);
-            hold on
-            h(2)=errorbar(data.lags,data.avgCorrFun,data.steCorrFun,'LineWidth', 2);
-            
-            xLim=[min(data.lags) max(data.lags)];
-            yLim =[min(data.avgCorrFun-data.steCorrFun) max(data.avgCorrFun+data.steCorrFun)];
+            [nx,nBands] = size(data.avgCorrFun);
+            h=-ones(nBands,2);
+            colors = hsv(nBands);
+            for i=1:nBands
+                h(i,1)=plot(data.lags(:,i),data.avgCorrFun(:,i),'Line',obj.LineStyle,...
+                    'LineWidth',obj.LineWidth,'Color',colors(i,:));
+                hold on
+                h(i,2)=errorbar(data.lags(:,i),data.avgCorrFun(:,i),data.steCorrFun(:,i),...
+                    'LineWidth', 2,'Color',colors(i,:));
+            end
+            xLim=[min(data.lags(:)) max(data.lags(:))];
+            yLim =[min(data.avgCorrFun(:)-data.steCorrFun(:)) max(data.avgCorrFun(:)+data.steCorrFun(:))];
             xlabel('Lag (s)',lfont{:})
             ylabel('Correlation',lfont{:})
             set(gca, 'LineWidth', 1.5, sfont{:},'XLim',xLim,'YLim',yLim);

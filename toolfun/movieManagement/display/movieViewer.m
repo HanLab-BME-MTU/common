@@ -1,9 +1,9 @@
-function mainFig = movieDataViewer(varargin)
+function mainFig = movieViewer(MO,varargin)
 
 ip = inputParser;
 ip.addRequired('MO',@(x) isa(x,'MovieObject'));
 ip.addOptional('procId',[],@isnumeric);
-ip.parse(varargin{:});
+ip.parse(MO,varargin{:});
 
 % Chek
 h=findobj(0,'Name','Viewer');
@@ -14,9 +14,13 @@ mainFig=figure('Name','Viewer','Position',[0 0 200 200],...
     'DeleteFcn', @(h,event) deleteViewer());
 userData=get(mainFig,'UserData');
 if isa(ip.Results.MO,'MovieList')
-    userData.ML=ip.Results.MO;
-    userData.MD=ip.Results.MO.movies_{1};
-    procId = userData.MD.getProcessIndex(class(userData.ML.processes_{ip.Results.procId}));
+    userData.ML=MO;
+    userData.MD=MO.movies_{1};
+    if ~isempty(ip.Results.procId)
+        procId = userData.MD.getProcessIndex(class(userData.MD.processes_{ip.Results.procId}));
+    else
+        procId = ip.Results.procId;
+    end
 else
     userData.MD=ip.Results.MO;
     procId=ip.Results.procId;
@@ -64,9 +68,9 @@ createChannelBox= @(panel,i,j,k,pos,varargin) uicontrol(panel,'Style','checkbox'
 createMovieBox= @(panel,i,j,pos,name,varargin) uicontrol(panel,'Style','checkbox',...
     'Position',[40 pos 200 20],'Tag',['checkbox_process' num2str(i) '_output'...
     num2str(j)],'String',[' ' name],varargin{:});
-createProcProcBox= @(panel,i,j,k,pos,varargin) uicontrol(panel,'Style','checkbox',...
-    'Position',[200+30*k pos 20 20],'Tag',['checkbox_process' num2str(i) '_output'...
-    num2str(j) '_output' num2str(k)],varargin{:});
+createProcProcBox= @(panel,i,j,k,l,pos,varargin) uicontrol(panel,'Style','checkbox',...
+    'Position',[200+30*l pos 20 20],'Tag',['checkbox_process' num2str(i) '_output'...
+    num2str(j) '_input' num2str(k) '_input' num2str(l)],varargin{:});
 
 
 %% Image panel creation
@@ -282,27 +286,32 @@ if ~isempty(graphProc) || ~isempty(movieGraphProc)
         'Title','Graph','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
         'Units','pixels','Tag','uipanel_graph');
     
-    % Create controls for selecting correaltion
+    % Create controls for correlation processes
     hPosition3=10;
     nProc = numel(corrProc);
     for iProc=nProc:-1:1;
-        output=corrProc{iProc}.getInput;
-        nOutput=numel(output);
-        for i=nOutput:-1:1
-            createOutputText(graphPanel,corrProcId(iProc),i,hPosition3,output(i).name);
-            for j=1:i
-                createProcProcBox(graphPanel,corrProcId(iProc),i,j,hPosition3,...
-                    'Callback',@(h,event) redrawCorrelationGraph(h,guidata(h)));
+        output=corrProc{iProc}.getDrawableOutput;
+        validOutput = find(strcmp({output.type},'correlationGraph'));
+        input=corrProc{iProc}.getInput;
+        nInput=numel(input);
+        for iOutput=validOutput(end:-1:1)
+            for iInput=nInput:-1:1
+                createOutputText(graphPanel,corrProcId(iProc),iInput,hPosition3,input(iInput).name);
+                for jInput=1:iInput
+                    createProcProcBox(graphPanel,corrProcId(iProc),iOutput,iInput,jInput,hPosition3,...
+                        'Callback',@(h,event) redrawCorrelationGraph(h,guidata(h)));
+                end
+                hPosition3=hPosition3+20;
             end
+            createProcText(graphPanel,corrProcId(iProc),iInput,hPosition3,output(iOutput).name);
             hPosition3=hPosition3+20;
         end
-        createProcText(graphPanel,corrProcId(iProc),i,hPosition3,corrProc{iProc}.getName);
-        hPosition3=hPosition3+20;
+%         createProcText(graphPanel,corrProcId(iProc),iProc,hPosition3,corrProc{iProc}.getName);
+%         hPosition3=hPosition3+20;
     end
     
     
     % Create controls for selecting movie-specific overlays
-    
     nProc = numel(movieGraphProc);
     for iProc=nProc:-1:1;
         output=movieGraphProc{iProc}.getDrawableOutput;
@@ -342,6 +351,7 @@ if ~isempty(graphProc) || ~isempty(movieGraphProc)
     end
     graphPanelSize = getPanelSize(graphPanel);
 else
+    graphPanel=-1;
     graphPanelSize= [0 0];
 end
 
@@ -350,17 +360,17 @@ end
 imagePanelSize = getPanelSize(imagePanel);
 overlayPanelSize = getPanelSize(overlayPanel);
 moviePanelsLength = imagePanelSize(1)+overlayPanelSize(1)+10;
-panelsLength = imagePanelSize(1)+overlayPanelSize(1)+graphPanelSize(1)+10;
+panelsLength = imagePanelSize(1)+overlayPanelSize(1)+graphPanelSize(1);
 panelsHeight = max([imagePanelSize(2),overlayPanelSize(2),graphPanelSize(2)]);
 
 % Resize panel
 set(imagePanel,'Position',[10 panelsHeight-imagePanelSize(2)+10 ...
     imagePanelSize(1) imagePanelSize(2)],...
     'SelectionChangeFcn',@(h,event) redrawImage(guidata(h)))
-set(overlayPanel,'Position',[10+imagePanelSize(1)+10 panelsHeight-overlayPanelSize(2)+10 ...
+set(overlayPanel,'Position',[imagePanelSize(1)+10 panelsHeight-overlayPanelSize(2)+10 ...
     overlayPanelSize(1) overlayPanelSize(2)])
 if ~isequal(graphPanelSize,[0 0])
-    set(graphPanel,'Position',[10+imagePanelSize(1)+overlayPanelSize(1)+10 ...
+    set(graphPanel,'Position',[imagePanelSize(1)+overlayPanelSize(1)+10 ...
         panelsHeight-graphPanelSize(2)+10 ...
         graphPanelSize(1) graphPanelSize(2)])
 end
@@ -434,18 +444,14 @@ set(handles.figure1,'UserData',userData);
 %% Set up default parameters
 % Auto check input process
 for i=intersect(procId,validProcId)
-    h=findobj(mainFig,'-regexp','Tag',['(\w)_process' num2str(i)  '_output1.*']);
+    h=findobj(mainFig,'-regexp','Tag',['(\w)_process' num2str(i)  '_output1.*'],...
+        '-not','Style','text');
     set(h,'Value',1);
+    for j=find(arrayfun(@(x)isequal(get(x,'Parent'),graphPanel),h))'
+        callbackFcn = get(h(j),'Callback');
+        callbackFcn(h(j),[]);
+    end
 end
-
-
-% Update handles structure and attach it to the main figure
-handles = guihandles(mainFig);
-guidata(handles.figure1, handles);
-
-% Set the figure handle to -1 by default
-userData.drawFig=-1;
-set(handles.figure1,'UserData',userData);
 
 % Update the image and overlays
 redrawScene(handles.figure1, handles);
@@ -764,16 +770,19 @@ overlayTag = get(hObject,'Tag');
 userData=get(handles.figure1,'UserData');
 
 % Retrieve the id, process nr and channel nr of the selected graphProc
-tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)_output(\d+)','tokens');
+tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)_input(\d+)_input(\d+)','tokens');
 procId=str2double(tokens{1}{1});
+outputList = userData.MD.processes_{procId}.getDrawableOutput;
 input = userData.MD.processes_{procId}.getInput;
-i = str2double(tokens{1}{2});
-j = str2double(tokens{1}{3});
+iOutput = str2double(tokens{1}{2});
+iInput1 = str2double(tokens{1}{3});
+iInput2 = str2double(tokens{1}{4});
+output = outputList(iOutput).var;
 
-if i==j
-    figName = [input(i).name ' autocorrelation'];
+if iInput1==iInput2
+    figName = [input(iInput1).name ' autocorrelation'];
 else
-    figName = [input(i).name ' - ' input(j).name ' cross-correlation'];
+    figName = [input(iInput1).name ' - ' input(iInput2).name ' cross-correlation'];
 end
 if isa(userData.MD.processes_{procId},'CorrelationAveragingProcess')
     figName =['Averaged ' figName];
@@ -782,7 +791,7 @@ end
 % Draw or delete the graph figure depending on the checkbox value
 if get(hObject,'Value')
     h = getFigure(handles,figName);
-    userData.MD.processes_{procId}.draw(i,j);
+    userData.MD.processes_{procId}.draw(iInput1,iInput2,'output',output);
     set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 else
     h=findobj(0,'-regexp','Name',['^' figName '$']);
