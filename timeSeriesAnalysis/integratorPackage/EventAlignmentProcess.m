@@ -32,39 +32,96 @@ classdef EventAlignmentProcess < TimeSeriesProcess
             obj = obj@TimeSeriesProcess(super_args{:});
         end
         
-        
-        function varargout = loadChannelOutput(obj,i,j,varargin)
-            % Check input
-            outputList={'','corrFun','bounds','lags'};
+        function varargout = loadChannelOutput(obj,iInput,varargin)
+                                   
+            %Input check
+            input=obj.getInput;
             ip=inputParser;
-            ip.addRequired('obj');
-            ip.addRequired('i',@isscalar);
-            ip.addRequired('j',@isscalar);
-            ip.addParamValue('output',outputList{1},@(x) all(ismember(x,outputList)));
-            ip.parse(obj,i,j,varargin{:});
-            output=ip.Results.output;
-            if ischar(output), output={output}; end
+            ip.addRequired('iInput',@isscalar);
+            ip.addParamValue('output',input(iInput).var,@ischar);
+            ip.parse(iInput,varargin{:});
+            output = ip.Results.output;
             
-            s=load(obj.outFilePaths_{i,j},output{:});
-            for j=1:numel(output)
-                if strcmp(output{j},'')
-                    varargout{j}=s;
-                else
-                    varargout{j} = s.(output{j});
-                end
-            end
+            % Load
+            s=load(obj.outFilePaths_{1,iInput},output);
+            varargout{1}=s.(output);
         end
         
+        function h=draw(obj,iInput,varargin)
+            
+            % Check input
+            ip=inputParser;
+            ip.addRequired('iInput',@isscalar);
+            outputList = obj.getDrawableOutput(iInput);
+            ip.addParamValue('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
+            ip.KeepUnmatched = true;
+            ip.parse(iInput,varargin{:})
+
+            data=obj.loadChannelOutput(iInput,'output',ip.Results.output);     
+            iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
+            if ~isempty(outputList(iOutput).formatData),
+                data=outputList(iOutput).formatData(data);
+            end
+            
+            try
+                assert(~isempty(obj.displayMethod_{iOutput,iInput}));
+            catch ME %#ok<NASGU>
+                obj.displayMethod_{iOutput,iInput}=outputList(iOutput).defaultDisplayMethod(iInput);
+            end
+            
+            % Delegate to the corresponding method
+            tag = [obj.getName '_output' num2str(iOutput) '_input' num2str(iInput)];
+            drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
+                2*numel(fieldnames(ip.Unmatched)),1);
+            h=obj.displayMethod_{iOutput,iInput}.draw(data,tag,drawArgs{:});
+         end
         
-        function output = getDrawableOutput(obj)
-            output(1).name='Correlation';
-            output(1).var={''};
-            output(1).formatData=[];
-            output(1).type='correlationGraph';
-            output(1).defaultDisplayMethod = @ScalarMapDisplay;
+        
+                
+        function status = checkChannelOutput(obj,varargin)
+            
+            %Input check
+            input=obj.getInput;
+            nInput=numel(input);
+            ip=inputParser;
+            ip.addOptional('iInput',1:nInput,@(x) all(ismember(x,1:nInput)));
+            ip.parse(varargin{:});
+            iInput=ip.Results.iInput;         
+             
+            status =  logical(arrayfun(@(x) exist(obj.outFilePaths_{1,x},...
+                'file'),iInput)); 
+        end  
+
+        
+        function output = getDrawableOutput(obj,varargin)
+           
+            output(1).name='Aligned maps';
+            if nargin>1
+                iInput=varargin{1};
+                input=obj.getInput;
+                original_output=obj.owner_.processes_{input(iInput).processIndex}.getDrawableOutput;
+                output(1).var=input(iInput).var;
+                output(1).formatData=original_output.formatData;
+                output(1).type=original_output.type;
+                output(1).defaultDisplayMethod = @(x) ScalarMapDisplay('Colormap','jet',...
+                'CLim',obj.getIntensityLimits(x),'Labels',{'Frame number','Window depth','Window number'});
+            else
+                output(1).var='';
+                output(1).formatData=[];
+                output(1).type='graph';
+                output(1).defaultDisplayMethod = []; 
+            end
+         
+
         end
     end
     
+    methods (Access=protected)
+        function limits = getIntensityLimits(obj,iInput)
+            data=obj.loadChannelOutput(iInput);
+            limits=[min(data(:)) max(data(:))];
+        end
+    end
     methods (Static)
         function name =getName()
             name = 'Event Alignment';
@@ -77,7 +134,9 @@ classdef EventAlignmentProcess < TimeSeriesProcess
             switch(processname)
                 case('ProtrusionSamplingProcess')
                     events(1).name='Maximum protrusion velocity';
-                    events(2).name='Maximum retraction velocity';
+                    events(1).func=@max;
+                    events(2).name='Minimum retraction velocity';
+                    events(2).func=@min;
             end
         end
         
@@ -100,8 +159,6 @@ classdef EventAlignmentProcess < TimeSeriesProcess
                 funParams.BandMax=min(cellfun(@(x) x.nBandMax_,winProc));
                 funParams.SliceIndex=cellfun(@(x) ones(x.nSliceMax_,1),winProc,'UniformOutput',false);
             end
-            funParams.AlignmentProcess = [];
-            funParams.Event = [];
         end
     end
 end

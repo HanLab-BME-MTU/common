@@ -31,26 +31,19 @@ end
 validProcId= find(cellfun(@(x) ismember('getDrawableOutput',methods(x)) &...
     x.success_,userData.MD.processes_));
 validProc=userData.MD.processes_(validProcId);
-isImageProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'image')),validProc);
+
+getOutputType = @(type) cellfun(@(x) any(~cellfun(@isempty,regexp({x.getDrawableOutput.type},type,'once','start'))),...
+    validProc);
+
+isImageProc =getOutputType('image');
 imageProc=validProc(isImageProc);
 imageProcId = validProcId(isImageProc);
-isOverlayProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'overlay')),validProc);
+isOverlayProc =getOutputType('[oO]verlay');
 overlayProc=validProc(isOverlayProc);
 overlayProcId = validProcId(isOverlayProc);
-isMovieOverlayProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'movieOverlay')),validProc);
-movieOverlayProc=validProc(isMovieOverlayProc);
-movieOverlayProcId = validProcId(isMovieOverlayProc);
-isMovieGraphProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'movieGraph')),validProc);
-movieGraphProc=validProc(isMovieGraphProc);
-movieGraphProcId = validProcId(isMovieGraphProc);
-isGraphProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'graph')),validProc);
+isGraphProc =getOutputType('[gG]raph');
 graphProc=validProc(isGraphProc);
 graphProcId = validProcId(isGraphProc);
-
-% Special class for correlation process
-isCorrProc =cellfun(@(x) any(strcmp({x.getDrawableOutput.type},'correlationGraph')),validProc);
-corrProc=validProc(isCorrProc);
-corrProcId = validProcId(isCorrProc);
 
 % Create series of anonymous function to generate process controls
 createProcText= @(panel,i,j,pos,name) uicontrol(panel,'Style','text',...
@@ -66,9 +59,12 @@ createChannelBox= @(panel,i,j,k,pos,varargin) uicontrol(panel,'Style','checkbox'
     'Position',[200+30*k pos 20 20],'Tag',['checkbox_process' num2str(i) '_output'...
     num2str(j) '_channel' num2str(k)],varargin{:});
 createMovieBox= @(panel,i,j,pos,name,varargin) uicontrol(panel,'Style','checkbox',...
-    'Position',[40 pos 200 20],'Tag',['checkbox_process' num2str(i) '_output'...
+    'Position',[40 pos 200 25],'Tag',['checkbox_process' num2str(i) '_output'...
     num2str(j)],'String',[' ' name],varargin{:});
-createProcProcBox= @(panel,i,j,k,l,pos,varargin) uicontrol(panel,'Style','checkbox',...
+createInputBox= @(panel,i,j,k,pos,name,varargin) uicontrol(panel,'Style','checkbox',...
+    'Position',[40 pos 200 25],'Tag',['checkbox_process' num2str(i) '_output'...
+    num2str(j) '_input' num2str(k)],'String',[' ' name],varargin{:});
+createInputInputBox= @(panel,i,j,k,l,pos,varargin) uicontrol(panel,'Style','checkbox',...
     'Position',[200+30*l pos 20 20],'Tag',['checkbox_process' num2str(i) '_output'...
     num2str(j) '_input' num2str(k) '_input' num2str(l)],varargin{:});
 
@@ -240,28 +236,24 @@ uicontrol(overlayPanel,'Style','text',...
     'Position',[10 hPosition2 200 20],'Tag','text_vectorFieldOptions',...
     'String','Vector field options','HorizontalAlignment','left','FontWeight','bold');
 
-% Create controls for selecting movie-specific overlays
-hPosition2=hPosition2+50;
-nProc = numel(movieOverlayProc);
-for iProc=nProc:-1:1;
-    output=movieOverlayProc{iProc}.getDrawableOutput;
-    validOutput = find(strcmp({output.type},'movieOverlay'));
-    for iOutput=validOutput(end:-1:1)
-        createMovieBox(overlayPanel,movieOverlayProcId(iProc),iOutput,hPosition2,output(iOutput).name,...
-            'Callback',@(h,event) redrawOverlay(h,guidata(h)));
-        hPosition2=hPosition2+20;
-    end
-    createProcText(overlayPanel,movieOverlayProcId(iProc),iOutput,hPosition2,movieOverlayProc{iProc}.getName);
-    hPosition2=hPosition2+20;
-end
-
-% Create controls for selecting channel-specific overlays
+% Create controls for selecting overlays
+ hPosition2=hPosition2+50;
 nProc = numel(overlayProc);
 for iProc=nProc:-1:1;
     output=overlayProc{iProc}.getDrawableOutput;
-    validChan = overlayProc{iProc}.checkChannelOutput;
+   
+    % Create checkboxes for movie overlays
+    validOutput = find(strcmp({output.type},'movieOverlay'));
+    for iOutput=validOutput(end:-1:1)
+        createMovieBox(overlayPanel,overlayProcId(iProc),iOutput,hPosition2,output(iOutput).name,...
+            'Callback',@(h,event) redrawOverlay(h,guidata(h)));
+        hPosition2=hPosition2+20;
+    end
+    
+    % Create checkboxes for channel-specific overlays
     validOutput = find(strcmp({output.type},'overlay'));
     for iOutput=validOutput(end:-1:1)
+        validChan = overlayProc{iProc}.checkChannelOutput;
         createOutputText(overlayPanel,overlayProcId(iProc),iOutput,hPosition2,output(iOutput).name);
         arrayfun(@(x) createChannelBox(overlayPanel,overlayProcId(iProc),iOutput,x,hPosition2,...
             'Callback',@(h,event) redrawOverlay(h,guidata(h))),find(validChan));
@@ -281,64 +273,72 @@ if ~isempty(overlayProc)
 end
 
 %% Add additional panel for independent graphs
-if ~isempty(graphProc) || ~isempty(movieGraphProc)
+if ~isempty(graphProc) 
     graphPanel = uipanel(mainFig,'Position',[0 0 1 1],...
         'Title','Graph','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
         'Units','pixels','Tag','uipanel_graph');
-    
-    % Create controls for correlation processes
     hPosition3=10;
-    nProc = numel(corrProc);
-    for iProc=nProc:-1:1;
-        output=corrProc{iProc}.getDrawableOutput;
-        validOutput = find(strcmp({output.type},'correlationGraph'));
-        input=corrProc{iProc}.getInput;
-        nInput=numel(input);
-        for iOutput=validOutput(end:-1:1)
-            for iInput=nInput:-1:1
-                createOutputText(graphPanel,corrProcId(iProc),iInput,hPosition3,input(iInput).name);
-                for jInput=1:iInput
-                    createProcProcBox(graphPanel,corrProcId(iProc),iOutput,iInput,jInput,hPosition3,...
-                        'Callback',@(h,event) redrawCorrelationGraph(h,guidata(h)));
-                end
-                hPosition3=hPosition3+20;
-            end
-            createProcText(graphPanel,corrProcId(iProc),iInput,hPosition3,output(iOutput).name);
-            hPosition3=hPosition3+20;
-        end
-%         createProcText(graphPanel,corrProcId(iProc),iProc,hPosition3,corrProc{iProc}.getName);
-%         hPosition3=hPosition3+20;
-    end
     
-    
-    % Create controls for selecting movie-specific overlays
-    nProc = numel(movieGraphProc);
-    for iProc=nProc:-1:1;
-        output=movieGraphProc{iProc}.getDrawableOutput;
-        validOutput = find(strcmp({output.type},'movieGraph'));
-        for iOutput=validOutput(end:-1:1)
-            createMovieBox(graphPanel,movieGraphProcId(iProc),iOutput,hPosition3,...
-                output(iOutput).name,'Callback',@(h,event) redrawGraph(h,guidata(h)));
-            hPosition3=hPosition3+20;
-        end
-        createProcText(graphPanel,movieGraphProcId(iProc),iOutput,hPosition3,movieGraphProc{iProc}.getName);
-        hPosition3=hPosition3+20;
-    end
-    
-    % Create controls for selecting channel-specific overlays
+    % Create controls for selecting all other graphs
     nProc = numel(graphProc);
     for iProc=nProc:-1:1;
         output=graphProc{iProc}.getDrawableOutput;
-        validChan = graphProc{iProc}.checkChannelOutput;
-        validOutput = find(strcmp({output.type},'graph'));
-        for iOutput=validOutput(end:-1:1)
-            createOutputText(graphPanel,graphProcId(iProc),iOutput,hPosition3,output(iOutput).name);
-            arrayfun(@(x) createChannelBox(graphPanel,graphProcId(iProc),iOutput,x,hPosition3,...
-                'Callback',@(h,event) redrawGraph(h,guidata(h))),find(validChan));
+        if isa(graphProc{iProc},'CorrelationCalculationProcess');
+
+            validOutput = find(strcmp({output.type},'correlationGraph'));
+            % Create set of boxes for correlation graphs (input/input)
+            for iOutput=validOutput(end:-1:1)
+                input=graphProc{iProc}.getInput;
+                nInput=numel(input);
+                for iInput=nInput:-1:1
+                    createOutputText(graphPanel,graphProcId(iProc),iInput,hPosition3,input(iInput).name);
+                    for jInput=1:iInput
+                        createInputInputBox(graphPanel,graphProcId(iProc),iOutput,iInput,jInput,hPosition3,...
+                            'Callback',@(h,event) redrawCorrelationGraph(h,guidata(h)));
+                    end
+                    hPosition3=hPosition3+20;
+                end
+                createProcText(graphPanel,graphProcId(iProc),iInput,hPosition3,output(iOutput).name);
+                hPosition3=hPosition3+20;
+            end
+        elseif isa(graphProc{iProc},'EventAlignmentProcess');
+            % Create set of boxes for correlation graphs (input/input)
+            input=graphProc{iProc}.getInput;
+            nInput=numel(input);
+            validOutput = find(strcmp({output.type},'graph'));
+            for iOutput=validOutput(end:-1:1)
+                for iInput=nInput:-1:1                       
+                    createInputBox(graphPanel,graphProcId(iProc),iOutput,iInput,hPosition3,...
+                        input(iInput).name,'Callback',@(h,event) redrawEventGraph(h,guidata(h)));                  
+                    hPosition3=hPosition3+20;
+                end
+                createProcText(graphPanel,graphProcId(iProc),iInput,hPosition3,output(iOutput).name);
+                hPosition3=hPosition3+20;
+            end
+            
+        else   
+            % Create boxes for movie -specific graphs
+            validOutput = find(strcmp({output.type},'movieGraph'));
+            for iOutput=validOutput(end:-1:1)
+                createMovieBox(graphPanel,graphProcId(iProc),iOutput,hPosition3,...
+                    output(iOutput).name,'Callback',@(h,event) redrawGraph(h,guidata(h)));
+                hPosition3=hPosition3+20;
+            end
+            
+            % Create boxes for channel-specific graphs
+            validOutput = find(strcmp({output.type},'graph'));
+            for iOutput=validOutput(end:-1:1)
+                validChan = graphProc{iProc}.checkChannelOutput();
+                createOutputText(graphPanel,graphProcId(iProc),iOutput,hPosition3,output(iOutput).name);
+                arrayfun(@(x) createChannelBox(graphPanel,graphProcId(iProc),iOutput,x,hPosition3,...
+                    'Callback',@(h,event) redrawGraph(h,guidata(h))),find(validChan));
+                hPosition3=hPosition3+20;
+            end
+
+            createProcText(graphPanel,graphProcId(iProc),iOutput,hPosition3,graphProc{iProc}.getName);
             hPosition3=hPosition3+20;
         end
-        createProcText(graphPanel,graphProcId(iProc),iOutput,hPosition3,graphProc{iProc}.getName);
-        hPosition3=hPosition3+20;
+       
     end
     
     if ~isempty(graphProc)
@@ -765,6 +765,8 @@ else
     if ~isempty(h), delete(h); end
 end
 
+
+
 function redrawCorrelationGraph(hObject,handles)
 overlayTag = get(hObject,'Tag');
 userData=get(handles.figure1,'UserData');
@@ -784,14 +786,38 @@ if iInput1==iInput2
 else
     figName = [input(iInput1).name ' - ' input(iInput2).name ' cross-correlation'];
 end
-if isa(userData.MD.processes_{procId},'CorrelationAveragingProcess')
-    figName =['Averaged ' figName];
-end
+
 
 % Draw or delete the graph figure depending on the checkbox value
 if get(hObject,'Value')
     h = getFigure(handles,figName);
     userData.MD.processes_{procId}.draw(iInput1,iInput2,'output',output);
+    set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
+else
+    h=findobj(0,'-regexp','Name',['^' figName '$']);
+    if ~isempty(h), delete(h); end
+end
+
+function redrawEventGraph(hObject,handles)
+overlayTag = get(hObject,'Tag');
+userData=get(handles.figure1,'UserData');
+
+% Retrieve the id, process nr and channel nr of the selected graphProc
+tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)_input(\d+)','tokens');
+procId=str2double(tokens{1}{1});
+outputList = userData.MD.processes_{procId}.getDrawableOutput;
+input = userData.MD.processes_{procId}.getInput;
+iOutput = str2double(tokens{1}{2});
+iInput1 = str2double(tokens{1}{3});
+output = outputList(iOutput).var;
+
+
+figName = ['Aligned ' input(iInput1).name];
+
+% Draw or delete the graph figure depending on the checkbox value
+if get(hObject,'Value')
+    h = getFigure(handles,figName);
+    userData.MD.processes_{procId}.draw(iInput1);
     set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 else
     h=findobj(0,'-regexp','Name',['^' figName '$']);

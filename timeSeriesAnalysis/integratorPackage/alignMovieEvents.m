@@ -41,7 +41,10 @@ p = parseProcessParams(eventProc,paramsIn);
 % Delegates correlation processes to movies if object is a movieList 
 if isa(movieObject,'MovieList')
     movieParams.ProcessName=p.ProcessName;
+    movieParams.BandMin=p.BandMin;
+    movieParams.BandMax=p.BandMax;
     for i =1:numel(p.MovieIndex);
+        movieParams.SliceIndex=p.SliceIndex{p.MovieIndex(i)};
         movieData = movieObject.movies_{p.MovieIndex(i)};
         iProc = movieData.getProcessIndex('EventAlignmentProcess',1,0);
         if isempty(iProc)
@@ -94,28 +97,23 @@ end
 % Load input files
 input = eventProc.getInput;
 nInput=numel(input);
-inFilePaths = cell(nInput,1);
+inFilePaths = cell(1,nInput);
+outFilePaths=cell(1,nInput);
 inData = cell(nInput,1);
 for i=1:nInput
     proc = movieObject.processes_{input(i).processIndex};
     if isempty(input(i).channelIndex)
-        inFilePaths{i,:} = proc.outFilePaths_{1};
         inData{i} = proc.loadChannelOutput('output',input(i).var);
         inData{i} = reshape(inData{i},size(inData{i},1),1,size(inData{i},2));
     else
-        inFilePaths{i,:} = proc.outFilePaths_{1,input(i).channelIndex};
         inData{i} = proc.loadChannelOutput(input(i).channelIndex,'output',input(i).var);
-    end
+    end    
+    inFilePaths{i} = proc.outFilePaths_{1};
+    outFilePaths{i} = [p.OutputDirectory filesep 'aligned_' ...
+            input(i).name '.mat'];
 end
 eventProc.setInFilePaths(inFilePaths);
 
-
-% Set up output files
-outFilePaths=cell(nInput,nInput);
-for i=1:nInput
-    outFilePaths{1,i} = [p.OutputDirectory filesep 'aligned_' ...
-            input(i).name '.mat'];
-end
 mkClrDir(p.OutputDirectory);
 eventProc.setOutFilePaths(outFilePaths);
 
@@ -135,10 +133,9 @@ nWindows=size(inData{1},1);
 eventTimes = NaN(nWindows+1,1);
 
 eventData =squeeze(inData{1}(:,1,:));
-[~,time]=max(eventData(:,nLagsMax:nFrames-nLagsMax),[],2);
-validTimes= (time>1) & (time<(nFrames-2*nLagsMax+1));
+[~,time]=min(eventData(:,nLagsMax:nFrames-nLagsMax),[],2);
+validTimes= (time>1) & (time<(nFrames-2*nLagsMax+1)) & p.SliceIndex;
 eventTimes(validTimes)=time(validTimes)+nLagsMax-1;
-
 
 
 % Align maps with regards to these events
@@ -157,7 +154,19 @@ for iWindow=find(~isnan(eventTimes))'
     end
 %     save(outFilePaths,'alignedData');  
 end
-    save(outFilePaths,'alignedData');  
+
+for i=1:nInput
+    s=struct(input(i).var,[]);
+    if isempty(input(i).channelIndex)
+        s.(input(i).var)=reshape(alignedData{i},nWindows,2*nFrames+1);
+    else
+        s.(input(i).var)=alignedData{i}; %#ok<STRNU>
+    end
+    save(outFilePaths{i},'-struct','s');
+    clear s
+end
+
+%     save(outFilePaths,'alignedData');  
 disp('Finished aligning events...')
 if ishandle(wtBar), close(wtBar); end
 

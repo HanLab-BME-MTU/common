@@ -2,14 +2,14 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
     % A concrete process for calculating correlation of sampled processes
     %
     % Sebastien Besson, Oct 2011 (last modified Dec 2011)
-
+    
     methods (Access = public)
         
         function obj = CorrelationCalculationProcess(owner,varargin)
             
             if nargin == 0
                 super_args = {};
-            else               
+            else
                 % Input check
                 ip = inputParser;
                 ip.addRequired('owner',@(x) isa(x,'MovieObject'));
@@ -20,18 +20,18 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
                 funParams = ip.Results.funParams;
                 
                 % Define arguments for superclass constructor
-                super_args{1} = owner;       
+                super_args{1} = owner;
                 super_args{2} = CorrelationCalculationProcess.getName;
-                super_args{3} = @calculateMovieCorrelation;                
+                super_args{3} = @calculateMovieCorrelation;
                 if isempty(funParams)
                     funParams=CorrelationCalculationProcess.getDefaultParams(owner,outputDir);
-                end                
-                super_args{4} = funParams;                
+                end
+                super_args{4} = funParams;
             end
             
             obj = obj@TimeSeriesProcess(super_args{:});
         end
-              
+        
         
         function varargout = loadChannelOutput(obj,i,j,varargin)
             % Check input
@@ -53,7 +53,7 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
             else
                 s=load(obj.outFilePaths_{i,j},output{:});
             end
-                
+            
             for j=1:numel(output)
                 if ismember(output{j},{'raw','bootstrap'})
                     varargout{j}=s;
@@ -63,6 +63,40 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
             end
         end
         
+        function h=draw(obj,i,varargin)
+            
+            % Check input
+            if ~ismember('getDrawableOutput',methods(obj)), h=[]; return; end
+            outputList = obj.getDrawableOutput();
+            ip = inputParser;
+            ip.addRequired('obj',@(x) isa(x,'Process'));
+            ip.addRequired('i',@isscalar);
+            ip.addOptional('j',i,@isscalar);
+            ip.addParamValue('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
+            ip.KeepUnmatched = true;
+            ip.parse(obj,i,varargin{:})
+            j=ip.Results.j;
+            
+            data=obj.loadChannelOutput(i,j,'output',ip.Results.output);
+            iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
+            if ~isempty(outputList(iOutput).formatData),
+                data=outputList(iOutput).formatData(data);
+            end
+            
+            try
+                assert(~isempty(obj.displayMethod_{iOutput,i,j}));
+            catch ME %#ok<NASGU>
+                obj.displayMethod_{iOutput,i,j}=outputList(iOutput).defaultDisplayMethod();
+            end
+            
+            % Delegate to the corresponding method
+            tag = [obj.getName '_input' num2str(i) '_input' num2str(j)];
+            drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
+                2*numel(fieldnames(ip.Unmatched)),1);
+            input=obj.getInput;
+            procArgs={'Input1',input(1).name,'Input2',input(2).name};
+            h=obj.displayMethod_{iOutput,i,j}.draw(data,tag,drawArgs{:},procArgs{:});
+        end
         
         function output = getDrawableOutput(obj)
             output(1).name='Correlation function';
@@ -97,7 +131,7 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
             % Set default parameters
             funParams.OutputDirectory = [outputDir  filesep 'correlation'];
             funParams.ProcessName=TimeSeriesProcess.getTimeSeriesProcesses;
-            if isa(owner,'MovieList'), 
+            if isa(owner,'MovieList'),
                 funParams.MovieIndex=1:numel(owner.movies_);
                 winProc =cellfun(@(x) x.processes_{x.getProcessIndex('WindowingProcess',1,false)},...
                     owner.movies_,'UniformOutput',false);
@@ -105,10 +139,10 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
                 funParams.BandMax=min(cellfun(@(x) x.nBandMax_,winProc));
                 funParams.SliceIndex=cellfun(@(x) ones(x.nSliceMax_,1),winProc,'UniformOutput',false);
             else
-               winProc =owner.processes_{owner.getProcessIndex('WindowingProcess',1,false)};
-               funParams.BandMin=1;
-               funParams.BandMax=winProc.nBandMax_;
-               funParams.SliceIndex=ones(winProc.nSliceMax_,1);
+                winProc =owner.processes_{owner.getProcessIndex('WindowingProcess',1,false)};
+                funParams.BandMin=1;
+                funParams.BandMax=winProc.nBandMax_;
+                funParams.SliceIndex=ones(winProc.nSliceMax_,1);
             end
         end
     end
