@@ -1,36 +1,31 @@
-function hdrMergeFile()
-%This function asks for directories containing the bright and dim images
+function hdrMergeFileBatch(dimDir, brightDir)
+%This function takes an input of directories containing the bright and dim images
 %needed for high dynamic range merging of 16bit images. It then calls the
-%highDynamicRangeMerge function on each and writes the output to a new
+%highDynamicRangeMerge function on each and writes the output to nested folders inside a new
 %folder called hdrMergedImages.
-%Note, down the road, I would like to change this program to be able to
-%change the output directory as well and to include the options to change
-%the mystery factor # (assuming that it hasn't been canceled by then).
-%-Jessica Tytell October 25, 2011
 
-%find directories containing dim and bright images
-dimDir = uigetdir('', 'Select Folder containing Dim images');
-brightDir = uigetdir('', 'Select Folder containing Bright images');
-outputDir = uigetdir('', 'Select Output Folder');
-% %for troubleshooting only
-% dimDir = '/home/jdt2/Desktop/IFproject/110915/D1_006/w2491_VimDim';
-% brightDir = '/home/jdt2/Desktop/IFproject/110915/D1_006/w3491_VimBright';
+%-Jessica Tytell December 5, 2011
 
-%find parent directory containing both images
-% THIS SECTION IS NOT WORKING - something wrong wigh regexp matching....
-%         inputDir = uigetdir('', 'Select Folder containing dim and bright images in separate folders');
-%         dimDir = dirList(cellfun(@any,regexp({inputDir},'Dim')));
-%         brightDir = dirList(cellfun(@any,regexp({inputDir},'Bright')));
+% parse input
+ip = inputParser;
+ip.addRequired('dimDir', @ischar); 
+ip.addRequired('brightDir', @ischar);
 
 
 %read in files to arrays
 dimFiles = imDir(dimDir);
 brightFiles = imDir(brightDir);
 
-disp('dimFiles = ' );
-disp(dimFiles);
-disp('brightFiles = ' );
-disp(brightFiles);
+%set location and make output dir
+outputLocation = fileparts(dimDir);
+outputDir = ([outputLocation filesep 'hdrMerge']);
+mkdir(outputDir);
+
+%show files to test reading - comment out for final version
+% disp('dimFiles = ' );
+% disp(dimFiles);
+% disp('brightFiles = ' );
+% disp(brightFiles);
 
 dimNames = {dimFiles.name};
 brightNames = {brightFiles.name};
@@ -93,4 +88,3 @@ if nDim == nBright
     
 else disp(['There are ', nDim, ' files in the Dim channel and ', nBright, ' images in the bright folder. Image folders must contain the same number of images. Input FAIL.']);
 end
-

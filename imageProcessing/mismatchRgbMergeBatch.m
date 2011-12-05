@@ -1,4 +1,4 @@
-function mismatchRgbMerge()
+function mismatchRgbMergeBatch(baseFileDir, intermitDir)
 %This function is designed to make RGB images of two channels where there
 %are different numbers of time points for each. It reads in two directories
 %and overlays the channel with less time points at the matching time and
@@ -6,10 +6,15 @@ function mismatchRgbMerge()
 
 %-Jessica Tytell December 2, 2011
 
-%find directories containing dim and bright images
-baseFileDir = uigetdir('', 'Select Folder containing images in each time point (base file)');
-intermitDir = uigetdir('', 'Select Folder with intermittent images');
-outputDir = uigetdir('', 'Select Output Folder for merged images');
+% parse input
+ip = inputParser;
+ip.addRequired('baseFileDir', @ischar); 
+ip.addRequired('intermitDir', @ischar);
+
+%set location and make output dir
+outputLocation = fileparts(dimDir);
+outputDir = ([outputLocation filesep 'VimentinPlusTipMerge']);
+mkdir(outputDir);
 
 %read in files and show in window
 baseFiles = imDir(baseFileDir);
