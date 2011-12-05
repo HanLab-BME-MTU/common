@@ -5,6 +5,9 @@ function mismatchRgbMergeBatchSetup(inputDir)
 %one.
 %-Jessica Tytell December 5, 2011
 
+% parse input
+ip = inputParser;
+ip.addRequired('inputDir', @ischar);
 
 %Get the folders for each movie
 movieFolders = dir([inputDir filesep '*EB*VIM*']);
@@ -23,28 +26,19 @@ for j = 1:nMovies
     currDir = [inputDir filesep movieFolders(j).name];
     disp(currDir);
     
-    %get bright and dim file directories 
-    baseStruct = dir([currDir filesep 'images']);
-    intermitStruct = dir([currDir filesep 'hdrMerge']);
-    disp(baseStruct);
-    disp(intermitStruct);
-    
-    %get directory names to pass to batch function
-    if length(baseStruct) > 1
-        disp('Too many folders labeled "images" ');
-    else 
-        dimName = dimStruct.name;
-        dimDir = [currDir filesep dimName];
-    end
-    
-    if length(brightStruct) > 1
-        disp('Too many folders labeled "Bright"');
+    %exit loop if files already exist - no overwrite allowed.
+    if exist([currDir filesep 'VimentinPlusTipMerge'], 'dir')
+        disp('Vimentin Merge file already exists. No override function exists, please delete file and start again');
+        continue;
     else
-        brightName = brightStruct.name;
-        brightDir = [currDir filesep brightName];
+        %get base and intermittent file directories
+        baseDir = [currDir filesep 'images'];
+        intermitDir = [currDir filesep 'hdrMerge' filesep 'logMysteryTIFFs'];
+        disp(baseDir);
+        disp(intermitDir);
+        
+        %send to hdrMergeFileBatch
+        mismatchRgbMergeBatch(baseDir, intermitDir);
     end
-    
-    %send to hdrMergeFileBatch
-    hdrMergeFileBatch(dimDir, brightDir);
     
 end

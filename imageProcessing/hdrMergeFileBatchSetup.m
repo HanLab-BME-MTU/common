@@ -27,7 +27,7 @@ for j = 1:nMovies
     currDir = [inputDir filesep movieFolders(j).name];
     disp(currDir);
     
-    %
+    %exit loop if files already exist - no overwrite allowed.
     if exist([currDir filesep 'hdrMerge'], 'dir')
         disp('hdr file already exists. No override function exists, please delete file and start again');
         continue;
