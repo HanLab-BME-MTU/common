@@ -130,14 +130,13 @@ classdef EventAlignmentProcess < TimeSeriesProcess
             h = @eventAlignmentProcessGUI;
         end
         
-        function events = getEvents(processname)
-            switch(processname)
-                case('ProtrusionSamplingProcess')
-                    events(1).name='Maximum protrusion velocity';
-                    events(1).func=@max;
-                    events(2).name='Minimum retraction velocity';
-                    events(2).func=@min;
-            end
+        function events = getEvents()
+            events(1).name='Maximum protrusion velocity';
+            events(1).func=@max;
+            events(2).name='Maximum retraction velocity';
+            events(2).func=@min;
+            events(3).name='Starting protrusion';
+            events(3).func=@min;
         end
         
         function funParams = getDefaultParams(owner,varargin)
@@ -158,7 +157,14 @@ classdef EventAlignmentProcess < TimeSeriesProcess
                 funParams.BandMin=1;
                 funParams.BandMax=min(cellfun(@(x) x.nBandMax_,winProc));
                 funParams.SliceIndex=cellfun(@(x) ones(x.nSliceMax_,1),winProc,'UniformOutput',false);
+                
+            else
+                winProc =owner.processes_{owner.getProcessIndex('WindowingProcess',1,false)};
+                funParams.BandMin=1;
+                funParams.BandMax=winProc.nBandMax_;
+                funParams.SliceIndex=ones(winProc.nSliceMax_,1);
             end
+            funParams.EventIndex=[];
         end
     end
 end

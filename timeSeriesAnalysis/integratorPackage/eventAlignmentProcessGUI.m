@@ -82,6 +82,14 @@ set(handles.edit_BandMax,'String',funParams.BandMax);
 userData.SliceIndex=funParams.SliceIndex;
 userData.previewFig=-1;
 
+% Set up event popupmenu
+allEvents=userData.crtProc.getEvents;
+eventString=vertcat('Please select an event',{allEvents.name}');
+eventData=horzcat({[]},num2cell(1:numel(allEvents)));
+eventValue = find(cellfun(@(x) isequal(x,funParams.EventIndex),eventData));
+set(handles.popupmenu_Event,'String',eventString,'UserData',eventData,...
+    'Value',eventValue);
+
 % Choose default command line output for eventAlignmentProcessGUI
 handles.output = hObject;
 
@@ -374,6 +382,14 @@ if ishandle(userData.previewFig)
 end
 funParams.SliceIndex=userData.SliceIndex;
 
+% Retriev event index
+props=get(handles.popupmenu_Event,{'UserData','Value'});
+if isempty(props{1}{props{2}})
+    errordlg('Please select a valid event to align sampled maps',...
+        'Setting error','modal');
+    return;
+end
+funParams.EventIndex=props{1}{props{2}}
 % Process Sanity check ( only check underlying data )
 userData = get(handles.figure1, 'UserData');
 try

@@ -43,6 +43,7 @@ if isa(movieObject,'MovieList')
     movieParams.ProcessName=p.ProcessName;
     movieParams.BandMin=p.BandMin;
     movieParams.BandMax=p.BandMax;
+    movieParams.EventIndex=p.EventIndex;
     for i =1:numel(p.MovieIndex);
         movieParams.SliceIndex=p.SliceIndex{p.MovieIndex(i)};
         movieData = movieObject.movies_{p.MovieIndex(i)};
@@ -133,7 +134,9 @@ nWindows=size(inData{1},1);
 eventTimes = NaN(nWindows+1,1);
 
 eventData =squeeze(inData{1}(:,1,:));
-[~,time]=min(eventData(:,nLagsMax:nFrames-nLagsMax),[],2);
+allEvents=eventProc.getEvents;
+eventFunc=allEvents(p.EventIndex).func;
+[~,time]=eventFunc(eventData(:,nLagsMax:nFrames-nLagsMax),[],2);
 validTimes= (time>1) & (time<(nFrames-2*nLagsMax+1)) & p.SliceIndex;
 eventTimes(validTimes)=time(validTimes)+nLagsMax-1;
 

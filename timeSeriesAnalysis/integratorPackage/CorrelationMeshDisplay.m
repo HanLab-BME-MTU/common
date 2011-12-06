@@ -15,15 +15,20 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
         end
         function h=initDraw(obj,data,tag,varargin)
   
+            % define small and large fonts
+            sfont = {'FontName', 'Helvetica', 'FontSize', 18};
+            lfont = {'FontName', 'Helvetica', 'FontSize', 22};
+            
             delete(gca);
             [nx,ny,nz,nz2] = size(data.Z);
             if ~isfield(data,'X'), data.X=repmat(1:nx,1,ny); end
             if ~isfield(data,'Y'), data.Y= repmat(1:ny,nx,1); end
             h(1)=mesh(data.X(:,:,1,1),data.Y,data.Z(:,:,1,1),'FaceColor','interp');
            
-            xlabel('Lag (s)');
-            ylabel('Window number');
-            zlabel('Correlation');
+            xlabel('Lag (s)',lfont{:});
+            ylabel('Window number',lfont{:});
+            zlabel('Correlation',lfont{:});
+            set(gca,'Linewidth',1.5,sfont{:});
             
             if ~isempty(data.bounds)
                 hold on
