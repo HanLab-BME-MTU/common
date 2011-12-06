@@ -22,7 +22,7 @@ classdef ScalarMapDisplay < MovieDataDisplay
             % Create extended cmap (for NaNs)
             cmap = [obj.NaNColor;colormap(obj.Colormap)];
             imData= data(:,:,1);
-            imData(isnan(imData)) = min(data(:))-1e-10;
+            imData(isnan(imData)) = min(data(:))-(max(data(:)-min(data(:))))*1e-10;
             h=imagesc(imData,varargin{:});
             
             % Plot the image and associate the tag

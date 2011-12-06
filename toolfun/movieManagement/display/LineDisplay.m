@@ -13,13 +13,18 @@ classdef LineDisplay < MovieDataDisplay
             obj@MovieDataDisplay(varargin{:})
         end
         function h=initDraw(obj,data,tag,varargin)
+            
+            % Set the fonts
+            sfont = {'FontName', 'Helvetica', 'FontSize', 18};
+            lfont = {'FontName', 'Helvetica', 'FontSize', 22};
+            
             h=plot(data(:,2),data(:,1),varargin{:});
             set(h,'Tag',tag,'Color',obj.Color,'Marker',obj.Marker,...
                 'Linestyle',obj.LineStyle);
             
-            if ~isempty(obj.XLabel),xlabel(obj.XLabel,varargin{:}); end
-            if ~isempty(obj.YLabel),ylabel(obj.YLabel,varargin{:}); end
-            
+            if ~isempty(obj.XLabel),xlabel(obj.XLabel,lfont{:},varargin{:}); end
+            if ~isempty(obj.YLabel),ylabel(obj.YLabel,lfont{:},varargin{:}); end
+            set(gca,'LineWidth', 1.5, sfont{:})
         end
         function updateDraw(obj,h,data)
             set(h,'XData',data(:,2),'YData',data(:,1))
