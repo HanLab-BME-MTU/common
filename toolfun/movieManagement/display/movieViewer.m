@@ -3,7 +3,10 @@ function mainFig = movieViewer(MO,varargin)
 ip = inputParser;
 ip.addRequired('MO',@(x) isa(x,'MovieObject'));
 ip.addOptional('procId',[],@isnumeric);
+ip.addParamValue('movieIndex',1,@isscalar);
 ip.parse(MO,varargin{:});
+userData.procId = ip.Results.procId;
+userData.movieIndex=ip.Results.movieIndex;
 
 % Chek
 h=findobj(0,'Name','Viewer');
@@ -15,9 +18,11 @@ mainFig=figure('Name','Viewer','Position',[0 0 200 200],...
 userData=get(mainFig,'UserData');
 if isa(ip.Results.MO,'MovieList')
     userData.ML=MO;
-    userData.MD=MO.movies_{1};
+    userData.movieIndex=ip.Results.movieIndex;
+    userData.MD=MO.movies_{userData.movieIndex};
+    userData.procId = ip.Results.procId;
     if ~isempty(ip.Results.procId)
-        procId = userData.MD.getProcessIndex(class(userData.MD.processes_{ip.Results.procId}));
+        procId = userData.MD.getProcessIndex(class(userData.ML.processes_{ip.Results.procId}));
     else
         procId = ip.Results.procId;
     end
@@ -411,10 +416,19 @@ uicontrol(moviePanel,'Style','slider',...
 hPosition = hPosition+30;
 uicontrol(moviePanel,'Style','text','Position',[10 hPosition 40 20],...
     'String','Movie','Tag','text_movie');
-uicontrol(moviePanel,'Style','edit','Position',[60 hPosition moviePanelsLength-70 20],...
-    'String',[userData.MD.movieDataPath_ filesep userData.MD.movieDataFileName_],...
-    'HorizontalAlignment','left','BackgroundColor','white','Tag','edit_movie');
+if isa(ip.Results.MO,'MovieList')
+    allPaths = cellfun(@(x) fullfile(x.getPath,x.getFilename),userData.ML.movies_,'UniformOutput',false)';
+    uicontrol(moviePanel,'Style','popupmenu','Position',[60 hPosition moviePanelsLength-70 20],...
+        'String',allPaths,'Value',userData.movieIndex,...
+        'HorizontalAlignment','left','BackgroundColor','white','Tag','popup_movie',...
+        'Callback',@(h,event) switchMovie(h,guidata(h)));
+    
+else
+    uicontrol(moviePanel,'Style','edit','Position',[60 hPosition moviePanelsLength-70 20],...
+        'String',[userData.MD.movieDataPath_ filesep userData.MD.movieDataFileName_],...
+        'HorizontalAlignment','left','BackgroundColor','white','Tag','edit_movie');
 
+end
 % Add copyrigth
 hPosition = hPosition+30;
 uicontrol(moviePanel,'Style','text','Position',[10 hPosition moviePanelsLength 20],...
@@ -455,6 +469,12 @@ end
 
 % Update the image and overlays
 redrawScene(handles.figure1, handles);
+
+function switchMovie(hObject,handles)
+userData=get(handles.figure1,'UserData');
+index=get(hObject,'Value');
+if isequal(index, userData.movieIndex),return;end
+movieViewer(userData.ML,userData.procId,'movieIndex',index);
 
 function size = getPanelSize(hPanel)
 
