@@ -9,6 +9,7 @@ function hdrMergeFileBatchSetup(inputDir)
 % parse input
 ip = inputParser;
 ip.addRequired('inputDir', @ischar);
+ip.parse(inputDir);
 
 %Get the folders for each movie
 movieFolders = dir([inputDir filesep '*EB*VIM*']);

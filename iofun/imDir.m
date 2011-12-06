@@ -1,4 +1,4 @@
-function [fileNames formatNum] = imDir(imDirectory,returnAll)
+function [fileNames formatNum sNums] = imDir(imDirectory,returnAll)
 %IMDIR is a wrapper for the dir command designed for finding only image files
 % 
 % fileNames = imDir(directory);
@@ -46,8 +46,9 @@ function [fileNames formatNum] = imDir(imDirectory,returnAll)
 %   formatNum - If returnAll was enabled, this is the number of different
 %   image file extensions found in the directory 
 %
-% Hunter Elliott
-% 2/2010
+%   sNums - an array containing the number at the end of each file 
+%
+% Hunter Elliott, 2/2010
 %
 
 %The list of supported file extensions. Feel free to add! (just update the
@@ -93,7 +94,7 @@ fNums = arrayfun(@(x)(str2double(...
 
 %The sort function handles NaNs, and will not re-order if the images are
 %not numbered.
-[dummy1,iX] = sort(fNums); %#ok<ASGLU>
+[sNums,iX] = sort(fNums);
 
 fileNames = fileNames(iX);
 
