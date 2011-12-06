@@ -75,7 +75,7 @@ Cnk = diag([1 cumprod(n:-1:1) ./ cumprod(1:n)]);
 % Fit a line
 % TODO: Replace with a weighted TLS fit
 [x0,a,~,~] = ls3dline(data); 
-[minPoint,maxPoint,~,~,~] = projectionPointsLineMinMax(data,x0',a');
+[minPoint,maxPoint,~,~,~] = projectPointsOntoLine(data,x0',a');
 
 % Compute the planar constraints
 planeNormal = (maxPoint-minPoint);
