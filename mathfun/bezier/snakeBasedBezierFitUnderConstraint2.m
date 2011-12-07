@@ -1,4 +1,4 @@
-function [C,T,res,SigmaC,lambda] = snakeBasedBezierFitUnderConstraint2(data,n,beta,varargin)
+function [C,T,res,lambda] = snakeBasedBezierFitUnderConstraint2(data,n,beta,varargin)
 % snakeBasedBezierFit computes the optimal n^th Bezier curves that fits
 % the data points using a constrainted snake-based functional.
 %
@@ -20,9 +20,8 @@ function [C,T,res,SigmaC,lambda] = snakeBasedBezierFitUnderConstraint2(data,n,be
 %
 % C:         Control points of the optimal Bezier curve. a (n+1)xd matrix
 % T:         a mx1 vector
-% res:       a mxd residual vector.
-% SigmaC:    a d x d matrix representing the variance-covariance matrix of
-%            the distance of the data to the curve.
+% res:       a mx1 residual vector corresponding to the distances between
+%            data points and the curve. This is taking into account SigmaX.
 % lambda     a structure lambda whose fields contain the Lagrange
 %            multipliers at the solution [C;T]
 %
@@ -102,8 +101,8 @@ ub(d * (n+1) + 1:end) = 1;
 % Compute the residual
 T = [0; X(d * (n + 1) + 1:end); 1];
 B = (bsxfun(@power, T, 0:n) .* bsxfun(@power, 1 - T, n:-1:0)) * Cnk;
-res = B * C - data;
-SigmaC = cov(res);
+V = B * C - data;
+res = sum((V / SigmaX) .* V, 2);
 
   function F = fun(X)
     
@@ -118,10 +117,12 @@ SigmaC = cov(res);
     
     % Compute the data fidelity term
     V = data - B * C;
-    dataFidelity = sum(sum((V / SigmaX) .* V, 2));
+    res = sum((V / SigmaX) .* V, 2);
+    dataFidelity = sum(dist);
+    sigmaC = std(res);
     
-    % Append the regularization term and the contraints
-    F = dataFidelity + beta * regFuncs{d-1,n}(C);
+    % Append the regularization terms and the contraints
+    F = dataFidelity + beta * regFuncs{d-1,n}(C) - gamma * (sigmaC - 1)^2;
   end
 end
 
