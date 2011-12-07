@@ -20,8 +20,9 @@ function [C,T,res,lambda] = snakeBasedBezierFitUnderConstraint2(data,n,beta,vara
 %
 % C:         Control points of the optimal Bezier curve. a (n+1)xd matrix
 % T:         a mx1 vector
-% res:       a mx1 residual vector corresponding to the distances between
-%            data points and the curve. This is taking into account SigmaX.
+% res:       a mx1 residual vector corresponding to the square distances
+%            between data points and the curve. This is taking into account
+%            SigmaX.
 % lambda     a structure lambda whose fields contain the Lagrange
 %            multipliers at the solution [C;T]
 %
@@ -120,7 +121,7 @@ res = sum((V / SigmaX) .* V, 2);
     V = data - B * C;
     res = sum((V / SigmaX) .* V, 2);
     dataFidelity = sum(dist);
-    sigmaC = std(res);
+    sigmaC = std(sqrt(res));
     
     % Append the regularization terms and the contraints
     F = dataFidelity + beta * regFuncs{d-1,n}(C) - gamma * (sigmaC - 1)^2;
