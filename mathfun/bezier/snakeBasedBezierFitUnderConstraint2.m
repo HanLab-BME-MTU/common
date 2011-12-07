@@ -72,6 +72,7 @@ regFuncs = {@computeRegTermN1D2, @computeRegTermN2D2, @computeRegTermN3D2;...
 
 % Weight beta
 beta = beta * m * sqrt(det(SigmaX));
+gamma = m;
 
 % Number of parameters of the fitting problem is equal to
 % - number of control point coordinates: d * (n+1)
