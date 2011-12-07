@@ -224,27 +224,22 @@ classdef Channel < hgsetget
             ip.addRequired('obj',@(x) isa(x,'Channel') || numel(x)<=3);
             ip.addRequired('iFrame',@isscalar);
             ip.addParamValue('hAxes',gca,@ishandle);
-            ip.addParamValue('Color',obj(1).getColor,@(x) isequal(size(x),[1 3]));
+            ip.KeepUnmatched = true;
             ip.parse(obj,iFrame,varargin{:})
             
             
             if numel(obj)>1
                 % Multi-channel display
                 data = zeros([obj(1).owner_.imSize_ 3]);
-                for iChan=1:numel(obj)
-                    rawData = obj(iChan).loadImage(iFrame);
-                    data(:,:,iChan)=scaleContrast(rawData,[],[0 1]);
-                end
             else
-                % Single channel display
-                rawData = obj.loadImage(iFrame);
-                data=repmat(scaleContrast(rawData,[],[0 1]),[1 1 3]);
-                color=ip.Results.Color;
-                for i=1:3
-                    data(:,:,i)=data(:,:,i)*color(i);
-                end
+                data = zeros([obj(1).owner_.imSize_]);
             end  
-            h = obj(1).displayMethod_.draw(data,'channels','hAxes',ip.Results.hAxes);
+            for iChan=1:numel(obj)
+                data(:,:,iChan)=scaleContrast(obj(iChan).loadImage(iFrame),[],[0 1]);
+            end
+            drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
+                2*numel(fieldnames(ip.Unmatched)),1);
+            h = obj(1).displayMethod_.draw(data,'channels','hAxes',ip.Results.hAxes,drawArgs{:});
         end          
     end
     

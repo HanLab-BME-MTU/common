@@ -6,7 +6,6 @@ ip.addOptional('procId',[],@isnumeric);
 ip.addParamValue('movieIndex',1,@isscalar);
 ip.parse(MO,varargin{:});
 userData.procId = ip.Results.procId;
-userData.movieIndex=ip.Results.movieIndex;
 
 % Chek
 h=findobj(0,'Name','Viewer');
@@ -144,11 +143,12 @@ uicontrol(imagePanel,'Style','checkbox',...
     'String',' Autoscale','HorizontalAlignment','left',...
     'Callback',@(h,event) setClim(guidata(h)));
 hPosition1=hPosition1+30;
-uicontrol(imagePanel,'Style','checkbox',...
-    'Position',[10 hPosition1 200 20],'Tag','checkbox_grayscale',...
-    'String',' Grayscale mono-channel','Value',1,...
-    'HorizontalAlignment','left',...
-    'Callback',@(h,event) redrawImage(guidata(h)));
+uicontrol(imagePanel,'Style','text','Position',[20 hPosition1-2 100 20],...
+    'String','Colormap','HorizontalAlignment','left');
+uicontrol(imagePanel,'Style','popupmenu',...
+    'Position',[150 hPosition1 150 20],'Tag','popupmenu_colormap',...
+    'String',{'Gray','Jet','HSV'},'Value',1,...
+    'HorizontalAlignment','left','Callback',@(h,event) editColormap(guidata(h)));
 
 hPosition1=hPosition1+20;
 uicontrol(imagePanel,'Style','text',...
@@ -645,8 +645,13 @@ if ishandle(userData.drawFig)
     set(child(strcmp(get(child,'Type'),'axes')),'Clim',clim);
 end
 
+function editColormap(handles)
+allCmap=get(handles.popupmenu_colormap,'String');
+selectedCmap = get(handles.popupmenu_colormap,'Value');
+colormapArgs={'ColorMap',allCmap{selectedCmap}};
+redrawImage(handles,colormapArgs{:})
 
-function redrawImage(handles)
+function redrawImage(handles,varargin)
 frameNr=get(handles.slider_frame,'Value');
 imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
 
@@ -661,13 +666,8 @@ channelBoxes =channelBoxes(index);
 if strcmp(imageTag,'radiobutton_channels')
     set(channelBoxes,'Enable','on');
     chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
-    if get(handles.checkbox_grayscale,'Value');
-        colorArgs={'Color',[1 1 1]};
-    else
-        colorArgs={};
-    end
-    userData.MD.channels_(chanList).draw(frameNr,colorArgs{:});
-    clim=userData.MD.channels_(chanList(1)).displayMethod_.CLim;
+    userData.MD.channels_(chanList).draw(frameNr,varargin{:});
+    displayMethod = userData.MD.channels_(chanList(1)).displayMethod_;
 else
     set(channelBoxes,'Enable','off');
     % Retrieve the id, process nr and channel nr of the selected imageProc
@@ -678,10 +678,12 @@ else
     output = outputList(iOutput).var;
     iChan = str2double(tokens{1}{3});
     userData.MD.processes_{procId}.draw(iChan,frameNr,'output',output);
-    clim=userData.MD.processes_{procId}.displayMethod_{iOutput,iChan}.CLim;
+    displayMethod = userData.MD.processes_{procId}.displayMethod_{iOutput,iChan};
 end
 
+
 % Set the autoscale properties
+clim=displayMethod.CLim;
 set(handles.checkbox_autoscale,'Value',isempty(clim));
 if isempty(clim)
     userData = get(handles.figure1,'UserData');
@@ -693,6 +695,11 @@ else
     set(handles.edit_cmin,'Enable','on','String',clim(1));
     set(handles.edit_cmax,'Enable','on','String',clim(2));
 end
+
+% Set the colormap properties
+cmap=displayMethod.Colormap;
+allCmap=get(handles.popupmenu_colormap,'String');
+set(handles.popupmenu_colormap,'Value',find(strcmpi(cmap,allCmap)));
 
 % Reset the scaleBar
 setScaleBar(handles,'imageScaleBar');

@@ -14,8 +14,15 @@ classdef ImageDisplay < MovieDataDisplay
         function h=initDraw(obj,data,tag,varargin)
             % Plot the image and associate the tag
             h=imshow(data,varargin{:});
-            set(h,'Tag',tag);
-            
+            set(h,'Tag',tag,'CDataMapping','scaled');
+            obj.applyImageOptions(h,data)
+        end
+        function updateDraw(obj,h,data)
+            set(h,'CData',data)
+            obj.applyImageOptions(h,data)
+        end
+        
+        function applyImageOptions(obj,h,data)
             % Clean existing image and set image at the bottom of the stack
             hAxes = get(h,'Parent');
             child=get(hAxes,'Children');
@@ -47,10 +54,6 @@ classdef ImageDisplay < MovieDataDisplay
             % Set the color limits
             if ~isempty(obj.CLim),set(hAxes,'CLim',obj.CLim); end
         end
-        function updateDraw(obj,h,data)
-            set(h,'CData',data)
-        end
-        
     end 
  
     methods (Static)

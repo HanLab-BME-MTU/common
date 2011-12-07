@@ -65,7 +65,7 @@ classdef SegmentationPackage < Package
         
         function procConstr = getDefaultProcessConstructors(index)
             segProcConstr = {
-                @SegmentationProcess,...
+                @ThresholdProcess,...
                 @MaskRefinementProcess};
             
             if nargin==0, index=1:numel(segProcConstr); end
