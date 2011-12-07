@@ -122,9 +122,11 @@ res = sum((V / SigmaX) .* V, 2);
     res = sum((V / SigmaX) .* V, 2);
     dataFidelity = sum(dist);
     sigmaC = std(sqrt(res));
+    sigma = 1;
     
     % Append the regularization terms and the contraints
-    F = dataFidelity + beta * regFuncs{d-1,n}(C) - gamma * (sigmaC - 1)^2;
+    F = dataFidelity + beta * regFuncs{d-1,n}(C) - gamma * (sigmaC - 1)^2 / ...
+        (2 * sigma^2);
   end
 end
 
