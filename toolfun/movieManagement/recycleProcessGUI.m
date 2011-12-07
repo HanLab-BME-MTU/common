@@ -165,23 +165,26 @@ props = get(handles.listbox_processes, {'UserData','Value'});
 procIds=props{1};
 procIndex = props{2};
 procId=procIds(procIndex);
-process= userData.recyclableProc{procId};
+process= userData.recyclableProc(procId);
 
 % Find associated  package process
-packId = find(cellfun(@(x) isa(process,x),userData.package.getProcessClassNames));
-if ~isempty(packId) 
+getPackId = @(proc)find(cellfun(@(x) isa(proc,x),userData.package.getProcessClassNames));
+packProcIds = cellfun(getPackId,process);
+if any(packProcIds) 
    % Update package process and pids
    props = get(handles.listbox_package, {'String','UserData'});
    packageString = props{1};
-   props{2}{packId}=procId;
-   packageString{packId} = ['<html><b> ' packageString{packId} '</b></html>'];
+   for i = 1:numel(packProcIds)
+       props{2}{packProcIds(i)}=procId(i);
+       packageString{packProcIds(i)} = ['<html><b> ' packageString{packProcIds(i)} '</b></html>'];
+   end
    set(handles.listbox_package, 'String',packageString','UserData',props{2});
    
    % Remove process from the list
    processString(procIndex) = [];
    procIds(procIndex) = [];
    % Set the highlighted value
-   if (procIndex > length(processString) && procIndex > 1)
+   if ~isscalar(procIndex) || (procIndex > length(processString) && procIndex > 1)
        set(handles.listbox_processes, 'Value', length(processString));
    end
    set(handles.listbox_processes, 'String', processString, 'UserData', procIds)

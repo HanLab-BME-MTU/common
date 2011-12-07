@@ -63,6 +63,11 @@ classdef Process < hgsetget
             if ~isequal(obj.funParams_,para)
                 obj.funParams_ = para;
                 obj.procChanged_=true;
+                
+                % Run sanityCheck on parent package to update dependencies
+                for packId=obj.getPackage
+                    obj.owner_.packages_{packId}.sanityCheck(false,'all');
+                end
             end
         end
         
@@ -95,22 +100,24 @@ classdef Process < hgsetget
             if nargin < 2 || isempty(iFrame)
                 error('You must specify a frame number!')
             end
-            
             status = ismember(iFrame,1:obj.owner_.nFrames_);
         end
    
         function sanityCheck(obj)
+            % Compare current process fields to default ones (static method)
             crtParams=obj.funParams_;
             defaultParams = obj.getDefaultParams(obj.owner_);
-            
             crtFields = fieldnames(crtParams);
             defaultFields = fieldnames(defaultParams);
+            
+            %  Find undefined parameters
             status = ~ismember(defaultFields,crtFields);
-            for i=find(status)'
-                 crtParams.(defaultFields{i})=defaultParams.(defaultFields{i});
+            if any(status)
+                for i=find(status)'
+                    crtParams.(defaultFields{i})=defaultParams.(defaultFields{i});
+                end
+                obj.setPara(crtParams);
             end
-            obj.setPara(crtParams);
-
         end
         
         function run(obj,varargin)
@@ -126,6 +133,12 @@ classdef Process < hgsetget
             obj.updated_=true;
             obj.procChanged_=false;
             obj.finishTime_ = clock;
+           
+            % Run sanityCheck on parent package to update dependencies
+            for packId=obj.getPackage
+                obj.owner_.packages_{packId}.sanityCheck(false,'all');
+            end
+            
             obj.owner_.save;
         end
         

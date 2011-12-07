@@ -63,7 +63,7 @@ classdef Package < hgsetget
             if obj.processes_{procID}.success_ && ...
                     (any(invalidParent) || ~obj.processes_{procID}.updated_)
                 % Set process's updated=false
-                obj.processes_{procID}.setUpdated (false);
+                obj.processes_{procID}.setUpdated(false);
                 % Create a dependency error exception
                 statusMsg =['The step ' num2str(procID),': ' obj.processes_{procID}.getName...
                     ' is out of date. '];

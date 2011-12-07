@@ -48,7 +48,7 @@ classdef BackgroundMasksProcess < MaskProcessingProcess
             % Set default parameters
             funParams.ChannelIndex = 1:numel(owner.channels_); %Default is to attempt to creat background masks for all channels
             funParams.SegProcessIndex = []; %No default...
-            funParams.OutputDirectory = [outputDir  filesep 'BackgroundMasks'];
+            funParams.OutputDirectory = [outputDir  filesep 'background_masks'];
             funParams.GrowthRadius = 20;
             funParams.BatchMode = false;
         end

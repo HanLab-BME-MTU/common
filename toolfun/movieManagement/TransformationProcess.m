@@ -181,6 +181,23 @@ classdef TransformationProcess < ImageProcessingProcess
             
         end
         
+        function sanityCheck(obj)
+            sanityCheck@ImageProcessingProcess(obj);
+            % Performs additional check on the existence of transformation
+            % files
+            transformFilePaths = obj.funParams_.TransformFilePaths;
+            validTransformFiles = ~cellfun(@isempty,transformFilePaths);
+
+            for i=find(validTransformFiles)
+                if ~exist(transformFilePaths{i},'file') 
+                    error('lccb:set:fatal', ...
+                        ['The specified transformation file:\n\n ',transformFilePaths{i}, ...
+                        '\n\ndoes not exist. Please double check your path.'])
+                end
+            end
+        end
+        
+        
     end
     methods(Static)
         function name =getName()
