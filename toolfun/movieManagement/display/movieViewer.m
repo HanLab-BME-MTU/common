@@ -127,32 +127,30 @@ uicontrol(imagePanel,'Style','popupmenu','Position',[130 hPosition1 120 20],...
 
 % Colormap control
 hPosition1=hPosition1+30;
-uicontrol(imagePanel,'Style','text','Position',[20 hPosition1-2 50 20],...
-    'String','Cmin','HorizontalAlignment','left');
-uicontrol(imagePanel,'Style','edit','Position',[70 hPosition1 50 20],...
+uicontrol(imagePanel,'Style','text','Position',[20 hPosition1-2 100 20],...
+    'String','Color limits','HorizontalAlignment','left');
+uicontrol(imagePanel,'Style','edit','Position',[150 hPosition1 50 20],...
     'String','','BackgroundColor','white','Tag','edit_cmin',...
-    'Callback',@(h,event) setClim(guidata(h)));
-uicontrol(imagePanel,'Style','text','Position',[150 hPosition1-2 50 20],...
-    'String','Cmax','HorizontalAlignment','left');
+    'Callback',@(h,event) setCLim(guidata(h)));
 uicontrol(imagePanel,'Style','edit','Position',[200 hPosition1 50 20],...
     'String','','BackgroundColor','white','Tag','edit_cmax',...
-    'Callback',@(h,event) setClim(guidata(h)));
+    'Callback',@(h,event) setCLim(guidata(h)));
+
 hPosition1=hPosition1+30;
 uicontrol(imagePanel,'Style','checkbox',...
-    'Position',[10 hPosition1 200 20],'Tag','checkbox_autoscale',...
-    'String',' Autoscale','HorizontalAlignment','left',...
-    'Callback',@(h,event) setClim(guidata(h)));
-hPosition1=hPosition1+30;
-uicontrol(imagePanel,'Style','text','Position',[20 hPosition1-2 100 20],...
+    'Position',[10 hPosition1 120 20],'Tag','checkbox_colorbar',...
+    'String',' Colorbar','HorizontalAlignment','left',...
+    'Callback',@(h,event) setColorbar(guidata(h)));
+
+uicontrol(imagePanel,'Style','text','Position',[120 hPosition1-2 80 20],...
     'String','Colormap','HorizontalAlignment','left');
 uicontrol(imagePanel,'Style','popupmenu',...
-    'Position',[150 hPosition1 150 20],'Tag','popupmenu_colormap',...
+    'Position',[200 hPosition1 80 20],'Tag','popupmenu_colormap',...
     'String',{'Gray','Jet','HSV'},'Value',1,...
-    'HorizontalAlignment','left','Callback',@(h,event) editColormap(guidata(h)));
+    'HorizontalAlignment','left','Callback',@(h,event) setColormap(guidata(h)));
 
 hPosition1=hPosition1+20;
-uicontrol(imagePanel,'Style','text',...
-    'Position',[10 hPosition1 200 20],'Tag','text_vectorFieldOptions',...
+uicontrol(imagePanel,'Style','text','Position',[10 hPosition1 200 20],...
     'String','Image options','HorizontalAlignment','left','FontWeight','bold');
 
 
@@ -417,7 +415,7 @@ hPosition = hPosition+30;
 uicontrol(moviePanel,'Style','text','Position',[10 hPosition 40 20],...
     'String','Movie','Tag','text_movie');
 if isa(ip.Results.MO,'MovieList')
-    allPaths = cellfun(@(x) fullfile(x.getPath,x.getFilename),userData.ML.movies_,'UniformOutput',false)';
+    allPaths = cellfun(@(x) x.getPath,userData.ML.movies_,'UniformOutput',false)';
     uicontrol(moviePanel,'Style','popupmenu','Position',[60 hPosition moviePanelsLength-70 20],...
         'String',allPaths,'Value',userData.movieIndex,...
         'HorizontalAlignment','left','BackgroundColor','white','Tag','popup_movie',...
@@ -618,38 +616,24 @@ hTimeStamp = plotScaleBar(width,'Label',p.str,'Location',location);
 set(hTimeStamp,'Tag','timeStamp');
 delete(hTimeStamp(1))
 
-function setClim(handles)
+function setCLim(handles)
 userData=get(handles.figure1,'UserData');
 imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
 
 clim=[str2double(get(handles.edit_cmin,'String')) ...
     str2double(get(handles.edit_cmax,'String'))];
+redrawImage(handles,'CLim',clim)
 
-if strcmp(imageTag,'radiobutton_channels')
-    channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
-    chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
-    displayMethod= userData.MD.channels_(chanList(1)).displayMethod_;
-else
-    % Retrieve the id, process nr and channel nr of the selected imageProc
-    tokens = regexp(imageTag,'radiobutton_process(\d+)_output(\d+)_channel(\d+)','tokens');
-    procId=str2double(tokens{1}{1});
-    iOutput = str2double(tokens{1}{2});
-    iChan = str2double(tokens{1}{3});
-    displayMethod =userData.MD.processes_{procId}.displayMethod_{iOutput,iChan};
-end
 
-displayMethod.CLim=clim;
-
-if ishandle(userData.drawFig)
-    child=get(userData.drawFig,'Children');
-    set(child(strcmp(get(child,'Type'),'axes')),'Clim',clim);
-end
-
-function editColormap(handles)
+function setColormap(handles)
 allCmap=get(handles.popupmenu_colormap,'String');
 selectedCmap = get(handles.popupmenu_colormap,'Value');
-colormapArgs={'ColorMap',allCmap{selectedCmap}};
-redrawImage(handles,colormapArgs{:})
+redrawImage(handles,'Colormap',allCmap{selectedCmap})
+
+function setColorbar(handles)
+cbar=get(handles.checkbox_colorbar,'Value');
+if cbar, cbarStatus='on'; else cbarStatus='off'; end 
+redrawImage(handles,'Colorbar',cbarStatus)
 
 function redrawImage(handles,varargin)
 frameNr=get(handles.slider_frame,'Value');
@@ -677,24 +661,24 @@ else
     iOutput = str2double(tokens{1}{2});
     output = outputList(iOutput).var;
     iChan = str2double(tokens{1}{3});
-    userData.MD.processes_{procId}.draw(iChan,frameNr,'output',output);
+    userData.MD.processes_{procId}.draw(iChan,frameNr,'output',output,varargin{:});
     displayMethod = userData.MD.processes_{procId}.displayMethod_{iOutput,iChan};
 end
 
 
-% Set the autoscale properties
+% Set the color limits properties
 clim=displayMethod.CLim;
-set(handles.checkbox_autoscale,'Value',isempty(clim));
 if isempty(clim)
     userData = get(handles.figure1,'UserData');
     hAxes=findobj(userData.drawFig,'Type','axes','-not','Tag','Colorbar');
     clim=get(hAxes,'Clim');
-    set(handles.edit_cmin,'Enable','off','String',clim(1));
-    set(handles.edit_cmax,'Enable','off','String',clim(2));
-else
-    set(handles.edit_cmin,'Enable','on','String',clim(1));
-    set(handles.edit_cmax,'Enable','on','String',clim(2));
 end
+set(handles.edit_cmin,'Enable','on','String',clim(1));
+set(handles.edit_cmax,'Enable','on','String',clim(2));
+    
+% Set the colorbar properties
+cbar=displayMethod.Colorbar;
+set(handles.checkbox_colorbar,'Value',strcmpi(cbar,'on'));
 
 % Set the colormap properties
 cmap=displayMethod.Colormap;
