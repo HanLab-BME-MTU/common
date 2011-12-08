@@ -21,11 +21,11 @@ mkdir(outputDir);
 
 %read in files and show in window
 [baseFiles,~,baseTimes] = imDir(baseFileDir);
-disp('baseFiles = ' );
-disp(baseFiles);
+% disp('baseFiles = ' );
+% disp(baseFiles);
 [intermitFiles,~,intermitTimes] = imDir(intermitDir);
-disp('intermittent Files = ');
-disp(intermitFiles);
+% disp('intermittent Files = ');
+% disp(intermitFiles);
 
 if isempty(baseTimes) || isempty(intermitTimes)
     error('One of the image directories is empty. Unfortunately this program does not work with theoretical data');
