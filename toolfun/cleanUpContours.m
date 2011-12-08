@@ -1,4 +1,4 @@
-function [cleanContours,iClean] = cleanUpContours(contoursIn,nPtsMin)
+function [cleanContours,iClean] = cleanUpContours(contoursIn,nPtsMin,minRange)
 %CLEANUPCONTOURS removes redundant points and short contours from the input contours
 %
 % cleanContours = cleanUpContours(contoursIn)
@@ -25,6 +25,10 @@ function [cleanContours,iClean] = cleanUpContours(contoursIn,nPtsMin)
 %             kept. Contours shorter than this will be removed. 
 %             Optional. Default is 3 - just enough to make a triangle. 
 % 
+%   minRange - Minimum range of X or Y values to retain a contour. Any
+%               contour where both the X and Y coordinates have a smaller
+%               range than this will not be retained.
+%               Optional. Default is 1.
 % 
 % Output:
 % 
@@ -50,6 +54,10 @@ if nargin < 2 || isempty(nPtsMin)
     nPtsMin = 3; %Just enough to make a triangle - only contours that can actually contain something will be returned.
 end
 
+if nargin < 3 || isempty(minRange)
+    minRange = 1;
+end
+
 %% ----- Parameters ----- %%
 
 %threshold for considering two points on a contour redundant
@@ -68,8 +76,15 @@ cleanContours = arrayfun(@(x)(contoursIn{x}(:,[(allDiffs{x} > distThreshold) tru
 
 %Find the contours that are long enough
 nPall = cellfun(@(x)(size(x,2)),cleanContours);
-iClean = find(nPall >= nPtsMin);
+iClean = nPall >= nPtsMin;
+
+%And the contours with sufficient coordinate range
+rangeAll = cellfun(@(x)(max(range(x,2))),cleanContours);
+iClean(rangeAll < minRange) = false;
 
 %Return only these long contours
 cleanContours = cleanContours(iClean)';
+
+%Convert clean to indices for historical reasons
+iClean = find(iClean);
 
