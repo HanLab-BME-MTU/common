@@ -1,9 +1,10 @@
 classdef LineDisplay < MovieDataDisplay
     %Concreate display class for displaying points or lines
     properties
-        Marker = 'none';
-        LineStyle = '-'
         Color='r';
+        Marker = 'none';
+        LineStyle = '-';
+        LineWidth = 1;
         XLabel='';
         YLabel='';
         sfont = {'FontName', 'Helvetica', 'FontSize', 18};
@@ -18,7 +19,7 @@ classdef LineDisplay < MovieDataDisplay
             
             h=plot(data(:,2),data(:,1),varargin{:});
             set(h,'Tag',tag,'Color',obj.Color,'Marker',obj.Marker,...
-                'Linestyle',obj.LineStyle);
+                'Linestyle',obj.LineStyle,'LineWidth',obj.LineWidth);
             obj.setAxesProperties;
             
         end
@@ -43,14 +44,16 @@ classdef LineDisplay < MovieDataDisplay
             params(2).validator=@ischar;
             params(3).name='LineStyle';
             params(3).validator=@ischar;
-            params(4).name='XLabel';
-            params(4).validator=@ischar;
-            params(5).name='YLabel';
+            params(4).name='LineWidth';
+            params(4).validator=@isscalar;
+            params(5).name='XLabel';
             params(5).validator=@ischar;
-            params(6).name='sfont';
-            params(6).validator=@iscell;
-            params(7).name='lfont';
+            params(6).name='YLabel';
+            params(6).validator=@ischar;
+            params(7).name='sfont';
             params(7).validator=@iscell;
+            params(8).name='lfont';
+            params(8).validator=@iscell;
         end
         function f=getDataValidator()
             f=@isnumeric;

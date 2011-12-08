@@ -258,7 +258,7 @@ disp('Saving results...')
 %Save the values that were subtracted from each frame.
 for i = 1:nChanCorr
    subtractedValues = backgroundValues{i}; %#ok<NASGU>
-   save(movieData.processes_{iProc}.outFilePaths_{2,p.ChannelIndex(iChan)},'subtractedValues');
+   save(movieData.processes_{iProc}.outFilePaths_{2,p.ChannelIndex(i)},'subtractedValues');
 end
 
 

@@ -112,18 +112,21 @@ classdef ImageCorrectionProcess < ImageProcessingProcess
             if drawAvgCorrImage
                 % Input check
                 ip =inputParser;
-                ip.addRequired('obj',@(x) isa(x,'ImageProcessingProcess'));
                 ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
                 ip.addParamValue('output',[],@ischar);
                 ip.KeepUnmatched = true;
-                ip.parse(obj,iChan,varargin{:})
+                ip.parse(iChan,varargin{:})
                 
                 % Load average corrected image
-                tmp = load(obj.outFilePaths_{2,iChan});
-                tmpFields=fieldnames(tmp);
-                data=tmp.(tmpFields{1});
+                s = load(obj.outFilePaths_{2,iChan});
+                tmpFields=fieldnames(s);
+                data=s.(tmpFields{1});
                 
-                iOutput= 2;
+                iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
+                if ~isempty(outputList(iOutput).formatData),
+                    data=outputList(iOutput).formatData(data);
+                end
+            
                 try
                     assert(~isempty(obj.displayMethod_{iOutput,iChan}));
                 catch ME
@@ -140,16 +143,25 @@ classdef ImageCorrectionProcess < ImageProcessingProcess
                 h=draw@ImageProcessingProcess(obj,iChan,varargin{1},varargin{2:end});
             end
         end
-    end
-    methods(Static)
-        function output = getDrawableOutput()
+        
+        function output = getDrawableOutput(obj)
             output = ImageProcessingProcess.getDrawableOutput();
-            output(2).name='Averaged correction images';
-            output(2).var='avgCorrImage';
-            output(2).formatData=[];
-            output(2).type='graph';
-            output(2).defaultDisplayMethod=@ScalarMapDisplay;
+            output(end+1).name='Averaged correction images';
+            output(end).var='avgCorrImage';
+            output(end).formatData=[];
+            output(end).type='graph';
+            output(end).defaultDisplayMethod=@(x) ImageDisplay('Colormap','jet',...
+                'Colorbar','on','CLim',obj.getCorrectionLimits(x));
         end
         
+    end
+    
+    methods (Access=protected)
+        function limits = getCorrectionLimits(obj,iChan)
+            s = load(obj.outFilePaths_{2,iChan});
+            tmpFields=fieldnames(s);
+            data=s.(tmpFields{1});
+            limits=[min(data(:)) max(data(:))];
+        end
     end
 end

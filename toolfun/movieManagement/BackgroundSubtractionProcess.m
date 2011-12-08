@@ -95,6 +95,7 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
             output(2).formatData=[];
             output(2).type='graph';
             output(2).defaultDisplayMethod=@(x)LineDisplay('Color',[0 0 0],...
+                'LineStyle','-','LineWidth',2,...
                 'XLabel','Frame Number','YLabel','Subtracted Background Value, A.U.');
         end
         
