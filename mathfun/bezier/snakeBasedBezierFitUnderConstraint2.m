@@ -118,7 +118,7 @@ res = B * C - data;
     % Compute the data fidelity term
     V = data - B * C;
     res = sum((V / SigmaX) .* V, 2);
-    dataFidelity = sum(dist);
+    dataFidelity = sum(res);
     
     % Append the regularization terms and the contraints
     F = dataFidelity + beta * regFuncs{d-1,n}(C);
