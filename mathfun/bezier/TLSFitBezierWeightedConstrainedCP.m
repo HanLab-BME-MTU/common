@@ -1,4 +1,4 @@
-function [P t res SigmaC] = TLSFitBezierWeightedConstrainedCP(data, w, n, maxCurvature, varargin)
+function [P t res] = TLSFitBezierWeightedConstrainedCP(data, w, n, maxCurvature, varargin)
 %
 % WORK IN PROGRESS!
 %
@@ -195,7 +195,7 @@ end
 % Compute unweighted residuals
 res = res./w(:);
 res = reshape(res,[m, dim]);
-SigmaC = cov(res);
+% SigmaC = cov(res);
 
 % Reshape residual
 % res = sqrt(sum(reshape(res, [m, dim]).^2, 2));
