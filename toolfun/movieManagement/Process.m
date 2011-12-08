@@ -97,9 +97,9 @@ classdef Process < hgsetget
         end
         
         function status = checkFrameNum(obj,iFrame)
-            if nargin < 2 || isempty(iFrame)
-                error('You must specify a frame number!')
-            end
+            ip=inputParser;
+            ip.addRequired('iFrame',@isnumeric)
+            ip.parse(iFrame);            
             status = ismember(iFrame,1:obj.owner_.nFrames_);
         end
    
