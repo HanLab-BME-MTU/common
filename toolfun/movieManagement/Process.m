@@ -87,18 +87,16 @@ classdef Process < hgsetget
         end
         
         function status = checkChanNum(obj,iChan)
-            %Checks that the selected channel numbers are valid for this
-            %movieData. Specific processes can override this to add more checks.
-            if nargin < 2 || isempty(iChan)
-                error('You must specify a channel number!')
-            end
+            ip=inputParser;
+            ip.addRequired('iChan',@(x) ~isempty(x) && isnumeric(x))
+            ip.parse(iChan);   
             
             status = ismember(iChan,1:numel(obj.owner_.channels_));
         end
         
         function status = checkFrameNum(obj,iFrame)
             ip=inputParser;
-            ip.addRequired('iFrame',@isnumeric)
+            ip.addRequired('iFrame',@(x) ~isempty(x) && isnumeric(x))
             ip.parse(iFrame);            
             status = ismember(iFrame,1:obj.owner_.nFrames_);
         end
