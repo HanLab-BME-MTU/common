@@ -6,6 +6,8 @@ classdef LineDisplay < MovieDataDisplay
         Color='r';
         XLabel='';
         YLabel='';
+        sfont = {'FontName', 'Helvetica', 'FontSize', 18};
+        lfont = {'FontName', 'Helvetica', 'FontSize', 22};
     end
     methods
                 
@@ -14,20 +16,22 @@ classdef LineDisplay < MovieDataDisplay
         end
         function h=initDraw(obj,data,tag,varargin)
             
-            % Set the fonts
-            sfont = {'FontName', 'Helvetica', 'FontSize', 18};
-            lfont = {'FontName', 'Helvetica', 'FontSize', 22};
-            
             h=plot(data(:,2),data(:,1),varargin{:});
             set(h,'Tag',tag,'Color',obj.Color,'Marker',obj.Marker,...
                 'Linestyle',obj.LineStyle);
+            obj.setAxesProperties;
             
-            if ~isempty(obj.XLabel),xlabel(obj.XLabel,lfont{:},varargin{:}); end
-            if ~isempty(obj.YLabel),ylabel(obj.YLabel,lfont{:},varargin{:}); end
-            set(gca,'LineWidth', 1.5, sfont{:})
         end
         function updateDraw(obj,h,data)
-            set(h,'XData',data(:,2),'YData',data(:,1))
+            set(h,'XData',data(:,2),'YData',data(:,1));
+            obj.setAxesProperties;
+        end
+    end
+    methods(Access=protected)
+        function setAxesProperties(obj)
+            if ~isempty(obj.XLabel),xlabel(obj.XLabel,obj.lfont{:}); end
+            if ~isempty(obj.YLabel),ylabel(obj.YLabel,obj.lfont{:}); end
+            set(gca,'LineWidth', 1.5, obj.sfont{:})
         end
     end    
     
@@ -43,6 +47,10 @@ classdef LineDisplay < MovieDataDisplay
             params(4).validator=@ischar;
             params(5).name='YLabel';
             params(5).validator=@ischar;
+            params(6).name='sfont';
+            params(6).validator=@iscell;
+            params(7).name='lfont';
+            params(7).validator=@iscell;
         end
         function f=getDataValidator()
             f=@isnumeric;
