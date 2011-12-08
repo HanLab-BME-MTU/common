@@ -72,8 +72,7 @@ regFuncs = {@computeRegTermN1D2, @computeRegTermN2D2, @computeRegTermN3D2;...
 [m d] = size(data);
 
 % Weight beta
-beta = beta * m * sqrt(det(SigmaX));
-gamma = m;
+beta = beta * m * trace(SigmaX);
 
 % Number of parameters of the fitting problem is equal to
 % - number of control point coordinates: d * (n+1)
@@ -125,8 +124,7 @@ res = sum((V / SigmaX) .* V, 2);
     sigmaPrior = 1;
     
     % Append the regularization terms and the contraints
-    F = dataFidelity + beta * regFuncs{d-1,n}(C) - gamma * (sigmaC - 1)^2 / ...
-        (2 * sigmaPrior^2);
+    F = dataFidelity + beta * regFuncs{d-1,n}(C);
   end
 end
 
