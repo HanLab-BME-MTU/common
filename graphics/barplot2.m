@@ -1,15 +1,15 @@
 %BARPLOT2 Bar plot grouping multiple sets/categories of data, with error bars.
 %
-% INPUTS:   prm : cell array of matrices that contain the box properties:
+% Inputs:   prm : cell array of matrices that contain the box properties:
 %                 row 1: height
 %                 row 2: optional, error bars
-%         color : cell array colors, each containing a Nx3 matrix. Colors cycle through matrix.
+%     errorbars : cell array colors, each containing a Nx3 matrix. Colors cycle through matrix.
 %
 %       Options : see function content
 %
 % Examples: 
 %
-% 1) simple bar plot
+% 1) Simple bar plot
 % figure; barplot2(rand(1,6), 0.1*rand(1,6), 'BarWidth', 0.8, 'XLabel', 'x label', 'YLabel', 'y label', ...
 %     'XLabels', arrayfun(@(k) ['S' num2str(k)], 1:6, 'UniformOutput', false),...
 %     'Angle', 0, 'YLim', [0 1]);

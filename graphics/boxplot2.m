@@ -1,17 +1,36 @@
 %BOXPLOT2 Box plot grouping multiple sets/categories of data, with error bars and SEM.
 %
-% INPUTS:   prm : matrix or cell array of matrices that contain the box properties:
+% Inputs:   prm : matrix or cell array of matrices that contain the box properties:
 %                 row 1: mean or median
 %                 row 2: optional, SEM
 %                 row 2/3: 25th percentile, bottom of box
 %                 row 3/4: 75th percentile, top of box
 %                 row 4/5: optional, bottom whisker
 %                 row 5/6: optional, top whisker
-%         color : Nx3 matrix of colors, where N is the number of bars
+% Options:
+%  
+%     FaceColor : Nx3 matrix of colors, where N is the number of bars or groups
+%     EdgeColor : "
 %       xLabels : cell array of strings, labels for each bar
 %        yLabel : string, y-axis label
 %
-% Example: boxplot2({[3 4; 0.2 0.2; 2 3; 4 5; 0.5 0.5; 0.5 0.5]});
+% Examples:
+%
+% 1) Simple box plot
+% prm = [3 4; 0.2 0.2; 2 3; 4 5; 0.5 0.5; 0.5 0.5];
+% figure; boxplot2(prm, 'BarWidth', 0.8, 'XLabel', 'x label', 'YLabel', 'y label', ...
+%     'XLabels', arrayfun(@(k) ['S' num2str(k)], 1:2, 'UniformOutput', false),...
+%     'Angle', 0);
+% 
+% 
+% 2) Multiple groups
+% prm = {[3 4; 0.2 0.2; 2 3; 4 5; 0.5 0.5; 0.5 0.5],...
+%     [3 4; 0.2 0.2; 2 3; 4 5; 0.5 0.5; 0.5 0.5]};
+% figure; boxplot2(prm, 'BarWidth', 0.8, 'XLabel', 'x label', 'YLabel', 'y label', ...
+%     'XLabels', arrayfun(@(k) ['S' num2str(k)], 1:2, 'UniformOutput', false),...
+%     'Angle', 0);
+
+
 
 % Francois Aguet, 22 Feb 2011 (Last modified: 12/08/2011)
 
