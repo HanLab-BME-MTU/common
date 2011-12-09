@@ -33,7 +33,7 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('prm');
 ip.addOptional('errorbars', [], @(x) all(size(x)==size(prm)));
-ip.addParamValue('Color', jet(nb), @(x) size(x,1)==nb || size(x,1)==ng);
+ip.addParamValue('FaceColor', jet(nb), @(x) size(x,1)==nb || size(x,1)==ng);
 ip.addParamValue('EdgeColor', []);
 ip.addParamValue('GroupDistance', 1, @isscalar);
 ip.addParamValue('BorderWidth', [], @isscalar); 
@@ -56,13 +56,13 @@ ip.addParamValue('AdjustFigure', true, @islogical);
 ip.parse(prm, varargin{:});
 
 errorBars = ip.Results.errorbars;
-color = ip.Results.Color;
-nc = size(color,1);
+faceColor = ip.Results.FaceColor;
+nc = size(faceColor,1);
 edgeColor = ip.Results.EdgeColor;
 ha = ip.Results.Handle;
 
 if isempty(edgeColor)
-    edgeColor = zeros(size(color));
+    edgeColor = zeros(size(faceColor));
 end
 
 bw = ip.Results.BarWidth;
@@ -108,15 +108,15 @@ for k = 1:ng
     rb = xa{k} + bw/2;
     xv = [lb; rb; rb; lb; lb; rb];
     yv = [height; height; zeros(1,nb); zeros(1,nb); height; height];
-
+    
     for b = 1:nb
         if nc==nb
             ci = b;
         else
             ci = k;
         end
-        patch(xv(:,b), yv(:,b), color(ci,:), 'EdgeColor', edgeColor(ci,:),...
-        'LineWidth', ip.Results.LineWidth);
+        patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
+            'LineWidth', ip.Results.LineWidth);
     end
    
     % errorbars, if two-sided

@@ -13,7 +13,7 @@
 %
 % Example: boxplot2({[3 4; 0.2 0.2; 2 3; 4 5; 0.5 0.5; 0.5 0.5]});
 
-% Francois Aguet, 22 Feb 2011 (Last modified: 27 July 2011)
+% Francois Aguet, 22 Feb 2011 (Last modified: 12/08/2011)
 
 function boxplot2(prm, varargin)
 
@@ -21,13 +21,13 @@ if isnumeric(prm)
     prm = {prm};
 end
 
-ng = length(prm); % # of groups
+ng = numel(prm); % # of groups
 nb = cellfun(@(c) size(c, 2), prm); % # bars in each group
 
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('prm');
-ip.addOptional('Color', []);
+ip.addParamValue('FaceColor', jet(max(nb)), @(x) size(x,1)==nb || size(x,1)==ng);
 ip.addParamValue('EdgeColor', []);
 ip.addParamValue('GroupDistance', 0.5, @isscalar);
 ip.addParamValue('BorderWidth', [], @isscalar); 
@@ -47,22 +47,19 @@ ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'non
 ip.addParamValue('X', [], @(x) numel(x)==ng); % cell array of x-coordinates (groups only)
 ip.addParamValue('AdjustFigure', true, @islogical);
 ip.parse(prm, varargin{:});
-color = ip.Results.Color;
+
+faceColor = ip.Results.FaceColor;
+nc = size(faceColor,1);
 edgeColor = ip.Results.EdgeColor;
 ha = ip.Results.Handle;
 
-if isempty(color)
-    color = arrayfun(@(k) [0.7 0.9 1], 1:ng, 'UniformOutput', false);
-end
-
 if isempty(edgeColor)
-    edgeColor = arrayfun(@(k) [0 0.7 1], 1:ng, 'UniformOutput', false);
+    edgeColor = zeros(size(faceColor));
 end
 
 bw = ip.Results.BarWidth;
 dg = ip.Results.GroupDistance; % distance between groups, in bar widths
 
-% xa = cell(1,ng);
 % x-coords for groups
 xa = cell(1,ng);
 if isempty(ip.Results.X)
@@ -127,8 +124,15 @@ for k = 1:ng
     xv = [lb; rb; rb; lb; lb; rb];
     yv = [p75; p75; p25; p25; p75; p75];
     
-    arrayfun(@(b) patch(xv(:,b), yv(:,b), color{k}(mod(b,size(color{k},1))+1,:),...
-        'EdgeColor', edgeColor{k}(mod(b,size(edgeColor{k},1))+1,:), 'LineWidth', ip.Results.LineWidth), 1:nb(k));
+    for b = 1:nb
+        if nc==nb
+            ci = b;
+        else
+            ci = k;
+        end
+        patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
+            'LineWidth', ip.Results.LineWidth);
+    end
     
     % mean/median line
     line([lb; rb], [mu; mu], 'Color', [0 0 0], 'LineWidth', ip.Results.LineWidth);
