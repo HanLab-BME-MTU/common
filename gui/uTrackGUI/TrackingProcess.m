@@ -228,50 +228,6 @@ classdef TrackingProcess < DataProcessingProcess
             funParams.gapCloseParam.minTrackLen = 1; %minimum length of track segments from linking to be used in gap closing.
             funParams.gapCloseParam.diagnostics = 1; %FLAG 1 to plot a histogram of gap lengths in the end; 0 or empty otherwise.
             
-            % --------------- costMatrices ----------------
-            
-            % Linking:
-            funParams.costMatrices(1).funcName = func2str(@costMatLinearMotionLink2);
-            
-            parameters.linearMotion = 0; %FLAG use linear motion Kalman filter.
-            parameters.minSearchRadius = 2; %minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
-            parameters.maxSearchRadius = 5; %IMPORTANT maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
-            parameters.brownStdMult = 3; %multiplication factor to calculate search radius from standard deviation.
-            parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the linking (initial tracking) step.
-            parameters.nnWindow = funParams.gapCloseParam.timeWindow; %number of frames before the current one where you want to look to see a feature's nearest neighbor in order to decide how isolated it is (in the initial linking step).
-            parameters.kalmanInitParam = []; %Kalman filter initialization parameters.
-            parameters.diagnostics = [2 owner.nFrames_-1]; %FLAG THEN NUMBERS if you want to plot the histogram of linking distances up to certain frames, indicate their numbers; 0 or empty otherwise. Does not work for the first or last frame of a movie.
-            
-            funParams.costMatrices(1).parameters = parameters;
-            clear parameters
-            
-            % Gap Closing:
-            funParams.costMatrices(2).funcName = func2str(@costMatLinearMotionCloseGaps2);
-            parameters.linearMotion = 0; %use linear motion Kalman filter.
-            
-            parameters.minSearchRadius = 2; %minimum allowed search radius.
-            parameters.maxSearchRadius = 5; %maximum allowed search radius.
-            parameters.brownStdMult = 3*ones(funParams.gapCloseParam.timeWindow,1); %multiplication factor to calculate Brownian search radius from standard deviation.
-            
-            parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the gap closing and merging/splitting step.
-            parameters.nnWindow = funParams.gapCloseParam.timeWindow; %number of frames before/after the current one where you want to look for a track's nearest neighbor at its end/start (in the gap closing step).
-            parameters.brownScaling = [0.5 0.01]; %power for scaling the Brownian search radius with time, before and after timeReachConfB (next parameter).
-            parameters.timeReachConfB = funParams.gapCloseParam.timeWindow; %before timeReachConfB, the search radius grows with time with the power in brownScaling(1); after timeReachConfB it grows with the power in brownScaling(2).
-            parameters.ampRatioLimit = [0.5 2]; % (FLAG + VALUES small-big value) for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
-            
-            % If parameters.linearMotion = 1
-            parameters.lenForClassify = 5; %minimum track segment length to classify it as linear or random.
-            parameters.linStdMult = 3*ones(funParams.gapCloseParam.timeWindow,1); %multiplication factor to calculate linear search radius from standard deviation.
-            parameters.linScaling = [1 0.01]; %power for scaling the linear search radius with time (similar to brownScaling).
-            parameters.timeReachConfL = funParams.gapCloseParam.timeWindow; %similar to timeReachConfB, but for the linear part of the motion.
-            parameters.maxAngleVV = 30; %maximum angle between the directions of motion of two tracks that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
-            % ---------------------------------
-            
-            parameters.gapPenalty = 1; %penalty for increasing temporary disappearance time (disappearing for n frames gets a penalty of gapPenalty^n).
-            parameters.resLimit = []; % text field resolution limit, which is generally equal to 3 * point spread function sigma.
-            
-            funParams.costMatrices(2).parameters = parameters;
-            clear parameters
             
             % --------------- kalmanFunctions ----------------
             
@@ -292,8 +248,74 @@ classdef TrackingProcess < DataProcessingProcess
             funParams.verbose = 1;
             funParams.probDim = 2;
             
+            funParams.costMatrices(1) = TrackingProcess.getDefaultLinkingCostMatrices(owner, funParams.gapCloseParam.timeWindow,1);
+            funParams.costMatrices(2) = TrackingProcess.getDefaultGapClosingCostMatrices(owner, funParams.gapCloseParam.timeWindow,1);
+            
 
         end
+        
+        function costMatrix = getDefaultLinkingCostMatrices(owner,timeWindow,varargin)
+            
+            % Linear motion
+            costMatrices(1).name = 'Linear motion models';
+            costMatrices(1).funcName = func2str(@costMatRandomDirectedSwitchingMotionLink);
+            costMatrices(1).GUI = @costMatRandomDirectedSwitchingMotionLinkGUI;
+            costMatrices(1).parameters.linearMotion = 0; % use linear motion Kalman filter.
+            costMatrices(1).parameters.minSearchRadius = 2; %minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
+            costMatrices(1).parameters.maxSearchRadius = 5; %IMPORTANT maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
+            costMatrices(1).parameters.brownStdMult = 3; %multiplication factor to calculate search radius from standard deviation.
+            costMatrices(1).parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the linking (initial tracking) step.
+            costMatrices(1).parameters.nnWindow = timeWindow; %number of frames before the current one where you want to look to see a feature's nearest neighbor in order to decide how isolated it is (in the initial linking step).
+            costMatrices(1).parameters.kalmanInitParam = []; %Kalman filter initialization parameters.
+            costMatrices(1).parameters.diagnostics = [2 owner.nFrames_-1];
+            
+                        
+            ip=inputParser;
+            ip.addRequired('owner',@(x) isa(x,'MovieData'));
+            ip.addRequired('timeWindow',@isscalar);
+            ip.addOptional('index',1:length(costMatrices),@isvector);
+            ip.parse(owner,timeWindow,varargin{:});
+            index = ip.Results.index;
+            costMatrix=costMatrices(index);          
+        end
+        
+        function costMatrix = getDefaultGapClosingCostMatrices(owner,timeWindow,varargin)
+            
+            % Linear motion
+            costMatrices(1).name = 'Linear motion models';
+            costMatrices(1).funcName = func2str(@costMatRandomDirectedSwitchingMotionCloseGaps);
+            costMatrices(1).GUI = @costMatRandomDirectedSwitchingMotionCloseGapsGUI;
+            costMatrices(1).parameters.linearMotion = 0; %use linear motion Kalman filter.
+            
+            costMatrices(1).parameters.minSearchRadius = 2; %minimum allowed search radius.
+            costMatrices(1).parameters.maxSearchRadius = 5; %maximum allowed search radius.
+            costMatrices(1).parameters.brownStdMult = 3*ones(timeWindow,1); %multiplication factor to calculate Brownian search radius from standard deviation.
+            
+            costMatrices(1).parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the gap closing and merging/splitting step.
+            costMatrices(1).parameters.nnWindow = timeWindow; %number of frames before/after the current one where you want to look for a track's nearest neighbor at its end/start (in the gap closing step).
+            costMatrices(1).parameters.brownScaling = [0.5 0.01]; %power for scaling the Brownian search radius with time, before and after timeReachConfB (next parameter).
+            costMatrices(1).parameters.timeReachConfB = timeWindow; %before timeReachConfB, the search radius grows with time with the power in brownScaling(1); after timeReachConfB it grows with the power in brownScaling(2).
+            costMatrices(1).parameters.ampRatioLimit = [0.5 2]; % (FLAG + VALUES small-big value) for merging and splitting. Minimum and maximum ratios between the intensity of a feature after merging/before splitting and the sum of the intensities of the 2 features that merge/split.
+            
+            % If parameters.linearMotion = 1
+            costMatrices(1).parameters.lenForClassify = 5; %minimum track segment length to classify it as linear or random.
+            costMatrices(1).parameters.linStdMult = 3*ones(timeWindow,1); %multiplication factor to calculate linear search radius from standard deviation.
+            costMatrices(1).parameters.linScaling = [1 0.01]; %power for scaling the linear search radius with time (similar to brownScaling).
+            costMatrices(1).parameters.timeReachConfL = timeWindow; %similar to timeReachConfB, but for the linear part of the motion.
+            costMatrices(1).parameters.maxAngleVV = 30; %maximum angle between the directions of motion of two tracks that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
+            % ---------------------------------
+            
+            costMatrices(1).parameters.gapPenalty = 1.5; %penalty for increasing temporary disappearance time (disappearing for n frames gets a penalty of gapPenalty^n).
+            costMatrices(1).parameters.resLimit = []; % text field resolution limit, which is generally equal to 3 * point spread function sigma.
+            
+            ip=inputParser;
+            ip.addRequired('owner',@(x) isa(x,'MovieData'));
+            ip.addRequired('timeWindow',@isscalar);
+            ip.addOptional('index',1:length(costMatrices),@isvector);
+            ip.parse(owner,timeWindow,varargin{:});
+            index = ip.Results.index;
+            costMatrix=costMatrices(index);      
+        end    
         
     end
 end

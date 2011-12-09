@@ -99,11 +99,14 @@ eval ( [ 'userData.procConstr = @', ...
     userData.crtPackage.getProcessClassNames{userData.procID},';']);
 
 % Set cost function and kalman options
-userData.cost_linking = {'costMatLinearMotionLink2'};
-userData.cost_gapclosing = {'costMatLinearMotionCloseGaps2'};
 
-userData.fun_cost_linking = {@costMatLinearMotionLink2GUI};
-userData.fun_cost_gap = {@costMatLinearMotionCloseGaps2GUI};
+defaultLinkingCostMat = TrackingProcess.getDefaultLinkingCostMatrices(userData.MD,5);
+defaultGapClosingCostMat = TrackingProcess.getDefaultGapClosingCostMatrices(userData.MD,5);
+userData.cost_linking = {defaultLinkingCostMat.funcName};
+userData.cost_gapclosing = {defaultGapClosingCostMat.funcName};
+userData.fun_cost_linking = {defaultLinkingCostMat.GUI};
+userData.fun_cost_gap = {defaultGapClosingCostMat.GUI};
+
 
 userData.kalman_reserveMem = {'kalmanResMemLM'};
 userData.kalman_initialize = {'kalmanInitLinearMotion'};
@@ -175,8 +178,10 @@ u1{i1} = funParams.costMatrices(1).parameters;
 u2{i2} = funParams.costMatrices(2).parameters;
 
 
-set(handles.popupmenu_linking, 'Value', i1, 'UserData', u1)
-set(handles.popupmenu_gapclosing, 'Value', i2, 'UserData', u2)
+set(handles.popupmenu_linking, 'Value', i1, 'UserData', u1,...
+    'String',{defaultLinkingCostMat.name})
+set(handles.popupmenu_gapclosing, 'Value', i2, 'UserData', u2,...
+    'String',{defaultGapClosingCostMat.name})
 
 
 % kalmanFunctions

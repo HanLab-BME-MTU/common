@@ -178,7 +178,7 @@ for iChan = 1:nChanThresh
         waitbar((iChan-1)*nImages / nImTot,wtBar,['Please wait, thresholding channel ' num2str(p.ChannelIndex(iChan)) ' ...']);        
     end        
     disp(['Thresholding images for channel # ' num2str(p.ChannelIndex(iChan)) ' : '])
-    disp(imDirs{iChan})
+    disp(inFilePaths{1,iChan})
     disp('Masks will be stored in directory :')
     disp(maskDirs{iChan})
     
