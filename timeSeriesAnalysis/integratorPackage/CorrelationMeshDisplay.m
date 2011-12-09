@@ -18,7 +18,7 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
         function h=initDraw(obj,data,tag,varargin)
             delete(gca)
             % Read sizes and replicate data if applicable
-            [nx,ny,nz,nz2] = size(data.Z);
+            [nx,ny,nBands,nBands2] = size(data.Z);
             if ~isfield(data,'X'), data.X=repmat(1:nx,1,ny); end
             if ~isfield(data,'Y'), data.Y= repmat(1:ny,nx,1); end
             
@@ -51,23 +51,23 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
             axesPos = get(get(h(1),'Parent'),'Position');
             mainFig = get(get(h(1),'Parent'),'Parent');
 
-            if nz>1
+            if nBands>1
                 set(mainFig,'Toolbar','figure');
                 obj.slider = uicontrol(mainFig,'Style','slider',...
                     'Units','normalized',...
                     'Position',[axesPos(1) 1-.03 axesPos(3) .03],...
-                    'Value',1,'Min',1,'Max',nz,...
-                    'SliderStep',[1/(nz-1)  5/(nz-1)],...
+                    'Value',1,'Min',1,'Max',nBands,...
+                    'SliderStep',[1/(nBands-1)  5/(nBands-1)],...
                     'BackgroundColor','white',...
                     'Callback',@(hObject,event) updateDraw(obj,h,data));
             end
-            if nz2>1
+            if nBands2>1
                 set(mainFig,'Toolbar','figure');
                 obj.slider2 = uicontrol(mainFig,'Style','slider',...
                     'Units','normalized',...
                     'Position',[axesPos(1) 1-.06 axesPos(3) .03],...
-                    'Value',1,'Min',1,'Max',nz,...
-                    'SliderStep',[1/(nz2-1)  5/(nz2-1)],...
+                    'Value',1,'Min',1,'Max',nBands2,...
+                    'SliderStep',[1/(nBands2-1)  5/(nBands2-1)],...
                     'BackgroundColor','white',...
                     'Callback',@(hObject,event) updateDraw(obj,h,data));
             end
@@ -75,13 +75,13 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
             
         end
         function updateDraw(obj,h,data)
-            [nx,ny,nz,nz2] = size(data.Z);
-            if nz>1,
+            [nx,ny,nBands,nBands2] = size(data.Z);
+            if nBands>1,
                 zdepth = round(get(obj.slider,'Value'));
             else
                 zdepth=1;
             end
-            if nz2>1,
+            if nBands2>1,
                 zdepth2 = round(get(obj.slider2,'Value'));
             else
                 zdepth2=1;
