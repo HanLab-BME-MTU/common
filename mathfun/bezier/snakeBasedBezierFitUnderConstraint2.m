@@ -72,7 +72,7 @@ regFuncs = {@computeRegTermN1D2, @computeRegTermN2D2, @computeRegTermN3D2;...
 [m d] = size(data);
 
 % Weight beta
-beta = beta * m * trace(SigmaX);
+beta = beta * m;
 
 % Number of parameters of the fitting problem is equal to
 % - number of control point coordinates: d * (n+1)
