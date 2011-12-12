@@ -160,6 +160,7 @@ classdef TrackingProcess < DataProcessingProcess
                 
             end
             obj.success_=true;
+            obj.updated_=true;         
             obj.procChanged_=false;
             obj.setDateTime;
             obj.owner_.save;

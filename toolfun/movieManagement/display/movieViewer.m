@@ -484,24 +484,25 @@ size = [max(P(:,1)+P(:,3))+10 max(P(:,2)+P(:,4))+20];
 function makeMovie(hObject,handles)
 
 userData = get(handles.figure1, 'UserData');
-nf = userData.MD.nFrames_;
+nFrames = userData.MD.nFrames_;
 
-fmt = ['%0' num2str(ceil(log10(nf))) 'd'];
-fpath = [userData.MD.movieDataPath_ filesep 'Frames' filesep];
+fmt = ['%0' num2str(ceil(log10(nFrames))) 'd'];
+frameName = @(frame) ['frame' num2str(frame, fmt) '.png'];
+fpath = [userData.MD.outputDirectory_ filesep 'Frames'];
 mkClrDir(fpath);
 fprintf('Generating movie frames:     ');
-for f=1:nf
-    set(handles.slider_frame, 'Value',f);
+resolution = ['-r' num2str(5*72)];
+for iFrame=1:nFrames
+    set(handles.slider_frame, 'Value',iFrame);
     redrawScene(hObject, handles);
     drawnow;
-    print(userData.drawFig, '-dpng', '-loose', ['-r' num2str(1*72)], [fpath 'frame' num2str(f, fmt) '.png']);
-    print(userData.drawFig, '-dtiff', '-loose', ['-r' num2str(1*72)], [fpath 'frame' num2str(f, fmt) '.tif']);
-    fprintf('\b\b\b\b%3d%%', round(100*f/(nf)));
+    print(userData.drawFig, '-dpng', '-loose', resolution, fullfile(fpath,frameName(iFrame)));
+    fprintf('\b\b\b\b%3d%%', round(100*iFrame/(nFrames)));
 end
 fprintf('\n');
 
 % Generate movie
-mpath = [userData.MD.movieDataPath_ filesep 'Movie' filesep];
+mpath = [userData.MD.outputDirectory_ filesep 'Movie'];
 mkClrDir(mpath);
 fprintf('Generating movie... ');
 fr = num2str(15);
@@ -537,9 +538,8 @@ if ~isempty(h), figure(h); return; end
 %Create a figure
 userData = get(handles.figure1,'UserData');
 sz=get(0,'ScreenSize');
-ratios = [sz(3)/userData.MD.imSize_(2) sz(4)/userData.MD.imSize_(1)];
-nx=.6*min(ratios)*userData.MD.imSize_(2);
-ny=.6*min(ratios)*userData.MD.imSize_(1);
+nx=userData.MD.imSize_(2);
+ny=userData.MD.imSize_(1);
 h = figure('Position',[sz(3)*.2 sz(4)*.2 nx ny],...
     'Name',figName,'NumberTitle','off','Tag','viewerFig');
 
@@ -549,8 +549,9 @@ set(h, 'InvertHardcopy', 'off');
 set(h, 'PaperUnits', 'Points');
 set(h, 'PaperSize', [nx ny]);
 set(h, 'PaperPosition', [0 0 nx ny]); % very important
-%  set(userData.drawFig,'DefaultLineLineSmoothing','on');
-% set(userData.drawFig,'DefaultPatchLineSmoothing','on');
+set(h, 'PaperPositionMode', 'auto');
+set(h,'DefaultLineLineSmoothing','on');
+% set(h,'DefaultPatchLineSmoothing','on');
 
 %Create the associate axes for the movie figure
 if strcmp(figName,'Movie')

@@ -25,7 +25,7 @@ packages(3).name='U-Track';
 packages(3).initFiles={'UTrackPackage'};
 packages(4).name='QFSM';
 packages(4).initFiles={'QFSMPackage'};
-for i=1:4, packages(i).additionalFiles = {'lccbGUIicons.mat'}; end
+for i=1:4, packages(i).additionalFiles = {'lccbGuiIcons.mat'}; end
 packages(5).name='plusTipTracker';
 packages(5).initFiles={'plusTipGetTracks';'plusTipSeeTracks';...
     'plusTipParamSweepGUI';'plusTipGroupAnalysis';'plusTipPoolGapsForReclass'};
