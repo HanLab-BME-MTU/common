@@ -87,21 +87,13 @@ set(handles.checkbox_useLocalDensity, 'Value', parameters.useLocalDensity)
 set(handles.edit_nnWindow, 'String', num2str(parameters.nnWindow))
 
 if isempty(parameters.diagnostics) || (length(parameters.diagnostics) == 1 && parameters.diagnostics == 0)
-    
-    set(handles.checkbox_diagnostics, 'Value', 0)
-    set(handles.text_diag_1, 'Enable', 'off')
-    set(handles.text_diag_2, 'Enable', 'off')
-    set(handles.edit_diag_1, 'Enable', 'off')
-    set(handles.edit_diag_2, 'Enable', 'off')
-    set(handles.edit_diag_3, 'Enable', 'off')
+    set(handles.checkbox_diagnostics, 'Value', 0);
+    set(get(handles.uipanel_diagnostics,'Children'),'Enable','off');
 else
-    set(handles.checkbox_diagnostics, 'Value', 1)
-    l = length(parameters.diagnostics);
-    if l>3
-       l = 3; 
-    end
-    for i = 1:l
-        eval(['set(handles.edit_diag_',num2str(i),', ''String'', num2str(parameters.diagnostics(i)))'])
+    set(handles.checkbox_diagnostics, 'Value', 1);
+    for i = 1:min(3,length(parameters.diagnostics))
+        set(handles.(['edit_diag_' num2str(i)]),...
+            'String',num2str(parameters.diagnostics(i)));
     end
 end
 
@@ -115,7 +107,7 @@ userData.colormap = userData.userData_main.colormap;
 % Set up help icon
 set(hObject,'colormap',userData.colormap);
 % Set up package help. Package icon is tagged as '0'
-axes(handles.axes_help);
+set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(userData.questIconData); 
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
@@ -160,192 +152,135 @@ delete(handles.figure1)
 function pushbutton_done_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
+lower = str2double(get(handles.edit_lower, 'String'));
+upper = str2double(get(handles.edit_upper, 'String'));
+brownStdMult = str2double(get(handles.edit_brownStdMult, 'String'));
+nnWindow = str2double(get(handles.edit_nnWindow, 'String'));
+diagnostics{1} = get(handles.edit_diag_1, 'String');
+diagnostics{2} = get(handles.edit_diag_2, 'String');
+diagnostics{3} = get(handles.edit_diag_3, 'String');
 
-% if userData.crtProc.procChanged_ 
-    
-    lower = get(handles.edit_lower, 'String');
-    upper = get(handles.edit_upper, 'String');
-    brownStdMult = get(handles.edit_brownStdMult, 'String');
-    nnWindow = get(handles.edit_nnWindow, 'String');
-    diagnostics{1} = ( get(handles.edit_diag_1, 'String') );
-    diagnostics{2} = ( get(handles.edit_diag_2, 'String') );
-    diagnostics{3} = ( get(handles.edit_diag_3, 'String') );  
-    
-    % lower
-    if isempty( lower )
-        errordlg('Parameter "Lower Bound" is required by the algorithm.','Error','modal')
-        return
+% lower
+isPosScalar = @(x) isscalar(x) && ~isnan(x) && x>=0;
+if ~isPosScalar(lower)
+    errordlg('Please provide a valid value to parameter "Lower Bound".','Error','modal')
+    return
+end
 
-    elseif isnan(str2double(lower)) || str2double(lower) < 0
-        errordlg('Please provide a valid value to parameter "Lower Bound".','Error','modal')
-        return
-    else
-        lower = str2double(lower);
-    end    
-    
-    % Upper
-    if isempty( upper )
-        errordlg('Parameter "Upper Bound" is required by the algorithm.','Error','modal')
-        return
+% Upper
+if ~isPosScalar(upper)
+    errordlg('Please provide a valid value to parameter "Upper Bound".','Error','modal')
+    return
+elseif upper < lower
+    errordlg('"Upper Bound" should be larger than "Lower Bound".','Error','modal')
+    return
+end
 
-    elseif isnan(str2double(upper)) || str2double(upper) < 0 
-        errordlg('Please provide a valid value to parameter "Upper Bound".','Error','modal')
-        return
-        
-    elseif str2double(upper) < lower
-        errordlg('"Upper Bound" should be larger than "Lower Bound".','Error','modal')
-        return
-        
-    else
-        upper = str2double(upper);
-    end        
-    
-    % brownStdMult
-    if isempty( brownStdMult )
-        errordlg('Parameter "Multiplication Factor for Search Radius Calculation" is required by the algorithm.','Error','modal')
-        return
+% brownStdMult
+if ~isPosScalar(brownStdMult)
+    errordlg('Please provide a valid value to parameter "Multiplication Factor for Search Radius Calculation".','Error','modal')
+    return
+end
 
-    elseif isnan(str2double(brownStdMult)) || str2double(brownStdMult) < 0
-        errordlg('Please provide a valid value to parameter "Multiplication Factor for Search Radius Calculation".','Error','modal')
-        return
-    else
-        brownStdMult = str2double(brownStdMult);
-    end  
-    
-    % nnWindow
-    if isempty( nnWindow )
-        errordlg('Parameter "Number of Frames for Nearest Neighbor Distance Calculation" is required by the algorithm.','Error','modal')
-        return
+% nnWindow
+if ~isPosScalar(nnWindow)
+    errordlg('Please provide a valid value to parameter "Number of Frames for Nearest Neighbor Distance Calculation".','Error','modal')
+    return
+end
 
-    elseif isnan(str2double(nnWindow)) || str2double(nnWindow) < 0
-        errordlg('Please provide a valid value to parameter "Number of Frames for Nearest Neighbor Distance Calculation".','Error','modal')
+% Set Parameters
+parameters = userData.parameters;
+
+parameters.linearMotion = get(handles.checkbox_linearMotion, 'Value')+...
+    get(handles.checkbox_immediateDirectionReversal,'Value');
+parameters.minSearchRadius = lower;
+parameters.maxSearchRadius = upper;
+parameters.brownStdMult = brownStdMult;
+parameters.useLocalDensity = get(handles.checkbox_useLocalDensity, 'Value');
+parameters.nnWindow = nnWindow;
+
+
+% Set diagnostics parameters
+if get(handles.checkbox_diagnostics, 'Value')
+    
+    if all(cellfun(@isempty, diagnostics))
+        errordlg('Please provide 1 or more than 1 (maximum 3) "Frame Numbers to Plot Histograms" in the text boxes.','Error','modal')
         return
-    else
-        nnWindow = str2double(nnWindow);
-    end    
+    end
     
-    % diagnostics
-    
-    if get(handles.checkbox_diagnostics, 'Value')
-        
-        temp = cellfun(@(x)~isempty(x), diagnostics);
-        if all(~temp)
-            errordlg('Please provide 1 or more than 1 (maximum 3) "Frame Numbers to Plot Histograms" in the text boxes.','Error','modal')
-            return
+    validDiagnostics = str2double(diagnostics(~cellfun(@isempty, diagnostics)));
+    nFrames= userData.crtProc.owner_.nFrames_;
+    if any(isnan(validDiagnostics) | validDiagnostics<2 | validDiagnostics>nFrames-1)
+        errordlg('Please provide a valid value to parameter "Frame Numbers to Plot Histograms". Note: the first or last frame of a movie is invalid.','Error','modal')
+        return
+    end
+    parameters.diagnostics =validDiagnostics;
+else
+    parameters.diagnostics = [];      
+end
 
-        elseif any(cellfun(@(x)isnan(str2double(x)), diagnostics(temp))) || ...
-                any(cellfun(@(x)(str2double(x)<2 || str2double(x)>userData.crtProc.owner_.nFrames_-1), diagnostics(temp)))
-            errordlg('Please provide a valid value to parameter "Frame Numbers to Plot Histograms". Note: the first or last frame of a movie is invalid.','Error','modal')
-            return
 
+u = get(userData.handles_main.popupmenu_linking, 'UserData');
+u{userData.procID} = parameters;
+
+set(userData.handles_main.popupmenu_linking, 'UserData', u)
+
+% set linearMotion to gap closing cost function "costMatLinearMotionCloseGaps2"
+u_gapclosing = get(userData.handles_main.popupmenu_gapclosing, 'UserData');
+gapclosingParameters = u_gapclosing{userData.procID};
+
+% Check consistency of search radius parameters with gap closing
+checkMinSearchRadius=(gapclosingParameters.minSearchRadius~=lower);
+checkMaxSearchRadius=(gapclosingParameters.maxSearchRadius~=upper);
+if checkMinSearchRadius || checkMaxSearchRadius
+    modifyGapClosingParameters=questdlg('Do you want to use the search radius bounds for the gap closing?',...
+        'Modified search radius parameters','Yes','No','Yes');
+    if strcmp(modifyGapClosingParameters,'Yes')
+        gapclosingParameters.minSearchRadius=lower;
+        gapclosingParameters.maxSearchRadius=upper;
+    end
+end
+
+% Check consistency of search radius parameters with gap closing
+checkNewLinearMotion=(gapclosingParameters.linearMotion~=parameters.linearMotion);
+checkDirectedMotion = parameters.linearMotion~=0;
+gapclosingParameters.linearMotion=parameters.linearMotion;
+if checkNewLinearMotion && checkDirectedMotion
+    modifyGapClosingParameters=questdlg('Do you want to use the default directed motion parameters for the gap closing?',...
+        'Modified linear motion parameters','Yes','No','Yes');
+    if strcmp(modifyGapClosingParameters,'Yes')
+        if parameters.linearMotion==1
+            gapclosingParameters.linStdMult(1)=3;
+            gapclosingParameters.linScaling(1)=.5;
         else
-            diagnostics = cellfun(@(x)str2double(x), diagnostics(temp), 'UniformOutput', true);
-        end  
-        
-    end
-    
-    
-    % Set Parameters
-    parameters = userData.parameters;
-    
-    parameters.linearMotion = get(handles.checkbox_linearMotion, 'Value')+...
-       get(handles.checkbox_immediateDirectionReversal,'Value') ;
-    parameters.minSearchRadius = lower;
-    parameters.maxSearchRadius = upper;
-    parameters.brownStdMult = brownStdMult;
-    parameters.useLocalDensity = get(handles.checkbox_useLocalDensity, 'Value');
-    parameters.nnWindow = nnWindow;
-    
-    if get(handles.checkbox_diagnostics, 'Value')
-        
-        parameters.diagnostics = diagnostics;
-    else
-        parameters.diagnostics = []; 
-    end
-    
-    u = get(userData.handles_main.popupmenu_linking, 'UserData');
-    u{userData.procID} = parameters;
-    
-    set(userData.handles_main.popupmenu_linking, 'UserData', u)
-    
-    % set linearMotion to gap closing cost function "costMatLinearMotionCloseGaps2"
-    u_gapclosing = get(userData.handles_main.popupmenu_gapclosing, 'UserData');
-    gapclosingParameters = u_gapclosing{userData.procID};
-    
-    % Check consistency of search radius parameters with gap closing
-    checkMinSearchRadius=(gapclosingParameters.minSearchRadius~=lower);
-    checkMaxSearchRadius=(gapclosingParameters.maxSearchRadius~=upper);
-    if checkMinSearchRadius || checkMaxSearchRadius
-        modifyGapClosingParameters=questdlg('Do you want to use the search radius bounds for the gap closing?',...
-           'Modified search radius','Yes','No','Yes');
-        if strcmp(modifyGapClosingParameters,'Yes')
-            gapclosingParameters.minSearchRadius=lower;
-            gapclosingParameters.maxSearchRadius=upper;
+            gapclosingParameters.linStdMult(1)=1;
+            gapclosingParameters.linScaling(1)=1;
         end
     end
-    
-    % Check consistency of search radius parameters with gap closing
-    checkNewLinearMotion=(gapclosingParameters.linearMotion~=parameters.linearMotion);
-    checkDirectedMotion = parameters.linearMotion~=0;
-    gapclosingParameters.linearMotion=parameters.linearMotion;
-    if checkNewLinearMotion && checkDirectedMotion
-        modifyGapClosingParameters=questdlg('Do you want to use the default directed motion parameters for the gap closing?',...
-           'Modified linear motion','Yes','No','Yes');
-        if strcmp(modifyGapClosingParameters,'Yes')
-            if parameters.linearMotion==1
-                gapclosingParameters.linStdMult(1)=3;
-                gapclosingParameters.linScaling(1)=.5;
-            else
-                gapclosingParameters.linStdMult(1)=1;
-                gapclosingParameters.linScaling(1)=1;                
-            end
-        end
-    end
-    
-    u_gapclosing{userData.procID} = gapclosingParameters;
-    set(userData.handles_main.popupmenu_gapclosing, 'UserData', u_gapclosing)
-    
-% end
+end
 
+u_gapclosing{userData.procID} = gapclosingParameters;
+set(userData.handles_main.popupmenu_gapclosing, 'UserData', u_gapclosing)
+    
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 delete(handles.figure1);
 
 % --- Executes on button press in checkbox_diagnostics.
 function checkbox_diagnostics_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_diagnostics (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox_diagnostics
-if get(hObject, 'Value')
-   
-    set(handles.text_diag_1, 'Enable', 'on')
-    set(handles.text_diag_2, 'Enable', 'on')
-    set(handles.edit_diag_1, 'Enable', 'on')
-    set(handles.edit_diag_2, 'Enable', 'on')
-    set(handles.edit_diag_3, 'Enable', 'on')    
+if get(hObject, 'Value'),
+    set(get(handles.uipanel_diagnostics,'Children'),'Enable','on');
 else
-    set(handles.text_diag_1, 'Enable', 'off')
-    set(handles.text_diag_2, 'Enable', 'off')
-    set(handles.edit_diag_1, 'Enable', 'off')
-    set(handles.edit_diag_2, 'Enable', 'off')
-    set(handles.edit_diag_3, 'Enable', 'off')    
+    set(get(handles.uipanel_diagnostics,'Children'),'Enable','off');
 end
-
 
 % --- Executes on key press with focus on figure1 and none of its controls.
 function figure1_KeyPressFcn(hObject, eventdata, handles)
-% hObject    handle to figure1 (see GCBO)
-% eventdata  structure with the following fields (see FIGURE)
-%	Key: name of the key that was pressed, in lower case
-%	Character: character interpretation of the key(s) that was pressed
-%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
-% handles    structure with handles and user data (see GUIDATA)
+
 if strcmp(eventdata.Key, 'return')
     pushbutton_done_Callback(handles.pushbutton_done, [], handles);
 end
-
 
 % --- Executes on button press in checkbox_linearMotion.
 function checkbox_linearMotion_Callback(hObject, eventdata, handles)
