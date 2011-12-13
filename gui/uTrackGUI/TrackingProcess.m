@@ -258,7 +258,7 @@ classdef TrackingProcess < DataProcessingProcess
         function costMatrix = getDefaultLinkingCostMatrices(owner,timeWindow,varargin)
             
             % Linear motion
-            costMatrices(1).name = 'Linear motion models';
+            costMatrices(1).name = 'Brownian + Directed motion models';
             costMatrices(1).funcName = func2str(@costMatRandomDirectedSwitchingMotionLink);
             costMatrices(1).GUI = @costMatRandomDirectedSwitchingMotionLinkGUI;
             costMatrices(1).parameters.linearMotion = 0; % use linear motion Kalman filter.
@@ -268,7 +268,7 @@ classdef TrackingProcess < DataProcessingProcess
             costMatrices(1).parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the linking (initial tracking) step.
             costMatrices(1).parameters.nnWindow = timeWindow; %number of frames before the current one where you want to look to see a feature's nearest neighbor in order to decide how isolated it is (in the initial linking step).
             costMatrices(1).parameters.kalmanInitParam = []; %Kalman filter initialization parameters.
-            costMatrices(1).parameters.diagnostics = [2 owner.nFrames_-1];
+            costMatrices(1).parameters.diagnostics = owner.nFrames_-1;
             
                         
             ip=inputParser;
@@ -283,7 +283,7 @@ classdef TrackingProcess < DataProcessingProcess
         function costMatrix = getDefaultGapClosingCostMatrices(owner,timeWindow,varargin)
             
             % Linear motion
-            costMatrices(1).name = 'Linear motion models';
+            costMatrices(1).name = 'Brownian + Directed motion models';
             costMatrices(1).funcName = func2str(@costMatRandomDirectedSwitchingMotionCloseGaps);
             costMatrices(1).GUI = @costMatRandomDirectedSwitchingMotionCloseGapsGUI;
             costMatrices(1).parameters.linearMotion = 0; %use linear motion Kalman filter.

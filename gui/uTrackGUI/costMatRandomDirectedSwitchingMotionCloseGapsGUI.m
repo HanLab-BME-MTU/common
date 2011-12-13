@@ -74,9 +74,18 @@ u = get(userData.handles_main.popupmenu_gapclosing, 'UserData');
 userData.parameters = u{userData.procID};
 parameters = userData.parameters;
 
-% Parameter Setup
-set(handles.checkbox_linearMotion, 'Value', logical(parameters.linearMotion));
-set(handles.checkbox_immediateDirectionReversal, 'Value', parameters.linearMotion==2);
+% Brownian motion parameters
+set(handles.edit_lower, 'String', num2str(parameters.minSearchRadius))
+set(handles.edit_upper, 'String', num2str(parameters.maxSearchRadius))
+set(handles.edit_brownStdMult, 'String', num2str(parameters.brownStdMult(1)))
+set(handles.checkbox_useLocalDensity, 'Value', parameters.useLocalDensity)
+set(handles.edit_nnWindow, 'String', num2str(parameters.nnWindow))
+set(handles.edit_before, 'String', num2str(parameters.brownScaling(1)))
+set(handles.edit_after, 'String', num2str(parameters.brownScaling(2)))
+set(handles.edit_gapLengthTransitionB, 'String', num2str(parameters.timeReachConfB-1))
+set(handles.edit_gapPenalty, 'String', num2str(parameters.gapPenalty));
+
+% Directed Motion parameters
 if parameters.linearMotion
     set(get(handles.uipanel_linearMotion,'Children'),'Enable','on');
     
@@ -89,27 +98,28 @@ if parameters.linearMotion
 else
     set(get(handles.uipanel_linearMotion,'Children'),'Enable','off');
 end
+set(handles.checkbox_linearMotion, 'Value', logical(parameters.linearMotion),'Enable','off');
+set(handles.checkbox_immediateDirectionReversal, 'Value', parameters.linearMotion==2,'Enable','off');
 
-set(handles.edit_lower, 'String', num2str(parameters.minSearchRadius))
-set(handles.edit_upper, 'String', num2str(parameters.maxSearchRadius))
-set(handles.edit_brownStdMult, 'String', num2str(parameters.brownStdMult(1)))
-set(handles.checkbox_useLocalDensity, 'Value', parameters.useLocalDensity)
-set(handles.edit_nnWindow, 'String', num2str(parameters.nnWindow))
-set(handles.edit_before, 'String', num2str(parameters.brownScaling(1)))
-set(handles.edit_after, 'String', num2str(parameters.brownScaling(2)))
-set(handles.edit_gapLengthTransitionB, 'String', num2str(parameters.timeReachConfB-1))
-
-if isempty(parameters.ampRatioLimit) || (length(parameters.ampRatioLimit) ==1 && parameters.ampRatioLimit == 0)
-    set(handles.checkbox_ampRatioLimit, 'Value', 0)
-    set(get(handles.uipanel_ampRatioLimit,'Children'),'Enable','off');
+% Merging/splitting parameters
+mergeSplitComponents = findobj(handles.uipanel_mergeSplit,'-not','Type','uipanel');
+if get(userData.handles_main.checkbox_merging,'Value') || ...
+    get(userData.handles_main.checkbox_splitting,'Value')
+    set(mergeSplitComponents,'Enable','on');
+    if isempty(parameters.ampRatioLimit) || ...
+            (length(parameters.ampRatioLimit) ==1 && parameters.ampRatioLimit == 0)
+        set(handles.checkbox_ampRatioLimit, 'Value', 0)
+        set(get(handles.uipanel_ampRatioLimit,'Children'),'Enable','off');
+    else
+        set(get(handles.uipanel_ampRatioLimit,'Children'),'Enable','on');
+        set(handles.edit_min, 'String', num2str(parameters.ampRatioLimit(1)))
+        set(handles.edit_max, 'String', num2str(parameters.ampRatioLimit(2)))
+    end
+    set(handles.edit_resLimit, 'String', num2str(parameters.resLimit))
 else
-    set(get(handles.uipanel_ampRatioLimit,'Children'),'Enable','on');
-    set(handles.edit_min, 'String', num2str(parameters.ampRatioLimit(1)))
-    set(handles.edit_max, 'String', num2str(parameters.ampRatioLimit(2)))
+    set(mergeSplitComponents,'Enable','off');
 end
 
-set(handles.edit_resLimit, 'String', num2str(parameters.resLimit))
-set(handles.edit_gapPenalty, 'String', num2str(parameters.gapPenalty))
 
 % Get icon infomation
 userData.questIconData = userData.userData_main.questIconData;
@@ -168,7 +178,7 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
 parameters = userData.parameters;
 
-
+% Brownian motion parameters
 minSearchRadius = str2double(get(handles.edit_lower, 'String'));
 maxSearchRadius = str2double(get(handles.edit_upper, 'String'));
 brownStdMult = str2double(get(handles.edit_brownStdMult, 'String'));
@@ -226,45 +236,6 @@ if ~isPosScalar(gapLengthTransitionB)
     return
 end
 
-% ampRatioLimit
-if ~get(handles.checkbox_ampRatioLimit, 'Value')
-    ampRatioLimit = [];
-else
-    ampRatioLimit_1 = str2double(get(handles.edit_min, 'String'));
-    ampRatioLimit_2 = str2double(get(handles.edit_max, 'String'));
-
-    % ampRatioLimit_1
-    if ~isPosScalar(ampRatioLimit_1)
-        errordlg('Please provide a valid value to parameter "Min Allowed".','Error','modal')
-        return
-    end
-    
-    % ampRatioLimit_2
-    if ~isPosScalar(ampRatioLimit_2)
-        errordlg('Please provide a valid value to parameter "Max Allowed".','Error','modal')
-        return
-    end
-    
-    if ampRatioLimit_2 <= ampRatioLimit_1
-        errordlg('"Max Allowed" should be larger than "Min Allowed".','Error','modal')
-        return
-    end
-    
-    ampRatioLimit = [ampRatioLimit_1 ampRatioLimit_2];
-end
-
-% resLimit
-resLimit = get(handles.edit_resLimit, 'String');
-if isempty( resLimit )
-    resLimit = [];
-else
-    resLimit = str2double(resLimit);
-    if ~isPosScalar(resLimit)
-       errordlg('Please provide a valid value to parameter "Time to Reach Confinement".','Error','modal')
-       return
-    end
-end
-
 % gapPenalty
 gapPenalty = get(handles.edit_gapPenalty, 'String');
 if isempty(gapPenalty)
@@ -284,11 +255,56 @@ parameters.useLocalDensity = get(handles.checkbox_useLocalDensity, 'Value');
 parameters.nnWindow = nnWindow;
 parameters.brownScaling = brownScaling;
 parameters.timeReachConfB = gapLengthTransitionB+1;
-parameters.ampRatioLimit = ampRatioLimit;
-parameters.resLimit = resLimit;
 parameters.gapPenalty = gapPenalty;
 
-% If parameters.linearMotion >0
+% Merging/splitting parameters
+if get(userData.handles_main.checkbox_merging,'Value') || ...
+        get(userData.handles_main.checkbox_splitting,'Value')
+    
+    if ~get(handles.checkbox_ampRatioLimit, 'Value')
+        ampRatioLimit = [];
+    else
+        ampRatioLimit_1 = str2double(get(handles.edit_min, 'String'));
+        ampRatioLimit_2 = str2double(get(handles.edit_max, 'String'));
+        
+        % ampRatioLimit_1
+        if ~isPosScalar(ampRatioLimit_1)
+            errordlg('Please provide a valid value to parameter "Min Allowed".','Error','modal')
+            return
+        end
+        
+        % ampRatioLimit_2
+        if ~isPosScalar(ampRatioLimit_2)
+            errordlg('Please provide a valid value to parameter "Max Allowed".','Error','modal')
+            return
+        end
+        
+        if ampRatioLimit_2 <= ampRatioLimit_1
+            errordlg('"Max Allowed" should be larger than "Min Allowed".','Error','modal')
+            return
+        end
+        
+        ampRatioLimit = [ampRatioLimit_1 ampRatioLimit_2];
+    end
+    
+    % resLimit
+    resLimit = get(handles.edit_resLimit, 'String');
+    if isempty( resLimit )
+        resLimit = [];
+    else
+        resLimit = str2double(resLimit);
+        if ~isPosScalar(resLimit)
+            errordlg('Please provide a valid value to parameter "Time to Reach Confinement".','Error','modal')
+            return
+        end
+    end
+    parameters.ampRatioLimit = ampRatioLimit;
+    parameters.resLimit = resLimit;
+end
+
+
+
+% Linear motion parameters
 if parameters.linearMotion
     
     lenForClassify = str2double(get(handles.edit_lenForClassify, 'String'));

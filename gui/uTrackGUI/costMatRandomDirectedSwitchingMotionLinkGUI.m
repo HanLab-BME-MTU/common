@@ -250,11 +250,11 @@ if checkNewLinearMotion && checkDirectedMotion
         'Modified linear motion parameters','Yes','No','Yes');
     if strcmp(modifyGapClosingParameters,'Yes')
         if parameters.linearMotion==1
-            gapclosingParameters.linStdMult(1)=3;
-            gapclosingParameters.linScaling(1)=.5;
-        else
             gapclosingParameters.linStdMult(1)=1;
             gapclosingParameters.linScaling(1)=1;
+        else
+            gapclosingParameters.linStdMult(1)=3;
+            gapclosingParameters.linScaling(1)=.5;
         end
     end
 end
