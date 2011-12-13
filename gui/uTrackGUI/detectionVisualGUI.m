@@ -157,7 +157,7 @@ set(handles.edit_filtersigma, 'String', num2str(visualParams.filterSigma))
 
 % Set default movie name as the name of result MAT file
 % if isempty(visualParams.movieName)
-     fName = userData.crtProc.funParams_.saveResults.filename;
+     fName = userData.crtProc.funParams_.OutputFilename;
      [x1 x2 x3 x4] = getFilenameBody(fName);
      visualParams.movieName = [x2 x3];
      userData.crtProc.setVisualParams(visualParams)

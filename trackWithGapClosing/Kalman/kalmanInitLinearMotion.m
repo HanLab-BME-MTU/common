@@ -89,7 +89,7 @@ if isfield(costMatParam,'kalmanInitParam')
     
     % calculate noiseVarInit from max search radius (if given) or from
     % min/max search radii
-    if isfield(initParam,'searchRadiusFirstIteration')
+    if isfield(initParam,'searchRadiusFirstIteration') && ~isempty(initParam.searchRadiusFirstIteration)
         searchRadiusFirstIteration = initParam.searchRadiusFirstIteration;
         noiseVarInit = -(searchRadiusFirstIteration/brownStdMult)^2 / probDim; %negative to flag as first appearance
     else

@@ -2,47 +2,34 @@ classdef TrackingProcess < DataProcessingProcess
     % A class definition for a generic tracking process.
     %
     % Chuangang Ren, 11/2010
-    % Modified by Sebastien Besson 03/2011
-    
-    properties(SetAccess = protected, GetAccess = public)
-        
-        
-        channelIndex_ % The index of channel to process
-        filename_ % file name of result data
-        overwrite_ = 0; % If overwrite the original result MAT file
-        
-    end
-    
+    % Sebastien Besson (last modified Dec 2011)
+
+   
     methods(Access = public)
         
-        function obj = TrackingProcess(owner, outputDir, channelIndex, funParams )
-            
+        function obj = TrackingProcess(owner, varargin)
             if nargin == 0
                 super_args = {};
             else
+                % Input check
+                ip = inputParser;
+                ip.addRequired('owner',@(x) isa(x,'MovieData'));
+                ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+                ip.addOptional('funParams',[],@isstruct);
+                ip.parse(owner,varargin{:});
+                outputDir = ip.Results.outputDir;
+                funParams = ip.Results.funParams;
+                
+                % Define arguments for superclass constructor
                 super_args{1} = owner;
                 super_args{2} = TrackingProcess.getName;
+                super_args{3} = @trackMovie;
+                if isempty(funParams)
+                    funParams = TrackingProcess.getDefaultParams(owner,outputDir);
+                end
+                super_args{4} = funParams;
             end
             obj = obj@DataProcessingProcess(super_args{:});
-            
-            if nargin < 2 || isempty(outputDir)
-                outputDir = owner.outputDirectory_ ;
-            end
-            
-            if nargin < 3 || isempty(channelIndex) % Default channel Index
-                channelIndex = 1:length(owner.channels_);
-            end
-            
-            if nargin < 4 || isempty(funParams)
-                funParams = TrackingProcess.getDefaultParams(owner,outputDir);
-            end
-            
-            obj.funParams_ = funParams;
-            
-            obj.channelIndex_ = channelIndex;
-            obj.filename_ = 'tracking_result.mat';
-            
-            obj.funName_ = @trackCloseGapsKalmanSparse;
             
             % ---------------- Visualization Parameters --------------------
             
@@ -75,7 +62,7 @@ classdef TrackingProcess < DataProcessingProcess
             obj.visualParams_.otmn.dragtailLength = 5;
             obj.visualParams_.otmn.saveMovie = 1;
             obj.visualParams_.otmn.movieName = [];
-            obj.visualParams_.otmn.dir2saveMovie = funParams.saveResults.dir;
+            obj.visualParams_.otmn.dir2saveMovie = funParams.OutputDirectory;
             obj.visualParams_.otmn.filterSigma = 0;
             obj.visualParams_.otmn.classifyGaps = 0;
             obj.visualParams_.otmn.highlightES = 0;
@@ -92,115 +79,69 @@ classdef TrackingProcess < DataProcessingProcess
             
         end
         
-        
-        function setChannelIndex(obj, index)
-            % Set channel index
-            if any(index > length(obj.owner_.channels_))
-                error ('User-defined: channel index is larger than the number of channels.')
-            end
-            if ~isequal(obj.channelIndex_,index)
-                obj.channelIndex_ = index;
-                obj.procChanged_=true;
-            end
-        end
-        
-        % Set result file name
-        function setFileName(obj, name)
-            obj.filename_ = name;
-        end
-        
-        % Set overwrite
-        function setOverwrite (obj, i)
-            obj.overwrite_ = i;
-        end
-        
-        function run(obj)
-            % Run the process!
+        function varargout = loadChannelOutput(obj,iChan,varargin)
             
-            iDetection = obj.owner_.getProcessIndex('DetectionProcess',1,0);
-            obj.owner_.processes_{iDetection}.checkChannelOutput(obj.channelIndex_);
-            obj.setInFilePaths(obj.owner_.processes_{iDetection}.outFilePaths_);
-            obj.success_=false;
-            for i = obj.channelIndex_
-                
-                load(obj.inFilePaths_{i},'movieInfo');
-                obj.funParams_.saveResults.filename = ['Channel_' num2str(i) '_' obj.filename_];
-                
-                %Check/create directory
-                if ~exist(obj.funParams_.saveResults.dir,'dir')
-                    mkdir(obj.funParams_.saveResults.dir)
-                end
-                
-                if ~obj.overwrite_
-                    % file name enumeration
-                    obj.funParams_.saveResults.filename = enumFileName(obj.funParams_.saveResults.dir, obj.funParams_.saveResults.filename);
-                end
-                
-                % Call function - return tracksFinal for reuse in the export
-                % feature
-                tracksFinal = obj.funName_(movieInfo, obj.funParams_.costMatrices, obj.funParams_.gapCloseParam,...
-                    obj.funParams_.kalmanFunctions, obj.funParams_.probDim, obj.funParams_.saveResults, obj.funParams_.verbose);
-                
-                obj.setOutFilePath(i,[obj.funParams_.saveResults.dir filesep obj.funParams_.saveResults.filename]);
-                
-                % Optional export
-                if obj.funParams_.saveResults.export
-                    if ~obj.funParams_.gapCloseParam.mergeSplit
-                        [M.trackedFeatureInfo M.trackedFeatureIndx]=...
-                            convStruct2MatNoMS(tracksFinal);
-                    else
-                        [M.trackedFeatureInfo M.trackedFeatureIndx,M.trackStartRow,M.numSegments]=...
-                            convStruct2MatIgnoreMS(tracksFinal);
-                    end
-                    
-                    matResultsSaveFile=[obj.funParams_.saveResults.dir filesep obj.funParams_.saveResults.filename(1:end-4) '_mat.mat'];
-                    save(matResultsSaveFile,'-struct','M');
-                    clear M;
-                end
-                
-            end
-            obj.success_=true;
-            obj.updated_=true;         
-            obj.procChanged_=false;
-            obj.setDateTime;
-            obj.owner_.save;
+            % Input check
+            outputList = {'tracksFinal'};
+            ip =inputParser;
+            ip.addRequired('obj');
+            ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
+            ip.addOptional('iFrame',[],@(x) ismember(x,1:obj.owner_.nFrames_));
+            ip.addParamValue('output',outputList{1},@(x) all(ismember(x,outputList)));
+            ip.parse(obj,iChan,varargin{:})
+            output = ip.Results.output;
+            iFrame = ip.Results.iFrame;
+            if ischar(output),output={output}; end
             
-            %         [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...
-            %             costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+            % Data loading
+            s = load(obj.outFilePaths_{iChan},output{:});
+            tracksFinal=s.tracksFinal;
+            
+            if ~isempty(iFrame),
+                startTime = arrayfun(@(x) x.seqOfEvents(1,1),tracksFinal);
+                endTime = arrayfun(@(x) x.seqOfEvents(2,1),tracksFinal);
+                isValid = (iFrame>=startTime &iFrame<=endTime);
+                data.x = arrayfun(@(x,y) x.tracksCoordAmpCG(1:8:1+8*(iFrame-y)),...
+                    tracksFinal(isValid),startTime(isValid),'Unif',0);
+                data.y = arrayfun(@(x,y) x.tracksCoordAmpCG(2:8:2+8*(iFrame-y)),...
+                    tracksFinal(isValid),startTime(isValid),'Unif',0);
+                data.label = find(isValid);
+                varargout{1}=data;
+            else
+                varargout{1} = tracksFinal;
+            end
             
         end
+        
+        
         
         function hfigure = resultDisplay(obj,fig,procID)
             % Display the output of the process
-            
-            % Copied and pasted from the old uTrackPackageGUI
-            % but there is definitely some optimization to do
+              
             % Check for movie output before loading the GUI
-            chan = [];
-            for i = 1:length(obj.owner_.channels_)
-                if obj.checkChannelOutput(i)
-                    chan = i;
-                    break
-                end
-            end
-            
-            if isempty(chan)
+            iChan = find(obj.checkChannelOutput,1);         
+            if isempty(iChan)
                 warndlg('The current step does not have any output yet.','No Output','modal');
                 return
             end
             
             % Make sure detection output is valid
-            load(obj.outFilePaths_{chan},'tracksFinal');
+            tracksFinal=obj.loadChannelOutput(iChan);
             if isempty(tracksFinal)
                 warndlg('The tracking result is empty. There is nothing to visualize.','Empty Output','modal');
                 return
             end
-            
-            if isa(obj, 'Process')
-                hfigure = trackingVisualGUI('mainFig', fig, procID);
-            else
-                error('User-defined: the input is not a Process object.')
-            end
+
+            hfigure = trackingVisualGUI('mainFig', fig, procID);
+        end
+        
+        function output = getDrawableOutput(obj)
+            colors = hsv(numel(obj.owner_.channels_));
+            output(1).name='Tracks';
+            output(1).var='tracksFinal';
+            output(1).formatData=[];
+            output(1).type='overlay';
+            output(1).defaultDisplayMethod=@(x)TracksDisplay('Color',colors(x,:));
         end
         
         
@@ -222,6 +163,12 @@ classdef TrackingProcess < DataProcessingProcess
             outputDir=ip.Results.outputDir;
             
             % Set default parameters
+                       
+            funParams.ChannelIndex =1:numel(owner.channels_);
+            funParams.DetProcessIndex = [];
+            funParams.OutputDirectory = [outputDir  filesep 'Tracking'];
+            funParams.OutputFilename = 'tracking_result.mat'; % Note: channel-specific
+            
             % --------------- gapCloseParam ----------------
             
             funParams.gapCloseParam.timeWindow = 5; %IMPORTANT maximum allowed time gap (in frames) between a track segment end and a track segment start that allows linking them.
@@ -232,16 +179,13 @@ classdef TrackingProcess < DataProcessingProcess
             
             % --------------- kalmanFunctions ----------------
             
-            funParams.kalmanFunctions.reserveMem  = func2str(@kalmanResMemLM);
-            funParams.kalmanFunctions.initialize  = func2str(@kalmanInitLinearMotion);
-            funParams.kalmanFunctions.calcGain    = func2str(@kalmanGainLinearMotion);
-            funParams.kalmanFunctions.timeReverse = func2str(@kalmanReverseLinearMotion);
+            funParams.kalmanFunctions.reserveMem  = TrackingProcess.getKalmanReserveMemFunctions(1).funcName;
+            funParams.kalmanFunctions.initialize  = TrackingProcess.getKalmanInitializeFunctions(1).funcName;
+            funParams.kalmanFunctions.calcGain    = TrackingProcess.getKalmanTimeReverseFunctions(1).funcName;
+            funParams.kalmanFunctions.timeReverse = TrackingProcess.getKalmanTimeReverseFunctions(1).funcName;
             
             
             % --------------- saveResults ----------------
-            
-            funParams.saveResults.dir = [outputDir  filesep 'Tracking' filesep]; %directory where to save input and output
-            funParams.saveResults.filename = []; % Note: channel-specific
             funParams.saveResults.export = 0; %FLAG allow additional export of the tracking results into matrix
             
             % --------------- Others ----------------
@@ -254,6 +198,51 @@ classdef TrackingProcess < DataProcessingProcess
             
 
         end
+        
+        function functions = getKalmanReserveMemFunctions(varargin)
+            functions(1).name = 'Brownian + Directed motion models';
+            functions(1).funcName = func2str(@kalmanResMemLM);
+            
+            ip=inputParser;
+            ip.addOptional('index',1:length(functions),@isvector);
+            ip.parse(varargin{:});
+            index = ip.Results.index;
+            functions=functions(index);      
+        end
+        
+        function functions = getKalmanInitializeFunctions(varargin)
+            functions(1).name = 'Brownian + Directed motion models';
+            functions(1).funcName = func2str(@kalmanInitLinearMotion);
+            functions(1).GUI=@kalmanInitializationGUI;
+            ip=inputParser;
+            ip.addOptional('index',1:length(functions),@isvector);
+            ip.parse(varargin{:});
+            index = ip.Results.index;
+            functions=functions(index);      
+        end
+        
+        function functions = getKalmanCalcGainFunctions(varargin)
+            functions(1).name = 'Brownian + Directed motion models';
+            functions(1).funcName = func2str(@kalmanGainLinearMotion);
+            
+            ip=inputParser;
+            ip.addOptional('index',1:length(functions),@isvector);
+            ip.parse(varargin{:});
+            index = ip.Results.index;
+            functions=functions(index);      
+        end
+        
+        function functions = getKalmanTimeReverseFunctions(varargin)
+            functions(1).name = 'Brownian + Directed motion models';
+            functions(1).funcName = func2str(@kalmanReverseLinearMotion);
+            
+            ip=inputParser;
+            ip.addOptional('index',1:length(functions),@isvector);
+            ip.parse(varargin{:});
+            index = ip.Results.index;
+            functions=functions(index);      
+        end     
+        
         
         function costMatrix = getDefaultLinkingCostMatrices(owner,timeWindow,varargin)
             

@@ -550,7 +550,7 @@ set(h, 'PaperUnits', 'Points');
 set(h, 'PaperSize', [nx ny]);
 set(h, 'PaperPosition', [0 0 nx ny]); % very important
 set(h, 'PaperPositionMode', 'auto');
-set(h,'DefaultLineLineSmoothing','on');
+% set(h,'DefaultLineLineSmoothing','on');
 % set(h,'DefaultPatchLineSmoothing','on');
 
 %Create the associate axes for the movie figure

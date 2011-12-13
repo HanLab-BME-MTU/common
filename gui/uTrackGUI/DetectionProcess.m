@@ -2,16 +2,11 @@ classdef DetectionProcess < ImageAnalysisProcess
     % A class definition for a generic detection process.
     %
     % Chuangang Ren, 11/2010
-    
-    properties(SetAccess = protected, GetAccess = public)
-        
-        channelIndex_ % The index of channel to process
-        overwrite_ = 0; % If overwrite the original result MAT file
-    end
+    % Sebastien Besson (last modified Dec 2011)
     
     methods(Access = public)
         
-        function obj = DetectionProcess(owner, name, funName, channelIndex, funParams )
+        function obj = DetectionProcess(owner, name, funName, funParams )
             
             if nargin == 0
                 super_args = {};
@@ -25,37 +20,53 @@ classdef DetectionProcess < ImageAnalysisProcess
             if nargin > 2
                 obj.funName_ = funName;
             end
-            
             if nargin > 3
-                obj.channelIndex_ = channelIndex;
-            end
-            
-            if nargin > 4
                 obj.funParams_ = funParams;
             end
+        end
+        
+        function status = checkChannelOutput(obj,iChan)
             
+            %Checks if the selected channels have valid output files
+            nChan = numel(obj.owner_.channels_);
+            if nargin < 2 || isempty(iChan), iChan = 1:nChan; end
             
+            status=  ismember(iChan,1:nChan) & ....
+                arrayfun(@(x) exist(obj.outFilePaths_{1,x},'file'),iChan);
         end
         
-        
-        % Set overwrite
-        function setOverwrite (obj, i)
-            obj.overwrite_ = i;
-        end
-        
-        
-        function setChannelIndex(obj, index)
-            % Set channel index
-            if any(index > length(obj.owner_.channels_))
-                error ('User-defined: channel index is larger than the number of channels.')
+        function varargout = loadChannelOutput(obj,iChan,varargin)
+            
+            % Input check
+            outputList = {'movieInfo'};
+            ip =inputParser;
+            ip.addRequired('iChan',@(x) isscalar(x) && obj.checkChanNum(x));
+            ip.addOptional('iFrame',1:obj.owner_.nFrames_,@(x) all(obj.checkFrameNum(x)));
+            ip.addParamValue('output',outputList,@(x) all(ismember(x,outputList)));
+            ip.parse(iChan,varargin{:})
+            iFrame = ip.Results.iFrame;
+            output = ip.Results.output;
+            if ischar(output),output={output}; end
+            
+            % Data loading
+            s = load(obj.outFilePaths_{iChan},output{:});
+           
+            if numel(ip.Results.iFrame)>1,
+                varargout{1}=s.(output{1});
+            else
+                varargout{1}=s.(output{1})(iFrame);
             end
-            if ~isequal(obj.channelIndex_,index)
-                obj.channelIndex_ = index;
-                obj.procChanged_=true;
-            end
         end
+        function output = getDrawableOutput(obj)
+            colors = hsv(numel(obj.owner_.channels_));
+            output(1).name='Objects';
+            output(1).var='movieInfo';
+            output(1).formatData=@(x) horzcat(x.yCoord(:,1),x.xCoord(:,1));
+            output(1).type='overlay';
+            output(1).defaultDisplayMethod=@(x) LineDisplay('Marker','o',...
+                'LineStyle','none','Color',colors(x,:));
+        end 
         
-    
         
     end
     methods(Static)
@@ -64,6 +75,10 @@ classdef DetectionProcess < ImageAnalysisProcess
         end
         function h = GUI()
             h= @detectionProcessGUI;
+        end
+        function procClasses = getConcreteClasses()
+            procClasses = ...
+                {'SubResolutionProcess'};
         end
     end
 

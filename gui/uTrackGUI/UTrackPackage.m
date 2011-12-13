@@ -38,7 +38,7 @@ classdef UTrackPackage < Package
                
         function procConstr = getDefaultProcessConstructors(index)
             uTrackProcConstr = {
-                @DetectionProcess,...
+                @SubResolutionProcess,...
                 @TrackingProcess};
             
             if nargin==0, index=1:numel(uTrackProcConstr); end
