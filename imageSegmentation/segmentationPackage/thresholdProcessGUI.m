@@ -22,7 +22,7 @@ function varargout = thresholdProcessGUI(varargin)
 
 % Edit the above text to modify the response to help thresholdProcessGUI
 
-% Last Modified by GUIDE v2.5 17-Oct-2011 14:59:34
+% Last Modified by GUIDE v2.5 12-Dec-2011 17:52:57
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -60,14 +60,14 @@ set(handles.listbox_availableChannels,'String',userData.MD.getChannelPaths(), ..
 channelIndex = funParams.ChannelIndex;
 
 % Find any parent process
-parentProc = userData.crtPackage.getParent(userData.procID);
-if isempty(userData.crtPackage.processes_{userData.procID}) && ~isempty(parentProc)
+userData.parentProc = userData.crtPackage.getParent(userData.procID);
+if isempty(userData.crtPackage.processes_{userData.procID}) && ~isempty(userData.parentProc)
     % Check existence of all parent processes
-    emptyParentProc = any(cellfun(@isempty,userData.crtPackage.processes_(parentProc)));
+    emptyParentProc = any(cellfun(@isempty,userData.crtPackage.processes_(userData.parentProc)));
     if ~emptyParentProc
         % Intersect channel index with channel index of parent processes
         parentChannelIndex = @(x) userData.crtPackage.processes_{x}.funParams_.ChannelIndex;
-        for i = parentProc
+        for i = userData.parentProc
             channelIndex = intersect(channelIndex,parentChannelIndex(i));
         end
     end
@@ -112,32 +112,25 @@ else
     userData.thresholdValue=funParams.ThresholdValue(1);
 end
 
-% Read the first image and update the sliders max value and steps
-props=get(handles.listbox_selectedChannels,{'UserData','Value'});
-userData.chanIndx = props{1}(props{2});
-userData.imIndx=1;
-
 % Initialize the frame number slider and eidt
 nFrames=userData.MD.nFrames_;
-set(handles.slider_frameNumber,'Value',userData.imIndx,'Min',1,...
+set(handles.slider_frameNumber,'Value',1,'Min',1,...
     'Max',nFrames,'SliderStep',[1/double(nFrames)  10/double(nFrames)]);
 set(handles.text_nFrames,'String',['/ ' num2str(nFrames)]);
-set(handles.edit_frameNumber,'Value',userData.imIndx);
+set(handles.edit_frameNumber,'Value',1);
 
-% Load the first image and update the threshold slide
-userData.imData = userData.MD.channels_(userData.chanIndx).loadImage(userData.imIndx);
-maxThresholdValue=max(max(userData.imData));
-thresholdStep = 1/double(maxThresholdValue);
 
-set(handles.edit_threshold,'String',userData.thresholdValue);
-set(handles.slider_threshold,'Value',userData.thresholdValue,...
-    'Max',maxThresholdValue,...
-    'SliderStep',[thresholdStep  10*thresholdStep]);
+% Initialize previewing constants
+userData.previewFig =-1;
+userData.chanIndx = 0;
+userData.imIndx=0;
 
 % Update user data and GUI data
 handles.output = hObject;
 set(hObject, 'UserData', userData);
 guidata(hObject, handles);
+update_data(hObject,eventdata,handles);
+
 
 % --- Outputs from this function are returned to the command line.
 function varargout = thresholdProcessGUI_OutputFcn(hObject, eventdata, handles) 
@@ -162,33 +155,41 @@ function pushbutton_done_Callback(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
 
 % -------- Check user input --------
-
 if isempty(get(handles.listbox_selectedChannels, 'String'))
    errordlg('Please select at least one input channel from ''Available Channels''.','Setting Error','modal') 
     return;
 end
+channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
+funParams.ChannelIndex = channelIndex;
 
 if get(handles.checkbox_auto, 'value')
-    if isnan(str2double(get(handles.edit_GaussFilterSigma, 'String'))) ...
-            || str2double(get(handles.edit_GaussFilterSigma, 'String')) < 0
+    funParams.ThresholdValue = [ ];
+    funParams.MethodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
+
+    
+    gaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma, 'String'));
+    if isnan(gaussFilterSigma) || gaussFilterSigma < 0
         errordlg(['Please provide a valid input for '''...
             get(handles.text_GaussFilterSigma,'String') '''.'],'Setting Error','modal');
         return;
     end
+    funParams.GaussFilterSigma=gaussFilterSigma;
+    
     if get(handles.checkbox_max, 'Value')
         % If both checkbox are checked
-        if isnan(str2double(get(handles.edit_jump, 'String'))) ...
-                || str2double(get(handles.edit_jump, 'String')) < 0
+        maxJump=str2double(get(handles.edit_jump, 'String'));
+        if isnan(maxJump) || maxJump < 0
             errordlg('Please provide a valid input for ''Maximum threshold jump''.','Setting Error','modal');
             return;
         end    
+        funParams.MaxJump = str2double(get(handles.edit_jump,'String'));
     end
 else
     threshold = get(handles.listbox_thresholdValues, 'String');
     if isempty(threshold)
        errordlg('Please provide at least one threshold value.','Setting Error','modal')
        return
-    elseif length(threshold) ~= 1 && length(threshold) ~= length(get(handles.listbox_selectedChannels, 'String'))
+    elseif length(threshold) ~= 1 && length(threshold) ~= length(channelIndex)
        errordlg('Please provide the same number of threshold values as the input channels.','Setting Error','modal')
        return
     else
@@ -198,6 +199,7 @@ else
             return            
         end
     end
+    funParams.ThresholdValue = threshold;
 end
    
 
@@ -211,23 +213,6 @@ catch ME
     errordlg([ME.message 'Please double check your data.'],...
                 'Setting Error','modal');
     return;
-end
-
-% Retrieve GUI-defined parameters
-channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
-funParams.ChannelIndex = channelIndex;
-if get(handles.checkbox_auto, 'value')
-    % if automatic thresholding
-    funParams.ThresholdValue = [ ];
-    funParams.MethodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
-    funParams.GaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma,'String'));
-    if get(handles.checkbox_max, 'value')
-        funParams.MaxJump = str2double(get(handles.edit_jump,'String'));
-    else
-        funParams.MaxJump = 0;
-    end
-else
-    funParams.ThresholdValue = threshold;
 end
 
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
@@ -326,36 +311,26 @@ update_data(hObject,eventdata,handles);
 % --- Executes on button press in checkbox_auto.
 function checkbox_auto_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkbox_auto
-switch get(hObject, 'Value')
-    case 0
-        set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
-        set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
-        set(handles.checkbox_max, 'Value', 0);
-        set(handles.checkbox_applytoall, 'Value',0);
-        update_data(hObject,eventdata,handles);
-    case 1
-        set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','on');
-        set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off'); 
-        if ~get(handles.checkbox_max,'Value'), set(handles.edit_jump,'Enable','off'); end
-        userData = get(handles.figure1, 'UserData');
-        if ~isfield(userData, 'previewFig') || ishandle(userData.previewFig)
-            delete(userData.previewFig);
-        end
+if get(hObject, 'Value')
+    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','on');
+    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
+    if ~get(handles.checkbox_max,'Value'), set(handles.edit_jump,'Enable','off'); end
+else 
+    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
+    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
+    set(handles.checkbox_max, 'Value', 0);
+    set(handles.checkbox_applytoall, 'Value',0);
+    set(handles.checkbox_preview, 'Value',1);
 end
-
+update_data(hObject,eventdata,handles);
 
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
 % Notify the package GUI that the setting panel is closed
 userData = get(handles.figure1, 'UserData');
 
-if isfield(userData, 'helpFig') && ishandle(userData.helpFig)
-   delete(userData.helpFig) 
-end
-
-if isfield(userData, 'previewFig') && ishandle(userData.previewFig)
-   delete(userData.previewFig) 
-end
+if ishandle(userData.helpFig), delete(userData.helpFig); end
+if ishandle(userData.previewFig), delete(userData.previewFig); end
 
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
@@ -363,12 +338,10 @@ guidata(hObject,handles);
 % --- Executes on button press in checkbox_max.
 function checkbox_max_Callback(hObject, eventdata, handles)
 
-
-switch get(hObject, 'value')
-    case 0
-        set(handles.edit_jump, 'Enable', 'off');
-    case 1
-        set(handles.edit_jump, 'Enable', 'on');
+if get(hObject, 'value')
+    set(handles.edit_jump, 'Enable', 'on');
+else 
+    set(handles.edit_jump, 'Enable', 'off');
 end
 
 
@@ -404,9 +377,7 @@ if get(handles.checkbox_preview,'Value'),
     update_data(hObject,eventdata,handles); 
 else
     userData = get(handles.figure1, 'UserData');
-    if isfield(userData, 'previewFig') && ishandle(userData.previewFig)
-        delete(userData.previewFig);
-    end
+    if ishandle(userData.previewFig), delete(userData.previewFig); end
     % Save data and update graphics
     set(handles.figure1,'UserData',userData);
     guidata(hObject, handles);
@@ -466,7 +437,8 @@ function update_data(hObject,eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
-if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_2') || strcmp(get(hObject,'Tag'),'listbox_thresholdValues')
+if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_channels') ||...
+        strcmp(get(hObject,'Tag'),'listbox_thresholdValues')
     % Check if changes have been at the list box level
     linkedListBoxes = {'listbox_selectedChannels','listbox_thresholdValues'};
     checkLinkBox = strcmp(get(hObject,'Tag'),linkedListBoxes);
@@ -495,17 +467,23 @@ end
 
 % Retrieve the channex index
 props=get(handles.listbox_selectedChannels,{'UserData','Value'});
+if isempty(props{1}), return; end
 chanIndx = props{1}(props{2});
 imIndx = get(handles.slider_frameNumber,'Value');
 thresholdValue = get(handles.slider_threshold, 'Value');
 
 % Load a new image in case the image number or channel has been changed
 if (chanIndx~=userData.chanIndx) ||  (imIndx~=userData.imIndx)
-    userData.imData=userData.MD.channels_(chanIndx).loadImage(imIndx);
+    if ~isempty(userData.parentProc) && ~isempty(userData.crtPackage.processes_{userData.parentProc}) &&...
+            userData.crtPackage.processes_{userData.parentProc}.checkChannelOutput(chanIndx)
+        userData.imData=userData.crtPackage.processes_{userData.parentProc}.loadOutImage(chanIndx,imIndx);
+    else
+        userData.imData=userData.MD.channels_(chanIndx).loadImage(imIndx);
+    end
     
     % Get the value of the new maximum threshold
     maxThresholdValue=max(userData.imData(:));
-    % Update the threshold Value if above th new maximum
+    % Update the threshold Value if above the new maximum
     thresholdValue=min(thresholdValue,maxThresholdValue);
     
     set(handles.slider_threshold,'Value',thresholdValue,'Max',maxThresholdValue,...
@@ -519,47 +497,59 @@ else
     userData.updateImage=0;
 end
 
-% Check if the threshold map should be refreshed
-if  (thresholdValue~=userData.thresholdValue);
-    userData.thresholdValue = thresholdValue;
-    userData.updateThreshold=1;
-else
-    userData.updateThreshold=0;
-end
 
 % Save the data
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 
 % Update graphics if applicable
-if get(handles.checkbox_preview,'Value') && ~get(handles.checkbox_auto,'Value'),
+if get(handles.checkbox_preview,'Value')
 
     % Create figure if non-existing or closed
-    if ~isfield(userData, 'previewFig') || ~ishandle(userData.previewFig)
-        userData.previewFig = figure;
-        userData.newFigure = 1;
+    if ~ishandle(userData.previewFig)
+        userData.previewFig = figure('NumberTitle','off','Name','Thresholding preview',...
+            'Position',[50 50 userData.MD.imSize_(2) userData.MD.imSize_(1)]);
+        axes('Position',[0 0 1 1]);
     else
         figure(userData.previewFig);
-        userData.newFigure = 1;
     end
     
     % Retrieve the handle of the figures image
     imHandle = findobj(userData.previewFig,'Type','image');
-    if userData.newFigure || userData.updateImage || isempty(imHandle)
-         if isempty(imHandle)
+    if userData.updateImage || isempty(imHandle)
+        if isempty(imHandle)
             imHandle=imagesc(userData.imData);
             axis off;
         else
             set(imHandle,'CData',userData.imData);
-         end
+        end
     end
     
-    % Preview the tresholding output using the alphaData mapping
-    if userData.newFigure || userData.updateThreshold
-        alphamask=ones(size(userData.imData));
-        alphamask(userData.imData<=userData.thresholdValue)=.4;
-        set(imHandle,'AlphaData',alphamask,'AlphaDataMapping','none');
+    % Preview the tresholding output using the alphaData mapping    
+    alphamask=ones(size(userData.imData));
+    
+    if get(handles.checkbox_auto,'Value')
+        gaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma, 'String'));
+        if gaussFilterSigma >0
+            imData = filterGauss2D(userData.imData,gaussFilterSigma);
+        else
+            imData=userData.imData;
+        end
+        methodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
+        threshMethod = userData.crtProc.getMethods(methodIndx).func;
+        
+        try %#ok<TRYNC>
+            currThresh = threshMethod( imData);
+            alphamask(imData<=currThresh)=.4;
+        end
+    else
+        % Preview manual threshold
+        thresholdValue = get(handles.slider_threshold, 'Value');
+        alphamask(userData.imData<=thresholdValue)=.4;
     end
+    set(imHandle,'AlphaData',alphamask,'AlphaDataMapping','none');
+
+
     
     set(handles.figure1, 'UserData', userData);
     guidata(hObject,handles);

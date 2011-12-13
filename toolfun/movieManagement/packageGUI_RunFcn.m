@@ -109,7 +109,7 @@ for iMovie = validMovies
             userfcn_drawIcon(handles,'error', i, procEx{i}(1).message, true);
             
             ME = MException('lccb:run:sanitycheck','Step %d %s: \n%s',...
-                i,userData.package(iMovie).processes_{i}.name_, procEx{i}(1).message);
+                i,userData.package(iMovie).processes_{i}.getName, procEx{i}(1).message);
             movieException{iMovie} = cat(2, movieException{iMovie}, ME);
                 
         end
