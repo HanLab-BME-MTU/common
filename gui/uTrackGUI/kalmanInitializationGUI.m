@@ -107,13 +107,13 @@ userData.colormap = userData.userData_main.colormap;
 % Set up help icon
 set(hObject,'colormap',userData.colormap);
 % Set up package help. Package icon is tagged as '0'
-axes(handles.axes_help);
+set(hanldes.figure1,'CurrentAxes',handles.axes_help);
 Img = image(userData.questIconData); 
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 if openHelpFile
-    set(Img, 'UserData', struct('class', 'kalmanInitializationGUI'))
+    set(Img, 'UserData', struct('class', mfilename))
 else
     set(Img, 'UserData', 'Please refer to help file.')
 end
