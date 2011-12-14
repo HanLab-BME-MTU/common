@@ -63,13 +63,13 @@ if all(s<=1&s>=0)
     end
     
     if iter == iterMax
-        disp('WARNING: transformArcLengthParametrization: iterMax reached! Result may be inaccurate!');
+        disp('WARNING: arcLengthToNativeBezierParametrization: iterMax reached! Result may be inaccurate!');
     end
     
     % Restore the input vector/matrix shape
     t = reshape(t,sizeS);
 else
-    disp('WARNING: transformArcLengthParametrization: The input parameter s must be between 0 and 1!');
+    disp('WARNING: arcLengthToNativeBezierParametrization: The input parameter s must be between 0 and 1!');
 end
 
 end
