@@ -36,7 +36,7 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
         function varargout = loadChannelOutput(obj,i,j,varargin)
             % Check input
             outputList={'raw','bootstrap','corrFun','bounds','lags',...
-                'bootstrapSteCorrFun'};
+                'bootstrapCorrFun','bootstrapBounds'};
             ip=inputParser;
             ip.addRequired('obj');
             ip.addRequired('i',@isscalar);
@@ -49,7 +49,7 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
             if strcmp(output{:},'raw')
                 s=load(obj.outFilePaths_{i,j},'corrFun','bounds','lags');
             elseif strcmp(output{:},'bootstrap')
-                s=load(obj.outFilePaths_{i,j},'bootstrapCorrFun','bootstrapSteCorrFun','bounds','lags');
+                s=load(obj.outFilePaths_{i,j},'bootstrapCorrFun','bootstrapCorrFun','bootstrapBounds','lags');
             else
                 s=load(obj.outFilePaths_{i,j},output{:});
             end
@@ -144,6 +144,8 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
                 funParams.BandMax=winProc.nBandMax_;
                 funParams.SliceIndex=ones(winProc.nSliceMax_,1);
             end
+            funParams.nBoot=1e4;
+            funParams.alpha=.01;
         end
     end
 end
@@ -156,6 +158,4 @@ end
 
 function data =formatBootstrappedCorrelationData(data)
 data.lags=squeeze(nanmean(data.lags,2));
-data.avgCorrFun=data.bootstrapCorrFun;
-data.steCorrFun=data.bootstrapSteCorrFun;
 end

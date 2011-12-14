@@ -41,9 +41,7 @@ p = parseProcessParams(corrProc,paramsIn);
 
 % Delegates correlation processes to movies if object is a movieList 
 if isa(movieObject,'MovieList')
-    movieParams.ProcessName=p.ProcessName;
-    movieParams.BandMin=p.BandMin;
-    movieParams.BandMax=p.BandMax;
+    movieParams=rmfield(p,'MovieIndex');
     for i =1:numel(p.MovieIndex);
         movieParams.SliceIndex=p.SliceIndex{p.MovieIndex(i)};
         movieData = movieObject.movies_{p.MovieIndex(i)};
@@ -81,7 +79,7 @@ if isempty(iSignalPreproc)
     'on this movie! Please run first!!']);
 end        
 
-% %Check that there is a valid output
+% Check that there is a valid output
 signalPreproc = movieObject.processes_{iSignalPreproc};
 preprocInput =signalPreproc.getInput;
 preprocIndex=zeros(nInput,1);
@@ -136,36 +134,46 @@ logMsg = @(i) ['Please wait, calculating ' input(i).name ' autocorrelation'];
 % Calculate autocorrelation
 for iInput=1:nInput
     disp(logMsg(iInput));
+    
     % Initialize autocorrelation function and bounds
-    corrFun = nan(nLagsMax+1,nSlices,nBands(iInput));
-    lags = nan(nLagsMax+1,nSlices,nBands(iInput));
-    bounds = nan(2,nSlices,nBands(iInput));
+    corrFun = NaN(nLagsMax+1,nSlices,nBands(iInput));
+    lags = NaN(nLagsMax+1,nSlices,nBands(iInput));
+    bounds = NaN(2,nSlices,nBands(iInput));
+    bootstrapCorrFun=NaN(nLagsMax+1,nBands(iInput));
+    bootstrapBounds=NaN(2,nLagsMax+1,nBands(iInput));
+        
     if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
     
-    % Calculate band index
+    % Calculate valid band index
     validBands = find(~cellfun(@isempty,data{iInput}));
     for iBand=find(validBands<=p.BandMax & validBands>=p.BandMin )'
+        
+        % Calculate raw auto-correlation
         validSlices = ~cellfun(@isempty,data{iInput}{iBand});
         for iSlice=find(validSlices & p.SliceIndex)'
             nLags = round(length(data{iInput}{iBand}{iSlice})/4);
             [corrFun(1:nLags+1,iSlice,iBand),lags(1:nLags+1,iSlice,iBand),...
                 bounds(:,iSlice,iBand)] = autocorr(data{iInput}{iBand}{iSlice},nLags);
         end
+        
+        % Bootstrap valid autocorrelation functions
+        validSlices = sum(isnan(corrFun(:,:,iBand)),1)==0;
+        if sum(validSlices)>2
+            [meanCC,CI] = correlationBootstrap(corrFun(2:end,validSlices,iBand),...
+                bounds(1,validSlices,iBand),p.nBoot,p.alpha);
+            bootstrapCorrFun(1,iBand)=1;
+            bootstrapBounds(:,1,iBand)=1;
+            bootstrapCorrFun(2:end,iBand)=meanCC;
+            bootstrapBounds(:,2:end,iBand)=CI;
+        end
+        
         if ishandle(wtBar), waitbar(iBand/nBands(iInput),wtBar); end
     end
        
     lags =lags*movieObject.timeInterval_; %#ok<NASGU>
     
-    % Stupid bootstrapping-like function to test the grapical output
-    bootstrapCorrFun=nan(nLagsMax+1,nBands(iInput));
-    bootstrapSteCorrFun=nan(nLagsMax+1,nBands(iInput));
-    for iBand=find(validBands<=p.BandMax & validBands>=p.BandMin )'
-        bootstrapCorrFun(:,iBand) = nanmean(corrFun(:,:,iBand),2);
-        bootstrapSteCorrFun(:,iBand) = nanstd(corrFun(:,:,iBand),1,2);
-    end
-    
     save(outFilePaths{iInput,iInput},'corrFun','bounds','lags',...
-        'bootstrapCorrFun','bootstrapSteCorrFun');  
+        'bootstrapCorrFun','bootstrapBounds');  
 end
 
 logMsg = @(i,j) ['Please wait, calculating ' input(i).name '/'...
@@ -177,17 +185,21 @@ for iInput1=1:nInput
         disp(logMsg(iInput1,iInput2));
         
         % Initialize cross-correlation function and bounds
-        corrFun = nan(2*nLagsMax+1,nSlices,nBands(iInput1),nBands(iInput2));
-        bounds  = nan(2,nSlices,nBands(iInput1),nBands(iInput2));
-        lags  = nan(2*nLagsMax+1,nSlices,nBands(iInput1),nBands(iInput2));
+        corrFun = NaN(2*nLagsMax+1,nSlices,nBands(iInput1),nBands(iInput2));
+        bounds  = NaN(2,nSlices,nBands(iInput1),nBands(iInput2));
+        lags  = NaN(2*nLagsMax+1,nSlices,nBands(iInput1),nBands(iInput2));
+        bootstrapCorrFun=NaN(2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
+        bootstrapBounds=NaN(2,2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
         
         if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput1,iInput2)); end
         
         % Loop over bands and window slices
         for iBand1=p.BandMin:min(nBands(iInput1),p.BandMax)
             for iBand2=p.BandMin:min(nBands(iInput2),p.BandMax)
+                
+                % Calculate raw cross-correlation
                 for iSlice=find(p.SliceIndex)'
-                    
+                    % Find valid range and test minimum number of timepoints
                     [~,range1,range2] = intersect(range{iInput1}{iBand1}{iSlice},range{iInput2}{iBand2}{iSlice});
                     ccL               = length(range1);
                     if ccL >= minP
@@ -197,26 +209,27 @@ for iInput1=1:nInput
                             crosscorr(data{iInput1}{iBand1}{iSlice}(range1),data{iInput2}{iBand2}{iSlice}(range2),nLags);
                     end
                 end
+                
+                % Bootstrap valid correlation functions
+                validSlices = sum(isnan(corrFun(:,:,iBand1,iBand2)),1)==0;
+                if sum(validSlices)>2
+                    [meanCC,CI] = correlationBootstrap(corrFun(:,validSlices,iBand1,iBand2),...
+                        bounds(1,validSlices,iBand1,iBand2),p.nBoot,p.alpha);
+                    bootstrapCorrFun(:,iBand1,iBand2)=meanCC;
+                    bootstrapBounds(:,:,iBand1,iBand2)=CI;
+                end   
+                
             end
             if ishandle(wtBar), waitbar(iBand1/nBands(iInput1),wtBar); end
         end
         lags=lags*movieObject.timeInterval_; %#ok<NASGU>
         
-        % Stupid bootstrapping-like function to test the grapical output
-        bootstrapCorrFun=nan(2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
-        bootstrapSteCorrFun=nan(2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
-        for iBand1=p.BandMin:min(nBands(iInput1),p.BandMax)
-            for iBand2=p.BandMin:min(nBands(iInput2),p.BandMax)                
-                bootstrapCorrFun(:,iBand1,iBand2) = nanmean(corrFun(:,:,iBand1,iBand2),2);
-                bootstrapSteCorrFun(:,iBand1,iBand2) = nanstd(corrFun(:,:,iBand1,iBand2),1,2);
-            end
-        end
-    
         save(outFilePaths{iInput1,iInput2},'corrFun','bounds','lags',...
-        'bootstrapCorrFun','bootstrapSteCorrFun');
+        'bootstrapCorrFun','bootstrapBounds');
     end
 end
 
 disp('Finished calculating correlation...')
 if ishandle(wtBar), close(wtBar); end
 
+end

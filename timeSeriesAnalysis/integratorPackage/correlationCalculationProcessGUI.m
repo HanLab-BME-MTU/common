@@ -77,10 +77,15 @@ selProc = funParams.ProcessName;
 selProcString = cellfun(@(x) eval([x '.getName']),selProc,'UniformOutput',false);
 set(handles.listbox_selectedProcesses,'String',selProcString,'UserData',selProc);
 
+% Windows selection parameters
 set(handles.edit_BandMin,'String',funParams.BandMin);
 set(handles.edit_BandMax,'String',funParams.BandMax);
 userData.SliceIndex=funParams.SliceIndex;
 userData.previewFig=-1;
+
+% Bootstrap parameters
+set(handles.edit_nBoot,'String',funParams.nBoot);
+set(handles.edit_alpha,'String',funParams.alpha);
 
 % Choose default command line output for correlationCalculationProcessGUI
 handles.output = hObject;
@@ -349,14 +354,14 @@ end
 
 bandMin = str2double(get(handles.edit_BandMin,'String'));
 if isnan(bandMin) || bandMin<1
-    errordlg('Please enter a valid value for the layer of cells to be used',...
+    errordlg('Please enter a valid value for the minimum band of windows to correlate',...
         'Setting error','modal');
     return;
 end
 
 bandMax = str2double(get(handles.edit_BandMax,'String'));
 if isnan(bandMax) 
-    errordlg('Please enter a valid value for the maximum layer of cells to be used',...
+    errordlg('Please enter a valid value for the maximum band of windows to correlate',...
         'Setting error','modal');
     return;
 end
@@ -374,16 +379,24 @@ if ishandle(userData.previewFig)
 end
 funParams.SliceIndex=userData.SliceIndex;
 
-% Process Sanity check ( only check underlying data )
-userData = get(handles.figure1, 'UserData');
-try
-    userData.crtProc.sanityCheck;
-catch ME
-
-    errordlg([ME.message 'Please double check your data.'],...
-                'Setting Error','modal');
+% Bootstrap parameters
+nBoot = str2double(get(handles.edit_nBoot,'String'));
+if isnan(nBoot) || nBoot<1 || floor(nBoot)~=nBoot
+    errordlg(['Please enter a valid value for the ' get(handles.text_nBoot,'String') ],...
+        'Setting error','modal');
     return;
 end
+
+alpha = str2double(get(handles.edit_alpha,'String'));
+if isnan(alpha) || alpha<0
+    errordlg(['Please enter a valid value for the ' get(handles.text_alpha,'String') ],...
+        'Setting error','modal');
+    return;
+end
+
+funParams.nBoot=nBoot;
+funParams.alpha=alpha;
+
 
 % Set parameters
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);

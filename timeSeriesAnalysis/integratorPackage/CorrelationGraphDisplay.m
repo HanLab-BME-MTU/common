@@ -20,21 +20,23 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
         end
         function h=initDraw(obj,data,tag,varargin)
             
-            nBands = min(size(data.avgCorrFun,2),obj.nBandMax);
-            nBands2 = min(size(data.avgCorrFun,3),obj.nBandMax);
+            nBands = min(size(data.bootstrapCorrFun,2),obj.nBandMax);
+            nBands2 = min(size(data.bootstrapCorrFun,3),obj.nBandMax);
             
             
             % Plot data
             nBandsTot = nBands*nBands2;
             colors = hsv(nBandsTot);
             h=-ones(nBandsTot,2);
+            hold on
             for j=1:nBands2
                 for i=1:nBands                
                     ind=sub2ind([nBands nBands2],i,j);
-                    h(ind,1)=plot(data.lags(:,i,j),data.avgCorrFun(:,i,j),'Line',obj.LineStyle,...
+                    h(ind,1)=plot(data.lags(:,i,j),data.bootstrapCorrFun(:,i,j),'Line',obj.LineStyle,...
                         'LineWidth',obj.LineWidth,'Color',colors(ind,:));
-                    hold on
-                    h(ind,2)=errorbar(data.lags(:,i,j),data.avgCorrFun(:,i,j),data.steCorrFun(:,i,j),...
+                    h(ind,2)=errorbar(data.lags(:,i,j),data.bootstrapCorrFun(:,i,j),...
+                        data.bootstrapBounds(2,:,i,j)'-data.bootstrapCorrFun(:,i,j),...
+                        data.bootstrapBounds(1,:,i,j)'-data.bootstrapCorrFun(:,i,j),...
                         'LineWidth', 2,'Color',colors(ind,:));
                 end
             end
@@ -49,7 +51,8 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
             
             % Set axis options
             xLim=[min(data.lags(:)) max(data.lags(:))];
-            yLim =[min(data.avgCorrFun(:)-data.steCorrFun(:)) max(data.avgCorrFun(:)+data.steCorrFun(:))];
+            yLim =[min(min(data.bootstrapBounds(1,:,1:nBands,1:nBands2))) ...
+                max(max(data.bootstrapBounds(2,:,1:nBands,1:nBands2)))];
             xlabel('Lag (s)',obj.lfont{:})
             if min(data.lags(:))==0
                 ylabel('Autocorrelation',obj.lfont{:})
@@ -97,13 +100,25 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
         end
         
         function updateDraw(obj,h,data)
+            nBands = min(size(data.bootstrapBounds,2),obj.nBandMax);
+            nBands2 = min(size(data.bootstrapBounds,3),obj.nBandMax);
+            if nBands>1 || nBands2>1
+                states=logical(arrayfun(@(x) get(x,'Value'),obj.bands));
+                set(h(states,:),'Visible','on');
+                set(h(~states,:),'Visible','off');
+            end
+        end
+        
+        function setYLimits(obj,h,data)
             nBands = min(size(data.avgCorrFun,2),obj.nBandMax);
             nBands2 = min(size(data.avgCorrFun,3),obj.nBandMax);
             if nBands>1 || nBands2>1
                 states=logical(arrayfun(@(x) get(x,'Value'),obj.bands));
                 set(h(states,:),'Visible','on');
                 set(h(~states,:),'Visible','off');
+                ind=sub2ind([nBands nBands2],i,j);
             end
+            yLim =[min(data.bootstrapBounds(:)) max(data.bootstrapBounds(:))];
         end
         
     end

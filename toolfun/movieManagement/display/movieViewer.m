@@ -536,30 +536,32 @@ h = findobj(0,'-regexp','Name',['^' figName '$']);
 if ~isempty(h), figure(h); return; end
 
 %Create a figure
-userData = get(handles.figure1,'UserData');
-sz=get(0,'ScreenSize');
-nx=userData.MD.imSize_(2);
-ny=userData.MD.imSize_(1);
-h = figure('Position',[sz(3)*.2 sz(4)*.2 nx ny],...
-    'Name',figName,'NumberTitle','off','Tag','viewerFig');
-
-% figure options for movie export
-iptsetpref('ImshowBorder','tight');
-set(h, 'InvertHardcopy', 'off');
-set(h, 'PaperUnits', 'Points');
-set(h, 'PaperSize', [nx ny]);
-set(h, 'PaperPosition', [0 0 nx ny]); % very important
-set(h, 'PaperPositionMode', 'auto');
-% set(h,'DefaultLineLineSmoothing','on');
-% set(h,'DefaultPatchLineSmoothing','on');
-
-%Create the associate axes for the movie figure
 if strcmp(figName,'Movie')
+    userData = get(handles.figure1,'UserData');
+    sz=get(0,'ScreenSize');
+    nx=userData.MD.imSize_(2);
+    ny=userData.MD.imSize_(1);
+    h = figure('Position',[sz(3)*.2 sz(4)*.2 nx ny],...
+        'Name',figName,'NumberTitle','off','Tag','viewerFig');
+    
+    % figure options for movie export
+    iptsetpref('ImshowBorder','tight');
+    set(h, 'InvertHardcopy', 'off');
+    set(h, 'PaperUnits', 'Points');
+    set(h, 'PaperSize', [nx ny]);
+    set(h, 'PaperPosition', [0 0 nx ny]); % very important
+    set(h, 'PaperPositionMode', 'auto');
+    % set(h,'DefaultLineLineSmoothing','on');
+    % set(h,'DefaultPatchLineSmoothing','on');
+    
     axes('Parent',h,'XLim',[0 userData.MD.imSize_(2)],...
         'YLim',[0 userData.MD.imSize_(1)],'Position',[0.05 0.05 .9 .9]);
     userData.drawFig=h;
+    set(handles.figure1,'UserData',userData);
+else
+    h = figure('Name',figName,'NumberTitle','off','Tag','viewerFig');
 end
-set(handles.figure1,'UserData',userData);
+
 
 function redrawChannel(hObject,handles)
 
