@@ -181,7 +181,7 @@ classdef TrackingProcess < DataProcessingProcess
             
             funParams.kalmanFunctions.reserveMem  = TrackingProcess.getKalmanReserveMemFunctions(1).funcName;
             funParams.kalmanFunctions.initialize  = TrackingProcess.getKalmanInitializeFunctions(1).funcName;
-            funParams.kalmanFunctions.calcGain    = TrackingProcess.getKalmanTimeReverseFunctions(1).funcName;
+            funParams.kalmanFunctions.calcGain    = TrackingProcess.getKalmanCalcGainFunctions(1).funcName;
             funParams.kalmanFunctions.timeReverse = TrackingProcess.getKalmanTimeReverseFunctions(1).funcName;
             
             
