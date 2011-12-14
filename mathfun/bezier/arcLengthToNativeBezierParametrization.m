@@ -14,7 +14,7 @@ function t = arcLengthToNativeBezierParametrization(cP,s)
 % Optional Inputs:
 %
 % Outputs:
-% t              Array representing the transformed ('native') node values
+% t              Array representing the transformed ('native') nodes
 %
 % Pascal Berard, December 2011
 
@@ -28,12 +28,12 @@ s = reshape(s,numel(s),1);
 
 % Test if all s are between 0 and 1
 if all(s<=1&s>=0)
-    nS = numel(s);
+    nS = numel(s); % Number of input nodes
     tLow = zeros(nS,1);
     tUpper = ones(nS,1);
     sLow = zeros(nS,1);
     sUpper = ones(nS,1);
-    t = zeros(nS,1);
+    t = zeros(nS,1); % Output
     
     length = lengthBezier(cP);
     
