@@ -41,7 +41,7 @@ workCC( abs(CC) < repmat( CB,nLag,1 ) ) = 0;
 
 opt = statset('UseParallel','always');
 
-[confI,statCC] = bootci(nBoot,{@(x) mean(atanh(x)),workCC'},'alpha',alpha,...
+[confI,statCC] = bootci(nBoot,{@(x) nanmean(atanh(x)),workCC'},'alpha',alpha,...
           'type','bca','Options',opt);
 
 CI     = tanh( confI );
