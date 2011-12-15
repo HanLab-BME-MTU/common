@@ -50,7 +50,7 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
         
         function varargout = loadChannelOutput(obj,i,j,varargin)
             % Check input
-            outputList={'raw','bootstrap','corrFun','bounds','lags',...
+            outputList={'bootstrap','raw','corrFun','bounds','lags',...
                 'bootstrapCorrFun','bootstrapBounds'};
             ip=inputParser;
             ip.addRequired('obj');
@@ -116,7 +116,7 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
         function output = getDrawableOutput(obj)
             output(1).name='Bootsrapped correlation';
             output(1).var='bootstrap';
-            output(1).formatData=@formatBootstrappedCorrelationData;
+            output(1).formatData=[];
             output(1).type='correlationGraph';
             output(1).defaultDisplayMethod = @CorrelationGraphDisplay;
             if isa(obj.owner_,'MovieData'),
@@ -153,12 +153,12 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
                     owner.movies_,'UniformOutput',false);
                 funParams.BandMin=1;
                 funParams.BandMax=min(cellfun(@(x) x.nBandMax_,winProc));
-                funParams.SliceIndex=cellfun(@(x) ones(x.nSliceMax_,1),winProc,'UniformOutput',false);
+                funParams.SliceIndex=cellfun(@(x) true(x.nSliceMax_,1),winProc,'UniformOutput',false);
             else
                 winProc =owner.processes_{owner.getProcessIndex('WindowingProcess',1,false)};
                 funParams.BandMin=1;
                 funParams.BandMax=winProc.nBandMax_;
-                funParams.SliceIndex=ones(winProc.nSliceMax_,1);
+                funParams.SliceIndex=true(winProc.nSliceMax_,1);
             end
             funParams.nBoot=1e4;
             funParams.alpha=.01;
@@ -170,8 +170,4 @@ function data =formatCorrelationData(data)
 data.X=data.lags;
 data.Z=data.corrFun;
 data=rmfield(data,{'lags','corrFun'});
-end
-
-function data =formatBootstrappedCorrelationData(data)
-data.lags=squeeze(nanmean(data.lags,2));
 end

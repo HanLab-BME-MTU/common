@@ -32,10 +32,17 @@ classdef TimeSeriesProcess < Process
             procIndex = zeros(nProc,1);
             channelIndex=cell(nProc,1);
             outputList = cell(nProc,1);
-
+            
+            if isa(obj.owner_,'MovieList');
+                movie=obj.owner_.movies_{1};
+            else
+                movie=obj.owner_;
+            end
+                
+            
             for i=1:nProc
-                procIndex(i) = obj.owner_.getProcessIndex(procNames{i},1);
-                proc =obj.owner_.processes_{procIndex(i)};
+                procIndex(i) =movie.getProcessIndex(procNames{i},1);
+                proc =movie.processes_{procIndex(i)};
                 outputList{i} = proc.getDrawableOutput;
                 isMovieProc = strcmp('movieGraph',outputList{i}(1).type);
                 if isMovieProc

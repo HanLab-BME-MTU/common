@@ -21,6 +21,7 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('movieObject', @(x) isa(x,'MovieObject'));
 ip.addOptional('paramsIn',[], @isstruct);
+ip.addParamValue('waitbar',[], @ishandle);
 ip.parse(movieObject,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
@@ -39,6 +40,20 @@ corrProc = movieObject.processes_{iProc};
 %Parse input, store in parameter structure
 p = parseProcessParams(corrProc,paramsIn);
 
+
+%% --------------- Initialization ---------------%%
+if ~isempty(ip.Results.waitbar)
+    wtBar=ip.Results.waitbar;
+    waitbar(0,ip.Results.waitbar,'Initializing...');
+    wtBarArgs={'waitbar',wtBar};
+elseif feature('ShowFigureWindows')
+    wtBar = waitbar(0,'Initializing...');
+    wtBarArgs={'waitbar',wtBar};
+else
+    wtBar=-1;
+    wtBarArgs={};
+end
+
 % Delegates correlation processes to movies if object is a movieList 
 if isa(movieObject,'MovieList')
     movieParams=rmfield(p,{'MovieIndex','OutputDirectory'});
@@ -54,11 +69,11 @@ if isa(movieObject,'MovieList')
         end
         corrProc = movieData.processes_{iProc};
         parseProcessParams(movieData.processes_{iProc},movieParams);
-        corrProc.run();
+        corrProc.run(wtBarArgs{:});
     end  
     
     % Calls the movie list correlation bootstrapping method
-    bootstrapMovieListCorrelation(movieObject);
+    bootstrapMovieListCorrelation(movieObject,wtBarArgs{:});
     return;
 end    
 
@@ -66,12 +81,9 @@ end
 assert(isa(movieObject,'MovieData'));
 movieData=movieObject;
 
-%% --------------- Initialization ---------------%%
-if feature('ShowFigureWindows')
-    [~,movieName]=fileparts(movieData.getPath);
-    wtBar = waitbar(0,'Initializing...','Name',movieName);
-else
-    wtBar=-1;
+if ishandle(wtBar), 
+    [~,movieName]=fileparts(movieObject.getPath);
+    set(wtBar,'Name',movieName);
 end
 
 input = corrProc.getInput;
@@ -142,7 +154,6 @@ for iInput=1:nInput
     
     % Initialize autocorrelation function and bounds
     corrFun = NaN(nLagsMax+1,nSlices,nBands(iInput));
-    lags = NaN(nLagsMax+1,nSlices,nBands(iInput));
     bounds = NaN(2,nSlices,nBands(iInput));
     bootstrapCorrFun=NaN(nLagsMax+1,nBands(iInput));
     bootstrapBounds=NaN(2,nLagsMax+1,nBands(iInput));
@@ -157,8 +168,8 @@ for iInput=1:nInput
         validSlices = ~cellfun(@isempty,data{iInput}{iBand});
         for iSlice=find(validSlices & p.SliceIndex)'
             nLags = round(length(data{iInput}{iBand}{iSlice})/4);
-            [corrFun(1:nLags+1,iSlice,iBand),lags(1:nLags+1,iSlice,iBand),...
-                bounds(:,iSlice,iBand)] = autocorr(data{iInput}{iBand}{iSlice},nLags);
+            [corrFun(1:nLags+1,iSlice,iBand),~,bounds(:,iSlice,iBand)] = ...
+                autocorr(data{iInput}{iBand}{iSlice},nLags);
         end
         
         % Bootstrap valid autocorrelation functions
@@ -173,7 +184,7 @@ for iInput=1:nInput
         if ishandle(wtBar), waitbar(iBand/nBands(iInput),wtBar); end
     end
        
-    lags =lags*movieData.timeInterval_; %#ok<NASGU>
+    lags =(0:nLagsMax)'*movieData.timeInterval_; 
     
     save(outFilePaths{iInput,iInput},'corrFun','bounds','lags',...
         'bootstrapCorrFun','bootstrapBounds');  
@@ -190,7 +201,6 @@ for iInput1=1:nInput
         % Initialize cross-correlation function and bounds
         corrFun = NaN(2*nLagsMax+1,nSlices,nBands(iInput1),nBands(iInput2));
         bounds  = NaN(2,nSlices,nBands(iInput1),nBands(iInput2));
-        lags  = NaN(2*nLagsMax+1,nSlices,nBands(iInput1),nBands(iInput2));
         bootstrapCorrFun=NaN(2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
         bootstrapBounds=NaN(2,2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
         
@@ -207,8 +217,7 @@ for iInput1=1:nInput
                     ccL               = length(range1);
                     if ccL >= minP
                         nLags = round(ccL/4);
-                        [corrFun(1:2*nLags+1,iSlice,iBand1,iBand2),lags(1:2*nLags+1,iSlice,iBand1,iBand2),...
-                            bounds(:,iSlice,iBand1,iBand2)] =...
+                        [corrFun(1:2*nLags+1,iSlice,iBand1,iBand2),~,bounds(:,iSlice,iBand1,iBand2)] =...
                             crosscorr(data{iInput1}{iBand1}{iSlice}(range1),data{iInput2}{iBand2}{iSlice}(range2),nLags);
                     end
                 end
@@ -226,6 +235,7 @@ for iInput1=1:nInput
             if ishandle(wtBar), waitbar(iBand1/nBands(iInput1),wtBar); end
         end
         lags=lags*movieData.timeInterval_; %#ok<NASGU>
+        lags =(-nLagsMax:nLagsMax)'*movieData.timeInterval_;
         
         save(outFilePaths{iInput1,iInput2},'corrFun','bounds','lags',...
         'bootstrapCorrFun','bootstrapBounds');
@@ -233,6 +243,6 @@ for iInput1=1:nInput
 end
 
 disp('Finished calculating correlation...')
-if ishandle(wtBar), close(wtBar); end
+if ishandle(wtBar)&&isempty(ip.Results.waitbar), close(wtBar); end
 
 end

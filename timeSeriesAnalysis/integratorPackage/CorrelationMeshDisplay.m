@@ -19,11 +19,11 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
             delete(gca)
             % Read sizes and replicate data if applicable
             [nx,ny,nBands,nBands2] = size(data.Z);
-            if ~isfield(data,'X'), data.X=repmat(1:nx,1,ny); end
+            if isvector(data.X), data.X=repmat(data.X,1,ny); end
             if ~isfield(data,'Y'), data.Y= repmat(1:ny,nx,1); end
             
             % Create mesh display
-            h(1)=mesh(data.X(:,:,1,1),data.Y,data.Z(:,:,1,1),'FaceColor','interp');
+            h(1)=mesh(data.X,data.Y,data.Z(:,:,1,1),'FaceColor','interp');
             if ~isempty(data.bounds)
                 hold on
                 upline  = repmat(data.bounds(1,:,1,1),nx,1);

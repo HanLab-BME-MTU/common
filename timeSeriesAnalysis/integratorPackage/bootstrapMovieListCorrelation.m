@@ -1,5 +1,5 @@
 function bootstrapMovieListCorrelation(movieList,varargin)
-% calculateMovieCorrelation calculate the autocorrelation and cross-correlation
+% bootstrapMovieListCorrelation calculate the autocorrelation and cross-correlation
 % between the protrusion and activity maps
 %
 % SYNOPSIS calculateMovieCorrelation(movieList,paramsIn)
@@ -21,6 +21,7 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('movieList', @(x) isa(x,'MovieList'));
 ip.addOptional('paramsIn',[], @isstruct);
+ip.addParamValue('waitbar',[], @ishandle);
 ip.parse(movieList,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
@@ -41,8 +42,11 @@ p = parseProcessParams(corrProc,paramsIn);
 
 
 %% --------------- Initialization ---------------%%
-if feature('ShowFigureWindows')
-    [~,movieName]=fileparts(movieList.getPath);
+[~,movieName]=fileparts(movieList.getPath);
+if ~isempty(ip.Results.waitbar)
+    wtBar=ip.Results.waitbar;
+    waitbar(0,wtBar,'Initializing...','Name',movieName);
+elseif feature('ShowFigureWindows')
     wtBar = waitbar(0,'Initializing...','Name',movieName);
 else
     wtBar=-1;
@@ -99,8 +103,8 @@ for iInput=1:nInput
                 movieCorrProc(i).loadChannelOutput(iInput,jInput,'output',{'corrFun','bounds'});
             
             % Slice window slices
-            rawCorrFun{iCorrFun,i}=rawCorrFun{iCorrFun,i}(:,p.SliceIndex{iMovie},:,:);
-            rawBounds{iCorrFun,i}=rawBounds{iCorrFun,i}(:,p.SliceIndex{iMovie},:,:);
+            rawCorrFun{iCorrFun,i}=rawCorrFun{iCorrFun,i}(:,find(p.SliceIndex{iMovie}),:,:);
+            rawBounds{iCorrFun,i}=rawBounds{iCorrFun,i}(:,find(p.SliceIndex{iMovie}),:,:);
             
             % Slice bands
             if size(rawCorrFun{iCorrFun,i},3)>1
@@ -142,7 +146,7 @@ corrProc.setOutFilePaths(outFilePaths);
 disp('Starting bootstraping correlation...')
 
 acfLogMsg = @(i) ['Please wait, bootstrapping ' input(i).name ' autocorrelation'];
-ccfLogMsg = @(i,j) ['Please wait, calculating ' input(i).name '/'...
+ccfLogMsg = @(i,j) ['Please wait, bootstrapping ' input(i).name '/'...
     input(j).name ' cross-correlation'];
 
 
@@ -194,13 +198,11 @@ for iInput1=1:nInput
             if ishandle(wtBar), waitbar(iBand1/nBandMax1,wtBar); end
         end
         
-        lags =(0:nAcfLags)*movieList.movies_{1}.timeInterval_; %#ok<NASGU>
-        
         save(outFilePaths{iInput1,iInput2},'lags','bootstrapCorrFun','bootstrapBounds');
     end
 end
 
 disp('Finished bootstraping correlation...')
-if ishandle(wtBar), close(wtBar); end
+if ishandle(wtBar) && isempty(ip.Results.waitbar), close(wtBar); end
 
 end
