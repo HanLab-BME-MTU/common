@@ -107,7 +107,7 @@ userData.colormap = userData.userData_main.colormap;
 % Set up help icon
 set(hObject,'colormap',userData.colormap);
 % Set up package help. Package icon is tagged as '0'
-set(hanldes.figure1,'CurrentAxes',handles.axes_help);
+set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(userData.questIconData); 
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');

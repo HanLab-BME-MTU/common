@@ -56,7 +56,29 @@ funParams = userData.crtProc.funParams_;
 set(handles.listbox_availableMovies,'String',userData.ML.movieDataFile_, ...
     'UserData',1:numel(userData.ML.movies_));
 
+% Set up available input processes
+allProc = userData.crtProc.getTimeSeriesProcesses();
+allProcString = cellfun(@(x) eval([x '.getName']),allProc,'UniformOutput',false);
+set(handles.listbox_availableProcesses,'String',allProcString,'UserData',allProc);
+
+
 movieIndex = funParams.MovieIndex;
+selProc = funParams.ProcessName;
+
+% Find any parent process
+parentProc = userData.crtPackage.getParent(userData.procID);
+if isempty(userData.crtPackage.processes_{userData.procID}) && ~isempty(parentProc)
+    % Check existence of all parent processes
+    emptyParentProc = any(cellfun(@isempty,userData.crtPackage.processes_(parentProc)));
+    if ~emptyParentProc
+        % Intersect movie index with channel index of parent processes
+        for i = parentProc
+            parentParams = userData.crtPackage.processes_{i}.funParams_;
+            movieIndex = intersect(movieIndex,parentParams.MovieIndex);
+            selProc = intersect(selProc,parentParams.ProcessName);
+        end
+    end
+end
 
 if ~isempty(movieIndex)
     movieString = userData.ML.movieDataFile_(movieIndex);
@@ -67,14 +89,13 @@ end
 set(handles.listbox_selectedMovies,'String',movieString,...
     'UserData',movieIndex,'Callback',@(h,event)update_preview(h,event,guidata(h)));
 
-% Set up available input processes
-allProc = userData.crtProc.getTimeSeriesProcesses();
-allProcString = cellfun(@(x) eval([x '.getName']),allProc,'UniformOutput',false);
-set(handles.listbox_availableProcesses,'String',allProcString,'UserData',allProc);
-
-% Set up selected input processes
-selProc = funParams.ProcessName;
-selProcString = cellfun(@(x) eval([x '.getName']),selProc,'UniformOutput',false);
+% Set up selected input processe
+if ~isempty(selProc)
+    
+    selProcString = cellfun(@(x) eval([x '.getName']),selProc,'UniformOutput',false);
+else
+    selProcString = {};
+end  
 set(handles.listbox_selectedProcesses,'String',selProcString,'UserData',selProc);
 
 % Windows selection parameters

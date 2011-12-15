@@ -41,7 +41,7 @@ p = parseProcessParams(corrProc,paramsIn);
 
 % Delegates correlation processes to movies if object is a movieList 
 if isa(movieObject,'MovieList')
-    movieParams=rmfield(p,'MovieIndex');
+    movieParams=rmfield(p,{'MovieIndex','OutputDirectory'});
     for i =1:numel(p.MovieIndex);
         movieParams.SliceIndex=p.SliceIndex{p.MovieIndex(i)};
         movieData = movieObject.movies_{p.MovieIndex(i)};
@@ -54,7 +54,6 @@ if isa(movieObject,'MovieList')
         corrProc = movieData.processes_{iProc};
         parseProcessParams(movieData.processes_{iProc},movieParams);
         corrProc.run();
-        
     end  
     return
 end    
@@ -72,37 +71,41 @@ end
 input = corrProc.getInput;
 nInput=numel(input);
 
-% Test the presence and output validity of the speckle detection process
-iSignalPreproc =movieObject.getProcessIndex('SignalPreprocessingProcess',1,1);     
-if isempty(iSignalPreproc)
-    error([SignalPreprocessingProcess.getName ' has not yet been performed'...
-    'on this movie! Please run first!!']);
-end        
-
-% Check that there is a valid output
-signalPreproc = movieObject.processes_{iSignalPreproc};
-preprocInput =signalPreproc.getInput;
-preprocIndex=zeros(nInput,1);
-for i=1:nInput
-    index = find(arrayfun(@(x) isequal(input(i),x),preprocInput));
-    assert(isscalar(index))
-    preprocIndex(i) = index;
+if isa(movieObject,'MovieList')
+    
+else
+    % Test the presence and output validity of the signal preprocessing
+    iSignalPreproc =movieObject.getProcessIndex('SignalPreprocessingProcess',1,1);
+    if isempty(iSignalPreproc)
+        error([SignalPreprocessingProcess.getName ' has not yet been performed'...
+            'on this movie! Please run first!!']);
+    end
+    
+    % Check that there is a valid output
+    signalPreproc = movieObject.processes_{iSignalPreproc};
+    preprocInput =signalPreproc.getInput;
+    preprocIndex=zeros(nInput,1);
+    for i=1:nInput
+        index = find(arrayfun(@(x) isequal(input(i),x),preprocInput));
+        assert(isscalar(index))
+        preprocIndex(i) = index;
+    end
+    if ~signalPreproc.checkChannelOutput(preprocIndex)
+        error(['Each time series must have been preprocessesd !' ...
+            'Please apply pre-processing to all time series before '...
+            'running correlation calculatino!'])
+    end
+    
+    % Load input
+    inFilePaths = cell(nInput,1);
+    data = cell(nInput,1);
+    range = cell(nInput,1);
+    for iInput=1:nInput
+        inFilePaths{1,iInput} = signalPreproc.outFilePaths_{1,preprocIndex(iInput)};
+        [data{iInput},range{iInput}] = signalPreproc.loadChannelOutput(preprocIndex(iInput));
+    end
+    corrProc.setInFilePaths(inFilePaths)
 end
-if ~signalPreproc.checkChannelOutput(preprocIndex)
-    error(['Each time series must have been preprocessesd !' ...
-        'Please apply pre-processing to all time series before '...
-        'running correlation calculatino!'])
-end
-
-% Load input
-inFilePaths = cell(nInput,1);
-data = cell(nInput,1);
-range = cell(nInput,1);
-for iInput=1:nInput
-    inFilePaths{1,iInput} = signalPreproc.outFilePaths_{1,preprocIndex(iInput)};
-    [data{iInput},range{iInput}] = signalPreproc.loadChannelOutput(preprocIndex(iInput));
-end
-corrProc.setInFilePaths(inFilePaths)
 
 % Set up output files
 outFilePaths=cell(nInput,nInput);

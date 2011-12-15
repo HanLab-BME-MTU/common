@@ -32,6 +32,21 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
             obj = obj@TimeSeriesProcess(super_args{:});
         end
         
+        function status = checkChannelOutput(obj,varargin)
+            % Input check
+            input=obj.getInput;
+            nInput=numel(input);
+            ip =inputParser;
+            ip.addOptional('iInput1',1:nInput,@(x) all(ismember(x,1:nInput)));
+            ip.addOptional('iInput2',1:nInput,@(x) all(ismember(x,1:nInput)));
+            ip.parse(varargin{:});
+            iInput1=ip.Results.iInput1;
+            iInput2=ip.Results.iInput2;
+            
+            %Makes sure there's at least one output file per channel
+            status =  arrayfun(@(i,j) exist(obj.outFilePaths_{i,j},'file'),iInput1,iInput2);
+    
+        end
         
         function varargout = loadChannelOutput(obj,i,j,varargin)
             % Check input
@@ -99,17 +114,18 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
         end
         
         function output = getDrawableOutput(obj)
-            output(1).name='Correlation function';
-            output(1).var='raw';
-            output(1).formatData=@formatCorrelationData;
+            output(1).name='Bootsrapped correlation';
+            output(1).var='bootstrap';
+            output(1).formatData=@formatBootstrappedCorrelationData;
             output(1).type='correlationGraph';
-            output(1).defaultDisplayMethod = @CorrelationMeshDisplay;
-            output(2).name='Bootsrapped correlation';
-            output(2).var='bootstrap';
-            output(2).formatData=@formatBootstrappedCorrelationData;
-            output(2).type='correlationGraph';
-            output(2).defaultDisplayMethod = @CorrelationGraphDisplay;
-            if isa(obj.owner_,'MovieList'), output=output(2); end
+            output(1).defaultDisplayMethod = @CorrelationGraphDisplay;
+            if isa(obj.owner_,'MovieData'),
+                output(2).name='Correlation function';
+                output(2).var='raw';
+                output(2).formatData=@formatCorrelationData;
+                output(2).type='correlationGraph';
+                output(2).defaultDisplayMethod = @CorrelationMeshDisplay;
+            end
         end
     end
     
