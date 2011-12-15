@@ -43,6 +43,7 @@ p = parseProcessParams(corrProc,paramsIn);
 if isa(movieObject,'MovieList')
     movieParams=rmfield(p,{'MovieIndex','OutputDirectory'});
     for i =1:numel(p.MovieIndex);
+        % Delegate correlation calculation for each movie of the list
         movieParams.SliceIndex=p.SliceIndex{p.MovieIndex(i)};
         movieData = movieObject.movies_{p.MovieIndex(i)};
         iProc = movieData.getProcessIndex('CorrelationCalculationProcess',1,0);
@@ -55,14 +56,19 @@ if isa(movieObject,'MovieList')
         parseProcessParams(movieData.processes_{iProc},movieParams);
         corrProc.run();
     end  
-    return
+    
+    % Calls the movie list correlation bootstrapping method
+    bootstrapMovieListCorrelation(movieObject);
+    return;
 end    
 
-
+% Code below should be only executed for MovieData objects
+assert(isa(movieObject,'MovieData'));
+movieData=movieObject;
 
 %% --------------- Initialization ---------------%%
 if feature('ShowFigureWindows')
-    [~,movieName]=fileparts(movieObject.getPath);
+    [~,movieName]=fileparts(movieData.getPath);
     wtBar = waitbar(0,'Initializing...','Name',movieName);
 else
     wtBar=-1;
@@ -71,41 +77,37 @@ end
 input = corrProc.getInput;
 nInput=numel(input);
 
-if isa(movieObject,'MovieList')
-    
-else
-    % Test the presence and output validity of the signal preprocessing
-    iSignalPreproc =movieObject.getProcessIndex('SignalPreprocessingProcess',1,1);
-    if isempty(iSignalPreproc)
-        error([SignalPreprocessingProcess.getName ' has not yet been performed'...
-            'on this movie! Please run first!!']);
-    end
-    
-    % Check that there is a valid output
-    signalPreproc = movieObject.processes_{iSignalPreproc};
-    preprocInput =signalPreproc.getInput;
-    preprocIndex=zeros(nInput,1);
-    for i=1:nInput
-        index = find(arrayfun(@(x) isequal(input(i),x),preprocInput));
-        assert(isscalar(index))
-        preprocIndex(i) = index;
-    end
-    if ~signalPreproc.checkChannelOutput(preprocIndex)
-        error(['Each time series must have been preprocessesd !' ...
-            'Please apply pre-processing to all time series before '...
-            'running correlation calculatino!'])
-    end
-    
-    % Load input
-    inFilePaths = cell(nInput,1);
-    data = cell(nInput,1);
-    range = cell(nInput,1);
-    for iInput=1:nInput
-        inFilePaths{1,iInput} = signalPreproc.outFilePaths_{1,preprocIndex(iInput)};
-        [data{iInput},range{iInput}] = signalPreproc.loadChannelOutput(preprocIndex(iInput));
-    end
-    corrProc.setInFilePaths(inFilePaths)
+% Test the presence and output validity of the signal preprocessing
+iSignalPreproc =movieData.getProcessIndex('SignalPreprocessingProcess',1,1);
+if isempty(iSignalPreproc)
+    error([SignalPreprocessingProcess.getName ' has not yet been performed'...
+        'on this movie! Please run first!!']);
 end
+
+% Check that there is a valid output
+signalPreproc = movieData.processes_{iSignalPreproc};
+preprocInput =signalPreproc.getInput;
+preprocIndex=zeros(nInput,1);
+for i=1:nInput
+    index = find(arrayfun(@(x) isequal(input(i),x),preprocInput));
+    assert(isscalar(index))
+    preprocIndex(i) = index;
+end
+if ~signalPreproc.checkChannelOutput(preprocIndex)
+    error(['Each time series must have been preprocessesd !' ...
+        'Please apply pre-processing to all time series before '...
+        'running correlation calculatino!'])
+end
+
+% Load input
+inFilePaths = cell(nInput,1);
+data = cell(nInput,1);
+range = cell(nInput,1);
+for iInput=1:nInput
+    inFilePaths{iInput,1} = signalPreproc.outFilePaths_{1,preprocIndex(iInput)};
+    [data{iInput},range{iInput}] = signalPreproc.loadChannelOutput(preprocIndex(iInput));
+end
+corrProc.setInFilePaths(inFilePaths);
 
 % Set up output files
 outFilePaths=cell(nInput,nInput);
@@ -128,7 +130,7 @@ disp('Starting calculating correlation...')
 %Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
 minP     = 50;
 
-nLagsMax =round(movieObject.nFrames_/4);
+nLagsMax =round(movieData.nFrames_/4);
 nBands =cellfun(@numel,data);
 nSlices = numel(data{1}{1});
 
@@ -162,18 +164,16 @@ for iInput=1:nInput
         % Bootstrap valid autocorrelation functions
         validSlices = sum(isnan(corrFun(:,:,iBand)),1)==0;
         if sum(validSlices)>2
-            [meanCC,CI] = correlationBootstrap(corrFun(2:end,validSlices,iBand),...
+            [meanCC,CI] = correlationBootstrap(corrFun(:,validSlices,iBand),...
                 bounds(1,validSlices,iBand),p.nBoot,p.alpha);
-            bootstrapCorrFun(1,iBand)=1;
-            bootstrapBounds(:,1,iBand)=1;
-            bootstrapCorrFun(2:end,iBand)=meanCC;
-            bootstrapBounds(:,2:end,iBand)=CI;
+            bootstrapCorrFun(:,iBand)=meanCC;
+            bootstrapBounds(:,:,iBand)=CI;
         end
         
         if ishandle(wtBar), waitbar(iBand/nBands(iInput),wtBar); end
     end
        
-    lags =lags*movieObject.timeInterval_; %#ok<NASGU>
+    lags =lags*movieData.timeInterval_; %#ok<NASGU>
     
     save(outFilePaths{iInput,iInput},'corrFun','bounds','lags',...
         'bootstrapCorrFun','bootstrapBounds');  
@@ -225,7 +225,7 @@ for iInput1=1:nInput
             end
             if ishandle(wtBar), waitbar(iBand1/nBands(iInput1),wtBar); end
         end
-        lags=lags*movieObject.timeInterval_; %#ok<NASGU>
+        lags=lags*movieData.timeInterval_; %#ok<NASGU>
         
         save(outFilePaths{iInput1,iInput2},'corrFun','bounds','lags',...
         'bootstrapCorrFun','bootstrapBounds');

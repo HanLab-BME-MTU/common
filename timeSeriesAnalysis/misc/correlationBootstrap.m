@@ -1,5 +1,4 @@
-function [meanCC,CI] = correlationBootstrap(CC,CB,nBoot,alpha)
-
+function [meanCC,CI] = correlationBootstrap(CC,CB,varargin)
 %This function gives an average auto or cross-correlation coeficient and the
 %confidence interval 
 %
@@ -14,9 +13,12 @@ function [meanCC,CI] = correlationBootstrap(CC,CB,nBoot,alpha)
 %                CB is a vector of the upper bound for each variable
 %                CB(1,# of variables)
 %           
-%         nBoot - number of bootstraped samples
+%Optional input:
 %
-%         alpha - alpha used to generate the bootstrap confidence intervals  
+%         nBoot - number of bootstraped samples (default value 1000)
+%
+%         alpha - alpha used to generate the bootstrap confidence intervals
+%         (default value 0.05)
 %
 %Output:
 %
@@ -25,16 +27,21 @@ function [meanCC,CI] = correlationBootstrap(CC,CB,nBoot,alpha)
 %
 % Marco Vilela, 12/2011
 
-if nargin < 3
-    nBoot    = 1000;
-end
+%Input check
+%SB: still need to find minimimum values for number of samples/variables
+ip=inputParser;
+ip.addRequired('CC',@(x) isnumeric(x) && size(x,2)>2);
+[nLag,nVar] = size(CC);
+ip.addRequired('CB',@(x) isnumeric(x) && isequal(size(x),[1 nVar]));
+ip.addOptional('nBoot',1e3,@isscalar);
+ip.addOptional('alpha',.05,@isscalar);
+ip.parse(CC,CB,varargin{:});
+nBoot=ip.Results.nBoot;
+alpha=ip.Results.alpha;
 
-if nargin < 4
-    alpha    = 0.05;
-end
-
-[nLag,~] = size(CC);
+% Fix bug when correlation function is equal to 1 or -1
 workCC   = CC;
+workCC(abs(CC)==1)=workCC(abs(CC)==1)-sign(workCC(abs(CC)==1))*1e-9;
 
 %Elimination of values below the CB
 workCC( abs(CC) < repmat( CB,nLag,1 ) ) = 0;

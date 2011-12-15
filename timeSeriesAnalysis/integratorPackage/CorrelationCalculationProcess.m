@@ -61,9 +61,9 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
             output=ip.Results.output;
             if ischar(output), output={output}; end
             
-            if strcmp(output{:},'raw')
+            if isequal(output{:},'raw')
                 s=load(obj.outFilePaths_{i,j},'corrFun','bounds','lags');
-            elseif strcmp(output{:},'bootstrap')
+            elseif isequal(output{:},'bootstrap')
                 s=load(obj.outFilePaths_{i,j},'bootstrapCorrFun','bootstrapCorrFun','bootstrapBounds','lags');
             else
                 s=load(obj.outFilePaths_{i,j},output{:});
