@@ -59,5 +59,8 @@ while(any(edgeIsActive))
     
 end
 
+% "Un"-sort edges
+M(sortIdx) = M;
+
 end
 
