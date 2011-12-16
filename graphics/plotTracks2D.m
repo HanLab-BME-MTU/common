@@ -1,4 +1,4 @@
-function plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
+function h=plotTracks2D(trackedFeatureInfo,timeRange,colorTime,markerType,...
     indicateSE,newFigure,image,flipXY,ask4sel,offset,minLength)
 %PLOTTRACKS2D plots a group of tracks in 2D and allows user to click on them and extract track information
 %
@@ -342,19 +342,19 @@ switch colorTime
 
     case '1' %if user wants to color-code time
 
-        %plot tracks ignoring missing points
-        %gaps are depicted as a dotted black line
-        for i = 1 : trackStartRow(end) + numSegments(end) - 1
-            obsAvail = find(~isnan(tracksXP(:,i)));
-            plot(axH,tracksXP(obsAvail,i),tracksYP(obsAvail,i),'k:');
-        end
+        xData=arrayfun(@(x)[tracksXP(~isnan(tracksXP(:,x)),x); NaN],1:size(tracksXP,2),'Unif',false);
+        yData=arrayfun(@(x)[tracksYP(~isnan(tracksYP(:,x)),x); NaN],1:size(tracksYP,2),'Unif',false);
+        plot(axH,vertcat(xData{:}),vertcat(yData{:}),'b-');
         
         %get the overall color per time interval
         colorOverTime = timeColormap(numTimePlot);
 
         %overlay tracks with color coding wherever a feature has been detected
         for i=1:numTimePlot-1
-            plot(axH,tracksXP(i:i+1,:),tracksYP(i:i+1,:),'color',colorOverTime(i,:));
+            validData=~all(isnan(tracksXP(i:i+1,:)),1);
+            xData=vertcat(tracksXP(i:i+1,validData),NaN(1,sum(validData)));
+            yData=vertcat(tracksYP(i:i+1,validData),NaN(1,sum(validData)));
+            plot(axH,xData(:),yData(:),'color',colorOverTime(i,:));
         end
 
     case '2' %no time color-coding, loop through series of colors to color tracks

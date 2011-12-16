@@ -65,7 +65,7 @@ subResDetProc.setOutFilePaths(outFilePaths);
 disp('Starting detecting diffraction-limited objects...')
 
 for i = p.ChannelIndex
-    disp(['Please wait, detecting speckles for channel ' num2str(i)])
+    disp(['Please wait, detecting objects for channel ' num2str(i)])
     disp(inFilePaths{1,i});
     disp('Results will be saved under:')
     disp(outFilePaths{1,i});
