@@ -56,6 +56,8 @@ userData = get(handles.figure1, 'UserData');
 % constructor
      
 userData.subProcClassNames = eval([userData.crtProcClassName '.getConcreteClasses']);
+validClasses = cellfun(@(x)exist(x,'class')==8,userData.subProcClassNames);
+userData.subProcClassNames = userData.subProcClassNames(validClasses);
 userData.subProcConstr = cellfun(@(x) str2func(x),userData.subProcClassNames,'Unif',0);
 userData.subProcGUI = cellfun(@(x) eval([x '.GUI']),userData.subProcClassNames,'Unif',0);
 subProcNames = cellfun(@(x) eval([x '.getName']),userData.subProcClassNames,'Unif',0);
