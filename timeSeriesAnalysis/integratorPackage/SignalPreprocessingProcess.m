@@ -57,15 +57,6 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
         function status = checkChannelOutput(obj,i)
             status = cellfun(@(x)exist(x,'file'),obj.outFilePaths_(1,i));
         end  
-%         
-%         
-%         function output = getDrawableOutput(obj)
-%             output(1).name='Correlation';
-%             output(1).var={''};
-%             output(1).formatData=@formatCorrelationData;
-%             output(1).type='correlationGraph';
-%             output(1).defaultDisplayMethod = @CorrelationMeshDisplay;
-%         end
     end
     
     methods (Static)
@@ -85,7 +76,7 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
             
             % Set default parameters
             if isa(owner,'MovieList'), funParams.MovieIndex=1:numel(owner.movies_); end
-            if isa(owner,'MovieData'), funParams.OutputDirectory = [outputDir  filesep 'preprocessedSignal']; end
+            funParams.OutputDirectory = [outputDir  filesep 'preprocessedSignal'];
             funParams.ProcessName=SignalPreprocessingProcess.getTimeSeriesProcesses;
             funParams.kSigma=5;
         end

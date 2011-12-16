@@ -1,15 +1,57 @@
 function calculateMovieCorrelation(movieObject,varargin)
-% calculateMovieCorrelation calculate the autocorrelation and cross-correlation
-% between the protrusion and activity maps
+% calculateMovieCorrelation calculate the correlation of temporal maps
 %
 % SYNOPSIS calculateMovieCorrelation(movieObject,paramsIn)
 %
 % INPUT   
-%   movieObject - A MovieData object describing the movie to be processed
+%   movieObject - A movie object describing the movie to be processed
 %
 %   paramsIn - Structure with inputs for optional parameters. The
 %   parameters should be stored as fields in the structure, with the field
 %   names and possible values as described below
+%
+%   Possible Parameter Structure Field Names:
+%       ('FieldName' -> possible values)
+%
+%       ('OutputDirectory' -> character string)
+%       Optional. A character string specifying the directory to save the
+%       correlation function to.
+%       If not input, the masks will be saved to the same directory as the
+%       movieObject, in a sub-directory called "correlation"
+%
+%       ('MovieIndex' -> Positive integer scalar or vector)
+%       Optional. For movie list, the integer index of the movie(s) to 
+%       correlate. If not input, all movies in the list will be correlated. 
+%
+%       ('ProcessName' -> cell array of strings) Optional.
+%       Names of processes to be correlated. The names should correspond to 
+%       existing process classes.
+% 
+%       ('BandMin' -> Positive scalar)
+%       The value of the minimal band of windows to be correlated.
+%       Optional. Default is 0 (no jump suppression)
+%
+%       ('BandMin' -> Positive scalar)
+%       The value of the maximal band of windows to be correlated.
+%       Optional. Default is set to number of bands if input is a movie or 
+%       the minimal value of the number of bands for all movies if the
+%       input is a movie list
+%
+%       ('Slice Index' -> Logical array or cell array of logical arrays) 
+%       A logical array of length equal to the number of window slices.
+%       True indicates the slice should be included in the correlation. If
+%       the input is a movie list, this should be a cell array of logical
+%       array where the ith element of the cell array corresponds to the
+%       slice index of the ith movie.
+% 
+%       ('nBoot' -> Positive integer)
+%       The number of bootstrap data  samples to use during correlation
+%       bootstrapping. Default is 1000.
+%
+%       ('alpha' -> Positive scalar)
+%       The alpha used to generate the bootstrap confidence intervals
+%       Default value is 0.05.
+%
 %
 
 % Marco Vilela, Sep 2011
@@ -42,6 +84,7 @@ p = parseProcessParams(corrProc,paramsIn);
 
 
 %% --------------- Initialization ---------------%%
+disp('Starting calculating correlation...')
 if ~isempty(ip.Results.waitbar)
     wtBar=ip.Results.waitbar;
     waitbar(0,ip.Results.waitbar,'Initializing...');
@@ -77,10 +120,11 @@ if isa(movieObject,'MovieList')
     return;
 end    
 
-% Code below should be only executed for MovieData objects
+% This part should be only executed for MovieData objects
 assert(isa(movieObject,'MovieData'));
 movieData=movieObject;
 
+% Set the waitbar title if applicable
 if ishandle(wtBar), 
     [~,movieName]=fileparts(movieObject.getPath);
     set(wtBar,'Name',movieName);
@@ -135,7 +179,10 @@ mkClrDir(p.OutputDirectory);
 corrProc.setOutFilePaths(outFilePaths);
 
 %% --------------- Correlation calculation ---------------%%% 
-disp('Starting calculating correlation...')
+disp('Using preprocessed signal from:');
+disp(signalPreproc.funParams_.OutputDirectory);
+disp('Results will be saved under:')
+disp(p.OutputDirectory);
 
 %At least 50 points are needed to calculate the ACF
 %Number of lags <= N/4;

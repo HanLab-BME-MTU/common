@@ -78,20 +78,22 @@ for i=1:nMovies
     
 end
 
+% Check that all input are constistent
 assert(all(cellfun(@(x) isequal(x,movieInput{1}),movieInput)));
-
 input=movieInput{1};
 nCorrFun=nInput*(nInput+1)/2;
-nFrames =  cellfun(@(x) x.nFrames_,movieList.movies_);
-inFilePaths = cell(nCorrFun,nMovies);
 
+% Check number of frames per movie and determine lag limits
+nFrames =  cellfun(@(x) x.nFrames_,movieList.movies_);
+nAcfLags=max(nFrames)/4+1;
+nCcfLags=max(nFrames)/2+1;
+
+% Initialize input files and movie correlation functions
+inFilePaths = cell(nCorrFun,nMovies);
 rawCorrFun = cell(nCorrFun,1);
 rawBounds = cell(nMovies,1);
 corrFun=cell(nCorrFun,1);
 bounds=cell(nCorrFun,1);
-
-nAcfLags=max(nFrames)/4+1;
-nCcfLags=max(nFrames)/2+1;
 bandRange= p.BandMin:p.BandMax;
 for iInput=1:nInput
     for jInput=1:iInput
@@ -102,11 +104,11 @@ for iInput=1:nInput
             [rawCorrFun{iCorrFun,i} rawBounds{iCorrFun,i}] =...
                 movieCorrProc(i).loadChannelOutput(iInput,jInput,'output',{'corrFun','bounds'});
             
-            % Slice window slices
-            rawCorrFun{iCorrFun,i}=rawCorrFun{iCorrFun,i}(:,find(p.SliceIndex{iMovie}),:,:);
-            rawBounds{iCorrFun,i}=rawBounds{iCorrFun,i}(:,find(p.SliceIndex{iMovie}),:,:);
+            % Select only window slices given by SliceIndex
+            rawCorrFun{iCorrFun,i}=rawCorrFun{iCorrFun,i}(:,p.SliceIndex{iMovie},:,:);
+            rawBounds{iCorrFun,i}=rawBounds{iCorrFun,i}(:,p.SliceIndex{iMovie},:,:);
             
-            % Slice bands
+            % Select only band within the valid band range
             if size(rawCorrFun{iCorrFun,i},3)>1
                 rawCorrFun{iCorrFun,i}=rawCorrFun{iCorrFun,i}(:,:,bandRange,:);
                 rawBounds{iCorrFun,i}=rawBounds{iCorrFun,i}(:,:,bandRange,:);
@@ -116,13 +118,14 @@ for iInput=1:nInput
                 rawBounds{iCorrFun,i}=rawBounds{iCorrFun,i}(:,:,:,bandRange);
             end
             
-            % Append
+            % Append trailing NaNs if movies have different number of frames
             if iInput==jInput
                 rawCorrFun{iCorrFun,i}(end+1:nAcfLags,:,:,:)=NaN;
             else
                 rawCorrFun{iCorrFun,i}(end+1:nCcfLags,:,:,:)=NaN;
             end
         end
+        % Concatenate bounds and correlation functions
         corrFun{iCorrFun}=horzcat([rawCorrFun{iCorrFun,:}]);
         bounds{iCorrFun}=horzcat([rawBounds{iCorrFun,:}]);
     end
@@ -143,7 +146,7 @@ mkClrDir(p.OutputDirectory);
 corrProc.setOutFilePaths(outFilePaths);
 
 %% --------------- Correlation calculation ---------------%%%
-disp('Starting bootstraping correlation...')
+disp('Starting bootstraping correlation of movies from list...')
 
 acfLogMsg = @(i) ['Please wait, bootstrapping ' input(i).name ' autocorrelation'];
 ccfLogMsg = @(i,j) ['Please wait, bootstrapping ' input(i).name '/'...
