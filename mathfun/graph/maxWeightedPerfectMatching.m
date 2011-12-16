@@ -1,4 +1,5 @@
 function M = maxWeightedPerfectMatching(n,E,W)
+% function M = maxWeightedPerfectMatching(n,E,W)
 % maxWeightedPerfectMatching computes the maximum weighted perfect matching 
 % of a graph consisting of n nodes connected by the edges defined in E and 
 % weighted with W. A matching is a subset of the edges defined in E. This 

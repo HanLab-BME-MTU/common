@@ -1,4 +1,5 @@
 function M = maxWeightedMatching(n,E,W)
+% function M = maxWeightedMatching(n,E,W)
 % maxWeightedMatching computes the maximum weighted matching of a graph 
 % consisting of n nodes connected by the edges defined in E and weighted 
 % with W. A matching is a subset of the edges defined in E. This matching 

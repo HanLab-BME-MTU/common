@@ -1,4 +1,5 @@
 function M = maxMatching(n,E)
+% function M = maxMatching(n,E)
 % maxMatching computes the maximum matching of a graph consisting of n
 % nodes connected by the edges defined in E. A matching is a subset of the 
 % edges defined in E. This matching maximizes the cardinality 
