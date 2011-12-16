@@ -11,7 +11,7 @@ function [workTS,interval,varUsed] = removeMeanTrendNaN(TS)
 %       interval - final interval = initial - (NaN blocks + outliers)  
 %       trend    - sum of all deterministic component of the signal within the output interval  
 %       varUsed  - Index of variable with some information
-
+%
 %Marco Vilela, 2011
 
 

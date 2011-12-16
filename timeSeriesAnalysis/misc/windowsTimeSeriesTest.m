@@ -50,8 +50,8 @@ protrusion(detectOutliers(protrusion,5)) = NaN;
 activity(detectOutliers(activity,5))     = NaN;
 
 %% Percentage of NaN
-[Prot,Prange] = removeMeanTrendNaN(protrusion','l');
-[Act,Arange]  = removeMeanTrendNaN(activity','l');
+[Prot,Prange] = removeMeanTrendNaN(protrusion');
+[Act,Arange]  = removeMeanTrendNaN(activity');
 
 %% Autocorrelation
 %At least 50 points are needed to calculate the ACF
