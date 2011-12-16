@@ -123,6 +123,7 @@ end
 % This part should be only executed for MovieData objects
 assert(isa(movieObject,'MovieData'));
 movieData=movieObject;
+assert(~isempty(movieObject.timeInterval_));
 
 % Set the waitbar title if applicable
 if ishandle(wtBar), 
@@ -231,7 +232,7 @@ for iInput=1:nInput
         if ishandle(wtBar), waitbar(iBand/nBands(iInput),wtBar); end
     end
        
-    lags =(0:nLagsMax)'*movieData.timeInterval_; 
+    lags =(0:nLagsMax)'*movieData.timeInterval_;
     
     save(outFilePaths{iInput,iInput},'corrFun','bounds','lags',...
         'bootstrapCorrFun','bootstrapBounds');  

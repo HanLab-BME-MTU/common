@@ -27,10 +27,10 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
             if ~isempty(data.bounds)
                 hold on
                 upline  = repmat(data.bounds(1,:,1,1),nx,1);
-                h(2)=mesh(data.X(:,:,1,1),data.Y,upline,'FaceColor',[63/255 63/255 63/255]);
+                h(2)=mesh(data.X,data.Y,upline,'FaceColor',[63/255 63/255 63/255]);
                 
                 dline  = repmat(data.bounds(2,:,1,1),nx,1);
-                h(3)=mesh(data.X(:,:,1,1),data.Y,dline,'FaceColor',[63/255 63/255 63/255]);
+                h(3)=mesh(data.X,data.Y,dline,'FaceColor',[63/255 63/255 63/255]);
             end
             set(h,'Tag',tag);
             
@@ -86,12 +86,12 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
             else
                 zdepth2=1;
             end
-            set(h(1),'XData',data.X(:,:,zdepth,zdepth2),'ZData',data.Z(:,:,zdepth,zdepth2));
+            set(h(1),'XData',data.X,'ZData',data.Z(:,:,zdepth,zdepth2));
             if ~isempty(data.bounds)
                 upline  = repmat(data.bounds(1,:,zdepth,zdepth2),nx,1);
-                set(h(2),'XData',data.X(:,:,zdepth,zdepth2),'ZData',upline);                
+                set(h(2),'XData',data.X,'ZData',upline);                
                 dline  = repmat(data.bounds(2,:,zdepth,zdepth2),nx,1);
-                set(h(3),'XData',data.X(:,:,zdepth,zdepth2),'ZData',dline);
+                set(h(3),'XData',data.X,'ZData',dline);
             end
         end
     end    

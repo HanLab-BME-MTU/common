@@ -112,13 +112,6 @@ set(handles.popupmenu_kalman_reverse,'String', {userData.timeReverseFunctions.na
 
 set(handles.checkbox_export, 'Value', funParams.saveResults.export)
 
-% funParams.saveResults
-props=get(handles.listbox_selectedChannels,{'UserData','Value'});
-chanIndx=props{1}(props{2});
-fullPath= [funParams.OutputDirectory filesep...
-    'Channel_' num2str(chanIndx) '_' funParams.OutputFilename];
-set(handles.text_path, 'String', fullPath)
-
 % Initialize children figure handles
 userData.linkingFig=-1;
 userData.gapclosingFig=-1;
@@ -327,28 +320,6 @@ else
     userData.kalmanFig = userData.initializeFunctions(funcId).GUI('mainFig', handles.figure1, funcId);
 end
 set(handles.figure1, 'UserData', userData);
-
-
-% --- Executes on button press in pushbutton_saveas.
-function pushbutton_saveas_Callback(hObject, eventdata, handles)
-
-
-% Ask user where to save the movie data file
-fullPath = get(handles.text_path, 'String');
-[file path] = uiputfile('*.mat','Save Results As',fullPath);
-        
-if ~any([file path]), return; end
-
-tokens = regexp(file,'^Channel_\d_(.+)$','tokens');
-if isempty(tokens)
-    props=get(handles.listbox_selectedChannels,{'UserData','Value'});
-    chanIndx=props{1}(props{2});
-    fullPath= [path  'Channel_' num2str(chanIndx) '_' file];
-else
-    fullPath=[path file];
-end
-
-set(handles.text_path, 'String', fullPath)
 
 % --- Executes on key press with focus on figure1 and none of its controls.
 function figure1_KeyPressFcn(hObject, eventdata, handles)

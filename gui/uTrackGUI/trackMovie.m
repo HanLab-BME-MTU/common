@@ -61,10 +61,10 @@ trackProc.setInFilePaths(inFilePaths);
 % Set up the output file
 outFilePaths = cell(1,numel(movieData.channels_));
 for i = p.ChannelIndex
-    
-    outFilePaths{1,i} = [p.OutputDirectory filesep 'Channel_' num2str(i) p.OutputFilename '.mat'];
+    outFilename= ['Channel_' num2str(i) '_tracking_result'];
+    outFilePaths{1,i} = [p.OutputDirectory filesep outFilename '.mat'];
     if p.saveResults.export
-        outFilePaths{2,i} = [p.OutputDirectory filesep 'channel_' num2str(i) p.OutputFilename  '_mat.mat'];
+        outFilePaths{2,i} = [p.OutputDirectory filesep outFilename '_mat.mat'];
     end
 end
 mkClrDir(p.OutputDirectory);

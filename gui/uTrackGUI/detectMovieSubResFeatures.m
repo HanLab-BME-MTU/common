@@ -54,7 +54,7 @@ outFilePaths = cell(1,nChan);
 saveResults(nChan,1)=struct();
 for i = p.ChannelIndex;    
     saveResults(i).dir = p.OutputDirectory ;
-    saveResults(i).filename = ['Channel_' num2str(i) '_' p.OutputFilename];
+    saveResults(i).filename = ['Channel_' num2str(i) '_detection_result.mat'];
     %Create string for current directory
     outFilePaths{1,i} = [saveResults(i).dir filesep saveResults(i).filename ];
 end
