@@ -379,7 +379,7 @@ end
 
 
 %% Get image/overlay panel size and resize them
-panelsLength = imagePanelSize(1)+overlayPanelSize(1)+graphPanelSize(1);
+panelsLength = max(500,imagePanelSize(1)+overlayPanelSize(1)+graphPanelSize(1));
 panelsHeight = max([imagePanelSize(2),overlayPanelSize(2),graphPanelSize(2)]);
 
 % Resize panel
@@ -435,12 +435,12 @@ end
 hPosition = hPosition+30;
 uicontrol(moviePanel,'Style','text','Position',[10 hPosition 40 20],...
     'String','Movie','Tag','text_movie');
-[~,movieName] = fileparts(userData.MO.getFilename);
+[~,moviePath] = fileparts(ip.Results.MO.getPath);
 if isa(ip.Results.MO,'MovieList')
     [~,allPaths] = cellfun(@(x) fileparts(x.getPath),userData.ML.movies_,'UniformOutput',false);
     movieIndex=0:numel(allPaths);
     uicontrol(moviePanel,'Style','popupmenu','Position',[60 hPosition panelsLength-70 20],...
-        'String',vertcat(movieName,allPaths'),'UserData',movieIndex,...
+        'String',vertcat(moviePath,allPaths'),'UserData',movieIndex,...
         'Value',find(userData.movieIndex==movieIndex),...
         'HorizontalAlignment','left','BackgroundColor','white','Tag','popup_movie',...
         'Callback',@(h,event) switchMovie(h,guidata(h)));
