@@ -41,7 +41,7 @@ p = parseProcessParams(signalPreProc,paramsIn);
 
 % Delegates signal preprocessing proces to movies if object is a movieList 
 if isa(movieObject,'MovieList')
-    movieParams.ProcessName=p.ProcessName;
+    movieParams=rmfield(p,{'MovieIndex','OutputDirectory'});
     for i =1:numel(p.MovieIndex);
         movieData = movieObject.movies_{i};
         iProc = movieData.getProcessIndex('SignalPreprocessingProcess',1,0);

@@ -22,8 +22,8 @@ function [workTS,interval,varUsed] = removeMeanTrendNaN(TS,varargin)
 % Input check
 ip=inputParser;
 ip.addRequired('TS',@isnumeric);
-ip.addOptional('trendType',true,@(x)isscalar(x) && ismember(x,0:2));
-ip.parser(TS,varargin{:})
+ip.addOptional('trendType',1,@(x)isscalar(x) && ismember(x,0:2));
+ip.parse(TS,varargin{:})
 trendType=ip.Results.trendType;
 
 % Initialize output
@@ -71,12 +71,10 @@ for i=1:nvar
         workTS{i}   = TS(fB{idxB},i);
         interval{i} = fB{idxB};
         workTS{i}   = workTS{i} - repmat(mean(workTS{i}),sum(~isnan(workTS{i})),1);
-        if trendType>0
-            if trendType==1
-                workTS{i} = dtrend(workTS{i});
-            else
-                workTS{i}   = preWhitening(workTS{i});
-            end
+        if trendType==1
+            workTS{i} = dtrend(workTS{i}); % Linear tren
+        elseif trendType==2
+            workTS{i}   = preWhitening(workTS{i}); % Deterministic trend
         end
         idx(i)      = 1;
         
