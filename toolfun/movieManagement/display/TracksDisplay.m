@@ -2,9 +2,10 @@ classdef TracksDisplay < MovieDataDisplay
     %Conrete class for displaying flow
     properties
         Linestyle='-';
+        GapLinestyle='--';
         Color='r';  
         dragtailLength=10;
-        showLabel=true;
+        showLabel=false;
     end
     methods
         function obj=TracksDisplay(varargin)
@@ -17,12 +18,18 @@ classdef TracksDisplay < MovieDataDisplay
         end
         function h=initDraw(obj,data,tag,varargin)
             nTracks = numel(data.x);
-            h=-ones(nTracks,1);
+            h=-ones(nTracks,2);
             for i=1:nTracks
-                h(i)=plot(data.x{i}(max(1,end-obj.dragtailLength):end),...
-                    data.y{i}(max(1,end-obj.dragtailLength):end),varargin{:});
+                xData= data.x{i}(max(1,end-obj.dragtailLength):end);
+                yData= data.y{i}(max(1,end-obj.dragtailLength):end);
+                h(i,1)=plot(xData(~isnan(xData)),yData(~isnan(yData)),...
+                    'Linestyle',obj.GapLinestyle','Color',obj.Color,...
+                    varargin{:});
+                h(i,2)=plot(xData,yData,...
+                    'Linestyle',obj.Linestyle,'Color',obj.Color,...
+                    varargin{:});
             end
-            set(h,'Tag',tag,'LineStyle',obj.Linestyle,'Color',obj.Color); 
+            set(h,'Tag',tag); 
             
             if isfield(data,'label')  && obj.showLabel
                 ht=-ones(nTracks,1);
@@ -38,24 +45,32 @@ classdef TracksDisplay < MovieDataDisplay
             tag=get(allh(1),'Tag');
             nTracks = numel(data.x);
 
-            h=allh(strcmp(get(allh,'Type'),'line'));
-            ht=allh(strcmp(get(allh,'Type'),'text'));
-            delete(h(nTracks+1:end));
-            h(nTracks+1:end)=[];
-
-
+            h=findobj(allh,'Type','line');
+            delete(h(2*nTracks+1:end));
+            h(2*nTracks+1:end)=[];
+            hlinks=findobj(h,'LineStyle',obj.Linestyle);
+            hgaps=findobj(h,'LineStyle',obj.GapLinestyle);
+            
             % Update existing windows
-            for i=1:min(numel(h),nTracks)
-                set(h(i),'Xdata',data.x{i}(max(1,end-obj.dragtailLength):end),...
-                    'YData',data.y{i}(max(1,end-obj.dragtailLength):end));
+            for i=1:min(numel(hlinks),nTracks) 
+                xData= data.x{i}(max(1,end-obj.dragtailLength):end);
+                yData= data.y{i}(max(1,end-obj.dragtailLength):end);
+                set(hgaps(i),'Xdata',xData(~isnan(xData)),'YData',yData(~isnan(yData)));
+                set(hlinks(i),'Xdata',xData,'YData',yData);
             end
-            for i=min(numel(h),nTracks)+1:nTracks
-                h(i)=plot(data.x{i}(max(1,end-obj.dragtailLength):end),...
-                    data.y{i}(max(1,end-obj.dragtailLength):end));
+            for i=min(numel(hlinks),nTracks)+1:nTracks
+                xData= data.x{i}(max(1,end-obj.dragtailLength):end);
+                yData= data.y{i}(max(1,end-obj.dragtailLength):end);
+                hgaps(i)=plot(xData(~isnan(xData)),yData(~isnan(yData)),...
+                    'Linestyle',obj.GapLinestyle','Color',obj.Color);
+                hlinks(i)=plot(xData,yData,...
+                    'Linestyle',obj.Linestyle,'Color',obj.Color);
             end
-            set(h,'Tag',tag,'Linestyle',obj.Linestyle,'Color',obj.Color);
+            set([hlinks hgaps],'Tag',tag);
 
+            
             if isfield(data,'label') && obj.showLabel
+                ht=findobj(allh,'Type','text');
                 delete(ht(nTracks+1:end));
                 ht(nTracks+1:end)=[];
                 for i=1:min(numel(ht),nTracks)
@@ -65,8 +80,9 @@ classdef TracksDisplay < MovieDataDisplay
                 for i=min(numel(ht),nTracks)+1:nTracks
                     ht(i) = text(data.x{i}(end),data.y{i}(end),num2str(data.label(i)));
                 end
+                set(ht,'Tag',tag); 
             end
-            set(ht,'Tag',tag); 
+           
         end
     end    
     
@@ -76,10 +92,12 @@ classdef TracksDisplay < MovieDataDisplay
             params(1).validator=@(x)ischar(x) ||isvector(x);
             params(2).name='Linestyle';
             params(2).validator=@ischar;
-            params(3).name='dragtailLength';
-            params(3).validator=@isscalar;
-            params(4).name='showLabel';
+            params(3).name='GapLinestyle';
+            params(3).validator=@ischar;
+            params(4).name='dragtailLength';
             params(4).validator=@isscalar;
+            params(5).name='showLabel';
+            params(5).validator=@isscalar;
         end
 
         function f=getDataValidator() 

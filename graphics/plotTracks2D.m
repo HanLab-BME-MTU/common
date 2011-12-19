@@ -344,7 +344,7 @@ switch colorTime
 
         xData=arrayfun(@(x)[tracksXP(~isnan(tracksXP(:,x)),x); NaN],1:size(tracksXP,2),'Unif',false);
         yData=arrayfun(@(x)[tracksYP(~isnan(tracksYP(:,x)),x); NaN],1:size(tracksYP,2),'Unif',false);
-        plot(axH,vertcat(xData{:}),vertcat(yData{:}),'b-');
+        plot(axH,vertcat(xData{:}),vertcat(yData{:}),'k:');
         
         %get the overall color per time interval
         colorOverTime = timeColormap(numTimePlot);
