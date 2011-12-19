@@ -99,7 +99,7 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
         end
         
         function output = getDrawableOutput(obj)
-            output(1).name='Correlation function';
+            output(1).name='Spectral density';
             output(1).var='raw';
             output(1).formatData=@formatCorrelationData;
             output(1).type='correlationGraph';
@@ -115,10 +115,10 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
     
     methods (Static)
         function name =getName()
-            name = 'Correlation Calculation';
+            name = 'Coherence Calculation';
         end
         function h =GUI()
-            h = @correlationCalculationProcessGUI;
+            h = @coherenceCalculationProcessGUI;
         end
         function funParams = getDefaultParams(owner,varargin)
             % Input check
@@ -144,6 +144,7 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
                 funParams.BandMax=winProc.nBandMax_;
                 funParams.SliceIndex=ones(winProc.nSliceMax_,1);
             end
+            funParams.window=[];
         end
     end
 end
