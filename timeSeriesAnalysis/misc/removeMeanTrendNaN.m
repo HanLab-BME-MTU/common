@@ -1,10 +1,15 @@
-function [workTS,interval,varUsed] = removeMeanTrendNaN(TS)
+function [workTS,interval,varUsed] = removeMeanTrendNaN(TS,varargin)
 %Removes mean, trend and NaN from input time series TS
 %
 %Synopsis:
 %         [outTS,interval] = removeMeanTrendNaN(TS)   
 %Input:
 %       TS        - time series (number of points,number of variables)
+%
+%       trendType - optional: a scalar giving the type of trend to remove
+%                   0: do not remove any trend
+%                   1: remove linear trend (default)
+%                   2: remove all deterministic trend
 %
 %Output:
 %       outTS{# of variables}(# of good points)  - cell array with a continuous time series points
@@ -14,12 +19,18 @@ function [workTS,interval,varUsed] = removeMeanTrendNaN(TS)
 %
 %Marco Vilela, 2011
 
+% Input check
+ip=inputParser;
+ip.addRequired('TS',@isnumeric);
+ip.addOptional('trendType',true,@(x)isscalar(x) && ismember(x,0:2));
+ip.parser(TS,varargin{:})
+trendType=ip.Results.trendType;
 
+% Initialize output
 [nobs,nvar] = size(TS);
 workTS      = cell(1,nvar);
 interval    = cell(1,nvar);
 idx         = false(1,nobs);
-
 
 for i=1:nvar
     
@@ -60,7 +71,13 @@ for i=1:nvar
         workTS{i}   = TS(fB{idxB},i);
         interval{i} = fB{idxB};
         workTS{i}   = workTS{i} - repmat(mean(workTS{i}),sum(~isnan(workTS{i})),1);
-        workTS{i}   = preWhitening(workTS{i});
+        if trendType>0
+            if trendType==1
+                workTS{i} = dtrend(workTS{i});
+            else
+                workTS{i}   = preWhitening(workTS{i});
+            end
+        end
         idx(i)      = 1;
         
     end

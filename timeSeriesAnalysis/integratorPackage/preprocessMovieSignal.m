@@ -134,7 +134,7 @@ for iInput=1:nInput
         validSlices = (nPoints-sum(isnan(rawData),2))>=minP;
         
         [data{iBand}(validSlices) ,range{iBand}(validSlices)] = ...
-            removeMeanTrendNaN(rawData(validSlices,:)');
+            removeMeanTrendNaN(rawData(validSlices,:)',p.trendType);
         
                 
         % Update waitbar

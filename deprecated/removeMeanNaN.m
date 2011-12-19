@@ -13,6 +13,7 @@ function [workTS,interval,usedVar] = removeMeanNaN(TS)
 
 %Marco Vilela, 2011
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used. Use removeMeanTrendNaN with trendType 0 instead.\n']);
 
 [nobs,nvar] = size(TS);
 workTS      = cell(1,nvar);

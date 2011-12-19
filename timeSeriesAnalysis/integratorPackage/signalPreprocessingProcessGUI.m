@@ -77,7 +77,10 @@ selProc = funParams.ProcessName;
 selProcString = cellfun(@(x) eval([x '.getName']),selProc,'UniformOutput',false);
 set(handles.listbox_selectedProcesses,'String',selProcString,'UserData',selProc);
 
+% Set preprocessing parameters
 set(handles.edit_kSigma,'String',funParams.kSigma);
+allTrends=SignalPreprocessingProcess.getTrends;
+set(handles.popupmenu_trendType,'String',allTrends,'Value',funParams.trendType+1);
 
 % Choose default command line output for signalPreprocessingProcessGUI
 handles.output = hObject;
@@ -211,7 +214,7 @@ if isnan(kSigma) || ~ismember(kSigma,1:10)
     return;
 end
 funParams.kSigma = kSigma;
-
+funParams.trendType= get(handles.popupmenu_trendType,'Value')-1;
 % Process Sanity check ( only check underlying data )
 userData = get(handles.figure1, 'UserData');
 try

@@ -66,6 +66,11 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
         function h =GUI()
             h = @signalPreprocessingProcessGUI;
         end
+        function trends= getTrends()
+            trends{1} = 'No trend';
+            trends{2} = 'Linear trend';
+            trends{3} = 'Deterministic trend';
+        end
         function funParams = getDefaultParams(owner,varargin)
             % Input check
             ip=inputParser;
@@ -79,6 +84,7 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
             funParams.OutputDirectory = [outputDir  filesep 'preprocessedSignal'];
             funParams.ProcessName=SignalPreprocessingProcess.getTimeSeriesProcesses;
             funParams.kSigma=5;
+            funParams.trendType=1;
         end
     end
 end
