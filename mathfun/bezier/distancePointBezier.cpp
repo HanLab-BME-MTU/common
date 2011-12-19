@@ -27,7 +27,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     int nCP = inputSize[0]; // Number of control points
     int controlPointsDimension = inputSize[1];
     
-    if (controlPointsDimension != 3 || nCP < 2 || nCP > 4) {
+    if (controlPointsDimension != 3 || nCP < 1 || nCP > 4) {
         mexErrMsgTxt("Only 2,3 or 4 3D control points supported!");
     }
     
@@ -67,9 +67,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     tDistMin = mxGetPr(plhs[1]);
     
     // =====================
+    // Distance between two points
+    // =====================
+    if (nCP == 1) {
+        *distanceMin = sqrt(pow(cP[0]-point[0],2)+pow(cP[1]-point[1],2)+pow(cP[2]-point[2],2));
+    }
+    
+    // =====================
     // Linear Bezier curve
     // =====================
-    if (nCP == 2) {
+    else if (nCP == 2) {
         // B[t_] = (1-t)*P0 + t*P1;
         // B[t_] = a*t + b;
         double a[3], b[3];
