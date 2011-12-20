@@ -717,6 +717,8 @@ setScaleBar(handles,'imageScaleBar');
 setTimeStamp(handles);
 
 function redrawOverlays(handles)
+if ~isfield(handles,'uipanel_overlay'), return; end
+
 overlayBoxes = findobj(handles.uipanel_overlay,'-regexp','Tag','checkbox_process*');
 checkedBoxes = logical(arrayfun(@(x) get(x,'Value'),overlayBoxes));
 overlayTags=arrayfun(@(x) get(x,'Tag'),overlayBoxes(checkedBoxes),...
