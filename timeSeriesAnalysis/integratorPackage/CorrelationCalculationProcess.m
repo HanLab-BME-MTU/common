@@ -103,14 +103,25 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
             output(1).var='bootstrap';
             output(1).formatData=[];
             output(1).type='correlationGraph';
-            output(1).defaultDisplayMethod = @CorrelationGraphDisplay;
+            output(1).defaultDisplayMethod = @(i,j)CorrelationGraphDisplay('XLabel','Lags (s)',...
+                'YLabel',obj.getDrawableOutputName(i,j),'Input1',obj.getInput(i).name);
             if isa(obj.owner_,'MovieData'),
                 output(2).name='Correlation function';
                 output(2).var='raw';
                 output(2).formatData=@formatCorrelationData;
                 output(2).type='correlationGraph';
                 output(2).defaultDisplayMethod = @(i,j) MeshDisplay('XLabel','Lags (s)',...
-                    'YLabel','Window number','ZLabel',getCorrFunName(i==j));
+                    'YLabel','Window number','ZLabel',obj.getDrawableOutputName(i,j));
+            end
+        end
+        
+        function [label,title] = getDrawableOutputName(obj,i,j)
+            if i==j, 
+                label='Autocorrelation function'; 
+                title = [obj.getInput(i).name ' autocorrelation'];
+            else
+                label='Cross-correlation function'; 
+                title = [obj.getInput(i).name '/' obj.getInput(j).name ' cross-correlation'];
             end
         end
     end
@@ -156,8 +167,4 @@ function data =formatCorrelationData(data)
 data.X=data.lags;
 data.Z=data.corrFun;
 data=rmfield(data,{'lags','corrFun'});
-end
-
-function name =getCorrFunName(autoFlag)
-if autoFlag, name='Autocorrelation'; else name='Cross-correlation'; end
 end

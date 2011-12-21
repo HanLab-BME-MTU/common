@@ -82,6 +82,7 @@ cohereProc = movieObject.processes_{iProc};
 %Parse input, store in parameter structure
 p = parseProcessParams(cohereProc,paramsIn);
 
+
 stack=dbstack;
 if ~any(strcmp('Process.run',{stack(:).name}));
     cohereProc.run();
@@ -198,19 +199,22 @@ disp(p.OutputDirectory);
 %Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
 minP     = 50;
 
-nFreq = 256/2;
-w =(0:pi/nFreq:pi)'/(2*pi*movieData.timeInterval_); %#ok<NASGU>
+
+nFFTMax = max(256,2^nextpow2(movieData.nFrames_/4.5)); % cf pwelch
+nFreqMax=nFFTMax/2+1;
+fs =1/movieData.timeInterval_;
+f =(0:2*pi/nFFTMax:pi)'*fs/(2*pi); %#ok<NASGU>
 nBands =cellfun(@numel,data);
 nSlices = numel(data{1}{1});
 
-logMsg = @(i) ['Please wait, calculating ' input(i).name ' power spectral denisty'];
+logMsg = @(i) ['Please wait, calculating ' input(i).name ' power spectral density'];
 
 % Calculate autocorrelation
 for iInput=1:nInput
     disp(logMsg(iInput));
     
     % Initialize spectral density
-    P = NaN(nFreq+1,nSlices,nBands(iInput));
+    P = NaN(nFreqMax,nSlices,nBands(iInput));
 %     bootstrapP=NaN(nFreq,nBands(iInput));
         
     if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
@@ -237,7 +241,7 @@ for iInput=1:nInput
         if ishandle(wtBar), waitbar(iBand/nBands(iInput),wtBar); end
     end
        
-    save(outFilePaths{iInput,iInput},'P','w');  
+    save(outFilePaths{iInput,iInput},'P','f');  
 end
 
 logMsg = @(i,j) ['Please wait, calculating ' input(i).name '/'...
@@ -249,7 +253,7 @@ for iInput1=1:nInput
         disp(logMsg(iInput1,iInput2));
         
         % Initialize cross-correlation function and bounds
-        P = NaN(nFreq+1,nSlices,nBands(iInput1),nBands(iInput2));
+        P = NaN(nFreqMax,nSlices,nBands(iInput1),nBands(iInput2));
 %         bootstrapCorrFun=NaN(2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
         
         if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput1,iInput2)); end
@@ -282,7 +286,7 @@ for iInput1=1:nInput
             if ishandle(wtBar), waitbar(iBand1/nBands(iInput1),wtBar); end
         end
         
-        save(outFilePaths{iInput1,iInput2},'P','w');
+        save(outFilePaths{iInput1,iInput2},'P','f');
     end
 end
 

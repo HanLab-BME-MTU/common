@@ -5,8 +5,9 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
         LineStyle = '-';
         LineWidth = 2;
         Color='r';
-        Input1 ='';
-        Input2 ='';
+        XLabel ='';
+        YLabel ='';
+        Input1='';
         sfont = {'FontName', 'Helvetica', 'FontSize', 18};
         lfont = {'FontName', 'Helvetica', 'FontSize', 22};
         nBandMax=5;
@@ -24,7 +25,7 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
             nBands2 = min(size(data.bootstrapCorrFun,3),obj.nBandMax);
             
             
-            % Plot data
+            % Plot data as color-coded lines with error bars
             nBandsTot = nBands*nBands2;
             colors = hsv(nBandsTot);
             h=-ones(nBandsTot,2);
@@ -40,25 +41,14 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
                         'LineWidth', 2,'Color',colors(ind,:));
                 end
             end
-            %             if ~isempty(data.avgBounds)
-            %                 upline  = repmat(data.avgBounds(1,:),nx,1);
-            %                 h(3)=plot(data.lags,upline,'Linewidth',2,'Color','r');
-            %
-            %                 dline  = repmat(data.avgBounds(2,:),nx,1);
-            %                 h(4)=plot(data.lags,dline,'Linewidth',2,'Color','r');
-            %             end
             set(h,'Tag',tag);
             
             % Set axis options
+            xlabel(obj.XLabel,obj.lfont{:});
+            ylabel(obj.YLabel,obj.lfont{:});
             xLim=[min(data.lags(:)) max(data.lags(:))];
             yLim =[min(min(data.bootstrapBounds(1,:,1:nBands,1:nBands2))) ...
                 max(max(data.bootstrapBounds(2,:,1:nBands,1:nBands2)))];
-            xlabel('Lag (s)',obj.lfont{:})
-            if min(data.lags(:))==0
-                ylabel('Autocorrelation',obj.lfont{:})
-            else
-                ylabel('Cross-correlation',obj.lfont{:})
-            end
             set(gca, 'LineWidth', 1.5, obj.sfont{:},'XLim',xLim,'YLim',yLim);
             
             % Add arrow for cross-correlation graphs
@@ -108,19 +98,6 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
                 set(h(~states,:),'Visible','off');
             end
         end
-        
-        function setYLimits(obj,h,data)
-            nBands = min(size(data.avgCorrFun,2),obj.nBandMax);
-            nBands2 = min(size(data.avgCorrFun,3),obj.nBandMax);
-            if nBands>1 || nBands2>1
-                states=logical(arrayfun(@(x) get(x,'Value'),obj.bands));
-                set(h(states,:),'Visible','on');
-                set(h(~states,:),'Visible','off');
-                ind=sub2ind([nBands nBands2],i,j);
-            end
-            yLim =[min(data.bootstrapBounds(:)) max(data.bootstrapBounds(:))];
-        end
-        
     end
     
     methods (Static)
@@ -131,14 +108,16 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
             params(2).validator=@ischar;
             params(3).name='LineStyle';
             params(3).validator=@ischar;
-            params(4).name='Input1';
+            params(4).name='XLabel';
             params(4).validator=@ischar;
-            params(5).name='Input2';
+            params(5).name='YLabel';
             params(5).validator=@ischar;
-            params(6).name='sfont';
-            params(6).validator=@iscell;
-            params(7).name='lfont';
+            params(6).name='Input1';
+            params(6).validator=@ischar;
+            params(7).name='sfont';
             params(7).validator=@iscell;
+            params(8).name='lfont';
+            params(8).validator=@iscell;
         end
         
         function f=getDataValidator()

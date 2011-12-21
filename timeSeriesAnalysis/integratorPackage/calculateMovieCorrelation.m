@@ -82,6 +82,11 @@ corrProc = movieObject.processes_{iProc};
 %Parse input, store in parameter structure
 p = parseProcessParams(corrProc,paramsIn);
 
+stack=dbstack;
+if ~any(strcmp('Process.run',{stack(:).name}));
+    corrProc.run();
+    return;
+end
 
 %% --------------- Initialization ---------------%%
 disp('Starting calculating correlation...')
@@ -117,6 +122,7 @@ if isa(movieObject,'MovieList')
     
     % Calls the movie list correlation bootstrapping method
     bootstrapMovieListCorrelation(movieObject,wtBarArgs{:});
+    if ishandle(wtBar)&&isempty(ip.Results.waitbar), close(wtBar); end
     return;
 end    
 

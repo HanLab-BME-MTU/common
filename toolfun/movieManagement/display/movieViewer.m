@@ -794,16 +794,12 @@ else
 end
 
 % Draw or delete the graph figure depending on the checkbox value
-if get(hObject,'Value')
-    h = getFigure(handles,figName);
-    userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,...
-        'vectorScale',str2double(get(handles.edit_vectorFieldScale,'String')));
-    set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
-else
-    h=findobj(0,'-regexp','Name',['^' figName '$']);
-    if ~isempty(h), delete(h); end
-end
+h = getFigure(handles,figName);
+if ~get(hObject,'Value'),delete(h); return; end
 
+userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,...
+    'vectorScale',str2double(get(handles.edit_vectorFieldScale,'String')));
+set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 
 
 function redrawCorrelationGraph(hObject,handles)
@@ -813,29 +809,23 @@ userData=get(handles.figure1,'UserData');
 % Retrieve the id, process nr and channel nr of the selected graphProc
 tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)_input(\d+)_input(\d+)','tokens');
 procId=str2double(tokens{1}{1});
-outputList = userData.MO.processes_{procId}.getDrawableOutput;
-input = userData.MO.processes_{procId}.getInput;
+timeSeriesProcess = userData.MO.processes_{procId};
+outputList = timeSeriesProcess.getDrawableOutput;
 iOutput = str2double(tokens{1}{2});
 iInput1 = str2double(tokens{1}{3});
 iInput2 = str2double(tokens{1}{4});
 output = outputList(iOutput).var;
 
-if iInput1==iInput2
-    figName = [input(iInput1).name ' autocorrelation'];
-else
-    figName = [input(iInput1).name ' - ' input(iInput2).name ' cross-correlation'];
-end
-
+timeSeriesProcess = userData.MO.processes_{procId};
+[~,figName] = timeSeriesProcess.getDrawableOutputName(iInput1,iInput2);
 
 % Draw or delete the graph figure depending on the checkbox value
-if get(hObject,'Value')
-    h = getFigure(handles,figName);
-    userData.MO.processes_{procId}.draw(iInput1,iInput2,'output',output);
-    set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
-else
-    h=findobj(0,'-regexp','Name',['^' figName '$']);
-    if ~isempty(h), delete(h); end
-end
+h = getFigure(handles,figName);
+if ~get(hObject,'Value'),delete(h); return; end
+
+timeSeriesProcess.draw(iInput1,iInput2,'output',output);
+set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
+
 
 function redrawEventGraph(hObject,handles)
 overlayTag = get(hObject,'Tag');
@@ -849,19 +839,14 @@ input = userData.MO.processes_{procId}.getInput;
 iOutput = str2double(tokens{1}{2});
 iInput1 = str2double(tokens{1}{3});
 output = outputList(iOutput).var;
-
-
 figName = ['Aligned ' input(iInput1).name];
 
 % Draw or delete the graph figure depending on the checkbox value
-if get(hObject,'Value')
-    h = getFigure(handles,figName);
-    userData.MO.processes_{procId}.draw(iInput1);
-    set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
-else
-    h=findobj(0,'-regexp','Name',['^' figName '$']);
-    if ~isempty(h), delete(h); end
-end
+h = getFigure(handles,figName);
+if ~get(hObject,'Value'),delete(h); return; end
+
+userData.MO.processes_{procId}.draw(iInput1);
+set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 
 function closeGraphFigure(hObject)
 set(hObject,'Value',0);

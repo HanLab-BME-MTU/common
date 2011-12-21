@@ -25,7 +25,7 @@ classdef TimeSeriesProcess < Process
             
         end
         
-        function input = getInput(obj)
+        function input = getInput(obj,varargin)
             procNames =obj.funParams_.ProcessName;
             nProc = numel(procNames);
             
@@ -34,12 +34,12 @@ classdef TimeSeriesProcess < Process
             outputList = cell(nProc,1);
             
             if isa(obj.owner_,'MovieList');
-                movie=obj.owner_.movies_{1};
+                movie=obj.owner_.movies_{1}; % Quick fix for movie lists
             else
                 movie=obj.owner_;
             end
                 
-            
+            % For each process check the channel/movie output
             for i=1:nProc
                 procIndex(i) =movie.getProcessIndex(procNames{i},1);
                 proc =movie.processes_{procIndex(i)};
@@ -60,7 +60,7 @@ classdef TimeSeriesProcess < Process
                 end
             end
             
-            % List input
+            % Put all input in a structre
             procInNr = cellfun(@numel,channelIndex)+cellfun(@isempty,channelIndex);
             if isempty(procInNr), input=[]; return; end
             input(sum(procInNr))=struct();
@@ -78,6 +78,10 @@ classdef TimeSeriesProcess < Process
                             num2str(channelIndex{i}(j))];
                     end
                 end
+            end
+            if nargin>1
+                assert(all(ismember(varargin{1},1:numel(input))));
+                input=input(varargin{1});
             end
         end  
         

@@ -35,7 +35,7 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
         
         function varargout = loadChannelOutput(obj,i,j,varargin)
             % Check input
-            outputList={'raw','bootstrap','P','w'};
+            outputList={'raw','bootstrap','P','f'};
             ip=inputParser;
             ip.addRequired('obj');
             ip.addRequired('i',@isscalar);
@@ -46,9 +46,9 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
             if ischar(output), output={output}; end
             
             if strcmp(output{:},'raw')
-                s=load(obj.outFilePaths_{i,j},'P','w');
+                s=load(obj.outFilePaths_{i,j},'P','f');
             elseif strcmp(output{:},'bootstrap')
-                s=load(obj.outFilePaths_{i,j},'bootstrapCorrFun','bootstrapSteCorrFun','bounds','lags');
+                s=load(obj.outFilePaths_{i,j},'bootstrapP','f');
             else
                 s=load(obj.outFilePaths_{i,j},output{:});
             end
@@ -109,10 +109,20 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
                 output(2).formatData=@formatSpectralDensity;
                 output(2).type='correlationGraph';
                 output(2).defaultDisplayMethod = @(i,j) MeshDisplay('XLabel','Frequency (Hz)',...
-                    'YLabel','Window number','ZLabel',getSpecDensityName(i==j));
+                    'YLabel','Window number','ZLabel',obj.getDrawableOutputName(i,j));
             end
             
         end
+        function [label,title] = getDrawableOutputName(obj,i,j)
+            if i==j, 
+                label='Power spectrum (db/Hz)'; 
+                title = [obj.getInput(i).name ' power spectrum'];
+            else
+                label='Coherence'; 
+                title = [obj.getInput(i).name '/' obj.getInput(j).name ' coherence'];
+            end
+        end
+        
     end
     
     methods (Static)
@@ -152,17 +162,13 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
 end
 
 function data =formatSpectralDensity(data)
-data.X=data.w;
-data.Z=data.P;
-data=rmfield(data,{'P','w'});
+data.X=data.f;
+data.Z=10*log10(data.P);
+data=rmfield(data,{'P','f'});
 end
 
 function data =formatBootstrappedSpectralDensity(data)
 data.lags=squeeze(nanmean(data.lags,2));
 data.avgCorrFun=data.bootstrapCorrFun;
 data.steCorrFun=data.bootstrapSteCorrFun;
-end
-
-function name =getSpecDensityName(autoFlag)
-if autoFlag, name='Power spectrum'; else name='Coherence'; end
 end
