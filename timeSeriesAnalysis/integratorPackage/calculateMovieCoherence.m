@@ -82,6 +82,11 @@ cohereProc = movieObject.processes_{iProc};
 %Parse input, store in parameter structure
 p = parseProcessParams(cohereProc,paramsIn);
 
+stack=dbstack;
+if ~any(strcmp('Process.run',{stack(:).name}));
+    cohereProc.run();
+    return;
+end
 
 %% --------------- Initialization ---------------%%
 disp('Starting calculating spectral density...')
@@ -116,7 +121,10 @@ if isa(movieObject,'MovieList')
     end  
     
     % Calls the movie list correlation bootstrapping method
-%     bootstrapMovieListCorrelation(movieObject,wtBarArgs{:});
+    %     bootstrapMovieListCorrelation(movieObject,wtBarArgs{:});
+    
+    if ishandle(wtBar) && isempty(ip.Results.waitbar), close(wtBar); end
+
     return;
 end    
 
@@ -190,7 +198,8 @@ disp(p.OutputDirectory);
 %Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
 minP     = 50;
 
-nFreq = 256/2+1;
+nFreq = 256/2;
+w =(0:pi/nFreq:pi)'/(2*pi*movieData.timeInterval_); %#ok<NASGU>
 nBands =cellfun(@numel,data);
 nSlices = numel(data{1}{1});
 
@@ -201,7 +210,7 @@ for iInput=1:nInput
     disp(logMsg(iInput));
     
     % Initialize spectral density
-    P = NaN(nFreq,nSlices,nBands(iInput));P = NaN(nFreq,nSlices,nBands(iInput));
+    P = NaN(nFreq+1,nSlices,nBands(iInput));
 %     bootstrapP=NaN(nFreq,nBands(iInput));
         
     if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
@@ -228,8 +237,6 @@ for iInput=1:nInput
         if ishandle(wtBar), waitbar(iBand/nBands(iInput),wtBar); end
     end
        
-    w =(0:pi/128:pi)'/movieData.timeInterval_;
-    
     save(outFilePaths{iInput,iInput},'P','w');  
 end
 
@@ -242,7 +249,7 @@ for iInput1=1:nInput
         disp(logMsg(iInput1,iInput2));
         
         % Initialize cross-correlation function and bounds
-        P = NaN(nFreq,nSlices,nBands(iInput1),nBands(iInput2));
+        P = NaN(nFreq+1,nSlices,nBands(iInput1),nBands(iInput2));
 %         bootstrapCorrFun=NaN(2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
         
         if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput1,iInput2)); end
@@ -274,8 +281,6 @@ for iInput1=1:nInput
             end
             if ishandle(wtBar), waitbar(iBand1/nBands(iInput1),wtBar); end
         end
-
-        w =(-pi:pi/128:pi)'*movieData.timeInterval_;
         
         save(outFilePaths{iInput1,iInput2},'P','w');
     end

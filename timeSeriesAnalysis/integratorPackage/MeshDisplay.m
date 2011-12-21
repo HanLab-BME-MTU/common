@@ -1,4 +1,4 @@
-classdef CorrelationMeshDisplay < MovieDataDisplay
+classdef MeshDisplay < MovieDataDisplay
     %Concreate display class for displaying points or lines
     properties
         Marker = 'none';
@@ -6,13 +6,16 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
         Color='r';
         sfont = {'FontName', 'Helvetica', 'FontSize', 18};
         lfont = {'FontName', 'Helvetica', 'FontSize', 22};
+        XLabel='';
+        YLabel='';
+        ZLabel='';
     end
     properties (SetAccess = protected)
         slider;
         slider2;
     end
     methods
-        function obj=CorrelationMeshDisplay(varargin)
+        function obj=MeshDisplay(varargin)
             obj@MovieDataDisplay(varargin{:})
         end
         function h=initDraw(obj,data,tag,varargin)
@@ -24,27 +27,25 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
             
             % Create mesh display
             h(1)=mesh(data.X,data.Y,data.Z(:,:,1,1),'FaceColor','interp');
-            if ~isempty(data.bounds)
+            if isfield(data,'bounds') && ~isempty(data.bounds)
                 hold on
                 upline  = repmat(data.bounds(1,:,1,1),nx,1);
                 h(2)=mesh(data.X,data.Y,upline,'FaceColor',[63/255 63/255 63/255]);
                 
                 dline  = repmat(data.bounds(2,:,1,1),nx,1);
                 h(3)=mesh(data.X,data.Y,dline,'FaceColor',[63/255 63/255 63/255]);
+                zLim =[min(vertcat(data.Z(:),data.bounds(:))) max(vertcat(data.Z(:),data.bounds(:)))];
+            else
+                zLim =[min(data.Z(:)) max(data.Z(:))];
             end
             set(h,'Tag',tag);
             
             % Set axis options
             xLim=[min(data.X(:)) max(data.X(:))];
             yLim=[min(data.Y(:)) max(data.Y(:))];
-            zLim =[min(vertcat(data.Z(:),data.bounds(:))) max(vertcat(data.Z(:),data.bounds(:)))];
-            xlabel('Lag (s)',obj.lfont{:});
-            ylabel('Window number',obj.lfont{:});
-            if min(data.X(:))==0
-                zlabel('Autocorrelation',obj.lfont{:})
-            else
-                zlabel('Cross-correlation',obj.lfont{:})
-            end
+            xlabel(obj.XLabel,obj.lfont{:});
+            ylabel(obj.YLabel,obj.lfont{:});
+            zlabel(obj.ZLabel,obj.lfont{:})
             set(gca,'Linewidth',1.5,obj.sfont{:},'XLim',xLim,'YLim',yLim,'ZLim',zLim);
             
             % Create sliders if multiple bands
@@ -87,7 +88,7 @@ classdef CorrelationMeshDisplay < MovieDataDisplay
                 zdepth2=1;
             end
             set(h(1),'XData',data.X,'ZData',data.Z(:,:,zdepth,zdepth2));
-            if ~isempty(data.bounds)
+            if isfield(data,'bounds') && ~isempty(data.bounds)
                 upline  = repmat(data.bounds(1,:,zdepth,zdepth2),nx,1);
                 set(h(2),'XData',data.X,'ZData',upline);                
                 dline  = repmat(data.bounds(2,:,zdepth,zdepth2),nx,1);

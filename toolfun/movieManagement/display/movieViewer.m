@@ -305,13 +305,13 @@ if ~isempty(graphProc)
     nProc = numel(graphProc);
     for iProc=nProc:-1:1;
         output=graphProc{iProc}.getDrawableOutput;
-        if isa(graphProc{iProc},'CorrelationCalculationProcess');
-
+        if isa(graphProc{iProc},'TimeSeriesProcess');
+            input=graphProc{iProc}.getInput;
+            nInput=numel(input);
+            
             validOutput = find(strcmp({output.type},'correlationGraph'));
             % Create set of boxes for correlation graphs (input/input)
             for iOutput=validOutput(end:-1:1)
-                input=graphProc{iProc}.getInput;
-                nInput=numel(input);
                 for iInput=nInput:-1:1
                     createOutputText(graphPanel,graphProcId(iProc),iInput,hPosition3,input(iInput).name);
                     for jInput=1:iInput
@@ -323,15 +323,13 @@ if ~isempty(graphProc)
                 createProcText(graphPanel,graphProcId(iProc),iInput,hPosition3,output(iOutput).name);
                 hPosition3=hPosition3+20;
             end
-        elseif isa(graphProc{iProc},'EventAlignmentProcess');
-            % Create set of boxes for correlation graphs (input/input)
-            input=graphProc{iProc}.getInput;
-            nInput=numel(input);
+            
+            % Create set of boxes for non-correlation graphs (input)
             validOutput = find(strcmp({output.type},'graph'));
             for iOutput=validOutput(end:-1:1)
-                for iInput=nInput:-1:1                       
+                for iInput=nInput:-1:1
                     createInputBox(graphPanel,graphProcId(iProc),iOutput,iInput,hPosition3,...
-                        input(iInput).name,'Callback',@(h,event) redrawEventGraph(h,guidata(h)));                  
+                        input(iInput).name,'Callback',@(h,event) redrawEventGraph(h,guidata(h)));
                     hPosition3=hPosition3+20;
                 end
                 createProcText(graphPanel,graphProcId(iProc),iInput,hPosition3,output(iOutput).name);
@@ -444,6 +442,7 @@ if isa(ip.Results.MO,'MovieList')
         'Value',find(userData.movieIndex==movieIndex),...
         'HorizontalAlignment','left','BackgroundColor','white','Tag','popup_movie',...
         'Callback',@(h,event) switchMovie(h,guidata(h)));
+    if userData.movieIndex==0, set(findobj(moviePanel,'Tag','text_movie'),'String','List'); end
     
 else
     uicontrol(moviePanel,'Style','edit','Position',[60 hPosition panelsLength-70 20],...

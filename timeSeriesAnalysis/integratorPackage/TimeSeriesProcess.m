@@ -81,11 +81,22 @@ classdef TimeSeriesProcess < Process
             end
         end  
         
-        function [procIndex,channelIndex] =input2procchannel(obj,iInput)
+        function status = checkChannelOutput(obj,varargin)
+            % Input check
             input=obj.getInput;
-            procIndex = input(iInput).processIndex;
-            channelIndex = input(iInput).channelIndex;
+            nInput=numel(input);
+            ip =inputParser;
+            ip.addOptional('iInput1',1:nInput,@(x) all(ismember(x,1:nInput)));
+            ip.addOptional('iInput2',1:nInput,@(x) all(ismember(x,1:nInput)));
+            ip.parse(varargin{:});
+            iInput1=ip.Results.iInput1;
+            iInput2=ip.Results.iInput2;
+            
+            %Makes sure there's at least one output file per channel
+            status =  arrayfun(@(i,j) exist(obj.outFilePaths_{i,j},'file'),iInput1,iInput2);
+    
         end
+        
         
 
     end

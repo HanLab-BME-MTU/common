@@ -35,8 +35,7 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
         
         function varargout = loadChannelOutput(obj,i,j,varargin)
             % Check input
-            outputList={'raw','bootstrap','corrFun','bounds','lags',...
-                'bootstrapSteCorrFun'};
+            outputList={'raw','bootstrap','P','w'};
             ip=inputParser;
             ip.addRequired('obj');
             ip.addRequired('i',@isscalar);
@@ -47,7 +46,7 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
             if ischar(output), output={output}; end
             
             if strcmp(output{:},'raw')
-                s=load(obj.outFilePaths_{i,j},'corrFun','bounds','lags');
+                s=load(obj.outFilePaths_{i,j},'P','w');
             elseif strcmp(output{:},'bootstrap')
                 s=load(obj.outFilePaths_{i,j},'bootstrapCorrFun','bootstrapSteCorrFun','bounds','lags');
             else
@@ -86,7 +85,7 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
             try
                 assert(~isempty(obj.displayMethod_{iOutput,i,j}));
             catch ME %#ok<NASGU>
-                obj.displayMethod_{iOutput,i,j}=outputList(iOutput).defaultDisplayMethod();
+                obj.displayMethod_{iOutput,i,j}=outputList(iOutput).defaultDisplayMethod(i,j);
             end
             
             % Delegate to the corresponding method
@@ -99,17 +98,20 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
         end
         
         function output = getDrawableOutput(obj)
-            output(1).name='Spectral density';
-            output(1).var='raw';
-            output(1).formatData=@formatCorrelationData;
+            output(1).name='Bootsrapped spectral density';
+            output(1).var='bootstrap';
+            output(1).formatData=@formatBootstrappedSpectralDensity;
             output(1).type='correlationGraph';
-            output(1).defaultDisplayMethod = @CorrelationMeshDisplay;
-            output(2).name='Bootsrapped correlation';
-            output(2).var='bootstrap';
-            output(2).formatData=@formatBootstrappedCorrelationData;
-            output(2).type='correlationGraph';
-            output(2).defaultDisplayMethod = @CorrelationGraphDisplay;
-            if isa(obj.owner_,'MovieList'), output=output(2); end
+            output(1).defaultDisplayMethod = @CorrelationGraphDisplay;
+            if isa(obj.owner_,'MovieData'),
+                output(2).name='Spectral density';
+                output(2).var='raw';
+                output(2).formatData=@formatSpectralDensity;
+                output(2).type='correlationGraph';
+                output(2).defaultDisplayMethod = @(i,j) MeshDisplay('XLabel','Frequency (Hz)',...
+                    'YLabel','Window number','ZLabel',getSpecDensityName(i==j));
+            end
+            
         end
     end
     
@@ -129,7 +131,7 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
             outputDir=ip.Results.outputDir;
             
             % Set default parameters
-            funParams.OutputDirectory = [outputDir  filesep 'correlation'];
+            funParams.OutputDirectory = [outputDir  filesep 'coherence'];
             funParams.ProcessName=TimeSeriesProcess.getTimeSeriesProcesses;
             if isa(owner,'MovieList'),
                 funParams.MovieIndex=1:numel(owner.movies_);
@@ -149,14 +151,18 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
     end
 end
 
-function data =formatCorrelationData(data)
-data.X=data.lags;
-data.Z=data.corrFun;
-data=rmfield(data,{'lags','corrFun'});
+function data =formatSpectralDensity(data)
+data.X=data.w;
+data.Z=data.P;
+data=rmfield(data,{'P','w'});
 end
 
-function data =formatBootstrappedCorrelationData(data)
+function data =formatBootstrappedSpectralDensity(data)
 data.lags=squeeze(nanmean(data.lags,2));
 data.avgCorrFun=data.bootstrapCorrFun;
 data.steCorrFun=data.bootstrapSteCorrFun;
+end
+
+function name =getSpecDensityName(autoFlag)
+if autoFlag, name='Power spectrum'; else name='Coherence'; end
 end

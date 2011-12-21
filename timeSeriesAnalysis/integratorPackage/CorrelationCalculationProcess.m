@@ -32,22 +32,7 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
             obj = obj@TimeSeriesProcess(super_args{:});
         end
         
-        function status = checkChannelOutput(obj,varargin)
-            % Input check
-            input=obj.getInput;
-            nInput=numel(input);
-            ip =inputParser;
-            ip.addOptional('iInput1',1:nInput,@(x) all(ismember(x,1:nInput)));
-            ip.addOptional('iInput2',1:nInput,@(x) all(ismember(x,1:nInput)));
-            ip.parse(varargin{:});
-            iInput1=ip.Results.iInput1;
-            iInput2=ip.Results.iInput2;
-            
-            %Makes sure there's at least one output file per channel
-            status =  arrayfun(@(i,j) exist(obj.outFilePaths_{i,j},'file'),iInput1,iInput2);
-    
-        end
-        
+
         function varargout = loadChannelOutput(obj,i,j,varargin)
             % Check input
             outputList={'bootstrap','raw','corrFun','bounds','lags',...
@@ -101,7 +86,7 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
             try
                 assert(~isempty(obj.displayMethod_{iOutput,i,j}));
             catch ME %#ok<NASGU>
-                obj.displayMethod_{iOutput,i,j}=outputList(iOutput).defaultDisplayMethod();
+                obj.displayMethod_{iOutput,i,j}=outputList(iOutput).defaultDisplayMethod(i,j);
             end
             
             % Delegate to the corresponding method
@@ -124,7 +109,8 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
                 output(2).var='raw';
                 output(2).formatData=@formatCorrelationData;
                 output(2).type='correlationGraph';
-                output(2).defaultDisplayMethod = @CorrelationMeshDisplay;
+                output(2).defaultDisplayMethod = @(i,j) MeshDisplay('XLabel','Lags (s)',...
+                    'YLabel','Window number','ZLabel',getCorrFunName(i==j));
             end
         end
     end
@@ -170,4 +156,8 @@ function data =formatCorrelationData(data)
 data.X=data.lags;
 data.Z=data.corrFun;
 data=rmfield(data,{'lags','corrFun'});
+end
+
+function name =getCorrFunName(autoFlag)
+if autoFlag, name='Autocorrelation'; else name='Cross-correlation'; end
 end
