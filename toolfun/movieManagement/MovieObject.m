@@ -346,7 +346,7 @@ classdef  MovieObject < hgsetget
             % Check the path is a valid Mat file
             assert(exist(moviepath, 'file')==2,'lccb:movieObject:load', 'File does not exist.');
             
-            if strcmpi(moviepath(end-3:end),'mat')
+            if strcmpi(moviepath(end-3:end),'.mat')
                 try
                     vars = whos('-file',moviepath);
                 catch ME
