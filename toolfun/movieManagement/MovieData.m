@@ -42,7 +42,7 @@ classdef  MovieData < MovieObject
                 
                 % Construct the Channel object
                 nVarargin = numel(varargin);
-                if nVarargin > 2 && mod(nVarargin,2)==0
+                if mod(nVarargin,2)==0
                     for i=1 : 2 : nVarargin-1
                         obj.(varargin{i}) = varargin{i+1};
                     end

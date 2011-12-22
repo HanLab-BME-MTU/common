@@ -340,36 +340,41 @@ classdef  MovieObject < hgsetget
         
         
         
-        function obj = load(fullpath,askUser)
+        function obj = load(moviepath,askUser)
             % Load a movie object stored in a mat file
             
             % Check the path is a valid Mat file
-            assert(exist(fullpath, 'file')==2,'lccb:movieObject:load', 'File does not exist.');
-            try
-                vars = whos('-file',fullpath);
-            catch ME
-                ME2 = MException('lccb:movieObject:load', 'Fail to open file. Make sure it is a MAT file.');
-                ME.addCause(ME2);
-                thorw(ME);
-            end
+            assert(exist(moviepath, 'file')==2,'lccb:movieObject:load', 'File does not exist.');
             
-            % Check if a movie object is part of the v
-            isMovie = cellfun(@(x) any(strcmp(superclasses(x),'MovieObject')),{vars.class});
-            if ~any(isMovie)
-                error('lccb:movieObject:load', ...
-                    'No movie object is found in selected MAT file.');
+            if strcmpi(moviepath(end-3:end),'mat')
+                try
+                    vars = whos('-file',moviepath);
+                catch ME
+                    ME2 = MException('lccb:movieObject:load', 'Fail to open file. Make sure it is a MAT file.');
+                    ME.addCause(ME2);
+                    throw(ME);
+                end
+                
+                % Check if a movie object is part of the v
+                isMovie = cellfun(@(x) any(strcmp(superclasses(x),'MovieObject')),{vars.class});
+                if ~any(isMovie)
+                    error('lccb:movieObject:load', ...
+                        'No movie object is found in selected MAT file.');
+                end
+                if sum(isMovie)>1
+                    error('lccb:movieObject:load', ...
+                        'Multiple movie objects are found in selected MAT file.');
+                end
+                
+                data = load(moviepath,'-mat',vars(isMovie).name);
+                obj= data.(vars(isMovie).name);
+                
+                if nargin<2, askUser=true; end
+                [moviePath,movieName,movieExt]=fileparts(moviepath);
+                obj.sanityCheck(moviePath,[movieName movieExt],askUser);
+            else
+                obj=bfImport(moviepath);
             end
-            if sum(isMovie)>1
-                error('lccb:movieObject:load', ...
-                    'Multiple movie objects are found in selected MAT file.');
-            end
-            
-            data = load(fullpath,'-mat',vars(isMovie).name);
-            obj= data.(vars(isMovie).name);
-            
-            if nargin<2, askUser=true; end
-            [moviePath,movieName,movieExt]=fileparts(fullpath);
-            obj.sanityCheck(moviePath,[movieName movieExt],askUser);
         end
         
     end

@@ -1,9 +1,5 @@
 classdef Channel < hgsetget
-    %  Class definition of channel class
-    properties (SetAccess = protected)
-        psfSigma_                  % standard deviation of the psf
-    end
-    
+    %  Class definition of channel class    
     properties
         
         % ---- Used Image Parameters ---- %
@@ -23,7 +19,7 @@ classdef Channel < hgsetget
     end
     
     properties(SetAccess=protected)
-        % ---- Object Params ---- %
+        psfSigma_                   % standard deviation of the psf
         channelPath_                % Channel path (directory containing image(s))
         owner_                      % MovieData object which owns this channel
     end
