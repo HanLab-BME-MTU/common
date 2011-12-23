@@ -340,7 +340,7 @@ classdef  MovieObject < hgsetget
         
         
         
-        function obj = load(moviepath,askUser)
+        function obj = load(moviepath,varargin)
             % Load a movie object stored in a mat file
             
             % Check the path is a valid Mat file
@@ -369,11 +369,10 @@ classdef  MovieObject < hgsetget
                 data = load(moviepath,'-mat',vars(isMovie).name);
                 obj= data.(vars(isMovie).name);
                 
-                if nargin<2, askUser=true; end
                 [moviePath,movieName,movieExt]=fileparts(moviepath);
-                obj.sanityCheck(moviePath,[movieName movieExt],askUser);
+                obj.sanityCheck(moviePath,[movieName movieExt],varargin{:});
             else
-                obj=bfImport(moviepath);
+                obj=bfImport(moviepath,varargin{:});
             end
         end
         

@@ -26,42 +26,53 @@ assert(exist(which('bfopen'),'file')==2,'Bioformats library missing');
 ip=inputParser;
 ip.addRequired('dataPath',@ischar);
 ip.addOptional('extractImages',true,@islogical)
-ip.parse(dataPath);
+ip.parse(dataPath,varargin{:});
 extractImages = ip.Results.extractImages;
 
 assert(exist(dataPath,'file')==2,'File does not exist');
 
 try
-    data=bfopen(dataPath);
+    r=bfGetReader(dataPath);
+    metadata=r.getMetadataStore();
 catch ME
     ME2 = MException('lccb:import:error','Import error');
     ME2.addCause(ME);
     throw(ME2);
 end
 
-% Read pixel size
+
+
 movieArgs={};
-pixelSize = data{4}.getPixelsPhysicalSizeX(0);
+
+% Read pixel size
+pixelSize = metadata.getPixelsPhysicalSizeX(0);
 if ~isempty(pixelSize)
-    assert(isequal(pixelSize.getValue,data{4}.getPixelsPhysicalSizeY(0).getValue));
+    assert(isequal(pixelSize.getValue,metadata.getPixelsPhysicalSizeY(0).getValue));
     movieArgs=horzcat(movieArgs,'pixelSize_',pixelSize.getValue*10^3);
 end
 
+% Read camera bit depath size
+camBitdepth = r.getBitsPerPixel;
+if ~isempty(camBitdepth)
+    movieArgs=horzcat(movieArgs,'camBitdepth_',camBitdepth);
+end
+
+
 % Read time interval
-timeInterval = data{4}.getPixelsTimeIncrement(0);
+timeInterval = metadata.getPixelsTimeIncrement(0);
 if ~isempty(timeInterval)
     movieArgs=horzcat(movieArgs,'timeInterval_',double(timeInterval));
 end
 
 % Read the lens numerical aperture
 try % Ue a tr-catch statement because property is not always defined
-    lensNA=data{4}.getObjectiveLensNA(0,0);
+    lensNA=metadata.getObjectiveLensNA(0,0);
     if ~isempty(lensNA)
         movieArgs=horzcat(movieArgs,'numAperture_',double(lensNA));
-    elseif ~isempty(data{4}.getObjectiveID(0,0))
+    elseif ~isempty(metadata.getObjectiveID(0,0))
         % Hard-coded for deltavision files. Try to get the objective Id and
         % read the na from a lookup table
-        tokens=regexp(char(data{4}.getObjectiveID(0,0).toString),...
+        tokens=regexp(char(metadata.getObjectiveID(0,0).toString),...
             '^Objective\:= (\d+)$','once','tokens');
         if ~isempty(tokens)
             movieArgs=horzcat(movieArgs,'numAperture_',naFromLensID(str2double(tokens)));
@@ -71,9 +82,13 @@ end
 
 % Read number of channels, frames and stacks
 [mainPath,movieName]=fileparts(dataPath);
-outputDir=[mainPath filesep movieName];
-nFrames =  data{4}.getPixelsSizeT(0).getValue;
-nChan =  data{4}.getPixelsSizeC(0).getValue;
+if extractImages
+    outputDir=[mainPath filesep movieName];
+else
+    outputDir=mainPath;
+end
+nFrames =  metadata.getPixelsSizeT(0).getValue;
+nChan =  metadata.getPixelsSizeC(0).getValue;
 
 % Create channel objects
 channelPath=cell(nChan,1);
@@ -83,24 +98,24 @@ for i=1:nChan
     channelArgs{i}={};
 
     % Read excitation wavelength
-    exwlgth=data{4}.getChannelExcitationWavelength(0,i-1);
+    exwlgth=metadata.getChannelExcitationWavelength(0,i-1);
     if ~isempty(exwlgth)
         channelArgs{i}=horzcat(channelArgs{i},'excitationWavelength_',exwlgth.getValue);
     end
     
     % Fill emission wavelength
-    emwlgth=data{4}.getChannelEmissionWavelength(0,i-1);
+    emwlgth=metadata.getChannelEmissionWavelength(0,i-1);
     if isempty(emwlgth)
         try
-            emwlgth= data{4}.getChannelLightSourceSettingsWavelength(0,0);
+            emwlgth= metadata.getChannelLightSourceSettingsWavelength(0,0);
         end
     end
     if ~isempty(emwlgth)
-        channelArgs{i}=horzcat(channelArgs{i},'emissionWavelength_',emWavelength.getValue);
+        channelArgs{i}=horzcat(channelArgs{i},'emissionWavelength_',emwlgth.getValue);
     end
     
     % Read channelName
-    chanName=data{4}.getChannelName(0,i-1);
+    chanName=metadata.getChannelName(0,i-1);
     if isempty(chanName), 
         chanName = ['Channel_' num2str(i)]; 
     else
@@ -108,7 +123,11 @@ for i=1:nChan
     end
     
     % Create new channel
-    channelPath{i} = [outputDir filesep chanName];
+    if extractImages
+        channelPath{i} = [outputDir filesep chanName];
+    else
+        channelPath{i}=dataPath;
+    end
     movieChannels(i)=Channel(channelPath{i},channelArgs{i}{:});
 end
 
@@ -118,8 +137,8 @@ movie.setPath(outputDir);
 movie.setFilename([movieName '.mat']);
 
 % Save images
-dimensionOrder =char(data{4}.getPixelsDimensionOrder(0));
-dimensions = arrayfun(@(x) data{4}.(['getPixelsSize' x])(0).getValue,...
+dimensionOrder =char(metadata.getPixelsDimensionOrder(0));
+dimensions = arrayfun(@(x) metadata.(['getPixelsSize' x])(0).getValue,...
     dimensionOrder(3:end));
 
 % Create anonymous functions for reading files
@@ -133,12 +152,13 @@ imageName = @(c,t) [movieName '-w' num2str(movieChannels(c).emissionWavelength_)
 % Save images
 if extractImages
     for i=1:nChan, mkClrDir(channelPath{i}); end
-    for iPlane = 1:size(data{1},1)
+    for iPlane = 1:r.getImageCount()
         [index(1),index(2),index(3)]=ind2sub(dimensions,iPlane);
         
-        imwrite(data{1}{iPlane,1},[channelPath{chanIndex(index)} filesep ...
+        imwrite(bfGetPlane(r,iPlane),[channelPath{chanIndex(index)} filesep ...
             imageName(chanIndex(index),tIndex(index))],'tif');
     end
 end
 
+r.close;
 movie.sanityCheck;

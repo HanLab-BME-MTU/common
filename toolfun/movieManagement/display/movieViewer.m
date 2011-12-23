@@ -433,12 +433,14 @@ end
 hPosition = hPosition+30;
 uicontrol(moviePanel,'Style','text','Position',[10 hPosition 40 20],...
     'String','Movie','Tag','text_movie');
-[~,moviePath] = fileparts(ip.Results.MO.getPath);
+
+
 if isa(ip.Results.MO,'MovieList')
-    [~,allPaths] = cellfun(@(x) fileparts(x.getPath),userData.ML.movies_,'UniformOutput',false);
-    movieIndex=0:numel(allPaths);
+    moviePaths = cellfun(@getDisplayPath,userData.ML.movies_,'UniformOutput',false);
+    movieIndex=0:numel(moviePaths);
+    
     uicontrol(moviePanel,'Style','popupmenu','Position',[60 hPosition panelsLength-70 20],...
-        'String',vertcat(moviePath,allPaths'),'UserData',movieIndex,...
+        'String',vertcat(getDisplayPath(ip.Results.MO),moviePaths'),'UserData',movieIndex,...
         'Value',find(userData.movieIndex==movieIndex),...
         'HorizontalAlignment','left','BackgroundColor','white','Tag','popup_movie',...
         'Callback',@(h,event) switchMovie(h,guidata(h)));
@@ -446,7 +448,7 @@ if isa(ip.Results.MO,'MovieList')
     
 else
     uicontrol(moviePanel,'Style','edit','Position',[60 hPosition panelsLength-70 20],...
-        'String',moviePath,...
+        'String',getDisplayPath(ip.Results.MO),...
         'HorizontalAlignment','left','BackgroundColor','white','Tag','edit_movie');
 
 end
@@ -490,6 +492,10 @@ end
 
 % Update the image and overlays
 if isa(userData.MO,'MovieData'), redrawScene(handles.figure1, handles); end
+
+function displayPath= getDisplayPath(movie)
+[~,endPath] = fileparts(movie.getPath);
+displayPath = fullfile(endPath,movie.getFilename);
 
 function switchMovie(hObject,handles)
 userData=get(handles.figure1,'UserData');

@@ -150,38 +150,47 @@ classdef Channel < hgsetget
             ip.parse(obj,varargin{:})
             obj.owner_=ip.Results.owner;
             
-            % Exception: channel path does not exist
-            assert(logical(exist(obj.channelPath_, 'dir')), ...
-                'Channel path specified is not a valid directory! Please double check the channel path!')
-            
-            % Check the number of file extensions
-            [fileNames nofExt] = imDir(obj.channelPath_,true);
-            switch nofExt
-                case 0
-                    % Exception: No proper image files are detected
-                    error('No proper image files are detected in:\n\n%s\n\nValid image file extension: tif, TIF, STK, bmp, BMP, jpg, JPG.',obj.channelPath_);
-                    
-                case 1
-                    nFrames = length(fileNames);
-                otherwise
-                    % Exception: More than one type of image
-                    % files are in the current specific channel
-                    error('More than one type of image files are found in:\n\n%s\n\nPlease make sure all images are of same type.', obj.channelPath_);
+            if exist(obj.channelPath_, 'file')==2 % Use bioformat-tools
+                % Get dataset reader, retrieve metadata and close reader
+                r=bfGetReader(obj.channelPath_,false);
+                width = r.getSizeX;
+                height = r.getSizeY;
+                nFrames = r.getSizeT;
+                r.close;               
+            else
+                % Exception: channel path does not exist
+                assert(logical(exist(obj.channelPath_, 'dir')), ...
+                    'Channel path specified is not a valid directory! Please double check the channel path!')
+                
+                % Check the number of file extensions
+                [fileNames nofExt] = imDir(obj.channelPath_,true);
+                switch nofExt
+                    case 0
+                        % Exception: No proper image files are detected
+                        error('No proper image files are detected in:\n\n%s\n\nValid image file extension: tif, TIF, STK, bmp, BMP, jpg, JPG.',obj.channelPath_);
+                        
+                    case 1
+                        nFrames = length(fileNames);
+                    otherwise
+                        % Exception: More than one type of image
+                        % files are in the current specific channel
+                        error('More than one type of image files are found in:\n\n%s\n\nPlease make sure all images are of same type.', obj.channelPath_);
+                end
+                
+                % Check the consistency of image size in current channel
+                imInfo = arrayfun(@(x)imfinfo([obj.channelPath_ filesep x.name]),...
+                    fileNames, 'UniformOutput', false);
+                width = unique(cellfun(@(x)(x.Width), imInfo));
+                height = unique(cellfun(@(x)(x.Height), imInfo));
+                
+                % Exception: Image sizes are inconsistent in the
+                % current channel.
+                assert(isscalar(width) && isscalar(height),...
+                    ['Image sizes are inconsistent in: \n\n%s\n\n'...
+                    'Please make sure all the images have the same size.'],obj.channelPath_);
+                obj.fileNames_ = arrayfun(@(x) x.name,fileNames,'UniformOutput',false);
             end
             
-            % Check the consistency of image size in current channel
-            imInfo = arrayfun(@(x)imfinfo([obj.channelPath_ filesep x.name]),...
-                fileNames, 'UniformOutput', false);
-            width = unique(cellfun(@(x)(x.Width), imInfo));
-            height = unique(cellfun(@(x)(x.Height), imInfo));
-            
-            % Exception: Image sizes are inconsistent in the
-            % current channel.
-            assert(isscalar(width) && isscalar(height),...
-                ['Image sizes are inconsistent in: \n\n%s\n\n'...
-                'Please make sure all the images have the same size.'],obj.channelPath_);
-            obj.fileNames_ = arrayfun(@(x) x.name,fileNames,'UniformOutput',false);
-
             if isempty(obj.psfSigma_) && ~isempty(obj.owner_)
                 obj.calculatePSFSigma();
             end
@@ -200,8 +209,36 @@ classdef Channel < hgsetget
             end
         end
         
-        function data = loadImage(obj,iFrame)
-            data = double(imread([obj.channelPath_ filesep obj.fileNames_{iFrame}]));
+        function I = loadImage(obj,iFrame)      
+            I=zeros([obj.owner_.imSize_ numel(iFrame)]);
+            if exist(obj.channelPath_, 'file')==2  % Use bioformat tools
+     
+                % Get the reader and retrieve dimension order
+                r=bfGetReader(obj.channelPath_,false);
+                metadata=r.getMetadataStore;
+                dimensionOrder =char(metadata.getPixelsDimensionOrder(0));
+                CZTOrder = dimensionOrder(3:end);
+                CZTdimensions = arrayfun(@(x) metadata.(['getPixelsSize' x])(0).getValue,CZTOrder);
+                
+                % Get channel index, fill multi-dimensional plane index and
+                % convert into linear plane index
+                chanIndex= find(obj.owner_.channels_==obj);
+                index(CZTOrder=='C',:)=chanIndex*ones(numel(iFrame),1);
+                index(CZTOrder=='Z',:)=1*ones(numel(iFrame),1);
+                index(CZTOrder=='T',:)=iFrame;
+                iPlane = sub2ind(CZTdimensions,index(1,:),index(2,:),index(3,:));
+                
+                % Get all planes and close reader
+                for i=1:numel(iPlane), I(:,:,i) =double(bfGetPlane(r,iPlane(i))); end
+                r.close;
+
+            else
+                % Read images from disk
+                if isempty(obj.fileNames_), obj.sanityCheck(); end
+                for i=1:numel(iFrame)
+                    I(:,:,i)  = double(imread([obj.channelPath_ filesep obj.fileNames_{iFrame(i)}]));
+                end
+            end
         end
         
         function color = getColor(obj)
