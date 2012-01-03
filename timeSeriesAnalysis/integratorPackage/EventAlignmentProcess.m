@@ -135,7 +135,9 @@ classdef EventAlignmentProcess < TimeSeriesProcess
             events(1).func=@max;
             events(2).name='Maximum retraction velocity';
             events(2).func=@min;
-            events(3).name='Starting protrusion';
+            events(3).name='Protrusion onset';
+            events(3).func=@min;
+            events(4).name='Retraction onset';
             events(3).func=@min;
         end
         

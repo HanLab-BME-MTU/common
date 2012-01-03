@@ -35,7 +35,7 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
         
         function varargout = loadChannelOutput(obj,i,j,varargin)
             % Check input
-            outputList={'raw','bootstrap','P','f'};
+            outputList={'bootstrap','avgCoh','cohCI','f'};
             ip=inputParser;
             ip.addRequired('obj');
             ip.addRequired('i',@isscalar);
@@ -45,16 +45,14 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
             output=ip.Results.output;
             if ischar(output), output={output}; end
             
-            if strcmp(output{:},'raw')
-                s=load(obj.outFilePaths_{i,j},'P','f');
-            elseif strcmp(output{:},'bootstrap')
-                s=load(obj.outFilePaths_{i,j},'bootstrapP','f');
+            if strcmp(output{:},'bootstrap')
+                s=load(obj.outFilePaths_{i,j},'avgCoh','cohCI','f');
             else
                 s=load(obj.outFilePaths_{i,j},output{:});
             end
             
             for j=1:numel(output)
-                if ismember(output{j},{'raw','bootstrap'})
+                if ismember(output{j},{'bootstrap'})
                     varargout{j}=s;
                 else
                     varargout{j} = s.(output{j});
@@ -62,55 +60,13 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
             end
         end
         
-        function h=draw(obj,i,varargin)
-            
-            % Check input
-            if ~ismember('getDrawableOutput',methods(obj)), h=[]; return; end
-            outputList = obj.getDrawableOutput();
-            ip = inputParser;
-            ip.addRequired('obj',@(x) isa(x,'Process'));
-            ip.addRequired('i',@isscalar);
-            ip.addOptional('j',i,@isscalar);
-            ip.addParamValue('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
-            ip.KeepUnmatched = true;
-            ip.parse(obj,i,varargin{:})
-            j=ip.Results.j;
-            
-            data=obj.loadChannelOutput(i,j,'output',ip.Results.output);
-            iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
-            if ~isempty(outputList(iOutput).formatData),
-                data=outputList(iOutput).formatData(data);
-            end
-            
-            try
-                assert(~isempty(obj.displayMethod_{iOutput,i,j}));
-            catch ME %#ok<NASGU>
-                obj.displayMethod_{iOutput,i,j}=outputList(iOutput).defaultDisplayMethod(i,j);
-            end
-            
-            % Delegate to the corresponding method
-            tag = [obj.getName '_input' num2str(i) '_input' num2str(j)];
-            drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
-                2*numel(fieldnames(ip.Unmatched)),1);
-            input=obj.getInput;
-            procArgs={'Input1',input(1).name,'Input2',input(2).name};
-            h=obj.displayMethod_{iOutput,i,j}.draw(data,tag,drawArgs{:},procArgs{:});
-        end
-        
         function output = getDrawableOutput(obj)
             output(1).name='Bootsrapped spectral density';
             output(1).var='bootstrap';
             output(1).formatData=@formatBootstrappedSpectralDensity;
             output(1).type='correlationGraph';
-            output(1).defaultDisplayMethod = @CorrelationGraphDisplay;
-            if isa(obj.owner_,'MovieData'),
-                output(2).name='Spectral density';
-                output(2).var='raw';
-                output(2).formatData=@formatSpectralDensity;
-                output(2).type='correlationGraph';
-                output(2).defaultDisplayMethod = @(i,j) MeshDisplay('XLabel','Frequency (Hz)',...
-                    'YLabel','Window number','ZLabel',obj.getDrawableOutputName(i,j));
-            end
+            output(1).defaultDisplayMethod = @(i,j)CorrelationGraphDisplay('XLabel','Frequency (Hz)',...
+                'YLabel',obj.getDrawableOutputName(i,j),'Input1',obj.getInput(i).name);
             
         end
         function [label,title] = getDrawableOutputName(obj,i,j)
@@ -156,19 +112,23 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
                 funParams.BandMax=winProc.nBandMax_;
                 funParams.SliceIndex=ones(winProc.nSliceMax_,1);
             end
-            funParams.window=[];
+            funParams.nWin=8;
+            funParams.window='hamming';
+            funParams.noLap=.5;
+            funParams.nBoot=1e4;
+            funParams.alpha=.01;
         end
     end
 end
-
-function data =formatSpectralDensity(data)
-data.X=data.f;
-data.Z=10*log10(data.P);
-data=rmfield(data,{'P','f'});
-end
+% 
+% function data =formatSpectralDensity(data)
+% data.X=data.f;
+% data.Z=10*log10(data.P);
+% data=rmfield(data,{'P','f'});
+% end
 
 function data =formatBootstrappedSpectralDensity(data)
-data.lags=squeeze(nanmean(data.lags,2));
-data.avgCorrFun=data.bootstrapCorrFun;
-data.steCorrFun=data.bootstrapSteCorrFun;
+data.X=data.f;
+data.Y=data.avgCoh;
+data.bounds=data.cohCI;
 end

@@ -90,7 +90,6 @@ if ~any(strcmp('Process.run',{stack(:).name}));
 end
 
 %% --------------- Initialization ---------------%%
-disp('Starting calculating spectral density...')
 if ~isempty(ip.Results.waitbar)
     wtBar=ip.Results.waitbar;
     waitbar(0,ip.Results.waitbar,'Initializing...');
@@ -106,41 +105,170 @@ end
 % Delegates correlation processes to movies if object is a movieList 
 if isa(movieObject,'MovieList')
     movieParams=rmfield(p,{'MovieIndex','OutputDirectory'});
-    for i =1:numel(p.MovieIndex);
-        % Delegate correlation calculation for each movie of the list
-        movieParams.SliceIndex=p.SliceIndex{p.MovieIndex(i)};
-        movieData = movieObject.movies_{p.MovieIndex(i)};
+    nMovies = numel(p.MovieIndex);
+    movieCohereProc=cell(nMovies,1);
+    movieInput = cell(nMovies,1);
+    
+    for i =1:nMovies;
+        iMovie = p.MovieIndex(i);
+        fprintf(1,'Calculating coherence for movie %g/%g\n',i,nMovies);
+        
+        % Delegate  calculation for each movie of the list
+        movieParams.SliceIndex=p.SliceIndex{iMovie};
+        movieData = movieObject.movies_{iMovie};
         iProc = movieData.getProcessIndex('CoherenceCalculationProcess',1,0);
         if isempty(iProc)
-            iProc = numel(movieData.processes_)+1;
             movieData.addProcess(CoherenceCalculationProcess(movieData,...
                 movieData.outputDirectory_));
         end
-        cohereProc = movieData.processes_{iProc};
-        parseProcessParams(movieData.processes_{iProc},movieParams);
-        cohereProc.run(wtBarArgs{:});
+        movieCohereProc{i} = movieData.processes_{end};
+        parseProcessParams(movieCohereProc{i},movieParams);
+        movieCohereProc{i}.run(wtBarArgs{:});
+        
+        movieInput{i}=movieCohereProc{i}.getInput;
+        
     end  
     
-    % Calls the movie list correlation bootstrapping method
-    %     bootstrapMovieListCorrelation(movieObject,wtBarArgs{:});
+    % Check input is the same for all movies
+    assert(all(cellfun(@(x) isequal(x,movieInput{1}),movieInput)));
+    input=movieInput{1};
+    nInput= numel(movieInput{1});
     
-    if ishandle(wtBar) && isempty(ip.Results.waitbar), close(wtBar); end
-
-    return;
-end    
-
-% This part should be only executed for MovieData objects
-assert(isa(movieObject,'MovieData'));
-movieData=movieObject;
-assert(~isempty(movieObject.timeInterval_));
-
-% Set the waitbar title if applicable
-if ishandle(wtBar), 
-    [~,movieName]=fileparts(movieObject.getPath);
-    set(wtBar,'Name',movieName);
+    % Check number of frames per movie and determine lag limits
+    nFrames =  cellfun(@(x) x.nFrames_,movieObject.movies_);
+    nFrames=max(nFrames);
+    timeInterval=unique(cellfun(@(x) x.timeInterval_,movieObject.movies_));
+    assert(numel(timeInterval)==1);
+    
+    % Load input
+    fprintf(1,'Calculating coherence for movie list\n');
+    inFilePaths = cell(nInput,nMovies);
+    data = cell(nInput,1);
+    range = cell(nInput,1);
+    disp('Using preprocessed signal from:');
+    for i =1:nMovies;
+        iMovie = p.MovieIndex(i);
+        [inFilePaths(:,i),localdata,localrange] =getTSInput(movieObject.movies_{iMovie},movieInput{i});
+        for iInput=1:nInput
+            for iBand=1:min(numel(data{iInput}),numel(localdata{iInput}))
+                data{iInput}{iBand} =vertcat(data{iInput}{iBand},localdata{iInput}{iBand});
+                range{iInput}{iBand} =vertcat(range{iInput}{iBand},localrange{iInput}{iBand});
+            end
+            for iBand=numel(data{iInput})+1:max(numel(data{iInput}),numel(localdata{iInput}))
+                data{iInput}{iBand} =localdata{iInput}{iBand};
+                range{iInput}{iBand} =localrange{iInput}{iBand};
+            end
+        end
+    end
+    cohereProc.setInFilePaths(inFilePaths);
+    p.SliceIndex = vertcat(p.SliceIndex{:});
+else    
+    
+    % Initialization of MovieData object
+    assert(isa(movieObject,'MovieData'));
+    movieData=movieObject;
+    
+    % Retrieve time interval and number of frames
+    timeInterval=movieData.timeInterval_;
+    nFrames = movieData.nFrames_;
+    assert(~isempty(timeInterval) && ~isempty(nFrames)) 
+    
+    % Set the waitbar title if applicable
+    if ishandle(wtBar),
+        [~,movieName]=fileparts(movieObject.getPath);
+        set(wtBar,'Name',movieName);
+    end
+    
+    input = cohereProc.getInput;
+    nInput=numel(input);
+    disp('Using preprocessed signal from:');
+    [inFilePaths,data,range] = getTSInput(movieData,input);
+    cohereProc.setInFilePaths(inFilePaths);
 end
 
-input = cohereProc.getInput;
+% Set up output files
+outFilePaths=cell(nInput,nInput);
+for i=1:nInput
+    for j=1:i-1
+        outFilePaths{i,j} = [p.OutputDirectory filesep 'coherence' ...
+            input(i).name '_' input(j).name '.mat'];
+    end
+    outFilePaths{i,i} = [p.OutputDirectory filesep 'powerSpectrum' ...
+        input(i).name '.mat'];
+end
+mkClrDir(p.OutputDirectory);
+cohereProc.setOutFilePaths(outFilePaths);
+disp('Results will be saved under:')
+disp(p.OutputDirectory);
+
+%% --------------- Coherence calculation ---------------%%% 
+
+%At least 50 points are needed to calculate the ACF
+%Number of lags <= N/4;
+%Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
+minP     = 50;
+
+nfft = 2^nextpow2(nFrames); % cf pwelch
+nFreqMax=nfft/2+1;
+fs =1/timeInterval;
+f= fs/2*linspace(0,1,nfft/2 +1); %#ok<NASGU>
+nBands =cellfun(@numel,data);
+
+padTS = @(x) padarray(x,nFrames-length(x),0,'post');
+
+logMsg = @(i,j) ['Please wait, calculating ' input(i).name '/'...
+    input(j).name ' coherence'];
+
+% Calculate spectral density coherence
+for iInput1=1:nInput
+    for iInput2=1:iInput1-1
+        disp(logMsg(iInput1,iInput2));
+        
+        % Initialize cross-correlation function and bounds
+        avgCoh = NaN(nFreqMax,nBands(iInput1),nBands(iInput2));
+        cohCI = NaN(2,nFreqMax,nBands(iInput1),nBands(iInput2));
+        
+        if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput1,iInput2)); end
+        
+        % Loop over bands and window slices
+        bands1=p.BandMin:min(nBands(iInput1),p.BandMax);
+        for i1=1:numel(bands1)
+            iBand1 = bands1(i1);
+            for iBand2=p.BandMin:min(nBands(iInput2),p.BandMax)
+                
+                % Find valid range and test minimum number of timepoints
+                nTimepoints = cellfun(@(x,y) length(intersect(x,y)),range{iInput2}{iBand2},...
+                    range{iInput1}{iBand1});
+                validSlices = nTimepoints>=minP & p.SliceIndex;
+                
+                if sum(validSlices)>0
+                    % Concatenate time-series
+                    paddedTS1 = cellfun(padTS,data{iInput1}{iBand1}(validSlices),'Unif',false);
+                    paddedTS1 = cat(2,paddedTS1{:});
+                    paddedTS2 = cellfun(padTS,data{iInput2}{iBand2}(validSlices),'Unif',false);
+                    paddedTS2 = cat(2,paddedTS2{:});
+                    
+                    % Bootstrap coherence
+                    [c,cI]=coherenceBootstrap(paddedTS1,paddedTS2,p.nWin,...
+                        p.window,p.noLap,fs,'alpha',p.alpha,'nBoot',p.nBoot);
+                    avgCoh(:,iBand1,iBand2)=c;
+                    cohCI(:,:,iBand1,iBand2)=cI;
+                end
+            end
+            if ishandle(wtBar), waitbar(i1/numel(bands1),wtBar); end
+        end
+        
+        save(outFilePaths{iInput1,iInput2},'avgCoh','cohCI','f');
+    end
+end
+
+disp('Finished calculating coherence...')
+if ishandle(wtBar)&&isempty(ip.Results.waitbar), close(wtBar); end
+
+end
+
+function [paths,data,range] = getTSInput(movieData,input)
+
 nInput=numel(input);
 
 % Test the presence and output validity of the signal preprocessing
@@ -160,137 +288,19 @@ for i=1:nInput
     preprocIndex(i) = index;
 end
 if ~signalPreproc.checkChannelOutput(preprocIndex)
-    error(['Each time series must have been preprocessesd !' ...
+    error(['Each time series must have been preprocessed !' ...
         'Please apply pre-processing to all time series before '...
-        'running correlation calculatino!'])
+        'running coherence calculation!'])
 end
 
+disp(signalPreproc.funParams_.OutputDirectory);
+
 % Load input
-inFilePaths = cell(nInput,1);
+paths = cell(nInput,1);
 data = cell(nInput,1);
 range = cell(nInput,1);
 for iInput=1:nInput
-    inFilePaths{iInput,1} = signalPreproc.outFilePaths_{1,preprocIndex(iInput)};
+    paths{iInput,1} = signalPreproc.outFilePaths_{1,preprocIndex(iInput)};
     [data{iInput},range{iInput}] = signalPreproc.loadChannelOutput(preprocIndex(iInput));
 end
-cohereProc.setInFilePaths(inFilePaths);
-
-% Set up output files
-outFilePaths=cell(nInput,nInput);
-for i=1:nInput
-    for j=1:i-1
-        outFilePaths{i,j} = [p.OutputDirectory filesep 'coherence' ...
-            input(i).name '_' input(j).name '.mat'];
-    end
-    outFilePaths{i,i} = [p.OutputDirectory filesep 'powerSpectrum' ...
-        input(i).name '.mat'];
-end
-mkClrDir(p.OutputDirectory);
-cohereProc.setOutFilePaths(outFilePaths);
-
-%% --------------- Correlation calculation ---------------%%% 
-disp('Using preprocessed signal from:');
-disp(signalPreproc.funParams_.OutputDirectory);
-disp('Results will be saved under:')
-disp(p.OutputDirectory);
-
-%At least 50 points are needed to calculate the ACF
-%Number of lags <= N/4;
-%Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
-minP     = 50;
-
-
-nFFTMax = max(256,2^nextpow2(movieData.nFrames_/4.5)); % cf pwelch
-nFreqMax=nFFTMax/2+1;
-fs =1/movieData.timeInterval_;
-f =(0:2*pi/nFFTMax:pi)'*fs/(2*pi); %#ok<NASGU>
-nBands =cellfun(@numel,data);
-nSlices = numel(data{1}{1});
-
-logMsg = @(i) ['Please wait, calculating ' input(i).name ' power spectral density'];
-
-% Calculate autocorrelation
-for iInput=1:nInput
-    disp(logMsg(iInput));
-    
-    % Initialize spectral density
-    P = NaN(nFreqMax,nSlices,nBands(iInput));
-%     bootstrapP=NaN(nFreq,nBands(iInput));
-        
-    if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
-    
-    % Calculate valid band index
-    validBands = find(~cellfun(@isempty,data{iInput}));
-    for iBand=find(validBands<=p.BandMax & validBands>=p.BandMin )'
-        
-        % Calculate raw auto-correlation
-        validSlices = ~cellfun(@isempty,data{iInput}{iBand});
-        for iSlice=find(validSlices & p.SliceIndex)'
-            P(:,iSlice,iBand) = pwelch(data{iInput}{iBand}{iSlice});
-        end
-        
-%         % Bootstrap valid autocorrelation functions
-%         validSlices = sum(isnan(corrFun(:,:,iBand)),1)==0;
-%         if sum(validSlices)>2
-%             [meanCC,CI] = correlationBootstrap(corrFun(:,validSlices,iBand),...
-%                 bounds(1,validSlices,iBand),p.nBoot,p.alpha);
-%             bootstrapCorrFun(:,iBand)=meanCC;
-%             bootstrapBounds(:,:,iBand)=CI;
-%         end
-        
-        if ishandle(wtBar), waitbar(iBand/nBands(iInput),wtBar); end
-    end
-       
-    save(outFilePaths{iInput,iInput},'P','f');  
-end
-
-logMsg = @(i,j) ['Please wait, calculating ' input(i).name '/'...
-    input(j).name ' coherence'];
-
-% Calculate spectral density coherence
-for iInput1=1:nInput
-    for iInput2=1:iInput1-1
-        disp(logMsg(iInput1,iInput2));
-        
-        % Initialize cross-correlation function and bounds
-        P = NaN(nFreqMax,nSlices,nBands(iInput1),nBands(iInput2));
-%         bootstrapCorrFun=NaN(2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
-        
-        if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput1,iInput2)); end
-        
-        % Loop over bands and window slices
-        for iBand1=p.BandMin:min(nBands(iInput1),p.BandMax)
-            for iBand2=p.BandMin:min(nBands(iInput2),p.BandMax)
-                
-                % Calculate raw cross-correlation
-                for iSlice=find(p.SliceIndex)'
-                    % Find valid range and test minimum number of timepoints
-                    [~,range1,range2] = intersect(range{iInput1}{iBand1}{iSlice},range{iInput2}{iBand2}{iSlice});
-                    ccL               = length(range1);
-                    if ccL >= minP
-                        P(:,iSlice,iBand1,iBand2) =...
-                            mscohere(data{iInput1}{iBand1}{iSlice}(range1),data{iInput2}{iBand2}{iSlice}(range2));
-                    end
-                end
-                
-                % Bootstrap valid correlation functions
-%                 validSlices = sum(isnan(corrFun(:,:,iBand1,iBand2)),1)==0;
-%                 if sum(validSlices)>2
-%                     [meanCC,CI] = correlationBootstrap(corrFun(:,validSlices,iBand1,iBand2),...
-%                         bounds(1,validSlices,iBand1,iBand2),p.nBoot,p.alpha);
-%                     bootstrapCorrFun(:,iBand1,iBand2)=meanCC;
-%                     bootstrapBounds(:,:,iBand1,iBand2)=CI;
-%                 end   
-%                 
-            end
-            if ishandle(wtBar), waitbar(iBand1/nBands(iInput1),wtBar); end
-        end
-        
-        save(outFilePaths{iInput1,iInput2},'P','f');
-    end
-end
-
-disp('Finished calculating spectral density...')
-if ishandle(wtBar)&&isempty(ip.Results.waitbar), close(wtBar); end
-
 end

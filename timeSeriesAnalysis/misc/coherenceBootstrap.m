@@ -1,11 +1,12 @@
-function [avegCoh,CohCI,w]=coherenceBootstrap(S1,S2,nWin,wType,noLap,Fs)
+function [avegCoh,CohCI,w]=coherenceBootstrap(S1,S2,varargin)
 % This function calculates the power spectrum and coherence 
 %
 % Synopsis: 
-%          []=windowedSpectrum(S,nWin,wType,nOverLap)
+%          []=coherenceBootstrap(S,S2,nWin,wType,noLap,Fs)
 %
 %Input:
-%      S     - signal
+%      S1    - signal
+%      S2    - signal
 %      nWin  - number of windows  
 %      wType - window type. Options:
 %              bartlett;
@@ -28,17 +29,32 @@ function [avegCoh,CohCI,w]=coherenceBootstrap(S1,S2,nWin,wType,noLap,Fs)
 %
 %Output
 
-alpha = 0.05;
-nBoot = 10000;
+% Input check
+ip=inputParser;
+ip.addRequired('S1',@isnumeric);
+ip.addRequired('S2',@(x) isnumeric(x) && isequal(size(x),size(S1)));
+ip.addOptional('nWin',8,@isscalar);
+ip.addOptional('wType','hamming',@ischar);
+ip.addOptional('noLap',.5,@isscalar);
+ip.addOptional('Fs',1,@isscalar);
+ip.addParamValue('alpha',.05,@isscalar);
+ip.addParamValue('nBoot',10000,@isscalar);
+ip.parse(S1,S2,varargin{:})
+nWin=ip.Results.nWin;
+wType=ip.Results.wType;
+noLap=ip.Results.noLap;
+Fs=ip.Results.Fs;
+alpha=ip.Results.alpha;
+nBoot=ip.Results.nBoot;
+
 
 [nPt,nVar] = size(S1);
 
-%French Dude, check if the S1 has the same number of variables as S2
 
 q1         = alpha*100/2;
 q2         = 100 - q1;
 winLen     = floor( nPt/( (1 - noLap)*nWin + noLap ) );
-exPt       = winLen*noLap;
+exPt       = round(winLen*noLap);
 windowF    = feval(wType,winLen);
 
 %**************************************************************************

@@ -63,45 +63,12 @@ classdef CorrelationCalculationProcess < TimeSeriesProcess
             end
         end
         
-        function h=draw(obj,i,varargin)
-            
-            % Check input
-            if ~ismember('getDrawableOutput',methods(obj)), h=[]; return; end
-            outputList = obj.getDrawableOutput();
-            ip = inputParser;
-            ip.addRequired('obj',@(x) isa(x,'Process'));
-            ip.addRequired('i',@isscalar);
-            ip.addOptional('j',i,@isscalar);
-            ip.addParamValue('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
-            ip.KeepUnmatched = true;
-            ip.parse(obj,i,varargin{:})
-            j=ip.Results.j;
-            
-            data=obj.loadChannelOutput(i,j,'output',ip.Results.output);
-            iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
-            if ~isempty(outputList(iOutput).formatData),
-                data=outputList(iOutput).formatData(data);
-            end
-            
-            try
-                assert(~isempty(obj.displayMethod_{iOutput,i,j}));
-            catch ME %#ok<NASGU>
-                obj.displayMethod_{iOutput,i,j}=outputList(iOutput).defaultDisplayMethod(i,j);
-            end
-            
-            % Delegate to the corresponding method
-            tag = [obj.getName '_input' num2str(i) '_input' num2str(j)];
-            drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
-                2*numel(fieldnames(ip.Unmatched)),1);
-            input=obj.getInput;
-            procArgs={'Input1',input(1).name,'Input2',input(2).name};
-            h=obj.displayMethod_{iOutput,i,j}.draw(data,tag,drawArgs{:},procArgs{:});
-        end
+
         
         function output = getDrawableOutput(obj)
             output(1).name='Bootsrapped correlation';
             output(1).var='bootstrap';
-            output(1).formatData=[];
+            output(1).formatData=@formatBootstrappedCorrelation;
             output(1).type='correlationGraph';
             output(1).defaultDisplayMethod = @(i,j)CorrelationGraphDisplay('XLabel','Lags (s)',...
                 'YLabel',obj.getDrawableOutputName(i,j),'Input1',obj.getInput(i).name);
@@ -167,4 +134,11 @@ function data =formatCorrelationData(data)
 data.X=data.lags;
 data.Z=data.corrFun;
 data=rmfield(data,{'lags','corrFun'});
+end
+
+
+function data =formatBootstrappedCorrelation(data)
+data.X=data.lags;
+data.Y=data.bootstrapCorrFun;
+data.bounds=data.bootstrapBounds;
 end

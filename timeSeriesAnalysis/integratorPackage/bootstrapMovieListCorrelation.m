@@ -42,6 +42,7 @@ p = parseProcessParams(corrProc,paramsIn);
 
 
 %% --------------- Initialization ---------------%%
+disp('Starting bootstrapping movie list correlation functions...')
 [~,movieName]=fileparts(movieList.getPath);
 if ~isempty(ip.Results.waitbar)
     wtBar=ip.Results.waitbar;
@@ -58,6 +59,7 @@ end
 nMovies =  numel(p.MovieIndex);
 movieInput= cell(nMovies,1);
 movieCorrProc(nMovies,1)=CorrelationCalculationProcess;
+disp('Using correlation functions from:');
 for i=1:nMovies
     iMovie=p.MovieIndex(i);
     iMovieCorrProc =movieList.movies_{iMovie}.getProcessIndex('CorrelationCalculationProcess',1,false);
@@ -76,6 +78,7 @@ for i=1:nMovies
         end
     end
     
+    disp(movieCorrProc(i).funParams_.OutputDirectory);
 end
 
 % Check that all input are constistent
@@ -142,11 +145,12 @@ for i=1:nInput
     outFilePaths{i,i} = [p.OutputDirectory filesep 'autocorrelation' ...
         input(i).name '.mat'];
 end
+disp('Results will be saved under:')
+disp(p.OutputDirectory);
 mkClrDir(p.OutputDirectory);
 corrProc.setOutFilePaths(outFilePaths);
 
 %% --------------- Correlation calculation ---------------%%%
-disp('Starting bootstraping correlation of movies from list...')
 
 acfLogMsg = @(i) ['Please wait, bootstrapping ' input(i).name ' autocorrelation'];
 ccfLogMsg = @(i,j) ['Please wait, bootstrapping ' input(i).name '/'...

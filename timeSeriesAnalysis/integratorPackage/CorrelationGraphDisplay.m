@@ -21,8 +21,8 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
         end
         function h=initDraw(obj,data,tag,varargin)
             
-            nBands = min(size(data.bootstrapCorrFun,2),obj.nBandMax);
-            nBands2 = min(size(data.bootstrapCorrFun,3),obj.nBandMax);
+            nBands = min(size(data.Y,2),obj.nBandMax);
+            nBands2 = min(size(data.Y,3),obj.nBandMax);
             
             
             % Plot data as color-coded lines with error bars
@@ -33,11 +33,11 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
             for j=1:nBands2
                 for i=1:nBands                
                     ind=sub2ind([nBands nBands2],i,j);
-                    h(ind,1)=plot(data.lags,data.bootstrapCorrFun(:,i,j),'Line',obj.LineStyle,...
+                    h(ind,1)=plot(data.X,data.Y(:,i,j),'Line',obj.LineStyle,...
                         'LineWidth',obj.LineWidth,'Color',colors(ind,:));
-                    h(ind,2)=errorbar(data.lags,data.bootstrapCorrFun(:,i,j),...
-                        data.bootstrapBounds(2,:,i,j)'-data.bootstrapCorrFun(:,i,j),...
-                        data.bootstrapBounds(1,:,i,j)'-data.bootstrapCorrFun(:,i,j),...
+                    h(ind,2)=errorbar(data.X,data.Y(:,i,j),...
+                        data.bounds(2,:,i,j)'-data.Y(:,i,j),...
+                        data.bounds(1,:,i,j)'-data.Y(:,i,j),...
                         'LineWidth', 2,'Color',colors(ind,:));
                 end
             end
@@ -46,13 +46,13 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
             % Set axis options
             xlabel(obj.XLabel,obj.lfont{:});
             ylabel(obj.YLabel,obj.lfont{:});
-            xLim=[min(data.lags(:)) max(data.lags(:))];
-            yLim =[min(min(data.bootstrapBounds(1,:,1:nBands,1:nBands2))) ...
-                max(max(data.bootstrapBounds(2,:,1:nBands,1:nBands2)))];
+            xLim=[min(data.X(:)) max(data.X(:))];
+            yLim =[min(min(data.bounds(1,:,1:nBands,1:nBands2))) ...
+                max(max(data.bounds(2,:,1:nBands,1:nBands2)))];
             set(gca, 'LineWidth', 1.5, obj.sfont{:},'XLim',xLim,'YLim',yLim);
             
             % Add arrow for cross-correlation graphs
-            if min(data.lags(:))<0
+            if min(data.X(:))<0
                 pos = get(gca,'Position');
                 annotation('arrow',[pos(1)+pos(3)/2-pos(3)/100 pos(1)+pos(3)/100],...
                     [pos(2)+pos(4)/100 pos(2)+pos(4)/100],'Linewidth',2);
@@ -90,8 +90,8 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
         end
         
         function updateDraw(obj,h,data)
-            nBands = min(size(data.bootstrapBounds,2),obj.nBandMax);
-            nBands2 = min(size(data.bootstrapBounds,3),obj.nBandMax);
+            nBands = min(size(data.bounds,2),obj.nBandMax);
+            nBands2 = min(size(data.bounds,3),obj.nBandMax);
             if nBands>1 || nBands2>1
                 states=logical(arrayfun(@(x) get(x,'Value'),obj.bands));
                 set(h(states,:),'Visible','on');
