@@ -29,9 +29,10 @@ ip.addOptional('extractImages',true,@islogical)
 ip.parse(dataPath,varargin{:});
 extractImages = ip.Results.extractImages;
 
-assert(exist(dataPath,'file')==2,'File does not exist');
+assert(exist(dataPath,'file')==2,'File does not exist'); % Check path
 
 try
+    % Retrieve movie reader and metadata
     r=bfGetReader(dataPath);
     metadata=r.getMetadataStore();
 catch ME
@@ -41,56 +42,61 @@ catch ME
 end
 
 
+movieArgs={}; % Create properties cell array based on existing metadata
 
-movieArgs={};
-
-% Read pixel size
-pixelSize = metadata.getPixelsPhysicalSizeX(0);
-if ~isempty(pixelSize)
-    assert(isequal(pixelSize.getValue,metadata.getPixelsPhysicalSizeY(0).getValue));
-    movieArgs=horzcat(movieArgs,'pixelSize_',pixelSize.getValue*10^3);
+% Get pixel size
+pixelSizeX = metadata.getPixelsPhysicalSizeX(0);
+if ~isempty(pixelSizeX)
+    pixelSizeX= pixelSizeX.getValue*10^3;
+    pixelSizeY= metadata.getPixelsPhysicalSizeY(0).getValue*10^3;
+    assert(isequal(pixelSizeX,pixelSizeY),'Pixel size different in x and y');
+    movieArgs=horzcat(movieArgs,'pixelSize_',pixelSizeX);
 end
 
-% Read camera bit depath size
+% Get camera bit depth
 camBitdepth = r.getBitsPerPixel;
 if ~isempty(camBitdepth)
     movieArgs=horzcat(movieArgs,'camBitdepth_',camBitdepth);
 end
 
-
-% Read time interval
+% Get time interval
 timeInterval = metadata.getPixelsTimeIncrement(0);
 if ~isempty(timeInterval)
     movieArgs=horzcat(movieArgs,'timeInterval_',double(timeInterval));
 end
 
-% Read the lens numerical aperture
-try % Ue a tr-catch statement because property is not always defined
+% Get the lens numerical aperture
+try % Use a tyr-catch statement because property is not always defined
     lensNA=metadata.getObjectiveLensNA(0,0);
     if ~isempty(lensNA)
         movieArgs=horzcat(movieArgs,'numAperture_',double(lensNA));
     elseif ~isempty(metadata.getObjectiveID(0,0))
-        % Hard-coded for deltavision files. Try to get the objective Id and
-        % read the na from a lookup table
+        % Hard-coded for deltavision files. Try to get the objective id and
+        % read the objective na from a lookup table
         tokens=regexp(char(metadata.getObjectiveID(0,0).toString),...
             '^Objective\:= (\d+)$','once','tokens');
         if ~isempty(tokens)
-            movieArgs=horzcat(movieArgs,'numAperture_',naFromLensID(str2double(tokens)));
+            [na,mag]=getLensProperties(str2double(tokens),{'na','magn'});
+            movieArgs=horzcat(movieArgs,'numAperture_',na,'magnification_',mag);
         end
     end
 end
 
 % Read number of channels, frames and stacks
+nFrames =  metadata.getPixelsSizeT(0).getValue;
+nChan =  metadata.getPixelsSizeC(0).getValue;
+nZ =  metadata.getPixelsSizeZ(0).getValue;
+assert(isequal(nZ,1),'Importation of 3D movies not implemented yet');
+
+% Set output directory (based on image extraction flag)
 [mainPath,movieName]=fileparts(dataPath);
-if extractImages
-    outputDir=[mainPath filesep movieName];
+if extractImages, 
+    outputDir=fullfile(mainPath,movieName);
 else
     outputDir=mainPath;
 end
-nFrames =  metadata.getPixelsSizeT(0).getValue;
-nChan =  metadata.getPixelsSizeC(0).getValue;
 
-% Create channel objects
+% Create movie channels
 channelPath=cell(nChan,1);
 movieChannels(nChan,1)=Channel();
 channelArgs=cell(nChan,1);
@@ -124,7 +130,7 @@ for i=1:nChan
     
     % Create new channel
     if extractImages
-        channelPath{i} = [outputDir filesep chanName];
+        channelPath{i} = fullfile(outputDir,chanName);
     else
         channelPath{i}=dataPath;
     end
