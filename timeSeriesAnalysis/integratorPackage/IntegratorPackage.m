@@ -33,21 +33,16 @@ classdef IntegratorPackage < Package
         
         function m = getDependencyMatrix(i,j)
             
-            m = [0 0 0; %1SignalPreprocessingProcess
-                1 0 0;  %2 CorrelationCalculationProcess
-                1 0 0;];%3 EventAlignerProcess
-            
+            m = [0 0; %1SignalPreprocessingProcess
+                1 0 ;];  %2 CorrelationCalculationProcess
+
             if nargin<2, j=1:size(m,2); end
             if nargin<1, i=1:size(m,1); end
             m=m(i,j);
         end
         
         function name = getName()
-            if any(strcmp(getenv('USERNAME'),{'mv89','sb286'}))
-                name = 'Hey dude! This is the ultimate integrator';
-            else
-                name='Integrator';
-            end
+            name='Integrator';
         end
         
         function varargout = GUI(varargin)
@@ -58,8 +53,7 @@ classdef IntegratorPackage < Package
         function procConstr = getDefaultProcessConstructors(index)
             integratorProcConstr = {
                 @SignalPreprocessingProcess,...
-                @CorrelationCalculationProcess,...
-                @EventAlignmentProcess};
+                @CorrelationCalculationProcess};
             
             if nargin==0, index=1:numel(integratorProcConstr); end
             procConstr=integratorProcConstr(index);
@@ -67,8 +61,7 @@ classdef IntegratorPackage < Package
         function classes = getProcessClassNames(index)
             integratorClasses = {
                 'SignalPreprocessingProcess',...
-                'CorrelationCalculationProcess',.....
-                'EventAlignmentProcess'};
+                'CorrelationCalculationProcess'};
             if nargin==0, index=1:numel(integratorClasses); end
             classes=integratorClasses(index);
         end
