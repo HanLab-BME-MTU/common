@@ -15,6 +15,8 @@ classdef ImageDisplay < MovieDataDisplay
             % Plot the image and associate the tag
             h=imshow(data,varargin{:});
             set(h,'Tag',tag,'CDataMapping','scaled');
+            hAxes = get(h,'Parent');
+            set(hAxes,'XLim',[0 size(data,2)],'YLim',[0 size(data,1)]);
             obj.applyImageOptions(h,data)
         end
         function updateDraw(obj,h,data)
@@ -36,7 +38,6 @@ classdef ImageDisplay < MovieDataDisplay
             % Set the colorbar
             hCbar = findobj(get(hAxes,'Parent'),'Tag','Colorbar');
             if strcmp(obj.Colorbar,'on')
-                axis image
                 if isempty(hCbar)
                     set(hAxes,'Position',[0.05 0.05 .9 .9]);   
                     hCbar = colorbar('peer',hAxes,'FontSize',12);
@@ -46,8 +47,7 @@ classdef ImageDisplay < MovieDataDisplay
                 end
             else
                 if ~isempty(hCbar),colorbar(hCbar,'delete'); end
-                set(hAxes,'XLim',[0 size(data,2)],'YLim',[0 size(data,1)],...
-                'Position',[0 0 1 1]);
+                set(hAxes,'Position',[0 0 1 1]);
             end
 
             
