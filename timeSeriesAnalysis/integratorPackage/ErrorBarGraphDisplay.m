@@ -1,4 +1,4 @@
-classdef CorrelationGraphDisplay < MovieDataDisplay
+classdef ErrorBarGraphDisplay < MovieDataDisplay
     %Concreate display class for displaying points or lines
     properties
         Marker = 'none';
@@ -16,14 +16,13 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
         bands;
     end
     methods
-        function obj=CorrelationGraphDisplay(varargin)
+        function obj=ErrorBarGraphDisplay(varargin)
             obj@MovieDataDisplay(varargin{:});
         end
         function h=initDraw(obj,data,tag,varargin)
             
             nBands = min(size(data.Y,2),obj.nBandMax);
             nBands2 = min(size(data.Y,3),obj.nBandMax);
-            
             
             % Plot data as color-coded lines with error bars
             nBandsTot = nBands*nBands2;
@@ -51,7 +50,7 @@ classdef CorrelationGraphDisplay < MovieDataDisplay
                 max(max(data.bounds(2,:,1:nBands,1:nBands2)))];
             set(gca, 'LineWidth', 1.5, obj.sfont{:},'XLim',xLim,'YLim',yLim);
             
-            % Add arrow for cross-correlation graphs
+            % Add arrows for cross-correlation graphs
             if min(data.X(:))<0
                 pos = get(gca,'Position');
                 annotation('arrow',[pos(1)+pos(3)/2-pos(3)/100 pos(1)+pos(3)/100],...

@@ -823,7 +823,7 @@ iInput2 = str2double(tokens{1}{4});
 output = outputList(iOutput).var;
 
 timeSeriesProcess = userData.MO.processes_{procId};
-[~,figName] = timeSeriesProcess.getDrawableOutputName(iInput1,iInput2);
+[~,figName] = timeSeriesProcess.getDrawableOutputName(iInput1,iInput2,output);
 
 % Draw or delete the graph figure depending on the checkbox value
 h = getFigure(handles,figName);

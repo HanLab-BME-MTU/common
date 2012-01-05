@@ -34,42 +34,51 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
         
         
         function varargout = loadChannelOutput(obj,i,j,varargin)
+            
             % Check input
-            outputList={'bootstrap','avgCoh','cohCI','f'};
             ip=inputParser;
-            ip.addRequired('obj');
             ip.addRequired('i',@isscalar);
             ip.addRequired('j',@isscalar);
-            ip.addParamValue('output',outputList{1},@(x) all(ismember(x,outputList)));
-            ip.parse(obj,i,j,varargin{:});
-            output=ip.Results.output;
-            if ischar(output), output={output}; end
+            ip.parse(i,j);
             
-            if strcmp(output{:},'bootstrap')
-                s=load(obj.outFilePaths_{i,j},'avgCoh','cohCI','f');
+            
+            % Check input
+            outputList={'avgCoh','cohCI','f'};
+            additionalOutput=horzcat({''});
+            allOutput = horzcat(additionalOutput,outputList);
+            ip.addParamValue('output',outputList,@(x) all(ismember(x,allOutput)));
+            ip.parse(i,j,varargin{:});
+            if strcmpi(ip.Results.output,'');
+                output=outputList;
             else
-                s=load(obj.outFilePaths_{i,j},output{:});
+                output=ip.Results.output;
+                if ischar(output), output={output}; end
             end
             
-            for j=1:numel(output)
-                if ismember(output{j},{'bootstrap'})
-                    varargout{j}=s;
-                else
+            s=load(obj.outFilePaths_{i,j},output{:});
+            
+            % Return structure if alll arguments are queried
+            if any(ismember(ip.Results.output,additionalOutput)) || ...
+                    isequal(ip.Results.output,outputList);
+                varargout{1}=s;
+            else
+                for j=1:numel(output)
                     varargout{j} = s.(output{j});
                 end
             end
+            
         end
         
         function output = getDrawableOutput(obj)
-            output(1).name='Bootsrapped spectral density';
-            output(1).var='bootstrap';
-            output(1).formatData=@formatBootstrappedSpectralDensity;
+            output(1).name='Coherence';
+            output(1).var='';
+            output(1).formatData=@formatCoherence;
             output(1).type='correlationGraph';
-            output(1).defaultDisplayMethod = @(i,j)CorrelationGraphDisplay('XLabel','Frequency (Hz)',...
+            output(1).defaultDisplayMethod = @(i,j)ErrorBarGraphDisplay('XLabel','Frequency (Hz)',...
                 'YLabel',obj.getDrawableOutputName(i,j),'Input1',obj.getInput(i).name);
             
         end
-        function [label,title] = getDrawableOutputName(obj,i,j)
+        function [label,title] = getDrawableOutputName(obj,i,j,varargin)
             if i==j, 
                 label='Power spectrum (db/Hz)'; 
                 title = [obj.getInput(i).name ' power spectrum'];
@@ -120,14 +129,8 @@ classdef CoherenceCalculationProcess < TimeSeriesProcess
         end
     end
 end
-% 
-% function data =formatSpectralDensity(data)
-% data.X=data.f;
-% data.Z=10*log10(data.P);
-% data=rmfield(data,{'P','f'});
-% end
 
-function data =formatBootstrappedSpectralDensity(data)
+function data =formatCoherence(data)
 data.X=data.f;
 data.Y=data.avgCoh;
 data.bounds=data.cohCI;

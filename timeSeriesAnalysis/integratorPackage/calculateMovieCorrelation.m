@@ -203,7 +203,7 @@ nLagsMax =round(movieData.nFrames_/4);
 nBands =cellfun(@numel,data);
 nSlices = numel(data{1}{1});
 
-logMsg = @(i) ['Please wait, calculating ' input(i).name ' autocorrelation'];
+logMsg = @(i) ['Calculating ' input(i).name ' autocorrelation'];
 
 % Calculate autocorrelation
 lags =(0:nLagsMax)'*movieData.timeInterval_; %#ok<NASGU>
@@ -211,11 +211,16 @@ for iInput=1:nInput
     disp(logMsg(iInput));
     
     % Initialize autocorrelation function and bounds
-    corrFun = NaN(nLagsMax+1,nSlices,nBands(iInput));
-    bounds = NaN(2,nSlices,nBands(iInput));
-    bootstrapCorrFun=NaN(nLagsMax+1,nBands(iInput));
-    bootstrapBounds=NaN(2,nLagsMax+1,nBands(iInput));
-        
+    acf = NaN(nLagsMax+1,nSlices,nBands(iInput));
+    acfBounds = NaN(2,nSlices,nBands(iInput));
+    bootstrapAcf=NaN(nLagsMax+1,nBands(iInput));
+    bootstrapAcfBounds=NaN(2,nLagsMax+1,nBands(iInput));
+  
+    pacf = NaN(nLagsMax+1,nSlices,nBands(iInput));
+    pacfBounds = NaN(2,nSlices,nBands(iInput));
+    bootstrapPacf=NaN(nLagsMax+1,nBands(iInput));
+    bootstrapPacfBounds=NaN(2,nLagsMax+1,nBands(iInput));
+    
     if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
     
     for iBand=p.BandMin:min(nBands(iInput),p.BandMax);
@@ -227,28 +232,40 @@ for iInput=1:nInput
         % Calculate raw auto-correlation
         for iSlice=find(validSlices)'
             nLags = round(length(data{iInput}{iBand}{iSlice})/4);
-            [corrFun(1:nLags+1,iSlice,iBand),~,bounds(:,iSlice,iBand)] = ...
+            [acf(1:nLags+1,iSlice,iBand),~,acfBounds(:,iSlice,iBand)] = ...
                 autocorr(data{iInput}{iBand}{iSlice},nLags);
+            
+            [pacf(1:nLags+1,iSlice,iBand),~,pacfBounds(:,iSlice,iBand)] = ...
+                parcorr(data{iInput}{iBand}{iSlice},nLags);
         end
         
         % Bootstrap valid autocorrelation functions
-        validCorrFunSlices = sum(isnan(corrFun(:,:,iBand)),1)==0;
-        if sum(validCorrFunSlices)>2
-            [meanCC,CI] = correlationBootstrap(corrFun(:,validCorrFunSlices,iBand),...
-                bounds(1,validCorrFunSlices,iBand),p.nBoot,p.alpha);
-            bootstrapCorrFun(:,iBand)=meanCC;
-            bootstrapBounds(:,:,iBand)=CI;
+        validAcfSlices = sum(isnan(acf(:,:,iBand)),1)==0;
+        if sum(validAcfSlices)>2
+            [meanCC,CI] = correlationBootstrap(acf(:,validAcfSlices,iBand),...
+                acfBounds(1,validAcfSlices,iBand),p.nBoot,p.alpha);
+            bootstrapAcf(:,iBand)=meanCC;
+            bootstrapAcfBounds(:,:,iBand)=CI;
+        end
+        
+        % Bootstrap valid partial autocorrelation functions
+        validPacfSlices = sum(isnan(pacf(:,:,iBand)),1)==0;
+        if sum(validPacfSlices)>2  
+            [meanCC,CI] = correlationBootstrap(pacf(:,validPacfSlices,iBand),...
+                pacfBounds(1,validPacfSlices,iBand),p.nBoot,p.alpha);
+            bootstrapPacf(:,iBand)=meanCC;
+            bootstrapPacfBounds(:,:,iBand)=CI;
         end
         
         if ishandle(wtBar), waitbar(iBand/nBands(iInput),wtBar); end
     end
     
-    save(outFilePaths{iInput,iInput},'corrFun','bounds','lags',...
-        'bootstrapCorrFun','bootstrapBounds');  
+    save(outFilePaths{iInput,iInput},'lags','acf','acfBounds',...
+        'bootstrapAcf','bootstrapAcfBounds','pacf','pacfBounds',...
+        'bootstrapPacf','bootstrapPacfBounds');  
 end
 
-logMsg = @(i,j) ['Please wait, calculating ' input(i).name '/'...
-    input(j).name ' cross-correlation'];
+logMsg = @(i,j) ['Calculating ' input(i).name '/' input(j).name ' cross-correlation'];
 
 % Calculate cross-correlation
 lags =(-nLagsMax:nLagsMax)'*movieData.timeInterval_; %#ok<NASGU>
@@ -257,10 +274,10 @@ for iInput1=1:nInput
         disp(logMsg(iInput1,iInput2));
         
         % Initialize cross-correlation function and bounds
-        corrFun = NaN(2*nLagsMax+1,nSlices,nBands(iInput1),nBands(iInput2));
-        bounds  = NaN(2,nSlices,nBands(iInput1),nBands(iInput2));
-        bootstrapCorrFun=NaN(2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
-        bootstrapBounds=NaN(2,2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
+        ccf = NaN(2*nLagsMax+1,nSlices,nBands(iInput1),nBands(iInput2));
+        ccfBounds  = NaN(2,nSlices,nBands(iInput1),nBands(iInput2));
+        bootstrapCcf=NaN(2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
+        bootstrapCcfBounds=NaN(2,2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
         
         if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput1,iInput2)); end
         
@@ -280,25 +297,25 @@ for iInput1=1:nInput
                     % Retrieve number of lags from range intersection
                     [~,range1,range2] = intersect(range{iInput1}{iBand1}{iSlice},range{iInput2}{iBand2}{iSlice});
                     nLags = round(length(range1)/4);
-                    [corrFun(1:2*nLags+1,iSlice,iBand1,iBand2),~,bounds(:,iSlice,iBand1,iBand2)] =...
+                    [ccf(1:2*nLags+1,iSlice,iBand1,iBand2),~,ccfBounds(:,iSlice,iBand1,iBand2)] =...
                         crosscorr(data{iInput1}{iBand1}{iSlice}(range1),data{iInput2}{iBand2}{iSlice}(range2),nLags);
                 end
                 
                 % Bootstrap valid correlation functions
-                validCorrFunSlices = sum(isnan(corrFun(:,:,iBand1,iBand2)),1)==0;
-                if sum(validCorrFunSlices)>2
-                    [meanCC,CI] = correlationBootstrap(corrFun(:,validCorrFunSlices,iBand1,iBand2),...
-                        bounds(1,validCorrFunSlices,iBand1,iBand2),p.nBoot,p.alpha);
-                    bootstrapCorrFun(:,iBand1,iBand2)=meanCC;
-                    bootstrapBounds(:,:,iBand1,iBand2)=CI;
+                validCcfSlices = sum(isnan(ccf(:,:,iBand1,iBand2)),1)==0;
+                if sum(validCcfSlices)>2
+                    [meanCC,CI] = correlationBootstrap(ccf(:,validCcfSlices,iBand1,iBand2),...
+                        ccfBounds(1,validCcfSlices,iBand1,iBand2),p.nBoot,p.alpha);
+                    bootstrapCcf(:,iBand1,iBand2)=meanCC;
+                    bootstrapCcfBounds(:,:,iBand1,iBand2)=CI;
                 end   
                 
             end
             if ishandle(wtBar), waitbar(i1/numel(bands1),wtBar); end
         end
         
-        save(outFilePaths{iInput1,iInput2},'corrFun','bounds','lags',...
-        'bootstrapCorrFun','bootstrapBounds');
+        save(outFilePaths{iInput1,iInput2},'lags','ccf','ccfBounds',...
+        'bootstrapCcf','bootstrapCcfBounds');
     end
 end
 
