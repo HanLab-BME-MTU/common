@@ -1,5 +1,6 @@
 classdef  MovieData < MovieObject
-    % Movie management class used for generic processing
+    % Concrete implementation of MovieObject for a single movie
+    
     properties (SetAccess = protected)
         channels_ = [];         % Channel object array
         nFrames_                % Number of frames
@@ -7,9 +8,6 @@ classdef  MovieData < MovieObject
     end
     
     properties (AbortSet = true)
-        % User defined data
-        
-        % ---- Used params ----
         movieDataPath_          % The path where the movie data is saved
         movieDataFileName_      % The name under which the movie data is saved
         pixelSize_              % Pipxel size (nm)
@@ -144,29 +142,23 @@ classdef  MovieData < MovieObject
         
         
         %% Sanitycheck/relocation
-        function sanityCheck(obj, path, filename,askUser)
-            % 1. Sanity check (user input, input channels, image files)
-            % 2. Assignments to 4 properties:
-            %       movieDataPath_
-            %       movieDataFileName_
-            %       nFrames_
-            %       imSize_
-            % **NOTE**: The movieData will be saved to disk if the sanity check
-            % is successfully completed.
+        function sanityCheck(obj,varargin)
+            % Check the sanity of the MovieData objects
+            %
+            % First call the superclass sanityCheck. Then call the Channel
+            % objects sanityCheck, check image properties and set the 
+            % nFrames_ and imSize_ properties. 
+            % Save the movie to disk if run successfully
             
-            % Ask user by default for relocation
-            if nargin < 4, askUser = true; end
-            
-            % Call the superclass sanityCheck (for movie relocation)
-            if nargin>1
-                sanityCheck@MovieObject(obj, path, filename,askUser);
-            end
+            % Call the superclass sanityCheck
+            if nargin>1, sanityCheck@MovieObject(obj,varargin{:}); end
             
             % Initialize channels dimensions
             width = zeros(1, length(obj.channels_));
             height = zeros(1, length(obj.channels_));
             nFrames = zeros(1, length(obj.channels_));
             
+            % Call subcomponents sanityCheck
             for i = 1: length(obj.channels_)
                 [width(i) height(i) nFrames(i)] = obj.channels_(i).sanityCheck(obj);
             end
@@ -191,11 +183,13 @@ classdef  MovieData < MovieObject
             obj.save();
         end
         
-        function relocate(obj,newPath)
-            % Call superclass relocate method
-            [oldRootDir newRootDir]=relocate@MovieObject(obj,newPath);
+        function relocate(obj,varargin)
+            % Relocate the MovieData object
             
-            % Relocate channel paths
+            % Run superclass relocate method (movie path and analysis components)
+            [oldRootDir newRootDir]=relocate@MovieObject(obj,varargin{:});
+            
+            % Relocate the Channel objects
             for i=1:numel(obj.channels_),
                 obj.channels_(i).relocate(oldRootDir,newRootDir);
             end
@@ -208,7 +202,7 @@ classdef  MovieData < MovieObject
     end
     methods(Static)
         function status = checkProperty(property)
-            % Returns true/false if the non-empty property is writable
+            % Return true/false if the non-empty property is writable
             status = checkProperty@MovieObject(property);
             if any(strcmp(property,{'movieDataPath_','movieDataFileName_'}))
                 stack = dbstack;

@@ -1,10 +1,13 @@
 classdef  MovieObject < hgsetget
-    % Interface defining movie analyis tools
+    % Abstract interface defining the analyis tools for movie objects
+    % (movies, movie lists...)
+    
+    % Sebastien Besson, Jan 2012
     
     properties (SetAccess = protected)
-        createTime_             % Time movie object is created
-        processes_ = {};        % Process object cell array
-        packages_ = {};         % Package object cell array
+        createTime_             % Object creation time
+        processes_ = {};        % Cell array of process objects
+        packages_ = {};         % Cell array of process packaged
     end
     
     properties
@@ -15,6 +18,7 @@ classdef  MovieObject < hgsetget
     methods
         %% Set/get methods
         function set.outputDirectory_(obj, path)
+            % Set the ouput
             endingFilesepToken = [regexptranslate('escape',filesep) '$'];
             path = regexprep(path,endingFilesepToken,'');
             obj.checkPropertyValue('outputDirectory_',path);
@@ -44,18 +48,20 @@ classdef  MovieObject < hgsetget
         end
         
         function set.notes_(obj, value)
-            obj.checkPropertyValue('notes_',path);
+            obj.checkPropertyValue('notes_',value);
             obj.notes_=value;
         end
         
         
         %% Functions to manipulate process object array
         function addProcess(obj, newprocess)
+            % Add new process in process list
+            assert(isa(newprocess,'Process'));
             obj.processes_ = horzcat(obj.processes_, {newprocess});
         end
         
         function deleteProcess(obj, process)
-            % Delete and clear given process object in movie data's process array
+            % Delete given process object in process list
             %
             % Input:
             %        process - Process object or index of process to be
@@ -64,21 +70,16 @@ classdef  MovieObject < hgsetget
             % Check input
             if isa(process, 'Process')
                 pid = obj.getProcessIndex(process,1,Inf,false);
-                if isempty(pid)
-                    error('User-defined: The given process is not in current movie processes list.')
-                elseif length(pid) ~=1
-                    error('User-defined: More than one process of this type exists in movie processes list.')
-                end
-                
-                % Make sure process is a integer index
-            elseif ismember(process,1:numel(obj.processes_))
+                assert(~isempty(pid),'The given process is not in current movie processes list.')
+                assert(length(pid)==1,'More than one process of this type exists in movie processes list.')
+            elseif iscalar(process) && ismember(process,1:numel(obj.processes_))
                 pid = process;
             else
                 error('Please provide a Process object or a valid process index of movie data processes list.')
             end
             
-            % Unassociate process in corresponding packages
             if ~isempty(obj.processes_{pid})
+                % Unassociate process in corresponding packages
                 [packageID procID] = obj.processes_{pid}.getPackage;
                 if ~isempty(packageID)
                     for i=1:numel(packageID)
@@ -87,18 +88,19 @@ classdef  MovieObject < hgsetget
                 end
             end
             
-            % Delete and clear the process object
+            % Delete process object and remove it from the process list
             delete(obj.processes_{pid})
             obj.processes_(pid) = [ ];
         end
         
         function replaceProcess(obj, pid, newprocess)
+            % Replace process object by another in the analysis list
+            
             % Input check
             ip=inputParser;
-            ip.addRequired('obj');
             ip.addRequired('pid',@(x) isscalar(x) && ismember(x,1:numel(obj.processes_)) || isa(x,'Process'));
             ip.addRequired('newprocess',@(x) isa(x,'Process'));
-            ip.parse(obj, pid, newprocess);
+            ip.parse(pid, newprocess);
             
             % Retrieve process index if input is of process type
             if isa(pid, 'Process')
@@ -106,14 +108,14 @@ classdef  MovieObject < hgsetget
                 assert(isscalar(pid))
             end
             
-            % Check new process is compatible with the parent package
             [packageID procID] = obj.processes_{pid}.getPackage;
             if ~isempty(packageID)
+                % Check new process is compatible with the parent package
                 for i=1:numel(packageID)
                     checkNewProcClass = isa(newprocess,...
                         obj.packages_{packageID(i)}.getProcessClassNames{procID(i)});
                     if ~checkNewProcClass
-                        error('Package compatibility prevents process replacement');
+                        error('Package class compatibility prevents process process replacement');
                     end
                 end
             end
@@ -123,6 +125,7 @@ classdef  MovieObject < hgsetget
             obj.processes_{pid} = newprocess;
             delete(oldprocess);
             if ~isempty(packageID),
+                % Associate new process in parent pacakge
                 for i=1:numel(packageID)
                     obj.packages_{packageID(i)}.setProcess(procID(i),newprocess);
                 end
@@ -161,9 +164,7 @@ classdef  MovieObject < hgsetget
                     'ListSize',[400,400],...
                     'PromptString',['Select the desired ' procName ':']);
                 iProc = iProc(iSelected);
-                if isempty(iProc)
-                    error('You must select a process to continue!');
-                end
+                assert(~isempty(iProc),'You must select a process to continue!');
             else
                 warning('lccb:process',['More than ' num2str(nDesired) ' ' ...
                     procName 'es were found! Returning most recent process(es)!'])
@@ -173,22 +174,20 @@ classdef  MovieObject < hgsetget
         
         %% Functions to manipulate package object array
         function addPackage(obj, newpackage)
-            % Add a package to the packages_ array
+            % Add package object to the package list
+            assert(isa(newprocess,'Package'));
             obj.packages_ = horzcat(obj.packages_ , {newpackage});
         end
         
         function deletePackage(obj, package)
+            % Remove package object from the package list
+            
             % Check input
             if isa(package, 'Package')
                 pid = find(cellfun(@(x)isequal(x, package), obj.packages_));
-                if isempty(pid)
-                    error('User-defined: The given package is not in current movie processes list.')
-                elseif length(pid) ~=1
-                    error('User-defined: More than one process of this type exists in movie processes list.')
-                end
-                
-                % Make sure process is a integer index
-            elseif ismember(package,1:numel(obj.packages_))
+                assert(~isempty(pid),'The given package is not in current movie packages list.')
+                assert(length(pid)==1,'More than one package of this type exists in movie packages list.')
+            elseif iscalar(package) && ismember(package,1:numel(obj.packages_))
                 pid = package;
             else
                 error('Please provide a Package object or a valid package index of movie data processes list.')
@@ -200,11 +199,13 @@ classdef  MovieObject < hgsetget
         end
         
         %% Miscellaneous functions
-        
-        function [askUser,relocateFlag] = sanityCheck(obj, path, filename,askUser)
+        function askUser = sanityCheck(obj, path, filename,askUser)
+            % Check sanity of movie object
+            %
             % Check if the path and filename stored in the movie object are
-            % the same as the ones provided in argument. They can differ if
-            % the MAT file has been renamed or moved to another location.
+            % the same as the input if any. If they differ, call the
+            % movie object relocation routine. Use a dialog interface to ask
+            % for relocation if askUser is set as true and return askUser.
             
             if nargin < 4, askUser = true; end
             if nargin > 1
@@ -212,50 +213,46 @@ classdef  MovieObject < hgsetget
                 endingFilesepToken = [regexptranslate('escape',filesep) '$'];
                 oldPath = regexprep(obj.getPath(),endingFilesepToken,'');
                 newPath = regexprep(path,endingFilesepToken,'');
+                
+                % If different path
                 if ~strcmp(oldPath, newPath)
+                    confirmRelocate = 'Yes to all';
                     if askUser
                         objName = regexprep(class(obj),'([A-Z])',' ${lower($1)}');
                         relocateMsg=sprintf(['The' objName ' located in \n%s\n has been relocated to \n%s.\n'...
                             'Should I try to relocate the components of the' objName ' as well?'],oldPath,newPath);
                         confirmRelocate = questdlg(relocateMsg,['Relocation -' objName],'Yes to all','Yes','No','Yes');
-                    else
-                        confirmRelocate = 'Yes to all';
                     end
                     
-                    % Relocate
-                    relocateFlag = ~strcmp(confirmRelocate,'No');
-                    if relocateFlag
-                        obj.relocate(path);
-                        askUser = strcmp(confirmRelocate,'Yes');
+                    if ~strcmp(confirmRelocate,'No')
+                        obj.relocate(path); % Call the relocate method
+                        askUser = strcmp(confirmRelocate,'Yes'); % Update the askUser flag
                     else
-                        obj.setPath(path);
+                        obj.setPath(path); % Set the new path
                     end
                 end
-                obj.setFilename(filename);
             end
+            if nargin > 2, obj.setFilename(filename); end
         end
         
         function [oldRootDir newRootDir]=relocate(obj,newPath)
-            % Relocate all paths of the movie object
+            % Relocate all analysis paths of the movie object
             %
-            % This function automatically relocates the output directory,
-            % processes and package paths assuming the internal
-            % architecture of the  project is conserved.
+            % The relocate method automatically relocates the output directory,
+            % as well as the paths in each process and package of the movie
+            % assuming the internal architecture of the  project is conserved.
             
             [oldRootDir newRootDir]=getRelocationDirs(obj.getPath,newPath);
             
+            % Relocate output directory and set the ne movie path
             obj.outputDirectory_=relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
             obj.setPath(newPath);
             
-            % Relocate paths in processes input/output as well as function
-            % and visual parameters
-            for i=1:numel(obj.processes_),
-                obj.processes_{i}.relocate(oldRootDir,newRootDir);
-            end
+            % Relocate the processes
+            for i=1:numel(obj.processes_), obj.processes_{i}.relocate(oldRootDir,newRootDir); end
             
-            for i=1:numel(obj.packages_),
-                obj.packages_{i}.relocate(oldRootDir,newRootDir);
-            end
+            % Relocate the packages
+            for i=1:numel(obj.packages_), obj.packages_{i}.relocate(oldRootDir,newRootDir); end
         end
         
         function flag = save(obj)
@@ -311,17 +308,17 @@ classdef  MovieObject < hgsetget
         end
         
         function reset(obj)
-            % Reset the movieObject
+            % Reset the analysis of the movie object
             obj.processes_={};
             obj.packages_={};
         end
         
     end
     methods (Abstract)
-        getPath(obj)
-        getFilename(obj)
-        setPath(obj,path)
-        setFilename(obj,filename)
+        getPath(obj) % Get the path of the movie object
+        getFilename(obj) % Get the file name of the movie object
+        setPath(obj,path) % Set the path of the movie object
+        setFilename(obj,filename) % Set the file name of the movie object
     end
     methods(Static)
         function status = checkProperty(property)
@@ -338,16 +335,15 @@ classdef  MovieObject < hgsetget
             end
         end
         
-        
-        
         function obj = load(moviepath,varargin)
-            % Load a movie object stored in a mat file
+            % Load a movie object from a path
             
-            % Check the path is a valid Mat file
-            assert(exist(moviepath, 'file')==2,'lccb:movieObject:load', 'File does not exist.');
+            % Check the path is a valid file
+            assert(logical(exist(moviepath, 'file')==2),'lccb:movieObject:load', 'File does not exist.');
             
-            if strcmpi(moviepath(end-3:end),'.mat')
+            if strcmpi(moviepath(end-3:end),'.mat') % Import movie object from MAT file
                 try
+                    % List variables in the path
                     vars = whos('-file',moviepath);
                 catch ME
                     ME2 = MException('lccb:movieObject:load', 'Fail to open file. Make sure it is a MAT file.');
@@ -355,26 +351,23 @@ classdef  MovieObject < hgsetget
                     throw(ME);
                 end
                 
-                % Check if a movie object is part of the v
+                % Check if a single movie object is in the variables
                 isMovie = cellfun(@(x) any(strcmp(superclasses(x),'MovieObject')),{vars.class});
-                if ~any(isMovie)
-                    error('lccb:movieObject:load', ...
-                        'No movie object is found in selected MAT file.');
-                end
-                if sum(isMovie)>1
-                    error('lccb:movieObject:load', ...
-                        'Multiple movie objects are found in selected MAT file.');
-                end
+                assert(any(isMovie),'lccb:movieObject:load', ...
+                    'No movie object is found in selected MAT file.');
+                assert(sum(isMovie)==1,'lccb:movieObject:load', ...
+                    'Multiple movie objects are found in selected MAT file.');
                 
+                % Load movie object
                 data = load(moviepath,'-mat',vars(isMovie).name);
                 obj= data.(vars(isMovie).name);
                 
+                % Perform sanityCheck using the input path
                 [moviePath,movieName,movieExt]=fileparts(moviepath);
                 obj.sanityCheck(moviePath,[movieName movieExt],varargin{:});
-            else
+            else % Assume proprietary file - use Bioformats library
                 obj=bfImport(moviepath,varargin{:});
             end
         end
-        
     end
 end

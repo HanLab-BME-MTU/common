@@ -1,13 +1,10 @@
 classdef MovieList < MovieObject
-    % MovieList
-    % A class to handle a list of MovieData objects
+    % Concrete implementation of MovieObject for a list of movies
     
     properties (SetAccess = protected, GetAccess = public)
-        
         movieDataFile_       % Cell array of movie data's directory
         movieListPath_       % The path where the movie list is saved
-        movieListFileName_   % The name under which the movie list is saved
-        
+        movieListFileName_   % The name under which the movie list is saved 
     end
     properties(Transient = true);
         movies_              % Cell array of movies
@@ -40,12 +37,11 @@ classdef MovieList < MovieObject
                     end
                 end
                 obj.createTime_ = clock;
-                
             end
         end
         
         
-        %% Set/get methods
+        %%  Set/get methods
         function path = getPath(obj)
             path = obj.movieListPath_;
         end
@@ -55,7 +51,7 @@ classdef MovieList < MovieObject
         end
         
         function set.movieListPath_(obj, path)
-            % Format the path
+            % Set movie list path
             endingFilesepToken = [regexptranslate('escape',filesep) '$'];
             path = regexprep(path,endingFilesepToken,'');
             obj.checkPropertyValue('movieListPath_',path);
@@ -74,46 +70,36 @@ classdef MovieList < MovieObject
             obj.checkPropertyValue('movieListFileName_',filename);
             obj.movieListFileName_ = filename;
         end
-        
-        
-        
-        %% Set/get methods
-        function movies = getMovies(obj,index)
-            % Retrieve the movies from a movie list
+               
+        function movies = getMovies(obj,varargin)
+            % Get the movies from a movie list
             
-            if nargin<2 || isempty(index), index = 1:numel(obj.movieDataFile_); end
+            ip =inputParser;
+            allIndex = 1:numel(obj.movieDataFile_);
+            ip.addOptional('index',allIndex,@(x) all(ismember(x,allIndex)));
+            ip.parse(varargin{:});
+            index= ip.Results.index;
+            
             movies = cell(numel(index),1);
-            for i=index
-                movies{i} = MovieData.load(obj.movieDataFile_{i});
-            end
+            for i=index, movies{i} = MovieData.load(obj.movieDataFile_{i}); end
         end
-        
-        
-        
-        %% Sanitycheck/relocation
-        function movieException = sanityCheck(obj, path, filename,askUser)
-            % Sanity Check: (Exception 1 - 4)   throws EXCEPTION!
-            %
-            % ML.sanityCheck
-            % ML.sanityCheck(movieListPath, movieListFileName)
-            %
-            % Assignments:
-            %       movieListPath_
-            %       movieListFileName_
-            %
-            % Output:
-            %       movieException - cell array of exceptions corresponding to
-            %       user index
             
+        %% Sanity check/relocation
+        function movieException = sanityCheck(obj, varargin)
+            % Check the sanity of the MovieData objects
+            %
+            % First call the superclass sanityCheck. Then load the individual 
+            % movies in the list (runs sanityCheck on each movie).
+            % Save the movie list to disk if run successfully.
             
-            % Ask user by default for relocation
-            if nargin < 4, askUser = true; end
-            % Calls the superclass sanityCheck (for relocation)
-            if nargin>1
-                askUser = sanityCheck@MovieObject(obj, path, filename,askUser);
+            % Call the superclass sanityCheck
+            if nargin>1, 
+                askUser = sanityCheck@MovieObject(obj, varargin{:});
+            else
+                askUser = true;
             end
             
-            % Apply sanityCheck to all components
+            % Load movie components (run sanityCheck on each of them)
             movieIndex = 1:numel(obj.movieDataFile_);
             movieException = cell(1, numel(movieIndex));
             for i = movieIndex
@@ -125,7 +111,7 @@ classdef MovieList < MovieObject
                 end
             end
             
-            % Concatenate and throw exceptions if movie loading failed
+            % Throw exception if at least one movie failed during loading
             if ~all(cellfun(@isempty,movieException)),
                 ME = MException('lccb:ml:sanitycheck','Failed to load movie(s)');
                 for i=find(~cellfun(@isempty,movieException));
@@ -134,74 +120,26 @@ classdef MovieList < MovieObject
                 throw(ME);
             end
             
-            % Save object
             obj.save();
         end
         
-        function relocate(obj,newPath)
-            % Call superclass relocate function
-            [oldRootDir newRootDir]=relocate@MovieObject(obj,newPath);
+        function relocate(obj,varargin)
+            % Relocate the MovieList object
             
-            % Update movie paths
+            % Run superclass relocate function (movie list path and analysis components)
+            [oldRootDir newRootDir]=relocate@MovieObject(obj,varargin{:});
+            
+            % Relocate movie paths
             for i=1:numel(obj.movieDataFile_);
                 obj.movieDataFile_{i} = relocatePath(obj.movieDataFile_{i},oldRootDir,newRootDir);
             end
         end
-        
-        %SB: I am not sure we want to modify the movies list dynamically
-        %now we associate packages/processes to a given list (cf MovieData)
-%         function removeMovieDataFile(obj, index)
-%             % Input:
-%             %    index - the index of moviedata to remove from list
-%             l = length(obj.movieDataFile_);
-%             if any(arrayfun(@(x)(x>l), index, 'UniformOutput', true))
-%                 error('User-defined: Index exceeds the length of movie data file.')
-%             else
-%                 obj.movieDataFile_(index) = [];
-%             end
-%         end
-%         
-%         function addMovieDataFile (obj, movie)
-%             % Input:
-%             %    movie - an array of MovieData objects
-%             %            an array of MovieList objects
-%             
-%             assert( ~iscell(movie), 'User-defined: input cannot be a cell array. It should be a MovieData or MovieList object array.')
-%             
-%             % Check input data type
-%             temp = arrayfun(@(x)(isa(x, 'MovieData')||isa(x, 'MovieList')), movie, 'UniformOutput', true);
-%             assert( all(temp), 'User-defined: Input should be a MovieData or MovieList object array')
-%             
-%             % If no duplicate, add movie data path to MovieList object
-%             if isa(movie(1), 'MovieData')
-%                 
-%                 for i = 1:length(movie)
-%                     
-%                     if ~any(strcmp(obj.movieDataFile_, [movie(i).getPath()  movie(i).getFilename()]))
-%                         obj.movieDataFile_{end+1} = [movie(i).getPath()  movie(i).getFilename()];
-%                     end
-%                 end
-%                 
-%             else % MovieList array
-%                 for i = 1:length(movie)
-%                     
-%                     exist = obj.movieDataFile_;
-%                     new = movie(i).movieDataFile_;
-%                     % temp(0-1 array): 1 - duplicate, 0 - not duplicate
-%                     temp = cellfun(@(z)any(z), cellfun(@(x)strcmp(x, exist), new, 'UniformOutput', false), 'UniformOutput', true);
-%                     
-%                     obj.movieDataFile_ = [obj.movieDataFile_ movie(i).movieDataFile_];
-%                 end
-%             end
-%         end
-        
-        
     end
     
     methods(Static)
         
         function status = checkProperty(property)
-            % Returns true/false if the non-empty property is writable
+            % Return true/false if the non-empty property is writable
             status = checkProperty@MovieObject(property);
             if any(strcmp(property,{'movieListPath_','movieListFileName_'}))
                 stack = dbstack;

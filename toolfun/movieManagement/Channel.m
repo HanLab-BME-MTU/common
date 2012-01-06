@@ -1,31 +1,28 @@
 classdef Channel < hgsetget
     %  Class definition of channel class    
+    
     properties
-        
-        % ---- Used Image Parameters ---- %
         excitationWavelength_       % Excitation wavelength (nm)
         emissionWavelength_         % Emission wavelength (nm)
         exposureTime_               % Exposure time (ms)
         imageType_                  % e.g. Widefield, TIRF, Confocal etc.
+         fluorophore_=''               % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
         
         % ---- Un-used params ---- %
-        
         excitationType_             % Excitation type (e.g. Xenon or Mercury Lamp, Laser, etc)
         neutralDensityFilter_       % Neutral Density Filter
         incidentAngle_              % Incident Angle - for TIRF (degrees)
         filterType_                 % Filter Type
-        fluorophore_=''               % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
-        
     end
     
     properties(SetAccess=protected)
-        psfSigma_                   % standard deviation of the psf
+        psfSigma_                   % Standard deviation of the psf
         channelPath_                % Channel path (directory containing image(s))
         owner_                      % MovieData object which owns this channel
     end
     
     properties(Transient=true)
-        displayMethod_  = ImageDisplay;
+        displayMethod_  = ImageDisplay; % Method to display the object content
         fileNames_;
     end
     
@@ -53,8 +50,7 @@ classdef Channel < hgsetget
             end
         end
         
-        % ------- Set / Get Methods ----- %
-        
+        %% Set / Get Methods 
         function set.channelPath_(obj,value)
             obj.checkPropertyValue('channelPath_',value);
             obj.channelPath_=value;
@@ -110,10 +106,9 @@ classdef Channel < hgsetget
         end
         
         function relocate(obj,oldRootDir,newRootDir)
+            % Relocate location of the  channel object
             
-            % Relocate channel path
             obj.channelPath_=  relocatePath(obj.channelPath_,oldRootDir,newRootDir);
-            
         end
         
         function checkPropertyValue(obj,property, value)
@@ -140,42 +135,38 @@ classdef Channel < hgsetget
         %properties of the channel
         
         function [width height nFrames] = sanityCheck(obj,varargin)
+            % Check the sanity of the channels
+            %
             % Check the validity of each channel and return pixel size and time
             % interval parameters
             
             % Check input
             ip = inputParser;
-            ip.addRequired('obj',@(x) isa(x,'Channel'));
             ip.addOptional('owner',obj.owner_,@(x) isa(x,'MovieData'));
-            ip.parse(obj,varargin{:})
+            ip.parse(varargin{:})
+            
+            % Set the channel owner
             obj.owner_=ip.Results.owner;
             
-            if exist(obj.channelPath_, 'file')==2 % Use bioformat-tools
-                % Get dataset reader, retrieve metadata and close reader
+            if exist(obj.channelPath_, 'file')==2 
+                % Using bioformat-tools, get metadata 
                 r=bfGetReader(obj.channelPath_,false);
                 width = r.getSizeX;
                 height = r.getSizeY;
                 nFrames = r.getSizeT;
                 r.close;               
             else
-                % Exception: channel path does not exist
+                % Check channel path existence
                 assert(logical(exist(obj.channelPath_, 'dir')), ...
                     'Channel path specified is not a valid directory! Please double check the channel path!')
                 
                 % Check the number of file extensions
                 [fileNames nofExt] = imDir(obj.channelPath_,true);
-                switch nofExt
-                    case 0
-                        % Exception: No proper image files are detected
-                        error('No proper image files are detected in:\n\n%s\n\nValid image file extension: tif, TIF, STK, bmp, BMP, jpg, JPG.',obj.channelPath_);
-                        
-                    case 1
-                        nFrames = length(fileNames);
-                    otherwise
-                        % Exception: More than one type of image
-                        % files are in the current specific channel
-                        error('More than one type of image files are found in:\n\n%s\n\nPlease make sure all images are of same type.', obj.channelPath_);
-                end
+                assert(nofExt~=0,['No proper image files are detected in:'...
+                    '\n\n%s\n\nValid image file extension: tif, TIF, STK, bmp, BMP, jpg, JPG.'],obj.channelPath_);
+                assert(nofExt==1,['More than one type of image files are found in:'...
+                    '\n\n%s\n\nPlease make sure all images are of same type.'],obj.channelPath_);
+                nFrames = length(fileNames);
                 
                 % Check the consistency of image size in current channel
                 imInfo = arrayfun(@(x)imfinfo([obj.channelPath_ filesep x.name]),...
@@ -183,18 +174,14 @@ classdef Channel < hgsetget
                 width = unique(cellfun(@(x)(x.Width), imInfo));
                 height = unique(cellfun(@(x)(x.Height), imInfo));
                 
-                % Exception: Image sizes are inconsistent in the
-                % current channel.
+                % Check unicity of image sizes
                 assert(isscalar(width) && isscalar(height),...
                     ['Image sizes are inconsistent in: \n\n%s\n\n'...
                     'Please make sure all the images have the same size.'],obj.channelPath_);
                 obj.fileNames_ = arrayfun(@(x) x.name,fileNames,'UniformOutput',false);
             end
             
-            if isempty(obj.psfSigma_) && ~isempty(obj.owner_)
-                obj.calculatePSFSigma();
-            end
-            
+            if isempty(obj.psfSigma_) && ~isempty(obj.owner_), obj.calculatePSFSigma(); end
         end
         
         function fileNames = getImageFileNames(obj,iFrame)
@@ -204,23 +191,20 @@ classdef Channel < hgsetget
                 fileNames = arrayfun(@(x) x.name,imDir(obj.channelPath_),...
                     'UniformOutput',false);
             end
-            if nargin>1
-                fileNames=fileNames{iFrame};
-            end
+            if nargin>1, fileNames=fileNames(iFrame); end
         end
         
         function I = loadImage(obj,iFrame)      
             I=zeros([obj.owner_.imSize_ numel(iFrame)]);
-            if exist(obj.channelPath_, 'file')==2  % Use bioformat tools
-     
-                % Get the reader and retrieve dimension order
+            if exist(obj.channelPath_, 'file')==2  
+                % Using bioformat tools, get the reader and retrieve dimension order
                 r=bfGetReader(obj.channelPath_,false);
                 metadata=r.getMetadataStore;
                 dimensionOrder =char(metadata.getPixelsDimensionOrder(0));
                 CZTOrder = dimensionOrder(3:end);
                 CZTdimensions = arrayfun(@(x) metadata.(['getPixelsSize' x])(0).getValue,CZTOrder);
                 
-                % Get channel index, fill multi-dimensional plane index and
+                % Get channel index, create multi-dimensional plane index and
                 % convert into linear plane index
                 chanIndex= find(obj.owner_.channels_==obj);
                 index(CZTOrder=='C',:)=chanIndex*ones(numel(iFrame),1);
@@ -228,15 +212,18 @@ classdef Channel < hgsetget
                 index(CZTOrder=='T',:)=iFrame;
                 iPlane = sub2ind(CZTdimensions,index(1,:),index(2,:),index(3,:));
                 
-                % Get all planes and close reader
+                % Get all requrested planes and close reader
                 for i=1:numel(iPlane), I(:,:,i) =double(bfGetPlane(r,iPlane(i))); end
                 r.close;
-
             else
                 % Read images from disk
-                if isempty(obj.fileNames_), obj.sanityCheck(); end
+                if ~isempty(obj.fileNames_), 
+                    fileNames=obj.fileNames_(iFrame);
+                else
+                    fileNames=obj.getImageFileNames(iFrame);
+                end
                 for i=1:numel(iFrame)
-                    I(:,:,i)  = double(imread([obj.channelPath_ filesep obj.fileNames_{iFrame(i)}]));
+                    I(:,:,i)  = double(imread([obj.channelPath_ filesep fileNames{i}]));
                 end
             end
         end
