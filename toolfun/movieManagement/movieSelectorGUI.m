@@ -396,7 +396,7 @@ end
 
 if isempty(userData.ML)
     movieListPath = [userData.userDir filesep];
-    movieListFileName = 'movieDataList.mat';
+    movieListFileName = 'movieList.mat';
 else
     movieListPath = userData.ML(end).movieListPath_;
     movieListFileName = userData.ML(end).movieListFileName_;

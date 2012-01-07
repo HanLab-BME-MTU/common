@@ -110,6 +110,7 @@ else
     set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
     set(handles.listbox_thresholdValues, 'String', num2cell(funParams.ThresholdValue));
     userData.thresholdValue=funParams.ThresholdValue(1);
+    set(handles.slider_threshold, 'Value',funParams.ThresholdValue(1))
 end
 
 % Initialize the frame number slider and eidt
