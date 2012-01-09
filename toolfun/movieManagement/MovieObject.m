@@ -295,6 +295,16 @@ classdef  MovieObject < hgsetget
                 copyfile(fullPath,[fullPath(1:end-3) 'old']);
             end
             
+            if isa(obj,'MovieData')
+                MD=obj; %#ok<NASGU>
+                    save(fullPath,'MD');
+            elseif isa(obj,'MovieList')
+                ML=obj; %#ok<NASGU>
+                    save(fullPath,'ML');
+            else
+                error('Unsupported MovieObject!')
+            end            
+            
             switch (movieClass)
                 case 'MovieData'
                     MD=obj; %#ok<NASGU>

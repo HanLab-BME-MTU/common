@@ -46,6 +46,10 @@ function makeMovieMovie(movieData,varargin)
 %       movie as.
 %       Optional. Default is "activityMovie"
 %
+%       ('AxesHandle' -> scalar axis handle) Specifies the axes handle to
+%       display the images on. The size of these axes will determine the
+%       size of the output movie.
+%
 %       ('MakeAvi' -> Logical scalar) If true, the movie will be saved as .avi.
 %       Optional. Default is false.
 %

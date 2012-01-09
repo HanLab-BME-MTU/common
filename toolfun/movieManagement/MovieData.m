@@ -206,7 +206,8 @@ classdef  MovieData < MovieObject
             status = checkProperty@MovieObject(property);
             if any(strcmp(property,{'movieDataPath_','movieDataFileName_'}))
                 stack = dbstack;
-                if any(cellfun(@(x)strcmp(x,'MovieData.sanityCheck'),{stack.name})),
+                if any(cellfun(@(x)strcmp(x,'MovieData.sanityCheck'),{stack.name})) || ...
+                        any(cellfun(@(x)strcmp(x,'MovieData3D.sanityCheck'),{stack.name}))
                     status  =true;
                 end
             end

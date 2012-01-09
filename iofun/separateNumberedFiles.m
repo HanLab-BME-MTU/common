@@ -1,4 +1,4 @@
-function OK = separateNumberedFiles(parentDir,numString,nameString)
+function separateNumberedFiles(parentDir,numString,nameString,dryRun)
 %SEPARATENUMBEREDFILES separates numbered files into their own numbered directories
 % 
 % separateNumberedFiles(parentDir,numString)
@@ -51,10 +51,10 @@ function OK = separateNumberedFiles(parentDir,numString,nameString)
 %   goes. Optional. If not input, the folders will be named based on the
 %   numString input.
 %
-% Output:
-%
-%   OK - True if all files were successfully separated, false otherwise.
-%
+%   dryRun - Use to test prior to actually moving files. If true, no files
+%   will be copied, but the list of what would have been moved will still
+%   be displayed.
+%   Optional. Default is false.
 %
 % Hunter Elliott
 % 11/2010
@@ -82,6 +82,10 @@ if nargin < 3 || isempty(nameString)
     nameString = numString;
 elseif isempty(regexp(nameString,ns,'ONCE')) || numel(regexp(nameString,ns)) > 1
     error('The nameString input must contain exactly one # character!')
+end
+
+if nargin < 4 || isempty(dryRun)
+    dryRun = false;
 end
 
 %% --------- Init --------- %%
@@ -147,21 +151,28 @@ for j = 1:nDir
     
     %Create this directory
     dirName = regexprep(nameString,'#',num2str(dirNums(j)));    
-    mkdir([parentDir filesep dirName])
+    
+    if ~dryRun
+        mkdir([parentDir filesep dirName])
+    end
     
     iThisDir = find(fileNumbers == dirNums(j));
     nFiles = numel(iThisDir);
     
-    disp(['Moving ' num2str(nFiles) ' files into directory "' dirName '"'])
-    
-    for k = 1:nFiles
+    if ~dryRun
         
-        movefile([parentDir filesep fileNames(iThisDir(k)).name],...
-             [parentDir filesep dirName filesep fileNames(iThisDir(k)).name]);
-        
-        
-    end 
-    
+        disp(['Moving ' num2str(nFiles) ' files into directory "' dirName '"'])
+
+        for k = 1:nFiles
+
+            movefile([parentDir filesep fileNames(iThisDir(k)).name],...
+                 [parentDir filesep dirName filesep fileNames(iThisDir(k)).name]);
+
+
+        end 
+    else
+        disp(['Dry run, not doing anything. Would have moved ' num2str(nFiles) ' files into directory "' dirName '"'])        
+    end
 end
 
 
