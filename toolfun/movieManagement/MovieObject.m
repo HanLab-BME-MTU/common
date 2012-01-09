@@ -175,7 +175,7 @@ classdef  MovieObject < hgsetget
         %% Functions to manipulate package object array
         function addPackage(obj, newpackage)
             % Add package object to the package list
-            assert(isa(newprocess,'Package'));
+            assert(isa(newpackage,'Package'));
             obj.packages_ = horzcat(obj.packages_ , {newpackage});
         end
         
