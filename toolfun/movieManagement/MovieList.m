@@ -1,10 +1,12 @@
 classdef MovieList < MovieObject
     % Concrete implementation of MovieObject for a list of movies
     
-    properties (SetAccess = protected, GetAccess = public)
-        movieDataFile_       % Cell array of movie data's directory
+    properties
+        movieListFileName_   % The name under which the movie list is saved
         movieListPath_       % The path where the movie list is saved
-        movieListFileName_   % The name under which the movie list is saved 
+    end
+    properties (SetAccess = protected)
+        movieDataFile_       % Cell array of movie data's directory
     end
     properties(Transient = true);
         movies_              % Cell array of movies
@@ -16,13 +18,12 @@ classdef MovieList < MovieObject
             
             if nargin > 0
                 if iscellstr(movies)
-                    if size(movies, 2) >= size(movies, 1)
-                        obj.movieDataFile_ = movies;
-                    else
-                        obj.movieDataFile_ = movies';
-                    end
+                    obj.movieDataFile_ = movies(:)';
+                elseif iscell(movies) && all(cellfun(@(x)isa(x,'MovieData'),movies))
+                    obj.movieDataFile_ = cellfun(@(x) fullfile(x.getPath,x.getFilename),...
+                        movies,'UniformOutput',false);
                 elseif isa(movies, 'MovieData')
-                    obj.movieDataFile_ = arrayfun(@(x) [x.getPath filesep x.getFilename],...
+                    obj.movieDataFile_ = arrayfun(@(x) fullfile(x.getPath,x.getFilename),...
                         movies,'UniformOutput',false);
                 else
                     error('lccb:ml:constructor','Movies should be a cell array or a array of MovieData');
@@ -42,28 +43,13 @@ classdef MovieList < MovieObject
         
         
         %%  Set/get methods
-        function path = getPath(obj)
-            path = obj.movieListPath_;
-        end
-        
-        function setPath(obj, value)
-            obj.movieListPath_ = value;
-        end
-        
+
         function set.movieListPath_(obj, path)
             % Set movie list path
             endingFilesepToken = [regexptranslate('escape',filesep) '$'];
             path = regexprep(path,endingFilesepToken,'');
             obj.checkPropertyValue('movieListPath_',path);
             obj.movieListPath_ = path;
-        end
-        
-        function path = getFilename(obj)
-            path = obj.movieListFileName_;
-        end
-        
-        function setFilename(obj, filename)
-            obj.movieListFileName_ = filename;
         end
         
         function set.movieListFileName_(obj, filename)
@@ -138,33 +124,42 @@ classdef MovieList < MovieObject
     
     methods(Static)
         
-        function status = checkProperty(property)
-            % Return true/false if the non-empty property is writable
-            status = checkProperty@MovieObject(property);
-            if any(strcmp(property,{'movieListPath_','movieListFileName_'}))
-                stack = dbstack;
-                if any(cellfun(@(x)strcmp(x,'MovieList.sanityCheck'),{stack.name})),
-                    status  = true;
-                end
+         function status=checkValue(property,value)
+           % Return true/false if the value for a given property is valid
+            
+           % Parse input
+           ip = inputParser;
+           ip.addRequired('property',@(x) ischar(x) || iscell(x));
+           ip.parse(property);
+           if iscell(property)
+               ip.addRequired('value',@(x) iscell(x)&&isequal(size(x),size(property)));
+               ip.parse(property,value);
+               status=cellfun(@(x,y) MovieList.checkValue(x,y),property,value);
+               return
+           end
+           
+           % Get validator for single property
+           validator=MovieList.getPropertyValidator(property);
+           propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
+           assert(~isempty(validator),['No validator defined for property ' propName]);
+           
+           % Return result of validation
+           status = isempty(value) || validator(value);
+        end
+        
+        function validator = getPropertyValidator(property) 
+            validator = getPropertyValidator@MovieObject(property);
+            if ~isempty(validator), return; end
+            if ismember(property, {'movieListPath_','movieListFileName_'})
+                validator=@ischar;
             end
         end
         
-        % SB: note outputDirectory_ and notes_ should be abstracted to
-        % the MovieObject interface but I haven't found a cleanb way to
-        % achieve that.
-        function status=checkValue(property,value)
-            % Return true/false if the value for a given property is valid
-            
-            if iscell(property)
-                status=cellfun(@(x,y) MovieList.checkValue(x,y),property,value);
-                return
-            end
-            
-            switch property
-                case {'movieListPath_','movieListFileName_','outputDirectory_','notes_'}
-                    checkTest=@ischar;
-            end
-            status = isempty(value) || checkTest(value);
+        function propName = getPathProperty()
+            propName = 'movieListPath_';
+        end
+        function propName = getFilenameProperty()
+            propName = 'movieListFileName_';
         end
     end
 end

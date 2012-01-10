@@ -7,7 +7,7 @@ classdef  MovieData < MovieObject
         imSize_                 % Image size 1x2 array[height width]
     end
     
-    properties (AbortSet = true)
+    properties
         movieDataPath_          % The path where the movie data is saved
         movieDataFileName_      % The name under which the movie data is saved
         pixelSize_              % Pipxel size (nm)
@@ -49,15 +49,8 @@ classdef  MovieData < MovieObject
             end
         end
         
-        %% Path/filename set/get methods
-        function path = getPath(obj)
-            path = obj.movieDataPath_;
-        end
-        
-        function setPath(obj, path)
-            obj.movieDataPath_ = path;
-        end
-        
+
+        %% MovieData specific set/get methods
         function set.movieDataPath_(obj, path)
             % Format the path
             endingFilesepToken = [regexptranslate('escape',filesep) '$'];
@@ -66,21 +59,11 @@ classdef  MovieData < MovieObject
             obj.movieDataPath_=path;
         end
         
-        function path = getFilename(obj)
-            path = obj.movieDataFileName_;
-        end
-        
-        function setFilename(obj, filename)
-            obj.movieDataFileName_ = filename;
-        end
-        
         function set.movieDataFileName_(obj, filename)
             obj.checkPropertyValue('movieDataFileName_',filename);
             obj.movieDataFileName_=filename;
         end
         
-        
-        %% MovieData set/Get methods
         function set.channels_(obj, value)
             obj.checkPropertyValue('channels_',value);
             obj.channels_=value;
@@ -138,8 +121,7 @@ classdef  MovieData < MovieObject
             
             chanPaths = arrayfun(@(x)obj.channels_(x).channelPath_,iChan,...
                 'UniformOutput',false);
-        end
-        
+        end  
         
         %% Sanitycheck/relocation
         function sanityCheck(obj,varargin)
@@ -186,7 +168,7 @@ classdef  MovieData < MovieObject
         function relocate(obj,varargin)
             % Relocate the MovieData object
             
-            % Run superclass relocate method (movie path and analysis components)
+            % Run superclass relocate method (for movie path and analysis components)
             [oldRootDir newRootDir]=relocate@MovieObject(obj,varargin{:});
             
             % Relocate the Channel objects
@@ -200,41 +182,52 @@ classdef  MovieData < MovieObject
         end
         
     end
-    methods(Static)
-        function status = checkProperty(property)
-            % Return true/false if the non-empty property is writable
-            status = checkProperty@MovieObject(property);
-            if any(strcmp(property,{'movieDataPath_','movieDataFileName_'}))
-                stack = dbstack;
-                if any(cellfun(@(x)strcmp(x,'MovieData.sanityCheck'),{stack.name})) || ...
-                        any(cellfun(@(x)strcmp(x,'MovieData3D.sanityCheck'),{stack.name}))
-                    status  =true;
-                end
+    methods(Static)        
+        function status=checkValue(property,value)
+           % Return true/false if the value for a given property is valid
+            
+           % Parse input
+           ip = inputParser;
+           ip.addRequired('property',@(x) ischar(x) || iscell(x));
+           ip.parse(property);
+           if iscell(property)
+               ip.addRequired('value',@(x) iscell(x)&&isequal(size(x),size(property)));
+               ip.parse(property,value);
+               status=cellfun(@(x,y) MovieData.checkValue(x,y),property,value);
+               return
+           end
+           
+           % Get validator for single property
+           validator=MovieData.getPropertyValidator(property);
+           propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
+           assert(~isempty(validator),['No validator defined for property ' propName]);
+           
+           % Return result of validation
+           status = isempty(value) || validator(value);
+        end
+        
+        function validator = getPropertyValidator(property) 
+            validator = getPropertyValidator@MovieObject(property);
+            if ~isempty(validator), return; end
+            switch property
+                case {'channels_'}
+                    validator=@(x) isa(x,'Channel');
+                case {'movieDataPath_','movieDataFileName_'}
+                    validator=@ischar;
+                case {'pixelSize_', 'timeInterval_','numAperture_','magnification_','binning_'}
+                    validator=@(x) all(isnumeric(x)) && all(x>0);
+                case {'camBitdepth_'}
+                    validator=@(x) isscalar(x) && ~mod(x, 2);
+                otherwise
+                    validator=[];
             end
         end
         
-        function status=checkValue(property,value)
-            % Return true/false if the value for a given property is valid
-            
-            if iscell(property)
-                status=cellfun(@(x,y) MovieData.checkValue(x,y),property,value);
-                return
-            end
-            
-            % SB: note outputDirectory_ and notes_ should be abstracted to
-            % the MovieObject interface but I haven't found a cleanb way to
-            % achieve that.
-            switch property
-                case {'channels_'}
-                    checkTest=@(x) isa(x,'Channel');
-                case {'movieDataPath_','movieDataFileName_','outputDirectory_','notes_'}
-                    checkTest=@ischar;
-                case {'pixelSize_', 'timeInterval_','numAperture_','magnification_','binning_'}
-                    checkTest=@(x) all(isnumeric(x)) && all(x>0);
-                case {'camBitdepth_'}
-                    checkTest=@(x) isscalar(x) && ~mod(x, 2);
-            end
-            status = isempty(value) || checkTest(value);
+        function propName = getPathProperty()
+            propName = 'movieDataPath_';
+        end
+        function propName = getFilenameProperty()
+            propName = 'movieDataFileName_';
         end
     end
 end

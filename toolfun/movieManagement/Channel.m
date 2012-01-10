@@ -6,7 +6,7 @@ classdef Channel < hgsetget
         emissionWavelength_         % Emission wavelength (nm)
         exposureTime_               % Exposure time (ms)
         imageType_                  % e.g. Widefield, TIRF, Confocal etc.
-         fluorophore_=''               % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
+        fluorophore_=''               % Fluorophore / Dye (e.g. CFP, Alexa, mCherry etc.)
         
         % ---- Un-used params ---- %
         excitationType_             % Excitation type (e.g. Xenon or Mercury Lamp, Laser, etc)
@@ -51,11 +51,6 @@ classdef Channel < hgsetget
         end
         
         %% Set / Get Methods 
-        function set.channelPath_(obj,value)
-            obj.checkPropertyValue('channelPath_',value);
-            obj.channelPath_=value;
-        end
-        
         function set.excitationWavelength_(obj, value)
             obj.checkPropertyValue('excitationWavelength_',value);
             obj.excitationWavelength_=value;
@@ -113,20 +108,31 @@ classdef Channel < hgsetget
         
         function checkPropertyValue(obj,property, value)
             % Check if a property/value pair can be set up
+            
+            % Return if unchanged property
             if isequal(obj.(property),value), return; end
+            propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
             
-            if  ~isempty(obj.(property)),
-                % Test if the property is writable
-                if ~obj.checkProperty(property)
-                    propertyName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
-                    error(['The channel''s ' propertyName ' has been set previously and cannot be changed!']);
+            % Test if the property is writable
+            assert(obj.checkProperty(property),'lccb:set:readonly',...
+                ['The channel''s' propName ' has been set previously and cannot be changed!']);
+            
+            % Test if the supplied value is valid
+            assert(obj.checkValue(property,value),'lccb:set:invalid',...
+                ['The supplied ' propName ' is invalid!']);
+        end
+        
+                
+        function status = checkProperty(obj,property)
+            % Returns true/false if the non-empty property is writable
+            status = isempty(obj.(property));
+            if status, return; end
+            
+            if strcmp(property,'channelPath_');
+                stack = dbstack;
+                if any(cellfun(@(x)strcmp(x,'Channel.relocate'),{stack.name})),
+                    status  =true;
                 end
-            end
-            
-            % Test if the value is valid
-            if ~obj.checkValue(property,value)
-                propertyName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
-                error(['The supplied ' propertyName ' is invalid!']);
             end
         end
         
@@ -279,17 +285,7 @@ classdef Channel < hgsetget
         end
     end
     methods(Static)
-        function status = checkProperty(property)
-            % Returns true/false if the non-empty property is writable
-            status = false;
-            if strcmp(property,'channelPath_');
-                stack = dbstack;
-                if any(cellfun(@(x)strcmp(x,'Channel.relocate'),{stack.name})),
-                    status  =true;
-                end
-            end
-        end
-        
+
         function checkValue=checkValue(property,value)
             % Test the validity of a property value
             %

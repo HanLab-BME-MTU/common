@@ -31,20 +31,31 @@ classdef  MovieObject < hgsetget
             % Test if the property is unchanged
             if isequal(obj.(property),value), return; end
             
-            if  ~isempty(obj.(property)),
-                % Test if the property is writable
-                if ~obj.checkProperty(property)
-                    propertyName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
-                    error(['The ' propertyName ' has been set previously and cannot be changed!']);
-                end
-            end
+            propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
+            % Test if the property is writable
+            assert(obj.checkProperty(property),'lccb:set:readonly',...
+                ['The ' propName ' has been set previously and cannot be changed!']);
             
-            % Test if the value is valid
-            if ~obj.checkValue(property,value);
-                propertyName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
-                error(['The supplied ' propertyName ' is invalid!']);
+            % Test if the supplied value is valid
+            assert(obj.checkValue(property,value),'lccb:set:invalid',...
+                ['The supplied ' propName ' is invalid!']);
+        end
+        
+        function status = checkProperty(obj,property)
+            % Returns true/false if the non-empty property is writable
+            status = isempty(obj.(property));
+            if status, return; end
+                
+            % Allow user to rewrite on some properties (paths, outputDirectory, notes)
+            switch property
+                case {'notes_'};
+                    status = true;
+                case {'outputDirectory_',obj.getPathProperty,obj.getFilenameProperty};
+                    stack = dbstack;
+                    if any(cellfun(@(x)strcmp(x,[class(obj) '.sanityCheck']),{stack.name})),
+                        status  = true;
+                    end
             end
-            
         end
         
         function set.notes_(obj, value)
@@ -52,7 +63,25 @@ classdef  MovieObject < hgsetget
             obj.notes_=value;
         end
         
+        function value = getPath(obj)
+            value = obj.(obj.getPathProperty);
+        end
         
+        function setPath(obj, value)
+            obj.(obj.getPathProperty) = value;
+        end
+        
+        function value = getFilename(obj)
+            value = obj.(obj.getFilenameProperty);
+        end
+        
+        function setFilename(obj, value)
+            obj.(obj.getFilenameProperty) = value;
+        end
+        
+        function value = getFullPath(obj)
+            value = fullfile(obj.(obj.getPathProperty),obj.(obj.getFilenameProperty));
+        end
         %% Functions to manipulate process object array
         function addProcess(obj, newprocess)
             % Add new process in process list
@@ -297,21 +326,12 @@ classdef  MovieObject < hgsetget
             
             if isa(obj,'MovieData')
                 MD=obj; %#ok<NASGU>
-                    save(fullPath,'MD');
+                save(fullPath,'MD');
             elseif isa(obj,'MovieList')
                 ML=obj; %#ok<NASGU>
-                    save(fullPath,'ML');
+                save(fullPath,'ML');
             else
                 error('Unsupported MovieObject!')
-            end            
-            
-            switch (movieClass)
-                case 'MovieData'
-                    MD=obj; %#ok<NASGU>
-                    save(fullPath,'MD');
-                case 'MovieList'
-                    ML=obj; %#ok<NASGU>
-                    save(fullPath,'ML');
             end
             
             flag=1;
@@ -324,34 +344,15 @@ classdef  MovieObject < hgsetget
         end
         
     end
-    methods (Abstract)
-        getPath(obj) % Get the path of the movie object
-        getFilename(obj) % Get the file name of the movie object
-        setPath(obj,path) % Set the path of the movie object
-        setFilename(obj,filename) % Set the file name of the movie object
-    end
-    methods(Static)
-        function status = checkProperty(property)
-            % Returns true/false if the non-empty property is writable
-            status = false;
-            switch property
-                case {'notes_'};
-                    status = true;
-                case {'outputDirectory_'};
-                    stack = dbstack;
-                    if any(cellfun(@(x)strcmp(x,'MovieObject.relocate'),{stack.name})),
-                        status  = true;
-                    end
-            end
-        end
-        
+    methods(Static)        
         function obj = load(moviepath,varargin)
             % Load a movie object from a path
             
             % Check the path is a valid file
             assert(logical(exist(moviepath, 'file')==2),'lccb:movieObject:load', 'File does not exist.');
             
-            if strcmpi(moviepath(end-3:end),'.mat') % Import movie object from MAT file
+            if strcmpi(moviepath(end-3:end),'.mat') 
+                % Import movie object from MAT file
                 try
                     % List variables in the path
                     vars = whos('-file',moviepath);
@@ -375,9 +376,22 @@ classdef  MovieObject < hgsetget
                 % Perform sanityCheck using the input path
                 [moviePath,movieName,movieExt]=fileparts(moviepath);
                 obj.sanityCheck(moviePath,[movieName movieExt],varargin{:});
-            else % Assume proprietary file - use Bioformats library
+            else
+                % Assume proprietary file - use Bioformats library
                 obj=bfImport(moviepath,varargin{:});
             end
         end
+        
+        function validator = getPropertyValidator(property)
+            validator=[];
+            if ismember(property,{'outputDirectory_','notes_'})
+                validator=@ischar;
+            end
+        end
+        
     end
+    methods (Static,Abstract)
+        getPathProperty()
+        getFilenameProperty()
+    end 
 end
