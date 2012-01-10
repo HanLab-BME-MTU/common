@@ -27,7 +27,6 @@ classdef Channel < hgsetget
     end
     
     methods
-        
         function obj = Channel(channelPath, varargin)
             % Constructor of channel object
             %
@@ -285,42 +284,47 @@ classdef Channel < hgsetget
         end
     end
     methods(Static)
-
-        function checkValue=checkValue(property,value)
-            % Test the validity of a property value
-            %
-            % Declared as a static method so that the method can be called
-            % without instantiating a Channel object. Should be called
-            % by any generic set method.
-            %
-            % INPUT:
-            %    property - a Channel property name (string)
-            %
-            %    value - the property value to be checked
-            %
-            % OUTPUT:
-            %    checkValue - a boolean containing the result of the test
+        function status=checkValue(property,value)
+            % Return true/false if the value for a given property is valid
             
+            % Parse input
+            ip = inputParser;
+            ip.addRequired('property',@(x) ischar(x) || iscell(x));
+            ip.parse(property);
             if iscell(property)
-                checkValue=cellfun(@(x,y) Channel.checkValue(x,y),property,value);
+                ip.addRequired('value',@(x) iscell(x)&&isequal(size(x),size(property)));
+                ip.parse(property,value);
+                status=cellfun(@(x,y) Channel.checkValue(x,y),property,value);
                 return
             end
             
+            % Get validator for single property
+            validator=Channel.getPropertyValidator(property);
+            propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
+            assert(~isempty(validator),['No validator defined for property ' propName]);
+            
+            % Return result of validation
+            status = isempty(value) || validator(value);
+        end
+        
+        function validator = getPropertyValidator(property)
             switch property
                 case {'emissionWavelength_','excitationWavelength_'}
-                    checkTest=@(x) isnumeric(x) && x>=300 && x<=800;
+                    validator=@(x) isnumeric(x) && x>=300 && x<=800;
                 case 'exposureTime_'
-                    checkTest=@(x) isnumeric(x) && x>0;
+                    validator=@(x) isnumeric(x) && x>0;
                 case {'excitationType_','notes_','channelPath_','filterType_'}
-                    checkTest=@(x) ischar(x);
+                    validator=@(x) ischar(x);
                 case 'imageType_'
-                    checkTest = @(x) any(strcmpi(x,Channel.getImagingModes));
+                    validator = @(x) any(strcmpi(x,Channel.getImagingModes));
                 case {'fluorophore_'}
-                    checkTest= @(x)  any(strcmpi(x,Channel.getFluorophores));
+                    validator= @(x)  any(strcmpi(x,Channel.getFluorophores));
                 case {'owner_'}
-                    checkTest= @(x) isa(x,'MovieData');
+                    validator= @(x) isa(x,'MovieData');
+                otherwise
+                    validator=[];
             end
-            checkValue = isempty(value) || checkTest(value);
+            
         end
         
         function modes=getImagingModes()
