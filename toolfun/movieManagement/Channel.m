@@ -80,6 +80,11 @@ classdef Channel < hgsetget
             obj.incidentAngle_=value;
         end
         
+        function set.imageType_(obj, value)
+            obj.checkPropertyValue('imageType_',value);
+            obj.imageType_=value;
+        end
+        
         function set.filterType_(obj, value)
             obj.checkPropertyValue('filterType_',value);
             obj.filterType_=value;
@@ -310,15 +315,15 @@ classdef Channel < hgsetget
         function validator = getPropertyValidator(property)
             switch property
                 case {'emissionWavelength_','excitationWavelength_'}
-                    validator=@(x) isnumeric(x) && x>=300 && x<=800;
+                    validator=@(x) isscalar(x) && x>=300 && x<=800;
                 case 'exposureTime_'
-                    validator=@(x) isnumeric(x) && x>0;
+                    validator=@isposrealscalar;
                 case {'excitationType_','notes_','channelPath_','filterType_'}
-                    validator=@(x) ischar(x);
+                    validator=@ischar;
                 case 'imageType_'
-                    validator = @(x) any(strcmpi(x,Channel.getImagingModes));
+                    validator = @(x) ischar(x) && ismember(x,Channel.getImagingModes);
                 case {'fluorophore_'}
-                    validator= @(x)  any(strcmpi(x,Channel.getFluorophores));
+                    validator= @(x) ischar(x) && ismember(x,Channel.getFluorophores);
                 case {'owner_'}
                     validator= @(x) isa(x,'MovieData');
                 otherwise

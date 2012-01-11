@@ -217,7 +217,7 @@ classdef  MovieData < MovieObject
                 case {'pixelSize_', 'timeInterval_','numAperture_','magnification_','binning_'}
                     validator=@(x) all(isnumeric(x)) && all(x>0);
                 case {'camBitdepth_'}
-                    validator=@(x) isscalar(x) && ~mod(x, 2);
+                    validator=@(x) isposintscalar(x) && ~mod(x, 2);
                 otherwise
                     validator=[];
             end
