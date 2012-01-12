@@ -83,6 +83,7 @@ end
 set(handles.listbox_selectedChannels,'String',channelString,...
     'UserData',channelIndex);
 
+set(handles.edit_GaussFilterSigma,'String',funParams.GaussFilterSigma);
 
 threshMethods = userData.crtProc.getMethods();
 set(handles.popupmenu_thresholdingMethod,'String',{threshMethods(:).name},...
@@ -99,7 +100,6 @@ if isempty(funParams.ThresholdValue)
     else
         set(handles.edit_jump, 'Enable', 'off');
     end
-    set(handles.edit_GaussFilterSigma,'String',funParams.GaussFilterSigma);
     nSelectedChannels  = numel(get(handles.listbox_selectedChannels, 'String'));
     set(handles.listbox_thresholdValues, 'String',...
         num2cell(zeros(1,nSelectedChannels)));
@@ -163,18 +163,18 @@ end
 channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
 
+gaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma, 'String'));
+if isnan(gaussFilterSigma) || gaussFilterSigma < 0
+    errordlg(['Please provide a valid input for '''...
+        get(handles.text_GaussFilterSigma,'String') '''.'],'Setting Error','modal');
+    return;
+end
+funParams.GaussFilterSigma=gaussFilterSigma;
+
+
 if get(handles.checkbox_auto, 'value')
     funParams.ThresholdValue = [ ];
     funParams.MethodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
-
-    
-    gaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma, 'String'));
-    if isnan(gaussFilterSigma) || gaussFilterSigma < 0
-        errordlg(['Please provide a valid input for '''...
-            get(handles.text_GaussFilterSigma,'String') '''.'],'Setting Error','modal');
-        return;
-    end
-    funParams.GaussFilterSigma=gaussFilterSigma;
     
     if get(handles.checkbox_max, 'Value')
         % If both checkbox are checked
@@ -528,14 +528,15 @@ if get(handles.checkbox_preview,'Value')
     
     % Preview the tresholding output using the alphaData mapping    
     alphamask=ones(size(userData.imData));
+    gaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma, 'String'));
+    if ~isnan(gaussFilterSigma) && gaussFilterSigma >0
+        imData = filterGauss2D(userData.imData,gaussFilterSigma);
+    else
+        imData=userData.imData;
+    end
+    
     
     if get(handles.checkbox_auto,'Value')
-        gaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma, 'String'));
-        if gaussFilterSigma >0
-            imData = filterGauss2D(userData.imData,gaussFilterSigma);
-        else
-            imData=userData.imData;
-        end
         methodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
         threshMethod = userData.crtProc.getMethods(methodIndx).func;
         
@@ -546,7 +547,7 @@ if get(handles.checkbox_preview,'Value')
     else
         % Preview manual threshold
         thresholdValue = get(handles.slider_threshold, 'Value');
-        alphamask(userData.imData<=thresholdValue)=.4;
+        alphamask(imData<=thresholdValue)=.4;
     end
     set(imHandle,'AlphaData',alphamask,'AlphaDataMapping','none');
 
