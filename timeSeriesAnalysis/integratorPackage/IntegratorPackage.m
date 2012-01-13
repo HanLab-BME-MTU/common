@@ -4,12 +4,19 @@ classdef IntegratorPackage < Package
     % Sebastien Besson, Sep 2011
     
     methods
-        function obj = IntegratorPackage(owner,outputDir)
+        function obj = IntegratorPackage(owner,varargin)
             % Constructor of class QFSMPackage
             
             if nargin == 0
                 super_args = {};
             else
+                % Check input
+                ip =inputParser;
+                ip.addRequired('owner',@(x) isa(x,'MovieObject'));
+                ip.addOptional('outputDir',owner.outputDirectory_,@(x) isa(x,'MovieObject'));
+                ip.parse(owner,varargin{:});
+                outputDir = ip.Results.outputDir;
+
                 % Owner: MovieData object
                 super_args{1} = owner;
                 super_args{2} = [outputDir  filesep 'IntegratorPackage'];

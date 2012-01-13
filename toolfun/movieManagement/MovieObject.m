@@ -101,7 +101,7 @@ classdef  MovieObject < hgsetget
                 pid = obj.getProcessIndex(process,1,Inf,false);
                 assert(~isempty(pid),'The given process is not in current movie processes list.')
                 assert(length(pid)==1,'More than one process of this type exists in movie processes list.')
-            elseif iscalar(process) && ismember(process,1:numel(obj.processes_))
+            elseif isscalar(process) && ismember(process,1:numel(obj.processes_))
                 pid = process;
             else
                 error('Please provide a Process object or a valid process index of movie data processes list.')
@@ -110,10 +110,8 @@ classdef  MovieObject < hgsetget
             if ~isempty(obj.processes_{pid})
                 % Unassociate process in corresponding packages
                 [packageID procID] = obj.processes_{pid}.getPackage;
-                if ~isempty(packageID)
-                    for i=1:numel(packageID)
-                        obj.packages_{packageID(i)}.setProcess(procID(i),[]);
-                    end
+                for i=1:numel(packageID)
+                    obj.packages_{packageID(i)}.setProcess(procID(i),[]);
                 end
             end
             

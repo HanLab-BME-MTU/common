@@ -2,13 +2,19 @@ classdef SegmentationPackage < Package
     % A concrete process for Segmentation Package
     
     methods (Access = public)
-        function obj = SegmentationPackage (owner,outputDir)
+        function obj = SegmentationPackage (owner,varargin)
             % Construntor of class MaskProcess
             if nargin == 0
                 super_args = {};
             else
-                % Owner: MovieData object
-                super_args{1} = owner;
+                % Check input
+                ip =inputParser;
+                ip.addRequired('owner',@(x) isa(x,'MovieObject'));
+                ip.addOptional('outputDir',owner.outputDirectory_,@(x) isa(x,'MovieObject'));
+                ip.parse(owner,varargin{:});
+                outputDir = ip.Results.outputDir;
+                
+                super_args{1} = owner;               
                 super_args{2} = [outputDir filesep 'SegmentationPackage'];
             end
             % Call the superclass constructor
