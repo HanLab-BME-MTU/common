@@ -34,12 +34,24 @@ brightMasked = image_high.*~satMask;
 dimMasked = image_low.*satMask;
 % figure('Name', 'dimMasked'), imshow(dimMasked,[]);
 
+% Make a mask for background region (coarse, for merging purpose only)
+segment_level = thresholdRosin(image_high);
+backgroundMask = image_high < segment_level;
+
+% A combined mask for both the saturated area and the background area.
+bg_st_Mask = or(satMask,backgroundMask);
+
 %find polynomial fit (linear) that says relationship between two images
 % figure, plot(image_high(~satMask(:)), image_low(~satMask(:)));
 lineValues = polyfit(image_high(~satMask(:)), image_low(~satMask(:)), 1);
 coeff=lineValues(1);
 offset = lineValues(2);
 % hold on; plot(image_high(~satMask(:)), coeff*image_high(~satMask(:))+offset,'-r')
+
+% find a linear relationship between two images, linear, not affine.
+High_data = image_high(~bg_st_Mask(:));
+Low_data = image_low(~bg_st_Mask(:));
+bright2dim_scaler = (High_data'*Low_data)/(High_data'*High_data);
 
 %NOTE various methods for combining images are listed below. Currently some
 %are used and some are not. None are being deleted until I figure out how
@@ -56,6 +68,13 @@ combined = (brightMasked.*coeff + offset) + dimMasked;
 combinedTwentyFivePercent = (brightMasked.*0.25) + dimMasked;
 logImage = log(combinedTwentyFivePercent);
 % figure('Name', 'logimage'), imshow(logImage,[]);
+
+% combine images using linear correction
+combined_linear = (brightMasked.*bright2dim_scaler) + dimMasked;
+% flatten combined image by taking the log of the image
+% here, this temporary overwrites the output logImage, will check in further
+% for how correct it is
+logImage = log(combined_linear);
 
 % scale image using mystery factor
 combinedMystery= (brightMasked.*coeff.*mysteryOffsetFactor + offset) + dimMasked;
