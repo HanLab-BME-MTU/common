@@ -16,8 +16,9 @@ classdef BleedthroughCorrectionProcess < ImageCorrectionProcess
                 super_args{1} = owner;
                 super_args{2} = BleedthroughCorrectionProcess.getName;
                 super_args{3} = @bleedthroughCorrectMovie;                               
-                
-                if nargin < 3 || isempty(funParams)                                       
+                if nargin<2, outputDir = owner.outputDirectory_; end
+                if nargin < 3 || isempty(funParams) 
+                    
                     funParams=BleedthroughCorrectionProcess.getDefaultParams(owner,outputDir);
                 end
                 
@@ -61,6 +62,7 @@ classdef BleedthroughCorrectionProcess < ImageCorrectionProcess
             % Set default parameters
             funParams.OutputDirectory = [outputDir  filesep 'bleedthrough_corrected_images'];
             funParams.ChannelIndex = [];%No default
+            funParams.ProcessIndex = [];%No default
             funParams.BleedChannelIndex = [];%No default
             funParams.BleedCoefficients = [];%No default
             funParams.BatchMode = false;      

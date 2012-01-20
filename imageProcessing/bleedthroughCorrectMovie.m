@@ -100,16 +100,10 @@ if isempty(iProc)
     movieData.addProcess(BleedthroughCorrectionProcess(movieData,movieData.outputDirectory_));                                                                                                 
 end
 
-
-%Make sure the movie has been background-subtracted
-iBSProc = find(cellfun(@(x)(isa(x,'BackgroundSubtractionProcess')),movieData.processes_),1);                          
-
-if isempty(iBSProc)
-    error('The input movie has not been background subtracted! Please perform background subtraction prior to bleedthrough correction!')
-end
-
 %Parse input, store in parameter structure
 p = parseProcessParams(movieData.processes_{iProc},paramsIn);
+
+%% Initialization
 
 nChan = numel(movieData.channels_);
 
@@ -142,14 +136,16 @@ if isempty(p.BleedChannelIndex)
     end
 end
 
-%Check which channels have been background subtracted
-iHasBS  = find(cellfun(@(x)(~isempty(x)),movieData.processes_{iBSProc}.outFilePaths_));
-
-%Make sure that the bleed channels and the channel to be corrected have
-%been background subtracted
-if ~all(arrayfun(@(x)(any(x == iHasBS)),[p.ChannelIndex p.BleedChannelIndex]));
-    error('The channel to be corrected, and the bleedthrough channels must all have been background-subtracted prior to bleedthrough correction!')
+% If using the output of an existing process
+if ~isempty(p.ProcessIndex)
+    assert(isa(movieData.processes_{p.ProcessIndex},'ImageProcessingProcess'));
+    
+    % Check which channels have been processed by the process
+    status= movieData.processes_{p.ProcessIndex}.checkChannelOutput;
+    assert(all(status([p.ChannelIndex p.BleedChannelIndex])),...
+        'The channel to be corrected, and the bleedthrough channels must all have been processed prior to bleedthrough correction!');
 end
+
 
 nBleed = length(p.BleedChannelIndex);
 
@@ -185,32 +181,33 @@ end
 movieData.processes_{iProc}.setPara(p);
 
 
-%% ------------ Init ---------- %%
-
-
+%% Bleedthrough correction
 disp('Starting bleedthrough correction...')
 
 
-%Set the input and output images of the bleedthrough correction process    
+%Retrieve the paths and names of the input images   
+if isempty(p.ProcessIndex)
+    imPaths = movieData.getChannelPaths;
+    imNames = movieData.getImageFileNames;
+else
+    imPaths = movieData.processes_{p.ProcessIndex}.outFilePaths_;
+    imNames = movieData.processes_{p.ProcessIndex}.getOutImageFileNames;
+end
 
-inDir = movieData.processes_{iBSProc}.outFilePaths_{1,p.ChannelIndex}; %input images to be corrected
-outDir = [p.OutputDirectory filesep dName num2str(p.ChannelIndex)]; %Corrected images
+inDir = imPaths{1,p.ChannelIndex}; %input images to be corrected
+inNames = imNames(1,p.ChannelIndex);
+bleedImDir = imPaths(1,p.BleedChannelIndex);
+bleedImNames = imNames(1,p.BleedChannelIndex);
 
-mkClrDir(outDir);
-
+%Log the input and bleed images in the process
 movieData.processes_{iProc}.setInImagePath(p.ChannelIndex,inDir);
+movieData.processes_{iProc}.setCorrectionImagePath(p.BleedChannelIndex,bleedImDir);
+
+% Set the output directory
+outDir = [p.OutputDirectory filesep dName num2str(p.ChannelIndex)]; %Corrected images
+mkClrDir(outDir);
 movieData.processes_{iProc}.setOutImagePath(p.ChannelIndex,outDir);
 
-
-%Get image file names for input images (background subtracted images)
-inNames =  movieData.processes_{iProc}.getInImageFileNames(p.ChannelIndex);
-bleedImNames = movieData.processes_{iBSProc}.getOutImageFileNames(p.BleedChannelIndex);
-
-%Get the directories of the bleedthrough images for readability
-bleedImDir = movieData.processes_{iBSProc}.outFilePaths_(1,p.BleedChannelIndex);
-
-%Log the bleed images in the movieData
-movieData.processes_{iProc}.setCorrectionImagePath(p.BleedChannelIndex,bleedImDir);
 
 %% -------------- Apply bleedthrough correction ------------%%
 %Applies the bleedthrough correction from above to each selected channel
@@ -226,7 +223,8 @@ end
 nImages = movieData.nFrames_;
 
 disp(['Bleedthrough correcting channel ' num2str(p.ChannelIndex) '...']);
-disp(['Correcting images from ' inDir ', storing results in ' outDir]);    
+disp(['Correcting images from ' inDir]);
+disp(['Storing results in ' outDir]);
 for j = 1:nBleed
     disp(['Correcting bleedthrough from channel ' num2str(p.BleedChannelIndex(j)) ', using images from ' bleedImDir{j}])        
     disp(['...using bleedthrough coefficient of ' num2str(p.BleedCoefficients(j))])
@@ -242,7 +240,6 @@ for iImage = 1:nImages
     currIm = double(currIm);
 
     for iBleed = 1:nBleed        
-        
         
         %Load the bleed image
         currBleedIm = double(imread([bleedImDir{iBleed} filesep bleedImNames{iBleed}{iImage}]));
@@ -289,6 +286,3 @@ movieData.save;
 
 
 disp('Finished Correcting!')
-
-
-

@@ -119,6 +119,8 @@ classdef ImageProcessingProcess < Process
             end                        
         end
         function fileNames = getOutImageFileNames(obj,iChan)
+            nChanTot = numel(obj.owner_.channels_);
+            if nargin < 2 || isempty(iChan), iChan = 1:nChanTot; end
             if obj.checkChannelOutput(iChan)
                 fileNames = cellfun(@(x)(imDir(x)),obj.outFilePaths_(1,iChan),'UniformOutput',false);
                 fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
@@ -133,6 +135,9 @@ classdef ImageProcessingProcess < Process
             
         end
         function fileNames = getInImageFileNames(obj,iChan)
+            nChanTot = numel(obj.owner_.channels_);
+            if nargin < 2 || isempty(iChan), iChan = 1:nChanTot; end
+           
             if obj.checkChanNum(iChan)
                 fileNames = cellfun(@(x)(imDir(x)),obj.inFilePaths_(1,iChan),'UniformOutput',false);
                 fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);

@@ -159,7 +159,7 @@ classdef  MovieObject < hgsetget
             end
         end
         
-        function iProc = getProcessIndex(obj,procName,varargin)
+        function iProc = getProcessIndex(obj,proc,varargin)
             % Find the index of a process or processes with given class name
             %
             % SYNOPSIS      iProc=obj.getProcessIndex(procName)
@@ -167,15 +167,21 @@ classdef  MovieObject < hgsetget
             
             % Input check
             ip = inputParser;
-            ip.addRequired('procName',@ischar);
+            ip.addRequired('proc',@(x)ischar(x)||isa(x,'Process'));
             ip.addOptional('nDesired',1,@isscalar);
             ip.addOptional('askUser',true,@isscalar);
-            ip.parse(procName,varargin{:});
+            ip.parse(proc,varargin{:});
             nDesired = ip.Results.nDesired;
             askUser = ip.Results.askUser;
             
             % Read process of given type
-            iProc = find(cellfun(@(x)(isa(x,procName)),obj.processes_));
+            if isa(proc,'Process'), 
+                searchFcn = @(x) isequal(x,proc);
+            else
+                searchFcn = @(x) isa(x,proc); 
+            end
+             
+            iProc = find(cellfun(searchFcn,obj.processes_)); 
             nProc = numel(iProc);
             
             %If there are only nDesired or less processes found, return
