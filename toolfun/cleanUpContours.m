@@ -69,7 +69,14 @@ nContours = length(contoursIn);
 
 %Find the sum difference in the coordinates at each point
 %Don't use distance, to keep it fast!
-allDiffs = cellfun(@(x)(sum(vertcat(abs(diff(x(1,:))),abs(diff(x(2,:)))))),contoursIn,'UniformOutput',false) ;
+allDiffs = cellfun(@(x)(sum(vertcat(abs(diff(x(1,:))),abs(diff(x(2,:)))))),contoursIn,'UniformOutput',false);
+
+%Replace allDiffs for single-point contours with empty to prevent error.
+%Starting with r2011b, contourc.m sometimes returns single-point contours.
+nPall = cellfun(@(x)(size(x,2)),contoursIn);
+if any(nPall == 1)
+    allDiffs{nPall==1} = [];
+end
 
 %Remove points which are seperated by less than the threshold
 cleanContours = arrayfun(@(x)(contoursIn{x}(:,[(allDiffs{x} > distThreshold) true])),1:nContours,'UniformOutput',false)';
