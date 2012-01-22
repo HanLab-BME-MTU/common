@@ -132,9 +132,9 @@ for k = 1:ng
     
     if plotWhiskers
         he = errorbar(xa{k}, p25, w1-p25, zeros(size(mu)), 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth);
-        setErrorbarStyle(he, 'bottom', ip.Results.ErrorBarWidth);
+        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
         he = errorbar(xa{k}, p75, zeros(size(mu)), w2-p75, 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth);
-        setErrorbarStyle(he, 'top', ip.Results.ErrorBarWidth);
+        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
     end
     
     % the box

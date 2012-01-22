@@ -100,7 +100,7 @@ for k = 1:ng
     if ~isempty(errorBars) && strcmpi(ip.Results.ErrorBarPosition, 'top')
         he = errorbar(xa{k}, height, zeros(size(xa{k})), errorBars(k,:),...
             'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
-        setErrorbarStyle(he, ip.Results.ErrorBarPosition, ip.Results.ErrorBarWidth);
+        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', ip.Results.ErrorBarPosition);
     end
         
     % bars
@@ -123,7 +123,7 @@ for k = 1:ng
     if ~isempty(errorBars) && strcmpi(ip.Results.ErrorBarPosition, 'both')
         he = errorbar(xa{k}, height, errorBars(k,:),...
             'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
-        setErrorbarStyle(he, ip.Results.ErrorBarPosition, ip.Results.ErrorBarWidth);
+        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', ip.Results.ErrorBarPosition);
     end
 end
 hold off;

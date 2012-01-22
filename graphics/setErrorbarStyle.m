@@ -1,26 +1,27 @@
 %setErrorbarStyle(he, pos, de) modifies the width of the error bars
 
-% Francois Aguet, Feb 22 2011 (last modif. 07/27/2011)
+% Francois Aguet, Feb 22 2011 (last modif. 01/21/2012)
 
-function setErrorbarStyle(he, pos, de)
+function setErrorbarStyle(he, varargin)
 
-if nargin<2
-    pos = 'both';
-end
-if nargin<3
-    de = 0.2;
-end
+ip = inputParser;
+ip.CaseSensitive = false;
+ip.addRequired('he');
+ip.addOptional('de', 0.2, @isscalar);
+ip.addParamValue('Position', 'both', @(x) any(strcmpi(x, {'both', 'top', 'bottom'})));
+ip.parse(he, varargin{:});
+de = ip.Results.de;
 
 he = get(he, 'Children');
 xd = get(he(2), 'XData');
-if strcmpi(pos, 'bottom')
+if strcmpi(ip.Results.Position, 'bottom')
     xd(4:9:end) = xd(1:9:end);
     xd(5:9:end) = xd(1:9:end);
 else
     xd(4:9:end) = xd(1:9:end) - de;
     xd(5:9:end) = xd(1:9:end) + de;
 end
-if strcmpi(pos, 'top')
+if strcmpi(ip.Results.Position, 'top')
     xd(7:9:end) = xd(1:9:end);
     xd(8:9:end) = xd(1:9:end);
 else
