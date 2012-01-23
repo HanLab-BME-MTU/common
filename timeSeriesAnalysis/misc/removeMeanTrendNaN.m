@@ -1,4 +1,4 @@
-function [workTS,interval,varUsed] = removeMeanTrendNaN(TS,varargin)
+function [workTS,interval,varUsed,imf] = removeMeanTrendNaN(TS,varargin)
 %Removes mean, trend and NaN from input time series TS
 %
 %Synopsis:
@@ -7,8 +7,8 @@ function [workTS,interval,varUsed] = removeMeanTrendNaN(TS,varargin)
 %       TS        - time series (number of points,number of variables)
 %
 %       trendType - optional: a scalar giving the type of trend to remove
-%                   0: do not remove any trend
-%                   1: remove linear trend (default)
+%                   0: remove only sample means (see dtrend.m)
+%                   1: remove linear trend (see dtrend.m)
 %                   2: remove all deterministic trend
 %
 %Output:
@@ -16,6 +16,7 @@ function [workTS,interval,varUsed] = removeMeanTrendNaN(TS,varargin)
 %       interval - final interval = initial - (NaN blocks + outliers)  
 %       trend    - sum of all deterministic component of the signal within the output interval  
 %       varUsed  - Index of variable with some information
+%       imf      - if trendType is 2, the intrisic mode functions of the corresponding time series
 %
 %Marco Vilela, 2011
 
@@ -31,6 +32,7 @@ trendType=ip.Results.trendType;
 workTS      = cell(1,nvar);
 interval    = cell(1,nvar);
 idx         = false(1,nobs);
+if trendType == 2, imf= cell(1,nvar); end
 
 for i=1:nvar
     
@@ -59,27 +61,23 @@ for i=1:nvar
         workTS{i}(isnan(workTS{i})) = ...
             interp1(intersect(x,fB{idxB}),TS(intersect(x,fB{idxB}),i),intersect(xi,fB{idxB}),'spline');
         
-        interval{i} = fB{idxB};
-        workTS{i}   = workTS{i} - repmat(mean(workTS{i}),sum(~isnan(workTS{i})),1);
-        workTS{i}   = preWhitening(workTS{i});
-        idx(i)      = 1;
-         
     elseif (nobs - length(exclude) ) >= 4 % forced by the spline used in preWhitening
         
         [fB,fL]     = findBlock(setdiff(1:nobs,exclude));
         [~,idxB]    = max(fL);
         workTS{i}   = TS(fB{idxB},i);
-        interval{i} = fB{idxB};
-        workTS{i}   = workTS{i} - repmat(mean(workTS{i}),sum(~isnan(workTS{i})),1);
-        if trendType==1
-            workTS{i} = dtrend(workTS{i}); % Linear tren
-        elseif trendType==2
-            workTS{i}   = preWhitening(workTS{i}); % Deterministic trend
-        end
-        idx(i)      = 1;
         
     end
     
+    interval{i} = fB{idxB};
+    if trendType<2
+        % Remove trend (mean or linear)
+        workTS{i} = dtrend(workTS{i},trendType);
+    else
+        % Remove deterministic components using preWhitening
+        [workTS{i},~,imf{i}]   = preWhitening(workTS{i});
+    end
+    idx(i)=true;
 end
 
 varUsed = find(idx);
