@@ -110,30 +110,34 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
         
         % remove NaN values
         idx = ~isnan([pstruct.x]);
-        fnames = fieldnames(pstruct);
-        for k = 1:length(fnames)
-            pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
+        if sum(idx)~=0
+            fnames = fieldnames(pstruct);
+            for k = 1:length(fnames)
+                pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
+            end
+            
+            % eliminate isignificant amplitudes
+            idx = [pstruct.pval_Ar] > 0.95;
+            
+            % eliminate duplicate positions (resulting from localization)
+            np = length(pstruct.x);
+            pM = [pstruct.x' pstruct.y'];
+            idxKD = KDTreeBallQuery(pM, pM, 0.25*ones(np,1));
+            idxKD = idxKD(cellfun(@(x) length(x)>1, idxKD));
+            
+            for k = 1:length(idxKD);
+                RSS = pstruct.RSS(idxKD{k});
+                idx(idxKD{k}(RSS ~= min(RSS))) = 0;
+            end
+            
+            fnames = fieldnames(pstruct);
+            for k = 1:length(fnames)
+                pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
+            end
+            pstruct.isPSF = pstruct.pval_KS > 0.05;
+        else
+            pstruct = [];
         end
-        
-        % eliminate isignificant amplitudes
-        idx = [pstruct.pval_Ar] > 0.95;
-        
-        % eliminate duplicate positions (resulting from localization)
-        np = length(pstruct.x);
-        pM = [pstruct.x' pstruct.y'];
-        idxKD = KDTreeBallQuery(pM, pM, 0.25*ones(np,1));
-        idxKD = idxKD(cellfun(@(x) length(x)>1, idxKD));
-        
-        for k = 1:length(idxKD);
-            RSS = pstruct.RSS(idxKD{k});
-            idx(idxKD{k}(RSS ~= min(RSS))) = 0;
-        end
-        
-        fnames = fieldnames(pstruct);
-        for k = 1:length(fnames)
-            pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
-        end
-        pstruct.isPSF = pstruct.pval_KS > 0.05;
     else
         pstruct = [];
     end
