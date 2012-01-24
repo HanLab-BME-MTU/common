@@ -220,7 +220,7 @@ classdef  MovieObject < hgsetget
                 pid = find(cellfun(@(x)isequal(x, package), obj.packages_));
                 assert(~isempty(pid),'The given package is not in current movie packages list.')
                 assert(length(pid)==1,'More than one package of this type exists in movie packages list.')
-            elseif iscalar(package) && ismember(package,1:numel(obj.packages_))
+            elseif isscalar(package) && ismember(package,1:numel(obj.packages_))
                 pid = package;
             else
                 error('Please provide a Package object or a valid package index of movie data processes list.')
