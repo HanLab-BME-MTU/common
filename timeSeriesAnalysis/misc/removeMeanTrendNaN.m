@@ -1,4 +1,4 @@
-function [workTS,interval,varUsed,imf] = removeMeanTrendNaN(TS,varargin)
+function [workTS,interval,trend,imf] = removeMeanTrendNaN(TS,varargin)
 %Removes mean, trend and NaN from input time series TS
 %
 %Synopsis:
@@ -14,8 +14,7 @@ function [workTS,interval,varUsed,imf] = removeMeanTrendNaN(TS,varargin)
 %Output:
 %       outTS{# of variables}(# of good points)  - cell array with a continuous time series points
 %       interval - final interval = initial - (NaN blocks + outliers)  
-%       trend    - sum of all deterministic component of the signal within the output interval  
-%       varUsed  - Index of variable with some information
+%       trend    - trend removed from the time series
 %       imf      - if trendType is 2, the intrisic mode functions of the corresponding time series
 %
 %Marco Vilela, 2011
@@ -31,8 +30,8 @@ trendType=ip.Results.trendType;
 [nobs,nvar] = size(TS);
 workTS      = cell(1,nvar);
 interval    = cell(1,nvar);
-idx         = false(1,nobs);
-if trendType == 2, imf= cell(1,nvar); end
+trend       = cell(1,nvar);
+if trendType == 2, imf = cell(1,nvar); end
 
 for i=1:nvar
     
@@ -71,13 +70,12 @@ for i=1:nvar
     
     interval{i} = fB{idxB};
     if trendType<2
-        % Remove trend (mean or linear)
-        workTS{i} = dtrend(workTS{i},trendType);
+        % Remove sample means or linear trend
+        dWorkTS = dtrend(workTS{i},trendType);
+        trend{i} = workTS{i} - dWorkTS;
+        workTS{i} = dWorkTS;
     else
         % Remove deterministic components using preWhitening
-        [workTS{i},~,imf{i}]   = preWhitening(workTS{i});
+        [workTS{i},trend{i},imf{i}]   = preWhitening(workTS{i});
     end
-    idx(i)=true;
 end
-
-varUsed = find(idx);
