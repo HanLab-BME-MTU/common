@@ -354,7 +354,17 @@ if ~isempty(graphProc)
                     'Callback',@(h,event) redrawGraph(h,guidata(h))),find(validChan));
                 hPosition3=hPosition3+20;
             end
-
+            
+            % Create boxes for sampled graphs
+            validOutput = find(strcmp({output.type},'sampledGraph'));
+            for iOutput=validOutput(end:-1:1)
+                validChan = graphProc{iProc}.checkChannelOutput();
+                createOutputText(graphPanel,graphProcId(iProc),iOutput,hPosition3,output(iOutput).name);
+                arrayfun(@(x) createChannelBox(graphPanel,graphProcId(iProc),iOutput,x,hPosition3,...
+                    'Callback',@(h,event) redrawGraph(h,guidata(h))),find(validChan(iOutput,:)));
+                hPosition3=hPosition3+20;
+            end
+            
             createProcText(graphPanel,graphProcId(iProc),iOutput,hPosition3,graphProc{iProc}.getName);
             hPosition3=hPosition3+20;
         end
@@ -792,8 +802,12 @@ output = outputList(iOutput).var;
 tokens = regexp(overlayTag,'_channel(\d+)$','tokens');
 if ~isempty(tokens)
     iChan = str2double(tokens{1}{1});
-    inputArgs={iChan};
     figName = [outputList(iOutput).name ' - Channel ' num2str(iChan)];
+    if strcmp({outputList(iOutput).type},'sampledGraph')
+        inputArgs={iChan,iOutput};
+    else
+        inputArgs={iChan};
+    end
 else
     inputArgs={};
     figName = outputList(iOutput).name;

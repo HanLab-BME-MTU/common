@@ -24,7 +24,6 @@ classdef ScalarMapDisplay < MovieDataDisplay
             
             % Set the NaN as the lowest value
             imData= data(:,:,1);
-            imData(isnan(imData)) = min(data(:))-(max(data(:)-min(data(:))))*1e-10;
             
             % Plot the image and associate the tag
             h=imagesc(imData,varargin{:});
@@ -62,10 +61,8 @@ classdef ScalarMapDisplay < MovieDataDisplay
             else
                 depth=1;
             end
-            
-            imData= data(:,:,depth);
-            imData(isnan(imData)) = 0;
-            set(h,'CData',imData);      
+           
+            set(h,'CData',data(:,:,depth));      
             
             obj.applyImageOptions(h,data);
         end
@@ -82,8 +79,12 @@ classdef ScalarMapDisplay < MovieDataDisplay
             uistack(h,'bottom');
             
             % Set the colormap
-            cmap = [obj.NaNColor;colormap(obj.Colormap)];          
-            colormap(hAxes,cmap);
+            imData=get(h,'CData');
+            alphamask =true(size(imData));
+            alphamask(isnan(imData))=false;
+            set(h,'AlphaData',alphamask,'AlphaDataMapping','none');
+
+            colormap(hAxes,obj.Colormap);
             
             
             % Set the colorbar
