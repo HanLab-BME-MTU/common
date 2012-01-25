@@ -18,6 +18,7 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
                 super_args{3} = @backgroundSubtractMovie;
                 
                 if nargin < 3 || isempty(funParams)
+                    if nargin <2, outputDir = owner.outputDirectory_; end
                     funParams=BackgroundSubtractionProcess.getDefaultParams(owner,outputDir);
                 end
                 

@@ -23,6 +23,7 @@ classdef TransformationProcess < ImageProcessingProcess
                 super_args{3} = @transformMovie;
                 
                 if nargin < 3 || isempty(funParams)
+                    if nargin <2, outputDir = owner.outputDirectory_; end
                     funParams=TransformationProcess.getDefaultParams(owner,outputDir);
                     
                 end

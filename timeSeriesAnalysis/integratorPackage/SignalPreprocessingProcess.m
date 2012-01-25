@@ -82,7 +82,7 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
             % Set default parameters
             if isa(owner,'MovieList'), funParams.MovieIndex=1:numel(owner.movies_); end
             funParams.OutputDirectory = [outputDir  filesep 'preprocessedSignal'];
-            funParams.ProcessName=SignalPreprocessingProcess.getTimeSeriesProcesses;
+            funParams.ProcessName=TimeSeriesProcess.getSamplingProcesses;
             funParams.kSigma=5;
             funParams.trendType=1;
         end

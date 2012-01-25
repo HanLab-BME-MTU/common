@@ -7,9 +7,10 @@ function [workTS,interval,trend,imf] = removeMeanTrendNaN(TS,varargin)
 %       TS        - time series (number of points,number of variables)
 %
 %       trendType - optional: a scalar giving the type of trend to remove
-%                   0: remove only sample means (see dtrend.m)
-%                   1: remove linear trend (see dtrend.m)
-%                   2: remove all deterministic trend
+%                   -1: no trend removal
+%                   0 : remove only sample means (see dtrend.m)
+%                   1 : default - remove linear trend (see dtrend.m)
+%                   2 : remove all deterministic trend
 %
 %Output:
 %       outTS{# of variables}(# of good points)  - cell array with a continuous time series points
@@ -69,12 +70,12 @@ for i=1:nvar
     end
     
     interval{i} = fB{idxB};
-    if trendType<2
+    if ismember(trendType,[0 1])
         % Remove sample means or linear trend
         dWorkTS = dtrend(workTS{i},trendType);
         trend{i} = workTS{i} - dWorkTS;
         workTS{i} = dWorkTS;
-    else
+    elseif trendType==2
         % Remove deterministic components using preWhitening
         [workTS{i},trend{i},imf{i}]   = preWhitening(workTS{i});
     end

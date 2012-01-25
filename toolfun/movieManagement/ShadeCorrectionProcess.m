@@ -20,6 +20,7 @@ classdef ShadeCorrectionProcess < ImageCorrectionProcess
                 super_args{3} = @shadeCorrectMovie;
                 
                 if nargin < 3 || isempty(funParams)
+                    if nargin <2, outputDir = owner.outputDirectory_; end
                     funParams=ShadeCorrectionProcess.getDefaultParams(owner,outputDir);
                 end
                 

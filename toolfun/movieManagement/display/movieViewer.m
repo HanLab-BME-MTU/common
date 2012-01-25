@@ -324,18 +324,7 @@ if ~isempty(graphProc)
                 hPosition3=hPosition3+20;
             end
             
-            % Create set of boxes for non-correlation graphs (input)
-            validOutput = find(strcmp({output.type},'graph'));
-            for iOutput=validOutput(end:-1:1)
-                for iInput=nInput:-1:1
-                    createInputBox(graphPanel,graphProcId(iProc),iOutput,iInput,hPosition3,...
-                        input(iInput).name,'Callback',@(h,event) redrawEventGraph(h,guidata(h)));
-                    hPosition3=hPosition3+20;
-                end
-                createProcText(graphPanel,graphProcId(iProc),iInput,hPosition3,output(iOutput).name);
-                hPosition3=hPosition3+20;
-            end
-            
+
         else   
             % Create boxes for movie -specific graphs
             validOutput = find(strcmp({output.type},'movieGraph'));
@@ -817,8 +806,7 @@ end
 h = getFigure(handles,figName);
 if ~get(hObject,'Value'),delete(h); return; end
 
-userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,...
-    'vectorScale',str2double(get(handles.edit_vectorFieldScale,'String')));
+userData.MO.processes_{procId}.draw(inputArgs{:},'output',output);
 set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 
 
@@ -844,28 +832,6 @@ h = getFigure(handles,figName);
 if ~get(hObject,'Value'),delete(h); return; end
 
 timeSeriesProcess.draw(iInput1,iInput2,'output',output);
-set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
-
-
-function redrawEventGraph(hObject,handles)
-overlayTag = get(hObject,'Tag');
-userData=get(handles.figure1,'UserData');
-
-% Retrieve the id, process nr and channel nr of the selected graphProc
-tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)_input(\d+)','tokens');
-procId=str2double(tokens{1}{1});
-outputList = userData.MO.processes_{procId}.getDrawableOutput;
-input = userData.MO.processes_{procId}.getInput;
-iOutput = str2double(tokens{1}{2});
-iInput1 = str2double(tokens{1}{3});
-output = outputList(iOutput).var;
-figName = ['Aligned ' input(iInput1).name];
-
-% Draw or delete the graph figure depending on the checkbox value
-h = getFigure(handles,figName);
-if ~get(hObject,'Value'),delete(h); return; end
-
-userData.MO.processes_{procId}.draw(iInput1);
 set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 
 function closeGraphFigure(hObject)
