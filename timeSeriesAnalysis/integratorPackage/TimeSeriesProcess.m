@@ -85,7 +85,7 @@ classdef TimeSeriesProcess < Process
             end
         end  
         
-        function status = checkChannelOutput(obj,varargin)
+        function status = checkOutput(obj,varargin)
             % Input check
             input=obj.getInput;
             nInput=numel(input);
@@ -101,7 +101,7 @@ classdef TimeSeriesProcess < Process
     
         end
         
-                function h=draw(obj,i,varargin)
+        function h=draw(obj,i,varargin)
             
             % Check input
             if ~ismember('getDrawableOutput',methods(obj)), h=[]; return; end
@@ -115,7 +115,7 @@ classdef TimeSeriesProcess < Process
             ip.parse(obj,i,varargin{:})
             j=ip.Results.j;
             
-            data=obj.loadChannelOutput(i,j,'output',ip.Results.output);
+            data=obj.loadOutput(i,j,'output',ip.Results.output);
             iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
             if ~isempty(outputList(iOutput).formatData),
                 data=outputList(iOutput).formatData(data);
@@ -138,8 +138,9 @@ classdef TimeSeriesProcess < Process
 
     end
     methods (Static)
-        function procNames = getTimeSeriesProcesses()
-            procNames = {'ProtrusionSamplingProcess';
+        function procNames = getSamplingProcesses()
+            procNames = {
+                'ProtrusionSamplingProcess';
                 'WindowSamplingProcess';};
         end
     end

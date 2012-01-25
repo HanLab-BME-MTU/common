@@ -1,35 +1,35 @@
-function varargout = eventAlignmentProcessGUI(varargin)
-% eventAlignmentProcessGUI M-file for eventAlignmentProcessGUI.fig
-%      eventAlignmentProcessGUI, by itself, creates a new eventAlignmentProcessGUI or raises the existing
+function varargout = signalProcessingProcessGUI(varargin)
+% signalProcessingProcessGUI M-file for signalProcessingProcessGUI.fig
+%      signalProcessingProcessGUI, by itself, creates a new signalProcessingProcessGUI or raises the existing
 %      singleton*.
 %
-%      H = eventAlignmentProcessGUI returns the handle to a new eventAlignmentProcessGUI or the handle to
+%      H = signalProcessingProcessGUI returns the handle to a new signalProcessingProcessGUI or the handle to
 %      the existing singleton*.
 %
-%      eventAlignmentProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in eventAlignmentProcessGUI.M with the given input arguments.
+%      signalProcessingProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in signalProcessingProcessGUI.M with the given input arguments.
 %
-%      eventAlignmentProcessGUI('Property','Value',...) creates a new eventAlignmentProcessGUI or raises the
+%      signalProcessingProcessGUI('Property','Value',...) creates a new signalProcessingProcessGUI or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before eventAlignmentProcessGUI_OpeningFcn gets called.  An
+%      applied to the GUI before signalProcessingProcessGUI_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to eventAlignmentProcessGUI_OpeningFcn via varargin.
+%      stop.  All inputs are passed to signalProcessingProcessGUI_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help eventAlignmentProcessGUI
+% Edit the above text to modify the response to help signalProcessingProcessGUI
 
-% Last Modified by GUIDE v2.5 05-Dec-2011 16:27:38
+% Last Modified by GUIDE v2.5 24-Jan-2012 12:18:35
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @eventAlignmentProcessGUI_OpeningFcn, ...
-                   'gui_OutputFcn',  @eventAlignmentProcessGUI_OutputFcn, ...
+                   'gui_OpeningFcn', @signalProcessingProcessGUI_OpeningFcn, ...
+                   'gui_OutputFcn',  @signalProcessingProcessGUI_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -44,8 +44,8 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before eventAlignmentProcessGUI is made visible.
-function eventAlignmentProcessGUI_OpeningFcn(hObject,eventdata,handles,varargin)
+% --- Executes just before signalProcessingProcessGUI is made visible.
+function signalProcessingProcessGUI_OpeningFcn(hObject,eventdata,handles,varargin)
 
 processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:});
 
@@ -56,7 +56,29 @@ funParams = userData.crtProc.funParams_;
 set(handles.listbox_availableMovies,'String',userData.ML.movieDataFile_, ...
     'UserData',1:numel(userData.ML.movies_));
 
+% Set up available input processes
+allProc = userData.crtProc.getTimeSeriesProcesses();
+allProcString = cellfun(@(x) eval([x '.getName']),allProc,'UniformOutput',false);
+set(handles.listbox_availableProcesses,'String',allProcString,'UserData',allProc);
+
+
 movieIndex = funParams.MovieIndex;
+selProc = funParams.ProcessName;
+
+% Find any parent process
+parentProc = userData.crtPackage.getParent(userData.procID);
+if isempty(userData.crtPackage.processes_{userData.procID}) && ~isempty(parentProc)
+    % Check existence of all parent processes
+    emptyParentProc = any(cellfun(@isempty,userData.crtPackage.processes_(parentProc)));
+    if ~emptyParentProc
+        % Intersect movie index with channel index of parent processes
+        for i = parentProc
+            parentParams = userData.crtPackage.processes_{i}.funParams_;
+            movieIndex = intersect(movieIndex,parentParams.MovieIndex);
+            selProc = intersect(selProc,parentParams.ProcessName);
+        end
+    end
+end
 
 if ~isempty(movieIndex)
     movieString = userData.ML.movieDataFile_(movieIndex);
@@ -67,30 +89,26 @@ end
 set(handles.listbox_selectedMovies,'String',movieString,...
     'UserData',movieIndex,'Callback',@(h,event)update_preview(h,event,guidata(h)));
 
-% Set up available input processes
-allProc = userData.crtProc.getTimeSeriesProcesses();
-allProcString = cellfun(@(x) eval([x '.getName']),allProc,'UniformOutput',false);
-set(handles.listbox_availableProcesses,'String',allProcString,'UserData',allProc);
-
-% Set up selected input processes
-selProc = funParams.ProcessName;
-selProcString = cellfun(@(x) eval([x '.getName']),selProc,'UniformOutput',false);
+% Set up selected input processe
+if ~isempty(selProc)
+    
+    selProcString = cellfun(@(x) eval([x '.getName']),selProc,'UniformOutput',false);
+else
+    selProcString = {};
+end  
 set(handles.listbox_selectedProcesses,'String',selProcString,'UserData',selProc);
 
+% Windows selection parameters
 set(handles.edit_BandMin,'String',funParams.BandMin);
 set(handles.edit_BandMax,'String',funParams.BandMax);
 userData.SliceIndex=funParams.SliceIndex;
 userData.previewFig=-1;
 
-% Set up event popupmenu
-allEvents=userData.crtProc.getEvents;
-eventString=vertcat('Please select an event',{allEvents.name}');
-eventData=horzcat({[]},num2cell(1:numel(allEvents)));
-eventValue = find(cellfun(@(x) isequal(x,funParams.EventIndex),eventData));
-set(handles.popupmenu_Event,'String',eventString,'UserData',eventData,...
-    'Value',eventValue);
+% Bootstrap parameters
+set(handles.edit_nBoot,'String',funParams.nBoot);
+set(handles.edit_alpha,'String',funParams.alpha);
 
-% Choose default command line output for eventAlignmentProcessGUI
+% Choose default command line output for signalProcessingProcessGUI
 handles.output = hObject;
 
 % Update user data and GUI data
@@ -99,7 +117,7 @@ guidata(hObject, handles);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = eventAlignmentProcessGUI_OutputFcn(~, ~, handles) 
+function varargout = signalProcessingProcessGUI_OutputFcn(~, ~, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -357,14 +375,14 @@ end
 
 bandMin = str2double(get(handles.edit_BandMin,'String'));
 if isnan(bandMin) || bandMin<1
-    errordlg('Please enter a valid value for the layer of cells to be used',...
+    errordlg('Please enter a valid value for the minimum band of windows to correlate',...
         'Setting error','modal');
     return;
 end
 
 bandMax = str2double(get(handles.edit_BandMax,'String'));
 if isnan(bandMax) 
-    errordlg('Please enter a valid value for the maximum layer of cells to be used',...
+    errordlg('Please enter a valid value for the maximum band of windows to correlate',...
         'Setting error','modal');
     return;
 end
@@ -382,24 +400,47 @@ if ishandle(userData.previewFig)
 end
 funParams.SliceIndex=userData.SliceIndex;
 
-% Retriev event index
-props=get(handles.popupmenu_Event,{'UserData','Value'});
-if isempty(props{1}{props{2}})
-    errordlg('Please select a valid event to align sampled maps',...
+% Bootstrap parameters
+nBoot = str2double(get(handles.edit_nBoot,'String'));
+if isnan(nBoot) || nBoot<1 || floor(nBoot)~=nBoot
+    errordlg(['Please enter a valid value for the ' get(handles.text_nBoot,'String') ],...
         'Setting error','modal');
     return;
 end
-funParams.EventIndex=props{1}{props{2}}
-% Process Sanity check ( only check underlying data )
-userData = get(handles.figure1, 'UserData');
-try
-    userData.crtProc.sanityCheck;
-catch ME
 
-    errordlg([ME.message 'Please double check your data.'],...
-                'Setting Error','modal');
+alpha = str2double(get(handles.edit_alpha,'String'));
+if isnan(alpha) || alpha<0
+    errordlg(['Please enter a valid value for the ' get(handles.text_alpha,'String') ],...
+        'Setting error','modal');
     return;
 end
 
+funParams.nBoot=nBoot;
+funParams.alpha=alpha;
+
+
 % Set parameters
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
+
+
+% --- Executes on button press in pushbutton15.
+function pushbutton15_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton15 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in pushbutton16.
+function pushbutton16_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton16 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in checkbox_doMIC.
+function checkbox_doMIC_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_doMIC (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+clear classes
+% Hint: get(hObject,'Value') returns toggle state of checkbox_doMIC
