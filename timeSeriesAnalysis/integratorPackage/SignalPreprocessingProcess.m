@@ -67,9 +67,10 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
             h = @signalPreprocessingProcessGUI;
         end
         function trends= getTrends()
-            trends{1} = 'No trend';
-            trends{2} = 'Linear trend';
-            trends{3} = 'Deterministic trend';
+            names = {'No detrending','Remove mean','Remove linear trend',...
+                'Remove deterministic components'};
+            type = {-1,0,1,2};
+            trends=cell2struct(vertcat(names,type),{'name','type'});
         end
         function funParams = getDefaultParams(owner,varargin)
             % Input check
@@ -80,9 +81,12 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
             outputDir=ip.Results.outputDir;
             
             % Set default parameters
-            if isa(owner,'MovieList'), funParams.MovieIndex=1:numel(owner.movies_); end
-            funParams.OutputDirectory = [outputDir  filesep 'preprocessedSignal'];
-            funParams.ProcessName=TimeSeriesProcess.getSamplingProcesses;
+            if isa(owner,'MovieList'), 
+                funParams.MovieIndex=1:numel(owner.movies_); 
+            end
+            funParams.OutputDirectory = [outputDir filesep 'preprocessedSignal'];
+            funParams.ProcessIndex=[];          
+            funParams.OutputName='';
             funParams.kSigma=5;
             funParams.trendType=1;
         end

@@ -5,6 +5,8 @@ classdef ImageDisplay < MovieDataDisplay
         Colorbar ='off';
         CLim = [];
         Units='';
+        sfont = {'FontName', 'Helvetica', 'FontSize', 18};
+        lfont = {'FontName', 'Helvetica', 'FontSize', 22};
     end
     methods
         function obj=ImageDisplay(varargin)
@@ -40,11 +42,9 @@ classdef ImageDisplay < MovieDataDisplay
             if strcmp(obj.Colorbar,'on')
                 if isempty(hCbar)
                     set(hAxes,'Position',[0.05 0.05 .9 .9]);   
-                    hCbar = colorbar('peer',hAxes,'FontSize',12);
-                    ylabel(hCbar,obj.Units,'FontSize',12);
-                else
-                    ylabel(hCbar,obj.Units,'FontSize',12);
+                    hCbar = colorbar('peer',hAxes,obj.sfont{:});
                 end
+                ylabel(hCbar,obj.Units,obj.lfont{:});
             else
                 if ~isempty(hCbar),colorbar(hCbar,'delete'); end
                 set(hAxes,'Position',[0 0 1 1]);
@@ -66,6 +66,10 @@ classdef ImageDisplay < MovieDataDisplay
             params(3).validator=@isvector;
             params(4).name='Units';
             params(4).validator=@ischar;
+            params(5).name='sfont';
+            params(5).validator=@iscell;
+            params(6).name='lfont';
+            params(6).validator=@iscell;
         end
         function f=getDataValidator()
             f=@isnumeric;

@@ -2,7 +2,6 @@ classdef ScalarMapDisplay < MovieDataDisplay
     %Abstract class for displaying image processing output
     properties
         Colormap='jet';
-        NaNColor = [1 1 1];
         Colorbar ='on';
         CLim = [];
         Units='';
@@ -126,12 +125,10 @@ classdef ScalarMapDisplay < MovieDataDisplay
             params(3).validator=@isvector;
             params(4).name='Units';
             params(4).validator=@ischar;
-            params(5).name='NaNColor';
-            params(5).validator=@(x) isequal(size(x),[1 3]);
-            params(6).name='sfont';
+            params(5).name='sfont';
+            params(5).validator=@iscell;
+            params(6).name='lfont';
             params(6).validator=@iscell;
-            params(7).name='lfont';
-            params(7).validator=@iscell;
         end
 
         function f=getDataValidator()

@@ -154,7 +154,7 @@ if isa(userData.MO,'MovieData')
         'String','Colormap','HorizontalAlignment','left');
     uicontrol(imagePanel,'Style','popupmenu',...
         'Position',[200 hPosition1 80 20],'Tag','popupmenu_colormap',...
-        'String',{'Gray','Jet','HSV'},'Value',1,...
+        'String',{'Gray','Jet','HSV','Custom'},'Value',1,...
         'HorizontalAlignment','left','Callback',@(h,event) setColormap(guidata(h)));
     
     hPosition1=hPosition1+20;
@@ -573,7 +573,7 @@ if strcmp(figName,'Movie')
         'Name',figName,'NumberTitle','off','Tag','viewerFig');
     
     % figure options for movie export
-    iptsetpref('ImshowBorder','tight');
+    iptsetpref('ImShowBorder','tight');
     set(h, 'InvertHardcopy', 'off');
     set(h, 'PaperUnits', 'Points');
     set(h, 'PaperSize', [nx ny]);
@@ -714,8 +714,16 @@ set(handles.checkbox_colorbar,'Value',strcmpi(cbar,'on'));
 % Set the colormap properties
 cmap=displayMethod.Colormap;
 allCmap=get(handles.popupmenu_colormap,'String');
-set(handles.popupmenu_colormap,'Value',find(strcmpi(cmap,allCmap)));
+iCmap = find(strcmpi(cmap,allCmap),1);
 
+if isempty(iCmap), 
+    iCmap= numel(allCmap); 
+    enableState = 'off';
+else
+    enableState = 'on';
+end
+set(handles.popupmenu_colormap,'Value',iCmap,'Enable',enableState);
+    
 % Reset the scaleBar
 setScaleBar(handles,'imageScaleBar');
 setTimeStamp(handles);

@@ -99,31 +99,6 @@ classdef SignalProcessingProcess < TimeSeriesProcess
                 output(i).type = 'signalGraph';
                 output(i).defaultDisplayMethod = tools(i).defaultDisplayMethod;
             end
-%             if obj.funParams_.doCorrelation
-%                 correlationOutput(1).name='Cross correlation';
-%                 correlationOutput(1).var='crossCorrelation';
-%                 correlationOutput(1).formatData=@formatCorrelation;
-%                 correlationOutput(1).type='correlationGraph';
-%                 correlationOutput(1).defaultDisplayMethod = @(i,j)ErrorBarGraphDisplay('XLabel','Lags (s)',...
-%                     'YLabel',obj.getDrawableOutputName(i,j,'cross'),'Input1',obj.getInput(i).name);
-%                 correlationOutput(2).name='Partial correlation';
-%                 correlationOutput(2).var='partialCorrelation';
-%                 correlationOutput(2).formatData=@formatCorrelation;
-%                 correlationOutput(2).type='correlationGraph';
-%                 correlationOutput(2).defaultDisplayMethod = @(i,j)ErrorBarGraphDisplay('XLabel','Lags (s)',...
-%                     'YLabel',obj.getDrawableOutputName(i,j,'partial'),'Input1',obj.getInput(i).name);
-%                 output(end+1:end+2)=crossOutput;
-%             end
-%             if obj.funParams_.doCoherence
-%                 coherenceOutput(1).name='Coherence';
-%                 coherenceOutput(1).var='coherence';
-%                 coherenceOutput(1).formatData=@formatCoherence;
-%                 coherenceOutput(1).type='correlationGraph';
-%                 coherenceOutput(1).defaultDisplayMethod = @(i,j)ErrorBarGraphDisplay('XLabel','Frequency (Hz)',...
-%                     'YLabel',obj.getDrawableOutputName(i,j,'cross'),'Input1',obj.getInput(i).name);
-%                 output(end+1)=coherenceOutput;
-%             end
-            
         end
         
         function [label,title] = getDrawableOutputName(obj,i,j,output)
@@ -197,7 +172,8 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             tools(1).GUI = @correlationSettingsGUI;
             tools(1).function = @measureDataCorrelation;
             tools(1).output = 'crossCorrelation';
-            tools(1).formatData = 'crossCorrelation';
+            tools(1).outputList = 'crossCorrelation';
+            tools(1).formatData = @formatCorrelation;
             tools(1).parameters.nBoot = 1e4;
             tools(1).parameters.alpha = .01;
             tools(1).defaultDisplayMethod = @(i,j)ErrorBarGraphDisplay('XLabel','Lags (s)',...
@@ -206,12 +182,14 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             tools(2).name = 'Partial correlation';
             tools(2).GUI = @correlationSettingsGUI;
             tools(2).function = @measureDataPartialCorrelation;
+            tools(2).formatData = @formatCorrelation;
             tools(2).parameters.nBoot = 1e4;
             tools(2).parameters.alpha = .01;
             % Coherence function
             tools(3).name = 'Coherence';
             tools(3).GUI = @coherenceSettingsGUI;
             tools(3).function = @measureDataCoherence;   
+            tools(3).formatData = @formatCoherence;
             tools(3).parameters.nWin=8;
             tools(3).parameters.window='hamming';
             tools(3).parameters.noLap=.5;
