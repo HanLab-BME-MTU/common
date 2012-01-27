@@ -1,4 +1,4 @@
-function [P t res] = TLSFitBezierWeightedConstrainedCP2(data, w, n, maxCurvature, varargin)
+function [P t res] = TLSFitBezierWeightedConstrainedCP(data, w, n, maxCurvature, varargin)
 % TLSFitBezierWeightedConstrainedCP computes the total weighted least 
 % squares fit of a nth-degree Bezier curve to a set of data points. 
 %
