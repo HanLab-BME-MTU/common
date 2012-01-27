@@ -89,6 +89,12 @@ classdef  MovieObject < hgsetget
             obj.processes_ = horzcat(obj.processes_, {newprocess});
         end
         
+        function proc = getProcess(obj, i)
+            assert(iscalar(i) && ismember(i,1:numel(obj.processes_)));
+            proc = obj.processes_{i};
+        end
+        
+        
         function deleteProcess(obj, process)
             % Delete given process object in process list
             %

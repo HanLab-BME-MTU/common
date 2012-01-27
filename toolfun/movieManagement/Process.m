@@ -1,4 +1,3 @@
-
 classdef Process < hgsetget
     % Defines the abstract class Process from which every user-defined process
     % will inherit.
@@ -57,7 +56,6 @@ classdef Process < hgsetget
     end
     
     methods
-        
         function setPara(obj, para)
             % Reset process' parameters
             if ~isequal(obj.funParams_,para)
@@ -87,17 +85,12 @@ classdef Process < hgsetget
         end
         
         function status = checkChanNum(obj,iChan)
-            ip=inputParser;
-            ip.addRequired('iChan',@(x) ~isempty(x) && isnumeric(x))
-            ip.parse(iChan);   
-            
+            assert(~isempty(iChan) && isnumeric(iChan),'Please provide a valid channel input'); 
             status = ismember(iChan,1:numel(obj.owner_.channels_));
         end
         
         function status = checkFrameNum(obj,iFrame)
-            ip=inputParser;
-            ip.addRequired('iFrame',@(x) ~isempty(x) && isnumeric(x))
-            ip.parse(iFrame);            
+            assert(~isempty(iFrame) && isnumeric(iFrame),'Please provide a valid frame input');           
             status = ismember(iFrame,1:obj.owner_.nFrames_);
         end
    
@@ -119,14 +112,19 @@ classdef Process < hgsetget
         end
         
         function run(obj,varargin)
-            % Run the process!
+            % Reset sucess flags and existing display methods
+            obj.resetDisplayMethods;
             obj.success_=false;
-            obj.startTime_ = clock;
+            
+            % Run the process!
             try
+                obj.startTime_ = clock;
                 obj.funName_(obj.owner_,varargin{:});
             catch runException
                 rethrow(runException)
             end
+            
+            % Update flags and set finishTime
             obj.success_=true;
             obj.updated_=true;
             obj.procChanged_=false;
@@ -140,6 +138,12 @@ classdef Process < hgsetget
             obj.owner_.save;
         end
         
+        function resetDisplayMethod(obj)
+            if ~isempty(obj.displayMethod_)
+                cellfun(@delete,obj.displayMethod_(~cellfun(@isempty,obj.displayMethod_)));
+                obj.displayMethod_ = {};
+            end        
+        end
         
         function setInFilePaths(obj,paths)
             %  Set input file paths
@@ -165,17 +169,13 @@ classdef Process < hgsetget
         end
         
         function relocate(obj,oldRootDir,newRootDir)
-            % Relocate all paths in various fields of process
-            %
-            % Sebastien Besson, 5/2011
-            
+            % Relocate all paths in various process fields 
             relocateFields ={'inFilePaths_','outFilePaths_',...
                 'funParams_','visualParams_'};
             for i=1:numel(relocateFields)
                 obj.(relocateFields{i}) = relocatePath(obj.(relocateFields{i}),...
                     oldRootDir,newRootDir);
-            end
-            
+            end       
         end
         
         function hfigure = resultDisplay(obj)
@@ -184,8 +184,9 @@ classdef Process < hgsetget
         end
         
         function h=draw(obj,iChan,iFrame,varargin)
-            % Function to draw process output (template method)
+            % Template function to draw process output
             
+            % Input check
             if ~ismember('getDrawableOutput',methods(obj)), h=[]; return; end
             outputList = obj.getDrawableOutput();
             ip = inputParser;
@@ -196,25 +197,26 @@ classdef Process < hgsetget
             ip.KeepUnmatched = true;
             ip.parse(obj,iChan,iFrame,varargin{:})
 			
+            % Load data
             data=obj.loadChannelOutput(iChan,iFrame,'output',ip.Results.output);
             iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
             if ~isempty(outputList(iOutput).formatData),
                 data=outputList(iOutput).formatData(data);
             end
-            try
-                assert(~isempty(obj.displayMethod_{iOutput,iChan}));
-            catch ME
-                obj.displayMethod_{iOutput,iChan}=...
-                    outputList(iOutput).defaultDisplayMethod(iChan);
+            
+            % Initialize display method
+            displayDims = size(obj.displayMethod_);
+            if any(displayDims(1:2)<[iOutput iChan]) || ...
+                    isempty(obj.displayMethod_{iOutput,iChan})
+                obj.displayMethod_{iOutput,iChan}=outputList(iOutput).defaultDisplayMethod(iChan);
             end
             
-            % Delegate to the corresponding method
+            % Create graphic tag and delegate drawing to the display class
             tag = [obj.getName '_channel' num2str(iChan) '_output' num2str(iOutput)];
             drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
                 2*numel(fieldnames(ip.Unmatched)),1);
             h=obj.displayMethod_{iOutput,iChan}.draw(data,tag,drawArgs{:});
-        end
-        
+        end       
     end
 
     methods (Static,Abstract)

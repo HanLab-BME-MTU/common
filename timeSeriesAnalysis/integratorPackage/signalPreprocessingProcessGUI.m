@@ -68,7 +68,7 @@ set(handles.listbox_selectedMovies,'String',movieString,...
     'UserData',movieIndex);
 
 % Set up available input processes
-allProc = userData.crtProc.getTimeSeriesProcesses();
+allProc =  userData.crtProc.getSamplingProcesses;
 allProcString = cellfun(@(x) eval([x '.getName']),allProc,'UniformOutput',false);
 set(handles.listbox_availableProcesses,'String',allProcString,'UserData',allProc);
 
@@ -80,7 +80,8 @@ set(handles.listbox_selectedProcesses,'String',selProcString,'UserData',selProc)
 % Set preprocessing parameters
 set(handles.edit_kSigma,'String',funParams.kSigma);
 allTrends=SignalPreprocessingProcess.getTrends;
-set(handles.popupmenu_trendType,'String',allTrends,'Value',funParams.trendType+1);
+set(handles.popupmenu_trendType,'String',{allTrends.name},...
+    'Value',find([allTrends.type]==funParams.trendType));
 
 % Choose default command line output for signalPreprocessingProcessGUI
 handles.output = hObject;
