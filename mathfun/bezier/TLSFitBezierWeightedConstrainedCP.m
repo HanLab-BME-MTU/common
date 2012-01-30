@@ -76,7 +76,6 @@ else
     [x0,a,~,~] = ls3dline(bsxfun(@times,data,meanW));
     [minPoint,maxPoint,~,~,~] = projectPointsOntoLine(data,x0'./meanW,a'./meanW);
     
-    
     % Compute the planar constraints
     planeNormal = (maxPoint-minPoint);
     planePoints = repmat(minPoint,n+1,1) + repmat(1/n*(0:n)',1,dim) .* repmat(planeNormal,n+1,1);
