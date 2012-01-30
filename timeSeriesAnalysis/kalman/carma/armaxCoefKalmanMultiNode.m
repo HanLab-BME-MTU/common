@@ -238,6 +238,20 @@ wnVariance = 0.8*wnVariance0; %variance from "current" iteration
 
 paramT = vectorFromParams(TOPO0,nExoIn,arPARAMP0,maPARAMP0,padCONN,0);
 
+%----------------------CHANGE----------------------------------------
+%
+% Initialization of the fmincon parameters
+Ain=[];
+bin=[];
+Aeq=[];
+beq=[];
+lb=-10;
+ub=10;
+noncon = [];
+opt= optimset('MaxIter',100,'Algorithm','interior-point') ;
+%Marco, 2011
+
+
 %while the variance changes by more than 5% from one iteration to the next,
 %keep regressing
 while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
@@ -257,16 +271,18 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
     param0 = paramT;
     
    % startup tomlab if necessary
-    success = startupTomlab;
-    if ~success
-        error('Tomlab could not be launched!')
-    end
-    
-    prob = conAssign('neg2LnLikelihoodMultiNodeMEXcall',[],[],[],...
-        [-10*ones(1,(arOrder+maOrder)*nNodes) -2*ones(1,(xOrder+1)*nConn)],...
-        [10*ones(1,(arOrder+maOrder)*nNodes) 2*ones(1,(xOrder+1)*nConn)],...
-        'locMinNegLikMEXMN',param0);
-    
+   % success = startupTomlab;
+   % if ~success
+   %     error('Tomlab could not be launched!')
+   % end
+   
+   % prob = conAssign('neg2LnLikelihoodMultiNodeMEXcall',[],[],[],...
+   %     [-10*ones(1,(arOrder+maOrder)*nNodes) -2*ones(1,(xOrder+1)*nConn)],...
+   %     [10*ones(1,(arOrder+maOrder)*nNodes) 2*ones(1,(xOrder+1)*nConn)],...
+   %     'locMinNegLikMEXMN',param0);
+   % No TomLab anymore - Marco Vilela, 2011
+   
+   
     prob.PriLevOpt = 0;
     prob.arOrder = arOrder;
     prob.maOrder = maOrder;
@@ -280,13 +296,17 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
     
     %minimize -2ln(likelihood) using Tomlab's ucSolve
     % -- 1/25/07 jonas: changed printLevel to 0
-    result = tomRun('ucSolve',prob,0,2);
-
-
+   % result = tomRun('ucSolve',prob,0,2);
+    costF=@(x)neg2LnLikelihoodMultiNodeMEXcall(x,prob);
+   
+   [result,fval,exitflag,output,lambda]=fmincon(costF,param0,Ain,bin,Aeq,beq,lb,ub,...
+                                                noncon,opt);
 
     %proceed if minimization was successful
-    if result.ExitFlag == 0
-        params = result.x_k';
+    %if result.ExitFlag == 0
+    %     params = result.x_k';
+    if exitflag >= 0
+        params = result;
         proceed = 1;
     else
         proceed = 0;
@@ -298,7 +318,7 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
         %assign parameter values to paramT to use them as starting guess in
         %next iteration
         paramT = params;
-        [arPARAMP,maPARAMP,TOPOK] = paramsFromVector(params',nNodes,arOrder,...
+        [arPARAMP,maPARAMP,TOPOK] = paramsFromVector(params,nNodes,arOrder,...
             maOrder,xOrder,padCONN);
 
         if ~isempty(arPARAMP)

@@ -549,18 +549,31 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                 for i = 1:numTraj
                     traj = trajOut2(i).observations;
                     [m, n] = size(traj);
-                    traj3d = zeros(m, 1, 2);
+                    traj3d = zeros(m, 2, 2);
                     traj3d(:, 1, 1) = traj(:, 1);
                     traj3d(:, 1, 2) = traj(:, 2);
+%#####################Modifcation                    
+                    traj3d(:, 2, 1) = trajIn.observations(:,1);
+                    traj3d(:, 2, 2) = trajIn.observations(:, 2);
+%#########################################################                    
                     tr(i).observations = traj3d;
                 end
                 
                 model.trajOut = tr;
-                model.TOPOp = cat(1, 0, (param0(1:arOrder))');
-                model.maPARAMSp = (param0(arOrder+1:arOrder+maOrder))';
+
+                model.TOPOp=zeros(arOrder+1,2,2);
+                model.TOPOp(1:arOrder+1,1,1) = cat(1, 0, (param0(1:arOrder))');
+                model.TOPOp(1:xOrder+2,2,1) = cat(1, 0, xParam0');
                 
-                topoBIN = cat(1, 0, ones(arOrder, 1));
-                maBIN = ones(maOrder, 1);
+                model.maPARAMSp = zeros(maOrder,2);
+                model.maPARAMSp(:,1) = (param0(arOrder+1:arOrder+maOrder))';
+                
+                topoBIN =zeros(arOrder+1,2,2);
+                topoBIN(1:arOrder+1,1,1) = cat(1, 0, ones(arOrder, 1));
+                topoBIN(2:xOrder+2,2,1) = ones(xOrder+1, 1);
+                
+                maBIN = zeros(maOrder, 2);
+                maBIN(:,1) = ones(maOrder, 1);
                 
                 model.topoBIN = cast(topoBIN, 'int32');
                 model.maBIN = cast(maBIN, 'int32');
@@ -583,13 +596,13 @@ while abs(wnVariance-wnVariance0)/wnVariance0 > 0.05
                         if arOrder > 0
                             ar = topo(2:(arOrder+1));
                             if maOrder > 0
-                                params = cat(2, (ar)', (ma)');
+                                params = cat(2, (ar)', (ma(:,1)));
                             else
                                 params = (ar)';
                             end
                         else % if arOrder == 0
                             if maOrder > 0
-                                params = (ma)';
+                                params = (ma(:,1))';
                             else
                                 params = [];
                             end

@@ -2,12 +2,12 @@ function [avegCoh,CohCI,w]=coherenceBootstrap(S1,S2,varargin)
 % This function calculates the power spectrum and coherence 
 %
 % Synopsis: 
-%          []=coherenceBootstrap(S,S2,nWin,wType,noLap,Fs)
+%          [avegCoh,CohCI,w]=coherenceBootstrap(S,S2,nWin,wType,noLap,Fs,alpha,nBoot)
 %
 %Input:
-%      S1    - signal
-%      S2    - signal
-%      nWin  - number of windows  
+%      S1    - signal 1 (number of points x number of variables)
+%      S2    - signal 2 (same as signal 1)
+%      nWin  - number of windows (Default 8) 
 %      wType - window type. Options:
 %              bartlett;
 %              blackman;
@@ -25,9 +25,17 @@ function [avegCoh,CohCI,w]=coherenceBootstrap(S1,S2,varargin)
 %              taylorwin;
 %              triang;
 %              tukeywin 
-%      nOverLap - percentage of overlap between windows (Default 0.5 - 50%)
+%      noLap - percentage of overlap between windows (Default 0.5 - 50%)
+%      Fs    - sampling rate (Default - 1)
+%      alpha - Used to define the confidence interval percentile (Default 0.05)
+%      nBoot - number of bootstrap samples (Default 10000)
 %
-%Output
+%Output:
+%       avegCoh - average coherence
+%       CohCI   - coherence confidence interval 
+%       W       - frequencies
+%
+% Marco Vilela, 01/2012
 
 % Input check
 ip=inputParser;

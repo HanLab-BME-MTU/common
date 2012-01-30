@@ -201,7 +201,7 @@ bleedImNames = imNames(1,p.BleedChannelIndex);
 
 %Log the input and bleed images in the process
 movieData.processes_{iProc}.setInImagePath(p.ChannelIndex,inDir);
-movieData.processes_{iProc}.setCorrectionImagePath(p.BleedChannelIndex,bleedImDir);
+% movieData.processes_{iProc}.setCorrectionImagePath(p.BleedChannelIndex,bleedImDir);
 
 % Set the output directory
 outDir = [p.OutputDirectory filesep dName num2str(p.ChannelIndex)]; %Corrected images
