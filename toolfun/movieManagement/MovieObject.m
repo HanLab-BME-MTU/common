@@ -183,8 +183,10 @@ classdef  MovieObject < hgsetget
             % Read process of given type
             if isa(proc,'Process'), 
                 searchFcn = @(x) isequal(x,proc);
+                procName = class(proc);
             else
                 searchFcn = @(x) isa(x,proc); 
+                procName = proc;
             end
              
             iProc = find(cellfun(searchFcn,obj.processes_)); 
@@ -201,7 +203,7 @@ classdef  MovieObject < hgsetget
                 iSelected = listdlg('ListString',procNames,...
                     'SelectionMode',isMultiple,...
                     'ListSize',[400,400],...
-                    'PromptString',['Select the desired ' procNames ':']);
+                    'PromptString',['Select the desired ' procName ':']);
                 iProc = iProc(iSelected);
                 assert(~isempty(iProc),'You must select a process to continue!');
             else
