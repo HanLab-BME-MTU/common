@@ -113,7 +113,7 @@ classdef Process < hgsetget
         
         function run(obj,varargin)
             % Reset sucess flags and existing display methods
-            obj.resetDisplayMethods;
+            obj.resetDisplayMethod;
             obj.success_=false;
             
             % Run the process!
