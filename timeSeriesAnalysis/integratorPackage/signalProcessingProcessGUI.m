@@ -22,7 +22,7 @@ function varargout = signalProcessingProcessGUI(varargin)
 
 % Edit the above text to modify the response to help signalProcessingProcessGUI
 
-% Last Modified by GUIDE v2.5 24-Jan-2012 12:18:35
+% Last Modified by GUIDE v2.5 30-Jan-2012 14:37:06
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -57,7 +57,7 @@ set(handles.listbox_availableMovies,'String',userData.ML.movieDataFile_, ...
     'UserData',1:numel(userData.ML.movies_));
 
 % Set up available input processes
-allProc = userData.crtProc.getTimeSeriesProcesses();
+allProc = userData.crtProc.getSamplingProcesses;
 allProcString = cellfun(@(x) eval([x '.getName']),allProc,'UniformOutput',false);
 set(handles.listbox_availableProcesses,'String',allProcString,'UserData',allProc);
 
@@ -104,9 +104,8 @@ set(handles.edit_BandMax,'String',funParams.BandMax);
 userData.SliceIndex=funParams.SliceIndex;
 userData.previewFig=-1;
 
-% Bootstrap parameters
-set(handles.edit_nBoot,'String',funParams.nBoot);
-set(handles.edit_alpha,'String',funParams.alpha);
+userData.tools = SignalProcessingProcess.getProcessingTools;
+set(handles.popupmenu_tools,'String',{userData.tools.name},'UserData',{userData.tools.GUI});
 
 % Choose default command line output for signalProcessingProcessGUI
 handles.output = hObject;
@@ -114,6 +113,7 @@ handles.output = hObject;
 % Update user data and GUI data
 set(hObject, 'UserData', userData);
 guidata(hObject, handles);
+updateTools(hObject,eventdata,handles);
 
 
 % --- Outputs from this function are returned to the command line.
@@ -243,7 +243,7 @@ userData.movieID=movieProps{1}(movieProps{2});
 p.ProcessName = get(handles.listbox_selectedProcesses,'UserData');
 
 % Retrieve input 
-corrProc = CorrelationCalculationProcess(userData.ML.movies_{userData.movieID},'');
+corrProc = SignalProcessingProcess(userData.ML.movies_{userData.movieID},'');
 parseProcessParams(corrProc,p);
 input = corrProc.getInput;
 nInput = numel(input);
@@ -400,47 +400,82 @@ if ishandle(userData.previewFig)
 end
 funParams.SliceIndex=userData.SliceIndex;
 
-% Bootstrap parameters
-nBoot = str2double(get(handles.edit_nBoot,'String'));
-if isnan(nBoot) || nBoot<1 || floor(nBoot)~=nBoot
-    errordlg(['Please enter a valid value for the ' get(handles.text_nBoot,'String') ],...
-        'Setting error','modal');
-    return;
-end
-
-alpha = str2double(get(handles.edit_alpha,'String'));
-if isnan(alpha) || alpha<0
-    errordlg(['Please enter a valid value for the ' get(handles.text_alpha,'String') ],...
-        'Setting error','modal');
-    return;
-end
-
-funParams.nBoot=nBoot;
-funParams.alpha=alpha;
+% Get parameters
 
 
 % Set parameters
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
 
 
-% --- Executes on button press in pushbutton15.
-function pushbutton15_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton15 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+% --- Executes on button press in pushbutton_addTool.
+function pushbutton_addTool_Callback(hObject, eventdata, handles)
+
+userData=get(handles.figure1,'UserData');
+iTool = get(handles.popupmenu_tools,'Value');
+userData.crtProc.addTool(userData.tools(iTool));
+updateTools(hObject, eventdata, handles);
+
+% --- Executes on button press in pushbutton_removeTool.
+function pushbutton_removeTool_Callback(hObject, eventdata, handles)
 
 
-% --- Executes on button press in pushbutton16.
-function pushbutton16_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton16 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+userData=get(handles.figure1,'UserData');
+tag = 'checkbox_tool(\d+)';
+h=findobj(handles.figure1,'-regexp','Tag',tag,'-and','Value',1);
+if isempty(h), return; end
+tokens=regexp(get(h,'Tag'),tag,'tokens');
+iTool = cellfun(@(x) str2double(x{1}),tokens);
+userData.crtProc.removeTools(iTool);
+updateTools(hObject, eventdata, handles);
+
+function updateTools(hObject, eventdata, handles)
+
+% Create templates for GUI generation
+userData= get(handles.figure1,'UserData');
+tools= userData.crtProc.funParams_.processingTools;
+nTools =numel(tools);
+
+createToolCheckbox= @(i,text,value) uicontrol(handles.uipanel_processingTools,...
+    'Style','checkbox','Tag',['checkbox_tool' num2str(i)],'Value',value,...
+    'Position',[40 10+20*(nTools-i) 250 20],'String',[' ' text],'HorizontalAlignment','left');
+createToolSettingsButton= @(i,settingsGUI) uicontrol(handles.uipanel_processingTools,...
+    'Style','pushbutton','String','Settings',...
+    'Position',[350 10+20*(nTools-i) 100 20],'Tag',['settings_tool' num2str(i)],...
+    'Callback',@(h,event) settingsGUI(h,event,guidata(h)));
 
 
-% --- Executes on button press in checkbox_doMIC.
-function checkbox_doMIC_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_doMIC (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-clear classes
-% Hint: get(hObject,'Value') returns toggle state of checkbox_doMIC
+values= zeros(nTools,1);
+getToolHandle = @(i) findobj(handles.figure1,'Tag',['checkbox_tool' num2str(i)]);
+if ~isequal(hObject,handles.pushbutton_removeTool)
+    validToolBoxes = ~arrayfun(@(x) isempty(getToolHandle(x)),1:nTools);
+    for i=find(validToolBoxes)
+        values(i)=get(getToolHandle(i),'Value');
+    end
+   
+end
+h=findobj(handles.figure1,'-regexp','Tag','checkbox_tool*','-or','-regexp','Tag','settings_tool*');
+delete(h);
+resizeGUI(handles,20*nTools-20*numel(h)/2);
+
+for i =nTools:-1:1
+    createToolCheckbox(i,tools(i).name,values(i));
+    createToolSettingsButton(i,tools(i).GUI);
+end
+% guidata(handles.figure1,guihandles(handles.figure1));
+
+
+function resizeGUI(handles,dh)
+
+toolsUicontrols = get(handles.uipanel_processingTools,'Children');
+resizableHandles=[handles.uipanel_processingTools,handles.figure1];
+arrayfun(@(x) set(x,'Position',get(x,'Position')+[0 0 0 dh]),resizableHandles);
+arrayfun(@(x) set(x,'Position',get(x,'Position')+[0 dh 0 0]),toolsUicontrols);
+
+% Fix GUI position/sizebleInput,'Position',get(handles.uipanel_samplableInput,'Position')+[0 0 0 dh]);
+uicontrols = {'uipanel_input','uipanel_windows','axes_help','text_processName','text_copyright'};
+for i=1:numel(uicontrols)
+    set(handles.(uicontrols{i}),'Position',get(handles.(uicontrols{i}),'Position')+[0 dh 0 0]);
+end
+
+
+

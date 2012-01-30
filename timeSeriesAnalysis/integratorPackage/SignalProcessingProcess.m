@@ -129,14 +129,22 @@ classdef SignalProcessingProcess < TimeSeriesProcess
                     end
             end
         end
+        
+        function addTool(obj,tools)
+            obj.funParams_.processingTools(end+1)=tools;
+        end
+        
+        function removeTool(obj,i)
+            obj.funParams_.processingTools(i)=[];
+        end
     end
     
     methods (Static)
         function name =getName()
-            name = 'Correlation Calculation';
+            name = 'Signal Processing';
         end
         function h =GUI()
-            h = @correlationCalculationProcessGUI;
+            h = @signalProcessingProcessGUI;
         end
         function funParams = getDefaultParams(owner,varargin)
             % Input check
@@ -148,7 +156,7 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             
             % Set default parameters
             funParams.OutputDirectory = [outputDir  filesep 'correlation'];
-            funParams.ProcessName=TimeSeriesProcess.getTimeSeriesProcesses;
+            funParams.ProcessName={};
             if isa(owner,'MovieList'),
                 funParams.MovieIndex=1:numel(owner.movies_);
                 winProc =cellfun(@(x) x.processes_{x.getProcessIndex('WindowingProcess',1,false)},...
@@ -176,8 +184,6 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             tools(1).formatData = @formatCorrelation;
             tools(1).parameters.nBoot = 1e4;
             tools(1).parameters.alpha = .01;
-            tools(1).defaultDisplayMethod = @(i,j)ErrorBarGraphDisplay('XLabel','Lags (s)',...
-                    'YLabel',obj.getDrawableOutputName(i,j,'cross'),'Input1',obj.getInput(i).name);
             % Partial correlation function
             tools(2).name = 'Partial correlation';
             tools(2).GUI = @correlationSettingsGUI;
