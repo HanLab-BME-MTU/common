@@ -30,7 +30,7 @@ set(handles.edit_path, 'String', ...
 
 % Bold the name of set-up processes
 setupProc = ~cellfun(@isempty,userData.crtPackage.processes_);
-set(setupHandles(setupProc),'FontWeight','bold');
+set(setupHandles(setupProc),'FontWeight','bold','Enable','on');
 set(setupHandles(~setupProc),'FontWeight','normal');
 
 % Allow visualization of successfully run processes
@@ -65,19 +65,16 @@ for i = find(~cellfun(@isempty,procEx));
 end
 
 % Set processes checkbox value
-set(setupHandles(~userData.statusM(userData.id).Checked),'Value',0);
-set(setupHandles(userData.statusM(userData.id).Checked),'Value',1);
-
-for i = find(userData.statusM(userData.id).Checked)
-     userfcn_lampSwitch(i, 1, handles)
-end
+checkedProc = logical(userData.statusM(userData.id).Checked);
+set(setupHandles(~checkedProc),'Value',0);
+set(setupHandles(checkedProc),'Value',1);
+arrayfun(@(i) userfcn_lampSwitch(i,1,handles),find(checkedProc));
 
 % Checkbox enable/disable set up
-k= successProc | userData.statusM(userData.id).Checked;
+k= successProc | checkedProc;
 tempDependM = userData.dependM;
 tempDependM(:,logical(k)) = zeros(nProc, nnz(k));
 userfcn_enable(find (any(tempDependM==1,2)), 'off',handles);
-
 
 if strcmp(type, 'initialize')
     userData.statusM(userData.id).Visited = true;
