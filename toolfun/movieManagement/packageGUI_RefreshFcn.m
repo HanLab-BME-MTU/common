@@ -34,7 +34,7 @@ set(setupHandles(setupProc),'FontWeight','bold','Enable','on');
 set(setupHandles(~setupProc),'FontWeight','normal');
 
 % Allow visualization of successfully run processes
-successProc = false(nProc,1);
+successProc = false(1,nProc);
 successProc(setupProc) = cellfun(@(x) x.success_,userData.crtPackage.processes_(setupProc));
 set(showHandles(successProc),'Enable','on');
 set(showHandles(~successProc),'Enable','off');
