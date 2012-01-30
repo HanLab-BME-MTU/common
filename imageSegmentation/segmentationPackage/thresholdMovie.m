@@ -178,7 +178,7 @@ for iChan = 1:nChanThresh
         waitbar((iChan-1)*nImages / nImTot,wtBar,['Please wait, thresholding channel ' num2str(p.ChannelIndex(iChan)) ' ...']);        
     end        
     disp(['Thresholding images for channel # ' num2str(p.ChannelIndex(iChan)) ' : '])
-    disp(inFilePaths{1,iChan})
+    disp(inFilePaths{1,p.ChannelIndex(iChan)})
     disp('Masks will be stored in directory :')
     disp(maskDirs{iChan})
     
@@ -192,7 +192,7 @@ for iChan = 1:nChanThresh
         if isempty(p.ProcessIndex)
             currImage = imread([imDirs{iChan} filesep imageFileNames{iChan}{iImage}]);
         else
-            currImage = movieData.processes_{p.ProcessIndex}.loadOutImage(iChan,iImage);
+            currImage = movieData.processes_{p.ProcessIndex}.loadOutImage(p.ChannelIndex(iChan),iImage);
         end
 
         %KJ: filter image before thesholding if requested
