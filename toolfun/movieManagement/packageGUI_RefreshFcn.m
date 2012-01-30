@@ -17,8 +17,12 @@ ip.addRequired('handles',@isstruct);
 ip.addRequired('type',@(x) any(strcmp(x,{'initialize','refresh'})));
 ip.parse(handles,type)
 
+% Retrieve handles
 userData = get(handles.figure1, 'UserData');
 nProc = size(userData.dependM, 1);
+setupHandles = arrayfun(@(i)handles.(['checkbox_',num2str(i)]),1:nProc);
+showHandles = arrayfun(@(i)handles.(['pushbutton_show_',num2str(i)]),1:nProc);
+set(setupHandles,'Enable','on');
 
 % Set movie data path
 set(handles.edit_path, 'String', ...
@@ -26,24 +30,14 @@ set(handles.edit_path, 'String', ...
 
 % Bold the name of set-up processes
 setupProc = ~cellfun(@isempty,userData.crtPackage.processes_);
-for i=find(setupProc)
-    set(handles.(['checkbox_',num2str(i)]),'FontWeight','bold');
-end
-
-for i=find(~setupProc)
-    set(handles.(['checkbox_',num2str(i)]),'FontWeight','normal');
-    set(handles.(['pushbutton_show_',num2str(i)]),'Enable','off');
-end
+set(setupHandles(setupProc),'FontWeight','bold');
+set(setupHandles(~setupProc),'FontWeight','normal');
 
 % Allow visualization of successfully run processes
-successProc = false(size(setupProc));
+successProc = false(nProc,1);
 successProc(setupProc) = cellfun(@(x) x.success_,userData.crtPackage.processes_(setupProc));
-for i=find(successProc)
-    set(handles.(['pushbutton_show_',num2str(i)]),'Enable','on');
-end
-for i=find(~successProc)
-    set(handles.(['pushbutton_show_',num2str(i)]),'Enable','off');
-end
+set(showHandles(successProc),'Enable','on');
+set(showHandles(~successProc),'Enable','off');
 
 % Run sanityCheck on package 
 % if strcmp(type, 'initialize'), full=true; else full=false; end
@@ -70,14 +64,11 @@ for i = find(~cellfun(@isempty,procEx));
         sprintf('%s\n',procEx{i}(:).message), true);
 end
 
-
 % Set processes checkbox value
-for i = find(~userData.statusM(userData.id).Checked)
-    set(handles.(['checkbox_',num2str(i)]),'Value',0);
-end
+set(setupHandles(~userData.statusM(userData.id).Checked),'Value',0);
+set(setupHandles(userData.statusM(userData.id).Checked),'Value',1);
 
 for i = find(userData.statusM(userData.id).Checked)
-     set(handles.(['checkbox_',num2str(i)]),'Value',1);
      userfcn_lampSwitch(i, 1, handles)
 end
 
