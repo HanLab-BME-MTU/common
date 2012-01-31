@@ -178,34 +178,34 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             % Correlation function
             tools(1).name = 'Correlation';
             tools(1).GUI = @correlationSettingsGUI;
-            tools(1).function = @measureDataCorrelation;
+            tools(1).function = @getMovieCorrelation;
             tools(1).output = 'crossCorrelation';
             tools(1).outputList = 'crossCorrelation';
             tools(1).formatData = @formatCorrelation;
-            tools(1).parameters.nBoot = 1e4;
-            tools(1).parameters.alpha = .01;
+            tools(1).nBoot = 1e4;
+            tools(1).alpha = .01;
             % Partial correlation function
             tools(2).name = 'Partial correlation';
             tools(2).GUI = @correlationSettingsGUI;
-            tools(2).function = @measureDataPartialCorrelation;
+            tools(2).function = @getMoviePartialCorrelation;
             tools(2).formatData = @formatCorrelation;
-            tools(2).parameters.nBoot = 1e4;
-            tools(2).parameters.alpha = .01;
+            tools(2).nBoot = 1e4;
+            tools(2).alpha = .01;
             % Coherence function
             tools(3).name = 'Coherence';
             tools(3).GUI = @coherenceSettingsGUI;
-            tools(3).function = @measureDataCoherence;   
+            tools(3).function = @getMovieCoherence;   
             tools(3).formatData = @formatCoherence;
-            tools(3).parameters.nWin=8;
-            tools(3).parameters.window='hamming';
-            tools(3).parameters.noLap=.5;
-            tools(3).parameters.nBoot=1e4;
-            tools(3).parameters.alpha=.01;
+            tools(3).nWin=8;
+            tools(3).window='hamming';
+            tools(3).noLap=.5;
+            tools(3).nBoot=1e4;
+            tools(3).alpha=.01;
             % Mutual information coefficient
             tools(4).name = 'Mutual information';
             tools(4).GUI = @micSettingsGUI;
-            tools(4).function = @measureDataMutualInformation;   
-            tools(4).parameters.nBoot=1e4;
+            tools(4).function = @getMovieMIC;   
+            tools(4).nBoot=1e4;
         end
     end
     
