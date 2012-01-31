@@ -30,16 +30,16 @@ s = reshape(s,numel(s),1);
 ub = max(1,s); % Upper bound
 lb = min(0,s); % Lower bound
 
-if (lb < 0 || ub > 1) && (nargin == 2 || strcmp(warn,'on'))
+if (any(lb < 0) || any(ub > 1)) && (nargin == 2 || strcmp(warn,'on'))
     disp('WARNING: The arc length parameter s is outside the interval [0,1]! Support is experimental!')
 end
 
 % Test if all s are between 0 and 1
 nS = numel(s); % Number of input nodes
-tLow = lb*ones(nS,1);
-tUpper = ub*ones(nS,1);
-sLow = lb*ones(nS,1);
-sUpper = ub*ones(nS,1);
+tLow = lb;
+tUpper = ub;
+sLow = lb;
+sUpper = ub;
 t = zeros(nS,1); % Output
 
 length = lengthBezier(cP);
