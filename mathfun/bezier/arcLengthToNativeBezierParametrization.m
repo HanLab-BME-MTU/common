@@ -9,9 +9,10 @@ function t = arcLengthToNativeBezierParametrization(cP,s,warn)
 %                points of the Bezier curve of degree n.
 %
 % s              Any array representing the arc length nodes for which the
-%                corresponding 'native' nodes should be computed.
+%                corresponding 'native' nodes should be computed.          
 %
 % Optional Inputs:
+% warn           If set to 'off' warnings will be suppressed 
 %
 % Outputs:
 % t              Array representing the transformed ('native') nodes
