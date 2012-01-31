@@ -242,7 +242,7 @@ void computeBaseTemplates(double* input, int nx, int ny, int M, double sigma, do
 
 
 // Point responses
-/*double pointRespM1(int i, double angle, double* alpha, double** templates) {
+double pointRespM1(int i, double angle, double* alpha, double** templates) {
     
     double cosT = cos(angle);
     double sinT = sin(angle);
@@ -253,7 +253,7 @@ void computeBaseTemplates(double* input, int nx, int ny, int M, double sigma, do
     
     double result = a11 * (cosT*gxi + sinT*gyi);
     return result;
-}*/
+}
 
 
 double pointRespM2(int i, double angle, double* alpha, double** templates) {
@@ -1015,8 +1015,10 @@ void computeNMS(double* response, double* orientation, double* nms, int nx, int 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         
     // Input checks
-    if (nrhs != 3)
-        mexErrMsgTxt("Required inputs arguments: image, filter order, sigma.");
+    if (nrhs != 3 && nrhs != 4)
+        mexErrMsgTxt("Required inputs arguments: image, filter order, sigma. Optional: # angles for rotations output.");
+    if (nrhs == 4 && (!mxIsDouble(prhs[3]) || *mxGetPr(prhs[3])<1))
+        mexErrMsgTxt("The number of angles must be larger than 1.");
     
     if (nlhs > 4)
         mexErrMsgTxt("Too many output arguments");
@@ -1032,6 +1034,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mexErrMsgTxt("Sigma must be a strictly positive scalar value.");
     double sigma = *mxGetPr(prhs[2]);
         
+    int nt;
+    if (nrhs==4) {
+        nt = (int) *mxGetPr(prhs[3]);
+    } else {
+        nt = 36;
+    }
+    
     int nx = (int)mxGetN(prhs[0]); // cols
     int ny = (int)mxGetM(prhs[0]);
     int N = nx*ny;
@@ -1127,7 +1136,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     
     if (nlhs > 3) { // return filterbank
-        const mwSize dims[] = {ny, nx, nTemplates};
+        /*const mwSize dims[] = {ny, nx, nTemplates};
         plhs[3] = mxCreateNumericArray(3, dims, mxDOUBLE_CLASS, mxREAL);
         double* p = mxGetPr(plhs[3]);
         
@@ -1137,9 +1146,63 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                 p[z*N + divRes.quot+divRes.rem*ny] = templates[z][i];
                 //p[z*N + divRes.quot+divRes.rem*ny] = pointRespM4(i, 2.0*PI/3.0, alpha, templates);
             }
+         * }*/
+        const mwSize dims[] = {ny, nx, nt};
+        plhs[3] = mxCreateNumericArray(3, dims, mxDOUBLE_CLASS, mxREAL);
+        double* p = mxGetPr(plhs[3]);
+        
+        double dt;
+        
+        switch (M) {
+            case 1:
+                dt = 2.0*PI/nt;
+                for (int t=0;t<nt;++t) {
+                    for (int i=0;i<N;++i) {
+                        divRes = div(i, nx);
+                        p[t*N + divRes.quot+divRes.rem*ny] = pointRespM1(i, t*dt, alpha, templates);
+                    }
+                }
+                break;
+            case 2:
+                dt = PI/nt;
+                for (int t=0;t<nt;++t) {
+                    for (int i=0;i<N;++i) {
+                        divRes = div(i, nx);
+                        p[t*N + divRes.quot+divRes.rem*ny] = pointRespM2(i, t*dt, alpha, templates);
+                    }
+                }
+                break;
+            case 3:
+                dt = 2.0*PI/nt;
+                for (int t=0;t<nt;++t) {
+                    for (int i=0;i<N;++i) {
+                        divRes = div(i, nx);
+                        p[t*N + divRes.quot+divRes.rem*ny] = pointRespM3(i, t*dt, alpha, templates);
+                    }
+                }
+                break;
+            case 4:
+                dt = PI/nt;
+                for (int t=0;t<nt;++t) {
+                    for (int i=0;i<N;++i) {
+                        divRes = div(i, nx);
+                        p[t*N + divRes.quot+divRes.rem*ny] = pointRespM4(i, t*dt, alpha, templates);
+                    }
+                }
+                break;
+            case 5:
+                dt = 2.0*PI/nt;
+                for (int t=0;t<nt;++t) {
+                    for (int i=0;i<N;++i) {
+                        divRes = div(i, nx);
+                        p[t*N + divRes.quot+divRes.rem*ny] = pointRespM5(i, t*dt, alpha, templates);
+                    }
+                }
+                break;
         }
-    }    
-    
+        
+    }
+
     
     // Free memory
     for (int i=0;i<nTemplates;++i) {
