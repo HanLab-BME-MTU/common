@@ -32,7 +32,7 @@ nb = size(prm,2); % #bars in each group
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('prm');
-ip.addOptional('errorbars', [], @(x) all(size(x)==size(prm)));
+ip.addOptional('errorbars', [], @(x) isempty(x) || all(size(x)==size(prm)));
 ip.addParamValue('FaceColor', jet(nb), @(x) size(x,1)==nb || size(x,1)==ng);
 ip.addParamValue('EdgeColor', []);
 ip.addParamValue('GroupDistance', 1, @isscalar);
