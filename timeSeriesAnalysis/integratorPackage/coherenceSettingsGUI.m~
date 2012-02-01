@@ -1,35 +1,35 @@
-function varargout = correlationSettingsGUI(varargin)
-% CORRELATIONSETTINGSGUI M-file for correlationSettingsGUI.fig
-%      CORRELATIONSETTINGSGUI, by itself, creates a new CORRELATIONSETTINGSGUI or raises the existing
+function varargout = coherenceSettingsGUI(varargin)
+% COHERENCESETTINGSGUI M-file for coherenceSettingsGUI.fig
+%      COHERENCESETTINGSGUI, by itself, creates a new COHERENCESETTINGSGUI or raises the existing
 %      singleton*.
 %
-%      H = CORRELATIONSETTINGSGUI returns the handle to a new CORRELATIONSETTINGSGUI or the handle to
+%      H = COHERENCESETTINGSGUI returns the handle to a new COHERENCESETTINGSGUI or the handle to
 %      the existing singleton*.
 %
-%      CORRELATIONSETTINGSGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in CORRELATIONSETTINGSGUI.M with the given input arguments.
+%      COHERENCESETTINGSGUI('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in COHERENCESETTINGSGUI.M with the given input arguments.
 %
-%      CORRELATIONSETTINGSGUI('Property','Value',...) creates a new CORRELATIONSETTINGSGUI or raises the
+%      COHERENCESETTINGSGUI('Property','Value',...) creates a new COHERENCESETTINGSGUI or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before correlationSettingsGUI_OpeningFcn gets called.  An
+%      applied to the GUI before coherenceSettingsGUI_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to correlationSettingsGUI_OpeningFcn via varargin.
+%      stop.  All inputs are passed to coherenceSettingsGUI_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help correlationSettingsGUI
+% Edit the above text to modify the response to help coherenceSettingsGUI
 
-% Last Modified by GUIDE v2.5 01-Feb-2012 17:51:57
+% Last Modified by GUIDE v2.5 01-Feb-2012 17:53:51
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @correlationSettingsGUI_OpeningFcn, ...
-                   'gui_OutputFcn',  @correlationSettingsGUI_OutputFcn, ...
+                   'gui_OpeningFcn', @coherenceSettingsGUI_OpeningFcn, ...
+                   'gui_OutputFcn',  @coherenceSettingsGUI_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -44,8 +44,8 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before correlationSettingsGUI is made visible.
-function correlationSettingsGUI_OpeningFcn(hObject, eventdata, handles, varargin)
+% --- Executes just before coherenceSettingsGUI is made visible.
+function coherenceSettingsGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
 [copyright openHelpFile] = userfcn_softwareConfig(handles);
 set(handles.text_copyright, 'String', copyright)
@@ -63,6 +63,8 @@ userData_main = get(userData.mainFig, 'UserData');
 processingTools = userData_main.processingTools(userData.iTool);
 set(handles.edit_nBoot, 'String', processingTools.parameters.nBoot)
 set(handles.edit_alpha, 'String', processingTools.parameters.alpha);
+set(handles.edit_nWin, 'String', processingTools.parameters.nWin)
+set(handles.edit_noLap, 'String', processingTools.parameters.noLap);
 
 % Get icon infomation
 userData.questIconData = userData_main.questIconData;
@@ -90,12 +92,12 @@ guidata(hObject, handles);
 
 
 
-% UIWAIT makes correlationSettingsGUI wait for user response (see UIRESUME)
+% UIWAIT makes coherenceSettingsGUI wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = correlationSettingsGUI_OutputFcn(hObject, eventdata, handles) 
+function varargout = coherenceSettingsGUI_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -120,13 +122,13 @@ userData=get(handles.figure1,'UserData');
 
 nBoot=str2double(get(handles.edit_nBoot,'String'));
 if isnan(nBoot) || nBoot<=0
-    errordlg(sprintf('Invalid value for the %s.',get(handles.text_nBoot,'String')),'Setting Error','modal')
+    errordlg(sprintf('Invalid value for the  %s.',get(handles.text_nBoot,'String')),'Setting Error','modal')
     return;
 end
 
 alpha=str2double(get(handles.edit_alpha,'String'));
 if isnan(alpha) || alpha<0 || alpha >1
-    errordlg(sprintf('Invalid value for the %s.',get(handles.text_alpha,'String')),'Setting Error','modal')
+    errordlg(sprintf('Invalid value for the  %s.',get(handles.text_alpha,'String')),'Setting Error','modal')
     return;
 end
 

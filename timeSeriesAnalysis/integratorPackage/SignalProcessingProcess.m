@@ -225,15 +225,28 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             tools(3).xlabel = 'Frequency (Hz)';
             tools(3).ylabel = @(i,j) getCoherenceLabel(i,j);
             tools(3).title = @(i,j) getCoherenceTitle(i,j);
-                        
-              % Mutual information coefficient
-%             tools(4).name = 'Mutual information';
-%             tools(4).GUI = @micSettingsGUI;
-%             tools(4).function = @getDataMIC;   
-%             tools(4).parameters.nBoot=1e4;
+        end
+        
+        function windows = getCoherenceWindows()
+            windows={'bartlett';
+                'blackman';
+                'blackmanharris';
+                'bohman';
+                'bohmanwin';
+                'chebwin';
+                'flattopwin';
+                'gausswin';
+                'hamming';
+                'hann';
+                'kaiser';
+                'nuttallwin';
+                'parzenwin';
+                'rectwin';
+                'taylorwin';
+                'triang';
+                'tukeywin'};
         end
     end
-    
 end
 
 function label =getCorrelationLabel(i,j)
