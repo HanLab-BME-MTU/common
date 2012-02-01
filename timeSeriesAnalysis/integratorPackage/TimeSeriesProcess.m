@@ -101,41 +101,7 @@ classdef TimeSeriesProcess < Process
     
         end
         
-        function h=draw(obj,i,varargin)
-            
-            % Check input
-            if ~ismember('getDrawableOutput',methods(obj)), h=[]; return; end
-            outputList = obj.getDrawableOutput();
-            ip = inputParser;
-            ip.addRequired('obj',@(x) isa(x,'Process'));
-            ip.addRequired('i',@isscalar);
-            ip.addOptional('j',i,@isscalar);
-            ip.addParamValue('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
-            ip.KeepUnmatched = true;
-            ip.parse(obj,i,varargin{:})
-            j=ip.Results.j;
-            
-            data=obj.loadOutput(i,j,'output',ip.Results.output);
-            iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
-            if ~isempty(outputList(iOutput).formatData),
-                data=outputList(iOutput).formatData(data);
-            end
-            
-            try
-                assert(~isempty(obj.displayMethod_{iOutput,i,j}));
-            catch ME %#ok<NASGU>
-                obj.displayMethod_{iOutput,i,j}=outputList(iOutput).defaultDisplayMethod(i,j);
-            end
-            
-            % Delegate to the corresponding method
-            tag = [obj.getName '_input' num2str(i) '_input' num2str(j)];
-            drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
-                2*numel(fieldnames(ip.Unmatched)),1);
-            input=obj.getInput;
-            procArgs={'Input1',input(1).name,'Input2',input(2).name};
-            h=obj.displayMethod_{iOutput,i,j}.draw(data,tag,drawArgs{:},procArgs{:});
-        end
-
+       
     end
     methods (Static)
         function procNames = getSamplingProcesses()

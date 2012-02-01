@@ -305,18 +305,21 @@ if ~isempty(graphProc)
     nProc = numel(graphProc);
     for iProc=nProc:-1:1;
         output=graphProc{iProc}.getDrawableOutput;
-        if isa(graphProc{iProc},'TimeSeriesProcess');
+        if isa(graphProc{iProc},'SignalProcessingProcess');
             input=graphProc{iProc}.getInput;
             nInput=numel(input);
             
-            validOutput = find(strcmp({output.type},'correlationGraph'));
+%             validOutput = find(strcmp({output.type},'signalGraph'));
             % Create set of boxes for correlation graphs (input/input)
-            for iOutput=validOutput(end:-1:1)
+            validOutput = graphProc{iProc}.checkOutput;
+            for iOutput=size(validOutput,3):-1:1
                 for iInput=nInput:-1:1
                     createOutputText(graphPanel,graphProcId(iProc),iInput,hPosition3,input(iInput).name);
                     for jInput=1:iInput
-                        createInputInputBox(graphPanel,graphProcId(iProc),iOutput,iInput,jInput,hPosition3,...
-                            'Callback',@(h,event) redrawCorrelationGraph(h,guidata(h)));
+                        if validOutput(iInput,jInput,iOutput)
+                            createInputInputBox(graphPanel,graphProcId(iProc),iOutput,iInput,jInput,hPosition3,...
+                                'Callback',@(h,event) redrawSignalGraph(h,guidata(h)));
+                        end
                     end
                     hPosition3=hPosition3+20;
                 end
@@ -818,28 +821,26 @@ userData.MO.processes_{procId}.draw(inputArgs{:},'output',output);
 set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 
 
-function redrawCorrelationGraph(hObject,handles)
+function redrawSignalGraph(hObject,handles)
 overlayTag = get(hObject,'Tag');
 userData=get(handles.figure1,'UserData');
 
 % Retrieve the id, process nr and channel nr of the selected graphProc
 tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)_input(\d+)_input(\d+)','tokens');
 procId=str2double(tokens{1}{1});
-timeSeriesProcess = userData.MO.processes_{procId};
-outputList = timeSeriesProcess.getDrawableOutput;
+signalProc = userData.MO.processes_{procId};
 iOutput = str2double(tokens{1}{2});
 iInput1 = str2double(tokens{1}{3});
 iInput2 = str2double(tokens{1}{4});
-output = outputList(iOutput).var;
 
-timeSeriesProcess = userData.MO.processes_{procId};
-[~,figName] = timeSeriesProcess.getDrawableOutputName(iInput1,iInput2,output);
+signalProc = userData.MO.processes_{procId};
+figName = signalProc.getOutputTitle(iInput1,iInput2,iOutput);
 
 % Draw or delete the graph figure depending on the checkbox value
 h = getFigure(handles,figName);
 if ~get(hObject,'Value'),delete(h); return; end
 
-timeSeriesProcess.draw(iInput1,iInput2,'output',output);
+signalProc.draw(iInput1,iInput2,iOutput);
 set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 
 function closeGraphFigure(hObject)

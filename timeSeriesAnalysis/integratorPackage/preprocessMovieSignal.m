@@ -42,8 +42,11 @@ p = parseProcessParams(signalPreProc,paramsIn);
 % Delegates signal preprocessing proces to movies if object is a movieList 
 if isa(movieObject,'MovieList')
     movieParams=rmfield(p,{'MovieIndex','OutputDirectory'});
-    for i =1:numel(p.MovieIndex);
+    nMovies =numel(p.MovieIndex);
+    for i =1:nMovies;
         movieData = movieObject.movies_{i};
+        fprintf(1,'Processing signal for movie %g/%g\n',i,nMovies);
+        
         iProc = movieData.getProcessIndex('SignalPreprocessingProcess',1,0);
         if isempty(iProc)
             iProc = numel(movieData.processes_)+1;
@@ -70,16 +73,19 @@ input = signalPreProc.getInput;
 nInput=numel(input);
 inFilePaths = cell(nInput,1);
 inData = cell(nInput,1);
+disp('Using sampled output from:');
 for i=1:nInput
     proc = movieObject.processes_{input(i).processIndex};
     if isempty(input(i).channelIndex)
-        inFilePaths{i,:} = proc.outFilePaths_{1};
+        
+        inFilePaths{i} = proc.outFilePaths_{1};
         inData{i} = proc.loadChannelOutput('output',input(i).var);
         inData{i} = reshape(inData{i},size(inData{i},1),1,size(inData{i},2));
     else
-        inFilePaths{i,:} = proc.outFilePaths_{1,input(i).channelIndex};
+        inFilePaths{i} = proc.outFilePaths_{1,input(i).channelIndex};
         inData{i} = proc.loadChannelOutput(input(i).channelIndex,'output',input(i).var);
     end
+    disp(inFilePaths{i})
 end
 signalPreProc.setInFilePaths(inFilePaths);
 

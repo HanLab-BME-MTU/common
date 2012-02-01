@@ -103,9 +103,12 @@ set(handles.edit_BandMin,'String',funParams.BandMin);
 set(handles.edit_BandMax,'String',funParams.BandMax);
 userData.SliceIndex=funParams.SliceIndex;
 userData.previewFig=-1;
+userData.setFig=-1;
 
-userData.tools = SignalProcessingProcess.getProcessingTools;
-set(handles.popupmenu_tools,'String',{userData.tools.name},'UserData',{userData.tools.GUI});
+userData.processingTools = funParams.processingTools;
+userData.availableTools = SignalProcessingProcess.getProcessingTools;
+set(handles.popupmenu_tools,'String',{userData.availableTools.name},...
+    'UserData',{userData.availableTools.GUI});
 
 % Choose default command line output for signalProcessingProcessGUI
 handles.output = hObject;
@@ -399,7 +402,7 @@ if ishandle(userData.previewFig)
     delete(userData.previewFig)
 end
 funParams.SliceIndex=userData.SliceIndex;
-
+funParams.processingTools = userData.processingTools;
 % Get parameters
 
 
@@ -412,7 +415,9 @@ function pushbutton_addTool_Callback(hObject, eventdata, handles)
 
 userData=get(handles.figure1,'UserData');
 iTool = get(handles.popupmenu_tools,'Value');
-userData.crtProc.addTool(userData.tools(iTool));
+userData.processingTools(end+1) = struct('type',iTool,...
+    'parameters',userData.availableTools(iTool).parameters);
+set(handles.figure1,'UserData',userData);
 updateTools(hObject, eventdata, handles);
 
 % --- Executes on button press in pushbutton_removeTool.
@@ -425,14 +430,16 @@ h=findobj(handles.figure1,'-regexp','Tag',tag,'-and','Value',1);
 if isempty(h), return; end
 tokens=regexp(get(h,'Tag'),tag,'tokens');
 iTool = cellfun(@(x) str2double(x{1}),tokens);
-userData.crtProc.removeTools(iTool);
+userData.processingTools(iTool)=[];
+set(handles.figure1,'UserData',userData);
 updateTools(hObject, eventdata, handles);
 
 function updateTools(hObject, eventdata, handles)
 
 % Create templates for GUI generation
 userData= get(handles.figure1,'UserData');
-tools= userData.crtProc.funParams_.processingTools;
+availableTools= userData.availableTools;
+tools= userData.processingTools;
 nTools =numel(tools);
 
 createToolCheckbox= @(i,text,value) uicontrol(handles.uipanel_processingTools,...
@@ -441,7 +448,7 @@ createToolCheckbox= @(i,text,value) uicontrol(handles.uipanel_processingTools,..
 createToolSettingsButton= @(i,settingsGUI) uicontrol(handles.uipanel_processingTools,...
     'Style','pushbutton','String','Settings',...
     'Position',[350 10+20*(nTools-i) 100 20],'Tag',['settings_tool' num2str(i)],...
-    'Callback',@(h,event) settingsGUI(h,event,guidata(h)));
+    'UserData',settingsGUI,'Callback',@(h,event)setToolParameters(h,event,guidata(h)));
 
 
 values= zeros(nTools,1);
@@ -458,11 +465,16 @@ delete(h);
 resizeGUI(handles,20*nTools-20*numel(h)/2);
 
 for i =nTools:-1:1
-    createToolCheckbox(i,tools(i).name,values(i));
-    createToolSettingsButton(i,tools(i).GUI);
+    createToolCheckbox(i,availableTools(tools(i).type).name,values(i));
+    createToolSettingsButton(i,availableTools(tools(i).type).GUI);
 end
 % guidata(handles.figure1,guihandles(handles.figure1));
 
+function setToolParameters(h,eventdata,handles)
+userData= get(handles.figure1,'UserData');
+iTool = str2double(regexp(get(h,'Tag'),'settings_tool(\d+)','tokens','once'));
+settingGUI=get(h,'UserData');
+userData.setFig(iTool) = settingGUI(iTool,handles);
 
 function resizeGUI(handles,dh)
 
@@ -476,6 +488,3 @@ uicontrols = {'uipanel_input','uipanel_windows','axes_help','text_processName','
 for i=1:numel(uicontrols)
     set(handles.(uicontrols{i}),'Position',get(handles.(uicontrols{i}),'Position')+[0 dh 0 0]);
 end
-
-
-

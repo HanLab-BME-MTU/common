@@ -80,7 +80,7 @@ set(handles.listbox_selectedProcesses,'String',selProcString,'UserData',selProc)
 % Set preprocessing parameters
 set(handles.edit_kSigma,'String',funParams.kSigma);
 allTrends=SignalPreprocessingProcess.getTrends;
-set(handles.popupmenu_trendType,'String',{allTrends.name},...
+set(handles.popupmenu_trendType,'String',{allTrends.name},'UserData',[allTrends.type],...
     'Value',find([allTrends.type]==funParams.trendType));
 
 % Choose default command line output for signalPreprocessingProcessGUI
@@ -215,7 +215,8 @@ if isnan(kSigma) || ~ismember(kSigma,1:10)
     return;
 end
 funParams.kSigma = kSigma;
-funParams.trendType= get(handles.popupmenu_trendType,'Value')-1;
+props = get(handles.popupmenu_trendType,{'UserData','Value'});
+funParams.trendType=props{1}(props{2});
 % Process Sanity check ( only check underlying data )
 userData = get(handles.figure1, 'UserData');
 try

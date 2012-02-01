@@ -85,7 +85,7 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
                 funParams.MovieIndex=1:numel(owner.movies_); 
             end
             funParams.OutputDirectory = [outputDir filesep 'preprocessedSignal'];
-            funParams.ProcessName={};          
+            funParams.ProcessName=TimeSeriesProcess.getSamplingProcesses;          
             funParams.OutputName='';
             funParams.kSigma=5;
             funParams.trendType=1;
