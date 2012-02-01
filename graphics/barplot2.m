@@ -41,6 +41,7 @@ ip.addParamValue('XLabel', ' ', @ischar);
 ip.addParamValue('XLabels', arrayfun(@(k) num2str(k), 1:sum(ng), 'UniformOutput', false), @(x) iscell(x) && (numel(x)==sum(nb)||numel(x)==ng));
 ip.addParamValue('YLabel', ' ', @ischar);
 ip.addParamValue('YLim', [], @(x) numel(x)==2);
+ip.addParamValue('YTick', []);
 ip.addParamValue('BarWidth', 0.8, @isscalar); 
 ip.addParamValue('LineWidth', 2, @isscalar);
 ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
@@ -147,7 +148,9 @@ set(ha, afont{:}, 'LineWidth', 1.5,...
 if ~isempty(ip.Results.YLim)
     set(ha, 'YLim', ip.Results.YLim);
 end
-
+if ~isempty(ip.Results.YTick)
+    set(ha, 'YTick', ip.Results.YTick);
+end
 
 % x label
 xlabel(ip.Results.XLabel, lfont{:});
