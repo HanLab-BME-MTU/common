@@ -1,5 +1,5 @@
 function [bestCONN, allBIC, allarPARAMK, allmaPARAMK, allTOPOK, errMat]...
-    =findBestConnectivity(allCONN,TRAJ,networkProp,arPARAM0,maPARAM0,TOPO0)
+    =findBestConnectivity(allCONN,TRAJ,networkProp,arPARAM0,maPARAM0,TOPO0);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % findBestConnectivity tests CARMA models of a variety of connectivities  %

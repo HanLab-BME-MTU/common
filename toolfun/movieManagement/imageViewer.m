@@ -371,7 +371,7 @@ if ~useTool && ~isempty(overlayName)
                 prots = movieData.processes_{iProtProc}.loadChannelOutput;
                 plot(prots.smoothedEdge{iFrame}(:,1),prots.smoothedEdge{iFrame}(:,2),'y')
                 quiver(prots.smoothedEdge{iFrame}(:,1),prots.smoothedEdge{iFrame}(:,2),...
-                        prots.protrusion{iFrame}(:,1),prots.protrusion{iFrame}(:,2),0,'Color',[1.0 1.0 1.0]);
+                        prots.protrusion{iFrame}(:,1),prots.protrusion{iFrame}(:,2),0);
             end
             
         otherwise
