@@ -20,7 +20,10 @@ inms = cell(1,ns);
 % responses at individual scales
 for si = 1:ns
     [ires{si}, itheta{si}, inms{si}] = steerableDetector(img, ip.Results.M, sigma(si));
-    ires{si} = sigma(si) * ires{si}; % scale normalization
+    % scale normalization for even orders
+    if ~mod(M,2)
+        ires{si} = sigma(si) * ires{si};
+    end
 end
 
 % determine  f(x,y) = argmax_s r_s(x,y) (init. at scale 1)
