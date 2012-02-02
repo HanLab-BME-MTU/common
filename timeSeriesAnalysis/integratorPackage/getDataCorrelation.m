@@ -29,10 +29,11 @@ for i=1:nInput
     outFilePaths{i,i} = [p2.outputDir filesep 'autocorrelation_' ...
         input(i).name '.mat'];
 end
+disp('Starting calculating correlation...')
+disp('Saving results under:');
+disp(p2.outputDir);
 
 %% Correlation calculation 
-disp('Starting calculating correlation...')
-
 %At least 50 points are needed to calculate the ACF
 %Number of lags <= N/4;
 %Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G

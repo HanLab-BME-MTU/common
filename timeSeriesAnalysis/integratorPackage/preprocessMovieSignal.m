@@ -10,9 +10,29 @@ function preprocessMovieSignal(movieObject,varargin)
 %   parameters should be stored as fields in the structure, with the field
 %   names and possible values as described below
 %
+%   Possible Parameter Structure Field Names:
+%       ('FieldName' -> possible values)
+%
+%       ('MovieIndex' -> array of integers)  If movieObject is a movie
+%       list, specifies the index of the movies to be preprocessed.
+%
+%       ('OutputDirectory' -> character string) Optional. A character
+%       string specifying the directory to save the preprocessed output.
+%       Each time-series will be saved as an individual mat file.
+%
+%       ('ProcessName'-> Cell array of character strings) The name of the
+%       sampling processes to retrieve the sampled output from. All output
+%       of the process will be preprocessed.
+%
+%       ('kSigma'-> positive integer) The multiplier to use when removing
+%       outliers from time-series. See detectOutliers.m for more info.
+%
+%       ('trendType'-> integer) A value specifying the type of detrending
+%       to apply to the time-series. See removeMeanTrendNan for a list of
+%       acceptable values.
 
 % Marco Vilela, Sep 2011
-% Sebastien Besson, Nov 2011 
+% Sebastien Besson, Nov 2011 (last modified Feb 2012)
 
 %% ----------- Input ----------- %%
 
@@ -39,7 +59,7 @@ signalPreProc = movieObject.processes_{iProc};
 %Parse input, store in parameter structure
 p = parseProcessParams(signalPreProc,paramsIn);
 
-% Delegates signal preprocessing proces to movies if object is a movieList 
+% If movie list, delegates signal preprocessing to individual movies
 if isa(movieObject,'MovieList')
     movieParams=rmfield(p,{'MovieIndex','OutputDirectory'});
     nMovies =numel(p.MovieIndex);
@@ -47,12 +67,15 @@ if isa(movieObject,'MovieList')
         movieData = movieObject.movies_{i};
         fprintf(1,'Processing signal for movie %g/%g\n',i,nMovies);
         
+        % Create movie process if empty
         iProc = movieData.getProcessIndex('SignalPreprocessingProcess',1,0);
         if isempty(iProc)
             iProc = numel(movieData.processes_)+1;
             movieData.addProcess(SignalPreprocessingProcess(movieData,...
                 movieData.outputDirectory_));
         end
+        
+        % Parse parameters and run movie process
         signalPreProc = movieData.processes_{iProc};
         parseProcessParams(movieData.processes_{iProc},movieParams);
         signalPreProc.run();
@@ -94,10 +117,12 @@ outFilePaths=cell(1,nInput);
 for i=1:nInput
     outFilePaths{1,i} = [p.OutputDirectory filesep input(i).name '.mat'];
 end
+disp('Saving results under:');
+disp(p.OutputDirectory);
 mkClrDir(p.OutputDirectory);
 signalPreProc.setOutFilePaths(outFilePaths);
 
-%% --------------- Signal pre-processing ---------------%%% 
+%% --------------- Signal pre-processing ---------------%%% kSigma
 disp('Starting preprocessing signal...')
 
 % Check input have the same size
@@ -123,25 +148,20 @@ for iInput=1:nInput
     disp(logMsg(iInput));
     if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
     
-    % Initialize output
+    % Initialize data and range ouptut
     data= cell(nBands(iInput),1);
-    range=cell(nBands(iInput),1);
+    [data{:}]=deal(cell(nSlices,1));
+    range = data;
     
     for iBand=1:nBands(iInput)
-        % Initialize band data and range for the corresponding band
-        data{iBand}=cell(nSlices,1);
-        range{iBand}=cell(nSlices,1);
-       
-        % Get band data and remove outliers
+        % Get iBand data and remove outliers
         rawData =squeeze(inData{iInput}(:,iBand,:));
         rawData(detectOutliers(rawData,p.kSigma)) = NaN;
         
-        %% Percentage of NaN
+        % Check percentage of NaN
         validSlices = (nPoints-sum(isnan(rawData),2))>=minP;
-        
         [data{iBand}(validSlices) ,range{iBand}(validSlices)] = ...
-            removeMeanTrendNaN(rawData(validSlices,:)',p.trendType);
-        
+            removeMeanTrendNaN(rawData(validSlices,:)',p.trendType);   
                 
         % Update waitbar
         if ishandle(wtBar), 

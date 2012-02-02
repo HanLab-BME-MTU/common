@@ -10,10 +10,40 @@ function processMovieSignal(movieObject,varargin)
 %   parameters should be stored as fields in the structure, with the field
 %   names and possible values as described below
 %
+%       ('FieldName' -> possible values)
+%
+%       ('MovieIndex' -> array of integers)  If movieObject is a movie
+%       list, specifies the index of the movies to be preprocessed.
+%
+%       ('BandMin' -> positive integer) Specifies the first band to
+%       consider for processing. Default 1.
+%
+%       ('BandMax' -> array of integers) Specified the last band to
+%       consider for processing
+%
+%       ('SliceIndex' -> logical array or cell array of logical array)  
+%       If movieObject is a movie list, each element of the cell array 
+%       specifies the SliceIndex of the slices to process for each movie. 
+%       If movieObject is a movie, only the slices given by to true elements 
+%       of the logical array will be processed.
+%
+%       ('OutputDirectory' -> character string)  A character
+%       string specifying the directory to save the processed output.
+%       Each processing tool will be saved in a separate subdirectory.
+%
+%       ('ProcessName'-> Cell array of character strings) The name of the
+%       sampling processes to retrieve the sampled output from. All output
+%       of the process will be preprocessed.
+%
+%       ('processingTools'-> array of structures) The processing tools to
+%       apply to the input time-series. Each tools should contain a type
+%       field indexing the type of tools(see getProcessingTools static
+%       method of SignalProcessingProcess) and a parameters field giving
+%       the parameters to use when processing the time-series.
 
-% Sebastien Besson, Jan 2012
+% Sebastien Besson, Jan 2012 (last modified Feb 2012
 
-%% ----------- Input ----------- %%
+%% Input
 
 %Check input
 ip = inputParser;
@@ -66,9 +96,9 @@ end
 
 % Delegates signal processing to  individual movies if movie list 
 if isa(movieObject,'MovieList')
-    % Movie list function consists of two steps
-    % 1- Delegation of process to individual movies (given by MovieIndex)
-    % 2- Processing of concatenated data for all movies
+    % Movie list processin consists of two steps
+    % 1- Delegation of processing to individual movies (in MovieIndex)
+    % 2- Processing of data concatenated for all movies
     
     % Movie delegation
     movieParams=rmfield(p,{'MovieIndex','OutputDirectory'});
@@ -81,7 +111,7 @@ if isa(movieObject,'MovieList')
         iMovie = p.MovieIndex(i);
         fprintf(1,'Processing signal for movie %g/%g\n',i,nMovies);
         
-        % Delegate  calculation for each movie of the list
+        % Delegate processing for each movie of the list
         movieParams.SliceIndex=p.SliceIndex{iMovie};
         movieData = movieObject.movies_{iMovie};
         iProc = movieData.getProcessIndex('SignalProcessingProcess',1,0);
@@ -89,6 +119,7 @@ if isa(movieObject,'MovieList')
             movieData.addProcess(SignalProcessingProcess(movieData,...
                 movieData.outputDirectory_));
         end
+        % Parse parameters and run the process
         movieSignalProc{i} = movieData.processes_{end};
         parseProcessParams(movieSignalProc{i},movieParams);
         movieSignalProc{i}.run(wtBarArgs{:});
@@ -115,6 +146,8 @@ if isa(movieObject,'MovieList')
         iMovie = p.MovieIndex(i);
         % Retrieve individual movie output
         movieInput{i} =loadInput(movieObject.movies_{iMovie},movieInput{i});
+        
+        % Concatenate all data
         for iInput=1:nInput
             localdata =  movieInput{i}(iInput).data;
             localrange =  movieInput{i}(iInput).range;
@@ -149,6 +182,7 @@ else
         set(wtBar,'Name',movieName);
     end
     
+    % Load preprocessing output
     input = signalProc.getInput;
     disp('Using preprocessed signal from:');
     input = loadInput(movieData,input);
@@ -156,14 +190,13 @@ else
 end
 
 %% Signal processing
-
-% Set the waitbar title if applicable
+% Set the waitbar title
 if ishandle(wtBar),
     [~,movieName]=fileparts(movieObject.getPath);
     set(wtBar,'Name',movieName);
 end
 
-% Clear output directory and recreate fresh one
+% Clear output directory to recreate fresh one
 if exist(p.OutputDirectory,'dir'), rmdir(p.OutputDirectory,'s'); end
 mkdir(p.OutputDirectory);
 
@@ -174,22 +207,24 @@ nInput= numel(input);
 nTools = numel(p.processingTools);
 outFilePaths =cell(nInput,nInput,nTools);
 for i=1:nTools
-    % Create output subdirectory for each tool
+    % Retrieve i-th tool function from the static method
     allTools = signalProc.getProcessingTools;
     selectedTool = allTools(p.processingTools(i).type);
     toolParams=p.processingTools(i).parameters;
+    
+    % Create output subdirectory for each tool
     toolParams.outputDir = fullfile(p.OutputDirectory,[num2str(i) '_' selectedTool.name]);
     mkClrDir(toolParams.outputDir);
     
-    % Pass input, process parameters and tool specific parameters
+    % Pass input, generic process parameters and tool specific parameters
     outFilePaths(:,:,i)=selectedTool.function(input,p,toolParams,wtBarArgs{:});
 end
+% Set the outputDirectory for the process
 signalProc.setOutFilePaths(outFilePaths);
 
 function input = loadInput(movieData,input)
 % Load the output of the preprocessing for each input and add it to the
 % input structure
-
 nInput=numel(input);
 
 % Test the presence and output validity of the signal preprocessing

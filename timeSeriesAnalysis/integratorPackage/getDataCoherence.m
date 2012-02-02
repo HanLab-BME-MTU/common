@@ -27,10 +27,11 @@ for i=1:nInput
     outFilePaths{i,i} = [p2.outputDir filesep 'powerSpectrum' ...
         input(i).name '.mat'];
 end
+disp('Starting calculating coherence...')
+disp('Saving results under:');
+disp(p2.outputDir);
 
 %% Coherence calculation
-disp('Starting calculating coherence...')
-
 %At least 50 points are needed to calculate the ACF
 %Number of lags <= N/4;
 %Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
@@ -46,8 +47,7 @@ nBands =cellfun(@numel,data);
 
 padTS = @(x) padarray(x,p.nFrames-length(x),0,'post');
 
-logMsg = @(i,j) ['Please wait, calculating ' input(i).name '/'...
-    input(j).name ' coherence'];
+logMsg = @(i,j) ['Calculating ' input(i).name '/' input(j).name ' coherence'];
 
 % Calculate spectral density coherence
 for iInput1=1:nInput
