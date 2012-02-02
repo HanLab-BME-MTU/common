@@ -7,7 +7,7 @@ function Y = renderBezier(P, t)
 % P              A n+1 x d array representing the d-dimensional control 
 %                points of the Bezier curve of degree n.
 %
-% t              1 x m array representing the nodes at which the curve
+% t              1 x m or m x 1 array representing the nodes at which the curve
 %                should be evaluated.
 % 
 % Optional Inputs:
@@ -17,6 +17,9 @@ function Y = renderBezier(P, t)
 %                unnormalized tangent vectors at the nodes defined by t
 %
 % Pascal Berard, October 2011
+
+% Reshape t
+t = reshape(t,numel(t),1);
 
 % Determine the curve degree
 n = size(P, 1) - 1;
