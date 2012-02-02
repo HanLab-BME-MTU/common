@@ -12,6 +12,7 @@
 #include <gsl/gsl_poly.h>
 
 #include "mex.h"
+// #include "matrix.h" // mx matrix library
 #include "conv2D.h"
 #include "stats.h"
 
@@ -1014,26 +1015,41 @@ void computeNMS(double* response, double* orientation, double* nms, int nx, int 
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         
-    // Input checks
+    // check # inputs
     if (nrhs != 3 && nrhs != 4)
         mexErrMsgTxt("Required inputs arguments: image, filter order, sigma. Optional: # angles for rotations output.");
-    if (nrhs == 4 && (!mxIsDouble(prhs[3]) || *mxGetPr(prhs[3])<1))
-        mexErrMsgTxt("The number of angles must be larger than 1.");
-    
     if (nlhs > 4)
-        mexErrMsgTxt("Too many output arguments");
+        mexErrMsgTxt("Too many output arguments.");
     
+    // check image
     if (!mxIsDouble(prhs[0]) || mxGetNumberOfDimensions(prhs[0]) != 2)
         mexErrMsgTxt("Input image must be a 2-D array.");
-    
+    int nx = (int)mxGetN(prhs[0]); // cols
+    int ny = (int)mxGetM(prhs[0]);
+    int N = nx*ny;
+    double* input = mxGetPr(prhs[0]);    
+    // check for NaNs in input, as these will result in a crash
+    for (int i=0;i<N;++i) {
+        if (mxIsNaN(input[i])) {
+            mexErrMsgTxt("Input image contains NaNs.");
+            break;
+        }
+    }
+
+    // check order
     if (!mxIsDouble(prhs[1]) || mxGetNumberOfElements(prhs[1]) != 1 || *mxGetPr(prhs[1])<1 || *mxGetPr(prhs[1])>5)
         mexErrMsgTxt("The order 'M' must be an integer between 1 and 5.");
     int M = (int) *mxGetPr(prhs[1]);
     
+    // check sigma
     if (!mxIsDouble(prhs[2]) || mxGetNumberOfElements(prhs[2]) != 1 || *mxGetPr(prhs[2]) <= 0.0)
         mexErrMsgTxt("Sigma must be a strictly positive scalar value.");
     double sigma = *mxGetPr(prhs[2]);
         
+    // check angles
+    if (nrhs == 4 && (!mxIsDouble(prhs[3]) || *mxGetPr(prhs[3])<1))
+        mexErrMsgTxt("The number of angles must be larger than 1.");
+    
     int nt;
     if (nrhs==4) {
         nt = (int) *mxGetPr(prhs[3]);
@@ -1041,9 +1057,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         nt = 36;
     }
     
-    int nx = (int)mxGetN(prhs[0]); // cols
-    int ny = (int)mxGetM(prhs[0]);
-    int N = nx*ny;
+   
     
     int L = 2*(int)(4.0*sigma)+1; // support of the Gaussian kernels
     
@@ -1052,7 +1066,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mexErrMsgTxt("Sigma value results in filter support that is larger than image.");
     }
     
-    double* input = mxGetPr(prhs[0]);
+    
     double* pixels = (double*)malloc(sizeof(double)*N);
     
     // Process inputs
