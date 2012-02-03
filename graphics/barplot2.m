@@ -22,7 +22,7 @@
 
 % Note: this function uses patch() since colors can't be controlled with bar()
 
-% Francois Aguet, 18 March 2011 (Last modified: 27 July 2011)
+% Francois Aguet, 18 March 2011 (Last modified: 01 Feb 2012)
 
 function he = barplot2(prm, varargin)
 
@@ -161,7 +161,3 @@ if ip.Results.Angle ~= 0
     rotateXTickLabels(ha, 'Angle', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter,...
         'AdjustFigure', ip.Results.AdjustFigure);
 end
-
-% re-plot axis on top
-% axes('Position', get(ha, 'Position'), 'Box', 'off', 'XTick', [], 'YTick', [],...
-%     'HitTest','off', 'Color', 'none', 'LineWidth', 1.5);
