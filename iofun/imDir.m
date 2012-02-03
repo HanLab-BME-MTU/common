@@ -53,11 +53,10 @@ function [fileNames formatNum sNums] = imDir(imDirectory,returnAll)
 
 %The list of supported file extensions. Feel free to add! (just update the
 %help also!)
-if ispc
-    %On PC, the dir command is non case-sensitive 
-    fExt = {'tif', 'stk', 'bmp', 'jpg'};
-else
-    fExt = {'tif','TIF','stk','STK','bmp','BMP','jpg','JPG'};
+fExt = {'tif', 'stk', 'bmp', 'jpg'};
+if ~ispc
+    % Add case-sensitivity under unix based platforms
+    fExt =  reshape(vertcat(fExt,upper(fExt)),1,2*numel(fExt));
 end
 
 

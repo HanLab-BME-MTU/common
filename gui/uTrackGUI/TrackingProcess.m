@@ -244,7 +244,7 @@ classdef TrackingProcess < DataProcessingProcess
         
         function costMatrix = getDefaultLinkingCostMatrices(owner,timeWindow,varargin)
             
-            % Linear motion
+            % Brownian + Directed motion models
             costMatrices(1).name = 'Brownian + Directed motion models';
             costMatrices(1).funcName = func2str(@costMatRandomDirectedSwitchingMotionLink);
             costMatrices(1).GUI = @costMatRandomDirectedSwitchingMotionLinkGUI;

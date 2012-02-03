@@ -2,15 +2,18 @@ classdef  MovieData < MovieObject
     % Concrete implementation of MovieObject for a single movie
     
     properties (SetAccess = protected)
-        channels_ = [];         % Channel object array
+        channels_               % Channel object array
         nFrames_                % Number of frames
         imSize_                 % Image size 1x2 array[height width]
+        rois_ =  MovieData.empty(1,0);
+        parent_ =  MovieData.empty(1,0);
     end
     
     properties
+        roiPath_                % The path weher the movie roi is stored
         movieDataPath_          % The path where the movie data is saved
         movieDataFileName_      % The name under which the movie data is saved
-        pixelSize_              % Pipxel size (nm)
+        pixelSize_              % Pixel size (nm)
         timeInterval_           % Time interval (s)
         numAperture_            % Numerical Aperture
         camBitdepth_            % Camera Bit-depth
@@ -20,7 +23,6 @@ classdef  MovieData < MovieObject
         
         magnification_
         binning_
-        
     end
     
     methods
@@ -123,6 +125,45 @@ classdef  MovieData < MovieObject
                 'UniformOutput',false);
         end  
         
+        %% ROI methods
+        function addROI(obj,roiPath,outputDirectory,varargin)
+            % Create a new object using the movie's channels
+            roiMovie = MovieData(obj.channels_,outputDirectory,varargin{:});
+            copyfields = {'pixelSize_','timeInterval_','numAperture_',...
+                'camBitdepth_','processes_','packages_','nFrames_','imSize_'};
+            set(roiMovie,copyfields,get(obj,copyfields));
+            
+            % Set toi properties
+            roiMovie.roiPath_=roiPath;
+            roiMovie.parent_=obj;
+            obj.rois_(end+1)=roiMovie;
+        end
+        
+        function deleteROI(obj,index)
+            assert(all(ismember(index,1:numel(obj.rois_))));
+            obj.rois_(index).delete;
+            obj.rois_(index)=[];
+        end
+        
+        function roiMask=getROI(obj)
+            
+            % If no roiPath_, the whole mask is the region of interest
+            if isempty(obj.roiPath_)
+                roiMask = true([obj.imSize_ obj.nFrames_]);
+                return; 
+            end
+           
+            % Support single tif files for now - should be extended to
+            % polygons, series of masks and other ROI objects
+            assert(exist(obj.roiPath_,'file')==2)
+            if strcmpi(obj.roiPath_(end-2:end),'tif'),
+                roiMask = logical(imread(obj.roiPath_));
+                assert(size(roiMask(:,:,1)) == obj.imSize_);
+                if size(roiMask,3)==1, roiMask=repmat(roiMask,[1 1 obj.nFrames_]); end
+                assert(size(roiMask,3) == obj.nFrames_);
+            end
+        end      
+        
         %% Sanitycheck/relocation
         function sanityCheck(obj,varargin)
             % Check the sanity of the MovieData objects
@@ -161,7 +202,7 @@ classdef  MovieData < MovieObject
             else
                 obj.imSize_ = [height(1) width(1)];
             end
-            
+           
             obj.save();
         end
         
@@ -179,6 +220,18 @@ classdef  MovieData < MovieObject
         
         function setFig = edit(obj)
             setFig = movieDataGUI(obj);
+        end
+        
+
+        function flag = save(obj)
+            if ~isempty(obj.parent_)
+                flag = obj.parent_.save;
+            else         
+                flag=save@MovieObject(obj);
+                for i=1:numel(obj.rois_);
+                    flag = flag && obj.rois_(i).save@MovieObject;
+                end
+            end 
         end
         
     end

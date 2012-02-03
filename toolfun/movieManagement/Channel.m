@@ -95,10 +95,6 @@ classdef Channel < hgsetget
             obj.fluorophore_=value;
         end
         
-        function set.owner_(obj,value)
-            obj.checkPropertyValue('owner_',value);
-            obj.owner_=value;
-        end
         
         function setFig = edit(obj)
             setFig = channelGUI(obj);
@@ -119,7 +115,7 @@ classdef Channel < hgsetget
             
             % Test if the property is writable
             assert(obj.checkProperty(property),'lccb:set:readonly',...
-                ['The channel''s' propName ' has been set previously and cannot be changed!']);
+                ['The channel''s ' propName ' has been set previously and cannot be changed!']);
             
             % Test if the supplied value is valid
             assert(obj.checkValue(property,value),'lccb:set:invalid',...
@@ -156,7 +152,13 @@ classdef Channel < hgsetget
             ip.parse(varargin{:})
             
             % Set the channel owner
-            obj.owner_=ip.Results.owner;
+            if isempty(obj.owner_)
+                obj.owner_=ip.Results.owner;
+            else
+                assert(isequal(obj.owner_,ip.Results.owner) ||...
+                    isequal(obj.owner_,ip.Results.owner.parent_),...
+                    'The channel''s owner is not the movie neither its parent')
+            end
             
             if exist(obj.channelPath_, 'file')==2 
                 % Using bioformat-tools, get metadata 
@@ -324,8 +326,6 @@ classdef Channel < hgsetget
                     validator = @(x) ischar(x) && ismember(x,Channel.getImagingModes);
                 case {'fluorophore_'}
                     validator= @(x) ischar(x) && ismember(x,Channel.getFluorophores);
-                case {'owner_'}
-                    validator= @(x) isa(x,'MovieData');
                 otherwise
                     validator=[];
             end
