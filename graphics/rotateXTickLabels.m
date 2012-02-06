@@ -18,8 +18,8 @@ ip.parse(ha, varargin{:});
 
 xa = get(ha, 'XTick');
 xla = get(ha, 'XTickLabel');
-if ischar(xla) % if singleton labels
-    xla = num2cell(xla);
+if ischar(xla) % label is numerical
+    xla = arrayfun(@(i) num2str(str2double(xla(i,:))), 1:size(xla,1), 'UniformOutput', false);
 end
 set(ha, 'XTickLabel', [], 'Units', 'pixels');
 
@@ -35,8 +35,8 @@ height = diff(YLim);
 % get height of default text bounding box
 h = text(0, 0, ' ', 'FontName', fontName, 'FontSize', fontSize);
 extent = get(h, 'extent');
-textHeight = extent(4);
-shift = textHeight/sqrt(2)/4 * width/height;
+pos = get(gca, 'Position');
+shift = extent(4)/height*width/pos(3)*pos(4) * sin(ip.Results.Angle*pi/180)/2;
 delete(h);
 
 
