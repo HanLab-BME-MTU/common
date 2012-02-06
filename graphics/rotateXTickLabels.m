@@ -26,7 +26,7 @@ set(ha, 'XTickLabel', [], 'Units', 'pixels');
 fontName = get(ha, 'FontName');
 fontSize = get(ha, 'FontSize');
 
-XLim = get(gca, 'XLim');
+XLim = get(ha, 'XLim');
 YLim = get(ha, 'Ylim');
 width = diff(XLim);
 height = diff(YLim);
@@ -35,7 +35,7 @@ height = diff(YLim);
 % get height of default text bounding box
 h = text(0, 0, ' ', 'FontName', fontName, 'FontSize', fontSize);
 extent = get(h, 'extent');
-pos = get(gca, 'Position');
+pos = get(ha, 'Position');
 shift = extent(4)/height*width/pos(3)*pos(4) * sin(ip.Results.Angle*pi/180)/2;
 delete(h);
 
