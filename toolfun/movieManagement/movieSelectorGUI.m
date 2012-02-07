@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 14-Nov-2011 13:46:47
+% Last Modified by GUIDE v2.5 07-Feb-2012 15:48:16
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -177,13 +177,9 @@ packageGUI(selectedPackage,userData.MD);
 function listbox_movie_Callback(hObject, eventdata, handles)
 
 contentlist = get(handles.listbox_movie, 'String');
-if isempty(contentlist)
-    title = sprintf('Movie List: 0/0 movie(s)');
-else
-    title = sprintf('Movie List: %s/%s movie(s)',...
-        num2str(get(handles.listbox_movie, 'Value')),...
-        num2str(length(contentlist)));
-end
+title = sprintf('Movie List: %g/%g movie(s)',...
+    min(get(handles.listbox_movie, 'Value'),length(contentlist)),...
+    length(contentlist));
 set(handles.text_movie_1, 'String', title)
 
 % --- Executes on button press in pushbutton_new.
@@ -214,8 +210,12 @@ if isempty(contentlist), return;end
 num = get(handles.listbox_movie,'Value');
 
 % Delete channel object
-delete(userData.MD(num))
+removedMovie=userData.MD(num);
 userData.MD(num) = [];
+
+% Test if movie does not share common ancestor
+checkCommonAncestor= arrayfun(@(x) any(isequal(removedMovie.getAncestor,x.getAncestor)),userData.MD);
+if ~any(checkCommonAncestor), delete(removedMovie); end
 
 % Refresh listbox_channel
 contentlist(num) = [ ];
@@ -223,18 +223,11 @@ set(handles.listbox_movie,'String',contentlist);
 
 % Point 'Value' to the second last item in the list once the 
 % last item has been deleted
-if num>length(contentlist) && num>1
-    set(handles.listbox_movie,'Value',length(contentlist));
-end
-if isempty(contentlist)
-    title = sprintf('Movie List: 0/0 movie(s)');
-    set(handles.text_movie_1, 'String', title)
-else
-    title = sprintf('Movie List: %s/%s movie(s)',...
-        num2str(get(handles.listbox_movie, 'Value')),...
-        num2str(length(contentlist)));
-    set(handles.text_movie_1, 'String', title)    
-end
+set(handles.listbox_movie,'Value',max(1,min(num,length(contentlist))));
+title = sprintf('Movie List: %g/%g movie(s)',...
+    min(get(handles.listbox_movie, 'Value'),length(contentlist)),...
+    length(contentlist));
+set(handles.text_movie_1, 'String', title)
 
 set(handles.figure1, 'Userdata', userData)
 guidata(hObject, handles);
@@ -248,7 +241,7 @@ if isempty(props{1}), return; end
 
 userData = get(handles.figure1, 'UserData');
 % if movieDataGUI exist, delete it
-if ishandle(userData.newFig), delete(userData.newFig); end
+% if ishandle(userData.newFig), delete(userData.newFig); end
 userData.newFig = movieDataGUI(userData.MD(props{2}));
 set(handles.figure1,'UserData',userData);
 
@@ -434,4 +427,17 @@ if isempty(props{1}), return; end
 userData = get(handles.figure1, 'UserData');
 if ishandle(userData.newFig), delete(userData.newFig); end
 userData.newFig = cropMovieGUI(userData.MD(props{2}),'mainFig',handles.figure1);
+set(handles.figure1,'UserData',userData);
+
+
+% --------------------------------------------------------------------
+function menu_tools_addROI_Callback(hObject, eventdata, handles)
+
+% Return if no movie 
+props=get(handles.listbox_movie, {'String','Value'});
+if isempty(props{1}), return; end
+
+userData = get(handles.figure1, 'UserData');
+if ishandle(userData.newFig), delete(userData.newFig); end
+userData.newFig = addMovieROIGUI(userData.MD(props{2}),'mainFig',handles.figure1);
 set(handles.figure1,'UserData',userData);

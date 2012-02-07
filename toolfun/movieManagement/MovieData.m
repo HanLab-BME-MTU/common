@@ -128,6 +128,7 @@ classdef  MovieData < MovieObject
         %% ROI methods
         function addROI(obj,roiPath,outputDirectory,varargin)
             % Create a new object using the movie's channels
+            assert(exist(roiPath,'file')==2,'The path to the roi mask does not exist');
             roiMovie = MovieData(obj.channels_,outputDirectory,varargin{:});
             copyfields = {'pixelSize_','timeInterval_','numAperture_',...
                 'camBitdepth_','processes_','packages_','nFrames_','imSize_'};
@@ -141,12 +142,10 @@ classdef  MovieData < MovieObject
         
         function deleteROI(obj,index)
             assert(all(ismember(index,1:numel(obj.rois_))));
-            obj.rois_(index).delete;
             obj.rois_(index)=[];
         end
         
         function roiMask=getROI(obj)
-            
             % If no roiPath_, the whole mask is the region of interest
             if isempty(obj.roiPath_)
                 roiMask = true([obj.imSize_ obj.nFrames_]);
@@ -158,12 +157,23 @@ classdef  MovieData < MovieObject
             assert(exist(obj.roiPath_,'file')==2)
             if strcmpi(obj.roiPath_(end-2:end),'tif'),
                 roiMask = logical(imread(obj.roiPath_));
-                assert(size(roiMask(:,:,1)) == obj.imSize_);
+                assert(isequal(size(roiMask(:,:,1)), obj.imSize_));
                 if size(roiMask,3)==1, roiMask=repmat(roiMask,[1 1 obj.nFrames_]); end
                 assert(size(roiMask,3) == obj.nFrames_);
             end
-        end      
+        end
         
+        function parent=getAncestor(obj)
+            if isempty(obj.parent_), parent=obj; else parent=obj.parent_.getAncestor(); end
+        end
+        
+        function descendants=getDescendants(obj)
+            nRois = numel(obj.rois_);
+            roiDescendants=cell(nRois,1);
+            for i=1:nRois, roiDescendants{i} = obj.rois_(i).getDescendants; end
+            descendants = horzcat(obj.rois_,roiDescendants{:});
+        end
+             
         %% Sanitycheck/relocation
         function sanityCheck(obj,varargin)
             % Check the sanity of the MovieData objects
@@ -223,15 +233,11 @@ classdef  MovieData < MovieObject
         end
         
 
-        function flag = save(obj)
-            if ~isempty(obj.parent_)
-                flag = obj.parent_.save;
-            else         
-                flag=save@MovieObject(obj);
-                for i=1:numel(obj.rois_);
-                    flag = flag && obj.rois_(i).save@MovieObject;
-                end
-            end 
+        function flag = save(obj,varargin)            
+            flag = save@MovieObject(obj.getAncestor);
+            for descendant= obj.getAncestor.getDescendants
+                flag = flag & save@MovieObject(descendant);
+            end
         end
         
     end

@@ -229,11 +229,7 @@ classdef Channel < hgsetget
                 r.close;
             else
                 % Read images from disk
-                if ~isempty(obj.fileNames_), 
-                    fileNames=obj.fileNames_(iFrame);
-                else
-                    fileNames=obj.getImageFileNames(iFrame);
-                end
+                fileNames=obj.getImageFileNames(iFrame);
                 for i=1:numel(iFrame)
                     I(:,:,i)  = double(imread([obj.channelPath_ filesep fileNames{i}]));
                 end
@@ -241,7 +237,6 @@ classdef Channel < hgsetget
         end
         
         function color = getColor(obj)
-            
             if ~isempty(obj.emissionWavelength_),
                 color = wavelength2rgb(obj.emissionWavelength_*1e-9);
             else
@@ -259,15 +254,13 @@ classdef Channel < hgsetget
             ip.KeepUnmatched = true;
             ip.parse(obj,iFrame,varargin{:})
             
-            
-            if numel(obj)>1
-                % Multi-channel display
-                data = zeros([obj(1).owner_.imSize_ 3]);
-            else
-                data = zeros([obj(1).owner_.imSize_]);
-            end  
+            % Initialize output
+            if numel(obj)>1, zdim=3; else zdim=1; end
+            data = zeros([obj(1).owner_.imSize_ zdim]);
+             
+            % Fill output
             for iChan=1:numel(obj)
-                data(:,:,iChan)=scaleContrast(obj(iChan).loadImage(iFrame),[],[0 1]);
+                data(:,:,iChan)=mat2gray(obj(iChan).loadImage(iFrame));
             end
             drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
                 2*numel(fieldnames(ip.Unmatched)),1);
@@ -339,7 +332,6 @@ classdef Channel < hgsetget
         function fluorophores=getFluorophores()
             fluorPropStruct= getFluorPropStruct();
             fluorophores={fluorPropStruct.name};
-        end
-        
+        end 
     end
 end
