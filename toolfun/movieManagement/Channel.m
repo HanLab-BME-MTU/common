@@ -152,13 +152,10 @@ classdef Channel < hgsetget
             ip.parse(varargin{:})
             
             % Set the channel owner
-            if isempty(obj.owner_)
-                obj.owner_=ip.Results.owner;
-            else
-                assert(isequal(obj.owner_,ip.Results.owner) ||...
-                    isequal(obj.owner_,ip.Results.owner.parent_),...
-                    'The channel''s owner is not the movie neither its parent')
-            end
+            if isempty(obj.owner_), obj.owner_=ip.Results.owner; end
+            assert(isequal(obj.owner_,ip.Results.owner) ||...
+                isequal(obj.owner_,ip.Results.owner.parent_),...
+                'The channel''s owner is not the movie neither its parent')
             
             if exist(obj.channelPath_, 'file')==2 
                 % Using bioformat-tools, get metadata 
@@ -166,7 +163,7 @@ classdef Channel < hgsetget
                 width = r.getSizeX;
                 height = r.getSizeY;
                 nFrames = r.getSizeT;
-                r.close;               
+                r.close;
             else
                 % Check channel path existence
                 assert(logical(exist(obj.channelPath_, 'dir')), ...
