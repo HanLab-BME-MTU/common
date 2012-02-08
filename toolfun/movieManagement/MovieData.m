@@ -10,17 +10,16 @@ classdef  MovieData < MovieObject
     end
     
     properties
-        roiPath_                % The path weher the movie roi is stored
+        roiMaskPath_            % The path where the roi mask is stored
         movieDataPath_          % The path where the movie data is saved
         movieDataFileName_      % The name under which the movie data is saved
-        pixelSize_              % Pixel size (nm)
+        pixelSize_              % Pixel size in the object domain (nm)
         timeInterval_           % Time interval (s)
-        numAperture_            % Numerical Aperture
+        numAperture_            % Lens numerical aperture
         camBitdepth_            % Camera Bit-depth
-        eventTimes_             % Time of movie events
-        
+                
         % ---- Un-used params ----
-        
+        eventTimes_             % Time of movie events
         magnification_
         binning_
     end
@@ -126,16 +125,16 @@ classdef  MovieData < MovieObject
         end  
         
         %% ROI methods
-        function addROI(obj,roiPath,outputDirectory,varargin)
+        function addROI(obj,roiMaskPath,outputDirectory,varargin)
             % Create a new object using the movie's channels
-            assert(exist(roiPath,'file')==2,'The path to the roi mask does not exist');
+            assert(exist(roiMaskPath,'file')==2,'The path to the roi mask does not exist');
             roiMovie = MovieData(obj.channels_,outputDirectory,varargin{:});
             copyfields = {'pixelSize_','timeInterval_','numAperture_',...
                 'camBitdepth_','processes_','packages_','nFrames_','imSize_'};
             set(roiMovie,copyfields,get(obj,copyfields));
             
             % Set toi properties
-            roiMovie.roiPath_=roiPath;
+            roiMovie.roiMaskPath_=roiMaskPath;
             roiMovie.parent_=obj;
             obj.rois_(end+1)=roiMovie;
         end
@@ -145,18 +144,18 @@ classdef  MovieData < MovieObject
             obj.rois_(index)=[];
         end
         
-        function roiMask=getROI(obj)
-            % If no roiPath_, the whole mask is the region of interest
-            if isempty(obj.roiPath_)
+        function roiMask=getROIMask(obj)
+            % If no roiMaskPath_, the whole mask is the region of interest
+            if isempty(obj.roiMaskPath_)
                 roiMask = true([obj.imSize_ obj.nFrames_]);
                 return; 
             end
            
             % Support single tif files for now - should be extended to
             % polygons, series of masks and other ROI objects
-            assert(exist(obj.roiPath_,'file')==2)
-            if strcmpi(obj.roiPath_(end-2:end),'tif'),
-                roiMask = logical(imread(obj.roiPath_));
+            assert(exist(obj.roiMaskPath_,'file')==2)
+            if strcmpi(obj.roiMaskPath_(end-2:end),'tif'),
+                roiMask = logical(imread(obj.roiMaskPath_));
                 assert(isequal(size(roiMask(:,:,1)), obj.imSize_));
                 if size(roiMask,3)==1, roiMask=repmat(roiMask,[1 1 obj.nFrames_]); end
                 assert(size(roiMask,3) == obj.nFrames_);
@@ -164,10 +163,12 @@ classdef  MovieData < MovieObject
         end
         
         function parent=getAncestor(obj)
+            % Get oldest common ancestor of the movie
             if isempty(obj.parent_), parent=obj; else parent=obj.parent_.getAncestor(); end
         end
         
         function descendants=getDescendants(obj)
+            % List all descendants of the movie
             nRois = numel(obj.rois_);
             roiDescendants=cell(nRois,1);
             for i=1:nRois, roiDescendants{i} = obj.rois_(i).getDescendants; end
@@ -232,11 +233,10 @@ classdef  MovieData < MovieObject
             setFig = movieDataGUI(obj);
         end
         
-
-        function flag = save(obj,varargin)            
+        function flag = save(obj,varargin)   
             flag = save@MovieObject(obj.getAncestor);
-            for descendant= obj.getAncestor.getDescendants
-                flag = flag & save@MovieObject(descendant);
+            for descendant = obj.getAncestor.getDescendants
+                flag = flag && save@MovieObject(descendant);
             end
         end
         

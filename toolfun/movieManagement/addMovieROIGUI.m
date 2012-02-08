@@ -74,6 +74,7 @@ userData.nFrames = userData.MD.nFrames_;
 userData.imRectHandle.isvalid=0;
 userData.ROI = [1 1 userData.MD.imSize_(end:-1:1)];
 userData.previewFig=-1;
+userData.helpFig=-1;
 
 % Read the first image and update the sliders max value and steps
 userData.chanIndex = 1;
@@ -114,10 +115,7 @@ function figure1_DeleteFcn(hObject, ~, handles)
 % Notify the package GUI that the setting panel is closed
 userData = get(handles.figure1, 'UserData');
 
-if isfield(userData, 'helpFig') && ishandle(userData.helpFig)
-   delete(userData.helpFig) 
-end
-
+if ishandle(userData.helpFig), delete(userData.helpFig); end
 if ishandle(userData.previewFig), delete(userData.previewFig); end
 
 set(handles.figure1, 'UserData', userData);
@@ -256,17 +254,17 @@ end
 update_data(hObject,eventdata,handles);
 assert(userData.imRectHandle.isvalid);
 
-% Load mask and save it in the outputDirectory
+% Create ROI mask and save it in the outputDirectory
 mask=createMask(userData.imRectHandle);
 maskPath = fullfile(outputDirectory,'roiMask.tif');
 imwrite(mask,maskPath);
 
-% Create the region of intereset and save it
+% Create a new region of interest and save the object
 userData.MD.addROI(maskPath,outputDirectory);   
 movieROI=userData.MD.rois_(end);
 movieROI.save;
 
-% If new MovieData was created (from movieSelectorGUI)
+% If called from movieSelectorGUI
 if userData.mainFig ~=-1, 
     % Retrieve main window userData
     userData_main = get(userData.mainFig, 'UserData');
