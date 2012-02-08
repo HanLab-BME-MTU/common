@@ -65,29 +65,7 @@ classdef DetectionProcess < ImageAnalysisProcess
             output(1).type='overlay';
             output(1).defaultDisplayMethod=@(x) LineDisplay('Marker','o',...
                 'LineStyle','none','Color',colors(x,:));
-        end 
-        
-        function hfigure = resultDisplay(obj,fig,procID)
-            % Display the output of the process
-              
-            % Check for movie output before loading the GUI
-            iChan = find(obj.checkChannelOutput,1);         
-            if isempty(iChan)
-                warndlg('The current step does not have any output yet.','No Output','modal');
-                return
-            end
-            
-            % Make sure detection output is valid
-            movieInfo=obj.loadChannelOutput(iChan,'output','movieInfo');
-            firstframe=find(arrayfun(@(x) ~isempty(x.amp),movieInfo),1);
-            if isempty(firstframe)
-                warndlg('The detection result is empty. There is nothing to visualize.','Empty Output','modal');
-                return
-            end
-            
-            hfigure = detectionVisualGUI('mainFig', fig, procID);
-        end
-        
+        end  
         
     end
     methods(Static)
