@@ -218,8 +218,13 @@ i = get(handles.popupmenu_kalman_reverse, 'Value');
 funParams.kalmanFunctions.timeReverse = userData.timeReverseFunctions(i).funcName;
 
 % Set up parameters effected by funParams.gapCloseParam.timeWindow
-funParams.costMatrices(2).parameters.brownStdMult = funParams.costMatrices(2).parameters.brownStdMult(1) * ones(funParams.gapCloseParam.timeWindow,1);
-funParams.costMatrices(2).parameters.linStdMult = funParams.costMatrices(2).parameters.linStdMult(1) * ones(funParams.gapCloseParam.timeWindow,1);
+if isfield(funParams.costMatrices(2).parameters,'brownStdMult'),
+    funParams.costMatrices(2).parameters.brownStdMult = funParams.costMatrices(2).parameters.brownStdMult(1) * ones(funParams.gapCloseParam.timeWindow,1);
+end
+
+if isfield(funParams.costMatrices(2).parameters,'linStdMult'),
+    funParams.costMatrices(2).parameters.linStdMult = funParams.costMatrices(2).parameters.linStdMult(1) * ones(funParams.gapCloseParam.timeWindow,1);
+end
 
 processGUI_ApplyFcn(hObject,eventdata,handles,funParams)
 
