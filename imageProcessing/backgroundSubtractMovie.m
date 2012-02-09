@@ -160,16 +160,16 @@ end
 
 
 outFilePaths = cell(2,nChan);
-for j = 1:nChanCorr;
+for iChan = p.ChannelIndex;
     
     %Create string for current directory
-    outFilePaths{1,j} = [p.OutputDirectory filesep dName num2str(p.ChannelIndex(j))];    
+    outFilePaths{1,iChan} = [p.OutputDirectory filesep dName num2str(iChan)];    
     
     %Check/create directory (checking avoids warning about existing
     %directory)
-    mkClrDir(outFilePaths{1,j});
+    mkClrDir(outFilePaths{1,iChan});
        
-    outFilePaths{2,j} = [p.OutputDirectory filesep saveName num2str(p.ChannelIndex(j)) '.mat'];   
+    outFilePaths{2,iChan} = [p.OutputDirectory filesep saveName num2str(iChan) '.mat'];   
 end
 
 %Save this in the process object
