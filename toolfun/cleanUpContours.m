@@ -75,7 +75,7 @@ allDiffs = cellfun(@(x)(sum(vertcat(abs(diff(x(1,:))),abs(diff(x(2,:)))))),conto
 %Starting with r2011b, contourc.m sometimes returns single-point contours.
 nPall = cellfun(@(x)(size(x,2)),contoursIn);
 if any(nPall == 1)
-    allDiffs{nPall==1} = [];
+    [allDiffs{nPall==1}] =deal([]);
 end
 
 %Remove points which are seperated by less than the threshold
