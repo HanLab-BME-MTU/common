@@ -145,17 +145,23 @@ if isa(userData.MO,'MovieData')
         'Callback',@(h,event) setCLim(guidata(h)));
     
     hPosition1=hPosition1+30;
+    uicontrol(imagePanel,'Style','text','Position',[20 hPosition1-2 80 20],...
+        'String','Colormap','HorizontalAlignment','left');
+    uicontrol(imagePanel,'Style','popupmenu',...
+        'Position',[130 hPosition1 80 20],'Tag','popupmenu_colormap',...
+        'String',{'Gray','Jet','HSV','Custom'},'Value',1,...
+        'HorizontalAlignment','left','Callback',@(h,event) setColormap(guidata(h)));
+    
+    hPosition1=hPosition1+30;
     uicontrol(imagePanel,'Style','checkbox',...
         'Position',[10 hPosition1 120 20],'Tag','checkbox_colorbar',...
         'String',' Colorbar','HorizontalAlignment','left',...
         'Callback',@(h,event) setColorbar(guidata(h)));
-    
-    uicontrol(imagePanel,'Style','text','Position',[120 hPosition1-2 80 20],...
-        'String','Colormap','HorizontalAlignment','left');
-    uicontrol(imagePanel,'Style','popupmenu',...
-        'Position',[200 hPosition1 80 20],'Tag','popupmenu_colormap',...
-        'String',{'Gray','Jet','HSV','Custom'},'Value',1,...
-        'HorizontalAlignment','left','Callback',@(h,event) setColormap(guidata(h)));
+    locations = findtype('ColorbarLocationPreset');
+    locations = locations.Strings;
+    uicontrol(imagePanel,'Style','popupmenu','String',locations,...
+        'Position',[130 hPosition1 80 20],'Tag','popupmenu_colorbarLocation',...
+        'HorizontalAlignment','left','Callback',@(h,event) setColorbar(guidata(h)));
     
     hPosition1=hPosition1+20;
     uicontrol(imagePanel,'Style','text','Position',[10 hPosition1 200 20],...
@@ -681,8 +687,9 @@ redrawImage(handles,'Colormap',allCmap{selectedCmap})
 
 function setColorbar(handles)
 cbar=get(handles.checkbox_colorbar,'Value');
+props = get(handles.popupmenu_colorbarLocation,{'String','Value'});
 if cbar, cbarStatus='on'; else cbarStatus='off'; end 
-redrawImage(handles,'Colorbar',cbarStatus)
+redrawImage(handles,'Colorbar',cbarStatus,'ColorbarLocation',props{1}{props{2}})
 
 function redrawImage(handles,varargin)
 frameNr=get(handles.slider_frame,'Value');
@@ -727,7 +734,9 @@ set(handles.edit_cmax,'Enable','on','String',clim(2));
     
 % Set the colorbar properties
 cbar=displayMethod.Colorbar;
-set(handles.checkbox_colorbar,'Value',strcmpi(cbar,'on'));
+cbarLocation = find(strcmpi(displayMethod.ColorbarLocation,get(handles.popupmenu_colorbarLocation,'String')));
+set(handles.checkbox_colorbar,'Value',strcmp(cbar,'on'));
+set(handles.popupmenu_colorbarLocation,'Enable',cbar,'Value',cbarLocation);
 
 % Set the colormap properties
 cmap=displayMethod.Colormap;

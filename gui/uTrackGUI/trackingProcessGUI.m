@@ -66,8 +66,8 @@ set(handles.checkbox_merging, 'Value',ismember(funParams.gapCloseParam.mergeSpli
 set(handles.checkbox_splitting, 'Value',ismember(funParams.gapCloseParam.mergeSplit,[1 3]));
     
 % Set cost matrics
-defaultLinkingCostMat = TrackingProcess.getDefaultLinkingCostMatrices(userData.MD,5);
-defaultGapClosingCostMat = TrackingProcess.getDefaultGapClosingCostMatrices(userData.MD,5);
+defaultLinkingCostMat = userData.crtProc.getDefaultLinkingCostMatrices(userData.MD,5);
+defaultGapClosingCostMat = userData.crtProc.getDefaultGapClosingCostMatrices(userData.MD,5);
 userData.cost_linking = {defaultLinkingCostMat.funcName};
 userData.cost_gapclosing = {defaultGapClosingCostMat.funcName};
 userData.fun_cost_linking = {defaultLinkingCostMat.GUI};

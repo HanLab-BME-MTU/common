@@ -3,6 +3,7 @@ classdef ImageDisplay < MovieDataDisplay
     properties
         Colormap ='gray';
         Colorbar ='off';
+        ColorbarLocation ='EastOutside';
         CLim = [];
         Units='';
         sfont = {'FontName', 'Helvetica', 'FontSize', 18};
@@ -39,17 +40,21 @@ classdef ImageDisplay < MovieDataDisplay
             
             % Set the colorbar
             hCbar = findobj(get(hAxes,'Parent'),'Tag','Colorbar');
+            axesPosition = [0 0 1 1];
             if strcmp(obj.Colorbar,'on')
+                if length(obj.ColorbarLocation) >6 && strcmp(obj.ColorbarLocation(end-6:end),'Outside'),
+                    axesPosition = [0.05 0.05 .9 .9];
+                end
                 if isempty(hCbar)
-                    set(hAxes,'Position',[0.05 0.05 .9 .9]);   
+                    set(hAxes,'Position',axesPosition);   
                     hCbar = colorbar('peer',hAxes,obj.sfont{:});
                 end
+                set(hCbar,'Location',obj.ColorbarLocation);
                 ylabel(hCbar,obj.Units,obj.lfont{:});
             else
                 if ~isempty(hCbar),colorbar(hCbar,'delete'); end
-                set(hAxes,'Position',[0 0 1 1]);
+                set(hAxes,'Position',axesPosition);
             end
-
             
             % Set the color limits
             if ~isempty(obj.CLim),set(hAxes,'CLim',obj.CLim); end
@@ -70,6 +75,10 @@ classdef ImageDisplay < MovieDataDisplay
             params(5).validator=@iscell;
             params(6).name='lfont';
             params(6).validator=@iscell;
+            params(7).name='ColorbarLocation';
+            locations = findtype('ColorbarLocationPreset');
+            locations = locations.Strings;
+            params(7).validator=@(x) any(strcmp(x,locations));
         end
         function f=getDataValidator()
             f=@isnumeric;
