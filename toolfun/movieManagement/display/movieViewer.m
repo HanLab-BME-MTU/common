@@ -406,10 +406,12 @@ moviePanel = uipanel(mainFig,...
 % Create control button for exporting figures and movie (cf Francois' GUI)
 hPosition=10;
 
-handles.movieButton = uicontrol(moviePanel, 'Style', 'pushbutton', ...
-    'String', 'Make movie',...
-    'Position', [150 hPosition 100 20],...
-    'Callback', @(h,event) makeMovie(h,guidata(h)));
+uicontrol(moviePanel, 'Style', 'pushbutton','String', 'Run movie',...
+    'Position', [10 hPosition 100 20],'Callback',@(h,event) runMovie(h,guidata(h)));
+uicontrol(moviePanel, 'Style', 'checkbox','Tag','checkbox_saveMovie',...
+    'Value',1,'String', 'Save movie','Position', [150 hPosition 100 20]);
+uicontrol(moviePanel, 'Style', 'checkbox','Tag','checkbox_saveFrames',...
+    'Value',0,'String', 'Save frames','Position', [250 hPosition 100 20]);
 
 if isa(userData.MO,'MovieData')
     % Create controls for scrollling through the movie
@@ -512,34 +514,39 @@ P=vertcat(a{:});
 size = [max(P(:,1)+P(:,3))+10 max(P(:,2)+P(:,4))+20];
 
 
-function makeMovie(hObject,handles)
+function runMovie(hObject,handles)
 
 userData = get(handles.figure1, 'UserData');
 nFrames = userData.MO.nFrames_;
 
-% Initialize movie
-MakeQTMovie('start',fullfile(,userData.MO.outputDirectory_,'Movie.mov');
-MakeQTMovie('quality',.9)
+if get(handles.checkbox_saveMovie,'Value');
+    % Initialize movie
+    MakeQTMovie('start',fullfile(userData.MO.outputDirectory_,'Movie.mov'));
+    MakeQTMovie('quality',.9)
+end
 
-% Initialize frame output
-fmt = ['%0' num2str(ceil(log10(nFrames))) 'd'];
-frameName = @(frame) ['frame' num2str(frame, fmt) '.png'];
-fpath = [userData.MO.outputDirectory_ filesep 'Frames'];
-mkClrDir(fpath);
-fprintf('Generating movie frames:     ');
-resolution = ['-r' num2str(5*72)];
+if get(handles.checkbox_saveFrames,'Value');
+    % Initialize frame output
+    fmt = ['%0' num2str(ceil(log10(nFrames))) 'd'];
+    frameName = @(frame) ['frame' num2str(frame, fmt) '.png'];
+    fpath = [userData.MO.outputDirectory_ filesep 'Frames'];
+    mkClrDir(fpath);
+    fprintf('Generating movie frames:     ');
+    resolution = ['-r' num2str(5*72)];
+end
 for iFrame=1:nFrames
     set(handles.slider_frame, 'Value',iFrame);
     redrawScene(hObject, handles);
     drawnow;
-    MakeQTMovie('addfigure')
-    print(userData.drawFig, '-dpng', '-loose', resolution, fullfile(fpath,frameName(iFrame)));
-    fprintf('\b\b\b\b%3d%%', round(100*iFrame/(nFrames)));
+    if get(handles.checkbox_saveMovie,'Value'), MakeQTMovie('addfigure'); end
+    if get(handles.checkbox_saveFrames,'Value');
+        print(userData.drawFig, '-dpng', '-loose', resolution, fullfile(fpath,frameName(iFrame)));
+        fprintf('\b\b\b\b%3d%%', round(100*iFrame/(nFrames)));
+    end
 end
-fprintf('\n');
+if get(handles.checkbox_saveFrames,'Value'); fprintf('\n'); end
 
-% Generate movie
-MakeQTMovie('finish')
+if get(handles.checkbox_saveMovie,'Value'), MakeQTMovie('finish'); end
 
 % mpath = [userData.MO.outputDirectory_ filesep 'Movie'];
 % mkClrDir(mpath);
