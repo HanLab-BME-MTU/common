@@ -152,8 +152,9 @@ end
        
 % Set up the input directories
 inFilePaths = cell(1,numel(movieData.channels_));
-for j = p.ChannelIndex
-    inFilePaths{1,j} = segProc{j}.outFilePaths_{1,j};
+for j = 1:nChan
+    iChan = p.ChannelIndex(j);
+    inFilePaths{1,iChan} = segProc{j}.outFilePaths_{1,iChan};
 end
 maskIntProc.setInFilePaths(inFilePaths);
     
