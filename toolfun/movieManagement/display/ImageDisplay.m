@@ -76,6 +76,7 @@ classdef ImageDisplay < MovieDataDisplay
             params(6).name='lfont';
             params(6).validator=@iscell;
             params(7).name='ColorbarLocation';
+            findclass(findpackage('scribe'),'colorbar');
             locations = findtype('ColorbarLocationPreset');
             locations = locations.Strings;
             params(7).validator=@(x) any(strcmp(x,locations));
