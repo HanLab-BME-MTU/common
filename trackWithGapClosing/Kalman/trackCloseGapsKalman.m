@@ -373,7 +373,8 @@ end
 %this function now breaks up frame-to-frame linked tracks if they do not
 %follow a linear trajectory.  it only runs with the EB3 cost matrix
 addDiagnostics={};
-if isequal(costMatrices(2).funcName,'plusTipCostMatCloseGaps')
+if isequal(costMatrices(2).funcName,'plusTipCostMatCloseGaps') && ...
+    costMatrices(2).parameters.breakNonLinearTracks
     [tracksCoordAmpLink,tracksFeatIndxLink,nnDistLinkedFeat,diagnosticTrackLinearity]=...
         plusTipBreakNonlinearTracks(tracksCoordAmpLink,tracksFeatIndxLink,nnDistLinkedFeat);
     addDiagnostics={'diagnosticTrackLinearity'};
