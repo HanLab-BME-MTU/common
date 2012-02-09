@@ -517,6 +517,11 @@ function makeMovie(hObject,handles)
 userData = get(handles.figure1, 'UserData');
 nFrames = userData.MO.nFrames_;
 
+% Initialize movie
+MakeQTMovie('start',fullfile(,userData.MO.outputDirectory_,'Movie.mov');
+MakeQTMovie('quality',.9)
+
+% Initialize frame output
 fmt = ['%0' num2str(ceil(log10(nFrames))) 'd'];
 frameName = @(frame) ['frame' num2str(frame, fmt) '.png'];
 fpath = [userData.MO.outputDirectory_ filesep 'Frames'];
@@ -527,19 +532,22 @@ for iFrame=1:nFrames
     set(handles.slider_frame, 'Value',iFrame);
     redrawScene(hObject, handles);
     drawnow;
+    MakeQTMovie('addfigure')
     print(userData.drawFig, '-dpng', '-loose', resolution, fullfile(fpath,frameName(iFrame)));
     fprintf('\b\b\b\b%3d%%', round(100*iFrame/(nFrames)));
 end
 fprintf('\n');
 
 % Generate movie
-mpath = [userData.MO.outputDirectory_ filesep 'Movie'];
-mkClrDir(mpath);
-fprintf('Generating movie... ');
-fr = num2str(15);
-cmd = ['ffmpeg -y -r ' fr ' -i ' fpath 'frame' fmt '.png' ' -r ' fr ' -b 50000k -bt 20000k ' mpath 'movie.mp4 > /dev/null 2>&1' ];
-system(cmd);
-fprintf('done.\n');
+MakeQTMovie('finish')
+
+% mpath = [userData.MO.outputDirectory_ filesep 'Movie'];
+% mkClrDir(mpath);
+% fprintf('Generating movie... ');
+% fr = num2str(15);
+% cmd = ['ffmpeg -y -r ' fr ' -i ' fpath 'frame' fmt '.png' ' -r ' fr ' -b 50000k -bt 20000k ' mpath 'movie.mp4 > /dev/null 2>&1' ];
+% system(cmd);
+% fprintf('done.\n');
 
 function redrawScene(hObject, handles)
 
