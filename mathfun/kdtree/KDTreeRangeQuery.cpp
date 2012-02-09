@@ -4,7 +4,7 @@
  *
  * Compilation:
  * Mac/Linux: mex -I.  -I../../mex/include/c++ KDTreeRangeQuery.cpp
- * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"." -I"..\..\mex\include\c++" -output KDTreeRangeQuery KDTreeRangeQuery.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP" -I"." -I"..\..\mex\include\c++" -output KDTreeRangeQuery KDTreeRangeQuery.cpp
  */
 
 # include <mex.h>
