@@ -89,10 +89,10 @@ set(handles.popupmenu_gapclosing, 'Value', i2, 'UserData', u2,...
 
 
 % Kalman functions
-userData.reserveMemFunctions = TrackingProcess.getKalmanReserveMemFunctions;
-userData.initializeFunctions = TrackingProcess.getKalmanInitializeFunctions;
-userData.calcGainFunctions = TrackingProcess.getKalmanCalcGainFunctions;
-userData.timeReverseFunctions = TrackingProcess.getKalmanTimeReverseFunctions;
+userData.reserveMemFunctions = userData.crtProc.getKalmanReserveMemFunctions;
+userData.initializeFunctions =  userData.crtProc.getKalmanInitializeFunctions;
+userData.calcGainFunctions =  userData.crtProc.getKalmanCalcGainFunctions;
+userData.timeReverseFunctions =  userData.crtProc.getKalmanTimeReverseFunctions;
 
 i1 = find(strcmp(funParams.kalmanFunctions.reserveMem, {userData.reserveMemFunctions.funcName}));
 i2 = find(strcmp(funParams.kalmanFunctions.initialize, {userData.initializeFunctions.funcName}));
