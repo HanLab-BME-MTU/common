@@ -3,40 +3,46 @@ function sph = binarySphere(radius)
 % 
 % sphereMat = binarySphere(radius)
 % 
-% This function genereates a logical matrix with values inside a sphere of
-% the specified radius being true and those outside being false. This
+% This function genereates a 3D logical matrix with values inside a sphere
+% of the specified radius being true and those outside being false. This
 % sphere can be used to perform morphological operations such is dilation
 % and erosion on 3D binary matrices.
 % 
 % Input:
 % 
-%   radius - Positive scalar >= 1. The radius of the sphere to generate.
-%    
+%   radius - Positive scalar. The radius of the sphere to generate.
+%           Note that for: 
+%              0       <  radius < 1       a single true voxel is returned
+%              1       <= radius < sqrt(2) the standard 6-connected neighborhood is returned.
+%              sqrt(2) <= radius < sqrt(3) the standard 18-connected neighborhood is returned
+%              sqrt(3) <= radius < 2       the standard 26-connected neighborhood is returned
+%               
 % 
 % Output:
 % 
-%   sphereMat - The resulting square logical matrix (neighborhood), of size
+%   sphereMat - The resulting 3D cubic logical matrix (neighborhood), of size
 %   ~2*radius+1 (this is only exact if radius is an integer)
 % 
 % Hunter Elliott
 % 2/2010
 %
 
-if nargin < 1 || isempty(radius) || radius < 1
-    error('You must specify a radius >= 1 for the sphere!')
+if nargin < 1 || isempty(radius) || numel(radius)>1 || radius <= 0
+    error('You must specify a single positive radius!')
 end
 
+w = floor(radius);
 
-if radius > 1
+if round(radius) ~= radius
+    %This avoids numerical error in the inequality below, and gives correct
+    %output for rad = sqrt(2) and rad = sqrt(3) etc.
+    radius = radius + eps(radius);
+end
+
     
-    %Get x,y,z coordinate matrices for distance-from-origin calculation
-    [xx,yy,zz] = meshgrid(-radius:radius,-radius:radius,-radius:radius);
+%Get x,y,z coordinate matrices for distance-from-origin calculation
+[xx,yy,zz] = meshgrid(-w:w,-w:w,-w:w);
 
-    %Return all points which are less than radius away from origin of
-    %neighborhood
-    sph = xx .^2 + yy .^2 + zz.^2 < radius^2;
-else
-    %Special case for radius = 1 - gives 6-connected neighborhood
-    sph = [0 0 0;0 1 0;0 0 0;0 1 0;1 1 1;0 1 0;0 0 0;0 1 0;0 0 0;];
-    sph = reshape(sph,[3 3 3]);        
-end
+%Return all points which are less than radius away from origin of
+%neighborhood
+sph = xx .^2 + yy .^2 + zz.^2 <= radius^2;
