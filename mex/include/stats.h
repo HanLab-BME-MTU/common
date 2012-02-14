@@ -181,3 +181,72 @@ double ksone(double *data, int N, double mu, double sigma) {
     double en = sqrt((double)N);
     return qks((en + 0.12 + 0.11/en)*D);
 }
+
+
+unsigned char adtest(double *data, int N, double mu, double sigma) {
+    double *sdata = (double*)malloc(sizeof(double)*N);
+    memcpy(sdata, data, N*sizeof(double));
+    qsort(sdata, N, sizeof(double), compDouble);
+    
+    int i;
+    /*double mu = 0.0;
+    double sigma = 0.0;
+    for (i=0;i<N;++i) {
+        mu += data[i];
+        sigma += data[i]*data[i];
+    }
+    mu /= N;
+    sigma = sqrt(sigma - mu*mu);*/
+    
+    double A2 = 0.0;
+    double r2 = sqrt(2.0);
+    
+    // Normal CDF
+    double *z = (double*)malloc(sizeof(double)*N);
+    for (i=0;i<N;++i) {
+        z[i] = 0.5 * (1 + erf((sdata[i]-mu)/(r2*sigma)));
+    }
+        
+    // A-D test statistic
+    for (i=0;i<N;++i) {
+        A2 += (2.0*i+1.0)*(log(z[i]) + log(1.0-z[N-1-i]));
+    }
+    A2 = -N - A2/N;
+    A2 *= 1.0+4.0/N-25.0/(N*N);
+
+    free(z);
+    free(sdata);
+    
+    double cval = 0.787;
+    return A2>cval;    
+}
+
+// adtest for sample distributions with zero mean
+unsigned char adTestResiduals(double *data, int N, double sigma) {
+    double *sdata = (double*)malloc(sizeof(double)*N);
+    memcpy(sdata, data, N*sizeof(double));
+    qsort(sdata, N, sizeof(double), compDouble);
+    
+    int i;
+    
+    double A2 = 0.0;
+    double r2 = sqrt(2.0);
+    
+    // Normal CDF
+    double *z = (double*)malloc(sizeof(double)*N);
+    for (i=0;i<N;++i) {
+        z[i] = 0.5 * (1 + erf(sdata[i]/(r2*sigma)));
+    }
+        
+    // A-D test statistic
+    for (i=0;i<N;++i) {
+        A2 += (2.0*i+1.0)*(log(z[i]) + log(1.0-z[N-1-i]));
+    }
+    A2 = -N - A2/N;
+
+    free(z);
+    free(sdata);
+    
+    double cval = 2.323;
+    return A2>cval;    
+}
