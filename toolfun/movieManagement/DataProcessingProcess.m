@@ -136,7 +136,7 @@ classdef DataProcessingProcess < Process
            iChan=ip.Results.iChan;
 
            %Makes sure there's at least one output file per channel
-           status =  arrayfun(@(x) exist(obj.outFilePaths_{1,x},'file')==2,iChan);
+           status =  arrayfun(@(x) ismember(exist(obj.outFilePaths_{1,x}),[2 7]),iChan); %#ok<EXIST>
         end
              
     end    
