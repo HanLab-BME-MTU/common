@@ -198,13 +198,13 @@ unsigned char adtest(double *data, int N, int adCase, double mu, double sigma, d
    
     int i;
    
-    // Normal CDF
+    /* Normal CDF */
     double *z = (double*)malloc(sizeof(double)*N);
     for (i=0;i<N;++i) {
         z[i] = 0.5 * (1 + erf((sdata[i]-mu)/(r2*sigma)));
     }
         
-    // A-D test statistic
+    /* A-D test statistic */
     for (i=0;i<N;++i) {
         A2 += (2.0*i+1.0)*(log(z[i]) + log(1.0-z[N-1-i]));
     }
@@ -217,14 +217,14 @@ unsigned char adtest(double *data, int N, int adCase, double mu, double sigma, d
     free(z);
     free(sdata);
     
-    // Look-up table for critical values
+    /* Look-up table for critical values */
     static const double alphaVec[4] = {0.01, 0.025, 0.05,  0.1};
-    static const double ctable[16] = {3.857, 3.070, 2.492, 1.933, // case 1
-                                      1.573, 1.304, 1.105, 0.908, // case 2
-                                      3.690, 2.904, 2.323, 1.760, // case 3
-                                      1.092, 0.918, 0.787, 0.656};// case 4
+    static const double ctable[16] = {3.857, 3.070, 2.492, 1.933, /* case 1 */
+                                      1.573, 1.304, 1.105, 0.908, /* case 2 */
+                                      3.690, 2.904, 2.323, 1.760, /* case 3 */
+                                      1.092, 0.918, 0.787, 0.656};/* case 4 */
     
-    // get critical value from lookup table
+    /* get critical value from lookup table */
     int ai = 5;
     for (i=0;i<4;++i) {
         if (alpha==alphaVec[i]) {
