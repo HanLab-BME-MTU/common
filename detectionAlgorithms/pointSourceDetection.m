@@ -130,13 +130,17 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
                 idx(idxKD{k}(RSS ~= min(RSS))) = 0;
             end
             
-            fnames = fieldnames(pstruct);
-            for k = 1:length(fnames)
-                pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
+            if sum(idx)>0
+                fnames = fieldnames(pstruct);
+                for k = 1:length(fnames)
+                    pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
+                end
+                pstruct.hval_Ar = logical(pstruct.hval_Ar);
+                pstruct.hval_AD = logical(pstruct.hval_AD);
+                pstruct.isPSF = ~pstruct.hval_AD;
+            else
+                pstruct = [];
             end
-            pstruct.hval_Ar = logical(pstruct.hval_Ar);
-            pstruct.hval_AD = logical(pstruct.hval_AD);
-            pstruct.isPSF = ~pstruct.hval_AD;
         else
             pstruct = [];
         end
