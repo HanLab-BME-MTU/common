@@ -432,7 +432,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     /* residuals */
     if (nlhs > 3) {
-        const char *fieldnames[] = {"data", "pval", "mean", "std", "RSS"};
+        const char *fieldnames[] = {"data", "hAD", "mean", "std", "RSS"};
         mwSize dims[2] = {1, 1};
         plhs[3] = mxCreateStructArray(2, dims, 5, fieldnames);
         mxArray *val = mxCreateDoubleMatrix(nx, nx, mxREAL);
@@ -450,9 +450,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
             res[nanIdx[i]] = mxGetNaN();
         }
         
-        double pval = ksone(resValid, data.nValid, mean, std);
+        unsigned char hAD = adtest(resValid, data.nValid, 3, 0.0, std, 0.05);
         mxSetFieldByNumber(plhs[3], 0, 0, val);
-        mxSetFieldByNumber(plhs[3], 0, 1, mxCreateDoubleScalar(pval));
+        mxSetFieldByNumber(plhs[3], 0, 1, mxCreateLogicalScalar(hAD));
         mxSetFieldByNumber(plhs[3], 0, 2, mxCreateDoubleScalar(mean));
         mxSetFieldByNumber(plhs[3], 0, 3, mxCreateDoubleScalar(std));
         mxSetFieldByNumber(plhs[3], 0, 4, mxCreateDoubleScalar(RSS));

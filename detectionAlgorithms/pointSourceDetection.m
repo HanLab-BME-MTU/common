@@ -72,10 +72,10 @@ SE_sigma_c = sigma_res/sqrt(2*(n-1)) * kLevel;
 df2 = (n-1) * (sigma_A.^2 + SE_sigma_c.^2).^2 ./ (sigma_A.^4 + SE_sigma_c.^4);
 scomb = sqrt((sigma_A.^2 + SE_sigma_c.^2)/n);
 T = (A_est - sigma_res*kLevel) ./ scomb;
-pval = tcdf(real(T), df2);
+pval = 1-tcdf(real(T), df2);
 
 % mask of admissible positions for local maxima
-mask = pval > 0.95;
+mask = pval < 0.05;
 
 % all local max
 allMax = locmax2d(imgLoG, 2*ceil(sigma)+1);
@@ -116,8 +116,8 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
                 pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
             end
             
-            % eliminate isignificant amplitudes
-            idx = [pstruct.pval_Ar] > 0.95;
+            % significant amplitudes
+            idx = [pstruct.hval_Ar] == 1;
             
             % eliminate duplicate positions (resulting from localization)
             np = length(pstruct.x);
@@ -134,7 +134,9 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
             for k = 1:length(fnames)
                 pstruct.(fnames{k}) = pstruct.(fnames{k})(idx);
             end
-            pstruct.isPSF = pstruct.pval_KS > 0.05;
+            pstruct.hval_Ar = logical(pstruct.hval_Ar);
+            pstruct.hval_AD = logical(pstruct.hval_AD);
+            pstruct.isPSF = ~pstruct.hval_AD;
         else
             pstruct = [];
         end

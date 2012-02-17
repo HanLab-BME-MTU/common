@@ -26,7 +26,7 @@
 %            sigma_r : standard deviation of the background (residual)
 %         SE_sigma_r : standard error of sigma_r
 %            pval_KS : p-value of the Kolomogorv-Smirnov test on the residuals (p > 0.05 -> Gaussian)
-%            pval_Ar : p-value of an amplitude vs. background noise test (p > 0.95 -> significant amplitude)
+%            pval_Ar : p-value of an amplitude vs. background noise test (p > 0.05 -> significant amplitude)
 %
 %
 % Usage for a single-channel img with mask and fixed sigma:
@@ -66,7 +66,7 @@ end
 pStruct = struct('x', [], 'y', [], 'A', [], 's', [], 'c', [],...
     'x_pstd', [], 'y_pstd', [], 'A_pstd', [], 's_pstd', [], 'c_pstd', [],...
     'x_init', [], 'y_init', [],...
-    'sigma_r', [], 'SE_sigma_r', [], 'RSS', [], 'pval_KS', [], 'pval_Ar', []);
+    'sigma_r', [], 'SE_sigma_r', [], 'RSS', [], 'pval_Ar', [], 'mask_Ar', [], 'hval_Ar', [], 'hval_AD', []);
 
 xi = round(x);
 yi = round(y);
@@ -100,7 +100,10 @@ pStruct.SE_sigma_r = NaN(1,np);
 pStruct.RSS = NaN(1,np);
 
 pStruct.pval_Ar = NaN(1,np);
-pStruct.pval_KS = NaN(1,np);
+
+pStruct.hval_AD = false(1,np);
+pStruct.hval_Ar = false(1,np);
+
 
 sigma_max = max(sigma);
 w2 = ceil(2*sigma_max);
@@ -113,6 +116,9 @@ r = sqrt(xm.^2+ym.^2);
 annularMask = zeros(size(r));
 annularMask(r<=w4 & r>=w3) = 1;
 
+g = exp(-(-w4:w4).^2/(2*sigma_max^2));
+g = g'*g;
+g = g(:);
 
 % indexes for cross-correlation coefficients
 % n = length(mode);
@@ -188,18 +194,22 @@ for p = 1:np
             pStruct.SE_sigma_r(p) = res.std/sqrt(2*(npx-1));
             SE_sigma_r = pStruct.SE_sigma_r(p) * kLevel;
             
-            pStruct.pval_KS(p) = res.pval;
+            pStruct.hval_AD(p) = res.hAD;
             
+            % H0: A <= k*sigma_r
+            % H1: A > k*sigma_r
             sigma_A = stdVect(3);
             A_est = prm(3);
             df2 = (npx-1) * (sigma_A.^2 + SE_sigma_r.^2).^2 ./ (sigma_A.^4 + SE_sigma_r.^4);
             scomb = sqrt((sigma_A.^2 + SE_sigma_r.^2)/npx);
-            T = (A_est - res.std*kLevel) ./ scomb;
-            pStruct.pval_Ar(p) = tcdf(T, df2);
+            T = (A_est - res.std*kLevel) ./ scomb;            
+            % 1-sided t-test: A_est must be greater than k*sigma_r
+            pStruct.pval_Ar(p) = 1-tcdf(T, df2);
+            pStruct.hval_Ar(p) = pStruct.pval_Ar(p) < alpha;
+            pStruct.mask_Ar(p) = sum(A_est*g>res.std*kLevel);
         end
     end
 end
-
 
 % function K = corrFromC(C,ij,ii,jj)
 % n = size(C,1);
