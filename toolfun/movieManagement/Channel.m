@@ -309,7 +309,7 @@ classdef Channel < hgsetget
                 case {'emissionWavelength_','excitationWavelength_'}
                     validator=@(x) isscalar(x) && x>=300 && x<=800;
                 case 'exposureTime_'
-                    validator=@isposrealscalar;
+                    validator=@(x) isscalar(x) && x>0;
                 case {'excitationType_','notes_','channelPath_','filterType_'}
                     validator=@ischar;
                 case 'imageType_'
