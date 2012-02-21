@@ -68,7 +68,9 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             selectedTool = allTools(tools(iOutput).type);            
             
             % Load the data
-            varargout{1}=load(obj.outFilePaths_{iInput1,iInput2,iOutput},selectedTool.outputList{:});
+            vars = whos('-file',obj.outFilePaths_{iInput1,iInput2,iOutput});
+            outputList = intersect({vars.name},selectedTool.outputList);
+            varargout{1}=load(obj.outFilePaths_{iInput1,iInput2,iOutput},outputList{:});
         end
         
         function h=draw(obj,iInput1,iInput2,iOutput,varargin)
