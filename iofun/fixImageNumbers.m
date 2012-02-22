@@ -30,10 +30,18 @@ if nStack > 0
         %And of the file extension
         iLFS = max(regexp(stackFiles(i).name,'\.'));
         
+        %Convert string to a frame number
         iFrame = str2double(stackFiles(i).name(iT+1:iLFS-1));
         
+        %Make sure we have a valid number to avoid destroying data!
+        if isnan(iFrame) || ~isfinite(iFrame)
+            error(['Frame number not recognized! "' stackFiles(i).name(iT+1:iLFS-1) '" is not a valid frame number! Check image name format!'])
+        end
+        
+        %Make the new file name
         newName = [stackFiles(i).name(1:iT) num2str(iFrame,fString) stackFiles(i).name(iLFS:end)];
         
+        %If the file name has changed, rename it.
         if ~strcmp(newName,stackFiles(i).name)
             movefile([directory filesep stackFiles(i).name],...
                 [directory filesep newName]);                
