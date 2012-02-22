@@ -271,46 +271,49 @@ function edit_maxgap_Callback(hObject, eventdata, handles)
 maxgap = str2double(get(handles.edit_maxgap, 'String'));
 if isnan(maxgap) || maxgap < 0 || floor(maxgap) ~= ceil(maxgap)
     errordlg('Please provide a valid value to parameter "Maximum Gap to Close".','Warning','modal')
-
-else
-    timeWindow = maxgap + 1; % Retrieve the new value for the time window
-
-    % Retrieve the parameters of the linking and gap closing matrices
-    u_linking = get(handles.popupmenu_linking, 'UserData');
-    linkingID = get(handles.popupmenu_linking, 'Value');
-    linkingParameters = u_linking{linkingID};
-    u_gapclosing = get(handles.popupmenu_gapclosing, 'UserData');
-    gapclosingID = get(handles.popupmenu_gapclosing, 'Value');
-    gapclosingParameters = u_gapclosing{gapclosingID};
-
-    % Check for changes
-    linkingnnWindowChange=(linkingParameters.nnWindow~=timeWindow);
-    gapclosingnnWindowChange=(gapclosingParameters.nnWindow~=timeWindow);
-    gapclosingtimeReachConfBChange=(gapclosingParameters.timeReachConfB~=timeWindow);
-    gapclosingtimeReachConfLChange=(gapclosingParameters.timeReachConfL~=timeWindow);
-
-    if linkingnnWindowChange || gapclosingnnWindowChange ||...
-            gapclosingtimeReachConfBChange || gapclosingtimeReachConfLChange
-        % Optional: asks the user if the time window value should be propagated
-        % to the linking and gap closing matrics
-        modifyParameters=questdlg('Do you want to propagate the changes in the maximum number of gaps to close?',...
-           'Parameters update','Yes','No','Yes');
-        if strcmp(modifyParameters,'Yes')
-            % Save changes
-            linkingParameters.nnWindow=timeWindow;
-            gapclosingParameters.nnWindow=timeWindow;
-            gapclosingParameters.timeReachConfB=timeWindow;
-            gapclosingParameters.timeReachConfL=timeWindow;
-            
-            u_linking{linkingID} = linkingParameters;
-            u_gapclosing{gapclosingID} = gapclosingParameters;
-            
-            set(handles.popupmenu_linking, 'UserData', u_linking)
-            set(handles.popupmenu_gapclosing, 'UserData', u_gapclosing)
-            guidata(hObject,handles);
-        end
-    end
+    return;
 end
+
+timeWindow = maxgap + 1; % Retrieve the new value for the time window
+
+% Retrieve the parameters of the linking and gap closing matrices
+u_linking = get(handles.popupmenu_linking, 'UserData');
+linkingID = get(handles.popupmenu_linking, 'Value');
+linkingParameters = u_linking{linkingID};
+u_gapclosing = get(handles.popupmenu_gapclosing, 'UserData');
+gapclosingID = get(handles.popupmenu_gapclosing, 'Value');
+gapclosingParameters = u_gapclosing{gapclosingID};
+
+% Check for changes
+linkingnnWindowChange=(linkingParameters.nnWindow~=timeWindow);
+gapclosingnnWindowChange=isfield(gapclosingParameters,'nnWindow') && (gapclosingParameters.nnWindow~=timeWindow);
+gapclosingtimeReachConfBChange=isfield(gapclosingParameters,'timeReachConfB') && (gapclosingParameters.timeReachConfB~=timeWindow);
+gapclosingtimeReachConfLChange=isfield(gapclosingParameters,'timeReachConfL') &&(gapclosingParameters.timeReachConfL~=timeWindow);
+
+if ~linkingnnWindowChange && ~gapclosingnnWindowChange && ...
+        ~gapclosingtimeReachConfBChange && ~gapclosingtimeReachConfLChange,
+    return;
+end
+% Optional: asks the user if the time window value should be propagated
+% to the linking and gap closing matrics
+modifyParameters=questdlg('Do you want to propagate the changes in the maximum number of gaps to close?',...
+    'Parameters update','Yes','No','Yes');
+if ~strcmp(modifyParameters,'Yes'), return; end
+
+
+% Set new linking time window
+if linkingnnWindowChange, linkingParameters.nnWindow=timeWindow; end
+u_linking{linkingID} = linkingParameters;
+set(handles.popupmenu_linking, 'UserData', u_linking)
+
+% Set new gap closing time window
+if gapclosingnnWindowChange, gapclosingParameters.nnWindow=timeWindow; end
+if gapclosingtimeReachConfBChange, gapclosingParameters.timeReachConfB=timeWindow; end
+if gapclosingtimeReachConfLChange, gapclosingParameters.timeReachConfL=timeWindow; end
+u_gapclosing{gapclosingID} = gapclosingParameters;
+set(handles.popupmenu_gapclosing, 'UserData', u_gapclosing)
+guidata(hObject,handles);
+
 
 % --- Executes on button press in pushbutton_set_kalman.
 function pushbutton_set_kalman_Callback(hObject, eventdata, handles)
