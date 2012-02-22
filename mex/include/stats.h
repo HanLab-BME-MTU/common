@@ -208,7 +208,7 @@ unsigned char adtest(double *data, int N, int adCase, double mu, double sigma, d
     for (i=0;i<N;++i) {
         A2 += (2.0*i+1.0)*(log(z[i]) + log(1.0-z[N-1-i]));
     }
-    A2 = -N - A2/N;
+    A2 = (-1.0*N) - A2/(1.0*N);
     
     if (adCase==4) {
         A2 *= 1.0+4.0/N-25.0/(N*N);
@@ -227,8 +227,9 @@ unsigned char adtest(double *data, int N, int adCase, double mu, double sigma, d
     /* get critical value from lookup table */
     int ai = 5;
     for (i=0;i<4;++i) {
-        if (alpha==alphaVec[i]) {
+        if ( fabs(alpha-alphaVec[i]) < 1e-10 ) {
             ai = i;
+	    break;
         }
     }
     if (ai==5) {
