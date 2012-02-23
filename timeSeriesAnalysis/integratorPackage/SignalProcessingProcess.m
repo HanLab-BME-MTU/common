@@ -181,7 +181,9 @@ classdef SignalProcessingProcess < TimeSeriesProcess
                 funParams.BandMax=min(cellfun(@(x) x.nBandMax_,winProc));
                 funParams.SliceIndex=cellfun(@(x) true(x.nSliceMax_,1),winProc,'UniformOutput',false);
             else
-                winProc =owner.processes_{owner.getProcessIndex('WindowingProcess',1,false)};
+                winProcIndex = owner.getProcessIndex('WindowingProcess',1,false);
+                assert(~isempty(winProcIndex),'lccb:getDefaultParams:noWindowing','Movie is not windowed yet');
+                winProc =owner.processes_{winProcIndex};
                 funParams.BandMin=1;
                 funParams.BandMax=winProc.nBandMax_;
                 funParams.SliceIndex=true(winProc.nSliceMax_,1);

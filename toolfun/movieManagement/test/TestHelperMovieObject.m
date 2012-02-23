@@ -46,14 +46,25 @@ classdef TestHelperMovieObject < handle
         
         function testProcessCreation(movieObject)
             concreteProc= TestHelperMovieObject.getConcreteSubClasses('Process');
-            procConstr = cellfun(@str2func,concreteProc,'Unif',false);
-            for i=1:numel(procConstr)
-                newprocess = procConstr{i}(movieObject);
-                assertTrue(isa(newprocess,concreteProc{i}));
-                
-                movieObject.addProcess(newprocess);
-                assertTrue(isa(movieObject.processes_{end},concreteProc{i}));
+            for i=1:numel(concreteProc)
+                procConstr = str2func(concreteProc{i});
+                switch concreteProc{i}
+                    case 'SignalProcessingProcess'
+                        assertExceptionThrown(@()procConstr(movieObject),'lccb:getDefaultParams:noWindowing')
+                    otherwise
+                        % Construct new process
+                        newprocess = procConstr(movieObject);
+                        assertTrue(isa(newprocess,concreteProc{i}));
+                        
+                        % Add process
+                        movieObject.addProcess(newprocess);
+                        assertTrue(isa(movieObject.processes_{1},concreteProc{i}));
+                        movieObject.deleteProcess(1);
+                end
+                movieObject.reset
+                assertTrue(isempty(movieObject.processes_));
             end
+
         end
         
         
@@ -61,14 +72,17 @@ classdef TestHelperMovieObject < handle
             concretePackages = TestHelperMovieObject.getConcreteSubClasses('Package');
             packageConstr = cellfun(@str2func,concretePackages,'Unif',false);
             for i=1:numel(packageConstr)
-                newpackage = packageConstr{i}(movieObject,'');
+                % Test package construction
+                packageConstr = str2func(concretePackages{i});
+                newpackage = packageConstr(movieObject,'');
                 assertTrue(isa(newpackage,concretePackages{i}));
                 
-                
+                % Test package addition
                 movieObject.addPackage(newpackage);
                 assertTrue(isa(movieObject.packages_{end},concretePackages{i}));
                 
-                crtPackage = movieObject.packages_{end};
+                % Test default process construction
+                crtPackage = movieObject.packages_{1};
                 for j=1:numel(crtPackage.getDefaultProcessConstructors),
                     procConstr = crtPackage.getDefaultProcessConstructors{j};
                     movieObject.addProcess(procConstr(movieObject,crtPackage.outputDirectory_));
@@ -76,6 +90,10 @@ classdef TestHelperMovieObject < handle
                     
                     assertTrue(isa(movieObject.processes_{end},crtPackage.getProcessClassNames{j}));
                 end
+                % Reset movie
+                movieObject.reset
+                assertTrue(isempty(movieObject.processes_));
+                sssertTrue(isempty(movieObject.pacakges_));
             end
         end
         
