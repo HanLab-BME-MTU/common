@@ -485,8 +485,6 @@ set(mainFig,'Position',[sz(3)/50 (sz(4)-figHeight)/2 figWidth figHeight]);
 handles = guihandles(mainFig);
 guidata(handles.figure1, handles);
 
-% Set the figure handle to -1 by default
-userData.drawFig=-1;
 set(handles.figure1,'UserData',userData);
 
 %% Set up default parameters
@@ -541,13 +539,14 @@ if get(handles.checkbox_saveFrames,'Value');
     fprintf('Generating movie frames:     ');
     resolution = ['-r' num2str(5*72)];
 end
+
 for iFrame=1:nFrames
     set(handles.slider_frame, 'Value',iFrame);
     redrawScene(hObject, handles);
     drawnow;
     if get(handles.checkbox_saveMovie,'Value'), MakeQTMovie('addfigure'); end
     if get(handles.checkbox_saveFrames,'Value');
-        print(userData.drawFig, '-dpng', '-loose', resolution, fullfile(fpath,frameName(iFrame)));
+        print(getFigure(handles,'Movie'), '-dpng', '-loose', resolution, fullfile(fpath,frameName(iFrame)));
         fprintf('\b\b\b\b%3d%%', round(100*iFrame/(nFrames)));
     end
 end
@@ -609,7 +608,6 @@ if strcmp(figName,'Movie')
     
     axes('Parent',h,'XLim',[0 userData.MO.imSize_(2)],...
         'YLim',[0 userData.MO.imSize_(1)],'Position',[0.05 0.05 .9 .9]);
-    userData.drawFig=h;
     set(handles.figure1,'UserData',userData);
 else
     h = figure('Name',figName,'NumberTitle','off','Tag','viewerFig');
@@ -632,10 +630,9 @@ if ~isempty(h), delete(h); end
 
 % If checked, adds a new scalebar using the width as a label input
 userData=get(handles.figure1,'UserData');
-if ~get(handles.(['checkbox_' type]),'Value') || ~ishandle(userData.drawFig),
-    return
-end
-figure(userData.drawFig)
+if ~get(handles.(['checkbox_' type]),'Value'), return; end
+getFigure(handles,'Movie');
+
 scale = str2double(get(handles.(['edit_' type]),'String'));
 if strcmp(type,'imageScaleBar')
     width = scale *1000/userData.MO.pixelSize_;
@@ -658,10 +655,9 @@ if ~isempty(h), delete(h); end
 
 % If checked, adds a new scalebar using the width as a label input
 userData=get(handles.figure1,'UserData');
-if ~get(handles.checkbox_timeStamp,'Value') || ~ishandle(userData.drawFig),
-    return
-end
-figure(userData.drawFig)
+if ~get(handles.checkbox_timeStamp,'Value'), return; end
+getFigure(handles,'Movie');
+
 frameNr=get(handles.slider_frame,'Value');
 width = userData.MO.imSize_(2)/20;
 time= (frameNr-1)*userData.MO.timeInterval_;
@@ -673,13 +669,9 @@ set(hTimeStamp,'Tag','timeStamp');
 delete(hTimeStamp(1))
 
 function setCLim(handles)
-userData=get(handles.figure1,'UserData');
-imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
-
 clim=[str2double(get(handles.edit_cmin,'String')) ...
     str2double(get(handles.edit_cmax,'String'))];
 redrawImage(handles,'CLim',clim)
-
 
 function setColormap(handles)
 allCmap=get(handles.popupmenu_colormap,'String');
@@ -697,7 +689,7 @@ frameNr=get(handles.slider_frame,'Value');
 imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
 
 % Get the figure handle
-getFigure(handles,'Movie');
+drawFig = getFigure(handles,'Movie');
 userData=get(handles.figure1,'UserData');
 
 % Use corresponding method depending if input is channel or process output
@@ -726,8 +718,7 @@ end
 % Set the color limits properties
 clim=displayMethod.CLim;
 if isempty(clim)
-    userData = get(handles.figure1,'UserData');
-    hAxes=findobj(userData.drawFig,'Type','axes','-not','Tag','Colorbar');
+    hAxes=findobj(drawFig,'Type','axes','-not','Tag','Colorbar');
     clim=get(hAxes,'Clim');
 end
 set(handles.edit_cmin,'Enable','on','String',clim(1));
@@ -778,11 +769,9 @@ frameNr=get(handles.slider_frame,'Value');
 overlayTag = get(hObject,'Tag');
 
 % Get figure handle or recreate figure
-if ishandle(userData.drawFig),
-    figure(userData.drawFig);
-else
-    redrawScene(hObject, handles); return;
-end
+movieFig = findobj(0,'-regexp','Name','Movie');
+if isempty(movieFig),  redrawScene(hObject, handles); return; end
+figure(movieFig);
 % Retrieve the id, process nr and channel nr of the selected imageProc
 tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)','tokens');
 procId=str2double(tokens{1}{1});

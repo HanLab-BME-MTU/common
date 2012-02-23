@@ -89,7 +89,7 @@ classdef ScalarMapDisplay < MovieDataDisplay
             % Set the colorbar
             hCbar = findobj(get(hAxes,'Parent'),'Tag','Colorbar');
             if strcmp(obj.Colorbar,'on')
-                axis image
+                axis tight
                 if isempty(hCbar)
                     %  set(hAxes,'Position',[0.05 0.05 .9 .9]);
                     hCBar = colorbar('peer',hAxes,obj.sfont{:});
