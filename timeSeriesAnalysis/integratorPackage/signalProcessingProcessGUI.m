@@ -266,7 +266,7 @@ for i=1:nInput;
     axesArgs={'hAxes',hAxes(i)};
     procID=input(i).processIndex;
     if ~isempty(input(i).channelIndex)
-        chanArgs={input(i).channelIndex};
+        chanArgs={input(i).channelIndex,input(i).outputIndex};
     else
         chanArgs={};
     end

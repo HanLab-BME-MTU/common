@@ -100,13 +100,13 @@ disp('Using sampled output from:');
 for i=1:nInput
     proc = movieObject.processes_{input(i).processIndex};
     if isempty(input(i).channelIndex)
-        
         inFilePaths{i} = proc.outFilePaths_{1};
         inData{i} = proc.loadChannelOutput('output',input(i).var);
         inData{i} = reshape(inData{i},size(inData{i},1),1,size(inData{i},2));
     else
+        % Load output for given channelIndex and outputIndex
         inFilePaths{i} = proc.outFilePaths_{1,input(i).channelIndex};
-        inData{i} = proc.loadChannelOutput(input(i).channelIndex,'output',input(i).var);
+        inData{i} = proc.loadChannelOutput(input(i).channelIndex,input(i).outputIndex,'output',input(i).var);
     end
     disp(inFilePaths{i})
 end

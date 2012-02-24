@@ -1,11 +1,9 @@
 classdef TimeSeriesProcess < Process
-    % Process
+    % Generic class to use for the time-series analysis
     %
-    % Sebastien Besson
-    % 7/2010
-    %
-    methods (Access = public)
-        
+    % Sebastien Besson, 7/2010 (last modified Mar, 2012)
+    
+    methods
         function obj = TimeSeriesProcess(owner,name,funName,funParams)                         
             if nargin == 0;
                 super_args = {};
@@ -13,7 +11,6 @@ classdef TimeSeriesProcess < Process
                 super_args{1} = owner;
                 super_args{2} = name;                
             end
-            
             obj = obj@Process(super_args{:});
             
             if nargin > 2
@@ -25,13 +22,16 @@ classdef TimeSeriesProcess < Process
             
         end
         
-        function input = getInput(obj,varargin)
+        function input = getInput(obj,index)
+            % Read process names from parameters
             procNames =obj.funParams_.ProcessName;
             nProc = numel(procNames);
             
+            % Initialize process status
             procIndex = zeros(nProc,1);
-            channelIndex=cell(nProc,1);
             outputList = cell(nProc,1);
+            isMovieProc = false(nProc,1);
+            procOutput = cell(nProc,1);
             
             if isa(obj.owner_,'MovieList');
                 movie=obj.owner_.movies_{1}; % Quick fix for movie lists
@@ -39,49 +39,48 @@ classdef TimeSeriesProcess < Process
                 movie=obj.owner_;
             end
                 
-            % For each process check the channel/movie output
+            % For each input process check the output validity
             for i=1:nProc
                 procIndex(i) =movie.getProcessIndex(procNames{i},1);
                 proc =movie.processes_{procIndex(i)};
                 outputList{i} = proc.getDrawableOutput;
-                isMovieProc = strcmp('movieGraph',outputList{i}(1).type);
-                if isMovieProc
-                    if ~proc.checkChannelOutput
-                        error([proc.getName ' has no valid output !' ...
-                            'Please apply ' proc.getName ' before running correlation!']);
-                    end
-                    channelIndex{i}=[];                    
-                else
-                    if ~any(proc.checkChannelOutput)
-                        error([proc.getName ' has no valid output !' ...
-                            'Please apply ' proc.getName ' before running correlation!']);
-                    end
-                    channelIndex{i}=find(proc.checkChannelOutput());  
-                end
+                isMovieProc(i) = strcmp('movieGraph',outputList{i}(1).type);
+                procOutput{i} = proc.checkChannelOutput;
+                assert(any(procOutput{i}),[proc.getName ' has no valid output !' ...
+                    'Please apply ' proc.getName ' before running correlation!']);             
             end
             
-            % Put all input in a structre
-            procInNr = cellfun(@numel,channelIndex)+cellfun(@isempty,channelIndex);
-            if isempty(procInNr), input=[]; return; end
-            input(sum(procInNr))=struct();
-            for i=1:nProc
-                for j=1:procInNr(i)
-                    inIdx=sum(procInNr(1:i-1))+j;
-                    input(inIdx).processIndex = procIndex(i);
-                    input(inIdx).var = outputList{i}.var;
-                    if isempty(channelIndex{i})
-                        input(inIdx).channelIndex = [];
-                        input(inIdx).name = regexprep(outputList{i}.name,' map','');
+            % Push all input into a structre
+            nInput = sum(cellfun(@(x)sum(x(:)),procOutput));
+            if nInput==0, input=[]; return; end
+            input(nInput,1)=struct(); % Initialize time-series input structure
+            iInput=0;
+            for iProc=1:nProc
+                for iOutput = 1:size(procOutput{iProc},1)
+                    if isMovieProc(iProc)
+                        % Add processIndex and output variable/name
+                        iInput=iInput+1;
+                        input(iInput).processIndex = procIndex(iProc);
+                        input(iInput).var = outputList{iProc}(iOutput).var;
+                        input(iInput).channelIndex = [];
+                        input(iInput).name = regexprep(outputList{iProc}(iOutput).name,' map','');
                     else
-                        input(inIdx).channelIndex = channelIndex{i}(j);
-                        input(inIdx).name = [regexprep(outputList{i}.name,' map','') ' channel '...
-                            num2str(channelIndex{i}(j))];
+                        % Loop over channels with valid output
+                        for iChan=find(procOutput{iProc}(iOutput,:))
+                            iInput=iInput+1;
+                            input(iInput).processIndex = procIndex(iProc);
+                            input(iInput).var = outputList{iProc}(iOutput).var;
+                            input(iInput).outputIndex = iOutput;
+                            input(iInput).channelIndex = iChan;
+                            input(iInput).name = [regexprep(outputList{iProc}(iOutput).name,' map','') ' channel '...
+                                num2str(iChan)];
+                        end
                     end
                 end
             end
             if nargin>1
-                assert(all(ismember(varargin{1},1:numel(input))));
-                input=input(varargin{1});
+                assert(all(ismember(index,1:numel(input))));
+                input=input(index);
             end
         end  
         

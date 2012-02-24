@@ -46,8 +46,8 @@ classdef ErrorBarGraphDisplay < MovieDataDisplay
             xlabel(obj.XLabel,obj.lfont{:});
             ylabel(obj.YLabel,obj.lfont{:});
             xLim=[min(data.X(:)) max(data.X(:))];
-            yLim =[min(min(data.bounds(1,:,1:nBands,1:nBands2))) ...
-                max(max(data.bounds(2,:,1:nBands,1:nBands2)))];
+            yLim =[min(min(min(data.bounds(1,:,1:nBands,1:nBands2)))) ...
+                max(max(max(data.bounds(2,:,1:nBands,1:nBands2))))];
             set(gca, 'LineWidth', 1.5, obj.sfont{:},'XLim',xLim,'YLim',yLim);
             
             % Add arrows for cross-correlation graphs

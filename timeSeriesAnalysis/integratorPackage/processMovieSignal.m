@@ -164,7 +164,7 @@ if isa(movieObject,'MovieList')
     inFilePaths = cellfun(@(x){x.paths},movieInput,'Unif',false);
     inFilePaths=vertcat(inFilePaths{:});
     signalProc.setInFilePaths(inFilePaths);
-    p.SliceIndex = vertcat(p.SliceIndex{:});
+    p.SliceIndex = vertcat(p.SliceIndex{p.MovieIndex});
 else    
     
     % Initialization of MovieData object
