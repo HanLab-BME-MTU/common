@@ -46,7 +46,10 @@ workCC(abs(CC)==1)=workCC(abs(CC)==1)-sign(workCC(abs(CC)==1))*1e-9;
 %Elimination of values below the CB
 workCC( abs(CC) < repmat( CB,nLag,1 ) ) = 0;
 
-opt = statset('UseParallel','always');
+opt = statset('UseParallel','never');
+if matlabpool('size')
+    opt = statset('UseParallel','always');
+end
 
 [confI,statCC] = bootci(nBoot,{@(x) nanmean(atanh(x)),workCC'},'alpha',alpha,...
           'type','bca','Options',opt);

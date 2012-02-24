@@ -48,12 +48,13 @@ ip.addOptional('Fs',1,@isscalar);
 ip.addParamValue('alpha',.05,@isscalar);
 ip.addParamValue('nBoot',10000,@isscalar);
 ip.parse(S1,S2,varargin{:})
-nWin=ip.Results.nWin;
-wType=ip.Results.wType;
-noLap=ip.Results.noLap;
-Fs=ip.Results.Fs;
-alpha=ip.Results.alpha;
-nBoot=ip.Results.nBoot;
+
+nWin  = ip.Results.nWin;
+wType = ip.Results.wType;
+noLap = ip.Results.noLap;
+Fs    = ip.Results.Fs;
+alpha = ip.Results.alpha;
+nBoot = ip.Results.nBoot;
 
 
 [nPt,nVar] = size(S1);
@@ -99,8 +100,11 @@ w            = Fs/2*linspace(0,1,nfft/2 +1);
 oneSideSpec1 = 2*dS1w(1:nfft/2 +1,:);
 oneSideSpec2 = 2*dS2w(1:nfft/2 +1,:);
 
+opt = statset('UseParallel','never');
+if matlabpool('size')
+    opt = statset('UseParallel','always');
+end
 
-opt = statset('UseParallel','always');
 if nVar == 1
     avegCoh = feval(coherence,oneSideSpec1',oneSideSpec2');
     bootSp  = jackknife(coherence,oneSideSpec1',oneSideSpec2','Options',opt);

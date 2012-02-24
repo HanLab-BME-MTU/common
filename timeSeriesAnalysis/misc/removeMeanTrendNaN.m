@@ -28,55 +28,68 @@ ip.parse(TS,varargin{:})
 trendType=ip.Results.trendType;
 
 % Initialize output
-[nobs,nvar] = size(TS);
-workTS      = cell(1,nvar);
-interval    = cell(1,nvar);
-trend       = cell(1,nvar);
-if trendType == 2, imf = cell(1,nvar); end
+[nObs,nVar] = size(TS);
+workTS      = cell(1,nVar);
+interval    = cell(1,nVar);
+trend       = cell(1,nVar);
+count       = 1;
+if trendType == 2, imf = cell(1,nVar); end
 
-for i=1:nvar
+for i=1:nVar
     
     xi          = find(isnan(TS(:,i)));
     [nanB,nanL] = findBlock(xi,1);
     exclude     = [];
     
-    for j = 1:length(nanB)%excluding gaps larger than 2 points and extremes (1 and N points)
+%% Excluding gaps larger than 2 points and single NaN extremes
+    for j = 1:length(nanB)
         
-        if nanL(j) > 2 || ~isempty(intersect(nanB{j},nobs)) || ~isempty(intersect(nanB{j},1))
+        if nanL(j) > 2 || ~isempty(intersect(nanB{j},nObs)) || ~isempty(intersect(nanB{j},1))
             
-            xi      = setdiff(xi,nanB{j});
+            xi      = setdiff(xi,nanB{j});%Single NaN islands 
             exclude = sort(cat(1,nanB{j},exclude));
             
         end
         
     end
+
     
-    if ~isempty(xi)%After excluding points, xi is a vector of 1 NaN block
-        
-        x         = find(~isnan(TS(:,i)));
-        [fB,fL]   = findBlock(union(x,xi));
-        [~,idxB]  = max(fL);
-        workTS{i} = TS(fB{idxB},i);
-        
-        workTS{i}(isnan(workTS{i})) = ...
-            interp1(intersect(x,fB{idxB}),TS(intersect(x,fB{idxB}),i),intersect(xi,fB{idxB}),'spline');
-        
-    elseif (nobs - length(exclude) ) >= 4 % forced by the spline used in preWhitening
-        
-        [fB,fL]     = findBlock(setdiff(1:nobs,exclude));
-        [~,idxB]    = max(fL);
-        workTS{i}   = TS(fB{idxB},i);
-        
+    if length( exclude ) <= nObs - 4% forced by the spline used in preWhitening
+%% Interpolating single NaN points throughout the time series        
+        if ~isempty(xi)%After excluding points, xi is a vector of size 1 NaN 
+            
+            x         = find(~isnan(TS(:,i)));
+            [fB,fL]   = findBlock(union(x,xi));
+            [~,idxB]  = max(fL);
+            workTS{count} = TS(fB{idxB},i);
+            
+            workTS{count}(isnan(workTS{count})) = ...
+                interp1(intersect(x,fB{idxB}),TS(intersect(x,fB{idxB}),i),intersect(xi,fB{idxB}),'spline');
+%% If there are only blocks of NaN, get the largest continuous block of real points            
+        else 
+            
+            [fB,fL]     = findBlock(setdiff(1:nObs,exclude));
+            [~,idxB]    = max(fL);
+            workTS{count}   = TS(fB{idxB},i);
+            
+        end
+%% Applying the detrend operation after excluding NaN         
+        interval{count} = fB{idxB};
+        if ismember(trendType,[0 1])
+            % Remove sample means or linear trend
+            dWorkTS = dtrend(workTS{count},trendType);
+            trend{count} = workTS{count} - dWorkTS;
+            workTS{count} = dWorkTS;
+        elseif trendType == 2
+            % Remove deterministic components using preWhitening
+            [workTS{count},trend{count},imf{count}]   = preWhitening(workTS{count});
+        end
+        count = count + 1;
     end
     
-    interval{i} = fB{idxB};
-    if ismember(trendType,[0 1])
-        % Remove sample means or linear trend
-        dWorkTS = dtrend(workTS{i},trendType);
-        trend{i} = workTS{i} - dWorkTS;
-        workTS{i} = dWorkTS;
-    elseif trendType==2
-        % Remove deterministic components using preWhitening
-        [workTS{i},trend{i},imf{i}]   = preWhitening(workTS{i});
-    end
 end
+
+empIdx           = find(cellfun(@isempty,workTS));
+workTS(empIdx)   = [];
+interval(empIdx) = [];
+trend(empIdx)    = [];
