@@ -93,7 +93,7 @@ classdef TestHelperMovieObject < handle
                 % Reset movie
                 movieObject.reset
                 assertTrue(isempty(movieObject.processes_));
-                sssertTrue(isempty(movieObject.pacakges_));
+                assertTrue(isempty(movieObject.packages_));
             end
         end
         
