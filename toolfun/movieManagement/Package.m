@@ -205,6 +205,14 @@ classdef Package < hgsetget
             
         end
         
+        function createDefaultProcess(obj, i)
+            % Create ith process using default constructor
+            assert(isempty(obj.processes_{i}),'Process already exists');
+            newprocess=obj.getDefaultProcessConstructors{i}(obj.owner_,obj.outputDirectory_);
+            obj.owner_.addProcess(newprocess);
+            obj.setProcess(i,newprocess);
+        end
+        
         function setProcess(obj, i, newProcess)
             % set the i th process of obj.processes_ to newprocess
             % If newProcess = [ ], clear the process in package process
