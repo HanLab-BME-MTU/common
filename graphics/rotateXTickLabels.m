@@ -6,7 +6,7 @@
 % Francois Aguet, 22 Feb 2011
 % Last modified: 26 July 2011
 
-function rotateXTickLabels(ha, varargin)
+function ht = rotateXTickLabels(ha, varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
@@ -44,10 +44,10 @@ ht = arrayfun(@(k) text(xa(k)-shift, YLim(1)-0.01*height, xla{k},...
     'FontName', fontName, 'FontSize', fontSize,...
     'Units', 'data', 'VerticalAlignment', 'top', 'HorizontalAlignment', 'right',...
     'Rotation', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter, 'Parent', ha),...
-    1:length(xa), 'UniformOutput', false);
+    1:length(xa));
 
 % largest extent (relative to axes units)
-extents = cellfun(@(k) get(k, 'extent'), ht, 'UniformOutput', false);
+extents = arrayfun(@(k) get(k, 'extent'), ht, 'UniformOutput', false);
 extents = vertcat(extents{:});
 
 pos = get(ha, 'Position');
