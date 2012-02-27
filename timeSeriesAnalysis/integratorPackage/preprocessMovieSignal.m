@@ -64,7 +64,7 @@ if isa(movieObject,'MovieList')
     movieParams=rmfield(p,{'MovieIndex','OutputDirectory'});
     nMovies =numel(p.MovieIndex);
     for i =1:nMovies;
-        movieData = movieObject.movies_{i};
+        movieData = movieObject.movies_{p.MovieIndex(i)};
         fprintf(1,'Processing signal for movie %g/%g\n',i,nMovies);
         
         % Create movie process if empty
