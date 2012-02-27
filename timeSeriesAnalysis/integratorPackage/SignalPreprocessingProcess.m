@@ -33,9 +33,9 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
         end
               
         
-        function varargout = loadChannelOutput(obj,i,varargin)
+        function varargout = loadOutput(obj,i,varargin)
             % Check input
-            outputList={'data','range'};
+            outputList={'rawData','data','range','energy'};
             ip=inputParser;
             ip.addRequired('obj');
             ip.addRequired('i',@isscalar);
@@ -54,9 +54,64 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
             end
         end
         
-        function status = checkChannelOutput(obj,i)
-            status = cellfun(@(x)exist(x,'file'),obj.outFilePaths_(1,i));
+        function h=draw(obj,iInput,varargin)
+            
+            % Check input
+            if ~ismember('getDrawableOutput',methods(obj)), h=[]; return; end
+            outputList = obj.getDrawableOutput();
+            ip = inputParser;
+            ip.addRequired('iInput',@isscalar);
+            ip.addParamValue('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
+            ip.KeepUnmatched = true;
+            ip.parse(iInput,varargin{:})
+			
+            % Load data
+            data=obj.loadOutput(iInput,'output',ip.Results.output);
+            iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
+            if ~isempty(outputList(iOutput).formatData),
+                data=outputList(iOutput).formatData(data);
+            end
+           
+            try
+                assert(~isempty(obj.displayMethod_{iInput}));
+            catch ME %#ok<NASGU>
+                obj.displayMethod_{iInput}=outputList(iOutput).defaultDisplayMethod(iInput);
+            end
+            
+            % Delegate to the corresponding method
+            tag = [obj.getName '_input' num2str(iInput)];
+            drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
+                2*numel(fieldnames(ip.Unmatched)),1);
+            input=obj.getInput;
+            procArgs={'Input1',input(1).name};
+            h=obj.displayMethod_{iInput}.draw(data,tag,drawArgs{:},procArgs{:});
+        end
+        
+        function status = checkOutput(obj,varargin)
+            % Input check
+            input=obj.getInput;
+            nInput=numel(input);
+            ip =inputParser;
+            ip.addOptional('iInput',1:nInput,@(x) all(ismember(x,1:nInput)));
+            ip.parse(varargin{:});
+            iInput=ip.Results.iInput;
+            
+            if isempty(obj.outFilePaths_), 
+                status =false(size(iInput));
+            else
+                status = cellfun(@(x) logical(exist(x,'file')),obj.outFilePaths_(iInput));
+            end
         end  
+        
+        function output = getDrawableOutput(obj)
+            output.name = 'Energy';
+            output.var = 'energy';
+            output.formatData=@formatEnergy;
+            output.type = 'signalGraph';
+            output.defaultDisplayMethod = @(i)ErrorBarGraphDisplay('XLabel','Band',...
+                'YLabel','Mean energy','Input1',obj.getInput(i).name); 
+        end
+        
     end
     
     methods (Static)
@@ -88,6 +143,16 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
             funParams.ProcessName=TimeSeriesProcess.getSamplingProcesses;          
             funParams.kSigma=5;
             funParams.trendType=1;
+            funParams.nBoot=1e3;
+            funParams.alpha=.05;
         end
+        
     end
 end
+
+function data =formatEnergy(energy)
+data.X=1:size(energy,1);
+data.Y=energy(:,1);
+data.bounds=energy(:,2:3)';
+end
+

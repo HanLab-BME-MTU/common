@@ -79,6 +79,9 @@ set(handles.listbox_selectedProcesses,'String',selProcString,'UserData',selProc)
 
 % Set preprocessing parameters
 set(handles.edit_kSigma,'String',funParams.kSigma);
+set(handles.edit_nBoot,'String',funParams.nBoot);
+set(handles.edit_alpha,'String',funParams.alpha);
+
 allTrends=SignalPreprocessingProcess.getTrends;
 set(handles.popupmenu_trendType,'String',{allTrends.name},'UserData',[allTrends.type],...
     'Value',find([allTrends.type]==funParams.trendType));
@@ -198,25 +201,42 @@ if isempty(get(handles.listbox_selectedMovies, 'String'))
     errordlg('Please select at least one input process from ''Available Movies''.','Setting Error','modal')
     return;
 end
+funParams.MovieIndex = get(handles.listbox_selectedMovies, 'UserData');
 
 if isempty(get(handles.listbox_selectedProcesses, 'String'))
     errordlg('Please select at least one input process from ''Available Processes''.','Setting Error','modal')
     return;
 end
-
-
-funParams.MovieIndex = get(handles.listbox_selectedMovies, 'UserData');
 funParams.ProcessName = get(handles.listbox_selectedProcesses,'UserData');
 
 kSigma = str2double(get(handles.edit_kSigma,'String'));
 if isnan(kSigma) || ~ismember(kSigma,1:10)
-    errordlg('Please enter a valid value for the cutoff for detecting outliers',...
+    errordlg(['Please enter a valid value for the' get(handles.text_kSigma,'String')],...
         'Setting error','modal');
     return;
 end
 funParams.kSigma = kSigma;
+
+nBoot = str2double(get(handles.edit_nBoot,'String'));
+if isnan(nBoot) || nBoot<=0 || round(nBoot) ~= nBoot
+    errordlg(['Please enter a valid value for the ' get(handles.text_nBoot,'String')],...
+        'Setting error','modal');
+    return;
+end
+funParams.nBoot = nBoot;
+
+alpha = str2double(get(handles.edit_alpha,'String'));
+if isnan(alpha) || alpha<=0 || alpha >=1
+    errordlg(['Please enter a valid value for the ' get(handles.text_alpha,'String')],...
+        'Setting error','modal');
+    return;
+end
+funParams.alpha = alpha;
+
+% Retrieve trendType
 props = get(handles.popupmenu_trendType,{'UserData','Value'});
 funParams.trendType=props{1}(props{2});
+
 % Process Sanity check ( only check underlying data )
 userData = get(handles.figure1, 'UserData');
 try

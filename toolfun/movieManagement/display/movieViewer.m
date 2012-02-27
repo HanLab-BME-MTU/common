@@ -333,7 +333,24 @@ if ~isempty(graphProc)
                 createProcText(graphPanel,graphProcId(iProc),iInput,hPosition3,output(iOutput).name);
                 hPosition3=hPosition3+20;
             end
-            
+%         elseif isa(graphProc{iProc},'SignalPreprocessingProcess');
+%             input=graphProc{iProc}.getInput;
+%             nInput=numel(input);
+%             
+% %             validOutput = find(strcmp({output.type},'signalGraph'));
+%             % Create set of boxes for correlation graphs (input/input)
+%             validOutput = find(graphProc{iProc}.checkOutput);
+%             if any(validOutput)
+%                 for iInput=validOutput(end):-1:1
+%                     createOutputText(graphPanel,graphProcId(iProc),iInput,hPosition3,input(iInput).name);
+%                     createInputInputBox(graphPanel,graphProcId(iProc),iOutput,iInput,iInput,hPosition3,...
+%                         'Callback',@(h,event) redrawSignalGraph(h,guidata(h)));
+%                     hPosition3=hPosition3+20;
+%                     
+%                 end
+%             end
+%             createProcText(graphPanel,graphProcId(iProc),iInput,hPosition3,output(iOutput).name);
+%             hPosition3=hPosition3+20;
 
         else   
             % Create boxes for movie -specific graphs
@@ -362,6 +379,19 @@ if ~isempty(graphProc)
                 arrayfun(@(x) createChannelBox(graphPanel,graphProcId(iProc),iOutput,x,hPosition3,...
                     'Callback',@(h,event) redrawGraph(h,guidata(h))),find(validChan(iOutput,:)));
                 hPosition3=hPosition3+20;
+            end
+            
+            % Create boxes for sampled graphs
+            validOutput = find(strcmp({output.type},'signalGraph'));
+            for iOutput=validOutput(end:-1:1)
+                input=graphProc{iProc}.getInput;      
+                validInput = find(graphProc{iProc}.checkOutput());
+                createOutputText(graphPanel,graphProcId(iProc),iOutput,hPosition3,output(iOutput).name);
+                for iInput=fliplr(validInput)
+                    createInputBox(graphPanel,graphProcId(iProc),iOutput,iInput,hPosition3,...
+                        input(iInput).name,'Callback',@(h,event) redrawGraph(h,guidata(h)));
+                    hPosition3=hPosition3+20;
+                end
             end
             
             createProcText(graphPanel,graphProcId(iProc),iOutput,hPosition3,graphProc{iProc}.getName);
@@ -823,8 +853,15 @@ if ~isempty(tokens)
         inputArgs={iChan};
     end
 else
-    inputArgs={};
-    figName = outputList(iOutput).name;
+    tokens = regexp(overlayTag,'_input(\d+)$','tokens');
+    if ~isempty(tokens)
+        iInput = str2double(tokens{1}{1});
+        figName = [outputList(iOutput).name ' - Input ' num2str(iInput)];
+        inputArgs={iInput};
+    else
+        inputArgs={};
+        figName = outputList(iOutput).name;
+    end
 end
 
 % Draw or delete the graph figure depending on the checkbox value
@@ -842,7 +879,6 @@ userData=get(handles.figure1,'UserData');
 % Retrieve the id, process nr and channel nr of the selected graphProc
 tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)_input(\d+)_input(\d+)','tokens');
 procId=str2double(tokens{1}{1});
-signalProc = userData.MO.processes_{procId};
 iOutput = str2double(tokens{1}{2});
 iInput1 = str2double(tokens{1}{3});
 iInput2 = str2double(tokens{1}{4});

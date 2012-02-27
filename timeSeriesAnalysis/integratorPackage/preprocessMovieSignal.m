@@ -30,6 +30,13 @@ function preprocessMovieSignal(movieObject,varargin)
 %       ('trendType'-> integer) A value specifying the type of detrending
 %       to apply to the time-series. See removeMeanTrendNan for a list of
 %       acceptable values.
+%
+%       ('nBoot'-> integer) A value specifying the number of bootstrapped
+%       samples to use when calculating the confidence interval of the
+%       signal energy
+%
+%       ('alpha'-> scalar) A value specifying the alpha value to use when
+%       calculating the confidence interval of the signal energy.
 
 % Marco Vilela, Sep 2011
 % Sebastien Besson, Nov 2011 (last modified Feb 2012)
@@ -59,13 +66,23 @@ signalPreProc = movieObject.processes_{iProc};
 %Parse input, store in parameter structure
 p = parseProcessParams(signalPreProc,paramsIn);
 
+%% --------------- Initialization ---------------%%
+if feature('ShowFigureWindows')
+    [~,movieName]=fileparts(movieObject.getPath);
+    wtBar = waitbar(0,'Initializing...','Name',movieName);
+else
+    wtBar=-1;
+end
+
 % If movie list, delegates signal preprocessing to individual movies
 if isa(movieObject,'MovieList')
     movieParams=rmfield(p,{'MovieIndex','OutputDirectory'});
     nMovies =numel(p.MovieIndex);
+    movieInput =cell(nMovies,1);
+    movieSignalPreProc = cell(nMovies,1);
     for i =1:nMovies;
         movieData = movieObject.movies_{p.MovieIndex(i)};
-        fprintf(1,'Processing signal for movie %g/%g\n',i,nMovies);
+        fprintf(1,'Preprocessing signal for movie %g/%g\n',i,nMovies);
         
         % Create movie process if empty
         iProc = movieData.getProcessIndex('SignalPreprocessingProcess',1,0);
@@ -76,41 +93,61 @@ if isa(movieObject,'MovieList')
         end
         
         % Parse parameters and run movie process
-        signalPreProc = movieData.processes_{iProc};
+        movieSignalPreProc{i} = movieData.processes_{iProc};
         parseProcessParams(movieData.processes_{iProc},movieParams);
-        signalPreProc.run();
-    end    
-    return;
-end    
+        movieSignalPreProc{i}.run();
+        movieInput{i}=movieSignalPreProc{i}.getInput;
+    end  
+    
+    % Check input is the same for all movies
+    assert(all(cellfun(@(x) isequal(x,movieInput{1}),movieInput)));
+    input=movieInput{1};
+    nInput= numel(movieInput{1});
 
-%% --------------- Initialization ---------------%%
-if feature('ShowFigureWindows')
-    [~,movieName]=fileparts(movieObject.getPath);
-    wtBar = waitbar(0,'Initializing...','Name',movieName);
-else
-    wtBar=-1;
-end
-
-% Load input files
-input = signalPreProc.getInput;
-nInput=numel(input);
-inFilePaths = cell(nInput,1);
-inData = cell(nInput,1);
-disp('Using sampled output from:');
-for i=1:nInput
-    proc = movieObject.processes_{input(i).processIndex};
-    if isempty(input(i).channelIndex)
-        inFilePaths{i} = proc.outFilePaths_{1};
-        inData{i} = proc.loadChannelOutput('output',input(i).var);
-        inData{i} = reshape(inData{i},size(inData{i},1),1,size(inData{i},2));
-    else
-        % Load output for given channelIndex and outputIndex
-        inFilePaths{i} = proc.outFilePaths_{1,input(i).channelIndex};
-        inData{i} = proc.loadChannelOutput(input(i).channelIndex,input(i).outputIndex,'output',input(i).var);
+    % Load input for all  movies and concatenate them
+    fprintf(1,'Preprocessing signal for movie list.\n');
+    [input.data] = deal({});
+    [input.range] = deal({});
+    disp('Using preprocessed signal from:');
+    for i =1:nMovies
+        % Retrieve individual movie filtered output and concatenate all data
+        for iInput=1:nInput
+            localRawData = movieSignalPreProc{i}.loadOutput(iInput,'output','rawData');
+            for iBand=1:min(numel(input(iInput).data),numel(localRawData))
+                input(iInput).rawData{iBand} =vertcat(input(iInput).localRawData{iBand},localRawData{iBand});
+            end
+            for iBand=numel(input(iInput).data)+1:max(numel(input(iInput).data),numel(localRawData))
+                input(iInput).rawData{iBand} =localRawData{iBand};
+            end
+        end
     end
-    disp(inFilePaths{i})
+    paths=cellfun(@(x) x.outFilePaths_,movieSignalPreProc,'Unif',false);
+    inFilePaths=vertcat(paths{:});
+    signalPreProc.setInFilePaths(inFilePaths);
+    % SB: need to boostrap energy calculation for movie list    
+    return;
+else  
+    % Load sampled output
+    input = signalPreProc.getInput;
+    nInput=numel(input);
+    inFilePaths = cell(nInput,1);
+    inData = cell(nInput,1);
+    disp('Using sampled output from:');
+    for i=1:nInput
+        proc = movieObject.processes_{input(i).processIndex};
+        if isempty(input(i).channelIndex)
+            inFilePaths{i} = proc.outFilePaths_{1};
+            inData{i} = proc.loadChannelOutput('output',input(i).var);
+            inData{i} = reshape(inData{i},size(inData{i},1),1,size(inData{i},2));
+        else
+            % Load output for given channelIndex and outputIndex
+            inFilePaths{i} = proc.outFilePaths_{1,input(i).channelIndex};
+            inData{i} = proc.loadChannelOutput(input(i).channelIndex,input(i).outputIndex,'output',input(i).var);
+        end
+        disp(inFilePaths{i})
+    end
+    signalPreProc.setInFilePaths(inFilePaths);
 end
-signalPreProc.setInFilePaths(inFilePaths);
 
 % Set up output files
 outFilePaths=cell(1,nInput);
@@ -149,20 +186,28 @@ for iInput=1:nInput
     if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
     
     % Initialize data and range ouptut
+    rawData = cell(nBands(iInput),1);
     data= cell(nBands(iInput),1);
     [data{:}]=deal(cell(nSlices,1));
     range = data;
+    energy  = NaN(nBands(iInput),3);
     
     for iBand=1:nBands(iInput)
         % Get iBand data and remove outliers
-        rawData =squeeze(inData{iInput}(:,iBand,:));
-        rawData(detectOutliers(rawData,p.kSigma)) = NaN;
+        rawData{iBand} =squeeze(inData{iInput}(:,iBand,:));
+        rawData{iBand}(detectOutliers(rawData{iBand},p.kSigma)) = NaN;
         
         % Check percentage of NaN
-        validSlices = (nPoints-sum(isnan(rawData),2))>=minP;
+        validSlices = (nPoints-sum(isnan(rawData{iBand}),2))>=minP;
         [data{iBand}(validSlices) ,range{iBand}(validSlices)] = ...
-            removeMeanTrendNaN(rawData(validSlices,:)',p.trendType);   
-                
+            removeMeanTrendNaN(rawData{iBand}(validSlices,:)',p.trendType);   
+        
+        if sum(validSlices)>2
+            % Remove linear trend for energy calculating
+            [energy(iBand,1), energy(iBand,2:3)] = ...
+                getWindowsBandEnergy(removeMeanTrendNaN(rawData{iBand}(validSlices,:)',1),p.nBoot,p.alpha);
+        end
+        
         % Update waitbar
         if ishandle(wtBar), 
             tj=toc;
@@ -170,7 +215,7 @@ for iInput=1:nInput
             waitbar(nj/nBandsTot,wtBar,sprintf([logMsg(iInput) timeMsg(tj*nBandsTot/nj-tj)]));
         end   
     end
-    save(outFilePaths{1,iInput},'data','range');  
+    save(outFilePaths{1,iInput},'rawData','data','range','energy');  
 end
 
 disp('Finished preprocessing signal...')

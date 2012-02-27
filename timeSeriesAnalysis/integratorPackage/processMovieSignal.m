@@ -243,7 +243,7 @@ for i=1:nInput
     assert(isscalar(index))
     preprocIndex(i) = index;
 end
-if ~signalPreproc.checkChannelOutput(preprocIndex)
+if ~signalPreproc.checkOutput(preprocIndex)
     error(['Each time series must have been preprocessed !' ...
         'Please apply pre-processing to all time series before '...
         'running coherence calculation!'])
@@ -254,6 +254,6 @@ disp(signalPreproc.funParams_.OutputDirectory);
 % Load input
 for iInput=1:nInput
     input(iInput).paths = signalPreproc.outFilePaths_{1,preprocIndex(iInput)};
-    [input(iInput).data,input(iInput).range] = signalPreproc.loadChannelOutput(preprocIndex(iInput));
+    [input(iInput).data,input(iInput).range] = signalPreproc.loadOutput(preprocIndex(iInput),'output',{'data','range'});
 end
 

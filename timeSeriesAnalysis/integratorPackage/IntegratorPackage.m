@@ -12,7 +12,7 @@ classdef IntegratorPackage < Package
             else
                 % Check input
                 ip =inputParser;
-                ip.addRequired('owner',@(x) isa(x,'MovieObject'));
+                ip.addRequired('owner',@(x) isa(x,'MovieList'));
                 ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
                 ip.parse(owner,varargin{:});
                 outputDir = ip.Results.outputDir;

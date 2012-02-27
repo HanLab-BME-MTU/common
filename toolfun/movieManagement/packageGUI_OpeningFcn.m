@@ -268,8 +268,9 @@ set(handles.text_packageName,'String',userData.crtPackage.getName);
 
 % Set movie explorer
 msg = {};
+if isa(userData.MD,'MovieData'), movieType = 'Movie'; else movieType = 'Movie list'; end
 for i = 1: length(userData.MD)
-    msg = cat(2, msg, {sprintf('  Movie %d of %d', i, length(userData.MD))});
+    msg = cat(2, msg, {sprintf('  %s %d of %d', movieType, i, length(userData.MD))});
 end
 set(handles.popupmenu_movie, 'String', msg, 'Value', userData.id);
 

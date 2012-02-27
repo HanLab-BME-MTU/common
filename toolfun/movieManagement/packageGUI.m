@@ -251,5 +251,10 @@ userfcn_lampSwitch(procID, procStatus, handles);
 function menu_debug_enter_Callback(hObject, eventdata, handles)
 
 status = get(hObject,'Checked');
-if strcmp(status,'on'), newstatus = 'off'; else newstatus='on'; end
+if strcmp(status,'on'), 
+    newstatus = 'off'; 
+    dbclear if caught error;
+else
+    newstatus='on'; 
+end
 set(hObject,'Checked',newstatus);
