@@ -211,6 +211,8 @@ classdef Package < hgsetget
             newprocess=obj.getDefaultProcessConstructors{i}(obj.owner_,obj.outputDirectory_);
             obj.owner_.addProcess(newprocess);
             obj.setProcess(i,newprocess);
+            % Run sanityCheck to set process dependencies
+            obj.sanityCheck(); 
         end
         
         function setProcess(obj, i, newProcess)
