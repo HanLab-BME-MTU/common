@@ -212,6 +212,9 @@ classdef TrackingProcess < DataProcessingProcess
             functions(1).name = 'Brownian + Directed motion models';
             functions(1).funcName = func2str(@kalmanInitLinearMotion);
             functions(1).GUI=@kalmanInitializationGUI;
+            functions(2).name = 'Microtubule dynamics';
+            functions(2).funcName = func2str(@plusTipKalmanInitLinearMotion);
+            functions(2).GUI=@kalmanInitializationGUI;
             ip=inputParser;
             ip.addOptional('index',1:length(functions),@isvector);
             ip.parse(varargin{:});
@@ -222,7 +225,8 @@ classdef TrackingProcess < DataProcessingProcess
         function functions = getKalmanCalcGainFunctions(varargin)
             functions(1).name = 'Brownian + Directed motion models';
             functions(1).funcName = func2str(@kalmanGainLinearMotion);
-            
+            functions(2).name = 'Microtubule dynamics';
+            functions(2).funcName = func2str(@plusTipKalmanGainLinearMotion);
             ip=inputParser;
             ip.addOptional('index',1:length(functions),@isvector);
             ip.parse(varargin{:});
@@ -257,7 +261,22 @@ classdef TrackingProcess < DataProcessingProcess
             costMatrices(1).parameters.kalmanInitParam = []; %Kalman filter initialization parameters.
             costMatrices(1).parameters.diagnostics = owner.nFrames_-1;
             
-                        
+            % plusTip markers
+            plusTipCostMatrix.name = 'Microtubule dynamics';
+            plusTipCostMatrix.funcName = func2str(@plusTipCostMatLinearMotionLink);
+            plusTipCostMatrix.GUI = @plusTipCostMatLinearMotionLinkGUI;
+            plusTipCostMatrix.parameters.linearMotion = 1; % use linear motion Kalman filter.
+            plusTipCostMatrix.parameters.minSearchRadius = 2; %minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
+            plusTipCostMatrix.parameters.maxSearchRadius = 10; %IMPORTANT maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
+            plusTipCostMatrix.parameters.brownStdMult = 3; %multiplication factor to calculate search radius from standard deviation.
+            plusTipCostMatrix.parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the linking (initial tracking) step.
+            plusTipCostMatrix.parameters.nnWindow = timeWindow; %number of frames before the current one where you want to look to see a feature's nearest neighbor in order to decide how isolated it is (in the initial linking step).
+            plusTipCostMatrix.parameters.kalmanInitParam.initVelocity = []; %Kalman filter initialization parameters.
+            plusTipCostMatrix.parameters.kalmanInitParam.convergePoint = []; %Kalman filter initialization parameters.  
+            plusTipCostMatrix.parameters.kalmanInitParam.searchRadiusFirstIteration = 20; %Kalman filter initialization parameters.
+            plusTipCostMatrix.parameters.diagnostics = [];
+            costMatrices(2)=plusTipCostMatrix;
+            
             ip=inputParser;
             ip.addRequired('owner',@(x) isa(x,'MovieData'));
             ip.addRequired('timeWindow',@isscalar);
@@ -295,6 +314,17 @@ classdef TrackingProcess < DataProcessingProcess
             
             costMatrices(1).parameters.gapPenalty = 1.5; %penalty for increasing temporary disappearance time (disappearing for n frames gets a penalty of gapPenalty^n).
             costMatrices(1).parameters.resLimit = []; % text field resolution limit, which is generally equal to 3 * point spread function sigma.
+            
+            % Linear motion
+            plusTipCostMatrix.name = 'Microtubule dynamics';
+            plusTipCostMatrix.funcName = func2str(@plusTipCostMatCloseGaps);
+            plusTipCostMatrix.GUI = @plusTipCostMatCloseGapsGUI;
+            plusTipCostMatrix.parameters.maxFAngle = 30; %use linear motion Kalman filter.
+            plusTipCostMatrix.parameters.maxBAngle = 10; %use linear motion Kalman filter.
+            plusTipCostMatrix.parameters.backVelMultFactor = 1.5;
+            plusTipCostMatrix.parameters.fluctRad = 1.0;
+            plusTipCostMatrix.parameters.breakNonLinearTracks = false;
+            costMatrices(2)=plusTipCostMatrix;
             
             ip=inputParser;
             ip.addRequired('owner',@(x) isa(x,'MovieData'));

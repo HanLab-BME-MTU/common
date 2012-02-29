@@ -8,6 +8,10 @@ function varargout = uTrackPackageGUI(varargin)
 % Sebastien Besson 5/2011
 %
 
-varargout{1} = packageGUI(@UTrackPackage,varargin{:});
+if isa(varargin{1},'MovieList')
+    varargout{1} = packageGUI(@UTrackPackage,[varargin{1}.getMovies{:}],varargin{2:end});
+else
+    varargout{1} = packageGUI(@UTrackPackage,varargin{:});
+end
 
 end

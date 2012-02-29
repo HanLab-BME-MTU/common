@@ -78,7 +78,9 @@ classdef DetectionProcess < ImageAnalysisProcess
         function procClasses = getConcreteClasses()
             procClasses = ...
                 {'SubResolutionProcess';
-                'NucleiDetectionProcess'};
+                'CometDetectionProcess';
+                'NucleiDetectionProcess';
+                };
         end
     end
 
