@@ -49,7 +49,7 @@ classdef DetectionProcess < ImageAnalysisProcess
             if ischar(output),output={output}; end
             
             % Data loading
-            s = load(obj.outFilePaths_{iChan},output{:});
+            s = load(obj.outFilePaths_{1,iChan},output{:});
            
             if numel(ip.Results.iFrame)>1,
                 varargout{1}=s.(output{1});

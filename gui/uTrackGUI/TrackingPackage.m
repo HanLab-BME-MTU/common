@@ -1,27 +1,10 @@
 classdef TrackingPackage < Package
     % A concrete process for Biosensor Package
-    
-    methods (Access = public)
-        function obj = TrackingPackage (owner,varargin)
-            % Construntor of class MaskProcess
-            if nargin == 0
-                super_args = {};
-            else
-                % Check input
-                ip =inputParser;
-                ip.addRequired('owner',@(x) isa(x,'MovieObject'));
-                ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
-                ip.parse(owner,varargin{:});
-                outputDir = ip.Results.outputDir;
-                
-                super_args{1} = owner;
-                super_args{2} = [outputDir  filesep 'TrackingPackage'];
-            end
+    methods
+        function obj = TrackingPackage(varargin)
             % Call the superclass constructor
-            obj = obj@Package(super_args{:});
-            
+            obj = obj@Package(varargin{:});        
         end
-        
     end
     methods (Static)
         function m = getDependencyMatrix(i,j)   

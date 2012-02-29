@@ -165,7 +165,8 @@ end
 % Create figure if non-existing or closed
 if ~isfield(userData, 'previewFig') || ~ishandle(userData.previewFig)
     userData.previewFig = figure('NumberTitle','off','Name','Select the region of interest',...
-        'Position',[.05 .05 .9 .9],'UserData',handles.figure1);
+        'UserData',handles.figure1);
+    axes('Position',[.05 .05 .9 .9]);
     userData.newFigure = 1;
 else
     figure(userData.previewFig);
