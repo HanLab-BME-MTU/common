@@ -83,7 +83,7 @@ set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 if openHelpFile
-    set(Img, 'UserData', struct('class', 'costMatLinearMotionLink2GUI'))
+    set(Img, 'UserData', struct('class', mfilename))
 else
     set(Img, 'UserData', 'Please refer to help file.')
 end

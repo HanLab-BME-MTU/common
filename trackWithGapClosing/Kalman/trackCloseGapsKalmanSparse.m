@@ -381,7 +381,7 @@ if isequal(costMatrices(2).funcName,'plusTipCostMatCloseGaps')
     tracksCoordAmpLink(:,3:8:end) = 0;
     tracksCoordAmpLink(:,7:8:end) = 0;
     [tracksCoordAmpLink,tracksFeatIndxLink,nnDistLinkedFeat]=...
-       breakNonlinearTracks(tracksCoordAmpLink,tracksFeatIndxLink,nnDistLinkedFeat);
+       plusTipBreakNonlinearTracks(tracksCoordAmpLink,tracksFeatIndxLink,nnDistLinkedFeat);
 end
 
 
