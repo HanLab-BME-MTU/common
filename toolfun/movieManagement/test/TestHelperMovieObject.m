@@ -69,33 +69,38 @@ classdef TestHelperMovieObject < handle
         
         
         function testPackageCreation(movieObject)
+            % Test full package creation
+            
             concretePackages = TestHelperMovieObject.getConcreteSubClasses('Package');
-            packageConstr = cellfun(@str2func,concretePackages,'Unif',false);
-            for i=1:numel(packageConstr)
+            for i=1:numel(concretePackages)
                 % Test package construction
                 packageConstr = str2func(concretePackages{i});
-                newpackage = packageConstr(movieObject,'');
-                assertTrue(isa(newpackage,concretePackages{i}));
-                
-                % Test package addition
-                movieObject.addPackage(newpackage);
-                assertTrue(isa(movieObject.packages_{end},concretePackages{i}));
-                
-                % Test default process construction
-                crtPackage = movieObject.packages_{1};
-                for j=1:numel(crtPackage.getDefaultProcessConstructors),
-                    procConstr = crtPackage.getDefaultProcessConstructors{j};
-                    movieObject.addProcess(procConstr(movieObject,crtPackage.outputDirectory_));
-                    crtPackage.setProcess(j,movieObject.processes_{end});
+                if strcmp(concretePackages{i},'IntegratorPackage') && ...
+                        isa(movieObject,'MovieData')
+                    assertExceptionThrown(@()procConstr(movieObject),'MATLAB:InputParser:ArgumentFailedValidation')
+                else     
+                    newpackage = packageConstr(movieObject,'');
+                    assertTrue(isa(newpackage,concretePackages{i}));
                     
-                    assertTrue(isa(movieObject.processes_{end},crtPackage.getProcessClassNames{j}));
+                    % Test package addition
+                    movieObject.addPackage(newpackage);
+                    assertTrue(isa(movieObject.packages_{end},concretePackages{i}));
+                    
+                    % Test default process construction
+                    crtPackage = movieObject.packages_{1};
+                    for j=1:numel(crtPackage.getDefaultProcessConstructors),
+                        crtPackage.createDefaultProcess(i);                       
+                        assertTrue(isa(movieObject.processes_{end},crtPackage.getProcessClassNames{j}));
+                    end
+                    
+                    % Reset movie
+                    movieObject.reset
+                    assertTrue(isempty(movieObject.processes_));
+                    assertTrue(isempty(movieObject.packages_));
                 end
-                % Reset movie
-                movieObject.reset
-                assertTrue(isempty(movieObject.processes_));
-                assertTrue(isempty(movieObject.packages_));
             end
         end
+        
         
         
         function relocatedMoviePath= relocateMovie(movieObject)
