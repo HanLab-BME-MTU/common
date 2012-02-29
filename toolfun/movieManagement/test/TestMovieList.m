@@ -47,7 +47,7 @@ classdef TestMovieList < TestCase
             assertEqual(relocatedMovieList.getPath,relocatedMovieListPath);
             
             % Test channel paths
-            assertEqual(relocatedMovieList.movies_{1}.getPath,relocatedMovieListPath);
+            assertEqual(relocatedMovieList.getMovies{1}.getPath,relocatedMovieListPath);
             
             % Test process/packages relocation            
             rmdir(relocatedMovieListPath,'s');
@@ -59,8 +59,8 @@ classdef TestMovieList < TestCase
         end
         
         function testSanityCheck(self)
-            assertFalse(isempty(self.movieList.movies_));
-            assertTrue(isa(self.movieList.movies_{1},'MovieData'));
+            assertFalse(isempty(self.movieList.getMovies));
+            assertTrue(isa(self.movieList.getMovies{1},'MovieData'));
         end
         
         

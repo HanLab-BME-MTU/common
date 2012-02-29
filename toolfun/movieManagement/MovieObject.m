@@ -274,6 +274,9 @@ classdef  MovieObject < hgsetget
                 end
             end
             if nargin > 2, obj.setFilename(filename); end
+            
+            if isempty(obj.outputDirectory_), warning('lccb:MovieObject:sanityCheck',...
+                'Empty output directory!'); end
         end
         
         function [oldRootDir newRootDir]=relocate(obj,newPath)

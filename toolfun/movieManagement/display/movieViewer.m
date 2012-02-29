@@ -19,12 +19,11 @@ if isa(ip.Results.MO,'MovieList')
     userData.ML=ip.Results.MO;
     userData.movieIndex=ip.Results.movieIndex;
     if userData.movieIndex~=0
-        userData.MO=ip.Results.MO.movies_{userData.movieIndex};
+        userData.MO=ip.Results.MO.getMovies{userData.movieIndex};
     else
          userData.MO=ip.Results.MO;
     end
         
-%     userData.MO=MO.movies_{userData.movieIndex};
     userData.procId = ip.Results.procId;
     if ~isempty(ip.Results.procId)
         procId = userData.MO.getProcessIndex(class(userData.ML.processes_{ip.Results.procId}));
@@ -477,7 +476,7 @@ uicontrol(moviePanel,'Style','text','Position',[10 hPosition 40 20],...
 
 
 if isa(ip.Results.MO,'MovieList')
-    moviePaths = cellfun(@getDisplayPath,userData.ML.movies_,'UniformOutput',false);
+    moviePaths = cellfun(@getDisplayPath,userData.ML.getMovies,'UniformOutput',false);
     movieIndex=0:numel(moviePaths);
     
     uicontrol(moviePanel,'Style','popupmenu','Position',[60 hPosition panelsLength-70 20],...

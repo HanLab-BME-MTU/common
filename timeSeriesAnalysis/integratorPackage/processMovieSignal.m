@@ -113,7 +113,7 @@ if isa(movieObject,'MovieList')
         
         % Delegate processing for each movie of the list
         movieParams.SliceIndex=p.SliceIndex{iMovie};
-        movieData = movieObject.movies_{iMovie};
+        movieData = movieObject.getMovies{iMovie};
         iProc = movieData.getProcessIndex('SignalProcessingProcess',1,0);
         if isempty(iProc)
             movieData.addProcess(SignalProcessingProcess(movieData,...
@@ -132,9 +132,9 @@ if isa(movieObject,'MovieList')
     nInput= numel(movieInput{1});
     
     % Check number of frames per movie and determine lag limits
-    nFrames =  cellfun(@(x) x.nFrames_,movieObject.movies_);
+    nFrames =  cellfun(@(x) x.nFrames_,movieObject.getMovies);
     nFrames=max(nFrames);
-    timeInterval=unique(cellfun(@(x) x.timeInterval_,movieObject.movies_));
+    timeInterval=unique(cellfun(@(x) x.timeInterval_,movieObject.getMovies));
     assert(numel(timeInterval)==1);
     
     % Load input for all  movies and concatenate them
@@ -145,7 +145,7 @@ if isa(movieObject,'MovieList')
     for i =1:nMovies;
         iMovie = p.MovieIndex(i);
         % Retrieve individual movie output
-        movieInput{i} =loadInput(movieObject.movies_{iMovie},movieInput{i});
+        movieInput{i} =loadInput(movieObject.getMovies{iMovie},movieInput{i});
         
         % Concatenate all data
         for iInput=1:nInput

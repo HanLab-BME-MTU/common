@@ -34,7 +34,7 @@ classdef TimeSeriesProcess < Process
             procOutput = cell(nProc,1);
             
             if isa(obj.owner_,'MovieList');
-                movie=obj.owner_.movies_{1}; % Quick fix for movie lists
+                movie=obj.owner_.getMovies{1}; % Quick fix for movie lists
             else
                 movie=obj.owner_;
             end

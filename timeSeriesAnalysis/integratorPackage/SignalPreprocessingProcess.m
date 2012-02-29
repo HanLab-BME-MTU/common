@@ -35,7 +35,7 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
         
         function varargout = loadOutput(obj,i,varargin)
             % Check input
-            outputList={'rawData','data','range','energy'};
+            outputList={'data','range','energyData','energy'};
             ip=inputParser;
             ip.addRequired('obj');
             ip.addRequired('i',@isscalar);
@@ -137,7 +137,7 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
             
             % Set default parameters
             if isa(owner,'MovieList'), 
-                funParams.MovieIndex=1:numel(owner.movies_); 
+                funParams.MovieIndex=1:numel(owner.getMovies); 
             end
             funParams.OutputDirectory = [outputDir filesep 'preprocessedSignal'];
             funParams.ProcessName=TimeSeriesProcess.getSamplingProcesses;          

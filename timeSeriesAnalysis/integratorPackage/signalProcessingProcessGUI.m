@@ -54,7 +54,7 @@ funParams = userData.crtProc.funParams_;
 
 % Set up available input channels
 set(handles.listbox_availableMovies,'String',userData.ML.movieDataFile_, ...
-    'UserData',1:numel(userData.ML.movies_));
+    'UserData',1:numel(userData.ML.getMovies));
 
 % Set up available input processes
 allProc = userData.crtProc.getSamplingProcesses;
@@ -246,7 +246,7 @@ userData.movieID=movieProps{1}(movieProps{2});
 p.ProcessName = get(handles.listbox_selectedProcesses,'UserData');
 
 % Retrieve input 
-corrProc = SignalProcessingProcess(userData.ML.movies_{userData.movieID},'');
+corrProc = SignalProcessingProcess(userData.ML.getMovies{userData.movieID},'');
 parseProcessParams(corrProc,p);
 input = corrProc.getInput;
 nInput = numel(input);
@@ -254,7 +254,7 @@ nInput = numel(input);
 
 % Create a mask using the slice index
 alphamask = repmat(userData.SliceIndex{userData.movieID},1,...
-    userData.ML.movies_{userData.movieID}.nFrames_);
+    userData.ML.getMovies{userData.movieID}.nFrames_);
 hAxes = -ones(nInput,1);
 h = -ones(nInput,1);
 userData_fig.mainFig=handles.figure1;
@@ -270,7 +270,7 @@ for i=1:nInput;
     else
         chanArgs={};
     end
-    h(i) = userData.ML.movies_{userData.movieID}.processes_{procID}.draw(chanArgs{:},axesArgs{:});
+    h(i) = userData.ML.getMovies{userData.movieID}.processes_{procID}.draw(chanArgs{:},axesArgs{:});
     hCbar = findobj(userData.previewFig,'Tag','Colorbar');
     delete(hCbar);    
     set(h(i),'HitTest','off','AlphaData',alphamask,'AlphaDataMapping','none');

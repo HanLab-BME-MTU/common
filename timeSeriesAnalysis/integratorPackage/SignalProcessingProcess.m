@@ -174,9 +174,9 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             funParams.OutputDirectory = [outputDir  filesep 'signalProcessing'];
             funParams.ProcessName=TimeSeriesProcess.getSamplingProcesses;
             if isa(owner,'MovieList'),
-                funParams.MovieIndex=1:numel(owner.movies_);
+                funParams.MovieIndex=1:numel(owner.getMovies);
                 winProc =cellfun(@(x) x.processes_{x.getProcessIndex('WindowingProcess',1,false)},...
-                    owner.movies_,'UniformOutput',false);
+                    owner.getMovies,'UniformOutput',false);
                 funParams.BandMin=1;
                 funParams.BandMax=min(cellfun(@(x) x.nBandMax_,winProc));
                 funParams.SliceIndex=cellfun(@(x) true(x.nSliceMax_,1),winProc,'UniformOutput',false);

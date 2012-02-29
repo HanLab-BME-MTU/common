@@ -54,7 +54,7 @@ funParams = userData.crtProc.funParams_;
 
 % Set up available input channels
 set(handles.listbox_availableMovies,'String',userData.MD.movieDataFile_, ...
-    'UserData',1:numel(userData.MD.movies_));
+    'UserData',1:numel(userData.MD.getMovies));
 
 movieIndex = funParams.MovieIndex;
 

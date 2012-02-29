@@ -64,10 +64,9 @@ classdef MovieList < MovieObject
             allIndex = 1:numel(obj.movieDataFile_);
             ip.addOptional('index',allIndex,@(x) all(ismember(x,allIndex)));
             ip.parse(varargin{:});
-            index= ip.Results.index;
             
-            movies = cell(numel(index),1);
-            for i=index, movies{i} = MovieData.load(obj.movieDataFile_{i}); end
+            if isempty(obj.movies_), obj.sanityCheck; end
+            movies = obj.movies_(ip.Results.index);
         end
             
         %% Sanity check/relocation
@@ -86,9 +85,11 @@ classdef MovieList < MovieObject
             end
             
             % Load movie components (run sanityCheck on each of them)
-            movieIndex = 1:numel(obj.movieDataFile_);
-            movieException = cell(1, numel(movieIndex));
+            nMovies = numel(obj.movieDataFile_);
+            movieIndex = 1:nMovies;
+            movieException = cell(1,nMovies);
             for i = movieIndex
+                fprintf(1,'Loading movie %g/%g\n',i,nMovies);
                 try
                     obj.movies_{i}=MovieData.load(obj.movieDataFile_{i},askUser);
                 catch ME

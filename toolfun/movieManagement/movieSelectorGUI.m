@@ -319,7 +319,7 @@ switch class(M)
         % Healthy Movie Data
         if ~isempty(healthMD)
             userData.ML = horzcat(userData.ML, M);
-            userData.MD = horzcat(userData.MD,M.movies_{index(healthMD)});
+            userData.MD = horzcat(userData.MD,M.getMovies{index(healthMD)});
             contentlist = horzcat(contentlist',M.movieDataFile_(index(healthMD)));
         end             
     otherwise

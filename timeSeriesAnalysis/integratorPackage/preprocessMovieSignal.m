@@ -81,7 +81,7 @@ if isa(movieObject,'MovieList')
     movieInput =cell(nMovies,1);
     movieSignalPreProc = cell(nMovies,1);
     for i =1:nMovies;
-        movieData = movieObject.movies_{p.MovieIndex(i)};
+        movieData = movieObject.getMovies{p.MovieIndex(i)};
         fprintf(1,'Preprocessing signal for movie %g/%g\n',i,nMovies);
         
         % Create movie process if empty
@@ -104,28 +104,29 @@ if isa(movieObject,'MovieList')
     input=movieInput{1};
     nInput= numel(movieInput{1});
 
-    % Load input for all  movies and concatenate them
-    fprintf(1,'Preprocessing signal for movie list.\n');
-    [input.data] = deal({});
-    [input.range] = deal({});
-    disp('Using preprocessed signal from:');
-    for i =1:nMovies
-        % Retrieve individual movie filtered output and concatenate all data
-        for iInput=1:nInput
-            localRawData = movieSignalPreProc{i}.loadOutput(iInput,'output','rawData');
-            for iBand=1:min(numel(input(iInput).data),numel(localRawData))
-                input(iInput).rawData{iBand} =vertcat(input(iInput).localRawData{iBand},localRawData{iBand});
-            end
-            for iBand=numel(input(iInput).data)+1:max(numel(input(iInput).data),numel(localRawData))
-                input(iInput).rawData{iBand} =localRawData{iBand};
-            end
-        end
-    end
+    % Set input path
     paths=cellfun(@(x) x.outFilePaths_,movieSignalPreProc,'Unif',false);
     inFilePaths=vertcat(paths{:});
     signalPreProc.setInFilePaths(inFilePaths);
-    % SB: need to boostrap energy calculation for movie list    
-    return;
+    
+    % Load input for all  movies and concatenate them
+    fprintf(1,'Preprocessing signal for movie list.\n');
+    [input.energyData] = deal({});
+    disp('Using preprocessed signal from:');
+    for i =1:nMovies
+        disp(inFilePaths{i});
+        % Retrieve individual movie filtered output and concatenate all data
+        for iInput=1:nInput
+            localEnergyData = movieSignalPreProc{i}.loadOutput(iInput,'output','energyData');
+            for iBand=1:min(numel(input(iInput).energyData),numel(localEnergyData))
+                input(iInput).energyData{iBand} =horzcat(input(iInput).energyData{iBand},localEnergyData{iBand});
+            end
+            for iBand=numel(input(iInput).energyData)+1:max(numel(input(iInput).energyData),numel(localEnergyData))
+                input(iInput).energyData{iBand} =localEnergyData{iBand};
+            end
+        end
+    end
+  
 else  
     % Load sampled output
     input = signalPreProc.getInput;
@@ -159,64 +160,107 @@ disp(p.OutputDirectory);
 mkClrDir(p.OutputDirectory);
 signalPreProc.setOutFilePaths(outFilePaths);
 
-%% --------------- Signal pre-processing ---------------%%% kSigma
-disp('Starting preprocessing signal...')
-
-% Check input have the same size
-allSizes =cellfun(@size,inData,'Unif',false);
-nSlices = unique(cellfun(@(x) x(1),allSizes));
-nBands = cellfun(@(x) x(2),allSizes);
-nPoints = unique(cellfun(@(x) x(3),allSizes));
-assert(isscalar(nSlices) && isscalar(nPoints));
-
-%At least 50 points are needed to calculate the ACF
-%Number of lags <= N/4;
-%Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
-minP     = 50;
-
 % Create log messages
 logMsg = @(iInput,iBand) ['Please wait, preprocessing signal of ' input(iInput).name];
 timeMsg = @(t) ['\nEstimated time remaining: ' num2str(round(t)) 's'];
-tic;
-nBandsTot = sum(nBands);
-
-for iInput=1:nInput    
-    % Show log
-    disp(logMsg(iInput));
-    if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
     
-    % Initialize data and range ouptut
-    rawData = cell(nBands(iInput),1);
-    data= cell(nBands(iInput),1);
-    [data{:}]=deal(cell(nSlices,1));
-    range = data;
-    energy  = NaN(nBands(iInput),3);
+if isa(movieObject,'MovieList')
+    %% Movie list energy calculation
+    tic;
+    % Initialize output
+    nBands = arrayfun(@(x)numel(x.energyData),input);
+    nBandsTot = sum(nBands);
     
-    for iBand=1:nBands(iInput)
-        % Get iBand data and remove outliers
-        rawData{iBand} =squeeze(inData{iInput}(:,iBand,:));
-        rawData{iBand}(detectOutliers(rawData{iBand},p.kSigma)) = NaN;
+    for iInput=1:nInput
+        % Show log
+        disp(logMsg(iInput));
+        if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
         
-        % Check percentage of NaN
-        validSlices = (nPoints-sum(isnan(rawData{iBand}),2))>=minP;
-        [data{iBand}(validSlices) ,range{iBand}(validSlices)] = ...
-            removeMeanTrendNaN(rawData{iBand}(validSlices,:)',p.trendType);   
+        % Initialize output
+        energy = NaN(nBands(iInput),3);
         
-        if sum(validSlices)>2
-            % Remove linear trend for energy calculating
+        % Calculate energy per input per band for all movies
+        validBands=~cellfun(@isempty,input(iInput).energyData);
+        for iBand=find(validBands);
             [energy(iBand,1), energy(iBand,2:3)] = ...
-                getWindowsBandEnergy(removeMeanTrendNaN(rawData{iBand}(validSlices,:)',1),p.nBoot,p.alpha);
+                getWindowsBandEnergy(input(iInput).energyData{iBand},p.nBoot,p.alpha);
+            % Update waitbar
+            if ishandle(wtBar),
+                tj=toc;
+                nj = sum(nBands(1:iInput-1))+ iBand;
+                waitbar(nj/nBandsTot,wtBar,sprintf([logMsg(iInput) timeMsg(tj*nBandsTot/nj-tj)]));
+            end
+            
         end
-        
-        % Update waitbar
-        if ishandle(wtBar), 
-            tj=toc;
-            nj = sum(nBands(1:iInput-1))+ iBand;
-            waitbar(nj/nBandsTot,wtBar,sprintf([logMsg(iInput) timeMsg(tj*nBandsTot/nj-tj)]));
-        end   
+        save(outFilePaths{1,iInput},'energy');
     end
-    save(outFilePaths{1,iInput},'rawData','data','range','energy');  
+else
+    %% Movie signal preprocessing
+    disp('Starting preprocessing signal...')
+    
+    % Check input have the same size
+    allSizes =cellfun(@size,inData,'Unif',false);
+    nSlices = unique(cellfun(@(x) x(1),allSizes));
+    nBands = cellfun(@(x) x(2),allSizes);
+    nPoints = unique(cellfun(@(x) x(3),allSizes));
+    assert(isscalar(nSlices) && isscalar(nPoints));
+    
+    %At least 50 points are needed to calculate the ACF
+    %Number of lags <= N/4;
+    %Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
+    minP     = 50;
+    
+    % Create log messages
+    tic;
+    nBandsTot = sum(nBands);
+    for iInput=1:nInput
+        % Show log
+        disp(logMsg(iInput));
+        if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
+        
+        % Initialize data and range ouptut
+        rawData= cell(nBands(iInput),1);
+        energyData = cell(nBands(iInput),1);
+        energyRange = cell(nBands(iInput),1);
+        data= cell(nBands(iInput),1);
+        [data{:}]=deal(cell(nSlices,1));
+        range = data;
+        energy  = NaN(nBands(iInput),3);
+        
+        for iBand=1:nBands(iInput)
+            % Get iBand data and remove outliers
+            rawData{iBand} =squeeze(inData{iInput}(:,iBand,:));
+            rawData{iBand}(detectOutliers(rawData{iBand},p.kSigma)) = NaN;
+            
+            % Check percentage of NaN and remove linear trend for energy
+            validSlices = (nPoints-sum(isnan(rawData{iBand}),2))>=minP;
+            [energyData{iBand} ,energyRange{iBand}] = ...
+                removeMeanTrendNaN(rawData{iBand}(validSlices,:)',1);
+            
+            % Recompute signal detrending if using a different trend type
+            if p.trendType~=1
+                [data{iBand}(validSlices) ,range{iBand}(validSlices)] = ...
+                    removeMeanTrendNaN(rawData{iBand}(validSlices,:)',p.trendType);
+            else
+                data{iBand}(validSlices)=energyData{iBand};
+                range{iBand}(validSlices)=energyRange{iBand};
+            end
+            
+            % Calculate energy
+            if sum(validSlices)>2, [energy(iBand,1), energy(iBand,2:3)] = getWindowsBandEnergy(energyData{iBand},p.nBoot,p.alpha); end
+            
+            % Update waitbar
+            if ishandle(wtBar),
+                tj=toc;
+                nj = sum(nBands(1:iInput-1))+ iBand;
+                waitbar(nj/nBandsTot,wtBar,sprintf([logMsg(iInput) timeMsg(tj*nBandsTot/nj-tj)]));
+            end
+        end
+        save(outFilePaths{1,iInput},'data','range','energyData','energy');
+    end
+    
+    disp('Finished preprocessing signal...')
 end
 
-disp('Finished preprocessing signal...')
+  
 if ishandle(wtBar), close(wtBar); end
