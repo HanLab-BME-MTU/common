@@ -10,7 +10,7 @@ classdef TrackingPackage < Package
         function m = getDependencyMatrix(i,j)   
             m = [0 0 0;  %1 DetectionProcess
                  1 0 0;  %2 TrackingProcess
-                 0 1 0;];%3 PostTrackingProcess
+                 0 1 0;];%3 MotionAnalysisProcess
             if nargin<2, j=1:size(m,2); end
             if nargin<1, i=1:size(m,1); end
             m=m(i,j);
@@ -24,9 +24,19 @@ classdef TrackingPackage < Package
             classes = {
                 'DetectionProcess',...
                 'TrackingProcess',...
-                'PostTrackingProcess'};
+                'MotionAnalysisProcess'};
             if nargin==0, index=1:numel(classes); end
             classes=classes(index);
         end
+        
+        function procConstr = getDefaultProcessConstructors(index)
+            procConstr = {
+                @SubResolutionProcess,...
+                @TrackingProcess,...
+                @MotionAnalysisProcess};
+            if nargin==0, index=1:numel(procConstr); end
+            procConstr=procConstr(index);
+        end
+        
     end 
 end

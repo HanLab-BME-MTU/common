@@ -150,6 +150,11 @@ classdef Package < hgsetget
             procID = ip.Results.procID;
             if strcmp(procID,'all'), procID = 1:nProc;end
             
+            % Allow dynamic package extension
+            if nProc>numel(obj.processes_), 
+                obj.processes_{numel(obj.processes_)+1:nProc}=deal([]); 
+            end
+            
             % Check processes are consistent with process class names
             assert(isequal(nProc,numel(obj.processes_)),'Wrong number of processes');
             validProc = procID(~cellfun(@isempty,obj.processes_(procID)));
