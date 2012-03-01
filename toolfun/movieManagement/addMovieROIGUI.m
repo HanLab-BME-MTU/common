@@ -71,8 +71,10 @@ set(handles.listbox_selectedChannels,'String',userData.MD.getChannelPaths(), ...
 
 % Save the image directories and names (for cropping preview)
 userData.nFrames = userData.MD.nFrames_;
-userData.imRectHandle.isvalid=0;
-userData.ROI = [1 1 userData.MD.imSize_(end:-1:1)];
+userData.imPolyHandle.isvalid=0;
+m=userData.MD.imSize_(2);
+n=userData.MD.imSize_(1);
+userData.ROI = [1 1; m 1; m n; 1 n;];
 userData.previewFig=-1;
 userData.helpFig=-1;
 
@@ -154,8 +156,8 @@ if (chanIndex~=userData.chanIndex) ||  (imIndx~=userData.imIndx)
     userData.imIndx=imIndx;
         
     % Update roi
-    if userData.imRectHandle.isvalid
-        userData.ROI=getPosition(userData.imRectHandle);
+    if userData.imPolyHandle.isvalid
+        userData.ROI=getPosition(userData.imPolyHandle);
     end    
 else
     userData.updateImage=0;
@@ -184,14 +186,14 @@ if userData.newFigure || userData.updateImage
     end
 end
 
-if userData.imRectHandle.isvalid
-    % Update the imrect position
-    setPosition(userData.imRectHandle,userData.ROI)
+if userData.imPolyHandle.isvalid
+    % Update the imPoly position
+    setPosition(userData.imPolyHandle,userData.ROI)
 else
-    % Create a new imrect object and store the handle
-    userData.imRectHandle = imrect(get(imHandle,'Parent'),userData.ROI);
-    fcn = makeConstrainToRectFcn('imrect',get(imHandle,'XData'),get(imHandle,'YData'));
-    setPositionConstraintFcn(userData.imRectHandle,fcn);
+    % Create a new imPoly object and store the handle
+    userData.imPolyHandle = impoly(get(imHandle,'Parent'),userData.ROI);
+    fcn = makeConstrainToRectFcn('impoly',get(imHandle,'XData'),get(imHandle,'YData'));
+    setPositionConstraintFcn(userData.imPolyHandle,fcn);
 end
 
 set(handles.figure1, 'UserData', userData);
@@ -253,10 +255,10 @@ end
 
 % Read ROI if crop window is still visible
 update_data(hObject,eventdata,handles);
-assert(userData.imRectHandle.isvalid);
+assert(userData.imPolyHandle.isvalid);
 
 % Create ROI mask and save it in the outputDirectory
-mask=createMask(userData.imRectHandle);
+mask=createMask(userData.imPolyHandle);
 maskPath = fullfile(outputDirectory,'roiMask.tif');
 imwrite(mask,maskPath);
 
