@@ -266,7 +266,7 @@ if ~isempty(overlayProc)
         'Position',[20 hPosition2 100 20],'Tag','text_dragtailLength',...
         'String',' Dragtail length','HorizontalAlignment','left');
     uicontrol(overlayPanel,'Style','edit','Position',[120 hPosition2 50 20],...
-        'String','1','BackgroundColor','white','Tag','edit_dragtailLength',...
+        'String','10','BackgroundColor','white','Tag','edit_dragtailLength',...
         'Callback',@(h,event) redrawOverlays(guidata(h)));
     
     hPosition2=hPosition2+20;
@@ -459,7 +459,7 @@ hPosition=10;
 uicontrol(moviePanel, 'Style', 'pushbutton','String', 'Run movie',...
     'Position', [10 hPosition 100 20],'Callback',@(h,event) runMovie(h,guidata(h)));
 uicontrol(moviePanel, 'Style', 'checkbox','Tag','checkbox_saveMovie',...
-    'Value',1,'String', 'Save movie','Position', [150 hPosition 100 20]);
+    'Value',0,'String', 'Save movie','Position', [150 hPosition 100 20]);
 uicontrol(moviePanel, 'Style', 'checkbox','Tag','checkbox_saveFrames',...
     'Value',0,'String', 'Save frames','Position', [250 hPosition 100 20]);
 
@@ -708,14 +708,12 @@ if ~get(handles.checkbox_timeStamp,'Value'), return; end
 getFigure(handles,'Movie');
 
 frameNr=get(handles.slider_frame,'Value');
-width = userData.MO.imSize_(2)/20;
 time= (frameNr-1)*userData.MO.timeInterval_;
 p=sec2struct(time);
 props=get(handles.popupmenu_timeStampLocation,{'String','Value'});
 location=props{1}{props{2}};
-hTimeStamp = plotScaleBar(width,'Label',p.str,'Location',location);
+hTimeStamp = plotTimeStamp(p.str,'Location',location);
 set(hTimeStamp,'Tag','timeStamp');
-delete(hTimeStamp(1))
 
 function setCLim(handles)
 clim=[str2double(get(handles.edit_cmin,'String')) ...
