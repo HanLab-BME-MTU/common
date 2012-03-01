@@ -260,6 +260,20 @@ if ~isempty(overlayProc)
         'Position',[10 hPosition2 200 20],'Tag','text_vectorFieldOptions',...
         'String','Vector field options','HorizontalAlignment','left','FontWeight','bold');
     
+    
+    hPosition2=hPosition2+30;
+    uicontrol(overlayPanel,'Style','text',...
+        'Position',[20 hPosition2 100 20],'Tag','text_dragtailLength',...
+        'String',' Dragtail length','HorizontalAlignment','left');
+    uicontrol(overlayPanel,'Style','edit','Position',[120 hPosition2 50 20],...
+        'String','1','BackgroundColor','white','Tag','edit_dragtailLength',...
+        'Callback',@(h,event) redrawOverlays(guidata(h)));
+    
+    hPosition2=hPosition2+20;
+    uicontrol(overlayPanel,'Style','text',...
+        'Position',[10 hPosition2 200 20],'Tag','text_trackOptions',...
+        'String','Track options','HorizontalAlignment','left','FontWeight','bold');
+    
     % Create controls for selecting overlays
     hPosition2=hPosition2+50;
     nProc = numel(overlayProc);
@@ -509,7 +523,6 @@ figWidth = panelsLength+20;
 figHeight = panelsHeight+moviePanelHeight;
 set(mainFig,'Position',[sz(3)/50 (sz(4)-figHeight)/2 figWidth figHeight]);
 
-
 % Update handles structure and attach it to the main figure
 handles = guihandles(mainFig);
 guidata(handles.figure1, handles);
@@ -623,7 +636,8 @@ if strcmp(figName,'Movie')
     nx=userData.MO.imSize_(2);
     ny=userData.MO.imSize_(1);
     h = figure('Position',[sz(3)*.2 sz(4)*.2 nx ny],...
-        'Name',figName,'NumberTitle','off','Tag','viewerFig');
+        'Name',figName,'NumberTitle','off','Tag','viewerFig',...
+        'UserData',handles.figure1);
     
     % figure options for movie export
     iptsetpref('ImShowBorder','tight');
@@ -638,6 +652,12 @@ if strcmp(figName,'Movie')
     axes('Parent',h,'XLim',[0 userData.MO.imSize_(2)],...
         'YLim',[0 userData.MO.imSize_(1)],'Position',[0.05 0.05 .9 .9]);
     set(handles.figure1,'UserData',userData);
+    
+    % Set the zoom properties
+    hZoom=zoom(h);
+    hPan=pan(h);
+    set(hZoom,'ActionPostCallback',@(h,event)panZoomCallback(h));
+    set(hPan,'ActionPostCallback',@(h,event)panZoomCallback(h));
 else
     h = figure('Name',figName,'NumberTitle','off','Tag','viewerFig');
 end
@@ -776,6 +796,13 @@ set(handles.popupmenu_colormap,'Value',iCmap,'Enable',enableState);
 setScaleBar(handles,'imageScaleBar');
 setTimeStamp(handles);
 
+function panZoomCallback(h)
+
+% Reset the scaleBar
+handles=guidata(get(h,'UserData'));
+setScaleBar(handles,'imageScaleBar');
+setTimeStamp(handles);
+
 function redrawOverlays(handles)
 if ~isfield(handles,'uipanel_overlay'), return; end
 
@@ -823,8 +850,10 @@ end
 
 % Draw or delete the overlay depending on the checkbox value
 if get(hObject,'Value')
+    vectorScale = str2double(get(handles.edit_vectorFieldScale,'String'));
+    dragtailLength = str2double(get(handles.edit_dragtailLength,'String'));
     userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,...
-        'vectorScale',str2double(get(handles.edit_vectorFieldScale,'String')));
+        'vectorScale',vectorScale,'dragtailLength',dragtailLength);
 else
     h=findobj('Tag',graphicTag);
     if ~isempty(h), delete(h); end

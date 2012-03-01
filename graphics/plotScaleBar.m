@@ -78,6 +78,8 @@ else
     x0 = dx;
 end
 
+x0 = x0+XLim(1);
+y0 = y0+YLim(1);
 
 % text alignment if > scalebar width
 if textWidth > width
@@ -98,8 +100,6 @@ textProps = {'Color', color, 'FontUnits', 'normalized',...
     'VerticalAlignment', 'Top',...
     'HorizontalAlignment', halign};
 
-x0 = x0+XLim(1);
-y0 = y0+YLim(1);
 
 hScaleBar(1) = fill([x0 x0+width x0+width x0], [y0+height y0+height y0 y0],...
     color, 'EdgeColor', 'none', 'Parent', ip.Results.Handle);
