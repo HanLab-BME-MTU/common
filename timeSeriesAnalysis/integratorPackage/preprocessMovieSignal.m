@@ -180,7 +180,7 @@ if isa(movieObject,'MovieList')
         energy = NaN(nBands(iInput),3);
         
         % Calculate energy per input per band for all movies
-        validBands=~cellfun(@isempty,input(iInput).energyData);
+        validBands=cellfun(@numel,input(iInput).energyData)>=2;
         for iBand=find(validBands);
             [energy(iBand,1), energy(iBand,2:3)] = ...
                 getWindowsBandEnergy(input(iInput).energyData{iBand},p.nBoot,p.alpha);

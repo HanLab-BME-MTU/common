@@ -54,7 +54,7 @@ funParams = userData.crtProc.funParams_;
 
 % Set up available input channels
 set(handles.listbox_availableMovies,'String',userData.ML.movieDataFile_, ...
-    'UserData',1:numel(userData.ML.getMovies));
+    'UserData',1:numel(userData.ML.movies_));
 
 % Set up available input processes
 allProc = userData.crtProc.getSamplingProcesses;
@@ -103,12 +103,9 @@ set(handles.edit_BandMin,'String',funParams.BandMin);
 set(handles.edit_BandMax,'String',funParams.BandMax);
 userData.SliceIndex=funParams.SliceIndex;
 userData.previewFig=-1;
-userData.setFig=-1;
 
-userData.processingTools = funParams.processingTools;
-userData.availableTools = SignalProcessingProcess.getProcessingTools;
-set(handles.popupmenu_tools,'String',{userData.availableTools.name},...
-    'UserData',{userData.availableTools.GUI});
+userData.tools = SignalProcessingProcess.getProcessingTools;
+set(handles.popupmenu_tools,'String',{userData.tools.name},'UserData',{userData.tools.GUI});
 
 % Choose default command line output for signalProcessingProcessGUI
 handles.output = hObject;
@@ -246,7 +243,7 @@ userData.movieID=movieProps{1}(movieProps{2});
 p.ProcessName = get(handles.listbox_selectedProcesses,'UserData');
 
 % Retrieve input 
-corrProc = SignalProcessingProcess(userData.ML.getMovies{userData.movieID},'');
+corrProc = SignalProcessingProcess(userData.ML.movies_{userData.movieID},'');
 parseProcessParams(corrProc,p);
 input = corrProc.getInput;
 nInput = numel(input);
@@ -254,7 +251,7 @@ nInput = numel(input);
 
 % Create a mask using the slice index
 alphamask = repmat(userData.SliceIndex{userData.movieID},1,...
-    userData.ML.getMovies{userData.movieID}.nFrames_);
+    userData.ML.movies_{userData.movieID}.nFrames_);
 hAxes = -ones(nInput,1);
 h = -ones(nInput,1);
 userData_fig.mainFig=handles.figure1;
@@ -266,11 +263,11 @@ for i=1:nInput;
     axesArgs={'hAxes',hAxes(i)};
     procID=input(i).processIndex;
     if ~isempty(input(i).channelIndex)
-        chanArgs={input(i).channelIndex,input(i).outputIndex};
+        chanArgs={input(i).channelIndex};
     else
         chanArgs={};
     end
-    h(i) = userData.ML.getMovies{userData.movieID}.processes_{procID}.draw(chanArgs{:},axesArgs{:});
+    h(i) = userData.ML.movies_{userData.movieID}.processes_{procID}.draw(chanArgs{:},axesArgs{:});
     hCbar = findobj(userData.previewFig,'Tag','Colorbar');
     delete(hCbar);    
     set(h(i),'HitTest','off','AlphaData',alphamask,'AlphaDataMapping','none');
@@ -402,7 +399,7 @@ if ishandle(userData.previewFig)
     delete(userData.previewFig)
 end
 funParams.SliceIndex=userData.SliceIndex;
-funParams.processingTools = userData.processingTools;
+
 % Get parameters
 
 
@@ -415,9 +412,7 @@ function pushbutton_addTool_Callback(hObject, eventdata, handles)
 
 userData=get(handles.figure1,'UserData');
 iTool = get(handles.popupmenu_tools,'Value');
-userData.processingTools(end+1) = struct('type',iTool,...
-    'parameters',userData.availableTools(iTool).parameters);
-set(handles.figure1,'UserData',userData);
+userData.crtProc.addTool(userData.tools(iTool));
 updateTools(hObject, eventdata, handles);
 
 % --- Executes on button press in pushbutton_removeTool.
@@ -430,16 +425,14 @@ h=findobj(handles.figure1,'-regexp','Tag',tag,'-and','Value',1);
 if isempty(h), return; end
 tokens=regexp(get(h,'Tag'),tag,'tokens');
 iTool = cellfun(@(x) str2double(x{1}),tokens);
-userData.processingTools(iTool)=[];
-set(handles.figure1,'UserData',userData);
+userData.crtProc.removeTools(iTool);
 updateTools(hObject, eventdata, handles);
 
 function updateTools(hObject, eventdata, handles)
 
 % Create templates for GUI generation
 userData= get(handles.figure1,'UserData');
-availableTools= userData.availableTools;
-tools= userData.processingTools;
+tools= userData.crtProc.funParams_.processingTools;
 nTools =numel(tools);
 
 createToolCheckbox= @(i,text,value) uicontrol(handles.uipanel_processingTools,...
@@ -448,7 +441,7 @@ createToolCheckbox= @(i,text,value) uicontrol(handles.uipanel_processingTools,..
 createToolSettingsButton= @(i,settingsGUI) uicontrol(handles.uipanel_processingTools,...
     'Style','pushbutton','String','Settings',...
     'Position',[350 10+20*(nTools-i) 100 20],'Tag',['settings_tool' num2str(i)],...
-    'UserData',settingsGUI,'Callback',@(h,event)setToolParameters(h,event,guidata(h)));
+    'Callback',@(h,event) settingsGUI(h,event,guidata(h)));
 
 
 values= zeros(nTools,1);
@@ -465,16 +458,11 @@ delete(h);
 resizeGUI(handles,20*nTools-20*numel(h)/2);
 
 for i =nTools:-1:1
-    createToolCheckbox(i,availableTools(tools(i).type).name,values(i));
-    createToolSettingsButton(i,availableTools(tools(i).type).GUI);
+    createToolCheckbox(i,tools(i).name,values(i));
+    createToolSettingsButton(i,tools(i).GUI);
 end
 % guidata(handles.figure1,guihandles(handles.figure1));
 
-function setToolParameters(h,eventdata,handles)
-userData= get(handles.figure1,'UserData');
-iTool = str2double(regexp(get(h,'Tag'),'settings_tool(\d+)','tokens','once'));
-settingGUI=get(h,'UserData');
-userData.setFig(iTool) = settingGUI(iTool,handles);
 
 function resizeGUI(handles,dh)
 
@@ -488,3 +476,6 @@ uicontrols = {'uipanel_input','uipanel_windows','axes_help','text_processName','
 for i=1:numel(uicontrols)
     set(handles.(uicontrols{i}),'Position',get(handles.(uicontrols{i}),'Position')+[0 dh 0 0]);
 end
+
+
+
