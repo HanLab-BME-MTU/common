@@ -36,7 +36,7 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             % Input check
             input=obj.getInput;
             nInput=numel(input);
-            nTools = numel(obj.funParams_.processingTools);
+            nTools = numel(obj.funParams_.tools);
             ip =inputParser;
             ip.addOptional('iInput1',1:nInput,@(x) all(ismember(x,1:nInput)));
             ip.addOptional('iInput2',1:nInput,@(x) all(ismember(x,1:nInput)));
@@ -55,7 +55,7 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             % Check input
             input=obj.getInput;
             nInput=numel(input);
-            tools=obj.funParams_.processingTools;
+            tools=obj.funParams_.tools;
             nTools = numel(tools);
             ip=inputParser;
             ip.addRequired('iInput1',@(x) isscalar(x) && ismember(x,1:nInput));
@@ -64,7 +64,7 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             ip.parse(iInput1,iInput2,iOutput);
             
             % Create specific output list for auto or cross correlation
-            allTools = obj.getProcessingTools;
+            allTools = obj.getTools;
             selectedTool = allTools(tools(iOutput).type);            
             
             % Load the data
@@ -108,8 +108,8 @@ classdef SignalProcessingProcess < TimeSeriesProcess
         
         function output = getDrawableOutput(obj)
 
-            allTools = obj.getProcessingTools;
-            tools = obj.funParams_.processingTools;
+            allTools = obj.getTools;
+            tools = obj.funParams_.tools;
             nOutput= numel(tools);
             output(nOutput,1)=struct();
             
@@ -125,7 +125,7 @@ classdef SignalProcessingProcess < TimeSeriesProcess
         end
         
         function title=getOutputTitle(obj,iInput1,iInput2,iOutput)
-            toolType =obj.funParams_.processingTools(iOutput).type;
+            toolType =obj.funParams_.tools(iOutput).type;
             if iInput1==iInput2,
                 switch toolType
                     case 1, name = 'autocorrelation';
@@ -147,11 +147,11 @@ classdef SignalProcessingProcess < TimeSeriesProcess
         
         
         function addTool(obj,tools)
-            obj.funParams_.processingTools(end+1)=tools;
+            obj.funParams_.tools(end+1)=tools;
         end
         
         function removeTool(obj,i)
-            obj.funParams_.processingTools(i)=[];
+            obj.funParams_.tools(i)=[];
         end
     end
     
@@ -189,15 +189,15 @@ classdef SignalProcessingProcess < TimeSeriesProcess
                 funParams.SliceIndex=true(winProc.nSliceMax_,1);
             end
             
-            tools = SignalProcessingProcess.getProcessingTools;
-            funParams.processingTools(1).type = 1;
-            funParams.processingTools(1).parameters = tools(1).parameters;
+            tools = SignalProcessingProcess.getTools;
+            funParams.tools(1).type = 1;
+            funParams.tools(1).parameters = tools(1).parameters;
         end
-        function tools = getProcessingTools()
+        function tools = getTools()
             % Correlation function
             tools(1).name = 'Correlation';
             tools(1).GUI = @correlationSettingsGUI;
-            tools(1).function = @getDataCorrelation;
+            tools(1).function = @computeSignalCorrelation;
             tools(1).outputList = {'lags','acf','acfBounds','bootstrapAcf',...
                 'bootstrapAcfBounds','ccf','ccfBounds','bootstrapCcf',...
                 'bootstrapCcfBounds'};
@@ -211,7 +211,7 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             tools(2).outputList = {'lags','pacf','pacfBounds','bootstrapPacf',...
                 'bootstrapPacfBounds'};
             tools(2).GUI = @correlationSettingsGUI;
-            tools(2).function = @getDataPartialCorrelation;
+            tools(2).function = @computeSignalPartialCorrelation;
             tools(2).formatData = @formatCorrelation;
             tools(2).xlabel = 'Lags (s)';
             tools(2).ylabel = @(i,j) getPartialCorrelationLabel(i,j);
@@ -222,7 +222,7 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             tools(3).output = 'coherence';
             tools(3).outputList = {'f','avgCoh','cohCI'};
             tools(3).GUI = @coherenceSettingsGUI;
-            tools(3).function = @getDataCoherence;   
+            tools(3).function = @computeSignalCoherence;   
             tools(3).formatData = @formatCoherence;
             tools(3).parameters = struct('nBoot',1e4,'alpha',.01,...
                 'window','hamming','noLap',.5,'nWin',8);

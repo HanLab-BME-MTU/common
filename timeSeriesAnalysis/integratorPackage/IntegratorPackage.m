@@ -28,9 +28,18 @@ classdef IntegratorPackage < Package
         
         function [status processExceptions] = sanityCheck(obj,varargin)
             % Check that the frame rate is present
-%             if isempty(obj.owner_.timeInterval_)
-%                 error('Missing frame rate! Please fill the time interval!');
-%             end
+            %             if isempty(obj.owner_.timeInterval_)
+            %                 error('Missing frame rate! Please fill the time interval!');
+            %             end
+            nMovies=numel(obj.owner_.movieDataFile_);
+            signalInput=cell(nMovies,1);
+            for i=1:nMovies, signalInput{i}=obj.owner_.getMovies{i}.getSampledOutput; end
+            nInput=unique(cellfun(@numel,signalInput));
+            assert(isscalar(nInput),'Different number of sampled signal per movie');
+            for i=1:nInput, 
+                signalName = unique(cellfun(@(x) x(i).name,signalInput,'Unif',false));
+                assert(numel(signalName)==1,'Different signal type in betwen movies');
+            end
             [status processExceptions] = sanityCheck@Package(obj,varargin{:});
         end
         

@@ -1,4 +1,4 @@
-function outFilePaths = getDataCorrelation(input,p,p2,varargin)
+function outFilePaths = computeSignalCorrelation(input,p,p2,varargin)
 
 % Check input
 ip=inputParser;

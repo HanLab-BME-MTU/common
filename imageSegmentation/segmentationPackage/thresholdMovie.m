@@ -190,7 +190,7 @@ for iChan = 1:nChanThresh
 
         %Load the current image
         if isempty(p.ProcessIndex)
-            currImage = imread([imDirs{iChan} filesep imageFileNames{iChan}{iImage}]);
+            currImage = movieData.channels_(iChan).loadImage(iImage);
         else
             currImage = movieData.processes_{p.ProcessIndex}.loadOutImage(p.ChannelIndex(iChan),iImage);
         end

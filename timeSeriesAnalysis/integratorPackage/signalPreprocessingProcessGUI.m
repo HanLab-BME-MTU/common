@@ -67,29 +67,67 @@ end
 set(handles.listbox_selectedMovies,'String',movieString,...
     'UserData',movieIndex);
 
-% Set up available input processes
-allProc =  userData.crtProc.getSamplingProcesses;
-allProcString = cellfun(@(x) eval([x '.getName']),allProc,'UniformOutput',false);
-set(handles.listbox_availableProcesses,'String',allProcString,'UserData',allProc);
+signal=userData.MD.getMovies{1}.getSampledOutput;
+nSignal=numel(signal);
+% Create templates for GUI generation
+allTrends=SignalPreprocessingProcess.getTrends;
 
-% Set up selected input processes
-selProc = funParams.ProcessName;
-selProcString = cellfun(@(x) eval([x '.getName']),selProc,'UniformOutput',false);
-set(handles.listbox_selectedProcesses,'String',selProcString,'UserData',selProc);
+createSignalText= @(pos,i) uicontrol(handles.uipanel_signal,'Style','text',...
+    'Position',[20 pos 200 20],'Tag',['text_signal_' num2str(i)],...
+    'String',signal(i).name,'HorizontalAlignment','left');
+createTrendMenu= @(pos,i) uicontrol(handles.uipanel_signal,'Style','popupmenu',...
+    'Position',[250 pos 140 20],'Tag',['popupmenu_trendType_' num2str(i)],...
+    'String',{allTrends.name},'UserData',[allTrends.type],...
+    'Value',find([allTrends.type]==funParams.trendType(i)));
+createOutlierBox= @(pos,i) uicontrol(handles.uipanel_signal,'Style','edit',...
+    'Position',[420 pos 50 20],'Tag',['edit_kSigma_' num2str(i)],...
+    'String',funParams.kSigma(i));
+
+% Create checkboxes for samplable processes
+hPosition =10;
+for i = nSignal:-1:1
+    createSignalText(hPosition,i);
+    createTrendMenu(hPosition,i);
+    createOutlierBox(hPosition,i);
+    hPosition=hPosition+20;
+end
+
+
+% Add cosmetic title for channels
+uicontrol(handles.uipanel_signal,'Style','text',...
+    'Position',[20 hPosition 150 20],'String','Signal name');
+uicontrol(handles.uipanel_signal,'Style','text',...
+    'Position',[250 hPosition 140 20],'String','Trend to remove');
+uicontrol(handles.uipanel_signal,'Style','text',...
+    'Position',[420 hPosition 50 20],'String','Outlier threshold');
+
+% Fix GUI position/size
+a=get(get(handles.uipanel_signal,'Children'),'Position');
+P=vertcat(a{:});
+panelSize = [max(P(:,1)+P(:,3))+10 max(P(:,2)+P(:,4))+20];
+pos = get(handles.uipanel_signal,'Position');
+dh= panelSize(2) - pos(4);
+set(handles.figure1,'Position',get(handles.figure1,'Position')+[0 -dh 0 dh]);
+set(handles.uipanel_signal,'Position',get(handles.uipanel_signal,'Position')+[0 0 0 dh]);
+
+uicontrols = {'uipanel_movies','axes_help','text_processName','text_copyright'};
+for i=1:numel(uicontrols)
+    set(handles.(uicontrols{i}),'Position',get(handles.(uicontrols{i}),'Position')+[0 dh 0 0]);
+end
+
 
 % Set preprocessing parameters
-set(handles.edit_kSigma,'String',funParams.kSigma);
 set(handles.edit_nBoot,'String',funParams.nBoot);
 set(handles.edit_alpha,'String',funParams.alpha);
 
-allTrends=SignalPreprocessingProcess.getTrends;
-set(handles.popupmenu_trendType,'String',{allTrends.name},'UserData',[allTrends.type],...
-    'Value',find([allTrends.type]==funParams.trendType));
+
+% Update handles structure and attach it to the main figure
+handles = guihandles(handles.figure1);
 
 % Choose default command line output for signalPreprocessingProcessGUI
 handles.output = hObject;
 
-% Update user data and GUI data
+% Update user data and GUI data 
 set(hObject, 'UserData', userData);
 guidata(hObject, handles);
 
@@ -196,6 +234,7 @@ set(listbox_selected, 'String', selectedProps{1},'UserData',selectedProps{2},...
 % --- Executes on button press in pushbutton_done.
 function pushbutton_done_Callback(hObject, eventdata, handles)
 
+
 % Check user input
 if isempty(get(handles.listbox_selectedMovies, 'String'))
     errordlg('Please select at least one input process from ''Available Movies''.','Setting Error','modal')
@@ -203,19 +242,26 @@ if isempty(get(handles.listbox_selectedMovies, 'String'))
 end
 funParams.MovieIndex = get(handles.listbox_selectedMovies, 'UserData');
 
-if isempty(get(handles.listbox_selectedProcesses, 'String'))
-    errordlg('Please select at least one input process from ''Available Processes''.','Setting Error','modal')
-    return;
-end
-funParams.ProcessName = get(handles.listbox_selectedProcesses,'UserData');
-
-kSigma = str2double(get(handles.edit_kSigma,'String'));
-if isnan(kSigma) || ~ismember(kSigma,1:10)
-    errordlg(['Please enter a valid value for the' get(handles.text_kSigma,'String')],...
-        'Setting error','modal');
-    return;
+h=findobj('-regexp','Tag','text_signal_(\d)');
+nSignal=numel(h);
+kSigma=NaN(nSignal,1);
+for i=1:nSignal
+    kSigma(i) = str2double(get(handles.(['edit_kSigma_'  num2str(i)]),'String'));
+    if isnan(kSigma(i)) || ~ismember(kSigma(i),1:10)
+        errordlg(['Please enter a valid outlie threshold for the '...
+            get(handles.(['text_signal_' num2str(i)]),'String')],...
+            'Setting error','modal');
+        return;
+    end
 end
 funParams.kSigma = kSigma;
+
+% Retrieve trendType
+funParams.trendType=NaN(nSignal,1);
+for i=1:nSignal
+    props = get(handles.(['popupmenu_trendType_' num2str(i)]),{'UserData','Value'});
+    funParams.trendType(i)=props{1}(props{2});
+end
 
 nBoot = str2double(get(handles.edit_nBoot,'String'));
 if isnan(nBoot) || nBoot<=0 || round(nBoot) ~= nBoot
@@ -233,9 +279,7 @@ if isnan(alpha) || alpha<=0 || alpha >=1
 end
 funParams.alpha = alpha;
 
-% Retrieve trendType
-props = get(handles.popupmenu_trendType,{'UserData','Value'});
-funParams.trendType=props{1}(props{2});
+
 
 % Process Sanity check ( only check underlying data )
 userData = get(handles.figure1, 'UserData');

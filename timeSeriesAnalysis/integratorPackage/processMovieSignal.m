@@ -35,9 +35,9 @@ function processMovieSignal(movieObject,varargin)
 %       sampling processes to retrieve the sampled output from. All output
 %       of the process will be preprocessed.
 %
-%       ('processingTools'-> array of structures) The processing tools to
+%       ('tools'-> array of structures) The processing tools to
 %       apply to the input time-series. Each tools should contain a type
-%       field indexing the type of tools(see getProcessingTools static
+%       field indexing the type of tools(see getTools static
 %       method of SignalProcessingProcess) and a parameters field giving
 %       the parameters to use when processing the time-series.
 
@@ -204,13 +204,13 @@ mkdir(p.OutputDirectory);
 p.nFrames=nFrames;
 p.timeInterval=timeInterval;
 nInput= numel(input);
-nTools = numel(p.processingTools);
+nTools = numel(p.tools);
 outFilePaths =cell(nInput,nInput,nTools);
 for i=1:nTools
     % Retrieve i-th tool function from the static method
-    allTools = signalProc.getProcessingTools;
-    selectedTool = allTools(p.processingTools(i).type);
-    toolParams=p.processingTools(i).parameters;
+    allTools = signalProc.getTools;
+    selectedTool = allTools(p.tools(i).type);
+    toolParams=p.tools(i).parameters;
     
     % Create output subdirectory for each tool
     toolParams.outputDir = fullfile(p.OutputDirectory,[num2str(i) '_' selectedTool.name]);

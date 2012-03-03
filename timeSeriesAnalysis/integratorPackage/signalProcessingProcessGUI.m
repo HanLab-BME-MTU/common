@@ -22,7 +22,7 @@ function varargout = signalProcessingProcessGUI(varargin)
 
 % Edit the above text to modify the response to help signalProcessingProcessGUI
 
-% Last Modified by GUIDE v2.5 30-Jan-2012 14:37:06
+% Last Modified by GUIDE v2.5 02-Mar-2012 22:38:35
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -56,14 +56,7 @@ funParams = userData.crtProc.funParams_;
 set(handles.listbox_availableMovies,'String',userData.ML.movieDataFile_, ...
     'UserData',1:numel(userData.ML.movies_));
 
-% Set up available input processes
-allProc = userData.crtProc.getSamplingProcesses;
-allProcString = cellfun(@(x) eval([x '.getName']),allProc,'UniformOutput',false);
-set(handles.listbox_availableProcesses,'String',allProcString,'UserData',allProc);
-
-
 movieIndex = funParams.MovieIndex;
-selProc = funParams.ProcessName;
 
 % Find any parent process
 parentProc = userData.crtPackage.getParent(userData.procID);
@@ -75,7 +68,6 @@ if isempty(userData.crtPackage.processes_{userData.procID}) && ~isempty(parentPr
         for i = parentProc
             parentParams = userData.crtPackage.processes_{i}.funParams_;
             movieIndex = intersect(movieIndex,parentParams.MovieIndex);
-            selProc = intersect(selProc,parentParams.ProcessName);
         end
     end
 end
@@ -89,22 +81,13 @@ end
 set(handles.listbox_selectedMovies,'String',movieString,...
     'UserData',movieIndex,'Callback',@(h,event)update_preview(h,event,guidata(h)));
 
-% Set up selected input processe
-if ~isempty(selProc)
-    
-    selProcString = cellfun(@(x) eval([x '.getName']),selProc,'UniformOutput',false);
-else
-    selProcString = {};
-end  
-set(handles.listbox_selectedProcesses,'String',selProcString,'UserData',selProc);
-
 % Windows selection parameters
 set(handles.edit_BandMin,'String',funParams.BandMin);
 set(handles.edit_BandMax,'String',funParams.BandMax);
 userData.SliceIndex=funParams.SliceIndex;
 userData.previewFig=-1;
 
-userData.tools = SignalProcessingProcess.getProcessingTools;
+userData.tools = SignalProcessingProcess.getTools;
 set(handles.popupmenu_tools,'String',{userData.tools.name},'UserData',{userData.tools.GUI});
 
 % Choose default command line output for signalProcessingProcessGUI
@@ -368,11 +351,6 @@ if isempty(get(handles.listbox_selectedMovies, 'String'))
     return;
 end
 
-if isempty(get(handles.listbox_selectedProcesses, 'String'))
-    errordlg('Please select at least one input process from ''Available Processes''.','Setting Error','modal')
-    return;
-end
-
 bandMin = str2double(get(handles.edit_BandMin,'String'));
 if isnan(bandMin) || bandMin<1
     errordlg('Please enter a valid value for the minimum band of windows to correlate',...
@@ -388,7 +366,6 @@ if isnan(bandMax)
 end
 
 funParams.MovieIndex = get(handles.listbox_selectedMovies, 'UserData');
-funParams.ProcessName = get(handles.listbox_selectedProcesses, 'UserData');
 funParams.BandMin=bandMin;
 funParams.BandMax=bandMax;
 
@@ -432,13 +409,13 @@ function updateTools(hObject, eventdata, handles)
 
 % Create templates for GUI generation
 userData= get(handles.figure1,'UserData');
-tools= userData.crtProc.funParams_.processingTools;
+tools= userData.crtProc.funParams_.tools;
 nTools =numel(tools);
 
-createToolCheckbox= @(i,text,value) uicontrol(handles.uipanel_processingTools,...
+createToolCheckbox= @(i,type,value) uicontrol(handles.uipanel_tools,...
     'Style','checkbox','Tag',['checkbox_tool' num2str(i)],'Value',value,...
-    'Position',[40 10+20*(nTools-i) 250 20],'String',[' ' text],'HorizontalAlignment','left');
-createToolSettingsButton= @(i,settingsGUI) uicontrol(handles.uipanel_processingTools,...
+    'Position',[40 10+20*(nTools-i) 250 20],'String',[' ' userData.tools(i).name],'HorizontalAlignment','left');
+createToolSettingsButton= @(i,settingsGUI) uicontrol(handles.uipanel_tools,...
     'Style','pushbutton','String','Settings',...
     'Position',[350 10+20*(nTools-i) 100 20],'Tag',['settings_tool' num2str(i)],...
     'Callback',@(h,event) settingsGUI(h,event,guidata(h)));
@@ -458,7 +435,7 @@ delete(h);
 resizeGUI(handles,20*nTools-20*numel(h)/2);
 
 for i =nTools:-1:1
-    createToolCheckbox(i,tools(i).name,values(i));
+    createToolCheckbox(i,tools(i).type,values(i));
     createToolSettingsButton(i,tools(i).GUI);
 end
 % guidata(handles.figure1,guihandles(handles.figure1));
@@ -466,8 +443,8 @@ end
 
 function resizeGUI(handles,dh)
 
-toolsUicontrols = get(handles.uipanel_processingTools,'Children');
-resizableHandles=[handles.uipanel_processingTools,handles.figure1];
+toolsUicontrols = get(handles.uipanel_tools,'Children');
+resizableHandles=[handles.uipanel_tools,handles.figure1];
 arrayfun(@(x) set(x,'Position',get(x,'Position')+[0 0 0 dh]),resizableHandles);
 arrayfun(@(x) set(x,'Position',get(x,'Position')+[0 dh 0 0]),toolsUicontrols);
 
@@ -476,6 +453,3 @@ uicontrols = {'uipanel_input','uipanel_windows','axes_help','text_processName','
 for i=1:numel(uicontrols)
     set(handles.(uicontrols{i}),'Position',get(handles.(uicontrols{i}),'Position')+[0 dh 0 0]);
 end
-
-
-

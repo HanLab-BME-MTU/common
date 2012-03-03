@@ -97,9 +97,9 @@ else
 end
 
 % Create movie channels
-channelPath=cell(nChan,1);
-movieChannels(nChan,1)=Channel();
-channelArgs=cell(nChan,1);
+channelPath=cell(1,nChan);
+movieChannels(1,nChan)=Channel();
+channelArgs=cell(1,nChan);
 for i=1:nChan
     channelArgs{i}={};
 

@@ -96,13 +96,11 @@ if isa(movieObject,'MovieList')
         movieSignalPreProc{i} = movieData.processes_{iProc};
         parseProcessParams(movieData.processes_{iProc},movieParams);
         movieSignalPreProc{i}.run();
-        movieInput{i}=movieSignalPreProc{i}.getInput;
     end  
     
     % Check input is the same for all movies
-    assert(all(cellfun(@(x) isequal(x,movieInput{1}),movieInput)));
-    input=movieInput{1};
-    nInput= numel(movieInput{1});
+    input=movieObject.getMovies{p.MovieIndex(i)}.getSampledOutput;
+    nInput= numel(input);
 
     % Set input path
     paths=cellfun(@(x) x.outFilePaths_,movieSignalPreProc,'Unif',false);
@@ -129,7 +127,7 @@ if isa(movieObject,'MovieList')
   
 else  
     % Load sampled output
-    input = signalPreProc.getInput;
+    input = movieObject.getSampledOutput;
     nInput=numel(input);
     inFilePaths = cell(nInput,1);
     inData = cell(nInput,1);
@@ -216,7 +214,7 @@ else
     for iInput=1:nInput
         % Show log
         disp(logMsg(iInput));
-        if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
+        if ishandle(wtBar), waitbar(sum(nBands(1:iInput-1))/nBandsTot ,wtBar,logMsg(iInput)); end
         
         % Initialize data and range ouptut
         rawData= cell(nBands(iInput),1);
@@ -230,7 +228,7 @@ else
         for iBand=1:nBands(iInput)
             % Get iBand data and remove outliers
             rawData{iBand} =squeeze(inData{iInput}(:,iBand,:));
-            rawData{iBand}(detectOutliers(rawData{iBand},p.kSigma)) = NaN;
+            rawData{iBand}(detectOutliers(rawData{iBand},p.kSigma(iInput))) = NaN;
             
             % Check percentage of NaN and remove linear trend for energy
             validSlices = (nPoints-sum(isnan(rawData{iBand}),2))>=minP;
@@ -238,9 +236,9 @@ else
                 removeMeanTrendNaN(rawData{iBand}(validSlices,:)',1);
             
             % Recompute signal detrending if using a different trend type
-            if p.trendType~=1
+            if p.trendType(iInput)~=1
                 [data{iBand}(validSlices) ,range{iBand}(validSlices)] = ...
-                    removeMeanTrendNaN(rawData{iBand}(validSlices,:)',p.trendType);
+                    removeMeanTrendNaN(rawData{iBand}(validSlices,:)',p.trendType(iInput));
             else
                 data{iBand}(validSlices)=energyData{iBand};
                 range{iBand}(validSlices)=energyRange{iBand};

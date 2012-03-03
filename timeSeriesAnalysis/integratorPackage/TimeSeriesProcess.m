@@ -23,65 +23,14 @@ classdef TimeSeriesProcess < Process
         end
         
         function input = getInput(obj,index)
-            % Read process names from parameters
-            procNames =obj.funParams_.ProcessName;
-            nProc = numel(procNames);
-            
-            % Initialize process status
-            procIndex = zeros(nProc,1);
-            outputList = cell(nProc,1);
-            isMovieProc = false(nProc,1);
-            procOutput = cell(nProc,1);
-            
+            % Read process names from parameters            
             if isa(obj.owner_,'MovieList');
-                movie=obj.owner_.getMovies{1}; % Quick fix for movie lists
+                input=obj.owner_.getMovies{1}.getSampledOutput; % Quick fix for movie lists
             else
-                movie=obj.owner_;
+                input=obj.owner_.getSampledOutput;
             end
+            if nargin>1, input=input(index); end
                 
-            % For each input process check the output validity
-            for i=1:nProc
-                procIndex(i) =movie.getProcessIndex(procNames{i},1);
-                proc =movie.processes_{procIndex(i)};
-                outputList{i} = proc.getDrawableOutput;
-                isMovieProc(i) = strcmp('movieGraph',outputList{i}(1).type);
-                procOutput{i} = proc.checkChannelOutput;
-                assert(any(procOutput{i}),[proc.getName ' has no valid output !' ...
-                    'Please apply ' proc.getName ' before running correlation!']);             
-            end
-            
-            % Push all input into a structre
-            nInput = sum(cellfun(@(x)sum(x(:)),procOutput));
-            if nInput==0, input=[]; return; end
-            input(nInput,1)=struct(); % Initialize time-series input structure
-            iInput=0;
-            for iProc=1:nProc
-                for iOutput = 1:size(procOutput{iProc},1)
-                    if isMovieProc(iProc)
-                        % Add processIndex and output variable/name
-                        iInput=iInput+1;
-                        input(iInput).processIndex = procIndex(iProc);
-                        input(iInput).var = outputList{iProc}(iOutput).var;
-                        input(iInput).channelIndex = [];
-                        input(iInput).name = regexprep(outputList{iProc}(iOutput).name,' map','');
-                    else
-                        % Loop over channels with valid output
-                        for iChan=find(procOutput{iProc}(iOutput,:))
-                            iInput=iInput+1;
-                            input(iInput).processIndex = procIndex(iProc);
-                            input(iInput).var = outputList{iProc}(iOutput).var;
-                            input(iInput).outputIndex = iOutput;
-                            input(iInput).channelIndex = iChan;
-                            input(iInput).name = [regexprep(outputList{iProc}(iOutput).name,' map','') ' channel '...
-                                num2str(iChan)];
-                        end
-                    end
-                end
-            end
-            if nargin>1
-                assert(all(ismember(index,1:numel(input))));
-                input=input(index);
-            end
         end  
         
         function status = checkOutput(obj,varargin)

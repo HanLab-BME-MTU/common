@@ -1,4 +1,4 @@
-function outFilePaths = getDataCoherence(input,p,p2,varargin)
+function outFilePaths = computeSignalCoherence(input,p,p2,varargin)
 % Check input
 ip=inputParser;
 ip.addRequired('input',@isstruct);
