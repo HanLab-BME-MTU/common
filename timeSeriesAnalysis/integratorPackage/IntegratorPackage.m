@@ -58,7 +58,7 @@ classdef IntegratorPackage < Package
         end
         
         function name = getName()
-            name='Integrator';
+            name='Image BLAST';
         end
         
         function varargout = GUI(varargin)

@@ -1,11 +1,10 @@
-function outFilePaths = computeSignalCoherence(input,p,p2,varargin)
+function outFilePaths = computeSignalCoherence(signal,params,varargin)
 % Check input
 ip=inputParser;
-ip.addRequired('input',@isstruct);
-ip.addRequired('p',@isstruct);
-ip.addRequired('p2',@isstruct);
+ip.addRequired('signal',@isstruct);
+ip.addRequired('params',@isstruct);
 ip.addParamValue('waitbar',-1,@ishandle);
-ip.parse(input,p,p2,varargin{:})
+ip.parse(signal,params,varargin{:})
 
 % Retrieve waitbar or create one if necessary
 if ~isempty(ip.Results.waitbar)
@@ -17,19 +16,19 @@ else
 end
 
 % Set up output files
-nInput=numel(input);
-outFilePaths=cell(nInput,nInput);
-for i=1:nInput
+nSignal=numel(signal);
+outFilePaths=cell(nSignal,nSignal);
+for i=1:nSignal
     for j=1:i-1
-        outFilePaths{i,j} = [p2.outputDir filesep 'coherence' ...
-            input(i).name '_' input(j).name '.mat'];
+        outFilePaths{i,j} = [params.OutputDirectory filesep 'coherence' ...
+            signal(i).name '_' signal(j).name '.mat'];
     end
-    outFilePaths{i,i} = [p2.outputDir filesep 'powerSpectrum' ...
-        input(i).name '.mat'];
+    outFilePaths{i,i} = [params.OutputDirectory filesep 'powerSpectrum' ...
+        signal(i).name '.mat'];
 end
 disp('Starting calculating coherence...')
 disp('Saving results under:');
-disp(p2.outputDir);
+disp(params.OutputDirectory);
 
 %% Coherence calculation
 %At least 50 points are needed to calculate the ACF
@@ -37,58 +36,56 @@ disp(p2.outputDir);
 %Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
 minP     = 50;
 
-nfft = 2^nextpow2(p.nFrames); % cf pwelch
+nfft = 2^nextpow2(params.nFrames); % cf pwelch
 nFreqMax=nfft/2+1;
-fs =1/p.timeInterval;
+fs =1/params.timeInterval;
 f= fs/2*linspace(0,1,nfft/2 +1); %#ok<NASGU>
-data={input.data};
-range={input.range};
+data={signal.data};
+range={signal.range};
 nBands =cellfun(@numel,data);
 
-padTS = @(x) padarray(x,p.nFrames-length(x),0,'post');
+padTS = @(x) padarray(x,params.nFrames-length(x),0,'post');
 
-logMsg = @(i,j) ['Calculating ' input(i).name '/' input(j).name ' coherence'];
+logMsg = @(i,j) ['Calculating ' signal(i).name '/' signal(j).name ' coherence'];
 
 % Calculate spectral density coherence
-for iInput1=1:nInput
-    for iInput2=1:iInput1-1
-        disp(logMsg(iInput1,iInput2));
+for iSignal1=1:nSignal
+    for iSignal2=1:iSignal1-1
+        disp(logMsg(iSignal1,iSignal2));
         
         % Initialize cross-correlation function and bounds
-        avgCoh = NaN(nFreqMax,nBands(iInput1),nBands(iInput2));
-        cohCI = NaN(2,nFreqMax,nBands(iInput1),nBands(iInput2));
+        avgCoh = NaN(nFreqMax,nBands(iSignal1),nBands(iSignal2));
+        cohCI = NaN(2,nFreqMax,nBands(iSignal1),nBands(iSignal2));
         
-        if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput1,iInput2)); end
+        if ishandle(wtBar), waitbar(0,wtBar,logMsg(iSignal1,iSignal2)); end
         
         % Loop over bands and window slices
-        bands1=p.BandMin:min(nBands(iInput1),p.BandMax);
-        for i1=1:numel(bands1)
-            iBand1 = bands1(i1);
-            for iBand2=p.BandMin:min(nBands(iInput2),p.BandMax)
+        for iBand1=1:nBands(iSignal1)
+            for iBand2=1:nBands(iSignal2)
                 
                 % Find valid range and test minimum number of timepoints
-                nTimepoints = cellfun(@(x,y) length(intersect(x,y)),range{iInput2}{iBand2},...
-                    range{iInput1}{iBand1});
-                validSlices = nTimepoints>=minP & p.SliceIndex;
+                nTimepoints = cellfun(@(x,y) length(intersect(x,y)),range{iSignal2}{iBand2},...
+                    range{iSignal1}{iBand1});
+                validSlices = nTimepoints>=minP;
                 
                 if sum(validSlices)>0
                     % Concatenate time-series
-                    paddedTS1 = cellfun(padTS,data{iInput1}{iBand1}(validSlices),'Unif',false);
+                    paddedTS1 = cellfun(padTS,data{iSignal1}{iBand1}(validSlices),'Unif',false);
                     paddedTS1 = cat(2,paddedTS1{:});
-                    paddedTS2 = cellfun(padTS,data{iInput2}{iBand2}(validSlices),'Unif',false);
+                    paddedTS2 = cellfun(padTS,data{iSignal2}{iBand2}(validSlices),'Unif',false);
                     paddedTS2 = cat(2,paddedTS2{:});
                     
                     % Bootstrap coherence
-                    [c,cI]=coherenceBootstrap(paddedTS1,paddedTS2,p2.nWin,...
-                        p2.window,p2.noLap,fs,'alpha',p2.alpha,'nBoot',p2.nBoot);
+                    [c,cI]=coherenceBootstrap(paddedTS1,paddedTS2,params.nWin,...
+                        params.window,params.noLap,fs,'alpha',params.alpha,'nBoot',params.nBoot);
                     avgCoh(:,iBand1,iBand2)=c;
                     cohCI(:,:,iBand1,iBand2)=cI;
                 end
             end
-            if ishandle(wtBar), waitbar(i1/numel(bands1),wtBar); end
+            if ishandle(wtBar), waitbar(iBand1/nBands(iSignal1),wtBar); end
         end
         
-        save(outFilePaths{iInput1,iInput2},'f','avgCoh','cohCI');
+        save(outFilePaths{iSignal1,iSignal2},'f','avgCoh','cohCI');
     end
 end
 

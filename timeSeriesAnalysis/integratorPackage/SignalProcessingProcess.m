@@ -147,7 +147,12 @@ classdef SignalProcessingProcess < TimeSeriesProcess
         
         
         function addTool(obj,tools)
-            obj.funParams_.tools(end+1)=tools;
+            ip=inputParser;
+            ip.addRequired('tools',@isstruct)
+            ip.parse(tools);
+            
+            fields=fieldnames(tools);
+            obj.funParams_.tools(end+1)=rmfield(tools,fields(~ismember(fields,{'type','parameters'})));
         end
         
         function removeTool(obj,i)
@@ -172,30 +177,21 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             
             % Set default parameters
             funParams.OutputDirectory = [outputDir  filesep 'signalProcessing'];
-            funParams.ProcessName=TimeSeriesProcess.getSamplingProcesses;
             if isa(owner,'MovieList'),
                 funParams.MovieIndex=1:numel(owner.getMovies);
-                winProc =cellfun(@(x) x.processes_{x.getProcessIndex('WindowingProcess',1,false)},...
-                    owner.getMovies,'UniformOutput',false);
-                funParams.BandMin=1;
-                funParams.BandMax=min(cellfun(@(x) x.nBandMax_,winProc));
-                funParams.SliceIndex=cellfun(@(x) true(x.nSliceMax_,1),winProc,'UniformOutput',false);
+                signal=owner.getMovies{1}.getSampledOutput;  
             else
-                winProcIndex = owner.getProcessIndex('WindowingProcess',1,false);
-                assert(~isempty(winProcIndex),'lccb:getDefaultParams:noWindowing','Movie is not windowed yet');
-                winProc =owner.processes_{winProcIndex};
-                funParams.BandMin=1;
-                funParams.BandMax=winProc.nBandMax_;
-                funParams.SliceIndex=true(winProc.nSliceMax_,1);
-            end
-            
-            tools = SignalProcessingProcess.getTools;
-            funParams.tools(1).type = 1;
-            funParams.tools(1).parameters = tools(1).parameters;
+                signal=owner.getSampledOutput;
+            end            
+            funParams.SignalIndex=1:numel(signal);
+            tools = SignalProcessingProcess.getTools(1);
+            fields=fieldnames(tools);
+            funParams.tools=rmfield(tools,fields(~ismember(fields,{'type','parameters'})));
         end
-        function tools = getTools()
+        function tools = getTools(index)
             % Correlation function
-            tools(1).name = 'Correlation';
+            tools(1).type = 1;
+            tools(1).name = 'Correlation';            
             tools(1).GUI = @correlationSettingsGUI;
             tools(1).function = @computeSignalCorrelation;
             tools(1).outputList = {'lags','acf','acfBounds','bootstrapAcf',...
@@ -207,6 +203,7 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             tools(1).formatData = @formatCorrelation;
             tools(1).parameters = struct('nBoot',1e4,'alpha',.01);
             % Partial correlation function
+            tools(2).type = 2;
             tools(2).name = 'Partial correlation';
             tools(2).outputList = {'lags','pacf','pacfBounds','bootstrapPacf',...
                 'bootstrapPacfBounds'};
@@ -218,6 +215,7 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             tools(2).title = @(i,j) getPartialCorrelationTitle(i,j);
             tools(2).parameters = struct('nBoot',1e4,'alpha',.01);
             % Coherence function
+            tools(3).type = 3;
             tools(3).name = 'Coherence';
             tools(3).output = 'coherence';
             tools(3).outputList = {'f','avgCoh','cohCI'};
@@ -229,6 +227,8 @@ classdef SignalProcessingProcess < TimeSeriesProcess
             tools(3).xlabel = 'Frequency (Hz)';
             tools(3).ylabel = @(i,j) getCoherenceLabel(i,j);
             tools(3).title = @(i,j) getCoherenceTitle(i,j);
+            
+            if nargin>0, tools=tools(index); end
         end
         
         function windows = getCoherenceWindows()

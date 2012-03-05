@@ -78,15 +78,9 @@ else
     movieString = {};
 end
 
-set(handles.listbox_selectedMovies,'String',movieString,...
-    'UserData',movieIndex,'Callback',@(h,event)update_preview(h,event,guidata(h)));
+set(handles.listbox_selectedMovies,'String',movieString,'UserData',movieIndex);
 
-% Windows selection parameters
-set(handles.edit_BandMin,'String',funParams.BandMin);
-set(handles.edit_BandMax,'String',funParams.BandMax);
-userData.SliceIndex=funParams.SliceIndex;
-userData.previewFig=-1;
-
+% Set tools menu
 userData.tools = SignalProcessingProcess.getTools;
 set(handles.popupmenu_tools,'String',{userData.tools.name},'UserData',{userData.tools.GUI});
 
@@ -195,151 +189,6 @@ selectedProps{1}(selectedProps{3}) = [ ];
 selectedProps{2}(selectedProps{3}) = [ ];
 set(listbox_selected, 'String', selectedProps{1},'UserData',selectedProps{2},...
     'Value',max(1,min(selectedProps{3},numel(selectedProps{1}))));
-update_preview(hObject, eventdata, handles)
-
-% --- Executes on button press in checkbox_selectSlices.
-function update_preview(hObject, eventdata, handles)
-
-userData=get(handles.figure1,'UserData');
-
-% Delete figure if checkbox is unselected
-if ~get(handles.checkbox_selectSlices,'Value') 
-    if ishandle(userData.previewFig), delete(userData.previewFig); end
-    return; 
-end
-
-if isequal(hObject,handles.checkbox_selectSlices)
-    % Create new figure
-    userData.previewFig=figure('NumberTitle','off','Name','Select/unselect the windows of interest');
-else
-    % Save slice index of current movie and clear figure
-    figure(userData.previewFig);
-    userData_fig=get(userData.previewFig,'UserData');
-    userData.SliceIndex{userData.movieID}=logical(sum(userData_fig.alphamask,2));
-    clf(userData.previewFig)
-end
-
-
-% Retrieve movie id and process names
-movieProps = get(handles.listbox_selectedMovies,{'UserData','Value'});
-userData.movieID=movieProps{1}(movieProps{2});
-p.ProcessName = get(handles.listbox_selectedProcesses,'UserData');
-
-% Retrieve input 
-corrProc = SignalProcessingProcess(userData.ML.movies_{userData.movieID},'');
-parseProcessParams(corrProc,p);
-input = corrProc.getInput;
-nInput = numel(input);
-
-
-% Create a mask using the slice index
-alphamask = repmat(userData.SliceIndex{userData.movieID},1,...
-    userData.ML.movies_{userData.movieID}.nFrames_);
-hAxes = -ones(nInput,1);
-h = -ones(nInput,1);
-userData_fig.mainFig=handles.figure1;
-userData_fig.alphamask = alphamask;
-userData_fig.crtAxes=[];
-for i=1:nInput;
-    hAxes(i) = axes('Position',[(i-1)/nInput 0.1 1/nInput .8],'HitTest','on',...
-        'ButtonDownFcn',@(h,event)editSliceIndex(h,event,guidata(h)));
-    axesArgs={'hAxes',hAxes(i)};
-    procID=input(i).processIndex;
-    if ~isempty(input(i).channelIndex)
-        chanArgs={input(i).channelIndex};
-    else
-        chanArgs={};
-    end
-    h(i) = userData.ML.movies_{userData.movieID}.processes_{procID}.draw(chanArgs{:},axesArgs{:});
-    hCbar = findobj(userData.previewFig,'Tag','Colorbar');
-    delete(hCbar);    
-    set(h(i),'HitTest','off','AlphaData',alphamask,'AlphaDataMapping','none');
-end
-linkaxes(hAxes);
-
-set(userData.previewFig,'UserData',userData_fig,....
-    'DeleteFcn',@(h,event)closeGraphFigure(h,event));
-set(handles.figure1, 'UserData', userData);
-
-
-function editSliceIndex(src,eventdata,handles)
-
-
-point = get(src,'CurrentPoint');
-windowIndex=ceil(point(1,2));
-
-f =  get(src,'Parent');
-userData = get(f,'UserData');
-userData.crtAxes=src;
-userData.windowStart=windowIndex;
-userData.alphavalue = ~userData.alphamask(windowIndex,1);
-
-% userData.alphamask(windowIndex,:)=.2;
-h=findobj(f,'Type','Image');
-set(h,'AlphaData',userData.alphamask);
-set(f,'UserData',userData,'WindowButtonMotionFcn',@moveSliceIndex,...
-    'WindowButtonUpFcn',@releaseSliceIndex);
-   
-
-function moveSliceIndex(src,event)
-
-% Retrieve current point
-userData = get(src,'UserData');
-point = get(userData.crtAxes,'CurrentPoint');
-windowIndex=ceil(point(1,2));
-
-% Scale within the axes limits and the mask range
-yLim=floor(get(userData.crtAxes','YLim'));
-windowIndex=max(min(yLim(2),windowIndex),yLim(1));
-windowIndex=max(min(size(userData.alphamask,1),windowIndex),1);
-
-% Update selected range
-if windowIndex>=userData.windowStart
-    windowRange=userData.windowStart:windowIndex;
-else
-    windowRange=windowIndex:userData.windowStart;
-end
- 
-% Update graphic alpha mask
-userData.alphamask(windowRange,:)=userData.alphavalue;
-set(findobj(src,'Type','Image'),'AlphaData',userData.alphamask);
-
-function releaseSliceIndex(src,event)
-
-% Retrieve current point
-userData = get(src,'UserData');
-point = get(userData.crtAxes,'CurrentPoint');
-windowIndex=floor(point(1,2));
-
-% Scale within the axes limits and the mask range
-yLim=floor(get(userData.crtAxes','YLim'));
-windowIndex=max(min(yLim(2),windowIndex),yLim(1));
-windowIndex=max(min(size(userData.alphamask,1),windowIndex),1);
-
-% Update selected range
-if windowIndex>=userData.windowStart
-    windowRange=userData.windowStart:windowIndex;
-else
-    windowRange=windowIndex:userData.windowStart;
-end
- 
-% Update graphic alpha mask
-userData.alphamask(windowRange,:)=userData.alphavalue;
-set(findobj(src,'Type','Image'),'AlphaData',userData.alphamask);
-
-% Save data in the figure
-set(src,'UserData',userData);
-set(src,'WindowButtonMotionFcn',[],'WindowButtonUpFcn',[]);
- 
-function closeGraphFigure(src,event)
-
-% Update SliceIndex parameters in main process figure
-userData = get(src,'UserData');
-userData_main =get(userData.mainFig,'UserData');
-handles_main = guidata(userData.mainFig);
-userData_main.SliceIndex{userData_main.movieID}=logical(sum(userData.alphamask,2));
-set(userData.mainFig,'UserData',userData_main);
-set(handles_main.checkbox_selectSlices,'Value',0);   
 
 
 % --- Executes on button press in pushbutton_done.
@@ -350,35 +199,7 @@ if isempty(get(handles.listbox_selectedMovies, 'String'))
     errordlg('Please select at least one input process from ''Available Movies''.','Setting Error','modal')
     return;
 end
-
-bandMin = str2double(get(handles.edit_BandMin,'String'));
-if isnan(bandMin) || bandMin<1
-    errordlg('Please enter a valid value for the minimum band of windows to correlate',...
-        'Setting error','modal');
-    return;
-end
-
-bandMax = str2double(get(handles.edit_BandMax,'String'));
-if isnan(bandMax) 
-    errordlg('Please enter a valid value for the maximum band of windows to correlate',...
-        'Setting error','modal');
-    return;
-end
-
 funParams.MovieIndex = get(handles.listbox_selectedMovies, 'UserData');
-funParams.BandMin=bandMin;
-funParams.BandMax=bandMax;
-
-userData = get(handles.figure1, 'UserData');
-if ishandle(userData.previewFig)
-    userData_fig=get(userData.previewFig,'UserData');
-    userData.SliceIndex{userData.movieID}=logical(sum(userData_fig.alphamask,2));
-    delete(userData.previewFig)
-end
-funParams.SliceIndex=userData.SliceIndex;
-
-% Get parameters
-
 
 % Set parameters
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
@@ -418,16 +239,14 @@ createToolCheckbox= @(i,type,value) uicontrol(handles.uipanel_tools,...
 createToolSettingsButton= @(i,settingsGUI) uicontrol(handles.uipanel_tools,...
     'Style','pushbutton','String','Settings',...
     'Position',[350 10+20*(nTools-i) 100 20],'Tag',['settings_tool' num2str(i)],...
-    'Callback',@(h,event) settingsGUI(h,event,guidata(h)));
+    'Callback',@(h,event) settingsGUI(h,event,guidata(h),i));
 
 
 values= zeros(nTools,1);
 getToolHandle = @(i) findobj(handles.figure1,'Tag',['checkbox_tool' num2str(i)]);
 if ~isequal(hObject,handles.pushbutton_removeTool)
-    validToolBoxes = ~arrayfun(@(x) isempty(getToolHandle(x)),1:nTools);
-    for i=find(validToolBoxes)
-        values(i)=get(getToolHandle(i),'Value');
-    end
+    validBoxes = ~arrayfun(@(x) isempty(getToolHandle(x)),1:nTools);
+    for i=find(validBoxes), values(i)=get(getToolHandle(i),'Value'); end
    
 end
 h=findobj(handles.figure1,'-regexp','Tag','checkbox_tool*','-or','-regexp','Tag','settings_tool*');
@@ -436,7 +255,7 @@ resizeGUI(handles,20*nTools-20*numel(h)/2);
 
 for i =nTools:-1:1
     createToolCheckbox(i,tools(i).type,values(i));
-    createToolSettingsButton(i,tools(i).GUI);
+    createToolSettingsButton(i,userData.tools(tools(i).type).GUI);
 end
 % guidata(handles.figure1,guihandles(handles.figure1));
 
@@ -449,7 +268,7 @@ arrayfun(@(x) set(x,'Position',get(x,'Position')+[0 0 0 dh]),resizableHandles);
 arrayfun(@(x) set(x,'Position',get(x,'Position')+[0 dh 0 0]),toolsUicontrols);
 
 % Fix GUI position/sizebleInput,'Position',get(handles.uipanel_samplableInput,'Position')+[0 0 0 dh]);
-uicontrols = {'uipanel_input','uipanel_windows','axes_help','text_processName','text_copyright'};
+uicontrols = {'uipanel_input','axes_help','text_processName','text_copyright'};
 for i=1:numel(uicontrols)
     set(handles.(uicontrols{i}),'Position',get(handles.(uicontrols{i}),'Position')+[0 dh 0 0]);
 end

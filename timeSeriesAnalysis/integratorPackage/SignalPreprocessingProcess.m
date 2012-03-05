@@ -138,8 +138,20 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
             if isa(owner,'MovieList'), 
                 signal=owner.getMovies{1}.getSampledOutput;
                 funParams.MovieIndex=1:numel(owner.getMovies); 
+                winProc =cellfun(@(x) x.processes_{x.getProcessIndex('WindowingProcess',1,false)},...
+                    owner.getMovies,'UniformOutput',false);
+                funParams.BandMin=1;
+                funParams.BandMax=min(cellfun(@(x) x.nBandMax_,winProc));
+                funParams.SliceIndex=cellfun(@(x) true(x.nSliceMax_,1),winProc,'UniformOutput',false);
+   
             else
                 signal=owner.getSampledOutput;
+                winProcIndex = owner.getProcessIndex('WindowingProcess',1,false);
+                assert(~isempty(winProcIndex),'lccb:getDefaultParams:noWindowing','Movie is not windowed yet');
+                winProc =owner.processes_{winProcIndex};
+                funParams.BandMin=1;
+                funParams.BandMax=winProc.nBandMax_;
+                funParams.SliceIndex=true(winProc.nSliceMax_,1);
             end
             nSignal=numel(signal);
             

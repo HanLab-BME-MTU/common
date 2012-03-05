@@ -1,12 +1,11 @@
-function outFilePaths = computeSignalCorrelation(input,p,p2,varargin)
+function outFilePaths = computeSignalCorrelation(signal,params,varargin)
 
 % Check input
 ip=inputParser;
-ip.addRequired('input',@isstruct);
-ip.addRequired('p',@isstruct);
-ip.addRequired('p2',@isstruct);
+ip.addRequired('signal',@isstruct);
+ip.addRequired('params',@isstruct);
 ip.addParamValue('waitbar',-1,@ishandle);
-ip.parse(input,p,p2,varargin{:})
+ip.parse(signal,params,varargin{:})
 
 % Retrieve waitbar or create one if necessary
 if ~isempty(ip.Results.waitbar)
@@ -19,19 +18,19 @@ end
 
 
 % Set up output files
-nInput=numel(input);
-outFilePaths=cell(nInput,nInput);
-for i=1:nInput
+nSignal=numel(signal);
+outFilePaths=cell(nSignal,nSignal);
+for i=1:nSignal
     for j=1:i-1
-        outFilePaths{i,j} = [p2.outputDir filesep 'crosscorrelation_' ...
-            input(i).name '_' input(j).name '.mat'];
+        outFilePaths{i,j} = [params.OutputDirectory filesep 'crosscorrelation_' ...
+            signal(i).name '_' signal(j).name '.mat'];
     end
-    outFilePaths{i,i} = [p2.outputDir filesep 'autocorrelation_' ...
-        input(i).name '.mat'];
+    outFilePaths{i,i} = [params.OutputDirectory filesep 'autocorrelation_' ...
+        signal(i).name '.mat'];
 end
 disp('Starting calculating correlation...')
 disp('Saving results under:');
-disp(p2.outputDir);
+disp(params.OutputDirectory);
 
 %% Correlation calculation 
 %At least 50 points are needed to calculate the ACF
@@ -39,108 +38,104 @@ disp(p2.outputDir);
 %Ref: Time Series Analysis, Forecast and Control. Jenkins, G. Box,G
 minP     = 50;
 
-nInput =numel(input);
-nLagsMax =round(p.nFrames/4);
-data={input.data};
-range={input.range};
+nSignal =numel(signal);
+nLagsMax =round(params.nFrames/4);
+data={signal.data};
+range={signal.range};
 nBands =cellfun(@numel,data);
 nSlices = numel(data{1}{1});
 
-logMsg = @(i) ['Calculating ' input(i).name ' autocorrelation'];
+logMsg = @(i) ['Calculating ' signal(i).name ' autocorrelation'];
 
 % Calculate autocorrelation
-lags =(0:nLagsMax)'*p.timeInterval; %#ok<NASGU>
-for iInput=1:nInput
-    disp(logMsg(iInput));
+lags =(0:nLagsMax)'*params.timeInterval; %#ok<NASGU>
+for iSignal=1:nSignal
+    disp(logMsg(iSignal));
     
     % Initialize autocorrelation function and bounds
-    acf = NaN(nLagsMax+1,nSlices,nBands(iInput));
-    acfBounds = NaN(2,nSlices,nBands(iInput));
-    bootstrapAcf=NaN(nLagsMax+1,nBands(iInput));
-    bootstrapAcfBounds=NaN(2,nLagsMax+1,nBands(iInput));
+    acf = NaN(nLagsMax+1,nSlices,nBands(iSignal));
+    acfBounds = NaN(2,nSlices,nBands(iSignal));
+    bootstrapAcf=NaN(nLagsMax+1,nBands(iSignal));
+    bootstrapAcfBounds=NaN(2,nLagsMax+1,nBands(iSignal));
     
-    if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput)); end
+    if ishandle(wtBar), waitbar(0,wtBar,logMsg(iSignal)); end
     
-    bandIndex = p.BandMin:min(nBands(iInput),p.BandMax);
-    for i=1:numel(bandIndex)
-        iBand=bandIndex(i);
+    for iBand=1:nBands(iSignal)
         % Get number of timepoints and prune out slices
-        nTimepoints=cellfun(@length,data{iInput}{iBand});
-        validSlices =nTimepoints >=minP & p.SliceIndex;
+        nTimepoints=cellfun(@length,data{iSignal}{iBand});
+        validSlices =nTimepoints >=minP;
         
         % Calculate raw auto-correlation
         for iSlice=find(validSlices)'
-            nLags = round(length(data{iInput}{iBand}{iSlice})/4);
+            nLags = round(length(data{iSignal}{iBand}{iSlice})/4);
             [acf(1:nLags+1,iSlice,iBand),~,acfBounds(:,iSlice,iBand)] = ...
-                autocorr(data{iInput}{iBand}{iSlice},nLags);
+                autocorr(data{iSignal}{iBand}{iSlice},nLags);
         end
         
         % Bootstrap valid autocorrelation functions
         validAcfSlices = sum(isnan(acf(:,:,iBand)),1)==0;
         if sum(validAcfSlices)>2
             [meanCC,CI] = correlationBootstrap(acf(:,validAcfSlices,iBand),...Movie
-                acfBounds(1,validAcfSlices,iBand),p2.nBoot,p2.alpha);
+                acfBounds(1,validAcfSlices,iBand),params.nBoot,params.alpha);
             bootstrapAcf(:,iBand)=meanCC;
             bootstrapAcfBounds(:,:,iBand)=CI;
         end
         
-        if ishandle(wtBar), waitbar(i/numel(bandIndex),wtBar); end
+        if ishandle(wtBar), waitbar(iBand/nBands(iSignal),wtBar); end
     end
     
-    save(outFilePaths{iInput,iInput},'lags','acf','acfBounds',...
+    save(outFilePaths{iSignal,iSignal},'lags','acf','acfBounds',...
         'bootstrapAcf','bootstrapAcfBounds');  
 end
 
-logMsg = @(i,j) ['Calculating ' input(i).name '/' input(j).name ' cross-correlation'];
+logMsg = @(i,j) ['Calculating ' signal(i).name '/' signal(j).name ' cross-correlation'];
 
 % Calculate cross-correlation
-lags =(-nLagsMax:nLagsMax)'*p.timeInterval; %#ok<NASGU>
-for iInput1=1:nInput
-    for iInput2=1:iInput1-1
-        disp(logMsg(iInput1,iInput2));
+lags =(-nLagsMax:nLagsMax)'*params.timeInterval; %#ok<NASGU>
+for iSignal1=1:nSignal
+    for iSignal2=1:iSignal1-1
+        disp(logMsg(iSignal1,iSignal2));
         
         % Initialize cross-correlation function and bounds
-        ccf = NaN(2*nLagsMax+1,nSlices,nBands(iInput1),nBands(iInput2));
-        ccfBounds  = NaN(2,nSlices,nBands(iInput1),nBands(iInput2));
-        bootstrapCcf=NaN(2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
-        bootstrapCcfBounds=NaN(2,2*nLagsMax+1,nBands(iInput1),nBands(iInput2));
+        ccf = NaN(2*nLagsMax+1,nSlices,nBands(iSignal1),nBands(iSignal2));
+        ccfBounds  = NaN(2,nSlices,nBands(iSignal1),nBands(iSignal2));
+        bootstrapCcf=NaN(2*nLagsMax+1,nBands(iSignal1),nBands(iSignal2));
+        bootstrapCcfBounds=NaN(2,2*nLagsMax+1,nBands(iSignal1),nBands(iSignal2));
         
-        if ishandle(wtBar), waitbar(0,wtBar,logMsg(iInput1,iInput2)); end
+        if ishandle(wtBar), waitbar(0,wtBar,logMsg(iSignal1,iSignal2)); end
         
         % Loop over bands and window slices
-        bandIndex1=p.BandMin:min(nBands(iInput1),p.BandMax);
-        for i1=1:numel(bandIndex1)
-            iBand1=bandIndex1(i1);
-            for iBand2=p.BandMin:min(nBands(iInput2),p.BandMax)
+        for iBand1=1:nBands(iSignal1)
+            for iBand2=1:nBands(iSignal2)
                
                 % Find valid range and test minimum number of timepoints
-                nTimepoints = cellfun(@(x,y) length(intersect(x,y)),range{iInput2}{iBand2},...
-                    range{iInput1}{iBand1});
-                validSlices = nTimepoints>=minP & p.SliceIndex;
+                nTimepoints = cellfun(@(x,y) length(intersect(x,y)),range{iSignal2}{iBand2},...
+                    range{iSignal1}{iBand1});
+                validSlices = nTimepoints>=minP ;
                 
                 % Calculate raw cross-correlation
                 for iSlice=find(validSlices)'
                     % Retrieve number of lags from range intersection
-                    [~,range1,range2] = intersect(range{iInput1}{iBand1}{iSlice},range{iInput2}{iBand2}{iSlice});
+                    [~,range1,range2] = intersect(range{iSignal1}{iBand1}{iSlice},range{iSignal2}{iBand2}{iSlice});
                     nLags = round(length(range1)/4);
                     [ccf(1:2*nLags+1,iSlice,iBand1,iBand2),~,ccfBounds(:,iSlice,iBand1,iBand2)] =...
-                        crosscorr(data{iInput1}{iBand1}{iSlice}(range1),data{iInput2}{iBand2}{iSlice}(range2),nLags);
+                        crosscorr(data{iSignal1}{iBand1}{iSlice}(range1),data{iSignal2}{iBand2}{iSlice}(range2),nLags);
                 end
                 
                 % Bootstrap valid correlation functions
                 validCcfSlices = sum(isnan(ccf(:,:,iBand1,iBand2)),1)==0;
                 if sum(validCcfSlices)>2
                     [meanCC,CI] = correlationBootstrap(ccf(:,validCcfSlices,iBand1,iBand2),...
-                        ccfBounds(1,validCcfSlices,iBand1,iBand2),p2.nBoot,p2.alpha);
+                        ccfBounds(1,validCcfSlices,iBand1,iBand2),params.nBoot,params.alpha);
                     bootstrapCcf(:,iBand1,iBand2)=meanCC;
                     bootstrapCcfBounds(:,:,iBand1,iBand2)=CI;
                 end   
                 
             end
-            if ishandle(wtBar), waitbar(i1/numel(bandIndex1),wtBar); end
+            if ishandle(wtBar), waitbar(iBand1/nBands(iSignal1),wtBar); end
         end
         
-        save(outFilePaths{iInput1,iInput2},'lags','ccf','ccfBounds',...
+        save(outFilePaths{iSignal1,iSignal2},'lags','ccf','ccfBounds',...
         'bootstrapCcf','bootstrapCcfBounds');
     end
 end

@@ -22,7 +22,7 @@ function varargout = signalPreprocessingProcessGUI(varargin)
 
 % Edit the above text to modify the response to help signalPreprocessingProcessGUI
 
-% Last Modified by GUIDE v2.5 18-Nov-2011 15:20:06
+% Last Modified by GUIDE v2.5 05-Mar-2012 17:00:21
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -52,7 +52,7 @@ processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:});
 userData=get(handles.figure1,'UserData');
 funParams = userData.crtProc.funParams_;
 
-% Set up available input channels
+% Set up available movies
 set(handles.listbox_availableMovies,'String',userData.MD.movieDataFile_, ...
     'UserData',1:numel(userData.MD.getMovies));
 
@@ -65,7 +65,7 @@ else
 end
 
 set(handles.listbox_selectedMovies,'String',movieString,...
-    'UserData',movieIndex);
+    'UserData',movieIndex,'Callback',@(h,event)update_preview(h,event,guidata(h)));
 
 signal=userData.MD.getMovies{1}.getSampledOutput;
 nSignal=numel(signal);
@@ -91,9 +91,10 @@ for i = nSignal:-1:1
     createOutlierBox(hPosition,i);
     hPosition=hPosition+20;
 end
+userData.previewFig=-ones(nSignal,1);
 
 
-% Add cosmetic title for channels
+% Add cosmetic title for signal
 uicontrol(handles.uipanel_signal,'Style','text',...
     'Position',[20 hPosition 150 20],'String','Signal name');
 uicontrol(handles.uipanel_signal,'Style','text',...
@@ -115,8 +116,12 @@ for i=1:numel(uicontrols)
     set(handles.(uicontrols{i}),'Position',get(handles.(uicontrols{i}),'Position')+[0 dh 0 0]);
 end
 
+% Set windows selection parameters
+set(handles.edit_BandMin,'String',funParams.BandMin);
+set(handles.edit_BandMax,'String',funParams.BandMax);
+userData.SliceIndex=funParams.SliceIndex;
 
-% Set preprocessing parameters
+% Set energy calculation parameters
 set(handles.edit_nBoot,'String',funParams.nBoot);
 set(handles.edit_alpha,'String',funParams.alpha);
 
@@ -152,9 +157,9 @@ function figure1_DeleteFcn(hObject, ~, handles)
 % Notify the package GUI that the setting panel is closed
 userData = get(handles.figure1, 'UserData');
 
-if isfield(userData, 'helpFig') && ishandle(userData.helpFig)
-   delete(userData.helpFig) 
-end
+delete(userData.helpFig(ishandle(userData.helpFig)));
+delete(userData.previewFig(ishandle(userData.previewFig)));
+
 
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
@@ -174,62 +179,48 @@ if strcmp(eventdata.Key, 'return')
     pushbutton_done_Callback(handles.pushbutton_done, [], handles);
 end
 
-% --- Executes on button press in checkbox_allMovies.
+% --- Executes on button press in checkbox_all.
 function checkbox_all_Callback(hObject, eventdata, handles)
 
-% Identify listbox and retrieve handles
-tokens = regexp(get(hObject,'Tag'),'^checkbox_all(.*)$','tokens');
-listbox_available= handles.(['listbox_available' tokens{1}{1}]);
-listbox_selected= handles.(['listbox_selected' tokens{1}{1}]);
+% Retrieve available channels properties
+props = get(handles.listbox_availableMovies, {'String','UserData'});
+if isempty(props{1}), return; end
 
-% Retrieve available properties
-availableProps = get(listbox_available, {'String','UserData'});
-if isempty(availableProps{1}), return; end
-
+% Update selected channels
 if get(hObject,'Value')
-    set(listbox_selected, 'String', availableProps{1},'UserData',availableProps{2});
+    set(handles.listbox_selectedMovies, 'String', props{1},...
+        'UserData',props{2});
 else
-    set(listbox_selected, 'String', {}, 'UserData',[], 'Value',1);
+    set(handles.listbox_selectedMovies, 'String', {}, 'UserData',[], 'Value',1);
 end
 
 % --- Executes on button press in pushbutton_selectMovies.
 function pushbutton_select_Callback(hObject, eventdata, handles)
 
-% Identify listbox and retrieve handles
-tokens = regexp(get(hObject,'Tag'),'^pushbutton_select(.*)$','tokens');
-listbox_available= handles.(['listbox_available' tokens{1}{1}]);
-listbox_selected= handles.(['listbox_selected' tokens{1}{1}]);
 
-% Get handles properties
-availableProps = get(listbox_available, {'String','UserData'});
-selectedProps = get(listbox_selected, {'String','UserData'});
-ID = get(listbox_available, 'Value');
+% Retrieve  Movies properties
+availableProps = get(handles.listbox_availableMovies, {'String','UserData','Value'});
+selectedProps = get(handles.listbox_selectedMovies, {'String','UserData'});
 
-% Update selected listbox properties
-newChanID = ID(~ismember(availableProps{1}(ID),selectedProps{1}));
-selectedString = vertcat(selectedProps{1},availableProps{1}(newChanID));
-selectedData = horzcat(selectedProps{2}, availableProps{2}(newChanID));
-
-set(listbox_selected, 'String', selectedString, 'Userdata', selectedData);
+% Find new elements and set them to the selected listbox
+newID = availableProps{3}(~ismember(availableProps{1}(availableProps{3}),selectedProps{1}));
+selectedMovies = horzcat(selectedProps{1}',availableProps{1}(newID)');
+selectedData = horzcat(selectedProps{2}, availableProps{2}(newID));
+set(handles.listbox_selectedMovies, 'String', selectedMovies, 'UserData', selectedData);
 
 
 % --- Executes on button press in pushbutton_deleteMovies.
 function pushbutton_delete_Callback(hObject, eventdata, handles)
 
-% Identify listbox and retrieve handles
-tokens = regexp(get(hObject,'Tag'),'^pushbutton_delete(.*)$','tokens');
-listbox_selected= handles.(['listbox_selected' tokens{1}{1}]);
-
 % Get selected properties and returin if empty
-selectedProps = get(listbox_selected, {'String','UserData','Value'});
+selectedProps = get(handles.listbox_selectedMovies, {'String','UserData','Value'});
 if isempty(selectedProps{1}) || isempty(selectedProps{3}),return; end
 
 % Delete selected item
 selectedProps{1}(selectedProps{3}) = [ ];
 selectedProps{2}(selectedProps{3}) = [ ];
-set(listbox_selected, 'String', selectedProps{1},'UserData',selectedProps{2},...
+set(handles.listbox_selectedMovies, 'String', selectedProps{1},'UserData',selectedProps{2},...
     'Value',max(1,min(selectedProps{3},numel(selectedProps{1}))));
-
 
 % --- Executes on button press in pushbutton_done.
 function pushbutton_done_Callback(hObject, eventdata, handles)
@@ -281,16 +272,150 @@ funParams.alpha = alpha;
 
 
 
-% Process Sanity check ( only check underlying data )
-userData = get(handles.figure1, 'UserData');
-try
-    userData.crtProc.sanityCheck;
-catch ME
 
-    errordlg([ME.message 'Please double check your data.'],...
-                'Setting Error','modal');
+bandMin = str2double(get(handles.edit_BandMin,'String'));
+if isnan(bandMin) || bandMin<1
+    errordlg('Please enter a valid value for the minimum band of windows to correlate',...
+        'Setting error','modal');
     return;
 end
 
+bandMax = str2double(get(handles.edit_BandMax,'String'));
+if isnan(bandMax) 
+    errordlg('Please enter a valid value for the maximum band of windows to correlate',...
+        'Setting error','modal');
+    return;
+end
+
+funParams.MovieIndex = get(handles.listbox_selectedMovies, 'UserData');
+funParams.BandMin=bandMin;
+funParams.BandMax=bandMax;
+
+userData = get(handles.figure1, 'UserData');
+if ishandle(userData.previewFig)
+    alphamask = get(findobj(userData.previewFig(1),'Tag','sliceIndexImage'),'AlphaData');
+    userData.SliceIndex{userData.movieID}=logical(sum(alphamask,2));
+    delete(userData.previewFig(1))
+end
+funParams.SliceIndex=userData.SliceIndex;
+
 % Set parameters
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
+
+
+% --- Executes on button press in checkbox_selectSlices.
+function update_preview(hObject, eventdata, handles)
+
+userData=get(handles.figure1,'UserData');
+
+% Delete figure if checkbox is unselected
+if ~get(handles.checkbox_selectSlices,'Value')
+    delete(userData.previewFig(ishandle(userData.previewFig)));
+    return;
+end
+
+if isequal(hObject,handles.listbox_selectedMovies) && ishandle(userData.previewFig(1)), 
+    alphamask = get(findobj(userData.previewFig(1),'Tag','sliceIndexImage'),'AlphaData');
+    userData.SliceIndex{userData.movieID}=logical(sum(alphamask,2));
+end
+
+% Retrieve new movie ID
+movieProps = get(handles.listbox_selectedMovies,{'UserData','Value'});
+userData.movieID=movieProps{1}(movieProps{2});
+movie = userData.ML.getMovies{userData.movieID};
+
+% Retrieve input 
+signal = movie.getSampledOutput;
+nSignal = numel(signal);
+
+% Create a mask using the slice index
+alphamask = repmat(userData.SliceIndex{userData.movieID},1,movie.nFrames_);
+hAxes = -ones(nSignal,1);
+h = -ones(nSignal,1);
+userData_fig.mainFig=handles.figure1;
+userData_fig.alphamask = alphamask;
+
+for i=find(~ishandle(userData.previewFig))'
+    userData.previewFig(i)=figure('NumberTitle','off','Name',signal(i).name);
+end
+
+for i=1:nSignal
+    figure(userData.previewFig(i));
+    clf(userData.previewFig(i));
+    hAxes(i) = axes('HitTest','on','ButtonDownFcn',@(h,event)editSliceIndex(h,event,guidata(h)));
+    procID=signal(i).processIndex;
+    if ~isempty(signal(i).channelIndex), 
+        drawArgs={signal(i).channelIndex,signal(i).outputIndex}; 
+    else
+        drawArgs={};
+    end
+    h(i) = movie.processes_{procID}.draw(drawArgs{:});  
+    set(h(i),'Tag','sliceIndexImage',...
+        'HitTest','off','AlphaData',alphamask,'AlphaDataMapping','none');
+    set(userData.previewFig(i),'UserData',userData_fig,'DeleteFcn',@(h,event)closeGraphFigure(h,event));
+end
+linkaxes(hAxes);
+
+set(handles.figure1, 'UserData', userData);
+
+function editSliceIndex(src,eventdata,handles)
+
+% Retrieve window index corresponding to point poistion
+point = get(src,'CurrentPoint');
+windowIndex=ceil(point(1,2));
+
+f =  get(src,'Parent');
+userData = get(f,'UserData');
+userData.windowStart=windowIndex;
+userData.alphavalue = ~userData.alphamask(windowIndex,1);
+
+% userData.alphamask(windowIndex,:)=.2;
+h=findobj(f,'Tag','sliceIndexImage');
+set(h,'AlphaData',userData.alphamask);
+set(f,'UserData',userData,'WindowButtonMotionFcn',@updateAlphaMask,...
+    'WindowButtonUpFcn',@saveAlphaMask);
+   
+function saveAlphaMask(src,event)
+
+userData = updateAlphaMask(src);
+% Save data in the figure
+set(src,'UserData',userData);
+set(src,'WindowButtonMotionFcn',[],'WindowButtonUpFcn',[]);
+ 
+function userData=updateAlphaMask(src,event)
+
+% Retrieve current point
+userData = get(src,'UserData');
+point = get(gca,'CurrentPoint');
+windowIndex=floor(point(1,2));
+
+% Scale within the axes limits and the mask range
+yLim=floor(get(gca,'YLim'));
+windowIndex=max(min(yLim(2),windowIndex),yLim(1));
+windowIndex=max(min(size(userData.alphamask,1),windowIndex),1);
+
+% Update selected range
+if windowIndex>=userData.windowStart
+    windowRange=userData.windowStart:windowIndex;
+else
+    windowRange=windowIndex:userData.windowStart;
+end
+
+% Update graphic alpha mask
+userData = get(src,'UserData');
+userData.alphamask(windowRange,:)=userData.alphavalue;
+set(findobj(0,'Tag','sliceIndexImage'),'AlphaData',userData.alphamask);
+
+function closeGraphFigure(src,event)
+
+% Update SliceIndex parameters in main process figure
+userData = get(src,'UserData');
+userData_main =get(userData.mainFig,'UserData');
+handles_main = guidata(userData.mainFig);
+userData_main.SliceIndex{userData_main.movieID}=logical(sum(userData.alphamask,2));
+
+% Update main figure
+delete(userData_main.previewFig(ishandle(userData_main.previewFig)));
+set(userData.mainFig,'UserData',userData_main);
+
+set(handles_main.checkbox_selectSlices,'Value',0);   

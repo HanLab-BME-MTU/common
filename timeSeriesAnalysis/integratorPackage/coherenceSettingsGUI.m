@@ -55,19 +55,19 @@ userData = get(handles.figure1, 'UserData');
 handles.output = hObject;
 
 % Get main figure handle and process id
-userData.iTool = varargin{1};
-userData.mainFig = varargin{2}.figure1;
+userData.iTool = varargin{4};
+userData.mainFig = varargin{3}.figure1;
 userData_main = get(userData.mainFig, 'UserData');
 
 % Parameter Setup
-processingTools = userData_main.processingTools(userData.iTool);
-set(handles.edit_nBoot, 'String', processingTools.parameters.nBoot)
-set(handles.edit_alpha, 'String', processingTools.parameters.alpha);
-set(handles.edit_nWin, 'String', processingTools.parameters.nWin)
-set(handles.edit_noLap, 'String', processingTools.parameters.noLap);
+tools = userData_main.tools(userData.iTool);
+set(handles.edit_nBoot, 'String', tools.parameters.nBoot)
+set(handles.edit_alpha, 'String', tools.parameters.alpha);
+set(handles.edit_nWin, 'String', tools.parameters.nWin)
+set(handles.edit_noLap, 'String', tools.parameters.noLap);
 windows = SignalProcessingProcess.getCoherenceWindows;
 set(handles.popupmenu_window, 'String', windows,'Value',...
-    find(strcmp(processingTools.parameters.window,windows)));
+    find(strcmp(tools.parameters.window,windows)));
 
 % Get icon infomation
 userData.questIconData = userData_main.questIconData;
@@ -148,12 +148,12 @@ if isnan(noLap) || noLap<0 || noLap>1
 end
 
 userData_main = get(userData.mainFig,'UserData');
-userData_main.processingTools(userData.iTool).parameters.nBoot=nBoot;
-userData_main.processingTools(userData.iTool).parameters.alpha=alpha;
-userData_main.processingTools(userData.iTool).parameters.nWin=nWin;
-userData_main.processingTools(userData.iTool).parameters.noLap=noLap;
+userData_main.tools(userData.iTool).parameters.nBoot=nBoot;
+userData_main.tools(userData.iTool).parameters.alpha=alpha;
+userData_main.tools(userData.iTool).parameters.nWin=nWin;
+userData_main.tools(userData.iTool).parameters.noLap=noLap;
 props = get(handles.popupmenu_window,{'String','Value'});
-userData_main.processingTools(userData.iTool).parameters.window=props{1}{props{2}};
+userData_main.tools(userData.iTool).parameters.window=props{1}{props{2}};
 
 set(userData.mainFig,'UserData',userData_main);
 

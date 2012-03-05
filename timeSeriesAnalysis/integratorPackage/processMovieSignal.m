@@ -14,18 +14,7 @@ function processMovieSignal(movieObject,varargin)
 %
 %       ('MovieIndex' -> array of integers)  If movieObject is a movie
 %       list, specifies the index of the movies to be preprocessed.
-%
-%       ('BandMin' -> positive integer) Specifies the first band to
-%       consider for processing. Default 1.
-%
-%       ('BandMax' -> array of integers) Specified the last band to
-%       consider for processing
-%
-%       ('SliceIndex' -> logical array or cell array of logical array)  
-%       If movieObject is a movie list, each element of the cell array 
-%       specifies the SliceIndex of the slices to process for each movie. 
-%       If movieObject is a movie, only the slices given by to true elements 
-%       of the logical array will be processed.
+
 %
 %       ('OutputDirectory' -> character string)  A character
 %       string specifying the directory to save the processed output.
@@ -112,7 +101,6 @@ if isa(movieObject,'MovieList')
         fprintf(1,'Processing signal for movie %g/%g\n',i,nMovies);
         
         % Delegate processing for each movie of the list
-        movieParams.SliceIndex=p.SliceIndex{iMovie};
         movieData = movieObject.getMovies{iMovie};
         iProc = movieData.getProcessIndex('SignalProcessingProcess',1,0);
         if isempty(iProc)
@@ -164,7 +152,6 @@ if isa(movieObject,'MovieList')
     inFilePaths = cellfun(@(x){x.paths},movieInput,'Unif',false);
     inFilePaths=vertcat(inFilePaths{:});
     signalProc.setInFilePaths(inFilePaths);
-    p.SliceIndex = vertcat(p.SliceIndex{p.MovieIndex});
 else    
     
     % Initialization of MovieData object
@@ -201,8 +188,7 @@ if exist(p.OutputDirectory,'dir'), rmdir(p.OutputDirectory,'s'); end
 mkdir(p.OutputDirectory);
 
 % Call individual processing tools
-p.nFrames=nFrames;
-p.timeInterval=timeInterval;
+
 nInput= numel(input);
 nTools = numel(p.tools);
 outFilePaths =cell(nInput,nInput,nTools);
@@ -213,11 +199,13 @@ for i=1:nTools
     toolParams=p.tools(i).parameters;
     
     % Create output subdirectory for each tool
-    toolParams.outputDir = fullfile(p.OutputDirectory,[num2str(i) '_' selectedTool.name]);
-    mkClrDir(toolParams.outputDir);
+    toolParams.OutputDirectory = fullfile(p.OutputDirectory,[num2str(i) '_' selectedTool.name]);
+    toolParams.nFrames=nFrames;
+    toolParams.timeInterval=timeInterval;
+    mkClrDir(toolParams.OutputDirectory);
     
     % Pass input, generic process parameters and tool specific parameters
-    outFilePaths(:,:,i)=selectedTool.function(input,p,toolParams,wtBarArgs{:});
+    outFilePaths(:,:,i)=selectedTool.function(input,toolParams,wtBarArgs{:});
 end
 % Set the outputDirectory for the process
 signalProc.setOutFilePaths(outFilePaths);

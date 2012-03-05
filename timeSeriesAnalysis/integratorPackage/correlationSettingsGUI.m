@@ -55,12 +55,12 @@ userData = get(handles.figure1, 'UserData');
 handles.output = hObject;
 
 % Get main figure handle and process id
-userData.iTool = varargin{1};
-userData.mainFig = varargin{2}.figure1;
+userData.iTool = varargin{4};
+userData.mainFig = varargin{3}.figure1;
 userData_main = get(userData.mainFig, 'UserData');
 
 % Parameter Setup
-processingTools = userData_main.processingTools(userData.iTool);
+processingTools = userData_main.tools(userData.iTool);
 set(handles.edit_nBoot, 'String', processingTools.parameters.nBoot)
 set(handles.edit_alpha, 'String', processingTools.parameters.alpha);
 
@@ -131,8 +131,8 @@ if isnan(alpha) || alpha<0 || alpha >1
 end
 
 userData_main = get(userData.mainFig,'UserData');
-userData_main.processingTools(userData.iTool).parameters.nBoot=nBoot;
-userData_main.processingTools(userData.iTool).parameters.alpha=alpha;
+userData_main.tools(userData.iTool).parameters.nBoot=nBoot;
+userData_main.tools(userData.iTool).parameters.alpha=alpha;
 set(userData.mainFig,'UserData',userData_main);
 
 delete(handles.figure1);

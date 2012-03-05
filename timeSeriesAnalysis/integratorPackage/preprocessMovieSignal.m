@@ -20,16 +20,25 @@ function preprocessMovieSignal(movieObject,varargin)
 %       string specifying the directory to save the preprocessed output.
 %       Each time-series will be saved as an individual mat file.
 %
-%       ('ProcessName'-> Cell array of character strings) The name of the
-%       sampling processes to retrieve the sampled output from. All output
-%       of the process will be preprocessed.
+%       ('BandMin' -> positive integer) Specifies the minimum band to
+%       be used for pre-processing. Default 1.
 %
-%       ('kSigma'-> positive integer) The multiplier to use when removing
-%       outliers from time-series. See detectOutliers.m for more info.
+%       ('BandMax' -> array of integers) Specified the last band to be
+%       used for pre-processing the signal.
 %
-%       ('trendType'-> integer) A value specifying the type of detrending
-%       to apply to the time-series. See removeMeanTrendNan for a list of
-%       acceptable values.
+%       ('SliceIndex' -> logical array or cell array of logical array)  
+%       If movieObject is a movie list, each element of the cell array 
+%       specifies the SliceIndex of the slices to process for each movie. 
+%       If movieObject is a movie, only the slices given by to true elements 
+%       of the logical array will be processed.
+%
+%       ('kSigma'-> array of positive integer) For each input signal, the 
+%       threshold (in sigma) to detect and remove time-series outliers. 
+%       See detectOutliers.m for more info.
+%
+%       ('trendType'-> array of integer) For each input signal, a value 
+%       specifying the type of detrending operation to apply. 
+%       See removeMeanTrendNan for a list of acceptable values.
 %
 %       ('nBoot'-> integer) A value specifying the number of bootstrapped
 %       samples to use when calculating the confidence interval of the
@@ -81,7 +90,10 @@ if isa(movieObject,'MovieList')
     movieInput =cell(nMovies,1);
     movieSignalPreProc = cell(nMovies,1);
     for i =1:nMovies;
-        movieData = movieObject.getMovies{p.MovieIndex(i)};
+        % Get slice index 
+        iMovie=p.MovieIndex(i);
+        movieParams.SliceIndex=p.SliceIndex{iMovie};
+        movieData = movieObject.getMovies{iMovie};
         fprintf(1,'Preprocessing signal for movie %g/%g\n',i,nMovies);
         
         % Create movie process if empty
@@ -99,7 +111,7 @@ if isa(movieObject,'MovieList')
     end  
     
     % Check input is the same for all movies
-    input=movieObject.getMovies{p.MovieIndex(i)}.getSampledOutput;
+    input=movieObject.getMovies{p.MovieIndex(1)}.getSampledOutput;
     nInput= numel(input);
 
     % Set input path
@@ -210,6 +222,7 @@ else
     
     % Create log messages
     tic;
+    nBands=arrayfun(@(x) min(x,p.BandMax),nBands);
     nBandsTot = sum(nBands);
     for iInput=1:nInput
         % Show log
@@ -225,13 +238,14 @@ else
         range = data;
         energy  = NaN(nBands(iInput),3);
         
-        for iBand=1:nBands(iInput)
+        for iBand=p.BandMin:nBands(iInput)
             % Get iBand data and remove outliers
             rawData{iBand} =squeeze(inData{iInput}(:,iBand,:));
             rawData{iBand}(detectOutliers(rawData{iBand},p.kSigma(iInput))) = NaN;
             
             % Check percentage of NaN and remove linear trend for energy
-            validSlices = (nPoints-sum(isnan(rawData{iBand}),2))>=minP;
+            validSlices = (nPoints-sum(isnan(rawData{iBand}),2))>=minP & ...
+                 p.SliceIndex;
             [energyData{iBand} ,energyRange{iBand}] = ...
                 removeMeanTrendNaN(rawData{iBand}(validSlices,:)',1);
             
@@ -250,7 +264,7 @@ else
             % Update waitbar
             if ishandle(wtBar),
                 tj=toc;
-                nj = sum(nBands(1:iInput-1))+ iBand;
+                nj = sum(nBands(1:iInput-1))+ iBand-p.BandMin+1;
                 waitbar(nj/nBandsTot,wtBar,sprintf([logMsg(iInput) timeMsg(tj*nBandsTot/nj-tj)]));
             end
         end
