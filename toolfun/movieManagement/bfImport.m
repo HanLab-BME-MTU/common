@@ -1,18 +1,19 @@
 function movie = bfImport(dataPath,varargin)
-% Import properiary movie files and convert them into MovieData objects
+% BFIMPORT imports movie files into MovieData objects using Bioformats 
 %
 % movie = bfimport(dataPath)
 %
-% Load proprietary files using the bioformats library. Read the metadata
+% Load proprietary files using the Bioformats library. Read the metadata
 % that is associated with the movie and the channels and set them into the
-% created movie objects. Optionally extract images.
+% created movie objects. Optionally images can be extracted and saved as
+% individual TIFF files.
 %
 % Input:
 % 
-%   dataPath - A string containing the full path to the movie proprietary file.
+%   dataPath - A string containing the full path to the movie file.
 %
-%   extractImages - Optional. A boolean to extract movie images and set
-%   them into 
+%   extractImages - Optional. If true, individual images will be extracted
+%   and saved as TIF images.
 %
 % Output:
 %
@@ -25,7 +26,7 @@ assert(exist(which('bfopen'),'file')==2,'Bioformats library missing');
 % Input check
 ip=inputParser;
 ip.addRequired('dataPath',@ischar);
-ip.addOptional('extractImages',true,@islogical)
+ip.addOptional('extractImages',true,@islogical);
 ip.parse(dataPath,varargin{:});
 extractImages = ip.Results.extractImages;
 
@@ -91,10 +92,10 @@ assert(isequal(nZ,1),'Importation of 3D movies not implemented yet');
 % Set output directory (based on image extraction flag)
 [mainPath,movieName]=fileparts(dataPath);
 if extractImages, 
-    outputDir=fullfile(mainPath,movieName);
-else
-    outputDir=mainPath;
+    rawDataPath = uigetdir(mainPath,'Find a place to save your extracted images');
 end
+[movieFileName,outputDir] = uiputfile('*.mat','Find a place to save your analysis',...
+    fullfile(mainPath,[movieName '.mat']));
 
 % Create movie channels
 channelPath=cell(1,nChan);
@@ -130,7 +131,7 @@ for i=1:nChan
     
     % Create new channel
     if extractImages
-        channelPath{i} = fullfile(outputDir,chanName);
+        channelPath{i} = fullfile(rawDataPath,chanName);
     else
         channelPath{i}=dataPath;
     end
@@ -140,23 +141,24 @@ end
 % Create movie object
 movie=MovieData(movieChannels,outputDir,movieArgs{:});
 movie.setPath(outputDir);
-movie.setFilename([movieName '.mat']);
+movie.setFilename(movieFileName);
 
-% Save images
-dimensionOrder =char(metadata.getPixelsDimensionOrder(0));
-dimensions = arrayfun(@(x) metadata.(['getPixelsSize' x])(0).getValue,...
-    dimensionOrder(3:end));
 
-% Create anonymous functions for reading files
-chanIndex = @(index) index(dimensionOrder(3:end)=='C');
-zIndex = @(index) index(dimensionOrder(3:end)=='Z');
-tIndex = @(index) index(dimensionOrder(3:end)=='T');
-tString=@(t)num2str(t, ['%0' num2str(floor(log10(nFrames))+1) '.f']);
-imageName = @(c,t) [movieName '-w' num2str(movieChannels(c).emissionWavelength_) ...
-    '_t' tString(t),'.tif'];
+if extractImages    
+    % Get dimensions
+    dimensionOrder =char(metadata.getPixelsDimensionOrder(0));
+    dimensions = arrayfun(@(x) metadata.(['getPixelsSize' x])(0).getValue,...
+        dimensionOrder(3:end));
+    
+    % Create anonymous functions for reading files
+    chanIndex = @(index) index(dimensionOrder(3:end)=='C');
+    zIndex = @(index) index(dimensionOrder(3:end)=='Z');
+    tIndex = @(index) index(dimensionOrder(3:end)=='T');
+    tString=@(t)num2str(t, ['%0' num2str(floor(log10(nFrames))+1) '.f']);
+    imageName = @(c,t) [movieName '-w' num2str(movieChannels(c).emissionWavelength_) ...
+        '_t' tString(t),'.tif'];
 
-% Save images
-if extractImages
+    % Clean channel directories and save images as TIF files
     for i=1:nChan, mkClrDir(channelPath{i}); end
     for iPlane = 1:r.getImageCount()
         [index(1),index(2),index(3)]=ind2sub(dimensions,iPlane);
@@ -166,5 +168,6 @@ if extractImages
     end
 end
 
+% Close reader and check movie sanity
 r.close;
 movie.sanityCheck;
