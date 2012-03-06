@@ -47,19 +47,25 @@ classdef MotionAnalysisProcess < DataProcessingProcess
         end
     end
     methods (Static)
-%         function output = getDrawableOutput()
-%             output(1).name='Classified tracks';
-%             output(1).var='tracks';
-%             output(1).formatData=[];
-%             output(1).type='overlay';
-%             output(1).defaultDisplayMethod=@(x) MTTracksDisplay();
-%         end
         
         function name = getName()
             name = 'Motion Analysis';
         end
         function h = GUI()
             h = @motionAnalysisProcessGUI;
+        end
+        
+        function alpha = getAlphaValues()
+           alpha=[0.01 0.05 0.1 0.2];
+        end
+        
+        function methods = getConfinementRadiusMethods()
+            methods(1).type=0;
+            methods(1).name='Mean positional standard deviation';
+            methods(2).type=1;
+            methods(2).name='Minimum positional standard deviation';
+            methods(3).type=2;
+            methods(3).name='Rectangle approximation';
         end
         
         function funParams = getDefaultParams(owner,varargin)
