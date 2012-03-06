@@ -364,7 +364,11 @@ classdef  MovieObject < hgsetget
             % Load a movie object from a path
             
             % Check the path is a valid file
-            assert(logical(exist(moviepath, 'file')==2),'lccb:movieObject:load', 'File does not exist.');
+            assert(~isempty(ls(moviepath)),'lccb:movieObject:load', 'File does not exist.');
+            
+            % Retrieve the absolute path
+            [~,f]= fileattrib(moviepath);
+            moviepath=f.Name;
             
             if strcmpi(moviepath(end-3:end),'.mat') 
                 % Import movie object from MAT file

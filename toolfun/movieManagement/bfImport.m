@@ -90,12 +90,15 @@ nZ =  metadata.getPixelsSizeZ(0).getValue;
 assert(isequal(nZ,1),'Importation of 3D movies not implemented yet');
 
 % Set output directory (based on image extraction flag)
+movie=MovieData;
 [mainPath,movieName]=fileparts(dataPath);
 if extractImages, 
     rawDataPath = uigetdir(mainPath,'Find a place to save your extracted images');
+    if isequal(rawDataPath,0), return; end
 end
 [movieFileName,outputDir] = uiputfile('*.mat','Find a place to save your analysis',...
     fullfile(mainPath,[movieName '.mat']));
+if isequal(outputDir,0), return; end
 
 % Create movie channels
 channelPath=cell(1,nChan);

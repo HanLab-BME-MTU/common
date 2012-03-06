@@ -220,10 +220,22 @@ classdef  MovieData < MovieObject
         function relocate(obj,varargin)
             % Relocate the MovieData object
             
-            % Run superclass relocate method (for movie path and analysis components)
-            [oldRootDir newRootDir]=relocate@MovieObject(obj,varargin{:});
-            
-            % Relocate the Channel objects
+            % Run superclass relocate method (path and analysis)
+            [oldRootDir newRootDir]=relocate@MovieObject(obj,varargin{:});           
+                       
+            % Check that channels can be relocated (share oldRootDir)
+            status = cellfun(@(x) ~isempty(regexp(x,['^' oldRootDir '*'],'once')),...
+                obj.getChannelPaths);
+            if ~all(status)
+                relocateMsg=sprintf(['The movie channels can not be automatically relocated.\n'...
+                    'Do you want to relocate channel %g:\n %s?'],1,obj.getChannelPaths{1});
+                confirmRelocate = questdlg(relocateMsg,'Relocation - Channels','Yes','No','Yes');
+                if ~strcmp(confirmRelocate,'Yes'), return; end
+                newChannelPath = uigetdir(newRootDir);
+                if isequal(newChannelPath,0), return; end
+                [oldRootDir newRootDir]=getRelocationDirs(obj.getChannelPaths{1},newChannelPath);
+            end
+            % Relocate the movie channels
             for i=1:numel(obj.channels_),
                 obj.channels_(i).relocate(oldRootDir,newRootDir);
             end
