@@ -4,7 +4,8 @@ clc;
 clear all;
 
 % Set some random control points and draw the curve
-cP = [[0 0 0];[4 2 0];[2 4 0];[4 4 0]];
+% cP = [[0 0 0];[4 2 0];[2 4 0];[4 4 0]];
+cP = [[0 0 0];[4 2 0];[2 4 0];[4 4 0];[3 0 0];[0 3 0]];
 
 curvePoints = renderBezier(cP,linspace(0,1,300)');
 
@@ -22,7 +23,8 @@ scatter(p(:,1),p(:,2),'.b');
 
 % Compute the distance and draw the projections
 for i=1:nPoints
-    [~,t] = distancePointBezier(cP,p(i,:));
+    [~,t] = distancePointBezierSISL(cP,p(i,:));
+    % [~,t] = distancePointBezier(cP,p(i,:));
     projectionPoints = renderBezier(cP,t);
     plot([p(i,1),projectionPoints(1)],[p(i,2),projectionPoints(2)],'-k');
 end
