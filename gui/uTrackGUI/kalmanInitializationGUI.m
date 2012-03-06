@@ -71,7 +71,7 @@ userData.crtProc = userData.userData_main.crtProc;
 
 props = get(userData.handles_main.popupmenu_probDim, {'UserData','Value'});
 userData.probDim=props{1}(props{2});
-u = get(userData.handles_main.popupmenu_kalman_initialize, 'UserData');
+u = get(userData.handles_main.popupmenu_kalmanFunctions, 'UserData');
 userData.kalmanInitParam = u{userData.procID};
 kalmanInitParam = userData.kalmanInitParam;
 
@@ -198,10 +198,10 @@ else
     kalmanInitParam.searchRadiusFirstIteration = searchRadiusFirstIteration;
 end
 
-u = get(userData.handles_main.popupmenu_kalman_initialize, 'UserData');
+u = get(userData.handles_main.popupmenu_kalmanFunctions, 'UserData');
 u{userData.procID} = kalmanInitParam;
 
-set(userData.handles_main.popupmenu_kalman_initialize, 'UserData', u)   
+set(userData.handles_main.popupmenu_kalmanFunctions, 'UserData', u)   
 
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);

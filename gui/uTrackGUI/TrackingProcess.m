@@ -181,11 +181,11 @@ classdef TrackingProcess < DataProcessingProcess
             
             % --------------- kalmanFunctions ----------------
             
-            funParams.kalmanFunctions.reserveMem  = TrackingProcess.getKalmanReserveMemFunctions(1).funcName;
-            funParams.kalmanFunctions.initialize  = TrackingProcess.getKalmanInitializeFunctions(1).funcName;
-            funParams.kalmanFunctions.calcGain    = TrackingProcess.getKalmanCalcGainFunctions(1).funcName;
-            funParams.kalmanFunctions.timeReverse = TrackingProcess.getKalmanTimeReverseFunctions(1).funcName;
-            
+            kalmanFunctions = TrackingProcess.getKalmanFunctions(1);
+            fields = fieldnames(kalmanFunctions);
+            validFields = {'reserveMem','initialize','calcGain','timeReverse'};
+            kalmanFunctions = rmfield(kalmanFunctions,fields(~ismember(fields,validFields)));
+            funParams.kalmanFunctions = kalmanFunctions;            
             
             % --------------- saveResults ----------------
             funParams.saveResults.export = 0; %FLAG allow additional export of the tracking results into matrix
@@ -201,54 +201,29 @@ classdef TrackingProcess < DataProcessingProcess
 
         end
         
-        function functions = getKalmanReserveMemFunctions(varargin)
-            functions(1).name = 'Brownian + Directed motion models';
-            functions(1).funcName = func2str(@kalmanResMemLM);
+        function kalmanFunctions = getKalmanFunctions(index)
+            % Brownian + Directed motion models
+            kalmanFunctions(1).name = 'Brownian + Directed motion models';
+            kalmanFunctions(1).reserveMem = func2str(@kalmanResMemLM);            
+            kalmanFunctions(1).initialize  = func2str(@kalmanInitLinearMotion);
+            kalmanFunctions(1).initializeGUI  = @kalmanInitializationGUI;            
+            kalmanFunctions(1).calcGain    = func2str(@kalmanGainLinearMotion);
+            kalmanFunctions(1).timeReverse = func2str(@kalmanReverseLinearMotion);
+              
+            % Microtubule dynamics
+            kalmanFunctions(2).name = 'Microtubule dynamics';
+            kalmanFunctions(2).reserveMem = func2str(@kalmanResMemLM);
+            kalmanFunctions(2).initialize  = func2str(@plusTipKalmanInitLinearMotion);
+            kalmanFunctions(2).initializeGUI  = @kalmanInitializationGUI;            
+            kalmanFunctions(2).calcGain    = func2str(@plusTipKalmanGainLinearMotion);
+            kalmanFunctions(2).timeReverse = func2str(@kalmanReverseLinearMotion);
             
-            ip=inputParser;
-            ip.addOptional('index',1:length(functions),@isvector);
-            ip.parse(varargin{:});
-            index = ip.Results.index;
-            functions=functions(index);      
+            if nargin>0
+                assert(all(ismember(index, 1:numel(kalmanFunctions))));
+                kalmanFunctions=kalmanFunctions(index);
+            end
         end
-        
-        function functions = getKalmanInitializeFunctions(varargin)
-            functions(1).name = 'Brownian + Directed motion models';
-            functions(1).funcName = func2str(@kalmanInitLinearMotion);
-            functions(1).GUI=@kalmanInitializationGUI;
-            functions(2).name = 'Microtubule dynamics';
-            functions(2).funcName = func2str(@plusTipKalmanInitLinearMotion);
-            functions(2).GUI=@kalmanInitializationGUI;
-            ip=inputParser;
-            ip.addOptional('index',1:length(functions),@isvector);
-            ip.parse(varargin{:});
-            index = ip.Results.index;
-            functions=functions(index);      
-        end
-        
-        function functions = getKalmanCalcGainFunctions(varargin)
-            functions(1).name = 'Brownian + Directed motion models';
-            functions(1).funcName = func2str(@kalmanGainLinearMotion);
-            functions(2).name = 'Microtubule dynamics';
-            functions(2).funcName = func2str(@plusTipKalmanGainLinearMotion);
-            ip=inputParser;
-            ip.addOptional('index',1:length(functions),@isvector);
-            ip.parse(varargin{:});
-            index = ip.Results.index;
-            functions=functions(index);      
-        end
-        
-        function functions = getKalmanTimeReverseFunctions(varargin)
-            functions(1).name = 'Brownian + Directed motion models';
-            functions(1).funcName = func2str(@kalmanReverseLinearMotion);
-            
-            ip=inputParser;
-            ip.addOptional('index',1:length(functions),@isvector);
-            ip.parse(varargin{:});
-            index = ip.Results.index;
-            functions=functions(index);      
-        end     
-        
+       
         
         function costMatrix = getDefaultLinkingCostMatrices(owner,timeWindow,varargin)
             

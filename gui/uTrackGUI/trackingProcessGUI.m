@@ -22,7 +22,7 @@ function varargout = trackingProcessGUI(varargin)
 
 % Edit the above text to modify the response to help trackingProcessGUI
 
-% Last Modified by GUIDE v2.5 13-Dec-2011 17:58:33
+% Last Modified by GUIDE v2.5 05-Mar-2012 18:28:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -66,8 +66,8 @@ set(handles.checkbox_merging, 'Value',ismember(funParams.gapCloseParam.mergeSpli
 set(handles.checkbox_splitting, 'Value',ismember(funParams.gapCloseParam.mergeSplit,[1 3]));
     
 % Set cost matrics
-defaultLinkingCostMat = userData.crtProc.getDefaultLinkingCostMatrices(userData.MD,5);
-defaultGapClosingCostMat = userData.crtProc.getDefaultGapClosingCostMatrices(userData.MD,5);
+defaultLinkingCostMat = userData.crtProc.getDefaultLinkingCostMatrices(userData.MD,funParams.gapCloseParam.timeWindow);
+defaultGapClosingCostMat = userData.crtProc.getDefaultGapClosingCostMatrices(userData.MD,funParams.gapCloseParam.timeWindow);
 userData.cost_linking = {defaultLinkingCostMat.funcName};
 userData.cost_gapclosing = {defaultGapClosingCostMat.funcName};
 userData.fun_cost_linking = {defaultLinkingCostMat.GUI};
@@ -77,38 +77,38 @@ userData.fun_cost_gap = {defaultGapClosingCostMat.GUI};
 i1 = find(strcmp(funParams.costMatrices(1).funcName, userData.cost_linking));
 i2 = find(strcmp(funParams.costMatrices(2).funcName, userData.cost_gapclosing));
 assert(isscalar(i1) && isscalar(i2),'User-defined: the length of matching methods must be 1.')
-u1 = cell(1, numel(defaultLinkingCostMat));
-u2 = cell(1,numel(defaultGapClosingCostMat));
+nLinking=numel(defaultLinkingCostMat);
+nGapClosing=numel(defaultGapClosingCostMat);
+u1 = cell(1,nLinking);
+u2 = cell(1,nGapClosing);
 u1{i1} = funParams.costMatrices(1).parameters;
 u2{i2} = funParams.costMatrices(2).parameters;
+for i=setdiff(1:nLinking,i1), u1{i}=defaultLinkingCostMat(i).parameters; end
+for i=setdiff(1:nGapClosing,i1), u2{i}=defaultGapClosingCostMat(i).parameters; end
 
 set(handles.popupmenu_linking, 'Value', i1, 'UserData', u1,...
     'String',{defaultLinkingCostMat.name})
 set(handles.popupmenu_gapclosing, 'Value', i2, 'UserData', u2,...
     'String',{defaultGapClosingCostMat.name})
 
-
 % Kalman functions
-userData.reserveMemFunctions = userData.crtProc.getKalmanReserveMemFunctions;
-userData.initializeFunctions =  userData.crtProc.getKalmanInitializeFunctions;
-userData.calcGainFunctions =  userData.crtProc.getKalmanCalcGainFunctions;
-userData.timeReverseFunctions =  userData.crtProc.getKalmanTimeReverseFunctions;
+userData.kalmanFunctions = TrackingProcess.getKalmanFunctions;
+nKalmanFunctions = numel(userData.kalmanFunctions);
+kalmanFields = {'reserveMem','initialize','calcGain','timeReverse'};
 
-i1 = find(strcmp(funParams.kalmanFunctions.reserveMem, {userData.reserveMemFunctions.funcName}));
-i2 = find(strcmp(funParams.kalmanFunctions.initialize, {userData.initializeFunctions.funcName}));
-i3 = find(strcmp(funParams.kalmanFunctions.calcGain, {userData.calcGainFunctions.funcName}));
-i4 = find(strcmp(funParams.kalmanFunctions.timeReverse, {userData.timeReverseFunctions.funcName}));
+index=true(1,nKalmanFunctions);
+for i=1:numel(kalmanFields)
+    index=index & strcmp(funParams.kalmanFunctions.(kalmanFields{i}),...
+        {userData.kalmanFunctions.(kalmanFields{i})});
+end
 
-assert(isscalar(i1) && isscalar(i2) && isscalar(i3) && isscalar(i4),...
-    'User-defined: the length of matching methods must be 1.');
+assert(sum(index)==1,'Did not find a unique Kalman set.');
 
-u2 = cell(1, numel(userData.initializeFunctions));
+u2 = cell(1,nKalmanFunctions);
 u2{i2} = funParams.costMatrices(1).parameters.kalmanInitParam;
 
-set(handles.popupmenu_kalman_reserve, 'String', {userData.reserveMemFunctions.name}, 'Value', i1)
-set(handles.popupmenu_kalman_initialize,'String', {userData.initializeFunctions.name}, 'Value', i2, 'UserData', u2)
-set(handles.popupmenu_kalman_gain, 'String', {userData.calcGainFunctions.name}, 'Value', i3)
-set(handles.popupmenu_kalman_reverse,'String', {userData.timeReverseFunctions.name}, 'Value', i4)
+set(handles.popupmenu_kalmanFunctions,'UserData',u2,...
+    'String', {userData.kalmanFunctions.name}, 'Value', find(index))
 
 set(handles.checkbox_export, 'Value', funParams.saveResults.export)
 
@@ -207,15 +207,13 @@ funParams.costMatrices(2).funcName = userData.cost_gapclosing{i_gapclosing};
 funParams.costMatrices(2).parameters = u_gapclosing{i_gapclosing};
 
 % Get Kalman values
-props = get(handles.popupmenu_kalman_initialize, {'Value','UserData'});
-funParams.kalmanFunctions.initialize = userData.initializeFunctions(props{1}).funcName;
-funParams.costMatrices(1).parameters.kalmanInitParam = props{2}{props{1}};
-i = get(handles.popupmenu_kalman_reserve, 'Value');
-funParams.kalmanFunctions.reserveMem  = userData.reserveMemFunctions(i).funcName;
-i = get(handles.popupmenu_kalman_gain, 'Value');
-funParams.kalmanFunctions.calcGain    = userData.calcGainFunctions(i).funcName;
-i = get(handles.popupmenu_kalman_reverse, 'Value');
-funParams.kalmanFunctions.timeReverse = userData.timeReverseFunctions(i).funcName;
+iKalman = get(handles.popupmenu_kalmanFunctions, 'Value');
+kalmanFields = {'reserveMem','initialize','calcGain','timeReverse'};
+for i=1:numel(kalmanFields)
+    funParams.kalmanFunctions.(kalmanFields{i})=userData.kalmanFunctions.(kalmanFields{i});
+end
+kalmanData = get(handles.popupmenu_kalmanFunctions, 'UserData');
+funParams.costMatrices(1).parameters.kalmanInitParam = kalmanData{iKalman};
 
 % Set up parameters effected by funParams.gapCloseParam.timeWindow
 if isfield(funParams.costMatrices(2).parameters,'brownStdMult'),
@@ -315,18 +313,14 @@ set(handles.popupmenu_gapclosing, 'UserData', u_gapclosing)
 guidata(hObject,handles);
 
 
-% --- Executes on button press in pushbutton_set_kalman.
-function pushbutton_set_kalman_Callback(hObject, eventdata, handles)
+% --- Executes on button press in pushbutton_kalman_initialize.
+function pushbutton_kalman_initialize_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
-funcId = get(handles.popupmenu_kalman_initialize, 'Value');
+id = get(handles.popupmenu_kalmanFunctions, 'Value');
 
-if funcId > numel(userData.initializeFunctions)
-    warndlg('Please select an option in the drop-down menu.','Error','modal')
-    return
-else
-    userData.kalmanFig = userData.initializeFunctions(funcId).GUI('mainFig', handles.figure1, funcId);
-end
+userData.kalmanFig = userData.kalmanFunctions(id).initializeGUI('mainFig', handles.figure1, id);
+
 set(handles.figure1, 'UserData', userData);
 
 % --- Executes on key press with focus on figure1 and none of its controls.
