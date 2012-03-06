@@ -3,9 +3,9 @@ function [dist,t] = distancePointBezierSISL(cP,P)
 % distancePointBezierSISL computes the distance between a point and a Bezier
 % curve. If only one control point is specified the distance between the 
 % point and the control point is returned. In comparison to distancePointBezier
-% the parametrization interval cannot be specified. However, there is no limitation
-% on the complexity of the curves. This function uses the SISL NURBS
-% library which can be found at "http://www.sintef.no/sisl".
+% the parametrization interval cannot be specified and it is a bit slower. 
+% However, there is no limitation on the complexity of the curves. This 
+% function uses the SISL NURBS library which can be found at "http://www.sintef.no/sisl".
 %
 % Required Inputs:
 % cP                A N x 3 array representing a set of 3-dimensional 
