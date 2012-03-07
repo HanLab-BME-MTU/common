@@ -6,39 +6,37 @@
 
 // Compilation: mex -I. -IC:\Users\PB93\Downloads\sisl-4.5.0\include -LC:\Users\PB93\Desktop\SISLbuild\Release -lsisl distancePointBezierSISL.cpp
 
+void truncate(double *cP, int cPdim, int nCP, double tStart, double tEnd);
+void transposeArray(double *a, int sizeX, int sizeY);
+
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
+	// =====================
+	// Check inputs
+	// =====================
+
 	// Check number of input arguments
-	if (nrhs != 2) {
-		mexErrMsgTxt("2 input arguments required.");
-	}
+	if (nrhs != 2 && nrhs != 4) mexErrMsgTxt("2 or 4 input arguments required.");
 
 	// Check number of output arguments
-	if (nlhs > 2) {
-		mexErrMsgTxt("Too many output arguments.");
-	}
+	if (nlhs > 2) mexErrMsgTxt("Too many output arguments.");
 
 	// Check the dimension of the control points
 	const mwSize *inputSize = mxGetDimensions(prhs[0]);
 	int nCP = inputSize[0]; // Number of control points
-	int controlPointsDimension = inputSize[1];
-
-	if (controlPointsDimension < 1 || nCP < 1) {
-		mexErrMsgTxt("At least 1 1D control point is needed!");
-	}
+	int cPdim = inputSize[1];
+	if (cPdim < 1 || nCP < 1) mexErrMsgTxt("At least 1 1D control point is needed!");
 
 	// Check the dimension of the free point
 	inputSize = mxGetDimensions(prhs[1]);
 	int nPoints = inputSize[0];
 	int pointsDimension = inputSize[1];
+	if (nPoints != 1) mexErrMsgTxt("Distance computation of only one point supported!");
+	if (pointsDimension != cPdim) mexErrMsgTxt("The dimension of the point and the control points should be the same!");
 
-	if (nPoints != 1) {
-		mexErrMsgTxt("Distance computation of only one point supported!");
-	}
-
-	if (pointsDimension != controlPointsDimension) {
-		mexErrMsgTxt("The dimension of the point and the control points should be the same!");
-	}
+	// =====================
+	// Inputs/Outputs
+	// =====================
 
 	// Variables
 	double *cP; // Control points
@@ -48,41 +46,38 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 	// Associate inputs
 	cP = mxGetPr(prhs[0]);
-	double *cP_transposed = new double[nCP*controlPointsDimension];
+	point = mxGetPr(prhs[1]);
 
 	// Transpose control points
-	for (int j = 0; j < nCP; j++) {
-		for (int i = 0; i < controlPointsDimension; i++) {
-			cP_transposed[j*controlPointsDimension+i] = cP[i*nCP+j];
-		}
-	}
-
-	point = mxGetPr(prhs[1]);
+	transposeArray(cP, nCP, cPdim);
 
 	// Associate outputs
 	plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
 	distanceMin = mxGetPr(plhs[0]);
-
 	plhs[1] = mxCreateDoubleMatrix(1, 1, mxREAL);
 	tDistMin = mxGetPr(plhs[1]);
 
+	// Optional inputs
+	if (nrhs == 4) {
+		double tStart, tEnd;
+		tStart = *mxGetPr(prhs[2]);
+		tEnd = *mxGetPr(prhs[3]);
+		truncate(cP, cPdim, nCP, tStart, tEnd);
+	}
+
 	// =====================
-	// Distance between two points
+	// Compute the distance
 	// =====================
 
-	if (nCP == 1) {
+	if (nCP == 1) { // Single control point
 		double dist = 0;
-		for (int i = 0; i<controlPointsDimension; i++) {
-			dist = dist + pow(cP[i]-point[i],2);
+		for (int i = 0; i < cPdim; i++) {
+			dist = dist + pow(cP[i] - point[i],2);
 		}
 		*distanceMin = sqrt(dist);
 		*tDistMin = 0;
+	} else { // A curve
 
-	// =====================
-	// Distance between the points and the curve
-	// =====================
-
-	} else {
 		// Convert the Bézier curve into a B-spline
 		const int number = nCP;
 		const int order = nCP;
@@ -100,14 +95,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 		// Inputs
 		SISLCurve *curve = newCurve(number, // number of control points
-			order,  // order of spline curve (degree + 1)
-			knots,  // pointer to knot vector (parametrization)
-			cP_transposed,   // pointer to coefficient vector (control points)
-			1,      // kind = polynomial B-spline curve
-			controlPointsDimension,      // dimension
-			0);     // no copying of information, 'borrow' arrays
-		double epsge = 1.0e-5; // geometric tolerance
-		double epsco = 0; // Not used
+			order,							// order of spline curve (degree + 1)
+			knots,							// pointer to knot vector (parametrization)
+			cP,								// pointer to coefficient vector (control points)
+			3,								// kind = Polynomial Bezier curve
+			cPdim,							// dimension
+			0);								// no copying of information, 'borrow' arrays
+		double epsge = 1.0e-5;				// geometric tolerance
+		double epsco = 0;					// Not used
 
 		// Outputs
 		int numintpt; // 
@@ -117,30 +112,82 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		int jstat = 0; // Status flag
 
 		// Compute the curve parameter of the closest point (See the SISL manual)
-		s1953(curve,point,controlPointsDimension,epsco,epsge,&numintpt,&intpar,&numintcu,&intcurve,&jstat);
+		s1953(curve,point,cPdim,epsco,epsge,&numintpt,&intpar,&numintcu,&intcurve,&jstat);
+		if (jstat < 0) mexErrMsgTxt("SISL library error in function s1953!");
 
 		// Inputs
 		int leftknot = nKnots/2 - 1;
-		double *curvePoint = new double[controlPointsDimension];
+		double *curvePoint = new double[cPdim];
 
 		// Evaluate the curve (See the SISL manual)
-		s1227(curve,0,*intpar,&leftknot,curvePoint,&jstat);
+		s1227(curve, 0, *intpar, &leftknot, curvePoint, &jstat);
+		if (jstat < 0) mexErrMsgTxt("SISL library error in function s1227!");
 
 		// Compute the distance to the closest point
 		*tDistMin = *intpar;
 		double dist = 0;
-		for (int i = 0; i<controlPointsDimension; i++) {
+		for (int i = 0; i<cPdim; i++) {
 			dist = dist + pow(curvePoint[i]-point[i],2);
 		}
 		*distanceMin = sqrt(dist);
 
 		// Clean up
 		freeCurve(curve);
-		delete [] cP_transposed;
 		delete [] knots;
 		delete [] curvePoint;
 	}
-
 }
 
+void truncate(double *cP, int cPdim, int nCP, double tStart, double tEnd) {
+	// Convert the Bézier curve into a B-spline
+	const int number = nCP;
+	const int order = nCP;
+	const int nKnots = number+order;
 
+	// Define the knots of the B-spline
+	double *knots = new double[nKnots];
+	for (int i=0;i<nKnots/2;i++) knots[i] = 0;
+	for (int i=nKnots/2;i<nKnots;i++) knots[i] = 1;
+
+	// Inputs
+	SISLCurve *curve = newCurve(number, // number of control points
+		order,							// order of spline curve (degree + 1)
+		knots,							// pointer to knot vector (parametrization)
+		cP,								// pointer to coefficient vector (control points)
+		3,								// kind = Polynomial Bezier curve
+		cPdim,							// dimension
+		0);								// no copying of information, 'borrow' arrays
+
+	// Outputs
+	int jstat = 0;	// Status flag
+	SISLCurve *newcurve = newCurve(number,	// number of control points
+		order,								// order of spline curve (degree + 1)
+		knots,								// pointer to knot vector (parametrization)
+		cP,									// pointer to coefficient vector (control points)
+		3,									// kind = Polynomial Bezier curve
+		cPdim,								// dimension
+		0);									// no copying of information, 'borrow' arrays
+
+	// Truncate the curve (See SISL manual)
+	s1712(curve, tStart, tEnd, &newcurve, &jstat);
+	if (jstat < 0) mexErrMsgTxt("SISL library error in function s1712!");
+
+	// Copy the control points
+	for (int i = 0; i < cPdim*nCP; i++) cP[i] = newcurve->ecoef[i];
+
+	// Clean up
+	freeCurve(curve);
+	freeCurve(newcurve);
+	delete [] knots;
+}
+
+void transposeArray(double *a, int sizeX, int sizeY) {
+	double *aTrans = new double[sizeX * sizeY];
+	for (int x = 0; x < sizeX; x++) {
+		for (int y = 0; y < sizeY; y++) {
+			aTrans[x * sizeY + y] = a[y * sizeX + x];
+		}
+	}
+	for (int i = 0; i < sizeX * sizeY; i++) a[i] = aTrans[i];
+	delete [] aTrans;
+}
