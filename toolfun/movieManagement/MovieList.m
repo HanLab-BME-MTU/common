@@ -107,16 +107,17 @@ classdef MovieList < MovieObject
                 throw(ME);
             end
             
+            disp('Saving movie list');
             obj.save();
         end
         
-        function relocate(obj,oldRootDir,newRootDir)
-            % Relocate the MovieList object
+        function relocate(obj,oldRootDir,newRootDir,full)
+            % Relocate  analysis
+            relocate@MovieObject(obj,oldRootDir,newRootDir);            
+            if nargin<3 || ~full, return; end
             
-            % Run superclass relocate method (path and analysis components)
-            relocate@MovieObject(obj,oldRootDir,newRootDir);
-            
-            % Relocate movie paths
+            % Relocate the movie paths
+            fprintf(1,'Relocating movies from %s to %s\n',oldRootDir,newRootDir);
             for i=1:numel(obj.movieDataFile_);
                 obj.movieDataFile_{i} = relocatePath(obj.movieDataFile_{i},oldRootDir,newRootDir);
             end

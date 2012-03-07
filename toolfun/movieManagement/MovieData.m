@@ -193,6 +193,7 @@ classdef  MovieData < MovieObject
             nFrames = zeros(1, length(obj.channels_));
             
             % Call subcomponents sanityCheck
+            disp('Checking channels');
             for i = 1: length(obj.channels_)
                 [width(i) height(i) nFrames(i)] = obj.channels_(i).sanityCheck(obj);
             end
@@ -214,33 +215,36 @@ classdef  MovieData < MovieObject
                 obj.imSize_ = [height(1) width(1)];
             end
            
+            disp('Saving movie');
             obj.save();
         end
         
-        function relocate(obj,oldRootDir,newRootDir)
-            % Relocate the MovieData object
+        function relocate(obj,oldRootDir,newRootDir,full)
             
-            % Run superclass relocate method for (path and analysis)
+            % Relocate movie and rois analysis
             relocate@MovieObject(obj.getAncestor,oldRootDir,newRootDir);                      
             for descendant = obj.getAncestor.getDescendants
                 relocate@MovieObject(descendant,oldRootDir,newRootDir);
             end
-
-            % Check that channels can be relocated (share oldRootDir)
-            channelPaths=obj.getAncestor.getChannelPaths;
+            if nargin<3 || ~full, return; end
+            
+            % Check that channels paths start with oldRootDir           
+            channelPaths=obj.getChannelPaths;
             status = cellfun(@(x) ~isempty(regexp(x,['^' oldRootDir '*'],'once')),channelPaths);
             if ~all(status)
                 relocateMsg=sprintf(['The movie channels can not be automatically relocated.\n'...
-                    'Do you want to relocate channel %g:\n %s?'],1,channelPaths{1});
-                confirmRelocate = questdlg(relocateMsg,'Relocation - Channels','Yes','No','Yes');
+                    'Do you want to manually relocate channel %g:\n %s?'],1,channelPaths{1});
+                confirmRelocate = questdlg(relocateMsg,'Relocation - channels','Yes','No','Yes');
                 if ~strcmp(confirmRelocate,'Yes'), return; end
                 newChannelPath = uigetdir(newRootDir);
                 if isequal(newChannelPath,0), return; end
                 [oldRootDir newRootDir]=getRelocationDirs(channelPaths{1},newChannelPath);
             end
+            
             % Relocate the movie channels
+            fprintf(1,'Relocating channels from %s to %s\n',oldRootDir,newRootDir);
             for i=1:numel(obj.channels_),
-                obj.getAncestor.channels_(i).relocate(oldRootDir,newRootDir);
+                obj.channels_(i).relocate(oldRootDir,newRootDir);
             end
         end
         

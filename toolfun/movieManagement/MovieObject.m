@@ -259,24 +259,31 @@ classdef  MovieObject < hgsetget
                 if ~strcmp(oldPath, newPath)
                     confirmRelocate = 'Yes to all';
                     if askUser
-                        objName = regexprep(class(obj),'([A-Z])',' ${lower($1)}');
-                        relocateMsg=sprintf(['The' objName ' located in \n%s\n has been relocated to \n%s.\n'...
-                            'Should I try to relocate the components of the' objName ' as well?'],oldPath,newPath);
-                        confirmRelocate = questdlg(relocateMsg,['Relocation -' objName],'Yes to all','Yes','No','Yes');
+                        switch class(obj)
+                            case 'MovieData'
+                                type='movie';
+                                components='channels';
+                            case 'MovieList'
+                                type='movie list';
+                                components='movies';
+                            otherwise
+                                error('Non supported movie object');                                
+                        end
+                        relocateMsg=sprintf(['The %s and its analysis will be relocated from \n%s to \n%s.\n'...
+                            'Should I relocate its %s as well?'],type,oldPath,newPath,components);
+                        confirmRelocate = questdlg(relocateMsg,['Relocation - ' type],'Yes to all','Yes','No','Yes');
                     end
                     
-                    if ~strcmp(confirmRelocate,'No')
-                        % Get old and new relocation directories
-                        [oldRootDir newRootDir]=getRelocationDirs(oldPath,newPath);
-                        oldRootDir = regexprep(oldRootDir,endingFilesepToken,'');
-                        newRootDir = regexprep(newRootDir,endingFilesepToken,'');
-                        
-                        % Relocate the object
-                        obj.relocate(oldRootDir,newRootDir);
-                        askUser = strcmp(confirmRelocate,'Yes');
-                    else
-                        obj.setPath(path); % Set the new path
-                    end
+                    full = ~strcmp(confirmRelocate,'No');
+                    askUser = ~strcmp(confirmRelocate,'Yes to all');
+                    % Get old and new relocation directories
+                    [oldRootDir newRootDir]=getRelocationDirs(oldPath,newPath);
+                    oldRootDir = regexprep(oldRootDir,endingFilesepToken,'');
+                    newRootDir = regexprep(newRootDir,endingFilesepToken,'');                   
+                                      
+                    % Relocate the object
+                    fprintf(1,'Relocating analysis from %s to %s\n',oldRootDir,newRootDir);
+                    obj.relocate(oldRootDir,newRootDir,full);
                 end
             end
             if nargin > 2, obj.setFilename(filename); end
@@ -291,8 +298,7 @@ classdef  MovieObject < hgsetget
             % The relocate method automatically relocates the output directory,
             % as well as the paths in each process and package of the movie
             % assuming the internal architecture of the  project is conserved.
-            
-                    
+                                
             % Relocate output directory and set the ne movie path
             obj.outputDirectory_=relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
             obj.setPath(relocatePath(obj.getPath,oldRootDir,newRootDir));
