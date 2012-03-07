@@ -78,7 +78,9 @@ switch (size(cP,1))
         cP(3,:) = d + (2*c*tEnd)/3 + (b*tEnd^2)/3 + (c*tStart)/3 + (2*b*tEnd*tStart)/3 + a*tEnd^2*tStart;
         
         % P3T -> d + c tEnd + b tEnd^2 + a tEnd^3
-        cP(4,:) = d + c*tEnd + b*tEnd^2 + a*tEnd^3;   
+        cP(4,:) = d + c*tEnd + b*tEnd^2 + a*tEnd^3; 
+    otherwise
+        assert(false,'Only linear, quadratic, and cubic Bézier 3D curves supported!');
 end
 
 end
