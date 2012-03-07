@@ -266,8 +266,14 @@ classdef  MovieObject < hgsetget
                     end
                     
                     if ~strcmp(confirmRelocate,'No')
-                        obj.relocate(path); % Call the relocate method
-                        askUser = strcmp(confirmRelocate,'Yes'); % Update the askUser flag
+                        % Get old and new relocation directories
+                        [oldRootDir newRootDir]=getRelocationDirs(oldPath,newPath);
+                        oldRootDir = regexprep(oldRootDir,endingFilesepToken,'');
+                        newRootDir = regexprep(newRootDir,endingFilesepToken,'');
+                        
+                        % Relocate the object
+                        obj.relocate(oldRootDir,newRootDir);
+                        askUser = strcmp(confirmRelocate,'Yes');
                     else
                         obj.setPath(path); % Set the new path
                     end
@@ -279,18 +285,17 @@ classdef  MovieObject < hgsetget
                 'Empty output directory!'); end
         end
         
-        function [oldRootDir newRootDir]=relocate(obj,newPath)
+        function relocate(obj,oldRootDir,newRootDir)
             % Relocate all analysis paths of the movie object
             %
             % The relocate method automatically relocates the output directory,
             % as well as the paths in each process and package of the movie
             % assuming the internal architecture of the  project is conserved.
             
-            [oldRootDir newRootDir]=getRelocationDirs(obj.getPath,newPath);
-            
+                    
             % Relocate output directory and set the ne movie path
             obj.outputDirectory_=relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
-            obj.setPath(newPath);
+            obj.setPath(relocatePath(obj.getPath,oldRootDir,newRootDir));
             
             % Relocate the processes
             for i=1:numel(obj.processes_), obj.processes_{i}.relocate(oldRootDir,newRootDir); end

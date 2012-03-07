@@ -110,11 +110,11 @@ classdef MovieList < MovieObject
             obj.save();
         end
         
-        function relocate(obj,varargin)
+        function relocate(obj,oldRootDir,newRootDir)
             % Relocate the MovieList object
             
-            % Run superclass relocate function (movie list path and analysis components)
-            [oldRootDir newRootDir]=relocate@MovieObject(obj,varargin{:});
+            % Run superclass relocate method (path and analysis components)
+            relocate@MovieObject(obj,oldRootDir,newRootDir);
             
             % Relocate movie paths
             for i=1:numel(obj.movieDataFile_);

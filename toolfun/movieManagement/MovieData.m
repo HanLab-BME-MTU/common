@@ -217,27 +217,30 @@ classdef  MovieData < MovieObject
             obj.save();
         end
         
-        function relocate(obj,varargin)
+        function relocate(obj,oldRootDir,newRootDir)
             % Relocate the MovieData object
             
-            % Run superclass relocate method (path and analysis)
-            [oldRootDir newRootDir]=relocate@MovieObject(obj,varargin{:});           
-                       
+            % Run superclass relocate method for (path and analysis)
+            relocate@MovieObject(obj.getAncestor,oldRootDir,newRootDir);                      
+            for descendant = obj.getAncestor.getDescendants
+                relocate@MovieObject(descendant,oldRootDir,newRootDir);
+            end
+
             % Check that channels can be relocated (share oldRootDir)
-            status = cellfun(@(x) ~isempty(regexp(x,['^' oldRootDir '*'],'once')),...
-                obj.getChannelPaths);
+            channelPaths=obj.getAncestor.getChannelPaths;
+            status = cellfun(@(x) ~isempty(regexp(x,['^' oldRootDir '*'],'once')),channelPaths);
             if ~all(status)
                 relocateMsg=sprintf(['The movie channels can not be automatically relocated.\n'...
-                    'Do you want to relocate channel %g:\n %s?'],1,obj.getChannelPaths{1});
+                    'Do you want to relocate channel %g:\n %s?'],1,channelPaths{1});
                 confirmRelocate = questdlg(relocateMsg,'Relocation - Channels','Yes','No','Yes');
                 if ~strcmp(confirmRelocate,'Yes'), return; end
                 newChannelPath = uigetdir(newRootDir);
                 if isequal(newChannelPath,0), return; end
-                [oldRootDir newRootDir]=getRelocationDirs(obj.getChannelPaths{1},newChannelPath);
+                [oldRootDir newRootDir]=getRelocationDirs(channelPaths{1},newChannelPath);
             end
             % Relocate the movie channels
             for i=1:numel(obj.channels_),
-                obj.channels_(i).relocate(oldRootDir,newRootDir);
+                obj.getAncestor.channels_(i).relocate(oldRootDir,newRootDir);
             end
         end
         
