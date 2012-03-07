@@ -1,6 +1,8 @@
 #include <mex.h>
 
+#include <Wm5BezierCurve2.h>
 #include <Wm5BezierCurve3.h>
+#include <Wm5Vector2.h>
 #include <Wm5Vector3.h>
 
 using namespace Wm5;
@@ -18,25 +20,20 @@ using namespace Wm5;
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     // Check number of input arguments
-    if (nrhs != 1 && nrhs !=3) {
-        mexErrMsgTxt("1 or 3 input arguments required.");
-    }
+    if (nrhs != 1 && nrhs !=3) mexErrMsgTxt("1 or 3 input arguments required.");
     
     // Check number of output arguments
-    if (nlhs > 1) {
-        mexErrMsgTxt("Too many output arguments.");
-    }
+    if (nlhs > 1) mexErrMsgTxt("Too many output arguments.");
     
     // Check the dimension of the control points
     const mwSize *inputSize = mxGetDimensions(prhs[0]);
-    int nControlPoints = inputSize[0];
-    int controlPointDimension = inputSize[1];
+    int nCP = inputSize[0]; // Number of control points
+    int cPdim = inputSize[1]; // Control point dimension
     
-    if (controlPointDimension != 3 || nControlPoints < 2) {
-        mexErrMsgTxt("At least two 3D control points needed!");
-    }
-    
-    // Variables
+    if (cPdim > 3 || cPdim < 1) mexErrMsgTxt("Only 1D, 2D, and 3D control points supported!");
+	if (nCP < 2) mexErrMsgTxt("At least two control points needed!");
+
+	// Variables
     double *cP; // Control points
     double *length; // Length of the Bezier curve
     double t0, t1; // Parametrization interval
@@ -48,25 +45,51 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         t0 = *mxGetPr(prhs[1]);
         t1 = *mxGetPr(prhs[2]);
     } else {
-        t0 = 0.0;
-        t1 = 1.0;
-    }
-    
-    // Associate outputs
-    plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
-    length = mxGetPr(plhs[0]);
-    
-    // Put the control points into a vector array
-    Vector3d *cPVector = new Vector3d[nControlPoints]; // Control points in a Vector3 array
-    for (int i=0;i<nControlPoints;i++) {
-        cPVector[i] = Vector3d(cP[0*nControlPoints+i], cP[1*nControlPoints+i], cP[2*nControlPoints+i]);
-    }
-    
-    // Create the Bezier curve, compute its length and set it as output
-    BezierCurve3d bezierCurve = BezierCurve3d(nControlPoints-1, cPVector);
-    *length = fabs(bezierCurve.GetLength(t0, t1));
-    
-    // BezierCurve3d accepts responsibility for deleting the input arrays
-    
+		t0 = 0.0;
+		t1 = 1.0;
+	}
+
+	// Associate outputs
+	plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+	length = mxGetPr(plhs[0]);
+
+
+	if (cPdim == 1) {
+		// Put the control points into a vector array
+		Vector2d *cPVector2 = new Vector2d[nCP]; // Control points in a Vector2 array
+		for (int i=0;i<nCP;i++) {
+			cPVector2[i] = Vector2d(cP[0*nCP+i], 0);
+		}
+
+		// Create the Bezier curve, compute its length and set it as output
+		BezierCurve2d bezierCurve2 = BezierCurve2d(nCP-1, cPVector2);
+		*length = fabs(bezierCurve2.GetLength(t0, t1));
+
+		// BezierCurve2d accepts responsibility for deleting the input arrays
+	} else if (cPdim == 2) {
+		// Put the control points into a vector array
+		Vector2d *cPVector2 = new Vector2d[nCP]; // Control points in a Vector2 array
+		for (int i=0;i<nCP;i++) {
+			cPVector2[i] = Vector2d(cP[0*nCP+i], cP[1*nCP+i]);
+		}
+
+		// Create the Bezier curve, compute its length and set it as output
+		BezierCurve2d bezierCurve2 = BezierCurve2d(nCP-1, cPVector2);
+		*length = fabs(bezierCurve2.GetLength(t0, t1));
+
+		// BezierCurve2d accepts responsibility for deleting the input arrays
+	} else if (cPdim == 3) {
+		// Put the control points into a vector array
+		Vector3d *cPVector3 = new Vector3d[nCP]; // Control points in a Vector3 array
+		for (int i=0;i<nCP;i++) {
+			cPVector3[i] = Vector3d(cP[0*nCP+i], cP[1*nCP+i], cP[2*nCP+i]);
+		}
+
+		// Create the Bezier curve, compute its length and set it as output
+		BezierCurve3d bezierCurve3 = BezierCurve3d(nCP-1, cPVector3);
+		*length = fabs(bezierCurve3.GetLength(t0, t1));
+
+		// BezierCurve3d accepts responsibility for deleting the input arrays
+	}
 }
 
