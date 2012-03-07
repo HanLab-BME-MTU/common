@@ -47,11 +47,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	int sizeTx, sizeTy; // Size of the optional parameter
 
 	// Associate inputs
-	cP = mxGetPr(prhs[0]);
+	double *cPtmp = mxGetPr(prhs[0]);
 	tStart = *mxGetPr(prhs[1]);
 	tEnd = *mxGetPr(prhs[2]);
 
 	// Transpose control points
+	cP = new double[cPdim*nCP];
+	for (int i = 0; i < cPdim*nCP; i++) cP[i] = cPtmp[i];
 	transposeArray(cP, nCP, cPdim);
 
 	// Associate outputs
@@ -90,6 +92,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 			tout[i] = (t[i] - tStart)/tDiff;
 		}
 	}
+
+	delete [] cP;
 }
 
 void truncate(double *cP, int cPdim, int nCP, double tStart, double tEnd) {

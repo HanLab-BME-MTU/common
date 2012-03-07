@@ -46,10 +46,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	double *tDistMin; // Value of the parameter corresponding to the minimal distance
 
 	// Associate inputs
-	cP = mxGetPr(prhs[0]);
+	double *cPtmp = mxGetPr(prhs[0]);
 	point = mxGetPr(prhs[1]);
 
 	// Transpose control points
+	cP = new double[cPdim*nCP];
+	for (int i = 0; i < cPdim*nCP; i++) cP[i] = cPtmp[i];
 	transposeArray(cP, nCP, cPdim);
 
 	// Associate outputs
@@ -130,12 +132,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		for (int i = 0; i<cPdim; i++) {
 			dist = dist + pow(curvePoint[i]-point[i],2);
 		}
+		
 		*distanceMin = sqrt(dist);
 
 		// Clean up
 		freeCurve(curve);
 		delete [] knots;
 		delete [] curvePoint;
+		delete [] cP;
 	}
 }
 
