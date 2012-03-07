@@ -5,7 +5,7 @@ function t = arcLengthToNativeBezierParametrization(cP,s,warn)
 % iteratively splitting the search interval.
 %
 % Required Inputs:
-% cP             A n+1 x 3 array representing the three-dimensional control
+% cP             A n+1 x M array representing the M-dimensional control
 %                points of the Bezier curve of degree n.
 %
 % s              Any array representing the arc length nodes for which the
