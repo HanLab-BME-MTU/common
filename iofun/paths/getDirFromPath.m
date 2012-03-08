@@ -1,3 +1,5 @@
+%[dirName] = getDirFromPath(dpath) returns the last directory contained in the input path
+
 % Francois Aguet, November 2010
 
 function dirName = getDirFromPath(dpath)

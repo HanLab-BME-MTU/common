@@ -1,5 +1,4 @@
-%fileList = findFilesInSubDirs(topdir, filename)
-% Finds all files containing 'filename' in their name in all subdirectories of 'topdir'.
+%[fileList] = findFilesInSubDirs(topdir, filename) Finds all files containing 'filename' in their name in all subdirectories of 'topdir'.
 
 % Francois Aguet, November 21, 2010
 

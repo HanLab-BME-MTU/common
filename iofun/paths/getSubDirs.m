@@ -1,5 +1,4 @@
-%subdirs = getSubDirs(topdir)
-% Returns all subdirectories below 'topDir'
+%[subdirs] = getSubDirs(topdir) Returns a list of subdirectories from 'topDir'
 
 % Francois Aguet, November 21, 2010
 

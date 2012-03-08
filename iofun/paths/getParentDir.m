@@ -1,4 +1,4 @@
-% Returns the parent directory of the input path
+% [cpath] = getParentDir(cpath) Returns the parent directory's path from the input path
 
 % Francois Aguet, 11/05/2010
 
