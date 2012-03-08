@@ -80,7 +80,7 @@ props = get(handles.listbox_selectedChannels, {'UserData','Value'});
 userData.chanIndx = props{1}(props{2});
 set(handles.edit_frameNumber,'String',1);
 set(handles.slider_frameNumber,'Min',1,'Value',1,'Max',userData.nFrames,...
-    'SliderStep',[1/double(userData.nFrames-1)  10/double(userData.nFrames-1)]);
+    'SliderStep',[1/max(1,double(userData.nFrames-1))  10/max(1,double(userData.nFrames-1))]);
 userData.imIndx=1;
 userData.imData=mat2gray(userData.MD.channels_(userData.chanIndx).loadImage(userData.imIndx));
     
