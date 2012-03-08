@@ -4,8 +4,8 @@ clc;
 clear all;
 
 % Set some random control points and draw the curve
-cP = [[0 0 0];[4 2 0];[2 4 0]];
-% cP = [[0 0 0];[4 2 0];[2 4 0];[4 4 0];[3 0 0];[0 3 0]];
+% cP = [[0 0 0];[4 2 0];[2 4 0]];
+cP = [[0 0 0];[4 2 0];[2 4 0];[4 4 0];[3 0 0];[-3 6 0];[3 0 0]];
 
 curvePoints = renderBezier(cP,linspace(0,1,300)');
 

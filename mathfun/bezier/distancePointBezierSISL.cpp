@@ -115,7 +115,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		double epsco = 0;					// Not used
 
 		// Outputs
-		int numintpt; // 
+		int numintpt; 
 		double *intpar;
 		int numintcu;
 		SISLIntcurve **intcurve;
@@ -125,25 +125,44 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		s1953(curve,point,cPdim,epsco,epsge,&numintpt,&intpar,&numintcu,&intcurve,&jstat);
 		if (jstat < 0) mexErrMsgTxt("SISL library error in function s1953!");
 
+		if (numintpt > 0 && numintcu == 0) {
+			*tDistMin = *intpar;
+			delete intpar;
+		} else if (numintpt == 0 && numintcu > 0) { // The libary retruns a intersection curve object
+			if ((*intcurve)->ipar1 == 1 && (*intcurve)->ipar2 == 0) {
+				int nPoints = (*intcurve)->ipoint;
+				*tDistMin = 0;
+				for (int i=0;i < nPoints; i++) {
+					*tDistMin += (*intcurve)->epar1[i];
+				}
+				*tDistMin /= nPoints;
+			} else {
+				mexErrMsgTxt("These values are suspicious!");
+			}
+			freeIntcurve(*intcurve);
+		} else {
+			mexErrMsgTxt("These values are suspicious!");
+		}
+
 		// Inputs
 		int leftknot = nKnots/2 - 1;
-		double *curvePoint = new double[cPdim];
 
 		// Evaluate the curve (See the SISL manual)
-		s1227(curve, 0, *intpar, &leftknot, curvePoint, &jstat);
+		double *curvePoint = new double[cPdim];
+		s1227(curve, 0, *tDistMin, &leftknot, curvePoint, &jstat);
 		if (jstat < 0) mexErrMsgTxt("SISL library error in function s1227!");
 
 		// Compute the distance to the closest point
-		*tDistMin = *intpar;
 		double dist = 0;
 		for (int i = 0; i<cPdim; i++) {
 			dist = dist + pow(curvePoint[i]-point[i],2);
 		}
-		
+
 		*distanceMin = sqrt(dist);
 
 		// Clean up
 		freeCurve(curve);
+		
 		delete [] knots;
 		delete [] curvePoint;
 		delete [] cP;
