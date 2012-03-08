@@ -8,6 +8,7 @@
 // Linux: mex -I. -I/home/pb93/Downloads/sisl-4.5.0/include -L/home/pb93/Downloads/sislBuild -lsisl truncateBezierSISL.cpp
 
 void truncate(double *cP, int cPdim, int nCP, double tStart, double tEnd);
+void extend(double *cP, int cPdim, int nCP, double tStart, double tEnd);
 void transposeArray(double *a, int sizeX, int sizeY);
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
@@ -64,7 +65,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	// Truncate the curve
 	// =====================
 
-	truncate(cP, cPdim, nCP, tStart, tEnd);
+	// Check tStart and tEnd and truncate or extend
+	if (tStart >= 0 && tEnd <=1) {
+		truncate(cP, cPdim, nCP, tStart, tEnd);
+	} else {
+		extend(cP, cPdim, nCP, tStart, tEnd);
+	}
+
 	transposeArray(cP, cPdim, nCP);
 
 	// Copy control points
@@ -137,6 +144,73 @@ void truncate(double *cP, int cPdim, int nCP, double tStart, double tEnd) {
 	freeCurve(curve);
 	freeCurve(newcurve);
 	delete [] knots;
+}
+
+void extend(double *cP, int cPdim, int nCP, double tStart, double tEnd) {
+	// Convert the Bézier curve into a B-spline
+	const int number = nCP;
+	const int order = nCP;
+	const int nKnots = number+order;
+
+	// Define the knots of the B-spline
+	double *knots = new double[nKnots];
+	for (int i=0;i<nKnots/2;i++) knots[i] = 0;
+	for (int i=nKnots/2;i<nKnots;i++) knots[i] = 1;
+
+	// Inputs
+	SISLCurve *curve = newCurve(number, // number of control points
+		order,							// order of spline curve (degree + 1)
+		knots,							// pointer to knot vector (parametrization)
+		cP,								// pointer to coefficient vector (control points)
+		3,								// kind = Polynomial Bezier curve
+		cPdim,							// dimension
+		0);								// no copying of information, 'borrow' arrays
+
+	// Sample the curve
+	int leftknot = nKnots/2 - 1;
+	double *curvePoints = new double[cPdim*nCP];
+	int jstat = 0;
+
+	double *epar = new double[nCP];
+	for (int i=0; i < nCP; i++) {
+		epar[i] = (tStart <= tEnd) ? i*(tEnd-tStart)/(nCP-1)+tStart : i*(tStart-tEnd)/(nCP-1)+tEnd;
+
+		// Evaluate the curve (See the SISL manual)
+		s1227(curve, 0, epar[i], &leftknot, &curvePoints[i*cPdim], &jstat);
+		if (jstat < 0) mexErrMsgTxt("SISL library error in function s1227!");
+	}
+
+	// Interpolate these points to find the new curve
+	// Inputs
+	int *ntype = new int[nCP];
+	for (int i=0;i<nCP;i++) ntype[i] = 1;
+	int icnsta = 0;
+	int icnend = 0;
+	int iopen = 1;
+	int ik = order;
+	double astpar = (tStart <= tEnd) ? tStart : tEnd;
+
+	// Outputs
+	double cendpar;
+	double *gpar = new double[nCP];
+	int jnbpar;
+
+	s1357(curvePoints, nCP, cPdim, ntype, epar, icnsta, icnend, iopen, ik, astpar, &cendpar, &curve, &gpar, &jnbpar, &jstat);
+	if (jstat < 0) mexErrMsgTxt("SISL library error in function s1357!");
+
+	// Reverse the orientation if needed
+	if (tEnd <= tStart){
+		s1706(curve);
+	}
+
+	// Copy the control points
+	for (int i = 0; i < cPdim*nCP; i++) cP[i] = curve->ecoef[i];
+
+	delete [] curvePoints;
+	delete [] ntype;
+	delete [] epar;
+	delete [] gpar;
+	freeCurve(curve);
 }
 
 void transposeArray(double *a, int sizeX, int sizeY) {
