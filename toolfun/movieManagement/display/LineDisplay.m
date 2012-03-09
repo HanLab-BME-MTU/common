@@ -3,6 +3,7 @@ classdef LineDisplay < MovieDataDisplay
     properties
         Color='r';
         Marker = 'none';
+        MarkerSize = 6; 
         LineStyle = '-';
         LineWidth = 1;
         XLabel='';
@@ -18,7 +19,8 @@ classdef LineDisplay < MovieDataDisplay
         function h=initDraw(obj,data,tag,varargin)
             
             h=plot(data(:,2),data(:,1),varargin{:});
-            set(h,'Tag',tag,'Color',obj.Color,'Marker',obj.Marker,...
+            set(h,'Tag',tag,'MarkerSize',obj.MarkerSize,...
+                'Color',obj.Color,'Marker',obj.Marker,...
                 'Linestyle',obj.LineStyle,'LineWidth',obj.LineWidth);
             obj.setAxesProperties;
             
@@ -54,6 +56,8 @@ classdef LineDisplay < MovieDataDisplay
             params(7).validator=@iscell;
             params(8).name='lfont';
             params(8).validator=@iscell;
+            params(9).name='MarkerSize';
+            params(9).validator=@isscalar;
         end
         function f=getDataValidator()
             f=@isnumeric;
