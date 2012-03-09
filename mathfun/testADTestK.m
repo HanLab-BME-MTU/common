@@ -10,3 +10,28 @@ samples = {[38.7 41.5 43.8 44.5 45.5 46.0 47.7 58.0],...
            [34.0 35.0 39.0 40.0 43.0 43.0 44.0 45.0],...
            [34.0 34.8 34.8 35.4 37.2 37.8 41.2 42.8]};
 [hval T cval] = adtestk(samples)
+disp('-----------');
+
+
+nexp = 1e4;
+N = 1e2;
+hvalAD = zeros(nexp,1);
+for k = 1:nexp
+    s1 = randn(1,N);
+    s2 = randn(1,N);
+    hvalAD(k) = adtestk({s1,s2});
+end
+sum(hvalAD)/nexp
+
+disp('-----------');
+
+% dx = 1;
+% x = -10:dx:10;
+% figure;
+% hold on;
+% for k = 1:numel(samples)
+%     ni = hist(samples{k}, x);
+%     ni = ni/sum(ni)/dx;
+%     plot(x, ni, '.-', 'Color', rand(1,3));
+% end
+
