@@ -1,6 +1,6 @@
-function [cP,t] = truncateBezier(cP,tStart,tEnd,t)
-% function [cP,t] = truncateBezier(cP,tStart,tEnd,t)
-% truncateBezier computes the control points of a segment of the input 
+function [cP,t] = truncateBezierOld(cP,tStart,tEnd,t)
+% function [cP,t] = truncateBezierOld(cP,tStart,tEnd,t)
+% truncateBezierOld computes the control points of a segment of the input 
 % Bezier curve. The input curve can be a linear, quadratic or cubic 
 % Bezier curve. Optionally, points of the old curve can be mapped onto the
 % new curve.
