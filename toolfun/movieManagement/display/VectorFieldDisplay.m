@@ -52,7 +52,7 @@ classdef VectorFieldDisplay < MovieDataDisplay
             params(5).name='Linestyle';
             params(5).validator=@ischar;
             params(6).name='Linewidth';
-            params(6).validator=@isposint;
+            params(6).validator=@isscalar;
         end
 
         function f=getDataValidator()
