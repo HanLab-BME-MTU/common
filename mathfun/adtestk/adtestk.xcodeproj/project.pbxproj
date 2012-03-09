@@ -1,0 +1,239 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A32F09E215092E660054FF0C /* adtestk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A32F09E115092E660054FF0C /* adtestk.cpp */; };
+		A357003C15095608004F08E9 /* adtestk.mexmaci64 in CopyFiles */ = {isa = PBXBuildFile; fileRef = A32F09DA150929B30054FF0C /* adtestk.mexmaci64 */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A357003B15095600004F08E9 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = $PROJECT_DIR;
+			dstSubfolderSpec = 0;
+			files = (
+				A357003C15095608004F08E9 /* adtestk.mexmaci64 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		A32F09DA150929B30054FF0C /* adtestk.mexmaci64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = adtestk.mexmaci64; sourceTree = BUILT_PRODUCTS_DIR; };
+		A32F09E115092E660054FF0C /* adtestk.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = adtestk.cpp; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A32F09D7150929B30054FF0C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A32F09CF150929B20054FF0C = {
+			isa = PBXGroup;
+			children = (
+				A32F09E115092E660054FF0C /* adtestk.cpp */,
+				A32F09DB150929B30054FF0C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A32F09DB150929B30054FF0C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A32F09DA150929B30054FF0C /* adtestk.mexmaci64 */,
+			);
+			name = Products;
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		A32F09D8150929B30054FF0C /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		A32F09D9150929B30054FF0C /* adtestk */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A32F09DE150929B30054FF0C /* Build configuration list for PBXNativeTarget "adtestk" */;
+			buildPhases = (
+				A32F09D6150929B30054FF0C /* Sources */,
+				A32F09D7150929B30054FF0C /* Frameworks */,
+				A32F09D8150929B30054FF0C /* Headers */,
+				A357003B15095600004F08E9 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = adtestk;
+			productName = adtestk;
+			productReference = A32F09DA150929B30054FF0C /* adtestk.mexmaci64 */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A32F09D1150929B20054FF0C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0420;
+				ORGANIZATIONNAME = "";
+			};
+			buildConfigurationList = A32F09D4150929B20054FF0C /* Build configuration list for PBXProject "adtestk" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = A32F09CF150929B20054FF0C;
+			productRefGroup = A32F09DB150929B30054FF0C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A32F09D9150929B30054FF0C /* adtestk */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A32F09D6150929B30054FF0C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A32F09E215092E660054FF0C /* adtestk.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A32F09DC150929B30054FF0C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				"HEADER_SEARCH_PATHS[arch=*]" = /Applications/MATLAB_R2011b.app/extern/include/;
+				"LIBRARY_SEARCH_PATHS[arch=*]" = /Applications/MATLAB_R2011b.app/bin/maci64;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				ONLY_ACTIVE_ARCH = YES;
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-lmex",
+					"-lmx",
+					"-lmat",
+					"-undefined",
+					error,
+				);
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		A32F09DD150929B30054FF0C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				"HEADER_SEARCH_PATHS[arch=*]" = /Applications/MATLAB_R2011b.app/extern/include/;
+				"LIBRARY_SEARCH_PATHS[arch=*]" = /Applications/MATLAB_R2011b.app/bin/maci64;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-lmex",
+					"-lmx",
+					"-lmat",
+					"-undefined",
+					error,
+				);
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		A32F09DF150929B30054FF0C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_EXTENSION = mexmaci64;
+				EXECUTABLE_PREFIX = "";
+				GCC_VERSION = "";
+				MACH_O_TYPE = mh_dylib;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		A32F09E0150929B30054FF0C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_EXTENSION = mexmaci64;
+				EXECUTABLE_PREFIX = "";
+				GCC_VERSION = "";
+				MACH_O_TYPE = mh_dylib;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A32F09D4150929B20054FF0C /* Build configuration list for PBXProject "adtestk" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A32F09DC150929B30054FF0C /* Debug */,
+				A32F09DD150929B30054FF0C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A32F09DE150929B30054FF0C /* Build configuration list for PBXNativeTarget "adtestk" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A32F09DF150929B30054FF0C /* Debug */,
+				A32F09E0150929B30054FF0C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A32F09D1150929B20054FF0C /* Project object */;
+}
