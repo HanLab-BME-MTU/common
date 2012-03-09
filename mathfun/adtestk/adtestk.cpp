@@ -111,7 +111,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     double b = (2.0*g-4.0)*k2 + 8.0*h*k + (2.0*g-14.0*h-4.0)*H - 8.0*h + 4.0*g - 6.0;
     double c = (6.0*h+2.0*g-2.0)*k2 + (4.0*h-4.0*g+6.0)*k + (2.0*h-6.0)*H + 4.0*h;
     double d = (2.0*h+6.0)*k2 - 4.0*h*k;
-    double varA = (((a*N + b)*N + c)*N + d) / ( (N-1)*(N-2)*(N-3) );
+    double varA = (((a*N + b)*N + c)*N + d) / ( (N-1.0)*(N-2.0)*(N-3.0) );
 
     // loop through current sample; if value not equal pooled sample value, advance pooled sample index j
     vector< vector<int> > f(k);
