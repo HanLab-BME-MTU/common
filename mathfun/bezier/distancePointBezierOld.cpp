@@ -2,7 +2,7 @@
 #include <math.h>
 #include <stdio.h>
 
-// Compilation: mex -I. distancePointBezier.cpp
+// Compilation: mex -I. distancePointBezierOld.cpp
 
 #include "rpoly_ak1.cpp" // http://www.akiti.ca/rpoly_ak1_Intro.html
 
