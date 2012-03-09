@@ -1,8 +1,8 @@
-function [cP,t] = truncateBezierSISL(cP,tStart,tEnd,t)
-% function [cP,t] = truncateBezierSISL(cP,tStart,tEnd,t)
-% truncateBezierSISL computes the control points of a segment of the input 
+function [cP,t] = truncateBezier(cP,tStart,tEnd,t)
+% function [cP,t] = truncateBezier(cP,tStart,tEnd,t)
+% truncateBezier computes the control points of a segment of the input 
 % Bezier curve. Optionally, points of the old curve can be mapped onto the
-% new curve. In comparison to truncateBezier, the input curve can be of 
+% new curve. In comparison to truncateBezierOld, the input curve can be of 
 % any degree, however it might be a bit slower. The implementation is based on
 % the SISL library.
 %
