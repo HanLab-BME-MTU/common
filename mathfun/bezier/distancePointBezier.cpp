@@ -4,8 +4,8 @@
 
 #include "sisl.h"
 
-// Windows: mex -I. -IC:\Users\PB93\Downloads\sisl-4.5.0\include -LC:\Users\PB93\Desktop\SISLbuild\Release -lsisl distancePointBezierSISL.cpp
-// Linux: mex -I. -I/home/pb93/Downloads/sisl-4.5.0/include -L/home/pb93/Downloads/sislBuild -lsisl distancePointBezierSISL.cpp
+// Windows: mex -I. -IC:\Users\PB93\Downloads\sisl-4.5.0\include -LC:\Users\PB93\Desktop\SISLbuild\Release -lsisl distancePointBezier.cpp
+// Linux: mex -I. -I/home/pb93/Downloads/sisl-4.5.0/include -L/home/pb93/Downloads/sislBuild -lsisl distancePointBezier.cpp
 
 void truncate(double *cP, int cPdim, int nCP, double tStart, double tEnd);
 void extend(double *cP, int cPdim, int nCP, double tStart, double tEnd);

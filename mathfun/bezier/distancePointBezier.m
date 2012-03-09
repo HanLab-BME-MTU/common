@@ -1,8 +1,8 @@
-function [dist,t] = distancePointBezierSISL(cP,P,t0,t1)
-% function [dist,t] = distancePointBezierSISL(cP,P,t0,t1)
-% distancePointBezierSISL computes the distance between a point and a Bezier
+function [dist,t] = distancePointBezier(cP,P,t0,t1)
+% function [dist,t] = distancePointBezier(cP,P,t0,t1)
+% distancePointBezier computes the distance between a point and a Bezier
 % curve. If only one control point is specified the distance between the 
-% point and the control point is returned. In comparison to distancePointBezier
+% point and the control point is returned. In comparison to distancePointBezierOld
 % it is a bit slower. However, there is no limitation on the complexity of 
 % the curves. This function makes use of the SISL NURBS library which can 
 % be found at "http://www.sintef.no/sisl".
