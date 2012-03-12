@@ -97,9 +97,10 @@ end
 
 % Create radio controls for packages
 nPackages=numel(packageList);
+pos = get(handles.uipanel_packages,'Position');
 for i=1:nPackages
     uicontrol(handles.uipanel_packages,'Style','radio',...
-    'Position',[10 300-30*i 220 20],'Tag',['radiobutton_package' num2str(i)],...
+    'Position',[10 pos(4)-20-30*i pos(3)-20 20],'Tag',['radiobutton_package' num2str(i)],...
     'String',eval([packageList{i} '.getName']),'UserData',str2func(packageList{i}))
 end
 set(handles.uipanel_packages,'SelectionChangeFcn','');
@@ -149,25 +150,32 @@ delete(handles.figure1)
 % --- Executes on button press in pushbutton_done.
 function pushbutton_done_Callback(hObject, eventdata, handles)
 
-% Check a movie and a package are selected
-if isempty(get(handles.listbox_movie, 'String'))
-   warndlg('Please select at least one movie to continue.', 'Movie Selector', 'modal')
-   return
-end
+% Check a package is selected
 if isempty(get(handles.uipanel_packages, 'SelectedObject'))
    warndlg('Please select a package to continue.', 'Movie Selector', 'modal')
    return
 end
 
 % Retrieve the ID of the selected button and call the appropriate
-userData = get(handles.figure1, 'userdata');
+userData = get(handles.figure1, 'UserData');
 selectedPackage=get(get(handles.uipanel_packages, 'SelectedObject'),'UserData');
-close(handles.figure1);
 if isequal(selectedPackage,@IntegratorPackage)
-    packageGUI(selectedPackage,userData.ML);
-else   
-    packageGUI(selectedPackage,userData.MD);
+    if isempty(userData.ML)
+        warndlg('Please load at least one movie list to continue.', 'Movie Selector', 'modal')
+        return
+    end
+    data = userData.ML;
+else
+    if isempty(userData.MD)
+        warndlg('Please load at least one movie to continue.', 'Movie Selector', 'modal')
+        return
+    end
+    data = userData.MD;    
 end
+
+close(handles.figure1);
+packageGUI(selectedPackage,data);
+
 
 % --- Executes on selection change in listbox_movie.
 function listbox_movie_Callback(hObject, eventdata, handles)
