@@ -17,6 +17,8 @@ using namespace Wm5;
 // Linux: 3. Compile in RELEASE mode: make CFG=Release -f makefile.wm5
 // Linux: mex -I. -I/home/pb93/Downloads/GeometricTools/WildMagic5/SDK/Include -L/home/pb93/Downloads/GeometricTools/WildMagic5/SDK/Library/Release -lWm5Core -lWm5Mathematics lengthBezier.cpp
 
+double lengthBezier(double *cP, double t0, double t1, int cPdim, int nCP);
+
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     // Check number of input arguments
@@ -53,7 +55,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
 	length = mxGetPr(plhs[0]);
 
+	*length = lengthBezier(cP, t0, t1, cPdim, nCP);
 
+}
+
+double lengthBezier(double *cP, double t0, double t1, int cPdim, int nCP) {
 	if (cPdim == 1) {
 		// Put the control points into a vector array
 		Vector2d *cPVector2 = new Vector2d[nCP]; // Control points in a Vector2 array
@@ -63,7 +69,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 		// Create the Bezier curve, compute its length and set it as output
 		BezierCurve2d bezierCurve2 = BezierCurve2d(nCP-1, cPVector2);
-		*length = fabs(bezierCurve2.GetLength(t0, t1));
+		return fabs(bezierCurve2.GetLength(t0, t1));
 
 		// BezierCurve2d accepts responsibility for deleting the input arrays
 	} else if (cPdim == 2) {
@@ -75,7 +81,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 		// Create the Bezier curve, compute its length and set it as output
 		BezierCurve2d bezierCurve2 = BezierCurve2d(nCP-1, cPVector2);
-		*length = fabs(bezierCurve2.GetLength(t0, t1));
+		return fabs(bezierCurve2.GetLength(t0, t1));
 
 		// BezierCurve2d accepts responsibility for deleting the input arrays
 	} else if (cPdim == 3) {
@@ -87,9 +93,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 		// Create the Bezier curve, compute its length and set it as output
 		BezierCurve3d bezierCurve3 = BezierCurve3d(nCP-1, cPVector3);
-		*length = fabs(bezierCurve3.GetLength(t0, t1));
+		return fabs(bezierCurve3.GetLength(t0, t1));
 
 		// BezierCurve3d accepts responsibility for deleting the input arrays
 	}
 }
+
+void main() {
+    double cP[] = {0,0,0,1,1,1,2,2,2,4,5,9,1,9,4,4,4,-1};
+    double t0 = 0.1;
+    double t1 = 0.9;
+    int cPdim = 3;
+    int nCP = 6;
+    double len = lengthBezier(cP, t0, t1, cPdim, nCP);
+}
+
 
