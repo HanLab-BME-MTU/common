@@ -4,7 +4,7 @@
 
 #include "sisl.h"
 
-// Compilation: mex -I. -IC:\Users\PB93\Downloads\sisl-4.5.0\include -LC:\Users\PB93\Desktop\SISLbuild\Release -lsisl truncateBezier.cpp
+// Compilation: mex -I. -I..\..\..\extern\mex\include\sisl-4.5.0\include -L..\..\..\extern\mex\lib -lsisl truncateBezier.cpp
 // Linux: mex -I. -I/home/pb93/Downloads/sisl-4.5.0/include -L/home/pb93/Downloads/sislBuild -lsisl truncateBezier.cpp
 
 void truncate(double *cP, int cPdim, int nCP, double tStart, double tEnd);

@@ -9,8 +9,8 @@ using namespace Wm5;
 
 // Get Wild Magic: from http://www.geometrictools.com/Downloads/Downloads.html
 
-// Windows: Compile WildMagic in 64 bit RELEASE mode with Visual Studio!
-// Windows: mex -I. -IC:\Users\PB93\Downloads\WildMagic5p5\GeometricTools\WildMagic5\SDK\Include -LC:\Users\PB93\Downloads\WildMagic5p5\GeometricTools\WildMagic5\SDK\Library\Release\ -lWm5Core90 -lWm5Mathematics90 lengthBezier.cpp
+// Windows: Compile LibCore and LibMathematics in 64 bit RELEASE mode with Visual Studio!
+// Windows: mex -I. -I..\..\..\extern\mex\include\wildmagic-5.7\include -L..\..\..\extern\mex\lib -lWm5Core90 -lWm5Mathematics90 lengthBezier.cpp
 
 // Linux: 1. Remove lines in WildMagic5/makefile.wm5 to compile only LibCore and LibMathematics
 // Linux: 2. Modify "CFLAGS := -c -D__LINUX__" in WildMagic5/LibCore/makeprj.wm5 WildMagic5/LibMathematics/makeprj.wm5 to "CFLAGS := -c -D__LINUX__ -fPIC"
