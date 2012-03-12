@@ -23,12 +23,7 @@ scatter(p(:,1),p(:,2),'.b');
 
 % Compute the distance and draw the projections
 for i=1:nPoints
-    [d,t] = distancePointBezierSISL(cP,p(i,:));
-    [d2,t2] = distancePointBezier(cP,p(i,:));
-    tol = 1e-61;
-    if abs(d-d2) > tol || abs(t-t2) > tol
-        [d,d2,t,t2]
-    end
+    [d,t] = distancePointBezier(cP,p(i,:));
     projectionPoints = renderBezier(cP,t);
     plot([p(i,1),projectionPoints(1)],[p(i,2),projectionPoints(2)],'-k');
 end
