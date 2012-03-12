@@ -13,9 +13,9 @@ using namespace Wm5;
 // Windows: mex -I. -I..\..\..\extern\mex\include\wildmagic-5.7\include -L..\..\..\extern\mex\lib -lWm5Core90 -lWm5Mathematics90 lengthBezier.cpp
 
 // Linux: 1. Remove lines in WildMagic5/makefile.wm5 to compile only LibCore and LibMathematics
-// Linux: 2. Modify "CFLAGS := -c -D__LINUX__" in WildMagic5/LibCore/makeprj.wm5 WildMagic5/LibMathematics/makeprj.wm5 to "CFLAGS := -c -D__LINUX__ -fPIC"
+// Linux: 2. Modify "CFLAGS := -c -D__LINUX__" in WildMagic5/LibCore/makeprj.wm5 and WildMagic5/LibMathematics/makeprj.wm5 to "CFLAGS := -c -D__LINUX__ -fPIC"
 // Linux: 3. Compile in RELEASE mode: make CFG=Release -f makefile.wm5
-// Linux: mex -I. -I/home/pb93/Downloads/GeometricTools/WildMagic5/SDK/Include -L/home/pb93/Downloads/GeometricTools/WildMagic5/SDK/Library/Release -lWm5Core -lWm5Mathematics lengthBezier.cpp
+// Linux: mex -I. -I../../../extern/mex/include/wildmagic-5.7/include -L../../../extern/mex/lib -lWm5Core -lWm5Mathematics lengthBezier.cpp
 
 double lengthBezier(double *cP, double t0, double t1, int cPdim, int nCP);
 
@@ -51,11 +51,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		t1 = 1.0;
 	}
 
-	// Associate outputs
-	plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
-	length = mxGetPr(plhs[0]);
+    // Associate outputs
+    plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+    length = mxGetPr(plhs[0]);
 
-	*length = lengthBezier(cP, t0, t1, cPdim, nCP);
+    *length = lengthBezier(cP, t0, t1, cPdim, nCP);
 
 }
 
@@ -99,7 +99,7 @@ double lengthBezier(double *cP, double t0, double t1, int cPdim, int nCP) {
 	}
 }
 
-void main() {
+int main() {
     double cP[] = {0,0,0,1,1,1,2,2,2,4,5,9,1,9,4,4,4,-1};
     double t0 = 0.1;
     double t1 = 0.9;
