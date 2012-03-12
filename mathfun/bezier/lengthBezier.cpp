@@ -99,13 +99,13 @@ double lengthBezier(double *cP, double t0, double t1, int cPdim, int nCP) {
 	}
 }
 
-int main() {
+/*int main() {
     double cP[] = {0,0,0,1,1,1,2,2,2,4,5,9,1,9,4,4,4,-1};
     double t0 = 0.1;
     double t1 = 0.9;
     int cPdim = 3;
     int nCP = 6;
     double len = lengthBezier(cP, t0, t1, cPdim, nCP);
-}
+}*/
 
 
