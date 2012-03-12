@@ -109,10 +109,7 @@ end
 
 if ~isempty(userData.MD),
     userData.channels = userData.MD.channels_;
-        
-    % Channel listbox
-    cPath=arrayfun(@(x) x.channelPath_,userData.channels,'UniformOutput',false);
-    set(handles.listbox_channel, 'String', cPath)
+    set(handles.listbox_channel, 'String', userData.MD.getChannelPaths)
     
     % GUI setting
     set(handles.pushbutton_delete, 'Enable', 'off')
@@ -120,7 +117,7 @@ if ~isempty(userData.MD),
     set(handles.pushbutton_output, 'Enable', 'off')
     
     set(hObject, 'Name', 'Movie Detail')
-    set(handles.edit_path,'String', [userData.MD.movieDataPath_ filesep userData.MD.movieDataFileName_])
+    set(handles.edit_path,'String', userData.MD.getFullPath)
     set(handles.edit_output, 'String', userData.MD.outputDirectory_)
     set(handles.edit_notes, 'String', userData.MD.notes_)
     
@@ -175,9 +172,7 @@ if ~isfield(userData, 'channels') || isempty(userData.channels)
     return;    
 end
 
-if ~isa(userData.channels(1), 'Channel')
-   error('User-defined: userData.channels are not of class ''Channel''') 
-end
+assert(isa(userData.channels(1), 'Channel'),'User-defined: userData.channels are not of class ''Channel''') 
 
 % Check output path
 outputDir = get(handles.edit_output, 'String');
@@ -192,6 +187,9 @@ propNames={'pixelSize_','timeInterval_','numAperture_','camBitdepth_'};
 propHandles = cellfun(@(x) handles.(['edit_' x(1:end-1)]),propNames);
 propStrings =get(propHandles,'String');
 validProps = ~cellfun(@isempty,propStrings);
+if ~isempty(userData.MD),
+    validProps=validProps & cellfun(@(x)isempty(userData.MD.(x)),propNames');
+end
 propNames=propNames(validProps);
 propValues=num2cell(str2double(propStrings(validProps)))';
  
@@ -235,10 +233,6 @@ catch ME
     return;
 end
 
-% Run the save method (should launch the dialog box asking for the object 
-% path and filename)
-MD.save(); 
-
 % If new MovieData was created (from movieSelectorGUI)
 if ishandle(userData.mainFig), 
     % Retrieve main window userData
@@ -247,7 +241,7 @@ if ishandle(userData.mainFig),
     % Check if files in movie list are saved in the same file
     handles_main = guidata(userData.mainFig);
     contentlist = get(handles_main.listbox_movie, 'String');
-    movieDataFullPath = [MD.movieDataPath_ filesep MD.movieDataFileName_];
+    movieDataFullPath = MD.getFullPath;
     if any(strcmp(movieDataFullPath, contentlist))
         errordlg('Cannot overwrite a movie data file which is already in the movie list. Please choose another file name or another path.','Error','modal');
         return
@@ -271,25 +265,18 @@ delete(handles.figure1)
 
 
 function edit_property_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_timeInterval (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit_timeInterval as text
-%        str2double(get(hObject,'String')) returns contents of edit_timeInterval as a double
-
-if ~isempty(get(hObject,'String'))
-    propTag = get(hObject,'Tag');
-    propName = [propTag(length('edit_')+1:end) '_'];
-    propValue = str2double(get(hObject,'String'));
-    if ~MovieData.checkValue(propName,propValue)
-        warndlg('Invalid property value','Setting Error','modal');
-        set(hObject,'BackgroundColor',[1 .8 .8]);
-        return
-    end
-end
 set(hObject,'BackgroundColor',[1 1 1])
+if isempty(get(hObject,'String')), return; end
 
+propTag = get(hObject,'Tag');
+propName = [propTag(length('edit_')+1:end) '_'];
+propValue = str2double(get(hObject,'String'));
+if ~MovieData.checkValue(propName,propValue)
+    warndlg('Invalid property value','Setting Error','modal');
+    set(hObject,'BackgroundColor',[1 .8 .8]);
+    return
+end
 
 % --- Executes on button press in pushbutton_delete.
 function pushbutton_delete_Callback(hObject, eventdata, handles)
@@ -299,21 +286,17 @@ userData = get(handles.figure1, 'Userdata');
 contents = get(handles.listbox_channel,'String');
 % Return if list is empty
 if isempty(contents), return; end
-num = get(handles.listbox_channel,'Value');
+iChan = get(handles.listbox_channel,'Value');
 
 % Delete channel object
-delete(userData.channels(num))
-userData.channels(num) = [];
-
-% Refresh listbox_channel
-contents(num) = [ ];
+delete(userData.channels(iChan))
+userData.channels(iChan) = [];
+contents(iChan) = [ ];
 set(handles.listbox_channel,'String',contents);
 
 % Point 'Value' to the second last item in the list once the 
 % last item has been deleted
-if num>length(contents) && num>1
-    set(handles.listbox_channel,'Value',length(contents));
-end
+set(handles.listbox_channel,'Value',max(1,min(iChan,length(contents))));
 
 set(handles.figure1, 'Userdata', userData)
 guidata(hObject, handles);
@@ -353,20 +336,14 @@ catch ME
     return
 end
 
-userData.channels = cat(2, userData.channels, newChannel);
 % Refresh listbox_channel
+userData.channels = cat(2, userData.channels, newChannel);
+
 contents{end+1} = path;
 set(handles.listbox_channel,'string',contents);
 
-% Set user directory
-sepDir = regexp(path, filesep, 'split');
-dir = sepDir{1};
-for i = 2: length(sepDir)-1
-    dir = [dir filesep sepDir{i}];
-end
-
 if ishandle(userData.mainFig), 
-    userData_main.userDir = dir;
+    userData_main.userDir = fileparts(path);
     set(handles_main.figure1, 'UserData', userData_main)
 end
 
@@ -392,14 +369,12 @@ if isnumeric(pathname), return; end
 
 set(handles.edit_output, 'String', pathname);
 
-
 % --- Executes on button press in pushbutton_setting_chan.
 function pushbutton_setting_chan_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
-
 if isempty(userData.channels), return; end
-assert( isa(userData.channels(1), 'Channel'), 'User-defined: Not a valid ''Channel'' object');
+assert(isa(userData.channels(1), 'Channel'), 'User-defined: Not a valid ''Channel'' object');
 
 userData.setChannelFig = channelGUI('mainFig', handles.figure1, 'modal');
 

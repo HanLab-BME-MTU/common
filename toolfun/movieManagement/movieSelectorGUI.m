@@ -89,7 +89,7 @@ userData.msgboxGUI=-1;
 userData.iconHelpFig =-1;
 
 % Get concrete packages
-packageList = TestHelperMovieObject.getConcreteSubClasses('Package')';
+packageList = sort(TestHelperMovieObject.getConcreteSubClasses('Package'));
 if isempty(packageList), 
     warndlg('No package found! Please make sure you properly added the installation directory to the path (see user''s manual).',...
         'Movie Selector','modal'); 
@@ -107,14 +107,8 @@ set(handles.uipanel_packages,'SelectionChangeFcn','');
 % Test a package preselection and update the corresponding radio button
 if ~isempty(ip.Results.MD)
     userData.MD=ip.Results.MD;
-    nMovies = numel(userData.MD);
-    contentlist =  arrayfun(@(x) [x.movieDataPath_ filesep ...
-        x.movieDataFileName_],userData.MD,'UniformOutput',false);
-    
-    % Refresh movie list box in movie selector panel
+    contentlist =  arrayfun(@getFullPath,userData.MD,'UniformOutput',false);    
     set(handles.listbox_movie, 'String', contentlist,'Value',1);
-    title = sprintf('Movie List: %g/%g movie(s)',1,nMovies);
-    set(handles.text_movies, 'String', title)
 end
 
 % Load help icon from dialogicons.mat
@@ -133,6 +127,7 @@ set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 
 if openHelpFile, set(Img, 'UserData', struct('class',mfilename)); end
 
+listbox_movie_Callback(hObject,eventdata,handles);
 % Save userdata
 set(handles.figure1,'UserData',userData);
 guidata(hObject, handles);
@@ -175,7 +170,7 @@ packageGUI(selectedPackage,userData.MD);
 function listbox_movie_Callback(hObject, eventdata, handles)
 
 contentlist = get(handles.listbox_movie, 'String');
-title = sprintf('Movie List: %g/%g movie(s)',...
+title = sprintf('%g/%g movie(s)',...
     min(get(handles.listbox_movie, 'Value'),length(contentlist)),...
     length(contentlist));
 set(handles.text_movies, 'String', title)
@@ -203,11 +198,10 @@ function pushbutton_delete_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'Userdata');
 contentlist = get(handles.listbox_movie,'String');
-% Return if list is empty
 if isempty(contentlist), return;end
-num = get(handles.listbox_movie,'Value');
 
 % Delete channel object
+num = get(handles.listbox_movie,'Value');
 removedMovie=userData.MD(num);
 userData.MD(num) = [];
 
@@ -217,15 +211,8 @@ if ~any(checkCommonAncestor), delete(removedMovie); end
 
 % Refresh listbox_channel
 contentlist(num) = [ ];
-set(handles.listbox_movie,'String',contentlist);
-
-% Point 'Value' to the second last item in the list once the 
-% last item has been deleted
-set(handles.listbox_movie,'Value',max(1,min(num,length(contentlist))));
-title = sprintf('Movie List: %g/%g movie(s)',...
-    min(get(handles.listbox_movie, 'Value'),length(contentlist)),...
-    length(contentlist));
-set(handles.text_movies, 'String', title)
+set(handles.listbox_movie,'String',contentlist,'Value',max(1,min(num,length(contentlist))));
+listbox_movie_Callback(hObject,eventdata,handles);
 
 set(handles.figure1, 'Userdata', userData)
 guidata(hObject, handles);
@@ -239,7 +226,6 @@ if isempty(props{1}), return; end
 
 userData = get(handles.figure1, 'UserData');
 % if movieDataGUI exist, delete it
-% if ishandle(userData.newFig), delete(userData.newFig); end
 userData.newFig = movieDataGUI(userData.MD(props{2}));
 set(handles.figure1,'UserData',userData);
 
@@ -247,7 +233,6 @@ set(handles.figure1,'UserData',userData);
 function figure1_DeleteFcn(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
-% Delete new window
 
 if ishandle(userData.newFig), delete(userData.newFig); end
 if ishandle(userData.iconHelpFig), delete(userData.iconHelpFig); end
@@ -257,22 +242,30 @@ if ishandle(userData.msgboxGUI), delete(userData.msgboxGUI); end
 function pushbutton_open_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
-
-[filename, pathname] = uigetfile('*.mat','Select a movie MAT file', ...
+filespec = {'*.mat','MATLAB Files'};
+[filename, pathname] = uigetfile(filespec,'Select a movie file', ...
     userData.userDir);
 if ~any([filename pathname]), return; end
 userData.userDir = pathname;
 
 % Check if reselect the movie data that is already in the listbox
 contentlist = get(handles.listbox_movie, 'String');
-
 if any(strcmp([pathname filename], contentlist))
     errordlg('This movie has already been selected.','Error','modal');
     return
 end
 
+% Ask for uncompression for single image files
+if ~strcmpi(filename(end-2:end),'mat')
+    uncompress=questdlg('You selected an image file. Do you want to uncompress it?',...
+        'Image loading','Yes','No','No');
+    args={strcmp(uncompress,'Yes')};
+else
+    args={};
+end
+
 try
-    M = MovieObject.load([pathname filename]);
+    M = MovieObject.load([pathname filename],args{:});
 catch ME
     msg = sprintf('Movie: %s\n\nError: %s\n\nMovie is not successfully loaded. Please refer to movie detail and adjust your data.', [pathname filename],ME.message);
     errordlg(msg, 'Movie error','modal');
@@ -282,13 +275,13 @@ end
 switch class(M)
     case 'MovieData'
         userData.MD = cat(2, userData.MD, M);
-        contentlist{end+1} = [pathname filename];
+        contentlist{end+1} = M.getFullPath;
         
     case 'MovieList'        
         % Find duplicate movie data in list box
         movieDataFile = M.movieDataFile_;
         index = 1: length(movieDataFile);
-        index = index( ~cellfun(@(z)any(z), cellfun(@(x)strcmp(x, contentlist), movieDataFile, 'UniformOutput', false), 'UniformOutput', true) );
+        index = index(~ismember(movieDataFile,contentlist));
         
         if isempty(index)
             msg = sprintf('All movie data in movie list file %s has already been added to the movie list box.', M.movieListFileName_);
@@ -326,8 +319,7 @@ end
 
 % Refresh movie list box in movie selector panel
 set(handles.listbox_movie, 'String', contentlist, 'Value', length(contentlist))
-title = sprintf('Movie List: %s/%s movie(s)', num2str(get(handles.listbox_movie, 'Value')), num2str(length(contentlist)));
-set(handles.text_movies, 'String', title)
+listbox_movie_Callback(hObject,eventdata,handles);
 
 set(handles.figure1, 'UserData', userData);
 
@@ -395,12 +387,11 @@ end
 
 % Ask user where to save the movie data file
 [filename,path] = uiputfile('*.mat','Find a place to save your movie list',...
-             [movieListPath filesep movieListFileName]);
-         
+             [movieListPath filesep movieListFileName]);         
 if ~any([filename,path]), return; end
 
 % Ask user where to select the output directory of the
-outputDir = uigetdir(path,'Select a directory to store the processes output');
+outputDir = uigetdir(path,'Select a directory to store the list analysis output');
 if isequal(outputDir,0), return; end
 
 try
