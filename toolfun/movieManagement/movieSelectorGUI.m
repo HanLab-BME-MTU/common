@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 07-Feb-2012 15:48:16
+% Last Modified by GUIDE v2.5 06-Mar-2012 15:24:12
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -88,23 +88,21 @@ userData.newFig=-1;
 userData.msgboxGUI=-1;
 userData.iconHelpFig =-1;
 
-% Check packages availability
-packageRadioButtons  = get(handles.uipanel_package,'Children');
-packageList = get(packageRadioButtons,'UserData');
-isValidPackage=logical(cellfun(@(x) exist(x,'class'),packageList));
-if isempty(isValidPackage), 
+% Get concrete packages
+packageList = TestHelperMovieObject.getConcreteSubClasses('Package')';
+if isempty(packageList), 
     warndlg('No package found! Please make sure you properly added the installation directory to the path (see user''s manual).',...
         'Movie Selector','modal'); 
 end
-set(handles.uipanel_package,'SelectionChangeFcn','');
 
-% Grey out radio buttons corresponding to non-available packages
-invalidRadioButtons = packageRadioButtons(~isValidPackage);
-set(invalidRadioButtons,'Enable','off');
-if ~isempty(ip.Results.packageName)
-    preSelectedPackage=strcmp(packageList,ip.Results.packageName);
-    set(packageRadioButtons(preSelectedPackage),'Value',1.0);
+% Create radio controls for packages
+nPackages=numel(packageList);
+for i=1:nPackages
+    uicontrol(handles.uipanel_packages,'Style','radio',...
+    'Position',[10 300-30*i 220 20],'Tag',['radiobutton_package' num2str(i)],...
+    'String',eval([packageList{i} '.getName']),'UserData',str2func(packageList{i}))
 end
+set(handles.uipanel_packages,'SelectionChangeFcn','');
 
 % Test a package preselection and update the corresponding radio button
 if ~isempty(ip.Results.MD)
@@ -116,7 +114,7 @@ if ~isempty(ip.Results.MD)
     % Refresh movie list box in movie selector panel
     set(handles.listbox_movie, 'String', contentlist,'Value',1);
     title = sprintf('Movie List: %g/%g movie(s)',1,nMovies);
-    set(handles.text_movie_1, 'String', title)
+    set(handles.text_movies, 'String', title)
 end
 
 % Load help icon from dialogicons.mat
@@ -161,14 +159,14 @@ if isempty(get(handles.listbox_movie, 'String'))
    warndlg('Please select at least one movie to continue.', 'Movie Selector', 'modal')
    return
 end
-if isempty(get(handles.uipanel_package, 'SelectedObject'))
+if isempty(get(handles.uipanel_packages, 'SelectedObject'))
    warndlg('Please select a package to continue.', 'Movie Selector', 'modal')
    return
 end
 
 % Retrieve the ID of the selected button and call the appropriate
 userData = get(handles.figure1, 'userdata');
-selectedPackage=get(get(handles.uipanel_package, 'SelectedObject'),'UserData');
+selectedPackage=get(get(handles.uipanel_packages, 'SelectedObject'),'UserData');
 close(handles.figure1);
 packageGUI(selectedPackage,userData.MD);
 
@@ -180,7 +178,7 @@ contentlist = get(handles.listbox_movie, 'String');
 title = sprintf('Movie List: %g/%g movie(s)',...
     min(get(handles.listbox_movie, 'Value'),length(contentlist)),...
     length(contentlist));
-set(handles.text_movie_1, 'String', title)
+set(handles.text_movies, 'String', title)
 
 % --- Executes on button press in pushbutton_new.
 function pushbutton_new_Callback(hObject, eventdata, handles)
@@ -227,7 +225,7 @@ set(handles.listbox_movie,'Value',max(1,min(num,length(contentlist))));
 title = sprintf('Movie List: %g/%g movie(s)',...
     min(get(handles.listbox_movie, 'Value'),length(contentlist)),...
     length(contentlist));
-set(handles.text_movie_1, 'String', title)
+set(handles.text_movies, 'String', title)
 
 set(handles.figure1, 'Userdata', userData)
 guidata(hObject, handles);
@@ -329,7 +327,7 @@ end
 % Refresh movie list box in movie selector panel
 set(handles.listbox_movie, 'String', contentlist, 'Value', length(contentlist))
 title = sprintf('Movie List: %s/%s movie(s)', num2str(get(handles.listbox_movie, 'Value')), num2str(length(contentlist)));
-set(handles.text_movie_1, 'String', title)
+set(handles.text_movies, 'String', title)
 
 set(handles.figure1, 'UserData', userData);
 
@@ -371,7 +369,7 @@ userData.MD = [];
 
 % Refresh listbox_channel
 set(handles.listbox_movie,'String',{}, 'Value',1);
-set(handles.text_movie_1, 'String','Movie List: 0/0 movie(s)')
+set(handles.text_movies, 'String','0/0 movie(s)')
 
 set(handles.figure1, 'Userdata', userData)
 guidata(hObject, handles);
