@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 06-Mar-2012 15:24:12
+% Last Modified by GUIDE v2.5 12-Mar-2012 14:48:47
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -127,9 +127,9 @@ set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 
 if openHelpFile, set(Img, 'UserData', struct('class',mfilename)); end
 
-listbox_movie_Callback(hObject,eventdata,handles);
-% Save userdata
 set(handles.figure1,'UserData',userData);
+refreshDisplay(hObject,eventdata,handles);
+% Save userdata
 guidata(hObject, handles);
 
 % --- Outputs from this function are returned to the command line.
@@ -163,17 +163,16 @@ end
 userData = get(handles.figure1, 'userdata');
 selectedPackage=get(get(handles.uipanel_packages, 'SelectedObject'),'UserData');
 close(handles.figure1);
-packageGUI(selectedPackage,userData.MD);
-
+if isequal(selectedPackage,@IntegratorPackage)
+    packageGUI(selectedPackage,userData.ML);
+else   
+    packageGUI(selectedPackage,userData.MD);
+end
 
 % --- Executes on selection change in listbox_movie.
 function listbox_movie_Callback(hObject, eventdata, handles)
 
-contentlist = get(handles.listbox_movie, 'String');
-title = sprintf('%g/%g movie(s)',...
-    min(get(handles.listbox_movie, 'Value'),length(contentlist)),...
-    length(contentlist));
-set(handles.text_movies, 'String', title)
+refreshDisplay(hObject, eventdata, handles)
 
 % --- Executes on button press in pushbutton_new.
 function pushbutton_new_Callback(hObject, eventdata, handles)
@@ -197,8 +196,7 @@ set(handles.figure1,'UserData',userData);
 function pushbutton_delete_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'Userdata');
-contentlist = get(handles.listbox_movie,'String');
-if isempty(contentlist), return;end
+if isempty(userData.MD), return;end
 
 % Delete channel object
 num = get(handles.listbox_movie,'Value');
@@ -210,11 +208,8 @@ checkCommonAncestor= arrayfun(@(x) any(isequal(removedMovie.getAncestor,x.getAnc
 if ~any(checkCommonAncestor), delete(removedMovie); end
 
 % Refresh listbox_channel
-contentlist(num) = [ ];
-set(handles.listbox_movie,'String',contentlist,'Value',max(1,min(num,length(contentlist))));
-listbox_movie_Callback(hObject,eventdata,handles);
-
 set(handles.figure1, 'Userdata', userData)
+refreshDisplay(hObject,eventdata,handles);
 guidata(hObject, handles);
 
 % --- Executes on button press in pushbutton_detail.
@@ -243,29 +238,22 @@ function pushbutton_open_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 filespec = {'*.mat','MATLAB Files'};
-[filename, pathname] = uigetfile(filespec,'Select a movie file', ...
+[filename, pathname] = uigetfile(filespec,'Select a movie or a list of movies', ...
     userData.userDir);
 if ~any([filename pathname]), return; end
 userData.userDir = pathname;
 
 % Check if reselect the movie data that is already in the listbox
-contentlist = get(handles.listbox_movie, 'String');
-if any(strcmp([pathname filename], contentlist))
+moviePaths = get(handles.listbox_movie, 'String');
+movieListPaths = get(handles.listbox_movieList, 'String');
+
+if any(strcmp([pathname filename],{moviePaths,movieListPaths}))
     errordlg('This movie has already been selected.','Error','modal');
     return
 end
 
-% Ask for uncompression for single image files
-if ~strcmpi(filename(end-2:end),'mat')
-    uncompress=questdlg('You selected an image file. Do you want to uncompress it?',...
-        'Image loading','Yes','No','No');
-    args={strcmp(uncompress,'Yes')};
-else
-    args={};
-end
-
 try
-    M = MovieObject.load([pathname filename],args{:});
+    M = MovieObject.load([pathname filename]);
 catch ME
     msg = sprintf('Movie: %s\n\nError: %s\n\nMovie is not successfully loaded. Please refer to movie detail and adjust your data.', [pathname filename],ME.message);
     errordlg(msg, 'Movie error','modal');
@@ -274,54 +262,30 @@ end
 
 switch class(M)
     case 'MovieData'
-        userData.MD = cat(2, userData.MD, M);
-        contentlist{end+1} = M.getFullPath;
-        
+        userData.MD = cat(2, userData.MD, M);       
     case 'MovieList'        
         % Find duplicate movie data in list box
         movieDataFile = M.movieDataFile_;
         index = 1: length(movieDataFile);
-        index = index(~ismember(movieDataFile,contentlist));
+        movieList=get(handles.listbox_movie,'String');
+        index = index(~ismember(movieDataFile,movieList));
         
         if isempty(index)
             msg = sprintf('All movie data in movie list file %s has already been added to the movie list box.', M.movieListFileName_);
             warndlg(msg,'Warning','modal');
             return
         end
-        
-        % Reload movie data filenames in case they have been relocated
-        % during sanity check        
-        movieException = M.sanityCheck();
-        movieException = movieException(index);
-        errorME = find(~cellfun(@isempty,movieException));
-        healthMD = find(cellfun(@isempty,movieException));
-        
-        % Error movie index
-        if ~isempty(errorME)
-            filemsg = '';
-            for i = errorME
-                filemsg = cat(2, filemsg, sprintf('Movie %d:  %s\nError:  %s\n\n', index(i), movieDataFile{index(i)}, movieException{i}.message));
-            end
-            msg = sprintf('The following movie(s) cannot be sucessfully loaded:\n\n%s', filemsg);
-            titlemsg = sprintf('Movie List: %s', [pathname filename]);
-            userData.msgboxGUI = msgboxGUI('title',titlemsg,'text', msg);
-        end
-        
-        % Healthy Movie Data
-        if ~isempty(healthMD)
-            userData.ML = horzcat(userData.ML, M);
-            userData.MD = horzcat(userData.MD,M.getMovies{index(healthMD)});
-            contentlist = horzcat(contentlist',M.movieDataFile_(index(healthMD)));
-        end             
+                  
+        % Healthy Movie Data        
+        userData.ML = horzcat(userData.ML, M);
+        userData.MD = horzcat(userData.MD,M.getMovies{index});
     otherwise
         error('User-defined: varable ''type'' does not have an approprate value.')
 end
 
 % Refresh movie list box in movie selector panel
-set(handles.listbox_movie, 'String', contentlist, 'Value', length(contentlist))
-listbox_movie_Callback(hObject,eventdata,handles);
-
 set(handles.figure1, 'UserData', userData);
+refreshDisplay(hObject,eventdata,handles);
 
 function menu_about_Callback(hObject, eventdata, handles)
 
@@ -350,20 +314,16 @@ contentlist = get(handles.listbox_movie,'String');
 % Return if list is empty
 if isempty(contentlist), return; end
  
+% Confirm deletion
 user_response = questdlg(['Are you sure to delete all the '...
     num2str(length(contentlist)) ' movie(s) in the listbox?'], ...
     'Movie Listbox', 'Yes','No','Yes');
-
 if strcmpi('no', user_response), return; end
 
 % Delete channel object
 userData.MD = [];
-
-% Refresh listbox_channel
-set(handles.listbox_movie,'String',{}, 'Value',1);
-set(handles.text_movies, 'String','0/0 movie(s)')
-
 set(handles.figure1, 'Userdata', userData)
+refreshDisplay(hObject, eventdata, handles)
 guidata(hObject, handles);
 
 % --- Executes on button press in pushbutton_save.
@@ -395,16 +355,18 @@ outputDir = uigetdir(path,'Select a directory to store the list analysis output'
 if isequal(outputDir,0), return; end
 
 try
-    ML = MovieList(contentList, outputDir,'movieListPath_', path,...
-        'movieListFileName_', filename);
+    ML = MovieList(contentList, outputDir);
+    ML.setPath(path);
+    ML.setFilename(filename);
+    ML.sanityCheck;
 catch ME
     msg = sprintf('%s\n\nMovie list is not saved.', ME.message);
     errordlg(msg, 'Movie List Error', 'modal')
     return
 end
-
-% Save the movie list
-ML.save();
+userData.ML=cat(2,userData.ML,ML);
+set(handles.figure1,'UserData',userData);
+refreshDisplay(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function menu_tools_crop_Callback(hObject, eventdata, handles)
@@ -430,3 +392,32 @@ userData = get(handles.figure1, 'UserData');
 if ishandle(userData.newFig), delete(userData.newFig); end
 userData.newFig = addMovieROIGUI(userData.MD(props{2}),'mainFig',handles.figure1);
 set(handles.figure1,'UserData',userData);
+
+% --- Executes on selection change in listbox_movie.
+function refreshDisplay(hObject, eventdata, handles)
+
+userData = get(handles.figure1,'UserData');
+
+% Display Movie information
+moviePaths = arrayfun(@getFullPath,userData.MD,'Unif',false);
+nMovies= numel(userData.MD);
+iMovie = get(handles.listbox_movie, 'Value');
+if isempty(userData.MD), 
+    iMovie=0; 
+else
+    iMovie=max(1,min(iMovie,nMovies));
+end
+set(handles.listbox_movie,'String',moviePaths,'Value',iMovie);
+set(handles.text_movies, 'String', sprintf('%g/%g movie(s)',iMovie,nMovies))
+
+% Display list information
+listPaths = arrayfun(@getFullPath,userData.ML,'Unif',false);
+nLists= numel(userData.ML);
+iList = get(handles.listbox_movieList, 'Value');
+if isempty(userData.ML), 
+    iList=0; 
+else
+    iList=max(1,min(iList,nLists));
+end
+set(handles.listbox_movieList,'String',listPaths);
+set(handles.text_movieList, 'String', sprintf('%g/%g movie list(s)',iList,nLists))

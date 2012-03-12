@@ -271,27 +271,12 @@ movieROI.save;
 if userData.mainFig ~=-1, 
     % Retrieve main window userData
     userData_main = get(userData.mainFig, 'UserData');
-    handles_main = guidata(userData.mainFig);
-    
-    % Check if files in movie list are saved in the same file
-    contentlist = get(handles_main.listbox_movie, 'String');
-    if any(strcmp(movieROI.getFullPath(), contentlist))
-        errordlg('Cannot overwrite a movie data file which is already in the movie list. Please choose another file name or another path.','Error','modal');
-        return
-    end
-    
-    % Append  MovieData object to movie selector panel
+
+    % Append new ROI to movie selector panel
     userData_main.MD = cat(2, userData_main.MD, movieROI);
-    
-    % Refresh movie list box in movie selector panel
-    contentlist{end+1} = movieROI.getFullPath();
-    nMovies = length(contentlist);
-    set(handles_main.listbox_movie, 'String', contentlist, 'Value', nMovies)
-    title = sprintf('Movie List: %s/%s movie(s)', num2str(nMovies), num2str(nMovies));
-    set(handles_main.text_movie_1, 'String', title)
-    
-    % Save the main window data
     set(userData.mainFig, 'UserData', userData_main)
+    movieSelectorGUI('refreshDisplay',userData.mainFig,...
+        eventdata,guidata(userData.mainFig));
 end
 % Delete current window
 delete(handles.figure1)

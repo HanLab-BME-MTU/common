@@ -22,7 +22,7 @@ function varargout = movieDataGUI(varargin)
 
 % Edit the above text to modify the response to help movieDataGUI
 
-% Last Modified by GUIDE v2.5 14-Nov-2011 13:42:46
+% Last Modified by GUIDE v2.5 12-Mar-2012 14:01:36
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -249,16 +249,8 @@ if ishandle(userData.mainFig),
     
     % Append  MovieData object to movie selector panel
     userData_main.MD = cat(2, userData_main.MD, MD);
-    
-    % Refresh movie list box in movie selector panel
-    contentlist{end+1} = movieDataFullPath;
-    nMovies = length(contentlist);
-    set(handles_main.listbox_movie, 'String', contentlist, 'Value', nMovies)
-    title = sprintf('Movie List: %s/%s movie(s)', num2str(nMovies), num2str(nMovies));
-    set(handles_main.text_movie_1, 'String', title)
-    
-    % Save the main window data
     set(userData.mainFig, 'UserData', userData_main)
+    movieSelectorGUI('refreshDisplay',userData.mainFig,eventdata,guidata(userData.mainFig));
 end
 % Delete current window
 delete(handles.figure1)
@@ -379,3 +371,27 @@ assert(isa(userData.channels(1), 'Channel'), 'User-defined: Not a valid ''Channe
 userData.setChannelFig = channelGUI('mainFig', handles.figure1, 'modal');
 
 set(handles.figure1,'UserData',userData);
+
+% --- Executes on button press in pushbutton_bfImport.
+function pushbutton_bfImport_Callback(hObject, eventdata, handles)
+
+% Note: list of supported formats could be retrieved using
+% loci.formats.tools.PrintFormatTable class
+[file path] = uigetfile('Select movie to load.');
+if isequal(file,0) || isequal(path,0), return; end
+
+% Import data into movie using bioformats
+MD=bfImport([path file],logical(get(handles.checkbox_uncompress,'Value')));
+
+% Update movie selector interface
+userData=get(handles.figure1,'UserData');
+if ishandle(userData.mainFig), 
+    % Append  MovieData object to movie selector panel
+    userData_main = get(userData.mainFig, 'UserData');
+    userData_main.MD = cat(2, userData_main.MD, MD);
+    set(userData.mainFig, 'UserData', userData_main)
+    movieSelectorGUI('refreshDisplay',userData.mainFig,eventdata,guidata(userData.mainFig))    
+end
+
+% Relaunch this interface in preview mode
+movieDataGUI(MD);
