@@ -89,11 +89,13 @@ userData.msgboxGUI=-1;
 userData.iconHelpFig =-1;
 
 % Get concrete packages
-packageList = sort(TestHelperMovieObject.getConcreteSubClasses('Package'));
+packageList = TestHelperMovieObject.getConcreteSubClasses('Package');
 if isempty(packageList), 
     warndlg('No package found! Please make sure you properly added the installation directory to the path (see user''s manual).',...
         'Movie Selector','modal'); 
 end
+packageNames = cellfun(@(x) eval([x '.getName']),packageList,'Unif',0);
+packageNames=sort(packageNames);
 
 % Create radio controls for packages
 nPackages=numel(packageList);
@@ -101,7 +103,7 @@ pos = get(handles.uipanel_packages,'Position');
 for i=1:nPackages
     uicontrol(handles.uipanel_packages,'Style','radio',...
     'Position',[10 pos(4)-20-30*i pos(3)-20 20],'Tag',['radiobutton_package' num2str(i)],...
-    'String',eval([packageList{i} '.getName']),'UserData',str2func(packageList{i}))
+    'String',packageNames{i},'UserData',str2func(packageList{i}))
 end
 set(handles.uipanel_packages,'SelectionChangeFcn','');
 
@@ -159,7 +161,7 @@ end
 % Retrieve the ID of the selected button and call the appropriate
 userData = get(handles.figure1, 'UserData');
 selectedPackage=get(get(handles.uipanel_packages, 'SelectedObject'),'UserData');
-if isequal(selectedPackage,@IntegratorPackage)
+if isequal(func2str(selectedPackage),'IntegratorPackage')
     if isempty(userData.ML)
         warndlg('Please load at least one movie list to continue.', 'Movie Selector', 'modal')
         return
@@ -324,12 +326,13 @@ if isempty(contentlist), return; end
  
 % Confirm deletion
 user_response = questdlg(['Are you sure to delete all the '...
-    num2str(length(contentlist)) ' movie(s) in the listbox?'], ...
+    'movies and movie lists?'], ...
     'Movie Listbox', 'Yes','No','Yes');
 if strcmpi('no', user_response), return; end
 
-% Delete channel object
+% Delete movies and movie lists
 userData.MD = [];
+userData.ML = [];
 set(handles.figure1, 'Userdata', userData)
 refreshDisplay(hObject, eventdata, handles)
 guidata(hObject, handles);

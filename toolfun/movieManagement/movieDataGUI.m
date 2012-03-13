@@ -161,7 +161,7 @@ delete(handles.figure1);
 
 
 % --- Executes on button press in pushbutton_done.
-function pushbutton_done_Callback(~, ~, handles)
+function pushbutton_done_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1,'UserData');
 
@@ -374,6 +374,9 @@ set(handles.figure1,'UserData',userData);
 
 % --- Executes on button press in pushbutton_bfImport.
 function pushbutton_bfImport_Callback(hObject, eventdata, handles)
+
+assert(~isempty(which('loci_tools.jar')),...
+    'Could not find the Bio-Formats library');
 
 % Note: list of supported formats could be retrieved using
 % loci.formats.tools.PrintFormatTable class
