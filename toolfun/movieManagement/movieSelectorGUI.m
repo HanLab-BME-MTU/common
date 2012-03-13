@@ -95,7 +95,8 @@ if isempty(packageList),
         'Movie Selector','modal'); 
 end
 packageNames = cellfun(@(x) eval([x '.getName']),packageList,'Unif',0);
-packageNames=sort(packageNames);
+[packageNames,index]=sort(packageNames);
+packageList=packageList(index);
 
 % Create radio controls for packages
 nPackages=numel(packageList);
