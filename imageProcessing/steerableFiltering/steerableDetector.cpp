@@ -1052,7 +1052,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                 }
                 string str = ch;
                 delete ch;
-                transform(str.begin(), str.end(), str.begin(), (int(*)(int))tolower);
+                int (*pf)(int) = tolower;
+                transform(str.begin(), str.end(), str.begin(), pf);
                 if (str.compare("mirror")==0) {
                     borderCondition = 3;
                 } else if (str.compare("periodic")==0) {
