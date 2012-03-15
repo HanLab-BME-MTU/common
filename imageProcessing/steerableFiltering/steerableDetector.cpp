@@ -11,6 +11,7 @@
 #include <string>
 #include <math.h>
 #include <gsl/gsl_poly.h>
+#include <algorithm>
 
 #include "mex.h"
 #include "convolver.h"
@@ -1051,7 +1052,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                 }
                 string str = ch;
                 delete ch;
-                transform(str.begin(), str.end(), str.begin(), tolower);
+                transform(str.begin(), str.end(), str.begin(), (int(*)(int))tolower);
                 if (str.compare("mirror")==0) {
                     borderCondition = 3;
                 } else if (str.compare("periodic")==0) {

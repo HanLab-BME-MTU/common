@@ -1,11 +1,13 @@
 //
 //  convolver.h
 //
-//  Created by François Aguet on 3/12/12.
+//  Created by Francois Aguet on 03/12/2012.
 //
 
 #ifndef CONVOLVER_H
 #define CONVOLVER_H
+
+#include <cstring> //memcpy
 
 namespace std {
 
