@@ -1,20 +1,22 @@
 /* [response orientation nms filterBank] = steerableDetector(image, filterOrder, sigma);
  *
- * (c) Francois Aguet, 07/12/2011 (last modified Jul 14, 2011). Adapted from SteerableJ package, 2008.
+ * (c) Francois Aguet, 07/12/2011 (last modified Mar 14, 2012). Adapted from SteerableJ package, 2008.
  *
  * Compilation:
  * Mac/Linux: mex -I/usr/local/include -I../../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a steerableDetector.cpp
  * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\gsl-1.14" -I"..\..\mex\include" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output steerableDetector steerableDetector.cpp
  */
 
+
+#include <string>
 #include <math.h>
-#include <string.h>
 #include <gsl/gsl_poly.h>
 
 #include "mex.h"
-// #include "matrix.h" // mx matrix library
-#include "conv2D.h"
+#include "convolver.h"
 #include "stats.h"
+
+using namespace std;
 
 #define PI 3.141592653589793
 #define TOL 1e-12
@@ -88,7 +90,7 @@ double* getWeights(int M, double sigma) {
 }
 
 
-void computeBaseTemplates(double* input, int nx, int ny, int M, double sigma, double** templates) {
+void computeBaseTemplates(double* input, int nx, int ny, int M, int borderCondition, double sigma, double** templates) {
     
     int wWidth = (int)(4.0*sigma);
     int nk = wWidth+1;
@@ -109,6 +111,9 @@ void computeBaseTemplates(double* input, int nx, int ny, int M, double sigma, do
         g[i] = exp(-(i*i)/(2.0*sigma2));
     }
     
+    // set up convolver
+    Convolver conv = Convolver(input, nx, ny, borderCondition);
+    
     if (M == 1 || M == 3 || M == 5) {
         
         d = 2.0*PI*sigma4;
@@ -117,12 +122,10 @@ void computeBaseTemplates(double* input, int nx, int ny, int M, double sigma, do
         }
         
         // g_x
-        convolveOddX(input, nx, ny, aKernel, nk, buffer);
-        convolveEvenY(buffer, nx, ny, g, nk, templates[0]);
+        conv.convolveOddXEvenY(aKernel, nk, g, nk, templates[0]);
         
         // g_y
-        convolveOddY(input, nx, ny, aKernel, nk, buffer);
-        convolveEvenX(buffer, nx, ny, g, nk, templates[1]);
+        conv.convolveEvenXOddY(g, nk, aKernel, nk, templates[1]);
         
         if (M == 3 || M == 5) {
             
@@ -131,21 +134,18 @@ void computeBaseTemplates(double* input, int nx, int ny, int M, double sigma, do
                 aKernel[i] = (3.0*i*sigma2 - i*i*i) * g[i] / d;
             }
             // g_xxx
-            convolveOddX(input, nx, ny, aKernel, nk, buffer);
-            convolveEvenY(buffer, nx, ny, g, nk, templates[2]);
+            conv.convolveOddXEvenY(aKernel, nk, g, nk, templates[2]);
+            
             // g_yyy
-            convolveOddY(input, nx, ny, aKernel, nk, buffer);
-            convolveEvenX(buffer, nx, ny, g, nk, templates[5]);
+            conv.convolveEvenXOddY(g, nk, aKernel, nk, templates[5]);
             for (int i=0;i<nk;i++) {
                 aKernel[i] = (sigma2 - i*i) * g[i] / d;
                 bKernel[i] = i*g[i];
             }
             // gxxy
-            convolveEvenX(input, nx, ny, aKernel, nk, buffer);
-            convolveOddY(buffer, nx, ny, bKernel, nk, templates[3]);
+            conv.convolveEvenXOddY(aKernel, nk, bKernel, nk, templates[3]);
             // gxyy
-            convolveEvenY(input, nx, ny, aKernel, nk, buffer);
-            convolveOddX(buffer, nx, ny, bKernel, nk, templates[4]);
+            conv.convolveOddXEvenY(bKernel, nk, aKernel, nk, templates[4]);
         }
         if (M == 5) {
             
@@ -154,31 +154,25 @@ void computeBaseTemplates(double* input, int nx, int ny, int M, double sigma, do
                 aKernel[i] = -i*(i*i*i*i - 10.0*i*i*sigma2 + 15.0*sigma4) * g[i] / d;
             }
             // gxxxxx
-            convolveOddX(input, nx, ny, aKernel, nk, buffer);
-            convolveEvenY(buffer, nx, ny, g, nk, templates[6]);
+            conv.convolveOddXEvenY(aKernel, nk, g, nk, templates[6]);
             // gyyyyy
-            convolveOddY(input, nx, ny, aKernel, nk, buffer);
-            convolveEvenX(buffer, nx, ny, g, nk, templates[11]);
+            conv.convolveEvenXOddY(g, nk, aKernel, nk, templates[11]);
             for (int i=0;i<nk;i++) {
                 aKernel[i] = (i*i*i*i - 6.0*i*i*sigma2 + 3.0*sigma4) * g[i] / d;
                 bKernel[i] = -i * g[i];
             }
             // g_xxxxy
-            convolveEvenX(input, nx, ny, aKernel, nk, buffer);
-            convolveOddY(buffer, nx, ny, bKernel, nk, templates[7]);
+            conv.convolveEvenXOddY(aKernel, nk, bKernel, nk, templates[7]);
             // g_xyyyy
-            convolveEvenY(input, nx, ny, aKernel, nk, buffer);
-            convolveOddX(buffer, nx, ny, bKernel, nk, templates[10]);
+            conv.convolveOddXEvenY(bKernel, nk, aKernel, nk, templates[10]);
             for (int i=0;i<nk;i++) {
                 aKernel[i] = i*(i*i - 3.0*sigma2) * g[i] / d;
                 bKernel[i] = (sigma2 - i*i) * g[i];
             }
             // g_xxxyy
-            convolveOddX(input, nx, ny, aKernel, nk, buffer);
-            convolveEvenY(buffer, nx, ny, bKernel, nk, templates[8]);
+            conv.convolveOddXEvenY(aKernel, nk, bKernel, nk, templates[8]);
             // g_xxyyy
-            convolveOddY(input, nx, ny, aKernel, nk, buffer);
-            convolveEvenX(buffer, nx, ny, bKernel, nk, templates[9]);
+            conv.convolveEvenXOddY(bKernel, nk, aKernel, nk, templates[9]);
         }
     } else { //(M == 2 || M == 4)
         
@@ -187,18 +181,15 @@ void computeBaseTemplates(double* input, int nx, int ny, int M, double sigma, do
             aKernel[i] = (i*i - sigma2) * g[i] / d;
         }
         // g_xx
-        convolveEvenX(input, nx, ny, aKernel, nk, buffer);
-        convolveEvenY(buffer, nx, ny, g, nk, templates[0]);
+        conv.convolveEvenXEvenY(aKernel, nk, g, nk, templates[0]);
         // g_yy
-        convolveEvenY(input, nx, ny, aKernel, nk, buffer);
-        convolveEvenX(buffer, nx, ny, g, nk, templates[2]);
+        conv.convolveEvenXEvenY(g, nk, aKernel, nk, templates[2]);
         for (int i=0;i<nk;i++) {
             aKernel[i] = i * g[i];
             bKernel[i] = aKernel[i] / d;
         }
         // g_xy
-        convolveOddX(input, nx, ny, aKernel, nk, buffer);
-        convolveOddY(buffer, nx, ny, bKernel, nk, templates[1]);
+        conv.convolveOddXOddY(aKernel, nk, bKernel, nk, templates[1]);
         
         if (M == 4) {
             
@@ -207,28 +198,23 @@ void computeBaseTemplates(double* input, int nx, int ny, int M, double sigma, do
                 aKernel[i] = (i*i*i*i - 6.0*i*i*sigma2 + 3.0*sigma4) * g[i] / d;
             }
             // g_xxxx
-            convolveEvenX(input, nx, ny, aKernel, nk, buffer);
-            convolveEvenY(buffer, nx, ny, g, nk, templates[3]);
+            conv.convolveEvenXEvenY(aKernel, nk, g, nk, templates[3]);
             // g_yyyy
-            convolveEvenY(input, nx, ny, aKernel, nk, buffer);
-            convolveEvenX(buffer, nx, ny, g, nk, templates[7]);
+            conv.convolveEvenXEvenY(g, nk, aKernel, nk, templates[7]);
             for (int i=0;i<nk;i++) {
                 aKernel[i] = i * (i*i - 3.0*sigma2) * g[i] / d;
                 bKernel[i] = i * g[i];
             }
             // g_xxxy
-            convolveOddX(input, nx, ny, aKernel, nk, buffer);
-            convolveOddY(buffer, nx, ny, bKernel, nk, templates[4]);
+            conv.convolveOddXOddY(aKernel, nk, bKernel, nk, templates[4]);
             // g_xyyy
-            convolveOddY(input, nx, ny, aKernel, nk, buffer);
-            convolveOddX(buffer, nx, ny, bKernel, nk, templates[6]);
+            conv.convolveOddXOddY(bKernel, nk, aKernel, nk, templates[6]);
             for (int i=0;i<nk;i++) {
                 aKernel[i] = (sigma2 - i*i) * g[i];
                 bKernel[i] = aKernel[i] / d;
             }
             // g_xxyy
-            convolveEvenX(input, nx, ny, aKernel, nk, buffer);
-            convolveEvenY(buffer, nx, ny, bKernel, nk, templates[5]);
+            conv.convolveEvenXEvenY(aKernel, nk, bKernel, nk, templates[5]);
         }
     }
     
@@ -1016,8 +1002,8 @@ void computeNMS(double* response, double* orientation, double* nms, int nx, int 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         
     // check # inputs
-    if (nrhs != 3 && nrhs != 4)
-        mexErrMsgTxt("Required inputs arguments: image, filter order, sigma. Optional: # angles for rotations output.");
+    if (nrhs < 3 || nrhs > 5)
+        mexErrMsgTxt("Required inputs arguments: image, filter order, sigma.\nOptional: # angles for rotations output; border condition (see help).");
     if (nlhs > 4)
         mexErrMsgTxt("Too many output arguments.");
     
@@ -1045,19 +1031,45 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     if (!mxIsDouble(prhs[2]) || mxGetNumberOfElements(prhs[2]) != 1 || *mxGetPr(prhs[2]) <= 0.0)
         mexErrMsgTxt("Sigma must be a strictly positive scalar value.");
     double sigma = *mxGetPr(prhs[2]);
-        
-    // check angles
-    if (nrhs == 4 && (!mxIsDouble(prhs[3]) || *mxGetPr(prhs[3])<1))
-        mexErrMsgTxt("The number of angles must be larger than 1.");
     
-    int nt;
-    if (nrhs==4) {
-        nt = (int) *mxGetPr(prhs[3]);
-    } else {
-        nt = 36;
+    // Set defaults for options
+    int borderCondition = 3;
+    int nt = 36;
+    
+    // check 1st option: angles or border condition
+    if (nrhs >= 4) {
+        for (int i=3;i<nrhs;++i) {
+            
+            if (mxIsDouble(prhs[i]) && *mxGetPr(prhs[i])>0) { // # angles
+                nt = (int) *mxGetPr(prhs[i]);
+            } else if (mxIsChar(prhs[i])) { // border condition
+                size_t nchar = mxGetNumberOfElements(prhs[i])+1;
+                char *ch = new char[nchar];
+                int f = mxGetString(prhs[i], ch,  nchar);
+                if (f!=0) {
+                    mexErrMsgTxt("Error parsing border condition.");
+                }
+                string str = ch;
+                delete ch;
+                transform(str.begin(), str.end(), str.begin(), tolower);
+                if (str.compare("mirror")==0) {
+                    borderCondition = 3;
+                } else if (str.compare("periodic")==0) {
+                    borderCondition = 2;
+                } else if (str.compare("replicate")==0) {
+                    borderCondition = 1;
+                } else if (str.compare("zeros")==0) {
+                    borderCondition = 0;
+                } else {
+                    mexErrMsgTxt("Unsupported border conditions.");
+                }
+            } else {
+                mexErrMsgTxt("Allowed options: # angles (must be ? 1) or border condition.");
+            }
+        }
+        
     }
     
-   
     
     int L = 2*(int)(4.0*sigma)+1; // support of the Gaussian kernels
     
@@ -1092,7 +1104,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     double* orientation = new double[N];
     
     // Compute the templates used in the steerable filterbank
-    computeBaseTemplates(pixels, nx, ny, M, sigma, templates);
+    computeBaseTemplates(pixels, nx, ny, M, borderCondition, sigma, templates);
     double* alpha = getWeights(M, sigma);
 
     
@@ -1229,9 +1241,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 }
 
 
-// compile with:
-// export DYLD_LIBRARY_PATH=/Applications/MATLAB_R2010b.app/bin/maci64 && g++ -ansi -Wall -g -DARRAY_ACCESS_INLINING -I. -L/Applications/MATLAB_R2010b.app/bin/maci64 -I../../mex/include/ -I/Applications/MATLAB_R2010b.app/extern/include steerableDetector.cpp -lmx -lmex -lgsl
-// test with:
+// compiled with:
+// export DYLD_LIBRARY_PATH=/Applications/MATLAB_R2012a.app/bin/maci64 && g++ -Wall -g -DARRAY_ACCESS_INLINING -I. -L/Applications/MATLAB_R2012a.app/bin/maci64 -I../../mex/include/ -I/Applications/MATLAB_R2012a.app/extern/include steerableDetector.cpp -lmx -lmex -lgsl
+// tested with:
 // valgrind --tool=memcheck --leak-check=full --show-reachable=yes ./a.out 2>&1 | grep steerable
 
 /*int main(void) {
@@ -1258,7 +1270,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     double* orientation = new double[N];
     
     // Compute the templates used in the steerable filterbank
-    computeBaseTemplates(pixels, nx, ny, M, sigma, templates);
+    computeBaseTemplates(pixels, nx, ny, M, 3, sigma, templates);
     double* alpha = getWeights(M, sigma);
 
     
