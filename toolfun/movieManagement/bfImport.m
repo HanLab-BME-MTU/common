@@ -36,6 +36,8 @@ try
     % Retrieve movie reader and metadata
     r=bfGetReader(dataPath);
     metadata=r.getMetadataStore();
+    assert(r.getSeriesCount()==1,'Multiple series not supported yet');
+    r.setSeries(0);
 catch ME
     ME2 = MException('lccb:import:error','Import error');
     ME2.addCause(ME);
@@ -87,7 +89,7 @@ end
 nFrames =  metadata.getPixelsSizeT(0).getValue;
 nChan =  metadata.getPixelsSizeC(0).getValue;
 nZ =  metadata.getPixelsSizeZ(0).getValue;
-assert(isequal(nZ,1),'Importation of 3D movies not implemented yet');
+assert(isequal(nZ,1),'3D movies import not implemented yet');
 
 % Set output directory (based on image extraction flag)
 movie=MovieData;
