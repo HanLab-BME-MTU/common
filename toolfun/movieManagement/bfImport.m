@@ -89,7 +89,6 @@ end
 nFrames =  metadata.getPixelsSizeT(0).getValue;
 nChan =  metadata.getPixelsSizeC(0).getValue;
 nZ =  metadata.getPixelsSizeZ(0).getValue;
-assert(isequal(nZ,1),'3D movies import not implemented yet');
 
 % Set output directory (based on image extraction flag)
 movie=MovieData;
@@ -160,8 +159,9 @@ if extractImages
     zIndex = @(index) index(dimensionOrder(3:end)=='Z');
     tIndex = @(index) index(dimensionOrder(3:end)=='T');
     tString=@(t)num2str(t, ['%0' num2str(floor(log10(nFrames))+1) '.f']);
-    imageName = @(c,t) [movieName '-w' num2str(movieChannels(c).emissionWavelength_) ...
-        '_t' tString(t),'.tif'];
+    zString=@(z)num2str(z, ['%0' num2str(floor(log10(nZ))+1) '.f']);
+    imageName = @(c,t,z) [movieName '_w' num2str(movieChannels(c).emissionWavelength_) ...
+        '_t' tString(t),'_z' zString(z),'.tif'];
 
     % Clean channel directories and save images as TIF files
     for i=1:nChan, mkClrDir(channelPath{i}); end
@@ -169,7 +169,7 @@ if extractImages
         [index(1),index(2),index(3)]=ind2sub(dimensions,iPlane);
         
         imwrite(bfGetPlane(r,iPlane),[channelPath{chanIndex(index)} filesep ...
-            imageName(chanIndex(index),tIndex(index))],'tif');
+            imageName(chanIndex(index),tIndex(index),zIndex(index))],'tif');
     end
 end
 
