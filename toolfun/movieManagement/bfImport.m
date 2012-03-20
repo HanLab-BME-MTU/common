@@ -27,6 +27,7 @@ assert(exist(which('bfopen'),'file')==2,'Bioformats library missing');
 ip=inputParser;
 ip.addRequired('dataPath',@ischar);
 ip.addOptional('extractImages',true,@islogical);
+ip.addParamValue('outputDirectory',[],@ischar);
 ip.parse(dataPath,varargin{:});
 extractImages = ip.Results.extractImages;
 
@@ -97,9 +98,16 @@ if extractImages,
     rawDataPath = uigetdir(mainPath,'Find a place to save your extracted images');
     if isequal(rawDataPath,0), return; end
 end
-[movieFileName,outputDir] = uiputfile('*.mat','Find a place to save your analysis',...
-    fullfile(mainPath,[movieName '.mat']));
-if isequal(outputDir,0), return; end
+
+if isempty(ip.Results.outputDirectory)
+    [movieFileName,outputDir] = uiputfile('*.mat','Find a place to save your analysis',...
+        fullfile(mainPath,[movieName '.mat']));
+    if isequal(outputDir,0), return; end
+else
+    outputDir=ip.Results.outputDirectory;
+    if ~isdir(outputDir), mkdir(outputDir); end
+    movieFileName='movieDta.mat';
+end
 
 % Create movie channels
 channelPath=cell(1,nChan);
