@@ -157,7 +157,7 @@ classdef ImageProcessingProcess < Process
            %Checks if the selected channels have valid output images          
            nChanTot = numel(obj.owner_.channels_);
            if nargin < 2 || isempty(iChan), iChan = 1:nChanTot; end
-           assert(all(ismember(iChan, 1:nChanTot)));
+           assert(all(obj.checkChanNum(iChan)));
            status =  arrayfun(@(x) exist(obj.outFilePaths_{1,x},'dir') && ...
                ~isempty(imDir(obj.outFilePaths_{1,x})),iChan);
         end
@@ -165,42 +165,21 @@ classdef ImageProcessingProcess < Process
         
         
         function outIm = loadOutImage(obj,iChan,iFrame)
-            
-            if nargin < 3 || isempty(iChan) || isempty(iFrame)
-                error('You must specify a frame and channel number!')
-            end            
-            
-            if length(iChan) > 1 || length(iFrame) > 1
-                error('You can only specify 1 image to load!')
-            end
-            
-            if ~obj.checkFrameNum(iFrame)
-                error('Invalid frame number!')
-            end
-            
-            %get the image names
-            imNames = getOutImageFileNames(obj,iChan);
-            
-            outIm = imread([obj.outFilePaths_{1,iChan} ...
-                filesep imNames{1}{iFrame}]);
-            
+            outIm=obj.loadChannelOutput(iChan,iFrame);
         end
            
         
         function outIm = loadChannelOutput(obj,iChan,iFrame,varargin)
             % Input check
             ip =inputParser;
-            ip.addRequired('obj',@(x) isa(x,'ImageProcessingProcess'));
-            ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
-            ip.addRequired('iFrame',@(x) ismember(x,1:obj.owner_.nFrames_));
+            ip.addRequired('iChan',@obj.checkChanNum);
+            ip.addRequired('iFrame',@obj.checkFrameNum);
             ip.addParamValue('output',[],@ischar);            
-            ip.parse(obj,iChan,iFrame,varargin{:})
+            ip.parse(iChan,iFrame,varargin{:})
 
-            
-            % Data loadingi
+            % Data loading
             imNames = obj.getOutImageFileNames(iChan);
-            outIm = imread([obj.outFilePaths_{1,iChan} ...
-                filesep imNames{1}{iFrame}]);
+            outIm = imread(fullfile(obj.outFilePaths_{1,iChan},imNames{1}{iFrame}));
         end
         
     end
