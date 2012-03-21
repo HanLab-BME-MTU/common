@@ -106,7 +106,7 @@ if isempty(ip.Results.outputDirectory)
 else
     outputDir=ip.Results.outputDirectory;
     if ~isdir(outputDir), mkdir(outputDir); end
-    movieFileName='movieDta.mat';
+    movieFileName=[movieName '.mat'];
 end
 
 % Create movie channels
