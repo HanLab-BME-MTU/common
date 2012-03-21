@@ -26,7 +26,7 @@ classdef BleedthroughCorrectionProcess < ImageProcessingProcess
     end
     methods (Static)
         function name =getName()
-            name = 'Bleedthrough Correction';
+            name = 'Bleedthrough/Crosstalk Correction';
         end
         function h = GUI()
             h= @bleedthroughCorrectionProcessGUI;
@@ -43,8 +43,7 @@ classdef BleedthroughCorrectionProcess < ImageProcessingProcess
             funParams.OutputDirectory = [outputDir  filesep 'bleedthrough_corrected_images'];
             funParams.ChannelIndex = [];%No default
             funParams.ProcessIndex = [];%No default
-            funParams.BleedChannelIndex = [];%No default
-            funParams.BleedCoefficients = [];%No default
+            funParams.Coefficients = zeros(numel(owner.channels_),2);%No default
             funParams.BatchMode = false;      
         end
     end
