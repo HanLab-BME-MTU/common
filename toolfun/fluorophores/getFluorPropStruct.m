@@ -41,8 +41,6 @@ s(17).name = 'texasred';
 s(17).lambda_em = 615e-9;
 s(18).name = 'alexa647';
 s(18).lambda_em = 665e-9;
-s(18).name = 'fluosphere605';
-s(18).lambda_em = 605e-9;
 s(19).name = 'cy3';
 s(19).lambda_em = 570e-9;
 s(20).name = 'cy5';
@@ -51,6 +49,8 @@ s(21).name = 'alexa594';
 s(21).lambda_em = 617e-9;
 s(22).name = 'dapi';
 s(22).lambda_em = 470e-9;
+s(23).name = 'fluosphere605';
+s(23).lambda_em = 605e-9;
 
 [~,i]=sort([s.lambda_em]);
 s=s(i);
