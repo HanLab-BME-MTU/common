@@ -25,6 +25,8 @@ function [meanCC,CI] = correlationBootstrap(CC,CB,varargin)
 %        meanXC - average value for the auto or cross-correlation   
 %        CI     - upper and lower confidence intervals   
 %
+%See also : coherenceBootstrap
+%
 % Marco Vilela, 12/2011
 
 %Input check
@@ -44,7 +46,7 @@ workCC   = CC;
 workCC(abs(CC)==1)=workCC(abs(CC)==1)-sign(workCC(abs(CC)==1))*1e-9;
 
 %Elimination of values below the CB
-workCC( abs(CC) < repmat( CB,nLag,1 ) ) = 0;
+workCC( abs(CC) < repmat( abs(CB),nLag,1 ) ) = 0;
 
 opt = statset('UseParallel','never');
 if matlabpool('size')
