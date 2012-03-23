@@ -141,7 +141,15 @@ classdef  MovieData < MovieObject
         
         function deleteROI(obj,index)
             assert(all(ismember(index,1:numel(obj.rois_))));
-            obj.rois_(index)=[];
+            paths = arrayfun(@getFullPath,obj.rois_(index),'Unif',false);
+            
+            delete(obj.rois_(index)); % Delete objects
+            % Save deleted object (to prevent future loading)
+            for i=find(~cellfun(@isempty,paths))
+               MD=obj.rois_(i); %#ok<NASGU>
+               save(paths{i},'MD');
+            end
+            obj.rois_(index)=[]; % Remove from the list
         end
         
         function roiMask=getROIMask(obj)
@@ -171,7 +179,7 @@ classdef  MovieData < MovieObject
             % List all descendants of the movie
             nRois = numel(obj.rois_);
             roiDescendants=cell(nRois,1);
-            for i=1:nRois, roiDescendants{i} = obj.rois_(i).getDescendants; end
+%             for i=1:nRois, roiDescendants{i} = obj.rois_(i).getDescendants; end
             descendants = horzcat(obj.rois_,roiDescendants{:});
         end
              
