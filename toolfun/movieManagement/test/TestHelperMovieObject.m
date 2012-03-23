@@ -157,6 +157,7 @@ classdef TestHelperMovieObject < handle
             % Get concrete subclasses
             subClasses= allClasses(cellfun(@(x) isSubclass(x,superclass),allClasses));
             concreteSubClasses= allClasses(cellfun(@isConcreteClass,subClasses));
+            concreteSubClasses= unique(concreteSubClasses);
         end
     end
 end
