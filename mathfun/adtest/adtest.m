@@ -14,14 +14,12 @@
 %
 % Critical values taken from 
 % [1] M.A. Stephens, J. Am. Stat. Assoc. 69(347), pp. 730-737, 1974
+% [2] M.A. Stephens, Ann. Stat. 4(2), pp. 357-369, 1976
 %
 % See also
-% [2] http://en.wikipedia.org/wiki/Anderson-Darling_test
-%
-% Note: this function only implements the case where both the mean and variance
-% of the sample are unknown.
+% [3] http://en.wikipedia.org/wiki/Anderson-Darling_test
 
-% Francois Aguet, 01/28/2012
+% Francois Aguet (last modified 03/27/2012)
 
 function [H, A2, cval] = adtest(x, varargin)
 
@@ -32,6 +30,7 @@ ip.addRequired('x');
 ip.addOptional('alpha', 0.05, @(x) ismember(x, alphaVec));
 ip.addParamValue('mu', []);
 ip.addParamValue('sigma', []);
+ip.addParamValue('Distribution', 'normal', @(x) any(strcmpi(x, {'normal', 'exponential'})));
 ip.parse(x, varargin{:});
 
 n = numel(x);
@@ -54,29 +53,48 @@ if isempty(sigma)
     estidx(1) = 1;
 end
 
-% case
-c = bin2dec(num2str(estidx))+1;
 
-% Case 1: mean and variance known
-% Case 2: mean unknown, variance known
-% Case 3: mean known, variance unknown
-% Case 4: mean and variance unknown
+% sort samples in ascending order
+x = sort(x);
+
+% case
+switch ip.Results.Distribution
+    case 'normal'
+        c = bin2dec(num2str(estidx))+1;
+        z = normcdf(x, mu, sigma);
+
+    case 'exponential'
+        c = 5;
+        z = expcdf(x, mu);
+end
 
 % Look-up table for critical values
+%  Case 1: mean and variance known
+%  Case 2: mean unknown, variance known
+%  Case 3: mean known, variance unknown
+%  Case 4: mean and variance unknown
+%  Case 5: exponential distribution, mean unknown
+
 ctable = [3.857 3.070 2.492 1.933 1.610;
           1.573 1.304 1.105 0.908 NaN;
           3.690 2.904 2.323 1.760 NaN;
-          1.092 0.918 0.787 0.656 0.576];
+          1.092 0.918 0.787 0.656 0.576
+          1.957 1.606 1.341 1.078 0.922];
 
-      
+% Values from [2]
+ctable = [3.857 3.070 2.492 1.933 1.610;
+          1.541 1.281 1.088 0.897 0.784;
+          3.682 2.890 2.315 1.761 1.443;
+          1.029 0.870 0.751 0.632 0.560;
+          1.943 1.587 1.326 1.070 0.918];
+
 % Alternative lookup table (d'Agostino 1986)
 % ctable(4,:) = [1.035 0.873 0.752 0.631 NaN];
-      
+
+
 cval = ctable(c,alphaVec==ip.Results.alpha);
       
 % Test statistic
-x = sort(x);
-z = normcdf(x, mu, sigma);
 i = 1:n;
 A2 = -n - 1/n*sum( (2*i-1).*(log(z) + log(1-z(n+1-i))) );
 

@@ -35,3 +35,43 @@ disp('-----------');
 %     plot(x, ni, '.-', 'Color', rand(1,3));
 % end
 
+
+% N = 1e4;
+% ns = 20;
+% alpha = 0.05;
+% 
+% H_AD = NaN(1,N);
+% H_KS = NaN(1,N);
+% P_KS = NaN(1,N);
+% H_L = NaN(1,N);
+% 
+% for k = 1:N
+%     x = randn(1,ns);
+%     x = (x-mean(x))/std(x);
+%     
+%     H_AD(k) = adtest(x, alpha);
+%     [H_KS(k), P_KS(k)] = kstest(x, [], alpha);
+%     H_L(k) = lillietest(x, alpha);
+%     
+% end
+% 
+% sum(H_AD)/N
+% sum(H_KS)/N
+% sum(H_L)/N
+
+%%
+rng('default')
+N = 1e5;
+ns = 20;
+hval = zeros(1,N);
+
+for k = 1:N
+    hval(k) = adtest(-1*log(1-rand(1,ns)), 'Distribution', 'exponential');
+    %hval(k) = adtest(randn(1,ns), 'Distribution', 'normal');
+end
+
+sum(hval)/N
+
+
+
+
