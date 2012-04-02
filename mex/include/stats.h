@@ -183,10 +183,18 @@ double ksone(double *data, int N, double mu, double sigma) {
 }
 
 
+
+
+
+/* Anderson-Darling test
+ *
+ * Critical values taken from p. 732
+ * [1] M.A. Stephens, J. Am. Stat. Assoc. 69(347), pp. 730-737, 1974
+ */
 unsigned char adtest(double *data, int N, int adCase, double mu, double sigma, double alpha) {
     
     if (adCase<1 || adCase>4) {
-        mexErrMsgTxt("'adCase' must be an integer between 1 and 4.");
+        mexErrMsgTxt("'adCase' must be an integer between 1 and 5.");
     }
     
     double *sdata = (double*)malloc(sizeof(double)*N);
@@ -213,16 +221,20 @@ unsigned char adtest(double *data, int N, int adCase, double mu, double sigma, d
     if (adCase==4) {
         A2 *= 1.0+4.0/N-25.0/(N*N);
     }
+    if (adCase==5) {
+        A2 *= 1.0 + 0.6/n;
+    }
     
     free(z);
     free(sdata);
     
     /* Look-up table for critical values */
     static const double alphaVec[4] = {0.01, 0.025, 0.05,  0.1};
-    static const double ctable[16] = {3.857, 3.070, 2.492, 1.933, /* case 1 */
-                                      1.573, 1.304, 1.105, 0.908, /* case 2 */
-                                      3.690, 2.904, 2.323, 1.760, /* case 3 */
-                                      1.092, 0.918, 0.787, 0.656};/* case 4 */
+    static const double ctable[20] = {3.857, 3.070, 2.492, 1.933, /* case 1: normal, mu/sigma known */
+                                      1.573, 1.304, 1.105, 0.908, /* case 2: normal, mu unknown, sigma known */
+                                      3.690, 2.904, 2.323, 1.760, /* case 3: normal, mu known, sigma unknown */
+                                      1.092, 0.918, 0.787, 0.656, /* case 4: normal, mu/sigma unknown */
+                                      1.957, 1.606, 1.341, 1.078};/* case 5: exponential, µ unknown */
     
     /* get critical value from lookup table */
     int ai = 5;
