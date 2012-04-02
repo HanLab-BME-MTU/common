@@ -386,9 +386,9 @@ classdef  MovieObject < hgsetget
                 try
                     % List variables in the path
                     vars = whos('-file',moviepath);
-                catch ME
-                    ME2 = MException('lccb:movieObject:load', 'Fail to open file. Make sure it is a MAT file.');
-                    ME.addCause(ME2);
+                catch whosException
+                    ME = MException('lccb:movieObject:load', 'Fail to open file. Make sure it is a MAT file.');
+                    ME = ME.addCause(whosException);
                     throw(ME);
                 end
                 

@@ -39,10 +39,10 @@ try
     metadata=r.getMetadataStore();
     assert(r.getSeriesCount()==1,'Multiple series not supported yet');
     r.setSeries(0);
-catch ME
-    ME2 = MException('lccb:import:error','Import error');
-    ME2.addCause(ME);
-    throw(ME2);
+catch bfException
+    ME = MException('lccb:import:error','Import error');
+    ME = ME.addCause(bfException);
+    throw(ME);
 end
 
 
