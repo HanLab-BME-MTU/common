@@ -45,6 +45,25 @@ classdef MotionAnalysisProcess < DataProcessingProcess
             s = load(obj.outFilePaths_{1,iChan},output{:});
             for i=1:numel(output),varargout{i}=s.(output{i}); end
         end
+        
+        function hfigure = resultDisplay(obj,varargin)
+            % Display the output of the process
+            if ~isempty(obj.getPackage) && ...
+                    isa(obj.owner_.packages_{obj.getPackage},'UTrackPackage')
+                
+                % Check for movie output before loading the GUI
+                iChan = find(obj.checkChannelOutput,1);
+                if isempty(iChan)
+                    warndlg('The current step does not have any output yet.','No Output','modal');
+                    return
+                end               
+                
+                hfigure = motionAnalysisVisualGUI('mainFig', varargin{:});
+            else
+                hfigure=resultDisplay@Process(obj,varargin{:});
+            end
+        end
+        
     end
     methods (Static)
         

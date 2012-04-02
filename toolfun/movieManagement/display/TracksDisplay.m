@@ -16,34 +16,41 @@ classdef TracksDisplay < MovieDataDisplay
                 end
             end
         end
-        function h=initDraw(obj,data,tag,varargin)
-            nTracks = numel(data.x);
-            h=-ones(nTracks,2);
-            for i=1:nTracks
-                xData= data.x{i}(max(1,end-obj.dragtailLength):end);
-                yData= data.y{i}(max(1,end-obj.dragtailLength):end);
-                h(i,1)=plot(xData(~isnan(xData)),yData(~isnan(yData)),...
-                    'Linestyle',obj.GapLinestyle','Color',obj.Color,...
-                    varargin{:});
-                h(i,2)=plot(xData,yData,...
-                    'Linestyle',obj.Linestyle,'Color',obj.Color,...
-                    varargin{:});
-            end
-            set(h,'Tag',tag); 
-            
-            if isfield(data,'label')  && obj.showLabel
-                ht=-ones(nTracks,1);
-                for i=1:nTracks
-                    ht(i) = text(data.x{i}(end),data.y{i}(end),num2str(data.label(i)));
+        function h=initDraw(obj,tracks,tag,varargin)
+            nTracks = numel(tracks);
+            h=-ones(nTracks,3);
+            % Get track length and display valid tracks
+            trackLengths = cellfun(@numel,{tracks.tracksCoordAmpCG})/8;  
+            validTracks = find(trackLengths>0);
+            for i=validTracks
+                xData= tracks(i).tracksCoordAmpCG(max(1,1+8*(trackLengths(i)-obj.dragtailLength)):8:end);
+                yData= tracks(i).tracksCoordAmpCG(max(2,2+8*(trackLengths(i)-obj.dragtailLength)):8:end);
+                % check gap is not exclusively composed of NaN's (e.g.
+                % gaps with a small dragtail)
+                if ~all(isnan(xData)) 
+                    h(i,1)=plot(xData(~isnan(xData)),yData(~isnan(yData)),...
+                        'Linestyle',obj.GapLinestyle','Color',obj.Color,...
+                        varargin{:});
+                    h(i,2)=plot(xData,yData,...
+                        'Linestyle',obj.Linestyle,'Color',obj.Color,...
+                        varargin{:});
+                    if obj.showLabel
+                        h(i,3) = text(xData(find(~isnan(xData),1,'last'))+2,...
+                            yData(find(~isnan(yData),1,'last'))+2,num2str(i),...
+                            'Color',obj.Color);
+                    end
                 end
-                set(ht,'Tag',tag);
-
             end
+            set(h(ishandle(h)),'Tag',tag); 
+           
         end
 
         function updateDraw(obj,allh,data)
             tag=get(allh(1),'Tag');
-            nTracks = numel(data.x);
+            delete(allh);
+            obj.initDraw(data,tag);
+            return;
+            nTracks = numel(data);
 
             h=findobj(allh,'Type','line');
             delete(h(2*nTracks+1:end));

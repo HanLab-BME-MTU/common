@@ -98,19 +98,18 @@ classdef TrackingProcess < DataProcessingProcess
             tracksFinal=s.tracksFinal;
             
             if ~isempty(iFrame),
-                startTime = arrayfun(@(x) x.seqOfEvents(1,1),tracksFinal);
-                endTime = arrayfun(@(x) x.seqOfEvents(2,1),tracksFinal);
-                isValid = (iFrame>=startTime &iFrame<=endTime);
-                data.x = arrayfun(@(x,y) x.tracksCoordAmpCG(1,1:8:1+8*(iFrame-y)),...
-                    tracksFinal(isValid),startTime(isValid),'Unif',0);
-                data.y = arrayfun(@(x,y) x.tracksCoordAmpCG(1,2:8:2+8*(iFrame-y)),...
-                    tracksFinal(isValid),startTime(isValid),'Unif',0);
-                data.label = find(isValid);
-                varargout{1}=data;
+                % Filter tracks existing in input frame
+                trackSEL=getTrackSEL(tracksFinal);
+                validTracks = (iFrame>=trackSEL(:,1) &iFrame<=trackSEL(:,2));
+                [tracksFinal(~validTracks).tracksCoordAmpCG]=deal([]);
+                
+                for i=find(validTracks)'                  
+                    tracksFinal(i).tracksCoordAmpCG = tracksFinal(i).tracksCoordAmpCG(1:8*(iFrame-trackSEL(i,1)+1));                    
+                end
+                varargout{1}=tracksFinal;
             else
                 varargout{1} = tracksFinal;
-            end
-            
+            end         
         end
         
         
