@@ -97,7 +97,7 @@ classdef MotionAnalysisProcess < DataProcessingProcess
             
             % Set default parameters
             funParams.ChannelIndex = 1 : numel(owner.channels_);
-            funParams.OutputDirectory = [outputDir  filesep 'meta'];
+            funParams.OutputDirectory = [outputDir  filesep 'MotionAnalysis'];
             funParams.probDim = 2;
             funParams.checkAsym = 0;
             funParams.alphaValues = [0.05 0.1];

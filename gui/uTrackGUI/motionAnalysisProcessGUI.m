@@ -22,7 +22,7 @@ function varargout = motionAnalysisProcessGUI(varargin)
 
 % Edit the above text to modify the response to help motionAnalysisProcessGUI
 
-% Last Modified by GUIDE v2.5 06-Mar-2012 11:13:36
+% Last Modified by GUIDE v2.5 03-Apr-2012 18:20:06
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
