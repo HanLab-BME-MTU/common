@@ -194,11 +194,26 @@ classdef Channel < hgsetget
         end
         
         function fileNames = getImageFileNames(obj,iFrame)
-            if ~isempty(obj.fileNames_)
-                fileNames = obj.fileNames_;
-            else                
-                fileNames = arrayfun(@(x) x.name,imDir(obj.channelPath_),...
-                    'UniformOutput',false);
+            
+            if exist(obj.channelPath_, 'file')==2
+                % Generate image file names using wavelength if applicable
+                [~,channelName]=fileparts(obj.channelPath_);
+                if ~isempty(obj.emissionWavelength_)
+                    basename = sprintf('%s_w%g_t',channelName ,obj.emissionWavelength_);
+                else
+                    basename = sprintf('%s_c%d_t',channelName,find(obj.owner_.channels_==obj));
+                end
+                nFrames=obj.owner_.nFrames_;
+                fileNames = arrayfun(@(t) [basename num2str(t, ['%0' num2str(floor(log10(nFrames))+1) '.f']) '.tif'],...
+                    1:nFrames,'Unif',false);
+            else
+                % Channel path is a directory of image files
+                if ~isempty(obj.fileNames_)
+                    fileNames = obj.fileNames_;
+                else
+                    fileNames = arrayfun(@(x) x.name,imDir(obj.channelPath_),...
+                        'UniformOutput',false);
+                end
             end
             if nargin>1, fileNames=fileNames(iFrame); end
         end
@@ -222,13 +237,13 @@ classdef Channel < hgsetget
                 iPlane = sub2ind(CZTdimensions,index(1,:),index(2,:),index(3,:));
                 
                 % Get all requrested planes and close reader
-                for i=1:numel(iPlane), I(:,:,i) =double(bfGetPlane(r,iPlane(i))); end
+                for i=1:numel(iPlane), I(:,:,i) = bfGetPlane(r,iPlane(i)); end
                 r.close;
             else
                 % Read images from disk
                 fileNames=obj.getImageFileNames(iFrame);
                 for i=1:numel(iFrame)
-                    I(:,:,i)  = double(imread([obj.channelPath_ filesep fileNames{i}]));
+                    I(:,:,i)  = imread([obj.channelPath_ filesep fileNames{i}]);
                 end
             end
         end

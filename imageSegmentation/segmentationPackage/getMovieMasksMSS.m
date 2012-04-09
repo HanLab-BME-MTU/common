@@ -122,10 +122,10 @@ for i=1:numel(p.ChannelIndex)
         if isempty(p.ProcessIndex)
             currImage = movieData.channels_(iChan).loadImage(j);
         else
-            currImage = double( movieData.processes_{p.ProcessIndex}.loadOutImage(iChan,j) );
+            currImage = movieData.processes_{p.ProcessIndex}.loadOutImage(iChan,j);
         end
         
-        mask=getCellMaskMSS(currImage,'Scales',p.Scales,'FilterOrder',p.FilterOrder);        
+        mask=getCellMaskMSS(double(currImage),'Scales',p.Scales,'FilterOrder',p.FilterOrder);        
         imwrite(mask,outMask(iChan,j));
 
         % Update the waitbar

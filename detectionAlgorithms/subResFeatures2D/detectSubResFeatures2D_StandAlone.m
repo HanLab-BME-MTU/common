@@ -342,7 +342,7 @@ for iWindow = 1 : numIntegWindow
                 end
             end
         else
-            imageRaw=channel.loadImage(imageIndx(iImage:iImage+2*integWindow(iWindow)));
+            imageRaw=double(channel.loadImage(imageIndx(iImage:iImage+2*integWindow(iWindow))));
         end
         %replace zeros with NaNs
         %zeros result from cropping that leads to curved boundaries
