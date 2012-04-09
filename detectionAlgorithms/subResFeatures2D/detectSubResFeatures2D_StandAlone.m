@@ -138,11 +138,16 @@ if nargin < 2
 end
 
 %get movie parameters
-imageDir = movieParam.imageDir;
-filenameBase = movieParam.filenameBase;
+hasImageDir = isfield(movieData,'imageDir');
+if hasImageDir
+    imageDir = movieParam.imageDir;
+    filenameBase = movieParam.filenameBase;
+    digits4Enum = movieParam.digits4Enum;
+else
+    channel = movieParam.channel;
+end
 firstImageNum = movieParam.firstImageNum;
 lastImageNum = movieParam.lastImageNum;
-digits4Enum = movieParam.digits4Enum;
 
 %get initial guess of PSF sigma
 psfSigma = detectionParam.psfSigma;
@@ -242,11 +247,13 @@ else
     end
 end
 
-%store the string version of the numerical index of each image
-enumString = repmat('0',lastImageNum,digits4Enum);
-formatString = ['%0' num2str(digits4Enum) 'i'];
-for i=1:lastImageNum
-    enumString(i,:) = num2str(i,formatString);
+if hasImageDir
+    %store the string version of the numerical index of each image
+    enumString = repmat('0',lastImageNum,digits4Enum);
+    formatString = ['%0' num2str(digits4Enum) 'i'];
+    for i=1:lastImageNum
+        enumString(i,:) = num2str(i,formatString);
+    end
 end
 
 %initialize some variables
@@ -264,34 +271,44 @@ imageIndx = firstImageNum : lastImageNum;
 numImagesRaw = lastImageNum - firstImageNum + 1; %raw images
 numImagesInteg = repmat(numImagesRaw,1,numIntegWindow) - 2 * integWindow; %integrated images
 
-%read first image and get image size
-if exist([imageDir filenameBase enumString(imageIndx(1),:) '.tif'],'file')
-    imageTmp = imread([imageDir filenameBase enumString(imageIndx(1),:) '.tif']);
+if hasImageDir
+    %read first image and get image size
+    if exist([imageDir filenameBase enumString(imageIndx(1),:) '.tif'],'file')
+        imageTmp = imread([imageDir filenameBase enumString(imageIndx(1),:) '.tif']);
+    else
+        disp('First image does not exist! Exiting ...');
+        return
+    end
+    [imageSizeX,imageSizeY] = size(imageTmp);
+    clear imageTmp
 else
-    disp('First image does not exist! Exiting ...');
-    return
+    imageSizeX=channel.owner_.imSize_(1);
+    imageSizeY=channel.owner_.imSize_(2);
 end
-[imageSizeX,imageSizeY] = size(imageTmp);
-clear imageTmp
-
 %check which images exist and which don't
-imageExists = zeros(numImagesRaw,1);
-for iImage = 1 : numImagesRaw
-    if exist([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif'],'file')
-        imageExists(iImage) = 1;
+imageExists = true(numImagesRaw,1);
+if hasImageDir
+    for iImage = 1 : numImagesRaw
+        if exist([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif'],'file')
+            imageExists(iImage) = 1;
+        end
     end
 end
 
-%calculate background properties at movie end
-last5start = max(numImagesRaw-4,1);
-i = 0;
-imageLast5 = NaN(imageSizeX,imageSizeY,5);
-for iImage = last5start : numImagesRaw
-    i = i + 1;
-    if imageExists(iImage)
-        imageLast5(:,:,i) = imread([imageDir filenameBase ...
-            enumString(imageIndx(iImage),:) '.tif']);
+if hasImageDir
+    %calculate background properties at movie end
+    last5start = max(numImagesRaw-4,1);
+    i = 0;
+    imageLast5 = NaN(imageSizeX,imageSizeY,5);
+    for iImage = last5start : numImagesRaw
+        i = i + 1;
+        if imageExists(iImage)
+            imageLast5(:,:,i) = imread([imageDir filenameBase ...
+                enumString(imageIndx(iImage),:) '.tif']);
+        end
     end
+else
+   imageLast5=channel.loadImage(numImagesRaw-4:numImagesRaw); 
 end
 imageLast5 = double(imageLast5) / (2^bitDepth-1);
 imageLast5(imageLast5==0) = NaN;
@@ -317,13 +334,16 @@ for iWindow = 1 : numIntegWindow
         
         %store raw images in array
         imageRaw = NaN(imageSizeX,imageSizeY,1+2*integWindow(iWindow));
-        for jImage = 1 : 1 + 2*integWindow(iWindow)
-            if imageExists(jImage+iImage-1)
-                imageRaw(:,:,jImage) = double(imread([imageDir filenameBase ...
-                    enumString(imageIndx(jImage+iImage-1),:) '.tif']));
+        if hasImageDir
+            for jImage = 1 : 1 + 2*integWindow(iWindow)
+                if imageExists(jImage+iImage-1)
+                    imageRaw(:,:,jImage) = double(imread([imageDir filenameBase ...
+                        enumString(imageIndx(jImage+iImage-1),:) '.tif']));
+                end
             end
+        else
+            imageRaw=channel.loadImage(imageIndx(iImage:iImage+2*integWindow(iWindow)));
         end
-        
         %replace zeros with NaNs
         %zeros result from cropping that leads to curved boundaries
         imageRaw(imageRaw==0) = NaN;
@@ -795,7 +815,11 @@ end
 for iImage = goodImages
     
     %read raw image
-    imageRaw = imread([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif']);
+    if hasImageDir
+        imageRaw = imread([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif']);
+    else
+        imageRaw = channel.loadImage(imageIndx(iImage));
+    end
     imageRaw = double(imageRaw) / (2^bitDepth-1);
     
     try %try to detect features in this frame
