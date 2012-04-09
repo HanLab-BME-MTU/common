@@ -71,12 +71,16 @@ for i = p.ChannelIndex
     disp(outFilePaths{1,i});
     
     % Retrieve information about the images
-    [~, base, digits4Enum ~] = getFilenameBody(movieData.getImageFileNames{i}{1});
-    digits4Enum = length(digits4Enum);
-    
-    movieParam.imageDir = [inFilePaths{1,i} filesep];
-    movieParam.filenameBase = base;
-    movieParam.digits4Enum = digits4Enum;
+    if exist(movieData.getChannelPaths{i},'file')
+        movieParam.channel = movieData.channels_(i);
+    else
+        [~, base, digits4Enum ~] = getFilenameBody(movieData.getImageFileNames{i}{1});
+        digits4Enum = length(digits4Enum);
+        
+        movieParam.imageDir = [inFilePaths{1,i} filesep];
+        movieParam.filenameBase = base;
+        movieParam.digits4Enum = digits4Enum;
+    end    
     movieParam.firstImageNum=p.firstImageNum;
     movieParam.lastImageNum=p.lastImageNum;
 

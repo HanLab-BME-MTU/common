@@ -74,9 +74,11 @@ classdef TrackingProcess < DataProcessingProcess
             obj.visualParams_.otmn.intensityScale = 1;
             obj.visualParams_.otmn.colorTracks = 1;
             obj.visualParams_.otmn.minLength = 1;
-            file = owner.getImageFileNames(1);
-            obj.visualParams_.otmn.firstImageFile = [owner.channels_(1).channelPath_ filesep file{1}{1}];
-            
+            if exist(owner.getChannelPaths{1}, 'file')==2  
+                obj.visualParams_.otmn.firstImageFile = owner.getChannelPaths{1};
+            else
+                obj.visualParams_.otmn.firstImageFile = [owner.getChannelPaths{1} filesep owner.getImageFileNames{1}{1}];
+            end
         end
         
         function varargout = loadChannelOutput(obj,iChan,varargin)

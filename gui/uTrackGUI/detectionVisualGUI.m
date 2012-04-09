@@ -128,8 +128,8 @@ visualParams = userData.crtProc.visualParams_;
 % parameter: startend
 visualParams.startend = [userData.firstframe, userData.lastframe]; 
 % parameter: firstImageFile
-file = userData.MD.getImageFileNames(chan);
-visualParams.firstImageFile = [userData.MD.channels_(chan).channelPath_ filesep file{1}{1}];
+% file = userData.MD.getImageFileNames(chan);
+% visualParams.firstImageFile = [userData.MD.channels_(chan).channelPath_ filesep file{1}{1}];
 % parameter: dir2saveMovie
 if any(strcmp(visualParams.dir2saveMovie, {userData.MD.channels_(:).channelPath_}))
     visualParams.dir2saveMovie = userData.MD.channels_(chan).channelPath_;

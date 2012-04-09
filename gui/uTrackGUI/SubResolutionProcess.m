@@ -35,8 +35,11 @@ classdef SubResolutionProcess < DetectionProcess
             obj.visualParams_.filterSigma = 0;
             obj.visualParams_.showRaw = 1;
             obj.visualParams_.intensityScale = 1;
-            file = owner.getImageFileNames(1);
-            obj.visualParams_.firstImageFile = [owner.channels_(1).channelPath_ filesep file{1}{1}];
+            if exist(owner.getChannelPaths{1}, 'file')==2  
+                obj.visualParams_.firstImageFile = owner.getChannelPaths{1};
+            else
+                obj.visualParams_.firstImageFile = [owner.getChannelPaths{1} filesep owner.getImageFileNames{1}{1}];
+            end
         end
       
  
