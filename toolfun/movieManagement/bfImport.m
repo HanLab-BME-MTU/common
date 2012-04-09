@@ -169,7 +169,7 @@ if extractImages
     tString=@(t)num2str(t, ['%0' num2str(floor(log10(nFrames))+1) '.f']);
     zString=@(z)num2str(z, ['%0' num2str(floor(log10(nZ))+1) '.f']);
     imageName = @(c,t,z) [movieName '_w' num2str(movieChannels(c).emissionWavelength_) ...
-        '_t' tString(t),'_z' zString(z),'.tif'];
+        '_z' zString(z),'_t' tString(t),'.tif'];
 
     % Clean channel directories and save images as TIF files
     for i=1:nChan, mkClrDir(channelPath{i}); end

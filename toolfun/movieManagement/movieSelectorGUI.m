@@ -258,7 +258,7 @@ userData.userDir = pathname;
 moviePaths = get(handles.listbox_movie, 'String');
 movieListPaths = get(handles.listbox_movieList, 'String');
 
-if any(strcmp([pathname filename],{moviePaths,movieListPaths}))
+if any(strcmp([pathname filename],vertcat(moviePaths,movieListPaths)))
     errordlg('This movie has already been selected.','Error','modal');
     return
 end
