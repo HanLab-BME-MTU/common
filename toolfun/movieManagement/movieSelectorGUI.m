@@ -104,7 +104,8 @@ pos = get(handles.uipanel_packages,'Position');
 for i=1:nPackages
     uicontrol(handles.uipanel_packages,'Style','radio',...
     'Position',[10 pos(4)-20-30*i pos(3)-20 20],'Tag',['radiobutton_package' num2str(i)],...
-    'String',packageNames{i},'UserData',str2func(packageList{i}))
+    'String',packageNames{i},'UserData',str2func(packageList{i}),...
+    'Value',strcmp(packageList{i},ip.Results.packageName))
 end
 set(handles.uipanel_packages,'SelectionChangeFcn','');
 
