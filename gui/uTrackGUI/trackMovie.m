@@ -29,11 +29,6 @@ trackProc = movieData.processes_{iProc};
 p = parseProcessParams(trackProc,paramsIn);
 
 %% --------------- Initialization ---------------%%
-if feature('ShowFigureWindows'),
-    wtBar = waitbar(0,'Initializing...','Name',trackProc.getName());
-else
-    wtBar=-1;
-end
 
 % Check detection process first
 if isempty(p.DetProcessIndex)
@@ -96,8 +91,5 @@ for i = p.ChannelIndex
         clear M;
     end
 end
-
-% Close waitbar
-if ishandle(wtBar), close(wtBar); end
 
 disp('Finished tracking!')
