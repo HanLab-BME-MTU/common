@@ -1,23 +1,22 @@
 function b = padarrayXT(varargin)
-%PADARRAYXT Extended version of built-in function 'padarray'.
-%   Mirroring does not replicate the border pixel anymore, and the 'antisymmetric'
-%   option has been added.
+%PADARRAYXT Modified version of built-in function 'padarray'.
+%   Mirroring ('symmetric' option) does not duplicate the border pixel.
 %   B = PADARRAYXT(A,PADSIZE) pads array A with PADSIZE(k) number of zeros
 %   along the k-th dimension of A.  PADSIZE should be a vector of
-%   positive integers.
+%   nonnegative integers.
 %
 %   B = PADARRAYXT(A,PADSIZE,PADVAL) pads array A with PADVAL (a scalar)
 %   instead of with zeros.
 %
 %   B = PADARRAYXT(A,PADSIZE,PADVAL,DIRECTION) pads A in the direction
 %   specified by the string DIRECTION.  DIRECTION can be one of the
-%   following strings.  
+%   following strings.
 %
 %       String values for DIRECTION
 %       'pre'         Pads before the first array element along each
 %                     dimension .
 %       'post'        Pads after the last array element along each
-%                     dimension. 
+%                     dimension.
 %       'both'        Pads before the first array element and after the
 %                     last array element along each dimension.
 %
@@ -27,11 +26,11 @@ function b = padarrayXT(varargin)
 %   specified METHOD.  METHOD can be one of these strings:
 %
 %       String values for METHOD
-%       'circular'        Pads with circular repetition of elements.
-%       'replicate'       Repeats border elements of A.
-%       'symmetric'       Pads array with mirror reflections of itself. 
-%       'antisymmetric'   Pads array with antisymmetric extensions of itself. 
-% 
+%       'circular'    Pads with circular repetition of elements.
+%       'replicate'   Repeats border elements of A.
+%       'symmetric'   Pads array with mirror reflections of itself.
+%       'asymmetric'   Pads array with odd-symmetric extensions of itself. 
+%
 %   Class Support
 %   -------------
 %   When padding with a constant value, A can be numeric or logical.
@@ -58,49 +57,44 @@ function b = padarrayXT(varargin)
 %       A = [1 2; 3 4];
 %       B = [5 6; 7 8];
 %       C = cat(3,A,B)
-%       D = padarrayxt(C,[3 3],0,'both')
+%       D = padarray(C,[3 3],0,'both')
 %
 %   See also CIRCSHIFT, IMFILTER.
 
-%   Copyright 1993-2005 The MathWorks, Inc.  
-%   $Revision: 1.11.4.6 $  $Date: 2006/03/13 19:44:02 $
+%   Copyright 1993-2010 The MathWorks, Inc.
+%   $Revision: 1.11.4.13 $  $Date: 2011/08/09 17:51:33 $
 
-%   Last modified on 15/10/2009 by Francois Aguet.
+%   Last modified on 04/14/2012 by Francois Aguet.
 
 [a, method, padSize, padVal, direction] = ParseInputs(varargin{:});
 
-if isempty(a),% treat empty matrix similar for any method
-
-   if strcmp(direction,'both')
-      sizeB = size(a) + 2*padSize;
-   else
-      sizeB = size(a) + padSize;
-   end
-
-   b = mkconstarray(class(a), padVal, sizeB);
-   
+if isempty(a)
+    
+    % treat empty matrix similar for any method
+    if strcmp(direction,'both')
+        sizeB = size(a) + 2*padSize;
+    else
+        sizeB = size(a) + padSize;
+    end
+    
+    b = mkconstarray(class(a), padVal, sizeB);
+    
+elseif strcmpi(method,'constant')
+    
+    % constant value padding with padVal
+    b = ConstantPad(a, padSize, padVal, direction);
 else
-  switch method
-    case 'constant'
-        b = ConstantPad(a, padSize, padVal, direction);
-        
-    case 'circular'
-        b = CircularPad(a, padSize, direction);
-  
-    case 'symmetric'
-        b = SymmetricPad(a, padSize, direction);
-        
-    case 'antisymmetric'
-        b = AntisymmetricPad(a, padSize, direction);    
-        
-    case 'replicate'
-        b = ReplicatePad(a, padSize, direction);
-  end      
+    
+    % compute indices then index into input image
+    aSize = size(a);
+    aIdx = getPaddingIndices(aSize,padSize,method,direction);
+    b = a(aIdx{:});
 end
 
-if (islogical(a))
+if islogical(a)
     b = logical(b);
 end
+
 
 %%%
 %%% ConstantPad
@@ -137,144 +131,23 @@ b(idx{:}) = a;
 
 
 %%%
-%%% CircularPad
-%%%
-function b = CircularPad(a, padSize, direction)
-
-numDims = numel(padSize);
-
-% Form index vectors to subsasgn input array into output array.
-% Also compute the size of the output array.
-idx   = cell(1,numDims);
-for k = 1:numDims
-  M = size(a,k);
-  dimNums = 1:M;
-  p = padSize(k);
-    
-  switch direction
-    case 'pre'
-       idx{k}   = dimNums(mod(-p:M-1, M) + 1);
-    
-    case 'post'
-      idx{k}   = dimNums(mod(0:M+p-1, M) + 1);
-    
-    case 'both'
-      idx{k}   = dimNums(mod(-p:M+p-1, M) + 1);
-  
-  end
-end
-b = a(idx{:});
-
-%%%
-%%% SymmetricPad
-%%%
-function b = SymmetricPad(a, padSize, direction)
-
-numDims = numel(padSize);
-
-% Form index vectors to subsasgn input array into output array.
-% Also compute the size of the output array.
-idx   = cell(1,numDims);
-for k = 1:numDims
-  M = size(a,k);
-  dimNums = [1:M M-1:-1:2];
-  p = padSize(k);
-    
-  switch direction
-    case 'pre'
-      idx{k}   = dimNums(mod(-p:M-1, 2*M-2) + 1);
-            
-    case 'post'
-      idx{k}   = dimNums(mod(0:M+p-1, 2*M-2) + 1);
-            
-    case 'both'
-      idx{k}   = dimNums(mod(-p:M+p-1, 2*M-2) + 1);
-  end
-end
-b = a(idx{:});
-
-%%%
-%%% AntisymmetricPad
-%%%
-function b = AntisymmetricPad(a, padSize, direction)
-
-numDims = numel(padSize);
-
-% Form index vectors to subsasgn input array into output array.
-% Also compute the size of the output array.
-idx   = cell(1,numDims);
-for k = 1:numDims
-  M = size(a,k);
-  dimNums = [1:M M-1:-1:2];
-  p = padSize(k);
-    
-  switch direction
-    case 'pre'
-      idx{k}   = dimNums(mod(-p:M-1, 2*M-2) + 1);
-            
-    case 'post'
-      idx{k}   = dimNums(mod(0:M+p-1, 2*M-2) + 1);
-            
-    case 'both'
-      idx{k}   = dimNums(mod(-p:M+p-1, 2*M-2) + 1);
-  end
-end
-b = a(idx{:});
-
-b(1:padSize(1),:) = 2*repmat(b(padSize(1)+1,:), [padSize(1) 1]) - b(1:padSize(1),:);
-b(end-padSize(1)+1:end,:) = 2*repmat(b(end-padSize(1),:), [padSize(1) 1]) - b(end-padSize(1)+1:end,:);
-
-b(:,1:padSize(2)) = 2*repmat(b(:,padSize(2)+1), [1 padSize(2)]) - b(:,1:padSize(2));
-b(:,end-padSize(2)+1:end) = 2*repmat(b(:,end-padSize(2)), [1 padSize(2)]) - b(:,end-padSize(2)+1:end);
-
-
-%%%
-%%% ReplicatePad
-%%%
-function b = ReplicatePad(a, padSize, direction)
-
-numDims = numel(padSize);
-
-% Form index vectors to subsasgn input array into output array.
-% Also compute the size of the output array.
-idx   = cell(1,numDims);
-for k = 1:numDims
-  M = size(a,k);
-  p = padSize(k);
-  onesVector = ones(1,p);
-    
-  switch direction
-    case 'pre'
-      idx{k}   = [onesVector 1:M];
-            
-    case 'post'
-      idx{k}   = [1:M M*onesVector];
-            
-    case 'both'
-      idx{k}   = [onesVector 1:M M*onesVector];
-  end
-end
- b = a(idx{:});
-
-%%%
 %%% ParseInputs
 %%%
 function [a, method, padSize, padVal, direction] = ParseInputs(varargin)
 
+narginchk(2,4);
+
+% fixed syntax args
+a         = varargin{1};
+padSize   = varargin{2};
+
 % default values
-%a         = [];
 method    = 'constant';
-%padSize   = [];
 padVal    = 0;
 direction = 'both';
 
-iptchecknargin(2,4,nargin,mfilename);
-
-a = varargin{1};
-
-padSize = varargin{2};
-iptcheckinput(padSize, {'double'}, {'real' 'vector' 'nonnan' 'nonnegative' ...
-                    'integer'}, mfilename, 'PADSIZE', 2);
+validateattributes(padSize, {'double'}, {'real' 'vector' 'nonnan' 'nonnegative' ...
+    'integer'}, mfilename, 'PADSIZE', 2);
 
 % Preprocess the padding size
 if (numel(padSize) < ndims(a))
@@ -283,45 +156,167 @@ if (numel(padSize) < ndims(a))
 end
 
 if nargin > 2
-
+    
     firstStringToProcess = 3;
     
     if ~ischar(varargin{3})
         % Third input must be pad value.
         padVal = varargin{3};
-        iptcheckinput(padVal, {'numeric' 'logical'}, {'scalar'}, ...
-                      mfilename, 'PADVAL', 3);
+        validateattributes(padVal, {'numeric' 'logical'}, {'scalar'}, ...
+            mfilename, 'PADVAL', 3);
         
         firstStringToProcess = 4;
         
     end
     
     for k = firstStringToProcess:nargin
-        validStrings = {'circular' 'replicate' 'symmetric' 'antisymmetric' 'pre' ...
-                        'post' 'both'};
-        string = iptcheckstrs(varargin{k}, validStrings, mfilename, ...
-                              'METHOD or DIRECTION', k);
+        validStrings = {'circular' 'replicate' 'symmetric' 'pre' ...
+            'post' 'both'};
+        string = validatestring(varargin{k}, validStrings, mfilename, ...
+            'METHOD or DIRECTION', k);
         switch string
-         case {'circular' 'replicate' 'symmetric' 'antisymmetric'}
-          method = string;
-          
-         case {'pre' 'post' 'both'}
-          direction = string;
-          
-         otherwise
-          error('Images:padarrayxt:unexpectedError', '%s', ...
-                'Unexpected logic error.')
+            case {'circular' 'replicate' 'symmetric'}
+                method = string;
+                
+            case {'pre' 'post' 'both'}
+                direction = string;
+                
+            otherwise
+                error(message('images:padarray:unexpectedError'))
         end
     end
 end
 
 % Check the input array type
 if strcmp(method,'constant') && ~(isnumeric(a) || islogical(a))
-    id = sprintf('Images:%s:badTypeForConstantPadding', mfilename);
-    msg1 = sprintf('Function %s expected A (argument 1)',mfilename);
-    msg2 = 'to be numeric or logical for constant padding.';
-    error(id,'%s\n%s',msg1,msg2);
+    error(message('images:padarray:badTypeForConstantPadding'))
 end
+
+
+% Internal functions called by padarray.m (modified)
+function aIdx = getPaddingIndices(aSize,padSize,method,direction)
+%getPaddingIndices is used by padarray and blockproc. 
+%   Computes padding indices of input image.  This is function is used to
+%   handle padding of in-memory images (via padarray) as well as
+%   arbitrarily large images (via blockproc).
+%
+%   aSize : result of size(I) where I is the image to be padded
+%   padSize : padding amount in each dimension.  
+%             numel(padSize) can be greater than numel(aSize)
+%   method : X or a 'string' padding method
+%   direction : pre, post, or both.
+%
+%   See the help for padarray for additional information.
+
+% Copyright 2010 The MathWorks, Inc.
+% $Revision: 1.1.6.1 $ $Date: 2010/04/15 15:18:15 $
+
+% make sure we have enough image dims for the requested padding
+if numel(padSize) > numel(aSize)
+    singleton_dims = numel(padSize) - numel(aSize);
+    aSize = [aSize ones(1,singleton_dims)];
+end
+
+switch method
+    case 'circular'
+        aIdx = CircularPad(aSize, padSize, direction);
+    case 'symmetric'
+        aIdx = SymmetricPad(aSize, padSize, direction);
+    case 'replicate' 
+        aIdx = ReplicatePad(aSize, padSize, direction);
+end
+
+
+%%%
+%%% CircularPad
+%%%
+function idx = CircularPad(aSize, padSize, direction)
+
+numDims = numel(padSize);
+
+% Form index vectors to subsasgn input array into output array.
+% Also compute the size of the output array.
+idx   = cell(1,numDims);
+for k = 1:numDims
+    M = aSize(k);
+    dimNums = uint32(1:M);
+    p = padSize(k);
+    
+    switch direction
+        case 'pre'
+            idx{k}   = dimNums(mod(-p:M-1, M) + 1);
+            
+        case 'post'
+            idx{k}   = dimNums(mod(0:M+p-1, M) + 1);
+            
+        case 'both'
+            idx{k}   = dimNums(mod(-p:M+p-1, M) + 1);
+            
+    end
+end
+
+
+%%%
+%%% SymmetricPad
+%%%
+function idx = SymmetricPad(aSize, padSize, direction)
+
+numDims = numel(padSize);
+
+% Form index vectors to subsasgn input array into output array.
+% Also compute the size of the output array.
+idx   = cell(1,numDims);
+for k = 1:numDims
+    M = aSize(k);
+    if M>1
+        dimNums = uint32([1:M M-1:-1:2]);
+        div = 2*M-2;
+    else
+        dimNums = [1 1];
+        div = 2;
+    end
+    p = padSize(k);
+    
+    switch direction
+        case 'pre'
+            idx{k}   = dimNums(mod(-p:M-1, div) + 1);
+            
+        case 'post'
+            idx{k}   = dimNums(mod(0:M+p-1, div) + 1);
+            
+        case 'both'
+            idx{k}   = dimNums(mod(-p:M+p-1, div) + 1);
+    end
+end
+
+
+%%%
+%%% ReplicatePad
+%%%
+function idx = ReplicatePad(aSize, padSize, direction)
+
+numDims = numel(padSize);
+
+% Form index vectors to subsasgn input array into output array.
+% Also compute the size of the output array.
+idx   = cell(1,numDims);
+for k = 1:numDims
+    M = aSize(k);
+    p = padSize(k);
+    onesVector = uint32(ones(1,p));
+    
+    switch direction
+        case 'pre'
+            idx{k}   = [onesVector 1:M];
+            
+        case 'post'
+            idx{k}   = [1:M M*onesVector];
+            
+        case 'both'
+            idx{k}   = [onesVector 1:M M*onesVector];
+    end
+end
+
 
 
 function out = mkconstarray(class, value, size)
@@ -333,3 +328,5 @@ function out = mkconstarray(class, value, size)
 %   $Revision: 1.8.4.1 $  $Date: 2003/01/26 06:00:35 $
 
 out = repmat(feval(class, value), size);
+
+
