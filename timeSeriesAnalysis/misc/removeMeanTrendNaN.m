@@ -23,7 +23,7 @@ function [workTS,interval,trend,imf] = removeMeanTrendNaN(TS,varargin)
 % Input check
 ip=inputParser;
 ip.addRequired('TS',@isnumeric);
-ip.addOptional('trendType',1,@(x)isscalar(x) && ismember(x,0:2));
+ip.addOptional('trendType',1,@(x)isscalar(x) && ismember(x,-1:2));
 ip.parse(TS,varargin{:})
 trendType=ip.Results.trendType;
 
@@ -32,6 +32,7 @@ trendType=ip.Results.trendType;
 workTS      = cell(1,nVar);
 interval    = cell(1,nVar);
 trend       = cell(1,nVar);
+imf         = cell(1,nVar);
 count       = 1;
 if trendType == 2, imf = cell(1,nVar); end
 
@@ -54,7 +55,7 @@ for i=1:nVar
     end
 
     
-    if length( exclude ) <= nObs - 4% forced by the spline used in preWhitening
+    if nObs - length( exclude ) >= 30% forced by the spline used in preWhitening
 %% Interpolating single NaN points throughout the time series        
         if ~isempty(xi)%After excluding points, xi is a vector of size 1 NaN 
             
@@ -65,7 +66,7 @@ for i=1:nVar
             
             workTS{count}(isnan(workTS{count})) = ...
                 interp1(intersect(x,fB{idxB}),TS(intersect(x,fB{idxB}),i),intersect(xi,fB{idxB}),'spline');
-%% If there are only blocks of NaN, get the largest continuous block of real points            
+%% If there are only blocks of NaN(no single NaN), get the largest continuous block of real points            
         else 
             
             [fB,fL]     = findBlock(setdiff(1:nObs,exclude));
@@ -84,7 +85,9 @@ for i=1:nVar
             % Remove deterministic components using preWhitening
             [workTS{count},trend{count},imf{count}]   = preWhitening(workTS{count});
         end
+        used(count) = i;
         count = count + 1;
+        
     end
     
 end
@@ -93,3 +96,4 @@ empIdx           = find(cellfun(@isempty,workTS));
 workTS(empIdx)   = [];
 interval(empIdx) = [];
 trend(empIdx)    = [];
+imf(empIdx)      = [];

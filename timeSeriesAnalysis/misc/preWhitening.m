@@ -3,7 +3,7 @@ function [out,trend,imf]=preWhitening(TS,method)
 %series TS
 %
 %Synopsis:
-%         [out,trend]=preWhitening(TS,method)  
+%         [out,trend,imf]=preWhitening(TS,method)  
 %
 %Input: TS     - matrix(# of observations,# of variables)
 %       method - string - 'imf' or 'ar' (Default is 'imf')
@@ -18,6 +18,8 @@ function [out,trend,imf]=preWhitening(TS,method)
 %Z. Wu, N. E. Huang, S. R. Long and C.-K. Peng, On the trend, detrending, and the
 %variability of nonlinear and non-stationary time series, Proc. Natl. Acad. Sci. USA
 %104 (2007) 14889?14894
+%
+%See also : removeMeanTrendNaN
 %
 % Marco Vilela, 2011
 
