@@ -135,7 +135,10 @@ b(idx{:}) = a;
 %%%
 function [a, method, padSize, padVal, direction] = ParseInputs(varargin)
 
-narginchk(2,4);
+% narginchk(2,4);
+if nargin<2 || nargin>4
+    error('Incompatible number of input arguments.');
+end
 
 % fixed syntax args
 a         = varargin{1};
