@@ -138,7 +138,7 @@ if nargin < 2
 end
 
 %get movie parameters
-hasImageDir = isfield(movieData,'imageDir');
+hasImageDir = isfield(movieParam,'imageDir');
 if hasImageDir
     imageDir = movieParam.imageDir;
     filenameBase = movieParam.filenameBase;
