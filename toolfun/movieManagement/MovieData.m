@@ -222,8 +222,12 @@ classdef  MovieData < MovieObject
             else
                 obj.imSize_ = [height(1) width(1)];
             end
-           
-            disp('Saving movie');
+
+            % Fix roi/parent initialization
+            if isempty(obj.rois_), obj.rois_=MovieData.empty(1,0); end
+            if isempty(obj.parent_), obj.parent_=MovieData.empty(1,0); end
+            
+            disp('Saving movie');            
             obj.save();
         end
         
