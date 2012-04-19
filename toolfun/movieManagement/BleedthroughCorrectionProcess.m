@@ -1,4 +1,4 @@
-classdef BleedthroughCorrectionProcess < ImageProcessingProcess   
+classdef BleedthroughCorrectionProcess < ImageCorrectionProcess   
     %A class for performing bleedthrough correction on images.
     %
     %Hunter Elliott, 5/2010
@@ -20,7 +20,7 @@ classdef BleedthroughCorrectionProcess < ImageProcessingProcess
                 super_args{4} = funParams;    
             end
             
-            obj = obj@ImageProcessingProcess(super_args{:});
+            obj = obj@ImageCorrectionProcess(super_args{:});
         end   
         
     end
