@@ -733,7 +733,9 @@ end
 if visual
     
     %make 3 layers out of original image (normalized)
-    imageNorm = image/max(image(:));
+    %     imageNorm = image/max(image(:));
+    imageNorm = image/prctile(image(:),99.9);
+    imageNorm(imageNorm>1) = 1;
     imageN3 = repmat(imageNorm,[1 1 3]);
     
     %place zeros in pixels of maxima from cands

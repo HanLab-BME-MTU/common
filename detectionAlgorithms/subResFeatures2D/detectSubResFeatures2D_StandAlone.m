@@ -289,8 +289,8 @@ end
 imageExists = true(numImagesRaw,1);
 if hasImageDir
     for iImage = 1 : numImagesRaw
-        if exist([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif'],'file')
-            imageExists(iImage) = 1;
+        if ~exist([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif'],'file')
+            imageExists(iImage) = 0;
         end
     end
 end
