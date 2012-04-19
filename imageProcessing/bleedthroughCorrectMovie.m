@@ -117,33 +117,49 @@ assert(movieData.processes_{iProc}.checkChanNum(p.ChannelIndex),...
 assert(~isempty(find(p.Coefficients,1)),'No bleedthrough coefficients');
 bleedChannelIndex = find(p.Coefficients(:,1)~=0);
 crossChannelIndex = find(p.Coefficients(:,2)~=0);
+corrChannelIndex  = unique(vertcat(bleedChannelIndex,crossChannelIndex));
 
 % If using the output of an existing process
 if ~isempty(p.ProcessIndex)
-    assert(isa(movieData.processes_{p.ProcessIndex},'ImageProcessingProcess'));
+    % Check which channels have been processed
+    nChan = numel(movieData.channels_);
+    nProc = numel(p.ProcessIndex);
+    inChan = unique(vertcat(p.ChannelIndex,corrChannelIndex));
     
-    % Check which channels have been processed by the process
-    allChan = unique(vertcat(p.ChannelIndex,bleedChannelIndex,crossChannelIndex));
-    status= movieData.processes_{p.ProcessIndex}.checkChannelOutput(allChan);
-    assert(all(status),'The channel to be corrected and the bleedthrough/crosstalk channels must all have been processed prior to bleedthrough correction!');
+    hasOutput = false(nProc,nChan);    
+    for i=1:nProc
+        inProcIndex = p.ProcessIndex(i);        
+        assert(isa(movieData.processes_{inProcIndex},'ImageProcessingProcess'));
+                
+        hasOutput(i,:)= movieData.processes_{inProcIndex}.checkChannelOutput;
+    end
+    assert(all(sum(hasOutput(:,inChan),1)),...
+        'The channel to be corrected and the bleedthrough/crosstalk channels must all have been processed prior to bleedthrough correction!');    
+    
+    inProc = cell(1,nChan);
+    for i=inChan', inProc{i} = movieData.processes_{p.ProcessIndex(find(hasOutput(:,i),1,'last'))}; end
 end
 
 
 %% Bleedthrough correction
 disp('Starting bleedthrough/crosstalk correction...')
 
+movieData.processes_{iProc}.setInFilePaths(cell(2,nChan));
 %Retrieve the paths and names of the input images   
 if isempty(p.ProcessIndex)
     imPaths = movieData.getChannelPaths;
     inNames = movieData.getImageFileNames(p.ChannelIndex);
 else
-    imPaths = movieData.processes_{p.ProcessIndex}.outFilePaths_(1,:);
-    inNames = movieData.processes_{p.ProcessIndex}.getOutImageFileNames(p.ChannelIndex);
+    imPaths = cell(1,nChan);
+    for i=inChan'
+        imPaths{i} = inProc{i}.outFilePaths_{1,:};       
+    end
+    inNames = inProc{p.ChannelIndex}.getOutImageFileNames(p.ChannelIndex);
 end
 
 %Log the input and bleed images in the process
 movieData.processes_{iProc}.setInImagePath(p.ChannelIndex,imPaths{1,p.ChannelIndex});
-% movieData.processes_{iProc}.setCorrectionImagePath(p.BleedChannelIndex,bleedImDir);
+movieData.processes_{iProc}.setCorrectionImagePath(corrChannelIndex,imPaths(1,corrChannelIndex));
 
 % Set the output directory
 outDir = [p.OutputDirectory filesep dName num2str(p.ChannelIndex)]; %Corrected images
@@ -167,7 +183,6 @@ disp(['Correcting channel ' num2str(p.ChannelIndex) '...']);
 disp(['Correcting images from ' imPaths{p.ChannelIndex}]);
 disp(['Storing results in ' outDir]);
 
-corrChannelIndex = vertcat(bleedChannelIndex,crossChannelIndex);
 corrCoefficients = vertcat(p.Coefficients(bleedChannelIndex,1),p.Coefficients(crossChannelIndex,2));
 
 for j = 1:length(corrChannelIndex)
@@ -184,7 +199,7 @@ for iImage = 1:nImages
     if isempty(p.ProcessIndex)
         currIm=movieData.channels_(p.ChannelIndex).loadImage(iImage);
     else
-        currIm=movieData.processes_{p.ProcessIndex}.loadChannelOutput(p.ChannelIndex,iImage);
+        currIm=inProc{p.ChannelIndex}.loadChannelOutput(p.ChannelIndex,iImage);
     end
     
     %Check the bit-depth of the image
@@ -197,7 +212,7 @@ for iImage = 1:nImages
         if isempty(p.ProcessIndex)
             currCorrIm=double(movieData.channels_(corrChannelIndex(iCorr)).loadImage(iImage));
         else
-            currCorrIm=double(movieData.processes_{p.ProcessIndex}.loadChannelOutput(corrChannelIndex(iCorr),iImage));
+            currCorrIm=double(inProc{corrChannelIndex(iCorr)}.loadChannelOutput(corrChannelIndex(iCorr),iImage));
         end
 %         currBleedIm = double(imread([bleedImDir{iBleed} filesep bleedImNames{iBleed}{iImage}]));
 
