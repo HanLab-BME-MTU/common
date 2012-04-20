@@ -60,17 +60,35 @@ disp('-----------');
 % sum(H_L)/N
 
 %%
+% Exponential distributions
+
 rng('default')
-N = 1e5;
+N = 1e4;
 ns = 20;
 hval = zeros(1,N);
 
 for k = 1:N
+    k
     hval(k) = adtest(-1*log(1-rand(1,ns)), 'Distribution', 'exponential');
-    %hval(k) = adtest(randn(1,ns), 'Distribution', 'normal');
 end
-
 sum(hval)/N
+
+
+% test for a truncated distribution
+hval = zeros(1,N);
+mu = 1;
+T = 0.2;
+for k = 1:N
+    samples = -mu*log(1-rand(1,ns));
+    % truncate
+    samples(samples<T) = [];
+    samples = samples-T;
+    hval(k) = adtest(samples, 'Distribution', 'exponential');
+end
+sum(hval)/N
+
+
+
 
 
 
