@@ -28,6 +28,7 @@ ip=inputParser;
 ip.addRequired('dataPath',@ischar);
 ip.addOptional('extractImages',true,@islogical);
 ip.addParamValue('outputDirectory',[],@ischar);
+ip.KeepUnmatched = true;
 ip.parse(dataPath,varargin{:});
 extractImages = ip.Results.extractImages;
 
@@ -151,7 +152,9 @@ for i=1:nChan
 end
 
 % Create movie object
-movie=MovieData(movieChannels,outputDir,movieArgs{:});
+addArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
+    2*numel(fieldnames(ip.Unmatched)),1);
+movie=MovieData(movieChannels,outputDir,movieArgs{:},addArgs{:});
 movie.setPath(outputDir);
 movie.setFilename(movieFileName);
 
