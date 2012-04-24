@@ -222,7 +222,7 @@ unsigned char adtest(double *data, int N, int adCase, double mu, double sigma, d
         A2 *= 1.0+4.0/N-25.0/(N*N);
     }
     if (adCase==5) {
-        A2 *= 1.0 + 0.6/n;
+        A2 *= 1.0 + 0.6/N;
     }
     
     free(z);
