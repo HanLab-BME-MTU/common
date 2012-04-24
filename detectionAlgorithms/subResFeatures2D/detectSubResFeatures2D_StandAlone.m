@@ -659,7 +659,11 @@ if numSigmaIter
         for iImage = images2use
             
             %read raw image
-            imageRaw = imread([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif']);
+            if hasImageDir
+                imageRaw = imread([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif']);                
+            else
+                imageRaw=double(channel.loadImage(imageIndx(iImage)));
+            end
             imageRaw = double(imageRaw) / (2^bitDepth-1);
             
             %get feature positions and amplitudes and average background
