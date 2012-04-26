@@ -222,6 +222,7 @@ classdef Channel < hgsetget
             I=zeros([obj.owner_.imSize_ numel(iFrame)]);
             if exist(obj.channelPath_, 'file')==2  
                 % Using bioformat tools, get the reader and retrieve dimension order
+                loci.common.DebugTools.enableLogging('OFF');
                 r=bfGetReader(obj.channelPath_,false);
                 metadata=r.getMetadataStore;
                 dimensionOrder =char(metadata.getPixelsDimensionOrder(0));
