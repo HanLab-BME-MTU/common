@@ -103,7 +103,7 @@ end
 iPs = regexp(numString,ns);
 
 %Convert numString to regular expression
-numString = regexprep(numString,ns,'\\d');
+numString = regexprep(numString,ns,'\\d+');
 
 nFiles = numel(fileNames);
 
