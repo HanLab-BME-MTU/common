@@ -1,5 +1,24 @@
 function [C, H] = plotLocalNeighborhoodDensityMap(mpm,imsize,varargin)
 
+%makes 'Getis Map' of point processes to identify clusters
+%SYNOPSIS [C, H] = plotLocalNeighborhoodDensityMap(mpm,imsize,varargin))
+%
+%INPUT  mpm             : matrix of point coordinates [x1 y1; x2 y2;....xn yn]
+%       imsize          : image size of the form [numVerticalPixels numHorizontalPixels] 
+%       dist(optional)  : vector of distances at which Ripley's K function
+%                         (i.e. number of neighbors )is sampled (1:20 is default)
+%       scale(optional) : intensity of clustering to map
+%       lr(optional)    : can specify Besag's L-function to use as
+%                         lr(length(dist),numOfPoints), use
+%                         RipleysKfunction.m
+%
+%OUTPUT C               : contour matrix C as described in CONTOURC
+%       H               : handle H to a contourgroup object
+%
+%Daniel Nunez, April 2012
+
+
+
 ip = inputParser;
 ip.CaseSensitive = false;
 %simulation params
