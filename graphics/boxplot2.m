@@ -27,26 +27,25 @@
 % prm = {[3 4; 0.2 0.2; 2 3; 4 5; 0.5 0.5; 0.5 0.5],...
 %     [3 4; 0.2 0.2; 2 3; 4 5; 0.5 0.5; 0.5 0.5]};
 % figure; boxplot2(prm, 'BarWidth', 0.8, 'XLabel', 'x label', 'YLabel', 'y label', ...
-%     'XLabels', arrayfun(@(k) ['S' num2str(k)], 1:2, 'UniformOutput', false),...
-%     'Angle', 0);
+%     'XLabels', arrayfun(@(k) ['Group label ' num2str(k)], 1:2, 'UniformOutput', false),...
+%     'Angle', 45, 'FaceColor', [1 0.5 0.5; 0.5 1 0.5], 'EdgeColor', [0.8 0 0; 0 0.8 0]);
 
+% Francois Aguet, 22 Feb 2011 (Last modified: 04/30/2012)
 
-
-% Francois Aguet, 22 Feb 2011 (Last modified: 12/08/2011)
-
-function boxplot2(prm, varargin)
+function h = boxplot2(prm, varargin)
 
 if isnumeric(prm)
     prm = {prm};
 end
 
-ng = numel(prm); % # of groups
-nb = cellfun(@(c) size(c, 2), prm); % # bars in each group
+ng = size(prm{1},2); % #groups
+nb = numel(prm); % #bars in each group
 
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('prm');
-ip.addParamValue('FaceColor', jet(max(nb)), @(x) size(x,1)==nb || size(x,1)==ng);
+ip.addParamValue('FaceColor', jet(max(nb)), @(x) size(x,1)==1 || size(x,1)==nb || size(x,1)==ng);
+% ip.addParamValue('FaceColor',[]);
 ip.addParamValue('EdgeColor', []);
 ip.addParamValue('GroupDistance', 0.5, @isscalar);
 ip.addParamValue('BorderWidth', [], @isscalar); 
@@ -68,13 +67,19 @@ ip.addParamValue('AdjustFigure', true, @islogical);
 ip.parse(prm, varargin{:});
 
 faceColor = ip.Results.FaceColor;
+if size(faceColor,1)==1
+    faceColor = repmat(faceColor, [nb 1]);
+end
 nc = size(faceColor,1);
-edgeColor = ip.Results.EdgeColor;
-ha = ip.Results.Handle;
 
-if isempty(edgeColor)
+edgeColor = ip.Results.EdgeColor;
+if size(edgeColor,1)==1
+    edgeColor = repmat(edgeColor, [nb 1]);
+elseif isempty(edgeColor)
     edgeColor = zeros(size(faceColor));
 end
+
+ha = ip.Results.Handle;
 
 bw = ip.Results.BarWidth;
 dg = ip.Results.GroupDistance; % distance between groups, in bar widths
@@ -100,36 +105,41 @@ else
     border = ip.Results.BorderWidth;
 end
 
+plotSEM = mod(size(prm{1},1),2)==0;
 
 hold on;
+% handles
+h = zeros(1,nb);
 for k = 1:ng
-    %nb = size(prm{k},2);
     
-    xa{k} = (1:nb) + (k-1)*(nb + dg);
-    plotSEM = mod(size(prm{k},1),2)==0;
+    % concatenate values for group 'k'
+    M = cellfun(@(i) i(:,k), prm, 'UniformOutput', false);
+    M = [M{:}];
     
-    mu = prm{k}(1,:);
+    %xa{k} = (1:nb) + (k-1)*(nb + dg);
+    
     if plotSEM
-        p25 = prm{k}(3,:);
-        p75 = prm{k}(4,:);
+        p25 = M(3,:);
+        p75 = M(4,:);
     else
-        p25 = prm{k}(2,:);
-        p75 = prm{k}(3,:);
+        p25 = M(2,:);
+        p75 = M(3,:);
     end
     
     % whiskers (plot first to mask bar at '0')
-    if plotSEM && size(prm{k},1)>4
-        w1 = prm{k}(5,:);
-        w2 = prm{k}(6,:);
+    if plotSEM && size(M,1)>4
+        w1 = M(5,:);
+        w2 = M(6,:);
         plotWhiskers = 1;
-    elseif size(prm{k},1)>3
-        w1 = prm{k}(4,:);
-        w2 = prm{k}(5,:);
+    elseif size(M,1)>3
+        w1 = M(4,:);
+        w2 = M(5,:);
         plotWhiskers = 1;
     else
         plotWhiskers = 0;
     end
     
+    mu = M(1,:);
     if plotWhiskers
         he = errorbar(xa{k}, p25, w1-p25, zeros(size(mu)), 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth);
         setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
@@ -149,16 +159,31 @@ for k = 1:ng
         else
             ci = k;
         end
-        patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
+        hp = patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
             'LineWidth', ip.Results.LineWidth);
+        if k==1
+            h(b) = hp;
+        end
     end
     
     % mean/median line
     line([lb; rb], [mu; mu], 'Color', [0 0 0], 'LineWidth', ip.Results.LineWidth);
     
+    for b = 1:nb
+        if nc==nb
+            ci = b;
+        else
+            ci = k;
+        end
+        hp = patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
+            'LineWidth', ip.Results.LineWidth);
+        set(hp, 'FaceColor', 'none');
+    end
+    
+    
     % SEM
     if plotSEM
-        sigma = prm{k}(2,:);
+        sigma = M(2,:);
         he = errorbar(xa{k}, mu, sigma, 'k', 'LineStyle', 'none', 'LineWidth', 2);
         setErrorbarStyle(he, 0.15);
     end

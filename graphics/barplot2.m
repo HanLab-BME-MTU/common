@@ -18,11 +18,17 @@
 % figure; barplot2(rand(6,3), 0.1*rand(6,3), 'BarWidth', 1, 'GroupDistance', 1, 'XLabel', 'x label', 'YLabel', 'y label', ...
 %     'XLabels', arrayfun(@(k) ['group ' num2str(k)], 1:6, 'UniformOutput', false),...
 %     'Angle', 45, 'YLim', [0 1.2]);
-
-
+%
+% 3) Multiple groups, asymmetric error bars
+% figure;
+% eb = 0.5*ones(2,4);
+% barplot2([-2 1 -3 2; -2 1 -4 2], eb, eb/2, 'ErrorBarPosition', 'both',...
+%     'BarWidth', 1, 'GroupDistance', 1, 'XLabel', 'x label', 'YLabel', 'y label');
+%
+%
 % Note: this function uses patch() since colors can't be controlled with bar()
 
-% Francois Aguet, 18 March 2011 (Last modified: 01 Feb 2012)
+% Francois Aguet, 18 March 2011 (Last modified: 30 Apr 2012)
 
 function he = barplot2(prm, varargin)
 
@@ -33,7 +39,8 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('prm');
 ip.addOptional('errorbars', [], @(x) isempty(x) || all(size(x)==size(prm)));
-ip.addParamValue('FaceColor', jet(nb), @(x) size(x,1)==nb || size(x,1)==ng);
+ip.addOptional('BottomErrorbars', [], @(x) isempty(x) || all(size(x)==size(prm)));
+ip.addParamValue('FaceColor', jet(nb), @(x) size(x,1)==1 || size(x,1)==nb || size(x,1)==ng);
 ip.addParamValue('EdgeColor', []);
 ip.addParamValue('GroupDistance', 1, @isscalar);
 ip.addParamValue('BorderWidth', [], @isscalar); 
@@ -56,15 +63,26 @@ ip.addParamValue('X', [], @(x) numel(x)==ng); % cell array of x-coordinates (gro
 ip.addParamValue('AdjustFigure', true, @islogical);
 ip.parse(prm, varargin{:});
 
-errorBars = ip.Results.errorbars;
+topErrorbars = ip.Results.errorbars;
+if isempty(ip.Results.BottomErrorbars)
+    bottomErrorbars = topErrorbars;
+else
+    bottomErrorbars = ip.Results.BottomErrorbars;
+end
 faceColor = ip.Results.FaceColor;
+if size(faceColor,1)==1
+    faceColor = repmat(faceColor, [nb 1]);
+end
 nc = size(faceColor,1);
-edgeColor = ip.Results.EdgeColor;
-ha = ip.Results.Handle;
 
-if isempty(edgeColor)
+edgeColor = ip.Results.EdgeColor;
+if size(edgeColor,1)==1
+    edgeColor = repmat(edgeColor, [nb 1]);
+elseif isempty(edgeColor)
     edgeColor = zeros(size(faceColor));
 end
+
+ha = ip.Results.Handle;
 
 bw = ip.Results.BarWidth;
 dg = ip.Results.GroupDistance; % distance between groups, in bar widths
@@ -96,12 +114,17 @@ for k = 1:ng
 
     height = prm(k,:);
     
-    
     % errorbars, if top only
-    if ~isempty(errorBars) && strcmpi(ip.Results.ErrorBarPosition, 'top')
-        he = errorbar(xa{k}, height, zeros(size(xa{k})), errorBars(k,:),...
+    if ~isempty(topErrorbars)% && strcmpi(ip.Results.ErrorBarPosition, 'top')
+        posIdx = height>=0;
+        he = errorbar(xa{k}(posIdx), height(posIdx), zeros(1,sum(posIdx)), topErrorbars(k,posIdx),...
             'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
-        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', ip.Results.ErrorBarPosition);
+        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
+        
+        posIdx = height<0; % negative values
+        he = errorbar(xa{k}(posIdx), height(posIdx), bottomErrorbars(k,posIdx), zeros(1,sum(posIdx)),...
+            'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
     end
         
     % bars
@@ -121,14 +144,25 @@ for k = 1:ng
     end
    
     % errorbars, if two-sided
-    if ~isempty(errorBars) && strcmpi(ip.Results.ErrorBarPosition, 'both')
-        he = errorbar(xa{k}, height, errorBars(k,:),...
+    if ~isempty(bottomErrorbars) && strcmpi(ip.Results.ErrorBarPosition, 'both')
+        posIdx = height>=0;
+        he = errorbar(xa{k}(posIdx), height(posIdx), bottomErrorbars(k,posIdx), zeros(1,sum(posIdx)),...
             'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
-        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', ip.Results.ErrorBarPosition);
+        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
+        posIdx = height<0; % negative values
+        he = errorbar(xa{k}(posIdx), height(posIdx), zeros(1,sum(posIdx)), topErrorbars(k,posIdx),...
+            'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
     end
 end
+
+% if there are negative values, plot axis
+if min(prm(:)) < 0
+    xAll = [xa{:}];
+    plot([xAll(1)-border xAll(end)+border], [0 0], 'k-', 'LineWidth', 1.5);
+end
+
 hold off;
-box off;
 
 if numel(ip.Results.XLabels)==ng
     la = arrayfun(@(k) (xa{k}(1) + xa{k}(end))/2, 1:ng);
