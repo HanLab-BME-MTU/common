@@ -22,7 +22,7 @@ function varargout = packageGUI(varargin)
 
 % Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 19-Oct-2011 14:16:02
+% Last Modified by GUIDE v2.5 01-May-2012 08:46:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -254,6 +254,18 @@ status = get(hObject,'Checked');
 if strcmp(status,'on'), 
     newstatus = 'off'; 
     dbclear if caught error;
+else
+    newstatus='on'; 
+end
+set(hObject,'Checked',newstatus);
+
+
+% --------------------------------------------------------------------
+function menu_debug_batchMode_Callback(hObject, eventdata, handles)
+
+status = get(hObject,'Checked');
+if strcmp(status,'on'), 
+    newstatus = 'off'; 
 else
     newstatus='on'; 
 end
