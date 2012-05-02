@@ -117,14 +117,17 @@ for k = 1:ng
     % errorbars, if top only
     if ~isempty(topErrorbars)% && strcmpi(ip.Results.ErrorBarPosition, 'top')
         posIdx = height>=0;
-        he = errorbar(xa{k}(posIdx), height(posIdx), zeros(1,sum(posIdx)), topErrorbars(k,posIdx),...
-            'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
-        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
-        
+        if sum(posIdx)>0
+            he = errorbar(xa{k}(posIdx), height(posIdx), zeros(1,sum(posIdx)), topErrorbars(k,posIdx),...
+                'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+            setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
+        end
         posIdx = height<0; % negative values
-        he = errorbar(xa{k}(posIdx), height(posIdx), bottomErrorbars(k,posIdx), zeros(1,sum(posIdx)),...
-            'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
-        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
+        if sum(posIdx)>0
+            he = errorbar(xa{k}(posIdx), height(posIdx), bottomErrorbars(k,posIdx), zeros(1,sum(posIdx)),...
+                'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+            setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
+        end
     end
         
     % bars
@@ -146,13 +149,17 @@ for k = 1:ng
     % errorbars, if two-sided
     if ~isempty(bottomErrorbars) && strcmpi(ip.Results.ErrorBarPosition, 'both')
         posIdx = height>=0;
-        he = errorbar(xa{k}(posIdx), height(posIdx), bottomErrorbars(k,posIdx), zeros(1,sum(posIdx)),...
-            'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
-        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
+        if sum(posIdx)>0
+            he = errorbar(xa{k}(posIdx), height(posIdx), bottomErrorbars(k,posIdx), zeros(1,sum(posIdx)),...
+                'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+            setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
+        end
         posIdx = height<0; % negative values
-        he = errorbar(xa{k}(posIdx), height(posIdx), zeros(1,sum(posIdx)), topErrorbars(k,posIdx),...
-            'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
-        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
+        if sum(posIdx)>0
+            he = errorbar(xa{k}(posIdx), height(posIdx), zeros(1,sum(posIdx)), topErrorbars(k,posIdx),...
+                'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+            setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
+        end
     end
 end
 
