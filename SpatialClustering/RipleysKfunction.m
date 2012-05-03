@@ -208,8 +208,8 @@ msy=ms(2);
 % rows-columns, the order in the DistanceMatrix function needs to be 
 % parent-child
 
-%[mdist]=DistanceMatrix(m2,m1);
-mdist = createSparseDistanceMatrix([m2(:,2) m2(:,1)],[m1(:,2) m1(:,1)],max(dist(:)),0);
+[mdist]=DistanceMatrix(m2,m1);
+%mdist = createSparseDistanceMatrix([m2(:,2) m2(:,1)],[m1(:,2) m1(:,1)],max(dist(:)),0);
 
 % NOTE: In the old version of the Ripley, since it was designed for
 % self-correlation, only distances > 0 were considered in the distance
