@@ -20,7 +20,8 @@ function [C, H] = plotLocalNeighborhoodDensityMap(mpm,imsize,varargin)
 %       dilationRadius(opt) : radius for dialation in calculating mask
 %       doFill(optional)    : true to fill calculates mask, false to not fill
 %       plotMask(optional)  : true to display calculated mask, false to not
-%
+%       function(optional)  : specify which function to use kr, lr, gcr, or
+%                             glr (see RipleysKfunction.m)
 %
 %OUTPUT C               : contour matrix C as described in CONTOURC
 %       H               : handle H to a contourgroup object
