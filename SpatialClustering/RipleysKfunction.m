@@ -1,4 +1,4 @@
-function [kr,lr,pcr]=RipleysKfunction(mpm1,mpm2,imsiz,dist,corrFacMat,normArea)
+function [kr,lr,pcr,glr]=RipleysKfunction(mpm1,mpm2,imsiz,dist,corrFacMat,normArea)
 % RipleysKfunction calculates Ripley's K-function for a given MPM,
 % allowing cross-corrlation between two MPMs
 % SYNOPSIS  [kr,lr,pcr]=RipleysKfunction(mpm,imsiz,dist,corrFacMat, normArea);
@@ -34,6 +34,7 @@ function [kr,lr,pcr]=RipleysKfunction(mpm1,mpm2,imsiz,dist,corrFacMat,normArea)
 %           kr:     Ripley's K-function 
 %           lr:     Besag's L-function = sqrt(K(r))-r
 %           pcr:    pair-correlation function
+%           glr:     Getis' L-function = sqrt(K(r))
 %           for all, every column contains the kr/lr function for one
 %           frame of the mpm-file, the row values correspond to the
 %           specified distances
@@ -102,6 +103,7 @@ end
 kr  = zeros(nr,numf);
 lr  = kr;
 pcr = lr;
+glr  = lr;
 
 % loop over all frames
 for i=1:numf
@@ -127,7 +129,7 @@ for i=1:numf
     
         % normalized pr - normalize by total point density
         totaldensity = (nump)/(imsizex*imsizey); 
-        if nargin>5
+        if nargin>5 && ~isempty(normArea)
             totaldensity = nump/normArea;
         end
 
@@ -136,10 +138,12 @@ for i=1:numf
         kr(:,i)     = prnorm;
         lr(:,i)     = sqrt(prnorm) - distvec;
         pcr(:,i)    = convertLR2PCF(lr(:,i),distvec);
+        glr(:,i) = sqrt(prnorm);
     else
         kr(:,i)     = nan*dist;
         lr(:,i)     = nan*dist;
         pcr(:,i)    = nan*dist;
+        glr(:,i)    = nan*dist;
     end
     
     %fprintf('\b\b\b\b\b\b\b\b\b\b\b');

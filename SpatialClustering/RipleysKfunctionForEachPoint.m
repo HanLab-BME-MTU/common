@@ -1,4 +1,4 @@
-function [kr,lr,pcr]=RipleysKfunctionForEachPoint(mpm,imsize,varargin)
+function [kr,lr,pcr,glr]=RipleysKfunctionForEachPoint(mpm,imsize,varargin)
 % RipleysKfunction calculates Ripley's K-function for a given MPM,
 % allowing cross-corrlation between two MPMs
 % SYNOPSIS  [kr,lr,pcr]=RipleysKfunction(mpm,imsiz,dist,corrFacMat, normArea);
@@ -21,6 +21,7 @@ function [kr,lr,pcr]=RipleysKfunctionForEachPoint(mpm,imsize,varargin)
 %           kr:     Ripley's K-function
 %           lr:     Besag's L-function = sqrt(K(r))-r
 %           pcr:    pair-correlation function
+%           glr:     Getis' L-function = sqrt(K(r))
 %           for all, every column contains the kr/lr function for one
 %           point of the mpm-file, the row values correspond to the
 %           specified distances
@@ -65,8 +66,9 @@ end
 
 %Calculate L-ripley
 lr = nan(length(dist),size(mpm,1));
-kr = nan(length(dist),size(mpm,1));
-pcr = nan(length(dist),size(mpm,1));
+kr = lr;
+pcr = lr;
+glr = lr;
 for i = 1:length(mpm)
-    [kr(:,i),lr(:,i),pcr(:,i)]=RipleysKfunction(mpm([1:i-1 i+1:length(mpm)],:),mpm(i,:),imsizS,dist,corrFacMat,normArea);
+    [kr(:,i),lr(:,i),pcr(:,i),glr(:,i)]=RipleysKfunction(mpm([1:i-1 i+1:length(mpm)],:),mpm(i,:),imsizS,dist,corrFacMat,normArea);
 end

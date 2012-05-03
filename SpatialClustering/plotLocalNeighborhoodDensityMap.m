@@ -49,11 +49,13 @@ ip.addParamValue('closureRadius', 20, @islogical);
 ip.addParamValue('dilationRadius', 5, @islogical);
 ip.addParamValue('doFill', false, @islogical);
 ip.addParamValue('plotMask', false, @islogical);
+ip.addParamValue('function', 'lr', @(var)any(strcmp(var,{'kr' 'lr' 'gcr' 'glr'})));
 ip.parse(mpm, imsize, varargin{:});
 dist = ip.Results.dist;
 lr = ip.Results.lr;
 areamask  = ip.Results.mask;
 imsizS = [imsize(2) imsize(1)];
+
 
 %MAKE MASK
 if ip.Results.calculateMask
@@ -76,7 +78,18 @@ end
 if isempty(lr)
     lr = nan(length(dist),size(mpm,1));
     for i = 1:length(mpm)
-        [~,lr(:,i)]=RipleysKfunction(mpm([1:i-1 i+1:length(mpm)],:),mpm(i,:),imsizS,dist,corrFacMat,normArea);
+        [k,l,g,gl]=RipleysKfunction(mpm([1:i-1 i+1:length(mpm)],:),mpm(i,:),imsizS,dist,corrFacMat,normArea);
+        
+        if strcmp(ip.Results.function,'kr')
+            lr(:,i) = k;
+        elseif strcmp(ip.Results.function,'lr')
+            lr(:,i) = l;
+        elseif strcmp(ip.Results.function,'gcr')
+            lr(:,i) = g;
+        elseif strcmp(ip.Results.function,'glr')
+            lr(:,i) = gl;
+        end
+        
     end
 end
 
