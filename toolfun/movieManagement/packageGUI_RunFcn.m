@@ -225,12 +225,8 @@ for j = parentRun
     userfcn_runProc_dfs (j, procRun, handles)
 end
 
-
-batchModeStatus = get(handles.menu_debug_batchMode,'Checked');
-runArgs = struct('BatchMode',strcmp(batchModeStatus,'on'));
-
 try
-    userData.crtPackage.processes_{procID}.run(runArgs); % throws exception
+    userData.crtPackage.processes_{procID}.run(); % throws exception
 catch ME
     rethrow(ME)
 end
