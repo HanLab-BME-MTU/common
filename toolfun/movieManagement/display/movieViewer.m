@@ -501,6 +501,16 @@ uicontrol(overlayPanel,'Style','checkbox',...
     'Callback',@(h,event) setScaleBar(guidata(h),'vectorFieldScaleBar'));
 
 hPosition=hPosition+30;
+uicontrol(overlayPanel,'Style','text','Position',[20 hPosition-2 100 20],...
+    'String','Color limits','HorizontalAlignment','left');
+uicontrol(overlayPanel,'Style','edit','Position',[150 hPosition 50 20],...
+    'String','','BackgroundColor','white','Tag','edit_vectorCmin',...
+    'Callback',@(h,event) redrawOverlays(guidata(h)));
+uicontrol(overlayPanel,'Style','edit','Position',[200 hPosition 50 20],...
+    'String','','BackgroundColor','white','Tag','edit_vectorCmax',...
+    'Callback',@(h,event) redrawOverlays(guidata(h)));
+
+hPosition=hPosition+30;
 uicontrol(overlayPanel,'Style','checkbox',...
     'Position',[20 hPosition 100 20],'Tag','checkbox_vectorFieldScaleBar',...
     'String',' Scalebar','HorizontalAlignment','left',...
@@ -877,12 +887,21 @@ if get(hObject,'Value')
     dragtailLength = str2double(get(handles.edit_dragtailLength,'String'));    
     showLabel = get(handles.checkbox_showLabel,'Value');
     faceAlpha = str2double(get(handles.edit_faceAlpha,'String'));
+    clim=[str2double(get(handles.edit_vectorCmin,'String')) ...
+        str2double(get(handles.edit_vectorCmax,'String'))];
+    if ~isempty(clim) && all(~isnan(clim)), cLimArgs={'CLim',clim}; else climArgs={}; end
     userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,...
         'vectorScale',vectorScale,'dragtailLength',dragtailLength,...
-        'faceAlpha',faceAlpha,'showLabel',showLabel);
+        'faceAlpha',faceAlpha,'showLabel',showLabel,cLimArgs{:});
 else
     h=findobj('Tag',graphicTag);
     if ~isempty(h), delete(h); end
+end
+
+displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput,iChan};
+if isa(displayMethod,'VectorFieldDisplay') && ~isempty(displayMethod.CLim)
+    set(handles.edit_vectorCmin,'String',displayMethod.CLim(1));
+    set(handles.edit_vectorCmax,'String',displayMethod.CLim(2));
 end
 
 function redrawGraph(hObject,handles)
