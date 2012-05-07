@@ -166,7 +166,8 @@ end
 
 % Create figure if non-existing or closed
 if ~isfield(userData, 'previewFig') || ~ishandle(userData.previewFig)
-    userData.previewFig = figure('NumberTitle','off','Name','Select the region of interest',...
+    userData.previewFig = figure('NumberTitle','off','Name',...
+        'Select the region of interest','DeleteFcn',@close_previewFig,...
         'UserData',handles.figure1);
     axes('Position',[.05 .05 .9 .9]);
     userData.newFigure = 1;
@@ -198,6 +199,13 @@ end
 
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
+
+function close_previewFig(hObject, eventdata)
+handles = guidata(get(hObject,'UserData'));
+userData=get(handles.figure1,'UserData');
+userData.ROI=getPosition(userData.imPolyHandle);
+set(handles.figure1,'UserData',userData);
+update_data(hObject, eventdata, handles);
 
 % --- Executes on slider movement.
 function frameNumberEdition_Callback(hObject, eventdata, handles)
@@ -254,10 +262,14 @@ if isempty(outputDirectory),
 end
 
 % Read ROI if crop window is still visible
+if userData.imPolyHandle.isvalid
+    userData.ROI=getPosition(userData.imPolyHandle);
+    set(handles.figure1,'UserData',userData);
+end
 update_data(hObject,eventdata,handles);
-assert(userData.imPolyHandle.isvalid);
 
 % Create ROI mask and save it in the outputDirectory
+userData = get(handles.figure1, 'UserData');
 mask=createMask(userData.imPolyHandle);
 maskPath = fullfile(outputDirectory,'roiMask.tif');
 imwrite(mask,maskPath);
