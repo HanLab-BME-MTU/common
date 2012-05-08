@@ -31,6 +31,7 @@ trendType=ip.Results.trendType;
 [nObs,nVar] = size(TS);
 if nVar > nObs
     TS = TS';
+    [nObs,nVar] = size(TS);
 end
 
 workTS      = cell(1,nVar);
