@@ -49,3 +49,12 @@ elseif n == 1
      Bleng(bk)=1;
 end
 
+%Make sure it always return a column vector
+nB = length(block);
+for i =1:nB
+    [nP,nV] = size(block{i});
+    if nV > nP
+        block{i} = block{i}';
+    end
+end
+

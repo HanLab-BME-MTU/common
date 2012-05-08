@@ -29,6 +29,10 @@ trendType=ip.Results.trendType;
 
 % Initialize output
 [nObs,nVar] = size(TS);
+if nVar > nObs
+    TS = TS';
+end
+
 workTS      = cell(1,nVar);
 interval    = cell(1,nVar);
 trend       = cell(1,nVar);
