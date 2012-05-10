@@ -249,7 +249,7 @@ classdef  MovieObject < hgsetget
             % for relocation if askUser is set as true and return askUser.
             
             if nargin < 4, askUser = true; end
-            if nargin > 1
+            if nargin > 1 && ~isempty(path)
                 % Remove ending file separators from paths
                 endingFilesepToken = [regexptranslate('escape',filesep) '$'];
                 oldPath = regexprep(obj.getPath(),endingFilesepToken,'');
@@ -259,14 +259,13 @@ classdef  MovieObject < hgsetget
                 if ~strcmp(oldPath, newPath)
                     confirmRelocate = 'Yes to all';
                     if askUser
-                        switch class(obj)
-                            case 'MovieData'
+                        if isa(obj,'MovieData')
                                 type='movie';
                                 components='channels';
-                            case 'MovieList'
+                        elseif isa(obj,'MovieList')
                                 type='movie list';
                                 components='movies';
-                            otherwise
+                        else
                                 error('Non supported movie object');                                
                         end
                         relocateMsg=sprintf(['The %s and its analysis will be relocated from \n%s to \n%s.\n'...
@@ -286,7 +285,7 @@ classdef  MovieObject < hgsetget
                     obj.relocate(oldRootDir,newRootDir,full);
                 end
             end
-            if nargin > 2, obj.setFilename(filename); end
+            if nargin > 2 && ~isempty(filename), obj.setFilename(filename); end
             
             if isempty(obj.outputDirectory_), warning('lccb:MovieObject:sanityCheck',...
                 'Empty output directory!'); end
