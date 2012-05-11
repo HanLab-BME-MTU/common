@@ -45,7 +45,7 @@ ip.addParamValue('EdgeColor', []);
 ip.addParamValue('GroupDistance', 1, @isscalar);
 ip.addParamValue('BorderWidth', [], @isscalar); 
 ip.addParamValue('XLabel', ' ', @ischar);
-ip.addParamValue('XLabels', arrayfun(@(k) num2str(k), 1:sum(ng), 'UniformOutput', false), @(x) iscell(x) && (numel(x)==sum(nb)||numel(x)==ng));
+ip.addParamValue('XLabels', arrayfun(@(k) num2str(k), 1:sum(ng), 'UniformOutput', false), @(x) isempty(x) || (iscell(x) && (numel(x)==sum(nb) || numel(x)==ng)));
 ip.addParamValue('YLabel', ' ', @ischar);
 ip.addParamValue('YLim', [], @(x) numel(x)==2);
 ip.addParamValue('YTick', []);
@@ -198,7 +198,7 @@ xlabel(ip.Results.XLabel, lfont{:});
 ylabel(ip.Results.YLabel, lfont{:});
 
 % x labels
-if ip.Results.Angle ~= 0
+if ip.Results.Angle ~= 0 && ~isempty(ip.Results.XLabels)
     rotateXTickLabels(ha, 'Angle', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter,...
         'AdjustFigure', ip.Results.AdjustFigure);
 end
