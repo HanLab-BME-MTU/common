@@ -858,7 +858,7 @@ frameNr=get(handles.slider_frame,'Value');
 overlayTag = get(hObject,'Tag');
 
 % Get figure handle or recreate figure
-movieFig = findobj(0,'-regexp','Name','Movie');
+movieFig = findobj(0,'Name','Movie');
 if isempty(movieFig),  redrawScene(hObject, handles); return; end
 figure(movieFig);
 % Retrieve the id, process nr and channel nr of the selected imageProc

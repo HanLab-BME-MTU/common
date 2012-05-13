@@ -242,7 +242,8 @@ classdef  MovieData < MovieObject
             
             % Check that channels paths start with oldRootDir           
             channelPaths=obj.getChannelPaths;
-            status = cellfun(@(x) ~isempty(regexp(x,['^' oldRootDir '*'],'once')),channelPaths);
+            status = cellfun(@(x) ~isempty(regexp(x,['^' regexptranslate('escape',oldRootDir) '*'],...
+                'once')),channelPaths);
             if ~all(status)
                 relocateMsg=sprintf(['The movie channels can not be automatically relocated.\n'...
                     'Do you want to manually relocate channel %g:\n %s?'],1,channelPaths{1});
