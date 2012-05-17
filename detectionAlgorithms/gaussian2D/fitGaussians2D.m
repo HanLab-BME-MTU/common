@@ -204,7 +204,7 @@ for p = 1:np
             scomb = sqrt((sigma_A.^2 + SE_sigma_r.^2)/npx);
             T = (A_est - res.std*kLevel) ./ scomb;            
             % 1-sided t-test: A_est must be greater than k*sigma_r
-            pStruct.pval_Ar(p) = 1-tcdf(T, df2);
+            pStruct.pval_Ar(p) = tcdf(-T, df2);
             pStruct.hval_Ar(p) = pStruct.pval_Ar(p) < alpha;
             pStruct.mask_Ar(p) = sum(A_est*g>res.std*kLevel);
         end

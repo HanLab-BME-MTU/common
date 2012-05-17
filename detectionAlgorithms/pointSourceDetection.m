@@ -72,7 +72,7 @@ SE_sigma_c = sigma_res/sqrt(2*(n-1)) * kLevel;
 df2 = (n-1) * (sigma_A.^2 + SE_sigma_c.^2).^2 ./ (sigma_A.^4 + SE_sigma_c.^4);
 scomb = sqrt((sigma_A.^2 + SE_sigma_c.^2)/n);
 T = (A_est - sigma_res*kLevel) ./ scomb;
-pval = 1-tcdf(real(T), df2);
+pval = tcdf(-T, df2);
 
 % mask of admissible positions for local maxima
 mask = pval < 0.05;
