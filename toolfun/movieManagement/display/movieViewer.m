@@ -445,6 +445,14 @@ uicontrol(imagePanel,'Style','popupmenu','Position',[130 hPosition 120 20],...
     'Tag','popupmenu_imageScaleBarLocation','Enable',scBarstatus,...
     'Callback',@(h,event) setScaleBar(guidata(h),'imageScaleBar'));
 
+hPosition=hPosition+30;
+uicontrol(imagePanel,'Style','text',...
+    'Position',[20 hPosition 100 20],'Tag','text_imageScaleFactor',...
+    'String',' Scaling factor','HorizontalAlignment','left');
+uicontrol(imagePanel,'Style','edit','Position',[120 hPosition 50 20],...
+    'String','1','BackgroundColor','white','Tag','edit_imageScaleFactor',...
+    'Callback',@(h,event) setScaleFactor(guidata(h)));
+
 % Colormap control
 hPosition=hPosition+30;
 uicontrol(imagePanel,'Style','text','Position',[20 hPosition-2 100 20],...
@@ -755,6 +763,10 @@ clim=[str2double(get(handles.edit_cmin,'String')) ...
     str2double(get(handles.edit_cmax,'String'))];
 redrawImage(handles,'CLim',clim)
 
+function setScaleFactor(handles)
+scaleFactor=str2double(get(handles.edit_imageScaleFactor,'String'));
+redrawImage(handles,'ScaleFactor',scaleFactor)
+
 function setColormap(handles)
 allCmap=get(handles.popupmenu_colormap,'String');
 selectedCmap = get(handles.popupmenu_colormap,'Value');
@@ -800,12 +812,13 @@ end
 % Set the color limits properties
 clim=displayMethod.CLim;
 if isempty(clim)
-    hAxes=findobj(drawFig,'Type','axes','-not','Tag','Colorbar');
+    hAxes=findobj(drawFig,'Type''axes','-not','Tag','Colorbar');
     clim=get(hAxes,'Clim');
 end
 set(handles.edit_cmin,'Enable','on','String',clim(1));
 set(handles.edit_cmax,'Enable','on','String',clim(2));
     
+set(handles.edit_imageScaleFactor,'Enable','on','String',displayMethod.ScaleFactor);
 % Set the colorbar properties
 cbar=displayMethod.Colorbar;
 cbarLocation = find(strcmpi(displayMethod.ColorbarLocation,get(handles.popupmenu_colorbarLocation,'String')));

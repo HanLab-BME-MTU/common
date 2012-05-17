@@ -8,6 +8,7 @@ classdef ImageDisplay < MovieDataDisplay
         Units='';
         sfont = {'FontName', 'Helvetica', 'FontSize', 18};
         lfont = {'FontName', 'Helvetica', 'FontSize', 22};
+        ScaleFactor = 1;
     end
     methods
         function obj=ImageDisplay(varargin)
@@ -16,18 +17,18 @@ classdef ImageDisplay < MovieDataDisplay
             
         function h=initDraw(obj,data,tag,varargin)
             % Plot the image and associate the tag
-            h=imshow(data,varargin{:});
+            h=imshow(data/obj.ScaleFactor,varargin{:});
             set(h,'Tag',tag,'CDataMapping','scaled');
             hAxes = get(h,'Parent');
             set(hAxes,'XLim',[0 size(data,2)],'YLim',[0 size(data,1)]);
-            obj.applyImageOptions(h,data)
+            obj.applyImageOptions(h)
         end
         function updateDraw(obj,h,data)
-            set(h,'CData',data)
-            obj.applyImageOptions(h,data)
+            set(h,'CData',data/obj.ScaleFactor)
+            obj.applyImageOptions(h)
         end
         
-        function applyImageOptions(obj,h,data)
+        function applyImageOptions(obj,h)
             % Clean existing image and set image at the bottom of the stack
             hAxes = get(h,'Parent');
             child=get(hAxes,'Children');
@@ -57,7 +58,7 @@ classdef ImageDisplay < MovieDataDisplay
             end
             
             % Set the color limits
-            if ~isempty(obj.CLim),set(hAxes,'CLim',obj.CLim); end
+            if ~isempty(obj.CLim),set(hAxes,'CLim',obj.CLim/obj.ScaleFactor); end
         end
     end 
  
@@ -80,6 +81,8 @@ classdef ImageDisplay < MovieDataDisplay
             locations = findtype('ColorbarLocationPreset');
             locations = locations.Strings;
             params(7).validator=@(x) any(strcmp(x,locations));
+            params(8).name='ScaleFactor';
+            params(8).validator=@isscalar;
         end
         function f=getDataValidator()
             f=@isnumeric;
