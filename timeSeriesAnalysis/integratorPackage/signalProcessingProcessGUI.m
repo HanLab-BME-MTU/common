@@ -82,7 +82,30 @@ set(handles.listbox_selectedMovies,'String',movieString,'UserData',movieIndex);
 
 % Set tools menu
 userData.tools = SignalProcessingProcess.getTools;
-set(handles.popupmenu_tools,'String',{userData.tools.name},'UserData',{userData.tools.GUI});
+nTools=numel(userData.tools);
+createToolCheckbox= @(i,type,value) uicontrol(handles.uipanel_tools,...
+    'Style','checkbox','Tag',['checkbox_tool' num2str(i)],'Value',0,...
+    'Position',[40 10+20*(nTools-i) 250 20],'String',[' ' userData.tools(i).name],'HorizontalAlignment','left');
+createToolSettingsButton= @(i,settingsGUI) uicontrol(handles.uipanel_tools,...
+    'Style','pushbutton','String','Settings',...
+    'Position',[350 10+20*(nTools-i) 100 20],'Tag',['settings_tool' num2str(i)],...
+    'Callback',@(h,event) settingsGUI(h,event,guidata(h),i));
+
+resizeGUI(handles,20*nTools);
+
+for i =nTools:-1:1
+    createToolCheckbox(i,userData.tools(i).type);
+    createToolSettingsButton(i,userData.tools(userData.tools(i).type).GUI);
+end
+
+tools= userData.crtProc.funParams_.tools;
+for i =1: numel(tools)
+    h = findobj(handles.figure1,'Tag',['checkbox_tool' num2str(tools(i).type)]);
+
+    set(h,'Value',1);
+    userData.tools(tools(i).type).parameters = tools(i).parameters;    
+end
+% guidata(handles.figure1,guihandles(handles.figure1));
 
 % Choose default command line output for signalProcessingProcessGUI
 handles.output = hObject;
@@ -90,8 +113,6 @@ handles.output = hObject;
 % Update user data and GUI data
 set(hObject, 'UserData', userData);
 guidata(hObject, handles);
-updateTools(hObject,eventdata,handles);
-
 
 % --- Outputs from this function are returned to the command line.
 function varargout = signalProcessingProcessGUI_OutputFcn(~, ~, handles) 
@@ -200,64 +221,14 @@ if isempty(get(handles.listbox_selectedMovies, 'String'))
     return;
 end
 funParams.MovieIndex = get(handles.listbox_selectedMovies, 'UserData');
+    
+h = findobj(handles.figure1,'-regexp','Tag','checkbox_tool*');
+selectedTools = logical(arrayfun(@(x) get(x,'Value'),h));
+userData=get(handles.figure1,'UserData');
+funParams.tools=userData.tools(selectedTools);
 
 % Set parameters
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
-
-
-% --- Executes on button press in pushbutton_addTool.
-function pushbutton_addTool_Callback(hObject, eventdata, handles)
-
-userData=get(handles.figure1,'UserData');
-iTool = get(handles.popupmenu_tools,'Value');
-userData.crtProc.addTool(userData.tools(iTool));
-updateTools(hObject, eventdata, handles);
-
-% --- Executes on button press in pushbutton_removeTool.
-function pushbutton_removeTool_Callback(hObject, eventdata, handles)
-
-
-userData=get(handles.figure1,'UserData');
-tag = 'checkbox_tool(\d+)';
-h=findobj(handles.figure1,'-regexp','Tag',tag,'-and','Value',1);
-if isempty(h), return; end
-tokens=regexp(get(h,'Tag'),tag,'tokens');
-iTool = cellfun(@(x) str2double(x{1}),tokens);
-userData.crtProc.removeTools(iTool);
-updateTools(hObject, eventdata, handles);
-
-function updateTools(hObject, eventdata, handles)
-
-% Create templates for GUI generation
-userData= get(handles.figure1,'UserData');
-tools= userData.crtProc.funParams_.tools;
-nTools =numel(tools);
-
-createToolCheckbox= @(i,type,value) uicontrol(handles.uipanel_tools,...
-    'Style','checkbox','Tag',['checkbox_tool' num2str(i)],'Value',value,...
-    'Position',[40 10+20*(nTools-i) 250 20],'String',[' ' userData.tools(i).name],'HorizontalAlignment','left');
-createToolSettingsButton= @(i,settingsGUI) uicontrol(handles.uipanel_tools,...
-    'Style','pushbutton','String','Settings',...
-    'Position',[350 10+20*(nTools-i) 100 20],'Tag',['settings_tool' num2str(i)],...
-    'Callback',@(h,event) settingsGUI(h,event,guidata(h),i));
-
-
-values= zeros(nTools,1);
-getToolHandle = @(i) findobj(handles.figure1,'Tag',['checkbox_tool' num2str(i)]);
-if ~isequal(hObject,handles.pushbutton_removeTool)
-    validBoxes = ~arrayfun(@(x) isempty(getToolHandle(x)),1:nTools);
-    for i=find(validBoxes), values(i)=get(getToolHandle(i),'Value'); end
-   
-end
-h=findobj(handles.figure1,'-regexp','Tag','checkbox_tool*','-or','-regexp','Tag','settings_tool*');
-delete(h);
-resizeGUI(handles,20*nTools-20*numel(h)/2);
-
-for i =nTools:-1:1
-    createToolCheckbox(i,tools(i).type,values(i));
-    createToolSettingsButton(i,userData.tools(tools(i).type).GUI);
-end
-% guidata(handles.figure1,guihandles(handles.figure1));
 
 
 function resizeGUI(handles,dh)
