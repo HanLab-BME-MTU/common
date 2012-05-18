@@ -627,7 +627,6 @@ if get(handles.checkbox_saveFrames,'Value');
     fpath = [userData.MO.outputDirectory_ filesep 'Frames'];
     mkClrDir(fpath);
     fprintf('Generating movie frames:     ');
-    resolution = ['-r' num2str(5*72)];
 end
 
 for iFrame=1:nFrames
@@ -637,7 +636,7 @@ for iFrame=1:nFrames
     drawnow;
     if get(handles.checkbox_saveMovie,'Value'), MakeQTMovie('addfigure'); end
     if get(handles.checkbox_saveFrames,'Value');
-        print(getFigure(handles,'Movie'), '-dtiff', '-loose', resolution, fullfile(fpath,frameName(iFrame)));
+        print(getFigure(handles,'Movie'), '-dtiff', fullfile(fpath,frameName(iFrame)));
         fprintf('\b\b\b\b%3d%%', round(100*iFrame/(nFrames)));
     end
 end
