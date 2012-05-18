@@ -618,7 +618,7 @@ end
 if get(handles.checkbox_saveFrames,'Value');
     % Initialize frame output
     fmt = ['%0' num2str(ceil(log10(nFrames))) 'd'];
-    frameName = @(frame) ['frame' num2str(frame, fmt) '.png'];
+    frameName = @(frame) ['frame' num2str(frame, fmt) '.tif'];
     fpath = [userData.MO.outputDirectory_ filesep 'Frames'];
     mkClrDir(fpath);
     fprintf('Generating movie frames:     ');
@@ -631,7 +631,7 @@ for iFrame=1:nFrames
     drawnow;
     if get(handles.checkbox_saveMovie,'Value'), MakeQTMovie('addfigure'); end
     if get(handles.checkbox_saveFrames,'Value');
-        print(getFigure(handles,'Movie'), '-dpng', '-loose', resolution, fullfile(fpath,frameName(iFrame)));
+        print(getFigure(handles,'Movie'), '-dtiff', '-loose', resolution, fullfile(fpath,frameName(iFrame)));
         fprintf('\b\b\b\b%3d%%', round(100*iFrame/(nFrames)));
     end
 end
@@ -815,9 +815,11 @@ if isempty(clim)
     hAxes=findobj(drawFig,'Type''axes','-not','Tag','Colorbar');
     clim=get(hAxes,'Clim');
 end
-set(handles.edit_cmin,'Enable','on','String',clim(1));
-set(handles.edit_cmax,'Enable','on','String',clim(2));
-    
+if ~isempty(clim)
+    set(handles.edit_cmin,'Enable','on','String',clim(1));
+    set(handles.edit_cmax,'Enable','on','String',clim(2));
+end
+
 set(handles.edit_imageScaleFactor,'Enable','on','String',displayMethod.ScaleFactor);
 % Set the colorbar properties
 cbar=displayMethod.Colorbar;
@@ -889,9 +891,9 @@ if ~isempty(tokens)
     graphicTag =[userData.MO.processes_{procId}.getName '_channel'...
         num2str(iChan) '_output' num2str(iOutput)];
 else
+    iChan = [];
     inputArgs={frameNr};
     graphicTag = [userData.MO.processes_{procId}.getName '_output' num2str(iOutput)];
-    
 end
 
 % Draw or delete the overlay depending on the checkbox value
@@ -911,7 +913,12 @@ else
     if ~isempty(h), delete(h); end
 end
 
-displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput,iChan};
+% Get display method and update option status
+if isempty(iChan),
+    displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput};
+else
+    displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput,iChan};
+end
 if isa(displayMethod,'VectorFieldDisplay') && ~isempty(displayMethod.CLim)
     set(handles.edit_vectorCmin,'String',displayMethod.CLim(1));
     set(handles.edit_vectorCmax,'String',displayMethod.CLim(2));
