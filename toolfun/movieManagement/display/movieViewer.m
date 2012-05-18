@@ -307,7 +307,7 @@ moviePanel = uipanel(panel2,...
 % Create control button for exporting figures and movie (cf Francois' GUI)
 hPosition=10;
 
-uicontrol(moviePanel, 'Style', 'pushbutton','String', 'Run movie',...
+uicontrol(moviePanel, 'Style', 'togglebutton','String', 'Run movie',...
     'Position', [10 hPosition 100 20],'Callback',@(h,event) runMovie(h,guidata(h)));
 uicontrol(moviePanel, 'Style', 'checkbox','Tag','checkbox_saveMovie',...
     'Value',0,'String', 'Save movie','Position', [150 hPosition 100 20]);
@@ -608,6 +608,11 @@ function runMovie(hObject,handles)
 
 userData = get(handles.figure1, 'UserData');
 nFrames = userData.MO.nFrames_;
+if get(hObject,'Value'),
+    set(hObject,'String','Stop movie');
+else
+    set(hObject,'String','Run movie');
+end
 
 if get(handles.checkbox_saveMovie,'Value');
     % Initialize movie
@@ -626,6 +631,7 @@ if get(handles.checkbox_saveFrames,'Value');
 end
 
 for iFrame=1:nFrames
+    if ~get(hObject,'Value'), return; end
     set(handles.slider_frame, 'Value',iFrame);
     redrawScene(hObject, handles);
     drawnow;
