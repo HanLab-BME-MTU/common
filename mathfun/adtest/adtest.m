@@ -25,7 +25,7 @@
 
 % Francois Aguet (last modified 03/27/2012)
 
-function [H, A2, cval] = adtest(x, varargin)
+function [H, pval, A2, cval] = adtest(x, varargin)
 
 alphaVec = [0.01 0.025 0.05 0.1 0.15];
 
@@ -104,8 +104,21 @@ i = 1:n;
 A2 = -n - 1/n*sum( (2*i-1).*(log(z) + log(1-z(n+1-i))) );
 
 % correction factor for sample mean and variance
+pval = NaN;
 if c==4
-    A2 = A2 * (1+4/n-25/n^2);
-    % A2 = A2 * (1.0 + 0.75/n + 2.25/n^2); % for the table by d'Agostino
+    %A2 = A2 * (1+4/n-25/n^2);
+    A2 = A2 * (1.0 + 0.75/n + 2.25/n^2); % for the table by d'Agostino
+    if (0.600<A2 && A2<=13)
+        pval = exp(1.2937 - 5.709*A2 + 0.0186*A2*A2);
+    end
+    if (0.340<A2 && A2<=0.600)
+        pval = exp(0.9177 - 4.279*A2 - 1.38*A2*A2);
+    end
+    if (0.200<A2 && A2<=0.340)
+        pval = 1 - exp(-8.318 + 42.796*A2 - 59.938*A2*A2);
+    end
+    if (A2<=0.200)
+        pval = 1 - exp(-13.436 + 101.14*A2 - 223.73*A2*A2);
+    end
 end
 H = A2 > cval;
