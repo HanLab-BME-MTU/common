@@ -61,7 +61,7 @@ classdef DetectionProcess < ImageAnalysisProcess
             colors = hsv(numel(obj.owner_.channels_));
             output(1).name='Objects';
             output(1).var='movieInfo';
-            output(1).formatData=@formatDetectionOutput;
+            output(1).formatData=@DetectionProcess.formatOutput;
             output(1).type='overlay';
             output(1).defaultDisplayMethod=@(x) LineDisplay('Marker','o',...
                 'LineStyle','none','Color',colors(x,:));
@@ -82,14 +82,13 @@ classdef DetectionProcess < ImageAnalysisProcess
                 'NucleiDetectionProcess';
                 };
         end
+        
+        function y =formatOutput(x)
+            if isempty(x.xCoord)
+                y=NaN(1,2);
+            else
+                y = horzcat(x.yCoord(:,1),x.xCoord(:,1));
+            end
+        end
     end
-
-end
-
-function y =formatDetectionOutput(x)
-if isempty(x.xCoord)
-    y=NaN(1,2);
-else
-    y = horzcat(x.yCoord(:,1),x.xCoord(:,1));
-end
 end
