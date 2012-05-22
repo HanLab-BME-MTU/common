@@ -1,6 +1,7 @@
 classdef MaskProcess < Process
-    % An abstract class for mask process
-    %
+    % Abstract interface for all mask-related processes (segmentation,
+    % morphological operations)
+    
     % Sebastien Besson Oct 2011
     
     methods (Access = protected)
@@ -110,18 +111,18 @@ classdef MaskProcess < Process
     end
     methods(Static)
         function procClasses = getConcreteClasses()
+            % List concrete mask classes
             procClasses = ...
                 {'ThresholdProcess';
                 'MSSSegmentationProcess'};
         end
         
+        function boundaries = getMaskBoundaries(mask)
+            % Format mask boundaries in xy-coordinate system
+            b=bwboundaries(mask);
+            b2 =cellfun(@(x) vertcat(x,[NaN NaN]),b,'Unif',false);
+            boundaries =vertcat(b2{:});
+            boundaries=boundaries(:,2:-1:1);
+        end        
     end
-end
-
-function boundaries = getMaskBoundaries(mask)
-
-b=bwboundaries(mask);
-b2 =cellfun(@(x) vertcat(x,[NaN NaN]),b,'Unif',false);
-boundaries =vertcat(b2{:});
-
 end

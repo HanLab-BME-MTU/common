@@ -1,8 +1,9 @@
 classdef DetectionProcess < ImageAnalysisProcess
-    % A class definition for a generic detection process.
-    %
+    % An abstract class for all detection processes with an output
+    % structure compatible with the tracker
+    
     % Chuangang Ren, 11/2010
-    % Sebastien Besson (last modified Dec 2011)
+    % Sebastien Besson (last modified May 2012)
     
     methods(Access = public)
         
@@ -73,7 +74,7 @@ classdef DetectionProcess < ImageAnalysisProcess
             name = 'Detection';
         end
         function h = GUI()
-            h= @detectionProcessGUI;
+            h = @detectionProcessGUI;
         end
         function procClasses = getConcreteClasses()
             procClasses = ...
@@ -84,10 +85,11 @@ classdef DetectionProcess < ImageAnalysisProcess
         end
         
         function y =formatOutput(x)
+            % Format output in xy coordinate system
             if isempty(x.xCoord)
-                y=NaN(1,2);
+                y = NaN(1,2);
             else
-                y = horzcat(x.yCoord(:,1),x.xCoord(:,1));
+                y = horzcat(x.xCoord(:,1),x.yCoord(:,1));
             end
         end
     end

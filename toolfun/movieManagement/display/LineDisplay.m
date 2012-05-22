@@ -1,5 +1,8 @@
 classdef LineDisplay < MovieDataDisplay
-    %Concreate display class for displaying points or lines
+    % Concrete display class for displaying points or lines
+    % Input data must be expressed in xy coordinate system
+    
+    % Sebastien Besson Jun 2011 (last modified May 2012)
     properties
         Color='r';
         Marker = 'none';
@@ -17,21 +20,20 @@ classdef LineDisplay < MovieDataDisplay
             obj@MovieDataDisplay(varargin{:})
         end
         function h=initDraw(obj,data,tag,varargin)
-            
-            h=plot(data(:,2),data(:,1),varargin{:});
+            % Plot data and set graphical options
+            h=plot(data(:,1),data(:,2),varargin{:});
             set(h,'Tag',tag,'MarkerSize',obj.MarkerSize,...
                 'Color',obj.Color,'Marker',obj.Marker,...
                 'Linestyle',obj.LineStyle,'LineWidth',obj.LineWidth);
             obj.setAxesProperties;
-            
         end
         function updateDraw(obj,h,data)
-            set(h,'XData',data(:,2),'YData',data(:,1));
+            % Update handle xData and yData
+            set(h,'XData',data(:,1),'YData',data(:,2));
             obj.setAxesProperties;
         end
-    end
-    methods(Access=protected)
         function setAxesProperties(obj)
+            % Set labels and fonts
             if ~isempty(obj.XLabel),xlabel(obj.XLabel,obj.lfont{:}); end
             if ~isempty(obj.YLabel),ylabel(obj.YLabel,obj.lfont{:}); end
             set(gca,'LineWidth', 1.5, obj.sfont{:})
