@@ -58,8 +58,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     for (int i=0;i<k;++i) {
         n[i] = (int)mxGetNumberOfElements(mxGetCell(prhs[0], i));
         N += n[i];
-    }        
-
+    }
+    
     // sample vectors
     vector< vector<double> > samples;
     samples.resize(k);
@@ -79,7 +79,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         sort(samples[i].begin(), samples[i].end()); // will need multiplity later
         
         // pooled vector
-        copy(dp, dp+n[i], pooledSamples.begin()+N); 
+        copy(dp, dp+n[i], pooledSamples.begin()+N);
         
         N += n[i];
     }
@@ -112,7 +112,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     double c = (6.0*h+2.0*g-2.0)*k2 + (4.0*h-4.0*g+6.0)*k + (2.0*h-6.0)*H + 4.0*h;
     double d = (2.0*h+6.0)*k2 - 4.0*h*k;
     double varA = (((a*N + b)*N + c)*N + d) / ( (N-1.0)*(N-2.0)*(N-3.0) );
-
+    
     // loop through current sample; if value not equal pooled sample value, advance pooled sample index j
     vector< vector<int> > f(k);
     int j;
@@ -161,7 +161,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         t2 = 0.0;
         for (int j=0;j<L;++j) {
             t1 = N*Mai[j]-n[i]*Ba[j];
-            t2 += l[j]*t1*t1/(Ba[j]*(N-Ba[j])-N*l[j]/4.0);            
+            t2 += l[j]*t1*t1/(Ba[j]*(N-Ba[j])-N*l[j]/4.0);
         }
         t2 /= n[i];
         A2 += t2;
@@ -201,7 +201,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     int hval = T>=cval;
     
-    // Return results to Matlab: hval, T, cval
+    // Return results to Matlab: hval, T, A2, cval
     if (nlhs>0) {
         plhs[0] = mxCreateDoubleScalar(hval);
     }
@@ -209,7 +209,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         plhs[1] = mxCreateDoubleScalar(T);
     }
     if (nlhs>2) {
-        plhs[2] = mxCreateDoubleScalar(cval);
+        plhs[2] = mxCreateDoubleScalar(A2);
+    }
+    if (nlhs>3) {
+        plhs[3] = mxCreateDoubleScalar(cval);
     }
 }
 
