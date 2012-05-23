@@ -59,8 +59,8 @@ classdef BackgroundSubtractionProcess < ImageCorrectionProcess
                 % Load average corrected image
                 tmp = load(obj.outFilePaths_{2,iChan});
                 tmpFields=fieldnames(tmp);
-                data(:,1)=tmp.(tmpFields{1});
-                data(:,2)=1:size(data,1);
+                data(:,1)=1:numel(tmp.(tmpFields{1}));
+                data(:,2)=tmp.(tmpFields{1});
                 
                 iOutput= 2;
                 try
