@@ -1,7 +1,10 @@
 /* Collection of functions for computing statistical tests
  *
- * (c) Francois Aguet, 2011 (last modified Mar 20, 2011)
+ * (c) Francois Aguet, 2011 (last modified May 23, 2012)
  * */
+
+#ifndef STATS_H
+#define STATS_H
 
 #include <math.h>
 
@@ -13,7 +16,7 @@
     #include <gsl/gsl_sf_erf.h>
 #endif
 
-
+#define NA 7 // number of allowed alpha values
 
 /* Code from:
  * Marsaglia, G., W.W. Tsang, and J. Wang (2003), "Evaluating Kolmogorov's
@@ -188,13 +191,17 @@ double ksone(double *data, int N, double mu, double sigma) {
 
 /* Anderson-Darling test
  *
- * Critical values taken from p. 732
- * [1] M.A. Stephens, J. Am. Stat. Assoc. 69(347), pp. 730-737, 1974
+ * For the test and its derivation, see
+ * [1] Anderson & Darling, Ann. Math. Stat. 23, 1952
+ * [2] Anderson & Darling, J. Am. Stat. Assoc. 49, 1954
+ *
+ * Critical values taken from 
+ * [3] R.B. D'Agostino and M.A. Stephens, Goodness-of-Fit Techniques, ed. M. Dekker, Inc., 1986
  */
-unsigned char adtest(double *data, int N, int adCase, double mu, double sigma, double alpha) {
+unsigned char adtest(const double *data, const int N, const int adCase, const double mu, const double sigma, const double alpha) {
     
-    if (adCase<1 || adCase>4) {
-        mexErrMsgTxt("'adCase' must be an integer between 1 and 5.");
+    if (adCase<0 || adCase>4) {
+        mexErrMsgTxt("'adCase' must be an integer between 0 and 4.");
     }
     
     double *sdata = (double*)malloc(sizeof(double)*N);
@@ -218,10 +225,10 @@ unsigned char adtest(double *data, int N, int adCase, double mu, double sigma, d
     }
     A2 = (-1.0*N) - A2/(1.0*N);
     
-    if (adCase==4) {
-        A2 *= 1.0+4.0/N-25.0/(N*N);
+    if (adCase==3) {
+        A2 *= 1.0 + 0.75/N + 2.25/(N*N);
     }
-    if (adCase==5) {
+    if (adCase==4) {
         A2 *= 1.0 + 0.6/N;
     }
     
@@ -229,23 +236,24 @@ unsigned char adtest(double *data, int N, int adCase, double mu, double sigma, d
     free(sdata);
     
     /* Look-up table for critical values */
-    static const double alphaVec[4] = {0.01, 0.025, 0.05,  0.1};
-    static const double ctable[20] = {3.857, 3.070, 2.492, 1.933, /* case 1: normal, mu/sigma known */
-                                      1.573, 1.304, 1.105, 0.908, /* case 2: normal, mu unknown, sigma known */
-                                      3.690, 2.904, 2.323, 1.760, /* case 3: normal, mu known, sigma unknown */
-                                      1.092, 0.918, 0.787, 0.656, /* case 4: normal, mu/sigma unknown */
-                                      1.957, 1.606, 1.341, 1.078};/* case 5: exponential, µ unknown */
+    static const double alphaVec[NA] = {0.25,  0.15,  0.10,  0.05,  0.025, 0.01, 0.005};
+    static const double ctable[35] =  {1.248, 1.610, 1.933, 2.492, 3.070, 3.857, 4.500,  /* case 0: normal, mu/sigma known */
+                                       0.644, 0.782, 0.894, 1.087, 1.285, 1.551, 1.756,  /* case 1: normal, mu unknown, sigma known */
+                                       1.072, 1.430, 1.743, 2.308, 2.898, 3.702, 4.324,  /* case 2: normal, mu known, sigma unknown */
+                                       0.470, 0.561, 0.631, 0.752, 0.873, 1.035, 1.159,  /* case 3: normal, mu/sigma unknown */
+                                       0.736, 0.916, 1.062, 1.321, 1.591, 1.959, 2.244}; /* case 4: exponential, µ unknown */
     
     /* get critical value from lookup table */
-    int ai = 5;
-    for (i=0;i<4;++i) {
+    int ai = NA; // number of values in alpha vector + 1
+    for (i=0;i<NA;++i) {
         if ( fabs(alpha-alphaVec[i]) < 1e-10 ) {
             ai = i;
 	    break;
         }
     }
-    if (ai==5) {
-        mexErrMsgTxt("Admissible 'alpha' values: 0.01, 0.025, 0.05, 0.1");
+    if (ai==NA) {
+        mexErrMsgTxt("Admissible 'alpha' values: 0.25,  0.15,  0.10,  0.05,  0.025, 0.01, 0.005");
     }
-    return A2>ctable[ai + 4*(adCase-1)];
+    return A2>ctable[ai + NA*adCase];
 }
+#endif // STATS_H
