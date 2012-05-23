@@ -565,7 +565,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
             res[nanIdx[i]] = mxGetNaN();
         }
         
-        unsigned char hAD = adtest(resValid, data.nValid, 3, 0.0, std, 0.05);
+        // A-D test, case 2: mean known
+        unsigned char hAD = adtest(resValid, data.nValid, 2, 0.0, std, 0.05);
         mxSetFieldByNumber(plhs[3], 0, 0, val);   
         mxSetFieldByNumber(plhs[3], 0, 1, mxCreateDoubleScalar(hAD));
         mxSetFieldByNumber(plhs[3], 0, 2, mxCreateDoubleScalar(mean));
