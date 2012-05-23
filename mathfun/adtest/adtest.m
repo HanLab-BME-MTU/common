@@ -1,14 +1,16 @@
-% ADTEST(X) implements the Anderson-Darling normality test, assuming unknown mean and variance
+% ADTEST(X) implements the Anderson-Darling test for normality
 %
 % Inputs:
 %          x : Sample vector (test only work for n>=5)
-%    {alpha} : Significane level. Possible values: 0.01 0.025 0.05 (default) 0.1 0.15
+%    {alpha} : Significance level. Possible values:
+%              0.25 0.15 0.10 0.05 [default] 0.025 0.01 0.005 0.0025
 %
 % Output:
 %          H : Result of the hypothesis test
 %              0: Do not reject H0 at given significance level
 %              1: Reject H0 at given significance level
-%         A2 : Adjusted test statistic
+%       pval : p-value. Only returned for case 3 (mean and variance unknown)   
+%         A2 : (Adjusted) test statistic
 %       cval : Critical value for the test
 %
 %
@@ -17,17 +19,20 @@
 % [2] Anderson & Darling, J. Am. Stat. Assoc. 49, 1954
 %
 % Critical values taken from 
-% [3] M.A. Stephens, J. Am. Stat. Assoc. 69(347), pp. 730-737, 1974
-% [4] M.A. Stephens, Ann. Stat. 4(2), pp. 357-369, 1976
+% [3] R.B. D'Agostino and M.A. Stephens, Goodness-of-Fit Techniques, ed. M. Dekker, Inc., 1986
+%
+% Older, less accurate critical values were given in
+% [4] M.A. Stephens, J. Am. Stat. Assoc. 69(347), pp. 730-737, 1974
+% [5] M.A. Stephens, Ann. Stat. 4(2), pp. 357-369, 1976
 %
 % See also
-% [5] http://en.wikipedia.org/wiki/Anderson-Darling_test
+% [6] http://en.wikipedia.org/wiki/Anderson-Darling_test
 
-% Francois Aguet (last modified 03/27/2012)
+% Francois Aguet (last modified 05/23/2012)
 
 function [H, pval, A2, cval] = adtest(x, varargin)
 
-alphaVec = [0.01 0.025 0.05 0.1 0.15];
+alphaVec = [0.5 0.25 0.15 0.10 0.05 0.025 0.01 0.005 0.0025 0.001];
 
 ip = inputParser;
 ip.addRequired('x');
@@ -73,42 +78,49 @@ switch ip.Results.Distribution
 end
 
 % Look-up table for critical values
-%  Case 1: mean and variance known
-%  Case 2: mean unknown, variance known
-%  Case 3: mean known, variance unknown
-%  Case 4: mean and variance unknown
-%  Case 5: exponential distribution, mean unknown
+%  Case 0: mean and variance known
+%  Case 1: mean unknown, variance known
+%  Case 2: mean known, variance unknown
+%  Case 3: mean and variance unknown
+%  Case 4: exponential distribution, scale unknown
+ctable = zeros(5,9);
+% alpha:      [0.5 0.25  0.15  0.10  0.05  0.025 0.01  0.005 0.0025]
+%-----------------------------
+% Normal distribution
+%-----------------------------
+% Case 0: Table 4.2 from, [3], p. 105, valid for n>=5
+ctable(1,:) = [NaN 1.248 1.610 1.933 2.492 3.070 3.857 4.500 NaN]; % 6.000 for alpha = 0.001
 
-% Values from [3]
-ctable = [3.857 3.070 2.492 1.933 1.610;
-          1.573 1.304 1.105 0.908 NaN;
-          3.690 2.904 2.323 1.760 NaN;
-          1.092 0.918 0.787 0.656 0.576
-          1.957 1.606 1.341 1.078 0.922];
+% Cases 1 and 2: Table 4.6 from [3], p. 122
+ctable(2,:) = [NaN 0.644 0.782 0.894 1.087 1.285 1.551 1.756 1.964];
+ctable(3,:) = [NaN 1.072 1.430 1.743 2.308 2.898 3.702 4.324 4.954];
 
-% Values from [4]
-% ctable = [3.857 3.070 2.492 1.933 1.610;
-%           1.541 1.281 1.088 0.897 0.784;
-%           3.682 2.890 2.315 1.761 1.443;
-%           1.029 0.870 0.751 0.632 0.560;
-%           1.943 1.587 1.326 1.070 0.918];
+% Case 3: Table 4.7 from [3], p. 123
+ctable(4,:) = [0.341 0.470 0.561 0.631 0.752 0.873 1.035 1.159 NaN];
 
-% Another alternative lookup table (d'Agostino 1986)
-% ctable(4,:) = [1.035 0.873 0.752 0.631 NaN];
+%-----------------------------
+% Exponential distribution
+%-----------------------------
+% Case 4: Table 4.11 from [3]
+ctable(5,:) = [NaN 0.736 0.916 1.062 1.321 1.591 1.959 2.244 2.534];
 
 
+% Select critical value
 cval = ctable(c,alphaVec==ip.Results.alpha);
       
 % Test statistic
 i = 1:n;
 A2 = -n - 1/n*sum( (2*i-1).*(log(z) + log(1-z(n+1-i))) );
 
-% correction factor for sample mean and variance
+
+% Note: A2 is not modified for cases 0 (Table 4.2) and 1 & 2 (Table 4.6)
 pval = NaN;
 if c==4
-    %A2 = A2 * (1+4/n-25/n^2);
-    A2 = A2 * (1.0 + 0.75/n + 2.25/n^2); % for the table by d'Agostino
-    if (0.600<A2 && A2<=13)
+    % Modified statistic for case 3
+    A2 = A2 * (1.0 + 0.75/n + 2.25/n^2); % [1] Table 4.7, replaces the less accurate correction factor (1+4/n-25/n^2)
+    
+    % p-values for case 3 ([1] p.127, Table 4.9)
+    if (0.600<A2)
         pval = exp(1.2937 - 5.709*A2 + 0.0186*A2*A2);
     end
     if (0.340<A2 && A2<=0.600)
@@ -121,4 +133,8 @@ if c==4
         pval = 1 - exp(-13.436 + 101.14*A2 - 223.73*A2*A2);
     end
 end
+if c==5
+    A2 = A2 * (1.0 + 0.6/n);
+end
+    
 H = A2 > cval;
