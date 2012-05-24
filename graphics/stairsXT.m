@@ -8,10 +8,10 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('x');
 ip.addRequired('f');
-ip.addParamValue('EdgeColor', 'k', @(s) ischar(s));
+ip.addParamValue('EdgeColor', 'k', @(s) ischar(s) || isvector(s));
 ip.addParamValue('FaceColor', []);
 ip.addParamValue('Bounds', 'closed', @(x) any(strcmpi(x, {'open', 'closed'})));
-ip.addParamValue('LineWidth', 1.5);
+ip.addParamValue('LineWidth', 1);
 ip.parse(x, f, varargin{:});
 
 if numel(x)>2
