@@ -47,7 +47,7 @@ function [probMotionType,motionChar,errFlag] = summarizeDiffAnRes(tracks,...
 %                    characteristics of each of these motion categories.
 %                       For each of these sub-fields, there are two
 %                    sub-sub-fields: 
-%           .distribution: Nx4 array. Each column belongs to a separate
+%           .distribution: Nx4 array. Each row belongs to a separate
 %                          trajectory in the category. The columns
 %                          store the diffusion coefficient, the confinement
 %                          radius, the other confinement dimension in the

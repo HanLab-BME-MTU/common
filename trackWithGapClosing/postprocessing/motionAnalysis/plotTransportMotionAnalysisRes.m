@@ -43,7 +43,7 @@ for iMC = 1 : numMotionChar
     n1 = hist(distrAway,binPos);
     n2 = hist(distrToward,binPos);
     n = max([n1 n2]);
-    figure('Name',motionChar{iMC})
+    figure('Name',[motionChar{iMC} '  ' num2str(indx2plot)])
     if strcmp(motionChar{iMC},'runTime') && pauseExists
         numSubPlots = 3;
     else

@@ -337,6 +337,7 @@ prefDir = NaN(numTrackSegments,probDim);
 %estimate the confinement radius of confined tracks
 if ~isempty(indxConf)
     for iTrack = indxConf'
+        %     for iTrack = 1 : numTrackSegments
 
         %get track coordinates
         xCoord = (tracks(iTrack,1:8:end))';

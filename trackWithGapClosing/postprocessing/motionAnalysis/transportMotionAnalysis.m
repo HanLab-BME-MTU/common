@@ -73,7 +73,7 @@ function [motionAnalysisWithErrBar,motionAnalysisNoErrBar,errFlag] = ...
 %                       (9) All not linear, i.e. 5+6+7
 %                       (10) All trajectories, i.e. 1+2+3+4+5+6+7.
 %                     Each entry contains 2 sub-sub-fields:
-%                       .values: Listing the pause time values.
+%                       .values: Listing all the values.
 %                       .stats : Showing the mean, median, std, min and max
 %                                of the distribution of values.
 %       motionAnalysisNoErrBar: Structure storing the results of analyzing
@@ -223,19 +223,22 @@ if isempty(tracks)
 end
 
 %retain only the diffusion analysis results of the tracks to keep
+diffAnalysisResRemove = diffAnalysisRes(indxRemove);
 diffAnalysisRes = diffAnalysisRes(indxKeep);
-trackClass = trackClass(indxKeep,:);
+% trackClass = trackClass(indxKeep,:);
 
 %show tracks kept and tracks removed for visual assessment
 if verbose >= 2
     if ~isempty(tracksRemove)
-        figure('Name','Removed tracks')
-        plotTracks2D(tracksRemove,[],'2',[],0,0,[],0,0);
+        %         figure('Name','Removed tracks')
+        plotTracksDiffAnalysis2D(tracksRemove,diffAnalysisResRemove,[],1,[],0,0);
+        %         plotTracks2D(tracksRemove,[],'2',[],0,1,[],0,0);
     else
         disp('No tracks removed');
     end
-    figure('Name','Retained tracks to be analyzed')
-    plotTracks2D(tracks,[],'2',[],0,0,[],0,0);
+    %     figure('Name','Retained tracks to be analyzed')
+    %     plotTracksDiffAnalysis2D(tracks,diffAnalysisRes,[],1,[],0,0);
+    plotTracks2D(tracks,[],'1',[],1,1,[],0,0);
     hold on
     plot(refCoord(1)*[1 1],refCoord(2)*[1 1],'kx','LineWidth',2,'MarkerSize',10)
 end

@@ -113,10 +113,19 @@ maskBlobs = ismember(labels, idx);
 if plotRes
 
     %get the blob edges from the final blob mask
-    edgesBlobs = double(edge(maskBlobs));
+    SE = strel('square',3);
+    edgesBlobs = imdilate(maskBlobs,SE) - maskBlobs;
 
     %scale the original image to be between 0 and 1
-    imageScaled = (image - min(image(:))) / (max(image(:)) - min(image(:)));
+    %actually scale it between the 1st and 99th percentiles
+    imageScaled = (image - prctile(image(:),1)) / (prctile(image(:),99) - prctile(image(:),1));
+    imageScaled(imageScaled<0) = 0;
+    imageScaled(imageScaled>1) = 1;
+
+    %plot image
+    figure, hold on
+    subplot(1,2,1)
+    imshow(imageScaled,[])
 
     %give the edge pixels a value of zero in the original image
     imageScaled(edgesBlobs==1) = 0;
@@ -126,10 +135,7 @@ if plotRes
     image3Color = repmat(imageScaled,[1 1 3]);
     image3Color(:,:,1) = image3Color(:,:,1) + edgesBlobs;
     
-    %plot image
-    figure, hold on
-    subplot(1,2,1)
-    imshow(image,[])
+    %plot mask edges
     subplot(1,2,2)
     imshow(image3Color,[]);
 
