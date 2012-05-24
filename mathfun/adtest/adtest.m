@@ -32,7 +32,7 @@
 
 function [H, pval, A2, cval] = adtest(x, varargin)
 
-alphaVec = [0.5 0.25 0.15 0.10 0.05 0.025 0.01 0.005 0.0025 0.001];
+alphaVec = [0.5 0.25  0.15  0.10  0.05  0.025 0.01  0.005 0.0025];
 
 ip = inputParser;
 ip.addRequired('x');
