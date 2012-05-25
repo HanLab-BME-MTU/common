@@ -1,7 +1,6 @@
 function [imfOut,noise] = testImf(imf,alpha)
 %This function tests the IMF significance by comparing all imf points with
 %the imf of a gaussian white noise
-%It uses the Anderson-Darling test (thanks to Francois)
 %
 %Usage:
 %     [auxImf,noise] = testIMF(imf)
@@ -19,13 +18,16 @@ function [imfOut,noise] = testImf(imf,alpha)
 %
 % See also: emdc
 %
+%Reference:
+%           The Hilbert-Huang Transform and Its Applications. Norden Huang,
+%           Samuel Shen. World Scientific. Chapter 5.
 %Marco Vilela, 2012
 
 [nImf,nObs] = size(imf);
 
 %This numbers work well. They are just the size of the white noise
 %genereted to test the imf's
-nSurr    = 10;
+nSurr    = 100;
 surrP    = nObs;
 
 %crude estimative of the noise variance
@@ -44,8 +46,10 @@ for i = 1:nImf
     imfTest = cell2mat(cellfun(@(x) getThImf(x,i),wnImf,'UniformOutput',0));
     %Test the ith imf against the noise ith imf
     if ~isempty(imfTest)
-        Ho = cell2mat(arrayfun(@(x) adtestk({imfTest,x},alpha),imf(i,:),'UniformOutput',0));
+        limit  = prctile(imfTest,100*[alpha/2 (1 - alpha/2)]);
+        %Null hypothesis that imf(i,j) is at the gaussian noise imf level
+        Ho     = bsxfun(@gt,imf(i,:),limit(2)) | bsxfun(@lt,imf(i,:),limit(1));
         imfOut(i,Ho == 1) = 0;
-        noise   = noise + imfOut(i,:);
+        noise  = noise + imfOut(i,:);
     end
 end
