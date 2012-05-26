@@ -1,5 +1,5 @@
 function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
-    detectSubResFeatures2D_StandAlone(movieParam,detectionParam,saveResults)
+    detectSubResFeatures2D_StandAlone(movieParam,detectionParam,saveResults,verbose)
 %DETECTSUBRESFEATURES2D_STANDALONE detects subresolution features in a series of images
 %
 %SYNOPSIS [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
@@ -71,6 +71,8 @@ function [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
 %           .filename     : Name of file where results should be saved.
 %                           Optional. Default: detectedFeatures.
 %                       Whole structure optional.
+%       verbose       : 1 to show progress while running, 0 otherwise.
+%                       Optional. Default: 1.
 %
 %       All optional variables can be entered as [] to use default values.
 %
@@ -247,6 +249,11 @@ else
     end
 end
 
+%check verbose state
+if nargin < 4 || isempty(verbose)
+    verbose = 1;
+end
+
 if hasImageDir
     %store the string version of the numerical index of each image
     enumString = repmat('0',lastImageNum,digits4Enum);
@@ -328,7 +335,9 @@ localMaxima = repmat(struct('cands',[]),numImagesRaw,1);
 for iWindow = 1 : numIntegWindow
     
     %initialize progress text
-    progressText(0,['Detecting local maxima with integration window = ' num2str(integWindow(iWindow))]);
+    if verbose
+        progressText(0,['Detecting local maxima with integration window = ' num2str(integWindow(iWindow))]);
+    end
     
     for iImage = 1 : numImagesInteg(iWindow)
         
@@ -470,7 +479,9 @@ for iWindow = 1 : numIntegWindow
         end
         
         %display progress
-        progressText(iImage/numImagesInteg(iWindow),['Detecting local maxima with integration window = ' num2str(integWindow(iWindow))]);
+        if verbose
+            progressText(iImage/numImagesInteg(iWindow),['Detecting local maxima with integration window = ' num2str(integWindow(iWindow))]);
+        end
         
     end %(for iImage = 1 : numImagesInteg(iWindow))
     
@@ -506,7 +517,9 @@ for iFrame = (find(imageExists==0))'
 end
 
 %go over all frames, remove redundant cands, and register empty frames
-progressText(0,'Removing redundant local maxima');
+if verbose
+    progressText(0,'Removing redundant local maxima');
+end
 for iImage = 1 : numImagesRaw
     
     %get the cands of this frame
@@ -604,7 +617,9 @@ for iImage = 1 : numImagesRaw
     end
     
     %display progress
-    progressText(iImage/numImagesRaw,'Removing redundant local maxima');
+    if verbose
+        progressText(iImage/numImagesRaw,'Removing redundant local maxima');
+    end
     
 end
 
@@ -646,11 +661,13 @@ if numSigmaIter
         psfSigma5 = ceil(5*psfSigma0);
         
         %initialize progress display
-        switch numIter
-            case 1
-                progressText(0,'Estimating PSF sigma');
-            otherwise
-                progressText(0,'Repeating PSF sigma estimation');
+        if verbose
+            switch numIter
+                case 1
+                    progressText(0,'Estimating PSF sigma');
+                otherwise
+                    progressText(0,'Repeating PSF sigma estimation');
+            end
         end
         
         %go over the first 50 good images and find isolated features
@@ -756,11 +773,13 @@ if numSigmaIter
             end %(if numFeats >= 1)
             
             %display progress
-            switch numIter
-                case 1
-                    progressText(iImage/max(images2use),'Estimating PSF sigma');
-                otherwise
-                    progressText(iImage/max(images2use),'Repeating PSF sigma estimation');
+            if verbose
+                switch numIter
+                    case 1
+                        progressText(iImage/max(images2use),'Estimating PSF sigma');
+                    otherwise
+                        progressText(iImage/max(images2use),'Repeating PSF sigma estimation');
+                end
             end
             
         end %(for iImage = images2use)
@@ -809,10 +828,12 @@ clear movieInfo
 movieInfo = repmat(struct('xCoord',[],'yCoord',[],'amp',[]),numImagesRaw,1);
 
 %initialize progress display
-if strcmp(calcMethod,'g')
-    progressText(0,'Mixture-model fitting');
-else
-    progressText(0,'Centroid calculation');
+if verbose
+    if strcmp(calcMethod,'g')
+        progressText(0,'Mixture-model fitting');
+    else
+        progressText(0,'Centroid calculation');
+    end
 end
 
 %go over all non-empty images ...
@@ -858,10 +879,12 @@ for iImage = goodImages
     end
     
     %display progress
-    if strcmp(calcMethod,'g')
-        progressText(iImage/numImagesRaw,'Mixture-model fitting');
-    else
-        progressText(iImage/numImagesRaw,'Centroid calculation');
+    if verbose
+        if strcmp(calcMethod,'g')
+            progressText(iImage/numImagesRaw,'Mixture-model fitting');
+        else
+            progressText(iImage/numImagesRaw,'Centroid calculation');
+        end
     end
     
 end

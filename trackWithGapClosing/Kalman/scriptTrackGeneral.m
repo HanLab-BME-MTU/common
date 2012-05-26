@@ -17,7 +17,7 @@ costMatrices(1).funcName = 'costMatRandomDirectedSwitchingMotionLink';
 parameters.linearMotion = 0; %use linear motion Kalman filter.
 
 parameters.minSearchRadius = 2; %minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
-parameters.maxSearchRadius = 3.5; %maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
+parameters.maxSearchRadius = 4.5; %maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
 parameters.brownStdMult = 3; %multiplication factor to calculate search radius from standard deviation.
 
 parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the linking (initial tracking) step.
@@ -43,7 +43,7 @@ costMatrices(2).funcName = 'costMatRandomDirectedSwitchingMotionCloseGaps';
 parameters.linearMotion = 0; %use linear motion Kalman filter.
 
 parameters.minSearchRadius = 2; %minimum allowed search radius.
-parameters.maxSearchRadius = 3.5; %maximum allowed search radius.
+parameters.maxSearchRadius = 4.5; %maximum allowed search radius.
 parameters.brownStdMult = 3*ones(gapCloseParam.timeWindow,1); %multiplication factor to calculate Brownian search radius from standard deviation.
 
 parameters.brownScaling = [0.25 0.01]; %power for scaling the Brownian search radius with time, before and after timeReachConfB (next parameter).
@@ -85,7 +85,7 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/talinAndCellEdge/120516_Cs2C3_Talin/analysisTalin/'; %directory where to save input and output
+saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaVandCellEdge/110114/Cs1_CHO02/Cs1_CHO02B/analysisAlphaV/'; %directory where to save input and output
 % saveResults.filename = 'tracksTest1DetectionAll1.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
@@ -100,7 +100,7 @@ probDim = 2;
 % [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...
 %     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
 
-for i = 1 : 12
+for i = 1 : 5
     movieInfoTmp((i-1)*1200+1:i*1200) = movieInfo((i-1)*1200+1:i*1200);
     saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
     [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
@@ -108,12 +108,12 @@ for i = 1 : 12
     clear movieInfoTmp
 end
 
-% i=12;
-% movieInfoTmp((i-1)*1200+1:14800) = movieInfo((i-1)*1200+1:14800);
-% saveResults.filename = ['tracks2All_' sprintf('%02i',i) '.mat'];
-% [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-% clear movieInfoTmp
+i=6;
+movieInfoTmp((i-1)*1200+1:6800) = movieInfo((i-1)*1200+1:6800);
+saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
+[tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
+    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+clear movieInfoTmp
 
 
 % for startFrame = 1 : 400 : 48000

@@ -2,8 +2,8 @@
 %% movie information
 movieParam.imageDir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaVandCellEdge/110114/Cs3_CHO03/Cs3_CHO03A/imagesAlphaV/'; %directory where images are
 movieParam.filenameBase = '110114_Cs3_CHO03A_'; %image file name base
-movieParam.firstImageNum = 2; %number of first image in movie
-movieParam.lastImageNum = 7200; %number of last image in movie
+movieParam.firstImageNum = 500; %number of first image in movie
+movieParam.lastImageNum = 510; %number of last image in movie
 movieParam.digits4Enum = 4; %number of digits used for frame enumeration (1-4).
 
 %% detection parameters
@@ -25,10 +25,13 @@ background.alphaLocMaxAbs = 0.01;
 detectionParam.background = background;
 
 %% save results
-saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaVandCellEdge/110114/Cs3_CHO03/Cs3_CHO03A/analysisAlphaV/'; %directory where to save input and output
-saveResults.filename = 'detectionAll1.mat'; %name of file where input and output are saved
-% saveResults = 0;
+% saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaVandCellEdge/110114/Cs3_CHO03/Cs3_CHO03A/analysisAlphaV/'; %directory where to save input and output
+% saveResults.filename = 'detectionTest1.mat'; %name of file where input and output are saved
+saveResults = 0;
+
+%% verbose state
+verbose = 0;
 
 %% run the detection function
 [movieInfo,exceptions,localMaxima,background,psfSigma] = ...
-    detectSubResFeatures2D_StandAlone(movieParam,detectionParam,saveResults);
+    detectSubResFeatures2D_StandAlone(movieParam,detectionParam,saveResults,verbose);
