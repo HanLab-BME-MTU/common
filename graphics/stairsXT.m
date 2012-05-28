@@ -26,7 +26,7 @@ if strcmpi(ip.Results.Bounds, 'closed')
     f = [0 f 0];
 end
 
-[xb,yb] = stairs(x-0.5, f);
+[xb,yb] = stairs(x-dx/2, f);
 hold on;
 if ~isempty(ip.Results.FaceColor)
     patch(xb, yb, ip.Results.FaceColor, 'EdgeColor', 'none')
