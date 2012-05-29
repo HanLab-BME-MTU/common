@@ -31,15 +31,17 @@ function [meanCC,CI] = correlationBootstrap(CC,CB,varargin)
 
 %Input check
 %SB: still need to find minimimum values for number of samples/variables
-ip=inputParser;
+ip = inputParser;
 ip.addRequired('CC',@(x) isnumeric(x) && size(x,2)>2);
 [nLag,nVar] = size(CC);
+
 ip.addRequired('CB',@(x) isnumeric(x) && isequal(size(x),[1 nVar]));
 ip.addOptional('nBoot',1e3,@isscalar);
 ip.addOptional('alpha',.05,@isscalar);
+
 ip.parse(CC,CB,varargin{:});
-nBoot=ip.Results.nBoot;
-alpha=ip.Results.alpha;
+nBoot = ip.Results.nBoot;
+alpha = ip.Results.alpha;
 
 % Fix bug when correlation function is equal to 1 or -1
 workCC   = CC;
@@ -62,4 +64,3 @@ meanCC = tanh( mean( statCC ) );
 % Arc tangent is a variance-stabilizing technique
 %Book: Zoubir, Iskander. Bootstrap techniques for signal processing. Page
 %53
-
