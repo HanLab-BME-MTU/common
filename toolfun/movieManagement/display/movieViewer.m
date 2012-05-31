@@ -309,10 +309,14 @@ hPosition=10;
 
 uicontrol(moviePanel, 'Style', 'togglebutton','String', 'Run movie',...
     'Position', [10 hPosition 100 20],'Callback',@(h,event) runMovie(h,guidata(h)));
-uicontrol(moviePanel, 'Style', 'checkbox','Tag','checkbox_saveMovie',...
-    'Value',0,'String', 'Save movie','Position', [150 hPosition 100 20]);
 uicontrol(moviePanel, 'Style', 'checkbox','Tag','checkbox_saveFrames',...
-    'Value',0,'String', 'Save frames','Position', [250 hPosition 100 20]);
+    'Value',0,'String', 'Save frames','Position', [150 hPosition 100 20]);
+uicontrol(moviePanel, 'Style', 'checkbox','Tag','checkbox_saveMovie',...
+    'Value',0,'String', 'Save movie','Position', [250 hPosition 100 20]);
+uicontrol(moviePanel, 'Style', 'popupmenu','Tag','popupmenu_movieFormat',...
+    'Value',1,'String', {'MOV';'AVI'},'Position', [350 hPosition 100 20]);
+
+
 
 if isa(userData.MO,'MovieData')
     % Create controls for scrollling through the movie
@@ -608,20 +612,31 @@ function runMovie(hObject,handles)
 
 userData = get(handles.figure1, 'UserData');
 nFrames = userData.MO.nFrames_;
-if get(hObject,'Value'),
-    set(hObject,'String','Stop movie');
-else
-    set(hObject,'String','Run movie');
+if get(hObject,'Value'), action = 'Run'; else action = 'Stop'; end
+set(hObject,'String',[action ' movie']);
+
+% Get frame/movies export status
+saveMovie = get(handles.checkbox_saveMovie,'Value');
+saveFrames = get(handles.checkbox_saveFrames,'Value');
+props = get(handles.popupmenu_movieFormat,{'String','Value'});
+movieFormat = props{1}{props{2}};
+
+if saveMovie,
+    moviePath = fullfile(userData.MO.outputDirectory_,['Movie.' lower(movieFormat)]);
 end
 
-if get(handles.checkbox_saveMovie,'Value');
-    % Initialize movie
-    MakeQTMovie('start',fullfile(userData.MO.outputDirectory_,'Movie.mov'));
+% Initialize movie output
+if saveMovie && strcmpi(movieFormat,'mov')
+    MakeQTMovie('start',moviePath);
     MakeQTMovie('quality',.9)
 end
 
-if get(handles.checkbox_saveFrames,'Value');
-    % Initialize frame output
+if saveMovie && strcmpi(movieFormat,'avi')
+    movieFrames(1:nFrames) = struct('cdata', [],'colormap', []);
+end
+
+% Initialize frame output
+if saveFrames;
     fmt = ['%0' num2str(ceil(log10(nFrames))) 'd'];
     frameName = @(frame) ['frame' num2str(frame, fmt) '.tif'];
     fpath = [userData.MO.outputDirectory_ filesep 'Frames'];
@@ -630,27 +645,25 @@ if get(handles.checkbox_saveFrames,'Value');
 end
 
 for iFrame=1:nFrames
-    if ~get(hObject,'Value'), return; end
+    if ~get(hObject,'Value'), return; end % Handle pushbutton press
     set(handles.slider_frame, 'Value',iFrame);
-    redrawScene(hObject, handles);
+    redrawScene(hObject, handles);    
     drawnow;
-    if get(handles.checkbox_saveMovie,'Value'), MakeQTMovie('addfigure'); end
-    if get(handles.checkbox_saveFrames,'Value');
-        print(getFigure(handles,'Movie'), '-dtiff', fullfile(fpath,frameName(iFrame)));
+    
+    % Get current frame for frame/movie export
+    hFig = getFigure(handles,'Movie');
+    if saveMovie && strcmpi(movieFormat,'mov'), MakeQTMovie('addfigure'); end
+    if saveMovie && strcmpi(movieFormat,'avi'), movieFrames(iFrame) = getframe(hFig); end
+    if saveFrames
+        print(hFig, '-dtiff', fullfile(fpath,frameName(iFrame)));
         fprintf('\b\b\b\b%3d%%', round(100*iFrame/(nFrames)));
     end
 end
-if get(handles.checkbox_saveFrames,'Value'); fprintf('\n'); end
 
-if get(handles.checkbox_saveMovie,'Value'), MakeQTMovie('finish'); end
-
-% mpath = [userData.MO.outputDirectory_ filesep 'Movie'];
-% mkClrDir(mpath);
-% fprintf('Generating movie... ');
-% fr = num2str(15);
-% cmd = ['ffmpeg -y -r ' fr ' -i ' fpath 'frame' fmt '.png' ' -r ' fr ' -b 50000k -bt 20000k ' mpath 'movie.mp4 > /dev/null 2>&1' ];
-% system(cmd);
-% fprintf('done.\n');
+% Finish frame/movie creation
+if saveFrames; fprintf('\n'); end
+if saveMovie && strcmpi(movieFormat,'mov'), MakeQTMovie('finish'); end
+if saveMovie && strcmpi(movieFormat,'avi'), movie2avi(movieFrames,moviePath); end
 
 function redrawScene(hObject, handles)
 
