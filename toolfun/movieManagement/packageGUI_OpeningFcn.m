@@ -52,7 +52,7 @@ ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
 ip.addRequired('packageName',@(x) isa(x,'char') || isa(x,'function_handle'));
-ip.addOptional('MD',[],@(x) isa(x,'MovieObject'));
+ip.addOptional('MO',[],@(x) isa(x,'MovieObject'));
 ip.parse(hObject,eventdata,handles,packageName,varargin{:});
 
 
@@ -70,20 +70,28 @@ assert(any(strcmp(superclasses(packageName),'Package')),...
 handles.output = hObject;
 userData = get(handles.figure1,'UserData');
 userData.packageName = packageName;
-userData.MD=ip.Results.MD;
-
-% Call package GUI error
-[copyright openHelpFile] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright);
 
 %If package GUI supplied without argument, saves a boolean which will be
 %read by packageNameGUI_OutputFcn
-if isempty(userData.MD)
+if isempty(ip.Results.MO)
     userData.startMovieSelectorGUI=true;
     set(handles.figure1,'UserData',userData);
     guidata(hObject, handles);
     return
 end
+
+if isa(ip.Results.MO,'MovieList')
+    userData.ML = ip.Results.MO;
+    userData.MD = [];
+    set(handles.pushbutton_status,'Enable','off');
+else
+    userData.MD=ip.Results.MO;
+    userData.ML = [];
+end
+
+% Call package GUI error
+[copyright openHelpFile] = userfcn_softwareConfig(handles);
+set(handles.text_copyright, 'String', copyright);
 
 % Singleton control
 try assert(~userData.init)
@@ -97,20 +105,20 @@ end
 
 
 % ----------------------------- Load MovieData ----------------------------
-nMovies = numel(userData.MD);
+nMovies = numel(ip.Results.MO);
 packageIndx = cell(1, nMovies);
 
 % I. Before loading MovieData, firstly check if the current package exists
 for i = 1:nMovies
     % Check for existing packages and create them if false
     packageIndx{i} = find(cellfun(@(x) isa(x,packageName),...
-        userData.MD(i).packages_),1);
+        ip.Results.MO(i).packages_),1);
     if packageIndx{i}
-        userData.package(i) = userData.MD(i).packages_{packageIndx{i}};
+        userData.package(i) = ip.Results.MO(i).packages_{packageIndx{i}};
     else
-        userData.MD(i).addPackage(packageConstr(userData.MD(i),...
-            userData.MD(i).outputDirectory_));
-        userData.package(i) = userData.MD(i).packages_{end};
+        ip.Results.MO(i).addPackage(packageConstr(ip.Results.MO(i),...
+            ip.Results.MO(i).outputDirectory_));
+        userData.package(i) = ip.Results.MO(i).packages_{end};
     end
     
     % Run sanity check to check basic dependencies are satisfied
@@ -131,10 +139,10 @@ processClassNames = userData.package(1).getProcessClassNames;
 
 % Multiple movies loop
 for i = 1:nMovies
-    if isempty(packageIndx{i}) && ~isempty(userData.MD(i).processes_)
+    if isempty(packageIndx{i}) && ~isempty(ip.Results.MO(i).processes_)
         recyclableProcIndx = cellfun(@(x) cellfun(@(y)isa(y,x),...
-            userData.MD(i).processes_),processClassNames,'UniformOutput',false);
-        recyclableProc{i}=userData.MD(i).processes_(any(vertcat(recyclableProcIndx{:}),1));
+            ip.Results.MO(i).processes_),processClassNames,'UniformOutput',false);
+        recyclableProc{i}=ip.Results.MO(i).processes_(any(vertcat(recyclableProcIndx{:}),1));
     end
 end
 
@@ -268,14 +276,14 @@ set(handles.text_packageName,'String',userData.crtPackage.getName);
 
 % Set movie explorer
 msg = {};
-if isa(userData.MD,'MovieData'), movieType = 'Movie'; else movieType = 'Movie list'; end
-for i = 1: length(userData.MD)
-    msg = cat(2, msg, {sprintf('  %s %d of %d', movieType, i, length(userData.MD))});
+if isa(ip.Results.MO,'MovieData'), movieType = 'Movie'; else movieType = 'Movie list'; end
+for i = 1: length(ip.Results.MO)
+    msg = cat(2, msg, {sprintf('  %s %d of %d', movieType, i, length(ip.Results.MO))});
 end
 set(handles.popupmenu_movie, 'String', msg, 'Value', userData.id);
 
 % Set option depen
-if length(userData.MD) == 1
+if length(ip.Results.MO) == 1
     set(handles.checkbox_runall, 'Visible', 'off')
     set(handles.pushbutton_left, 'Enable', 'off')
     set(handles.pushbutton_right, 'Enable', 'off')   

@@ -186,8 +186,9 @@ end
 function menu_file_open_Callback(~, ~, handles)
 % Call back function of 'New' in menu bar
 userData = get(handles.figure1,'Userdata');
-if isfield(userData,'MD'), arrayfun(@(x) x.save,userData.MD); end
-movieSelectorGUI('packageName',userData.packageName,'MD',userData.MD);
+if ~isempty(userData.MD), field = 'MD'; else field = 'ML'; end
+arrayfun(@(x) x.save,userData.(field));
+movieSelectorGUI('packageName',userData.packageName,field,userData.(field));
 delete(handles.figure1)
 
 % --------------------------------------------------------------------

@@ -70,6 +70,7 @@ ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
 ip.addParamValue('packageName','',@ischar);
 ip.addParamValue('MD',[],@(x) isempty(x) || isa(x,'MovieData'));
+ip.addParamValue('ML',[],@(x) isempty(x) || isa(x,'MovieList'));
 ip.parse(hObject,eventdata,handles,varargin{:});
 
 [copyright openHelpFile] = userfcn_softwareConfig(handles);
@@ -109,11 +110,17 @@ for i=1:nPackages
 end
 set(handles.uipanel_packages,'SelectionChangeFcn','');
 
-% Test a package preselection and update the corresponding radio button
+% Populate pre-loaded movies/movie lists
+if ~isempty(ip.Results.ML)
+    userData.ML=ip.Results.ML;
+    MD=arrayfun(@(x) horzcat(x.getMovies{:}),userData.ML,'Unif',0);
+    MD=horzcat(MD{:});
+    [~,index]=unique(arrayfun(@getFullPath,MD,'Unif',0));
+    userData.MD=MD(sort(index));
+end
+
 if ~isempty(ip.Results.MD)
-    userData.MD=ip.Results.MD;
-    contentlist =  arrayfun(@getFullPath,userData.MD,'UniformOutput',false);    
-    set(handles.listbox_movie, 'String', contentlist,'Value',1);
+    userData.MD=horzcat(userData.MD,ip.Results.MD);
 end
 
 % Load help icon from dialogicons.mat
@@ -164,22 +171,19 @@ end
 userData = get(handles.figure1, 'UserData');
 selectedPackage=get(get(handles.uipanel_packages, 'SelectedObject'),'UserData');
 if isequal(func2str(selectedPackage),'IntegratorPackage')
-    if isempty(userData.ML)
-        warndlg('Please load at least one movie list to continue.', 'Movie Selector', 'modal')
-        return
-    end
-    data = userData.ML;
+    type = 'movie list';
+    field = 'ML';
 else
-    if isempty(userData.MD)
-        warndlg('Please load at least one movie to continue.', 'Movie Selector', 'modal')
-        return
-    end
-    data = userData.MD;    
+    type = 'movie';
+    field = 'MD'; 
 end
 
+if isempty(userData.ML)
+    warndlg(['Please load at least one ' type ' to continue.'], 'Movie Selector', 'modal')
+    return
+end
 close(handles.figure1);
-packageGUI(selectedPackage,data);
-
+packageGUI(selectedPackage,userData.(field));
 
 % --- Executes on selection change in listbox_movie.
 function listbox_movie_Callback(hObject, eventdata, handles)
@@ -285,7 +289,6 @@ switch class(M)
         if isempty(index)
             msg = sprintf('All movie data in movie list file %s has already been added to the movie list box.', M.movieListFileName_);
             warndlg(msg,'Warning','modal');
-            return
         end
                   
         % Healthy Movie Data        

@@ -21,7 +21,8 @@ userData.statusM(userData.id).Checked = userfcn_saveCheckbox(handles);
 set(handles.figure1, 'UserData', userData)
 
 % Determine the movie(s) to be processed
-nMovies = length(userData.MD); % number of movies
+if ~isempty(userData.MD), field='MD'; else field = 'ML'; end
+nMovies = length(userData.(field)); % number of movies
 if get(handles.checkbox_runall, 'Value')
     movieList = circshift(1:nMovies,[0 -(userData.id-1)]);
 else
@@ -250,8 +251,8 @@ basicLogMsg = cell(size(movieException));
 extendedLogMsg = cell(size(movieException));
 for i = errorMovies
     % Format movie log message
-    basicLogMsg{i} = sprintf('Movie %d - %s:\n\n', i, ...
-        [userData.MD(i).getPath filesep userData.MD(i).getFilename]);
+    if strcmp(field,'MD'), type = 'Movie'; else type = 'Movie list'; end
+    basicLogMsg{i} = sprintf('%s %d - %s:\n\n', type, i, userData.(field)(i).getFullPath);
     extendedLogMsg{i}=basicLogMsg{i};
     
     % Read exception message and add causes message if any

@@ -49,8 +49,8 @@ set(handles.text_copyright, 'String', copyright)
 % Get current package, movie data and process
 userData.handles_main = guidata(userData.mainFig);
 userData_main = get(userData.mainFig, 'UserData');
-userData.MD = userData_main.MD(userData_main.id);
-if isa(userData.MD,'MovieList'),userData.ML=userData.MD; end
+if ~isempty(userData_main.MD), field='MD'; else field = 'ML'; end
+userData.(field) = userData_main.(field)(userData_main.id);
 userData.crtPackage = userData_main.crtPackage;
 
 % If constructor is not inherited from abstract class, read it from package
@@ -85,7 +85,7 @@ userData.colormap = userData_main.colormap;
 % If process does not exist, create a default one in user data.
 if isempty(userData.crtProc)
     try
-        userData.crtProc = userData.procConstr(userData.MD, ...
+        userData.crtProc = userData.procConstr(userData.(field), ...
             userData.crtPackage.outputDirectory_);
     catch ME
         if ~isequal(ME.identifier,'MATLAB:class:MethodRestricted')

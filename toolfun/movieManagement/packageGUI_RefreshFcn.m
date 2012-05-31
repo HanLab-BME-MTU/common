@@ -25,8 +25,9 @@ showHandles = arrayfun(@(i)handles.(['pushbutton_show_',num2str(i)]),1:nProc);
 set(setupHandles,'Enable','on');
 
 % Set movie data path
+if ~isempty(userData.MD), field='MD'; else field = 'ML'; end
 set(handles.edit_path, 'String', ...
-    [userData.MD(userData.id).getPath filesep userData.MD(userData.id).getFilename])
+    [userData.(field)(userData.id).getPath filesep userData.(field)(userData.id).getFilename])
 
 % Bold the name of set-up processes
 setupProc = ~cellfun(@isempty,userData.crtPackage.processes_);

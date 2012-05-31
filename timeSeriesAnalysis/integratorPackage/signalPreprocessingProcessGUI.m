@@ -53,13 +53,13 @@ userData=get(handles.figure1,'UserData');
 funParams = userData.crtProc.funParams_;
 
 % Set up available movies
-set(handles.listbox_availableMovies,'String',userData.MD.movieDataFile_, ...
-    'UserData',1:numel(userData.MD.getMovies));
+set(handles.listbox_availableMovies,'String',userData.ML.movieDataFile_, ...
+    'UserData',1:numel(userData.ML.getMovies));
 
 movieIndex = funParams.MovieIndex;
 
 if ~isempty(movieIndex)
-    movieString = userData.MD.movieDataFile_(movieIndex);
+    movieString = userData.ML.movieDataFile_(movieIndex);
 else
     movieString = {};
 end
@@ -67,7 +67,7 @@ end
 set(handles.listbox_selectedMovies,'String',movieString,...
     'UserData',movieIndex,'Callback',@(h,event)update_preview(h,event,guidata(h)));
 
-signal=userData.MD.getMovies{1}.getSampledOutput;
+signal=userData.ML.getMovies{1}.getSampledOutput;
 nSignal=numel(signal);
 % Create templates for GUI generation
 allTrends=SignalPreprocessingProcess.getTrends;

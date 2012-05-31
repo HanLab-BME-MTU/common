@@ -27,6 +27,7 @@ end
 
 % Get the main figure userData
 userData = get(handles.figure1, 'UserData');
+if isfield(userData,'MD'), field='MD'; else field = 'ML'; end
 
 % Check if the current process is equal to the package process (to cover
 % empty processes as well as new subclass processes)
@@ -34,10 +35,10 @@ if ~isequal(userData.crtPackage.processes_{userData.procID},userData.crtProc)
     
     if isempty(userData.crtPackage.processes_{userData.procID})
         % Create a new process and set it in the package
-        userData.MD.addProcess(userData.crtProc);
+        userData.(field).addProcess(userData.crtProc);
         userData.crtPackage.setProcess(userData.procID,userData.crtProc);
     else
-        userData.MD.replaceProcess(userData.crtPackage.processes_{userData.procID},userData.crtProc);
+        userData.(field).replaceProcess(userData.crtPackage.processes_{userData.procID},userData.crtProc);
     end
        
 end
@@ -51,7 +52,7 @@ packageGUI_RefreshFcn(userData.handles_main,'refresh')
 userData_main = get(userData.mainFig, 'UserData');
 
 if get(handles.checkbox_applytoall, 'Value'),
-    moviesId = setdiff(1:numel(userData_main.MD),userData_main.id);
+    moviesId = setdiff(1:numel(userData_main.(field)),userData_main.id);
 else
     moviesId=[];
 end
@@ -62,15 +63,15 @@ for i = moviesId
     % if process classes differ, create a new process with default parameters
     if ~strcmp(class(userData_main.package(i).processes_{userData.procID}),...
             class(userData.crtProc))
-        newProcess = userData.procConstr(userData_main.MD(i), ...
+        newProcess = userData.procConstr(userData_main.(field)(i), ...
             userData_main.package(i).outputDirectory_);
         
         % if package process is empty, add new process and associate it
         if isempty(userData_main.package(i).processes_{userData.procID})
-            userData_main.MD(i).addProcess(newProcess);
+            userData_main.(field)(i).addProcess(newProcess);
             userData_main.package(i).setProcess(userData.procID, newProcess);
         else
-            userData_main.MD(i).replaceProcess(userData_main.package(i).processes_{userData.procID},newProcess);
+            userData_main.(field)(i).replaceProcess(userData_main.package(i).processes_{userData.procID},newProcess);
         end
     end
     
