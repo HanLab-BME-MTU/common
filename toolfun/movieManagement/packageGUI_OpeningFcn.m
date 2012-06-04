@@ -70,6 +70,8 @@ assert(any(strcmp(superclasses(packageName),'Package')),...
 handles.output = hObject;
 userData = get(handles.figure1,'UserData');
 userData.packageName = packageName;
+userData.MD = [];
+userData.ML = [];
 
 %If package GUI supplied without argument, saves a boolean which will be
 %read by packageNameGUI_OutputFcn
@@ -82,11 +84,9 @@ end
 
 if isa(ip.Results.MO,'MovieList')
     userData.ML = ip.Results.MO;
-    userData.MD = [];
     set(handles.pushbutton_status,'Enable','off');
 else
     userData.MD=ip.Results.MO;
-    userData.ML = [];
 end
 
 % Call package GUI error
