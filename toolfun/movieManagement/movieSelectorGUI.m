@@ -177,7 +177,7 @@ else
     field = 'MD'; 
 end
 
-if isempty(userData.ML)
+if isempty(userData.(field))
     warndlg(['Please load at least one ' type ' to continue.'], 'Movie Selector', 'modal')
     return
 end
