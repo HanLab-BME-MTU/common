@@ -174,13 +174,7 @@ userData.statusM = repmat( struct('IconType', {cell(1,nProc)}, 'Msg', {cell(1,nP
 % -----------------------Load and set up icons----------------------------
 
 % Load icon images from dialogicons.mat
-load lccbGuiIcons.mat
-
-% Save Icon data to GUI data
-userData.passIconData = passIconData;
-userData.errorIconData = errorIconData;
-userData.warnIconData = warnIconData;
-userData.questIconData = questIconData;
+userData = loadLCCBIcons(userData);
 
 % Set figure colormap
 supermap(1,:) = get(hObject,'color');
@@ -190,7 +184,7 @@ userData.colormap = supermap;
 
 % Set up package help. 
 set(handles.figure1,'CurrentAxes',handles.axes_help);
-Img = image(questIconData); 
+Img = image(userData.questIconData); 
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
@@ -207,6 +201,8 @@ templateTag{3} = 'pushbutton_show';
 templateTag{4} = 'pushbutton_set';
 templateTag{5} = 'axes_prochelp';
 templateTag{6} = 'pushbutton_open';
+
+set(handles.(templateTag{6}),'CData',userData.openIconData);
 
 % templateTag{6} = 'pushbutton_clear'; To be implemented someday?
 procTag=templateTag;
@@ -233,7 +229,7 @@ for i = 1:nProc
     set(handles.(procTag{1}),'String',checkboxString)
     
     set(handles.figure1,'CurrentAxes',handles.(procTag{5}));
-    Img = image(questIconData);
+    Img = image(userData.smallquestIconData);
     set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
         'visible','off','YDir','reverse');  
     set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);

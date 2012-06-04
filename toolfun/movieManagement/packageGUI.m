@@ -22,7 +22,7 @@ function varargout = packageGUI(varargin)
 
 % Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 01-Jun-2012 22:30:58
+% Last Modified by GUIDE v2.5 03-Jun-2012 14:40:28
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
