@@ -282,5 +282,9 @@ userData = get(handles.figure1, 'UserData');
 prop=get(hObject,'Tag');
 procID = str2double(prop(length('pushbutton_show_')+1:end));
 
-cmd = sprintf('open %s',userData.crtPackage.processes_{procID}.funParams_.OutputDirectory);
-system(cmd);
+outputDir = userData.crtPackage.processes_{procID}.funParams_.OutputDirectory;
+if ispc
+    winopen(outputDir);
+else
+    system(sprintf('open %s',outputDir));
+end
