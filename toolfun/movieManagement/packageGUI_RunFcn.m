@@ -236,7 +236,7 @@ end
 packageGUI_RefreshFcn(handles,'initialize');
 end
 
-function status = generateReport(movieException,userData,type)
+function status = generateReport(movieException,userData,reportType)
 % Generate report from movie exception cell array
 
 % Check exception status
@@ -251,16 +251,24 @@ basicLogMsg = cell(size(movieException));
 extendedLogMsg = cell(size(movieException));
 for i = errorMovies
     % Format movie log message
-    if strcmp(field,'MD'), type = 'Movie'; else type = 'Movie list'; end
+    if ~isempty(userData.MD), 
+        field = 'MD';
+        type = 'Movie'; 
+    else
+        field = 'ML';
+        type = 'Movie list'; 
+    end
     basicLogMsg{i} = sprintf('%s %d - %s:\n\n', type, i, userData.(field)(i).getFullPath);
     extendedLogMsg{i}=basicLogMsg{i};
     
     % Read exception message and add causes message if any
     for j = 1:length(movieException{i})
-        basicLogMsg{i} = [basicLogMsg{i} sprintf('-- %s\n',...
-            movieException{i}(j).getReport('extended','hyperlinks','off'))];
+        basicLogMsg{i} = [basicLogMsg{i} '--'  ...
+            movieException{i}(j).getReport('basic','hyperlinks','off') sprintf('\n')];
         extendedLogMsg{i} = [extendedLogMsg{i} sprintf('-- %s\n\n', movieException{i}(j).message)];
         if ~isempty(movieException{i}(j).cause)
+            basicLogMsg{i} = [basicLogMsg{i},sprintf('\nCaused by:\n%s\n',...
+                movieException{i}(j).cause{1}.getReport('basic','hyperlinks','off'))];
             extendedLogMsg{i} = [extendedLogMsg{i},...
                 movieException{i}(j).cause{1}.getReport('extended','hyperlinks','off')];
         end
@@ -270,10 +278,10 @@ for i = errorMovies
 end
 
 % Add report information
-if strcmpi(type,'preprocessing'), 
+if strcmpi(reportType,'preprocessing'), 
     additionalText=['Please solve the above problems before continuing.'...
         '\n\nThe movie(s) could not be processed.'];
-elseif strcmpi(type,'postprocessing'), 
+elseif strcmpi(reportType,'postprocessing'), 
     additionalText=...
         ['Please verify your settings are correct. '...
         'Feel free to contact us if you have question regarding this error.'...
