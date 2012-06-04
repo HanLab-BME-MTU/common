@@ -22,7 +22,7 @@ function varargout = packageGUI(varargin)
 
 % Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 01-May-2012 08:46:45
+% Last Modified by GUIDE v2.5 01-Jun-2012 22:30:58
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -271,3 +271,16 @@ else
     newstatus='on'; 
 end
 set(hObject,'Checked',newstatus);
+
+
+% --- Executes on button press in pushbutton_open.
+function pushbutton_open_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_open (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+userData = get(handles.figure1, 'UserData');
+prop=get(hObject,'Tag');
+procID = str2double(prop(length('pushbutton_show_')+1:end));
+
+cmd = sprintf('open %s',userData.crtPackage.processes_{procID}.funParams_.OutputDirectory);
+system(cmd);

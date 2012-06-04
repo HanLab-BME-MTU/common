@@ -22,6 +22,7 @@ userData = get(handles.figure1, 'UserData');
 nProc = size(userData.dependM, 1);
 setupHandles = arrayfun(@(i)handles.(['checkbox_',num2str(i)]),1:nProc);
 showHandles = arrayfun(@(i)handles.(['pushbutton_show_',num2str(i)]),1:nProc);
+openHandles = arrayfun(@(i)handles.(['pushbutton_open_',num2str(i)]),1:nProc);
 set(setupHandles,'Enable','on');
 
 % Set movie data path
@@ -39,6 +40,8 @@ successProc = false(1,nProc);
 successProc(setupProc) = cellfun(@(x) x.success_,userData.crtPackage.processes_(setupProc));
 set(showHandles(successProc),'Enable','on');
 set(showHandles(~successProc),'Enable','off');
+set(openHandles(successProc),'Enable','on');
+set(openHandles(~successProc),'Enable','off');
 
 % Run sanityCheck on package 
 % if strcmp(type, 'initialize'), full=true; else full=false; end

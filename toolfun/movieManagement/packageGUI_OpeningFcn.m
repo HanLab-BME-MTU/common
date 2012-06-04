@@ -206,6 +206,8 @@ templateTag{2} = 'axes_icon';
 templateTag{3} = 'pushbutton_show';
 templateTag{4} = 'pushbutton_set';
 templateTag{5} = 'axes_prochelp';
+templateTag{6} = 'pushbutton_open';
+
 % templateTag{6} = 'pushbutton_clear'; To be implemented someday?
 procTag=templateTag;
 set(handles.figure1,'Position',...
@@ -235,7 +237,7 @@ for i = 1:nProc
     set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
         'visible','off','YDir','reverse');  
     set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-        
+    
     if openHelpFile
         set(Img, 'UserData', struct('class', processClassName))
     end
