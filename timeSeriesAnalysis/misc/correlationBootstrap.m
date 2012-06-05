@@ -55,7 +55,8 @@ if matlabpool('size')
     opt = statset('UseParallel','always');
 end
 
-[confI,statCC] = bootci(nBoot,{@(x) nanmean(atanh(x)),workCC'},'alpha',alpha,...
+
+[confI,statCC] = bootci(nBoot,{@(x) nanmean(atanh(x)),workCC},'alpha',alpha,...
           'type','bca','Options',opt);
 
 CI     = tanh( confI );
