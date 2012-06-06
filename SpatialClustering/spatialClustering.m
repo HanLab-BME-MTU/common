@@ -1,4 +1,4 @@
-function [kr,lr,pcr]= spatialClustering(mpm,imsize,dist,plotMask,closureRadius,dilationRadius,doFill);
+function [kr,lr,pcr]= spatialClustering(mpm,imsize,dist,plotMask,closureRadius,dilationRadius,doFill,sparse);
 % spatialClustering puts together all functions required to calculate
 % Ripley's functions with border correction
 %           
@@ -13,6 +13,9 @@ function [kr,lr,pcr]= spatialClustering(mpm,imsize,dist,plotMask,closureRadius,d
 %           closureRadius =   radius for disk used in closure
 %           dilationRadius = radius for dialation
 %           doFill = 1 to fill mask, 0 to not fill
+%           sparse: true to measure distances using graph based algorithm
+%                   that creates sparse matrix (might be faster for large 
+%                   data sets) 
 %   OUTPUTS                    
 %           kr:     Ripley's K-function 
 %           lr:     Besag's L-function = sqrt(K(r))-r
@@ -37,11 +40,14 @@ end
 if nargin < 5 || isempty(closureRadius)
     closureRadius = 20;
 end
-if nargin < 5 || isempty(dilationRadius)
+if nargin < 6 || isempty(dilationRadius)
     dilationRadius = 5;
 end
-if nargin < 5 || isempty(doFill)
+if nargin < 7 || isempty(doFill)
     doFill = 0;
+end
+if nargin < 8 || isempty(doFill)
+    sparse = 0;
 end
 
 imsizS = [imsize(2) imsize(1)];
