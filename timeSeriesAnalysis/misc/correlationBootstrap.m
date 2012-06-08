@@ -50,17 +50,25 @@ workCC(abs(CC)==1)=workCC(abs(CC)==1)-sign(workCC(abs(CC)==1))*1e-9;
 %Elimination of values below the CB
 workCC( abs(CC) < repmat( abs(CB),nLag,1 ) ) = 0;
 
+%Exclude full NaN rows 
+exclude = find(sum(isnan(workCC)==1,2) == size(workCC,2));
+workCC(exclude,:) = [];
+
+
+meanCC = nan(nLag,1);
+
 opt = statset('UseParallel','never');
 if matlabpool('size')
     opt = statset('UseParallel','always');
 end
 
 
-[confI,statCC] = bootci(nBoot,{@(x) nanmean(atanh(x)),workCC},'alpha',alpha,...
+[confI,statCC] = bootci(nBoot,{@(x) nanmean(atanh(x)),workCC'},'alpha',alpha,...
           'type','bca','Options',opt);
 
 CI     = tanh( confI );
-meanCC = tanh( mean( statCC ) );
+
+meanCC( setdiff(1:nLag,exclude) ) = tanh( mean( statCC ) );
 
 % Arc tangent is a variance-stabilizing technique
 %Book: Zoubir, Iskander. Bootstrap techniques for signal processing. Page
