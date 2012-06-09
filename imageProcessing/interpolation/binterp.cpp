@@ -1,6 +1,6 @@
 /* [] = binterp(signal, coords);
  *
- * Francois Aguet ? May 2012 (last modified May 11, 2012)
+ * Francois Aguet, May 2012 (last modified May 11, 2012)
  *
  * Compilation:
  * Mac/Linux: mex -I/usr/local/include -I../../mex/include binterp.cpp
@@ -8,6 +8,8 @@
  */
 
 #include <iostream>
+#include <cstring> // memcpy
+#include <algorithm> // transform
 #include <math.h>
 #include "mex.h"
 #include "interpolator.h"
