@@ -275,16 +275,19 @@ set(hObject,'Checked',newstatus);
 
 % --- Executes on button press in pushbutton_open.
 function pushbutton_open_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_open (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 userData = get(handles.figure1, 'UserData');
 prop=get(hObject,'Tag');
 procID = str2double(prop(length('pushbutton_show_')+1:end));
 
+% Use the OS-specific command to open result in exploration window
 outputDir = userData.crtPackage.processes_{procID}.funParams_.OutputDirectory;
 if ispc
     winopen(outputDir);
+elseif ismac
+    system(sprintf('open %s',regexptranslate('escape',outputDir)));
 else
-    system(sprintf('open %s',outputDir));
+    msgbox(sprintf('Results can be found under %s',regexptranslate('escape',outputDir)));
+    % SB: Following command not working under Ubuntu (as well as gnome-open
+    % & nautilus)
+    % system(sprintf('xdg-open %s',regexptranslate('escape',outputDir)));
 end
