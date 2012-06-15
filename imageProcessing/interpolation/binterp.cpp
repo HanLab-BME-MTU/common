@@ -4,7 +4,7 @@
  *
  * Compilation:
  * Mac/Linux: mex -I/usr/local/include -I../../mex/include binterp.cpp
- * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT"  -I"..\..\mex\include" -output binterp binterp.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT"  -I"..\..\mex\include" binterp.cpp
  */
 
 #include <iostream>
