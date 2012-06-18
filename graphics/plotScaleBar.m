@@ -104,5 +104,5 @@ textProps = {'Color', color, 'FontUnits', 'normalized',...
 hScaleBar(1) = fill([x0 x0+width x0+width x0], [y0+height y0+height y0 y0],...
     color, 'EdgeColor', 'none', 'Parent', ip.Results.Handle);
 if ~isempty(label)
-    hScaleBar(2) = text(tx, y0+height, label, textProps{:});
+    hScaleBar(2) = text(tx, y0+height, label, textProps{:}, 'Parent', ip.Results.Handle);
 end
