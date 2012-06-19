@@ -141,9 +141,9 @@ for k = 1:ng
     
     mu = M(1,:);
     if plotWhiskers
-        he = errorbar(xa{k}, p25, w1-p25, zeros(size(mu)), 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth);
+        he = errorbar(xa{k}, p25, w1-p25, zeros(size(mu)), 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
         setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
-        he = errorbar(xa{k}, p75, zeros(size(mu)), w2-p75, 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth);
+        he = errorbar(xa{k}, p75, zeros(size(mu)), w2-p75, 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
         setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
     end
     
@@ -184,7 +184,7 @@ for k = 1:ng
     % SEM
     if plotSEM
         sigma = M(2,:);
-        he = errorbar(xa{k}, mu, sigma, 'k', 'LineStyle', 'none', 'LineWidth', 2);
+        he = errorbar(xa{k}, mu, sigma, 'k', 'LineStyle', 'none', 'LineWidth', 2, 'HandleVisibility', 'off');
         setErrorbarStyle(he, 0.15);
     end
 end
