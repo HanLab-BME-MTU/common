@@ -171,7 +171,7 @@ classdef TrackingProcess < DataProcessingProcess
                        
             funParams.ChannelIndex =1:numel(owner.channels_);
             funParams.DetProcessIndex = [];
-            funParams.OutputDirectory = [outputDir  filesep 'Tracking'];
+            funParams.OutputDirectory = [outputDir  filesep 'tracks'];
             
             % --------------- gapCloseParam ----------------
             funParams.gapCloseParam.timeWindow = 5; %IMPORTANT maximum allowed time gap (in frames) between a track segment end and a track segment start that allows linking them.
