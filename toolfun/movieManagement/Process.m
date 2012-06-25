@@ -145,6 +145,17 @@ classdef Process < hgsetget
             end        
         end
         
+                
+        function setDisplayMethod(obj,iOutput,iChan,displayMethod)
+            
+            assert(isa(displayMethod(),'MovieDataDisplay'));
+            try
+                delete(obj.displayMethod_{iOutput,iChan});                
+            end 
+            obj.displayMethod_{iOutput,iChan} = displayMethod;
+        end
+        
+        
         function setInFilePaths(obj,paths)
             %  Set input file paths
             obj.inFilePaths_=paths;
@@ -212,11 +223,16 @@ classdef Process < hgsetget
             end
             
             % Create graphic tag and delegate drawing to the display class
-            tag = [obj.getName '_channel' num2str(iChan) '_output' num2str(iOutput)];
+            tag = ['process' num2str(obj.getIndex) '_channel' num2str(iChan) '_output' num2str(iOutput)];
             drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
                 2*numel(fieldnames(ip.Unmatched)),1);
             h=obj.displayMethod_{iOutput,iChan}.draw(data,tag,drawArgs{:});
-        end       
+        end     
+        
+        function index = getIndex(obj)
+            index = find(cellfun(@(x) isequal(x,obj),obj.owner_.processes_));
+            assert(numel(index)==1);
+        end
     end
 
     methods (Static,Abstract)

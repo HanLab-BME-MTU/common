@@ -79,7 +79,7 @@ classdef SignalPreprocessingProcess < TimeSeriesProcess
             end
             
             % Delegate to the corresponding method
-            tag = [obj.getName '_input' num2str(iInput)];
+            tag = ['process' num2str(obj.getIndex) '_input' num2str(iInput)];
             drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
                 2*numel(fieldnames(ip.Unmatched)),1);
             input=obj.getInput;

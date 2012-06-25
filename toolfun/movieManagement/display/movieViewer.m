@@ -906,12 +906,12 @@ tokens = regexp(overlayTag,'_channel(\d+)$','tokens');
 if ~isempty(tokens)
     iChan = str2double(tokens{1}{1});
     inputArgs={iChan,frameNr};
-    graphicTag =[userData.MO.processes_{procId}.getName '_channel'...
+    graphicTag =['process' num2str(procId) '_channel'...
         num2str(iChan) '_output' num2str(iOutput)];
 else
     iChan = [];
     inputArgs={frameNr};
-    graphicTag = [userData.MO.processes_{procId}.getName '_output' num2str(iOutput)];
+    graphicTag = ['process' num2str(procId) '_output' num2str(iOutput)];
 end
 
 % Draw or delete the overlay depending on the checkbox value
