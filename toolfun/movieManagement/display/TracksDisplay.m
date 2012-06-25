@@ -19,25 +19,33 @@ classdef TracksDisplay < MovieDataDisplay
         function h=initDraw(obj,tracks,tag,varargin)
             nTracks = numel(tracks);
             h=-ones(nTracks,3);
+                        
             % Get track length and display valid tracks
             trackLengths = cellfun(@numel,{tracks.tracksCoordAmpCG})/8;  
             validTracks = find(trackLengths>0);
+            
             for i=validTracks
                 xData= tracks(i).tracksCoordAmpCG(max(1,1+8*(trackLengths(i)-obj.dragtailLength)):8:end);
                 yData= tracks(i).tracksCoordAmpCG(max(2,2+8*(trackLengths(i)-obj.dragtailLength)):8:end);
                 % check gap is not exclusively composed of NaN's (e.g.
                 % gaps with a small dragtail)
                 if ~all(isnan(xData)) 
+                    % Set color depending if track is classified or not
+                    if isfield(tracks,'label')
+                        color = obj.Color(mod(tracks(i).label,size(obj.Color,1))+1,:);
+                    else
+                        color =obj.Color;
+                    end
+                    
                     h(i,1)=plot(xData(~isnan(xData)),yData(~isnan(yData)),...
-                        'Linestyle',obj.GapLinestyle','Color',obj.Color,...
+                        'Linestyle',obj.GapLinestyle','Color',color,...
                         varargin{:});
-                    h(i,2)=plot(xData,yData,...
-                        'Linestyle',obj.Linestyle,'Color',obj.Color,...
-                        varargin{:});
+                    h(i,2)=plot(xData,yData,'Linestyle',obj.Linestyle,...
+                        'Color',color,varargin{:});
                     if obj.showLabel
                         h(i,3) = text(xData(find(~isnan(xData),1,'last'))+2,...
                             yData(find(~isnan(yData),1,'last'))+2,num2str(i),...
-                            'Color',obj.Color);
+                            'Color',color);
                     end
                 end
             end
