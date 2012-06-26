@@ -25,7 +25,6 @@
 %             c_pstd :
 %            sigma_r : standard deviation of the background (residual)
 %         SE_sigma_r : standard error of sigma_r
-%            pval_KS : p-value of the Kolomogorv-Smirnov test on the residuals (p > 0.05 -> Gaussian)
 %            pval_Ar : p-value of an amplitude vs. background noise test (p > 0.05 -> significant amplitude)
 %
 %
