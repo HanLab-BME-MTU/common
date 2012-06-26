@@ -612,7 +612,7 @@ function runMovie(hObject,handles)
 
 userData = get(handles.figure1, 'UserData');
 nFrames = userData.MO.nFrames_;
-if get(hObject,'Value'), action = 'Run'; else action = 'Stop'; end
+if get(hObject,'Value'), action = 'Stop'; else action = 'Run'; end
 set(hObject,'String',[action ' movie']);
 
 % Get frame/movies export status
