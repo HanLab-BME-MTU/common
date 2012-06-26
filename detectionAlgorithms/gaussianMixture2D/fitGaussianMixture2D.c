@@ -1,6 +1,6 @@
-/* [prmVect prmStd covarianceMatrix residuals Jacobian] = fitGaussian2Dmex(prmVect, initValues, mode);
+/* [prmVect prmStd covarianceMatrix residuals Jacobian] = fitGaussianMixture2D(image, prmVect, mode);
  *
- * (c) Francois Aguet, 2011 (last modified 03/15/2012)
+ * (c) Francois Aguet, 2011 (last modified 06/26/2012)
  *
  * Compilation:
  * Mac/Linux: mex -I/usr/local/include -lgsl -lgslcblas fitGaussianMixture2D.c
@@ -104,6 +104,7 @@ static int df_dc(double *J, int i, argStruct_t *argStruct) {
 int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
     
     dataStruct_t *data = (dataStruct_t *)params;
+
     int nx = data->nx;
     int b = nx/2, i, k;
     int np = data->np;
@@ -111,7 +112,7 @@ int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
     double *buffer = data->buffer;
     double *gx = data->gx;
     double *gy = data->gy;
-    
+
     // update prmVect with new estimates
     for (i=0; i<data->nparam; ++i) {
         data->prmVect[data->estIdx[i]] = gsl_vector_get(x, i);
@@ -122,7 +123,7 @@ int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
     double d = 2.0*sigma*sigma;
     double c = data->prmVect[np-1];
     
-    int g, idx;
+    int gi, idx;
     div_t divRes;
     
     // loop through non-NaN pixels; background component of cost function
@@ -133,10 +134,10 @@ int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
     }
     
     // add individual gaussians to cost
-    for (g=0; g<3*data->ng; g+=3) {
-        xp = data->prmVect[g];
-        yp = data->prmVect[g+1];
-        A  = data->prmVect[g+2];
+    for (gi=0; gi<data->ng; ++gi) {
+        xp = data->prmVect[3*gi];
+        yp = data->prmVect[3*gi+1];
+        A  = data->prmVect[3*gi+2];
         
         // gaussian kernel
         for (i=0; i<nx; ++i) {
@@ -157,7 +158,6 @@ int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
     for (i=0; i<data->nValid; ++i) {
         gsl_vector_set(f, i, buffer[i]);
     }
-    
     return GSL_SUCCESS;
 }
 
@@ -166,6 +166,7 @@ int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
 int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J) {
     
     dataStruct_t *data = (dataStruct_t *)params;
+
     // initialize Jacobian
     int nJ = data->nparam * data->nValid;
     memset(data->Jbuffer, 0, nJ*sizeof(double));
@@ -190,7 +191,6 @@ int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J) {
     argStruct.sigma2 = sigma2;
     argStruct.sigma3 = sigma2*sigma;
     
-    
     int idx;
     div_t divRes;
     
@@ -201,6 +201,7 @@ int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J) {
         yp = data->prmVect[3*gi+1];
         argStruct.A = data->prmVect[3*gi+2];
         
+        // x and y components of the gaussian kernel
         for (i=0; i<nx; ++i) {
             k = i-b;
             xi = k-xp;
@@ -322,7 +323,6 @@ int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J
         divRes = div(i, data->nValid);
         gsl_matrix_set(J, divRes.rem, divRes.quot, data->Jbuffer[i]);
     }
-    
     return GSL_SUCCESS;
 }
 
@@ -350,7 +350,6 @@ int MLalgo(struct dataStruct *data) {
     f.p = data->nparam;
     f.params = data;
     
-    
     T = gsl_multifit_fdfsolver_lmsder;
     s = gsl_multifit_fdfsolver_alloc(T, data->nValid, data->nparam);
     gsl_multifit_fdfsolver_set(s, &f, &x.vector);
@@ -358,8 +357,10 @@ int MLalgo(struct dataStruct *data) {
     int status, status2;
     int iter = 0;
     gsl_vector *gradt = gsl_vector_alloc(data->nparam);
+    
     do {
         iter++;
+        
         status = gsl_multifit_fdfsolver_iterate(s);
         if (status)
             break;
@@ -367,6 +368,8 @@ int MLalgo(struct dataStruct *data) {
         status = gsl_multifit_test_delta(s->dx, s->x, data->eAbs, data->eRel);
         gsl_multifit_gradient(s->J, s->f, gradt);
         status2 = gsl_multifit_test_gradient(gradt, data->eAbs);
+        
+        
     }
     while (status == GSL_CONTINUE && status2 == GSL_CONTINUE && iter < data->maxIter);
     gsl_vector_free(gradt);
