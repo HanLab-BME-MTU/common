@@ -57,7 +57,7 @@ end
 % x,y,l,u
 
 switch length(varargin)
-    case 2 
+    case 2
         % y, e
         y = varargin{1};
         y = y(:);
@@ -124,7 +124,7 @@ if ischar(x) || ischar(y) || ischar(u) || ischar(l)
     error('Arguments must be numeric.')
 end
 
-if ~isequal(size(x),size(y)) 
+if ~isequal(size(x),size(y))
     error('The sizes of X and Y must be the same.');
 end
 
@@ -151,17 +151,20 @@ myLineH = dataH(1);
 if strcmp(get(myLineH,'Type'),'hggroup')
     latestColor = get(myLineH,'EdgeColor'); %new children are added on top!
 else
-latestColor = get(myLineH,'Color'); %new children are added on top!
+    latestColor = get(myLineH,'Color'); %new children are added on top!
 end
 
 tee=0;
 if ~strcmp('log',get(axesH,'XScale'))
     tee = (max(x(:))-min(x(:)))/100;  % make tee .02 x-distance for error bars
+    tee = min(tee,0.3*nanmedian(diff(unique(x(:))))); % or at most 0.3*deltaX
     xl = x - tee;
     xr = x + tee;
 end
 if strcmp('log',get(axesH,'XScale'))
     tee = (max(log(x(:)))-min(log(x(:))))/100;  % make tee .02 x-distance for error bars
+    tee = min(tee,0.3*nanmedian(diff(unique(log(x(:)))))); % or at most 0.3*deltaX
+    
     xl = x *exp(tee);
     xr = x *exp(-tee);
 end
@@ -169,11 +172,15 @@ end
 if xyBars
     if ~strcmp('log',get(axesH,'YScale'))
         tee = (max(y(:))-min(y(:)))/100;  % make tee .02 y-distance for error bars
+        tee = min(tee,0.3*nanmedian(diff(unique(y(:))))); % or at most 0.3*deltaY
+        
         yl = y - tee;
         yr = y + tee;
     end
     if strcmp('log',get(axesH,'YScale'))
         tee = (max(log(y(:)))-min(log(y(:))))/100;  % make tee .02 y-distance for error bars
+        tee = min(tee,0.3*nanmedian(diff(unique(log(y(:)))))); % or at most 0.3*deltaX
+        
         yl = y *exp(tee);
         yr = y *exp(-tee);
     end
@@ -214,7 +221,7 @@ yb(7:9:end,:) = ybot;
 yb(8:9:end,:) = ybot;
 yb(9:9:end,:) = NaN;
 
-h = [plot(axesH,xb,yb,'Color',latestColor)]; 
+h = [line(xb,yb,'parent',axesH,'Color',latestColor)];
 
 if xyBars
     
@@ -238,7 +245,7 @@ if xyBars
     yb(8:9:end,:) = yr;
     yb(9:9:end,:) = NaN;
     
-    h = [h;plot(axesH,xb,yb,'Color',latestColor)]; 
+    h = [h;line(xb,yb,'parent',axesH,'Color',latestColor)];
     
 end
 
