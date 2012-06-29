@@ -510,7 +510,7 @@ switch isR
                     (sum(residuals.^2)/numDegFree);
 
                 %get p-value of test statistic
-                pValue = fcdf(testStat,numDegFreeT,numDegFree);
+                pValue = fcdf(testStat,numDegFree,numDegFreeT);
 
                 %compare p-value to alpha
                 %1-sided F-test: H0: F=1, H1: F<1

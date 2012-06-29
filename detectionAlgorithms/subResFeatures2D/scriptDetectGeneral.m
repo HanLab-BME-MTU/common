@@ -1,10 +1,10 @@
 
 %% movie information
-movieParam.imageDir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaVandCellEdge/110114/Cs3_CHO03/Cs3_CHO03A/imagesAlphaV/'; %directory where images are
-movieParam.filenameBase = '110114_Cs3_CHO03A_'; %image file name base
+movieParam.imageDir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/talinAndCellEdge/120524_Cs1C2_Talin/imagesTalin/'; %directory where images are
+movieParam.filenameBase = '120524_Cs1C2_mEosTalin_'; %image file name base
 movieParam.firstImageNum = 500; %number of first image in movie
-movieParam.lastImageNum = 510; %number of last image in movie
-movieParam.digits4Enum = 4; %number of digits used for frame enumeration (1-4).
+movieParam.lastImageNum = 550; %number of last image in movie
+movieParam.digits4Enum = 5; %number of digits used for frame enumeration (1-4).
 
 %% detection parameters
 detectionParam.psfSigma = 1.2; %point spread function sigma (in pixels)
@@ -19,17 +19,19 @@ detectionParam.integWindow = 0; %number of frames before and after a frame for t
 detectionParam.calcMethod = 'g';
 
 %absolute background info and parameters...
-background.imageDir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaVandCellEdge/110114/Cs3_CHO03/Cs3_CHO03A/bgAlphaV/';
-background.filenameBase = 'crop_110114_Cs3_CHO03A_';
+background.imageDir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/talinAndCellEdge/120524_Cs1C2_Talin/bgTalin/';
+background.filenameBase = 'crop_120524_Cs1C2_mEosTalin_';
 background.alphaLocMaxAbs = 0.01;
 detectionParam.background = background;
 
-%% save results
-% saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaVandCellEdge/110114/Cs3_CHO03/Cs3_CHO03A/analysisAlphaV/'; %directory where to save input and output
-% saveResults.filename = 'detectionTest1.mat'; %name of file where input and output are saved
-saveResults = 0;
+%% additional input
 
-%% verbose state
+%saveResults
+saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/talinAndCellEdge/120524_Cs1C2_Talin/analysisTalin/'; %directory where to save input and output
+saveResults.filename = 'detectionTest1.mat'; %name of file where input and output are saved
+% saveResults = 0;
+
+%verbose state
 verbose = 0;
 
 %% run the detection function

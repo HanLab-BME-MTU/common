@@ -89,7 +89,7 @@ saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaVandCell
 % saveResults.filename = 'tracksTest1DetectionAll1.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
-%verbose
+%verbose state
 verbose = 1;
 
 %problem dimension

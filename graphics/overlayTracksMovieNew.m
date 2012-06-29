@@ -91,7 +91,7 @@ function overlayTracksMovieNew(tracksFinal,startend,dragtailLength,...
 %       movieType     : 'mov' to make a Quicktime movie using MakeQTMovie,
 %                       'avi' to make AVI movie using Matlab's movie2avi,
 %                       'mp4_unix', 'avi_unix' to make an MP4 or AVI movie
-%                       using ImageMagick and ffmpeg. These options works
+%                       using ImageMagick and ffmpeg. These options work
 %                       only under linux or mac.
 %                       Optional. Default: 'mov'.
 %
@@ -164,7 +164,7 @@ if(isa(fName,'char') && isa(dirName,'char'))
     outFileList = getFileStackNames([dirName,fName]);
     numFiles = length(outFileList);
     
-    %determine which frames the files correspond to, and generate the inverse map
+    %determine     diffAnalysisRes = diffAnalysisRes(indx);which frames the files correspond to, and generate the inverse map
     %indicate missing frames with a zero
     frame2fileMap = zeros(numFiles,1);
     for iFile = 1 : numFiles
@@ -272,7 +272,7 @@ if nargin < 12 || isempty(classifyLft)
 end
 
 %check whether to color-code tracks based on diffusion classification
-%checm whether diffusion classification is for overall tracks or transient
+%check whether diffusion classification is for overall tracks or transient
 if nargin < 13 || isempty(diffAnalysisRes)
     diffAnalysisRes = [];
     transDiffClass = 0;
@@ -285,7 +285,9 @@ else
     else
         transDiffClass = 0;
     end
-    diffAnalysisRes = diffAnalysisRes(indx);
+    if minLength > 1
+        diffAnalysisRes = diffAnalysisRes(indx);
+    end
 end
 
 %check how to scale image intensity
@@ -941,30 +943,30 @@ for iFrame = 1 : numFramesMovie
         
         %red circles: detected feature in the middle of track with status 0
         points2plot = find(pointStatus(:,iFrame)==1);
-        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'ro','MarkerSize',10);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'ro','MarkerSize',6);
         %         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'ro','MarkerSize',2);
         
         %magenta circles: detected feature in the middle of track with status 1
         points2plot = find(pointStatus(:,iFrame)==2);
-        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'mo','MarkerSize',10);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'mo','MarkerSize',6);
         %         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'mo','MarkerSize',2);
         %         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'mo','MarkerSize',10,'LineWidth',2);
         
         %white circles: detected feature in the middle of track with status 2
         points2plot = find(pointStatus(:,iFrame)==3);
-        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wo','MarkerSize',10);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wo','MarkerSize',6);
         %         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wo','MarkerSize',5);
         %         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wo','MarkerSize',2);
         
         %green circles: detected feature just after birth
         points2plot = find(pointStatus(:,iFrame)==4);
-        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'go','MarkerSize',10);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'go','MarkerSize',6);
         %         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'go','MarkerSize',2);
         %         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'go','MarkerSize',15,'LineWidth',2);
         
         %yellow circles: detected feature just before death
         points2plot = find(pointStatus(:,iFrame)==5);
-        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yo','MarkerSize',10);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yo','MarkerSize',6);
         %         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yo','MarkerSize',2);
         %         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yo','MarkerSize',15,'LineWidth',2);
         

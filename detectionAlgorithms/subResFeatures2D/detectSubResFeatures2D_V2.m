@@ -686,6 +686,8 @@ if ~isempty(indx)
             bgNoiseVar;
         
         %get p-value of test statistic
+        %THIS NEEDS CHECKING IF I EVER WANT TO USE IT AGAIN
+        %I THINK THE DEGREES OF FREEDOM ARE SWITCHED AROUND
         pValue = 1 - fcdf(testStat,numDegFree,numDegFree+3*size(clustersMMF(iCluster).bgAmp,1));
         
         %compare p-value to alpha

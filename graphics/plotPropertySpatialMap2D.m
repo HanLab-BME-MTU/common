@@ -1,9 +1,11 @@
-function plotPropertySpatialMap2D(tracksFinal,figureName,minLength,...
-    properties2plot,positions2plot,image,fixedSegLength,diffAnalysisRes)
+function [fracTrajClass,f2fDispRMS] = plotPropertySpatialMap2D(tracksFinal,...
+    figureName,minLength,properties2plot,positions2plot,image,fixedSegLength,...
+    diffAnalysisRes)
 %PLOTPROPERTYSPATIALMAP creates spatial maps of trajectory properties
 %
-%SYNOPSIS plotPropertySpatialMap2D(tracksFinal,figureName,minLength,...
-%    properties2plot,positions2plot,image,fixedSegLength,diffAnalysisRes)
+%SYNOPSIS [fracTrajClass,f2fDispRMS] = plotPropertySpatialMap2D(tracksFinal,...
+%    figureName,minLength,properties2plot,positions2plot,image,fixedSegLength,...
+%    diffAnalysisRes)
 %
 %INPUT  tracksFinal    : Output of trackCloseGapsKalman.
 %       figureName     : Figure name.
@@ -32,6 +34,14 @@ function plotPropertySpatialMap2D(tracksFinal,figureName,minLength,...
 %       diffAnalysisRes: Output of trackDiffusionAnalysis1.
 %                        Optional. If not input but needed, it will be
 %                        calculated within the code.
+%
+%OUTPUT fracTrajClass  : Row vector with fraction of trajectories
+%                        classified as confined, Brownian and directed.
+%       f2fDispRMS     : Row vector with root mean square of frame-to-frame
+%                        displacement for confined, Brownian, directed, all
+%                        classified (i.e. confined+Brownian+directed) and
+%                        all (i.e. all longer than minLength frames)
+%                        trajectories.
 %
 %REMARKS If there are n properties2plot and m positions2plot, the code will
 %output n*m spatial maps.
@@ -100,56 +110,6 @@ end
 %save tracksFinal into a new variable name
 inputStructure = tracksFinal;
 
-% %convert tracksFinal into a matrix if it's input as a structure
-% if isstruct(tracksFinal)
-%     clear tracksFinal
-%     tracksFinal = convStruct2MatIgnoreMS(inputStructure);
-% end
-% 
-% %get number of trajectories
-% numTraj = size(tracksFinal,1);
-% 
-% %extract the x- and y-coordinates from the big matrix
-% xCoord = tracksFinal(:,1:8:end);
-% yCoord = tracksFinal(:,2:8:end);
-% 
-% %find x-coordinate limits
-% minXCoord = min(floor(min(xCoord(:))),0);
-% maxXCoord =  ceil(max(xCoord(:)));
-% 
-% %find y-coordinate limits
-% minYCoord = min(floor(min(yCoord(:))),0);
-% maxYCoord =  ceil(max(yCoord(:)));
-% 
-% %get the start, end and life time information of trajectories
-% trajSEL = getTrackSEL(tracksFinal);
-% 
-% %get the start, end and center position of trajectories
-% %also calculate the average frame-to-frame displacement
-% trajXCoord = NaN(numTraj,3);
-% trajYCoord = NaN(numTraj,3);
-% frame2frameDisp = NaN(numTraj,1);
-% for iTraj = 1 : numTraj
-% 
-%     %get current track's positions over its lifetime
-%     xCoordCurrent = xCoord(iTraj,trajSEL(iTraj,1):trajSEL(iTraj,2));
-%     yCoordCurrent = yCoord(iTraj,trajSEL(iTraj,1):trajSEL(iTraj,2));
-% 
-%     %calculate start, end and center positions
-%     startPos = [xCoordCurrent(1) yCoordCurrent(1)];
-%     endPos = [xCoordCurrent(end) yCoordCurrent(end)];
-%     centerPos = [nanmean(xCoordCurrent) nanmean(yCoordCurrent)];
-% 
-%     %assemble the position information, ordered as instructed for the input
-%     %variable positions2plot
-%     trajXCoord(iTraj,:) = [centerPos(1) startPos(1) endPos(1)];
-%     trajYCoord(iTraj,:) = [centerPos(2) startPos(2) endPos(2)];
-% 
-%     %calculate the average frame-to-frame displacement
-%     frame2frameDisp(iTraj) = nanmean(sqrt(diff(xCoordCurrent).^2+diff(yCoordCurrent).^2));
-% 
-% end
-
 %if tracksFinal is a structure ...
 if isstruct(tracksFinal)
     
@@ -200,8 +160,9 @@ if isstruct(tracksFinal)
             trajXCoord(segLoc(iCompTrack)+iSegment-1,:) = [centerPos(1) startPos(1) endPos(1)];
             trajYCoord(segLoc(iCompTrack)+iSegment-1,:) = [centerPos(2) startPos(2) endPos(2)];
             
-            %calculate the average frame-to-frame displacement
-            frame2frameDisp(segLoc(iCompTrack)+iSegment-1) = nanmean(sqrt(diff(xCoordCurrent).^2+diff(yCoordCurrent).^2));
+            %calculate the average frame-to-frame displacement (root mean
+            %square)
+            frame2frameDisp(segLoc(iCompTrack)+iSegment-1) = sqrt(nanmean(diff(xCoordCurrent).^2+diff(yCoordCurrent).^2));
             
         end
     end
@@ -239,8 +200,9 @@ else %if tracksFinal is a matrix ...
         trajXCoord(iTraj,:) = [centerPos(1) startPos(1) endPos(1)];
         trajYCoord(iTraj,:) = [centerPos(2) startPos(2) endPos(2)];
         
-        %calculate the average frame-to-frame displacement
-        frame2frameDisp(iTraj) = nanmean(sqrt(diff(xCoordCurrent).^2+diff(yCoordCurrent).^2));
+        %calculate the average frame-to-frame displacement (root mean
+        %square)
+        frame2frameDisp(iTraj) = sqrt(nanmean(diff(xCoordCurrent).^2+diff(yCoordCurrent).^2));
         
     end
     
@@ -253,7 +215,6 @@ maxXCoord =  ceil(max(trajXCoord(:)));
 %find y-coordinate limits
 minYCoord = min(floor(min(trajYCoord(:))),0);
 maxYCoord =  ceil(max(trajYCoord(:)));
-
 
 %% Property extraction and pre-processing
 
@@ -306,6 +267,17 @@ trajLft = trajSEL(:,3);
 [f2fDispSegment,segmentEdgesFFD,fracInSegmentsFFD] = divideRangeIntoSegments(...
     frame2frameDisp,numSegments,fixedSegLength);
 
+%% Some numbers for output
+
+%get indices of trajectories in the various classifications
+indxConf = find(trajClass==1);
+indxBrown = find(trajClass==2);
+indxDir = find(trajClass==3);
+
+f2fDispRMS = [nanmean(frame2frameDisp(indxConf)) nanmean(frame2frameDisp(indxBrown)) ...
+    nanmean(frame2frameDisp(indxDir)) nanmean(frame2frameDisp([indxConf;indxBrown;indxDir])) ...
+    nanmean(frame2frameDisp)];
+
 %% Plotting
 
 %go over all properties and positions
@@ -314,9 +286,9 @@ for iProperty = properties2plot
         
         %make new figure
         if isempty(figureName)
-            figure
+            h = figure;
         else
-            figure('Name',figureName)
+            h = figure('Name',figureName);
         end
 
         % SUBPLOT 1: Spatial map of values %
@@ -571,6 +543,9 @@ for iProperty = properties2plot
         
         %hold off
         hold off
+        
+        %save figure
+        saveas(h,[figureName '_' plottedProperty{iProperty} '_vs_' plottedPosition{iPos}],'fig');
         
     end
 end
