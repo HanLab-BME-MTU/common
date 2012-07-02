@@ -344,9 +344,9 @@ classdef  MovieObject < hgsetget
             
             %First, check if there is an existing file. If so, save a
             %backup. Then save the MovieData as obj
-            fullPath = [obj.getPath filesep obj.getFilename];
-            if exist(fullPath,'file');
-                copyfile(fullPath,[fullPath(1:end-3) 'old']);
+            fullPath = obj.getFullPath();
+            if exist(fullPath,'file')
+                copyfile(fullPath,[fullPath(1:end-3) 'old'],'f');
             end
             
             if isa(obj,'MovieData')
