@@ -1,5 +1,9 @@
 /* Collection of functions for computing statistical tests
  *
+ * References:
+ * [1] M. Abramowitz and I. A. Stegun, "Handbook of Mathematical Functions",
+ *     National Bureau of Standards, 1972
+ *
  * (c) Francois Aguet, 2011 (last modified May 23, 2012)
  * */
 
@@ -7,6 +11,7 @@
 #define STATS_H
 
 #include <math.h>
+#include <gsl/gsl_sf_gamma.h>
 
 #if defined(_WIN32) || defined(_WIN64)
     #define fmax max
@@ -17,6 +22,25 @@
 #endif
 
 #define NA 7 // number of allowed alpha values
+
+
+// CDF of the F distribution        
+// [1]; see also fcdf.m (Matlab built-in)
+double fcdf(const double x, const double v1, const double v2) {        
+    double xx, p;
+    if (v2 <= x*v1) {
+        xx = v2/(v2+x*v1);
+        // Upper incomplete beta
+        p = 1.0 - gsl_sf_beta_inc(0.5*v2, 0.5*v1, xx);
+    } else {
+        double num = v1*x;
+        xx = num/(num+v2);
+        // Lower incomplete beta
+        p = gsl_sf_beta_inc(0.5*v1, 0.5*v2, xx);
+    }
+    return p;
+}
+
 
 /* Code from:
  * Marsaglia, G., W.W. Tsang, and J. Wang (2003), "Evaluating Kolmogorov's
