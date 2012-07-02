@@ -23,6 +23,7 @@ ip.addRequired('sigma', @isscalar);
 ip.addParamValue('Mode', 'xyAc', @ischar);
 ip.addParamValue('alpha', 0.05, @isscalar);
 ip.addParamValue('mask', [], @isnumeric);
+ip.addParamValue('FitMixtures', false, @islogical);
 ip.parse(img, sigma, varargin{:});
 mode = ip.Results.Mode;
 alpha = ip.Results.alpha;
@@ -106,7 +107,11 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
     
     if ~isempty(lmIdx)
         % run localization on local maxima
-        pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), mode, 'mask', mask, 'alpha', alpha);
+        if ~ip.Results.FitMixtures
+            pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), mode, 'mask', mask, 'alpha', alpha);
+        else
+            pstruct = fitGaussianMixtures2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), 'mask', mask, 'alpha', alpha);
+        end
         
         % remove NaN values
         idx = ~isnan([pstruct.x]);
@@ -138,6 +143,13 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
                 pstruct.hval_Ar = logical(pstruct.hval_Ar);
                 pstruct.hval_AD = logical(pstruct.hval_AD);
                 pstruct.isPSF = ~pstruct.hval_AD;
+                
+                % adjust mixture index if only a single component remains
+                if ip.Results.FitMixtures
+                    mv = 0:max(pstruct.mixtureIndex);
+                    multiplicity = getMultiplicity(pstruct.mixtureIndex);
+                    pstruct.mixtureIndex(ismember(pstruct.mixtureIndex, mv(multiplicity==1))) = 0;
+                end
             else
                 pstruct = [];
             end
