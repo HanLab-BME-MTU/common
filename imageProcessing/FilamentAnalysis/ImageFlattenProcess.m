@@ -196,7 +196,7 @@ classdef ImageFlattenProcess < ImageProcessingProcess
             name = 'Image Flatten';
         end
         function h = GUI()
-            h= @ImageFlattenProcessGUI;
+            h= @imageFlattenProcessGUI;
         end
         
         function output = getDrawableOutput()

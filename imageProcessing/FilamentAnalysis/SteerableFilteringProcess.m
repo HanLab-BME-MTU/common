@@ -153,7 +153,7 @@ classdef SteerableFilteringProcess < ImageProcessingProcess
             name = 'Steerable filtering';
         end
         function h = GUI()
-            h= @SteerableFilteringProcessGUI;
+            h= @steerableFilteringProcessGUI;
         end
         
         function output = getDrawableOutput()

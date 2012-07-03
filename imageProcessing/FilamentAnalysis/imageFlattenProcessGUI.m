@@ -1,26 +1,26 @@
-function varargout = ImageFlattenProcessGUI(varargin)
-% ImageFlattenProcessGUI M-file for ImageFlattenProcessGUI.fig
-%      ImageFlattenProcessGUI, by itself, creates a new ImageFlattenProcessGUI or raises the existing
+function varargout = imageFlattenProcessGUI(varargin)
+% imageFlattenProcessGUI M-file for imageFlattenProcessGUI.fig
+%      imageFlattenProcessGUI, by itself, creates a new imageFlattenProcessGUI or raises the existing
 %      singleton*.
 %
-%      H = ImageFlattenProcessGUI returns the handle to a new ImageFlattenProcessGUI or the handle to
+%      H = imageFlattenProcessGUI returns the handle to a new imageFlattenProcessGUI or the handle to
 %      the existing singleton*.
 %
-%      ImageFlattenProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in ImageFlattenProcessGUI.M with the given input arguments.
+%      imageFlattenProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in imageFlattenProcessGUI.M with the given input arguments.
 %
-%      ImageFlattenProcessGUI('Property','Value',...) creates a new ImageFlattenProcessGUI or raises the
+%      imageFlattenProcessGUI('Property','Value',...) creates a new imageFlattenProcessGUI or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before ImageFlattenProcessGUI_OpeningFcn gets called.  An
+%      applied to the GUI before imageFlattenProcessGUI_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to ImageFlattenProcessGUI_OpeningFcn via varargin.
+%      stop.  All inputs are passed to imageFlattenProcessGUI_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help ImageFlattenProcessGUI
+% Edit the above text to modify the response to help imageFlattenProcessGUI
 
 % Last Modified by GUIDE v2.5 02-Jul-2012 10:24:25
 
@@ -28,8 +28,8 @@ function varargout = ImageFlattenProcessGUI(varargin)
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @ImageFlattenProcessGUI_OpeningFcn, ...
-                   'gui_OutputFcn',  @ImageFlattenProcessGUI_OutputFcn, ...
+                   'gui_OpeningFcn', @imageFlattenProcessGUI_OpeningFcn, ...
+                   'gui_OutputFcn',  @imageFlattenProcessGUI_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -44,8 +44,8 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before ImageFlattenProcessGUI is made visible.
-function ImageFlattenProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
+% --- Executes just before imageFlattenProcessGUI is made visible.
+function imageFlattenProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
 processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',0);
 
@@ -90,7 +90,7 @@ guidata(hObject, handles);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = ImageFlattenProcessGUI_OutputFcn(hObject, eventdata, handles) 
+function varargout = imageFlattenProcessGUI_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -134,7 +134,7 @@ switch get(hObject,'Value')
         thresholdValues = [];
 end
 set(handles.listbox_selectedChannels, 'UserData', chanIndex2);
-update_data(hObject,eventdata,handles);
+% update_data(hObject,eventdata,handles);
 
 % --- Executes on button press in pushbutton_select.
 function pushbutton_select_Callback(hObject, eventdata, handles)
@@ -158,7 +158,7 @@ for i = id
 end
 
 set(handles.listbox_selectedChannels, 'String', contents2, 'Userdata', chanIndex2);
-update_data(hObject,eventdata,handles);
+% update_data(hObject,eventdata,handles);
 
 
 % --- Executes on button press in pushbutton_done.
@@ -202,26 +202,26 @@ end
 
 % Set parameters and update main window
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
-% 
-% 
-% function update_data(hObject,eventdata, handles)
-% 
-% userData = get(handles.figure1, 'UserData');
-% 
-% if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_channels') ||...
-%         strcmp(get(hObject,'Tag'),'listbox_thresholdValues')
-%     % Check if changes have been at the list box level
-%     linkedListBoxes = {'listbox_selectedChannels'};
-%     checkLinkBox = strcmp(get(hObject,'Tag'),linkedListBoxes);
-%     if any(checkLinkBox)
-%         value = get(handles.(linkedListBoxes{checkLinkBox}),'Value');
-%         set(handles.(linkedListBoxes{~checkLinkBox}),'Value',value);
-%     else
-%         value = get(handles.listbox_selectedChannels,'Value');
-%     end  
-% end
-% 
-% 
+
+
+function update_data(hObject,eventdata, handles)
+
+userData = get(handles.figure1, 'UserData');
+
+if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_channels') ||...
+        strcmp(get(hObject,'Tag'),'listbox_thresholdValues')
+    % Check if changes have been at the list box level
+    linkedListBoxes = {'listbox_selectedChannels'};
+    checkLinkBox = strcmp(get(hObject,'Tag'),linkedListBoxes);
+    if any(checkLinkBox)
+        value = get(handles.(linkedListBoxes{checkLinkBox}),'Value');
+        set(handles.(linkedListBoxes{~checkLinkBox}),'Value',value);
+    else
+        value = get(handles.listbox_selectedChannels,'Value');
+    end  
+end
+
+
 % % Retrieve the channex index
 % props=get(handles.listbox_selectedChannels,{'UserData','Value'});
 % if isempty(props{1}), return; end
@@ -243,11 +243,11 @@ processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
 % else
 %     userData.updateImage=0;
 % end
-% 
-% 
-% % Save the data
-% set(handles.figure1, 'UserData', userData);
-% guidata(hObject,handles);
+
+
+% Save the data
+set(handles.figure1, 'UserData', userData);
+guidata(hObject,handles);
 % 
 % % Update graphics if applicable
 % if get(handles.checkbox_preview,'Value')

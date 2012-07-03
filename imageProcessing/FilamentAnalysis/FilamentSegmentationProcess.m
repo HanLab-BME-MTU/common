@@ -153,7 +153,7 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             name = 'Steerable filtering';
         end
         function h = GUI()
-            h= @FilamentSegmentationProcessGUI;
+            h= @filamentSegmentationProcessGUI;
         end
         
         function output = getDrawableOutput()
