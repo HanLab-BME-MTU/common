@@ -51,7 +51,7 @@ for si = 1:ns
     [ires{si}, itheta{si}, inms{si}] = steerableDetector(img, ip.Results.M, sigma(si));
     % scale normalization for even orders
     if ~mod(M,2)
-        ires{si} = sigma(si) * ires{si};
+        ires{si} = sqrt(sigma(si)) * ires{si};
     end
 end
 
