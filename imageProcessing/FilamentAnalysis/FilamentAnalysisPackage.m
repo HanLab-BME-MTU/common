@@ -1,6 +1,7 @@
 classdef FilamentAnalysisPackage < Package
     % A concrete package for segmentation of filament and the orientation
     % Liya Ding 06. 2012.
+    % Liya is still working on it. It is not ready yet.
     
     methods (Access = public)
         function obj = FilamentAnalysisPackage(owner,varargin)
@@ -37,7 +38,7 @@ classdef FilamentAnalysisPackage < Package
             m = [0 0 0 0 0 ;
                  1 0 0 0 0 ;
                  0 0 0 0 0 ;
-                 1 1 0 0 0 ;
+                 0 0 0 0 0 ;
                  0 0 0 0 0 ];
 
         if nargin<2, j=1:size(m,2); end

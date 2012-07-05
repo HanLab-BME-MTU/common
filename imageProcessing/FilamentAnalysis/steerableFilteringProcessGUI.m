@@ -1,35 +1,35 @@
-function varargout = SteerableFilteringProcessGUI(varargin)
-% SteerableFilteringProcessGUI M-file for SteerableFilteringProcessGUI.fig
-%      SteerableFilteringProcessGUI, by itself, creates a new SteerableFilteringProcessGUI or raises the existing
+function varargout = steerableFilteringProcessGUI(varargin)
+% steerableFilteringProcessGUI M-file for steerableFilteringProcessGUI.fig
+%      steerableFilteringProcessGUI, by itself, creates a new steerableFilteringProcessGUI or raises the existing
 %      singleton*.
 %
-%      H = SteerableFilteringProcessGUI returns the handle to a new SteerableFilteringProcessGUI or the handle to
+%      H = steerableFilteringProcessGUI returns the handle to a new steerableFilteringProcessGUI or the handle to
 %      the existing singleton*.
 %
-%      SteerableFilteringProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in SteerableFilteringProcessGUI.M with the given input arguments.
+%      steerableFilteringProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in steerableFilteringProcessGUI.M with the given input arguments.
 %
-%      SteerableFilteringProcessGUI('Property','Value',...) creates a new SteerableFilteringProcessGUI or raises the
+%      steerableFilteringProcessGUI('Property','Value',...) creates a new steerableFilteringProcessGUI or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before SteerableFilteringProcessGUI_OpeningFcn gets called.  An
+%      applied to the GUI before steerableFilteringProcessGUI_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to SteerableFilteringProcessGUI_OpeningFcn via varargin.
+%      stop.  All inputs are passed to steerableFilteringProcessGUI_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help SteerableFilteringProcessGUI
+% Edit the above text to modify the response to help steerableFilteringProcessGUI
 
-% Last Modified by GUIDE v2.5 29-Jun-2012 13:25:44
+% Last Modified by GUIDE v2.5 05-Jul-2012 10:01:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @SteerableFilteringProcessGUI_OpeningFcn, ...
-                   'gui_OutputFcn',  @SteerableFilteringProcessGUI_OutputFcn, ...
+                   'gui_OpeningFcn', @steerableFilteringProcessGUI_OpeningFcn, ...
+                   'gui_OutputFcn',  @steerableFilteringProcessGUI_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -44,8 +44,8 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before SteerableFilteringProcessGUI is made visible.
-function SteerableFilteringProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
+% --- Executes just before steerableFilteringProcessGUI is made visible.
+function steerableFilteringProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
 processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',0);
 
@@ -83,58 +83,16 @@ end
 set(handles.listbox_selectedChannels,'String',channelString,...
     'UserData',channelIndex);
 
-set(handles.edit_GaussFilterSigma,'String',funParams.GaussFilterSigma);
-
-threshMethods = userData.crtProc.getMethods();
-set(handles.popupmenu_thresholdingMethod,'String',{threshMethods(:).name},...
-    'Value',funParams.MethodIndx);
-
-if isempty(funParams.ThresholdValue)
-   
-    set(handles.checkbox_auto, 'Value', 1);
-    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','on');
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
-    if funParams.MaxJump
-        set(handles.checkbox_max, 'Value', 1);
-        set(handles.edit_jump, 'Enable','on','String',funParams.MaxJump);
-    else
-        set(handles.edit_jump, 'Enable', 'off');
-    end
-    nSelectedChannels  = numel(get(handles.listbox_selectedChannels, 'String'));
-    set(handles.listbox_thresholdValues, 'String',...
-        num2cell(zeros(1,nSelectedChannels)));
-    userData.thresholdValue=0;
-else
-    set(handles.checkbox_auto, 'Value', 0);
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on');
-    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
-    set(handles.listbox_thresholdValues, 'String', num2cell(funParams.ThresholdValue));
-    userData.thresholdValue=funParams.ThresholdValue(1);
-    set(handles.slider_threshold, 'Value',funParams.ThresholdValue(1))
-end
-
-% Initialize the frame number slider and eidt
-nFrames=userData.MD.nFrames_;
-set(handles.slider_frameNumber,'Value',1,'Min',1,...
-    'Max',nFrames,'SliderStep',[1/double(nFrames)  10/double(nFrames)]);
-set(handles.text_nFrames,'String',['/ ' num2str(nFrames)]);
-set(handles.edit_frameNumber,'Value',1);
-
-
-% Initialize previewing constants
-userData.previewFig =-1;
-userData.chanIndx = 0;
-userData.imIndx=0;
+set(handles.edit_BaseSteerableFilterSigma,'String',funParams.BaseSteerableFilterSigma);
+set(handles.edit_levelsofsteerablefilters,'String',funParams.Levelsofsteerablefilters);
 
 % Update user data and GUI data
 handles.output = hObject;
 set(hObject, 'UserData', userData);
 guidata(hObject, handles);
-update_data(hObject,eventdata,handles);
-
 
 % --- Outputs from this function are returned to the command line.
-function varargout = SteerableFilteringProcessGUI_OutputFcn(hObject, eventdata, handles) 
+function varargout = steerableFilteringProcessGUI_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -163,46 +121,34 @@ end
 channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
 
-gaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma, 'String'));
-if isnan(gaussFilterSigma) || gaussFilterSigma < 0
+BaseSteerableFilterSigma = str2double(get(handles.edit_BaseSteerableFilterSigma, 'String'));
+if isnan(BaseSteerableFilterSigma) || BaseSteerableFilterSigma < 0
     errordlg(['Please provide a valid input for '''...
-        get(handles.text_GaussFilterSigma,'String') '''.'],'Setting Error','modal');
+
+    get(handles.text_BaseSteerableFilterSigma,'String') '''.'],'Setting Error','modal');
     return;
 end
-funParams.GaussFilterSigma=gaussFilterSigma;
+funParams.BaseSteerableFilterSigma=BaseSteerableFilterSigma;
 
+Levelsofsteerablefilters = str2double(get(handles.edit_levelsofsteerablefilters, 'String'));
+if isnan(Levelsofsteerablefilters) || Levelsofsteerablefilters < 0
+    errordlg(['Please provide a valid input for '''...
 
-if get(handles.checkbox_auto, 'value')
-    funParams.ThresholdValue = [ ];
-    funParams.MethodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
-    
-    if get(handles.checkbox_max, 'Value')
-        % If both checkbox are checked
-        maxJump=str2double(get(handles.edit_jump, 'String'));
-        if isnan(maxJump) || maxJump < 0
-            errordlg('Please provide a valid input for ''Maximum threshold jump''.','Setting Error','modal');
-            return;
-        end    
-        funParams.MaxJump = str2double(get(handles.edit_jump,'String'));
-    end
-else
-    threshold = get(handles.listbox_thresholdValues, 'String');
-    if isempty(threshold)
-       errordlg('Please provide at least one threshold value.','Setting Error','modal')
-       return
-    elseif length(threshold) ~= 1 && length(threshold) ~= length(channelIndex)
-       errordlg('Please provide the same number of threshold values as the input channels.','Setting Error','modal')
-       return
-    else
-        threshold = str2double(threshold);
-        if any(isnan(threshold)) || any(threshold < 0)
-            errordlg('Please provide valid threshold values. Threshold cannot be a negative number.','Setting Error','modal')
-            return            
-        end
-    end
-    funParams.ThresholdValue = threshold;
+    get(handles.text_Levelsofsteerablefilters,'String') '''.'],'Setting Error','modal');
+    return;
 end
-   
+funParams.Levelsofsteerablefilters=Levelsofsteerablefilters;
+
+funParams.OutputDirectory  = [ userData.crtPackage.outputDirectory_, filesep 'SteerableFiltering'];
+
+for iChannel = channelIndex
+SteerableFilterChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
+    if (~exist(SteerableFilterChannelOutputDir,'dir'))
+        mkdir(SteerableFilterChannelOutputDir);
+    end
+    
+    userData.crtProc.setOutImagePath(iChannel,SteerableFilterChannelOutputDir)
+end
 
 % -------- Process Sanity check --------
 % ( only check underlying data )
@@ -236,15 +182,12 @@ switch get(hObject,'Value')
     case 1
         set(handles.listbox_selectedChannels, 'String', contents1);
         chanIndex2 = chanIndex1;
-        thresholdValues =zeros(1,numel(chanIndex1));
     case 0
         set(handles.listbox_selectedChannels, 'String', {}, 'Value',1);
         chanIndex2 = [ ];
-        thresholdValues = [];
 end
 set(handles.listbox_selectedChannels, 'UserData', chanIndex2);
-set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues))
-update_data(hObject,eventdata,handles);
+
 
 % --- Executes on button press in pushbutton_select.
 function pushbutton_select_Callback(hObject, eventdata, handles)
@@ -257,22 +200,18 @@ id = get(handles.listbox_availableChannels, 'Value');
 % If channel has already been added, return;
 chanIndex1 = get(handles.listbox_availableChannels, 'Userdata');
 chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
-thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
 
 for i = id
     if any(strcmp(contents1{i}, contents2) )
         continue;
     else
         contents2{end+1} = contents1{i};
-        thresholdValues(end+1) = 0;
         chanIndex2 = cat(2, chanIndex2, chanIndex1(i));
 
     end
 end
 
 set(handles.listbox_selectedChannels, 'String', contents2, 'Userdata', chanIndex2);
-set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues))
-update_data(hObject,eventdata,handles);
 
 
 % --- Executes on button press in pushbutton_delete.
@@ -294,36 +233,14 @@ chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
 chanIndex2(id) = [ ];
 set(handles.listbox_selectedChannels, 'Userdata', chanIndex2);
 
-% Update thresholdValues
-thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
-thresholdValues(id) = [];
-set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
-
 % Point 'Value' to the second last item in the list once the 
 % last item has been deleted
 if (id >length(contents) && id>1)
     set(handles.listbox_selectedChannels,'Value',length(contents));
-    set(handles.listbox_thresholdValues,'Value',length(contents));
 end
 % Refresh listbox
 set(handles.listbox_selectedChannels,'String',contents);
-update_data(hObject,eventdata,handles);
 
-% --- Executes on button press in checkbox_auto.
-function checkbox_auto_Callback(hObject, eventdata, handles)
-% Hint: get(hObject,'Value') returns toggle state of checkbox_auto
-if get(hObject, 'Value')
-    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','on');
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
-    if ~get(handles.checkbox_max,'Value'), set(handles.edit_jump,'Enable','off'); end
-else 
-    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
-    set(handles.checkbox_max, 'Value', 0);
-    set(handles.checkbox_applytoall, 'Value',0);
-    set(handles.checkbox_preview, 'Value',1);
-end
-update_data(hObject,eventdata,handles);
 
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
@@ -331,7 +248,6 @@ function figure1_DeleteFcn(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
 
 if ishandle(userData.helpFig), delete(userData.helpFig); end
-if ishandle(userData.previewFig), delete(userData.previewFig); end
 
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
@@ -361,216 +277,18 @@ if strcmp(eventdata.Key, 'return')
 end
 
 
-% --- Executes on button press in pushbutton_set_threshold.
-function pushbutton_set_threshold_Callback(hObject, eventdata, handles)
-
-newThresholdValue = get(handles.slider_threshold,'Value');
-indx = get(handles.listbox_selectedChannels,'Value');
-thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
-thresholdValues(indx) = newThresholdValue;
-set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
-
-
-% --- Executes on button press in checkbox_preview.
-function checkbox_preview_Callback(hObject, eventdata, handles)
-
-if get(handles.checkbox_preview,'Value'), 
-    update_data(hObject,eventdata,handles); 
-else
-    userData = get(handles.figure1, 'UserData');
-    if ishandle(userData.previewFig), delete(userData.previewFig); end
-    % Save data and update graphics
-    set(handles.figure1,'UserData',userData);
-    guidata(hObject, handles);
-end
-
-function threshold_edition(hObject,eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-
-% Retrieve the valuye of the selected threshold
-if strcmp(get(hObject,'Tag'),'edit_threshold')
-    thresholdValue = str2double(get(handles.edit_threshold, 'String'));
-else
-    thresholdValue = get(handles.slider_threshold, 'Value');
-end
-thresholdValue=round(thresholdValue);
-
-% Check the validity of the supplied threshold
-if isnan(thresholdValue) || thresholdValue < 0 || thresholdValue > get(handles.slider_threshold,'Max')
-    warndlg('Please provide a valid coefficient.','Setting Error','modal');
-    thresholdValue=userData.thresholdValue;
-end
-
-set(handles.slider_threshold,'Value',thresholdValue);
-set(handles.edit_threshold,'String',thresholdValue);
-    
-% Save data and update graphics
-set(handles.figure1,'UserData',userData);
-guidata(hObject, handles);
-update_data(hObject,eventdata,handles);
-
-
-function imageNumber_edition(hObject,eventdata, handles)
-
-% Retrieve the value of the selected image
-if strcmp(get(hObject,'Tag'),'edit_imageNumber')
-    imageNumber = str2double(get(handles.edit_frameNumber, 'String'));
-else
-    imageNumber = get(handles.slider_frameNumber, 'Value');
-end
-imageNumber=round(imageNumber);
-
-% Check the validity of the supplied threshold
-if isnan(imageNumber) || imageNumber < 0 || imageNumber > get(handles.slider_frameNumber,'Max')
-    warndlg('Please provide a valid coefficient.','Setting Error','modal');
-end
-
-set(handles.slider_frameNumber,'Value',imageNumber);
-set(handles.edit_frameNumber,'String',imageNumber);
-
-% Save data and update graphics
-guidata(hObject, handles);
-update_data(hObject,eventdata,handles);
-
-
-function update_data(hObject,eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-
-if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_channels') ||...
-        strcmp(get(hObject,'Tag'),'listbox_thresholdValues')
-    % Check if changes have been at the list box level
-    linkedListBoxes = {'listbox_selectedChannels','listbox_thresholdValues'};
-    checkLinkBox = strcmp(get(hObject,'Tag'),linkedListBoxes);
-    if any(checkLinkBox)
-        value = get(handles.(linkedListBoxes{checkLinkBox}),'Value');
-        set(handles.(linkedListBoxes{~checkLinkBox}),'Value',value);
-    else
-        value = get(handles.listbox_selectedChannels,'Value');
-    end
-    thresholdString = get(handles.listbox_thresholdValues,'String');
-    if ~isempty(thresholdString)
-        thresholdValue = str2double(thresholdString{value});
-    else
-        thresholdValue=0;
-    end
-    set(handles.edit_threshold,'String',thresholdValue);
-    set(handles.slider_threshold,'Value',thresholdValue);
-    if isempty(thresholdString),
-        if isfield(userData, 'previewFig'), delete(userData.previewFig); end
-        set(handles.figure1, 'UserData', userData);
-        guidata(hObject,handles);
-        return
-    end
-end
-
-
-% Retrieve the channex index
-props=get(handles.listbox_selectedChannels,{'UserData','Value'});
-if isempty(props{1}), return; end
-chanIndx = props{1}(props{2});
-imIndx = get(handles.slider_frameNumber,'Value');
-thresholdValue = get(handles.slider_threshold, 'Value');
-
-% Load a new image in case the image number or channel has been changed
-if (chanIndx~=userData.chanIndx) ||  (imIndx~=userData.imIndx)
-    if ~isempty(userData.parentProc) && ~isempty(userData.crtPackage.processes_{userData.parentProc}) &&...
-            userData.crtPackage.processes_{userData.parentProc}.checkChannelOutput(chanIndx)
-        userData.imData=userData.crtPackage.processes_{userData.parentProc}.loadOutImage(chanIndx,imIndx);
-    else
-        userData.imData=userData.MD.channels_(chanIndx).loadImage(imIndx);
-    end
-    
-    % Get the value of the new maximum threshold
-    maxThresholdValue=max(userData.imData(:));
-    % Update the threshold Value if above the new maximum
-    thresholdValue=min(thresholdValue,maxThresholdValue);
-    
-    set(handles.slider_threshold,'Value',thresholdValue,'Max',maxThresholdValue,...
-        'SliderStep',[1/double(maxThresholdValue)  10/double(maxThresholdValue)]);
-    set(handles.edit_threshold,'String',thresholdValue);
-    
-    userData.updateImage=1;
-    userData.chanIndx=chanIndx;
-    userData.imIndx=imIndx;
-else
-    userData.updateImage=0;
-end
-
-
-% Save the data
-set(handles.figure1, 'UserData', userData);
-guidata(hObject,handles);
-
-% Update graphics if applicable
-if get(handles.checkbox_preview,'Value')
-
-    % Create figure if non-existing or closed
-    if ~ishandle(userData.previewFig)
-        userData.previewFig = figure('NumberTitle','off','Name','Thresholding preview',...
-            'Position',[50 50 userData.MD.imSize_(2) userData.MD.imSize_(1)]);
-        axes('Position',[0 0 1 1]);
-    else
-        figure(userData.previewFig);
-    end
-    
-    % Retrieve the handle of the figures image
-    imHandle = findobj(userData.previewFig,'Type','image');
-    if userData.updateImage || isempty(imHandle)
-        if isempty(imHandle)
-            imHandle=imagesc(userData.imData);
-            axis off;
-        else
-            set(imHandle,'CData',userData.imData);
-        end
-    end
-    
-    % Preview the tresholding output using the alphaData mapping    
-    alphamask=ones(size(userData.imData));
-    gaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma, 'String'));
-    if ~isnan(gaussFilterSigma) && gaussFilterSigma >0
-        imData = filterGauss2D(userData.imData,gaussFilterSigma);
-    else
-        imData=userData.imData;
-    end
-    
-    
-    if get(handles.checkbox_auto,'Value')
-        methodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
-        threshMethod = userData.crtProc.getMethods(methodIndx).func;
-        
-        try %#ok<TRYNC>
-            currThresh = threshMethod( imData);
-            alphamask(imData<=currThresh)=.4;
-        end
-    else
-        % Preview manual threshold
-        thresholdValue = get(handles.slider_threshold, 'Value');
-        alphamask(imData<=thresholdValue)=.4;
-    end
-    set(imHandle,'AlphaData',alphamask,'AlphaDataMapping','none');
-
-
-    
-    set(handles.figure1, 'UserData', userData);
-    guidata(hObject,handles);
-end
-
-
-
-function edit8_Callback(hObject, eventdata, handles)
-% hObject    handle to edit8 (see GCBO)
+function edit_Levelsofsteerablefilters_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_Levelsofsteerablefilters (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit8 as text
-%        str2double(get(hObject,'String')) returns contents of edit8 as a double
+% Hints: get(hObject,'String') returns contents of edit_Levelsofsteerablefilters as text
+%        str2double(get(hObject,'String')) returns contents of edit_Levelsofsteerablefilters as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit8_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit8 (see GCBO)
+function edit_Levelsofsteerablefilters_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_Levelsofsteerablefilters (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -579,7 +297,6 @@ function edit8_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit9_Callback(hObject, eventdata, handles)

@@ -22,7 +22,7 @@ function varargout = imageFlattenProcessGUI(varargin)
 
 % Edit the above text to modify the response to help imageFlattenProcessGUI
 
-% Last Modified by GUIDE v2.5 02-Jul-2012 10:24:25
+% Last Modified by GUIDE v2.5 03-Jul-2012 14:58:40
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -82,6 +82,12 @@ end
 
 set(handles.listbox_selectedChannels,'String',channelString,...
     'UserData',channelIndex);
+
+set(handles.edit_GaussFilterSigma,'String',funParams.GaussFilterSigma);
+
+% flattenMethods = userData.crtProc.getMethods();
+% set(handles.popupmenu_flatteningMethods,'String',{flattenMethods(:).name},...
+%     'Value',funParams.MethodIndx);
 
 % Update user data and GUI data
 handles.output = hObject;
@@ -186,7 +192,20 @@ if isnan(gaussFilterSigma) || gaussFilterSigma < 0
 end
 funParams.GaussFilterSigma=gaussFilterSigma;
 
-funParams.method_ind = 1;
+funParams.method_ind = 1; 
+
+funParams.OutputDirectory  = [ userData.crtPackage.outputDirectory_, filesep 'ImageFlatten'];
+
+for iChannel = channelIndex
+ImageFlattenChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
+    if (~exist(ImageFlattenChannelOutputDir,'dir'))
+        mkdir(ImageFlattenChannelOutputDir);
+    end
+    
+    userData.crtProc.setOutImagePath(iChannel,ImageFlattenChannelOutputDir)
+end
+
+
 
 % -------- Process Sanity check --------
 % ( only check underlying data )
@@ -201,25 +220,25 @@ catch ME
 end
 
 % Set parameters and update main window
-processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
+processGUI_ApplyFcn(hObject, eventdata, handles, funParams);
 
 
 function update_data(hObject,eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
-if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_channels') ||...
-        strcmp(get(hObject,'Tag'),'listbox_thresholdValues')
-    % Check if changes have been at the list box level
-    linkedListBoxes = {'listbox_selectedChannels'};
-    checkLinkBox = strcmp(get(hObject,'Tag'),linkedListBoxes);
-    if any(checkLinkBox)
-        value = get(handles.(linkedListBoxes{checkLinkBox}),'Value');
-        set(handles.(linkedListBoxes{~checkLinkBox}),'Value',value);
-    else
-        value = get(handles.listbox_selectedChannels,'Value');
-    end  
-end
+% if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_channels') ||...
+%         strcmp(get(hObject,'Tag'),'listbox_thresholdValues')
+%     % Check if changes have been at the list box level
+%     linkedListBoxes = {'listbox_selectedChannels'};
+%     checkLinkBox = strcmp(get(hObject,'Tag'),linkedListBoxes);
+%     if any(checkLinkBox)
+%         value = get(handles.(linkedListBoxes{checkLinkBox}),'Value');
+%         set(handles.(linkedListBoxes{~checkLinkBox}),'Value',value);
+%     else
+%         value = get(handles.listbox_selectedChannels,'Value');
+%     end  
+% end
 
 
 % % Retrieve the channex index
@@ -292,3 +311,4 @@ guidata(hObject,handles);
 %     set(handles.figure1, 'UserData', userData);
 %     guidata(hObject,handles);
 % end
+

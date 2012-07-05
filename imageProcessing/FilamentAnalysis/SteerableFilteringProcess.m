@@ -5,28 +5,28 @@ classdef SteerableFilteringProcess < ImageProcessingProcess
     
     methods (Access = public)
         
-        function obj = SteerableFilteringProcess(owner,name,funName,funParams,...
-                inImagePaths,outImagePaths, SteerableFilteringImagePaths)
+        function obj = SteerableFilteringProcess(owner,varargin)
             
             if nargin == 0
                 super_args = {};
             else
+                % Input check
+                ip = inputParser;
+                ip.addRequired('owner',@(x) isa(x,'MovieData'));
+                ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+                ip.addOptional('funParams',[],@isstruct);
+                ip.parse(owner,varargin{:});
+                outputDir = ip.Results.outputDir;
+                funParams = ip.Results.funParams;
                 
+                % Define arguments for superclass constructor
                 super_args{1} = owner;
-                super_args{2} = name;
-                if nargin > 2
-                    super_args{3} = funName;
+                super_args{2} = SteerableFilteringProcess.getName;
+                super_args{3} = @steerable_filter_forprocess;
+                if isempty(funParams)
+                    funParams = SteerableFilteringProcess.getDefaultParams(owner,outputDir);
                 end
-                if nargin > 3
-                    super_args{4} = funParams;
-                end
-                
-                super_args{3} = @steerable_filter_segmentation_orientation;
-                
-                if nargin < 3 || isempty(funParams)
-                    if nargin <2, outputDir = owner.outputDirectory_; end
-                    funParams=SteerableFilteringProcess.getDefaultParams(owner,outputDir);
-                end
+                super_args{4} = funParams;
                 
                 if nargin > 4
                     super_args{5} = inImagePaths;
@@ -39,44 +39,80 @@ classdef SteerableFilteringProcess < ImageProcessingProcess
             
             obj = obj@ImageProcessingProcess(super_args{:});
             
-            if nargin > 6
-                obj.inFilePaths_(2,:) = SteerableFilteringImagePaths;
-            else
-                obj.inFilePaths_(2,:) = cell(1,numel(owner.channels_));
+        end
+        
+        function setInImagePath(obj,chanNum,imagePath)
+            
+            if ~obj.checkChanNum(chanNum)
+                error('lccb:set:fatal','Invalid image channel number for image path!\n\n');
             end
             
-        end
-        
-        function setFilteringImagePath(obj,iChan,imagePaths)
-            if ~obj.checkChanNum(iChan);
-                error('lccb:set:fatal','Invalid image channel number for correction image path!\n\n');
+            if ~iscell(imagePath)
+                imagePath = {imagePath};
             end
-            nChan = length(iChan);
-            if ~iscell(imagePaths)
-                imagePaths = {imagePaths};
+            nChan = length(chanNum);
+            if nChan ~= length(imagePath)
+                error('lccb:set:fatal','You must specify a path for every channel!')
             end
-            if numel(imagePaths) ~= nChan
-                error('lccb:set:fatal','You must specify one image path for each correction image channel!\n\n');
-            end
+            
             for j = 1:nChan
-                if exist(imagePaths{j},'dir') && numel(imDir(imagePaths{j})) > 0
-                    obj.inFilePaths_{2,iChan(j)} = imagePaths{j};
+                if ~exist(imagePath{j},'dir')
+                    error('lccb:set:fatal',...
+                        ['The directory specified for channel ' ...
+                        num2str(chanNum(j)) ' is invalid!'])
                 else
-                    error(['The correction image path specified for channel ' num2str(iChan(j)) ' was not a valid image-containing directory!'])
+                    if isempty(imDir(imagePath{j})) && ...
+                            isempty(dir([imagePath{j} filesep '*.mat']))
+                        error('lccb:set:fatal',...
+                            ['The directory specified for channel ' ...
+                            num2str(chanNum(j)) ' does not contain any images!!'])
+                    else
+                        obj.inFilePaths_{1,chanNum(j)} = imagePath{j};
+                    end
                 end
             end
         end
         
-        function fileNames = getFilteringImageFileNames(obj,iChan)
-            if obj.checkChanNum(iChan)
-                fileNames = cellfun(@(x)(imDir(x)),obj.inFilePaths_(2,iChan),'SteerableFiltering',false);
-                fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'SteerableFiltering',false)),fileNames,'SteerableFiltering',false);
+        function fileNames = getOutImageFileNames(obj,iChan)
+            if obj.checkChannelOutput(iChan)
+                fileNames = cellfun(@(x)(dir([x filesep '*.tif'])),obj.outFilePaths_(1,iChan),'UniformOutput',false);
+                fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
+                nChan = numel(iChan);
+                for j = 1:nChan
+                    %Sort the files by the trailing numbers
+                    fNums = cellfun(@(x)(str2double(...
+                        x(max(regexp(x(1:end-4),'\D'))+1:end-4))),fileNames{j});
+                    [~,iX] = sort(fNums);
+                    fileNames{j} = fileNames{j}(iX);
+                end
                 nIm = cellfun(@(x)(length(x)),fileNames);
-                if any(nIm == 0)
-                    error('No images in one or more orientation channels!')
+                if ~all(nIm == obj.owner_.nFrames_)
+                    error('Incorrect number of images found in one or more channels!')
                 end
             else
-                error('lccb:set:fatal','Invalid channel numbers! Must be positive integers less than the number of image channels!')
+                error('Invalid channel numbers! Must be positive integers less than the number of image channels!')
+            end
+        end
+        
+        function fileNames = getInImageFileNames(obj,iChan)
+            if obj.checkChanNum(iChan)
+                nChan = numel(iChan);
+                fileNames = cell(1,nChan);
+                for j = 1:nChan
+                    %First check for regular image inputs
+                    fileNames{j} = imDir(obj.inFilePaths_{1,iChan(j)});
+                    if isempty(fileNames{j})
+                        %If none found, check for .mat image inputs
+                        fileNames{j} = dir([obj.inFilePaths_{1,inFilePaths_iChan(j)} filesep '*.tif']);
+                    end
+                    fileNames{j} = arrayfun(@(x)(x.name),fileNames{j},'UniformOutput',false);
+                    nIm = length(fileNames{j});
+                    if nIm ~= obj.owner_.nFrames_
+                        error(['Incorrect number of images found in channel ' num2str(iChan(j)) ' !'])
+                    end
+                end
+            else
+                error('Invalid channel numbers! Must be positive integers less than the number of image channels!')
             end
         end
         
@@ -106,6 +142,7 @@ classdef SteerableFilteringProcess < ImageProcessingProcess
             
             
         end
+        
         function h = draw(obj,iChan,varargin)
             
             outputList = obj.getDrawableOutput();
@@ -146,7 +183,7 @@ classdef SteerableFilteringProcess < ImageProcessingProcess
             end
         end
     end
-
+    
     
     methods (Static)
         function name =getName()
@@ -158,13 +195,13 @@ classdef SteerableFilteringProcess < ImageProcessingProcess
         
         function output = getDrawableOutput()
             output = ImageProcessingProcess.getDrawableOutput();
-            output(2).name='Steerable Filtering images';
-            output(2).var='SteerableFilteringImage';
-            output(2).formatData=[];
-            output(2).type='graph';
-            output(2).defaultDisplayMethod=@(x)LineDisplay('Color',[0 0 0],...
-                'LineStyle','-','LineWidth',2,...
-                'XLabel','Frame Number','YLabel','SteerableFilteringImage');
+            %             output(2).name='Steerable Filtering images';
+            %             output(2).var='SteerableFilteringImage';
+            %             output(2).formatData=[];
+            %             output(2).type='graph';
+            %             output(2).defaultDisplayMethod=@(x)LineDisplay('Color',[0 0 0],...
+            %                 'LineStyle','-','LineWidth',2,...
+            %                 'XLabel','Frame Number','YLabel','SteerableFiltering');
         end
         
         function funParams = getDefaultParams(owner,varargin)
@@ -176,10 +213,11 @@ classdef SteerableFilteringProcess < ImageProcessingProcess
             outputDir=ip.Results.outputDir;
             
             % Set default parameters
-            funParams.OutputDirectory =  [outputDir  filesep 'SteerableFilteringImage'];
+            funParams.OutputDirectory =  [outputDir  filesep 'SteerableFiltering'];
             funParams.ChannelIndex = 1:numel(owner.channels_);
-            funParams.MaskChannelIndex = funParams.ChannelIndex;
-            funParams.BatchMode = false;
+            funParams.Levelsofsteerablefilters = 1;
+            funParams.BaseSteerableFilterSigma = 1;
+            
         end
     end
 end

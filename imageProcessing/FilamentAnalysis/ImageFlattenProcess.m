@@ -76,7 +76,7 @@ classdef ImageFlattenProcess < ImageProcessingProcess
          
          function fileNames = getOutImageFileNames(obj,iChan)
             if obj.checkChannelOutput(iChan)
-                fileNames = cellfun(@(x)(dir([x filesep '*.mat'])),obj.outFilePaths_(1,iChan),'UniformOutput',false);
+                fileNames = cellfun(@(x)(dir([x filesep '*.tif'])),obj.outFilePaths_(1,iChan),'UniformOutput',false);
                 fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
                 nChan = numel(iChan);
                 for j = 1:nChan
@@ -108,7 +108,7 @@ classdef ImageFlattenProcess < ImageProcessingProcess
                     fileNames{j} = imDir(obj.inFilePaths_{1,iChan(j)});
                     if isempty(fileNames{j})
                         %If none found, check for .mat image inputs
-                        fileNames{j} = dir([obj.inFilePaths_{1,inFilePaths_iChan(j)} filesep '*.mat']);
+                        fileNames{j} = dir([obj.inFilePaths_{1,inFilePaths_iChan(j)} filesep '*.tif']);
                     end
                     fileNames{j} = arrayfun(@(x)(x.name),fileNames{j},'UniformOutput',false);
                     nIm = length(fileNames{j});
@@ -123,6 +123,8 @@ classdef ImageFlattenProcess < ImageProcessingProcess
             
             end
         
+            
+            
         function setOutImagePath(obj,chanNum,imagePath)
             
             if ~obj.checkChanNum(chanNum)
@@ -152,7 +154,7 @@ classdef ImageFlattenProcess < ImageProcessingProcess
         function h = draw(obj,iChan,varargin)
             
             outputList = obj.getDrawableOutput();
-            drawImageFlattenImage = any(strcmpi('ImageFlattenImage',varargin));
+            drawImageFlattenImage = any(strcmpi('ImageFlatten',varargin));
             
             if drawImageFlattenImage
                 % Input check
@@ -201,15 +203,18 @@ classdef ImageFlattenProcess < ImageProcessingProcess
         
         function output = getDrawableOutput()
             output = ImageProcessingProcess.getDrawableOutput();
-            output(2).name='Image Flatten images';
-            output(2).var='ImageFlattenImage';
-            output(2).formatData=[];
-            output(2).type='graph';
-            output(2).defaultDisplayMethod=@(x)LineDisplay('Color',[0 0 0],...
-                'LineStyle','-','LineWidth',2,...
-                'XLabel','Frame Number','YLabel','ImageFlattenImage');
         end
         
+        function methods = getMethods(varargin)
+            flatteningMethods(1).name = 'Log';
+            flatteningMethods(2).name = 'Sqrt';
+            
+            ip=inputParser;
+            ip.addOptional('index',1:length(flatteningMethods),@isvector);
+            ip.parse(varargin{:});
+            index = ip.Results.index;
+            methods=flatteningMethods(index);
+        end
         function funParams = getDefaultParams(owner,varargin)
             % Input check
             ip=inputParser;
@@ -219,7 +224,7 @@ classdef ImageFlattenProcess < ImageProcessingProcess
             outputDir=ip.Results.outputDir;
             
             % Set default parameters
-            funParams.OutputDirectory =  [outputDir  filesep 'ImageFlattenImage'];
+            funParams.OutputDirectory =  [outputDir  filesep 'ImageFlatten'];
             funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.method_ind = 1;
             funParams.GaussFilterSigma =1;            

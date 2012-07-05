@@ -1,35 +1,35 @@
-function varargout = FilamentSegmentationProcessGUI(varargin)
-% FilamentSegmentationProcessGUI M-file for FilamentSegmentationProcessGUI.fig
-%      FilamentSegmentationProcessGUI, by itself, creates a new FilamentSegmentationProcessGUI or raises the existing
+function varargout = filamentSegmentationProcessGUI(varargin)
+% filamentSegmentationProcessGUI M-file for filamentSegmentationProcessGUI.fig
+%      filamentSegmentationProcessGUI, by itself, creates a new filamentSegmentationProcessGUI or raises the existing
 %      singleton*.
 %
-%      H = FilamentSegmentationProcessGUI returns the handle to a new FilamentSegmentationProcessGUI or the handle to
+%      H = filamentSegmentationProcessGUI returns the handle to a new filamentSegmentationProcessGUI or the handle to
 %      the existing singleton*.
 %
-%      FilamentSegmentationProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in FilamentSegmentationProcessGUI.M with the given input arguments.
+%      filamentSegmentationProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in filamentSegmentationProcessGUI.M with the given input arguments.
 %
-%      FilamentSegmentationProcessGUI('Property','Value',...) creates a new FilamentSegmentationProcessGUI or raises the
+%      filamentSegmentationProcessGUI('Property','Value',...) creates a new filamentSegmentationProcessGUI or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before FilamentSegmentationProcessGUI_OpeningFcn gets called.  An
+%      applied to the GUI before filamentSegmentationProcessGUI_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to FilamentSegmentationProcessGUI_OpeningFcn via varargin.
+%      stop.  All inputs are passed to filamentSegmentationProcessGUI_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help FilamentSegmentationProcessGUI
+% Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 29-Jun-2012 13:38:08
+% Last Modified by GUIDE v2.5 05-Jul-2012 15:18:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @FilamentSegmentationProcessGUI_OpeningFcn, ...
-                   'gui_OutputFcn',  @FilamentSegmentationProcessGUI_OutputFcn, ...
+                   'gui_OpeningFcn', @filamentSegmentationProcessGUI_OpeningFcn, ...
+                   'gui_OutputFcn',  @filamentSegmentationProcessGUI_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -44,8 +44,8 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before FilamentSegmentationProcessGUI is made visible.
-function FilamentSegmentationProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
+% --- Executes just before filamentSegmentationProcessGUI is made visible.
+function filamentSegmentationProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
 processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',0);
 
@@ -83,58 +83,16 @@ end
 set(handles.listbox_selectedChannels,'String',channelString,...
     'UserData',channelIndex);
 
-set(handles.edit_GaussFilterSigma,'String',funParams.GaussFilterSigma);
-
-threshMethods = userData.crtProc.getMethods();
-set(handles.popupmenu_thresholdingMethod,'String',{threshMethods(:).name},...
-    'Value',funParams.MethodIndx);
-
-if isempty(funParams.ThresholdValue)
-   
-    set(handles.checkbox_auto, 'Value', 1);
-    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','on');
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
-    if funParams.MaxJump
-        set(handles.checkbox_max, 'Value', 1);
-        set(handles.edit_jump, 'Enable','on','String',funParams.MaxJump);
-    else
-        set(handles.edit_jump, 'Enable', 'off');
-    end
-    nSelectedChannels  = numel(get(handles.listbox_selectedChannels, 'String'));
-    set(handles.listbox_thresholdValues, 'String',...
-        num2cell(zeros(1,nSelectedChannels)));
-    userData.thresholdValue=0;
-else
-    set(handles.checkbox_auto, 'Value', 0);
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on');
-    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
-    set(handles.listbox_thresholdValues, 'String', num2cell(funParams.ThresholdValue));
-    userData.thresholdValue=funParams.ThresholdValue(1);
-    set(handles.slider_threshold, 'Value',funParams.ThresholdValue(1))
-end
-
-% Initialize the frame number slider and eidt
-nFrames=userData.MD.nFrames_;
-set(handles.slider_frameNumber,'Value',1,'Min',1,...
-    'Max',nFrames,'SliderStep',[1/double(nFrames)  10/double(nFrames)]);
-set(handles.text_nFrames,'String',['/ ' num2str(nFrames)]);
-set(handles.edit_frameNumber,'Value',1);
-
-
-% Initialize previewing constants
-userData.previewFig =-1;
-userData.chanIndx = 0;
-userData.imIndx=0;
+set(handles.edit_PaceSize,'String',funParams.Pace_Size);
+set(handles.edit_PatchSize,'String',funParams.Patch_Size);
 
 % Update user data and GUI data
 handles.output = hObject;
 set(hObject, 'UserData', userData);
 guidata(hObject, handles);
-update_data(hObject,eventdata,handles);
-
 
 % --- Outputs from this function are returned to the command line.
-function varargout = FilamentSegmentationProcessGUI_OutputFcn(hObject, eventdata, handles) 
+function varargout = filamentSegmentationProcessGUI_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -163,46 +121,32 @@ end
 channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
 
-gaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma, 'String'));
-if isnan(gaussFilterSigma) || gaussFilterSigma < 0
+Pace_Size = str2double(get(handles.edit_PaceSize, 'String'));
+if isnan(Pace_Size) || Pace_Size < 0
     errordlg(['Please provide a valid input for '''...
-        get(handles.text_GaussFilterSigma,'String') '''.'],'Setting Error','modal');
+        get(handles.text_PaceSize,'String') '''.'],'Setting Error','modal');
     return;
 end
-funParams.GaussFilterSigma=gaussFilterSigma;
+funParams.Pace_Size=Pace_Size;
 
-
-if get(handles.checkbox_auto, 'value')
-    funParams.ThresholdValue = [ ];
-    funParams.MethodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
-    
-    if get(handles.checkbox_max, 'Value')
-        % If both checkbox are checked
-        maxJump=str2double(get(handles.edit_jump, 'String'));
-        if isnan(maxJump) || maxJump < 0
-            errordlg('Please provide a valid input for ''Maximum threshold jump''.','Setting Error','modal');
-            return;
-        end    
-        funParams.MaxJump = str2double(get(handles.edit_jump,'String'));
-    end
-else
-    threshold = get(handles.listbox_thresholdValues, 'String');
-    if isempty(threshold)
-       errordlg('Please provide at least one threshold value.','Setting Error','modal')
-       return
-    elseif length(threshold) ~= 1 && length(threshold) ~= length(channelIndex)
-       errordlg('Please provide the same number of threshold values as the input channels.','Setting Error','modal')
-       return
-    else
-        threshold = str2double(threshold);
-        if any(isnan(threshold)) || any(threshold < 0)
-            errordlg('Please provide valid threshold values. Threshold cannot be a negative number.','Setting Error','modal')
-            return            
-        end
-    end
-    funParams.ThresholdValue = threshold;
+Patch_Size = str2double(get(handles.edit_PatchSize, 'String'));
+if isnan(Patch_Size) || Patch_Size < 0
+    errordlg(['Please provide a valid input for '''...
+        get(handles.text_Patch_Size,'String') '''.'],'Setting Error','modal');
+    return;
 end
-   
+funParams.Patch_Size=Patch_Size;
+
+funParams.OutputDirectory  = [ userData.crtPackage.outputDirectory_, filesep 'FilamentSegmentation'];
+
+for iChannel = channelIndex
+FilamentSegmentationOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
+    if (~exist(FilamentSegmentationOutputDir,'dir'))
+        mkdir(FilamentSegmentationOutputDir);
+    end
+    
+    userData.crtProc.setOutImagePath(iChannel,FilamentSegmentationOutputDir)
+end   
 
 % -------- Process Sanity check --------
 % ( only check underlying data )
@@ -244,7 +188,6 @@ switch get(hObject,'Value')
 end
 set(handles.listbox_selectedChannels, 'UserData', chanIndex2);
 set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues))
-update_data(hObject,eventdata,handles);
 
 % --- Executes on button press in pushbutton_select.
 function pushbutton_select_Callback(hObject, eventdata, handles)
@@ -272,7 +215,6 @@ end
 
 set(handles.listbox_selectedChannels, 'String', contents2, 'Userdata', chanIndex2);
 set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues))
-update_data(hObject,eventdata,handles);
 
 
 % --- Executes on button press in pushbutton_delete.
@@ -307,23 +249,6 @@ if (id >length(contents) && id>1)
 end
 % Refresh listbox
 set(handles.listbox_selectedChannels,'String',contents);
-update_data(hObject,eventdata,handles);
-
-% --- Executes on button press in checkbox_auto.
-function checkbox_auto_Callback(hObject, eventdata, handles)
-% Hint: get(hObject,'Value') returns toggle state of checkbox_auto
-if get(hObject, 'Value')
-    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','on');
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','off');
-    if ~get(handles.checkbox_max,'Value'), set(handles.edit_jump,'Enable','off'); end
-else 
-    set(get(handles.uipanel_automaticThresholding,'Children'),'Enable','off');
-    set(get(handles.uipanel_fixedThreshold,'Children'),'Enable','on')
-    set(handles.checkbox_max, 'Value', 0);
-    set(handles.checkbox_applytoall, 'Value',0);
-    set(handles.checkbox_preview, 'Value',1);
-end
-update_data(hObject,eventdata,handles);
 
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
@@ -335,15 +260,6 @@ if ishandle(userData.previewFig), delete(userData.previewFig); end
 
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
-
-% --- Executes on button press in checkbox_max.
-function checkbox_max_Callback(hObject, eventdata, handles)
-
-if get(hObject, 'value')
-    set(handles.edit_jump, 'Enable', 'on');
-else 
-    set(handles.edit_jump, 'Enable', 'off');
-end
 
 
 % --- Executes on key press with focus on pushbutton_done and none of its controls.
@@ -360,226 +276,23 @@ if strcmp(eventdata.Key, 'return')
     pushbutton_done_Callback(handles.pushbutton_done, [], handles);
 end
 
-
-% --- Executes on button press in pushbutton_set_threshold.
-function pushbutton_set_threshold_Callback(hObject, eventdata, handles)
-
-newThresholdValue = get(handles.slider_threshold,'Value');
-indx = get(handles.listbox_selectedChannels,'Value');
-thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
-thresholdValues(indx) = newThresholdValue;
-set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
-
-
-% --- Executes on button press in checkbox_preview.
-function checkbox_preview_Callback(hObject, eventdata, handles)
-
-if get(handles.checkbox_preview,'Value'), 
-    update_data(hObject,eventdata,handles); 
-else
-    userData = get(handles.figure1, 'UserData');
-    if ishandle(userData.previewFig), delete(userData.previewFig); end
-    % Save data and update graphics
-    set(handles.figure1,'UserData',userData);
-    guidata(hObject, handles);
-end
-
-function threshold_edition(hObject,eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-
-% Retrieve the valuye of the selected threshold
-if strcmp(get(hObject,'Tag'),'edit_threshold')
-    thresholdValue = str2double(get(handles.edit_threshold, 'String'));
-else
-    thresholdValue = get(handles.slider_threshold, 'Value');
-end
-thresholdValue=round(thresholdValue);
-
-% Check the validity of the supplied threshold
-if isnan(thresholdValue) || thresholdValue < 0 || thresholdValue > get(handles.slider_threshold,'Max')
-    warndlg('Please provide a valid coefficient.','Setting Error','modal');
-    thresholdValue=userData.thresholdValue;
-end
-
-set(handles.slider_threshold,'Value',thresholdValue);
-set(handles.edit_threshold,'String',thresholdValue);
-    
-% Save data and update graphics
-set(handles.figure1,'UserData',userData);
-guidata(hObject, handles);
-update_data(hObject,eventdata,handles);
-
-
-function imageNumber_edition(hObject,eventdata, handles)
-
-% Retrieve the value of the selected image
-if strcmp(get(hObject,'Tag'),'edit_imageNumber')
-    imageNumber = str2double(get(handles.edit_frameNumber, 'String'));
-else
-    imageNumber = get(handles.slider_frameNumber, 'Value');
-end
-imageNumber=round(imageNumber);
-
-% Check the validity of the supplied threshold
-if isnan(imageNumber) || imageNumber < 0 || imageNumber > get(handles.slider_frameNumber,'Max')
-    warndlg('Please provide a valid coefficient.','Setting Error','modal');
-end
-
-set(handles.slider_frameNumber,'Value',imageNumber);
-set(handles.edit_frameNumber,'String',imageNumber);
-
-% Save data and update graphics
-guidata(hObject, handles);
-update_data(hObject,eventdata,handles);
-
-
-function update_data(hObject,eventdata, handles)
-
-userData = get(handles.figure1, 'UserData');
-
-if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_channels') ||...
-        strcmp(get(hObject,'Tag'),'listbox_thresholdValues')
-    % Check if changes have been at the list box level
-    linkedListBoxes = {'listbox_selectedChannels','listbox_thresholdValues'};
-    checkLinkBox = strcmp(get(hObject,'Tag'),linkedListBoxes);
-    if any(checkLinkBox)
-        value = get(handles.(linkedListBoxes{checkLinkBox}),'Value');
-        set(handles.(linkedListBoxes{~checkLinkBox}),'Value',value);
-    else
-        value = get(handles.listbox_selectedChannels,'Value');
-    end
-    thresholdString = get(handles.listbox_thresholdValues,'String');
-    if ~isempty(thresholdString)
-        thresholdValue = str2double(thresholdString{value});
-    else
-        thresholdValue=0;
-    end
-    set(handles.edit_threshold,'String',thresholdValue);
-    set(handles.slider_threshold,'Value',thresholdValue);
-    if isempty(thresholdString),
-        if isfield(userData, 'previewFig'), delete(userData.previewFig); end
-        set(handles.figure1, 'UserData', userData);
-        guidata(hObject,handles);
-        return
-    end
-end
-
-
-% Retrieve the channex index
-props=get(handles.listbox_selectedChannels,{'UserData','Value'});
-if isempty(props{1}), return; end
-chanIndx = props{1}(props{2});
-imIndx = get(handles.slider_frameNumber,'Value');
-thresholdValue = get(handles.slider_threshold, 'Value');
-
-% Load a new image in case the image number or channel has been changed
-if (chanIndx~=userData.chanIndx) ||  (imIndx~=userData.imIndx)
-    if ~isempty(userData.parentProc) && ~isempty(userData.crtPackage.processes_{userData.parentProc}) &&...
-            userData.crtPackage.processes_{userData.parentProc}.checkChannelOutput(chanIndx)
-        userData.imData=userData.crtPackage.processes_{userData.parentProc}.loadOutImage(chanIndx,imIndx);
-    else
-        userData.imData=userData.MD.channels_(chanIndx).loadImage(imIndx);
-    end
-    
-    % Get the value of the new maximum threshold
-    maxThresholdValue=max(userData.imData(:));
-    % Update the threshold Value if above the new maximum
-    thresholdValue=min(thresholdValue,maxThresholdValue);
-    
-    set(handles.slider_threshold,'Value',thresholdValue,'Max',maxThresholdValue,...
-        'SliderStep',[1/double(maxThresholdValue)  10/double(maxThresholdValue)]);
-    set(handles.edit_threshold,'String',thresholdValue);
-    
-    userData.updateImage=1;
-    userData.chanIndx=chanIndx;
-    userData.imIndx=imIndx;
-else
-    userData.updateImage=0;
-end
-
-
-% Save the data
-set(handles.figure1, 'UserData', userData);
-guidata(hObject,handles);
-
-% Update graphics if applicable
-if get(handles.checkbox_preview,'Value')
-
-    % Create figure if non-existing or closed
-    if ~ishandle(userData.previewFig)
-        userData.previewFig = figure('NumberTitle','off','Name','Thresholding preview',...
-            'Position',[50 50 userData.MD.imSize_(2) userData.MD.imSize_(1)]);
-        axes('Position',[0 0 1 1]);
-    else
-        figure(userData.previewFig);
-    end
-    
-    % Retrieve the handle of the figures image
-    imHandle = findobj(userData.previewFig,'Type','image');
-    if userData.updateImage || isempty(imHandle)
-        if isempty(imHandle)
-            imHandle=imagesc(userData.imData);
-            axis off;
-        else
-            set(imHandle,'CData',userData.imData);
-        end
-    end
-    
-    % Preview the tresholding output using the alphaData mapping    
-    alphamask=ones(size(userData.imData));
-    gaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma, 'String'));
-    if ~isnan(gaussFilterSigma) && gaussFilterSigma >0
-        imData = filterGauss2D(userData.imData,gaussFilterSigma);
-    else
-        imData=userData.imData;
-    end
-    
-    
-    if get(handles.checkbox_auto,'Value')
-        methodIndx=get(handles.popupmenu_thresholdingMethod,'Value');
-        threshMethod = userData.crtProc.getMethods(methodIndx).func;
-        
-        try %#ok<TRYNC>
-            currThresh = threshMethod( imData);
-            alphamask(imData<=currThresh)=.4;
-        end
-    else
-        % Preview manual threshold
-        thresholdValue = get(handles.slider_threshold, 'Value');
-        alphamask(imData<=thresholdValue)=.4;
-    end
-    set(imHandle,'AlphaData',alphamask,'AlphaDataMapping','none');
-
-
-    
-    set(handles.figure1, 'UserData', userData);
-    guidata(hObject,handles);
-end
-
-
-
-function edit8_Callback(hObject, eventdata, handles)
-% hObject    handle to edit8 (see GCBO)
+function edit_PatchSize_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_PatchSize (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit8 as text
-%        str2double(get(hObject,'String')) returns contents of edit8 as a double
+% Hints: get(hObject,'String') returns contents of edit_PatchSize as text
+%        str2double(get(hObject,'String')) returns contents of edit_PatchSize as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit8_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit8 (see GCBO)
+function edit_PatchSize_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_PatchSize (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
 % Hint: edit controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 
 
 function edit9_Callback(hObject, eventdata, handles)

@@ -5,28 +5,28 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
     
     methods (Access = public)
         
-        function obj = FilamentSegmentationProcess(owner,name,funName,funParams,...
-                inImagePaths,outImagePaths, FilamentSegmentationImagePaths)
+        function obj = FilamentSegmentationProcess(owner,varargin)
             
             if nargin == 0
                 super_args = {};
             else
+                % Input check
+                ip = inputParser;
+                ip.addRequired('owner',@(x) isa(x,'MovieData'));
+                ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
+                ip.addOptional('funParams',[],@isstruct);
+                ip.parse(owner,varargin{:});
+                outputDir = ip.Results.outputDir;
+                funParams = ip.Results.funParams;
                 
+                % Define arguments for superclass constructor
                 super_args{1} = owner;
-                super_args{2} = name;
-                if nargin > 2
-                    super_args{3} = funName;
-                end
-                if nargin > 3
-                    super_args{4} = funParams;
-                end
-                
+                super_args{2} = FilamentSegmentationProcess.getName;
                 super_args{3} = @filament_segmentation;
-                
-                if nargin < 3 || isempty(funParams)
-                    if nargin <2, outputDir = owner.outputDirectory_; end
-                    funParams=FilamentSegmentationProcess.getDefaultParams(owner,outputDir);
+                if isempty(funParams)
+                    funParams = FilamentSegmentationProcess.getDefaultParams(owner,outputDir);
                 end
+                super_args{4} = funParams;
                 
                 if nargin > 4
                     super_args{5} = inImagePaths;
@@ -39,48 +39,10 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             
             obj = obj@ImageProcessingProcess(super_args{:});
             
-            if nargin > 6
-                obj.inFilePaths_(2,:) = FilamentSegmentationImagePaths;
-            else
-                obj.inFilePaths_(2,:) = cell(1,numel(owner.channels_));
-            end
-            
         end
         
-        function setFilamentSegmentationImagePath(obj,iChan,imagePaths)
-            if ~obj.checkChanNum(iChan);
-                error('lccb:set:fatal','Invalid image channel number for correction image path!\n\n');
-            end
-            nChan = length(iChan);
-            if ~iscell(imagePaths)
-                imagePaths = {imagePaths};
-            end
-            if numel(imagePaths) ~= nChan
-                error('lccb:set:fatal','You must specify one image path for each correction image channel!\n\n');
-            end
-            for j = 1:nChan
-                if exist(imagePaths{j},'dir') && numel(imDir(imagePaths{j})) > 0
-                    obj.inFilePaths_{2,iChan(j)} = imagePaths{j};
-                else
-                    error(['The correction image path specified for channel ' num2str(iChan(j)) ' was not a valid image-containing directory!'])
-                end
-            end
-        end
         
-        function fileNames = getFilamentSegmentationImageFileNames(obj,iChan)
-            if obj.checkChanNum(iChan)
-                fileNames = cellfun(@(x)(imDir(x)),obj.inFilePaths_(2,iChan),'FilamentSegmentation',false);
-                fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'FilamentSegmentation',false)),fileNames,'FilamentSegmentation',false);
-                nIm = cellfun(@(x)(length(x)),fileNames);
-                if any(nIm == 0)
-                    error('No images in one or more orientation channels!')
-                end
-            else
-                error('lccb:set:fatal','Invalid channel numbers! Must be positive integers less than the number of image channels!')
-            end
-        end
-        
-        function setOutImagePath(obj,chanNum,imagePath)
+        function setInImagePath(obj,chanNum,imagePath)
             
             if ~obj.checkChanNum(chanNum)
                 error('lccb:set:fatal','Invalid image channel number for image path!\n\n');
@@ -100,12 +62,89 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
                         ['The directory specified for channel ' ...
                         num2str(chanNum(j)) ' is invalid!'])
                 else
+                    if isempty(imDir(imagePath{j})) && ...
+                            isempty(dir([imagePath{j} filesep '*.mat']))
+                        error('lccb:set:fatal',...
+                            ['The directory specified for channel ' ...
+                            num2str(chanNum(j)) ' does not contain any images!!'])
+                    else
+                        obj.inFilePaths_{1,chanNum(j)} = imagePath{j};
+                    end
+                end
+            end
+        end
+        
+        function fileNames = getOutImageFileNames(obj,iChan)
+            if obj.checkChannelOutput(iChan)
+                fileNames = cellfun(@(x)(dir([x filesep '*.tif'])),obj.outFilePaths_(1,iChan),'UniformOutput',false);
+                fileNames = cellfun(@(x)(arrayfun(@(x)(x.name),x,'UniformOutput',false)),fileNames,'UniformOutput',false);
+                nChan = numel(iChan);
+                for j = 1:nChan
+                    %Sort the files by the trailing numbers
+                    fNums = cellfun(@(x)(str2double(...
+                        x(max(regexp(x(1:end-4),'\D'))+1:end-4))),fileNames{j});
+                    [~,iX] = sort(fNums);
+                    fileNames{j} = fileNames{j}(iX);
+                end
+                nIm = cellfun(@(x)(length(x)),fileNames);
+                if ~all(nIm == obj.owner_.nFrames_)
+                    error('Incorrect number of images found in one or more channels!')
+                end
+            else
+                error('Invalid channel numbers! Must be positive integers less than the number of image channels!')
+            end
+        end
+        
+        
+        function fileNames = getInImageFileNames(obj,iChan)
+            if obj.checkChanNum(iChan)
+                
+                nChan = numel(iChan);
+                fileNames = cell(1,nChan);
+                for j = 1:nChan
+                    %First check for regular image inputs
+                    fileNames{j} = imDir(obj.inFilePaths_{1,iChan(j)});
+                    if isempty(fileNames{j})
+                        %If none found, check for .mat image inputs
+                        fileNames{j} = dir([obj.inFilePaths_{1,inFilePaths_iChan(j)} filesep '*.tif']);
+                    end
+                    fileNames{j} = arrayfun(@(x)(x.name),fileNames{j},'UniformOutput',false);
+                    nIm = length(fileNames{j});
+                    if nIm ~= obj.owner_.nFrames_
+                        error(['Incorrect number of images found in channel ' num2str(iChan(j)) ' !'])
+                    end
+                end
+            else
+                error('Invalid channel numbers! Must be positive integers less than the number of image channels!')
+            end
+            
+        end
+        
+        function setOutImagePath(obj,chanNum,imagePath)
+            
+            if ~obj.checkChanNum(chanNum)
+                error('lccb:set:fatal','Invalid image channel number for image path!\n\n');
+            end
+            
+            if ~iscell(imagePath)
+                imagePath = {imagePath};
+            end
+            nChan = length(chanNum);
+            if nChan ~= length(imagePath)
+                error('lccb:set:fatal','You must specify a path for every channel!')
+            end
+            
+            for j = 1 : nChan
+                if ~exist(imagePath{j},'dir')
+                    error('lccb:set:fatal',...
+                        ['The directory specified for channel ' ...
+                        num2str(chanNum(j)) ' is invalid!'])
+                else
                     obj.outFilePaths_{1,chanNum(j)} = imagePath{j};
                 end
             end
-            
-            
         end
+        
         function h = draw(obj,iChan,varargin)
             
             outputList = obj.getDrawableOutput();
@@ -146,11 +185,11 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             end
         end
     end
-
+    
     
     methods (Static)
         function name =getName()
-            name = 'Steerable filtering';
+            name = 'Filament Segmentation';
         end
         function h = GUI()
             h= @filamentSegmentationProcessGUI;
@@ -158,13 +197,13 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
         
         function output = getDrawableOutput()
             output = ImageProcessingProcess.getDrawableOutput();
-            output(2).name='Steerable Filtering images';
-            output(2).var='SteerableFilteringImage';
-            output(2).formatData=[];
-            output(2).type='graph';
-            output(2).defaultDisplayMethod=@(x)LineDisplay('Color',[0 0 0],...
-                'LineStyle','-','LineWidth',2,...
-                'XLabel','Frame Number','YLabel','FilamentSegmentationImage');
+            %             output(2).name='Steerable Filtering images';
+            %             output(2).var='SteerableFilteringImage';
+            %             output(2).formatData=[];
+            %             output(2).type='graph';
+            %             output(2).defaultDisplayMethod=@(x)LineDisplay('Color',[0 0 0],...
+            %                 'LineStyle','-','LineWidth',2,...
+            %                 'XLabel','Frame Number','YLabel','FilamentSegmentationImage');
         end
         
         function funParams = getDefaultParams(owner,varargin)
@@ -176,10 +215,11 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             outputDir=ip.Results.outputDir;
             
             % Set default parameters
-            funParams.OutputDirectory =  [outputDir  filesep 'FilamentSegmentationImage'];
+            funParams.OutputDirectory =  [outputDir  filesep 'FilamentSegmentation'];
             funParams.ChannelIndex = 1:numel(owner.channels_);
-            funParams.MaskChannelIndex = funParams.ChannelIndex;
-            funParams.BatchMode = false;
+            funParams.Pace_Size = 3;
+            funParams.Patch_size  = 11;
+            funParams.Combine_Way = 'st_only';
         end
     end
 end
