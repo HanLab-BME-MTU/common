@@ -258,7 +258,7 @@ end
 %% ---------------- Mask Refinement --------------- %%
 
 
-if ~p.BatchMode
+if ~p.BatchMode && feature('ShowFigureWindows')
     wtBar = waitbar(0,['Please wait, refining masks for channel ' num2str(p.ChannelIndex(1)) ' ...']);     
 end        
 
@@ -277,7 +277,7 @@ for iChan = 1:nChanThresh
         disp(['For edge refinment, using images from ' currImDir{iChan}])
     end
     
-    if ~p.BatchMode        
+    if ishandle(wtBar)       
         waitbar((iChan-1)*nImages / nImTot,wtBar,['Please wait, refining masks for channel ' num2str(p.ChannelIndex(iChan)) ' ...']);        
     end        
     
@@ -375,7 +375,7 @@ for iChan = 1:nChanThresh
         %Write the refined mask to file
         imwrite(currMask,[outMaskDir{iChan} filesep pString maskNames{iChan}{iImage}]);
         
-        if ~p.BatchMode && mod(iImage,5)
+        if ishandle(wtBar) && mod(iImage,5)
             %Update the waitbar occasionally to minimize slowdown
             waitbar((iImage + (iChan-1)*nImages) / nImTot,wtBar)
         end                 
@@ -384,7 +384,7 @@ for iChan = 1:nChanThresh
    
 end
 
-if ~p.BatchMode && ishandle(wtBar)
+if ishandle(wtBar)
     close(wtBar)
 end
 

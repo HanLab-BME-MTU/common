@@ -166,7 +166,7 @@ imDirs  = movieData.getChannelPaths(p.ChannelIndex);
 threshMethod = thresProc.getMethods(p.MethodIndx).func;
 %% ----- Thresholding ----- %%
 
-if ~p.BatchMode
+if ~p.BatchMode && feature('ShowFigureWindows')
     wtBar = waitbar(0,['Please wait, thresholding channel ' num2str(p.ChannelIndex(1)) ' ...']);        
 end        
 
@@ -174,7 +174,7 @@ end
 for iChan = 1:nChanThresh
         
         
-    if ~p.BatchMode        
+    if ishandle(wtBar)        
         waitbar((iChan-1)*nImages / nImTot,wtBar,['Please wait, thresholding channel ' num2str(p.ChannelIndex(iChan)) ' ...']);        
     end        
     disp(['Thresholding images for channel # ' num2str(p.ChannelIndex(iChan)) ' : '])
@@ -210,7 +210,7 @@ for iChan = 1:nChanThresh
                 if p.MaxJump > 0
                     currThresh = Inf;
                 else
-                    if ~p.BatchMode && ishandle(wtBar)
+                    if ishandle(wtBar)
                         warndlg(['Could not automatically select a threshold in frame ' ...
                         num2str(iImage) '! Try specifying a threshold level, or enabling the MaxJump option!']);
                         close(wtBar)
@@ -249,7 +249,7 @@ for iChan = 1:nChanThresh
         %write the mask to file                    
         imwrite(imageMask,[maskDirs{iChan} filesep pString imageFileNames{iChan}{iImage}]);
         
-        if ~p.BatchMode && mod(iImage,5)
+        if ishandle(wtBar) && mod(iImage,5)
             %Update the waitbar occasionally to minimize slowdown
             waitbar((iImage + (iChan-1)*nImages) / nImTot,wtBar)
         end
@@ -260,7 +260,7 @@ for iChan = 1:nChanThresh
     
 end
 
-if ~p.BatchMode && ishandle(wtBar)
+if ishandle(wtBar)
     close(wtBar)
 end
 
