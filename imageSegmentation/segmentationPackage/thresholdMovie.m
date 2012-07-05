@@ -168,6 +168,8 @@ threshMethod = thresProc.getMethods(p.MethodIndx).func;
 
 if ~p.BatchMode && feature('ShowFigureWindows')
     wtBar = waitbar(0,['Please wait, thresholding channel ' num2str(p.ChannelIndex(1)) ' ...']);        
+else
+    wtBar = -1;
 end        
 
 

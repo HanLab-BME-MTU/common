@@ -260,6 +260,8 @@ end
 
 if ~p.BatchMode && feature('ShowFigureWindows')
     wtBar = waitbar(0,['Please wait, refining masks for channel ' num2str(p.ChannelIndex(1)) ' ...']);     
+else
+    wtBar = -1;
 end        
 
 if p.EdgeRefinement
