@@ -236,16 +236,10 @@ chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
 chanIndex2(id) = [ ];
 set(handles.listbox_selectedChannels, 'Userdata', chanIndex2);
 
-% Update thresholdValues
-thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
-thresholdValues(id) = [];
-set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues));
-
 % Point 'Value' to the second last item in the list once the 
 % last item has been deleted
 if (id >length(contents) && id>1)
     set(handles.listbox_selectedChannels,'Value',length(contents));
-    set(handles.listbox_thresholdValues,'Value',length(contents));
 end
 % Refresh listbox
 set(handles.listbox_selectedChannels,'String',contents);

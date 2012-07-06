@@ -45,7 +45,7 @@ end
 
 indexCellSegProcess = 0;
 for i = 1 : nProcesses
-    if(strcmp(MD.processes_{i}.getName,'Mask Refinement')==1)
+    if(strcmp(movieData.processes_{i}.getName,'Mask Refinement')==1)
         indexCellSegProcess = i;
         break;
     end
@@ -60,7 +60,7 @@ funParams=movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
 
 selected_channels = funParams.ChannelIndex;
 Pace_Size = funParams.Pace_Size;
-Patch_size = funParams.Patch_size;
+Patch_Size = funParams.Patch_size;
 Combine_Way = funParams.Combine_Way;
 
 FilamentSegmentationOutputDir = funParams.OutputDirectory;
@@ -79,6 +79,13 @@ for iChannel = selected_channels
         mkdir(FilamentSegmentationChannelOutputDir);
     end
 
+    SteerableChannelOutputDir = movieData.processes_{indexSteerabeleProcess}.outFilePaths_{iChannel};
+
+    
+    if indexFlattenProcess >0
+        FileNames = movieData.processes_{indexFlattenProcess}.getOutImageFileNames(iChannel);
+    end
+    
     for iFrame = 1 : nFrame
         disp(['Frame: ',num2str(iFrame)]);
         
@@ -89,7 +96,7 @@ for iChannel = selected_channels
             currentImg = movieData.channels_(iChannel).loadImage(iFrame);
         end
         
-        load([FilamentSegmentationChannelOutputDir, filesep, '/steerable_',num2str(iFrame),'.mat']);
+        load([SteerableChannelOutputDir, filesep, 'steerable_',num2str(iFrame),'.mat']);
         
         MaskCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(iChannel,iFrame);
        
@@ -164,12 +171,37 @@ for iChannel = selected_channels
             orienation_map_filtered(find(intensity_addon>0)) = OrientationVoted(find(intensity_addon>0));
         end
 
-        imwrite(current_seg,[FilamentSegmentationChannelOutputDir,'/segment_',num2str(iFrame),'.tif']);
-      
+%         imwrite(current_seg,[FilamentSegmentationChannelOutputDir,'/segment_',num2str(iFrame),'.tif']);
+        
+        Hue = (-orienation_map_filtered(:)+pi/2)/(pi)-0.2;
+        Hue(find(Hue>=1)) = Hue(find(Hue>=1)) -1;
+        Hue(find(Hue<0)) = Hue(find(Hue<0)) +1;
+        
+        Sat = Hue*0+1;
+        Value = Hue*0+1;
+        RGB_seg_orient_heat_array = hsv2rgb([Hue Sat Value]);
+        R_seg_orient_heat_map = col2im(RGB_seg_orient_heat_array(:,1),[1 1],[size(current_seg,1) size(current_seg,2)]);
+        G_seg_orient_heat_map = col2im(RGB_seg_orient_heat_array(:,2),[1 1],[size(current_seg,1) size(current_seg,2)]);
+        B_seg_orient_heat_map = col2im(RGB_seg_orient_heat_array(:,3),[1 1],[size(current_seg,1) size(current_seg,2)]);
+        
+        enhanced_im_r = currentImg;
+        enhanced_im_g = currentImg;
+        enhanced_im_b = currentImg;
+        
+        enhanced_im_r(find(current_seg>0))=255*R_seg_orient_heat_map(find(current_seg>0));
+        enhanced_im_g(find(current_seg>0))=255*G_seg_orient_heat_map(find(current_seg>0));
+        enhanced_im_b(find(current_seg>0))=255*B_seg_orient_heat_map(find(current_seg>0));
+        
+        RGB_seg_orient_heat_map(:,:,1 ) = enhanced_im_r;
+        RGB_seg_orient_heat_map(:,:,2 ) = enhanced_im_g;
+        RGB_seg_orient_heat_map(:,:,3 ) = enhanced_im_b;
+        
+        imwrite(RGB_seg_orient_heat_map,[FilamentSegmentationChannelOutputDir,'/segment_heat_',num2str(iFrame),'.tif']);
+        
         save([FilamentSegmentationChannelOutputDir,'/steerable_vote_',num2str(iFrame),'.mat'],...
             'currentImg','orienation_map_filtered','OrientationVoted','orienation_map', ...
             'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment');
         
     end
-        
+end     
  
