@@ -252,15 +252,6 @@ if ishandle(userData.helpFig), delete(userData.helpFig); end
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);
 
-% --- Executes on button press in checkbox_max.
-function checkbox_max_Callback(hObject, eventdata, handles)
-
-if get(hObject, 'value')
-    set(handles.edit_jump, 'Enable', 'on');
-else 
-    set(handles.edit_jump, 'Enable', 'off');
-end
-
 
 % --- Executes on key press with focus on pushbutton_done and none of its controls.
 function pushbutton_done_KeyPressFcn(hObject, eventdata, handles)

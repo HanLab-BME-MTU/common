@@ -22,7 +22,7 @@ function varargout = imageFlattenProcessGUI(varargin)
 
 % Edit the above text to modify the response to help imageFlattenProcessGUI
 
-% Last Modified by GUIDE v2.5 03-Jul-2012 14:58:40
+% Last Modified by GUIDE v2.5 05-Jul-2012 16:51:08
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -84,6 +84,10 @@ set(handles.listbox_selectedChannels,'String',channelString,...
     'UserData',channelIndex);
 
 set(handles.edit_GaussFilterSigma,'String',funParams.GaussFilterSigma);
+
+set(handles.checkbox_log,'Value',funParams.log_flag);
+set(handles.checkbox_sqrt,'Value',funParams.sqrt_flag);
+
 
 % flattenMethods = userData.crtProc.getMethods();
 % set(handles.popupmenu_flatteningMethods,'String',{flattenMethods(:).name},...
@@ -192,6 +196,9 @@ if isnan(gaussFilterSigma) || gaussFilterSigma < 0
 end
 funParams.GaussFilterSigma=gaussFilterSigma;
 
+funParams.log_flag = get(handles.checkbox_log,'Value');
+funParams.sqrt_flag = get(handles.checkbox_sqrt,'Value');
+
 funParams.method_ind = 1; 
 
 funParams.OutputDirectory  = [ userData.crtPackage.outputDirectory_, filesep 'ImageFlatten'];
@@ -223,92 +230,20 @@ end
 processGUI_ApplyFcn(hObject, eventdata, handles, funParams);
 
 
-function update_data(hObject,eventdata, handles)
+% --- Executes on button press in checkbox_sqrt.
+function checkbox_sqrt_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_sqrt (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 
-userData = get(handles.figure1, 'UserData');
+% Hint: get(hObject,'Value') returns toggle state of checkbox_sqrt
+set(handles.checkbox_log,'Value',0);
 
-% if strcmp(get(get(hObject,'Parent'),'Tag'),'uipanel_channels') ||...
-%         strcmp(get(hObject,'Tag'),'listbox_thresholdValues')
-%     % Check if changes have been at the list box level
-%     linkedListBoxes = {'listbox_selectedChannels'};
-%     checkLinkBox = strcmp(get(hObject,'Tag'),linkedListBoxes);
-%     if any(checkLinkBox)
-%         value = get(handles.(linkedListBoxes{checkLinkBox}),'Value');
-%         set(handles.(linkedListBoxes{~checkLinkBox}),'Value',value);
-%     else
-%         value = get(handles.listbox_selectedChannels,'Value');
-%     end  
-% end
+% --- Executes on button press in checkbox_log.
+function checkbox_log_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_log (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 
-
-% % Retrieve the channex index
-% props=get(handles.listbox_selectedChannels,{'UserData','Value'});
-% if isempty(props{1}), return; end
-% chanIndx = props{1}(props{2});
-% imIndx = get(handles.slider_frameNumber,'Value');
-% 
-% % Load a new image in case the image number or channel has been changed
-% if (chanIndx~=userData.chanIndx) ||  (imIndx~=userData.imIndx)
-%     if ~isempty(userData.parentProc) && ~isempty(userData.crtPackage.processes_{userData.parentProc}) &&...
-%             userData.crtPackage.processes_{userData.parentProc}.checkChannelOutput(chanIndx)
-%         userData.imData=userData.crtPackage.processes_{userData.parentProc}.loadOutImage(chanIndx,imIndx);
-%     else
-%         userData.imData=userData.MD.channels_(chanIndx).loadImage(imIndx);
-%     end
-%     
-%     userData.updateImage=1;
-%     userData.chanIndx=chanIndx;
-%     userData.imIndx=imIndx;
-% else
-%     userData.updateImage=0;
-% end
-
-
-% Save the data
-set(handles.figure1, 'UserData', userData);
-guidata(hObject,handles);
-% 
-% % Update graphics if applicable
-% if get(handles.checkbox_preview,'Value')
-% 
-%     % Create figure if non-existing or closed
-%     if ~ishandle(userData.previewFig)
-%         userData.previewFig = figure('NumberTitle','off','Name','Thresholding preview',...
-%             'Position',[50 50 userData.MD.imSize_(2) userData.MD.imSize_(1)]);
-%         axes('Position',[0 0 1 1]);
-%     else
-%         figure(userData.previewFig);
-%     end
-%     
-%     % Retrieve the handle of the figures image
-%     imHandle = findobj(userData.previewFig,'Type','image');
-%     if userData.updateImage || isempty(imHandle)
-%         if isempty(imHandle)
-%             imHandle=imagesc(userData.imData);
-%             axis off;
-%         else
-%             set(imHandle,'CData',userData.imData);
-%         end
-%     end
-%     
-%     % Preview the tresholding output using the alphaData mapping    
-%     flatten_preview_img=ones(size(userData.imData));
-%  
-%     
-%     if get(handles.checkbox_auto,'Value')
-%         methodIndx=get(handles.popupmenu_flatteningMethod,'Value');
-%         
-%         flatten_preview_img=image_flatten_single(currentImg, flatten_method_ind, Gaussian_sigma);
-%     end
-%     
-%       gaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma, 'String'));
-%     if ~isnan(gaussFilterSigma) && gaussFilterSigma >0
-%         flatten_preview_img = filterGauss2D(flatten_preview_img,gaussFilterSigma);    
-%     end
-%     
-%     figure(imHandle); imagescc(flatten_preview_img);
-%     
-%     set(handles.figure1, 'UserData', userData);
-%     guidata(hObject,handles);
-% end
-
+% Hint: get(hObject,'Value') returns toggle state of checkbox_log
+set(handles.checkbox_sqrt,'Value',0);

@@ -22,6 +22,10 @@ selected_channels = funParams.ChannelIndex;
 flatten_method_ind = funParams.method_ind;
 Gaussian_sigma = funParams.GaussFilterSigma;
 ImageFlattenProcessOutputDir = funParams.OutputDirectory;
+log_flag = funParams.log_flag;
+sqrt_flag = funParams.sqrt_flag;
+
+flatten_method_ind = log_flag + 2*sqrt_flag;
 
 if (~exist(ImageFlattenProcessOutputDir,'dir'))
     mkdir(ImageFlattenProcessOutputDir);
@@ -58,6 +62,10 @@ for iChannel = selected_channels
             
         else
             if flatten_method_ind == 2
+                
+                currentImg = currentImg - min(min(currentImg));
+                currentImg = currentImg/(max(max(currentImg)));
+    
                 currentImg = sqrt(currentImg);
             end
         end
