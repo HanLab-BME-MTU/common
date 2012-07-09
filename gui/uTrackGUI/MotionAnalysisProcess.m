@@ -1,6 +1,6 @@
-classdef MotionAnalysisProcess < DataProcessingProcess
-    % A concrete class associated to the comet detection
-    %
+classdef MotionAnalysisProcess < PostTrackingProcess
+    % A concrete class for analyzing tracks diffusion
+    
     % Sebastien Besson, March 2012
 
     methods (Access = public)
@@ -26,7 +26,7 @@ classdef MotionAnalysisProcess < DataProcessingProcess
                 super_args{4} = funParams;  
             end
             
-            obj = obj@DataProcessingProcess(super_args{:});
+            obj = obj@PostTrackingProcess(super_args{:});
         end
         function varargout = loadChannelOutput(obj,iChan,varargin)
             

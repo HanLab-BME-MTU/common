@@ -2,32 +2,35 @@ classdef UTrackPackage < TrackingPackage
     % A concrete process for UTrack Package
     
     methods (Access = public)
-        function obj = UTrackPackage (owner,varargin)
-            % Construntor of class MaskProcess
-            if nargin == 0
-                super_args = {};
-            else
-                % Check input
-                ip =inputParser;
-                ip.addRequired('owner',@(x) isa(x,'MovieObject'));
-                ip.addOptional('outputDir',owner.outputDirectory_,@ischar);
-                ip.parse(owner,varargin{:});
-                outputDir = ip.Results.outputDir;
-
-                super_args{1} = owner;              
-                super_args{2} = [outputDir filesep 'UTrackPackage'];
-                
-            end
+        function obj = UTrackPackage (varargin)
+            
             % Call the superclass constructor
-            obj = obj@TrackingPackage(super_args{:});
+            obj = obj@TrackingPackage(varargin{:});
         end
         
     end
     methods (Static)
-        function name = getName()
-            name = 'U-Track';
-        end
 
+        function procConstr = getDefaultProcessConstructors(index)
+            procConstr = {
+                @SubResolutionProcess,...
+                @(x,y)TrackingProcess(x,y,UTrackPackage.getDefaultTrackingParams(x,y)),...
+                @MotionAnalysisProcess};
+            if nargin==0, index=1:numel(procConstr); end
+            procConstr=procConstr(index);
+        end
+        
+        function funParams = getDefaultTrackingParams(owner,outputDir)
+            funParams = TrackingProcess.getDefaultParams(owner,outputDir);
+
+            % Set default kalman functions
+            funParams.kalmanFunctions = TrackingProcess.getKalmanFunctions(1);
+
+            % Set default cost matrices
+            funParams.costMatrices(1) = TrackingProcess.getDefaultLinkingCostMatrices(owner, funParams.gapCloseParam.timeWindow,1);
+            funParams.costMatrices(2) = TrackingProcess.getDefaultGapClosingCostMatrices(owner, funParams.gapCloseParam.timeWindow,1);
+        end
+        
         function varargout = GUI(varargin)
             % Start the package GUI
             varargout{1} = uTrackPackageGUI(varargin{:});
