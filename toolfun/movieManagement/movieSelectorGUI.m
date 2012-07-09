@@ -105,7 +105,7 @@ pos = get(handles.uipanel_packages,'Position');
 for i=1:nPackages
     uicontrol(handles.uipanel_packages,'Style','radio',...
     'Position',[10 pos(4)-20-30*i pos(3)-20 20],'Tag',['radiobutton_package' num2str(i)],...
-    'String',packageNames{i},'UserData',str2func(packageList{i}),...
+    'String',packageNames{i},'UserData',packageList{i},...
     'Value',strcmp(packageList{i},ip.Results.packageName))
 end
 set(handles.uipanel_packages,'SelectionChangeFcn','');
@@ -181,20 +181,37 @@ end
 % Retrieve the ID of the selected button and call the appropriate
 userData = get(handles.figure1, 'UserData');
 selectedPackage=get(get(handles.uipanel_packages, 'SelectedObject'),'UserData');
-if isequal(func2str(selectedPackage),'IntegratorPackage')
+
+% Select movie or list depending on the package nature
+if isequal(selectedPackage,'IntegratorPackage')
     type = 'movie list';
     field = 'ML';
 else
     type = 'movie';
     field = 'MD'; 
 end
-
+  
 if isempty(userData.(field))
     warndlg(['Please load at least one ' type ' to continue.'], 'Movie Selector', 'modal')
     return
 end
+
+% If  tracking package is selected
+packageConstr = str2func(selectedPackage);
+if isequal(selectedPackage,'TrackingPackage')
+    hasTrackingPackage = @(x) any(cellfun(@(y) isa(y,'TrackingPackage'),...
+        x.packages_));
+    if ~all(arrayfun(hasTrackingPackage, userData.(field)))
+        objects = TrackingPackage.getObjects();
+        [selection, status] = listdlg('Name','Objects',...
+            'Select the type of object you want to track',...
+            'ListString', {objects.name},'SelectionMode','single');
+        if ~status, return; end
+        packageConstr = objects(selection).packageConstr;
+    end
+end
 close(handles.figure1);
-packageGUI(selectedPackage,userData.(field));
+packageGUI(packageConstr,userData.(field),'packageName', selectedPackage);
 
 % --- Executes on selection change in listbox_movie.
 function listbox_movie_Callback(hObject, eventdata, handles)

@@ -1,4 +1,4 @@
-function packageGUI_OpeningFcn(hObject,eventdata,handles,packageName,varargin)
+function packageGUI_OpeningFcn(hObject,eventdata,handles,packageConstr,varargin)
 % Callback called at the opening of packageGUI
 %
 % packageGUI_OpeningFcn(packageName,MD)   MD: MovieData object
@@ -51,19 +51,13 @@ ip = inputParser;
 ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
-ip.addRequired('packageName',@(x) isa(x,'char') || isa(x,'function_handle'));
+ip.addRequired('packageConstr',@(x) isa(x,'function_handle'));
 ip.addOptional('MO',[],@(x) isa(x,'MovieObject'));
-ip.parse(hObject,eventdata,handles,packageName,varargin{:});
+ip.addParamValue('packageName',func2str(packageConstr),@(x) isa(x,'char'));
+ip.parse(hObject,eventdata,handles,packageConstr,varargin{:});
 
-
-% Generate the package constructor
-if isa(packageName,'function_handle')
-    packageConstr=packageName;
-    packageName=func2str(packageName);
-elseif isa(packageName,'char')
-    packageConstr=str2func(packageName);
-end
-
+% Read the package name
+packageName = ip.Results.packageName;
 assert(any(strcmp(superclasses(packageName),'Package')),...
     sprintf('%s is not a valid Package',packageName));
       
