@@ -1,18 +1,18 @@
-function varargout = detectionProcessGUI(varargin)
-%DETECTIONPROCESSGUI M-file for detectionProcessGUI.fig
-%      DETECTIONPROCESSGUI, by itself, creates a new DETECTIONPROCESSGUI or raises the existing
+function varargout = abstractProcessGUI(varargin)
+%ABSTRACTPROCESSGUI M-file for abstractProcessGUI.fig
+%      ABSTRACTPROCESSGUI, by itself, creates a new ABSTRACTPROCESSGUI or raises the existing
 %      singleton*.
 %
-%      H = DETECTIONPROCESSGUI returns the handle to a new DETECTIONPROCESSGUI or the handle to
+%      H = ABSTRACTPROCESSGUI returns the handle to a new ABSTRACTPROCESSGUI or the handle to
 %      the existing singleton*.
 %
-%      DETECTIONPROCESSGUI('Property','Value',...) creates a new DETECTIONPROCESSGUI using the
+%      ABSTRACTPROCESSGUI('Property','Value',...) creates a new ABSTRACTPROCESSGUI using the
 %      given property value pairs. Unrecognized properties are passed via
-%      varargin to detectionProcessGUI_OpeningFcn.  This calling syntax produces a
+%      varargin to abstractProcessGUI_OpeningFcn.  This calling syntax produces a
 %      warning when there is an existing singleton*.
 %
-%      DETECTIONPROCESSGUI('CALLBACK') and DETECTIONPROCESSGUI('CALLBACK',hObject,...) call the
-%      local function named CALLBACK in DETECTIONPROCESSGUI.M with the given input
+%      ABSTRACTPROCESSGUI('CALLBACK') and ABSTRACTPROCESSGUI('CALLBACK',hObject,...) call the
+%      local function named CALLBACK in ABSTRACTPROCESSGUI.M with the given input
 %      arguments.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
@@ -20,16 +20,16 @@ function varargout = detectionProcessGUI(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help detectionProcessGUI
+% Edit the above text to modify the response to help abstractProcessGUI
 
-% Last Modified by GUIDE v2.5 13-Dec-2011 13:55:39
+% Last Modified by GUIDE v2.5 09-Jul-2012 10:49:16
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @detectionProcessGUI_OpeningFcn, ...
-                   'gui_OutputFcn',  @detectionProcessGUI_OutputFcn, ...
+                   'gui_OpeningFcn', @abstractProcessGUI_OpeningFcn, ...
+                   'gui_OutputFcn',  @abstractProcessGUI_OutputFcn, ...
                    'gui_LayoutFcn',  [], ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -44,24 +44,28 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before detectionProcessGUI is made visible.
-function detectionProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
+% --- Executes just before abstractProcessGUI is made visible.
+function abstractProcessGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
 processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:})
 
 % Get current package and process
 userData = get(handles.figure1, 'UserData');
 
+procName = eval([userData.crtProcClassName '.getName()']); 
+set(handles.uipanel_methods, 'Title', [procName ' methods']);
+set(handles.text_methods, 'String', ['Choose a ' lower(procName) ' method']);
+
+
 % Get current process constructer, set-up GUIs and mask refinement process
 % constructor
-     
-userData.subProcClassNames = eval([userData.crtProcClassName '.getConcreteClasses']);
+userData.subProcClassNames = eval([userData.crtProcClassName '.getConcreteClasses()']);
 validClasses = cellfun(@(x)exist(x,'class')==8,userData.subProcClassNames);
 userData.subProcClassNames = userData.subProcClassNames(validClasses);
 userData.subProcConstr = cellfun(@(x) str2func(x),userData.subProcClassNames,'Unif',0);
 userData.subProcGUI = cellfun(@(x) eval([x '.GUI']),userData.subProcClassNames,'Unif',0);
 subProcNames = cellfun(@(x) eval([x '.getName']),userData.subProcClassNames,'Unif',0);
-popupMenuProcName = vertcat(subProcNames,{'Choose a detection method'});
+popupMenuProcName = vertcat(subProcNames,{['Choose a ' lower(procName) ' method']});
 
 % Set up input channel list box
 if isempty(userData.crtProc)
@@ -79,7 +83,7 @@ end
 set(handles.popupmenu_methods, 'String', popupMenuProcName,...
     'Value',value)
 
-% Choose default command line output for detectionProcessGUI
+% Choose default command line output for abstractProcessGUI
 handles.output = hObject;
 
 % Update user data and GUI data
@@ -88,7 +92,7 @@ guidata(hObject, handles);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = detectionProcessGUI_OutputFcn(hObject, eventdata, handles)
+function varargout = abstractProcessGUI_OutputFcn(hObject, eventdata, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -133,6 +137,9 @@ delete(handles.figure1);
 
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
-% hObject    handle to figure1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+userData = get(handles.figure1, 'UserData');
+
+delete(userData.helpFig(ishandle(userData.helpFig))); 
+
+set(handles.figure1, 'UserData', userData);
+guidata(hObject,handles);

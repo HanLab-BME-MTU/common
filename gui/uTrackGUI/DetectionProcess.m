@@ -74,7 +74,7 @@ classdef DetectionProcess < ImageAnalysisProcess
             name = 'Detection';
         end
         function h = GUI()
-            h = @detectionProcessGUI;
+            h = @abstractProcessGUI;
         end
         function procClasses = getConcreteClasses()
             procClasses = ...
