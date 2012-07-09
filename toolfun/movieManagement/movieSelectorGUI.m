@@ -153,7 +153,8 @@ packageList = {'BiosensorsPackage';...
     'TFMPackage'
     'TrackingPackage'
     'WindowingPackage'};
-
+validPackage = cellfun(@(x) exist(x,'class')==8,packageList);
+packageList = packageList(validPackage);
 
 % --- Outputs from this function are returned to the command line.
 function varargout = movieSelectorGUI_OutputFcn(hObject, eventdata, handles) 
