@@ -90,7 +90,7 @@ userData.msgboxGUI=-1;
 userData.iconHelpFig =-1;
 
 % Get concrete packages
-packageList = TestHelperMovieObject.getConcreteSubClasses('Package');
+packageList = getPackageList();
 if isempty(packageList), 
     warndlg('No package found! Please make sure you properly added the installation directory to the path (see user''s manual).',...
         'Movie Selector','modal'); 
@@ -142,6 +142,18 @@ set(handles.figure1,'UserData',userData);
 refreshDisplay(hObject,eventdata,handles);
 % Save userdata
 guidata(hObject, handles);
+
+function packageList = getPackageList()
+
+packageList = {'BiosensorsPackage';...
+    'FocalAdhesionPackage'
+    'IntegratorPackage'
+    'QFSMPackage'
+    'SegmentationPackage'
+    'TFMPackage'
+    'TrackingPackage'
+    'WindowingPackage'};
+
 
 % --- Outputs from this function are returned to the command line.
 function varargout = movieSelectorGUI_OutputFcn(hObject, eventdata, handles) 
