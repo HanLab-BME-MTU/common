@@ -1,6 +1,6 @@
 function [fracTrajClass,f2fDispRMS] = plotPropertySpatialMap2D(tracksFinal,...
     figureName,minLength,properties2plot,positions2plot,image,fixedSegLength,...
-    diffAnalysisRes)
+    diffAnalysisRes,diffModeAnRes)
 %PLOTPROPERTYSPATIALMAP creates spatial maps of trajectory properties
 %
 %SYNOPSIS [fracTrajClass,f2fDispRMS] = plotPropertySpatialMap2D(tracksFinal,...
@@ -14,11 +14,13 @@ function [fracTrajClass,f2fDispRMS] = plotPropertySpatialMap2D(tracksFinal,...
 %                        Optional. Default: 20.
 %       properties2plot: Row vector of properties to plot:
 %                        1 - Diffusion classification.
-%                        2 - Diffusion coefficient.
+%                        2 - Diffusion coefficient from MSS analysis.
 %                        3 - Confinement radius.
 %                        4 - Track lifetime.
 %                        5 - Average frame-to-frame displacement.
-%                        Optional. Default: 1, 2 and 3.
+%                        6 - Diffusion mode.
+%                        7 - Diffusion coefficient from mode analysis.
+%                        Optional. Default: all.
 %	    positions2plot : Row vector of trajectory position to plot:
 %                        1 - Center position.
 %                        2 - Start position.
@@ -34,6 +36,10 @@ function [fracTrajClass,f2fDispRMS] = plotPropertySpatialMap2D(tracksFinal,...
 %       diffAnalysisRes: Output of trackDiffusionAnalysis1.
 %                        Optional. If not input but needed, it will be
 %                        calculated within the code.
+%       diffModeAnRes  : Output of trackDiffModeAnalysis.
+%                        Optional. If not input but needed, it will be
+%                        calculated within the code. NOT IMPLEMENTED YET,
+%                        so must be input if needed.
 %
 %OUTPUT fracTrajClass  : Row vector with fraction of trajectories
 %                        classified as confined, Brownian and directed.
@@ -64,7 +70,7 @@ if nargin < 3 || isempty(minLength)
 end
 
 if nargin < 4 || isempty(properties2plot)
-    properties2plot = 1:3;
+    properties2plot = 1:7;
 end
 
 if nargin < 5 || isempty(positions2plot)
@@ -83,6 +89,10 @@ if nargin < 8 || isempty(diffAnalysisRes)
     diffAnalysisRes = [];
 end
 
+if nargin < 9 || isempty(diffModeAnRes)
+    diffModeAnRes = [];
+end
+
 %% Preparation for plotting
 
 %define the default of 10 segments for plotting some of the properties
@@ -93,8 +103,9 @@ segmentColor = [0 0 0; 0 0 1; 0.2 0.7 0.7; 0 1 1; 0 1 0; ...
     0.6824 0.4667 0; 1 0.7 0; 1 0 0; 1 0 1; 0.7 0 1];
 
 %construct parts of figure titles
-plottedProperty = {'Classification','Diffusion coefficient',...
-    'Confinement radius','Lifetime','Frame-to-frame displacement'};
+plottedProperty = {'Classification','Diffusion coefficient MSS',...
+    'Confinement radius','Lifetime','Frame-to-frame displacement',...
+    'Diffusion mode dispSq','Diffusion coefficient dispSq'};
 plottedPosition = {'center position','start position','end position'};
 
 %% Trajectory pre-processing
@@ -105,6 +116,9 @@ indx = chooseTracks(tracksFinal,criteria);
 tracksFinal = tracksFinal(indx);
 if ~isempty(diffAnalysisRes)
     diffAnalysisRes = diffAnalysisRes(indx);
+end
+if ~isempty(diffModeAnRes)
+    diffModeAnRes = diffModeAnRes(indx);
 end
 
 %save tracksFinal into a new variable name
@@ -223,49 +237,98 @@ if any(properties2plot<=3) && isempty(diffAnalysisRes)
     diffAnalysisRes = trackDiffusionAnalysis1(inputStructure,1,2,0,0.05);
 end
 
+% %perform diffusion mode nalysis if not supplied
+% if any(properties2plot>=6) && isempty(diffModeAnRes)
+%     diffModeAnRes = trackDiffModeAnalysis(inputStructure,1,2,0,0.05);
+% end
+
 %get classifications from diffusion analysis results
 trajClass = vertcat(diffAnalysisRes.classification);
 trajClass = trajClass(:,2);
 
-%calculate the fraction of trajectories in each classification
-fracTrajClass = hist(trajClass,1:3);
-fracTrajClass = fracTrajClass / sum(fracTrajClass);
+if any(properties2plot==1)
+    
+    %calculate the fraction of trajectories in each classification
+    fracTrajClass = hist(trajClass,1:3);
+    fracTrajClass = fracTrajClass / sum(fracTrajClass);
+    
+end
 
-%get diffusion coefficients from diffusion analysis results
-% diffCoefNorm = catStruct(1,'diffAnalysisRes.fullDim.normDiffCoef');
-diffCoefGen = catStruct(1,'diffAnalysisRes.fullDim.genDiffCoef(:,3)');
+if any(properties2plot==2)
+    
+    %get diffusion coefficients from diffusion analysis results
+    % diffCoefNorm = catStruct(1,'diffAnalysisRes.fullDim.normDiffCoef');
+    diffCoefGen = catStruct(1,'diffAnalysisRes.fullDim.genDiffCoef(:,3)');
+    
+    %divide the range of diffusion coefficients into segments, determine
+    %which segment each trajectory falls into, and calculate the fraction of
+    %trajectories in each segment
+    % [diffCoefSegment,segmentEdgesDC,fracInSegmentsDC] = divideRangeIntoSegments(...
+    %     diffCoefNorm,numSegments,fixedSegLength);
+    [diffCoefSegment,segmentEdgesDC,fracInSegmentsDC] = divideRangeIntoSegments(...
+        diffCoefGen,numSegments,fixedSegLength);
+    
+end
 
-%divide the range of diffusion coefficients into segments, determine
-%which segment each trajectory falls into, and calculate the fraction of
-%trajectories in each segment
-% [diffCoefSegment,segmentEdgesDC,fracInSegmentsDC] = divideRangeIntoSegments(...
-%     diffCoefNorm,numSegments,fixedSegLength);
-[diffCoefSegment,segmentEdgesDC,fracInSegmentsDC] = divideRangeIntoSegments(...
-    diffCoefGen,numSegments,fixedSegLength);
+if any(properties2plot==3)
+    
+    %get confinement radii from diffusion analysis results
+    confRad = catStruct(1,'diffAnalysisRes.confRadInfo.confRadius(:,1)');
+    
+    %divide the range of confinement radii into segments, determine which
+    %segment each trajectory falls into, and calculate the fraction of
+    %trajectories in each segment
+    [confRadSegment,segmentEdgesCR,fracInSegmentsCR] = divideRangeIntoSegments(...
+        confRad,numSegments,fixedSegLength);
+    
+end
 
-%get confinement radii from diffusion analysis results
-confRad = catStruct(1,'diffAnalysisRes.confRadInfo.confRadius(:,1)');
+if any(properties2plot==4)
+    
+    %get trajectory lifetimes
+    trajLft = trajSEL(:,3);
+    
+    %divide the range of lifetimes into segments, determine which
+    %segment each trajectory falls into, and calculate the fraction of
+    %trajectories in each segment
+    [trajLftSegment,segmentEdgesLft,fracInSegmentsLft] = divideRangeIntoSegments(...
+        trajLft,numSegments,fixedSegLength);
+    
+end
 
-%divide the range of confinement radii into segments, determine which
-%segment each trajectory falls into, and calculate the fraction of
-%trajectories in each segment
-[confRadSegment,segmentEdgesCR,fracInSegmentsCR] = divideRangeIntoSegments(...
-    confRad,numSegments,fixedSegLength);
+if any(properties2plot==5)
+    
+    %divide the range of frame-to-frame displacements into segments, determine
+    %which segment each trajectory falls into, and calculate the fraction of
+    %trajectories in each segment
+    [f2fDispSegment,segmentEdgesFFD,fracInSegmentsFFD] = divideRangeIntoSegments(...
+        frame2frameDisp,numSegments,fixedSegLength);
+    
+end
 
-%get trajectory lifetimes
-trajLft = trajSEL(:,3);
+if any(properties2plot==6)
+    
+    %get diffusion modes from diffusion mode analysis results
+    trajDiffMode = vertcat(diffModeAnRes.diffMode);
+    
+    %calculate the fraction of trajectories in each mode
+    fracDiffMode = hist(trajDiffMode,1:5);
+    fracDiffMode = fracDiffMode / sum(fracDiffMode);
+    
+end
 
-%divide the range of lifetimes into segments, determine which
-%segment each trajectory falls into, and calculate the fraction of
-%trajectories in each segment
-[trajLftSegment,segmentEdgesLft,fracInSegmentsLft] = divideRangeIntoSegments(...
-    trajLft,numSegments,fixedSegLength);
-
-%divide the range of frame-to-frame displacements into segments, determine
-%which segment each trajectory falls into, and calculate the fraction of
-%trajectories in each segment
-[f2fDispSegment,segmentEdgesFFD,fracInSegmentsFFD] = divideRangeIntoSegments(...
-    frame2frameDisp,numSegments,fixedSegLength);
+if any(properties2plot==7)
+    
+    %get diffusion coefficients from diffusion mode analysis results
+    diffCoefDisp2 = vertcat(diffModeAnRes.diffCoef);
+    
+    %divide the range of diffusion coefficients into segments, determine
+    %which segment each trajectory falls into, and calculate the fraction of
+    %trajectories in each segment
+    [diffCoef2Segment,segmentEdgesDC2,fracInSegmentsDC2] = divideRangeIntoSegments(...
+        diffCoefDisp2,numSegments,fixedSegLength);
+    
+end
 
 %% Some numbers for output
 
@@ -351,7 +414,7 @@ for iProperty = properties2plot
                         '.','Color','m');
                 end
                                 
-            case 2 %diffusion coefficient
+            case 2 %diffusion coefficient MSS
                 
                 %trajectories without a diffusion coefficient i.e.
                 %unclassified trajectories
@@ -368,8 +431,6 @@ for iProperty = properties2plot
                     if ~isempty(indx)
                         plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
                             '.','Color',segmentColor(iSegment,:));
-                        %                         legendText{end+1} = [num2str(segmentEdgesDC(iSegment,1)) ...
-                        %                             ' - ' num2str(segmentEdgesDC(iSegment,2)) '; ' num2str(fracInSegmentsDC(iSegment))];
                     end
                 end
                 
@@ -397,8 +458,6 @@ for iProperty = properties2plot
                     if ~isempty(indx)
                         plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
                             '.','Color',segmentColor(iSegment,:));
-                        %                         legendText{end+1} = [num2str(segmentEdgesCR(iSegment,1)) ...
-                        %                             ' - ' num2str(segmentEdgesCR(iSegment,2))];
                     end
                 end
                 
@@ -426,6 +485,71 @@ for iProperty = properties2plot
                 %go over the different frame-to-frame displacement segments
                 for iSegment = 1 : numSegments
                     indx = find(f2fDispSegment==iSegment);
+                    if ~isempty(indx)
+                        plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
+                            '.','Color',segmentColor(iSegment,:));
+                    end
+                end
+                
+            case 6 %diffusion mode
+                
+                %unclassified
+                indx = find(isnan(trajDiffMode));
+                if ~isempty(indx)
+                    plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
+                        '.','Color',[0.7 0.7 0.7]);
+                    legendText{end+1} = 'unclassified'; %#ok<AGROW>
+                end
+
+                %mode 3
+                indx = find(trajDiffMode == 3);
+                if ~isempty(indx)
+                    plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
+                        '.','Color','c');
+                end
+                                
+                %mode 1
+                indx = find(trajDiffMode == 1);
+                if ~isempty(indx)
+                    plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
+                        '.','Color','k');
+                end
+                
+                %mode 2
+                indx = find(trajDiffMode == 2);
+                if ~isempty(indx)
+                    plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
+                        '.','Color','b');
+                end
+                
+                %mode 4
+                indx = find(trajDiffMode == 4);
+                if ~isempty(indx)
+                    plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
+                        '.','Color','m');
+                end
+                                
+                %mode 5
+                indx = find(trajDiffMode == 5);
+                if ~isempty(indx)
+                    plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
+                        '.','Color','g');
+                end
+                                
+            case 7 %diffusion coefficient from mode analysis
+                
+                %trajectories without a diffusion coefficient i.e.
+                %unclassified trajectories
+                indx = find(isnan(diffCoef2Segment));
+                if ~isempty(indx)
+                    plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
+                        '.','Color',[0.7 0.7 0.7]);
+                    legendText{end+1} = 'unclassified'; %#ok<AGROW>
+                end
+                
+                %go over the different diff. coef. segments
+                for iSegment = 1 : numSegments
+                    indx = find(diffCoef2Segment==iSegment);
                     if ~isempty(indx)
                         plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
                             '.','Color',segmentColor(iSegment,:));
@@ -469,7 +593,7 @@ for iProperty = properties2plot
                     'm','EdgeColor','none');
                 legendText = {'confined','free','directed'};
                 
-            case 2 %diffusion coefficient
+            case 2 %diffusion coefficient MSS
                 
                 %get the center and width of each segment
                 segmentCenter = mean(segmentEdgesDC,2);
@@ -531,6 +655,37 @@ for iProperty = properties2plot
                         'EdgeColor','none');
                     legendText{end+1} = [num2str(segmentEdgesFFD(iSegment,1)) ...
                         ' - ' num2str(segmentEdgesFFD(iSegment,2))]; %#ok<AGROW>
+                end
+                
+            case 6 %diffusion mode
+                
+                %plot the bars with different colors
+                bar([1 2],[fracDiffMode(1) 0],'BarWidth',1,'FaceColor',...
+                    'k','EdgeColor','none');
+                bar([2 3],[fracDiffMode(2) 0],'BarWidth',1,'FaceColor',...
+                    'b','EdgeColor','none');
+                bar([3 4],[fracDiffMode(3) 0],'BarWidth',1,'FaceColor',...
+                    'c','EdgeColor','none');
+                bar([4 5],[fracDiffMode(4) 0],'BarWidth',1,'FaceColor',...
+                    'm','EdgeColor','none');
+                bar([5 6],[fracDiffMode(5) 0],'BarWidth',1,'FaceColor',...
+                    'g','EdgeColor','none');
+                legendText = {'mode 1','mode 2','mode 3','mode 4','mode 5'};
+                
+            case 7 %diffusion coefficient from mode analysis
+                
+                %get the center and width of each segment
+                segmentCenter = mean(segmentEdgesDC2,2);
+                segmentWidth = segmentEdgesDC2(:,2) - segmentEdgesDC2(:,1);
+                
+                %plot the bars with different colors
+                for iSegment = 1 : numSegments
+                    bar([segmentCenter(iSegment) segmentCenter(iSegment)+...
+                        segmentWidth(iSegment)],[fracInSegmentsDC2(iSegment) 0],...
+                        'BarWidth',1,'FaceColor',segmentColor(iSegment,:),...
+                        'EdgeColor','none');
+                    legendText{end+1} = [num2str(segmentEdgesDC2(iSegment,1)) ...
+                        ' - ' num2str(segmentEdgesDC2(iSegment,2))]; %#ok<AGROW>
                 end
                 
         end

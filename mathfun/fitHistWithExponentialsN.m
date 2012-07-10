@@ -126,8 +126,9 @@ switch binStrategy
         numObservations = length(find(~isnan(observations)));
         
         %calculate the histogram
-        [numObsPerBin,binCenter] = histogram(observations);
-        numObsPerBin = numObsPerBin'*(binCenter(2)-binCenter(1));
+        [numObsPerBin,binCenter] = histogram(observations,[],0);
+        %         numObsPerBin = numObsPerBin'*(binCenter(2)-binCenter(1));
+        numObsPerBin = numObsPerBin';
         binCenter = binCenter';
         
         %determine the number of bins used

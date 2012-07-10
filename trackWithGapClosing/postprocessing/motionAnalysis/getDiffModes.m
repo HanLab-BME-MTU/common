@@ -34,12 +34,14 @@ function [modeParam,expParam] = getDiffModes(tracksFinal,minLength,alpha,...
 %                     Column 4: std of each fraction of contribution
 %       expParam    : Output of fitHistWithExponentialsN
 %
+%REMARKS Code is written for 2D case only, but can be generalized to 3D.
+%
 %Khuloud Jaqaman, June 2012
 
 %% Input
 
 %get tracks if not input
-%this only works 
+%this only works if tracks are called tracksFinal inside the .mat file
 if nargin < 1 || isempty(tracksFinal)
     [fName,dirName] = uigetfile('*.mat','Please choose .mat file of tracks.');
     load(fullfile(dirName,fName));
@@ -70,7 +72,7 @@ end
 if nargin < 7 || isempty(plotName)
     plotName = 'Figure';
 end
-    
+
 %% Mode decomposition
 
 %keep only tracks of the right length

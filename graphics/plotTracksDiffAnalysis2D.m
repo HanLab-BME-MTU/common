@@ -41,8 +41,12 @@ function plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,.
 %                                   number - start is due to a split, end
 %                                   is due to a merge, number is the index
 %                                   of track segment for the merge/split.
-%       diffAnalysisRes   : Structure of diffusion analysis results as
+%       diffAnalysisRes   : -- EITHER --
+%                           Structure of diffusion analysis results as
 %                           output by the code "trackDiffusionAnalysis1".
+%                           -- OR --
+%                           Structure of diffusion mode analysus results as
+%                           output by the code "classifyTrackDiffMode".
 %       timeRange         : 2-element row vector indicating time range to plot. 
 %                           Optional. Default: whole movie.
 %       newFigure         : 1 if plot should be made in a new figure
@@ -64,6 +68,9 @@ function plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,.
 %
 %OUTPUT The plot.
 %       Color coding:
+%
+%   IF OUTPUT OF trackDiffusionAnalysis1
+%
 %       linear & 1D confined diffusion -> orange
 %       linear & 1D normal diffusion -> red
 %       linear & 1D super diffusion -> green
@@ -72,11 +79,24 @@ function plotTracksDiffAnalysis2D(trackedFeatureInfo,diffAnalysisRes,timeRange,.
 %       random/unclassified & 2D normal diffusion -> cyan
 %       random/unclassified & 2D super diffusion -> magenta
 %       random & too short to analyze 2D diffusion -> purple
-%       too short for any analysis -> black
+%       too short for any analysis -> black, or white if overlaying on an
+%       image
 %
-%       If simplifyLin = 1, all linear groups will be colored red.
+%       If simplifyLin = 1, all linear groups will be colored red
 %       If simplifyLin = 2, all linear groups + random&super-diffusive will
-%       be colored red.
+%       be colored red
+%
+%   IF OUTPUT OF classifyTrackDiffMode
+%
+%       Mode 1 -> blue
+%       Mode 2 -> cyan
+%       Mode 3 -> red
+%       Mode 4 -> green
+%       Mode 5 -> magenta
+%       too short to classify -> black, or white if overlaying on an image
+%
+%       If there are more than 5 modes, for now the code will complain and
+%       exit
 %
 %Khuloud Jaqaman, March 2008
 
@@ -145,6 +165,13 @@ end
 if errFlag
     disp('--plotTracksDiffAnalysis2D: Please fix input data!');
     return
+end
+
+%if input diffusion analysis is in fact diffusion mode analysis, disable
+%showConf and simplifyLin
+if ~isfield(diffAnalysisRes,'classification')
+    showConf = 0;
+    simplifyLin = 0;
 end
 
 %% Pre-processing
@@ -235,80 +262,129 @@ numTrackSegments = size(tracksX,2);
 
 %% track segment color based on track type
 
-%get track segment types from diffusion analysis
-trackSegmentType = vertcat(diffAnalysisRes.classification);
-
-%color coding:
-%       linear & 1D confined diffusion -> orange
-%       linear & 1D normal diffusion -> red
-%       linear & 1D super diffusion -> green
-%       linear & too short to analyze 1D diffusion -> yellow
-%       random/unclassified & 2D confined diffusion -> blue
-%       random/unclassified & 2D normal diffusion -> cyan
-%       random/unclassified & 2D super diffusion -> magenta
-%       random & too short to analyze 2D diffusion -> purple
-%       too short for any analysis -> black (or white if overlaying on an
-%       image)
-%
-%       If simplifyLin = 1, all linear groups will be colored red.
-%       If simplifyLin = 2, all linear groups + random&super-diffusive will
-%       be colored red.
-%
-if isempty(image)
-    trackSegmentColor = repmat([0 0 0],numTrackSegments,1);
-else
-    trackSegmentColor = repmat([0.7 0.7 0.7],numTrackSegments,1);
+if isfield(diffAnalysisRes,'classification') %output of trackDiffusionAnalysis1
+    
+    %get track segment types from diffusion analysis
+    trackSegmentType = vertcat(diffAnalysisRes.classification);
+    
+    %color coding:
+    %       linear & 1D confined diffusion -> orange
+    %       linear & 1D normal diffusion -> red
+    %       linear & 1D super diffusion -> green
+    %       linear & too short to analyze 1D diffusion -> yellow
+    %       random/unclassified & 2D confined diffusion -> blue
+    %       random/unclassified & 2D normal diffusion -> cyan
+    %       random/unclassified & 2D super diffusion -> magenta
+    %       random & too short to analyze 2D diffusion -> purple
+    %       too short for any analysis -> black, or white if overlaying on an
+    %       image
+    %
+    %       If simplifyLin = 1, all linear groups will be colored red.
+    %       If simplifyLin = 2, all linear groups + random&super-diffusive will
+    %       be colored red.
+    %
+    if isempty(image)
+        trackSegmentColor = repmat([0 0 0],numTrackSegments,1);
+    else
+        trackSegmentColor = repmat([0.7 0.7 0.7],numTrackSegments,1);
+    end
+    indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 1);
+    switch simplifyLin
+        case 0
+            trackSegmentColor(indx,:) = repmat([1 0.7 0],length(indx),1);
+        case {1,2}
+            trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
+    end
+    indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 2);
+    trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
+    indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 3);
+    switch simplifyLin
+        case 0
+            trackSegmentColor(indx,:) = repmat([0 1 0],length(indx),1);
+        case {1,2}
+            trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
+    end
+    indx = find(trackSegmentType(:,1) == 1 & isnan(trackSegmentType(:,3)));
+    switch simplifyLin
+        case 0
+            trackSegmentColor(indx,:) = repmat([1 1 0],length(indx),1);
+        case {1,2}
+            trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
+    end
+    indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 1);
+    trackSegmentColor(indx,:) = repmat([0 0 1],length(indx),1);
+    indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 2);
+    trackSegmentColor(indx,:) = repmat([0 1 1],length(indx),1);
+    indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 3);
+    switch simplifyLin
+        case {0,1}
+            trackSegmentColor(indx,:) = repmat([1 0 1],length(indx),1);
+        case 2
+            trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
+    end
+    indx = find(trackSegmentType(:,1) == 0 & isnan(trackSegmentType(:,2)));
+    trackSegmentColor(indx,:) = repmat([0.6 0 1],length(indx),1);
+    
+else %output of classifyTrackDiffMode
+    
+    %get track segment diffusion modes
+    trackSegmentType = vertcat(diffAnalysisRes.diffMode);
+    
+    %color coding:
+    %       Mode 1 -> blue
+    %       Mode 2 -> cyan
+    %       Mode 3 -> red
+    %       Mode 4 -> green
+    %       Mode 5 -> magenta
+    %       too short to classify -> black, or white if overlaying on an image
+    
+    %find number of diffusion modes
+    numMode = max(trackSegmentType);
+    
+    %exit if there are more than 5 modes
+    if numMode > 5
+        disp('--plotTracksDiffAnalysis2D: Code cannot currently color-code more than 5 modes!');
+        return
+    end
+    
+    %the default, for unclassified tracks
+    if isempty(image)
+        trackSegmentColor = repmat([0 0 0],numTrackSegments,1);
+    else
+        trackSegmentColor = repmat([0.7 0.7 0.7],numTrackSegments,1);
+    end
+    
+    %go over the modes
+    indx = find(trackSegmentType==1);
+    trackSegmentColor(indx,:) = repmat([0 0 1],length(indx),1);
+    indx = find(trackSegmentType==2);
+    trackSegmentColor(indx,:) = repmat([0 1 1],length(indx),1);
+    indx = find(trackSegmentType==3);
+    trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
+    indx = find(trackSegmentType==4);
+    trackSegmentColor(indx,:) = repmat([0 1 0],length(indx),1);
+    indx = find(trackSegmentType==5);
+    trackSegmentColor(indx,:) = repmat([1 0 1],length(indx),1);
+    
 end
-indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 1);
-switch simplifyLin
-    case 0
-        trackSegmentColor(indx,:) = repmat([1 0.7 0],length(indx),1);
-    case {1,2}
-        trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
-end
-indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 2);
-trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
-indx = find(trackSegmentType(:,1) == 1 & trackSegmentType(:,3) == 3);
-switch simplifyLin
-    case 0
-        trackSegmentColor(indx,:) = repmat([0 1 0],length(indx),1);
-    case {1,2}
-        trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
-end
-indx = find(trackSegmentType(:,1) == 1 & isnan(trackSegmentType(:,3)));
-switch simplifyLin
-    case 0
-        trackSegmentColor(indx,:) = repmat([1 1 0],length(indx),1);
-    case {1,2}
-        trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
-end
-indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 1);
-trackSegmentColor(indx,:) = repmat([0 0 1],length(indx),1);
-indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 2);
-trackSegmentColor(indx,:) = repmat([0 1 1],length(indx),1);
-indx = find(trackSegmentType(:,1) ~= 1 & trackSegmentType(:,2) == 3);
-switch simplifyLin
-    case {0,1}
-        trackSegmentColor(indx,:) = repmat([1 0 1],length(indx),1);
-    case 2
-        trackSegmentColor(indx,:) = repmat([1 0 0],length(indx),1);
-end
-indx = find(trackSegmentType(:,1) == 0 & isnan(trackSegmentType(:,2)));
-trackSegmentColor(indx,:) = repmat([0.6 0 1],length(indx),1);
 
 %% confinement radius information
 
-%get track segment center, confinement radii and preferred direction of
-%motion
-trackSegmentCenter = catStruct(1,'diffAnalysisRes.confRadInfo.trackCenter');
-trackSegmentConfRad = catStruct(1,'diffAnalysisRes.confRadInfo.confRadius');
-trackSegmentPrefDir = catStruct(1,'diffAnalysisRes.confRadInfo.prefDir');
-
-%determine indices of tracks with one confinement radius
-indxCircle = find( ~isnan(trackSegmentConfRad(:,1)) & isnan(trackSegmentConfRad(:,2)) );
-
-%determine indices of tracks with 2 confinement radii
-indxRectangle = find( ~isnan(trackSegmentConfRad(:,2)) );
+if showConf
+    
+    %get track segment center, confinement radii and preferred direction of
+    %motion
+    trackSegmentCenter = catStruct(1,'diffAnalysisRes.confRadInfo.trackCenter');
+    trackSegmentConfRad = catStruct(1,'diffAnalysisRes.confRadInfo.confRadius');
+    trackSegmentPrefDir = catStruct(1,'diffAnalysisRes.confRadInfo.prefDir');
+    
+    %determine indices of tracks with one confinement radius
+    indxCircle = find( ~isnan(trackSegmentConfRad(:,1)) & isnan(trackSegmentConfRad(:,2)) );
+    
+    %determine indices of tracks with 2 confinement radii
+    indxRectangle = find( ~isnan(trackSegmentConfRad(:,2)) );
+    
+end
 
 %% Plotting
 
