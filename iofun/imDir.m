@@ -5,7 +5,7 @@ function [fileNames formatNum sNums] = imDir(imDirectory,returnAll)
 % 
 % fileNames = imDir(directory,returnAll);
 %
-% [fileNames formatNum] = imDir(...);
+% [fileNames formatNum sNums] = imDir(...);
 %
 % This function will find all files in the specified directory with common
 % file extensions for images. Additionally, the images will be re-ordered,
