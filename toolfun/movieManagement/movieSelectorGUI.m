@@ -203,7 +203,9 @@ if isequal(selectedPackage,'TrackingPackage')
     hasTrackingPackage = @(x) any(cellfun(@(y) isa(y,'TrackingPackage'),...
         x.packages_));
     if ~all(arrayfun(hasTrackingPackage, userData.(field)))
-        objects = TrackingPackage.getObjects();
+        % Using eval here since I don't want TrackingPackge to be evaluated
+        % as a dependency of movieSelector GUI
+        objects = [eval(selectedPackage) '.getObjects()'];
         [selection, status] = listdlg('Name','',...
             'PromptString',{'Select the type of object';'you want to track:'},...
             'ListString', {objects.name},'SelectionMode','single');
