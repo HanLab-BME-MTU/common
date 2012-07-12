@@ -115,8 +115,12 @@ end
 
 % Initialize the frame number slider and eidt
 nFrames=userData.MD.nFrames_;
-set(handles.slider_frameNumber,'Value',1,'Min',1,...
-    'Max',nFrames,'SliderStep',[1/double(nFrames)  10/double(nFrames)]);
+if nFrames > 1
+    set(handles.slider_frameNumber,'Value',1,'Min',1,...
+        'Max',nFrames,'SliderStep',[1/double(nFrames)  10/double(nFrames)]);
+else
+    set(handles.slider_frameNumber,'Enable','off');
+end
 set(handles.text_nFrames,'String',['/ ' num2str(nFrames)]);
 set(handles.edit_frameNumber,'Value',1);
 
