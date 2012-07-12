@@ -13,35 +13,30 @@ function makePackage(outDir)
 %   outDir - The directory to copy all the package files to.
 %
 
-% Sebastien Besson, July 2011 (last modified: Oct 3, 2011)
+% Sebastien Besson, July 2011 (last modified: Jul 2012)
 
 % List available packages and additional files required for running them
-packages(5)=struct('name','','initFiles','','additionalFiles','');
-packages(1).name='Segmentation';
-packages(1).initFiles={'SegmentationPackage'};
-packages(2).name='Biosensors';
-packages(2).initFiles={'BiosensorsPackage'};
-packages(3).name='U-Track';
-packages(3).initFiles={'UTrackPackage'};
-packages(4).name='QFSM';
-packages(4).initFiles={'QFSMPackage'};
-for i=1:4, packages(i).additionalFiles = {'lccbGuiIcons.mat'}; end
-packages(5).name='plusTipTracker';
-packages(5).initFiles={'plusTipGetTracks';'plusTipSeeTracks';...
-    'plusTipParamSweepGUI';'plusTipGroupAnalysis';'plusTipPoolGapsForReclass'};
-packages(5).additionalFiles = {'pTT_logo_sm.png';'help_icon.png'};
+packageList = {
+    'BiosensorsPackage';...
+    'IntegratorPackage'
+    'QFSMPackage'
+    'SegmentationPackage'
+    'TrackingPackage'
+    'WindowingPackage'};
+validPackage = cellfun(@(x) exist(x,'class')==8,packageList);
+packageList = packageList(validPackage);
+if isempty(packageList), error('No package found'); end
 
-% List all valid packages on the machine
-isValidPackage=@(x)all(cellfun(@(y)exist(y,'file'),packages(x).initFiles));
-validPackages=arrayfun(isValidPackage,1:numel(packages));
-packages(~validPackages)=[];
-if isempty(packages), error('No package found'); end
+% Create package names
+packageNames = cellfun(@(x) eval([x '.getName']),packageList,'Unif',0);
+[packageNames,index]=sort(packageNames);
+packageList=packageList(index);
 
 % Ask the user which packages to build
 [packageIndx,status] = listdlg('PromptString','Select the package(s) to build:',...
-    'SelectionMode','multiple','ListString',{packages(:).name});
+    'SelectionMode','multiple','ListString',packageNames);
 if ~status, return; end
-packages=packages(packageIndx);
+packageList=packageList(packageIndx);
 
 % Ask for the output directory if not supplied
 if nargin < 1 || isempty(outDir)    
@@ -49,7 +44,7 @@ if nargin < 1 || isempty(outDir)
 end
     
 %Get all the function dependencies and display toolboxes
-[packageFuns toolboxesUsed] = getFunDependencies(vertcat(packages.initFiles));
+[packageFuns toolboxesUsed] = getFunDependencies(packageList);
 disp('The package uses the following toolboxes:')
 disp(toolboxesUsed)
 
@@ -93,11 +88,13 @@ if ~isempty(packageMexFuns)
     end
 end
 
-% Add additional files (not included in dependencies)
-packageIcons = unique(cellfun(@which,vertcat(packages.additionalFiles),'UniformOutput',false));
+% Get the main path to the icons folder
+iconsPath = fullfile(fileparts(which('packageGUI.m')),'icons');
+icons = dir([iconsPath filesep '*.png']);
+packageIcons = arrayfun(@(x) [iconsPath filesep x.name],icons,'Unif',false);
 
 % Concatenate all matlab files but the documentation
-packageFiles=vertcat(packageFuns,packageFigs,packageIcons,packageMexFuns);
+packageFiles=vertcat(packageFuns,packageFigs,packageMexFuns);
 
 %% Export package files
 % Create package output directory if non-existing
@@ -113,6 +110,19 @@ for j = 1:nFiles
 end
 
 % Create doc output directory if non-existing
+disp('Creating/cleaning release icons directory...')
+iconsDir=[outDir filesep 'icons'];
+mkClrDir(iconsDir);
+
+% Copy documentation files
+nIcons = numel(packageIcons);
+disp(['Copying all '  num2str(nIcons) ' files ...'])
+for i = 1:numel(packageIcons)
+    iLFS = max(regexp(packageIcons{i},filesep));
+    copyfile(packageIcons{i}, [iconsDir filesep packageIcons{i}(iLFS+1:end)]);
+end
+
+% Create doc output directory if non-existing
 disp('Creating/cleaning release documentation directory...')
 docDir=[outDir filesep 'doc'];
 mkClrDir(docDir);
@@ -120,9 +130,9 @@ mkClrDir(docDir);
 % Copy documentation files
 nDocFiles = numel(packageDocs);
 disp(['Copying all '  num2str(nDocFiles) ' files ...'])
-for nfile=1:numel(packageDocs)
-    iLFS = max(regexp(packageDocs{nfile},filesep));
-    copyfile(packageDocs{nfile},[docDir filesep packageDocs{nfile}(iLFS+1:end)]);
+for i = 1 : numel(packageDocs)
+    iLFS = max(regexp(packageDocs{i},filesep));
+    copyfile(packageDocs{i},[docDir filesep packageDocs{i}(iLFS+1:end)]);
 end
     
 disp(['Finished. Wrote package to ' outDir])
