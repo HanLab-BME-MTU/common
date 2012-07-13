@@ -21,12 +21,13 @@ classdef TracksDisplay < MovieDataDisplay
             h=-ones(nTracks,3);
                         
             % Get track length and display valid tracks
-            trackLengths = cellfun(@numel,{tracks.tracksCoordAmpCG})/8;  
+            trackLengths = cellfun(@numel,{tracks.xCoord});
             validTracks = find(trackLengths>0);
             
             for i=validTracks
-                xData= tracks(i).tracksCoordAmpCG(max(1,1+8*(trackLengths(i)-obj.dragtailLength)):8:end);
-                yData= tracks(i).tracksCoordAmpCG(max(2,2+8*(trackLengths(i)-obj.dragtailLength)):8:end);
+                xData= tracks(i).xCoord(max(1,1+(trackLengths(i)-obj.dragtailLength)):end);
+                yData= tracks(i).yCoord(max(1,1+(trackLengths(i)-obj.dragtailLength)):end);
+
                 % check gap is not exclusively composed of NaN's (e.g.
                 % gaps with a small dragtail)
                 if ~all(isnan(xData)) 
@@ -58,46 +59,7 @@ classdef TracksDisplay < MovieDataDisplay
             delete(allh);
             obj.initDraw(data,tag);
             return;
-            nTracks = numel(data);
 
-            h=findobj(allh,'Type','line');
-            delete(h(2*nTracks+1:end));
-            h(2*nTracks+1:end)=[];
-            hlinks=findobj(h,'LineStyle',obj.Linestyle);
-            hgaps=findobj(h,'LineStyle',obj.GapLinestyle);
-            
-            % Update existing windows
-            for i=1:min(numel(hlinks),nTracks) 
-                xData= data.x{i}(max(1,end-obj.dragtailLength):end);
-                yData= data.y{i}(max(1,end-obj.dragtailLength):end);
-                set(hgaps(i),'Xdata',xData(~isnan(xData)),'YData',yData(~isnan(yData)));
-                set(hlinks(i),'Xdata',xData,'YData',yData);
-            end
-            for i=min(numel(hlinks),nTracks)+1:nTracks
-                xData= data.x{i}(max(1,end-obj.dragtailLength):end);
-                yData= data.y{i}(max(1,end-obj.dragtailLength):end);
-                hgaps(i)=plot(xData(~isnan(xData)),yData(~isnan(yData)),...
-                    'Linestyle',obj.GapLinestyle','Color',obj.Color);
-                hlinks(i)=plot(xData,yData,...
-                    'Linestyle',obj.Linestyle,'Color',obj.Color);
-            end
-            set([hlinks hgaps],'Tag',tag);
-
-            
-            if isfield(data,'label') && obj.showLabel
-                ht=findobj(allh,'Type','text');
-                delete(ht(nTracks+1:end));
-                ht(nTracks+1:end)=[];
-                for i=1:min(numel(ht),nTracks)
-                    set(ht(i),'Position',[data.x{i}(end),data.y{i}(end)],...
-                        'String',data.label(i));
-                end
-                for i=min(numel(ht),nTracks)+1:nTracks
-                    ht(i) = text(data.x{i}(end),data.y{i}(end),num2str(data.label(i)));
-                end
-                set(ht,'Tag',tag); 
-            end
-           
         end
     end    
     
