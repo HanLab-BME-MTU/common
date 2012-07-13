@@ -45,10 +45,11 @@ alpha = ip.Results.alpha;
 
 % Fix bug when correlation function is equal to 1 or -1
 workCC   = CC;
-workCC(abs(CC)==1)=workCC(abs(CC)==1)-sign(workCC(abs(CC)==1))*1e-9;
+badIdx   = abs(workCC)<=1.000001 & abs(workCC) >= 0.99999;
+workCC(badIdx) = workCC(badIdx)-sign(workCC(badIdx))*1e-9;
 
 %Elimination of values below the CB
-workCC( abs(CC) < repmat( abs(CB),nLag,1 ) ) = 0;
+%workCC( abs(CC) < repmat( abs(CB),nLag,1 ) ) = 0;
 
 %Exclude full NaN rows 
 exclude = find(sum(isnan(workCC)==1,2) == size(workCC,2));

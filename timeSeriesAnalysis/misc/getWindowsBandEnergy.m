@@ -4,7 +4,7 @@ function [meanEn, confI] = getWindowsBandEnergy(band,varargin)
 %
 % Note: Remove mean and linear trend before applying this function
 %
-% Usage: [meanEn, confI] = getBandEnergy()
+% Usage: [meanEn, confI] = getWindowsBandEnergy()
 %
 % Input :
 %       band  - biosensor signal band (# of windows X  # of time points) 
