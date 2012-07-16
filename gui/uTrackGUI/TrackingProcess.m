@@ -144,7 +144,7 @@ classdef TrackingProcess < DataProcessingProcess
             colors = hsv(numel(obj.owner_.channels_));
             output(1).name='Tracks';
             output(1).var='tracksFinal';
-            output(1).formatData=@formatTracks;
+            output(1).formatData=@TrackingProcess.formatTracks;
             output(1).type='overlay';
             output(1).defaultDisplayMethod=@(x)TracksDisplay('Color',colors(x,:));
         end
@@ -313,16 +313,17 @@ classdef TrackingProcess < DataProcessingProcess
             ip.parse(owner,timeWindow,varargin{:});
             index = ip.Results.index;
             costMatrix=costMatrices(index);      
-        end    
+        end
+        
+        function tracks=formatTracks(tracks)
+            
+            for i=1:numel(tracks)
+                tracks(i).xCoord = tracks(i).tracksCoordAmpCG(1:8:end);
+                tracks(i).yCoord = tracks(i).tracksCoordAmpCG(2:8:end);
+            end
+            tracks = rmfield(tracks,'tracksCoordAmpCG');
+        end
         
     end
 end
 
-function tracks=formatTracks(tracks)
-
-for i=1:numel(tracks)
-    tracks(i).xCoord = tracks(i).tracksCoordAmpCG(1:8:end);
-    tracks(i).yCoord = tracks(i).tracksCoordAmpCG(2:8:end);
-end
-tracks = rmfield(tracks,'tracksCoordAmpCG');
-end
