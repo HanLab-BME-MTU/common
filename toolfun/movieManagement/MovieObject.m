@@ -346,7 +346,7 @@ classdef  MovieObject < hgsetget
             %backup. Then save the MovieData as obj
             fullPath = obj.getFullPath();
             if exist(fullPath,'file')
-                copyfile(fullPath,[fullPath(1:end-3) 'old'],'f');
+                movefile(fullPath,[fullPath(1:end-3) 'old'],'f');
             end
             
             if isa(obj,'MovieData')
