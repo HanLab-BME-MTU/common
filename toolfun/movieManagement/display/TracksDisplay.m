@@ -27,11 +27,15 @@ classdef TracksDisplay < MovieDataDisplay
             nTracks = numel(validTracks);
             h=-ones(nTracks,3);
 
+            % Constraing the dragtail length between 2 and the maximum
+            % track length
+            dLength = max(2,min(obj.dragtailLength,max(trackLengths)));
+            
             % Concatenate data in a matrix of size dragtailLength x nTracks
-            xData = NaN(obj.dragtailLength, nTracks);
-            yData = NaN(obj.dragtailLength, nTracks);
+            xData = NaN(dLength, nTracks);
+            yData = NaN(dLength, nTracks);
             for i = 1 : nTracks
-                displayLength = trackLengths(i) - max(0,trackLengths(i)-obj.dragtailLength);
+                displayLength = trackLengths(i) - max(0,trackLengths(i)-dLength);
                 xData(1:displayLength, i) = tracks(i).xCoord(end-displayLength+1:end);
                 yData(1:displayLength, i) = tracks(i).yCoord(end-displayLength+1:end);
             end
