@@ -17,39 +17,62 @@ classdef TracksDisplay < MovieDataDisplay
             end
         end
         function h=initDraw(obj,tracks,tag,varargin)
-            nTracks = numel(tracks);
-            h=-ones(nTracks,3);
                         
-            % Get track length and display valid tracks
+            % Get track length and filter valid tracks
             trackLengths = cellfun(@numel,{tracks.xCoord});
             validTracks = find(trackLengths>0);
+            tracks = tracks(validTracks);
+            trackLengths = trackLengths(validTracks);
             
-            for i=validTracks
-                xData= tracks(i).xCoord(max(1,1+(trackLengths(i)-obj.dragtailLength)):end);
-                yData= tracks(i).yCoord(max(1,1+(trackLengths(i)-obj.dragtailLength)):end);
+            nTracks = numel(validTracks);
+            h=-ones(nTracks,3);
 
-                % check gap is not exclusively composed of NaN's (e.g.
-                % gaps with a small dragtail)
-                if ~all(isnan(xData)) 
-                    % Set color depending if track is classified or not
+            % Concatenate data in a matrix of size dragtailLength x nTracks 
+            xData = NaN(obj.dragtailLength, nTracks);
+            yData = NaN(obj.dragtailLength, nTracks);
+            for i = 1 : nTracks
+                displayLength = trackLengths(i) - max(0,trackLengths(i)-obj.dragtailLength);
+                xData(1:displayLength, i) = tracks(i).xCoord(end-displayLength+1:end);
+                yData(1:displayLength, i) = tracks(i).yCoord(end-displayLength+1:end);
+            end
+
+            % Plot subtracks
+            if isfield(tracks,'label')
+                % If track is classified
+                nColors = size(obj.Color,1);
+                for i = unique([tracks.label]),
+                    index = [tracks.label] == i;
+                    iColor = mod(i,nColors)+1;
+                    h(index,1)=plot(xData(:,index),yData(:,index),'Linestyle',obj.Linestyle,...
+                        'Color',obj.Color(iColor,:),varargin{:});
+                end
+            else
+                h(:,1)=plot(xData,yData,'Linestyle',obj.Linestyle,...
+                    'Color',obj.Color,varargin{:});
+            end
+            
+            % Plot gaps
+%             h(:,2)=plot(xData(~isnan(xData)),yData(~isnan(yData)),...
+%                 'Linestyle',obj.GapLinestyle','Color',color,...
+%                 varargin{:});
+            
+            
+            % Display track numbers if option is selected
+            if obj.showLabel
+                for i = find(~all(isnan(xData),1))
+                    % Find last non-NaN coordinate
+                    index = find(~isnan(xData(:,i)),1,'last');
                     if isfield(tracks,'label')
-                        color = obj.Color(mod(tracks(i).label,size(obj.Color,1))+1,:);
+                        iColor = mod(tracks(i).label,nColors)+1;
+                        h(i,3) = text(xData(index,i)+2, yData(index,i)+2,num2str(i),...
+                            'Color',obj.Color(iColor,:));
                     else
-                        color =obj.Color;
-                    end
-                    
-                    h(i,1)=plot(xData(~isnan(xData)),yData(~isnan(yData)),...
-                        'Linestyle',obj.GapLinestyle','Color',color,...
-                        varargin{:});
-                    h(i,2)=plot(xData,yData,'Linestyle',obj.Linestyle,...
-                        'Color',color,varargin{:});
-                    if obj.showLabel
-                        h(i,3) = text(xData(find(~isnan(xData),1,'last'))+2,...
-                            yData(find(~isnan(yData),1,'last'))+2,num2str(i),...
-                            'Color',color);
+                        h(i,3) = text(xData(index,i)+2, yData(index,i)+2,num2str(i),...
+                            'Color',obj.Color);
                     end
                 end
             end
+                
             set(h(ishandle(h)),'Tag',tag); 
            
         end
