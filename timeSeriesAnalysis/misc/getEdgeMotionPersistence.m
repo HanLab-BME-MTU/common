@@ -1,4 +1,4 @@
-function [meanTime,confI,cltDisp,cltConfI,index] = getEdgeMotionPersistence(TS,varargin)
+function [meanTime,confI,cltDisp,cltConfI,index,ProtInterval,RetrInterval] = getEdgeMotionPersistence(TS,varargin)
 % This function bootstrap the mean and confidence intervals for the
 % protrusion and retraction persistence time using all time series in input TS
 %
@@ -59,7 +59,7 @@ auxP = 1;
 auxR = 1;
 
 for iW = 1:nWin
-    [ProtTime,RetrTime,~,~,Up(iW),Dw(iW)] = getPersistenceTime(TS{iW},deltaT);
+    [ProtTime,RetrTime,ProtInterval{iW},RetrInterval{iW},Up(iW),Dw(iW)] = getPersistenceTime(TS{iW},deltaT);
     outProtTime(auxP:auxP+length(ProtTime) - 1) = ProtTime;
     auxP = auxP + length(ProtTime);
     
@@ -68,7 +68,7 @@ for iW = 1:nWin
     clear ProtTime;clear RetrTime
 end
 
-% Outcome of the above loop is:
+% Outcome of this loop is:
 %  1 outProtTime -vector with the protrusion time for all time series in TS
 %  2 outRetrTime -vector with the retraction time for all time series in TS
 
@@ -82,6 +82,7 @@ outRetrTime(isnan(outRetrTime)) = [];
 
 [confI(:,1),meanTime(1)] = bootStrapMean(outProtTime,alpha,nBoot);
 [confI(:,2),meanTime(2)] = bootStrapMean(outRetrTime,alpha,nBoot);
+
 
 if cluster
     [nP,nV] = size(outProtTime);
@@ -99,6 +100,11 @@ if cluster
                                 
     [cltConfI(:,nCluster+1:2*nCluster),cltDisp(nCluster+1:2*nCluster),index(nCluster+1:2*nCluster)] = ...
                                     clusterWindowsVelocity(outRetrTime,nBoot,alpha,nCluster);
+else
+    
+    cltConfI = [];
+    cltDisp  = [];
+    index    = [];
     
 end
 

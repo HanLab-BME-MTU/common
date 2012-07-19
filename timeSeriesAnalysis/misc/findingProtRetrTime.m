@@ -14,6 +14,7 @@ function [PersTime,newBlock] = findingProtRetrTime(block,TS,deltaT)
 % See also: getPersistenceTime, getEdgeMotionPersistence
 %
 %Marco Vilela, 2012
+
 %% Parsing the input ******************************************************
 ip = inputParser;
 ip.addRequired('block',@iscell);

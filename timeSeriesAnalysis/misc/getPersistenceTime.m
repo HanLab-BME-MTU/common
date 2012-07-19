@@ -58,11 +58,11 @@ if ~isempty(ProtBlock)
     [ProtPersTime,ProtBlockOut] = findingProtRetrTime(ProtBlock,TS,deltaT);
 else
     ProtPersTime = NaN;
-    ProtBlockOut = NaN;
+    ProtBlockOut = {[]};
 end
 if ~isempty(RetrBlock)
     [RetrPersTime,RetrBlockOut] = findingProtRetrTime(RetrBlock,-TS,deltaT);
 else
     RetrPersTime = NaN;
-    RetrBlockOut = NaN;
+    RetrBlockOut = {[]};
 end
