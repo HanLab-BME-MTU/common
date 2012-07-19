@@ -58,12 +58,11 @@ classdef TracksDisplay < MovieDataDisplay
             % Plot tracks
             if isfield(tracks,'label') % If track is classified
                 nColors = size(obj.Color,1);
-                for i = unique([tracks.label]),
-                    index = [tracks.label] == i;
-                    iColor = mod(i,nColors)+1;
-                    h(index,1)=plot(xData(:,index),yData(:,index),'Linestyle',obj.Linestyle,...
+                for iColor = 1:nColors
+                    iTracks = mod([tracks.label]-1, nColors) +1 == iColor;
+                    h(iTracks,1)=plot(xData(:,iTracks),yData(:,iTracks),'Linestyle',obj.Linestyle,...
                         'Color',obj.Color(iColor,:),varargin{:});
-                    h(index,1)=plot(xGapData(:,index),yGapData(:,index),'Linestyle',obj.GapLinestyle,...
+                    h(iTracks,2)=plot(xGapData(:,iTracks),yGapData(:,iTracks),'Linestyle',obj.GapLinestyle,...
                         'Color',obj.Color(iColor,:),varargin{:});
                 end
             else
