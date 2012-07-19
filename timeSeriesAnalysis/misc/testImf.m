@@ -1,4 +1,4 @@
-function [imfOut,noise] = testImf(imf,alpha)
+function [imfOut,noise] = testImf(imf,varargin)
 %This function tests the IMF significance by comparing all imf points with
 %the imf of a gaussian white noise
 %
@@ -16,21 +16,26 @@ function [imfOut,noise] = testImf(imf,alpha)
 %
 %       noise - estimated noise
 %
-% See also: emdc
+% Required functions: emdc, emd (extern)
 %
 %Reference:
 %           The Hilbert-Huang Transform and Its Applications. Norden Huang,
 %           Samuel Shen. World Scientific. Chapter 5.
+%
 %Marco Vilela, 2012
+ip = inputParser;
+ip.addRequired('imf',@isvector);
+ip.addRequired('alpha',0.05,@isscalar);
+ip.addOptional('nSurr',100,@isscalar);
+ip.parse(imf,varargin{:});
+alpha  = ip.Results.alpha;
+nSurr  = ip.Results.nSurr;
 
 [nImf,nObs] = size(imf);
 
-%This numbers work well. They are just the size of the white noise
-%genereted to test the imf's
-nSurr    = 100;
-surrP    = nObs;
 
-%crude estimative of the noise variance
+%crude estimative of the noise variance using the first IMF (See reference)
+surrP  = nObs;
 wnStd  = std(imf(1,:));
 Wn     = wnStd*randn(surrP,nSurr);%WN generated for the test
 noise  = zeros(1,numel(imf(1,:)));
