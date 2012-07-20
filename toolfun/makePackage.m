@@ -59,10 +59,9 @@ disp(toolboxesUsed)
     cellfun(@fileparts,packageFuns,'UniformOutput',false);
 
 % Find associated documentation files
-isDocFile = logical(cellfun(@(x,y) exist([x filesep 'doc' filesep y '.pdf'],'file'),...
-    packageFunsPaths,packageFunsNames));
-packageDocs = cellfun(@(x,y) [x filesep 'doc' filesep y '.pdf'],...
-    packageFunsPaths(isDocFile),packageFunsNames(isDocFile),'UniformOutput',false);
+hasDocFile = cellfun(@(x,y) exist([x  '.pdf'])==2,packageFunsNames);
+packageDocs = cellfun(@(x) which([x  '.pdf']), packageFunsNames(hasDocFile),...
+    'UniformOutput',false);
 
 % Get GUI fig files
 isGUIFile =logical(cellfun(@(x) exist([x(1:end-2) '.fig'],'file'),packageFuns));
