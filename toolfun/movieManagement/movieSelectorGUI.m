@@ -89,6 +89,9 @@ userData.newFig=-1;
 userData.msgboxGUI=-1;
 userData.iconHelpFig =-1;
 
+% Load help icon from dialogicons.mat
+userData = loadLCCBIcons(userData);
+
 % Get concrete packages
 packageList = getPackageList();
 if isempty(packageList), 
@@ -104,9 +107,17 @@ nPackages=numel(packageList);
 pos = get(handles.uipanel_packages,'Position');
 for i=1:nPackages
     uicontrol(handles.uipanel_packages,'Style','radio',...
-    'Position',[10 pos(4)-20-30*i pos(3)-20 20],'Tag',['radiobutton_package' num2str(i)],...
+    'Position',[30 pos(4)-20-30*i pos(3)-20 20],'Tag',['radiobutton_package' num2str(i)],...
     'String',packageNames{i},'UserData',packageList{i},...
     'Value',strcmp(packageList{i},ip.Results.packageName))
+
+    axes('Units','pixels',...
+        'Position',[10 pos(4)-20-30*i 20 20],'Tag',['axes_help_package' num2str(i)],...
+        'Parent',handles.uipanel_packages)
+    Img = image(userData.questIconData, 'UserData', struct('class', packageList{i}));
+    set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'), 'Visible','off');
+    set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
+    
 end
 set(handles.uipanel_packages,'SelectionChangeFcn','');
 
@@ -123,8 +134,7 @@ if ~isempty(ip.Results.MD)
     userData.MD=horzcat(userData.MD,ip.Results.MD);
 end
 
-% Load help icon from dialogicons.mat
-userData = loadLCCBIcons(userData);
+
 supermap(1,:) = get(hObject,'color');
 
 userData.colormap = supermap;
