@@ -215,7 +215,7 @@ if isequal(selectedPackage,'TrackingPackage')
     if ~all(arrayfun(hasTrackingPackage, userData.(field)))
         % Using eval here since I don't want TrackingPackge to be evaluated
         % as a dependency of movieSelector GUI
-        objects = [eval(selectedPackage) '.getObjects()'];
+        objects = eval([selectedPackage '.getObjects()']);
         [selection, status] = listdlg('Name','',...
             'PromptString',{'Select the type of object';'you want to track:'},...
             'ListString', {objects.name},'SelectionMode','single');
