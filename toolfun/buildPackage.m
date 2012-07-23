@@ -1,7 +1,7 @@
-function makePackage(outDir)
-% Build the list of selected packages
+function buildPackage(varargin)
+% Build the selected packages and export them to a given repository
 % 
-% makePackage(outDir)
+% makePackage(packageList, outDir)
 % 
 % This function copies all the files needed to run the selected packages data
 % processing package into a single folder for upload to the website. It
@@ -15,32 +15,47 @@ function makePackage(outDir)
 
 % Sebastien Besson, July 2011 (last modified: Jul 2012)
 
-% List available packages and additional files required for running them
-packageList = {
-    'BiosensorsPackage';...
-    'IntegratorPackage'
-    'QFSMPackage'
-    'SegmentationPackage'
-    'TrackingPackage'
-    'WindowingPackage'};
-validPackage = cellfun(@(x) exist(x,'class')==8,packageList);
-packageList = packageList(validPackage);
-if isempty(packageList), error('No package found'); end
+% Input check
+ip = inputParser;
+isClass = @(x) exist(x,'class')==8;
+isPackageCell = @(x) iscell(x) && all(cellfun(isClass, x));
+isPackage = @(x) ischar(x) && isClass(x);
+ip.addOptional('packageList',{},@(x) isPackageCell(x) || isPackage(x));
+ip.addOptional('outDir','',@ischar);
+ip.parse(varargin{:});
 
-% Create package names
-packageNames = cellfun(@(x) eval([x '.getName']),packageList,'Unif',0);
-[packageNames,index]=sort(packageNames);
-packageList=packageList(index);
-
-% Ask the user which packages to build
-[packageIndx,status] = listdlg('PromptString','Select the package(s) to build:',...
-    'SelectionMode','multiple','ListString',packageNames);
-if ~status, return; end
-packageList=packageList(packageIndx);
+if isempty(ip.Results.packageList)
+    % List available packages and additional files required for running them
+    buildPackageList = {
+        'BiosensorsPackage';...
+        'IntegratorPackage'
+        'QFSMPackage'
+        'SegmentationPackage'
+        'TrackingPackage'
+        'WindowingPackage'};
+    validPackage = cellfun(isClass, buildPackageList);
+    buildPackageList = buildPackageList(validPackage);
+    if isempty(buildPackageList), error('No package found'); end
+    
+    % Create package names
+    packageNames = cellfun(@(x) eval([x '.getName']),buildPackageList,'Unif',0);
+    [packageNames,index]=sort(packageNames);
+    buildPackageList=buildPackageList(index);
+    
+    % Ask the user which packages to build
+    [packageIndx,status] = listdlg('PromptString','Select the package(s) to build:',...
+        'SelectionMode','multiple','ListString',packageNames);
+    if ~status, return; end
+    packageList=buildPackageList(packageIndx);
+else
+   packageList = ip.Results.packageList; 
+end
 
 % Ask for the output directory if not supplied
-if nargin < 1 || isempty(outDir)    
-    outDir = uigetdir(pwd,'Select output dir:');
+if isempty(ip.Results.outDir)    
+    outDir = uigetdir(pwd,'Select output directory:');
+else
+    outDir = ip.Results.outDir;
 end
     
 %Get all the function dependencies and display toolboxes
@@ -59,7 +74,7 @@ disp(toolboxesUsed)
     cellfun(@fileparts,packageFuns,'UniformOutput',false);
 
 % Find associated documentation files
-hasDocFile = cellfun(@(x,y) exist([x  '.pdf'])==2,packageFunsNames);
+hasDocFile = cellfun(@(x,y) exist([x  '.pdf'],'file')==2,packageFunsNames);
 packageDocs = cellfun(@(x) which([x  '.pdf']), packageFunsNames(hasDocFile),...
     'UniformOutput',false);
 
@@ -77,6 +92,7 @@ packageMexFunsNames = @(x) strcat([packageMexFunsPaths{x} filesep],...
     {packageMexList{x}(~[packageMexList{x}.isdir]).name}');
 packageMexFuns = arrayfun(@(x) packageMexFunsNames(x),1:numel(mexFunsIndx),'Unif',false);
 packageMexFuns =vertcat(packageMexFuns{:});
+packageFuns(mexFunsIndx) = [];
 
 % Remove additional compilation files
 if ~isempty(packageMexFuns)
@@ -93,7 +109,7 @@ icons = dir([iconsPath filesep '*.png']);
 packageIcons = arrayfun(@(x) [iconsPath filesep x.name],icons,'Unif',false);
 
 % Concatenate all matlab files but the documentation
-packageFiles=vertcat(packageFuns,packageFigs,packageMexFuns);
+packageFiles=vertcat(packageFuns,packageFigs);
 
 %% Export package files
 % Create package output directory if non-existing
@@ -108,30 +124,43 @@ for j = 1:nFiles
     copyfile(packageFiles{j},[outDir filesep packageFiles{j}(iLFS+1:end)]);
 end
 
-% Create doc output directory if non-existing
+% Create icons output directory if non-existing
 disp('Creating/cleaning release icons directory...')
 iconsDir=[outDir filesep 'icons'];
 mkClrDir(iconsDir);
 
-% Copy documentation files
+% Copy icons
 nIcons = numel(packageIcons);
 disp(['Copying all '  num2str(nIcons) ' files ...'])
-for i = 1:numel(packageIcons)
+for i = 1 : nIcons
     iLFS = max(regexp(packageIcons{i},filesep));
     copyfile(packageIcons{i}, [iconsDir filesep packageIcons{i}(iLFS+1:end)]);
 end
 
-% Create doc output directory if non-existing
-disp('Creating/cleaning release documentation directory...')
+% Create icons output directory if non-existing
+disp('Creating/cleaning release doc directory...')
 docDir=[outDir filesep 'doc'];
 mkClrDir(docDir);
 
-% Copy documentation files
+% Copy icons
 nDocFiles = numel(packageDocs);
 disp(['Copying all '  num2str(nDocFiles) ' files ...'])
-for i = 1 : numel(packageDocs)
+for i = 1 : nDocFiles
     iLFS = max(regexp(packageDocs{i},filesep));
-    copyfile(packageDocs{i},[docDir filesep packageDocs{i}(iLFS+1:end)]);
+    copyfile(packageDocs{i}, [docDir filesep packageDocs{i}(iLFS+1:end)]);
+end
+
+% Create mex output directory if non-existing
+disp('Creating/cleaning mex directory...')
+mexDir=[outDir filesep 'mex'];
+mkClrDir(mexDir);
+
+% Copy mex-files
+nMexFiles = numel(packageMexFuns);
+disp(['Copying all '  num2str(nMexFiles) ' files ...'])
+for i = 1 : nMexFiles
+    iLFS = max(regexp(packageMexFuns{i},filesep));
+    copyfile(packageMexFuns{i},[mexDir filesep packageMexFuns{i}(iLFS+1:end)]);
 end
     
-disp(['Finished. Wrote package to ' outDir])
+disp(['Wrote package to ' outDir])
