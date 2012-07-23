@@ -38,7 +38,7 @@ try
     % Retrieve movie reader and metadata
     r=bfGetReader(dataPath);
     metadata=r.getMetadataStore();
-    assert(r.getSeriesCount()==1,'Multiple series not supported yet');
+    assert(r.getSeriesCount() == 1, 'Multiple series not supported yet');
     r.setSeries(0);
 catch bfException
     ME = MException('lccb:import:error','Import error');
@@ -46,32 +46,35 @@ catch bfException
     throw(ME);
 end
 
+% Create movie metadata cell array using read metadata
+movieArgs={};
 
-movieArgs={}; % Create properties cell array based on existing metadata
-
-% Get pixel size
 pixelSizeX = metadata.getPixelsPhysicalSizeX(0);
-if ~isempty(pixelSizeX)
+% Pixel size might be automatically set to 1.0 by @#$% Metamorph
+hasValidPixelSize = ~isempty(pixelSizeX) && pixelSizeX.getValue ~= 1;
+if hasValidPixelSize
+    % Convert from microns to nm and check x and y values are equal
     pixelSizeX= pixelSizeX.getValue*10^3;
     pixelSizeY= metadata.getPixelsPhysicalSizeY(0).getValue*10^3;
     assert(isequal(pixelSizeX,pixelSizeY),'Pixel size different in x and y');
     movieArgs=horzcat(movieArgs,'pixelSize_',pixelSizeX);
 end
 
-% Get camera bit depth
+% Camera bit depth
 camBitdepth = r.getBitsPerPixel;
-if ~isempty(camBitdepth)
+hasValidCamBitDepth = ~isempty(camBitdepth) && mod(camBitdepth, 2) == 0;
+if hasValidCamBitDepth
     movieArgs=horzcat(movieArgs,'camBitdepth_',camBitdepth);
 end
 
-% Get time interval
+% Time interval
 timeInterval = metadata.getPixelsTimeIncrement(0);
 if ~isempty(timeInterval)
     movieArgs=horzcat(movieArgs,'timeInterval_',double(timeInterval));
 end
 
-% Get the lens numerical aperture
-try % Use a tyr-catch statement because property is not always defined
+% Lens numerical aperture
+try % Use a try-catch statement because property is not always defined
     lensNA=metadata.getObjectiveLensNA(0,0);
     if ~isempty(lensNA)
         movieArgs=horzcat(movieArgs,'numAperture_',double(lensNA));
