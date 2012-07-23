@@ -183,7 +183,7 @@ if get(handles.checkbox_auto, 'value')
     if get(handles.checkbox_max, 'Value')
         % If both checkbox are checked
         maxJump=str2double(get(handles.edit_jump, 'String'));
-        if isnan(maxJump) || maxJump < 0
+        if isnan(maxJump) || maxJump < 1
             errordlg('Please provide a valid input for ''Maximum threshold jump''.','Setting Error','modal');
             return;
         end    
