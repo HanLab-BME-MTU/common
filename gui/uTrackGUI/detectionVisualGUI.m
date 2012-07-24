@@ -141,7 +141,7 @@ userData.crtProc.setVisualParams(visualParams)
 visualParams = userData.crtProc.visualParams_;
 
 % text_movie
-str = userData.MD.channels_(chan).channelPath_;
+str = userData.MD.getChannelPaths(chan);
 limit = 60;
 if length(str)>limit
     str = ['... ' str(end-limit:end)];

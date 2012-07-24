@@ -232,7 +232,7 @@ classdef Channel < hgsetget
                 store.setPixelsId(obj.channelPath_.getId().getValue(), false);
                 chanIndex= find(obj.owner_.channels_==obj);
                 for i=1:numel(iFrame),
-                    plane = store.getPlane(0, chanIndex-1, iFrame-1);
+                    plane = store.getPlane(0, chanIndex-1, iFrame(i)-1);
                     I(:,:,i)=double(toMatrix(plane,obj.channelPath_)');
                 end
 

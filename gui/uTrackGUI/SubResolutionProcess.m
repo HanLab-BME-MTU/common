@@ -35,7 +35,9 @@ classdef SubResolutionProcess < DetectionProcess
             obj.visualParams_.filterSigma = 0;
             obj.visualParams_.showRaw = 1;
             obj.visualParams_.intensityScale = 1;
-            if exist(owner.getChannelPaths{1}, 'file')==2  
+            if isa(owner.channels_(1).channelPath_, 'omero.model.Pixels')
+                obj.visualParams_.firstImageFile = owner.getChannelPaths{1};
+            elseif exist(owner.getChannelPaths{1}, 'file')==2  
                 obj.visualParams_.firstImageFile = owner.getChannelPaths{1};
             else
                 obj.visualParams_.firstImageFile = [owner.getChannelPaths{1} filesep owner.getImageFileNames{1}{1}];

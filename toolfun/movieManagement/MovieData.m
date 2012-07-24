@@ -124,8 +124,14 @@ classdef  MovieData < MovieObject
             assert(all(ismember(iChan,1:numel(obj.channels_))),...
                 'Invalid channel index specified! Cannot return path!');
             
-            chanPaths = arrayfun(@(x)obj.channels_(x).channelPath_,iChan,...
-                'UniformOutput',false);
+            if isa(obj.channels_(1).channelPath_,'omero.model.Pixels')
+                id = obj.channels_(1).channelPath_.getId.getValue;
+                chanPaths = arrayfun(@(x) ['Image ' num2str(id) ': Channel ' num2str(x)],...
+                    iChan,'UniformOutput',false);
+            else
+                chanPaths = arrayfun(@(x)obj.channels_(x).channelPath_,iChan,...
+                    'UniformOutput',false);
+            end
         end  
         
         %% ROI methods
