@@ -349,29 +349,40 @@ classdef  MovieData < MovieObject
             end
         end  
 
-        %%
+        %% OMERO functions
         function setSession(obj,session)
             obj.omeroSession_=session;
+        end
+        
+        function session = getSession(obj)
+            session = obj.omeroSession_;
+        end
+        
+        function image = getImage(obj)
+            assert(~isempty(obj.omeroSession_),'No available session');
+            
+            ids = java.util.ArrayList();
+            ids.add(java.lang.Long(obj.omeroId_));
+            
+            param = omero.sys.ParametersI();
+            param.acquisitionData;
+            
+            list = obj.omeroSession_.getContainerService().getImages('omero.model.Image', ids, param);
+            image = list.get(0);
+
         end
         
         function pixels = getPixels(obj)
             if ~isempty(obj.omeroPixels_)
                 pixels = obj.omeroPixels_;
             else                
-                assert(~isempty(obj.omeroSession_),'no session');
+                % Retrieve pixels ID
+                image = obj.getImage();
+                pixelsId = image.getPixels(0).getId.getValue; 
                 
-                ids = java.util.ArrayList();
-                ids.add(java.lang.Long(obj.omeroId_));
-                
-                param = omero.sys.ParametersI();
-                param.acquisitionData;                
-                
-                list = obj.omeroSession_.getContainerService().getImages('omero.model.Image', ids, param);
-                image = list.get(0);
-
+                % Get PixelsI object
                 pixelsService=obj.omeroSession_.getPixelsService();
-                pixels=pixelsService.retrievePixDescription(image.getPixels(0).getId.getValue);
-                
+                pixels=pixelsService.retrievePixDescription(pixelsId);                
             end
         end
 
