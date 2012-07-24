@@ -24,6 +24,10 @@ classdef  MovieData < MovieObject
         binning_
     end
     
+    properties (Transient =true)
+        session_
+    end
+
     methods
         %% Constructor
         function obj = MovieData(channels,outputDirectory,varargin)
@@ -330,6 +334,11 @@ classdef  MovieData < MovieObject
                 input=input(index);
             end
         end  
+
+        %%
+        function setSession(obj,session)
+            obj.session_=session;
+        end
 
     end
     methods(Static)        

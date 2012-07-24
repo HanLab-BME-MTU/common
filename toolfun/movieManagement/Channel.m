@@ -157,7 +157,11 @@ classdef Channel < hgsetget
                 isequal(obj.owner_,ip.Results.owner.parent_),...
                 'The channel''s owner is not the movie neither its parent')
             
-            if exist(obj.channelPath_, 'file')==2 
+            if isa(obj.channelPath_,'omero.model.PixelsI')
+                width = obj.channelPath_.getSizeX.getValue;
+                height = obj.channelPath_.getSizeY.getValue;
+                nFrames = obj.channelPath_.getSizeT.getValue;
+            elseif exist(obj.channelPath_, 'file')==2
                 % Using bioformat-tools, get metadata 
                 r=bfGetReader(obj.channelPath_,false);
                 width = r.getSizeX;
@@ -220,7 +224,13 @@ classdef Channel < hgsetget
         
         function I = loadImage(obj,iFrame)      
             I=zeros([obj.owner_.imSize_ numel(iFrame)]);
-            if exist(obj.channelPath_, 'file')==2  
+            if isa(obj.channelPath_,'omero.model.PixelsI')
+                assert(~isempty(obj.owner_.session_))
+                store = obj.owner_.session_.createRawPixelsStore();
+                store.setPixelsId(obj.channelPath_.getId().getValue(), false);
+                plane = store.getPlane(0, 0, iFrame-1);
+                I=double(toMatrix(plane,obj.channelPath_));
+            elseif exist(obj.channelPath_, 'file')==2
                 % Using bioformat tools, get the reader and retrieve dimension order
                 bfCheckJavaPath();
                 loci.common.DebugTools.enableLogging('OFF');
