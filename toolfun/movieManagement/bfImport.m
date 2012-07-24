@@ -26,7 +26,7 @@ assert(exist(which('bfopen'),'file')==2,'Bioformats library missing');
 % Input check
 ip=inputParser;
 ip.addRequired('dataPath',@ischar);
-ip.addOptional('extractImages',true,@islogical);
+ip.addOptional('extractImages',false,@islogical);
 ip.addParamValue('outputDirectory',[],@ischar);
 ip.KeepUnmatched = true;
 ip.parse(dataPath,varargin{:});
