@@ -162,7 +162,7 @@ classdef Channel < hgsetget
                 width = pixels.getSizeX.getValue;
                 height = pixels.getSizeY.getValue;
                 nFrames = pixels.getSizeT.getValue;
-            elseif exist(obj.channelPath_, 'file')==2
+            elseif obj.isBF()
                 % Using bioformat-tools, get metadata 
                 r=bfGetReader(obj.channelPath_,false);
                 width = r.getSizeX;
@@ -200,7 +200,7 @@ classdef Channel < hgsetget
         
         function fileNames = getImageFileNames(obj,iFrame)
             
-            if exist(obj.channelPath_, 'file')==2
+            if obj.isBF()
                 % Generate image file names using wavelength if applicable
                 [~,channelName]=fileparts(obj.channelPath_);
                 if ~isempty(obj.emissionWavelength_)
@@ -224,8 +224,11 @@ classdef Channel < hgsetget
         end
         
         function I = loadImage(obj,iFrame)
+            
+            % Initialize image
             I=zeros([obj.owner_.imSize_ numel(iFrame)]);
-            if obj.owner_.isOmero()
+            
+            if obj.owner_.isOmero() % OMERO objects
                 % Test session integrity
                 assert(~isempty(obj.owner_.omeroSession_))
                 pixels = obj.owner_.getPixels();
@@ -239,7 +242,7 @@ classdef Channel < hgsetget
                 end
 
 
-            elseif exist(obj.channelPath_, 'file')==2
+            elseif obj.isBF()
                 % Using bioformat tools, get the reader and retrieve dimension order
                 bfCheckJavaPath();
                 loci.common.DebugTools.enableLogging('OFF');
@@ -267,6 +270,11 @@ classdef Channel < hgsetget
                     I(:,:,i)  = imread([obj.channelPath_ filesep fileNames{i}]);
                 end
             end
+        end
+        
+        %% Bio-formats functions
+        function status = isBF(obj)
+            status = exist(obj.channelPath_, 'file')==2;
         end
         
         function color = getColor(obj)
