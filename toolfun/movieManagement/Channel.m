@@ -164,7 +164,7 @@ classdef Channel < hgsetget
                 nFrames = pixels.getSizeT.getValue;
             elseif obj.isBF()
                 % Using bioformat-tools, get metadata 
-                r=bfGetReader(obj.channelPath_,false);
+                r = obj.getReader();
                 width = r.getSizeX;
                 height = r.getSizeY;
                 nFrames = r.getSizeT;
@@ -244,20 +244,18 @@ classdef Channel < hgsetget
 
             elseif obj.isBF()
                 % Using bioformat tools, get the reader and retrieve dimension order
-                bfCheckJavaPath();
-                loci.common.DebugTools.enableLogging('OFF');
-                r=bfGetReader(obj.channelPath_,false);
-                metadata=r.getMetadataStore;
-                dimensionOrder =char(metadata.getPixelsDimensionOrder(0));
+                r = obj.getReader();
+                metadata = r.getMetadataStore();
+                dimensionOrder = char(metadata.getPixelsDimensionOrder(0));
                 CZTOrder = dimensionOrder(3:end);
                 CZTdimensions = arrayfun(@(x) metadata.(['getPixelsSize' x])(0).getValue,CZTOrder);
                 
                 % Get channel index, create multi-dimensional plane index and
                 % convert into linear plane index
-                chanIndex= find(obj.owner_.channels_==obj);
-                index(CZTOrder=='C',:)=chanIndex*ones(numel(iFrame),1);
-                index(CZTOrder=='Z',:)=1*ones(numel(iFrame),1);
-                index(CZTOrder=='T',:)=iFrame;
+                chanIndex = find(obj.owner_.channels_==obj);
+                index(CZTOrder=='C',:) = chanIndex*ones(numel(iFrame),1);
+                index(CZTOrder=='Z',:) = 1*ones(numel(iFrame),1);
+                index(CZTOrder=='T',:) = iFrame;
                 iPlane = sub2ind(CZTdimensions,index(1,:),index(2,:),index(3,:));
                 
                 % Get all requrested planes and close reader
@@ -277,6 +275,15 @@ classdef Channel < hgsetget
             status = exist(obj.channelPath_, 'file')==2;
         end
         
+        function r = getReader(obj)
+            assert(obj.isBF(), 'Object must be using the Bio-Formats library');
+            
+            bfCheckJavaPath(); % Check loci-tools.jar is in the Java path
+            loci.common.DebugTools.enableLogging('OFF');
+            r = bfGetReader(obj.channelPath_, false);
+        end
+        
+        %% Display functions
         function color = getColor(obj)
             if ~isempty(obj.emissionWavelength_),
                 color = wavelength2rgb(obj.emissionWavelength_*1e-9);

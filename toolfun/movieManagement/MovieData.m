@@ -351,6 +351,10 @@ classdef  MovieData < MovieObject
                 input=input(index);
             end
         end  
+        
+        function status = isBF(obj)
+            status = all(arrayfun(@(x) x.isBF(), obj.channels_));
+        end
 
         %% OMERO functions
         function status = isOmero(obj)
