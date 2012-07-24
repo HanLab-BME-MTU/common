@@ -85,7 +85,10 @@ for i = p.ChannelIndex
     movieParam.lastImageNum=p.lastImageNum;
 
     % Call stand-alone subresolution detection function
-    detectSubResFeatures2D_StandAlone(movieParam, p.detectionParam, saveResults(i));
+    movieInfo = detectSubResFeatures2D_StandAlone(movieParam, p.detectionParam, saveResults(i));
+
+    % Export as omero ROI if applicable
+    if ~isempty(movieData.omeroId_), omeroExportDetection(movieData,movieInfo); end
 end
 
 disp('Finished detecting diffraction-limited objects...')
