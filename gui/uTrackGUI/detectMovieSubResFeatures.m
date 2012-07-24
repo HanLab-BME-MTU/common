@@ -71,7 +71,7 @@ for i = p.ChannelIndex
     disp(outFilePaths{1,i});
     
     % Retrieve information about the images
-    if ~isempty(movieData.omeroId_) || exist(movieData.getChannelPaths{i},'file')
+    if movieData.isOmero() || exist(movieData.getChannelPaths{i},'file')
         movieParam.channel = movieData.channels_(i);
     else
         [~, base, digits4Enum ~] = getFilenameBody(movieData.getImageFileNames{i}{1});
@@ -88,7 +88,7 @@ for i = p.ChannelIndex
     movieInfo = detectSubResFeatures2D_StandAlone(movieParam, p.detectionParam, saveResults(i));
 
     % Export as omero ROI if applicable
-    if ~isempty(movieData.omeroId_), omeroExportDetection(movieData,movieInfo); end
+    if movieData.isOmero(), omeroExportDetection(movieData,movieInfo); end
 end
 
 disp('Finished detecting diffraction-limited objects...')

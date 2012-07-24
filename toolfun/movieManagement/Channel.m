@@ -157,7 +157,7 @@ classdef Channel < hgsetget
                 isequal(obj.owner_,ip.Results.owner.parent_),...
                 'The channel''s owner is not the movie neither its parent')
             
-            if ~isempty(obj.owner_.omeroId_)
+            if obj.owner_.isOmero()
                 pixels = obj.owner_.getPixels();
                 width = pixels.getSizeX.getValue;
                 height = pixels.getSizeY.getValue;
@@ -225,7 +225,7 @@ classdef Channel < hgsetget
         
         function I = loadImage(obj,iFrame)
             I=zeros([obj.owner_.imSize_ numel(iFrame)]);
-            if ~isempty(obj.owner_.omeroId_)
+            if obj.owner_.isOmero()
                 % Test session integrity
                 assert(~isempty(obj.owner_.omeroSession_))
                 pixels = obj.owner_.getPixels();

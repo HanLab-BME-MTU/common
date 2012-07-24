@@ -350,6 +350,10 @@ classdef  MovieData < MovieObject
         end  
 
         %% OMERO functions
+        function status = isOmero(obj)
+            status = ~isempty(obj.omeroId_);
+        end
+        
         function setSession(obj,session)
             obj.omeroSession_=session;
         end
