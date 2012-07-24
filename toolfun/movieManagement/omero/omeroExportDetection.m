@@ -25,12 +25,13 @@ image = movieData.getImage;
 updateService = movieData.getSession().getUpdateService();
 
 progressText(0,'Exporting ROIs')
+roi=omero.model.RoiI();
+roi.setImage(image);
+
 for t=1:size(movieInfo,1)
     
     for i = 1:size(movieInfo(t).xCoord,1)
-
-        roi=omero.model.RoiI();
-        roi.setImage(image);
+        
         point = omero.model.PointI;
         point.setCx(omero.rtypes.rdouble(movieInfo(t).xCoord(i,1)));
         point.setCy(omero.rtypes.rdouble(movieInfo(t).yCoord(i,1)));
@@ -38,9 +39,8 @@ for t=1:size(movieInfo,1)
         point.setTheZ(omero.rtypes.rint(0));
         roi.addShape(point);
 
-        % save
-        updateService.saveAndReturnObject(roi);
     end
 
     progressText(t/size(movieInfo,1))
 end
+updateService.saveAndReturnObject(roi);
