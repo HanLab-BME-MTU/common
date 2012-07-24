@@ -403,7 +403,7 @@ classdef  MovieObject < hgsetget
                 obj= data.(vars(isMovie).name);
                 
                 % Set session
-                if isa(varargin{1},'omero.api.ServiceFactoryPrxHelper')
+                if nargin>1 && isa(varargin{1},'omero.api.ServiceFactoryPrxHelper')
                     obj.setSession(varargin{1});
                 end
                 
