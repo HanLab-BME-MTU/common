@@ -222,14 +222,21 @@ classdef Channel < hgsetget
             if nargin>1, fileNames=fileNames(iFrame); end
         end
         
-        function I = loadImage(obj,iFrame)      
+        function I = loadImage(obj,iFrame)
             I=zeros([obj.owner_.imSize_ numel(iFrame)]);
             if isa(obj.channelPath_,'omero.model.PixelsI')
+                % Test session integrity
                 assert(~isempty(obj.owner_.session_))
+
                 store = obj.owner_.session_.createRawPixelsStore();
                 store.setPixelsId(obj.channelPath_.getId().getValue(), false);
-                plane = store.getPlane(0, 0, iFrame-1);
-                I=double(toMatrix(plane,obj.channelPath_));
+                chanIndex= find(obj.owner_.channels_==obj);
+                for i=1:numel(iFrame),
+                    plane = store.getPlane(0, chanIndex-1, i-1);
+                    I(:,:,i)=double(toMatrix(plane,obj.channelPath_));
+                end
+
+
             elseif exist(obj.channelPath_, 'file')==2
                 % Using bioformat tools, get the reader and retrieve dimension order
                 bfCheckJavaPath();
