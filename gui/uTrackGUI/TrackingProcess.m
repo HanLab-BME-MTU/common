@@ -74,7 +74,9 @@ classdef TrackingProcess < DataProcessingProcess
             obj.visualParams_.otmn.intensityScale = 1;
             obj.visualParams_.otmn.colorTracks = 1;
             obj.visualParams_.otmn.minLength = 1;
-            if exist(owner.getChannelPaths{1}, 'file')==2  
+             if isa(owner.channels_(1).channelPath_, 'omero.model.Pixels')
+                obj.visualParams_.firstImageFile = owner.getChannelPaths{1};
+             elseif exist(owner.getChannelPaths{1}, 'file')==2
                 obj.visualParams_.otmn.firstImageFile = owner.getChannelPaths{1};
             else
                 obj.visualParams_.otmn.firstImageFile = [owner.getChannelPaths{1} filesep owner.getImageFileNames{1}{1}];
