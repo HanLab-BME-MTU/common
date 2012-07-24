@@ -92,14 +92,14 @@ for i=1:nChan
 
     channelD = pojos.ChannelData(i-1,channels.get(i-1));
     % Read excitation wavelength
-    exwlgth=channelD.getEmissionWavelength;
+    exwlgth=channelD.getExcitationWavelength();
     if ~isempty(exwlgth) && exwlgth ~= -1
         channelArgs{i}=horzcat(channelArgs{i},'excitationWavelength_',exwlgth);
     end
     
     % Read emission wavelength
-    emwlgth=channelD.getExcitationWavelength();
-    if ~isempty(emwlgth) && emwlgth ~= -1
+    emwlgth=channelD.getEmissionWavelength();
+    if ~isempty(emwlgth) && emwlgth ~= -1 && emwlgth ~= 1 % Bug
         channelArgs{i}=horzcat(channelArgs{i},'emissionWavelength_',emwlgth);
     end
     
