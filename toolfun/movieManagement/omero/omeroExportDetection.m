@@ -1,5 +1,12 @@
 function omeroExportDetection(movieData,movieInfo)
-% omeroExportDetection export the output of a detection into the OMERO model
+% omeroExportDetection export the output of a detection to the OMERO server
+%
+% omeroExportDetection export the output of any detection process
+% (generating a movieInfo like structure into OMERO. After creates a single
+% ROI, the function creates as many Point shapes as the number of detected
+% objects and sets the timepoints and x,y coordinates of this point shape
+% using the detection information. Finally, the roi is attached to the
+% image on the server.
 %
 % omeroExportDetection(movieData,movieInfo)
 %
@@ -17,7 +24,7 @@ function omeroExportDetection(movieData,movieInfo)
 
 % Input check
 ip=inputParser;
-ip.addRequired('movieData',@(x) isa(x,'MovieData'));
+ip.addRequired('movieData',@(x) isa(x,'MovieData') && x.isOmero());
 ip.addRequired('movieInfo',@isstruct);
 ip.parse(movieData,movieInfo);
 

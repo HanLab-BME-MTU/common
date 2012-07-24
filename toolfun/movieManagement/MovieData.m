@@ -288,6 +288,9 @@ classdef  MovieData < MovieObject
             for descendant = obj.getAncestor.getDescendants
                 flag = flag && save@MovieObject(descendant);
             end
+            if obj.getAncestor().isOmero(), 
+                omeroSave(obj.getAncestor()); 
+            end
         end
         
         function input = getSampledOutput(obj,index)
