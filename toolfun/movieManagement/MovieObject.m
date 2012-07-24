@@ -402,6 +402,11 @@ classdef  MovieObject < hgsetget
                 data = load(moviepath,'-mat',vars(isMovie).name);
                 obj= data.(vars(isMovie).name);
                 
+                % Set session
+                if isa(varargin{1},'omero.api.ServiceFactoryPrxHelper')
+                    obj.setSession(varargin{1});
+                end
+                
                 % Perform sanityCheck using the input path
                 [moviePath,movieName,movieExt]=fileparts(moviepath);
                 obj.sanityCheck(moviePath,[movieName movieExt],varargin{:});

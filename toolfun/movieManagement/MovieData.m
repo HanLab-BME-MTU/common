@@ -22,10 +22,14 @@ classdef  MovieData < MovieObject
         eventTimes_             % Time of movie events
         magnification_
         binning_
+        
+        % For OMERO objects
+        omeroId_ 
     end
     
-    properties (Transient =true)
-        session_
+    properties (Transient =true)        
+        omeroSession_
+        omeroPixels_
     end
 
     methods
@@ -102,7 +106,11 @@ classdef  MovieData < MovieObject
             obj.checkPropertyValue('binning_',value);
             obj.binning_=value;
         end
-        
+        function setOmeroId(obj, value)
+            obj.checkPropertyValue('omeroId_',value);
+            obj.omeroId_=value;
+        end
+
         function fileNames = getImageFileNames(obj,iChan)
             % Retrieve the names of the images in a specific channel
             
@@ -343,7 +351,28 @@ classdef  MovieData < MovieObject
 
         %%
         function setSession(obj,session)
-            obj.session_=session;
+            obj.omeroSession_=session;
+        end
+        
+        function pixels = getPixels(obj)
+            if ~isempty(obj.omeroPixels_)
+                pixels = obj.omeroPixels_;
+            else                
+                assert(~isempty(obj.omeroSession_),'no session');
+                
+                ids = java.util.ArrayList();
+                ids.add(java.lang.Long(obj.omeroId_));
+                
+                param = omero.sys.ParametersI();
+                param.acquisitionData;                
+                
+                list = obj.omeroSession_.getContainerService().getImages('omero.model.Image', ids, param);
+                image = list.get(0);
+
+                pixelsService=obj.omeroSession_.getPixelsService();
+                pixels=pixelsService.retrievePixDescription(image.getPixels(0).getId.getValue);
+                
+            end
         end
 
     end
@@ -379,7 +408,7 @@ classdef  MovieData < MovieObject
                     validator=@(x) isa(x,'Channel');
                 case {'movieDataPath_','movieDataFileName_'}
                     validator=@ischar;
-                case {'pixelSize_', 'timeInterval_','numAperture_','magnification_','binning_'}
+                case {'pixelSize_', 'timeInterval_','numAperture_','magnification_','binning_','omeroId_'}
                     validator=@(x) all(isnumeric(x)) && all(x>0);
                 case {'camBitdepth_'}
                     validator=@(x) isscalar(x) && x>0 && ~mod(x, 2);

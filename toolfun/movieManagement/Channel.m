@@ -157,10 +157,11 @@ classdef Channel < hgsetget
                 isequal(obj.owner_,ip.Results.owner.parent_),...
                 'The channel''s owner is not the movie neither its parent')
             
-            if isa(obj.channelPath_,'omero.model.PixelsI')
-                width = obj.channelPath_.getSizeX.getValue;
-                height = obj.channelPath_.getSizeY.getValue;
-                nFrames = obj.channelPath_.getSizeT.getValue;
+            if ~isempty(obj.owner_.omeroId_)
+                pixels = obj.owner_.getPixels();
+                width = pixels.getSizeX.getValue;
+                height = pixels.getSizeY.getValue;
+                nFrames = pixels.getSizeT.getValue;
             elseif exist(obj.channelPath_, 'file')==2
                 % Using bioformat-tools, get metadata 
                 r=bfGetReader(obj.channelPath_,false);
@@ -224,16 +225,17 @@ classdef Channel < hgsetget
         
         function I = loadImage(obj,iFrame)
             I=zeros([obj.owner_.imSize_ numel(iFrame)]);
-            if isa(obj.channelPath_,'omero.model.PixelsI')
+            if ~isempty(obj.owner_.omeroId_)
                 % Test session integrity
-                assert(~isempty(obj.owner_.session_))
-
-                store = obj.owner_.session_.createRawPixelsStore();
-                store.setPixelsId(obj.channelPath_.getId().getValue(), false);
+                assert(~isempty(obj.owner_.omeroSession_))
+                pixels = obj.owner_.getPixels();
+                
+                store = obj.owner_.omeroSession_.createRawPixelsStore();
+                store.setPixelsId(pixels.getId().getValue(), false);
                 chanIndex= find(obj.owner_.channels_==obj);
                 for i=1:numel(iFrame),
                     plane = store.getPlane(0, chanIndex-1, iFrame(i)-1);
-                    I(:,:,i)=double(toMatrix(plane,obj.channelPath_)');
+                    I(:,:,i)=double(toMatrix(plane,pixels)');
                 end
 
 

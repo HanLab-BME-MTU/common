@@ -1,4 +1,4 @@
-function movie = omeroImport(image,session,varargin)
+function movie = omeroImport(session,imageID,varargin)
 % BFIMPORT imports movie files into MovieData objects using Bioformats 
 %
 % movie = bfimport(image)
@@ -25,10 +25,23 @@ if ~exist('omero.client','class'), loadOmero; end
 
 % Input check
 ip=inputParser;
-ip.addRequired('image',@(x) isa(x,'omero.model.ImageI'));
 ip.addRequired('session',@(x) isa(x,'omero.api.ServiceFactoryPrxHelper'));
+ip.addRequired('imageID',@isscalar);
 ip.addOptional('outputDirectory',[],@ischar);
-ip.parse(image,session,varargin{:});
+ip.parse(session,imageID,varargin{:});
+
+
+ids = java.util.ArrayList();
+ids.add(java.lang.Long(imageID)); %add the id of the image.
+
+param = omero.sys.ParametersI();
+% param.leaves(); % indicate to load the images.
+param.acquisitionData;
+
+
+proxy = session.getContainerService();
+list = proxy.getImages('omero.model.Image', ids, param);
+image = list.get(0);
 
 movieArgs={}; % Create properties cell array based on existing metadata
 
@@ -43,7 +56,7 @@ pixelsA=pojos.PixelsData(pixels);
 pixelSize = pixelsA.getPixelSizeX;
 if ~isempty(pixelSize)
     assert(isequal(pixelSize,pixelsA.getPixelSizeY),'Pixel size different in x and y');
-    movieArgs=horzcat(movieArgs,'pixelSize_',pixelSize*1e3);
+%     movieArgs=horzcat(movieArgs,'pixelSize_',pixelSize*1e3);
 end
 
 % Get camera bit depth
@@ -110,13 +123,14 @@ for i=1:nChan
     % Create new channel
 %     channelPath{i}=dataPath;
 %     end
-    movieChannels(i)=Channel(pixels,channelArgs{i}{:});
+    movieChannels(i)=Channel('',channelArgs{i}{:});
 end
 
 % Create movie object
 movie=MovieData(movieChannels,outputDir,movieArgs{:});
 movie.setPath(outputDir);
 movie.setFilename(movieFileName);
+movie.setOmeroId(imageID);
 movie.setSession(session);
 
 movie.sanityCheck;

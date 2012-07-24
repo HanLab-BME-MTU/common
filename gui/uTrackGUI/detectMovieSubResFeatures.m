@@ -71,8 +71,7 @@ for i = p.ChannelIndex
     disp(outFilePaths{1,i});
     
     % Retrieve information about the images
-    if isa(movieData.channels_(i).channelPath_,'omero.model.Pixels') || ...
-            exist(movieData.getChannelPaths{i},'file')
+    if ~isempty(movieData.omeroId_) || exist(movieData.getChannelPaths{i},'file')
         movieParam.channel = movieData.channels_(i);
     else
         [~, base, digits4Enum ~] = getFilenameBody(movieData.getImageFileNames{i}{1});
