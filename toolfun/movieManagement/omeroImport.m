@@ -36,13 +36,14 @@ movieArgs={}; % Create properties cell array based on existing metadata
 svc=session.getPixelsService();
 pixels=svc.retrievePixDescription(image.getPixels(0).getId.getValue);
 
+
+pixelsA=pojos.PixelsData(pixels);
+
 % Get pixel size
-pixelSizeX = pixels.getPhysicalSizeX;
-if ~isempty(pixelSizeX)
-    pixelSizeX = pixelSizeX.getValue*10^3; % Convert to nm
-    pixelSizeY = pixels.getPhysicalSizeY.getValue*10^3;
-    assert(isequal(pixelSizeX,pixelSizeY),'Pixel size different in x and y');
-    movieArgs=horzcat(movieArgs,'pixelSize_',pixelSizeX);
+pixelSize = pixelsA.getPixelSizeX;
+if ~isempty(pixelSize)
+    assert(isequal(pixelSize,pixelsA.getPixelSizeY),'Pixel size different in x and y');
+    movieArgs=horzcat(movieArgs,'pixelSize_',pixelSize*1e3);
 end
 
 % Get camera bit depth
@@ -58,26 +59,16 @@ if ~isempty(timeInterval)
 end
 
 % Get the lens numerical aperture
-try % Use a tyr-catch statement because property is not always defined
-    lensNA=metadata.getObjectiveLensNA(0,0);
-    if ~isempty(lensNA)
-        movieArgs=horzcat(movieArgs,'numAperture_',double(lensNA));
-    elseif ~isempty(metadata.getObjectiveID(0,0))
-        % Hard-coded for deltavision files. Try to get the objective id and
-        % read the objective na from a lookup table
-        tokens=regexp(char(metadata.getObjectiveID(0,0).toString),...
-            '^Objective\:= (\d+)$','once','tokens');
-        if ~isempty(tokens)
-            [na,mag]=getLensProperties(str2double(tokens),{'na','magn'});
-            movieArgs=horzcat(movieArgs,'numAperture_',na,'magnification_',mag);
-        end
-    end
+imageA = pojos.ImageAcquisitionData(image);
+objective = imageA.getObjective;
+if ~isempty(objective)
+    lensNA = imageA.getObjective.getLensNA;
+    movieArgs=horzcat(movieArgs,'numAperture_',double(lensNA));
 end
 
+
 % Read number of channels, frames and stacks
-nFrames =  pixels.getSizeT.getValue;
-nChan =  pixels.getSizeC.getValue;
-nZ =  pixels.getSizeZ.getValue;
+nChan =  pixelsA.getSizeC;
 
 % Set output directory (based on image extraction flag)
 movie=MovieData;
@@ -99,28 +90,22 @@ channels = pixels.copyChannels;
 for i=1:nChan
     channelArgs{i}={};
 
-%     Read excitation wavelength
-    exwlgth=channels.get(i-1).getLogicalChannel().getEmissionWave;
-%     exwlgth=channels.get(i-1).getEmissionWave;
-
-    if ~isempty(exwlgth) && exwlgth.getValue ~=1
-        channelArgs{i}=horzcat(channelArgs{i},'excitationWavelength_',exwlgth.getValue);
+    channelD = pojos.ChannelData(i-1,channels.get(i-1));
+    % Read excitation wavelength
+    exwlgth=channelD.getEmissionWavelength;
+    if ~isempty(exwlgth) && exwlgth ~= -1
+        channelArgs{i}=horzcat(channelArgs{i},'excitationWavelength_',exwlgth);
     end
     
-    % Fill emission wavelength
-    emwlgth=channels.get(i-1).getLogicalChannel().getExcitationWave();
-
-    if ~isempty(emwlgth) && emwlgth.getValue ~=1
-        channelArgs{i}=horzcat(channelArgs{i},'emissionWavelength_',emwlgth.getValue);
+    % Read emission wavelength
+    emwlgth=channelD.getExcitationWavelength();
+    if ~isempty(emwlgth) && emwlgth ~= -1
+        channelArgs{i}=horzcat(channelArgs{i},'emissionWavelength_',emwlgth);
     end
     
     % Read channelName
-    chanName=channels.get(i-1).getLogicalChannel.getName;
-    if isempty(chanName), 
-        chanName = ['Channel_' num2str(i)]; 
-    else
-        chanName = char(chanName.toString); 
-    end
+    chanName=channelD.getName;
+    if isempty(chanName), chanName = ['Channel_' num2str(i)]; end
     
     % Create new channel
 %     channelPath{i}=dataPath;
