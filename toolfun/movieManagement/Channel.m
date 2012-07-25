@@ -157,7 +157,7 @@ classdef Channel < hgsetget
                 isequal(obj.owner_,ip.Results.owner.parent_),...
                 'The channel''s owner is not the movie neither its parent')
             
-            if obj.owner_.isOmero()
+            if obj.isOmero()
                 pixels = obj.owner_.getPixels();
                 width = pixels.getSizeX.getValue;
                 height = pixels.getSizeY.getValue;
@@ -228,7 +228,7 @@ classdef Channel < hgsetget
             % Initialize image
             I=zeros([obj.owner_.imSize_ numel(iFrame)]);
             
-            if obj.owner_.isOmero() % OMERO objects
+            if obj.isOmero() % OMERO objects
                 % Test session integrity
                 assert(~isempty(obj.owner_.omeroSession_))
                 pixels = obj.owner_.getPixels();
@@ -271,6 +271,10 @@ classdef Channel < hgsetget
         end
         
         %% Bio-formats functions
+        function status = isOmero(obj)
+            status = ~isempty(obj.owner_) && obj.owner_.isOmero();
+        end
+        
         function status = isBF(obj)
             status = exist(obj.channelPath_, 'file')==2;
         end
