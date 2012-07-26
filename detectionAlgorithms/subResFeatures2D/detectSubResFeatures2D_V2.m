@@ -17,7 +17,7 @@ function [detectedFeatures,clustersMMF,imageN3,errFlag] = ...
 %             .alphaD: For distance test. Optional. Default: 0.05.
 %             .alphaF: Final residuals test, comparing residuals from final
 %                      fit to estimated background noise.
-%                      Optional. Default: 0.05.
+%                      Optional. Default: 0.
 %       visual     : 1 if user wants to view results; 0 otherwise.
 %                    Optional. Default: 0.
 %       doMMF      : 1 if user wants to do mixture-model fitting, 0
@@ -100,7 +100,7 @@ else %if some were, check their values and assign default for the rest
         end
     end
     if ~isfield(testAlpha,'alphaF')
-        testAlpha.alphaF = 0.05;
+        testAlpha.alphaF = 0;
     else
         if testAlpha.alphaF < 0 || testAlpha.alphaF > 1
             disp('--detectSubResFeatures2D_V2: testAlpha.alphaF should be between 0 and 1!');
