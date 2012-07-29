@@ -12,6 +12,9 @@ function [workTS,interval,trend,imf,excludeVar] = removeMeanTrendNaN(TS,varargin
 %                   1 : default - remove linear trend (see dtrend.m)
 %                   2 : remove all deterministic trend
 %
+%       minLength  - minimal length accepted. Any window that has less than
+%                    minLength will be discarded.
+%
 %Output:
 %       outTS{# of variables}(# of good points)  - cell array with a continuous time series points
 %       interval   - final interval = initial - (NaN blocks + outliers)  
@@ -127,7 +130,7 @@ empIdx           = find( cellfun(@isempty,workTS) );
 minIdx           = find( cell2mat( cellfun(@(x) lt(numel(x),minLength),workTS,'UniformOutput',0) ) );
 finIdx           = union(empIdx,minIdx);
 workTS(finIdx)   = [];
-interval(empIdx) = [];
-trend(empIdx)    = [];
-imf(empIdx)      = [];
+interval(finIdx) = [];
+trend(finIdx)    = [];
+imf(finIdx)      = [];
 excludeVar       = union(excludeVar,finIdx);
