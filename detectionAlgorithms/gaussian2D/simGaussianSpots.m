@@ -1,4 +1,4 @@
-function [frame, xv, yv, sv, Av] = simGaussianSpots(nx, ny, sv, varargin)
+function [frame, xv, yv, sv, Av] = simGaussianSpots(nx, ny, sigma, varargin)
 % SIMGAUSSIANSPOTS generates a given number of 2D Gaussians in an image.
 % The generated Gaussian signals do not overlap with the image boundaries.
 %
@@ -41,7 +41,7 @@ ip.addParamValue('background', 0);
 ip.addParamValue('verbose', 'off', @(x) any(strcmpi(x, {'on', 'off'})));
 ip.addParamValue('Border', 'padded', @(x) any(strcmpi(x, {'padded', 'periodic', 'truncated'})));
 ip.addParamValue('Normalization', 'off', @(x) any(strcmpi(x, {'on', 'off'})));
-ip.parse(nx, ny, sv, varargin{:});
+ip.parse(nx, ny, sigma, varargin{:});
 
 np = ip.Results.npoints;
 c = ip.Results.background;
