@@ -70,7 +70,7 @@ if (w_max>nx || w_max>ny)
 end
 
 if numel(Av)==1
-    Av = Av*ones(size(Av));
+    Av = Av*ones(np,1);
 end
 if isempty(Av)
     Av = ones(np,1);
