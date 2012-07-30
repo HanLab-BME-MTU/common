@@ -39,7 +39,7 @@ ip.addParamValue('A', []);
 ip.addParamValue('npoints', 1);
 ip.addParamValue('background', 0);
 ip.addParamValue('verbose', 'off', @(x) any(strcmpi(x, {'on', 'off'})));
-ip.addParamValue('Border', 'padded', @(x) any(strcmpi(x, {'periodic', 'truncated'})));
+ip.addParamValue('Border', 'padded', @(x) any(strcmpi(x, {'padded', 'periodic', 'truncated'})));
 ip.addParamValue('Normalization', 'off', @(x) any(strcmpi(x, {'on', 'off'})));
 ip.parse(nx, ny, sv, varargin{:});
 
