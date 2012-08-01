@@ -200,14 +200,16 @@ if ~isempty(get(handles.edit_notes, 'String'))
     movieOptions=horzcat(movieOptions,'notes_',get(handles.edit_notes, 'String'));
 end
 
-if ~isempty(userData.MD);
+if ~isempty(userData.MD),
     % Overview mode - edit existing MovieDat
-    try
-        set(userData.MD,movieOptions{:});
-    catch ME
-        errormsg = sprintf([ME.message '.\n\Editing movie data failed.']);
-        errordlg(errormsg, 'User Input Error','modal');
-        return;
+    if ~isempty(movieOptions)
+        try
+            set(userData.MD,movieOptions{:});
+        catch ME
+            errormsg = sprintf([ME.message '.\n\nMovie edition failed.']);
+            errordlg(errormsg, 'User Input Error','modal');
+            return;
+        end
     end
     % Create a pointer to the MovieData object (to use the same
     % sanityCheck command later)
@@ -217,14 +219,14 @@ else
     try
         MD = MovieData(userData.channels, outputDir, movieOptions{:});
     catch ME
-        errormsg = sprintf([ME.message '.\n\nCreating movie data failed.']);
+        errormsg = sprintf([ME.message '.\n\nMovie creation failed.']);
         errordlg(errormsg, 'User Input Error','modal');
         return;
     end
 end
 
 try
-    MD.sanityCheck
+    MD.sanityCheck;
 catch ME
     delete(MD);
     errormsg = sprintf('%s.\n\nPlease check your movie data. Movie data is not saved.',ME.message);

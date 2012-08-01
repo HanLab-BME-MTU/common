@@ -46,7 +46,7 @@ end
 
 % Read number of series and initialize movies
 nSeries = r.getSeriesCount();
-MD(nSeries, 1) = MovieData();
+MD(1, nSeries) = MovieData();
 
 % Set output directory (based on image extraction flag)
 [mainPath,movieName]=fileparts(dataPath);
