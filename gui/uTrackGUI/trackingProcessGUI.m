@@ -102,10 +102,10 @@ for i=1:numel(kalmanFields)
         {userData.kalmanFunctions.(kalmanFields{i})});
 end
 
-assert(sum(index)==1,'Did not find a unique Kalman set.');
+assert(sum(index)==1, 'Did not find a unique Kalman set.');
 
 u2 = cell(1,nKalmanFunctions);
-u2{i2} = funParams.costMatrices(1).parameters.kalmanInitParam;
+u2{index} = funParams.costMatrices(1).parameters.kalmanInitParam;
 
 set(handles.popupmenu_kalmanFunctions,'UserData',u2,...
     'String', {userData.kalmanFunctions.name}, 'Value', find(index))
@@ -210,7 +210,7 @@ funParams.costMatrices(2).parameters = u_gapclosing{i_gapclosing};
 iKalman = get(handles.popupmenu_kalmanFunctions, 'Value');
 kalmanFields = {'reserveMem','initialize','calcGain','timeReverse'};
 for i=1:numel(kalmanFields)
-    funParams.kalmanFunctions.(kalmanFields{i})=userData.kalmanFunctions.(kalmanFields{i});
+    funParams.kalmanFunctions.(kalmanFields{i})=userData.kalmanFunctions(iKalman).(kalmanFields{i});
 end
 kalmanData = get(handles.popupmenu_kalmanFunctions, 'UserData');
 funParams.costMatrices(1).parameters.kalmanInitParam = kalmanData{iKalman};

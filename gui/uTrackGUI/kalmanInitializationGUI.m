@@ -76,9 +76,8 @@ userData.kalmanInitParam = u{userData.procID};
 kalmanInitParam = userData.kalmanInitParam;
 
 % Parameter Setup
-if isempty(kalmanInitParam)
-    set(handles.radiobutton_none,'Value',1);
-else
+set(handles.radiobutton_none,'Value',1);
+if ~isempty(kalmanInitParam)
     if ~isempty(kalmanInitParam.initVelocity)% Initial Valocity Estimate
         for i=1:userData.probDim  
             set(handles.(['edit_v_' num2str(i)]), 'String', kalmanInitParam.initVelocity(i));
