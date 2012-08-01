@@ -247,7 +247,7 @@ classdef Channel < hgsetget
             elseif obj.isBF()
                 % Using bioformat tools, get the reader and retrieve dimension order
                 r = obj.getReader();
-                
+
                 % Get channel index
                 iChan = find(obj.owner_.channels_==obj);
                 
@@ -283,6 +283,7 @@ classdef Channel < hgsetget
             bfCheckJavaPath(); % Check loci-tools.jar is in the Java path
             loci.common.DebugTools.enableLogging('OFF');
             r = bfGetReader(obj.channelPath_, false);
+            r.setSeries(obj.getSeries());
         end
         
         function setSeries(obj, iSeries)
