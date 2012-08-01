@@ -98,7 +98,8 @@ for i = 1:nSeries
             channelPath{i, iChan} = dataPath;
         end
         movieChannels(i, iChan) = Channel(channelPath{i, iChan}, channelArgs{:});
-        movieChannels(i, iChan).setSeries(iSeries);
+        
+        if ~extractImages, movieChannels(i, iChan).setSeries(iSeries); end
     end
     
     % Create movie object

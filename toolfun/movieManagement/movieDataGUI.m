@@ -374,16 +374,15 @@ set(handles.figure1,'UserData',userData);
 % --- Executes on button press in pushbutton_bfImport.
 function pushbutton_bfImport_Callback(hObject, eventdata, handles)
 
-assert(~isempty(which('loci_tools.jar')),...
-    'Could not find the Bio-Formats library');
+assert(bfCheckJavaPath(), 'Could not load the Bio-Formats library');
 
 % Note: list of supported formats could be retrieved using
 % loci.formats.tools.PrintFormatTable class
-[file path] = uigetfile('Select movie to load.');
+[file path] = uigetfile('Select image file to import.');
 if isequal(file,0) || isequal(path,0), return; end
 
 % Import data into movie using bioformats
-MD=bfImport([path file],logical(get(handles.checkbox_uncompress,'Value')));
+MD = bfImport([path file],logical(get(handles.checkbox_uncompress,'Value')));
 
 % Update movie selector interface
 userData=get(handles.figure1,'UserData');
@@ -396,4 +395,4 @@ if ishandle(userData.mainFig),
 end
 
 % Relaunch this interface in preview mode
-movieDataGUI(MD);
+movieDataGUI(MD(end));
