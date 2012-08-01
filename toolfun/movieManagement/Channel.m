@@ -1,5 +1,5 @@
 classdef Channel < hgsetget
-    %  Class definition of channel class    
+    %  Class definition of channel class
     
     properties
         excitationWavelength_       % Excitation wavelength (nm)
@@ -49,7 +49,7 @@ classdef Channel < hgsetget
             end
         end
         
-        %% Set / Get Methods 
+        %% Set / Get Methods
         function set.excitationWavelength_(obj, value)
             obj.checkPropertyValue('excitationWavelength_',value);
             obj.excitationWavelength_=value;
@@ -122,7 +122,7 @@ classdef Channel < hgsetget
                 ['The supplied ' propName ' is invalid!']);
         end
         
-                
+        
         function status = checkProperty(obj,property)
             % Returns true/false if the non-empty property is writable
             status = isempty(obj.(property));
@@ -163,7 +163,7 @@ classdef Channel < hgsetget
                 height = pixels.getSizeY.getValue;
                 nFrames = pixels.getSizeT.getValue;
             elseif obj.isBF()
-                % Using bioformat-tools, get metadata 
+                % Using bioformat-tools, get metadata
                 r = obj.getReader();
                 width = r.getSizeX;
                 height = r.getSizeY;
@@ -240,26 +240,22 @@ classdef Channel < hgsetget
                     plane = store.getPlane(0, chanIndex-1, iFrame(i)-1);
                     I(:,:,i)=double(toMatrix(plane,pixels)');
                 end
-
-
+                
+                
             elseif obj.isBF()
                 % Using bioformat tools, get the reader and retrieve dimension order
                 r = obj.getReader();
-                metadata = r.getMetadataStore();
-                dimensionOrder = char(metadata.getPixelsDimensionOrder(0));
-                CZTOrder = dimensionOrder(3:end);
-                CZTdimensions = arrayfun(@(x) metadata.(['getPixelsSize' x])(0).getValue,CZTOrder);
                 
-                % Get channel index, create multi-dimensional plane index and
-                % convert into linear plane index
-                chanIndex = find(obj.owner_.channels_==obj);
-                index(CZTOrder=='C',:) = chanIndex*ones(numel(iFrame),1);
-                index(CZTOrder=='Z',:) = 1*ones(numel(iFrame),1);
-                index(CZTOrder=='T',:) = iFrame;
-                iPlane = sub2ind(CZTdimensions,index(1,:),index(2,:),index(3,:));
+                % Get channel index
+                iChan = find(obj.owner_.channels_==obj);
                 
-                % Get all requrested planes and close reader
-                for i=1:numel(iPlane), I(:,:,i) = bfGetPlane(r,iPlane(i)); end
+                % Get all requested planes
+                for i=1:numel(iFrame),
+                    iPlane = loci.formats.FormatTools.getIndex(r,0,iChan-1,iFrame(i)-1);
+                    I(:,:,i) = bfGetPlane(r, iPlane + 1);
+                end
+                
+                % Close reader
                 r.close;
             else
                 % Read images from disk
@@ -309,7 +305,7 @@ classdef Channel < hgsetget
             % Initialize output
             if numel(obj)>1, zdim=3; else zdim=1; end
             data = zeros([obj(1).owner_.imSize_ zdim]);
-             
+            
             % Fill output
             for iChan=1:numel(obj)
                 data(:,:,iChan)=mat2gray(obj(iChan).loadImage(iFrame));
@@ -317,7 +313,7 @@ classdef Channel < hgsetget
             drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
                 2*numel(fieldnames(ip.Unmatched)),1);
             h = obj(1).displayMethod_.draw(data,'channels','hAxes',ip.Results.hAxes,drawArgs{:});
-        end          
+        end
     end
     
     methods(Access=protected)
@@ -326,13 +322,13 @@ classdef Channel < hgsetget
             emissionWavelength=obj.emissionWavelength_*1e-9;
             numAperture=obj.owner_.numAperture_;
             pixelSize=obj.owner_.pixelSize_*1e-9;
-            if isempty(emissionWavelength) || isempty(numAperture) || isempty(pixelSize), 
-                return; 
+            if isempty(emissionWavelength) || isempty(numAperture) || isempty(pixelSize),
+                return;
             end
             
             obj.psfSigma_ = getGaussianPSFsigma(numAperture,1,pixelSize,emissionWavelength);
-%             obj.psfSigma_ =.21*obj.emissionWavelength/(numAperture*pixelSize);
-
+            %             obj.psfSigma_ =.21*obj.emissionWavelength/(numAperture*pixelSize);
+            
         end
     end
     methods(Static)
@@ -384,6 +380,6 @@ classdef Channel < hgsetget
         function fluorophores=getFluorophores()
             fluorPropStruct= getFluorPropStruct();
             fluorophores={fluorPropStruct.name};
-        end 
+        end
     end
 end
