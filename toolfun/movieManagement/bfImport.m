@@ -28,7 +28,6 @@ ip=inputParser;
 ip.addRequired('dataPath',@ischar);
 ip.addOptional('extractImages',false,@islogical);
 ip.addParamValue('outputDirectory',[],@ischar);
-ip.KeepUnmatched = true;
 ip.parse(dataPath,varargin{:});
 extractImages = ip.Results.extractImages;
 
@@ -95,22 +94,13 @@ nChan =  r.getMetadataStore().getPixelsSizeC(0).getValue;
 nZ =  r.getMetadataStore().getPixelsSizeZ(0).getValue;
 
 % Set output directory (based on image extraction flag)
-movie=MovieData;
 [mainPath,movieName]=fileparts(dataPath);
-if extractImages, 
-    rawDataPath = uigetdir(mainPath,'Find a place to save your extracted images');
-    if isequal(rawDataPath,0), return; end
-end
-
-if isempty(ip.Results.outputDirectory)
-    [movieFileName,outputDir] = uiputfile('*.mat','Find a place to save your analysis',...
-        fullfile(mainPath,[movieName '.mat']));
-    if isequal(outputDir,0), return; end
+if ~isempty(ip.Results.outputDirectory)
+    outputDir = ip.Results.outputDirectory;
 else
-    outputDir=ip.Results.outputDirectory;
-    if ~isdir(outputDir), mkdir(outputDir); end
-    movieFileName=[movieName '.mat'];
+    outputDir = fullfile(mainPath, movieName);
 end
+movieFileName=[movieName '.mat'];
 
 % Create movie channels
 channelPath=cell(1,nChan);
@@ -146,31 +136,21 @@ for i=1:nChan
     
     % Create new channel
     if extractImages
-        channelPath{i} = fullfile(rawDataPath,chanName);
+        channelPath{i} = fullfile(outputDir, chanName);
     else
-        channelPath{i}=dataPath;
+        channelPath{i} = dataPath;
     end
-    movieChannels(i)=Channel(channelPath{i},channelArgs{i}{:});
+    movieChannels(i) = Channel(channelPath{i},channelArgs{i}{:});
 end
 
 % Create movie object
-addArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
-    2*numel(fieldnames(ip.Unmatched)),1);
-movie=MovieData(movieChannels,outputDir,movieArgs{:},addArgs{:});
+movie=MovieData(movieChannels, outputDir, movieArgs{:});
 movie.setPath(outputDir);
 movie.setFilename(movieFileName);
 
 
 if extractImages    
-    % Get dimensions
-    dimensionOrder =char(r.getMetadataStore().getPixelsDimensionOrder(0));
-    dimensions = arrayfun(@(x) r.getMetadataStore().(['getPixelsSize' x])(0).getValue,...
-        dimensionOrder(3:end));
-    
     % Create anonymous functions for reading files
-    chanIndex = @(index) index(dimensionOrder(3:end)=='C');
-    zIndex = @(index) index(dimensionOrder(3:end)=='Z');
-    tIndex = @(index) index(dimensionOrder(3:end)=='T');
     tString=@(t)num2str(t, ['%0' num2str(floor(log10(nFrames))+1) '.f']);
     zString=@(z)num2str(z, ['%0' num2str(floor(log10(nZ))+1) '.f']);
     imageName = @(c,t,z) [movieName '_w' num2str(movieChannels(c).emissionWavelength_) ...
@@ -179,10 +159,9 @@ if extractImages
     % Clean channel directories and save images as TIF files
     for i=1:nChan, mkClrDir(channelPath{i}); end
     for iPlane = 1:r.getImageCount()
-        [index(1),index(2),index(3)]=ind2sub(dimensions,iPlane);
-        
-        imwrite(bfGetPlane(r,iPlane),[channelPath{chanIndex(index)} filesep ...
-            imageName(chanIndex(index),tIndex(index),zIndex(index))],'tif');
+        index = r.getZCTCoords(iPlane - 1);
+        imwrite(bfGetPlane(r, iPlane),[channelPath{index(2) + 1} filesep ...
+            imageName(index(2) + 1, index(3) + 1, index(1) + 1)],'tif');
     end
 end
 
