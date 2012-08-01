@@ -1,7 +1,7 @@
-function movie = bfImport(dataPath,varargin)
+function MD = bfImport(dataPath,varargin)
 % BFIMPORT imports movie files into MovieData objects using Bioformats 
 %
-% movie = bfimport(dataPath)
+% MD = bfimport(dataPath)
 %
 % Load proprietary files using the Bioformats library. Read the metadata
 % that is associated with the movie and the channels and set them into the
@@ -17,11 +17,12 @@ function movie = bfImport(dataPath,varargin)
 %
 % Output:
 %
-%   movie - A MovieData object
+%   MD - A MovieData object
 
 % Sebastien Besson, Dec 2011
 
-assert(exist(which('bfopen'),'file')==2,'Bioformats library missing');
+status = bfCheckJavaPath();
+assert(status, 'Bioformats library missing');
 
 % Input check
 ip=inputParser;
@@ -36,7 +37,6 @@ assert(exist(dataPath,'file')==2,'File does not exist'); % Check path
 try
     % Retrieve movie reader and metadata
     r=bfGetReader(dataPath);
-    assert(r.getSeriesCount() == 1, 'Multiple series not supported yet');
     r.setSeries(0);
 catch bfException
     ME = MException('lccb:import:error','Import error');
@@ -44,29 +44,97 @@ catch bfException
     throw(ME);
 end
 
+iSeries =0;
+movieArgs = getMovieMetadata(r, iSeries);
+
+% Read number of channels, frames and stacks
+nFrames =  r.getMetadataStore().getPixelsSizeT(iSeries).getValue;
+nChan =  r.getMetadataStore().getPixelsSizeC(iSeries).getValue;
+nZ =  r.getMetadataStore().getPixelsSizeZ(iSeries).getValue;
+
+% Set output directory (based on image extraction flag)
+[mainPath,movieName]=fileparts(dataPath);
+if ~isempty(ip.Results.outputDirectory)
+    outputDir = ip.Results.outputDirectory;
+else
+    outputDir = fullfile(mainPath, movieName);
+end
+movieFileName=[movieName '.mat'];
+
+% Create movie channels
+channelPath=cell(1,nChan);
+movieChannels(1,nChan)=Channel();
+for iChan = 1:nChan
+
+    channelArgs = getChannelMetadata(r, iSeries, iChan-1);
+    % Read channelName
+    chanName=r.getMetadataStore().getChannelName(iSeries, iChan-1);
+    if isempty(chanName), 
+        chanName = ['Channel_' num2str(iChan)]; 
+    else
+        chanName = char(chanName.toString); 
+    end
+    
+    % Create new channel
+    if extractImages
+        channelPath{iChan} = fullfile(outputDir, chanName);
+    else
+        channelPath{iChan} = dataPath;
+    end
+    movieChannels(iChan) = Channel(channelPath{iChan}, channelArgs{:});
+end
+
+% Create movie object
+MD=MovieData(movieChannels, outputDir, movieArgs{:});
+MD.setPath(outputDir);
+MD.setFilename(movieFileName);
+
+
+if extractImages    
+    % Create anonymous functions for reading files
+    tString=@(t)num2str(t, ['%0' num2str(floor(log10(nFrames))+1) '.f']);
+    zString=@(z)num2str(z, ['%0' num2str(floor(log10(nZ))+1) '.f']);
+    imageName = @(c,t,z) [movieName '_w' num2str(movieChannels(c).emissionWavelength_) ...
+        '_z' zString(z),'_t' tString(t),'.tif'];
+
+    % Clean channel directories and save images as TIF files
+    for iChan = 1:nChan, mkClrDir(channelPath{iChan}); end
+    for iPlane = 1:r.getImageCount()
+        index = r.getZCTCoords(iPlane - 1);
+        imwrite(bfGetPlane(r, iPlane),[channelPath{index(2) + 1} filesep ...
+            imageName(index(2) + 1, index(3) + 1, index(1) + 1)],'tif');
+    end
+end
+
+% Close reader and check movie sanity
+r.close;
+MD.sanityCheck;
+
+function movieArgs = getMovieMetadata(r, iSeries)
+
 % Create movie metadata cell array using read metadata
 movieArgs={};
 
-pixelSizeX = r.getMetadataStore().getPixelsPhysicalSizeX(0);
+pixelSizeX = r.getMetadataStore().getPixelsPhysicalSizeX(iSeries);
 % Pixel size might be automatically set to 1.0 by @#$% Metamorph
 hasValidPixelSize = ~isempty(pixelSizeX) && pixelSizeX.getValue ~= 1;
 if hasValidPixelSize
     % Convert from microns to nm and check x and y values are equal
     pixelSizeX= pixelSizeX.getValue*10^3;
-    pixelSizeY= r.getMetadataStore().getPixelsPhysicalSizeY(0).getValue*10^3;
+    pixelSizeY= r.getMetadataStore().getPixelsPhysicalSizeY(iSeries).getValue*10^3;
     assert(isequal(pixelSizeX,pixelSizeY),'Pixel size different in x and y');
     movieArgs=horzcat(movieArgs,'pixelSize_',pixelSizeX);
 end
 
 % Camera bit depth
-camBitdepth = r.getBitsPerPixel;
+camBitdepth = r.getBitsPerPixel();
 hasValidCamBitDepth = ~isempty(camBitdepth) && mod(camBitdepth, 2) == 0;
 if hasValidCamBitDepth
     movieArgs=horzcat(movieArgs,'camBitdepth_',camBitdepth);
 end
 
 % Time interval
-timeInterval = r.getMetadataStore().getPixelsTimeIncrement(0);
+timeInterval = r.getMetadataStore().getPixelsTimeIncrement(iSeries);
 if ~isempty(timeInterval)
     movieArgs=horzcat(movieArgs,'timeInterval_',double(timeInterval));
 end
@@ -88,83 +156,23 @@ try % Use a try-catch statement because property is not always defined
     end
 end
 
-% Read number of channels, frames and stacks
-nFrames =  r.getMetadataStore().getPixelsSizeT(0).getValue;
-nChan =  r.getMetadataStore().getPixelsSizeC(0).getValue;
-nZ =  r.getMetadataStore().getPixelsSizeZ(0).getValue;
+function channelArgs = getChannelMetadata(r, iSeries, iChan)
 
-% Set output directory (based on image extraction flag)
-[mainPath,movieName]=fileparts(dataPath);
-if ~isempty(ip.Results.outputDirectory)
-    outputDir = ip.Results.outputDirectory;
-else
-    outputDir = fullfile(mainPath, movieName);
-end
-movieFileName=[movieName '.mat'];
+channelArgs={};
 
-% Create movie channels
-channelPath=cell(1,nChan);
-movieChannels(1,nChan)=Channel();
-channelArgs=cell(1,nChan);
-for i=1:nChan
-    channelArgs{i}={};
-
-    % Read excitation wavelength
-    exwlgth=r.getMetadataStore().getChannelExcitationWavelength(0,i-1);
-    if ~isempty(exwlgth)
-        channelArgs{i}=horzcat(channelArgs{i},'excitationWavelength_',exwlgth.getValue);
-    end
-    
-    % Fill emission wavelength
-    emwlgth=r.getMetadataStore().getChannelEmissionWavelength(0,i-1);
-    if isempty(emwlgth)
-        try
-            emwlgth= r.getMetadataStore().getChannelLightSourceSettingsWavelength(0,0);
-        end
-    end
-    if ~isempty(emwlgth)
-        channelArgs{i}=horzcat(channelArgs{i},'emissionWavelength_',emwlgth.getValue);
-    end
-    
-    % Read channelName
-    chanName=r.getMetadataStore().getChannelName(0,i-1);
-    if isempty(chanName), 
-        chanName = ['Channel_' num2str(i)]; 
-    else
-        chanName = char(chanName.toString); 
-    end
-    
-    % Create new channel
-    if extractImages
-        channelPath{i} = fullfile(outputDir, chanName);
-    else
-        channelPath{i} = dataPath;
-    end
-    movieChannels(i) = Channel(channelPath{i},channelArgs{i}{:});
+% Read excitation wavelength
+exwlgth=r.getMetadataStore().getChannelExcitationWavelength(iSeries, iChan);
+if ~isempty(exwlgth)
+    channelArgs=horzcat(channelArgs, 'excitationWavelength_', exwlgth.getValue);
 end
 
-% Create movie object
-movie=MovieData(movieChannels, outputDir, movieArgs{:});
-movie.setPath(outputDir);
-movie.setFilename(movieFileName);
-
-
-if extractImages    
-    % Create anonymous functions for reading files
-    tString=@(t)num2str(t, ['%0' num2str(floor(log10(nFrames))+1) '.f']);
-    zString=@(z)num2str(z, ['%0' num2str(floor(log10(nZ))+1) '.f']);
-    imageName = @(c,t,z) [movieName '_w' num2str(movieChannels(c).emissionWavelength_) ...
-        '_z' zString(z),'_t' tString(t),'.tif'];
-
-    % Clean channel directories and save images as TIF files
-    for i=1:nChan, mkClrDir(channelPath{i}); end
-    for iPlane = 1:r.getImageCount()
-        index = r.getZCTCoords(iPlane - 1);
-        imwrite(bfGetPlane(r, iPlane),[channelPath{index(2) + 1} filesep ...
-            imageName(index(2) + 1, index(3) + 1, index(1) + 1)],'tif');
+% Fill emission wavelength
+emwlgth=r.getMetadataStore().getChannelEmissionWavelength(iSeries, iChan);
+if isempty(emwlgth)
+    try
+        emwlgth= r.getMetadataStore().getChannelLightSourceSettingsWavelength(iSeries, iChan);
     end
 end
-
-% Close reader and check movie sanity
-r.close;
-movie.sanityCheck;
+if ~isempty(emwlgth)
+    channelArgs = horzcat(channelArgs, 'emissionWavelength_', emwlgth.getValue);
+end
