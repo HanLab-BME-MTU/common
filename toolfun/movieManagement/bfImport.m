@@ -46,73 +46,81 @@ end
 
 % Read number of series and initialize movies
 nSeries = r.getSeriesCount();
-MD(nSeries,1)=MovieData();
+MD(nSeries, 1) = MovieData();
+
+% Set output directory (based on image extraction flag)
+[mainPath,movieName]=fileparts(dataPath);
+if ~isempty(ip.Results.outputDirectory)
+    mainOutputDir = ip.Results.outputDirectory;
+else
+    mainOutputDir = fullfile(mainPath, movieName);
+end
+
+% Create movie channels
+nChan = r.getSizeC();
+channelPath = cell(nSeries, nChan);
+movieChannels(nSeries, nChan) = Channel();
 
 for i = 1:nSeries
     iSeries = i-1;
     movieArgs = getMovieMetadata(r, iSeries);
     
     % Read number of channels, frames and stacks
-    nFrames =  r.getMetadataStore().getPixelsSizeT(iSeries).getValue;
     nChan =  r.getMetadataStore().getPixelsSizeC(iSeries).getValue;
-    nZ =  r.getMetadataStore().getPixelsSizeZ(iSeries).getValue;
     
-    % Set output directory (based on image extraction flag)
-    [mainPath,movieName]=fileparts(dataPath);
-    if ~isempty(ip.Results.outputDirectory)
-        outputDir = ip.Results.outputDirectory;
+    if nSeries>1
+        sString = num2str(i, ['_s%0' num2str(floor(log10(nSeries))+1) '.f']);
+        outputDir = [mainOutputDir sString];
+        movieFileName = [movieName sString '.mat'];
     else
-        outputDir = fullfile(mainPath, movieName);
-    end
-    if nSeries>1, 
-        outputDir = [outputDir '_s' num2str(i)];
-        movieFileName = [movieName '_s' num2str(i) '.mat'];
-    else
+        outputDir = mainOutputDir;
         movieFileName = [movieName '.mat'];
     end
     
+    % Create output directory
     mkClrDir(outputDir);
-    % Create movie channels
-    channelPath=cell(1,nChan);
-    movieChannels(1,nChan)=Channel();
+
     for iChan = 1:nChan
         
-        channelArgs = getChannelMetadata(r, iSeries, iChan-1);
-        % Read channelName
-        chanName=r.getMetadataStore().getChannelName(iSeries, iChan-1);
-        if isempty(chanName),
-            chanName = ['Channel_' num2str(iChan)];
-        else
-            chanName = char(chanName.toString);
-        end
+        channelArgs = getChannelMetadata(r, iSeries, iChan-1);        
         
         % Create new channel
         if extractImages
-            channelPath{iChan} = fullfile(outputDir, chanName);
+            % Read channelName
+            chanName=r.getMetadataStore().getChannelName(iSeries, iChan-1);
+            if isempty(chanName),
+                chanName = ['Channel_' num2str(iChan)];
+            else
+                chanName = char(chanName.toString);
+            end
+            channelPath{i, iChan} = fullfile(outputDir, chanName);
         else
-            channelPath{iChan} = dataPath;
+            channelPath{i, iChan} = dataPath;
         end
-        movieChannels(iChan) = Channel(channelPath{iChan}, channelArgs{:});
-        movieChannels(iChan).setSeries(iSeries);
+        movieChannels(i, iChan) = Channel(channelPath{i, iChan}, channelArgs{:});
+        movieChannels(i, iChan).setSeries(iSeries);
     end
     
     % Create movie object
-    MD(i) = MovieData(movieChannels, outputDir, movieArgs{:});
+    MD(i) = MovieData(movieChannels(i, :), outputDir, movieArgs{:});
     MD(i).setPath(outputDir);
     MD(i).setFilename(movieFileName);
     
     if extractImages
+        nFrames =  r.getMetadataStore().getPixelsSizeT(iSeries).getValue;
+        nZ =  r.getMetadataStore().getPixelsSizeZ(iSeries).getValue;
+
         % Create anonymous functions for reading files
         tString=@(t)num2str(t, ['%0' num2str(floor(log10(nFrames))+1) '.f']);
         zString=@(z)num2str(z, ['%0' num2str(floor(log10(nZ))+1) '.f']);
-        imageName = @(c,t,z) [movieName '_w' num2str(movieChannels(c).emissionWavelength_) ...
+        imageName = @(c,t,z) [movieName '_w' num2str(movieChannels(i, c).emissionWavelength_) ...
             '_z' zString(z),'_t' tString(t),'.tif'];
         
         % Clean channel directories and save images as TIF files
-        for iChan = 1:nChan, mkClrDir(channelPath{iChan}); end
+        for iChan = 1:nChan, mkClrDir(channelPath{i, iChan}); end
         for iPlane = 1:r.getImageCount()
             index = r.getZCTCoords(iPlane - 1);
-            imwrite(bfGetPlane(r, iPlane),[channelPath{index(2) + 1} filesep ...
+            imwrite(bfGetPlane(r, iPlane),[channelPath{i, index(2) + 1} filesep ...
                 imageName(index(2) + 1, index(3) + 1, index(1) + 1)],'tif');
         end
     end
