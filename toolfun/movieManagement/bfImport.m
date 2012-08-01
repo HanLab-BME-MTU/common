@@ -37,7 +37,6 @@ assert(exist(dataPath,'file')==2,'File does not exist'); % Check path
 try
     % Retrieve movie reader and metadata
     r=bfGetReader(dataPath);
-    metadata=r.getMetadataStore();
     assert(r.getSeriesCount() == 1, 'Multiple series not supported yet');
     r.setSeries(0);
 catch bfException
@@ -49,13 +48,13 @@ end
 % Create movie metadata cell array using read metadata
 movieArgs={};
 
-pixelSizeX = metadata.getPixelsPhysicalSizeX(0);
+pixelSizeX = r.getMetadataStore().getPixelsPhysicalSizeX(0);
 % Pixel size might be automatically set to 1.0 by @#$% Metamorph
 hasValidPixelSize = ~isempty(pixelSizeX) && pixelSizeX.getValue ~= 1;
 if hasValidPixelSize
     % Convert from microns to nm and check x and y values are equal
     pixelSizeX= pixelSizeX.getValue*10^3;
-    pixelSizeY= metadata.getPixelsPhysicalSizeY(0).getValue*10^3;
+    pixelSizeY= r.getMetadataStore().getPixelsPhysicalSizeY(0).getValue*10^3;
     assert(isequal(pixelSizeX,pixelSizeY),'Pixel size different in x and y');
     movieArgs=horzcat(movieArgs,'pixelSize_',pixelSizeX);
 end
@@ -68,20 +67,20 @@ if hasValidCamBitDepth
 end
 
 % Time interval
-timeInterval = metadata.getPixelsTimeIncrement(0);
+timeInterval = r.getMetadataStore().getPixelsTimeIncrement(0);
 if ~isempty(timeInterval)
     movieArgs=horzcat(movieArgs,'timeInterval_',double(timeInterval));
 end
 
 % Lens numerical aperture
 try % Use a try-catch statement because property is not always defined
-    lensNA=metadata.getObjectiveLensNA(0,0);
+    lensNA=r.getMetadataStore().getObjectiveLensNA(0,0);
     if ~isempty(lensNA)
         movieArgs=horzcat(movieArgs,'numAperture_',double(lensNA));
-    elseif ~isempty(metadata.getObjectiveID(0,0))
+    elseif ~isempty(r.getMetadataStore().getObjectiveID(0,0))
         % Hard-coded for deltavision files. Try to get the objective id and
         % read the objective na from a lookup table
-        tokens=regexp(char(metadata.getObjectiveID(0,0).toString),...
+        tokens=regexp(char(r.getMetadataStore().getObjectiveID(0,0).toString),...
             '^Objective\:= (\d+)$','once','tokens');
         if ~isempty(tokens)
             [na,mag]=getLensProperties(str2double(tokens),{'na','magn'});
@@ -91,9 +90,9 @@ try % Use a try-catch statement because property is not always defined
 end
 
 % Read number of channels, frames and stacks
-nFrames =  metadata.getPixelsSizeT(0).getValue;
-nChan =  metadata.getPixelsSizeC(0).getValue;
-nZ =  metadata.getPixelsSizeZ(0).getValue;
+nFrames =  r.getMetadataStore().getPixelsSizeT(0).getValue;
+nChan =  r.getMetadataStore().getPixelsSizeC(0).getValue;
+nZ =  r.getMetadataStore().getPixelsSizeZ(0).getValue;
 
 % Set output directory (based on image extraction flag)
 movie=MovieData;
@@ -121,16 +120,16 @@ for i=1:nChan
     channelArgs{i}={};
 
     % Read excitation wavelength
-    exwlgth=metadata.getChannelExcitationWavelength(0,i-1);
+    exwlgth=r.getMetadataStore().getChannelExcitationWavelength(0,i-1);
     if ~isempty(exwlgth)
         channelArgs{i}=horzcat(channelArgs{i},'excitationWavelength_',exwlgth.getValue);
     end
     
     % Fill emission wavelength
-    emwlgth=metadata.getChannelEmissionWavelength(0,i-1);
+    emwlgth=r.getMetadataStore().getChannelEmissionWavelength(0,i-1);
     if isempty(emwlgth)
         try
-            emwlgth= metadata.getChannelLightSourceSettingsWavelength(0,0);
+            emwlgth= r.getMetadataStore().getChannelLightSourceSettingsWavelength(0,0);
         end
     end
     if ~isempty(emwlgth)
@@ -138,7 +137,7 @@ for i=1:nChan
     end
     
     % Read channelName
-    chanName=metadata.getChannelName(0,i-1);
+    chanName=r.getMetadataStore().getChannelName(0,i-1);
     if isempty(chanName), 
         chanName = ['Channel_' num2str(i)]; 
     else
@@ -164,8 +163,8 @@ movie.setFilename(movieFileName);
 
 if extractImages    
     % Get dimensions
-    dimensionOrder =char(metadata.getPixelsDimensionOrder(0));
-    dimensions = arrayfun(@(x) metadata.(['getPixelsSize' x])(0).getValue,...
+    dimensionOrder =char(r.getMetadataStore().getPixelsDimensionOrder(0));
+    dimensions = arrayfun(@(x) r.getMetadataStore().(['getPixelsSize' x])(0).getValue,...
         dimensionOrder(3:end));
     
     % Create anonymous functions for reading files
