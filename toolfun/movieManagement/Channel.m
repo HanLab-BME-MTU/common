@@ -19,6 +19,7 @@ classdef Channel < hgsetget
         psfSigma_                   % Standard deviation of the psf
         channelPath_                % Channel path (directory containing image(s))
         owner_                      % MovieData object which owns this channel
+        bfSeries_                   % Pixels Series 
     end
     
     properties(Transient=true)
@@ -165,9 +166,10 @@ classdef Channel < hgsetget
             elseif obj.isBF()
                 % Using bioformat-tools, get metadata
                 r = obj.getReader();
-                width = r.getSizeX;
-                height = r.getSizeY;
-                nFrames = r.getSizeT;
+                iSeries = obj.getSeries();
+                width = r.getMetadataStore().getPixelsSizeX(iSeries).getValue();
+                height = r.getMetadataStore().getPixelsSizeY(iSeries).getValue();
+                nFrames = r.getMetadataStore().getPixelsSizeT(iSeries).getValue();
                 r.close;
             else
                 % Check channel path existence
@@ -281,6 +283,20 @@ classdef Channel < hgsetget
             bfCheckJavaPath(); % Check loci-tools.jar is in the Java path
             loci.common.DebugTools.enableLogging('OFF');
             r = bfGetReader(obj.channelPath_, false);
+        end
+        
+        function setSeries(obj, iSeries)
+            assert(obj.isBF(), 'Object must be using the Bio-Formats library');
+            assert(isempty(obj.bfSeries_), 'The series number has been already populated');
+            obj.bfSeries_ = iSeries;
+        end
+        
+        function iSeries = getSeries(obj)
+            if isempty(obj.bfSeries_),
+                iSeries = 0;
+            else
+                iSeries = obj.bfSeries_;
+            end
         end
         
         %% Display functions
