@@ -21,7 +21,7 @@ xla = get(ha, 'XTickLabel');
 if ischar(xla) % label is numerical
     xla = arrayfun(@(i) num2str(str2double(xla(i,:))), 1:size(xla,1), 'UniformOutput', false);
 end
-set(ha, 'XTickLabel', [], 'Units', 'pixels');
+set(ha, 'XTickLabel', []);
 
 fontName = get(ha, 'FontName');
 fontSize = get(ha, 'FontSize');
@@ -35,14 +35,14 @@ height = diff(YLim);
 % get height of default text bounding box
 h = text(0, 0, ' ', 'FontName', fontName, 'FontSize', fontSize);
 extent = get(h, 'extent');
-pos = get(ha, 'Position');
-shift = extent(4)/height*width/pos(3)*pos(4) * sin(ip.Results.Angle*pi/180)/2;
+axPos = get(ha, 'Position');
+shift = extent(4)/height*width/axPos(3)*axPos(4) * sin(ip.Results.Angle*pi/180)/2;
 delete(h);
 
 
 ht = arrayfun(@(k) text(xa(k)-shift, YLim(1)-0.01*height, xla{k},...
     'FontName', fontName, 'FontSize', fontSize,...
-    'Units', 'data', 'VerticalAlignment', 'top', 'HorizontalAlignment', 'right',...
+    'VerticalAlignment', 'top', 'HorizontalAlignment', 'right',...
     'Rotation', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter, 'Parent', ha),...
     1:length(xa));
 
@@ -50,9 +50,9 @@ ht = arrayfun(@(k) text(xa(k)-shift, YLim(1)-0.01*height, xla{k},...
 extents = arrayfun(@(k) get(k, 'extent'), ht, 'UniformOutput', false);
 extents = vertcat(extents{:});
 
-pos = get(ha, 'Position');
+axPos = get(ha, 'Position');
 
-lmargin = -min(extents(:,1))/width * pos(3); % normalized units in fig. frame
+lmargin = -min(extents(:,1))/width * axPos(3); % normalized units in fig. frame
 
 hx = get(ha, 'XLabel');
 maxHeight = max(extents(:,4));
@@ -62,25 +62,25 @@ if ~strcmpi(get(hx, 'String'), ' ')
 else
     xlheight = 0;
 end
-bmargin = (maxHeight+xlheight)/height * pos(4); % data units -> normalized
+bmargin = (maxHeight+xlheight)/height * axPos(4); % data units -> normalized
 
 if ip.Results.AdjustFigure
     hfig = get(ha, 'Parent');
     fpos = get(hfig, 'Position');
     % expand figure window
     
-    if lmargin > pos(1)
-        fpos(3) = fpos(3) + lmargin-pos(1);
-        pos(1) = lmargin;
+    if lmargin > axPos(1)
+        fpos(3) = fpos(3) + lmargin-axPos(1);
+        axPos(1) = lmargin;
     end
-    fpos(4) = fpos(4) + bmargin-pos(2);
-    pos(2) = bmargin;
+    fpos(4) = fpos(4) + bmargin-axPos(2);
+    axPos(2) = bmargin;
 
     set(hfig, 'Position', fpos, 'PaperPositionMode', 'auto');
-    set(ha, 'Position', pos);
+    set(ha, 'Position', axPos);
 end
 
 % shift x-label
-pos = get(hx, 'Position');
-pos(2) = pos(2) - maxHeight;
-set(hx, 'Position', pos, 'VerticalAlignment', 'middle');
+xPos = get(hx, 'Position');
+xPos(2) = -maxHeight;
+set(hx, 'Position', xPos, 'VerticalAlignment', 'middle');
