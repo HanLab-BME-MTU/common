@@ -64,6 +64,7 @@ ip.addParamValue('LabelFontSize', 20, @isscalar);
 ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
 ip.addParamValue('X', [], @(x) numel(x)==ng); % cell array of x-coordinates (groups only)
 ip.addParamValue('AdjustFigure', true, @islogical);
+ip.addParamValue('ErrorbarColor', []);
 ip.parse(prm, varargin{:});
 
 faceColor = ip.Results.FaceColor;
@@ -77,6 +78,11 @@ if size(edgeColor,1)==1
     edgeColor = repmat(edgeColor, [nb 1]);
 elseif isempty(edgeColor)
     edgeColor = zeros(size(faceColor));
+end
+
+errorbarColor = ip.Results.ErrorbarColor;
+if isempty(errorbarColor)
+    errorbarColor = zeros(size(faceColor));
 end
 
 ha = ip.Results.Handle;
@@ -140,12 +146,6 @@ for k = 1:ng
     end
     
     mu = M(1,:);
-    if plotWhiskers
-        he = errorbar(xa{k}, p25, w1-p25, zeros(size(mu)), 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
-        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
-        he = errorbar(xa{k}, p75, zeros(size(mu)), w2-p75, 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
-        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
-    end
     
     % the box
     lb = xa{k} - bw/2;
@@ -159,24 +159,26 @@ for k = 1:ng
         else
             ci = k;
         end
+        
+        if plotWhiskers
+            he = errorbar(xa{k}(b), p25(b), w1(b)-p25(b), 0, 'Color', errorbarColor(ci,:), 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+            setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
+            he = errorbar(xa{k}(b), p75(b), 0, w2(b)-p75(b), 'Color', errorbarColor(ci,:), 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+            setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
+        end
+        
         hp = patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
             'LineWidth', ip.Results.LineWidth);
         if k==1
             h(b) = hp;
         end
-    end
-    
-    % mean/median line
-    line([lb; rb], [mu; mu], 'Color', [0 0 0], 'LineWidth', ip.Results.LineWidth);
-    
-    for b = 1:nb
-        if nc==nb
-            ci = b;
-        else
-            ci = k;
-        end
+        
+        % mean/median line
+        line([lb(b); rb(b)], [mu(b); mu(b)], 'Color', errorbarColor(ci,:), 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+        
+        % replot border
         hp = patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
-            'LineWidth', ip.Results.LineWidth);
+            'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
         set(hp, 'FaceColor', 'none');
     end
     
@@ -203,7 +205,7 @@ xa = [xa{:}];
 afont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.AxisFontSize};
 lfont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.LabelFontSize};
 
-set(ha, afont{:}, 'LineWidth', 1.5,...
+set(ha, afont{:}, 'LineWidth', ip.Results.LineWidth,...
     'XTick', la, 'XTickLabel', ip.Results.XLabels, 'XLim', [xa(1)-border xa(end)+border],...
     'TickDir', 'out', 'Layer', 'top');
 if ~isempty(ip.Results.YLim);
