@@ -22,6 +22,9 @@ function [C, H] = plotLocalNeighborhoodDensityMap(mpm,imsize,varargin)
 %       plotMask(optional)  : true to display calculated mask, false to not
 %       function(optional)  : specify which function to use kr, lr, gcr, or
 %                             glr (see RipleysKfunction.m)
+%       sparse          : true to measure distances using graph based algorithm
+%                         that creates sparse matrix (might be faster for large 
+%                         data sets) 
 %
 %OUTPUT C               : contour matrix C as described in CONTOURC
 %       H               : handle H to a contourgroup object
@@ -51,6 +54,7 @@ ip.addParamValue('dilationRadius', 5, @islogical);
 ip.addParamValue('doFill', false, @islogical);
 ip.addParamValue('plotMask', false, @islogical);
 ip.addParamValue('function', 'lr', @(var)any(strcmp(var,{'kr' 'lr' 'gcr' 'glr'})));
+ip.addParamValue('sparse', false, @islogical);
 ip.parse(mpm, imsize, varargin{:});
 dist = ip.Results.dist;
 lr = ip.Results.lr;
@@ -79,7 +83,7 @@ end
 if isempty(lr)
     lr = nan(length(dist),size(mpm,1));
     for i = 1:length(mpm)
-        [k,l,g,gl]=RipleysKfunction(mpm([1:i-1 i+1:length(mpm)],:),mpm(i,:),imsizS,dist,corrFacMat,normArea);
+        [k,l,g,gl]=RipleysKfunction(mpm([1:i-1 i+1:length(mpm)],:),mpm(i,:),imsizS,dist,corrFacMat,normArea,ip.Results.sparse);
         
         if strcmp(ip.Results.function,'kr')
             lr(:,i) = k;
