@@ -197,13 +197,6 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
         
         function output = getDrawableOutput()
             output = ImageProcessingProcess.getDrawableOutput();
-            %             output(2).name='Steerable Filtering images';
-            %             output(2).var='SteerableFilteringImage';
-            %             output(2).formatData=[];
-            %             output(2).type='graph';
-            %             output(2).defaultDisplayMethod=@(x)LineDisplay('Color',[0 0 0],...
-            %                 'LineStyle','-','LineWidth',2,...
-            %                 'XLabel','Frame Number','YLabel','FilamentSegmentationImage');
         end
         
         function funParams = getDefaultParams(owner,varargin)
@@ -216,10 +209,34 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             
             % Set default parameters
             funParams.OutputDirectory =  [outputDir  filesep 'FilamentSegmentation'];
+            % Set default channels, use all channels
             funParams.ChannelIndex = 1:numel(owner.channels_);
+            
+            % The parameter to set pace in local segmentation
             funParams.Pace_Size = 3;
-            funParams.Patch_size  = 11;
+            % The parameter to set patch size in local segmentation, for
+            % the estimation of local threshold
+            funParams.Patch_Size  = 15;
+            
+            % The percentage as the lower bound of local thresholding 
+            % local threshold has to be larger or equal to this percentage
+            % of the global threshold
+            funParams.lowerbound_localthresholding  = 80; % default 80%
+            
+            % The way to combine segmentation results from steerable
+            % filtering responce and from intensity, default is : only use
+            % steerable filtering result
             funParams.Combine_Way = 'st_only';
+            
+            % Flag to set if cell mask is used, if 1, use
+            % segmentation(refined) results, if 2, use the user define ROI
+            % as in MD_ROI.tif in movieData folder, if 3, no such limit
+            funParams.Cell_Mask_ind = 3;
+            
+            % Flag to do VIF_outgrowth or not. This is an option made for
+            % Gelfand lab
+            funParams.VIF_Outgrowth_Flag = 1;
+            
         end
     end
 end

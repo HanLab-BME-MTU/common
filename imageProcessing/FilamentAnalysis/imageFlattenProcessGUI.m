@@ -22,7 +22,7 @@ function varargout = imageFlattenProcessGUI(varargin)
 
 % Edit the above text to modify the response to help imageFlattenProcessGUI
 
-% Last Modified by GUIDE v2.5 05-Jul-2012 16:51:08
+% Last Modified by GUIDE v2.5 13-Aug-2012 15:13:46
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -85,9 +85,8 @@ set(handles.listbox_selectedChannels,'String',channelString,...
 
 set(handles.edit_GaussFilterSigma,'String',funParams.GaussFilterSigma);
 
-set(handles.checkbox_log,'Value',funParams.log_flag);
-set(handles.checkbox_sqrt,'Value',funParams.sqrt_flag);
-
+set(handles.popupmenu_flatten_method,'String',{'Log','Sqrt'});
+set(handles.popupmenu_flatten_method,'Value',2);
 
 % flattenMethods = userData.crtProc.getMethods();
 % set(handles.popupmenu_flatteningMethods,'String',{flattenMethods(:).name},...
@@ -196,12 +195,8 @@ if isnan(gaussFilterSigma) || gaussFilterSigma < 0
 end
 funParams.GaussFilterSigma=gaussFilterSigma;
 
-funParams.log_flag = get(handles.checkbox_log,'Value');
-funParams.sqrt_flag = get(handles.checkbox_sqrt,'Value');
-
-funParams.method_ind = 1; 
-
 funParams.OutputDirectory  = [ userData.crtPackage.outputDirectory_, filesep 'ImageFlatten'];
+funParams.method_ind = get(handles.popupmenu_flatten_method,'Value');
 
 for iChannel = channelIndex
 ImageFlattenChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
@@ -230,20 +225,34 @@ end
 processGUI_ApplyFcn(hObject, eventdata, handles, funParams);
 
 
-% --- Executes on button press in checkbox_sqrt.
-function checkbox_sqrt_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_sqrt (see GCBO)
+% --- Executes on button press in pushbutton_cancel.
+function pushbutton_cancel_Callback(hObject, eventdata, handles)
+% Delete figure
+delete(handles.figure1);
+
+
+% --- Executes on selection change in popupmenu_flatten_method.
+function popupmenu_flatten_method_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_flatten_method (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox_sqrt
-set(handles.checkbox_log,'Value',0);
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_flatten_method contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_flatten_method
 
-% --- Executes on button press in checkbox_log.
-function checkbox_log_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_log (see GCBO)
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_flatten_method_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_flatten_method (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+% handles    empty - handles not created until after all CreateFcns called
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox_log
-set(handles.checkbox_sqrt,'Value',0);
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+ set(hObject,'String',{'Log','Sqrt'});
+ set(hObject,'Value',2);
+ 

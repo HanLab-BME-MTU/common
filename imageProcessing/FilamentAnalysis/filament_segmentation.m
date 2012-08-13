@@ -39,8 +39,8 @@ for i = 1 : nProcesses
 end
 
 if indexFlattenProcess==0
-    msg('Please set parameters for Image Flatten.')
-    return;
+    display('Please set parameters for Image Flatten.')
+%     return;
 end
 
 indexCellSegProcess = 0;
@@ -60,8 +60,11 @@ funParams=movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
 
 selected_channels = funParams.ChannelIndex;
 Pace_Size = funParams.Pace_Size;
-Patch_Size = funParams.Patch_size;
+Patch_Size = funParams.Patch_Size;
 Combine_Way = funParams.Combine_Way;
+Cell_Mask_ind = funParams.Cell_Mask_ind;
+lowerbound =  funParams.lowerbound_localthresholding;
+VIF_Outgrowth_Flag = funParams.VIF_Outgrowth_Flag;
 
 FilamentSegmentationOutputDir = funParams.OutputDirectory;
 
@@ -70,6 +73,12 @@ if (~exist(FilamentSegmentationOutputDir,'dir'))
 end
 
 nFrame = movieData.nFrames_;
+ 
+% If the user set an cell ROI read in
+if(exist([movieData.outputDirectory_,filesep,'MD_ROI.tif'],'file'))
+    user_input_mask = imread([movieData.outputDirectory_,filesep,'MD_ROI.tif']);
+end
+    
 
 for iChannel = selected_channels
     
@@ -86,6 +95,8 @@ for iChannel = selected_channels
         FileNames = movieData.processes_{indexFlattenProcess}.getOutImageFileNames(iChannel);
     end
     
+    display(['Start to do filament segmentation in Channel ',num2str(iChannel)]);
+
     for iFrame = 1 : nFrame
         disp(['Frame: ',num2str(iFrame)]);
         
@@ -95,6 +106,7 @@ for iChannel = selected_channels
          else
             currentImg = movieData.channels_(iChannel).loadImage(iFrame);
         end
+        currentImg = double(currentImg);
         
         load([SteerableChannelOutputDir, filesep, 'steerable_',num2str(iFrame),'.mat']);
         
@@ -102,59 +114,41 @@ for iChannel = selected_channels
        
         switch Combine_Way
             case 'int_st_both'
-                
                  level0 = thresholdOtsu(MAX_st_res);
                  thresh_Segment = MAX_st_res > level0;
                                 
-                [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,0);
-                [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,0);
-                
+                [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,lowerbound,0);
+                [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,lowerbound,0);
                 
             case 'st_only'                
-                [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,0);
-                
-%                 [level1, SteerabelRes_Segment ] = thresholdOtsu_local_with_mask(MAX_st_res,MaskBig, Patch_Size,Pace_Size,0);
-     
+                [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,lowerbound,0);
                 current_seg = SteerabelRes_Segment; 
                 Intensity_Segment = current_seg*0;
                 
             case 'int_only'
-                [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,0);
-                % The segmentation is set as from intensity segmentation
+                [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,lowerbound,0);
                 current_seg = Intensity_Segment; 
                 SteerabelRes_Segment = current_seg*0;
             otherwise
                 warning('Use the default of union');
-                [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,0);
-                [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,0);
+                [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,lowerbound,0);
+                [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,lowerbound,0);
                 % The segmentation is set as the union of two segmentation.
                 current_seg = or(Intensity_Segment,SteerabelRes_Segment);
         end
         
-
-        current_seg = current_seg.*MaskCell;        
-        
-        current_seg_big = imdilate(current_seg, ones(5,5));
-        current_seg_big = imfill(current_seg_big,'holes');
-        
-        %Label all objects in the mask
-        labelMask = bwlabel(current_seg_big);
-        
-        %Get their area
-        obAreas = regionprops(labelMask,'Area');      
-        
-        %First, check that there are objects to remove
-        if length(obAreas) > 1
-            obAreas = [obAreas.Area];
-            %Sort by area
-            [dummy,iSort] = sort(obAreas,'descend'); 
-            %Keep only the largest requested number
-            current_seg_big = labelMask == iSort(1);
+        if Cell_Mask_ind == 1
+            MaskCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(iChannel,iFrame);
+        else
+            if Cell_Mask_ind == 2
+                MaskCell = user_input_mask>0;
+            else
+                MaskCell = ones(size(currentImg,1),size(currentImg,2));
+            end
         end
         
-        current_seg_big = imerode(current_seg_big,ones(5,5));        
-        current_seg = current_seg_big.*current_seg;
-        
+        current_seg = current_seg.*MaskCell;        
+
         
         %%
         % A smoothing done only at the steerable filtering results        
@@ -172,7 +166,7 @@ for iChannel = selected_channels
         end
 
 %         imwrite(current_seg,[FilamentSegmentationChannelOutputDir,'/segment_',num2str(iFrame),'.tif']);
-        
+        currentImg = uint8(currentImg);
         Hue = (-orienation_map_filtered(:)+pi/2)/(pi)-0.2;
         Hue(find(Hue>=1)) = Hue(find(Hue>=1)) -1;
         Hue(find(Hue<0)) = Hue(find(Hue<0)) +1;
@@ -205,3 +199,9 @@ for iChannel = selected_channels
     end
 end     
  
+
+if(VIF_Outgrowth_Flag==1)
+   VIF_outgrowth_measurement(movieData);
+end
+% 
+% post_heat_outgrowth_pp(movieData);

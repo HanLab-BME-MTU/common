@@ -22,10 +22,6 @@ selected_channels = funParams.ChannelIndex;
 flatten_method_ind = funParams.method_ind;
 Gaussian_sigma = funParams.GaussFilterSigma;
 ImageFlattenProcessOutputDir = funParams.OutputDirectory;
-log_flag = funParams.log_flag;
-sqrt_flag = funParams.sqrt_flag;
-
-flatten_method_ind = log_flag + 2*sqrt_flag;
 
 if (~exist(ImageFlattenProcessOutputDir,'dir'))
     mkdir(ImageFlattenProcessOutputDir);
@@ -35,6 +31,28 @@ nFrame = movieData.nFrames_;
 
 for iChannel = selected_channels
     
+    img_pixel_pool = [];
+    for iFrame = 1 : nFrame
+            currentImg = movieData.channels_(iChannel).loadImage(iFrame);
+        img_pixel_pool = [img_pixel_pool currentImg(:)];
+    end
+    
+    img_min = min(img_pixel_pool(:));
+    img_max = min(max(img_pixel_pool(:)),  mean(img_pixel_pool(:))+10*std(img_pixel_pool(:)));
+    
+    [hist_all_frame, hist_bin] = hist(img_pixel_pool,25);
+    
+    for iFrame = 1 : nFrame
+        hist_this_frame = hist_all_frame(:,iFrame);
+        ind = find(hist_this_frame==max(hist_this_frame));
+        center_value(iFrame) = hist_bin(ind(1));
+    end
+    
+    center_value = center_value/max(center_value);
+    center_value = sqrt(center_value);
+    center_value = imfilter(center_value,[1 2 3 9 3 2 1]/21,'replicate','same');
+    center_value = center_value/max(center_value);
+    
     % Make output directory for the flattened images
     ImageFlattenChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
     if (~exist(ImageFlattenChannelOutputDir,'dir'))
@@ -42,7 +60,9 @@ for iChannel = selected_channels
     end
     
     movieData.processes_{indexFlattenProcess}.setOutImagePath(iChannel,ImageFlattenChannelOutputDir)
-    
+
+    display(['Start to do image flatten in Channel ',num2str(iChannel)]);
+
     for iFrame = 1 : nFrame
         disp(['Frame: ',num2str(iFrame)]);
         
@@ -50,21 +70,17 @@ for iChannel = selected_channels
         currentImg = movieData.channels_(iChannel).loadImage(iFrame);
         currentImg = double(currentImg);
         
-        % Normalize before flatten
-%         currentImg = currentImg - min(min(currentImg)) +1;
-        currentImg = currentImg/(max(max(currentImg)));
-        
         % based on the given method index, do log or sqrt to flatten the image
         if flatten_method_ind == 1
             currentImg = log(currentImg);
-            currentImg = currentImg - min(min(currentImg));
-            currentImg = currentImg/(max(max(currentImg)));
+            currentImg = currentImg - log(img_min);
+            currentImg = currentImg/log((center_value(iFrame))*img_max);
             
         else
             if flatten_method_ind == 2
                 
-                currentImg = currentImg - min(min(currentImg));
-                currentImg = currentImg/(max(max(currentImg)));
+                currentImg = currentImg - img_min;
+                currentImg = currentImg/(center_value(iFrame))/img_max;
     
                 currentImg = sqrt(currentImg);
             end
@@ -74,6 +90,7 @@ for iChannel = selected_channels
         if Gaussian_sigma > 0
             currentImg = imfilter(currentImg, fspecial('gaussian',round(5*Gaussian_sigma), Gaussian_sigma),'replicate','same');
         end
+        currentImg(find(currentImg>1)) = 1;
         imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_',num2str(iFrame),'.tif']);
     end
 end

@@ -226,11 +226,8 @@ classdef ImageFlattenProcess < ImageProcessingProcess
             % Set default parameters
             funParams.OutputDirectory =  [outputDir  filesep 'ImageFlatten'];
             funParams.ChannelIndex = 1:numel(owner.channels_);
-            funParams.method_ind = 1;
-            funParams.GaussFilterSigma =1;            
-            funParams.log_flag = 1 ;
-            funParams.sqrt_flag = 1 ;
-            
+            funParams.method_ind = 2;
+            funParams.GaussFilterSigma =1;                        
         end
     end
 end

@@ -22,7 +22,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 05-Jul-2012 15:18:03
+% Last Modified by GUIDE v2.5 13-Aug-2012 15:59:46
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -86,6 +86,22 @@ set(handles.listbox_selectedChannels,'String',channelString,...
 set(handles.edit_PaceSize,'String',funParams.Pace_Size);
 set(handles.edit_PatchSize,'String',funParams.Patch_Size);
 
+set(handles.edit_lowerbound_localthresholding,'String',funParams.lowerbound_localthresholding);
+
+set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind);
+
+set(handles.checkbox_outgrowth,'value',funParams.VIF_Outgrowth_Flag);
+
+if (strcmp(funParams.Combine_Way,'st_only'))
+    set(handles.popupmenu_segmentationbase, 'Value',1);
+else
+    if (strcmp(funParams.Combine_Way,'int_only'))
+        set(handles.popupmenu_segmentationbase, 'Value',2);
+    else
+        set(handles.popupmenu_segmentationbase, 'Value',3);
+    end
+end
+    
 % Update user data and GUI data
 handles.output = hObject;
 set(hObject, 'UserData', userData);
@@ -121,6 +137,10 @@ end
 channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
 
+Combine_Way_tag = {'st_only','int_only','int_st_both'};
+Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
+funParams.Combine_Way=Combine_Way_tag{Combine_Way_ind};
+
 Pace_Size = str2double(get(handles.edit_PaceSize, 'String'));
 if isnan(Pace_Size) || Pace_Size < 0
     errordlg(['Please provide a valid input for '''...
@@ -136,6 +156,21 @@ if isnan(Patch_Size) || Patch_Size < 0
     return;
 end
 funParams.Patch_Size=Patch_Size;
+
+
+lowerbound_localthresholding = str2double(get(handles.edit_lowerbound_localthresholding, 'String'));
+if isnan(lowerbound_localthresholding) || lowerbound_localthresholding < 0
+    errordlg(['Please provide a valid input for '''...
+        get(handles.text_lowerbound_localthresholding,'String') '''.'],'Setting Error','modal');
+    return;
+end
+funParams.lowerbound_localthresholding=lowerbound_localthresholding;
+
+Cell_Mask_ind = get(handles.popupmenu_cell_mask, 'Value');
+funParams.Cell_Mask_ind = Cell_Mask_ind;
+
+VIF_Outgrowth_Flag = get(handles.checkbox_outgrowth,'value');
+funParams.VIF_Outgrowth_Flag = VIF_Outgrowth_Flag;
 
 funParams.OutputDirectory  = [ userData.crtPackage.outputDirectory_, filesep 'FilamentSegmentation'];
 
@@ -309,3 +344,86 @@ function edit9_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+
+function edit_lowerbound_localthresholding_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_lowerbound_localthresholding (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_lowerbound_localthresholding as text
+%        str2double(get(hObject,'String')) returns contents of edit_lowerbound_localthresholding as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_lowerbound_localthresholding_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_lowerbound_localthresholding (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupmenu_segmentationbase.
+function popupmenu_segmentationbase_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_segmentationbase (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_segmentationbase contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_segmentationbase
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_segmentationbase_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_segmentationbase (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+set(hObject,'String',{'Steerable Filter Results','Intensity','Combine Both'});
+set(hObject,'Value',1);
+ 
+
+% --- Executes on button press in checkbox_outgrowth.
+function checkbox_outgrowth_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_outgrowth (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_outgrowth
+
+
+% --- Executes on selection change in popupmenu_cell_mask.
+function popupmenu_cell_mask_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_cell_mask (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_cell_mask contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_cell_mask
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_cell_mask_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_cell_mask (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+set(hObject,'String',{'Cell Segmentation','Input ROI','No limitation'});
+set(hObject,'Value',3);

@@ -25,8 +25,8 @@ for i = 1 : nProcesses
 end
 
 if indexFlattenProcess==0
-    msg('Please set parameters for Image Flatten.')
-    return;
+    display('If you need flattening, please set parameters for Image Flatten and run. For now, we use the original images.')
+%     return;
 end
 
 funParams=movieData.processes_{indexSteerabeleProcess}.funParams_;
@@ -54,6 +54,8 @@ for iChannel = selected_channels
         FileNames = movieData.processes_{indexFlattenProcess}.getOutImageFileNames(iChannel);
     end
     
+    display(['Start to do steerable filtering in Channel ',num2str(iChannel)]);
+
     for iFrame = 1 : nFrame
         disp(['Frame: ',num2str(iFrame)]);
         
@@ -66,14 +68,15 @@ for iChannel = selected_channels
         
         currentImg = double(currentImg);
         
-        levels = 1:Levelsofsteerablefilters;
-        levels_sizes = 2.^(levels-1);
+%         levels = 0:Levelsofsteerablefilters-1;
+        levels_sizes = 2.^(Levelsofsteerablefilters-1);
         
         % Steerable filtering using four scales one doubling the previous one.
         % function multiscaleSteerableDetector will automatically merge the results
-        [MAX_st_res, orienation_map, nms, scaleMap] = multiscaleSteerableDetector(currentImg, 4, BaseSteerableFilterSigma.*levels_sizes);
+         [MAX_st_res, orienation_map, nms, scaleMap] = multiscaleSteerableDetector(currentImg, 4, BaseSteerableFilterSigma.*levels_sizes);
+%        [MAX_st_res, orienation_map, nms, scaleMap] = multiscaleSteerableDetector(currentImg, 4, BaseSteerableFilterSigma+levels);
         
-        imwrite((MAX_st_res),[ImageSteerableFilterChannelOutputDir,'/MAX_st_res_',num2str(iFrame),'.tif']);
+        imwrite((MAX_st_res)/(max(max(MAX_st_res))),[ImageSteerableFilterChannelOutputDir,'/MAX_st_res_',num2str(iFrame),'.tif']);
         
         save([ImageSteerableFilterChannelOutputDir,'/steerable_',num2str(iFrame),'.mat'],...
             'orienation_map', 'MAX_st_res');
