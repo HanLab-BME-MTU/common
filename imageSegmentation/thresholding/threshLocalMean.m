@@ -194,7 +194,7 @@ function [ imThresh, varargout ] = threshLocalMean( im, windowRadius, C, varargi
 
         boxsum = 0;
         for i = 0:2^(ndims(im))-1
-            b = dec2binvec(i,ndims(imIntegral));       
+            b = dec2binarray(i,ndims(imIntegral));       
             cornerPixSubind = cell(1,ndims(im));
             for j = 1:ndims(im)
                 if b(j)
@@ -237,7 +237,7 @@ function [ imThresh, varargout ] = threshLocalMean( im, windowRadius, C, varargi
 
         boxsum = 0;
         for i = 0:2^(ndims(im))-1
-            b = dec2binvec(i,ndims(imIntegral));       
+            b = dec2binarray(i,ndims(imIntegral));       
             cornerPixSubind = cell(1,ndims(im));
             for j = 1:ndims(im)
                 if b(j)

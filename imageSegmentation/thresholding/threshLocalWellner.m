@@ -68,7 +68,7 @@ function [ imThresh, varargout ] = threshLocalWellner( im, windowRadius, thresh_
 %       end      
 %       
 %       A typical way to specify this range is to compute a threshold using 
-%       a global thresholding first and then set the range as:
+%       a global thresholding algorithm first and then set the range as:
 %       
 %       allowedThresholdRange = [ 0.75 * global_threshold, 1.5 * global_threshold ]
 %       
@@ -167,7 +167,7 @@ function [ imThresh, varargout ] = threshLocalWellner( im, windowRadius, thresh_
 
         boxsum = 0;
         for i = 0:2^(ndims(im))-1
-            b = dec2binvec(i,ndims(imIntegral));       
+            b = dec2binarray(i,ndims(imIntegral));       
             cornerPixSubind = cell(1,ndims(im));
             for j = 1:ndims(im)
                 if b(j)
@@ -210,7 +210,7 @@ function [ imThresh, varargout ] = threshLocalWellner( im, windowRadius, thresh_
 
         boxsum = 0;
         for i = 0:2^(ndims(im))-1
-            b = dec2binvec(i,ndims(imIntegral));       
+            b = dec2binarray(i,ndims(imIntegral));       
             cornerPixSubind = cell(1,ndims(im));
             for j = 1:ndims(im)
                 if b(j)
