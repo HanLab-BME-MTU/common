@@ -1,6 +1,18 @@
 function movieData = filament_segmentation(movieData, varargin)
 % Created 07 2012 by Liya Ding, Matlab R2011b
 
+% input movieData object, with the parameters
+%   funParams.ChannelIndex:         the channels to process
+%   funParams.Pace_Size:            the parameter to set pace in local segmentation
+%   funParams.Patch_Size:           the parameter to set patch size in local segmentation, for the estimation of local threshold
+%   funParams.lowerbound_localthresholding: The percentage as the lower bound of local thresholding 
+%                                    local threshold has to be larger or equal to this percentage of the global threshold
+%   funParams.Combine_Way :         The way to combine segmentation results from steerable filtering responce
+%                                     and from intensity, default is : only use steerable filtering result
+%   funParams.Cell_Mask_ind:        Flag to set if cell mask is used, if 1, use segmentation(refined) results, 
+%                                     if 2, use the user define ROI as in MD_ROI.tif in movieData folder, if 3, no such limit
+%   funParams.VIF_Outgrowth_Flag:   Flag to do VIF_outgrowth or not. This is an option made for Gelfand lab
+
 nProcesses = length(movieData.processes_);
 
 indexFilamentSegmentationProcess = 0;
@@ -78,8 +90,27 @@ nFrame = movieData.nFrames_;
 if(exist([movieData.outputDirectory_,filesep,'MD_ROI.tif'],'file'))
     user_input_mask = imread([movieData.outputDirectory_,filesep,'MD_ROI.tif']);
 end
-    
 
+%% Prepare the cone masks
+cone_size = 15;
+cone_angle = 25;
+cone_mask = cell(180,1);
+cone_zero = zeros(2*cone_size+1,2*cone_size+1);
+for ci = 1 : 2*cone_size+1
+    for cj = 1 : 2*cone_size+1
+        cone_zero(ci,cj) = mod(atan2(ci-cone_size-1,cj-cone_size-1),pi);
+    end
+end
+cone_zero_mask = cone_zero<cone_angle/180*pi | cone_zero>pi - cone_angle/180*pi;
+
+cone_zero_mask(cone_size-3:cone_size+3,:)=1;
+
+
+for cone_i = 1 :180
+    cone_mask{cone_i} = imrotate(cone_zero_mask, cone_i, 'nearest','crop');
+end
+  
+%%
 for iChannel = selected_channels
     
     % Make output directory for the steerable filtered images
@@ -164,7 +195,66 @@ for iChannel = selected_channels
         if (~isempty(max(max(intensity_addon))>0))
             orienation_map_filtered(find(intensity_addon>0)) = OrientationVoted(find(intensity_addon>0));
         end
-
+        
+        
+        %% Deleting the small isolated dots
+        
+        labelMask = bwlabel(current_seg);
+        
+        ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength');
+        
+        obAreas = [ob_prop.Area];
+        obLongaxis = [ob_prop.MajorAxisLength];
+        obShortaxis = [ob_prop.MinorAxisLength];
+        obEccentricity = [ob_prop.Eccentricity];
+        ratio  = obShortaxis./obLongaxis;
+        % for now the parameters are set here, without adaptiveness
+        for i_area = 1 : length(obAreas)
+            if obAreas(i_area) < 200
+                angle_area{i_area} = orienation_map_filtered(find(labelMask==i_area));
+                [h_area, bin] = hist(angle_area{i_area},-pi/2:5/180*pi:pi/2);
+                ind_t = find(h_area==max(h_area));
+                temp = mod((angle_area{i_area} - bin(ind_t(1)) + pi/2), pi) - pi/2;
+                if std(temp>0.75) && max(h_area)<0.2*length(angle_area{i_area}) && ratio(i_area) >0.5 && obLongaxis(i_area)<20
+                    labelMask(find(labelMask==i_area))=0;
+                end
+            end
+        end
+        
+        current_seg = labelMask > 0;
+%     
+%         [ind_a,ind_b] = find(current_seg>0);
+%         
+%         cone_bins = cell(size(current_seg,1), size(current_seg,2));
+%         
+%         for si = 1 : length(ind_a)
+%             pixel_angle = round(orienation_map(ind_a(si), ind_b(si))*180/pi);
+%             if pixel_angle ==0
+%                 pixel_angle = 180;
+%             end
+%             try
+%                 [ind_c,ind_d] = find(cone_mask{pixel_angle}>0);
+%                 for p_i = 1 : length(ind_c)
+%                     cone_bins{ind_c(p_i)+ind_a(si)-cone_size-1, ind_d(p_i)+ind_b(si)-cone_size-1} ...
+%                         = [cone_bins{ind_c(p_i)+ind_a(si)-cone_size-1, ind_d(p_i)+ind_b(si)-cone_size-1} pixel_angle];
+%                 end
+%             end
+%             
+%         end
+%         
+%         for p_i = 1 : size(cone_bins,1)
+%             for p_j = 1 : size(cone_bins,2)
+%                 length_cone_bin(p_i,p_j) = length(cone_bins{p_i,p_j});
+%                 if(~isempty(cone_bins{p_i,p_j}))
+%                 h = hist(cone_bins{p_i,p_j},0:10:180);
+%                 centernumber_cone_bin(p_i,p_j) = max(h);
+%                 end
+%             end
+%         end
+%                    
+        
+        %% For heat presentation of the segmented filaments
+        
 %         imwrite(current_seg,[FilamentSegmentationChannelOutputDir,'/segment_',num2str(iFrame),'.tif']);
         currentImg = uint8(currentImg);
         Hue = (-orienation_map_filtered(:)+pi/2)/(pi)-0.2;
@@ -192,6 +282,7 @@ for iChannel = selected_channels
         
         imwrite(RGB_seg_orient_heat_map,[FilamentSegmentationChannelOutputDir,'/segment_heat_',num2str(iFrame),'.tif']);
         
+        %% Save segmentation results
         save([FilamentSegmentationChannelOutputDir,'/steerable_vote_',num2str(iFrame),'.mat'],...
             'currentImg','orienation_map_filtered','OrientationVoted','orienation_map', ...
             'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment');
@@ -200,8 +291,9 @@ for iChannel = selected_channels
 end     
  
 
+%% For Gelfand Lab, outgrowth calculation
 if(VIF_Outgrowth_Flag==1)
    VIF_outgrowth_measurement(movieData);
 end
-% 
-% post_heat_outgrowth_pp(movieData);
+
+
