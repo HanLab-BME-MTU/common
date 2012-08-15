@@ -58,19 +58,30 @@ negDistVals = [distVals(distVals<0) min(posDistVals)];
 
 if numel(negDistVals) > 1
     distX2 = -bwdist(mask);
+    aVd = arrayfun(@(x)(mean(image(distX2(:) ~=0 & distX2(:) >= negDistVals(x) & distX2(:) < negDistVals(x+1)))),1:(length(negDistVals)-1));
+else
+    aVd = [];
 end
 
 %% ----- Analysis ----- %%
 
-aVd = arrayfun(@(x)(mean(image(distX2(:) ~=0 & distX2(:) >= negDistVals(x) & distX2(:) < negDistVals(x+1)))),1:(length(negDistVals)-1));
+
 aVd = [aVd arrayfun(@(x)(mean(image(distX(:) ~= 0 & distX(:) > posDistVals(x) & distX(:) <= posDistVals(x+1)))),1:(length(posDistVals)-1))];
 
 if nargout > 1
-    aStd = arrayfun(@(x)(std(image(distX2(:) ~=0 & distX2(:) >= negDistVals(x) & distX2(:) < negDistVals(x+1)))),1:(length(negDistVals)-1));
+    if numel(negDistVals) > 1
+        aStd = arrayfun(@(x)(std(image(distX2(:) ~=0 & distX2(:) >= negDistVals(x) & distX2(:) < negDistVals(x+1)))),1:(length(negDistVals)-1));
+    else
+        aStd = [];
+    end
     aStd = [aStd arrayfun(@(x)(std(image(distX(:) ~= 0 & distX(:) > posDistVals(x) & distX(:) <= posDistVals(x+1)))),1:(length(posDistVals)-1))];
 end
 if nargout > 2
-    nPts = arrayfun(@(x)(numel(image(distX2(:) ~=0 & distX2(:) >= negDistVals(x) & distX2(:) < negDistVals(x+1)))),1:(length(negDistVals)-1));
+    if numel(negDistVals) > 1
+        nPts = arrayfun(@(x)(numel(image(distX2(:) ~=0 & distX2(:) >= negDistVals(x) & distX2(:) < negDistVals(x+1)))),1:(length(negDistVals)-1));
+    else
+        nPts = [];
+    end
     nPts = [nPts arrayfun(@(x)(numel(image(distX(:) ~= 0 & distX(:) > posDistVals(x) & distX(:) <= posDistVals(x+1)))),1:(length(posDistVals)-1))];
 end
 
