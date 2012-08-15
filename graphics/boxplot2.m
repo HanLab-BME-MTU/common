@@ -30,7 +30,7 @@
 %     'XLabels', arrayfun(@(k) ['Group label ' num2str(k)], 1:2, 'UniformOutput', false),...
 %     'Angle', 45, 'FaceColor', [1 0.5 0.5; 0.5 1 0.5], 'EdgeColor', [0.8 0 0; 0 0.8 0]);
 
-% Francois Aguet, 22 Feb 2011 (Last modified: 04/30/2012)
+% Francois Aguet, 22 Feb 2011 (Last modified: 08/15/2012)
 
 function h = boxplot2(prm, varargin)
 
@@ -45,7 +45,6 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('prm');
 ip.addParamValue('FaceColor', jet(max(nb)), @(x) size(x,1)==1 || size(x,1)==nb || size(x,1)==ng);
-% ip.addParamValue('FaceColor',[]);
 ip.addParamValue('EdgeColor', []);
 ip.addParamValue('GroupDistance', 0.5, @isscalar);
 ip.addParamValue('BorderWidth', [], @isscalar); 
@@ -58,9 +57,6 @@ ip.addParamValue('LineWidth', 2, @isscalar);
 ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('ErrorBarWidth', 0.2, @(x) 0<x && x<=1);
 ip.addParamValue('Handle', gca, @ishandle);
-ip.addParamValue('FontName', 'Helvetica', @ischar);
-ip.addParamValue('AxisFontSize', 16, @isscalar);
-ip.addParamValue('LabelFontSize', 20, @isscalar);
 ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
 ip.addParamValue('X', [], @(x) numel(x)==ng); % cell array of x-coordinates (groups only)
 ip.addParamValue('AdjustFigure', true, @islogical);
@@ -186,7 +182,7 @@ for k = 1:ng
     % SEM
     if plotSEM
         sigma = M(2,:);
-        he = errorbar(xa{k}, mu, sigma, 'k', 'LineStyle', 'none', 'LineWidth', 2, 'HandleVisibility', 'off');
+        he = errorbar(xa{k}, mu, sigma, 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
         setErrorbarStyle(he, 0.15);
     end
 end
@@ -202,28 +198,13 @@ end
 % position of the bars
 xa = [xa{:}];
 
-afont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.AxisFontSize};
-lfont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.LabelFontSize};
-
-set(ha, afont{:}, 'LineWidth', ip.Results.LineWidth,...
-    'XTick', la, 'XTickLabel', ip.Results.XLabels, 'XLim', [xa(1)-border xa(end)+border],...
-    'TickDir', 'out', 'Layer', 'top');
+set(ha, 'XTick', la, 'XTickLabel', ip.Results.XLabels, 'XLim', [xa(1)-border xa(end)+border]);
 if ~isempty(ip.Results.YLim);
     set(ha, 'YLim', ip.Results.YLim);
-end
-
-% x label
-if ~isempty(ip.Results.XLabel)
-    xlabel(ip.Results.XLabel, lfont{:});
 end
 
 % x labels
 if ip.Results.Angle ~= 0
     rotateXTickLabels(ha, 'Angle', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter,...
         'AdjustFigure', ip.Results.AdjustFigure);
-end
-
-% y label
-if ~isempty(ip.Results.YLabel)
-    ylabel(ip.Results.YLabel, lfont{:});
 end

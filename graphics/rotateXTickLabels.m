@@ -4,7 +4,7 @@
 %         'Angle' : rotation in degrees. Default: 45
 
 % Francois Aguet, 22 Feb 2011
-% Last modified: 26 July 2011
+% Last modified: 08/15/2012
 
 function ht = rotateXTickLabels(ha, varargin)
 
@@ -21,7 +21,8 @@ xla = get(ha, 'XTickLabel');
 if ischar(xla) % label is numerical
     xla = arrayfun(@(i) num2str(str2double(xla(i,:))), 1:size(xla,1), 'UniformOutput', false);
 end
-set(ha, 'XTickLabel', []);
+axPos = get(ha, 'Position');
+set(ha, 'XTickLabel', [], 'Position', axPos);
 
 fontName = get(ha, 'FontName');
 fontSize = get(ha, 'FontSize');
@@ -35,12 +36,11 @@ height = diff(YLim);
 % get height of default text bounding box
 h = text(0, 0, ' ', 'FontName', fontName, 'FontSize', fontSize);
 extent = get(h, 'extent');
-axPos = get(ha, 'Position');
-shift = extent(4)/height*width/axPos(3)*axPos(4) * sin(ip.Results.Angle*pi/180)/6;
+shift = extent(4)/height*width/axPos(3)*axPos(4) * sin(ip.Results.Angle*pi/180)/4;
 delete(h);
 
 
-ht = arrayfun(@(k) text(xa(k)-shift, YLim(1)-0.05*height, xla{k},...
+ht = arrayfun(@(k) text(xa(k)-shift, YLim(1)-0.01*height, xla{k},...
     'FontName', fontName, 'FontSize', fontSize,...
     'VerticalAlignment', 'top', 'HorizontalAlignment', 'right',...
     'Rotation', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter, 'Parent', ha),...
@@ -50,7 +50,6 @@ ht = arrayfun(@(k) text(xa(k)-shift, YLim(1)-0.05*height, xla{k},...
 extents = arrayfun(@(k) get(k, 'extent'), ht, 'UniformOutput', false);
 extents = vertcat(extents{:});
 
-axPos = get(ha, 'Position');
 
 lmargin = -min(extents(:,1))/width * axPos(3); % normalized units in fig. frame
 
@@ -73,9 +72,19 @@ if ip.Results.AdjustFigure
         fpos(3) = fpos(3) + lmargin-axPos(1);
         axPos(1) = lmargin;
     end
-    fpos(4) = fpos(4) + bmargin-axPos(2);
-    axPos(2) = bmargin;
-
+    
+    switch get(ha, 'Units')
+        case 'normalized'
+            cf = 1-axPos(2) + bmargin;
+            axPos(4) = axPos(4) / cf;
+            fpos(4) = fpos(4) * cf;
+            axPos(2) = bmargin / cf;
+        otherwise % assumes units are the same for figure and axes
+            % extend figure, add bottom offest
+            fpos(4) = fpos(4) - axPos(2) + bmargin;
+            axPos(2) = bmargin;
+    end
+    
     set(hfig, 'Position', fpos, 'PaperPositionMode', 'auto');
     set(ha, 'Position', axPos);
 end
