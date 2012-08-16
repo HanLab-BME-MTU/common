@@ -60,6 +60,8 @@ function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
 %      prevCost               : Structure with fields:
 %             .all                : Matrix of previous linking costs.
 %             .max                : Maximum previous linking cost.
+%             .allAux             : Matrix of previous linking costs for
+%                                   features not linked to current frame.
 %      featLifetime           : Lengths of tracks that features in
 %                               first frame belong to.
 %      trackedFeatureIndx     : The matrix of feature index connectivity up
@@ -375,14 +377,14 @@ if currentFrame ~= 1 && any(diagnostics == currentFrame)
     %get linking distances
     % jonas, 10/09: fix for non-sparse tracker
     if isstruct(prevCost)
-        prevCostNoCol1 = prevCost.all(:,2:end);
+        prevCostNoCol1 = [prevCost.all(:,2:end); prevCost.allAux(:,2:currentFrame)];
     else
         prevCostNoCol1 = prevCost(:,2:end);
     end
     linkingDistances = sqrt(prevCostNoCol1(~isnan(prevCostNoCol1)));
     
     %plot histogram
-    figure('Name',['frame # ' num2str(currentFrame)],'NumberTitle','off');
+    figure('Name',['frame # ' num2str(currentFrame)]); %,'NumberTitle','off');
     try
         histogram(linkingDistances,[],0);
         xlabel('Linking distance');

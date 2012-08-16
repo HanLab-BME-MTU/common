@@ -129,6 +129,11 @@ for iTrack = 1 : numTracks
     %get track's sequence of events
     seqOfEvents = tracks(iTrack).seqOfEvents;
     
+    %remove splits and merges that are most likely artifacts
+    if removePotArtifacts
+        seqOfEvents = removeSplitMergeArtifacts(seqOfEvents,0);
+    end
+
     %get track's coordinates
     trackCoordX = tracks(iTrack).tracksCoordAmpCG(:,1:8:end);
     trackCoordY = tracks(iTrack).tracksCoordAmpCG(:,2:8:end);

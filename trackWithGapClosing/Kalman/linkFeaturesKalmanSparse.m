@@ -272,6 +272,7 @@ else
 end
 prevCostStruct.all = prevCost;
 prevCostStruct.max = max(prevCost(:));
+prevCostStruct.allAux = [];
 
 %assign the lifetime of features in first frame
 featLifetime = ones(movieInfo(1).num,1);
@@ -519,7 +520,7 @@ for iFrame = 1 : numFrames-1
             
         end %(if numFeaturesFrame2 ~= 0 ... else ...)
         
-    else %if there are no feature in 1st frame
+    else %if there are no features in 1st frame
         
         if numFeaturesFrame2 ~= 0 %if there are features in 2nd frame
             
@@ -578,6 +579,7 @@ for iFrame = 1 : numFrames-1
     %update structure of previous costs
     prevCostStruct.all = prevCost;
     prevCostStruct.max = max([prevCostStruct.max; prevCost(:,end)]);
+    prevCostStruct.allAux = prevCostAux;
     
     %display progress
     if verbose
