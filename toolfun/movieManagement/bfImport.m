@@ -62,6 +62,7 @@ channelPath = cell(nSeries, nChan);
 movieChannels(nSeries, nChan) = Channel();
 
 for i = 1:nSeries
+    fprintf(1,'Creating movie %g/%g\n',i,nSeries);
     iSeries = i-1;
     movieArgs = getMovieMetadata(r, iSeries);
     
