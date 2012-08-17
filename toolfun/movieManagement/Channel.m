@@ -19,7 +19,6 @@ classdef Channel < hgsetget
         psfSigma_                   % Standard deviation of the psf
         channelPath_                % Channel path (directory containing image(s))
         owner_                      % MovieData object which owns this channel
-        bfSeries_                   % Pixels Series 
     end
     
     properties(Transient=true)
@@ -166,11 +165,10 @@ classdef Channel < hgsetget
             elseif obj.isBF()
                 % Using bioformat-tools, get metadata
                 r = obj.getReader();
-                iSeries = obj.getSeries();
+                iSeries = obj.owner_.getSeries();
                 width = r.getMetadataStore().getPixelsSizeX(iSeries).getValue();
                 height = r.getMetadataStore().getPixelsSizeY(iSeries).getValue();
                 nFrames = r.getMetadataStore().getPixelsSizeT(iSeries).getValue();
-                r.close;
             else
                 % Check channel path existence
                 assert(logical(exist(obj.channelPath_, 'dir')), ...
@@ -257,8 +255,6 @@ classdef Channel < hgsetget
                     I(:,:,i) = bfGetPlane(r, iPlane + 1);
                 end
                 
-                % Close reader
-                r.close;
             else
                 % Read images from disk
                 fileNames=obj.getImageFileNames(iFrame);
@@ -268,37 +264,19 @@ classdef Channel < hgsetget
             end
         end
         
-        %% Bio-formats functions
+        %% Bio-formats/OMERO functions
         function status = isOmero(obj)
             status = ~isempty(obj.owner_) && obj.owner_.isOmero();
         end
         
         function status = isBF(obj)
-            status = exist(obj.channelPath_, 'file')==2;
+            status = ~isempty(obj.owner_) && obj.owner_.isBF();
         end
         
         function r = getReader(obj)
-            assert(obj.isBF(), 'Object must be using the Bio-Formats library');
-            
-            bfCheckJavaPath(); % Check loci-tools.jar is in the Java path
-            loci.common.DebugTools.enableLogging('OFF');
-            r = bfGetReader(obj.channelPath_, false);
-            r.setSeries(obj.getSeries());
+            r = obj.owner_.getReader();
         end
         
-        function setSeries(obj, iSeries)
-            assert(obj.isBF(), 'Object must be using the Bio-Formats library');
-            assert(isempty(obj.bfSeries_), 'The series number has been already populated');
-            obj.bfSeries_ = iSeries;
-        end
-        
-        function iSeries = getSeries(obj)
-            if isempty(obj.bfSeries_),
-                iSeries = 0;
-            else
-                iSeries = obj.bfSeries_;
-            end
-        end
         
         %% Display functions
         function color = getColor(obj)

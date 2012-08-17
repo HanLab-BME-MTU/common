@@ -23,12 +23,16 @@ classdef  MovieData < MovieObject
         magnification_
         binning_
         
+        % For Bio-Formats objects
+        bfSeries_
+                
         % For OMERO objects
         omeroId_ 
     end
     
-    properties (Transient =true)        
-        omeroSession_
+    properties (Transient =true)
+        bfReader_          
+        omeroSession_       
         omeroPixels_
     end
 
@@ -352,8 +356,47 @@ classdef  MovieData < MovieObject
             end
         end  
         
+        %% Bio-Formats functions
+        
+        function setSeries(obj, iSeries)
+            assert(obj.isBF(), 'Object must be using the Bio-Formats library');
+            assert(isempty(obj.bfSeries_), 'The series number has already been set');
+            obj.bfSeries_ = iSeries;
+        end
+        
+        function iSeries = getSeries(obj)
+            if isempty(obj.bfSeries_),
+                iSeries = 0;
+            else
+                iSeries = obj.bfSeries_;
+            end
+        end
+        
+        function r = getReader(obj)
+            assert(obj.isBF(), 'Object must be using the Bio-Formats library');
+            
+            if ~isempty(obj.bfReader_)
+                r = obj.bfReader_;
+            else                
+                bfCheckJavaPath(); % Check loci-tools.jar is in the Java path
+                loci.common.DebugTools.enableLogging('OFF');
+                r = bfGetReader(obj.channels_(1).channelPath_, false);
+                r.setSeries(obj.getSeries());
+                obj.bfReader_ = r;
+            end            
+        end
+        
         function status = isBF(obj)
-            status = all(arrayfun(@(x) x.isBF(), obj.channels_));
+            channelPaths = arrayfun(@(x) x.channelPath_, obj.channels_, 'Unif', false);
+            channelPaths = unique(channelPaths);
+            status = numel(channelPaths) == 1 && ...
+                exist(channelPaths{1}, 'file');
+        end
+        
+        function delete(obj)
+            if ~isempty(obj.bfReader_)
+                obj.bfReader_.close()
+            end
         end
 
         %% OMERO functions

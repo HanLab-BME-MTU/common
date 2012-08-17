@@ -99,13 +99,13 @@ for i = 1:nSeries
         end
         movieChannels(i, iChan) = Channel(channelPath{i, iChan}, channelArgs{:});
         
-        if ~extractImages, movieChannels(i, iChan).setSeries(iSeries); end
     end
     
     % Create movie object
     MD(i) = MovieData(movieChannels(i, :), outputDir, movieArgs{:});
     MD(i).setPath(outputDir);
     MD(i).setFilename(movieFileName);
+    if ~extractImages, MD(i).setSeries(iSeries); end
     
     if extractImages
         nFrames =  r.getMetadataStore().getPixelsSizeT(iSeries).getValue;
