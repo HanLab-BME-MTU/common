@@ -31,7 +31,17 @@ ip.parse(movieData,movieInfo);
 
 % Retrieve image and update service
 image = movieData.getImage();
+roiService = movieData.getSession().getRoiService();
 updateService = movieData.getSession().getUpdateService();
+
+% Get previously saved ROIs
+roiOptions = omero.api.RoiOptions();
+roiOptions.namespace = omero.rtypes.rstring(ns);
+r = roiService.findByImage(movieData.omeroId_, roiOptions);
+for i = 1:r.rois().size()
+    % Remove roi
+       
+end
 
 %  Create roi to attach to the image
 progressText(0, 'Exporting ROIs')
@@ -42,6 +52,7 @@ roi.setNamespaces(ns);
 for t=1:size(movieInfo,1)
     
     for i = 1:size(movieInfo(t).xCoord,1)        
+        % Create point shape
         point = omero.model.PointI;
         point.setCx(omero.rtypes.rdouble(movieInfo(t).xCoord(i,1)));
         point.setCy(omero.rtypes.rdouble(movieInfo(t).yCoord(i,1)));
