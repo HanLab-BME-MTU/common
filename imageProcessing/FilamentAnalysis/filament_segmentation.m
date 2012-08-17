@@ -215,20 +215,22 @@ for iChannel = selected_channels
                 [h_area, bin] = hist(angle_area{i_area},-pi/2:5/180*pi:pi/2);
                 ind_t = find(h_area==max(h_area));
                 temp = mod((angle_area{i_area} - bin(ind_t(1)) + pi/2), pi) - pi/2;
-                if std(temp>0.75) && max(h_area)<0.2*length(angle_area{i_area}) && ratio(i_area) >0.5 && obLongaxis(i_area)<20
+                if std(temp)>0.75 && max(h_area)<0.2*length(angle_area{i_area}) && ratio(i_area) >0.5 && obLongaxis(i_area)<20
                     labelMask(find(labelMask==i_area))=0;
                 end
             end
         end
         
         current_seg = labelMask > 0;
-%     
+    
 %         [ind_a,ind_b] = find(current_seg>0);
 %         
 %         cone_bins = cell(size(current_seg,1), size(current_seg,2));
+%         cone_weight_bins = cell(size(current_seg,1), size(current_seg,2));
 %         
 %         for si = 1 : length(ind_a)
 %             pixel_angle = round(orienation_map(ind_a(si), ind_b(si))*180/pi);
+%             weight_res = MAX_st_res(ind_a(si), ind_b(si));
 %             if pixel_angle ==0
 %                 pixel_angle = 180;
 %             end
@@ -237,6 +239,8 @@ for iChannel = selected_channels
 %                 for p_i = 1 : length(ind_c)
 %                     cone_bins{ind_c(p_i)+ind_a(si)-cone_size-1, ind_d(p_i)+ind_b(si)-cone_size-1} ...
 %                         = [cone_bins{ind_c(p_i)+ind_a(si)-cone_size-1, ind_d(p_i)+ind_b(si)-cone_size-1} pixel_angle];
+%                     cone_weight_bins{ind_c(p_i)+ind_a(si)-cone_size-1, ind_d(p_i)+ind_b(si)-cone_size-1} ...
+%                         = [cone_bins{ind_c(p_i)+ind_a(si)-cone_size-1, ind_d(p_i)+ind_b(si)-cone_size-1} weight_res];
 %                 end
 %             end
 %             
@@ -245,13 +249,16 @@ for iChannel = selected_channels
 %         for p_i = 1 : size(cone_bins,1)
 %             for p_j = 1 : size(cone_bins,2)
 %                 length_cone_bin(p_i,p_j) = length(cone_bins{p_i,p_j});
+%                  weight_bin(p_i,p_j) = m(cone_weight_bins{p_i,p_j});
 %                 if(~isempty(cone_bins{p_i,p_j}))
 %                 h = hist(cone_bins{p_i,p_j},0:10:180);
 %                 centernumber_cone_bin(p_i,p_j) = max(h);
+%                 else
+%                      centernumber_cone_bin(p_i,p_j) =0;
 %                 end
 %             end
 %         end
-%                    
+                   
         
         %% For heat presentation of the segmented filaments
         
