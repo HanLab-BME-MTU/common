@@ -42,6 +42,25 @@ function [frameInfo imgDenoised] = main283AUTO_standalone(img, iclean)
 %                                   here, or input is empty, the default
 %                                   value will be
 %                                   itest=0
+%
+%  OUTPUT
+%
+%  Cluster-specific values:  
+%
+%     xav, yav   : centroid coordinates for the clusters
+%     num        : number of clusters
+%
+%  Local maxima (each cluster can have several)
+%     xmax, ymax : coordinates of local maxima 
+%     inn        : intensity of local maxima
+%     intot      : intensity of the cluster (sum of all pixels in cluster)
+%                : this is repeated for each maxima within the cluster (change in future version?)
+%     csize      : number of pixels in each cluster (same as above)
+%     lxm        : number of local maxima in cluster (same again)
+%     labl       : cluster to which local maximum belong (i.e., cluster label) 
+%     nmax       : number of local maxima in the image
+
+
 % EXAMPLE: main283AUTO(1,[],0);
 %
 % NOTE: the default values can be changed below in line 58-60, if desired,
@@ -65,7 +84,7 @@ itest = 0;
 
 
 [ny,nx,nz] = size(img);
-imgDenoised = zeros(ny,nx,nz);
+imgDenoised = zeros(ny,nx,nz, 'uint8');
 
 
 % %%%%%%%%%%%%%%%%%%%%%% SET CONTROL PARAMETERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -303,7 +322,7 @@ for ix = 1:ixmax
         
     inn = zeros(nmax,1);
     for ii = 1:nmax
-        inn(ii) = rw(ymax(ii),xmax(ii));        
+        inn(ii) = rw(ymax(ii),xmax(ii)); % problem with shift? xmax, ymax start at 0?     
     end
     
     frameInfo(ix).ymax = ymax;
