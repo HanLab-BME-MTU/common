@@ -129,9 +129,14 @@ data.plane(3).spacing = [spacing(2) spacing(1) 1];
 
 % Data log
 data.logUse = 0;
+data.imLog = cell(1,numChannels);
 data.imLogDisplayRanges = zeros( numChannels, 2 );
 for i = 1:numChannels     
-   data.imLogDisplayRanges(i,:) = [ min( log(im{i}(:)) ), max( log(im{i}(:)) ) ]; 
+   ImageIntensityRange = ComputeImageDynamicRange( im{i}, 99.0 );
+   log_bottom = ImageIntensityRange(1) + range(ImageIntensityRange)/256.0;
+   imAdjusted = log( log_bottom + AdjustImageIntensityRange(im{i}, ImageIntensityRange) );
+   data.imLogDisplayRanges(i,:) = [ min(imAdjusted(:)), max(imAdjusted(:)) ]; 
+   data.imLog{i} = imAdjusted;
 end
 
 %% Create UI controls
@@ -286,6 +291,14 @@ if ~any( data.blnShowChannel )
     return;
 end
 
+if data.logUse      
+    im = data.imLog;
+    displayranges = data.imLogDisplayRanges;    
+else
+    im = data.im;
+    displayranges = data.displayranges;
+end
+
 % Get the slice, depending on the plane showed
 slice = [];
 for i = 1:data.numChannels    
@@ -293,19 +306,14 @@ for i = 1:data.numChannels
         continue;
     end        
     if data.curPlane == 1
-        curSlice = squeeze(data.im{i}(:,data.sliceno,:))';
+        curSlice = squeeze(im{i}(:,data.sliceno,:))';
     elseif data.curPlane == 2
-        curSlice = squeeze(data.im{i}(data.sliceno,:,:))';
+        curSlice = squeeze(im{i}(data.sliceno,:,:))';
     else
-        curSlice = squeeze(data.im{i}(:,:,data.sliceno));
+        curSlice = squeeze(im{i}(:,:,data.sliceno));
     end    
     
-    if data.logUse
-       curSlice = mat2gray( log(curSlice), data.imLogDisplayRanges(i,:) ); 
-    else
-       curSlice = mat2gray( curSlice, data.displayranges(i,:) );
-    end
-
+    curSlice = mat2gray( curSlice, displayranges(i,:) );    
     slice = cat( 3, slice, curSlice );
 end
 
