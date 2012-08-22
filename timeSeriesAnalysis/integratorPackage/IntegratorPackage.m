@@ -37,7 +37,14 @@ classdef IntegratorPackage < Package
             
             % Check signal input consistency in-between movies
             signalInput=cell(nMovies,1);
-            for i=1:nMovies, signalInput{i}=movies{i}.getSampledOutput; end
+            for i=1:nMovies,
+                try 
+                    signalInput{i}=movies{i}.getSampledOutput;
+                catch ME
+                    throw(MException('lccb:ml:sanitycheck','Movie %g\n\n%s',...
+                        i, ME.message));
+                end
+            end
             nInput=unique(cellfun(@numel,signalInput));
             assert(isscalar(nInput),'Different number of sampled signal per movie');
             for i=1:nInput, 
