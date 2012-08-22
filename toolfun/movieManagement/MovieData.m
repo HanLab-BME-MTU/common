@@ -390,7 +390,7 @@ classdef  MovieData < MovieObject
             channelPaths = arrayfun(@(x) x.channelPath_, obj.channels_, 'Unif', false);
             channelPaths = unique(channelPaths);
             status = numel(channelPaths) == 1 && ...
-                exist(channelPaths{1}, 'file');
+                exist(channelPaths{1}, 'file') ==2;
         end
         
         function delete(obj)
