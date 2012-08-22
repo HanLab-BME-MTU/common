@@ -363,7 +363,7 @@ function editSliceIndex(src,eventdata,handles)
 
 % Retrieve window index corresponding to point poistion
 point = get(src,'CurrentPoint');
-windowIndex=ceil(point(1,2));
+windowIndex=floor(point(1,2));
 
 f =  get(src,'Parent');
 userData = get(f,'UserData');
