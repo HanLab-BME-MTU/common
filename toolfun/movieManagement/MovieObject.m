@@ -165,52 +165,9 @@ classdef  MovieObject < hgsetget
             end
         end
         
-        function iProc = getProcessIndex(obj,proc,varargin)
-            % Find the index of a process or processes with given class name
-            %
-            % SYNOPSIS      iProc=obj.getProcessIndex(procName)
-            %               iProc=obj.getProcessIndex(procName,nDesired,askUser)
-            
-            % Input check
-            ip = inputParser;
-            ip.addRequired('proc',@(x)ischar(x)||isa(x,'Process'));
-            ip.addOptional('nDesired',1,@isscalar);
-            ip.addOptional('askUser',true,@isscalar);
-            ip.parse(proc,varargin{:});
-            nDesired = ip.Results.nDesired;
-            askUser = ip.Results.askUser;
-            
-            % Read process of given type
-            if isa(proc,'Process'), 
-                searchFcn = @(x) isequal(x,proc);
-                procName = class(proc);
-            else
-                searchFcn = @(x) isa(x,proc); 
-                procName = proc;
-            end
-             
-            iProc = find(cellfun(searchFcn,obj.processes_)); 
-            nProc = numel(iProc);
-            
-            %If there are only nDesired or less processes found, return
-            if nProc <= nDesired, return; end
-            
-            % If more than nDesired processes
-            if askUser
-                isMultiple = nDesired > 1;
-                procNames = cellfun(@(x)(x.getName),...
-                    obj.processes_(iProc),'UniformOutput',false);
-                iSelected = listdlg('ListString',procNames,...
-                    'SelectionMode',isMultiple,...
-                    'ListSize',[400,400],...
-                    'PromptString',['Select the desired ' procName ':']);
-                iProc = iProc(iSelected);
-                assert(~isempty(iProc),'You must select a process to continue!');
-            else
-                warning('lccb:process',['More than ' num2str(nDesired) ' ' ...
-                    procName 'es were found! Returning most recent process(es)!'])
-                iProc = iProc(end:-1:(end-nDesired+1));
-            end
+        function iProc = getProcessIndex(obj, type, varargin)
+            if isa(type, 'Process'), type = class(type); end
+            iProc = getIndex(obj.processes_, type, varargin{:});
         end
         
         %% Functions to manipulate package object array
@@ -239,6 +196,10 @@ classdef  MovieObject < hgsetget
             obj.packages_(pid) = [ ];
         end
         
+        function iPackage = getPackageIndex(obj, type, varargin)
+            if isa(type, 'Package'), type = class(type); end
+            iPackage = getIndex(obj.packages_, type, varargin{:});
+        end
         %% Miscellaneous functions
         function askUser = sanityCheck(obj, path, filename,askUser)
             % Check sanity of movie object
@@ -369,6 +330,7 @@ classdef  MovieObject < hgsetget
         end
         
     end
+    
     methods(Static)        
         function obj = load(moviepath,varargin)
             % Load a movie object from a path
@@ -428,4 +390,40 @@ classdef  MovieObject < hgsetget
         getPathProperty()
         getFilenameProperty()
     end 
+end
+
+function iProc = getIndex(list, type, varargin)
+% Find the index of a object of given class
+
+% Input check
+ip = inputParser;
+ip.addRequired('list',@iscell);
+ip.addRequired('type',@ischar);
+ip.addOptional('nDesired',1,@isscalar);
+ip.addOptional('askUser',true,@isscalar);
+ip.parse(list, type, varargin{:});
+nDesired = ip.Results.nDesired;
+askUser = ip.Results.askUser;
+
+
+iProc = find(cellfun(@(x) isa(x,type), list));
+nProc = numel(iProc);
+
+%If there are only nDesired or less processes found, return
+if nProc <= nDesired, return; end
+
+% If more than nDesired processes
+if askUser
+    isMultiple = nDesired > 1;
+    names = cellfun(@(x) (x.getName()), list(iProc), 'UniformOutput', false);
+    iSelected = listdlg('ListString', names,...
+        'SelectionMode', isMultiple, 'ListSize', [400,400],...
+        'PromptString', ['Select the desired ' type ':']);
+    iProc = iProc(iSelected);
+    assert(~isempty(iProc), 'You must select a process to continue!');
+else
+    warning('lccb:process', ['More than ' num2str(nDesired) ' objects '...
+        'of class ' type ' were found! Returning most recent!'])
+    iProc = iProc(end:-1:(end-nDesired+1));
+end
 end
