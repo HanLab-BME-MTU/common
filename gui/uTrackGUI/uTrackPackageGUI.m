@@ -11,7 +11,7 @@ function varargout = uTrackPackageGUI(varargin)
 options = {'packageName', 'TrackingPackage'};
 if nargin>0 && isa(varargin{1},'MovieList')
     varargout{1} = packageGUI(@UTrackPackage,[varargin{1}.getMovies{:}],...
-        varargin{2:end},options{:});
+        varargin{2:end},options{:},'ML',varargin{1});
 else
     varargout{1} = packageGUI(@UTrackPackage,varargin{:},options{:});
 end
