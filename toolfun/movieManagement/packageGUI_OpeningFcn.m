@@ -53,6 +53,8 @@ ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
 ip.addRequired('packageConstr',@(x) isa(x,'function_handle'));
 ip.addOptional('MO',[],@(x) isa(x,'MovieObject'));
+ip.addParamValue('MD',[],@(x) isempty(x) || isa(x,'MovieData'));
+ip.addParamValue('ML',[],@(x) isempty(x) || isa(x,'MovieList'));
 ip.addParamValue('packageName',func2str(packageConstr),@(x) isa(x,'char'));
 ip.parse(hObject,eventdata,handles,packageConstr,varargin{:});
 
@@ -64,8 +66,8 @@ assert(any(strcmp(superclasses(packageName),'Package')),...
 handles.output = hObject;
 userData = get(handles.figure1,'UserData');
 userData.packageName = packageName;
-userData.MD = [];
-userData.ML = [];
+userData.MD = ip.Results.MD;
+userData.ML = ip.Results.ML;
 
 %If package GUI supplied without argument, saves a boolean which will be
 %read by packageNameGUI_OutputFcn

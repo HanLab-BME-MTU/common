@@ -56,7 +56,8 @@ varargout{1} = handles.output;
 % In case the package GUI has been called without argument
 userData = get(handles.figure1, 'UserData');
 if (isfield(userData,'startMovieSelectorGUI') && userData.startMovieSelectorGUI)
-    movieSelectorGUI('packageName',userData.packageName,'MD',userData.MD);
+    movieSelectorGUI('packageName',userData.packageName,'MD',userData.MD,...
+        'ML', userData.ML);
     delete(handles.figure1)
 end
 
@@ -186,9 +187,10 @@ end
 function menu_file_open_Callback(~, ~, handles)
 % Call back function of 'New' in menu bar
 userData = get(handles.figure1,'Userdata');
-if ~isempty(userData.MD), field = 'MD'; else field = 'ML'; end
-arrayfun(@(x) x.save,userData.(field));
-movieSelectorGUI('packageName',userData.packageName,field,userData.(field));
+% if ~isempty(userData.MD), field = 'MD'; else field = 'ML'; end
+% arrayfun(@(x) x.save,userData.(field));
+movieSelectorGUI('packageName',userData.packageName,...
+    'MD', userData.MD, 'ML', userData.ML);
 delete(handles.figure1)
 
 % --------------------------------------------------------------------

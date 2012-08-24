@@ -125,15 +125,20 @@ set(handles.uipanel_packages,'SelectionChangeFcn','');
 if ~isempty(ip.Results.ML)
     userData.ML=ip.Results.ML;
     MD=arrayfun(@(x) horzcat(x.getMovies{:}),userData.ML,'Unif',0);
-    MD=horzcat(MD{:});
-    [~,index]=unique(arrayfun(@getFullPath,MD,'Unif',0));
-    userData.MD=MD(sort(index));
+    userData.MD=horzcat(MD{:});
 end
 
 if ~isempty(ip.Results.MD)
-    userData.MD=horzcat(userData.MD,ip.Results.MD);
+    userData.MD = horzcat(userData.MD,ip.Results.MD);
 end
 
+% Filter movies to get a unique list
+[~,index] = unique(arrayfun(@getFullPath,userData.MD,'Unif',0));
+userData.MD = userData.MD(sort(index));
+
+% Filter movie lists to get a unique list
+[~,index] = unique(arrayfun(@getFullPath,userData.ML,'Unif',0));
+userData.ML = userData.ML(sort(index));
 
 supermap(1,:) = get(hObject,'color');
 
@@ -194,7 +199,8 @@ userData = get(handles.figure1, 'UserData');
 selectedPackage=get(get(handles.uipanel_packages, 'SelectedObject'),'UserData');
 
 % Select movie or list depending on the package nature
-if isequal(selectedPackage,'IntegratorPackage')
+class = eval([selectedPackage '.getMovieClass()']);
+if strcmp(class, 'MovieList')
     type = 'movie list';
     field = 'ML';
 else
@@ -224,7 +230,8 @@ if isequal(selectedPackage,'TrackingPackage')
     end
 end
 close(handles.figure1);
-packageGUI(packageConstr,userData.(field),'packageName', selectedPackage);
+packageGUI(packageConstr,userData.(field),'packageName', selectedPackage,...
+    'MD',userData.MD,'ML',userData.ML);
 
 % --- Executes on selection change in listbox_movie.
 function listbox_movie_Callback(hObject, eventdata, handles)
