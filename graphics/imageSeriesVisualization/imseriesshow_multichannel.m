@@ -88,7 +88,6 @@ p.addParamValue( 'spacing', [1,1,1], @(x) ( isnumeric(x) && ~isscalar(x) && nume
 p.addParamValue( 'displayRanges', default_displayranges, @(x) ( isnumeric(x) && ndims(x) == 2 && size(x,2) == 2 && size(x,1) == numChannels ) );
 p.addParamValue( 'displayColors', cMap(1:numChannels,:), @(x) ( isnumeric(x) && ndims(x) == 2 && size(x,2) == 3 && size(x,1) == numChannels ) );
 p.parse(im, varargin{:});
-p.Results
 
 spacing = p.Results.spacing;
 displayranges = p.Results.displayRanges;
@@ -224,7 +223,7 @@ data.ui.ch_planes = uibuttongroup('visible', 'on', 'Units', 'normalized', ...
     'Position', [0.3 0.01 0.4 0.05], ...
     'SelectionChangeFcn', {@planes_Callback});
 
-if ndims(data.im) == 3
+if ndims(data.im{1}) == 3
     otherPlaneEnableState = 'on';
 else
     otherPlaneEnableState = 'off';
