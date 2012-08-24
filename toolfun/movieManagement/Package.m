@@ -256,6 +256,9 @@ classdef Package < hgsetget
         function tools = getTools()
             tools=[];
         end
+        function class = getMovieClass()
+            class = 'MovieData';
+        end
     end 
 
     methods(Static,Abstract)

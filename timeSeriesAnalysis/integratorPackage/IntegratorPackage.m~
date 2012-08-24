@@ -75,7 +75,7 @@ classdef IntegratorPackage < Package
         end
 
         function name = getMovieClass()
-            name='MovieList';
+            name='Image BLAST';
         end
         
         function varargout = GUI(varargin)
