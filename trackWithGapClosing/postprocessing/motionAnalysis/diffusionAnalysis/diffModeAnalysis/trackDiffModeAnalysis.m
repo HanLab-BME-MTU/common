@@ -58,6 +58,18 @@ for iTrack = 1 : numTracks
     xCoordDelta = diff(xCoord,[],2);
     yCoordDelta = diff(yCoord,[],2);
     
+    %calculate effective trajectory length from the number of available
+    %displacements (this takes care of gaps)
+    numSeg = size(xCoordDelta,1);
+    segLft = NaN(numSeg,1);
+    for iSeg = 1 : size(xCoordDelta,1)
+        segLft(iSeg) = length(find(~isnan(xCoordDelta(iSeg,:)))) + 1;
+    end
+    
+    %determine which segments are of sufficient length to be classified
+    indxGood = find(segLft >= minLength);
+    indxBad  = setdiff(1:numSeg,indxGood);
+    
     %calculate the mean square frame-to-frame displacement
     msdF2F = nanmean(xCoordDelta.^2+yCoordDelta.^2,2);
         
@@ -68,19 +80,12 @@ for iTrack = 1 : numTracks
     %calculate mean positional variance per track
     meanPosVar = nanmean([xCoordStd yCoordStd].^2,2);
 
-    %determine which segments are of sufficient length
-    segLft = getTrackSEL(trackCoordCurrent);
-    segLft = segLft(:,3);
-    numSeg = size(segLft,1);
-    indxGood = find(segLft >= minLength);
-    indxBad  = setdiff(1:numSeg,indxGood);
-    
     %calculate diffusion coefficient
     diffCoefCurrent = msdF2F/4 - meanPosVar;
     diffCoefCurrent(indxBad) = NaN;
     
     %determine diffusion mode
-    diffModeCurrent = diffCoefCurrent;
+    diffModeCurrent = NaN(numSeg,1);
     for iSeg = indxGood'
         i3 = min(segLft(iSeg)-minLength+1,maxLength-minLength+1);
         tmp = find(diffModeDivider(:,2,i3)>diffCoefCurrent(iSeg),1,'first');

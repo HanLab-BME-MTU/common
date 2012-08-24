@@ -1,5 +1,5 @@
 function [numObsPerBinP,binCenterP,expParam,errFlag] = fitHistWithExponentialsN(...
-    observations,alpha,showPlot,maxNumExp,binStrategy,plotName,meanLB)
+    observations,alpha,showPlot,maxNumExp,binStrategy,numBinIn,plotName,meanLB)
 %FITHISTWITHEXPONENTIALSN determines the number of exponentials + their characteristics to fit a histogram
 %
 %SYNOPSIS [numObsPerBinP,binCenterP,expParam,errFlag] = fitHistWithExponentialsN(...
@@ -15,9 +15,12 @@ function [numObsPerBinP,binCenterP,expParam,errFlag] = fitHistWithExponentialsN(
 %       maxNumExp   : Upper limit on the number of exponentials.
 %                     Optional. Default: 100.            
 %       binStrategy : Binning strategy for calculating the cumulative
-%                     histogram. 1 for using "histogram" and 2 for using
-%                     the data directly.
+%                     histogram. 1 for using "histogram", 2 for using
+%                     the data directly, and 3 for using "hist" with a
+%                     specified number of bins.
 %                     Optional. Default: 2.
+%       numBinIn    : Number of bins to contruct histogram. 
+%                     Required if binStrategy = 3, otherwise ignored.
 %       plotName    : The title of the plotted figure.
 %                     Optional. Default: 'Figure'.
 %       meanLB      : Lower bound on mean of exponential.
@@ -97,17 +100,26 @@ end
 if nargin < 5 || isempty(binStrategy)
     binStrategy = 2;
 else
-    if ~any(binStrategy == [1,2])
-        disp('--fitHistWithExponentialsN: Variable "binStrategy" should be 1 or 2!');
+    if ~any(binStrategy == [1,2,3])
+        disp('--fitHistWithExponentialsN: Variable "binStrategy" should be 1, 2 or 3!');
         errFlag = 1;
     end
 end
 
-if nargin < 6 || isempty(plotName)
+if nargin < 6 || isempty(numBinIn)
+    if binStrategy == 3
+        disp('--fitHistWithExponentialsN: Please input value for numBinIn when binStrategy = 3!');
+        errFlag = 1;        
+    else
+        numBinIn = [];
+    end
+end
+
+if nargin < 7 || isempty(plotName)
     plotName = 'Figure';
 end
 
-if nargin < 7 || isempty(meanLB)
+if nargin < 8 || isempty(meanLB)
     meanLB = 0;
 end
 
@@ -151,17 +163,20 @@ switch binStrategy
             disp(sprintf('--%s',errMsg))
             return
         end
+        
         % number of bins is the number of different x-values
         numBins = length(binCenter);
-        % cdfcalc returns n+1 values for cumHist. 1:end-1 is the bottom of the
-        % step, 2:end the top. Take the middle for best results.
-        % cumHist = (cumHist(2:end)+cumHist(1:end-1))/2;
         
-        % make cumHist with binCenters in middle of top of step
-        binCenter = (binCenter(1:end-1)+binCenter(2:end))/2;
-        cumHist = cumHist(2:end-1);
-        numBins = numBins - 1;
+        %         % cdfcalc returns n+1 values for cumHist. 1:end-1 is the bottom of the
+        %         % step, 2:end the top. Take the middle for best results.
+        %         % cumHist = (cumHist(2:end)+cumHist(1:end-1))/2;
+        %
+        %         % make cumHist with binCenters in middle of top of step
+        %         binCenter = (binCenter(1:end-1)+binCenter(2:end))/2;
+        %         cumHist = cumHist(2:end-1);
+        %         numBins = numBins - 1;
         
+        cumHist = cumHist(2:end);
         
         % downsample to about 1000 points if necessary
         if numBins > 1000
@@ -174,6 +189,25 @@ switch binStrategy
         % make cumHist go from 1:numObservations
         cumHist = cumHist * numObservations;
         
+    case 3
+        
+        %get the number of observations
+        numObservations = length(find(~isnan(observations)));
+        
+        %calculate the histogram
+        [numObsPerBin,binCenter] = hist(observations,numBinIn);
+        numObsPerBin = numObsPerBin';
+        binCenter = binCenter';
+        
+        %determine the number of bins used
+        numBins = length(binCenter);
+        
+        %calculate the cumulative histogram
+        cumHist = zeros(numBins,1);
+        for iBin = 1 : numBins
+            cumHist(iBin) = sum(numObsPerBin(1:iBin));
+        end
+                
 end
 
 %initialize variables indicating number of fitted exponentials and their parameters

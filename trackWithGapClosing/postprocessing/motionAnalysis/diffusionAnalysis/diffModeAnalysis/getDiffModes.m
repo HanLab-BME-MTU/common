@@ -1,9 +1,11 @@
-function [modeParam,expParam] = getDiffModes(tracksFinal,minLength,alpha,...
-    showPlot,maxNumMode,binStrategy,plotName)
+function [modeParam,expParam,pvModeDiff,modeParamControl,pvModeDiffControl] = ...
+    getDiffModes(tracksFinal,minLength,alpha,showPlot,maxNumMode,...
+    binStrategy,plotName)
 %GETDIFFMODES determines number of diffusion modes and their parameters from distribution of frame-to-frame displacements
 %
-%SYNOPSIS [expParam,diffCoef] = getDiffModes(tracksFinal,alpha,showPlot,...
-%    maxNumExp,binStrategy,plotName)
+%SYNOPSIS [modeParam,expParam,pvModeDiff,modeParamControl,pvModeDiffControl] = ...
+%    getDiffModes(tracksFinal,minLength,alpha,showPlot,maxNumMode,...
+%    binStrategy,plotName)
 %
 %INPUT  tracksFinal : Output of trackCloseGapsKalman.
 %                     Optional. If not input, GUI will be called to get
@@ -33,6 +35,7 @@ function [modeParam,expParam] = getDiffModes(tracksFinal,minLength,alpha,...
 %                     Column 3: std of each diffusion coefficient
 %                     Column 4: std of each fraction of contribution
 %       expParam    : Output of fitHistWithExponentialsN
+%       expControl  : Output of 
 %
 %REMARKS Code is written for 2D case only, but can be generalized to 3D.
 %
@@ -114,8 +117,8 @@ end
 meanPosVar = mean([xCoordStdAll;yCoordStdAll].^2);
 
 %fit exponentials to the distribution of square displacements
-[~,~,expParam] = fitHistWithExponentialsN(f2fdispSqAll,alpha,showPlot,...
-    maxNumMode,binStrategy,plotName,4*meanPosVar);
+[~,binCenterP,expParam] = fitHistWithExponentialsN(f2fdispSqAll,alpha,showPlot,...
+    maxNumMode,binStrategy,[],plotName,4*meanPosVar);
 
 %calculate diffusion coefficient of each mode
 %formula: mu (i.e. mean of exponential) = 4*diffCoef + 4*posStd^2
@@ -132,6 +135,41 @@ fracContrStd = expParam(:,4)/sum(expParam(:,2));
 
 %output
 modeParam = [diffCoef fracContr diffCoefStd fracContrStd];
+
+%test whether the distance between consecutive modes is significant given
+%the diffusion coefficients and their standard deviations
+if length(diffCoef) > 1
+    diffCoefDelta = diff(diffCoef);
+    deltaStd = sqrt( diffCoefStd(1:end-1).^2 + diffCoefStd(2:end).^2 );
+    pvModeDiff = 1-normcdf(diffCoefDelta,0,deltaStd);
+else
+    pvModeDiff = NaN;
+end
+
+%control: repeat the above but for a synthetic data set generated from a
+%mono-exponential distribution with the same average as the data-derived
+%distribution of square displacements
+numBin = length(binCenterP);
+if binStrategy == 1
+    binStrategyControl = 3;
+else
+    binStrategyControl = binStrategy;
+end
+f2fdispSqControl = exprnd(mean(f2fdispSqAll),length(f2fdispSqAll),1);
+[~,~,expParamControl] = fitHistWithExponentialsN(f2fdispSqControl,alpha,showPlot,...
+    maxNumMode,binStrategyControl,numBin,[plotName ' - Control'],4*meanPosVar);
+diffCoefControl = expParamControl(:,1)/4 - meanPosVar;
+diffCoefStdControl = expParamControl(:,3)/4;
+fracContrControl = expParamControl(:,2)/sum(expParamControl(:,2));
+fracContrStdControl = expParamControl(:,4)/sum(expParamControl(:,2));
+modeParamControl = [diffCoefControl fracContrControl diffCoefStdControl fracContrStdControl];
+if length(diffCoefControl) > 1
+    diffCoefDeltaControl = diff(diffCoefControl);
+    deltaStdControl = sqrt( diffCoefStdControl(1:end-1).^2 + diffCoefStdControl(2:end).^2 );
+    pvModeDiffControl = 1-normcdf(diffCoefDeltaControl,0,deltaStdControl);
+else
+    pvModeDiffControl = NaN;
+end
 
 %% ~~~ the end ~~~
 

@@ -5,7 +5,7 @@ gapCloseParam.mergeSplit = 1; %1 if merging and splitting are to be considered, 
 gapCloseParam.minTrackLen = 2; %minimum length of track segments from linking to be used in gap closing.
 
 %optional input:
-gapCloseParam.diagnostics = 0; %1 to plot a histogram of gap lengths in the end; 0 or empty otherwise.
+gapCloseParam.diagnostics = 1; %1 to plot a histogram of gap lengths in the end; 0 or empty otherwise.
 
 %% cost matrix for frame-to-frame linking
 
@@ -27,7 +27,7 @@ parameters.kalmanInitParam = []; %Kalman filter initialization parameters.
 % parameters.kalmanInitParam.searchRadiusFirstIteration = 10; %Kalman filter initialization parameters.
 
 %optional input
-parameters.diagnostics = []; %if you want to plot the histogram of linking distances up to certain frames, indicate their numbers; 0 or empty otherwise. Does not work for the first or last frame of a movie.
+parameters.diagnostics = [5 250]; %if you want to plot the histogram of linking distances up to certain frames, indicate their numbers; 0 or empty otherwise. Does not work for the first or last frame of a movie.
 
 costMatrices(1).parameters = parameters;
 clear parameters
@@ -85,9 +85,9 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaVandCellEdge/110114/Cs1_CHO02/Cs1_CHO02B/analysisAlphaV/'; %directory where to save input and output
-% saveResults.filename = 'tracksTest1DetectionAll1.mat'; %name of file where input and output are saved
-% saveResults = 0; %don't save results
+% saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/lifeActAndCellEdge/120213/120213_Cs2C1_Lifeact/analysisLifeact/'; %directory where to save input and output
+% saveResults.filename = 'tracksTest4DetectionAll1.mat'; %name of file where input and output are saved
+saveResults = 0; %don't save results
 
 %verbose state
 verbose = 1;
@@ -97,23 +97,23 @@ probDim = 2;
 
 %% tracking function call
 
-% [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-
-for i = 1 : 5
-    movieInfoTmp((i-1)*1200+1:i*1200) = movieInfo((i-1)*1200+1:i*1200);
-    saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
-    [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
-        costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-    clear movieInfoTmp
-end
-
-i=6;
-movieInfoTmp((i-1)*1200+1:6800) = movieInfo((i-1)*1200+1:6800);
-saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
-[tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
+[tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1:300),...
     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-clear movieInfoTmp
+
+% for i = 1 : 5
+%     movieInfoTmp((i-1)*1200+1:i*1200) = movieInfo((i-1)*1200+1:i*1200);
+%     saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
+%     [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
+%         costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+%     clear movieInfoTmp
+% end
+% 
+% i=6;
+% movieInfoTmp((i-1)*1200+1:6800) = movieInfo((i-1)*1200+1:6800);
+% saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
+% [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% clear movieInfoTmp
 
 
 % for startFrame = 1 : 400 : 48000
