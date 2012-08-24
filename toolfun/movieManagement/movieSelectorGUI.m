@@ -213,25 +213,9 @@ if isempty(userData.(field))
     return
 end
 
-% If  tracking package is selected
-packageConstr = str2func(selectedPackage);
-if isequal(selectedPackage,'TrackingPackage')
-    hasTrackingPackage = @(x) any(cellfun(@(y) isa(y,'TrackingPackage'),...
-        x.packages_));
-    if ~all(arrayfun(hasTrackingPackage, userData.(field)))
-        % Using eval here since I don't want TrackingPackge to be evaluated
-        % as a dependency of movieSelector GUI
-        objects = eval([selectedPackage '.getObjects()']);
-        [selection, status] = listdlg('Name','',...
-            'PromptString',{'Select the type of object';'you want to track:'},...
-            'ListString', {objects.name},'SelectionMode','single');
-        if ~status, return; end
-        packageConstr = objects(selection).packageConstr;
-    end
-end
 close(handles.figure1);
-packageGUI(packageConstr,userData.(field),'packageName', selectedPackage,...
-    'MD',userData.MD,'ML',userData.ML);
+packageGUI(selectedPackage,userData.(field),...
+    'MD', userData.MD, 'ML', userData.ML);
 
 % --- Executes on selection change in listbox_movie.
 function listbox_movie_Callback(hObject, eventdata, handles)

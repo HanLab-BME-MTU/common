@@ -1,4 +1,4 @@
-function packageGUI_OpeningFcn(hObject,eventdata,handles,packageConstr,varargin)
+function packageGUI_OpeningFcn(hObject,eventdata,handles,packageName,varargin)
 % Callback called at the opening of packageGUI
 %
 % packageGUI_OpeningFcn(packageName,MD)   MD: MovieData object
@@ -8,6 +8,7 @@ function packageGUI_OpeningFcn(hObject,eventdata,handles,packageConstr,varargin)
 % User Data:
 %
 %       userData.MD - array of MovieData object
+%       userData.MD - array of MovieList object
 %       userData.package - array of package (same length with userData.MD)
 %       userData.crtPackage - the package of current MD
 %       userData.id - the id of current MD on board
@@ -51,12 +52,12 @@ ip = inputParser;
 ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
-ip.addRequired('packageConstr',@(x) isa(x,'function_handle'));
+ip.addRequired('packageName',@ischar);
 ip.addOptional('MO',[],@(x) isa(x,'MovieObject'));
 ip.addParamValue('MD',[],@(x) isempty(x) || isa(x,'MovieData'));
 ip.addParamValue('ML',[],@(x) isempty(x) || isa(x,'MovieList'));
-ip.addParamValue('packageName',func2str(packageConstr),@(x) isa(x,'char'));
-ip.parse(hObject,eventdata,handles,packageConstr,varargin{:});
+ip.addParamValue('packageConstr','',@(x) isa(x,'function_handle'));
+ip.parse(hObject,eventdata,handles,packageName,varargin{:});
 
 % Read the package name
 packageName = ip.Results.packageName;
@@ -107,17 +108,44 @@ packageIndx = cell(1, nMovies);
 % I. Before loading MovieData, firstly check if the current package exists
 for i = 1:nMovies
     % Check for existing packages and create them if false
-    packageIndx{i} = find(cellfun(@(x) isa(x,packageName),...
-        ip.Results.MO(i).packages_),1);
-    if packageIndx{i}
-        userData.package(i) = ip.Results.MO(i).packages_{packageIndx{i}};
+    packageIndx{i} = ip.Results.MO(i).getPackageIndex(packageName,1,false);
+end
+
+for i = find(~cellfun(@isempty, packageIndx))
+    userData.package(i) = ip.Results.MO(i).packages_{packageIndx{i}};
+end
+
+if any(cellfun(@isempty, packageIndx))
+    % Get the adapted constructor
+    if ~isempty(ip.Results.packageConstr),
+        packageConstr = ip.Results.packageConstr;
+    elseif isConcreteClass(userData.packageName)
+        packageConstr = str2func(userData.packageName);
     else
+        % Launch interface to determine constructor
+        concretePackages = eval([userData.packageName '.getConcretePackages()']);
+        [selection, status] = listdlg('Name','',...
+            'PromptString',{'Select the type of object';'you want to track:'},...
+            'ListString', {concretePackages.name},'SelectionMode','single');
+        if ~status,
+            userData.startMovieSelectorGUI=true;
+            set(handles.figure1,'UserData',userData);
+            guidata(hObject, handles); 
+            return
+        end
+        packageConstr = concretePackages(selection).packageConstr;
+    end
+    
+    % Add package to movie
+    for i = find(cellfun(@isempty, packageIndx))
         ip.Results.MO(i).addPackage(packageConstr(ip.Results.MO(i),...
             ip.Results.MO(i).outputDirectory_));
         userData.package(i) = ip.Results.MO(i).packages_{end};
     end
-    
-    % Run sanity check to check basic dependencies are satisfied
+end
+
+% Run sanity check to check basic dependencies are satisfied
+for i = 1:nMovies
     try
         userData.package(i).sanityCheck(true,'all');
     catch ME

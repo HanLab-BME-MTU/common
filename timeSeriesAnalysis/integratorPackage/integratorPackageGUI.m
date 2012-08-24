@@ -7,6 +7,6 @@ function varargout = integratorPackageGUI(varargin)
 
 % Sebastien Besson, Sep 2011
 
-varargout{1} = packageGUI(@IntegratorPackage,varargin{:});
+varargout{1} = packageGUI('IntegratorPackage',varargin{:});
 
 end

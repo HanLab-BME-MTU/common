@@ -9,10 +9,10 @@ function varargout = segmentationPackageGUI(varargin)
 %
 
 if nargin>0 && isa(varargin{1},'MovieList')
-    varargout{1} = packageGUI(@SegmentationPackage,...
+    varargout{1} = packageGUI('SegmentationPackage',...
         [varargin{1}.getMovies{:}], varargin{2:end}, 'ML', varargin{1});
 else
-    varargout{1} = packageGUI(@SegmentationPackage,varargin{:});
+    varargout{1} = packageGUI('SegmentationPackage',varargin{:});
 end
 
 end

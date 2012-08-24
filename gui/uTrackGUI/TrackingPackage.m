@@ -48,16 +48,7 @@ classdef TrackingPackage < Package
             classes=classes(index);
         end
         
-        function procConstr = getDefaultProcessConstructors(index)
-            procConstr = {
-                str2func(DetectionProcess.getConcreteClasses{1}),...
-                @TrackingProcess,...
-                str2func(PostTrackingProcess.getConcreteClasses{1})};
-            if nargin==0, index=1:numel(procConstr); end
-            procConstr=procConstr(index);
-        end
-        
-        function objects = getObjects()
+        function objects = getConcretePackages()
             objects(1).name = 'Single-particles';
             objects(1).packageConstr = @UTrackPackage;
             objects(2).name = 'Microtubules';

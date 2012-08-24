@@ -8,12 +8,12 @@ function varargout = uTrackPackageGUI(varargin)
 % Sebastien Besson 5/2011
 %
 
-options = {'packageName', 'TrackingPackage'};
+options = {'packageConstr', @UTrackPackage};
 if nargin>0 && isa(varargin{1},'MovieList')
-    varargout{1} = packageGUI(@UTrackPackage,[varargin{1}.getMovies{:}],...
+    varargout{1} = packageGUI('TrackingPackage',[varargin{1}.getMovies{:}],...
         varargin{2:end},options{:},'ML',varargin{1});
 else
-    varargout{1} = packageGUI(@UTrackPackage,varargin{:},options{:});
+    varargout{1} = packageGUI('TrackingPackage',varargin{:},options{:});
 end
 
 end
