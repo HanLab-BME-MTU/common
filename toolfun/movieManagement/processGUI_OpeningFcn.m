@@ -50,9 +50,12 @@ set(handles.text_copyright, 'String', copyright)
 % Get current package, movie data and process
 userData.handles_main = guidata(userData.mainFig);
 userData_main = get(userData.mainFig, 'UserData');
-userData.MD = userData_main.MD(userData_main.id);
-userData.ML = userData_main.ML(userData_main.id);
 userData.crtPackage = userData_main.crtPackage;
+if strcmp(userData.crtPackage.getMovieClass(), 'MovieData')
+    userData.MD = userData_main.MD(userData_main.id);
+else
+    userData.ML = userData_main.ML(userData_main.id);
+end
 
 % If constructor is not inherited from abstract class, read it from package
 if isempty(userData.procConstr)
