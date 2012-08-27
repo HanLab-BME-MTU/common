@@ -167,10 +167,11 @@ for ix = 1:ixmax
     rwb=bwmorph(rwb,'clean'); %to get rid of isolated pixels (noise)
     rwb=bwmorph(rwb,'fill'); %to fill up empty internal pixels
     rwb=bwmorph(rwb,'thicken'); %to make larger clusters because of the harsh cutoff criteria above
-    rwb=bwmorph(rwb,'spur'); % to remove single pixels 8-attached to clusters
-    rwb=bwmorph(rwb,'spur');
-    rwb=bwmorph(rwb,'clean');% to remove any remaining isolated pixels after applying spur twice
-    
+    if iclean >=0
+        rwb=bwmorph(rwb,'spur'); % to remove single pixels 8-attached to clusters
+        rwb=bwmorph(rwb,'spur');
+        rwb=bwmorph(rwb,'clean');% to remove any remaining isolated pixels after applying spur twice
+    end
     if iclean > 0 %Value of iclean is set in line 56 above
         rwb=bwmorph(rwb,'erode');%extra cleaning of small spots
         
