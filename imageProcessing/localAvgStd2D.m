@@ -6,23 +6,20 @@
 function [avg sigma] = localAvgStd2D(img, w)
 
 if mod(w+1, 2)
-    error('The window length w should be an odd integer.');
-end;
+    error('The window length w must be an odd integer.');
+end
 
 nanMask = isnan(img);
 
-b = (w-1)/2;
-
 % kernel
-h = ones(1,w);
+h = ones(w,w);
 
 % count of non-NaN elements
-n = conv2(h, h, padarray(double(~nanMask), [b b], 'replicate'), 'valid');
+n = imfilter(double(~nanMask), h, 'replicate');
 img(nanMask) = 0;
 
-img = padarray(img, [b b], 'replicate');
-E = conv2(h, h, img, 'valid');
-E2 = conv2(h, h, img.^2, 'valid');
+E = imfilter(img, h, 'replicate');
+E2 = imfilter(img.^2, h, 'replicate');
 
 sigma = E2 - E.^2./n;
 sigma(sigma<0) = 0;
