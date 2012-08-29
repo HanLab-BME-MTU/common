@@ -104,17 +104,17 @@ void convolveEvenY(const double input[], const double kernel[], const int k, con
                 idx = x + y*nx + z*nx*ny;
                 output[idx] = kernel[0]*input[idx];
                 for (int i=1;i<=y;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]+input[idx+i]);
+                    output[idx] += kernel[i]*(input[idx-i*nx]+input[idx+i*nx]);
                 }
                 for (int i=y+1;i<k;++i) {
-                    output[idx] += kernel[i]*(input[2*A-idx+i*nx]+input[idx+i]);
+                    output[idx] += kernel[i]*(input[2*A-idx+i*nx]+input[idx+i*nx]);
                 }
             }
             for (int y=k_1;y<=ny-k;++y) {
                 idx = x + y*nx + z*nx*ny;
                 output[idx] = kernel[0]*input[idx];
                 for (int i=1;i<k;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]+input[idx+i]);
+                    output[idx] += kernel[i]*(input[idx-i*nx]+input[idx+i*nx]);
                 }
             }
             // "right" border
@@ -122,10 +122,10 @@ void convolveEvenY(const double input[], const double kernel[], const int k, con
                 idx = x + y*nx + z*nx*ny;
                 output[idx] = kernel[0]*input[idx];
                 for (int i=1;i<ny-y;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]+input[idx+i]);
+                    output[idx] += kernel[i]*(input[idx-i*nx]+input[idx+i*nx]);
                 }
                 for (int i=ny-y;i<k;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]+input[2*B-idx-i*nx]);
+                    output[idx] += kernel[i]*(input[idx-i*nx]+input[2*B-idx-i*nx]);
                 }
             }
         }
@@ -146,17 +146,17 @@ void convolveOddY(const double input[], const double kernel[], const int k, cons
                 idx = x + y*nx + z*nx*ny;
                 output[idx] = 0.0;
                 for (int i=1;i<=y;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]-input[idx+i]);
+                    output[idx] += kernel[i]*(input[idx-i*nx]-input[idx+i*nx]);
                 }
                 for (int i=y+1;i<k;++i) {
-                    output[idx] += kernel[i]*(input[2*A-idx+i*nx]-input[idx+i]);
+                    output[idx] += kernel[i]*(input[2*A-idx+i*nx]-input[idx+i*nx]);
                 }
             }
             for (int y=k_1;y<=ny-k;++y) {
                 idx = x + y*nx + z*nx*ny;
                 output[idx] = 0.0;
                 for (int i=1;i<k;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]-input[idx+i]);
+                    output[idx] += kernel[i]*(input[idx-i*nx]-input[idx+i*nx]);
                 }
             }
             // "right" border
@@ -164,10 +164,10 @@ void convolveOddY(const double input[], const double kernel[], const int k, cons
                 idx = x + y*nx + z*nx*ny;
                 output[idx] = 0.0;
                 for (int i=1;i<ny-y;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]-input[idx+i]);
+                    output[idx] += kernel[i]*(input[idx-i*nx]-input[idx+i*nx]);
                 }
                 for (int i=ny-y;i<k;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]-input[2*B-idx-i*nx]);
+                    output[idx] += kernel[i]*(input[idx-i*nx]-input[2*B-idx-i*nx]);
                 }
             }
         }
@@ -179,6 +179,7 @@ void convolveEvenZ(const double input[], const double kernel[], const int k, con
     int k_1 = k-1;
     int idx = 0;
     int A,B;
+    int N = nx*ny;
     for (int y=0;y<ny;++y) {
         for (int x=0;x<nx;++x) {
             A = x + y*nx;
@@ -188,17 +189,17 @@ void convolveEvenZ(const double input[], const double kernel[], const int k, con
                 idx = x + y*nx + z*nx*ny;
                 output[idx] = kernel[0]*input[idx];
                 for (int i=1;i<=z;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]+input[idx+i]);
+                    output[idx] += kernel[i]*(input[idx-i*N]+input[idx+i*N]);
                 }
                 for (int i=z+1;i<k;++i) {
-                    output[idx] += kernel[i]*(input[2*A-idx+i*nx*ny]+input[idx+i]);
+                    output[idx] += kernel[i]*(input[2*A-idx+i*N]+input[idx+i*N]);
                 }
             }
             for (int z=k_1;z<=nz-k;++z) {
                 idx = x + y*nx + z*nx*ny;
                 output[idx] = kernel[0]*input[idx];
                 for (int i=1;i<k;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]+input[idx+i]);
+                    output[idx] += kernel[i]*(input[idx-i*N]+input[idx+i*N]);
                 }
             }
             // "right" border
@@ -206,10 +207,10 @@ void convolveEvenZ(const double input[], const double kernel[], const int k, con
                 idx = x + y*nx + z*nx*ny;
                 output[idx] = kernel[0]*input[idx];
                 for (int i=1;i<nz-z;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]+input[idx+i]);
+                    output[idx] += kernel[i]*(input[idx-i*N]+input[idx+i*N]);
                 }
                 for (int i=nz-z;i<k;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]+input[2*B-idx-i*nx*ny]);
+                    output[idx] += kernel[i]*(input[idx-i*N]+input[2*B-idx-i*N]);
                 }
             }
         }
@@ -221,6 +222,7 @@ void convolveOddZ(const double input[], const double kernel[], const int k, cons
     int k_1 = k-1;
     int idx = 0;
     int A,B;
+    int N = nx*ny;
     for (int y=0;y<ny;++y) {
         for (int x=0;x<nx;++x) {
             A = x + y*nx;
@@ -230,17 +232,17 @@ void convolveOddZ(const double input[], const double kernel[], const int k, cons
                 idx = x + y*nx + z*nx*ny;
                 output[idx] = 0.0;
                 for (int i=1;i<=z;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]-input[idx+i]);
+                    output[idx] += kernel[i]*(input[idx-i*N]-input[idx+i*N]);
                 }
                 for (int i=z+1;i<k;++i) {
-                    output[idx] += kernel[i]*(input[2*A-idx+i*nx*ny]-input[idx+i]);
+                    output[idx] += kernel[i]*(input[2*A-idx+i*N]-input[idx+i*N]);
                 }
             }
             for (int z=k_1;z<=nz-k;++z) {
                 idx = x + y*nx + z*nx*ny;
                 output[idx] = 0.0;
                 for (int i=1;i<k;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]-input[idx+i]);
+                    output[idx] += kernel[i]*(input[idx-i*N]-input[idx+i*N]);
                 }
             }
             // "right" border
@@ -248,10 +250,10 @@ void convolveOddZ(const double input[], const double kernel[], const int k, cons
                 idx = x + y*nx + z*nx*ny;
                 output[idx] = 0.0;
                 for (int i=1;i<nz-z;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]-input[idx+i]);
+                    output[idx] += kernel[i]*(input[idx-i*N]-input[idx+i*N]);
                 }
                 for (int i=nz-z;i<k;++i) {
-                    output[idx] += kernel[i]*(input[idx-i]-input[2*B-idx-i*nx*ny]);
+                    output[idx] += kernel[i]*(input[idx-i*N]-input[2*B-idx-i*N]);
                 }
             }
         }
