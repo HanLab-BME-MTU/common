@@ -7,10 +7,10 @@
 #ifndef CONVOLVER3D_H
 #define CONVOLVER3D_H
 
-void convolveEvenX(const double input[], const double[] kernel, const int k, const int nx, const int ny, const int nz, double output[]) {
+void convolveEvenX(const double input[], const double kernel[], const int k, const int nx, const int ny, const int nz, double output[]) {
     int k_1 = k-1;
     int idx = 0;
-    double A,B;
+    int A,B;
     for (int z=0;z<nz;++z) {
         for (int y=0;y<ny;++y) {
             A = y*nx+z*nx*ny;
@@ -49,10 +49,10 @@ void convolveEvenX(const double input[], const double[] kernel, const int k, con
 }
 
 
-void Convolver3D::convolveOddX(const double input[], const double[] kernel, const int k, const int nx, const int ny, const int nz, double output[]) {
+void convolveOddX(const double input[], const double kernel[], const int k, const int nx, const int ny, const int nz, double output[]) {
     int k_1 = k-1;
     int idx = 0;
-    double A,B;
+    int A,B;
     for (int z=0;z<nz;++z) {
         for (int y=0;y<ny;++y) {
             A = y*nx+z*nx*ny;
@@ -91,10 +91,10 @@ void Convolver3D::convolveOddX(const double input[], const double[] kernel, cons
 }
 
 
-void Convolver3D::convolveEvenY(const double input[], const double[] kernel, const int k, const int nx, const int ny, const int nz, double output[]) {
+void convolveEvenY(const double input[], const double kernel[], const int k, const int nx, const int ny, const int nz, double output[]) {
     int k_1 = k-1;
     int idx = 0;
-    double A,B;
+    int A,B;
     for (int z=0;z<nz;++z) {
         for (int x=0;x<nx;++x) {
             A = x + z*nx*ny;
@@ -133,10 +133,10 @@ void Convolver3D::convolveEvenY(const double input[], const double[] kernel, con
 }
 
 
-void Convolver3D::convolveOddY(const double input[], const double[] kernel, const int k, const int nx, const int ny, const int nz, double output[]) {
+void convolveOddY(const double input[], const double kernel[], const int k, const int nx, const int ny, const int nz, double output[]) {
     int k_1 = k-1;
     int idx = 0;
-    double A,B;
+    int A,B;
     for (int z=0;z<nz;++z) {
         for (int x=0;x<nx;++x) {
             A = x + z*nx*ny;
@@ -175,10 +175,10 @@ void Convolver3D::convolveOddY(const double input[], const double[] kernel, cons
 }
 
 
-void Convolver3D::convolveEvenZ(const double input[], const double[] kernel, const int k, const int nx, const int ny, const int nz, double output[]) {
+void convolveEvenZ(const double input[], const double kernel[], const int k, const int nx, const int ny, const int nz, double output[]) {
     int k_1 = k-1;
     int idx = 0;
-    double A,B;
+    int A,B;
     for (int y=0;y<ny;++y) {
         for (int x=0;x<nx;++x) {
             A = x + y*nx;
@@ -217,10 +217,10 @@ void Convolver3D::convolveEvenZ(const double input[], const double[] kernel, con
 }
 
 
-void Convolver3D::convolveOddZ(const double input[], const double[] kernel, const int k, const int nx, const int ny, const int nz, double output[]) {
+void convolveOddZ(const double input[], const double kernel[], const int k, const int nx, const int ny, const int nz, double output[]) {
     int k_1 = k-1;
     int idx = 0;
-    double A,B;
+    int A,B;
     for (int y=0;y<ny;++y) {
         for (int x=0;x<nx;++x) {
             A = x + y*nx;
