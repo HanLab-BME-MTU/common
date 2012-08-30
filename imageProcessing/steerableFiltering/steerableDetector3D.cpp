@@ -8,7 +8,7 @@
  */
 
 
-#include <string>
+#include <cstring>
 #include <gsl/gsl_poly.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_eigen.h>
