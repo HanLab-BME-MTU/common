@@ -398,7 +398,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     int Lz = 2*(int)(4.0*sigma/zfactor)+1;
     
     if (L>nx || L>ny || Lz>nz) {
-        mexPrintf("Sigma must be smaller than %.2f\n", (min(nx,ny)-1.0)/8.0);
+        mexPrintf("Sigma must be smaller than %.2f\n", (min(min(nx,ny), nz)-1.0)/8.0);
         mexErrMsgTxt("Sigma value results in filter support that is larger than image.");
     }
     
