@@ -91,7 +91,7 @@ function [varargout] = imseriesmaskshow(im, inmasks, varargin)
 % Get and Validate Required Parameters
 p = inputParser;
 p.addRequired( 'im', @(x)( isnumeric(x) && ~isscalar(x) && ismember( ndims(x), [2,3] ) ) );
-p.addRequired( 'inmasks', @(x) ( ~isempty(x) && ( iscell(x) || ( isnumeric(x) && ismember(ndims(x), [2,3,4]) ) ) ) );
+p.addRequired( 'inmasks', @(x) ( ~isempty(x) && ( iscell(x) || ( (islogical(x) || isnumeric(x)) && ismember(ndims(x), [2,3,4]) ) ) ) );
 p.parse( im, inmasks );
 
 im = p.Results.im;
@@ -105,7 +105,7 @@ if iscell(inmasks)
         end
         masks(i).im = inmasks{i};
     end	
-elseif isnumeric(inmasks)     
+else     
     inmaskssize = size(inmasks);
     if any( volSize(1:ndims(im)) ~= inmaskssize(1:ndims(im)) ) && ~ismember( (ndims(inmasksize) - ndims(im)), {0,1} )
         error('ERROR: sizes of the masks and the input image must match. check example usages of masks in the documentation');

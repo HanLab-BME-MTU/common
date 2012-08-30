@@ -1,4 +1,4 @@
-function [imLabelRGB] = label2rgbND( imLabel )
+function [imLabelRGB, varargout] = label2rgbND( imLabel )
 
     numLabels = double(max(imLabel(:)));
     cmap = jet(numLabels);
@@ -9,6 +9,10 @@ function [imLabelRGB] = label2rgbND( imLabel )
     imLabelRGB = [];
     for i = 1:3
         imLabelRGB = cat( ndims(imLabel) + 1, imLabelRGB, reshape( cmap( imLabel(:), i ), size( imLabel ) ) );
+    end
+    
+    if nargout > 1
+        varargout{1} = cmap;
     end
     
 end
