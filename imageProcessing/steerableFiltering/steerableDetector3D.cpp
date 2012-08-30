@@ -18,7 +18,6 @@
 #include "mex.h"
 
 #include "convolver3D.h"
-#include "stats.h"
 
 using namespace std;
 
