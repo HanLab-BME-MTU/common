@@ -40,7 +40,7 @@ private:
     double* nms_;
     int nx_, ny_, nz_;
     int M_;
-    int sigma_;
+    double sigma_;
     int N_;
     double alpha_, sign_;
     
@@ -91,7 +91,7 @@ Filter::Filter(const double voxels[], const int nx, const int ny, const int nz, 
     run();
     
     nms_ = new double[N_];
-    memset(nms_, 0.0, N_*sizeof(double));
+    memset(nms_, 0, N_*sizeof(double));
     if (M==1) {
         computeCurveNMS();
     } else if (M==2) {
@@ -300,7 +300,7 @@ void Filter::computeCurveNMS() {
     double jv[3] = {0.0, 1.0, 0.0};
     
     int nt = 10;
-    double theta[nt];
+    double theta[10];
     double dt = 2.0*PI/nt;
     for (int t=0;t<nt;++t) {
         theta[t] = t*dt;
@@ -398,7 +398,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     int Lz = 2*(int)(4.0*sigma/zfactor)+1;
     
     if (L>nx || L>ny || Lz>nz) {
-        mexPrintf("Sigma must be smaller than %.2f\n", (fmin(nx,ny)-1)/8.0);
+        mexPrintf("Sigma must be smaller than %.2f\n", (min(nx,ny)-1.0)/8.0);
         mexErrMsgTxt("Sigma value results in filter support that is larger than image.");
     }
     
