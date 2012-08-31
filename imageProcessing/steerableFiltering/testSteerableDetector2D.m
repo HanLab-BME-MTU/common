@@ -15,7 +15,7 @@ close all
 
     numLines = 20;
     
-    meanLineWidth = 1;
+    meanLineWidth = 4;
     stdLineWidth = 2;
     
     orderSteerableDetector = 4;
@@ -82,7 +82,7 @@ im( lineMask ) = random(fgGmObj, numel( find( lineMask ) ));
 
 % Run steerable detector to enhance the lines
 fprintf( '\nRunning steerable detector to enhance curves on %d x %d sized image ...\n', imsize(2), imsize(1) );
-sigmaTrialValues = meanLineWidth * (-3:3);
+sigmaTrialValues = meanLineWidth + stdLineWidth * (-2:2);
 sigmaTrialValues( sigmaTrialValues <= 0 ) = [];
 
 for i = 1:numel( sigmaTrialValues )
