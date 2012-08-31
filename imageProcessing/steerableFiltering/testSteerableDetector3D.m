@@ -81,11 +81,16 @@ fprintf( '\n' );
 
 im( lineMask ) = random(fgGmObj, numel( find( lineMask ) ));
 
+% Run steerable detector to enhance the lines
+fprintf( '\nRunning steerable detector to enhance curves on %d x %d x %d sized volume ...\n', imsize(2), imsize(1), imsize(3) );
+tic
+[res, theta, nms] = steerableDetector3D(im, 1, sigmaSteerableDetector);
+timeElapsed = toc;
+fprintf( '\n\tIt took %.2f seconds\n', timeElapsed );
+
 % display
 imseriesshow( im );
 set( gcf, 'Name', 'Volume with Randomly Generated Lines' );
-
-[res, theta, nms] = steerableDetector3D(im, 1, sigmaSteerableDetector);
 
 imseriesshow( res );
 set( gcf, 'Name', 'Response of Steerable Detector' );
