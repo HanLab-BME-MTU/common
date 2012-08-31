@@ -15,10 +15,9 @@ close all
 
     numLines = 20;
     
-    meanLineWidth = 2;
-    stdLineWidth = 0.0;
+    meanLineWidth = 1;
+    stdLineWidth = 2;
     
-    sigmaSteerableDetector = meanLineWidth;
     orderSteerableDetector = 4;
 
 %*************************************************************************
@@ -65,7 +64,7 @@ for i = 1:numLines
     % generate random line width
     randLineWidth = meanLineWidth + stdLineWidth * rand;
     
-    if randLineWidth < 0 
+    if randLineWidth <= 0 
         randLineWidth = meanLineWidth;
     end
     
@@ -83,17 +82,48 @@ im( lineMask ) = random(fgGmObj, numel( find( lineMask ) ));
 
 % Run steerable detector to enhance the lines
 fprintf( '\nRunning steerable detector to enhance curves on %d x %d sized image ...\n', imsize(2), imsize(1) );
-tic
-[res, theta, nms, rotations] = steerableDetector(im, orderSteerableDetector, sigmaSteerableDetector);
-timeElapsed = toc;
-fprintf( '\n\tIt took %.2f seconds\n', timeElapsed );
+sigmaTrialValues = meanLineWidth * (-3:3);
+sigmaTrialValues( sigmaTrialValues <= 0 ) = [];
+
+for i = 1:numel( sigmaTrialValues )
+    
+    fprintf( '\n\t%d/%d: Trying sigma value of %.2f ... ', i, numel( sigmaTrialValues ), sigmaTrialValues(i) );   
+    
+    tic
+    [curRes, cutTheta, curNms, rotations] = steerableDetector(im, orderSteerableDetector, sigmaTrialValues(i));
+    timeElapsed = toc;
+    
+    fprintf( 'It took %.2f seconds\n', timeElapsed );   
+    
+    curRes = sigmaTrialValues(i) * curRes; % scale normalization
+    if i == 1        
+        res = curRes;
+        nms = curNms;
+        theta = cutTheta;
+        pixelScaleMap = ones( size(res) );
+    else
+        indBetter = curRes > res;
+        res(indBetter) = curRes(indBetter);
+        nms(indBetter) = curNms(indBetter);
+        theta(indBetter) = cutTheta(indBetter);
+        pixelScaleMap(indBetter) = i;
+    end
+end
+
+imLineSegMask = res > thresholdOtsu(res);
+imLineSegRGBMask = zeros( [size(imLineSegMask), 3] );
+imLineSegRGBMask(:,:,1) = imLineSegMask;
+
+pixelScaleMap( ~imLineSegMask ) = 0;
+imScaleRGB = label2rgbND( pixelScaleMap );
 
 % display
 imseriesshow( im );
 set( gcf, 'Name', 'Image with Randomly Generated Lines' );
 
-imseriesshow( res );
-set( gcf, 'Name', 'Response of Steerable Detector' );
+imseriesmaskshowrgb( res, {imLineSegRGBMask, imScaleRGB} );
+set( gcf, 'Name', 'Response of Steerable Detector with Otsu Line Mask and Pixel Scale Map' );
 
-imseriesshow( nms );
-set( gcf, 'Name', 'Result of Non-maximal suppression' );
+imseriesmaskshowrgb( nms, {imLineSegRGBMask, imScaleRGB} );
+set( gcf, 'Name', 'Result of Non-maximal suppression with Otsu Line Mask and Pixel Scale Map' );
+
