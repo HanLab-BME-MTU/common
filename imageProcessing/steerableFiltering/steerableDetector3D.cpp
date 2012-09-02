@@ -27,7 +27,9 @@ class Filter {
     
 public:
     Filter(const double voxels[], const int nx, const int ny, const int nz, const int M, const double sigma);
+    Filter(const double voxels[], const int nx, const int ny, const int nz, const int M, const double sigma, const double zxRatio);
     ~Filter();
+    void init();
     
     double* getResponse();
     double** getOrientation();
@@ -40,7 +42,7 @@ private:
     double* nms_;
     int nx_, ny_, nz_;
     int M_;
-    double sigma_;
+    double sigma_, sigmaZ_;
     int N_;
     double alpha_, sign_, c_;
     
@@ -64,15 +66,31 @@ Filter::Filter(const double voxels[], const int nx, const int ny, const int nz, 
     nz_ = nz;
     M_ = M;
     sigma_ = sigma;
-    
-    if (M==1) {
+    sigmaZ_ = sigma;
+    init();
+}
+
+Filter::Filter(const double voxels[], const int nx, const int ny, const int nz, const int M, const double sigma, const double zxRatio) {
+    voxels_ = voxels;
+    nx_ = nx;
+    ny_ = ny;
+    nz_ = nz;
+    M_ = M;
+    sigma_ = sigma;
+    sigmaZ_ = sigma/zxRatio;
+    init();
+}
+
+
+void Filter::init() {
+    if (M_==1) {
         alpha_ = 2.0/3.0;
         sign_ = -1.0;
-        c_ = 2.0*sqrt(2.0*PI)*sigma_;
-    } else if (M==2) {
+        c_ = 2.0*sqrt(2.0*PI)*sigmaZ_;
+    } else if (M_==2) {
         alpha_ = 4.0;
         sign_ = 1.0;
-        c_ = 8.0*PI*sqrt(6.0)*sigma_;
+        c_ = 8.0*PI*sqrt(6.0)*sigmaZ_;
     }
     
     N_ = nx_*ny_*nz_;
@@ -94,13 +112,13 @@ Filter::Filter(const double voxels[], const int nx, const int ny, const int nz, 
     
     nms_ = new double[N_];
     memset(nms_, 0, N_*sizeof(double));
-    if (M==1) {
+    if (M_==1) {
         computeCurveNMS();
-    } else if (M==2) {
+    } else if (M_==2) {
         computeSurfaceNMS();
-    }
-    
+    }    
 }
+
 
 Filter::~Filter() {
     delete[] response_;
@@ -124,14 +142,22 @@ void Filter::calculateTemplates() {
     
     int wWidth = (int)(3.0*sigma_);
     int kLength = wWidth+1;
-    
     double sigma2 = sigma_*sigma_;
     double sigma4 = sigma2*sigma2;
+    
+    int wWidthZ = (int)(3.0*sigmaZ_);
+    int kLengthZ = wWidthZ+1;
+    double sigmaZ2 = sigmaZ_*sigmaZ_;
+    double sigmaZ4= sigmaZ2*sigmaZ2;
     
     // Compute Gaussian kernels
     double *kernelG = new double[kLength];
     double *kernelGx = new double[kLength];
     double *kernelGxx = new double[kLength];
+    
+    double *kernelG_z = new double[kLengthZ];
+    double *kernelGx_z = new double[kLengthZ];
+    double *kernelGxx_z = new double[kLengthZ];
     
     double g;
     for (int i=0;i<=wWidth;++i) {
@@ -139,6 +165,13 @@ void Filter::calculateTemplates() {
         kernelG[i] = g;               // to keep magnitude of response similar to input
         kernelGx[i] = -i/sigma2 * g;
         kernelGxx[i] = (i*i-sigma2)/sigma4 * g;
+    }
+    
+    for (int i=0;i<=wWidthZ;++i) {
+        g = exp(-(i*i)/(2.0*sigmaZ2));
+        kernelG_z[i] = g;
+        kernelGx_z[i] = -i/sigmaZ2 * g;
+        kernelGxx_z[i] = (i*i-sigmaZ2)/sigmaZ4 * g;
     }
     
     // Convolve all along x
@@ -150,26 +183,29 @@ void Filter::calculateTemplates() {
     convolveEvenX(voxels_, kernelGxx, kLength, nx_, ny_, nz_, gxx_);
     // gxx
     convolveEvenY(gxx_, kernelG, kLength, nx_, ny_, nz_, buffer);
-    convolveEvenZ(buffer, kernelG, kLength, nx_, ny_, nz_, gxx_);
+    convolveEvenZ(buffer, kernelG_z, kLengthZ, nx_, ny_, nz_, gxx_);
     // gxy
     convolveOddY(gxy_, kernelGx, kLength, nx_, ny_, nz_, buffer);
-    convolveEvenZ(buffer, kernelG, kLength, nx_, ny_, nz_, gxy_);
+    convolveEvenZ(buffer, kernelG_z, kLengthZ, nx_, ny_, nz_, gxy_);
     // gxz
     convolveEvenY(gxz_, kernelG, kLength, nx_, ny_, nz_, buffer);
-    convolveOddZ(buffer, kernelGx, kLength, nx_, ny_, nz_, gxz_);
+    convolveOddZ(buffer, kernelGx_z, kLengthZ, nx_, ny_, nz_, gxz_);
     // gyy
     convolveEvenY(gyy_, kernelGxx, kLength, nx_, ny_, nz_, buffer);
-    convolveEvenZ(buffer, kernelG, kLength, nx_, ny_, nz_, gyy_);
+    convolveEvenZ(buffer, kernelG_z, kLengthZ, nx_, ny_, nz_, gyy_);
     // gyz
     convolveOddY(gyz_, kernelGx, kLength, nx_, ny_, nz_, buffer);
-    convolveOddZ(buffer, kernelGx, kLength, nx_, ny_, nz_, gyz_);
+    convolveOddZ(buffer, kernelGx_z, kLengthZ, nx_, ny_, nz_, gyz_);
     // gzz
     convolveEvenY(gzz_, kernelG, kLength, nx_, ny_, nz_, buffer);
-    convolveEvenZ(buffer, kernelGxx, kLength, nx_, ny_, nz_, gzz_);
+    convolveEvenZ(buffer, kernelGxx_z, kLengthZ, nx_, ny_, nz_, gzz_);
     
     delete[] kernelG;
     delete[] kernelGx;
     delete[] kernelGxx;
+    delete[] kernelG_z;
+    delete[] kernelGx_z;
+    delete[] kernelGxx_z;
     delete[] buffer;
 }
 
@@ -396,8 +432,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         zfactor = *mxGetPr(prhs[3]);
     }
     
-    int L = 2*(int)(4.0*sigma)+1; // support of the Gaussian kernels
-    int Lz = 2*(int)(4.0*sigma/zfactor)+1;
+    int L = 2*(int)(3.0*sigma)+1; // support of the Gaussian kernels
+    int Lz = 2*(int)(3.0*sigma/zfactor)+1;
     
     if (L>nx || L>ny || Lz>nz) {
         mexPrintf("Sigma must be smaller than %.2f\n", (min(min(nx,ny), nz)-1.0)/8.0);
@@ -416,7 +452,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         voxels[divRes.quot+divRes.rem*nx + z*nxy] = input[i];
     }
     
-    Filter filter = Filter(voxels, nx, ny, nz, M, sigma);
+    Filter filter = Filter(voxels, nx, ny, nz, M, sigma, zfactor);
     double *res = filter.getResponse();
     
     // Switch outputs back to column-major format

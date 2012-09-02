@@ -1,4 +1,4 @@
-%[res, theta, nms] = steerableDetector3D(vol, M, sigma) performs curve/surface detection using 3D steerable filters
+%[res, theta, nms] = steerableDetector3D(vol, M, sigma, zxRatio) performs curve/surface detection using 3D steerable filters
 %
 % Inputs: 
 %         vol : input volume
@@ -6,6 +6,8 @@
 %               1: curve detector
 %               2: surface detector
 %       sigma : standard deviation of the Gaussian kernel on which the filters are based
+%   {zxRatio} : correction factor for z anisotropy (default: 1).
+%               Example: if the z sampling step is 5x larger than xy-sampling, set this value to 5.
 %
 % Outputs: 
 %         res : response to the filter
@@ -20,4 +22,4 @@
 
 % Francois Aguet, 08/2012 (last modified 08/28/2012).
 
-function [res, theta, nms] = steerableDetector3D(vol, M, sigma) %#ok<STOUT,INUSD>
+function [res, theta, nms] = steerableDetector3D(vol, M, sigma, zxRatio) %#ok<STOUT,INUSD>
