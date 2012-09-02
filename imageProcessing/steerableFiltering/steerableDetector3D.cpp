@@ -197,7 +197,7 @@ void Filter::run() {
         gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(3);
         gsl_eigen_symmv (&m.matrix, eval, evec, w);
         gsl_eigen_symmv_free(w);
-        gsl_eigen_symmv_sort(eval, evec, GSL_EIGEN_SORT_ABS_ASC); // largest eigenvalue in magnitude
+        gsl_eigen_symmv_sort(eval, evec, GSL_EIGEN_SORT_VAL_ASC); // largest eigenvalue
         
         response_[i] = gsl_vector_get(eval, 2);
         orientation_[i][0] = gsl_matrix_get(evec, 0, 2);
