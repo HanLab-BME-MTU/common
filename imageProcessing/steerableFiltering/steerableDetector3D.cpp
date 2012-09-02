@@ -42,7 +42,7 @@ private:
     int M_;
     double sigma_;
     int N_;
-    double alpha_, sign_;
+    double alpha_, sign_, c_;
     
     double *gxx_, *gxy_, *gxz_, *gyy_, *gyz_, *gzz_;
     
@@ -68,9 +68,11 @@ Filter::Filter(const double voxels[], const int nx, const int ny, const int nz, 
     if (M==1) {
         alpha_ = 2.0/3.0;
         sign_ = -1.0;
+        c_ = 2.0*sqrt(2.0*PI)*sigma_;
     } else if (M==2) {
         alpha_ = 4.0;
         sign_ = 1.0;
+        c_ = 8.0*PI*sqrt(6.0)*sigma_;
     }
     
     N_ = nx_*ny_*nz_;
@@ -133,8 +135,8 @@ void Filter::calculateTemplates() {
     
     double g;
     for (int i=0;i<=wWidth;++i) {
-        g = exp(-(i*i)/(2.0*sigma2));// / sqrt(2*PI) / sigma_;
-        kernelG[i] = g;
+        g = exp(-(i*i)/(2.0*sigma2)); // normalization by sqrt(2*PI)*sigma_ omitted
+        kernelG[i] = g;               // to keep magnitude of response similar to input
         kernelGx[i] = -i/sigma2 * g;
         kernelGxx[i] = (i*i-sigma2)/sigma4 * g;
     }
@@ -199,7 +201,7 @@ void Filter::run() {
         gsl_eigen_symmv_free(w);
         gsl_eigen_symmv_sort(eval, evec, GSL_EIGEN_SORT_VAL_ASC); // largest eigenvalue
         
-        response_[i] = gsl_vector_get(eval, 2);
+        response_[i] = gsl_vector_get(eval, 2) / c_;
         orientation_[i][0] = gsl_matrix_get(evec, 0, 2);
         orientation_[i][1] = gsl_matrix_get(evec, 1, 2);
         orientation_[i][2] = gsl_matrix_get(evec, 2, 2);
