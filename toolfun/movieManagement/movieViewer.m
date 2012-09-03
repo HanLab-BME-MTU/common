@@ -707,7 +707,8 @@ if strcmp(figName,'Movie')
     sz=get(0,'ScreenSize');
     nx=userData.MO.imSize_(2);
     ny=userData.MO.imSize_(1);
-    h = figure('Position',[sz(3)*.2 sz(4)*.2 nx ny],...
+    sc = max(1, max(nx/(.9*sz(3)), ny/(.9*sz(4))));
+    h = figure('Position',[sz(3)*.2 sz(4)*.2 nx/sc ny/sc],...
         'Name',figName,'NumberTitle','off','Tag','viewerFig',...
         'UserData',handles.figure1);
     
