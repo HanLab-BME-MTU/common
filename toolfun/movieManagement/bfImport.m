@@ -49,7 +49,10 @@ nSeries = r.getSeriesCount();
 MD(1, nSeries) = MovieData();
 
 % Set output directory (based on image extraction flag)
-[mainPath,movieName]=fileparts(dataPath);
+[mainPath,movieName,movieExt]=fileparts(dataPath);
+token = regexp([movieName,movieExt],'(\w+)\.ome\.tiff','tokens');
+if ~isempty(token), movieName = token{1}{1}; end
+
 if ~isempty(ip.Results.outputDirectory)
     mainOutputDir = ip.Results.outputDirectory;
 else
