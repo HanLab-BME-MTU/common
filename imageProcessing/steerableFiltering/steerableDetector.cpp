@@ -15,7 +15,6 @@
 
 #include "mex.h"
 #include "convolver.h"
-#include "stats.h"
 
 using namespace std;
 
@@ -1076,7 +1075,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     int L = 2*(int)(4.0*sigma)+1; // support of the Gaussian kernels
     
     if (L>nx || L>ny) {
-        mexPrintf("Sigma must be smaller than %.2f\n", (fmin(nx,ny)-1)/8.0);
+        mexPrintf("Sigma must be smaller than %.2f\n", (min(nx,ny)-1)/8.0);
         mexErrMsgTxt("Sigma value results in filter support that is larger than image.");
     }
     
