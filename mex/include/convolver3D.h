@@ -1,7 +1,8 @@
 /* Functions for convolution on 3D data
  * Data is linearly indexed: (x,y,z) -> x + y*nx + z*nx*ny
+ * Supported border conditions: mirror
  *
- * (c) Francois Aguet, 2012 (created on 08/28/2012)
+ * (c) Francois Aguet, 08/28/2012 (last modified 08/29/2012)
  * */
 
 #ifndef CONVOLVER3D_H

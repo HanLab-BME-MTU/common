@@ -1,8 +1,8 @@
-//
-//  convolver.h
-//
-//  Created by Francois Aguet on 03/12/2012.
-//
+/* Class for 2-D convolutions with even- or odd-symmetric kernels
+ * Supported border conditions: mirror, periodic, replicate of border pixels, or zeros
+ *
+ * (c) Francois Aguet, 03/12/2012 (last modified 03/15/2012)
+ */
 
 #ifndef CONVOLVER_H
 #define CONVOLVER_H
@@ -22,23 +22,16 @@ public:
     static const int REPLICATE = 1;
     static const int PERIODIC = 2;
     static const int MIRROR = 3;
-    //enum { ZEROS = 0, REPLICATE = 1, PERIODIC = 2, MIRROR = 3 };
     
     Convolver(const double pixels[], const int nx, const int ny);
     Convolver(const double pixels[], const int nx, const int ny, const int borderCondition);
     
     ~Convolver();
     
-    
     void convolveEvenXEvenY(const double xkernel[], const int nx, const double ykernel[], const int ny, double output[]);
     void convolveEvenXOddY(const double xkernel[], const int nx, const double ykernel[], const int ny, double output[]);
     void convolveOddXEvenY(const double xkernel[], const int nx, const double ykernel[], const int ny, double output[]);
     void convolveOddXOddY(const double xkernel[], const int nx, const double ykernel[], const int ny, double output[]);
-    
-//    void convolveEvenX(const double kernel[], const int k, double output[]);
-//    void convolveEvenY(const double kernel[], const int k, double output[]);
-//    void convolveOddX(const double kernel[], const int k, double output[]);
-//    void convolveOddY(const double kernel[], const int k, double output[]);
     
     int nx_, ny_;
     double *pixels_;
@@ -336,7 +329,6 @@ private:
     }
     double Convolver::bottomBorderMirror(const int idx, const int i, const int y) {
         return buffer_[(2*(ny_-y-1)-i)*nx_+idx];
-        //return buffer_[(2*(y+1)-i)*nx_-idx]; //border: (y+1)*nx -> 2*(y+1)*nx - (x+y*nx + i*nx) 
     }
     
     // Periodic border condition functions
