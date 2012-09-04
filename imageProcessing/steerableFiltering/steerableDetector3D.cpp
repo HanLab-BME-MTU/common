@@ -1,6 +1,6 @@
 /* [response orientation nms filterBank] = steerableDetector3D(image, filterOrder, sigma);
  *
- * (c) Francois Aguet, 08/2012 (last modified 08/28/2012).
+ * (c) Francois Aguet, 30/08/2012 (last modified 09/02/2012).
  *
  * Compilation:
  * Mac/Linux: mex -I/usr/local/include -I../../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a steerableDetector3D.cpp

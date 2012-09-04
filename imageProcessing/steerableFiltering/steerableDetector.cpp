@@ -409,7 +409,6 @@ void filterM1(double** templates, int nx, int ny, double* alpha, double* respons
         gyi = approxZero(gy[i]);
         
         orientation[i] = atan2(gyi,gxi);
-        //response[i] = a11 * (cos(orientation[i])*gxi + sin(orientation[i])*gyi);
         response[i] = a11*sqrt(gxi*gxi + gyi*gyi);
     }
     delete[] tRoots;
@@ -497,10 +496,6 @@ void filterM3(double** templates, int nx, int ny, double* alpha, double* respons
     
     double A, B, C, D;
     
-    //double a1 = 2.0*a31-3.0*a33;
-    //double a2 = 6.0*a33-7.0*a31;
-    //double g1, g2;
-    
     int nr, nt, deg;
     
     for (int i=0;i<nx*ny;++i) {
@@ -561,7 +556,6 @@ void filterM3(double** templates, int nx, int ny, double* alpha, double* respons
                 roots[nr++] = z[2*k];
             }
         }
-        //nr = getRealRoots(z, 2*deg, roots);
         
         double* tRoots;
         if (nr == 0) {
@@ -618,13 +612,7 @@ void filterM4(double** templates, int nx, int ny, double* alpha, double* respons
     double a42 = alpha[3];
     double a44 = alpha[4];
     
-    //double g1, g2, g3;
     double A, B, C, D, E;
-    
-    /*double a1 = 2.0*a44-a42;
-    double a2 = 2.0*a40-a42;
-    double a3 = a22-a20;
-    double a4 = 6.0*(a44-a42+a40);*/
     
     int nr, deg;
     double delta;
@@ -636,16 +624,6 @@ void filterM4(double** templates, int nx, int ny, double* alpha, double* respons
         C = 6.0*((a40-a42+ a44)*gxyyy[i] + (a42-a40-a44)*gxxxy[i]);
         D = (a20-a22)*gyy[i] + (a22-a20)*gxx[i] + (a42-2.0*a44)*gyyyy[i] + 6.0*(a40-a42+a44)*gxxyy[i] + (a42-2.0*a40)*gxxxx[i];
         E = (a20-a22)*gxy[i] + (a42-2.0*a44)*gxyyy[i] + (2.0*a40-a42)*gxxxy[i];
-        
-        /*g1 = a3*gxy[i];
-        g2 = a3*(gxx[i]-gyy[i]);
-        g3 = a4*gxxyy[i];
-        
-        A = a1*gxxxy[i] - a2*gxyyy[i] + g1;
-        B = a1*gxxxx[i] + a2*gyyyy[i] - g3 + g2;
-        C = a4*(gxyyy[i] - gxxxy[i]);
-        D = -a1*gyyyy[i] - a2*gxxxx[i] + g3 + g2;
-        E = a2*gxxxy[i] - a1*gxyyy[i] - g1;*/
         
         A = approxZero(A);
         C = approxZero(C);
@@ -790,17 +768,6 @@ void filterM5(double** templates, int nx, int ny, double* alpha, double* respons
     double a32 = alpha[2];
     double a52 = alpha[3];
     double a54 = alpha[4];
-        
-    /*double a1 = 2.0*a31 - 3.0*a33;
-    double a2 = 4.0*a51 - 3.0*a53;
-    double a3 = 6.0*a33 - 7.0*a31;
-    double a4 = 12.0*a51 - 17.0*a53;
-    double a5 = 6.0*a53 - 13.0*a51;
-    double a6 = 3.0*a33 - 5.0*a31;
-    double a7 = a31 - 3.0*a33;
-    double a8 = 30.0*a53 - 34.0*a51;
-    double a53x2 = 2.0*a53;
-    double a11x2 = 2.0*a11;*/
     
     double A, B, C, D, E, F;
     int nr, nt, deg;
@@ -1163,17 +1130,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     
     if (nlhs > 3) { // return filterbank
-        /*const mwSize dims[] = {ny, nx, nTemplates};
-        plhs[3] = mxCreateNumericArray(3, dims, mxDOUBLE_CLASS, mxREAL);
-        double* p = mxGetPr(plhs[3]);
-        
-        for (int z=0;z<nTemplates;++z) {
-            for (int i=0;i<N;++i) {
-                divRes = div(i, nx);
-                p[z*N + divRes.quot+divRes.rem*ny] = templates[z][i];
-                //p[z*N + divRes.quot+divRes.rem*ny] = pointRespM4(i, 2.0*PI/3.0, alpha, templates);
-            }
-         * }*/
         const mwSize dims[] = {ny, nx, nt};
         plhs[3] = mxCreateNumericArray(3, dims, mxDOUBLE_CLASS, mxREAL);
         double* p = mxGetPr(plhs[3]);
