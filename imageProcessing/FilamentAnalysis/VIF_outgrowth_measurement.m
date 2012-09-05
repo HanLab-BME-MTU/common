@@ -13,10 +13,19 @@ for i = 1 : nProcesses
 end
 
 if indexFilamentSegmentationProcess==0
-    msg('Please set parameters for steerable filtering.')
+    msg('Please set parameters for Filament Segmentation and run.')
     return;
 end
 
+funParams=movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
+
+selected_channels = funParams.ChannelIndex;
+Pace_Size = funParams.Pace_Size;
+Patch_Size = funParams.Patch_Size;
+Combine_Way = funParams.Combine_Way;
+Cell_Mask_ind = funParams.Cell_Mask_ind;
+lowerbound =  funParams.lowerbound_localthresholding;
+VIF_Outgrowth_Flag = funParams.VIF_Outgrowth_Flag;
 
 indexSteerabeleProcess = 0;
 for i = 1 : nProcesses
@@ -26,9 +35,12 @@ for i = 1 : nProcesses
     end
 end
 
-if indexSteerabeleProcess==0
+if indexSteerabeleProcess==0 && Combine_Way~=2
     msg('Please run steerable filtering first.')
     return;
+else
+    funParams_st = movieData.processes_{indexSteerabeleProcess}.funParams_;
+    ImageFlattenFlag = funParams_st.ImageFlattenFlag;    
 end
 
 indexFlattenProcess = 0;
@@ -39,10 +51,10 @@ for i = 1 : nProcesses
     end
 end
 
-if indexFlattenProcess==0
-    display('Please set parameters for Image Flatten.')
-    %     return;
-end
+ if indexFlattenProcess==0  && ImageFlattenFlag == 2
+    display('The setting shows you want to use flattened image for steerable filtering. Please set parameters for Image Flatten and run.')
+    return;
+ end
 
 indexCellSegProcess = 0;
 for i = 1 : nProcesses
@@ -52,7 +64,7 @@ for i = 1 : nProcesses
     end
 end
 
-if indexCellSegProcess==0
+if indexCellSegProcess == 0 && Cell_Mask_ind == 1
     msg('Please run segmentation and refinement first.')
     return;
 end
@@ -111,7 +123,7 @@ for iChannel = selected_channels
     end
     disp(funParams.OutputDirectory);
     
-    H_close = fspecial('disk',9);
+    H_close = fspecial('disk',39);
     H_close = H_close>0;
     
 
@@ -141,9 +153,6 @@ for iChannel = selected_channels
             'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment');
         
         if iFrame==1
-            % Get the first segmented results for the base of comparison
-            current_seg_firstframe = current_seg;
-       
             % Read in the initial circle from the 'start_ROI.tif' file
             MaskFirstFrame = imread([movieData.outputDirectory_,'/start_ROI.tif']);
             MaskFirstFrame = (MaskFirstFrame)>0;
@@ -177,21 +186,40 @@ for iChannel = selected_channels
 
         labelMask = bwlabel(current_seg);
         
-        ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity');
+        ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','Centroid');
         
         if length(ob_prop) > 1
             obAreas = [ob_prop.Area];
             obLongaxis = [ob_prop.MajorAxisLength];
             obEccentricity = [ob_prop.Eccentricity];
+            obCentroid = [ob_prop.Centroid];
             
             for i_area = 1 : length(obAreas)
-                if obAreas(i_area) < 8 || obLongaxis(i_area) < 5
-                    labelMask(labelMask==i_area) = 0;
+                centroid_x = round(obCentroid(2*i_area-1));
+                centroid_y = round(obCentroid(2*i_area));
+                
+                if( MaskFirstFrame(centroid_y, centroid_x) == 0)
+                    if obAreas(i_area) < 12 || obLongaxis(i_area) < 10
+                        labelMask(labelMask==i_area) = 0;
+                    end
+                else
+                    if obAreas(i_area) < 7 || obLongaxis(i_area) < 5
+                        labelMask(labelMask==i_area) = 0;
+                    end
                 end
             end
         end
         
         current_seg = labelMask > 0;
+        
+        if iFrame==1
+            % Get the first segmented results for the base of comparison
+            current_seg_firstframe = current_seg;
+        
+            current_seg_inside_firstframe = current_seg_firstframe.*(double(MaskFirstFrame));
+            seg_sum_inside_firstframe = sum(sum(current_seg_inside_firstframe));       
+        end
+        
         
         current_seg_outside = current_seg.*(1-MaskFirstFrame);
         
@@ -226,7 +254,7 @@ for iChannel = selected_channels
         imagesc(RGB_seg_orient_heat_map);
         axis image; axis off;
         title(['Percentage of out growth: ', ...
-            num2str(100*sum(sum(current_seg_outside))/sum(sum(current_seg_firstframe))), '%'],'FontSize',20);
+            num2str(100*sum(sum(current_seg_outside))/seg_sum_inside_firstframe), '%'],'FontSize',20);
         
         saveas(h12,[HeatEnhOutputDir,'/Enh_VIF_heat_display_',num2str(iFrame),'.tif']);
         if(save_fig_flag==1)
@@ -240,8 +268,7 @@ for iChannel = selected_channels
             saveas(h12,[HeatEnhOutputDir,'_bound/Enh_Bound_VIF_heat_display_',num2str(iFrame),'.fig']);
         end
         seg_outside_current(iChannel, iFrame) = sum(sum(current_seg_outside));
-        seg_outside_firstframe = sum(sum(current_seg_firstframe));
-        ratio_outside_firstframeinside(iChannel, iFrame) = sum(sum(current_seg_outside))/sum(sum(current_seg_firstframe));
+        ratio_outside_firstframeinside(iChannel, iFrame) = sum(sum(current_seg_outside))/seg_sum_inside_firstframe;
         
     end
 end
@@ -250,5 +277,55 @@ display('The outgrowth percentage results:');
 display(ratio_outside_firstframeinside'*100);
 
 % Save the outgrowth results
-save([FilamentSegmentationChannelOutputDir,'/seg_outside.mat'],'seg_outside_current','seg_outside_firstframe','ratio_outside_firstframeinside');
+save([FilamentSegmentationChannelOutputDir,'/seg_outside.mat'],'seg_outside_current','seg_sum_inside_firstframe','ratio_outside_firstframeinside');
 
+
+
+
+%% Simply use intensity as outgrowth calculation
+
+for iFrame = 1 : nFrame
+    disp(['Frame: ',num2str(iFrame)]);
+    
+    % Read in the intensity image, flattened or original
+     if indexFlattenProcess > 0
+         currentImg = double(imread([movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel}, filesep, FileNames{1}{iFrame}]));
+     else
+         currentImg = double(movieData.channels_(iChannel).loadImage(iFrame));
+     end
+    
+     level1 = thresholdOtsu(currentImg);
+     currentImg = double(currentImg>level1).*currentImg;
+     
+    if iFrame==1
+        % Get the first segmented results for the base of comparison
+        current_img_firstframe = currentImg;
+        int_sum_inside_firstframe = sum(sum(current_img_firstframe));
+    end
+    
+    current_img_outside = double(currentImg).*(double(1-MaskFirstFrame));
+    
+    h12 = figure(12);
+    hold off;
+    
+    imagesc(currentImg); colormap(gray);
+    axis image; axis off;
+    title(['Percentage of out growth based on intensity with zeroing the background: ', ...
+        num2str(100*sum(sum(current_img_outside))/int_sum_inside_firstframe), '%'],'FontSize',20);
+    
+    hold on; plot(RoiYX(:,2),RoiYX(:,1),'m');
+    
+    saveas(h12,[HeatEnhOutputDir,'_bound/Int_display_',num2str(iFrame),'.tif']);
+    
+    int_outside_current_intensity(iChannel, iFrame) = sum(sum(current_img_outside));
+    ratio_int_outside_firstframeinside(iChannel, iFrame) = sum(sum(current_img_outside))/int_sum_inside_firstframe;
+    
+end
+
+display('The outgrowth percentage results based on intensity(with zeroing the background):');
+display(ratio_int_outside_firstframeinside'*100);
+
+% Save the outgrowth results
+save([FilamentSegmentationChannelOutputDir,'/seg_outside.mat'], ...
+    'seg_outside_current','seg_sum_inside_firstframe','ratio_outside_firstframeinside',...
+    'ratio_int_outside_firstframeinside');

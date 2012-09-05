@@ -425,5 +425,5 @@ function popupmenu_cell_mask_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-set(hObject,'String',{'Cell Segmentation','Input ROI','No limitation'});
-set(hObject,'Value',3);
+set(hObject,'String',{'Cell Segmentation in this same channel','Input ROI','Cell Segmentation combined from two channels','No limitation'});
+set(hObject,'Value',4);

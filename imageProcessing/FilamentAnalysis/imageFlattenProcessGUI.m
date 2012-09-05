@@ -22,7 +22,7 @@ function varargout = imageFlattenProcessGUI(varargin)
 
 % Edit the above text to modify the response to help imageFlattenProcessGUI
 
-% Last Modified by GUIDE v2.5 13-Aug-2012 15:13:46
+% Last Modified by GUIDE v2.5 04-Sep-2012 14:20:36
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -85,8 +85,11 @@ set(handles.listbox_selectedChannels,'String',channelString,...
 
 set(handles.edit_GaussFilterSigma,'String',funParams.GaussFilterSigma);
 
-set(handles.popupmenu_flatten_method,'String',{'Log','Sqrt'});
-set(handles.popupmenu_flatten_method,'Value',2);
+set(handles.popupmenu_flatten_method,'String',{'Log','Sqrt','Power 2/3','Nothing'});
+set(handles.popupmenu_flatten_method,'Value',funParams.method_ind);
+
+set(handles.edit_timefilter_sigma,'String',funParams.TimeFilterSigma);
+
 
 % flattenMethods = userData.crtProc.getMethods();
 % set(handles.popupmenu_flatteningMethods,'String',{flattenMethods(:).name},...
@@ -136,11 +139,9 @@ switch get(hObject,'Value')
     case 1
         set(handles.listbox_selectedChannels, 'String', contents1);
         chanIndex2 = chanIndex1;
-        thresholdValues =zeros(1,numel(chanIndex1));
     case 0
         set(handles.listbox_selectedChannels, 'String', {}, 'Value',1);
         chanIndex2 = [ ];
-        thresholdValues = [];
 end
 set(handles.listbox_selectedChannels, 'UserData', chanIndex2);
 % update_data(hObject,eventdata,handles);
@@ -186,7 +187,7 @@ if isempty(get(handles.listbox_selectedChannels, 'String'))
 end
 channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
-
+ 
 gaussFilterSigma = str2double(get(handles.edit_GaussFilterSigma, 'String'));
 if isnan(gaussFilterSigma) || gaussFilterSigma < 0
     errordlg(['Please provide a valid input for '''...
@@ -197,6 +198,14 @@ funParams.GaussFilterSigma=gaussFilterSigma;
 
 funParams.OutputDirectory  = [ userData.crtPackage.outputDirectory_, filesep 'ImageFlatten'];
 funParams.method_ind = get(handles.popupmenu_flatten_method,'Value');
+
+TimeFilterSigma = str2double(get(handles.edit_timefilter_sigma, 'String'));
+if isnan(TimeFilterSigma) || TimeFilterSigma < 0
+    errordlg(['Please provide a valid input for '''...
+        get(handles.text_timefilter,'String') '''.'],'Setting Error','modal');
+    return;
+end
+funParams.TimeFilterSigma=TimeFilterSigma;
 
 for iChannel = channelIndex
 ImageFlattenChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
@@ -253,6 +262,61 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
- set(hObject,'String',{'Log','Sqrt'});
- set(hObject,'Value',2);
+ set(hObject,'String',{'Log','Sqrt','Power 2/3','Nothing'});
+ set(hObject,'Value',3);
  
+
+
+% --- Executes on button press in pushbutton_delete.
+function pushbutton_delete_Callback(hObject, eventdata, handles)
+% Call back function of 'delete' button
+contents = get(handles.listbox_selectedChannels,'String');
+id = get(handles.listbox_selectedChannels,'Value');
+
+% Return if list is empty
+if isempty(contents) || isempty(id)
+    return;
+end
+
+% Delete selected item
+contents(id) = [ ];
+
+% Delete userdata
+chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
+chanIndex2(id) = [ ];
+set(handles.listbox_selectedChannels, 'Userdata', chanIndex2);
+
+% Refresh listbox
+set(handles.listbox_selectedChannels,'String',contents);
+
+
+% --- Executes on button press in checkbox_timefilter.
+function checkbox_timefilter_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_timefilter (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_timefilter
+
+
+
+function edit_timefilter_sigma_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_timefilter_sigma (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_timefilter_sigma as text
+%        str2double(get(hObject,'String')) returns contents of edit_timefilter_sigma as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_timefilter_sigma_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_timefilter_sigma (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

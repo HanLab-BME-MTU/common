@@ -208,6 +208,7 @@ classdef ImageFlattenProcess < ImageProcessingProcess
         function methods = getMethods(varargin)
             flatteningMethods(1).name = 'Log';
             flatteningMethods(2).name = 'Sqrt';
+            flatteningMethods(3).name = 'Power 2/3';
             
             ip=inputParser;
             ip.addOptional('index',1:length(flatteningMethods),@isvector);
@@ -226,8 +227,9 @@ classdef ImageFlattenProcess < ImageProcessingProcess
             % Set default parameters
             funParams.OutputDirectory =  [outputDir  filesep 'ImageFlatten'];
             funParams.ChannelIndex = 1:numel(owner.channels_);
-            funParams.method_ind = 2;
-            funParams.GaussFilterSigma =1;                        
+            funParams.method_ind = 3;
+            funParams.GaussFilterSigma = 0;                        
+            funParams.TimeFilterSigma = 2;                        
         end
     end
 end

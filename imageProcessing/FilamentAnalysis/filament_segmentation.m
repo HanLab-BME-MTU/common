@@ -29,45 +29,6 @@ if indexFilamentSegmentationProcess==0
 end
 
 
-indexSteerabeleProcess = 0;
-for i = 1 : nProcesses
-    if(strcmp(movieData.processes_{i}.getName,'Steerable filtering')==1)
-        indexSteerabeleProcess = i;
-        break;
-    end
-end
-
-if indexSteerabeleProcess==0
-    msg('Please run steerable filtering first.')
-    return;
-end
-
-indexFlattenProcess = 0;
-for i = 1 : nProcesses
-    if(strcmp(movieData.processes_{i}.getName,'Image Flatten')==1)
-        indexFlattenProcess = i;
-        break;
-    end
-end
-
-if indexFlattenProcess==0
-    display('Please set parameters for Image Flatten.')
-%     return;
-end
-
-indexCellSegProcess = 0;
-for i = 1 : nProcesses
-    if(strcmp(movieData.processes_{i}.getName,'Mask Refinement')==1)
-        indexCellSegProcess = i;
-        break;
-    end
-end
-
-if indexCellSegProcess==0
-    msg('Please run segmentation and refinement first.')
-    return;
-end
-
 funParams=movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
 
 selected_channels = funParams.ChannelIndex;
@@ -79,6 +40,52 @@ lowerbound =  funParams.lowerbound_localthresholding;
 VIF_Outgrowth_Flag = funParams.VIF_Outgrowth_Flag;
 
 FilamentSegmentationOutputDir = funParams.OutputDirectory;
+
+indexSteerabeleProcess = 0;
+for i = 1 : nProcesses
+    if(strcmp(movieData.processes_{i}.getName,'Steerable filtering')==1)
+        indexSteerabeleProcess = i;
+        break;
+    end
+end
+
+if indexSteerabeleProcess==0 && Combine_Way~=2
+    msg('Please run steerable filtering first.')
+    return;
+end
+
+funParams_st=movieData.processes_{indexSteerabeleProcess}.funParams_;
+
+BaseSteerableFilterSigma = funParams_st.BaseSteerableFilterSigma;
+Levelsofsteerablefilters = funParams_st.Levelsofsteerablefilters;
+ImageFlattenFlag = funParams_st.ImageFlattenFlag;
+
+indexFlattenProcess = 0;
+for i = 1 : nProcesses
+    if(strcmp(movieData.processes_{i}.getName,'Image Flatten')==1)
+        indexFlattenProcess = i;
+        break;
+    end
+end
+
+if indexFlattenProcess == 0 && ImageFlattenFlag==2
+    display('Please set parameters for Image Flatten.')
+    return;
+end
+
+indexCellSegProcess = 0;
+for i = 1 : nProcesses
+    if(strcmp(movieData.processes_{i}.getName,'Mask Refinement')==1)
+        indexCellSegProcess = i;
+        break;
+    end
+end
+
+if indexCellSegProcess == 0 && Cell_Mask_ind == 1
+    msg('Please run segmentation and refinement first.')
+    return;
+end
+
 
 if (~exist(FilamentSegmentationOutputDir,'dir'))
     mkdir(FilamentSegmentationOutputDir);
@@ -118,9 +125,11 @@ for iChannel = selected_channels
     if (~exist(FilamentSegmentationChannelOutputDir,'dir'))
         mkdir(FilamentSegmentationChannelOutputDir);
     end
-
-    SteerableChannelOutputDir = movieData.processes_{indexSteerabeleProcess}.outFilePaths_{iChannel};
-
+    
+    % If steerable filter process is run
+    if indexSteerabeleProcess>0
+        SteerableChannelOutputDir = movieData.processes_{indexSteerabeleProcess}.outFilePaths_{iChannel};
+    end
     
     if indexFlattenProcess >0
         FileNames = movieData.processes_{indexFlattenProcess}.getOutImageFileNames(iChannel);
@@ -132,49 +141,65 @@ for iChannel = selected_channels
         disp(['Frame: ',num2str(iFrame)]);
         
         % Read in the intensity image.
-        if indexFlattenProcess > 0
+        if indexFlattenProcess > 0 && ImageFlattenFlag==2
             currentImg = imread([movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel}, filesep, FileNames{1}{iFrame}]);
          else
             currentImg = movieData.channels_(iChannel).loadImage(iFrame);
         end
         currentImg = double(currentImg);
         
-        load([SteerableChannelOutputDir, filesep, 'steerable_',num2str(iFrame),'.mat']);
-        
-        MaskCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(iChannel,iFrame);
-       
         switch Combine_Way
             case 'int_st_both'
+                 load([SteerableChannelOutputDir, filesep, 'steerable_',num2str(iFrame),'.mat']);
                  level0 = thresholdOtsu(MAX_st_res);
                  thresh_Segment = MAX_st_res > level0;
                                 
                 [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,lowerbound,0);
                 [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,lowerbound,0);
-                
-            case 'st_only'                
+                current_seg = or(Intensity_Segment,SteerabelRes_Segment);
+
+            case 'st_only' 
+                load([SteerableChannelOutputDir, filesep, 'steerable_',num2str(iFrame),'.mat']);
                 [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,lowerbound,0);
                 current_seg = SteerabelRes_Segment; 
-                Intensity_Segment = current_seg*0;
+                Intensity_Segment = current_seg;
                 
             case 'int_only'
                 [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,lowerbound,0);
                 current_seg = Intensity_Segment; 
-                SteerabelRes_Segment = current_seg*0;
+                SteerabelRes_Segment = current_seg;
             otherwise
                 warning('Use the default of union');
+                load([SteerableChannelOutputDir, filesep, 'steerable_',num2str(iFrame),'.mat']);
                 [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,lowerbound,0);
                 [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,lowerbound,0);
                 % The segmentation is set as the union of two segmentation.
                 current_seg = or(Intensity_Segment,SteerabelRes_Segment);
         end
         
-        if Cell_Mask_ind == 1
+        if Cell_Mask_ind == 1 % using cell segmentation from same channel
             MaskCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(iChannel,iFrame);
         else
-            if Cell_Mask_ind == 2
+            if Cell_Mask_ind == 2 % Using input static ROI tiff
                 MaskCell = user_input_mask>0;
             else
+                if Cell_Mask_ind == 4 % No limit
                 MaskCell = ones(size(currentImg,1),size(currentImg,2));
+                else
+                    % Combine from both channel
+                    % In this option, the channel need to be 1. MT or Membrame, 2. VIF or Actin
+                    MaskVIFCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(2,iFrame);
+                    MaskMTCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(1,iFrame);
+      
+                    H_close_cell = fspecial('disk',5);
+                    H_close_cell = H_close_cell>0;
+                    
+                    MaskMTCell = imerode(MaskMTCell,H_close_cell);
+                    TightMask = MaskMTCell.*MaskMTCell;
+                    
+                    % Make the mask bigger in order to include all
+                    MaskCell = imdilate(Mask, ones(15,15),'same');
+                 end
             end
         end
         
@@ -182,15 +207,15 @@ for iChannel = selected_channels
 
         
         %%
-        % A smoothing done only at the steerable filtering results        
+        % A smoothing done only at the steerable filtering results, if only intensity only, then the same        
         orienation_map_filtered = OrientationSmooth(orienation_map, SteerabelRes_Segment);
         
         %%
         % Voting of the orientation field for the non-steerable filter
         % segmented places.
-        tic
+
         OrientationVoted = OrientationVote(orienation_map,SteerabelRes_Segment,3,25);
-        toc
+
         intensity_addon = current_seg - SteerabelRes_Segment ==1;
         if (~isempty(max(max(intensity_addon))>0))
             orienation_map_filtered(find(intensity_addon>0)) = OrientationVoted(find(intensity_addon>0));
@@ -222,14 +247,14 @@ for iChannel = selected_channels
         end
         
         current_seg = labelMask > 0;
-    
+%     
 %         [ind_a,ind_b] = find(current_seg>0);
 %         
 %         cone_bins = cell(size(current_seg,1), size(current_seg,2));
 %         cone_weight_bins = cell(size(current_seg,1), size(current_seg,2));
 %         
 %         for si = 1 : length(ind_a)
-%             pixel_angle = round(orienation_map(ind_a(si), ind_b(si))*180/pi);
+%             pixel_angle = round((-orienation_map(ind_a(si), ind_b(si))+pi/2)*180/pi);
 %             weight_res = MAX_st_res(ind_a(si), ind_b(si));
 %             if pixel_angle ==0
 %                 pixel_angle = 180;

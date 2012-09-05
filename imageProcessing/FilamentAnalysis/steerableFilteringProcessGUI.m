@@ -22,7 +22,7 @@ function varargout = steerableFilteringProcessGUI(varargin)
 
 % Edit the above text to modify the response to help steerableFilteringProcessGUI
 
-% Last Modified by GUIDE v2.5 05-Jul-2012 10:01:03
+% Last Modified by GUIDE v2.5 23-Aug-2012 11:50:11
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -83,6 +83,9 @@ end
 set(handles.listbox_selectedChannels,'String',channelString,...
     'UserData',channelIndex);
 
+set(handles.popupmenu_imageflattenedflag,'String', {'Original Images','Flattened Images'});
+set(handles.popupmenu_imageflattenedflag,'Value', funParams.ImageFlattenFlag);
+
 set(handles.edit_BaseSteerableFilterSigma,'String',funParams.BaseSteerableFilterSigma);
 set(handles.edit_levelsofsteerablefilters,'String',funParams.Levelsofsteerablefilters);
 
@@ -138,6 +141,8 @@ if isnan(Levelsofsteerablefilters) || Levelsofsteerablefilters < 0
     return;
 end
 funParams.Levelsofsteerablefilters=Levelsofsteerablefilters;
+
+funParams.ImageFlattenFlag = get(handles.popupmenu_imageflattenedflag,'Value');
 
 funParams.OutputDirectory  = [ userData.crtPackage.outputDirectory_, filesep 'SteerableFiltering'];
 
@@ -310,3 +315,29 @@ function edit9_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on selection change in popupmenu_imageflattenedflag.
+function popupmenu_imageflattenedflag_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_imageflattenedflag (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_imageflattenedflag contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_imageflattenedflag
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_imageflattenedflag_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_imageflattenedflag (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+set(hObject,'String',{'Original Images','Flattened Images'});
+set(hObject,'Value',2);
+ 

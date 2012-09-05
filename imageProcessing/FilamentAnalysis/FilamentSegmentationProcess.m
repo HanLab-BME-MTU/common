@@ -216,12 +216,12 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             funParams.Pace_Size = 3;
             % The parameter to set patch size in local segmentation, for
             % the estimation of local threshold
-            funParams.Patch_Size  = 15;
+            funParams.Patch_Size  = 21;
             
             % The percentage as the lower bound of local thresholding 
             % local threshold has to be larger or equal to this percentage
             % of the global threshold
-            funParams.lowerbound_localthresholding  = 80; % default 80%
+            funParams.lowerbound_localthresholding  = 85; % default 85%
             
             % The way to combine segmentation results from steerable
             % filtering responce and from intensity, default is : only use
