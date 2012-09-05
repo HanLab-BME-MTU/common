@@ -1,11 +1,11 @@
-function [modeParam,expParam,pvModeDiff,modeParamControl,pvModeDiffControl] = ...
+function [modeParam,numMode,modeParamControl,numModeControl] = ...
     getDiffModes(tracksFinal,minLength,alpha,showPlot,maxNumMode,...
-    binStrategy,plotName)
+    binStrategy,plotName,subSampSize,doControl)
 %GETDIFFMODES determines number of diffusion modes and their parameters from distribution of frame-to-frame displacements
 %
-%SYNOPSIS [modeParam,expParam,pvModeDiff,modeParamControl,pvModeDiffControl] = ...
+%SYNOPSIS [modeParam,numMode,modeParamControl,numModeControl] = ...
 %    getDiffModes(tracksFinal,minLength,alpha,showPlot,maxNumMode,...
-%    binStrategy,plotName)
+%    binStrategy,plotName,subSampSize)
 %
 %INPUT  tracksFinal : Output of trackCloseGapsKalman.
 %                     Optional. If not input, GUI will be called to get
@@ -27,15 +27,32 @@ function [modeParam,expParam,pvModeDiff,modeParamControl,pvModeDiffControl] = ..
 %                     Optional. Default: 2.
 %       plotName    : The title of the plotted figure.
 %                     Optional. Default: 'Figure'.
-%
+%       subSampSize : Size of subsample to use in mode decomposition. In
+%                     this case, the original data are subsampled many
+%                     times, each time with the specified subSampSize. The
+%                     output is then the diffusion mode decomposition
+%                     result for each of the subsamples. Enter [] if
+%                     no sub-sampling.
+%                     Optional. Default: [].
+%       doControl   : 1 in order to do mono-exponential control, 0
+%                     otherwise. 
+%                     Optional. Default: 1.
+%                     
 %OUTPUT modeParam   : Matrix with number of rows equal to number of modes
 %                     and 4 columns:
-%                     Column 1: diffusion coefficient of each mode
-%                     Column 2: fraction of contribution of each mode
-%                     Column 3: std of each diffusion coefficient
-%                     Column 4: std of each fraction of contribution
-%       expParam    : Output of fitHistWithExponentialsN
-%       expControl  : Output of 
+%                     Column 1: diffusion coefficient of each mode.
+%                     Column 2: fraction of contribution of each mode.
+%                     Column 3: std of each diffusion coefficient.
+%                     Column 4: std of each fraction of contribution.
+%                     In case of subsampling, the 3rd dimension refers to
+%                     the results of each subsample.
+%       numMode     : Number of diffusion modes. In case of subsampling,
+%                     this is an array with a value for each subsample.
+%       modeParamControl: The same diffusion mode decomposition but
+%                     performed on synthetic data representing a truly
+%                     mono-exponential distribution. The synthetic data
+%                     have the same size and mean as the input data.
+%       numModeControl: Number of diffusion modes in control data.
 %
 %REMARKS Code is written for 2D case only, but can be generalized to 3D.
 %
@@ -76,7 +93,21 @@ if nargin < 7 || isempty(plotName)
     plotName = 'Figure';
 end
 
-%% Mode decomposition
+if nargin < 8 || isempty(subSampSize)
+    subSampSize = [];
+end
+if isempty(subSampSize)
+    numSamp = 1;
+else
+    numSamp = 10;
+    showPlot = 0;
+end
+
+if nargin < 9 || isempty(doControl)
+    doControl = 1;
+end
+
+%% Square displacement distribution
 
 %keep only tracks of the right length
 criteria.lifeTime.min = minLength;
@@ -115,60 +146,86 @@ while indxFirst < numTracks
 
 end
 meanPosVar = mean([xCoordStdAll;yCoordStdAll].^2);
+dataSize = length(f2fdispSqAll);
 
-%fit exponentials to the distribution of square displacements
-[~,binCenterP,expParam] = fitHistWithExponentialsN(f2fdispSqAll,alpha,showPlot,...
-    maxNumMode,binStrategy,[],plotName,4*meanPosVar);
+%generate a mono-exponenetial distribution with the same mean as a control
+f2fdispSqControl = exprnd(mean(f2fdispSqAll),dataSize,1);
+
+%patch-up for for-loop later
+if numSamp == 1
+    subSampSize = dataSize;
+end
+
+%% Exponential fits
+
+%initialize memory
+numMode = zeros(numSamp,1);
+numModeControl = zeros(numSamp,1);
+expParam = zeros(maxNumMode,6,numSamp);
+expParamControl = zeros(maxNumMode,6,numSamp);
+
+%go over all subsamples
+for iSamp = 1 : numSamp
+    
+    %get subsample
+    indxSamp = randsample(dataSize,subSampSize);
+    
+    %fit data
+    expParamTmp = fitHistWithExponentialsN(f2fdispSqAll(indxSamp),...
+        alpha,showPlot,maxNumMode,binStrategy,[],plotName,4*meanPosVar);
+    numMode(iSamp) = size(expParamTmp,1);
+    expParam(1:numMode(iSamp),:,iSamp) = expParamTmp;
+    
+    %fit control
+    if doControl
+        expParamTmp = fitHistWithExponentialsN(f2fdispSqControl(indxSamp),...
+            alpha,showPlot,maxNumMode,binStrategy,[],plotName,4*meanPosVar);
+        numModeControl(iSamp) = size(expParamTmp,1);
+        expParamControl(1:numModeControl(iSamp),:,iSamp) = expParamTmp;
+    end
+    
+end
+
+%remove unnecessary rows
+numModeMaxData = max(numMode);
+expParam = expParam(1:numModeMaxData,:,:);
+expParam(expParam==0) = NaN;
+if doControl
+    numModeMaxControl = max(numModeControl);
+    expParamControl = expParamControl(1:numModeMaxControl,:,:);
+    expParamControl(expParamControl==0) = NaN;
+end
+
+%% Diffusion modes
+
+%data
 
 %calculate diffusion coefficient of each mode
 %formula: mu (i.e. mean of exponential) = 4*diffCoef + 4*posStd^2
-diffCoef = expParam(:,1)/4 - meanPosVar;
+diffCoef = expParam(:,1,:)/4 - meanPosVar;
 
 %calculate the diffusion coefficient std -- under-estimate
-diffCoefStd = expParam(:,3)/4;
+diffCoefStd = expParam(:,3,:)/4;
 
 %calculate fraction of contribution of each mode
-fracContr = expParam(:,2)/sum(expParam(:,2));
+fracContr = expParam(:,2,:)./repmat(nansum(expParam(:,2,:),1),[numModeMaxData 1 1]);
 
 %calculate corresponding std -- under-estimate
-fracContrStd = expParam(:,4)/sum(expParam(:,2));
+fracContrStd = expParam(:,4,:)./repmat(nansum(expParam(:,2,:),1),[numModeMaxData 1 1]);
 
 %output
-modeParam = [diffCoef fracContr diffCoefStd fracContrStd];
+modeParam = cat(2,diffCoef,fracContr,diffCoefStd,fracContrStd);
 
-%test whether the distance between consecutive modes is significant given
-%the diffusion coefficients and their standard deviations
-if length(diffCoef) > 1
-    diffCoefDelta = diff(diffCoef);
-    deltaStd = sqrt( diffCoefStd(1:end-1).^2 + diffCoefStd(2:end).^2 );
-    pvModeDiff = 1-normcdf(diffCoefDelta,0,deltaStd);
+%control
+if doControl
+    diffCoef = expParamControl(:,1,:)/4 - meanPosVar;
+    diffCoefStd = expParamControl(:,3,:)/4;
+    fracContr = expParamControl(:,2,:)./repmat(nansum(expParamControl(:,2,:),1),[numModeMaxControl 1 1]);
+    fracContrStd = expParamControl(:,4,:)./repmat(nansum(expParamControl(:,2,:),1),[numModeMaxControl 1 1]);
+    modeParamControl = cat(2,diffCoef,fracContr,diffCoefStd,fracContrStd);
 else
-    pvModeDiff = NaN;
-end
-
-%control: repeat the above but for a synthetic data set generated from a
-%mono-exponential distribution with the same average as the data-derived
-%distribution of square displacements
-numBin = length(binCenterP);
-if binStrategy == 1
-    binStrategyControl = 3;
-else
-    binStrategyControl = binStrategy;
-end
-f2fdispSqControl = exprnd(mean(f2fdispSqAll),length(f2fdispSqAll),1);
-[~,~,expParamControl] = fitHistWithExponentialsN(f2fdispSqControl,alpha,showPlot,...
-    maxNumMode,binStrategyControl,numBin,[plotName ' - Control'],4*meanPosVar);
-diffCoefControl = expParamControl(:,1)/4 - meanPosVar;
-diffCoefStdControl = expParamControl(:,3)/4;
-fracContrControl = expParamControl(:,2)/sum(expParamControl(:,2));
-fracContrStdControl = expParamControl(:,4)/sum(expParamControl(:,2));
-modeParamControl = [diffCoefControl fracContrControl diffCoefStdControl fracContrStdControl];
-if length(diffCoefControl) > 1
-    diffCoefDeltaControl = diff(diffCoefControl);
-    deltaStdControl = sqrt( diffCoefStdControl(1:end-1).^2 + diffCoefStdControl(2:end).^2 );
-    pvModeDiffControl = 1-normcdf(diffCoefDeltaControl,0,deltaStdControl);
-else
-    pvModeDiffControl = NaN;
+    modeParamControl = [];
+    numModeControl = [];
 end
 
 %% ~~~ the end ~~~

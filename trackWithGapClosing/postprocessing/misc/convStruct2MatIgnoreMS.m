@@ -8,7 +8,7 @@ function [trackedFeatureInfo,trackedFeatureIndx,trackStartRow,numSegments,aggreg
 %INPUT  tracksFinal: Output of trackCloseGapsKalman, when run with
 %                    gapCloseParam.mergeSplit = 1.
 %       startFirstFrame: 1 to start martix at first frame where there are
-%                    tracks, 0 otherwise. Thepoint is to avoid many empty
+%                    tracks, 0 otherwise. The point is to avoid many empty
 %                    columns before any tracks start.
 %                    Optional. Default: 0.
 %OUTPUT trackedFeatureInfo, trackedFeatureIndx: Output of trackWithGapClosing.

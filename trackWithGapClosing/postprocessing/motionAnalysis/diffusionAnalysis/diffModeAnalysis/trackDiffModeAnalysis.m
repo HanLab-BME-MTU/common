@@ -1,18 +1,24 @@
-function diffModeAnalysisRes = trackDiffModeAnalysis(tracksFinal,diffModeDivider)
+function diffModeAnalysisRes = trackDiffModeAnalysis(tracksFinal,diffModeDividerStruct)
 %TRACKDIFFMODEANALYSIS classifies tracks into diffusion modes
 %
-%SYNOPSIS diffModeAnalysisRes = trackDiffModeAnalysis(tracksFinal,diffModeDivider,minLength)
+%SYNOPSIS diffModeAnalysisRes = trackDiffModeAnalysis(tracksFinal,diffModeDividerStruct)
 %
 %INPUT  tracksFinal : Output of trackCloseGapsKalman.
-%       diffModeDivider: (number of modes - 1)-by-2-by-(number of trajectory lengths)
-%                     array storing the diffusion mode dividers per trajectory length.
-%                     In each layer, 1st column indicates trajectory
-%                     length, while 2nd column indicates divider values.
+%       diffModeDividerStruct: Structure with fields:
+%           .trajLength: Trajectory lengths for which mode divider values
+%                        are supplied.
+%           .coordStd  : Coordinate standard deviations for which mode
+%                        divider values are supplied.
+%           .divider   : (number of trajectory lengths) x (number of
+%                        coordinates stds) x (number of modes - 1) array
+%                        of mode divider values.
 %                     Trajectories shorter than the minimum length with a
 %                     divider cannot be classified.
 %                     Trajectories longer than the maximum length with a
 %                     divider will be classified using the divider values
 %                     for the maximum length.
+%                     The coordStd used is the closest to each trajectory's
+%                     average coordinate standard deviation.
 %
 %OUTPUT diffModeAnalysisRes : Structure array with the following fields per
 %                         track:
@@ -26,8 +32,10 @@ function diffModeAnalysisRes = trackDiffModeAnalysis(tracksFinal,diffModeDivider
 
 %% Input
 
-%get trajectory lengths with diffusion mode dividers
-trajLengthWithDivider = squeeze(diffModeDivider(1,1,:));
+%get trajectory lengths and positional standard deviations with diffusion
+%mode dividers
+trajLengthWithDivider = diffModeDividerStruct.trajLength;
+coordStdWithDivider = diffModeDividerStruct.coordStd;
 
 %thus get minimum trajectory length that can be classified
 minLength = min(trajLengthWithDivider);
@@ -39,7 +47,8 @@ maxLength = max(trajLengthWithDivider);
 numTracks = length(tracksFinal);
 
 %get number of diffusion mode dividers (= number of modes - 1)
-numModeDiv = size(diffModeDivider,1);
+dividerValues = diffModeDividerStruct.divider;
+numModeDiv = size(dividerValues,3);
 
 %% Diffusion mode classification
 
@@ -78,7 +87,9 @@ for iTrack = 1 : numTracks
     yCoordStd = trackCoordCurrent(:,6:8:end);
     
     %calculate mean positional variance per track
+    %also determine which coordStd is relevant
     meanPosVar = nanmean([xCoordStd yCoordStd].^2,2);
+    meanPosStd = sqrt(meanPosVar);
 
     %calculate diffusion coefficient
     diffCoefCurrent = msdF2F/4 - meanPosVar;
@@ -87,8 +98,10 @@ for iTrack = 1 : numTracks
     %determine diffusion mode
     diffModeCurrent = NaN(numSeg,1);
     for iSeg = indxGood'
-        i3 = min(segLft(iSeg)-minLength+1,maxLength-minLength+1);
-        tmp = find(diffModeDivider(:,2,i3)>diffCoefCurrent(iSeg),1,'first');
+        iLength = min(segLft(iSeg)-minLength+1,maxLength-minLength+1);
+        tmp = abs(coordStdWithDivider-meanPosStd(iSeg));
+        iStd = find(tmp==min(tmp));
+        tmp = find(dividerValues(iLength,iStd,:)>diffCoefCurrent(iSeg),1,'first'); %#ok<FNDSB>
         if isempty(tmp)
             tmp = numModeDiv + 1;
         end

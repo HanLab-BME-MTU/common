@@ -54,7 +54,7 @@ parameters.ampRatioLimit = [0.7 4]; %for merging and splitting. Minimum and maxi
 
 parameters.lenForClassify = 5; %minimum track segment length to classify it as linear or random.
 
-parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the gap closing and merging/splitting step.
+parameters.useLocalDensity = 0; %1 if you want to expand the search radius of isolated features in the gap closing and merging/splitting step.
 parameters.nnWindow = gapCloseParam.timeWindow; %number of frames before/after the current one where you want to look for a track's nearest neighbor at its end/start (in the gap closing step).
 
 parameters.linStdMult = 1*ones(gapCloseParam.timeWindow,1); %multiplication factor to calculate linear search radius from standard deviation.
@@ -85,9 +85,9 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-% saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/lifeActAndCellEdge/120213/120213_Cs2C1_Lifeact/analysisLifeact/'; %directory where to save input and output
-% saveResults.filename = 'tracksTest4DetectionAll1.mat'; %name of file where input and output are saved
-saveResults = 0; %don't save results
+saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaVandCellEdge/120828_Cs3C3/analysisAlphaV/'; %directory where to save input and output
+saveResults.filename = 'tracksTest1DetectionAll1.mat'; %name of file where input and output are saved
+% saveResults = 0; %don't save results
 
 %verbose state
 verbose = 1;

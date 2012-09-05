@@ -1,5 +1,5 @@
-function [numObsPerBinP,binCenterP,expParam,errFlag] = fitHistWithExponentialsN(...
-    observations,alpha,showPlot,maxNumExp,binStrategy,numBinIn,plotName,meanLB)
+function [expParam,errFlag] = fitHistWithExponentialsN(observations,alpha,...
+    showPlot,maxNumExp,binStrategy,numBinIn,plotName,meanLB)
 %FITHISTWITHEXPONENTIALSN determines the number of exponentials + their characteristics to fit a histogram
 %
 %SYNOPSIS [numObsPerBinP,binCenterP,expParam,errFlag] = fitHistWithExponentialsN(...
@@ -8,6 +8,7 @@ function [numObsPerBinP,binCenterP,expParam,errFlag] = fitHistWithExponentialsN(
 %INPUT  observations: Vector of observations whose histogram is to be fitted.
 %       alpha       : Alpha-value for the statistical test that compares the
 %                     fit of n+1 exponentials to the fit of n exponentials.
+%                     Optional. Default: 0.01.
 %       showPlot    : 0 to not plot anything.
 %                     1 to plot the histogram and fitted exponentials.
 %                     2 as 1, but with smooth histogram.
@@ -26,9 +27,7 @@ function [numObsPerBinP,binCenterP,expParam,errFlag] = fitHistWithExponentialsN(
 %       meanLB      : Lower bound on mean of exponential.
 %                     Optional. Default: 0.
 %
-%OUTPUT numObsPerBin: Number of observations that fall in each bin.
-%       binCenter   : Center of each bin.
-%       expParam    : Matrix with number of rows equal to number of fitted
+%OUTPUT expParam    : Matrix with number of rows equal to number of fitted
 %                     exponentials and 5 columns:
 %                     Column 1: mean of each exponential
 %                     Column 2: amplitude of each exponential
@@ -44,30 +43,28 @@ function [numObsPerBinP,binCenterP,expParam,errFlag] = fitHistWithExponentialsN(
 
 %% Output
 
-numObsPerBinP = [];
-binCenterP = [];
 expParam = [];
 errFlag = 0;
 
 %% Input
 
 %check whether correct number of input arguments was used
-if nargin < 2
+if nargin < 1
     disp('--fitHistWithExponentialsN: Incorrect number of input arguments!');
     errFlag = 1;
     return
 end
 
-% make sure observations is a col-vector
+%make sure observations is a column vector
 observations = observations(:);
 
-% %get rid of outliers in the observations vector
-% [outlierIdx,inlierIdx] = detectOutliers(observations,4);
-% observations = observations(inlierIdx);
-
-if alpha < 0 || alpha > 1
-    disp('--fitHistWithExponentialsN: Variable "alpha" should be between 0 and 1!');
-    errFlag = 1;
+if nargin < 2 || isempty(alpha)
+    alpha = 0.01;
+else
+    if alpha < 0 || alpha > 1
+        disp('--fitHistWithExponentialsN: Variable "alpha" should be between 0 and 1!');
+        errFlag = 1;
+    end
 end
 
 if nargin < 3 || isempty(showPlot)
@@ -128,14 +125,14 @@ if errFlag
     return
 end
 
-%% Histogram calculation and fitting
+%% Cumulative distribution function
+
+%get the number of observations
+numObservations = length(find(~isnan(observations)));
 
 switch binStrategy
     
     case 1 %use "histogram"
-        
-        %get the number of observations
-        numObservations = length(find(~isnan(observations)));
         
         %calculate the histogram
         [numObsPerBin,binCenter] = histogram(observations,[],0);
@@ -154,31 +151,13 @@ switch binStrategy
         
     case 2
         
-        % for the optimization: don't bin the cumulative histogram. However, don't
-        % use duplicate values - therefore, use cdfcalc. It also returns the number
-        % of non-NaN observations, and an error message, if any.
-        [cumHist,binCenter,numObservations,errMsg] = cdfcalc(observations);
-        if ~isempty(errMsg)
-            % disp/return instead of throwing the error b/c of Khuloud's standard
-            disp(sprintf('--%s',errMsg))
-            return
-        end
-        
-        % number of bins is the number of different x-values
+        %get the empirical cumulative distribution function
+        [cumHist,binCenter] = ecdf(observations);
+        binCenter = binCenter(2:end);
+        cumHist = cumHist(2:end);
         numBins = length(binCenter);
         
-        %         % cdfcalc returns n+1 values for cumHist. 1:end-1 is the bottom of the
-        %         % step, 2:end the top. Take the middle for best results.
-        %         % cumHist = (cumHist(2:end)+cumHist(1:end-1))/2;
-        %
-        %         % make cumHist with binCenters in middle of top of step
-        %         binCenter = (binCenter(1:end-1)+binCenter(2:end))/2;
-        %         cumHist = cumHist(2:end-1);
-        %         numBins = numBins - 1;
-        
-        cumHist = cumHist(2:end);
-        
-        % downsample to about 1000 points if necessary
+        %downsample to about 1000 points if necessary
         if numBins > 1000
             dsIdx = unique(round(linspace(1,numBins,1000)))';
             cumHist = cumHist(dsIdx);
@@ -186,13 +165,10 @@ switch binStrategy
             numBins = length(dsIdx);
         end
         
-        % make cumHist go from 1:numObservations
+        %make cumHist go from 1:numObservations
         cumHist = cumHist * numObservations;
         
     case 3
-        
-        %get the number of observations
-        numObservations = length(find(~isnan(observations)));
         
         %calculate the histogram
         [numObsPerBin,binCenter] = hist(observations,numBinIn);
@@ -210,6 +186,8 @@ switch binStrategy
                 
 end
 
+%% Fit
+
 %initialize variables indicating number of fitted exponentials and their parameters
 numExp = 0;
 expParam = [];
@@ -218,7 +196,7 @@ expParam = [];
 fit = 1;
 
 %set some optimization options
-options = optimset('MaxFunEvals',100000,'MaxIter',10000,'TolFun',1e-3,'Display','off');
+options = optimset('MaxFunEvals',1e6,'MaxIter',1e6,'TolFun',1e-10,'TolX',1e-10,'Display','off'); %,'Jacobian','on');
 
 %maximum observed value, just to avoid repetition
 maxVal = max(observations);
@@ -301,9 +279,91 @@ expMeans = expParam(:,1);
 [~,orderIndx] = sort(expMeans);
 expParam = expParam(orderIndx,:);
 
+%get the p-values for the distances between adjacent exponentials and
+%determine whether one exponential should be removed
+if numExp > 1 && alpha < 1
+    adjacentExpoDist = diff(expParam(:,1));
+    distStd = sqrt( expParam(2:end,3).^2 + expParam(1:end-1,3).^2 );
+    pValue = 1 - normcdf(adjacentExpoDist,0,distStd);
+    if max(pValue) > 0.05
+        removeExp = 1;
+    else
+        removeExp = 0;
+    end
+else
+    removeExp = 0;
+end
+
+%remove exponentials if their means are not far enough from each other
+while removeExp
+    
+    %remove one exponential from the fit
+    numExp = numExp - 1;
+    
+    %calculate number of degrees of freedom
+    numDegFree = numBins - 2*numExp;
+    
+    %assign the parameter initial guesses
+    meanIGInc = (0.9*maxVal-1.1*meanLB)/(numExp+1);
+    meanInitialGuess = (1.1*meanLB : meanIGInc : 0.9*maxVal)';
+    meanInitialGuess = meanInitialGuess(2:end-1);
+    ampInitialGuess = numObservations/numExp*ones(numExp,1);
+    expParam = [meanInitialGuess ampInitialGuess];
+    
+    %assign parameter initial values
+    x0 = expParam(:);
+    
+    %assign lower bounds
+    lb = [meanLB*ones(numExp,1) zeros(numExp,1)];
+    lb = lb(:);
+    
+    %assign upper bounds
+    ub = [maxVal*ones(numExp,1) 1.5*numObservations*ones(numExp,1)];
+    ub = ub(:);
+    
+    %estimate unknown parameters
+    [param,~,residuals,~,~,~,jacMat] = lsqcurvefit(@calcCumDistrNExp,x0,...
+        binCenter,cumHist,lb,ub,options);
+    
+    %get output from parameters vector
+    expParam = reshape(param,numExp,2);
+    
+    %calculate the parameter variance-covariance matrix
+    varCovMat = full((sum(residuals.^2)/numDegFree) * inv(jacMat'*jacMat));
+    
+    %append standard deviation to output variable expParam
+    paramStd = sqrt(diag(varCovMat));
+    paramStd = reshape(paramStd,numExp,2);
+    expParam = [expParam paramStd];
+    
+    %order the exponentials in ascending value of the mean
+    expMeans = expParam(:,1);
+    [~,orderIndx] = sort(expMeans);
+    expParam = expParam(orderIndx,:);
+    
+    %get the p-values for the distances between adjacent exponentials and
+    %determine whether one exponential should be removed
+    if numExp > 1
+        adjacentExpoDist = diff(expParam(:,1));
+        distStd = sqrt( expParam(2:end,3).^2 + expParam(1:end-1,3).^2 );
+        pValue = 1 - normcdf(adjacentExpoDist,0,distStd);
+        if max(pValue) > 0.05
+            removeExp = 1;
+        else
+            removeExp = 0;
+        end
+    else
+        removeExp = 0;
+    end
+    
+end
+
 %append the sum of squared residuals / # degrees of freedom to
 %the first row of expParam
 expParam(1,end+1) = sum(residuals.^2) / numDegFree;
+
+%also append the BIC
+expParam(1,end+1) = numBins*log(sum(residuals.^2)/numBins) + 2*numExpT*log(numBins);
 
 %% Plotting
 

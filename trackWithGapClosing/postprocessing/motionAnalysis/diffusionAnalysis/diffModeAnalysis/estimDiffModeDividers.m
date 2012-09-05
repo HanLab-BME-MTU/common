@@ -1,7 +1,9 @@
-function [diffModeDivider,fracTruePos] = estimDiffModeDividers(diffModeCoef,numTraj,trajLength,doPlot)
+function [diffModeDivider,fracTruePos] = estimDiffModeDividers(diffModeCoef,...
+    numTraj,trajLength,doPlot,coordStd)
 %ESTIMDIFFMODEDIVIDERS estimates the optimal dividers between different diffusion modes
 %
-%SYNOPSIS [diffModeDivider,fracTruePos] = estimDiffModeDividers(diffModeCoef,numTraj,trajLength,doPlot)
+%SYNOPSIS [diffModeDivider,fracTruePos] = estimDiffModeDividers(diffModeCoef,...
+%    numTraj,trajLength,doPlot,coordStd)
 %
 %INPUT  diffModeCoef: Vector listing the diffusion coefficient of the
 %                     different diffusion modes. The diffusion modes should
@@ -14,14 +16,21 @@ function [diffModeDivider,fracTruePos] = estimDiffModeDividers(diffModeCoef,numT
 %                     Optional. Default: [5:20].
 %       doPlot      : 1 to plot the results, 0 otherwise.
 %                     Optional. Default: 0.
+%                     NO PLOTTING AT THE MOMENT.
+%       coordStd    : Vector of standard deviations of coordinates (i.e.
+%                     localization precision).
+%                     Optional. Default: 0.
 %
-%OUTPUT diffModeDivider: Estimated dividers between the different modes.
-%                        The third dimension corresponds to the different
-%                        trajectory lengths.
+%OUTPUT diffModeDivider: Estimated dividers between the different modes
+%                        (1st dimension) and their standard deviations (2nd
+%                        dimension) for each coordinate standard deviation
+%                        (3rd dimension) and each trajectory length (4th
+%                        dimension).
 %       fracTruePos    : Fraction of each mode correctly classified using
-%                        the estimated dividers.
-%                        The third dimension corresponds to the different
-%                        trajectory lengths.
+%                        the estimated dividers (1st dimension) and its
+%                        standard deviation (2nd dimension) for each
+%                        coordinate standard deviation (3rd dimension) and
+%                        each trajectory length (4th dimension).
 %
 %REMARKS Code is written for 2D case only, but can be generalized to 3D.
 %
@@ -50,20 +59,27 @@ if nargin < 4 || isempty(doPlot)
     doPlot = 0;
 end
 
+if nargin < 5 || isempty(coordStd)
+    coordStd = 0;
+end
+
 %% Divider estimation
 
-%number of time to repeat estimation in order to get an std
+%number of times to repeat estimation in order to get an std
 numRep = 50;
 
 %number of trajectory lengths
 numLength = length(trajLength);
 
+%number of coordinate standard deviation values
+numCoordStd = length(coordStd);
+
 %get number of diffusion modes
 numMode = length(diffModeCoef);
 
 %resere memory for output
-diffModeDivider = NaN(numMode-1,2,numLength);
-fracTruePos = NaN(numMode-1,2,numLength);
+diffModeDivider = NaN(numMode-1,2,numCoordStd,numLength);
+fracTruePos = NaN(numMode-1,2,numCoordStd,numLength);
 
 %go over all lengths
 for iLength = 1 : numLength
@@ -72,51 +88,57 @@ for iLength = 1 : numLength
     trajLengthC = trajLength(iLength);
     
     %reserve memory for intermediate results
-    diffModeDividerRep = NaN(numRep,numMode-1);
-    fracTruePosRep = NaN(numRep,numMode-1);
+    diffModeDividerRep = NaN(numMode-1,numRep,numCoordStd);
+    fracTruePosRep = NaN(numMode-1,numRep,numCoordStd);
     
     %go over repetitions
     progressText(0,'Estimating dividers');
     for iRep = 1 : numRep
         
         %simulate trajectories in each mode
-        traj = NaN(trajLengthC,2,numTraj,numMode);
+        traj0 = NaN(trajLengthC,2,numTraj,numMode);
         for iMode = 1 : numMode
             for iTraj = 1 : numTraj
                 trajTmp = brownianMotion(2,diffModeCoef(iMode),trajLengthC,0.01);
                 trajTmp = trajTmp(1:100:end,:);
                 trajTmp = trajTmp(2:end,:);
-                traj(:,:,iTraj,iMode) = trajTmp;
-            end
-        end
-        msd = squeeze( mean( sum( diff(traj).^2,2 ) ) );
-        diffCoef = msd / 4;
-        
-        %for each pair of consecutive modes, slide divider between their means and
-        %calculate the fraction of each mode that will be properly classified
-        %given divider value
-        divValue = 0:0.001:diffModeCoef(end)*1.1;
-        numValue = length(divValue);
-        fracModeBelow = NaN(numValue,numMode);
-        fracModeAbove = NaN(numValue,numMode);
-        for iMode = 1 : numMode
-            for iValue = 1 : numValue
-                fracModeBelow(iValue,iMode) = length(find(diffCoef(:,iMode)<=divValue(iValue)))/numTraj;
-                fracModeAbove(iValue,iMode) = length(find(diffCoef(:,iMode)>divValue(iValue)))/numTraj;
+                traj0(:,:,iTraj,iMode) = trajTmp;
             end
         end
         
-        %find the best divider between each pair of modes, i.e. the divider value
-        %which simultaneously maximizes the correct classification of each mode
-        for iMode = 1 : numMode-1
-            %         [dividerTmp,fracTmp] = polyxpoly(divValue',fracModeBelow(:,iMode),divValue',fracModeAbove(:,iMode+1));
-            %         diffModeDividerRep(iRep,iMode) = mean(dividerTmp);
-            %         fracTruePosRep(iRep,iMode) = fracTmp(1);
-            fracDiff = abs( fracModeBelow(:,iMode) - fracModeAbove(:,iMode+1) );
-            dividerIndx = find(fracDiff == min(fracDiff));
-            dividerIndx = round(median(dividerIndx));
-            diffModeDividerRep(iRep,iMode) = divValue(dividerIndx);
-            fracTruePosRep(iRep,iMode) = fracModeBelow(dividerIndx,iMode);
+        for iCoordStd = 1 : numCoordStd
+            
+            %perturb positions to reflect localization error
+            traj = traj0 + randn(size(traj0))*coordStd(iCoordStd);
+            
+            %calculate diffusion coefficient
+            msd = squeeze( mean( sum( diff(traj).^2,2 ) ) );
+            diffCoef = msd / 4 - coordStd(iCoordStd)^2;
+            
+            %for each pair of consecutive modes, slide divider between their means and
+            %calculate the fraction of each mode that will be properly classified
+            %given divider value
+            divValue = 0:0.001:diffModeCoef(end)*1.1;
+            numValue = length(divValue);
+            fracModeBelow = NaN(numValue,numMode);
+            fracModeAbove = NaN(numValue,numMode);
+            for iMode = 1 : numMode
+                for iValue = 1 : numValue
+                    fracModeBelow(iValue,iMode) = length(find(diffCoef(:,iMode)<=divValue(iValue)))/numTraj;
+                    fracModeAbove(iValue,iMode) = length(find(diffCoef(:,iMode)>divValue(iValue)))/numTraj;
+                end
+            end
+            
+            %find the best divider between each pair of modes, i.e. the divider value
+            %which simultaneously maximizes the correct classification of each mode
+            for iMode = 1 : numMode-1
+                fracDiff = abs( fracModeBelow(:,iMode) - fracModeAbove(:,iMode+1) );
+                dividerIndx = find(fracDiff == min(fracDiff));
+                dividerIndx = round(median(dividerIndx));
+                diffModeDividerRep(iMode,iRep,iCoordStd) = divValue(dividerIndx);
+                fracTruePosRep(iMode,iRep,iCoordStd) = fracModeBelow(dividerIndx,iMode);
+            end
+            
         end
         
         progressText(iRep/numRep,'Estimating dividers');
@@ -124,8 +146,10 @@ for iLength = 1 : numLength
     end %(for iRep = 1 : numRep)
     
     %calculate the average and std for output
-    diffModeDivider(:,:,iLength) = [mean(diffModeDividerRep); std(diffModeDividerRep)]';
-    fracTruePos(:,:,iLength) = [mean(fracTruePosRep); std(fracTruePosRep)]';
+    diffModeDivider(:,1,:,iLength) = mean(diffModeDividerRep,2);
+    diffModeDivider(:,2,:,iLength) = std(diffModeDividerRep,[],2);
+    fracTruePos(:,1,:,iLength) = mean(fracTruePosRep,2);
+    fracTruePos(:,2,:,iLength) = std(fracTruePosRep,[],2);
     
 end %(for iLength = 1 : numLength)
 

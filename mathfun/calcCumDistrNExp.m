@@ -10,6 +10,7 @@ function cumDistrNExp = calcCumDistrNExp(param,abscissa)
 %
 %OUTPUT cumDistrNExp  : Values of the resulting cumulative distribution
 %                       given the input abscissa values.
+%       jacobianMat   : Jacobian matrix.
 
 %Khuloud Jaqaman, June 2012
 
@@ -34,10 +35,16 @@ numExp = length(param)/2;
 expMean = param(1:numExp);
 expAmp  = param(numExp+1:end);
 
-%calculate the cumulative distribution
-cumDistrNExp = zeros(size(abscissa));
+%get number of data points
+numData = length(abscissa);
+
+%calculate the cumulative distribution and the jacobian matrix
+cumDistrNExp = zeros(numData,1);
+% jacobianMat = zeros(numData,2*numExp);
 for iExp = 1 : numExp
-    cumDistrNExp = cumDistrNExp + expAmp(iExp)*expcdf(abscissa,expMean(iExp));
+    cumDistrNExp = cumDistrNExp + expAmp(iExp)*(1 - exp(-abscissa/expMean(iExp)));
+    %     jacobianMat(:,iExp) = -(expAmp(iExp)/expMean(iExp)^2)*exp(-abscissa/expMean(iExp));
+    %     jacobianMat(:,numExp+iExp) = 1 - exp(-abscissa/expMean(iExp));
 end
     
 %% ~~ the end ~~
