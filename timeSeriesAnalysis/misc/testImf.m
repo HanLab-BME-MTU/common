@@ -14,7 +14,7 @@ function [imfOut,noise] = testImf(imf,varargin)
 %       imfOut - matrix same size as the input imf 
 %                the signal is removed from imf -> set to zero
 %
-%       noise - estimated noise
+%       noise - estimated noise level
 %
 % Required functions: emdc, emd (extern)
 %

@@ -10,7 +10,7 @@ function [ProtPersTime,RetrPersTime,ProtBlockOut,RetrBlockOut,Up,Dw] = getPersis
 %       deltaT - scalar - sampling rate (in seconds, every deltaT seconds)
 %       Optional:
 %               per - number of standard deviations used to calculate the
-%               threshold
+%                     local noise threshold
 %
 % Output:
 %       ProtPersTime - vector - Protrusion time for all protrusive events
@@ -28,9 +28,9 @@ function [ProtPersTime,RetrPersTime,ProtBlockOut,RetrBlockOut,Up,Dw] = getPersis
 ip = inputParser;
 ip.addRequired('TS',@isvector);
 ip.addRequired('deltaT',@isscalar);
-ip.addOptional('per',1,@isscalar);
+ip.addOptional('noiseStd',1,@isscalar);
 ip.parse(TS,deltaT,varargin{:});
-per  = ip.Results.per;
+noiseStd  = ip.Results.noiseStd;
 %**************************************************************************
 %%
 
@@ -41,8 +41,8 @@ nPoint    = length(TS);
 sdtError  = std(noise); 
 
 %Defining the lower and upper noise confidence bands
-Up  = Mu + sdtError*per; 
-Dw  = Mu - sdtError*per;
+Up  = Mu + sdtError*noiseStd; 
+Dw  = Mu - sdtError*noiseStd;
 %*************************
  
 
