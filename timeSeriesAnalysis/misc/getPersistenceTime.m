@@ -9,8 +9,8 @@ function [ProtPersTime,RetrPersTime,ProtBlockOut,RetrBlockOut,Up,Dw] = getPersis
 %       TS     - vector - Time series
 %       deltaT - scalar - sampling rate (in seconds, every deltaT seconds)
 %       Optional:
-%               per - number of standard deviations used to calculate the
-%                     local noise threshold
+%               noiseStd - number of standard deviations used to calculate the
+%                          local noise threshold (Default = 1)
 %
 % Output:
 %       ProtPersTime - vector - Protrusion time for all protrusive events
