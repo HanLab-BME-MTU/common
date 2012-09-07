@@ -359,7 +359,7 @@ function [ rgbSlice ] = getRGBSlice(data)
             else
                 rgbMaskSlice = squeeze(data.masks(i).im(:,:,data.sliceno,:));
             end
-            rgbSlice = uint8( double((1 - data.alpha(i)) * rgbSlice) + 255 * data.alpha(i) * rgbMaskSlice );
+            rgbSlice = uint8( double((1 - data.alpha(i)) * double(rgbSlice)) + 255.0 * data.alpha(i) * double(rgbMaskSlice) );
         end
     end
 
