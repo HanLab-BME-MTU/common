@@ -191,6 +191,10 @@ if ~isempty(graphProc)
         'Units','pixels','Tag','uipanel_graph');
     hPosition3=10;
     
+    hPosition3 = createScalarMapOptions(graphPanel,userData,hPosition3);
+
+    hPosition3=hPosition3+50;
+
     % Create controls for selecting all other graphs
     nProc = numel(graphProc);
     for iProc=nProc:-1:1;
@@ -594,7 +598,32 @@ hPosition=hPosition+20;
 uicontrol(overlayPanel,'Style','text',...
     'Position',[10 hPosition 200 20],'Tag','text_windowsOptions',...
     'String','Windows options','HorizontalAlignment','left','FontWeight','bold');
+
+function hPosition=createScalarMapOptions(graphPanel,userData,hPosition)
+
+
+hPosition=hPosition+30;
+uicontrol(graphPanel,'Style','text',...
+    'Position',[20 hPosition 200 20],'Tag','text_UpSample',...
+    'String',' Upsampling Factor','HorizontalAlignment','left');
+uicontrol(graphPanel,'Style','edit','Position',[220 hPosition 50 20],...
+    'String','1','BackgroundColor','white','Tag','edit_UpSample',...
+    'Callback',@(h,event) redrawGraphs(guidata(h)));
+
+hPosition=hPosition+20;
+uicontrol(graphPanel,'Style','text',...
+    'Position',[20 hPosition 200 20],'Tag','text_SmoothParam',...
+    'String',' Smoothing Parameter','HorizontalAlignment','left');
+uicontrol(graphPanel,'Style','edit','Position',[220 hPosition 50 20],...
+    'String','.99','BackgroundColor','white','Tag','edit_SmoothParam',...
+    'Callback',@(h,event) redrawGraphs(guidata(h)));
+
+hPosition=hPosition+20;
+uicontrol(graphPanel,'Style','text',...
+    'Position',[10 hPosition 200 20],'Tag','text_scalarMapOptions',...
+    'String','Scalar Map options','HorizontalAlignment','left','FontWeight','bold');
     
+
 
 function slider_callback(src,eventdata,panel)
 pos=get(panel,'Position');
@@ -954,19 +983,30 @@ if isa(displayMethod,'VectorFieldDisplay') && ~isempty(displayMethod.CLim)
     set(handles.edit_vectorCmax,'String',displayMethod.CLim(2));
 end
 
+function redrawGraphs(handles)
+if ~isfield(handles,'uipanel_graph'), return; end
+
+graphBoxes = findobj(handles.uipanel_graph,'-regexp','Tag','checkbox_process*');
+checkedBoxes = logical(arrayfun(@(x) get(x,'Value'),graphBoxes));
+graphTags=arrayfun(@(x) get(x,'Tag'),graphBoxes(checkedBoxes),...
+    'UniformOutput',false);
+for i=1:numel(graphTags),
+    redrawGraph(handles.(graphTags{i}),handles)
+end
+
 function redrawGraph(hObject,handles)
-overlayTag = get(hObject,'Tag');
+graphTag = get(hObject,'Tag');
 userData=get(handles.figure1,'UserData');
 
 % Retrieve the id, process nr and channel nr of the selected graphProc
-tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)','tokens');
+tokens = regexp(graphTag,'^checkbox_process(\d+)_output(\d+)','tokens');
 procId=str2double(tokens{1}{1});
 outputList = userData.MO.processes_{procId}.getDrawableOutput;
 iOutput = str2double(tokens{1}{2});
 output = outputList(iOutput).var;
 
 % Discriminate between channel-specific and movie processes
-tokens = regexp(overlayTag,'_channel(\d+)$','tokens');
+tokens = regexp(graphTag,'_channel(\d+)$','tokens');
 if ~isempty(tokens)
     iChan = str2double(tokens{1}{1});
     figName = [outputList(iOutput).name ' - Channel ' num2str(iChan)];
@@ -976,7 +1016,7 @@ if ~isempty(tokens)
         inputArgs={iChan};
     end
 else
-    tokens = regexp(overlayTag,'_input(\d+)$','tokens');
+    tokens = regexp(graphTag,'_input(\d+)$','tokens');
     if ~isempty(tokens)
         iInput = str2double(tokens{1}{1});
         figName = [outputList(iOutput).name ' - ' ...
@@ -992,16 +1032,19 @@ end
 h = getFigure(handles,figName);
 if ~get(hObject,'Value'),delete(h); return; end
 
-userData.MO.processes_{procId}.draw(inputArgs{:},'output',output);
+upSample = str2double(get(handles.edit_UpSample,'String'));
+smoothParam = str2double(get(handles.edit_SmoothParam,'String'));
+userData.MO.processes_{procId}.draw(inputArgs{:}, 'output', output,...
+    'UpSample', upSample,'SmoothParam', smoothParam);
 set(h,'DeleteFcn',@(h,event)closeGraphFigure(hObject));
 
 
 function redrawSignalGraph(hObject,handles)
-overlayTag = get(hObject,'Tag');
+graphTag = get(hObject,'Tag');
 userData=get(handles.figure1,'UserData');
 
 % Retrieve the id, process nr and channel nr of the selected graphProc
-tokens = regexp(overlayTag,'^checkbox_process(\d+)_output(\d+)_input(\d+)_input(\d+)','tokens');
+tokens = regexp(graphTag,'^checkbox_process(\d+)_output(\d+)_input(\d+)_input(\d+)','tokens');
 procId=str2double(tokens{1}{1});
 iOutput = str2double(tokens{1}{2});
 iInput1 = str2double(tokens{1}{3});
