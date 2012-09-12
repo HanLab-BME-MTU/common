@@ -9,6 +9,8 @@ classdef ScalarMapDisplay < MovieDataDisplay
         depthDim=3;
         sfont = {'FontName', 'Helvetica', 'FontSize', 18};
         lfont = {'FontName', 'Helvetica', 'FontSize', 22};
+        UpSample = 1;
+        SmoothParam = .99;
     end
     properties (SetAccess = protected)
         slider;
@@ -24,8 +26,16 @@ classdef ScalarMapDisplay < MovieDataDisplay
             % Set the NaN as the lowest value
             imData= data(:,:,1);
             
-            % Plot the image and associate the tag
-            h=imagesc(imData,varargin{:});
+            % Smooth the data if the upsampling factor is different than 1
+            if obj.UpSample ~= 1
+                h = imagesc(smoothActivityMap(imData,...
+                    'UpSample', obj.UpSample,...
+                    'SmoothParam', obj.SmoothParam), varargin{:});
+            else
+                h = imagesc(imData, varargin{:});
+            end
+            
+            % Add tag
             set(h,'Tag',tag,'UserData',data);
             
             % Create slider if data z-dimension is greater than 1
@@ -60,25 +70,42 @@ classdef ScalarMapDisplay < MovieDataDisplay
             else
                 depth=1;
             end
-           
-            set(h,'CData',data(:,:,depth));      
+            % Reset alpha value as the size of the image may change
+            set(h,'AlphaData',1);
+            
+            if obj.UpSample ~= 1
+                set(h,'CData', smoothActivityMap(data(:,:,depth),...
+                    'UpSample', obj.UpSample,...
+                    'SmoothParam', obj.SmoothParam));
+            else
+                set(h,'CData',data(:,:,depth));
+            end
             
             obj.applyImageOptions(h,data);
         end
     end
     methods(Access=protected)
         
+        function smoothedData = smoothData(obj, data)
+            smoothActivityMap
+            % Smooth data sing cubic smoothing spline
+            warning('off','SPLINES:CHCKXYWP:NaNs');
+            smoothedData = csaps({1:size(data,1), 1:size(data,2)}, data,...
+                obj.SmoothingParameter, {1:1/obj.UpsamplingFactor:size(data,1), ...
+                1:1/obj.UpsamplingFactor:size(data,2)});
+        end
+        
         function applyImageOptions(obj,h,data)
             % Clean existing image and set image at the bottom of the stack
             hAxes = get(h,'Parent');
             
-            child=get(hAxes,'Children');
+            child = get(hAxes,'Children');
             imChild = child(strcmp(get(child,'Type'),'image'));
             delete(imChild(imChild~=h));
             uistack(h,'bottom');
             
             % Set the colormap
-            imData=get(h,'CData');
+            imData = get(h,'CData');
             alphamask =true(size(imData));
             alphamask(isnan(imData))=false;
             set(h,'AlphaData',alphamask,'AlphaDataMapping','none');
@@ -111,7 +138,9 @@ classdef ScalarMapDisplay < MovieDataDisplay
             else
                 if ~isempty(obj.Labels{2}),ylabel(obj.Labels{2},'Parent',hAxes,obj.lfont{:}); end
             end
-            set(hAxes,'LineWidth', 1.5, obj.sfont{:})
+            set(hAxes,'LineWidth', 1.5, obj.sfont{:});
+            set(gca,'XTickLabel',get(gca,'XTick')/obj.UpSample);
+            set(gca,'YTickLabel',get(gca,'YTick')/obj.UpSample);
         end
             
     end 
@@ -129,6 +158,10 @@ classdef ScalarMapDisplay < MovieDataDisplay
             params(5).validator=@iscell;
             params(6).name='lfont';
             params(6).validator=@iscell;
+            params(7).name='UpSample';
+            params(7).validator=@(x) isscalar(x) && x>=1 && round(x)==x;
+            params(8).name='SmoothParam';
+            params(8).validator=@(x) isscalar(x) && x>=0 && x<=1;
         end
 
         function f=getDataValidator()
