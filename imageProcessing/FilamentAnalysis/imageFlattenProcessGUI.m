@@ -22,7 +22,7 @@ function varargout = imageFlattenProcessGUI(varargin)
 
 % Edit the above text to modify the response to help imageFlattenProcessGUI
 
-% Last Modified by GUIDE v2.5 04-Sep-2012 14:20:36
+% Last Modified by GUIDE v2.5 07-Sep-2012 11:20:28
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -84,6 +84,7 @@ set(handles.listbox_selectedChannels,'String',channelString,...
     'UserData',channelIndex);
 
 set(handles.edit_GaussFilterSigma,'String',funParams.GaussFilterSigma);
+set(handles.edit_subsample_number,'String',funParams.Sub_Sample_Num);
 
 set(handles.popupmenu_flatten_method,'String',{'Log','Sqrt','Power 2/3','Nothing'});
 set(handles.popupmenu_flatten_method,'Value',funParams.method_ind);
@@ -207,6 +208,17 @@ if isnan(TimeFilterSigma) || TimeFilterSigma < 0
 end
 funParams.TimeFilterSigma=TimeFilterSigma;
 
+
+
+Sub_Sample_Num  = str2double(get(handles.edit_subsample_number, 'String'));
+if isnan(Sub_Sample_Num) || Sub_Sample_Num < 0
+    errordlg(['Please provide a valid input for '''...
+        get(handles.text_subsample,'String') '''.'],'Setting Error','modal');
+    return;
+end
+
+funParams.Sub_Sample_Num  = Sub_Sample_Num;
+
 for iChannel = channelIndex
 ImageFlattenChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
     if (~exist(ImageFlattenChannelOutputDir,'dir'))
@@ -312,6 +324,29 @@ function edit_timefilter_sigma_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function edit_timefilter_sigma_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit_timefilter_sigma (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_subsample_number_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_subsample_number (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_subsample_number as text
+%        str2double(get(hObject,'String')) returns contents of edit_subsample_number as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_subsample_number_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_subsample_number (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

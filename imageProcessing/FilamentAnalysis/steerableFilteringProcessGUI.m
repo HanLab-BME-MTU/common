@@ -22,7 +22,7 @@ function varargout = steerableFilteringProcessGUI(varargin)
 
 % Edit the above text to modify the response to help steerableFilteringProcessGUI
 
-% Last Modified by GUIDE v2.5 23-Aug-2012 11:50:11
+% Last Modified by GUIDE v2.5 07-Sep-2012 12:49:51
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -86,6 +86,9 @@ set(handles.listbox_selectedChannels,'String',channelString,...
 set(handles.popupmenu_imageflattenedflag,'String', {'Original Images','Flattened Images'});
 set(handles.popupmenu_imageflattenedflag,'Value', funParams.ImageFlattenFlag);
 
+
+set(handles.edit_subsample_number,'String',funParams.Sub_Sample_Num);
+
 set(handles.edit_BaseSteerableFilterSigma,'String',funParams.BaseSteerableFilterSigma);
 set(handles.edit_levelsofsteerablefilters,'String',funParams.Levelsofsteerablefilters);
 
@@ -140,7 +143,17 @@ if isnan(Levelsofsteerablefilters) || Levelsofsteerablefilters < 0
     get(handles.text_Levelsofsteerablefilters,'String') '''.'],'Setting Error','modal');
     return;
 end
+
 funParams.Levelsofsteerablefilters=Levelsofsteerablefilters;
+
+Sub_Sample_Num  = str2double(get(handles.edit_subsample_number, 'String'));
+if isnan(Sub_Sample_Num) || Sub_Sample_Num < 0
+    errordlg(['Please provide a valid input for '''...
+        get(handles.text_subsample,'String') '''.'],'Setting Error','modal');
+    return;
+end
+funParams.Sub_Sample_Num  = Sub_Sample_Num;
+
 
 funParams.ImageFlattenFlag = get(handles.popupmenu_imageflattenedflag,'Value');
 
@@ -340,4 +353,25 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 set(hObject,'String',{'Original Images','Flattened Images'});
 set(hObject,'Value',2);
- 
+
+
+function edit_subsample_number_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_subsample_number (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_subsample_number as text
+%        str2double(get(hObject,'String')) returns contents of edit_subsample_number as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_subsample_number_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_subsample_number (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

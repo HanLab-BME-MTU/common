@@ -38,7 +38,7 @@ Combine_Way = funParams.Combine_Way;
 Cell_Mask_ind = funParams.Cell_Mask_ind;
 lowerbound =  funParams.lowerbound_localthresholding;
 VIF_Outgrowth_Flag = funParams.VIF_Outgrowth_Flag;
-
+Sub_Sample_Num  = funParams.Sub_Sample_Num;
 FilamentSegmentationOutputDir = funParams.OutputDirectory;
 
 indexSteerabeleProcess = 0;
@@ -137,7 +137,15 @@ for iChannel = selected_channels
     
     display(['Start to do filament segmentation in Channel ',num2str(iChannel)]);
 
-    for iFrame = 1 : nFrame
+    % Segment only the real collected data, but skip the padded ones, which
+    % were there just to fill in the time lap to make two channel same
+    % number of frames
+    Frames_to_Seg = 1:Sub_Sample_Num:nFrame;
+    Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1]),[1 1]);
+    Frames_results_correspondence = Frames_results_correspondence(1:nFrame);
+    
+    for iFrame = Frames_to_Seg        
+        
         disp(['Frame: ',num2str(iFrame)]);
         
         % Read in the intensity image.
@@ -198,7 +206,7 @@ for iChannel = selected_channels
                     TightMask = MaskMTCell.*MaskMTCell;
                     
                     % Make the mask bigger in order to include all
-                    MaskCell = imdilate(Mask, ones(15,15),'same');
+                    MaskCell = imdilate(TightMask, ones(15,15),'same');
                  end
             end
         end
@@ -312,7 +320,13 @@ for iChannel = selected_channels
         RGB_seg_orient_heat_map(:,:,2 ) = enhanced_im_g;
         RGB_seg_orient_heat_map(:,:,3 ) = enhanced_im_b;
         
-        imwrite(RGB_seg_orient_heat_map,[FilamentSegmentationChannelOutputDir,'/segment_heat_',num2str(iFrame),'.tif']);
+      
+         for sub_i = 1 : Sub_Sample_Num
+            if iFrame + sub_i-1 <= nFrame
+                imwrite(RGB_seg_orient_heat_map, ...
+                    [FilamentSegmentationChannelOutputDir,'/segment_heat_',num2str(iFrame + sub_i-1),'.tif']);
+            end
+        end
         
         %% Save segmentation results
         save([FilamentSegmentationChannelOutputDir,'/steerable_vote_',num2str(iFrame),'.mat'],...

@@ -229,7 +229,13 @@ classdef ImageFlattenProcess < ImageProcessingProcess
             funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.method_ind = 3;
             funParams.GaussFilterSigma = 0;                        
-            funParams.TimeFilterSigma = 2;                        
+            funParams.TimeFilterSigma = 2;      
+
+            % sub-sample number, since often VIF images are taken at a
+            % lower sample rate than the other channel, so use this number
+            % to save some time.
+            funParams.Sub_Sample_Num = 1;
+
         end
     end
 end

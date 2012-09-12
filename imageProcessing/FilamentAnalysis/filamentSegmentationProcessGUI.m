@@ -22,7 +22,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 13-Aug-2012 15:59:46
+% Last Modified by GUIDE v2.5 07-Sep-2012 10:08:46
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -85,6 +85,7 @@ set(handles.listbox_selectedChannels,'String',channelString,...
 
 set(handles.edit_PaceSize,'String',funParams.Pace_Size);
 set(handles.edit_PatchSize,'String',funParams.Patch_Size);
+set(handles.edit_subsample_number,'String',funParams.Sub_Sample_Num);
 
 set(handles.edit_lowerbound_localthresholding,'String',funParams.lowerbound_localthresholding);
 
@@ -173,6 +174,16 @@ VIF_Outgrowth_Flag = get(handles.checkbox_outgrowth,'value');
 funParams.VIF_Outgrowth_Flag = VIF_Outgrowth_Flag;
 
 funParams.OutputDirectory  = [ userData.crtPackage.outputDirectory_, filesep 'FilamentSegmentation'];
+
+
+Sub_Sample_Num  = str2double(get(handles.edit_subsample_number, 'String'));
+if isnan(Sub_Sample_Num) || Sub_Sample_Num < 0
+    errordlg(['Please provide a valid input for '''...
+        get(handles.text_subsample,'String') '''.'],'Setting Error','modal');
+    return;
+end
+
+funParams.Sub_Sample_Num  = Sub_Sample_Num;
 
 for iChannel = channelIndex
 FilamentSegmentationOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
@@ -427,3 +438,26 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 set(hObject,'String',{'Cell Segmentation in this same channel','Input ROI','Cell Segmentation combined from two channels','No limitation'});
 set(hObject,'Value',4);
+
+
+
+function edit_subsample_number_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_subsample_number (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_subsample_number as text
+%        str2double(get(hObject,'String')) returns contents of edit_subsample_number as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_subsample_number_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_subsample_number (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

@@ -23,7 +23,8 @@ flatten_method_ind = funParams.method_ind;
 Gaussian_sigma = funParams.GaussFilterSigma;
 ImageFlattenProcessOutputDir = funParams.OutputDirectory;
 TimeFilterSigma = funParams.TimeFilterSigma;                        
- 
+Sub_Sample_Num  = funParams.Sub_Sample_Num;
+
 
 if (~exist(ImageFlattenProcessOutputDir,'dir'))
     mkdir(ImageFlattenProcessOutputDir);
@@ -33,9 +34,14 @@ nFrame = movieData.nFrames_;
 
 for iChannel = selected_channels
     
+    Frames_to_Seg = 1:Sub_Sample_Num:nFrame;
+    Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1]),[1 1]);
+    Frames_results_correspondence = Frames_results_correspondence(1:nFrame);
+       
     img_pixel_pool = [];
-    for iFrame = 1 : nFrame
-            currentImg = movieData.channels_(iChannel).loadImage(iFrame);
+    for iFrame_subsample = 1 : length(Frames_to_Seg)
+        iFrame = Frames_to_Seg(iFrame_subsample);
+        currentImg = movieData.channels_(iChannel).loadImage(iFrame);
         img_pixel_pool = [img_pixel_pool currentImg(:)];
     end
     
@@ -44,10 +50,10 @@ for iChannel = selected_channels
     
     [hist_all_frame, hist_bin] = hist(img_pixel_pool,55);
     
-    for iFrame = 1 : nFrame
-        hist_this_frame = hist_all_frame(:,iFrame);
+    for iFrame_subsample = 1 : length(Frames_to_Seg)
+        hist_this_frame = hist_all_frame(:,iFrame_subsample);
         ind = find(hist_this_frame==max(hist_this_frame));
-        center_value(iFrame) = hist_bin(ind(1));
+        center_value(iFrame_subsample) = hist_bin(ind(1));
     end
     
     center_value = center_value/max(center_value);
@@ -65,8 +71,9 @@ for iChannel = selected_channels
 
     display(['Start to do image flatten in Channel ',num2str(iChannel)]);
 
-    for iFrame = 1 : nFrame
-        disp(['Frame: ',num2str(iFrame)]);
+     for iFrame_subsample = 1 : length(Frames_to_Seg)
+         iFrame = Frames_to_Seg(iFrame_subsample);
+         disp(['Frame: ',num2str(iFrame)]);
         
         % Read in the intensity image.
         currentImg = movieData.channels_(iChannel).loadImage(iFrame);
@@ -76,12 +83,12 @@ for iChannel = selected_channels
         if flatten_method_ind == 1
             currentImg = log(currentImg);
             currentImg = currentImg - log(img_min);
-            currentImg = currentImg/log((center_value(iFrame))*img_max);
+            currentImg = currentImg/log((center_value(iFrame_subsample))*img_max);
             
         else
             
             currentImg = currentImg - img_min;
-            currentImg = currentImg/(center_value(iFrame))/img_max;
+            currentImg = currentImg/(center_value(iFrame_subsample))/img_max;
             if flatten_method_ind == 2
                 currentImg = (currentImg).^(1/2);
             end
@@ -97,13 +104,21 @@ for iChannel = selected_channels
             currentImg = imfilter(currentImg, fspecial('gaussian',round(5*Gaussian_sigma), Gaussian_sigma),'replicate','same');
         end
         currentImg(find(currentImg>1)) = 1;
-        imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_',num2str(iFrame),'.tif']);
-         
-        if iFrame==1
-            Image_tensor = zeros(size(currentImg,1),size(currentImg,2),nFrame);
+        
+        for sub_i = 1 : Sub_Sample_Num
+            if iFrame + sub_i-1 <= nFrame
+              imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
+                   num2str(iFrame + sub_i-1),'.tif']);
+            end
         end
-        Image_tensor(:,:,iFrame) = currentImg;
-
+        
+        
+        if(TimeFilterSigma > 0)
+            if iFrame_subsample==1
+                Image_tensor = zeros(size(currentImg,1),size(currentImg,2),length(Frames_to_Seg));
+            end
+            Image_tensor(:,:,iFrame_subsample) = currentImg;
+        end
     end
 end
 
@@ -121,9 +136,18 @@ if(TimeFilterSigma > 0)
     
     time_filtered = imfilter(Image_tensor,temperal_filter,'replicate','same');
     
-    for iFrame = 1 : nFrame
+    for iFrame_subsample = 1 : length(Frames_to_Seg)
+        iFrame = Frames_to_Seg(iFrame_subsample);
         disp(['Frame: ',num2str(iFrame)]);
-        currentImg = squeeze(time_filtered(:,:,iFrame));
-        imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_',num2str(iFrame),'.tif']);
+        currentImg = squeeze(time_filtered(:,:,iFrame_subsample));
+        
+        for sub_i = 1 : Sub_Sample_Num
+            if iFrame + sub_i-1 <= nFrame
+            disp(['Frame: ',num2str(iFrame + sub_i-1)]);
+       
+            imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
+                num2str(iFrame + sub_i-1),'.tif']);
+            end
+        end
     end
 end

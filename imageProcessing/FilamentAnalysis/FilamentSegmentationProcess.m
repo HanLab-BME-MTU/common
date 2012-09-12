@@ -237,6 +237,12 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % Gelfand lab
             funParams.VIF_Outgrowth_Flag = 1;
             
+            % sub-sample number, since often VIF images are taken at a
+            % lower sample rate than the other channel, so use this number
+            % to save some time.
+            funParams.Sub_Sample_Num = 1;
+            
+            
         end
     end
 end

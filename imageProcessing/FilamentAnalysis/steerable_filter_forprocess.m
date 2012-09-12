@@ -21,7 +21,8 @@ selected_channels = funParams.ChannelIndex;
 BaseSteerableFilterSigma = funParams.BaseSteerableFilterSigma;
 Levelsofsteerablefilters = funParams.Levelsofsteerablefilters;
 ImageFlattenFlag = funParams.ImageFlattenFlag;
-            
+Sub_Sample_Num = funParams.Sub_Sample_Num;
+
 indexFlattenProcess = 0;
 for i = 1 : nProcesses
     if(strcmp(movieData.processes_{i}.getName,'Image Flatten')==1)
@@ -46,6 +47,10 @@ nFrame = movieData.nFrames_;
 % RES_cell = cell(1,nFrame);
 % Image_cell = cell(1,nFrame);
 
+Frames_to_Seg = 1:Sub_Sample_Num:nFrame;
+Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1]),[1 1]);
+Frames_results_correspondence = Frames_results_correspondence(1:nFrame);
+
 for iChannel = selected_channels
     
     % Make output directory for the steerable filtered images
@@ -60,7 +65,9 @@ for iChannel = selected_channels
     
     display(['Start to do steerable filtering in Channel ',num2str(iChannel)]);
 
-    for iFrame = 1 : nFrame
+   
+    for iFrame_subsample = 1 : length(Frames_to_Seg)
+        iFrame = Frames_to_Seg(iFrame_subsample);
         disp(['Frame: ',num2str(iFrame)]);
         
         % Read in the intensity image.
@@ -69,62 +76,22 @@ for iChannel = selected_channels
         else
             currentImg = movieData.channels_(iChannel).loadImage(iFrame);
         end
-% 
-%         if iFrame==1
-%             Image_tensor = zeros(size(currentImg,1),size(currentImg,2),nFrame);
-%             Res_tensor = zeros(size(currentImg,1),size(currentImg,2),nFrame);
-%         end
         currentImg = double(currentImg);
-%         Image_cell{iFrame} = currentImg;
-%         Image_tensor(:,:,iFrame) = currentImg;
-%         levels = 0:Levelsofsteerablefilters-1;
+
         levels_sizes = 2.^((1:Levelsofsteerablefilters)-1);
         
         % Steerable filtering using four scales one doubling the previous one.
         % function multiscaleSteerableDetector will automatically merge the results
-         [MAX_st_res, orienation_map, nms, scaleMap] = multiscaleSteerableDetector(currentImg, 4, BaseSteerableFilterSigma.*levels_sizes);
-%        [MAX_st_res, orienation_map, nms, scaleMap] = multiscaleSteerableDetector(currentImg, 4, BaseSteerableFilterSigma+levels);
-        
-        imwrite((MAX_st_res)/(max(max(MAX_st_res))),[ImageSteerableFilterChannelOutputDir,'/MAX_st_res_',num2str(iFrame),'.tif']);
+        [MAX_st_res, orienation_map, nms, scaleMap] = multiscaleSteerableDetector(currentImg, 4, BaseSteerableFilterSigma.*levels_sizes);
+       
+        for sub_i = 1 : Sub_Sample_Num
+            if iFrame + sub_i-1 <= nFrame
+                imwrite((MAX_st_res)/(max(max(MAX_st_res))), ...
+                    [ImageSteerableFilterChannelOutputDir,'/MAX_st_res_',num2str(iFrame + sub_i-1),'.tif']);
+            end
+        end
         
         save([ImageSteerableFilterChannelOutputDir,'/steerable_',num2str(iFrame),'.mat'],...
             'orienation_map', 'MAX_st_res','nms');
-        
-%         RES_cell{iFrame} = MAX_st_res;
-%          Res_tensor(:,:,iFrame) = MAX_st_res;
     end
-    
 end
-% 
-% save('temperal.mat','Image_cell','RES_cell','Image_tensor','Res_tensor');
-% 
-% temperal_filter = zeros(1,1,11);
-% 
-% H = fspecial('gaussian',11, 2);
-% H_1D = H(6,:);
-% 
-% H_1D = H_1D/(sum(H_1D));
-% 
-% temperal_filter(1,1,:) = H_1D(:);
-% 
-% time_filtered = imfilter(Image_tensor,temperal_filter,'replicate','same');
-%         
-% 
-% 
-%     for iFrame = 1 : nFrame
-%         disp(['Frame: ',num2str(iFrame)]);
-%         
-%         currentImg = squeeze(time_filtered(:,:,iFrame));
-%         
-%         levels_sizes = 2.^((1:Levelsofsteerablefilters)-1);
-%         
-%         % Steerable filtering using four scales one doubling the previous one.
-%         % function multiscaleSteerableDetector will automatically merge the results
-%          [MAX_st_res, orienation_map, nms, scaleMap] = multiscaleSteerableDetector(currentImg, 4, BaseSteerableFilterSigma.*levels_sizes);
-% %        [MAX_st_res, orienation_map, nms, scaleMap] = multiscaleSteerableDetector(currentImg, 4, BaseSteerableFilterSigma+levels);
-%         
-%         imwrite([RES_cell{iFrame}/(max(max(RES_cell{iFrame}))) (MAX_st_res)/(max(max(RES_cell{iFrame})))],[ImageSteerableFilterChannelOutputDir,'/time_filtered_MAX_st_res_',num2str(iFrame),'.tif']);
-%         display([mean2(RES_cell{iFrame})   mean2(MAX_st_res)]);
-%         save([ImageSteerableFilterChannelOutputDir,'/time_filtered_steerable_',num2str(iFrame),'.mat'],...
-%             'orienation_map', 'MAX_st_res','nms');        
-%     end
