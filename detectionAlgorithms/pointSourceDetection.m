@@ -1,15 +1,21 @@
 %[pstruct, mask, imgLM, imgLoG] = pointSourceDetection(img, sigma, mode)
 %
-% Inputs :         img : input image
-%                sigma : standard deviation of the Gaussian PSF
-%       {'mode', mode} : parameters to estimate, default 'xyAc'
-%     {'alpha', alpha} : 
-%       {'mask', mask} : 
+% Inputs :   
+%             img : input image
+%           sigma : standard deviation of the Gaussian PSF
 %
-% Outputs:  pstruct : output structure with Gaussian parameters, standard deviations, p-values
-%              mask : mask of significant (in amplitude) pixels
-%             imgLM : image of local maxima
-%            imgLoG : Laplacian of Gaussian filtered image
+% Options (as 'specifier', value): 
+%
+%          'mode' : parameters to estimate. Default: 'xyAc'.
+%         'alpha' : alpha value used in the statistical tests. Default: 0.05.
+%          'mask' : mask of pixels to include in the detection. Default: all.
+%   'FitMixtures' : true | {false}. Toggles mixture-model fitting.
+%
+% Outputs:  
+%         pstruct : output structure with Gaussian parameters, standard deviations, p-values
+%            mask : mask of significant (in amplitude) pixels
+%           imgLM : image of local maxima
+%          imgLoG : Laplacian of Gaussian filtered image
 
 % Francois Aguet, April 2-6 2011
 
@@ -21,12 +27,12 @@ ip.CaseSensitive = false;
 ip.addRequired('img', @isnumeric);
 ip.addRequired('sigma', @isscalar);
 ip.addParamValue('Mode', 'xyAc', @ischar);
-ip.addParamValue('alpha', 0.05, @isscalar);
-ip.addParamValue('mask', [], @isnumeric);
+ip.addParamValue('Alpha', 0.05, @isscalar);
+ip.addParamValue('Mask', [], @isnumeric);
 ip.addParamValue('FitMixtures', false, @islogical);
 ip.parse(img, sigma, varargin{:});
 mode = ip.Results.Mode;
-alpha = ip.Results.alpha;
+alpha = ip.Results.Alpha;
 
 % Gaussian kernel
 w = ceil(4*sigma);
@@ -97,8 +103,8 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
     imgLM = allMax .* mask;
     
     % apply cell shape mask
-    if ~isempty(ip.Results.mask)
-        imgLM(ip.Results.mask == 0) = 0;
+    if ~isempty(ip.Results.Mask)
+        imgLM(ip.Results.Mask == 0) = 0;
     end
     
     
