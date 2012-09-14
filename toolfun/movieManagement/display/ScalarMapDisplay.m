@@ -23,19 +23,11 @@ classdef ScalarMapDisplay < MovieDataDisplay
         
         function h=initDraw(obj,data,tag,varargin)
             
-            % Set the NaN as the lowest value
+            % Display the first slice along the first dimension
             imData= data(:,:,1);
+            h = imagesc(obj.formatData(imData), varargin{:});
             
-            % Smooth the data if the upsampling factor is different than 1
-            if obj.UpSample ~= 1
-                h = imagesc(smoothActivityMap(imData,...
-                    'UpSample', obj.UpSample,...
-                    'SmoothParam', obj.SmoothParam), varargin{:});
-            else
-                h = imagesc(imData, varargin{:});
-            end
-            
-            % Add tag
+            % Add tag and attach data to graphic object
             set(h,'Tag',tag,'UserData',data);
             
             % Create slider if data z-dimension is greater than 1
@@ -59,8 +51,7 @@ classdef ScalarMapDisplay < MovieDataDisplay
                     'String',obj.Labels{2},obj.sfont{:},...
                     'BackgroundColor',get(mainFig,'Color')); 
                 end
-            end
-            
+            end            
             
         end
 
@@ -73,45 +64,50 @@ classdef ScalarMapDisplay < MovieDataDisplay
             % Reset alpha value as the size of the image may change
             set(h,'AlphaData',1);
             
-            if obj.UpSample ~= 1
-                set(h,'CData', smoothActivityMap(data(:,:,depth),...
-                    'UpSample', obj.UpSample,...
-                    'SmoothParam', obj.SmoothParam));
-            else
-                set(h,'CData',data(:,:,depth));
-            end
+            % Set image CData after smoothing if applicable
+            set(h,'CData', obj.formatData(data(:,:,depth)));
             
             obj.applyImageOptions(h,data);
         end
     end
     methods(Access=protected)
         
-        function smoothedData = smoothData(obj, data)
-            smoothActivityMap
-            % Smooth data sing cubic smoothing spline
-            warning('off','SPLINES:CHCKXYWP:NaNs');
-            smoothedData = csaps({1:size(data,1), 1:size(data,2)}, data,...
-                obj.SmoothingParameter, {1:1/obj.UpsamplingFactor:size(data,1), ...
-                1:1/obj.UpsamplingFactor:size(data,2)});
+        function smoothedData = formatData(obj, imData)
+            if obj.UpSample ~= 1
+                % Smooth the data using cubic spline interpolcation
+                smoothedData = smoothActivityMap(imData,...
+                    'UpSample', obj.UpSample,...
+                    'SmoothParam', obj.SmoothParam);
+            else
+                % Use the raw data
+                smoothedData = imData;
+            end
         end
         
         function applyImageOptions(obj,h,data)
             % Clean existing image and set image at the bottom of the stack
             hAxes = get(h,'Parent');
             
+            % Remove all other images in the axes and stack it at the
+            % bottom
             child = get(hAxes,'Children');
             imChild = child(strcmp(get(child,'Type'),'image'));
             delete(imChild(imChild~=h));
             uistack(h,'bottom');
             
-            % Set the colormap
             imData = get(h,'CData');
+            
+            % Set XData and YData to have x-axis and y-axis labels
+            % independent of the upsampling factor
+            set(h,'XData',1:1/obj.UpSample:size(imData,2)/obj.UpSample);
+            set(h,'YData',1:1/obj.UpSample:size(imData,1)/obj.UpSample);
+            
+            % Set the alphamask            
             alphamask =true(size(imData));
             alphamask(isnan(imData))=false;
             set(h,'AlphaData',alphamask,'AlphaDataMapping','none');
 
-            colormap(hAxes,obj.Colormap);
-            
+            colormap(hAxes,obj.Colormap);            
             
             % Set the colorbar
             hCbar = findobj(get(hAxes,'Parent'),'Tag','Colorbar');
@@ -131,7 +127,7 @@ classdef ScalarMapDisplay < MovieDataDisplay
             % Set the color limits
             if ~isempty(obj.CLim),set(hAxes,'CLim',obj.CLim); end
                         
-            % Set the axes
+            % Set the axes and labels properties
             if ~isempty(obj.Labels{1}),xlabel(obj.Labels{1},'Parent',hAxes,obj.lfont{:}); end
             if size(data,3)>1   
                 if ~isempty(obj.Labels{3}),ylabel(obj.Labels{3},'Parent',hAxes,obj.lfont{:}); end
@@ -139,8 +135,6 @@ classdef ScalarMapDisplay < MovieDataDisplay
                 if ~isempty(obj.Labels{2}),ylabel(obj.Labels{2},'Parent',hAxes,obj.lfont{:}); end
             end
             set(hAxes,'LineWidth', 1.5, obj.sfont{:});
-            set(gca,'XTickLabel',get(gca,'XTick')/obj.UpSample);
-            set(gca,'YTickLabel',get(gca,'YTick')/obj.UpSample);
         end
             
     end 
