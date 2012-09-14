@@ -29,7 +29,6 @@ classdef ScalarMapDisplay < MovieDataDisplay
             % Smooth the data if the upsampling factor is different than 1
             if obj.UpSample ~= 1
                 h = imagesc(smoothActivityMap(imData,...
-                    'XData',1:1/obj.UpSample:size(imData,1),...
                     'UpSample', obj.UpSample,...
                     'SmoothParam', obj.SmoothParam), varargin{:});
             else
@@ -76,7 +75,6 @@ classdef ScalarMapDisplay < MovieDataDisplay
             
             if obj.UpSample ~= 1
                 set(h,'CData', smoothActivityMap(data(:,:,depth),...
-                    'XData',1:1/obj.UpSample:size(imData,1),...
                     'UpSample', obj.UpSample,...
                     'SmoothParam', obj.SmoothParam));
             else
@@ -141,6 +139,8 @@ classdef ScalarMapDisplay < MovieDataDisplay
                 if ~isempty(obj.Labels{2}),ylabel(obj.Labels{2},'Parent',hAxes,obj.lfont{:}); end
             end
             set(hAxes,'LineWidth', 1.5, obj.sfont{:});
+            set(gca,'XTickLabel',get(gca,'XTick')/obj.UpSample);
+            set(gca,'YTickLabel',get(gca,'YTick')/obj.UpSample);
         end
             
     end 
