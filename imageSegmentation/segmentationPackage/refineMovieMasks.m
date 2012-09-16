@@ -80,6 +80,12 @@ function movieData = refineMovieMasks(movieData,paramsIn)
 %           in.
 %           Optional. Default is true.
 %
+%           ('OpeningRadius -> non-negative integer scalar)
+%           If this parameter is greater than zero, the mask will be eroded
+%           then dilated using a disk-shaped structuring element of this radius. This
+%           has the effect of removing spikes in the mask.
+%           Optional. Default: 0, meaning do not perform.
+%
 %       ('EdgeRefinement' -> True/False)
 %       If true, edge detection will be used to refine the position of the
 %       mask edge to the nearest detected edge in the image. This will be
@@ -225,10 +231,15 @@ if p.EdgeRefinement %Images are only needed for edge-refinement
 end
 
 if p.ClosureRadius > 0 %If closure is to be performed, create the structuring element
-    seClose = strel('disk',p.ClosureRadius(1),0);    
+    seClose = strel('disk',p.ClosureRadius(1),0);
 end
 
-nImages = movieData.nFrames_;   
+if p.OpeningRadius > 0
+    seOpen = strel('disk',p.OpeningRadius(1),0);
+end
+
+
+nImages = movieData.nFrames_;
 nImTot = nImages * nChanThresh;
 
 %Set up the input and mask directories
@@ -305,7 +316,11 @@ for iChan = 1:nChanThresh
                 currMask = imclose(currMask,seClose);            
             end            
             
-           
+            %Perform initial opening operation
+            if p.OpeningRadius > 0
+                currMask = imopen(currMask,seOpen);
+            end
+            
         end
         
         

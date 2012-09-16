@@ -53,6 +53,7 @@ classdef MaskRefinementProcess < MaskProcessingProcess
             funParams.MaskCleanUp = true;
             funParams.MinimumSize = 10;
             funParams.ClosureRadius = 3;
+            funParams.OpeningRadius = 0;
             funParams.ObjectNumber = 1; %only 1 object per mask
             funParams.FillHoles = true;
             funParams.EdgeRefinement = false; %This off by default because it sort of sucks, and is slow.

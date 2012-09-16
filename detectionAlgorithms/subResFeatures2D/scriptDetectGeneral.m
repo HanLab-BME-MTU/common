@@ -1,7 +1,7 @@
 
 %% movie information
-movieParam.imageDir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaVandCellEdge/120828_Cs1C4/imagesAlphaV/'; %directory where images are
-movieParam.filenameBase = '120828_Cs1C4_CHO_mEos2Av_'; %image file name base
+movieParam.imageDir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/farnesylAndCellEdge/110614_Cs1C1/imagesFarn/'; %directory where images are
+movieParam.filenameBase = '110614_mEos2farn_'; %image file name base
 movieParam.firstImageNum = 502; %number of first image in movie
 movieParam.lastImageNum = 550; %number of last image in movie
 movieParam.digits4Enum = 5; %number of digits used for frame enumeration (1-4).
@@ -19,15 +19,15 @@ detectionParam.integWindow = 0; %number of frames before and after a frame for t
 detectionParam.calcMethod = 'g';
 
 %absolute background info and parameters...
-background.imageDir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaVandCellEdge/120828_Cs1C4/bgAlphaV/';
-background.filenameBase = 'crop_120828_Cs1C4_CHO_mEos2Av_';
+background.imageDir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/farnesylAndCellEdge/110614_Cs1C1/bgFarn/';
+background.filenameBase = 'crop_110614_mEos2farn_';
 background.alphaLocMaxAbs = 0.01;
 detectionParam.background = background;
 
 %% additional input
 
 %saveResults
-saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaVandCellEdge/120828_Cs1C4/analysisAlphaV/'; %directory where to save input and output
+saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/farnesylAndCellEdge/110614_Cs1C1/analysisFarn/'; %directory where to save input and output
 saveResults.filename = 'detectionTest1.mat'; %name of file where input and output are saved
 % saveResults = 0;
 

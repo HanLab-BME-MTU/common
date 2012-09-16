@@ -1,17 +1,13 @@
-function [fracTrajClass,f2fDispRMS] = plotPropertySpatialMap2D(tracksFinal,...
-    figureName,minLength,properties2plot,positions2plot,image,fixedSegLength,...
-    diffAnalysisRes,diffModeAnRes)
+function plotPropertySpatialMap2D(tracksFinal,diffAnalysisRes,diffModeAnRes,...
+    properties2plot,positions2plot,lengthMinMax,fixedSegLength,figureName,image)
 %PLOTPROPERTYSPATIALMAP creates spatial maps of trajectory properties
 %
-%SYNOPSIS [fracTrajClass,f2fDispRMS] = plotPropertySpatialMap2D(tracksFinal,...
-%    figureName,minLength,properties2plot,positions2plot,image,fixedSegLength,...
-%    diffAnalysisRes)
+%SYNOPSIS plotPropertySpatialMap2D(tracksFinal,diffAnalysisRes,diffModeAnRes,...
+%    properties2plot,positions2plot,lengthMinMax,fixedSegLength,figureName,image)
 %
 %INPUT  tracksFinal    : Output of trackCloseGapsKalman.
-%       figureName     : Figure name.
-%       minLength      : Minimum length of a trajectory to analyze and
-%                        include in plots.
-%                        Optional. Default: 20.
+%       diffAnalysisRes: Output of trackDiffusionAnalysis1.
+%       diffModeAnRes  : Output of trackDiffModeAnalysis.
 %       properties2plot: Row vector of properties to plot:
 %                        1 - Diffusion classification.
 %                        2 - Diffusion coefficient from MSS analysis.
@@ -26,28 +22,23 @@ function [fracTrajClass,f2fDispRMS] = plotPropertySpatialMap2D(tracksFinal,...
 %                        2 - Start position.
 %                        3 - End position.
 %                        Optional. Default: 1.
-%       image          : Image to overlay spatial map on.
-%                        Optional. Default: [].
+%       lengthMinMax   : Minimum and maximum length of trajectories to
+%                        include in plots.
+%                        Optional. Default: [5 99].
 %       fixedSegLength : 1 to divide a property range into segments of
 %                        fixed length, 0 to divide a property range into
 %                        segments of variable length such that they contain
 %                        an equal number of elements.
 %                        Optional. Default: 1;
-%       diffAnalysisRes: Output of trackDiffusionAnalysis1.
-%                        Optional. If not input but needed, it will be
-%                        calculated within the code.
-%       diffModeAnRes  : Output of trackDiffModeAnalysis.
-%                        Optional. If not input but needed, it will be
-%                        calculated within the code. NOT IMPLEMENTED YET,
-%                        so must be input if needed.
-%
-%OUTPUT fracTrajClass  : Row vector with fraction of trajectories
-%                        classified as confined, Brownian and directed.
-%       f2fDispRMS     : Row vector with root mean square of frame-to-frame
-%                        displacement for confined, Brownian, directed, all
-%                        classified (i.e. confined+Brownian+directed) and
-%                        all (i.e. all longer than minLength frames)
-%                        trajectories.
+%       figureName     : Figure name. 
+%                        Optional. Default: [].
+%       image          : Image(s) to overlay spatial map on.
+%                        Can be 1 or 2 images.
+%                        If 1 image, the image will be displayed as is.
+%                        If 2 images (usually masks), then only their
+%                        outline will be plotted (green for image 1, red
+%                        for image 2)
+%                        Optional. Default: None.
 %
 %REMARKS If there are n properties2plot and m positions2plot, the code will
 %output n*m spatial maps.
@@ -56,17 +47,9 @@ function [fracTrajClass,f2fDispRMS] = plotPropertySpatialMap2D(tracksFinal,...
 
 %% Input
 
-if nargin < 1
+if nargin < 3
     disp('--plotPropertySpatialMap2D: Incorrect number of input arguments!');
     return
-end
-
-if nargin < 2 || isempty(figureName)
-    figureName = [];
-end
-
-if nargin < 3 || isempty(minLength)
-    minLength = 20;
 end
 
 if nargin < 4 || isempty(properties2plot)
@@ -77,20 +60,20 @@ if nargin < 5 || isempty(positions2plot)
     positions2plot = 1;
 end
 
-if nargin < 6 || isempty(image)
-    image = [];
+if nargin < 6 || isempty(lengthMinMax)
+    lengthMinMax = [5 99];
 end
 
 if nargin < 7 || isempty(fixedSegLength)
     fixedSegLength = 1;
 end
 
-if nargin < 8 || isempty(diffAnalysisRes)
-    diffAnalysisRes = [];
+if nargin < 8 || isempty(figureName)
+    figureName = [];
 end
 
-if nargin < 9 || isempty(diffModeAnRes)
-    diffModeAnRes = [];
+if nargin < 9 || isempty(image)
+    image = [];
 end
 
 %% Preparation for plotting
@@ -103,23 +86,20 @@ segmentColor = [0 0 0; 0 0 1; 0.2 0.7 0.7; 0 1 1; 0 1 0; ...
     0.6824 0.4667 0; 1 0.7 0; 1 0 0; 1 0 1; 0.7 0 1];
 
 %construct parts of figure titles
-plottedProperty = {'Classification','Diffusion coefficient MSS',...
+plottedProperty = {'MSS classification','MSS diffusion coefficient',...
     'Confinement radius','Lifetime','Frame-to-frame displacement',...
-    'Diffusion mode dispSq','Diffusion coefficient dispSq'};
+    'Diffusion mode','Mode analysis diffusion coefficient'};
 plottedPosition = {'center position','start position','end position'};
 
 %% Trajectory pre-processing
 
-%keep only trajectories longer than minLength
-criteria.lifeTime.min = minLength;
+%keep only trajectories of acceptable length
+criteria.lifeTime.min = lengthMinMax(1);
+criteria.lifeTime.max = lengthMinMax(2);
 indx = chooseTracks(tracksFinal,criteria);
 tracksFinal = tracksFinal(indx);
-if ~isempty(diffAnalysisRes)
-    diffAnalysisRes = diffAnalysisRes(indx);
-end
-if ~isempty(diffModeAnRes)
-    diffModeAnRes = diffModeAnRes(indx);
-end
+diffAnalysisRes = diffAnalysisRes(indx);
+diffModeAnRes = diffModeAnRes(indx);
 
 %save tracksFinal into a new variable name
 inputStructure = tracksFinal;
@@ -232,21 +212,11 @@ maxYCoord =  ceil(max(trajYCoord(:)));
 
 %% Property extraction and pre-processing
 
-%perform diffusion analysis if not supplied
-if any(properties2plot<=3) && isempty(diffAnalysisRes)
-    diffAnalysisRes = trackDiffusionAnalysis1(inputStructure,1,2,0,0.05);
-end
-
-% %perform diffusion mode nalysis if not supplied
-% if any(properties2plot>=6) && isempty(diffModeAnRes)
-%     diffModeAnRes = trackDiffModeAnalysis(inputStructure,1,2,0,0.05);
-% end
-
-%get classifications from diffusion analysis results
-trajClass = vertcat(diffAnalysisRes.classification);
-trajClass = trajClass(:,2);
-
 if any(properties2plot==1)
+    
+    %get classifications from MSS diffusion analysis results
+    trajClass = vertcat(diffAnalysisRes.classification);
+    trajClass = trajClass(:,2);
     
     %calculate the fraction of trajectories in each classification
     fracTrajClass = hist(trajClass,1:3);
@@ -312,7 +282,7 @@ if any(properties2plot==6)
     trajDiffMode = vertcat(diffModeAnRes.diffMode);
     
     %calculate the fraction of trajectories in each mode
-    fracDiffMode = hist(trajDiffMode,1:5);
+    fracDiffMode = hist(trajDiffMode,1:4);
     fracDiffMode = fracDiffMode / sum(fracDiffMode);
     
 end
@@ -330,16 +300,16 @@ if any(properties2plot==7)
     
 end
 
-%% Some numbers for output
-
-%get indices of trajectories in the various classifications
-indxConf = find(trajClass==1);
-indxBrown = find(trajClass==2);
-indxDir = find(trajClass==3);
-
-f2fDispRMS = [nanmean(frame2frameDisp(indxConf)) nanmean(frame2frameDisp(indxBrown)) ...
-    nanmean(frame2frameDisp(indxDir)) nanmean(frame2frameDisp([indxConf;indxBrown;indxDir])) ...
-    nanmean(frame2frameDisp)];
+% %% Some numbers for output
+% 
+% %get indices of trajectories in the various classifications
+% indxConf = find(trajClass==1);
+% indxBrown = find(trajClass==2);
+% indxDir = find(trajClass==3);
+% 
+% f2fDispRMS = [nanmean(frame2frameDisp(indxConf)) nanmean(frame2frameDisp(indxBrown)) ...
+%     nanmean(frame2frameDisp(indxDir)) nanmean(frame2frameDisp([indxConf;indxBrown;indxDir])) ...
+%     nanmean(frame2frameDisp)];
 
 %% Plotting
 
@@ -360,7 +330,7 @@ for iProperty = properties2plot
         hold on
         
         %plot the image to overlay the spatial map on, if given
-        if ~isempty(image)
+        if size(image,3)==1
             imshow(image,[]);
         else
             imshow(ones(maxYCoord,maxXCoord),[]);
@@ -500,19 +470,12 @@ for iProperty = properties2plot
                         '.','Color',[0.7 0.7 0.7]);
                     legendText{end+1} = 'unclassified'; %#ok<AGROW>
                 end
-
+                
                 %mode 3
                 indx = find(trajDiffMode == 3);
                 if ~isempty(indx)
                     plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
                         '.','Color','c');
-                end
-                                
-                %mode 1
-                indx = find(trajDiffMode == 1);
-                if ~isempty(indx)
-                    plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
-                        '.','Color','k');
                 end
                 
                 %mode 2
@@ -528,14 +491,14 @@ for iProperty = properties2plot
                     plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
                         '.','Color','m');
                 end
-                                
-                %mode 5
-                indx = find(trajDiffMode == 5);
+                
+                %mode 1
+                indx = find(trajDiffMode == 1);
                 if ~isempty(indx)
                     plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
-                        '.','Color','g');
+                        '.','Color','k');
                 end
-                                
+                
             case 7 %diffusion coefficient from mode analysis
                 
                 %trajectories without a diffusion coefficient i.e.
@@ -556,6 +519,13 @@ for iProperty = properties2plot
                     end
                 end
                 
+        end
+        
+        if size(image,3)==2
+            maskBounds = bwboundaries(image(:,:,1));
+            cellfun(@(x)(plot(x(:,2),x(:,1),'k','LineWidth',2)),maskBounds);
+            maskBounds = bwboundaries(image(:,:,2));
+            cellfun(@(x)(plot(x(:,2),x(:,1),'k--','LineWidth',2)),maskBounds);
         end
         
         %add subplot title
@@ -668,9 +638,7 @@ for iProperty = properties2plot
                     'c','EdgeColor','none');
                 bar([4 5],[fracDiffMode(4) 0],'BarWidth',1,'FaceColor',...
                     'm','EdgeColor','none');
-                bar([5 6],[fracDiffMode(5) 0],'BarWidth',1,'FaceColor',...
-                    'g','EdgeColor','none');
-                legendText = {'mode 1','mode 2','mode 3','mode 4','mode 5'};
+                legendText = {'mode 1','mode 2','mode 3','mode 4'};
                 
             case 7 %diffusion coefficient from mode analysis
                 
