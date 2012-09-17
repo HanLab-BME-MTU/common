@@ -29,8 +29,9 @@ ip.addRequired('deltaT',@isscalar);
     newBlock{1} = block{1};
     cc = 1;
     for iB = 2:nB
-        if ( block{iB}(1) - newBlock{cc}(end) == 2 ) & TS( block{iB}(1) - 1 ) > 0%Testing gap
-            newBlock{cc} = [newBlock{cc};block{iB}(1)-1;block{iB}];
+        %if ( block{iB}(1) - newBlock{cc}(end) == 2 ) & TS( block{iB}(1) - 1 ) > 0%Testing gap
+        if ( TS( newBlock{cc}(end):block{iB}(1) ) > 0 ) & TS( block{iB}(1) - 1 ) > 0%Testing gap
+            newBlock{cc} = [newBlock{cc};[newBlock{cc}(end)+1:block{iB}(1)-1]';block{iB}];
         else
             cc = cc + 1;
             newBlock{cc} = block{iB};
@@ -64,6 +65,9 @@ ip.addRequired('deltaT',@isscalar);
 
         clear deltaTl;clear deltaTr;
     end
+PersTime  = PersTime(:);
+maxVeloc  = maxVeloc(:);
+meanVeloc = meanVeloc(:);
 
 end%End of main function
 
