@@ -11,6 +11,7 @@ classdef ScalarMapDisplay < MovieDataDisplay
         lfont = {'FontName', 'Helvetica', 'FontSize', 22};
         UpSample = 1;
         SmoothParam = .99;
+        Scaling = [1 1 1];
     end
     properties (SetAccess = protected)
         slider;
@@ -75,12 +76,12 @@ classdef ScalarMapDisplay < MovieDataDisplay
         function smoothedData = formatData(obj, imData)
             if obj.UpSample ~= 1
                 % Smooth the data using cubic spline interpolcation
-                smoothedData = smoothActivityMap(imData,...
+                smoothedData = smoothActivityMap(imData * obj.Scaling(3),...
                     'UpSample', obj.UpSample,...
                     'SmoothParam', obj.SmoothParam);
             else
                 % Use the raw data
-                smoothedData = imData;
+                smoothedData = imData * obj.Scaling(3);
             end
         end
         
@@ -99,8 +100,10 @@ classdef ScalarMapDisplay < MovieDataDisplay
             
             % Set XData and YData to have x-axis and y-axis labels
             % independent of the upsampling factor
-            set(h,'XData',1:1/obj.UpSample:size(imData,2)/obj.UpSample);
-            set(h,'YData',1:1/obj.UpSample:size(imData,1)/obj.UpSample);
+            xscaling = 1/obj.UpSample*obj.Scaling(2);
+            yscaling = 1/obj.UpSample*obj.Scaling(1);
+            set(h, 'XData', 1:xscaling:size(imData,2)*xscaling);
+            set(h, 'YData', 1:yscaling:size(imData,1)*yscaling);
             
             % Set the alphamask            
             alphamask =true(size(imData));
@@ -156,6 +159,8 @@ classdef ScalarMapDisplay < MovieDataDisplay
             params(7).validator=@(x) isscalar(x) && x>=1 && round(x)==x;
             params(8).name='SmoothParam';
             params(8).validator=@(x) isscalar(x) && x>=0 && x<=1;
+            params(9).name='Scaling';
+            params(9).validator=@isvector;
         end
 
         function f=getDataValidator()
