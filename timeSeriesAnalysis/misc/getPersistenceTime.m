@@ -1,21 +1,21 @@
-function [ProtPersTime,RetrPersTime,ProtBlockOut,RetrBlockOut,Up,Dw] = getPersistenceTime(TS,deltaT,varargin)
+function [Protrusion,Retraction] = getPersistenceTime(TS,deltaT,varargin)
 %This function calculate the threshold to define a protrusion or retraction
 %and uses it to estimate the time of protrusion and retraction for each
 %event in TS
 %Usage:
-%       [ProtPersTime,RetrPersTime,ProtBlockOut,RetrBlockOut,Up,Dw] = getPersistenceTime(TS,deltaT,varargin)
+%       [Protrusion,Retraction,Up,Dw] = getPersistenceTime(TS,deltaT,varargin)
 %
 % Input:
 %       TS     - vector - Time series
 %       deltaT - scalar - sampling rate (in seconds, every deltaT seconds)
 %       Optional:
-%               noiseStd - number of standard deviations used to calculate the
-%                          local noise threshold (Default = 1)
+%               per - number of standard deviations used to calculate the
+%               threshold
 %
 % Output:
-%       ProtPersTime - vector - Protrusion time for all protrusive events
+%       Protrusion.PersTime - vector - Protrusion time for all protrusive events
+%       Protusion.BlockOut - cell   - Time point where Protrusion happened
 %       RetrPersTime - vector - Retraction time for all retractive events
-%       ProtBlockOut - cell   - Time point where Protrusion happened
 %       RetrBlockOut - cell   - Time point where Retraction happened
 %       Up           - scalar - Upper threshold
 %       Dw           - scalar - Lower threshold
@@ -28,9 +28,9 @@ function [ProtPersTime,RetrPersTime,ProtBlockOut,RetrBlockOut,Up,Dw] = getPersis
 ip = inputParser;
 ip.addRequired('TS',@isvector);
 ip.addRequired('deltaT',@isscalar);
-ip.addOptional('noiseStd',1,@isscalar);
+ip.addOptional('per',1,@isscalar);
 ip.parse(TS,deltaT,varargin{:});
-noiseStd  = ip.Results.noiseStd;
+per  = ip.Results.per;
 %**************************************************************************
 %%
 
@@ -41,28 +41,32 @@ nPoint    = length(TS);
 sdtError  = std(noise); 
 
 %Defining the lower and upper noise confidence bands
-Up  = Mu + sdtError*noiseStd; 
-Dw  = Mu - sdtError*noiseStd;
+Protrusion.limit  = Mu + sdtError*per; 
+Retraction.limit  = Mu - sdtError*per;
 %*************************
  
 
 TSprot = NaN(size(TS));
-TSret  = NaN(size(TS));
+TSretr  = NaN(size(TS));
 
-TSprot(TS>Up) = TS(TS>Up);
-TSret(TS<Dw)  = TS(TS<Dw);
+TSprot(TS > Protrusion.limit) = TS(TS > Protrusion.limit);
+TSretr(TS < Retraction.limit) = TS(TS < Retraction.limit);
 
 ProtBlock = findBlock(setdiff(1:nPoint,find(isnan(TSprot))));
-RetrBlock = findBlock(setdiff(1:nPoint,find(isnan(TSret))));
+RetrBlock = findBlock(setdiff(1:nPoint,find(isnan(TSretr))));
 if ~isempty(ProtBlock)
-    [ProtPersTime,ProtBlockOut] = findingProtRetrTime(ProtBlock,TS,deltaT);
+    [Protrusion.PersTime,Protrusion.BlockOut,Protrusion.MaxVeloc,Protrusion.MeanVeloc] = findingProtRetrTime(ProtBlock,TS,deltaT);
 else
-    ProtPersTime = NaN;
-    ProtBlockOut = {[]};
+    Protrusion.PersTime  = NaN;
+    Protrusion.BlockOut  = {[]};
+    Protrusion.MaxVeloc  = NaN;
+    Protrusion.MeanVeloc = NaN;
 end
 if ~isempty(RetrBlock)
-    [RetrPersTime,RetrBlockOut] = findingProtRetrTime(RetrBlock,-TS,deltaT);
+    [Retraction.PersTime,Retraction.BlockOut,Retraction.MaxVeloc,Retraction.MeanVeloc] = findingProtRetrTime(RetrBlock,-TS,deltaT);
 else
-    RetrPersTime = NaN;
-    RetrBlockOut = {[]};
+    Retraction.PersTime  = NaN;
+    Retraction.BlockOut  = {[]};
+    Retraction.MaxVeloc  = NaN;
+    Retraction.MeanVeloc = NaN;
 end
