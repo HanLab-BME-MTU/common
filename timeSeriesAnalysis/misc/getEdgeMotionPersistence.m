@@ -1,9 +1,9 @@
-function [meanTime,confI,cltDisp,cltConfI,index,ProtInterval,RetrInterval] = getEdgeMotionPersistence(TS,varargin)
+function [Protrusion,Retraction] = getEdgeMotionPersistence(TS,varargin)
 % This function bootstrap the mean and confidence intervals for the
 % protrusion and retraction persistence time using all time series in input TS
+%THIS FUNCTION HAS NO TIME SERIES PRE-PROCESSING
 %
-%
-%Usage: [meanTime,confI,cltDisp,cltConfI,index] = getEdgeMotionPersistence(TS,'nBoot',1000,'alpha',0.05)
+%Usage: [Protrusion,Retraction] = getEdgeMotionPersistence(TS,'nBoot',1000,'alpha',0.05)
 %
 %Input:
 %       TS - cell array with one time series in each element
@@ -13,22 +13,19 @@ function [meanTime,confI,cltDisp,cltConfI,index,ProtInterval,RetrInterval] = get
 %               cluster  - logical - true for cluster the data 
 %               nCluster - scalar  - number of clusters
 %Output:
-%       meanTime - 1x2 vector - mean time for the whole data set 
-%                  meanTime(1) - for protrusion
-%                  meanTime(2) - for retraction
 %
-%       confI    - 2x2 matrix - confidence interval for the meanTime
-%                  confI(1,1) - lower CI for protrusion
-%                  confI(2,1) - upper CI for protrusion
-%                  confI(1,2) - lower CI for retraction
-%                  confI(2,2) - lower CI for retraction
+%       Protrusion.meanTime    - 
+%       Protrusion.meanConfInt - 
+%       Protrusion.windows     - 
+%       
+%       Same structure for Retraction
 %
-%       cltDisp  - vector containing the mean displacement for each cluster
+%       IF the input "cluster" is TRUE
+%           Protrusion.cltDisp  - 
+%           Protrusion.cltConfI -
+%           Protrusion.index    - cell array with indexes for each cluster 
 %
-%       cltConfI - matrix (2,nCluster) - confidence interval for each
-%       cluster
-%
-%       index    - cell array with indeces for each cluster
+%       Same structure for Retraction    
 %
 %See also: getPersistenceTime, findingProtRetrTime
 %
@@ -40,7 +37,7 @@ ip.addRequired('TS',@(x) iscell(x));
 ip.addOptional('nBoot',1e3,@isscalar);
 ip.addOptional('alpha',.05,@isscalar);
 ip.addOptional('deltaT',1,@isscalar);
-ip.addOptional('cluster',true,@islogical);
+ip.addOptional('cluster',false,@islogical);
 ip.addOptional('nCluster',2,@isscalar);
 ip.parse(TS,varargin{:});
 
@@ -54,18 +51,16 @@ nCluster = ip.Results.nCluster;
 
 
 %%
-nWin = length(TS);
-auxP = 1;
-auxR = 1;
+nWin        = length(TS);
+outProtTime = [];
+outRetrTime = [];
 
-for iW = 1:nWin
-    [ProtTime,RetrTime,ProtInterval{iW},RetrInterval{iW},Up(iW),Dw(iW)] = getPersistenceTime(TS{iW},deltaT);
-    outProtTime(auxP:auxP+length(ProtTime) - 1) = ProtTime;
-    auxP = auxP + length(ProtTime);
+for iWin = 1:nWin
     
-    outRetrTime(auxR:auxR+length(RetrTime) - 1) = RetrTime;
-    auxR = auxR + length(RetrTime);
-    clear ProtTime;clear RetrTime
+    [Protrusion.windows(iWin),Retraction.windows(iWin)] = getPersistenceTime(TS{iWin},deltaT);
+    outProtTime = [outProtTime;Protrusion.windows(iWin).PersTime];
+    outRetrTime = [outRetrTime;Retraction.windows(iWin).PersTime];
+    
 end
 
 % Outcome of this loop is:
@@ -80,32 +75,26 @@ outRetrTime(isnan(outRetrTime)) = [];
 %*****************************************************************
 
 
-[confI(:,1),meanTime(1)] = bootStrapMean(outProtTime,alpha,nBoot);
-[confI(:,2),meanTime(2)] = bootStrapMean(outRetrTime,alpha,nBoot);
+[Protrusion.meanConfInt,Protrusion.meanTime] = bootStrapMean(outProtTime,alpha,nBoot);
+[Retraction.meanConfInt,Retraction.meanTime] = bootStrapMean(outRetrTime,alpha,nBoot);
 
 
 if cluster
-    [nP,nV] = size(outProtTime);
-    if nV > nP
-        outProtTime = outProtTime';
-    end
     
-    [nP,nV] = size(outRetrTime);
-    if nV > nP
-        outRetrTime = outRetrTime';
-    end
-    
-    [cltConfI(:,1:nCluster),cltDisp(1:nCluster),index(1:nCluster)] = ...
+    [Protrusion.cltConfI(:,1:nCluster),Protrusion.cltDisp(1:nCluster),Protrusion.index(1:nCluster)] = ...
                                     clusterWindowsVelocity(outProtTime,nBoot,alpha,nCluster);
                                 
-    [cltConfI(:,nCluster+1:2*nCluster),cltDisp(nCluster+1:2*nCluster),index(nCluster+1:2*nCluster)] = ...
+    [Retraction.cltConfI(:,nCluster+1:2*nCluster),Retraction.cltDisp(nCluster+1:2*nCluster),Retraction.index(nCluster+1:2*nCluster)] = ...
                                     clusterWindowsVelocity(outRetrTime,nBoot,alpha,nCluster);
 else
     
-    cltConfI = [];
-    cltDisp  = [];
-    index    = [];
+    Retraction.cltConfI = [];
+    Retraction.cltDisp  = [];
+    Retraction.index    = [];
     
+    Protrusion.cltConfI = [];
+    Protrusion.cltDisp  = [];
+    Protrusion.index    = [];
 end
 
 end%End of main function
