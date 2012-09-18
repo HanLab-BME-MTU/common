@@ -56,10 +56,15 @@ double* getWeights(int M, double sigma) {
             alpha = new double[1];
             alpha[0] = sqrt(2.0/PI);
             break;
-        case 2:
+        case 2: 
             alpha = new double[2];
+            // mu = 0
             alpha[0] = -sqrt(3.0/(4.0*PI)) * sigma;
             alpha[1] = -alpha[0] / 3.0;
+            // mu = 2
+            //alpha[0] = -sqrt(2.0/(3.0*PI))*sigma;
+            //alpha[0] = -sigma; // Hessian
+            //alpha[1] = 0.0;
             break;
         case 3: // mu = 0
             alpha = new double[3];

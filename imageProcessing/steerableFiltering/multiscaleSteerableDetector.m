@@ -51,20 +51,19 @@ for si = 1:ns
     [ires{si}, itheta{si}, inms{si}] = steerableDetector(img, ip.Results.M, sigma(si));
     % scale normalization for even orders
     if ~mod(M,2)
-        ires{si} = (sigma(si)) * ires{si};
+        ires{si} = sigma(si) * ires{si};
     end
 end
 
 % determine  f(x,y) = argmax_s r_s(x,y) (init. at scale 1)
 res = ires{1};
 theta = itheta{1};
-nms = inms{1};
 scaleMap = ones(size(img));
-
 for si = 2:ns
     idx = ires{si}>res;
     res(idx) = ires{si}(idx);
-    nms(idx) = inms{si}(idx);
     theta(idx) = itheta{si}(idx);
     scaleMap(idx) = si;
 end
+nms = nonMaximumSuppression(res, theta);
+
