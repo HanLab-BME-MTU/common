@@ -78,7 +78,7 @@ function [deltaTr,newBlock] = rightBorder(TS,newBlock,deltaT,nPoint)
         if ~isempty(endPoint)
             rZeroC2  = endPoint(1) + newBlock(end);
             rZeroC1  = rZeroC2  - 1;
-            newBlock = [newBlock;[newBlock(end):rZeroC1]'];
+            newBlock = [newBlock;[newBlock(end)+1:rZeroC1]'];
             deltaTr  = deltaT*TS(rZeroC1)/abs( diff( TS(rZeroC1:rZeroC2) ) );
         else
             rZeroC2  = nPoint;
