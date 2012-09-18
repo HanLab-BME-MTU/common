@@ -35,21 +35,19 @@ borderIdx = [1:ny (nx-1)*ny+(1:ny) ny+1:ny:(nx-2)*ny+1 2*ny:ny:(nx-1)*ny];
 ns = length(scales);
 res = cell(1,ns);
 th = cell(1,ns);
-nms = cell(1,ns);
 for si = 1:ns
-    [res{si}, th{si}, nms{si}] = steerableDetector(img, ip.Results.FilterOrder, scales(si));
+    [res{si}, th{si}] = steerableDetector(img, ip.Results.FilterOrder, scales(si));
 end
 %maxIdx = ones(ny,nx);
 maxRes = res{1};
-maxNMS = nms{1};
-%maxTh = th{1};
+maxTh = th{1};
 for si = 2:ns
     idx = res{si}>maxRes;
     maxRes(idx) = res{si}(idx);
     %maxIdx(idx) = si;
-    maxNMS(idx) = nms{si}(idx);
-    %maxTh(idx) = th{si}(idx);
+    maxTh(idx) = th{si}(idx);
 end
+maxNMS = nonMaximumSuppression(maxRes, maxTh);
 
 % Mask of candidate edges
 maxNMS = maxNMS.*bwmorph(maxNMS~=0, 'thin'); % or skel
@@ -302,7 +300,6 @@ if ~isempty(E)
     
     % add linear segments corresponding to linked endpoints
     for i = 1:size(E,1)
-        %iseg = bresenham([xe(E(i,1)) ye(E(i,1))], [xe(E(i,2)) ye(E(i,2))]);
         iseg = bresenham([queryPoints(E(i,1),1) queryPoints(E(i,1),2)],...
             [inputPoints(E(i,2),1) inputPoints(E(i,2),2)]);
         out(sub2ind(dims, iseg(:,2), iseg(:,1))) = 1;
