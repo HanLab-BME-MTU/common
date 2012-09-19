@@ -81,9 +81,8 @@ function [deltaTr,newBlock] = rightBorder(TS,newBlock,deltaT,nPoint)
             newBlock = [newBlock;[newBlock(end)+1:rZeroC1]'];
             deltaTr  = deltaT*TS(rZeroC1)/abs( diff( TS(rZeroC1:rZeroC2) ) );
         else
-            rZeroC2  = nPoint;
-            rZeroC1  = newBlock(end);
-            deltaTr  = deltaT*(rZeroC2 - rZeroC1);
+            newBlock = [newBlock;(newBlock(end)+1:nPoint)'];
+            deltaTr  = 0;
         end
        %deltaTr = deltaTr + deltaT*(rZeroC1 - newBlock(end)); 
 end
@@ -98,9 +97,8 @@ function [deltaTl,newBlock] = leftBorder(TS,newBlock,deltaT)
         newBlock = [[lZeroC2:newBlock(1)]';newBlock];
         deltaTl  = deltaT*TS(lZeroC2)/abs( diff( TS(lZeroC1:lZeroC2) ) );
     else
-        lZeroC1  = 1;
-        lZeroC2  = newBlock(end);
-        deltaTl  = deltaT*(lZeroC2 - lZeroC1);
+        newBlock = [(1:newBlock(1)-1)';newBlock];
+        deltaTl  = 0;
     end
     %deltaTl = deltaTl + deltaT*(newBlock(1) - lZeroC2);
 end
