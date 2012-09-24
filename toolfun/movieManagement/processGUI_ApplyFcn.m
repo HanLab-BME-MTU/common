@@ -9,7 +9,7 @@ ip = inputParser;
 ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
-ip.addRequired('funParams',@isstruct)
+ip.addRequired('funParams',@(x) isstruct(x) || isempty(x))
 ip.addOptional('settingFcn',{},@iscell);
 ip.parse(hObject,eventdata,handles,funParams,varargin{:});
 settingFcn=ip.Results.settingFcn;
