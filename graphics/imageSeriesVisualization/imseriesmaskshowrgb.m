@@ -176,9 +176,10 @@ data.plane(3).spacing = [spacing(2) spacing(1) 1];
 
 % Data log
 data.logUse = 0;
-ImageIntensityRange = ComputeImageDynamicRange( data.im, 99.0 );
+data.imLog = data.im - min( data.im(:) );
+ImageIntensityRange = ComputeImageDynamicRange( data.imLog, 99.0 );
 log_bottom = ImageIntensityRange(1) + range(ImageIntensityRange)/256.0;
-data.imLog = log_bottom + AdjustImageIntensityRange( data.im, ImageIntensityRange );
+data.imLog = log_bottom + AdjustImageIntensityRange( data.imLog, ImageIntensityRange );
 data.imLog = log( data.imLog );
 data.imLogDisplayRange = [ min(data.imLog(:)), max(data.imLog(:)) ];
 
@@ -346,7 +347,7 @@ function [ rgbSlice ] = getRGBSlice(data)
         imSlice = squeeze(im(:,:,data.sliceno));
     end
 
-    imSlice = im2uint8( mat2gray(imSlice, displayrange) );
+    imSlice = im2uint8( mat2gray( double(imSlice), displayrange) );
     rgbSlice = cat(3, imSlice, imSlice, imSlice );
 
     % Add masks to rgb
@@ -359,7 +360,8 @@ function [ rgbSlice ] = getRGBSlice(data)
             else
                 rgbMaskSlice = squeeze(data.masks(i).im(:,:,data.sliceno,:));
             end
-            rgbSlice = uint8( double((1 - data.alpha(i)) * double(rgbSlice)) + 255.0 * data.alpha(i) * double(rgbMaskSlice) );
+            blnMask = repmat( max( rgbMaskSlice, [], 3 ) > 0, [1, 1, 3] );
+            rgbSlice(blnMask) = uint8( double((1 - data.alpha(i)) * double(rgbSlice(blnMask))) + 255.0 * data.alpha(i) * double(rgbMaskSlice(blnMask)) );
         end
     end
 

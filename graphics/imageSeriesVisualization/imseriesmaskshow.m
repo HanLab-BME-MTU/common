@@ -199,9 +199,10 @@ data.plane(3).spacing = [spacing(2) spacing(1) 1];
 
 % Data log
 data.logUse = 0;
-ImageIntensityRange = ComputeImageDynamicRange( data.im, 99.0 );
+data.imLog = data.im - min( data.im(:) );
+ImageIntensityRange = ComputeImageDynamicRange( data.imLog, 99.0 );
 log_bottom = ImageIntensityRange(1) + range(ImageIntensityRange)/256.0;
-data.imLog = log_bottom + AdjustImageIntensityRange( data.im, ImageIntensityRange );
+data.imLog = log_bottom + AdjustImageIntensityRange( data.imLog, ImageIntensityRange );
 data.imLog = log( data.imLog );
 data.imLogDisplayRange = [ min(data.imLog(:)), max(data.imLog(:)) ];
 

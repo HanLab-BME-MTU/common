@@ -131,9 +131,10 @@ data.logUse = 0;
 data.imLog = cell(1,numChannels);
 data.imLogDisplayRanges = zeros( numChannels, 2 );
 for i = 1:numChannels     
-   ImageIntensityRange = ComputeImageDynamicRange( im{i}, 99.0 );
+   imAdjusted = im{i} - min( im{i}(:) );
+   ImageIntensityRange = ComputeImageDynamicRange( imAdjusted, 99.0 );
    log_bottom = ImageIntensityRange(1) + range(ImageIntensityRange)/256.0;
-   imAdjusted = log( log_bottom + AdjustImageIntensityRange(im{i}, ImageIntensityRange) );
+   imAdjusted = log( log_bottom + AdjustImageIntensityRange(imAdjusted, ImageIntensityRange) );
    data.imLogDisplayRanges(i,:) = [ min(imAdjusted(:)), max(imAdjusted(:)) ]; 
    data.imLog{i} = imAdjusted;
 end
