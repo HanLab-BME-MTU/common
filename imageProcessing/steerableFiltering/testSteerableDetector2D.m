@@ -44,6 +44,7 @@ catch err
 end
 
 lineMask = false( imsize );
+lineWidthVec = zeros( numLines, 1 );
 
 for i = 1:numLines   
     
@@ -62,18 +63,20 @@ for i = 1:numLines
     v = [ cos(thetax), sin(thetax) ];
     
     % generate random line width
-    randLineWidth = meanLineWidth + stdLineWidth * rand;
+    randLineWidth = meanLineWidth + stdLineWidth * randn;
     
     if randLineWidth <= 0 
         randLineWidth = meanLineWidth;
     end
     
+    lineWidthVec(i) = randLineWidth;
+    
     % generate line
     refvec = ptIm - repmat( ptRef, numel(im), 1 );
     perp = refvec - (refvec * v') * v;
     sqDist = sum( perp .* perp, 2 );
-    lineMask( sqDist <= randLineWidth^2 ) = true;
-    
+    flagCurLineMask = sqDist <= randLineWidth^2;
+    lineMask( flagCurLineMask ) = true;
 end
 
 fprintf( '\n' );
@@ -82,7 +85,7 @@ im( lineMask ) = random(fgGmObj, numel( find( lineMask ) ));
 
 % Run steerable detector to enhance the lines
 fprintf( '\nRunning steerable detector to enhance curves on %d x %d sized image ...\n', imsize(2), imsize(1) );
-sigmaTrialValues = meanLineWidth + stdLineWidth * (-2:2);
+sigmaTrialValues = meanLineWidth + stdLineWidth * (-2:0.5:2);
 sigmaTrialValues( sigmaTrialValues <= 0 ) = [];
 
 for i = 1:numel( sigmaTrialValues )
@@ -96,6 +99,7 @@ for i = 1:numel( sigmaTrialValues )
     fprintf( 'It took %.2f seconds\n', timeElapsed );   
     
     curRes = sigmaTrialValues(i) * curRes; % scale normalization
+    
     if i == 1        
         res = curRes;
         nms = curNms;
@@ -115,15 +119,17 @@ imLineSegRGBMask = zeros( [size(imLineSegMask), 3] );
 imLineSegRGBMask(:,:,1) = imLineSegMask;
 
 pixelScaleMap( ~imLineSegMask ) = 0;
-imScaleRGB = label2rgbND( pixelScaleMap );
+imScaleRGB = label2rgb( pixelScaleMap, 'jet', 'k' ) / 255.0;
 
 % display
 imseriesshow( im );
 set( gcf, 'Name', 'Image with Randomly Generated Lines' );
 
 imseriesmaskshowrgb( res, {imLineSegRGBMask, imScaleRGB} );
+colorbar;
 set( gcf, 'Name', 'Response of Steerable Detector with Otsu Line Mask and Pixel Scale Map' );
 
 imseriesmaskshowrgb( nms, {imLineSegRGBMask, imScaleRGB} );
+colorbar;
 set( gcf, 'Name', 'Result of Non-maximal suppression with Otsu Line Mask and Pixel Scale Map' );
 
