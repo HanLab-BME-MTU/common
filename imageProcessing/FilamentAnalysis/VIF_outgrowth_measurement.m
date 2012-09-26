@@ -92,6 +92,10 @@ save_fig_flag = 0;
 
 for iChannel = selected_channels
     
+    % Get frame number from the title of the image, this not neccesarily
+    % the same as iFrame due to some shorting problem of the channel
+    filename_short_strs = uncommon_str_takeout(movieData.channels_(iChannel).fileNames_);
+    
     % Make output directory for the steerable filtered images
     FilamentSegmentationChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
     if (~exist(FilamentSegmentationChannelOutputDir,'dir'))
@@ -118,6 +122,13 @@ for iChannel = selected_channels
         mkdir(HeatEnhBoundOutputDir);
     end
     
+    DataOutputDir = [FilamentSegmentationChannelOutputDir,'/DataOutput'];
+    
+    if (~exist(DataOutputDir,'dir'))
+        mkdir(DataOutputDir);
+    end
+    
+    
     if indexFlattenProcess >0
         FileNames = movieData.processes_{indexFlattenProcess}.getOutImageFileNames(iChannel);
     end
@@ -137,7 +148,8 @@ for iChannel = selected_channels
              currentImg = movieData.channels_(iChannel).loadImage(iFrame);
          end
         
-        load([SteerableChannelOutputDir, filesep, 'steerable_',num2str(iFrame),'.mat']);
+        load([SteerableChannelOutputDir, filesep, 'steerable_',...
+            filename_short_strs{iFrame},'.mat']);
         
         if funParams.Cell_Mask_ind == 1
             MaskCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(iChannel,iFrame);
@@ -148,7 +160,9 @@ for iChannel = selected_channels
                 MaskCell = ones(size(currentImg,1),size(currentImg,2));
             end
         end
-        load([FilamentSegmentationChannelOutputDir,'/steerable_vote_',num2str(iFrame),'.mat'],...
+        
+        load([DataOutputDir,'/steerable_vote_',...
+            filename_short_strs{iFrame},'.mat'],...
             'orienation_map_filtered','OrientationVoted','orienation_map', ...
             'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment');
         
@@ -256,16 +270,20 @@ for iChannel = selected_channels
         title(['Percentage of out growth: ', ...
             num2str(100*sum(sum(current_seg_outside))/seg_sum_inside_firstframe), '%'],'FontSize',20);
         
-        saveas(h12,[HeatEnhOutputDir,'/Enh_VIF_heat_display_',num2str(iFrame),'.tif']);
+        saveas(h12,[HeatEnhOutputDir,'/Enh_VIF_heat_display_',...
+            filename_short_strs{iFrame},'.tif']);
         if(save_fig_flag==1)
-            saveas(h12,[HeatEnhOutputDir,'/Enh_VIF_heat_display_',num2str(iFrame),'.fig']);
+            saveas(h12,[HeatEnhOutputDir,'/Enh_VIF_heat_display_',...
+                filename_short_strs{iFrame},'.fig']);
         end
         
         hold on; plot(RoiYX(:,2),RoiYX(:,1),'m');
         
-        saveas(h12,[HeatEnhOutputDir,'_bound/Enh_Bound_VIF_heat_display_',num2str(iFrame),'.tif']);
+        saveas(h12,[HeatEnhOutputDir,'_bound/Enh_Bound_VIF_heat_display_',...
+            filename_short_strs{iFrame},'.tif']);
         if(save_fig_flag==1)
-            saveas(h12,[HeatEnhOutputDir,'_bound/Enh_Bound_VIF_heat_display_',num2str(iFrame),'.fig']);
+            saveas(h12,[HeatEnhOutputDir,'_bound/Enh_Bound_VIF_heat_display_',...
+                filename_short_strs{iFrame},'.fig']);
         end
         seg_outside_current(iChannel, iFrame) = sum(sum(current_seg_outside));
         ratio_outside_firstframeinside(iChannel, iFrame) = sum(sum(current_seg_outside))/seg_sum_inside_firstframe;

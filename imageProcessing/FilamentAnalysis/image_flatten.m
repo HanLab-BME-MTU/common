@@ -34,6 +34,10 @@ nFrame = movieData.nFrames_;
 
 for iChannel = selected_channels
     
+    % Get frame number from the title of the image, this not neccesarily
+    % the same as iFrame due to some shorting problem of the channel
+    filename_short_strs = uncommon_str_takeout(movieData.channels_(iChannel).fileNames_);
+    
     Frames_to_Seg = 1:Sub_Sample_Num:nFrame;
     Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1]),[1 1]);
     Frames_results_correspondence = Frames_results_correspondence(1:nFrame);
@@ -107,8 +111,10 @@ for iChannel = selected_channels
         
         for sub_i = 1 : Sub_Sample_Num
             if iFrame + sub_i-1 <= nFrame
+
               imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
-                   num2str(iFrame + sub_i-1),'.tif']);
+                filename_short_strs{iFrame + sub_i-1},'.tif']);
+           
             end
         end
         
@@ -144,9 +150,9 @@ if(TimeFilterSigma > 0)
         for sub_i = 1 : Sub_Sample_Num
             if iFrame + sub_i-1 <= nFrame
             disp(['Frame: ',num2str(iFrame + sub_i-1)]);
-       
+     
             imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
-                num2str(iFrame + sub_i-1),'.tif']);
+                filename_short_strs{iFrame + sub_i-1},'.tif']);
             end
         end
     end

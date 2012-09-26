@@ -52,6 +52,9 @@ Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1])
 Frames_results_correspondence = Frames_results_correspondence(1:nFrame);
 
 for iChannel = selected_channels
+        % Get frame number from the title of the image, this not neccesarily
+    % the same as iFrame due to some shorting problem of the channel
+    filename_short_strs = uncommon_str_takeout(movieData.channels_(iChannel).fileNames_);
     
     % Make output directory for the steerable filtered images
     ImageSteerableFilterChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
@@ -59,10 +62,10 @@ for iChannel = selected_channels
         mkdir(ImageSteerableFilterChannelOutputDir);
     end
     
-    if indexFlattenProcess >0
-        FileNames = movieData.processes_{indexFlattenProcess}.getOutImageFileNames(iChannel);
-    end
-    
+%     if indexFlattenProcess >0
+%         FileNames = movieData.processes_{indexFlattenProcess}.getOutImageFileNames(iChannel);
+%     end
+%     
     display(['Start to do steerable filtering in Channel ',num2str(iChannel)]);
 
    
@@ -72,7 +75,7 @@ for iChannel = selected_channels
         
         % Read in the intensity image.
         if indexFlattenProcess > 0
-            currentImg = imread([movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel}, filesep, FileNames{1}{iFrame}]);
+            currentImg = imread([movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel}, filesep, 'flatten_',filename_short_strs{iFrame},'.tif']);
         else
             currentImg = movieData.channels_(iChannel).loadImage(iFrame);
         end
@@ -87,11 +90,12 @@ for iChannel = selected_channels
         for sub_i = 1 : Sub_Sample_Num
             if iFrame + sub_i-1 <= nFrame
                 imwrite((MAX_st_res)/(max(max(MAX_st_res))), ...
-                    [ImageSteerableFilterChannelOutputDir,'/MAX_st_res_',num2str(iFrame + sub_i-1),'.tif']);
+                    [ImageSteerableFilterChannelOutputDir,'/MAX_st_res_', ...
+                    filename_short_strs{iFrame + sub_i-1},'.tif']);
             end
         end
         
-        save([ImageSteerableFilterChannelOutputDir,'/steerable_',num2str(iFrame),'.mat'],...
+        save([ImageSteerableFilterChannelOutputDir,'/steerable_',filename_short_strs{iFrame},'.mat'],...
             'orienation_map', 'MAX_st_res','nms');
     end
 end

@@ -221,7 +221,7 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % The percentage as the lower bound of local thresholding 
             % local threshold has to be larger or equal to this percentage
             % of the global threshold
-            funParams.lowerbound_localthresholding  = 85; % default 85%
+            funParams.lowerbound_localthresholding  = 90; % default 90%
             
             % The way to combine segmentation results from steerable
             % filtering responce and from intensity, default is : only use

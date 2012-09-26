@@ -13,6 +13,10 @@ function movieData = filament_segmentation(movieData, varargin)
 %                                     if 2, use the user define ROI as in MD_ROI.tif in movieData folder, if 3, no such limit
 %   funParams.VIF_Outgrowth_Flag:   Flag to do VIF_outgrowth or not. This is an option made for Gelfand lab
 
+% a temp flag for saving tif stack image for Gelfand Lab
+save_tif_flag=0;
+
+
 nProcesses = length(movieData.processes_);
 
 indexFilamentSegmentationProcess = 0;
@@ -120,21 +124,47 @@ end
 %%
 for iChannel = selected_channels
     
+    % Get frame number from the title of the image, this not neccesarily
+    % the same as iFrame due to some shorting problem of the channel
+    filename_short_strs = uncommon_str_takeout(movieData.channels_(iChannel).fileNames_);
+    
+    
     % Make output directory for the steerable filtered images
     FilamentSegmentationChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
     if (~exist(FilamentSegmentationChannelOutputDir,'dir'))
         mkdir(FilamentSegmentationChannelOutputDir);
     end
     
+    HeatOutputDir = [FilamentSegmentationChannelOutputDir,'/HeatOutput'];
+    
+    if (~exist(HeatOutputDir,'dir'))
+        mkdir(HeatOutputDir);
+    end
+    
+    HeatEnhOutputDir = [HeatOutputDir,'/Enh'];
+    
+    if (~exist(HeatEnhOutputDir,'dir'))
+        mkdir(HeatEnhOutputDir);
+    end
+    
+     DataOutputDir = [FilamentSegmentationChannelOutputDir,'/DataOutput'];
+    
+    if (~exist(DataOutputDir,'dir'))
+        mkdir(DataOutputDir);
+    end
+    
+    
+    
+    
     % If steerable filter process is run
     if indexSteerabeleProcess>0
         SteerableChannelOutputDir = movieData.processes_{indexSteerabeleProcess}.outFilePaths_{iChannel};
     end
     
-    if indexFlattenProcess >0
-        FileNames = movieData.processes_{indexFlattenProcess}.getOutImageFileNames(iChannel);
-    end
-    
+%     if indexFlattenProcess >0
+%         FileNames = movieData.processes_{indexFlattenProcess}.getOutImageFileNames(iChannel);
+%     end
+%     
     display(['Start to do filament segmentation in Channel ',num2str(iChannel)]);
 
     % Segment only the real collected data, but skip the padded ones, which
@@ -144,21 +174,32 @@ for iChannel = selected_channels
     Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1]),[1 1]);
     Frames_results_correspondence = Frames_results_correspondence(1:nFrame);
     
-    for iFrame = Frames_to_Seg        
+   
+    for iFrame_index = 1 : length(Frames_to_Seg)
+        iFrame = Frames_to_Seg(iFrame_index);
         
         disp(['Frame: ',num2str(iFrame)]);
         
         % Read in the intensity image.
         if indexFlattenProcess > 0 && ImageFlattenFlag==2
-            currentImg = imread([movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel}, filesep, FileNames{1}{iFrame}]);
+            currentImg = imread([movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel}, filesep, 'flatten_',filename_short_strs{iFrame},'.tif']);
          else
             currentImg = movieData.channels_(iChannel).loadImage(iFrame);
         end
         currentImg = double(currentImg);
         
+        
+        if( save_tif_flag==1 && iFrame==Frames_to_Seg(1)  )
+        % Gelfand lab needs single file results for tif stack
+        tif_stack_binary_seg_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),length(Frames_to_Seg)));
+        tif_stack_RGB_heat_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),3,length(Frames_to_Seg)));
+        end
+         
+       load([SteerableChannelOutputDir, filesep, 'steerable_', ...
+           filename_short_strs{iFrame},'.mat']);
+                  
         switch Combine_Way
             case 'int_st_both'
-                 load([SteerableChannelOutputDir, filesep, 'steerable_',num2str(iFrame),'.mat']);
                  level0 = thresholdOtsu(MAX_st_res);
                  thresh_Segment = MAX_st_res > level0;
                                 
@@ -167,18 +208,17 @@ for iChannel = selected_channels
                 current_seg = or(Intensity_Segment,SteerabelRes_Segment);
 
             case 'st_only' 
-                load([SteerableChannelOutputDir, filesep, 'steerable_',num2str(iFrame),'.mat']);
                 [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,lowerbound,0);
                 current_seg = SteerabelRes_Segment; 
                 Intensity_Segment = current_seg;
                 
             case 'int_only'
                 [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,lowerbound,0);
+                
                 current_seg = Intensity_Segment; 
                 SteerabelRes_Segment = current_seg;
             otherwise
                 warning('Use the default of union');
-                load([SteerableChannelOutputDir, filesep, 'steerable_',num2str(iFrame),'.mat']);
                 [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,lowerbound,0);
                 [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,lowerbound,0);
                 % The segmentation is set as the union of two segmentation.
@@ -230,31 +270,33 @@ for iChannel = selected_channels
         end
         
         
-        %% Deleting the small isolated dots
-        
-        labelMask = bwlabel(current_seg);
-        
-        ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength');
-        
-        obAreas = [ob_prop.Area];
-        obLongaxis = [ob_prop.MajorAxisLength];
-        obShortaxis = [ob_prop.MinorAxisLength];
-        obEccentricity = [ob_prop.Eccentricity];
-        ratio  = obShortaxis./obLongaxis;
-        % for now the parameters are set here, without adaptiveness
-        for i_area = 1 : length(obAreas)
-            if obAreas(i_area) < 200
-                angle_area{i_area} = orienation_map_filtered(find(labelMask==i_area));
-                [h_area, bin] = hist(angle_area{i_area},-pi/2:5/180*pi:pi/2);
-                ind_t = find(h_area==max(h_area));
-                temp = mod((angle_area{i_area} - bin(ind_t(1)) + pi/2), pi) - pi/2;
-                if std(temp)>0.75 && max(h_area)<0.2*length(angle_area{i_area}) && ratio(i_area) >0.5 && obLongaxis(i_area)<20
-                    labelMask(find(labelMask==i_area))=0;
-                end
-            end
-        end
-        
-        current_seg = labelMask > 0;
+%         %% Deleting the small isolated dots
+%         
+%         labelMask = bwlabel(current_seg);
+%         
+%         ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength');
+%         
+%         obAreas = [ob_prop.Area];
+%         obLongaxis = [ob_prop.MajorAxisLength];
+%         obShortaxis = [ob_prop.MinorAxisLength];
+%         obEccentricity = [ob_prop.Eccentricity];
+%         ratio  = obShortaxis./obLongaxis;
+%         % for now the parameters are set here, without adaptiveness
+%         for i_area = 1 : length(obAreas)
+%             if obAreas(i_area) < 200
+%                 angle_area{i_area} = orienation_map_filtered(find(labelMask==i_area));
+%                 [h_area, bin] = hist(angle_area{i_area},-pi/2:5/180*pi:pi/2);
+%                 ind_t = find(h_area==max(h_area));
+%                 temp = mod((angle_area{i_area} - bin(ind_t(1)) + pi/2), pi) - pi/2;
+%                 if std(temp)>0.75 && max(h_area)<0.2*length(angle_area{i_area}) && ratio(i_area) >0.5 && obLongaxis(i_area)<20
+%                     labelMask(find(labelMask==i_area))=0;
+%                 end
+%             end
+%         end
+%         
+%         current_seg = labelMask > 0;
+
+
 %     
 %         [ind_a,ind_b] = find(current_seg>0);
 %         
@@ -295,8 +337,17 @@ for iChannel = selected_channels
         
         %% For heat presentation of the segmented filaments
         
-%         imwrite(current_seg,[FilamentSegmentationChannelOutputDir,'/segment_',num2str(iFrame),'.tif']);
-        currentImg = uint8(currentImg);
+        
+        for sub_i = 1 : Sub_Sample_Num
+            if iFrame + sub_i-1 <= nFrame
+                imwrite(current_seg, ...
+                    [FilamentSegmentationChannelOutputDir,'/segment_binary_',...
+                    filename_short_strs{iFrame+ sub_i-1},'.tif']);
+            end
+        end
+        
+        
+        currentImg = uint8(currentImg/16);
         Hue = (-orienation_map_filtered(:)+pi/2)/(pi)-0.2;
         Hue(find(Hue>=1)) = Hue(find(Hue>=1)) -1;
         Hue(find(Hue<0)) = Hue(find(Hue<0)) +1;
@@ -324,18 +375,42 @@ for iChannel = selected_channels
          for sub_i = 1 : Sub_Sample_Num
             if iFrame + sub_i-1 <= nFrame
                 imwrite(RGB_seg_orient_heat_map, ...
-                    [FilamentSegmentationChannelOutputDir,'/segment_heat_',num2str(iFrame + sub_i-1),'.tif']);
+                    [HeatEnhOutputDir,'/segment_heat_',...
+                    filename_short_strs{iFrame+ sub_i-1},'.tif']);
             end
         end
         
         %% Save segmentation results
-        save([FilamentSegmentationChannelOutputDir,'/steerable_vote_',num2str(iFrame),'.mat'],...
+        save([DataOutputDir,'/steerable_vote_', ...
+            filename_short_strs{iFrame},'.mat'],...
             'currentImg','orienation_map_filtered','OrientationVoted','orienation_map', ...
             'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment');
         
+        if( save_tif_flag==1)
+           current_seg = imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']);
+            RGB_seg_orient_heat_map = imread([HeatEnhOutputDir,'/segment_heat_',filename_short_strs{iFrame},'.tif']);
+          
+            tif_stack_binary_seg_image_data(:,:,iFrame_index) = uint8(current_seg*255);
+            tif_stack_RGB_heat_image_data(:,:,:,iFrame_index) = uint8(RGB_seg_orient_heat_map);
+            
+         end
     end
 end     
- 
+
+if( save_tif_flag==1)
+    
+    options.comp = false;
+    options.ask = false;
+    options.message = true;
+    options.append = false;
+    
+    % Save the multi-frame RGB color image
+    options.color = true;
+    saveastiff(tif_stack_RGB_heat_image_data, [FilamentSegmentationChannelOutputDir,'channel_',num2str(iChannel),'_seg_heat.tif'], options);
+    options.color = false;
+    saveastiff(tif_stack_binary_seg_image_data, [FilamentSegmentationChannelOutputDir,'channel_',num2str(iChannel),'_seg_binary.tif'], options);
+end
+
 
 %% For Gelfand Lab, outgrowth calculation
 if(VIF_Outgrowth_Flag==1)
