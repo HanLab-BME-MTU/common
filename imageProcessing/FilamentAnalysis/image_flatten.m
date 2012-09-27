@@ -1,5 +1,22 @@
 function movieData = image_flatten(movieData, varargin)
 
+% Find the package of Filament Analysis
+nPackage = length(movieData.packages_);
+
+indexFilamentPackage = 0;
+for i = 1 : nPackage
+    if(strcmp(movieData.packages_{i}.getName,'FilamentAnalysis')==1)
+        indexFilamentPackage = i;
+        break;
+    end
+end
+
+if(indexFilamentPackage==0)
+    msg('Need to be in Filament Package for now.')
+    return; 
+end
+
+
 % Find the process of segmentation mask refinement.
 nProcesses = length(movieData.processes_);
 
@@ -21,18 +38,30 @@ funParams=movieData.processes_{indexFlattenProcess}.funParams_;
 selected_channels = funParams.ChannelIndex;
 flatten_method_ind = funParams.method_ind;
 Gaussian_sigma = funParams.GaussFilterSigma;
-ImageFlattenProcessOutputDir = funParams.OutputDirectory;
+
 TimeFilterSigma = funParams.TimeFilterSigma;                        
 Sub_Sample_Num  = funParams.Sub_Sample_Num;
 
+nFrame = movieData.nFrames_;
 
+
+ImageFlattenProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'ImageFlatten'];
 if (~exist(ImageFlattenProcessOutputDir,'dir'))
     mkdir(ImageFlattenProcessOutputDir);
 end
 
-nFrame = movieData.nFrames_;
+for iChannel = selected_channels
+    ImageFlattenChannelOutputDir = [ImageFlattenProcessOutputDir,'/Channel',num2str(iChannel)];
+    if (~exist(ImageFlattenChannelOutputDir,'dir'))
+        mkdir(ImageFlattenChannelOutputDir);
+    end
+    
+    movieData.processes_{indexFlattenProcess}.setOutImagePath(iChannel,ImageFlattenChannelOutputDir);
+end
 
 for iChannel = selected_channels
+
+    ImageFlattenProcessOutputDir = movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel};
     
     % Get frame number from the title of the image, this not neccesarily
     % the same as iFrame due to some shorting problem of the channel
@@ -66,13 +95,11 @@ for iChannel = selected_channels
     center_value = center_value/max(center_value);
     
     % Make output directory for the flattened images
-    ImageFlattenChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
-    if (~exist(ImageFlattenChannelOutputDir,'dir'))
+    ImageFlattenChannelOutputDir = movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel};
+   if (~exist(ImageFlattenChannelOutputDir,'dir'))
         mkdir(ImageFlattenChannelOutputDir);
     end
-    
-    movieData.processes_{indexFlattenProcess}.setOutImagePath(iChannel,ImageFlattenChannelOutputDir)
-
+   
     display(['Start to do image flatten in Channel ',num2str(iChannel)]);
 
      for iFrame_subsample = 1 : length(Frames_to_Seg)

@@ -17,6 +17,23 @@ function movieData = filament_segmentation(movieData, varargin)
 save_tif_flag=0;
 
 
+% Find the package of Filament Analysis
+nPackage = length(movieData.packages_);
+
+indexFilamentPackage = 0;
+for i = 1 : nPackage
+    if(strcmp(movieData.packages_{i}.getName,'FilamentAnalysis')==1)
+        indexFilamentPackage = i;
+        break;
+    end
+end
+
+if(indexFilamentPackage==0)
+    msg('Need to be in Filament Package for now.')
+    return; 
+end
+
+
 nProcesses = length(movieData.processes_);
 
 indexFilamentSegmentationProcess = 0;
@@ -43,8 +60,26 @@ Cell_Mask_ind = funParams.Cell_Mask_ind;
 lowerbound =  funParams.lowerbound_localthresholding;
 VIF_Outgrowth_Flag = funParams.VIF_Outgrowth_Flag;
 Sub_Sample_Num  = funParams.Sub_Sample_Num;
-FilamentSegmentationOutputDir = funParams.OutputDirectory;
 
+%% Output Directories
+    
+    FilamentSegmentationProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'FilamentSegmentation'];
+    if (~exist(FilamentSegmentationProcessOutputDir,'dir'))
+        mkdir(FilamentSegmentationProcessOutputDir);
+    end
+
+for iChannel = selected_channels
+    FilamentSegmentationChannelOutputDir = [FilamentSegmentationProcessOutputDir,'/Channel',num2str(iChannel)];
+    if (~exist(FilamentSegmentationChannelOutputDir,'dir'))
+        mkdir(FilamentSegmentationChannelOutputDir);
+    end
+    
+    movieData.processes_{indexFilamentSegmentationProcess}.setOutImagePath(iChannel,FilamentSegmentationChannelOutputDir);
+end
+
+
+
+%%
 indexSteerabeleProcess = 0;
 for i = 1 : nProcesses
     if(strcmp(movieData.processes_{i}.getName,'Steerable filtering')==1)
@@ -91,10 +126,6 @@ if indexCellSegProcess == 0 && Cell_Mask_ind == 1
 end
 
 
-if (~exist(FilamentSegmentationOutputDir,'dir'))
-    mkdir(FilamentSegmentationOutputDir);
-end
-
 nFrame = movieData.nFrames_;
  
 % If the user set an cell ROI read in
@@ -127,10 +158,9 @@ for iChannel = selected_channels
     % Get frame number from the title of the image, this not neccesarily
     % the same as iFrame due to some shorting problem of the channel
     filename_short_strs = uncommon_str_takeout(movieData.channels_(iChannel).fileNames_);
-    
-    
+            
     % Make output directory for the steerable filtered images
-    FilamentSegmentationChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
+    FilamentSegmentationChannelOutputDir =  movieData.processes_{indexFilamentSegmentationProcess}.outFilePaths_{iChannel};
     if (~exist(FilamentSegmentationChannelOutputDir,'dir'))
         mkdir(FilamentSegmentationChannelOutputDir);
     end
@@ -174,7 +204,7 @@ for iChannel = selected_channels
     Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1]),[1 1]);
     Frames_results_correspondence = Frames_results_correspondence(1:nFrame);
     
-   
+   indexFlattenProcess=0;
     for iFrame_index = 1 : length(Frames_to_Seg)
         iFrame = Frames_to_Seg(iFrame_index);
         
@@ -347,7 +377,7 @@ for iChannel = selected_channels
         end
         
         
-        currentImg = uint8(currentImg/16);
+        currentImg = uint8(currentImg/1);
         Hue = (-orienation_map_filtered(:)+pi/2)/(pi)-0.2;
         Hue(find(Hue>=1)) = Hue(find(Hue>=1)) -1;
         Hue(find(Hue<0)) = Hue(find(Hue<0)) +1;

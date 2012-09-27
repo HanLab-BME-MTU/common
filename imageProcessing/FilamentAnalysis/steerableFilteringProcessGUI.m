@@ -154,19 +154,7 @@ if isnan(Sub_Sample_Num) || Sub_Sample_Num < 0
 end
 funParams.Sub_Sample_Num  = Sub_Sample_Num;
 
-
 funParams.ImageFlattenFlag = get(handles.popupmenu_imageflattenedflag,'Value');
-
-funParams.OutputDirectory  = [ userData.crtPackage.outputDirectory_, filesep 'SteerableFiltering'];
-
-for iChannel = channelIndex
-SteerableFilterChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
-    if (~exist(SteerableFilterChannelOutputDir,'dir'))
-        mkdir(SteerableFilterChannelOutputDir);
-    end
-    
-    userData.crtProc.setOutImagePath(iChannel,SteerableFilterChannelOutputDir)
-end
 
 % -------- Process Sanity check --------
 % ( only check underlying data )

@@ -1,6 +1,23 @@
 function steerable_filter_forprocess(movieData, varargin)
 % Created 07 2012 by Liya Ding, Matlab R2011b
 
+% Find the package of Filament Analysis
+nPackage = length(movieData.packages_);
+
+indexFilamentPackage = 0;
+for i = 1 : nPackage
+    if(strcmp(movieData.packages_{i}.getName,'FilamentAnalysis')==1)
+        indexFilamentPackage = i;
+        break;
+    end
+end
+
+if(indexFilamentPackage==0)
+    msg('Need to be in Filament Package for now.')
+    return; 
+end
+
+% Find the process of segmentation mask refinement.
 nProcesses = length(movieData.processes_);
 
 indexSteerabeleProcess = 0;
@@ -23,6 +40,23 @@ Levelsofsteerablefilters = funParams.Levelsofsteerablefilters;
 ImageFlattenFlag = funParams.ImageFlattenFlag;
 Sub_Sample_Num = funParams.Sub_Sample_Num;
 
+%% Output Directories
+    
+ImageSteerableFilterProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'SteerableFiltering'];
+if (~exist(ImageSteerableFilterProcessOutputDir,'dir'))
+    mkdir(ImageSteerableFilterProcessOutputDir);
+end
+
+for iChannel = selected_channels
+    ImageSteerableFilterChannelOutputDir = [ImageSteerableFilterProcessOutputDir,'/Channel',num2str(iChannel)];
+    if (~exist(ImageSteerableFilterChannelOutputDir,'dir'))
+        mkdir(ImageSteerableFilterChannelOutputDir);
+    end
+   
+    movieData.processes_{indexSteerabeleProcess}.setOutImagePath(iChannel,ImageSteerableFilterChannelOutputDir);
+end
+
+%%
 indexFlattenProcess = 0;
 for i = 1 : nProcesses
     if(strcmp(movieData.processes_{i}.getName,'Image Flatten')==1)
@@ -31,15 +65,10 @@ for i = 1 : nProcesses
     end
 end
 
+
 if indexFlattenProcess==0 && ImageFlattenFlag == 2
     display('The setting shows you want to use flattened image for steerable filtering. Please set parameters for Image Flatten and run.')
     return;
-end
-
-
-ImageSteerableFilterProcessOutputDir = funParams.OutputDirectory;
-if (~exist(ImageSteerableFilterProcessOutputDir,'dir'))
-    mkdir(ImageSteerableFilterProcessOutputDir);
 end
 
 nFrame = movieData.nFrames_;
@@ -57,7 +86,8 @@ for iChannel = selected_channels
     filename_short_strs = uncommon_str_takeout(movieData.channels_(iChannel).fileNames_);
     
     % Make output directory for the steerable filtered images
-    ImageSteerableFilterChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
+    ImageSteerableFilterChannelOutputDir = movieData.processes_{indexSteerabeleProcess}.outFilePaths_{iChannel};
+  
     if (~exist(ImageSteerableFilterChannelOutputDir,'dir'))
         mkdir(ImageSteerableFilterChannelOutputDir);
     end

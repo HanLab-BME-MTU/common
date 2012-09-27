@@ -173,9 +173,6 @@ funParams.Cell_Mask_ind = Cell_Mask_ind;
 VIF_Outgrowth_Flag = get(handles.checkbox_outgrowth,'value');
 funParams.VIF_Outgrowth_Flag = VIF_Outgrowth_Flag;
 
-funParams.OutputDirectory  = [ userData.crtPackage.outputDirectory_, filesep 'FilamentSegmentation'];
-
-
 Sub_Sample_Num  = str2double(get(handles.edit_subsample_number, 'String'));
 if isnan(Sub_Sample_Num) || Sub_Sample_Num < 0
     errordlg(['Please provide a valid input for '''...
@@ -184,15 +181,7 @@ if isnan(Sub_Sample_Num) || Sub_Sample_Num < 0
 end
 
 funParams.Sub_Sample_Num  = Sub_Sample_Num;
-
-for iChannel = channelIndex
-FilamentSegmentationOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
-    if (~exist(FilamentSegmentationOutputDir,'dir'))
-        mkdir(FilamentSegmentationOutputDir);
-    end
-    
-    userData.crtProc.setOutImagePath(iChannel,FilamentSegmentationOutputDir)
-end   
+ 
 
 % -------- Process Sanity check --------
 % ( only check underlying data )

@@ -98,59 +98,59 @@ classdef ImageFlattenProcess < ImageProcessingProcess
          end
         
         
-%             function fileNames = getInImageFileNames(obj,iChan)
-%             if obj.checkChanNum(iChan)
-%                 
-%                 nChan = numel(iChan);
-%                 fileNames = cell(1,nChan);
-%                 for j = 1:nChan
-%                     %First check for regular image inputs
-%                     fileNames{j} = imDir(obj.inFilePaths_{1,iChan(j)});
-%                     if isempty(fileNames{j})
-%                         %If none found, check for .mat image inputs
-%                         fileNames{j} = dir([obj.inFilePaths_{1,inFilePaths_iChan(j)} filesep '*.tif']);
-%                     end
-%                     fileNames{j} = arrayfun(@(x)(x.name),fileNames{j},'UniformOutput',false);
-%                     nIm = length(fileNames{j});
-%                     if nIm ~= obj.owner_.nFrames_
-%                         error(['Incorrect number of images found in channel ' num2str(iChan(j)) ' !'])
-%                     end
-%                 end
-%             else
-%                 error('Invalid channel numbers! Must be positive integers less than the number of image channels!')
-%             end
-%             
-%             
-%             end
+            function fileNames = getInImageFileNames(obj,iChan)
+            if obj.checkChanNum(iChan)
+                
+                nChan = numel(iChan);
+                fileNames = cell(1,nChan);
+                for j = 1:nChan
+                    %First check for regular image inputs
+                    fileNames{j} = imDir(obj.inFilePaths_{1,iChan(j)});
+                    if isempty(fileNames{j})
+                        %If none found, check for .mat image inputs
+                        fileNames{j} = dir([obj.inFilePaths_{1,inFilePaths_iChan(j)} filesep '*.tif']);
+                    end
+                    fileNames{j} = arrayfun(@(x)(x.name),fileNames{j},'UniformOutput',false);
+                    nIm = length(fileNames{j});
+                    if nIm ~= obj.owner_.nFrames_
+                        error(['Incorrect number of images found in channel ' num2str(iChan(j)) ' !'])
+                    end
+                end
+            else
+                error('Invalid channel numbers! Must be positive integers less than the number of image channels!')
+            end
+            
+            
+            end
         
             
             
-%         function setOutImagePath(obj,chanNum,imagePath)
-%             
-%             if ~obj.checkChanNum(chanNum)
-%                 error('lccb:set:fatal','Invalid image channel number for image path!\n\n');
-%             end
-%             
-%             if ~iscell(imagePath)
-%                 imagePath = {imagePath};
-%             end
-%             nChan = length(chanNum);
-%             if nChan ~= length(imagePath)
-%                 error('lccb:set:fatal','You must specify a path for every channel!')
-%             end
-%             
-%             for j = 1:nChan
-%                 if ~exist(imagePath{j},'dir')
-%                     error('lccb:set:fatal',...
-%                         ['The directory specified for channel ' ...
-%                         num2str(chanNum(j)) ' is invalid!'])
-%                 else
-%                     obj.outFilePaths_{1,chanNum(j)} = imagePath{j};
-%                 end
-%             end
-%             
-%             
-%         end
+        function setOutImagePath(obj,chanNum,imagePath)
+            
+            if ~obj.checkChanNum(chanNum)
+                error('lccb:set:fatal','Invalid image channel number for image path!\n\n');
+            end
+            
+            if ~iscell(imagePath)
+                imagePath = {imagePath};
+            end
+            nChan = length(chanNum);
+            if nChan ~= length(imagePath)
+                error('lccb:set:fatal','You must specify a path for every channel!')
+            end
+            
+            for j = 1:nChan
+                if ~exist(imagePath{j},'dir')
+                    error('lccb:set:fatal',...
+                        ['The directory specified for channel ' ...
+                        num2str(chanNum(j)) ' is invalid!'])
+                else
+                    obj.outFilePaths_{1,chanNum(j)} = imagePath{j};
+                end
+            end
+            
+            
+        end
         function h = draw(obj,iChan,varargin)
             
             outputList = obj.getDrawableOutput();
@@ -225,7 +225,6 @@ classdef ImageFlattenProcess < ImageProcessingProcess
             outputDir=ip.Results.outputDir;
             
             % Set default parameters
-            funParams.OutputDirectory =  [outputDir  filesep 'ImageFlatten'];
             funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.method_ind = 3;
             funParams.GaussFilterSigma = 0.5;                        

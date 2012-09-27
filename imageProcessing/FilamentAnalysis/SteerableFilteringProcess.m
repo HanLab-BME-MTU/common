@@ -213,7 +213,7 @@ classdef SteerableFilteringProcess < ImageProcessingProcess
             outputDir=ip.Results.outputDir;
             
             % Set default parameters
-            funParams.OutputDirectory =  [outputDir  filesep 'SteerableFiltering'];
+            
             funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.Levelsofsteerablefilters = 2;
             funParams.BaseSteerableFilterSigma = 1;

@@ -197,7 +197,6 @@ if isnan(gaussFilterSigma) || gaussFilterSigma < 0
 end
 funParams.GaussFilterSigma=gaussFilterSigma;
 
-funParams.OutputDirectory  = [ userData.crtPackage.outputDirectory_, filesep 'ImageFlatten'];
 funParams.method_ind = get(handles.popupmenu_flatten_method,'Value');
 
 TimeFilterSigma = str2double(get(handles.edit_timefilter_sigma, 'String'));
@@ -208,8 +207,6 @@ if isnan(TimeFilterSigma) || TimeFilterSigma < 0
 end
 funParams.TimeFilterSigma=TimeFilterSigma;
 
-
-
 Sub_Sample_Num  = str2double(get(handles.edit_subsample_number, 'String'));
 if isnan(Sub_Sample_Num) || Sub_Sample_Num < 0
     errordlg(['Please provide a valid input for '''...
@@ -219,14 +216,7 @@ end
 
 funParams.Sub_Sample_Num  = Sub_Sample_Num;
 
-for iChannel = channelIndex
-ImageFlattenChannelOutputDir = [funParams.OutputDirectory,'/Channel',num2str(iChannel)];
-    if (~exist(ImageFlattenChannelOutputDir,'dir'))
-        mkdir(ImageFlattenChannelOutputDir);
-    end
-    
-    userData.crtProc.setOutImagePath(iChannel,ImageFlattenChannelOutputDir)
-end
+          
 
 
 
