@@ -14,7 +14,7 @@ end
 
 if(indexFilamentPackage==0)
     msg('Need to be in Filament Package for now.')
-    return; 
+    return;
 end
 
 % Find the process of segmentation mask refinement.
@@ -41,7 +41,7 @@ ImageFlattenFlag = funParams.ImageFlattenFlag;
 Sub_Sample_Num = funParams.Sub_Sample_Num;
 
 %% Output Directories
-    
+
 ImageSteerableFilterProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'SteerableFiltering'];
 if (~exist(ImageSteerableFilterProcessOutputDir,'dir'))
     mkdir(ImageSteerableFilterProcessOutputDir);
@@ -52,7 +52,7 @@ for iChannel = selected_channels
     if (~exist(ImageSteerableFilterChannelOutputDir,'dir'))
         mkdir(ImageSteerableFilterChannelOutputDir);
     end
-   
+    
     movieData.processes_{indexSteerabeleProcess}.setOutImagePath(iChannel,ImageSteerableFilterChannelOutputDir);
 end
 
@@ -81,24 +81,25 @@ Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1])
 Frames_results_correspondence = Frames_results_correspondence(1:nFrame);
 
 for iChannel = selected_channels
-        % Get frame number from the title of the image, this not neccesarily
+    % Get frame number from the title of the image, this not neccesarily
     % the same as iFrame due to some shorting problem of the channel
     filename_short_strs = uncommon_str_takeout(movieData.channels_(iChannel).fileNames_);
     
     % Make output directory for the steerable filtered images
     ImageSteerableFilterChannelOutputDir = movieData.processes_{indexSteerabeleProcess}.outFilePaths_{iChannel};
-  
+    
     if (~exist(ImageSteerableFilterChannelOutputDir,'dir'))
         mkdir(ImageSteerableFilterChannelOutputDir);
     end
     
-%     if indexFlattenProcess >0
-%         FileNames = movieData.processes_{indexFlattenProcess}.getOutImageFileNames(iChannel);
-%     end
-%     
-    display(['Start to do steerable filtering in Channel ',num2str(iChannel)]);
-
-   
+    
+    display('======================================');
+    
+    display(['Current movie: as in ',movieData.outputDirectory_]);
+    
+    display(['Start steerable filtering in Channel ',num2str(iChannel)]);
+    
+    
     for iFrame_subsample = 1 : length(Frames_to_Seg)
         iFrame = Frames_to_Seg(iFrame_subsample);
         disp(['Frame: ',num2str(iFrame)]);
@@ -110,13 +111,13 @@ for iChannel = selected_channels
             currentImg = movieData.channels_(iChannel).loadImage(iFrame);
         end
         currentImg = double(currentImg);
-
+        
         levels_sizes = 2.^((1:Levelsofsteerablefilters)-1);
         
         % Steerable filtering using four scales one doubling the previous one.
         % function multiscaleSteerableDetector will automatically merge the results
         [MAX_st_res, orienation_map, nms, scaleMap] = multiscaleSteerableDetector(currentImg, 4, BaseSteerableFilterSigma.*levels_sizes);
-       
+        
         for sub_i = 1 : Sub_Sample_Num
             if iFrame + sub_i-1 <= nFrame
                 imwrite((MAX_st_res)/(max(max(MAX_st_res))), ...

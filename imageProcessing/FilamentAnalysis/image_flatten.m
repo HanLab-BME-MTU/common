@@ -13,7 +13,7 @@ end
 
 if(indexFilamentPackage==0)
     msg('Need to be in Filament Package for now.')
-    return; 
+    return;
 end
 
 
@@ -39,7 +39,7 @@ selected_channels = funParams.ChannelIndex;
 flatten_method_ind = funParams.method_ind;
 Gaussian_sigma = funParams.GaussFilterSigma;
 
-TimeFilterSigma = funParams.TimeFilterSigma;                        
+TimeFilterSigma = funParams.TimeFilterSigma;
 Sub_Sample_Num  = funParams.Sub_Sample_Num;
 
 nFrame = movieData.nFrames_;
@@ -60,7 +60,7 @@ for iChannel = selected_channels
 end
 
 for iChannel = selected_channels
-
+    
     ImageFlattenProcessOutputDir = movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel};
     
     % Get frame number from the title of the image, this not neccesarily
@@ -70,7 +70,7 @@ for iChannel = selected_channels
     Frames_to_Seg = 1:Sub_Sample_Num:nFrame;
     Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1]),[1 1]);
     Frames_results_correspondence = Frames_results_correspondence(1:nFrame);
-       
+    
     img_pixel_pool = [];
     for iFrame_subsample = 1 : length(Frames_to_Seg)
         iFrame = Frames_to_Seg(iFrame_subsample);
@@ -96,15 +96,17 @@ for iChannel = selected_channels
     
     % Make output directory for the flattened images
     ImageFlattenChannelOutputDir = movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel};
-   if (~exist(ImageFlattenChannelOutputDir,'dir'))
+    if (~exist(ImageFlattenChannelOutputDir,'dir'))
         mkdir(ImageFlattenChannelOutputDir);
     end
-   
-    display(['Start to do image flatten in Channel ',num2str(iChannel)]);
-
-     for iFrame_subsample = 1 : length(Frames_to_Seg)
-         iFrame = Frames_to_Seg(iFrame_subsample);
-         disp(['Frame: ',num2str(iFrame)]);
+    
+    display('======================================');
+    display(['Current movie: as in ',movieData.outputDirectory_]);
+    display(['Start image flattening in Channel ',num2str(iChannel)]);
+    
+    for iFrame_subsample = 1 : length(Frames_to_Seg)
+        iFrame = Frames_to_Seg(iFrame_subsample);
+        disp(['Frame: ',num2str(iFrame)]);
         
         % Read in the intensity image.
         currentImg = movieData.channels_(iChannel).loadImage(iFrame);
@@ -128,8 +130,8 @@ for iChannel = selected_channels
                 currentImg = (currentImg).^(2/3);
             end
         end
-    
-
+        
+        
         % Smooth the image in requested
         if Gaussian_sigma > 0
             currentImg = imfilter(currentImg, fspecial('gaussian',round(5*Gaussian_sigma), Gaussian_sigma),'replicate','same');
@@ -138,10 +140,10 @@ for iChannel = selected_channels
         
         for sub_i = 1 : Sub_Sample_Num
             if iFrame + sub_i-1 <= nFrame
-
-              imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
-                filename_short_strs{iFrame + sub_i-1},'.tif']);
-           
+                
+                imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
+                    filename_short_strs{iFrame + sub_i-1},'.tif']);
+                
             end
         end
         
@@ -155,7 +157,7 @@ for iChannel = selected_channels
     end
 end
 
-if(TimeFilterSigma > 0)    
+if(TimeFilterSigma > 0)
     FilterHalfLength = 2*ceil(TimeFilterSigma);
     
     temperal_filter = zeros(1,1,2*FilterHalfLength+1);
@@ -176,10 +178,10 @@ if(TimeFilterSigma > 0)
         
         for sub_i = 1 : Sub_Sample_Num
             if iFrame + sub_i-1 <= nFrame
-            disp(['Frame: ',num2str(iFrame + sub_i-1)]);
-     
-            imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
-                filename_short_strs{iFrame + sub_i-1},'.tif']);
+                disp(['Frame: ',num2str(iFrame + sub_i-1)]);
+                
+                imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
+                    filename_short_strs{iFrame + sub_i-1},'.tif']);
             end
         end
     end

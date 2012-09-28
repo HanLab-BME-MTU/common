@@ -227,7 +227,7 @@ classdef ImageFlattenProcess < ImageProcessingProcess
             % Set default parameters
             funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.method_ind = 3;
-            funParams.GaussFilterSigma = 0.5;                        
+            funParams.GaussFilterSigma = 0.2;                        
             funParams.TimeFilterSigma = 1;      
 
             % sub-sample number, since often VIF images are taken at a
