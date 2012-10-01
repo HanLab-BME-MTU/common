@@ -82,7 +82,7 @@ for i = 1:nSeries
     end
     
     % Create output directory
-    mkClrDir(outputDir);
+    if ~isdir(outputDir), mkdir(outputDir); end
 
     for iChan = 1:nChan
         
