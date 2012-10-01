@@ -208,7 +208,6 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             outputDir=ip.Results.outputDir;
             
             % Set default parameters
-            funParams.OutputDirectory =  [outputDir  filesep 'FilamentSegmentation'];
             % Set default channels, use all channels
             funParams.ChannelIndex = 1:numel(owner.channels_);
             

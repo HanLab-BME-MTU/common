@@ -419,29 +419,31 @@ for iChannel = selected_channels
             'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment');
         
         if( save_tif_flag==1)
-            current_seg = imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']);
-            RGB_seg_orient_heat_map = imread([HeatEnhOutputDir,'/segment_heat_',filename_short_strs{iFrame},'.tif']);
-            
+%             current_seg = (imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']))>0;
+%             RGB_seg_orient_heat_map = imread([HeatEnhOutputDir,'/segment_heat_',filename_short_strs{iFrame},'.tif']);
+%             
             tif_stack_binary_seg_image_data(:,:,iFrame_index) = uint8(current_seg*255);
             tif_stack_RGB_heat_image_data(:,:,:,iFrame_index) = uint8(RGB_seg_orient_heat_map);
             
         end
     end
+    %% For Gelfand Lab, save results as tif stack file
+    if( save_tif_flag==1)
+        options.comp = false;
+        options.ask = false;
+        options.message = true;
+        options.append = false;
+        
+        % Save the multi-frame RGB color image
+        options.color = true;
+        saveastiff(tif_stack_RGB_heat_image_data, [FilamentSegmentationProcessOutputDir,'/channel_',num2str(iChannel),'_seg_heat.tif'], options);
+        options.color = false;
+        saveastiff(tif_stack_binary_seg_image_data, [FilamentSegmentationProcessOutputDir,'/channel_',num2str(iChannel),'_seg_binary.tif'], options);
+        
+    end
+    
 end
 
-%% For Gelfand Lab, save results as tif stack file
-if( save_tif_flag==1)
-    options.comp = false;
-    options.ask = false;
-    options.message = true;
-    options.append = false;
-    
-    % Save the multi-frame RGB color image
-    options.color = true;
-    saveastiff(tif_stack_RGB_heat_image_data, [FilamentSegmentationChannelOutputDir,'channel_',num2str(iChannel),'_seg_heat.tif'], options);
-    options.color = false;
-    saveastiff(tif_stack_binary_seg_image_data, [FilamentSegmentationChannelOutputDir,'channel_',num2str(iChannel),'_seg_binary.tif'], options);
-end
 
 
 %% For Gelfand Lab, outgrowth calculation
