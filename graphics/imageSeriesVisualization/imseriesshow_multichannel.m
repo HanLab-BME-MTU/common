@@ -265,7 +265,7 @@ if nargout > 0
 end
 guidata(hMainFigure,data);
 imsliceshow(data);
-close(gcbf);
+% close(gcbf);
 
 end
 

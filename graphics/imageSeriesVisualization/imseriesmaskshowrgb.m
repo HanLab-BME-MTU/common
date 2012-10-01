@@ -268,7 +268,7 @@ data.ui.ch_planes = uibuttongroup('visible', 'on', 'Units' , 'normalized', ...
     'Position', [0.30 0.01 0.4 0.05], ...
     'SelectionChangeFcn',{@planes_Callback});
 
-if data.im == 3
+if ndims( data.im ) == 3
     otherPlaneEnableState = 'on';
 else
     otherPlaneEnableState = 'off';
@@ -309,7 +309,7 @@ if nargout > 0
 end
 guidata(hMainFigure,data);
 imsliceshow(data);
-close(gcbf);
+% close(gcbf);
 
 end
 
