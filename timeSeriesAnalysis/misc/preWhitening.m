@@ -1,12 +1,13 @@
-function [out,trend,imf]=preWhitening(TS,method)
+function [out,trend,imf] = preWhitening(TS,varargin)
 %This function removes any deterministic component from the input time
 %series TS
 %
 %Synopsis:
 %         [out,trend,imf]=preWhitening(TS,method)  
 %
-%Input: TS     - matrix(# of observations,# of variables)
-%       method - string - 'imf' or 'ar' (Default is 'imf')
+%Input: TS          - matrix(# of observations,# of variables)
+%       method      - string - 'imf' or 'ar' (Default is 'imf')
+%       removeMean  - logical - true to remove the time series mean value
 %
 %Output
 %       out   - detrend time series
@@ -23,10 +24,17 @@ function [out,trend,imf]=preWhitening(TS,method)
 %
 % Marco Vilela, 2011
 
-if nargin < 2
-    method = 'imf';
-end
+%%Parsing input
+ip=inputParser;
+ip.addRequired('TS',@isnumeric);
+ip.addOptional('method','imf',@ischar);
+ip.addOptional('removeMean',false,@islogical);
 
+ip.parse(TS,varargin{:})
+method     = ip.Results.method;
+removeMean = ip.Results.removeMean;
+
+%% Initialization
 [nObs,nVar] = size(TS);
 max_order   = 8;
 trend       = [];
@@ -34,6 +42,7 @@ out         = TS;
 imf         = [];
 h           = inf(2,nVar);
 
+%%
 for i=1:nVar
     
     h(1,i) = kpsstest(TS(:,i));%Ho is stationary - 0 
@@ -51,9 +60,7 @@ for i=1:nVar
                 out(:,i) = filter(IR,1,TS(:,i));
                 
             case 'imf'
-               % [imf, flag] = empiricalModeDecomp( TS(:,i) ) ;
-                imf = emd(TS(:,i));
-                
+                imf = empiricalModeDecomp( TS(:,i) )' ;
                 %Testing each IMF
                 for j = 1:size(imf,1) 
                     rW(j) = vratiotest( imf(j,:) );
@@ -64,8 +71,8 @@ for i=1:nVar
                 range =  find( ~rW | sS ) ;
                 if ~isempty(range)
                     for j=numel(range):-1:1
-                        trend = sum( imf( range(j:end), : ), 1 );
-                        DTs   = TS(:,i) - trend';
+                        trend = sum( imf( range(j:end), : ), 1 )';
+                        DTs   = TS(:,i) - trend;
                         h     = kpsstest(DTs);
                         if ~h
                             out(:,i) = DTs;
@@ -83,4 +90,7 @@ for i=1:nVar
         end
     end
 end
-out = out - repmat(mean(out),nObs,1);
+%%
+if removeMean
+    out = out - repmat(mean(out),nObs,1);
+end

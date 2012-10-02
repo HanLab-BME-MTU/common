@@ -81,7 +81,7 @@ for i = 1:nVar
  
 
     
-    if nObs - length( exclude ) >= 20% forced by the spline used in preWhitening
+    if nObs - length( exclude ) >= minLength% forced by the spline used in preWhitening
 %% Interpolating single NaN points throughout the time series        
         if ~isempty(xi)%After excluding points, xi is a vector of size 1 NaN 
 

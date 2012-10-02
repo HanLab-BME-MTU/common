@@ -3,7 +3,7 @@ function [imfOut,noise] = testImf(imf,varargin)
 %the imf of a gaussian white noise
 %
 %Usage:
-%     [auxImf,noise] = testIMF(imf)
+%     [imfOut,noise] = testIMF(imf)
 %
 %Input:
 %      imf   - matrix with all imf's 
