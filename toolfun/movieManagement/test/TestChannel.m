@@ -56,7 +56,7 @@ classdef TestChannel < TestCase
         
         
         function testClass(self)
-            assertEqual(class(self.channel),'Channel');
+            assertTrue(isa(self.channel,'Channel'));
         end
           
     end

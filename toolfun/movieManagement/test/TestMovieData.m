@@ -33,16 +33,6 @@ classdef TestMovieData < TestCase
             TestHelperMovieObject.testGetProcessIndex(self.movie);
         end
         
-        function testProcessCreation(self)
-            TestHelperMovieObject.testProcessCreation(self.movie);
-        end
-        
-        
-        function testPackageCreation(self)
-            TestHelperMovieObject.testPackageCreation(self.movie);
-        end
-        
-        
         function testRelocate(self)
             % Add process + package to test analysis relocation
             self.movie.addProcess(ThresholdProcess(self.movie));

@@ -89,8 +89,9 @@ classdef TestHelperMovieObject < handle
                     % Test default process construction
                     crtPackage = movieObject.packages_{1};
                     for j=1:numel(crtPackage.getDefaultProcessConstructors),
-                        crtPackage.createDefaultProcess(i);                       
-                        assertTrue(isa(movieObject.processes_{end},crtPackage.getProcessClassNames{j}));
+                        crtPackage.createDefaultProcess(j);                       
+                        assertTrue(isa(movieObject.processes_{end},...
+                            crtPackage.getProcessClassNames{j}));
                     end
                     
                     % Reset movie
