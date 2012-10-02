@@ -79,8 +79,41 @@ classdef  MovieObject < hgsetget
             obj.(obj.getFilenameProperty) = value;
         end
         
-        function value = getFullPath(obj)
-            value = fullfile(obj.(obj.getPathProperty),obj.(obj.getFilenameProperty));
+        function fullPath = getFullPath(obj, askUser)
+            % Return full path of the movie object
+            
+            if nargin < 2, askUser = true; end
+            hasEmptyComponent = isempty(obj.getPath) || isempty(obj.getFilename);
+            hasDisplay = feature('ShowFigureWindows');
+            
+            if any(hasEmptyComponent) && askUser && hasDisplay
+                if ~isempty(obj.getPath),
+                    defaultDir = obj.getPath;
+                elseif ~isempty(obj.outputDirectory_)
+                    defaultDir = obj.outputDirectory_;
+                else
+                    defaultDir = pwd;
+                end
+                
+                % Open a dialog box asking where to save the movie object
+                movieClass = class(obj);
+                objName = regexprep(movieClass,'([A-Z])',' ${lower($1)}');
+                defaultName = regexprep(movieClass,'(^[A-Z])','${lower($1)}');
+                [filename,path] = uiputfile('*.mat',['Find a place to save your' objName],...
+                    [defaultDir filesep defaultName '.mat']);
+                
+                if ~any([filename,path]),
+                    fullPath=[];
+                else
+                    fullPath = [path, filename];
+                    % Set new path and filename
+                    obj.setPath(path);
+                    obj.setFilename(filename);
+                end
+            else
+                fullPath = fullfile(obj.getPath(), obj.getFilename());
+            end
+
         end
         %% Functions to manipulate process object array
         function addProcess(obj, newprocess)
@@ -268,59 +301,6 @@ classdef  MovieObject < hgsetget
             
             % Relocate the packages
             for i=1:numel(obj.packages_), obj.packages_{i}.relocate(oldRootDir,newRootDir); end
-        end
-        
-        function flag = save(obj)
-            % Save the movie object to disk.
-            %
-            % This function check for the values of the path and filename.
-            % If empty, it launches a dialog box asking where to save the
-            % movie object. If a MAT file already exist, copies this MAT
-            % file before saving the MovieObject.
-            %
-            % OUTPUT:
-            %    flag - a flag returning the status of the save method
-            movieClass =class(obj);
-            
-            % If no path or fileName, start a dialog box asking where to save the MovieObject
-            if isempty(obj.getPath) || isempty(obj.getFilename)
-                if ~isempty(obj.getPath),
-                    defaultDir=obj.getPath;
-                elseif ~isempty(obj.outputDirectory_)
-                    defaultDir=obj.outputDirectory_;
-                else
-                    defaultDir =pwd;
-                end
-                objName = regexprep(movieClass,'([A-Z])',' ${lower($1)}');
-                defaultName = regexprep(movieClass,'(^[A-Z])','${lower($1)}');
-                [filename,path] = uiputfile('*.mat',['Find a place to save your' objName],...
-                    [defaultDir filesep defaultName '.mat']);
-                
-                if ~any([filename,path]), flag=0; return; end
-                
-                % After checking file directory, set directory to movie data
-                obj.setPath(path);
-                obj.setFilename(filename);
-            end
-            
-            %First, check if there is an existing file. If so, save a
-            %backup. Then save the MovieData as obj
-            fullPath = obj.getFullPath();
-            if exist(fullPath,'file')
-                movefile(fullPath,[fullPath(1:end-3) 'old'],'f');
-            end
-            
-            if isa(obj,'MovieData')
-                MD=obj; %#ok<NASGU>
-                save(fullPath,'MD');
-            elseif isa(obj,'MovieList')
-                ML=obj; %#ok<NASGU>
-                save(fullPath,'ML');
-            else
-                error('Unsupported MovieObject!')
-            end
-            
-            flag=1;
         end
         
         function reset(obj)

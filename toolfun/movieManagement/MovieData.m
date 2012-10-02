@@ -286,11 +286,25 @@ classdef  MovieData < MovieObject
             setFig = movieDataGUI(obj);
         end
         
-        function flag = save(obj,varargin)   
-            flag = save@MovieObject(obj.getAncestor);
-            for descendant = obj.getAncestor.getDescendants
-                flag = flag && save@MovieObject(descendant);
+        function save(obj,varargin)
+            
+            % Create list of movies to save simultaneously
+            allMovies = [obj.getAncestor() obj.getAncestor().getDescendants()];
+            
+            % Check path validity for all movies in the tree
+            checkPath = @(x) assert(~isempty(x.getFullPath()), 'Invalid path');
+            arrayfun(checkPath, allMovies);
+            
+            % Backup existing file and save each movie in the list
+            for MD = allMovies
+                fullPath = MD.getFullPath();
+                if exist(fullPath,'file')
+                    movefile(fullPath,[fullPath(1:end-3) 'old'],'f');
+                end
+                save(fullPath, 'MD');
             end
+            
+            % Save to OMERO if OMERO object
             if obj.getAncestor().isOmero(), 
                 omeroSave(obj.getAncestor()); 
             end

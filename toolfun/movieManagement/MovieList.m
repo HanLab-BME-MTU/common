@@ -122,6 +122,19 @@ classdef MovieList < MovieObject
                 obj.movieDataFile_{i} = relocatePath(obj.movieDataFile_{i},oldRootDir,newRootDir);
             end
         end
+        
+        function save(ML,varargin)
+            
+            % Check path validity for movie list
+            fullPath = ML.getFullPath();
+            assert(~isempty(fullPath), 'Invalid path');
+            
+            % Backup existing file and save the movie list
+            if exist(fullPath,'file')
+                movefile(fullPath,[fullPath(1:end-3) 'old'],'f');
+            end
+            save(fullPath, 'ML');
+        end
     end
     
     methods(Static)
