@@ -130,23 +130,50 @@ classdef TestMovieData < TestCase
             assertEqual(roiMovie.getAncestor().getDescendants(), roiMovie);
         end
         
+        function testAddMultipleROIs(self)
+            % Create 3 ROIs
+            roiFullPath{1} = self.setupROI();
+            roiFullPath{2} = self.setupROI();
+            roiFullPath{3} = self.setupROI();
+            assertEqual(numel(self.movie.rois_), 3);
+            
+            % Reload ROI Movie and test components
+            roiMovie1 = MovieData.load(roiFullPath{1});
+            roiMovie2 = MovieData.load(roiFullPath{2});
+            roiMovie3 = MovieData.load(roiFullPath{3});
+            
+            % Test getAncestor/getDescendants methods
+            assertEqual(roiMovie1.getAncestor(), self.movie);
+            assertEqual(roiMovie2.getAncestor(), self.movie);
+            assertEqual(roiMovie3.getAncestor(), self.movie);
+            assertEqual(self.movie.getDescendants(),...
+                [roiMovie1, roiMovie2, roiMovie3]);
+
+        end
+        
         function testDeleteROI(self)
             % Create ROI movie
-            roiFullPath = self.setupROI();
-            assertEqual(numel(self.movie.rois_),1);
+            roiFullPath{1} = self.setupROI();
+            roiFullPath{2} = self.setupROI();
+            assertEqual(numel(self.movie.rois_),2);
             
             % Delete create ROI
             self.movie.deleteROI(1);            
-            assertEqual(numel(self.movie.rois_),0);
+            assertEqual(numel(self.movie.rois_),1);
             self.movie.save;
             
             % Test ROI has been deleted
-            roiMovie = load(roiFullPath);
-            assertFalse(roiMovie.MD.isvalid)
+            roiMovie1 = load(roiFullPath{1});
+            assertFalse(roiMovie1.MD.isvalid)
             
+            % Test ROI has been deleted
+            roiMovie2 = MovieData.load(roiFullPath{2});
+            assertEqual(roiMovie2.getAncestor(), self.movie);
+
             % Test main movie has been saved without ROI
             reloadedMovie = MovieData.load(self.movie.getFullPath);
-            assertEqual(numel(reloadedMovie.rois_),0)
+            assertEqual(reloadedMovie.getDescendants(), roiMovie2)
+            assertEqual(numel(reloadedMovie.rois_),1)
         end
         
         
