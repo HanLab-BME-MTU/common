@@ -99,9 +99,10 @@ classdef TestMovieData < TestCase
         end
         
         % ROI tests
-        function testAddROI(self)
+        function roiFullPath = setupROI(self)
             % Create ROI folder
-            roiPath = fullfile(self.moviePath, self.roiFolder);
+            nROIs = numel(self.movie.rois_);
+            roiPath = fullfile(self.moviePath, self.roiFolder, num2str(nROIs+1));
             mkdir(roiPath);
 
             % Create ROI mask
@@ -114,13 +115,40 @@ classdef TestMovieData < TestCase
             self.movie.rois_(end).setPath(roiPath);
             self.movie.rois_(end).setFilename(self.roiName);
             self.movie.rois_(end).sanityCheck;
-            
-            % Reload ROI Movie and test components
-            roiMovie = MovieData.load(fullfile(roiPath, self.roiName));
-            assertEqual(roiMovie.parent_, self.movie);
-            assertEqual(roiMovie.getROIMask(), true(self.movie.imSize_));
+            roiFullPath = self.movie.rois_(end).getFullPath();
         end
         
-        % ROIS test
+        function testAddROI(self)
+            % Create ROI movie
+            roiFullPath = self.setupROI();
+            
+            % Reload ROI Movie and test components
+            roiMovie = MovieData.load(roiFullPath);
+            assertEqual(roiMovie.parent_, self.movie);
+            assertEqual(roiMovie.getROIMask(), true(self.movie.imSize_));
+            assertEqual(roiMovie.getAncestor(), self.movie);
+            assertEqual(roiMovie.getAncestor().getDescendants(), roiMovie);
+        end
+        
+        function testDeleteROI(self)
+            % Create ROI movie
+            roiFullPath = self.setupROI();
+            assertEqual(numel(self.movie.rois_),1);
+            
+            % Delete create ROI
+            self.movie.deleteROI(1);            
+            assertEqual(numel(self.movie.rois_),0);
+            self.movie.save;
+            
+            % Test ROI has been deleted
+            roiMovie = load(roiFullPath);
+            assertFalse(roiMovie.MD.isvalid)
+            
+            % Test main movie has been saved without ROI
+            reloadedMovie = MovieData.load(self.movie.getFullPath);
+            assertEqual(numel(reloadedMovie.rois_),0)
+        end
+        
+        
     end
 end
