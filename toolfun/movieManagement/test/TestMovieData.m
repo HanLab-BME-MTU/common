@@ -3,7 +3,10 @@ classdef TestMovieData < TestCase
     properties
         movie
         moviePath = fullfile(getenv('HOME'),'MovieTest');
-        movieName='movieData.mat';
+        movieName = 'movieData.mat';
+        roiFolder = 'ROI';
+        roiName = 'roiMovie.mat';
+        roiMaskName = 'roiMask.tif';
         imSize = [100 200];
         nFrames = 1;
         validProperties =  {'timeInterval_','numAperture_',...
@@ -94,5 +97,30 @@ classdef TestMovieData < TestCase
         function testClass(self)
             assertTrue(isa(self.movie,'MovieData'));
         end
+        
+        % ROI tests
+        function testAddROI(self)
+            % Create ROI folder
+            roiPath = fullfile(self.moviePath, self.roiFolder);
+            mkdir(roiPath);
+
+            % Create ROI mask
+            roiMask = true(self.movie.imSize_); 
+            roiMaskFullPath = fullfile(roiPath, self.roiMaskName);
+            imwrite(roiMask, roiMaskFullPath);
+            
+            % Create and save ROI
+            self.movie.addROI(roiMaskFullPath, roiPath);
+            self.movie.rois_(end).setPath(roiPath);
+            self.movie.rois_(end).setFilename(self.roiName);
+            self.movie.rois_(end).sanityCheck;
+            
+            % Reload ROI Movie and test components
+            roiMovie = MovieData.load(fullfile(roiPath, self.roiName));
+            assertEqual(roiMovie.parent_, self.movie);
+            assertEqual(roiMovie.getROIMask(), true(self.movie.imSize_));
+        end
+        
+        % ROIS test
     end
 end
