@@ -38,18 +38,18 @@ if isnumeric(prm)
     prm = {prm};
 end
 
-ng = size(prm{1},2); % #groups
-nb = numel(prm); % #bars in each group
+nbin = size(prm{1},2); % # bins
+nd = numel(prm); % # data sets
 
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('prm');
-ip.addParamValue('FaceColor', jet(max(nb)), @(x) size(x,1)==1 || size(x,1)==nb || size(x,1)==ng);
-ip.addParamValue('EdgeColor', []);
+ip.addParamValue('FaceColor', jet(max(nd)), @(x) size(x,1)==1 || size(x,1)==nd || size(x,1)==nbin);
+ip.addParamValue('EdgeColor', zeros(1,3));
 ip.addParamValue('GroupDistance', 0.5, @isscalar);
 ip.addParamValue('BorderWidth', [], @isscalar); 
 ip.addParamValue('XLabel', [], @ischar);
-ip.addParamValue('XLabels', arrayfun(@(k) num2str(k), 1:sum(ng), 'UniformOutput', false), @(x) iscell(x) && (numel(x)==sum(nb)||numel(x)==ng));
+ip.addParamValue('XLabels', arrayfun(@(k) num2str(k), 1:sum(nbin), 'UniformOutput', false), @(x) iscell(x) && (numel(x)==sum(nd)||numel(x)==nbin));
 ip.addParamValue('YLabel', ' ', @ischar);
 ip.addParamValue('YLim', [], @(x) numel(x)==2);
 ip.addParamValue('BarWidth', 0.8, @isscalar);
@@ -58,46 +58,58 @@ ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('ErrorBarWidth', 0.2, @(x) 0<x && x<=1);
 ip.addParamValue('Handle', gca, @ishandle);
 ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
-ip.addParamValue('X', [], @(x) numel(x)==ng); % cell array of x-coordinates (groups only)
+ip.addParamValue('X', [], @(x) numel(x)==nbin); % cell array of x-coordinates (groups only)
 ip.addParamValue('AdjustFigure', true, @islogical);
 ip.addParamValue('ErrorbarColor', []);
 ip.parse(prm, varargin{:});
 
 faceColor = ip.Results.FaceColor;
-if size(faceColor,1)==1
-    faceColor = repmat(faceColor, [nb 1]);
+if ~iscell(faceColor) % otherwise assume correct format: cell(1,nd)(nbin,:)
+    if size(faceColor,1)==1
+        faceColor = repmat({repmat(faceColor, [nbin 1])}, [1 nd]);
+    elseif size(faceColor,1)==nbin
+        faceColor = repmat({faceColor}, [1 nd]);
+    elseif size(faceColor,1)==nd
+        faceColor = arrayfun(@(i) repmat(faceColor(i,:), [nbin 1]), 1:nd, 'UniformOutput', false);
+    else
+        error('Incorrect color format.');
+    end
 end
-nc = size(faceColor,1);
 
 edgeColor = ip.Results.EdgeColor;
-if size(edgeColor,1)==1
-    edgeColor = repmat(edgeColor, [nb 1]);
-elseif isempty(edgeColor)
-    edgeColor = zeros(size(faceColor));
+if ~iscell(edgeColor)
+    if size(edgeColor,1)==1
+        edgeColor = repmat({repmat(edgeColor, [nbin 1])}, [1 nd]);
+    elseif size(edgeColor,1)==nbin
+        edgeColor = repmat({edgeColor}, [1 nd]);
+    elseif size(edgeColor,1)==nd
+        edgeColor = arrayfun(@(i) repmat(edgeColor(i,:), [nbin 1]), 1:nd, 'UniformOutput', false);
+    else
+        error('Incorrect color format.');
+    end
 end
 
 errorbarColor = ip.Results.ErrorbarColor;
 if isempty(errorbarColor)
-    errorbarColor = zeros(size(faceColor));
+    errorbarColor = repmat({zeros(nbin,3)}, [1 nd]);
 end
 
 ha = ip.Results.Handle;
-
 bw = ip.Results.BarWidth;
 dg = ip.Results.GroupDistance; % distance between groups, in bar widths
 
 % x-coords for groups
-xa = cell(1,ng);
+xa = cell(1,nbin);
 if isempty(ip.Results.X)
-    xa{1} = 1:nb;
-    for k = 2:ng
+    xa{1} = 1:nd;
+    for k = 2:nbin
         xa{k} = xa{1} + xa{k-1}(end) + dg;
     end
 else
     dx = min(diff(ip.Results.X));
-    for k = 1:ng
-        w = (nb-1)/2;
-        xa{k} = ip.Results.X(k) + (k-1)*dg + (-w:w)*dx/nb;
+    for k = 1:nbin
+        w = (nd-1)/2;
+        xa{k} = ip.Results.X(k) + (k-1)*dg + (-w:w)*dx/nd;
     end
 end
 
@@ -111,8 +123,8 @@ plotSEM = mod(size(prm{1},1),2)==0;
 
 hold on;
 % handles
-h = zeros(1,nb);
-for k = 1:ng
+h = zeros(1,nd);
+for k = 1:nbin
     
     % concatenate values for group 'k'
     M = cellfun(@(i) i(:,k), prm, 'UniformOutput', false);
@@ -149,31 +161,26 @@ for k = 1:ng
     xv = [lb; rb; rb; lb; lb; rb];
     yv = [p75; p75; p25; p25; p75; p75];
     
-    for b = 1:nb
-        if nc==nb
-            ci = b;
-        else
-            ci = k;
-        end
-        
+    for b = 1:nd
+
         if plotWhiskers
-            he = errorbar(xa{k}(b), p25(b), w1(b)-p25(b), 0, 'Color', errorbarColor(ci,:), 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+            he = errorbar(xa{k}(b), p25(b), w1(b)-p25(b), 0, 'Color', errorbarColor{b}(k,:), 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
             setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
-            he = errorbar(xa{k}(b), p75(b), 0, w2(b)-p75(b), 'Color', errorbarColor(ci,:), 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+            he = errorbar(xa{k}(b), p75(b), 0, w2(b)-p75(b), 'Color', errorbarColor{b}(k,:), 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
             setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
         end
         
-        hp = patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
+        hp = patch(xv(:,b), yv(:,b), faceColor{b}(k,:), 'EdgeColor', edgeColor{b}(k,:),...
             'LineWidth', ip.Results.LineWidth);
         if k==1
             h(b) = hp;
         end
         
         % mean/median line
-        line([lb(b); rb(b)], [mu(b); mu(b)], 'Color', errorbarColor(ci,:), 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+        line([lb(b); rb(b)], [mu(b); mu(b)], 'Color', errorbarColor{b}(k,:), 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
         
         % replot border
-        hp = patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
+        hp = patch(xv(:,b), yv(:,b), faceColor{b}(k,:), 'EdgeColor', edgeColor{b}(k,:),...
             'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
         set(hp, 'FaceColor', 'none');
     end
@@ -189,8 +196,8 @@ end
 hold off;
 box off;
 
-if numel(ip.Results.XLabels)==ng
-    la = arrayfun(@(k) (xa{k}(1) + xa{k}(end))/2, 1:ng);
+if numel(ip.Results.XLabels)==nbin
+    la = arrayfun(@(k) (xa{k}(1) + xa{k}(end))/2, 1:nbin);
 else
     la = [xa{:}];
 end
