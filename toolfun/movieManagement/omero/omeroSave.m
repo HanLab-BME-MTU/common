@@ -16,7 +16,7 @@ function omeroSave(movieData)
 %   movieData - A MovieData object
 %
 
-% Sebastien Besson, Jun 2012
+% Sebastien Besson, Jun 2012 (last modified Oct 2012)
 
 % To be replaced by omero.constants....
 namespace = 'hms-tracking';
@@ -28,9 +28,9 @@ ip.addRequired('movieData',@(x) isa(x,'MovieData') && x.isOmero());
 ip.parse(movieData);
 
 % Zip output directory for attachment
-zipPath = movieData.outputDirectory_;
+zipPath = fileparts(movieData.outputDirectory_);
 zipFullPath = fullfile(zipPath,zipName);
-zip(fullfile(zipPath,zipName),movieData.outputDirectory_)
+zip(zipFullPath, movieData.outputDirectory_)
 
 % Create java io File
 file = java.io.File(zipFullPath);
@@ -46,11 +46,17 @@ nsToExclude = java.util.ArrayList;
 
 options = omero.sys.ParametersI;
 options.exp(omero.rtypes.rlong(userId)); %load the annotation for a given user.
+options.exp(omero.rtypes.rlong(userId)); %load the annotation for a given user.
 metadataService = movieData.getSession().getMetadataService();
 % retrieve the annotations linked to images, for datasets use: 'omero.model.Dataset'
 annotations = metadataService.loadSpecifiedAnnotations('omero.model.FileAnnotation', nsToInclude, nsToExclude, options);
 
-if annotations.size()>0
+% imageIds = java.util.ArrayList;
+% imageIds.add(java.lang.Long(MD.getImage().getId().getValue))
+% annotations = metadataService.loadAnnotation('omero.model.Image', imageIds,...
+%     java.util.ArrayList,java.util.ArrayList,omero.sys.ParametersI());
+
+if annotations.size() >0
     originalFile = annotations.get(0).getFile();
 else
     originalFile = omero.model.OriginalFileI;
