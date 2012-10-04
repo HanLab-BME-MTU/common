@@ -19,7 +19,7 @@ function omeroExportDetection(movieData,movieInfo)
 % Output:
 %
 
-% Sebastien Besson, Jun 2012 (last modified Aug 2012)
+% Sebastien Besson, Jun 2012 (last modified Oct 2012)
 
 ns = 'hms-detection';
 
@@ -34,16 +34,25 @@ image = movieData.getImage();
 roiService = movieData.getSession().getRoiService();
 updateService = movieData.getSession().getUpdateService();
 
-% Get previously saved ROIs
+% Get previously saved ROIs with same namespace
 roiOptions = omero.api.RoiOptions();
 roiOptions.namespace = omero.rtypes.rstring(ns);
-r = roiService.findByImage(movieData.omeroId_, roiOptions);
-for i = 1:r.rois().size()
-    % Remove roi
-       
+rois = roiService.findByImage(movieData.omeroId_, roiOptions).rois();
+
+if rois.size()> 0
+    % List rois to remove
+    fprintf('Deleting %g existing rois with namespace %s\n', rois.size(), ns);
+    list = javaArray('omero.api.delete.DeleteCommand', 1);
+    for i = 1:rois().size()
+        roiId = rois.get(i-1).getId().getValue;
+        list(i) = omero.api.delete.DeleteCommand('/Roi', roiId, []);
+    end
+    
+    %Delete the rois
+    movieData.getSession().getDeleteService().queueDelete(list);
 end
 
-%  Create roi to attach to the image
+% Create ROI to attach to the image
 progressText(0, 'Exporting ROIs')
 roi = omero.model.RoiI();
 roi.setImage(image);
