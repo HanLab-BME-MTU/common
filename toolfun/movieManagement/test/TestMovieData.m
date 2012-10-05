@@ -175,6 +175,31 @@ classdef TestMovieData < TestCase
             assertEqual(reloadedMovie.getDescendants(), roiMovie2)
             assertEqual(numel(reloadedMovie.rois_),1)
         end
+        
+                
+        function testRelocateROI(self)
+            % Add ROI & save
+            self.setupROI()
+            self.movie.save;
+            roiOutputDirectory = self.movie.rois_(1).outputDirectory_;
+            roiMaskPath = self.movie.rois_(1).roiMaskPath_;
+
+             % Load the relocated movie
+            relocatedMoviePath = TestHelperMovieObject.relocateMovie(self.movie);
+            relocatedMovie=MovieData.load(fullfile(relocatedMoviePath,self.movie.getFilename),false);
+            
+            % Test movie paths
+            relocatedROI = relocatedMovie.rois_(1);
+            relocatedROIOutputDir = relocatePath(roiOutputDirectory,...
+                self.movie.getPath, relocatedMoviePath);
+            relocatedROIMaskPath = relocatePath(roiMaskPath,...
+                self.movie.getPath, relocatedMoviePath);
+            assertEqual(relocatedROI.outputDirectory_, relocatedROIOutputDir);
+            assertEqual(relocatedROI.roiMaskPath_, relocatedROIMaskPath);
+
+            % Remove relocated movie
+            rmdir(relocatedMoviePath,'s');
+        end
 
         
         %% Process/package deletion
