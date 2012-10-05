@@ -146,7 +146,7 @@ classdef  MovieObject < hgsetget
                 error('Please provide a Process object or a valid process index of movie data processes list.')
             end
             
-            if ~isempty(obj.processes_{pid})
+            if ~isempty(obj.processes_{pid}) &&  obj.processes_{pid}.isvalid
                 % Unassociate process in corresponding packages
                 [packageID procID] = obj.processes_{pid}.getPackage;
                 for i=1:numel(packageID)
