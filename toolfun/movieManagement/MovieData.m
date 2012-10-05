@@ -255,12 +255,12 @@ classdef  MovieData < MovieObject
         function relocate(obj,oldRootDir,newRootDir,full)
             
             % Relocate movie and rois analysis
-            relocate@MovieObject(obj.getAncestor,oldRootDir,newRootDir);                      
-            for descendant = obj.getAncestor.getDescendants
-                relocate@MovieObject(descendant,oldRootDir,newRootDir);
-            end
-            if ~isempty(obj.roiMaskPath_)
-                obj.roiMaskPath_ = relocatePath(obj.roiMaskPath_,oldRootDir,newRootDir);
+            for movie = [obj.getAncestor() obj.getAncestor().getDescendants()]
+                relocate@MovieObject(movie, oldRootDir, newRootDir);
+                if ~isempty(movie.roiMaskPath_)
+                    movie.roiMaskPath_ = relocatePath(movie.roiMaskPath_,...
+                        oldRootDir,newRootDir);
+                end
             end
             
             if nargin<3 || ~full, return; end
