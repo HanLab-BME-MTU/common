@@ -176,6 +176,21 @@ classdef TestMovieData < TestCase
             assertEqual(numel(reloadedMovie.rois_),1)
         end
         
+        function testDeleteProcess(self)
+            
+            % Create process in main movie
+            self.movie.addProcess(ThresholdProcess(self.movie));
+            
+            % Create ROI movie
+            self.setupROI();
+            roiMovie = self.movie.rois_(1);
+
+            % Delete process and check results
+            roiMovie.deleteProcess(1);              
+            assertEqual(numel(roiMovie.processes_),1);
+            assertEqual(numel(self.movie.processes_),1);
+
+        end
         
     end
 end
