@@ -175,20 +175,91 @@ classdef TestMovieData < TestCase
             assertEqual(reloadedMovie.getDescendants(), roiMovie2)
             assertEqual(numel(reloadedMovie.rois_),1)
         end
+
         
-        function testDeleteProcess(self)
+        %% Process/package deletion
+        
+        function testDeleteInvalidProcess(self)
+            
+            % Create process in main movie
+            self.movie.addProcess(ThresholdProcess(self.movie));
+            assertEqual(numel(self.movie.processes_),1);
+            
+            delete(self.movie.processes_{1});
+            assertEqual(numel(self.movie.processes_),1);
+            
+            self.movie.deleteProcess(1);
+            assertEqual(numel(self.movie.processes_),0);
+        end
+        
+        
+        function testDeleteSharedProcess(self)
             
             % Create process in main movie
             self.movie.addProcess(ThresholdProcess(self.movie));
             
-            % Create ROI movie
+            % Create ROI movies
             self.setupROI();
-            roiMovie = self.movie.rois_(1);
-
-            % Delete process and check results
-            roiMovie.deleteProcess(1);              
-            assertEqual(numel(roiMovie.processes_),1);
+            self.setupROI();
             assertEqual(numel(self.movie.processes_),1);
+            assertEqual(numel(self.movie.rois_(1).processes_),1);
+            assertEqual(numel(self.movie.rois_(2).processes_),1);
+            
+            % Delete process
+            self.movie.rois_(1).deleteProcess(1);  
+            assertEqual(numel(self.movie.processes_),0);
+            assertEqual(numel(self.movie.rois_(1).processes_),0);
+            assertEqual(numel(self.movie.rois_(2).processes_),0);
+            
+            % Reload movie and check process has been deleted in the parent
+            % and in the ROI movies
+            self.movie.save();
+            reloadedMovie = MovieData.load(self.movie.getFullPath);
+            assertEqual(numel(reloadedMovie.processes_),0);
+            assertEqual(numel(reloadedMovie.rois_(1).processes_),0);
+            assertEqual(numel(reloadedMovie.rois_(2).processes_),0);
+
+        end
+        
+        function testDeleteInvalidPackage(self)
+                    
+            % Create process in main movie
+            self.movie.addPackage(SegmentationPackage(self.movie));
+            assertEqual(numel(self.movie.packages_),1);
+            
+            delete(self.movie.packages_{1});
+            assertEqual(numel(self.movie.packages_),1);
+            
+            self.movie.deletePackage(1);
+            assertEqual(numel(self.movie.packages_),0);
+        end
+
+        
+        function testDeleteSharedPackage(self)
+            
+            % Create process in main movie
+            self.movie.addPackage(SegmentationPackage(self.movie));
+            
+            % Create ROI movies
+            self.setupROI();
+            self.setupROI();
+            assertEqual(numel(self.movie.packages_),1);
+            assertEqual(numel(self.movie.rois_(1).packages_),1);
+            assertEqual(numel(self.movie.rois_(2).packages_),1);
+            
+            % Delete process
+            self.movie.rois_(1).deletePackage(1);  
+            assertEqual(numel(self.movie.packages_),0);
+            assertEqual(numel(self.movie.rois_(1).packages_),0);
+            assertEqual(numel(self.movie.rois_(2).packages_),0);
+            
+            % Reload movie and check process has been deleted in the parent
+            % and in the ROI movies
+            self.movie.save();
+            reloadedMovie = MovieData.load(self.movie.getFullPath);
+            assertEqual(numel(reloadedMovie.packages_),0);
+            assertEqual(numel(reloadedMovie.rois_(1).packages_),0);
+            assertEqual(numel(reloadedMovie.rois_(2).packages_),0);
 
         end
         

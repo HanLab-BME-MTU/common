@@ -146,17 +146,30 @@ classdef  MovieObject < hgsetget
                 error('Please provide a Process object or a valid process index of movie data processes list.')
             end
             
-            if ~isempty(obj.processes_{pid}) &&  obj.processes_{pid}.isvalid
-                % Unassociate process in corresponding packages
-                [packageID procID] = obj.processes_{pid}.getPackage;
+            % Check process validity
+            process = obj.processes_{pid};
+            isValid = ~isempty(process) && process.isvalid;
+
+            if isValid
+                % Unassociate process from parent packages
+                [packageID procID] = process.getPackage();
                 for i=1:numel(packageID)
                     obj.packages_{packageID(i)}.setProcess(procID(i),[]);
                 end
+                
+                % Remove process from list for owner and descendants
+                for movie = [process.owner_ process.owner_.getDescendants()]
+                    id = find(cellfun(@(x) isequal(x,process), movie.processes_),1);
+                    if ~isempty(id), movie.processes_(id) = [ ]; end
+                end
+                
+                % Delete process object
+                delete(process);
+            else
+                obj.processes_(pid) = [ ];
             end
             
-            % Delete process object and remove it from the process list
-            delete(obj.processes_{pid})
-            obj.processes_(pid) = [ ];
+            
         end
         
         function replaceProcess(obj, pid, newprocess)
@@ -224,9 +237,22 @@ classdef  MovieObject < hgsetget
                 error('Please provide a Package object or a valid package index of movie data processes list.')
             end
             
-            % Delete and clear the process object
-            delete(obj.packages_{pid})
-            obj.packages_(pid) = [ ];
+            % Check package validity
+            package = obj.packages_{pid};
+            isValid = ~isempty(package) && package.isvalid;
+
+            if isValid                                
+                % Remove package from list for owner and descendants
+                for movie = [package.owner_ package.owner_.getDescendants()]
+                    id = find(cellfun(@(x) isequal(x,package), movie.packages_),1);
+                    if ~isempty(id), movie.packages_(id) = [ ]; end
+                end
+                
+                % Delete package object
+                delete(package);
+            else
+                obj.packages_(pid) = [ ];
+            end
         end
         
         function iPackage = getPackageIndex(obj, type, varargin)
