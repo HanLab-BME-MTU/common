@@ -259,6 +259,10 @@ classdef  MovieData < MovieObject
             for descendant = obj.getAncestor.getDescendants
                 relocate@MovieObject(descendant,oldRootDir,newRootDir);
             end
+            if ~isempty(obj.roiMaskPath_)
+                obj.roiMaskPath_ = relocatePath(obj.roiMaskPath_,oldRootDir,newRootDir);
+            end
+            
             if nargin<3 || ~full, return; end
             
             % Check that channels paths start with oldRootDir           
