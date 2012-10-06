@@ -204,17 +204,29 @@ classdef TestMovieData < TestCase
         
         %% Process/package deletion
         
-        function testDeleteInvalidProcess(self)
-            
-            % Create process in main movie
+        function testDeleteSingleProcess(self)            
+            % Create process
             self.movie.addProcess(ThresholdProcess(self.movie));
             assertEqual(numel(self.movie.processes_),1);
             
+            % Delete process and test deletion
+            self.movie.deleteProcess(1);
+            assertTrue(isempty(self.movie.processes_));
+        end
+        
+        function testDeleteInvalidProcess(self)
+            
+            % Create process
+            self.movie.addProcess(ThresholdProcess(self.movie));
+            assertEqual(numel(self.movie.processes_),1);
+            
+            % Delete process object
             delete(self.movie.processes_{1});
             assertEqual(numel(self.movie.processes_),1);
             
+            % Delete process using deleteProcess method
             self.movie.deleteProcess(1);
-            assertEqual(numel(self.movie.processes_),0);
+            assertTrue(isempty(self.movie.processes_));
         end
         
         
@@ -230,7 +242,7 @@ classdef TestMovieData < TestCase
             assertEqual(numel(self.movie.rois_(1).processes_),1);
             assertEqual(numel(self.movie.rois_(2).processes_),1);
             
-            % Delete process
+            % Delete process from ROI 1
             self.movie.rois_(1).deleteProcess(1);  
             assertEqual(numel(self.movie.processes_),0);
             assertEqual(numel(self.movie.rois_(1).processes_),0);
@@ -246,15 +258,27 @@ classdef TestMovieData < TestCase
 
         end
         
+        function testDeleteSinglePackage(self)
+            % Create package
+            self.movie.addPackage(SegmentationPackage(self.movie));
+            assertEqual(numel(self.movie.packages_),1);
+            
+            % Delete package and test deletion
+            self.movie.deletePackage(1);
+            assertTrue(isempty(self.movie.packages_));
+        end
+        
         function testDeleteInvalidPackage(self)
                     
             % Create process in main movie
             self.movie.addPackage(SegmentationPackage(self.movie));
             assertEqual(numel(self.movie.packages_),1);
             
+            % Delete package object
             delete(self.movie.packages_{1});
             assertEqual(numel(self.movie.packages_),1);
             
+            % Delete package using deletePackage method
             self.movie.deletePackage(1);
             assertEqual(numel(self.movie.packages_),0);
         end

@@ -67,5 +67,27 @@ classdef TestMovieList < TestCase
         function testClass(self)
             assertTrue(isa(self.movieList,'MovieList'));
         end
+        
+        %% Process/package deletion
+        
+        function testDeleteSingleProcess(self)            
+            % Create process
+            self.movieList.addProcess(SignalPreprocessingProcess(self.movieList,'',struct()));
+            assertEqual(numel(self.movieList.processes_),1);
+            
+            % Create process and test deletion
+            self.movieList.deleteProcess(1);
+            assertTrue(isempty(self.movieList.processes_));
+        end
+        
+        function testDeleteSinglePackage(self)
+            % Create package
+            self.movieList.addPackage(IntegratorPackage(self.movieList));
+            assertEqual(numel(self.movieList.packages_),1);
+            
+            % Delete package and test deletion
+            self.movieList.deletePackage(1);
+            assertTrue(isempty(self.movieList.packages_));
+        end
     end
 end
