@@ -188,23 +188,31 @@ classdef  MovieObject < hgsetget
             end
             
             [packageID procID] = obj.processes_{pid}.getPackage;
+            
+            % Check new process is compatible with parent packages
             if ~isempty(packageID)
-                % Check new process is compatible with the parent package
                 for i=1:numel(packageID)
-                    checkNewProcClass = isa(newprocess,...
+                    isValid = isa(newprocess,...
                         obj.packages_{packageID(i)}.getProcessClassNames{procID(i)});
-                    if ~checkNewProcClass
-                        error('Package class compatibility prevents process process replacement');
-                    end
+                    assert(isValid, 'Package class compatibility prevents process process replacement');
                 end
             end
             
             % Delete old process and replace it by the new one
-            oldprocess=obj.processes_{pid};
-            obj.processes_{pid} = newprocess;
+            oldprocess = obj.processes_{pid};
+            if isa(oldprocess.owner_, 'MovieData')
+                % Remove process from list for owner and descendants
+                for movie = [oldprocess.owner_ oldprocess.owner_.getDescendants()]
+                    id = find(cellfun(@(x) isequal(x, oldprocess), movie.processes_),1);
+                    if ~isempty(id), movie.processes_{id} = newprocess; end
+                end
+            else
+                obj.processes_{pid} = newprocess;
+            end
             delete(oldprocess);
+            
+            % Associate new process in parent packages
             if ~isempty(packageID),
-                % Associate new process in parent pacakge
                 for i=1:numel(packageID)
                     obj.packages_{packageID(i)}.setProcess(procID(i),newprocess);
                 end
