@@ -200,8 +200,8 @@ classdef TestMovieData < TestCase
             % Remove relocated movie
             rmdir(relocatedMoviePath,'s');
         end
-
         
+                
         %% Process/package deletion
         
         function testDeleteSingleProcess(self)            
@@ -312,5 +312,34 @@ classdef TestMovieData < TestCase
 
         end
         
+        function testReplaceSingleProcess(self)
+            % Create process
+            self.movie.addProcess(ThresholdProcess(self.movie));
+            oldprocess = self.movie.getProcess(1);
+            
+            % Replace process
+            self.movie.replaceProcess(1, MaskRefinementProcess(self.movie))
+            assertTrue(isa(self.movie.getProcess(1),'MaskRefinementProcess'));
+            assertFalse(oldprocess.isvalid);
+        end
+
+        
+        function testReplaceSharedProcess(self)
+            % Create process
+            self.movie.addProcess(ThresholdProcess(self.movie));
+            oldprocess = self.movie.getProcess(1);
+            
+
+            % Create ROI movies
+            self.setupROI();
+            self.setupROI();
+            
+            % Replace process
+            self.movie.replaceProcess(1, MaskRefinementProcess(self.movie))
+            assertTrue(isa(self.movie.getProcess(1),'MaskRefinementProcess'));
+            assertTrue(isa(self.movie.rois_(1).getProcess(1),'MaskRefinementProcess'));
+            assertTrue(isa(self.movie.rois_(2).getProcess(1),'MaskRefinementProcess'));
+            assertFalse(oldprocess.isvalid);
+        end
     end
 end

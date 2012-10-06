@@ -80,6 +80,17 @@ classdef TestMovieList < TestCase
             assertTrue(isempty(self.movieList.processes_));
         end
         
+        function testReplaceSingleProcess(self)
+            % Create process
+            self.movieList.addProcess(SignalPreprocessingProcess(self.movieList,'',struct()));
+            oldprocess = self.movieList.getProcess(1);
+            
+            % Replace process
+            self.movieList.replaceProcess(1, SignalProcessingProcess(self.movieList,'',struct()))
+            assertTrue(isa(self.movieList.getProcess(1), 'SignalProcessingProcess'));
+            assertFalse(oldprocess.isvalid);
+        end
+        
         function testDeleteSinglePackage(self)
             % Create package
             self.movieList.addPackage(IntegratorPackage(self.movieList));
