@@ -94,7 +94,7 @@ function [deltaTl,newBlock] = leftBorder(TS,newBlock,deltaT)
     if ~isempty(ftPoint)
         lZeroC1  = ftPoint(end) ;
         lZeroC2  = lZeroC1  + 1;
-        newBlock = [[lZeroC2:newBlock(1)]';newBlock];
+        newBlock = [[lZeroC2:newBlock(1)]';newBlock(2:end)];
         deltaTl  = deltaT*TS(lZeroC2)/abs( diff( TS(lZeroC1:lZeroC2) ) );
     else
         newBlock = [(1:newBlock(1)-1)';newBlock];
