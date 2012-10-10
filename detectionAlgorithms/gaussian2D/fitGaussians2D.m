@@ -25,7 +25,7 @@
 %             c_pstd :
 %            sigma_r : standard deviation of the background (residual)
 %         SE_sigma_r : standard error of sigma_r
-%            pval_Ar : p-value of an amplitude vs. background noise test (p > 0.05 -> significant amplitude)
+%            pval_Ar : p-value of an amplitude vs. background noise test (p < 0.05 -> significant amplitude)
 %
 %
 % Usage for a single-channel img with mask and fixed sigma:
