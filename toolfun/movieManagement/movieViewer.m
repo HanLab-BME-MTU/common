@@ -652,6 +652,8 @@ function runMovie(hObject,handles)
 
 userData = get(handles.figure1, 'UserData');
 nFrames = userData.MO.nFrames_;
+startFrame = get(handles.slider_frame,'Value');
+if startFrame == nFrames, startFrame =1; end;
 if get(hObject,'Value'), action = 'Stop'; else action = 'Run'; end
 set(hObject,'String',[action ' movie']);
 
@@ -684,7 +686,7 @@ if saveFrames;
     fprintf('Generating movie frames:     ');
 end
 
-for iFrame=1:nFrames
+for iFrame = startFrame : nFrames
     if ~get(hObject,'Value'), return; end % Handle pushbutton press
     set(handles.slider_frame, 'Value',iFrame);
     redrawScene(hObject, handles);    
@@ -704,6 +706,9 @@ end
 if saveFrames; fprintf('\n'); end
 if saveMovie && strcmpi(movieFormat,'mov'), MakeQTMovie('finish'); end
 if saveMovie && strcmpi(movieFormat,'avi'), movie2avi(movieFrames,moviePath); end
+
+% Reset button
+set(hObject,'String', 'Run movie', 'Value', 0);
 
 function redrawScene(hObject, handles)
 
