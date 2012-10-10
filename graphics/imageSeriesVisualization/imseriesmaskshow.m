@@ -199,11 +199,7 @@ data.plane(3).spacing = [spacing(2) spacing(1) 1];
 
 % Data log
 data.logUse = 0;
-data.imLog = data.im - min( data.im(:) );
-ImageIntensityRange = ComputeImageDynamicRange( data.imLog, 99.0 );
-log_bottom = ImageIntensityRange(1) + range(ImageIntensityRange)/256.0;
-data.imLog = log_bottom + AdjustImageIntensityRange( data.imLog, ImageIntensityRange );
-data.imLog = log( data.imLog );
+data.imLog = ComputeImageLogTransformForDisplay( data.im );
 data.imLogDisplayRange = [ min(data.imLog(:)), max(data.imLog(:)) ];
 
 %% Create UI controls
@@ -668,7 +664,6 @@ function [ intensityRange ] = ComputeImageDynamicRange( im, cover_percent )
     min_xlow = [];
     min_xhigh = [];
     min_xdiff = [];
-    min_xcover = [];
     
     for i = 1:numel(x)
         for j = i+1:numel(x)
@@ -687,5 +682,16 @@ function [ intensityRange ] = ComputeImageDynamicRange( im, cover_percent )
     
     w = 0.5 * (x(2) - x(1));
     intensityRange = [min_xlow-w, min_xhigh+w];
+    
+end
+
+%%
+function [ imLog ] = ComputeImageLogTransformForDisplay( im )
+
+    imLog = im - min( im(:) );
+    ImageIntensityRange = ComputeImageDynamicRange( imLog, 99.0 );
+    log_bottom = ImageIntensityRange(1) + range(ImageIntensityRange)/256.0 + eps; % just to give log a bottom
+    imLog = log_bottom + AdjustImageIntensityRange( imLog, ImageIntensityRange );
+    imLog = log( imLog );
     
 end
