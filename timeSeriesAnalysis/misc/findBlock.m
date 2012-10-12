@@ -1,10 +1,14 @@
 function [block,Bleng]=findBlock(S,min_len)
-%[block,Bleng]=find_block(S)
-%Find blocks of consecutive intergers in S that have minimum length of "min_len" 
+%Find blocks of consecutive intergers in S that have minimum length of "minLength" 
+%
+%Usage:
+%       [block,Bleng]=findBlock(S,minLength)
+%
 %Output
 %   block - cell array of the blocks
 %   Bleng - length of each block
 %Marco Vilela, 1-20-11
+
 if nargin < 2
     min_len=1;
 end

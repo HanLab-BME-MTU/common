@@ -83,7 +83,7 @@ for i=1:nVar
                 
                 if h
                     
-                    out(:,i) = preWhitening(TS(:,i),1);
+                    out(:,i) = preWhitening(TS(:,i),'method','ar');
                     h        = kpsstest(out(:,i));
                     
                 end
