@@ -86,7 +86,7 @@ classdef TrackingProcess < DataProcessingProcess
         function varargout = loadChannelOutput(obj,iChan,varargin)
             
             % Input check
-            outputList = {'tracksFinal'};
+            outputList = {'tracksFinal', 'gapInfo'};
             ip =inputParser;
             ip.addRequired('obj');
             ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
@@ -98,22 +98,29 @@ classdef TrackingProcess < DataProcessingProcess
             if ischar(output),output={output}; end
             
             % Data loading
-            s = load(obj.outFilePaths_{iChan},output{:});
+            s = load(obj.outFilePaths_{iChan}, 'tracksFinal');
             tracksFinal=s.tracksFinal;
             
-            if ~isempty(iFrame),
-                % Filter tracks existing in input frame
-                trackSEL=getTrackSEL(tracksFinal);
-                validTracks = (iFrame>=trackSEL(:,1) &iFrame<=trackSEL(:,2));
-                [tracksFinal(~validTracks).tracksCoordAmpCG]=deal([]);
-                
-                for i=find(validTracks)'                  
-                    tracksFinal(i).tracksCoordAmpCG = tracksFinal(i).tracksCoordAmpCG(1:8*(iFrame-trackSEL(i,1)+1));                    
+            for i=1:numel(output)
+                switch output{i}
+                    case 'tracksFinal'
+                        if ~isempty(iFrame),
+                            % Filter tracks existing in input frame
+                            trackSEL=getTrackSEL(tracksFinal);
+                            validTracks = (iFrame>=trackSEL(:,1) &iFrame<=trackSEL(:,2));
+                            [tracksFinal(~validTracks).tracksCoordAmpCG]=deal([]);
+                            
+                            for i=find(validTracks)'
+                                tracksFinal(i).tracksCoordAmpCG = tracksFinal(i).tracksCoordAmpCG(1:8*(iFrame-trackSEL(i,1)+1));
+                            end
+                            varargout{1}=tracksFinal;
+                        else
+                            varargout{1} = tracksFinal;
+                        end
+                    case 'gapInfo'
+                        varargout{1} = findTrackGaps(tracksFinal);
                 end
-                varargout{1}=tracksFinal;
-            else
-                varargout{1} = tracksFinal;
-            end         
+            end
         end
         
         
@@ -149,6 +156,12 @@ classdef TrackingProcess < DataProcessingProcess
             output(1).formatData=@TrackingProcess.formatTracks;
             output(1).type='overlay';
             output(1).defaultDisplayMethod=@(x)TracksDisplay('Color',colors(x,:));
+            output(2).name='Gap length histogram';
+            output(2).var='gapInfo';
+            output(2).formatData=@(x) x(:,4);
+            output(2).type='graph';
+            output(2).defaultDisplayMethod=@(x)HistogramDisplay('XLabel','Gap length',...
+                'YLabel','Counts');
         end
         
         
@@ -324,8 +337,7 @@ classdef TrackingProcess < DataProcessingProcess
                 tracks(i).yCoord = tracks(i).tracksCoordAmpCG(2:8:end);
             end
             tracks = rmfield(tracks,'tracksCoordAmpCG');
-        end
-        
+        end        
     end
 end
 

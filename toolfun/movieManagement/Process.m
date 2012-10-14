@@ -194,7 +194,7 @@ classdef Process < hgsetget
                 find(cellfun(@(x)isequal(x,obj),obj.owner_.processes_)));    
         end
         
-        function h=draw(obj,iChan,iFrame,varargin)
+        function h=draw(obj,iChan,varargin)
             % Template function to draw process output
             
             % Input check
@@ -203,14 +203,18 @@ classdef Process < hgsetget
             ip = inputParser;
             ip.addRequired('obj',@(x) isa(x,'Process'));
             ip.addRequired('iChan',@isnumeric);
-            ip.addRequired('iFrame',@isnumeric);
+            ip.addOptional('iFrame',[],@isnumeric);
             ip.addParamValue('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
             ip.KeepUnmatched = true;
-            ip.parse(obj,iChan,iFrame,varargin{:})
+            ip.parse(obj,iChan,varargin{:})
 			
             % Load data
-            data=obj.loadChannelOutput(iChan,iFrame,'output',ip.Results.output);
-            iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
+            if ~isempty(ip.Results.iFrame)     
+                data=obj.loadChannelOutput(iChan,ip.Results.iFrame,'output',ip.Results.output);
+            else
+                data=obj.loadChannelOutput(iChan,'output',ip.Results.output);
+            end
+                iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
             if ~isempty(outputList(iOutput).formatData),
                 data=outputList(iOutput).formatData(data);
             end
