@@ -1,4 +1,4 @@
-function [level,bw_out] = thresholdOtsu_local(imageIn,level_local_radius, pace, varargin)
+function [level,bw_out] = thresholdOtsu_local(imageIn,level_local_radius, pace, lowerbound, varargin)
 % local thresholding based on global thresholding level using Otsu's method
 %
 % [level,bw_out] = thresholdOtsu_local(imageIn,level_local_radius, pace, showPlots)
@@ -28,6 +28,7 @@ ip=inputParser;
 ip.addRequired('imageIn',@isnumeric);
 ip.addRequired('level_local_radius',@isnumeric);
 ip.addRequired('pace',@isnumeric);
+ip.addRequired('lowerbound',@isnumeric);
 ip.addOptional('showPlots',0,@isnumeric)
 ip.parse(imageIn, level_local_radius, pace, varargin{:});
 showPlots=ip.Results.showPlots;
@@ -66,6 +67,9 @@ level_whole = level*(maxSignal - minSignal)+minSignal;
 % Initialized the threshold map(level_img) as setting everywhere as the global level
 level_img = imageIn*0+level_whole;
 
+x_grid = level_local_radius + 1 : pace : size(level_img,1) - level_local_radius;
+y_grid = level_local_radius + 1 : pace : size(level_img,2) - level_local_radius;
+
 % For every patch according to the pace(grid)
 for img_x = level_local_radius + 1 : pace : size(level_img,1) - level_local_radius
     for img_y = level_local_radius + 1 : pace : size(level_img,2) - level_local_radius
@@ -91,11 +95,56 @@ for img_x = level_local_radius + 1 : pace : size(level_img,1) - level_local_radi
         % level could be empty if input patch is all background zeros
         if(isempty(level))
             level_img(img_x-half_pace:img_x+half_pace,img_y-half_pace:img_y+half_pace) = level_whole;
+            if img_x == x_grid(1)
+                level_img(1:img_x+half_pace,img_y-half_pace:img_y+half_pace) = level_whole;
+            end
+            if img_x == x_grid(end)
+                level_img(img_x-half_pace:end,img_y-half_pace:img_y+half_pace) = level_whole;
+            end
+            if img_y == y_grid(1)
+                level_img(img_x-half_pace:img_x+half_pace,1:img_y+half_pace) = level_whole;
+            end
+            if img_y == y_grid(end)
+                level_img(img_x-half_pace:img_x+half_pace,img_y-half_pace:end) = level_whole;
+            end
         else
             level_img(img_x-half_pace:img_x+half_pace,img_y-half_pace:img_y+half_pace) = level;
+            if img_x == x_grid(1)
+                level_img(1:img_x+half_pace,img_y-half_pace:img_y+half_pace) = level;
+            end
+            if img_x == x_grid(end)
+                level_img(img_x-half_pace:end,img_y-half_pace:img_y+half_pace) = level;
+            end
+            if img_y == y_grid(1)
+                level_img(img_x-half_pace:img_x+half_pace,1:img_y+half_pace) = level;
+            end
+            if img_y == y_grid(end)
+                level_img(img_x-half_pace:img_x+half_pace,img_y-half_pace:end) = level;
+            end
         end
     end
 end
+
+
+% For the corners
+
+CL = level_local_radius + pace;
+
+level_img(1:CL, 1:CL)= ...
+    mean2(level_img(CL+1:CL+10, 1:CL))/2 +...
+    mean2(level_img(1:CL,CL+1:CL+10))/2;
+
+level_img(1:CL, end-CL:end)= ...
+    mean2(level_img(CL+1:CL+10, end-CL:end))/2 +...
+    mean2(level_img(1:CL,end-CL-10:end-CL-1))/2;
+ 
+level_img(end-CL:end, 1:CL)= ...
+    mean2(level_img(end-CL-10:end-CL-1, 1:CL))/2 +...
+    mean2(level_img(end-CL:end,CL+1:CL+10))/2;
+
+level_img(end-CL:end, end-CL:end)= ...
+     mean2(level_img(end-CL-10:end-CL-1,end-CL:end))/2 +...
+     mean2(level_img(end-CL:end,end-CL-10:end-CL))/2;
 
 % Smooth the threshold map
 H = fspecial('gaussian',pace);
@@ -107,9 +156,14 @@ imageMask = imageIn >= level_img;
 % Get a global mask to eliminate segmentation of detailed noise in the
 % background, with a slight lowered threshold to include some boundary
 % parts, fill holes and dilate a little to avoid masking off target region
-imageMask_whole = sm_imageInNorm >= level_sm_norm*0.85;
-imageMask_whole = imfill(imageMask_whole,'holes');
-imageMask_whole = imdilate(imageMask_whole,ones(5,5));
+
+second_group =imageIn(find(imageIn>level_whole));
+new_level_for_second_group = level_whole+lowerbound/100*std(second_group);
+imageMask_whole = imageIn>new_level_for_second_group;
+
+% imageMask_whole = sm_imageInNorm >= level_sm_norm*lowerbound/100;
+% imageMask_whole = imfill(imageMask_whole,'holes');
+% imageMask_whole = imdilate(imageMask_whole,ones(5,5));
 
 % The final segmentation is the intersect of both mask.
 bw_out =  imageMask.*imageMask_whole;
