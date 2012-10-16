@@ -1,4 +1,4 @@
-function omeroExportDetection(movieData,movieInfo)
+function roi = omeroExportDetection(movieData,movieInfo)
 % omeroExportDetection export the output of a detection to the OMERO server
 %
 % omeroExportDetection export the output of any detection process
@@ -18,6 +18,7 @@ function omeroExportDetection(movieData,movieInfo)
 %
 % Output:
 %
+%   roi - A detection ROI uploaded to the server
 
 % Sebastien Besson, Jun 2012 (last modified Oct 2012)
 
@@ -25,9 +26,9 @@ ns = 'hms-detection';
 
 % Input check
 ip=inputParser;
-ip.addRequired('movieData',@(x) isa(x,'MovieData') && x.isOmero());
-ip.addRequired('movieInfo',@isstruct);
-ip.parse(movieData,movieInfo);
+ip.addRequired('movieData', @(x) isa(x,'MovieData') && x.isOmero());
+ip.addRequired('movieInfo', @isstruct);
+ip.parse(movieData, movieInfo);
 
 % Retrieve image and update service
 image = movieData.getImage();
@@ -40,36 +41,47 @@ roiOptions.namespace = omero.rtypes.rstring(ns);
 rois = roiService.findByImage(movieData.omeroId_, roiOptions).rois();
 
 if rois.size()> 0
-    % List rois to remove
-    fprintf('Deleting %g existing rois with namespace %s\n', rois.size(), ns);
+    % Create a list of detection ROIs to remove
+    fprintf('Deleting %g existing ROI(s) with namespace %s\n', rois.size(), ns);
     list = javaArray('omero.api.delete.DeleteCommand', 1);
     for i = 1:rois().size()
         roiId = rois.get(i-1).getId().getValue;
         list(i) = omero.api.delete.DeleteCommand('/Roi', roiId, []);
     end
     
-    %Delete the rois
+    %Delete the ROIs
     movieData.getSession().getDeleteService().queueDelete(list);
 end
 
-% Create ROI to attach to the image
-progressText(0, 'Exporting ROIs')
+% Create a new ROI to attach to the image
+fprintf('Creating detection ROI for Image %g with namespace %s\n', ...
+    image.getId().getValue(), ns);
 roi = omero.model.RoiI();
 roi.setImage(image);
 roi.setNamespaces(ns);
 
+% Create point shapes and add them to the detection ROI
+progressText(0, 'Adding detection results frame-by-frame')
 for t=1:size(movieInfo,1)
     
     for i = 1:size(movieInfo(t).xCoord,1)        
-        % Create point shape
-        point = omero.model.PointI;
-        point.setCx(omero.rtypes.rdouble(movieInfo(t).xCoord(i,1)));
-        point.setCy(omero.rtypes.rdouble(movieInfo(t).yCoord(i,1)));
-        point.setTheT(omero.rtypes.rint(t-1));
-        point.setTheZ(omero.rtypes.rint(0));
+        point = createPointShape(movieInfo(t).xCoord(i,1), ...
+            movieInfo(t).yCoord(i,1), t-1, 0);
         roi.addShape(point);
     end
 
     progressText(t/size(movieInfo,1))
 end
+
+% Upload ROI to server
+fprintf('Uploading ROI to server\n');
 updateService.saveAndReturnObject(roi);
+
+function point = createPointShape(x,y,t,z)
+
+% Create point shape
+point = omero.model.PointI;
+point.setCx(omero.rtypes.rdouble(x));
+point.setCy(omero.rtypes.rdouble(y));
+point.setTheT(omero.rtypes.rint(t));
+point.setTheZ(omero.rtypes.rint(z));
