@@ -34,8 +34,10 @@ function thresholdValue = getSegThreshFromFullMovie(MD,filterSigma,incAftMin,sho
 imageDir = MD.channels_.channelPath_;
 analysisDir = MD.movieDataPath_;
 
-imageFileListing = dir(imageDir);
-imageFileListing = keepOnlyTiffFiles(imageFileListing);
+imageFileListing = dir([imageDir filesep '*.tif']);
+if isempty(imageFileListing)
+    imageFileListing = dir([imageDir filesep '*.tiff']);
+end
 numFrames = length(imageFileListing);
 
 if nargin < 2 || isempty(filterSigma)
@@ -118,18 +120,5 @@ end
 
 save(fullfile(analysisDir,'thresholdParamValue'),'filterSigma','incAftMin','thresholdValue');
 
+%% ~~~ the end ~~~
 
-%% Sub-function
-
-function fileListing = keepOnlyTiffFiles(fileListing)
-
-numFiles = length(fileListing);
-goodFile = zeros(numFiles,1);
-for iFile = 1 : numFiles
-    fileName = fileListing(iFile).name;
-    if (length(fileName) > 4) && ((strcmp(fileName(end-2:end),'tif')) || ...
-            (strcmp(fileName(end-3:end),'tiff')))
-        goodFile(iFile) = 1;
-    end
-end
-fileListing = fileListing(goodFile==1);

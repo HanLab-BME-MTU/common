@@ -3,7 +3,7 @@ function [weightedMean,weightedStdOfMean,weightedStdOfSample] = weightedStats(da
 %
 %SYNOPSIS [weightedMean,weightedStd] = weightedStats(data, weightsOrSigma,sw)
 %
-%INPUT data: vector of imput values. 
+%INPUT data: vector of input values. 
 %
 %      weightsOrSigma: weights or standardDeviations of the input data
 %      sw (opt): switch, either 'w' or {'s'}
@@ -28,7 +28,7 @@ function [weightedMean,weightedStdOfMean,weightedStdOfSample] = weightedStats(da
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %test input: count input arguments
-if nargin < 2 | isempty(weightsOrSigma) | isempty(data)
+if nargin < 2 || isempty(weightsOrSigma) || isempty(data)
     error('not enough or empty input arguments!')
 end
 weights = weightsOrSigma;
@@ -40,7 +40,7 @@ sIS = size(weights);
 if any(sDat ~= sIS)
     %one is a matrix and the other a vector, or bad user input
     if sDat(1) ~= sIS(1)
-        if sDat(1) == sIS(2) & sDat(2) == sIS(1)
+        if sDat(1) == sIS(2) && sDat(2) == sIS(1)
             %bad user input: badly arranged vectors: make col-vectors
             if sDat(1) == 1
                 data = data';
@@ -77,7 +77,7 @@ numRows = size(data,1);
 numCols = size(data,2);
 
 %calculate weights if necessary
-if nargin == 2 | ~(strcmp(sw,'w')|strcmp(sw,'s'))
+if nargin == 2 || ~(strcmp(sw,'w') || strcmp(sw,'s'))
     sw = 's';
 end
 if strcmp(sw,'s')
