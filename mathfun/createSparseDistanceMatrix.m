@@ -5,6 +5,7 @@ function D = createSparseDistanceMatrix(M,N,threshold,varargin)
 %            D=createSparseDistanceMatrix(M,N,threshold,eps)
 %
 % INPUT      M and N are the matrices containing the set of point coordinates.
+%            They have to be doubles.
 %            M and N can represent point positions in 1, 2 and 3D, as follows.
 %            
 %            In 1D: M=[ y1        and   N=[ y1
@@ -29,6 +30,7 @@ function D = createSparseDistanceMatrix(M,N,threshold,varargin)
 %                       ym xm zm ]          yn xn zn ]
 %
 %                   Distances: dij = sqrt( (yj-yi)^2 + (xj-xi)^2 + (zj-zi)^2 )
+%
 %
 %            threshold : only the distances dij between the two set of points 
 %                        M and N which are below the threshold are stored in 
@@ -56,20 +58,36 @@ function D = createSparseDistanceMatrix(M,N,threshold,varargin)
 
 % Input check
 ip =inputParser;
-ip.addRequired('M',@isnumeric);
-ip.addRequired('N',@isnumeric);
+ip.addRequired('M',@(x)isa(x,'double'));
+ip.addRequired('N',@(x)isa(x,'double'));
 ip.addRequired('threshold',@isscalar);
 ip.addOptional('epsilon',1e-10,@isscalar);
 ip.parse(M,N,threshold,varargin{:})
 
+% handle NaNs - kdTree will "forget" to report a few distances if there are
+% NaNs present in the input
+finiteM = find(all(isfinite(M),2));
+finiteN = find(all(isfinite(N),2));
+
 % Query the points below the threshold using the KDTree
-[points,distances]=KDTreeBallQuery(N,M,threshold);
+[points,distances]=KDTreeBallQuery(N(finiteN,:),M(finiteM,:),threshold);
 
 % Generate the list of indices to create the sparse matrix
-points1=points;
-nzInd=find(~cellfun(@isempty,points));
-for i=nzInd', points1{i}(:)=i;end
+% points1=points;
+% nzInd=find(~cellfun(@isempty,points));
+% for i=nzInd', points1{i}(:)=i;end
 
-% Create the sparse matrix
-D=sparse(vertcat(points1{:}),vertcat(points{:}),...
+% a much faster version of the above -- jonas, 10/2012
+% Create a vector with ones and zeros so that we can use cumsum to create
+% number of times we need to repeat a given entry, and use it to index
+% "toRepeat"
+nRepeats = cellfun('length',points);
+toRepeat = find(nRepeats);
+index = zeros(sum(nRepeats),1);
+index([1;cumsum(nRepeats(toRepeat(1:end-1)))+1])=1;
+
+% Create the sparse matrix. Index into finiteM, finiteN to account for
+% NaN-rows that have been removed.
+D=sparse(finiteM(toRepeat(cumsum(index))),...
+    finiteN(vertcat(points{:})),...
     max(vertcat(distances{:}),ip.Results.epsilon),size(M,1),size(N,1));
