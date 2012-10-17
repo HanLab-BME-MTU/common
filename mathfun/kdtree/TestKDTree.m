@@ -14,7 +14,7 @@ classdef TestKDTree < TestCase
                 X = rand(self.nInPts,dim);
                 C = rand(self.nQueryPts,dim);
                 R=.2;
-                idx = KDTreeBalslQuery(X,C,R);
+                idx = KDTreeBallQuery(X,C,R);
                 idx2 = KDTreeBallQuery(X,C,R*ones(self.nQueryPts,1));
                 assertEqual(idx, idx2)
             end
