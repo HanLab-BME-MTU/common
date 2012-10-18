@@ -9,6 +9,7 @@ classdef ImageDisplay < MovieDataDisplay
         sfont = {'FontName', 'Helvetica', 'FontSize', 18};
         lfont = {'FontName', 'Helvetica', 'FontSize', 22};
         ScaleFactor = 1;
+        NaNColor = [0 0 0];
     end
     methods
         function obj=ImageDisplay(varargin)
@@ -37,7 +38,13 @@ classdef ImageDisplay < MovieDataDisplay
             uistack(h,'bottom');
             
             % Set the colormap
-            colormap(hAxes,obj.Colormap);
+            if any(isnan(get(h, 'CData')))
+                c = colormap(obj.Colormap);
+                c=[obj.NaNColor; c];
+                colormap(hAxes, c);
+            else
+                colormap(hAxes,obj.Colormap);
+            end
             
             % Set the colorbar
             hCbar = findobj(get(hAxes,'Parent'),'Tag','Colorbar');
@@ -83,6 +90,8 @@ classdef ImageDisplay < MovieDataDisplay
             params(7).validator=@(x) any(strcmp(x,locations));
             params(8).name='ScaleFactor';
             params(8).validator=@isscalar;
+            params(9).name='NaNColor';
+            params(9).validator=@isvector;
         end
         function f=getDataValidator()
             f=@isnumeric;
