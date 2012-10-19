@@ -284,6 +284,10 @@ end
 
 %If requested, change the colormap
 if ~isempty(cMap)
+    if any(isnan(currImage))
+        c = colormap(cMap);
+        cMap = [0 0 0; c];
+    end
     colormap(cMap)%NOTE: This has no effect when displaying multiple channels
 end
 
