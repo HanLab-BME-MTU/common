@@ -1,4 +1,4 @@
-function cell_mask_with_manual_separation(MD)
+function cell_mask_with_manual_separation(MD,startframe)
 % manually help the cell segmentation of a single cell out off many
 % touching or not touching cells
 
@@ -67,7 +67,7 @@ poisition_flag=zeros(1,nFrame);
 manual_finish=zeros(1,nFrame);
 
 %% For each frame, do manual helping/checking
-for iFrame = 1 : nFrame
+for iFrame = startframe : nFrame
     % load segmented mask ( not refined ones)
     MaskMB = MD.processes_{indexMBSegProcess}.loadChannelOutput(indexMBChannel,iFrame);
     % load images, boost them for visualization purpose
@@ -89,10 +89,10 @@ for iFrame = 1 : nFrame
     hold on;
     plot(contourYX(:,2),contourYX(:,1),'r');
     
-    if iFrame == 1
+    if iFrame == startframe
         height_image = size(MaskMB,1);
         width_image = size(MaskMB,2);
-        
+       
         title(['Frame: ',num2str(iFrame),', please click on which cell you want to help segment']);
         % For the first frame, the user has to define a valid cell center
         while poisition_flag(iFrame) ==0
@@ -149,7 +149,7 @@ for iFrame = 1 : nFrame
     % Fill the hole
     MaskMB_new = imfill(MaskMB_new,'hole');
     
-    
+       
     %% Step 2: Cutting touching parts
     
     while(manual_finish(iFrame)==0)
@@ -177,7 +177,8 @@ for iFrame = 1 : nFrame
             % Cutting by defining all the pixels along this cutting line as
             % background
             for iP = 1 : size(position,1)-1                
-                x1 = position(iP,1);
+               try
+                   x1 = position(iP,1);
                 y1 = position(iP,2);
                 x2 = position(iP+1,1);
                 y2 = position(iP+1,2);
@@ -190,6 +191,7 @@ for iFrame = 1 : nFrame
                
                kill_connection_ind = sub2ind([height_image width_image],round(plot_y),round(plot_x));
                MaskMB_new(kill_connection_ind)=0;
+               end
             end
             % Get rid of the "non-touching" parts, which is newly
             % disconnected regions due to wiping of the cutting line pixels

@@ -157,12 +157,12 @@ imageMask = imageIn >= level_img;
 % background, with a slight lowered threshold to include some boundary
 % parts, fill holes and dilate a little to avoid masking off target region
 
-second_group =imageIn(find(imageIn>level_whole));
-new_level_for_second_group = level_whole+lowerbound/100*std(second_group);
-imageMask_whole = imageIn>new_level_for_second_group;
+% second_group =imageIn(find(imageIn>level_whole));
+% new_level_for_second_group = level_whole+lowerbound/100*std(second_group);
+% imageMask_whole = imageIn>new_level_for_second_group;
 
-% imageMask_whole = sm_imageInNorm >= level_sm_norm*lowerbound/100;
-% imageMask_whole = imfill(imageMask_whole,'holes');
+imageMask_whole = sm_imageInNorm >= level_sm_norm*lowerbound/100;
+imageMask_whole = imfill(imageMask_whole,'holes');
 % imageMask_whole = imdilate(imageMask_whole,ones(5,5));
 
 % The final segmentation is the intersect of both mask.
