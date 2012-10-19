@@ -2,7 +2,7 @@ function [workTS,interval,trend,imf,excludeVar] = removeMeanTrendNaN(TS,varargin
 %Removes mean, trend and NaN from input time series TS
 %
 %Synopsis:
-%         [outTS,interval] = removeMeanTrendNaN(TS)   
+%         [outTS,interval,trend,imf,excludeVar] = removeMeanTrendNaN(TS)   
 %Input:
 %       TS        - time series (number of points,number of variables)
 %
