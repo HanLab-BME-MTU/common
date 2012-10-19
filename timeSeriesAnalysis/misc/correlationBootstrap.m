@@ -32,7 +32,7 @@ function [meanCC,CI] = correlationBootstrap(CC,CB,varargin)
 %Input check
 %SB: still need to find minimimum values for number of samples/variables
 ip = inputParser;
-ip.addRequired('CC',@(x) isnumeric(x) && size(x,2)>2);
+ip.addRequired('CC',@(x) isnumeric(x) && size(x,2)>=2);
 [nLag,nVar] = size(CC);
 
 ip.addRequired('CB',@(x) isnumeric(x) && isequal(size(x),[1 nVar]));
