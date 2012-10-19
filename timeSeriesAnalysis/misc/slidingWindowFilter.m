@@ -5,25 +5,47 @@ function [out] = slidingWindowFilter(TS,winSize,operation)
 %      [out] = slidingWindowFilter(TS,winSize,operation)
 %
 %Input:
-%      TS        - vector Time Series 
+%      TS        - vector or matrix contained the Time Series 
 %      winSize   - 
 %      operation - anonymous function with the filter kernel.  
 %
 %Output:
 %       out - filtered signal.Same size as TS
-%Marco Vilel, 2012
+%Marco Vilela, 2012
 
 out = [];
 
-if winSize >= numel(TS) 
+if ~isa(operation,'function_handle')
+    error('The filter kernel has to be a function handle');
+end
+
+[nObs,nVar]  = size(TS);
+
+if winSize >= nObs 
     error('Window size is too large')
 end
 
-TS    = TS(:);
-%Adding reflective boundary condition
-bound = floor(winSize/2) + 1;
-TS    = [flipud(TS(2:bound));TS;flipud(TS(end - bound + 1:end - 1))];
+
+workTS = num2cell(TS,1);
+bound  = floor(winSize/2) + 1;
+funOut = nargout(operation);
+Hat    = cellfun(@(x) formatFilterInput(x,bound,winSize),workTS,'Unif',0);
+
 %Filtering
-H     = hankel(TS);
-H1    = H(1:end-winSize + 1,1:winSize);
-out   = operation(H1);
+if nVar == 1
+    out   = operation(Hat{1});
+else
+    input = cellfun(@(x) num2cell(x,2),Hat,'Unif',0);
+    out   = cell2mat(cellfun(@(x,y) funOut,input{1},input{2},'Unif',0));
+end
+
+end %End of main function
+
+function H1 = formatFilterInput(TS,bound,winSize)
+
+%Adding reflective boundary condition
+TS = [flipud(TS(2:bound));TS;flipud(TS(end - bound + 1:end - 1))];
+%Sliding Window of size winSize
+H  = hankel(TS);
+H1 = H(1:end-winSize,1:winSize);
+end
