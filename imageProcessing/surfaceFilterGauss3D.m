@@ -10,7 +10,10 @@ function [d2X,d2Y,d2Z] = surfaceFilterGauss3D(input, sigma, borderCondition)
 %
 %    INPUT: image           : 3-D input array
 %           sigma           : standard deviation of the Gaussian to use
-%                             derivatives of for filtering
+%                             derivatives of for filtering. If scalar, same
+%                             sigma is used for all dimensions, if 3
+%                             element vector then specifies different
+%                             sigmas for each dimension.
 %           borderCondition : input for 'padarrayXT'. Default: 'symmetric'
 %                             Options: 'symmetric', 'replicate', 'circular', 'antisymmetric', or a constant value
 %
@@ -26,10 +29,14 @@ if nargin < 3 || isempty(borderCondition)
     borderCondition = 'symmetric';
 end
 
-w = ceil(5*sigma); % cutoff radius of the gaussian kernel
+if numel(sigma) == 1
+    sigma = repmat(sigma,1,3);
+end
+
+w = ceil(5*sigma(1)); % cutoff radius of the gaussian kernel
 x = -w:w;
-g = exp(-x.^2/(2*sigma^2));
-d2g = -(x.^2/sigma^2 - 1) / sigma^2 .* exp(-x.^2/(2*sigma^2));
+g = exp(-x.^2/(2*sigma(1)^2));
+d2g = -(x.^2/sigma(1)^2 - 1) / sigma(1)^2 .* exp(-x.^2/(2*sigma(1)^2));
 gSum = sum(g);
 g = g/gSum;
 d2g = d2g/gSum;
@@ -38,9 +45,25 @@ d2X = convn(padarrayXT(input, [w w w], borderCondition), d2g, 'valid');
 d2X = convn(d2X, g', 'valid');
 d2X = convn(d2X,reshape(g,[1 1 2*w+1]),'valid');
 
+w = ceil(5*sigma(2)); % cutoff radius of the gaussian kernel
+x = -w:w;
+g = exp(-x.^2/(2*sigma(2)^2));
+d2g = -(x.^2/sigma(2)^2 - 1) / sigma(2)^2 .* exp(-x.^2/(2*sigma(2)^2));
+gSum = sum(g);
+g = g/gSum;
+d2g = d2g/gSum;
+
 d2Y = convn(padarrayXT(input, [w w w], borderCondition), g, 'valid');
 d2Y = convn(d2Y, d2g', 'valid');
 d2Y = convn(d2Y,reshape(g,[1 1 2*w+1]),'valid');
+
+w = ceil(5*sigma(3)); % cutoff radius of the gaussian kernel
+x = -w:w;
+g = exp(-x.^2/(2*sigma(3)^2));
+d2g = -(x.^2/sigma(3)^2 - 1) / sigma(3)^2 .* exp(-x.^2/(2*sigma(3)^2));
+gSum = sum(g);
+g = g/gSum;
+d2g = d2g/gSum;
 
 d2Z = convn(padarrayXT(input, [w w w], borderCondition), g, 'valid');
 d2Z = convn(d2Z, g', 'valid');

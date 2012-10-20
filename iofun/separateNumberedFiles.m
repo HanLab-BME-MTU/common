@@ -2,7 +2,7 @@ function separateNumberedFiles(parentDir,numString,nameString,dryRun)
 %SEPARATENUMBEREDFILES separates numbered files into their own numbered directories
 % 
 % separateNumberedFiles(parentDir,numString)
-% separateNumberedFiles(parentDir,numString,nameString)
+% separateNumberedFiles(parentDir,numString,nameString,testRun)
 % OK = separateNumberedFiles(...);
 %
 % This function is designed to take files which are numbered somewhere in

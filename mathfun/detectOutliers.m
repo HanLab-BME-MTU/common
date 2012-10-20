@@ -46,4 +46,9 @@ testValue = res2 / (magicNumber2 * medRes2);
 inlierIdx = find(testValue <= k^2);
 outlierIdx = find(testValue > k^2);
 
+%Make sure these damn things are row vectors - somehow it returns them
+%differently with different input
+inlierIdx = inlierIdx(:)';
+outlierIdx = outlierIdx(:)';
+
 %% ~~~ the end ~~~
