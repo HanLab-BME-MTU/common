@@ -10,7 +10,7 @@ function m  = manualSegmentationTweakGUI(im,m,displayrange)
 
 if ~exist( 'displayrange' , 'var' )
     
-    displayrange = [];
+    displayrange = double([min(im(:)) max(im(:))/2]);
     
 end
 
@@ -131,8 +131,8 @@ end
 %%
 function imsliceshow(data_get_fgnd_bgnd_seeds_3d_points)
 
-    imHan = imshow(genImageMaskOverlay(data_get_fgnd_bgnd_seeds_3d_points.im(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno),...
-                                       data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno),[0 1 0],.2));
+    imHan = imshow(genImageMaskOverlay_loc(data_get_fgnd_bgnd_seeds_3d_points.im(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno),...
+                                       data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno),[0 1 0],.17,data_get_fgnd_bgnd_seeds_3d_points.displayrange));
 %data_get_fgnd_bgnd_seeds_3d_points.displayrange);
     set(data_get_fgnd_bgnd_seeds_3d_points.ui.eth_sno,'String',sprintf('%d / %d' , data_get_fgnd_bgnd_seeds_3d_points.sliceno , size( data_get_fgnd_bgnd_seeds_3d_points.im , 3 ) ));    
 
@@ -374,10 +374,41 @@ switch eventdata_get_fgnd_bgnd_seeds_3d_points.Key
     case 'p'
         
         set( data_get_fgnd_bgnd_seeds_3d_points.ui.sel_mode , 'SelectedObject' , data_get_fgnd_bgnd_seeds_3d_points.ui_rbh2_poly);
-    
+        
+    case 'equal'
+        
+        data_get_fgnd_bgnd_seeds_3d_points.displayrange = data_get_fgnd_bgnd_seeds_3d_points.displayrange - [0 100];
+        
+    case 'hyphen'
+        
+        data_get_fgnd_bgnd_seeds_3d_points.displayrange = data_get_fgnd_bgnd_seeds_3d_points.displayrange + [0 100];                
+        
+    case '0'
+        
+        data_get_fgnd_bgnd_seeds_3d_points.displayrange = data_get_fgnd_bgnd_seeds_3d_points.displayrange - [100 0];
+        
+    case '9'
+        
+        data_get_fgnd_bgnd_seeds_3d_points.displayrange = data_get_fgnd_bgnd_seeds_3d_points.displayrange + [100 0];                
+        
+        
         
 end    
+
+imsliceshow(data_get_fgnd_bgnd_seeds_3d_points);    
     
+function imRGB = genImageMaskOverlay_loc( im, mask, maskColor, maskAlpha,displayRange)
 
-
+    imr = im2uint8( mat2gray( im ,displayRange) );
+    img = imr;
+    imb = imr;
+    mask = mask > 0;
+    maxVal = 255;
+    
+    imr(mask) = uint8( double( (1 - maskAlpha) * imr(mask) ) + maxVal * maskAlpha * maskColor(1) );
+    img(mask) = uint8( double( (1 - maskAlpha) * img(mask) ) + maxVal * maskAlpha * maskColor(2) );
+    imb(mask) = uint8( double( (1 - maskAlpha) * imb(mask) ) + maxVal * maskAlpha * maskColor(3) );
+    
+    imRGB = cat(3, imr, img, imb );
+    
             
