@@ -3,25 +3,32 @@ function m  = manualSegmentationTweakGUI(im,m,displayrange)
 % [varargout] = get_fgnd_bgnd_seeds_3d_points(im,range)
 %
 % This function allows the user to modify a set of masks manually to
-% improve them. Based on Deepaks seed point selection GUI.
+% improve them. Based on Deepaks seed point selection GUI - thanks Deepak!!
 %
+
+
+
 
 %%
 
-if ~exist( 'displayrange' , 'var' )
+if nargin < 3 || isempty(displayRange)
     
-    displayrange = double([min(im(:)) max(im(:))/2]);
+    displayrange = double([min(im(:)) max(im(:))]);
     
+end
+
+if nargin < 2 || isempty(m)
+    m = false(size(im));
 end
 
 global data_get_fgnd_bgnd_seeds_3d_points;
 
-hMainFigure = figure;
+hMainFigure = fsFigure(.75);
 
 % Create UI controls
 
     % axis
-    data_get_fgnd_bgnd_seeds_3d_points.ui.ah_img = axes( 'Position' , [ 0.001 , 0.2 , 0.7 , 0.7 ] , 'Visible' , 'off' );
+    data_get_fgnd_bgnd_seeds_3d_points.ui.ah_img = axes( 'Position' , [ 0.001 , 0.2 , 0.7 , 0.7 ] , 'Visible' , 'off' );    
    
     % slice navigation controls
     data_get_fgnd_bgnd_seeds_3d_points.ui.pbh_dec = uicontrol(hMainFigure,'Style','pushbutton','String','<<',...
@@ -66,7 +73,7 @@ hMainFigure = figure;
     data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_none = uicontrol('Style','Radio','String','Restart',...
                                  'Units' , 'normalized' ,'Position',[0.05 0.25 0.75 0.15],'parent',data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode,'HandleVisibility','off');    
     
-    set( data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode , 'SelectedObject' , data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_none );            
+    set( data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode , 'SelectedObject' , data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_fgnd );            
     
     % selection type controls
     data_get_fgnd_bgnd_seeds_3d_points.ui.sel_mode = uibuttongroup('visible','on', 'Units' , 'normalized' ,'Position',[0.71 0.5 0.2 0.2]);
@@ -318,27 +325,29 @@ function pushGo_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
             
     end
     
-    currROI = fH.createMask;    
-    
-    switch get( data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode , 'SelectedObject' )
-           
-            case data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_fgnd
-                
-                data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) = ...
-                    data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) | currROI;
+    if ~isempty(fH)
+        currROI = fH.createMask;    
 
-            case data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_bgnd
-                
-                data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) = ...
-                    data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) ~= ...
-                    (currROI & data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno));
-                
-            case data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_none
-                
-                data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) = currROI;
-                    
-                
-                
+        switch get( data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode , 'SelectedObject' )
+
+                case data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_fgnd
+
+                    data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) = ...
+                        data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) | currROI;
+
+                case data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_bgnd
+
+                    data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) = ...
+                        data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) ~= ...
+                        (currROI & data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno));
+
+                case data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_none
+
+                    data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno) = currROI;
+
+
+
+        end
     end
     
     imsliceshow(data_get_fgnd_bgnd_seeds_3d_points);    
