@@ -125,8 +125,9 @@ for i = 1:numMasks
     end
 end
 
+defaultDisplayRange = ComputeImageDynamicRange( im, 98.0 );
 p.addParamValue( 'spacing', ones(1, ndims(im)), @(x) ( isnumeric(x) && ~isscalar(x) && numel(x) == ndims(im) ) );
-p.addParamValue( 'displayRange', double([ min(im(:)) max(im(:))]), @(x) ( isnumeric(x) && numel(x) == 2 ) );
+p.addParamValue( 'displayRange', defaultDisplayRange, @(x) ( isnumeric(x) && numel(x) == 2 ) );
 p.addParamValue( 'maskAlphas', 0.5 * ones(numMasks,1), @(x) (isnumeric(x) && numel(x) == numMasks) );
 p.parse( im, inRgbMasks, varargin{:} );
 

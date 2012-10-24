@@ -73,7 +73,8 @@ for i = 1:numChannels
    if ~isempty( setxor( curChannelVolSize, volSize ) )
       error('Images corresponding to all channels must of the same size and dimension'); 
    end
-   default_displayranges(i,:) = double([ min(im{i}(:)) max(im{i}(:))]);
+   %default_displayranges(i,:) = double([ min(im{i}(:)) max(im{i}(:))]);
+   default_displayranges(i,:) = ComputeImageDynamicRange( im{i}, 98.0 );
 end
 
 cMap(1,:) = [1 0 0];

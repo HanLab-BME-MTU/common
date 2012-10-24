@@ -54,13 +54,14 @@ p = inputParser;
 p.addRequired( 'im', @(x)( isnumeric(x) && ~isscalar(x) && ismember( ndims(x), [2,3] ) ) );
 p.parse(im);
 
-im = p.Results.im;
+im = double(p.Results.im);
 volSize = size(im);
 volSize(3) = size(im, 3);
 
 % get optional parameters
+defaultDisplayRange = ComputeImageDynamicRange( im, 98.0 );
 p.addParamValue( 'spacing', [1,1,1], @(x) ( isnumeric(x) && ~isscalar(x) && numel(x) == ndims(im) ) );
-p.addParamValue( 'displayRange', double([ min(im(:)) max(im(:))]), @(x) ( isnumeric(x) && numel(x) == 2 ) );
+p.addParamValue( 'displayRange', defaultDisplayRange, @(x) ( isnumeric(x) && numel(x) == 2 ) );
 p.addParamValue( 'displayColor', [1, 1, 1], @(x) ( isnumeric(x) && ~isscalar(x) && numel(x) == 3 ) );
 p.parse(im, varargin{:});
 
