@@ -57,7 +57,7 @@ hMainFigure = figure;
                     'String','I: INV',...
                     'Units' , 'normalized' , 'Position',[0.40 0.05 0.1 0.05]);                                                
                 
-    % seed selection mode controls
+    % selection mode controls
     data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode = uibuttongroup('visible','on', 'Units' , 'normalized' ,'Position',[0.71 0.2 0.2 0.2]);
     data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_fgnd = uicontrol('Style','Radio','String','Add',...
                                  'Units' , 'normalized' ,'Position',[0.05 0.75 0.75 0.15],'parent',data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode,'HandleVisibility','off');
@@ -68,9 +68,19 @@ hMainFigure = figure;
     
     set( data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode , 'SelectedObject' , data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_none );            
     
+    % selection type controls
+    data_get_fgnd_bgnd_seeds_3d_points.ui.sel_mode = uibuttongroup('visible','on', 'Units' , 'normalized' ,'Position',[0.71 0.5 0.2 0.2]);
+    data_get_fgnd_bgnd_seeds_3d_points.ui_rbh2_fhan = uicontrol('Style','Radio','String','Freehand',...
+                                 'Units' , 'normalized' ,'Position',[0.05 0.75 0.75 0.15],'parent',data_get_fgnd_bgnd_seeds_3d_points.ui.sel_mode,'HandleVisibility','off');
+    data_get_fgnd_bgnd_seeds_3d_points.ui_rbh2_poly = uicontrol('Style','Radio','String','Polygon',...
+                                 'Units' , 'normalized' ,'Position',[0.05 0.50 0.75 0.15],'parent',data_get_fgnd_bgnd_seeds_3d_points.ui.sel_mode,'HandleVisibility','off');            
+    
+    set( data_get_fgnd_bgnd_seeds_3d_points.ui.sel_mode , 'SelectedObject' , data_get_fgnd_bgnd_seeds_3d_points.ui_rbh2_fhan );            
+    
+    
     %Go button
     data_get_fgnd_bgnd_seeds_3d_points.ui_go = uicontrol('Style','pushbutton','String','Go',...
-                                 'Units' , 'normalized' ,'Position',[0.71 0.6 0.2 0.2],'parent',hMainFigure,'Callback',{@pushGo_Callback});                
+                                 'Units' , 'normalized' ,'Position',[0.71 0.8 0.2 0.1],'parent',hMainFigure,'Callback',{@pushGo_Callback});                
     
     
     
@@ -79,6 +89,8 @@ hMainFigure = figure;
 set( hMainFigure , 'WindowScrollWheelFcn' , @FnSliceScroll_Callback );  
 %set( hMainFigure , 'WindowButtonDownFcn' , @FnMainFig_MouseButtonDownFunc );  
 %set( hMainFigure , 'WindowButtonMotionFcn' , @FnMainFig_MouseMotionFunc );  
+set( hMainFigure , 'WindowKeyPressFcn' , @FnKeyPress_Callback );  
+
 
 % data_get_fgnd_bgnd_seeds_3d_points                         
 data_get_fgnd_bgnd_seeds_3d_points.im = im;
@@ -101,28 +113,15 @@ catch
 end
     
 if errCatch == 0 
-    
-    imsize = size( data_get_fgnd_bgnd_seeds_3d_points.im );
+        
 
-    fgnd_seed_points = [];
-    
-    if ~isempty( data_get_fgnd_bgnd_seeds_3d_points.fgnd_seed_points )
-    
-        fgnd_seed_points = unique( round( data_get_fgnd_bgnd_seeds_3d_points.fgnd_seed_points ) , 'rows' );
-        
-    end
-    
-    bgnd_seed_points = [];
-    
-    if ~isempty( data_get_fgnd_bgnd_seeds_3d_points.bgnd_seed_points )
-    
-        bgnd_seed_points = unique( round( data_get_fgnd_bgnd_seeds_3d_points.bgnd_seed_points ) , 'rows' );
-        
-    end
+    m = data_get_fgnd_bgnd_seeds_3d_points.m;
     
     clear data_get_fgnd_bgnd_seeds_3d_points;
     
 else
+    
+    m = data_get_fgnd_bgnd_seeds_3d_points.m;
     
     clear data_get_fgnd_bgnd_seeds_3d_points;
     error( 'Error: Unknown error occured while getting seed points from the user' );
@@ -306,7 +305,19 @@ function pushGo_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
 
     global data_get_fgnd_bgnd_seeds_3d_points;
     
-    fH = imfreehand(data_get_fgnd_bgnd_seeds_3d_points.ui.ah_img);
+    
+    switch get( data_get_fgnd_bgnd_seeds_3d_points.ui.sel_mode , 'SelectedObject' )
+        
+        case data_get_fgnd_bgnd_seeds_3d_points.ui_rbh2_fhan
+            
+            fH = imfreehand(data_get_fgnd_bgnd_seeds_3d_points.ui.ah_img);
+            
+        case data_get_fgnd_bgnd_seeds_3d_points.ui_rbh2_poly
+            
+            fH = impoly(data_get_fgnd_bgnd_seeds_3d_points.ui.ah_img);            
+            
+    end
+    
     currROI = fH.createMask;    
     
     switch get( data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode , 'SelectedObject' )
@@ -332,5 +343,41 @@ function pushGo_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
     
     imsliceshow(data_get_fgnd_bgnd_seeds_3d_points);    
 
+function FnKeyPress_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)    
+
+global data_get_fgnd_bgnd_seeds_3d_points;
+
+switch eventdata_get_fgnd_bgnd_seeds_3d_points.Key
     
+        
+    case 'space'
+        %Call the go button function
+        pushGo_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
+        
+    case 'a'
+        
+        set( data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode , 'SelectedObject' , data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_fgnd);
+
+    case 's'
+        
+        set( data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode , 'SelectedObject' , data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_bgnd);
+        
+    case 'r'
+        
+        set( data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode , 'SelectedObject' , data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_none);
+        
+        
+    case 'f'
+        
+        set( data_get_fgnd_bgnd_seeds_3d_points.ui.sel_mode , 'SelectedObject' , data_get_fgnd_bgnd_seeds_3d_points.ui_rbh2_fhan);            
+        
+    case 'p'
+        
+        set( data_get_fgnd_bgnd_seeds_3d_points.ui.sel_mode , 'SelectedObject' , data_get_fgnd_bgnd_seeds_3d_points.ui_rbh2_poly);
+    
+        
+end    
+    
+
+
             
