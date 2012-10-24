@@ -1,13 +1,53 @@
 
-function m  = manualSegmentationTweakGUI(im,m,displayrange)
-% [varargout] = get_fgnd_bgnd_seeds_3d_points(im,range)
+function [m,isDone]  = manualSegmentationTweakGUI(im,m,displayrange)
+%MANUALSEGMENTATIONTWEAKGUI allows manual segmentation creation of masks or alteration of existing masksk
+% [masks,isCompleted] = manualSegmentationTweakGUI(images,masks)
 %
 % This function allows the user to modify a set of masks manually to
 % improve them. Based on Deepaks seed point selection GUI - thanks Deepak!!
 %
+%
+%
+% Instructions:
+%
+%    -Go to the frame you want to edit or create mask for (you can use mouse
+%    scroll wheel to change frames).
+%   -Select one of the options: 
+%
+%               Add = add an area to the mask
+%               Subtract = cut an area out of the mask
+%               Restart = redraw this frame from scratch
+%
+%   -Select a drawing option:
+%       Freehand = click and drag to select a region.
+%       Polygon = click several times to create the vertices of a polygon.
+%       Double click on first vertex to close polygon.
+%
+%
+%   -Click GO or hit spacebar to start drawing your mask or mask correction
+%
+%   -Hit enter or click the "completed" box when you are done fixing a
+%   frame
+%
+%   -When you are done with all the frames you want to fix, just close the
+%   GUI
+%
+%   NOTE: To segment a cell which touches the image border, you must drag a
+%   circle around it OUTSIDE the image area, or if using the polygon tool,
+%   move a vertex outside of the image area.
+%
+% *****Keyboard shortcuts:*****
+%
+%   =For All the radio button options, just press the first letter
+%   =Space - Go (start drawing on the mask)
+%   =u - undo (only one step)
+%   =m - toggle mask display
+%   =enter - mark frame as completed
+%   - OR + - Decrease/increase contrast by adjusting upper display limit
+%   ( OR ) - Decrease/increase contrast by adjusting lower display limit
+%
 
-
-
+%Hunter Elliott, 10/2012
 
 %%
 
@@ -89,9 +129,13 @@ hMainFigure = fsFigure(.75);
     data_get_fgnd_bgnd_seeds_3d_points.ui_go = uicontrol('Style','pushbutton','String','Go',...
                                  'Units' , 'normalized' ,'Position',[0.71 0.8 0.2 0.1],'parent',hMainFigure,'Callback',{@pushGo_Callback});                
     
-    
-    
-    
+    %check box
+    data_get_fgnd_bgnd_seeds_3d_points.ui_cb = uicontrol('Style','checkbox','String','Completed',...        
+                             'Units' , 'normalized' ,'Position',[0.10 0.1 0.05 0.05],'parent',hMainFigure,'Callback',{@chkBox_Callback});         
+                         
+    set(data_get_fgnd_bgnd_seeds_3d_points.ui_cb,'Value',0)
+                         
+    %[0.20 0.1 0.05 0.05]
 % set callbacks
 set( hMainFigure , 'WindowScrollWheelFcn' , @FnSliceScroll_Callback );  
 %set( hMainFigure , 'WindowButtonDownFcn' , @FnMainFig_MouseButtonDownFunc );  
@@ -102,6 +146,9 @@ set( hMainFigure , 'WindowKeyPressFcn' , @FnKeyPress_Callback );
 % data_get_fgnd_bgnd_seeds_3d_points                         
 data_get_fgnd_bgnd_seeds_3d_points.im = im;
 data_get_fgnd_bgnd_seeds_3d_points.m = m;
+data_get_fgnd_bgnd_seeds_3d_points.prevm = m;
+data_get_fgnd_bgnd_seeds_3d_points.showMask = true;
+data_get_fgnd_bgnd_seeds_3d_points.isDone = false(size(im,3),1);
 data_get_fgnd_bgnd_seeds_3d_points.sliceno = 1;
 data_get_fgnd_bgnd_seeds_3d_points.displayrange = displayrange;
 data_get_fgnd_bgnd_seeds_3d_points.fgnd_seed_points = [];
@@ -119,17 +166,15 @@ catch
     errCatch = 1;
 end
     
-if errCatch == 0 
-        
+if errCatch == 0         
 
     m = data_get_fgnd_bgnd_seeds_3d_points.m;
+    isDone = data_get_fgnd_bgnd_seeds_3d_points.isDone;
     
     clear data_get_fgnd_bgnd_seeds_3d_points;
     
 else
-    
-    m = data_get_fgnd_bgnd_seeds_3d_points.m;
-    
+        
     clear data_get_fgnd_bgnd_seeds_3d_points;
     error( 'Error: Unknown error occured while getting seed points from the user' );
     
@@ -138,11 +183,23 @@ end
 %%
 function imsliceshow(data_get_fgnd_bgnd_seeds_3d_points)
 
+    
+
+    %Just show a blank mask so we can be lazy and still use deepaks display function
+    %and have consistant image display/contrast etc.
+    if data_get_fgnd_bgnd_seeds_3d_points.showMask
+        mShow = data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno);
+    else
+        mShow = false(size(data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno)));
+    end
+    
     imHan = imshow(genImageMaskOverlay_loc(data_get_fgnd_bgnd_seeds_3d_points.im(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno),...
-                                       data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno),[0 1 0],.17,data_get_fgnd_bgnd_seeds_3d_points.displayrange));
+                                   mShow,[0 1 0],.17,data_get_fgnd_bgnd_seeds_3d_points.displayrange));
+    
 %data_get_fgnd_bgnd_seeds_3d_points.displayrange);
     set(data_get_fgnd_bgnd_seeds_3d_points.ui.eth_sno,'String',sprintf('%d / %d' , data_get_fgnd_bgnd_seeds_3d_points.sliceno , size( data_get_fgnd_bgnd_seeds_3d_points.im , 3 ) ));    
 
+    set(data_get_fgnd_bgnd_seeds_3d_points.ui_cb,'Value',data_get_fgnd_bgnd_seeds_3d_points.isDone(data_get_fgnd_bgnd_seeds_3d_points.sliceno))
 
 %Old method - show by transparency
 %     imHan = imshow(data_get_fgnd_bgnd_seeds_3d_points.im(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno),data_get_fgnd_bgnd_seeds_3d_points.displayrange);
@@ -327,6 +384,8 @@ function pushGo_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
     
     if ~isempty(fH)
         currROI = fH.createMask;    
+        
+        data_get_fgnd_bgnd_seeds_3d_points.prevm = data_get_fgnd_bgnd_seeds_3d_points.m;
 
         switch get( data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode , 'SelectedObject' )
 
@@ -400,11 +459,29 @@ switch eventdata_get_fgnd_bgnd_seeds_3d_points.Key
         
         data_get_fgnd_bgnd_seeds_3d_points.displayrange = data_get_fgnd_bgnd_seeds_3d_points.displayrange + [100 0];                
         
+    case 'm'
+        
+        data_get_fgnd_bgnd_seeds_3d_points.showMask = ~data_get_fgnd_bgnd_seeds_3d_points.showMask;
+        
+    case 'return'
+        chkBox_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
+        
+    case 'u'
+        
+        tmp = data_get_fgnd_bgnd_seeds_3d_points.m;
+        data_get_fgnd_bgnd_seeds_3d_points.m = data_get_fgnd_bgnd_seeds_3d_points.prevm;
+        data_get_fgnd_bgnd_seeds_3d_points.prevm = tmp;
         
         
 end    
 
 imsliceshow(data_get_fgnd_bgnd_seeds_3d_points);    
+
+function chkBox_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)  
+    global data_get_fgnd_bgnd_seeds_3d_points
+    data_get_fgnd_bgnd_seeds_3d_points.isDone(data_get_fgnd_bgnd_seeds_3d_points.sliceno) = ~data_get_fgnd_bgnd_seeds_3d_points.isDone(data_get_fgnd_bgnd_seeds_3d_points.sliceno);
+    
+    
     
 function imRGB = genImageMaskOverlay_loc( im, mask, maskColor, maskAlpha,displayRange)
 
