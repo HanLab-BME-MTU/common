@@ -182,7 +182,7 @@ if handles.segThisCell > 1
     
     if exist([compPath filesep 'completedFrames.mat'],'file')
         aux      = load([compPath filesep 'completedFrames.mat']);
-        goodMask = dir([truthPath filesep '*.tif']);
+        goodMask = imDir([truthPath]);
         for iMask = find(aux.isCompleted)'
             masks(:,:,iMask) = imread([truthPath filesep goodMask(iMask).name]);
         end
