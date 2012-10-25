@@ -94,7 +94,7 @@ if ~isempty(fileName)
     nCell = numel(ML.movieDataFile_);
     for iCell = 1:nCell                                    
             idx                      = max(regexp(ML.movies_{iCell}.movieDataPath_,filesep));
-            cellName{iCell+1}          = ML.movies_{iCell}.movieDataPath_(idx+1:end);
+            cellName{iCell+1}         = ML.movies_{iCell}.movieDataPath_(idx+1:end);
     end
             
     set(handles.chooseCell,'Enable','on')
@@ -175,10 +175,22 @@ if handles.segThisCell > 1
         images = handles.loadedImage{handles.currCell};
     end
     
-    [outMasks,isCompleted] = manualSegmentationTweakGUI(images,masks);
-    segIdx                 = currObj.getPackageIndex('SegmentationPackage');
-    segPath                = currObj.packages_{segIdx}.outputDirectory_;
+    segIdx    = currObj.getPackageIndex('SegmentationPackage');
+    segPath   = currObj.packages_{segIdx}.outputDirectory_;
     truthPath = [segPath filesep 'groundTruthChannel' num2str(currChan)];
+    compPath  = [segPath filesep 'completedFramesChannel' num2str(currChan)];
+    
+    if exist([compPath filesep 'completedFrames.mat'],'file')
+        aux      = load([compPath filesep 'completedFrames.mat']);
+        goodMask = dir([truthPath filesep '*.tif']);
+        for iMask = find(aux.isCompleted)'
+            masks(:,:,iMask) = imread([truthPath filesep goodMask(iMask).name]);
+        end
+    end
+    
+    [outMasks,isCompleted] = manualSegmentationTweakGUI(images,masks);
+    
+    
     if ~exist(truthPath,'dir')
         
         mkdir(truthPath)
@@ -189,7 +201,7 @@ if handles.segThisCell > 1
         imwrite(outMasks(:,:,iFrame),[truthPath filesep 'mask_' num2str(iFrame) '.tif'],'tif');
     end
     
-    compPath = [segPath filesep 'completedFramesChannel' num2str(currChan)];
+    
     if ~exist(compPath,'dir')
         
         mkdir(compPath)
