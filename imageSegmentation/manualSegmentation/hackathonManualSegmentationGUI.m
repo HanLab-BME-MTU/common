@@ -88,44 +88,21 @@ function loadObject_Callback(hObject, eventdata, handles)
 cellName{1} = 'Choose a movie';
 if ~isempty(fileName)
     
-    mObject             = load([pathName filesep fileName]);
-    
-    [~,user]         = system('users');
-    aux              = regexp(user,' ');
-    user(aux(1:end)) = [];
-    
-    if strcmp(fieldnames(mObject),'ML')
-        
-        ML    = mObject.ML;
-        nCell = numel(ML.movieDataFile_);
-        for iCell = 1:nCell
-            loadingPath = regexprep(ML.movieDataFile_{iCell},'mv89',user);
-            mdIn = load(loadingPath);
-            listOfObjects{iCell}     = mdIn.MD;
-            idx                      = max(regexp(mdIn.MD.movieDataPath_,filesep));
-            cellName{iCell+1}          = mdIn.MD.movieDataPath_(idx+1:end);
-            
-        end
-        
-    elseif strcmp(fieldname(mObject),'MD')
-        
-        nCell            = 1;
-        MD               = mObject.MD;
-        listOfObjects{1} = MD;
-        idx              = max(regexp(mdIn.MD.movieDataPath_,filesep));
-        cellName{2}      =  MD.movieDataPath_(idx+1:end);
-        
-    else
-        error('This file is not a movie Object')
+    ML = MovieList.load([pathName filesep fileName],0);
+             
+    nCell = numel(ML.movieDataFile_);
+    for iCell = 1:nCell                                    
+            idx                      = max(regexp(ML.movies_{iCell}.movieDataPath_,filesep));
+            cellName{iCell+1}          = ML.movies_{iCell}.movieDataPath_(idx+1:end);
     end
-    
+            
     set(handles.chooseCell,'Enable','on')
     set(handles.goForSegmentation,'Enable','on')
     set(handles.chooseCell,'String',cellName)
     
     
     handles.cellName    = cellName;
-    handles.ML          = listOfObjects;
+    handles.ML          = ML.movies_;
     handles.loadedCells = false(nCell,1);
     handles.loadedMask  = cell(nCell,1);
     handles.loadedImage = cell(nCell,1);
@@ -200,7 +177,7 @@ if handles.segThisCell > 1
     [outMasks,isCompleted] = manualSegmentationTweakGUI(images,masks);
     segIdx                 = currObj.getPackageIndex('SegmentationPackage');
     segPath                = currObj.packages_{segIdx}.outputDirectory_;
-    truthPath = [segPath filesep 'groundTruthChannel' currChan];
+    truthPath = [segPath filesep 'groundTruthChannel' num2str(currChan)];
     if ~exist(truthPath,'dir')
         
         mkdir(truthPath)
@@ -211,7 +188,7 @@ if handles.segThisCell > 1
         imwrite(outMasks(:,:,iFrame),[truthPath filesep 'mask_' num2str(iFrame) '.tif'],'tif');
     end
     
-    compPath = [segPath filesep 'completedFramesChannel' currChan];
+    compPath = [segPath filesep 'completedFramesChannel' num2str(currChan)];
     if ~exist(compPath,'dir')
         
         mkdir(compPath)
