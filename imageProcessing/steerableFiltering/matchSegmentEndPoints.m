@@ -27,7 +27,7 @@ R = ip.Results.SearchRadius;
 mask = double(bwmorph(mask~=0, 'thin'));
 [ny, nx] = size(mask);
 
-theta = theta+pi/2;
+theta = theta+pi/2; % orientation returned by steerable filter is orthogonal to feature
 
 %=============================================
 % I. Generate segments, connected components
@@ -150,7 +150,7 @@ while matchesFound
             figure; imagesc(segmentMatrix- 4*matchedMask); colormap(gray(256)); axis image; colorbar;
             hold on;
             plot(xe(unmatchedIdx), ye(unmatchedIdx), 'rx');
-            T = theta(endpointIdx(unmatchedIdx));%+pi/2; % +pi/2 only for ridges -> debug
+            T = theta(endpointIdx(unmatchedIdx));
             quiver(X(:,1), X(:,2), cos(T), sin(T),0);
             %quiver(X(E(:,1),1), X(E(:,1),2), vL(1,:)', vL(2,:)',0, 'c');
             
