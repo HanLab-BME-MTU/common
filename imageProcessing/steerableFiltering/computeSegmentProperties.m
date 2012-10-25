@@ -27,8 +27,8 @@ for i = 1:ns
             % local neighborhood indexes
             hoodIdx = getNH(orderedIdx(k-1));
             nextIdx = intersect(unorderedIdx, hoodIdx);
-            unorderedIdx(unorderedIdx==nextIdx) = [];
-            orderedIdx(k) = nextIdx;
+            unorderedIdx(unorderedIdx==nextIdx(1)) = [];
+            orderedIdx(k) = nextIdx(1);
         end
         CC.PixelIdxList{i} = orderedIdx;
         CC.rawAngle{i} = theta(orderedIdx);
