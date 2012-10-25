@@ -23,7 +23,8 @@ ip.addParamValue('Display', false, @islogical);
 ip.parse(mask, theta, varargin{:});
 R = ip.Results.SearchRadius;
 
-mask = double(skeleton(mask));
+mask = double(bwmorph(mask~=0, 'thin'));
+theta = theta+pi/2;
 
 %=============================================
 % I. Generate segments, connected components
@@ -67,7 +68,7 @@ endpointIdx = endpointIdx(:);
 
 % order pixels from one endpoint to the other
 [ny, nx] = size(mask);
-getNH = @(i) [i-nx-1 i-nx i-nx+1 i-1 i+1 i+nx-1 i+nx i+nx+1]; 
+getNH = @(i) [i-ny-1 i-ny i-ny+1 i-1 i+1 i+ny-1 i+ny i+ny+1]; 
 
 for i = 1:ns
     np = numel(CC.PixelIdxList{i});
@@ -122,7 +123,9 @@ while matchesFound
     % remove redundant pairs
     E = E(E(:,1) < E(:,2),:);
     
-    if iter>1 % this adds stability to small segments adjacent to gaps
+    % Omitting this in the first pass adds stability by essentially ignoring
+    % (self matching) small segments adjacent to (and offset from) gaps
+    if iter>1 
         % remove queries on same segment
         Elabel = ceil(unmatchedIdx(E)/2);
         E(Elabel(:,1)==Elabel(:,2),:) = [];
@@ -130,12 +133,34 @@ while matchesFound
     
     % perform matching
     % weights based on angle
-    a1 = abs(theta(endpointIdx(unmatchedIdx(E(:,1)))) - theta(endpointIdx(unmatchedIdx(E(:,2)))));
+    t1 = theta(endpointIdx(unmatchedIdx(E(:,1))));
+    t2 = theta(endpointIdx(unmatchedIdx(E(:,2))));
+    a1 = abs(t1 - t2);
     a2 = abs(a1-pi);
-    cost = cos(min(a1,a2));
+    minAngle = min(a1,a2);
+    cost = cos(minAngle);
 
+    % endpoint vectors
+    v1 = [cos(t1) sin(t1)]';
+    v2 = [cos(t2) sin(t2)]';
+    % angle btw. vectors
+    dt = acos(sum(v1.*v2,1));
+    v2(:,dt>pi/2) = -v2(:,dt>pi/2); % flip if wrong direction
+    % vectors between endpoint pairs
+    vL = [X(E(:,2),1)-X(E(:,1),1) X(E(:,2),2)-X(E(:,1),2)]';
+    vL = vL./repmat(sqrt(sum(vL.^2,1)), [2 1]);
+    % mean btw. endpoint vectors
+    vMean = (v1+v2) ./ repmat(sqrt(sum((v1+v2).^2,1)), [2 1]);
+    diffT = acos(sum(vMean.*vL,1));
+    diffT(diffT>pi/2) = pi-diffT(diffT>pi/2);
     
-    M = maxWeightedMatching(numel(unmatchedIdx), E, cost); % returns index (true) of matches
+    % The angle difference could be included in the matching cost.
+    % Currently, any pair with diffT>pi/4 is discarded
+    rmIdx = diffT>pi/4;
+    E(rmIdx,:) = [];
+    cost(rmIdx) = [];
+    
+    M = maxWeightedMatching(numel(unmatchedIdx), E, cost); % returns index (M==true) of matches
     % retain only pairs that are matches
     E = E(M,:);
 
@@ -146,8 +171,10 @@ while matchesFound
         figure; imagesc(segmentMatrix- 4*matchedMask); colormap(gray(256)); axis image; colorbar;
         hold on;
         plot(xe(unmatchedIdx), ye(unmatchedIdx), 'rx');
-        T = theta(endpointIdx(unmatchedIdx))+pi/2;
+        T = theta(endpointIdx(unmatchedIdx));%+pi/2; % +pi/2 only for ridges -> debug
         quiver(X(:,1), X(:,2), cos(T), sin(T),0);
+        %quiver(X(E(:,1),1), X(E(:,1),2), vL(1,:)', vL(2,:)',0, 'c');
+        
         plot(X(unique(E(:)),1), X(unique(E(:)),2), 'go');
         plot([X(E(:,1),1) X(E(:,2),1)]', [X(E(:,1),2) X(E(:,2),2)]', 'y-')
     end
