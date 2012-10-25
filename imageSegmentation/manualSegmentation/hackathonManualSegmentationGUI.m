@@ -86,6 +86,7 @@ function loadObject_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 [fileName,pathName] = uigetfile;
 cellName{1} = 'Choose a movie';
+set(handles.chooseCell,'String',cellName)
 if ~isempty(fileName)
     
     ML = MovieList.load([pathName filesep fileName],0);
