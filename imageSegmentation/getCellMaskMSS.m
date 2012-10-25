@@ -22,7 +22,7 @@ ip.addRequired('img');
 ip.addParamValue('Scales', [1 2 4], @isvector);
 ip.addParamValue('FilterOrder', 3, @(x) ismember(x, [1 3 5]));
 ip.addParamValue('SearchRadius', 6, @isscalar);
-
+ip.addParamValue('NormalizeResponse', false, @islogical);
 ip.addParamValue('Mask', []);
 ip.parse(img, varargin{:});
 scales = ip.Results.Scales;
@@ -38,10 +38,15 @@ borderMask(borderIdx) = 1;
 %------------------------------------------------------------------------------
 [res, theta, nms] = multiscaleSteerableDetector(img, ip.Results.FilterOrder, scales);
 
-% Mask of candidate edges
-% maxNMS = maxNMS.*bwmorph(maxNMS~=0, 'thin'); % or skel
-edgeMask = double(bwmorph(nms~=0, 'thin'));
+if ip.Results.NormalizeResponse
+    res = res ./ filterGauss2D(res, 5);
+    %nms = nonMaximumSuppression(res, theta);
+    % -or-
+    nms = (nms~=0).*res;
+end
 
+% Mask of candidate edges
+edgeMask = double(bwmorph(nms~=0, 'thin'));
 
 % Break any Y or higher order junctions
 nn = (imfilter(edgeMask, ones(3), 'same')-1) .* edgeMask;

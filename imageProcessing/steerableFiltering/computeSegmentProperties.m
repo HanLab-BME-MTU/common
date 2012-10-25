@@ -33,14 +33,17 @@ for i = 1:ns
             %umask = double(bwmorph(umask, 'thin'));
             nn = (imfilter(umask, ones(3), 'same')-1) .* umask;
             endpointIdx = find(nn<2 & umask==1);
-            
-            [yi, xi] = ind2sub(dims, orderedIdx(orderedIdx~=0));
-            X = [xi yi];
-            [yi, xi] = ind2sub(dims, endpointIdx);
-            x0 = [xi yi];
-            [~,dist] = KDTreeClosestPoint(X, x0);
-            
-            nextIdx = endpointIdx(find(dist==min(dist),1,'first')); % start over at closest endpoint
+
+            if ~isempty(endpointIdx)
+                [yi, xi] = ind2sub(dims, orderedIdx(orderedIdx~=0));
+                X = [xi yi];
+                [yi, xi] = ind2sub(dims, endpointIdx);
+                x0 = [xi yi];
+                [~,dist] = KDTreeClosestPoint(X, x0);
+                nextIdx = endpointIdx(find(dist==min(dist),1,'first')); % start over at closest endpoint
+            else
+                nextIdx = unorderedIdx(1);
+            end
         end
         unorderedIdx(unorderedIdx==nextIdx(1)) = [];
         orderedIdx(k) = nextIdx(1);
