@@ -14,118 +14,149 @@
 
 % Francois Aguet, September 2011 (last modified: 10/23/2011)
 
-function [cellMask cellBoundary] = getCellMaskMSS(img, varargin)
+function [cellMask, cellBoundary] = getCellMaskMSS(img, varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('img');
 ip.addParamValue('Scales', [1 2 4], @isvector);
 ip.addParamValue('FilterOrder', 3, @(x) ismember(x, [1 3 5]));
-ip.addParamValue('RemoveRadius', [], @isscalar);
+ip.addParamValue('SearchRadius', 6, @isscalar);
+
 ip.addParamValue('Mask', []);
 ip.parse(img, varargin{:});
 scales = ip.Results.Scales;
 
 [ny,nx] = size(img);
-borderIdx = [1:ny (nx-1)*ny+(1:ny) ny+1:ny:(nx-2)*ny+1 2*ny:ny:(nx-1)*ny];
+% ordered index, column-order CCW
+borderIdx = [1:ny 2*ny:ny:(nx-1)*ny nx*ny:-1:(nx-1)*ny+1 (nx-2)*ny+1:-ny:ny+1];
+borderMask = zeros(ny,nx);
+borderMask(borderIdx) = 1;
 
 %------------------------------------------------------------------------------
 % I. Multi-scale steerable filter
 %------------------------------------------------------------------------------
-ns = length(scales);
-res = cell(1,ns);
-th = cell(1,ns);
-for si = 1:ns
-    [res{si}, th{si}] = steerableDetector(img, ip.Results.FilterOrder, scales(si));
-end
-%maxIdx = ones(ny,nx);
-maxRes = res{1};
-maxTh = th{1};
-for si = 2:ns
-    idx = res{si}>maxRes;
-    maxRes(idx) = res{si}(idx);
-    %maxIdx(idx) = si;
-    maxTh(idx) = th{si}(idx);
-end
-maxNMS = nonMaximumSuppression(maxRes, maxTh);
+[res, theta, nms] = multiscaleSteerableDetector(img, ip.Results.FilterOrder, scales);
 
 % Mask of candidate edges
-maxNMS = maxNMS.*bwmorph(maxNMS~=0, 'thin'); % or skel
+% maxNMS = maxNMS.*bwmorph(maxNMS~=0, 'thin'); % or skel
+edgeMask = double(bwmorph(nms~=0, 'thin'));
+
 
 % Break any Y or higher order junctions
-nn = padarrayXT(double(maxNMS~=0), [1 1]);
-sumKernel = [1 1 1];
-nn = conv2(sumKernel, sumKernel', nn, 'valid');
-nn = (nn-1) .* (maxNMS~=0);
-junctionMask = nn>2;
-maxNMS(junctionMask) = 0;
+nn = (imfilter(edgeMask, ones(3), 'same')-1) .* edgeMask;
 
-% Individual edges: connected components
-CC = bwconncomp(maxNMS,8);
-csize = cellfun(@(c) numel(c), CC.PixelIdxList);
+junctionMatrix = nn>2;
+segmentMatrix = edgeMask .* ~junctionMatrix;
 
-% Remove singletons
-nsingle = sum(csize==1);
-CC.NumObjects = CC.NumObjects-nsingle;
-CC.PixelIdxList(csize==1) = [];
-csize(csize==1) = [];
+% endpoints of all segments
+endpointMatrix = (imfilter(segmentMatrix, ones(3), 'same')-1) .* segmentMatrix;
+endpointMatrix = endpointMatrix==1;
 
+% generate list of segments and add associated properties
+CC = bwconncomp(segmentMatrix, 8);
+
+% identify and remove single pixels, update segment matrix
+issingleton = cellfun(@(i) numel(i)==1, CC.PixelIdxList);
+CC.NumObjects = CC.NumObjects - sum(issingleton);
+singletonIdx = CC.PixelIdxList(issingleton);
+segmentMatrix([singletonIdx{:}]) = 0;
+CC.PixelIdxList(issingleton) = [];
+csize = cellfun(@numel, CC.PixelIdxList);
+
+% labels of connected components
+labels = double(labelmatrix(CC));
 
 %------------------------------------------------------------------------------
-% II. Rough estimate of the cell outline based on threshold: bdrMask
+% II. Rough estimate of the cell outline based on threshold: coarseMask
 %------------------------------------------------------------------------------
-mask = ip.Results.Mask;
-if isempty(mask)
+coarseMask = ip.Results.Mask;
+if isempty(coarseMask)
     % threshold 1st mode (background) of histogram
     img_smooth = filterGauss2D(img, 1);
     T = thresholdFluorescenceImage(img_smooth);
-    mask = double(img_smooth>T);
-    mask = bwmorph(mask, 'fill');
+    coarseMask = double(img_smooth>T);
+    coarseMask = bwmorph(coarseMask, 'fill'); % clean up isolated negative pixels
 end
-bdrVect = bwboundaries(mask);
-bdrMask = zeros(ny,nx);
-% largest perimeter/boundary
-plength = cellfun(@(i) size(i,1), bdrVect);
-idx = plength==max(plength);
-bdrMask(sub2ind([ny nx], bdrVect{idx}(:,1), bdrVect{idx}(:,2))) = 1;
-bdrMask = bwmorph(bdrMask, 'thin');
-bdrMask = bwmorph(bdrMask, 'spur', 1);
+% get boundary from this mask
+bdrVect = bwboundaries(coarseMask);
+bdrVect = vertcat(bdrVect{:});
+coarseBdr = zeros(ny,nx);
+coarseBdr(sub2ind([ny nx], bdrVect(:,1), bdrVect(:,2))) = 1;
 
-% Remove pixels at image border
-bdrMask(borderIdx) = 0;
+% endpoints/intersection of boundary w/ border
+borderIS = coarseBdr & borderMask;
+borderIS = double(borderIS(borderIdx));
+borderIS = borderIdx((conv([borderIS(end) borderIS borderIS(1)], [1 1 1], 'same')-1)==1);
 
-% Area of admissible edges based on bdrMask; labels of these edges
-bdrMask = imdilate(bdrMask, strel('disk', 20)); % dilation is arbitrary...
-idx = unique(double(labelmatrix(CC)).*bdrMask);
-idx(idx==0) = [];
+% clean up, remove image border, add intersects
+coarseBdr = bwmorph(coarseBdr, 'thin');
+coarseBdr(borderIdx) = 0;
+coarseBdr(borderIS) = 1;
+
+edgeSearchMask = imdilate(coarseBdr, strel('disk', 20)); % dilation is arbitrary...
+
+% labels within search area
+idx = unique(labels.*edgeSearchMask);
+idx(idx==0) = []; % remove background label
+
+% update connected components list
 CC.NumObjects = numel(idx);
 CC.PixelIdxList = CC.PixelIdxList(idx);
 csize = csize(idx);
 
-% Mask of retained edges
-edgeMask = labelmatrix(CC) ~= 0;
-
-% average intensity of each connected component
-avgInt = cellfun(@(px) sum(maxNMS(px)), CC.PixelIdxList) ./ csize;
-avgMap = zeros(ny,nx);
+% mask with average intensity of each segment
+avgInt = cellfun(@(px) sum(nms(px)), CC.PixelIdxList) ./ csize;
+edgeMask = zeros(ny,nx);
 for k = 1:CC.NumObjects
-    avgMap(CC.PixelIdxList{k}) = avgInt(k);
+    edgeMask(CC.PixelIdxList{k}) = avgInt(k);
 end
 
 % Some of the edges are background noise -> bimodal distribution of edge intensities
-val = maxNMS(edgeMask); % intensities of edges
+val = nms(edgeMask~=0); % intensities of edges
 minv = min(val);
 maxv = max(val);
 T = graythresh(scaleContrast(val, [], [0 1]));
 T = T*(maxv-minv)+minv;
+
 % initial estimate of cell contour
-cellBoundary = avgMap > T;
+cellBoundary = edgeMask > T;
+
+% 1st graph matching based on orientation at endpoints, with small search radius
+[matchedMask] = matchSegmentEndPoints(cellBoundary, theta, 'SearchRadius', ip.Results.SearchRadius, 'Display', false);
+matchedMask = double(bwmorph(matchedMask, 'thin'));
+nn = (imfilter(matchedMask, ones(3), 'same')-1) .* matchedMask;
+endpointMatrix = nn==1;
+endpointIdx = find(endpointMatrix);
+
+CC = bwconncomp(matchedMask, 8);
+% labels = labelmatrix(CC);
+csize = cellfun(@numel, CC.PixelIdxList);
+avgInt = cellfun(@(px) sum(res(px)), CC.PixelIdxList) ./ csize;
+for k = 1:CC.NumObjects
+    matchedMask(CC.PixelIdxList{k}) = avgInt(k);
+    CC.isSegment(k) = max(nn(CC.PixelIdxList{k}))<3;
+    CC.endpointIdx{k} = intersect(CC.PixelIdxList{k}, endpointIdx);
+end
+
+% add CC processing fct.; add left/right px info only if linear segment (max(nn)==2)
+CC = computeSegmentProperties(CC, img, theta);
+
+figure; imagesc(rgbOverlay(img, matchedMask, [1 0 0])); colormap(gray(256)); axis image; colorbar;
+
+
+cellMask = [];
+return
+
+
+
+
+
 
 edgeLabels = double(labelmatrix(CC));
-
 for i = 1:2
     % junctions connected to edges above threshold
-    cjunctions = bwmorph(cellBoundary, 'dilate') .* junctionMask;
+    cjunctions = bwmorph(cellBoundary, 'dilate') .* junctionMatrix;
     
     % add segments connected to these junctions
     clabels = unique(double(bwmorph(cjunctions, 'dilate')) .* edgeLabels);
@@ -241,7 +272,7 @@ end
 
 % loop through remaining components, check whether part of foreground or background
 for i = idx(3:end)
-    px = mask(maskCC.PixelIdxList{i});
+    px = coarseMask(maskCC.PixelIdxList{i});
     if sum(px) > 0.6*numel(px)
         cellMask(maskCC.PixelIdxList{i}) = 1;
     end
