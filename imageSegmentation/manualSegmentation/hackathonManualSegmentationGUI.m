@@ -90,9 +90,9 @@ if ~isempty(fileName)
     
     mObject             = load([pathName filesep fileName]);
     
-    currDir = pwd;
-    aux     = regexp(currDir,filesep);
-    user    = currDir(aux(2)+1:aux(3)-1);
+    [~,user]         = system('users');
+    aux              = regexp(user,' ');
+    user(aux(1:end)) = [];
     
     if strcmp(fieldnames(mObject),'ML')
         
