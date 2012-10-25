@@ -121,29 +121,59 @@ T = T*(maxv-minv)+minv;
 
 % initial estimate of cell contour
 cellBoundary = edgeMask > T;
+% cellBoundary = edgeMask;
 
 % 1st graph matching based on orientation at endpoints, with small search radius
 [matchedMask] = matchSegmentEndPoints(cellBoundary, theta, 'SearchRadius', ip.Results.SearchRadius, 'Display', false);
-matchedMask = double(bwmorph(matchedMask, 'thin'));
-nn = (imfilter(matchedMask, ones(3), 'same')-1) .* matchedMask;
+
+% find endpoint candidates on skeleton
+nn = double(bwmorph(matchedMask, 'thin'));
+nn = (imfilter(nn, ones(3), 'same')-1) .* nn;
 endpointMatrix = nn==1;
 endpointIdx = find(endpointMatrix);
 
 CC = bwconncomp(matchedMask, 8);
-% labels = labelmatrix(CC);
+for k = 1:CC.NumObjects
+    CC.endpointIdx{k} = intersect(CC.PixelIdxList{k}, endpointIdx);
+end
+
+% retain the two endpoints that are furthest apart for later matching
+nEndpoint = cellfun(@numel, CC.endpointIdx);
+for k = 1:max(nEndpoint)
+    idx = find(nEndpoint>=max(3,k));
+    % seed point indexes
+    sp = cellfun(@(x) x(k), CC.endpointIdx(idx));
+    seedMatrix = false(ny,nx);
+    seedMatrix(sp) = true;
+    D = bwdistgeodesic(matchedMask, seedMatrix);
+    for i = 1:numel(idx)
+        CC.endpointDist{idx(i)}(k) = max(D(CC.PixelIdxList{idx(i)}));
+    end    
+end
+idx = find(nEndpoint>2);
+for k = 1:numel(idx)
+    [~,si] = sort(CC.endpointDist{idx(k)}, 'descend');
+    [~,si] = sort(si, 'descend');
+    CC.endpointIdx{idx(k)} = CC.endpointIdx{idx(k)}(si<=2);
+end
+CC = rmfield(CC, 'endpointDist');
+
+matchedMask = double(matchedMask);
+
 csize = cellfun(@numel, CC.PixelIdxList);
 avgInt = cellfun(@(px) sum(res(px)), CC.PixelIdxList) ./ csize;
 for k = 1:CC.NumObjects
     matchedMask(CC.PixelIdxList{k}) = avgInt(k);
-    CC.isSegment(k) = max(nn(CC.PixelIdxList{k}))<3;
-    CC.endpointIdx{k} = intersect(CC.PixelIdxList{k}, endpointIdx);
+    %CC.isSegment(k) = max(nn(CC.PixelIdxList{k}))<3;
+    %CC.endpointIdx{k} = intersect(CC.PixelIdxList{k}, endpointIdx);
+    if isempty(CC.endpointIdx{k})
+        CC.endpointIdx{k} = CC.PixelIdxList{k}(1);
+    end
 end
 
-% add CC processing fct.; add left/right px info only if linear segment (max(nn)==2)
 CC = computeSegmentProperties(CC, img, theta);
 
 figure; imagesc(rgbOverlay(img, matchedMask, [1 0 0])); colormap(gray(256)); axis image; colorbar;
-
 
 cellMask = [];
 return
