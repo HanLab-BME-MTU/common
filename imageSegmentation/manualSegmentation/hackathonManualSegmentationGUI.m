@@ -90,14 +90,17 @@ if ~isempty(fileName)
     
     mObject             = load([pathName filesep fileName]);
     
+    currDir = pwd;
+    aux     = regexp(currDir,filesep);
+    user    = currDir(aux(2)+1:aux(3)-1);
     
     if strcmp(fieldnames(mObject),'ML')
         
         ML    = mObject.ML;
         nCell = numel(ML.movieDataFile_);
         for iCell = 1:nCell
-            
-            mdIn = load(ML.movieDataFile_{iCell});
+            loadingPath = regexprep(ML.movieDataFile_{iCell},'mv89',user);
+            mdIn = load(loadingPath);
             listOfObjects{iCell}     = mdIn.MD;
             idx                      = max(regexp(mdIn.MD.movieDataPath_,filesep));
             cellName{iCell+1}          = mdIn.MD.movieDataPath_(idx+1:end);
