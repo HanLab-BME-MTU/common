@@ -1,5 +1,5 @@
 
-function [m,isDone]  = manualSegmentationTweakGUI(im,m,displayrange)
+function [m,isDone]  = manualSegmentationTweakGUI(im,m,displayrange,isDone)
 %MANUALSEGMENTATIONTWEAKGUI allows manual segmentation creation of masks or alteration of existing masksk
 % [masks,isCompleted] = manualSegmentationTweakGUI(images,masks)
 %
@@ -51,7 +51,11 @@ function [m,isDone]  = manualSegmentationTweakGUI(im,m,displayrange)
 
 %%
 
-if nargin < 3 || isempty(displayRange)
+if nargin < 4 || isempty(isDone)
+    isDone = false(size(im,3),1);
+end
+
+if nargin < 3 || isempty(displayrange)
     
     displayrange = double([min(im(:)) max(im(:))]);
     
@@ -148,14 +152,15 @@ data_get_fgnd_bgnd_seeds_3d_points.im = im;
 data_get_fgnd_bgnd_seeds_3d_points.m = m;
 data_get_fgnd_bgnd_seeds_3d_points.prevm = m;
 data_get_fgnd_bgnd_seeds_3d_points.showMask = true;
-data_get_fgnd_bgnd_seeds_3d_points.isDone = false(size(im,3),1);
+data_get_fgnd_bgnd_seeds_3d_points.isDone = isDone;
+data_get_fgnd_bgnd_seeds_3d_points.firstShow = true;%Stupid way to keep axis from resizing after initial
 data_get_fgnd_bgnd_seeds_3d_points.sliceno = 1;
 data_get_fgnd_bgnd_seeds_3d_points.displayrange = displayrange;
 data_get_fgnd_bgnd_seeds_3d_points.fgnd_seed_points = [];
 data_get_fgnd_bgnd_seeds_3d_points.bgnd_seed_points = [];
 
 imsliceshow(data_get_fgnd_bgnd_seeds_3d_points);
-
+data_get_fgnd_bgnd_seeds_3d_points.firstShow = false;
 
 
 % wait until the window is closed
@@ -193,8 +198,17 @@ function imsliceshow(data_get_fgnd_bgnd_seeds_3d_points)
         mShow = false(size(data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno)));
     end
     
+    
+    xl = xlim(data_get_fgnd_bgnd_seeds_3d_points.ui.ah_img);
+    yl = ylim(data_get_fgnd_bgnd_seeds_3d_points.ui.ah_img);
+    
     imHan = imshow(genImageMaskOverlay_loc(data_get_fgnd_bgnd_seeds_3d_points.im(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno),...
                                    mShow,[0 1 0],.17,data_get_fgnd_bgnd_seeds_3d_points.displayrange));
+    
+    if ~data_get_fgnd_bgnd_seeds_3d_points.firstShow
+        xlim(data_get_fgnd_bgnd_seeds_3d_points.ui.ah_img,xl)
+        ylim(data_get_fgnd_bgnd_seeds_3d_points.ui.ah_img,yl)    
+    end
     
 %data_get_fgnd_bgnd_seeds_3d_points.displayrange);
     set(data_get_fgnd_bgnd_seeds_3d_points.ui.eth_sno,'String',sprintf('%d / %d' , data_get_fgnd_bgnd_seeds_3d_points.sliceno , size( data_get_fgnd_bgnd_seeds_3d_points.im , 3 ) ));    
