@@ -1,4 +1,18 @@
-function [mu sigma x g] = fitGaussianModeToHist(xi, ni, varargin)
+%[mu, sigma, xi, g] = fitGaussianModeToHist(xi, ni, varargin) fits a Gaussian to the lower half of the first mode of a histogram
+%
+% Inputs:
+%              xi : sample space vector
+%              ni : histogram values at xi
+%
+% Outputs:
+%              mu : mean of the Gaussian
+%           sigma : standard deviation of the Gaussian
+%               x : fine-scale sample space vector
+%               g : Gaussian calculated on x
+
+% Francois Aguet, 05/24/2012
+
+function [mu, sigma, x, g] = fitGaussianModeToHist(xi, ni, varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
@@ -17,17 +31,10 @@ A0 = max(ni);
 mu0 = sum(ni.*xi)*dxi;
 sigma0 = sqrt(sum(ni.*xi.^2)*dxi - mu0^2);
 
-[p,resnorm,~,~,~,~,J] = lsqnonlin(@cost, [A0 mu0 sigma0], [0 0], [Inf Inf], opts, xi, ni);
-
-
-
+p = lsqnonlin(@cost, [A0 mu0 sigma0], [0 0], [Inf Inf], opts, xi, ni);
 A = p(1);
 mu = p(2);
 sigma = p(3);
-
-% A = max(ni);
-% mu = p(1);
-% sigma = p(2);
 
 x = 0:dxi/10:xi(end);
 g = A * exp(-(x-mu).^2/(2*sigma^2));
@@ -45,11 +52,7 @@ function v = cost(p, xi, ni)
 A = p(1);
 mu = p(2);
 sigma = p(3);
-% A = max(ni);
-% mu = p(1);
-% sigma = p(2);
 
 g = A * exp(-(xi-mu).^2/(2*sigma^2));
 v = g-ni;
 v(xi>mu+sigma) = 0;
-

@@ -1,4 +1,18 @@
-function [mu sigma x g] = fitGaussianModeToPDF(samples, varargin)
+%[mu, sigma, xi, g] = fitGaussianModeToCDF(samples, varargin) fits a Gaussian to the lower half of the first mode of the sample distribution
+% The fit is performed on the PDF of the samples, calculated using kernel density.
+%
+% Inputs:
+%         samples : data points
+%
+% Outputs:
+%              mu : mean of the Gaussian
+%           sigma : standard deviation of the Gaussian
+%              xi : sample space vector
+%               g : Gaussian calculated on xi
+
+% Francois Aguet, 05/24/2012
+
+function [mu, sigma, xi, g] = fitGaussianModeToPDF(samples, varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
@@ -20,7 +34,7 @@ xi = linspace(pct(1), pct(2), 1000);
 A0 = 1;
 mu0 = mean(samples);
 sigma0 = 0.5*std(samples);
-[p,resnorm,~,~,~,~,J] = lsqnonlin(@cost, [A0 mu0 sigma0], [0 0 0], [1 Inf Inf], opts, xi, pdf);
+p = lsqnonlin(@cost, [A0 mu0 sigma0], [0 0 0], [1 Inf Inf], opts, xi, pdf);
 
 A = p(1);
 mu = p(2);

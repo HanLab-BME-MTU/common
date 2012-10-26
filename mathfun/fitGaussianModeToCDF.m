@@ -1,4 +1,5 @@
 %[mu, sigma, xi, g] = fitGaussianModeToCDF(samples, varargin) fits a Gaussian to the lower half of the first mode of the sample distribution
+% The fit is performed on the EDF of the samples.
 %
 % Inputs:
 %         samples : data points
