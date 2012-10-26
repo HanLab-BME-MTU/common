@@ -42,7 +42,7 @@ if ip.Results.NormalizeResponse
     res = res ./ filterGauss2D(res, 5);
     %nms = nonMaximumSuppression(res, theta);
     % -or-
-    nms = (nms~=0).*res;
+    nms = (nms~=0).*res; % better
 end
 
 % Mask of candidate edges
@@ -177,8 +177,37 @@ for k = 1:CC.NumObjects
 end
 
 CC = computeSegmentProperties(CC, img, theta);
+labels = double(labelmatrix(CC));
 
-figure; imagesc(rgbOverlay(img, matchedMask, [1 0 0])); colormap(gray(256)); axis image; colorbar;
+% for each remaining endpoint, find closest edge and get its label
+for k = 1:CC.NumObjects
+    pidx = vertcat(CC.PixelIdxList{setdiff(1:CC.NumObjects, k)});
+    [yi, xi] = ind2sub([ny nx], pidx);
+    X = [xi yi];
+    [yi, xi] = ind2sub([ny nx], CC.endpointIdx{k});
+    [idx] = KDTreeClosestPoint(X, [xi yi]);
+    CC.matchIdx{k} = pidx(idx)';
+    CC.matchLabel{k} = labels(CC.matchIdx{k});
+end
+
+% edge->edge pairs (not optimal, search is redundant)
+matchList = zeros(0,2);
+for k = 1:CC.NumObjects
+    matches = CC.matchLabel{k}(arrayfun(@(i) any(CC.matchLabel{i}==k), CC.matchLabel{k}));
+    matchList = [matchList; [k*ones(numel(matches),1) matches']];
+end
+matchList(matchList(:,1)>matchList(:,2),:) = [];
+
+
+
+img0 = scaleContrast(img);
+img1 = img0;
+img0(matchedMask~=0) = 0;
+img1(matchedMask~=0) = 255;
+rgb = uint8(cat(3, img1, img0, img0));
+figure; imagesc(rgb); colormap(gray(256)); axis image; colorbar;
+
+%figure; imagesc(rgbOverlay(img, matchedMask, [1 0 0])); colormap(gray(256)); axis image; colorbar;
 
 cellMask = [];
 return
