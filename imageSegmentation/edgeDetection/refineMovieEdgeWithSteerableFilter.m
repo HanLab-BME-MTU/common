@@ -1,7 +1,9 @@
-function prctileUsed = refineMovieEdgeWithSteerableFilter(MD,threshParam,gapCloseParam,doPlot)
+function prctileUsed = refineMovieEdgeWithSteerableFilter(MD,threshParam,...
+    gapCloseParam,doPlot,movieInfo,numSPTFrames,meanBkg)
 %REFINEMOVIEEDGEWITHSTEERABLEFILTER replaces simple masks with masks refined using steerable line filtering
 %
-%SYNOPSIS refineMovieEdgeWithSteerableFilter(MD,threshParam,gapCloseParam,doPlot)
+%SYNOPSIS prctileUsed = refineMovieEdgeWithSteerableFilter(MD,threshParam,...
+%    gapCloseParam,doPlot,movieInfo,numSPTFrames,meanBkg)
 %
 %INPUT  MD    : The movieData object as output by the cell masking and
 %               windowing software. Before calling this code,
@@ -12,15 +14,14 @@ function prctileUsed = refineMovieEdgeWithSteerableFilter(MD,threshParam,gapClos
 %                             Optional. Default: 1.5.
 %           .gradPrctile    : Gradient percentile for thresholding.
 %                             Optional. Default: [95 90 85 80].
+%           .bandWidth      : Width of band around original edge to look
+%                             into for edge refinement.
+%                             Use -1 so as to use whole image instead of a
+%                             band.
+%                             Optional. Default: 100 pixels (50 on each side).
 %       gapCloseParam: Structure with parameters for edge gap closing:
 %           .maxEdgePairDist: Maximum distance between edge segment pair.
 %                             Optional. Default: 5 pixels.
-%           .maxThetaDiff   : Maximum angle between gradients of edge
-%                             segment pair.
-%                             Optional. Default: pi (i.e. full range).
-%           .maxC2cAngleThetaDiff: Maximum angle between edge gradient and
-%                             perpendicular to centroid-centroid vector.
-%                             Optional. Default: pi/2 (i.e. full range).
 %           .factorContr    : Contribution of each factor to the edge gap
 %                             closing cost. 6 entries for the factors:
 %                             (1) distance,
@@ -28,9 +29,7 @@ function prctileUsed = refineMovieEdgeWithSteerableFilter(MD,threshParam,gapClos
 %                             (3) angle between gradient and perpendicular
 %                                 to centroid-centroid distance,
 %                             (4) "edginess" score,
-%                             (5) intensity,
-%                             (6) lack of asymmetry cost.
-%                             Optional. Default: [1 1 1 1 1 1].
+%                             Optional. Default: ones(1,4).
 %           .edgeType       : Flag indicating edge type:
 %                             0 = open edge, i.e. image is of part of a
 %                             cell and edge touches image boundary.
@@ -52,7 +51,13 @@ function prctileUsed = refineMovieEdgeWithSteerableFilter(MD,threshParam,gapClos
 %               refinement comes on top of the "refineMovieMask"
 %               refinement.
 %               Optional. Default: 0.
-%
+%       movieInfo: Detection output with particle positions.
+%                  Optional. If not input, information not used.
+%       numSPTFrames: Number of SPT frames between edge frames.
+%                  Only needed if movieInfo is also input.
+%                  Optional. Default: 400.
+%       meanBkg  : Mean background intensity close to the cell edge.
+%                  Optional. If not input, information not used.
 %
 %OUTPUT prctileUsed: Percentile used for gradient thresholding, one per
 %                    frame.
@@ -75,6 +80,7 @@ end
 if nargin < 2 || isempty(threshParam)
     threshParam.filterSigma = 1.5;
     threshParam.gradPrctile = [95 90 85 80];
+    threshParam.bandWidth = 100;
 else
     if ~isfield(threshParam,'fiterSigma')
         threshParam.filterSigma = 1.5;
@@ -82,28 +88,23 @@ else
     if ~isfield(threshParam,'gradPrctile')
         threshParam.gradPrctile = [95 90 85 80];
     end
+    if ~isfield(threshParam,'bandWidth')
+        threshParam.bandWidth = 100;
+    end
 end
 
 %get edge gap closing parameters
 if nargin < 3 || isempty(gapCloseParam)
     gapCloseParam.maxEdgePairDist = 5;
-    gapCloseParam.maxThetaDiff = pi;
-    gapCloseParam.maxC2cAngleThetaDiff = pi/2;
-    gapCloseParam.factorContr = ones(1,6);
+    gapCloseParam.factorContr = ones(1,4);
     gapCloseParam.edgeType = 0;
     gapCloseParam.fracImageCell = 0.25;
 else
     if ~isfield(gapCloseParam,'maxEdgePairDist')
         gapCloseParam.maxEdgePairDist = 5;
     end
-    if ~isfield(gapCloseParam,'maxThetaDiff')
-        gapCloseParam.maxThetaDiff = pi;
-    end
-    if ~isfield(gapCloseParam,'maxC2cAngleThetaDiff')
-        gapCloseParam.maxC2cAngleThetaDiff = pi/2;
-    end
     if ~isfield(gapCloseParam,'factorContr')
-        gapCloseParam.factorContr = ones(1,6);
+        gapCloseParam.factorContr = ones(1,4);
     end
     if ~isfield(gapCloseParam,'edgeType')
         gapCloseParam.edgeType = 0;
@@ -118,6 +119,18 @@ if nargin < 4 || isempty(doPlot)
     doPlot = 0;
 end
 
+%check particle information
+if nargin < 5 || isempty(movieInfo)
+    movieInfo = [];
+end
+if nargin < 6 || isempty(numSPTFrames)
+    numSPTFrames = 400;
+end
+
+if nargin < 7 || isempty(meanBkg)
+    meanBkg = [];
+end
+
 %get image and analysis directories
 imageDir = MD.channels_.channelPath_;
 analysisDir = MD.movieDataPath_;
@@ -126,26 +139,35 @@ analysisDir = MD.movieDataPath_;
 masksDir = [analysisDir filesep 'masks'];
 masksOldDir = [analysisDir filesep 'masks_OLD'];
 mkdir(masksOldDir);
-copyfile([masksDir filesep '*'],masksOldDir);
+copyfile([masksDir filesep '*'],masksOldDir,'f');
 refinedMasksDir = [analysisDir filesep 'refined_masks'];
 refinedMasksOldDir = [analysisDir filesep 'refined_masks_OLD'];
 mkdir(refinedMasksOldDir);
-copyfile([refinedMasksDir filesep '*'],refinedMasksOldDir);
+copyfile([refinedMasksDir filesep '*'],refinedMasksOldDir,'f');
 
 %get image and mask file listings
 imageFileListing = dir([imageDir filesep '*.tif']);
 if isempty(imageFileListing)
     imageFileListing = dir([imageDir filesep '*.tiff']);
 end
+if isempty(imageFileListing)
+    imageFileListing = dir([imageDir filesep '*.TIF']);
+end
 masksDirFull = [masksDir filesep 'masks_for_channel_1'];
 maskFileListing = dir([masksDirFull filesep '*.tif']);
 if isempty(maskFileListing)
     maskFileListing = dir([masksDirFull filesep '*.tiff']);
 end
+if isempty(maskFileListing)
+    maskFileListing = dir([masksDirFull filesep '*.TIF']);
+end
 refinedMasksDirFull = [refinedMasksDir filesep 'refined_masks_for_channel_1'];
 refinedMaskFileListing = dir([refinedMasksDirFull filesep '*.tif']);
 if isempty(refinedMaskFileListing)
     refinedMaskFileListing = dir([refinedMasksDirFull filesep '*.tiff']);
+end
+if isempty(refinedMaskFileListing)
+    refinedMaskFileListing = dir([refinedMasksDirFull filesep '*.TIF']);
 end
 
 %get number of files
@@ -156,6 +178,7 @@ numFiles = length(imageFileListing);
 wtBar = waitbar(0,'Please wait, refining edge with steerable filter ...'); 
 
 %refine masks using steerable line filter
+particleInfo = [];
 prctileUsed = NaN(numFiles,1);
 for iFile = 1 : numFiles
     
@@ -165,9 +188,17 @@ for iFile = 1 : numFiles
     image = double(imread(fullfile(imageDir,imageFileListing(iFile).name)));
     mask0 = double(imread(fullfile(refinedMasksDirFull,refinedMaskFileListing(iFile).name)));
     
+    %get relevant particle information
+    if ~isempty(movieInfo)
+        particleIndx = (iFile-1)*numSPTFrames;
+        if iFile ~= numFiles
+            particleInfo = movieInfo(particleIndx+1:particleIndx+numSPTFrames);
+        end
+    end
+    
     %call refinement function
     [mask,prctileUsed(iFile)] = refineEdgeWithSteerableFilter(mask0,image,...
-        threshParam,gapCloseParam,doPlot);
+        threshParam,gapCloseParam,doPlot,particleInfo,meanBkg);
     
     %store new mask
     imwrite(mask,fullfile(masksDirFull,maskFileListing(iFile).name),'tif');

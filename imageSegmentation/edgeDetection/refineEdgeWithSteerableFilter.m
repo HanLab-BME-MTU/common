@@ -1,5 +1,5 @@
 function [mask,prctileUsed] = refineEdgeWithSteerableFilter(mask0,image,...
-    threshParam,gapCloseParam,doPlot)
+    threshParam,gapCloseParam,doPlot,particleInfo,meanBkg)
 %REFINEEDGEWITHSTEERABLEFILTER refines cell edge using intensity gradients obtained from a steerable line filter
 %
 %SYNOPSIS [mask,segmentOK] = refineEdgeWithSteerableFilter(mask0,image,...
@@ -12,15 +12,14 @@ function [mask,prctileUsed] = refineEdgeWithSteerableFilter(mask0,image,...
 %                             Optional. Default: 1.5.
 %           .gradPrctile    : Gradient percentile for thresholding.
 %                             Optional. Default: [95 90 85 80].
+%           .bandWidth      : Width of band around original edge to look
+%                             into for edge refinement.
+%                             Use -1 so as to use whole image instead of a
+%                             band.
+%                             Optional. Default: 100 pixels (50 on each side).
 %       gapCloseParam: Structure with parameters for edge gap closing:
 %           .maxEdgePairDist: Maximum distance between edge segment pair.
 %                             Optional. Default: 5 pixels.
-%           .maxThetaDiff   : Maximum angle between gradients of edge
-%                             segment pair.
-%                             Optional. Default: pi (i.e. full range).
-%           .maxC2cAngleThetaDiff: Maximum angle between edge gradient and
-%                             perpendicular to centroid-centroid vector.
-%                             Optional. Default: pi/2 (i.e. full range).
 %           .factorContr    : Contribution of each factor to the edge gap
 %                             closing cost. 6 entries for the factors:
 %                             (1) distance,
@@ -28,9 +27,7 @@ function [mask,prctileUsed] = refineEdgeWithSteerableFilter(mask0,image,...
 %                             (3) angle between gradient and perpendicular
 %                                 to centroid-centroid distance,
 %                             (4) "edginess" score,
-%                             (5) intensity,
-%                             (6) lack of asymmetry cost.
-%                             Optional. Default: [1 1 1 1 1 1].
+%                             Optional. Default: ones(1,4).
 %           .edgeType       : Flag indicating edge type:
 %                             0 = open edge, i.e. image is of part of a
 %                             cell and edge touches image boundary.
@@ -50,6 +47,11 @@ function [mask,prctileUsed] = refineEdgeWithSteerableFilter(mask0,image,...
 %                      0 to plot nothing. In final plot, refined masks
 %                      shown in green, original masks shown in blue.
 %                      Optional. Default: 0.
+%       particleInfo : Detection output with particle positions for
+%                      relevant frames.
+%                      Optional. If not input, information not used.
+%       meanBkg      : Mean background intensity close to the cell edge.
+%                      Optional. If not input, information not used.
 %
 %OUTPUT mask         : Mask (1 inside cell, 0 outside).
 %       perctileUsed : Percentile used for gradient thresholding. -1
@@ -67,6 +69,7 @@ end
 if nargin < 3 || isempty(threshParam)
     threshParam.filterSigma = 1.5;
     threshParam.gradPrctile = [95 90 85 80];
+    threshParam.bandWidth = 100;
 else
     if ~isfield(threshParam,'fiterSigma')
         threshParam.filterSigma = 1.5;
@@ -74,30 +77,26 @@ else
     if ~isfield(threshParam,'gradPrctile')
         threshParam.gradPrctile = [95 90 85 80];
     end
+    if ~isfield(threshParam,'bandWidth')
+        threshParam.bandWidth = 100;
+    end
 end
 filterSigma = threshParam.filterSigma;
 gradPrctile = threshParam.gradPrctile;
+bandWidth = threshParam.bandWidth;
 
 %get edge gap closing parameters
 if nargin < 4 || isempty(gapCloseParam)
     gapCloseParam.maxEdgePairDist = 5;
-    gapCloseParam.maxThetaDiff = pi;
-    gapCloseParam.maxC2cAngleThetaDiff = pi/2;
-    gapCloseParam.factorContr = ones(1,6);
+    gapCloseParam.factorContr = ones(1,4);
     gapCloseParam.edgeType = 0;
     gapCloseParam.fracImageCell = 0.25;
 else
     if ~isfield(gapCloseParam,'maxEdgePairDist')
         gapCloseParam.maxEdgePairDist = 5;
     end
-    if ~isfield(gapCloseParam,'maxThetaDiff')
-        gapCloseParam.maxThetaDiff = pi;
-    end
-    if ~isfield(gapCloseParam,'maxC2cAngleThetaDiff')
-        gapCloseParam.maxC2cAngleThetaDiff = pi/2;
-    end
     if ~isfield(gapCloseParam,'factorContr')
-        gapCloseParam.factorContr = ones(1,6);
+        gapCloseParam.factorContr = ones(1,4);
     end
     if ~isfield(gapCloseParam,'edgeType')
         gapCloseParam.edgeType = 0;
@@ -107,8 +106,6 @@ else
     end
 end
 maxEdgePairDist = gapCloseParam.maxEdgePairDist;
-maxThetaDiff = gapCloseParam.maxThetaDiff;
-maxC2cAngleThetaDiff = gapCloseParam.maxC2cAngleThetaDiff;
 contr = gapCloseParam.factorContr;
 edgeType = gapCloseParam.edgeType;
 fracImageCell = gapCloseParam.fracImageCell;
@@ -133,19 +130,40 @@ imSize = size(image);
 %get minimum mask size for segmentation assessment
 minMaskSize = fracImageCell*prod(imSize);
 
+%get the particle positions
+if nargin < 6 || isempty(particleInfo)
+    linIndxPart = [];
+else
+    xCoordPart = vertcat(particleInfo.xCoord);
+    yCoordPart = vertcat(particleInfo.yCoord);
+    linIndxPart = sub2ind(imSize,ceil(yCoordPart(:,1)),ceil(xCoordPart(:,1)));
+end
+
+if nargin < 7 || isempty(meanBkg)
+    meanBkg = [];
+end
+
 %% Pre-processing
 
 %run steerable filter to enhance edges
 [res,theta] = steerableDetector(image,3,filterSigma);
 
-%run Gaussian filter to smoothen noise
-imageF = filterGauss2D(image,filterSigma);
+% %run Gaussian filter to smoothen noise
+% imageF = filterGauss2D(image,filterSigma);
 
-%divide gradient by intensity value to enhance the real cell edge
-resOverImage = res./imageF;
+% %divide gradient by intensity value to enhance the real cell edge
+% resOverImage = res./imageF;
+resOverImage = res;
 
 %get the non-maximum suppression image to get edge candidates
-nmsResOverImage = nonMaximumSuppression(resOverImage,theta);
+nmsResOverImage0 = nonMaximumSuppression(resOverImage,theta);
+
+%break junctions in nms image to get clean edge segments
+nmsMaskThin = double(bwmorph(nmsResOverImage0~=0, 'thin'));
+nn = (imfilter(nmsMaskThin,ones(3),'same')-1) .* nmsMaskThin;
+junctionMatrix = nn>2;
+nmsResOverImage = nmsResOverImage0 .*nmsMaskThin .* ~junctionMatrix;
+% nmsJunctions = nmsResOverImage0 .* nmsMaskThin .* junctionMatrix;
 
 %get the edges at image boundary of original mask
 %needed only in open edge case
@@ -166,35 +184,38 @@ if edgeType == 0
     mask0Bound = bwmorph(mask0Bound,'bridge');
 end
 
+%keep only a certain band of pixels around initial mask
+if bandWidth > 0
+    goodArea = imdilate(mask0,strel('square',3'))-mask0;
+    goodArea = imdilate(goodArea,strel('square',bandWidth));
+    nmsResOverImage = nmsResOverImage .* goodArea;
+end
+
 %extract some connected component properties in the nms image
 nmsBW = (nmsResOverImage > 0);
-[nmsL,numL] = bwlabel(nmsBW,4);
+CC = bwconncomp(nmsBW,8);
+numL = CC.NumObjects;
+candPixLinAll = CC.PixelIdxList';
 [candLengthAll,candMeanGradientAll,candMeanThetaAll,candStdThetaAll,...
-    candIntensityAll,candMeanGradSlabAll,candIntSlabAll] = deal(NaN(numL,1));
-candCentroidAll = NaN(numL,2);
-[candPixAll,candPixSlabAll] = deal(cell(numL,1));
-SE = strel('square',5);
+    candIntensityAll,candIntSlabUpAll,candIntSlabDnAll,candParticleGradAll]...
+    = deal(NaN(numL,1));
+[candPixAll,candPixSlabUpAll,candPixSlabDnAll] = deal(cell(numL,1));
+maskUpDn = zeros(imSize);
+
+if numL == 0
+    mask = zeros(imSize);
+    prctileUsed = -1;
+    return
+end
 
 for iL = 1 : numL
     
-    %pixels - edge segment itself
-    [pixLy,pixLx] = find(nmsL==iL); %image coord
+    %pixels of edge itself
+    pixL = candPixLinAll{iL};
+    [pixLy,pixLx] = ind2sub(imSize,candPixLinAll{iL});
     candPixAll{iL} = [pixLx pixLy]; %pixels
-    pixL = sub2ind(imSize,pixLy,pixLx);
     
-    %pixels - slab around edge segment
-    imageNew = zeros(imSize);
-    imageNew(pixL) = 1;
-    imageNew = imdilate(imageNew,SE);
-    [pixSlabY,pixSlabX] = find(imageNew); %image coord
-    candPixSlabAll{iL} = [pixSlabX pixSlabY]; %pixels
-    pixSlab = sub2ind(imSize,pixSlabY,pixSlabX);
-    
-    %properties - geometrical
-    candLengthAll(iL) = length(pixL); %length
-    candCentroidAll(iL,:) = [mean(pixLx) mean(pixLy)]; %centroid coord (in image coord)
-    
-    %properties - gradient
+    %gradient information
     candMeanGradientAll(iL) = mean(nmsResOverImage(pixL)); %mean gradient at edge
     thetaVal1 = theta(pixL);
     thetaVal2 = thetaVal1;
@@ -213,42 +234,109 @@ for iL = 1 : numL
         candMeanThetaAll(iL) = meanTheta2; %mean angle
         candStdThetaAll(iL) = sqrt(varTheta2); %std of angle
     end
-    candMeanGradSlabAll(iL) = mean(resOverImage(pixSlab)); %mean gradient in slab
     
-    %properties - intensity
+    %pixels of band around edge, up and down the gradient
+    if candMeanThetaAll(iL) >= -pi/8 && candMeanThetaAll(iL) <= pi/8 %approximate as 0
+        thetaTmp =  0;
+    elseif candMeanThetaAll(iL) > pi/8 && candMeanThetaAll(iL) <= 3*pi/8  %approximate as pi/4
+        thetaTmp =  pi/4;
+    elseif candMeanThetaAll(iL) < -pi/8 && candMeanThetaAll(iL) >= -3*pi/8 %approximate as -pi/4
+        thetaTmp = -pi/4;
+    elseif candMeanThetaAll(iL) > 3*pi/8 && candMeanThetaAll(iL) <= 5*pi/8 %approximate as pi/2
+        thetaTmp =  pi/2;
+    elseif candMeanThetaAll(iL) < 3*pi/8 && candMeanThetaAll(iL) >= -5*pi/8 %approximate as -pi/2
+        thetaTmp = -pi/2;
+    elseif candMeanThetaAll(iL) > 5*pi/8 && candMeanThetaAll(iL) <= 7*pi/8 %approximate as 3pi/4
+        thetaTmp =  3*pi/4;
+    elseif candMeanThetaAll(iL) < -5*pi/8 && candMeanThetaAll(iL) >= -7*pi/8 %approximate as -3pi/4
+        thetaTmp = -3*pi/4;
+    else %approximate as pi=-pi
+        thetaTmp = pi;
+    end
+    upX = round(cos(thetaTmp));
+    upY = round(sin(thetaTmp));
+    
+    pixSlabUpX = [pixLx+1*upX; pixLx+2*upX; pixLx+3*upX; pixLx+4*upX; pixLx+5*upX; pixLx+6*upX];
+    pixSlabUpY = [pixLy+1*upY; pixLy+2*upY; pixLy+3*upY; pixLy+4*upY; pixLy+5*upY; pixLy+6*upY];
+    indx = find(pixSlabUpX<1|pixSlabUpX>imSize(2)|pixSlabUpY<1|pixSlabUpY>imSize(1));
+    pixSlabUpX(indx) = [];
+    pixSlabUpY(indx) = [];
+    candPixSlabUpAll{iL} = [pixSlabUpX pixSlabUpY];
+    pixSlabUp = sub2ind(imSize,pixSlabUpY,pixSlabUpX);
+    
+    pixSlabDnX = [pixLx-1*upX; pixLx-2*upX; pixLx-3*upX; pixLx-4*upX; pixLx-5*upX; pixLx-6*upX];
+    pixSlabDnY = [pixLy-1*upY; pixLy-2*upY; pixLy-3*upY; pixLy-4*upY; pixLy-5*upY; pixLy-6*upY];
+    indx = find(pixSlabDnX<1|pixSlabDnX>imSize(2)|pixSlabDnY<1|pixSlabDnY>imSize(1));
+    pixSlabDnX(indx) = [];
+    pixSlabDnY(indx) = [];
+    candPixSlabDnAll{iL} = [pixSlabDnX pixSlabDnY];
+    pixSlabDn = sub2ind(imSize,pixSlabDnY,pixSlabDnX);
+    
+    %edge length
+    candLengthAll(iL) = length(pixL); %length
+    
+    %intensity of edge and bands around it
     candIntensityAll(iL) = mean(image(pixL)); %mean intensity at edge
-    candIntSlabAll(iL) = mean(image(pixSlab)); %mean intensity in slab
+    candIntSlabUpAll(iL) = mean(image(pixSlabUp)); %mean intensity up the gradient
+    candIntSlabDnAll(iL) = mean(image(pixSlabDn)); %mean intensity down the gradient
+    
+    %particle density gradient in bands around edge
+    maskUpDn(pixSlabUp) = 1;
+    numPartUp = sum(maskUpDn(linIndxPart));
+    maskUpDn(pixSlabUp) = 0;
+    maskUpDn(pixSlabDn) = 1;
+    numPartDn = sum(maskUpDn(linIndxPart));
+    maskUpDn(pixSlabDn) = 0;
+    tmp = (numPartUp-numPartDn)/mean([numPartUp numPartDn]);
+    if isnan(tmp) || isinf(tmp)
+        candParticleGradAll(iL) = 0;
+    else
+        candParticleGradAll(iL) = tmp;
+    end
     
 end
 
 %calculate a score for each segment, reflecting how "edgy" it is
-candScoreAll = (candLengthAll.^0.25) .* candMeanGradientAll ./ (1+candStdThetaAll).^2;
+if isempty(meanBkg)
+    gradOverIntAll = candMeanGradientAll./candIntSlabDnAll;
+else
+    gradOverIntAll = candMeanGradientAll./max(meanBkg,candIntSlabDnAll);
+end
+candScoreAll = (candLengthAll.^0.2)/(max(candLengthAll).^0.2) ...
+    + gradOverIntAll/max(gradOverIntAll) ...
+    - candStdThetaAll/max(candStdThetaAll);
+if ~isempty(meanBkg)
+    candScoreAll = candScoreAll - abs(candIntSlabDnAll-meanBkg)/max(abs(candIntSlabDnAll-meanBkg));
+end
+if ~isempty(linIndxPart)
+    candScoreAll = candScoreAll + candParticleGradAll/max(candParticleGradAll);
+end
+
+% candScoreAll = (candLengthAll.^0.25) .* gradOverIntAll ./ (1+candStdThetaAll).^2;
+% if ~isempty(linIndxPart)
+%     candScoreAll = candScoreAll .* candParticleGradAll;
+% end
 
 for iPrctile = 1 : length(gradPrctile)
     
     %% Thresholding
     
     %determine threshold for edge segmentation
-    %     cutThreshEdge = prctile(candMeanGradientAll,gradPrctile(iPrctile));
     cutThreshEdge = prctile(candScoreAll,gradPrctile(iPrctile));
     
     %keep only edge segments above the threshold
-    %     indxEdgeKeep = find(candMeanGradientAll>=cutThreshEdge);
     indxEdgeKeep = find(candScoreAll>=cutThreshEdge);
     numEdgeKeep = length(indxEdgeKeep);
     
     %keep information of surviving edges
     candPix = candPixAll(indxEdgeKeep);
-    candLength = candLengthAll(indxEdgeKeep);
-    candCentroid = candCentroidAll(indxEdgeKeep,:);
-    candMeanGradient = candMeanGradientAll(indxEdgeKeep);
+    candPixLin = candPixLinAll(indxEdgeKeep);
     candMeanTheta = candMeanThetaAll(indxEdgeKeep);
-    candStdTheta = candStdThetaAll(indxEdgeKeep);
-    candIntensity = candIntensityAll(indxEdgeKeep);
     candScore = candScoreAll(indxEdgeKeep);
+    candIntSlabDn = candIntSlabDnAll(indxEdgeKeep);
+    candParticleGrad = candParticleGradAll(indxEdgeKeep);
     
     %get maximum edge intensity and score for later use
-    maxInt = max(candIntensityAll);
     maxScore = max(candScoreAll);
     
     %% Edge linking and gap closing
@@ -256,9 +344,9 @@ for iPrctile = 1 : length(gradPrctile)
     %The different factors contributing to the edge gap closing cost - START
     
     %distance between all surviving edge segment pairs
-    %two distances: centroid-centroid & nearest pixel-pixel
-    %also angle of the vector connecting the centroids
-    [edgePairDist,c2cPairDist,c2cAnglePerp] = deal(NaN(numEdgeKeep));
+    %distances = nearest pixel-pixel distance
+    %also angle of the nearest-nearest vector
+    [edgePairDist,edgePairAnglePerp] = deal(NaN(numEdgeKeep));
     edgePairDistPix = zeros(numEdgeKeep,numEdgeKeep,2,2);
     for iEdge = 1 : numEdgeKeep
         
@@ -272,63 +360,58 @@ for iPrctile = 1 : length(gradPrctile)
             
             %distance between the two closest pixels
             [idx,dist] = KDTreeClosestPoint(pixLJxy,pixLIxy);
-            minDistIJ = min(dist);
-            idx2 = find(dist==minDistIJ);
-            edgePairDist(iEdge,jEdge) = minDistIJ;
+            
+            %             minDistIJ = min(dist);
+            %             idx2 = find(dist==minDistIJ);
+            %             edgePairDist(iEdge,jEdge) = minDistIJ;
+            
+            [dist,indxSort] = sort(dist);
+            idx2 = indxSort(1);
+            edgePairDist(iEdge,jEdge) = dist(1);            
+ 
             edgePairDistPix(iEdge,jEdge,:,1) = pixLIxy(idx2(1),:); %image coord
             edgePairDistPix(iEdge,jEdge,:,2) = pixLJxy(idx(idx2(1)),:); %image coord
             
-            %magnitude and angle of centroid-centroid vector
-            tmp = diff(candCentroid([iEdge jEdge],:));
-            c2cPairDist(iEdge,jEdge) = norm(tmp);
-            c2cAnglePerp(iEdge,jEdge) = abs(atan(tmp(2)/tmp(1)));
+            %angle of vector connecting the two closest pixels
+            tmp = pixLJxy(idx(idx2(1)),:) - pixLIxy(idx2(1),:);
+            edgePairAnglePerp(iEdge,jEdge) = abs(atan(tmp(2)/tmp(1)));
             
             %symmetrize
             edgePairDistPix(jEdge,iEdge,:,:) = edgePairDistPix(iEdge,jEdge,:,:);
             edgePairDist(jEdge,iEdge) = edgePairDist(iEdge,jEdge);
-            c2cPairDist(jEdge,iEdge) = c2cPairDist(iEdge,jEdge);
-            c2cAnglePerp(jEdge,iEdge) = c2cAnglePerp(iEdge,jEdge);
+            edgePairAnglePerp(jEdge,iEdge) = edgePairAnglePerp(iEdge,jEdge);
             
         end
     end
-    %angle of perpendicular to centroid-centroid vector
-    c2cAnglePerp = pi/2 - c2cAnglePerp;
+    %angle of perpendicular to vector connecting the two closest pixels
+    edgePairAnglePerp = pi/2 - edgePairAnglePerp;
     
-    %pair-wise differences in mean gradient and mean theta
-    meanGradDiff = abs(repmat(candMeanGradient,1,numEdgeKeep)-repmat(candMeanGradient',numEdgeKeep,1));
-    meanGradDiff(isnan(edgePairDist)) = NaN; %#ok<NASGU>
+    %pair-wise difference in mean theta
     dotProd = cos(candMeanTheta)*cos(candMeanTheta)' + sin(candMeanTheta)*sin(candMeanTheta)';
     dotProd(dotProd<=-1) = -1;
     dotProd(dotProd>=1) = 1;
     meanThetaDiff = acos(dotProd);
-    meanThetaDiff(isnan(edgePairDist)) = NaN;
     
-    %angle between centroid-centroid vector and mean theta
-    dotProd = abs(cos(abs(repmat(candMeanTheta,1,numEdgeKeep))).*cos(c2cAnglePerp) + sin(abs(repmat(candMeanTheta,1,numEdgeKeep))).*sin(c2cAnglePerp));
+    %angle between connecting vector and mean theta
+    dotProd = abs(cos(abs(repmat(candMeanTheta,1,numEdgeKeep))).*cos(edgePairAnglePerp) + sin(abs(repmat(candMeanTheta,1,numEdgeKeep))).*sin(edgePairAnglePerp));
     dotProd(dotProd>=1) = 1;
-    c2cAngleThetaDiff1 = acos(dotProd);
-    dotProd = abs(cos(abs(repmat(candMeanTheta',numEdgeKeep,1))).*cos(c2cAnglePerp) + sin(abs(repmat(candMeanTheta',numEdgeKeep,1))).*sin(c2cAnglePerp));
+    edgePairAngleThetaDiff1 = acos(dotProd);
+    dotProd = abs(cos(abs(repmat(candMeanTheta',numEdgeKeep,1))).*cos(edgePairAnglePerp) + sin(abs(repmat(candMeanTheta',numEdgeKeep,1))).*sin(edgePairAnglePerp));
     dotProd(dotProd>=1) = 1;
-    c2cAngleThetaDiff2 = acos(dotProd);
-    c2cAngleThetaDiff = cat(3,c2cAngleThetaDiff1,c2cAngleThetaDiff2);
-    c2cAngleThetaDiff = max(c2cAngleThetaDiff,[],3);
+    edgePairAngleThetaDiff2 = acos(dotProd);
+    edgePairAngleThetaDiff = cat(3,edgePairAngleThetaDiff1,edgePairAngleThetaDiff2);
+    edgePairAngleThetaDiff = max(edgePairAngleThetaDiff,[],3);
     
     %reward for higher "edginess" score
     pairScoreReward = (repmat(candScore,1,numEdgeKeep) + repmat(candScore',numEdgeKeep,1))/2;
-    
-    %reward for higher intensity
-    pairIntReward = (repmat(candIntensity,1,numEdgeKeep) + repmat(candIntensity',numEdgeKeep,1))/2;
-    
-    %links counter to penalize for too many links
-    %start at 1 to prevent dividing by zero
-    linksCounter = ones(numEdgeKeep);
     
     %The different factors contributing to the edge gap closing cost - END
     
     %remove improbable links
     edgePairDist(edgePairDist > maxEdgePairDist) = NaN;
-    meanThetaDiff(meanThetaDiff > maxThetaDiff) = NaN;
-    c2cAngleThetaDiff(c2cAngleThetaDiff > maxC2cAngleThetaDiff) = NaN;
+    meanThetaDiff(isnan(edgePairDist)) = NaN;
+    edgePairAngleThetaDiff(isnan(edgePairDist)) = NaN;
+    pairScoreReward(isnan(edgePairDist)) = NaN;
     
     %find edge segment with highest score
     %this is most likely a true edge segment, so use it as a seed to
@@ -342,18 +425,10 @@ for iPrctile = 1 : length(gradPrctile)
         %ADD SOMETHING HERE FOR edgeType = 2
     end
     
-    %remove seed from list of segments
-    edgePairDist(indxLink,:) = NaN;
-    c2cPairDist(indxLink,:) = NaN;
-    c2cAngleThetaDiff(indxLink,:) = NaN;
-    meanThetaDiff(indxLink,:) = NaN;
-    pairScoreReward(indxLink,:) = NaN;
-    pairIntReward(indxLink,:) = NaN;
-    
     %start constructing an edge image to assess whether segmentation has been
     %achieved
     imageConst = zeros(imSize);
-    imageConst(nmsL==indxEdgeKeep(indxLink)) = 1;
+    imageConst(candPixLin{indxLink}) = 1;
     
     %show edge progress
     if doPlot==2
@@ -367,44 +442,26 @@ for iPrctile = 1 : length(gradPrctile)
     %THIS FUNCTION SHOULD BE MODIFIED IN CASE OF WHOLE OR MULTIPLE CELLS
     [segmentOK,imageConst] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize,edgeType);
     
+    iCounter = 0;
+    
     %loop and add segments until segmentation has been achieved
     while ~segmentOK && ~isempty(indxLink)
         
-        %get the different factors contributing to the costs of potential links
-        seedDist         = edgePairDist(:,indxSeed);
-        seedC2CPairDist  = c2cPairDist(:,indxSeed); %#ok<NASGU>
-        seedC2CAngleDiff = c2cAngleThetaDiff(:,indxSeed);
-        seedThetaDiff    = meanThetaDiff(:,indxSeed);
-        seedScoreReward  = pairScoreReward(:,indxSeed);
-        seedIntReward    = pairIntReward(:,indxSeed);
-        includeOrNaN = seedDist;
-        includeOrNaN(~isnan(includeOrNaN)) = 1;
+        iCounter = iCounter + 1;
         
-        %calculate one additional factor, reflecting how asymmetric the
-        %distribution of pixels will be when each of the edge segments is
-        %added
-        %the idea is that the edge contour should be highly asymmetric
-        asymmetryCost = NaN(size(seedDist));
-        indxInclude = find(max(includeOrNaN,[],2)==1);
-        for iPotLink = indxInclude'
-            
-            %get the edge pixels if this segment is to be added
-            newEdgePix = vertcat(candPix{[indxSeed; iPotLink]});
-            
-            %calculate the positional asymmetry
-            pixCovMat = cov(newEdgePix);
-            eigenVal = eig(pixCovMat);
-            asymmetryCost(iPotLink,:) = min(eigenVal)/max(eigenVal);
-            
-        end
+        %get the different factors contributing to the costs of potential links
+        seedDist           = edgePairDist(:,indxSeed);
+        seedAngleThetaDiff = edgePairAngleThetaDiff(:,indxSeed);
+        seedThetaDiff = meanThetaDiff(:,indxSeed);
+        seedScoreReward    = pairScoreReward(:,indxSeed);
+        %         includeOrNaN       = seedDist;
+        %         includeOrNaN(~isnan(includeOrNaN)) = 1;
         
         %calculate the cost
         linkCost = contr(1)*seedDist/maxEdgePairDist ...
-            + contr(2)*seedThetaDiff/maxThetaDiff ...
-            + contr(3)*seedC2CAngleDiff/maxC2cAngleThetaDiff ...
-            - contr(4)*seedScoreReward/maxScore ...
-            - contr(5)*seedIntReward/maxInt ...
-            + contr(6)*asymmetryCost/max(asymmetryCost(:));
+            + contr(2)*seedThetaDiff/pi ...
+            + contr(3)*seedAngleThetaDiff/(pi/2) ...
+            - contr(4)*seedScoreReward/maxScore;
         
         %find possible links
         [indxLink,indxSeed2Link] = find(~isnan(linkCost));
@@ -421,19 +478,14 @@ for iPrctile = 1 : length(gradPrctile)
             %update list of seeds
             indxSeed = [indxSeed; indxLink]; %#ok<AGROW>
             
-            %remove added segment from possible links
-            edgePairDist(indxLink,:) = NaN;
-            c2cPairDist(indxLink,:) = NaN;
-            c2cAngleThetaDiff(indxLink,:) = NaN;
-            meanThetaDiff(indxLink,:) = NaN;
-            pairScoreReward(indxLink,:) = NaN;
-            pairIntReward(indxLink,:) = NaN;
-            
-            %add 1 to counter of seed that got linked to
-            linksCounter(:,indxSeed2Link) = linksCounter(:,indxSeed2Link) + 1;
+            %remove segment pair from possible links
+            edgePairDist(indxLink,indxSeed2Link) = NaN;
+            edgePairAngleThetaDiff(indxLink,indxSeed2Link) = NaN;
+            meanThetaDiff(indxLink,indxSeed2Link) = NaN;
+            pairScoreReward(indxLink,indxSeed2Link) = NaN;
             
             %add edge segment to edge image
-            imageConst(nmsL==indxEdgeKeep(indxLink)) = 1;
+            imageConst(candPixLin{indxLink}) = 1;
             
             %make a link between this edge segment and the existing edge
             %segment that it is linked to
@@ -455,29 +507,70 @@ for iPrctile = 1 : length(gradPrctile)
             
             %check whether full segmentation has been achieved
             %THIS FUNCTION SHOULD BE MODIFIED IN CASE OF WHOLE OR MULTIPLE CELLS
-            [segmentOK,imageConst] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize,edgeType);
+            if mod(iCounter,10)==0
+                [segmentOK,imageConst] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize,edgeType);
+            end
             
         end
         
     end
     
+    %check whether full segmentation has been achieved
+    %THIS FUNCTION SHOULD BE MODIFIED IN CASE OF WHOLE OR MULTIPLE CELLS
+    [segmentOK,imageConst] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize,edgeType);
+    
     %% Final mask
     
     if segmentOK
-        
-        %order edges in increasing order of their score
-        seedScore = candScore(indxSeed);
-        [~,indxSort] = sort(seedScore);
-        indxSeed = indxSeed(indxSort);
-        
-        %go over all edges in order of increasing score
+                
+        removeSeed = zeros(numEdgeKeep,1);
         for iSeed = indxSeed'
             
             %copy constructed image to a temporary image
             imageTmp = imageConst;
             
             %remove current edge from temporary image
-            imageTmp(nmsL==indxEdgeKeep(iSeed)) = 0;
+            imageTmp(candPixLin{iSeed}) = 0;
+            
+            %check whether segmentation is still OK
+            %THIS FUNCTION SHOULD BE MODIFIED IN CASE OF WHOLE OR MULTIPLE CELLS
+            [segmentStillOK,~,maskTmp] = checkEdgeComplete(imageTmp,mask0Bound,minMaskSize,edgeType);
+            
+            %if OK, indicate that this seed could be removed
+            if segmentStillOK
+                removeSeed(iSeed) = 1;
+            end
+            
+        end
+        indxRemove = find(removeSeed);
+        
+        %design a metric to sort seeds to be removed
+        %this metric goes up as intensity down the gradient goes down
+        %it also goes up as number of particles contained in mask goes up
+        seedMetric = zeros(size(indxRemove));
+        if ~isempty(meanBkg)
+            seedMetric = - abs(candIntSlabDn(indxRemove)-meanBkg)/max(abs(candIntSlabDn(indxRemove)-meanBkg));
+        end
+        if ~isempty(linIndxPart)
+            seedMetric = seedMetric + candParticleGrad(indxRemove)/max(candParticleGrad(indxRemove));
+        end
+        if all(seedMetric==0)
+            seedMetric = candScore(indxRemove);
+        end
+        
+        %order edges in increasing order of this metric
+        [~,indxSort] = sort(seedMetric);
+        indxRemove = indxRemove(indxSort);
+        
+        %now go over these seeds and remove seeds that do not break the
+        %mask
+        for iSeed = indxRemove'
+            
+            %copy constructed image to a temporary image
+            imageTmp = imageConst;
+            
+            %remove current edge from temporary image
+            imageTmp(candPixLin{iSeed}) = 0;
             
             %check whether segmentation is still OK
             %THIS FUNCTION SHOULD BE MODIFIED IN CASE OF WHOLE OR MULTIPLE CELLS
@@ -498,17 +591,17 @@ for iPrctile = 1 : length(gradPrctile)
             end
             
         end
-        
+
         %now make final mask
         edgeMask = imageConst | mask0Bound;
         mask = imfill(edgeMask,'holes');
         
         %get rid of spikes in mask by doing an opening
-        SE = strel('disk',5,0);
+        SE = strel('disk',3,0);
         mask = imopen(mask,SE);
         
         %also get rid os whole by doing a closure
-        SE = strel('disk',5,0);
+        SE = strel('disk',3,0);
         mask = imclose(mask,SE);
         
         %store percentile used for gradient thresholding
@@ -543,7 +636,7 @@ end
 
 %% ~~~ the end ~~~
 
-function [segmentOK,imageConst] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize,edgeType)
+function [segmentOK,imageConst,mask] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize,edgeType)
 
 switch edgeType
     
@@ -563,6 +656,8 @@ switch edgeType
         
         %POTENTIALLY ADD SOMETHING HERE TO BRIDGE THAT FINAL GAP IN
         %imageConst (THUS RETURN imageConst AFTER MODIFICATION)
+        
+        %         imageConst = imclose(imageConst,strel('disk',2,0));
         
         %check whether segmentation has been achieved
         edgeMask = imageConst | mask0Bound;

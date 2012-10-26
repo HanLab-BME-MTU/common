@@ -1,12 +1,15 @@
-function prctileUsed = refineRescueEdgeWithSteerableFilter(MD,threshParam,gapCloseParam,doPlot,frames2rescue)
+function prctileUsed = refineRescueEdgeWithSteerableFilter(MD,frames2rescue,...
+    threshParam,gapCloseParam,doPlot,movieInfo,numSPTFrames,meanBkg)
 %refineRescueEdgeWithSteerableFilter like refineMovieEdgeWithSteerableFilter but for specific frames only, can be run only after refineMovieEdgeWithSteerableFilte
 %
-%SYNOPSIS refineRescueEdgeWithSteerableFilter(MD,threshParam,gapCloseParam,doPlot,frames2rescue)
+%SYNOPSIS prctileUsed = refineRescueEdgeWithSteerableFilter(MD,frames2rescue,...
+%    threshParam,gapCloseParam,doPlot,movieInfo,numSPTFrames,meanBkg)
 %
 %INPUT  MD    : The movieData object as output by the cell masking and
 %               windowing software. Before calling this code,
 %               thresholdMovie and refineMovieMask must have been
 %               processed. Otherwise the code will crash.
+%       frames2rescue: Row vector of indices of frames to rescue. 
 %       threshParam  : Structure with parameters for gradient thresholding:
 %           .filterSigma    : Standard deviation for filtering.
 %                             Optional. Default: 1.5.
@@ -15,12 +18,6 @@ function prctileUsed = refineRescueEdgeWithSteerableFilter(MD,threshParam,gapClo
 %       gapCloseParam: Structure with parameters for edge gap closing:
 %           .maxEdgePairDist: Maximum distance between edge segment pair.
 %                             Optional. Default: 5 pixels.
-%           .maxThetaDiff   : Maximum angle between gradients of edge
-%                             segment pair.
-%                             Optional. Default: pi (i.e. full range).
-%           .maxC2cAngleThetaDiff: Maximum angle between edge gradient and
-%                             perpendicular to centroid-centroid vector.
-%                             Optional. Default: pi/2 (i.e. full range).
 %           .factorContr    : Contribution of each factor to the edge gap
 %                             closing cost. 6 entries for the factors:
 %                             (1) distance,
@@ -28,8 +25,7 @@ function prctileUsed = refineRescueEdgeWithSteerableFilter(MD,threshParam,gapClo
 %                             (3) angle between gradient and perpendicular
 %                                 to centroid-centroid distance,
 %                             (4) "edginess" score,
-%                             (5) intensity,
-%                             (6) lack of asymmetry cost.
+%                             (5) lack of asymmetry cost.
 %                             Optional. Default: [1 1 1 1 1 1].
 %           .edgeType       : Flag indicating edge type:
 %                             0 = open edge, i.e. image is of part of a
@@ -52,27 +48,29 @@ function prctileUsed = refineRescueEdgeWithSteerableFilter(MD,threshParam,gapClo
 %               refinement comes on top of the "refineMovieMask"
 %               refinement.
 %               Optional. Default: 0.
-%       frames2rescue: Row vector of indices of frames to rescue. 
+%       movieInfo: Detection output with particle positions.
+%                  Optional. If not input, information not used.
+%       numSPTFrames: Number of SPT frames between edge frames.
+%                  Only needed if movieInfo is also input.
+%                  Optional. Default: 400.
+%       meanBkg  : Mean background intensity close to the cell edge.
+%                  Optional. If not input, information not used.
 %
 %OUTPUT prctileUsed: Percentile used for gradient thresholding, one per
 %                    frame.
 %
-%REMARKS The code will copy the original masks and refined masks into new
-%        directories called masks_OLD and refined_masks_OLD and will
-%        replace the old masks with the ones it produces. After this, one
-%        should run refineMovieMasks one more time to get back on track and
-%        use the rest of the windowing functions.
+%REMARKS ...
 %
 %Khuloud Jaqaman, November 2011
 
 %% Input/Output
 
-if nargin < 1
+if nargin < 2
     error('refineRescueEdgeWithSteerableFilter: Wrong number of input arguments');
 end
 
 %get thresholding parameters, including steerable filter parameters
-if nargin < 2 || isempty(threshParam)
+if nargin < 3 || isempty(threshParam)
     threshParam.filterSigma = 1.5;
     threshParam.gradPrctile = [95 90 85 80];
 else
@@ -85,10 +83,8 @@ else
 end
 
 %get edge gap closing parameters
-if nargin < 3 || isempty(gapCloseParam)
+if nargin < 4 || isempty(gapCloseParam)
     gapCloseParam.maxEdgePairDist = 5;
-    gapCloseParam.maxThetaDiff = pi;
-    gapCloseParam.maxC2cAngleThetaDiff = pi/2;
     gapCloseParam.factorContr = ones(1,6);
     gapCloseParam.edgeType = 0;
     gapCloseParam.fracImageCell = 0.25;
@@ -96,14 +92,8 @@ else
     if ~isfield(gapCloseParam,'maxEdgePairDist')
         gapCloseParam.maxEdgePairDist = 5;
     end
-    if ~isfield(gapCloseParam,'maxThetaDiff')
-        gapCloseParam.maxThetaDiff = pi;
-    end
-    if ~isfield(gapCloseParam,'maxC2cAngleThetaDiff')
-        gapCloseParam.maxC2cAngleThetaDiff = pi/2;
-    end
     if ~isfield(gapCloseParam,'factorContr')
-        gapCloseParam.factorContr = ones(1,6);
+        gapCloseParam.factorContr = ones(1,5);
     end
     if ~isfield(gapCloseParam,'edgeType')
         gapCloseParam.edgeType = 0;
@@ -114,8 +104,20 @@ else
 end
 
 %check whether/what to plot
-if nargin < 4 || isempty(doPlot)
+if nargin < 5 || isempty(doPlot)
     doPlot = 0;
+end
+
+%check particle information
+if nargin < 6 || isempty(movieInfo)
+    movieInfo = [];
+end
+if nargin < 7 || isempty(numSPTFrames)
+    numSPTFrames = 400;
+end
+
+if nargin < 8 || isempty(meanBkg)
+    meanBkg = [];
 end
 
 %get image and analysis directories
@@ -149,6 +151,7 @@ numFiles = length(frames2rescue);
 %% Mask refinement
 
 %refine masks using steerable line filter
+particleInfo = [];
 prctileUsed = NaN(numFiles,1);
 for iFile = frames2rescue
     
@@ -156,9 +159,17 @@ for iFile = frames2rescue
     image = double(imread(fullfile(imageDir,imageFileListing(iFile).name)));
     mask0 = double(imread(fullfile(refinedMasksDirFull,refinedMaskFileListing(iFile).name)));
     
+    %get relevant particle information
+    if ~isempty(movieInfo)
+        particleIndx = (iFile-1)*numSPTFrames;
+        if iFile ~= numFiles
+            particleInfo = movieInfo(particleIndx+1:particleIndx+numSPTFrames);
+        end
+    end
+    
     %call refinement function
     [mask,prctileUsed(iFile)] = refineEdgeWithSteerableFilter(mask0,image,...
-        threshParam,gapCloseParam,doPlot);
+        threshParam,gapCloseParam,doPlot,particleInfo,meanBkg);
     
     %store new mask
     imwrite(mask,fullfile(masksDirFull,maskFileListing(iFile).name),'tif');
