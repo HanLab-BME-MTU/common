@@ -1,4 +1,17 @@
-function [mu sigma xi g] = fitGaussianModeToCDF(samples, varargin)
+%[mu, sigma, xi, g] = fitGaussianModeToCDF(samples, varargin) fits a Gaussian to the lower half of the first mode of the sample distribution
+%
+% Inputs:
+%         samples : data points
+%
+% Outputs:
+%              mu : mean of the Gaussian
+%           sigma : standard deviation of the Gaussian
+%              xi : sample space vector
+%               g : Gaussian calculated on xi
+
+% Francois Aguet, 05/24/2012
+
+function [mu, sigma, xi, g] = fitGaussianModeToCDF(samples, varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
@@ -17,21 +30,21 @@ opts = optimset('Jacobian', 'off', ...
 A0 = 0.5;
 mu0 = mean(samples);
 sigma0 = 0.5*std(samples);
-[p,resnorm,~,~,~,~,J] = lsqnonlin(@cost, [A0 mu0 sigma0], [0 0 0], [1 Inf Inf], opts, x_edf, f_edf);
-
-A = p(1);
+p = lsqnonlin(@cost, [A0 mu0 sigma0], [0 0 0], [1 Inf Inf], opts, x_edf, f_edf);
 mu = p(2);
 sigma = p(3);
 
-pct = prctile(samples, [0 99.9]);
-xi = linspace(pct(1), pct(2), 1000);
-[f,xi] = ksdensity(samples,xi);
-g = exp(-(xi-mu).^2/(2*sigma^2)) / sqrt(2*pi)/sigma;
-
-% adjust A for density plot
-T = find(xi>mu, 1, 'first')-1;
-A = sum(f(1:T).*g(1:T)) / sum(g(1:T).^2);
-g = A*g;
+if nargout>2  || ip.Results.Display
+    pct = prctile(samples, [0 99.9]);
+    xi = linspace(pct(1), pct(2), 1000);
+    [f,xi] = ksdensity(samples,xi);
+    g = exp(-(xi-mu).^2/(2*sigma^2)) / sqrt(2*pi)/sigma;
+    
+    % adjust A for density plot
+    T = find(xi>mu, 1, 'first')-1;
+    A = sum(f(1:T).*g(1:T)) / sum(g(1:T).^2);
+    g = A*g;
+end
 
 if ip.Results.Display
     figure;
