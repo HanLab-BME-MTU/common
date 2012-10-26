@@ -1,5 +1,8 @@
 function movieData = image_flatten(movieData, varargin)
 
+% for most cases, don't do background removal here.
+background_removal_flag =0;
+
 % Find the package of Filament Analysis
 nPackage = length(movieData.packages_);
 
@@ -99,7 +102,7 @@ for iChannel = selected_channels
     if (~exist(ImageFlattenChannelOutputDir,'dir'))
         mkdir(ImageFlattenChannelOutputDir);
     end
-    
+      
     display('======================================');
     display(['Current movie: as in ',movieData.outputDirectory_]);
     display(['Start image flattening in Channel ',num2str(iChannel)]);
@@ -114,9 +117,16 @@ for iChannel = selected_channels
         
         % based on the given method index, do log or sqrt to flatten the image
         if flatten_method_ind == 1
+            
+            if(img_min<1)
+                img_min=1;
+                currentImg(find(currentImg<1))=1;
+            end
             currentImg = log(currentImg);
             currentImg = currentImg - log(img_min);
-            currentImg = currentImg/log((center_value(iFrame_subsample))*img_max);
+            currentImg = currentImg/...
+                (log((center_value(iFrame_subsample))*img_max) ...
+                -log((center_value(iFrame_subsample))*img_min));
             
         else
             
@@ -186,3 +196,37 @@ if(TimeFilterSigma > 0)
         end
     end
 end
+
+if background_removal_flag==1
+    % Background substraction for uneven illumination
+    for iFrame_subsample = 1 : length(Frames_to_Seg)
+        iFrame = Frames_to_Seg(iFrame_subsample);
+        disp(['Frame: ',num2str(iFrame)]);
+        currentImg =  imread([ImageFlattenChannelOutputDir,'/flatten_', ...
+            filename_short_strs{iFrame + sub_i-1},'.tif']);
+        
+        I = double(currentImg);
+        % Get the x and y of the surface
+        [XI, YI] = meshgrid(1:size(I,2), 1:size(I,1));
+        % Fit a polynomial to the surface x-y both up to 2nd order
+        fit_sur = fit([YI(:),XI(:)],I(:), 'poly22', 'Robust', 'on');
+        % Reconstract the surface for uneven background---without the first part (the DC part)
+        Z_fit = fit_sur.p01.*XI+ fit_sur.p10.*YI +fit_sur.p11.*XI.*YI+ ...
+            fit_sur.p20.*YI.*YI+fit_sur.p02.*XI.*XI;
+        % Substract the background
+        currentImg = I-Z_fit;
+        currentImg = currentImg/255;% back to 0~1 for saving image tif
+        
+        % Save to disk
+        for sub_i = 1 : Sub_Sample_Num
+            if iFrame + sub_i-1 <= nFrame
+                disp(['Frame: ',num2str(iFrame + sub_i-1)]);
+                
+                imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
+                    filename_short_strs{iFrame + sub_i-1},'.tif']);
+            end
+        end
+        
+    end
+end
+    
