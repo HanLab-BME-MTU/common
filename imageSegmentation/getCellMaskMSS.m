@@ -180,23 +180,42 @@ CC = computeSegmentProperties(CC, img, theta);
 labels = double(labelmatrix(CC));
 
 % for each remaining endpoint, find closest edge and get its label
-for k = 1:CC.NumObjects
-    pidx = vertcat(CC.PixelIdxList{setdiff(1:CC.NumObjects, k)});
-    [yi, xi] = ind2sub([ny nx], pidx);
-    X = [xi yi];
-    [yi, xi] = ind2sub([ny nx], CC.endpointIdx{k});
-    [idx] = KDTreeClosestPoint(X, [xi yi]);
-    CC.matchIdx{k} = pidx(idx)';
-    CC.matchLabel{k} = labels(CC.matchIdx{k});
-end
-
-% edge->edge pairs (not optimal, search is redundant)
+endpointIdx = vertcat(CC.endpointIdx{:});
+endpointLabel = labels(endpointIdx);
+pidx = vertcat(CC.PixelIdxList{:});
+[yi, xi] = ind2sub([ny nx], pidx);
+X = [xi yi];
+[yi, xi] = ind2sub([ny nx], endpointIdx);
+[idx, dist] = KDTreeBallQuery(X, [xi yi], 10);
 matchList = zeros(0,2);
-for k = 1:CC.NumObjects
-    matches = CC.matchLabel{k}(arrayfun(@(i) any(CC.matchLabel{i}==k), CC.matchLabel{k}));
-    matchList = [matchList; [k*ones(numel(matches),1) matches']];
+for k = 1:numel(endpointLabel)
+    % remove self queries
+    rmIdx = labels(pidx(idx{k}))==endpointLabel(k);
+    idx{k}(rmIdx) = [];
+    dist{k}(rmIdx) = [];
+    % label of closest point
+    if ~isempty(idx{k})
+        imatch = sort([endpointLabel(k) labels(pidx(idx{k}(1)))]);
+        if ~any(matchList(:,1)==imatch(1) & matchList(:,2)==imatch(2))
+            matchList = [matchList; imatch];
+        end
+    end
 end
-matchList(matchList(:,1)>matchList(:,2),:) = [];
+[~,idx] = sort(matchList(:,1));
+matchList = matchList(idx,:);
+
+
+% 
+% for k = 1:CC.NumObjects
+%     rmean = nanmean(CC.rval{k}(:));
+%     lmean = nanmean(CC.lval{k}(:));
+%     if rmean<lmean
+%         tmp = CC.rval{k};
+%         CC.rval{k} = CC.lval{k};
+%         CC.lval{k} = tmp;
+%     end
+% end
+
 
 
 
