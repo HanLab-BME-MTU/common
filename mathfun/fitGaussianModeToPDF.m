@@ -32,8 +32,9 @@ xi = linspace(pct(1), pct(2), 1000);
 
 
 A0 = 1;
-mu0 = mean(samples);
-sigma0 = 0.5*std(samples);
+%HE - This seems to give more reliable initialization.
+[mu0,sigma0] = robustMean(samples(:),1,2);
+
 p = lsqnonlin(@cost, [A0 mu0 sigma0], [0 0 0], [1 Inf Inf], opts, xi, pdf);
 
 A = p(1);
