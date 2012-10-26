@@ -62,15 +62,56 @@ endpointMatrix = endpointMatrix==1;
 CC = bwconncomp(segmentMatrix, 8);
 
 % identify and remove single pixels, update segment matrix
-issingleton = cellfun(@(i) numel(i)==1, CC.PixelIdxList);
-CC.NumObjects = CC.NumObjects - sum(issingleton);
-singletonIdx = CC.PixelIdxList(issingleton);
-segmentMatrix([singletonIdx{:}]) = 0;
-CC.PixelIdxList(issingleton) = [];
 csize = cellfun(@numel, CC.PixelIdxList);
+singletonIdx = CC.PixelIdxList(csize==1);
+segmentMatrix([singletonIdx{:}]) = 0;
+CC.PixelIdxList(csize==1) = [];
+CC.NumObjects = numel(CC.PixelIdxList);
+csize(csize==1) = [];
 
 % labels of connected components
 labels = double(labelmatrix(CC));
+
+% order the pixels of each segment from one endpoint to the other
+nn = (imfilter(segmentMatrix, ones(3), 'same')-1) .* segmentMatrix;
+PixelIdxList = vertcat(CC.PixelIdxList{:});
+endpointIdxList = PixelIdxList(nn(PixelIdxList)==1);
+% each segment has two endpoints
+endpointIdxList = [endpointIdxList(1:2:end) endpointIdxList(2:2:end)];
+tmp = NaN(CC.NumObjects,2);
+tmp(labels(endpointIdxList(:,1)),:) = endpointIdxList;
+endpointIdxList = tmp;
+
+tmp = endpointIdxList(:,1);
+D = bwdistgeodesic(logical(segmentMatrix), tmp(~isnan(tmp)));
+D(isinf(D)) = 0;
+CC.PixelOrder = mat2cell(D(PixelIdxList)+1, csize, 1);
+CC.endpointIdx = mat2cell(endpointIdxList, ones(size(endpointIdxList,1),1), 2);
+for i = 1:CC.NumObjects
+    CC.PixelIdxList{i} = CC.PixelIdxList{i}(CC.PixelOrder{i});
+end
+PixelIdxList = vertcat(CC.PixelIdxList{:});
+
+% compute intensity on side of all segments
+angleVect = theta(PixelIdxList);
+cost = cos(angleVect);
+sint = sin(angleVect);
+[x,y] = meshgrid(1:nx,1:ny);
+% 'positive' or 'right' side
+[yi, xi] = ind2sub([ny nx], PixelIdxList);
+X = [xi+cost xi+2*cost];
+Y = [yi+sint yi+2*sint];
+interp2(x, y, img, X, Y);
+CC.rval = mat2cell(interp2(x, y, img, X, Y), csize, 2);
+% 'negative' or 'left' side
+X = [xi-cost xi-2*cost];
+Y = [yi-sint yi-2*sint];
+CC.lval = mat2cell(interp2(x, y, img, X, Y), csize, 2);
+
+%hval = zeros(1,CC.NumObjects);
+%for k = 1:CC.NumObjects
+%    hval(k) = kstest2(CC.rval{k}(:), CC.lval{k}(:));
+%end
 
 %------------------------------------------------------------------------------
 % II. Rough estimate of the cell outline based on threshold: coarseMask
@@ -126,10 +167,14 @@ T = T*(maxv-minv)+minv;
 
 % initial estimate of cell contour
 cellBoundary = edgeMask > T;
-% cellBoundary = edgeMask;
+% cellBoundary = edgeMask > min(T, thresholdRosin(val));
+%cellBoundary = edgeMask;
 
 % 1st graph matching based on orientation at endpoints, with small search radius
 [matchedMask] = matchSegmentEndPoints(cellBoundary, theta, 'SearchRadius', ip.Results.SearchRadius, 'Display', false);
+
+% The connected components in this mask are no longer segments. For the next matching 
+% steps, the two outermost endpoints are needed.
 
 % find endpoint candidates on skeleton
 nn = double(bwmorph(matchedMask, 'thin'));
@@ -137,6 +182,7 @@ nn = (imfilter(nn, ones(3), 'same')-1) .* nn;
 endpointMatrix = nn==1;
 endpointIdx = find(endpointMatrix);
 
+% calculate new connected components
 CC = bwconncomp(matchedMask, 8);
 for k = 1:CC.NumObjects
     CC.endpointIdx{k} = intersect(CC.PixelIdxList{k}, endpointIdx);
@@ -144,7 +190,6 @@ end
 
 % retain the two endpoints that are furthest apart for later matching
 nEndpoint = cellfun(@numel, CC.endpointIdx);
-
 for k = 1:max(nEndpoint)
     idx = find(nEndpoint>=max(3,k));
     % seed point indexes
@@ -162,10 +207,9 @@ for k = 1:numel(idx)
     [~,si] = sort(si, 'descend');
     CC.endpointIdx{idx(k)} = CC.endpointIdx{idx(k)}(si<=2);
 end
-if isfield(CC, 'endpointDist') % clean this mess up at some point
+if isfield(CC, 'endpointDist') % ! clean this mess up at some point !
     CC = rmfield(CC, 'endpointDist');
 end
-
 matchedMask = double(matchedMask);
 
 csize = cellfun(@numel, CC.PixelIdxList);
@@ -179,33 +223,9 @@ for k = 1:CC.NumObjects
     end
 end
 
+% get intensity information adjacent to each segment
 CC = computeSegmentProperties(CC, img, theta);
 labels = double(labelmatrix(CC));
-
-% for each remaining endpoint, find closest edge and get its label
-endpointIdx = vertcat(CC.endpointIdx{:});
-endpointLabel = labels(endpointIdx);
-pidx = vertcat(CC.PixelIdxList{:});
-[yi, xi] = ind2sub([ny nx], pidx);
-X = [xi yi];
-[yi, xi] = ind2sub([ny nx], endpointIdx);
-[idx, dist] = KDTreeBallQuery(X, [xi yi], 10);
-matchList = zeros(0,2);
-for k = 1:numel(endpointLabel)
-    % remove self queries
-    rmIdx = labels(pidx(idx{k}))==endpointLabel(k);
-    idx{k}(rmIdx) = [];
-    dist{k}(rmIdx) = [];
-    % label of closest point
-    if ~isempty(idx{k})
-        imatch = sort([endpointLabel(k) labels(pidx(idx{k}(1)))]);
-        if ~any(matchList(:,1)==imatch(1) & matchList(:,2)==imatch(2))
-            matchList = [matchList; imatch];
-        end
-    end
-end
-[~,idx] = sort(matchList(:,1));
-matchList = matchList(idx,:);
 
 % re-order interpolated intensities such that the lower intensities are always in 'lval'
 for k = 1:CC.NumObjects
@@ -218,42 +238,115 @@ for k = 1:CC.NumObjects
     end
 end
 
-% cost based on KS distance
-cost = zeros(size(matchList,1),1);
-for k = 1:size(matchList,1)
-    [~,~,ksLL] = kstest2(CC.lval{matchList(k,1)}(:), CC.lval{matchList(k,2)}(:));
-    [~,~,ksHH] = kstest2(CC.rval{matchList(k,1)}(:), CC.rval{matchList(k,2)}(:));
-    cost(k) = 1-max([ksLL ksHH]);
-    %cost(k) = 1-mean([ksLL ksHH]);
-end
-M = maxWeightedMatching(CC.NumObjects, matchList, cost); % returns index (M==true) of matches
-matchList = matchList(M,:);
 
-% rudimentary linking between matched pairs: shortest projection
-for k = 1:size(matchList,1)
-    imatch = zeros(2,3); % distance, endpoint idx, matched pixel idx
-    [yi, xi] = ind2sub([ny nx], CC.PixelIdxList{matchList(k,1)});
-    X = [xi yi];
-    [yi, xi] = ind2sub([ny nx], CC.endpointIdx{matchList(k,2)});
-    [idx, dist] = KDTreeClosestPoint(X, [xi, yi]);
-    i = find(dist==min(dist), 1, 'first');
-    imatch(1,:) = [dist(i) CC.endpointIdx{matchList(k,2)}(i) CC.PixelIdxList{matchList(k,1)}(idx(i))];
+matchesFound = true;
+iter = 0;
+while matchesFound
     
-    [yi, xi] = ind2sub([ny nx], CC.PixelIdxList{matchList(k,2)});
+    % for each remaining endpoint, find closest edge and get its label
+    endpointIdx = vertcat(CC.endpointIdx{:});
+    endpointLabel = labels(endpointIdx);
+    pidx = vertcat(CC.PixelIdxList{:});
+    [yi, xi] = ind2sub([ny nx], pidx);
     X = [xi yi];
-    [yi, xi] = ind2sub([ny nx], CC.endpointIdx{matchList(k,1)});
-    [idx, dist] = KDTreeClosestPoint(X, [xi, yi]);
-    i = find(dist==min(dist), 1, 'first');
-    imatch(2,:) = [dist(i) CC.endpointIdx{matchList(k,1)}(i) CC.PixelIdxList{matchList(k,2)}(idx(i))];
-    i = find(imatch(:,1)==min(imatch(:,1)), 1, 'first');
-    imatch = imatch(i,:);
+    [yi, xi] = ind2sub([ny nx], endpointIdx);
+    [idx, dist] = KDTreeBallQuery(X, [xi yi], 10); % ! make this a parameter !
+    matchList = zeros(0,2);
+    for k = 1:numel(endpointLabel)
+        % remove self queries
+        rmIdx = labels(pidx(idx{k}))==endpointLabel(k);
+        idx{k}(rmIdx) = [];
+        dist{k}(rmIdx) = [];
+        % label of closest point
+        if ~isempty(idx{k})
+            imatch = sort([endpointLabel(k) labels(pidx(idx{k}(1)))]);
+            if ~any(matchList(:,1)==imatch(1) & matchList(:,2)==imatch(2))
+                matchList = [matchList; imatch];
+            end
+        end
+    end
+    [~,idx] = sort(matchList(:,1));
+    matchList = matchList(idx,:);
     
-    % add connection to matchedMask
-    [y0, x0] = ind2sub([ny nx], imatch(2));
-    [y1, x1] = ind2sub([ny nx], imatch(3));
-    iseg = bresenham([x0 y0], [x1 y1]);
-    matchedMask(sub2ind([ny nx], iseg(:,2), iseg(:,1))) = 1;
+    % cost based on KS distance
+    cost = zeros(size(matchList,1),1);
+    for k = 1:size(matchList,1)
+        [~,~,ksLL] = kstest2(CC.lval{matchList(k,1)}(:), CC.lval{matchList(k,2)}(:));
+        [~,~,ksHH] = kstest2(CC.rval{matchList(k,1)}(:), CC.rval{matchList(k,2)}(:));
+        
+        %[~,~,ks1] = kstest2(CC.lval{matchList(k,1)}(:), CC.rval{matchList(k,1)}(:));
+        %[~,~,ks2] = kstest2(CC.lval{matchList(k,2)}(:), CC.rval{matchList(k,2)}(:));
+        
+        cost(k) = 1-max([ksLL ksHH]);
+        %cost(k) = 1-mean([ksLL ksHH]);
+        
+        % penalize cost when left/right distributions of a segment are close
+        %cost(k) = cost(k) * min(ks1,ks2);
+        %cost(k) = cost(k) * (1-(1-ks1)*(1-ks2));
+        
+    end
+    rmIdx = cost<0.2;
+    matchList(rmIdx,:) = [];
+    cost(rmIdx) = [];
+
+    M = maxWeightedMatching(CC.NumObjects, matchList, cost); % returns index (M==true) of matches
+    matchList = matchList(M,:);
+    if isempty(matchList)
+        matchesFound = false;
+    end
+    
+    % rudimentary linking between matched pairs: shortest projection
+    for k = 1:size(matchList,1)
+        imatch = zeros(2,3); % distance, endpoint idx, matched pixel idx
+        newEP = [];
+        
+        [yi, xi] = ind2sub([ny nx], CC.PixelIdxList{matchList(k,1)});
+        X = [xi yi];
+        [yi, xi] = ind2sub([ny nx], CC.endpointIdx{matchList(k,2)});
+        [idx, dist] = KDTreeClosestPoint(X, [xi, yi]);
+        i = find(dist==min(dist), 1, 'first');
+        imatch(1,:) = [dist(i) CC.endpointIdx{matchList(k,2)}(i) CC.PixelIdxList{matchList(k,1)}(idx(i))];
+        newEP = [newEP; CC.endpointIdx{matchList(k,2)}(setdiff(1:numel(dist), i))];
+        
+        [yi, xi] = ind2sub([ny nx], CC.PixelIdxList{matchList(k,2)});
+        X = [xi yi];
+        [yi, xi] = ind2sub([ny nx], CC.endpointIdx{matchList(k,1)});
+        [idx, dist] = KDTreeClosestPoint(X, [xi, yi]);
+        i = find(dist==min(dist), 1, 'first');
+        imatch(2,:) = [dist(i) CC.endpointIdx{matchList(k,1)}(i) CC.PixelIdxList{matchList(k,2)}(idx(i))];
+        newEP = [newEP; CC.endpointIdx{matchList(k,1)}(setdiff(1:numel(dist), i))];
+        
+        i = find(imatch(:,1)==min(imatch(:,1)), 1, 'first');
+        imatch = imatch(i,:);
+        
+        % add connection to matchedMask
+        [y0, x0] = ind2sub([ny nx], imatch(2));
+        [y1, x1] = ind2sub([ny nx], imatch(3));
+        iseg = bresenham([x0 y0], [x1 y1]);
+        iseg = sub2ind([ny nx], iseg(:,2), iseg(:,1));
+        
+        matchedMask(iseg) = 1;
+        
+        % merge CCs
+        CC.endpointIdx{matchList(k,1)} = newEP;
+        CC.endpointIdx{matchList(k,2)} = [];
+        CC.PixelIdxList{matchList(k,1)} = [CC.PixelIdxList{matchList(k,1)}; iseg; CC.PixelIdxList{matchList(k,2)}];
+        CC.PixelIdxList{matchList(k,2)} = [];
+        %CC.rawAngle{matchList(k,1)} = [CC.rawAngle{matchList(k,1)} CC.rawAngle{matchList(k,2)}];
+        CC.rval{matchList(k,1)} = [CC.rval{matchList(k,1)}; CC.rval{matchList(k,2)}];
+        CC.rval{matchList(k,2)} = [];
+        CC.lval{matchList(k,1)} = [CC.lval{matchList(k,1)}; CC.lval{matchList(k,2)}];
+        CC.lval{matchList(k,2)} = [];
+        
+        % update labels
+        labels(CC.PixelIdxList{matchList(k,1)}) = matchList(k,1);
+    end
+    iter = iter + 1;
 end
+
+% score edges: background vs. foreground
+
+% endpoints of foreground edges
 
 
 img0 = scaleContrast(img);
