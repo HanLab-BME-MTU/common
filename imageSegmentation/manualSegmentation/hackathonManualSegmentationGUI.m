@@ -179,6 +179,7 @@ if handles.segThisCell > 1
     segPath   = currObj.packages_{segIdx}.outputDirectory_;
     truthPath = [segPath filesep 'groundTruthChannel' num2str(currChan)];
     compPath  = [segPath filesep 'completedFramesChannel' num2str(currChan)];
+    aux.isCompleted = [];
     
     if exist([compPath filesep 'completedFrames.mat'],'file')
         aux      = load([compPath filesep 'completedFrames.mat']);
@@ -186,6 +187,7 @@ if handles.segThisCell > 1
         for iMask = find(aux.isCompleted)'
             masks(:,:,iMask) = imread([truthPath filesep goodMask(iMask).name]);
         end
+            
     end
     
     [outMasks,isCompleted] = manualSegmentationTweakGUI(images,masks,[],aux.isCompleted);
