@@ -92,7 +92,7 @@ coarseBdr(sub2ind([ny nx], bdrVect(:,1), bdrVect(:,2))) = 1;
 % endpoints/intersection of boundary w/ border
 borderIS = coarseBdr & borderMask;
 borderIS = double(borderIS(borderIdx));
-borderIS = borderIdx((conv([borderIS(end) borderIS borderIS(1)], [1 1 1], 'same')-1)==1);
+borderIS = borderIdx((conv([borderIS(end) borderIS borderIS(1)], [1 1 1], 'valid')-1)==1);
 
 % clean up, remove image border, add intersects
 coarseBdr = bwmorph(coarseBdr, 'thin');
@@ -144,6 +144,7 @@ end
 
 % retain the two endpoints that are furthest apart for later matching
 nEndpoint = cellfun(@numel, CC.endpointIdx);
+
 for k = 1:max(nEndpoint)
     idx = find(nEndpoint>=max(3,k));
     % seed point indexes
@@ -161,7 +162,9 @@ for k = 1:numel(idx)
     [~,si] = sort(si, 'descend');
     CC.endpointIdx{idx(k)} = CC.endpointIdx{idx(k)}(si<=2);
 end
-CC = rmfield(CC, 'endpointDist');
+if isfield(CC, 'endpointDist') % clean this mess up at some point
+    CC = rmfield(CC, 'endpointDist');
+end
 
 matchedMask = double(matchedMask);
 
@@ -204,19 +207,30 @@ end
 [~,idx] = sort(matchList(:,1));
 matchList = matchList(idx,:);
 
+% re-order interpolated intensities such that the lower intensities are always in 'lval'
+for k = 1:CC.NumObjects
+    rmean = nanmean(CC.rval{k}(:));
+    lmean = nanmean(CC.lval{k}(:));
+    if rmean<lmean
+        tmp = CC.rval{k};
+        CC.rval{k} = CC.lval{k};
+        CC.lval{k} = tmp;
+    end
+end
 
+% cost based on KS distance
+cost = zeros(size(matchList,1),1);
+for k = 1:size(matchList,1)
+    [~,~,ksLL] = kstest2(CC.lval{matchList(k,1)}(:), CC.lval{matchList(k,2)}(:));
+    [~,~,ksHH] = kstest2(CC.rval{matchList(k,1)}(:), CC.rval{matchList(k,2)}(:));
+    cost(k) = 1-max([ksLL ksHH]);
+    %cost(k) = 1-mean([ksLL ksHH]);
+end
+M = maxWeightedMatching(CC.NumObjects, matchList, cost); % returns index (M==true) of matches
+matchList(M,:)
+
+% rudimentary linking between matched pairs: shortest projection
 % 
-% for k = 1:CC.NumObjects
-%     rmean = nanmean(CC.rval{k}(:));
-%     lmean = nanmean(CC.lval{k}(:));
-%     if rmean<lmean
-%         tmp = CC.rval{k};
-%         CC.rval{k} = CC.lval{k};
-%         CC.lval{k} = tmp;
-%     end
-% end
-
-
 
 
 img0 = scaleContrast(img);
