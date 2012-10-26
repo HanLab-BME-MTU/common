@@ -188,7 +188,7 @@ if handles.segThisCell > 1
         end
     end
     
-    [outMasks,isCompleted] = manualSegmentationTweakGUI(images,masks);
+    [outMasks,isCompleted] = manualSegmentationTweakGUI(images,masks,[],aux.isCompleted);
     
     
     if ~exist(truthPath,'dir')
