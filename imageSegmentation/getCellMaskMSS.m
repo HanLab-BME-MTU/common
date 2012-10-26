@@ -227,10 +227,33 @@ for k = 1:size(matchList,1)
     %cost(k) = 1-mean([ksLL ksHH]);
 end
 M = maxWeightedMatching(CC.NumObjects, matchList, cost); % returns index (M==true) of matches
-matchList(M,:)
+matchList = matchList(M,:);
 
 % rudimentary linking between matched pairs: shortest projection
-% 
+for k = 1:size(matchList,1)
+    imatch = zeros(2,3); % distance, endpoint idx, matched pixel idx
+    [yi, xi] = ind2sub([ny nx], CC.PixelIdxList{matchList(k,1)});
+    X = [xi yi];
+    [yi, xi] = ind2sub([ny nx], CC.endpointIdx{matchList(k,2)});
+    [idx, dist] = KDTreeClosestPoint(X, [xi, yi]);
+    i = find(dist==min(dist), 1, 'first');
+    imatch(1,:) = [dist(i) CC.endpointIdx{matchList(k,2)}(i) CC.PixelIdxList{matchList(k,1)}(idx(i))];
+    
+    [yi, xi] = ind2sub([ny nx], CC.PixelIdxList{matchList(k,2)});
+    X = [xi yi];
+    [yi, xi] = ind2sub([ny nx], CC.endpointIdx{matchList(k,1)});
+    [idx, dist] = KDTreeClosestPoint(X, [xi, yi]);
+    i = find(dist==min(dist), 1, 'first');
+    imatch(2,:) = [dist(i) CC.endpointIdx{matchList(k,1)}(i) CC.PixelIdxList{matchList(k,2)}(idx(i))];
+    i = find(imatch(:,1)==min(imatch(:,1)), 1, 'first');
+    imatch = imatch(i,:);
+    
+    % add connection to matchedMask
+    [y0, x0] = ind2sub([ny nx], imatch(2));
+    [y1, x1] = ind2sub([ny nx], imatch(3));
+    iseg = bresenham([x0 y0], [x1 y1]);
+    matchedMask(sub2ind([ny nx], iseg(:,2), iseg(:,1))) = 1;
+end
 
 
 img0 = scaleContrast(img);
@@ -250,103 +273,10 @@ return
 
 
 
-edgeLabels = double(labelmatrix(CC));
-for i = 1:2
-    % junctions connected to edges above threshold
-    cjunctions = bwmorph(cellBoundary, 'dilate') .* junctionMatrix;
-    
-    % add segments connected to these junctions
-    clabels = unique(double(bwmorph(cjunctions, 'dilate')) .* edgeLabels);
-    cellBoundary = cellBoundary | cjunctions | ismember(edgeLabels, clabels(2:end));
-end
-cellBoundary = double(cellBoundary);
-
-% Endpoints of edges
-endpoints = double((cellBoundary .* (conv2(sumKernel, sumKernel', padarrayXT(cellBoundary, [1 1]), 'valid')-1))==1);
-
-% last step of hysteresis: recover edges close to these endpoints
-labels = unique(bwmorph(endpoints, 'dilate', 2) .* edgeLabels);
-cellBoundary = cellBoundary | ismember(edgeLabels, labels(2:end));
-
-% extend endpoints that are within 1 pixel of image border
-border = zeros(ny,nx);
-border(borderIdx) = 1;
-endpoints(borderIdx) = 0;
-cellBoundary = cellBoundary | (bwmorph(endpoints, 'dilate') & border);
-cellBoundary = double(bwmorph(cellBoundary~=0, 'thin'));
-
-% update endpoints
-endpoints = double((cellBoundary .* (conv2(sumKernel, sumKernel', padarrayXT(cellBoundary, [1 1]), 'valid')-1))==1);
 
 %------------------------------------------------------------------------------
 % III. Join remaining segments/endpoints using graph matching
 %------------------------------------------------------------------------------
-CC = bwconncomp(cellBoundary, 8);
-labels = double(labelmatrix(CC));
-
-% A) Link endpoints that are in close proximity
-[ye,xe] = find(endpoints~=0);
-cellBoundary = connectEndpoints([xe ye], [xe ye], 1.42*2, labels, cellBoundary);
-
-% B) Some junctions are not detected by the filters -> join endpoints with nearby edges
-endpoints = double((cellBoundary .* (conv2(sumKernel, sumKernel', padarrayXT(cellBoundary, [1 1]), 'valid')-1))==1);
-CC = bwconncomp(cellBoundary, 8);
-labels = double(labelmatrix(CC));
-[ye,xe] = find(endpoints~=0);
-[yb,xb] = find(cellBoundary~=0);
-
-cellBoundary = connectEndpoints([xb yb], [xe ye], 1.42*2, labels, cellBoundary);
-
-% C) For each remaining connected component, identify the most distant (geodesic distance) endpoints
-CC = bwconncomp(cellBoundary, 8);
-labels = double(labelmatrix(CC));
-
-epLabels = zeros(ny,nx);
-for c = 1:CC.NumObjects
-    % endpoints for this segment
-    endpoints = double((cellBoundary .* (conv2(sumKernel, sumKernel', padarrayXT(double(labels==c), [1 1]), 'valid')-1))==1);
-    endpoints(borderIdx) = 0;
-    [yi,xi] = find(endpoints~=0);
-    nep = numel(xi);
-    if nep > 2
-        % use each endpoint as a seed point
-        xm = zeros(1,nep);
-        ym = zeros(1,nep);
-        dm = zeros(1,nep);
-        for i = 1:nep
-            D = bwdistgeodesic(labels==c, xi(i), yi(i));
-            dm(i) = max(D(:));
-            [ym(i) xm(i)] = ind2sub([ny nx], find(D==dm(i), 1', 'first'));
-        end
-        idx = find(dm==max(dm), 1, 'first');
-        epLabels(yi(idx), xi(idx)) = c;
-        epLabels(ym(idx), xm(idx)) = c;
-    else
-        epLabels(sub2ind([ny nx], yi, xi)) = c;
-    end
-end
-
-% D) Bridge longer gaps linearly (real gap only if no intersections)
-[ye,xe] = find(epLabels~=0);
-segments = connectEndpoints([xe ye], [xe ye], 20, epLabels, cellBoundary, false);
-
-segCC = bwconncomp(segments);
-% read pixel positions in boundary, count. If count >2, intersection
-validSeg = cellfun(@(i) sum(cellBoundary(i)), segCC.PixelIdxList) == 2;
-
-% update boundary
-cellBoundary(vertcat(segCC.PixelIdxList{validSeg})) = 1;
-
-
-% if a single segment is left, but the endpoints are not at the image boundary, join them
-epLabels(borderIdx) = 0;
-nep = sum(epLabels(:)~=0);
-if CC.NumObjects==1 && nep == 2
-    [yi,xi] = find(epLabels~=0);
-    seg = bresenham([xi(1) yi(1)], [xi(2) yi(2)]);
-    cellBoundary(sub2ind([ny nx], seg(:,2), seg(:,1))) = 1;
-end
-
 
 % Remove long spurs
 cellBoundary = bwmorph(cellBoundary, 'thin');
