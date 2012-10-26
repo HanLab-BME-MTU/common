@@ -38,6 +38,9 @@ imageFileListing = dir([imageDir filesep '*.tif']);
 if isempty(imageFileListing)
     imageFileListing = dir([imageDir filesep '*.tiff']);
 end
+if isempty(imageFileListing)
+    imageFileListing = dir([imageDir filesep '*.TIF']);
+end
 numFrames = length(imageFileListing);
 
 if nargin < 2 || isempty(filterSigma)

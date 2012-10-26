@@ -1,12 +1,12 @@
-function [mask,prctileUsed] = refineEdgeWithSteerableFilter(mask0,image,...
+function [mask,prctileUsed] = refineEdgeWithSteerableFilter(image,mask0,...
     threshParam,gapCloseParam,doPlot,particleInfo,meanBkg)
 %REFINEEDGEWITHSTEERABLEFILTER refines cell edge using intensity gradients obtained from a steerable line filter
 %
-%SYNOPSIS [mask,segmentOK] = refineEdgeWithSteerableFilter(mask0,image,...
-%    threshParam,gapCloseParam,doPlot)
+%SYNOPSIS [mask,prctileUsed] = refineEdgeWithSteerableFilter(image,mask0,...
+%    threshParam,gapCloseParam,doPlot,particleInfo,meanBkg)
 %
-%INPUT  mask0        : Original mask to be refined.
-%       image        : Image to be segmented.
+%INPUT  image        : Image to be segmented.
+%       mask0        : Original mask to be refined.
 %       threshParam  : Structure with parameters for gradient thresholding:
 %           .filterSigma    : Standard deviation for filtering.
 %                             Optional. Default: 1.5.
@@ -341,7 +341,7 @@ for iPrctile = 1 : length(gradPrctile)
     
     %% Edge linking and gap closing
     
-    %The different factors contributing to the edge gap closing cost - START
+    %Gap closing cost - START
     
     %distance between all surviving edge segment pairs
     %distances = nearest pixel-pixel distance
@@ -405,13 +405,19 @@ for iPrctile = 1 : length(gradPrctile)
     %reward for higher "edginess" score
     pairScoreReward = (repmat(candScore,1,numEdgeKeep) + repmat(candScore',numEdgeKeep,1))/2;
     
-    %The different factors contributing to the edge gap closing cost - END
-    
     %remove improbable links
     edgePairDist(edgePairDist > maxEdgePairDist) = NaN;
     meanThetaDiff(isnan(edgePairDist)) = NaN;
     edgePairAngleThetaDiff(isnan(edgePairDist)) = NaN;
     pairScoreReward(isnan(edgePairDist)) = NaN;
+    
+    %calculate linking cost for all pairs
+    linkCostAllPairs = contr(1)*edgePairDist/maxEdgePairDist ...
+        + contr(2)*meanThetaDiff/pi ...
+        + contr(3)*edgePairAngleThetaDiff/(pi/2) ...
+        - contr(4)*pairScoreReward/maxScore;
+    
+    %Gap closing cost - END
     
     %find edge segment with highest score
     %this is most likely a true edge segment, so use it as a seed to
@@ -449,19 +455,8 @@ for iPrctile = 1 : length(gradPrctile)
         
         iCounter = iCounter + 1;
         
-        %get the different factors contributing to the costs of potential links
-        seedDist           = edgePairDist(:,indxSeed);
-        seedAngleThetaDiff = edgePairAngleThetaDiff(:,indxSeed);
-        seedThetaDiff = meanThetaDiff(:,indxSeed);
-        seedScoreReward    = pairScoreReward(:,indxSeed);
-        %         includeOrNaN       = seedDist;
-        %         includeOrNaN(~isnan(includeOrNaN)) = 1;
-        
-        %calculate the cost
-        linkCost = contr(1)*seedDist/maxEdgePairDist ...
-            + contr(2)*seedThetaDiff/pi ...
-            + contr(3)*seedAngleThetaDiff/(pi/2) ...
-            - contr(4)*seedScoreReward/maxScore;
+        %get the relevant costs
+        linkCost = linkCostAllPairs(:,indxSeed);
         
         %find possible links
         [indxLink,indxSeed2Link] = find(~isnan(linkCost));
@@ -479,10 +474,7 @@ for iPrctile = 1 : length(gradPrctile)
             indxSeed = [indxSeed; indxLink]; %#ok<AGROW>
             
             %remove segment pair from possible links
-            edgePairDist(indxLink,indxSeed2Link) = NaN;
-            edgePairAngleThetaDiff(indxLink,indxSeed2Link) = NaN;
-            meanThetaDiff(indxLink,indxSeed2Link) = NaN;
-            pairScoreReward(indxLink,indxSeed2Link) = NaN;
+            linkCostAllPairs(indxLink,indxSeed2Link) = NaN;
             
             %add edge segment to edge image
             imageConst(candPixLin{indxLink}) = 1;
@@ -534,7 +526,7 @@ for iPrctile = 1 : length(gradPrctile)
             
             %check whether segmentation is still OK
             %THIS FUNCTION SHOULD BE MODIFIED IN CASE OF WHOLE OR MULTIPLE CELLS
-            [segmentStillOK,~,maskTmp] = checkEdgeComplete(imageTmp,mask0Bound,minMaskSize,edgeType);
+            segmentStillOK = checkEdgeComplete(imageTmp,mask0Bound,minMaskSize,edgeType);
             
             %if OK, indicate that this seed could be removed
             if segmentStillOK
@@ -654,11 +646,6 @@ switch edgeType
         
     case 1
         
-        %POTENTIALLY ADD SOMETHING HERE TO BRIDGE THAT FINAL GAP IN
-        %imageConst (THUS RETURN imageConst AFTER MODIFICATION)
-        
-        %         imageConst = imclose(imageConst,strel('disk',2,0));
-        
         %check whether segmentation has been achieved
         edgeMask = imageConst | mask0Bound;
         mask = imfill(edgeMask,'holes');
@@ -674,5 +661,3 @@ switch edgeType
         %ADD SOMETHING IN CASE OF MULTIPLE CELLS
         
 end
-
-

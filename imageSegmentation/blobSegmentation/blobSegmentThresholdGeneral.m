@@ -93,18 +93,8 @@ imageFilteredMinusBackground = imageFiltered - imageBackground;
 imageFilteredMinusBackground = imageFilteredMinusBackground .* mask;
 
 %enhance features by performing a maximum filter
-[sizeX,sizeY] = size(imageFilteredMinusBackground);
+% imageDilated = ordfilt2(imageFilteredMinusBackground,9,ones(3));
 imageDilated = imageFilteredMinusBackground;
-imageTmp(:,:,1) = imageDilated;
-imageTmp(:,:,2) = [zeros(1,sizeY); imageDilated(2:end,:)];
-imageTmp(:,:,3) = [imageDilated(1:end-1,:); zeros(1,sizeY)];
-imageTmp(:,:,4) = [zeros(sizeX,1) imageDilated(:,2:end)];
-imageTmp(:,:,5) = [imageDilated(:,1:end-1) zeros(sizeX,1)];
-imageTmp(:,:,6) = [zeros(1,sizeY); [zeros(sizeX-1,1) imageDilated(2:end,2:end)]];
-imageTmp(:,:,7) = [zeros(1,sizeY); [imageDilated(2:end,1:end-1) zeros(sizeX-1,1)]];
-imageTmp(:,:,8) = [[zeros(sizeX-1,1) imageDilated(1:end-1,2:end)]; zeros(1,sizeY)];
-imageTmp(:,:,9) = [[imageDilated(1:end-1,1:end-1) zeros(sizeX-1,1)]; zeros(1,sizeY)];
-imageDilated = max(imageTmp,[],3);
 
 %find nonzero values (due to masking)
 nzInd = find(imageDilated);
@@ -166,24 +156,33 @@ maskBlobs = ismember(labels, idx);
 
 if plotRes
     
+    figHandle1 = figure('Name',[plotName '_segmentation_' ...
+        thresholdMethod '_noise' num2str(filterNoise) ...
+        '_background' num2str(filterBackground)]);
+
+    %subplot 1: original image
+    
+    imageScaled = (image - prctile(image(:),1)) / (prctile(image(:),99) - prctile(image(:),1));
+    imageScaled(imageScaled<0) = 0;
+    imageScaled(imageScaled>1) = 1;
+    subplot(1,3,1)
+    imshow(imageScaled,[])
+    
+    %subplot 2: bandpass-filtered image
+    
+    imageScaled2 = (imageFilteredMinusBackground - prctile(imageFilteredMinusBackground(:),1)) / ...
+        (prctile(imageFilteredMinusBackground(:),99) - prctile(imageFilteredMinusBackground(:),1));
+    imageScaled2(imageScaled2<0) = 0;
+    imageScaled2(imageScaled2>1) = 1;
+    subplot(1,3,2)
+    imshow(imageScaled2,[])
+    
+    %subplot 3: mask edges
+
     %get the blob edges from the final blob mask
     SE = strel('square',3);
     edgesBlobs = imdilate(maskBlobs,SE) - maskBlobs;
     
-    %scale the original image to be between 0 and 1
-    %actually scale it between the 1st and 99th percentiles
-    imageScaled = (image - prctile(image(:),1)) / (prctile(image(:),99) - prctile(image(:),1));
-    imageScaled(imageScaled<0) = 0;
-    imageScaled(imageScaled>1) = 1;
-    
-    %plot image
-    figHandle1 = figure('Name',[plotName '_segmentation_' ...
-        thresholdMethod '_noise' num2str(filterNoise) ...
-        '_background' num2str(filterBackground)]);
-    hold on
-    subplot(1,2,1)
-    imshow(imageScaled,[])
-
     %give the edge pixels a value of zero in the original image
     imageScaled(edgesBlobs==1) = 0;
     
@@ -193,20 +192,23 @@ if plotRes
     image3Color(:,:,1) = image3Color(:,:,1) + edgesBlobs;
     
     %plot mask edges
-    subplot(1,2,2)
+    subplot(1,3,3)
     imshow(image3Color,[]);
+    
 %     saveas(figHandle1,fullfile(saveDir,[plotName '_segmentation_' ...
 %         thresholdMethod '_noise' num2str(filterNoise) ...
 %         '_background' num2str(filterBackground)]),'fig');
     
     %also plot intensity histogram and threshold
-    n = histogram(imageDilatedNorm(nzInd),[],0);
     figHandle2 = figure('Name',[plotName '_histogram_' ...
         thresholdMethod '_noise' num2str(filterNoise) ...
         '_background' num2str(filterBackground)]);
-    hold on
+    
+    n = histogram(imageDilatedNorm(nzInd),[],0);
     histogram(imageDilatedNorm(nzInd),[],0);
+    hold on
     plot(level*[1 1],[0 max(n)],'r','LineWidth',2)
+    
 %     saveas(figHandle2,fullfile(saveDir,[plotName '_histogram_' ...
 %         thresholdMethod '_noise' num2str(filterNoise) ...
 %         '_background' num2str(filterBackground)]),'fig');
