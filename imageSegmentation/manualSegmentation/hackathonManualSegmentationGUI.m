@@ -88,22 +88,35 @@ function loadObject_Callback(hObject, eventdata, handles)
 cellName{1} = 'Choose a movie';
 set(handles.chooseCell,'String',cellName)
 if ~isempty(fileName)
+    mObj = load([pathName filesep fileName]);
     
-    ML = MovieList.load([pathName filesep fileName],0);
-             
-    nCell = numel(ML.movieDataFile_);
-    for iCell = 1:nCell                                    
+    if isfield(mObj,'ML')
+        
+        ML = MovieList.load([pathName filesep fileName],0);
+        
+        nCell = numel(ML.movieDataFile_);
+        for iCell = 1:nCell
             idx                      = max(regexp(ML.movies_{iCell}.movieDataPath_,filesep));
             cellName{iCell+1}         = ML.movies_{iCell}.movieDataPath_(idx+1:end);
+        end
+        handles.ML          = ML.movies_;
+    elseif isfield(mObj,'MD')
+        MD            = MovieData.load([pathName filesep fileName],0);
+        nCell         = 1;
+        idx           = max(regexp(MD.movieDataPath_,filesep));
+        cellName{2}   = MD.movieDataPath_(idx+1:end);
+        handles.ML{1} = MD;
+    else
+        error('This is not a movieObjet')
     end
-            
+    
     set(handles.chooseCell,'Enable','on')
     set(handles.goForSegmentation,'Enable','on')
     set(handles.chooseCell,'String',cellName)
     
     
     handles.cellName    = cellName;
-    handles.ML          = ML.movies_;
+    
     handles.loadedCells = false(nCell,1);
     handles.loadedMask  = cell(nCell,1);
     handles.loadedImage = cell(nCell,1);
