@@ -53,8 +53,9 @@ stkpath = [stkpath filesep];
 stkList = [dir([stkpath '*.tif']) dir([stkpath '*.tiff']) dir([stkpath '*.stk'])];
 
 N = length(stkList);
-
-
+if N==0
+    fprintf('No TIFF files found in input directory.\n');
+end
 
 for k = 1:N
     fprintf('Converting: %s\n', stkList(k).name);
