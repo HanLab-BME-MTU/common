@@ -1,8 +1,8 @@
-function [mask,prctileUsed] = refineEdgeWithSteerableFilter(image,mask0,...
+function [mask,prctileUsed] = refineEdgeWithSteerableFilterSeed(image,mask0,...
     threshParam,gapCloseParam,doPlot,particleInfo,meanBkg)
-%REFINEEDGEWITHSTEERABLEFILTER refines cell edge using intensity gradients obtained from a steerable line filter
+%refineEdgeWithSteerableFilterSeed refines cell edge using intensity gradients obtained from a steerable line filter
 %
-%SYNOPSIS [mask,prctileUsed] = refineEdgeWithSteerableFilter(image,mask0,...
+%SYNOPSIS [mask,prctileUsed] = refineEdgeWithSteerableFilterSeed(image,mask0,...
 %    threshParam,gapCloseParam,doPlot,particleInfo,meanBkg)
 %
 %INPUT  image        : Image to be segmented.
@@ -62,7 +62,7 @@ function [mask,prctileUsed] = refineEdgeWithSteerableFilter(image,mask0,...
 %% Input
 
 if nargin < 2
-    error('refineEdgeWithSteerableFilter: Wrong number of input arguments');
+    error('refineEdgeWithSteerableFilterSeed: Wrong number of input arguments');
 end
 
 %get thresholding parameters, including steerable filter parameters
@@ -113,9 +113,9 @@ fracImageCell = gapCloseParam.fracImageCell;
 %make sure that edgeType has one of possible values
 if edgeType ~= 0 && edgeType ~= 1
     if edgeType == 2
-        error('refineEdgeWithSteerableFilter: Algorithm not developed for edgeType = 2');
+        error('refineEdgeWithSteerableFilterSeed: Algorithm not developed for edgeType = 2');
     else
-        error('refineEdgeWithSteerableFilter: Bad edgeType value');
+        error('refineEdgeWithSteerableFilterSeed: Bad edgeType value');
     end
 end
 

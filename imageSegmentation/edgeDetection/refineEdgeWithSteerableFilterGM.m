@@ -431,9 +431,9 @@ for iPrctile = 1 : length(gradPrctile)
     [linkReward,indxSort] = sort(linkReward,'descend');
     edgePairIdx = edgePairIdx(indxSort,:);
     
-    %     %define indices of possible links - since this is the very first
-    %     %matching, all links are possible
-    %     indxPossible = (1 : numEdgePairs)';
+    %define indices of possible links - since this is the very first
+    %matching, all links are possible
+    indxPossible = (1 : numEdgePairs)';
     
     %GAP CLOSING COST - END
     
@@ -448,18 +448,19 @@ for iPrctile = 1 : length(gradPrctile)
         iCounter = iCounter + 1;
         
         %find matches
-        %         lengthTmp = length(indxPossible);
-        %         edgePairIdxTmp = edgePairIdx(indxPossible,:);
-        %         linkRewardTmp = linkReward(indxPossible);
-        %         edgeMatches = maxWeightedMatching(lengthTmp,edgePairIdxTmp,linkRewardTmp);
-        %         indxMatches = indxPossible(edgeMatches);
-        edgeMatches = maxWeightedMatching(numEdgePairs,edgePairIdx,linkReward);
-        indxMatches = find(edgeMatches);
+        edgePairIdxPoss = edgePairIdx(indxPossible,:);
+        linkRewardPoss = linkReward(indxPossible);
+        edgeMatches = maxWeightedMatching(numEdgeKeep,edgePairIdxPoss,linkRewardPoss);
+        indxMatches = indxPossible(edgeMatches);
+        
+        %         edgeMatches = maxWeightedMatching(numEdgePairs,edgePairIdx,linkReward);
+        %         indxMatches = find(edgeMatches);
+        
         numMatches = length(indxMatches);
         
         if numMatches > 0
             
-            %take only the top 3*(number of cells) matches
+            %take only the top 5*(number of cells) matches
             indxMatches = indxMatches(1:min(5*max(edgeType,1),numMatches));
             numMatches = length(indxMatches);
             
@@ -472,13 +473,13 @@ for iPrctile = 1 : length(gradPrctile)
             linkReward(indxMatches) = [];
             numEdgePairs = numEdgePairs - numMatches;
             
-            %             %update list of possible links, from now on it has to include
-            %             %segments already in the list of seeds
-            %             indxPossible = [];
-            %             for iSeed = indxSeed'
-            %                 indxPossible = [indxPossible; find( edgePairIdx(:,1)==iSeed | edgePairIdx(:,2)==iSeed )]; %#ok<AGROW>
-            %             end
-            %             indxPossible = unique(indxPossible);
+            %update list of possible links, from now on it has to include
+            %segments already in the list of seeds
+            indxPossible = [];
+            for iSeed = indxSeed'
+                indxPossible = [indxPossible; find( edgePairIdx(:,1)==iSeed | edgePairIdx(:,2)==iSeed )]; %#ok<AGROW>
+            end
+            indxPossible = unique(indxPossible);
             
             %add edge segments to edge image
             imageConst(vertcat(candPixLin{indxSeed})) = 1;

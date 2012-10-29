@@ -197,7 +197,7 @@ for iFile = 1 : numFiles
     end
     
     %call refinement function
-    [mask,prctileUsed(iFile)] = refineEdgeWithSteerableFilter(image,mask0,...
+    [mask,prctileUsed(iFile)] = refineEdgeWithSteerableFilterGM(image,mask0,...
         threshParam,gapCloseParam,doPlot,particleInfo,meanBkg);
     
     %store new mask
