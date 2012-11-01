@@ -38,7 +38,7 @@ function [res, theta, nms, pixelScaleMap] = multiscaleSteerableDetector3D( im, f
     p.addRequired( 'im', @(x) ( isnumeric(x) && ndims(x) == 3 ) );
     p.addRequired( 'filterType', @(x) (ismember(x, [1,2])) );
     p.addRequired( 'sigmaValues', @(x) isnumeric(x) );
-    p.addOptional( 'zAnisotropyFactor', @(x) isscalar(x) );
+    p.addOptional( 'zAnisotropyFactor', 1.0, @(x) isscalar(x) );
     p.parse( im, filterType, sigmaValues, varargin{:} );
     
     imsize = size(im);
