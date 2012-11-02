@@ -335,7 +335,7 @@ classdef  MovieData < MovieObject
                 outputList{i} = proc.getDrawableOutput;
                 isMovieProc(i) = strcmp('movieGraph',outputList{i}(1).type);
                 procOutput{i} = proc.checkChannelOutput;
-                assert(any(procOutput{i}),[proc.getName ' has no valid output !' ...
+                assert(any(procOutput{i}(:)),[proc.getName ' has no valid output !' ...
                     'Please apply ' proc.getName ' before running correlation!']);             
             end
             
