@@ -60,11 +60,11 @@ for iCell = 1:numel(clusterInfo)
     sigma_y(iCell) = std(Y);
     center_x(iCell) = ptCurClusterCenter(1);
     center_y(iCell) = ptCurClusterCenter(2);
-    cell_width = 2*round(sigma_x(iCell)*3)+1;
-    cell_height = 2*round(sigma_y(iCell)*3)+1;
+    cell_width = 2*round(sigma_x(iCell)*2)+1;
+    cell_height = 2*round(sigma_y(iCell)*2)+1;
     
-    position(1) = round(center_x(iCell)) - round(sigma_x(iCell)*3);
-    position(2) = round(center_y(iCell)) - round(sigma_y(iCell)*3);
+    position(1) = round(center_x(iCell)) - round(sigma_x(iCell)*2 );
+    position(2) = round(center_y(iCell)) - round(sigma_y(iCell)*2);
     position(3) = cell_width;
     position(4) = cell_height;  
     if(cell_width>30 && length(X)>200)
@@ -84,6 +84,10 @@ img_width = size(currentImg,2);
 img_height = size(currentImg,1);
 pad_xy = [img_width/2 img_height/2];
 
+present_cells = cell(1,MD.nFrames_);
+present_cells{1}=ones(1,nCell);
+
+
 for iFrame = 1 : MD.nFrames_;   
     
     previoucurrentImg = currentImg;
@@ -91,8 +95,16 @@ for iFrame = 1 : MD.nFrames_;
     
     h3 = figure(3);hold off; imagescc(currentImg);hold on;
     
-    for iCell = 1 : nCell
+    if iFrame >1
+           present_cells{iFrame} =present_cells{iFrame-1};
+    end
+    
+    
+    ind_cell = find(present_cells{iFrame}>0);
+    
+    for iCell = ind_cell
         if iFrame >1
+           
             previous_position = position_array{iFrame-1}(iCell,1:4);
             
             tPos = previous_position(1:2)+(previous_position(3:4)+1)/2;
@@ -143,6 +155,10 @@ for iFrame = 1 : MD.nFrames_;
             current_position(2);];
         plot(X,Y,'color',color_array(iCell,:));
 
+        if(current_position(3)<5||current_position(4)<5)
+                 present_cells{iFrame}(iCell)=0;
+        end
+        
 %     These are for level set segmentation
 %     Not ready yet
         
@@ -163,16 +179,18 @@ for iFrame = 1 : MD.nFrames_;
     
 end
 
-save('position_array','position_array');
+save('cc_tracking_results.mat','position_array','present_cells');
 
 currentImg = double(MD.channels_(1).loadImage(1));
 
 h3 = figure(3);hold off; imagescc(currentImg);hold on;
    
+
+
 for iFrame = 1 : MD.nFrames_    
+    ind_cell = find(present_cells{iFrame}>0);
     
-    for iCell = 1 : nCell
-        
+    for iCell = ind_cell     
         current_position = position_array{iFrame}(iCell,1:4);
         tracked_pos = current_position(1:2)+(current_position(3:4)+1)/2;
         
