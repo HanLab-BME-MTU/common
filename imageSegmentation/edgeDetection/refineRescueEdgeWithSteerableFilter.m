@@ -168,7 +168,7 @@ for iFile = frames2rescue
     end
     
     %call refinement function
-    [mask,prctileUsed(iFile)] = refineEdgeWithSteerableFilterGM(image,mask0,...
+    [mask,prctileUsed(iFile)] = refineEdgeWithSteerableFilterSeed(image,mask0,...
         threshParam,gapCloseParam,doPlot,particleInfo,meanBkg);
     
     %store new mask

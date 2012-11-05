@@ -1,6 +1,6 @@
 function [mask,prctileUsed] = refineEdgeWithSteerableFilterGM(image,mask0,...
     threshParam,gapCloseParam,doPlot,particleInfo,meanBkg)
-%refineEdgeWithSteerableFilterGM refines cell edge using intensity gradients obtained from a steerable line filter
+%refineEdgeWithSteerableFilterGM *OUTDATED* refines cell edge using intensity gradients obtained from a steerable line filter
 %
 %SYNOPSIS [mask,segmentOK] = refineEdgeWithSteerableFilterGM(mask0,image,...
 %    threshParam,gapCloseParam,doPlot)
@@ -56,6 +56,9 @@ function [mask,prctileUsed] = refineEdgeWithSteerableFilterGM(image,mask0,...
 %OUTPUT mask         : Mask (1 inside cell, 0 outside).
 %       perctileUsed : Percentile used for gradient thresholding. -1
 %                      indicates failed segmentation.
+%
+%REMARKS NOT UP-TO-DATE -- FOLLOW refineEdgeWithSteerableFilterSeed AND FIX
+%        BEFORE USING.
 %
 %Khuloud Jaqaman, November 2011
 

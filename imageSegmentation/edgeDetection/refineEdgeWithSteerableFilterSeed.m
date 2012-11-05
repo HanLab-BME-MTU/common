@@ -1,9 +1,9 @@
 function [mask,prctileUsed] = refineEdgeWithSteerableFilterSeed(image,mask0,...
-    threshParam,gapCloseParam,doPlot,particleInfo,meanBkg)
+    threshParam,gapCloseParam,doPlot,meanBkg,channel2)
 %refineEdgeWithSteerableFilterSeed refines cell edge using intensity gradients obtained from a steerable line filter
 %
 %SYNOPSIS [mask,prctileUsed] = refineEdgeWithSteerableFilterSeed(image,mask0,...
-%    threshParam,gapCloseParam,doPlot,particleInfo,meanBkg)
+%    threshParam,gapCloseParam,doPlot,meanBkg,channel2)
 %
 %INPUT  image        : Image to be segmented.
 %       mask0        : Original mask to be refined.
@@ -47,10 +47,10 @@ function [mask,prctileUsed] = refineEdgeWithSteerableFilterSeed(image,mask0,...
 %                      0 to plot nothing. In final plot, refined masks
 %                      shown in green, original masks shown in blue.
 %                      Optional. Default: 0.
-%       particleInfo : Detection output with particle positions for
-%                      relevant frames.
-%                      Optional. If not input, information not used.
 %       meanBkg      : Mean background intensity close to the cell edge.
+%                      Optional. If not input, information not used.
+%       channel2     : Image or some derivative thereof from second
+%                      channel if available.
 %                      Optional. If not input, information not used.
 %
 %OUTPUT mask         : Mask (1 inside cell, 0 outside).
@@ -130,17 +130,14 @@ imSize = size(image);
 %get minimum mask size for segmentation assessment
 minMaskSize = fracImageCell*prod(imSize);
 
-%get the particle positions
-if nargin < 6 || isempty(particleInfo)
-    linIndxPart = [];
-else
-    xCoordPart = vertcat(particleInfo.xCoord);
-    yCoordPart = vertcat(particleInfo.yCoord);
-    linIndxPart = sub2ind(imSize,ceil(yCoordPart(:,1)),ceil(xCoordPart(:,1)));
+%get background information
+if nargin < 6 || isempty(meanBkg)
+    meanBkg = [];
 end
 
-if nargin < 7 || isempty(meanBkg)
-    meanBkg = [];
+%get channel 2 information
+if nargin < 7 || isempty(channel2)
+    channel2 = [];
 end
 
 %% Pre-processing
@@ -148,26 +145,20 @@ end
 %run steerable filter to enhance edges
 [res,theta] = steerableDetector(image,3,filterSigma);
 
-% %run Gaussian filter to smoothen noise
-% imageF = filterGauss2D(image,filterSigma);
-
-% %divide gradient by intensity value to enhance the real cell edge
-% resOverImage = res./imageF;
-resOverImage = res;
-
 %get the non-maximum suppression image to get edge candidates
-nmsResOverImage0 = nonMaximumSuppression(resOverImage,theta);
+nms0 = nonMaximumSuppression(res,theta);
 
 %break junctions in nms image to get clean edge segments
-nmsMaskThin = double(bwmorph(nmsResOverImage0~=0, 'thin'));
+nmsMaskThin = double(bwmorph(nms0~=0, 'thin'));
 nn = (imfilter(nmsMaskThin,ones(3),'same')-1) .* nmsMaskThin;
 junctionMatrix = nn>2;
-nmsResOverImage = nmsResOverImage0 .*nmsMaskThin .* ~junctionMatrix;
-% nmsJunctions = nmsResOverImage0 .* nmsMaskThin .* junctionMatrix;
+nms = nms0 .*nmsMaskThin .* ~junctionMatrix;
+% nmsJunctions = nms0 .* nmsMaskThin .* junctionMatrix;
 
 %get the edges at image boundary of original mask
 %needed only in open edge case
-mask0Bound = zeros(imSize);
+mask0Bound = mask0;
+mask0Bound(2:end-1,2:end-1) = 0;
 if edgeType == 0
     if sum(mask0(1,:)) > 0
         mask0Bound(1,3:end-2) = 1;
@@ -181,26 +172,24 @@ if edgeType == 0
     if sum(mask0(:,end)) > 0
         mask0Bound(3:end-2,end) = 1;
     end
-    mask0Bound = bwmorph(mask0Bound,'bridge');
 end
 
 %keep only a certain band of pixels around initial mask
 if bandWidth > 0
     goodArea = imdilate(mask0,strel('square',3'))-mask0;
     goodArea = imdilate(goodArea,strel('square',bandWidth));
-    nmsResOverImage = nmsResOverImage .* goodArea;
+    nms = nms .* goodArea;
 end
 
 %extract some connected component properties in the nms image
-nmsBW = (nmsResOverImage > 0);
+nmsBW = (nms > 0);
 CC = bwconncomp(nmsBW,8);
 numL = CC.NumObjects;
 candPixLinAll = CC.PixelIdxList';
 [candLengthAll,candMeanGradientAll,candMeanThetaAll,candStdThetaAll,...
-    candIntensityAll,candIntSlabUpAll,candIntSlabDnAll,candParticleGradAll]...
+    candIntensityAll,candIntSlabUpAll,candIntSlabDnAll,channel2GradAll]...
     = deal(NaN(numL,1));
 [candPixAll,candPixSlabUpAll,candPixSlabDnAll] = deal(cell(numL,1));
-maskUpDn = zeros(imSize);
 
 if numL == 0
     mask = zeros(imSize);
@@ -216,7 +205,7 @@ for iL = 1 : numL
     candPixAll{iL} = [pixLx pixLy]; %pixels
     
     %gradient information
-    candMeanGradientAll(iL) = mean(nmsResOverImage(pixL)); %mean gradient at edge
+    candMeanGradientAll(iL) = mean(nms(pixL)); %mean gradient at edge
     thetaVal1 = theta(pixL);
     thetaVal2 = thetaVal1;
     thetaVal2(thetaVal2<0) = 2*pi + thetaVal2(thetaVal2<0);
@@ -280,18 +269,11 @@ for iL = 1 : numL
     candIntSlabUpAll(iL) = mean(image(pixSlabUp)); %mean intensity up the gradient
     candIntSlabDnAll(iL) = mean(image(pixSlabDn)); %mean intensity down the gradient
     
-    %particle density gradient in bands around edge
-    maskUpDn(pixSlabUp) = 1;
-    numPartUp = sum(maskUpDn(linIndxPart));
-    maskUpDn(pixSlabUp) = 0;
-    maskUpDn(pixSlabDn) = 1;
-    numPartDn = sum(maskUpDn(linIndxPart));
-    maskUpDn(pixSlabDn) = 0;
-    tmp = (numPartUp-numPartDn)/mean([numPartUp numPartDn]);
-    if isnan(tmp) || isinf(tmp)
-        candParticleGradAll(iL) = 0;
-    else
-        candParticleGradAll(iL) = tmp;
+    %channel 2 gradient in bands around edge
+    if ~isempty(channel2)
+        channel2Up = sum(channel2(pixSlabUp));
+        channel2Dn = sum(channel2(pixSlabDn));
+        channel2GradAll(iL) = channel2Up-channel2Dn;
     end
     
 end
@@ -308,13 +290,13 @@ candScoreAll = (candLengthAll.^0.2)/(max(candLengthAll).^0.2) ...
 if ~isempty(meanBkg)
     candScoreAll = candScoreAll - abs(candIntSlabDnAll-meanBkg)/max(abs(candIntSlabDnAll-meanBkg));
 end
-if ~isempty(linIndxPart)
-    candScoreAll = candScoreAll + candParticleGradAll/max(candParticleGradAll);
+if ~isempty(channel2)
+    candScoreAll = candScoreAll + channel2GradAll/max(channel2GradAll);
 end
 
 % candScoreAll = (candLengthAll.^0.25) .* gradOverIntAll ./ (1+candStdThetaAll).^2;
 % if ~isempty(linIndxPart)
-%     candScoreAll = candScoreAll .* candParticleGradAll;
+%     candScoreAll = candScoreAll .* channel2GradAll;
 % end
 
 for iPrctile = 1 : length(gradPrctile)
@@ -334,7 +316,7 @@ for iPrctile = 1 : length(gradPrctile)
     candMeanTheta = candMeanThetaAll(indxEdgeKeep);
     candScore = candScoreAll(indxEdgeKeep);
     candIntSlabDn = candIntSlabDnAll(indxEdgeKeep);
-    candParticleGrad = candParticleGradAll(indxEdgeKeep);
+    channel2Grad = channel2GradAll(indxEdgeKeep);
     
     %get maximum edge intensity and score for later use
     maxScore = max(candScoreAll);
@@ -543,8 +525,8 @@ for iPrctile = 1 : length(gradPrctile)
         if ~isempty(meanBkg)
             seedMetric = - abs(candIntSlabDn(indxRemove)-meanBkg)/max(abs(candIntSlabDn(indxRemove)-meanBkg));
         end
-        if ~isempty(linIndxPart)
-            seedMetric = seedMetric + candParticleGrad(indxRemove)/max(candParticleGrad(indxRemove));
+        if ~isempty(channel2)
+            seedMetric = seedMetric + channel2Grad(indxRemove)/max(channel2Grad(indxRemove));
         end
         if all(seedMetric==0)
             seedMetric = candScore(indxRemove);

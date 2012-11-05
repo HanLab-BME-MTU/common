@@ -1,5 +1,5 @@
 function prctileUsed = refineMovieEdgeWithSteerableFilter(MD,threshParam,...
-    gapCloseParam,doPlot,movieInfo,numSPTFrames,meanBkg)
+    gapCloseParam,doPlot,meanBkg,channel2Dir)
 %REFINEMOVIEEDGEWITHSTEERABLEFILTER replaces simple masks with masks refined using steerable line filtering
 %
 %SYNOPSIS prctileUsed = refineMovieEdgeWithSteerableFilter(MD,threshParam,...
@@ -51,12 +51,10 @@ function prctileUsed = refineMovieEdgeWithSteerableFilter(MD,threshParam,...
 %               refinement comes on top of the "refineMovieMask"
 %               refinement.
 %               Optional. Default: 0.
-%       movieInfo: Detection output with particle positions.
-%                  Optional. If not input, information not used.
-%       numSPTFrames: Number of SPT frames between edge frames.
-%                  Only needed if movieInfo is also input.
-%                  Optional. Default: 400.
 %       meanBkg  : Mean background intensity close to the cell edge.
+%                  Optional. If not input, information not used.
+%       channel2Dir: Directory where Channel 2 images, or some derivative
+%                  thereof, are saved to use in edge refinement.
 %                  Optional. If not input, information not used.
 %
 %OUTPUT prctileUsed: Percentile used for gradient thresholding, one per
@@ -119,21 +117,19 @@ if nargin < 4 || isempty(doPlot)
     doPlot = 0;
 end
 
-%check particle information
-if nargin < 5 || isempty(movieInfo)
-    movieInfo = [];
-end
-if nargin < 6 || isempty(numSPTFrames)
-    numSPTFrames = 400;
+%get background information
+if nargin < 5 || isempty(meanBkg)
+    meanBkg = [];
 end
 
-if nargin < 7 || isempty(meanBkg)
-    meanBkg = [];
+%check particle information
+if nargin < 6 || isempty(channel2Dir)
+    channel2Dir = [];
 end
 
 %get image and analysis directories
 imageDir = MD.channels_.channelPath_;
-analysisDir = MD.movieDataPath_;
+analysisDir = [MD.movieDataPath_ filesep 'SegmentationPackage'];
 
 %make new directories and copy old masks to them
 masksDir = [analysisDir filesep 'masks'];
@@ -170,6 +166,17 @@ if isempty(refinedMaskFileListing)
     refinedMaskFileListing = dir([refinedMasksDirFull filesep '*.TIF']);
 end
 
+%get channel 2 file listings if relevant
+if ~isempty(channel2Dir)
+    channel2FileListing = dir([channel2Dir filesep '*.tif']);
+    if isempty(channel2FileListing)
+        channel2FileListing = dir([channel2Dir filesep '*.tiff']);
+    end
+    if isempty(channel2FileListing)
+        channel2FileListing = dir([channel2Dir filesep '*.TIF']);
+    end
+end
+
 %get number of files
 numFiles = length(imageFileListing);
 
@@ -178,7 +185,7 @@ numFiles = length(imageFileListing);
 wtBar = waitbar(0,'Please wait, refining edge with steerable filter ...'); 
 
 %refine masks using steerable line filter
-particleInfo = [];
+channel2Info = [];
 prctileUsed = NaN(numFiles,1);
 for iFile = 1 : numFiles
     
@@ -188,17 +195,14 @@ for iFile = 1 : numFiles
     image = double(imread(fullfile(imageDir,imageFileListing(iFile).name)));
     mask0 = double(imread(fullfile(refinedMasksDirFull,refinedMaskFileListing(iFile).name)));
     
-    %get relevant particle information
-    if ~isempty(movieInfo)
-        particleIndx = (iFile-1)*numSPTFrames;
-        if iFile ~= numFiles
-            particleInfo = movieInfo(particleIndx+1:particleIndx+numSPTFrames);
-        end
+    %get relevant channel2 information
+    if ~isempty(channel2Dir)
+        channel2Info = double(imread(fullfile(channel2Dir,channel2FileListing(iFile).name)));
     end
     
     %call refinement function
-    [mask,prctileUsed(iFile)] = refineEdgeWithSteerableFilterGM(image,mask0,...
-        threshParam,gapCloseParam,doPlot,particleInfo,meanBkg);
+    [mask,prctileUsed(iFile)] = refineEdgeWithSteerableFilterSeed(image,mask0,...
+        threshParam,gapCloseParam,doPlot,meanBkg,channel2Info);
     
     %store new mask
     imwrite(mask,fullfile(masksDirFull,maskFileListing(iFile).name),'tif');
