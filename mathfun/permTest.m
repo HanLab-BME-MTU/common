@@ -1,54 +1,79 @@
-function [status,pValue]=permTest(pop1,pop2,alpha,varargin)
-% permTest performs a permutation test for means, returning the one-sided p-value
+function [H, pValue] = permTest(s1, s2, varargin)
+% PERMTEST performs the two-sample permutation test for means
 %
-% the idea is to sample n1 and n2 values (with replacement) from the union
-% of the populations pop1 and pop2.  if the null hypothesis is true (that
-% the one distributions are the same), then the mean(sample1)-mean(sample2)
-% should cluster around zero after many iterations.
+% Inputs:
+%         s1, s2 : sample vectors
 %
-% the one-sided p-value is then the proportion of sampled permutations
-% where the difference in means was greater than or equal to the absolute
-% value of the difference between the population means.
+% Options: 
+%          alpha : alpha value, default: 0.05.
+%           tail : specifies the type of null hypothesis
+%                  'both': mean(s1) != mean(s2)
+%                  'right': mean(s1) > mean(s2)
+%                   'left': mean(s1) < mean(s2)
+%           nrep : # of permutations, default: 1900. This gives a coefficient of
+%                  variation <=0.10 for alpha = 0.05. Calculated as
+%                  nrep = (1-alpha)/cv^2/alpha. See [1] for details.
+%
+% Reference:
+% [1] Efron, B. and Tibshirani, R., "An introduction to the Bootstrap," Ch. 15, 1993.
+%
+%  Example data from [1]
+%   y = [10 27 31 40 46 50 52 104 146];
+%   z = [16 23 38 94 99 141 197];
 
-% input check
+% Francois Aguet, 11/05/2012
+
 ip = inputParser;
-ip.addRequired('pop1',@isnumeric);
-ip.addRequired('pop2',@isnumeric);
-ip.addRequired('alpha',@isscalar);
-ip.addOptional('tail','both',@(x) any(strcmpi(x,{'both','right'})));
-ip.parse(pop1,pop2,alpha,varargin{:})
-tail=ip.Results.tail;
+ip.addRequired('s1', @isnumeric);
+ip.addRequired('s2', @isnumeric);
+ip.addOptional('alpha', 0.05, @isscalar);
+ip.addOptional('tail', 'both', @(x) any(strcmpi(x, {'both', 'left', 'right'})));
+ip.addOptional('nrep', 1900, @isscalar);
+ip.parse(s1, s2, varargin{:})
+nrep = ip.Results.nrep;
 
-nReps=1000;
+s1 = s1(:);
+s2 = s2(:);
+sAll = [s1; s2];
 
-n1=length(pop1);
-n2=length(pop2);
+n1 = numel(s1);
+n2 = numel(s2);
+N = n1+n2;
 
-% get union of the two populations
-bigPop=[pop1(:); pop2(:)];
-
-% get absolute value of the difference between the actual population means
-deltaPop=abs(mean(pop1)-mean(pop2));
-
-% sample both populations with replacement nReps times to get a
-% distribution of the differences
-delta=zeros(nReps,1);
-for i=1:nReps
-    s1=randsample(bigPop,n1,'true');
-    s2=randsample(bigPop,n2,'true');
-
-    delta(i)=mean(s1)-mean(s2);
+% Calculate the number of permutations. If small, run exact test
+w = warning('off', 'MATLAB:nchoosek:LargeCoefficient');
+nperms = nchoosek(n1+n2, n1);
+warning(w);
+if nperms<1000 % calculate all permutations
+    P = false(N, nperms);
+    pidx = nchoosek(1:N, n1); % returns row index of class 'sample 1'
+    % convert to linear index
+    pidx = pidx + repmat(N*(0:nperms-1)', [1 n1]);
+    % category (1->sample1, 0->sample2) matrix for all permutations
+    P(pidx) = true;
+    delta = zeros(nperms,1);
+    for i = 1:nperms
+        delta(i) = mean(sAll(P(:,i))) - mean(sAll(~P(:,i)));
+    end
+    ns = nperms;
+else % compute 'nrep' random permutations
+    delta = zeros(nrep,1);
+    for i = 1:nrep
+        idx = randperm(N); % calculate random permutation of the samples
+        delta(i) = mean(sAll(idx(1:n1))) - mean(sAll(idx(n1+1:end)));
+    end
+    ns = nrep;
 end
 
-% two-sided p-value: proportion of abs(delta) values greater than deltaPop
-%pValue = sum(abs(delta)>deltaPop)/nReps;
+deltaRef = mean(s1)-mean(s2);
 
-% calculate the one-sided p-value
-if strcmpi(tail,'both')
-    pValue = 2*(1-normcdf(deltaPop,mean(delta),std(delta)));
-else
-    pValue = 1-normcdf(deltaPop,mean(delta),std(delta));
+switch ip.Results.tail
+    case 'both'
+        pValue = sum(abs(delta)>=abs(deltaRef))/ns;
+    case 'right'
+        pValue = sum(delta>=deltaRef)/ns;
+    case 'left'
+        pValue = sum(delta<=deltaRef)/ns;
 end
 
-status = pValue<=alpha;
-%figure; hist(delta,25)
+H = pValue <= ip.Results.alpha;
