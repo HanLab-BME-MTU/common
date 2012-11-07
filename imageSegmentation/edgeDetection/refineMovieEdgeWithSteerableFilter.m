@@ -3,48 +3,32 @@ function prctileUsed = refineMovieEdgeWithSteerableFilter(MD,threshParam,...
 %REFINEMOVIEEDGEWITHSTEERABLEFILTER replaces simple masks with masks refined using steerable line filtering
 %
 %SYNOPSIS prctileUsed = refineMovieEdgeWithSteerableFilter(MD,threshParam,...
-%    gapCloseParam,doPlot,movieInfo,numSPTFrames,meanBkg)
+%    gapCloseParam,doPlot,meanBkg,channel2Dir)
 %
 %INPUT  MD    : The movieData object as output by the cell masking and
 %               windowing software. Before calling this code,
 %               thresholdMovie and refineMovieMask must have been
 %               processed. Otherwise the code will crash.
 %       threshParam  : Structure with parameters for gradient thresholding:
-%           .filterSigma    : Standard deviation for filtering.
+%           .filterSigma    : Standard deviation for steerable filtering.
 %                             Optional. Default: 1.5.
-%           .gradPrctile    : Gradient percentile for thresholding.
+%           .prctile        : Percentile for thresholding.
 %                             Optional. Default: [95 90 85 80].
-%           .bandWidth      : Width of band around original edge to look
-%                             into for edge refinement.
-%                             Use -1 so as to use whole image instead of a
-%                             band.
-%                             Optional. Default: 100 pixels (50 on each side).
+%           .bandHalfWidth  : Half-width of band around original edge to
+%                             look into for edge refinement.
+%                             Input -1 to use whole image instead of a band.
+%                             Optional. Default: 50 pixels.
 %       gapCloseParam: Structure with parameters for edge gap closing:
-%           .maxEdgePairDist: Maximum distance between edge segment pair.
+%           .maxEdgePairDist: Maximum distance between edge segment pairs.
 %                             Optional. Default: 5 pixels.
 %           .factorContr    : Contribution of each factor to the edge gap
-%                             closing cost. 6 entries for the factors:
+%                             closing cost. 4 entries for the factors:
 %                             (1) distance,
 %                             (2) angle between gradients,
 %                             (3) angle between gradient and perpendicular
 %                                 to centroid-centroid distance,
 %                             (4) "edginess" score,
 %                             Optional. Default: ones(1,4).
-%           .edgeType       : Flag indicating edge type:
-%                             0 = open edge, i.e. image is of part of a
-%                             cell and edge touches image boundary.
-%                             1 = closed edge, i.e. image is of whole cell
-%                             and segmentation requires finding a closed
-%                             contour.
-%                             2 = closed edge(s), but of potentially more
-%                             than one cell. TO BE IMPLEMENTED IN THE
-%                             FUTURE IF NEEDED.
-%                             Optional. Default: 0.
-%           .fracImageCell  : Fraction of image covered by cell. This
-%                             number does not have to be accurate, just
-%                             some minimum value to help asses whether
-%                             segmentation has been achieved.
-%                             Optional. Default: 0.25.
 %       doPlot: 1 to plot masks in the end, 2 to also show edge progress,
 %               0 to plot nothing. In final plot, refined masks shown in
 %               green, original masks shown in blue. Note that this
@@ -77,17 +61,17 @@ end
 %get thresholding parameters, including steerable filter parameters
 if nargin < 2 || isempty(threshParam)
     threshParam.filterSigma = 1.5;
-    threshParam.gradPrctile = [95 90 85 80];
-    threshParam.bandWidth = 100;
+    threshParam.prctile = [95 90 85 80];
+    threshParam.bandHalfWidth = 50;
 else
     if ~isfield(threshParam,'fiterSigma')
         threshParam.filterSigma = 1.5;
     end
-    if ~isfield(threshParam,'gradPrctile')
-        threshParam.gradPrctile = [95 90 85 80];
+    if ~isfield(threshParam,'prctile')
+        threshParam.prctile = [95 90 85 80];
     end
-    if ~isfield(threshParam,'bandWidth')
-        threshParam.bandWidth = 100;
+    if ~isfield(threshParam,'bandHalfWidth')
+        threshParam.bandHalfWidth = 50;
     end
 end
 
@@ -95,20 +79,12 @@ end
 if nargin < 3 || isempty(gapCloseParam)
     gapCloseParam.maxEdgePairDist = 5;
     gapCloseParam.factorContr = ones(1,4);
-    gapCloseParam.edgeType = 0;
-    gapCloseParam.fracImageCell = 0.25;
 else
     if ~isfield(gapCloseParam,'maxEdgePairDist')
         gapCloseParam.maxEdgePairDist = 5;
     end
     if ~isfield(gapCloseParam,'factorContr')
         gapCloseParam.factorContr = ones(1,4);
-    end
-    if ~isfield(gapCloseParam,'edgeType')
-        gapCloseParam.edgeType = 0;
-    end
-    if ~isfield(gapCloseParam,'fracImageCell')
-        gapCloseParam.fracImageCell = 0.25;
     end
 end
 

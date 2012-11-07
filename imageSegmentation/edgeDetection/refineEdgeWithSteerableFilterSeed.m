@@ -7,42 +7,26 @@ function [mask,prctileUsed] = refineEdgeWithSteerableFilterSeed(image,mask0,...
 %
 %INPUT  image        : Image to be segmented.
 %       mask0        : Original mask to be refined.
-%       threshParam  : Structure with parameters for gradient thresholding:
-%           .filterSigma    : Standard deviation for filtering.
+%       threshParam  : Structure with parameters for edge candidate thresholding:
+%           .filterSigma    : Standard deviation for steerable filtering.
 %                             Optional. Default: 1.5.
-%           .gradPrctile    : Gradient percentile for thresholding.
+%           .prctile        : Percentile for thresholding.
 %                             Optional. Default: [95 90 85 80].
-%           .bandWidth      : Width of band around original edge to look
-%                             into for edge refinement.
-%                             Use -1 so as to use whole image instead of a
-%                             band.
-%                             Optional. Default: 100 pixels (50 on each side).
+%           .bandHalfWidth  : Half-width of band around original edge to
+%                             look into for edge refinement.
+%                             Input -1 to use whole image instead of a band.
+%                             Optional. Default: 50 pixels.
 %       gapCloseParam: Structure with parameters for edge gap closing:
-%           .maxEdgePairDist: Maximum distance between edge segment pair.
+%           .maxEdgePairDist: Maximum distance between edge segment pairs.
 %                             Optional. Default: 5 pixels.
 %           .factorContr    : Contribution of each factor to the edge gap
-%                             closing cost. 6 entries for the factors:
+%                             closing cost. 4 entries for the factors:
 %                             (1) distance,
 %                             (2) angle between gradients,
 %                             (3) angle between gradient and perpendicular
 %                                 to centroid-centroid distance,
 %                             (4) "edginess" score,
 %                             Optional. Default: ones(1,4).
-%           .edgeType       : Flag indicating edge type:
-%                             0 = open edge, i.e. image is of part of a
-%                             cell and edge touches image boundary.
-%                             1 = closed edge, i.e. image is of whole cell
-%                             and segmentation requires finding a closed
-%                             contour.
-%                             2 = closed edge(s), but of potentially more
-%                             than one cell. TO BE IMPLEMENTED IN THE
-%                             FUTURE IF NEEDED.
-%                             Optional. Default: 0.
-%           .fracImageCell  : Fraction of image covered by cell. This
-%                             number does not have to be accurate, just
-%                             some minimum value to help asses whether
-%                             segmentation has been achieved.
-%                             Optional. Default: 0.25.
 %       doPlot       : 1 to plot masks in the end, 2 to also show edge progress,
 %                      0 to plot nothing. In final plot, refined masks
 %                      shown in green, original masks shown in blue.
@@ -68,29 +52,27 @@ end
 %get thresholding parameters, including steerable filter parameters
 if nargin < 3 || isempty(threshParam)
     threshParam.filterSigma = 1.5;
-    threshParam.gradPrctile = [95 90 85 80];
-    threshParam.bandWidth = 100;
+    threshParam.prctile = [95 90 85 80];
+    threshParam.bandHalfWidth = 50;
 else
     if ~isfield(threshParam,'fiterSigma')
         threshParam.filterSigma = 1.5;
     end
-    if ~isfield(threshParam,'gradPrctile')
-        threshParam.gradPrctile = [95 90 85 80];
+    if ~isfield(threshParam,'prctile')
+        threshParam.prctile = [95 90 85 80];
     end
-    if ~isfield(threshParam,'bandWidth')
-        threshParam.bandWidth = 100;
+    if ~isfield(threshParam,'bandHalfWidth')
+        threshParam.bandHalfWidth = 50;
     end
 end
 filterSigma = threshParam.filterSigma;
-gradPrctile = threshParam.gradPrctile;
-bandWidth = threshParam.bandWidth;
+threshPrctile = threshParam.prctile;
+bandWidth = 2*threshParam.bandHalfWidth + 1;
 
 %get edge gap closing parameters
 if nargin < 4 || isempty(gapCloseParam)
     gapCloseParam.maxEdgePairDist = 5;
     gapCloseParam.factorContr = ones(1,4);
-    gapCloseParam.edgeType = 0;
-    gapCloseParam.fracImageCell = 0.25;
 else
     if ~isfield(gapCloseParam,'maxEdgePairDist')
         gapCloseParam.maxEdgePairDist = 5;
@@ -98,37 +80,14 @@ else
     if ~isfield(gapCloseParam,'factorContr')
         gapCloseParam.factorContr = ones(1,4);
     end
-    if ~isfield(gapCloseParam,'edgeType')
-        gapCloseParam.edgeType = 0;
-    end
-    if ~isfield(gapCloseParam,'fracImageCell')
-        gapCloseParam.fracImageCell = 0.25;
-    end
 end
 maxEdgePairDist = gapCloseParam.maxEdgePairDist;
 contr = gapCloseParam.factorContr;
-edgeType = gapCloseParam.edgeType;
-fracImageCell = gapCloseParam.fracImageCell;
-
-%make sure that edgeType has one of possible values
-if edgeType ~= 0 && edgeType ~= 1
-    if edgeType == 2
-        error('refineEdgeWithSteerableFilterSeed: Algorithm not developed for edgeType = 2');
-    else
-        error('refineEdgeWithSteerableFilterSeed: Bad edgeType value');
-    end
-end
 
 %check whether/what to plot
 if nargin < 5 || isempty(doPlot)
     doPlot = 0;
 end
-
-%get image size
-imSize = size(image);
-
-%get minimum mask size for segmentation assessment
-minMaskSize = fracImageCell*prod(imSize);
 
 %get background information
 if nargin < 6 || isempty(meanBkg)
@@ -142,6 +101,35 @@ end
 
 %% Pre-processing
 
+%convert to double
+image = double(image);
+mask0 = double(mask0);
+
+%get image size
+imSize = size(image);
+
+%get minimum mask size for segmentation assessment
+minMaskSize = 0.5*sum(mask0(:));
+
+%get the edges at image boundary of original mask
+%and determine whether mask should touch image boundary
+mask0Bound = mask0;
+mask0Bound(2:end-1,2:end-1) = 0;
+if sum(mask0(1,:)) > 0
+    mask0Bound(1,3:end-2) = 1;
+end
+if sum(mask0(end,:)) > 0
+    mask0Bound(end,3:end-2) = 1;
+end
+if sum(mask0(:,1)) > 0
+    mask0Bound(3:end-2,1) = 1;
+end
+if sum(mask0(:,end)) > 0
+    mask0Bound(3:end-2,end) = 1;
+end
+
+%% Edge candidates and scores
+
 %run steerable filter to enhance edges
 [res,theta] = steerableDetector(image,3,filterSigma);
 
@@ -154,25 +142,6 @@ nn = (imfilter(nmsMaskThin,ones(3),'same')-1) .* nmsMaskThin;
 junctionMatrix = nn>2;
 nms = nms0 .*nmsMaskThin .* ~junctionMatrix;
 % nmsJunctions = nms0 .* nmsMaskThin .* junctionMatrix;
-
-%get the edges at image boundary of original mask
-%needed only in open edge case
-mask0Bound = mask0;
-mask0Bound(2:end-1,2:end-1) = 0;
-if edgeType == 0
-    if sum(mask0(1,:)) > 0
-        mask0Bound(1,3:end-2) = 1;
-    end
-    if sum(mask0(end,:)) > 0
-        mask0Bound(end,3:end-2) = 1;
-    end
-    if sum(mask0(:,1)) > 0
-        mask0Bound(3:end-2,1) = 1;
-    end
-    if sum(mask0(:,end)) > 0
-        mask0Bound(3:end-2,end) = 1;
-    end
-end
 
 %keep only a certain band of pixels around initial mask
 if bandWidth > 0
@@ -294,17 +263,12 @@ if ~isempty(channel2)
     candScoreAll = candScoreAll + channel2GradAll/max(channel2GradAll);
 end
 
-% candScoreAll = (candLengthAll.^0.25) .* gradOverIntAll ./ (1+candStdThetaAll).^2;
-% if ~isempty(linIndxPart)
-%     candScoreAll = candScoreAll .* channel2GradAll;
-% end
-
-for iPrctile = 1 : length(gradPrctile)
+for iPrctile = 1 : length(threshPrctile)
     
     %% Thresholding
     
     %determine threshold for edge segmentation
-    cutThreshEdge = prctile(candScoreAll,gradPrctile(iPrctile));
+    cutThreshEdge = prctile(candScoreAll,threshPrctile(iPrctile));
     
     %keep only edge segments above the threshold
     indxEdgeKeep = find(candScoreAll>=cutThreshEdge);
@@ -318,8 +282,8 @@ for iPrctile = 1 : length(gradPrctile)
     candIntSlabDn = candIntSlabDnAll(indxEdgeKeep);
     channel2Grad = channel2GradAll(indxEdgeKeep);
     
-    %get maximum edge intensity and score for later use
-    maxScore = max(candScoreAll);
+    %get maximum edge score for later use
+    maxScore = max(candScore);
     
     %% Edge linking and gap closing
     
@@ -404,14 +368,10 @@ for iPrctile = 1 : length(gradPrctile)
     %find edge segment with highest score
     %this is most likely a true edge segment, so use it as a seed to
     %put segments together and grow the edge
-    if edgeType < 2
-        scoreSorted = sort(candScore,'descend');
-        indxLink = find(candScore==scoreSorted(1));
-        indxLink = indxLink(1);
-        indxSeed = indxLink;
-    else
-        %ADD SOMETHING HERE FOR edgeType = 2
-    end
+    scoreSorted = sort(candScore,'descend');
+    indxLink = find(candScore==scoreSorted(1));
+    indxLink = indxLink(1);
+    indxSeed = indxLink;
     
     %start constructing an edge image to assess whether segmentation has been
     %achieved
@@ -427,8 +387,7 @@ for iPrctile = 1 : length(gradPrctile)
     end
     
     %check whether segmentation has been achieved
-    %THIS FUNCTION SHOULD BE MODIFIED IN CASE OF WHOLE OR MULTIPLE CELLS
-    [segmentOK,imageConst] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize,edgeType);
+    [segmentOK,imageConst] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize);
     
     iCounter = 0;
     
@@ -480,9 +439,8 @@ for iPrctile = 1 : length(gradPrctile)
             end
             
             %check whether full segmentation has been achieved
-            %THIS FUNCTION SHOULD BE MODIFIED IN CASE OF WHOLE OR MULTIPLE CELLS
             if mod(iCounter,10)==0
-                [segmentOK,imageConst] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize,edgeType);
+                [segmentOK,imageConst] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize);
             end
             
         end
@@ -490,8 +448,7 @@ for iPrctile = 1 : length(gradPrctile)
     end
     
     %check whether full segmentation has been achieved
-    %THIS FUNCTION SHOULD BE MODIFIED IN CASE OF WHOLE OR MULTIPLE CELLS
-    [segmentOK,imageConst] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize,edgeType);
+    [segmentOK,imageConst] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize);
     
     %% Final mask
     
@@ -507,8 +464,7 @@ for iPrctile = 1 : length(gradPrctile)
             imageTmp(candPixLin{iSeed}) = 0;
             
             %check whether segmentation is still OK
-            %THIS FUNCTION SHOULD BE MODIFIED IN CASE OF WHOLE OR MULTIPLE CELLS
-            segmentStillOK = checkEdgeComplete(imageTmp,mask0Bound,minMaskSize,edgeType);
+            segmentStillOK = checkEdgeComplete(imageTmp,mask0Bound,minMaskSize);
             
             %if OK, indicate that this seed could be removed
             if segmentStillOK
@@ -547,8 +503,7 @@ for iPrctile = 1 : length(gradPrctile)
             imageTmp(candPixLin{iSeed}) = 0;
             
             %check whether segmentation is still OK
-            %THIS FUNCTION SHOULD BE MODIFIED IN CASE OF WHOLE OR MULTIPLE CELLS
-            [segmentStillOK,imageTmp] = checkEdgeComplete(imageTmp,mask0Bound,minMaskSize,edgeType);
+            [segmentStillOK,imageTmp] = checkEdgeComplete(imageTmp,mask0Bound,minMaskSize);
             
             if segmentStillOK
                 
@@ -574,23 +529,37 @@ for iPrctile = 1 : length(gradPrctile)
         SE = strel('disk',3,0);
         mask = imopen(mask,SE);
         
-        %also get rid os whole by doing a closure
+        %also get rid of holes by doing a closure
         SE = strel('disk',3,0);
         mask = imclose(mask,SE);
         
+        %if there is more than one connected componenent, retain the
+        %largest one
+        stats = regionprops(mask,'Area');
+        maskArea = vertcat(stats.Area);
+        numMasks = length(maskArea);
+        if numMasks > 1
+            indxKeep = find(maskArea==max(maskArea));
+            indxRemove = setdiff(1:numMasks,indxKeep);
+            L = bwlabel(mask);
+            for iRem = indxRemove
+                mask(L==iRem) = 0;
+            end
+        end
+        
         %store percentile used for gradient thresholding
-        prctileUsed = gradPrctile(iPrctile);
+        prctileUsed = threshPrctile(iPrctile);
         
         %exit for loop
         break
         
     end
     
-end %(for iPrctile = 1 : length(gradPrctile))
+end %(for iPrctile = 1 : length(threshPrctile))
 
 %return empty mask if segmentation is not achieved
 if ~segmentOK
-    mask = zeros(imSize);
+    mask = mask0;
     prctileUsed = -1;
 end
         
@@ -610,36 +579,16 @@ end
 
 %% ~~~ the end ~~~
 
-function [segmentOK,imageConst,mask] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize,edgeType)
+function [segmentOK,imageConst,mask] = checkEdgeComplete(imageConst,mask0Bound,minMaskSize)
 
-switch edgeType
-    
-    case 0
-        
-        %check whether segmentation has been achieved
-        edgeMask = imageConst | mask0Bound;
-        mask = imfill(edgeMask,'holes');
-        maxArea = sum(mask(:));
-        if maxArea > minMaskSize
-            segmentOK = 1;
-        else
-            segmentOK = 0;
-        end
-        
-    case 1
-        
-        %check whether segmentation has been achieved
-        edgeMask = imageConst | mask0Bound;
-        mask = imfill(edgeMask,'holes');
-        maxArea = sum(mask(:));
-        if maxArea > minMaskSize
-            segmentOK = 1;
-        else
-            segmentOK = 0;
-        end
-        
-    case 2
-        
-        %ADD SOMETHING IN CASE OF MULTIPLE CELLS
-        
+%check whether segmentation has been achieved
+edgeMask = imageConst | mask0Bound;
+mask = imfill(edgeMask,'holes');
+maxArea = sum(mask(:));
+if maxArea > minMaskSize
+    segmentOK = 1;
+else
+    segmentOK = 0;
 end
+
+
