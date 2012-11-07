@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 12-Mar-2012 14:48:47
+% Last Modified by GUIDE v2.5 07-Nov-2012 18:14:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -121,13 +121,19 @@ for i=1:nPackages
 end
 set(handles.uipanel_packages,'SelectionChangeFcn','');
 
-% Populate pre-loaded movies/movie lists
+% Populate movie list to analyze
 if ~isempty(ip.Results.ML)
     userData.ML=ip.Results.ML;
-    MD=arrayfun(@(x) horzcat(x.getMovies{:}),userData.ML,'Unif',0);
-    userData.MD=horzcat(MD{:});
+    % Populate movies with the movie list components if no MD is passed
+    if isempty(ip.Results.MD)
+        MD = arrayfun(@(x) horzcat(x.getMovies{:}),userData.ML,'Unif',0);
+        userData.MD = horzcat(MD{:});
+    else
+        userData.MD = [];
+    end
 end
 
+% Populate movies to analyze
 if ~isempty(ip.Results.MD)
     userData.MD = horzcat(userData.MD,ip.Results.MD);
 end
@@ -469,3 +475,20 @@ else
 end
 set(handles.listbox_movieList,'String',listPaths);
 set(handles.text_movieList, 'String', sprintf('%g/%g movie list(s)',iList,nLists))
+
+
+% --- Executes on button press in pushbutton_deletelist.
+function pushbutton_deletelist_Callback(hObject, eventdata, handles)
+
+userData = get(handles.figure1, 'Userdata');
+if isempty(userData.MD), return;end
+
+% Delete channel object
+iList = get(handles.listbox_movie,'Value');
+delete(userData.ML(iList));
+userData.ML(iList) = [];
+
+% Refresh listbox_channel
+set(handles.figure1, 'Userdata', userData)
+refreshDisplay(hObject,eventdata,handles);
+guidata(hObject, handles);
