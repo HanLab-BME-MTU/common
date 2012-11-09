@@ -13,7 +13,7 @@ function [backMask,backMu,backSig] = estimateBackgroundArea(ims,varargin)
 
 ip = inputParser;
 ip.addParamValue('PostProcess',false,@(x)(islogical(x) && numel(x) == 1));%Mask post-processing
-ip.addParamValue('nSTD',2,@(x)(numel(x) == 0));%# of STD above estimated background to threshold mask at
+ip.addParamValue('nSTD',2,@(x)(numel(x) == 1));%# of STD above estimated background to threshold mask at
 ip.addParamValue('TimeFiltSigma',3,@(x)(numel(x)==1 && x >=0)); %Sigma for gradient filtering in 3D if multiple images input
 ip.addParamValue('ShowPlots',false,@(x)(numel(x)==1 && islogical(x))); %Display histogram fitting plots
 %Post-processing parameters
