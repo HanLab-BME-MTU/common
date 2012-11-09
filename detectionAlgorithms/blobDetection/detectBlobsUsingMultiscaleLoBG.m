@@ -1,11 +1,11 @@
-function [ imCellSeedPoints, varargout ] = detect_cell_seeds_multiscale_LoBG( im, cellDiameterRange, varargin )
-% Detects cell seed points as local maxima of the Multiscale LoBG filtered image
+function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoBG( im, blobDiameterRange, varargin )
+% Detects blobs as local maxima of the Multiscale LoBG filtered image
 % 
-%   [ imCellSeedPoints ] = detect_cell_seeds_multiscale_LoBG( im, cellDiameterRange, varargin )
-%   [ imCellSeedPoints, imMultiscaleLoBGResponse ] = detect_cell_seeds_multiscale_LoBG( im, cellDiameterRange, varargin )
+%   [ imBlobLocations ] = detectBlobsUsingMultiscaleLoBG( im, blobDiameterRange, varargin )
+%   [ imBlobLocations, imMultiscaleLoBGResponse ] = detectBlobsUsingMultiscaleLoBG( im, blobDiameterRange, varargin )
 % 
 %   The input intensity image is first filtered with a Laplacian of Bi-Gaussian
-%   (LoBG) Filter accross multiple scales/sigmas. The seed points are then detected 
+%   (LoBG) Filter accross multiple scales/sigmas. The blobs are then detected 
 %   as local maxima in the scale space.
 %
 %   References:
@@ -22,14 +22,14 @@ function [ imCellSeedPoints, varargout ] = detect_cell_seeds_multiscale_LoBG( im
 
     p = inputParser;    
     p.addRequired( 'im', @(x) (isnumeric(x) && ismember( ndims(x), [2,3] )) );
-    p.addRequired( 'cellDiameterRange', @(x) (numel(x) == 2) );    
-    p.parse( im, cellDiameterRange );    
+    p.addRequired( 'blobDiameterRange', @(x) (numel(x) == 2) );    
+    p.parse( im, blobDiameterRange );    
     
     p.addParamValue( 'rho', 0.2, @(x) (isscalar(x)) );
     p.addParamValue( 'spacing', ones( 1, ndims(im) ), @(x) (isnumeric(x) && numel(x) == ndims(im)) );
     p.addParamValue( 'numLoGScales', 15, @(x) isscalar(x) );
     p.addParamValue( 'debugMode', false, @(x) (isscalar(x) && islogical(x)) );
-    p.parse( im, cellDiameterRange, varargin{:} ); 
+    p.parse( im, blobDiameterRange, varargin{:} ); 
 
     spacing = p.Results.spacing;
     numLoGScales = p.Results.numLoGScales;
@@ -37,7 +37,7 @@ function [ imCellSeedPoints, varargout ] = detect_cell_seeds_multiscale_LoBG( im
     rho = p.Results.rho;
     
     % compute LoG at a series of sigmas
-    sigmaLogRange = log2( 0.5 * sort(cellDiameterRange) );
+    sigmaLogRange = log2( 0.5 * sort(blobDiameterRange) );
     sigmaValues = 2.^linspace( sigmaLogRange(1), sigmaLogRange(2), numLoGScales);
 
     [ imMultiscaleLoBGResponse, pixelScaleMap ] = filterMultiscaleLoBGND( im, sigmaValues, rho, ...
@@ -47,7 +47,7 @@ function [ imCellSeedPoints, varargout ] = detect_cell_seeds_multiscale_LoBG( im
     imMultiscaleLoBGResponse = -1 * imMultiscaleLoBGResponse;
     
     % locate local intensity maxima in gaussian blurred image
-    minCellDiameterImsp = min( cellDiameterRange ) ./ spacing;
+    minCellDiameterImsp = min( blobDiameterRange ) ./ spacing;
     MaximaSuppressionSize = round( minCellDiameterImsp );
     evenind = (mod( MaximaSuppressionSize, 2 ) == 0);
     MaximaSuppressionSize( evenind ) = MaximaSuppressionSize( evenind ) + 1;    
@@ -99,7 +99,7 @@ function [ imCellSeedPoints, varargout ] = detect_cell_seeds_multiscale_LoBG( im
     end
 
     % detect local intensity maxima as cell seed points
-    imCellSeedPoints = imLocalMax;   
+    imBlobLocations = imLocalMax;   
     if nargout > 1
         varargout{1} = imMultiscaleLoBGResponse;
     end     

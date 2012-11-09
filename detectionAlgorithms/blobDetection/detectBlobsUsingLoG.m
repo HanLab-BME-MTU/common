@@ -1,8 +1,8 @@
-function [imCellSeedPoints] = detect_cell_seeds_LoG( im, meanCellDiameter, varargin )
-% Detects cell seed points as local maxima of the LoG filtered image
+function [imBlobLocations] = detectBlobsUsingLoG( im, meanBlobDiameter, varargin )
+% Detects blobs as local maxima of the LoG filtered image
 %
 % The input intensity image is first filtered with a Laplacian of Gaussian (LoG)
-% Filter and then the seed points are detected as local maxima in this
+% Filter and then the blobs are detected as local maxima in this
 % filtered image.
 %
 % References:
@@ -16,22 +16,22 @@ function [imCellSeedPoints] = detect_cell_seeds_LoG( im, meanCellDiameter, varar
 
     p = inputParser;    
     p.addRequired( 'im', @(x) (isnumeric(x) && ismember( ndims(x), [2,3] )) );
-    p.addRequired( 'meanCellDiameter', @(x) isscalar(x) );
-    p.parse( im, meanCellDiameter );
+    p.addRequired( 'meanBlobDiameter', @(x) isscalar(x) );
+    p.parse( im, meanBlobDiameter );
     p.addParamValue( 'spacing', ones( 1, ndims(im) ), @(x) (isnumeric(x) && numel(x) == ndims(im)) );
     p.addParamValue( 'debugMode', false, @(x) (isscalar(x) && islogical(x)) );
-    p.parse( im, meanCellDiameter, varargin{:} ); 
+    p.parse( im, meanBlobDiameter, varargin{:} ); 
     
     spacing = p.Results.spacing;
     flagDebugMode = p.Results.debugMode;
-    meanCellDiameterImsp = meanCellDiameter ./ spacing;
+    meanBlobDiameterImsp = meanBlobDiameter ./ spacing;
 
     % Apply Laplacian of Gaussian (LoG) filter
-    sigma = 0.5 * meanCellDiameter / sqrt( ndims(im) );
+    sigma = 0.5 * meanBlobDiameter / sqrt( ndims(im) );
     imLoG = -1 * filterLoGND( im, sigma, 'spacing', spacing, 'UseNormalizedDerivatives', true );
 
     % locate local intensity maxima in gaussian blurred image
-    MaximaSuppressionSize = round( meanCellDiameterImsp );
+    MaximaSuppressionSize = round( meanBlobDiameterImsp );
     evenind = (mod( MaximaSuppressionSize, 2 ) == 0);
     MaximaSuppressionSize( evenind ) = MaximaSuppressionSize( evenind ) + 1;    
     
@@ -47,7 +47,7 @@ function [imCellSeedPoints] = detect_cell_seeds_LoG( im, meanCellDiameter, varar
                 theta = 0:0.1:(2*pi+0.1);
                 cx = cx(:,ones(size(theta)));
                 cy = cy(:,ones(size(theta)));
-                cellRadius = (0.5 * meanCellDiameter);
+                cellRadius = (0.5 * meanBlobDiameter);
                 rad = cellRadius * ones( size(cx) );
                 theta = theta(ones(size(cx,1),1),:);                
                 X = cx + cos(theta).* rad;
@@ -73,6 +73,6 @@ function [imCellSeedPoints] = detect_cell_seeds_LoG( im, meanCellDiameter, varar
     end
 
     % detect local intensity maxima as cell seed points
-    imCellSeedPoints = imLocalMax;
+    imBlobLocations = imLocalMax;
 
 end
