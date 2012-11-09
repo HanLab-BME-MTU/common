@@ -106,8 +106,8 @@ if iscell(inmasks)
         masks(i).im = inmasks{i};
     end	
 else     
-    inmaskssize = size(inmasks);
-    if any( volSize(1:ndims(im)) ~= inmaskssize(1:ndims(im)) ) && ~ismember( (ndims(inmasksize) - ndims(im)), {0,1} )
+    inmasksize = size(inmasks);
+    if any( volSize(1:ndims(im)) ~= inmasksize(1:ndims(im)) ) && ~ismember( (ndims(inmasksize) - ndims(im)), [0,1] )
         error('ERROR: sizes of the masks and the input image must match. check example usages of masks in the documentation');
     end
     switch ndims(im)

@@ -624,7 +624,7 @@ end
 %%
 function [ intensityRange ] = ComputeImageDynamicRange( im, cover_percent )
 
-    [p,x] = hist( im, 255 );   
+    [p,x] = hist( double(im), 255 );   
     p = p / sum(p);
     
     min_xlow = [];

@@ -1,15 +1,26 @@
-function [ imRGB ] = genImageMaskOverlay( im, mask, maskColor, maskAlpha )
+function [ imMaskOverlay ] = genImageMaskOverlay( im, masks, maskColors, maskAlphas )
 
-    imr = im2uint8( mat2gray( im ) );
+    imr = mat2gray( im );
     img = imr;
     imb = imr;
-    mask = mask > 0;
-    maxVal = 255;
     
-    imr(mask) = uint8( double( (1 - maskAlpha) * imr(mask) ) + maxVal * maskAlpha * maskColor(1) );
-    img(mask) = uint8( double( (1 - maskAlpha) * img(mask) ) + maxVal * maskAlpha * maskColor(2) );
-    imb(mask) = uint8( double( (1 - maskAlpha) * imb(mask) ) + maxVal * maskAlpha * maskColor(3) );
+    if ~iscell( masks )
+        masks = { masks };
+    end
+       
+    for i = 1:numel(masks)
+        
+        curMask = logical(masks{i});
+        curMaskColor = maskColors(i,:);
+        curMaskAlpha = maskAlphas(i);
+                
+        imr(curMask) = double( (1 - curMaskAlpha) * imr(curMask) + curMaskAlpha * curMaskColor(1) );
+        img(curMask) = double( (1 - curMaskAlpha) * img(curMask) + curMaskAlpha * curMaskColor(2) );
+        imb(curMask) = double( (1 - curMaskAlpha) * imb(curMask) + curMaskAlpha * curMaskColor(3) );
+        
+    end
     
-    imRGB = cat(3, imr, img, imb );
+    imMaskOverlay = cat(3, imr, img, imb );
+    imMaskOverlay( imMaskOverlay > 1 ) = 1;
     
 end
