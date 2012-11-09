@@ -1,6 +1,0 @@
-----------------------------------------------------------------------
-Do NOT use the gui tool on the file '*window.m' or '*panel.m' directly
-----------------------------------------------------------------------
-
-To edit the gui panel use the corresponding panel in 'gui/PanelLayouts' and
-copy the changed (added) parts of the source code to the file '*window.m'.
