@@ -38,8 +38,11 @@ if isempty(init)
     A_init = ones(1,n)/n;
     init = reshape([mu_init; sigma_init; A_init], [1 3*n]);
 end
-    
-[p,resnorm,~,~,~,~,J] = lsqnonlin(@cost, init(1:end-1), [], [], opts, x_ecdf, f_ecdf);
+  
+%HLE - Constrain amplitude to positive values
+lb = repmat([-Inf 0 0],1,n);
+
+[p,resnorm,~,~,~,~,J] = lsqnonlin(@cost, init(1:end-1), lb(1:end-1), [], opts, x_ecdf, f_ecdf);
 
 % covariance matrix, error propagation
 C = resnorm*full(inv(J'*J));
