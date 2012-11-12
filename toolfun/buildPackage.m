@@ -1,7 +1,9 @@
 function buildPackage(varargin)
 % Build the selected packages and export them to a given repository
 % 
-% makePackage(packageList, outDir)
+% SYNOPSIS
+%   buildPackage(packageList, outDir)
+%   buildPackage('exclude', {'extern','myfunctions'})
 % 
 % This function copies all the files needed to run the selected packages data
 % processing package into a single folder for upload to the website. It
@@ -10,10 +12,20 @@ function buildPackage(varargin)
 % 
 % INPUT:
 % 
-%   outDir - The directory to copy all the package files to.
+%   packageList - A package name or a cell array of package names. If not
+%   input a prompt dialog will appear asking to select a list of packages.
+%   
+%   outDir - Optional. The directory to copy all the package files to. If
+%   not input
+%
+%   Parameter/value pairs.
+%
+%   exclude -  a string of a cell array of strings, giving a list of
+%   patterns to exclude when looking for the function dependencies.
+%   Default: extern.
 %
 
-% Sebastien Besson, July 2011 (last modified: Jul 2012)
+% Sebastien Besson, July 2011 (last modified: Nov 2012)
 
 % Input check
 ip = inputParser;
@@ -22,6 +34,7 @@ isPackageCell = @(x) iscell(x) && all(cellfun(isClass, x));
 isPackage = @(x) ischar(x) && isClass(x);
 ip.addOptional('packageList',{},@(x) isPackageCell(x) || isPackage(x));
 ip.addOptional('outDir','',@ischar);
+ip.addParamValue('exclude','extern',@(x) ischar(x) || iscell(x));
 ip.parse(varargin{:});
 
 if isempty(ip.Results.packageList)
@@ -59,7 +72,7 @@ else
 end
     
 %Get all the function dependencies and display toolboxes
-[packageFuns toolboxesUsed] = getFunDependencies(packageList);
+[packageFuns toolboxesUsed] = getFunDependencies(packageList, ip.Results.exclude);
 disp('The package uses the following toolboxes:')
 disp(toolboxesUsed)
 
