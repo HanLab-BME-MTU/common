@@ -9,11 +9,13 @@ function [block,Bleng]=findBlock(TS,minLength)
 %   Bleng - length of each block
 %Marco Vilela, 1-20-11
 
-if nargin < 2
-    
-    minLength = 1;
-    
-end
+ip = inputParser;
+ip.addRequired('TS',@isvector);
+ip.addRequired('minLength',@isscalar);
+ip.parse(TS,minLength);
+
+block = [];
+Bleng = [];
 
 TS = TS(:);
 
@@ -22,12 +24,12 @@ testDiff   = find( diff( diff( test ) == 1 ) );
 %Blocks with length >= 2
 testDiff   = reshape( testDiff,2,numel(testDiff)/2);
 %Block with length = 1
-smallBlock = setdiff( find(diff( test ) ~= 1),testDiff(:) );smallBlock([1 end]) = [];
+smallBlock = setdiff( find(diff( test ) ~= 1),testDiff(:) );smallBlock(end) = [];
 %Temporal indexes 
 [~,idx]    = sort([testDiff(1,:) smallBlock']);
 %Convert into cell array
-smallBlock = num2cell(smallBlock);
-bigBlock   = cellfun( @(x) x(1):x(end),num2cell( testDiff,1 ),'Unif',0);
+smallBlock = num2cell(TS(smallBlock));
+bigBlock   = cellfun( @(x) TS(x(1):x(end)),num2cell( testDiff,1 ),'Unif',0);
 %Set the right temporal chain of events
 block      = [bigBlock smallBlock'];
 block      = block(idx); 
