@@ -10,13 +10,14 @@ function [Protrusion,Retraction] = getEdgeMotionPersistence(TS,varargin)
 %       Optional:
 %               nBoot    - scalar  - number of bootstrap samples
 %               alpha    - scalar  - confidence level
+%               deltaT   - frame rate
 %               cluster  - logical - true for cluster the data 
 %               nCluster - scalar  - number of clusters
 %Output:
 %
-%       Protrusion.meanTime    - 
-%       Protrusion.meanConfInt - 
-%       Protrusion.windows     - 
+%       Protrusion.meanTime    - mean time
+%       Protrusion.meanConfInt - mean time confidence interval(based on the input alpha)
+%       Protrusion.windows     - structure with all measurements per window (see getPersistenceTime for the measurements)
 %       
 %       Same structure for Retraction
 %
@@ -51,7 +52,22 @@ nCluster = ip.Results.nCluster;
 
 
 %%
-nWin        = length(TS);
+nWin                           = length(TS);[Protrusion,Retraction] = getEdgeMotionPersistence(TS,varargin)
+
+Retraction.meanPersTime        = [];
+Retraction.meanPersTimeCI      = [];
+Retraction.persTimeClusterCI   = [];
+Retraction.persTimeClusterIdx  = [];
+Retraction.persTimeClusterMean = [];
+Retraction.windows(1:nWin)     = struct('limit',[],'PersTime',[],'BlockOut',[],'MaxVeloc',[],'MeanVeloc',[]);
+
+Protrusion.meanPersTime        = [];
+Protrusion.meanPersTimeCI      = [];
+Protrusion.persTimeClusterCI   = [];
+Protrusion.persTimeClusterIdx  = [];
+Protrusion.persTimeClusterMean = [];
+Protrusion.windows(1:nWin)     = struct('limit',[],'PersTime',[],'BlockOut',[],'MaxVeloc',[],'MeanVeloc',[]);
+
 outProtTime = [];
 outRetrTime = [];
 
@@ -75,46 +91,21 @@ outRetrTime(isnan(outRetrTime)) = [];
 %*****************************************************************
 
 
-[Protrusion.meanConfInt,Protrusion.meanTime] = bootStrapMean(outProtTime,alpha,nBoot);
-[Retraction.meanConfInt,Retraction.meanTime] = bootStrapMean(outRetrTime,alpha,nBoot);
+[Protrusion.meanTimeCI,Protrusion.meanTime] = bootStrapMean(outProtTime,alpha,nBoot);
+[Retraction.meanTimeCI,Retraction.meanTime] = bootStrapMean(outRetrTime,alpha,nBoot);
 
 
 if cluster
     
-    [Protrusion.cltConfI(:,1:nCluster),Protrusion.cltDisp(1:nCluster),Protrusion.index(1:nCluster)] = ...
+    [Protrusion.timeClusterCI(:,1:nCluster),Protrusion.timeClusterMean(1:nCluster),Protrusion.timeClusterIdx(1:nCluster)] = ...
                                     clusterWindowsVelocity(outProtTime,nBoot,alpha,nCluster);
                                 
-    [Retraction.cltConfI(:,nCluster+1:2*nCluster),Retraction.cltDisp(nCluster+1:2*nCluster),Retraction.index(nCluster+1:2*nCluster)] = ...
+    [Retraction.timeClusterCI(:,nCluster+1:2*nCluster),Retraction.timeClusterMean(nCluster+1:2*nCluster),Retraction.timeClusterIdx(nCluster+1:2*nCluster)] = ...
                                     clusterWindowsVelocity(outRetrTime,nBoot,alpha,nCluster);
-else
     
-    Retraction.cltConfI = [];
-    Retraction.cltDisp  = [];
-    Retraction.index    = [];
-    
-    Protrusion.cltConfI = [];
-    Protrusion.cltDisp  = [];
-    Protrusion.index    = [];
 end
 
 end%End of main function
-
-
-function [conf,meanS] = bootStrapMean(variable,alpha,nBoot)
-%This subFunction bootstrap the mean value of the input "variable" at an
-%alpha confidence level with nBoot samples
-
-opt = statset('UseParallel','never');
-if matlabpool('size')
-    opt = statset('UseParallel','always');
-end
-
-[conf,meanSample] = bootci(nBoot,{@nanmean,variable},'alpha',alpha,...
-    'type','bca','Options',opt);
-
-meanS = nanmean(meanSample);
-
-end
 
 function [cltConfI,cltDisp,index] = clusterWindowsVelocity(Veloc,nBoot,alpha,nCluster)
 

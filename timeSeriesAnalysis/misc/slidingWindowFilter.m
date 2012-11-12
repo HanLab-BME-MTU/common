@@ -33,10 +33,14 @@ Hat    = cellfun(@(x) formatFilterInput(x,bound,winSize),workTS,'Unif',0);
 
 %Filtering
 if nVar == 1
+    
     out   = operation(Hat{1});
+    
 else
+    
     input = cellfun(@(x) num2cell(x,2),Hat,'Unif',0);
     out   = cell2mat(cellfun(@(x,y) funOut,input{1},input{2},'Unif',0));
+    
 end
 
 end %End of main function

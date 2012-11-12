@@ -23,10 +23,12 @@ function [imfOut,noise] = testImf(imf,varargin)
 %           Samuel Shen. World Scientific. Chapter 5.
 %
 %Marco Vilela, 2012
+
 ip = inputParser;
 ip.addRequired('imf',@ismatrix);
 ip.addOptional('alpha',0.05,@isscalar);
 ip.addOptional('nSurr',100,@isscalar);
+
 ip.parse(imf,varargin{:});
 alpha  = ip.Results.alpha;
 nSurr  = ip.Results.nSurr;
@@ -43,18 +45,24 @@ imfOut = imf;
 
 %Decomposing noise into IMF's
 for i=1:nSurr
+    
     wnImf{i}  = emdc([],Wn(:,i));
+    
 end
 
 %Testing each imf
 for i = 1:nImf
+    
     imfTest = cell2mat(cellfun(@(x) getThImf(x,i),wnImf,'UniformOutput',0));
     %Test the ith imf against the noise ith imf
     if ~isempty(imfTest)
+        
         limit  = prctile(imfTest,100*[alpha/2 (1 - alpha/2)]);
         %Null hypothesis that imf(i,j) is at the gaussian noise imf level
-        Ho     = bsxfun(@gt,imf(i,:),limit(2)) | bsxfun(@lt,imf(i,:),limit(1));
+        Ho                = bsxfun(@gt,imf(i,:),limit(2)) | bsxfun(@lt,imf(i,:),limit(1));
         imfOut(i,Ho == 1) = 0;
-        noise  = noise + imfOut(i,:);
+        noise             = noise + imfOut(i,:);
+        
     end
+    
 end

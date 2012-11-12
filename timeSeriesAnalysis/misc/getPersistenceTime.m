@@ -29,12 +29,13 @@ ip = inputParser;
 ip.addRequired('TS',@isvector);
 ip.addRequired('deltaT',@isscalar);
 ip.addOptional('per',1,@isscalar);
+
 ip.parse(TS,deltaT,varargin{:});
 per  = ip.Results.per;
 %**************************************************************************
 %%
 
-imf       = emd(TS);
+imf       = empiricalModeDecomp(TS)';
 Mu        = mean(imf(1,:));
 nPoint    = length(TS);
 [~,noise] = testImf(imf);
@@ -46,7 +47,7 @@ Retraction.limit  = Mu - sdtError*per;
 %*************************
  
 
-TSprot = NaN(size(TS));
+TSprot  = NaN(size(TS));
 TSretr  = NaN(size(TS));
 
 TSprot(TS > Protrusion.limit) = TS(TS > Protrusion.limit);
@@ -54,19 +55,25 @@ TSretr(TS < Retraction.limit) = TS(TS < Retraction.limit);
 
 ProtBlock = findBlock(setdiff(1:nPoint,find(isnan(TSprot))));
 RetrBlock = findBlock(setdiff(1:nPoint,find(isnan(TSretr))));
+
+Protrusion = getStuff(ProtBlock,TS,deltaT);
+Retraction = getStuff(RetrBlock,-TS,deltaT);
+
+end%End of main function
+
+function cellData =  getStuff(block,TS,deltaT)
+
 if ~isempty(ProtBlock)
-    [Protrusion.PersTime,Protrusion.BlockOut,Protrusion.MaxVeloc,Protrusion.MeanVeloc] = findingProtRetrTime(ProtBlock,TS,deltaT);
+    
+    [cellData.PersTime,cellData.BlockOut,cellDa.MaxVeloc,cellDa.MeanVeloc] = findingProtRetrTime(block,TS,deltaT);
+    
 else
-    Protrusion.PersTime  = NaN;
-    Protrusion.BlockOut  = {[]};
-    Protrusion.MaxVeloc  = NaN;
-    Protrusion.MeanVeloc = NaN;
+    
+    cellDa.PersTime  = NaN;
+    cellDa.BlockOut  = {[]};
+    cellDa.MaxVeloc  = NaN;
+    cellDa.MeanVeloc = NaN;
+    
 end
-if ~isempty(RetrBlock)
-    [Retraction.PersTime,Retraction.BlockOut,Retraction.MaxVeloc,Retraction.MeanVeloc] = findingProtRetrTime(RetrBlock,-TS,deltaT);
-else
-    Retraction.PersTime  = NaN;
-    Retraction.BlockOut  = {[]};
-    Retraction.MaxVeloc  = NaN;
-    Retraction.MeanVeloc = NaN;
+
 end
