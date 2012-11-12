@@ -1,8 +1,9 @@
-function [depList toolboxes] = getFunDependencies(funList)
+function [depList, toolboxes] = getFunDependencies(funList, varargin)
 %GETFUNDEPENDENCIES list dependencies and required toolboxes of the input m-files
 % 
 % SYNOPSIS depList = getFunDependencies(funList)
 %          [depList,toolboxes] = getFunDependencies(funList)
+%          [depList,toolboxes] = getFunDependencies(funList, excludefilter)
 % 
 % Returns a cell array with the paths of every m file which the input list
 % of m files calls / depends on, including object classes, but excluding
@@ -17,6 +18,9 @@ function [depList toolboxes] = getFunDependencies(funList)
 %   funList - a string or a cell array of strings containing the names of
 %   the files whose dependencies should be listed.
 % 
+%   excludefilters - a string or cell array of regular expressions to
+%   exclude from the dependency search. Default: empty cell array.
+%
 % Output:
 % 
 %   depList - A cell array of strings containing the full path of the
@@ -32,19 +36,30 @@ function [depList toolboxes] = getFunDependencies(funList)
 % Input check
 if ischar(funList), funList={funList}; end
 ip = inputParser;
-ip.addRequired('funList',@iscell);
-ip.parse(funList);
+ip.addRequired('funList', @iscell);
+ip.addOptional('excludefilters', {}, @(x) ischar(x) || iscell(x));
+ip.parse(funList, varargin{:});
+if ischar(ip.Results.excludefilters)
+    excludefilters = {'toolbox', ip.Results.excludefilters};
+else
+    excludefilters = [{'toolbox'},ip.Results.excludefilters{:}];
+end
 
 % Get the initial set of file dependencies
 filesList=cellfun(@which,funList(:),'UniformOutput',false);
 depList={};
 
+% Construct anonymous functions for filtering files
+filter = @(f, l) cellfun(@(x)(isempty(regexp(x,f,'once'))), l);
+
 while true
     %Find dependencies of current list
     newFiles = depfun(filesList{:},'-toponly','-quiet');
         
-    %Remove all the toolbox entries
-    newFiles = newFiles(cellfun(@(x)(isempty(regexp(x,'toolbox','once'))),newFiles));    
+    % Filter new found files using regular expression
+    for i = 1:numel(excludefilters)
+        newFiles = newFiles(filter(excludefilters{i}, newFiles));
+    end
     
     % Update the dependencies file list
     nFiles=numel(depList);
