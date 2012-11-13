@@ -239,7 +239,7 @@ maxWidth = panelsLength+20;
 maxHeight = panelsHeight;
 figWidth = min(maxWidth,.75*sz(3));
 figHeight=min(maxHeight,.75*sz(4));
-set(optionsFig,'Position',[sz(3)/50 (sz(4)-maxHeight)/2 figWidth figHeight+20]);
+set(optionsFig,'Position',[sz(3)/50 10 figWidth figHeight+20]);
 
 % Update handles structure and attach it to the main figure
 handles = guihandles(optionsFig);

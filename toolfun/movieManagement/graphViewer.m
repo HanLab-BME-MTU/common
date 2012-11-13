@@ -154,9 +154,7 @@ set(graphPanel,'Position',[10 10  graphPanelSize(1) graphPanelSize(2)])
 sz=get(0,'ScreenSize');
 maxWidth = graphPanelSize(1)+20;
 maxHeight = graphPanelSize(2)+20;
-figWidth = min(maxWidth,.75*sz(3));
-figHeight=min(maxHeight,.75*sz(4));
-set(graphFig,'Position',[sz(3)/50 (sz(4)-maxHeight)/2 figWidth figHeight]);
+set(graphFig,'Position',[3*sz(3)/4 sz(4)/2 maxWidth maxHeight]);
 
 % Update handles structure and attach it to the main figure
 handles = guihandles(graphFig);

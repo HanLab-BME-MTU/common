@@ -110,16 +110,9 @@ createMovieBox= @(panel,i,j,pos,name,varargin) uicontrol(panel,'Style','checkbox
     'Position',[40 pos 200 25],'Tag',['checkbox_process' num2str(i) '_output'...
     num2str(j)],'String',[' ' name],varargin{:});
 
-% Create two panels with a slider
-panel1 = uipanel('Parent',mainFig,'BorderType','none');
-panel2 = uipanel('Parent',panel1,'BorderType','none');
-s=uicontrol('Style','Slider','Parent',mainFig,...
-'Units','normalized','Position',[0.95 0 0.05 1],...
-'Value',1,'SliderStep',[.02,.2],'Callback',{@slider_callback,panel2});
-
 %% Image panel creation
 if isa(userData.MO,'MovieData')
-    imagePanel = uibuttongroup(panel2,'Position',[0 0 1/2 1],...
+    imagePanel = uibuttongroup(mainFig,'Position',[0 0 1/2 1],...
         'Title','Image','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
         'Units','pixels','Tag','uipanel_image');
         
@@ -164,7 +157,7 @@ end
 
 %% Overlay panel creation
 if ~isempty(overlayProc)
-    overlayPanel = uipanel(panel2,'Position',[1/2 0 1/2 1],...
+    overlayPanel = uipanel(mainFig,'Position',[1/2 0 1/2 1],...
         'Title','Overlay','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
         'Units','pixels','Tag','uipanel_overlay');
     
@@ -226,7 +219,7 @@ end
 
 
 %% Create movie panel
-moviePanel = uipanel(panel2,...
+moviePanel = uipanel(mainFig,...
     'Title','','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
     'Units','pixels','Tag','uipanel_movie','BorderType','none');
 
@@ -310,14 +303,8 @@ moviePanelHeight =moviePanelSize(2);
 sz=get(0,'ScreenSize');
 maxWidth = panelsLength+20;
 maxHeight = panelsHeight+moviePanelHeight;
-figWidth = min(maxWidth,.75*sz(3));
-figHeight=min(maxHeight,.75*sz(4));
-set(mainFig,'Position',[sz(3)/50 (sz(4)-maxHeight)/2 figWidth+20 figHeight]);
-set(panel1,'Units','Pixels','Position',[0 0 figWidth figHeight]);
-panelRatio=maxHeight/figHeight;
+set(mainFig,'Position',[sz(3)/50 sz(4)/2 maxWidth maxHeight]);
 set(moviePanel,'Position',[10 panelsHeight+10 panelsLength moviePanelHeight]);
-set(panel2,'Position',[0 1-panelRatio 1 panelRatio]);
-if panelRatio==1, set(s,'Enable','off'); end
 
 % Update handles structure and attach it to the main figure
 handles = guihandles(mainFig);
