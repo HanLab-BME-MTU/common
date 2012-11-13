@@ -79,6 +79,12 @@ uicontrol(imagePanel,'Style','text',...
     'String','Scalebar','HorizontalAlignment','left','FontWeight','bold');
 
 hPosition=hPosition+30;
+uicontrol(imagePanel,'Style','pushbutton',...
+    'Position',[20 hPosition 300 20],'Tag','pushbutton_scaleFactor',...
+    'String','Calibrate the ratio map unit','HorizontalAlignment','left',...
+    'Callback',@(h,event) calibrateRatio(guidata(h)));
+
+hPosition=hPosition+20;
 uicontrol(imagePanel,'Style','text',...
     'Position',[20 hPosition 100 20],'Tag','text_imageScaleFactor',...
     'String','Scaling factor','HorizontalAlignment','left');
@@ -308,6 +314,36 @@ function setScaleFactor(handles)
 scaleFactor=str2double(get(handles.edit_imageScaleFactor,'String'));
 userData = get(handles.figure1,'UserData');
 userData.redrawImageFcn(handles,'ScaleFactor',scaleFactor)
+
+
+function calibrateRatio(handles)
+
+% Make sure a movie is drawn
+userData = get(handles.figure1, 'UserData');
+h = findobj(0, '-regexp', 'Name', '^Movie$');
+if isempty(h), userData.redrawImageFcn(handles); end
+
+% Retrieve the handle of the axes containing the image
+hImage = findobj(h, 'Type', 'image', '-and', '-regexp', 'Tag', 'process');
+hAxes = get(hImage, 'Parent');
+
+% Allow use to draw polygon and retrieve mask once it is double-clicked
+p = impoly(hAxes);
+wait(p);
+mask = createMask(p);
+p.delete();
+
+% Calculate mean value of unscaled image within the mask
+scaleFactor = str2double(get(handles.edit_imageScaleFactor, 'String'));
+imData = get(hImage, 'CData') * scaleFactor;
+ratio = nanmean(imData(mask));
+
+% Set the color limit and scale factor of the image
+clim=[str2double(get(handles.edit_cmin, 'String')) ...
+    str2double(get(handles.edit_cmax, 'String'))];
+clim(1) = ratio;
+scaleFactor = ratio;
+userData.redrawImageFcn(handles, 'CLim', clim, 'ScaleFactor', scaleFactor);
 
 function setVectorScaleFactor(handles)
 
