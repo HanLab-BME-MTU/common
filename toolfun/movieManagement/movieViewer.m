@@ -346,10 +346,6 @@ for i=intersect(procId,validProcId)
     h=findobj(mainFig,'-regexp','Tag',['(\w)_process' num2str(i)  '_output1.*'],...
         '-not','Style','text');
     set(h,'Value',1);
-    for j=find(arrayfun(@(x)isequal(get(x,'Parent'),graphPanel),h))'
-        callbackFcn = get(h(j),'Callback');
-        callbackFcn(h(j),[]);
-    end
 end
 
 % Update the image and overlays

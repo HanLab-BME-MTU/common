@@ -172,11 +172,9 @@ for i=checkedId
     h=findobj(graphFig,'-regexp','Tag',['(\w)_process' num2str(i)  '_output1.*'],...
         '-not','Style','text');
     set(h,'Value',1);
-    for j=find(arrayfun(@(x)isequal(get(x,'Parent'),graphPanel),h))'
-        callbackFcn = get(h(j),'Callback');
-        callbackFcn(h(j),[]);
-    end
 end
+
+redrawGraphs(handles)
 
 function hPosition=createScalarMapOptions(graphPanel,hPosition)
 
