@@ -1,4 +1,4 @@
-function  workTS = gapInterpolation(TS,nPoint)
+function  [workTS,newX] = gapInterpolation(TS,nPoint)
 %This function interpolates NaN in a TS gap. It does not interpolate borders.
 %USAGE:
 %       workTS = gapInterpolation(TS,nPoint)
@@ -9,6 +9,7 @@ function  workTS = gapInterpolation(TS,nPoint)
 %
 %Output:
 %       workTS - Time Series with closed gaps (column vector)
+%       newX   - new x-axis vector 
 %
 % Marco Vilela, 2012
 
@@ -24,7 +25,7 @@ if ~isempty(xi)
     leftBorder   = find(nanB{1}(1)==1);
     rightBorder  = find(nanB{end}(end)==nObs);
     
-    workTS([leftBorder*nanB{1};rightBorder*nanB{end}]) = [];
+    workTS([nanB{leftBorder*1};nanB{rightBorder*end}]) = [];
     
     numIdx       = find(~isnan(workTS));
     numB         = findBlock(numIdx,1);
