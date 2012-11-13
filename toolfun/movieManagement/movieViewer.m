@@ -1,27 +1,67 @@
 function mainFig = movieViewer(MO,varargin)
+%MOVIEVIEWER creates a graphical interface to display the analysis output of a MovieObject
+% 
+% h = movieViewer(MD)
+% movieViewer(MD, [1 2]);
+% h = movieViewer(ML, 'movieIndex', 3);
+%
+% This function reads the components of a MovieObject including all
+% drawable anlaysis results (determined by the getDrawableOutput method).
+% It then generates a graphical interface allowing to switch between image
+% results and toggle on/off overlay components. Additionally, two
+% interfaces can be created: one to control movie display options (for the
+% image and the various overlays) and one interface showing the different
+% graph results (i.e. results displayed on separate figures).
+% 
+% Input 
+%
+%   MO - the MovieObject to be displayed. If a MovieList is input, the main
+%   interface will have a popupmenu allowing to switch between the list and
+%   all the movie components.
+% 
+%   procId - Optional. An array containing the indices of the processes 
+%   which output should be displayed by default. Default: empty.
+%
+%   Optional parameters in param/value pairs
+%
+%   movieIndex - Integer. For movie list input. If 0 display the movie list
+%   and its analysis. If non-zero, set the index of the movie to be
+%   displayed. Default: 0.
+%
+% Output:
+%   
+%   mainFig - the handle of the main control interface
+%
+% See also: graphViewer, movieViewerOptions
+%
+% Sebastien Besson, July 2012 (last modified Nov 2012)
 
+% Check input
 ip = inputParser;
 ip.addRequired('MO',@(x) isa(x,'MovieObject'));
 ip.addOptional('procId',[],@isnumeric);
 ip.addParamValue('movieIndex',0,@isscalar);
 ip.parse(MO,varargin{:});
 
-% Check existence of viewer
+% Check existence of viewer interface
 h=findobj(0,'Name','Viewer');
 if ~isempty(h), delete(h); end
+
+% Generate the main figure
 mainFig=figure('Name','Viewer','Position',[0 0 200 200],...
     'NumberTitle','off','Tag','figure1','Toolbar','none','MenuBar','none',...
     'Color',get(0,'defaultUicontrolBackgroundColor'),'Resize','off',...
     'DeleteFcn', @(h,event) deleteViewer());
 userData=get(mainFig,'UserData');
 
+% Read the MovieObject and process index input 
 if isa(ip.Results.MO,'MovieList')
     userData.ML=ip.Results.MO;
     userData.movieIndex=ip.Results.movieIndex;
     if userData.movieIndex~=0
         userData.MO=ip.Results.MO.getMovies{userData.movieIndex};
     else
-         userData.MO=ip.Results.MO;
+        userData.MO=ip.Results.MO;
     end
         
     userData.procId = ip.Results.procId;
@@ -32,24 +72,22 @@ if isa(ip.Results.MO,'MovieList')
     end
 else
     userData.MO=ip.Results.MO;
-%     userData.MO=ip.Results.MO;
     procId=ip.Results.procId;
 end
 
-% Classify movieData processes by type (image, overlay, movie overlay or
-% graph)
+% Read all drawable output
 validProcId= find(cellfun(@(x) ismember('getDrawableOutput',methods(x)) &...
     x.success_,userData.MO.processes_));
 validProc=userData.MO.processes_(validProcId);
 
-getOutputType = @(type) cellfun(@(x) any(~cellfun(@isempty,regexp({x.getDrawableOutput.type},type,'once','start'))),...
-    validProc);
-
-isImageProc =getOutputType('image');
+% Classify movieData processes by type (image, overlay or graph)
+getOutputType = @(type) cellfun(@(x) any(~cellfun(@isempty,...
+    regexp({x.getDrawableOutput.type},type,'once','start'))), validProc);
+isImageProc = getOutputType('image');
 imageProc=validProc(isImageProc);
 imageProcId = validProcId(isImageProc);
-isOverlayProc =getOutputType('[oO]verlay');
-overlayProc=validProc(isOverlayProc);
+isOverlayProc = getOutputType('[oO]verlay');
+overlayProc = validProc(isOverlayProc);
 overlayProcId = validProcId(isOverlayProc);
 isGraphProc =getOutputType('[gG]raph');
 graphProc=validProc(isGraphProc);
@@ -72,6 +110,7 @@ createMovieBox= @(panel,i,j,pos,name,varargin) uicontrol(panel,'Style','checkbox
     'Position',[40 pos 200 25],'Tag',['checkbox_process' num2str(i) '_output'...
     num2str(j)],'String',[' ' name],varargin{:});
 
+% Create two panels with a slider
 panel1 = uipanel('Parent',mainFig,'BorderType','none');
 panel2 = uipanel('Parent',panel1,'BorderType','none');
 s=uicontrol('Style','Slider','Parent',mainFig,...
@@ -79,7 +118,6 @@ s=uicontrol('Style','Slider','Parent',mainFig,...
 'Value',1,'SliderStep',[.02,.2],'Callback',{@slider_callback,panel2});
 
 %% Image panel creation
-
 if isa(userData.MO,'MovieData')
     imagePanel = uibuttongroup(panel2,'Position',[0 0 1/2 1],...
         'Title','Image','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
@@ -231,7 +269,7 @@ hPosition = hPosition+30;
 uicontrol(moviePanel,'Style','text','Position',[10 hPosition 40 20],...
     'String','Movie','Tag','text_movie');
 
-
+% Create popupmenu if input is a MovieList, else  list the movie path
 if isa(ip.Results.MO,'MovieList')
     moviePaths = cellfun(@getDisplayPath,userData.ML.getMovies,'UniformOutput',false);
     movieIndex=0:numel(moviePaths);
@@ -247,7 +285,6 @@ else
     uicontrol(moviePanel,'Style','edit','Position',[60 hPosition panelsLength-110 20],...
         'String',getDisplayPath(ip.Results.MO),...
         'HorizontalAlignment','left','BackgroundColor','white','Tag','edit_movie');
-
 end
 
 % Add help button
@@ -527,11 +564,6 @@ for i=1:numel(overlayTags),
     redrawOverlay(handles.(overlayTags{i}),handles)
 end
 
-% Reset the scaleBar
-% if get(handles.checkbox_vectorFieldScaleBar,'Value'),
-%     setScaleBar(handles,'vectorFieldScaleBar');
-% end
-
 function redrawOverlay(hObject,handles)
 userData=get(handles.figure1,'UserData');
 frameNr=get(handles.slider_frame,'Value');
@@ -591,11 +623,8 @@ end
 
 function deleteViewer()
 
-h = findobj(0,'-regexp','Tag','viewerFig');
-if ~isempty(h), delete(h); end
-
-h = findobj(0,'-regexp','Tag','optionsFig');
-if ~isempty(h), delete(h); end
-
-h = findobj(0,'-regexp','Tag','graphFig');
-if ~isempty(h), delete(h); end
+tags = {'viewerFig','optionsFig','graphFig'};
+for i = 1:numel(tags)
+    h = findobj(0,'-regexp','Tag', tags{i});
+    if ~isempty(h), delete(h); end
+end

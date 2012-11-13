@@ -1,4 +1,27 @@
 function graphFig = graphViewer(mainFig, graphProc, graphProcId, checkedId)
+%GRAPHVIEWER creates a graphical interface to display the graph output of a MovieObject
+%
+% This function creates a list of checkboxes for all graph processes which
+% output can be displayed in a standalone figure. It is called by
+% movieViewer.
+% 
+% Input 
+%
+%   mainFig - the handle of the calling figure.
+% 
+%   graphProc - The cell array of processes that can be displaye.
+%
+%   graphProcId - The  array of processes indices that can be displayed.
+%
+%   checkedId - The  array of processes indices to display at creation.
+%
+% Output:
+%   
+%   graphFig - the handle of the graph control interface
+%
+% See also: graphViewer, movieViewerOptions
+%
+% Sebastien Besson, Nov 2012
 
 % Check existence of viewer
 h=findobj(0,'Name','Graphs');

@@ -1,4 +1,21 @@
 function optionsFig = movieViewerOptions(mainFig)
+%GRAPHVIEWER creates a graphical interface to control the movie options
+%
+% This function creates a list of checkboxes for all graph processes which
+% output can be displayed in a standalone figure. It is called by
+% movieViewer.
+% 
+% Input 
+%
+%   mainFig - the handle of the calling figure.
+%
+% Output:
+%   
+%   optionsFig - the handle of the movie options interface
+%
+% See also: graphViewer, movieViewerOptions
+%
+% Sebastien Besson, Nov 2012
 
 % Check existence of viewer
 h=findobj(0,'Name','Movie options');
@@ -8,13 +25,12 @@ optionsFig=figure('Name','Movie options','Position',[0 0 200 200],...
     'Color',get(0,'defaultUicontrolBackgroundColor'),'Resize','off');
 
 userData = get(mainFig, 'UserData');
-%% Image panel creation
 
+%% Image options panel creation
 imagePanel = uibuttongroup(gcf,'Position',[0 0 1/2 1],...
     'Title','Image options','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
     'Units','pixels','Tag','uipanel_image');
 
-% First create image option (timestamp, scalebar, image scaling)
 % Timestamp
 hPosition=10;
 if isempty(userData.MO.timeInterval_),
@@ -103,7 +119,6 @@ uicontrol(imagePanel,'Style','popupmenu','String',locations,...
     'HorizontalAlignment','left','Callback',@(h,event) setColorbar(guidata(h)));
 
 %% Overlay options creation
-
 overlayPanel = uipanel(gcf,'Position',[1/2 0 1/2 1],...
     'Title','Overlay options','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
     'Units','pixels','Tag','uipanel_overlay');
@@ -154,7 +169,7 @@ uicontrol(overlayPanel,'Style','text',...
     'String',' Display scale','HorizontalAlignment','left');
 uicontrol(overlayPanel,'Style','edit','Position',[120 hPosition 50 20],...
     'String','1','BackgroundColor','white','Tag','edit_vectorFieldScale',...
-    'Callback',@(h,event) userData.redrawOverlaysFcn());
+    'Callback',@(h,event) setVectorScaleFactor(guidata(h)));
 
 hPosition=hPosition+20;
 uicontrol(overlayPanel,'Style','text',...
@@ -293,6 +308,16 @@ function setScaleFactor(handles)
 scaleFactor=str2double(get(handles.edit_imageScaleFactor,'String'));
 userData = get(handles.figure1,'UserData');
 userData.redrawImageFcn(handles,'ScaleFactor',scaleFactor)
+
+function setVectorScaleFactor(handles)
+
+userData = get(handles.figure1,'UserData');
+userData.redrawOverlaysFcn();
+
+% Reset the vector field scalebar
+if get(handles.checkbox_vectorFieldScaleBar,'Value'),
+    setScaleBar(handles,'vectorFieldScaleBar');
+end
 
 function setColormap(handles)
 allCmap=get(handles.popupmenu_colormap,'String');
