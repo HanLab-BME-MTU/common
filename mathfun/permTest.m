@@ -44,7 +44,7 @@ N = n1+n2;
 w = warning('off', 'MATLAB:nchoosek:LargeCoefficient');
 nperms = nchoosek(n1+n2, n1);
 warning(w);
-if nperms<1000 % calculate all permutations
+if nperms<=nrep % calculate all permutations
     P = false(N, nperms);
     pidx = nchoosek(1:N, n1); % returns row index of class 'sample 1'
     % convert to linear index
