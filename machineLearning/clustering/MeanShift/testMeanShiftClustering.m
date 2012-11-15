@@ -3,7 +3,7 @@ clear
 close all
 
 % generate three synthetic gaussian clusters
-numPointsPerCluster = 2^14;
+numPointsPerCluster = 2^16;
 ptTrueClusterCenters = [ 1 1 ; -1, -1; 1, -1 ];
 clusterStdDev = 0.6;
 

@@ -138,7 +138,7 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
             if flagDebug
                 fprintf( 1, '\n\tBuilding KD-Tree ...\n' );        
             end        
-            kdtree_points = kdtree_build( ptData );  
+            kdtree_points = KDTree( ptData );  
             
         end
         
@@ -166,7 +166,7 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
 
                 % get nearest points
                 if flagUseKDTree
-                    [ptIdNearest] = kdtree_ball_query( kdtree_points, ptOldMean, bandwidth );
+                    [ptIdNearest] = kdtree_points.ball( ptOldMean, bandwidth );
                 else                    
                     ptIdNearest = exhaustive_ball_query( ptData, ptOldMean, bandwidth );                       
                 end
@@ -195,13 +195,18 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
             
             % check if a close cluster is present already
             blnCloseClusterFound = false;
+            closestClusterDist = [];
+            closestClusterId = [];
             for cid = 1:numel( clusterInfo )
             
-                if norm( ptClusterCenter - clusterInfo(cid).ptClusterCenter ) < minClusterDistance
+                curClusterDist = norm( ptClusterCenter - clusterInfo(cid).ptClusterCenter );
+                if curClusterDist < minClusterDistance 
                     
-                    blnCloseClusterFound = true;
-                    clusterInfo(cid).ptClusterCenter = 0.5 * (ptClusterCenter + clusterInfo(cid).ptClusterCenter);
-                    pointClusterVotes( flagPointOnPath, cid ) = pointClusterVotes( flagPointOnPath, cid ) + 1;
+                    if ~blnCloseClusterFound || (blnCloseClusterFound && curClusterDist < closestClusterDist)                      
+                        blnCloseClusterFound = true;
+                        closestClusterId = cid;
+                        closestClusterDist = curClusterDist;
+                    end
                     
                 end
                 
@@ -210,6 +215,9 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
             if ~blnCloseClusterFound
                 clusterInfo(end+1).ptClusterCenter = ptClusterCenter;
                 pointClusterVotes( flagPointOnPath, numel(clusterInfo) ) = 1;                
+            else
+                clusterInfo(closestClusterId).ptClusterCenter = 0.5 * (ptClusterCenter + clusterInfo(closestClusterId).ptClusterCenter);
+                pointClusterVotes( flagPointOnPath, closestClusterId ) = pointClusterVotes( flagPointOnPath, closestClusterId ) + 1;
             end            
             
             numPointsProcessed = numPointsProcessed + 1;
@@ -223,11 +231,6 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
 
         % assign each point to maximum voting cluster
         [ maxvote, pointToClusterMap] = max( pointClusterVotes, [], 2 );
-        
-        % release kd-tree memory
-        if flagUseKDTree
-            kdtree_delete( kdtree_points );   
-        end
         
     %% post process clusters
     for i = 1:numel( clusterInfo )
@@ -252,7 +255,7 @@ function [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth
             if flagDebug
                 fprintf( 1, '\n\tBuilding KD-Tree ...\n' );        
             end        
-            kdtree_points = kdtree_build( ptData );  
+            kdtree_points = KDTree( ptData );  
             
         end        
         
@@ -271,7 +274,7 @@ function [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth
 
                 % get nearest points
                 if flagUseKDTree
-                    [ptIdNearest] = kdtree_ball_query( kdtree_points, ptOldMean, bandwidth );
+                    [ptIdNearest] = kdtree_points.ball( ptOldMean, bandwidth );
                 else                    
                     ptIdNearest = exhaustive_ball_query( ptData, ptOldMean, bandwidth );                       
                 end
@@ -295,7 +298,7 @@ function [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth
             
             % get point density around the cluster center
             if flagUseKDTree
-                ptIdNearest = kdtree_ball_query( kdtree_points, ptClusterCenter, bandwidth );
+                ptIdNearest = kdtree_points.ball( ptClusterCenter, bandwidth );
             else                    
                 ptIdNearest = exhaustive_ball_query( ptData, ptClusterCenter, bandwidth );                       
             end            
@@ -331,9 +334,6 @@ function [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth
         fprintf( 1, '\n\t%d clusters were found ...\n',  numel( clusterInfo ) ); 
         fprintf( 1, '\n\tMode seeking for each data took an average of %d iterations ...\n', round( meanIterationsElapsed ) ); 
         
-        % release kd-tree memory
-        kdtree_delete( kdtree_points );
-     
     %% post process clusters
     for i = 1:numel( clusterInfo )
        clusterInfo(i).ptIdData = find( pointToClusterMap == i );
