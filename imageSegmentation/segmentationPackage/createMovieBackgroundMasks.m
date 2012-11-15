@@ -157,7 +157,7 @@ if any(~sum(hasMasks,2))
         'Cannot create background masks because some channels do not have foreground masks! Please segment these channels before creating background masks!')
 end
 
-if p.GrowthRadius ~= round(p.GrowthRadius) || p.GrowthRadius < 1
+if p.GrowthRadius ~= round(p.GrowthRadius) || p.GrowthRadius < 0
     error('Input variable p.GrowthRadius must be a positive integer!')
 end
 
@@ -186,8 +186,9 @@ for j = 1:nChanBack;
     
 end
 
-
-growDisk = strel('disk',p.GrowthRadius);
+if p.GrowthRadius > 0
+    growDisk = strel('disk',p.GrowthRadius);
+end
 
 
 %% ------- Background mask creation -------------%%
@@ -224,8 +225,13 @@ for iChan = 1:nChanBack
         %Load the current foreground mask
         currMask = imread([maskDirs{iChan} filesep maskFileNames{iChan}{iMask}]);
         
-        %Grow and invert this mask to create the background mask
-        backgroundMask = ~imdilate(currMask,growDisk);
+        
+        if p.GrowthRadius > 0
+            %Grow and invert this mask to create the background mask
+            backgroundMask = ~imdilate(currMask,growDisk);
+        else
+            backgroundMask = ~currMask;
+        end
         
         %Write it to file        
         imwrite(backgroundMask,[currBkgrndMaskDir filesep ...
