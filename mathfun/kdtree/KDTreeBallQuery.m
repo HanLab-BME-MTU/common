@@ -1,3 +1,4 @@
+function [idx, dist] = KDTreeBallQuery(inPts,queryPts,radii)
 %KDTREEBALLQUERY finds all of the points which are within the specified radius of the query points
 % 
 % [idx, dist] = KDTreeBallQuery(inPts,queryPts,radii)
@@ -34,3 +35,39 @@
 %   dist - Nx1 cell array, the n-th element of which gives the corresponding 
 %   distances between the input points and the n-th query point.
 %
+% Warning:
+% 
+%     The KD-Tree is built each time you call this function. 
+%     If you want to build the kdtree once and query it multiple times, then
+%     it would be suboptimal to use this function because building a KD-tree 
+%     takes a lot more time than querying it. Specifically,
+%     
+%     -- building the KD-Tree takes O(n log(n)) time
+%     -- just range querying an already built tree takes on the average 
+%        O(n^(1-1/d) + m) time where m is the number of reported points
+%        and d is the dimensionality of the points.   
+% 
+%     So you would be acting contrary to the purpose (fast-querying) of using KDTree 
+%     if you are going to call this function multiple times for the same KD-tree. 
+%     Use the KDTree class in KDTree.m instead.
+%       
+
+warning( ['The KD-Tree is built each time you call this function.' ...
+         'If you want to build the kdtree once and query it multiple times, then ' ...
+         'it would be really suboptimal to use this function because building a KD-tree ' ...
+         'takes a lot more time than querying it. Use the KDTree class in KDTree.m instead. ' ...
+         'We may be removing this function from the toolkit in the near future.'] );
+         
+kdtreeobj = KDTree( inPts );
+
+numQueryPoints = size(queryPts,1);
+if isscalar( radii )
+    radii = radii + zeros(numQueryPoints,1);
+end
+
+idx = cell(numQueryPoints, 1);
+dist = cell(numQueryPoints, 1);
+for i = 1:numQueryPoints
+    [idx{i}, dist{i}] = kdtreeobj.ball( queryPts(i,:), radii(i) );
+end
+
