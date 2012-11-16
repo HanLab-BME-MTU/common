@@ -13,6 +13,8 @@ function mask = CustomizedSeg(thismask, closureRadius)
 % Last updated: May 06, 2009 by Shann-Ching Chen, LCCB
 % See also: graythresh, im2bw, medianSeg, phasecontrastSeg, segPanel
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 if( nargin < 2)
 	closureRadius = 0;
 end

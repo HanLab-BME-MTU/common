@@ -25,6 +25,7 @@ function [lsmimg,lsm2rgb,fileinfo]=openlsm(param)
 %
 % CB, 18-12-01
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
 
 header='Open LSM file';
 lsm2rgb=[1,2,3]; %Default value

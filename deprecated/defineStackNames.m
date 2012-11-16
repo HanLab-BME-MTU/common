@@ -12,6 +12,8 @@ function [outputFileList]=defineStackNames(firstfilename)
 % OUTPUT   outputFileList: names of all files belonging to the stack
 %                          defined by firstFileName
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 oldDir = [];
 
 % Output

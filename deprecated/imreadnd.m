@@ -50,6 +50,9 @@ function [I,adepth,msg,res]=imreadnd(filename,adepth,algorithm)
 %   as a parameter.
 %
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
+
 if nargin==0
    error('This functions requires at least one parameter');   
 end

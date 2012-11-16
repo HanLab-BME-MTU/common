@@ -8,6 +8,8 @@ function [img,info] = rawread(filename)
 % OUTPUT img : image
 %        info: image info (size, bit depth)
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 if isempty(findstr(filename,'.'))
 	filename=[filename,'.raw'];
 end;

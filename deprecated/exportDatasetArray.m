@@ -76,6 +76,7 @@ function exportDatasetArray(a,varargin)
 %   $Revision: 1.1.6.3 $  $Date: 2008/12/01 07:41:31 $
 
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
 
 
 t=cell(length(varargin)/2,2);

@@ -22,6 +22,7 @@ function u = nonLinearFit(x,y,u0)
 % c: 10/04 jonas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
 
 %=============
 % TEST INPUT

@@ -16,6 +16,8 @@ function imwritestack(stack,firstfilename)
 %
 % SEE ALSO imreadstack
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 if(ndims(stack) ~= 3)
    error('invalid stack entered');
 end;

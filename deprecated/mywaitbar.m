@@ -40,6 +40,8 @@ function h= mywaitbar(op,h,maxval,name);
 %
 %c: dT 01/03
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 if isempty(h)
     h = waitbar(0,'Please wait...');
     set(h,'Units','pixels');

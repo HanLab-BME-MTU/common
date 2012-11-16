@@ -16,6 +16,8 @@ function success = startupTomlab
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 s = false; % init success. Try not to print output argument
 
 % Tomlab can only be run from linux

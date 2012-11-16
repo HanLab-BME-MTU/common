@@ -12,6 +12,9 @@ function rgb = imOverlayOriMap(img,ori,mask,l,c)
 % OUTPUT rgb : rgb map
 %
 % SEE ALSO colorCode2rgb for color code definitions
+
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 if(nargin < 3)
    c = 'r';
 end

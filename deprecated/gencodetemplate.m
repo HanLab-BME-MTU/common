@@ -17,6 +17,8 @@ function gencodetemplate(fxnname)
 % USERNAME: jkunken
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 %===============
 % CHECK INPUT
 %===============

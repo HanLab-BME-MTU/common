@@ -17,6 +17,8 @@ function [Gx,Gy,Gxx,Gyy,LoG,G]=imGaussBench2D(sigma,stretch)
 
 % STARTED July-7-1999  G. Danuser
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 switch nargin
 case 0, sigma = 1.0; stretch = 1.4;
 case 1, stretch = 1.4;

@@ -29,6 +29,8 @@ function [stack,index,nEntries,outSubFrm,origColor]=imreadstack(firstfilename,ma
 % NOTE  the search for filenames is case insensitive, i.e. the names in a stack
 %       series can have different cases.
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 stack = [];
 index = [];
 oldDir = [];

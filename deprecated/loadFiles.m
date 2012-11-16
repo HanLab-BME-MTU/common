@@ -18,6 +18,7 @@ function loadFiles(includeString,excludeString,directory,includeSubDirectories,s
 %c: 11-03 jonas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
 
 %---test input---
 if nargin<1|isempty(includeString)

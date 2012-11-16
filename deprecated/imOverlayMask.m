@@ -11,6 +11,8 @@ function rgb = imOverlayMask(img,mask,c)
 %
 % SEE ALSO colorCode2rgb for color code definitions
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 if(nargin < 3)
    c = 'r';
 end

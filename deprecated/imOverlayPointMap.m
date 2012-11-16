@@ -9,6 +9,8 @@ function imOverlayPointMap(map,fmt)
 %
 % SEE ALSO plot
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 indx = find(map);
 cols = floor(indx/size(map,1))+1;
 rows = rem(indx,size(map,1));

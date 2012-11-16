@@ -10,6 +10,8 @@ function unpackNIHStack()
 % NOTE the outcoming filenames are composed by the root of the
 %      stack filename, an account of the frame and the extension '.tif'
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 [fName,dirName] = uigetfile('*.tif','unpackNIHStack ...');
 
 if( isa(fName,'char') & isa(dirName,'char'))

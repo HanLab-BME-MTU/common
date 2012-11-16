@@ -1,4 +1,7 @@
 function multImgSeries(f)
+
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 BIT_DEPTH = 2^16;
 
 firstfilename = 'S:\scripps\Staurosporin\stauroRatio\ratio01.tif'

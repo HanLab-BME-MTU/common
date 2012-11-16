@@ -24,6 +24,8 @@ function [d,ccMap,x1,x2] = cctrack(tImg,tPos,tDim,sImg,dmax,subpix,d0)
 %                useful to display ccMap as a mesh calling
 %                mesh(x1,x2,ccMap)
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 % set defaults
 d = [0,0];
 maxRow = d(1);

@@ -26,6 +26,7 @@ function [stack,msg,res,index,nEntries,outSubFrm,origColor]=imReadStackND(firstf
 %                       original color format (origColor = 'rgb' or 'gray').
 %                       if it is omitted the stack is always converted to 'gray' format.
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
 
 stack = [];
 index = [];

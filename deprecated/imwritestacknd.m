@@ -19,6 +19,8 @@ function imwritestacknd(stack,firstfilename,depth)
 %
 % SEE ALSO IMREADSTACKND
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 % Check for input stack
 if class(stack)=='uint8' | class(stack)=='uint16'
     imwritestack(stack,firstfilename);

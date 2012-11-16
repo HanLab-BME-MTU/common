@@ -15,6 +15,7 @@ function fig = grabPanel()
 % FIG-files.
 
 load grabPanel
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
 
 h0 = figure('Color',[0.8 0.8 0.8], ...
 	'Colormap',[], ...

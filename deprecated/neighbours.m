@@ -11,6 +11,8 @@ function nbIdx =neighbours(pSet1,pSet2,nbDist);
 %                     second row indexes into pSet2, each column pair
 %                     corresponds to two neighbours
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 lSet1=size(pSet1,2);
 lSet2=size(pSet2,2);
 nbIdx=[0 ;0];

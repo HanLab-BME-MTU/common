@@ -17,6 +17,7 @@ function imwritend(image,filename,depth)
 % INPUT PARAMETER CHECK
 %
 % *************************
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
 
 % Check for existance/validity of parameter depth
 if isempty(depth)

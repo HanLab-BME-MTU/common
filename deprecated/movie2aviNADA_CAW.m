@@ -10,6 +10,8 @@ function movie2aviNADA(mov, filename, varargin)
 %
 % Cyrus A Wilson    July 2006
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 numFrames = max(size(mov));
 
 %% first go through and find first non-empty frame

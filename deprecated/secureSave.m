@@ -13,6 +13,8 @@ function [savedFileName, savePath] = secureSave(varargin)
 %
 %c: 10/10/02 dT
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 fname=varargin{1};
 [path,body,nr,ext]=getFilenameBody(fname,'_');
 if isempty(path)

@@ -20,6 +20,8 @@ function [kym,xBand,yBand] = imKymograph(stack,x,y,width);
 
 % STARTED July-9-1999 GD
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 % check whether the stack is an empty matrix
 if(isempty(stack))
    [fName,dirName] = uigetfile('*.tif','imKymograph ...');

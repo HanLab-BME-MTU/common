@@ -18,6 +18,8 @@ function[acnx, acny]=normACfunc(image,verbose)
 %               -direction
 %last modified by Dinah 07/08/2005
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 if nargin < 2 || isempty(verbose)
     verbose = 1;
 end

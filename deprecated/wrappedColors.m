@@ -14,7 +14,9 @@ function clrmp=wrappedColors
 %               wrappedColors is used by { textureFilter }
 
 % Alexnadre Matov, February 20th, 2003
- 
+
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 R=zeros(180,1);
 R(61:90,1)=[0:1/29:1]';
 R(91:150,1)=1;

@@ -15,6 +15,7 @@ function [xi,yi] = segmentIntersectRect(xS,yS,rect)
 %       The term segment is used as 2-point representation of a 
 %       line from -infinity to +infinity
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
 
 % check input data 
 if((sum([length(xS),length(yS)]==2)~=2) | length(rect)~=4)

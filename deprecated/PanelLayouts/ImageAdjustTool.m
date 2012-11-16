@@ -8,6 +8,7 @@ function fig = ScaleOptions1()
 % prompt. The M-file and its associated MAT-file must be on your path.
 
 load ScaleOptions1
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
 
 h0 = figure('Color',[0.8 0.8 0.8], ...
 	'Colormap',mat0, ...

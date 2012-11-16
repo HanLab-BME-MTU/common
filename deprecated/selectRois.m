@@ -11,6 +11,8 @@ function selectIdxL = selectRois(ah)
 % c: jonas 5/07
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 % check input
 if nargin == 0 || isempty(ah)
     ah = gca;

@@ -11,6 +11,8 @@ function I=imreadnd2(filename,xmin,xmax)
 %
 % Aaron Ponti, 2001
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+
 if nargin<3
    error('This functions requires three parameter');   
 end
