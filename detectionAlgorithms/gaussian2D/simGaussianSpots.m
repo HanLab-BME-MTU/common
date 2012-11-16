@@ -166,8 +166,8 @@ switch ip.Results.Border
         uby = min(yi+wv,ny);
         
         for k = 1:np
-            wx = xi(k) - (lbx(k):ubx(k));
-            wy = yi(k) - (lby(k):uby(k));
+            wx = (lbx(k):ubx(k)) - xi(k);
+            wy = (lby(k):uby(k)) - yi(k);
             [xg,yg] = meshgrid(wx,wy);
             g = Av(k) * exp(-((xg-dx(k)).^2+(yg-dy(k)).^2) / (2*sv(k)^2));
             xa = lbx(k):ubx(k);
