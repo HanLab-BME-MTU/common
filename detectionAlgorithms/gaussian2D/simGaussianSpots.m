@@ -40,7 +40,7 @@ ip.addParamValue('npoints', 1);
 ip.addParamValue('background', 0);
 ip.addParamValue('verbose', 'off', @(x) any(strcmpi(x, {'on', 'off'})));
 ip.addParamValue('Border', 'padded', @(x) any(strcmpi(x, {'padded', 'periodic', 'truncated'})));
-ip.addParamValue('Normalization', 'off', @(x) any(strcmpi(x, {'on', 'off'})));
+ip.addParamValue('Normalization', 'off', @(x) any(strcmpi(x, {'analytical', 'sum', 'off'})));
 ip.parse(nx, ny, sigma, varargin{:});
 
 np = ip.Results.npoints;
@@ -114,7 +114,7 @@ yi = round(yv);
 dx = xv-xi;
 dy = yv-yi;
 
-if strcmpi(ip.Results.Normalization, 'on')
+if strcmpi(ip.Results.Normalization, 'analytical')
     Av = Av ./ (2*pi*sv.^2);
 end
 
@@ -126,6 +126,9 @@ switch ip.Results.Border
             ya = yi(k)-wi:yi(k)+wi;
             [xg,yg] = meshgrid(-wi:wi);
             g = Av(k) * exp(-((xg-dx(k)).^2+(yg-dy(k)).^2) / (2*sv(k)^2));
+            if strcmpi(ip.Results.Normalization, 'sum')
+                g = g/sum(g(:));
+            end
             frame(ya,xa) = frame(ya,xa) + g;
         end
     case 'periodic'
@@ -149,6 +152,9 @@ switch ip.Results.Border
             wi = -wv(k):wv(k);
             [xg,yg] = meshgrid(wi,wi);
             g = Av(k) * exp(-((xg-dx(k)).^2+(yg-dy(k)).^2) / (2*sv(k)^2));
+            if strcmpi(ip.Results.Normalization, 'sum')
+                g = g/sum(g(:));
+            end
             xa = (xi(k)-wv(k):xi(k)+wv(k)) + shifts(2);
             ya = (yi(k)-wv(k):yi(k)+wv(k)) + shifts(1);
             if all(shifts==0)
@@ -170,6 +176,9 @@ switch ip.Results.Border
             wy = (lby(k):uby(k)) - yi(k);
             [xg,yg] = meshgrid(wx,wy);
             g = Av(k) * exp(-((xg-dx(k)).^2+(yg-dy(k)).^2) / (2*sv(k)^2));
+            if strcmpi(ip.Results.Normalization, 'sum')
+                g = g/sum(g(:));
+            end
             xa = lbx(k):ubx(k);
             ya = lby(k):uby(k);
             frame(ya,xa) = frame(ya,xa) + g;
