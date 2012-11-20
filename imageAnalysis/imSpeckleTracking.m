@@ -221,59 +221,77 @@ for k = 1:nPoints
                         % SH: I made a change for this refining process to
                         % use parabola approximation. 
 
-                        % subset of score around the maxV
+                        % parabola approximation
                         subv = 1; % radius of subgroup for subscore
-                        sub_score2 = score2(max(1,maxI2(1)-subv):min(size(score2,1),maxI2(1)+subv),...
-                                            max(1,maxI2(2)-subv):min(size(score2,2),maxI2(2)+subv));
+                        sub_score = score(max(1,maxI2(1)-subv):min(size(score,1),maxI2(1)+subv),...
+                                            max(1,maxI2(2)-subv):min(size(score,2),maxI2(2)+subv));
                         % my field of interest
-                        subvP = vP(max(1,maxI2(1)-subv):min(size(score2,1),maxI2(1)+subv));
-                        subvF = vF(max(1,maxI2(2)-subv):min(size(score2,2),maxI2(2)+subv));
+                        subvP = vP(max(1,maxI2(1)-subv):min(size(score,1),maxI2(1)+subv));
+                        subvF = vF(max(1,maxI2(2)-subv):min(size(score,2),maxI2(2)+subv));
 
                         [subvFG,subvPG]=meshgrid(subvF,subvP);
                         subvF1D = reshape(subvFG,[],1);
                         subvP1D = reshape(subvPG,[],1);
-                        sub_score1D2 = reshape(sub_score2,[],1);
-                        sf = fit( [subvF1D, subvP1D], sub_score1D2, 'poly22');
+                        sub_score1D = reshape(sub_score,[],1);
 
-                        px = [sf.p20 sf.p10 sf.p00]; py = [sf.p02 sf.p01 sf.p00];
-                        maxV2 = [roots(polyder(py)) roots(polyder(px)) ];
+                        % starting point estimation SH based on discretized maxV (-b/2a =
+                        % maxV(2)) in quadratical expression to avoid the random starting point warning SH
+                        maxV  = [vP(maxI2(1)) vF(maxI2(2))];
+                        asp = -0.026; %decided empirically
+                        bsp = -2*asp*maxV(2);
+                        csp = asp;
+                        dsp = -2*csp*maxV(1);
+                        esp = -0.5; %arbitrary number
+                        s = fitoptions('Method','NonlinearLeastSquares','StartPoint', [asp,bsp,csp,dsp,esp]); 
+                        f = fittype('a*x^2+b*x+c*y^2+d*y+e','independent', {'x', 'y'}, 'dependent', 'z','option',s);
+                        sf = fit( [subvF1D, subvP1D], sub_score1D, f);
+
+                        px = [sf.a sf.b sf.e]; py = [sf.c sf.d sf.e];
+                        maxV = [roots(polyder(py)) roots(polyder(px)) ];
+%                         maxV2 = [roots(polyder(py)) roots(polyder(px)) ];
                         
-                        locMaxV = [vP(locMaxI(:,1)).' vF(locMaxI(:,2)).'];
-                        for j = 1:size(locMaxI,1)
-                            % subset of score around the maxV
-                            subv = 2; % radius of subgroup for subscore
-                            sub_score = score(max(1,locMaxI(j,1)-subv):min(size(score,1),locMaxI(j,1)+subv),...
-                                                max(1,locMaxI(j,2)-subv):min(size(score,2),locMaxI(j,2)+subv));
-                            % my field of interest
-                            subvP = vP(max(1,locMaxI(j,1)-subv):min(size(score,1),locMaxI(j,1)+subv));
-                            subvF = vF(max(1,locMaxI(j,2)-subv):min(size(score,2),locMaxI(j,2)+subv));
-
-                            % subset of score around the maxV
-                            [subvFG,subvPG]=meshgrid(subvF,subvP);
-                            subvF1D = reshape(subvFG,[],1);
-                            subvP1D = reshape(subvPG,[],1);
-                            sub_score1D = reshape(sub_score,[],1);
-                            sf = fit( [subvF1D, subvP1D], sub_score1D, 'poly22');
-
-                            px = [sf.p20 sf.p10 sf.p00]; py = [sf.p02 sf.p01 sf.p00];
-                            maxV = [roots(polyder(py)) roots(polyder(px)) ];
-
-                            locMaxV(j,:) = maxV;
-                        end
+                        % SH: This part below goes through each local
+                        % maximum velocity and finds out what is closest to
+                        % the maxV2. I found out it is always the first
+                        % member in locMaxV. So it is redundant to perform
+                        % this routine.
                         
-                        distToMaxV2 = sqrt(sum((locMaxV- ...
-                            ones(size(locMaxV,1),1)*maxV2).^2,2));
-                        [minD,ind] = min(distToMaxV2);
-                        maxV = locMaxV(ind,:);
-                        maxVNorm = max(norm(maxV2),norm(maxV));
-                        if maxVNorm == 0 || ...
-                                (pass == 1 && minD < 2*closenessThreshold*maxVNorm) || ...
-                                (pass == 1 && maxVNorm < 0.5) || ...
-                                (pass == 0 && minD < closenessThreshold*maxVNorm)
-                            pass = 2;
-                        else
-                            pass = 0;
-                        end
+%                         locMaxV = [vP(locMaxI(:,1)).' vF(locMaxI(:,2)).'];
+%                         for j = 1:size(locMaxI,1)
+%                             % subset of score around the maxV
+%                             subv = 2; % radius of subgroup for subscore
+%                             sub_score = score(max(1,locMaxI(j,1)-subv):min(size(score,1),locMaxI(j,1)+subv),...
+%                                                 max(1,locMaxI(j,2)-subv):min(size(score,2),locMaxI(j,2)+subv));
+%                             % my field of interest
+%                             subvP = vP(max(1,locMaxI(j,1)-subv):min(size(score,1),locMaxI(j,1)+subv));
+%                             subvF = vF(max(1,locMaxI(j,2)-subv):min(size(score,2),locMaxI(j,2)+subv));
+% 
+%                             % subset of score around the maxV
+%                             [subvFG,subvPG]=meshgrid(subvF,subvP);
+%                             subvF1D = reshape(subvFG,[],1);
+%                             subvP1D = reshape(subvPG,[],1);
+%                             sub_score1D = reshape(sub_score,[],1);
+%                             sf = fit( [subvF1D, subvP1D], sub_score1D, 'poly22');
+% 
+%                             px = [sf.p20 sf.p10 sf.p00]; py = [sf.p02 sf.p01 sf.p00];
+%                             maxV = [roots(polyder(py)) roots(polyder(px)) ];
+% 
+%                             locMaxV(j,:) = maxV;
+%                         end
+%                         
+%                         distToMaxV2 = sqrt(sum((locMaxV- ...
+%                             ones(size(locMaxV,1),1)*maxV2).^2,2));
+%                         [minD,ind] = min(distToMaxV2);
+%                         maxV = locMaxV(ind,:);
+%                         maxVNorm = max(norm(maxV2),norm(maxV));
+%                         if maxVNorm == 0 || ...
+%                                 (pass == 1 && minD < 2*closenessThreshold*maxVNorm) || ...
+%                                 (pass == 1 && maxVNorm < 0.5) || ...
+%                                 (pass == 0 && minD < closenessThreshold*maxVNorm)
+%                             pass = 2;
+%                         else
+%                             pass = 0;
+%                         end
                     else
                         pass = 0;
                     end
@@ -308,9 +326,20 @@ for k = 1:nPoints
         subvF1D = reshape(subvFG,[],1);
         subvP1D = reshape(subvPG,[],1);
         sub_score1D = reshape(sub_score,[],1);
-        sf = fit( [subvF1D, subvP1D], sub_score1D, 'poly22');
+        
+        % starting point estimation SH based on discretized maxV (-b/2a =
+        % maxV(2)) in quadratical expression to avoid the random starting point warning SH
+        maxV  = [vP(maxI(1)) vF(maxI(2))];
+        asp = -0.026; %decided empirically
+        bsp = -2*asp*maxV(2);
+        csp = asp;
+        dsp = -2*csp*maxV(1);
+        esp = -0.5; %arbitrary number
+        s = fitoptions('Method','NonlinearLeastSquares','StartPoint', [asp,bsp,csp,dsp,esp]); 
+        f = fittype('a*x^2+b*x+c*y^2+d*y+e','independent', {'x', 'y'}, 'dependent', 'z','option',s);
+        sf = fit( [subvF1D, subvP1D], sub_score1D, f);
 
-        px = [sf.p20 sf.p10 sf.p00]; py = [sf.p02 sf.p01 sf.p00];
+        px = [sf.a sf.b sf.e]; py = [sf.c sf.d sf.e];
         maxV = [roots(polyder(py)) roots(polyder(px)) ];
     end
     
