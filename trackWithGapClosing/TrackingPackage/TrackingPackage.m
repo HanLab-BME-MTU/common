@@ -53,6 +53,8 @@ classdef TrackingPackage < Package
             objects(1).packageConstr = @UTrackPackage;
             objects(2).name = 'Microtubules';
             objects(2).packageConstr = @PlusTipTrackerPackage;                        
+            objects(3).name = 'Nuclei';
+            objects(3).packageConstr = @NucleiTrackingPackage;
         end
         
     end 
