@@ -387,6 +387,7 @@ classdef  MovieObject < hgsetget
                 % Set session
                 if nargin>1 && isa(varargin{1},'omero.api.ServiceFactoryPrxHelper')
                     obj.setSession(varargin{1});
+                    varargin = varargin(2:end);
                 end
                 
                 % Perform sanityCheck using the input path

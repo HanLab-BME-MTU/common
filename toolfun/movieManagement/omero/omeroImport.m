@@ -1,7 +1,7 @@
 function movie = omeroImport(session,imageID,varargin)
-% BFIMPORT imports movie files into MovieData objects using Bioformats 
+% OMEROIMPORT imports images from an OMERO server into MovieData objects
 %
-% movie = bfimport(image)
+% movie = omeroImport(session)
 %
 % Load proprietary files using the Bioformats library. Read the metadata
 % that is associated with the movie and the channels and set them into the
@@ -10,7 +10,9 @@ function movie = omeroImport(session,imageID,varargin)
 %
 % Input:
 % 
-%   image - A string containing the full path to the movie file.
+%   session - an omero session
+%
+%   imageID - A string containing the full path to the movie file.
 %
 %   extractImages - Optional. If true, individual images will be extracted
 %   and saved as TIF images.
@@ -19,7 +21,7 @@ function movie = omeroImport(session,imageID,varargin)
 %
 %   movie - A MovieData object
 
-% Sebastien Besson, Dec 2011
+% Sebastien Besson, Dec 2011 (last modified Nov 2012)
 
 if ~exist('omero.client','class'), loadOmero; end
 

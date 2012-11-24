@@ -39,25 +39,10 @@ absolutePath = file.getAbsolutePath();
 path = absolutePath.substring(0, absolutePath.length()-name.length());
 
 % Load existing file annotations
-userId = movieData.getSession().getAdminService().getEventContext().userId;
-nsToInclude = java.util.ArrayList;
-nsToInclude.add(namespace);
-nsToExclude = java.util.ArrayList;
+files = getOmeroFileAnnotations(movieData.getSession(), movieData.omeroId_);
 
-options = omero.sys.ParametersI;
-options.exp(omero.rtypes.rlong(userId)); %load the annotation for a given user.
-options.exp(omero.rtypes.rlong(userId)); %load the annotation for a given user.
-metadataService = movieData.getSession().getMetadataService();
-% retrieve the annotations linked to images, for datasets use: 'omero.model.Dataset'
-annotations = metadataService.loadSpecifiedAnnotations('omero.model.FileAnnotation', nsToInclude, nsToExclude, options);
-
-% imageIds = java.util.ArrayList;
-% imageIds.add(java.lang.Long(MD.getImage().getId().getValue))
-% annotations = metadataService.loadAnnotation('omero.model.Image', imageIds,...
-%     java.util.ArrayList,java.util.ArrayList,omero.sys.ParametersI());
-
-if annotations.size() >0
-    originalFile = annotations.get(0).getFile();
+if ~isempty(files{1})
+    originalFile = files{1};
 else
     originalFile = omero.model.OriginalFileI;
 end
@@ -87,7 +72,7 @@ originalFile = rawFileStore.save();
 % Important to close the service
 rawFileStore.close();
 
-if annotations.size()==0
+if isempty(files{1})
     % now we have an original File in DB and raw data uploaded.
     % We now need to link the Original file to the image using the File annotation object. That's the way to do it.
     fa = omero.model.FileAnnotationI;
