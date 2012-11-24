@@ -27,7 +27,7 @@ classdef PostTrackingProcess < DataProcessingProcess
     end
     methods(Static)
         function name = getName()
-            name = 'Post-tracking';
+            name = 'Track analysis';
         end
         function h = GUI()
             h = @abstractProcessGUI;
