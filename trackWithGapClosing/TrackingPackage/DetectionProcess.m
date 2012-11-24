@@ -80,7 +80,8 @@ classdef DetectionProcess < ImageAnalysisProcess
             procClasses = ...
                 {'SubResolutionProcess';
                 'CometDetectionProcess';
-                'AnisoGaussianDetectionProcess';                
+                'AnisoGaussianDetectionProcess';
+                'NucleiDetectionProcess'
                 };
         end
         
