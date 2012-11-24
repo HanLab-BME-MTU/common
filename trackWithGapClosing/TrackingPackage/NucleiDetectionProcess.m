@@ -25,18 +25,6 @@ classdef NucleiDetectionProcess < DetectionProcess
             super_args{4} = funParams;
             
             obj = obj@DetectionProcess(super_args{:});
-            
-            
-            % Visual parameters ( Default: channel 1 )
-            obj.visualParams_.startend = [1 owner.nFrames_];
-            obj.visualParams_.saveMovie = 1;
-            obj.visualParams_.movieName = [];
-            obj.visualParams_.dir2saveMovie = funParams.OutputDirectory;
-            obj.visualParams_.filterSigma = 0;
-            obj.visualParams_.showRaw = 1;
-            obj.visualParams_.intensityScale = 1;
-            file = owner.getImageFileNames(1);
-            obj.visualParams_.firstImageFile = [owner.channels_(1).channelPath_ filesep file{1}{1}];
         end
         
    
@@ -70,16 +58,16 @@ classdef NucleiDetectionProcess < DetectionProcess
             
             % Set default parameters
             % movieParam
-            funParams.ChannelIndex =1:numel(owner.channels_);
+            funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.OutputDirectory = [outputDir  filesep 'detected_nuclei'];
             funParams.ProcessIndex = [];%Default is to use raw images
-            funParams.edgeFilter='canny';
-            funParams.radius=5;
-            funParams.sigma=2;
-            funParams.useDblLog=true;
-            funParams.p=.1;
-            funParams.firstFrame=1;
-            funParams.lastFrame=owner.nFrames_;
+            funParams.edgeFilter = 'sobel';
+            funParams.radius = 5;
+            funParams.sigma = 2;
+            funParams.useDblLog = true;
+            funParams.p = .01;
+            funParams.firstFrame = 1;
+            funParams.lastFrame = owner.nFrames_;
         end
     end
     

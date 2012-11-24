@@ -14,7 +14,7 @@ function detectMovieNuclei(movieData,varargin)
 %
 % OUTPUT   
 
-% Sebastien Besson, Oct 2011
+% Sebastien Besson, Nov 2012
 
 %% ----------- Input ----------- %%
 
@@ -35,7 +35,7 @@ if isempty(iProc)
     movieData.addProcess(NucleiDetectionProcess(movieData,...
         movieData.outputDirectory_));                                                                                                 
 end
-nucDetProc = movieData.processes_{iProc};
+nucDetProc = movieData.getProcess(iProc);
 %Parse input, store in parameter structure
 p = parseProcessParams(nucDetProc,paramsIn);
 
@@ -79,6 +79,8 @@ nChan = length(p.ChannelIndex);
 nDetFrames=p.lastFrame-p.firstFrame+1;
 nTot = nChan*nDetFrames;
 
+movieInfo(nFrames,1)=deal(struct('xCoord',[],'yCoord',[],'amp',[]));
+
 for i = 1:numel(p.ChannelIndex)
     iChan = p.ChannelIndex(i);
     % Log display
@@ -86,13 +88,17 @@ for i = 1:numel(p.ChannelIndex)
     disp(inFilePaths{1,iChan});
     disp('Results will be saved under:')
     disp(outFilePaths{1,iChan});
+    
     if ishandle(wtBar), waitbar((i-1)/numel(p.ChannelIndex),wtBar,logMsg(iChan)); end
     
-    movieInfo(nFrames,1)=deal(struct('xCoord',[],'yCoord',[],'amp',[]));
     for j=p.firstFrame:p.lastFrame
-        I = movieData.channels_(iChan).loadImage(j);
-        movieInfo(j,1)=detectNucleiCentroids(I,p.radius,p.useDblLog,...
-            'edgeFilter',p.edgeFilter,'sigma',p.sigma,'p',p.p);
+        if isempty(p.ProcessIndex)
+            I = double(movieData.channels_(iChan).loadImage(j));
+        else
+            I = double(movieData.getProcess(p.ProcessIndex).loadChanelOutput(iChan, j));
+        end
+        movieInfo(j,1)= detectNuclei(I, p.radius, p.useDblLog,...
+            'edgeFilter', p.edgeFilter, 'sigma', p.sigma, 'p', p.p);
         
         % Update the waitbar
         if mod(j,5)==1 && ishandle(wtBar)
@@ -109,4 +115,3 @@ end
 
 if ishandle(wtBar), close(wtBar); end
 disp('Finished detecting nuclei...')
-

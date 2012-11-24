@@ -148,9 +148,14 @@ if isnan(lastFrame) || lastFrame>userData.MD.nFrames_ ||...
 end
 funParams.lastFrame=lastFrame;
 
+if  lastFrame == userData.MD.nFrames_
+     setLastFrame =@(x) parseProcessParams(x, struct('lastFrame',...
+        x.owner_.nFrames_));
+else
+    setLastFrame =@(x) parseProcessParams(x, struct('lastFrame',...
+        min(x.funParams_.lastFrame,x.owner_.nFrames_)));
+end
 
-setLastFrame =@(x) parseProcessParams(x,struct('lastFrame',...
-    min(x.funParams_.lastFrame,x.owner_.nFrames_)));
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams,{setLastFrame});
 
 
