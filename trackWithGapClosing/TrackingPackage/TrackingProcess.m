@@ -110,12 +110,12 @@ classdef TrackingProcess < DataProcessingProcess
                             validTracks = (iFrame>=trackSEL(:,1) &iFrame<=trackSEL(:,2));
                             [tracksFinal(~validTracks).tracksCoordAmpCG]=deal([]);
                             
-                            for i=find(validTracks)'
-                                tracksFinal(i).tracksCoordAmpCG = tracksFinal(i).tracksCoordAmpCG(1:8*(iFrame-trackSEL(i,1)+1));
+                            for j=find(validTracks)'
+                                tracksFinal(j).tracksCoordAmpCG = tracksFinal(j).tracksCoordAmpCG(:,1:8*(iFrame-trackSEL(j,1)+1));
                             end
-                            varargout{1}=tracksFinal;
+                            varargout{i} = tracksFinal;
                         else
-                            varargout{1} = tracksFinal;
+                            varargout{i} = tracksFinal;
                         end
                     case 'gapInfo'
                         varargout{1} = findTrackGaps(tracksFinal);
@@ -330,13 +330,30 @@ classdef TrackingProcess < DataProcessingProcess
             costMatrix=costMatrices(index);      
         end
         
-        function tracks=formatTracks(tracks)
+        function displayTracks = formatTracks(tracks)
             
-            for i=1:numel(tracks)
-                tracks(i).xCoord = tracks(i).tracksCoordAmpCG(1:8:end);
-                tracks(i).yCoord = tracks(i).tracksCoordAmpCG(2:8:end);
+            % Get the x and y coordinate of all compound tracks
+            nCompoundTracks = arrayfun(@(x) size(x.tracksCoordAmpCG,1), tracks);
+            nTracksTot = [0 cumsum(nCompoundTracks(:))'];
+            displayTracks(sum(nCompoundTracks),1) = struct('xCoord', [], 'yCoord', []);
+            for i = find(nCompoundTracks)'
+                for  j = 1 : nCompoundTracks(i)
+                    iTrack = nTracksTot(i) + j ;
+                    displayTracks(iTrack).xCoord = tracks(i).tracksCoordAmpCG(j, 1:8:end);
+                    displayTracks(iTrack).yCoord = tracks(i).tracksCoordAmpCG(j, 2:8:end);
+                end
+                nTimes = numel(displayTracks(iTrack).xCoord);
+                
+                splitEvents = find(tracks(i).seqOfEvents(:,2)==1 & ~isnan(tracks(i).seqOfEvents(:,4)))';
+                eventTimes = tracks(i).seqOfEvents(splitEvents,1)-1;
+                for iEvent = splitEvents (eventTimes < nTimes)
+                    iTrack1 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,3);
+                    iTrack2 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,4);
+                    t = tracks(i).seqOfEvents(iEvent,1)-1;
+                    displayTracks(iTrack1).xCoord(t) = displayTracks(iTrack2).xCoord(t);
+                    displayTracks(iTrack1).yCoord(t) = displayTracks(iTrack2).yCoord(t);
+                end
             end
-            tracks = rmfield(tracks,'tracksCoordAmpCG');
         end        
     end
 end
