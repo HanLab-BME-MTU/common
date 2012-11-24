@@ -3,8 +3,8 @@ classdef TrackingProcess < DataProcessingProcess
     %
     % Chuangang Ren, 11/2010
     % Sebastien Besson (last modified Dec 2011)
-
-   
+    
+    
     methods(Access = public)
         
         function obj = TrackingProcess(owner, varargin)
@@ -173,7 +173,7 @@ classdef TrackingProcess < DataProcessingProcess
         function h = GUI()
             h= @trackingProcessGUI;
         end
-
+        
         function funParams = getDefaultParams(owner,varargin)
             % Input check
             ip=inputParser;
@@ -183,7 +183,7 @@ classdef TrackingProcess < DataProcessingProcess
             outputDir=ip.Results.outputDir;
             
             % Set default parameters
-                       
+            
             funParams.ChannelIndex =1:numel(owner.channels_);
             funParams.DetProcessIndex = [];
             funParams.OutputDirectory = [outputDir  filesep 'tracks'];
@@ -201,7 +201,7 @@ classdef TrackingProcess < DataProcessingProcess
             fields = fieldnames(kalmanFunctions);
             validFields = {'reserveMem','initialize','calcGain','timeReverse'};
             kalmanFunctions = rmfield(kalmanFunctions,fields(~ismember(fields,validFields)));
-            funParams.kalmanFunctions = kalmanFunctions;            
+            funParams.kalmanFunctions = kalmanFunctions;
             
             % --------------- saveResults ----------------
             funParams.saveResults.export = 0; %FLAG allow additional export of the tracking results into matrix
@@ -214,23 +214,23 @@ classdef TrackingProcess < DataProcessingProcess
             funParams.costMatrices(1) = TrackingProcess.getDefaultLinkingCostMatrices(owner, funParams.gapCloseParam.timeWindow,1);
             funParams.costMatrices(2) = TrackingProcess.getDefaultGapClosingCostMatrices(owner, funParams.gapCloseParam.timeWindow,1);
             
-
+            
         end
         
         function kalmanFunctions = getKalmanFunctions(index)
             % Brownian + Directed motion models
             kalmanFunctions(1).name = 'Brownian + Directed motion models';
-            kalmanFunctions(1).reserveMem = func2str(@kalmanResMemLM);            
+            kalmanFunctions(1).reserveMem = func2str(@kalmanResMemLM);
             kalmanFunctions(1).initialize  = func2str(@kalmanInitLinearMotion);
-            kalmanFunctions(1).initializeGUI  = @kalmanInitializationGUI;            
+            kalmanFunctions(1).initializeGUI  = @kalmanInitializationGUI;
             kalmanFunctions(1).calcGain    = func2str(@kalmanGainLinearMotion);
             kalmanFunctions(1).timeReverse = func2str(@kalmanReverseLinearMotion);
-              
+            
             % Microtubule dynamics
             kalmanFunctions(2).name = 'Microtubule dynamics';
             kalmanFunctions(2).reserveMem = func2str(@kalmanResMemLM);
             kalmanFunctions(2).initialize  = func2str(@plusTipKalmanInitLinearMotion);
-            kalmanFunctions(2).initializeGUI  = @kalmanInitializationGUI;            
+            kalmanFunctions(2).initializeGUI  = @kalmanInitializationGUI;
             kalmanFunctions(2).calcGain    = func2str(@plusTipKalmanGainLinearMotion);
             kalmanFunctions(2).timeReverse = func2str(@kalmanReverseLinearMotion);
             
@@ -239,7 +239,7 @@ classdef TrackingProcess < DataProcessingProcess
                 kalmanFunctions=kalmanFunctions(index);
             end
         end
-       
+        
         
         function costMatrix = getDefaultLinkingCostMatrices(owner,timeWindow,varargin)
             
@@ -267,7 +267,7 @@ classdef TrackingProcess < DataProcessingProcess
             plusTipCostMatrix.parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the linking (initial tracking) step.
             plusTipCostMatrix.parameters.nnWindow = timeWindow; %number of frames before the current one where you want to look to see a feature's nearest neighbor in order to decide how isolated it is (in the initial linking step).
             plusTipCostMatrix.parameters.kalmanInitParam.initVelocity = []; %Kalman filter initialization parameters.
-            plusTipCostMatrix.parameters.kalmanInitParam.convergePoint = []; %Kalman filter initialization parameters.  
+            plusTipCostMatrix.parameters.kalmanInitParam.convergePoint = []; %Kalman filter initialization parameters.
             plusTipCostMatrix.parameters.kalmanInitParam.searchRadiusFirstIteration = 20; %Kalman filter initialization parameters.
             plusTipCostMatrix.parameters.diagnostics = [];
             costMatrices(2)=plusTipCostMatrix;
@@ -278,7 +278,7 @@ classdef TrackingProcess < DataProcessingProcess
             ip.addOptional('index',1:length(costMatrices),@isvector);
             ip.parse(owner,timeWindow,varargin{:});
             index = ip.Results.index;
-            costMatrix=costMatrices(index);          
+            costMatrix=costMatrices(index);
         end
         
         function costMatrix = getDefaultGapClosingCostMatrices(owner,timeWindow,varargin)
@@ -327,34 +327,51 @@ classdef TrackingProcess < DataProcessingProcess
             ip.addOptional('index',1:length(costMatrices),@isvector);
             ip.parse(owner,timeWindow,varargin{:});
             index = ip.Results.index;
-            costMatrix=costMatrices(index);      
+            costMatrix=costMatrices(index);
         end
         
         function displayTracks = formatTracks(tracks)
             
-            % Get the x and y coordinate of all compound tracks
-            nCompoundTracks = arrayfun(@(x) size(x.tracksCoordAmpCG,1), tracks);
+            % Determine the number of compound tracks
+            nCompoundTracks = zeros(numel(tracks), 1);
+            for i = 1:numel(tracks)
+                nCompoundTracks(i) =  size(tracks(i).tracksCoordAmpCG,1);
+            end
             nTracksTot = [0 cumsum(nCompoundTracks(:))'];
+            
             displayTracks(sum(nCompoundTracks),1) = struct('xCoord', [], 'yCoord', []);
             for i = find(nCompoundTracks)'
+                % Get the x and y coordinate of all compound tracks
                 for  j = 1 : nCompoundTracks(i)
                     iTrack = nTracksTot(i) + j ;
                     displayTracks(iTrack).xCoord = tracks(i).tracksCoordAmpCG(j, 1:8:end);
                     displayTracks(iTrack).yCoord = tracks(i).tracksCoordAmpCG(j, 2:8:end);
                 end
-                nTimes = numel(displayTracks(iTrack).xCoord);
                 
+                % Fill split events NaNs in compound tracks
+                nTimes = numel(displayTracks(iTrack).xCoord);
                 splitEvents = find(tracks(i).seqOfEvents(:,2)==1 & ~isnan(tracks(i).seqOfEvents(:,4)))';
                 eventTimes = tracks(i).seqOfEvents(splitEvents,1)-1;
-                for iEvent = splitEvents (eventTimes < nTimes)
+                for iEvent = splitEvents(eventTimes < nTimes)
                     iTrack1 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,3);
                     iTrack2 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,4);
                     t = tracks(i).seqOfEvents(iEvent,1)-1;
                     displayTracks(iTrack1).xCoord(t) = displayTracks(iTrack2).xCoord(t);
                     displayTracks(iTrack1).yCoord(t) = displayTracks(iTrack2).yCoord(t);
                 end
+                
+                % Fill merge events NaNs in compound tracks
+                mergeEvents = find(tracks(i).seqOfEvents(:,2)==2 & ~isnan(tracks(i).seqOfEvents(:,4)))';
+                eventTimes = tracks(i).seqOfEvents(mergeEvents,1)-1;
+                for iEvent = mergeEvents(eventTimes < nTimes)
+                    iTrack1 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,3);
+                    iTrack2 = nTracksTot(i)+ tracks(i).seqOfEvents(iEvent,4);
+                    t = tracks(i).seqOfEvents(iEvent,1);
+                    displayTracks(iTrack1).xCoord(t) = displayTracks(iTrack2).xCoord(t);
+                    displayTracks(iTrack1).yCoord(t) = displayTracks(iTrack2).yCoord(t);
+                end
             end
-        end        
+        end
     end
 end
 
