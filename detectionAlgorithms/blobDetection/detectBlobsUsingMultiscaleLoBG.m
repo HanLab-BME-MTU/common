@@ -25,7 +25,7 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoBG( im, bl
     p.addRequired( 'blobDiameterRange', @(x) (numel(x) == 2) );    
     p.parse( im, blobDiameterRange );    
     
-    p.addParamValue( 'rho', 0.2, @(x) (isscalar(x)) );
+    p.addParamValue( 'rho', 0.2, @(x) (isscalar(x)) ); % for now read the reference paper to understand what this means
     p.addParamValue( 'spacing', ones( 1, ndims(im) ), @(x) (isnumeric(x) && numel(x) == ndims(im)) );
     p.addParamValue( 'numLoGScales', 15, @(x) isscalar(x) );
     p.addParamValue( 'debugMode', false, @(x) (isscalar(x) && islogical(x)) );
