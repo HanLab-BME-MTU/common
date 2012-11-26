@@ -56,6 +56,7 @@ classdef MaskRefinementProcess < MaskProcessingProcess
             funParams.OpeningRadius = 0;
             funParams.ObjectNumber = 1; %only 1 object per mask
             funParams.FillHoles = true;
+            funParams.SuppressBorder = false;
             funParams.EdgeRefinement = false; %This off by default because it sort of sucks, and is slow.
             funParams.MaxEdgeAdjust = []; %Use refineMaskEdges.m function defaults for these settings
             funParams.MaxEdgeGap = [];

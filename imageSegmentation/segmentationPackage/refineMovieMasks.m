@@ -86,6 +86,11 @@ function movieData = refineMovieMasks(movieData,paramsIn)
 %           has the effect of removing spikes in the mask.
 %           Optional. Default: 0, meaning do not perform.
 %
+%           ('SuppressBorder' -> True/False)
+%           If true, mask pixels at the image border will always be false.
+%           This prevents any mask objects from touching the image border.
+%           Optional. Default is false.
+%
 %       ('EdgeRefinement' -> True/False)
 %       If true, edge detection will be used to refine the position of the
 %       mask edge to the nearest detected edge in the image. This will be
@@ -386,6 +391,16 @@ for iChan = 1:nChanThresh
              end
 
             
+            
+        end
+        
+        if p.SuppressBorder
+            
+            %Sets all mask pixels on the image border to false. Prevents
+            %other analysis routines from complaining when cells/mask
+            %objects touch the image border.
+            currMask([1 end],:) = false;
+            currMask(:,[1 end]) = false;
             
         end
         
