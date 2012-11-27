@@ -1,4 +1,4 @@
-function [v,corLength,sigtVal] = imSpeckleTracking(stack,points,minCorL,varargin)
+function [v,corLength,sigtVal] = trackStackFlow(stack,points,minCorL,varargin)
 %trackStackFlow: Calculate the flow velocity from a stack of movie images.
 %
 % SYNOPSIS :
@@ -171,10 +171,28 @@ for k = 1:nPoints
             % the image area. We also use bigger stepsize for large speed.
             minSpdF = -min(floor(maxFlowSpd),max(0,xI-corL-1));
             maxSpdF = min(floor(maxFlowSpd),imgL-min(xI+corL,imgL));
+%             dv = max(1,ceil(abs(minSpdF)/10));
+%             vF = minSpdF:dv:min(0,maxSpdF);
+%             if vF(end) ~= 0
+%                 vF(end+1) = 0;
+%             end
+%             dv = max(1,ceil(abs(maxSpdF)/10));
+%             vF = [vF vF(end)+dv:dv:maxSpdF];
+%             
             minSpdP = -min(floor(maxPerpSpd),max(0,yI-corL-1));
             maxSpdP = min(floor(maxPerpSpd),imgW-min(yI+corL,imgW));
+%             dv = max(1,ceil(abs(minSpdP)/10));
+%             vP = minSpdP:dv:min(0,maxSpdP);
+%             if vP(end) ~= 0
+%                 vP(end+1) = 0;
+%             end
+%             dv = max(1,ceil(abs(maxSpdP)/10));
+%             vP = [vP vP(end)+dv:dv:maxSpdP];
+%             
+            %Debugging
             vF = minSpdF:maxSpdF;
             vP = minSpdP:maxSpdP;
+            %End of debugging
             
             hCLL    = min(xI-1,corL)+max(-vF(1),0);
             hCLR    = min(imgL-xI,corL)+max(vF(end),0);
@@ -216,14 +234,22 @@ for k = 1:nPoints
                     [score2] = calScore(kym,centerI,ceil(1.25*corL),...
                         vP,vF,'bAreaThreshold',bAreaThreshold,...
                         'kymMask',kymMask,'kymAvgImg',kymAvgImg);
-                    [pass2,maxI2] = findMaxScoreI(score2,zeroI,minFeatureSize);
+                    [pass2,maxI2] = findMaxScoreI(score2,zeroI,minFeatureSize,0.6);
                     if pass2 == 1
+                        % SB: here Jin Li was using a spline to refine the
+                        % velocity estimation. This creates a bottleneck in
+                        % terms of speed execution.
+                        % Maybe looking at the local neighborhood and
+                        % fitting a 2D parabola to extract sub-pixel
+                        % maximum would be a good idea in future
+                        % development of the function
+                        
                         % SH: I made a change for this refining process to
                         % use parabola approximation. 
 
                         % parabola approximation
                         subv = 1; % radius of subgroup for subscore
-                        sub_score = score(max(1,maxI2(1)-subv):min(size(score,1),maxI2(1)+subv),...
+                        sub_score = score2(max(1,maxI2(1)-subv):min(size(score,1),maxI2(1)+subv),...
                                             max(1,maxI2(2)-subv):min(size(score,2),maxI2(2)+subv));
                         % my field of interest
                         subvP = vP(max(1,maxI2(1)-subv):min(size(score,1),maxI2(1)+subv));
@@ -248,13 +274,25 @@ for k = 1:nPoints
 
                         px = [sf.a sf.b sf.e]; py = [sf.c sf.d sf.e];
                         maxV = [roots(polyder(py)) roots(polyder(px)) ];
-%                         maxV2 = [roots(polyder(py)) roots(polyder(px)) ];
                         
-                        % SH: This part below goes through each local
-                        % maximum velocity and finds out what is closest to
-                        % the maxV2. I found out it is always the first
-                        % member in locMaxV. So it is redundant to perform
-                        % this routine.
+                        pass = 2;
+
+%                         % subset of score around the maxV
+%                         subv = 1; % radius of subgroup for subscore
+%                         sub_score2 = score2(max(1,maxI2(1)-subv):min(size(score2,1),maxI2(1)+subv),...
+%                                             max(1,maxI2(2)-subv):min(size(score2,2),maxI2(2)+subv));
+%                         % my field of interest
+%                         subvP = vP(max(1,maxI2(1)-subv):min(size(score2,1),maxI2(1)+subv));
+%                         subvF = vF(max(1,maxI2(2)-subv):min(size(score2,2),maxI2(2)+subv));
+% 
+%                         [subvFG,subvPG]=meshgrid(subvF,subvP);
+%                         subvF1D = reshape(subvFG,[],1);
+%                         subvP1D = reshape(subvPG,[],1);
+%                         sub_score1D2 = reshape(sub_score2,[],1);
+%                         sf = fit( [subvF1D, subvP1D], sub_score1D2, 'poly22');
+% 
+%                         px = [sf.p20 sf.p10 sf.p00]; py = [sf.p02 sf.p01 sf.p00];
+%                         maxV2 = [roots(polyder(py)) roots(polyder(px)) ];
                         
 %                         locMaxV = [vP(locMaxI(:,1)).' vF(locMaxI(:,2)).'];
 %                         for j = 1:size(locMaxI,1)
@@ -278,7 +316,7 @@ for k = 1:nPoints
 % 
 %                             locMaxV(j,:) = maxV;
 %                         end
-%                         
+                        
 %                         distToMaxV2 = sqrt(sum((locMaxV- ...
 %                             ones(size(locMaxV,1),1)*maxV2).^2,2));
 %                         [minD,ind] = min(distToMaxV2);
@@ -400,7 +438,7 @@ bI1(bI1<1 | bI1>kymWidth) = [];
 bI2(bI2<1 | bI2>kymLen) = [];
 
 score = zeros(length(vP),length(vF));
-if min(min(kymMask(:,:,1))) == 1 %SH: kymMask is all 1 if there is no mask defined. 11/07/12
+if min(min(kymMask(:,:,1))) == 1
     %Background intensities are set to be zero. So, if there is no zero intensities, there is no
     % background.
     kymP2 = kym.*kym;
@@ -537,7 +575,7 @@ end
 
 
 
-function [pass,locMaxI,sigtVal] = findMaxScoreI(score,zeroI,minFeatureSize)
+function [pass,locMaxI,sigtVal] = findMaxScoreI(score,zeroI,minFeatureSize,sigThreshold)
 %
 % INPUT:
 %    score : The cross-correlation score function.
@@ -549,6 +587,9 @@ function [pass,locMaxI,sigtVal] = findMaxScoreI(score,zeroI,minFeatureSize)
 %    locMaxI : Index of local maximum whose scores pass the significant test.
 %    sigtVal : A 1x3 vector that contains the scores of the 1st, 2nd local
 %              maximum and the reference score.
+if nargin < 4
+    sigThreshold = 0.5; %0.5;
+end
 
 [m,n] = size(score);
 numSamples = m*n;
@@ -560,7 +601,6 @@ avg = sum(score(:))/numSamples;
 minFeatureRadius   = max(1,ceil((minFeatureSize-1)/2)); %Unit: pixel.
 closenessThreshold = 0.2;
 maxNbDist          = 0.5;
-sigThreshold       = 0.5; %0.5;
 
 %We divide the score into 5x5 pixels blocks centered at 'zeroI' which is
 % the index for zero velocity and find the local maximum in each block
