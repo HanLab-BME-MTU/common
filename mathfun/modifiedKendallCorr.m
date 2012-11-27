@@ -14,7 +14,6 @@ ip.parse(x,varargin{:});
 neigh    = ip.Results.neigh;
 alpha    = ip.Results.alpha;
 y        = ip.Results.y;
-amp      = ip.Results.amp;
 maxLag   = ip.Results.maxLag;
 
 x = x(:);
@@ -37,11 +36,11 @@ contM               = getCorrMatrix(ones(nObs,1),neigh,[]);
 [contX,ampM(:,:,1)] = getCorrMatrix(x,neigh,contM);
 [contY,ampM(:,:,2)] = getCorrMatrix(y,neigh,contM);
 
-match  = contX.*contY;
-tau(1) = sum(match(:))/normalization;
+match = contX.*contY;
+tau   = sum(match(:))/normalization;
 
-matchAmp  = match.*mean(abs(ampM),3);
-tauAmp(1) = sum(matchAmp(:))/sum(abs(matchAmp(:)));
+matchAmp = match.*mean(abs(ampM),3);
+tauAmp   = sum(matchAmp(:))/sum(abs(matchAmp(:)));
 
 
 contYr = contY;
@@ -51,7 +50,7 @@ tauL   = NaN(1,maxLag-1);
 
 for iLag = 1:maxLag
     
-    currNorm      = normalization - neigh*(iLag);
+    currNorm      = normalization - neigh*iLag;
     contYr        = circshift(contYr,-1);contYr(end,:) = 0;
     contXl        = circshift(contXl,-1);contXl(end,:) = 0;
     matchR        = contX.*contYr;
