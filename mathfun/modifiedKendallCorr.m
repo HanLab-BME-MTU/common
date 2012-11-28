@@ -1,6 +1,9 @@
 function  [tau,tauAmp] = modifiedKendallCorr(x,varargin)
 %Modified Kendall cross-correlation coefficient
-%Under construction
+%Temporal information added 
+%Amplitude information added
+%TS with NaN
+%Under construction (missing p-value)
 %Marco Vilela, 2012
 
 ip = inputParser;
@@ -69,7 +72,6 @@ for iLag = 1:maxLag
     [contXl,ampM(:,:,[1 3]),tauL(iLag),tauAmpL(iLag)]...
              = calculateCorr(contXl,contY,ampM(:,:,[1 3]),currNorm);
     
-    
 end
 
 tau    = [fliplr(tauL) tau tauR];
@@ -87,6 +89,9 @@ if isempty(contM)
     contTS    = hTS;
 else
     ampTSdiff = (hTS - repmat(TS(1:end-1),1,neigh)).*contM;
+    %Eliminating NaN
+    ampTSdiff(isnan(ampTSdiff)) = 0;
+    %
     contTS    = sign(ampTSdiff);
 end
 
