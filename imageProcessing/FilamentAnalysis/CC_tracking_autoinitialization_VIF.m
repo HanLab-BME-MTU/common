@@ -1,4 +1,5 @@
-function [position_array, present_cells, mean_intensity_matrix] = CC_tracking_autoinitialization(MD, iChannel, bandwidth, min_size)
+function [position_array, present_cells, mean_intensity_matrix,VIF_intensity] = ...
+    CC_tracking_autoinitialization_VIF(MD, Tracking_iChannel, VIF_iChannel, bandwidth, min_size)
 % Cross Correlation based tracking with automatic initialization
 % Input: MD the movieData object
 %        bandwidth: for mean shift clustering, set as the mean distance for the cells in pixels        
@@ -22,7 +23,7 @@ min_int = 2^16;
 max_int = 0;
 
 for iFrame = 1 : nFrame;       
-    currentImg = double(MD.channels_(iChannel).loadImage(iFrame));
+    currentImg = double(MD.channels_(Tracking_iChannel).loadImage(iFrame));
     currentImg = currentImg(1:10:end,1:10:end);
     intensity_pool = [intensity_pool;currentImg(:)];    
 end
@@ -44,7 +45,7 @@ for bin_ind = 1:1:100
 end
 
 iFrame=1;
-currentImg = double(MD.channels_(iChannel).loadImage(iFrame));
+currentImg = double(MD.channels_(Tracking_iChannel).loadImage(iFrame));
 
 std_muler=1;
 level1 = thresholdOtsu(currentImg(currentImg>mean2(currentImg)+std_muler*std2(currentImg)));
@@ -63,7 +64,7 @@ ptRawData = [(indb) (inda)];
                                                       'kernel', 'gaussian', ...
                                                       'flagUseKDTree', true);
 % plot result
-currentImg = double(MD.channels_(iChannel).loadImage(iFrame));
+currentImg = double(MD.channels_(Tracking_iChannel).loadImage(iFrame));
 
 h1 = figure(1);hold off;
 imagesc(currentImg,[min_int max_int]); axis off; axis image;
@@ -117,6 +118,7 @@ for iCell = 1:numel(clusterInfo)
 end
 
 mean_intensity_matrix = zeros(nFrame, nCell);
+VIF_intensity = zeros(nFrame, nCell);
 
 title( sprintf('Mean-shift clustering result - %d clusters were found', numel(clusterInfo)));
 saveas(h1,[MD.outputDirectory_,'/CC_tracking/mean_shift_clustering.tif']);
@@ -137,7 +139,8 @@ present_cells{1}=ones(1,nCell);
 for iFrame = 1 : nFrame;   
     
     previoucurrentImg = currentImg;
-    currentImg = double(MD.channels_(iChannel).loadImage(iFrame));
+    currentImg = double(MD.channels_(Tracking_iChannel).loadImage(iFrame));
+    currentVIFImg = double(MD.channels_(VIF_iChannel).loadImage(iFrame));
     
     current_level1 = thresholdOtsu(currentImg(currentImg>mean2(currentImg)+std_muler*std2(currentImg)));
 
@@ -146,6 +149,11 @@ for iFrame = 1 : nFrame;
 
     h3 = figure(3);hold off;    
     imagesc(currentImg,[min_int max_int]); axis off; axis image;
+    colormap(gray);
+    hold on;
+    
+     h13 = figure(13);hold off;    
+    imagesc(currentVIFImg,[min_int max_int]); axis off; axis image;
     colormap(gray);
     hold on;
     
@@ -195,7 +203,11 @@ for iFrame = 1 : nFrame;
             current_position = position_array{iFrame}(iCell,1:4);
             tracked_pos = current_position(1:2)+(current_position(3:4)+1)/2;
         end
+        h3 = figure(3);
         plot(tracked_pos(1),tracked_pos(2),'.','color',color_array(iCell,:));
+        h13 = figure(13);        
+        plot(tracked_pos(1),tracked_pos(2),'.','color',color_array(iCell,:));
+        
         X = [current_position(1);...
             current_position(1)+ current_position(3);...
             current_position(1)+current_position(3);...
@@ -207,6 +219,10 @@ for iFrame = 1 : nFrame;
             current_position(2)+ current_position(4);...
             current_position(2)+current_position(4);...
             current_position(2);];
+        
+        h13 = figure(13);        
+        plot(X,Y,'color',color_array(iCell,:));
+        h3 = figure(3);        
         plot(X,Y,'color',color_array(iCell,:));
 
         if(current_position(3)<5||current_position(4)<5)
@@ -220,6 +236,17 @@ for iFrame = 1 : nFrame;
              max(1,round(current_position(1))):...
              min(round(current_position(1)+current_position(3)),size(currentImg,2))...
              ))));
+         
+         
+        VIF_intensity(iFrame, iCell)...
+             = mean2(double(currentVIFImg(...
+             max(1,round(current_position(2))):...
+             min(round(current_position(2)+current_position(4)),size(currentImg,1)), ...
+             max(1,round(current_position(1))):...
+             min(round(current_position(1)+current_position(3)),size(currentImg,2))...
+             )));
+         
+         
 
          if(mean_intensity_matrix(iFrame, iCell) < mean_intensity_start(iCell)/20)
                present_cells{iFrame}(iCell)=0;
@@ -234,6 +261,7 @@ for iFrame = 1 : nFrame;
     end
     title(['Tracking Frame ',num2str(iFrame)]);
     print(h3,'-dtiff',[MD.outputDirectory_,'/CC_tracking/tracking_',num2str(iFrame),'.tif']);
+   print(h13,'-dtiff',[MD.outputDirectory_,'/CC_tracking/VIF_',num2str(iFrame),'.tif']);
 
 %     These are for level set segmentation
 %     Not ready yet
@@ -245,12 +273,15 @@ for iFrame = 1 : nFrame;
     
 end
 
-save([MD.outputDirectory_,'/CC_tracking/cc_tracking_results.mat'],'position_array','present_cells','mean_intensity_matrix');
+save([MD.outputDirectory_,'/CC_tracking/cc_tracking_results.mat'], ...
+    'position_array','present_cells','mean_intensity_matrix','VIF_intensity');
 
 currentImg = double(MD.channels_(1).loadImage(1));
-
+currentVIFImg = double(MD.channels_(VIF_iChannel).loadImage(iFrame));
+  
 h3 = figure(3);hold off; imagescc(currentImg);hold on;
-   
+h13 = figure(13);hold off; imagescc(currentVIFImg);hold on;
+     
 
 
 for iFrame = 1 : nFrame    
@@ -259,8 +290,12 @@ for iFrame = 1 : nFrame
     for iCell = ind_cell     
         current_position = position_array{iFrame}(iCell,1:4);
         tracked_pos = current_position(1:2)+(current_position(3:4)+1)/2;
-        
+        h3 = figure(3);
         plot(tracked_pos(1),tracked_pos(2),'.','color',color_array(iCell,:));
+        h13 = figure(13);
+        plot(tracked_pos(1),tracked_pos(2),'.','color',color_array(iCell,:));
+        
+        
         X = [current_position(1);...
             current_position(1)+ current_position(3);...
             current_position(1)+current_position(3);...
@@ -272,7 +307,12 @@ for iFrame = 1 : nFrame
             current_position(2)+ current_position(4);...
             current_position(2)+current_position(4);...
             current_position(2);];
+        
+        h13 = figure(13);        
         plot(X,Y,'color',color_array(iCell,:));
+        h3 = figure(3);        
+        plot(X,Y,'color',color_array(iCell,:));
+        
         if iFrame >1 
             previous_position = position_array{iFrame-1}(iCell,1:4);
             tracked_old_pos = previous_position(1:2)+(previous_position(3:4)+1)/2;
@@ -285,3 +325,4 @@ for iFrame = 1 : nFrame
 end
 
 saveas(h3,[MD.outputDirectory_,'/CC_tracking/whole_tracking.tif']);
+saveas(h3,[MD.outputDirectory_,'/CC_tracking/VIF_whole_tracking.tif']);
