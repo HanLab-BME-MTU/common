@@ -54,10 +54,14 @@ for i = 1:nVar
 
     
     xi          = find(isnan(TS(:,i)));
-    [nanB,nanL] = findBlock(xi,1);
-    exclude     = [];
+    if ~isempty(xi)
+        [nanB,nanL] = findBlock(xi,1);
+        
+    else
+        nanB = [];nanL = [];
+    end
 
-    
+    exclude     = [];
 %% Excluding gaps larger than 2 points and single NaN extremes
     for j = 1:length(nanB)
 
@@ -76,7 +80,7 @@ for i = 1:nVar
         if ~isempty(xi)%After excluding points, xi is a vector of size 1 NaN 
           
             x         = find(~isnan(TS(:,i)));
-            [fB,fL]   = findBlock(union(x,xi));
+            [fB,fL]   = findBlock(union(x,xi),1);
             [~,idxB]  = max(fL);
             workTS{count} = TS(fB{idxB},i);
 
@@ -86,7 +90,7 @@ for i = 1:nVar
             
         else % If there are only blocks of NaN(no single NaN), get the largest continuous block of real points            
 
-            [fB,fL]     = findBlock(setdiff(1:nObs,exclude));
+            [fB,fL]     = findBlock(setdiff(1:nObs,exclude),1);
             [~,idxB]    = max(fL);
             workTS{count}   = TS(fB{idxB},i);
 
