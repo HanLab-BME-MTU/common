@@ -1,5 +1,7 @@
 function  [tau,tauAmp] = modifiedKendallCorr(x,varargin)
 %Modified Kendall cross-correlation coefficient
+%Under construction
+%Marco Vilela, 2012
 
 ip = inputParser;
 ip.addRequired('x',@(x) isvector(x));
@@ -57,34 +59,22 @@ tauAmpL       = NaN(1,maxLag-1);
 
 for iLag = 1:maxLag
     %Change this code - create a template that change with lag
-    currNorm      = normalization - local*iLag;
-    contYr        = circshift(contYr,-1);contYr(end,:) = 0;
-    contXl        = circshift(contXl,-1);contXl(end,:) = 0;
+    currNorm = normalization - local*iLag;
     
-    ampM(:,:,3)   = circshift(ampM(:,:,3),-1);ampM(end,:,3) = 0;
-    ampM(:,:,4)   = circshift(ampM(:,:,4),-1);ampM(end,:,4) = 0;
+    %Shifting Y to the past
+    [contYr,ampM(:,:,[2 4]),tauR(iLag),tauAmpR(iLag)]...
+             = calculateCorr(contYr,contX,ampM(:,:,[2 4]),currNorm);
     
-    %Right - y series is shifted to the left
-    matchR        = contX.*contYr;
-    matchL        = contXl.*contY;
+    %Shifting X to the past
+    [contXl,ampM(:,:,[1 3]),tauL(iLag),tauAmpL(iLag)]...
+             = calculateCorr(contXl,contY,ampM(:,:,[1 3]),currNorm);
     
-    
-    meanAmpR      = mean(abs(ampM(:,:,[2 4])),3);
-    matchAmpR     = matchR.*meanAmpR;
-    tauAmpR(iLag) = sum(matchAmpR(:))/sum(meanAmpR(:));
-
-    meanAmpL      = mean(abs(ampM(:,:,[1 3])),3);
-    matchAmpL     = matchL.*meanAmpL;
-    tauAmpL(iLag) = sum(matchAmpL(:))/sum(meanAmpL(:));
-    
-    %matchRamp     = matchR
-    tauR(iLag)  = sum(matchR(:))/currNorm;
-    tauL(iLag)  = sum(matchL(:))/currNorm;
     
 end
 
 tau    = [fliplr(tauL) tau tauR];
 tauAmp = [fliplr(tauAmpL) tauAmp tauAmpR];
+
 end%END OF MAIN FUNCTION
 
 function [contTS,ampTSdiff] = getCorrMatrix(TS,neigh,contM)
@@ -100,4 +90,27 @@ else
     contTS    = sign(ampTSdiff);
 end
 
+end%END OF getCorrMatrix
+
+function [contZ,ampM,tau,tauAmp] = calculateCorr(contZ,contA,ampM,currNorm)
+%contZ - comes from the time series being shifted
+%contA - reference time series
+
+    %Updating counter matrix - shifting up and adding zeros to the last row
+    contZ  = circshift(contZ,-1);contZ(end,:) = 0;
+
+    %Updating amplitude matrix 
+    ampM(:,:,2) = circshift(ampM(:,:,2),-1);ampM(end,:,2) = 0;
+    
+    %Finding matches
+    match    = contA.*contZ;
+    
+    %Calculating the mean amplitude of the slopes
+    meanAmp  = mean( abs( ampM ),3);
+    %Setting the sign for each amplitude slope
+    matchAmp = match.*meanAmp;
+    %
+    tauAmp   = sum(matchAmp(:))/sum(meanAmp(:));
+    tau      = sum(match(:))/currNorm;
+    
 end
