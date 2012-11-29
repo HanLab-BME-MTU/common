@@ -1207,7 +1207,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 // tested with:
 // valgrind --tool=memcheck --leak-check=full --show-reachable=yes ./a.out 2>&1 | grep steerable
 
-int main(void) {
+/*int main(void) {
     int nx = 200;
     int ny = 100;
     int N = nx*ny;
@@ -1263,5 +1263,4 @@ int main(void) {
     delete[] alpha;
     
     delete[] pixels;
-}
-
+}*/
