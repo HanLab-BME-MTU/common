@@ -237,7 +237,7 @@ function channel_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns channel contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from channel
 contents           = cellstr(get(hObject,'String'));
-handles.channelIdx = contents{get(hObject,'Value')};
+handles.channelIdx = str2num( contents{get(hObject,'Value')} );
 guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
