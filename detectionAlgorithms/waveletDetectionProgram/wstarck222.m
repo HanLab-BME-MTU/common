@@ -1,33 +1,15 @@
-function wm=wstarck222(x,k,irecon)
+%[wm] = wstarck222(img, k) calculates the multiscale wavelet product.
 
-% Calculates the multiscale product from the reconstructed image
+% Shann-Ching Sam Chen, 2008 (?). Last modified by Francois Aguet.
 
-[ly,lx]=size(x);		% Get the original image size
+function [wm] = wstarck222(img, k)
 
+[ny,nx] = size(img);
 
-%------------------------------
-%   SETUP ARRAYS
-%------------------------------
-yl = zeros(ly,lx,k);
+% Calculate 'a trous' wavelet transform (spline wavelets)
+W = awt(img, k);
 
-tx=x;		% Copy the original.
-yl(:,:,1)=x;
-wm = ones(ly,lx);
-
-for ind = 1:k			% For every scale...
-    
-    %%% Now let's call wtlo2 (low pass transform) first over the rows %%%
-    %%% of the present image			   %%%
-    yl(:,:,ind+1) = wtlo2(wtlo2(tx, ind)',ind)';	% This is the ind_th approximation of x
-    
-    %wi = awt(tx, ind);
-    %yl(:,:,ind+1) = wi(:,:,end);
-    
-    
-    yh = yl(:,:,ind) - yl(:,:,ind+1); % This is the ind_th detail or residue
-    wm = abs(wm.*yh);
-    %yh=tx-yl(:,:,ind+1); % This is the ind_th detail or residue (or high pass component)
-    tx = yl(:,:,ind+1);   % This is the ind_th approximation of x (or low pass component)
-    %st=std(yh(:)); % Estimate the standard deviation of the noise in the detail at each scale.
-end				% end of all scales.
-
+wm = ones(ny,nx);
+for ind = 1:k 
+    wm = abs(wm.*W(:,:,ind));
+end
