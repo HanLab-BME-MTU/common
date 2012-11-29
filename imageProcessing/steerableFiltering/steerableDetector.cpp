@@ -1051,8 +1051,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mexErrMsgTxt("Sigma value results in filter support that is larger than image.");
     }
     
-    
-    double* pixels = (double*)malloc(sizeof(double)*N);
+    double* pixels = new double[N];
     
     // Process inputs
     
@@ -1190,7 +1189,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         }
         
     }
-
     
     // Free memory
     for (int i=0;i<nTemplates;++i) {
@@ -1200,15 +1198,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     delete[] response;
     delete[] orientation;
     delete[] alpha;
+    delete[] pixels;
 }
 
 
 // compiled with:
-// export DYLD_LIBRARY_PATH=/Applications/MATLAB_R2012a.app/bin/maci64 && g++ -Wall -g -DARRAY_ACCESS_INLINING -I. -L/Applications/MATLAB_R2012a.app/bin/maci64 -I../../mex/include/ -I/Applications/MATLAB_R2012a.app/extern/include steerableDetector.cpp -lmx -lmex -lgsl
+// export DYLD_LIBRARY_PATH=/Applications/MATLAB_R2012b.app/bin/maci64 && g++ -Wall -g -DARRAY_ACCESS_INLINING -I. -L/Applications/MATLAB_R2012b.app/bin/maci64 -I../../mex/include/ -I/Applications/MATLAB_R2012b.app/extern/include steerableDetector.cpp -lmx -lmex -lgsl
 // tested with:
 // valgrind --tool=memcheck --leak-check=full --show-reachable=yes ./a.out 2>&1 | grep steerable
 
-/*int main(void) {
+int main(void) {
     int nx = 200;
     int ny = 100;
     int N = nx*ny;
@@ -1264,5 +1263,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     delete[] alpha;
     
     delete[] pixels;
-}*/
+}
 
