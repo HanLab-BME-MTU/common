@@ -1,9 +1,9 @@
 
 %% movie information
-movieParam.imageDir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/lifeActAndCellEdge/121015_Cs1C1_LifeAct/imagesLifeact/'; %directory where images are
-movieParam.filenameBase = '121015_Cs1C1_CHO_mEos2LifeAct_'; %image file name base
-movieParam.firstImageNum = 1602; %number of first image in movie
-movieParam.lastImageNum = 1650; %number of last image in movie
+movieParam.imageDir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/lifeActAndCellEdge/121108_Cs1C5_FIXEDmEos2LIfeAct/imagesLifeact/'; %directory where images are
+movieParam.filenameBase = '121108_Cs1C5_CHO_FIXEDmEos2LifeAct_'; %image file name base
+movieParam.firstImageNum = 1; %number of first image in movie
+movieParam.lastImageNum = 14400; %number of last image in movie
 movieParam.digits4Enum = 5; %number of digits used for frame enumeration (1-4).
 
 %% detection parameters
@@ -19,16 +19,16 @@ detectionParam.integWindow = 0; %number of frames before and after a frame for t
 detectionParam.calcMethod = 'g';
 
 %absolute background info and parameters...
-background.imageDir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/lifeActAndCellEdge/121015_Cs1C1_LifeAct/bgLifeact/';
-background.filenameBase = 'crop_121015_Cs1C1_CHO_mEos2LifeAct_';
+background.imageDir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/lifeActAndCellEdge/121108_Cs1C5_FIXEDmEos2LIfeAct/bgLifeact/';
+background.filenameBase = 'crop_121108_Cs1C5_CHO_FIXEDmEos2LifeAct_';
 background.alphaLocMaxAbs = 0.01;
 detectionParam.background = background;
 
 %% additional input
 
 %saveResults
-saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/lifeActAndCellEdge/121015_Cs1C1_LifeAct/analysisLifeact/'; %directory where to save input and output
-saveResults.filename = 'detectionTest1.mat'; %name of file where input and output are saved
+saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/lifeActAndCellEdge/121108_Cs1C5_FIXEDmEos2LIfeAct/analysisLifeact/'; %directory where to save input and output
+saveResults.filename = 'detectionAll1.mat'; %name of file where input and output are saved
 % saveResults = 0;
 
 %verbose state

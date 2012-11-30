@@ -523,9 +523,9 @@ for iProperty = properties2plot
         
         if size(image,3)==2
             maskBounds = bwboundaries(image(:,:,1));
-            cellfun(@(x)(plot(x(:,2),x(:,1),'k','LineWidth',2)),maskBounds);
+            cellfun(@(x)(plot(x(:,2),x(:,1),'r','LineWidth',3)),maskBounds);
             maskBounds = bwboundaries(image(:,:,2));
-            cellfun(@(x)(plot(x(:,2),x(:,1),'k--','LineWidth',2)),maskBounds);
+            cellfun(@(x)(plot(x(:,2),x(:,1),'r--','LineWidth',3)),maskBounds);
         end
         
         %add subplot title
