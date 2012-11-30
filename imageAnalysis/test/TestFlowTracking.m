@@ -24,7 +24,8 @@ classdef TestFlowTracking < TestCase
             for i = 1 : size(v0,1)
                 self.setUpGaussianSpot(v0(i,:));
                 v = self.f(self.stack, self.imsize/2, 20, 20);
-                assertElementsAlmostEqual(v, v0(i,:) ,'relative',1e-3);
+                assertElementsAlmostEqual(v, v0(i,:) ,'relative',1e-3,...
+                    ['Displacement: ' num2str(v0(i,:))]);
             end
         end
         
@@ -36,7 +37,8 @@ classdef TestFlowTracking < TestCase
             for depth = 2 : 15
                 self.setUpGaussianSpot(v0, depth);
                 v = self.f(self.stack, self.imsize/2, 20, 20);
-                assertElementsAlmostEqual(v, v0 ,'relative',1e-3);
+                assertElementsAlmostEqual(v, v0 ,'relative',1e-3,...
+                    ['Stack depth: ' num2str(depth)]);
             end
         end
         
@@ -52,14 +54,16 @@ classdef TestFlowTracking < TestCase
             for maxSpd = v0+1 : 2 : 20;
                 v = self.f(self.stack, self.imsize/2, 20, 20,...
                     'maxSpd', maxSpd);
-                assertElementsAlmostEqual(v, vth, 'relative', 1e-4);
+                assertElementsAlmostEqual(v, vth, 'relative', 1e-4,...
+                    ['Maximum speed: ' num2str(maxSpd)]);
             end
             
             % Test maximum speeds smaller than v0
             for maxSpd = 1 : .5 : v0 - .5
                 v = self.f(self.stack, self.imsize/2, 20, 20,...
                     'maxSpd', maxSpd);
-                assertTrue(all(isnan(v)));
+                assertTrue(all(isnan(v)),...
+                    ['Maximum speed: ' num2str(maxSpd)]);
             end
         end
         
