@@ -13,13 +13,13 @@ function [Protrusion,Retraction] = getPersistenceTime(TS,deltaT,varargin)
 %               threshold
 %
 % Output:
-%       Protrusion.PersTime - vector - Protrusion time for all protrusive events
-%       Protusion.BlockOut - cell   - Time point where Protrusion happened
-%       RetrPersTime - vector - Retraction time for all retractive events
-%       RetrBlockOut - cell   - Time point where Retraction happened
-%       Up           - scalar - Upper threshold
-%       Dw           - scalar - Lower threshold
-%
+%       Protrusion.PersTime  - vector - Protrusion time for all protrusive events
+%       Protusion.BlockOut   - cell   - Time point where Protrusion happened
+%       Protrusion.MaxVeloc  - max velocity within each protrusion block
+%       Protrusion.MeanVeloc - mean velocity within each protrusion block 
+%       Protrusion.MinVeloc  - min velocity within each protrusion block
+%       Protrusion.MednVeloc - median velocity within each protrusion block
+%       Protrusion.limit     - limit of the energy for the most fast component
 % See also: findingProtRetrTime, getEdgeMotionPersistence
 %
 %Marco Vilela, 2012
@@ -35,7 +35,7 @@ per  = ip.Results.per;
 %**************************************************************************
 %%
 
-imf       = empiricalModeDecomp(TS)';
+imf       = emd(TS);
 Mu        = mean(imf(1,:));
 nPoint    = length(TS);
 [~,noise] = testImf(imf);
@@ -53,26 +53,29 @@ TSretr  = NaN(size(TS));
 TSprot(TS > Protrusion.limit) = TS(TS > Protrusion.limit);
 TSretr(TS < Retraction.limit) = TS(TS < Retraction.limit);
 
-ProtBlock = findBlock(setdiff(1:nPoint,find(isnan(TSprot))));
-RetrBlock = findBlock(setdiff(1:nPoint,find(isnan(TSretr))));
+ProtBlock = findBlock( setdiff(1:nPoint,find(isnan(TSprot))),1 );
+RetrBlock = findBlock( setdiff(1:nPoint,find(isnan(TSretr))),1 );
 
-Protrusion = getStuff(ProtBlock,TS,deltaT);
-Retraction = getStuff(RetrBlock,-TS,deltaT);
+Protrusion = getStuff(Protrusion,ProtBlock,TS,deltaT);
+Retraction = getStuff(Retraction,RetrBlock,-TS,deltaT);
 
 end%End of main function
 
-function cellData =  getStuff(block,TS,deltaT)
+function cellData =  getStuff(cellData,block,TS,deltaT)
 
-if ~isempty(ProtBlock)
+if ~isempty(block)
     
-    [cellData.PersTime,cellData.BlockOut,cellDa.MaxVeloc,cellDa.MeanVeloc] = findingProtRetrTime(block,TS,deltaT);
+    [cellData.PersTime,cellData.BlockOut,cellData.MaxVeloc,cellData.MeanVeloc,cellData.MinVeloc,cellData.MednVeloc] ...
+            = findingProtRetrTime(block,TS,deltaT);
     
 else
     
-    cellDa.PersTime  = NaN;
-    cellDa.BlockOut  = {[]};
-    cellDa.MaxVeloc  = NaN;
-    cellDa.MeanVeloc = NaN;
+    cellData.PersTime  = NaN;
+    cellData.BlockOut  = {[]};
+    cellData.MaxVeloc  = NaN;
+    cellData.MeanVeloc = NaN;
+    cellData.MinVeloc  = NaN;
+    cellData.MednVeloc = NaN;
     
 end
 
