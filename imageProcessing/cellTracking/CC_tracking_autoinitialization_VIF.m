@@ -12,7 +12,7 @@ function [position_array, present_cells, mean_intensity_matrix,VIF_intensity] = 
 
 nFrame = MD.nFrames_;
 
-color_array= [1 0 0; 0 1 0; 0 0 1; 1 1 0; 1 0 1;0 1 1 ;rand(50,3)];
+color_array= [1 0 0; 0 1 0; 0 0 1; 1 1 0; 1 0 1;0 1 1 ;rand(150,3)];
 iFrame = 1;
 if(~exist([MD.outputDirectory_,'/CC_tracking/'],'dir'))
     mkdir([MD.outputDirectory_,'/CC_tracking/']);
@@ -21,10 +21,12 @@ end
 intensity_pool = [];
 min_int = 2^16;
 max_int = 0;
-
+ G_H = fspecial('gaussian',50,3);
 for iFrame = 1 : nFrame;       
     currentImg = double(MD.channels_(Tracking_iChannel).loadImage(iFrame));
     currentImg = currentImg(1:10:end,1:10:end);
+    currentImg = imfilter(currentImg,G_H,'same','replicate');
+  
     intensity_pool = [intensity_pool;currentImg(:)];    
 end
 [hist_int, bin_int] =  hist(intensity_pool,100);
@@ -37,6 +39,14 @@ for bin_ind = 100:-1:1
     end
 end
 
+for bin_ind = 100:-1:1
+    if(sum(hist_int(bin_ind:end))/sum(hist_int(1:end))>1/100)
+        max_97_percent_int = max(0, bin_int(bin_ind)+(bin_int(2)-bin_int(1))*2);
+        break;
+    end
+end
+
+
 for bin_ind = 1:1:100
     if(sum(hist_int(1:bin_ind))/sum(hist_int(1:end))>1/100)
         min_int = bin_int(bin_ind) - (bin_int(2)-bin_int(1))*2;
@@ -44,14 +54,20 @@ for bin_ind = 1:1:100
     end
 end
 
+
+
 iFrame=1;
 currentImg = double(MD.channels_(Tracking_iChannel).loadImage(iFrame));
+currentImg = imfilter(currentImg,G_H,'same','replicate');
 
-std_muler=1;
-level1 = thresholdOtsu(currentImg(currentImg>mean2(currentImg)+std_muler*std2(currentImg)));
+for_first_threshold_img = currentImg;
+for_first_threshold_img(find(for_first_threshold_img>max_int*1.5)) = max_int*1.5;
+
+std_muler=0.3;
+level1 = thresholdOtsu(for_first_threshold_img(for_first_threshold_img>mean2(for_first_threshold_img)+std_muler*std2(for_first_threshold_img)));
 
 % threshold out the bright nucleas part
-Mask  = currentImg>level1;
+Mask  = currentImg>max_97_percent_int;
 
 [inda,indb] = find(Mask>0);
 
@@ -59,12 +75,13 @@ ptRawData = [(indb) (inda)];
 
 % Run mean-shift
 % bandwidth =70;
-[clusterInfo,pointToClusterMap] = MeanShiftClustering(ptRawData, bandwidth, ... 
-                                                      'flagDebug', false, ...
-                                                      'kernel', 'gaussian', ...
-                                                      'flagUseKDTree', true);
+[clusterInfo,pointToClusterMap] = MeanShiftClustering(ptRawData, bandwidth, ...
+    'flagDebug', false, ...
+    'kernel', 'gaussian', ...
+    'flagUseKDTree', true);
 % plot result
 currentImg = double(MD.channels_(Tracking_iChannel).loadImage(iFrame));
+    currentImg = imfilter(currentImg,G_H,'same','replicate');
 
 h1 = figure(1);hold off;
 imagesc(currentImg,[min_int max_int]); axis off; axis image;
@@ -81,39 +98,39 @@ mean_intensity_start = [];
 
 for iCell = 1:numel(clusterInfo)
     ptCurClusterCenter = clusterInfo(iCell).ptClusterCenter;
-    plot( ptRawData(pointToClusterMap==iCell, 1), ...
-        ptRawData(pointToClusterMap==iCell, 2), ...
-        '.', 'Color', color_array(iCell,:));
-    
-    plot(ptCurClusterCenter(1),ptCurClusterCenter(2),'.','MarkerFaceColor',color_array(iCell,:), 'MarkerSize',10)
     
     X = ptRawData(pointToClusterMap==iCell, 1);
     Y = ptRawData(pointToClusterMap==iCell, 2);
     
-%     [prmVect prmStd C res J] = fitGaussian2D([X; Y]);
-    
-    sigma_x(iCell) = std(X);
-    sigma_y(iCell) = std(Y);
-    center_x(iCell) = ptCurClusterCenter(1);
-    center_y(iCell) = ptCurClusterCenter(2);
-    cell_width = 2*round(sigma_x(iCell)*2.5)+1;
-    cell_height = 2*round(sigma_y(iCell)*2.5)+1;
-    
-    position(1) = round(center_x(iCell)) - round(sigma_x(iCell)*2.5 );
-    position(2) = round(center_y(iCell)) - round(sigma_y(iCell)*2.5);
-    position(3) = cell_width;
-    position(4) = cell_height;  
-    if(cell_width>min_size && length(X)>min_size*min_size/3)
-        nCell = nCell+1;
-        position_array{iFrame}(nCell,1:4) = position;
-        mean_intensity_start(nCell) = ...
-             sum(sum(double(Mask(...
-             max(1,round(position(2))):...
-             min(round(position(2)+position(4)),size(Mask,1)), ...
-             max(1,round(position(1))):...
-             min(round(position(1)+position(3)),size(Mask,2))...
-             ))));
-
+    if(isempty(X)==0)
+        plot( X,Y, '.', 'Color', color_array(iCell,:));
+        plot(ptCurClusterCenter(1),ptCurClusterCenter(2),'.','MarkerFaceColor',color_array(iCell,:), 'MarkerSize',10);
+        
+        %     [prmVect prmStd C res J] = fitGaussian2D([X; Y]);
+        
+        sigma_x(iCell) = std(X);
+        sigma_y(iCell) = std(Y);
+        center_x(iCell) = ptCurClusterCenter(1);
+        center_y(iCell) = ptCurClusterCenter(2);
+        cell_width = 2*round(sigma_x(iCell)*2)+1;
+        cell_height = 2*round(sigma_y(iCell)*2)+1;
+        
+        position(1) = round(center_x(iCell)) - round(sigma_x(iCell)*2);
+        position(2) = round(center_y(iCell)) - round(sigma_y(iCell)*2);
+        position(3) = cell_width;
+        position(4) = cell_height;
+        if(cell_width>min_size && length(X)>min_size*min_size/3)
+            nCell = nCell+1;
+            position_array{iFrame}(nCell,1:4) = position;
+            mean_intensity_start(nCell) = ...
+                sum(sum(double(Mask(...
+                max(1,round(position(2))):...
+                min(round(position(2)+position(4)),size(Mask,1)), ...
+                max(1,round(position(1))):...
+                min(round(position(1)+position(3)),size(Mask,2))...
+                ))));
+            
+        end
     end
 end
 
@@ -142,21 +159,25 @@ for iFrame = 1 : nFrame;
     currentImg = double(MD.channels_(Tracking_iChannel).loadImage(iFrame));
     currentVIFImg = double(MD.channels_(VIF_iChannel).loadImage(iFrame));
     
+    h3 = figure(3);hold off;    
+    imagesc(currentImg,[min_int/2 max_int*2]); axis off; axis image;
+    colormap(gray);
+    hold on;
+    
+%      h13 = figure(13);hold off;    
+%     imagesc(currentVIFImg,[min_int/2 max_int*2]); axis off; axis image;
+%     colormap(gray);
+%     hold on;
+%     
+    currentImg = imfilter(currentImg,G_H,'same','replicate');
+    currentVIFImg = imfilter(currentVIFImg,G_H,'same','replicate');
+
+    
     current_level1 = thresholdOtsu(currentImg(currentImg>mean2(currentImg)+std_muler*std2(currentImg)));
 
     current_Mask  = currentImg>level1;
 
 
-    h3 = figure(3);hold off;    
-    imagesc(currentImg,[min_int max_int]); axis off; axis image;
-    colormap(gray);
-    hold on;
-    
-     h13 = figure(13);hold off;    
-    imagesc(currentVIFImg,[min_int max_int]); axis off; axis image;
-    colormap(gray);
-    hold on;
-    
     if iFrame >1
            present_cells{iFrame} =present_cells{iFrame-1};
     end
@@ -205,9 +226,9 @@ for iFrame = 1 : nFrame;
         end
         h3 = figure(3);
         plot(tracked_pos(1),tracked_pos(2),'.','color',color_array(iCell,:));
-        h13 = figure(13);        
-        plot(tracked_pos(1),tracked_pos(2),'.','color',color_array(iCell,:));
-        
+%         h13 = figure(13);        
+%         plot(tracked_pos(1),tracked_pos(2),'.','color',color_array(iCell,:));
+%         
         X = [current_position(1);...
             current_position(1)+ current_position(3);...
             current_position(1)+current_position(3);...
@@ -220,8 +241,8 @@ for iFrame = 1 : nFrame;
             current_position(2)+current_position(4);...
             current_position(2);];
         
-        h13 = figure(13);        
-        plot(X,Y,'color',color_array(iCell,:));
+%         h13 = figure(13);        
+%         plot(X,Y,'color',color_array(iCell,:));
         h3 = figure(3);        
         plot(X,Y,'color',color_array(iCell,:));
 
@@ -248,7 +269,7 @@ for iFrame = 1 : nFrame;
          
          
 
-         if(mean_intensity_matrix(iFrame, iCell) < mean_intensity_start(iCell)/20)
+         if(mean_intensity_matrix(iFrame, iCell) < mean_intensity_start(iCell)/100)
                present_cells{iFrame}(iCell)=0;
          end
         
@@ -261,7 +282,7 @@ for iFrame = 1 : nFrame;
     end
     title(['Tracking Frame ',num2str(iFrame)]);
     print(h3,'-dtiff',[MD.outputDirectory_,'/CC_tracking/tracking_',num2str(iFrame),'.tif']);
-   print(h13,'-dtiff',[MD.outputDirectory_,'/CC_tracking/VIF_',num2str(iFrame),'.tif']);
+%    print(h13,'-dtiff',[MD.outputDirectory_,'/CC_tracking/VIF_',num2str(iFrame),'.tif']);
 
 %     These are for level set segmentation
 %     Not ready yet
@@ -280,11 +301,11 @@ currentImg = double(MD.channels_(1).loadImage(1));
 currentVIFImg = double(MD.channels_(VIF_iChannel).loadImage(iFrame));
   
 h3 = figure(3);hold off; imagescc(currentImg);hold on;
-h13 = figure(13);hold off; imagescc(currentVIFImg);hold on;
+% h13 = figure(13);hold off; imagescc(currentVIFImg);hold on;
      
 
 
-for iFrame = 1 : nFrame    
+for iFrame = 1 : 5: nFrame    
     ind_cell = find(present_cells{iFrame}>0);
     
     for iCell = ind_cell     
@@ -308,8 +329,8 @@ for iFrame = 1 : nFrame
             current_position(2)+current_position(4);...
             current_position(2);];
         
-        h13 = figure(13);        
-        plot(X,Y,'color',color_array(iCell,:));
+%         h13 = figure(13);        
+%         plot(X,Y,'color',color_array(iCell,:));
         h3 = figure(3);        
         plot(X,Y,'color',color_array(iCell,:));
         
@@ -325,4 +346,4 @@ for iFrame = 1 : nFrame
 end
 
 saveas(h3,[MD.outputDirectory_,'/CC_tracking/whole_tracking.tif']);
-saveas(h3,[MD.outputDirectory_,'/CC_tracking/VIF_whole_tracking.tif']);
+% saveas(h13,[MD.outputDirectory_,'/CC_tracking/VIF_whole_tracking.tif']);
