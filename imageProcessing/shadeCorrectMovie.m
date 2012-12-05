@@ -86,7 +86,7 @@ function movieData = shadeCorrectMovie(movieData,paramsIn)
 
 %% ------ Parameters ------- %%
 
-pString = 'sc_'; %The string to prepend before the shade-corrected image directory & channel name
+pString = 'shade_corrected_'; %The string to prepend before the shade-corrected image directory & channel name
 saveName = 'shade_correction_image_for_channel'; %File name for saving processed/avged shade images. Actual file name will have channel name appended.
 dName = 'shade_corrected_images_for_channel_';%String for naming the directories for each corrected channel
 
@@ -132,6 +132,7 @@ if isempty(iDarkProc)
         'This movie has not been dark-current corrected yet! It is recommended that you run dark-current correction before shade correction!')    
     %If no dark-current correction, then use raw images.
     movieData.processes_{iProc}.setInImagePath(p.ChannelIndex,movieData.getChannelPaths(p.ChannelIndex));
+    hasDarkCorr = false(1,nChanCorr);
     
 else    
     
@@ -141,14 +142,15 @@ else
     %Set the input directories to be the output directories of the
     %dark-current correction
     for j = 1:nChanCorr
-        if hasDarkCorr(j)
+        if all(hasDarkCorr(j)) %This is what was effectively happening anyways, now the input will be reflected. Quick fix.
             movieData.processes_{iProc}.setInImagePath(p.ChannelIndex(j),...
                 movieData.processes_{iDarkProc}.outFilePaths_{1,p.ChannelIndex(j)});    
         else
-            warning(['No dark-current correction for channel ' num2str(p.ChannelIndex(j)) ' : using raw images. This is not recommended!!'])
+            if j == 1
+                warning('Not all channels have dark-current correction : using raw images. This is not recommended!!')
+            end
             movieData.processes_{iProc}.setInImagePath(p.ChannelIndex(j),...
-                movieData.getChannelPaths(p.ChannelIndex(j)));
-            
+                movieData.getChannelPaths(p.ChannelIndex(j)));            
         end
     end
 end
@@ -225,8 +227,11 @@ movieData.processes_{iProc}.setOutFilePaths(outFilePaths);
 
 %Get the shade image file names.
 shadeImNames = movieData.processes_{iProc}.getCorrectionImageFileNames(p.ChannelIndex);
-%Get image file names for input images (dark-current corrected images)
-inNames =  movieData.processes_{iProc}.getInImageFileNames(p.ChannelIndex);
+if all(hasDarkCorr)
+    %Get image file names for input images (dark-current corrected images)
+    inNames =  movieData.processes_{iProc}.getInImageFileNames(p.ChannelIndex);
+end
+    
 
 disp('Starting shade correction...')
 
@@ -319,7 +324,11 @@ for iChan = 1:nChanCorr
     for iImage = 1:nImages
     
         %Load the image to be corrected
-        currIm = imread([inDir filesep inNames{iChan}{iImage}]);
+        if all(hasDarkCorr)
+            currIm = imread([inDir filesep inNames{iChan}{iImage}]);
+        else
+            currIm = movieData.channels_(p.ChannelIndex(iChan)).loadImage(iImage);
+        end
         ogClass = class(currIm);
     
         %Correct it
@@ -328,7 +337,7 @@ for iChan = 1:nChanCorr
         currIm = cast(currIm,ogClass);
         
         %Write it to disk        
-        imwrite(currIm,[outDir filesep pString inNames{iChan}{iImage}]);                
+        imwrite(currIm,[outDir filesep pString num2str(iImage,['%0' num2str(floor(log10(nImages))+1) '.f']) '.tif' ]);
         
         if ~p.BatchMode && mod(iImage,5)
             %Update the waitbar occasionally to minimize slowdown
