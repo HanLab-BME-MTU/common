@@ -101,21 +101,25 @@ classdef ImageProcessingProcess < Process
                 error('lccb:set:fatal','You must specify a path for every channel!')
             end
             
+            
             for j = 1:nChan
-               if ~exist(imagePath{j},'dir')
-                   error('lccb:set:fatal',...
-                       ['The directory specified for channel ' ...
-                       num2str(chanNum(j)) ' is invalid!']) 
-               
-               else
-                   if isempty(imDir(imagePath{j}))
+                if ~obj.owner_.isBF
+                   if ~exist(imagePath{j},'dir')
                        error('lccb:set:fatal',...
-                       ['The directory specified for channel ' ...
-                       num2str(chanNum(j)) ' does not contain any images!!']) 
-                   else                       
+                           ['The directory specified for channel ' ...
+                           num2str(chanNum(j)) ' is invalid!']) 
+                   else
                        obj.inFilePaths_{1,chanNum(j)} = imagePath{j};                
-                   end
-               end
+                   end                
+                else
+                    if ~exist(imagePath{j},'file')
+                       error('lccb:set:fatal',...
+                           ['The file specified for channel ' ...
+                           num2str(chanNum(j)) ' is invalid!']) 
+                    else
+                       obj.inFilePaths_{1,chanNum(j)} = imagePath{j};                
+                    end     
+                end
             end                        
         end
         function fileNames = getOutImageFileNames(obj,iChan)

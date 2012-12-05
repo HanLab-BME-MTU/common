@@ -252,7 +252,13 @@ classdef Channel < hgsetget
                 % Get all requested planes
                 for i=1:numel(iFrame),
                     iPlane = loci.formats.FormatTools.getIndex(r,0,iChan-1,iFrame(i)-1);
-                    I(:,:,i) = bfGetPlane(r, iPlane + 1);
+                    if i == 1
+                        tmp = bfGetPlane(r, iPlane + 1);
+                        I = cast(I,class(tmp));
+                        I(:,:,i) = bfGetPlane(r, iPlane + 1);
+                    else
+                        I(:,:,i) = bfGetPlane(r, iPlane + 1);
+                    end
                 end
                 
             else
