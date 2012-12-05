@@ -122,7 +122,9 @@ classdef MaskProcess < Process
             b=bwboundaries(mask);
             b2 =cellfun(@(x) vertcat(x,[NaN NaN]),b,'Unif',false);
             boundaries =vertcat(b2{:});
-            boundaries=boundaries(:,2:-1:1);
+            if ~isempty(boundaries)
+                boundaries=boundaries(:,2:-1:1);
+            end
         end        
     end
 end
