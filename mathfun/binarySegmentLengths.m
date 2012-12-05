@@ -1,9 +1,9 @@
-%[lengths value] = binarySegmentLengths(signal) returns the lengths of the successive sequences of 0s and 1s in a binary signal
+%[lengths, value] = binarySegmentLengths(signal) returns the lengths of the successive sequences of 0s and 1s in a binary signal
 % Example: for the signal [0 1 1 0 0 0 1], lengths = [1 2 3 1], value = [0 1 0 1]
 
 % Francois Aguet, 08/08/2012
 
-function [lengths value] = binarySegmentLengths(signal)
+function [lengths, value] = binarySegmentLengths(signal)
 
 d = diff(signal);
 
