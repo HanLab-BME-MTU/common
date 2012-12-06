@@ -15,6 +15,8 @@ classdef  Reader < handle
         getSizeZ(obj)
         getSizeC(obj)
         getSizeT(obj)
+        getImageFileNames(obj)
+        getChannelNames(obj)
         loadImage(obj)
     end
     

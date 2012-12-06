@@ -246,7 +246,7 @@ classdef Channel < hgsetget
             end
             
             obj.psfSigma_ = getGaussianPSFsigma(numAperture,1,pixelSize,emissionWavelength);
-                         obj.psfSigma_ =.21*obj.emissionWavelength/(numAperture*pixelSize);
+            % obj.psfSigma_ =.21*obj.emissionWavelength/(numAperture*pixelSize);
             
         end
     end

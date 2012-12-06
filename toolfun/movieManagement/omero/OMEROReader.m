@@ -9,7 +9,7 @@ classdef  OMEROReader < Reader
         image
         pixels
     end
-
+    
     methods
         %% Constructor
         function obj = OMEROReader(imageID, varargin)
@@ -17,9 +17,9 @@ classdef  OMEROReader < Reader
             obj.imageID = imageID;
             if nargin > 1, obj.setSession(varargin{1}); end
         end
-
-
-        %% Dimensions functions        
+        
+        
+        %% Dimensions functions
         function sizeX = getSizeX(obj, varargin)
             sizeX = obj.getPixels().getSizeX.getValue;
         end
@@ -43,7 +43,7 @@ classdef  OMEROReader < Reader
         function session = getSession(obj)
             % Check session is not empty
             assert(~isempty(obj.session), 'No session created');
-            session =  obj.session;            
+            session =  obj.session;
         end
         
         function setSession(obj, session)
@@ -53,6 +53,19 @@ classdef  OMEROReader < Reader
             ip.parse(session);
             
             obj.session = session;
+        end
+        
+        function fileNames = getImageFileNames(obj, iChan, varargin)
+            % Generate image file names
+            basename = sprintf('Image%g_c%d_t', obj.imageID, iChan);
+            fileNames = arrayfun(@(t) [basename num2str(t, ['%0' num2str(floor(log10(obj.getSizeT))+1) '.f']) '.tif'],...
+                1:obj.getSizeT,'Unif',false);
+            
+        end
+        
+        function chanNames = getChannelNames(obj, iChan)
+            chanNames = arrayfun(@(x) ['Image ' num2str(obj.imageID) ...
+                ': Channel ' num2str(x)], iChan, 'UniformOutput', false);
         end
         
         %% Image loading function
@@ -68,7 +81,7 @@ classdef  OMEROReader < Reader
         end
         
         %% Helper functions
-        function image = getImage(obj)  
+        function image = getImage(obj)
             if ~isempty(obj.pixels)
                 image = obj.image;
             else
@@ -89,13 +102,13 @@ classdef  OMEROReader < Reader
         function pixels = getPixels(obj)
             if ~isempty(obj.pixels)
                 pixels = obj.pixels;
-            else                
+            else
                 % Retrieve pixels ID
-                pixelsId = obj.getImage().getPixels(0).getId.getValue; 
+                pixelsId = obj.getImage().getPixels(0).getId.getValue;
                 
                 % Get PixelsI object
                 pixelsService=obj.getSession().getPixelsService();
-                pixels=pixelsService.retrievePixDescription(pixelsId);                
+                pixels=pixelsService.retrievePixDescription(pixelsId);
             end
         end
         

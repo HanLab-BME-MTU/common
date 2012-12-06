@@ -5,7 +5,7 @@ classdef  TiffSeriesReader < Reader
         paths
         filenames
     end
-
+    
     methods
         %% Constructor
         function obj = TiffSeriesReader(channelPaths)
@@ -18,8 +18,8 @@ classdef  TiffSeriesReader < Reader
             obj.sizeZ = 1;
             obj.filenames = cell(obj.sizeC, 1);
         end
-
-
+        
+        
         function checkPath(obj, iChan)
             % Check channel path existence
             assert(logical(exist(obj.paths{iChan}, 'dir')), ...
@@ -35,40 +35,40 @@ classdef  TiffSeriesReader < Reader
             assert(isscalar(sizeX) && isscalar(sizeY),...
                 ['Image sizes are inconsistent in: \n\n%s\n\n'...
                 'Please make sure all the images have the same size.'],obj.paths{iChan});
-
+            
             obj.sizeX(iChan) = sizeX;
             obj.sizeY(iChan) = sizeY;
         end
         
         function sizeX = getSizeX(obj, iChan)
-            if obj.sizeX(iChan) == -1, 
-                obj.getXYDimensions(iChan); 
+            if obj.sizeX(iChan) == -1,
+                obj.getXYDimensions(iChan);
             end
             sizeX = obj.sizeX(iChan);
         end
-
+        
         function sizeY = getSizeY(obj, iChan)
             if  obj.sizeY(iChan) == -1,
-                obj.getXYDimensions(iChan); 
+                obj.getXYDimensions(iChan);
             end
             sizeY = obj.sizeY(iChan);
         end
-
+        
         function sizeZ = getSizeZ(obj, varargin)
             sizeZ = obj.sizeZ;
         end
-
+        
         function sizeC = getSizeC(obj, varargin)
             sizeC = obj.sizeC;
         end
-
+        
         function sizeT = getSizeT(obj, iChan)
             if obj.sizeT(iChan) == -1,
                 fileNames = obj.getImageFileNames(iChan);
                 obj.sizeT(iChan) = length(fileNames);
             end
             sizeT = obj.sizeT(iChan);
-        end        
+        end
         
         
         function filenames = getImageFileNames(obj, iChan, iFrame)
@@ -84,16 +84,20 @@ classdef  TiffSeriesReader < Reader
                 obj.filenames{iChan} = arrayfun(@(x) x.name, files,...
                     'UniformOutput',false);
             end
-            if nargin>2, 
-                filenames = obj.filenames{iChan}(iFrame); 
+            if nargin>2,
+                filenames = obj.filenames{iChan}(iFrame);
             else
                 filenames = obj.filenames{iChan};
             end
             
         end
         
-        function I = loadImage(obj, iChan, iFrame)
+        function chanNames = getChannelNames(obj, iChan)
+            chanNames = obj.paths(iChan);
+        end
         
+        function I = loadImage(obj, iChan, iFrame)
+            
             I = zeros([obj.getSizeY(iChan), obj.getSizeX(iChan), numel(iFrame)]);
             fileNames = obj.getImageFileNames(iChan, iFrame);
             for i=1:numel(iFrame)
