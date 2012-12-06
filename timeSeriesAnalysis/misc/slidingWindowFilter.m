@@ -56,6 +56,6 @@ TS = [flipud(TS(2:bound));TS;flipud(TS(end - bound + 1:end - 1))];
 
 %Sliding Window of size winSize
 H  = hankel(TS);
-H1 = H(1:end-winSize,1:winSize);
+H1 = H(1:end-2*(bound-1),1:winSize);
 
 end
