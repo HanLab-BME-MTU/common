@@ -86,7 +86,7 @@ if isempty(files{1})
     % now link the image and the annotation
     link = omero.model.ImageAnnotationLinkI;
     link.setChild(fa);
-    link.setParent(movieData.getImage());
+    link.setParent(movieData.getReader().getImage());
     % save the link back to the server.
     iUpdate.saveAndReturnObject(link);
 end

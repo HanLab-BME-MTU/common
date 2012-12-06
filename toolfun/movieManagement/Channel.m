@@ -23,7 +23,6 @@ classdef Channel < hgsetget
     
     properties(Transient=true)
         displayMethod_  = ImageDisplay; % Method to display the object content
-        fileNames_;
     end
     
     methods
@@ -157,117 +156,32 @@ classdef Channel < hgsetget
                 isequal(obj.owner_,ip.Results.owner.parent_),...
                 'The channel''s owner is not the movie neither its parent')
             
-            if obj.isOmero()
-                pixels = obj.owner_.getPixels();
-                width = pixels.getSizeX.getValue;
-                height = pixels.getSizeY.getValue;
-                nFrames = pixels.getSizeT.getValue;
-            elseif obj.isBF()
-                % Using bioformat-tools, get metadata
-                r = obj.getReader();
-                iSeries = obj.owner_.getSeries();
-                width = r.getMetadataStore().getPixelsSizeX(iSeries).getValue();
-                height = r.getMetadataStore().getPixelsSizeY(iSeries).getValue();
-                nFrames = r.getMetadataStore().getPixelsSizeT(iSeries).getValue();
-            else
-                % Check channel path existence
-                assert(logical(exist(obj.channelPath_, 'dir')), ...
-                    'Channel path specified is not a valid directory! Please double check the channel path!')
-                
-                % Check the number of file extensions
-                [fileNames nofExt] = imDir(obj.channelPath_,true);
-                assert(nofExt~=0,['No proper image files are detected in:'...
-                    '\n\n%s\n\nValid image file extension: tif, TIF, STK, bmp, BMP, jpg, JPG.'],obj.channelPath_);
-                assert(nofExt==1,['More than one type of image files are found in:'...
-                    '\n\n%s\n\nPlease make sure all images are of same type.'],obj.channelPath_);
-                nFrames = length(fileNames);
-                
-                % Check the consistency of image size in current channel
-                imInfo = arrayfun(@(x)imfinfo([obj.channelPath_ filesep x.name]),...
-                    fileNames, 'UniformOutput', false);
-                width = unique(cellfun(@(x)(x.Width), imInfo));
-                height = unique(cellfun(@(x)(x.Height), imInfo));
-                
-                % Check unicity of image sizes
-                assert(isscalar(width) && isscalar(height),...
-                    ['Image sizes are inconsistent in: \n\n%s\n\n'...
-                    'Please make sure all the images have the same size.'],obj.channelPath_);
-                obj.fileNames_ = arrayfun(@(x) x.name,fileNames,'UniformOutput',false);
-            end
+            % Get the size along the X,Y and T dimensions
+            width = obj.getReader().getSizeX(obj.getChannelIndex());
+            height = obj.getReader().getSizeY(obj.getChannelIndex());
+            nFrames = obj.getReader().getSizeT(obj.getChannelIndex());
             
             if isempty(obj.psfSigma_) && ~isempty(obj.owner_), obj.calculatePSFSigma(); end
         end
         
+        function iChan = getChannelIndex(obj)
+            if ~isempty(obj.owner_)
+                iChan = find(obj.owner_.channels_ == obj, 1);
+            else
+                iChan = 1 ;
+            end
+        end
+        
         function fileNames = getImageFileNames(obj,iFrame)
             
-            if obj.isBF()
-                % Generate image file names using wavelength if applicable
-                [~,channelName]=fileparts(obj.channelPath_);
-                if ~isempty(obj.emissionWavelength_)
-                    basename = sprintf('%s_w%g_t',channelName ,obj.emissionWavelength_);
-                else
-                    basename = sprintf('%s_c%d_t',channelName,find(obj.owner_.channels_==obj));
-                end
-                nFrames=obj.owner_.nFrames_;
-                fileNames = arrayfun(@(t) [basename num2str(t, ['%0' num2str(floor(log10(nFrames))+1) '.f']) '.tif'],...
-                    1:nFrames,'Unif',false);
-            else
-                % Channel path is a directory of image files
-                if ~isempty(obj.fileNames_)
-                    fileNames = obj.fileNames_;
-                else
-                    fileNames = arrayfun(@(x) x.name,imDir(obj.channelPath_),...
-                        'UniformOutput',false);
-                end
-            end
+            fileNames = obj.getReader.getFileNames(obj.getChannelIndex());
             if nargin>1, fileNames=fileNames(iFrame); end
         end
         
-        function I = loadImage(obj,iFrame)
+        function I = loadImage(obj, iFrame)
             
             % Initialize image
-            I=zeros([obj.owner_.imSize_ numel(iFrame)]);
-            
-            if obj.isOmero() % OMERO objects
-                % Test session integrity
-                assert(~isempty(obj.owner_.omeroSession_))
-                pixels = obj.owner_.getPixels();
-                
-                store = obj.owner_.omeroSession_.createRawPixelsStore();
-                store.setPixelsId(pixels.getId().getValue(), false);
-                chanIndex= find(obj.owner_.channels_==obj);
-                for i=1:numel(iFrame),
-                    plane = store.getPlane(0, chanIndex-1, iFrame(i)-1);
-                    I(:,:,i)=double(toMatrix(plane,pixels)');
-                end
-                
-                
-            elseif obj.isBF()
-                % Using bioformat tools, get the reader and retrieve dimension order
-                r = obj.getReader();
-
-                % Get channel index
-                iChan = find(obj.owner_.channels_==obj);
-                
-                % Get all requested planes
-                for i=1:numel(iFrame),
-                    iPlane = loci.formats.FormatTools.getIndex(r,0,iChan-1,iFrame(i)-1);
-                    if i == 1
-                        tmp = bfGetPlane(r, iPlane + 1);
-                        I = cast(I,class(tmp));
-                        I(:,:,i) = bfGetPlane(r, iPlane + 1);
-                    else
-                        I(:,:,i) = bfGetPlane(r, iPlane + 1);
-                    end
-                end
-                
-            else
-                % Read images from disk
-                fileNames=obj.getImageFileNames(iFrame);
-                for i=1:numel(iFrame)
-                    I(:,:,i)  = imread([obj.channelPath_ filesep fileNames{i}]);
-                end
-            end
+            I = obj.getReader().loadImage(obj.getChannelIndex(), iFrame);
         end
         
         %% Bio-formats/OMERO functions
@@ -280,7 +194,11 @@ classdef Channel < hgsetget
         end
         
         function r = getReader(obj)
-            r = obj.owner_.getReader();
+            if ~isempty(obj.owner_),
+                r = obj.owner_.getReader();
+            else
+                r = TiffSeriesReader(obj.channelPath_);
+            end
         end
         
         
@@ -328,7 +246,7 @@ classdef Channel < hgsetget
             end
             
             obj.psfSigma_ = getGaussianPSFsigma(numAperture,1,pixelSize,emissionWavelength);
-            %             obj.psfSigma_ =.21*obj.emissionWavelength/(numAperture*pixelSize);
+                         obj.psfSigma_ =.21*obj.emissionWavelength/(numAperture*pixelSize);
             
         end
     end

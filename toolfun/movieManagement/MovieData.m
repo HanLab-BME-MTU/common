@@ -31,9 +31,7 @@ classdef  MovieData < MovieObject
     end
     
     properties (Transient =true)
-        bfReader_          
-        omeroSession_       
-        omeroPixels_
+        reader        
     end
 
     methods
@@ -389,18 +387,20 @@ classdef  MovieData < MovieObject
             end
         end
         
-        function r = getReader(obj)
-            assert(obj.isBF(), 'Object must be using the Bio-Formats library');
+        function r = getReader(obj, varargin)
+            if ~isempty(obj.reader),
+                r = obj.reader;
+                return
+            end
             
-            if ~isempty(obj.bfReader_)
-                r = obj.bfReader_;
-            else                
-                bfCheckJavaPath(); % Check loci-tools.jar is in the Java path
-                loci.common.DebugTools.enableLogging('OFF');
-                r = bfGetReader(obj.channels_(1).channelPath_, false);
-                r.setSeries(obj.getSeries());
-                obj.bfReader_ = r;
-            end            
+            if obj.isBF()
+                r = BioFormatsReader(obj.channels_(1).channelPath_, obj.bfSeries_);
+            elseif obj.isOmero()
+                r = OMEROReader(obj.omeroId_, varargin{:});
+            else
+                r = TiffSeriesReader({obj.channels_.channelPath_});
+            end
+            obj.reader = r;
         end
         
         function status = isBF(obj)
@@ -411,8 +411,8 @@ classdef  MovieData < MovieObject
         end
         
         function delete(obj)
-            if ~isempty(obj.bfReader_)
-                obj.bfReader_.close()
+            if ~isempty(obj.reader),
+                obj.reader.delete()
             end
         end
 
@@ -422,40 +422,13 @@ classdef  MovieData < MovieObject
         end
         
         function setSession(obj,session)
-            obj.omeroSession_=session;
+            obj.getReader().setSession(session);
         end
         
         function session = getSession(obj)
-            session = obj.omeroSession_;
+            session = obj.getReader().getSession();
         end
         
-        function image = getImage(obj)
-            assert(~isempty(obj.omeroSession_),'No available session');
-            
-            ids = java.util.ArrayList();
-            ids.add(java.lang.Long(obj.omeroId_));
-            
-            param = omero.sys.ParametersI();
-            param.acquisitionData;
-            
-            list = obj.omeroSession_.getContainerService().getImages('omero.model.Image', ids, param);
-            image = list.get(0);
-
-        end
-        
-        function pixels = getPixels(obj)
-            if ~isempty(obj.omeroPixels_)
-                pixels = obj.omeroPixels_;
-            else                
-                % Retrieve pixels ID
-                image = obj.getImage();
-                pixelsId = image.getPixels(0).getId.getValue; 
-                
-                % Get PixelsI object
-                pixelsService=obj.omeroSession_.getPixelsService();
-                pixels=pixelsService.retrievePixDescription(pixelsId);                
-            end
-        end
 
     end
     methods(Static)        

@@ -31,7 +31,7 @@ ip.addRequired('movieInfo', @isstruct);
 ip.parse(movieData, movieInfo);
 
 % Retrieve image and update service
-image = movieData.getImage();
+image = movieData.getReader().getImage();
 roiService = movieData.getSession().getRoiService();
 updateService = movieData.getSession().getUpdateService();
 

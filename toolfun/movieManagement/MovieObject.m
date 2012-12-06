@@ -45,7 +45,7 @@ classdef  MovieObject < hgsetget
             % Returns true/false if the non-empty property is writable
             status = isempty(obj.(property));
             if status, return; end
-                
+            
             % Allow user to rewrite on some properties (paths, outputDirectory, notes)
             switch property
                 case {'notes_'};
@@ -113,7 +113,7 @@ classdef  MovieObject < hgsetget
             else
                 fullPath = fullfile(obj.getPath(), obj.getFilename());
             end
-
+            
         end
         %% Functions to manipulate process object array
         function addProcess(obj, newprocess)
@@ -149,7 +149,7 @@ classdef  MovieObject < hgsetget
             % Check process validity
             process = obj.processes_{pid};
             isValid = ~isempty(process) && process.isvalid;
-
+            
             if isValid
                 % Unassociate process from parent packages
                 [packageID procID] = process.getPackage();
@@ -167,7 +167,7 @@ classdef  MovieObject < hgsetget
             else
                 obj.processes_(pid) = [ ];
             end
-                
+            
             % Delete process object
             if isValid, delete(process); end
         end
@@ -254,7 +254,7 @@ classdef  MovieObject < hgsetget
             % Check package validity
             package = obj.packages_{pid};
             isValid = ~isempty(package) && package.isvalid;
-
+            
             if isValid && isa(package.owner_, 'MovieData')
                 % Remove package from list for owner and descendants
                 for movie = [package.owner_ package.owner_.getDescendants()]
@@ -263,8 +263,8 @@ classdef  MovieObject < hgsetget
                 end
             else
                 obj.packages_(pid) = [ ];
-            end                   
-                
+            end
+            
             % Delete package object
             if isValid, delete(package); end
         end
@@ -294,13 +294,13 @@ classdef  MovieObject < hgsetget
                     confirmRelocate = 'Yes to all';
                     if askUser
                         if isa(obj,'MovieData')
-                                type='movie';
-                                components='channels';
+                            type='movie';
+                            components='channels';
                         elseif isa(obj,'MovieList')
-                                type='movie list';
-                                components='movies';
+                            type='movie list';
+                            components='movies';
                         else
-                                error('Non supported movie object');                                
+                            error('Non supported movie object');
                         end
                         relocateMsg=sprintf(['The %s and its analysis will be relocated from \n%s to \n%s.\n'...
                             'Should I relocate its %s as well?'],type,oldPath,newPath,components);
@@ -312,8 +312,8 @@ classdef  MovieObject < hgsetget
                     % Get old and new relocation directories
                     [oldRootDir newRootDir]=getRelocationDirs(oldPath,newPath);
                     oldRootDir = regexprep(oldRootDir,endingFilesepToken,'');
-                    newRootDir = regexprep(newRootDir,endingFilesepToken,'');                   
-                                      
+                    newRootDir = regexprep(newRootDir,endingFilesepToken,'');
+                    
                     % Relocate the object
                     fprintf(1,'Relocating analysis from %s to %s\n',oldRootDir,newRootDir);
                     obj.relocate(oldRootDir,newRootDir,full);
@@ -322,7 +322,7 @@ classdef  MovieObject < hgsetget
             if nargin > 2 && ~isempty(filename), obj.setFilename(filename); end
             
             if isempty(obj.outputDirectory_), warning('lccb:MovieObject:sanityCheck',...
-                'Empty output directory!'); end
+                    'Empty output directory!'); end
         end
         
         function relocate(obj,oldRootDir,newRootDir)
@@ -331,7 +331,7 @@ classdef  MovieObject < hgsetget
             % The relocate method automatically relocates the output directory,
             % as well as the paths in each process and package of the movie
             % assuming the internal architecture of the  project is conserved.
-                                
+            
             % Relocate output directory and set the ne movie path
             obj.outputDirectory_=relocatePath(obj.outputDirectory_,oldRootDir,newRootDir);
             obj.setPath(relocatePath(obj.getPath,oldRootDir,newRootDir));
@@ -351,7 +351,7 @@ classdef  MovieObject < hgsetget
         
     end
     
-    methods(Static)        
+    methods(Static)
         function obj = load(moviepath,varargin)
             % Load a movie object from a path
             
@@ -362,7 +362,7 @@ classdef  MovieObject < hgsetget
             [~,f]= fileattrib(moviepath);
             moviepath=f.Name;
             
-            if strcmpi(moviepath(end-3:end),'.mat') 
+            if strcmpi(moviepath(end-3:end),'.mat')
                 % Import movie object from MAT file
                 try
                     % List variables in the path
@@ -384,15 +384,14 @@ classdef  MovieObject < hgsetget
                 data = load(moviepath,'-mat',vars(isMovie).name);
                 obj= data.(vars(isMovie).name);
                 
-                % Set session
-                if nargin>1 && isa(varargin{1},'omero.api.ServiceFactoryPrxHelper')
-                    obj.setSession(varargin{1});
-                    varargin = varargin(2:end);
-                end
-                
                 % Perform sanityCheck using the input path
                 [moviePath,movieName,movieExt]=fileparts(moviepath);
-                obj.sanityCheck(moviePath,[movieName movieExt],varargin{:});
+                if nargin>1 && isa(varargin{1}, 'omero.api.ServiceFactoryPrxHelper')
+                    obj.setSession(varargin{1});
+                    obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
+                else
+                    obj.sanityCheck(moviePath,[movieName movieExt], varargin{:});
+                end
             else
                 % Assume proprietary file - use Bioformats library
                 obj=bfImport(moviepath,varargin{:});
@@ -410,7 +409,7 @@ classdef  MovieObject < hgsetget
     methods (Static,Abstract)
         getPathProperty()
         getFilenameProperty()
-    end 
+    end
 end
 
 function iProc = getIndex(list, type, varargin)
