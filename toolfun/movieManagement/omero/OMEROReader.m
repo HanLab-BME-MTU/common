@@ -55,6 +55,13 @@ classdef  OMEROReader < Reader
             obj.session = session;
         end
         
+        function bitDepth = getBitDepth(obj, varargin)
+            pixelType = obj.getPixels().getPixelsType();
+            pixelsService=obj.getSession().getPixelsService();
+            bitDepth = pixelsService.getBitDepth(pixelType);
+        end
+        
+        %% Image/Channel name functions
         function fileNames = getImageFileNames(obj, iChan, varargin)
             % Generate image file names
             basename = sprintf('Image%g_c%d_t', obj.imageID, iChan);
@@ -68,23 +75,27 @@ classdef  OMEROReader < Reader
                 ': Channel ' num2str(x)], iChan, 'UniformOutput', false);
         end
         
+        
         %% Image loading function
         function I = loadImage(obj, iChan, iFrame)
+
+            % Initialize array
+            class = ['uint' num2str(obj.getBitDepth())];
+            I = zeros([obj.getSizeY(), obj.getSizeX(), numel(iFrame)], class);
+
             % Test session integrity
             store = obj.getSession().createRawPixelsStore();
             store.setPixelsId(obj.getPixels().getId().getValue(), false);
-            I = zeros([obj.getSizeY(), obj.getSizeX(), numel(iFrame)]);
+            
             for i=1:numel(iFrame),
                 plane = store.getPlane(0, iChan-1, iFrame(i)-1);
-                I(:,:,i)=double(toMatrix(plane, obj.getPixels())');
+                I(:,:,i)=toMatrix(plane, obj.getPixels())';
             end
         end
         
         %% Helper functions
         function image = getImage(obj)
-            if ~isempty(obj.pixels)
-                image = obj.image;
-            else
+            if isempty(obj.image)
                 % Create list of image IDs
                 ids = java.util.ArrayList();
                 ids.add(java.lang.Long(obj.imageID));
@@ -95,21 +106,21 @@ classdef  OMEROReader < Reader
                 
                 % Retrieve list of images and select first one
                 list = obj.getSession().getContainerService().getImages('omero.model.Image', ids, param);
-                image = list.get(0);
+                obj.image = list.get(0);
             end
+            image = obj.image;
         end
         
         function pixels = getPixels(obj)
-            if ~isempty(obj.pixels)
-                pixels = obj.pixels;
-            else
+            if isempty(obj.pixels)
                 % Retrieve pixels ID
                 pixelsId = obj.getImage().getPixels(0).getId.getValue;
                 
                 % Get PixelsI object
                 pixelsService=obj.getSession().getPixelsService();
-                pixels=pixelsService.retrievePixDescription(pixelsId);
+                obj.pixels=pixelsService.retrievePixDescription(pixelsId);
             end
+            pixels = obj.pixels;
         end
         
         function delete(obj)
