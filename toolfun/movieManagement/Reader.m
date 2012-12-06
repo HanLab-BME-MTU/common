@@ -7,6 +7,7 @@ classdef  Reader < handle
         sizeZ
         sizeC
         sizeT
+        bitDepth
     end
     
     methods(Abstract)
@@ -15,6 +16,7 @@ classdef  Reader < handle
         getSizeZ(obj)
         getSizeC(obj)
         getSizeT(obj)
+        getBitDepth(obj)
         getImageFileNames(obj)
         getChannelNames(obj)
         loadImage(obj)

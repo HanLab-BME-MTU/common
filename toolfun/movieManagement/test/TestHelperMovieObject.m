@@ -18,14 +18,23 @@ classdef TestHelperMovieObject < handle
             movie.setFilename('movieData.mat');
         end
         
-        function channel = setUpChannel(path,imSize,nFrames)
+        function channel = setUpChannel(path,imSize,nFrames, format)
+            if nargin<4, format = 'double'; end
             if nargin<3, nFrames=1;end
             if nargin<2,imSize=[100 200]; end
             if ~exist(path,'dir'), mkdir(path); end
             for i=1:nFrames
-                imwrite(zeros(imSize),fullfile(path,['test_' num2str(i) '.tif']));
+                imwrite(zeros(imSize, format),fullfile(path,['test_' num2str(i) '.tif']));
             end
             channel=Channel(path);
+        end
+        
+        function movie = setUpBFMovie(path, imSize, nChan, nFrames, format)
+            if nargin<5, format = 'double'; end
+            if ~exist(path,'dir'), mkdir(path); end
+            bfsave(zeros(imSize(1), imSize(2), nChan, nFrames, format),...
+                fullfile(path, 'test.ome.tiff'), 'XYCTZ');
+            movie = bfImport(fullfile(path, 'test.ome.tiff'));
         end
         
         function testGetProcessIndex(movieObject)
@@ -63,7 +72,7 @@ classdef TestHelperMovieObject < handle
                 movieObject.reset
                 assertTrue(isempty(movieObject.processes_));
             end
-
+            
         end
         
         
@@ -77,7 +86,7 @@ classdef TestHelperMovieObject < handle
                 if strcmp(concretePackages{i},'IntegratorPackage') && ...
                         isa(movieObject,'MovieData')
                     assertExceptionThrown(@()procConstr(movieObject),'MATLAB:InputParser:ArgumentFailedValidation')
-                else     
+                else
                     newpackage = packageConstr(movieObject,'');
                     assertTrue(isa(newpackage,concretePackages{i}));
                     
@@ -88,7 +97,7 @@ classdef TestHelperMovieObject < handle
                     % Test default process construction
                     crtPackage = movieObject.packages_{1};
                     for j=1:numel(crtPackage.getDefaultProcessConstructors),
-                        crtPackage.createDefaultProcess(j);                       
+                        crtPackage.createDefaultProcess(j);
                         assertTrue(isa(movieObject.processes_{end},...
                             crtPackage.getProcessClassNames{j}));
                     end
@@ -100,8 +109,6 @@ classdef TestHelperMovieObject < handle
                 end
             end
         end
-        
-        
         
         function relocatedMoviePath= relocateMovie(movieObject)
             % Copy movie in new location
@@ -144,6 +151,7 @@ classdef TestHelperMovieObject < handle
                 assertEqual(object.(validProperties{i}),validValues{i});
             end
         end
+        
         
         function concreteSubClasses=getConcreteSubClasses(superclass)
             % List all files in the matlab path ending by Process

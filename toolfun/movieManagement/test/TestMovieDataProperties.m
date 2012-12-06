@@ -4,7 +4,7 @@ classdef TestMovieDataProperties < TestCase
         movie
         validProperties =  {'timeInterval_','numAperture_',...
             'magnification_','camBitdepth_'};
-        validValues =  {1,1.4,100,14};;
+        validValues =  {1,1.4,100,14};
         
     end
     

@@ -45,6 +45,12 @@ classdef  BioFormatsReader < Reader
             sizeC = obj.getMetadataStore().getPixelsSizeC(obj.getSeries()).getValue();
         end
         
+        function bitDepth = getBitDepth(obj, varargin)
+            pixelType = obj.formatReader.getPixelType();
+            bpp = loci.formats.FormatTools.getBytesPerPixel(pixelType);
+            bitDepth = 8 * bpp;
+        end
+        
         function fileNames = getImageFileNames(obj, iChan, varargin)
             % Generate image file names
             [~, fileName] = fileparts(char(obj.formatReader.getCurrentFile));
@@ -63,7 +69,9 @@ classdef  BioFormatsReader < Reader
         function I = loadImage(obj, c, t)
             % Using bioformat tools, get the reader and retrieve dimension order
             r = obj.formatReader;
-            I = zeros([obj.getSizeY(), obj.getSizeX(), numel(t)]);
+            class = ['uint' num2str(obj.getBitDepth())];
+            I = zeros([obj.getSizeY(), obj.getSizeX(), numel(t)], class);
+
             z = 1;
             for i = 1 : numel(t),
                 iPlane = loci.formats.FormatTools.getIndex(r, z-1, c-1, t(i)-1);

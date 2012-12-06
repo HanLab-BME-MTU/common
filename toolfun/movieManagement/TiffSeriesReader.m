@@ -16,6 +16,7 @@ classdef  TiffSeriesReader < Reader
             obj.sizeT = - ones(nChan, 1);
             obj.sizeC = numel(channelPaths);
             obj.sizeZ = 1;
+            obj.bitDepth = - ones(nChan, 1);
             obj.filenames = cell(obj.sizeC, 1);
         end
         
@@ -28,16 +29,22 @@ classdef  TiffSeriesReader < Reader
         
         function getXYDimensions(obj, iChan)
             fileNames = obj.getImageFileNames(iChan);
-            imInfo = cellfun(@(x)imfinfo([obj.paths{iChan} filesep x]),...
+            imInfo = cellfun(@(x) imfinfo([obj.paths{iChan} filesep x]),...
                 fileNames, 'UniformOutput', false);
             sizeX = unique(cellfun(@(x)(x.Width), imInfo));
             sizeY = unique(cellfun(@(x)(x.Height), imInfo));
+            bitDepth = unique(cellfun(@(x)(x.BitDepth), imInfo));
             assert(isscalar(sizeX) && isscalar(sizeY),...
                 ['Image sizes are inconsistent in: \n\n%s\n\n'...
                 'Please make sure all the images have the same size.'],obj.paths{iChan});
             
+            assert(isscalar(bitDepth),...
+                ['Bit depth is inconsistent in: \n\n%s\n\n'...
+                'Please make sure all the images have the same bit depth.'],obj.paths{iChan});
+
             obj.sizeX(iChan) = sizeX;
             obj.sizeY(iChan) = sizeY;
+            obj.bitDepth(iChan) = bitDepth;
         end
         
         function sizeX = getSizeX(obj, iChan)
@@ -70,6 +77,13 @@ classdef  TiffSeriesReader < Reader
             sizeT = obj.sizeT(iChan);
         end
         
+        function bitDepth = getBitDepth(obj, iChan)
+            if obj.bitDepth(iChan) == -1,
+                obj.getXYDimensions(iChan);
+            end
+                
+            bitDepth = obj.bitDepth(iChan);
+        end
         
         function filenames = getImageFileNames(obj, iChan, iFrame)
             % Channel path is a directory of image files
@@ -97,8 +111,14 @@ classdef  TiffSeriesReader < Reader
         end
         
         function I = loadImage(obj, iChan, iFrame)
+            % Initialize array
+            sizeX = obj.getSizeX(iChan);
+            sizeY = obj.getSizeY(iChan);
+            bitDepth = obj.getBitDepth(iChan);
+            class = ['uint' num2str(bitDepth)];
+            I = zeros([sizeY, sizeX, numel(iFrame)], class);
             
-            I = zeros([obj.getSizeY(iChan), obj.getSizeX(iChan), numel(iFrame)]);
+            % Read individual files
             fileNames = obj.getImageFileNames(iChan, iFrame);
             for i=1:numel(iFrame)
                 I(:,:,i)  = imread([obj.paths{iChan} filesep fileNames{i}]);
