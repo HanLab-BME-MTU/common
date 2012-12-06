@@ -101,7 +101,6 @@ classdef Channel < hgsetget
         
         function relocate(obj,oldRootDir,newRootDir)
             % Relocate location of the  channel object
-            
             obj.channelPath_=  relocatePath(obj.channelPath_,oldRootDir,newRootDir);
         end
         

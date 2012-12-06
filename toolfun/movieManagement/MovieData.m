@@ -259,7 +259,9 @@ classdef  MovieData < MovieObject
                 end
             end
             
-            if nargin<3 || ~full, return; end
+            if nargin<3 || ~full || obj.isOmero(), 
+                return 
+            end
             
             % Check that channels paths start with oldRootDir           
             channelPaths=obj.getChannelPaths;

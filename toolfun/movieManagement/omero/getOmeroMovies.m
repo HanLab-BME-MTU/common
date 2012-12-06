@@ -21,7 +21,7 @@ function MD = getOmeroMovies(client, imageIDs, varargin)
 % Input check
 ip = inputParser;
 ip.addRequired('imageIDs', @(x) isvector(x) || isa(x,'java.util.ArrayList'));
-ip.addOptional('path', getenv('HOME'), @ischar);
+ip.addOptional('path', fullfile(getenv('HOME'), 'omero'), @ischar);
 ip.parse(imageIDs, varargin{:});
 
 % Create a java array list for the IDs
@@ -71,7 +71,7 @@ if any(hasFileAnnotation)
             if ~hasMovie, continue; end
             
             % Load MovieData object
-            MD(iMovie) = MovieData.load(matFiles{j}, client.getSession);
+            MD(iMovie) = MovieData.load(matFiles{j}, client.getSession, false);
         end
         
         if isempty(MD(iMovie)), error('No movie found'); end     
