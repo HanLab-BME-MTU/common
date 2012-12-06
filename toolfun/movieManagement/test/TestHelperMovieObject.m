@@ -16,7 +16,6 @@ classdef TestHelperMovieObject < handle
             movie = MovieData(channel,path);
             movie.setPath(path);
             movie.setFilename('movieData.mat');
-            movie.sanityCheck;
         end
         
         function channel = setUpChannel(path,imSize,nFrames)

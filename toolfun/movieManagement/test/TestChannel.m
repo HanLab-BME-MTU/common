@@ -42,12 +42,12 @@ classdef TestChannel < TestCase
         
         
         
-%         function testSanityCheck(self)
-%             [width,height,nf]= self.channel.sanityCheck;
-%             assertEqual(width,self.imSize(2));
-%             assertEqual(height,self.imSize(1));
-%             assertEqual(nf,1);
-%         end
+        function testSanityCheck(self)
+            [width,height,nf]= self.channel.sanityCheck;
+            assertEqual(width,self.imSize(2));
+            assertEqual(height,self.imSize(1));
+            assertEqual(nf,1);
+        end
         
 
         function testPath(self)

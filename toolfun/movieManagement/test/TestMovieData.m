@@ -8,11 +8,7 @@ classdef TestMovieData < TestCase
         roiName = 'roiMovie.mat';
         roiMaskName = 'roiMask.tif';
         imSize = [100 200];
-        nFrames = 1;
-        validProperties =  {'timeInterval_','numAperture_',...
-                'magnification_','camBitdepth_'};
-        validValues =  {1,1.4,100,14};;
-            
+        nFrames = 1;            
     end
 
     methods
@@ -24,6 +20,7 @@ classdef TestMovieData < TestCase
         function setUp(self)
             channel = TestHelperMovieObject.setUpChannel(self.moviePath,self.imSize,self.nFrames);
             self.movie=TestHelperMovieObject.setUpMovie(self.moviePath,channel);
+            self.movie.sanityCheck();
         end
         
         function tearDown(self)
@@ -69,29 +66,6 @@ classdef TestMovieData < TestCase
             assertEqual(self.movie,newmovie);
             assertEqual(newmovie.processes_,{newProcess});
             assertEqual(newmovie.packages_,{newPackage});
-        end
-        
-        function testSetInvalidProperties(self)
-            TestHelperMovieObject.testSetInvalidProperties(self.movie,self.validProperties);
-        end
-        
-        function testMultiSetProperties(self)
-            TestHelperMovieObject.testMultiSetProperties(self.movie,self.validProperties,self.validValues);
-        end
-        
-        function testSetMultipleProperties(self)
-            TestHelperMovieObject.testSetMultipleProperties(self.movie,self.validProperties,self.validValues);
-        end
-        
-        
-        function testSetIndividualProperties(self)
-            TestHelperMovieObject.testSetIndividualProperties(self.movie,self.validProperties,self.validValues);
-        end
-        
-        function testSanityCheck(self)
-            assertEqual(self.movie.channels_.owner_,self.movie);
-            assertEqual(self.movie.imSize_,self.imSize);
-            assertEqual(self.movie.nFrames_,1);
         end
           
         function testClass(self)

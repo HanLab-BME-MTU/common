@@ -12,7 +12,9 @@ classdef TestMovieList < TestCase
         
         %% Set up and tear down methods
         function setUp(self)
-            self.movieList=TestHelperMovieObject.setUpMovieList(self.movieListPath);
+            movie=TestHelperMovieObject.setUpMovie(self.movieListPath);
+            movie.sanityCheck();
+            self.movieList=TestHelperMovieObject.setUpMovieList(self.movieListPath, movie);
         end
         
         

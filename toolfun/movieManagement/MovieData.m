@@ -225,19 +225,23 @@ classdef  MovieData < MovieObject
                 [width(i) height(i) nFrames(i)] = obj.channels_(i).sanityCheck(obj);
             end
             
-            assert(max(nFrames) == min(nFrames), ...
+            assert(max(nFrames) == min(nFrames), 'MovieData:sanityCheck:nFrames',...
                 'Different number of frames are detected in different channels. Please make sure all channels have same number of frames.')
             assert(max(width)==min(width) && max(height)==min(height), ...
+                'MovieData:sanityCheck:imSize',...
                 'Image sizes are inconsistent in different channels.\n\n')
             
             % Define imSize_ and nFrames_;
             if ~isempty(obj.nFrames_)
-                assert(obj.nFrames_ == nFrames(1), 'Record shows the number of frames has changed in this movie.')
+                assert(obj.nFrames_ == nFrames(1), 'MovieData:sanityCheck:nFrames',...
+                    'Record shows the number of frames has changed in this movie.')
             else
                 obj.nFrames_ = nFrames(1);
             end
             if ~isempty(obj.imSize_)
-                assert(obj.imSize_(2) == width(1) && obj.imSize_(1) ==height(1), 'Record shows image size has changed in this movie.')
+                assert(obj.imSize_(2) == width(1) && obj.imSize_(1) ==height(1),...
+                    'MovieData:sanityCheck:imSize',...
+                    'Record shows image size has changed in this movie.')
             else
                 obj.imSize_ = [height(1) width(1)];
             end
