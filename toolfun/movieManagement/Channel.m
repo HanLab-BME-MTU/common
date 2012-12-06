@@ -174,7 +174,7 @@ classdef Channel < hgsetget
         
         function fileNames = getImageFileNames(obj,iFrame)
             
-            fileNames = obj.getReader.getFileNames(obj.getChannelIndex());
+            fileNames = obj.getReader.getImageFileNames(obj.getChannelIndex());
             if nargin>1, fileNames=fileNames(iFrame); end
         end
         
@@ -197,7 +197,7 @@ classdef Channel < hgsetget
             if ~isempty(obj.owner_),
                 r = obj.owner_.getReader();
             else
-                r = TiffSeriesReader(obj.channelPath_);
+                r = TiffSeriesReader({obj.channelPath_});
             end
         end
         
