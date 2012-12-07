@@ -3,6 +3,7 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoBG( im, bl
 % 
 %   [ imBlobLocations ] = detectBlobsUsingMultiscaleLoBG( im, blobDiameterRange, varargin )
 %   [ imBlobLocations, imMultiscaleLoBGResponse ] = detectBlobsUsingMultiscaleLoBG( im, blobDiameterRange, varargin )
+%   [ imBlobLocations, imMultiscaleLoBGResponse, imPixelScaleMap ] = detectBlobsUsingMultiscaleLoBG( im, blobDiameterRange, varargin )  
 % 
 %   The input intensity image is first filtered with a Laplacian of Bi-Gaussian
 %   (LoBG) Filter accross multiple scales/sigmas. The blobs are then detected 
@@ -26,14 +27,18 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoBG( im, bl
     p.parse( im, blobDiameterRange );    
     
     p.addParamValue( 'rho', 0.2, @(x) (isscalar(x)) ); % for now read the reference paper to understand what this means
+    p.addParamValue( 'minBlobDistance', [], @(x) isscalar(x) ); % should be in physical space
     p.addParamValue( 'spacing', ones( 1, ndims(im) ), @(x) (isnumeric(x) && numel(x) == ndims(im)) );
     p.addParamValue( 'numLoGScales', 15, @(x) isscalar(x) );
+    p.addParamValue( 'flagBrightBlobs', true, @(x) (isscalar(x) && islogical(x)) );
     p.addParamValue( 'debugMode', false, @(x) (isscalar(x) && islogical(x)) );
     p.parse( im, blobDiameterRange, varargin{:} ); 
 
+    minBlobDistance = p.Results.minBlobDistance;
     spacing = p.Results.spacing;
     numLoGScales = p.Results.numLoGScales;
     flagDebugMode = p.Results.debugMode;
+    flagBrightBlobs = p.Results.flagBrightBlobs;
     rho = p.Results.rho;
     
     % compute LoG at a series of sigmas
@@ -44,20 +49,26 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoBG( im, bl
                                                                           'spacing', spacing, ...
                                                                           'debugMode', flagDebugMode );
 
-    imMultiscaleLoBGResponse = -1 * imMultiscaleLoBGResponse;
+    if flagBrightBlobs
+        imMultiscaleLoBGResponse = -1 * imMultiscaleLoBGResponse;
+    end
     
     % locate local intensity maxima in gaussian blurred image
-    minCellDiameterImsp = min( blobDiameterRange ) ./ spacing;
-    MaximaSuppressionSize = round( minCellDiameterImsp );
+    if isempty(minBlobDistance)
+        MaximaSuppressionSize = round(  min( blobDiameterRange ) ./ spacing );
+    else
+        MaximaSuppressionSize = round( minBlobDistance ./ spacing );    
+    end
+    
     evenind = (mod( MaximaSuppressionSize, 2 ) == 0);
     MaximaSuppressionSize( evenind ) = MaximaSuppressionSize( evenind ) + 1;    
+    MaximaSuppressionSize( MaximaSuppressionSize < 3 ) = 3; 
     
     switch ndims( im ) 
         
         case 2 
             
             imLocalMax = locmax2d(imMultiscaleLoBGResponse, MaximaSuppressionSize, 1);            
-            imLocalMax = double(imLocalMax > 0);
             
             if flagDebugMode
                 
@@ -80,6 +91,12 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoBG( im, bl
                     line(X', Y', 'Color', 'g', 'LineWidth', 1.5);                
                 hold off;
                 
+                imseriesmaskshow( im, imdilate( imLocalMax, strel('disk',3) ) ); 
+                set( gcf, 'Name', 'Seed Points Overlayed on Input Image' );
+                hold on;               
+                    line(X', Y', 'Color', 'g', 'LineWidth', 1.5);                
+                hold off;
+                
                 
                 figure, histogram( pixelScaleMap(seedInd) );
                 title( 'Histogram of the cell scales (diameter) found in the image' );
@@ -89,11 +106,13 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoBG( im, bl
         case 3
             
             imLocalMax = locmax3d(imMultiscaleLoBGResponse, MaximaSuppressionSize);           
-            imLocalMax = double(imLocalMax > 0);
             
             if flagDebugMode
                 imseriesmaskshow( imMultiscaleLoBGResponse, imdilate(imLocalMax, ones(3,3,3)) ); 
                 set( gcf, 'Name', 'Local Maxima Overlayed on the response of Multiscale LoBG Filter' );
+                
+                imseriesmaskshow( im, imdilate(imLocalMax, ones(3,3,3)) ); 
+                set( gcf, 'Name', 'Seed Points Overlayed on Input Image' );
             end
             
     end
@@ -102,6 +121,10 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoBG( im, bl
     imBlobLocations = imLocalMax;   
     if nargout > 1
         varargout{1} = imMultiscaleLoBGResponse;
+    end     
+
+    if nargout > 2
+        varargout{2} = sigmaValues( pixelScaleMap ); % radius for each detected blob
     end     
     
 end

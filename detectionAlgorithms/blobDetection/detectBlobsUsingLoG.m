@@ -1,4 +1,4 @@
-function [imBlobLocations] = detectBlobsUsingLoG( im, meanBlobDiameter, varargin )
+function [imBlobLocations, varargout ] = detectBlobsUsingLoG( im, meanBlobDiameter, varargin )
 % Detects blobs as local maxima of the LoG filtered image
 %
 % The input intensity image is first filtered with a Laplacian of Gaussian (LoG)
@@ -18,22 +18,33 @@ function [imBlobLocations] = detectBlobsUsingLoG( im, meanBlobDiameter, varargin
     p.addRequired( 'im', @(x) (isnumeric(x) && ismember( ndims(x), [2,3] )) );
     p.addRequired( 'meanBlobDiameter', @(x) isscalar(x) );
     p.parse( im, meanBlobDiameter );
+    p.addParamValue( 'minBlobDistance', [], @(x) isscalar(x) );
     p.addParamValue( 'spacing', ones( 1, ndims(im) ), @(x) (isnumeric(x) && numel(x) == ndims(im)) );
+    p.addParamValue( 'flagBrightBlobs', true, @(x) (isscalar(x) && islogical(x)) );    
     p.addParamValue( 'debugMode', false, @(x) (isscalar(x) && islogical(x)) );
     p.parse( im, meanBlobDiameter, varargin{:} ); 
     
+    minBlobDistance = p.Results.minBlobDistance;
     spacing = p.Results.spacing;
+    flagBrightBlobs = p.Results.flagBrightBlobs;
     flagDebugMode = p.Results.debugMode;
-    meanBlobDiameterImsp = meanBlobDiameter ./ spacing;
-
+    
     % Apply Laplacian of Gaussian (LoG) filter
     sigma = 0.5 * meanBlobDiameter / sqrt( ndims(im) );
-    imLoG = -1 * filterLoGND( im, sigma, 'spacing', spacing, 'UseNormalizedDerivatives', true );
+    imLoG = filterLoGND( im, sigma, 'spacing', spacing, 'UseNormalizedDerivatives', true );
+    if flagBrightBlobs
+        imLoG = -1 * imLoG;
+    end
 
     % locate local intensity maxima in gaussian blurred image
-    MaximaSuppressionSize = round( meanBlobDiameterImsp );
-    evenind = (mod( MaximaSuppressionSize, 2 ) == 0);
-    MaximaSuppressionSize( evenind ) = MaximaSuppressionSize( evenind ) + 1;    
+    if isempty(minBlobDistance)
+        MaximaSuppressionSize = 3;
+    else
+        MaximaSuppressionSize = round( minBlobDistance ./ spacing );    
+        evenind = (mod( MaximaSuppressionSize, 2 ) == 0);
+        MaximaSuppressionSize( evenind ) = MaximaSuppressionSize( evenind ) + 1;    
+        MaximaSuppressionSize( MaximaSuppressionSize < 3 ) = 3; 
+    end
     
     switch ndims( im ) 
         
@@ -58,6 +69,12 @@ function [imBlobLocations] = detectBlobsUsingLoG( im, meanBlobDiameter, varargin
                 hold on;               
                     line(X', Y', 'Color', 'g', 'LineWidth', 1.5);                
                 hold off;
+
+                imseriesmaskshow( im, imdilate( imLocalMax, strel('disk',3) ) ); 
+                set( gcf, 'Name', 'Seed Points Overlayed on Input Image' );
+                hold on;               
+                    line(X', Y', 'Color', 'g', 'LineWidth', 1.5);                
+                hold off;
                 
             end
             
@@ -68,6 +85,9 @@ function [imBlobLocations] = detectBlobsUsingLoG( im, meanBlobDiameter, varargin
             if flagDebugMode
                 imseriesmaskshow( imLoG, imdilate(imLocalMax, ones(3,3,3)) ); 
                 set( gcf, 'Name', 'Local Maxima overlayed on the response of LoG Filter' );
+                
+                imseriesmaskshow( im, imdilate(imLocalMax, ones(3,3,3)) ); 
+                set( gcf, 'Name', 'Seed Points Overlayed on Input Image' );
             end
             
     end
@@ -75,4 +95,9 @@ function [imBlobLocations] = detectBlobsUsingLoG( im, meanBlobDiameter, varargin
     % detect local intensity maxima as cell seed points
     imBlobLocations = imLocalMax;
 
+    % detect response if requested
+    if nargout > 1 
+        varargout{1} = imLoG;
+    end
+    
 end
