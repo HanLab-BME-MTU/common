@@ -129,12 +129,14 @@ defaultDisplayRange = ComputeImageDynamicRange( im, 98.0 );
 p.addParamValue( 'spacing', ones(1, ndims(im)), @(x) ( isnumeric(x) && ~isscalar(x) && numel(x) == ndims(im) ) );
 p.addParamValue( 'displayRange', defaultDisplayRange, @(x) ( isnumeric(x) && numel(x) == 2 ) );
 p.addParamValue( 'maskAlphas', 0.5 * ones(numMasks,1), @(x) (isnumeric(x) && numel(x) == numMasks) );
+p.addParamValue( 'ApplyLog', false, @(x) (isscalar(x) && islogical(x)) );
 p.parse( im, inRgbMasks, varargin{:} );
 
 spacing = ones(1,3);
 spacing(1:ndims(im)) = p.Results.spacing;
 maskAlpha = p.Results.maskAlphas;
 displayrange = p.Results.displayRange;
+flagApplyLog = p.Results.ApplyLog;
 
 numAlpha  = length(maskAlpha);
 
@@ -176,7 +178,7 @@ data.plane(2).spacing = [spacing(3) spacing(2) 1];
 data.plane(3).spacing = [spacing(2) spacing(1) 1];
 
 % Data log
-data.logUse = 0;
+data.logUse = flagApplyLog;
 data.imLog = ComputeImageLogTransformForDisplay( data.im );
 data.imLogDisplayRange = [ min(data.imLog(:)), max(data.imLog(:)) ];
 

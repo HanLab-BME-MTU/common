@@ -20,7 +20,7 @@ function [ imMaskOverlay ] = genImageMaskOverlay( im, masks, maskColors, maskAlp
         
     end
     
-    imMaskOverlay = cat(3, imr, img, imb );
+    imMaskOverlay = cat(ndims(im)+1, imr, img, imb );
     imMaskOverlay( imMaskOverlay > 1 ) = 1;
     
 end
