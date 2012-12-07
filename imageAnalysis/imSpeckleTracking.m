@@ -352,33 +352,52 @@ for k = 1:nPoints
         maxV = [NaN NaN];
         sigtVal = [NaN NaN NaN];
     elseif pass == 1
-        % parabola approximation
-        subv = 1; % radius of subgroup for subscore
+%         % parabola approximation
+%         subv = 1; % radius of subgroup for subscore
+%         sub_score = score(max(1,maxI(1)-subv):min(size(score,1),maxI(1)+subv),...
+%                             max(1,maxI(2)-subv):min(size(score,2),maxI(2)+subv));
+%         % my field of interest
+%         subvP = vP(max(1,maxI(1)-subv):min(size(score,1),maxI(1)+subv));
+%         subvF = vF(max(1,maxI(2)-subv):min(size(score,2),maxI(2)+subv));
+% 
+%         [subvFG,subvPG]=meshgrid(subvF,subvP);
+%         subvF1D = reshape(subvFG,[],1);
+%         subvP1D = reshape(subvPG,[],1);
+%         sub_score1D = reshape(sub_score,[],1);
+%         
+%         % starting point estimation SH based on discretized maxV (-b/2a =
+%         % maxV(2)) in quadratical expression to avoid the random starting point warning SH
+%         maxV  = [vP(maxI(1)) vF(maxI(2))];
+%         asp = -0.026; %decided empirically
+%         bsp = -2*asp*maxV(2);
+%         csp = asp;
+%         dsp = -2*csp*maxV(1);
+%         esp = -0.5; %arbitrary number
+%         s = fitoptions('Method','NonlinearLeastSquares','StartPoint', [asp,bsp,csp,dsp,esp]); 
+%         f = fittype('a*x^2+b*x+c*y^2+d*y+e','independent', {'x', 'y'}, 'dependent', 'z','option',s);
+%         sf = fit( [subvF1D, subvP1D], sub_score1D, f);
+% 
+%         px = [sf.a sf.b sf.e]; py = [sf.c sf.d sf.e];
+%         maxV = [roots(polyder(py)) roots(polyder(px)) ];
+
+        % B-spline approximation for subscore
+        subv = 3; % radius of subgroup for subscore: it might need at least 3 pixels for radius
         sub_score = score(max(1,maxI(1)-subv):min(size(score,1),maxI(1)+subv),...
                             max(1,maxI(2)-subv):min(size(score,2),maxI(2)+subv));
         % my field of interest
         subvP = vP(max(1,maxI(1)-subv):min(size(score,1),maxI(1)+subv));
         subvF = vF(max(1,maxI(2)-subv):min(size(score,2),maxI(2)+subv));
 
-        [subvFG,subvPG]=meshgrid(subvF,subvP);
-        subvF1D = reshape(subvFG,[],1);
-        subvP1D = reshape(subvPG,[],1);
-        sub_score1D = reshape(sub_score,[],1);
-        
-        % starting point estimation SH based on discretized maxV (-b/2a =
-        % maxV(2)) in quadratical expression to avoid the random starting point warning SH
+        sp = csape({subvP,subvF},sub_score);
+        dsp1 = fnder(sp,[1,0]);
+        dsp2 = fnder(sp,[0,1]);
         maxV  = [vP(maxI(1)) vF(maxI(2))];
-        asp = -0.026; %decided empirically
-        bsp = -2*asp*maxV(2);
-        csp = asp;
-        dsp = -2*csp*maxV(1);
-        esp = -0.5; %arbitrary number
-        s = fitoptions('Method','NonlinearLeastSquares','StartPoint', [asp,bsp,csp,dsp,esp]); 
-        f = fittype('a*x^2+b*x+c*y^2+d*y+e','independent', {'x', 'y'}, 'dependent', 'z','option',s);
-        sf = fit( [subvF1D, subvP1D], sub_score1D, f);
-
-        px = [sf.a sf.b sf.e]; py = [sf.c sf.d sf.e];
-        maxV = [roots(polyder(py)) roots(polyder(px)) ];
+        
+        options = optimset('Algorithm','interior-point');
+        maxV = fmincon(@vFun,maxV,[],[],[],[], ...
+                [max(vP(1),maxV(1)-subv) max(vF(1),maxV(2)-subv)], ...
+                [min(vP(end),maxV(1)+subv),min(vF(end),maxV(2)+subv)],[], ...
+                options,sp,dsp1,dsp2);
     end
     
     if ~isnan(maxV(1)) && ~isnan(maxV(2))
