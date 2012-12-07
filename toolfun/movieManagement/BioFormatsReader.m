@@ -59,11 +59,16 @@ classdef  BioFormatsReader < Reader
                 1:obj.getSizeT,'Unif',false);
         end
         
-        function chanNames = getChannelNames(obj, iChan)
+        function channelNames = getChannelNames(obj, iChan)
             [~, fileName, fileExt] = fileparts(char(obj.formatReader.getCurrentFile));
-            channelID = @(x) char(obj.getMetadataStore().getChannelID(obj.getSeries(), x-1));
-            chanNames = arrayfun(@(x) [fileName fileExt ':'  channelID(x)], iChan, ...
-                'Unif',false);
+            
+            if obj.formatReader.getSeriesCount() > 1
+                base = [fileName fileExt ' Series ' num2str(obj.getSeries()+1) ' Channel '];
+            else
+                base = [fileName fileExt ' Channel '];
+            end
+            
+            channelNames = arrayfun(@(x) [base num2str(x)], iChan, 'Unif',false);
         end
         
         function I = loadImage(obj, c, t)
@@ -71,7 +76,7 @@ classdef  BioFormatsReader < Reader
             r = obj.formatReader;
             class = ['uint' num2str(obj.getBitDepth())];
             I = zeros([obj.getSizeY(), obj.getSizeX(), numel(t)], class);
-
+            
             z = 1;
             for i = 1 : numel(t),
                 iPlane = loci.formats.FormatTools.getIndex(r, z-1, c-1, t(i)-1);
