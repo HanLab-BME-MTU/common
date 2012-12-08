@@ -19,7 +19,7 @@ ip.CaseSensitive = false;
 ip.addRequired('NA', @isscalar);
 ip.addRequired('M', @isscalar);
 ip.addRequired('pixelSize', @isscalar);
-ip.addRequired('lambda', @(x) ischar(x) | isscalar(x))
+ip.addRequired('lambda', @(x) ischar(x) | (isnumeric(x) & numel(x)==1))
 ip.addParamValue('Display', 'off', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
 ip.parse(NA, M, pixelSize, lambda, varargin{:});
 
