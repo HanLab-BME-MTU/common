@@ -10,7 +10,7 @@ function [block,Bleng]=findBlock(TS,minLength)
 %Marco Vilela, 1-20-11
 
 ip = inputParser;
-ip.addRequired('TS',@isvector);
+ip.addRequired('TS',@isreal);
 ip.addRequired('minLength',@isscalar);
 ip.parse(TS,minLength);
 
