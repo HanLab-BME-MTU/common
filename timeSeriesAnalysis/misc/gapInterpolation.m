@@ -16,7 +16,7 @@ function  [workTS,newX] = gapInterpolation(TS,nPoint)
 nObs   = numel(TS);
 xi     = find(isnan(TS));
 workTS = TS(:);
-
+newX   = 1:nObs;
 if ~isempty(xi)
     
     nanB         = findBlock(xi,1);
@@ -26,18 +26,26 @@ if ~isempty(xi)
     rightBorder  = find(nanB{end}(end)==nObs);
     
     workTS([nanB{leftBorder*1};nanB{rightBorder*end}]) = [];
-    
+    %Indexes for real points
     numIdx       = find(~isnan(workTS));
+    %Blocks of real points
     numB         = findBlock(numIdx,1);
+    %Fusing blocks that will have an interpolated number in between
     fusingB      = find(cell2mat(cellfun(@(x,y)  y(1) - x(end) <= nPoint+1,numB(1:end-1),numB(2:end),'Unif',0)));
-    fusedB       = findBlock(fusingB,1);
-    %Fused blocks with gaps <= nPoint
-    fusedPoint   = cellfun(@(x) cat(1,numB{[x;x(end)+1]}),fusedB,'Unif',0);
-    %New x-axis
-    newX         = (nanB{1}(1)==1)*nanB{1}(end) + cell2mat(cellfun(@(x) x(1):x(end),fusedPoint,'Unif',0));
-    interpF      = @(x,y) interp1(x,y(x),x(1):x(end));
-    %Interpolated points
-    interpPoint  = cellfun(@(x) interpF(x,workTS),fusedPoint,'Unif',0);
-    workTS       = TS(:);
-    workTS(newX) = cell2mat(interpPoint)';
+    
+    if ~isempty(fusingB)
+        fusedB       = findBlock(fusingB,1);
+        %Fused blocks with gaps <= nPoint
+        fusedPoint   = cellfun(@(x) cat(1,numB{[x;x(end)+1]}),fusedB,'Unif',0);
+        %New x-axis
+        newX         = (nanB{1}(1)==1)*nanB{1}(end) + cell2mat(cellfun(@(x) x(1):x(end),fusedPoint,'Unif',0));
+        interpF      = @(x,y) interp1(x,y(x),x(1):x(end));
+        %Interpolated points
+        interpPoint  = cellfun(@(x) interpF(x,workTS),fusedPoint,'Unif',0);
+        workTS       = TS(:);
+        workTS(newX) = cell2mat(interpPoint)';
+    else
+        workTS       = TS(:);
+    end
+    
 end
