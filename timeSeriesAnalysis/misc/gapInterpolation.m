@@ -17,7 +17,8 @@ nObs   = numel(TS);
 xi     = find(isnan(TS));
 workTS = TS(:);
 newX   = 1:nObs;
-if ~isempty(xi)
+
+if (~isempty(xi) && numel(xi) ~= nObs)
     
     nanB         = findBlock(xi,1);
     
