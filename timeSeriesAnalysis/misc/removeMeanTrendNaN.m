@@ -37,12 +37,11 @@ trendType = ip.Results.trendType;
 minLength = ip.Results.minLength;
 
 % Initialize output
-[nObs,nVar] = size(TS);
+nVar        = size(TS,2);
 workTS      = cell(1,nVar);
 interval    = cell(1,nVar);
 trend       = cell(1,nVar);
 imf         = cell(1,nVar);
-count       = 1;
 exC         = 1;
 excludeVar  = [];
 
@@ -50,73 +49,34 @@ excludeVar  = [];
 if trendType == 2, imf = cell(1,nVar); end
 
  
-for i = 1:nVar
-
-    
-    xi          = find(isnan(TS(:,i)));
-    if ~isempty(xi)
-        [nanB,nanL] = findBlock(xi,1);
-        
-    else
-        nanB = [];nanL = [];
-    end
-
-    exclude     = [];
-%% Excluding gaps larger than 2 points and single NaN extremes
-    for j = 1:length(nanB)
-
-        if nanL(j) > 2 || ~isempty(intersect(nanB{j},nObs)) || ~isempty(intersect(nanB{j},1))
-            
-            xi      = setdiff(xi,nanB{j});%Single NaN islands 
-            exclude = sort(cat(1,nanB{j},exclude));
-            
-        end
-        
-    end
+for iVar = 1:nVar
     
 %% Interpolating single NaN points throughout the time series            
-    if nObs - length( exclude ) >= minLength% forced by the spline used in preWhitening
-
-        if ~isempty(xi)%After excluding points, xi is a vector of size 1 NaN 
-          
-            x         = find(~isnan(TS(:,i)));
-            [fB,fL]   = findBlock(union(x,xi),1);
-            [~,idxB]  = max(fL);
-            workTS{count} = TS(fB{idxB},i);
-
-            
-            workTS{count}(isnan(workTS{count})) = ...
-                interp1(intersect(x,fB{idxB}),TS(intersect(x,fB{idxB}),i),intersect(xi,fB{idxB}),'spline');
-            
-        else % If there are only blocks of NaN(no single NaN), get the largest continuous block of real points            
-
-            [fB,fL]     = findBlock(setdiff(1:nObs,exclude),1);
-            [~,idxB]    = max(fL);
-            workTS{count}   = TS(fB{idxB},i);
-
-        end
+     workTS{iVar}  = gapInterpolation(TS(:,iVar),1);
+    [xAxisB,bLeng] = findBlock(find(isfinite(workTS{iVar})),1);
+    [~,idxB]       = max(bLeng);    
+    
+    if bLeng(idxB) >= minLength 
         
         % Applying the detrend operation after excluding NaN         
-        interval{count} = fB{idxB};
+        interval{iVar} = xAxisB{idxB};
         if ismember(trendType,[0 1])
             
             % Remove sample means or linear trend
-            dWorkTS       = dtrend(workTS{count},trendType);
-            trend{count}  = workTS{count} - dWorkTS;
-            workTS{count} = dWorkTS;
+            dWorkTS       = detrend(workTS{iVar}(interval{iVar}),trendType);
+            trend{iVar}  = workTS{iVar}(interval{iVar}) - dWorkTS;
+            workTS{iVar} = dWorkTS;
             
         elseif trendType == 2
             
             % Remove deterministic components using preWhitening
-            [workTS{count},trend{count},imf{count}]   = preWhitening(workTS{count});
+            [workTS{iVar},trend{iVar},imf{iVar}] = preWhitening(workTS{iVar}(interval{iVar}));
             
         end
         
-        count = count + 1;
-        
     else
         
-        excludeVar(exC) = i;
+        excludeVar(exC) = iVar;
         exC = exC + 1;
         
     end
@@ -124,12 +84,10 @@ for i = 1:nVar
     
 end
 
- 
+%Empty windows 
 empIdx           = find( cellfun(@isempty,workTS) );
+%Windows with #points < minLength
 minIdx           = find( cell2mat( cellfun(@(x) lt(numel(x),minLength),workTS,'UniformOutput',0) ) );
+%All windows to be excluded
 finIdx           = union(empIdx,minIdx);
-workTS(finIdx)   = [];
-interval(finIdx) = [];
-trend(finIdx)    = [];
-imf(finIdx)      = [];
 excludeVar       = union(excludeVar,finIdx);

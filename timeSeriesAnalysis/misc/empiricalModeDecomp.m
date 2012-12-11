@@ -21,14 +21,8 @@ function [imf,flag] = empiricalModeDecomp(X)
 %A(454):903?995, 1998.
 %
 %Marco Vilela, 2011
-
-[nObs,nVar] = size(X);
-
-if nVar > nObs
-    X = X';
-    nObs = length(X);
-end
-
+X       = X(:);
+nObs    = numel(X);
 xTest   = X;
 imf     = [];
 Snumber = [4 12];%The HHT and it's applications, Chapter 1, p,9
@@ -48,16 +42,17 @@ while ~isempty( findpeaks( xTest ) )
            x1     = x1 - nanmean([upperE lowerE],2);
            
            if imfTest( x1 )
-               ensImf(:,i) = x1;
-               flag        = 1;
-               idx(count2) = i;
-               count2      = count2 +1;
+               
+               ensImf(:,count2) = x1;
+               flag             = 1;
+               count2           = count2 +1;
+               
            end
            
        end
        
        if flag
-           imf{end+1} = nanmean( ensImf( :, idx ), 2 );
+           imf{end+1} = nanmean( ensImf, 2 );
        else
            break;
        end
@@ -87,7 +82,7 @@ N  = length(In);
 t1 = sum( In(1:N-1).*In(2:N) < 0);
 
 %Numnber of extrema
-t2  = length(findpeaks(In)) + length(findpeaks(-In));
+t2  = length(findpeaks(In,'minpeakdistance',2)) + length(findpeaks(-In,'minpeakdistance',2));
 out = 0;
 
 if abs(t1 -t2) <= 1
