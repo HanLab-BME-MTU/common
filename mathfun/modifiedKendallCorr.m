@@ -4,11 +4,14 @@ function  [tau,tauAmp] = modifiedKendallCorr(x,varargin)
 %Amplitude information added
 %TS with NaN
 %Under construction (missing p-value)
+%Based on "A New Measure of Rank Correlation", M.G.Kendall. Biometrika, Vol. 30, No 1/2, pp 81-93
 %Marco Vilela, 2012
+
+
 
 ip = inputParser;
 ip.addRequired('x',@(x) isvector(x));
-ip.addOptional('y',x,@(x) isnumeric(x));
+ip.addOptional('y',x,@(x) isvector(x));
 ip.addOptional('local',numel(x)-1,@isscalar);
 ip.addOptional('alpha',0.05,@isscalar);
 ip.addOptional('amp',false,@islogical);
@@ -27,7 +30,10 @@ y = y(:);
 if ~all( size(x) == size(y) )
     error('x and y have different size')
 else
-    nObs = numel(x);
+    nObs = numel(x);% - max( [sum(isnan(x)) sum(isnan(y))] );
+    if nObs <= 6 %This number comes from a lookup table (Original Kendall Paper) - Hard(impossible) to assume normalitity for smaller sample size
+        error('Insuficient number of points')
+    end
 end
 
 if (nObs - local) < maxLag
@@ -36,8 +42,9 @@ if (nObs - local) < maxLag
 end
 
 
-normalization       = local*(2*nObs - local - 1)/2;
-contM               = getCorrMatrix(ones(nObs,1),local,[]);
+%normalization       = local*(2*nObs - local - 1)/2;
+normalization       = (nObs - local)*(nObs - local - 1)/2;
+contM               = getCorrMatrix(ones(size(x)),local,[]);
 [contX,ampM(:,:,1)] = getCorrMatrix(x,local,contM);
 [contY,ampM(:,:,2)] = getCorrMatrix(y,local,contM);
 
