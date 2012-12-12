@@ -89,7 +89,7 @@ if isempty(contM)
     contTS    = hTS;
 else
     ampTSdiff = (hTS - repmat(TS(1:end-1),1,neigh)).*contM;
-    %Eliminating NaN
+    %Eliminating NaN - NaN points will not interfere with the counting, but they will still be there for the lag shifting
     ampTSdiff(isnan(ampTSdiff)) = 0;
     %
     contTS    = sign(ampTSdiff);
