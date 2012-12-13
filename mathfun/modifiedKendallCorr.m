@@ -30,9 +30,10 @@ y = y(:);
 if ~all( size(x) == size(y) )
     error('x and y have different size')
 else
-    nObs = numel(x);% - max( [sum(isnan(x)) sum(isnan(y))] );
+    nObs   = numel(x) - max( [sum(isnan(x)) sum(isnan(y))] );
+    localN = nObs - 1;
     if nObs <= 6 %This number comes from a lookup table (Original Kendall Paper) - Hard(impossible) to assume normalitity for smaller sample size
-        error('Insuficient number of points')
+        error('Insufficient number of points')
     end
 end
 
@@ -42,8 +43,7 @@ if (nObs - local) < maxLag
 end
 
 
-%normalization       = local*(2*nObs - local - 1)/2;
-normalization       = (nObs - local)*(nObs - local - 1)/2;
+normalization       = localN*(2*nObs - localN - 1)/2;
 contM               = getCorrMatrix(ones(size(x)),local,[]);
 [contX,ampM(:,:,1)] = getCorrMatrix(x,local,contM);
 [contY,ampM(:,:,2)] = getCorrMatrix(y,local,contM);
