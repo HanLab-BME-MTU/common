@@ -11,6 +11,9 @@ function  [workTS,newX] = gapInterpolation(TS,nPoint)
 %       workTS - Time Series with closed gaps (column vector)
 %       newX   - new x-axis vector 
 %
+% 
+% This function does not interpolate points at the borders
+%
 % Marco Vilela, 2012
 
 nObs   = numel(TS);
@@ -43,10 +46,8 @@ if (~isempty(xi) && numel(xi) ~= nObs)
         interpF      = @(x,y) interp1(x,y(x),x(1):x(end));
         %Interpolated points
         interpPoint  = cellfun(@(x) interpF(x,workTS),fusedPoint,'Unif',0);
-        workTS       = TS(:);
+       % workTS       = TS(:);
         workTS(newX) = cell2mat(interpPoint)';
-    else
-        workTS       = TS(:);
     end
-    
+    workTS([nanB{leftBorder*1};nanB{rightBorder*end}]) = NaN;
 end
