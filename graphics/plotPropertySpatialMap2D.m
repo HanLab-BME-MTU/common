@@ -1,5 +1,5 @@
 function plotPropertySpatialMap2D(tracksFinal,diffAnalysisRes,diffModeAnRes,...
-    properties2plot,positions2plot,lengthMinMax,fixedSegLength,figureName,image)
+    properties2plot,positions2plot,lengthMinMax,fixedSegLength,figureName,image,trackDensity)
 %PLOTPROPERTYSPATIALMAP creates spatial maps of trajectory properties
 %
 %SYNOPSIS plotPropertySpatialMap2D(tracksFinal,diffAnalysisRes,diffModeAnRes,...
@@ -16,6 +16,7 @@ function plotPropertySpatialMap2D(tracksFinal,diffAnalysisRes,diffModeAnRes,...
 %                        5 - Average frame-to-frame displacement.
 %                        6 - Diffusion mode.
 %                        7 - Diffusion coefficient from mode analysis.
+%                        8 - Track density.
 %                        Optional. Default: all.
 %	    positions2plot : Row vector of trajectory position to plot:
 %                        1 - Center position.
@@ -88,7 +89,7 @@ segmentColor = [0 0 0; 0 0 1; 0.2 0.7 0.7; 0 1 1; 0 1 0; ...
 %construct parts of figure titles
 plottedProperty = {'MSS classification','MSS diffusion coefficient',...
     'Confinement radius','Lifetime','Frame-to-frame displacement',...
-    'Diffusion mode','Mode analysis diffusion coefficient'};
+    'Diffusion mode','Mode analysis diffusion coefficient','Density'};
 plottedPosition = {'center position','start position','end position'};
 
 %% Trajectory pre-processing
@@ -100,6 +101,7 @@ indx = chooseTracks(tracksFinal,criteria);
 tracksFinal = tracksFinal(indx);
 diffAnalysisRes = diffAnalysisRes(indx);
 diffModeAnRes = diffModeAnRes(indx);
+trackDensity = trackDensity(indx);
 
 %save tracksFinal into a new variable name
 inputStructure = tracksFinal;
@@ -297,6 +299,19 @@ if any(properties2plot==7)
     %trajectories in each segment
     [diffCoef2Segment,segmentEdgesDC2,fracInSegmentsDC2] = divideRangeIntoSegments(...
         diffCoefDisp2,numSegments,fixedSegLength);
+    
+end
+
+if any(properties2plot==8)
+    
+    %get density from trackDensity variable
+    smDensity = vertcat(trackDensity.value);
+    
+    %divide the range of densities into segements, determine which segment
+    %each trajectory falls into, and calculate the fraction of trajectories
+    %in each segement
+    [smDensitySegment,segmentEdgesDensity,fracInSegmentsDensity] = divideRangeIntoSegments(...
+        smDensity,numSegments,fixedSegLength);
     
 end
 
@@ -519,6 +534,17 @@ for iProperty = properties2plot
                     end
                 end
                 
+            case 8 %single molecule density
+                
+                %go over the different density segments
+                for iSegment = 1 : numSegments
+                    indx = find(smDensitySegment==iSegment);
+                    if ~isempty(indx)
+                        plot(trajXCoord(indx,iPos),trajYCoord(indx,iPos),...
+                            '.','Color',segmentColor(iSegment,:));
+                    end
+                end
+                
         end
         
         if size(image,3)==2
@@ -654,6 +680,22 @@ for iProperty = properties2plot
                         'EdgeColor','none');
                     legendText{end+1} = [num2str(segmentEdgesDC2(iSegment,1)) ...
                         ' - ' num2str(segmentEdgesDC2(iSegment,2))]; %#ok<AGROW>
+                end
+                
+            case 8 %single molecule density
+                
+                %get the center and width of each segment
+                segmentCenter = mean(segmentEdgesDensity,2);
+                segmentWidth = segmentEdgesDensity(:,2) - segmentEdgesDensity(:,1);
+                
+                %plot the bars with different colors
+                for iSegment = 1 : numSegments
+                    bar([segmentCenter(iSegment) segmentCenter(iSegment)+...
+                        segmentWidth(iSegment)],[fracInSegmentsDensity(iSegment) 0],...
+                        'BarWidth',1,'FaceColor',segmentColor(iSegment,:),...
+                        'EdgeColor','none');
+                    legendText{end+1} = [num2str(segmentEdgesDensity(iSegment,1)) ...
+                        ' - ' num2str(segmentEdgesDensity(iSegment,2))]; %#ok<AGROW>
                 end
                 
         end
