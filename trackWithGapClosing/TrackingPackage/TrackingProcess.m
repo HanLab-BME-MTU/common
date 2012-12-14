@@ -346,6 +346,7 @@ classdef TrackingProcess < DataProcessingProcess
                     iTrack = nTracksTot(i) + j ;
                     displayTracks(iTrack).xCoord = tracks(i).tracksCoordAmpCG(j, 1:8:end);
                     displayTracks(iTrack).yCoord = tracks(i).tracksCoordAmpCG(j, 2:8:end);
+                    displayTracks(iTrack).number = i;
                 end
                 
                 % Fill split events NaNs in compound tracks

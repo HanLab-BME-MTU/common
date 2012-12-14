@@ -80,7 +80,7 @@ classdef TracksDisplay < MovieDataDisplay
             % Display track numbers if option is selected
             if obj.showLabel
                 for i = find(~all(isnan(xData),1))
-                    trackNr = num2str(validTracks(i));
+                    trackNr = num2str(tracks(i).number);
                     % Find last non-NaN coordinate
                     index = find(~isnan(xData(:,i)),1,'last');
                     if isfield(tracks,'label')
