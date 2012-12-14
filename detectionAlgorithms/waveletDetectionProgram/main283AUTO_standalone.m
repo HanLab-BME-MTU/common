@@ -150,7 +150,7 @@ for ix = 1:ixmax
         delta=abs(sig2-sig1)/sig2;
         sig1=sig2;
     end
-    wm = wstarck222(rw,k,1); % calculate the multiscale product of the details
+    wm = wstarck222(rw,k); % calculate the multiscale product of the details
     rw = rw-min(rw(:));
     
     % mnw=min(rw(:)); (Sylvain)
@@ -192,7 +192,7 @@ for ix = 1:ixmax
     
     
     lm = locmax2d(rw, [9 9]); % find the location of the maxima of the clusters
-    [ymx xmx] = find(lm>0); % coordinates of the local maxima
+    [ymx, xmx] = find(lm>0); % coordinates of the local maxima
     nmax = length(xmx);  % calculate  number of maxima determined by locmax2d
     
     snum=0; %initialize number of secondary maxima (if there are two or more maxima in a cluster found by locmax2d)
