@@ -37,7 +37,7 @@ classdef TestFlowTracking < TestCase
             for depth = 2 : 15
                 self.setUpGaussianSpot(v0, depth);
                 v = self.f(self.stack, self.imsize/2, 20, 20);
-                assertElementsAlmostEqual(v, v0 ,'relative',1e-3,...
+                assertElementsAlmostEqual(v, v0 ,'relative',1e-2,...
                     ['Stack depth: ' num2str(depth)]);
             end
         end
