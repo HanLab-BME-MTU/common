@@ -71,7 +71,7 @@ for i = p.ChannelIndex
     disp(outFilePaths{1,i});
     
     % Retrieve information about the images
-    if movieData.isOmero() || exist(movieData.getChannelPaths{i},'file')
+    if movieData.isOmero() || movieData.isBF()
         movieParam.channel = movieData.channels_(i);
     else
         [~, base, digits4Enum ~] = getFilenameBody(movieData.getImageFileNames{i}{1});
