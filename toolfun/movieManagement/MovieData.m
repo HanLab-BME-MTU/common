@@ -264,7 +264,8 @@ classdef  MovieData < MovieObject
             end
             
             % Check that channels paths start with oldRootDir           
-            channelPaths=obj.getChannelPaths;
+            channelPaths = arrayfun(@(x) x.channelPath_, obj.channels_,...
+                'Unif', false);
             status = cellfun(@(x) ~isempty(regexp(x,['^' regexptranslate('escape',oldRootDir) '*'],...
                 'once')),channelPaths);
             if ~all(status)
