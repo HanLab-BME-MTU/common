@@ -22,14 +22,15 @@ classdef HistogramDisplay < MovieDataDisplay
             
             % Generate plot
             hold on;
-            [n,x]=hist(data, 1:max(data));
-            h=bar(x,n,'Linewidth',obj.Linewidth);
-            
+            if ~isempty(data)
+                [n,x]=hist(data, 1:max(data));
+                h=bar(x, n, 'Linewidth', obj.Linewidth, 'Tag', tag);
+            else
+                h = text(.3,.4,'No data found', obj.lfont{:});
+            end
             xlabel(obj.XLabel,obj.lfont{:});
             ylabel(obj.YLabel,obj.lfont{:});
             set(gca, 'LineWidth', 1.5, obj.sfont{:});
-            
-            set(h,'Tag',tag);
         end
         function updateDraw(obj,h,data)
             tag = get(h(1),'Tag');
