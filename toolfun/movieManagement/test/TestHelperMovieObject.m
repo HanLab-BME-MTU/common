@@ -114,6 +114,7 @@ classdef TestHelperMovieObject < handle
             % Copy movie in new location
             relocatedMoviePath = [movieObject.getPath '_relocated'];
             copyfile(movieObject.getPath,relocatedMoviePath);
+            rmdir(movieObject.getPath, 's')
         end
         
         function testSetInvalidProperties(object,validProperties)

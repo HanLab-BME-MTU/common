@@ -25,7 +25,9 @@ classdef TestMovieData < TestCase
         
         function tearDown(self)
             delete(self.movie);
-            rmdir(self.moviePath,'s');
+            if isdir(self.moviePath)
+                rmdir(self.moviePath,'s');
+            end
         end
         
         %% Tests    
