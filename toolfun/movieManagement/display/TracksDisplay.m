@@ -18,6 +18,7 @@ classdef TracksDisplay < MovieDataDisplay
         end
         function h=initDraw(obj, tracks, tag, varargin)
                         
+            if isempty(tracks), h = -1; return; end
             % Get track length and filter valid tracks
             trackLengths = cellfun(@numel,{tracks.xCoord});
             validTracks = find(trackLengths>0);

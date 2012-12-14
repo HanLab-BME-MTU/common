@@ -339,6 +339,12 @@ classdef TrackingProcess < DataProcessingProcess
             end
             nTracksTot = [0 cumsum(nCompoundTracks(:))'];
             
+            % Fail fast if no track
+            if sum(nCompoundTracks) == 0
+                displayTracks = struct.empty(1,0);
+                return
+            end
+            
             displayTracks(sum(nCompoundTracks),1) = struct('xCoord', [], 'yCoord', []);
             for i = find(nCompoundTracks)'
                 % Get the x and y coordinate of all compound tracks
