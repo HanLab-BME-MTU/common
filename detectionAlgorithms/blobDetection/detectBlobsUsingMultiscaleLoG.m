@@ -3,7 +3,7 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoG( im, blo
 % 
 %   [ imBlobLocations ] = detectBlobsUsingMultiscaleLoG( im, blobDiameterRange, varargin )
 %   [ imBlobLocations, imMultiscaleLoGResponse ] = detectBlobsUsingMultiscaleLoG( im, blobDiameterRange, varargin )
-%   [ imBlobLocations, imMultiscaleLoGResponse, imPixelScaleMap ] = detectBlobsUsingMultiscaleLoG( im, blobDiameterRange, varargin )
+%   [ imBlobLocations, imMultiscaleLoGResponse, imBlobSize ] = detectBlobsUsingMultiscaleLoG( im, blobDiameterRange, varargin )
 % 
 % The input intensity image is first filtered with a Laplacian of Gaussian
 % (LoG) Filter accross multiple scales/sigmas.
