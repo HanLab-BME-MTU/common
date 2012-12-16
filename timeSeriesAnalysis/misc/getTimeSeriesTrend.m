@@ -41,34 +41,34 @@ trendT   = ip.Results.trendType;
 
 for iVar = 1:nVar
     
-    if ismember(trendType,[0 1])
+    if ismember(trendT,0)
         
         % Remove sample means or linear trend
         trend(:,iVar) = nanmean(TS(:,iVar));
         dTS(:,iVar)   = TS(:,iVar) - trend(:,iVar);
         
-    elseif ismember(trendType,[1 2 3])
+    elseif ismember(trendT,[1 2 3])
         
-        switch trendType
+        switch trendT
             case 1
                 fitFun = @(b,x)(b(1)*x + b(2));
-                bInit = [1 0]; %Initial guess for fit parameters.                
+                bInit  = [1 0]; %Initial guess for fit parameters.                
             case 2
                 fitFun = @(b,x)(b(1)*exp(b(2)*x));
-                bInit = [1 0]; %Initial guess for fit parameters.
+                bInit  = [1 0]; %Initial guess for fit parameters.
             case 3
                 fitFun = @(b,x)(b(1)*exp(b(2)*x))+(b(3)*exp(b(4)*x));
-                bInit = [1 0 1 0]; %Initial guess for fit parameters.
+                bInit  = [1 0 1 0]; %Initial guess for fit parameters.
         end
         
         fitOptions = statset('Robust','on','MaxIter',500,'Display','off');
-        [bFit,resFit,jacFit,covFit,mseFit] = nlinfit(1:nObs,TS(:,iVar),fitFun,bInit,fitOptions);
+        [bFit,resFit,jacFit,covFit,mseFit] = nlinfit([1:nObs]',TS(:,iVar),fitFun,bInit,fitOptions);
         %Get confidence intervals of fit and fit values
-        [fitValues,deltaFit] = nlpredci(fitFun,1:nObs,bFit,resFit,'covar',covFit,'mse',mseFit);
-        
+        [trend(:,iVar),deltaFit] = nlpredci(fitFun,1:nObs,bFit,resFit,'covar',covFit,'mse',mseFit);
+        dTS(:,iVar)              = TS(:,iVar) - trend(:,iVar);
 
-        
-    elseif trendType == 5
+       
+    elseif trendT == 5
         
         % Remove all deterministic components
         [dTS(:,iVar),trend(:,iVar),imf(:,iVar)] = preWhitening(dTS{iVar}(interval{iVar}));
