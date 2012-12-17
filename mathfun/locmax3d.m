@@ -9,7 +9,7 @@ ip.CaseSensitive = false;
 ip.addRequired('img', @isnumeric);
 ip.addRequired('wdims', @isnumeric);
 ip.addParamValue('ClearBorder', true, @islogical);
-ip.parse(data, varargin{:});
+ip.parse(img, wdims, varargin{:});
 
 if numel(wdims)==1
     wx = wdims;
