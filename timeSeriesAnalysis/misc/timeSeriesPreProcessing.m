@@ -38,6 +38,6 @@ end
 %Empty windows 
 empIdx  = find( cellfun(@isempty,outTS) );
 %Windows with #points < minLength
-minIdx  = find( cell2mat( cellfun(@(x) lt(numel(x),minLength),outTS,'UniformOutput',0) ) );
+minIdx  = find( cell2mat( cellfun(@(x) lt(numel(x),minLen),outTS,'UniformOutput',0) ) );
 %Windows to be excluded
 exclude = unique([empIdx(:);minIdx(:)]);
