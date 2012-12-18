@@ -2,14 +2,15 @@ function  [outTS,exclude] = timeSeriesPreProcessing(TS,varargin)
 %TS (nVar,nPoints)
 
 ip = inputParser;
-ip.addRequired('TS',@(x) isnumeric(x));
-ip.addOptional('alpha',.05,@isscalar);
-ip.addOptional('nSurr',100,@isscalar);
-ip.addOptional('minLength',30,@isscalar);
-ip.addOptional('plotYes',0,@isscalar);
-ip.addOptional('trendType',0,@isscalar);
-ip.addOptional('gapSize',0,@isscalar);
+ip.addRequired('TS',@(x) ismatrix(x));
+ip.addParamValue('alpha',.05,@isscalar);
+ip.addParamValue('nSurr',100,@isscalar);
+ip.addParamValue('minLength',30,@isscalar);
+ip.addParamValue('plotYes',0,@isscalar);
+ip.addParamValue('trendType',0,@isscalar);
+ip.addParamValue('gapSize',0,@isscalar);
 ip.addParamValue('outLevel',7,@isscalar);
+ip.addParamValue('missingObs',0,@(x) ge(x,0) & le(x,100));
 
 ip.parse(TS,varargin{:});
 alpha    = ip.Results.alpha;
@@ -19,21 +20,21 @@ plotYes  = ip.Results.plotYes;
 trendT   = ip.Results.trendType;
 gapSize  = ip.Results.gapSize;
 outLevel = ip.Results.outLevel;
+missObs  = ip.Results.missingObs;
 
+[nVar,nObs] = size(TS);
+outTS       = cell(1,nVar);
 
-nVar        = size(TS,1);
-outTS      = cell(1,nVar);
-
-if outLevel
+if outLevel > 0
     TS(detectOutliers(TS,outLevel)) = NaN;
 end
 
 for iVar = 1:nVar
-    
     %Closing nan gaps <= gapSize . 
     %IMPORTANT - Artificial autocorrelation is generated if the gapSize >= 2
     outTS{iVar} = gapInterpolation(TS(iVar,:),gapSize);
 end
 
+excludeFun = @(x) le(numel(isfinite(x)),minLen*(100 - missObs)/100);
 %Windows with #points < minLength
-exclude  = find( cell2mat( cellfun(@(x) lt(numel(isfinite(x)),minLen),outTS,'UniformOutput',0) ) );
+exclude = find( cell2mat( cellfun(@(x) excludeFun(x),outTS,'UniformOutput',0) ) );

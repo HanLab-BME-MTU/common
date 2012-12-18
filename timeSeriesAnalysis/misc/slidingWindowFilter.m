@@ -12,7 +12,8 @@ function [varargout] = slidingWindowFilter(TS,winSize,operation)
 %      operation - anonymous function with the filter kernel.  
 %       
 %       Ex: out = slidingWindowFilter(TS,10,@(x) mean(x,2))
-%                 mean sliding filter  
+%                 mean sliding filter
+%       IMPORTANT - operations are done over the rows. That is the reason for applying the mean on the dimension 2
 %Output:
 %
 %       out - filtered signal.Same size as TS
