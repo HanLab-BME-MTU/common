@@ -35,9 +35,5 @@ for iVar = 1:nVar
     outTS{iVar} = gapInterpolation(TS(iVar,:),gapSize);
 end
 
-%Empty windows 
-empIdx  = find( cellfun(@isempty,outTS) );
 %Windows with #points < minLength
-minIdx  = find( cell2mat( cellfun(@(x) lt(numel(x),minLen),outTS,'UniformOutput',0) ) );
-%Windows to be excluded
-exclude = unique([empIdx(:);minIdx(:)]);
+exclude  = find( cell2mat( cellfun(@(x) lt(numel(isfinite(x)),minLen),outTS,'UniformOutput',0) ) );
