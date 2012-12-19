@@ -1,7 +1,9 @@
 /* Class for 2-D convolutions with even- or odd-symmetric kernels
  * Supported border conditions: mirror, periodic, replicate of border pixels, or zeros
  *
- * (c) Francois Aguet, 03/12/2012 (last modified 03/15/2012)
+ * Copyright (C) 2012 Francois Aguet
+ * 
+ * Last modified: Mar 15, 2012
  */
 
 #ifndef CONVOLVER_H

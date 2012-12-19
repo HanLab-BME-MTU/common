@@ -1,6 +1,9 @@
-/* [response orientation nms filterBank] = steerableDetector(image, filterOrder, sigma);
+/* [response, orientation, nms, filterBank] = steerableDetector(image, filterOrder, sigma);
  *
- * (c) Francois Aguet, 07/12/2011 (last modified Mar 14, 2012). Adapted from SteerableJ package, 2008.
+ * Copyright (C) 2011-2012 Francois Aguet
+ * Adapted from the SteerableJ package, Copyright (C) 2005-2008 Francois Aguet, Biomedical Imaging Group, EPFL.
+ *
+ * Last modified: Nov 29, 2012
  *
  * Compilation:
  * Mac/Linux: mex -I/usr/local/include -I../../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a steerableDetector.cpp

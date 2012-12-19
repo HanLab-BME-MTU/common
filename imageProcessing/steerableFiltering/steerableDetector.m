@@ -19,7 +19,7 @@
 % For more information, see:
 % M. Jacob et al., IEEE Trans. Image Proc., 26(8) 1007-1019, 2004.
 
-% Francois Aguet, 07/12/2011 (last modified Jan 30, 2012).
-% Adapted from SteerableJ package (2008).
+% Copyright (C) 2011-2012 Francois Aguet
+% Adapted from the SteerableJ package, Copyright (C) 2005-2008 Francois Aguet, Biomedical Imaging Group, EPFL.
 
 function [res, theta, nms, filterBank] = steerableDetector(img, M, sigma) %#ok<STOUT,INUSD>
