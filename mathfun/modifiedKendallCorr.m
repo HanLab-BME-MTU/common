@@ -15,9 +15,9 @@ function  [tau,tauAmp] = modifiedKendallCorr(x,varargin)
 ip = inputParser;
 ip.addRequired('x',@(x) isvector(x));
 ip.addOptional('y',x,@(x) isvector(x));
-ip.addOptional('local',numel(x)-1,@isscalar);
-ip.addOptional('alpha',0.05,@isscalar);
-ip.addOptional('maxLag',0,@isscalar);
+ip.addParamValue('local',numel(x)-1,@isscalar);
+ip.addParamValue('alpha',0.05,@isscalar);
+ip.addParamValue('maxLag',0,@isscalar);
 
  
 
