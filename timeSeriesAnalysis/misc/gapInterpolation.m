@@ -46,7 +46,7 @@ if (~isempty(xi) && numel(xi) ~= nObs)
         interpF      = @(x,y) interp1(x,y(x),x(1):x(end));
         %Interpolated points
         interpPoint  = cellfun(@(x) interpF(x,workTS),fusedPoint,'Unif',0);
-       % workTS       = TS(:);
+        workTS       = TS(:);
         workTS(newX) = cell2mat(interpPoint)';
     end
     workTS([nanB{leftBorder*1};nanB{rightBorder*end}]) = NaN;

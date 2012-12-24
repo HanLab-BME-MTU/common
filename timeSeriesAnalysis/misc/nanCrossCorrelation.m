@@ -8,7 +8,7 @@ ip = inputParser;
 ip.addRequired('x',@isvector);
 ip.addRequired('y',@isvector);
 ip.addParamValue('type','Pearson', @ischar)
-ip.addParamValue('maxLag',10,@isscalar);
+ip.addParamValue('maxLag',1,@isscalar);
 ip.addParamValue('local',numel(x)-1,@isscalar);
 
 x = x(:);
@@ -44,7 +44,7 @@ switch type
         pVal  = pvalPearson('b',xCorr,nObs);
     case 'Kendall'
         
-        [xCorr(:,1),xCorr(:,2)] = modifiedKendallCorr(x,'local',local,'maxLag',maxLag);
+        [xCorr(:,1)] = modifiedKendallCorr(x,y,'local',local,'maxLag',maxLag);
         
     case 'Spearman'
         
