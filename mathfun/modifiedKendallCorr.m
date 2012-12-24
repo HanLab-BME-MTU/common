@@ -52,7 +52,7 @@ end
  
 
  
-normalization       = localN*(2*nObs - localN - 1)/2;
+normalization       = local*(2*nObs - local - 1)/2;
 contM               = getCorrMatrix(ones(size(x)),local,[]);
 [contX,ampM(:,:,1)] = getCorrMatrix(x,local,contM);
 [contY,ampM(:,:,2)] = getCorrMatrix(y,local,contM);
