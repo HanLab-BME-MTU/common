@@ -80,7 +80,7 @@ function [imBlobLocations, varargout ] = detectBlobsUsingLoG( im, meanBlobDiamet
             
         case 3
             
-            imLocalMax = locmax3d(imLoG, MaximaSuppressionSize);           
+            imLocalMax = locmax3d(imLoG, MaximaSuppressionSize, 'ClearBorder', false);           
 
             if flagDebugMode
                 imseriesmaskshow( imLoG, imdilate(imLocalMax, ones(3,3,3)) ); 

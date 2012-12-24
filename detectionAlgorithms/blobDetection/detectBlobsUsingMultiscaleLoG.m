@@ -17,6 +17,7 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoG( im, blo
 %
 % Author: Deepak Roy Chittajallu
 %
+%
 
     p = inputParser;    
     p.addRequired( 'im', @(x) (isnumeric(x) && ismember( ndims(x), [2,3] )) );
@@ -99,7 +100,8 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoG( im, blo
             
         case 3
             
-            imLocalMax = locmax3d(imMultiscaleLoGResponse, MaximaSuppressionSize);           
+            imLocalMax = locmax3d(imMultiscaleLoGResponse, MaximaSuppressionSize, ...
+                                  'ClearBorder', false);           
             
             if flagDebugMode
                 imseriesmaskshow( imMultiscaleLoGResponse, imdilate(imLocalMax, ones(3,3,3)) ); 

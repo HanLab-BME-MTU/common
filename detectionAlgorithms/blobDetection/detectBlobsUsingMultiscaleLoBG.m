@@ -105,7 +105,8 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoBG( im, bl
             
         case 3
             
-            imLocalMax = locmax3d(imMultiscaleLoBGResponse, MaximaSuppressionSize);           
+            imLocalMax = locmax3d( imMultiscaleLoBGResponse, MaximaSuppressionSize, ...
+                                   'ClearBorder', false);           
             
             if flagDebugMode
                 imseriesmaskshow( imMultiscaleLoBGResponse, imdilate(imLocalMax, ones(3,3,3)) ); 
