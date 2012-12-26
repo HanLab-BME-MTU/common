@@ -83,7 +83,9 @@ Frames_results_correspondence = Frames_results_correspondence(1:nFrame);
 for iChannel = selected_channels
     % Get frame number from the title of the image, this not neccesarily
     % the same as iFrame due to some shorting problem of the channel
-    filename_short_strs = uncommon_str_takeout(movieData.channels_(iChannel).fileNames_);
+    Channel_FilesNames = movieData.channels_(iChannel).getImageFileNames(1:movieData.nFrames_);
+    
+    filename_short_strs = uncommon_str_takeout(Channel_FilesNames);
     
     % Make output directory for the steerable filtered images
     ImageSteerableFilterChannelOutputDir = movieData.processes_{indexSteerabeleProcess}.outFilePaths_{iChannel};

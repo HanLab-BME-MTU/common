@@ -157,7 +157,9 @@ for iChannel = selected_channels
     
     % Get frame number from the title of the image, this not neccesarily
     % the same as iFrame due to some shorting problem of the channel
-    filename_short_strs = uncommon_str_takeout(movieData.channels_(iChannel).fileNames_);
+   Channel_FilesNames = movieData.channels_(iChannel).getImageFileNames(1:movieData.nFrames_);
+    
+    filename_short_strs = uncommon_str_takeout(Channel_FilesNames);
     
     % Make output directory for the steerable filtered images
     FilamentSegmentationChannelOutputDir =  movieData.processes_{indexFilamentSegmentationProcess}.outFilePaths_{iChannel};
@@ -206,7 +208,7 @@ for iChannel = selected_channels
     Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1]),[1 1]);
     Frames_results_correspondence = Frames_results_correspondence(1:nFrame);
     
-    indexFlattenProcess=0;
+%     indexFlattenProcess=1;
     for iFrame_index = 1 : length(Frames_to_Seg)
         iFrame = Frames_to_Seg(iFrame_index);
         
@@ -235,24 +237,24 @@ for iChannel = selected_channels
                 level0 = thresholdOtsu(MAX_st_res);
                 thresh_Segment = MAX_st_res > level0;
                 
-                [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,lowerbound,0);
-                [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,lowerbound,0);
-                current_seg = or(Intensity_Segment,SteerabelRes_Segment);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',Patch_Size,Pace_Size,lowerbound,0);
+                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',Patch_Size,Pace_Size,lowerbound/1.5,0);
+                current_seg = and(Intensity_Segment,SteerabelRes_Segment);
                 
             case 'st_only'
-                [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,lowerbound,0);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',Patch_Size,Pace_Size,lowerbound,0);
                 current_seg = SteerabelRes_Segment;
                 Intensity_Segment = current_seg;
                 
             case 'int_only'
-                [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,lowerbound,0);
+                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',Patch_Size,Pace_Size,lowerbound,0);
                 
                 current_seg = Intensity_Segment;
                 SteerabelRes_Segment = current_seg;
             otherwise
                 warning('Use the default of union');
-                [level1, SteerabelRes_Segment ] = thresholdOtsu_local(MAX_st_res,Patch_Size,Pace_Size,lowerbound,0);
-                [level2, Intensity_Segment ] = thresholdOtsu_local(currentImg,Patch_Size,Pace_Size,lowerbound,0);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',Patch_Size,Pace_Size,lowerbound,0);
+                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',Patch_Size,Pace_Size,lowerbound,0);
                 % The segmentation is set as the union of two segmentation.
                 current_seg = or(Intensity_Segment,SteerabelRes_Segment);
         end
@@ -302,31 +304,55 @@ for iChannel = selected_channels
         end
         
         
-        %         %% Deleting the small isolated dots
-        %
-        %         labelMask = bwlabel(current_seg);
-        %
-        %         ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength');
-        %
-        %         obAreas = [ob_prop.Area];
-        %         obLongaxis = [ob_prop.MajorAxisLength];
-        %         obShortaxis = [ob_prop.MinorAxisLength];
-        %         obEccentricity = [ob_prop.Eccentricity];
-        %         ratio  = obShortaxis./obLongaxis;
-        %         % for now the parameters are set here, without adaptiveness
-        %         for i_area = 1 : length(obAreas)
-        %             if obAreas(i_area) < 200
-        %                 angle_area{i_area} = orienation_map_filtered(find(labelMask==i_area));
-        %                 [h_area, bin] = hist(angle_area{i_area},-pi/2:5/180*pi:pi/2);
-        %                 ind_t = find(h_area==max(h_area));
-        %                 temp = mod((angle_area{i_area} - bin(ind_t(1)) + pi/2), pi) - pi/2;
-        %                 if std(temp)>0.75 && max(h_area)<0.2*length(angle_area{i_area}) && ratio(i_area) >0.5 && obLongaxis(i_area)<20
-        %                     labelMask(find(labelMask==i_area))=0;
-        %                 end
-        %             end
-        %         end
-        %
-        %         current_seg = labelMask > 0;
+                %% Deleting the small isolated dots
+        
+                labelMask = bwlabel(current_seg);
+        
+                ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength');
+        
+                obAreas = [ob_prop.Area];
+                obLongaxis = [ob_prop.MajorAxisLength];
+                obShortaxis = [ob_prop.MinorAxisLength];
+                obEccentricity = [ob_prop.Eccentricity];
+                ratio  = obShortaxis./obLongaxis;
+                % for now the parameters are set here, without adaptiveness
+                for i_area = 1 : length(obAreas)
+                    if obAreas(i_area) < 100
+                        angle_area{i_area} = orienation_map_filtered(find(labelMask==i_area));
+                        [h_area, bin] = hist(angle_area{i_area},-pi/2:5/180*pi:pi/2);
+                        ind_t = find(h_area==max(h_area));
+                        temp = mod((angle_area{i_area} - bin(ind_t(1)) + pi/2), pi) - pi/2;
+                        if std(temp)>0.75 && max(h_area)<0.2*length(angle_area{i_area}) && ratio(i_area) >0.5 && obLongaxis(i_area)<20
+                            labelMask(find(labelMask==i_area))=0;
+                        end
+                    end
+                end
+        
+                current_seg = labelMask > 0;
+                
+                
+                       labelMask = bwlabel(current_seg);
+        
+        ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','Centroid');
+        
+        if length(ob_prop) > 1
+            obAreas = [ob_prop.Area];
+            obLongaxis = [ob_prop.MajorAxisLength];
+            obEccentricity = [ob_prop.Eccentricity];
+            obCentroid = [ob_prop.Centroid];
+            
+            for i_area = 1 : length(obAreas)
+                centroid_x = round(obCentroid(2*i_area-1));
+                centroid_y = round(obCentroid(2*i_area));
+                
+                    if obAreas(i_area) <20 || obLongaxis(i_area) <15
+                        labelMask(labelMask==i_area) = 0;
+                    end
+               
+            end
+        end
+        
+        current_seg = labelMask > 0;
         
         
         %
@@ -450,5 +476,7 @@ end
 if(VIF_Outgrowth_Flag==1)
     VIF_outgrowth_measurement(movieData);
 end
+
+
 
 
