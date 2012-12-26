@@ -14,7 +14,7 @@ ip.addParamValue('local',numel(x)-1,@isscalar);
 x = x(:);
 y = y(:);
 
-lags = [-maxLag,maxLag];
+lags = [-maxLag:maxLag];
 nObs = length(x);
 xIn  = testSign(x);
 yIn  = testSign(y);

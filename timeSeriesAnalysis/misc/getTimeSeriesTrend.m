@@ -43,7 +43,7 @@ for iVar = 1:nVar
     
     if ismember(trendT,0)
         
-        % Remove sample means or linear trend
+        % Remove sample mean 
         trend(:,iVar) = nanmean(TS(:,iVar));
         dTS(:,iVar)   = TS(:,iVar) - trend(:,iVar);
         
