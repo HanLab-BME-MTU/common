@@ -1,4 +1,4 @@
-function [xCorr,bounds,pVal] = nanCrossCorrelation(x,y,type,maxLag,local)
+function [xCorr,bounds,lags,pVal] = nanCrossCorrelation(x,y,type,maxLag,local)
 %Inputs are column vectors
 %Under Construction
 %
@@ -14,6 +14,7 @@ ip.addParamValue('local',numel(x)-1,@isscalar);
 x = x(:);
 y = y(:);
 
+lags = [-maxLag,maxLag];
 nObs = length(x);
 xIn  = testSign(x);
 yIn  = testSign(y);
