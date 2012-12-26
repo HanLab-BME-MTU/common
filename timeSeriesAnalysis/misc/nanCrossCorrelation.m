@@ -1,4 +1,4 @@
-function [xCorr,bounds,lags,pVal] = nanCrossCorrelation(x,y,type,maxLag,local)
+function [xCorr,bounds,lags,pVal] = nanCrossCorrelation(x,y,varargin)
 %Inputs are column vectors
 %Under Construction
 %
@@ -7,9 +7,14 @@ function [xCorr,bounds,lags,pVal] = nanCrossCorrelation(x,y,type,maxLag,local)
 ip = inputParser;
 ip.addRequired('x',@isvector);
 ip.addRequired('y',@isvector);
-ip.addParamValue('type','Pearson', @ischar)
-ip.addParamValue('maxLag',1,@isscalar);
+ip.addParamValue('corrType','Pearson', @ischar)
+ip.addParamValue('maxLag',0,@isscalar);
 ip.addParamValue('local',numel(x)-1,@isscalar);
+
+ip.parse(x,y,varargin{:});
+local    = ip.Results.local;
+maxLag   = ip.Results.maxLag;
+corrT    = ip.Results.corrType;
 
 x = x(:);
 y = y(:);
@@ -24,7 +29,7 @@ bounds = [numSTD;-numSTD]/sqrt(nObs);
 
 
 pVal = [];
-switch type
+switch corrT
     
     case 'Pearson'
         %NaN have no influence
