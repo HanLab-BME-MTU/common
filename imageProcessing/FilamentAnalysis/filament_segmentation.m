@@ -53,11 +53,15 @@ end
 funParams=movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
 
 selected_channels = funParams.ChannelIndex;
-Pace_Size = funParams.Pace_Size;
-Patch_Size = funParams.Patch_Size;
+StPace_Size = funParams.StPace_Size;
+StPatch_Size = funParams.StPatch_Size;
+Stlowerbound =  funParams.st_lowerbound_localthresholding;
+IntPace_Size = funParams.IntPace_Size;
+IntPatch_Size = funParams.IntPatch_Size;
+Intlowerbound =  funParams.int_lowerbound_localthresholding;
+
 Combine_Way = funParams.Combine_Way;
 Cell_Mask_ind = funParams.Cell_Mask_ind;
-lowerbound =  funParams.lowerbound_localthresholding;
 VIF_Outgrowth_Flag = funParams.VIF_Outgrowth_Flag;
 Sub_Sample_Num  = funParams.Sub_Sample_Num;
 
@@ -237,24 +241,24 @@ for iChannel = selected_channels
                 level0 = thresholdOtsu(MAX_st_res);
                 thresh_Segment = MAX_st_res > level0;
                 
-                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',Patch_Size,Pace_Size,lowerbound,0);
-                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',Patch_Size,Pace_Size,lowerbound/1.5,0);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0);
+                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
                 current_seg = and(Intensity_Segment,SteerabelRes_Segment);
                 
             case 'st_only'
-                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',Patch_Size,Pace_Size,lowerbound,0);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0);
                 current_seg = SteerabelRes_Segment;
                 Intensity_Segment = current_seg;
                 
             case 'int_only'
-                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',Patch_Size,Pace_Size,lowerbound,0);
+                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
                 
                 current_seg = Intensity_Segment;
                 SteerabelRes_Segment = current_seg;
             otherwise
                 warning('Use the default of union');
-                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',Patch_Size,Pace_Size,lowerbound,0);
-                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',Patch_Size,Pace_Size,lowerbound,0);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0);
+                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
                 % The segmentation is set as the union of two segmentation.
                 current_seg = or(Intensity_Segment,SteerabelRes_Segment);
         end

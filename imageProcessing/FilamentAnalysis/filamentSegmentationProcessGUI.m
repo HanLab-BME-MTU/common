@@ -22,7 +22,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 07-Sep-2012 10:08:46
+% Last Modified by GUIDE v2.5 28-Dec-2012 14:57:54
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -83,11 +83,15 @@ end
 set(handles.listbox_selectedChannels,'String',channelString,...
     'UserData',channelIndex);
 
-set(handles.edit_PaceSize,'String',funParams.Pace_Size);
-set(handles.edit_PatchSize,'String',funParams.Patch_Size);
 set(handles.edit_subsample_number,'String',funParams.Sub_Sample_Num);
 
-set(handles.edit_lowerbound_localthresholding,'String',funParams.lowerbound_localthresholding);
+set(handles.edit_StPaceSize,'String',funParams.StPace_Size);
+set(handles.edit_StPatchSize,'String',funParams.StPatch_Size);
+set(handles.edit_st_lowerbound_localthresholding,'String',funParams.st_lowerbound_localthresholding);
+
+set(handles.edit_IntPaceSize,'String',funParams.IntPace_Size);
+set(handles.edit_IntPatchSize,'String',funParams.IntPatch_Size);
+set(handles.edit_int_lowerbound_localthresholding,'String',funParams.int_lowerbound_localthresholding);
 
 set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind);
 
@@ -95,14 +99,37 @@ set(handles.checkbox_outgrowth,'value',funParams.VIF_Outgrowth_Flag);
 
 if (strcmp(funParams.Combine_Way,'st_only'))
     set(handles.popupmenu_segmentationbase, 'Value',1);
+    
+    set(handles.edit_StPaceSize,'Enable','on');
+    set(handles.edit_StPatchSize,'Enable','on');
+    set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
+    set(handles.edit_IntPaceSize,'Enable','off');
+    set(handles.edit_IntPatchSize,'Enable','off');
+    set(handles.edit_int_lowerbound_localthresholding,'Enable','off');
+    
 else
     if (strcmp(funParams.Combine_Way,'int_only'))
         set(handles.popupmenu_segmentationbase, 'Value',2);
+        
+        set(handles.edit_StPaceSize,'Enable','off');
+        set(handles.edit_StPatchSize,'Enable','off');
+        set(handles.edit_st_lowerbound_localthresholding,'Enable','off');
+        set(handles.edit_IntPaceSize,'Enable','on');
+        set(handles.edit_IntPatchSize,'Enable','on');
+        set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
+        
     else
         set(handles.popupmenu_segmentationbase, 'Value',3);
+        set(handles.edit_StPaceSize,'Enable','on');
+        set(handles.edit_StPatchSize,'Enable','on');
+        set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
+        set(handles.edit_IntPaceSize,'Enable','on');
+        set(handles.edit_IntPatchSize,'Enable','on');
+        set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
+        
     end
 end
-    
+
 % Update user data and GUI data
 handles.output = hObject;
 set(hObject, 'UserData', userData);
@@ -142,30 +169,57 @@ Combine_Way_tag = {'st_only','int_only','int_st_both'};
 Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
 funParams.Combine_Way=Combine_Way_tag{Combine_Way_ind};
 
-Pace_Size = str2double(get(handles.edit_PaceSize, 'String'));
-if isnan(Pace_Size) || Pace_Size < 0
+StPace_Size = str2double(get(handles.edit_StPaceSize, 'String'));
+if isnan(StPace_Size) || StPace_Size < 0
     errordlg(['Please provide a valid input for '''...
         get(handles.text_PaceSize,'String') '''.'],'Setting Error','modal');
     return;
 end
-funParams.Pace_Size=Pace_Size;
+funParams.StPace_Size=StPace_Size;
 
-Patch_Size = str2double(get(handles.edit_PatchSize, 'String'));
-if isnan(Patch_Size) || Patch_Size < 0
+StPatch_Size = str2double(get(handles.edit_StPatchSize, 'String'));
+if isnan(StPatch_Size) || StPatch_Size < 0
     errordlg(['Please provide a valid input for '''...
         get(handles.text_Patch_Size,'String') '''.'],'Setting Error','modal');
     return;
 end
-funParams.Patch_Size=Patch_Size;
+funParams.StPatch_Size=StPatch_Size;
 
 
-lowerbound_localthresholding = str2double(get(handles.edit_lowerbound_localthresholding, 'String'));
-if isnan(lowerbound_localthresholding) || lowerbound_localthresholding < 0
+st_lowerbound_localthresholding = str2double(get(handles.edit_st_lowerbound_localthresholding, 'String'));
+if isnan(st_lowerbound_localthresholding) || st_lowerbound_localthresholding < 0
     errordlg(['Please provide a valid input for '''...
         get(handles.text_lowerbound_localthresholding,'String') '''.'],'Setting Error','modal');
     return;
 end
-funParams.lowerbound_localthresholding=lowerbound_localthresholding;
+funParams.st_lowerbound_localthresholding=st_lowerbound_localthresholding;
+
+
+IntPace_Size = str2double(get(handles.edit_IntPaceSize, 'String'));
+if isnan(IntPace_Size) || IntPace_Size < 0
+    errordlg(['Please provide a valid input for '''...
+        get(handles.text_PaceSize,'String') '''.'],'Setting Error','modal');
+    return;
+end
+funParams.IntPace_Size=IntPace_Size;
+
+IntPatch_Size = str2double(get(handles.edit_IntPatchSize, 'String'));
+if isnan(IntPatch_Size) || IntPatch_Size < 0
+    errordlg(['Please provide a valid input for '''...
+        get(handles.text_Patch_Size,'String') '''.'],'Setting Error','modal');
+    return;
+end
+funParams.IntPatch_Size=IntPatch_Size;
+
+
+int_lowerbound_localthresholding = str2double(get(handles.edit_int_lowerbound_localthresholding, 'String'));
+if isnan(int_lowerbound_localthresholding) || int_lowerbound_localthresholding < 0
+    errordlg(['Please provide a valid input for '''...
+        get(handles.text_lowerbound_localthresholding,'String') '''.'],'Setting Error','modal');
+    return;
+end
+funParams.int_lowerbound_localthresholding=int_lowerbound_localthresholding;
+
 
 Cell_Mask_ind = get(handles.popupmenu_cell_mask, 'Value');
 funParams.Cell_Mask_ind = Cell_Mask_ind;
@@ -305,18 +359,18 @@ if strcmp(eventdata.Key, 'return')
     pushbutton_done_Callback(handles.pushbutton_done, [], handles);
 end
 
-function edit_PatchSize_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_PatchSize (see GCBO)
+function edit_StPatchSize_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_StPatchSize (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit_PatchSize as text
-%        str2double(get(hObject,'String')) returns contents of edit_PatchSize as a double
+% Hints: get(hObject,'String') returns contents of edit_StPatchSize as text
+%        str2double(get(hObject,'String')) returns contents of edit_StPatchSize as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit_PatchSize_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_PatchSize (see GCBO)
+function edit_StPatchSize_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_StPatchSize (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -347,18 +401,18 @@ end
 
 
 
-function edit_lowerbound_localthresholding_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_lowerbound_localthresholding (see GCBO)
+function edit_st_lowerbound_localthresholding_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_st_lowerbound_localthresholding (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit_lowerbound_localthresholding as text
-%        str2double(get(hObject,'String')) returns contents of edit_lowerbound_localthresholding as a double
+% Hints: get(hObject,'String') returns contents of edit_st_lowerbound_localthresholding as text
+%        str2double(get(hObject,'String')) returns contents of edit_st_lowerbound_localthresholding as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit_lowerbound_localthresholding_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_lowerbound_localthresholding (see GCBO)
+function edit_st_lowerbound_localthresholding_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_st_lowerbound_localthresholding (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -377,6 +431,41 @@ function popupmenu_segmentationbase_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_segmentationbase contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_segmentationbase
+
+
+% The following code is for set the parameter set editing boxes, that corresponds to combine way 
+% not choosen as disabled from editing
+
+Combine_Way_tag = {'st_only','int_only','int_st_both'};
+Combine_Way_ind = get(hObject, 'Value');
+Combine_Way=Combine_Way_tag{Combine_Way_ind};
+
+if (strcmp(Combine_Way,'st_only'))
+    set(handles.edit_StPaceSize,'Enable','on');
+    set(handles.edit_StPatchSize,'Enable','on');
+    set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
+    set(handles.edit_IntPaceSize,'Enable','off');
+    set(handles.edit_IntPatchSize,'Enable','off');
+    set(handles.edit_int_lowerbound_localthresholding,'Enable','off');
+    
+else
+    if (strcmp(Combine_Way,'int_only'))
+        set(handles.edit_StPaceSize,'Enable','off');
+        set(handles.edit_StPatchSize,'Enable','off');
+        set(handles.edit_st_lowerbound_localthresholding,'Enable','off');
+        set(handles.edit_IntPaceSize,'Enable','on');
+        set(handles.edit_IntPatchSize,'Enable','on');
+        set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
+    else
+        set(handles.edit_StPaceSize,'Enable','on');
+        set(handles.edit_StPatchSize,'Enable','on');
+        set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
+        set(handles.edit_IntPaceSize,'Enable','on');
+        set(handles.edit_IntPatchSize,'Enable','on');
+        set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
+    end
+end
+
 
 
 % --- Executes during object creation, after setting all properties.
@@ -442,6 +531,75 @@ function edit_subsample_number_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function edit_subsample_number_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit_subsample_number (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_IntPaceSize_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_IntPaceSize (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_IntPaceSize as text
+%        str2double(get(hObject,'String')) returns contents of edit_IntPaceSize as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_IntPaceSize_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_IntPaceSize (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_IntPatchSize_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_IntPatchSize (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_IntPatchSize as text
+%        str2double(get(hObject,'String')) returns contents of edit_IntPatchSize as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_IntPatchSize_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_IntPatchSize (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_int_lowerbound_localthresholding_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_int_lowerbound_localthresholding (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_int_lowerbound_localthresholding as text
+%        str2double(get(hObject,'String')) returns contents of edit_int_lowerbound_localthresholding as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_int_lowerbound_localthresholding_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_int_lowerbound_localthresholding (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
