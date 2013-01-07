@@ -33,7 +33,7 @@
 
 % Francois Aguet, March 28 2011 (last modified: August 30 2011)
 
-function pStruct = fitGaussians2D(img, x, y, A, sigma, c, mode, varargin)
+function pStruct = fitGaussians2D(img, x, y, A, sigma, c, varargin)
 
 % Parse inputs
 ip = inputParser;
@@ -46,8 +46,9 @@ ip.addRequired('sigma');
 ip.addRequired('c');
 ip.addOptional('mode', 'xyAc', @ischar);
 ip.addParamValue('Alpha', 0.05, @isscalar);
+ip.addParamValue('AlphaT', 0.05, @isscalar);
 ip.addParamValue('Mask', [], @islogical);
-ip.parse(img, x, y, A, sigma, c, mode, varargin{:});
+ip.parse(img, x, y, A, sigma, c, varargin{:});
 
 np = length(x);
 sigma = ip.Results.sigma;
@@ -55,7 +56,6 @@ if numel(sigma)==1
     sigma = sigma*ones(1,np);
 end
 mode = ip.Results.mode;
-alpha = ip.Results.Alpha;
 if ~isempty(ip.Results.Mask)
     labels = bwlabel(ip.Results.Mask);
 else
@@ -71,7 +71,7 @@ xi = round(x);
 yi = round(y);
 [ny,nx] = size(img);
 
-kLevel = norminv(1-alpha/2.0, 0, 1); % ~2 std above background
+kLevel = norminv(1-ip.Results.Alpha/2.0, 0, 1); % ~2 std above background
 
 iRange = [squeeze(min(min(img))) squeeze(max(max(img)))];
 
@@ -99,6 +99,7 @@ pStruct.SE_sigma_r = NaN(1,np);
 pStruct.RSS = NaN(1,np);
 
 pStruct.pval_Ar = NaN(1,np);
+pStruct.mask_Ar = zeros(1,np);
 
 pStruct.hval_AD = false(1,np);
 pStruct.hval_Ar = false(1,np);
@@ -204,7 +205,7 @@ for p = 1:np
             T = (A_est - res.std*kLevel) ./ scomb;            
             % 1-sided t-test: A_est must be greater than k*sigma_r
             pStruct.pval_Ar(p) = tcdf(-T, df2);
-            pStruct.hval_Ar(p) = pStruct.pval_Ar(p) < alpha;
+            pStruct.hval_Ar(p) = pStruct.pval_Ar(p) < ip.Results.AlphaT;
             pStruct.mask_Ar(p) = sum(A_est*g>res.std*kLevel);
         end
     end
