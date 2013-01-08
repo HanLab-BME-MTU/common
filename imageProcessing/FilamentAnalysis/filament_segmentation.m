@@ -467,11 +467,41 @@ for iChannel = selected_channels
             end
         end
         
+        RGB_seg_orient_heat_map_nms=[];
+        
+        if(strcmp(Combine_Way,'st_nms_two'))
+            RGB_seg_orient_heat_map_nms = RGB_seg_orient_heat_map*0;
+                        
+            enhanced_im_r = currentImg;
+            enhanced_im_g = currentImg;
+            enhanced_im_b = currentImg;
+            
+            enhanced_im_r(find(NMS_segment>0))=255*R_seg_orient_heat_map(find(NMS_segment>0));
+            enhanced_im_g(find(NMS_segment>0))=255*G_seg_orient_heat_map(find(NMS_segment>0));
+            enhanced_im_b(find(NMS_segment>0))=255*B_seg_orient_heat_map(find(NMS_segment>0));
+            
+            RGB_seg_orient_heat_map_nms(:,:,1 ) = enhanced_im_r;
+            RGB_seg_orient_heat_map_nms(:,:,2 ) = enhanced_im_g;
+            RGB_seg_orient_heat_map_nms(:,:,3 ) = enhanced_im_b;
+            
+            
+            for sub_i = 1 : Sub_Sample_Num
+                if iFrame + sub_i-1 <= nFrame
+                    imwrite(RGB_seg_orient_heat_map_nms, ...
+                        [HeatEnhOutputDir,'/nms_segment_heat_',...
+                        filename_short_strs{iFrame+ sub_i-1},'.tif']);
+                end
+            end
+            
+            
+        end
+        
+        
         %% Save segmentation results
         save([DataOutputDir,'/steerable_vote_', ...
             filename_short_strs{iFrame},'.mat'],...
-            'currentImg','orienation_map_filtered','OrientationVoted','orienation_map', ...
-            'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment','NMS_Segment');
+            'currentImg','orienation_map_filtered','OrientationVoted','orienation_map','RGB_seg_orient_heat_map_nms', ...
+            'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment','NMS_Segment','RGB_seg_orient_heat_map');
         
         if( save_tif_flag==1)
 %             current_seg = (imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']))>0;
