@@ -129,6 +129,6 @@ for iChannel = selected_channels
         end
         
         save([ImageSteerableFilterChannelOutputDir,'/steerable_',filename_short_strs{iFrame},'.mat'],...
-            'orienation_map', 'MAX_st_res','nms');
+            'orienation_map', 'MAX_st_res','nms','scaleMap');
     end
 end

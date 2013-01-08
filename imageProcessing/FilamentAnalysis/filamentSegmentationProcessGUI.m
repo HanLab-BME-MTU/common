@@ -97,7 +97,7 @@ set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind);
 
 set(handles.checkbox_outgrowth,'value',funParams.VIF_Outgrowth_Flag);
 
-if (strcmp(funParams.Combine_Way,'st_only'))
+if (strcmp(funParams.Combine_Way,'st_only')||strcmp(funParams.Combine_Way,'st_nms_two')||strcmp(funParams.Combine_Way,'st_nms_only'))
     set(handles.popupmenu_segmentationbase, 'Value',1);
     
     set(handles.edit_StPaceSize,'Enable','on');
@@ -165,7 +165,7 @@ end
 channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
 
-Combine_Way_tag = {'st_only','int_only','int_st_both'};
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only'};
 Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
 funParams.Combine_Way=Combine_Way_tag{Combine_Way_ind};
 
@@ -436,11 +436,11 @@ function popupmenu_segmentationbase_Callback(hObject, eventdata, handles)
 % The following code is for set the parameter set editing boxes, that corresponds to combine way 
 % not choosen as disabled from editing
 
-Combine_Way_tag = {'st_only','int_only','int_st_both'};
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only'};
 Combine_Way_ind = get(hObject, 'Value');
 Combine_Way=Combine_Way_tag{Combine_Way_ind};
 
-if (strcmp(Combine_Way,'st_only'))
+if (strcmp(Combine_Way,'st_only')||strcmp(Combine_Way,'st_nms_two')||strcmp(Combine_Way,'st_nms_only'))
     set(handles.edit_StPaceSize,'Enable','on');
     set(handles.edit_StPatchSize,'Enable','on');
     set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
@@ -480,7 +480,7 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-set(hObject,'String',{'Steerable Filter Results','Intensity','Combine Both'});
+set(hObject,'String',{'Steerable Filter Results','Intensity','Combine Both St and Int','St NMS two','St nms only'});
 set(hObject,'Value',1);
  
 

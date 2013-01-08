@@ -236,6 +236,14 @@ for iChannel = selected_channels
         load([SteerableChannelOutputDir, filesep, 'steerable_', ...
             filename_short_strs{iFrame},'.mat']);
         
+        NMS_Segment=[];
+        Intensity_Segment=[];
+        SteerabelRes_Segment=[];
+        
+        Min_area = 20;
+        Min_longaxis = 6;
+        
+        
         switch Combine_Way
             case 'int_st_both'
                 level0 = thresholdOtsu(MAX_st_res);
@@ -249,6 +257,23 @@ for iChannel = selected_channels
                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0);
                 current_seg = SteerabelRes_Segment;
                 Intensity_Segment = current_seg;
+                SteerabelRes_Segment = current_seg;
+                
+            case 'st_nms_two'
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0);
+                [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound,0);
+                current_seg = imdilateWithScale(NMS_Segment,scaleMap,BaseSteerableFilterSigma.*(2.^((1:Levelsofsteerablefilters)-1)))...
+                    .*SteerabelRes_Segment;
+                       
+                Intensity_Segment = current_seg;
+                SteerabelRes_Segment = current_seg;
+        
+            case 'st_nms_only'
+                [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound,0);
+                current_seg = NMS_Segment;
+                Intensity_Segment = current_seg;
+                SteerabelRes_Segment = current_seg;
+                Min_area = 6;
                 
             case 'int_only'
                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
@@ -300,7 +325,7 @@ for iChannel = selected_channels
         % Voting of the orientation field for the non-steerable filter
         % segmented places.
         
-        OrientationVoted = OrientationVote(orienation_map,SteerabelRes_Segment,3,25);
+        OrientationVoted = OrientationVote(orienation_map,SteerabelRes_Segment,3,45);
         
         intensity_addon = current_seg - SteerabelRes_Segment ==1;
         if (~isempty(max(max(intensity_addon))>0))
@@ -349,7 +374,7 @@ for iChannel = selected_channels
                 centroid_x = round(obCentroid(2*i_area-1));
                 centroid_y = round(obCentroid(2*i_area));
                 
-                    if obAreas(i_area) <20 || obLongaxis(i_area) <15
+                    if obAreas(i_area) <Min_area || obLongaxis(i_area) <Min_longaxis
                         labelMask(labelMask==i_area) = 0;
                     end
                
@@ -446,7 +471,7 @@ for iChannel = selected_channels
         save([DataOutputDir,'/steerable_vote_', ...
             filename_short_strs{iFrame},'.mat'],...
             'currentImg','orienation_map_filtered','OrientationVoted','orienation_map', ...
-            'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment');
+            'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment','NMS_Segment');
         
         if( save_tif_flag==1)
 %             current_seg = (imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']))>0;
