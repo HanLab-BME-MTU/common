@@ -97,8 +97,16 @@ set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind);
 
 set(handles.checkbox_outgrowth,'value',funParams.VIF_Outgrowth_Flag);
 
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only'};
+for Combine_Way_ind = 1 : 5
+    if(strcmp(funParams.Combine_Way, Combine_Way_tag{Combine_Way_ind}))
+        set(handles.popupmenu_segmentationbase,'Value',Combine_Way_ind);
+        break;
+    end
+end
+
+
 if (strcmp(funParams.Combine_Way,'st_only')||strcmp(funParams.Combine_Way,'st_nms_two')||strcmp(funParams.Combine_Way,'st_nms_only'))
-    set(handles.popupmenu_segmentationbase, 'Value',1);
     
     set(handles.edit_StPaceSize,'Enable','on');
     set(handles.edit_StPatchSize,'Enable','on');
@@ -109,7 +117,6 @@ if (strcmp(funParams.Combine_Way,'st_only')||strcmp(funParams.Combine_Way,'st_nm
     
 else
     if (strcmp(funParams.Combine_Way,'int_only'))
-        set(handles.popupmenu_segmentationbase, 'Value',2);
         
         set(handles.edit_StPaceSize,'Enable','off');
         set(handles.edit_StPatchSize,'Enable','off');
@@ -119,7 +126,6 @@ else
         set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
         
     else
-        set(handles.popupmenu_segmentationbase, 'Value',3);
         set(handles.edit_StPaceSize,'Enable','on');
         set(handles.edit_StPatchSize,'Enable','on');
         set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
@@ -481,7 +487,15 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 set(hObject,'String',{'Steerable Filter Results','Intensity','Combine Both St and Int','St NMS two','St nms only'});
+
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only'};
 set(hObject,'Value',1);
+% for Combine_Way_ind = 1 : 5
+%     if(strcmp(funParams.Combine_Way, Combine_Way_tag{Combine_Way_ind}))
+%         set(hObject,'Value',Combine_Way_ind);
+%         break;
+%     end
+% end
  
 
 % --- Executes on button press in checkbox_outgrowth.

@@ -260,8 +260,8 @@ for iChannel = selected_channels
                 SteerabelRes_Segment = current_seg;
                 
             case 'st_nms_two'
-                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0);
-                [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound,0);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound*0.7,0);
+                [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound*1.3,0);
                 current_seg = imdilateWithScale(NMS_Segment,scaleMap,BaseSteerableFilterSigma.*(2.^((1:Levelsofsteerablefilters)-1)))...
                     .*SteerabelRes_Segment;
                        
@@ -476,9 +476,9 @@ for iChannel = selected_channels
             enhanced_im_g = currentImg;
             enhanced_im_b = currentImg;
             
-            enhanced_im_r(find(NMS_segment>0))=255*R_seg_orient_heat_map(find(NMS_segment>0));
-            enhanced_im_g(find(NMS_segment>0))=255*G_seg_orient_heat_map(find(NMS_segment>0));
-            enhanced_im_b(find(NMS_segment>0))=255*B_seg_orient_heat_map(find(NMS_segment>0));
+            enhanced_im_r(find(NMS_Segment>0))=255*R_seg_orient_heat_map(find(NMS_Segment>0));
+            enhanced_im_g(find(NMS_Segment>0))=255*G_seg_orient_heat_map(find(NMS_Segment>0));
+            enhanced_im_b(find(NMS_Segment>0))=255*B_seg_orient_heat_map(find(NMS_Segment>0));
             
             RGB_seg_orient_heat_map_nms(:,:,1 ) = enhanced_im_r;
             RGB_seg_orient_heat_map_nms(:,:,2 ) = enhanced_im_g;
@@ -488,7 +488,7 @@ for iChannel = selected_channels
             for sub_i = 1 : Sub_Sample_Num
                 if iFrame + sub_i-1 <= nFrame
                     imwrite(RGB_seg_orient_heat_map_nms, ...
-                        [HeatEnhOutputDir,'/nms_segment_heat_',...
+                        [HeatEnhOutputDir,'/NMS_Segment_heat_',...
                         filename_short_strs{iFrame+ sub_i-1},'.tif']);
                 end
             end
