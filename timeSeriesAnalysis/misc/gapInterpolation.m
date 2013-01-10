@@ -12,8 +12,8 @@ function  [workTS,newX] = gapInterpolation(TS,nPoint)
 %       newX   - new x-axis vector 
 %
 % 
-% This function does not interpolate points at the borders
-%
+% This function does not interpolate points at the borders 
+% Just for new release
 % Marco Vilela, 2012
 
 nObs   = numel(TS);
