@@ -1,5 +1,5 @@
 function [H, pValue] = permTest(s1, s2, varargin)
-% PERMTEST performs the two-sample permutation test for means
+% PERMTEST performs the two-sample permutation test for means (default) or medians
 %
 % Inputs:
 %         s1, s2 : sample vectors
@@ -29,8 +29,10 @@ ip.addRequired('s2', @isnumeric);
 ip.addOptional('alpha', 0.05, @isscalar);
 ip.addOptional('tail', 'both', @(x) any(strcmpi(x, {'both', 'left', 'right'})));
 ip.addOptional('nrep', 1900, @isscalar);
+ip.addParamValue('CmpFunction', @mean, @(x) isa(x, 'function_handle'));
 ip.parse(s1, s2, varargin{:})
 nrep = ip.Results.nrep;
+fct = ip.Results.CmpFunction;
 
 s1 = s1(:);
 s2 = s2(:);
@@ -53,19 +55,19 @@ if nperms<=nrep % calculate all permutations
     P(pidx) = true;
     delta = zeros(nperms,1);
     for i = 1:nperms
-        delta(i) = mean(sAll(P(:,i))) - mean(sAll(~P(:,i)));
+        delta(i) = fct(sAll(P(:,i))) - fct(sAll(~P(:,i)));
     end
     ns = nperms;
 else % compute 'nrep' random permutations
     delta = zeros(nrep,1);
     for i = 1:nrep
         idx = randperm(N); % calculate random permutation of the samples
-        delta(i) = mean(sAll(idx(1:n1))) - mean(sAll(idx(n1+1:end)));
+        delta(i) = fct(sAll(idx(1:n1))) - fct(sAll(idx(n1+1:end)));
     end
     ns = nrep;
 end
 
-deltaRef = mean(s1)-mean(s2);
+deltaRef = fct(s1)-fct(s2);
 
 switch ip.Results.tail
     case 'both'
