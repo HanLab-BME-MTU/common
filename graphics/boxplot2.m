@@ -61,6 +61,7 @@ ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'non
 ip.addParamValue('X', [], @(x) numel(x)==nbin); % cell array of x-coordinates (groups only)
 ip.addParamValue('AdjustFigure', true, @islogical);
 ip.addParamValue('ErrorbarColor', []);
+ip.addParamValue('PlotDensity', false, @islogical);
 ip.parse(prm, varargin{:});
 
 faceColor = ip.Results.FaceColor;
@@ -119,7 +120,11 @@ else
     border = ip.Results.BorderWidth;
 end
 
-plotSEM = mod(size(prm{1},1),2)==0;
+if ~iscell(prm{1})
+    plotSEM = mod(size(prm{1},1),2)==0;
+else
+    plotSEM = false;
+end
 
 hold on;
 % handles
@@ -127,8 +132,13 @@ h = zeros(1,nd);
 for k = 1:nbin
     
     % concatenate values for group 'k'
-    M = cellfun(@(i) i(:,k), prm, 'UniformOutput', false);
-    M = [M{:}];
+    if iscell(prm{1})
+        M = cellfun(@(i) [prctile(i{k}, [50 25 75]) min(i{k}) max(i{k})], prm, 'UniformOutput', false);
+        M = vertcat(M{:})';
+    else
+        M = cellfun(@(i) i(:,k), prm, 'UniformOutput', false);
+        M = [M{:}];
+    end
     
     %xa{k} = (1:nb) + (k-1)*(nb + dg);
     
@@ -163,6 +173,13 @@ for k = 1:nbin
     
     for b = 1:nd
 
+        if ip.Results.PlotDensity
+            [f,xi] = ksdensity(prm{b}{k});
+            f = f/max(f)/2.5;
+            fill([xa{k}(b)+f xa{k}(b)-f(end:-1:1)], [xi xi(end:-1:1)], faceColor{b}(k,:),...
+                'EdgeColor', edgeColor{b}(k,:), 'HandleVisibility', 'off');
+        end
+        
         if plotWhiskers
             he = errorbar(xa{k}(b), p25(b), w1(b)-p25(b), 0, 'Color', errorbarColor{b}(k,:), 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
             setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
