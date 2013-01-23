@@ -115,7 +115,7 @@ else
 end
 
 if isempty(ip.Results.BorderWidth)
-    border = (bw+dg)/2;
+    border = 0.5+dg/2;
 else
     border = ip.Results.BorderWidth;
 end
