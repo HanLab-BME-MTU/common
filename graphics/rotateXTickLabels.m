@@ -14,6 +14,7 @@ ip.addRequired('ha', @ishandle);
 ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
 ip.addParamValue('AdjustFigure', true, @islogical);
+ip.addParamValue('YOffset', 0.02);
 ip.parse(ha, varargin{:});
 
 xa = get(ha, 'XTick');
@@ -40,7 +41,7 @@ shift = extent(4)/height*width/axPos(3)*axPos(4) * sin(ip.Results.Angle*pi/180)/
 delete(h);
 
 
-ht = arrayfun(@(k) text(xa(k)-shift, YLim(1)-0.02*height, xla{k},...
+ht = arrayfun(@(k) text(xa(k)-shift, YLim(1)-ip.Results.YOffset*height, xla{k},...
     'FontName', fontName, 'FontSize', fontSize,...
     'VerticalAlignment', 'top', 'HorizontalAlignment', 'right',...
     'Rotation', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter, 'Parent', ha),...
