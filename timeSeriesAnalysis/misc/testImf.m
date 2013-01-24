@@ -26,8 +26,8 @@ function [imfOut,noise] = testImf(imf,varargin)
 
 ip = inputParser;
 ip.addRequired('imf',@ismatrix);
-ip.addOptional('alpha',0.05,@isscalar);
-ip.addOptional('nSurr',100,@isscalar);
+ip.addParamValue('alpha',0.05,@isscalar);
+ip.addParamValue('nSurr',100,@isscalar);
 
 ip.parse(imf,varargin{:});
 alpha  = ip.Results.alpha;
