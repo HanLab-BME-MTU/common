@@ -5,7 +5,7 @@ function outTS = getTimeSeriesTrend(TS,varargin)
 %       outTS = getTimeSeriesTrend(TS,varargin)
 %
 %Input:
-%       TS - Time Series (#ofPoints,#ofVariables)
+%       TS - Time Series (#ofVariables,#ofPoints)
 %
 %       trendType:
 %                  0 - remove only the mean value
@@ -35,17 +35,18 @@ nSurr    = ip.Results.nSurr;
 plotYes  = ip.Results.plotYes;
 trendT   = ip.Results.trendType;
 
-[nObs,nVar] = size(TS);
-
+[nVar,nObs] = size(TS);
+trend       = TS;
+dTS         = TS;
 
 for iVar = 1:nVar
     
     if ismember(trendT,0)
         
         % Remove sample mean 
-        trend(:,iVar)    = repmat( nanmean(TS(:,iVar)),1,nObs );
-        deltaFit(:,iVar) = norminv((1-alpha/2),0,1)*repmat( nanstd(TS(:,iVar)),1,nObs )/sqrt(nObs);
-        dTS(:,iVar)      = TS(:,iVar) - trend(:,iVar);
+        trend(iVar,:)    = repmat( nanmean(TS(iVar,:)),nObs,1 );
+        deltaFit(iVar,:) = norminv((1-alpha/2),0,1)*repmat( nanstd(TS(iVar,:)),nObs,1 )/sqrt(nObs);
+        dTS(iVar,:)      = TS(iVar,:) - trend(iVar,:);
         
     elseif ismember(trendT,[1 2 3])
         
@@ -62,31 +63,31 @@ for iVar = 1:nVar
         end
         
         fitOptions = statset('Robust','on','MaxIter',500,'Display','off');
-        [bFit,resFit,~,covFit,mseFit] = nlinfit([1:nObs]',TS(:,iVar),fitFun,bInit,fitOptions);
+        [bFit,resFit,~,covFit,mseFit] = nlinfit([1:nObs],TS(iVar,:),fitFun,bInit,fitOptions);
         %Get confidence intervals of fit and fit values
-        [trend(:,iVar),deltaFit] = nlpredci(fitFun,1:nObs,bFit,resFit,'covar',covFit,'mse',mseFit);
-        dTS(:,iVar)              = TS(:,iVar) - trend(:,iVar);
+        [trend(iVar,:),deltaFit] = nlpredci(fitFun,1:nObs,bFit,resFit,'covar',covFit,'mse',mseFit);
+        dTS(iVar,:)              = TS(iVar,:) - trend(iVar,:);
 
-        deltaFit = deltaFit';
+               
     elseif trendT == 5
-        
+        workTS = gapInterpolation(TS(iVar,:),1);
         % Remove all deterministic components
-        [dTS(:,iVar),trend(:,iVar),imf(:,iVar)] = preWhitening(TS(:,iVar));
+        [dTS(iVar,:),trend(iVar,:)] = preWhitening(workTS);
         
     end
     
     if plotYes
         
         figure
-        plot(TS(:,iVar))
+        plot(TS(iVar,:))
         hold on
-        plot(trend(:,iVar),'r')
-        plot(trend(:,iVar)+deltaFit,'r--')
-        plot(trend(:,iVar)-deltaFit,'r--')
+        plot(trend(iVar,:),'r')
+        plot(trend(iVar,:)+deltaFit,'r--')
+        plot(trend(iVar,:)-deltaFit,'r--')
         
     end
     
-    outTS(iVar).trend     = trend(:,iVar);
-    outTS(iVar).detrendTS = dTS(:,iVar);
+    outTS(iVar).trend     = trend(iVar,:);
+    outTS(iVar).detrendTS = dTS(iVar,:);
     
 end

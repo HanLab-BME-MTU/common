@@ -13,7 +13,7 @@ ip.addParamValue('nSurr',100,@isscalar);
 ip.addParamValue('minLength',30,@isscalar);
 ip.addParamValue('trendType',-1,@isscalar);
 ip.addParamValue('gapSize',0,@isscalar);
-ip.addParamValue('outLevel',7,@isscalar);
+ip.addParamValue('outLevel',0,@isscalar);
 
 ip.parse(TS,varargin{:});
 alpha    = ip.Results.alpha;
@@ -30,26 +30,29 @@ outTS = TS;
 %% Removing outliers
 if outLevel > 0
     
-    outTS(detectOutliers(TS,outLevel)) = NaN;
+    for iVar = 1:nVar
+        outTS(iVar,detectOutliers(TS(iVar,:),outLevel)) = NaN;
+    end
     
 end
 
 %% Interpolating nan Gaps
+        %Closing nan gaps <= gapSize .
+        %IMPORTANT - Artificial autocorrelation is generated if the gapSize >= 2
+
 if gapSize > 0
     
     for iVar = 1:nVar
-        %Closing nan gaps <= gapSize .
-        %IMPORTANT - Artificial autocorrelation is generated if the gapSize >= 2
         outTS(iVar,:) = gapInterpolation(TS(iVar,:),gapSize);
     end
     
 end
 
 %% Removing trend
-if trendType > -1
+if trendT > -1
     
-    outTS = getTimeSeriesTrend(outTS,'trendType',trendT,'nSurr',nSurr,'alpha',alpha);
-        
+    auxTS = getTimeSeriesTrend(outTS,'trendType',trendT,'nSurr',nSurr,'alpha',alpha);
+    outTS = auxTS.detrendTS;    
 end
 
 %% Removing by minimum length

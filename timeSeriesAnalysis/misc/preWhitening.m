@@ -35,7 +35,7 @@ method     = ip.Results.method;
 removeMean = ip.Results.removeMean;
 
 %% Initialization
-[nObs,nVar] = size(TS);
+[nVar,nObs] = size(TS);
 max_order   = 8;
 trend       = [];
 out         = TS;
@@ -43,25 +43,26 @@ imf         = [];
 h           = inf(2,nVar);
 
 %%
-for i=1:nVar
+for iVar=1:nVar
     
-    h(1,i) = kpsstest(TS(:,i));%Ho is stationary - 0 
-    h(2,i) = vratiotest(TS(:,i),'alpha',0.01);%Ho is a random walk - 1
+    h(1,iVar) = kpsstest(TS(iVar,:));%Ho is stationary - 0 
+    h(2,iVar) = vratiotest(TS(iVar,:),'alpha',0.01);%Ho is a random walk - 1
     
-    if or(h(1,i),~h(2,i))
+    if or(h(1,iVar),~h(2,iVar))
         switch method
             case 'ar'
                 
-                ts       = iddata(TS(:,i),[],1);
+                ts       = iddata(TS(iVar,:),[],1);
                 model    = arxstruc(ts,ts,[1:max_order]');
                 bestM    = selstruc(model,'aic');
                 finalM   = ar(ts,bestM(1));
                 IR       = polydata(finalM);
-                out(:,i) = filter(IR,1,TS(:,i));
+                
+                out(iVar,:) = filter(IR,1,TS(iVar,:));
                 
             case 'imf'
                 %imf = empiricalModeDecomp( TS(:,i) )' ;
-                imf  = emd(TS(:,i));
+                imf  = emd(TS(iVar,:));
                 %Testing each IMF
                 for j = 1:size(imf,1) 
                     rW(j) = vratiotest( imf(j,:) );
@@ -72,11 +73,11 @@ for i=1:nVar
                 range =  find( ~rW | sS ) ;
                 if ~isempty(range)
                     for j=numel(range):-1:1
-                        trend = sum( imf( range(j:end), : ), 1 )';
-                        DTs   = TS(:,i) - trend;
+                        trend = sum( imf( range(j:end), : ), 1 );
+                        DTs   = TS(iVar,:) - trend;
                         h     = kpsstest(DTs);
                         if ~h
-                            out(:,i) = DTs;
+                            out(iVar,:) = DTs;
                             break;
                         end
                     end
@@ -84,8 +85,8 @@ for i=1:nVar
                 
                 if h
                     
-                    out(:,i) = preWhitening(TS(:,i),'method','ar');
-                    h        = kpsstest(out(:,i));
+                    out(iVar,:) = preWhitening(TS(iVar,:),'method','ar');
+                    h           = kpsstest(out(iVar,:));
                     
                 end
         end
@@ -93,5 +94,5 @@ for i=1:nVar
 end
 %%
 if removeMean
-    out = out - repmat(mean(out),nObs,1);
+    out = out - repmat(mean(out),1,nObs);
 end

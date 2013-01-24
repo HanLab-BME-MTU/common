@@ -1,35 +1,33 @@
-function  [workTS,newX] = gapInterpolation(TS,nPoint)
+function  [outTS,newX] = gapInterpolation(TS,nPoint)
 %This function interpolates NaN in a TS gap. It does not interpolate borders.
 %USAGE:
 %       workTS = gapInterpolation(TS,nPoint)
 %
 %Input:
-%       TS     - Time Series (Column Vector)
+%       TS     - Time Series (row Vector)
 %       nPoint - maximum size of the gaps to be interpolated
 %
 %Output:
-%       workTS - Time Series with closed gaps (column vector)
+%       workTS - Time Series with closed gaps (row vector)
 %       newX   - new x-axis vector 
 %
 % 
 % This function does not interpolate points at the borders 
-% Just for new release
 % Marco Vilela, 2012
 
 nObs   = numel(TS);
 xi     = find(isnan(TS));
-workTS = TS(:);
+outTS  = TS(:)';
+workTS = TS(:)';
 newX   = 1:nObs;
 
-if (~isempty(xi) && numel(xi) ~= nObs)
+if (~isempty(xi) && numel(xi) < nObs) 
     
     nanB         = findBlock(xi,1);
-    
     %If NaN blocks in the beginning or end of the TS, Delete it
-    leftBorder   = find(nanB{1}(1)==1);
+    leftBorder   = nanB{1}(1)==1;
     rightBorder  = find(nanB{end}(end)==nObs);
-    
-    workTS([nanB{leftBorder*1};nanB{rightBorder*end}]) = [];
+    workTS([nanB{leftBorder};nanB{rightBorder*end}]) = [];
     %Indexes for real points
     numIdx       = find(~isnan(workTS));
     %Blocks of real points
@@ -38,6 +36,7 @@ if (~isempty(xi) && numel(xi) ~= nObs)
     fusingB      = find(cell2mat(cellfun(@(x,y)  y(1) - x(end) <= nPoint+1,numB(1:end-1),numB(2:end),'Unif',0)));
     
     if ~isempty(fusingB)
+        
         fusedB       = findBlock(fusingB,1);
         %Fused blocks with gaps <= nPoint
         fusedPoint   = cellfun(@(x) cat(1,numB{[x;x(end)+1]}),fusedB,'Unif',0);
@@ -46,8 +45,9 @@ if (~isempty(xi) && numel(xi) ~= nObs)
         interpF      = @(x,y) interp1(x,y(x),x(1):x(end));
         %Interpolated points
         interpPoint  = cellfun(@(x) interpF(x,workTS),fusedPoint,'Unif',0);
-        workTS       = TS(:);
-        workTS(newX) = cell2mat(interpPoint)';
+        
+        outTS(newX) = cell2mat(interpPoint)';
+        
     end
-    workTS([nanB{leftBorder*1};nanB{rightBorder*end}]) = NaN;
+    
 end
