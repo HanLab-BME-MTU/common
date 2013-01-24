@@ -29,8 +29,8 @@ function [workTS,interval,trend,imf,excludeVar] = removeMeanTrendNaN(TS,varargin
 % Input check
 ip=inputParser;
 ip.addRequired('TS',@isnumeric);
-ip.addOptional('trendType',1,@(x)isscalar(x) && ismember(x,-1:2));
-ip.addOptional('minLength',30,@(x)isscalar(x));
+ip.addParamValue('trendType',1,@(x)isscalar(x) && ismember(x,-1:2));
+ip.addParamValue('minLength',30,@(x)isscalar(x));
 
 ip.parse(TS,varargin{:})
 trendType = ip.Results.trendType;

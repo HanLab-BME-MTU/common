@@ -36,7 +36,7 @@ nSurr  = ip.Results.nSurr;
 [nImf,nObs] = size(imf);
 
 
-%crude estimative of the noise variance using the first IMF (()See reference)
+%crude estimative of the noise variance using the first IMF (See reference)
 surrP  = nObs;
 wnStd  = std(imf(1,:));
 Wn     = wnStd*randn(surrP,nSurr);%WN generated for the test
