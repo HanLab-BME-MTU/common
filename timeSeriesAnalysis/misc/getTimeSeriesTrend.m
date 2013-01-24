@@ -32,7 +32,6 @@ ip.addOptional('trendType',0,@isscalar);
 ip.parse(TS,varargin{:});
 alpha    = ip.Results.alpha;
 nSurr    = ip.Results.nSurr;
-minLen   = ip.Results.minLength;
 plotYes  = ip.Results.plotYes;
 trendT   = ip.Results.trendType;
 
@@ -44,8 +43,9 @@ for iVar = 1:nVar
     if ismember(trendT,0)
         
         % Remove sample mean 
-        trend(:,iVar) = nanmean(TS(:,iVar));
-        dTS(:,iVar)   = TS(:,iVar) - trend(:,iVar);
+        trend(:,iVar)    = repmat( nanmean(TS(:,iVar)),1,nObs );
+        deltaFit(:,iVar) = norminv((1-alpha/2),0,1)*repmat( nanstd(TS(:,iVar)),1,nObs )/sqrt(nObs);
+        dTS(:,iVar)      = TS(:,iVar) - trend(:,iVar);
         
     elseif ismember(trendT,[1 2 3])
         
@@ -62,16 +62,16 @@ for iVar = 1:nVar
         end
         
         fitOptions = statset('Robust','on','MaxIter',500,'Display','off');
-        [bFit,resFit,jacFit,covFit,mseFit] = nlinfit([1:nObs]',TS(:,iVar),fitFun,bInit,fitOptions);
+        [bFit,resFit,~,covFit,mseFit] = nlinfit([1:nObs]',TS(:,iVar),fitFun,bInit,fitOptions);
         %Get confidence intervals of fit and fit values
         [trend(:,iVar),deltaFit] = nlpredci(fitFun,1:nObs,bFit,resFit,'covar',covFit,'mse',mseFit);
         dTS(:,iVar)              = TS(:,iVar) - trend(:,iVar);
 
-       
+        deltaFit = deltaFit';
     elseif trendT == 5
         
         % Remove all deterministic components
-        [dTS(:,iVar),trend(:,iVar),imf(:,iVar)] = preWhitening(dTS{iVar}(interval{iVar}));
+        [dTS(:,iVar),trend(:,iVar),imf(:,iVar)] = preWhitening(TS(:,iVar));
         
     end
     
@@ -81,6 +81,8 @@ for iVar = 1:nVar
         plot(TS(:,iVar))
         hold on
         plot(trend(:,iVar),'r')
+        plot(trend(:,iVar)+deltaFit,'r--')
+        plot(trend(:,iVar)-deltaFit,'r--')
         
     end
     

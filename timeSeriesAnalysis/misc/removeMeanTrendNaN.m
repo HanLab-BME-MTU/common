@@ -63,7 +63,7 @@ for iVar = 1:nVar
         if ismember(trendType,[0 1])
             
             % Remove sample means or linear trend
-            dWorkTS       = detrend(workTS{iVar}(interval{iVar}),trendType);
+            dWorkTS      = detrend(workTS{iVar}(interval{iVar}),trendType);
             trend{iVar}  = workTS{iVar}(interval{iVar}) - dWorkTS;
             workTS{iVar} = dWorkTS;
             
