@@ -44,6 +44,7 @@ nd = numel(prm); % # data sets
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('prm');
+ip.addOptional('Annotations', [], @(x) size(x,2)==2);
 ip.addParamValue('FaceColor', jet(max(nd)), @(x) size(x,1)==1 || size(x,1)==nd || size(x,1)==nbin);
 ip.addParamValue('EdgeColor', zeros(1,3));
 ip.addParamValue('GroupDistance', 0.5, @isscalar);
@@ -129,6 +130,7 @@ end
 hold on;
 % handles
 h = zeros(1,nd);
+topval = zeros(1,nbin);
 for k = 1:nbin
     
     % concatenate values for group 'k'
@@ -139,6 +141,7 @@ for k = 1:nbin
         M = cellfun(@(i) i(:,k), prm, 'UniformOutput', false);
         M = [M{:}];
     end
+    topval(k) = M(end);
     
     %xa{k} = (1:nb) + (k-1)*(nb + dg);
     
@@ -210,7 +213,6 @@ for k = 1:nbin
         setErrorbarStyle(he, 0.15);
     end
 end
-hold off;
 box off;
 
 if numel(ip.Results.XLabels)==nbin
@@ -222,10 +224,29 @@ end
 % position of the bars
 xa = [xa{:}];
 
-set(ha, 'XTick', la, 'XTickLabel', ip.Results.XLabels, 'XLim', [xa(1)-border xa(end)+border]);
+XLim = [xa(1)-border xa(end)+border];
+set(ha, 'XTick', la, 'XTickLabel', ip.Results.XLabels, 'XLim', XLim);
 if ~isempty(ip.Results.YLim);
-    set(ha, 'YLim', ip.Results.YLim);
+    YLim = ip.Results.YLim;
+    set(ha, 'YLim', YLim);
+else
+    YLim = get(gca, 'YLim');
 end
+
+% add annotation links (for significance etc.)
+av = ip.Results.Annotations;
+if ~isempty(av)
+    pos = get(gca, 'Position');
+    dy = 0.25/diff(XLim)*diff(YLim)/pos(4)*pos(3);
+    maxposCount = zeros(nbin,1);
+    for k = 1:size(av,1)
+        y0 = max(topval(av(k,1):av(k,2)));
+        maxpos = find(topval==y0, 1, 'first');
+        maxposCount(maxpos) = maxposCount(maxpos)+1;
+        plot(la(av(k,[1 1 2 2])), y0+dy+1.75*dy*(maxposCount(maxpos)-1)+[0 dy dy 0], 'k', 'LineWidth', 0.75);
+    end
+end
+hold off;
 
 % x labels
 if ip.Results.Angle ~= 0
