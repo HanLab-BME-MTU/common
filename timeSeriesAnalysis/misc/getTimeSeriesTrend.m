@@ -42,8 +42,8 @@ dTS         = TS;
 
 for iVar = 1:nVar
     
-    outTS(iVar).detrendTS = TS(iVar,:);
-    outTS(iVar).trend     = [];
+    outTS.detrendTS(iVar,:) = TS(iVar,:);
+    outTS.trend(iVar,:)     = nan(1,nObs);
     
     if sum(isfinite(TS(iVar,:))) > minLen
 
