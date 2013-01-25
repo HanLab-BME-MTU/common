@@ -75,6 +75,10 @@ for iVar = 1:nVar
             
             
         elseif trendT == 5
+            %Indexes for real points
+            numIdx = find(~isnan(TS(iVar,:)));
+            %Blocks of real points
+            numB   = findBlock(numIdx,1);
             workTS = gapInterpolation(TS(iVar,:),1);
             % Remove all deterministic components
             [dTS(iVar,:),trend(iVar,:)] = preWhitening(workTS);
@@ -92,8 +96,8 @@ for iVar = 1:nVar
             
         end
         
-        outTS(iVar).trend     = trend(iVar,:);
-        outTS(iVar).detrendTS = dTS(iVar,:);
+        outTS.trend(iVar,:)     = trend(iVar,:);
+        outTS.detrendTS(iVar,:) = dTS(iVar,:);
     end
     
 end
