@@ -49,7 +49,10 @@ epsilon=ip.Results.epsilon;
 % outliers)
 ind=find(~isnan(data(:,3)));
 data=data(ind,:);
-
+    
+% Take out duplicate points (Sangyoon)
+[data,idata,iudata] = unique(data,'rows'); %data2 = data(idata,:),data = data2(iudata,:)
+    
 % Generate a Delaunay tessellation
 tri=DelaunayTri(data(:,1),data(:,2));
 
@@ -87,4 +90,4 @@ normFluct = arrayfun(@(x) abs(localVel{x}-medianVel{x})./(medianRes{x}+epsilon),
 r=cellfun(@norm, normFluct);
 
 % Filter outliers using threshold
-outlierIndex = ind(r>threshold);
+outlierIndex = ind(idata(r>threshold));
