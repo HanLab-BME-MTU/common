@@ -1,5 +1,5 @@
-function [v,corLength,sigtVal] = trackStackFlow(stack,points,minCorL,varargin)
-%trackStackFlow: Calculate the flow velocity from a stack of movie images.
+function [v,corLength,sigtVal] = imSpeckleTracking(stack,points,minCorL,varargin)
+%imSpeckleTracking: Calculate the flow velocity from a stack of movie images.
 %
 % SYNOPSIS :
 %    v = trackStackFlow(stack,points,minCorL)
@@ -58,7 +58,7 @@ function [v,corLength,sigtVal] = trackStackFlow(stack,points,minCorL,varargin)
 % Lin Ji, 2005
 % Sebastien Besson, May 2011 (last modified Nov 2011)
 % Adapted from imFlowTrack.m
-% Sangyoon Han, October 2012 (last modified Nov 2012)
+% Sangyoon Han, October 2012 (last modified Jan 2013)
 
 % Input check
 ip= inputParser;
@@ -245,7 +245,9 @@ for k = 1:nPoints
                         % development of the function
                         
                         % SH: I made a change for this refining process to
-                        % use parabola approximation. 
+                        % use parabola approximation. Once parabola fit is
+                        % too much apart from integer maxV (maxVorg), I
+                        % started to use the fmincon again for more correct refining process.
 
                         % parabola approximation
                         subv = 1; % radius of subgroup for subscore
@@ -273,63 +275,73 @@ for k = 1:nPoints
                         sf = fit( [subvF1D, subvP1D], sub_score1D, f);
 
                         px = [sf.a sf.b sf.e]; py = [sf.c sf.d sf.e];
-                        maxV = [roots(polyder(py)) roots(polyder(px)) ];
-                        
-                        pass = 2;
+                        maxV2 = [roots(polyder(py)) roots(polyder(px)) ];
+                        locMaxV = zeros(size(locMaxI,1),2);
+%                         pass = 2;
 
-%                         % subset of score around the maxV
-%                         subv = 1; % radius of subgroup for subscore
-%                         sub_score2 = score2(max(1,maxI2(1)-subv):min(size(score2,1),maxI2(1)+subv),...
-%                                             max(1,maxI2(2)-subv):min(size(score2,2),maxI2(2)+subv));
-%                         % my field of interest
-%                         subvP = vP(max(1,maxI2(1)-subv):min(size(score2,1),maxI2(1)+subv));
-%                         subvF = vF(max(1,maxI2(2)-subv):min(size(score2,2),maxI2(2)+subv));
-% 
-%                         [subvFG,subvPG]=meshgrid(subvF,subvP);
-%                         subvF1D = reshape(subvFG,[],1);
-%                         subvP1D = reshape(subvPG,[],1);
-%                         sub_score1D2 = reshape(sub_score2,[],1);
-%                         sf = fit( [subvF1D, subvP1D], sub_score1D2, 'poly22');
-% 
-%                         px = [sf.p20 sf.p10 sf.p00]; py = [sf.p02 sf.p01 sf.p00];
-%                         maxV2 = [roots(polyder(py)) roots(polyder(px)) ];
+                        for j = 1:size(locMaxI,1)
+                            % subset of score around the maxV
+                            subv = 2; % radius of subgroup for subscore
+                            sub_score = score(max(1,locMaxI(j,1)-subv):min(size(score,1),locMaxI(j,1)+subv),...
+                                                max(1,locMaxI(j,2)-subv):min(size(score,2),locMaxI(j,2)+subv));
+                            % my field of interest
+                            subvP = vP(max(1,locMaxI(j,1)-subv):min(size(score,1),locMaxI(j,1)+subv));
+                            subvF = vF(max(1,locMaxI(j,2)-subv):min(size(score,2),locMaxI(j,2)+subv));
+
+                            % subset of score around the maxV
+                            [subvFG,subvPG]=meshgrid(subvF,subvP);
+                            subvF1D = reshape(subvFG,[],1);
+                            subvP1D = reshape(subvPG,[],1);
+                            sub_score1D = reshape(sub_score,[],1);
+                            % starting point estimation SH based on discretized maxV (-b/2a =
+                            % maxV(2)) in quadratical expression to avoid the random starting point warning SH
+                            maxVorg  = [vP(locMaxI(j,1)) vF(locMaxI(j,2))];
+                            asp = -0.026; %decided empirically
+                            bsp = -2*asp*maxVorg(2);
+                            csp = asp;
+                            dsp = -2*csp*maxVorg(1);
+                            esp = -0.5; %arbitrary number
+                            s = fitoptions('Method','NonlinearLeastSquares','StartPoint', [asp,bsp,csp,dsp,esp]); 
+                            f = fittype('a*x^2+b*x+c*y^2+d*y+e','independent', {'x', 'y'}, 'dependent', 'z','option',s);
+                            sf = fit( [subvF1D, subvP1D], sub_score1D, f);
+
+                            px = [sf.a sf.b sf.e]; py = [sf.c sf.d sf.e];
+                            maxV = [roots(polyder(py)) roots(polyder(px)) ];
+                            if norm(maxVorg-maxV,2)>1 %checking for proximity of the fitted point to the original discrete point
+                                subv = 4; % expanding region to fit
+                                sub_score = score(max(1,locMaxI(j,1)-subv):min(size(score,1),locMaxI(j,1)+subv),...
+                                                    max(1,locMaxI(j,2)-subv):min(size(score,2),locMaxI(j,2)+subv));
+                                % my field of interest
+                                subvP = vP(max(1,locMaxI(j,1)-subv):min(size(score,1),locMaxI(j,1)+subv));
+                                subvF = vF(max(1,locMaxI(j,2)-subv):min(size(score,2),locMaxI(j,2)+subv));
+
+                                sp   = csape({subvP,subvF},sub_score);
+                                dsp1 = fnder(sp,[1,0]);
+                                dsp2 = fnder(sp,[0,1]);
+                                options = optimset('Algorithm','interior-point'); % this generates an warning
+                    %             options = optimset('Algorithm','sqp');% this, and active-set too
+
+                                maxV = fmincon(@vFun,maxVorg,[],[],[],[], ...
+                                    [max(subvP(1),maxVorg(1)-2) max(subvF(1),maxVorg(2)-2)], ...
+                                    [min(subvP(end),maxVorg(1)+2), min(subvF(end),maxVorg(2)+2)],[], ...
+                                    options,sp,dsp1,dsp2);            
+                            end                            
+                            locMaxV(j,:) = maxV;
+                        end
                         
-%                         locMaxV = [vP(locMaxI(:,1)).' vF(locMaxI(:,2)).'];
-%                         for j = 1:size(locMaxI,1)
-%                             % subset of score around the maxV
-%                             subv = 2; % radius of subgroup for subscore
-%                             sub_score = score(max(1,locMaxI(j,1)-subv):min(size(score,1),locMaxI(j,1)+subv),...
-%                                                 max(1,locMaxI(j,2)-subv):min(size(score,2),locMaxI(j,2)+subv));
-%                             % my field of interest
-%                             subvP = vP(max(1,locMaxI(j,1)-subv):min(size(score,1),locMaxI(j,1)+subv));
-%                             subvF = vF(max(1,locMaxI(j,2)-subv):min(size(score,2),locMaxI(j,2)+subv));
-% 
-%                             % subset of score around the maxV
-%                             [subvFG,subvPG]=meshgrid(subvF,subvP);
-%                             subvF1D = reshape(subvFG,[],1);
-%                             subvP1D = reshape(subvPG,[],1);
-%                             sub_score1D = reshape(sub_score,[],1);
-%                             sf = fit( [subvF1D, subvP1D], sub_score1D, 'poly22');
-% 
-%                             px = [sf.p20 sf.p10 sf.p00]; py = [sf.p02 sf.p01 sf.p00];
-%                             maxV = [roots(polyder(py)) roots(polyder(px)) ];
-% 
-%                             locMaxV(j,:) = maxV;
-%                         end
-                        
-%                         distToMaxV2 = sqrt(sum((locMaxV- ...
-%                             ones(size(locMaxV,1),1)*maxV2).^2,2));
-%                         [minD,ind] = min(distToMaxV2);
-%                         maxV = locMaxV(ind,:);
-%                         maxVNorm = max(norm(maxV2),norm(maxV));
-%                         if maxVNorm == 0 || ...
-%                                 (pass == 1 && minD < 2*closenessThreshold*maxVNorm) || ...
-%                                 (pass == 1 && maxVNorm < 0.5) || ...
-%                                 (pass == 0 && minD < closenessThreshold*maxVNorm)
-%                             pass = 2;
-%                         else
-%                             pass = 0;
-%                         end
+                        distToMaxV2 = sqrt(sum((locMaxV- ...
+                            ones(size(locMaxV,1),1)*maxV2).^2,2));
+                        [minD,ind] = min(distToMaxV2);
+                        maxV = locMaxV(ind,:);
+                        maxVNorm = max(norm(maxV2),norm(maxV));
+                        if maxVNorm == 0 || ...
+                                (pass == 1 && minD < 2*closenessThreshold*maxVNorm) || ...
+                                (pass == 1 && maxVNorm < 0.5) || ...
+                                (pass == 0 && minD < closenessThreshold*maxVNorm)
+                            pass = 2;
+                        else
+                            pass = 0;
+                        end
                     else
                         pass = 0;
                     end
@@ -352,52 +364,53 @@ for k = 1:nPoints
         maxV = [NaN NaN];
         sigtVal = [NaN NaN NaN];
     elseif pass == 1
-%         % parabola approximation
-%         subv = 1; % radius of subgroup for subscore
-%         sub_score = score(max(1,maxI(1)-subv):min(size(score,1),maxI(1)+subv),...
-%                             max(1,maxI(2)-subv):min(size(score,2),maxI(2)+subv));
-%         % my field of interest
-%         subvP = vP(max(1,maxI(1)-subv):min(size(score,1),maxI(1)+subv));
-%         subvF = vF(max(1,maxI(2)-subv):min(size(score,2),maxI(2)+subv));
-% 
-%         [subvFG,subvPG]=meshgrid(subvF,subvP);
-%         subvF1D = reshape(subvFG,[],1);
-%         subvP1D = reshape(subvPG,[],1);
-%         sub_score1D = reshape(sub_score,[],1);
-%         
-%         % starting point estimation SH based on discretized maxV (-b/2a =
-%         % maxV(2)) in quadratical expression to avoid the random starting point warning SH
-%         maxV  = [vP(maxI(1)) vF(maxI(2))];
-%         asp = -0.026; %decided empirically
-%         bsp = -2*asp*maxV(2);
-%         csp = asp;
-%         dsp = -2*csp*maxV(1);
-%         esp = -0.5; %arbitrary number
-%         s = fitoptions('Method','NonlinearLeastSquares','StartPoint', [asp,bsp,csp,dsp,esp]); 
-%         f = fittype('a*x^2+b*x+c*y^2+d*y+e','independent', {'x', 'y'}, 'dependent', 'z','option',s);
-%         sf = fit( [subvF1D, subvP1D], sub_score1D, f);
-% 
-%         px = [sf.a sf.b sf.e]; py = [sf.c sf.d sf.e];
-%         maxV = [roots(polyder(py)) roots(polyder(px)) ];
-
-        % B-spline approximation for subscore
-        subv = 3; % radius of subgroup for subscore: it might need at least 3 pixels for radius
+        % parabola approximation
+        subv = 1; % radius of subgroup for subscore
         sub_score = score(max(1,maxI(1)-subv):min(size(score,1),maxI(1)+subv),...
                             max(1,maxI(2)-subv):min(size(score,2),maxI(2)+subv));
         % my field of interest
         subvP = vP(max(1,maxI(1)-subv):min(size(score,1),maxI(1)+subv));
         subvF = vF(max(1,maxI(2)-subv):min(size(score,2),maxI(2)+subv));
 
-        sp = csape({subvP,subvF},sub_score);
-        dsp1 = fnder(sp,[1,0]);
-        dsp2 = fnder(sp,[0,1]);
-        maxV  = [vP(maxI(1)) vF(maxI(2))];
+        [subvFG,subvPG]=meshgrid(subvF,subvP);
+        subvF1D = reshape(subvFG,[],1);
+        subvP1D = reshape(subvPG,[],1);
+        sub_score1D = reshape(sub_score,[],1);
         
-        options = optimset('Algorithm','interior-point');
-        maxV = fmincon(@vFun,maxV,[],[],[],[], ...
-                [max(vP(1),maxV(1)-subv) max(vF(1),maxV(2)-subv)], ...
-                [min(vP(end),maxV(1)+subv),min(vF(end),maxV(2)+subv)],[], ...
-                options,sp,dsp1,dsp2);
+        % starting point estimation SH based on discretized maxV (-b/2a =
+        % maxV(2)) in quadratical expression to avoid the random starting point warning SH
+        maxVorg  = [vP(maxI(1)) vF(maxI(2))];
+        asp = -0.026; %decided empirically
+        bsp = -2*asp*maxVorg(2);
+        csp = asp;
+        dsp = -2*csp*maxVorg(1);
+        esp = -0.5; %arbitrary number
+        s = fitoptions('Method','NonlinearLeastSquares','StartPoint', [asp,bsp,csp,dsp,esp]); 
+        f = fittype('a*x^2+b*x+c*y^2+d*y+e','independent', {'x', 'y'}, 'dependent', 'z','option',s);
+        sf = fit( [subvF1D, subvP1D], sub_score1D, f);
+
+        px = [sf.a sf.b sf.e]; py = [sf.c sf.d sf.e];
+        maxV = [roots(polyder(py)) roots(polyder(px)) ];
+        
+        if norm(maxVorg-maxV,2)>1 %checking for proximity of the fitted point to the original discrete point
+            subv = 4; % expanding region to fit
+            sub_score = score(max(1,maxI(1)-subv):min(size(score,1),maxI(1)+subv),...
+                                max(1,maxI(2)-subv):min(size(score,2),maxI(2)+subv));
+            % my field of interest
+            subvP = vP(max(1,maxI(1)-subv):min(size(score,1),maxI(1)+subv));
+            subvF = vF(max(1,maxI(2)-subv):min(size(score,2),maxI(2)+subv));
+
+            sp   = csape({subvP,subvF},sub_score);
+            dsp1 = fnder(sp,[1,0]);
+            dsp2 = fnder(sp,[0,1]);
+            options = optimset('Algorithm','interior-point'); % this generates an warning
+%             options = optimset('Algorithm','sqp');% this too
+            
+            maxV = fmincon(@vFun,maxVorg,[],[],[],[], ...
+                [max(subvP(1),maxVorg(1)-2) max(subvF(1),maxVorg(2)-2)], ...
+                [min(subvP(end),maxVorg(1)+2), min(subvF(end),maxVorg(2)+2)],[], ...
+                options,sp,dsp1,dsp2);            
+        end
     end
     
     if ~isnan(maxV(1)) && ~isnan(maxV(2))
@@ -808,4 +821,3 @@ if maxI(1) < m/4 || maxI(1) > 3*m/4 || ...
 end
 
 pass = 1;
-
