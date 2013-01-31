@@ -101,7 +101,8 @@ for iChannel = selected_channels
     
     display(['Start steerable filtering in Channel ',num2str(iChannel)]);
     
-    
+     mkdir(ImageSteerableFilterChannelOutputDir,'NMS');
+       
     for iFrame_subsample = 1 : length(Frames_to_Seg)
         iFrame = Frames_to_Seg(iFrame_subsample);
         disp(['Frame: ',num2str(iFrame)]);
@@ -120,10 +121,14 @@ for iChannel = selected_channels
         % function multiscaleSteerableDetector will automatically merge the results
         [MAX_st_res, orienation_map, nms, scaleMap] = multiscaleSteerableDetector(currentImg, 4, BaseSteerableFilterSigma.*levels_sizes);
         
+        
         for sub_i = 1 : Sub_Sample_Num
             if iFrame + sub_i-1 <= nFrame
                 imwrite((MAX_st_res)/(max(max(MAX_st_res))), ...
                     [ImageSteerableFilterChannelOutputDir,'/MAX_st_res_', ...
+                    filename_short_strs{iFrame + sub_i-1},'.tif']);
+               imwrite((nms)/(max(max(nms))), ...
+                    [ImageSteerableFilterChannelOutputDir,'/NMS/NMS_', ...
                     filename_short_strs{iFrame + sub_i-1},'.tif']);
             end
         end

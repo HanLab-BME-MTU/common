@@ -325,7 +325,8 @@ for iChannel = selected_channels
         % Voting of the orientation field for the non-steerable filter
         % segmented places.
         
-        OrientationVoted = OrientationVote(orienation_map,SteerabelRes_Segment,3,45);
+        % OrientationVoted = OrientationVote(orienation_map,SteerabelRes_Segment,3,45);
+        OrientationVoted= orienation_map_filtered;
         
         intensity_addon = current_seg - SteerabelRes_Segment ==1;
         if (~isempty(max(max(intensity_addon))>0))

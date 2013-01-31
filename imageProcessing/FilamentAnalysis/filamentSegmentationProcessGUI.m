@@ -295,21 +295,18 @@ id = get(handles.listbox_availableChannels, 'Value');
 % If channel has already been added, return;
 chanIndex1 = get(handles.listbox_availableChannels, 'Userdata');
 chanIndex2 = get(handles.listbox_selectedChannels, 'Userdata');
-thresholdValues = cellfun(@str2num,get(handles.listbox_thresholdValues,'String'));
 
 for i = id
     if any(strcmp(contents1{i}, contents2) )
         continue;
     else
         contents2{end+1} = contents1{i};
-        thresholdValues(end+1) = 0;
         chanIndex2 = cat(2, chanIndex2, chanIndex1(i));
 
     end
 end
 
 set(handles.listbox_selectedChannels, 'String', contents2, 'Userdata', chanIndex2);
-set(handles.listbox_thresholdValues,'String',num2cell(thresholdValues))
 
 
 % --- Executes on button press in pushbutton_delete.

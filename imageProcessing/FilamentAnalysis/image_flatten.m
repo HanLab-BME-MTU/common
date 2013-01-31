@@ -85,8 +85,25 @@ for iChannel = selected_channels
     
     img_pixel_pool = double(img_pixel_pool(:));
     
-    img_min = min(img_pixel_pool(:));
-    img_max = min(max(img_pixel_pool(:)),  mean(img_pixel_pool(:))+10*std(img_pixel_pool(:)));
+    low_005_percentile = min(img_pixel_pool);
+    high_995_percentile = max(img_pixel_pool);    
+    
+    for intensity_i = min(img_pixel_pool) : (max(img_pixel_pool)-min(img_pixel_pool))/1000 : max(img_pixel_pool)
+        if length(find(img_pixel_pool<=intensity_i))/length(img_pixel_pool)>0.005
+            low_005_percentile = intensity_i;
+            break;
+        end        
+    end
+    
+    for intensity_i = max(img_pixel_pool) : -(max(img_pixel_pool)-min(img_pixel_pool))/1000 : min(img_pixel_pool)
+        if length(find(img_pixel_pool<intensity_i))/length(img_pixel_pool)<0.995
+            high_995_percentile = intensity_i;
+            break;
+        end        
+    end
+    
+    img_min=low_005_percentile;
+    img_max=high_995_percentile;
     
     [hist_all_frame, hist_bin] = hist(img_pixel_pool,55);
     
@@ -119,13 +136,13 @@ for iChannel = selected_channels
         currentImg = movieData.channels_(iChannel).loadImage(iFrame);
         currentImg = double(currentImg);
         
+        % Get rid of extreme noises
+        currentImg(find(currentImg<low_005_percentile))=low_005_percentile;
+        currentImg(find(currentImg>high_995_percentile))=high_995_percentile;
+        
         % based on the given method index, do log or sqrt to flatten the image
         if flatten_method_ind == 1
             
-            if(img_min<1)
-                img_min=1;
-                currentImg(find(currentImg<1))=1;
-            end
             currentImg = log(currentImg);
             currentImg = currentImg - log(img_min);
             currentImg = currentImg/...
