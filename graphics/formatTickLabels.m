@@ -39,7 +39,7 @@ if ~all(idx==0) || ~isempty(xfmt)
     if ~isempty(idx)
         xticks{idx} = '0';
     end
-    set(h, 'XTickLabel', xticks);
+    set(h, 'XTick', val, 'XTickLabel', xticks);
 end
 
 yticks = cellstr(get(h, 'YTickLabel'));
@@ -57,5 +57,5 @@ if ~all(idx==0)
     if ~isempty(idx)
         yticks{idx} = '0';
     end
-    set(h, 'YTickLabel', yticks);
+    set(h, 'YTick', val, 'YTickLabel', yticks);
 end
