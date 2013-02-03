@@ -30,6 +30,7 @@ ip.addParamValue('Mode', 'xyAc', @ischar);
 ip.addParamValue('Alpha', 0.05, @isscalar);
 ip.addParamValue('Mask', [], @isnumeric);
 ip.addParamValue('FitMixtures', false, @islogical);
+ip.addParamValue('RefineMaskLoG', true, @islogical);
 ip.parse(img, sigma, varargin{:});
 mode = ip.Results.Mode;
 alpha = ip.Results.Alpha;
@@ -92,12 +93,14 @@ imgLM = allMax .* mask;
 
 if sum(imgLM(:))~=0 % no local maxima found, likely a background image
     
-    % -> set threshold in LoG domain
-    logThreshold = min(imgLoG(imgLM~=0));
-    logMask = imgLoG >= logThreshold;
-    
-    % combine masks
-    mask = mask | logMask;
+    if ip.Results.RefineMaskLoG
+        % -> set threshold in LoG domain
+        logThreshold = min(imgLoG(imgLM~=0));
+        logMask = imgLoG >= logThreshold;
+        
+        % combine masks
+        mask = mask | logMask;
+    end
     
     % re-select local maxima
     imgLM = allMax .* mask;
