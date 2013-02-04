@@ -45,4 +45,6 @@ idx = cell(numQueryPoints, 1);
 dist = cell(numQueryPoints, 1);
 for i = 1:numQueryPoints
     [idx{i}, dist{i}] = kdtreeobj.ball( queryPts(i,:), radii(i) );
+    [dist{i}, si] = sort(dist{i});
+    idx{i} = idx{i}(si);
 end
