@@ -137,7 +137,7 @@ int gaussian_f(const gsl_vector *x, void *params, gsl_vector *f) {
     for (gi=0; gi<data->ng; ++gi) {
         xp = data->prmVect[3*gi];
         yp = data->prmVect[3*gi+1];
-        A  = data->prmVect[3*gi+2];
+        A  = fabs(data->prmVect[3*gi+2]);
         
         // gaussian kernel
         for (i=0; i<nx; ++i) {
@@ -199,7 +199,7 @@ int gaussian_df(const gsl_vector *x, void *params, gsl_matrix *J) {
     for (gi=0;gi<data->ng;++gi) {
         xp = data->prmVect[3*gi];
         yp = data->prmVect[3*gi+1];
-        argStruct.A = data->prmVect[3*gi+2];
+        argStruct.A = fabs(data->prmVect[3*gi+2]);
         
         // x and y components of the gaussian kernel
         for (i=0; i<nx; ++i) {
@@ -281,7 +281,7 @@ int gaussian_fdf(const gsl_vector *x, void *params, gsl_vector *f, gsl_matrix *J
     for (gi=0;gi<data->ng;++gi) {
         xp = data->prmVect[3*gi];
         yp = data->prmVect[3*gi+1];
-        A  = data->prmVect[3*gi+2];
+        A  = fabs(data->prmVect[3*gi+2]);
         argStruct.A = A;
         
         for (i=0; i<nx; ++i) {

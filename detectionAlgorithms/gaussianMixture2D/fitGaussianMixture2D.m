@@ -30,4 +30,4 @@
 % Axis conventions: image processing, see meshgrid
 % For single Gaussian mixture fitting, fitGaussian2D() is faster.
 %
-% Example: [prmVect prmStd C res J] = fitGaussian2D(data, [0 0 max(data(:)) 0 0 max(data(:)) 1.5 min(data(:))], 'xyasc');
+% Example: [prmVect prmStd C res J] = fitGaussianMixture2D(data, [0 0 max(data(:)) 0 0 max(data(:)) 1.5 min(data(:))], 'xyasc');

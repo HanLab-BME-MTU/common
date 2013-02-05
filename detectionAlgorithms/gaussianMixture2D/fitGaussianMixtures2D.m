@@ -1,4 +1,4 @@
-% pStruct = fitGaussians2D(img, x, y, A, sigma, c, mode, varargin)
+% pStruct = fitGaussianMixtures2D(img, x, y, A, sigma, c, mode, varargin)
 %
 % Inputs:   img : input image
 %             x : initial (or fixed) x-positions
@@ -31,7 +31,7 @@
 % Usage for a single-channel img with mask and fixed sigma:
 % fitGaussians2D(img, x_v, y_v, 'sigma', sigma_v, 'mask', mask);
 
-% Francois Aguet, March 28 2011 (last modified: August 30 2011)
+% Francois Aguet, March 28 2011 (last modified: Feb 5 2013)
 
 function pStruct = fitGaussianMixtures2D(img, x, y, A, sigma, c, varargin)
 
@@ -44,8 +44,8 @@ ip.addRequired('y');
 ip.addRequired('A');
 ip.addRequired('sigma');
 ip.addRequired('c');
-% ip.addOptional('mode', 'xyAc', @ischar);
 ip.addParamValue('Alpha', 0.05, @isscalar);
+ip.addParamValue('AlphaT', 0.05, @isscalar);
 ip.addParamValue('Mask', [], @islogical);
 ip.addParamValue('maxM', 5, @isscalar);
 ip.parse(img, x, y, A, sigma, c, varargin{:});
@@ -55,9 +55,6 @@ sigma = ip.Results.sigma;
 if numel(sigma)==1
     sigma = sigma*ones(1,np);
 end
-% mode = ip.Results.mode;
-% mode = 'xyAc';
-alpha = ip.Results.Alpha;
 if ~isempty(ip.Results.Mask)
     labels = bwlabel(ip.Results.Mask);
 else
@@ -73,12 +70,10 @@ xi = round(x);
 yi = round(y);
 [ny,nx] = size(img);
 
-kLevel = norminv(1-alpha/2.0, 0, 1); % ~2 std above background
+kLevel = norminv(1-ip.Results.Alpha/2.0, 0, 1); % ~2 std above background
 
 iRange = [squeeze(min(min(img))) squeeze(max(max(img)))];
 
-% estIdx = regexpi('xyAsc', ['[' mode ']']);
-% estIdx = [1 1 1 0 1];
 
 % initialize pStruct arrays
 pStruct.x = cell(1,np);
@@ -93,8 +88,6 @@ pStruct.A_pstd = cell(1,np);
 pStruct.s_pstd = cell(1,np);
 pStruct.c_pstd = cell(1,np);
 
-% pStruct.x_init = reshape(xi, [1 np]);
-% pStruct.y_init = reshape(yi, [1 np]);
 pStruct.x_init = cell(1,np);
 pStruct.y_init = cell(1,np);
 
@@ -112,7 +105,6 @@ sigma_max = max(sigma);
 w2 = ceil(2*sigma_max);
 w3 = ceil(3*sigma_max);
 w4 = ceil(4*sigma_max);
-nw = 2*w4+1;
 
 % mask template: ring with inner radius w3, outer radius w4
 [xm,ym] = meshgrid(-w4:w4);
@@ -120,14 +112,11 @@ r = sqrt(xm.^2+ym.^2);
 annularMask = zeros(size(r));
 annularMask(r<=w4 & r>=w3) = 1;
 
-g = exp(-(-w4:w4).^2/(2*sigma_max^2));
-g = g'*g;
-g = g(:);
-
 mixtureIndex = 1;
+% loop through initial points
 for p = 1:np
     
-    % ignore points in border
+    % ignore points in image border
     if (xi(p)>w4 && xi(p)<=nx-w4 && yi(p)>w4 && yi(p)<=ny-w4)
         
         % label mask
@@ -155,17 +144,14 @@ for p = 1:np
             A0 = A(p);
         end
 
-        % initial fit with a single Gaussian
+        % initial fit with a single Gaussian 
+        % Notation: reduced model: '_r', full model: '_f'
         [prm_f, prmStd_f, ~, res_f] = fitGaussian2D(window, [x(p)-xi(p) y(p)-yi(p) A0 sigma(p) c0], 'xyAc');
-        prmStd_f = [prmStd_f(1:3) 0 prmStd_f(4)];
+        prmStd_f = [prmStd_f(1:3) 0 prmStd_f(4)]; % update standard deviations
         RSS_r = res_f.RSS;
         
-        %prm_r = prm_f;
-        %prmStd_r = prmStd_f;
-        %res_r = res_f;
-        
-        p_r = 4; % #parameters        
-        i = 1;
+        p_r = 4; % #parameters in the model (x,y,A,c)     
+        i = 1; % iteration
         
         pval = 0;
         validBounds = true;
@@ -178,12 +164,19 @@ for p = 1:np
             
             % expanded model
             % new component: initial values given by max. residual point
-            [x0 y0] = ind2sub([nw nw], find(RSS_r==max(RSS_r(:)),1,'first'));
-            [prm_f, prmStd_f, ~, res_f] = fitGaussianMixture2D(window, [x0 y0 max(res_f.data(:)) prm_r], 'xyAc');
-            RSS_f = res_f.RSS;
-            p_f = p_r + 3;
+            [y0, x0] = find(res_r.data==max(res_r.data(:)), 1, 'first');
             
-            % test statistic
+            % This initialization may work better in some cases:
+            %initV = [x0-w4-1 y0-w4-1 max(res_r.data(:)) prm_r];
+            %initV(3:3:end-2) = sum(prm_r(3:3:end-2))/i;
+            %[prm_f, prmStd_f, ~, res_f] = fitGaussianMixture2D(window, initV, 'xyAc');
+            
+            [prm_f, prmStd_f, ~, res_f] = fitGaussianMixture2D(window, [x0-w4-1 y0-w4-1 max(res_r.data(:)) prm_r], 'xyAc');
+            
+            RSS_f = res_f.RSS;
+            p_f = p_r + 3; % 3 parameters (x,y,A) added at every iteration
+            
+            % test statistic (F-test)
             T = (RSS_r-RSS_f)/RSS_f * (npx-p_f-1)/(p_f-p_r);
             pval = 1-fcdf(T,p_f-p_r,npx-p_f-1);
             
@@ -200,6 +193,7 @@ for p = 1:np
         end
         ng = i-1; % # gaussians in final model
         
+        % sigma, c are the same for each mixture
         x_est = prm_r(1:3:end-2);
         y_est = prm_r(2:3:end-2);
         A_est = prm_r(3:3:end-2);
@@ -213,17 +207,14 @@ for p = 1:np
             pStruct.s{p} = repmat(prm_r(end-1), [1 ng]);
             pStruct.c{p} = repmat(prm_r(end), [1 ng]);
             
-            %stdVect = zeros(1,5);
-            %stdVect(estIdx) = prmStd;
-            
             pStruct.x_pstd{p} = prmStd_r(1:3:end-2);
             pStruct.y_pstd{p} = prmStd_r(2:3:end-2);
             pStruct.A_pstd{p} = prmStd_r(3:3:end-2);
             pStruct.s_pstd{p} = repmat(prmStd_r(end-1), [1 ng]);
             pStruct.c_pstd{p} = repmat(prmStd_r(end), [1 ng]);
             
-            pStruct.x_init{p} = repmat(xi, [1 ng]);
-            pStruct.y_init{p} = repmat(yi, [1 ng]);
+            pStruct.x_init{p} = repmat(xi(p), [1 ng]);
+            pStruct.y_init{p} = repmat(yi(p), [1 ng]);
             
             pStruct.sigma_r{p} = repmat(res_r.std, [1 ng]);
             pStruct.RSS{p} = repmat(res_r.RSS, [1 ng]);
@@ -239,13 +230,12 @@ for p = 1:np
             for i = 1:ng
                 sigma_A = pStruct.A_pstd{p}(i);
                 A_est = pStruct.A{p}(i);
-                %A_est = prm(3);
                 df2 = (npx-1) * (sigma_A.^2 + SE_sigma_r.^2).^2 ./ (sigma_A.^4 + SE_sigma_r.^4);
                 scomb = sqrt((sigma_A.^2 + SE_sigma_r.^2)/npx);
                 T = (A_est - res_r.std*kLevel) ./ scomb;
                 % 1-sided t-test: A_est must be greater than k*sigma_r
                 pStruct.pval_Ar{p}(i) = tcdf(-T, df2);
-                pStruct.hval_Ar{p}(i) = pStruct.pval_Ar{p}(i) < alpha;
+                pStruct.hval_Ar{p}(i) = pStruct.pval_Ar{p}(i) < ip.Results.AlphaT;
                 %pStruct.mask_Ar{p}(i) = sum(A_est*g>res_r.std*kLevel); % # significant pixels
             end
             if ng>1
