@@ -16,13 +16,15 @@ function [s, rm] = sortStringsByToken(s, token, mode)
 
 switch mode
     case 'post'
-        idx = cellfun(@(x) str2double(regexpi(x,['(?<=' token ')\d+'], 'match')), s, 'UniformOutput', false);
+        q = ['(?<=' token ')\d+'];
     case 'pre'
-        idx = cellfun(@(x) str2double(regexpi(x,['\d+(?=' token ')'], 'match')), s, 'UniformOutput', false);
+        q = ['\d+(?=' token ')'];
 end
-rm = find(cellfun(@isempty, idx));
+idx = str2double(regexpi(s, q, 'match', 'once'));
+rm = find(isnan(idx));
 s(rm) = [];
-[~,idx] = sort([idx{:}]);
+idx(rm) = [];
+[~,idx] = sort(idx);
 if ~isempty(idx)
     s = s(idx);
 end
