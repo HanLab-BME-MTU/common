@@ -34,7 +34,7 @@ isPackageCell = @(x) iscell(x) && all(cellfun(isClass, x));
 isPackage = @(x) ischar(x) && isClass(x);
 ip.addOptional('packageList',{},@(x) isPackageCell(x) || isPackage(x));
 ip.addOptional('outDir','',@ischar);
-ip.addParamValue('exclude','extern',@(x) ischar(x) || iscell(x));
+ip.addParamValue('exclude', {'extern' ,'omero'}, @(x) ischar(x) || iscell(x));
 ip.parse(varargin{:});
 
 if isempty(ip.Results.packageList)
@@ -72,7 +72,7 @@ else
 end
     
 %Get all the function dependencies and display toolboxes
-[packageFuns toolboxesUsed] = getFunDependencies(packageList, ip.Results.exclude);
+[packageFuns, toolboxesUsed] = getFunDependencies(packageList, ip.Results.exclude);
 disp('The package uses the following toolboxes:')
 disp(toolboxesUsed)
 
@@ -83,7 +83,7 @@ disp(toolboxesUsed)
 %   * Icons or other MAT-files
 
 % Split functions into paths, filenames and extensions for search
-[packageFunsPaths packageFunsNames packageFunsExt]=...
+[packageFunsPaths, packageFunsNames, packageFunsExt]=...
     cellfun(@fileparts,packageFuns,'UniformOutput',false);
 
 % Find associated documentation files
@@ -126,7 +126,7 @@ packageFiles=vertcat(packageFuns,packageFigs);
 
 %% Export package files
 % Create package output directory if non-existing
-disp('Creating/cleaning release directory...')
+disp('Creating release directory...')
 mkClrDir(outDir);
 
 % Copy function files
@@ -138,7 +138,7 @@ for j = 1:nFiles
 end
 
 % Create icons output directory if non-existing
-disp('Creating/cleaning release icons directory...')
+disp('Creating icons directory...')
 iconsDir=[outDir filesep 'icons'];
 mkClrDir(iconsDir);
 
@@ -151,7 +151,7 @@ for i = 1 : nIcons
 end
 
 % Create icons output directory if non-existing
-disp('Creating/cleaning release doc directory...')
+disp('Creating documenation directory...')
 docDir=[outDir filesep 'doc'];
 mkClrDir(docDir);
 
@@ -164,7 +164,7 @@ for i = 1 : nDocFiles
 end
 
 % Create mex output directory if non-existing
-disp('Creating/cleaning mex directory...')
+disp('Creating MEX-files directory...')
 mexDir=[outDir filesep 'mex'];
 mkClrDir(mexDir);
 
@@ -175,5 +175,10 @@ for i = 1 : nMexFiles
     iLFS = max(regexp(packageMexFuns{i},filesep));
     copyfile(packageMexFuns{i},[mexDir filesep packageMexFuns{i}(iLFS+1:end)]);
 end
+
+% Create folder for Bio-Formats utilities
+disp('Creating Bio-Formats directory...')
+bfDir=[outDir filesep 'bioformats'];
+copyfile(fileparts(which('bfGetReader.m')), bfDir)
     
 disp(['Wrote package to ' outDir])
