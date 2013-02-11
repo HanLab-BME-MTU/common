@@ -1,5 +1,5 @@
 % function mean_shift_for_cc_tracking_each_frame(currentImg,iFrame, max_97_percent_int, bandwidth)
-Mask  = currentImg>max_99_percent_int;
+Mask  = currentImg>max_97_percent_int;
 
 [inda,indb] = find(Mask>0);
 
@@ -54,7 +54,9 @@ for iCell = 1:numel(clusterInfo)
         clustering_nCell = clustering_nCell+1;
         position_array_from_clustering{iFrame}(clustering_nCell,1:4) = position;
         cluster_xy_s_from_clustering{iFrame,clustering_nCell} = [X Y];        
-        cluster_sigma_s_from_clustering{iFrame,clustering_nCell} = [sigma_x(iCell);    sigma_y(iCell);    center_x(iCell);    center_y(iCell);    cell_width;    cell_height;]       
+        cluster_sigma_s_from_clustering{iFrame,clustering_nCell} = ...
+            [sigma_x(iCell);    sigma_y(iCell);    center_x(iCell);    center_y(iCell);    cell_width;    cell_height;];
+        
         mean_intensity_from_clustering(iFrame,clustering_nCell) = ...
              sum(sum(double(Mask(...
              max(1,round(position(2))):...

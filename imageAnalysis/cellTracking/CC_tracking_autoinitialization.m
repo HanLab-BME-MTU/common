@@ -1,4 +1,4 @@
-function [position_array, present_cells, mean_intensity_matrix] = CC_tracking_autoinitialization(MD, iChannel, bandwidth, min_size)
+function [position_array, present_cells, mean_intensity_matrix] = CC_tracking_autoinitialization(MD, iChannel, bandwidth, min_size,dmax)
 % Cross Correlation based tracking with automatic initialization
 % Input: MD the movieData object
 %        bandwidth: for mean shift clustering, set as the mean distance for the cells in pixels        
@@ -15,6 +15,10 @@ color_array= [1 0 0; 0 1 0; 0 0 1; 1 1 0; 1 0 1;0 1 1 ;rand(50,3)];
 iFrame = 1;
 if(~exist([MD.outputDirectory_,'/CC_tracking/'],'dir'))
     mkdir([MD.outputDirectory_,'/CC_tracking/']);
+end
+
+if(~exist([MD.outputDirectory_,'/cropped_images/'],'dir'))
+    mkdir([MD.outputDirectory_,'/cropped_images/']);
 end
 
 intensity_pool = [];
@@ -123,7 +127,7 @@ saveas(h1,[MD.outputDirectory_,'/CC_tracking/mean_shift_clustering.tif']);
 
 % mask_cells = zeros(size(currentImg,1),size(currentImg,2),nCell);
 
-dmax = [10 10];
+% dmax = [10 10];
 subpix = 'none';
 d0=[0 0];
 img_width = size(currentImg,2);
@@ -255,7 +259,8 @@ h3 = figure(3);hold off; imagescc(currentImg);hold on;
 
 for iFrame = 1 : nFrame    
     ind_cell = find(present_cells{iFrame}>0);
-    
+    currentImg = double(MD.channels_(iChannel).loadImage(iFrame));
+   
     for iCell = ind_cell     
         current_position = position_array{iFrame}(iCell,1:4);
         tracked_pos = current_position(1:2)+(current_position(3:4)+1)/2;
@@ -279,6 +284,12 @@ for iFrame = 1 : nFrame
             quiver(tracked_old_pos(1), tracked_old_pos(2), tracked_pos(1)-tracked_old_pos(1), tracked_pos(2)-tracked_old_pos(2),'color',color_array(iCell,:));
         
         end
+        
+        crop_img = currentImg(position_array{iFrame}(iCell,2):position_array{iFrame}(iCell,2)+position_array{iFrame}(iCell,4),...
+            position_array{iFrame}(iCell,1):position_array{iFrame}(iCell,1)+position_array{iFrame}(iCell,3));
+        crop_img = double(crop_img)/(2^14);
+        figure(5);imagescc(crop_img);
+        imwrite(crop_img,[MD.outputDirectory_,'/cropped_images/cropped_',num2str(iFrame),'.tif']);
     end
     
 

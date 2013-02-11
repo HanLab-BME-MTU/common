@@ -51,8 +51,8 @@ if(isempty(tPatch))
 end;
 
 % crop the search area
-while( (maxRow < 1) | (maxRow > (nRowCcMap-1)) | ...
-      (maxCol < 1) | (maxCol > (nColCcMap-1)))
+% while( (maxRow < 1) | (maxRow > (nRowCcMap-1)) | ...
+%       (maxCol < 1) | (maxCol > (nColCcMap-1)))
 	sPos = tPos + d0;
 	sWidth = 2*ceil(abs(dmax(1)));
 	sHeight = 2*ceil(abs(dmax(2)));
@@ -107,7 +107,7 @@ while( (maxRow < 1) | (maxRow > (nRowCcMap-1)) | ...
 	% if the maximum is at the border of the currnet map shift
 	% the maximum towards the center (is tested in the next while)
 	d0 = d + d0;
-end;
+% end;
 
 % determine the maximum in the cross-correlation map
 if(strcmp(subpix,'none'))
