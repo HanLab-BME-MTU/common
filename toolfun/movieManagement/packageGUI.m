@@ -206,17 +206,11 @@ userData = get(handles.figure1, 'UserData');
 prop=get(hObject,'Tag');
 procID = str2double(prop(length('pushbutton_show_')+1:end));
 
-if isfield(userData, 'resultFig') & ishandle(userData.resultFig)
+if isfield(userData, 'resultFig') && ishandle(userData.resultFig)
     delete(userData.resultFig)
 end
 
-% Modifications should be added to the resultDisplay methods (should be
-% generic!!!!)
-if isa(userData.crtPackage,'UTrackPackage')
-    userData.resultFig = userData.crtPackage.processes_{procID}.resultDisplay(handles.figure1,procID);
-else
-    userData.resultFig = userData.crtPackage.processes_{procID}.resultDisplay();
-end
+userData.resultFig = userData.crtPackage.processes_{procID}.resultDisplay();
     
 set(handles.figure1, 'UserData', userData);
 

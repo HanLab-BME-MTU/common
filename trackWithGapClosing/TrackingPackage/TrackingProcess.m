@@ -123,32 +123,6 @@ classdef TrackingProcess < DataProcessingProcess
             end
         end
         
-        
-        
-        function hfigure = resultDisplay(obj,varargin)
-            % Display the output of the process
-            if ~isempty(obj.getPackage) && ...
-                    isa(obj.owner_.packages_{obj.getPackage},'UTrackPackage')
-                % Check for movie output before loading the GUI
-                iChan = find(obj.checkChannelOutput,1);
-                if isempty(iChan)
-                    warndlg('The current step does not have any output yet.','No Output','modal');
-                    return
-                end
-                
-                % Make sure detection output is valid
-                tracksFinal=obj.loadChannelOutput(iChan);
-                if isempty(tracksFinal)
-                    warndlg('The tracking result is empty. There is nothing to visualize.','Empty Output','modal');
-                    return
-                end
-                
-                hfigure = trackingVisualGUI('mainFig', varargin{:});
-            else
-                hfigure=resultDisplay@Process(obj,varargin{:});
-            end
-        end
-        
         function output = getDrawableOutput(obj)
             colors = hsv(numel(obj.owner_.channels_));
             output(1).name='Tracks';
