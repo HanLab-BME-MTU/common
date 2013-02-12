@@ -166,7 +166,7 @@ end
 % if there are negative values, plot axis
 if min(prm(:)) < 0
     xAll = [xa{:}];
-    plot([xAll(1)-border xAll(end)+border], [0 0], 'k-', 'LineWidth', 1.5);
+    plot([xAll(1)-border xAll(end)+border], [0 0], 'k-');
 end
 
 hold off;
@@ -183,7 +183,7 @@ xa = [xa{:}];
 afont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.AxisFontSize};
 lfont = {'FontName', ip.Results.FontName, 'FontSize', ip.Results.LabelFontSize};
 
-set(ha, afont{:}, 'LineWidth', 1.5,...
+set(ha, afont{:},...
     'XTick', la, 'XTickLabel', ip.Results.XLabels, 'XLim', [xa(1)-border xa(end)+border],...
     'TickDir', 'out', 'Layer', 'top');
 if ~isempty(ip.Results.YLim)

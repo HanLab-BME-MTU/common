@@ -44,7 +44,7 @@ nd = numel(prm); % # data sets
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('prm');
-ip.addOptional('Annotations', [], @(x) size(x,2)==2);
+ip.addOptional('Annotations', [], @(x) isempty(x) || size(x,2)==2);
 ip.addParamValue('FaceColor', jet(max(nd)), @(x) size(x,1)==1 || size(x,1)==nd || size(x,1)==nbin);
 ip.addParamValue('EdgeColor', zeros(1,3));
 ip.addParamValue('GroupDistance', 0.5, @isscalar);

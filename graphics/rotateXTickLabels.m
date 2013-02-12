@@ -92,5 +92,5 @@ end
 
 % shift x-label
 xPos = get(hx, 'Position');
-xPos(2) = -maxHeight;
+xPos(2) = YLim(1)-maxHeight;
 set(hx, 'Position', xPos, 'VerticalAlignment', 'middle');
