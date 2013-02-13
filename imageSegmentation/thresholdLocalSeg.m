@@ -35,7 +35,7 @@ ip.addRequired('level_local_radius',@isnumeric);
 ip.addRequired('pace',@isnumeric);
 ip.addRequired('lowerbound',@isnumeric);
 ip.addOptional('showPlots',0,@isnumeric)
-ip.parse(imageIn, level_local_radius, pace, varargin{:});
+ip.parse(imageIn, level_local_radius, pace, lowerbound, varargin{:});
 showPlots=ip.Results.showPlots;
 
 
