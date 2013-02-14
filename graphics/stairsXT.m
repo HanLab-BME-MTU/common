@@ -2,7 +2,7 @@
 
 % Francois Aguet, 5/21/2012
 
-function stairsXT(x, f, varargin)
+function h = stairsXT(x, f, varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
@@ -31,4 +31,4 @@ hold on;
 if ~isempty(ip.Results.FaceColor)
     patch(xb, yb, ip.Results.FaceColor, 'EdgeColor', 'none')
 end
-plot(xb, yb, '-', 'Color', ip.Results.EdgeColor, 'LineWidth', ip.Results.LineWidth);
+h = plot(xb, yb, '-', 'Color', ip.Results.EdgeColor, 'LineWidth', ip.Results.LineWidth);
