@@ -321,9 +321,11 @@ guidata(hObject,handles);
 function pushbutton_kalman_initialize_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
-id = get(handles.popupmenu_kalmanFunctions, 'Value');
+parent = handles.popupmenu_kalmanFunctions;
+id = get(parent, 'Value');
 
-userData.kalmanFig = userData.kalmanFunctions(id).initializeGUI('mainFig', handles.figure1, id);
+settingGUI = userData.kalmanFunctions(id).initializeGUI;
+userData.kalmanFig = settingGUI(parent, id);
 
 set(handles.figure1, 'UserData', userData);
 
