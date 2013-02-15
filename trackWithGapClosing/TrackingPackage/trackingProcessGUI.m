@@ -238,12 +238,14 @@ function pushbutton_set_linking_Callback(hObject, eventdata, handles)
 %       userData.kalmanFig
 
 userData = get(handles.figure1, 'UserData');
-procID = get(handles.popupmenu_linking, 'Value');
+parent = handles.popupmenu_linking;
+procID = get(parent, 'Value');
 if procID > length(userData.fun_cost_linking)
     warndlg('Please select a cost function for linking step.','Error','modal')
     return
 else
-    userData.linkingFig = userData.fun_cost_linking{procID}('mainFig', handles.figure1, procID);
+    settingGUI = userData.fun_cost_linking{procID};
+    userData.linkingFig = settingGUI(parent, procID);
 end
 set(handles.figure1, 'UserData', userData);
 
@@ -253,12 +255,14 @@ function pushbutton_set_gapclosing_Callback(hObject, eventdata, handles)
 %       userData.gapclosingFig - the handle of setting panel for gap closing set-up
 %       userData.kalmanFig
 userData = get(handles.figure1, 'UserData');
-procID = get(handles.popupmenu_gapclosing, 'Value');
+parent = handles.popupmenu_gapclosing;
+procID = get(parent, 'Value');
 if procID > length(userData.fun_cost_gap)
     warndlg('Please select a cost function for gap closing step.','Error','modal')
     return
 else
-    userData.gapclosingFig = userData.fun_cost_gap{procID}('mainFig', handles.figure1, procID);
+    settingGUI = userData.fun_cost_gap{procID};
+    userData.gapclosingFig = settingGUI(parent, procID);
 end
 set(handles.figure1, 'UserData', userData);
 
