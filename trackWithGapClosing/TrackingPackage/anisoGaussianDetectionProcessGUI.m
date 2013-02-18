@@ -138,4 +138,13 @@ end
 % Update the filter sigma based upon the value of psfSigm
 funParams.filterSigma = sqrt(2) * funParams.psfSigma;
 
+% Add 64-bit warning
+is64bit = ~isempty(regexp(computer ,'64$', 'once'));
+if ~is64bit
+    warndlg(['Your Matlab version is not detected as 64-bit. Please note '....
+        'the anisotropic Gaussian detection uses compiled MEX files which '...
+        'are not provided for 32-bit.'],...
+        'Setting Error','modal');
+end
+
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
