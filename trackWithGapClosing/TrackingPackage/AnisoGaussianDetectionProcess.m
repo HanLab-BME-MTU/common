@@ -45,6 +45,10 @@ classdef AnisoGaussianDetectionProcess < DetectionProcess
             name = 'Anisotropic Gaussian Detection';
         end
         
+        function h = GUI()
+            h = @anisoGaussianDetectionProcessGUI;
+        end
+        
         function funParams = getDefaultParams(owner,varargin)
             % Input check
             ip=inputParser;
