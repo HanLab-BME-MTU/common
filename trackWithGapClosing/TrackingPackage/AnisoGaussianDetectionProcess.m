@@ -64,7 +64,11 @@ classdef AnisoGaussianDetectionProcess < DetectionProcess
             funParams.MaskChannelIndex =  1 : numel(owner.channels_);
             
             % Detection parameters
-            funParams.psfSigma = 1;
+            if ~isempty(owner.channels_(1).psfSigma_)
+                funParams.psfSigma = owner.channels_(1).psfSigma_;
+            else
+                funParams.psfSigma = 1;
+            end
             funParams.mode = 'xyArtc';
             funParams.alpha = .05;
             funParams.kSigma = 4;
