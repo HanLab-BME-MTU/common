@@ -83,7 +83,7 @@ if ~all(hasFileAnnotation)
     newIDs = find(~hasFileAnnotation);
     
     %% Retrieve a given plane.
-    for i = newIDs
+    for i = newIDs(:)'
         path = fullfile(ip.Results.path, num2str(imageIDs.get(i-1)));        
         MD(i) = omeroImport(client.getSession(),imageIDs.get(i-1),path);
     end

@@ -70,7 +70,7 @@ end
 % Get time interval
 timeInterval = pixels.getTimeIncrement();
 if ~isempty(timeInterval)
-    movieArgs=horzcat(movieArgs,'timeInterval_',double(timeInterval));
+    movieArgs=horzcat(movieArgs,'timeInterval_', timeInterval.getValue());
 end
 
 % Get the lens numerical aperture
