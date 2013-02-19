@@ -71,9 +71,6 @@ p = parseProcessParams(postProc,paramsIn);
 
 %% --------------- Initialization ---------------%%
 
-assert(~isempty(movieData.timeInterval_), 'Please fill in the movie time interval!');
-assert(~isempty(movieData.pixelSize_), 'Please fill in the movie pixel size!');
-
 % Check detection process first
 iTrackProc =movieData.getProcessIndex('TrackingProcess',1,1);
 
@@ -109,8 +106,7 @@ for i = p.ChannelIndex
     
     diffAnalysisRes = trackDiffusionAnalysis1(tracks,...
         1,p.probDim,p.checkAsym,p.alphaValues,0,p.confRadMin); %#ok<NASGU>
-   
-    
+       
     % save each projData in its own directory
     save(outFilePaths{1,i},'diffAnalysisRes')
 end
