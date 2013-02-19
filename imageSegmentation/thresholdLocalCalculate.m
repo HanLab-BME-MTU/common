@@ -56,11 +56,11 @@ try
     
     switch choice_of_threshold
         case 'Otsu'
-            level = thresholdOtsu(imageInNorm);
+            level = thresholdOtsu(imageInNorm(nzInd));
         case 'Rosin'
-            level = thresholdRosin(imageInNorm);
+            level = thresholdRosin(imageInNorm(nzInd));
         case 'FluorescenceImage'
-            level = thresholdFluorescenceImage(imageInNorm);
+            level = thresholdFluorescenceImage(imageInNorm(nzInd));
     end
     
  level_whole = level*(maxSignal - minSignal)+minSignal;
@@ -71,6 +71,12 @@ end
 
 % Initialized the threshold map(level_img) as setting everywhere as the global level
 level_img = imageIn*0+level_whole;
+
+% If the radius defined here is larger than the size of image, simply
+% return with the global threshold
+if level_local_radius> min(size(imageIn))
+    return;
+end
 
 x_grid = level_local_radius + 1 : pace : size(level_img,1) - level_local_radius;
 y_grid = level_local_radius + 1 : pace : size(level_img,2) - level_local_radius;

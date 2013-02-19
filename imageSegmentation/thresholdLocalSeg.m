@@ -66,7 +66,7 @@ imageMask = imageIn >= level_img;
 % imageMask_whole = imageIn>new_level_for_second_group;
 
 imageMask_whole = imageIn >= level_whole*lowerbound/100;
-imageMask_whole = imfill(imageMask_whole,'holes');
+% imageMask_whole = imfill(imageMask_whole,'holes');
 % imageMask_whole = imdilate(imageMask_whole,ones(5,5));
 
 % The final segmentation is the intersect of both mask.
