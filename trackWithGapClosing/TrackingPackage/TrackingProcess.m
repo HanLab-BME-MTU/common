@@ -305,6 +305,8 @@ classdef TrackingProcess < DataProcessingProcess
         end
         
         function displayTracks = formatTracks(tracks)
+            % Format tracks structure into compound tracks for display
+            % purposes
             
             % Determine the number of compound tracks
             nCompoundTracks = zeros(numel(tracks), 1);
@@ -327,6 +329,9 @@ classdef TrackingProcess < DataProcessingProcess
                     displayTracks(iTrack).xCoord = tracks(i).tracksCoordAmpCG(j, 1:8:end);
                     displayTracks(iTrack).yCoord = tracks(i).tracksCoordAmpCG(j, 2:8:end);
                     displayTracks(iTrack).number = i;
+                    if isfield(tracks, 'label'),
+                        displayTracks(iTrack).label = tracks(i).label;
+                    end
                 end
                 
                 % Fill split events NaNs in compound tracks

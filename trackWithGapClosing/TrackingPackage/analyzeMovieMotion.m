@@ -106,9 +106,12 @@ for i = p.ChannelIndex
     
     diffAnalysisRes = trackDiffusionAnalysis1(tracks,...
         1,p.probDim,p.checkAsym,p.alphaValues,0,p.confRadMin); %#ok<NASGU>
-       
+    
+    for j = 1:numel(tracks)
+        tracks(j).classification = diffAnalysisRes(j).classification;
+    end
     % save each projData in its own directory
-    save(outFilePaths{1,i},'diffAnalysisRes')
+    save(outFilePaths{1,i},'diffAnalysisRes', 'tracks')
 end
 
 

@@ -2,9 +2,9 @@ classdef MotionAnalysisProcess < PostTrackingProcess
     % A concrete class for analyzing tracks diffusion
     
     % Sebastien Besson, March 2012
-
+    
     methods (Access = public)
-        function obj = MotionAnalysisProcess(owner, varargin)            
+        function obj = MotionAnalysisProcess(owner, varargin)
             if nargin == 0
                 super_args = {};
             else
@@ -23,7 +23,7 @@ classdef MotionAnalysisProcess < PostTrackingProcess
                 if isempty(funParams)  % Default funParams
                     funParams = MotionAnalysisProcess.getDefaultParams(owner,outputDir);
                 end
-                super_args{4} = funParams;  
+                super_args{4} = funParams;
             end
             
             obj = obj@PostTrackingProcess(super_args{:});
@@ -31,7 +31,7 @@ classdef MotionAnalysisProcess < PostTrackingProcess
         function varargout = loadChannelOutput(obj,iChan,varargin)
             
             % Input check
-            outputList = {'diffAnalysisRes'};
+            outputList = {'diffAnalysisRes', 'tracks'};
             ip =inputParser;
             ip.addRequired('iChan',@(x) isscalar(x) && obj.checkChanNum(x));
             ip.addOptional('iFrame',1:obj.owner_.nFrames_,@(x) all(obj.checkFrameNum(x)));
@@ -40,10 +40,43 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             iFrame = ip.Results.iFrame;
             output = ip.Results.output;
             if ischar(output),output={output}; end
+            nOutput = numel(output);
             
             % Data loading
             s = load(obj.outFilePaths_{1,iChan},output{:});
-            for i=1:numel(output),varargout{i}=s.(output{i}); end
+            
+            varargout = cell(nOutput);
+            for i = 1:nOutput
+                switch output{i}
+                    case 'tracks'
+                        tracksFinal = s.(output{i});
+                        if ~isempty(iFrame),
+                            % Filter tracks existing in input frame
+                            trackSEL=getTrackSEL(tracksFinal);
+                            validTracks = (iFrame>=trackSEL(:,1) &iFrame<=trackSEL(:,2));
+                            [tracksFinal(~validTracks).tracksCoordAmpCG]=deal([]);
+                            
+                            for j=find(validTracks)'
+                                tracksFinal(j).tracksCoordAmpCG = tracksFinal(j).tracksCoordAmpCG(:,1:8*(iFrame-trackSEL(j,1)+1));
+                            end
+                            varargout{i} = tracksFinal;
+                        else
+                            varargout{i} = tracksFinal;
+                        end
+                    case 'diffAnalysisRes'
+                        varargout{i} = s.(output{i});
+                end
+            end
+        end
+        
+        function output = getDrawableOutput(obj)
+            types = MotionAnalysisProcess.getTrackTypes();
+            colors = vertcat(types.color);
+            output(1).name='Classified tracks';
+            output(1).var='tracks';
+            output(1).formatData=@MotionAnalysisProcess.formatTracks;
+            output(1).type='overlay';
+            output(1).defaultDisplayMethod=@(x)TracksDisplay('Color', colors);
         end
         
     end
@@ -57,7 +90,7 @@ classdef MotionAnalysisProcess < PostTrackingProcess
         end
         
         function alpha = getAlphaValues()
-           alpha=[0.01 0.05 0.1 0.2];
+            alpha=[0.01 0.05 0.1 0.2];
         end
         
         function methods = getConfinementRadiusMethods()
@@ -85,5 +118,58 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             funParams.alphaValues = [0.05 0.1];
             funParams.confRadMin=0;
         end
-    end    
+        
+        function displayTracks = formatTracks(tracks)
+            % Format classified tracks into structure for display
+            
+            % Read track types and classification matrix
+            types = MotionAnalysisProcess.getTrackTypes();
+            track_class = vertcat(tracks.classification);
+            
+            % Assign label to each track of known type
+            for i = 1 : numel(types) - 1
+                idx = types(i).f(track_class);
+                if any(idx), [tracks(idx).label] = deal(i); end
+            end
+            
+            % Assign last label to unlabelled tracks
+            idx = cellfun(@isempty, {tracks.label});
+            [tracks(idx).label] = deal(numel(types));
+            
+            % Format tracks using TrackingProcess utility function
+            displayTracks = TrackingProcess.formatTracks(tracks);
+        end
+        
+        function types = getTrackTypes()
+            %
+            types(1).name = 'linear & 1D confined diffusion';
+            types(1).f = @(x) x(:,1) == 1 & x(:,3) == 1;
+            types(1).color = [0.7 0.7 0.7];
+            types(2).name = 'linear & 1D normal diffusion';
+            types(2).f = @(x) x(:,1) == 1 & x(:,3) == 2;
+            types(2).color = [1 0.7 0];
+            types(3).name = 'linear & 1D super diffusion';
+            types(3).f = @(x) x(:,1) == 1 & x(:,3) == 3;
+            types(3).color = [1 0 0];
+            types(4).name = 'linear & too short to analyze 1D diffusion';
+            types(4).f = @(x) x(:,1) == 1 & isnan(x(:,3));
+            types(4).color = [1 0 0];
+            types(5).name = 'random/unclassified & 2D confined diffusion';
+            types(5).f = @(x) x(:,1) ~= 1 & x(:,2) == 1;
+            types(5).color = [0 0 1];
+            types(6).name = 'random/unclassified & 2D normal diffusion';
+            types(6).f = @(x) x(:,1) ~= 1 & x(:,2) == 2;
+            types(6).color = [0 1 1];
+            types(7).name = 'random/unclassified & 2D super diffusion';
+            types(7).f = @(x) x(:,1) ~= 1 & x(:,3) == 3;
+            types(7).color = [1 0 1];
+            types(8).name = 'random & too short to analyze 2D diffusion';
+            types(8).f = @(x) x(:,1) == 0 & isnan(x(:,2));
+            types(8).color = [.6 0 1];
+            types(9).name = 'too short for any analysis';
+            types(9).f = @(x) 1;
+            types(9).color = [1 1 1];
+        end
+        
+    end
 end
