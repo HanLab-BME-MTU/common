@@ -97,8 +97,9 @@ set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind);
 
 set(handles.checkbox_outgrowth,'value',funParams.VIF_Outgrowth_Flag);
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only'};
-for Combine_Way_ind = 1 : 5
+
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based'};
+for Combine_Way_ind = 1 : 6
     if(strcmp(funParams.Combine_Way, Combine_Way_tag{Combine_Way_ind}))
         set(handles.popupmenu_segmentationbase,'Value',Combine_Way_ind);
         break;
@@ -131,10 +132,19 @@ else
         set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
         set(handles.edit_IntPaceSize,'Enable','on');
         set(handles.edit_IntPatchSize,'Enable','on');
-        set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
-        
+        set(handles.edit_int_lowerbound_localthresholding,'Enable','on');        
     end
 end
+
+if (strcmp(funParams.Combine_Way,'geo_based'))    
+    set(handles.edit_StPaceSize,'Enable','off');
+    set(handles.edit_StPatchSize,'Enable','off');
+    set(handles.edit_st_lowerbound_localthresholding,'Enable','off');
+    set(handles.edit_IntPaceSize,'Enable','off');
+    set(handles.edit_IntPatchSize,'Enable','off');
+    set(handles.edit_int_lowerbound_localthresholding,'Enable','off');
+end
+
 
 % Update user data and GUI data
 handles.output = hObject;
@@ -171,7 +181,7 @@ end
 channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only'};
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based'};
 Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
 funParams.Combine_Way=Combine_Way_tag{Combine_Way_ind};
 
@@ -439,7 +449,7 @@ function popupmenu_segmentationbase_Callback(hObject, eventdata, handles)
 % The following code is for set the parameter set editing boxes, that corresponds to combine way 
 % not choosen as disabled from editing
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only'};
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based'};
 Combine_Way_ind = get(hObject, 'Value');
 Combine_Way=Combine_Way_tag{Combine_Way_ind};
 
@@ -470,6 +480,14 @@ else
 end
 
 
+if (strcmp(Combine_Way,'geo_based'))    
+    set(handles.edit_StPaceSize,'Enable','off');
+    set(handles.edit_StPatchSize,'Enable','off');
+    set(handles.edit_st_lowerbound_localthresholding,'Enable','off');
+    set(handles.edit_IntPaceSize,'Enable','off');
+    set(handles.edit_IntPatchSize,'Enable','off');
+    set(handles.edit_int_lowerbound_localthresholding,'Enable','off');
+end
 
 % --- Executes during object creation, after setting all properties.
 function popupmenu_segmentationbase_CreateFcn(hObject, eventdata, handles)
@@ -483,11 +501,12 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-set(hObject,'String',{'Steerable Filter Results','Intensity','Combine Both St and Int','St NMS two','St nms only'});
+set(hObject,'String',{'Steerable Filter Results','Intensity','Combine Both St and Int',...
+    'St NMS two','St nms only', 'Geo based'});
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only'};
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based'};
 set(hObject,'Value',1);
-% for Combine_Way_ind = 1 : 5
+% for Combine_Way_ind = 1 : 6
 %     if(strcmp(funParams.Combine_Way, Combine_Way_tag{Combine_Way_ind}))
 %         set(hObject,'Value',Combine_Way_ind);
 %         break;

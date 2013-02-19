@@ -274,6 +274,15 @@ for iChannel = selected_channels
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;
                 Min_area = 6;
+            
+            case 'geo_based'
+                tic
+                [level2, NMS_Segment ] = geoBasedNmsSeg(nms);
+                toc
+                current_seg = NMS_Segment;
+                Intensity_Segment = current_seg;
+                SteerabelRes_Segment = current_seg;
+                Min_area = 6;
                 
             case 'int_only'
                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
@@ -333,6 +342,7 @@ for iChannel = selected_channels
             orienation_map_filtered(find(intensity_addon>0)) = OrientationVoted(find(intensity_addon>0));
         end
         
+        if(~strcmp(Combine_Way,'geo_based'))
         
                 %% Deleting the small isolated dots
         
@@ -383,7 +393,7 @@ for iChannel = selected_channels
         end
         
         current_seg = labelMask > 0;
-        
+        end
         
         %
         %         [ind_a,ind_b] = find(current_seg>0);

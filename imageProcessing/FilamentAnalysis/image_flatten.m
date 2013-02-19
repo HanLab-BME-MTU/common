@@ -105,12 +105,13 @@ for iChannel = selected_channels
     img_min=low_005_percentile;
     img_max=high_995_percentile;
     
-    [hist_all_frame, hist_bin] = hist(img_pixel_pool,55);
+    [hist_all_frame, hist_bin] = hist(img_pixel_pool,5);
     
     for iFrame_subsample = 1 : length(Frames_to_Seg)
-        hist_this_frame = hist_all_frame(:,iFrame_subsample);
-        ind = find(hist_this_frame==max(hist_this_frame));
-        center_value(iFrame_subsample) = hist_bin(ind(1));
+%         hist_this_frame = hist_all_frame(:,iFrame_subsample);
+%         ind = find(hist_this_frame==max(hist_this_frame));
+%         center_value(iFrame_subsample) = hist_bin(ind(1));
+        center_value(iFrame_subsample) = 1;
     end
     
     center_value = center_value/max(center_value);
