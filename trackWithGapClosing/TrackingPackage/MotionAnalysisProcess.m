@@ -144,16 +144,16 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             %
             types(1).name = 'linear & 1D confined diffusion';
             types(1).f = @(x) x(:,1) == 1 & x(:,3) == 1;
-            types(1).color = [0.7 0.7 0.7];
+            types(1).color = [1 0.7 0];
             types(2).name = 'linear & 1D normal diffusion';
             types(2).f = @(x) x(:,1) == 1 & x(:,3) == 2;
-            types(2).color = [1 0.7 0];
+            types(2).color = [1 0 0];
             types(3).name = 'linear & 1D super diffusion';
             types(3).f = @(x) x(:,1) == 1 & x(:,3) == 3;
-            types(3).color = [1 0 0];
+            types(3).color = [0 1 0];
             types(4).name = 'linear & too short to analyze 1D diffusion';
             types(4).f = @(x) x(:,1) == 1 & isnan(x(:,3));
-            types(4).color = [1 0 0];
+            types(4).color = [1 1 0];
             types(5).name = 'random/unclassified & 2D confined diffusion';
             types(5).f = @(x) x(:,1) ~= 1 & x(:,2) == 1;
             types(5).color = [0 0 1];
@@ -161,14 +161,14 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             types(6).f = @(x) x(:,1) ~= 1 & x(:,2) == 2;
             types(6).color = [0 1 1];
             types(7).name = 'random/unclassified & 2D super diffusion';
-            types(7).f = @(x) x(:,1) ~= 1 & x(:,3) == 3;
+            types(7).f = @(x) x(:,1) ~= 1 & x(:,2) == 3;
             types(7).color = [1 0 1];
             types(8).name = 'random & too short to analyze 2D diffusion';
             types(8).f = @(x) x(:,1) == 0 & isnan(x(:,2));
             types(8).color = [.6 0 1];
             types(9).name = 'too short for any analysis';
             types(9).f = @(x) 1;
-            types(9).color = [1 1 1];
+            types(9).color = [.7 .7 .7];
         end
         
     end
