@@ -56,7 +56,8 @@ set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
 if openHelpFile
-    set(Img, 'UserData', struct('class', mfilename))
+    [~, filename] = fileparts(get(handles.figure1,'Filename'));
+    set(Img, 'UserData', struct('class', filename))
 end
 
 % Update user data and GUI data
