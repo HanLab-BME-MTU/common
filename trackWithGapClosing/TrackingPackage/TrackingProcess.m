@@ -200,8 +200,8 @@ classdef TrackingProcess < DataProcessingProcess
             kalmanFunctions(1).calcGain    = func2str(@kalmanGainLinearMotion);
             kalmanFunctions(1).timeReverse = func2str(@kalmanReverseLinearMotion);
             
-            % Microtubule dynamics
-            kalmanFunctions(2).name = 'Microtubule dynamics';
+            % Microtubule plus-end dynamics
+            kalmanFunctions(2).name = 'Microtubule plus-end dynamics';
             kalmanFunctions(2).reserveMem = func2str(@kalmanResMemLM);
             kalmanFunctions(2).initialize  = func2str(@plusTipKalmanInitLinearMotion);
             kalmanFunctions(2).initializeGUI  = @kalmanInitializationGUI;
@@ -231,7 +231,7 @@ classdef TrackingProcess < DataProcessingProcess
             costMatrices(1).parameters.diagnostics = owner.nFrames_-1;
             
             % plusTip markers
-            plusTipCostMatrix.name = 'Microtubule dynamics';
+            plusTipCostMatrix.name = 'Microtubule plus-end dynamics';
             plusTipCostMatrix.funcName = func2str(@plusTipCostMatLinearMotionLink);
             plusTipCostMatrix.GUI = @plusTipCostMatLinearMotionLinkGUI;
             plusTipCostMatrix.parameters.linearMotion = 1; % use linear motion Kalman filter.
@@ -285,7 +285,7 @@ classdef TrackingProcess < DataProcessingProcess
             costMatrices(1).parameters.resLimit = []; % text field resolution limit, which is generally equal to 3 * point spread function sigma.
             
             % Linear motion
-            plusTipCostMatrix.name = 'Microtubule dynamics';
+            plusTipCostMatrix.name = 'Microtubule plus-end dynamics';
             plusTipCostMatrix.funcName = func2str(@plusTipCostMatCloseGaps);
             plusTipCostMatrix.GUI = @plusTipCostMatCloseGapsGUI;
             plusTipCostMatrix.parameters.maxFAngle = 30; %use linear motion Kalman filter.

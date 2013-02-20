@@ -24,7 +24,7 @@ classdef TrackingPackage < Package
     methods (Static)
         
         function name = getName()
-            name = 'Tracking';
+            name = 'U-Track';
         end 
         function m = getDependencyMatrix(i,j)   
             m = [0 0 0;  %1 DetectionProcess
@@ -51,7 +51,7 @@ classdef TrackingPackage < Package
         function objects = getConcretePackages()
             objects(1).name = 'Single-particles';
             objects(1).packageConstr = @UTrackPackage;
-            objects(2).name = 'Microtubules';
+            objects(2).name = 'Microtubules plus-ends';
             objects(2).packageConstr = @PlusTipTrackerPackage;                        
             objects(3).name = 'Nuclei';
             objects(3).packageConstr = @NucleiTrackingPackage;
