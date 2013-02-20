@@ -74,8 +74,10 @@ end
 allDepFiles = depfun(depList{:},'-toponly','-quiet');
 toolboxToken = ['toolbox' regexptranslate('escape',filesep) '(\w+)' regexptranslate('escape',filesep)];
 foundTokens=regexp(allDepFiles,toolboxToken,'tokens','once');
-toolboxes= unique(vertcat(foundTokens{:}));
+tb_namespaces = unique(vertcat(foundTokens{:}));
 
 % Remove the "toolboxes" that come with MATLAB by default
-builtInToolboxes = {'matlab','local','compiler','control'};
-toolboxes = setdiff(toolboxes,builtInToolboxes);
+v = cellfun(@ver, tb_namespaces, 'UniformOutput', false);
+v = v(~cellfun(@isempty, v));
+tb_names = cellfun(@(x) x.Name, v, 'UniformOutput', false);
+toolboxes = tb_names(~cellfun(@isempty, tb_names));
