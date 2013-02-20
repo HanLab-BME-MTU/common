@@ -23,10 +23,10 @@ function outTS = getTimeSeriesTrend(TS,varargin)
 
 ip = inputParser;
 ip.addRequired('TS',@(x) isnumeric(x));
-ip.addOptional('alpha',.05,@isscalar);
-ip.addOptional('nSurr',100,@isscalar);
-ip.addOptional('plotYes',0,@isscalar);
-ip.addOptional('trendType',0,@isscalar);
+ip.addParamValue('alpha',.05,@isscalar);
+ip.addParamValue('nSurr',100,@isscalar);
+ip.addParamValue('plotYes',0,@isscalar);
+ip.addParamValue('trendType',0,@isscalar);
 
 ip.parse(TS,varargin{:});
 alpha    = ip.Results.alpha;
@@ -82,7 +82,7 @@ for iVar = 1:nVar
             workTS = gapInterpolation(TS(iVar,:),1);
             % Remove all deterministic components
             [dTS(iVar,:),trend(iVar,:)] = preWhitening(workTS);
-            
+            deltaFit = [];
         end
         
         if plotYes

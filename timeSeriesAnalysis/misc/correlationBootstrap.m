@@ -65,7 +65,7 @@ end
 
 
 [confI,statCC] = bootci(nBoot,{@(x) nanmean(atanh(x)),workCC'},'alpha',alpha,...
-          'type','bca','Options',opt);
+          'type','norm','Options',opt);
 
 CI     = tanh( confI );
 

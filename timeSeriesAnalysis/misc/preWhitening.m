@@ -37,7 +37,7 @@ removeMean = ip.Results.removeMean;
 %% Initialization
 [nVar,nObs] = size(TS);
 max_order   = 8;
-trend       = [];
+trend       = nan(nVar,nObs);
 out         = TS;
 imf         = [];
 h           = inf(2,nVar);

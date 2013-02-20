@@ -96,13 +96,13 @@ if ~isempty(TSwork)
         alphaT    = 0.2;
         figure
         xAxis = frameRate*( outTS.interval );
-        plot(xAxis,TSwork,'LineWidth',2)
+        plot(xAxis,TSwork,'c','LineWidth',2)
         xlabel('Time [sec]')
         ylabel('Signal [A.U]')
         hold on
         
         
-        fill([xAxis fliplr(xAxis)],[outTS.Up flipud(outTS.Dw)],'r','FaceAlpha', alphaT,'linestyle','none');
+        fill([xAxis fliplr(xAxis)],[outTS.Up flipud(outTS.Dw)],'g','FaceAlpha', alphaT,'linestyle','none');
         disp(['If you are going to import this figure into Illustrator, comment the above and uncomment the line below' ...
               'DO NOT FORGET TO REVERSE THE COMMENTS BEFORE svn ci'])
         %The shading can be done once the figure is imported into illustrator by altering the transparency of the red area
