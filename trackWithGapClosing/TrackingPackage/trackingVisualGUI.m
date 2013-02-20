@@ -63,8 +63,7 @@ function trackingVisualGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 %       userData.file - maximum frame number
 %
 
-[copyright openHelpFile] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright)
+set(handles.text_copyright, 'String', getLCCBCopyright());
 
 userData = get(handles.figure1, 'UserData');
 % Choose default command line output for detectionVisualGUI
@@ -283,14 +282,8 @@ for i = 1:length(userData.toolName)
     Img = image(userData.questIconData); 
     set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
         'visible','off','YDir','reverse');
-    set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-    
-    if openHelpFile
-        set(Img, 'UserData', struct('class', userData.toolName{i}))
-    else
-        set(Img, 'UserData', 'Please refer to help file.')
-    end
-
+    set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
+        'UserData', struct('class', userData.toolName{i}))
 end
 
 % Update user data and GUI data

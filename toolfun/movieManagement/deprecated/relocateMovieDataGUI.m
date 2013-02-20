@@ -62,7 +62,7 @@ function relocateMovieDataGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % userData.userDir - default open directory
 % 
 
-[copyright] = userfcn_softwareConfig(handles);
+[copyright] = getLCCBCopyright(handles);
 set(handles.text_copyright, 'String', copyright)
 
 userData = get(handles.figure1, 'UserData');

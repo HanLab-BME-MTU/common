@@ -63,8 +63,7 @@ function dataPreparationGUI_OpeningFcn(hObject, ~, handles, varargin)
 %
 %
 
-[copyright openHelpFile] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright)
+set(handles.text_copyright, 'String', getLCCBCopyright())
 
 % Choose default command line output forfor i dataPreparationGUI
 handles.output = hObject;
@@ -88,11 +87,8 @@ Img = image(userData.questIconData);
 set(hObject,'colormap',supermap);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off');
-set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-
-if openHelpFile
-    set(Img, 'UserData', struct('class',mfilename))
-end
+set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
+    'UserData', struct('class',mfilename));
 
 % TestIif the dataPreparationGUI ewas called from the movieSelctorGUI
 if nargin > 3       

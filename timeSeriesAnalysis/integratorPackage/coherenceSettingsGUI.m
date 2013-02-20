@@ -47,8 +47,7 @@ end
 % --- Executes just before coherenceSettingsGUI is made visible.
 function coherenceSettingsGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
-[copyright openHelpFile] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright)
+set(handles.text_copyright, 'String', getLCCBCopyright())
 
 
 userData = get(handles.figure1, 'UserData');
@@ -81,12 +80,8 @@ set(hObject,'colormap',userData.colormap);
 set(handles.figure1,'CurrentAxes',handles.axes_help);Img = image(userData.questIconData); 
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
-set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-if openHelpFile
-    set(Img, 'UserData', struct('class', mfilename))
-else
-    set(Img, 'UserData', 'Please refer to help file.')
-end
+set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
+    'UserData', struct('class', mfilename));
 
 
 set(handles.figure1, 'UserData', userData)

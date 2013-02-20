@@ -87,8 +87,7 @@ else
 end
 
 % Call package GUI error
-[copyright openHelpFile] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright);
+set(handles.text_copyright, 'String', getLCCBCopyright());
 
 % Singleton control
 try assert(~userData.init)
@@ -211,11 +210,7 @@ set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(userData.questIconData); 
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
-set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-
-if openHelpFile
-    set(Img, 'UserData', struct('class', packageName))
-end
+set(Img,'ButtonDownFcn',@icon_ButtonDownFcn, 'UserData', struct('class', packageName))
 % --------------------------Set up processes------------------------------
 
 % List of template process uicontrols to expand
@@ -256,11 +251,8 @@ for i = 1:nProc
     Img = image(userData.smallquestIconData);
     set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
         'visible','off','YDir','reverse');  
-    set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-    
-    if openHelpFile
-        set(Img, 'UserData', struct('class', processClassName))
-    end
+    set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
+        'UserData', struct('class', processClassName))
 end
 
 cellfun(@(x)delete(handles.(x)),templateTag)

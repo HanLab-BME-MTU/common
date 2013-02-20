@@ -47,8 +47,7 @@ end
 % --- Executes just before motionAnalysisVisualGUI is made visible.
 function motionAnalysisVisualGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
-[copyright openHelpFile] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright)
+set(handles.text_copyright, 'String', getLCCBCopyright());
 
 userData = get(handles.figure1, 'UserData');
 % Choose default command line output for detectionVisualGUI

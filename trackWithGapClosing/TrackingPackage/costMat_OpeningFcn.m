@@ -24,8 +24,7 @@ ip.addOptional('ID',[],@isscalar);
 ip.parse(hObject,eventdata,handles, parent, ID);
 
 
-[copyright, openHelpFile] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright)
+set(handles.text_copyright, 'String', getLCCBCopyright());
 
 handles.output = hObject;
 userData = get(handles.figure1, 'UserData');
@@ -54,11 +53,10 @@ set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(userData.questIconData); 
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
-set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-if openHelpFile
-    [~, filename] = fileparts(get(handles.figure1,'Filename'));
-    set(Img, 'UserData', struct('class', filename))
-end
+
+[~, filename] = fileparts(get(handles.figure1,'Filename'));
+set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
+    'UserData', struct('class', filename));
 
 % Update user data and GUI data
 set(hObject, 'UserData', userData);

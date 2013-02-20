@@ -79,8 +79,7 @@ userData.package = ip.Results.package;
 userData.mainFig=ip.Results.mainFig;
 userData.previewFig = -1;
 
-[copyright] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright)
+set(handles.text_copyright, 'String', getLCCBCopyright())
 
 % Choose default command line output for recycleProcessGUI
 handles.output = hObject;

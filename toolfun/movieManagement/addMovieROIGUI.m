@@ -63,7 +63,7 @@ userData.MD =ip.Results.MD;
 userData.mainFig =ip.Results.mainFig;
         
 % Set up copyright statement
-set(handles.text_copyright, 'String',userfcn_softwareConfig(handles));
+set(handles.text_copyright, 'String', getLCCBCopyright());
 
 % Set up available input channels
 set(handles.listbox_selectedChannels,'String',userData.MD.getChannelPaths(), ...

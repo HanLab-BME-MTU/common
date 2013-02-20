@@ -44,8 +44,7 @@ userData.crtProcClassName = ip.Results.procClassName;
 initChannel = ip.Results.initChannel;
 
 % Set up copyright statement
-[copyright openHelpFile] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright)
+set(handles.text_copyright, 'String', getLCCBCopyright());
 
 % Get current package, movie data and process
 userData.handles_main = guidata(userData.mainFig);
@@ -124,10 +123,8 @@ set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(userData.questIconData);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
-set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-if openHelpFile
-    set(Img, 'UserData', struct('class',userData.crtProcClassName))
-end
+set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
+    'UserData', struct('class',userData.crtProcClassName))
 
 % Update user data and GUI data
 set(hObject, 'UserData', userData);

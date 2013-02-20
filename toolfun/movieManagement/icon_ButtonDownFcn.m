@@ -32,7 +32,7 @@ else
     % if called from setting GUI, call user-defined help dialog 'msgboxGUI'
 
     if isfield(userData, 'crtProc')
-        [copyright openHelpFile] = userfcn_softwareConfig(handles);
+        copyright = getLCCBCopyright();
         % Help dialog from setting panel
         if ~isempty(userData.crtProc)
             userData.helpFig = msgboxGUI('Text', sprintf([get(hObject,'UserData'), ...

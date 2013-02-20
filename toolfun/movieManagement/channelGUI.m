@@ -62,8 +62,7 @@ function channelGUI_OpeningFcn(hObject, ~, handles, varargin)
 % userData.helpFig - handle of help window
 %
 
-[copyright openHelpFile] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright)
+set(handles.text_copyright, 'String', getLCCBCopyright())
 
 userData = get(handles.figure1, 'UserData');
 % Choose default command line output for channelGUI
@@ -80,10 +79,8 @@ Img = image(userData.questIconData);
 set(hObject,'colormap',supermap);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off');
-set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-if openHelpFile
-    set(Img, 'UserData', struct('class', mfilename))
-end
+set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
+    'UserData', struct('class', mfilename))
 
 if nargin > 3    
     if any(strcmp(varargin, 'mainFig'))

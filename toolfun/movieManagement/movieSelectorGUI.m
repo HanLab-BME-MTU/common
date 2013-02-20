@@ -73,8 +73,7 @@ ip.addParamValue('MD',[],@(x) isempty(x) || isa(x,'MovieData'));
 ip.addParamValue('ML',[],@(x) isempty(x) || isa(x,'MovieList'));
 ip.parse(hObject,eventdata,handles,varargin{:});
 
-[copyright openHelpFile] = userfcn_softwareConfig(handles);
-set(handles.text_copyright, 'String', copyright)
+set(handles.text_copyright, 'String', getLCCBCopyright())
 
 userData = get(handles.figure1, 'UserData');
 
@@ -155,9 +154,7 @@ Img = image(userData.questIconData);
 set(hObject,'colormap',supermap);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off');
-set(Img,'ButtonDownFcn',@icon_ButtonDownFcn);
-
-if openHelpFile, set(Img, 'UserData', struct('class',mfilename)); end
+set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,'UserData', struct('class',mfilename)); 
 
 set(handles.figure1,'UserData',userData);
 refreshDisplay(hObject,eventdata,handles);
