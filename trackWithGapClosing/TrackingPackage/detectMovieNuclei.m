@@ -97,8 +97,9 @@ for i = 1:numel(p.ChannelIndex)
         else
             I = double(movieData.getProcess(p.ProcessIndex).loadChanelOutput(iChan, j));
         end
-        movieInfo(j,1)= detectNuclei(I, p.radius, p.useDblLog,...
-            'edgeFilter', p.edgeFilter, 'sigma', p.sigma, 'p', p.p);
+        movieInfo(j,1) = detectNuclei(I, p.radius, p.confluent,...
+            'edgeFilter', p.edgeFilter, 'sigma', p.sigma, 'p', p.p,...
+            'useDblLog', p.useDblLog);
         
         % Update the waitbar
         if mod(j,5)==1 && ishandle(wtBar)

@@ -22,7 +22,7 @@ function varargout = nucleiDetectionProcessGUI(varargin)
 
 % Edit the above text to modify the response to help nucleiDetectionProcessGUI
 
-% Last Modified by GUIDE v2.5 16-Dec-2011 15:45:34
+% Last Modified by GUIDE v2.5 21-Feb-2013 16:58:23
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -54,15 +54,8 @@ userData = get(handles.figure1, 'UserData');
 funParams = userData.crtProc.funParams_;
 
 % Set parameters
-set(handles.edit_radius,'String',funParams.radius);
-edgeFilters=NucleiDetectionProcess.getFilters;
-set(handles.popupmenu_edgeFilter,'String',edgeFilters,...
-    'Value',find(strcmp(funParams.edgeFilter,edgeFilters)));
-
-set(handles.edit_sigma,'String',funParams.sigma);
-set(handles.edit_p,'String',funParams.p);
-set(handles.checkbox_useDblLog,'Value',funParams.useDblLog);
-
+set(handles.edit_radius, 'String', funParams.radius);
+set(handles.checkbox_confluent, 'Value', funParams.confluent);
 
 set(handles.edit_firstFrame, 'String', funParams.firstFrame);
 set(handles.edit_lastFrame, 'String', funParams.lastFrame);
@@ -110,29 +103,9 @@ if isnan(radius) || radius <0
     return
 end
 funParams.radius = radius;
+funParams.confluent  = get(handles.checkbox_confluent, 'Value');
 
-p = str2double(get(handles.edit_p, 'String'));
-if isnan(p ) || p  <0
-    errordlg(['Please provide a valid value for ' get(handles.text_p,'String')...
-        '.'],'Setting Error','modal')
-    return
-end
-funParams.p  = p ;
-funParams.useDblLog = get(handles.checkbox_useDblLog,'Value');
-
-props=get(handles.popupmenu_edgeFilter, {'String','Value'});
-funParams.edgeFilter=props{1}{props{2}};
-if strcmp(funParams.edgeFilter,'canny')
-    sigma = str2double(get(handles.edit_sigma, 'String'));
-    if isnan(sigma) || sigma <0
-        errordlg(['Please provide a valid value for ' get(handles.text_sigma,'String')...
-            '.'],'Setting Error','modal')
-        return
-    end
-    funParams.sigma  = sigma;
-end
-
-
+% Read frame range for detection
 firstFrame=str2double(get(handles.edit_firstFrame, 'String'));
 if isnan(firstFrame) || firstFrame<1 ||round(firstFrame)~=firstFrame
     errordlg('Please provide a valid value for the frame range to analyze.','Setting Error','modal')
@@ -148,8 +121,8 @@ if isnan(lastFrame) || lastFrame>userData.MD.nFrames_ ||...
 end
 funParams.lastFrame=lastFrame;
 
-if  lastFrame == userData.MD.nFrames_
-     setLastFrame =@(x) parseProcessParams(x, struct('lastFrame',...
+if lastFrame == userData.MD.nFrames_
+    setLastFrame =@(x) parseProcessParams(x, struct('lastFrame',...
         x.owner_.nFrames_));
 else
     setLastFrame =@(x) parseProcessParams(x, struct('lastFrame',...

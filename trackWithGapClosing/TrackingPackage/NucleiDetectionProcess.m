@@ -61,8 +61,9 @@ classdef NucleiDetectionProcess < DetectionProcess
             funParams.ChannelIndex = 1:numel(owner.channels_);
             funParams.OutputDirectory = [outputDir  filesep 'detected_nuclei'];
             funParams.ProcessIndex = [];%Default is to use raw images
-            funParams.edgeFilter = 'sobel';
             funParams.radius = 5;
+            funParams.confluent = false;
+            funParams.edgeFilter = 'sobel';
             funParams.sigma = 2;
             funParams.useDblLog = true;
             funParams.p = .01;
