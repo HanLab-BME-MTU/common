@@ -8,7 +8,8 @@ function [movieInfo, dPix]=detectNuclei(I, radius, varargin)
 %
 %   radius - radius of the nuclei (in pixels)
 %
-%   useDblLog - optional.
+%   confluent - optional. Boolean specifying wether the nuclei to be
+%   detected are organized in a confluent epithelial sheet. Default: false.
 %
 %   Possible Parameter Structure Field Names:
 %       ('FieldName' -> possible values)
@@ -22,8 +23,15 @@ function [movieInfo, dPix]=detectNuclei(I, radius, varargin)
 %
 %       p - a scalar
 %
+%
+%       useDblLog - optional.
+%
 %       doPlot -  a boolean value to display intermediate graphs. Default:
 %       false.
+%
+%
+% For more information, see:
+% M. Rosa Ng, A. Besser, G. Danuser, and J. S. Brugge, J Cell Biol 2012 199:545-563
 
 % Achim Besser, Dec 2010 (last modified Aug 2011)
 % Adapted by Sebastien Besson, Nov 2012
@@ -32,11 +40,12 @@ function [movieInfo, dPix]=detectNuclei(I, radius, varargin)
 ip =inputParser;
 ip.addRequired('I', @isnumeric)
 ip.addRequired('radius', @isposint)
-ip.addOptional('useDblLog', true, @isscalar)
+ip.addOptional('confluent', false, @isscalar)
 edgeFilters = {'sobel', 'canny', 'prewitt','none'};
-ip.addParamValue('edgeFilter', 'sobel', @(x) ismember(x, edgeFilters))
+ip.addParamValue('edgeFilter', 'sobel', @(x) ismember(x, edgeFilters));
 ip.addParamValue('sigma', 2, @isscalar);
 ip.addParamValue('p', .01, @isscalar);
+ip.addParamValue('useDblLog', true, @isscalar);
 ip.addParamValue('doPlot', false, @isscalar);
 ip.parse(I, radius, varargin{:});
 
@@ -144,18 +153,21 @@ if doPlot==1
     hist(Imax(Imax(:)>0),1000)
 end
 
-% % cut off the maxima in the noise:
-% try
-%     % This only works for dense sheets!
-%     level1=thresholdFluorescenceImageFewBg(Imax(Imax(:)>0),doPlot);
-%     % This only works for significant amount of Bg, but is then more reliable than the above method!
-%     % level1=thresholdFluorescenceImage(Imax(Imax(:)>0),doPlot,1);
-% catch
+% cut off the maxima in the noise:
+try
+    if ip.Results.confluent
+        % This only works for dense sheets!
+        level1 = thresholdFluorescenceImageFewBg(Imax(Imax(:)>0), doPlot);
+    else
+        % This only works for significant amount of Bg, but is then more reliable than the above method!
+        level1 = thresholdFluorescenceImage(Imax(Imax(:)>0), doPlot, 1);
+    end
+catch
     % This shouldn't be used anymore. Instead, one should use the
     % algorithm above!
-%     display('!!!switched to cutFirstHistMode!!!')
+    display('!!!switched to cutFirstHistMode!!!')
     [~, level1]=cutFirstHistMode(Imax(Imax(:)>0),0);
-% end
+end
 Imax(Imax(:)<level1)=0;
 Imax(Imax(:)>0)=1;
 
