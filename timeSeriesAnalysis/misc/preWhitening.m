@@ -36,7 +36,7 @@ removeMean = ip.Results.removeMean;
 
 %% Initialization
 [nVar,nObs] = size(TS);
-max_order   = 8;
+maxOrder    = 8;%Upper bound on the arx model order - empirical
 trend       = nan(nVar,nObs);
 out         = TS;
 imf         = [];
@@ -53,7 +53,7 @@ for iVar=1:nVar
             case 'ar'
                 
                 ts       = iddata(TS(iVar,:),[],1);
-                model    = arxstruc(ts,ts,[1:max_order]');
+                model    = arxstruc(ts,ts,[1:maxOrder]');
                 bestM    = selstruc(model,'aic');
                 finalM   = ar(ts,bestM(1));
                 IR       = polydata(finalM);

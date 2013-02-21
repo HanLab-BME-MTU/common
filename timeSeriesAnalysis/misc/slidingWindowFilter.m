@@ -13,6 +13,10 @@ function [varargout] = slidingWindowFilter(TS,winSize,operation)
 %       
 %       Ex: out = slidingWindowFilter(TS,10,@(x) mean(x,2))
 %                 mean sliding filter
+%
+%           out = slidingWindowFilter(TS,10,@(x) var(x,[],2))
+%                 mean sliding filter
+%           
 %       IMPORTANT - operations are done over the rows. That is the reason for applying the mean on the dimension 2
 %Output:
 %

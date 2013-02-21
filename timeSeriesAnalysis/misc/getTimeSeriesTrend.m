@@ -12,8 +12,8 @@ function outTS = getTimeSeriesTrend(TS,varargin)
 %                  1 - remove linear trend
 %                  2 - remove exponential trend
 %                  3 - remove double exponential trend
-%                  4 - remove nonlinear local trend
-%                  5 - remove all determinitic component (trend + seasonal)
+%                  4 - remove nonlinear local trend (trendFilteringEMD)
+%                  5 - remove all determinitic component and spits out a stationary signal
 %
 %Output:
 %       outTS(iVariable).trend     - estimated trend
@@ -48,6 +48,7 @@ for iVar = 1:nVar
     if sum(isfinite(TS(iVar,:))) > minLen
 
         if ismember(trendT,0)
+            
             % Remove sample mean
             trend(iVar,:)    = repmat( nanmean(TS(iVar,:)),nObs,1 );
             deltaFit(iVar,:) = norminv((1-alpha/2),0,1)*repmat( nanstd(TS(iVar,:)),nObs,1 )/sqrt(nObs);
@@ -70,19 +71,25 @@ for iVar = 1:nVar
             fitOptions = statset('Robust','on','MaxIter',500,'Display','off');
             [bFit,resFit,~,covFit,mseFit] = nlinfit([1:nObs],TS(iVar,:),fitFun,bInit,fitOptions);
             %Get confidence intervals of fit and fit values
-            [trend(iVar,:),deltaFit] = nlpredci(fitFun,1:nObs,bFit,resFit,'covar',covFit,'mse',mseFit);
-            dTS(iVar,:)              = TS(iVar,:) - trend(iVar,:);
+            [outTS.trend(iVar,:),deltaFit] = nlpredci(fitFun,1:nObs,bFit,resFit,'covar',covFit,'mse',mseFit);
+            outTS.dTS(iVar,:)              = TS(iVar,:) - trend(iVar,:);
             
+        elseif trendT == 4
+            
+            outTS    = trendFilteringEMD(TS(iVar,:));
+            deltaFit = [];
             
         elseif trendT == 5
+            
             %Indexes for real points
             numIdx = find(~isnan(TS(iVar,:)));
             %Blocks of real points
             numB   = findBlock(numIdx,1);
             workTS = gapInterpolation(TS(iVar,:),1);
             % Remove all deterministic components
-            [dTS(iVar,:),trend(iVar,:)] = preWhitening(workTS);
+            [outTS.dTS(iVar,:),outTS.trend(iVar,:)] = preWhitening(workTS);
             deltaFit = [];
+            
         end
         
         if plotYes
@@ -90,14 +97,12 @@ for iVar = 1:nVar
             figure
             plot(TS(iVar,:))
             hold on
-            plot(trend(iVar,:),'r')
-            plot(trend(iVar,:)+deltaFit,'r--')
-            plot(trend(iVar,:)-deltaFit,'r--')
+            plot(outTS.trend(iVar,:),'r')
+            plot(outTS.trend(iVar,:)+deltaFit,'r--')
+            plot(outTS.trend(iVar,:)-deltaFit,'r--')
             
         end
         
-        outTS.trend(iVar,:)     = trend(iVar,:);
-        outTS.detrendTS(iVar,:) = dTS(iVar,:);
     end
     
 end
