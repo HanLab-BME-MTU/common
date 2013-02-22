@@ -21,7 +21,7 @@ function [simMPM,tracksSim] = simulateRandomPlusLinearMotion(imSize,numP,...
 %                               motion.
 %               .confRad2D    : 2-element row vector indicating range of
 %                               confinement radii for 2D confined motion.
-%               .speed1D      : 2-element row vector inficating range of
+%               .speed1D      : 2-element row vector indicating range of
 %                               speeds for directed motion. Note that
 %                               direction can be anything and will be
 %                               chosen randomly.
@@ -359,6 +359,9 @@ for iTrack = 1 : numTracks
         tracksCoordAmpCG(1,1:8:end) = xyvecTraj(:,1);
         tracksCoordAmpCG(1,2:8:end) = xyvecTraj(:,2);
         tracksCoordAmpCG(1,4:8:end) = intVecTraj;
+        tracksCoordAmpCG(1,5:8:end) = 0;
+        tracksCoordAmpCG(1,6:8:end) = 0;
+        tracksCoordAmpCG(1,8:8:end) = 0;
         
         %info of splits/merges
         for iSplit = 1 : numSplits
@@ -388,6 +391,9 @@ for iTrack = 1 : numTracks
         tracksCoordAmpCG(1,1:8:end) = xyvecTraj(:,1);
         tracksCoordAmpCG(1,2:8:end) = xyvecTraj(:,2);
         tracksCoordAmpCG(1,4:8:end) = intVecTraj;
+        tracksCoordAmpCG(1,5:8:end) = 0;
+        tracksCoordAmpCG(1,6:8:end) = 0;
+        tracksCoordAmpCG(1,8:8:end) = 0;
         
     end
 
@@ -402,39 +408,41 @@ numTracks = length(tracksSim);
 
 %%   make simMPM out of tracksFinal
 
-%allocate memory for simMPM
-simMPM = zeros(numTracks,8*numF);
+simMPM = [];
 
-%get number of segments making each track
-numSegments = zeros(numTracks,1);
-for i = 1 : numTracks
-    numSegments(i) = size(tracksSim(i).tracksCoordAmpCG,1);
-end
-
-%locate the row of the first track of each compound track in the
-%big matrix of all tracks (to be constructed in the next step)
-trackStartRow = ones(numTracks,1);
-for iTrack = 2 : numTracks
-    trackStartRow(iTrack) = trackStartRow(iTrack-1) + numSegments(iTrack-1);
-end
-
-%put all tracks together in a matrix
-for i = 1 : numTracks
-    startTime = tracksSim(i).seqOfEvents(1,1);
-    endTime   = tracksSim(i).seqOfEvents(end,1);
-    simMPM(trackStartRow(i):trackStartRow(i)+...
-        numSegments(i)-1,8*(startTime-1)+1:8*endTime) = ...
-        tracksSim(i).tracksCoordAmpCG;
-end
-
-%remove extra columns
-dummy = simMPM;
-clear simMPM
-simMPM = zeros(size(dummy,1),3*numF);
-simMPM(:,1:3:end) = dummy(:,1:8:end);
-simMPM(:,2:3:end) = dummy(:,2:8:end);
-simMPM(:,3:3:end) = dummy(:,4:8:end);
-simMPM(isnan(simMPM)) = 0;
+% %allocate memory for simMPM
+% simMPM = zeros(numTracks,8*numF);
+% 
+% %get number of segments making each track
+% numSegments = zeros(numTracks,1);
+% for i = 1 : numTracks
+%     numSegments(i) = size(tracksSim(i).tracksCoordAmpCG,1);
+% end
+% 
+% %locate the row of the first track of each compound track in the
+% %big matrix of all tracks (to be constructed in the next step)
+% trackStartRow = ones(numTracks,1);
+% for iTrack = 2 : numTracks
+%     trackStartRow(iTrack) = trackStartRow(iTrack-1) + numSegments(iTrack-1);
+% end
+% 
+% %put all tracks together in a matrix
+% for i = 1 : numTracks
+%     startTime = tracksSim(i).seqOfEvents(1,1);
+%     endTime   = tracksSim(i).seqOfEvents(end,1);
+%     simMPM(trackStartRow(i):trackStartRow(i)+...
+%         numSegments(i)-1,8*(startTime-1)+1:8*endTime) = ...
+%         tracksSim(i).tracksCoordAmpCG;
+% end
+% 
+% %remove extra columns
+% dummy = simMPM;
+% clear simMPM
+% simMPM = zeros(size(dummy,1),3*numF);
+% simMPM(:,1:3:end) = dummy(:,1:8:end);
+% simMPM(:,2:3:end) = dummy(:,2:8:end);
+% simMPM(:,3:3:end) = dummy(:,4:8:end);
+% simMPM(isnan(simMPM)) = 0;
 
 %% shift positions to remove any negative coordinates
 

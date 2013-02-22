@@ -101,7 +101,7 @@ indx = chooseTracks(tracksFinal,criteria);
 tracksFinal = tracksFinal(indx);
 diffAnalysisRes = diffAnalysisRes(indx);
 diffModeAnRes = diffModeAnRes(indx);
-trackDensity = trackDensity(indx);
+% trackDensity = trackDensity(indx);
 
 %save tracksFinal into a new variable name
 inputStructure = tracksFinal;

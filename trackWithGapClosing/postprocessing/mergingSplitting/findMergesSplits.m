@@ -190,22 +190,30 @@ for iTrack = 1 : numTracks
 end
 
 %remove empty columns
-fullIndx = find(sum(mergesInfo(:,2:end))~=0);
-mergesInfo = [mergesInfo(:,1) mergesInfo(:,1+fullIndx)];
-fullIndx = sum(mergesInfoSpace)~=0;
-mergesInfoSpace = mergesInfoSpace(:,fullIndx);
-fullIndx = find(sum(splitsInfo(:,2:end))~=0);
-splitsInfo = [splitsInfo(:,1) splitsInfo(:,1+fullIndx)];
-fullIndx = sum(splitsInfoSpace)~=0;
-splitsInfoSpace = splitsInfoSpace(:,fullIndx);
+if ~isempty(mergesInfo)
+    fullIndx = find(sum(mergesInfo(:,2:end))~=0);
+    mergesInfo = [mergesInfo(:,1) mergesInfo(:,1+fullIndx)];
+    fullIndx = sum(mergesInfoSpace)~=0;
+    mergesInfoSpace = mergesInfoSpace(:,fullIndx);
+end
+if ~isempty(splitsInfo)
+    fullIndx = find(sum(splitsInfo(:,2:end))~=0);
+    splitsInfo = [splitsInfo(:,1) splitsInfo(:,1+fullIndx)];
+    fullIndx = sum(splitsInfoSpace)~=0;
+    splitsInfoSpace = splitsInfoSpace(:,fullIndx);
+end
 
 %remove rows without merges or splits
-filledRows = find(any(mergesInfo(:,2)~=0,2));
-mergesInfo = [filledRows mergesInfo(filledRows,:)];
-mergesInfoSpace = mergesInfoSpace(filledRows,:);
-filledRows = find(any(splitsInfo(:,2)~=0,2));
-splitsInfo = [filledRows splitsInfo(filledRows,:)];
-splitsInfoSpace = splitsInfoSpace(filledRows,:);
+if ~isempty(mergesInfo)
+    filledRows = find(any(mergesInfo(:,2)~=0,2));
+    mergesInfo = [filledRows mergesInfo(filledRows,:)];
+    mergesInfoSpace = mergesInfoSpace(filledRows,:);
+end
+if ~isempty(splitsInfo)
+    filledRows = find(any(splitsInfo(:,2)~=0,2));
+    splitsInfo = [filledRows splitsInfo(filledRows,:)];
+    splitsInfoSpace = splitsInfoSpace(filledRows,:);
+end
 
 %% Plotting
 
