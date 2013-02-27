@@ -19,6 +19,7 @@ endpointLabels = labels(endpointIdx);
 [yi, xi] = ind2sub(dims, pidx);
 X = [xi yi];
 [yi, xi] = ind2sub(dims, endpointIdx);
+% use endpoints to find closest points on other edges
 [idx, dist] = KDTreeBallQuery(X, [xi yi], ip.Results.SearchRadius);
 
 np = numel(endpointIdx);
@@ -31,17 +32,31 @@ for k = 1:np
     rmIdx = labels(pidx(idx{k}))==endpointLabels(k);
     idx{k}(rmIdx) = [];
     dist{k}(rmIdx) = [];
-    % label of closest point
+    
+    % label of closest edge %%%% USE STRONGEST EDGE INSTEAD!!!
+    % pick edge with highest intensity among closest 3
     if ~isempty(idx{k})
-        iMatchLabel = [endpointLabels(k) labels(pidx(idx{k}(1)))];
-        iMatchIndex = [endpointIdx(k) pidx(idx{k}(1))];
-        [~,sidx] = sort(iMatchLabel);
-        matchLabel(k,:) = iMatchLabel(sidx);
-        matchIndex(k,:) = iMatchIndex(sidx);
-        matchDist(k) = dist{k}(1);
+        iAvgInt = CC.AvgInt(labels(pidx(idx{k})));
+        
+        %if iAvgInt==max(iAvgInt)
+        % match: first 'idx' with max 'iAvgInt'
+        li = min(3, numel(iAvgInt));
+        mi = find(iAvgInt(1:li)==max(iAvgInt(1:li)), 1, 'first');
+        %mi = 1;
+%         if mi<4
+            % label of the matched points
+            iMatchLabel = [endpointLabels(k) labels(pidx(idx{k}(mi)))];
+            [~,sidx] = sort(iMatchLabel);
+            matchLabel(k,:) = iMatchLabel(sidx);
+            % index of the matched points
+            iMatchIndex = [endpointIdx(k) pidx(idx{k}(mi))];
+            matchIndex(k,:) = iMatchIndex(sidx);
+            % distance btw matched points
+            matchDist(k) = dist{k}(mi);
+%         end
     end
 end
-% determine unique pairs (shortest distance)
+% determine unique pairs of edges (shortest distance)
 [~,sidx] = sort(matchDist);
 matchLabel = matchLabel(sidx,:);
 matchIndex = matchIndex(sidx,:);
@@ -53,6 +68,7 @@ matchLabel = matchLabel(sidx,:);
 matchIndex = matchIndex(sidx,:);
 
 N = size(matchLabel,1);
+% POSSIBLY LEAVE OUT: 
 valid = false(N,1);
 valid(1) = true;
 for k = 2:N
@@ -62,29 +78,59 @@ matchLabel = matchLabel(valid,:);
 matchIndex = matchIndex(valid,:);
 N = size(matchLabel,1);
 
+%%
+tmp = double(labels~=0);
+tmp(endpointIdx(:)) = 2;
+figure; imagesc(tmp); colormap(gray(256)); axis image; colorbar;
+hold on;
+[yi1, xi1] = ind2sub(CC.ImageSize, matchIndex(:,1));
+[yi2, xi2] = ind2sub(CC.ImageSize, matchIndex(:,2));
+X = [xi1 xi2];
+Y = [yi1 yi2];
+plot(X',Y', 'b')
+% return
+%%
+
+kval = zeros(CC.NumObjects,1);
+for k = 1:CC.NumObjects
+    [~,~,kval(k)] = kstest2(CC.nvalDist{k}(:), CC.pvalDist{k}(:));
+end
+
 switch ip.Results.Mode
     case 'KSDistance'
         % cost based on KS distance
         cost = zeros(N,1);
         for k = 1:N
-            [~,~,ksLL] = kstest2(CC.lval{matchLabel(k,1)}(:), CC.lval{matchLabel(k,2)}(:));
-            [~,~,ksHH] = kstest2(CC.rval{matchLabel(k,1)}(:), CC.rval{matchLabel(k,2)}(:));
+            [~,~,ksLL] = kstest2(CC.nvalProx{matchLabel(k,1)}(:), CC.nvalProx{matchLabel(k,2)}(:));
+            [~,~,ksHH] = kstest2(CC.pvalProx{matchLabel(k,1)}(:), CC.pvalProx{matchLabel(k,2)}(:));
             
-            %[~,~,ks1] = kstest2(CC.lval{matchList(k,1)}(:), CC.rval{matchList(k,1)}(:));
-            %[~,~,ks2] = kstest2(CC.lval{matchList(k,2)}(:), CC.rval{matchList(k,2)}(:));
-            
-            cost(k) = 1-max([ksLL ksHH]);
-            %cost(k) = 1-mean([ksLL ksHH]);
-            
+            %[~,~,ksLL] = kstest2(CC.nvalDist{matchLabel(k,1)}(:), CC.nvalDist{matchLabel(k,2)}(:));
+            %[~,~,ksHH] = kstest2(CC.pvalDist{matchLabel(k,1)}(:), CC.pvalDist{matchLabel(k,2)}(:));
+
             % penalize cost when left/right distributions of a segment are close
+            %cost(k) = (1-max([ksLL ksHH])) * kval(matchLabel(k,1)) * kval(matchLabel(k,2)) * CC.AvgInt(matchLabel(k,1)) * CC.AvgInt(matchLabel(k,2));
+            
+            % similar intensities, penalize difference in distributions
+            %cost(k) = 1-abs(CC.AvgInt(matchLabel(k,1))-CC.AvgInt(matchLabel(k,2)))...
+            
+            
+            % reward linking of high intensity segments, penalize difference in distributions
+            cost(k) = min(CC.AvgInt(matchLabel(k,1)),CC.AvgInt(matchLabel(k,2)))...
+                   .* (1-max([ksLL ksHH]));
+                   %- max([ksLL ksHH]);% * kval(matchLabel(k,1)) * kval(matchLabel(k,2));
+            
+            
+            %cost(k) = min(CC.AvgInt(matchLabel(k,1)),CC.AvgInt(matchLabel(k,2)))...
+            %       - max([ksLL ksHH]);% * kval(matchLabel(k,1)) * kval(matchLabel(k,2));
+            
             %cost(k) = cost(k) * min(ks1,ks2);
             %cost(k) = cost(k) * (1-(1-ks1)*(1-ks2));
             
         end
-        rmIdx = cost<0.2;
-        matchLabel(rmIdx,:) = [];
-        matchIndex(rmIdx,:) = [];
-        cost(rmIdx) = [];
+%         rmIdx = cost<0.2;
+%         matchLabel(rmIdx,:) = [];
+%         matchIndex(rmIdx,:) = [];
+%         cost(rmIdx) = [];
     case 'Edge'
         % score edges: background vs. foreground
         medDiff = cellfun(@(i) nanmedian(i(:)), CC.rval) - cellfun(@(i) nanmedian(i(:)), CC.lval);
@@ -97,7 +143,32 @@ switch ip.Results.Mode
         % matchList(rmIdx,:) = [];
         % cost(rmIdx) = [];
 end
+% figure; plot(cost);
+% return
+
+% [yi1, xi1] = ind2sub(CC.ImageSize, matchIndex(:,1));
+% [yi2, xi2] = ind2sub(CC.ImageSize, matchIndex(:,2));
+% X = [xi1 xi2];
+% Y = [yi1 yi2];
+% plot(X',Y', 'r--')
+% for k = 1:numel(cost)
+%    text(mean(xi1(k),xi2(k)), mean(yi1(k),yi2(k)), num2str(cost(k), '%.2f'), 'Color', 'r');
+% end
+
 
 M = maxWeightedMatching(CC.NumObjects, matchLabel, cost); % returns index (M==true) of matches
 matchLabel = matchLabel(M,:);
 matchIndex = matchIndex(M,:);
+
+[yi1, xi1] = ind2sub(CC.ImageSize, matchIndex(:,1));
+[yi2, xi2] = ind2sub(CC.ImageSize, matchIndex(:,2));
+X = [xi1 xi2];
+Y = [yi1 yi2];
+plot(X',Y', 'r--')
+% cost = cost(M);
+% for k = 1:numel(cost)
+%    text(mean(xi1(k),xi2(k)), mean(yi1(k),yi2(k)), num2str(cost(k), '%.2f'), 'Color', 'r');
+% end
+
+
+

@@ -12,113 +12,80 @@
 
 % Francois Aguet, 01/22/2012 (last modified 10/25/2012)
 
-function [matchedMask, unmatchedIdx] = matchSegmentEndPoints(mask, theta, varargin)
+function [matchedMask, unmatchedIdx] = matchSegmentEndPoints(CC, varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('mask');
-ip.addRequired('theta');
-ip.addParamValue('SearchRadius', 5, @isscalar);
+ip.addRequired('CC', @isstruct);
+ip.addParamValue('SearchRadius', 4, @isscalar);
 ip.addParamValue('KeepJunctions', true, @islogical);
 ip.addParamValue('Display', false, @islogical);
-ip.parse(mask, theta, varargin{:});
+ip.parse(CC, varargin{:});
 R = ip.Results.SearchRadius;
 
-mask = double(bwmorph(mask~=0, 'thin'));
-[ny, nx] = size(mask);
-
-theta = theta+pi/2; % orientation returned by steerable filter is orthogonal to feature
-
 %=============================================
-% I. Generate segments, connected components
+% I. Match segments
 %=============================================
-
-% # neighbors
-nn = (imfilter(mask, ones(3), 'same')-1) .* mask;
-
-% identify junctions and remove
-junctionMatrix = nn>2;
-segmentMatrix = mask .* ~junctionMatrix;
-
-% endpoints of all segments
-endpointMatrix = (imfilter(segmentMatrix, ones(3), 'same')-1) .* segmentMatrix;
-endpointMatrix = endpointMatrix==1;
-
-% generate list of segments and add associated properties
-CC = bwconncomp(segmentMatrix, 8);
-
-% identify and remove single pixels, update segment matrix
-issingleton = cellfun(@(i) numel(i)==1, CC.PixelIdxList);
-CC.NumObjects = CC.NumObjects - sum(issingleton);
-singletonIdx = CC.PixelIdxList(issingleton);
-segmentMatrix([singletonIdx{:}]) = 0;
-CC.PixelIdxList(issingleton) = [];
-
-% labels of connected components
-labels = double(labelmatrix(CC));
-
-ns = CC.NumObjects; % # segments
-
-% add endpoint indexes
-endpointIdx = find(endpointMatrix);
-for i = 1:ns
-    CC.endpointIdx{i} = intersect(CC.PixelIdxList{i}, endpointIdx);
-    %CC.isSegment(i) = max(nn(CC.PixelIdxList{i}))<3;
-end
-% sorted index
-endpointIdx = [CC.endpointIdx{:}];
-endpointIdx = endpointIdx(:);
-
-% order pixels from one endpoint to the other
-% CC = computeSegmentProperties(CC, theta);
-
-
-%=============================================
-% II. Match segments
-%=============================================
-[ye, xe] = ind2sub([ny nx], endpointIdx);
-
-matchedMask = zeros(ny,nx);
-matchesFound = true;
-
-% iterative matching
-unmatchedIdx = 1:numel(endpointIdx);
-matchedIdx = [];
 
 iter = 1;
+matchesFound = true;
 while matchesFound
     
-    % segment endpoints admissible for matching
-    X = [xe(unmatchedIdx) ye(unmatchedIdx)];
-    [idx, dist] = KDTreeBallQuery(X, X, R);
+    % index of all endpoints
+    endpointIdx = [CC.EndpointIdx{:}]';
+    % corresponding edge label
+    endpointLabel = repmat(1:CC.NumObjects, [2 1]);
+    endpointLabel = vertcat(endpointLabel(:));
     
-    % Generate all possible pairs from the points that resulted from the query.
-    % These pairs are the edges in the graph used for matching
-    E = arrayfun(@(i) [repmat(i, [numel(idx{i}) 1]) idx{i}], 1:numel(unmatchedIdx), 'UniformOutput', false);
-    E = vertcat(E{:});
+    theta = cellfun(@(i) i([1 end]), CC.Theta, 'unif', 0);
+    theta = vertcat(theta{:});
+    
+    [ye, xe] = ind2sub(CC.ImageSize, endpointIdx);    
+    X = [xe ye];
+    
+    [idx, dist] = KDTreeBallQuery(X, X, R);
     
     if ~isempty(idx)
         
-        % remove redundant pairs
+        % Generate all pairs that resulted from the query.
+        % These pairs are the edges in the graph used for matching
+        E = arrayfun(@(i) [repmat(i, [numel(idx{i}) 1]) idx{i} dist{i}], 1:numel(endpointIdx), 'UniformOutput', false);
+        E = vertcat(E{:});
+        
+        % remove redundant pairs & self-queried points
         E = E(E(:,1) < E(:,2),:);
         
-        % Omitting this in the first pass adds stability by essentially ignoring
-        % (self matching) small segments adjacent to (and offset from) gaps
+        % sort endpoints by edge label and distance
+        % if multiple matches between two segments, retain connection with shortest distance
+        M = sortrows([endpointLabel(E(:,1:2)) E(:,3) E(:,1:2)]);
+        [~,ia] = unique(M(:,1:2), 'rows', 'first');
+        M = M(ia,:);
+        E = M(:,4:5);
+        
+        % Omitting this in the first pass adds stability by essentially ignoring (self matching)
+        % small segments adjacent to (and offset from) gaps
         if iter>1
             % remove queries on same segment
-            Elabel = ceil(unmatchedIdx(E)/2);
-            E(Elabel(:,1)==Elabel(:,2),:) = [];
+            E(endpointLabel(E(:,1))==endpointLabel(E(:,2)),:) = [];
         end
         
-        % perform matching
-        % weights based on angle
-        t1 = theta(endpointIdx(unmatchedIdx(E(:,1))));
-        t2 = theta(endpointIdx(unmatchedIdx(E(:,2))));
+        % consider only matches to the X highest-intensity segments
+        T = sort(CC.AvgRes);
+        T = T(end-10);
+        E(CC.AvgRes(endpointLabel(E(:,1)))<T & CC.AvgRes(endpointLabel(E(:,2)))<T,:) = [];
+        
+        % Matching criteria:
+        % 1) angle between the two endpoint vectors (orientations)
+        t1 = theta(E(:,1));
+        t2 = theta(E(:,2));
         a1 = abs(t1 - t2);
+        a1(a1>pi) = a1(a1>pi)-pi;
         a2 = abs(a1-pi);
         minAngle = min(a1,a2);
-        cost = cos(minAngle);
+        % cost function in [-1,1]: consider angles up to pi/4, penalize larger values
+        cost = cos(2*minAngle);
         
+        % 2) angle between the vector connecting the endpoints and the average endpoint orientation
         % endpoint vectors
         v1 = [cos(t1) sin(t1)]';
         v2 = [cos(t2) sin(t2)]';
@@ -130,33 +97,61 @@ while matchesFound
         vL = vL./repmat(sqrt(sum(vL.^2,1)), [2 1]);
         % mean btw. endpoint vectors
         vMean = (v1+v2) ./ repmat(sqrt(sum((v1+v2).^2,1)), [2 1]);
-        diffT = acos(sum(vMean.*vL,1));
+        diffT = acos(sum(vMean.*vL,1))';
         diffT(diffT>pi/2) = pi-diffT(diffT>pi/2);
+        % cost function: differences up to pi/4 are allowed
+        cost(diffT>=pi/4) = -1;
+        cost(diffT<pi/4) = cost(diffT<pi/4) .* (1-2*sin(2*diffT(diffT<pi/4)).^8);
         
-        % The angle difference could be included in the matching cost.
-        % Currently, any pair with diffT>pi/4 is discarded
-        rmIdx = diffT>pi/4;
-        E(rmIdx,:) = [];
-        cost(rmIdx) = [];
-        
-        M = maxWeightedMatching(numel(unmatchedIdx), E, cost); % returns index (M==true) of matches
+        M = maxWeightedMatching(numel(endpointIdx), E, cost); % returns index (M==true) of matches
+%%
+        if ip.Results.Display && any(M)
+            tmp = zeros(CC.ImageSize);
+            for k = 1:CC.NumObjects
+                tmp(CC.PixelIdxList{k}) = CC.AvgRes(k);
+            end
+            
+            figure; imagesc(tmp); colormap(gray(256)); axis image; colorbar;
+            hold on;
+            % all endpoints
+            %plot(xe(unmatchedIdx), ye(unmatchedIdx), 'rx');
+            %T = theta(endpointIdx);
+            % endpoint orientations
+            quiver(X(:,1), X(:,2), cos(theta), sin(theta),0);            
+            % endpoint candidates for matching
+            %plot(X(unique(E(:)),1), X(unique(E(:)),2), 'go');
+            
+            plot([X(E(:,1),1) X(E(:,2),1)]', [X(E(:,1),2) X(E(:,2),2)]', 'y');
+            mux = (X(E(:,1),1)+X(E(:,2),1))/2;
+            muy = (X(E(:,1),2)+X(E(:,2),2))/2;
+            %for k = 1:numel(mux)
+            %   text(mux(k)+0.2, muy(k), num2str(cost(k), '%.2f'), 'Color', 'c', 'VerticalAlignment', 'bottom')
+            %end
+            
+            % plot mean vector for each pair
+            quiver(mux, muy, vMean(1,:)', vMean(2,:)',0, 'g');
+            
+            % plot transverse vector for each pair
+            %quiver(mux, muy, vL(1,:)', vL(2,:)',0, 'r');
+            %quiver(mux, muy, -vL(1,:)', -vL(2,:)',0, 'r');
+            %quiver(mux, muy, vL(2,:)', -vL(1,:)',0, 'r');
+            %quiver(mux, muy, vL(2,:)'-vL(1,:)', -vL(1,:)'-vL(2,:)',0, 'r');
+
+            %plot([X(E(rmIdx,1),1) X(E(rmIdx,2),1)]', [X(E(rmIdx,1),2) X(E(rmIdx,2),2)]', 'g--');
+            plot([X(E(M,1),1) X(E(M,2),1)]', [X(E(M,1),2) X(E(M,2),2)]', 'r');
+            title(['Iteration ' num2str(iter)]);
+        end
+        %%
         % retain only pairs that are matches
         E = E(M,:);
         
         % remove 'self' matches (only relevant for 1st iteration)
-        E(labels(endpointIdx(unmatchedIdx(E(:,1))))==labels(endpointIdx(unmatchedIdx(E(:,2)))), :) = [];
-        
-        if ip.Results.Display
-            figure; imagesc(segmentMatrix- 4*matchedMask); colormap(gray(256)); axis image; colorbar;
-            hold on;
-            plot(xe(unmatchedIdx), ye(unmatchedIdx), 'rx');
-            T = theta(endpointIdx(unmatchedIdx));
-            quiver(X(:,1), X(:,2), cos(T), sin(T),0);
-            %quiver(X(E(:,1),1), X(E(:,1),2), vL(1,:)', vL(2,:)',0, 'c');
-            
-            plot(X(unique(E(:)),1), X(unique(E(:)),2), 'go');
-            plot([X(E(:,1),1) X(E(:,2),1)]', [X(E(:,1),2) X(E(:,2),2)]', 'y-')
+        if iter==1
+%             E(endpointLabel(E(:,1))==endpointLabel(E(:,2)),:)
+            E(labels(endpointIdx(unmatchedIdx(E(:,1))))==labels(endpointIdx(unmatchedIdx(E(:,2)))), :) = [];
         end
+        
+        % update CC with matches
         
         % fill mask
         for i = 1:size(E,1)
@@ -180,7 +175,3 @@ if ip.Results.KeepJunctions
 end
 
 unmatchedIdx = endpointIdx(unmatchedIdx);
-
-if ip.Results.Display
-    figure; imagesc(2*matchedMask-segmentMatrix); colormap(gray(256)); axis image; colorbar;
-end
