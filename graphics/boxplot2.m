@@ -54,7 +54,7 @@ ip.addParamValue('XLabels', arrayfun(@(k) num2str(k), 1:sum(nbin), 'UniformOutpu
 ip.addParamValue('YLabel', ' ', @ischar);
 ip.addParamValue('YLim', [], @(x) numel(x)==2);
 ip.addParamValue('BarWidth', 0.8, @isscalar);
-ip.addParamValue('LineWidth', 2, @isscalar);
+ip.addParamValue('LineWidth', 1, @isscalar);
 ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('ErrorBarWidth', 0.2, @(x) 0<x && x<=1);
 ip.addParamValue('Handle', gca, @ishandle);
@@ -130,7 +130,7 @@ end
 hold on;
 % handles
 h = zeros(1,nd);
-topval = zeros(1,nbin);
+topval = zeros(1,nbin*nd);
 for k = 1:nbin
     
     % concatenate values for group 'k'
@@ -141,10 +141,7 @@ for k = 1:nbin
         M = cellfun(@(i) i(:,k), prm, 'UniformOutput', false);
         M = [M{:}];
     end
-    topval(k) = M(end);
-    
-    %xa{k} = (1:nb) + (k-1)*(nb + dg);
-    
+        
     if plotSEM
         p25 = M(3,:);
         p75 = M(4,:);
@@ -175,6 +172,7 @@ for k = 1:nbin
     yv = [p75; p75; p25; p25; p75; p75];
     
     for b = 1:nd
+        topval((b-1)*nbin+k) = M(end);
 
         if ip.Results.PlotDensity
             [f,xi] = ksdensity(prm{b}{k});
@@ -216,16 +214,16 @@ end
 box off;
 
 if numel(ip.Results.XLabels)==nbin
-    la = arrayfun(@(k) (xa{k}(1) + xa{k}(end))/2, 1:nbin);
+    XTick = arrayfun(@(k) (xa{k}(1) + xa{k}(end))/2, 1:nbin);
 else
-    la = [xa{:}];
+    XTick = [xa{:}];
 end
 
 % position of the bars
 xa = [xa{:}];
 
 XLim = [xa(1)-border xa(end)+border];
-set(ha, 'XTick', la, 'XTickLabel', ip.Results.XLabels, 'XLim', XLim);
+set(ha, 'XTick', XTick, 'XTickLabel', ip.Results.XLabels, 'XLim', XLim);
 if ~isempty(ip.Results.YLim);
     YLim = ip.Results.YLim;
     set(ha, 'YLim', YLim);
@@ -243,7 +241,7 @@ if ~isempty(av)
         y0 = max(topval(av(k,1):av(k,2)));
         maxpos = find(topval==y0, 1, 'first');
         maxposCount(maxpos) = maxposCount(maxpos)+1;
-        plot(la(av(k,[1 1 2 2])), y0+dy+1.75*dy*(maxposCount(maxpos)-1)+[0 dy dy 0], 'k', 'LineWidth', 0.75);
+        plot(xa(av(k,[1 1 2 2])), y0+dy+1.75*dy*(maxposCount(maxpos)-1)+[0 dy dy 0], 'k', 'LineWidth', 0.75);
     end
 end
 hold off;
