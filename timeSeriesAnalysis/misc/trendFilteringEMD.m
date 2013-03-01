@@ -57,6 +57,6 @@ if plotYes
 end
 
 
-out.detrend = TS - trend;
+out.dTS     = TS - trend;
 out.trend   = trend;
 
