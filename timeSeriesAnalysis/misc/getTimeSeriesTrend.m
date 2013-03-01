@@ -42,7 +42,7 @@ dTS         = TS;
 
 for iVar = 1:nVar
     
-    outTS.detrendTS(iVar,:) = TS(iVar,:);
+    outTS.dTS(iVar,:) = TS(iVar,:);
     outTS.trend(iVar,:)     = nan(1,nObs);
     
     if sum(isfinite(TS(iVar,:))) > minLen
@@ -72,7 +72,7 @@ for iVar = 1:nVar
             [bFit,resFit,~,covFit,mseFit] = nlinfit([1:nObs],TS(iVar,:),fitFun,bInit,fitOptions);
             %Get confidence intervals of fit and fit values
             [outTS.trend(iVar,:),deltaFit] = nlpredci(fitFun,1:nObs,bFit,resFit,'covar',covFit,'mse',mseFit);
-            outTS.dTS(iVar,:)              = TS(iVar,:) - trend(iVar,:);
+            outTS.dTS(iVar,:)              = TS(iVar,:) - outTS.trend(iVar,:);
             
         elseif trendT == 4
             
