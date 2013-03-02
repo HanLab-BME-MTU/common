@@ -10,7 +10,12 @@ function compTracksAlt = convTrackFormatDefault2Alt(compTracks)
 %                      merge/split leads to new track segments, without
 %                      continuation of the merging/splitting segments
 %                      
-
+%REMARKS Code does not handle properly the case of multiple merges with or
+%        multiple splits from the same track segment at the same time. Bug
+%        must be fixed. This situation arises with simulated data.
+%        Idea: Bug can be fixed by grouping events together if they are
+%        simultaneous, instead of going over them sequentially.
+%
 %Khuloud Jaqaman, February 2009
 
 %% Output
@@ -115,6 +120,10 @@ for iTrack = 1 : numTracks
     %reserve memory for matrix storing segment correspondence
     alt2defSegCorr = zeros(numMSEvents,2);
     
+    %transpose matrices to speed up calculations
+    tracksFeatIndxAlt = tracksFeatIndxAlt';
+    tracksCoordAmpAlt = tracksCoordAmpAlt';
+    
     %go over merging and splitting events
     for iEventTmp = 1 : numMSEvents
 
@@ -140,15 +149,24 @@ for iTrack = 1 : numTracks
         %separate chunk after merging or splitting from original segment ...
         
         %update feature connectivity matrix
-        tracksFeatIndxAlt(numSegmentsAlt,(doubleFreq+1)*eventTime:end) = tracksFeatIndxAlt(...
-            originalSegment,(doubleFreq+1)*eventTime:end);
-        tracksFeatIndxAlt(originalSegment,(doubleFreq+1)*eventTime:end) = 0;
+        %         tracksFeatIndxAlt(numSegmentsAlt,(doubleFreq+1)*eventTime:end) = tracksFeatIndxAlt(...
+        %             originalSegment,(doubleFreq+1)*eventTime:end);
+        %         tracksFeatIndxAlt(numSegmentsAlt,1:(doubleFreq+1)*eventTime-1) = 0;
+        %         tracksFeatIndxAlt(originalSegment,(doubleFreq+1)*eventTime:end) = 0;
+        tracksFeatIndxAlt((doubleFreq+1)*eventTime:end,numSegmentsAlt) = tracksFeatIndxAlt(...
+            (doubleFreq+1)*eventTime:end,originalSegment);
+        tracksFeatIndxAlt(1:(doubleFreq+1)*eventTime-1,numSegmentsAlt) = 0;
+        tracksFeatIndxAlt((doubleFreq+1)*eventTime:end,originalSegment) = 0;
         
         %update matrix of coordinates and amplitudes
-        tracksCoordAmpAlt(numSegmentsAlt,8*((doubleFreq+1)*eventTime-1)+1:end) = ...
-            tracksCoordAmpAlt(originalSegment,8*((doubleFreq+1)*eventTime-1)+1:end);
-        tracksCoordAmpAlt(numSegmentsAlt,1:8*((doubleFreq+1)*eventTime-1)) = NaN;
-        tracksCoordAmpAlt(originalSegment,8*((doubleFreq+1)*eventTime-1)+1:end) = NaN;
+        %         tracksCoordAmpAlt(numSegmentsAlt,8*((doubleFreq+1)*eventTime-1)+1:end) = ...
+        %             tracksCoordAmpAlt(originalSegment,8*((doubleFreq+1)*eventTime-1)+1:end);
+        %         tracksCoordAmpAlt(numSegmentsAlt,1:8*((doubleFreq+1)*eventTime-1)) = NaN;
+        %         tracksCoordAmpAlt(originalSegment,8*((doubleFreq+1)*eventTime-1)+1:end) = NaN;
+        tracksCoordAmpAlt(8*((doubleFreq+1)*eventTime-1)+1:end,numSegmentsAlt) = ...
+            tracksCoordAmpAlt(8*((doubleFreq+1)*eventTime-1)+1:end,originalSegment);
+        tracksCoordAmpAlt(1:8*((doubleFreq+1)*eventTime-1),numSegmentsAlt) = NaN;
+        tracksCoordAmpAlt(8*((doubleFreq+1)*eventTime-1)+1:end,originalSegment) = NaN;
         
         %update sequence of events based on event type
         switch eventType
@@ -179,12 +197,18 @@ for iTrack = 1 : numTracks
 
                     %update its feature connectivity matrix and matrix of
                     %coordinates and amplitudes
-                    tracksFeatIndxAlt(mergingSegment,(doubleFreq+1)*eventTime-1) = ...
-                        tracksFeatIndxAlt(mergingSegment,(doubleFreq+1)*eventTime-2);
-                    tracksCoordAmpAlt(mergingSegment,8*((doubleFreq+1)*eventTime-1)-7:...
-                        8*((doubleFreq+1)*eventTime-1)) = tracksCoordAmpAlt(...
-                        mergingSegment,8*((doubleFreq+1)*eventTime-1)-15:...
-                        8*((doubleFreq+1)*eventTime-1)-8);
+                    %                     tracksFeatIndxAlt(mergingSegment,(doubleFreq+1)*eventTime-1) = ...
+                    %                         tracksFeatIndxAlt(mergingSegment,(doubleFreq+1)*eventTime-2);
+                    %                     tracksCoordAmpAlt(mergingSegment,8*((doubleFreq+1)*eventTime-1)-7:...
+                    %                         8*((doubleFreq+1)*eventTime-1)) = tracksCoordAmpAlt(...
+                    %                         mergingSegment,8*((doubleFreq+1)*eventTime-1)-15:...
+                    %                         8*((doubleFreq+1)*eventTime-1)-8);
+                    tracksFeatIndxAlt((doubleFreq+1)*eventTime-1,mergingSegment) = ...
+                        tracksFeatIndxAlt((doubleFreq+1)*eventTime-2,mergingSegment);
+                    tracksCoordAmpAlt(8*((doubleFreq+1)*eventTime-1)-7:...
+                        8*((doubleFreq+1)*eventTime-1),mergingSegment) = tracksCoordAmpAlt(...
+                        8*((doubleFreq+1)*eventTime-1)-15:...
+                        8*((doubleFreq+1)*eventTime-1)-8,mergingSegment);
 
                 end
 
@@ -200,6 +224,10 @@ for iTrack = 1 : numTracks
 
     end
 
+    %transpose matrices back
+    tracksFeatIndxAlt = tracksFeatIndxAlt';
+    tracksCoordAmpAlt = tracksCoordAmpAlt';
+    
     %sort sequence of events in ascending chronological order
     seqOfEventsAlt = sortrows(seqOfEventsAlt,1);
     
