@@ -38,6 +38,7 @@ height = diff(YLim);
 h = text(0, 0, ' ', 'FontName', fontName, 'FontSize', fontSize);
 extent = get(h, 'extent');
 shift = extent(4)/height*width/axPos(3)*axPos(4) * sin(ip.Results.Angle*pi/180)/4;
+height0 = extent(4);
 delete(h);
 
 
@@ -50,17 +51,15 @@ ht = arrayfun(@(k) text(xa(k)-shift, YLim(1)-ip.Results.YOffset*height, xla{k},.
 % largest extent (relative to axes units)
 extents = arrayfun(@(k) get(k, 'extent'), ht, 'UniformOutput', false);
 extents = vertcat(extents{:});
-
+maxHeight = max(extents(:,4));
 
 lmargin = -min(extents(:,1))/width * axPos(3); % normalized units in fig. frame
 
 hx = get(ha, 'XLabel');
-maxHeight = max(extents(:,4));
-if ~strcmpi(get(hx, 'String'), ' ')
-    xlheight = get(hx, 'Extent');
-    xlheight = xlheight(4);
-else
-    xlheight = 0;
+xlheight = get(hx, 'Extent');
+xlheight = xlheight(4);
+if xlheight==0 % add default space for label: 1.5*height of labels
+    xlheight = height0;
 end
 bmargin = (maxHeight+xlheight)/height * axPos(4); % data units -> normalized
 
