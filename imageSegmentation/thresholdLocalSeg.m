@@ -1,4 +1,4 @@
-function  [level,bw_out] = thresholdLocalSeg(imageIn,choice_of_threshold, level_local_radius, pace, lowerbound, varargin)
+function  [level,bw_out,varargout] = thresholdLocalSeg(imageIn,choice_of_threshold, level_local_radius, pace, lowerbound, varargin)
 % local thresholding based on thresholding levels determined by the
 % thrsholding method of choice
 %
@@ -31,11 +31,14 @@ function  [level,bw_out] = thresholdLocalSeg(imageIn,choice_of_threshold, level_
 
 ip=inputParser;
 ip.addRequired('imageIn',@isnumeric);
+ip.addRequired('choice_of_threshold', ...
+               @(x) ((ischar(x) && ismember('Otsu', 'Rosin', 'FluorescenceImage')) || ...
+                      isa(x, 'function_handle')));
 ip.addRequired('level_local_radius',@isnumeric);
 ip.addRequired('pace',@isnumeric);
 ip.addRequired('lowerbound',@isnumeric);
 ip.addOptional('showPlots',0,@isnumeric)
-ip.parse(imageIn, level_local_radius, pace, lowerbound, varargin{:});
+ip.parse(imageIn, choice_of_threshold, level_local_radius, pace, lowerbound, varargin{:});
 showPlots=ip.Results.showPlots;
 
 
@@ -80,3 +83,10 @@ if(showPlots==1)
     imagesc(imageIn); colormap(gray); hold on
     contour(bw_out,'r')
 end
+
+if nargout > 2
+    minThresh = level_whole*lowerbound/100;
+    level_img( level_img < minThresh ) = minThresh;
+    varargout{1} = level_img;
+end
+

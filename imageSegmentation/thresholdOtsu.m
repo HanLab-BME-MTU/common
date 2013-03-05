@@ -1,4 +1,4 @@
-function level = thresholdOtsu(imageIn,varargin)
+function [level, varargout] = thresholdOtsu(imageIn,varargin)
 % Select a thresholding level using Otsu's method
 %
 % level = thresholdOtsu(imageIn)
@@ -23,6 +23,9 @@ function level = thresholdOtsu(imageIn,varargin)
 % 
 % 
 %   level - The intensity value selected for thresholding.
+%   mask (optional) -- the thresholded foreground mask is returned as 
+%                      an optional output argument
+%                      (added by Deepak on Mar, 2013) 
 %
 % Revamped from OtsuSeg
 %
@@ -59,4 +62,8 @@ if showPlots
     hold on
     contour(imageMask,'w')
     colormap hot
+end
+
+if nargout > 1
+    varargout{1} = double(imageIn >= level);
 end

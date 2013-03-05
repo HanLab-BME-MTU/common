@@ -28,10 +28,13 @@ function [level_img, level_whole] = thresholdLocalCalculate(imageIn,choice_of_th
 
 ip=inputParser;
 ip.addRequired('imageIn',@isnumeric);
+ip.addRequired('choice_of_threshold', ...
+               @(x) ((ischar(x) && ismember('Otsu', 'Rosin', 'FluorescenceImage')) || ...
+                      isa(x, 'function_handle')));
 ip.addRequired('level_local_radius',@isnumeric);
 ip.addRequired('pace',@isnumeric);
 ip.addOptional('showPlots',0,@isnumeric)
-ip.parse(imageIn, level_local_radius, pace, varargin{:});
+ip.parse(imageIn, choice_of_threshold, level_local_radius, pace, varargin{:});
 showPlots=ip.Results.showPlots;
 
 % Define the half pace 
@@ -52,18 +55,20 @@ imageInNorm = zeros(size(imageIn));
 imageInNorm(nzInd) = (imageIn(nzInd)- minSignal) / (maxSignal - minSignal);
 
 try
-    % Obtain the global threshold using the method user askes for
-    
-    switch choice_of_threshold
-        case 'Otsu'
-            level = thresholdOtsu(imageInNorm(nzInd));
-        case 'Rosin'
-            level = thresholdRosin(imageInNorm(nzInd));
-        case 'FluorescenceImage'
-            level = thresholdFluorescenceImage(imageInNorm(nzInd));
-    end
-    
- level_whole = level*(maxSignal - minSignal)+minSignal;
+    % Obtain the global threshold using the method user askes for 
+    if isa(choice_of_threshold, 'function_handle')
+        level = choice_of_threshold(imageInNorm);                
+    else        
+        switch choice_of_threshold
+            case 'Otsu'
+                level = thresholdOtsu(imageInNorm);
+            case 'Rosin'
+                level = thresholdRosin(imageInNorm);
+            case 'FluorescenceImage'
+                level = thresholdFluorescenceImage(imageInNorm);
+        end
+    end    
+    level_whole = level*(maxSignal - minSignal)+minSignal;
 catch
     level = nan;
     level_whole = nan;
@@ -111,13 +116,17 @@ for img_x = level_local_radius + 1 : pace : size(level_img,1) - level_local_radi
                
         try
             
-            switch choice_of_threshold
-                case 'Otsu'
-                    level = thresholdOtsu(imageInNorm);
-                case 'Rosin'
-                    level = thresholdRosin(imageInNorm);
-                case 'FluorescenceImage'
-                    level = thresholdFluorescenceImage(imageInNorm);
+            if isa(choice_of_threshold, 'function_handle')
+                level = choice_of_threshold(imageInNorm);                
+            else                    
+                switch choice_of_threshold
+                    case 'Otsu'
+                        level = thresholdOtsu(imageInNorm);
+                    case 'Rosin'
+                        level = thresholdRosin(imageInNorm);
+                    case 'FluorescenceImage'
+                        level = thresholdFluorescenceImage(imageInNorm);
+                end                
             end
             
         catch
