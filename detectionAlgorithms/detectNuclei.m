@@ -93,7 +93,7 @@ if strcmp(ip.Results.edgeFilter,'sobel') || strcmp(ip.Results.edgeFilter,'prewit
     Ix = imfilter(double(I), hx, 'replicate');
     gradmag = sqrt(Ix.^2 + Iy.^2);
 elseif strcmp(ip.Results.edgeFilter,'canny')
-    [gradmag] = steerableFiltering(I,1,ip.Results.sigma);
+    [gradmag] = steerableDetector(I,1,ip.Results.sigma);
 elseif strcmp(edgeFilter,'none')
     gradmag=zeros(size(I));
 end
