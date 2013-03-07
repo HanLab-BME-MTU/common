@@ -3,17 +3,8 @@ function [files] = getOmeroFileAnnotations(session, imageIDs)
 
 % Input check
 ip = inputParser;
-ip.addRequired('imageIDs', @(x) isvector(x) || isa(x,'java.util.ArrayList'));
+ip.addRequired('imageIDs', @isvector);
 ip.parse(imageIDs);
-
-% Create a java array list for the IDs
-if ~isa(imageIDs, 'java.util.ArrayList')
-    ids = java.util.ArrayList();
-    for i = imageIDs(:)'
-        ids.add(java.lang.Long(i)); %add the id of the image.
-    end
-    imageIDs = ids;
-end
 
 namespace = 'hms-tracking';
 
@@ -33,11 +24,12 @@ annotationTypes.add('FileAnnotation');
 
 annotatorIds = java.util.ArrayList();
 parameters = omero.sys.ParametersI; 
-annSet = metadataService.loadAnnotations('Image',imageIDs, ...
+annSet = metadataService.loadAnnotations('Image',...
+    toJavaList(imageIDs, 'java.lang.Long'),...
     annotationTypes,annotatorIds, parameters);
 
 itr = annSet.values.iterator;
-files = cell(imageIDs.size, 1);
+files = cell(numel(imageIDs), 1);
 i = 0;
 while (itr.hasNext())
     I = itr.next();

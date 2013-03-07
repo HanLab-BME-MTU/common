@@ -20,21 +20,12 @@ function MD = getOmeroMovies(session, imageIDs, varargin)
 
 % Input check
 ip = inputParser;
-ip.addRequired('imageIDs', @(x) isvector(x) || isa(x,'java.util.ArrayList'));
+ip.addRequired('imageIDs', @isvector);
 ip.addOptional('path', fullfile(getenv('HOME'), 'omero'), @ischar);
 ip.parse(imageIDs, varargin{:});
 
-% Create a java array list for the IDs
-if ~isa(imageIDs, 'java.util.ArrayList')
-    ids = java.util.ArrayList();
-    for i = imageIDs(:)'
-        ids.add(java.lang.Long(i)); %add the id of the image.
-    end
-    imageIDs = ids;
-end
-
 % Initialize movie array
-nMovies = imageIDs.size;
+nMovies = numel(imageIDs);
 MD(nMovies) = MovieData();
 
 % Retrieve existing file annotations with the correct namespace
@@ -95,7 +86,7 @@ if ~all(hasFileAnnotation)
     
     %% Retrieve a given plane.
     for i = newIDs(:)'
-        path = fullfile(ip.Results.path, num2str(imageIDs.get(i-1)));
-        MD(i) = omeroImport(session,imageIDs.get(i-1),path);
+        path = fullfile(ip.Results.path, num2str(imageIDs(i)));
+        MD(i) = omeroImport(session, imageIDs(i),path);
     end
 end
