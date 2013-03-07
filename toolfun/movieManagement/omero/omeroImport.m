@@ -32,24 +32,17 @@ ip.addRequired('imageID',@isscalar);
 ip.addOptional('outputDirectory',[],@ischar);
 ip.parse(session,imageID,varargin{:});
 
-
-ids = java.util.ArrayList();
-ids.add(java.lang.Long(imageID)); %add the id of the image.
-
-param = omero.sys.ParametersI();
-% param.leaves(); % indicate to load the images.
-param.acquisitionData;
-
-
-proxy = session.getContainerService();
-list = proxy.getImages('omero.model.Image', ids, param);
-image = list.get(0);
-
-movieArgs={}; % Create properties cell array based on existing metadata
+images = getImages(session, imageID);
+assert(~isempty(images) && ~isempty(images(1)), 'No image found');
+image=images(1);
 
 % Retrieve pixels
 svc=session.getPixelsService();
 pixels=svc.retrievePixDescription(image.getPixels(0).getId.getValue);
+
+
+movieArgs={}; % Create properties cell array based on existing metadata
+
 
 
 pixelsA=pojos.PixelsData(pixels);
