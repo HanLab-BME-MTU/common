@@ -1,11 +1,11 @@
-function MD = getOmeroMovies(client, imageIDs, varargin)
+function MD = getOmeroMovies(session, imageIDs, varargin)
 % getOmeroMovies creates or loads MovieData object from OMERO images
 %
 % SYNOPSIS
-%      
+%
 %
 % INPUT
-%    client -  an omero.client object with a created session
+%    session -  a session
 %
 %    imageIDs - an array of imageIDs. May be a Matlab array or a Java
 %    ArrayList.
@@ -16,7 +16,7 @@ function MD = getOmeroMovies(client, imageIDs, varargin)
 % OUTPUT
 %    MD - an array of MovieData object corresponding to the images.
 %
-% Sebastien Besson, Nov 2012
+% Sebastien Besson, Nov 2012 (last modified Mar 2013)
 
 % Input check
 ip = inputParser;
@@ -38,7 +38,7 @@ nMovies = imageIDs.size;
 MD(nMovies) = MovieData();
 
 % Retrieve existing file annotations with the correct namespace
-fileAnnotations = getOmeroFileAnnotations(client.getSession(), imageIDs);
+fileAnnotations = getOmeroFileAnnotations(session, imageIDs);
 hasFileAnnotation = ~cellfun(@isempty, fileAnnotations);
 
 %% OMERO Images for which a MovieData has been created and uploaded
@@ -48,20 +48,28 @@ if any(hasFileAnnotation)
     
     % List found image IDs and corresponding OriginalFile IDs
     foundIDs = find(hasFileAnnotation);
-    fileIDs = cellfun(@(x) x.getId.getValue, fileAnnotations(hasFileAnnotation));
+    foundAnnotations = fileAnnotations(hasFileAnnotation);
     
-    for i = 1:numel(fileIDs)        
-        iMovie = (foundIDs(i));
+    % Initialize raw file store
+    store = session.createRawFileStore();
+    
+    for iAnnotation = 1:numel(foundAnnotations)
+        iMovie = (foundIDs(iAnnotation));
         
-        % Download file annotation using omero.client.download
-        localfile = java.io.File(zipPath);
-        client.download(fileIDs(i), localfile);
+        % Download file annotation using raw file store
+        store.setFileId(foundAnnotations{iAnnotation}.getId().getValue());
+        
+        % Read data
+        fid = fopen(zipPath, 'w');
+        fwrite(fid, store.read(0,...
+            foundAnnotations{iAnnotation}.getSize().getValue()), 'int8');
+        fclose(fid);
         
         % Unzip and delete temporary fil
         zipFiles = unzip(zipPath, ip.Results.path);
         delete(zipPath);
         
-        % List unzipped MAT files 
+        % List unzipped MAT files
         isMatFile = cellfun(@(x) strcmp(x(end-2:end),'mat'), zipFiles);
         matFiles = zipFiles(isMatFile);
         for j = 1: numel(matFiles)
@@ -71,11 +79,14 @@ if any(hasFileAnnotation)
             if ~hasMovie, continue; end
             
             % Load MovieData object
-            MD(iMovie) = MovieData.load(matFiles{j}, client.getSession, false);
+            MD(iMovie) = MovieData.load(matFiles{j}, session, false);
         end
         
-        if isempty(MD(iMovie)), error('No movie found'); end     
+        if isempty(MD(iMovie)), error('No movie found'); end
     end
+    
+    % Close raw file store
+    store.close();
 end
 
 %% OMERO Images where a new MovieData object needs to be created
@@ -84,7 +95,7 @@ if ~all(hasFileAnnotation)
     
     %% Retrieve a given plane.
     for i = newIDs(:)'
-        path = fullfile(ip.Results.path, num2str(imageIDs.get(i-1)));        
-        MD(i) = omeroImport(client.getSession(),imageIDs.get(i-1),path);
+        path = fullfile(ip.Results.path, num2str(imageIDs.get(i-1)));
+        MD(i) = omeroImport(session,imageIDs.get(i-1),path);
     end
 end
