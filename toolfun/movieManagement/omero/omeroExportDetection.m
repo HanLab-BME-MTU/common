@@ -11,7 +11,7 @@ function roi = omeroExportDetection(movieData,movieInfo)
 % omeroExportDetection(movieData,movieInfo)
 %
 % Input:
-% 
+%
 %   movieData - A MovieData object
 %
 %   movieInfo - The output of a detection process
@@ -54,7 +54,7 @@ if rois.size()> 0
 end
 
 % Create a new ROI to attach to the image
-fprintf('Creating detection ROI for Image %g with namespace %s\n', ...
+fprintf('Creating detection ROI for Image %u with namespace %s\n', ...
     image.getId().getValue(), ns);
 roi = omero.model.RoiI();
 roi.setImage(image);
@@ -64,24 +64,15 @@ roi.setNamespaces(ns);
 progressText(0, 'Adding detection results frame-by-frame')
 for t=1:size(movieInfo,1)
     
-    for i = 1:size(movieInfo(t).xCoord,1)        
-        point = createPointShape(movieInfo(t).xCoord(i,1), ...
-            movieInfo(t).yCoord(i,1), t-1, 0);
+    for i = 1:size(movieInfo(t).xCoord,1)
+        point = setShapeCoordinates(createPoint(movieInfo(t).xCoord(i,1),...
+            movieInfo(t).yCoord(i,1)), 0, 0, t-1);
         roi.addShape(point);
     end
-
+    
     progressText(t/size(movieInfo,1))
 end
 
 % Upload ROI to server
 fprintf('Uploading ROI to server\n');
 updateService.saveAndReturnObject(roi);
-
-function point = createPointShape(x,y,t,z)
-
-% Create point shape
-point = omero.model.PointI;
-point.setCx(omero.rtypes.rdouble(x));
-point.setCy(omero.rtypes.rdouble(y));
-point.setTheT(omero.rtypes.rint(t));
-point.setTheZ(omero.rtypes.rint(z));
