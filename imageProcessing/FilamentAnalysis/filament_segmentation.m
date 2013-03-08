@@ -277,7 +277,7 @@ for iChannel = selected_channels
             
             case 'geo_based'
                 tic
-                [level2, NMS_Segment ] = geoBasedNmsSeg(nms);
+                [level2, NMS_Segment ] = geoBasedNmsSeg(nms,funParams.F_classifier,0);
                 toc
                 current_seg = NMS_Segment;
                 Intensity_Segment = current_seg;
@@ -343,56 +343,55 @@ for iChannel = selected_channels
         end
         
         if(~strcmp(Combine_Way,'geo_based'))
-        
-                %% Deleting the small isolated dots
-        
-                labelMask = bwlabel(current_seg);
-        
-                ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength');
-        
-                obAreas = [ob_prop.Area];
-                obLongaxis = [ob_prop.MajorAxisLength];
-                obShortaxis = [ob_prop.MinorAxisLength];
-                obEccentricity = [ob_prop.Eccentricity];
-                ratio  = obShortaxis./obLongaxis;
-                % for now the parameters are set here, without adaptiveness
-                for i_area = 1 : length(obAreas)
-                    if obAreas(i_area) < 100
-                        angle_area{i_area} = orienation_map_filtered(find(labelMask==i_area));
-                        [h_area, bin] = hist(angle_area{i_area},-pi/2:5/180*pi:pi/2);
-                        ind_t = find(h_area==max(h_area));
-                        temp = mod((angle_area{i_area} - bin(ind_t(1)) + pi/2), pi) - pi/2;
-                        if std(temp)>0.75 && max(h_area)<0.2*length(angle_area{i_area}) && ratio(i_area) >0.5 && obLongaxis(i_area)<20
-                            labelMask(find(labelMask==i_area))=0;
-                        end
-                    end
-                end
-        
-                current_seg = labelMask > 0;
-                
-                
-                       labelMask = bwlabel(current_seg);
-        
-        ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','Centroid');
-        
-        if length(ob_prop) > 1
+            % if the segmentation is not done with geo_based method, do
+            % some geometry based checking on the results
+            
+            %% Deleting the small isolated dots            
+            labelMask = bwlabel(current_seg);            
+            ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength');
+            
             obAreas = [ob_prop.Area];
             obLongaxis = [ob_prop.MajorAxisLength];
+            obShortaxis = [ob_prop.MinorAxisLength];
             obEccentricity = [ob_prop.Eccentricity];
-            obCentroid = [ob_prop.Centroid];
-            
+            ratio  = obShortaxis./obLongaxis;
+            % for now the parameters are set here, without adaptiveness
             for i_area = 1 : length(obAreas)
-                centroid_x = round(obCentroid(2*i_area-1));
-                centroid_y = round(obCentroid(2*i_area));
+                if obAreas(i_area) < 100
+                    angle_area{i_area} = orienation_map_filtered(find(labelMask==i_area));
+                    [h_area, bin] = hist(angle_area{i_area},-pi/2:5/180*pi:pi/2);
+                    ind_t = find(h_area==max(h_area));
+                    temp = mod((angle_area{i_area} - bin(ind_t(1)) + pi/2), pi) - pi/2;
+                    if std(temp)>0.75 && max(h_area)<0.2*length(angle_area{i_area}) && ratio(i_area) >0.5 && obLongaxis(i_area)<20
+                        labelMask(find(labelMask==i_area))=0;
+                    end
+                end
+            end
+            
+            current_seg = labelMask > 0;            
+            
+            labelMask = bwlabel(current_seg);
+            
+            ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','Centroid');
+            
+            if length(ob_prop) > 1
+                obAreas = [ob_prop.Area];
+                obLongaxis = [ob_prop.MajorAxisLength];
+                obEccentricity = [ob_prop.Eccentricity];
+                obCentroid = [ob_prop.Centroid];
                 
+                for i_area = 1 : length(obAreas)
+                    centroid_x = round(obCentroid(2*i_area-1));
+                    centroid_y = round(obCentroid(2*i_area));
+                    
                     if obAreas(i_area) <Min_area || obLongaxis(i_area) <Min_longaxis
                         labelMask(labelMask==i_area) = 0;
                     end
-               
+                    
+                end
             end
-        end
-        
-        current_seg = labelMask > 0;
+            
+            current_seg = labelMask > 0;
         end
         
         %

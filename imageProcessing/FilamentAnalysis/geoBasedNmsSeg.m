@@ -1,12 +1,23 @@
-function  [T_otsu, current_all_matching_bw ]  = geoBasedNmsSeg(nms, classifier_trained)
+function  [T_otsu, current_all_matching_bw ]  = geoBasedNmsSeg(imageIn, classifier_trained, graph_matching_flag)
+% geoBasedNmsSeg segments filaments from input image(nms) based on the geometrical features of the curves/lines in the image
+% Input:            
+%    ImageIn:                           the input image, typically the non maximum supress version of the steerable filtering output
+%    classifier_trained:                the trained or provided classifier of the curvee, if not provided, use empirical function
+% Output: 
+%    T_otsu:                            the threshold defined by Otsu method for intensity of the input image, just as a format thing here.
+%    current_all_matching_bw:           the segmented results, this serves as the starting point of the graphic matching
+%
 
-imageIn=nms;
+% Liya Ding
+% 2013.02
 
+% the threshold defined by Otsu method
 T_otsu = thresholdOtsu(imageIn);
 
-%%first, get everything
+% first, get almost all the curves/lines, by using a low threshold
 imageMask = imageIn > T_otsu/3;
 
+% further thin it, since the nms version of steerable filtering is not real skeleton
 bw_out = bwmorph(imageMask,'thin','inf');
 
 % Find the branching points
@@ -30,114 +41,84 @@ ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAx
 % Redefine variable for easy of notation
 obAreas = [ob_prop.Area];
 
-% eliminate the isolated dot and two point lines, just for the ease of
-% analysis
-% % for i_area = 1 : length(obAreas)
-% %     if obAreas(i_area)<=3
-% %         labelMask(labelMask == i_area)=0;
-% %     end
-% % end
-%      
-% nms_seg_no_brancing = labelMask>0;
-%     
-% % Label all isolated lines(curves)
-% labelMask = bwlabel(nms_seg_no_brancing);
-% 
-% % Get properties for each of curve
-% ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength','Centroid');
-% 
-% % Redefine variable for easy of notation
-% obAreas = [ob_prop.Area];
-
 nLine = length(obAreas);
 
+% Some feature for later consideration
 obLongaxis = [ob_prop.MajorAxisLength];
 obShortaxis = [ob_prop.MinorAxisLength];
 obEccentricity = [ob_prop.Eccentricity];
-
 obCentroid = zeros(2, length(obAreas));
 obCentroid(:) = [ob_prop.Centroid];
-
 % The ratio of short vs long axis
 ratio  = obShortaxis./obLongaxis;
 
-Good_ind=[];
-good_lines=cell(1,1);
 
-feature_MinInt = zeros(nLine,1);
-feature_MeanInt = zeros(nLine,1);
-feature_MaxInt = zeros(nLine,1);
+feature_MeanInt = nan(nLine,1);
+feature_Length = obAreas';
 
-feature_Length = obAreas;
-feature_InvCurvature = zeros(nLine,1);
+% for the features, only include those curves/lines longer than 4 pixels
+ind_long = find(feature_Length>4);
 
-ind_long = find(feature_Length>3);
-
-for i_area = ind_long
-%     if obAreas(i_area)>0
-        [all_y_i, all_x_i] = find(labelMask == i_area);
-        
-        INT = imageIn(sub2ind(size(bw_out), round(all_y_i),round(all_x_i)));
-%         feature_MinInt(i_area) = min(INT);
-        feature_MeanInt(i_area) = mean(INT);
-%         feature_MaxInt(i_area) = max(INT);
-        
-%         bw_i = zeros(size(bw_out));
-%         bw_i(sub2ind(size(bw_i), round(all_y_i),round(all_x_i)))=1;
-%         end_points_i = bwmorph(bw_i,'endpoints');
-%         
-%         [y_i, x_i]=find(end_points_i);
-%         
-%         if isempty(x_i)
-%             % if there is no end point, then it is a enclosed circle
-%             [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, all_x_i(1),all_y_i(1));
-%         else
-%             [y_i, x_i]=find(end_points_i);
-%             [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
-%         end
-%         line_smooth_H = fspecial('gaussian',5,1.5);
-%         
-%         line_i_x = (imfilter(line_i_x, line_smooth_H, 'replicate', 'same'));
-%         line_i_y = (imfilter(line_i_y, line_smooth_H, 'replicate', 'same'));
-%         
-%         Vertices = [line_i_x' line_i_y'];
-%         Lines=[(1:size(Vertices,1)-1)' (2:size(Vertices,1))'];
-%         k=LineCurvature2D(Vertices,Lines);
-%         
-%         feature_InvCurvature(i_area) = mean(1/k);        
-%     end
+% get the mean intensity of the curves
+for i_area = ind_long'
+    [all_y_i, all_x_i] = find(labelMask == i_area);    
+    INT = imageIn(sub2ind(size(bw_out), round(all_y_i),round(all_x_i)));    
+    feature_MeanInt(i_area) = mean(INT);
+    % this version with the curvature measure, to save time.
 end
-
 
 % figure; plot3(feature_Length,feature_MeanInt,feature_InvCurvature,'.');
-% 
-% feature_Curvature = 1./feature_InvCurvature;
-% T_int = thresholdOtsu(imageIn);
-% T_L = 6;
-% T_K = 0.1;
 
-
-
-ind_T_int = 18;
-T_xie_int = T_otsu/2*ind_T_int;
-
-Good_ind = find(feature_Length>40);
-Bad_ind = [];
-
-for ind_L = 1:40
-    T_int = T_otsu/10*ind_T_int;
+if(isempty(classifier_trained))
+    % if there is no input classifier, build one, with empirical setting
     
-    Good_ind_sub = find(feature_Length'==ind_L & feature_MeanInt>(T_xie_int - ind_L*(T_xie_int/40)));
-    Bad_ind_sub = find(feature_Length'==ind_L & feature_MeanInt<=(T_xie_int - ind_L*(T_xie_int/40)));
+    % find the mode of the intensity of the curves/lines
+    [hist_n,bin] = hist(feature_MeanInt,200);
+    ind_mode = find(hist_n==max(hist_n));
+    mode_int = bin(ind_mode(1));
+    % And find the Otsu threshold for the intensity
+    hotsu = thresholdOtsu(feature_MeanInt(find(feature_MeanInt>mode_int)));
     
-    Good_ind = [Good_ind Good_ind_sub'];
-    Bad_ind = [Bad_ind Bad_ind_sub'];
+    % Set the slanted classification line cutoff as twice of the Otsu with
+    % respect to the mode
+    T_xie_int =  abs(hotsu - mode_int)*1.5 + mode_int;
+        
+    % And the length as Otsu threshold
+    T_xie_length = 2*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
+    
+    % Make a classification function as whether it is above the line
+    F_classifer = @(i,l) (((T_xie_int + (T_xie_int/T_xie_length)*(-l) )<i));
+else
+    % when there is an input classifer, use the input one
+    F_classifer = classifier_trained;
 end
 
-[ind_all_y, ind_all_x] = find(labelMask>0);
-current_all_matching_bw = zeros(size(labelMask));
+% Select those above the line as our good ones as starting point of graph
+% matching
+Good_ind = find(F_classifer(feature_MeanInt, feature_Length)>0);
+
+% plot the output image with these good ones
+current_all_seg_bw = zeros(size(labelMask));
 
 for i_E = 1 : length(Good_ind)
     current_good_bw = labelMask==Good_ind(i_E);
-    current_all_matching_bw = or(current_all_matching_bw, current_good_bw);
+    current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
 end
+current_all_matching_bw = current_all_seg_bw;
+
+% graph_matching_flag=1;
+
+% Now if user intended for graph matching part, do it
+if(graph_matching_flag==1)
+        
+    confidency_interval = 0.8;
+    current_model = [];
+    bw_to_be_matched = current_all_seg_bw;
+    
+    graph_matching_linking_once; %(current_model, bw_to_be_matched, confidency_interval);
+    
+    graph_matching_linking_once;
+    
+    graph_matching_linking_once;
+end
+

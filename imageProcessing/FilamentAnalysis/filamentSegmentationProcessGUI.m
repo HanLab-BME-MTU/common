@@ -22,7 +22,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 28-Dec-2012 14:57:54
+% Last Modified by GUIDE v2.5 06-Mar-2013 17:15:12
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -638,3 +638,31 @@ function edit_int_lowerbound_localthresholding_CreateFcn(hObject, eventdata, han
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in pushbutton_traing_nms.
+function pushbutton_traing_nms_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_traing_nms (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+userData = get(handles.figure1, 'UserData');
+
+funParams.F_classifier = nms_classifier_train(userData.MD,[],[]);
+
+
+
+% --- Executes on button press in pushbutton_load_nms_classifier.
+function pushbutton_load_nms_classifier_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_load_nms_classifier (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+funParams.F_classifier = load_classifier_trained(userData.MD);
+
+
+% --- Executes during object creation, after setting all properties.
+function pushbutton_traing_nms_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pushbutton_traing_nms (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
