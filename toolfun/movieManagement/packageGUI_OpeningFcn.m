@@ -144,16 +144,21 @@ if any(cellfun(@isempty, packageIndx))
 end
 
 % Run sanity check to check basic dependencies are satisfied
+movieExceptions = cell(nMovies, 1);
 for i = 1:nMovies
     try
         userData.package(i).sanityCheck(true,'all');
     catch ME
-        errordlg(ME.message,'Package initialization','modal');
-        userData.startMovieSelectorGUI=true;
-        set(handles.figure1,'UserData',userData);
-        guidata(hObject, handles);
-        return
+        movieExceptions{i} = ME;
     end
+end
+
+if ~all(cellfun(@isempty, movieExceptions))
+    generateReport(movieExceptions, userData);
+    userData.startMovieSelectorGUI=true;
+    set(handles.figure1,'UserData',userData);
+    guidata(hObject, handles);
+    return
 end
 
 % ------------- Check if existing processes can be recycled ---------------
