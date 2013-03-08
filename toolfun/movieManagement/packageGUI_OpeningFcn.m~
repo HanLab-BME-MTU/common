@@ -149,10 +149,11 @@ for i = 1:nMovies
     try
         userData.package(i).sanityCheck(true,'all');
     catch ME
-        movieExceptions{i} = MException('lccb:initialization',...
-            '%s initialization',...
+        ME2 = M        
+        ME2 = MException('lccb:initialization','%s',...
             userData.package(i).getName);
-        movieExceptions{i} = movieExceptions{i}.addCause(ME);
+        movieException{iMovie} = cat(2, movieException{iMovie}, ME2);
+        movieExceptions{i} = ME.message;
     end
 end
 
