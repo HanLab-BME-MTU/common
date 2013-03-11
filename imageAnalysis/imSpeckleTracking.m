@@ -70,6 +70,7 @@ ip.addParamValue('bgMask',true(size(stack)),@(x) isequal(size(x),size(stack)));
 ip.addParamValue('bgAvgImg', zeros(size(stack)),@isnumeric);
 ip.addParamValue('minFeatureSize',11,@isscalar);
 ip.addParamValue('mode','fast',@(x) ismember(x,{'fast','accurate'}));
+ip.addParamValue('verbose', true, @isscalar);
 ip.parse(stack,points,minCorL,varargin{:});
 maxCorL=ip.Results.maxCorL;
 maxSpd=ip.Results.maxSpd;
@@ -77,7 +78,7 @@ minFeatureSize=ip.Results.minFeatureSize;
 bgMask=ip.Results.bgMask;
 bgAvgImg=ip.Results.bgAvgImg;
 mode=ip.Results.mode;
-
+verbose = ip.Results.verbose;
 % SH: Poly-fit version
 
 %We automatically update the speed search radius until a high limit is
@@ -129,9 +130,11 @@ backSpc =repmat('\b',1,L);
 %Calculate the correlation coefficient for each sampling velocity at
 % each point.
 startTime = cputime;
-fprintf(1,['   Start tracking (total: ' strg ' points): '],nPoints);
+if verbose, 
+    fprintf(1,['   Start tracking (total: ' strg ' points): '],nPoints);
+end
 for k = 1:nPoints
-    fprintf(1,[strg ' ...'],k);
+    if verbose, fprintf(1,[strg ' ...'],k); end
     
     sigtVal = [NaN NaN NaN];
     
@@ -323,17 +326,17 @@ for k = 1:nPoints
     corLength(k) = corL;
     sigtValues(k,:) = sigtVal;
     
-    fprintf(1,[backSpc '\b\b\b\b']);
+    if verbose, fprintf(1,[backSpc '\b\b\b\b']); end
 end
 nanInd = find(isnan(v(:,1)));
 endTime = cputime;
-fprintf(1,[strg '.\n'],nPoints);
-fprintf(1,'   Tracking is done in %f sec (%f sec per point).\n', ...
-    endTime-startTime,(endTime-startTime)/nPoints);
-fprintf(1,'   Total tracked points: %d (out of %d).\n', ...
-    nPoints-length(nanInd),nPoints);
-
-
+if verbose,
+    fprintf(1,[strg '.\n'],nPoints);
+    fprintf(1,'   Tracking is done in %f sec (%f sec per point).\n', ...
+        endTime-startTime,(endTime-startTime)/nPoints);
+    fprintf(1,'   Total tracked points: %d (out of %d).\n', ...
+        nPoints-length(nanInd),nPoints);
+end
 
 
 function [score,blockIsTooSmall] = calScore(kym,centerI,corL,vP,vF,varargin)
