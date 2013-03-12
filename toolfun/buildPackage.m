@@ -176,9 +176,18 @@ for i = 1 : nMexFiles
     copyfile(packageMexFuns{i},[mexDir filesep packageMexFuns{i}(iLFS+1:end)]);
 end
 
-% Create folder for Bio-Formats utilities
+%% External libraries
+
+% Bio-Formats
 disp('Creating Bio-Formats directory...')
 bfDir=[outDir filesep 'bioformats'];
 copyfile(fileparts(which('bfGetReader.m')), bfDir)
-    
+
+% Kd-tree
+if any(~cellfun(@isempty, regexp(packageFunsNames,'^KDTree','once')))
+    disp('Creating kd-tree directory...')
+    kdtreeDir = [outDir filesep 'kdtree'];
+    copyfile(fileparts(which('KDtree.m')), kdtreeDir)
+end
+
 disp(['Wrote package to ' outDir])
