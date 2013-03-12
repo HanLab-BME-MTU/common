@@ -2,6 +2,7 @@ classdef TracksDisplay < MovieDataDisplay
     %Conrete class for displaying flow
     properties
         Linestyle='-';
+        Linewidth=1;
         GapLinestyle='--';
         Color='r';  
         dragtailLength=10;
@@ -66,16 +67,16 @@ classdef TracksDisplay < MovieDataDisplay
                 for iColor = 1:nColors
                     iTracks = mod([tracks.label]-1, nColors) +1 == iColor;
                     h(iTracks,1)=plot(xData(:,iTracks),yData(:,iTracks),'Linestyle',obj.Linestyle,...
-                        'Color',obj.Color(iColor,:),varargin{:});
+                        'Linewidth', obj.Linewidth, 'Color',obj.Color(iColor,:),varargin{:});
                     h(iTracks,2)=plot(xGapData(:,iTracks),yGapData(:,iTracks),'Linestyle',obj.GapLinestyle,...
-                        'Color',obj.Color(iColor,:),varargin{:});
+                        'Linewidth', obj.Linewidth, 'Color',obj.Color(iColor,:),varargin{:});
                 end
             else
                 % Plot links and gaps
                 h(:,1) = plot(xData, yData, 'Linestyle', obj.Linestyle,...
-                    'Color',obj.Color,varargin{:});
+                    'Linewidth', obj.Linewidth, 'Color',obj.Color,varargin{:});
                 h(:,2) = plot(xGapData, yGapData, 'Linestyle', obj.GapLinestyle',...
-                    'Color',obj.Color, varargin{:});
+                    'Linewidth', obj.Linewidth, 'Color',obj.Color, varargin{:});
             end
             
             % Display track numbers if option is selected
