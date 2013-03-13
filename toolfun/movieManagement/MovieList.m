@@ -22,6 +22,7 @@ classdef MovieList < MovieObject
                 elseif iscell(movies) && all(cellfun(@(x)isa(x,'MovieData'),movies))
                     obj.movieDataFile_ = cellfun(@(x) fullfile(x.getPath,x.getFilename),...
                         movies,'UniformOutput',false);
+                    obj.movies_ = movies;
                 elseif isa(movies, 'MovieData')
                     obj.movieDataFile_ = arrayfun(@(x) fullfile(x.getPath,x.getFilename),...
                         movies,'UniformOutput',false);
