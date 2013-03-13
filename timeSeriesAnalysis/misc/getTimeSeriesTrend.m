@@ -30,7 +30,6 @@ ip.addParamValue('trendType',0,@isscalar);
 
 ip.parse(TS,varargin{:});
 alpha    = ip.Results.alpha;
-nSurr    = ip.Results.nSurr;
 plotYes  = ip.Results.plotYes;
 trendT   = ip.Results.trendType;
 
@@ -59,17 +58,18 @@ for iVar = 1:nVar
             switch trendT
                 case 1
                     fitFun = @(b,x)(b(1)*x + b(2));
-                    bInit  = [1 0]; %Initial guess for fit parameters.
+                    bInit  = rand(1,2); %Initial guess for fit parameters.
                 case 2
                     fitFun = @(b,x)(b(1)*exp(b(2)*x));
-                    bInit  = [1 0]; %Initial guess for fit parameters.
+                    bInit  = rand(1,2); %Initial guess for fit parameters.
                 case 3
                     fitFun = @(b,x)(b(1)*exp(b(2)*x))+(b(3)*exp(b(4)*x));
-                    bInit  = [1 0 1 0]; %Initial guess for fit parameters.
+                    bInit  = rand(1,4); %Initial guess for fit parameters.
             end
             
             fitOptions = statset('Robust','on','MaxIter',500,'Display','off');
-            [bFit,resFit,~,covFit,mseFit] = nlinfit([1:nObs],TS(iVar,:),fitFun,bInit,fitOptions);
+            [bFit,resFit,~,covFit,mseFit] = nlinfit(1:nObs,TS(iVar,:),fitFun,bInit,fitOptions);
+            
             %Get confidence intervals of fit and fit values
             [outTS.trend(iVar,:),deltaFit] = nlpredci(fitFun,1:nObs,bFit,resFit,'covar',covFit,'mse',mseFit);
             outTS.dTS(iVar,:)              = TS(iVar,:) - outTS.trend(iVar,:);
@@ -81,10 +81,7 @@ for iVar = 1:nVar
             
         elseif trendT == 5
             
-            %Indexes for real points
-            numIdx = find(~isnan(TS(iVar,:)));
-            %Blocks of real points
-            numB   = findBlock(numIdx,1);
+            %Does not search for blocks
             workTS = gapInterpolation(TS(iVar,:),1);
             % Remove all deterministic components
             [outTS.dTS(iVar,:),outTS.trend(iVar,:)] = preWhitening(workTS);
