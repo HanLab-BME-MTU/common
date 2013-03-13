@@ -236,6 +236,36 @@ for iChannel = selected_channels
         load([SteerableChannelOutputDir, filesep, 'steerable_', ...
             filename_short_strs{iFrame},'.mat']);
         
+        MaskCell = ones(size(currentImg));
+        
+        if Cell_Mask_ind == 1 % using cell segmentation from same channel
+            MaskCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(iChannel,iFrame);
+        else
+            if Cell_Mask_ind == 2 % Using input static ROI tiff
+                MaskCell = user_input_mask>0;
+            else
+                if Cell_Mask_ind == 4 % No limit
+                    MaskCell = ones(size(currentImg,1),size(currentImg,2));
+                else
+                    % Combine from both channel
+                    % In this option, the channel need to be 1. MT or Membrame, 2. VIF or Actin
+                    MaskVIFCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(2,iFrame);
+                    MaskMTCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(1,iFrame);
+                    
+                    H_close_cell = fspecial('disk',5);
+                    H_close_cell = H_close_cell>0;
+                    
+                    MaskMTCell = imerode(MaskMTCell,H_close_cell);
+                    TightMask = MaskMTCell.*MaskMTCell;
+                    
+                    % Make the mask bigger in order to include all
+                    MaskCell = imdilate(TightMask, ones(15,15),'same');
+                end
+            end
+        end
+                
+        
+        
         NMS_Segment=[];
         Intensity_Segment=[];
         SteerabelRes_Segment=[];
@@ -277,7 +307,7 @@ for iChannel = selected_channels
             
             case 'geo_based'
                 tic
-                [level2, NMS_Segment ] = geoBasedNmsSeg(nms,funParams.F_classifier,0);
+                [level2, NMS_Segment ] = geoBasedNmsSeg(nms,currentImg, funParams.F_classifier,0, [] );
                 toc
                 current_seg = NMS_Segment;
                 Intensity_Segment = current_seg;
@@ -295,32 +325,6 @@ for iChannel = selected_channels
                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
                 % The segmentation is set as the union of two segmentation.
                 current_seg = or(Intensity_Segment,SteerabelRes_Segment);
-        end
-        
-        if Cell_Mask_ind == 1 % using cell segmentation from same channel
-            MaskCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(iChannel,iFrame);
-        else
-            if Cell_Mask_ind == 2 % Using input static ROI tiff
-                MaskCell = user_input_mask>0;
-            else
-                if Cell_Mask_ind == 4 % No limit
-                    MaskCell = ones(size(currentImg,1),size(currentImg,2));
-                else
-                    % Combine from both channel
-                    % In this option, the channel need to be 1. MT or Membrame, 2. VIF or Actin
-                    MaskVIFCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(2,iFrame);
-                    MaskMTCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(1,iFrame);
-                    
-                    H_close_cell = fspecial('disk',5);
-                    H_close_cell = H_close_cell>0;
-                    
-                    MaskMTCell = imerode(MaskMTCell,H_close_cell);
-                    TightMask = MaskMTCell.*MaskMTCell;
-                    
-                    % Make the mask bigger in order to include all
-                    MaskCell = imdilate(TightMask, ones(15,15),'same');
-                end
-            end
         end
         
         current_seg = current_seg.*MaskCell;

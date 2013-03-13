@@ -1,4 +1,4 @@
-function  [T_otsu, current_all_matching_bw ]  = geoBasedNmsSeg(imageIn, classifier_trained, graph_matching_flag)
+function  [T_otsu, current_all_matching_bw ]  = geoBasedNmsSeg(imageNMS, imageInt, classifier_trained, graph_matching_flag,MaskCell)
 % geoBasedNmsSeg segments filaments from input image(nms) based on the geometrical features of the curves/lines in the image
 % Input:            
 %    ImageIn:                           the input image, typically the non maximum supress version of the steerable filtering output
@@ -11,11 +11,44 @@ function  [T_otsu, current_all_matching_bw ]  = geoBasedNmsSeg(imageIn, classifi
 % Liya Ding
 % 2013.02
 
+% define a mask to reduce the number of curvelet to classify
+if(~isempty(MaskCell) || mean(double(MaskCell))==1)
+    
+    MaskCell =  imdilate(MaskCell,fspecial('disk', 71)>0);
+else
+    T_Rosin_otsu = thresholdRosin(imfilter(imageInt,fspecial('gaussian',11,2)));
+    MaskCell = imageInt>T_Rosin_otsu*6/3;
+    MaskCell = imdilate(MaskCell,fspecial('disk', 71)>0);
+end
+
+figure(1); hold off;
+subplot(121);
+imagescc(imageInt);
+
+% imageNMS = imageNMS.*MaskCell;
+% imageInt = imageInt.*MaskCell;
+subplot(122);
+imagescc(MaskCell);
+
+% pause;
+% 
 % the threshold defined by Otsu method
-T_otsu = thresholdOtsu(imageIn);
+
+
+[hist_n,bin] = hist(imageNMS(find(imageNMS>0)),200);
+ind_mode = find(hist_n==max(hist_n));
+mode_nms = bin(ind_mode(1));
+% And find the Otsu threshold for the intensity
+T_otsu = thresholdOtsu(imageNMS(find(imageNMS>mode_nms)));
+T_otsu_start =  abs(T_otsu - mode_nms)*0.2 + mode_nms;
+   
+
+imageNMS = imageNMS.*MaskCell;
+imageInt = imageInt.*MaskCell;
+
 
 % first, get almost all the curves/lines, by using a low threshold
-imageMask = imageIn > T_otsu/3;
+imageMask = imageNMS > T_otsu_start;
 
 % further thin it, since the nms version of steerable filtering is not real skeleton
 bw_out = bwmorph(imageMask,'thin','inf');
@@ -54,17 +87,49 @@ ratio  = obShortaxis./obLongaxis;
 
 
 feature_MeanInt = nan(nLine,1);
+feature_MeanNMS = nan(nLine,1);
 feature_Length = obAreas';
+smoothed_ordered_points = cell(1,1);
+feature_Curvature = nan(nLine,1);
 
 % for the features, only include those curves/lines longer than 4 pixels
 ind_long = find(feature_Length>4);
 
 % get the mean intensity of the curves
 for i_area = ind_long'
-    [all_y_i, all_x_i] = find(labelMask == i_area);    
-    INT = imageIn(sub2ind(size(bw_out), round(all_y_i),round(all_x_i)));    
+[all_y_i, all_x_i] = find(labelMask == i_area);
+    NMS = imageNMS(sub2ind(size(bw_out), round(all_y_i),round(all_x_i)));
+    feature_MeanNMS(i_area) = mean(NMS);
+    INT = imageInt(sub2ind(size(bw_out), round(all_y_i),round(all_x_i)));
     feature_MeanInt(i_area) = mean(INT);
     % this version with the curvature measure, to save time.
+    
+%     bw_i = zeros(size(bw_out));
+%     bw_i(sub2ind(size(bw_i), round(all_y_i),round(all_x_i)))=1;
+%     end_points_i = bwmorph(bw_i,'endpoints');
+%     [y_i, x_i]=find(end_points_i);
+%     
+%     if isempty(x_i)
+%         % if there is no end point, then it is a enclosed circle
+%         [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, all_x_i(1),all_y_i(1));
+%     else
+%         [y_i, x_i]=find(end_points_i);
+%         [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
+%     end
+%     
+%     ordered_points{i_area} = [line_i_x, line_i_y];
+%     
+%     line_smooth_H = fspecial('gaussian',5,1.5);
+%     
+%     line_i_x = (imfilter(line_i_x, line_smooth_H, 'replicate', 'same'));
+%     line_i_y = (imfilter(line_i_y, line_smooth_H, 'replicate', 'same'));
+%      smoothed_ordered_points{i_area} = [line_i_x, line_i_y];
+%    
+%     Vertices = [line_i_x' line_i_y'];
+%     Lines=[(1:size(Vertices,1)-1)' (2:size(Vertices,1))'];
+%     k=LineCurvature2D(Vertices,Lines);
+%     
+%     feature_Curvature(i_area) = mean(k);
 end
 
 % figure; plot3(feature_Length,feature_MeanInt,feature_InvCurvature,'.');
@@ -73,18 +138,18 @@ if(isempty(classifier_trained))
     % if there is no input classifier, build one, with empirical setting
     
     % find the mode of the intensity of the curves/lines
-    [hist_n,bin] = hist(feature_MeanInt,200);
+    [hist_n,bin] = hist(feature_MeanNMS,200);
     ind_mode = find(hist_n==max(hist_n));
-    mode_int = bin(ind_mode(1));
+    mode_nms = bin(ind_mode(1));
     % And find the Otsu threshold for the intensity
-    hotsu = thresholdOtsu(feature_MeanInt(find(feature_MeanInt>mode_int)));
+    hotsu = thresholdOtsu(feature_MeanNMS(find(feature_MeanNMS>mode_nms)));
     
     % Set the slanted classification line cutoff as twice of the Otsu with
     % respect to the mode
-    T_xie_int =  abs(hotsu - mode_int)*1.5 + mode_int;
+    T_xie_int =  abs(hotsu - mode_nms)*1.0 + mode_nms;
         
     % And the length as Otsu threshold
-    T_xie_length = 2*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
+    T_xie_length = 1.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
     
     % Make a classification function as whether it is above the line
     F_classifer = @(i,l) (((T_xie_int + (T_xie_int/T_xie_length)*(-l) )<i));
@@ -95,7 +160,7 @@ end
 
 % Select those above the line as our good ones as starting point of graph
 % matching
-Good_ind = find(F_classifer(feature_MeanInt, feature_Length)>0);
+Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
 
 % plot the output image with these good ones
 current_all_seg_bw = zeros(size(labelMask));

@@ -1,8 +1,8 @@
-function  F_classifer  = nms_classifier_train(movieData,imageIn,currentImg)
+function  F_classifer  = nms_classifier_train(movieData,imageNMS,currentImg)
 % nms_classifier_train trains an classifier for segments filaments from input image(nms) based on the geometrical features of the curves/lines in the image and user input
 % Input:            
 %    MD:                                the MD for the image project
-% imageIn:                              the input image, typically the non maximum supress version of the steerable filtering output
+% imageNMS:                              the input image, typically the non maximum supress version of the steerable filtering output
 % currentImg:                           the greyscale input image
 
 % Output: 
@@ -16,7 +16,7 @@ function  F_classifer  = nms_classifier_train(movieData,imageIn,currentImg)
 
 save_tif_flag=1;
 
-if(isempty(imageIn))
+if(isempty(imageNMS))
     
     % Find the package of Filament Analysis
     nPackage = length(movieData.packages_);
@@ -152,18 +152,30 @@ if(isempty(imageIn))
     end
     currentImg = double(currentImg);
     
-    
     load([SteerableChannelOutputDir, filesep, 'steerable_', ...
         filename_short_strs{iFrame},'.mat']);
     
-    imageIn = nms;
+    imageNMS = nms;
 end
 
-% the threshold defined by Otsu method
-T_otsu = thresholdOtsu(imageIn);
+imageInt = currentImg;
+
+T_Rosin_otsu = thresholdRosin(imfilter(imageInt,fspecial('gaussian',11,2)));
+MaskCell = imageInt>T_Rosin_otsu*6/3;
+MaskCell = imdilate(MaskCell,fspecial('disk', 71)>0);
+
+[hist_n,bin] = hist(imageNMS(find(imageNMS>0)),200);
+ind_mode = find(hist_n==max(hist_n));
+mode_nms = bin(ind_mode(1));
+% And find the Otsu threshold for the intensity
+T_otsu = thresholdOtsu(imageNMS(find(imageNMS>mode_nms)));
+T_otsu_start =  abs(T_otsu - mode_nms)*0.2 + mode_nms;
+
+imageNMS = imageNMS.*MaskCell;
+imageInt = imageInt.*MaskCell;
 
 % first, get almost all the curves/lines, by using a low threshold
-imageMask = imageIn > T_otsu/3;
+imageMask = imageNMS > T_otsu_start;
 
 % further thin it, since the nms version of steerable filtering is not real skeleton
 bw_out = bwmorph(imageMask,'thin','inf');
@@ -202,17 +214,54 @@ ratio  = obShortaxis./obLongaxis;
 
 
 feature_MeanInt = nan(nLine,1);
+feature_MeanNMS = nan(nLine,1);
 feature_Length = obAreas';
+feature_Curvature = nan(nLine,1);
 
 % for the features, only include those curves/lines longer than 4 pixels
 ind_long = find(feature_Length>4);
 
+ordered_points = cell(1,1);
+smoothed_ordered_points = cell(1,1);
+
 % get the mean intensity of the curves
 for i_area = ind_long'
     [all_y_i, all_x_i] = find(labelMask == i_area);
-    INT = imageIn(sub2ind(size(bw_out), round(all_y_i),round(all_x_i)));
+    NMS = imageNMS(sub2ind(size(bw_out), round(all_y_i),round(all_x_i)));
+    feature_MeanNMS(i_area) = mean(NMS);
+    INT = imageInt(sub2ind(size(bw_out), round(all_y_i),round(all_x_i)));
     feature_MeanInt(i_area) = mean(INT);
     % this version with the curvature measure, to save time.
+    
+    bw_i = zeros(size(bw_out));
+    bw_i(sub2ind(size(bw_i), round(all_y_i),round(all_x_i)))=1;
+    end_points_i = bwmorph(bw_i,'endpoints');
+    [y_i, x_i]=find(end_points_i);
+    
+    if isempty(x_i)
+        % if there is no end point, then it is a enclosed circle
+        [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, all_x_i(1),all_y_i(1));
+    else
+        [y_i, x_i]=find(end_points_i);
+        [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
+    end
+    
+    ordered_points{i_area} = [line_i_x, line_i_y];
+    
+    line_smooth_H = fspecial('gaussian',5,1.5);
+    
+    line_i_x = (imfilter(line_i_x, line_smooth_H, 'replicate', 'same'));
+    line_i_y = (imfilter(line_i_y, line_smooth_H, 'replicate', 'same'));
+    
+    smoothed_ordered_points{i_area} = [line_i_x, line_i_y];
+   
+    
+    Vertices = [line_i_x' line_i_y'];
+    Lines=[(1:size(Vertices,1)-1)' (2:size(Vertices,1))'];
+    k=LineCurvature2D(Vertices,Lines);
+    
+    feature_Curvature(i_area) = mean(k);
+    
 end
 
 % figure; plot3(feature_Length,feature_MeanInt,feature_Curvature,'.');
@@ -273,8 +322,8 @@ for i_mark = 1 : 2*length(training_ind)
     plot(x,y,'g.');
     saveas(h1,[FilamentSegmentationChannelOutputDir,'/train_g_',num2str(i_mark),'.jpg']);
     
-    AA = [max(1, round(mean(x))-50), min(size(imageIn,2), round(mean(x))+50), ...
-        max(1, round(mean(y))-50), min(size(imageIn,1), round(mean(y))+50)];
+    AA = [max(1, round(mean(x))-50), min(size(imageNMS,2), round(mean(x))+50), ...
+        max(1, round(mean(y))-50), min(size(imageNMS,1), round(mean(y))+50)];
     axis(AA);
     ch = getkey();
     if(ch==28)
@@ -320,10 +369,6 @@ if(mean(good_bad_label)>1.8)
     
     F_classifer_down = @(i,l) (((T_xie_int_down + (T_xie_int_down/T_xie_length_down)*(-l) )<i));
     
-    
-    
-    
-    
     % the points in between the two classifier is the not sure ones that
     % requires annotation
     not_sure_ind = find(F_classifer_up(feature_MeanInt, feature_Length)==0 & F_classifer_down(feature_MeanInt, feature_Length)>0);
@@ -354,8 +399,8 @@ if(mean(good_bad_label)>1.8)
         plot(x,y,'g.');
         saveas(h1,[FilamentSegmentationChannelOutputDir,'/train_g_',num2str(i_mark),'.jpg']);
         
-        AA = [max(1, round(mean(x))-50), min(size(imageIn,2), round(mean(x))+50), ...
-            max(1, round(mean(y))-50), min(size(imageIn,1), round(mean(y))+50)];
+        AA = [max(1, round(mean(x))-50), min(size(imageNMS,2), round(mean(x))+50), ...
+            max(1, round(mean(y))-50), min(size(imageNMS,1), round(mean(y))+50)];
         axis(AA);
         ch = getkey();
         if(ch==28)
@@ -435,8 +480,8 @@ if(mean(good_bad_label)<1.2)
         plot(x,y,'g.');
         saveas(h1,[FilamentSegmentationChannelOutputDir,'/train_g_',num2str(i_mark),'.jpg']);
         
-        AA = [max(1, round(mean(x))-50), min(size(imageIn,2), round(mean(x))+50), ...
-            max(1, round(mean(y))-50), min(size(imageIn,1), round(mean(y))+50)];
+        AA = [max(1, round(mean(x))-50), min(size(imageNMS,2), round(mean(x))+50), ...
+            max(1, round(mean(y))-50), min(size(imageNMS,1), round(mean(y))+50)];
         axis(AA);
         ch = getkey();
         if(ch==28)
@@ -471,23 +516,24 @@ axis auto;
 training_good_ind = [good_ind; training_ind(find(good_bad_label(1:end)==1))];
 training_bad_ind = [bad_ind; training_ind(find(good_bad_label(1:end)==2))];
 
-
 train_length_good = feature_Length(training_good_ind);
 train_length_bad = feature_Length(training_bad_ind);
 
 train_int_good = feature_MeanInt(training_good_ind);
 train_int_bad = feature_MeanInt(training_bad_ind);
 
-% train_cur_good = feature_Curvature(training_good_ind);
-% train_cur_bad = feature_Curvature(training_bad_ind);
+train_nms_good = feature_MeanNMS(training_good_ind);
+train_nms_bad = feature_MeanNMS(training_bad_ind);
 
-feature_good = [train_length_good train_int_good ];
-feature_bad = [train_length_bad train_int_bad ];
+train_cur_good = feature_Curvature(training_good_ind);
+train_cur_bad = feature_Curvature(training_bad_ind);
+
+
+feature_good = [train_length_good train_int_good train_nms_good train_cur_good];
+feature_bad = [train_length_bad train_int_bad train_nms_bad train_cur_bad];
 
 label_good = ones(size(train_length_good));
 label_bad = zeros(size(train_length_bad));
-
-
 
 
 feature_training = [feature_Length(training_ind) feature_MeanInt(training_ind)];
