@@ -45,9 +45,6 @@ ip.addParamValue('frameRate',1,@isscalar);
 
 ip.parse(TS,varargin{:});
 alpha     = ip.Results.alpha;
-outLevel  = ip.Results.outLevel;
-trend     = ip.Results.trendType;
-minLen    = ip.Results.minLength;
 winSize   = ip.Results.winSize;
 noiseStd  = ip.Results.noiseStd;
 plotYes   = ip.Results.plotYes;
@@ -60,55 +57,47 @@ if mod(winSize,2) == 0
 end
 
 
-    % IT SHOULD NOT HAVE PRE-PROCESSING IN IT
 
-TS             = TS(:)';
-outTS.points   = timeSeriesPreProcessing(TS,'gapSize',1,'trendType',trend);
-outTS.interval = 1:length(TS);
-%TS(detectOutliers(TS,outLevel)) = NaN;
-%[outTS.points,outTS.interval]   = removeMeanTrendNaN(TS,'trendType',trend,'minLength',minLen);
-%outTS.points                    = cell2mat(outTS.points);
-%outTS.interval                  = cell2mat(outTS.interval);
+TS       = TS(:)';
+nPoint   = numel(TS);
+outTS.Up = nan(size(TS));
+outTS.Dw = nan(size(TS));
 
-outTS.Up                        = nan(size(TS));
-outTS.Dw                        = nan(size(TS));
-TSwork                          = outTS.points';
 
-if ~isempty(TSwork)
+if ~isempty(TS)
     
-    imf       = emd(TSwork);
-    Mu        = mean(imf(1,:));
+    imf       = emd(TS);
+    Mu        = mean(imf(1,:));%Fastest mode
     [~,noise] = testImf(imf,'alpha',alpha);
     
     %Local variance calculation
     
-    localSignalVar  = slidingWindowFilter(TSwork,winSize,@(x) nanvar(x,1,2));
+    localSignalVar  = slidingWindowFilter(TS',winSize,@(x) nanvar(x,1,2));
     localNoiseVar   = slidingWindowFilter(noise,winSize,@(x) nanvar(x,1,2));
     outTS.localSNR  = localSignalVar./localNoiseVar;
-    outTS.globalSNR = nanvar(TSwork)/nanvar(noise);
+    outTS.globalSNR = nanvar(TS)/nanvar(noise);
     
     %Defining the lower and upper noise confidence bands
-    outTS.Up(outTS.interval)  = Mu + sqrt(localNoiseVar)*noiseStd;
-    outTS.Dw(outTS.interval)  = Mu - sqrt(localNoiseVar)*noiseStd;
+    outTS.Up  = Mu + sqrt(localNoiseVar)*noiseStd;
+    outTS.Dw  = Mu - sqrt(localNoiseVar)*noiseStd;
     %*************************
     if plotYes
                 
         alphaT    = 0.2;
         figure
-        xAxis = frameRate*( outTS.interval );
-        plot(xAxis,TSwork,'c','LineWidth',2)
+        xAxis = frameRate*( 1:nPoint );
+        plot(xAxis,TS,'c','LineWidth',2)
         xlabel('Time [sec]')
         ylabel('Signal [A.U]')
         hold on
         
         
-        fill([xAxis fliplr(xAxis)],[outTS.Up flipud(outTS.Dw)],'g','FaceAlpha', alphaT,'linestyle','none');
-        disp(['If you are going to import this figure into Illustrator, comment the above and uncomment the line below' ...
-              'DO NOT FORGET TO REVERSE THE COMMENTS BEFORE svn ci'])
+        fill([xAxis fliplr(xAxis)]',[outTS.Up;flipud(outTS.Dw)],'g','FaceAlpha', alphaT,'linestyle','none');
+        disp(['If you are going to import this figure into Illustrator, change the alphaT to 1' ...
+              'DO NOT CHECK IT IN'])
         %The shading can be done once the figure is imported into illustrator by altering the transparency of the red area
         
-        %fill([xAxis;flipud(xAxis)],[Up;flipud(Dw)],'r','linestyle','none');
-        h = legend({'Detrended Signal','Noise Level'});
+        h = legend({'Signal','Noise Level'});
         legend(h,'boxoff')
         
     end
