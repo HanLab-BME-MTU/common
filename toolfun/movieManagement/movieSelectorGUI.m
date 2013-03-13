@@ -400,9 +400,22 @@ end
              [movieListPath filesep movieListFileName]);         
 if ~any([filename,path]), return; end
 
-% Ask user where to select the output directory of the
-outputDir = uigetdir(path,'Select a directory to store the list analysis output');
-if isequal(outputDir,0), return; end
+listPaths = arrayfun(@getFullPath,userData.ML,'Unif',false);
+if any(strcmp([path filename], listPaths))
+    user_response = questdlg(['Are you sure to want to overwrite the list '...
+        'with the current selection of movies? All analysis performed at the '...
+        'list level will be lost.'], ...
+        'Movie Listbox', 'Yes','No','Yes');
+    if strcmpi('no', user_response), return; end
+    iList = strcmp([path filename], listPaths);
+    outputDir = userData.ML(iList).outputDirectory_;
+    delete(userData.ML(iList));
+    userData.ML(iList) = [];
+else
+    % Ask user where to select the output directory of the
+    outputDir = uigetdir(path,'Select a directory to store the list analysis output');
+    if isequal(outputDir,0), return; end
+end
 
 try
     ML = MovieList(userData.MD, outputDir);
