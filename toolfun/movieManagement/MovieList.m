@@ -20,12 +20,13 @@ classdef MovieList < MovieObject
                 if iscellstr(movies)
                     obj.movieDataFile_ = movies(:)';
                 elseif iscell(movies) && all(cellfun(@(x)isa(x,'MovieData'),movies))
-                    obj.movieDataFile_ = cellfun(@(x) fullfile(x.getPath,x.getFilename),...
+                    obj.movieDataFile_ = cellfun(@getFullPath,...
                         movies,'UniformOutput',false);
                     obj.movies_ = movies;
                 elseif isa(movies, 'MovieData')
-                    obj.movieDataFile_ = arrayfun(@(x) fullfile(x.getPath,x.getFilename),...
+                    obj.movieDataFile_ = arrayfun(@getFullPath,...
                         movies,'UniformOutput',false);
+                    obj.movies_ = num2cell(movies);
                 else
                     error('lccb:ml:constructor','Movies should be a cell array or a array of MovieData');
                 end
