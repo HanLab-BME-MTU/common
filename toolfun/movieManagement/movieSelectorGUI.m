@@ -382,8 +382,7 @@ function pushbutton_save_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
-contentList = get(handles.listbox_movie, 'String');
-if isempty(contentList)
+if isempty(userData.MD)
     warndlg('No movie selected. Please create new movie data or open existing movie data or movie list.', 'No Movie Selected', 'modal')
     return
 end
@@ -406,7 +405,7 @@ outputDir = uigetdir(path,'Select a directory to store the list analysis output'
 if isequal(outputDir,0), return; end
 
 try
-    ML = MovieList(contentList, outputDir);
+    ML = MovieList(userData.MD, outputDir);
     ML.setPath(path);
     ML.setFilename(filename);
     ML.sanityCheck;
