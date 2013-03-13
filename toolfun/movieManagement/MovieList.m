@@ -86,12 +86,17 @@ classdef MovieList < MovieObject
             
             % Load movie components (run sanityCheck on each of them)
             nMovies = numel(obj.movieDataFile_);
-            movieIndex = 1:nMovies;
+            nLoadedMovies = numel(obj.movies_);
             movieException = cell(1,nMovies);
-            for i = movieIndex
-                fprintf(1,'Loading movie %g/%g\n',i,nMovies);
+            for i = 1 : nMovies
                 try
-                    obj.movies_{i}=MovieData.load(obj.movieDataFile_{i},askUser);
+                    if i <= nLoadedMovies && ~isempty(obj.movies_{i})
+                        [moviePath,movieName,movieExt] = fileparts(obj.movieDataFile_{i});
+                        obj.movies_{i}.sanityCheck(moviePath,[movieName movieExt], askUser);
+                    else
+                        fprintf(1,'Loading movie %g/%g\n',i,nMovies);
+                        obj.movies_{i}=MovieData.load(obj.movieDataFile_{i},askUser);
+                    end
                 catch ME
                     movieException{i} = ME;
                     continue
