@@ -648,7 +648,7 @@ function pushbutton_traing_nms_Callback(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 funParams = userData.crtProc.funParams_;
-funParams.F_classifier = nms_classifier_train(userData.MD,[],[]);
+funParams.F_classifier = nms_classifier_train_moviedata(userData.MD);
 
 try
     userData.crtProc.sanityCheck;
@@ -668,7 +668,21 @@ function pushbutton_load_nms_classifier_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+userData = get(handles.figure1, 'UserData');
+funParams = userData.crtProc.funParams_;
 funParams.F_classifier = load_classifier_trained(userData.MD);
+
+try
+    userData.crtProc.sanityCheck;
+catch ME
+
+    errordlg([ME.message 'Please double check your data.'],...
+                'Setting Error','modal');
+    return;
+end
+
+processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
+
 
 
 % --- Executes during object creation, after setting all properties.

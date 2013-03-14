@@ -1,4 +1,4 @@
-function  F_classifer  = load_classifier_trained(MD)
+function  F_classifer  = load_classifier_trained(movieData)
 % nms_classifier_train trains an classifier for segments filaments from input image(nms) based on the geometrical features of the curves/lines in the image and user input
 % Input:
 %    MD:                                the MD for the image project
@@ -121,6 +121,9 @@ for iChannel = selected_channels
     
     % Make output directory for the steerable filtered images
     FilamentSegmentationChannelOutputDir =  movieData.processes_{indexFilamentSegmentationProcess}.outFilePaths_{iChannel};
+    if (~exist(FilamentSegmentationChannelOutputDir,'dir'))
+        mkdir(FilamentSegmentationChannelOutputDir);
+    end
     
     load([FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'],'F_classifer_train_this_channel');
     F_classifer{iChannel} = F_classifer_train_this_channel;
