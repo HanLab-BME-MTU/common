@@ -20,8 +20,6 @@ function  outTS = getTimeSeriesNoiseLevel(TS,varargin)
 %       frameRate - just to set the right time axis in the plot
 %
 %Output:
-%       outTS.points   - processed TS (trend, mean, nan removal) - same size as TS
-%       outTS.interval - 
 %       outTS.Up          - Upper noise limit (same size as TS)
 %       outTS.Dw          - Lower noise limit (same size as TS)
 %       outTS.localSNR    - local SNR(same size as TS)
