@@ -581,7 +581,6 @@ label_bad = zeros(size(train_length_bad));
   T_xie_length_train = train_mat(ind(1), 2);
   F_classifer_train = @(i,l) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-l) )<i));
   
-
-  
- 
+   save([FilamentSegmentationChannelOutputDir,'/F_classifer.mat'],'F_classifer_train');
+     
       

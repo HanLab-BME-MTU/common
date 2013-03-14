@@ -312,7 +312,7 @@ for iChannel = selected_channels
             
             case 'geo_based'
                 tic
-                [level2, NMS_Segment,current_model ] = geoBasedNmsSeg(nms,currentImg, funParams.F_classifier,0, [] );
+                [level2, NMS_Segment,current_model ] = geoBasedNmsSeg(nms,currentImg, funParams.F_classifier{iChannel},0, [] );
                 toc
                 current_seg = NMS_Segment;
                 Intensity_Segment = current_seg;
