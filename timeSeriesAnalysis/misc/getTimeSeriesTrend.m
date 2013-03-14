@@ -13,7 +13,8 @@ function outTS = getTimeSeriesTrend(TS,varargin)
 %                  2 - remove exponential trend
 %                  3 - remove double exponential trend
 %                  4 - remove nonlinear local trend (trendFilteringEMD)
-%                  5 - remove all determinitic component and spits out a stationary signal
+%                  5 - remove all determinitic component and spits out a stationary signal 
+%                      the trend in this case is a smoothed version of the input signal
 %
 %Output:
 %       outTS(iVariable).trend     - estimated trend
@@ -34,10 +35,11 @@ plotYes  = ip.Results.plotYes;
 trendT   = ip.Results.trendType;
 
 %Constant
-minLen      = 5;%Ill-posed otherwise
+minLen      = 5;%minimum length. Ill-posed otherwise
 [nVar,nObs] = size(TS);
 trend       = TS;
 dTS         = TS;
+deltaFit    = nan(nVar,nObs);
 
 for iVar = 1:nVar
     
@@ -77,7 +79,7 @@ for iVar = 1:nVar
         elseif trendT == 4
             
             outTS    = trendFilteringEMD(TS(iVar,:));
-            deltaFit = [];
+          
             
         elseif trendT == 5
             
@@ -85,7 +87,7 @@ for iVar = 1:nVar
             workTS = gapInterpolation(TS(iVar,:),1);
             % Remove all deterministic components
             [outTS.dTS(iVar,:),outTS.trend(iVar,:)] = preWhitening(workTS);
-            deltaFit = [];
+          
             
         end
         
