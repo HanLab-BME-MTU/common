@@ -1,4 +1,4 @@
-function  [T_otsu, current_all_matching_bw ]  = geoBasedNmsSeg(imageNMS, imageInt, classifier_trained, graph_matching_flag,MaskCell)
+function  [T_otsu, current_all_matching_bw, current_model ]  = geoBasedNmsSeg(imageNMS, imageInt, classifier_trained, graph_matching_flag,MaskCell)
 % geoBasedNmsSeg segments filaments from input image(nms) based on the geometrical features of the curves/lines in the image
 % Input:            
 %    ImageIn:                           the input image, typically the non maximum supress version of the steerable filtering output
@@ -164,11 +164,17 @@ Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
 
 % plot the output image with these good ones
 current_all_seg_bw = zeros(size(labelMask));
-
-for i_E = 1 : length(Good_ind)
+current_model = [];
+ 
+fo i_E = 1 : length(Good_ind)
     current_good_bw = labelMask==Good_ind(i_E);
     current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
+          [y_i, x_i] = find(labelMask==Good_ind(i_E));
+   
+    current_model{i_E} = [x_i y_i];
 end
+
+
 current_all_matching_bw = current_all_seg_bw;
 
 % graph_matching_flag=1;

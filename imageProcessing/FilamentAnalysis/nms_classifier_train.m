@@ -1,4 +1,4 @@
-function  F_classifer  = nms_classifier_train(movieData,imageNMS,currentImg)
+function  F_classifer_train  = nms_classifier_train(movieData,imageNMS,currentImg)
 % nms_classifier_train trains an classifier for segments filaments from input image(nms) based on the geometrical features of the curves/lines in the image and user input
 % Input:            
 %    MD:                                the MD for the image project
@@ -231,53 +231,53 @@ for i_area = ind_long'
     feature_MeanNMS(i_area) = mean(NMS);
     INT = imageInt(sub2ind(size(bw_out), round(all_y_i),round(all_x_i)));
     feature_MeanInt(i_area) = mean(INT);
-    % this version with the curvature measure, to save time.
-    
-    bw_i = zeros(size(bw_out));
-    bw_i(sub2ind(size(bw_i), round(all_y_i),round(all_x_i)))=1;
-    end_points_i = bwmorph(bw_i,'endpoints');
-    [y_i, x_i]=find(end_points_i);
-    
-    if isempty(x_i)
-        % if there is no end point, then it is a enclosed circle
-        [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, all_x_i(1),all_y_i(1));
-    else
-        [y_i, x_i]=find(end_points_i);
-        [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
-    end
-    
-    ordered_points{i_area} = [line_i_x, line_i_y];
-    
-    line_smooth_H = fspecial('gaussian',5,1.5);
-    
-    line_i_x = (imfilter(line_i_x, line_smooth_H, 'replicate', 'same'));
-    line_i_y = (imfilter(line_i_y, line_smooth_H, 'replicate', 'same'));
-    
-    smoothed_ordered_points{i_area} = [line_i_x, line_i_y];
-   
-    
-    Vertices = [line_i_x' line_i_y'];
-    Lines=[(1:size(Vertices,1)-1)' (2:size(Vertices,1))'];
-    k=LineCurvature2D(Vertices,Lines);
-    
-    feature_Curvature(i_area) = mean(k);
-    
+%     % this version without the curvature measure, to save time.
+%     
+%     bw_i = zeros(size(bw_out));
+%     bw_i(sub2ind(size(bw_i), round(all_y_i),round(all_x_i)))=1;
+%     end_points_i = bwmorph(bw_i,'endpoints');
+%     [y_i, x_i]=find(end_points_i);
+%     
+%     if isempty(x_i)
+%         % if there is no end point, then it is a enclosed circle
+%         [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, all_x_i(1),all_y_i(1));
+%     else
+%         [y_i, x_i]=find(end_points_i);
+%         [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
+%     end
+%     
+%     ordered_points{i_area} = [line_i_x, line_i_y];
+%     
+%     line_smooth_H = fspecial('gaussian',5,1.5);
+%     
+%     line_i_x = (imfilter(line_i_x, line_smooth_H, 'replicate', 'same'));
+%     line_i_y = (imfilter(line_i_y, line_smooth_H, 'replicate', 'same'));
+%     
+%     smoothed_ordered_points{i_area} = [line_i_x, line_i_y];
+%    
+%     
+%     Vertices = [line_i_x' line_i_y'];
+%     Lines=[(1:size(Vertices,1)-1)' (2:size(Vertices,1))'];
+%     k=LineCurvature2D(Vertices,Lines);
+%     
+%     feature_Curvature(i_area) = mean(k);
+%     
 end
 
 % figure; plot3(feature_Length,feature_MeanInt,feature_Curvature,'.');
 
 
 % find the mode of the intensity of the curves/lines
-[hist_n,bin] = hist(feature_MeanInt,200);
+[hist_n,bin] = hist(feature_MeanNMS,200);
 ind_mode = find(hist_n==max(hist_n));
-mode_int = bin(ind_mode(1));
+mode_nms = bin(ind_mode(1));
 % And find the Otsu threshold for the intensity
-hotsu = thresholdOtsu(feature_MeanInt(find(feature_MeanInt>mode_int)));
+hotsu = thresholdOtsu(feature_MeanNMS(find(feature_MeanNMS>mode_nms)));
 
 % the up one
 % Set the slanted classification line cutoff as twice of the Otsu with
 % respect to the mode
-T_xie_int_up =  abs(hotsu - mode_int)*2 + mode_int;
+T_xie_int_up =  abs(hotsu - mode_nms)*2 + mode_nms;
 
 % And the length as Otsu threshold
 T_xie_length_up = 2*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
@@ -287,18 +287,18 @@ F_classifer_up = @(i,l) (((T_xie_int_up + (T_xie_int_up/T_xie_length_up)*(-l) )<
 
 
 % the down one
-T_xie_int_down =  abs(hotsu - mode_int)*1.5 + mode_int;
+T_xie_int_down =  abs(hotsu - mode_nms)*1.5 + mode_nms;
 T_xie_length_down = 1.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
 
 F_classifer_down = @(i,l) (((T_xie_int_down + (T_xie_int_down/T_xie_length_down)*(-l) )<i));
 
 % the points in between the two classifier is the not sure ones that
 % requires annotation
-not_sure_ind = find(F_classifer_up(feature_MeanInt, feature_Length)==0 & F_classifer_down(feature_MeanInt, feature_Length)>0);
-good_ind = find(F_classifer_up(feature_MeanInt, feature_Length)>0);
+not_sure_ind = find(F_classifer_up(feature_MeanNMS, feature_Length)==0 & F_classifer_down(feature_MeanNMS, feature_Length)>0);
+good_ind = find(F_classifer_up(feature_MeanNMS, feature_Length)>0);
 
 F_classifer_notuse =  @(i,l) (((T_xie_int_down/2 + (T_xie_int_down/T_xie_length_down)*(-l) )<i));
-bad_ind = find(F_classifer_down(feature_MeanInt, feature_Length)==0 & F_classifer_notuse(feature_MeanInt, feature_Length)>0);
+bad_ind = find(F_classifer_down(feature_MeanNMS, feature_Length)==0 & F_classifer_notuse(feature_MeanNMS, feature_Length)>0);
     
 
 h1 = figure(1); hold off;
@@ -318,7 +318,7 @@ for i_mark = 1 : 2*length(training_ind)
     i_ind
     iLine = training_ind(i_ind);
     [y,x] = find(labelMask==iLine);
-    h1=figure(1);
+    h1=figure(1);title(['Frame: ',num2str(i_mark)]);
     plot(x,y,'g.');
     saveas(h1,[FilamentSegmentationChannelOutputDir,'/train_g_',num2str(i_mark),'.jpg']);
     
@@ -354,7 +354,7 @@ if(mean(good_bad_label)>1.8)
     % the up one
     % Set the slanted classification line cutoff as twice of the Otsu with
     % respect to the mode
-    T_xie_int_up =  abs(hotsu - mode_int)*1.5 + mode_int;
+    T_xie_int_up =  abs(hotsu - mode_nms)*1.5 + mode_nms;
     
     % And the length as Otsu threshold
     T_xie_length_up = 1.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
@@ -364,18 +364,19 @@ if(mean(good_bad_label)>1.8)
     
     
     % the down one
-    T_xie_int_down =  abs(hotsu - mode_int)*1 + mode_int;
+    T_xie_int_down =  abs(hotsu - mode_nms)*1 + mode_nms;
     T_xie_length_down = 1.2*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
     
     F_classifer_down = @(i,l) (((T_xie_int_down + (T_xie_int_down/T_xie_length_down)*(-l) )<i));
     
     % the points in between the two classifier is the not sure ones that
     % requires annotation
-    not_sure_ind = find(F_classifer_up(feature_MeanInt, feature_Length)==0 & F_classifer_down(feature_MeanInt, feature_Length)>0);
-    good_ind = find(F_classifer_up(feature_MeanInt, feature_Length)>0);
+    not_sure_ind = find(F_classifer_up(feature_MeanNMS, feature_Length)==0 & F_classifer_down(feature_MeanNMS, feature_Length)>0);
+    good_ind = find(F_classifer_up(feature_MeanNMS, feature_Length)>0);
   
     F_classifer_notuse =  @(i,l) (((T_xie_int_down/2 + (T_xie_int_down/T_xie_length_down)*(-l) )<i));
-    bad_ind = find(F_classifer_down(feature_MeanInt, feature_Length)==0 & F_classifer_notuse(feature_MeanInt, feature_Length)>0);
+    bad_ind = find(F_classifer_down(feature_MeanNMS, feature_Length)==0 ...
+        & F_classifer_notuse(feature_MeanNMS, feature_Length)>0);
     
     
     h1 = figure(1); hold off;
@@ -395,7 +396,7 @@ if(mean(good_bad_label)>1.8)
         i_ind
         iLine = training_ind(i_ind);
         [y,x] = find(labelMask==iLine);
-        h1=figure(1);
+        h1=figure(1);title(['Frame: ',num2str(i_mark)]);
         plot(x,y,'g.');
         saveas(h1,[FilamentSegmentationChannelOutputDir,'/train_g_',num2str(i_mark),'.jpg']);
         
@@ -435,7 +436,7 @@ if(mean(good_bad_label)<1.2)
     % the up one
     % Set the slanted classification line cutoff as twice of the Otsu with
     % respect to the mode
-    T_xie_int_up =  abs(hotsu - mode_int)*3 + mode_int;
+    T_xie_int_up =  abs(hotsu - mode_nms)*3 + mode_nms;
     
     % And the length as Otsu threshold
     T_xie_length_up = 3*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
@@ -445,18 +446,18 @@ if(mean(good_bad_label)<1.2)
     
     
     % the down one
-    T_xie_int_down =  abs(hotsu - mode_int)*2 + mode_int;
+    T_xie_int_down =  abs(hotsu - mode_nms)*2 + mode_nms;
     T_xie_length_down = 2*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
     
     F_classifer_down = @(i,l) (((T_xie_int_down + (T_xie_int_down/T_xie_length_down)*(-l) )<i));
     
     % the points in between the two classifier is the not sure ones that
     % requires annotation
-    not_sure_ind = find(F_classifer_up(feature_MeanInt, feature_Length)==0 & F_classifer_down(feature_MeanInt, feature_Length)>0);
-    good_ind = find(F_classifer_up(feature_MeanInt, feature_Length)>0);
+    not_sure_ind = find(F_classifer_up(feature_MeanNMS, feature_Length)==0 & F_classifer_down(feature_MeanNMS, feature_Length)>0);
+    good_ind = find(F_classifer_up(feature_MeanNMS, feature_Length)>0);
   
     F_classifer_notuse =  @(i,l) (((T_xie_int_down/2 + (T_xie_int_down/T_xie_length_down)*(-l) )<i));
-    bad_ind = find(F_classifer_down(feature_MeanInt, feature_Length)==0 & F_classifer_notuse(feature_MeanInt, feature_Length)>0);
+    bad_ind = find(F_classifer_down(feature_MeanNMS, feature_Length)==0 & F_classifer_notuse(feature_MeanNMS, feature_Length)>0);
     
     
     h1 = figure(1); hold off;
@@ -478,6 +479,7 @@ if(mean(good_bad_label)<1.2)
         [y,x] = find(labelMask==iLine);
         h1=figure(1);
         plot(x,y,'g.');
+        title(['Frame: ',num2str(i_mark)]);
         saveas(h1,[FilamentSegmentationChannelOutputDir,'/train_g_',num2str(i_mark),'.jpg']);
         
         AA = [max(1, round(mean(x))-50), min(size(imageNMS,2), round(mean(x))+50), ...
@@ -536,21 +538,50 @@ label_good = ones(size(train_length_good));
 label_bad = zeros(size(train_length_bad));
 
 
-feature_training = [feature_Length(training_ind) feature_MeanInt(training_ind)];
-label_training = good_bad_label;
+% feature_training = [feature_Length(training_ind) feature_MeanInt(training_ind)];
+% label_training = good_bad_label;
 
-mean_good = mean(feature_good);
-mean_bad = mean(feature_bad);
-v = corr_LDA([feature_good; feature_bad], 2, [length(label_good); length(label_bad)], 0.7);
-
-
-v*feature_good
-
-v*feature_bad
-
-F_classifer=[];
-
-save('F_classifer.mat','F_classifer');
+% mean_good = mean(feature_good);
+% mean_bad = mean(feature_bad);
+% v = corr_LDA([feature_good; feature_bad], 2, [length(label_good); length(label_bad)], 0.7);
+% 
+% 
+% v*feature_good
+% 
+% v*feature_bad
+% 
+% F_classifer=[];
+% 
+% save('F_classifer.mat','F_classifer');
     
 
 
+  T_xie_int_mid = (T_xie_int_up + T_xie_int_down)/2;
+  T_xie_length_mid = (T_xie_length_up +  T_xie_length_down)/2;
+    
+  F_classifer_mid = @(i,l) (((T_xie_int_mid + (T_xie_int_mid/T_xie_length_mid)*(-l) )<i));
+ 
+  train_mat = [];
+  for T_xie_int_grid = T_xie_int_down : (T_xie_int_up - T_xie_int_down)/10 : T_xie_int_up
+     for T_xie_length_grid = T_xie_length_down : (T_xie_length_up - T_xie_length_down)/10 : T_xie_length_up
+        
+  F_classifer_train = @(i,l) (((T_xie_int_grid + (T_xie_int_grid/T_xie_length_grid)*(-l) -i )));
+ train_mat = [train_mat; T_xie_int_grid T_xie_length_grid ...
+     (-sum(F_classifer_train(feature_MeanNMS(training_good_ind),...
+     feature_Length((training_good_ind))))...
+     +sum(F_classifer_train(feature_MeanNMS(training_bad_ind),...
+     feature_Length((training_bad_ind)))))];
+     end
+  end
+  
+  ind = find(train_mat(:,3)==max(train_mat(:,3)));
+  
+  
+  T_xie_int_train = train_mat(ind(1), 1);
+  T_xie_length_train = train_mat(ind(1), 2);
+  F_classifer_train = @(i,l) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-l) )<i));
+  
+
+  
+ 
+      

@@ -190,6 +190,11 @@ for iChannel = selected_channels
     end
     
     
+    OrientationOutputDir = [FilamentSegmentationChannelOutputDir,'/OrientImage'];
+    
+    if (~exist(OrientationOutputDir,'dir'))
+        mkdir(OrientationOutputDir);
+    end
     
     
     % If steerable filter process is run
@@ -307,7 +312,7 @@ for iChannel = selected_channels
             
             case 'geo_based'
                 tic
-                [level2, NMS_Segment ] = geoBasedNmsSeg(nms,currentImg, funParams.F_classifier,0, [] );
+                [level2, NMS_Segment,current_model ] = geoBasedNmsSeg(nms,currentImg, funParams.F_classifier,0, [] );
                 toc
                 current_seg = NMS_Segment;
                 Intensity_Segment = current_seg;
@@ -444,6 +449,9 @@ for iChannel = selected_channels
                 imwrite(current_seg, ...
                     [FilamentSegmentationChannelOutputDir,'/segment_binary_',...
                     filename_short_strs{iFrame+ sub_i-1},'.tif']);
+                imwrite(orienation_map_filtered.*double(current_seg), ...
+                    [OrientationOutputDir,'/segment_orientation_',...
+                    filename_short_strs{iFrame+ sub_i-1},'.tif']);                
             end
         end
         
@@ -515,7 +523,8 @@ for iChannel = selected_channels
         save([DataOutputDir,'/steerable_vote_', ...
             filename_short_strs{iFrame},'.mat'],...
             'currentImg','orienation_map_filtered','OrientationVoted','orienation_map','RGB_seg_orient_heat_map_nms', ...
-            'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment','NMS_Segment','RGB_seg_orient_heat_map');
+            'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment','NMS_Segment', ...
+            'current_model', 'RGB_seg_orient_heat_map');
         
         if( save_tif_flag==1)
 %             current_seg = (imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']))>0;
