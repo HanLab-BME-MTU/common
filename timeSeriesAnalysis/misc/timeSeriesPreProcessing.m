@@ -68,7 +68,7 @@ end
 if trendT > -1
     
     auxTS = getTimeSeriesTrend(outTS,'trendType',trendT,'nSurr',nSurr,'alpha',alpha);
-    outTS = auxTS.dTS;    
+        
 end
 
 %% Removing by minimum length
