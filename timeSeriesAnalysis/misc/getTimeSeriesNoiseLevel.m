@@ -11,9 +11,6 @@ function  outTS = getTimeSeriesNoiseLevel(TS,varargin)
 %Input:
 %       TS        - vector with time observations
 %       alpha     - alpha level for testing the IMF's (see testImf)
-%       outLevel  - Std for the outliear detection    (see detectOutliers)
-%       trend     - type of trend to be removed       (see removeMean) 
-%       minLen    - minimal time series length
 %       winSize   - size of the sliding window used to average the local SNR
 %       noiseStd  - number of std of the local noise distribution that will be used to define the local noise limits
 %       plotYes   - if 1, plots the time series with the noise level
@@ -33,9 +30,6 @@ function  outTS = getTimeSeriesNoiseLevel(TS,varargin)
 ip=inputParser;
 ip.addRequired('TS',@(x) isnumeric(x));
 ip.addParamValue('alpha',   .05,@isscalar);
-ip.addParamValue('outLevel',7,@isscalar);
-ip.addParamValue('trendType',   1,@isscalar);
-ip.addParamValue('minLength',  30,@isscalar);
 ip.addParamValue('winSize', 10,@isscalar);
 ip.addParamValue('noiseStd', 1,@isscalar);
 ip.addParamValue('plotYes', 0,@isscalar);
