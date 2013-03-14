@@ -647,9 +647,19 @@ function pushbutton_traing_nms_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 userData = get(handles.figure1, 'UserData');
-
+funParams = userData.crtProc.funParams_;
 funParams.F_classifier = nms_classifier_train(userData.MD,[],[]);
 
+try
+    userData.crtProc.sanityCheck;
+catch ME
+
+    errordlg([ME.message 'Please double check your data.'],...
+                'Setting Error','modal');
+    return;
+end
+
+processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
 
 
 % --- Executes on button press in pushbutton_load_nms_classifier.
