@@ -514,8 +514,6 @@ for iChannel = selected_channels
                         filename_short_strs{iFrame+ sub_i-1},'.tif']);
                 end
             end
-            
-            
         end
         
         
