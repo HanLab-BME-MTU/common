@@ -73,4 +73,4 @@ if gapSize > 0
 end
 
 %% Removing by minimum length
-exclude = find( sum(isfinite(outTS),2) < minLen );
+exclude = find( sum(isfinite(outTS),2) < minLen )';
