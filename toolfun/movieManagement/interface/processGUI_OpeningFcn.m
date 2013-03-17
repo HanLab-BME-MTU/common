@@ -164,49 +164,9 @@ set(handles.listbox_selectedChannels,'String',channelString,...
 
 % Set default channels callback function
 set(handles.checkbox_all,'Callback',@(hObject,eventdata)...
-    checkallChannels(hObject,eventdata,guidata(hObject)));
+    checkallChannels_Callback(hObject,eventdata,guidata(hObject)));
 set(handles.pushbutton_select,'Callback',@(hObject,eventdata)...
-    selectChannel(hObject,eventdata,guidata(hObject)));
+    selectChannel_Callback(hObject,eventdata,guidata(hObject)));
 set(handles.pushbutton_delete,'Callback',@(hObject,eventdata)...
-    deleteChannel(hObject,eventdata,guidata(hObject)));
+    deleteChannel_Callback(hObject,eventdata,guidata(hObject)));
 
-% --- Executes on button press in checkbox_all.
-function checkallChannels(hObject, eventdata, handles)
-
-% Retrieve available channels properties
-availableProps = get(handles.listbox_availableChannels, {'String','UserData'});
-if isempty(availableProps{1}), return; end
-
-% Update selected channels
-if get(hObject,'Value')
-    set(handles.listbox_selectedChannels, 'String', availableProps{1},...
-        'UserData',availableProps{2});
-else
-    set(handles.listbox_selectedChannels, 'String', {}, 'UserData',[], 'Value',1);
-end
-
-% --- Executes on button press in pushbutton_select.
-function selectChannel(hObject, eventdata, handles)
-
-% Retrieve  channels properties
-availableProps = get(handles.listbox_availableChannels, {'String','UserData','Value'});
-selectedProps = get(handles.listbox_selectedChannels, {'String','UserData'});
-
-% Find new elements and set them to the selected listbox
-newID = availableProps{3}(~ismember(availableProps{1}(availableProps{3}),selectedProps{1}));
-selectedChannels = horzcat(selectedProps{1}',availableProps{1}(newID)');
-selectedData = horzcat(selectedProps{2}, availableProps{2}(newID));
-set(handles.listbox_selectedChannels, 'String', selectedChannels, 'UserData', selectedData);
-
-% --- Executes on button press in pushbutton_delete.
-function deleteChannel(hObject, eventdata, handles)
-
-% Get selected properties and returin if empty
-selectedProps = get(handles.listbox_selectedChannels, {'String','UserData','Value'});
-if isempty(selectedProps{1}) || isempty(selectedProps{3}),return; end
-
-% Delete selected item
-selectedProps{1}(selectedProps{3}) = [ ];
-selectedProps{2}(selectedProps{3}) = [ ];
-set(handles.listbox_selectedChannels, 'String', selectedProps{1},'UserData',selectedProps{2},...
-    'Value',max(1,min(selectedProps{3},numel(selectedProps{1}))));
