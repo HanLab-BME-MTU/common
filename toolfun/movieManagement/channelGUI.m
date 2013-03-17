@@ -157,6 +157,14 @@ for i=1:numel(propNames)
     set(propHandle,guiProp,guiValue,'Enable',enableState);
 end
 
+% Display psf sigma if computed
+if ~isempty(userData.channels(userData.selectedChannel).psfSigma_),
+    set(handles.edit_psfSigma, 'String',...
+        userData.channels(userData.selectedChannel).psfSigma_);
+else
+    set(handles.edit_psfSigma, 'String', '');
+end
+
 % Update handles structure
 set(handles.figure1,'UserData',userData)
 guidata(hObject, handles);
@@ -218,6 +226,14 @@ for i=1:numel(propNames)
     set(propHandle,guiProp,guiValue,'Enable',enableState);
 end
 
+
+% Display psf sigma if present
+if ~isempty(userData.channels(userData.selectedChannel).psfSigma_),
+    set(handles.edit_psfSigma, 'String',...
+        userData.channels(userData.selectedChannel).psfSigma_);
+else
+    set(handles.edit_psfSigma, 'String', '');
+end
 
 set(handles.figure1,'UserData',userData)
 
