@@ -19,10 +19,11 @@ corrT    = ip.Results.corrType;
 x = x(:);
 y = y(:);
 
-lags = [-maxLag:maxLag];
+lags = -maxLag:maxLag;
 nObs = length(x);
-xIn  = testSign(x);
-yIn  = testSign(y);
+%xIn  = testSign(x);
+%yIn  = testSign(y);
+
 numSTD = 2;
 
 bounds = [numSTD;-numSTD]/sqrt(nObs);
@@ -32,20 +33,32 @@ pVal = [];
 switch corrT
     
     case 'Pearson'
-        %NaN have no influence
-        xIn(isnan(xIn)) = 0;
-        yIn(isnan(yIn)) = 0;
-        nObs            = min([sum(~isnan(xIn)) sum(~isnan(yIn))]);
-        normalization   = ( (nObs - 1)*nanstd(x)*nanstd(y) )^-1;
+        %NaN and outliers have no influence. Well, not too much.
         
-        SX = flipud(buffer(xIn,nObs,nObs - 1));%delay x(t-n)
-        SY = flipud(buffer(yIn,nObs,nObs - 1));%delay y(t-n)
+               
+        SX = flipud(buffer(x,nObs,nObs - 1));%delay x(t-n)
+        SY = flipud(buffer(y,nObs,nObs - 1));%delay y(t-n)
 
         SX(maxLag+2:end,:) = [];
         SY(maxLag+2:end,:) = [];
         
-        CCR   = normalization*xIn'*SY';
-        CCL   = normalization*yIn'*SX';
+         SX = SX + tril(nan(size(SX)));
+         SY = SY + tril(nan(size(SY)));
+         Y  = repmat(y,1,maxLag+1)+ tril(nan(size(SY)))';
+         X  = repmat(x,1,maxLag+1)+ tril(nan(size(SX)))';
+         
+        lagX = num2cell(SX',1);
+        lagY = num2cell(SY',1);
+        Y    = num2cell(Y,1);
+        X    = num2cell(X,1);
+        
+        posLag = cell2mat(cellfun(@(x,y) robustfit(x,y,'bisquare'),lagX,Y,'Unif',0));
+        negLag = cell2mat(cellfun(@(x,y) robustfit(x,y,'bisquare'),X,lagY,'Unif',0));
+        normalizationR = cell2mat(cellfun(@(x,y) mad(x,1)/mad(y,1),lagX,Y,'Unif',0));
+        normalizationL = cell2mat(cellfun(@(x,y) mad(x,1)/mad(y,1),X,lagY,'Unif',0));
+        
+        CCL   = normalizationR.*posLag(2,:);
+        CCR   = normalizationL.*negLag(2,:);
         xCorr = [fliplr(CCR) CCL(2:end)];
         pVal  = pvalPearson('b',xCorr,nObs);
     case 'Kendall'
