@@ -45,8 +45,7 @@ alpha = ip.Results.alpha;
 
 % Fix bug when correlation function is equal to 1 or -1
 workCC   = CC;
-badIdx   = abs(workCC)<=1.000001 & abs(workCC) >= 0.99999;
-workCC(badIdx) = workCC(badIdx)-sign(workCC(badIdx))*1e-9;
+workCC(abs(workCC) > 0.99999) = 0.99999;
 
 %Elimination of values below the CB
 %workCC( abs(CC) < repmat( abs(CB),nLag,1 ) ) = 0;
