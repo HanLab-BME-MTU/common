@@ -60,7 +60,7 @@ pVal = [];
 switch corrT
     
     case 'Pearson'
-        %NaN and outliers have no influence. Well, not too much.
+        
         
                
         SX = flipud(buffer(x,nObs,nObs - 1));%delay x(t-n)
@@ -80,6 +80,7 @@ switch corrT
         X    = num2cell(X,1);
         
         if robustOn
+            %NaN and outliers have no influence. Well, not too much.
             
             posLag = cell2mat(cellfun(@(x,y) robustfit(x,y,'bisquare'),lagX,Y,'Unif',0));
             negLag = cell2mat(cellfun(@(x,y) robustfit(x,y,'bisquare'),X,lagY,'Unif',0));
@@ -93,11 +94,12 @@ switch corrT
 
             posLag = cell2mat(cellfun(@(x,y) regress(x,y),lagX,Y,'Unif',0));
             negLag = cell2mat(cellfun(@(x,y) regress(x,y),X,lagY,'Unif',0));
-            normalizationR = cell2mat(cellfun(@(x,y) nanstd(x)/nanstd(y),lagX,Y,'Unif',0));
-            normalizationL = cell2mat(cellfun(@(x,y) nanstd(x)/nanstd(y),X,lagY,'Unif',0));
-            
+            normalizationR = cell2mat(cellfun(@(x,y) nanstd(x,1)/nanstd(y,1),lagX,Y,'Unif',0));
+            normalizationL = cell2mat(cellfun(@(x,y) nanstd(x,1)/nanstd(y,1),X,lagY,'Unif',0));
+
         end            
-            
+
+        
         CCL   = normalizationR.*posLag;
         CCR   = normalizationL.*negLag;
         xCorr = [fliplr(CCR) CCL(2:end)];
