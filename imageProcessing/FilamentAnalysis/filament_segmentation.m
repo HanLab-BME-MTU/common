@@ -516,13 +516,15 @@ for iChannel = selected_channels
             end
         end
         
+        current_seg_orientation = current_seg.*orienation_map_filtered;
+        current_seg_orientation(find(current_seg==0)) = nan;
         
         %% Save segmentation results
         save([DataOutputDir,'/steerable_vote_', ...
             filename_short_strs{iFrame},'.mat'],...
             'currentImg','orienation_map_filtered','OrientationVoted','orienation_map','RGB_seg_orient_heat_map_nms', ...
             'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment','NMS_Segment', ...
-            'current_model', 'RGB_seg_orient_heat_map');
+            'current_model', 'RGB_seg_orient_heat_map','current_seg_orientation');
         
         if( save_tif_flag==1)
 %             current_seg = (imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']))>0;
