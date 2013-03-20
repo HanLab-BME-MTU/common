@@ -42,8 +42,14 @@ x = x(:);
 y = y(:);
 
 lags = -maxLag:maxLag;
-nObs = length(x);
+nObsX = length(x);
+nObsY = length(y);
 
+if nObsY ~= nObsX
+    error('X and Y have different number of observations');
+else
+    nObs = nObsY;
+end
 
 numSTD = 2;
 bounds = [numSTD;-numSTD]/sqrt(nObs);
