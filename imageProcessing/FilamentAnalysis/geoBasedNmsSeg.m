@@ -1,9 +1,9 @@
 function  [T_otsu, current_all_matching_bw, current_model ]  = geoBasedNmsSeg(imageNMS, imageInt, classifier_trained, graph_matching_flag,MaskCell)
 % geoBasedNmsSeg segments filaments from input image(nms) based on the geometrical features of the curves/lines in the image
-% Input:            
+% Input:
 %    ImageIn:                           the input image, typically the non maximum supress version of the steerable filtering output
 %    classifier_trained:                the trained or provided classifier of the curvee, if not provided, use empirical function
-% Output: 
+% Output:
 %    T_otsu:                            the threshold defined by Otsu method for intensity of the input image, just as a format thing here.
 %    current_all_matching_bw:           the segmented results, this serves as the starting point of the graphic matching
 %
@@ -31,7 +31,7 @@ subplot(122);
 imagescc(MaskCell);
 
 % pause;
-% 
+%
 % the threshold defined by Otsu method
 
 
@@ -41,7 +41,7 @@ mode_nms = bin(ind_mode(1));
 % And find the Otsu threshold for the intensity
 T_otsu = thresholdOtsu(imageNMS(find(imageNMS>mode_nms)));
 T_otsu_start =  abs(T_otsu - mode_nms)*0.2 + mode_nms;
-   
+
 
 imageNMS = imageNMS.*MaskCell;
 imageInt = imageInt.*MaskCell;
@@ -97,39 +97,39 @@ ind_long = find(feature_Length>4);
 
 % get the mean intensity of the curves
 for i_area = ind_long'
-[all_y_i, all_x_i] = find(labelMask == i_area);
+    [all_y_i, all_x_i] = find(labelMask == i_area);
     NMS = imageNMS(sub2ind(size(bw_out), round(all_y_i),round(all_x_i)));
     feature_MeanNMS(i_area) = mean(NMS);
     INT = imageInt(sub2ind(size(bw_out), round(all_y_i),round(all_x_i)));
     feature_MeanInt(i_area) = mean(INT);
     % this version with the curvature measure, to save time.
     
-%     bw_i = zeros(size(bw_out));
-%     bw_i(sub2ind(size(bw_i), round(all_y_i),round(all_x_i)))=1;
-%     end_points_i = bwmorph(bw_i,'endpoints');
-%     [y_i, x_i]=find(end_points_i);
-%     
-%     if isempty(x_i)
-%         % if there is no end point, then it is a enclosed circle
-%         [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, all_x_i(1),all_y_i(1));
-%     else
-%         [y_i, x_i]=find(end_points_i);
-%         [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
-%     end
-%     
-%     ordered_points{i_area} = [line_i_x, line_i_y];
-%     
-%     line_smooth_H = fspecial('gaussian',5,1.5);
-%     
-%     line_i_x = (imfilter(line_i_x, line_smooth_H, 'replicate', 'same'));
-%     line_i_y = (imfilter(line_i_y, line_smooth_H, 'replicate', 'same'));
-%      smoothed_ordered_points{i_area} = [line_i_x, line_i_y];
-%    
-%     Vertices = [line_i_x' line_i_y'];
-%     Lines=[(1:size(Vertices,1)-1)' (2:size(Vertices,1))'];
-%     k=LineCurvature2D(Vertices,Lines);
-%     
-%     feature_Curvature(i_area) = mean(k);
+    %     bw_i = zeros(size(bw_out));
+    %     bw_i(sub2ind(size(bw_i), round(all_y_i),round(all_x_i)))=1;
+    %     end_points_i = bwmorph(bw_i,'endpoints');
+    %     [y_i, x_i]=find(end_points_i);
+    %
+    %     if isempty(x_i)
+    %         % if there is no end point, then it is a enclosed circle
+    %         [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, all_x_i(1),all_y_i(1));
+    %     else
+    %         [y_i, x_i]=find(end_points_i);
+    %         [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
+    %     end
+    %
+    %     ordered_points{i_area} = [line_i_x, line_i_y];
+    %
+    %     line_smooth_H = fspecial('gaussian',5,1.5);
+    %
+    %     line_i_x = (imfilter(line_i_x, line_smooth_H, 'replicate', 'same'));
+    %     line_i_y = (imfilter(line_i_y, line_smooth_H, 'replicate', 'same'));
+    %      smoothed_ordered_points{i_area} = [line_i_x, line_i_y];
+    %
+    %     Vertices = [line_i_x' line_i_y'];
+    %     Lines=[(1:size(Vertices,1)-1)' (2:size(Vertices,1))'];
+    %     k=LineCurvature2D(Vertices,Lines);
+    %
+    %     feature_Curvature(i_area) = mean(k);
 end
 
 % figure; plot3(feature_Length,feature_MeanInt,feature_InvCurvature,'.');
@@ -147,7 +147,7 @@ if(isempty(classifier_trained))
     % Set the slanted classification line cutoff as twice of the Otsu with
     % respect to the mode
     T_xie_int =  abs(hotsu - mode_nms)*1.0 + mode_nms;
-        
+    
     % And the length as Otsu threshold
     T_xie_length = 1.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
     
@@ -165,13 +165,13 @@ Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
 % plot the output image with these good ones
 current_all_seg_bw = zeros(size(labelMask));
 current_model = [];
- 
-fo i_E = 1 : length(Good_ind)
-    current_good_bw = labelMask==Good_ind(i_E);
-    current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
-          [y_i, x_i] = find(labelMask==Good_ind(i_E));
-   
-    current_model{i_E} = [x_i y_i];
+
+for i_E = 1 : length(Good_ind)
+current_good_bw = labelMask==Good_ind(i_E);
+current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
+[y_i, x_i] = find(labelMask==Good_ind(i_E));
+
+current_model{i_E} = [x_i y_i];
 end
 
 
@@ -181,7 +181,7 @@ current_all_matching_bw = current_all_seg_bw;
 
 % Now if user intended for graph matching part, do it
 if(graph_matching_flag==1)
-        
+    
     confidency_interval = 0.8;
     current_model = [];
     bw_to_be_matched = current_all_seg_bw;

@@ -266,7 +266,7 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % lower sample rate than the other channel, so use this number
             % to save some time.
             funParams.Sub_Sample_Num = 1;
-            funParams.F_classifier = [];
+            funParams.F_classifier = cell(1,max(funParams.ChannelIndex));
             
         end
     end
