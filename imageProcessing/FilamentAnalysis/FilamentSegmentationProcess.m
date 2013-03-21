@@ -156,9 +156,9 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             ip.parse(iChan,iFrame,varargin{:})
             
             % Data loading
-            Channel_FilesNames = obj.getInImageFileNames(obj,iChan);
-            filename_short_strs = uncommon_str_takeout(Channel_FilesNames);
-            load([obj.outFilePaths_{1,iChannel},'/DataOutput/steerable_vote_',filename_short_strs{iFrame},'.mat'], ...
+            Channel_FilesNames = obj.getInImageFileNames(iChan);
+            filename_short_strs = uncommon_str_takeout(Channel_FilesNames{1});
+            load([obj.outFilePaths_{1,iChan},'/DataOutput/steerable_vote_',filename_short_strs{iFrame},'.mat'], ...
             'current_seg_orientation');
             outMatrix = current_seg_orientation;
             
