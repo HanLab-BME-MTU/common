@@ -36,7 +36,7 @@ classdef PostTrackingProcess < DataProcessingProcess
             procClasses = ...
                 {'MotionAnalysisProcess';
                 'CometPostTrackingProcess';                
-                };
+                'TrackGroupingProcess'};
         end
     end
 end
