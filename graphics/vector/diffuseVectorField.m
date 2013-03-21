@@ -88,7 +88,7 @@ function [diffusedVectorField] = diffuseVectorField(referenceVectorField, vararg
 %     rad = round(0.25 * min(size(im)));
 %     
 %     im = ((X - xc).^2/rad^2) + ((Y - yc).^2/rad^2) - 1 <= 0;
-%     im = double(edge(im));
+%     im = double(bwperim(im));
 % 
 %     referenceVectorField = cell(1, 2);    
 %     [referenceVectorField{:}] = gradient(im);
@@ -156,7 +156,7 @@ function [diffusedVectorField] = diffuseVectorField(referenceVectorField, vararg
         referenceVectorFieldPadded{i} = padarray(referenceVectorField{i}, padSize,padMethod);
     end
     unpadmask = padarray(ones(imsize), padSize, 0 );
-    borderCorrectionInd = getPaddingIndices(imsize, padSize, padMethod, 'both' );
+    borderCorrectionInd = getMatrixPaddingIndices(imsize, padSize, padMethod, 'both' );
         
     for j = 1:imdims
         borderCorrectionInd{j} = borderCorrectionInd{j} + 1;
