@@ -22,7 +22,7 @@ function varargout = movieDataGUI(varargin)
 
 % Edit the above text to modify the response to help movieDataGUI
 
-% Last Modified by GUIDE v2.5 12-Mar-2012 14:01:36
+% Last Modified by GUIDE v2.5 22-Mar-2013 14:05:16
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -377,11 +377,12 @@ assert(bfCheckJavaPath(), 'Could not load the Bio-Formats library');
 
 % Note: list of supported formats could be retrieved using
 % loci.formats.tools.PrintFormatTable class
-[file path] = uigetfile('Select image file to import.');
+[file, path] = uigetfile('Select image file to import.');
 if isequal(file,0) || isequal(path,0), return; end
 
 % Import data into movie using bioformats
-MD = bfImport([path file],logical(get(handles.checkbox_uncompress,'Value')));
+importMetadata = logical(get(handles.checkbox_importMetadata,'Value'));
+MD = bfImport([path file], importMetadata);
 
 % Update movie selector interface
 userData=get(handles.figure1,'UserData');
