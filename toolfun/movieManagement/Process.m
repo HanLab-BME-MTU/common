@@ -6,28 +6,28 @@ classdef Process < hgsetget
     properties (SetAccess = private, GetAccess = public)
         name_           % Process name
         owner_          % Movie data object owning the process
-        createTime_     % Time process was created  
+        createTime_     % Time process was created
         startTime_      % Time process was last started
         finishTime_     % Time process was last run
     end
     
     properties  (SetAccess = protected)
         % Success/Uptodate flags
-        procChanged_   % Whether process parameters have been changed     
+        procChanged_   % Whether process parameters have been changed
         success_       % If the process has been successfully run
         % If the parameter of parent process is changed
         % updated_ - false, not changed updated_ - true
-        updated_ 
+        updated_
         
         funName_        % Function running the process
         funParams_      % Parameters for running the process
-        visualParams_   % Visualization parameters    
+        visualParams_   % Visualization parameters
         
         inFilePaths_    % Path to the process input
         outFilePaths_   % Path to the process output
-
+        
     end
-    properties        
+    properties
         notes_          % Process notes
     end
     properties (Transient=true)
@@ -85,15 +85,15 @@ classdef Process < hgsetget
         end
         
         function status = checkChanNum(obj,iChan)
-            assert(~isempty(iChan) && isnumeric(iChan),'Please provide a valid channel input'); 
+            assert(~isempty(iChan) && isnumeric(iChan),'Please provide a valid channel input');
             status = ismember(iChan,1:numel(obj.owner_.channels_));
         end
         
         function status = checkFrameNum(obj,iFrame)
-            assert(~isempty(iFrame) && isnumeric(iFrame),'Please provide a valid frame input');           
+            assert(~isempty(iFrame) && isnumeric(iFrame),'Please provide a valid frame input');
             status = ismember(iFrame,1:obj.owner_.nFrames_);
         end
-   
+        
         function sanityCheck(obj)
             % Compare current process fields to default ones (static method)
             crtParams=obj.funParams_;
@@ -129,7 +129,7 @@ classdef Process < hgsetget
             obj.updated_=true;
             obj.procChanged_=false;
             obj.finishTime_ = clock;
-           
+            
             % Run sanityCheck on parent package to update dependencies
             for packId=obj.getPackage
                 obj.owner_.packages_{packId}.sanityCheck(false,'all');
@@ -142,16 +142,16 @@ classdef Process < hgsetget
             if ~isempty(obj.displayMethod_)
                 cellfun(@delete,obj.displayMethod_(~cellfun(@isempty,obj.displayMethod_)));
                 obj.displayMethod_ = {};
-            end        
+            end
         end
         
-                
+        
         function setDisplayMethod(obj,iOutput,iChan,displayMethod)
             
             assert(isa(displayMethod(),'MovieDataDisplay'));
             try
-                delete(obj.displayMethod_{iOutput,iChan});                
-            end 
+                delete(obj.displayMethod_{iOutput,iChan});
+            end
             obj.displayMethod_{iOutput,iChan} = displayMethod;
         end
         
@@ -180,18 +180,18 @@ classdef Process < hgsetget
         end
         
         function relocate(obj,oldRootDir,newRootDir)
-            % Relocate all paths in various process fields 
+            % Relocate all paths in various process fields
             relocateFields ={'inFilePaths_','outFilePaths_',...
                 'funParams_','visualParams_'};
             for i=1:numel(relocateFields)
                 obj.(relocateFields{i}) = relocatePath(obj.(relocateFields{i}),...
                     oldRootDir,newRootDir);
-            end       
+            end
         end
         
         function hfigure = resultDisplay(obj)
             hfigure = movieViewer(obj.owner_, ...
-                find(cellfun(@(x)isequal(x,obj),obj.owner_.processes_)));    
+                find(cellfun(@(x)isequal(x,obj),obj.owner_.processes_)));
         end
         
         function h=draw(obj,iChan,varargin)
@@ -207,14 +207,14 @@ classdef Process < hgsetget
             ip.addParamValue('output',outputList(1).var,@(x) any(cellfun(@(y) isequal(x,y),{outputList.var})));
             ip.KeepUnmatched = true;
             ip.parse(obj,iChan,varargin{:})
-			
+            
             % Load data
-            if ~isempty(ip.Results.iFrame)     
+            if ~isempty(ip.Results.iFrame)
                 data=obj.loadChannelOutput(iChan,ip.Results.iFrame,'output',ip.Results.output);
             else
                 data=obj.loadChannelOutput(iChan,'output',ip.Results.output);
             end
-                iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
+            iOutput= find(cellfun(@(y) isequal(ip.Results.output,y),{outputList.var}));
             if ~isempty(outputList(iOutput).formatData),
                 data=outputList(iOutput).formatData(data);
             end
@@ -231,14 +231,26 @@ classdef Process < hgsetget
             drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
                 2*numel(fieldnames(ip.Unmatched)),1);
             h=obj.displayMethod_{iOutput,iChan}.draw(data,tag,drawArgs{:});
-        end     
+        end
         
         function index = getIndex(obj)
             index = find(cellfun(@(x) isequal(x,obj),obj.owner_.processes_));
             assert(numel(index)==1);
         end
     end
-
+    
+    methods (Static)
+        function status = isProcess(name)
+            status = isSubclass(name, 'Process');
+        end
+        
+        function status = hasGUI(name)
+            m = meta.class.fromName(name);
+            status = ismember('GUI',{m.MethodList.Name});
+        end
+        
+    end
+    
     methods (Static,Abstract)
         getDefaultParams
         getName
