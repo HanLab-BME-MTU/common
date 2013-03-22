@@ -2,22 +2,32 @@ function MD = bfImport(dataPath,varargin)
 % BFIMPORT imports movie files into MovieData objects using Bioformats 
 %
 % MD = bfimport(dataPath)
+% MD = bfimport(dataPath, false)
+% MD = bfimport(dataPath, 'outputDirectory', outputDir)
 %
 % Load proprietary files using the Bioformats library. Read the metadata
 % that is associated with the movie and the channels and set them into the
-% created movie objects. Optionally images can be extracted and saved as
-% individual TIFF files.
+% created movie objects.
 %
 % Input:
 % 
 %   dataPath - A string containing the full path to the movie file.
 %
-%   extractImages - Optional. If true, individual images will be extracted
-%   and saved as TIF images.
+%   importMetadata - A flag specifying whether the movie metadata read by
+%   Bio-Formats should be copied into the MovieData. Default: true.
+%
+%   Optional Parameters :
+%       ('FieldName' -> possible values)
+%
+%       outputDirectory - A string giving the directory where to save the
+%       created MovieData as well as the analysis output. In the case of
+%       multi-series images, this string gives the basename of the output 
+%       folder and will be exanded as basename_sxxx for each movie
 %
 % Output:
 %
-%   MD - A MovieData object
+%   MD - A single MovieData object or an array of MovieData objects
+%   depending on the number of series in the original images.
 
 % Sebastien Besson, Dec 2011
 
@@ -27,10 +37,9 @@ assert(status, 'Bioformats library missing');
 % Input check
 ip=inputParser;
 ip.addRequired('dataPath',@ischar);
-ip.addOptional('extractImages',false,@islogical);
+ip.addOptional('importMetadata',true,@islogical);
 ip.addParamValue('outputDirectory',[],@ischar);
 ip.parse(dataPath,varargin{:});
-extractImages = ip.Results.extractImages;
 
 assert(exist(dataPath,'file')==2,'File does not exist'); % Check path
 
@@ -61,17 +70,23 @@ end
 
 % Create movie channels
 nChan = r.getSizeC();
-channelPath = cell(nSeries, nChan);
 movieChannels(nSeries, nChan) = Channel();
 
 for i = 1:nSeries
     fprintf(1,'Creating movie %g/%g\n',i,nSeries);
     iSeries = i-1;
-    movieArgs = getMovieMetadata(r, iSeries);
+    
+    % Read movie metadata using Bio-Formats
+    if ip.Results.importMetadata
+        movieArgs = getMovieMetadata(r, iSeries);
+    else
+        movieArgs = {};
+    end
     
     % Read number of channels, frames and stacks
     nChan =  r.getMetadataStore().getPixelsSizeC(iSeries).getValue;
     
+    % Generate movie filename out of the input name
     if nSeries>1
         sString = num2str(i, ['_s%0' num2str(floor(log10(nSeries))+1) '.f']);
         outputDir = [mainOutputDir sString];
@@ -86,49 +101,21 @@ for i = 1:nSeries
 
     for iChan = 1:nChan
         
-        channelArgs = getChannelMetadata(r, iSeries, iChan-1);        
+        if ip.Results.importMetadata
+            channelArgs = getChannelMetadata(r, iSeries, iChan-1);
+        else
+            channelArgs = {};
+        end
         
         % Create new channel
-        if extractImages
-            % Read channelName
-            chanName=r.getMetadataStore().getChannelName(iSeries, iChan-1);
-            if isempty(chanName),
-                chanName = ['Channel_' num2str(iChan)];
-            else
-                chanName = char(chanName.toString);
-            end
-            channelPath{i, iChan} = fullfile(outputDir, chanName);
-        else
-            channelPath{i, iChan} = dataPath;
-        end
-        movieChannels(i, iChan) = Channel(channelPath{i, iChan}, channelArgs{:});
-        
+        movieChannels(i, iChan) = Channel(dataPath, channelArgs{:});
     end
     
     % Create movie object
     MD(i) = MovieData(movieChannels(i, :), outputDir, movieArgs{:});
     MD(i).setPath(outputDir);
     MD(i).setFilename(movieFileName);
-    if ~extractImages, MD(i).setSeries(iSeries); end
-    
-    if extractImages
-        nFrames =  r.getMetadataStore().getPixelsSizeT(iSeries).getValue;
-        nZ =  r.getMetadataStore().getPixelsSizeZ(iSeries).getValue;
-
-        % Create anonymous functions for reading files
-        tString=@(t)num2str(t, ['%0' num2str(floor(log10(nFrames))+1) '.f']);
-        zString=@(z)num2str(z, ['%0' num2str(floor(log10(nZ))+1) '.f']);
-        imageName = @(c,t,z) [movieName '_w' num2str(movieChannels(i, c).emissionWavelength_) ...
-            '_z' zString(z),'_t' tString(t),'.tif'];
-        
-        % Clean channel directories and save images as TIF files
-        for iChan = 1:nChan, mkClrDir(channelPath{i, iChan}); end
-        for iPlane = 1:r.getImageCount()
-            index = r.getZCTCoords(iPlane - 1);
-            imwrite(bfGetPlane(r, iPlane),[channelPath{i, index(2) + 1} filesep ...
-                imageName(index(2) + 1, index(3) + 1, index(1) + 1)],'tif');
-        end
-    end
+    MD(i).setSeries(iSeries);
     
     % Close reader and check movie sanity
     MD(i).sanityCheck;
