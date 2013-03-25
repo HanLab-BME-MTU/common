@@ -128,6 +128,11 @@ classdef  MovieData < MovieObject
             end
         end
         
+        function channel = getChannel(obj, i)
+            assert(isscalar(i) && ismember(i, 1:numel(obj.channels_)));
+            channel = obj.channels_(i);
+        end
+        
         function chanPaths = getChannelPaths(obj,iChan)
             %Returns the directories for the selected channels
             if nargin < 2 || isempty(iChan), iChan = 1:numel(obj.channels_); end

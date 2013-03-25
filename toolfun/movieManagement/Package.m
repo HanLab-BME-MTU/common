@@ -210,6 +210,11 @@ classdef Package < hgsetget
             
         end
         
+        function process = getProcess(obj, i)
+            assert(isscalar(i) && ismember(i, 1:numel(obj.processes_)));
+            process = obj.processes_{i};
+        end
+        
         function createDefaultProcess(obj, i)
             % Create ith process using default constructor
             assert(isempty(obj.processes_{i}),'Process already exists');
