@@ -1,5 +1,8 @@
-%[outdatedList] = listOutdatedMEX(rpath, spath) returns a list of all outdated MEX files
+%[outdatedList] = listOutdatedMEX(rpath) returns a list of all outdated MEX files
 % SVN time stamps (commit) of C/C++ files are used as a reference.
+%
+% Inputs: 
+%         rpath: path from which to start search. Function is recursive.
 
 % Francois Aguet, 03/26/2013
 
