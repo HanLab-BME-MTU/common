@@ -4,50 +4,51 @@ function [varargout] = imseriesshow(im, varargin )
 % A simple function to show series of 2D images from a volume.
 %
 %
-% Input:
+%  Required Input Arguments: 
 % 
-%     im - input grayscale image
+%                 im - input grayscale image
 % 
-%     Variable arguments (should be specified as param-value pairs)
+%  Optional arguments: param-name/value pairs
 % 
 %       displayColor - allows you to specify the RGB color in which to
-%       dislpay the image
+%       			   dislpay the image should be a vector of length 3.
+%					   Ex: [1,0,0] for red colore. 
+%
+%				       The image will be displayed in shades of the 
+%                      specified color. Default is shades of gray.
 % 
-%         should be a vector of length 3 (Ex: [1,0,0] for red). The image
-%         will be displayed in shades of the specified color. Default is
-%         shades of gray.
+%           spacing - pixel spacing of the grayscale image
 % 
-%       spacing - pixel spacing of the grayscale image
+%      displayRange - intensity display range of the input image
 % 
-%       displayRange - intensity display range of the input image
-% 
-%         specify this if you want to the grayscale image
-%         to be displayed in a specific intensity range. 
-%         All intensity values outside this range will be     
-%         made equal to the nearest border in the specified
-%         intensity range.                           
+%                     Specify this if you want to the grayscale image
+%                     to be displayed in a specific intensity range. 
+%                     All intensity values outside this range will be     
+%                     made equal to the nearest border in the specified
+%                     intensity range.                           
+%
+% Example:
 %    
-% % 2D case
-% im2d = zeros(500,500);
-% im2d(100:400,100:400) = rand(301,301);
-%
-% imseriesshow( im2d ); % 2D image display
-% set( gcf, 'Name', '2D Example: Image display' );
-%
-% % 3D case
-% im3d = zeros(500,500,10);
-% im3d(100:400,100:400,:) = rand(301,301,10);
-%
-% imseriesshow( im3d ); % 3D image overlay
-% set( gcf, 'Name', '3D Example: 3D image display' ); 
-%
-% imseriesshow( im3d, 'displayColor', [0,1,0] ); % 3D colored image display
-% set( gcf, 'Name', '3D Example: 3D image display in a user specified color' ); 
+%     % 2D case
+%     im2d = zeros(500,500);
+%     im2d(100:400,100:400) = rand(301,301);
+% 
+%     imseriesshow( im2d ); % 2D image display
+%     set( gcf, 'Name', '2D Example: Image display' );
+% 
+%     % 3D case
+%     im3d = zeros(500,500,10);
+%     im3d(100:400,100:400,:) = rand(301,301,10);
+% 
+%     imseriesshow( im3d ); % 3D image overlay
+%     set( gcf, 'Name', '3D Example: 3D image display' ); 
+% 
+%     imseriesshow( im3d, 'displayColor', [0,1,0] ); % 3D colored image display
+%     set( gcf, 'Name', '3D Example: 3D image display in a user specified color' ); 
 %
 % Author: Deepak Roy Chittajallu 
 %
-
-%%
+%% Parameter Parsing
 
 % get required parameters
 p = inputParser;
@@ -108,6 +109,7 @@ data.imLogDisplayRange = [ min(data.imLog(:)), max(data.imLog(:)) ];
 
 %% Create UI controls
 hMainFigure = figure;
+clf(hMainFigure);
 
 % Display figure toolbar
 set(hMainFigure, 'ToolBar', 'figure')
