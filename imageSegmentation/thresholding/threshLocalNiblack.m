@@ -258,7 +258,7 @@ function [ imThresh, varargout ] = threshLocalNiblack( im, windowRadius, k, vara
        imThreshValues = zeros( size(im) );
        imThreshValues(:) = thresh_vals;
        imThreshValues = ImageIntensityRange(1) + range(ImageIntensityRange) * imThreshValues;
-       varargout(1) = imThreshValues;
+       varargout{1} = imThreshValues;
     end
 
 end

@@ -49,6 +49,8 @@ distX = bwdist(~mask);
 
 if nargin < 3 || isempty(distVals)
     distVals = 0:max(distX(:));    
+else
+    distVals = distVals(1:find(distVals<=max(distX(:)),1,'last'));
 end
 
 %Separate the positive and negative distances as these will use different

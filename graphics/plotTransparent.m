@@ -150,7 +150,7 @@ if length(width) ~= n
 end
 
 if any(isnan([x; y]))
-    disp('Warning: NaN values will be ignored!')
+    warning('PLOTTRANSPARENT:NAN','Warning: NaN values will be ignored!')
     
     notNan = ~isnan(x) & ~isnan(y);
     width = width(notNan);

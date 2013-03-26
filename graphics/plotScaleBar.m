@@ -40,6 +40,12 @@ color = ip.Results.Color;
 height = ip.Results.height;
 location = lower(ip.Results.Location);
 
+if ~isempty(fontSize)
+    fontUnits = 'points';
+else
+    fontUnits = 'normalized';
+end
+
 XLim = get(ip.Results.Handle, 'XLim');
 YLim = get(ip.Results.Handle, 'YLim');
 
@@ -50,10 +56,11 @@ dx = ly/20; % distance from border
 
 if ~isempty(label)
     if isempty(fontSize)
-        fontSize = 3*height/ly; % normalized units        
+        fontSize = 3*height/ly; % normalized units            
     end
     % get height of default text bounding box
-    h = text(0, 0, label, 'FontUnits', 'normalized', 'FontName', fontName, 'FontSize', fontSize);
+    h = text(0, 0, label, 'FontUnits', fontUnits, 'FontName', fontName, 'FontSize', fontSize);
+    
     extent = get(h, 'extent'); % units: pixels
     textHeight = 1.2*extent(4);
     textWidth = extent(3);
@@ -95,7 +102,7 @@ else
     tx = x0+width/2;
 end
 
-textProps = {'Color', color, 'FontUnits', 'normalized',...
+textProps = {'Color', color, 'FontUnits', fontUnits,...
     'FontName', fontName, 'FontSize', fontSize,...
     'VerticalAlignment', 'Top',...
     'HorizontalAlignment', halign};
