@@ -67,7 +67,7 @@ end
 if gapSize > 0
     
     for iVar = 1:nVar
-        outTS(iVar,:) = gapInterpolation(TS(iVar,:),gapSize);
+        outTS(iVar,:) = gapInterpolation(outTS(iVar,:),gapSize);
     end
     
 end
