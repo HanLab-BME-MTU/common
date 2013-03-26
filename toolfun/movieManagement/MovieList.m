@@ -70,7 +70,14 @@ classdef MovieList < MovieObject
             if isempty(obj.movies_), obj.sanityCheck; end
             movies = obj.movies_(ip.Results.index);
         end
+        
+        function movie = getMovie(obj, i)
+            % Get the movies from a movie list
             
+            assert(isscalar(i) && ismember(i,1:numel(obj.movieDataFile_)));
+            movie = obj.movies_{i};
+        end
+        
         %% Sanity check/relocation
         function movieException = sanityCheck(obj, varargin)
             % Check the sanity of the MovieData objects
