@@ -48,7 +48,9 @@ if nc~=0
         mexnames = cellfun(@(i) [fname '.' i], ext, 'unif', 0);
         % add uncompiled files
         [ucList,  ucIdx] = setdiff(mexnames, fileNames);
-        outdatedList = [outdatedList; cellfun(@(i) [spath i], ucList', 'unif', 0)]; %#ok<AGROW>
+        if numel(ucIdx)~=3
+            outdatedList = [outdatedList; cellfun(@(i) [spath i], ucList', 'unif', 0)]; %#ok<AGROW>
+        end        
         mexnames(ucIdx) = [];
         nm = numel(mexnames);
         mdate = zeros(1,nm);
