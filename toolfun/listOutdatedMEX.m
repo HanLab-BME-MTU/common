@@ -34,7 +34,7 @@ if nc~=0
     % get dates of commit
     cdate = zeros(1,nc);
     for k = 1:nc
-        cmd = ['svn info ' cpath cfiles{k} ' | grep "Last Changed Date"'];
+        cmd = ['svn info ' cpath cfiles{k} ' | grep "Text Last Changed"'];
         [st,tmp] = system(cmd);
         if st==0
             cdate(k) = datenum(regexpi(tmp, svnDateFormat, 'match', 'once'), 'yyyy-mm-dd HH:MM:SS');
@@ -53,7 +53,7 @@ if nc~=0
         nm = numel(mexnames);
         mdate = zeros(1,nm);
         for m = 1:nm
-            cmd = ['svn info ' cpath mexnames{m} ' | grep "Last Changed Date"'];
+            cmd = ['svn info ' cpath mexnames{m} ' | grep "Text Last Changed"'];
             [st,tmp] = system(cmd);
             if st==0
                 mdate(m) = datenum(regexpi(tmp, svnDateFormat, 'match', 'once'), 'yyyy-mm-dd HH:MM:SS');
