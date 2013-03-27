@@ -13,6 +13,10 @@
 %         A2 : (Adjusted) test statistic
 %       cval : Critical value for the test
 %
+% NOTE: As of Matlab 2013a, adtest() is a built-in function. The implementation uses
+%       different interpolations and is slower, therefore this function remains available.
+%       The function prototypes are identical.
+%
 %
 % For the test and its derivation, see
 % [1] Anderson & Darling, Ann. Math. Stat. 23, 1952
@@ -30,7 +34,7 @@
 
 % Francois Aguet (last modified 05/23/2012)
 
-function [H, pval, A2, cval] = adtest(x, varargin)
+function [H, pval, A2, cval] = adtest1(x, varargin)
 
 alphaVec = [0.5 0.25  0.15  0.10  0.05  0.025 0.01  0.005 0.0025];
 
