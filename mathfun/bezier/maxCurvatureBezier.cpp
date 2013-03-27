@@ -2,7 +2,8 @@
 #include <math.h>
 #include <stdio.h>
 
-// Compilation: mex -I. maxCurvatureBezier.cpp
+// Compilation: 
+// Mac/Linux: mex maxCurvatureBezier.cpp
 
 #include "rpoly_ak1.cpp" // http://www.akiti.ca/rpoly_ak1_Intro.html
 
@@ -405,7 +406,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         int degree = 7;
         double outZeroReal[7];
         double outZeroImag[7];
-        int info[7];
         rpoly_ak1(polyCoeff, &degree, outZeroReal, outZeroImag);
                 
         for (int i=0;i<degree;i++) {

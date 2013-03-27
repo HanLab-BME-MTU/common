@@ -3,8 +3,8 @@
  * (c) Sylvain Berlemont, 2011 (last modified Oct 7, 2011)
  *
  * Compilation:
- * Mac/Linux: mex -I. -I../kdtree -I../../mex/include/c++ computeICP.cpp
- * Windows: mex COMPFLAGS="$COMPFLAGS /TP" -I"." -I"..\kdtree" -I"..\..\mex\include\c++" -output computeICP computeICP.cpp
+ * Mac/Linux: mex -I. -I../../deprecated/kdtree -I../../mex/include/c++ computeICP.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /TP" -I"." -I"..\..\deprecated\kdtree" -I"..\..\mex\include\c++" -output computeICP computeICP.cpp
  */
 
 # include <mex.h>
@@ -80,8 +80,6 @@ void mexFunction(int nlhs, mxArray *plhs[],
   quaternion qr(1, 0, 0, 0);
   matrix<3, 3, double> Spy;
   matrix<4, 4, double> Q;
-
-  double tmp;
 
   int iter = 0;
 	
