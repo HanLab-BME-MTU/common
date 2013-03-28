@@ -25,23 +25,7 @@ classdef SubResolutionProcess < DetectionProcess
             end
             super_args{4} = funParams;
             
-            obj = obj@DetectionProcess(super_args{:});
-            
-            % Visual parameters ( Default: channel 1 )
-            obj.visualParams_.startend = [1 owner.nFrames_];
-            obj.visualParams_.saveMovie = 1;
-            obj.visualParams_.movieName = [];
-            obj.visualParams_.dir2saveMovie = funParams.OutputDirectory;
-            obj.visualParams_.filterSigma = 0;
-            obj.visualParams_.showRaw = 1;
-            obj.visualParams_.intensityScale = 1;
-            if owner.isOmero()
-                obj.visualParams_.firstImageFile = owner.getChannelPaths{1};
-            elseif exist(owner.getChannelPaths{1}, 'file')==2  
-                obj.visualParams_.firstImageFile = owner.getChannelPaths{1};
-            else
-                obj.visualParams_.firstImageFile = [owner.getChannelPaths{1} filesep owner.getImageFileNames{1}{1}];
-            end
+            obj = obj@DetectionProcess(super_args{:});            
         end
       
  

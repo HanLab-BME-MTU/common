@@ -21,7 +21,6 @@ classdef Process < hgsetget
         
         funName_        % Function running the process
         funParams_      % Parameters for running the process
-        visualParams_   % Visualization parameters
         
         inFilePaths_    % Path to the process input
         outFilePaths_   % Path to the process output
@@ -67,10 +66,6 @@ classdef Process < hgsetget
                     obj.owner_.packages_{packId}.sanityCheck(false,'all');
                 end
             end
-        end
-        
-        function setVisualParams(obj, para)
-            obj.visualParams_ = para;
         end
         
         function setUpdated(obj, is)
@@ -181,8 +176,7 @@ classdef Process < hgsetget
         
         function relocate(obj,oldRootDir,newRootDir)
             % Relocate all paths in various process fields
-            relocateFields ={'inFilePaths_','outFilePaths_',...
-                'funParams_','visualParams_'};
+            relocateFields ={'inFilePaths_','outFilePaths_', 'funParams_'};
             for i=1:numel(relocateFields)
                 obj.(relocateFields{i}) = relocatePath(obj.(relocateFields{i}),...
                     oldRootDir,newRootDir);

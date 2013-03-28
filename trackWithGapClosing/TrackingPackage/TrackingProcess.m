@@ -29,58 +29,7 @@ classdef TrackingProcess < DataProcessingProcess
                 end
                 super_args{4} = funParams;
             end
-            obj = obj@DataProcessingProcess(super_args{:});
-            
-            % ---------------- Visualization Parameters --------------------
-            
-            % Tool 1: plotTracks2D
-            
-            obj.visualParams_.pt2D.timeRange = [1 owner.nFrames_];
-            obj.visualParams_.pt2D.colorTime = '3';
-            obj.visualParams_.pt2D.markerType = 'none';
-            obj.visualParams_.pt2D.indicateSE = 0;
-            obj.visualParams_.pt2D.newFigure = 1;
-            obj.visualParams_.pt2D.image = [];
-            obj.visualParams_.pt2D.imageDir = []; % Not in original function
-            obj.visualParams_.pt2D.flipXY = 0;
-            obj.visualParams_.pt2D.ask4sel = 0;
-            obj.visualParams_.pt2D.offset = [0 0];
-            obj.visualParams_.pt2D.minLength = 1;
-            
-            % Tool 2: plotCompTrack
-            
-            obj.visualParams_.pct.trackid = 1; % Not in original function
-            obj.visualParams_.pct.plotX = 1;
-            obj.visualParams_.pct.plotY = 1;
-            obj.visualParams_.pct.plotA = 1;
-            obj.visualParams_.pct.inOneFigure = 1;
-            obj.visualParams_.pct.plotAggregState = 1;
-            
-            % Tool 3: overlayTracksMovieNew
-            
-            obj.visualParams_.otmn.startend = [1 owner.nFrames_];
-            obj.visualParams_.otmn.dragtailLength = 5;
-            obj.visualParams_.otmn.saveMovie = 1;
-            obj.visualParams_.otmn.movieName = [];
-            obj.visualParams_.otmn.dir2saveMovie = funParams.OutputDirectory;
-            obj.visualParams_.otmn.filterSigma = 0;
-            obj.visualParams_.otmn.classifyGaps = 0;
-            obj.visualParams_.otmn.highlightES = 0;
-            obj.visualParams_.otmn.showRaw = 1;
-            obj.visualParams_.otmn.imageRange = []; % TO DO in GUI
-            obj.visualParams_.otmn.onlyTracks = 0;
-            obj.visualParams_.otmn.classifyLft = 0;
-            obj.visualParams_.otmn.diffAnalysisRes = [];
-            obj.visualParams_.otmn.intensityScale = 1;
-            obj.visualParams_.otmn.colorTracks = 1;
-            obj.visualParams_.otmn.minLength = 1;
-            if owner.isOmero()
-                obj.visualParams_.firstImageFile = owner.getChannelPaths{1};
-            elseif exist(owner.getChannelPaths{1}, 'file')==2
-                obj.visualParams_.otmn.firstImageFile = owner.getChannelPaths{1};
-            else
-                obj.visualParams_.otmn.firstImageFile = [owner.getChannelPaths{1} filesep owner.getImageFileNames{1}{1}];
-            end
+            obj = obj@DataProcessingProcess(super_args{:});            
         end
         
         function varargout = loadChannelOutput(obj,iChan,varargin)
