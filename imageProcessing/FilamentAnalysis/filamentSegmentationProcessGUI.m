@@ -646,9 +646,12 @@ function pushbutton_traing_nms_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+% Call back function of 'Apply' button
 userData = get(handles.figure1, 'UserData');
-funParams = userData.crtProc.funParams_;
-funParams.F_classifier = nms_classifier_train_moviedata(userData.MD);
+
+channelIndex = get(handles.listbox_selectedChannels, 'Userdata');
+ 
+funParams.F_classifier = nms_classifier_train_moviedata(userData.MD, channelIndex);
 
 try
     userData.crtProc.sanityCheck;

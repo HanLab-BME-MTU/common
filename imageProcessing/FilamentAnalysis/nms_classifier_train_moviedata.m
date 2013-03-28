@@ -1,8 +1,8 @@
-function  F_classifer_train_output  = nms_classifier_train_moviedata(movieData)
+function  F_classifer_train_output  = nms_classifier_train_moviedata(movieData,channelIndex)
 % nms_classifier_train trains an classifier for segments filaments from input image(nms) based on the geometrical features of the curves/lines in the image and user input
 % Input:            
 %    MD:                                the MD for the image project
-
+%    channelIndex:                      the channels to run through ( at this point the process might be not ready yet)
 % Output: 
 %    F_classifer:                       trained classifiers for selected channels, one for each
 %
@@ -12,7 +12,6 @@ function  F_classifer_train_output  = nms_classifier_train_moviedata(movieData)
 
 
 save_tif_flag=1;
-
 
 
 % Find the package of Filament Analysis
@@ -34,34 +33,34 @@ end
 
 nProcesses = length(movieData.processes_);
 
-indexFilamentSegmentationProcess = 0;
-for i = 1 : nProcesses
-    if(strcmp(movieData.processes_{i}.getName,'Filament Segmentation')==1)
-        indexFilamentSegmentationProcess = i;
-        break;
-    end
-end
-
-if indexFilamentSegmentationProcess==0
-    msg('Please set parameters for steerable filtering.')
-    return;
-end
-
-
-funParams=movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
-
-selected_channels = funParams.ChannelIndex;
-StPace_Size = funParams.StPace_Size;
-StPatch_Size = funParams.StPatch_Size;
-Stlowerbound =  funParams.st_lowerbound_localthresholding;
-IntPace_Size = funParams.IntPace_Size;
-IntPatch_Size = funParams.IntPatch_Size;
-Intlowerbound =  funParams.int_lowerbound_localthresholding;
-
-Combine_Way = funParams.Combine_Way;
-Cell_Mask_ind = funParams.Cell_Mask_ind;
-VIF_Outgrowth_Flag = funParams.VIF_Outgrowth_Flag;
-Sub_Sample_Num  = funParams.Sub_Sample_Num;
+% indexFilamentSegmentationProcess = 0;
+% for i = 1 : nProcesses
+%     if(strcmp(movieData.processes_{i}.getName,'Filament Segmentation')==1)
+%         indexFilamentSegmentationProcess = i;
+%         break;
+%     end
+% end
+% 
+% if indexFilamentSegmentationProcess==0
+%     msg('Please set parameters for steerable filtering.')
+%     return;
+% end
+% 
+% 
+% funParams=movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
+% 
+% selected_channels = funParams.ChannelIndex;
+% StPace_Size = funParams.StPace_Size;
+% StPatch_Size = funParams.StPatch_Size;
+% Stlowerbound =  funParams.st_lowerbound_localthresholding;
+% IntPace_Size = funParams.IntPace_Size;
+% IntPatch_Size = funParams.IntPatch_Size;
+% Intlowerbound =  funParams.int_lowerbound_localthresholding;
+% 
+% Combine_Way = funParams.Combine_Way;
+% Cell_Mask_ind = funParams.Cell_Mask_ind;
+% VIF_Outgrowth_Flag = funParams.VIF_Outgrowth_Flag;
+% Sub_Sample_Num  = funParams.Sub_Sample_Num;
 
 %% Output Directories
 
@@ -121,16 +120,16 @@ end
 nFrame = movieData.nFrames_;
 
 
-F_classifer_train_output = cell(1,max(selected_channels));
+F_classifer_train_output = cell(1,max(channelIndex));
 
-for iChannel = selected_channels    
+for iChannel = channelIndex    
     
     Channel_FilesNames = movieData.channels_(iChannel).getImageFileNames(1:movieData.nFrames_);
     
     filename_short_strs = uncommon_str_takeout(Channel_FilesNames);
     
     % Make output directory for the steerable filtered images
-    FilamentSegmentationChannelOutputDir =  movieData.processes_{indexFilamentSegmentationProcess}.outFilePaths_{iChannel};
+    FilamentSegmentationChannelOutputDir =  [FilamentSegmentationProcessOutputDir, '/Channel',num2str(iChannel)];
     if (~exist(FilamentSegmentationChannelOutputDir,'dir'))
         mkdir(FilamentSegmentationChannelOutputDir);
     end
@@ -305,8 +304,8 @@ for iChannel = selected_channels
     imagescc(currentImg); hold on;
     scrsz = get(0,'ScreenSize');
     set(h1,'Position',scrsz);
-    
-    training_ind = datasample(not_sure_ind,20);
+    training_sample_number=10;
+    training_ind = datasample(not_sure_ind,training_sample_number);
     
     training_bad_ind = [];
     training_good_ind = [];
@@ -384,7 +383,7 @@ for iChannel = selected_channels
         scrsz = get(0,'ScreenSize');
         set(h1,'Position',scrsz);
         
-        training_ind = datasample(not_sure_ind,20);
+        training_ind = datasample(not_sure_ind,training_sample_number);
         
         training_bad_ind = [];
         training_good_ind = [];
@@ -465,7 +464,7 @@ for iChannel = selected_channels
         scrsz = get(0,'ScreenSize');
         set(h1,'Position',scrsz);
         
-        training_ind = datasample(not_sure_ind,20);
+        training_ind = datasample(not_sure_ind,training_sample_number);
         
         training_bad_ind = [];
         training_good_ind = [];
@@ -575,10 +574,6 @@ for iChannel = selected_channels
   [predict_label_L, accuracy_L, dec_values_L] = svmpredict([label_good; label_bad], [feature_good; feature_bad], model_linear);
 
     
-    
-    
-    
-    
     % feature_training = [feature_Length(training_ind) feature_MeanInt(training_ind)];
     % label_training = good_bad_label;
     
@@ -620,12 +615,20 @@ for iChannel = selected_channels
     
     T_xie_int_train = train_mat(ind(1), 1);
     T_xie_length_train = train_mat(ind(1), 2);
-    F_classifer_train_this_channel = @(i,l) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-l) )<i));
-    F_classifer_train_output{iChannel} = F_classifer_train_this_channel;
+    clear train_mat training_good_ind training_bad_ind feature_Length feature_MeanNMS feature_good  feature_bad;
+    clear imageNMS nms imageInt currentImg;
+    clear F_classifer_down F_classifer_mid F_classifer_notuse F_classifer_train F_classifer_up;
+    
+    F_classifer_train_this_channel = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
+    
+    % due to some problem of the size of the function, with wired
+    % difference of being here or outside the framework, now change to save
+    % only the mat file name in the MD file.
+    F_classifer_train_output{iChannel} = [FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'];
     
     save([FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'],'F_classifer_train_this_channel');
     
 end
 
-save([FilamentSegmentationProcessOutputDir,'/F_classifer_process.mat'],'F_classifer_train_output');
+% save([FilamentSegmentationProcessOutputDir,'/F_classifer_process.mat'],'F_classifer_train_output');
 

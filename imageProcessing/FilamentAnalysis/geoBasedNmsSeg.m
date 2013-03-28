@@ -1,4 +1,4 @@
-function  [T_otsu, current_all_matching_bw, current_model ]  = geoBasedNmsSeg(imageNMS, imageInt, classifier_trained, graph_matching_flag,MaskCell)
+function  [T_otsu, current_all_matching_bw, current_model ]  = geoBasedNmsSeg(imageNMS, imageInt, classifier_trained, graph_matching_flag,MaskCell,iFrame)
 % geoBasedNmsSeg segments filaments from input image(nms) based on the geometrical features of the curves/lines in the image
 % Input:
 %    ImageIn:                           the input image, typically the non maximum supress version of the steerable filtering output
@@ -152,7 +152,11 @@ if(isempty(classifier_trained))
     T_xie_length = 1.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
     
     % Make a classification function as whether it is above the line
-    F_classifer = @(i,l) (((T_xie_int + (T_xie_int/T_xie_length)*(-l) )<i));
+    T_xie_int_train = T_xie_int;
+    T_xie_length_train = T_xie_length;
+    
+    F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
+    
 else
     % when there is an input classifer, use the input one
     F_classifer = classifier_trained;
@@ -174,22 +178,108 @@ current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
 current_model{i_E} = [x_i y_i];
 end
 
-
 current_all_matching_bw = current_all_seg_bw;
+
+
+% restore parameters from saved trained functions
+for int_test = max(feature_MeanNMS):-0.1:0
+    if F_classifer(int_test,0)==0;
+        T_xie_int_train = int_test;
+        break;
+    end
+end
+
+for length_test = max(feature_Length):-0.1:0
+    if F_classifer(0,length_test)==0;
+        T_xie_length_train = length_test;
+        break;
+    end
+end
 
 % graph_matching_flag=1;
 
 % Now if user intended for graph matching part, do it
 if(graph_matching_flag==1)
     
-    confidency_interval = 0.8;
-    current_model = [];
-    bw_to_be_matched = current_all_seg_bw;
+    confidency_interval = 0.7;
+    [current_model,current_matching_bw] = graph_matching_linking_once([], current_all_seg_bw, confidency_interval,imageInt);
+      imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round1_begin.tif']);
+   figure(1);close;
+    imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round1_end.tif']);
+    h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round1_match_color.tif']);
     
-    graph_matching_linking_once; %(current_model, bw_to_be_matched, confidency_interval);
     
-    graph_matching_linking_once;
     
-    graph_matching_linking_once;
+    T_xie_int_train = T_xie_int_train*0.9;
+    T_xie_length_train = T_xie_length_train*0.9;
+    F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
+    Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    
+    % plot the output image with these good ones
+    current_all_seg_bw = zeros(size(labelMask));
+    for i_E = 1 : length(Good_ind)
+        current_good_bw = labelMask==Good_ind(i_E);
+        current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
+    end
+  imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round2_begin.tif']);
+   figure(1);close;
+    [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
+    imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round2_end.tif']);
+    h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round2_match_color.tif']);
+    
+    
+    
+    T_xie_int_train = T_xie_int_train*0.9;
+    T_xie_length_train = T_xie_length_train*0.9;
+    F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
+    Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    
+    % plot the output image with these good ones
+    current_all_seg_bw = zeros(size(labelMask));
+    for i_E = 1 : length(Good_ind)
+        current_good_bw = labelMask==Good_ind(i_E);
+        current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
+    end
+    
+      imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round3_begin.tif']);
+   figure(1);close;
+    [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
+    imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round3_end.tif']);
+    h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round3_match_color.tif']);
+    
+    T_xie_int_train = T_xie_int_train*0.9;
+    T_xie_length_train = T_xie_length_train*0.9;
+    F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
+    Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    
+    % plot the output image with these good ones
+    current_all_seg_bw = zeros(size(labelMask));
+    for i_E = 1 : length(Good_ind)
+        current_good_bw = labelMask==Good_ind(i_E);
+        current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
+    end
+  imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round4_begin.tif']);
+   figure(1);close;
+    [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
+    imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round4_end.tif']);
+    h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round4_match_color.tif']);
+    
+    T_xie_int_train = T_xie_int_train*0.9;
+    T_xie_length_train = T_xie_length_train*0.9;
+    F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
+    Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    
+    % plot the output image with these good ones
+    current_all_seg_bw = zeros(size(labelMask));
+    for i_E = 1 : length(Good_ind)
+        current_good_bw = labelMask==Good_ind(i_E);
+        current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
+    end
+    imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round5_begin.tif']);
+   figure(1);close;
+    [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
+    imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round5_end.tif']);
+    h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round5_match_color.tif']);
 end
 
+current_all_matching_bw = current_matching_bw>0;

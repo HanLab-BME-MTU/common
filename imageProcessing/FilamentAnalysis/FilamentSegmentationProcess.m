@@ -266,6 +266,8 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % lower sample rate than the other channel, so use this number
             % to save some time.
             funParams.Sub_Sample_Num = 1;
+            
+            % the classifiers trained, the mat file's name is saved here.
             funParams.F_classifier = cell(1,max(funParams.ChannelIndex));
             
         end
