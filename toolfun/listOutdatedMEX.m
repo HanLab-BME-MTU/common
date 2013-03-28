@@ -24,7 +24,7 @@ flist = flist([flist.isdir]==0);
 
 % identify C/C++ files
 fileNames = arrayfun(@(i) i.name, flist, 'unif', 0);
-cfiles = regexpi(fileNames, '.*\.c\w+', 'match', 'once');
+cfiles = regexpi(fileNames, '.*\.c.*', 'match', 'once');
 cfiles(cellfun(@isempty, cfiles)) = [];
 nc = numel(cfiles);
 
@@ -34,7 +34,7 @@ if nc~=0
     % get dates of commit
     cdate = zeros(1,nc);
     for k = 1:nc
-        cmd = ['svn info ' cpath cfiles{k} ' | grep "Text Last Changed"'];
+        cmd = ['svn info ' cpath cfiles{k} ' | grep "Text Last Updated"'];
         [st,tmp] = system(cmd);
         if st==0
             cdate(k) = datenum(regexpi(tmp, svnDateFormat, 'match', 'once'), 'yyyy-mm-dd HH:MM:SS');
@@ -55,7 +55,7 @@ if nc~=0
         nm = numel(mexnames);
         mdate = zeros(1,nm);
         for m = 1:nm
-            cmd = ['svn info ' cpath mexnames{m} ' | grep "Text Last Changed"'];
+            cmd = ['svn info ' cpath mexnames{m} ' | grep "Text Last Updated"'];
             [st,tmp] = system(cmd);
             if st==0
                 mdate(m) = datenum(regexpi(tmp, svnDateFormat, 'match', 'once'), 'yyyy-mm-dd HH:MM:SS');
