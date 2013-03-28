@@ -147,7 +147,7 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
         
         
         
-        function outMatrix = loadChannelOutput(obj,iChan,iFrame,varargin)
+        function out_data = loadChannelOutput(obj,iChan,iFrame,varargin)
             % Input check
             ip =inputParser;
             ip.addRequired('iChan',@obj.checkChanNum);
@@ -158,10 +158,9 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % Data loading
             Channel_FilesNames = obj.getInImageFileNames(iChan);
             filename_short_strs = uncommon_str_takeout(Channel_FilesNames{1});
-            load([obj.outFilePaths_{1,iChan},'/DataOutput/steerable_vote_',filename_short_strs{iFrame},'.mat'], ...
-            'current_seg_orientation');
-            outMatrix = current_seg_orientation;
-            
+            out_data = load([obj.outFilePaths_{1,iChan},'/DataOutput/steerable_vote_',filename_short_strs{iFrame},'.mat'], ...
+            'current_seg_orientation','tip_orientation','tip_int','tip_NMS');
+           
         end
         
         function h = draw(obj,iChan,varargin)
