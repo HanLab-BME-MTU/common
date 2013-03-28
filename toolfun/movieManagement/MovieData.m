@@ -264,7 +264,7 @@ classdef  MovieData < MovieObject
                 end
             end
             
-            if nargin<3 || ~full || obj.isOmero(), 
+            if nargin<3 || ~full || obj.isOMERO(),
                 return 
             end
             
@@ -297,7 +297,8 @@ classdef  MovieData < MovieObject
         function save(obj,varargin)
             
             % Create list of movies to save simultaneously
-            allMovies = [obj.getAncestor() obj.getAncestor().getDescendants()];
+            ancestor = obj.getAncestor();
+            allMovies = [ancestor ancestor.getDescendants()];
             
             % Check path validity for all movies in the tree
             checkPath = @(x) assert(~isempty(x.getFullPath()), 'Invalid path');
@@ -313,8 +314,8 @@ classdef  MovieData < MovieObject
             end
             
             % Save to OMERO if OMERO object
-            if obj.getAncestor().isOmero(), 
-                omeroSave(obj.getAncestor()); 
+            if ancestor.isOMERO() && ~isempty(ancestor.getSession()),
+                omeroSave(ancestor);
             end
         end
         
@@ -401,7 +402,7 @@ classdef  MovieData < MovieObject
             
             if obj.isBF()
                 r = BioFormatsReader(obj.channels_(1).channelPath_, obj.bfSeries_);
-            elseif obj.isOmero()
+            elseif obj.isOMERO()
                 r = OMEROReader(obj.omeroId_, varargin{:});
             else
                 r = TiffSeriesReader({obj.channels_.channelPath_});
@@ -423,7 +424,7 @@ classdef  MovieData < MovieObject
         end
 
         %% OMERO functions
-        function status = isOmero(obj)
+        function status = isOMERO(obj)
             status = ~isempty(obj.omeroId_);
         end
         
