@@ -152,15 +152,37 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             ip =inputParser;
             ip.addRequired('iChan',@obj.checkChanNum);
             ip.addRequired('iFrame',@obj.checkFrameNum);
-            ip.addParamValue('output',[],@ischar);
+            
+            outputList = {'current_seg_orientation','tip_orientation',...
+                'tip_int','tip_NMS',''};
+            ip.addParamValue('output',{},@(x) all(ismember(x,outputList)));
+            
             ip.parse(iChan,iFrame,varargin{:})
             
             % Data loading
             Channel_FilesNames = obj.getInImageFileNames(iChan);
             filename_short_strs = uncommon_str_takeout(Channel_FilesNames{1});
-            out_data = load([obj.outFilePaths_{1,iChan},'/DataOutput/steerable_vote_',filename_short_strs{iFrame},'.mat'], ...
-            'current_seg_orientation','tip_orientation','tip_int','tip_NMS');
-           
+            out_data_all = load([obj.outFilePaths_{1,iChan},'/DataOutput/steerable_vote_',filename_short_strs{iFrame},'.mat'], ...
+                'current_seg','current_seg_orientation','tip_orientation','tip_int','tip_NMS');
+                        
+            % if there is no output parameter
+            if( isempty(ip.Results.output))
+                out_data = out_data_all.current_seg;
+            else
+                % or according to user's defined output parameter
+                switch ip.Results.output
+                    case 'current_seg_orientation'
+                        out_data = out_data_all.current_seg_orientation;
+                    case 'tip_orientation'
+                        out_data = out_data_all.tip_orientation;
+                    case 'tip_int'
+                        out_data = out_data_all.tip_int;
+                    case 'tip_NMS'
+                        out_data = out_data_all.tip_NMS;
+                    otherwise
+                        out_data = out_data_all.current_seg_orientation;
+                end
+            end
         end
         
         function h = draw(obj,iChan,varargin)

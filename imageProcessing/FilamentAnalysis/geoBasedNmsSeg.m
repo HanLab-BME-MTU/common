@@ -171,11 +171,11 @@ current_all_seg_bw = zeros(size(labelMask));
 current_model = [];
 
 for i_E = 1 : length(Good_ind)
-current_good_bw = labelMask==Good_ind(i_E);
-current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
-[y_i, x_i] = find(labelMask==Good_ind(i_E));
-
-current_model{i_E} = [x_i y_i];
+    current_good_bw = labelMask==Good_ind(i_E);
+    current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
+    [y_i, x_i] = find(labelMask==Good_ind(i_E));
+    
+    current_model{i_E} = [x_i y_i];
 end
 
 current_all_matching_bw = current_all_seg_bw;
@@ -203,8 +203,8 @@ if(graph_matching_flag==1)
     
     confidency_interval = 0.7;
     [current_model,current_matching_bw] = graph_matching_linking_once([], current_all_seg_bw, confidency_interval,imageInt);
-      imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round1_begin.tif']);
-   figure(1);close;
+    imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round1_begin.tif']);
+    figure(1);close;
     imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round1_end.tif']);
     h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round1_match_color.tif']);
     
@@ -221,8 +221,8 @@ if(graph_matching_flag==1)
         current_good_bw = labelMask==Good_ind(i_E);
         current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
     end
-  imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round2_begin.tif']);
-   figure(1);close;
+    imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round2_begin.tif']);
+    figure(1);close;
     [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
     imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round2_end.tif']);
     h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round2_match_color.tif']);
@@ -241,8 +241,8 @@ if(graph_matching_flag==1)
         current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
     end
     
-      imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round3_begin.tif']);
-   figure(1);close;
+    imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round3_begin.tif']);
+    figure(1);close;
     [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
     imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round3_end.tif']);
     h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round3_match_color.tif']);
@@ -258,8 +258,8 @@ if(graph_matching_flag==1)
         current_good_bw = labelMask==Good_ind(i_E);
         current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
     end
-  imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round4_begin.tif']);
-   figure(1);close;
+    imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round4_begin.tif']);
+    figure(1);close;
     [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
     imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round4_end.tif']);
     h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round4_match_color.tif']);
@@ -276,10 +276,10 @@ if(graph_matching_flag==1)
         current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
     end
     imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round5_begin.tif']);
-   figure(1);close;
+    figure(1);close;
     [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
     imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round5_end.tif']);
     h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round5_match_color.tif']);
+    current_all_matching_bw = current_matching_bw>0;
 end
 
-current_all_matching_bw = current_matching_bw>0;

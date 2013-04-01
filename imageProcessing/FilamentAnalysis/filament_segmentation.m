@@ -319,7 +319,7 @@ for iChannel = selected_channels
                   F_classifer_train_this_channel=[];  
                 end
                 
-                [level2, NMS_Segment,current_model ] = geoBasedNmsSeg(nms,currentImg, F_classifer_train_this_channel,1, [],iFrame);
+                [level2, NMS_Segment,current_model ] = geoBasedNmsSeg(nms,currentImg, F_classifer_train_this_channel,0, [],iFrame);
                 toc
                 current_seg = NMS_Segment;
                 Intensity_Segment = current_seg;
@@ -525,14 +525,14 @@ for iChannel = selected_channels
         
         current_seg_orientation = current_seg.*orienation_map_filtered;
         current_seg_orientation(find(current_seg==0)) = nan;
-        
-        
         end_points_map = bwmorph(current_seg,'endpoints');
-        
-        tip_orientation = end_points_map.*orienation_map_filtered;
-        tip_int = end_points_map.*currentImg;
-        tip_NMS = end_points_map.*nms;
-        
+       
+        tip_orientation = double(end_points_map).*double(orienation_map_filtered);
+        tip_int = double(end_points_map).*double(currentImg);
+        tip_NMS = double(end_points_map).*double(nms);
+        tip_orientation(find(current_seg==0)) = nan;
+        tip_int(find(current_seg==0)) = nan;
+        tip_NMS(find(current_seg==0)) = nan;
         
         %% Save segmentation results
         save([DataOutputDir,'/steerable_vote_', ...
