@@ -184,8 +184,8 @@ classdef Channel < hgsetget
         end
         
         %% Bio-formats/OMERO functions
-        function status = isOMERO(obj)
-            status = ~isempty(obj.owner_) && obj.owner_.isOMERO();
+        function status = isOmero(obj)
+            status = ~isempty(obj.owner_) && obj.owner_.isOmero();
         end
         
         function status = isBF(obj)

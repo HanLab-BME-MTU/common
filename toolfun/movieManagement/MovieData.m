@@ -28,6 +28,7 @@ classdef  MovieData < MovieObject
                 
         % For OMERO objects
         omeroId_ 
+        omeroSave_ = false
     end
     
     properties (Transient =true)
@@ -264,7 +265,7 @@ classdef  MovieData < MovieObject
                 end
             end
             
-            if nargin<3 || ~full || obj.isOMERO(),
+            if nargin<3 || ~full || obj.isOmero(),
                 return 
             end
             
@@ -314,7 +315,7 @@ classdef  MovieData < MovieObject
             end
             
             % Save to OMERO if OMERO object
-            if ancestor.isOMERO() && ~isempty(ancestor.getSession()),
+            if ancestor.isOmero() && ancestor.canUpload(),
                 omeroSave(ancestor);
             end
         end
@@ -402,8 +403,8 @@ classdef  MovieData < MovieObject
             
             if obj.isBF()
                 r = BioFormatsReader(obj.channels_(1).channelPath_, obj.bfSeries_);
-            elseif obj.isOMERO()
-                r = OMEROReader(obj.omeroId_, varargin{:});
+            elseif obj.isOmero()
+                r = OmeroReader(obj.omeroId_, varargin{:});
             else
                 r = TiffSeriesReader({obj.channels_.channelPath_});
             end
@@ -424,7 +425,7 @@ classdef  MovieData < MovieObject
         end
 
         %% OMERO functions
-        function status = isOMERO(obj)
+        function status = isOmero(obj)
             status = ~isempty(obj.omeroId_);
         end
         
@@ -434,6 +435,14 @@ classdef  MovieData < MovieObject
         
         function session = getSession(obj)
             session = obj.getReader().getSession();
+        end
+        
+        function setOmeroSave(obj, status)
+            obj.omeroSave_ = status;
+        end
+        
+        function status = canUpload(obj)
+            status = obj.omeroSave_ && ~isempty(obj.getSession());
         end
         
 

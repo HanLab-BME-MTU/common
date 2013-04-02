@@ -24,7 +24,7 @@ zipName = 'HMS-tracking.zip';
 
 % Input check
 ip=inputParser;
-ip.addRequired('movieData',@(x) isa(x,'MovieData') && x.isOMERO());
+ip.addRequired('movieData',@(x) isa(x,'MovieData') && x.isOmero() && x.canUpload());
 ip.parse(movieData);
 
 % Zip output directory for attachment

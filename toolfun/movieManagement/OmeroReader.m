@@ -1,4 +1,4 @@
-classdef  OMEROReader < Reader
+classdef  OmeroReader < Reader
     % Concrete implementation of MovieObject for a single movie
     properties
         imageID
@@ -12,7 +12,7 @@ classdef  OMEROReader < Reader
     
     methods
         %% Constructor
-        function obj = OMEROReader(imageID, varargin)
+        function obj = OmeroReader(imageID, varargin)
             
             obj.imageID = imageID;
             if nargin > 1, obj.setSession(varargin{1}); end

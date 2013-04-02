@@ -127,5 +127,6 @@ movie.setPath(outputDir);
 movie.setFilename(movieFileName);
 movie.setOmeroId(imageID);
 movie.setSession(session);
+movie.setOmeroSave(true);
 
 movie.sanityCheck;
