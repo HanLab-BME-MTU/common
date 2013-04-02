@@ -111,11 +111,11 @@ for i = 1 : nProcesses
     end
 end
 
-if indexCellSegProcess == 0 && Cell_Mask_ind == 1
-    msg('Please run segmentation and refinement first.')
-    return;
-end
-
+% if indexCellSegProcess == 0 && Cell_Mask_ind == 1
+%     msg('Please run segmentation and refinement first.')
+%     return;
+% end
+% 
 
 nFrame = movieData.nFrames_;
 
@@ -304,8 +304,8 @@ for iChannel = channelIndex
     imagescc(currentImg); hold on;
     scrsz = get(0,'ScreenSize');
     set(h1,'Position',scrsz);
-    training_sample_number=10;
-    training_ind = datasample(not_sure_ind,training_sample_number);
+    training_sample_number=20;
+    training_ind = datasample(not_sure_ind,min(length(not_sure_ind),training_sample_number),'Replace',false);
     
     training_bad_ind = [];
     training_good_ind = [];
@@ -328,22 +328,21 @@ for iChannel = channelIndex
         if(ch==28)
             i_ind = max(1, i_ind - 1);
         else
-            i_ind = i_ind + 1;
             if(ch==32)
                 good_bad_label(i_ind) = 1;
                 plot(x,y,'r.');
+                i_ind = i_ind + 1;
             else
                 good_bad_label(i_ind) = 2;
                 plot(x,y,'b.');
+                i_ind = i_ind + 1;
             end
             saveas(h1,[FilamentSegmentationChannelOutputDir,'/train_rb_',num2str(i_mark),'.jpg']);
             
             if(ch==27 || i_ind > length(training_ind))
-                i_ind = i_ind-1;
-                good_bad_label = good_bad_label(1:length(training_ind));
+               good_bad_label = good_bad_label(1:length(training_ind));
                 break;
-            end
-            
+            end            
         end
     end
     
@@ -383,13 +382,13 @@ for iChannel = channelIndex
         scrsz = get(0,'ScreenSize');
         set(h1,'Position',scrsz);
         
-        training_ind = datasample(not_sure_ind,training_sample_number);
+        training_ind = datasample(not_sure_ind,min(length(not_sure_ind),training_sample_number),'Replace',false);
         
         training_bad_ind = [];
         training_good_ind = [];
         
         good_bad_label = [];
-        i_ind = 1;
+        i_ind = 0;
         
         for i_mark = 1 : 2*length(training_ind)
             i_ind
@@ -406,19 +405,19 @@ for iChannel = channelIndex
             if(ch==28)
                 i_ind = max(1, i_ind - 1);
             else
-                i_ind = i_ind + 1;
                 if(ch==32)
                     good_bad_label(i_ind) = 1;
                     plot(x,y,'r.');
+                    i_ind = i_ind + 1;
                 else
                     good_bad_label(i_ind) = 2;
                     plot(x,y,'b.');
+                    i_ind = i_ind + 1;
                 end
                 saveas(h1,[FilamentSegmentationChannelOutputDir,'/train_rb_',num2str(i_mark),'.jpg']);
                 
                 if(ch==27 || i_ind > length(training_ind))
-                    i_ind = i_ind-1;
-                    good_bad_label = good_bad_label(1:length(training_ind));
+                   ood_bad_label = good_bad_label(1:length(training_ind));
                     break;
                 end
                 
@@ -464,13 +463,13 @@ for iChannel = channelIndex
         scrsz = get(0,'ScreenSize');
         set(h1,'Position',scrsz);
         
-        training_ind = datasample(not_sure_ind,training_sample_number);
+        training_ind = datasample(not_sure_ind,min(length(not_sure_ind),training_sample_number),'Replace',false);
         
         training_bad_ind = [];
         training_good_ind = [];
         
         good_bad_label = [];
-        i_ind = 1;
+        i_ind = 0;
         
         for i_mark = 1 : 2*length(training_ind)
             i_ind
@@ -569,9 +568,9 @@ for iChannel = channelIndex
     label_bad = -ones(size(train_length_bad));
     
     
-     % Linear Kernel
-  model_linear = svmtrain([label_good; label_bad], [feature_good; feature_bad], '-t 0');
-  [predict_label_L, accuracy_L, dec_values_L] = svmpredict([label_good; label_bad], [feature_good; feature_bad], model_linear);
+%      % Linear Kernel
+%   model_linear = svmtrain([label_good; label_bad], [feature_good; feature_bad], '-t 0');
+%   [predict_label_L, accuracy_L, dec_values_L] = svmpredict([label_good; label_bad], [feature_good; feature_bad], model_linear);
 
     
     % feature_training = [feature_Length(training_ind) feature_MeanInt(training_ind)];

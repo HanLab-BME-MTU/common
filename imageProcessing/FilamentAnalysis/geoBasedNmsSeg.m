@@ -17,7 +17,7 @@ if(~isempty(MaskCell) || mean(double(MaskCell))==1)
     MaskCell =  imdilate(MaskCell,fspecial('disk', 71)>0);
 else
     T_Rosin_otsu = thresholdRosin(imfilter(imageInt,fspecial('gaussian',11,2)));
-    MaskCell = imageInt>T_Rosin_otsu*6/3;
+    MaskCell = imageInt>T_Rosin_otsu*3/3;
     MaskCell = imdilate(MaskCell,fspecial('disk', 71)>0);
 end
 

@@ -287,13 +287,15 @@ for iChannel = selected_channels
                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0);
                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
                 current_seg = and(Intensity_Segment,SteerabelRes_Segment);
-                
+                     current_model=[];
+            
             case 'st_only'
                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0);
                 current_seg = SteerabelRes_Segment;
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;
-                
+                    current_model=[];
+             
             case 'st_nms_two'
                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound*0.7,0);
                 [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound*1.3,0);
@@ -302,14 +304,16 @@ for iChannel = selected_channels
                        
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;
-        
+                   current_model=[];
+      
             case 'st_nms_only'
                 [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound,0);
                 current_seg = NMS_Segment;
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;
                 Min_area = 6;
-            
+                  current_model=[];
+           
             case 'geo_based'
                 tic
                 
@@ -331,12 +335,14 @@ for iChannel = selected_channels
                 
                 current_seg = Intensity_Segment;
                 SteerabelRes_Segment = current_seg;
-            otherwise
+                  current_model=[];
+           otherwise
                 warning('Use the default of union');
                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0);
                 [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
                 % The segmentation is set as the union of two segmentation.
                 current_seg = or(Intensity_Segment,SteerabelRes_Segment);
+                current_model=[];
         end
         
         current_seg = current_seg.*MaskCell;

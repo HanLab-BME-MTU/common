@@ -271,8 +271,8 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             
             % The way to combine segmentation results from steerable
             % filtering responce and from intensity, default is : only use
-            % steerable filtering result
-            funParams.Combine_Way = 'st_only';
+            % steerable filtering result and geobased nms
+            funParams.Combine_Way = 'geo_based';
             
             % Flag to set if cell mask is used, if 1, use
             % segmentation(refined) results, if 2, use the user define ROI
