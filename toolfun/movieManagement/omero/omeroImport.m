@@ -23,8 +23,6 @@ function movie = omeroImport(session,imageID,varargin)
 
 % Sebastien Besson, Dec 2011 (last modified Nov 2012)
 
-if ~exist('omero.client','class'), loadOmero; end
-
 % Input check
 ip=inputParser;
 ip.addRequired('session',@(x) isa(x,'omero.api.ServiceFactoryPrxHelper'));
@@ -32,7 +30,11 @@ ip.addRequired('imageID',@isscalar);
 ip.addOptional('outputDirectory',[],@ischar);
 ip.parse(session,imageID,varargin{:});
 
-images = getImages(session, imageID);
+% Get images
+proxy = session.getContainerService();
+id = toJavaList(imageID, 'java.lang.Long');
+imageList = proxy.getImages('omero.model.Image', id, omero.sys.ParametersI());
+images = toMatlabList(imageList);
 assert(~isempty(images) && ~isempty(images(1)), 'No image found');
 image=images(1);
 

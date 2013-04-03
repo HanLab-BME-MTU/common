@@ -1,4 +1,4 @@
-function [files] = getOmeroFileAnnotations(session, imageIDs)
+function [annotations] = getOmeroFileAnnotations(session, imageIDs)
 
 
 % Input check
@@ -15,30 +15,26 @@ namespace = 'hms-tracking';
 metadataService = session.getMetadataService();
 
 % imageIds = java.util.ArrayList;
-% imageIds.add(java.lang.Long(MD.getImage().getId().getValue))
-% annotations = metadataService.loadAnnotation('omero.model.Image', imageIds,...
-%     java.util.ArrayList,java.util.ArrayList,omero.sys.ParametersI());
-
-annotationTypes = java.util.ArrayList;
-annotationTypes.add('FileAnnotation');
-
+imageIds = toJavaList(imageIDs, 'java.lang.Long');
+annotationTypes = toJavaList('FileAnnotation');
 annotatorIds = java.util.ArrayList();
-parameters = omero.sys.ParametersI; 
-annSet = metadataService.loadAnnotations('Image',...
-    toJavaList(imageIDs, 'java.lang.Long'),...
-    annotationTypes,annotatorIds, parameters);
 
-itr = annSet.values.iterator;
-files = cell(numel(imageIDs), 1);
-i = 0;
-while (itr.hasNext())
-    I = itr.next();
-    j = I.iterator();
-    i = i + 1;
+userId = session.getAdminService().getEventContext().userId;
+parameters = omero.sys.ParametersI;
+parameters.exp(rlong(userId)); %load the annotation for a given user.
+
+annSet = metadataService.loadAnnotations('Image',...
+    imageIds, annotationTypes,annotatorIds, parameters);
+
+% Aggregate all annotations into a java.util.ArrayList
+annotationList = java.util.ArrayList();
+i = annSet.values.iterator;
+while (i.hasNext())
+    j = i.next().iterator();
     while (j.hasNext())
-        nextAnn = j.next();
-        if strcmp(nextAnn.getNs.getValue, namespace);
-            files{i} = nextAnn.getFile;
-        end
+        annotationList.add(j.next());
     end
 end
+
+% Convert java.util.ArrayList into a Matlab array
+annotations = toMatlabList(annotationList);

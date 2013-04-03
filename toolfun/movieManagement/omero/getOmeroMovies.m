@@ -28,33 +28,18 @@ ip.parse(imageIDs, varargin{:});
 nMovies = numel(imageIDs);
 MD(nMovies) = MovieData();
 
-% Retrieve existing file annotations with the correct namespace
-fileAnnotations = getOmeroFileAnnotations(session, imageIDs);
-hasFileAnnotation = ~cellfun(@isempty, fileAnnotations);
+% Set temporary file to extract file annotations
+zipPath = fullfile(ip.Results.path, 'tmp.zip');
 
-%% OMERO Images for which a MovieData has been created and uploaded
-if any(hasFileAnnotation)
-    % Set temporary file to extract file annotations
-    zipPath = fullfile(ip.Results.path, 'tmp.zip');
+for i = 1 : nMovies
+    newID = imageIDs(i);
+    fas = getOmeroFileAnnotations(session, newID);
     
-    % List found image IDs and corresponding OriginalFile IDs
-    foundIDs = find(hasFileAnnotation);
-    foundAnnotations = fileAnnotations(hasFileAnnotation);
-    
-    % Initialize raw file store
-    store = session.createRawFileStore();
-    
-    for iAnnotation = 1:numel(foundAnnotations)
-        iMovie = (foundIDs(iAnnotation));
-        
-        % Download file annotation using raw file store
-        store.setFileId(foundAnnotations{iAnnotation}.getId().getValue());
-        
-        % Read data
-        fid = fopen(zipPath, 'w');
-        fwrite(fid, store.read(0,...
-            foundAnnotations{iAnnotation}.getSize().getValue()), 'int8');
-        fclose(fid);
+    if isempty(fas)
+        path = fullfile(ip.Results.path, num2str(newID));
+        MD(i) = omeroImport(session, newID, path);
+    else
+        getFileAnnotationContent(session, fas(1), zipPath);
         
         % Unzip and delete temporary fil
         zipFiles = unzip(zipPath, ip.Results.path);
@@ -70,23 +55,8 @@ if any(hasFileAnnotation)
             if ~hasMovie, continue; end
             
             % Load MovieData object
-            MD(iMovie) = MovieData.load(matFiles{j}, session, false);
+            MD(i) = MovieData.load(matFiles{j}, session, false);
         end
-        
-        if isempty(MD(iMovie)), error('No movie found'); end
     end
-    
-    % Close raw file store
-    store.close();
 end
 
-%% OMERO Images where a new MovieData object needs to be created
-if ~all(hasFileAnnotation)
-    newIDs = find(~hasFileAnnotation);
-    
-    %% Retrieve a given plane.
-    for i = newIDs(:)'
-        path = fullfile(ip.Results.path, num2str(imageIDs(i)));
-        MD(i) = omeroImport(session, imageIDs(i),path);
-    end
-end
