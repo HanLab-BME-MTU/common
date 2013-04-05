@@ -1,4 +1,4 @@
-function [frameInfo imgDenoised] = detectSpotsWT(img, iclean, varargin)
+function [frameInfo, imgDenoised] = detectSpotsWT(img, iclean, varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
@@ -93,7 +93,7 @@ for ix = 1:nz
         delta = abs(sig2-sig1)/sig2;
         sig1 = sig2;
     end
-    wm = wstarck222(rw,k,1); % calculate the multiscale product of the details
+    wm = wstarck222(rw,k); % calculate the multiscale product of the details
     rw = rw-min(rw(:));
     
     % size of mask for local average = (2*bs+1)by(2*bs+1)
@@ -133,7 +133,7 @@ for ix = 1:nz
     
     % calculate local maxima
     lm = locmax2d(rw, [9 9]); % find the location of the maxima of the clusters
-    [ymax xmax] = find(lm>0); % coordinates of the local maxima
+    [ymax, xmax] = find(lm>0); % coordinates of the local maxima
     
     labl = labelMat(sub2ind([ny nx],ymax,xmax));
     
@@ -142,7 +142,7 @@ for ix = 1:nz
     
     % determine local max coordinates for these clusters
     idx = cellfun(@(i) i(find(rw(i)==max(rw(i)),1,'first')), CC.PixelIdxList(idx));
-    [ymax2 xmax2] = ind2sub([ny nx], idx);
+    [ymax2, xmax2] = ind2sub([ny nx], idx);
     ymax = [ymax; ymax2']; %#ok<AGROW>
     xmax = [xmax; xmax2']; %#ok<AGROW>
     nmax = length(xmax);
