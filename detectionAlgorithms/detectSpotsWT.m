@@ -4,7 +4,8 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('img');
 ip.addOptional('iclean', 0);
-ip.addParamValue('BackwardsCompatible', true, @islogical);
+ip.addParamValue('LegacyMode', false);
+ip.addParamValue('BackwardsCompatible', true, @islogical); % to match output of main283AUTO
 ip.parse(img, iclean, varargin{:});
 
 iclean = ip.Results.iclean;
@@ -12,6 +13,11 @@ iclean = ip.Results.iclean;
 % Wavelet decomposition calculated up to scale k
 k = 4;
 
+if ip.Results.LegacyMode
+    denoisefun = @wstarck2;
+else
+    denoisefun = @awtDenoising;    
+end
 
 % NOTE: this file is identical to main283AUTO_standalone in function.
 % The output vectors elements may be in a different order due to implementation differences.
@@ -75,8 +81,7 @@ for ix = 1:nz
     mno=min(frame(:));
     frame = frame*450/mxo; % to renormalize the maximum intensity to a reasonable value.
        
-    
-    rw = wstarck2(frame,k,0); % CALCULATES reconstructed image up to order k without kth detail(irecon=0)
+    rw = denoisefun(frame,k,0); % CALCULATES reconstructed image up to order k without kth detail(irecon=0)
     er = frame - rw;  % This is the error image
     
     % Now do iterative filtering
@@ -86,14 +91,19 @@ for ix = 1:nz
     while delta > 0.002
         
         n = n+1;
-        rw = rw + wstarck2(er,k,0);
+        rw = rw + denoisefun(er,k,0);
         
         er = frame - rw;
         sig2 = std(er(:));
         delta = abs(sig2-sig1)/sig2;
         sig1 = sig2;
     end
-    wm = wstarck222(rw,k); % calculate the multiscale product of the details
+    if ip.Results.LegacyMode
+        wm = wstarck222(rw,k); % calculate the multiscale product of the details
+    else
+        W = abs(awt(rw, k));
+        wm = prod(W(:,:,1:k-1),3);
+    end
     rw = rw-min(rw(:));
     
     % size of mask for local average = (2*bs+1)by(2*bs+1)
@@ -107,19 +117,15 @@ for ix = 1:nz
     rwb=bwmorph(rwb,'clean'); %to get rid of isolated pixels (noise)
     rwb=bwmorph(rwb,'fill'); %to fill up empty internal pixels
     rwb=bwmorph(rwb,'thicken'); %to make larger clusters because of the harsh cutoff criteria above
-    if iclean >=0
-        rwb=bwmorph(rwb,'spur'); % to remove single pixels 8-attached to clusters
-        rwb=bwmorph(rwb,'spur');
-        rwb=bwmorph(rwb,'clean');% to remove any remaining isolated pixels after applying spur twice
-    end
+    rwb=bwmorph(rwb,'spur'); % to remove single pixels 8-attached to clusters
+    rwb=bwmorph(rwb,'spur');
+    rwb=bwmorph(rwb,'clean');% to remove any remaining isolated pixels after applying spur twice
     if iclean > 0
         rwb=bwmorph(rwb,'erode'); %extra cleaning of small spots
         if iclean >=2
             rwb=bwmorph(rwb,'spur'); %extra cleaning of small spots % for extraextra cleaning
         end
-        if iclean >=1
-            rwb=bwmorph(rwb,'clean');%extra cleaning of small spots
-        end
+        rwb=bwmorph(rwb,'clean');%extra cleaning of small spots
         rwb=bwmorph(rwb,'thicken');%extra cleaning of small spots
     end
     rw = rw*(mxo-mno)/max(rw(:)); % normalize maximum intensity to original (maximum intensity-background intensity).
@@ -188,6 +194,6 @@ for ix = 1:nz
     frameInfo(ix).nmax = nmax;
    
     % eliminate the frequent error messages by rescaling to uint8
-    rw8 = uint8(round(255*(rw/max(rw(:)))));
+    rw8 = uint8(255*(rw/max(rw(:))));
     imgDenoised(:,:,ix) = rw8;
 end
