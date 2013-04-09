@@ -148,15 +148,20 @@ defaultDisplayRange = ComputeImageDynamicRange( im, 98.0 );
 p.addParamValue( 'spacing', ones(1, ndims(im)), @(x) ( isnumeric(x) && ~isscalar(x) && numel(x) == ndims(im) ) );
 p.addParamValue( 'displayRange', defaultDisplayRange, @(x) ( isnumeric(x) && numel(x) == 2 ) );
 p.addParamValue( 'maskColors', cMap(1:numMasks,:), @(x) (isnumeric(x) && ndims(x) == 2 && size(x,2) == 3 && size(x,1) == numMasks) ); 
-p.addParamValue( 'maskAlphas', 0.5 * ones(numMasks,1), @(x) (isnumeric(x) && numel(x) == numMasks) );
+p.addParamValue( 'maskAlphas', 0.5 * ones(numMasks,1), @(x) (isnumeric(x) && (isscalar(x) || numel(x) == numMasks)) );
 p.parse( im, inmasks, varargin{:} );
 
 spacing = ones(1,3);
 spacing(1:ndims(im)) = p.Results.spacing;
 maskColorMap = p.Results.maskColors;
-maskAlpha = p.Results.maskAlphas;
 displayrange = p.Results.displayRange;
 
+if isscalar(p.Results.maskAlphas) && numMasks > 1
+   maskAlpha =  p.Results.maskAlphas  * ones(numMasks,1);
+else
+   maskAlpha =  p.Results.maskAlphas;
+end
+    
 numColors = size(maskColorMap, 1);
 numAlpha  = length(maskAlpha);
 
