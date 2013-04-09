@@ -138,8 +138,8 @@ nms0 = nonMaximumSuppression(res,theta);
 
 %break junctions in nms image to get clean edge segments
 nmsMaskThin = double(bwmorph(nms0~=0, 'thin'));
-nn = (imfilter(nmsMaskThin,ones(3),'same')-1) .* nmsMaskThin;
-junctionMatrix = nn>2;
+nn2 = (imfilter(nmsMaskThin,ones(3),'same')-1) .* nmsMaskThin;
+junctionMatrix = nn2>2;
 nms = nms0 .*nmsMaskThin .* ~junctionMatrix;
 % nmsJunctions = nms0 .* nmsMaskThin .* junctionMatrix;
 
@@ -305,11 +305,10 @@ for iPrctile = 1 : length(threshPrctile)
             pixLJxy = candPix{jEdge};
             
             %distance between the two closest pixels
-            [idx,dist] = KDTreeClosestPoint(pixLJxy,pixLIxy);
-            
-            %             minDistIJ = min(dist);
-            %             idx2 = find(dist==minDistIJ);
-            %             edgePairDist(iEdge,jEdge) = minDistIJ;
+            %             [idx,dist] = KDTreeClosestPoint(pixLJxy,pixLIxy);
+            %             kd = KDTree(pixLJxy);
+            %             [idx,dist] = nn(kd,pixLIxy);
+            [idx,dist] = knnsearch(pixLJxy,pixLIxy);
             
             [dist,indxSort] = sort(dist);
             idx2 = indxSort(1);

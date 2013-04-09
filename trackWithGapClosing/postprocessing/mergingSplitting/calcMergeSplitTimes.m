@@ -1,4 +1,4 @@
-function [msTimeInfo] = calcMergeSplitTimes(tracks,minTrackLen,probDim,...
+function [msTimeInfo] = calcMergeSplitTimes(tracks,minTrackLen,...
     diffAnalysisRes,removePotArtifacts)
 %CALCMERGESPLITTIMES calculates times between merges and splits
 %
@@ -8,18 +8,18 @@ function [msTimeInfo] = calcMergeSplitTimes(tracks,minTrackLen,probDim,...
 %       minTrackLen: Minimum length of a track to be used in getting
 %                    merge/split statistics.
 %                    Optional. Default: 5.
-%       probDim    : Dimensionality - 2 for 2D, 3 for 3D.
-%                    Optional. Default: 2.
 %       diffAnalysisRes: Diffusion analysis results (output of
-%                    trackDiffAnalysis1). Optional. If not input, it will
-%                    be calculated.
+%                    trackDiffAnalysis1).
+%                    Optional. If not input, all tracks will be analyzed
+%                    together.
 %       removePotArtifacts: 1 to remove potentially artifactual merges and
 %                    splits, resulting for instance from detection
 %                    artifact, 0 otherwise. 
 %                    Optional. Default: 1.
 %
-%OUTPUT msTimeInfo : Structure with field 'conf','brown' and 'linear' for
-%                    confined, Brownian and linear tracks. Each field is a
+%OUTPUT msTimeInfo : Structure with fields 'conf','brown' and 'linear' for
+%                    confined, Brownian and linear tracks OR field 'all' if
+%                    diffAnalysisRes was not input. Each field is a
 %                    structure containing the fields:
 %           .numTracks      : # of tracks in category.
 %           .timeMerge2Split: 1-column vector storing the time interval
@@ -46,19 +46,11 @@ if nargin < 2 || isempty(minTrackLen)
     minTrackLen = 5;
 end
 
-if nargin < 3 || isempty(probDim)
-    probDim = 2;
+if nargin < 3 || isempty(diffAnalysisRes)
+    diffAnalysisRes = [];
 end
 
-if nargin < 4 || isempty(diffAnalysisRes)
-    [diffAnalysisRes,errFlag] = trackDiffusionAnalysis1(tracks,1,probDim,...
-        1,[0.05 0.1],0);
-    if errFlag
-        return
-    end
-end
-
-if nargin < 5 || isempty(removePotArtifacts)
+if nargin < 4 || isempty(removePotArtifacts)
     removePotArtifacts = 1;
 end
 
@@ -69,44 +61,63 @@ criteria.lifeTime.min = minTrackLen;
 indx = chooseTracks(tracks,criteria);
 clear criteria
 tracks = tracks(indx);
-diffAnalysisRes = diffAnalysisRes(indx);
+if ~isempty(diffAnalysisRes)
+    diffAnalysisRes = diffAnalysisRes(indx);
+end
 
 %get number of tracks and number of frames
 numTracks = length(tracks);
 
 %% track types
 
-%assign track types based on track segment types
-%track type is taken as the type of the most dynamic segment
-%linear > Brownian > confined
-trackType = NaN(numTracks,1);
-for iTrack = 1 : numTracks
-    if any(diffAnalysisRes(iTrack).classification(:,1)==1)
-        trackType(iTrack) = 3;
-    else
-        trackType(iTrack) = max(diffAnalysisRes(iTrack).classification(:,2));
+if ~isempty(diffAnalysisRes)
+    
+    %assign track types based on track segment types
+    %track type is taken as the type of the most dynamic segment
+    %linear > Brownian > confined
+    trackType = NaN(numTracks,1);
+    for iTrack = 1 : numTracks
+        if any(diffAnalysisRes(iTrack).classification(:,1)==1)
+            trackType(iTrack) = 3;
+        else
+            trackType(iTrack) = max(diffAnalysisRes(iTrack).classification(:,2));
+        end
     end
+    
+    %store indices of tracks in the various categories
+    indxConf = find(trackType==1);
+    numTracksConf = length(indxConf);
+    indxBrown = find(trackType==2);
+    numTracksBrown = length(indxBrown);
+    indxLin = find(trackType==3);
+    numTracksLin = length(indxLin);
+    
+    %determine number of track types
+    numType = 3;
+    
+else
+    
+    indxAll = (1:numTracks)';
+    numTracksAll = length(indxAll);
+    numType = 1;
+    
 end
-
-%store indices of tracks in the various categories
-indxConf = find(trackType==1);
-numTracksConf = length(indxConf);
-indxBrown = find(trackType==2);
-numTracksBrown = length(indxBrown);
-indxLin = find(trackType==3);
-numTracksLin = length(indxLin);
 
 %% time from merges to splits and vice versa
 
-for iType = 1 : 3
+for iType = 1 : numType
 
-    switch iType
-        case 1
-            trackType = 'Conf';
-        case 2
-            trackType = 'Brown';
-        case 3
-            trackType = 'Lin';
+    if numType == 3
+        switch iType
+            case 1
+                trackType = 'Conf';
+            case 2
+                trackType = 'Brown';
+            case 3
+                trackType = 'Lin';
+        end
+    else
+        trackType = 'All';
     end
 
     %initialize some variables
@@ -383,24 +394,33 @@ end
 
 %% output
 
-msTimeInfo.linear.numTracks = numTracksLin;
-msTimeInfo.linear.timeMerge2Split = timeMerge2SplitLin;
-msTimeInfo.linear.timeSplit2MergeSelf = timeSplit2MergeSelfLin;
-msTimeInfo.linear.timeSplit2MergeOther = timeSplit2MergeOtherLin;
-msTimeInfo.linear.timeStart2Split = timeStart2SplitLin;
-msTimeInfo.linear.timeMerge2End = timeMerge2EndLin;
-msTimeInfo.brown.numTracks = numTracksBrown;
-msTimeInfo.brown.timeMerge2Split = timeMerge2SplitBrown;
-msTimeInfo.brown.timeSplit2MergeSelf = timeSplit2MergeSelfBrown;
-msTimeInfo.brown.timeSplit2MergeOther = timeSplit2MergeOtherBrown;
-msTimeInfo.brown.timeStart2Split = timeStart2SplitBrown;
-msTimeInfo.brown.timeMerge2End = timeMerge2EndBrown;
-msTimeInfo.conf.numTracks = numTracksConf;
-msTimeInfo.conf.timeMerge2Split = timeMerge2SplitConf;
-msTimeInfo.conf.timeSplit2MergeSelf = timeSplit2MergeSelfConf;
-msTimeInfo.conf.timeSplit2MergeOther = timeSplit2MergeOtherConf;
-msTimeInfo.conf.timeStart2Split = timeStart2SplitConf;
-msTimeInfo.conf.timeMerge2End = timeMerge2EndConf;
+if ~isempty(diffAnalysisRes)
+    msTimeInfo.linear.numTracks = numTracksLin;
+    msTimeInfo.linear.timeMerge2Split = timeMerge2SplitLin;
+    msTimeInfo.linear.timeSplit2MergeSelf = timeSplit2MergeSelfLin;
+    msTimeInfo.linear.timeSplit2MergeOther = timeSplit2MergeOtherLin;
+    msTimeInfo.linear.timeStart2Split = timeStart2SplitLin;
+    msTimeInfo.linear.timeMerge2End = timeMerge2EndLin;
+    msTimeInfo.brown.numTracks = numTracksBrown;
+    msTimeInfo.brown.timeMerge2Split = timeMerge2SplitBrown;
+    msTimeInfo.brown.timeSplit2MergeSelf = timeSplit2MergeSelfBrown;
+    msTimeInfo.brown.timeSplit2MergeOther = timeSplit2MergeOtherBrown;
+    msTimeInfo.brown.timeStart2Split = timeStart2SplitBrown;
+    msTimeInfo.brown.timeMerge2End = timeMerge2EndBrown;
+    msTimeInfo.conf.numTracks = numTracksConf;
+    msTimeInfo.conf.timeMerge2Split = timeMerge2SplitConf;
+    msTimeInfo.conf.timeSplit2MergeSelf = timeSplit2MergeSelfConf;
+    msTimeInfo.conf.timeSplit2MergeOther = timeSplit2MergeOtherConf;
+    msTimeInfo.conf.timeStart2Split = timeStart2SplitConf;
+    msTimeInfo.conf.timeMerge2End = timeMerge2EndConf;
+else
+    msTimeInfo.all.numTracks = numTracksAll;
+    msTimeInfo.all.timeMerge2Split = timeMerge2SplitAll;
+    msTimeInfo.all.timeSplit2MergeSelf = timeSplit2MergeSelfAll;
+    msTimeInfo.all.timeSplit2MergeOther = timeSplit2MergeOtherAll;
+    msTimeInfo.all.timeStart2Split = timeStart2SplitAll;
+    msTimeInfo.all.timeMerge2End = timeMerge2EndAll;
+end
 
 %% ~~~ the end ~~~
 

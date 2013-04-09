@@ -85,7 +85,7 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/home/kj35/files/LCCB/receptors/Galbraiths/data/alphaV/091012_CHO07hifix_mEosAV_2400_25/analysis121130/'; %directory where to save input and output
+saveResults.dir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\121115_Cs2C4_Y773A\analysisAlphaVY773A\'; %directory where to save input and output
 % saveResults.filename = 'tracksTest1DetectionAll1.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
@@ -100,7 +100,7 @@ probDim = 2;
 % [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1:300),...
 %     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
 
-for i = 1 : 2
+for i = 1 : 12
     movieInfoTmp((i-1)*1200+1:i*1200) = movieInfo((i-1)*1200+1:i*1200);
     saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
     [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...

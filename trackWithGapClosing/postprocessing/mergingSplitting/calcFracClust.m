@@ -1,7 +1,7 @@
-function [fracClustTotalMS,fracClustPerFrameMS,fracClustTotalMovie,fracClustPerFrameMovie] = calcFracClust(tracksAggreg,maxSize)
+function [fracClustTotalMSN,fracClustPerFrameMSN,fracClustTotalMovie,fracClustPerFrameMovie] = calcFracClust(tracksAggreg,maxSize)
 %CALCFRACCLUST calculates the fraction of clusters of various sizes from series of tracks
 %
-%SYNOPSIS [fracClustPerFrameMovie,fracClustTotalMovie] = calcFracClust(tracksAggreg,masSize)
+%SYNOPSIS [fracClustTotalMSN,fracClustPerFrameMSN,fracClustTotalMovie,fracClustPerFrameMovie] = calcFracClust(tracksAggreg,maxSize)
 %
 %INPUT  tracksAggreg : Cell array of output of aggregStateFromCompTracks.
 %                      1 entry = 1 movie/simulation.
@@ -40,7 +40,7 @@ end
 fracClustPerFrameMovie = cell(numMovie,1);
 for iMovie = 1 : numMovie
     fracClust = hist(aggregMat{iMovie},1:maxSize);
-    fracClust = fracClust ./ repmat(sum(fracClust),maxSize,1);
+    fracClust = fracClust ./ repmat(sum(fracClust,1),maxSize,1);
     fracClustPerFrameMovie{iMovie} = fracClust;
 end
 
@@ -54,16 +54,16 @@ end
 
 %mean and std of fractions per frame
 fracClustPerFrameAll = vertcat(fracClustPerFrameMovie{:});
-fracClustPerFrameMS = zeros(maxSize,numFrames,2);
+fracClustPerFrameMSN = zeros(maxSize,numFrames,3);
 for iSize = 1 : maxSize
-    fracClustPerFrameMS(iSize,:,1) = mean(fracClustPerFrameAll(iSize:maxSize:end,:));
-    fracClustPerFrameMS(iSize,:,2) = std(fracClustPerFrameAll(iSize:maxSize:end,:));
+    fracClustPerFrameMSN(iSize,:,1) = mean(fracClustPerFrameAll(iSize:maxSize:end,:));
+    fracClustPerFrameMSN(iSize,:,2) = std(fracClustPerFrameAll(iSize:maxSize:end,:));
+    fracClustPerFrameMSN(iSize,:,3) = numMovie;
 end
     
 %mean and std of overall fractions
 fracClustTotalAll = vertcat(fracClustTotalMovie{:});
-fracClustTotalMS = [mean(fracClustTotalAll); std(fracClustTotalAll)]';
-
-
+fracClustTotalMSN = [mean(fracClustTotalAll,1); std(fracClustTotalAll,[],1)]';
+fracClustTotalMSN(:,3) = numMovie;
 
 %% ~~~ the end ~~~
