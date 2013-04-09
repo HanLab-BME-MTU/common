@@ -587,7 +587,7 @@ update_graphics(hObject,handles)
 
 
 % --- Executes on button press in pushbutton_done.
-function pushbutton_done_Callback(~, ~, handles)
+function pushbutton_done_Callback(~, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
 
@@ -732,13 +732,11 @@ for iMovie=1:nMovies
                 return
             end
 
-            % Update the main window components (list of MovieData, MovieData
-            % listbox)
-            userData_main.MD = cat(2, userData_main.MD, MD);        
-            contentlist{end+1} = [movieFolder filesep movieDataFile];
-            set(userData.handles_main.listbox_movie, 'String', contentlist, 'Value', length(contentlist))
-            title = sprintf('Movie List: %s/%s movie(s)', num2str(length(contentlist)), num2str(length(contentlist)));
-            set(userData.handles_main.text_movie_1, 'String', title)        
+            % Append new ROI to movie selector panel
+            userData_main.MD = cat(2, userData_main.MD, MD);
+            set(userData.mainFig, 'UserData', userData_main)
+            movieSelectorGUI('refreshDisplay',userData.mainFig,...
+                eventdata,guidata(userData.mainFig));
         end
     end
 end
