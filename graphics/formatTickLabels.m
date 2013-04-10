@@ -13,13 +13,14 @@
 
 % Francois Aguet, 2012
 
-function formatTickLabels(h, varargin)
+function formatTickLabels(varargin)
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('h', @(x) all(arrayfun(@ishandle, x)));
+ip.addOptional('h', gca, @(x) all(arrayfun(@ishandle, x)));
 ip.addOptional('XFormat', [], @(x) isempty(x) || ischar(x));
 ip.addOptional('YFormat', [], @ischar);
-ip.parse(h, varargin{:});
+ip.parse(varargin{:});
+h = ip.Results.h;
 xfmt = ip.Results.XFormat;
 yfmt = ip.Results.YFormat;
 
