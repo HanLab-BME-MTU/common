@@ -24,40 +24,26 @@ function Irec = awtDenoising(I, varargin)
 % Sylvain Berlemont, 2009
 
 [N, M] = size(I);
-
 K = ceil(max(log2(N), log2(M)));
 
-nBands = K;
-
-if nargin > 1 && ~isempty(varargin{1})
-    nBands = varargin{1};
-    
-    if nBands < 1 || nBands > K
-        error('invalid range for nBands parameter.');
-    end
-end
-
-includeLoBand = 1;
-
-if nargin > 2 && ~isempty(varargin{2})
-    includeLoBand = varargin{2};
-end
-
-nSigma = 3;
-
-if nargin > 3 && ~isempty(varargin{3})
-    nSigma = varargin{3};
-end
+ip = inputParser;
+ip.CaseSensitive = false;
+ip.addRequired('I');
+ip.addOptional('nBands', K, @(x) x>=1 & x<=K);
+ip.addOptional('includeLoBand', 1);
+ip.addOptional('nSigma', 3);
+ip.parse(I, varargin{:});
+nBands = ip.Results.nBands;
 
 W = awt(I, nBands);
 
-Irec = zeros(size(I));
-
-if includeLoBand
-    Irec = W(:, :, nBands + 1);
+if ip.Results.includeLoBand
+    Irec = W(:,:,nBands+1);
+else
+    Irec = zeros(size(I));
 end
 
-madFactor = nSigma / norminv(0.75, 0, 1);
+madFactor = ip.Results.nSigma / norminv(0.75, 0, 1);
 for k = 1:nBands
     S = W(:, :, k);
     S(abs(S) < madFactor * mad(S(:), 1)) = 0;
