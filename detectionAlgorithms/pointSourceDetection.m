@@ -30,6 +30,7 @@ ip.addParamValue('Mode', 'xyAc', @ischar);
 ip.addParamValue('Alpha', 0.05, @isscalar);
 ip.addParamValue('Mask', [], @isnumeric);
 ip.addParamValue('FitMixtures', false, @islogical);
+ip.addParamValue('RedundancyRadius', 0.25, @isscalar);
 ip.addParamValue('RefineMaskLoG', true, @islogical);
 ip.parse(img, sigma, varargin{:});
 mode = ip.Results.Mode;
@@ -136,9 +137,8 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
             % eliminate duplicate positions (resulting from localization)
             np = length(pstruct.x);
             pM = [pstruct.x' pstruct.y'];
-            idxKD = KDTreeBallQuery(pM, pM, 0.25*ones(np,1));
-            idxKD = idxKD(cellfun(@(x) length(x)>1, idxKD));
-            
+            idxKD = KDTreeBallQuery(pM, pM, ip.Results.RedundancyRadius*ones(np,1));
+            idxKD = idxKD(cellfun(@numel, idxKD)>1);
             for k = 1:length(idxKD);
                 RSS = pstruct.RSS(idxKD{k});
                 idx(idxKD{k}(RSS ~= min(RSS))) = 0;
