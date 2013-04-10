@@ -22,7 +22,7 @@ function varargout = dataPreparationGUI(varargin)
 
 % Edit the above text to modify the response to help dataPreparationGUI
 
-% Last Modified by GUIDE v2.5 23-Apr-2011 20:07:04
+% Last Modified by GUIDE v2.5 10-Apr-2013 12:15:52
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -749,4 +749,3 @@ if isfield(userData,'mainFig')% Save the data
 end
 % Delete current window
 delete(handles.figure1)
-
