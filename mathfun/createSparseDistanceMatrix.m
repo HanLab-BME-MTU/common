@@ -70,7 +70,7 @@ finiteM = find(all(isfinite(M),2));
 finiteN = find(all(isfinite(N),2));
 
 % Query the points below the threshold using the KDTree
-[points,distances]=KDTreeBallQuery(N(finiteN,:),M(finiteM,:),threshold);
+[points,distances] = KDTreeBallQuery(N(finiteN,:),M(finiteM,:),threshold);
 
 % Generate the list of indices to create the sparse matrix
 % points1=points;
@@ -81,13 +81,17 @@ finiteN = find(all(isfinite(N),2));
 % Create a vector with ones and zeros so that we can use cumsum to create
 % number of times we need to repeat a given entry, and use it to index
 % "toRepeat"
-nRepeats = cellfun('length',points);
+nRepeats = cellfun(@numel, points);
 toRepeat = find(nRepeats);
 index = zeros(sum(nRepeats),1);
 index([1;cumsum(nRepeats(toRepeat(1:end-1)))+1])=1;
 
 % Create the sparse matrix. Index into finiteM, finiteN to account for
 % NaN-rows that have been removed.
-D=sparse(finiteM(toRepeat(cumsum(index))),...
-    finiteN(vertcat(points{:})),...
-    max(vertcat(distances{:}),ip.Results.epsilon),size(M,1),size(N,1));
+if ~isempty(toRepeat)
+    D = sparse(finiteM(toRepeat(cumsum(index))),...
+        finiteN(vertcat(points{:})),...
+        max(vertcat(distances{:}),ip.Results.epsilon),size(M,1),size(N,1));
+else
+    D = sparse(size(M,1),size(N,1));
+end
