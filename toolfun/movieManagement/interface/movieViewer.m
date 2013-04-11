@@ -338,14 +338,6 @@ end
 % Update the image and overlays
 if isa(userData.MO,'MovieData'), redrawScene(handles.figure1, handles); end
 
-
-function slider_callback(src,eventdata,panel)
-pos=get(panel,'Position');
-pos(2)=(1-pos(4))*get(src,'Value');
-set(panel,'Position',pos)
-uistack(panel,'top');
-
-
 function displayPath= getDisplayPath(movie)
 [~,endPath] = fileparts(movie.getPath);
 displayPath = fullfile(endPath,movie.getFilename);
@@ -529,12 +521,18 @@ if ~isempty(optFig),
     userData.setImageOptions(drawFig, displayMethod)
 end
 
-function panZoomCallback(h)
+function panZoomCallback(varargin)
 
-% Reset the scaleBar
-handles=guidata(get(h,'UserData'));
-setScaleBar(handles,'imageScaleBar');
-setTimeStamp(handles);
+% Find if options figure exist
+optionsFig = findobj(0,'-regexp','Tag', 'optionsFig');
+if ~isempty(optionsFig)
+    % Reset the scaleBar
+    handles = guidata(optionsFig);
+    scalebarCallback = get(handles.edit_imageScaleBar,'Callback');
+    timeStampCallback = get(handles.checkbox_timeStamp,'Callback');
+    scalebarCallback(optionsFig);
+    timeStampCallback(optionsFig);
+end
 
 function redrawOverlays(handles)
 if ~isfield(handles,'uipanel_overlay'), return; end
