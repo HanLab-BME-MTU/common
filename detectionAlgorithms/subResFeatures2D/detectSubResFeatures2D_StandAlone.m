@@ -310,8 +310,8 @@ if hasImageDir
     for iImage = last5start : numImagesRaw
         i = i + 1;
         if imageExists(iImage)
-            imageLast5(:,:,i) = imread([imageDir filenameBase ...
-                enumString(imageIndx(iImage),:) '.tif']);
+            imageLast5(:,:,i) = double(imread([imageDir filenameBase ...
+                enumString(imageIndx(iImage),:) '.tif']));
         end
     end
 else
@@ -679,7 +679,7 @@ if numSigmaIter
             if hasImageDir
                 imageRaw = imread([imageDir filenameBase enumString(imageIndx(iImage),:) '.tif']);                
             else
-                imageRaw=double(channel.loadImage(imageIndx(iImage)));
+                imageRaw= channel.loadImage(imageIndx(iImage));
             end
             imageRaw = double(imageRaw) / (2^bitDepth-1);
             
