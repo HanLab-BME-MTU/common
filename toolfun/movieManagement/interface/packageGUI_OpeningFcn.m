@@ -3,6 +3,7 @@ function packageGUI_OpeningFcn(hObject,eventdata,handles,packageName,varargin)
 %
 % packageGUI_OpeningFcn(packageName,MD)   MD: MovieData object
 %
+
 % Useful tools
 %
 % User Data:
@@ -300,7 +301,7 @@ set(handles.text_packageName,'String',userData.crtPackage.getName);
 msg = {};
 if isa(ip.Results.MO,'MovieData'), movieType = 'Movie'; else movieType = 'Movie list'; end
 for i = 1: length(ip.Results.MO)
-    msg = cat(2, msg, {sprintf('  %s %d of %d', movieType, i, length(ip.Results.MO))});
+    msg = horzcat(msg, {sprintf('  %s %d of %d', movieType, i, length(ip.Results.MO))});
 end
 set(handles.popupmenu_movie, 'String', msg, 'Value', userData.id);
 

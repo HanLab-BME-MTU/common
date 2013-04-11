@@ -313,7 +313,7 @@ end
 
 switch class(M)
     case 'MovieData'
-        userData.MD = cat(2, userData.MD, M);       
+        userData.MD = horzcat(userData.MD, M);
     case 'MovieList'        
         % Find duplicate movie data in list box
         movieDataFile = M.movieDataFile_;
@@ -427,7 +427,7 @@ catch ME
     errordlg(msg, 'Movie List Error', 'modal')
     return
 end
-userData.ML=cat(2,userData.ML,ML);
+userData.ML = horzcat(userData.ML, ML);
 set(handles.figure1,'UserData',userData);
 refreshDisplay(hObject, eventdata, handles)
 

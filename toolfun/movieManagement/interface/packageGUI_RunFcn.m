@@ -60,7 +60,7 @@ for i = invalidMovies
         ME = MException('lccb:run:setup', ['Step %d : %s is not set up yet.\n'...
             '\nTip: when step is set up successfully, the step name becomes bold.'],j,...
             eval([userData.package(i).getProcessClassNames{j} '.getName']));
-        movieException{i} = cat(2, movieException{i}, ME);
+        movieException{i} = horzcat(movieException{i}, ME);
     end
 end
 
@@ -78,7 +78,7 @@ for iMovie = validMovies
                     ~userData.package(iMovie).processes_{i}.updated_
                 
                 k = false;
-                procRun{iMovie} = cat(2, procRun{iMovie}, i);
+                procRun{iMovie} = horzcat(procRun{iMovie}, i);
             end
         end
         if k
@@ -111,7 +111,7 @@ for iMovie = validMovies
             
             ME = MException('lccb:run:sanitycheck','Step %d %s: \n%s',...
                 i,userData.package(iMovie).processes_{i}.getName, procEx{i}(1).message);
-            movieException{iMovie} = cat(2, movieException{iMovie}, ME);
+            movieException{iMovie} = horzcat(movieException{iMovie}, ME);
                 
         end
     end
@@ -173,7 +173,7 @@ for i=1:length(movieRun)
         % Save the error into movie Exception cell array
         ME2 = MException('lccb:run:error','Step %d: %s',...
             procID,userData.package(iMovie).processes_{procID}.getName);
-        movieException{iMovie} = cat(2, movieException{iMovie}, ME2);
+        movieException{iMovie} = horzcat(movieException{iMovie}, ME2);
         movieException{iMovie}=movieException{iMovie}.addCause(ME);
         
         procRun{iMovie} = procRun{iMovie}(procRun{iMovie} < procID);

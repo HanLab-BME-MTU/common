@@ -246,7 +246,7 @@ if ishandle(userData.mainFig),
     end
     
     % Append  MovieData object to movie selector panel
-    userData_main.MD = cat(2, userData_main.MD, MD);
+    userData_main.MD = horzcat(userData_main.MD, MD);
     set(userData.mainFig, 'UserData', userData_main)
     movieSelectorGUI('refreshDisplay',userData.mainFig,eventdata,guidata(userData.mainFig));
 end
@@ -327,7 +327,7 @@ catch ME
 end
 
 % Refresh listbox_channel
-userData.channels = cat(2, userData.channels, newChannel);
+userData.channels = horzcat(userData.channels, newChannel);
 
 contents{end+1} = path;
 set(handles.listbox_channel,'string',contents);
@@ -389,7 +389,7 @@ userData=get(handles.figure1,'UserData');
 if ishandle(userData.mainFig), 
     % Append  MovieData object to movie selector panel
     userData_main = get(userData.mainFig, 'UserData');
-    userData_main.MD = cat(2, userData_main.MD, MD);
+    userData_main.MD = horzcat(userData_main.MD, MD);
     set(userData.mainFig, 'UserData', userData_main)
     movieSelectorGUI('refreshDisplay',userData.mainFig,eventdata,guidata(userData.mainFig))    
 end

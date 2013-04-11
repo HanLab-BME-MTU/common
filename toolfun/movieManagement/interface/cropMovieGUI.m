@@ -319,7 +319,7 @@ if userData.mainFig ~=-1,
     userData_main = get(userData.mainFig, 'UserData');
 
     % Append new ROI to movie selector panel
-    userData_main.MD = cat(2, userData_main.MD, MD);
+    userData_main.MD = horzcat(userData_main.MD, MD);
     set(userData.mainFig, 'UserData', userData_main)
     movieSelectorGUI('refreshDisplay',userData.mainFig,...
         eventdata,guidata(userData.mainFig));
