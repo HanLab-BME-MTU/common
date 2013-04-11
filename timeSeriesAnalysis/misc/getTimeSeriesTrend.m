@@ -78,8 +78,10 @@ for iVar = 1:nVar
             
         elseif trendT == 4
             
-            outTS    = trendFilteringEMD(TS(iVar,:));
-          
+            [trendC,detrend]    = trendFilteringEMD(TS(iVar,:));
+            %Choose the slowest scale as trend
+            outTS.dTS(iVar,:)   = detrend{end};
+            outTS.trend(iVar,:) = trendC{end};
             
         elseif trendT == 5
             

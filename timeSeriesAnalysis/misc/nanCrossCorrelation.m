@@ -8,16 +8,16 @@ function [xCorr,bounds,lags,pVal] = nanCrossCorrelation(x,y,varargin)
 %Inputs:
 %       x and y  - vectors of the same size
 %       corrType - correlation type: 'Pearson', 'Kendall' or 'Spearman'
-%       maxLag   - number of lag shifts 
+%       maxLag   - number of lag shifts
 %       local    - only used for Kendall type. Under development
-%       robust   - logical. Only used for the Pearson type. If true, uses robust regression and estimation of variance to calculate the 
+%       robust   - logical. Only used for the Pearson type. If true, uses robust regression and estimation of variance to calculate the
 %                  coefficient. Default is false.
 %
 %Output:
 %       xCorr  - correlation coefficients
 %       bounds - Two-element vector indicating the approximate upper and lower
 %                confidence bounds, assuming the input series are uncorrelated.
-%       lags   - 
+%       lags   -
 %       pVal   - pValue for each coefficient
 %
 %
@@ -62,25 +62,26 @@ switch corrT
     case 'Pearson'
         
         
-               
+        
         SX = flipud(buffer(x,nObs,nObs - 1));%delay x(t-n)
         SY = flipud(buffer(y,nObs,nObs - 1));%delay y(t-n)
-
+        
         SX(maxLag+2:end,:) = [];
         SY(maxLag+2:end,:) = [];
         
-         SX = SX + tril(nan(size(SX)));
-         SY = SY + tril(nan(size(SY)));
-         Y  = repmat(y,1,maxLag+1)+ tril(nan(size(SY)))';
-         X  = repmat(x,1,maxLag+1)+ tril(nan(size(SX)))';
-         
-        lagX = num2cell(SX',1);
-        lagY = num2cell(SY',1);
-        Y    = num2cell(Y,1);
-        X    = num2cell(X,1);
         
         if robustOn
             %NaN and outliers have no influence. Well, not too much.
+            
+            SX = SX + tril(nan(size(SX)));
+            SY = SY + tril(nan(size(SY)));
+            Y  = repmat(y,1,maxLag+1)+ tril(nan(size(SY)))';
+            X  = repmat(x,1,maxLag+1)+ tril(nan(size(SX)))';
+            
+            lagX = num2cell(SX',1);
+            lagY = num2cell(SY',1);
+            Y    = num2cell(Y,1);
+            X    = num2cell(X,1);
             
             posLag = cell2mat(cellfun(@(x,y) robustfit(x,y,'bisquare'),lagX,Y,'Unif',0));
             negLag = cell2mat(cellfun(@(x,y) robustfit(x,y,'bisquare'),X,lagY,'Unif',0));
@@ -90,18 +91,16 @@ switch corrT
             normalizationR = cell2mat(cellfun(@(x,y) mad(x,1)/mad(y,1),lagX,Y,'Unif',0));
             normalizationL = cell2mat(cellfun(@(x,y) mad(x,1)/mad(y,1),X,lagY,'Unif',0));
             
+            CCL   = normalizationR.*posLag;
+            CCR   = normalizationL.*negLag;
+
         else
-
-            posLag = cell2mat(cellfun(@(x,y) regress(x,y),lagX,Y,'Unif',0));
-            negLag = cell2mat(cellfun(@(x,y) regress(x,y),X,lagY,'Unif',0));
-            normalizationR = cell2mat(cellfun(@(x,y) nanstd(x,1)/nanstd(y,1),lagX,Y,'Unif',0));
-            normalizationL = cell2mat(cellfun(@(x,y) nanstd(x,1)/nanstd(y,1),X,lagY,'Unif',0));
-
-        end            
-
+            
+            
+            
+        end
         
-        CCL   = normalizationR.*posLag;
-        CCR   = normalizationL.*negLag;
+        
         xCorr = [fliplr(CCR) CCL(2:end)];
         pVal  = pvalPearson('b',xCorr,nObs);
     case 'Kendall'
@@ -117,7 +116,7 @@ end %ENd of main function
 
 function p = pvalPearson(tail, xCorr, nObs)
 %
-t = xCorr.*sqrt((nObs-2)./(1-xCorr.^2)); % 
+t = xCorr.*sqrt((nObs-2)./(1-xCorr.^2)); %
 switch tail
     case 'b'
         
@@ -133,4 +132,4 @@ switch tail
         
 end
 
-end     
+end
