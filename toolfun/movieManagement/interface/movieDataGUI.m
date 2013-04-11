@@ -86,7 +86,7 @@ set(handles.text_copyright, 'String', getLCCBCopyright());
 
 
 % Set channel object array
-userData.channels = [];
+userData.channels = Channel.empty(1,0);
 
 % Load help icon from dialogicons.mat
 userData = loadLCCBIcons(userData);

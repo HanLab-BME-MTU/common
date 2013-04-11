@@ -69,8 +69,8 @@ ip.addRequired('hObject',@ishandle);
 ip.addRequired('eventdata',@(x) isstruct(x) || isempty(x));
 ip.addRequired('handles',@isstruct);
 ip.addParamValue('packageName','',@ischar);
-ip.addParamValue('MD',[],@(x) isempty(x) || isa(x,'MovieData'));
-ip.addParamValue('ML',[],@(x) isempty(x) || isa(x,'MovieList'));
+ip.addParamValue('MD', MovieData.empty(1,0) ,@(x) isempty(x) || isa(x,'MovieData'));
+ip.addParamValue('ML', MovieList.empty(1,0), @(x) isempty(x) || isa(x,'MovieList'));
 ip.parse(hObject,eventdata,handles,varargin{:});
 
 set(handles.text_copyright, 'String', getLCCBCopyright())
@@ -81,8 +81,8 @@ userData = get(handles.figure1, 'UserData');
 handles.output = hObject;
 
 % other user data set-up
-userData.MD = [ ];
-userData.ML = [ ];
+userData.MD = MovieData.empty(1,0);
+userData.ML = MovieList.empty(1,0);
 userData.userDir = pwd;
 userData.newFig=-1;
 userData.msgboxGUI=-1;
@@ -128,7 +128,7 @@ if ~isempty(ip.Results.ML)
         MD = arrayfun(@(x) horzcat(x.getMovies{:}),userData.ML,'Unif',0);
         userData.MD = horzcat(MD{:});
     else
-        userData.MD = [];
+        userData.MD = MovieData.empty(1,0);
     end
 end
 
@@ -371,8 +371,8 @@ user_response = questdlg(['Are you sure to delete all the '...
 if strcmpi('no', user_response), return; end
 
 % Delete movies and movie lists
-userData.MD = [];
-userData.ML = [];
+userData.MD = MovieData.empty(1,0);
+userData.ML = MovieList.empty(1,0);
 set(handles.figure1, 'Userdata', userData)
 refreshDisplay(hObject, eventdata, handles)
 guidata(hObject, handles);
