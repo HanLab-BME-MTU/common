@@ -38,17 +38,5 @@ classdef TestMovieDataTypeCast < TestCase
             I = self.movie.channels_.loadImage(1);
             assertEqual(class(I),'uint16');
         end
-        function testFLOAT(self)
-            TestHelperMovieObject.setUpChannel(self.movie.channels_(1).channelPath_,...
-                    self.imSize,self.nFrames, 'uint32');
-            I = self.movie.channels_.loadImage(1);
-            assertEqual(class(I),'uint8');
-        end
-        function testDOUBLE(self)
-            TestHelperMovieObject.setUpChannel(self.movie.channels_(1).channelPath_,...
-                    self.imSize,self.nFrames, 'uint64');
-            I = self.movie.channels_.loadImage(1);
-            assertEqual(class(I),'uint8');
-        end
     end
 end
