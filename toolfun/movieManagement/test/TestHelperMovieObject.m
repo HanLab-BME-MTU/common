@@ -116,16 +116,7 @@ classdef TestHelperMovieObject < handle
             copyfile(movieObject.getPath,relocatedMoviePath);
             rmdir(movieObject.getPath, 's')
         end
-        
-        function testSetInvalidProperties(object,validProperties)
-            for i=1:numel(validProperties)
-                f= @() set(object,validProperties{i},NaN);
-                assertExceptionThrown(f,'lccb:set:invalid');
-                
-                f= @() set(object,validProperties{i},0);
-                assertExceptionThrown(f,'lccb:set:invalid');
-            end
-        end
+
         
         function testMultiSetProperties(object,validProperties,validValues)
             set(object,validProperties,validValues);
@@ -137,23 +128,7 @@ classdef TestHelperMovieObject < handle
             end
         end
         
-        
-        function testSetMultipleProperties(object,validProperties,validValues)
-            set(object,validProperties,validValues);
-            for i=1:numel(validProperties)
-                assertEqual(object.(validProperties{i}),validValues{i});
-            end
-        end
-        
-        
-        function testSetIndividualProperties(object,validProperties,validValues)
-            for i=1:numel(validProperties)
-                set(object,validProperties{i},validValues{i});
-                assertEqual(object.(validProperties{i}),validValues{i});
-            end
-        end
-        
-        
+
         function concreteSubClasses=getConcreteSubClasses(superclass)
             % List all files in the matlab path ending by Process
             pathList=regexp(path,pathsep,'split');
