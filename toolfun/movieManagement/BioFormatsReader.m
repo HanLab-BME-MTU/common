@@ -74,7 +74,8 @@ classdef  BioFormatsReader < Reader
         function I = loadImage(obj, c, t)
             % Using bioformat tools, get the reader and retrieve dimension order
             r = obj.formatReader;
-            class = ['uint' num2str(obj.getBitDepth())];
+            class = char(loci.formats.FormatTools.getPixelTypeString(r.getPixelType));
+            if strcmp(class, 'float'), class = 'single'; end
             I = zeros([obj.getSizeY(), obj.getSizeX(), numel(t)], class);
             
             z = 1;
