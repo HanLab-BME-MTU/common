@@ -26,20 +26,6 @@ classdef TestMovieList < TestCase
         end
         
         %% Tests
-%         function testGetProcessIndex(self)
-%             TestHelperMovieObject.testGetProcessIndex(self.movieList);
-%         end
-%         
-%         
-%         function testProcessCreation(self)
-%             TestHelperMovieObject.testProcessCreation(self.movieList);
-%         end
-%         
-%         function testPackageCreation(self)
-%             TestHelperMovieObject.testPackageCreation(self.movieList);
-%         end
-        
-        
         function testRelocate(self)
             relocatedMovieListPath = TestHelperMovieObject.relocateMovie(self.movieList);
             
@@ -53,7 +39,7 @@ classdef TestMovieList < TestCase
             % Test channel paths
             assertEqual(relocatedMovieList.getMovies{1}.getPath,relocatedMovieListPath);
             
-            % Test process/packages relocation            
+            % Test process/packages relocation
             rmdir(relocatedMovieListPath,'s');
         end
         
@@ -73,8 +59,7 @@ classdef TestMovieList < TestCase
         end
         
         %% Process/package deletion
-        
-        function testDeleteSingleProcess(self)            
+        function testDeleteSingleProcess(self)
             % Create process
             self.movieList.addProcess(SignalPreprocessingProcess(self.movieList,'',struct()));
             assertEqual(numel(self.movieList.processes_),1);

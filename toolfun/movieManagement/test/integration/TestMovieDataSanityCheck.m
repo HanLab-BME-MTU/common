@@ -1,5 +1,5 @@
 classdef TestMovieDataSanityCheck < TestCase
-
+    
     properties
         movie
         moviePath = fullfile(getenv('HOME'),'MovieTest');
@@ -8,12 +8,12 @@ classdef TestMovieDataSanityCheck < TestCase
         nFrames = 3;
         nChan = 2;
     end
-
+    
     methods
         function self = TestMovieDataSanityCheck(name)
             self = self@TestCase(name);
         end
-
+        
         %% Set up and tear down methods
         function setUp(self)
             channelPath = @(x) fullfile(self.moviePath, ['Channel' num2str(x)]);
@@ -35,10 +35,10 @@ classdef TestMovieDataSanityCheck < TestCase
         end
         
         function newmovie = reload(self)
-             newmovie = MovieData.load(self.movie.getFullPath);
+            newmovie = MovieData.load(self.movie.getFullPath);
         end
         
-        %% Regular sanityCheck()            
+        %% Regular sanityCheck()
         function testSanityCheck(self)
             self.movie.sanityCheck();
             assertEqual(self.movie.channels_.owner_,self.movie);
@@ -46,11 +46,11 @@ classdef TestMovieDataSanityCheck < TestCase
             assertEqual(self.movie.nFrames_,self.nFrames);
             assertEqual(numel(self.movie.channels_),self.nChan);
         end
-         
+        
         %% Invalid sizeT tests
-        function testInvalidNumberFrames(self)            
+        function testInvalidNumberFrames(self)
             TestHelperMovieObject.setUpChannel(self.movie.channels_(1).channelPath_,...
-                    self.imSize(end:-1:1),self.nFrames+1);
+                self.imSize(end:-1:1),self.nFrames+1);
             assertExceptionThrown(@() self.sanityCheck, 'MovieData:sanityCheck:nFrames');
         end
         
@@ -62,15 +62,15 @@ classdef TestMovieDataSanityCheck < TestCase
             end
             assertExceptionThrown(@() self.reload, 'MovieData:sanityCheck:nFrames');
         end
-
+        
         %% Invalid sizeX, sizeY tests
         function testInvalidImSize(self)
             TestHelperMovieObject.setUpChannel(self.movie.channels_(1).channelPath_,...
-                    self.imSize(end:-1:1),self.nFrames);
+                self.imSize(end:-1:1),self.nFrames);
             assertExceptionThrown(@() self.sanityCheck, 'MovieData:sanityCheck:imSize');
         end
         
-                
+        
         function testReloadInvalidImSize(self)
             self.sanityCheck();
             for i = 1: self.nChan
