@@ -673,7 +673,7 @@ if numSigmaIter
         %go over the first 50 good images and find isolated features
         images2use = goodImages(1:min(50,numGoodImages));
         images2use = setdiff(images2use,1:integWindow);
-        for iImage = images2use
+        for iImage = images2use(:)'
             
             %read raw image
             if hasImageDir
@@ -837,7 +837,7 @@ if verbose
 end
 
 %go over all non-empty images ...
-for iImage = goodImages
+for iImage = goodImages(:)'
     
     %read raw image
     if hasImageDir
