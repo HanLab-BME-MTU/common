@@ -27,15 +27,7 @@ classdef TestHelperMovieObject < handle
                 imwrite(zeros(imSize, format),fullfile(path,['test_' num2str(i) '.tif']));
             end
             channel=Channel(path);
-        end
-        
-        function movie = setUpBFMovie(path, imSize, nChan, nFrames, format)
-            if nargin<5, format = 'double'; end
-            if ~exist(path,'dir'), mkdir(path); end
-            bfsave(zeros(imSize(1), imSize(2), nChan, nFrames, format),...
-                fullfile(path, 'test.ome.tiff'), 'XYCTZ');
-            movie = bfImport(fullfile(path, 'test.ome.tiff'));
-        end
+        end       
         
         function testGetProcessIndex(movieObject)
             allProc= TestHelperMovieObject.getConcreteSubClasses('Process');
@@ -115,19 +107,7 @@ classdef TestHelperMovieObject < handle
             relocatedMoviePath = [movieObject.getPath '_relocated'];
             copyfile(movieObject.getPath,relocatedMoviePath);
             rmdir(movieObject.getPath, 's')
-        end
-
-        
-        function testMultiSetProperties(object,validProperties,validValues)
-            set(object,validProperties,validValues);
-            set(object,validProperties,validValues);
-            
-            for i=1:numel(validProperties)
-                f= @() set(object,validProperties{i},NaN);
-                assertExceptionThrown(f,'lccb:set:readonly');
-            end
-        end
-        
+        end        
 
         function concreteSubClasses=getConcreteSubClasses(superclass)
             % List all files in the matlab path ending by Process
