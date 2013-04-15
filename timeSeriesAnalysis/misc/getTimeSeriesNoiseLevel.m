@@ -12,7 +12,7 @@ function  outTS = getTimeSeriesNoiseLevel(TS,varargin)
 %       TS        - vector with time observations
 %       alpha     - alpha level for testing the IMF's (see testImf)
 %       winSize   - size of the sliding window used to average the local SNR
-%       noiseStd  - number of std of the local noise distribution that will be used to define the local noise limits
+%       noiseStd  - number of std of the local noise distribution that will be used to define the local noise limits(Default=1)
 %       plotYes   - if 1, plots the time series with the noise level
 %       frameRate - just to set the right time axis in the plot
 %
