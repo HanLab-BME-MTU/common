@@ -1,4 +1,4 @@
-function Mi=vectorFieldSparseInterp(M,Pg,threshold,d0,polygon)
+function Mi=vectorFieldSparseInterp(M,Pg,threshold,d0,polygon,keepExisting)
 % vectorFieldSparseInterp interpolates a vector field on a user-specified grid (using a sparse correlation matrix)
 %
 % For a vector field v:  
@@ -23,6 +23,8 @@ function Mi=vectorFieldSparseInterp(M,Pg,threshold,d0,polygon)
 %                        GETLINE. These functions return the polygon vertices
 %                        stored in two vectors y and x. Set polygon=[x y] to
 %                        use with vectorFieldSparseInterp.
+%          keepExisting: do not change existing field and fill only NaN
+%                        positions (default=false)
 %
 % OUTPUT     Mi        : interpolated vector field.
 %
@@ -30,11 +32,16 @@ function Mi=vectorFieldSparseInterp(M,Pg,threshold,d0,polygon)
 %                        vectorFieldSparseInterp is used by { }
 %
 % Aaron Ponti, 02/11/2004
+% Sangyoon Han, 04/15/2013
 
 % Check d0
 % if size(d0)~=[1 1]
 %     error('The input parameter d0 must be a scalar.');
 % end
+
+if nargin<6
+    keepExisting = false;
+end
 
 % Vector base positions
 Pi=M(:,1:2);
@@ -72,4 +79,16 @@ if ~isempty(polygon)
     %Mi(find(~index),4)=Mi(find(~index),2);
     Mi(find(~index),3)=NaN;
     Mi(find(~index),4)=NaN;
+end
+
+% Keep the existing vector field unchanged (used for bead displacement
+% field)
+if keepExisting
+    nNodes = length(Pg);
+    for k=1:nNodes
+        indPg= find(Pg(k,1)==Pi(:,1) & Pg(k,2)==Pi(:,2));
+        if indPg
+            Mi(k,3:4) = M(indPg,3:4);
+        end
+    end
 end
