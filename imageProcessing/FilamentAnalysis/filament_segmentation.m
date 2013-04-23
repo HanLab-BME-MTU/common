@@ -536,9 +536,9 @@ for iChannel = selected_channels
         tip_orientation = double(end_points_map).*double(orienation_map_filtered);
         tip_int = double(end_points_map).*double(currentImg);
         tip_NMS = double(end_points_map).*double(nms);
-        tip_orientation(find(current_seg==0)) = nan;
-        tip_int(find(current_seg==0)) = nan;
-        tip_NMS(find(current_seg==0)) = nan;
+        tip_orientation(find(end_points_map==0)) = nan;
+        tip_int(find(end_points_map==0)) = nan;
+        tip_NMS(find(end_points_map==0)) = nan;
         
         %% Save segmentation results
         save([DataOutputDir,'/steerable_vote_', ...

@@ -17,18 +17,29 @@ if(~isempty(MaskCell) || mean(double(MaskCell))==1)
     MaskCell =  imdilate(MaskCell,fspecial('disk', 71)>0);
 else
     T_Rosin_otsu = thresholdRosin(imfilter(imageInt,fspecial('gaussian',11,2)));
-    MaskCell = imageInt>T_Rosin_otsu*3/3;
+    MaskCell = imageInt>T_Rosin_otsu*6/3;
+    if(sum(sum(MaskCell))<size(MaskCell,1)*size(MaskCell,2)*0.05)
+        MaskCell = imageInt>T_Rosin_otsu*5/3;
+    end
+    if(sum(sum(MaskCell))<size(MaskCell,1)*size(MaskCell,2)*0.05)
+        MaskCell = imageInt>T_Rosin_otsu*4/3;
+    end
+    if(sum(sum(MaskCell))<size(MaskCell,1)*size(MaskCell,2)*0.05)
+        MaskCell = imageInt>T_Rosin_otsu*3/3;
+    end
     MaskCell = imdilate(MaskCell,fspecial('disk', 71)>0);
 end
 
-figure(1); hold off;
-subplot(121);
-imagescc(imageInt);
+MaskCell = ones(size(MaskCell));
 
-% imageNMS = imageNMS.*MaskCell;
-% imageInt = imageInt.*MaskCell;
-subplot(122);
-imagescc(MaskCell);
+% figure(1); hold off;
+% subplot(121);
+% imagescc(imageInt);
+% 
+% % imageNMS = imageNMS.*MaskCell;
+% % imageInt = imageInt.*MaskCell;
+% subplot(122);
+% imagescc(MaskCell);
 
 % pause;
 %
@@ -146,10 +157,10 @@ if(isempty(classifier_trained))
     
     % Set the slanted classification line cutoff as twice of the Otsu with
     % respect to the mode
-    T_xie_int =  abs(hotsu - mode_nms)*1.0 + mode_nms;
+    T_xie_int =  abs(hotsu - mode_nms)*0.5 + mode_nms;
     
     % And the length as Otsu threshold
-    T_xie_length = 1.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
+    T_xie_length = 0.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
     
     % Make a classification function as whether it is above the line
     T_xie_int_train = T_xie_int;
@@ -165,6 +176,13 @@ end
 % Select those above the line as our good ones as starting point of graph
 % matching
 Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
+    
+    h12 =  figure(12);hold off;
+    plot(feature_Length(Good_ind),feature_MeanNMS(Good_ind),'b.'); hold on;
+    plot(feature_Length(Bad_ind),feature_MeanNMS(Bad_ind),'r.');
+    title('Classifier Plane with matched data round 0');
+    saveas(h12,['./GEO_frame_',num2str(iFrame),'_round0_trained_plane.tif']);
 
 % plot the output image with these good ones
 current_all_seg_bw = zeros(size(labelMask));
@@ -201,20 +219,34 @@ end
 % Now if user intended for graph matching part, do it
 if(graph_matching_flag==1)
     
+    
+    
+    figure(3);imagescc(imageInt);hold on;
+    [y,x]=find(current_all_seg_bw>0);
+    plot(x,y,'.','MarkerSize',3);
+    h3=figure(3);saveas(h3,['./GEO/frame_',num2str(iFrame),'_round0_all_match_bw.tif']);
+    
     confidency_interval = 0.7;
     [current_model,current_matching_bw] = graph_matching_linking_once([], current_all_seg_bw, confidency_interval,imageInt);
     imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round1_begin.tif']);
     figure(1);close;
     imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round1_end.tif']);
     h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round1_match_color.tif']);
-    
-    
-    
+     h3=figure(3);saveas(h3,['./GEO/frame_',num2str(iFrame),'_round1_all_match_bw.tif']);
+   
     T_xie_int_train = T_xie_int_train*0.9;
     T_xie_length_train = T_xie_length_train*0.9;
     F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
     Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
     
+    h12 =  figure(12);hold off;
+    plot(feature_Length(Good_ind),feature_MeanNMS(Good_ind),'b.'); hold on;
+    plot(feature_Length(Bad_ind),feature_MeanNMS(Bad_ind),'r.');
+    
+    title('Classifier Plane with matched data round 1');
+    saveas(h12,['./GEO/frame_',num2str(iFrame),'_round1_lowered_plane.tif']);
+
     % plot the output image with these good ones
     current_all_seg_bw = zeros(size(labelMask));
     for i_E = 1 : length(Good_ind)
@@ -226,13 +258,62 @@ if(graph_matching_flag==1)
     [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
     imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round2_end.tif']);
     h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round2_match_color.tif']);
+     h3=figure(3);saveas(h3,['./GEO/frame_',num2str(iFrame),'_round2_all_match_bw.tif']);
+   
     
     
+    good_bw = nms_seg_no_brancing.*current_matching_bw;
     
-    T_xie_int_train = T_xie_int_train*0.9;
-    T_xie_length_train = T_xie_length_train*0.9;
+    Matched_ind=[];
+    UnMatched_ind=[];
+    
+    for i_area = ind_long'
+        
+        [all_y_i, all_x_i] = find(labelMask == i_area);
+        if_matched = mean(good_bw(sub2ind(size(bw_out), round(all_y_i),round(all_x_i))));
+        if(if_matched>0.1)
+            Matched_ind = [Matched_ind; i_area];
+        else
+            UnMatched_ind = [UnMatched_ind; i_area];
+        end
+        
+    end
+    
+   
+    
+    train_mat = [];
+    for T_xie_int_grid = T_xie_int_train*(0.8) : (T_xie_int_train*(1.2) - T_xie_int_train*(0.8))/20 : T_xie_int_train*(1.2)
+        for T_xie_length_grid = T_xie_length_train*(0.8) : (T_xie_length_train*(1.2) - T_xie_length_train*(0.8))/20 : T_xie_length_train*(1.2)
+            
+            F_classifer_train = @(i,l) (((T_xie_int_grid + (T_xie_int_grid/T_xie_length_grid)*(-l) -i )));
+            train_mat = [train_mat; T_xie_int_grid T_xie_length_grid ...
+                (-sum(F_classifer_train(feature_MeanNMS(Matched_ind),...
+                feature_Length((Matched_ind))))...
+                +sum(F_classifer_train(feature_MeanNMS(UnMatched_ind),...
+                feature_Length((UnMatched_ind)))))];
+        end
+    end
+    
+    ind = find(train_mat(:,3)==max(train_mat(:,3)));
+    
+    T_xie_int_train = train_mat(ind(1), 1);
+    T_xie_length_train = train_mat(ind(1), 2);
+    
+%     T_xie_int_train = T_xie_int_train*(0.9);
+%     T_xie_length_train = T_xie_length_train*(0.9);
+    
     F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
     Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
+    
+    
+    h12 =  figure(12);hold off;
+    plot(feature_Length(Good_ind),feature_MeanNMS(Good_ind),'b.'); hold on;
+    plot(feature_Length(Bad_ind),feature_MeanNMS(Bad_ind),'r.');
+    plot(feature_Length(Matched_ind),feature_MeanNMS(Matched_ind),'g.');
+    title('Classifier Plane with matched data round 2');
+    saveas(h12,['./GEO/frame_',num2str(iFrame),'_round2_match_plane.tif']);
+
     
     % plot the output image with these good ones
     current_all_seg_bw = zeros(size(labelMask));
@@ -246,11 +327,59 @@ if(graph_matching_flag==1)
     [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
     imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round3_end.tif']);
     h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round3_match_color.tif']);
+     h3=figure(3);saveas(h3,['./GEO/frame_',num2str(iFrame),'_round3_all_match_bw.tif']);
+   
+    good_bw = nms_seg_no_brancing.*current_matching_bw;
     
-    T_xie_int_train = T_xie_int_train*0.9;
-    T_xie_length_train = T_xie_length_train*0.9;
+    Matched_ind=[];
+    UnMatched_ind=[];
+    
+    for i_area = ind_long'
+        
+        [all_y_i, all_x_i] = find(labelMask == i_area);
+        if_matched = mean(good_bw(sub2ind(size(bw_out), round(all_y_i),round(all_x_i))));
+        if(if_matched>0.1)
+            Matched_ind = [Matched_ind; i_area];
+        else
+            UnMatched_ind = [UnMatched_ind; i_area];
+        end
+        
+    end
+    
+   
+    
+    train_mat = [];
+    for T_xie_int_grid = T_xie_int_train*(0.8) : (T_xie_int_train*(1.2) - T_xie_int_train*(0.8))/20 : T_xie_int_train*(1.2)
+        for T_xie_length_grid = T_xie_length_train*(0.8) : (T_xie_length_train*(1.2) - T_xie_length_train*(0.8))/20 : T_xie_length_train*(1.2)
+            
+            F_classifer_train = @(i,l) (((T_xie_int_grid + (T_xie_int_grid/T_xie_length_grid)*(-l) -i )));
+            train_mat = [train_mat; T_xie_int_grid T_xie_length_grid ...
+                (-sum(F_classifer_train(feature_MeanNMS(Matched_ind),...
+                feature_Length((Matched_ind))))...
+                +sum(F_classifer_train(feature_MeanNMS(UnMatched_ind),...
+                feature_Length((UnMatched_ind)))))];
+        end
+    end
+    
+    ind = find(train_mat(:,3)==max(train_mat(:,3)));
+    
+    T_xie_int_train = train_mat(ind(1), 1);
+    T_xie_length_train = train_mat(ind(1), 2);
+    
+%     T_xie_int_train = T_xie_int_train*(0.9);
+%     T_xie_length_train = T_xie_length_train*(0.9);
+    
+    
     F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
     Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
+    
+    h12 =  figure(12);hold off;
+    plot(feature_Length(Good_ind),feature_MeanNMS(Good_ind),'b.'); hold on;
+    plot(feature_Length(Bad_ind),feature_MeanNMS(Bad_ind),'r.');
+    plot(feature_Length(Matched_ind),feature_MeanNMS(Matched_ind),'g.');
+    title('Classifier Plane with matched data round 3');
+    saveas(h12,['./GEO/frame_',num2str(iFrame),'_round3_match_plane.tif']);
     
     % plot the output image with these good ones
     current_all_seg_bw = zeros(size(labelMask));
@@ -263,11 +392,59 @@ if(graph_matching_flag==1)
     [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
     imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round4_end.tif']);
     h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round4_match_color.tif']);
+     h3=figure(3);saveas(h3,['./GEO/frame_',num2str(iFrame),'_round4_all_match_bw.tif']);
+   
+   good_bw = nms_seg_no_brancing.*current_matching_bw;
     
-    T_xie_int_train = T_xie_int_train*0.9;
-    T_xie_length_train = T_xie_length_train*0.9;
+    Matched_ind=[];
+    UnMatched_ind=[];
+    
+    for i_area = ind_long'
+        
+        [all_y_i, all_x_i] = find(labelMask == i_area);
+        if_matched = mean(good_bw(sub2ind(size(bw_out), round(all_y_i),round(all_x_i))));
+        if(if_matched>0.1)
+            Matched_ind = [Matched_ind; i_area];
+        else
+            UnMatched_ind = [UnMatched_ind; i_area];
+        end
+        
+    end
+    
+   
+    
+    train_mat = [];
+    for T_xie_int_grid = T_xie_int_train*(0.8) : (T_xie_int_train*(1.2) - T_xie_int_train*(0.8))/20 : T_xie_int_train*(1.2)
+        for T_xie_length_grid = T_xie_length_train*(0.8) : (T_xie_length_train*(1.2) - T_xie_length_train*(0.8))/20 : T_xie_length_train*(1.2)
+            
+            F_classifer_train = @(i,l) (((T_xie_int_grid + (T_xie_int_grid/T_xie_length_grid)*(-l) -i )));
+            train_mat = [train_mat; T_xie_int_grid T_xie_length_grid ...
+                (-sum(F_classifer_train(feature_MeanNMS(Matched_ind),...
+                feature_Length((Matched_ind))))...
+                +sum(F_classifer_train(feature_MeanNMS(UnMatched_ind),...
+                feature_Length((UnMatched_ind)))))];
+        end
+    end
+    
+    ind = find(train_mat(:,3)==max(train_mat(:,3)));
+    
+    T_xie_int_train = train_mat(ind(1), 1);
+    T_xie_length_train = train_mat(ind(1), 2);
+   
+%     T_xie_int_train = T_xie_int_train*(0.9);
+%     T_xie_length_train = T_xie_length_train*(0.9);
+    
     F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
     Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
+    
+    h12 =  figure(12);hold off;
+    plot(feature_Length(Good_ind),feature_MeanNMS(Good_ind),'b.'); hold on;
+    plot(feature_Length(Bad_ind),feature_MeanNMS(Bad_ind),'r.');
+    plot(feature_Length(Matched_ind),feature_MeanNMS(Matched_ind),'g.');
+    
+    title('Classifier Plane with matched data round 4');
+    saveas(h12,['./GEO/frame_',num2str(iFrame),'_round4_match_plane.tif']);
     
     % plot the output image with these good ones
     current_all_seg_bw = zeros(size(labelMask));
@@ -280,6 +457,332 @@ if(graph_matching_flag==1)
     [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
     imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round5_end.tif']);
     h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round5_match_color.tif']);
+    h3=figure(3);saveas(h3,['./GEO/frame_',num2str(iFrame),'_round5_all_match_bw.tif']);
+   
+    
+    
+   good_bw = nms_seg_no_brancing.*current_matching_bw;
+    
+    Matched_ind=[];
+    UnMatched_ind=[];
+    
+    for i_area = ind_long'
+        
+        [all_y_i, all_x_i] = find(labelMask == i_area);
+        if_matched = mean(good_bw(sub2ind(size(bw_out), round(all_y_i),round(all_x_i))));
+        if(if_matched>0.1)
+            Matched_ind = [Matched_ind; i_area];
+        else
+            UnMatched_ind = [UnMatched_ind; i_area];
+        end
+        
+    end
+    
+   
+    
+    train_mat = [];
+    for T_xie_int_grid = T_xie_int_train*(0.8) : (T_xie_int_train*(1.2) - T_xie_int_train*(0.8))/20 : T_xie_int_train*(1.2)
+        for T_xie_length_grid = T_xie_length_train*(0.8) : (T_xie_length_train*(1.2) - T_xie_length_train*(0.8))/20 : T_xie_length_train*(1.2)
+            
+            F_classifer_train = @(i,l) (((T_xie_int_grid + (T_xie_int_grid/T_xie_length_grid)*(-l) -i )));
+            train_mat = [train_mat; T_xie_int_grid T_xie_length_grid ...
+                (-sum(F_classifer_train(feature_MeanNMS(Matched_ind),...
+                feature_Length((Matched_ind))))...
+                +sum(F_classifer_train(feature_MeanNMS(UnMatched_ind),...
+                feature_Length((UnMatched_ind)))))];
+        end
+    end
+    
+    ind = find(train_mat(:,3)==max(train_mat(:,3)));
+    
+    T_xie_int_train = train_mat(ind(1), 1);
+    T_xie_length_train = train_mat(ind(1), 2);
+   
+%     T_xie_int_train = T_xie_int_train*(0.9);
+%     T_xie_length_train = T_xie_length_train*(0.9);
+    
+    F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
+    Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
+    
+    h12 =  figure(12);hold off;
+    plot(feature_Length(Good_ind),feature_MeanNMS(Good_ind),'b.'); hold on;
+    plot(feature_Length(Bad_ind),feature_MeanNMS(Bad_ind),'r.');
+    plot(feature_Length(Matched_ind),feature_MeanNMS(Matched_ind),'g.');
+    title('Classifier Plane with matched data round 5');
+    saveas(h12,['./GEO/frame_',num2str(iFrame),'_round5_match_plane.tif']);
+    
+    % plot the output image with these good ones
+    current_all_seg_bw = zeros(size(labelMask));
+    for i_E = 1 : length(Good_ind)
+        current_good_bw = labelMask==Good_ind(i_E);
+        current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
+    end
+    imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round6_begin.tif']);
+    figure(1);close;
+    [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
+    imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round6_end.tif']);
+    h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round6_match_color.tif']);
+    h3=figure(3);saveas(h3,['./GEO/frame_',num2str(iFrame),'_round6_all_match_bw.tif']);
+    
+   good_bw = nms_seg_no_brancing.*current_matching_bw;
+    
+    Matched_ind=[];
+    UnMatched_ind=[];
+    
+    for i_area = ind_long'
+        
+        [all_y_i, all_x_i] = find(labelMask == i_area);
+        if_matched = mean(good_bw(sub2ind(size(bw_out), round(all_y_i),round(all_x_i))));
+        if(if_matched>0.1)
+            Matched_ind = [Matched_ind; i_area];
+        else
+            UnMatched_ind = [UnMatched_ind; i_area];
+        end
+        
+    end
+    
+   
+    
+    train_mat = [];
+    for T_xie_int_grid = T_xie_int_train*(0.8) : (T_xie_int_train*(1.2) - T_xie_int_train*(0.8))/20 : T_xie_int_train*(1.2)
+        for T_xie_length_grid = T_xie_length_train*(0.8) : (T_xie_length_train*(1.2) - T_xie_length_train*(0.8))/20 : T_xie_length_train*(1.2)
+            
+            F_classifer_train = @(i,l) (((T_xie_int_grid + (T_xie_int_grid/T_xie_length_grid)*(-l) -i )));
+            train_mat = [train_mat; T_xie_int_grid T_xie_length_grid ...
+                (-sum(F_classifer_train(feature_MeanNMS(Matched_ind),...
+                feature_Length((Matched_ind))))...
+                +sum(F_classifer_train(feature_MeanNMS(UnMatched_ind),...
+                feature_Length((UnMatched_ind)))))];
+        end
+    end
+    
+    ind = find(train_mat(:,3)==max(train_mat(:,3)));
+    
+    T_xie_int_train = train_mat(ind(1), 1);
+    T_xie_length_train = train_mat(ind(1), 2);
+   
+%     T_xie_int_train = T_xie_int_train*(0.9);
+%     T_xie_length_train = T_xie_length_train*(0.9);
+    
+    F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
+    Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
+    
+    h12 =  figure(12);hold off;
+    plot(feature_Length(Good_ind),feature_MeanNMS(Good_ind),'b.'); hold on;
+    plot(feature_Length(Bad_ind),feature_MeanNMS(Bad_ind),'r.');
+    plot(feature_Length(Matched_ind),feature_MeanNMS(Matched_ind),'g.');
+    title('Classifier Plane with matched data round 6');
+    saveas(h12,['./GEO/frame_',num2str(iFrame),'_round6_match_plane.tif']);
+    
+    % plot the output image with these good ones
+    current_all_seg_bw = zeros(size(labelMask));
+    for i_E = 1 : length(Good_ind)
+        current_good_bw = labelMask==Good_ind(i_E);
+        current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
+    end
+    imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round7_begin.tif']);
+    figure(1);close;
+    [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
+    imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round7_end.tif']);
+    h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round7_match_color.tif']);
+    h3=figure(3);saveas(h3,['./GEO/frame_',num2str(iFrame),'_round7_all_match_bw.tif']);
+    
+    
+    
+       good_bw = nms_seg_no_brancing.*current_matching_bw;
+    
+    Matched_ind=[];
+    UnMatched_ind=[];
+    
+    for i_area = ind_long'
+        
+        [all_y_i, all_x_i] = find(labelMask == i_area);
+        if_matched = mean(good_bw(sub2ind(size(bw_out), round(all_y_i),round(all_x_i))));
+        if(if_matched>0.1)
+            Matched_ind = [Matched_ind; i_area];
+        else
+            UnMatched_ind = [UnMatched_ind; i_area];
+        end
+        
+    end
+    
+   
+    
+    train_mat = [];
+    for T_xie_int_grid = T_xie_int_train*(0.8) : (T_xie_int_train*(1.2) - T_xie_int_train*(0.8))/20 : T_xie_int_train*(1.2)
+        for T_xie_length_grid = T_xie_length_train*(0.8) : (T_xie_length_train*(1.2) - T_xie_length_train*(0.8))/20 : T_xie_length_train*(1.2)
+            
+            F_classifer_train = @(i,l) (((T_xie_int_grid + (T_xie_int_grid/T_xie_length_grid)*(-l) -i )));
+            train_mat = [train_mat; T_xie_int_grid T_xie_length_grid ...
+                (-sum(F_classifer_train(feature_MeanNMS(Matched_ind),...
+                feature_Length((Matched_ind))))...
+                +sum(F_classifer_train(feature_MeanNMS(UnMatched_ind),...
+                feature_Length((UnMatched_ind)))))];
+        end
+    end
+    
+    ind = find(train_mat(:,3)==max(train_mat(:,3)));
+    
+    T_xie_int_train = train_mat(ind(1), 1);
+    T_xie_length_train = train_mat(ind(1), 2);
+   
+%     T_xie_int_train = T_xie_int_train*(0.9);
+%     T_xie_length_train = T_xie_length_train*(0.9);
+    
+    F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
+    Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
+    
+    h12 =  figure(12);hold off;
+    plot(feature_Length(Good_ind),feature_MeanNMS(Good_ind),'b.'); hold on;
+    plot(feature_Length(Bad_ind),feature_MeanNMS(Bad_ind),'r.');
+    plot(feature_Length(Matched_ind),feature_MeanNMS(Matched_ind),'g.');
+    title('Classifier Plane with matched data round 7');
+    saveas(h12,['./GEO/frame_',num2str(iFrame),'_round7_match_plane.tif']);
+    
+    % plot the output image with these good ones
+    current_all_seg_bw = zeros(size(labelMask));
+    for i_E = 1 : length(Good_ind)
+        current_good_bw = labelMask==Good_ind(i_E);
+        current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
+    end
+    imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round8_begin.tif']);
+    figure(1);close;
+    [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
+    imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round8_end.tif']);
+    h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round8_match_color.tif']);
+    h3=figure(3);saveas(h3,['./GEO/frame_',num2str(iFrame),'_round8_all_match_bw.tif']);
+    
+       good_bw = nms_seg_no_brancing.*current_matching_bw;
+    
+    Matched_ind=[];
+    UnMatched_ind=[];
+    
+    for i_area = ind_long'
+        
+        [all_y_i, all_x_i] = find(labelMask == i_area);
+        if_matched = mean(good_bw(sub2ind(size(bw_out), round(all_y_i),round(all_x_i))));
+        if(if_matched>0.1)
+            Matched_ind = [Matched_ind; i_area];
+        else
+            UnMatched_ind = [UnMatched_ind; i_area];
+        end
+        
+    end
+    
+   
+    
+    train_mat = [];
+    for T_xie_int_grid = T_xie_int_train*(0.8) : (T_xie_int_train*(1.2) - T_xie_int_train*(0.8))/20 : T_xie_int_train*(1.2)
+        for T_xie_length_grid = T_xie_length_train*(0.8) : (T_xie_length_train*(1.2) - T_xie_length_train*(0.8))/20 : T_xie_length_train*(1.2)
+            
+            F_classifer_train = @(i,l) (((T_xie_int_grid + (T_xie_int_grid/T_xie_length_grid)*(-l) -i )));
+            train_mat = [train_mat; T_xie_int_grid T_xie_length_grid ...
+                (-sum(F_classifer_train(feature_MeanNMS(Matched_ind),...
+                feature_Length((Matched_ind))))...
+                +sum(F_classifer_train(feature_MeanNMS(UnMatched_ind),...
+                feature_Length((UnMatched_ind)))))];
+        end
+    end
+    
+    ind = find(train_mat(:,3)==max(train_mat(:,3)));
+    
+    T_xie_int_train = train_mat(ind(1), 1);
+    T_xie_length_train = train_mat(ind(1), 2);
+   
+%     T_xie_int_train = T_xie_int_train*(0.9);
+%     T_xie_length_train = T_xie_length_train*(0.9);
+    
+    F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
+    Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
+    
+    h12 =  figure(12);hold off;
+    plot(feature_Length(Good_ind),feature_MeanNMS(Good_ind),'b.'); hold on;
+    plot(feature_Length(Bad_ind),feature_MeanNMS(Bad_ind),'r.');
+    plot(feature_Length(Matched_ind),feature_MeanNMS(Matched_ind),'g.');
+    
+    title('Classifier Plane with matched data round 8');
+    saveas(h12,['./GEO/frame_',num2str(iFrame),'_round8_match_plane.tif']);
+    
+    % plot the output image with these good ones
+    current_all_seg_bw = zeros(size(labelMask));
+    for i_E = 1 : length(Good_ind)
+        current_good_bw = labelMask==Good_ind(i_E);
+        current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
+    end
+    imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round9_begin.tif']);
+    figure(1);close;
+    [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
+    imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round9_end.tif']);
+    h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round9_match_color.tif']);
+    h3=figure(3);saveas(h3,['./GEO/frame_',num2str(iFrame),'_round9_all_match_bw.tif']);
+    
+       good_bw = nms_seg_no_brancing.*current_matching_bw;
+    
+    Matched_ind=[];
+    UnMatched_ind=[];
+    
+    for i_area = ind_long'
+        
+        [all_y_i, all_x_i] = find(labelMask == i_area);
+        if_matched = mean(good_bw(sub2ind(size(bw_out), round(all_y_i),round(all_x_i))));
+        if(if_matched>0.1)
+            Matched_ind = [Matched_ind; i_area];
+        else
+            UnMatched_ind = [UnMatched_ind; i_area];
+        end
+        
+    end
+    
+   
+    
+    train_mat = [];
+    for T_xie_int_grid = T_xie_int_train*(0.8) : (T_xie_int_train*(1.2) - T_xie_int_train*(0.8))/20 : T_xie_int_train*(1.2)
+        for T_xie_length_grid = T_xie_length_train*(0.8) : (T_xie_length_train*(1.2) - T_xie_length_train*(0.8))/20 : T_xie_length_train*(1.2)
+            
+            F_classifer_train = @(i,l) (((T_xie_int_grid + (T_xie_int_grid/T_xie_length_grid)*(-l) -i )));
+            train_mat = [train_mat; T_xie_int_grid T_xie_length_grid ...
+                (-sum(F_classifer_train(feature_MeanNMS(Matched_ind),...
+                feature_Length((Matched_ind))))...
+                +sum(F_classifer_train(feature_MeanNMS(UnMatched_ind),...
+                feature_Length((UnMatched_ind)))))];
+        end
+    end
+    
+    ind = find(train_mat(:,3)==max(train_mat(:,3)));
+    
+    T_xie_int_train = train_mat(ind(1), 1);
+    T_xie_length_train = train_mat(ind(1), 2);
+   
+%     T_xie_int_train = T_xie_int_train*(0.9);
+%     T_xie_length_train = T_xie_length_train*(0.9);
+    
+    F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
+    Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
+    Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
+    
+    h12 =  figure(12);hold off;
+    plot(feature_Length(Good_ind),feature_MeanNMS(Good_ind),'b.'); hold on;
+    plot(feature_Length(Bad_ind),feature_MeanNMS(Bad_ind),'r.');
+    plot(feature_Length(Matched_ind),feature_MeanNMS(Matched_ind),'g.');
+    title('Classifier Plane with matched data round 9');
+    saveas(h12,['./GEO/frame_',num2str(iFrame),'_round9_match_plane.tif']);
+    
+    % plot the output image with these good ones
+    current_all_seg_bw = zeros(size(labelMask));
+    for i_E = 1 : length(Good_ind)
+        current_good_bw = labelMask==Good_ind(i_E);
+        current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
+    end
+    imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round10_begin.tif']);
+    figure(1);close;
+    [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
+    imwrite(double(current_matching_bw/2),['./GEO/frame_',num2str(iFrame),'_round10_end.tif']);
+    h1=figure(1);saveas(h1,['./GEO/frame_',num2str(iFrame),'_round10_match_color.tif']);
+    h3=figure(3);saveas(h3,['./GEO/frame_',num2str(iFrame),'_round10_all_match_bw.tif']);
     current_all_matching_bw = current_matching_bw>0;
 end
 

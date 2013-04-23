@@ -235,8 +235,30 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             h= @filamentSegmentationProcessGUI;
         end
         
-        function output = getDrawableOutput()
-            output = ImageProcessingProcess.getDrawableOutput();
+        function output = getDrawableOutput()            
+            output(1).name='Segmentation with Orientaion';
+            output(1).var='current_seg_orientation';
+            output(1).formatData=@mat2gray;
+            output(1).type='image';
+            output(1).defaultDisplayMethod=@ImageDisplay;
+            
+            output(2).name='Orientation at Tip Only';
+            output(2).var='tip_orientation';
+            output(2).formatData=@mat2gray;
+            output(2).type='image';
+            output(2).defaultDisplayMethod=@ImageDisplay;
+            
+            output(3).name='Intensity at Tip Only';
+            output(3).var='tip_int';
+            output(3).formatData=@mat2gray;
+            output(3).type='image';
+            output(3).defaultDisplayMethod=@ImageDisplay;
+            
+            output(4).name='SF Results at Tip Only';
+            output(4).var='tip_NMS';
+            output(4).formatData=@mat2gray;
+            output(4).type='image';
+            output(4).defaultDisplayMethod=@ImageDisplay;
         end
         
         function funParams = getDefaultParams(owner,varargin)

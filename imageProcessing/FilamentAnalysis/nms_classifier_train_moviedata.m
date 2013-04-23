@@ -568,10 +568,11 @@ for iChannel = channelIndex
     label_bad = -ones(size(train_length_bad));
     
     
-%      % Linear Kernel
-%   model_linear = svmtrain([label_good; label_bad], [feature_good; feature_bad], '-t 0');
-%   [predict_label_L, accuracy_L, dec_values_L] = svmpredict([label_good; label_bad], [feature_good; feature_bad], model_linear);
-
+     % Linear Kernel
+  model_linear = svmtrain([label_good; label_bad], [feature_good; feature_bad], '-t 0');
+  [predict_label_L, accuracy_L, dec_values_L] = svmpredict([label_good; label_bad], [feature_good; feature_bad], model_linear);
+ save([FilamentSegmentationChannelOutputDir,'/F_SVM_channel.mat'],'model_linear');
+   
     
     % feature_training = [feature_Length(training_ind) feature_MeanInt(training_ind)];
     % label_training = good_bad_label;
