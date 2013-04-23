@@ -182,7 +182,7 @@ Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
     plot(feature_Length(Good_ind),feature_MeanNMS(Good_ind),'b.'); hold on;
     plot(feature_Length(Bad_ind),feature_MeanNMS(Bad_ind),'r.');
     title('Classifier Plane with matched data round 0');
-    saveas(h12,['./GEO_frame_',num2str(iFrame),'_round0_trained_plane.tif']);
+%     saveas(h12,['./GEO_frame_',num2str(iFrame),'_round0_trained_plane.tif']);
 
 % plot the output image with these good ones
 current_all_seg_bw = zeros(size(labelMask));

@@ -22,7 +22,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 06-Mar-2013 17:15:12
+% Last Modified by GUIDE v2.5 23-Apr-2013 18:08:40
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -671,9 +671,41 @@ function pushbutton_load_nms_classifier_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+% userData = get(handles.figure1, 'UserData');
+% funParams = userData.crtProc.funParams_;
+% funParams.F_classifier = load_classifier_trained(userData.MD);
+% 
+% try
+%     userData.crtProc.sanityCheck;
+% catch ME
+% 
+%     errordlg([ME.message 'Please double check your data.'],...
+%                 'Setting Error','modal');
+%     return;
+% end
+% 
+% processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
+% 
+
+
+% --- Executes during object creation, after setting all properties.
+function pushbutton_traing_nms_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pushbutton_traing_nms (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+
+% --- Executes on button press in pushbutton_deletetraining.
+function pushbutton_deletetraining_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_deletetraining (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
 userData = get(handles.figure1, 'UserData');
-funParams = userData.crtProc.funParams_;
-funParams.F_classifier = load_classifier_trained(userData.MD);
+
+channelIndex = get(handles.listbox_selectedChannels, 'Userdata');
+ 
+funParams.F_classifier = cell(1,max(channelIndex));
 
 try
     userData.crtProc.sanityCheck;
@@ -685,11 +717,3 @@ catch ME
 end
 
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
-
-
-
-% --- Executes during object creation, after setting all properties.
-function pushbutton_traing_nms_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to pushbutton_traing_nms (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called

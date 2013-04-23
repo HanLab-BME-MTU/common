@@ -417,7 +417,7 @@ for iChannel = channelIndex
                 saveas(h1,[FilamentSegmentationChannelOutputDir,'/train_rb_',num2str(i_mark),'.jpg']);
                 
                 if(ch==27 || i_ind > length(training_ind))
-                   ood_bad_label = good_bad_label(1:length(training_ind));
+                   good_bad_label = good_bad_label(1:length(training_ind));
                     break;
                 end
                 
@@ -569,10 +569,10 @@ for iChannel = channelIndex
     
     
      % Linear Kernel
-  model_linear = svmtrain([label_good; label_bad], [feature_good; feature_bad], '-t 0');
-  [predict_label_L, accuracy_L, dec_values_L] = svmpredict([label_good; label_bad], [feature_good; feature_bad], model_linear);
- save([FilamentSegmentationChannelOutputDir,'/F_SVM_channel.mat'],'model_linear');
-   
+%   model_linear = svmtrain([label_good; label_bad], [feature_good; feature_bad], '-t 0');
+%   [predict_label_L, accuracy_L, dec_values_L] = svmpredict([label_good; label_bad], [feature_good; feature_bad], model_linear);
+%  save([FilamentSegmentationChannelOutputDir,'/F_SVM_channel.mat'],'model_linear');
+%    
     
     % feature_training = [feature_Length(training_ind) feature_MeanInt(training_ind)];
     % label_training = good_bad_label;
