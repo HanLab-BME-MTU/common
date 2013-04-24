@@ -111,13 +111,9 @@ classdef Process < hgsetget
             obj.resetDisplayMethod;
             obj.success_=false;
             
-            % Run the process!
-            try
-                obj.startTime_ = clock;
-                obj.funName_(obj.owner_,varargin{:});
-            catch runException
-                rethrow(runException)
-            end
+            % Run the process!        
+            obj.startTime_ = clock;
+            obj.funName_(obj.owner_,varargin{:});            
             
             % Update flags and set finishTime
             obj.success_=true;
