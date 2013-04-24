@@ -157,10 +157,10 @@ if(isempty(classifier_trained))
     
     % Set the slanted classification line cutoff as twice of the Otsu with
     % respect to the mode
-    T_xie_int =  abs(hotsu - mode_nms)*0.5 + mode_nms;
+    T_xie_int =  abs(hotsu - mode_nms)*2 + mode_nms;
     
     % And the length as Otsu threshold
-    T_xie_length = 0.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
+    T_xie_length = 2*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
     
     % Make a classification function as whether it is above the line
     T_xie_int_train = T_xie_int;
