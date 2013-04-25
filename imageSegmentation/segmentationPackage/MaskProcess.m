@@ -4,6 +4,10 @@ classdef MaskProcess < Process
     
     % Sebastien Besson Oct 2011
     
+    properties (SetAccess = protected)
+        maxIndex_;%For index-image segmentation, specifies the highest index present in any frame of the movie.
+    end
+    
     methods (Access = protected)
         function obj = MaskProcess(owner,name,funName, funParams,outFilePaths)
             % Constructor of class MaskProcess
@@ -101,11 +105,36 @@ classdef MaskProcess < Process
         end
         function output = getDrawableOutput(obj)
             output(1).name='Masks';
-            output(1).var='';
-            output(1).formatData=@MaskProcess.getMaskBoundaries;
+            output(1).var='mask';            
             output(1).type='overlay';
-            colors = hsv(numel(obj.owner_.channels_));
-            output(1).defaultDisplayMethod=@(x) LineDisplay('Color',colors(x,:));
+            if isempty(obj.maxIndex_)            
+                output(1).formatData=@MaskProcess.getMaskBoundaries;
+                colors = hsv(numel(obj.owner_.channels_));
+                output(1).defaultDisplayMethod=@(x) LineDisplay('Color',colors(x,:));                                
+            else
+                cMap = randomColormap(obj.maxIndex_,42);%random colors since index is arbitrary, but constant seed so we are consistent across frames.
+                output(1).formatData=@(x)(MaskProcess.getMaskOverlayImage(x,cMap));
+                %If index values for diff channels are to be differentiated
+                %they must be done at the level of the indexes.
+                output(1).defaultDisplayMethod=@ImageOverlayDisplay;
+                
+                output(2).name='Object Number';
+                output(2).var = 'number';
+                output(2).type = 'overlay';
+                output(2).formatData=@(x)(MaskProcess.getObjectNumberText(x,cMap));
+                output(2).defaultDisplayMethod=@TextDisplay;
+                
+                
+            end
+        end
+        
+        function setMaxIndex(obj,maxIndex)
+            assert(numel(maxIndex) == 1 && isposint(maxIndex),'Invalid maxIndex! Must be positive integer scalar!')
+            obj.maxIndex_ = maxIndex;
+        end
+        
+        function maxIndex = getMaxIndex(obj)            
+            maxIndex = obj.maxIndex_;
         end
         
     end
@@ -117,6 +146,14 @@ classdef MaskProcess < Process
                 'MSSSegmentationProcess'};
         end
         
+        function overlayIm = getMaskOverlayImage(mask,cMap)
+            
+            overlayIm = zeros([size(mask) 4]);
+            overlayIm(:,:,1:3) = ind2rgb(double(mask),cMap);%Convert to double to avoid ind2rgb adding 1            
+            overlayIm(:,:,4) = double(mask>0) * .5;%So it works with binary and indexed images                        
+            
+        end        
+        
         function boundaries = getMaskBoundaries(mask)
             % Format mask boundaries in xy-coordinate system
             b=bwboundaries(mask);
@@ -127,6 +164,16 @@ classdef MaskProcess < Process
             else
                 boundaries = [NaN NaN];
             end
-        end        
+        end
+        
+        function out = getObjectNumberText(mask,cMap)
+                       
+            out.ind = unique(mask(mask(:)>0));
+            out.Color = cMap(out.ind,:);
+            out.String = arrayfun(@num2str,out.ind,'Unif',0);
+            rp = regionprops(mask,'Centroid');            
+            out.Position = vertcat(rp(out.ind).Centroid);%regionprops pads zeros if indices are missing
+        
+        end
     end
 end

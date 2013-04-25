@@ -174,7 +174,7 @@ if isempty(p.SegProcessIndex)
     else        
         %We need to exclude this function's process, and ask user if more
         %than one
-        segProcList =  movieData.getProcessIndex('MaskProcess',Inf,0);
+        segProcList =  movieData.getProcessIndex('MaskProcess',Inf,true);
         segProcList(segProcList == iProc) = []; %Don't count this process
         iSegProc=1;
         if numel(segProcList) > 1

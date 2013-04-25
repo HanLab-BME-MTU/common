@@ -22,6 +22,9 @@ classdef ImageDisplay < MovieDataDisplay
             set(h,'Tag',tag,'CDataMapping','scaled');
             hAxes = get(h,'Parent');
             set(hAxes,'XLim',[0 size(data,2)],'YLim',[0 size(data,1)]);
+            usrData = get(h,'UserData');
+            usrData.DisplayClass = 'ImageDisplay';%Tag all objects displayed by this class, so they can be easily identified and cleared.
+            set(h,'UserData',usrData)            
             obj.applyImageOptions(h)
         end
         function updateDraw(obj,h,data)
@@ -33,7 +36,7 @@ classdef ImageDisplay < MovieDataDisplay
             % Clean existing image and set image at the bottom of the stack
             hAxes = get(h,'Parent');
             child=get(hAxes,'Children');
-            imChild = child(strcmp(get(child,'Type'),'image'));
+            imChild = child(cellfun(@(x)(isfield(x,'DisplayClass') && strcmp(x.DisplayClass,'ImageDisplay')),arrayfun(@(x)(get(x,'UserData')),child,'Unif',false)));%Clear all objects which were displayed by this class. Use arrayfun for get so it always returns cell.
             delete(imChild(imChild~=h));
             uistack(h,'bottom');
             
