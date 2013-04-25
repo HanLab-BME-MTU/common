@@ -28,10 +28,6 @@ classdef TestMovieData < TestCase
         end
         
         %% Tests
-        function testGetProcessIndex(self)
-            TestHelperMovieObject.testGetProcessIndex(self.movie);
-        end
-        
         function testRelocate(self)
             % Add process + package to test analysis relocation
             self.movie.addProcess(ThresholdProcess(self.movie));
@@ -70,67 +66,6 @@ classdef TestMovieData < TestCase
         function testClass(self)
             assertTrue(isa(self.movie,'MovieData'));
         end
-        
-        %% Process/package deletion
-        function testDeleteSingleProcess(self)
-            % Create process
-            self.movie.addProcess(ThresholdProcess(self.movie));
-            assertEqual(numel(self.movie.processes_),1);
-            
-            % Delete process and test deletion
-            self.movie.deleteProcess(1);
-            assertTrue(isempty(self.movie.processes_));
-        end
-        
-        function testDeleteInvalidProcess(self)
-            
-            % Create process
-            self.movie.addProcess(ThresholdProcess(self.movie));
-            assertEqual(numel(self.movie.processes_),1);
-            
-            % Delete process object
-            delete(self.movie.processes_{1});
-            assertEqual(numel(self.movie.processes_),1);
-            
-            % Delete process using deleteProcess method
-            self.movie.deleteProcess(1);
-            assertTrue(isempty(self.movie.processes_));
-        end
-        
-        function testDeleteSinglePackage(self)
-            % Create package
-            self.movie.addPackage(SegmentationPackage(self.movie));
-            assertEqual(numel(self.movie.packages_),1);
-            
-            % Delete package and test deletion
-            self.movie.deletePackage(1);
-            assertTrue(isempty(self.movie.packages_));
-        end
-        
-        function testDeleteInvalidPackage(self)
-            
-            % Create process in main movie
-            self.movie.addPackage(SegmentationPackage(self.movie));
-            assertEqual(numel(self.movie.packages_),1);
-            
-            % Delete package object
-            delete(self.movie.packages_{1});
-            assertEqual(numel(self.movie.packages_),1);
-            
-            % Delete package using deletePackage method
-            self.movie.deletePackage(1);
-            assertEqual(numel(self.movie.packages_),0);
-        end
-        
-        function testReplaceSingleProcess(self)
-            % Create process
-            self.movie.addProcess(ThresholdProcess(self.movie));
-            oldprocess = self.movie.getProcess(1);
-            
-            % Replace process
-            self.movie.replaceProcess(1, MaskRefinementProcess(self.movie))
-            assertTrue(isa(self.movie.getProcess(1),'MaskRefinementProcess'));
-            assertFalse(oldprocess.isvalid);
-        end
+
     end
 end
