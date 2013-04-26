@@ -55,14 +55,20 @@ if isempty(p.SegProcessIndex)
 end
 segProc = movieData.getProcess(p.SegProcessIndex);
 
+nChanTot = numel(movieData.channels_);
 if isempty(p.MaskChannelIndex)
-    %Just use the first one that has valid masks
-    p.MaskChannelIndex = find(segProc.checkChannelOutput,1,'first');
-    assert(~isempty(p.MaskChannelIndex),'No channels have valid masks! Please segment the movie before attempting sampling!')
-else    
-    %Make sure the sementation has been successfully completed for the
-    %specified channel
-    assert(numel(p.MaskChannelIndex) == 1 && segProc.checkChannelOutput(p.MaskChannelIndex),'Error, you must specify a single MaskChannelIndex for a channel which has valid segmentation!')
+    iHasMasks = find(segProc.checkChannelOutput(1:nChanTot));
+    if nnz(iHasMasks) > 1        
+        iSel = listdlg('ListString',arrayfun(@num2str,iHasMasks,'Unif',0),'SelectionMode','single',...
+            'Name','Mask Channel Selection','ListSize',[340 314],'PromptString',...
+            'Pick channel to use segmented adhesions from:');
+        if isempty(iSel); return, end
+        p.MaskChannelIndex = iHasMasks(iSel);
+    else
+        p.MaskChannelIndex = iHasMasks;
+    end    
+else
+    assert(segProc.checkChannelOutput(p.MaskChannelIndex),'No valid masks for selected segmentation process!');
 end
 
 
@@ -82,7 +88,7 @@ else
     maxIndex = 1;
 end
 
-%Set up and store the output directories for the window samples.
+%Set up and store the output directories for the samples.
 mkClrDir(p.OutputDirectory)
 outFilePaths =cell(numel(p.ProcessIndex),numel(movieData.channels_));
 for i=1:numel(p.ProcessIndex)

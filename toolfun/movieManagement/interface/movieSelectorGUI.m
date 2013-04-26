@@ -165,6 +165,7 @@ function packageList = getPackageList()
 
 packageList = {'BiosensorsPackage';...
     'FocalAdhesionPackage'
+    'FocalAdhesionSegmentationPackage'
     'IntegratorPackage'
     'QFSMPackage'
     'SegmentationPackage'

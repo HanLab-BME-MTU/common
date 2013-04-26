@@ -64,8 +64,8 @@ classdef SegmentationSamplingProcess < ImageSamplingProcess
         function samplableInput = getSamplableInput()
             % List process output that can be sampled
             processNames = horzcat('Raw images','DoubleProcessingProcess',...
-                repmat({'KineticAnalysisProcess'},1,3),'FlowAnalysisProcess');
-            samplableOutput = {'','','netMap','polyMap','depolyMap','speedMap'};
+                repmat({'KineticAnalysisProcess'},1,3),'FlowAnalysisProcess','ImageCorrectionProcess');
+            samplableOutput = {'','','netMap','polyMap','depolyMap','speedMap',''};
             samplableInput=cell2struct(vertcat(processNames,samplableOutput),...
                 {'processName','samplableOutput'});  
         end
