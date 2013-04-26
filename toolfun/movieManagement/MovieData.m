@@ -32,7 +32,8 @@ classdef  MovieData < MovieObject
     end
     
     properties (Transient =true)
-        reader        
+        reader
+        omeroSession_
     end
 
     methods
@@ -400,7 +401,7 @@ classdef  MovieData < MovieObject
             end
         end
         
-        function r = getReader(obj, varargin)
+        function r = getReader(obj)
             if ~isempty(obj.reader),
                 r = obj.reader;
                 return
@@ -409,7 +410,7 @@ classdef  MovieData < MovieObject
             if obj.isBF()
                 r = BioFormatsReader(obj.channels_(1).channelPath_, obj.bfSeries_);
             elseif obj.isOmero()
-                r = OmeroReader(obj.omeroId_, varargin{:});
+                r = OmeroReader(obj.omeroId_, obj.omeroSession_);
             else
                 r = TiffSeriesReader({obj.channels_.channelPath_});
             end
@@ -435,11 +436,11 @@ classdef  MovieData < MovieObject
         end
         
         function setSession(obj,session)
-            obj.getReader().setSession(session);
+            obj.omeroSession_ = session;
         end
         
         function session = getSession(obj)
-            session = obj.getReader().getSession();
+            session = obj.omeroSession_;
         end
         
         function setOmeroSave(obj, status)

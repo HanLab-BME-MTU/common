@@ -39,7 +39,8 @@ absolutePath = file.getAbsolutePath();
 path = absolutePath.substring(0, absolutePath.length()-name.length());
 
 % Load existing file annotations
-fas = getOmeroFileAnnotations(movieData.getSession(), movieData.omeroId_);
+fas = getImageFileAnnotations(movieData.getSession(), movieData.omeroId_,...
+    'include', namespace);
 
 if ~isempty(fas)
     % Read file of first found file annotation

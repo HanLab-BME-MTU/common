@@ -29,15 +29,16 @@ nMovies = numel(imageIDs);
 MD(nMovies) = MovieData();
 
 % Set temporary file to extract file annotations
+namespace = 'hms-tracking';
 zipPath = fullfile(ip.Results.path, 'tmp.zip');
 
 for i = 1 : nMovies
-    newID = imageIDs(i);
-    fas = getOmeroFileAnnotations(session, newID);
+    imageID = imageIDs(i);
+    fas = getImageFileAnnotations(session, imageID, 'include', namespace);
     
     if isempty(fas)
-        path = fullfile(ip.Results.path, num2str(newID));
-        MD(i) = omeroImport(session, newID, path);
+        path = fullfile(ip.Results.path, num2str(imageID));
+        MD(i) = omeroImport(session, imageID, path);
     else
         getFileAnnotationContent(session, fas(1), zipPath);
         

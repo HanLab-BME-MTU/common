@@ -12,10 +12,9 @@ classdef  OmeroReader < Reader
     
     methods
         %% Constructor
-        function obj = OmeroReader(imageID, varargin)
-            
+        function obj = OmeroReader(imageID, session)
             obj.imageID = imageID;
-            if nargin > 1, obj.setSession(varargin{1}); end
+            obj.setSession(session);
         end
         
         
@@ -95,38 +94,14 @@ classdef  OmeroReader < Reader
         
         %% Helper functions
         function image = getImage(obj)
-            if isempty(obj.image)
-                % Create list of image IDs
-                ids = java.util.ArrayList();
-                ids.add(java.lang.Long(obj.imageID));
-                
-                % Create parameters
-                param = omero.sys.ParametersI();
-                param.acquisitionData;
-                
-                % Retrieve list of images and select first one
-                list = obj.getSession().getContainerService().getImages('omero.model.Image', ids, param);
-                obj.image = list.get(0);
+            if isempty(obj.image),
+                obj.image = getImages(obj.getSession(), obj.imageID);
             end
             image = obj.image;
         end
         
         function pixels = getPixels(obj)
-            if isempty(obj.pixels)
-                % Retrieve pixels ID
-                pixelsId = obj.getImage().getPixels(0).getId.getValue;
-                
-                % Get PixelsI object
-                pixelsService=obj.getSession().getPixelsService();
-                obj.pixels=pixelsService.retrievePixDescription(pixelsId);
-            end
-            pixels = obj.pixels;
-        end
-        
-        function delete(obj)
-            if ~isempty(obj.session)
-                obj.session.close()
-            end
-        end
+            pixels = obj.getImage().getPrimaryPixels();
+        end       
     end
 end
