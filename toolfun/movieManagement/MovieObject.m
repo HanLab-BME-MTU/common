@@ -111,7 +111,11 @@ classdef  MovieObject < hgsetget
                     obj.setFilename(filename);
                 end
             else
-                fullPath = fullfile(obj.getPath(), obj.getFilename());
+                if all(hasEmptyComponent),
+                    fullPath = '';
+                else
+                    fullPath = fullfile(obj.getPath(), obj.getFilename());
+                end
             end
             
         end

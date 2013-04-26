@@ -144,9 +144,8 @@ classdef  MovieData < MovieObject
         end  
         
         %% ROI methods
-        function addROI(obj,roiMaskPath,outputDirectory,varargin)
+        function roiMovie = addROI(obj,roiMaskPath,outputDirectory,varargin)
             % Create a new object using the movie's channels
-            assert(exist(roiMaskPath,'file')==2,'The path to the roi mask does not exist');
             roiMovie = MovieData(obj.channels_,outputDirectory,varargin{:});
             copyfields = {'pixelSize_','timeInterval_','numAperture_',...
                 'camBitdepth_','processes_','packages_','nFrames_','imSize_'};
@@ -158,9 +157,15 @@ classdef  MovieData < MovieObject
             obj.rois_(end+1)=roiMovie;
         end
         
-        function deleteROI(obj,index)
+        function roi = getROI(obj, i)
+            assert(isscalar(i) && ismember(i, 1:numel(obj.rois_)));
+            roi = obj.rois_(i);
+        end
+        
+        function deleteROI(obj, index, askUser)
             assert(all(ismember(index,1:numel(obj.rois_))));
-            paths = arrayfun(@getFullPath,obj.rois_(index),'Unif',false);
+            if nargin < 3, askUser = true; end
+            paths = arrayfun(@(x) getFullPath(x, askUser), obj.rois_(index),'Unif',false);
             
             delete(obj.rois_(index)); % Delete objects
             % Save deleted object (to prevent future loading)
