@@ -25,15 +25,10 @@ classdef  MovieData < MovieObject
         
         % For Bio-Formats objects
         bfSeries_
-                
-        % For OMERO objects
-        omeroId_ 
-        omeroSave_ = false
     end
     
     properties (Transient =true)
         reader
-        omeroSession_
     end
 
     methods
@@ -429,28 +424,6 @@ classdef  MovieData < MovieObject
                 obj.reader.delete()
             end
         end
-
-        %% OMERO functions
-        function status = isOmero(obj)
-            status = ~isempty(obj.omeroId_);
-        end
-        
-        function setSession(obj,session)
-            obj.omeroSession_ = session;
-        end
-        
-        function session = getSession(obj)
-            session = obj.omeroSession_;
-        end
-        
-        function setOmeroSave(obj, status)
-            obj.omeroSave_ = status;
-        end
-        
-        function status = canUpload(obj)
-            status = obj.omeroSave_ && ~isempty(obj.getSession());
-        end
-        
 
     end
     methods(Static)        

@@ -13,6 +13,14 @@ classdef  MovieObject < hgsetget
     properties
         outputDirectory_  ='';      % Default output directory for all processes
         notes_                  % User's notes
+        
+        % For OMERO objects
+        omeroId_
+        omeroSave_ = false
+    end
+    
+    properties (Transient =true)
+        omeroSession_
     end
     
     methods
@@ -351,6 +359,27 @@ classdef  MovieObject < hgsetget
             % Reset the analysis of the movie object
             obj.processes_={};
             obj.packages_={};
+        end
+        
+        %% OMERO functions
+        function status = isOmero(obj)
+            status = ~isempty(obj.omeroId_);
+        end
+        
+        function setSession(obj,session)
+            obj.omeroSession_ = session;
+        end
+        
+        function session = getSession(obj)
+            session = obj.omeroSession_;
+        end
+        
+        function setOmeroSave(obj, status)
+            obj.omeroSave_ = status;
+        end
+        
+        function status = canUpload(obj)
+            status = obj.omeroSave_ && ~isempty(obj.getSession());
         end
         
     end
