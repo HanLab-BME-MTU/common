@@ -1,5 +1,5 @@
-function omeroSave(movieData)
-% omeroSave uploads the outputDirectory into OMERO as a file annotation
+function omeroSave(movieObject)
+% OMEROSAVE uploads the output directory into OMERO as a file annotation
 %
 % omeroSave first create a zipped archive of all the content of the movie
 % output directory. It then looks for a file annotation with the correct
@@ -9,11 +9,11 @@ function omeroSave(movieData)
 % has been created, a new file annotation linking it to the image is
 % created and uploaded to the server.
 %
-% omeroSave(movieData)
+% omeroSave(movieObject)
 %
 % Input:
 % 
-%   movieData - A MovieData object
+%   movieObject - A MovieData object
 %
 
 % Sebastien Besson, Jun 2012 (last modified Oct 2012)
@@ -24,13 +24,13 @@ zipName = 'HMS-tracking.zip';
 
 % Input check
 ip=inputParser;
-ip.addRequired('movieData',@(x) isa(x,'MovieData') && x.isOmero() && x.canUpload());
-ip.parse(movieData);
+ip.addRequired('movieObject',@(x) isa(x,'MovieData') && x.isOmero() && x.canUpload());
+ip.parse(movieObject);
 
 % Zip output directory for attachment
-zipPath = fileparts(movieData.outputDirectory_);
+zipPath = fileparts(movieObject.outputDirectory_);
 zipFullPath = fullfile(zipPath,zipName);
-zip(zipFullPath, movieData.outputDirectory_)
+zip(zipFullPath, movieObject.outputDirectory_)
 
 % Create java io File
 file = java.io.File(zipFullPath);
@@ -39,7 +39,7 @@ absolutePath = file.getAbsolutePath();
 path = absolutePath.substring(0, absolutePath.length()-name.length());
 
 % Load existing file annotations
-fas = getImageFileAnnotations(movieData.getSession(), movieData.omeroId_,...
+fas = getImageFileAnnotations(movieObject.getSession(), movieObject.omeroId_,...
     'include', namespace);
 
 if ~isempty(fas)
@@ -55,11 +55,11 @@ originalFile.setSha1(rstring(''));
 originalFile.setMimetype(rstring('application/zip'));
 
 % now we save the originalFile object
-iUpdate = movieData.getSession().getUpdateService();
+iUpdate = movieObject.getSession().getUpdateService();
 originalFile = iUpdate.saveAndReturnObject(originalFile);
 
 % Initialize the service to load the raw data
-rawFileStore = movieData.getSession().createRawFileStore();
+rawFileStore = movieObject.getSession().createRawFileStore();
 rawFileStore.setFileId(originalFile.getId().getValue());
 
 %  open file and read it
@@ -88,7 +88,7 @@ if isempty(fas)
     % now link the image and the annotation
     link = omero.model.ImageAnnotationLinkI;
     link.setChild(fa);
-    images = getImages(movieData.getSession(), movieData.omeroId_);
+    images = getImages(movieObject.getSession(), movieObject.omeroId_);
     if ~isempty(images)
         link.setParent(images(1));
         % save the link back to the server.

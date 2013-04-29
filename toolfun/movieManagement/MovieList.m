@@ -148,6 +148,11 @@ classdef MovieList < MovieObject
                 movefile(fullPath,[fullPath(1:end-3) 'old'],'f');
             end
             save(fullPath, 'ML');
+            
+            % Save to OMERO if OMERO object
+            if ML.isOmero() && ML.canUpload(),
+                omeroSave(ML);
+            end
         end
     end
     

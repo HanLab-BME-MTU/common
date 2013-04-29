@@ -378,6 +378,14 @@ classdef  MovieObject < hgsetget
             obj.omeroSave_ = status;
         end
         
+        function id = getOmeroId(obj)
+            id = obj.omeroId_;
+        end
+        
+        function setOmeroId(obj, id)
+            obj.omeroId_ = id;
+        end
+        
         function status = canUpload(obj)
             status = obj.omeroSave_ && ~isempty(obj.getSession());
         end
