@@ -55,7 +55,7 @@ end
 if outLevel > 0
     
     for iVar = 1:nVar
-        outTS(iVar,detectOutliers(TS(iVar,:),outLevel)) = NaN;
+        outTS(iVar,detectOutliers(outTS(iVar,:),outLevel)) = NaN;
     end
     
 end
