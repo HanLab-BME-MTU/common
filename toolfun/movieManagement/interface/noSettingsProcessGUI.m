@@ -1,35 +1,35 @@
-function varargout = protrusionSamplingProcessGUI(varargin)
-% protrusionSamplingProcessGUI M-file for protrusionSamplingProcessGUI.fig
-%      protrusionSamplingProcessGUI, by itself, creates a new protrusionSamplingProcessGUI or raises the existing
+function varargout = noSettingsProcessGUI(varargin)
+% noSettingsProcessGUI M-file for noSettingsProcessGUI.fig
+%      noSettingsProcessGUI, by itself, creates a new noSettingsProcessGUI or raises the existing
 %      singleton*.
 %
-%      H = protrusionSamplingProcessGUI returns the handle to a new protrusionSamplingProcessGUI or the handle to
+%      H = noSettingsProcessGUI returns the handle to a new noSettingsProcessGUI or the handle to
 %      the existing singleton*.
 %
-%      protrusionSamplingProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in protrusionSamplingProcessGUI.M with the given input arguments.
+%      noSettingsProcessGUI('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in noSettingsProcessGUI.M with the given input arguments.
 %
-%      protrusionSamplingProcessGUI('Property','Value',...) creates a new protrusionSamplingProcessGUI or raises the
+%      noSettingsProcessGUI('Property','Value',...) creates a new noSettingsProcessGUI or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before protrusionSamplingProcessGUI_OpeningFcn gets called.  An
+%      applied to the GUI before noSettingsProcessGUI_OpeningFcn gets called.  An
 %      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to protrusionSamplingProcessGUI_OpeningFcn via varargin.
+%      stop.  All inputs are passed to noSettingsProcessGUI_OpeningFcn via varargin.
 %
 %      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
 %      instance to run (singleton)".
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
-% Edit the above text to modify the response to help protrusionSamplingProcessGUI
+% Edit the above text to modify the response to help noSettingsProcessGUI
 
-% Last Modified by GUIDE v2.5 02-Aug-2011 13:40:27
+% Last Modified by GUIDE v2.5 29-Apr-2013 16:34:47
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @protrusionSamplingProcessGUI_OpeningFcn, ...
-                   'gui_OutputFcn',  @protrusionSamplingProcessGUI_OutputFcn, ...
+                   'gui_OpeningFcn', @noSettingsProcessGUI_OpeningFcn, ...
+                   'gui_OutputFcn',  @noSettingsProcessGUI_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
@@ -44,19 +44,23 @@ end
 % End initialization code - DO NOT EDIT
 
 
-% --- Executes just before protrusionSamplingProcessGUI is made visible.
-function protrusionSamplingProcessGUI_OpeningFcn(hObject,eventdata,handles,varargin)
+% --- Executes just before noSettingsProcessGUI is made visible.
+function noSettingsProcessGUI_OpeningFcn(hObject,eventdata,handles,varargin)
 
 processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:});
 
-% Choose default command line output for protrusionSamplingProcessGUI
+userData = get(handles.figure1, 'UserData');
+funParams = userData.crtProc.funParams_;
+
+
+% Choose default command line output for noSettingsProcessGUI
 handles.output = hObject;
 
 guidata(hObject, handles);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = protrusionSamplingProcessGUI_OutputFcn(~, ~, handles) 
+function varargout = noSettingsProcessGUI_OutputFcn(~, ~, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
