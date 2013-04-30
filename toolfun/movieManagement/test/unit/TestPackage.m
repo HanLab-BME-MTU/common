@@ -1,4 +1,4 @@
-classdef TestPackage < TestCase
+classdef TestPackage < handle
     
     properties
         movie
@@ -6,13 +6,8 @@ classdef TestPackage < TestCase
     end
     
     methods
-        function self = TestPackage(name)
-            self = self@TestCase(name);
-        end
-        
         %% Set up and tear down methods
         function setUp(self)
-            self.movie = MovieData();
             self.package = MockPackage(self.movie);
             self.movie.addPackage(self.package);
         end
@@ -54,7 +49,7 @@ classdef TestPackage < TestCase
             self.movie.deletePackage(1);
             assertTrue(isempty(self.movie.packages_));
         end
-
+        
         %% Tests
         function testCreateDefaultProcess(self)
             self.package.createDefaultProcess(1);
@@ -62,7 +57,7 @@ classdef TestPackage < TestCase
                 self.movie.getProcess(1));
             assertTrue(isa(self.package.getProcess(1),...
                 self.package.getProcessClassNames{1}));
-
+            
         end
     end
 end

@@ -1,18 +1,12 @@
-classdef TestProcess < TestCase
-    
+classdef TestProcess < handle
     properties
         movie
         process
     end
     
     methods
-        function self = TestProcess(name)
-            self = self@TestCase(name);
-        end
-        
         %% Set up and tear down methods
         function setUp(self)
-            self.movie = MovieData();
             self.process = MockProcess(self.movie);
             self.movie.addProcess(self.process);
         end
