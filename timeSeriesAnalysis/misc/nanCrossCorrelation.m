@@ -110,7 +110,6 @@ switch corrT
             xCorr = [fliplr(CCR) CCL(2:end)];
             pVal  = pvalPearson('b',xCorr,nObs);
             
-            
         end
         
         
