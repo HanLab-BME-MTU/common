@@ -61,18 +61,13 @@ switch corrT
     
     case 'Pearson'
         
-        
-        
-        SX = flipud(buffer(x,nObs,nObs - 1));%delay x(t-n)
-        SY = flipud(buffer(y,nObs,nObs - 1));%delay y(t-n)
-        
-        SX(maxLag+2:end,:) = [];
-        SY(maxLag+2:end,:) = [];
-        
-        
         if robustOn
             %NaN and outliers have no influence. Well, not too much.
+            SX = flipud(buffer(x,nObs,nObs - 1));%delay x(t-n)
+            SY = flipud(buffer(y,nObs,nObs - 1));%delay y(t-n)
             
+            SX(maxLag+2:end,:) = [];
+            SY(maxLag+2:end,:) = [];
             SX = SX + tril(nan(size(SX)));
             SY = SY + tril(nan(size(SY)));
             Y  = repmat(y,1,maxLag+1)+ tril(nan(size(SY)))';
@@ -88,14 +83,32 @@ switch corrT
             posLag(1,:) = [];
             negLag(1,:) = [];
             
-            normalizationR = cell2mat(cellfun(@(x,y) mad(x,1)/mad(y,1),lagX,Y,'Unif',0));
-            normalizationL = cell2mat(cellfun(@(x,y) mad(x,1)/mad(y,1),X,lagY,'Unif',0));
+            normalizationR = cell2mat(cellfun(@(x,y) nanstd(x)/nanstd(y),lagX,Y,'Unif',0));
+            normalizationL = cell2mat(cellfun(@(x,y) nanstd(x)/nanstd(y),X,lagY,'Unif',0));
             
             CCL   = normalizationR.*posLag;
             CCR   = normalizationL.*negLag;
-
-        else
             
+        else
+            %NaN have no influence
+            normalization   = ( (nObs - 1)*nanstd(x)*nanstd(y) )^-1;
+            x = x - nanmean(x);
+            y = y - nanmean(y);
+            
+            x(isnan(x)) = 0;
+            y(isnan(y)) = 0;
+                        
+            
+            SX = flipud(buffer(x,nObs,nObs - 1));%delay x(t-n)
+            SY = flipud(buffer(y,nObs,nObs - 1));%delay y(t-n)
+            
+            SX(maxLag+2:end,:) = [];
+            SY(maxLag+2:end,:) = [];
+            
+            CCR   = normalization*x'*SY';
+            CCL   = normalization*y'*SX';
+            xCorr = [fliplr(CCR) CCL(2:end)];
+            pVal  = pvalPearson('b',xCorr,nObs);
             
             
         end
