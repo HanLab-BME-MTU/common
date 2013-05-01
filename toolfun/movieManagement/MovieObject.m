@@ -383,6 +383,7 @@ classdef  MovieObject < hgsetget
         end
         
         function setOmeroId(obj, id)
+            obj.checkPropertyValue('omeroId_', id);
             obj.omeroId_ = id;
         end
         
@@ -443,6 +444,8 @@ classdef  MovieObject < hgsetget
             validator=[];
             if ismember(property,{'outputDirectory_','notes_'})
                 validator=@ischar;
+            elseif strcmp(property, 'omeroId_')
+                validator = @isposint;
             end
         end
         
