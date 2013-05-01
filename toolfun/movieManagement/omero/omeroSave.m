@@ -40,10 +40,10 @@ path = absolutePath.substring(0, absolutePath.length()-name.length());
 
 % Load existing file annotations
 if isa(movieObject, 'MovieData')
-    fas = getImageFileAnnotations(movieObject.getSession(),...
+    fas = getImageFileAnnotations(movieObject.getOmeroSession(),...
         movieObject.getOmeroId(), 'include', namespace);
 else
-    fas = getDatasetFileAnnotations(movieObject.getSession(),...
+    fas = getDatasetFileAnnotations(movieObject.getOmeroSession(),...
         movieObject.getOmeroId(), 'include', namespace);
 end
 
@@ -60,11 +60,11 @@ originalFile.setSha1(rstring(''));
 originalFile.setMimetype(rstring('application/zip'));
 
 % now we save the originalFile object
-iUpdate = movieObject.getSession().getUpdateService();
+iUpdate = movieObject.getOmeroSession().getUpdateService();
 originalFile = iUpdate.saveAndReturnObject(originalFile);
 
 % Initialize the service to load the raw data
-rawFileStore = movieObject.getSession().createRawFileStore();
+rawFileStore = movieObject.getOmeroSession().createRawFileStore();
 rawFileStore.setFileId(originalFile.getId().getValue());
 
 %  open file and read it
@@ -85,12 +85,12 @@ if isempty(fas)
     
     % Create link the image and the annotation
     if isa(movieObject, 'MovieData')
-        image = getImages(movieObject.getSession(), movieObject.getOmeroId());
+        image = getImages(movieObject.getOmeroSession(), movieObject.getOmeroId());
         assert(isa(image, 'omero.model.ImageI'));
         link = omero.model.ImageAnnotationLinkI;
         link.setParent(image)
     else
-        dataset = getDatasets(movieObject.getSession(), movieObject.getOmeroId());
+        dataset = getDatasets(movieObject.getOmeroSession(), movieObject.getOmeroId());
         assert(isa(dataset, 'omero.model.DatasetI'));
         link = omero.model.DatasetAnnotationLinkI;
         link.setParent(dataset)

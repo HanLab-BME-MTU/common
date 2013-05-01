@@ -401,7 +401,7 @@ classdef  MovieData < MovieObject
             if obj.isBF()
                 r = BioFormatsReader(obj.channels_(1).channelPath_, obj.bfSeries_);
             elseif obj.isOmero()
-                r = OmeroReader(obj.getOmeroId(), obj.omeroSession_);
+                r = OmeroReader(obj.getOmeroId(), obj.getOmeroSession());
             else
                 r = TiffSeriesReader({obj.channels_.channelPath_});
             end

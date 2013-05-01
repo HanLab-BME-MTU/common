@@ -366,11 +366,11 @@ classdef  MovieObject < hgsetget
             status = ~isempty(obj.omeroId_);
         end
         
-        function setSession(obj,session)
+        function setOmeroSession(obj,session)
             obj.omeroSession_ = session;
         end
         
-        function session = getSession(obj)
+        function session = getOmeroSession(obj)
             session = obj.omeroSession_;
         end
         
@@ -388,7 +388,7 @@ classdef  MovieObject < hgsetget
         end
         
         function status = canUpload(obj)
-            status = obj.omeroSave_ && ~isempty(obj.getSession());
+            status = obj.omeroSave_ && ~isempty(obj.getOmeroSession());
         end
         
     end
@@ -429,7 +429,7 @@ classdef  MovieObject < hgsetget
                 % Perform sanityCheck using the input path
                 [moviePath,movieName,movieExt]=fileparts(moviepath);
                 if nargin>1 && isa(varargin{1}, 'omero.api.ServiceFactoryPrxHelper')
-                    obj.setSession(varargin{1});
+                    obj.setOmeroSession(varargin{1});
                     obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
                 else
                     obj.sanityCheck(moviePath,[movieName movieExt], varargin{:});

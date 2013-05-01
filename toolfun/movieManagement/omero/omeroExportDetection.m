@@ -32,8 +32,8 @@ ip.parse(movieData, movieInfo);
 
 % Retrieve image and update service
 image = movieData.getReader().getImage();
-roiService = movieData.getSession().getRoiService();
-updateService = movieData.getSession().getUpdateService();
+roiService = movieData.getOmeroSession().getRoiService();
+updateService = movieData.getOmeroSession().getUpdateService();
 
 % Get previously saved ROIs with same namespace
 roiOptions = omero.api.RoiOptions();
@@ -50,7 +50,7 @@ if rois.size()> 0
     end
     
     %Delete the ROIs
-    movieData.getSession().getDeleteService().queueDelete(list);
+    movieData.getOmeroSession().getDeleteService().queueDelete(list);
 end
 
 % Create a new ROI to attach to the image
