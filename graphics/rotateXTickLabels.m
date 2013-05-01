@@ -6,16 +6,17 @@
 % Francois Aguet, 22 Feb 2011
 % Last modified: 08/15/2012
 
-function ht = rotateXTickLabels(ha, varargin)
+function ht = rotateXTickLabels(varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('ha', @ishandle);
+ip.addOptional('ha', gca, @ishandle);
 ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
 ip.addParamValue('AdjustFigure', true, @islogical);
 ip.addParamValue('YOffset', 0.02);
-ip.parse(ha, varargin{:});
+ip.parse(varargin{:});
+ha = ip.Results.ha;
 
 xa = get(ha, 'XTick');
 xla = get(ha, 'XTickLabel');
