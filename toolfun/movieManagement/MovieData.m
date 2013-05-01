@@ -105,10 +105,6 @@ classdef  MovieData < MovieObject
             obj.checkPropertyValue('binning_',value);
             obj.binning_=value;
         end
-        function setOmeroId(obj, value)
-            obj.checkPropertyValue('omeroId_',value);
-            obj.omeroId_=value;
-        end
 
         function fileNames = getImageFileNames(obj,iChan)
             % Retrieve the names of the images in a specific channel
@@ -405,7 +401,7 @@ classdef  MovieData < MovieObject
             if obj.isBF()
                 r = BioFormatsReader(obj.channels_(1).channelPath_, obj.bfSeries_);
             elseif obj.isOmero()
-                r = OmeroReader(obj.omeroId_, obj.omeroSession_);
+                r = OmeroReader(obj.getOmeroId(), obj.omeroSession_);
             else
                 r = TiffSeriesReader({obj.channels_.channelPath_});
             end
@@ -458,7 +454,7 @@ classdef  MovieData < MovieObject
                     validator=@(x) isa(x,'Channel');
                 case {'movieDataPath_','movieDataFileName_'}
                     validator=@ischar;
-                case {'pixelSize_', 'timeInterval_','numAperture_','magnification_','binning_','omeroId_'}
+                case {'pixelSize_', 'timeInterval_','numAperture_','magnification_','binning_'}
                     validator=@(x) all(isnumeric(x)) && all(x>0);
                 case {'camBitdepth_'}
                     validator=@(x) isscalar(x) && x>0 && ~mod(x, 2);

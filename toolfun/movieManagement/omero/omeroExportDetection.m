@@ -38,7 +38,7 @@ updateService = movieData.getSession().getUpdateService();
 % Get previously saved ROIs with same namespace
 roiOptions = omero.api.RoiOptions();
 roiOptions.namespace = omero.rtypes.rstring(ns);
-rois = roiService.findByImage(movieData.omeroId_, roiOptions).rois();
+rois = roiService.findByImage(movieData.getOmeroId(), roiOptions).rois();
 
 if rois.size()> 0
     % Create a list of detection ROIs to remove
