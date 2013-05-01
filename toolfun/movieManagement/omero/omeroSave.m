@@ -16,7 +16,7 @@ function omeroSave(movieObject)
 %   movieObject - A MovieData object
 %
 
-% Sebastien Besson, Jun 2012 (last modified Oct 2012)
+% Sebastien Besson, Jun 2012 (last modified May 2013)
 
 % To be replaced by omero.constants....
 namespace = 'hms-tracking';
@@ -24,7 +24,7 @@ zipName = 'HMS-tracking.zip';
 
 % Input check
 ip=inputParser;
-ip.addRequired('movieObject',@(x) isa(x,'MovieData') && x.isOmero() && x.canUpload());
+ip.addRequired('movieObject',@(x) isa(x, 'MovieObject') && x.isOmero() && x.canUpload());
 ip.parse(movieObject);
 
 % Zip output directory for attachment
@@ -39,8 +39,13 @@ absolutePath = file.getAbsolutePath();
 path = absolutePath.substring(0, absolutePath.length()-name.length());
 
 % Load existing file annotations
-fas = getImageFileAnnotations(movieObject.getSession(), movieObject.omeroId_,...
-    'include', namespace);
+if isa(movieObject, 'MovieData')
+    fas = getImageFileAnnotations(movieObject.getSession(),...
+        movieObject.getOmeroId(), 'include', namespace);
+else
+    fas = getDatasetFileAnnotations(movieObject.getSession(),...
+        movieObject.getOmeroId(), 'include', namespace);
+end
 
 if ~isempty(fas)
     % Read file of first found file annotation
@@ -73,28 +78,33 @@ fclose(fid);
 originalFile = rawFileStore.save();
 % Important to close the service
 rawFileStore.close();
+% Delete zip file
+delete(zipFullPath);
 
 if isempty(fas)
+    
+    % Create link the image and the annotation
+    if isa(movieObject, 'MovieData')
+        image = getImages(movieObject.getSession(), movieObject.getOmeroId());
+        assert(isa(image, 'omero.model.ImageI'));
+        link = omero.model.ImageAnnotationLinkI;
+        link.setParent(image)
+    else
+        dataset = getDatasets(movieObject.getSession(), movieObject.getOmeroId());
+        assert(isa(dataset, 'omero.model.DatasetI'));
+        link = omero.model.DatasetAnnotationLinkI;
+        link.setParent(dataset)
+    end
+        
     % now we have an original File in DB and raw data uploaded.
     % We now need to link the Original file to the image using the File annotation object. That's the way to do it.
     fa = omero.model.FileAnnotationI;
     fa.setFile(originalFile);
     fa.setDescription(rstring('HMS tracking')); % The description set above e.g. PointsModel
     fa.setNs(rstring(namespace)) % The name space you have set to identify the file annotation.
-    
-    % save the file annotation.
-    fa = iUpdate.saveAndReturnObject(fa);
-    
-    % now link the image and the annotation
-    link = omero.model.ImageAnnotationLinkI;
+    fa = iUpdate.saveAndReturnObject(fa); % save the file annotation
+  
+    % Add file annotation to the link and save it
     link.setChild(fa);
-    images = getImages(movieObject.getSession(), movieObject.omeroId_);
-    if ~isempty(images)
-        link.setParent(images(1));
-        % save the link back to the server.
-        iUpdate.saveAndReturnObject(link);
-    end
+    iUpdate.saveAndReturnObject(link);
 end
-
-% Delete zip file
-delete(zipFullPath);
