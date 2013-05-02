@@ -16,7 +16,13 @@ classdef TestProcess < handle
             delete(self.process);
         end
         
-        %% Tests
+        % Basic tests
+        function testIsProcess(self)
+            assertTrue(Process.isProcess(class(self.movie.getProcess(1))));
+            assertFalse(Process.isProcess('InvalidProcessClass'));
+        end
+        
+        %% Get functions
         function testGetProcess(self)
             assertEqual(self.movie.getProcess(1), self.process);
         end
@@ -34,6 +40,7 @@ classdef TestProcess < handle
             assertEqual(iProc, [1 2]);
         end
         
+        %% Delete function
         function testDeleteProcess(self)
             % Delete process and test deletion
             self.movie.deleteProcess(1);

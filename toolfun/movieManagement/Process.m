@@ -231,7 +231,7 @@ classdef Process < hgsetget
     
     methods (Static)
         function status = isProcess(name)
-            status = isSubclass(name, 'Process');
+            status = exist(name, 'class') == 8 && isSubclass(name, 'Process');
         end
         
         function status = hasGUI(name)
