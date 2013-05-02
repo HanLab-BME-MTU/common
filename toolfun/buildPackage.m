@@ -30,9 +30,7 @@ function buildPackage(varargin)
 % Input check
 ip = inputParser;
 isClass = @(x) exist(x,'class')==8;
-isPackageCell = @(x) iscell(x) && all(cellfun(isClass, x));
-isPackage = @(x) ischar(x) && isClass(x);
-ip.addOptional('packageList',{},@(x) isPackageCell(x) || isPackage(x));
+ip.addOptional('packageList',{},@(x) ischar(x) || iscell(x));
 ip.addOptional('outDir','',@ischar);
 ip.addParamValue('exclude', {'extern' ,'omero'}, @(x) ischar(x) || iscell(x));
 ip.parse(varargin{:});
