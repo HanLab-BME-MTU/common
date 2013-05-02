@@ -35,6 +35,11 @@ function [clusterInfo, pointToClusterMap] = MeanShiftClustering( ptData, bandwid
 %                             If the distance between two modes is less than this value 
 %                             then the two corresponding clusters will be merged.
 %                             Default: 2 * bandwidth
+%
+%              kernelSupport: specifies the maximum distance of points to
+%                             include when evaluating the mean-shift kernel.
+%                             Default: =2*bandwidth for 'gaussian' and user-specified kernel
+%                                      =banwidth for 'flat' kernel;
 %                             
 %              flagUseKDTree: true/false
 %                             specifies whether or not to use the KD-Tree
@@ -81,6 +86,7 @@ function [clusterInfo, pointToClusterMap] = MeanShiftClustering( ptData, bandwid
     p.addParamValue( 'kernel', 'gaussian', @(x) ( (ischar(x) && ismember(x, {'gaussian', 'flat'})) || (isa(x,'function_handle') && nargin(x) >= 3 && abs(nargout(x)) >= 1)) );
     p.addParamValue( 'method', 'optimized', @(x) ( (ischar(x) && ismember(x, {'standard', 'optimized'})) ) );
     p.addParamValue( 'maxIterations', 500, @(x) (isscalar(x)) );
+    p.addParamValue('kernelSupport',[],@(x)(isscalar(x) && x > 0));
     p.addParamValue( 'minClusterDistance', 2 * bandwidth, @(x) (isscalar(x)) );
     p.addParamValue( 'flagUseKDTree', true, @(x) (isscalar(x) && islogical(x)) );
     p.addParamValue( 'flagDebug', false, @(x) (isscalar(x) && islogical(x)) );
@@ -97,7 +103,7 @@ function [clusterInfo, pointToClusterMap] = MeanShiftClustering( ptData, bandwid
        
         switch p.Results.kernel        
             case 'gaussian'                
-                kernelfunc = @update_mean_gaussian_kernel;                      
+                kernelfunc = @update_mean_gaussian_kernel;
             case 'flat'                             
                 kernelfunc = @update_mean_flat_kernel;                
         end
@@ -105,21 +111,31 @@ function [clusterInfo, pointToClusterMap] = MeanShiftClustering( ptData, bandwid
     else
           kernelfunc = p.Results.kernel;          
     end
+    
+    if isempty(p.Results.kernelSupport)
+        if strcmp(p.Results.kernel,'flat')           
+            kernelSupport = bandwidth;
+        else
+            kernelSupport = 2*bandwidth;
+        end
+    else
+        kernelSupport = p.Results.kernelSupport;
+    end
 
     switch meanShiftMethod
         
         case 'standard'
             
-            [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug );
+            [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug, kernelSupport);
             
         case 'optimized'
             
-            [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug );            
+            [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug, kernelSupport);            
     end
     
 end
 
-function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug )
+function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug, kernelSupport)
 
     threshConvergence = 1e-3 * bandwidth;    
     [numDataPoints, numDataDims] = size( ptData );           
@@ -166,9 +182,9 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
 
                 % get nearest points
                 if flagUseKDTree
-                    [ptIdNearest] = kdtree_points.ball( ptOldMean, bandwidth );
+                    [ptIdNearest] = kdtree_points.ball( ptOldMean, kernelSupport);
                 else                    
-                    ptIdNearest = exhaustive_ball_query( ptData, ptOldMean, bandwidth );                       
+                    ptIdNearest = exhaustive_ball_query( ptData, ptOldMean, kernelSupport);                       
                 end
                 
                 ptNearest = ptData( ptIdNearest, : );                            
@@ -239,7 +255,7 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
     end
 end
 
-function [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug )
+function [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug, kernelSupport)
 
     threshConvergence = 1e-3 * bandwidth;    
     [numDataPoints, numDataDims] = size( ptData );           
@@ -274,9 +290,9 @@ function [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth
 
                 % get nearest points
                 if flagUseKDTree
-                    [ptIdNearest] = kdtree_points.ball( ptOldMean, bandwidth );
+                    [ptIdNearest] = kdtree_points.ball( ptOldMean, kernelSupport );
                 else                    
-                    ptIdNearest = exhaustive_ball_query( ptData, ptOldMean, bandwidth );                       
+                    ptIdNearest = exhaustive_ball_query( ptData, ptOldMean, kernelSupport );                       
                 end
                 ptNearest = ptData( ptIdNearest, : );
                 
@@ -298,9 +314,9 @@ function [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth
             
             % get point density around the cluster center
             if flagUseKDTree
-                ptIdNearest = kdtree_points.ball( ptClusterCenter, bandwidth );
+                ptIdNearest = kdtree_points.ball( ptClusterCenter, kernelSupport );
             else                    
-                ptIdNearest = exhaustive_ball_query( ptData, ptClusterCenter, bandwidth );                       
+                ptIdNearest = exhaustive_ball_query( ptData, ptClusterCenter, kernelSupport );                       
             end            
             curClusterCenterDensity = numel( ptIdNearest );
             
