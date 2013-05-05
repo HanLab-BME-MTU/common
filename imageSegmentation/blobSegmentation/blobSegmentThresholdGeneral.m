@@ -1,4 +1,4 @@
-function maskBlobs = blobSegmentThresholdGeneral(image,thresholdMethod,...
+function [maskBlobs, f] = blobSegmentThresholdGeneral(image,thresholdMethod,...
     filterNoise,filterBackground,minSize,plotRes,saveDir,plotName)
 %BLOBSEGMENTTHRESHOLDGENERAL segments blobs in 2D images via various thresholding methods
 %
@@ -66,6 +66,9 @@ mask = ones(size(image));
 if ~logical(mask)
     error('Mask must be a logical image.');
 end
+
+% Initialize figure output
+f = -ones(1,3);
     
 %% Segmentation
 
@@ -156,29 +159,31 @@ maskBlobs = ismember(labels, idx);
 
 if plotRes
     
-    figHandle1 = figure('Name',[plotName '_segmentation_' ...
-        thresholdMethod '_noise' num2str(filterNoise) ...
-        '_background' num2str(filterBackground)]);
-
-    %subplot 1: original image
     
     imageScaled = (image - prctile(image(:),1)) / (prctile(image(:),99) - prctile(image(:),1));
     imageScaled(imageScaled<0) = 0;
     imageScaled(imageScaled>1) = 1;
-    subplot(1,3,1)
-    imshow(imageScaled,[])
     
-    %subplot 2: bandpass-filtered image
+    % plot 1: original image
+    % subplot(1,3,1)
+    % imshow(imageScaled,[])
     
+    %plot 2: bandpass-filtered image
+    f(1) = figure('Name',[plotName '_filteredimage_' ...
+    thresholdMethod '_noise' num2str(filterNoise) ...
+    '_background' num2str(filterBackground)]);
+
     imageScaled2 = (imageFilteredMinusBackground - prctile(imageFilteredMinusBackground(:),1)) / ...
         (prctile(imageFilteredMinusBackground(:),99) - prctile(imageFilteredMinusBackground(:),1));
     imageScaled2(imageScaled2<0) = 0;
     imageScaled2(imageScaled2>1) = 1;
-    subplot(1,3,2)
     imshow(imageScaled2,[])
     
-    %subplot 3: mask edges
-
+    %plot3: mask edges
+    f(2) = figure('Name',[plotName '_segmentation_' ...
+        thresholdMethod '_noise' num2str(filterNoise) ...
+        '_background' num2str(filterBackground)]);
+    
     %get the blob edges from the final blob mask
     SE = strel('square',3);
     edgesBlobs = imdilate(maskBlobs,SE) - maskBlobs;
@@ -192,15 +197,11 @@ if plotRes
     image3Color(:,:,1) = image3Color(:,:,1) + edgesBlobs;
     
     %plot mask edges
-    subplot(1,3,3)
     imshow(image3Color,[]);
     
-%     saveas(figHandle1,fullfile(saveDir,[plotName '_segmentation_' ...
-%         thresholdMethod '_noise' num2str(filterNoise) ...
-%         '_background' num2str(filterBackground)]),'fig');
-    
+
     %also plot intensity histogram and threshold
-    figHandle2 = figure('Name',[plotName '_histogram_' ...
+    f(3) = figure('Name',[plotName '_histogram_' ...
         thresholdMethod '_noise' num2str(filterNoise) ...
         '_background' num2str(filterBackground)]);
     
@@ -209,12 +210,7 @@ if plotRes
     hold on
     plot(level*[1 1],[0 max(n)],'r','LineWidth',2)
     
-%     saveas(figHandle2,fullfile(saveDir,[plotName '_histogram_' ...
-%         thresholdMethod '_noise' num2str(filterNoise) ...
-%         '_background' num2str(filterBackground)]),'fig');
-%     
-%     close all
-    
+
 end
 
 %% ~~~ the end ~~~
