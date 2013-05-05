@@ -377,7 +377,8 @@ assert(bfCheckJavaPath(), 'Could not load the Bio-Formats library');
 
 % Note: list of supported formats could be retrieved using
 % loci.formats.tools.PrintFormatTable class
-[file, path] = uigetfile('Select image file to import.');
+[file, path] = uigetfile(bfGetFileExtensions(),...
+    'Select image file to import.');
 if isequal(file,0) || isequal(path,0), return; end
 
 % Import data into movie using bioformats
