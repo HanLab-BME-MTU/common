@@ -1,5 +1,5 @@
 function MD = bfImport(dataPath,varargin)
-% BFIMPORT imports movie files into MovieData objects using Bioformats 
+% BFIMPORT imports movie files into MovieData objects using Bioformats
 %
 % MD = bfimport(dataPath)
 % MD = bfimport(dataPath, false)
@@ -10,7 +10,7 @@ function MD = bfImport(dataPath,varargin)
 % created movie objects.
 %
 % Input:
-% 
+%
 %   dataPath - A string containing the full path to the movie file.
 %
 %   importMetadata - A flag specifying whether the movie metadata read by
@@ -21,7 +21,7 @@ function MD = bfImport(dataPath,varargin)
 %
 %       outputDirectory - A string giving the directory where to save the
 %       created MovieData as well as the analysis output. In the case of
-%       multi-series images, this string gives the basename of the output 
+%       multi-series images, this string gives the basename of the output
 %       folder and will be exanded as basename_sxxx for each movie
 %
 % Output:
@@ -98,7 +98,7 @@ for i = 1:nSeries
     
     % Create output directory
     if ~isdir(outputDir), mkdir(outputDir); end
-
+    
     for iChan = 1:nChan
         
         if ip.Results.importMetadata
@@ -119,7 +119,7 @@ for i = 1:nSeries
     
     % Close reader and check movie sanity
     MD(i).sanityCheck;
-
+    
 end
 % Close reader
 r.close;
@@ -204,5 +204,18 @@ if ~isempty(acquisitionMode),
             channelArgs = horzcat(channelArgs, 'imageType_', 'Confocal');
         otherwise
             disp('Acqusition mode not supported by the Channel object');
+    end
+end
+
+% Read fluorophore
+fluorophore = r.getMetadataStore().getChannelFluor(iSeries, iChan);
+if ~isempty(fluorophore),
+    fluorophores = Channel.getFluorophores();
+    isFluorophore = strcmpi(fluorophore, fluorophores);
+    if ~any(isFluorophore),
+        disp('Fluorophore not supported by the Channel object');
+    else
+        channelArgs = horzcat(channelArgs, 'fluorophore_',...
+            fluorophores(find(isFluorophore, 1)));
     end
 end

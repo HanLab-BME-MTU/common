@@ -51,6 +51,8 @@ s(22).name = 'dapi';
 s(22).lambda_em = 470e-9;
 s(23).name = 'fluosphere605';
 s(23).lambda_em = 605e-9;
+s(24).name = 'meos';
+s(24).lambda_em = 563e-9;
 
 [~,i]=sort([s.lambda_em]);
 s=s(i);
