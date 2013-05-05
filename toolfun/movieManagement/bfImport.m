@@ -190,3 +190,19 @@ end
 if ~isempty(emwlgth)
     channelArgs = horzcat(channelArgs, 'emissionWavelength_', emwlgth.getValue);
 end
+
+% Read imaging mode
+acquisitionMode = r.getMetadataStore().getChannelAcquisitionMode(iSeries, iChan);
+if ~isempty(acquisitionMode),
+    acquisitionMode = char(acquisitionMode.toString);
+    switch acquisitionMode
+        case {'TotalInternalReflection','TIRF'}
+            channelArgs = horzcat(channelArgs, 'imageType_', 'TIRF');
+        case 'WideField'
+            channelArgs = horzcat(channelArgs, 'imageType_', 'Widefield');
+        case {'SpinningDiskConfocal','SlitScanConfocal','LaserScanningConfocalMicroscopy'}
+            channelArgs = horzcat(channelArgs, 'imageType_', 'Confocal');
+        otherwise
+            disp('Acqusition mode not supported by the Channel object');
+    end
+end
