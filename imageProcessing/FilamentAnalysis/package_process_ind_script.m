@@ -1,8 +1,13 @@
 
 % for now MT Channe 1, VIF/Actin/Adhesion... Channel 2
-indexMTChannel = 1;
 
-indexVIFChannel = 1;
+if(~exist('indexMTChannel','var'))
+    indexMTChannel = 1;
+end
+
+if(~exist('indexVIFChannel','var'))
+    indexVIFChannel = 1;
+end
 
 % Find the package of Filament Analysis
 nFrame = MD.nFrames_;
