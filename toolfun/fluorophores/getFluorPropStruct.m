@@ -54,7 +54,7 @@ s(23).lambda_em = 605e-9;
 s(24).name = 'meos';
 s(24).lambda_em = 563e-9;
 s(25).name = 'turborfp';
-s(25).lambda_em = 574-9;
+s(25).lambda_em = 574e-9;
 
 [~,i] = sort([s.lambda_em]);
 s = s(i);
