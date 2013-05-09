@@ -311,7 +311,6 @@ if(graph_matching_flag==1)
     end
     imwrite(double(current_all_seg_bw*3/4),['./GEO/frame_',num2str(iFrame),'_round2_begin.tif']);
     figure(1);close;
-    [current_model,current_matching_bw] = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt);
     
     [current_model,current_matching_bw, model_ind]...
             = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt, ...
