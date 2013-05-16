@@ -131,6 +131,7 @@ function [clusterInfo, pointToClusterMap, pointTraj] = MeanShiftClustering( ptDa
         case 'optimized'
             
             [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug, kernelSupport);            
+            pointTraj = {};
     end
     
 end
