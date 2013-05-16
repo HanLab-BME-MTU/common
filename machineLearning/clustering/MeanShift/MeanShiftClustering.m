@@ -1,4 +1,4 @@
-function [clusterInfo, pointToClusterMap] = MeanShiftClustering( ptData, bandwidth, varargin )
+function [clusterInfo, pointToClusterMap, pointTraj] = MeanShiftClustering( ptData, bandwidth, varargin )
 % A Fast and Scalable implementation of the mean-shift clustering algorithm using KD-Trees
 % 
 %     Required Input Arguments:
@@ -126,7 +126,7 @@ function [clusterInfo, pointToClusterMap] = MeanShiftClustering( ptData, bandwid
         
         case 'standard'
             
-            [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug, kernelSupport);
+            [clusterInfo, pointToClusterMap,pointTraj] = StandardMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug, kernelSupport);
             
         case 'optimized'
             
@@ -255,10 +255,12 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
     end
 end
 
-function [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug, kernelSupport)
+function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug, kernelSupport)
 
     threshConvergence = 1e-3 * bandwidth;    
     [numDataPoints, numDataDims] = size( ptData );           
+    
+    pointTraj = cell(numDataPoints,1);
     
     %% Run mean-shift for each data point and find its mode
     fprintf( 1, '\nMean-shift clustering on a dataset of %d points ...\n', numDataPoints );
@@ -285,6 +287,9 @@ function [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth
 
             numIterationsElapsed = 0;        
             ptOldMean = ptData(i,:);
+            
+            pointTraj{i} = nan(maxIterations,numDataDims);
+            pointTraj{i}(1,:) = ptOldMean;
 
             while true            
 
@@ -299,6 +304,8 @@ function [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth
                 % call kernel to shift mean
                 [ptNewMean] = kernelfunc( ptOldMean, ptNearest, bandwidth ); 
                 numIterationsElapsed = numIterationsElapsed + 1;
+                
+                pointTraj{i}(numIterationsElapsed+1,:) = ptNewMean;
 
                 % check for convergence
                 if numIterationsElapsed >= maxIterations || norm(ptNewMean - ptOldMean) < threshConvergence                
@@ -311,6 +318,7 @@ function [clusterInfo, pointToClusterMap] = StandardMeanShift( ptData, bandwidth
             end               
 
             ptClusterCenter = ptNewMean;
+            pointTraj{i} = pointTraj{i}(1:numIterationsElapsed+1,:);
             
             % get point density around the cluster center
             if flagUseKDTree
