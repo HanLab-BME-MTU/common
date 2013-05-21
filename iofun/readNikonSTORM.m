@@ -55,7 +55,13 @@ formatSpec = '%s%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%[^\n\r]';
 
 if nargin < 1 || isempty(filename)
     [filename, filepath] = uigetfile('*.txt','Select the storm localization file to open:');
+    if filepath == 0
+        stormData = [];
+        return
+    end
     filename = [filepath filename];
+elseif ~exist(filename,'file')
+    error(['"' filename '" is not a valid file! Please specify a valid file to open!'])
 end
 
 fileID = fopen(filename,'r');
