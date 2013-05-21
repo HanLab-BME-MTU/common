@@ -208,26 +208,24 @@ if ~isempty(userData.MD),
             return;
         end
     end
-    % Create a pointer to the MovieData object (to use the same
-    % sanityCheck command later)
-    MD=userData.MD; 
 else
     % Create Movie Data
     try
-        MD = MovieData(userData.channels, outputDir, movieOptions{:});
+        userData.MD = MovieData(userData.channels, outputDir, movieOptions{:});
     catch ME
         errormsg = sprintf([ME.message '.\n\nMovie creation failed.']);
         errordlg(errormsg, 'User Input Error','modal');
+        set(handles.figure1,'UserData',userData)
         return;
     end
 end
 
 try
-    MD.sanityCheck;
+    userData.MD.sanityCheck;
 catch ME
-    delete(MD);
     errormsg = sprintf('%s.\n\nPlease check your movie data. Movie data is not saved.',ME.message);
     errordlg(errormsg,'Channel Error','modal');
+    set(handles.figure1,'UserData',userData)
     return;
 end
 
@@ -239,14 +237,14 @@ if ishandle(userData.mainFig),
     % Check if files in movie list are saved in the same file
     handles_main = guidata(userData.mainFig);
     contentlist = get(handles_main.listbox_movie, 'String');
-    movieDataFullPath = MD.getFullPath;
+    movieDataFullPath = userData.MD.getFullPath;
     if any(strcmp(movieDataFullPath, contentlist))
         errordlg('Cannot overwrite a movie data file which is already in the movie list. Please choose another file name or another path.','Error','modal');
         return
     end
     
     % Append  MovieData object to movie selector panel
-    userData_main.MD = horzcat(userData_main.MD, MD);
+    userData_main.MD = horzcat(userData_main.MD, userData.MD);
     set(userData.mainFig, 'UserData', userData_main)
     movieSelectorGUI('refreshDisplay',userData.mainFig,eventdata,guidata(userData.mainFig));
 end
