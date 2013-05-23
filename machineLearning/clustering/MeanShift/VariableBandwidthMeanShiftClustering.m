@@ -106,7 +106,8 @@ function [clusterInfo, pointToClusterMap, pointTraj] = VariableBandwidthMeanShif
             case 'gaussian'                
                 kernelfunc = @update_mean_gaussian_kernel;
             case 'flat'                             
-                kernelfunc = @update_mean_flat_kernel;                
+                error('This function only supports gaussian kernels!')
+                %kernelfunc = @update_mean_flat_kernel;                
         end
                 
     else
@@ -341,37 +342,20 @@ function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData
                     blnCloseClusterFound = true;
                     if curClusterCenterDensity > clusterInfo(cid).clusterCenterDensity
                         clusterInfo(cid).ptClusterCenter = ptClusterCenter;
-                        clusterInfo(cid).clusterCenterDensity = curClusterCenterDensity;
-                        wts = 1./ distNearest;%Weight the minimum distances of near points inverseley with distance
-                        clusterInfo(cid).clusterMinDist = sum((minClusterDistance(ptIdNearest) .* wts)) ./ sum(wts);%Use weighted mean of minDist for points near cluster center
+                        clusterInfo(cid).clusterCenterDensity = curClusterCenterDensity;                        
+                        wts = exp( -0.5 * distNearest .^2 ./ bandwidth(ptIdNearest) .^2 );%Bandwidth - weight the minimum distances of near points
+                        clusterInfo(cid).clusterMinDist = sum((minClusterDistance(ptIdNearest) .* wts)) ./ sum(wts);%Use weighted mean for minDist of cluster
                     end
                     pointToClusterMap(i) = cid;
 
                 end
-            end
-            
-%             for cid = 1:numel( clusterInfo )
-%             
-%                 if norm( ptClusterCenter - clusterInfo(cid).ptClusterCenter ) < clusterInfo(cid).clusterMinDist
-%                     
-%                     blnCloseClusterFound = true;
-%                     if curClusterCenterDensity > clusterInfo(cid).clusterCenterDensity
-%                         clusterInfo(cid).ptClusterCenter = ptClusterCenter;
-%                         clusterInfo(cid).clusterCenterDensity = curClusterCenterDensity;
-%                         wts = 1./ distNearest;%Weight the minimum distances of near points inverseley with distance
-%                         clusterInfo(cid).clusterMinDist = sum((minClusterDistance(ptIdNearest) .* wts)) ./ sum(wts);%Use weighted mean of minDist for points near cluster center
-%                     end
-%                     pointToClusterMap(i) = cid;
-%                     
-%                 end
-%                 
-%             end
+            end            
                
             if ~blnCloseClusterFound
                 clusterInfo(end+1).ptClusterCenter = ptClusterCenter;
                 clusterInfo(end).clusterCenterDensity = curClusterCenterDensity;
-                wts = 1./ distNearest;%Weight the minimum distances of near points inverseley with distance
-                clusterInfo(end).clusterMinDist = sum((minClusterDistance(ptIdNearest) .* wts)) ./ sum(wts);%Use weighted mean of minDist for points near cluster center
+                wts = exp( -0.5 * distNearest .^2 ./ bandwidth(ptIdNearest) .^2 );%Bandwidth - weight the minimum distances of near points
+                clusterInfo(end).clusterMinDist = sum((minClusterDistance(ptIdNearest) .* wts)) ./ sum(wts);%Use weighted mean for minDist of cluster
                 pointToClusterMap(i) = numel( clusterInfo );
             end            
             
