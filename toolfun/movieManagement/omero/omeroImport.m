@@ -12,35 +12,99 @@ function movie = omeroImport(session,imageID,varargin)
 % 
 %   session - an omero session
 %
-%   imageID - A string containing the full path to the movie file.
+%   imageID - The ID of the image to be associated with the movie Data.
 %
-%   extractImages - Optional. If true, individual images will be extracted
-%   and saved as TIF images.
+%   importMetadata - A flag specifying whether the movie metadata read by
+%   Bio-Formats should be copied into the MovieData. Default: true.
+%
+%   Optional Parameters :
+%       ('FieldName' -> possible values)
+%
+%       outputDirectory - A string giving the directory where to save the
+%       created MovieData as well as the analysis output. In the case of
+%       multi-series images, this string gives the basename of the output
+%       folder and will be exanded as basename_sxxx for each movie
 %
 % Output:
 %
 %   movie - A MovieData object
 
-% Sebastien Besson, Dec 2011 (last modified Nov 2012)
+% Sebastien Besson, Dec 2011 (last modified May 2013)
 
 % Input check
 ip=inputParser;
 ip.addRequired('session', @(x) isa(x,'omero.api.ServiceFactoryPrxHelper'));
 ip.addRequired('imageID', @isscalar);
-ip.addOptional('outputDirectory',[],@ischar);
-ip.parse(session,imageID,varargin{:});
+ip.addOptional('importMetadata', true, @islogical);
+ip.addParamValue('outputDirectory', '', @ischar);
+ip.parse(session, imageID, varargin{:});
 
 % Retrieve image and pixels
 image = getImages(session, imageID);
 assert(~isempty(image), 'No image of id %g found', imageID);
 pixels = image.getPrimaryPixels();
 
-% Create properties cell array based on existing metadata
-metadataService = session.getMetadataService;
+% Create metadata service
+metadataService = session.getMetadataService();
+
+% Read Image metadata
+if ip.Results.importMetadata
+    movieArgs = getMovieMetadata(metadataService, image);
+else
+    movieArgs = {};
+end
+    
+% Set output directory (based on image extraction flag)
+if isempty(ip.Results.outputDirectory)
+    [movieFileName, outputDir] = uiputfile('*.mat',...
+        'Find a place to save your analysis', 'movieData.mat');
+    if isequal(outputDir,0), return; end
+else
+    outputDir = ip.Results.outputDirectory;
+    if ~isdir(outputDir), mkdir(outputDir); end
+    movieFileName = 'movie.mat';
+end
+
+% Create movie channels
+nChan =  pixels.getSizeC().getValue();
+movieChannels(1,nChan) = Channel();
+
+% Read OMERO channels
+pixelsId = toJavaList(pixels.getId.getValue,'java.lang.Long');
+omeroChannels = metadataService.loadChannelAcquisitionData(pixelsId);
+omeroChannels = toMatlabList(omeroChannels);
+
+for i=1:nChan
+    if ip.Results.importMetadata
+        channelArgs = getChannelMetadata(omeroChannels(i));
+    else
+        channelArgs = {};
+    end
+
+    % Read channel xame
+    chanName = omeroChannels(i).getName.getValue;
+    if isempty(chanName), chanName = ['Channel_' num2str(i)]; end
+    
+    movieChannels(i)=Channel('',channelArgs{:});
+end
+
+% Create movie object
+movie=MovieData(movieChannels,outputDir,movieArgs{:});
+movie.setPath(outputDir);
+movie.setFilename(movieFileName);
+movie.setOmeroId(imageID);
+movie.setOmeroSession(session);
+movie.setOmeroSave(true);
+
+movie.sanityCheck;
+
+function movieArgs = getMovieMetadata(metadataService, image)
+
 movieArgs={}; 
+pixels = image.getPrimaryPixels();
 
 % Read pixel size
-pixelSize = pixels.getPhysicalSizeX;
+pixelSize = pixels.getPhysicalSizeX();
 if ~isempty(pixelSize)
     assert(isequal(pixelSize, pixels.getPhysicalSizeY),...
         'Pixel size different in x and y');
@@ -70,57 +134,18 @@ if ~isempty(objectiveSettings)
     end
 end
 
+function channelArgs = getChannelMetadata(omeroChannel)
 
-% Read number of channels, frames and stacks
-nChan =  pixels.getSizeC().getValue();
+channelArgs = {};
 
-% Set output directory (based on image extraction flag)
-movie=MovieData;
-
-if isempty(ip.Results.outputDirectory)
-    [movieFileName,outputDir] = uiputfile('*.mat','Find a place to save your analysis',...
-        'movieData.mat');
-    if isequal(outputDir,0), return; end
-else
-    outputDir=ip.Results.outputDirectory;
-    if ~isdir(outputDir), mkdir(outputDir); end
-    movieFileName='movie.mat';
+% Read excitation wavelength
+exwlgth = omeroChannel.getExcitationWave().getValue();
+if ~isempty(exwlgth) && exwlgth ~= -1
+    channelArgs=horzcat(channelArgs,'excitationWavelength_',exwlgth);
 end
 
-% Create movie channels
-movieChannels(1,nChan)=Channel();
-channelArgs=cell(1,nChan);
-pixelsId = toJavaList(pixels.getId.getValue,'java.lang.Long');
-omeroChannels = metadataService.loadChannelAcquisitionData(pixelsId);
-for i=1:nChan
-    channelArgs{i}={};
-    omeroChannel = omeroChannels.get(i-1);
-    
-    % Read excitation wavelength
-    exwlgth = omeroChannel.getExcitationWave().getValue();
-    if ~isempty(exwlgth) && exwlgth ~= -1
-        channelArgs{i}=horzcat(channelArgs{i},'excitationWavelength_',exwlgth);
-    end
-    
-    % Read emission wavelength
-    emwlgth=omeroChannel.getEmissionWave().getValue();
-    if ~isempty(emwlgth) && emwlgth ~= -1 && emwlgth ~= 1 % Bug
-        channelArgs{i}=horzcat(channelArgs{i},'emissionWavelength_',emwlgth);
-    end
-    
-    % Read channel xame
-    chanName = omeroChannels.get(0).getName.getValue;
-    if isempty(chanName), chanName = ['Channel_' num2str(i)]; end
-    
-    movieChannels(i)=Channel('',channelArgs{i}{:});
+% Read emission wavelength
+emwlgth=omeroChannel.getEmissionWave().getValue();
+if ~isempty(emwlgth) && emwlgth ~= -1 && emwlgth ~= 1 % Bug
+    channelArgs=horzcat(channelArgs,'emissionWavelength_',emwlgth);
 end
-
-% Create movie object
-movie=MovieData(movieChannels,outputDir,movieArgs{:});
-movie.setPath(outputDir);
-movie.setFilename(movieFileName);
-movie.setOmeroId(imageID);
-movie.setOmeroSession(session);
-movie.setOmeroSave(true);
-
-movie.sanityCheck;

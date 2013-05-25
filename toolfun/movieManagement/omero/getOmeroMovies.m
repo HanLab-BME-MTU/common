@@ -38,7 +38,7 @@ for i = 1 : nMovies
     
     if isempty(fas)
         path = fullfile(ip.Results.path, num2str(imageID));
-        MD(i) = omeroImport(session, imageID, path);
+        MD(i) = omeroImport(session, imageID, 'outputDirectory', path);
     else
         getFileAnnotationContent(session, fas(1), zipPath);
         
