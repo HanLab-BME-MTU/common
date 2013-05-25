@@ -133,8 +133,12 @@ classdef MotionAnalysisProcess < PostTrackingProcess
             end
             
             % Assign last label to unlabelled tracks
-            idx = cellfun(@isempty, {tracks.label});
-            [tracks(idx).label] = deal(numel(types));
+            if ~isfield(tracks, 'label')
+                 [tracks.label] = deal(numel(types));
+            else
+                idx = cellfun(@isempty, {tracks.label});
+                [tracks(idx).label] = deal(numel(types));
+            end
             
             % Format tracks using TrackingProcess utility function
             displayTracks = TrackingProcess.formatTracks(tracks);
