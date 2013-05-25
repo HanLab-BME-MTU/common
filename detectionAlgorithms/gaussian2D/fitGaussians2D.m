@@ -129,7 +129,8 @@ g = g(:);
 % ii = i+n*(i-1);
 % jj = j+n*(j-1);
 
-
+T = zeros(1,np);
+df2 = zeros(1,np);
 for p = 1:np
     
     % ignore points in border
@@ -200,16 +201,16 @@ for p = 1:np
             % H1: A > k*sigma_r
             sigma_A = stdVect(3);
             A_est = prm(3);
-            df2 = (npx-1) * (sigma_A.^2 + SE_sigma_r.^2).^2 ./ (sigma_A.^4 + SE_sigma_r.^4);
+            df2(p) = (npx-1) * (sigma_A.^2 + SE_sigma_r.^2).^2 ./ (sigma_A.^4 + SE_sigma_r.^4);
             scomb = sqrt((sigma_A.^2 + SE_sigma_r.^2)/npx);
-            T = (A_est - res.std*kLevel) ./ scomb;            
-            % 1-sided t-test: A_est must be greater than k*sigma_r
-            pStruct.pval_Ar(p) = tcdf(-T, df2);
-            pStruct.hval_Ar(p) = pStruct.pval_Ar(p) < ip.Results.AlphaT;
+            T(p) = (A_est - res.std*kLevel) ./ scomb;            
             pStruct.mask_Ar(p) = sum(A_est*g>res.std*kLevel);
         end
     end
 end
+% 1-sided t-test: A_est must be greater than k*sigma_r
+pStruct.pval_Ar = tcdf(-T, df2);
+pStruct.hval_Ar = pStruct.pval_Ar < ip.Results.AlphaT;
 
 % function K = corrFromC(C,ij,ii,jj)
 % n = size(C,1);
