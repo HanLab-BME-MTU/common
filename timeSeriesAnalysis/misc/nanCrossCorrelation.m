@@ -91,7 +91,9 @@ switch corrT
             
         else
             %NaN have no influence
+            nObs            = min(sum(isfinite(x)),sum(isfinite(y)));
             normalization   = ( (nObs - 1)*nanstd(x)*nanstd(y) )^-1;
+            
             x = x - nanmean(x);
             y = y - nanmean(y);
             
