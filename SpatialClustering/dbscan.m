@@ -7,6 +7,7 @@
 %
 % Outputs:
 %    clusterID : cluster identifier/class number for each point in X
+%           nn : #neighbors within R for each point
 %
 %
 % Adapted from the pseudo-code published in
@@ -16,10 +17,11 @@
 % Francois Aguet, 05/26/2013
 
 
-function [clusterID] = dbscan(X, minsize, R)
+function [clusterID, nn] = dbscan(X, minsize, R)
 
 np = size(X,1);
 kdidx = KDTreeBallQuery(X, X, R);
+nn = cellfun(@numel, kdidx)-1;
 
 clusterID = NaN(np,1);
 
