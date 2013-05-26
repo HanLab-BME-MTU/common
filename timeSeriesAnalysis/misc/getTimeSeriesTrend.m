@@ -78,7 +78,13 @@ for iVar = 1:nVar
             
         elseif trendT == 4
             
-            [trendC,detrend]    = trendFilteringEMD(TS(iVar,:));
+            nanTime = isnan(TS(iVar,:));
+            workTS  = gapInterpolation(TS(iVar,:),nObs);
+            
+            [trendC,detrend] = trendFilteringEMD(workTS);
+            
+            detrend{end}(nanTime) = nan;
+            trendC{end}(nanTime)   = nan;
             %Choose the slowest scale as trend
             outTS.dTS(iVar,:)   = detrend{end};
             outTS.trend(iVar,:) = trendC{end};
