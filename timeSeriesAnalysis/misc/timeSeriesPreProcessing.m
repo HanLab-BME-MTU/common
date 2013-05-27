@@ -12,7 +12,7 @@ function  [outTS,exclude] = timeSeriesPreProcessing(TS,varargin)
 %       alpha - alpha level to test signal's imf against white noise imf's. (see getTimeSeriesTrend)
 %       nSurr - number of TS surragates created to build the white noise imf distribution
 %       minLength - minimal TS length
-%       trendType - see getTimeSeriesTrend
+%       trendType - see getTimeSeriesTrend; -1 for no trend removal
 %       gapSize   - length of the NaN gap to be interpolated - usually 1
 %       outLevel  - used to detect outliers (see detectOutliers)
 %
@@ -35,7 +35,7 @@ ip.parse(TS,varargin{:});
 alpha    = ip.Results.alpha;
 nSurr    = ip.Results.nSurr;
 minLen   = ip.Results.minLength;
-trendT   = ip.Results.trendType;
+trend    = ip.Results.trendType;
 gapSize  = ip.Results.gapSize;
 outLevel = ip.Results.outLevel;
 
@@ -43,9 +43,9 @@ outLevel = ip.Results.outLevel;
 nVar  = size(TS,1);
 outTS = TS;
 %% Removing trend
-if trendT > -1
+if trend > -1
     
-    auxTS = getTimeSeriesTrend(outTS,'trendType',trendT,'nSurr',nSurr,'alpha',alpha);
+    auxTS = getTimeSeriesTrend(outTS,'trendType',trend,'nSurr',nSurr,'alpha',alpha);
     outTS = auxTS.dTS;   
     
 end
