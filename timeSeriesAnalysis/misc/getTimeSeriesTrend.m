@@ -88,11 +88,13 @@ for iVar = 1:nVar
             outTS.trend(iVar,:) = trendC{end};
             
         elseif trendT == 5
-            
-            %Does not search for blocks
-            workTS = gapInterpolation(TS(iVar,:),1);
+            nanTime               = isnan(TS(iVar,:));
+            workTS                = gapInterpolation(TS(iVar,:),nObs);
             % Remove all deterministic components
             [outTS.dTS(iVar,:),outTS.trend(iVar,:)] = preWhitening(workTS);
+
+            outTS.dTS(iVar,nanTime)   = nan;
+            outTS.trend(iVar,nanTime) = nan;
           
             
         end
