@@ -374,6 +374,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     int np = mxGetNumberOfFields(prhs[pIndex]);
     parameters p;
     if (np != 13 && np != 15) mexErrMsgTxt("Incorrect parameter vector");
+    for (int i=0;i<13;++i) {
+        if (!mxIsDouble(mxGetFieldByNumber(prhs[pIndex],0,i))) {
+            mexErrMsgTxt("All fields of the parameter structure 'p' must be Double scalars.");
+        }
+    }
     
     p.ti0 = mxGetScalar(mxGetFieldByNumber(prhs[pIndex],0,0));
     p.ni0 = mxGetScalar(mxGetFieldByNumber(prhs[pIndex],0,1));

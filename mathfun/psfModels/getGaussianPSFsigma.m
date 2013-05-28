@@ -1,30 +1,35 @@
-% getGaussianPSFsigma returns the standard deviation of the Gaussian
-% approximation of an ideal PSF in pixel
+%[sigma] = getGaussianPSFsigma(NA, M, pixelSize, lambda) returns the s.d. of the Gaussian PSF approximation
 %
-% INPUTS     NA        : numerical aperture of the objective
+% Inputs     NA        : numerical aperture of the objective
 %            M         : magnification of the objective
 %            pixelSize : physical pixel size of the CCD in [m]
 %            lambda    : emission maximum wavelength of the fluorophore in [m]
-%                        -or- fluorophore name
-%          {'Display'} : Display PSF and its Gaussian approximation. Optional, default 'off'.
+%                        -or- fluorophore name (see getFluorPropStruct.m)
+%          {'Display'} : Display PSF and its Gaussian approximation. Optional, default: false.
 %
-% Alternative input: p : parameter structure for PSF calculations (see vectorialPSF.cpp).
+% Ouputs
+%                sigma : standard deviation of the Gaussian PSF approximation, in pixels
 
-% Francois Aguet, October 2010 (Last modified April 6 2011)
+% Francois Aguet, October 2010 (last modified 05/28/2013)
 
 function sigma = getGaussianPSFsigma(NA, M, pixelSize, lambda, varargin)
+
+if ~iscell(lambda)
+    lambda = num2cell(lambda);
+end
 
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('NA', @isscalar);
 ip.addRequired('M', @isscalar);
 ip.addRequired('pixelSize', @isscalar);
-ip.addRequired('lambda', @(x) ischar(x) | (isnumeric(x) & numel(x)==1))
-ip.addParamValue('Display', 'off', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
+ip.addRequired('lambda', @(x) all(cellfun(@(i) ischar(i) || isscalar(i),x)));
+ip.addParamValue('Display', @islogical);
 ip.parse(NA, M, pixelSize, lambda, varargin{:});
 
-if ischar(lambda)
-    lambda = name2wavelength(lambda);
+idx = find(cellfun(@ischar, lambda));
+for i = idx
+    lambda{i} = name2wavelength(lambda(i));
 end
 
 % Defaults use values corresponding to optimal imaging conditions
@@ -36,37 +41,37 @@ p.tg = 0.17e-3;
 p.ng0 = 1.515;
 p.ng = 1.515;
 p.ns = 1.33;
-p.lambda = lambda;
+p.lambda = [];
 p.M = M;
 p.NA = NA;
 p.alpha = asin(p.NA/p.ni);
 p.pixelSize = pixelSize;
 
-
 ru = 8;
-psf = vectorialPSF(0,0,0,0,ru,p);
-
-[pG, ~, ~, res] = fitGaussian2D(psf, [0 0 max(psf(:)) 1 0], 'As');
-sigma = pG(4);
-
-
-%===============
-% Display
-%===============
-if strcmpi(ip.Results.Display, 'on')
-    xa = (-ru+1:ru-1)*p.pixelSize/p.M*1e9;
+nl = numel(lambda);
+sigma = zeros(1,nl);
+for i = 1:nl
+    p.lambda = lambda{i};
+    psf = vectorialPSF(0,0,0,0,ru,p);
+    [pG, ~, ~, res] = fitGaussian2D(psf, [0 0 max(psf(:)) 1 0], 'As');
+    sigma(i) = pG(4);
     
-    figure;
-    subplot(1,2,1);
-    imagesc(xa,xa,psf); colormap(gray(256)); axis image; colorbar;
-    title('PSF');
-    xlabel('x [nm]');
-    ylabel('y [nm]');
-    
-    subplot(1,2,2);
-    imagesc(xa,xa, psf+res.data); colormap(gray(256)); axis image; colorbar;
-    title('Gaussian approximation');
-    xlabel('x [nm]');
-    ylabel('y [nm]');
-    linkaxes;
+    % Display
+    if ip.Results.Display
+        xa = (-ru+1:ru-1)*p.pixelSize/p.M*1e9;
+        
+        figure;
+        subplot(1,2,1);
+        imagesc(xa,xa,psf); colormap(gray(256)); axis image; colorbar;
+        title('PSF');
+        xlabel('x [nm]');
+        ylabel('y [nm]');
+        
+        subplot(1,2,2);
+        imagesc(xa,xa, psf+res.data); colormap(gray(256)); axis image; colorbar;
+        title('Gaussian approximation');
+        xlabel('x [nm]');
+        ylabel('y [nm]');
+        linkaxes;
+    end
 end
