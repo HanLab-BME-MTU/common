@@ -1,5 +1,6 @@
 function outTS = getTimeSeriesTrend(TS,varargin)
-% This function removes time series trend
+% This function removes time series trend.
+% Accepts NaN (Of course, more NaN the time series has crappier the result is)
 %
 %USAGE
 %       outTS = getTimeSeriesTrend(TS,varargin)
@@ -13,7 +14,7 @@ function outTS = getTimeSeriesTrend(TS,varargin)
 %                  2 - remove exponential trend
 %                  3 - remove double exponential trend
 %                  4 - remove nonlinear local trend (trendFilteringEMD)
-%                  5 - remove all determinitic component and spits out a stationary signal 
+%                  5 - remove all determinitic component and spits out a stationary signal
 %                      the trend in this case is a smoothed version of the input signal
 %
 %Output:
@@ -43,11 +44,11 @@ deltaFit    = nan(nVar,nObs);
 
 for iVar = 1:nVar
     
-    outTS.dTS(iVar,:) = TS(iVar,:);
-    outTS.trend(iVar,:)     = nan(1,nObs);
+    outTS.dTS(iVar,:)   = TS(iVar,:);
+    outTS.trend(iVar,:) = nan(1,nObs);
     
     if sum(isfinite(TS(iVar,:))) > minLen
-
+        
         if ismember(trendT,0)
             
             % Remove sample mean
@@ -76,26 +77,46 @@ for iVar = 1:nVar
             [outTS.trend(iVar,:),deltaFit] = nlpredci(fitFun,1:nObs,bFit,resFit,'covar',covFit,'mse',mseFit);
             outTS.dTS(iVar,:)              = TS(iVar,:) - outTS.trend(iVar,:);
             
-        elseif trendT == 4
+        elseif ismember(trendT,[4 5])
             
-            nanTime               = isnan(TS(iVar,:));
-            workTS                = gapInterpolation(TS(iVar,:),nObs);
-            [trendC,detrend]      = trendFilteringEMD(workTS);
-            detrend{end}(nanTime) = nan;
-            trendC{end}(nanTime)  = nan;
-            %Choose the slowest scale as trend
-            outTS.dTS(iVar,:)   = detrend{end};
-            outTS.trend(iVar,:) = trendC{end};
             
-        elseif trendT == 5
-            nanTime               = isnan(TS(iVar,:));
-            workTS                = gapInterpolation(TS(iVar,:),nObs);
-            % Remove all deterministic components
-            [outTS.dTS(iVar,:),outTS.trend(iVar,:)] = preWhitening(workTS);
-
-            outTS.dTS(iVar,nanTime)   = nan;
-            outTS.trend(iVar,nanTime) = nan;
-          
+            nanTime      = isnan(TS(iVar,:));
+            workTS       = gapInterpolation(TS(iVar,:),nObs);
+            nanTimePost  = isnan(workTS);
+            
+            if trendT == 4
+                
+                [aux1,aux2]  = trendFilteringEMD(workTS(~nanTimePost));
+                deTrend      = aux2{end};
+                trendC       = aux1{end};
+                
+            else
+                
+                [deTrend,trendC] = preWhitening(workTS(~nanTimePost));
+                
+            end
+            
+            if isempty(find(nanTime,1))
+                
+                outTS.dTS(iVar,:)   = deTrend;
+                outTS.trend(iVar,:) = trendC;
+                
+            else
+                
+                if nanTimePost(1) == 1
+                    
+                    newTime = setdiff(find(nanTime),find(nanTimePost)) - 1;
+                    outTS.dTS(iVar,~nanTime)   = deTrend(setdiff(1:nObs-sum(nanTimePost),newTime));
+                    outTS.trend(iVar,~nanTime) = trendC(setdiff(1:nObs-sum(nanTimePost),newTime));
+                    
+                else
+                    
+                    outTS.dTS(iVar,~nanTime)   = deTrend(~nanTime(1:end-1));
+                    outTS.trend(iVar,~nanTime) = trendC(~nanTime(1:end-1));
+                    
+                end
+                
+            end
             
         end
         
