@@ -1,23 +1,27 @@
 %[pstruct, mask, imgLM, imgLoG] = pointSourceDetection(img, sigma, mode)
 %
 % Inputs :   
-%             img : input image
-%           sigma : standard deviation of the Gaussian PSF
+%                 img : input image
+%               sigma : standard deviation of the Gaussian PSF
 %
-% Options (as 'specifier', value): 
+% Options (as 'specifier'-value pairs): 
 %
-%          'mode' : parameters to estimate. Default: 'xyAc'.
-%         'alpha' : alpha value used in the statistical tests. Default: 0.05.
-%          'mask' : mask of pixels to include in the detection. Default: all.
-%   'FitMixtures' : true | {false}. Toggles mixture-model fitting.
+%              'mode' : parameters to estimate. Default: 'xyAc'.
+%             'alpha' : alpha value used in the statistical tests. Default: 0.05.
+%              'mask' : mask of pixels (i.e., cell mask) to include in the detection. Default: all.
+%       'FitMixtures' : true|{false}. Toggles mixture-model fitting.
+%   'RemoveRedundant' : {true}|false. Discard localizations that coincide within 'RedundancyRadius'.
+%  'RedundancyRadius' : Radius for filtering out redundant localizatios. Default: 0.25
+%     'RefineMaskLoG' : {true}|false. Apply threshold to LoG-filtered img to refine mask of significant pixels.
+%   'RefineMaskValid' : {true}|false. Return only mask regions where a significant signal was localized.
 %
 % Outputs:  
-%         pstruct : output structure with Gaussian parameters, standard deviations, p-values
-%            mask : mask of significant (in amplitude) pixels
-%           imgLM : image of local maxima
-%          imgLoG : Laplacian of Gaussian filtered image
+%             pstruct : output structure with Gaussian parameters, standard deviations, p-values
+%                mask : mask of significant (in amplitude) pixels
+%               imgLM : image of local maxima
+%              imgLoG : Laplacian of Gaussian-filtered image
 
-% Francois Aguet, April 2-6 2011
+% Francois Aguet, April 2011 (last modified: 05/28/2013)
 
 function [pstruct, mask, imgLM, imgLoG] = pointSourceDetection(img, sigma, varargin)
 
@@ -30,8 +34,10 @@ ip.addParamValue('Mode', 'xyAc', @ischar);
 ip.addParamValue('Alpha', 0.05, @isscalar);
 ip.addParamValue('Mask', [], @isnumeric);
 ip.addParamValue('FitMixtures', false, @islogical);
+ip.addParamValue('RemoveRedundant', true, @islogical);
 ip.addParamValue('RedundancyRadius', 0.25, @isscalar);
 ip.addParamValue('RefineMaskLoG', true, @islogical);
+ip.addParamValue('RefineMaskValid', true, @islogical);
 ip.parse(img, sigma, varargin{:});
 mode = ip.Results.Mode;
 alpha = ip.Results.Alpha;
@@ -92,6 +98,7 @@ allMax = locmax2d(imgLoG, 2*ceil(sigma)+1);
 % local maxima above threshold in image domain
 imgLM = allMax .* mask;
 
+pstruct = [];
 if sum(imgLM(:))~=0 % no local maxima found, likely a background image
     
     if ip.Results.RefineMaskLoG
@@ -135,13 +142,14 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
             idx = [pstruct.hval_Ar] == 1;
             
             % eliminate duplicate positions (resulting from localization)
-            np = length(pstruct.x);
-            pM = [pstruct.x' pstruct.y'];
-            idxKD = KDTreeBallQuery(pM, pM, ip.Results.RedundancyRadius*ones(np,1));
-            idxKD = idxKD(cellfun(@numel, idxKD)>1);
-            for k = 1:length(idxKD);
-                RSS = pstruct.RSS(idxKD{k});
-                idx(idxKD{k}(RSS ~= min(RSS))) = 0;
+            if ip.Results.RemoveRedundant
+                pM = [pstruct.x' pstruct.y'];
+                idxKD = KDTreeBallQuery(pM, pM, ip.Results.RedundancyRadius*ones(numel(pstruct.x),1));
+                idxKD = idxKD(cellfun(@numel, idxKD)>1);
+                for k = 1:length(idxKD);
+                    RSS = pstruct.RSS(idxKD{k});
+                    idx(idxKD{k}(RSS ~= min(RSS))) = 0;
+                end
             end
             
             if sum(idx)>0
@@ -165,16 +173,15 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
         else
             pstruct = [];
         end
-    else
-        pstruct = [];
     end
-else
-    pstruct = [];
 end
 
-% T = A_est ./ sigma_A;
-% pval = tcdf(T,numel(img) - 2 - 1);
-% hval = pval > 0.95;
-% 
-% figure; imagesc(hval); colormap(gray(2)); axis image;
-% figure; imagesc(mask); colormap(gray(2)); axis image;
+if ~isempty(pstruct) && ip.Results.RefineMaskValid
+    CC = bwconncomp(mask);
+    labels = labelmatrix(CC);
+    loclabels = labels(sub2ind(size(img), pstruct.y_init, pstruct.x_init));
+    idx = setdiff(1:CC.NumObjects, loclabels);
+    CC.PixelIdxList(idx) = [];
+    CC.NumObjects = length(CC.PixelIdxList);
+    mask = labelmatrix(CC)~=0;
+end

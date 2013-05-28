@@ -24,7 +24,7 @@ ip.addRequired('NA', @isscalar);
 ip.addRequired('M', @isscalar);
 ip.addRequired('pixelSize', @isscalar);
 ip.addRequired('lambda', @(x) all(cellfun(@(i) ischar(i) || isscalar(i),x)));
-ip.addParamValue('Display', @islogical);
+ip.addParamValue('Display', false, @islogical);
 ip.parse(NA, M, pixelSize, lambda, varargin{:});
 
 idx = find(cellfun(@ischar, lambda));
