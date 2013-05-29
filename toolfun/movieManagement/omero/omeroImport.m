@@ -70,9 +70,8 @@ nChan =  pixels.getSizeC().getValue();
 movieChannels(1,nChan) = Channel();
 
 % Read OMERO channels
-pixelsId = toJavaList(pixels.getId.getValue,'java.lang.Long');
-omeroChannels = metadataService.loadChannelAcquisitionData(pixelsId);
-omeroChannels = toMatlabList(omeroChannels);
+pixels = session.getPixelsService().retrievePixDescription(pixels.getId.getValue);
+omeroChannels = toMatlabList(pixels.copyChannels);
 
 for i=1:nChan
     if ip.Results.importMetadata
@@ -82,7 +81,7 @@ for i=1:nChan
     end
 
     % Read channel xame
-    chanName = omeroChannels(i).getName.getValue;
+    chanName = omeroChannels(i).getLogicalChannel().getName.getValue;
     if isempty(chanName), chanName = ['Channel_' num2str(i)]; end
     
     movieChannels(i)=Channel('',channelArgs{:});
@@ -124,12 +123,12 @@ if ~isempty(timeInterval)
 end
 
 % Read the lens numerical aperture
-objectiveSettings = image.getObjectiveSettings;
-if ~isempty(objectiveSettings)
-    instrument = metadataService.loadInstrument(objectiveSettings.getId.getValue);
-    objective = instrument.copyObjective().get(0);
-    if ~isempty(objective)
-        lensNA = objective.getLensNA().getValue();
+instrument = image.getInstrument();
+if ~isempty(instrument)
+    instrument = metadataService.loadInstrument(instrument.getId.getValue);
+    objectives = toMatlabList(instrument.copyObjective());
+    if ~isempty(objectives)
+        lensNA = objectives(1).getLensNA().getValue();
         movieArgs=horzcat(movieArgs,'numAperture_',double(lensNA));
     end
 end
@@ -139,13 +138,15 @@ function channelArgs = getChannelMetadata(omeroChannel)
 channelArgs = {};
 
 % Read excitation wavelength
-exwlgth = omeroChannel.getExcitationWave().getValue();
-if ~isempty(exwlgth) && exwlgth ~= -1
-    channelArgs=horzcat(channelArgs,'excitationWavelength_',exwlgth);
+exwlgth = omeroChannel.getLogicalChannel().getExcitationWave();
+if ~isempty(exwlgth) && exwlgth.getValue() ~= -1
+    channelArgs=horzcat(channelArgs,...
+        'excitationWavelength_', exwlgth.getValue());
 end
 
 % Read emission wavelength
-emwlgth=omeroChannel.getEmissionWave().getValue();
-if ~isempty(emwlgth) && emwlgth ~= -1 && emwlgth ~= 1 % Bug
-    channelArgs=horzcat(channelArgs,'emissionWavelength_',emwlgth);
+emwlgth=omeroChannel.getLogicalChannel().getEmissionWave();
+if ~isempty(emwlgth) && emwlgth.getValue() ~= -1 % Bug
+    channelArgs=horzcat(channelArgs,...
+        'emissionWavelength_', emwlgth.getValue());
 end
