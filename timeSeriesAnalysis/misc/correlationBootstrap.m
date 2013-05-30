@@ -27,6 +27,9 @@ function [meanCC,CI] = correlationBootstrap(CC,CB,varargin)
 %
 %See also : coherenceBootstrap
 %
+%Ref:
+%Book: Zoubir, Iskander. Bootstrap techniques for signal processing. Page 53
+%
 % Marco Vilela, 12/2011
 
 %Input check
@@ -67,9 +70,6 @@ end
           'type','norm','Options',opt);
 
 CI     = tanh( confI );
-
+% Arc tangent is a variance-stabilizing technique
 meanCC( setdiff(1:nLag,exclude) ) = tanh( mean( statCC ) );
 
-% Arc tangent is a variance-stabilizing technique
-%Book: Zoubir, Iskander. Bootstrap techniques for signal processing. Page
-%53
