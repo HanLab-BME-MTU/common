@@ -15,7 +15,7 @@ maxLag = (nLag-1)/2;
 sCC    = smoothActivityMap(xCorr);
 
 figure
-imagesc(Fs.*(1:size(sCC,2)/5),linspace(-maxLag,maxLag,size(sCC,1)),sCC)
+imagesc((1:size(sCC,2)/5),Fs.*linspace(-maxLag,maxLag,size(sCC,1)),sCC)
 
 
 ylabel('Lag','FontSize',14)
