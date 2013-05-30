@@ -2,12 +2,15 @@
 
 % Francois Aguet, 11/05/2010
 
-function cpath = getParentDir(cpath)
+function cpath = getParentDir(cpath, level)
+if nargin<2
+    level = 1;
+end
 
 fsIdx = regexp(cpath, filesep);
 
 if strcmp(cpath(end), filesep)
-    cpath = cpath(1:fsIdx(end-1));
+    cpath = cpath(1:fsIdx(end-level));
 else
-    cpath = cpath(1:fsIdx(end));
+    cpath = cpath(1:fsIdx(end-level+1));
 end
