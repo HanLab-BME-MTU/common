@@ -32,7 +32,7 @@ ip.addRequired('TS1',@(x) isnumeric(x));
 [nVar1,nObs1] = size(TS1);
 ip.addOptional('TS2',       TS1,@(x) isnumeric(x));
 ip.addParamValue('nBoot',   1e3,@isscalar);
-ip.addParamValue('alpha',   .05,@isscalar);
+ip.addParamValue('alpha',   .05,@isscalar); 
 ip.addParamValue('corrType','Pearson', @ischar)
 ip.addParamValue('local',    length(TS1)-1,@isscalar);
 ip.addParamValue('maxLag',   0,@isscalar);
