@@ -20,7 +20,15 @@ function [ stats ] = ComputeClassificationPerformance( PredictedLabels , ActualL
     stats.fnf = fnf;     
 
     Precision = TP / ( TP + FP );                        
-    Recall = TP / ( TP + FN );                        
+    Recall = TP / ( TP + FN );             
+    if isnan(Recall)
+        Recall = 1;
+    end
+    
+    if isnan(Precision)
+        Precision = 1;
+    end
+
     FMeasure = 2 * Precision * Recall / ( Precision + Recall );
     
     PositiveRecall = TP / ( TP + FN );

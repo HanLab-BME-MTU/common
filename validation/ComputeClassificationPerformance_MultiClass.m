@@ -1,4 +1,4 @@
-function [ stats ] = ComputeClassificationPerformance_MultiClass( PredictedLabels , ActualLabels , LabelList )
+function [ stats ] = ComputeClassificationPerformance_MultiClass( inPredictedLabels , inActualLabels , inLabelList )
 % 
 %                             Predicted
 %                     class1  class2  class3 ... ... 
@@ -9,15 +9,38 @@ function [ stats ] = ComputeClassificationPerformance_MultiClass( PredictedLabel
 %         ...
 % 
 
-    if ~exist( 'LabelList' , 'var' )
-        
-        LabelList = unique( cat( 1 , PredictedLabels , ActualLabels ) );
-        
+    if ~exist( 'inLabelList' , 'var' )        
+        inLabelList = unique( cat( 1 , inPredictedLabels , inActualLabels ) );
     end
     
-    stats.LabelList = LabelList;
-    stats.PredictedLabels = PredictedLabels;
-    stats.ActualLabels = ActualLabels;
+    stats.LabelList = inLabelList;
+    stats.PredictedLabels = inPredictedLabels;
+    stats.ActualLabels = inActualLabels;
+    
+    if iscell(inPredictedLabels)
+        
+        PredictedLabels = zeros( size(inPredictedLabels) );
+        ActualLabels = zeros( size(inPredictedLabels) );
+        
+        for i = 1:numel(PredictedLabels)
+            curPredictedLabel = find( strcmp( inPredictedLabels{i}, inLabelList ) );
+            curActualLabel = find( strcmp( inActualLabels{i}, inLabelList ) );
+            
+            if isempty(curPredictedLabel) || isempty(curActualLabel)
+               error( 'error: found a label which is not in the label list' ); 
+            end
+            
+            PredictedLabels(i) = curPredictedLabel;
+            ActualLabels(i) = curActualLabel;
+        end
+        
+        LabelList = 1:numel(inLabelList);
+        
+    else        
+        LabelList = inLabelList;
+        PredictedLabels = inPredictedLabels;
+        ActualLabels = inActualLabels;
+    end
     
     numLabels = numel( LabelList );
     
@@ -38,8 +61,8 @@ function [ stats ] = ComputeClassificationPerformance_MultiClass( PredictedLabel
 
     stats.cMatrix_Display = zeros( size( stats.cMatrix ) + 1 );    
     stats.cMatrix_Display( 2:end , 2:end ) = stats.cMatrix;
-    stats.cMatrix_Display( 2:end , 1 ) = stats.LabelList;
-    stats.cMatrix_Display( 1 , 2:end ) = stats.LabelList;
+    stats.cMatrix_Display( 2:end , 1 ) = LabelList;
+    stats.cMatrix_Display( 1 , 2:end ) = LabelList;
     stats.cMatrix_Display( 1 , 1) = -1;
     
     % compute per-label stats
@@ -56,5 +79,8 @@ function [ stats ] = ComputeClassificationPerformance_MultiClass( PredictedLabel
         stats.PerClassStats(i) = ComputeClassificationPerformance( curPredictedLabels > 0 , curActualLabels > 0 );
         
     end
+    
+    stats.GMean = geomean( [stats.PerClassStats.Recall] );
+    stats.avgFMeasure = mean( [stats.PerClassStats.FMeasure] );
     
 end
