@@ -14,8 +14,11 @@
 
 function sigma = getGaussianPSFsigma(NA, M, pixelSize, lambda, varargin)
 
-if ~iscell(lambda)
+if isnumeric(lambda)
     lambda = num2cell(lambda);
+end
+if ischar(lambda)
+    lambda = {lambda};
 end
 
 ip = inputParser;
