@@ -43,7 +43,7 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoG( im, blo
 
     [ imMultiscaleLoGResponse, pixelScaleMap ] = filterMultiscaleLoGND( im, sigmaValues, ...
                                                                         'spacing', spacing, ...
-                                                                        'debugMode', flagDebugMode );
+                                                                        'debugMode', flagDebugMode);
 
     if flagBrightBlobs
         imMultiscaleLoGResponse = -1 * imMultiscaleLoGResponse;
