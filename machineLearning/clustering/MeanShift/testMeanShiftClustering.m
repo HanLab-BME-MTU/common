@@ -3,7 +3,7 @@ clear
 close all
 
 % generate three synthetic gaussian clusters
-numPointsPerCluster = 2^16;
+numPointsPerCluster = 2^12;
 ptTrueClusterCenters = [ 1 1 ; -1, -1; 1, -1 ];
 clusterStdDev = 0.6;
 
@@ -20,10 +20,23 @@ end
 bandwidth = 0.5;
 tic
 profile on;
-[clusterInfo,pointToClusterMap] = MeanShiftClustering(ptRawData, bandwidth, ... 
-                                                      'flagDebug', false, ...
-                                                      'kernel', 'gaussian', ...
-                                                      'flagUseKDTree', true);
+numRuns = 1000;
+
+h = waitbar(0, 'Running multiple runs of mean-shift ...');
+
+for i = 1:numRuns    
+    
+    [clusterInfo,pointToClusterMap] = MeanShiftClustering(ptRawData, bandwidth, ... 
+                                                          'flagDebug', false, ...
+                                                          'kernel', 'gaussian', ...
+                                                          'flagUseKDTree', true);
+                                                      
+    waitbar(i/numRuns, h, sprintf( 'Running multiple runs of mean-shift ... %.2f%% done', 100*i/numRuns) );
+    
+end
+
+close(h);
+
 profile off;
 profile viewer;
 toc
