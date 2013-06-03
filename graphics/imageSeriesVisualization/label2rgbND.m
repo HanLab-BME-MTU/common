@@ -1,18 +1,22 @@
 function [imLabelRGB, varargout] = label2rgbND( imLabel, labelColorMap )
 
-    numLabels = double(max(imLabel(:)));
-    imLabel( imLabel == 0 ) = numLabels + 1;
-    
     if ~exist( 'labelColorMap', 'var' )
 
         % assign colors randomly
+        numLabels = double(max(imLabel(:)));
+        imLabel( imLabel == 0 ) = numLabels + 1;
         cmap = jet(numLabels);
         stream = RandStream('swb2712','seed',0);
         index = randperm(stream,numLabels);
         cmap = [ cmap(index,:); 0 0 0 ];            
         
     else
-        assert( all(size(labelColorMap) == [numLabels + 1, 3]) );
+        assert( all(size(labelColorMap, 2) == 3) );
+        assert( all(size(labelColorMap, 1) >= max(imLabel(:))+1) );                
+        
+        numLabels = size(labelColorMap, 1) - 1; 
+        imLabel( imLabel == 0 ) = numLabels + 1;
+        
         cmap = labelColorMap;
     end
     
