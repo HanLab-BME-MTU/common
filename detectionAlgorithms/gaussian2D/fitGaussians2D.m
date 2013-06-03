@@ -6,10 +6,12 @@
 %             A : initial (or fixed) amplitudes
 %             s : initial (or fixed) Gaussian PSF standard deviations
 %             c : initial (or fixed) background intensities
-%          mode : string selector for optimization parameters, any of 'xyAsc'
 %
-% Optional inputs : ('Mask', mask) pair with a mask of spot locations
+% Options:
+%          mode : selector for optimization parameters, any of 'xyAsc'. Default: 'xyAc'
 %
+% Options ('specifier', value):
+%        'Mask' : mask of spot locations
 %
 % Output: pStruct: structure with fields:
 %                  x : estimated x-positions
@@ -19,19 +21,19 @@
 %                  c : estimated background intensities
 %
 %             x_pstd : standard deviations, estimated by error propagation
-%             y_pstd :
-%             A_pstd :
-%             s_pstd :
-%             c_pstd :
+%             y_pstd : "
+%             A_pstd : "
+%             s_pstd : "
+%             c_pstd : "
 %            sigma_r : standard deviation of the background (residual)
 %         SE_sigma_r : standard error of sigma_r
 %            pval_Ar : p-value of an amplitude vs. background noise test (p < 0.05 -> significant amplitude)
 %
 %
-% Usage for a single-channel img with mask and fixed sigma:
-% fitGaussians2D(img, x_v, y_v, 'sigma', sigma_v, 'mask', mask);
+% Usage for a single-channel image with mask and fixed sigma:
+% fitGaussians2D(img, x, y, A, sigma, c, 'xyAc', 'mask', mask);
 
-% Francois Aguet, March 28 2011 (last modified: August 30 2011)
+% Francois Aguet, March 28 2011 (last updated: June 03 2013)
 
 function pStruct = fitGaussians2D(img, x, y, A, sigma, c, varargin)
 
@@ -120,15 +122,6 @@ g = exp(-(-w4:w4).^2/(2*sigma_max^2));
 g = g'*g;
 g = g(:);
 
-% indexes for cross-correlation coefficients
-% n = length(mode);
-% idx = pcombs(1:n);
-% i = idx(:,1);
-% j = idx(:,2);
-% ij = i+n*(j-1);
-% ii = i+n*(i-1);
-% jj = j+n*(j-1);
-
 T = zeros(1,np);
 df2 = zeros(1,np);
 for p = 1:np
@@ -152,10 +145,6 @@ for p = 1:np
         
         % set any other components to NaN
         window(maskWindow~=0) = NaN;
-        
-        % standard deviation of the background within annular mask
-        %bgStd = nanstd(window(annularMask==1));
-        
         npx = sum(isfinite(window(:)));
         
         % fit
@@ -166,7 +155,6 @@ for p = 1:np
         end
 
         [prm, prmStd, ~, res] = fitGaussian2D(window, [x(p)-xi(p) y(p)-yi(p) A_init sigma(p) c_init], mode);
-        %K = corrFromC(C,ij,ii,jj);
         
         dx = prm(1);
         dy = prm(2);
@@ -211,12 +199,3 @@ end
 % 1-sided t-test: A_est must be greater than k*sigma_r
 pStruct.pval_Ar = tcdf(-T, df2);
 pStruct.hval_Ar = pStruct.pval_Ar < ip.Results.AlphaT;
-
-% function K = corrFromC(C,ij,ii,jj)
-% n = size(C,1);
-% K = zeros(n,n);
-%
-% K(ij) = C(ij) ./ sqrt(C(ii).*C(jj));
-% remaining components are redundant
-% K = K + K';
-% K(sub2ind([n n], 1:n, 1:n)) = 1;
