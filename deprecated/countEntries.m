@@ -21,6 +21,9 @@ function [uniqueEntries,numberOfOccurences,whereIdx] = countEntries(m,isRow, kee
 %c: 11/03, jonas
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+fprintf(2,['The function output is buggy. Use getMultiplicity() instead.\n']);
+
 
 %---test input
 if iscell(m) || isstruct(m)

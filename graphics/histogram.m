@@ -110,7 +110,7 @@ nData = length(data);
 % check whether we do a standard or a smooth histogram
 if factor ~= -1
     % check for discrete distribution
-    [xx,nn] = countEntries(data);
+    [nn,xx] = getMultiplicity(data);
     % consider the distribution discrete if there are, on average, 3
     % entries per bin
     nBins = length(xx);

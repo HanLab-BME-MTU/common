@@ -249,7 +249,7 @@ if any(isnan(parameters))
         fullImage = fullImage>exp(-0.5);
         % find largest group in threshold
         fullImage = bwlabeln(fullImage);
-        [entry, number] = countEntries(fullImage(:));
+        [number,entry] = getMultiplicity(fullImage(:));
         [dummy,idx] = max(number(2:end));
         % get indices of largest group
         idx = find(fullImage == entry(idx+1));

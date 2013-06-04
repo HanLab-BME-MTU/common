@@ -116,7 +116,7 @@ else
     % find unique filenames
     names=strvcat(lof{:,1});
     [un,m,n]=unique(names,'rows');
-    [ue,num]=countEntries(n);
+    [num,ue]=getMultiplicity(n);
     
     % check for duplicates
     idx=find(num>1);
