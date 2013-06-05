@@ -14,7 +14,7 @@ function varargout = listSelectGUI(varargin)
 %                      the left to the right list, if 'copy' (default), the
 %                      inputList always remains on the right
 %
-%          forceChoice optional. If 1 (default), listSelectGUI will launch 
+%          forceChoice optional. If 1 (default), listSelectGUI will launch
 %                      on any number of items in the list. If 0 , it will
 %                      not open if the number of items is equal to
 %                      maxSelect (or 1, if maxSelect is empty)
@@ -118,8 +118,8 @@ if length(varargin) > 4
         error('at least one preselect index is out of range')
     end
     if any(handles.rightIndexList<0)
-        handles.rightIndexList = missingIndices(abs(handles.rightIndexList),listLength);
-    end       
+        handles.rightIndexList = setdiff(1:listLength, abs(handles.rightIndexList));
+    end
 else
     handles.rightIndexList = [];
 end
@@ -128,7 +128,7 @@ end
 if isempty(handles.rightIndexList) || strcmp(moveOrCopy,'copy')
     handles.leftIndexList = (1:listLength)';
 else
-    handles.leftIndexList = missingIndices(handles.rightIndexList,listLength);
+    handles.leftIndexList = setdiff(1:listLength, handles.rightIndexList);
 end
 set(handles.LSG_listboxLeft,'String',listCell(handles.leftIndexList));
 set(handles.LSG_listboxRight,'String',listCell(handles.rightIndexList));
@@ -424,5 +424,3 @@ if isempty(newSelection)
     newSelection = 1;
 end
 set(handles.LSG_listboxRight,'Value',newSelection);
-
-
