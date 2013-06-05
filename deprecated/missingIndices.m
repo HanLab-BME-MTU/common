@@ -20,7 +20,8 @@ function m=missingIndices(v,n)
 %
 % Aaron Ponti, March 3rd, 2003
 
-
+fprintf(2,['Warning: ''' mfilename ''' is deprecated and should no longer be used.\n']);
+fprintf(2,'Replace function call with setdiff(1:n,v).\n');
 
 m = (1:n)';
 
