@@ -70,7 +70,7 @@ for iVar = 1:nVar
                     bInit  = rand(1,4); %Initial guess for fit parameters.
             end
             
-            fitOptions = statset('Robust','on','MaxIter',500,'Display','off');
+            fitOptions = statset('Robust','on','RobustWgtFun','welsch','MaxIter',500,'Display','off');
             [bFit,resFit,~,covFit,mseFit] = nlinfit(1:nObs,TS(iVar,:),fitFun,bInit,fitOptions);
             
             %Get confidence intervals of fit and fit values
