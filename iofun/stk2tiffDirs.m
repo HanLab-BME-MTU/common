@@ -1,5 +1,5 @@
 function stk2tiffDirs(varargin)
-% stktiffDirs splits STKs in input directory into folders with TIFF files.
+% stktiffDirs splits TIFF stacks (*.tif or *.stk) in input directory into folders with TIFF files.
 % 
 % Synopsis:    stk2tiffDirs(path)
 %              stk2tiffDirs(path,'Crop','on')
@@ -50,7 +50,10 @@ if iscell(stkpath),
 end
 
 stkpath = [stkpath filesep];
-stkList = [dir([stkpath '*.tif']) dir([stkpath '*.tiff']) dir([stkpath '*.stk'])];
+stkList = dir(stkpath);
+stkList = {stkList(~[stkList.isdir]).name};
+idx = ~cellfun(@isempty, regexpi(stkList, '(\.tiff?|\.stk)$'));
+stkList = stkList(idx);
 
 N = length(stkList);
 if N==0
@@ -58,9 +61,9 @@ if N==0
 end
 
 for k = 1:N
-    fprintf('Converting: %s\n', stkList(k).name);
-    [~,stkname] = fileparts(stkList(k).name);
-    stack = stackRead([stkpath stkList(k).name]);
+    fprintf('Converting: %s\n', stkList{k});
+    [~,stkname] = fileparts(stkList{k});
+    stack = stackRead([stkpath stkList{k}]);
     
     if strcmpi(ip.Results.Crop, 'on')
        h = figure;
