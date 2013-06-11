@@ -1,20 +1,20 @@
 function buildPackage(varargin)
 % Build the selected packages and export them to a given repository
-% 
+%
 % SYNOPSIS
 %   buildPackage(packageList, outDir)
 %   buildPackage('exclude', {'extern','myfunctions'})
-% 
+%
 % This function copies all the files needed to run the selected packages data
 % processing package into a single folder for upload to the website. It
 % assumes you have checked out all the files from the SVN repository, and
 % that they are all in your matlab path.
-% 
+%
 % INPUT:
-% 
+%
 %   packageList - A package name or a cell array of package names. If not
 %   input a prompt dialog will appear asking to select a list of packages.
-%   
+%
 %   outDir - Optional. The directory to copy all the package files to. If
 %   not input
 %
@@ -32,7 +32,7 @@ ip = inputParser;
 isClass = @(x) exist(x,'class')==8;
 ip.addOptional('packageList',{},@(x) ischar(x) || iscell(x));
 ip.addOptional('outDir','',@ischar);
-ip.addParamValue('exclude', {'extern' ,'omero'}, @(x) ischar(x) || iscell(x));
+ip.addParamValue('exclude', 'extern', @(x) ischar(x) || iscell(x));
 ip.parse(varargin{:});
 
 if isempty(ip.Results.packageList)
@@ -59,16 +59,16 @@ if isempty(ip.Results.packageList)
     if ~status, return; end
     packageList=buildPackageList(packageIndx);
 else
-   packageList = ip.Results.packageList; 
+    packageList = ip.Results.packageList;
 end
 
 % Ask for the output directory if not supplied
-if isempty(ip.Results.outDir)    
+if isempty(ip.Results.outDir)
     outDir = uigetdir(pwd,'Select output directory:');
 else
     outDir = ip.Results.outDir;
 end
-    
+
 %Get all the function dependencies and display toolboxes
 [packageFuns, toolboxesUsed] = getFunDependencies(packageList, ip.Results.exclude);
 disp('The package uses the following toolboxes:')

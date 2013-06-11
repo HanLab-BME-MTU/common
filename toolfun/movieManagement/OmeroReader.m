@@ -48,7 +48,7 @@ classdef  OmeroReader < Reader
         function setSession(obj, session)
             % Check input
             ip = inputParser;
-            ip.addRequired('session', @(x) isa(x, 'omero.api.ServiceFactoryPrxHelper'));
+            ip.addRequired('session', @MovieObject.isOmeroSession);
             ip.parse(session);
             
             obj.session = session;

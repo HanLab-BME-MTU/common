@@ -25,7 +25,7 @@ function MD = omeroCacheImport(session,imageID,varargin)
 
 % Input check
 ip=inputParser;
-ip.addRequired('session',@(x) isa(x,'omero.api.ServiceFactoryPrxHelper'));
+ip.addRequired('session',@MovieObject.isOmeroSession);
 ip.addRequired('imageID',@isscalar);
 ip.addOptional('outputDirectory',[],@ischar);
 ip.parse(session,imageID,varargin{:});

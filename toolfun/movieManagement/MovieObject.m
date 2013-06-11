@@ -397,6 +397,11 @@ classdef  MovieObject < hgsetget
         function obj = load(moviepath,varargin)
             % Load a movie object from a path
             
+            if MovieObject.isOmeroSession(moviepath),
+                obj = getOmeroMovies(moviepath, varargin{:});
+                return;
+            end
+            
             % Check the path is a valid file
             assert(~isempty(ls(moviepath)),'lccb:movieObject:load', 'File does not exist.');
             
@@ -428,7 +433,7 @@ classdef  MovieObject < hgsetget
                 
                 % Perform sanityCheck using the input path
                 [moviePath,movieName,movieExt]=fileparts(moviepath);
-                if nargin>1 && isa(varargin{1}, 'omero.api.ServiceFactoryPrxHelper')
+                if nargin>1 &&  MovieObject.isOmeroSession(varargin{1}),
                     obj.setOmeroSession(varargin{1});
                     obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
                 else
@@ -447,6 +452,10 @@ classdef  MovieObject < hgsetget
             elseif strcmp(property, 'omeroId_')
                 validator = @isposint;
             end
+        end
+        
+        function status = isOmeroSession(session)
+            status = isa(session, 'omero.api.ServiceFactoryPrxHelper');
         end
         
     end
