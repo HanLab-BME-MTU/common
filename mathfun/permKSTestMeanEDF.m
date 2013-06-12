@@ -42,14 +42,14 @@ if nperms<=nrep % calculate all permutations
     P(pidx) = true;
     delta = zeros(nperms,1);
     for i = 1:nperms
-        delta(i) = max(abs(mean(dAll(P(:,i),:),1) - mean(dAll(~P(:,i)),1)));
+        delta(i) = max(abs(nanmean(dAll(P(:,i),:),1) - nanmean(dAll(~P(:,i)),1)));
     end
     ns = nperms;
 else % compute 'nrep' random permutations
     delta = zeros(nrep,1);
     for i = 1:nrep
         idx = randperm(N); % calculate random permutation of the samples
-        delta(i) = max(abs(mean(dAll(idx(1:n1),:),1) - mean(dAll(idx(n1+1:end),:),1)));
+        delta(i) = max(abs(nanmean(dAll(idx(1:n1),:),1) - nanmean(dAll(idx(n1+1:end),:),1)));
     end
     ns = nrep;
 end
