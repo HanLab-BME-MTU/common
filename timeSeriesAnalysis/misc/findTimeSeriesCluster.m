@@ -76,15 +76,15 @@ end
 
 end
 
-function out = gettingFeatures(TS,fVector,maxLag)
+function out = gettingFeatures(TS,fVector,featInput)
 
 % Time Series Features
 
 feature{1} = @(x)   x*x';%Energy
 feature{2} = @(x)   nanmean(x);%Mean
 feature{3} = @(x)   nanvar(x);%Variance
-feature{4} = @(x)   nanCrossCorrelation(x,x,'maxLag',maxLag);%ACF
-feature{5} = @(x,y) nanCrossCorrelation(x,y,'maxLag',maxLag);%CC
+feature{4} = @(x)   nanCrossCorrelation(x,x,featInput{:});%ACF
+feature{5} = @(x,y) nanCrossCorrelation(x,y,featInput{:});%CC
 
 selectedFeat = @(x) cellfun(@(y) y(x),feature(fVector),'Unif',0);
 estFeat      = cellfun(@(x) selectedFeat(x),num2cell(TS,2),'Unif',0);
