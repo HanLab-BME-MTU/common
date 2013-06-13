@@ -34,6 +34,7 @@ ip.addParamValue('Mode', 'xyAc', @ischar);
 ip.addParamValue('Alpha', 0.05, @isscalar);
 ip.addParamValue('Mask', [], @isnumeric);
 ip.addParamValue('FitMixtures', false, @islogical);
+ip.addParamValue('MaxMixtures', 5, @isposint);
 ip.addParamValue('RemoveRedundant', true, @islogical);
 ip.addParamValue('RedundancyRadius', 0.25, @isscalar);
 ip.addParamValue('RefineMaskLoG', true, @islogical);
@@ -127,7 +128,8 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
         if ~ip.Results.FitMixtures
             pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), mode, 'mask', mask, 'alpha', alpha);
         else
-            pstruct = fitGaussianMixtures2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), 'mask', mask, 'alpha', alpha);
+            pstruct = fitGaussianMixtures2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)),...
+                c_est(lmIdx), 'mask', mask, 'alpha', alpha, 'maxM', ip.Results.MaxMixtures);
         end
         
         % remove NaN values
