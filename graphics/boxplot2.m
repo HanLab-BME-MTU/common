@@ -143,7 +143,7 @@ end
 
 
 hold on;
-h = zeros(1,ng); % handles for legend
+h = zeros(1,nb); % handles for legend
 topval = zeros(1,nb*ng); % keep track of highest value
 for g = 1:ng
     

@@ -30,7 +30,7 @@
 
 % Francois Aguet, 18 March 2011 (Last modified: 1 Mar 2013)
 
-function he = barplot2(prm, varargin)
+function [h, he] = barplot2(prm, varargin)
 
 ng = size(prm,1); % #groups
 nb = size(prm,2); % #bars in each group
@@ -111,6 +111,7 @@ end
 
 
 hold on;
+h = zeros(1,nb);
 topval = zeros(1,ng*nb);
 for g = 1:ng
 
@@ -146,8 +147,11 @@ for g = 1:ng
         else
             ci = g;
         end
-        patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
+        hp = patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
             'LineWidth', ip.Results.LineWidth);
+        if g==1
+            h(b) = hp;
+        end
     end
    
     % errorbars, if two-sided
