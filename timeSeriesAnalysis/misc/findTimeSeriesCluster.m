@@ -54,6 +54,7 @@ end
 methods{1} = @(x,y) kmeans(x,y{:});
 methods{2} = @(x,y) findFuzzyCluster(x,y{:});
 methods{3} = @(x,y) MeanShiftClustering(x,y{:});
+%Add new clustering method here
 
 %% estimating the features
 
@@ -85,9 +86,14 @@ feature{2} = @(x)   nanmean(x);%Mean
 feature{3} = @(x)   nanvar(x);%Variance
 feature{4} = @(x)   nanCrossCorrelation(x,x,featInput{:});%ACF
 feature{5} = @(x,y) nanCrossCorrelation(x,y,featInput{:});%CC
+%Add new feature here
+
+tsPreP{1} = @(x) x;
+tsPreP{2} = @(x) num2cell(x,2);
+
 
 selectedFeat = @(x) cellfun(@(y) y(x),feature(fVector),'Unif',0);
-estFeat      = cellfun(@(x) selectedFeat(x),num2cell(TS,2),'Unif',0);
+estFeat      = cellfun(@(x) selectedFeat(x),tsPreP{1+~iscell(TS)}(TS),'Unif',0);
 out          = cell2mat(cellfun(@(x) cell2mat(x'),estFeat,'Unif',0)');
 
 end
