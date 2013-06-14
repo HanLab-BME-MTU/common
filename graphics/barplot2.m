@@ -41,7 +41,7 @@ ip.addRequired('prm');
 ip.addOptional('errorbars', [], @(x) isempty(x) || all(size(x)==size(prm)));
 ip.addOptional('BottomErrorbars', [], @(x) isempty(x) || all(size(x)==size(prm)));
 ip.addOptional('Annotations', [], @(x) isempty(x) || size(x,2)==2);
-ip.addParamValue('FaceColor', jet(nb), @(x) size(x,1)==1 || size(x,1)==nb || size(x,1)==ng);
+ip.addParamValue('FaceColor', jet(nb), @(x) any(size(x,1)==[1 nb ng]));
 ip.addParamValue('EdgeColor', []);
 ip.addParamValue('BorderWidth', [], @isscalar); 
 ip.addParamValue('XLabel', ' ', @ischar);
@@ -72,7 +72,6 @@ faceColor = ip.Results.FaceColor;
 if size(faceColor,1)==1
     faceColor = repmat(faceColor, [nb 1]);
 end
-nc = size(faceColor,1);
 
 edgeColor = ip.Results.EdgeColor;
 if size(edgeColor,1)==1
@@ -142,7 +141,7 @@ for g = 1:ng
     yv = [height; height; zeros(1,nb); zeros(1,nb); height; height];
     
     for b = 1:nb
-        if nc==nb
+        if size(faceColor,1)==nb
             ci = b;
         else
             ci = g;

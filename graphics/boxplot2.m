@@ -30,7 +30,7 @@
 %     'XTickLabel', arrayfun(@(k) ['Group label ' num2str(k)], 1:2, 'UniformOutput', false),...
 %     'Angle', 45, 'FaceColor', [1 0.5 0.5; 0.5 1 0.5], 'EdgeColor', [0.8 0 0; 0 0.8 0]);
 
-% Francois Aguet, 22 Feb 2011 (Last modified: 08/15/2012)
+% Francois Aguet, 22 Feb 2011 (Last modified: 06/14/2013)
 
 function h = boxplot2(prm, varargin)
 
@@ -38,183 +38,189 @@ if isnumeric(prm)
     prm = {prm};
 end
 
-nbin = size(prm{1},2); % # bins
-nd = numel(prm); % # data sets
+% input can either be a cell array of vectors, or a cell array of 5/6xnb matrices
+[s1,s2] = cellfun(@(i) size(i), prm);
+s1 = unique(s1);
+if all(cellfun(@isvector, prm))
+    % input is cell array of vectors
+    [nb, ng] = size(prm); % #bars in each group, #groups
+    rawdata = true;
+elseif numel(s1)==1 && any(s1==[5 6]) && numel(unique(s2))==1
+    ng = numel(prm);
+    nb = size(prm{1},2);
+    rawdata = false;
+else
+    error('Input must be a cell array of vectors, or a cell array of 5xN matrices');
+end
 
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('prm');
 ip.addOptional('Annotations', [], @(x) isempty(x) || size(x,2)==2);
-ip.addParamValue('FaceColor', jet(max(nd)), @(x) size(x,1)==1 || size(x,1)==nd || size(x,1)==nbin);
-ip.addParamValue('EdgeColor', zeros(1,3));
-ip.addParamValue('GroupDistance', 0.5, @isscalar);
+ip.addParamValue('FaceColor', jet(nb), @(x) any(size(x,1)==[1 nb ng]));
+ip.addParamValue('EdgeColor', []);
 ip.addParamValue('BorderWidth', [], @isscalar); 
 ip.addParamValue('XLabel', [], @ischar);
-ip.addParamValue('XTickLabel', arrayfun(@(k) num2str(k), 1:sum(nbin), 'UniformOutput', false), @(x) iscell(x) && (numel(x)==sum(nd)||numel(x)==nbin));
 ip.addParamValue('YLabel', ' ', @ischar);
 ip.addParamValue('YLim', [], @(x) numel(x)==2);
+ip.addParamValue('YTick', []);
+ip.addParamValue('XTickLabel', [], @(x) isempty(x) || (iscell(x) && (numel(x)==sum(nb) || numel(x)==ng)));
 ip.addParamValue('BarWidth', 0.8, @isscalar);
+ip.addParamValue('GroupDistance', 0.8, @isscalar);
 ip.addParamValue('LineWidth', 1, @isscalar);
 ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('ErrorBarWidth', 0.2, @(x) 0<x && x<=1);
 ip.addParamValue('Handle', gca, @ishandle);
 ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
-ip.addParamValue('X', [], @(x) numel(x)==nbin); % cell array of x-coordinates (groups only)
+ip.addParamValue('X', [], @(x) numel(x)==nb); % cell array of x-coordinates (groups only)
 ip.addParamValue('AdjustFigure', true, @islogical);
 ip.addParamValue('ErrorbarColor', []);
 ip.addParamValue('PlotDensity', false, @islogical);
+ip.addParamValue('DetectOutliers', true, @islogical);
 ip.parse(prm, varargin{:});
 
-faceColor = ip.Results.FaceColor;
-if ~iscell(faceColor) % otherwise assume correct format: cell(1,nd)(nbin,:)
-    if size(faceColor,1)==1
-        faceColor = repmat({repmat(faceColor, [nbin 1])}, [1 nd]);
-    elseif size(faceColor,1)==nbin
-        faceColor = repmat({faceColor}, [1 nd]);
-    elseif size(faceColor,1)==nd
-        faceColor = arrayfun(@(i) repmat(faceColor(i,:), [nbin 1]), 1:nd, 'UniformOutput', false);
-    else
-        error('Incorrect color format.');
+% identify outliers
+if ip.Results.DetectOutliers && rawdata
+    [prm, outliers] = cellfun(@(i) detectOutliers(i), prm, 'unif', 0);
+else
+    outliers = cell(nb,ng);
+end
+
+if rawdata
+    if ip.Results.PlotDensity
+        [f,xi] = cellfun(@ksdensity, prm, 'unif', 0);
     end
+    % calculate percentiles
+    prm = cellfun(@(i) [prctile(i(:), [50 25 75]) min(i) max(i)]', prm, 'unif', 0);
+    % concatenate
+    prm = mat2cell(cat(2,prm{:}), 5, nb*ones(1,ng));
+end
+
+faceColor = ip.Results.FaceColor;
+if size(faceColor,1)==1
+    faceColor = repmat(faceColor, [nb 1]);
 end
 
 edgeColor = ip.Results.EdgeColor;
-if ~iscell(edgeColor)
-    if size(edgeColor,1)==1
-        edgeColor = repmat({repmat(edgeColor, [nbin 1])}, [1 nd]);
-    elseif size(edgeColor,1)==nbin
-        edgeColor = repmat({edgeColor}, [1 nd]);
-    elseif size(edgeColor,1)==nd
-        edgeColor = arrayfun(@(i) repmat(edgeColor(i,:), [nbin 1]), 1:nd, 'UniformOutput', false);
-    else
-        error('Incorrect color format.');
-    end
+if size(edgeColor,1)==1
+    edgeColor = repmat(edgeColor, [nb 1]);
+elseif isempty(edgeColor)
+    edgeColor = zeros(size(faceColor));
 end
 
 errorbarColor = ip.Results.ErrorbarColor;
 if isempty(errorbarColor)
-    errorbarColor = repmat({zeros(nbin,3)}, [1 nd]);
+    errorbarColor = zeros(size(faceColor));
 end
 
 ha = ip.Results.Handle;
 bw = ip.Results.BarWidth;
 dg = ip.Results.GroupDistance; % distance between groups, in bar widths
 
-% x-coords for groups
-xa = cell(1,nbin);
+xa = cell(1,ng);
 if isempty(ip.Results.X)
-    xa{1} = 1:nd;
-    for k = 2:nbin
-        xa{k} = xa{1} + xa{k-1}(end) + dg;
+    xa{1} = 1:nb;
+    for g = 2:ng
+        xa{g} = xa{1} + xa{g-1}(end) + dg;
     end
 else
     dx = min(diff(ip.Results.X));
-    for k = 1:nbin
-        w = (nd-1)/2;
-        xa{k} = ip.Results.X(k) + (k-1)*dg + (-w:w)*dx/nd;
+    for g = 1:ng
+        w = (nb-1)/2;
+        xa{g} = ip.Results.X(g) + (g-1)*dg + (-w:w)*dx/nb;
     end
 end
 
 if isempty(ip.Results.BorderWidth)
-    border = 0.5+dg/2;
+    if ng>1
+        border = bw/2+dg/2;
+    else
+        border = 1-bw/2;
+    end
 else
     border = ip.Results.BorderWidth;
 end
 
-if ~iscell(prm{1})
-    plotSEM = mod(size(prm{1},1),2)==0;
-else
-    plotSEM = false;
-end
 
 hold on;
-% handles
-h = zeros(1,nd);
-topval = zeros(1,nbin*nd);
-for k = 1:nbin
+h = zeros(1,ng); % handles for legend
+topval = zeros(1,nb*ng); % keep track of highest value
+for g = 1:ng
     
-    % concatenate values for group 'k'
-    if iscell(prm{1})
-        M = cellfun(@(i) [prctile(i{k}, [50 25 75]) min(i{k}) max(i{k})], prm, 'UniformOutput', false);
-        M = vertcat(M{:})';
+    if size(prm{g},1)==6 % contains SEM
+        p25 = prm{g}(3,:);
+        p75 = prm{g}(4,:);
     else
-        M = cellfun(@(i) i(:,k), prm, 'UniformOutput', false);
-        M = [M{:}];
-    end
-        
-    if plotSEM
-        p25 = M(3,:);
-        p75 = M(4,:);
-    else
-        p25 = M(2,:);
-        p75 = M(3,:);
+        p25 = prm{g}(2,:);
+        p75 = prm{g}(3,:);
     end
     
     % whiskers (plot first to mask bar at '0')
-    if plotSEM && size(M,1)>4
-        w1 = M(5,:);
-        w2 = M(6,:);
-        plotWhiskers = 1;
-    elseif size(M,1)>3
-        w1 = M(4,:);
-        w2 = M(5,:);
-        plotWhiskers = 1;
+    if size(prm{g},1)==6
+        w1 = prm{g}(5,:);
+        w2 = prm{g}(6,:);
     else
-        plotWhiskers = 0;
+        w1 = prm{g}(4,:);
+        w2 = prm{g}(5,:);
     end
     
-    mu = M(1,:);
-    
     % the box
-    lb = xa{k} - bw/2;
-    rb = xa{k} + bw/2;
+    lb = xa{g} - bw/2;
+    rb = xa{g} + bw/2;
     xv = [lb; rb; rb; lb; lb; rb];
     yv = [p75; p75; p25; p25; p75; p75];
-    topval((k-1)*nd+(1:nd)) = M(end,:);
+    topval((g-1)*ng+(1:ng)) = max(prm{g}(end,:));
     
-    for b = 1:nd
+    for b = 1:nb
+        if size(faceColor,1)==nb
+            ci = b;
+        else
+            ci = g;
+        end
 
         if ip.Results.PlotDensity
-            [f,xi] = ksdensity(prm{b}{k});
-            f = f/max(f)/2.5;
-            fill([xa{k}(b)+f xa{k}(b)-f(end:-1:1)], [xi xi(end:-1:1)], faceColor{b}(k,:),...
-                'EdgeColor', edgeColor{b}(k,:), 'HandleVisibility', 'off');
+            f{b,g} = f{b,g}/max(f{b,g})/2.5;
+            fill([xa{g}(b)+f{b,g} xa{g}(b)-f{b,g}(end:-1:1)], [xi{b,g} xi{b,g}(end:-1:1)], 0.8*[1 1 1],...
+                'EdgeColor', 'none', 'HandleVisibility', 'off');
         end
-        
-        if plotWhiskers
-            he = errorbar(xa{k}(b), p25(b), w1(b)-p25(b), 0, 'Color', errorbarColor{b}(k,:), 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
-            setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
-            he = errorbar(xa{k}(b), p75(b), 0, w2(b)-p75(b), 'Color', errorbarColor{b}(k,:), 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
-            setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
-        end
-        
-        hp = patch(xv(:,b), yv(:,b), faceColor{b}(k,:), 'EdgeColor', edgeColor{b}(k,:),...
+
+        % plot whiskers
+        wopts = {'Color', errorbarColor(ci,:), 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off'};
+        he = errorbar(xa{g}(b), p25(b), w1(b)-p25(b), 0, 'LineStyle', 'none', wopts{:});
+        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
+        he = errorbar(xa{g}(b), p75(b), 0, w2(b)-p75(b), 'LineStyle', 'none', wopts{:});
+        setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
+             
+        hp = patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
             'LineWidth', ip.Results.LineWidth);
-        if k==1
+        if g==1 % for legend
             h(b) = hp;
         end
         
         % mean/median line
-        line([lb(b); rb(b)], [mu(b); mu(b)], 'Color', errorbarColor{b}(k,:), 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+        line([lb(b); rb(b)], prm{g}(1,b)*[1; 1], wopts{:});
+        
+        % plot outliers
+        if ~isempty(outliers{b,g})
+            plot(xa{g}(b), outliers{b,g}, 'kp', 'Color', 0.4*[1 1 1], 'MarkerFaceColor', 0.4*[1 1 1]);
+        end
         
         % replot border
-        hp = patch(xv(:,b), yv(:,b), faceColor{b}(k,:), 'EdgeColor', edgeColor{b}(k,:),...
+        hp = patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
             'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
         set(hp, 'FaceColor', 'none');
     end
     
-    
     % SEM
-    if plotSEM
-        sigma = M(2,:);
-        he = errorbar(xa{k}, mu, sigma, 'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+    if size(prm{g},1)==6
+        he = errorbar(xa{g}, prm{g}(1,:), prm{g}(2,:), 'k', 'LineStyle', 'none', 'LineWidth',...
+            ip.Results.LineWidth, 'HandleVisibility', 'off');
         setErrorbarStyle(he, 0.15);
     end
 end
-box off;
 
-if numel(ip.Results.XTickLabel)==nbin
-    XTick = arrayfun(@(k) (xa{k}(1) + xa{k}(end))/2, 1:nbin);
+if ng>1
+    XTick = arrayfun(@(k) (xa{k}(1) + xa{k}(end))/2, 1:ng);
 else
     XTick = [xa{:}];
 end
@@ -222,13 +228,25 @@ end
 % position of the bars
 xa = [xa{:}];
 
+XTickLabel = ip.Results.XTickLabel;
+if isempty(XTickLabel)
+    if ng>1
+        XTickLabel = 1:ng;
+    else
+        XTickLabel = 1:nb;
+    end
+end
+
 XLim = [xa(1)-border xa(end)+border];
-set(ha, 'XTick', XTick, 'XTickLabel', ip.Results.XTickLabel, 'XLim', XLim);
+set(ha, 'XTick', XTick, 'XTickLabel', XTickLabel, 'XLim', XLim);
 if ~isempty(ip.Results.YLim);
     YLim = ip.Results.YLim;
     set(ha, 'YLim', YLim);
 else
     YLim = get(gca, 'YLim');
+end
+if ~isempty(ip.Results.YTick)
+    set(ha, 'YTick', ip.Results.YTick);
 end
 
 % add annotation links (for significance etc.)
@@ -236,18 +254,36 @@ av = ip.Results.Annotations;
 if ~isempty(av)
     pos = get(gca, 'Position');
     dy = 0.25/diff(XLim)*diff(YLim)/pos(4)*pos(3);
-    maxposCount = zeros(nbin,1);
+    maxposCount = zeros(nb,1);
     for k = 1:size(av,1)
         y0 = max(topval(av(k,1):av(k,2)));
         maxpos = find(topval==y0, 1, 'first');
         maxposCount(maxpos) = maxposCount(maxpos)+1;
-        plot(xa(av(k,[1 1 2 2])), y0+dy+1.75*dy*(maxposCount(maxpos)-1)+[0 dy dy 0], 'k', 'LineWidth', 0.75);
+        plot(xa(av(k,[1 1 2 2])), y0+dy+1.75*dy*(maxposCount(maxpos)-1)+[0 dy dy 0], 'k',...
+            'LineWidth', 0.75*ip.Results.LineWidth);
     end
 end
 hold off;
 
 % x labels
-if ip.Results.Angle ~= 0
+if ip.Results.Angle~=0 && ~isempty(ip.Results.XTickLabel)
     rotateXTickLabels(ha, 'Angle', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter,...
         'AdjustFigure', ip.Results.AdjustFigure);
 end
+
+
+function [inliers, outliers] = detectOutliers(obs)
+
+% Same methods as boxplot(). Outliers: values that are
+% larger than q3 + w(q3 ? q1) or smaller than q1 ? w(q3 ? q1),
+% where q1 and q3 are the 25th and 75th percentiles, respectively.
+% The default w = 1.5 corresponds to approximately +/?2.7? and 99.3
+% coverage if the data are normally distributed.
+    
+q = prctile(obs, [25 75]);
+d = 1.5*(q(2)-q(1));
+% outliers:
+idx = obs > q(2)+d | obs < q(1)-d;
+
+inliers = obs(~idx);
+outliers = obs(idx);
