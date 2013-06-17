@@ -1,4 +1,4 @@
-function out = findTimeSeriesCluster(TS,fVector,clusterMethod,varargin)
+function [clusterIdx,featMatrix] = findTimeSeriesCluster(TS,fVector,clusterMethod,varargin)
 %This function cluster time series data using a set of different features.
 %
 %USAGE:
@@ -24,7 +24,8 @@ function out = findTimeSeriesCluster(TS,fVector,clusterMethod,varargin)
 %                clusterSet - cell array with the input options for each clustering method. Help the cluster method function to figure this out out 
 %
 %Output:
-%       out - cell array where each element contains the indexes for each cluster
+%       out        - cell array where each element contains the indexes for each cluster
+%       featMatrix - feature matrix
 %
 %Marco Vilela, 2013
 
@@ -58,21 +59,22 @@ methods{3} = @(x,y) MeanShiftClustering(x,y{:});
 
 %% estimating the features
 
-featMatrix = cell2mat( cellfun(@(x,y) gettingFeatures(x,y,featInput),TS,fVector,'Unif',0)' );
+featMatrix = cellfun(@(x,y) gettingFeatures(x,y,featInput),TS,fVector,'Unif',0);
 
 %% Running clustering algorithm
 
-out = methods{clusterMethod}(featMatrix',clusterSet);
+clusterIdx = methods{clusterMethod}(cat(2,featMatrix{:}),clusterSet);
 
 %% Formatting output
 
 if clusterMethod == 1
     
-    out = cellfun(@(x) find(out == x),num2cell(1:clusterSet{1}),'Unif',0);
+    clusterIdx = cellfun(@(x) find(clusterIdx == x),num2cell(1:clusterSet{1}),'Unif',0);
     
 elseif clusterMethod == 3
     
-    out = arrayfun(@(x) x.ptIdData,out,'Unif',0);
+    clusterIdx = arrayfun(@(x) x.ptIdData,clusterIdx,'Unif',0);
+    
 end
 
 end
@@ -94,6 +96,6 @@ tsPreP{2} = @(x) num2cell(x,2);
 
 selectedFeat = @(x) cellfun(@(y) y(x),feature(fVector),'Unif',0);
 estFeat      = cellfun(@(x) selectedFeat(x),tsPreP{1+~iscell(TS)}(TS),'Unif',0);
-out          = cell2mat(cellfun(@(x) cell2mat(x'),estFeat,'Unif',0)');
+out          = cell2mat(cellfun(@(x) cat(2,x{:}),estFeat,'Unif',0)');
 
 end
