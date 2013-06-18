@@ -122,14 +122,14 @@ for g = 1:ng
         posIdx = height>=0;
         if sum(posIdx)>0
             he = errorbar(xa{g}(posIdx), height(posIdx), zeros(1,sum(posIdx)), topErrorbars(g,posIdx),...
-                'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+                'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off', 'Parent', ha);
             setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
             topval((g-1)*nb+find(posIdx)) = height(posIdx)+topErrorbars(g,posIdx);
         end
         posIdx = height<0; % negative values
         if sum(posIdx)>0
             he = errorbar(xa{g}(posIdx), height(posIdx), bottomErrorbars(g,posIdx), zeros(1,sum(posIdx)),...
-                'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+                'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off', 'Parent', ha);
             setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
         end
         %topval((g-1)*nb+find(posIdx)
@@ -148,7 +148,7 @@ for g = 1:ng
             ci = g;
         end
         hp = patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
-            'LineWidth', ip.Results.LineWidth);
+            'LineWidth', ip.Results.LineWidth, 'Parent', ha);
         if g==1
             h(b) = hp;
         end
@@ -159,13 +159,13 @@ for g = 1:ng
         posIdx = height>=0;
         if sum(posIdx)>0
             he = errorbar(xa{g}(posIdx), height(posIdx), bottomErrorbars(g,posIdx), zeros(1,sum(posIdx)),...
-                'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+                'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off', 'Parent', ha);
             setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
         end
         posIdx = height<0; % negative values
         if sum(posIdx)>0
             he = errorbar(xa{g}(posIdx), height(posIdx), zeros(1,sum(posIdx)), topErrorbars(g,posIdx),...
-                'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+                'k', 'LineStyle', 'none', 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off', 'Parent', ha);
             setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
         end
     end
