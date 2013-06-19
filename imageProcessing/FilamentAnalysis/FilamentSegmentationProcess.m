@@ -299,11 +299,11 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % Flag to set if cell mask is used, if 1, use
             % segmentation(refined) results, if 2, use the user define ROI
             % as in MD_ROI.tif in movieData folder, if 3, no such limit
-            funParams.Cell_Mask_ind = 3;
+            funParams.Cell_Mask_ind = 1;
             
             % Flag to do VIF_outgrowth or not. This is an option made for
             % Gelfand lab
-            funParams.VIF_Outgrowth_Flag = 1;
+            funParams.VIF_Outgrowth_Flag = 0;
             
             % sub-sample number, since often VIF images are taken at a
             % lower sample rate than the other channel, so use this number
@@ -312,6 +312,14 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             
             % the classifiers trained, the mat file's name is saved here.
             funParams.F_classifier = cell(1,max(funParams.ChannelIndex));
+ 
+            % for code running preference
+            % No jumping out figures disrupt other thing; change to 0 if want to see the figures
+            funParams.nofiguredisruption = 1;
+            % No saving the step figures or debug ones; change to 1 if want to save these figures
+            funParams.savestepfigures = 0;
+            % No displaying detailed messages: change to 1 if want to see all debugging messages
+            funParams.showdetailmessages = 0;
             
         end
     end

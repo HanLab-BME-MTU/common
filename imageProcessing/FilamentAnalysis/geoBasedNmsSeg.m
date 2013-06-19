@@ -1,4 +1,4 @@
-function  [T_otsu, current_all_matching_bw, current_model ]  = geoBasedNmsSeg(imageNMS, imageInt, classifier_trained, graph_matching_flag,MaskCell,iFrame,FilamentSegmentationChannelOutputDir)
+function  [T_otsu, current_all_matching_bw, current_model ]  = geoBasedNmsSeg(imageNMS, imageInt, classifier_trained, graph_matching_flag,MaskCell,iFrame,FilamentSegmentationChannelOutputDir,funParams)
 % geoBasedNmsSeg segments filaments from input image(nms) based on the geometrical features of the curves/lines in the image
 % Input:
 %    ImageIn:                           the input image, typically the non maximum supress version of the steerable filtering output
@@ -11,8 +11,19 @@ function  [T_otsu, current_all_matching_bw, current_model ]  = geoBasedNmsSeg(im
 % Liya Ding
 % 2013.02
 
+
+
 % to show or not to show the figures; not affecting the saving part
- set_visible='off';
+ if(funParams.nofiguredisruption ==1 )
+     set_visible='off';
+ else
+     set_visible='on';
+ end
+
+ % save figures or not, show messages or not
+ SaveFigures = funParams.savestepfigures;
+ ShowDetailMessages = funParams.savestepfigures;
+
 
 % define a mask to reduce the number of curvelet to classify
 if(~isempty(MaskCell) || mean(double(MaskCell))==1)
@@ -107,7 +118,7 @@ smoothed_ordered_points = cell(1,1);
 feature_Curvature = nan(nLine,1);
 
 % for the features, only include those curves/lines longer than 4 pixels
-ind_long = find(feature_Length>5);
+ind_long = find(feature_Length>3);
 
 % get the mean intensity of the curves
 for i_area = ind_long'
@@ -160,10 +171,10 @@ if(isempty(classifier_trained))
     
     % Set the slanted classification line cutoff as twice of the Otsu with
     % respect to the mode
-    T_xie_int =  abs(hotsu - mode_nms)*1.5 + mode_nms;
+    T_xie_int =  abs(hotsu - mode_nms)*1.2 + mode_nms;
     
     % And the length as Otsu threshold
-    T_xie_length = 1.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
+    T_xie_length = 1.2*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
     
     % Make a classification function as whether it is above the line
     T_xie_int_train = T_xie_int;
@@ -182,10 +193,12 @@ master_flassier = F_classifer;
 % Select those above the line as our good ones as starting point of graph
 % matching
 Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
-    Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
- display(['Length and NMS only: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);
+Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
+if(ShowDetailMessages==1)
+    display(['Length and NMS only: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);
+end
 
-    % get the mean intensity of the curves
+% get the mean intensity of the curves
 for i_area = Good_ind'
     [all_y_i, all_x_i] = find(labelMask == i_area);
     % only for those good ones, check the curvature
@@ -226,11 +239,12 @@ feature_all.feature_MeanInt = feature_MeanInt;
 feature_all.feature_Curvature = feature_Curvature;
 
 
-Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0 & feature_Curvature<0.1);
-Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0 | feature_Curvature>=0.1);
+Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0 & feature_Curvature<0.3);
+Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0 | feature_Curvature>=0.3);
 
-display(['Length,NMSand Curvature: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);
-
+if(ShowDetailMessages==1)
+    display(['Length,NMSand Curvature: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);
+end
     
 %     
 %     h12 =  figure(12);hold off;
@@ -284,20 +298,23 @@ if(graph_matching_flag==1)
         mkdir(FilamentSegmentationChannelOutputDir,'GEO');
     end
     
-    saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round0_all_match_bw.tif']);
+    if(SaveFigures==1)        
+        saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round0_all_match_bw.tif']);
+    end
     
     confidency_interval = 0.7;
 %     close(h1);
         iIteration=0;
     [current_model,current_matching_bw,model_ind]...
     = graph_matching_linking_once([], current_all_seg_bw, confidency_interval,imageInt, ...
-                                Good_ind,ind_long, [],feature_all,labelMask,master_flassier,iIteration);
-    
-    imwrite(double(current_all_seg_bw*3/4),[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_begin.tif']);
-    imwrite(double(current_matching_bw/2),[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_end.tif']);
-    h1=figure(1);set(h1,'Visible',set_visible);saveas(h1,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_match_color.tif']);
-    h3=figure(3);set(h3,'Visible',set_visible);saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_all_match_bw.tif']);
-   
+                                Good_ind,ind_long, [],feature_all,labelMask,master_flassier,iIteration,funParams);
+    if(SaveFigures==1)
+        imwrite(double(current_all_seg_bw*3/4),[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_begin.tif']);
+        imwrite(double(current_matching_bw/2),[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_end.tif']);
+        h1=figure(1);set(h1,'Visible',set_visible);saveas(h1,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_match_color.tif']);
+        h3=figure(3);set(h3,'Visible',set_visible);saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_all_match_bw.tif']);
+    end
+
     retrain_flag = 1;
      
     T_xie_int_train = T_xie_int_train*0.9;
@@ -311,26 +328,35 @@ if(graph_matching_flag==1)
     plot(feature_Length(Bad_ind),feature_MeanNMS(Bad_ind),'r.');
     
     title('Classifier Plane with matched data round 1');
-    saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_lowered_plane.tif']);
-
+    
+    if(SaveFigures==1)
+        saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_lowered_plane.tif']);
+    end
+    
     % plot the output image with these good ones
     current_all_seg_bw = zeros(size(labelMask));
     for i_E = 1 : length(Good_ind)
         current_good_bw = labelMask==Good_ind(i_E);
         current_all_seg_bw = or(current_all_seg_bw, current_good_bw);
     end
-    imwrite(double(current_all_seg_bw*3/4),[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round2_begin.tif']);
-    close(h1);
+    
+     if(SaveFigures==1)   
+        imwrite(double(current_all_seg_bw*3/4),[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round2_begin.tif']);
+     end
+     
+     if(exist('h1','var'))
+     close(h1);
+     end
     iIteration=1;
     [current_model,current_matching_bw, model_ind]...
             = graph_matching_linking_once(current_model, current_all_seg_bw, confidency_interval,imageInt, ...
-                                Good_ind,ind_long, model_ind,feature_all,labelMask,master_flassier,iIteration);
+                                Good_ind,ind_long, model_ind,feature_all,labelMask,master_flassier,iIteration,funParams);
 
-    
-    imwrite(double(current_matching_bw/2),[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round2_end.tif']);
-    h1=figure(1);set(h1,'Visible',set_visible);saveas(h1,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round2_match_color.tif']);
-    h3=figure(3);set(h3,'Visible',set_visible);saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round2_all_match_bw.tif']);
-    
+    if(SaveFigures==1)        
+        imwrite(double(current_matching_bw/2),[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round2_end.tif']);
+        h1=figure(1);set(h1,'Visible',set_visible);saveas(h1,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round2_match_color.tif']);
+        h3=figure(3);set(h3,'Visible',set_visible);saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round2_all_match_bw.tif']);
+    end
     
     good_bw = nms_seg_no_brancing.*current_matching_bw;
     
@@ -349,11 +375,11 @@ if(graph_matching_flag==1)
         
     end
 
-    retrain_flag=0;
-    
-    for iIteration = 2 : 3
-        graph_matching_iteration_in_segmentation;
-    end
+%     retrain_flag=0;
+%     
+%     for iIteration = 2 : 3
+%         graph_matching_iteration_in_segmentation;
+%     end
     current_all_matching_bw = current_matching_bw>0;
 end
 

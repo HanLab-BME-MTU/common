@@ -315,7 +315,7 @@ for iChannel = selected_channels
                   current_model=[];
            
             case 'geo_based'
-                tic
+%                 tic
                 
                 if(~isempty(funParams.F_classifier{iChannel}))
                     load(funParams.F_classifier{iChannel});
@@ -323,8 +323,10 @@ for iChannel = selected_channels
                   F_classifer_train_this_channel=[];  
                 end
                 
-                [level2, NMS_Segment,current_model ] = geoBasedNmsSeg(nms,currentImg, F_classifer_train_this_channel,1, MaskCell,iFrame,FilamentSegmentationChannelOutputDir);
-                toc
+                [level2, NMS_Segment,current_model ] = ...
+                    geoBasedNmsSeg(nms,currentImg, F_classifer_train_this_channel,1,...
+                    MaskCell,iFrame,FilamentSegmentationChannelOutputDir,funParams);
+%                 toc
                 current_seg = NMS_Segment;
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;
@@ -548,14 +550,14 @@ for iChannel = selected_channels
             'current_model', 'RGB_seg_orient_heat_map','current_seg_orientation','tip_orientation',...
             'tip_int','tip_NMS');
 %         
-%         if( save_tif_flag==1)
-% %             current_seg = (imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']))>0;
-% %             RGB_seg_orient_heat_map = imread([HeatEnhOutputDir,'/segment_heat_',filename_short_strs{iFrame},'.tif']);
-% %             
-%             tif_stack_binary_seg_image_data(:,:,iFrame_index) = uint8(current_seg*255);
-%             tif_stack_RGB_heat_image_data(:,:,:,iFrame_index) = uint8(RGB_seg_orient_heat_map);
+        if( save_tif_flag==1)
+%             current_seg = (imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']))>0;
+%             RGB_seg_orient_heat_map = imread([HeatEnhOutputDir,'/segment_heat_',filename_short_strs{iFrame},'.tif']);
 %             
-%         end
+            tif_stack_binary_seg_image_data(:,:,iFrame_index) = uint8(current_seg*255);
+            tif_stack_RGB_heat_image_data(:,:,:,iFrame_index) = uint8(RGB_seg_orient_heat_map);
+            
+        end
     end
     %% For Gelfand Lab, save results as tif stack file
     if( save_tif_flag==1)

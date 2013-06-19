@@ -22,7 +22,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 23-Apr-2013 18:08:40
+% Last Modified by GUIDE v2.5 29-May-2013 15:52:22
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -96,6 +96,10 @@ set(handles.edit_int_lowerbound_localthresholding,'String',funParams.int_lowerbo
 set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind);
 
 set(handles.checkbox_outgrowth,'value',funParams.VIF_Outgrowth_Flag);
+
+set(handles.checkbox_nofiguredisruption,'value',funParams.nofiguredisruption);
+set(handles.checkbox_savefigures,'value',funParams.savestepfigures);
+set(handles.checkbox_showdetailmessage,'value',funParams.showdetailmessages);
 
 
 Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based'};
@@ -242,6 +246,17 @@ funParams.Cell_Mask_ind = Cell_Mask_ind;
 
 VIF_Outgrowth_Flag = get(handles.checkbox_outgrowth,'value');
 funParams.VIF_Outgrowth_Flag = VIF_Outgrowth_Flag;
+
+
+nofiguredisruption = get(handles.checkbox_nofiguredisruption,'value');
+funParams.nofiguredisruption = nofiguredisruption;
+
+savestepfigures = get(handles.checkbox_savefigures,'value');
+funParams.savestepfigures = savestepfigures;
+
+showdetailmessages = get(handles.checkbox_showdetailmessage,'value');
+funParams.showdetailmessages = showdetailmessages;
+
 
 Sub_Sample_Num  = str2double(get(handles.edit_subsample_number, 'String'));
 if isnan(Sub_Sample_Num) || Sub_Sample_Num < 0
@@ -717,3 +732,30 @@ catch ME
 end
 
 processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
+
+
+% --- Executes on button press in checkbox_showdetailmessage.
+function checkbox_showdetailmessage_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_showdetailmessage (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_showdetailmessage
+
+
+% --- Executes on button press in checkbox_nofiguredisruption.
+function checkbox_nofiguredisruption_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_nofiguredisruption (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_nofiguredisruption
+
+
+% --- Executes on button press in checkbox_savefigures.
+function checkbox_savefigures_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_savefigures (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_savefigures
