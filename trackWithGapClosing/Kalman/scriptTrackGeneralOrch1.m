@@ -1,6 +1,6 @@
 
 %% detecton results
-load('/files/.retain-snapshots.d7d-w0d/LCCB/receptors/Galbraiths/data/alphaVTruncAndCellEdge/120605_Cs3C1_AvTrunc/analysisAlphaVTrunc/detectionAll1.mat');
+load('/files/LCCB/receptors/Galbraiths/data/beta3andCellEdge/130503_Cs2C1_Beta3/detectionAll1.mat');
 
 %% general gap closing parameters
 gapCloseParam.timeWindow = 7; %maximum allowed time gap (in frames) between a track segment end and a track segment start that allows linking them.
@@ -57,7 +57,7 @@ parameters.ampRatioLimit = [0.7 4]; %for merging and splitting. Minimum and maxi
 
 parameters.lenForClassify = 5; %minimum track segment length to classify it as linear or random.
 
-parameters.useLocalDensity = 1; %1 if you want to expand the search radius of isolated features in the gap closing and merging/splitting step.
+parameters.useLocalDensity = 0; %1 if you want to expand the search radius of isolated features in the gap closing and merging/splitting step.
 parameters.nnWindow = gapCloseParam.timeWindow; %number of frames before/after the current one where you want to look for a track's nearest neighbor at its end/start (in the gap closing step).
 
 parameters.linStdMult = 1*ones(gapCloseParam.timeWindow,1); %multiplication factor to calculate linear search radius from standard deviation.
@@ -88,7 +88,7 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = '/files/.retain-snapshots.d7d-w0d/LCCB/receptors/Galbraiths/data/alphaVTruncAndCellEdge/120605_Cs3C1_AvTrunc/analysisAlphaVTrunc/'; %directory where to save input and output
+saveResults.dir = '/files/LCCB/receptors/Galbraiths/data/beta3andCellEdge/130503_Cs2C1_Beta3/'; %directory where to save input and output
 % saveResults.filename = 'tracksTest1DetectionAll1.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
@@ -103,7 +103,7 @@ probDim = 2;
 % [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo,...
 %     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
 
-for i = 1 : 26
+for i = 1 : 12
     movieInfoTmp((i-1)*1200+1:i*1200) = movieInfo((i-1)*1200+1:i*1200);
     saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
     [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...

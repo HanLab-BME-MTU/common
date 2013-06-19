@@ -1,13 +1,16 @@
 function plotPropertySpatialMap2D(tracksFinal,diffAnalysisRes,diffModeAnRes,...
-    properties2plot,positions2plot,lengthMinMax,fixedSegLength,figureName,image,trackDensity)
+    numNeighbors,properties2plot,positions2plot,lengthMinMax,fixedSegLength,...
+    figureName,image)
 %PLOTPROPERTYSPATIALMAP creates spatial maps of trajectory properties
 %
 %SYNOPSIS plotPropertySpatialMap2D(tracksFinal,diffAnalysisRes,diffModeAnRes,...
-%    properties2plot,positions2plot,lengthMinMax,fixedSegLength,figureName,image)
+%    numNeighbors,properties2plot,positions2plot,lengthMinMax,fixedSegLength,...
+%    figureName,image)
 %
 %INPUT  tracksFinal    : Output of trackCloseGapsKalman.
 %       diffAnalysisRes: Output of trackDiffusionAnalysis1.
 %       diffModeAnRes  : Output of trackDiffModeAnalysis.
+%       numNeighbors   : Output of numNeighborsTrack.
 %       properties2plot: Row vector of properties to plot:
 %                        1 - Diffusion classification.
 %                        2 - Diffusion coefficient from MSS analysis.
@@ -16,7 +19,7 @@ function plotPropertySpatialMap2D(tracksFinal,diffAnalysisRes,diffModeAnRes,...
 %                        5 - Average frame-to-frame displacement.
 %                        6 - Diffusion mode.
 %                        7 - Diffusion coefficient from mode analysis.
-%                        8 - Track density.
+%                        8 - Number of neighbors.
 %                        Optional. Default: all.
 %	    positions2plot : Row vector of trajectory position to plot:
 %                        1 - Center position.
@@ -48,32 +51,32 @@ function plotPropertySpatialMap2D(tracksFinal,diffAnalysisRes,diffModeAnRes,...
 
 %% Input
 
-if nargin < 3
+if nargin < 4
     disp('--plotPropertySpatialMap2D: Incorrect number of input arguments!');
     return
 end
 
-if nargin < 4 || isempty(properties2plot)
-    properties2plot = 1:7;
+if nargin < 5 || isempty(properties2plot)
+    properties2plot = 1:8;
 end
 
-if nargin < 5 || isempty(positions2plot)
+if nargin < 6 || isempty(positions2plot)
     positions2plot = 1;
 end
 
-if nargin < 6 || isempty(lengthMinMax)
+if nargin < 7 || isempty(lengthMinMax)
     lengthMinMax = [5 99];
 end
 
-if nargin < 7 || isempty(fixedSegLength)
+if nargin < 8 || isempty(fixedSegLength)
     fixedSegLength = 1;
 end
 
-if nargin < 8 || isempty(figureName)
+if nargin < 9 || isempty(figureName)
     figureName = [];
 end
 
-if nargin < 9 || isempty(image)
+if nargin < 10 || isempty(image)
     image = [];
 end
 
@@ -89,7 +92,7 @@ segmentColor = [0 0 0; 0 0 1; 0.2 0.7 0.7; 0 1 1; 0 1 0; ...
 %construct parts of figure titles
 plottedProperty = {'MSS classification','MSS diffusion coefficient',...
     'Confinement radius','Lifetime','Frame-to-frame displacement',...
-    'Diffusion mode','Mode analysis diffusion coefficient','Density'};
+    'Diffusion mode','Mode analysis diffusion coefficient','Number of neighbors'};
 plottedPosition = {'center position','start position','end position'};
 
 %% Trajectory pre-processing
@@ -101,7 +104,7 @@ indx = chooseTracks(tracksFinal,criteria);
 tracksFinal = tracksFinal(indx);
 diffAnalysisRes = diffAnalysisRes(indx);
 diffModeAnRes = diffModeAnRes(indx);
-% trackDensity = trackDensity(indx);
+numNeighbors = numNeighbors(indx);
 
 %save tracksFinal into a new variable name
 inputStructure = tracksFinal;
@@ -304,10 +307,10 @@ end
 
 if any(properties2plot==8)
     
-    %get density from trackDensity variable
-    smDensity = vertcat(trackDensity.value);
+    %get number of neighbors from numNeighbors variable
+    smDensity = vertcat(numNeighbors.value);
     
-    %divide the range of densities into segements, determine which segment
+    %divide the range of number of neighbors into segements, determine which segment
     %each trajectory falls into, and calculate the fraction of trajectories
     %in each segement
     [smDensitySegment,segmentEdgesDensity,fracInSegmentsDensity] = divideRangeIntoSegments(...
@@ -534,7 +537,7 @@ for iProperty = properties2plot
                     end
                 end
                 
-            case 8 %single molecule density
+            case 8 %number of neighbors
                 
                 %go over the different density segments
                 for iSegment = 1 : numSegments
@@ -682,7 +685,7 @@ for iProperty = properties2plot
                         ' - ' num2str(segmentEdgesDC2(iSegment,2))]; %#ok<AGROW>
                 end
                 
-            case 8 %single molecule density
+            case 8 %number of neighbors
                 
                 %get the center and width of each segment
                 segmentCenter = mean(segmentEdgesDensity,2);

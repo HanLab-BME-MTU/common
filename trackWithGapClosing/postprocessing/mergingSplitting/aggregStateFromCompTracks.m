@@ -25,7 +25,7 @@ function compTracksOut = aggregStateFromCompTracks(compTracks,intensityInfo)
 %                       splitting into 2 different segments. 
 %                      -The field "aggregState" has the same dimensions as
 %                       "tracksFeatIndxCG", and indicates the estimated
-%                       number of units (e.g. rece%ptors) within each
+%                       number of units (e.g. receptors) within each
 %                       detected particle/feature.
 %
 %REMARKS Code does not handle properly the case of multiple merges with or

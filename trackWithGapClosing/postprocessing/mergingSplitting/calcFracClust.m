@@ -4,13 +4,34 @@ function [fracClustTotalMSN,fracClustPerFrameMSN,fracClustTotalMovie,fracClustPe
 %SYNOPSIS [fracClustTotalMSN,fracClustPerFrameMSN,fracClustTotalMovie,fracClustPerFrameMovie] = calcFracClust(tracksAggreg,maxSize)
 %
 %INPUT  tracksAggreg : Cell array of output of aggregStateFromCompTracks.
-%                      1 entry = 1 movie/simulation.
+%                      1 entry = 1 movie or simulation.
 %       maxSize      : Maximum cluster size to look into. Any clusters
 %                      larger than maxSize will be lumped into the bin for
 %                      maxSize.
 %                      Optional. Default: maximum cluster size in data.
 %
-%OUTPUT 
+%OUTPUT fracClustTotalMSN     : maxSize-by-3 array with rows referring to
+%                               clusters of size 1, 2, etc. and columns
+%                               storing the mean over all frames over all
+%                               movies, standard deviation over all frames
+%                               over all movies, and number of movies
+%                               contributing to the mean and std
+%                               calculations.
+%       fracClustPerFrameMSN  : maxSize-by-number of frames-by-3 array with
+%                               rows referring to cluster size, columns
+%                               referring to frames, and 3rd dimension
+%                               storing, per frame, the mean over all
+%                               movies, std over all movies, and number of
+%                               movies.
+%       fracClustTotalMovie   : Cell array with number of entries = number
+%                               of movies. Each entry stores the cluster
+%                               fractions over all frames in an individual
+%                               movie.
+%       fracClustPerFrameMovie: Cell array with number of entries = number
+%                               of movies. Each entry is a
+%                               maxSize-by-number of frames array stoaring
+%                               the cluster fractions per frame in an
+%                               individual movie.
 %
 %Khuloud Jaqaman, February 2013
 

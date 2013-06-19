@@ -2,7 +2,8 @@ function [msTimeInfo] = calcMergeSplitTimes(tracks,minTrackLen,...
     diffAnalysisRes,removePotArtifacts)
 %CALCMERGESPLITTIMES calculates times between merges and splits
 %
-%SYNOPSIS [msTimeInfo] = calcMergeSplitTimes(tracks,minTrackLen,probDim,diffAnalysisRes)
+%SYNOPSIS [msTimeInfo] = calcMergeSplitTimes(tracks,minTrackLen,...
+%    diffAnalysisRes,removePotArtifacts)
 %
 %INPUT  tracks     : Output of trackCloseGapsKalman.
 %       minTrackLen: Minimum length of a track to be used in getting
@@ -24,8 +25,12 @@ function [msTimeInfo] = calcMergeSplitTimes(tracks,minTrackLen,...
 %           .numTracks      : # of tracks in category.
 %           .timeMerge2Split: 1-column vector storing the time interval
 %                             between a merge and a consecutive split.
-%           .timeSplit2Merge: 1-column vector storing the time interval
-%                             between a split and a consecutive merge.
+%           .timeSplit2MergeSelf: 1-column vector storing the time interval
+%                             between a split and a consecutive merge 
+%                             between the same two segments.
+%           .timeSplit2MergeOther: 1-column vector storing the time interval
+%                             between a split and a consecutive merge with
+%                             different segments.
 %           .timeMerge2End  : 1-column vector storing the time interval
 %                             between a merge not followed by a split and
 %                             the track's end.

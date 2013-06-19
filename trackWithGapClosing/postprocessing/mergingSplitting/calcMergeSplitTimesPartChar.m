@@ -27,7 +27,7 @@ function [msTimeMotionCharInfo] = calcMergeSplitTimesPartChar(tracks,...
 %                             between a merge and a consecutive split.
 %           .timeSplit2MergeSelf: 1-column vector storing the time interval
 %                             between a split and a consecutive merge 
-%                             between the same segments.
+%                             between the same two segments.
 %           .timeSplit2MergeOther: 1-column vector storing the time interval
 %                             between a split and a consecutive merge with
 %                             different segments.

@@ -1,9 +1,9 @@
 
 %% movie information
-movieParam.imageDir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\121128_Cs1C3_Y773A\imagesAlphaVY773A\'; %directory where images are
-movieParam.filenameBase = '121128_Cs1C3_CHO_mEos2AvBeta3Y773A_'; %image file name base
+movieParam.imageDir = 'C:\kjData\Galbraiths\data\beta3andCellEdgeP2\130510_Cs2C1_Beta3\imagesBeta3\'; %directory where images are
+movieParam.filenameBase = '130510_Cs2C1_mEos2Beta3_'; %image file name base
 movieParam.firstImageNum = 2; %number of first image in movie
-movieParam.lastImageNum = 9600; %number of last image in movie
+movieParam.lastImageNum = 14400; %number of last image in movie
 movieParam.digits4Enum = 5; %number of digits used for frame enumeration (1-4).
 
 %% detection parameters
@@ -19,16 +19,16 @@ detectionParam.integWindow = 0; %number of frames before and after a frame for t
 detectionParam.calcMethod = 'g';
 
 %absolute background info and parameters...
-background.imageDir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\121128_Cs1C3_Y773A\bgAlphaVY773A\';
-background.filenameBase = 'crop_121128_Cs1C3_CHO_mEos2AvBeta3Y773A_';
+background.imageDir = 'C:\kjData\Galbraiths\data\beta3andCellEdgeP2\130510_Cs2C1_Beta3\bgBeta3\';
+background.filenameBase = 'crop_130510_Cs2C1_mEos2Beta3_';
 background.alphaLocMaxAbs = 0.01;
 detectionParam.background = background;
 
 %% additional input
 
 %saveResults
-saveResults.dir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\121128_Cs1C3_Y773A\analysisAlphaVY773A\tracks\'; %directory where to save input and output
-saveResults.filename = 'detectionAll1.mat'; %name of file where input and output are saved
+saveResults.dir = 'C:\kjData\Galbraiths\data\beta3andCellEdgeP2\130510_Cs2C1_Beta3\analysisBeta3\'; %directory where to save input and output
+saveResults.filename = 'detectionAll1Loc.mat'; %name of file where input and output are saved
 % saveResults = 0;
 
 %verbose state
