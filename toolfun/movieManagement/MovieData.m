@@ -25,6 +25,13 @@ classdef  MovieData < MovieObject
         
         % For Bio-Formats objects
         bfSeries_
+
+        % For mockMovieData
+        mockMD_
+        mMDparent_ % mMDparent is a two column field with the first column 
+        % filed with indexes and second column filled with corresponding
+        % mock Movie Data path. Every time a mock_MD is created the parent
+        % MovieData will have a new line of mMDparent_ appended and saved.
     end
     
     properties (Transient =true)
@@ -114,10 +121,23 @@ classdef  MovieData < MovieObject
                 'Invalid channel numbers! Must be positive integers less than the number of image channels!');
             
             % Delegates the method to the classes
-            fileNames = arrayfun(@getImageFileNames,obj.channels_(iChan),...
-                'UniformOutput',false);
-            if ~all(cellfun(@numel,fileNames) == obj.nFrames_)
-                error('Incorrect number of images found in one or more channels!')
+            if ~isHCS(obj)
+                fileNames = arrayfun(@getImageFileNames,obj.channels_(iChan),...
+                    'UniformOutput',false);
+                if ~all(cellfun(@numel,fileNames) == obj.nFrames_)
+                    error('Incorrect number of images found in one or more channels!')
+                end
+            else
+                kf = 0;
+                for icc = 1:numel(iChan)
+                    fileNames(icc) = arrayfun(@getImageFileNames,obj.channels_(icc),...
+                        'UniformOutput',false);
+                    kf = kf + numel(fileNames{1,icc});
+                end
+                
+                if ~kf == obj.nFrames_
+                    error('Incorrect number of images found in one or more channels!')
+                end
             end
         end
         
@@ -219,7 +239,7 @@ classdef  MovieData < MovieObject
             % Call subcomponents sanityCheck
             disp('Checking channels');
             for i = 1: length(obj.channels_)
-                [width(i) height(i) nFrames(i)] = obj.channels_(i).sanityCheck(obj);
+                [width(i), height(i), nFrames(i)] = obj.channels_(i).sanityCheck(obj);
             end
             
             assert(max(nFrames) == min(nFrames), 'MovieData:sanityCheck:nFrames',...
@@ -229,7 +249,7 @@ classdef  MovieData < MovieObject
                 'Image sizes are inconsistent in different channels.\n\n')
             
             % Define imSize_ and nFrames_;
-            if ~isempty(obj.nFrames_)
+            if ~isempty(obj.nFrames_) && ~isMock(obj)
                 assert(obj.nFrames_ == nFrames(1), 'MovieData:sanityCheck:nFrames',...
                     'Record shows the number of frames has changed in this movie.')
             else
@@ -246,6 +266,24 @@ classdef  MovieData < MovieObject
             % Fix roi/parent initialization
             if isempty(obj.rois_), obj.rois_=MovieData.empty(1,0); end
             if isempty(obj.parent_), obj.parent_=MovieData.empty(1,0); end
+            
+            if isMock(obj)
+                mockMDname = obj.channels_(1,1).getGenericName(obj.channels_(1,1).hcsPlatestack_{1}, 'site_on');
+                if max(size(obj.channels_(1,1).hcsPlatestack_)) ~= 1
+                    mockMDname = strcat('control begin with ',mockMDname);
+                end
+                pathmock = [obj.mockMD_.parent.movieDataPath_ filesep 'controls' filesep mockMDname '.mat'];
+                obj.movieDataPath_ = [obj.mockMD_.parent.movieDataPath_ filesep 'controls'];
+                obj.movieDataFileName_ = [mockMDname '.mat'];
+                obj.mockMD_.path = pathmock;
+                mkdir(obj.movieDataPath_);
+                save(pathmock, 'obj');
+                parentMDpath = [obj.mockMD_.parent.movieDataPath_ filesep obj.mockMD_.parent.movieDataFileName_];
+                load(parentMDpath);
+                MD.mMDparent_ = [MD.mMDparent_; {obj.mockMD_.index obj.mockMD_.path}];
+                save(parentMDpath, 'MD');
+                return
+            end
             
             disp('Saving movie');            
             obj.save();
@@ -402,6 +440,8 @@ classdef  MovieData < MovieObject
                 r = BioFormatsReader(obj.channels_(1).channelPath_, obj.bfSeries_);
             elseif obj.isOmero()
                 r = OmeroReader(obj.getOmeroId(), obj.getOmeroSession());
+            elseif obj.isHCS()
+                r = HCSReader(obj.channels_);
             else
                 r = TiffSeriesReader({obj.channels_.channelPath_});
             end
@@ -421,7 +461,21 @@ classdef  MovieData < MovieObject
             end
         end
 
-    end
+        
+        %% HCS functions
+        function status = isHCS(obj)
+            status = ~isempty(obj.channels_(1).hcsPlatestack_);
+        end
+        
+        function status = isMock(obj)
+            status = ~isempty(obj.mockMD_);
+        end
+        
+        function status = hasMock(obj)
+            status = ~isempty(obj.mMDparent_);
+        end
+        
+            end
     methods(Static)        
         function status=checkValue(property,value)
            % Return true/false if the value for a given property is valid

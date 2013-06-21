@@ -22,7 +22,7 @@ function varargout = movieDataGUI(varargin)
 
 % Edit the above text to modify the response to help movieDataGUI
 
-% Last Modified by GUIDE v2.5 22-Mar-2013 14:05:16
+% Last Modified by GUIDE v2.5 20-Apr-2013 12:53:57
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -316,8 +316,19 @@ end
 
 % Create path object and save it to userData
 try
-    newChannel= Channel(path);
-    newChannel.sanityCheck();
+    hcstoggle = get(handles.checkbox4, 'Value');
+    if hcstoggle == 1
+        newChannel= Channel(path, 'hcsPlatestack_', 1);
+        if max(size(newChannel))>1
+            for icn = 1:max(size(newChannel))
+                newChannel(icn).sanityCheck();
+            end
+        end
+        
+    else
+        newChannel = Channel(path);
+        newChannel.sanityCheck();
+    end
 catch ME
     errormsg = sprintf('%s.\n\nPlease check this is valid channel.',ME.message);
     errordlg(errormsg,'Channel Error','modal');
@@ -327,7 +338,14 @@ end
 % Refresh listbox_channel
 userData.channels = horzcat(userData.channels, newChannel);
 
+if hcstoggle == 1
+    for in = 1:length(userData.channels)
+        ch_name = strcat(userData.channels(in).channelPath_, '-', userData.channels(in).hcsFlags_.wN);
+        contents{end+1} = ch_name{1};
+    end
+else
 contents{end+1} = path;
+end
 set(handles.listbox_channel,'string',contents);
 
 if ishandle(userData.mainFig), 
@@ -395,3 +413,12 @@ end
 
 % Relaunch this interface in preview mode
 movieDataGUI(MD(end));
+
+
+% --- Executes on button press in checkbox4.
+function checkbox4_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+%set(handles.checkbox4, 'Value', 1);
+% Hint: get(hObject,'Value') returns toggle state of checkbox4

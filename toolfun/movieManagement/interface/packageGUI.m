@@ -22,7 +22,7 @@ function varargout = packageGUI(varargin)
 
 % Edit the above text to modify the response to help packageGUI
 
-% Last Modified by GUIDE v2.5 03-Jun-2012 14:40:28
+% Last Modified by GUIDE v2.5 04-Jun-2013 14:06:35
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -137,6 +137,11 @@ delete(handles.figure1);
 function figure1_DeleteFcn(hObject, eventdata, handles)
 
 userData = get(handles.figure1, 'UserData');
+
+if userData.MD.isMock()
+    load([userData.MD.mockMD_.parent.movieDataPath_, filesep, userData.MD.mockMD_.parent.movieDataFileName_]);
+    movieViewer(MD, 'refresher', '1');
+end
 
 % Find all figures stored in userData and delete them
 if isempty(userData), return; end

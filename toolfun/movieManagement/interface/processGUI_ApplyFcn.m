@@ -14,16 +14,16 @@ ip.addOptional('settingFcn',{},@iscell);
 ip.parse(hObject,eventdata,handles,funParams,varargin{:});
 settingFcn=ip.Results.settingFcn;
 
-if get(handles.checkbox_applytoall, 'Value')
-    confirmApplytoAll = questdlg(...
-        ['You are about to copy the current process settings to all movies.'...
-        ' Previous settings will be lost. Do you want to continue?'],...
-        'Apply settings to all movies','Yes','No','Yes'); 
-    if ~strcmp(confirmApplytoAll,'Yes'),
-        set(handles.checkbox_applytoall,'Value',0);
-        return
-    end
-end
+% if get(handles.checkbox_applytoall, 'Value')
+%     confirmApplytoAll = questdlg(...
+%         ['You are about to copy the current process settings to all movies.'...
+%         ' Previous settings will be lost. Do you want to continue?'],...
+%         'Apply settings to all movies','Yes','No','Yes'); 
+%     if ~strcmp(confirmApplytoAll,'Yes'),
+%         set(handles.checkbox_applytoall,'Value',0);
+%         return
+%     end
+% end
 
 % Get the main figure userData
 userData = get(handles.figure1, 'UserData');
@@ -50,11 +50,14 @@ parseProcessParams(userData.crtProc,funParams);
 packageGUI_RefreshFcn(userData.handles_main,'refresh')
 
 userData_main = get(userData.mainFig, 'UserData');
-
-if get(handles.checkbox_applytoall, 'Value'),
-    moviesId = setdiff(1:numel(userData_main.(field)),userData_main.id);
+if isfield(handles, 'checkbox_applytoall')
+    if get(handles.checkbox_applytoall, 'Value'),
+        moviesId = setdiff(1:numel(userData_main.(field)),userData_main.id);
+    else
+        moviesId=[];
+    end
 else
-    moviesId=[];
+    moviesId = 1;
 end
 
 % Apply setting to all movies
@@ -85,7 +88,9 @@ for i = moviesId
 end
 
 % Store the applytoall choice for this particular process
+if isfield(handles, 'checkbox_applytoall')
 userData_main.applytoall(userData.procID)=get(handles.checkbox_applytoall,'Value');
+end
 % Save user data
 set(userData.mainFig, 'UserData', userData_main)
 set(handles.figure1, 'UserData', userData);

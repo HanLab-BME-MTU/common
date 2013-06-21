@@ -13,6 +13,10 @@ classdef Channel < hgsetget
         neutralDensityFilter_       % Neutral Density Filter
         incidentAngle_              % Incident Angle - for TIRF (degrees)
         filterType_                 % Filter Type
+        hcsPlatestack_              % HCS plate file names stack
+        hcsFlags_  % HCS plate well imaged indicator in cell one, 
+        %HCS plate site indicator in second cell HCS plate wavelength names
+        %in the third cell
     end
     
     properties(SetAccess=protected)
@@ -35,15 +39,38 @@ classdef Channel < hgsetget
             %    'PropertyName',propertyValue - A string with an valid channel property followed by the
             %    value.
             
-            if nargin>0
-                obj.channelPath_ = channelPath;
-                
+            if nargin>0                
                 % Construct the Channel object
                 nVarargin = numel(varargin);
                 if nVarargin > 1 && mod(nVarargin,2)==0
                     for i=1 : 2 : nVarargin-1
                         obj.(varargin{i}) = varargin{i+1};
                     end
+                end
+                
+                if obj.hcsPlatestack_ == 1
+                    [wellf, sitef, waveln,hcsPlatestack] = readIXMHTDFile(channelPath);
+                    file_lists = dir(fullfile(channelPath, '*.TIF'));
+                    if length(file_lists) ~= size(hcsPlatestack{1},1)*size(hcsPlatestack{1},2)*length(hcsPlatestack{1}{1,1})*length(waveln) ||...
+                            strcmp(hcsPlatestack{1}{1,1}{1}(1:5),file_lists(2).name(1:5)) ~= 1
+                        warndlg('File Miss Match!, rebuilding plate stack...');
+                    [hcsPlatestack] = HCSplatestack(channelPath);
+                    end
+                    if isempty(hcsPlatestack)
+                        h = errordlg('No HCS data detected, please uncheck HCS data box');
+                        return;
+                    end
+                    for ich = 1:size(hcsPlatestack, 2)
+                        obj(ich).channelPath_ = channelPath;
+                        obj(ich).hcsPlatestack_ = hcsPlatestack{ich};
+                        obj(ich).hcsFlags_.wellF = wellf;
+                        obj(ich).hcsFlags_.siteF = sitef;
+                        obj(ich).hcsFlags_.wN = waveln(ich);
+                        %obj(ich).hcsFlags_.startI = starti;
+                        %obj(ich).hcsFlags_.swI = startsw;
+                    end
+                else
+                    obj.channelPath_ = channelPath;
                 end
             end
         end
@@ -167,7 +194,7 @@ classdef Channel < hgsetget
             if ~isempty(obj.owner_)
                 iChan = find(obj.owner_.channels_ == obj, 1);
             else
-                iChan = 1 ;
+                iChan = 1;
             end
         end
         
@@ -175,6 +202,24 @@ classdef Channel < hgsetget
             
             fileNames = obj.getReader.getImageFileNames(obj.getChannelIndex());
             if nargin>1, fileNames=fileNames(iFrame); end
+        end
+        
+        function Gname = getGenericName(obj, oFileName, flag) %oFileName is either from getImagesFiles or from hcsplatestack
+%             starti = obj.hcsFlags_.startI;
+%             startsw = obj.hcsFlags_.swI;   
+            [starti, startsw] = getindexstart(oFileName);
+            if min(abs(str2double(oFileName(min(startsw)+2))-(0:9))) == 0
+                adi = 1;
+            else
+                adi = 0;
+            end
+            if nargin > 2 && strcmp(flag, 'well_on') == 1
+            Gname = oFileName(starti:max(startsw)+adi);
+            elseif nargin > 2 && strcmp(flag, 'site_on') == 1
+                Gname = oFileName(starti:min(startsw)+1+adi);
+            else
+                Gname = oFileName(starti:starti+2);
+            end           
         end
         
         function I = loadImage(obj, iFrame)
@@ -195,6 +240,8 @@ classdef Channel < hgsetget
         function r = getReader(obj)
             if ~isempty(obj.owner_),
                 r = obj.owner_.getReader();
+            elseif ~isempty(obj.hcsPlatestack_),
+                    r = HCSReader(obj);                    
             else
                 r = TiffSeriesReader({obj.channelPath_});
             end

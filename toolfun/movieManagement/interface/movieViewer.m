@@ -40,12 +40,22 @@ function mainFig = movieViewer(MO,varargin)
 ip = inputParser;
 ip.addRequired('MO',@(x) isa(x,'MovieObject'));
 ip.addOptional('procId',[],@isnumeric);
+ip.addOptional('refresher',[],@isstr);
 ip.addParamValue('movieIndex',0,@isscalar);
 ip.parse(MO,varargin{:});
 
+if strcmp(ip.Results.refresher, '1') == 1
+    movieviewerRefresher(MO);
+    return
+end
+
 % Check existence of viewer interface
-h=findobj(0,'Name','Viewer');
-if ~isempty(h), delete(h); end
+if ~MO.isMock()
+    h=findobj(0,'Name','Viewer');
+    h2 = findobj('Name', 'hcsview');
+    if ~isempty(h), delete(h); end
+    if ~isempty(h2), delete(h2); end
+end
 
 % Generate the main figure
 mainFig=figure('Name','Viewer','Position',[0 0 200 200],...
@@ -53,6 +63,7 @@ mainFig=figure('Name','Viewer','Position',[0 0 200 200],...
     'Color',get(0,'defaultUicontrolBackgroundColor'),'Resize','off',...
     'DeleteFcn', @(h,event) deleteViewer());
 userData=get(mainFig,'UserData');
+set(mainFig, 'UserData', userData);
 
 % Read the MovieObject and process index input 
 if isa(ip.Results.MO,'MovieList')
@@ -223,22 +234,26 @@ moviePanel = uipanel(mainFig,...
     'Title','','BackgroundColor',get(0,'defaultUicontrolBackgroundColor'),...
     'Units','pixels','Tag','uipanel_movie','BorderType','none');
 
-hPosition=10;
 
+    
 if isa(userData.MO,'MovieData')
-    % Create control button for exporting figures and movie (cf Francois' GUI)
-    uicontrol(moviePanel, 'Style', 'togglebutton','String', 'Run movie',...
+    hPosition=10;
+ 
+    % Create controls for scrollling through the movie if regular moviedata
+    if ~MO.isHCS()
+    uicontrol(moviePanel, 'Style', 'pushbutton','String', 'Run movie',...
         'Position', [10 hPosition 100 20],'Callback',@(h,event) runMovie(h,guidata(h)));
+    
+    % Create control button for exporting figures and movie (cf Francois' GUI)
+
     uicontrol(moviePanel, 'Style', 'checkbox','Tag','checkbox_saveFrames',...
         'Value',0,'String', 'Save frames','Position', [150 hPosition 100 20]);
     uicontrol(moviePanel, 'Style', 'checkbox','Tag','checkbox_saveMovie',...
         'Value',0,'String', 'Save movie','Position', [250 hPosition 100 20]);
     uicontrol(moviePanel, 'Style', 'popupmenu','Tag','popupmenu_movieFormat',...
-        'Value',1,'String', {'MOV';'AVI'},'Position', [350 hPosition 100 20]);
-    
-
-    
-    % Create controls for scrollling through the movie
+        'Value',1,'String', {'MOV';'AVI'},'Position', [350 hPosition 100 20]);    
+        
+        
     hPosition = hPosition+30;
     uicontrol(moviePanel,'Style','text','Position',[10 hPosition 50 15],...
         'String','Frame','Tag','text_frame','HorizontalAlignment','left');
@@ -256,9 +271,125 @@ if isa(userData.MO,'MovieData')
         'SliderStep',[1/double(userData.MO.nFrames_)  5/double(userData.MO.nFrames_)],...
         'Tag','slider_frame','BackgroundColor','white',...
         'Callback',@(h,event) redrawScene(h,guidata(h)));
+    
+    hPosition = hPosition+30;
+    elseif MO.isMock()
+%         shtext = uicontrol(moviePanel, 'Style', 'text', 'Position', [10 60 panelsLength-100 20], ...
+%             'String', ['Preview for site ', MO.channels_(1,1).getGenericName(MO.channels_(1,1).hcsPlatestack_{1}, 'site_on')], ...
+%         'HorizontalAlignment','left');
+    if size(MO.mockMD_.index,1) > 1
+    %hPosition = hPosition+20;
+    uicontrol(moviePanel,'Style','text','Position',[10 hPosition 50 15],...
+        'String','Frame','Tag','text_frame','HorizontalAlignment','left');
+    uicontrol(moviePanel,'Style','text','Position',[70 hPosition 80 15],...
+        'String','1','Tag','edit_frame','BackgroundColor','white',...
+        'HorizontalAlignment','left',...
+        'Callback',@(h,event) redrawScene(h,guidata(h)));
+    uicontrol(moviePanel,'Style','text','Position',[150 hPosition 40 15],...
+        'HorizontalAlignment','left',...
+        'String',['/' num2str(userData.MO.nFrames_)],'Tag','text_frameMax');
+    
+    uicontrol(moviePanel,'Style','slider',...
+        'Position',[200 hPosition panelsLength-160 20],...
+        'Value',1,'Min',1,'Max',userData.MO.nFrames_,...
+        'SliderStep',[1/double(userData.MO.nFrames_)  5/double(userData.MO.nFrames_)],...
+        'Tag','slider_frame','BackgroundColor','white',...
+        'Callback',@(h,event) redrawScene(h,guidata(h)));    
+    end
+    hPosition = hPosition+30;
+    else
+        hcshid = uicontrol('Parent', mainFig, 'Visible', 'off', 'Tag','slider_frame');
+        hcsview = figure('Name','hcsview','Position',[100 100 200 200],...
+            'NumberTitle','off','Tag','hcsview','Toolbar','none','MenuBar','none',...
+            'Color',get(0,'defaultUicontrolBackgroundColor'),'Resize','off',...
+            'DeleteFcn', @(h,event) deleteViewer());
+        hcsuserData.lastclick = '0';
+        hcsuserData.MO = MO;
+        set(hcsview, 'UserData', hcsuserData);
+        dcolor = get(0, 'DefaultUIControlBackgroundColor');
+        platestack = MO.channels_(1,1).hcsPlatestack_;
+        wellflag = MO.channels_(1,1).hcsFlags_.wellF;
+        % gui for a plate
+        %         hp = uipanel('Parent', moviePanel,'Title','Plate Inspector','FontSize',10,...
+%             'Position',[10 320 22*((size(wellflag,1)+2)) 22*((size(wellflag,2)+2))]);
+        hp = uipanel('Parent', hcsview,'Title','Plate Inspector','FontSize',10,...
+             'Position',[.04 .29 .9 .68]);
+        % gui for well
+        hpp = uipanel('Parent', hcsview,'Title','Well Inspector','FontSize',10,...
+            'Position',[.04 .04 .4 .24]); 
+        pwgc = 0; % plate-well good count 
+        for i2 = 1:size(wellflag,1)
+            for i3 = 1:size(wellflag,2)
+                
+                if i2 == 1
+                    hth = uicontrol('Parent', hp, 'Style', 'Text', 'Position', [i3*22+22,370, 22,22],...
+                        'String', num2str(i3));
+                end
+                if i3 == 1
+                    htv = uicontrol('Parent', hp, 'Style', 'Text', 'Position', [22,365-i2*22, 22,22],...
+                        'String', char(i2-1+'A'));
+                end
+                if wellflag(i2, i3) == 0
+                hb = uicontrol('Parent', hp,'Style','pushbutton', 'Position', [i3*22+22,370-i2*22,22,22]...
+                    ,'Tag','slider_frame',...
+                    'enable', 'off'); %
+                elseif wellflag(i2, i3) == 1
+                    pwgc = pwgc + 1;
+                    if pwgc == 1
+                        ipr1 = i2; ipr2 = i3;
+                    end
+                    wellname = MO.channels_(1,1).getGenericName(platestack{i2-ipr1+1, i3-ipr2+1}{1,1});
+                    hb = uicontrol('Parent', hp,'Style','pushbutton', 'Position', [i3*22+22,370-i2*22,22,22]...
+                        ,'TooltipString',[wellname, ...
+                        ',',num2str(length(platestack{i2-ipr1+1, i3-ipr2+1})), ...
+                        ' Sites'],'Tag', wellname,...
+                        'UserData', dcolor, ...
+                        'enable', 'on',...
+                        'Callback', {@updatewellp, platestack, [i2-ipr1+1, i3-ipr2+1], hpp, mainFig, MO});
+                    % setting the colors while building the plate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    if MO.hasMock()
+                        mMDsite_number = [];
+                        for imMDt = 1:size(MO.mMDparent_,1)
+                            if size(MO.mMDparent_{imMDt},1) > 1 % multi-frame mockMD
+                                for imMD = 1:size(MO.mMDparent_{imMDt},1)
+                                    if i2-ipr1+1 == MO.mMDparent_{imMDt}(imMD, 1) && i3-ipr2+1 == MO.mMDparent_{imMDt}(imMD,2)
+                                        set(hb,'BackgroundColor','cyan');
+                                        set(hb,'UserData',[0 1 1]);
+                                        mMDsite_number = [mMDsite_number; MO.mMDparent_{imMDt}(imMD,3)];
+                                        set(hb, 'Callback', {@updatewellp, platestack, {i2-ipr1+1, i3-ipr2+1, mMDsite_number, 1, MO.mMDparent_{imMDt,2}}, hpp, mainFig, MO});
+                                    end
+                                end
+                                
+                            else
+                                if i2-ipr1+1 == MO.mMDparent_{imMDt}(1) && i3-ipr2+1 == MO.mMDparent_{imMDt}(2)
+                                    set(hb,'BackgroundColor','green');
+                                    set(hb,'UserData',[0 1 0]);
+                                    mMDsite_number = [mMDsite_number; MO.mMDparent_{imMDt}(3)];
+                                    set(hb, 'Callback', {@updatewellp, platestack, {i2-ipr1+1, i3-ipr2+1, mMDsite_number, 0, MO.mMDparent_{imMDt,2}}, hpp, mainFig, MO});
+                                end
+                            end
+                        end
+                    end
+                    
+                end
+                
+            end
+        end
+        uicontrol('Parent', hpp, 'Style', 'pushbutton', 'Position', [299 55 180 25], ...
+            'String', 'Preprocess Controls ', ...
+        'Callback', {@togglecontrol, MO});
+        
+        if ~isempty(MO.mMDparent_)
+        uicontrol('Parent', hpp, 'Style', 'pushbutton', 'Position', [299 30 180 25], ...
+            'String', 'Flush Controls', ...
+            'Callback', {@flushcontrol, MO});
+        end
+        handles = guihandles(hcsview);
+        guidata(handles.hcsview, handles);
+        set(handles.hcsview,'UserData',hcsuserData);
+    end
 end
 % Create movie location edit box
-hPosition = hPosition+30;
 uicontrol(moviePanel,'Style','text','Position',[10 hPosition 40 20],...
     'String','Movie','Tag','text_movie');
 
@@ -282,7 +413,7 @@ end
 
 % Add help button
 set(0,'CurrentFigure',mainFig)
-hAxes = axes('Units','pixels','Position',[panelsLength-50 hPosition  48 48],...
+hAxes = axes('Units','pixels','Position',[panelsLength-50 hPosition  20 20],...
     'Tag','axes_help', 'Parent', moviePanel);
 icons = loadLCCBIcons();
 Img = image(icons.questIconData);
@@ -298,12 +429,27 @@ uicontrol(moviePanel,'Style','text','Position',[10 hPosition panelsLength-100 20
 % Get overlay panel size
 moviePanelSize = getPanelSize(moviePanel);
 moviePanelHeight =moviePanelSize(2);
-
+if ~isempty(MO.channels_(1,1).hcsFlags_)
+    if max(size(MO.channels_(1,1).hcsFlags_.wellF)) ~= 0
+        hcsl = 22*size(MO.channels_(1,1).hcsFlags_.wellF,2)+150;
+        hcsh = 22*size(MO.channels_(1,1).hcsFlags_.wellF,1)+250;
+    else
+        hcsl = 0;
+        hcsh = 0;
+    end
+panelsLength = max(panelsLength, hcsl);
+end
 %% Resize panels and figure
 sz=get(0,'ScreenSize');
 maxWidth = panelsLength+20;
 maxHeight = panelsHeight+moviePanelHeight;
-set(mainFig,'Position',[sz(3)/50 sz(4)/2 maxWidth maxHeight]);
+if MO.isMock()
+    maxHeight = 190;
+end
+if MO.isHCS() && ~MO.isMock()
+    set(hcsview,'Position',[sz(3)/50 sz(4)/2 maxWidth hcsh]);
+end
+set(mainFig,'Position',[sz(3)/50 sz(4)/3.8 maxWidth maxHeight]);
 set(moviePanel,'Position',[10 panelsHeight+10 panelsLength moviePanelHeight]);
 
 % Update handles structure and attach it to the main figure
@@ -335,8 +481,22 @@ for i=intersect(procId,validProcId)
     set(h,'Value',1);
 end
 
+if userData.MO.isMock()
+    redrawScene(handles.figure1, handles);
+end
+
 % Update the image and overlays
-if isa(userData.MO,'MovieData'), redrawScene(handles.figure1, handles); end
+if isa(userData.MO,'MovieData') && ~userData.MO.isHCS()
+  redrawScene(handles.figure1, handles);
+end
+
+
+% function slider_callback(src,eventdata,panel)
+% pos=get(panel,'Position');
+% pos(2)=(1-pos(4))*get(src,'Value');
+% set(panel,'Position',pos)
+% uistack(panel,'top');
+
 
 function displayPath= getDisplayPath(movie)
 [~,endPath] = fileparts(movie.getPath);
@@ -360,7 +520,10 @@ userData = get(handles.figure1, 'UserData');
 nFrames = userData.MO.nFrames_;
 startFrame = get(handles.slider_frame,'Value');
 if startFrame == nFrames, startFrame =1; end;
-if get(hObject,'Value'), action = 'Stop'; else action = 'Run'; end
+if get(hObject,'Value')
+   action = 'Stop'; 
+else action = 'Run'; 
+end
 set(hObject,'String',[action ' movie']);
 
 % Get frame/movies export status
@@ -417,10 +580,25 @@ if saveMovie && strcmpi(movieFormat,'avi'), movie2avi(movieFrames,moviePath); en
 set(hObject,'String', 'Run movie', 'Value', 0);
 
 function redrawScene(hObject, handles)
-
 userData = get(handles.figure1, 'UserData');
 % Retrieve the value of the selected image
-if strcmp(get(hObject,'Tag'),'edit_frame')
+if userData.MO.isHCS()
+    if userData.MO.isMock()
+        if size(userData.MO.mockMD_.index,1) == 1;
+        frameNumber = 1;
+        else
+        frameNumber = get(handles.slider_frame,'Value');
+        end    
+    else
+        frameNumber = get(handles.slider_frame,'Value');
+        if max(size(frameNumber)) ~= 1
+            frameNumber = frameNumber{1};
+            if frameNumber == 0;
+                frameNumber = 1;
+            end
+        end
+    end
+elseif strcmp(get(hObject,'Tag'),'edit_frame')
     frameNumber = str2double(get(handles.edit_frame, 'String'));
 else
     frameNumber = get(handles.slider_frame, 'Value');
@@ -429,8 +607,17 @@ frameNumber=round(frameNumber);
 frameNumber = min(max(frameNumber,1),userData.MO.nFrames_);
 
 % Set the slider and editboxes values
+if ~userData.MO.isHCS()
 set(handles.edit_frame,'String',frameNumber);
 set(handles.slider_frame,'Value',frameNumber);
+end
+if userData.MO.isMock() && size(userData.MO.mockMD_.index,1) > 1
+set(handles.slider_frame,'Value',frameNumber);
+set(handles.edit_frame,'String',userData.MO.channels_(1,1).getGenericName(userData.MO.channels_(1,1).hcsPlatestack_{frameNumber}, 'site_on'));
+if userData.MO.isMock() && size(userData.MO.mockMD_.index,1) == 1
+    set(handles.slider_frame,'Value',1);
+end
+end
 
 % Update the image and overlays
 redrawImage(handles);
@@ -486,12 +673,16 @@ if nChan==0, set(hObject,'Value',1); elseif nChan>3, set(hObject,'Value',0); end
 redrawImage(handles)
 
 function redrawImage(handles,varargin)
-frameNr=get(handles.slider_frame,'Value');
-imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
 
+imageTag = get(get(handles.uipanel_image,'SelectedObject'),'Tag');
 % Get the figure handle
 drawFig = getFigure(handles,'Movie');
 userData=get(handles.figure1,'UserData');
+if userData.MO.isMock() && size(userData.MO.mockMD_.index,1) == 1
+    frameNr = 1;
+else
+frameNr= get(handles.slider_frame,'Value');
+end
 
 % Use corresponding method depending if input is channel or process output
 channelBoxes = findobj(handles.figure1,'-regexp','Tag','checkbox_channel*');
@@ -521,9 +712,8 @@ if ~isempty(optFig),
     userData.setImageOptions(drawFig, displayMethod)
 end
 
-function panZoomCallback(varargin)
-
-% Find if options figure exist
+function panZoomCallback(varargin) 
+    % Find if options figure exist
 optionsFig = findobj(0,'-regexp','Tag', 'optionsFig');
 if ~isempty(optionsFig)
     % Reset the scaleBar
@@ -546,8 +736,19 @@ for i=1:numel(overlayTags),
 end
 
 function redrawOverlay(hObject,handles)
-userData=get(handles.figure1,'UserData');
-frameNr=get(handles.slider_frame,'Value');
+    userData=get(handles.figure1,'UserData');
+    if userData.MO.isMock()
+        if size(userData.MO.mockMD_.index,1) == 1;
+            frameNr = 1;
+        else
+            frameNr = get(handles.slider_frame,'Value');
+        end
+    else
+        frameNr = get(handles.slider_frame,'Value');
+    end
+if max(size(frameNr)) > 1
+frameNr = frameNr{1};
+end
 overlayTag = get(hObject,'Tag');
 
 % Get figure handle or recreate figure
@@ -609,3 +810,368 @@ for i = 1:numel(tags)
     h = findobj(0,'-regexp','Tag', tags{i});
     if ~isempty(h), delete(h); end
 end
+
+function updatewellp(src, eventdata, platestack, indw, hpp, mainFig, MO)
+        dcolor = get(0, 'DefaultUIControlBackgroundColor');
+        siteflags = MO.channels_(1,1).hcsFlags_.siteF;
+        hcsview = findobj('Name', 'hcsview');
+        userData = get(hcsview, 'UserData'); 
+        userData = userData(1);
+        if strcmp(userData.lastclick, '0') ~= 1
+            lwell = findobj('Tag', userData.lastclick);
+            original_color = get(lwell, 'UserData'); % original color saved in each well's UserData
+            set(lwell, 'BackgroundColor', original_color);
+        end
+        if size(indw,2) == 2
+            indw = {indw(1), indw(2)};
+        end
+        pst = platestack{indw{1}, indw{2}};
+        cwell = findobj('Tag', MO.channels_(1,1).getGenericName(pst{1,1}));
+    % save last clicked well into userdata, in order to be refreshed.
+        userData.lastclick = MO.channels_(1,1).getGenericName(pst{1,1});
+        set(hcsview, 'UserData', userData);
+        current_well_type = get(cwell, 'UserData');
+        if sum(current_well_type - [0 1 0]) == 0
+            set(cwell, 'BackgroundColor', [0.5 1 0.5]);
+        elseif sum(current_well_type - [0 1 1]) == 0
+            set(cwell, 'BackgroundColor', [0.8 1 1]);
+        else
+        set(cwell, 'BackgroundColor', [1 1 1]);
+        end
+        i4 = 1;
+        for i1 = 1:size(siteflags,2)
+            for i2 = 1:size(siteflags,1)
+                if siteflags(i1, i2) == 0
+                    hballsites = uicontrol('Parent', hpp, 'Style', 'pushbutton', 'Position', [i2*22 size(siteflags,1)*22-i1*22+10 22 22],...
+                        'enable', 'off');
+                else
+                    preprocess_flag{1} = 0;
+                    sitestr = [MO.channels_(1,1).getGenericName(pst{1,1}),'S',num2str(i4)]; sstr = num2str(i4);
+                    hbwp = uicontrol('Parent', hpp, 'Style', 'pushbutton', 'Position', [i2*22 size(siteflags,1)*22-i1*22+10 22 22],...
+                        'Tag',['S', num2str(i4)], ...
+                        'UserData', dcolor, ...
+                        'FontWeight', 'normal', ...
+                        'String',sstr,'Callback', {@viewsite, i4, indw, platestack, mainFig, hpp, sitestr, preprocess_flag});%@(hbwp,event) redrawScene(hbwp,guidata(hbwp)));%,...
+                    current_well_type = get(cwell, 'UserData');
+                    if sum(current_well_type - [0 1 0]) ~= 0 && sum(current_well_type - [0 1 1]) ~= 0
+                        if i4 == 1
+                            set(hbwp, 'BackgroundColor', [1 1 1]);
+                            viewsite(src, eventdata, i4, indw, platestack, mainFig, hpp, sitestr, preprocess_flag);
+                        end
+                    end
+                    %'Callback',{@view4ch, pst, i4,dirurl});
+                    if size(indw, 2) >2
+                        for isk = 1:length(indw{3})
+                            if i4 == indw{3}(isk)
+                                preprocess_flag{1} = 1;
+                                if size(indw,2)>3
+                                    if indw{4} == 1
+                                        set(hbwp,'BackgroundColor','cyan');
+                                        set(hbwp,'UserData',[0 1 1]);
+                                    else
+                                        set(hbwp,'BackgroundColor','green');
+                                        set(hbwp,'UserData',[0 1 0]);
+                                    end
+                                    preprocess_flag{2} = indw{5};
+                                end
+                                set(hbwp, 'Callback', {@viewsite, i4, indw, platestack, mainFig, hpp, sitestr, preprocess_flag});
+                            end
+                        end
+                    end
+                    i4 = i4+1;
+                end
+            end
+        end
+       
+    function viewsite(src, eventdata, inds, indw, platestack, mainFig, hpp, sitestr, preprocess_flag)
+        n_site = size(platestack{indw{1},indw{2}},2);
+        for id = 1:n_site
+            refreshsitestr = findobj(hpp, 'Tag', ['S', num2str(id)]);
+            if length(refreshsitestr) > 0
+            original_color = get(refreshsitestr(1), 'UserData');
+            set(refreshsitestr, 'BackgroundColor', original_color);
+            end
+        end   
+        current_click = findobj('Tag', ['S', num2str(inds)]);
+        original_color = get(current_click(1), 'UserData');
+        if original_color == [0 1 0] % green
+            set(current_click, 'BackgroundColor', [0.5 1 0.5]); % lighter green
+        elseif original_color == [0 1 1] % cyan
+            set(current_click, 'BackgroundColor', [0.8 1 1]); % lighter cyan
+        else
+            set(current_click, 'BackgroundColor', [1 1 1]);
+        end
+        tni = 0;
+        for iv = 1:indw{1} %get number of rows
+            for ih = 1:size(platestack,2)%get number of columns
+                niw = size(platestack{iv,ih},2);%get number of sites within one well
+                % doing this loop instead of multiplication can
+                % avoid the case of inconsistent number of sites
+                % exists across wells.
+                if iv == indw{1} && ih == indw{2}
+                    tni = tni + inds;
+                    break;
+                else
+                    tni = tni + niw;
+                end
+            end
+        end
+        if tni == 0
+            tni = 1;
+        end
+        handles = guihandles(mainFig);
+        set(handles.slider_frame, 'Value', tni);
+        userdata = get(handles.figure1, 'UserData');
+        MD = userdata.MO;
+        if MD.isMock()
+            load([MD.movieDataPath_ filesep MD.mockMD_.parent.movieDataFileName_]);
+            % Duplication of objects in matlab will link all the
+            % duplicated objects to be consistent. One solution to it is
+            % to have this object < matlab.mixin.copy, which is not
+            % desired. Therefore we need to load in the original
+            % MovieData if it has been changed during MD_mock
+            % loading original MD in this level of callback is to
+            % prevent MD_mock been wrapped recursively into itself.
+        end
+        userdata.MO = MD;
+        set(handles.figure1, 'UserData', userdata);
+        % Preprocess for mock_MD button
+        mockppb = uicontrol('Parent', hpp, 'Style', 'pushbutton', 'Position', [299 80 180 25], ...
+            'String', ['Process&View ',sitestr], 'Callback', {@mockMD_preprocess, tni, MD, preprocess_flag});
+
+        redrawScene(handles.figure1, handles);
+        %redrawScene(handles,guidata(mainFig));
+        
+        
+        function mockMD_preprocess(src, eventdata, tni, MD, preprocess_flag)
+            if MD.isMock()
+               load([MD.movieDataPath_ filesep MD.movieDataFileName_]); 
+               % Duplication of objects in matlab will link all the
+               % duplicated objects to be consistent. One solution to it is
+               % to have this object < matlab.mixin.copy, which is not
+               % desired. Therefore we need to load in the original
+               % MovieData if it has been changed during MD_mock
+               % loading original MD in this level of callback is to
+               % prevent MD_mock been wrapped recursively into itself.
+            end
+            if preprocess_flag{1} == 0
+            MD_mock = mockMovieData(MD, tni);%tni is the single number index for the site. NOT [col# row# site#]
+            MD_mock.sanityCheck;
+            else 
+                load(preprocess_flag{2}); 
+                ds = exist('obj', 'var');
+                if ds == 1
+                    MD_mock = obj;
+                else 
+                    dsk = exist('MD', 'var');
+                    if dsk == 1
+                        MD_mock = MD;
+                    end
+                end
+            end              
+            fig = movieSelectorGUI;
+            handles = guihandles(fig);
+            userData = get(handles.figure1, 'UserData');
+            userData.MD = MD_mock;
+            pathname = MD_mock.movieDataPath_;
+            userData.userDir = pathname;
+            M = MD_mock;
+            set(handles.figure1, 'UserData', userData);
+            
+            % Display Movie information
+            moviePaths = MD_mock.mockMD_.path;
+            nMovies= numel(userData.MD);
+            iMovie = get(handles.listbox_movie, 'Value');
+            if isempty(userData.MD),
+                iMovie=0;
+            else
+                iMovie=max(1,min(iMovie,nMovies));
+            end
+            set(handles.listbox_movie,'String',moviePaths,'Value',iMovie);
+            set(handles.text_movies, 'String', sprintf('%g/%g movie(s)',iMovie,nMovies))
+            
+            % Display list information
+            listPaths = arrayfun(@getFullPath,userData.ML,'Unif',false);
+            nLists= numel(userData.ML);
+            iList = get(handles.listbox_movieList, 'Value');
+            if isempty(userData.ML),
+                iList=0;
+            else
+                iList=max(1,min(iList,nLists));
+            end
+            set(handles.listbox_movieList,'String',listPaths);
+            set(handles.text_movieList, 'String', sprintf('%g/%g movie list(s)',iList,nLists))
+        
+function togglecontrol(src, eventdata, MO)
+pp = figure('Name','Viewer','Position',[0 0 700 530],...
+    'NumberTitle','off','Tag','tog','Toolbar','none','MenuBar','none',...
+    'Color',get(0,'defaultUicontrolBackgroundColor'),'Resize','off');
+platestack = MO.channels_(1,1).hcsPlatestack_;
+wellflag = MO.channels_(1,1).hcsFlags_.wellF;
+hp = uipanel('Parent', pp,'Title','Select Wells as Controls','FontSize',10,...
+    'Position',[.05 .15 .9 .8]);
+pwgc = 0; % plate-well good count
+for i2 = 1:size(wellflag,1)
+    for i3 = 1:size(wellflag,2)
+        
+        if i2 == 1
+            hth = uicontrol('Parent', hp, 'Style', 'Text', 'Position', [i3*22+22,380, 22,22],...
+                'String', num2str(i3));
+        end
+        if i3 == 1
+            htv = uicontrol('Parent', hp, 'Style', 'Text', 'Position', [22,375-i2*22, 22,22],...
+                'String', char(i2-1+'A'));
+        end
+        if wellflag(i2, i3) == 0
+            hb = uicontrol('Parent', hp,'Style','pushbutton', 'Position', [i3*22+22,380-i2*22,22,22]...
+                ,'Tag','slider_frame',...
+                'enable', 'off'); %
+        elseif wellflag(i2, i3) == 1
+            pwgc = pwgc + 1;
+            if pwgc == 1
+                ipr1 = i2; ipr2 = i3;
+            end
+            indexvh = [i2-ipr1+1, i3-ipr2+1];
+            wellname = MO.channels_(1,1).getGenericName(platestack{i2-ipr1+1, i3-ipr2+1}{1,1});
+            hb(pwgc) = uicontrol('Parent', hp,'Style','togglebutton', 'Position', [i3*22+22,380-i2*22,22,22]...
+                ,'TooltipString',[MO.channels_(1,1).getGenericName(platestack{i2-ipr1+1, i3-ipr2+1}{1,1}), ...% has to be named in the same way
+                ',',num2str(length(platestack{i2-ipr1+1, i3-ipr2+1})), ...
+                ' Sites'],'Tag',['T', wellname],...
+                'enable', 'on');%,'Callback', {@mockMDindex, indexvh, platestack, pp});
+        end
+        
+    end
+end
+             hbend = uicontrol('Parent', pp,'Style','pushbutton', 'Position', [450,20,180,30],...
+                 'String', 'Submit as Controls',...
+                 'enable', 'on','Callback', {@submittoggles, MO});
+
+
+% 
+% function abs_inx = mockMDindex(src, eventdata, indexvh, platestack, pp)
+% in = size(platestack{indexvh(1),indexvh(2)},2);
+% for i = 1:in
+%     index3 = [indexvh, i];
+%     abs_inx(i) = indexing3to1(index3, platestack);
+% end
+% absi_list = get(pp, 'UserData');
+% set(pp, 'UserData', [absi_list abs_inx]);
+
+function submittoggles(src, eventdata, MD)
+    pt = findobj('Value', 1, 'Style', 'togglebutton');
+    selectedWell = get(pt, 'Tag');
+    findemptyh = sum(MD.channels_(1,1).hcsFlags_.wellF);
+    findemptyv = sum(MD.channels_(1,1).hcsFlags_.wellF');
+    e_c = find(findemptyh == 0);
+    e_r = find(findemptyv == 0);
+    if length(e_c) == 1
+        emptywellc = e_c;
+    else
+        for i1 = 2:length(e_c)
+            if e_c(i1)-e_c(i1-1) ~=1
+                emptywellc = e_c(i1-1);
+            end
+        end
+    end
+    if length(e_r) == 1
+        emptywellr = e_r;
+    else
+        for i3 = 2:length(e_r)
+            if e_r(i3)-e_r(i3-1) ~=1
+                emptywellr = e_r(i3-1);
+            end
+        end
+    end
+    tnit = [];
+    for i= 1:length(selectedWell)
+        wpv = double(selectedWell{i}(2))-64-emptywellc;
+        wph = str2double(selectedWell{i}(3:4))-emptywellr;
+        for i2 = 1:length(MD.channels_(1,1).hcsPlatestack_{1,1})
+           index3(i2,:) = [wpv, wph, i2];
+           tni(i2) = indexing3to1(index3(i2,:), MD.channels_(1,1).hcsPlatestack_);
+        end
+        tnit = [tnit tni];
+    end  
+    tnit = sort(tnit);
+mMD = mockMovieData(MD, tnit);
+mMD.sanityCheck;
+load([mMD.mockMD_.parent.movieDataPath_ filesep mMD.mockMD_.parent.movieDataFileName_]);
+movieViewer(MD, 'refresher', '1');
+hf = findobj(0, '-regexp', 'Tag', 'tog');
+delete(hf)
+
+function flushcontrol(src, eventdata, MD)
+    MD.mMDparent_ = [];   
+    rmdir([MD.outputDirectory_ filesep 'controls'], 's');
+    parentMDpath = [MD.movieDataPath_ filesep MD.movieDataFileName_];
+    save(parentMDpath, 'MD');
+    movieViewer(MD);
+
+function tni = indexing3to1(index3, platestack)   
+indw = {index3(1),index3(2)};
+inds = index3(3);
+tni = 0;
+for iv = 1:indw{1} %get number of rows
+    for ih = 1:size(platestack,2)%get number of columns
+        niw = size(platestack{iv,ih},2);%get number of sites within one well
+        % doing this loop instead of multiplication can
+        % avoid the case of inconsistent number of sites
+        % exists across wells.
+        if iv == indw{1} && ih == indw{2}
+            tni = tni + inds;
+            return;
+        else
+            tni = tni + niw;
+        end
+    end
+end
+if tni == 0
+    tni = 1;
+end
+
+function movieviewerRefresher(MO)
+hcsFig = findobj('Name', 'hcsview');
+mainFig = findobj('Tag', 'figure1');
+mainFig = mainFig(end);
+userData = get(hcsFig, 'UserData');
+userData.MO = MO;
+set(hcsFig, 'UserData', userData);
+hpp = findobj('Title','Well Inspector');
+if MO.hasMock()
+    uicontrol('Parent', hpp, 'Style', 'pushbutton', 'Position', [299 30 180 25], ...
+        'String', 'Flush Controls', ...
+        'Callback', {@flushcontrol, MO});
+end
+if MO.hasMock()
+    mMDsite_number = [];
+    for imMDt = 1:size(MO.mMDparent_,1)
+    platestack = MO.channels_(1,1).hcsPlatestack_;
+        if size(MO.mMDparent_{imMDt},1) > 1
+            for imMD = 1:size(MO.mMDparent_{imMDt},1)
+                k1 = MO.mMDparent_{imMDt}(imMD, 1);
+                k2 = MO.mMDparent_{imMDt}(imMD,2);
+                wellname = MO.channels_(1,1).getGenericName(platestack{k1, k2}{1,1});
+                hb = findobj('Tag', wellname);
+                set(hb,'BackgroundColor','cyan');
+                set(hb,'UserData',[0 1 1]);
+                userData.lastclick = wellname;
+                set(hcsFig, 'UserData', userData);
+                mMDsite_number = [mMDsite_number; MO.mMDparent_{imMDt}(imMD,3)];
+                set(hb, 'Callback', {@updatewellp, platestack, {k1, k2, mMDsite_number, 1, MO.mMDparent_{imMDt,2}}, hpp, mainFig, MO});
+            end            
+        else
+            k1 = MO.mMDparent_{imMDt}(1);
+            k2 = MO.mMDparent_{imMDt}(2);
+            wellname = MO.channels_(1,1).getGenericName(platestack{k1, k2}{1,1});
+            hb = findobj('Tag', wellname);
+            set(hb,'BackgroundColor','green');
+            set(hb,'UserData',[0 1 0]);
+            userData.lastclick = wellname;
+            set(hcsFig, 'UserData', userData);
+            mMDsite_number = MO.mMDparent_{imMDt}(3);
+            set(hb, 'Callback', {@updatewellp, platestack, {k1, k2, mMDsite_number, 0, MO.mMDparent_{imMDt,2}}, hpp, mainFig, MO});
+        end
+    end
+end
+
+        
