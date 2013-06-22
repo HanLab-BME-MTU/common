@@ -464,15 +464,30 @@ classdef  MovieData < MovieObject
         
         %% HCS functions
         function status = isHCS(obj)
+            objcache = get(obj.channels_(1));
+            if isfield(objcache, 'hcsPlatestack_')
             status = ~isempty(obj.channels_(1).hcsPlatestack_);
+            else
+                status = isfield(objcache.channels_(1), 'hcsPlatestack_');
+            end
         end
         
         function status = isMock(obj)
+            objcache = get(obj);
+            if isfield(objcache, 'mockMD_')
             status = ~isempty(obj.mockMD_);
+            else
+                status = isfield(objcache, 'mockMD_');
+            end
         end
         
         function status = hasMock(obj)
+            objcache = get(obj);
+            if isfield(objcache, 'mMDparent_')
             status = ~isempty(obj.mMDparent_);
+            else
+                status = isfield(objcache, 'mMDparent_');
+            end
         end
         
             end
