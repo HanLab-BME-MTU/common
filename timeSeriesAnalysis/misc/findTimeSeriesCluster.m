@@ -34,8 +34,8 @@ function [clusterIdx,featMatrix] = findTimeSeriesCluster(TS,fVector,clusterMetho
 
 ip = inputParser;
 ip.addRequired('TS',@(x) iscell(x) || ismatrix(x));
-ip.addRequired('fVector',@isvector );
-ip.addRequired('clusterMethod',1,@isscalar);
+ip.addRequired('fVector',@iscell);
+ip.addRequired('clusterMethod',@isscalar);
 
 ip.addParamValue('maxLag',   0,@isscalar);
 ip.addParamValue('clusterSet', {2,'Distance','sqEuclidean','Replicates',10}, @iscell);                 
@@ -45,11 +45,13 @@ maxLag     = ip.Results.maxLag;
 clusterSet = ip.Results.clusterSet;
 featInput  = {'maxLag',maxLag};
 
+if ~iscell(TS)
+   TS = mat2cell(TS);
+end
+
 if numel(TS) ~= numel(fVector)
     error('Number of Variables and number of feature vector does not match')
 end
-
-
 %% Clustering methods
 
 methods{1} = @(x,y) kmeans(x,y{:});
