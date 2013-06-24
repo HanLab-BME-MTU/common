@@ -15,14 +15,14 @@ function [clusterIdx,featMatrix] = findTimeSeriesCluster(TS,fVector,clusterMetho
 %                                5 - Time series CCF
 %
 %       clusterMethod - scalar ID for the cluster method
-%                                1 - K-means 
+%                                1 - K-means (Default)
 %                                2 - fuzzy K-means
 %                                3 - Mean shift
 %
 %       Optional:
 %                maxLag     - ACF or CCF maximum lag, if 4 and/or 5 is chosen in fVector
-%                clusterSet - cell array with the input options for each clustering method. Help the cluster method function to figure this out out 
-%
+%                clusterSet - cell array with the input options for each clustering method. Help the cluster method function to figure this one out.
+%                             Default: {2,'Distance','sqEuclidean','Replicates',10} - used for kmens
 %Output:
 %       out        - cell array where each element contains the indexes for each cluster
 %       featMatrix - feature matrix
@@ -35,7 +35,7 @@ function [clusterIdx,featMatrix] = findTimeSeriesCluster(TS,fVector,clusterMetho
 ip = inputParser;
 ip.addRequired('TS',@(x) iscell(x) || ismatrix(x));
 ip.addRequired('fVector',@isvector );
-ip.addRequired('clusterMethod',@isscalar);
+ip.addRequired('clusterMethod',1,@isscalar);
 
 ip.addParamValue('maxLag',   0,@isscalar);
 ip.addParamValue('clusterSet', {2,'Distance','sqEuclidean','Replicates',10}, @iscell);                 
