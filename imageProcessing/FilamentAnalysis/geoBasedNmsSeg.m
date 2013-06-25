@@ -171,10 +171,10 @@ if(isempty(classifier_trained))
     
     % Set the slanted classification line cutoff as twice of the Otsu with
     % respect to the mode
-    T_xie_int =  abs(hotsu - mode_nms)*1.2 + mode_nms;
+    T_xie_int =  abs(hotsu - mode_nms)*1.8+ mode_nms;
     
     % And the length as Otsu threshold
-    T_xie_length = 1.2*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
+    T_xie_length = 1.8*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
     
     % Make a classification function as whether it is above the line
     T_xie_int_train = T_xie_int;
@@ -239,8 +239,8 @@ feature_all.feature_MeanInt = feature_MeanInt;
 feature_all.feature_Curvature = feature_Curvature;
 
 
-Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0 & feature_Curvature<0.3);
-Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0 | feature_Curvature>=0.3);
+Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0 & feature_Curvature<0.1);
+Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0 | feature_Curvature>=0.1);
 
 if(ShowDetailMessages==1)
     display(['Length,NMSand Curvature: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);

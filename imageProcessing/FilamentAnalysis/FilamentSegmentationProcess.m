@@ -154,7 +154,7 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             ip.addRequired('iFrame',@obj.checkFrameNum);
             
             outputList = {'current_seg_orientation','tip_orientation',...
-                'tip_int','tip_NMS',''};
+                'tip_int','tip_NMS', 'current_model',''};
             ip.addParamValue('output',{},@(x) all(ismember(x,outputList)));
             
             ip.parse(iChan,iFrame,varargin{:})
@@ -163,7 +163,7 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             Channel_FilesNames = obj.getInImageFileNames(iChan);
             filename_short_strs = uncommon_str_takeout(Channel_FilesNames{1});
             out_data_all = load([obj.outFilePaths_{1,iChan},'/DataOutput/steerable_vote_',filename_short_strs{iFrame},'.mat'], ...
-                'current_seg','current_seg_orientation','tip_orientation','tip_int','tip_NMS');
+                'current_seg','current_seg_orientation','tip_orientation','tip_int','tip_NMS','current_model');
                         
             % if there is no output parameter
             if( isempty(ip.Results.output))
@@ -179,6 +179,8 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
                         out_data = out_data_all.tip_int;
                     case 'tip_NMS'
                         out_data = out_data_all.tip_NMS;
+                    case 'current_model'
+                        out_data = out_data_all.current_model;
                     otherwise
                         out_data = out_data_all.current_seg_orientation;
                 end

@@ -82,15 +82,29 @@ for iChannel = selected_channels
         currentImg = movieData.channels_(iChannel).loadImage(iFrame);
         img_pixel_pool = [img_pixel_pool currentImg(:)];
     end
-    
+      [hist_all_frame, hist_bin] = hist(double(img_pixel_pool),45);
+   
     img_pixel_pool = double(img_pixel_pool(:));
     
+    
     % if not found the loop use 3 times min
-    low_005_percentile = 3*min(img_pixel_pool);
-    for intensity_i = min(img_pixel_pool) : (max(img_pixel_pool)-min(img_pixel_pool))/100 : 3*min(img_pixel_pool);
-        if length(find(img_pixel_pool<=intensity_i))/length(img_pixel_pool)>0.0005
+    low_005_percentile =  3*min(img_pixel_pool)+3*(max(img_pixel_pool)-min(img_pixel_pool))/100;
+    for intensity_i = min(img_pixel_pool) : (max(img_pixel_pool)-min(img_pixel_pool))/100 : 3*min(img_pixel_pool)+3*(max(img_pixel_pool)-min(img_pixel_pool))/100
+        if length(find(img_pixel_pool<=intensity_i))/length(img_pixel_pool)>0.005
             low_005_percentile = intensity_i;
             break;
+        end
+    end
+    
+    if(low_005_percentile==0 && strcmp(flatten_method,'log'))
+        for intensity_i = min(img_pixel_pool) : (max(img_pixel_pool)-min(img_pixel_pool))/100 : 3*min(img_pixel_pool)+3*(max(img_pixel_pool)-min(img_pixel_pool))/100;
+            if length(find(img_pixel_pool<=intensity_i))/length(img_pixel_pool)>0.01
+                low_005_percentile = intensity_i;
+                break;
+            end
+        end
+        if(low_005_percentile==0)
+            low_005_percentile = 3*min(nonzero_img_pixel_pool);
         end
     end
     
@@ -108,13 +122,12 @@ for iChannel = selected_channels
     img_min=low_005_percentile;
     img_max=high_995_percentile;
     
-    [hist_all_frame, hist_bin] = hist(img_pixel_pool,5);
-    
+   
     for iFrame_subsample = 1 : length(Frames_to_Seg)
-%         hist_this_frame = hist_all_frame(:,iFrame_subsample);
-%         ind = find(hist_this_frame==max(hist_this_frame));
-%         center_value(iFrame_subsample) = hist_bin(ind(1));
-        center_value(iFrame_subsample) = 1;
+        hist_this_frame = hist_all_frame(:,iFrame_subsample);
+        ind = find(hist_this_frame==max(hist_this_frame));
+        center_value(iFrame_subsample) = hist_bin(ind(1));
+ %       center_value(iFrame_subsample) = 1;
     end
     
     center_value = center_value/max(center_value);
@@ -156,7 +169,7 @@ for iChannel = selected_channels
         else
             
             currentImg = currentImg - img_min;
-            currentImg = currentImg/(center_value(iFrame_subsample))/img_max;
+            currentImg = currentImg/(center_value(iFrame_subsample))/(img_max- img_min);
             if flatten_method_ind == 2
                 currentImg = (currentImg).^(1/2);
             end
