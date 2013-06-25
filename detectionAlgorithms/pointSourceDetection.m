@@ -43,6 +43,10 @@ ip.parse(img, sigma, varargin{:});
 mode = ip.Results.Mode;
 alpha = ip.Results.Alpha;
 
+if ~isa(img, 'double')
+    img = double(img);
+end
+
 % Gaussian kernel
 w = ceil(4*sigma);
 x = -w:w;
@@ -75,6 +79,7 @@ C = inv(J'*J);
 
 f_c = fu2 - 2*c_est.*fu + n*c_est.^2; % f-c
 RSS = A_est.^2*g2sum - 2*A_est.*(fg - c_est*gsum) + f_c;
+RSS(RSS<0) = 0; % negative numbers may result from machine epsilon/roundoff precision
 sigma_e2 = RSS/(n-3);
 
 sigma_A = sqrt(sigma_e2*C(1,1));
@@ -114,9 +119,9 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
     % re-select local maxima
     imgLM = allMax .* mask;
     
-    % apply cell shape mask
+    % apply exclusion mask
     if ~isempty(ip.Results.Mask)
-        imgLM(ip.Results.Mask == 0) = 0;
+        imgLM(ip.Results.Mask==0) = 0;
     end
     
     
