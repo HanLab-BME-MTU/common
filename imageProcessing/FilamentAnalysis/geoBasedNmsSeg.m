@@ -118,7 +118,7 @@ smoothed_ordered_points = cell(1,1);
 feature_Curvature = nan(nLine,1);
 
 % for the features, only include those curves/lines longer than 4 pixels
-ind_long = find(feature_Length>3);
+ind_long = find(feature_Length>5);
 
 % get the mean intensity of the curves
 for i_area = ind_long'
@@ -175,7 +175,7 @@ if(isempty(classifier_trained))
     
     % And the length as Otsu threshold
     T_xie_length = 1.8*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
-    
+   
     % Make a classification function as whether it is above the line
     T_xie_int_train = T_xie_int;
     T_xie_length_train = T_xie_length;
@@ -239,8 +239,8 @@ feature_all.feature_MeanInt = feature_MeanInt;
 feature_all.feature_Curvature = feature_Curvature;
 
 
-Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0 & feature_Curvature<0.1);
-Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0 | feature_Curvature>=0.1);
+Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0 & feature_Curvature<0.051);
+Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0 | feature_Curvature>=0.051);
 
 if(ShowDetailMessages==1)
     display(['Length,NMSand Curvature: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);

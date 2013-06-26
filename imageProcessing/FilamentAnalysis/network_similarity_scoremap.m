@@ -12,6 +12,12 @@ distance_map_2_1 = nan(img_size);
 angle_map_1_2 = nan(img_size);
 angle_map_2_1 = nan(img_size);
 
+  [MT_digital_model,MT_orientation_model] ...
+        = filament_model_to_digital_with_orientation(MT_current_model);
+
+
+
+
 [Y1, X1] = find(VIF_current_seg>0);
 [Y2, X2] = find(MT_current_seg>0);
 
@@ -73,6 +79,30 @@ angle_map_1_2(angle_map_1_2<-pi/2) = angle_map_1_2(angle_map_1_2<-pi/2) +pi;
 angle_map_2_1(angle_map_2_1>pi/2) = angle_map_2_1(angle_map_2_1>pi/2) -pi;
 angle_map_2_1(angle_map_2_1<-pi/2) = angle_map_2_1(angle_map_2_1<-pi/2) +pi;
 
+
+
+imwrite(distance_map_1_2,[outdir,filesep,'Dis12_frame_',num2str(iFrame),'.tif']);
+imwrite(distance_map_2_1,[outdir,filesep,'Dis21_frame_',num2str(iFrame),'.tif']);
+imwrite(angle_map_2_1,[outdir,filesep,'Ang21_frame_',num2str(iFrame),'.tif']);
+imwrite(angle_map_1_2,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.tif']);
+
+
+h6=figure(6);
+imagesc(distance_map_1_2);axis equal;axis off;
+saveas(h6,[outdir,filesep,'Dis12_frame_',num2str(iFrame),'.tif']);
+
+h6=figure(6);
+imagesc(distance_map_2_1);axis equal;axis off;
+saveas(h6,[outdir,filesep,'Dis21_frame_',num2str(iFrame),'.tif']);
+
+h6=figure(6);
+imagesc(angle_map_2_1);axis equal;axis off;
+saveas(h6,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.tif']);
+
+h6=figure(6);
+imagesc(angle_map_1_2);axis equal;axis off;
+saveas(h6,[outdir,filesep,'Ang21_frame_',num2str(iFrame),'.tif']);
+
 whole_ROI = imdilate(VIF_current_seg,ones(radius,radius)) + imdilate(MT_current_seg,ones(radius,radius))>0;
 % 
 % % disgard the boundary ones
@@ -97,6 +127,7 @@ distance_map_2_1_pad = nan(img_size+2*radius);
 angle_map_1_2_pad = nan(img_size+2*radius);
 angle_map_2_1_pad = nan(img_size+2*radius);
 
+
 distance_map_1_2_pad(radius+1:end-radius,radius+1:end-radius) = distance_map_1_2;
 distance_map_2_1_pad(radius+1:end-radius,radius+1:end-radius) = distance_map_2_1;
 angle_map_1_2_pad(radius+1:end-radius,radius+1:end-radius) = angle_map_1_2;
@@ -117,27 +148,28 @@ angle_map_2_1_pad(radius+1:end-radius,radius+1:end-radius) = angle_map_2_1;
 % end
 % 
 % 
-
+Weight_mask = fspecial('gaussian',2*radius+1,radius/(2));
+Weight_mask = Weight_mask(sub2ind([2*radius+1,2*radius+1,],cy,cx));
 
 % for all these points
 for j = 1 : length(Y)
-    j
+%     j
     x = X(j);
     y = Y(j);
         
     dis_1 = distance_map_1_2_pad(sub2ind(img_size+2*radius,y+cy-1,x+cx-1));
     dis_2 = distance_map_2_1_pad(sub2ind(img_size+2*radius,y+cy-1,x+cx-1));
 
-    ang_1 = angle_map_1_2_pad(sub2ind(img_size+2*radius,y+cy-1,x+cx-1));
-    ang_2 = angle_map_2_1_pad(sub2ind(img_size+2*radius,y+cy-1,x+cx-1));
+    ang_1 = abs(angle_map_1_2_pad(sub2ind(img_size+2*radius,y+cy-1,x+cx-1)));
+    ang_2 = abs(angle_map_2_1_pad(sub2ind(img_size+2*radius,y+cy-1,x+cx-1)));
     
     if(~isempty(dis_1))
-        score_maps_distance_1_2(y,x) = mean(dis_1(~isnan(dis_1)));
-        score_maps_angle_1_2(y,x) = mean(ang_1(~isnan(ang_1)));
+        score_maps_distance_1_2(y,x) = sum(dis_1(~isnan(dis_1)).*Weight_mask(~isnan(dis_1)))/sum(Weight_mask(~isnan(dis_1)));
+        score_maps_angle_1_2(y,x) = sum(ang_1(~isnan(ang_1)).*Weight_mask(~isnan(ang_1)))/sum(Weight_mask(~isnan(ang_1)));
     end
     if(~isempty(dis_2))
-        score_maps_distance_2_1(y,x) = mean(dis_2(~isnan(dis_2)));        
-        score_maps_angle_2_1(y,x) = mean(ang_2(~isnan(ang_2)));
+        score_maps_distance_2_1(y,x) = sum(dis_2(~isnan(dis_2)).*Weight_mask(~isnan(dis_2)))/sum(Weight_mask(~isnan(dis_2)));       
+        score_maps_angle_2_1(y,x) = sum(ang_2(~isnan(ang_2)).*Weight_mask(~isnan(ang_2)))/sum(Weight_mask(~isnan(ang_2)));
     end    
 end
 
@@ -146,22 +178,46 @@ score_maps_distance_1_2(isnan(score_maps_distance_1_2))=radius;
 score_maps_angle_2_1(isnan(score_maps_angle_2_1))=pi/2;
 score_maps_angle_1_2(isnan(score_maps_angle_1_2))=pi/2;
 
+h6=figure(6);
+imagesc(score_maps_distance_1_2);axis equal;axis off;
+saveas(h6,[outdir,filesep,'LVDis12_frame_',num2str(iFrame),'.tif']);
+
+h6=figure(6);
+imagesc(score_maps_distance_2_1);axis equal;axis off;
+saveas(h6,[outdir,filesep,'LVDis21_frame_',num2str(iFrame),'.tif']);
+
+h6=figure(6);
+imagesc(score_maps_angle_1_2);axis equal;axis off;
+saveas(h6,[outdir,filesep,'LVAng12_frame_',num2str(iFrame),'.tif']);
+
+h6=figure(6);
+imagesc(score_maps_angle_2_1);axis equal;axis off;
+saveas(h6,[outdir,filesep,'LVAng21_frame_',num2str(iFrame),'.tif']);
+
+
+
 h3=figure(3); imagesc(score_maps_distance_2_1+score_maps_distance_1_2);axis equal;axis off;
-saveas(h3,[outdir,filesep,'MTMT_dis_frame_',num2str(iFrame),'.tif']);
+saveas(h3,[outdir,filesep,'VIFMT_dis_frame_',num2str(iFrame),'.tif']);
+
+saveas(h3,[outdir,filesep,'VIFMT_dis_frame_',num2str(iFrame),'.fig']);
 
 h4=figure(4); imagesc(abs(score_maps_angle_2_1/2)+abs(score_maps_angle_1_2/2));axis equal;axis off;
-saveas(h4,[outdir,filesep,'MTMT_ang_frame_',num2str(iFrame),'.tif']);
+saveas(h4,[outdir,filesep,'VIFMT_ang_frame_',num2str(iFrame),'.tif']);
 
-similarity_score = exp(-(score_maps_distance_2_1+score_maps_distance_1_2).^2/((radius)^2))...
-    .*exp(-(abs(score_maps_angle_2_1/2)+abs(score_maps_angle_1_2/2)).^2/((pi/6)^2));
-save([outdir,filesep,'MTMT_sm_maps_frame_',num2str(iFrame),'.mat'], ...
+saveas(h4,[outdir,filesep,'VIFMT_ang_frame_',num2str(iFrame),'.fig']);
+
+similarity_score = exp(-(score_maps_distance_2_1+score_maps_distance_1_2).^2/((radius*1.5)^2))...
+    .*exp(-(abs(score_maps_angle_2_1/2)+abs(score_maps_angle_1_2/2)).^2/((pi/4)^2));
+save([outdir,filesep,'VIFMT_sm_maps_frame_',num2str(iFrame),'.mat'], ...
     'score_maps_distance_2_1','score_maps_distance_1_2',...
     'score_maps_angle_2_1','score_maps_angle_1_2',...
     'similarity_score');
 
-similarity_score(similarity_score<0.3)=0.3;
+similarity_score(similarity_score<0.2)=0.2;
 h5=figure(5); imagesc(similarity_score);axis equal;axis off;
-saveas(h5,[outdir,filesep,'MTMT_sm_score_frame_',num2str(iFrame),'.tif']);
+saveas(h5,[outdir,filesep,'VIFMT_sm_score_frame_',num2str(iFrame),'.tif']);
+
+saveas(h5,[outdir,filesep,'VIFMT_sm_score_frame_',num2str(iFrame),'.fig']);
 
 
 
