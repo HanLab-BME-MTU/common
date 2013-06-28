@@ -11,7 +11,11 @@ flatten_dir{2} = MD.processes_{3}.outFilePaths_{2};
 outdir = [MD.processes_{5}.outFilePaths_{1},filesep,'similarity_results'];
     mkdir(outdir);
     
+    dist_pool_for_crossing=[];
+    ang_pool_for_crossing=[];
+    
 for iFrame = 1 : 10
+    iFrame
     VIF_orientation = MD.processes_{5}.loadChannelOutput(1,iFrame+0,'output','current_seg_orientation');
     VIF_current_model = MD.processes_{5}.loadChannelOutput(1,iFrame+0,'output','current_model');
     
@@ -19,13 +23,13 @@ for iFrame = 1 : 10
     [Vif_digital_model,Vif_orientation_model,VIF_XX,VIF_YY,VIF_OO] ...
     = filament_model_to_digital_with_orientation(VIF_current_model);
 
-    VIF_orientation = VIF_orientation(140:200,150:250);
+%     VIF_orientation = VIF_orientation(140:200,150:250);
    
     VIF_current_seg = (isnan(VIF_orientation)==0);
     VIF_img =  imread([flatten_dir{1},filesep,'flatten_',num2str(iFrame+0,'%03d'),'.tif']);
     
     MT_orientation = MD.processes_{5}.loadChannelOutput(2,iFrame,'output','current_seg_orientation');
-    MT_orientation = MT_orientation(140:200,150:250);
+%     MT_orientation = MT_orientation(140:200,150:250);
     MT_current_model = MD.processes_{5}.loadChannelOutput(2,iFrame,'output','current_model');
     
     [MT_digital_model,MT_orientation_model,MT_XX,MT_YY,MT_OO] ...
@@ -35,8 +39,8 @@ for iFrame = 1 : 10
     MT_current_seg = (isnan(MT_orientation)==0);
     
     MT_img =  imread([flatten_dir{2},filesep,'flatten_',num2str(iFrame,'%03d'),'.tif']);
-    MT_img = MT_img(140:200,150:250);
-   VIF_img = VIF_img(140:200,150:250);
+%     MT_img = MT_img(140:200,150:250);
+%    VIF_img = VIF_img(140:200,150:250);
    
     
     
