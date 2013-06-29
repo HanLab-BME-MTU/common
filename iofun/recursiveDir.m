@@ -31,6 +31,7 @@ while ~isempty(files) && (isempty(maxlevel) || iter<maxlevel)
     querylevel = files;
     
     files = cellfun(@dir, querylevel, 'unif', 0);
+    files(cellfun(@isempty, files)) = [];
     
     % retain visible dirs in each set
     files = cellfun(@(i) {i(isvisibledir(i)).name}', files, 'unif', 0);
@@ -40,7 +41,7 @@ while ~isempty(files) && (isempty(maxlevel) || iter<maxlevel)
         files{k} = cellfun(@(i) [querylevel{k} i filesep], files{k}, 'unif', 0);
     end
     files = vertcat(files{:});
-
+    
     p = [p; files]; %#ok<AGROW>
     iter = iter + 1;
 end
