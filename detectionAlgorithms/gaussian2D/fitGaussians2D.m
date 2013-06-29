@@ -147,52 +147,55 @@ for p = 1:np
         window(maskWindow~=0) = NaN;
         npx = sum(isfinite(window(:)));
         
-        % fit
-        if isempty(A)
-            A_init = max(window(:))-c_init;
-        else
-            A_init = A(p);
-        end
-
-        [prm, prmStd, ~, res] = fitGaussian2D(window, [x(p)-xi(p) y(p)-yi(p) A_init sigma(p) c_init], mode);
+        if npx >= 10 % only perform fit if window contains sufficient data points
         
-        dx = prm(1);
-        dy = prm(2);
-        
-        % exclude points where localization failed
-        if (dx > -w2 && dx < w2 && dy > -w2 && dy < w2 && prm(3)<2*diff(iRange))
+            % fit
+            if isempty(A)
+                A_init = max(window(:))-c_init;
+            else
+                A_init = A(p);
+            end
             
-            pStruct.x(p) = xi(p) + dx;
-            pStruct.y(p) = yi(p) + dy;
-            pStruct.A(p) = prm(3);
-            pStruct.s(p) = prm(4);
-            pStruct.c(p) = prm(5);
+            [prm, prmStd, ~, res] = fitGaussian2D(window, [x(p)-xi(p) y(p)-yi(p) A_init sigma(p) c_init], mode);
             
-            stdVect = zeros(1,5);
-            stdVect(estIdx) = prmStd;
+            dx = prm(1);
+            dy = prm(2);
             
-            pStruct.x_pstd(p) = stdVect(1);
-            pStruct.y_pstd(p) = stdVect(2);
-            pStruct.A_pstd(p) = stdVect(3);
-            pStruct.s_pstd(p) = stdVect(4);
-            pStruct.c_pstd(p) = stdVect(5);
-            
-            pStruct.sigma_r(p) = res.std;
-            pStruct.RSS(p) = res.RSS;
-            
-            pStruct.SE_sigma_r(p) = res.std/sqrt(2*(npx-1));
-            SE_sigma_r = pStruct.SE_sigma_r(p) * kLevel;
-            
-            pStruct.hval_AD(p) = res.hAD;
-            
-            % H0: A <= k*sigma_r
-            % H1: A > k*sigma_r
-            sigma_A = stdVect(3);
-            A_est = prm(3);
-            df2(p) = (npx-1) * (sigma_A.^2 + SE_sigma_r.^2).^2 ./ (sigma_A.^4 + SE_sigma_r.^4);
-            scomb = sqrt((sigma_A.^2 + SE_sigma_r.^2)/npx);
-            T(p) = (A_est - res.std*kLevel) ./ scomb;            
-            pStruct.mask_Ar(p) = sum(A_est*g>res.std*kLevel);
+            % exclude points where localization failed
+            if (dx > -w2 && dx < w2 && dy > -w2 && dy < w2 && prm(3)<2*diff(iRange))
+                
+                pStruct.x(p) = xi(p) + dx;
+                pStruct.y(p) = yi(p) + dy;
+                pStruct.A(p) = prm(3);
+                pStruct.s(p) = prm(4);
+                pStruct.c(p) = prm(5);
+                
+                stdVect = zeros(1,5);
+                stdVect(estIdx) = prmStd;
+                
+                pStruct.x_pstd(p) = stdVect(1);
+                pStruct.y_pstd(p) = stdVect(2);
+                pStruct.A_pstd(p) = stdVect(3);
+                pStruct.s_pstd(p) = stdVect(4);
+                pStruct.c_pstd(p) = stdVect(5);
+                
+                pStruct.sigma_r(p) = res.std;
+                pStruct.RSS(p) = res.RSS;
+                
+                pStruct.SE_sigma_r(p) = res.std/sqrt(2*(npx-1));
+                SE_sigma_r = pStruct.SE_sigma_r(p) * kLevel;
+                
+                pStruct.hval_AD(p) = res.hAD;
+                
+                % H0: A <= k*sigma_r
+                % H1: A > k*sigma_r
+                sigma_A = stdVect(3);
+                A_est = prm(3);
+                df2(p) = (npx-1) * (sigma_A.^2 + SE_sigma_r.^2).^2 ./ (sigma_A.^4 + SE_sigma_r.^4);
+                scomb = sqrt((sigma_A.^2 + SE_sigma_r.^2)/npx);
+                T(p) = (A_est - res.std*kLevel) ./ scomb;
+                pStruct.mask_Ar(p) = sum(A_est*g>res.std*kLevel);
+            end
         end
     end
 end
