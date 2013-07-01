@@ -34,11 +34,11 @@ parfor i = 1:nd
     end
     % First pass with fixed sigma
     pstruct = pointSourceDetection(img, 1.5, 'Mode', 'xyac');
-    pstruct = fitGaussians2D(img, pstruct.x, pstruct.y, pstruct.A, 1.5*ones(1,length(pstruct.x)), pstruct.c, 'xyasc');
-    
-    isPSF = ~[pstruct.hval_AD] & [pstruct.pval_Ar] < 0.05;
-    
-    svect{i} = pstruct.s(~isnan(pstruct.s) & isPSF);
+    if ~isempty(pstruct)
+        pstruct = fitGaussians2D(img, pstruct.x, pstruct.y, pstruct.A, 1.5*ones(1,length(pstruct.x)), pstruct.c, 'xyasc');
+        isPSF = ~[pstruct.hval_AD] & [pstruct.pval_Ar] < 0.05;
+        svect{i} = pstruct.s(~isnan(pstruct.s) & isPSF);
+    end
 end
 svect = [svect{:}];
 
