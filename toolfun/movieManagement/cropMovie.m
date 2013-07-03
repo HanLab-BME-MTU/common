@@ -90,7 +90,8 @@ for i = 1:nChan
     for j= 1:numel(cropTOI)
         tj=cropTOI(j);
         % Read original image, crop it and save it
-        imwrite(imcrop(imread(inImage(i,tj)),cropROI), outImage(i,j));
+        I = movieData.getChannel(i).loadImage(tj);
+        imwrite(imcrop(I,cropROI), outImage(i,j));
         if mod(j,5)==1 && ishandle(wtBar)
             tj=toc;
             nj = (i-1)*numel(cropTOI)+ j;
@@ -130,6 +131,7 @@ croppedMovieData=MovieData(channels,outputDirectory,'movieDataPath_',outputDirec
 s= struct(movieData);
 fields=fieldnames(s);
 set(croppedMovieData,rmfield(s,fields(~moviePublicFields | movieChangedFields)));
+croppedMovieData.reader = []; % Reset reader
 
 % Perform sanityCheck
 croppedMovieData.sanityCheck
