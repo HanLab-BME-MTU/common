@@ -42,14 +42,14 @@ outLevel = ip.Results.outLevel;
 
 nVar  = size(TS,1);
 outTS = TS;
+
 %% Removing trend
 if trend > -1
     
-    auxTS = getTimeSeriesTrend(outTS,'trendType',trend,'nSurr',nSurr,'alpha',alpha);
-    outTS = auxTS.dTS;   
+    [auxTS,exclude1] = getTimeSeriesTrend(outTS,'trendType',trend,'nSurr',nSurr,'alpha',alpha,'minLength',minLen);
+    outTS            = auxTS.dTS;   
     
 end
-
 
 %% Removing outliers
 if outLevel > 0
@@ -72,5 +72,6 @@ if gapSize > 0
     
 end
 
-%% Removing by minimum length
-exclude = find( sum(isfinite(outTS),2) < minLen )';
+%% Removing by minimum length again in case outliers were detected
+exclude2 = find( sum(isfinite(outTS),2) < minLen )';
+exclude  = union(exclude1,exclude2);

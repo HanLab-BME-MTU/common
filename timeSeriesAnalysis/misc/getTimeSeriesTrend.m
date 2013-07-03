@@ -1,4 +1,4 @@
-function outTS = getTimeSeriesTrend(TS,varargin)
+function [outTS,exclude] = getTimeSeriesTrend(TS,varargin)
 % This function removes time series trend.
 % Accepts NaN (Of course, more NaN the time series has crappier the result is)
 %
@@ -29,18 +29,20 @@ ip.addParamValue('alpha',.05,@isscalar);
 ip.addParamValue('nSurr',100,@isscalar);
 ip.addParamValue('plotYes',0,@isscalar);
 ip.addParamValue('trendType',0,@isscalar);
-
+ip.addParamValue('minLength',5,@isscalar);%minimum length. Ill-posed otherwise
 ip.parse(TS,varargin{:});
 alpha    = ip.Results.alpha;
 plotYes  = ip.Results.plotYes;
 trendT   = ip.Results.trendType;
+minLen   = ip.Results.minLength;
 
-%Constant
-minLen      = 5;%minimum length. Ill-posed otherwise
+%Initialization
 [nVar,nObs] = size(TS);
 trend       = TS;
 dTS         = TS;
 deltaFit    = nan(nVar,nObs);
+iEx         = 1;
+exclude     = nan(1,nObs);
 
 for iVar = 1:nVar
     
@@ -130,7 +132,10 @@ for iVar = 1:nVar
             plot(outTS.trend(iVar,:)-deltaFit,'r--')
             
         end
-        
+    else
+        exclude(iEx) = iVar;
+        iEx          = iEx + 1;
     end
     
 end
+exclude(isnan(exclude)) = [];
