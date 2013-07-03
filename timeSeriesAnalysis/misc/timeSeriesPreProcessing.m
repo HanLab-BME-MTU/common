@@ -40,8 +40,9 @@ gapSize  = ip.Results.gapSize;
 outLevel = ip.Results.outLevel;
 
 
-nVar  = size(TS,1);
-outTS = TS;
+nVar     = size(TS,1);
+outTS    = TS;
+exclude1 = [];
 
 %% Removing trend
 if trend > -1
