@@ -315,6 +315,18 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % the classifiers trained, the mat file's name is saved here.
             funParams.F_classifier = cell(1,max(funParams.ChannelIndex));
  
+            % the type of classifier
+            funParams.Classifier_Type_ind=1;
+            
+            % the length threshold
+            funParams.LengthThreshold=4;
+    
+            % the curvature threshold
+            funParams.CurvatureThreshold=0.1;
+            
+            % iteration number
+            funParams.IternationNumber=2;            
+            
             % for code running preference
             % No jumping out figures disrupt other thing; change to 0 if want to see the figures
             funParams.nofiguredisruption = 1;

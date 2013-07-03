@@ -33,34 +33,34 @@ end
 
 nProcesses = length(movieData.processes_);
 
-% indexFilamentSegmentationProcess = 0;
-% for i = 1 : nProcesses
-%     if(strcmp(movieData.processes_{i}.getName,'Filament Segmentation')==1)
-%         indexFilamentSegmentationProcess = i;
-%         break;
-%     end
-% end
-% 
-% if indexFilamentSegmentationProcess==0
-%     msg('Please set parameters for steerable filtering.')
-%     return;
-% end
-% 
-% 
-% funParams=movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
-% 
-% selected_channels = funParams.ChannelIndex;
-% StPace_Size = funParams.StPace_Size;
-% StPatch_Size = funParams.StPatch_Size;
-% Stlowerbound =  funParams.st_lowerbound_localthresholding;
-% IntPace_Size = funParams.IntPace_Size;
-% IntPatch_Size = funParams.IntPatch_Size;
-% Intlowerbound =  funParams.int_lowerbound_localthresholding;
-% 
-% Combine_Way = funParams.Combine_Way;
-% Cell_Mask_ind = funParams.Cell_Mask_ind;
-% VIF_Outgrowth_Flag = funParams.VIF_Outgrowth_Flag;
-% Sub_Sample_Num  = funParams.Sub_Sample_Num;
+indexFilamentSegmentationProcess = 0;
+for i = 1 : nProcesses
+    if(strcmp(movieData.processes_{i}.getName,'Filament Segmentation')==1)
+        indexFilamentSegmentationProcess = i;
+        break;
+    end
+end
+
+if indexFilamentSegmentationProcess==0
+    msg('Please set parameters for steerable filtering.')
+    return;
+end
+
+
+funParams=movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
+
+selected_channels = funParams.ChannelIndex;
+StPace_Size = funParams.StPace_Size;
+StPatch_Size = funParams.StPatch_Size;
+Stlowerbound =  funParams.st_lowerbound_localthresholding;
+IntPace_Size = funParams.IntPace_Size;
+IntPatch_Size = funParams.IntPatch_Size;
+Intlowerbound =  funParams.int_lowerbound_localthresholding;
+
+Combine_Way = funParams.Combine_Way;
+Cell_Mask_ind = funParams.Cell_Mask_ind;
+VIF_Outgrowth_Flag = funParams.VIF_Outgrowth_Flag;
+Sub_Sample_Num  = funParams.Sub_Sample_Num;
 
 %% Output Directories
 
@@ -214,6 +214,8 @@ for iChannel = channelIndex
     
     feature_MeanInt = nan(nLine,1);
     feature_MeanNMS = nan(nLine,1);
+    feature_MeanX = zeros(nLine,1);
+    feature_MeanY = zeros(nLine,1);
     feature_Length = obAreas';
     feature_Curvature = nan(nLine,1);
     
@@ -230,6 +232,11 @@ for iChannel = channelIndex
         feature_MeanNMS(i_area) = mean(NMS);
         INT = imageInt(sub2ind(size(bw_out), round(all_y_i),round(all_x_i)));
         feature_MeanInt(i_area) = mean(INT);
+        
+        feature_MeanX(i_area) = mean(all_x_i);
+        feature_MeanY(i_area) = mean(all_y_i);
+        
+        
         %     % this version without the curvature measure, to save time.
         %
         %     bw_i = zeros(size(bw_out));
@@ -304,14 +311,32 @@ for iChannel = channelIndex
     imagescc(currentImg); hold on;
     scrsz = get(0,'ScreenSize');
     set(h1,'Position',scrsz);
-    training_sample_number=20;
-    training_ind = datasample(not_sure_ind,min(length(not_sure_ind),training_sample_number),'Replace',false);
+    training_sample_number=50;
+    
+    [idx, dist] = KDTreeBallQuery([feature_MeanX feature_MeanY], [feature_MeanX feature_MeanY], 150);
+    
+    for fi = 1 : length(feature_MeanX)
+        neighbor_number(fi) = length(idx{fi});
+    end
+    
+    W_neighbor = 1./neighbor_number;
+    
+    training_ind = randsample(not_sure_ind,min(length(not_sure_ind),training_sample_number),true,W_neighbor(not_sure_ind));
     
     training_bad_ind = [];
     training_good_ind = [];
     
     good_bad_label = [];
     i_ind = 1;
+    
+     for i_ind = 1 : length(training_ind)
+        i_ind
+        iLine = training_ind(i_ind);
+        [y,x] = find(labelMask==iLine);
+        h1=figure(1);hold on;
+        plot(x,y,'y.');
+     end
+    
     
     for i_mark = 1 : 2*length(training_ind)
         i_ind
@@ -382,13 +407,13 @@ for iChannel = channelIndex
         scrsz = get(0,'ScreenSize');
         set(h1,'Position',scrsz);
         
-        training_ind = datasample(not_sure_ind,min(length(not_sure_ind),training_sample_number),'Replace',false);
+        training_ind = randsample(not_sure_ind,min(length(not_sure_ind),training_sample_number),true,W_neighbor(not_sure_ind));
         
         training_bad_ind = [];
         training_good_ind = [];
         
         good_bad_label = [];
-        i_ind = 0;
+        i_ind = 1;
         
         for i_mark = 1 : 2*length(training_ind)
             i_ind
@@ -463,13 +488,13 @@ for iChannel = channelIndex
         scrsz = get(0,'ScreenSize');
         set(h1,'Position',scrsz);
         
-        training_ind = datasample(not_sure_ind,min(length(not_sure_ind),training_sample_number),'Replace',false);
-        
+        training_ind = randsample(not_sure_ind,min(length(not_sure_ind),training_sample_number),true,W_neighbor(not_sure_ind));
+   
         training_bad_ind = [];
         training_good_ind = [];
         
         good_bad_label = [];
-        i_ind = 0;
+        i_ind = 1;
         
         for i_mark = 1 : 2*length(training_ind)
             i_ind
@@ -567,12 +592,16 @@ for iChannel = channelIndex
     label_good = ones(size(train_length_good));
     label_bad = -ones(size(train_length_bad));
     
-    
-     % Linear Kernel
-%   model_linear = svmtrain([label_good; label_bad], [feature_good; feature_bad], '-t 0');
-%   [predict_label_L, accuracy_L, dec_values_L] = svmpredict([label_good; label_bad], [feature_good; feature_bad], model_linear);
-%  save([FilamentSegmentationChannelOutputDir,'/F_SVM_channel.mat'],'model_linear');
-%    
+    if(funParams.Classifier_Type_ind==2)
+        % if user intended for SVM classifier
+%         Linear Kernel
+        model_linear = svmtrain([label_good; label_bad], [feature_good; feature_bad], '-t 0');
+        [predict_label_L, accuracy_L, dec_values_L] = svmpredict([label_good; label_bad], [feature_good; feature_bad], model_linear);
+        save([FilamentSegmentationChannelOutputDir,'/F_SVM_channel.mat'],'model_linear');
+        
+        F_classifer_train_this_channel =  @(nms,length,curvature,int) (svmpredict(ones(length(nms),1), [nms,length,curvature,int], model_linear)>0);
+        
+    end
     
     % feature_training = [feature_Length(training_ind) feature_MeanInt(training_ind)];
     % label_training = good_bad_label;
@@ -580,7 +609,6 @@ for iChannel = channelIndex
     % mean_good = mean(feature_good);
     % mean_bad = mean(feature_bad);
     % v = corr_LDA([feature_good; feature_bad], 2, [length(label_good); length(label_bad)], 0.7);
-    %
     %
     % v*feature_good
     %
@@ -590,40 +618,42 @@ for iChannel = channelIndex
     %
     % save('F_classifer.mat','F_classifer');
     
-    
-    
-    T_xie_int_mid = (T_xie_int_up + T_xie_int_down)/2;
-    T_xie_length_mid = (T_xie_length_up +  T_xie_length_down)/2;
-    
-    F_classifer_mid = @(i,l) (((T_xie_int_mid + (T_xie_int_mid/T_xie_length_mid)*(-l) )<i));
-    
-    train_mat = [];
-    for T_xie_int_grid = T_xie_int_down : (T_xie_int_up - T_xie_int_down)/10 : T_xie_int_up
-        for T_xie_length_grid = T_xie_length_down : (T_xie_length_up - T_xie_length_down)/10 : T_xie_length_up
-            
-            F_classifer_train = @(i,l) (((T_xie_int_grid + (T_xie_int_grid/T_xie_length_grid)*(-l) -i )));
-            train_mat = [train_mat; T_xie_int_grid T_xie_length_grid ...
-                (-sum(F_classifer_train(feature_MeanNMS(training_good_ind),...
-                feature_Length((training_good_ind))))...
-                +sum(F_classifer_train(feature_MeanNMS(training_bad_ind),...
-                feature_Length((training_bad_ind)))))];
+    if(funParams.Classifier_Type_ind==1)
+        
+        T_xie_int_mid = (T_xie_int_up + T_xie_int_down)/2;
+        T_xie_length_mid = (T_xie_length_up +  T_xie_length_down)/2;
+        
+        F_classifer_mid = @(i,l) (((T_xie_int_mid + (T_xie_int_mid/T_xie_length_mid)*(-l) )<i));
+        
+        train_mat = [];
+        for T_xie_int_grid = T_xie_int_down : (T_xie_int_up - T_xie_int_down)/10 : T_xie_int_up
+            for T_xie_length_grid = T_xie_length_down : (T_xie_length_up - T_xie_length_down)/10 : T_xie_length_up
+                
+                F_classifer_train = @(i,l) (((T_xie_int_grid + (T_xie_int_grid/T_xie_length_grid)*(-l) -i )));
+                train_mat = [train_mat; T_xie_int_grid T_xie_length_grid ...
+                    (-sum(F_classifer_train(feature_MeanNMS(training_good_ind),...
+                    feature_Length((training_good_ind))))...
+                    +sum(F_classifer_train(feature_MeanNMS(training_bad_ind),...
+                    feature_Length((training_bad_ind)))))];
+            end
         end
+        
+        ind = find(train_mat(:,3)==max(train_mat(:,3)));
+        
+        T_xie_int_train = train_mat(ind(1), 1);
+        T_xie_length_train = train_mat(ind(1), 2);
+        clear train_mat training_good_ind training_bad_ind feature_Length feature_MeanNMS feature_good  feature_bad;
+        clear imageNMS nms imageInt currentImg;
+        clear F_classifer_down F_classifer_mid F_classifer_notuse F_classifer_train F_classifer_up;
+        
+        F_classifer_train_this_channel = @(int,length,curvatre,int_int) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
+        
+        % due to some problem of the size of the function, with wired
+        % difference of being here or outside the framework, now change to save
+        % only the mat file name in the MD file.
+        
     end
     
-    ind = find(train_mat(:,3)==max(train_mat(:,3)));
-    
-    
-    T_xie_int_train = train_mat(ind(1), 1);
-    T_xie_length_train = train_mat(ind(1), 2);
-    clear train_mat training_good_ind training_bad_ind feature_Length feature_MeanNMS feature_good  feature_bad;
-    clear imageNMS nms imageInt currentImg;
-    clear F_classifer_down F_classifer_mid F_classifer_notuse F_classifer_train F_classifer_up;
-    
-    F_classifer_train_this_channel = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
-    
-    % due to some problem of the size of the function, with wired
-    % difference of being here or outside the framework, now change to save
-    % only the mat file name in the MD file.
     F_classifer_train_output{iChannel} = [FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'];
     
     save([FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'],'F_classifer_train_this_channel');

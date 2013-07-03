@@ -314,8 +314,7 @@ for iChannel = selected_channels
                 Min_area = 6;
                   current_model=[];
            
-            case 'geo_based'
-%                 tic
+            case 'geo_based_training'
                 
                 if(~isempty(funParams.F_classifier{iChannel}))
                     load(funParams.F_classifier{iChannel});
@@ -324,9 +323,25 @@ for iChannel = selected_channels
                 end
                 
                 [level2, NMS_Segment,current_model ] = ...
-                    geoBasedNmsSeg(nms,currentImg, F_classifer_train_this_channel,1,...
+                    geoBasedNmsSeg_withtraining(nms,currentImg, F_classifer_train_this_channel,1,...
                     MaskCell,iFrame,FilamentSegmentationChannelOutputDir,funParams);
-%                 toc
+                current_seg = NMS_Segment;
+                Intensity_Segment = current_seg;
+                SteerabelRes_Segment = current_seg;
+                Min_area = 6;
+                
+            case 'geo_based_GM'
+                
+                if(~isempty(funParams.F_classifier{iChannel}))
+                    load(funParams.F_classifier{iChannel});
+                else
+                  F_classifer_train_this_channel=[];  
+                end
+                
+                [level2, NMS_Segment,current_model ] = ...
+                    geoBasegeoBasedNmsSeg_withGMdNmsSeg(nms,currentImg, F_classifer_train_this_channel,1,...
+                    MaskCell,iFrame,FilamentSegmentationChannelOutputDir,funParams);
+
                 current_seg = NMS_Segment;
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;

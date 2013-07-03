@@ -22,7 +22,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 29-May-2013 15:52:22
+% Last Modified by GUIDE v2.5 02-Jul-2013 14:59:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -102,14 +102,35 @@ set(handles.checkbox_savefigures,'value',funParams.savestepfigures);
 set(handles.checkbox_showdetailmessage,'value',funParams.showdetailmessages);
 
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based'};
-for Combine_Way_ind = 1 : 6
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
+for Combine_Way_ind = 1 : 7
     if(strcmp(funParams.Combine_Way, Combine_Way_tag{Combine_Way_ind}))
         set(handles.popupmenu_segmentationbase,'Value',Combine_Way_ind);
         break;
     end
 end
 
+
+
+% visible or not, show the parameters for the geo based algorithm
+    % when visible, set the numbers
+    set(handles.popupmenu_classifier_type,'Value',funParams.Classifier_Type_ind);
+    set(handles.edit_lengththreshold,'String',funParams.LengthThreshold);
+    set(handles.edit_curvaturethreshold,'String',funParams.CurvatureThreshold);
+    set(handles.edit_IternationNumber,'String',funParams.IternationNumber);
+
+
+set(handles.text_block,'Visible','off');
+set(handles.text50,'Visible','off');
+set(handles.text51,'Visible','off');
+set(handles.text52,'Visible','off');
+set(handles.text53,'Visible','off');
+set(handles.text49,'Visible','off');
+set(handles.text55,'Visible','off');
+set(handles.popupmenu_classifier_type,'Visible','off');
+set(handles.edit_lengththreshold,'Visible','off');
+set(handles.edit_curvaturethreshold,'Visible','off');
+set(handles.edit_IternationNumber,'Visible','off');
 
 if (strcmp(funParams.Combine_Way,'st_only')||strcmp(funParams.Combine_Way,'st_nms_two')||strcmp(funParams.Combine_Way,'st_nms_only'))
     
@@ -140,7 +161,21 @@ else
     end
 end
 
-if (strcmp(funParams.Combine_Way,'geo_based'))    
+if (strcmp(funParams.Combine_Way,'geo_based_training') || strcmp(funParams.Combine_Way,'geo_based_GM'))    
+    
+    
+    set(handles.text_block,'Visible','on');
+    set(handles.text50,'Visible','on');
+    set(handles.text51,'Visible','on');
+    set(handles.text52,'Visible','on');
+    set(handles.text53,'Visible','on');
+    set(handles.text49,'Visible','on');
+    set(handles.text55,'Visible','on');
+    set(handles.popupmenu_classifier_type,'Visible','on');
+    set(handles.edit_lengththreshold,'Visible','on');
+    set(handles.edit_curvaturethreshold,'Visible','on');
+    set(handles.edit_IternationNumber,'Visible','on');
+
     set(handles.edit_StPaceSize,'Enable','off');
     set(handles.edit_StPatchSize,'Enable','off');
     set(handles.edit_st_lowerbound_localthresholding,'Enable','off');
@@ -185,7 +220,7 @@ end
 channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based'};
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
 Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
 funParams.Combine_Way=Combine_Way_tag{Combine_Way_ind};
 
@@ -240,9 +275,47 @@ if isnan(int_lowerbound_localthresholding) || int_lowerbound_localthresholding <
 end
 funParams.int_lowerbound_localthresholding=int_lowerbound_localthresholding;
 
-
 Cell_Mask_ind = get(handles.popupmenu_cell_mask, 'Value');
 funParams.Cell_Mask_ind = Cell_Mask_ind;
+
+if(strcmp(get(handles.text_block,'Visible'),'on'))
+    Classifier_Type_ind = get(handles.popupmenu_classifier_type,'Value');
+    funParams.Classifier_Type_ind=Classifier_Type_ind;
+    
+    LengthThreshold = get(handles.edit_lengththreshold,'String');
+    funParams.LengthThreshold=LengthThreshold;
+    
+    
+    LengthThreshold = str2double(get(handles.edit_lengththreshold, 'String'));
+    if isnan(LengthThreshold) || LengthThreshold < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text53,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.LengthThreshold=LengthThreshold;
+    
+    
+    
+    CurvatureThreshold = str2double(get(handles.edit_curvaturethreshold, 'String'));
+    if isnan(CurvatureThreshold) || CurvatureThreshold < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text52,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.CurvatureThreshold=CurvatureThreshold;
+    
+    
+    IternationNumber = str2double(get(handles.edit_IternationNumber, 'String'));
+    if isnan(IternationNumber) || IternationNumber < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text51,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.IternationNumber=IternationNumber;
+    
+end
+
+
 
 VIF_Outgrowth_Flag = get(handles.checkbox_outgrowth,'value');
 funParams.VIF_Outgrowth_Flag = VIF_Outgrowth_Flag;
@@ -256,7 +329,6 @@ funParams.savestepfigures = savestepfigures;
 
 showdetailmessages = get(handles.checkbox_showdetailmessage,'value');
 funParams.showdetailmessages = showdetailmessages;
-
 
 Sub_Sample_Num  = str2double(get(handles.edit_subsample_number, 'String'));
 if isnan(Sub_Sample_Num) || Sub_Sample_Num < 0
@@ -464,9 +536,23 @@ function popupmenu_segmentationbase_Callback(hObject, eventdata, handles)
 % The following code is for set the parameter set editing boxes, that corresponds to combine way 
 % not choosen as disabled from editing
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based'};
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
+
 Combine_Way_ind = get(hObject, 'Value');
 Combine_Way=Combine_Way_tag{Combine_Way_ind};
+
+set(handles.text_block,'Visible','off');
+set(handles.text50,'Visible','off');
+set(handles.text51,'Visible','off');
+set(handles.text52,'Visible','off');
+set(handles.text53,'Visible','off');
+set(handles.text49,'Visible','off');
+set(handles.text55,'Visible','off');
+set(handles.popupmenu_classifier_type,'Visible','off');
+set(handles.edit_lengththreshold,'Visible','off');
+set(handles.edit_curvaturethreshold,'Visible','off');
+set(handles.edit_IternationNumber,'Visible','off');
+
 
 if (strcmp(Combine_Way,'st_only')||strcmp(Combine_Way,'st_nms_two')||strcmp(Combine_Way,'st_nms_only'))
     set(handles.edit_StPaceSize,'Enable','on');
@@ -494,8 +580,21 @@ else
     end
 end
 
-
-if (strcmp(Combine_Way,'geo_based'))    
+if (strcmp(Combine_Way,'geo_based_training') || strcmp(Combine_Way,'geo_based_GM') )
+    set(handles.text_block,'Visible','on');
+    set(handles.text50,'Visible','on');
+    set(handles.text51,'Visible','on');
+    set(handles.text52,'Visible','on');
+    set(handles.text53,'Visible','on');
+    
+    set(handles.text49,'Visible','on');
+    set(handles.text55,'Visible','on');
+    set(handles.popupmenu_classifier_type,'Visible','on');
+    set(handles.edit_lengththreshold,'Visible','on');
+    set(handles.edit_curvaturethreshold,'Visible','on');
+    set(handles.edit_IternationNumber,'Visible','on');
+ 
+    
     set(handles.edit_StPaceSize,'Enable','off');
     set(handles.edit_StPatchSize,'Enable','off');
     set(handles.edit_st_lowerbound_localthresholding,'Enable','off');
@@ -517,11 +616,11 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 set(hObject,'String',{'Steerable Filter Results','Intensity','Combine Both St and Int',...
-    'St NMS two','St nms only', 'Geo based'});
+    'St NMS two','St nms only', 'Geo based with training','Geo based with GM'});
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based'};
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
 set(hObject,'Value',1);
-% for Combine_Way_ind = 1 : 6
+% for Combine_Way_ind = 1 : 7
 %     if(strcmp(funParams.Combine_Way, Combine_Way_tag{Combine_Way_ind}))
 %         set(hObject,'Value',Combine_Way_ind);
 %         break;
@@ -759,3 +858,103 @@ function checkbox_savefigures_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of checkbox_savefigures
+
+
+
+function edit_IternationNumber_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_IternationNumber (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_IternationNumber as text
+%        str2double(get(hObject,'String')) returns contents of edit_IternationNumber as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_IternationNumber_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_IternationNumber (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupmenu_classifier_type.
+function popupmenu_classifier_type_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_classifier_type (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_classifier_type contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_classifier_type
+
+Classifier_Type_tag = {'linear','SVM'};
+
+Classifier_Type_ind = get(hObject, 'Value');
+Classifier_Type=Classifier_Type_tag{Classifier_Type_ind};
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_classifier_type_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_classifier_type (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+set(hObject,'String',{'linear', 'SVM'});
+
+Combine_Way_tag = {'linear','SVM'};
+set(hObject,'Value',1);
+
+
+function edit_curvaturethreshold_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_curvaturethreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_curvaturethreshold as text
+%        str2double(get(hObject,'String')) returns contents of edit_curvaturethreshold as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_curvaturethreshold_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_curvaturethreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_lengththreshold_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_lengththreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_lengththreshold as text
+%        str2double(get(hObject,'String')) returns contents of edit_lengththreshold as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_lengththreshold_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_lengththreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
