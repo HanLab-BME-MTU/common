@@ -47,27 +47,30 @@ classdef Channel < hgsetget
                         obj.(varargin{i}) = varargin{i+1};
                     end
                 end
-                
-                if obj.hcsPlatestack_ == 1
-                    [wellf, sitef, waveln,hcsPlatestack] = readIXMHTDFile(channelPath);
-                    file_lists = dir(fullfile(channelPath, '*.TIF'));
-                    if length(file_lists) ~= size(hcsPlatestack{1},1)*size(hcsPlatestack{1},2)*length(hcsPlatestack{1}{1,1})*length(waveln) ||...
-                            strcmp(hcsPlatestack{1}{1,1}{1}(1:5),file_lists(2).name(1:5)) ~= 1
-                        warndlg('File Miss Match!, rebuilding plate stack...');
-                    [hcsPlatestack] = HCSplatestack(channelPath);
-                    end
-                    if isempty(hcsPlatestack)
-                        h = errordlg('No HCS data detected, please uncheck HCS data box');
-                        return;
-                    end
-                    for ich = 1:size(hcsPlatestack, 2)
-                        obj(ich).channelPath_ = channelPath;
-                        obj(ich).hcsPlatestack_ = hcsPlatestack{ich};
-                        obj(ich).hcsFlags_.wellF = wellf;
-                        obj(ich).hcsFlags_.siteF = sitef;
-                        obj(ich).hcsFlags_.wN = waveln(ich);
-                        %obj(ich).hcsFlags_.startI = starti;
-                        %obj(ich).hcsFlags_.swI = startsw;
+                if isprop(obj,'hcsPlatestack_')
+                    if obj.hcsPlatestack_ == 1
+                        [wellf, sitef, waveln,hcsPlatestack] = readIXMHTDFile(channelPath);
+                        file_lists = dir(fullfile(channelPath, '*.TIF'));
+                        if length(file_lists) ~= size(hcsPlatestack{1},1)*size(hcsPlatestack{1},2)*length(hcsPlatestack{1}{1,1})*length(waveln) ||...
+                                strcmp(hcsPlatestack{1}{1,1}{1}(1:5),file_lists(2).name(1:5)) ~= 1
+                            warndlg('File Miss Match!, rebuilding plate stack...');
+                            [hcsPlatestack] = HCSplatestack(channelPath);
+                        end
+                        if isempty(hcsPlatestack)
+                            h = errordlg('No HCS data detected, please uncheck HCS data box');
+                            return;
+                        end
+                        for ich = 1:size(hcsPlatestack, 2)
+                            obj(ich).channelPath_ = channelPath;
+                            obj(ich).hcsPlatestack_ = hcsPlatestack{ich};
+                            obj(ich).hcsFlags_.wellF = wellf;
+                            obj(ich).hcsFlags_.siteF = sitef;
+                            obj(ich).hcsFlags_.wN = waveln(ich);
+                            %obj(ich).hcsFlags_.startI = starti;
+                            %obj(ich).hcsFlags_.swI = startsw;
+                        end
+                    else
+                        obj.channelPath_ = channelPath;
                     end
                 else
                     obj.channelPath_ = channelPath;

@@ -4,8 +4,8 @@ function [ha2, dRange] = densityplot(x, y, varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addOptional('xv', 1:numel(x));
-ip.addOptional('yv', 1:numel(y));
+ip.addOptional('xv', linspace(min(x), max(x), 100));
+ip.addOptional('yv', linspace(min(y), max(y), 100));
 ip.addParamValue('Handle', gca, @ishandle);
 ip.addParamValue('AdjustBorder', false, @islogical);
 ip.addParamValue('Div', 1, @isscalar);
@@ -30,6 +30,7 @@ M = hist3([y(:) x(:)], {yv, xv});
 % M = M(2:end-1,2:end-1);
 M = ip.Results.DisplayFunction(M/ip.Results.Div);
 imagesc(xv, yv, M, 'Parent', ha);
+axis xy;
 dRange = [min(M(:)) max(M(:))];
 
 % re-plot axes on top to create box w/o ticks

@@ -29,11 +29,14 @@ K = ceil(max(log2(N), log2(M)));
 ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('I');
-ip.addOptional('nBands', K, @(x) x>=1 & x<=K);
+ip.addOptional('nBands', K, @(x) isempty(x) || (x>=1 && x<=K));
 ip.addOptional('includeLoBand', 1);
 ip.addOptional('nSigma', 3);
 ip.parse(I, varargin{:});
 nBands = ip.Results.nBands;
+if isempty(nBands)
+    nBands = K;
+end
 
 W = awt(I, nBands);
 
