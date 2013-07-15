@@ -22,6 +22,7 @@ classdef TestBFMovieData < TestMovieData & TestCase
             filename = fullfile(self.path, self.fakename);
             fid = fopen(filename, 'w');
             fclose(fid);
+            
             self.movie = MovieData.load(filename);
         end
         
@@ -71,6 +72,27 @@ classdef TestBFMovieData < TestMovieData & TestCase
         function testDOUBLE(self)
             self.checkPixelType('double');
         end
+        
+        %% Dimensions tests
+        function testSizeXY(self)
+            self.fakename = 'test&sizeX=256&sizeY=256.fake';
+            self.imSize = [256 256];
+            self.setUpMovie()
+            self.checkMovie();
+        end
+        
+        function testSizeC(self)
+            self.fakename = 'test&sizeC=4.fake';
+            self.nChan = 4;
+            self.setUpMovie()
+            self.checkMovie();
+        end
+        
+        function testSizeT(self)
+            self.fakename = 'test&sizeT=256.fake';
+            self.nFrames = 256;
+            self.setUpMovie()
+            self.checkMovie();
+        end
     end
-    
 end

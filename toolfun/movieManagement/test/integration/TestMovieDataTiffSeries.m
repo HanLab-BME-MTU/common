@@ -31,13 +31,13 @@ classdef TestMovieDataTiffSeries < TestMovieData & TestCase
         
         %% Pixel Type tests
         function testUINT8(self)
-            self.setUpMovie('uint8')            
+            self.setUpMovie('uint8')
             I = self.movie.getChannel(1).loadImage(1);
             assertEqual(class(I), 'uint8');
         end
         
         function testUINT16(self)
-            self.setUpMovie('uint16');             
+            self.setUpMovie('uint16');
             self.movie = MovieData.load(self.movie.getFullPath());
             I = self.movie.getChannel(1).loadImage(1);
             assertEqual(class(I), 'uint16');
@@ -45,7 +45,7 @@ classdef TestMovieDataTiffSeries < TestMovieData & TestCase
         %% Invalid sizeT tests
         function testInvalidNumberFrames(self)
             self.setUpMovie();
-            fullPath = self.movie.getFullPath();            
+            fullPath = self.movie.getFullPath();
             TestHelperMovieObject.setUpChannel(self.movie.getChannel(1).channelPath_,...
                 self.imSize(end:-1:1),self.nFrames+1);
             assertExceptionThrown(@() MovieData.load(fullPath), 'MovieData:sanityCheck:nFrames');

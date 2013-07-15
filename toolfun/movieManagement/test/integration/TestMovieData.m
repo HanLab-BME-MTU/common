@@ -95,7 +95,7 @@ classdef TestMovieData < TestMovieObject
             % Test ROI has been deleted
             oldmovie = self.movie;
             self.movie = MovieData.load(roiMovieFullPath);
-            self.checkMovie();                        
+            self.checkMovie();
         end
         
         function testDeleteROI(self)

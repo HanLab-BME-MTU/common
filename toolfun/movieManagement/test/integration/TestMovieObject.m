@@ -4,11 +4,11 @@ classdef TestMovieObject < handle
         path = fullfile(getenv('HOME'), 'MovieTest');
     end
     
-    methods        
+    methods
         %% Set up and tear down methods
         function setUp(self)
             if ~exist(self.path, 'dir'), mkdir(self.path); end
-        end        
+        end
         
         function tearDown(self)
             rmdir(self.path, 's');
@@ -19,6 +19,6 @@ classdef TestMovieObject < handle
             relocatedPath = [self.path '_relocated'];
             movefile(self.path, relocatedPath);
             self.path = relocatedPath;
-        end 
+        end
     end
 end
