@@ -15,11 +15,24 @@ classdef TestMovieDataTiffSeries < TestMovieData & TestCase
             self.tearDown@TestMovieData();
         end
         
+        function channel = setUpChannel(self, format)
+            if nargin<2, format = 'double'; end
+            for i = 1 : self.nFrames
+                imwrite(zeros(self.imSize, format),...
+                    fullfile(self.path, ['test_' num2str(i) '.tif']));
+            end
+            channel = Channel(self.path);
+        end
+        
         function setUpMovie(self, format)
             if nargin < 2,  format = 'uint8'; end
-            channel = TestHelperMovieObject.setUpChannel(self.path,self.imSize,...
-                self.nFrames, format);
-            self.movie=TestHelperMovieObject.setUpMovie(self.path,channel);
+            channels(self.nChan, 1) = Channel();
+            for i = 1 : self.nChan,
+                channels(i) = self.setUpChannel(format);
+            end
+            self.movie = MovieData(channels, self.path);
+            self.movie.setPath(self.path);
+            self.movie.setFilename('movieData.mat');
             self.movie.sanityCheck();
         end
         
@@ -46,16 +59,16 @@ classdef TestMovieDataTiffSeries < TestMovieData & TestCase
         function testInvalidNumberFrames(self)
             self.setUpMovie();
             fullPath = self.movie.getFullPath();
-            TestHelperMovieObject.setUpChannel(self.movie.getChannel(1).channelPath_,...
-                self.imSize(end:-1:1),self.nFrames+1);
+            self.nFrames = self.nFrames + 1;
+            self.setUpChannel();
             assertExceptionThrown(@() MovieData.load(fullPath), 'MovieData:sanityCheck:nFrames');
         end
         
         function testInvalidImSize(self)
             self.setUpMovie();
             fullPath = self.movie.getFullPath();
-            TestHelperMovieObject.setUpChannel(self.movie.getChannel(1).channelPath_,...
-                self.imSize/2,self.nFrames);
+            self.imSize = self.imSize / 2;
+            self.setUpChannel();
             assertExceptionThrown(@() MovieData.load(fullPath), 'MovieData:sanityCheck:imSize');
         end
         
