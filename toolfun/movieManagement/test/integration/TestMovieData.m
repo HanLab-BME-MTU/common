@@ -1,71 +1,160 @@
-classdef TestMovieData < TestCase
+classdef TestMovieData < TestMovieObject
     
     properties
         movie
-        moviePath = fullfile(getenv('HOME'),'MovieTest');
-        movieName = 'movieData.mat';
-        imSize = [100 200];
+        imSize = [512 512];
         nFrames = 1;
+        nChan = 1;
+        
+        % ROI properties
+        roiFolder = 'ROI';
+        roiName = 'roiMovie.mat';
+        roiMaskName = 'roiMask.tif';
     end
     
     methods
-        function self = TestMovieData(name)
-            self = self@TestCase(name);
-        end
-        
         %% Set up and tear down methods
         function setUp(self)
-            channel = TestHelperMovieObject.setUpChannel(self.moviePath,self.imSize,self.nFrames);
-            self.movie=TestHelperMovieObject.setUpMovie(self.moviePath,channel);
-            self.movie.sanityCheck();
+            self.setUp@TestMovieObject();
         end
         
         function tearDown(self)
             delete(self.movie);
-            if isdir(self.moviePath)
-                rmdir(self.moviePath,'s');
+            self.tearDown@TestMovieObject();
+        end
+        
+        %% SanityCheck test
+        function checkMovie(self)
+            assertTrue(isa(self.movie,'MovieData'));
+            assertEqual(numel(self.movie.channels_), self.nChan);
+            self.checkChannels();
+            assertEqual(self.movie.imSize_, self.imSize);
+            assertEqual(self.movie.nFrames_, self.nFrames);
+        end
+        
+        function setUpROIs(self, nROIs)
+            
+            % Create ROI folder
+            for i = 1 : nROIs
+                roiPath = fullfile(self.movie.getPath(),...
+                    [self.roiFolder '_' num2str(i)]);
+                mkdir(roiPath);
+                
+                % Create ROI mask
+                roiMask = true(self.movie.imSize_);
+                roiMaskFullPath = fullfile(roiPath, self.roiMaskName);
+                imwrite(roiMask, roiMaskFullPath);
+                
+                % Create and save ROI
+                self.movie.addROI(roiMaskFullPath, roiPath);
+                self.movie.getROI(i).setPath(roiPath);
+                self.movie.getROI(i).setFilename(self.roiName);
+                self.movie.getROI(i).sanityCheck;
             end
         end
         
         %% Tests
+        function testSimple(self)
+            self.setUpMovie();
+            self.checkMovie();
+        end
+        
         function testRelocate(self)
-            % Add process + package to test analysis relocation
-            self.movie.addProcess(ThresholdProcess(self.movie));
-            self.movie.addPackage(SegmentationPackage(self.movie));
-            self.movie.sanityCheck;
-            self.movie.save;
+            self.setUpMovie();
+            
+            % Perform movie relocation
+            moviePath = self.movie.getPath();
+            movieName = self.movie.getFilename();
+            oldPath = self.path;
+            self.relocate();
             
             % Load the relocated movie
-            relocatedMoviePath = TestHelperMovieObject.relocateMovie(self.movie);
-            relocatedMovie=MovieData.load(fullfile(relocatedMoviePath,self.movie.getFilename),false);
+            newPath = relocatePath(moviePath, oldPath, self.path);
+            newFullPath = fullfile(newPath, movieName);
+            self.movie = MovieData.load(newFullPath, false);
+            self.checkMovie();
             
             % Test movie paths
-            assertEqual(relocatedMovie.outputDirectory_,relocatedMoviePath);
-            assertEqual(relocatedMovie.getPath,relocatedMoviePath);
-            
-            % Test process/packages paths
-            assertEqual(fileparts(relocatedMovie.processes_{1}.funParams_.OutputDirectory),relocatedMoviePath);
-            assertEqual(fileparts(relocatedMovie.packages_{1}.outputDirectory_),relocatedMoviePath);
-            
-            rmdir(relocatedMoviePath,'s');
+            assertEqual(self.movie.outputDirectory_, newPath);
+            assertEqual(self.movie.getPath, newPath);
         end
         
         function testLoad(self)
-            newProcess= ThresholdProcess(self.movie);
-            newPackage= SegmentationPackage(self.movie);
-            self.movie.addProcess(newProcess);
-            self.movie.addPackage(newPackage);
-            self.movie.sanityCheck;
-            self.movie.save;
-            newmovie=MovieData.load(self.movie.getFullPath);
-            assertEqual(self.movie,newmovie);
-            assertEqual(newmovie.processes_,{newProcess});
-            assertEqual(newmovie.packages_,{newPackage});
+            self.setUpMovie();
+            
+            self.movie = MovieData.load(self.movie.getFullPath());
+            self.checkMovie;
         end
         
-        function testClass(self)
-            assertTrue(isa(self.movie,'MovieData'));
+        %% ROI
+        function testSimpleROI(self)
+            self.setUpMovie();
+            self.setUpROIs(1);
+            roiMovieFullPath = self.movie.getROI(1).getFullPath();
+            
+            % Test ROI has been deleted
+            oldmovie = self.movie;
+            self.movie = MovieData.load(roiMovieFullPath);
+            self.checkMovie();                        
         end
-
+        
+        function testDeleteROI(self)
+            % Create ROI movie
+            self.setUpMovie();
+            self.setUpROIs(2);
+            assertEqual(numel(self.movie.rois_), 2);
+            roiMovie1FullPath = self.movie.getROI(1).getFullPath();
+            roiMovie2FullPath = self.movie.getROI(2).getFullPath();
+            
+            % Delete create ROI
+            self.movie.deleteROI(1);
+            assertEqual(numel(self.movie.rois_), 1);
+            self.movie.sanityCheck();
+            
+            % Test ROI has been deleted
+            roiMovie1 = load(roiMovie1FullPath);
+            assertFalse(roiMovie1.MD.isvalid)
+            
+            % Test ROI has been deleted
+            roiMovie2 = MovieData.load(roiMovie2FullPath);
+            assertEqual(numel(roiMovie2.getAncestor().getDescendants), 1);
+            
+            % Test main movie has been saved without ROI
+            self.movie = MovieData.load(self.movie.getFullPath);
+            assertEqual(numel(self.movie.getDescendants()), 1)
+        end
+        
+        function testRelocateROI(self)
+            % Add ROI & save
+            self.setUpMovie();
+            self.setUpROIs(1);
+            
+            self.movie.sanityCheck();
+            
+            % Perform movie relocation
+            moviePath = self.movie.getROI(1).getPath();
+            movieName = self.movie.getROI(1).getFilename();
+            roiOutputDirectory = self.movie.getROI(1).outputDirectory_;
+            roiMaskPath = self.movie.getROI(1).roiMaskPath_;
+            oldPath = self.path;
+            self.relocate();
+            
+            % Load the relocated ROI
+            newPath = relocatePath(moviePath, oldPath, self.path);
+            newFullPath = fullfile(newPath, movieName);
+            self.movie = MovieData.load(newFullPath, false);
+            
+            % Test movie paths
+            self.checkMovie();
+            assertEqual(self.movie.outputDirectory_,...
+                relocatePath(roiOutputDirectory, oldPath, self.path));
+            assertEqual(self.movie.roiMaskPath_,...
+                relocatePath(roiMaskPath, oldPath, self.path));
+        end
+    end
+    
+    methods (Abstract)
+        setUpMovie(self)
+        checkChannels(self)
     end
 end

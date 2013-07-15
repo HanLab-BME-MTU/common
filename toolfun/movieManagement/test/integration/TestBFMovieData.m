@@ -1,12 +1,7 @@
-classdef TestBFMovieData < TestCase
+classdef TestBFMovieData < TestMovieData & TestCase
     
     properties
-        movie
-        path = fullfile(getenv('HOME'),'MovieTest');
-        name = 'movieData.mat';
-        imSize = [10 50];
-        nFrames = 3;
-        nChan = 2;
+        fakename = 'test.fake';
     end
     
     methods
@@ -15,33 +10,38 @@ classdef TestBFMovieData < TestCase
         end
         
         %% Set up and tear down methods
-        function movie = setUpBFMovie(self, format)
-            if nargin < 2, format = 'double'; end
-            if ~exist(self.path,'dir'), mkdir(self.path); end
-            bfsave(zeros(self.imSize(1), self.imSize(2), self.nChan, self.nFrames, format),...
-                fullfile(self.path, 'test.ome.tiff'), 'XYCTZ');
-            movie = bfImport(fullfile(self.path, 'test.ome.tiff'));
+        function setUp(self)
+            self.setUp@TestMovieData();
         end
         
         function tearDown(self)
-            delete(self.movie);
-            rmdir(self.path,'s');
+            self.tearDown@TestMovieData();
         end
         
-        %% SanityCheck test
-        function testSanityCheck(self)
-            self.movie= self.setUpBFMovie();
-            assertEqual(self.movie.channels_(1).owner_, self.movie);
-            assertEqual(self.movie.imSize_, self.imSize);
-            assertEqual(self.movie.nFrames_, self.nFrames);
-            assertEqual(numel(self.movie.channels_), self.nChan);
+        function setUpMovie(self)
+            filename = fullfile(self.path, self.fakename);
+            fid = fopen(filename, 'w');
+            fclose(fid);
+            self.movie = MovieData.load(filename);
+        end
+        
+        function checkChannels(self)
+            for i = 1 : self.nChan
+                assertEqual(self.movie.getChannel(i).channelPath_,...
+                    fullfile(self.path, self.fakename))
+            end
         end
         
         %% Typecasting tests
         function checkPixelType(self, classname)
-            self.movie = self.setUpBFMovie(classname);
+            if strcmp(classname, 'single'),
+                self.fakename = 'test&pixelType=float.fake';
+            else
+                self.fakename = ['test&pixelType=' classname '.fake'];
+            end
+            self.setUpMovie();
             I = self.movie.getChannel(1).loadImage(1);
-            assertEqual(I, zeros(self.imSize, classname));
+            assertTrue(isa(I, classname));
         end
         
         function testINT8(self)
@@ -72,4 +72,5 @@ classdef TestBFMovieData < TestCase
             self.checkPixelType('double');
         end
     end
+    
 end
