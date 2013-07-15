@@ -19,7 +19,6 @@ function omeroSave(movieObject)
 % Sebastien Besson, Jun 2012 (last modified May 2013)
 
 % To be replaced by omero.constants....
-namespace = 'hms-tracking';
 zipName = 'HMS-tracking.zip';
 
 % Input check
@@ -32,79 +31,24 @@ zipPath = fileparts(movieObject.outputDirectory_);
 zipFullPath = fullfile(zipPath,zipName);
 zip(zipFullPath, movieObject.outputDirectory_)
 
-% Create java io File
-file = java.io.File(zipFullPath);
-name = file.getName();
-absolutePath = file.getAbsolutePath();
-path = absolutePath.substring(0, absolutePath.length()-name.length());
-
 % Load existing file annotations
+session = movieObject.getOmeroSession();
+id = movieObject.getOmeroId();
+namespace = 'hms-tracking';
+
 if isa(movieObject, 'MovieData')
-    fas = getImageFileAnnotations(movieObject.getOmeroSession(),...
-        movieObject.getOmeroId(), 'include', namespace);
+    objecttype = 'image';
+    fas = getImageFileAnnotations(session, id, 'include', namespace);
 else
-    fas = getDatasetFileAnnotations(movieObject.getOmeroSession(),...
-        movieObject.getOmeroId(), 'include', namespace);
+    objecttype = 'dataset';
+    fas = getDatasetFileAnnotations(session, id, 'include', namespace);
 end
 
 if ~isempty(fas)
     % Read file of first found file annotation
-    originalFile = fas(1).getFile;
+    updateOriginalFile(session, fas(1).getFile, zipFullPath);
 else
-    originalFile = omero.model.OriginalFileI;
-end
-originalFile.setName(rstring(name));
-originalFile.setPath(rstring(path));
-originalFile.setSize(rlong(file.length()));
-originalFile.setSha1(rstring(''));
-originalFile.setMimetype(rstring('application/zip'));
-
-% now we save the originalFile object
-iUpdate = movieObject.getOmeroSession().getUpdateService();
-originalFile = iUpdate.saveAndReturnObject(originalFile);
-
-% Initialize the service to load the raw data
-rawFileStore = movieObject.getOmeroSession().createRawFileStore();
-rawFileStore.setFileId(originalFile.getId().getValue());
-
-%  open file and read it
-
-%code for small file.
-fid = fopen(zipFullPath);
-byteArray = fread(fid,[1, file.length()], 'uint8');
-rawFileStore.write(byteArray, 0, file.length());
-fclose(fid);
-
-originalFile = rawFileStore.save();
-% Important to close the service
-rawFileStore.close();
-% Delete zip file
-delete(zipFullPath);
-
-if isempty(fas)
-    
-    % Create link the image and the annotation
-    if isa(movieObject, 'MovieData')
-        image = getImages(movieObject.getOmeroSession(), movieObject.getOmeroId());
-        assert(isa(image, 'omero.model.ImageI'));
-        link = omero.model.ImageAnnotationLinkI;
-        link.setParent(image)
-    else
-        dataset = getDatasets(movieObject.getOmeroSession(), movieObject.getOmeroId());
-        assert(isa(dataset, 'omero.model.DatasetI'));
-        link = omero.model.DatasetAnnotationLinkI;
-        link.setParent(dataset)
-    end
-        
-    % now we have an original File in DB and raw data uploaded.
-    % We now need to link the Original file to the image using the File annotation object. That's the way to do it.
-    fa = omero.model.FileAnnotationI;
-    fa.setFile(originalFile);
-    fa.setDescription(rstring('HMS tracking')); % The description set above e.g. PointsModel
-    fa.setNs(rstring(namespace)) % The name space you have set to identify the file annotation.
-    fa = iUpdate.saveAndReturnObject(fa); % save the file annotation
-  
-    % Add file annotation to the link and save it
-    link.setChild(fa);
-    iUpdate.saveAndReturnObject(link);
+    fa = writeFileAnnotation(session, zipFullPath,...
+        'description', 'HMS tracking', 'namespace', namespace);
+    linkAnnotation(session, fa, objecttype, id);
 end
