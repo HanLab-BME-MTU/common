@@ -12,14 +12,14 @@ function omeroSave(movieObject)
 % omeroSave(movieObject)
 %
 % Input:
-% 
+%
 %   movieObject - A MovieData object
 %
 
 % Sebastien Besson, Jun 2012 (last modified May 2013)
 
 % To be replaced by omero.constants....
-zipName = 'HMS-tracking.zip';
+zipName = 'LCCB-analysis.zip';
 
 % Input check
 ip=inputParser;
@@ -34,7 +34,7 @@ zip(zipFullPath, movieObject.outputDirectory_)
 % Load existing file annotations
 session = movieObject.getOmeroSession();
 id = movieObject.getOmeroId();
-namespace = 'hms-tracking';
+namespace = getLCCBOmeroNamespace();
 
 if isa(movieObject, 'MovieData')
     objecttype = 'image';
@@ -46,9 +46,15 @@ end
 
 if ~isempty(fas)
     % Read file of first found file annotation
+    fprintf(1, 'Updating original file: %g\n', fas(1).getFile().getId().getValue());
     updateOriginalFile(session, fas(1).getFile, zipFullPath);
 else
     fa = writeFileAnnotation(session, zipFullPath,...
         'description', 'HMS tracking', 'namespace', namespace);
+    msg = 'Creating file annotation %g and linking it to %s %g\n';
+    fprintf(1, msg, fa.getId().getValue(), objecttype, id);
     linkAnnotation(session, fa, objecttype, id);
 end
+
+% Delete zip file
+delete(zipFullPath);

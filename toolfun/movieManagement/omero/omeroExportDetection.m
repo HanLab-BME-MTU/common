@@ -22,7 +22,7 @@ function roi = omeroExportDetection(movieData,movieInfo)
 
 % Sebastien Besson, Jun 2012 (last modified Oct 2012)
 
-ns = 'hms-detection';
+ns = getLCCBOmeroNamespace('detection');
 
 % Input check
 ip=inputParser;

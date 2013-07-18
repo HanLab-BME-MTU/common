@@ -29,7 +29,7 @@ nMovies = numel(imageIDs);
 MD(nMovies) = MovieData();
 
 % Set temporary file to extract file annotations
-namespace = 'hms-tracking';
+namespace = getLCCBOmeroNamespace;
 zipPath = fullfile(ip.Results.path, 'tmp.zip');
 
 for i = 1 : nMovies
@@ -40,6 +40,7 @@ for i = 1 : nMovies
         path = fullfile(ip.Results.path, num2str(imageID));
         MD(i) = omeroImport(session, imageID, 'outputDirectory', path);
     else
+        fprintf(1, 'Downloading file annotation: %g\n', fas(1).getId().getValue());
         getFileAnnotationContent(session, fas(1), zipPath);
         
         % Unzip and delete temporary fil
