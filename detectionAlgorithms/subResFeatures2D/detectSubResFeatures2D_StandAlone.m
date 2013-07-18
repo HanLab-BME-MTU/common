@@ -302,21 +302,20 @@ if hasImageDir
     end
 end
 
-if hasImageDir
-    %calculate background properties at movie end
-    last5start = max(numImagesRaw-4,1);
-    i = 0;
-    imageLast5 = NaN(imageSizeX,imageSizeY,5);
-    for iImage = last5start : numImagesRaw
-        i = i + 1;
-        if imageExists(iImage)
-            imageLast5(:,:,i) = double(imread([imageDir filenameBase ...
-                enumString(imageIndx(iImage),:) '.tif']));
-        end
+%calculate background properties at movie end
+last5start = max(numImagesRaw-4,1);
+i = 0;
+imageLast5 = NaN(imageSizeX,imageSizeY,5);
+for iImage = last5start : numImagesRaw
+    i = i + 1;
+    if imageExists(iImage) && hasImageDir
+        imageLast5(:,:,i) = double(imread([imageDir filenameBase ...
+            enumString(imageIndx(iImage),:) '.tif']));
+    elseif ~hasImageDir
+        imageLast5(:,:,i) = double(channel.loadImage(imageIndx(iImage)));
     end
-else
-   imageLast5=channel.loadImage(numImagesRaw-4:numImagesRaw); 
 end
+
 imageLast5 = double(imageLast5) / (2^bitDepth-1);
 imageLast5(imageLast5==0) = NaN;
 [bgMeanRaw,bgStdRaw] = spatialMovAveBG(imageLast5,imageSizeX,imageSizeY);
@@ -343,16 +342,15 @@ for iWindow = 1 : numIntegWindow
         
         %store raw images in array
         imageRaw = NaN(imageSizeX,imageSizeY,1+2*integWindow(iWindow));
-        if hasImageDir
-            for jImage = 1 : 1 + 2*integWindow(iWindow)
-                if imageExists(jImage+iImage-1)
-                    imageRaw(:,:,jImage) = double(imread([imageDir filenameBase ...
-                        enumString(imageIndx(jImage+iImage-1),:) '.tif']));
-                end
+        for jImage = 1 : 1 + 2*integWindow(iWindow)
+            if hasImageDir && imageExists(jImage+iImage-1)
+                imageRaw(:,:,jImage) = double(imread([imageDir filenameBase ...
+                    enumString(imageIndx(jImage+iImage-1),:) '.tif']));
+            elseif ~hasImageDir
+                imageRaw(:,:,jImage) = double(channel.loadImage(imageIndx(jImage+iImage-1)));
             end
-        else
-            imageRaw=double(channel.loadImage(imageIndx(iImage:iImage+2*integWindow(iWindow))));
         end
+        
         %replace zeros with NaNs
         %zeros result from cropping that leads to curved boundaries
         imageRaw(imageRaw==0) = NaN;
