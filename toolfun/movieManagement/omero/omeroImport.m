@@ -79,10 +79,6 @@ for i=1:nChan
     else
         channelArgs = {};
     end
-
-    % Read channel xame
-    chanName = omeroChannels(i).getLogicalChannel().getName.getValue;
-    if isempty(chanName), chanName = ['Channel_' num2str(i)]; end
     
     movieChannels(i)=Channel('',channelArgs{:});
 end
