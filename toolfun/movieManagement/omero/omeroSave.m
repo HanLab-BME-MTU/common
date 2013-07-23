@@ -46,12 +46,13 @@ end
 
 if ~isempty(fas)
     % Read file of first found file annotation
-    fprintf(1, 'Updating original file: %g\n', fas(1).getFile().getId().getValue());
-    updateOriginalFile(session, fas(1).getFile, zipFullPath);
+    fa = fas(1);
+    fprintf(1, 'Updating file annotation: %d\n', fa.getId().getValue());
+    updateFileAnnotation(session, fa, zipFullPath);
 else
     fa = writeFileAnnotation(session, zipFullPath,...
         'description', 'HMS tracking', 'namespace', namespace);
-    msg = 'Creating file annotation %g and linking it to %s %g\n';
+    msg = 'Creating file annotation %g and linking it to %s %d\n';
     fprintf(1, msg, fa.getId().getValue(), objecttype, id);
     linkAnnotation(session, fa, objecttype, id);
 end
