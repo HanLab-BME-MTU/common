@@ -71,18 +71,19 @@ classdef  BioFormatsReader < Reader
             channelNames = arrayfun(@(x) [base num2str(x)], iChan, 'Unif',false);
         end
         
+        function index = getIndex(obj, z, c, t)
+            index = loci.formats.FormatTools.getIndex(obj.formatReader, z, c, t);
+        end
+        
         function I = loadImage(obj, c, t)
-            % Using bioformat tools, get the reader and retrieve dimension order
-            r = obj.formatReader;
-            class = char(loci.formats.FormatTools.getPixelTypeString(r.getPixelType));
-            if strcmp(class, 'float'), class = 'single'; end
-            I = zeros([obj.getSizeY(), obj.getSizeX(), numel(t)], class);
             
-            z = 1;
-            for i = 1 : numel(t),
-                iPlane = loci.formats.FormatTools.getIndex(r, z-1, c-1, t(i)-1);
-                I(:,:,i) = bfGetPlane(r, iPlane + 1);
-            end
+            ip = inputParser;
+            ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
+            ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT()));
+            ip.parse(c, t);
+            
+            % Using bioformat tools, get the reader and retrieve dimension order
+            I = bfGetPlane(obj.formatReader, obj.getIndex(0, c-1, t-1) + 1);
         end
         
         function delete(obj)
