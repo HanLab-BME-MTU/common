@@ -1,5 +1,5 @@
 
-function [m,isDone]  = manualSegmentationTweakGUI(im,m,displayrange,isDone)
+function [m,isDone]  = manualSegmentationTweakGUI(im,m,displayrange,isDone,ptsShow)
 %MANUALSEGMENTATIONTWEAKGUI allows manual segmentation creation of masks or alteration of existing masksk
 % [masks,isCompleted] = manualSegmentationTweakGUI(images,masks)
 %
@@ -50,6 +50,11 @@ function [m,isDone]  = manualSegmentationTweakGUI(im,m,displayrange,isDone)
 %Hunter Elliott, 10/2012
 
 %%
+
+if nargin < 5
+    ptsShow = [];
+end
+
 
 if nargin < 4 || isempty(isDone)
     isDone = false(size(im,3),1);
@@ -156,6 +161,8 @@ data_get_fgnd_bgnd_seeds_3d_points.isDone = isDone;
 data_get_fgnd_bgnd_seeds_3d_points.firstShow = true;%Stupid way to keep axis from resizing after initial
 data_get_fgnd_bgnd_seeds_3d_points.sliceno = 1;
 data_get_fgnd_bgnd_seeds_3d_points.displayrange = displayrange;
+data_get_fgnd_bgnd_seeds_3d_points.ptsShow = ptsShow;
+data_get_fgnd_bgnd_seeds_3d_points.ptsHan = [];
 data_get_fgnd_bgnd_seeds_3d_points.fgnd_seed_points = [];
 data_get_fgnd_bgnd_seeds_3d_points.bgnd_seed_points = [];
 
@@ -208,6 +215,13 @@ function imsliceshow(data_get_fgnd_bgnd_seeds_3d_points)
     if ~data_get_fgnd_bgnd_seeds_3d_points.firstShow
         xlim(data_get_fgnd_bgnd_seeds_3d_points.ui.ah_img,xl)
         ylim(data_get_fgnd_bgnd_seeds_3d_points.ui.ah_img,yl)    
+    end
+    
+    if ~isempty(data_get_fgnd_bgnd_seeds_3d_points.ptsShow) && (isempty(data_get_fgnd_bgnd_seeds_3d_points.ptsHan) || ~ishandle(data_get_fgnd_bgnd_seeds_3d_points.ptsHan))
+        hold on
+        data_get_fgnd_bgnd_seeds_3d_points.ptsHan = ...
+            plot(data_get_fgnd_bgnd_seeds_3d_points.ptsShow(:,1),data_get_fgnd_bgnd_seeds_3d_points.ptsShow(:,2),'.r');
+        hold off
     end
     
 %data_get_fgnd_bgnd_seeds_3d_points.displayrange);
