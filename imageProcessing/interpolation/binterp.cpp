@@ -21,6 +21,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //===========================================================
     // Input checks 
     //===========================================================
+    /* The required inputs are:
+        input: input signal (1D or 2D)
+        xi: x interpolation coordinates
+        yi: y interpolation coordinates
+       Other relevant variables:
+        N: number of points in input    
+        ni: number of interpolation points
+        vi: interpolated values
+    */
     
     if (nrhs<2) {
         mexErrMsgTxt("Insufficient inputs.");
@@ -37,7 +46,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     int dims;
     if (nx==1 || ny==1) {
         dims = 1;
-        if (nx==1) { // transpose
+        if (nx==1) { // use x coordinate as index
             nx = ny;
             ny = 1;
         }
@@ -61,7 +70,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         }
     }
     
-    // check interpolation coordinates
+    // get x interpolation coordinates
     if (!mxIsDouble(prhs[1]) || mxGetNumberOfDimensions(prhs[1]) != 2)
         mexErrMsgTxt("Interpolation coordinates must match dimensionality of input.");
     int nx_X = (int)mxGetN(prhs[1]);
@@ -71,7 +80,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     const double* xin = mxGetPr(prhs[1]);
     double* xi = new double[ni];
     
-    // verify that coordinates are within signal range
+    // verify that coordinates are within correct range ([0 ... nx+1])
     for (int i=0;i<ni;++i) {
         if (mxIsNaN(xin[i]) || xin[i]<0.0 || xin[i]>nx+1.0) {
             mexErrMsgTxt("x-interpolation coordinates must be real-valued in interval [0..nx+1] (data range: [1..nx]).");
@@ -81,6 +90,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         }
     }
     
+    // get y interpolation coordinates
     double* yi = NULL;
     if (dims==2) {
         if (!mxIsDouble(prhs[2]) || mxGetNumberOfDimensions(prhs[2]) != 2)
@@ -141,17 +151,24 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //===========================================================
     // Perform interpolation
     //===========================================================
+    // Transpose for row-major index (Matlab uses column-major)
+    double* pixels = new double[N];
+    div_t divRes;
+    for (int i=0;i<N;++i) {
+        divRes = div(i, ny);
+        pixels[divRes.quot+divRes.rem*nx] = input[i];
+    }
     
-    Interpolator ip = Interpolator(input, nx, ny, borderCondition);
-    
-    double* vi = new double[ni];
-
+    // The 'xi' and 'yi' matrices do not need transposition, they contain independent indexes.
+    // As a result, the interpolated array 'vi' is already in the correct order for Matlab.
+    Interpolator ip = Interpolator(pixels, nx, ny, borderCondition);
+    double* vi = new double[ni]; // interpolated values
     if (dims==1) {
         ip.interp(xi, ni, vi);
     } else if (dims==2) {
         ip.interp(xi, yi, ni, vi);
     }
-    
+
     
     //===========================================================
     // Return results to Matlab

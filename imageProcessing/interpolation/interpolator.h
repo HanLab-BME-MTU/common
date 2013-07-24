@@ -229,7 +229,7 @@ class Interpolator {
         
         int xi, yi;
         double dx, dy;
-        
+
         if (n==3 || n==2) {
             double bx[4], by[4];
             int row[4], col[4];
@@ -253,7 +253,6 @@ class Interpolator {
                 // get x-interpolated value for each row
                 getSpline(dx, bx); // CHANGE TO FCT POINTER
                 getSpline(dy, by);
-                
                 v[i] = by[0]*(bx[0]*coefficients_[col[0]+row[0]*nx_] + bx[1]*coefficients_[col[1]+row[0]*nx_] +
                               bx[2]*coefficients_[col[2]+row[0]*nx_] + bx[3]*coefficients_[col[3]+row[0]*nx_]) + 
                        by[1]*(bx[0]*coefficients_[col[0]+row[1]*nx_] + bx[1]*coefficients_[col[1]+row[1]*nx_] + 
@@ -297,7 +296,6 @@ class Interpolator {
     void Interpolator::getCausalInitValueX() {
         int i, offset;
         if (borderCondition_ == MIRROR) {
-            offset = 2*nx_-2;
             for (int y=0;y<ny_;++y) { // loop through rows
                 i = y*nx_;
                 double ap = 1.0; // store powers of 'a'
@@ -306,9 +304,8 @@ class Interpolator {
                     cp_[i] += pixels_[i+k]*ap;
                     ap *= a_;
                 }
-                // over: k-(nx-1) -> mirror index: nx-1-(k-(nx-1)) = 2*nx-2-k
-                for (int k=nx_;k<2*nx_-2;++k) {
-                    cp_[i] += pixels_[offset-k]*ap;
+                for (int k=nx_-2;k>0;--k) { // mirror: loop backwards
+                    cp_[i] += pixels_[i+k]*ap;
                     ap *= a_;
                 }
                 cp_[i] /= (1.0 - ap);
@@ -332,16 +329,14 @@ class Interpolator {
     void Interpolator::getCausalInitValueY() {
         if (borderCondition_ == MIRROR) {
             for (int x=0;x<nx_;++x) { // loop through columns
-                
                 double ap = 1.0; // store powers of 'a'
                 cp_[x] = 0.0;
                 for (int k=0;k<ny_;++k) {
                     cp_[x] += cn_[x+k*nx_]*ap;
                     ap *= a_;
                 }
-                // over: i=x+k*nx -> mirror index: 2*(x+(ny-1)*nx) - (x+k*nx) 
-                for (int k=ny_;k<2*ny_-2;++k) {
-                    cp_[x] += cn_[x+(2*(ny_-1)-k)*nx_]*ap;
+                for (int k=ny_-2;k>0;--k) { // mirror: loop backwards
+                    cp_[x] += cn_[x+k*nx_]*ap;
                     ap *= a_;                    
                 }
                 cp_[x] /= (1.0 - ap);
