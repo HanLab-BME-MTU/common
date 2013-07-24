@@ -5,14 +5,12 @@ nms=[];
 res=[];
 theta=[];
 
-close all;
 if M==4
-    
-    basicMaskSize = round(sigma*24);
-    
     resThisSigmaStack = zeros(size(img,1),size(img,2),90);
     thetaThisSigma = zeros(size(img,1),size(img,2));
-    
+  
+    basicMaskSize = round(sigma*24);
+     
     twoDGaussian = fspecial('gaussian',basicMaskSize*2+1,sigma);
     oneDGaussian = twoDGaussian(:,basicMaskSize);
     
@@ -52,6 +50,6 @@ if M==4
     %     %
     
     res = resThisSigma;
-    theta = thetaThisSigma;
+    theta = pi/2 - thetaThisSigma*pi/180;
     
 end

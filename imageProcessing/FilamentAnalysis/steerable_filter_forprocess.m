@@ -121,7 +121,7 @@ for iChannel = selected_channels
         % function multiscaleSteerableDetector will automatically merge the results
 %         [MAX_st_res, orienation_map, nms, scaleMap] = multiscaleSteerableDetector(currentImg, 4, BaseSteerableFilterSigma.*levels_sizes);
         
-        [MAX_st_res, orienation_map, nms, scaleMap] = multiscaleLongSteerableDetector(currentImg, 4, BaseSteerableFilterSigma.*levels_sizes);
+        [MAX_st_res, orienation_map, nms, scaleMap] = multiscaleSteerableDetector(currentImg, 4, BaseSteerableFilterSigma.*levels_sizes);
         
         for sub_i = 1 : Sub_Sample_Num
             if iFrame + sub_i-1 <= nFrame

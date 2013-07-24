@@ -118,7 +118,7 @@ smoothed_ordered_points = cell(1,1);
 feature_Curvature = nan(nLine,1);
 
 % for the features, only include those curves/lines longer than 4 pixels
-ind_long = find(feature_Length>5);
+ind_long = find(feature_Length>10);
 
 % get the mean intensity of the curves
 for i_area = ind_long'
@@ -171,10 +171,10 @@ if(isempty(classifier_trained))
     
     % Set the slanted classification line cutoff as twice of the Otsu with
     % respect to the mode
-    T_xie_int =  abs(hotsu - mode_nms)*1.8+ mode_nms;
+    T_xie_int =  abs(hotsu - mode_nms)*1.5+ mode_nms;
     
     % And the length as Otsu threshold
-    T_xie_length = 1.8*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
+    T_xie_length =1.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
    
     % Make a classification function as whether it is above the line
     T_xie_int_train = T_xie_int;
@@ -239,8 +239,8 @@ feature_all.feature_MeanInt = feature_MeanInt;
 feature_all.feature_Curvature = feature_Curvature;
 
 
-Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0 & feature_Curvature<0.051);
-Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0 | feature_Curvature>=0.051);
+Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0 & feature_Curvature<0.2);
+Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0 | feature_Curvature>=0.2);
 
 if(ShowDetailMessages==1)
     display(['Length,NMSand Curvature: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);
@@ -283,8 +283,8 @@ for length_test = max(feature_Length):-0.1:0
         break;
     end
 end
-
-% graph_matching_flag=1;
+% 
+% graph_matching_flag=0;
 
 % Now if user intended for graph matching part, do it
 if(graph_matching_flag==1)
