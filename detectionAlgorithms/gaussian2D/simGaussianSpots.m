@@ -2,20 +2,21 @@ function [frame, xv, yv, sv, Av] = simGaussianSpots(nx, ny, sigma, varargin)
 % SIMGAUSSIANSPOTS generates a given number of 2D Gaussians in an image.
 % The generated Gaussian signals do not overlap with the image boundaries.
 %
-%   Usage: [frame,xv,yv,sv,Av]=simGaussianSpots(nx,ny,sigma,varargin)
 %   Input:
 %           nx:    image size in x direction
 %           ny:    image size in y direction
 %           sigma: 2D Gaussian standard deviation (in pixels)
+%
 %   Options:
 %           'x': x coordinates of centers of 2D Gaussians (can be subpixel)
 %           'y': y coordinates of centers of 2D Gaussians (can be subpixel)
 %           'A': amplitudes of 2D Gaussians
 %           'npoints'   : number of 2D Gaussian to be generated
-%           'background': value of background
+%           'Background': value of background
 %           'Border' : border conditions: 'padded' (default), 'periodic', or 'truncated'
 %           'Normalization: {'on' | 'off' (default)} divides Gaussians by 2*pi*sigma^2 when 'on'
 %           'Verbose': {'on' | 'off' (default)}
+%
 %   Output:
 %           frame: image with 2D Gaussian signals
 %           xv:    x coordinates of centers of Gaussians (can be subpixel)
@@ -37,14 +38,16 @@ ip.addParamValue('x', []);
 ip.addParamValue('y', []);
 ip.addParamValue('A', []);
 ip.addParamValue('npoints', 1);
-ip.addParamValue('background', 0);
-ip.addParamValue('verbose', 'off', @(x) any(strcmpi(x, {'on', 'off'})));
+ip.addParamValue('Background', 0);
+ip.addParamValue('Window', []);
+ip.addParamValue('Verbose', 'off', @(x) any(strcmpi(x, {'on', 'off'})));
 ip.addParamValue('Border', 'padded', @(x) any(strcmpi(x, {'padded', 'periodic', 'truncated'})));
 ip.addParamValue('Normalization', 'off', @(x) any(strcmpi(x, {'analytical', 'sum', 'off'})));
+ip.addParamValue('NonOverlapping', false, @islogical);
 ip.parse(nx, ny, sigma, varargin{:});
 
 np = ip.Results.npoints;
-c = ip.Results.background;
+c = ip.Results.Background;
 xv = ip.Results.x(:);
 yv = ip.Results.y(:);
 Av = ip.Results.A(:);
@@ -62,7 +65,12 @@ end
 if numel(sv)==1
     sv = sv*ones(np,1);
 end
-wv = ceil(4*sv);
+wv = ip.Results.Window;
+if isempty(wv)
+    wv = ceil(4*sv);
+elseif numel(wv)==1
+    wv = wv*ones(size(sv));
+end
 
 w_max = 2*max(wv)+1;
 if (w_max>nx || w_max>ny)
@@ -85,13 +93,29 @@ if strcmpi(ip.Results.Border, 'padded');
         yv(idx) = [];
         Av(idx) = [];
         sv(idx) = [];
-        if strcmpi(ip.Results.verbose, 'on')
+        if strcmpi(ip.Results.Verbose, 'on')
             fprintf('Number of discarded points: %d\n', numel(idx));
         end
         np = length(xv);
     else
-        xv = (nx-2*wv-1).*rand(np,1) + wv+1;
-        yv = (ny-2*wv-1).*rand(np,1) + wv+1;
+        if ip.Results.NonOverlapping
+            xv = [];
+            yv = [];
+            while numel(xv)<np
+                xcand = (nx-2*wv-1).*rand(np,1) + wv+1;
+                ycand = (ny-2*wv-1).*rand(np,1) + wv+1;
+                idx = KDTreeBallQuery([xcand ycand; xv yv], [xcand ycand], 2*wv);
+                idx(cellfun(@numel, idx)>1) = [];
+                idx = vertcat(idx{:});
+                xv = [xv; xcand(idx)]; %#ok<AGROW>
+                yv = [yv; ycand(idx)]; %#ok<AGROW>
+            end
+            xv = xv(1:np);
+            yv = yv(1:np);
+        else
+            xv = (nx-2*wv-1).*rand(np,1) + wv+1;
+            yv = (ny-2*wv-1).*rand(np,1) + wv+1;
+        end
         [~, idx] = sort(xv+yv*nx); % sort spots according to row position
         xv = xv(idx);
         yv = yv(idx);
@@ -101,8 +125,24 @@ else
         error('All points must lie within x:[0.5 nx+0.5), y:[0.5 ny+0.5).');
     end
     if isempty(xv)
-        xv = nx*rand(np,1)+0.5;
-        yv = ny*rand(np,1)+0.5;
+        if ip.Results.NonOverlapping
+            xv = [];
+            yv = [];
+            while numel(xv)<np
+                xcand = nx*rand(np,1)+0.5;
+                ycand = ny*rand(np,1)+0.5;
+                idx = KDTreeBallQuery([xcand ycand; xv yv], [xcand ycand], 2*wv);
+                idx(cellfun(@numel, idx)>1) = [];
+                idx = vertcat(idx{:});
+                xv = [xv; xcand(idx)]; %#ok<AGROW>
+                yv = [yv; ycand(idx)]; %#ok<AGROW>
+            end
+            xv = xv(1:np);
+            yv = yv(1:np);
+        else
+            xv = nx*rand(np,1)+0.5;
+            yv = ny*rand(np,1)+0.5;
+        end
     end
 end
 
