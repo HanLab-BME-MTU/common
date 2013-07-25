@@ -59,7 +59,7 @@ axis equal; hold on;
 plot(fx, fy, 'ko');
 plotcircle([0 0], 1, 'EdgeColor', 0.6*[1 1 1], 'LineStyle', '--');
 axis(1.1*[-1 1 -1 1]);
-legend('Samples', 'Cubic B-spline', 'Circle', 'Location', 'NorthEastOutside');
+legend('Samples/node points', 'Cubic B-spline', 'Circle', 'Location', 'NorthEastOutside');
 
 %%
 %===============================================================================
@@ -91,7 +91,6 @@ subplot(2,2,4)
 imagesc(F_dy); colormap(gray(256)); axis image;
 title('d/dy F');
 
-%%
 
 xa = 1:0.01:nx;
 ya = 1:0.01:ny;
@@ -114,4 +113,25 @@ title(['F (' num2str(t1, '%.3f') ' s)']);
 subplot(1,2,2)
 imagesc(Fm); axis image; colormap(gray(256));
 title(['Matlab spline (' num2str(t2, '%.3f') ' s)']);
+
+%%
+
+% test perfect reconstruction
+nx = 20;
+ny = 10;
+S = rand(ny,nx);
+
+xa = 1:nx;
+ya = 1:ny;
+[xi,yi] = meshgrid(xa,ya);
+Srec = binterp(S, xi, yi, 'symmetric');
+figure; imagesc(S-Srec); colormap(gray(256)); axis image; colorbar;
+
+C = computeBSplineCoefficients(S);
+k = [1 4 1]/6;
+rec = conv2(k, k, padarrayXT(C, [1 1], 'symmetric'), 'valid');
+figure; imagesc(rec-S); colormap(gray(256)); axis image; colorbar;
+
+
+
 
