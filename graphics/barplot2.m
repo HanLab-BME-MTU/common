@@ -196,7 +196,10 @@ if isempty(XTickLabel)
 end
 
 XLim = [xa(1)-border xa(end)+border];
-set(ha, 'XTick', XTick, 'XTickLabel', XTickLabel, 'XLim', XLim);
+set(ha, 'XLim', XLim, 'XTick', XTick);
+if ~isempty(get(ha, 'XTickLabel'))
+    set(ha, 'XTickLabel', XTickLabel);
+end
 if ~isempty(ip.Results.YLim)
     YLim = ip.Results.YLim;
     set(ha, 'YLim', YLim);
