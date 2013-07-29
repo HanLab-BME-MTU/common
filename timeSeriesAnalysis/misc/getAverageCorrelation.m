@@ -66,8 +66,8 @@ bound = nan(2,nVar1);
 
 for iVar = 1:nVar1
     
-    [auxCC,bound(:,iVar),lags]      = nanCrossCorrelation(TS1(iVar,:),TS2(iVar,:),'corrType',corrT,'maxLag',maxLag,'local',local,'robust',robust);
-    adjust                          = maxLag - ((numel(auxCC) - 1)/2); 
+    [auxCC,bound(:,iVar),lags]        = nanCrossCorrelation(TS1(iVar,:),TS2(iVar,:),'corrType',corrT,'maxLag',maxLag,'local',local,'robust',robust);
+    adjust                            = maxLag - ((numel(auxCC) - 1)/2); 
     [xCorr(adjust+1:end-adjust,iVar)] = auxCC;
     
 end
