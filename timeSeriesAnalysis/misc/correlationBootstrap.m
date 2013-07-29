@@ -71,5 +71,5 @@ end
 
 CI     = tanh( confI );
 % Arc tangent is a variance-stabilizing technique
-meanCC( setdiff(1:nLag,exclude) ) = tanh( mean( statCC ) );
+meanCC( setdiff(1:nLag,exclude) ) = tanh( nanmean( statCC ) );
 
