@@ -32,7 +32,7 @@ ip.addRequired('img', @isnumeric);
 ip.addRequired('sigma', @isscalar);
 ip.addParamValue('Mode', 'xyAc', @ischar);
 ip.addParamValue('Alpha', 0.05, @isscalar);
-ip.addParamValue('Mask', [], @islogical);
+ip.addParamValue('Mask', [], @isnumeric);
 ip.addParamValue('FitMixtures', false, @islogical);
 ip.addParamValue('MaxMixtures', 5, @isposint);
 ip.addParamValue('RemoveRedundant', true, @islogical);
