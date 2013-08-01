@@ -143,7 +143,7 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
     
     %% Run mean-shift for each data point and find its mode
     fprintf( 1, '\nMean-shift clustering on a dataset of %d points ...\n', numDataPoints );
-    pointClusterVotes = zeros( numDataPoints, 1 );
+    pointClusterVotes = sparse( numDataPoints, 1 );
     flagPointVisited = false( numDataPoints, 1 );
     numPointsProcessed = 0;
     ptIdRandomized = randperm(numDataPoints);
@@ -265,7 +265,7 @@ function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData
     
     %% Run mean-shift for each data point and find its mode
     fprintf( 1, '\nMean-shift clustering on a dataset of %d points ...\n', numDataPoints );
-    pointToClusterMap = zeros( numDataPoints, 1 );
+    pointToClusterMap = sparse( numDataPoints, 1 );
     clusterInfo = [];
     
         % build kd-tree over all points if requested  -- O(n log(n) log(n)) 
