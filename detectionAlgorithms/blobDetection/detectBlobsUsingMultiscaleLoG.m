@@ -1,4 +1,4 @@
-function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoG( im, blobDiameterRange, varargin )
+function [ imBlobSeedPoints, varargout ] = detectBlobsUsingMultiscaleLoG( im, blobDiameterRange, varargin )
 % Detects blobs as local maxima of the Multiscale LoG filtered image
 % 
 %   [ imBlobLocations ] = detectBlobsUsingMultiscaleLoG( im, blobDiameterRange, varargin )
@@ -104,17 +104,40 @@ function [ imBlobLocations, varargout ] = detectBlobsUsingMultiscaleLoG( im, blo
                                   'ClearBorder', false);           
             
             if flagDebugMode
-                imseriesmaskshow( imMultiscaleLoGResponse, imdilate(imLocalMax, ones(3,3,3)) ); 
-                set( gcf, 'Name', 'Local Maxima Overlayed on the response of Multiscale LoG Filter' );
                 
-                imseriesmaskshow( im, imdilate(imLocalMax, ones(3,3,3)) ); 
+                seedPixelInd = find( imLocalMax > 0 );
+                
+                seedPos = cell(1, 3);
+                [seedPos{:}] = ind2sub( size(imLocalMax), seedPixelInd );
+                seedPos = cat( 2, seedPos{[2,1]}, seedPos{3:end} );
+                
+                kd = KDTreeSearcher( seedPos * diag(spacing) );
+                
+                pixelPos = cell(1, 3);
+                [pixelPos{:}] = ind2sub( size(imLocalMax), (1:numel(imLocalMax))' );
+                pixelPos = cat( 2, pixelPos{[2,1]}, pixelPos{3:end} );     
+
+                [closestSeedInd, distanceToSeed] = kd.knnsearch(pixelPos * diag(spacing));
+                closestSeedPixelInd = seedPixelInd( closestSeedInd );
+                
+                imBlobMask = zeros( size(imLocalMax) );
+                imBlobRadius = sigmaValues( pixelScaleMap ) * sqrt(ndims(im));
+                flagIsPixelInSeedVicinity = distanceToSeed <= imBlobRadius(closestSeedPixelInd);
+                imBlobMask( flagIsPixelInSeedVicinity ) = closestSeedInd( flagIsPixelInSeedVicinity );
+                
+                seedMask = imdilate(imLocalMax, ones(3,3,3));
+                imseriesmaskshow( imMultiscaleLoGResponse, {seedMask, imBlobMask}); 
+                set( gcf, 'Name', 'Local Maxima Overlayed on the response of Adaptive Multiscale LoG Filter' );
+                
+                imseriesmaskshow( im, {seedMask, imBlobMask}); 
                 set( gcf, 'Name', 'Seed Points Overlayed on Input Image' );
+                
             end
             
     end
 
     % detect local intensity maxima as cell seed points
-    imBlobLocations = imLocalMax;   
+    imBlobSeedPoints = imLocalMax;   
     if nargout > 1
         varargout{1} = imMultiscaleLoGResponse;
     end 
