@@ -125,7 +125,7 @@ for i = 1:numMasks
     end
 end
 
-defaultDisplayRange = ComputeImageDynamicRange( im, 98.0 );
+defaultDisplayRange = ComputeImageDynamicRange( im, 99.0 );
 p.addParamValue( 'spacing', ones(1, ndims(im)), @(x) ( isnumeric(x) && ~isscalar(x) && numel(x) == ndims(im) ) );
 p.addParamValue( 'displayRange', defaultDisplayRange, @(x) ( isnumeric(x) && numel(x) == 2 ) );
 p.addParamValue( 'maskAlphas', 0.5 * ones(numMasks,1), @(x) (isnumeric(x) && numel(x) == numMasks) );
@@ -353,9 +353,9 @@ function [ rgbSlice ] = getRGBSlice(data)
     for i = 1:numel(data.masks)
         if data.masks(i).show
             if data.curPlane == 1
-                rgbMaskSlice = squeeze(data.masks(i).im(:,data.sliceno,:,:))';
+                rgbMaskSlice = permute( squeeze(data.masks(i).im(:,data.sliceno,:,:)), [2, 1, 3] );
             elseif data.curPlane == 2
-                rgbMaskSlice = squeeze(data.masks(i).im(data.sliceno,:,:,:))';
+                rgbMaskSlice = permute( squeeze(data.masks(i).im(data.sliceno,:,:,:)), [2, 1, 3] );
             else
                 rgbMaskSlice = squeeze(data.masks(i).im(:,:,data.sliceno,:));
             end

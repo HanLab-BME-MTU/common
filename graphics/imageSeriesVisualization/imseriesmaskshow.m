@@ -144,7 +144,7 @@ cMap(4,:) = [1 0 1];
 cMap(5,:) = [0 1 1];
 cMap(6,:) = [1 1 0];
 
-defaultDisplayRange = ComputeImageDynamicRange( im, 98.0 );
+defaultDisplayRange = ComputeImageDynamicRange( im, 99.0 );
 p.addParamValue( 'spacing', ones(1, ndims(im)), @(x) ( isnumeric(x) && ~isscalar(x) && numel(x) == ndims(im) ) );
 p.addParamValue( 'displayRange', defaultDisplayRange, @(x) ( isnumeric(x) && numel(x) == 2 ) );
 p.addParamValue( 'maskColors', cMap(1:numMasks,:), @(x) (isnumeric(x) && ndims(x) == 2 && size(x,2) == 3 && size(x,1) == numMasks) ); 

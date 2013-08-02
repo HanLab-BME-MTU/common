@@ -60,7 +60,7 @@ volSize = size(im);
 volSize(3) = size(im, 3);
 
 % get optional parameters
-defaultDisplayRange = ComputeImageDynamicRange( im, 98.0 );
+defaultDisplayRange = ComputeImageDynamicRange( im, 99.0 );
 p.addParamValue( 'spacing', [1,1,1], @(x) ( isnumeric(x) && ~isscalar(x) && numel(x) == ndims(im) ) );
 p.addParamValue( 'displayRange', defaultDisplayRange, @(x) ( isnumeric(x) && numel(x) == 2 ) );
 p.addParamValue( 'displayColor', [1, 1, 1], @(x) ( isnumeric(x) && ~isscalar(x) && numel(x) == 3 ) );
@@ -507,6 +507,7 @@ function [ intensityRange ] = ComputeImageDynamicRange( im, cover_percent )
 
     [p,x] = hist( im, 255 );   
     p = p / sum(p);
+    pcum = cumsum(p);
     
     min_xlow = [];
     min_xhigh = [];
@@ -515,7 +516,7 @@ function [ intensityRange ] = ComputeImageDynamicRange( im, cover_percent )
     for i = 1:numel(x)
         for j = i+1:numel(x)
     
-            if sum( p(i:j) ) < 0.01 * cover_percent
+            if (pcum(j) - pcum(i) + p(i)) < 0.01 * cover_percent
                 continue;
             end
             
