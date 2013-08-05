@@ -14,9 +14,6 @@ function MD = omeroCacheImport(session,imageID,varargin)
 %
 %   imageID - A string containing the full path to the movie file.
 %
-%   extractImages - Optional. If true, individual images will be extracted
-%   and saved as TIF images.
-%
 % Output:
 %
 %   movie - A MovieData object
@@ -27,23 +24,28 @@ function MD = omeroCacheImport(session,imageID,varargin)
 ip=inputParser;
 ip.addRequired('session',@MovieObject.isOmeroSession);
 ip.addRequired('imageID',@isscalar);
-ip.addOptional('outputDirectory',[],@ischar);
-ip.parse(session,imageID,varargin{:});
+ip.addParamValue('outputDirectory', '', @ischar);
+ip.parse(session, imageID, varargin{:});
 
+% Ensure the outputDirectory is defined
 if isempty(ip.Results.outputDirectory)
     [~, outputDir] = uiputfile('*.mat','Find a place to save your analysis',...
         'movieData.mat');
     if isequal(outputDir,0), return; end
 else
-    outputDir=ip.Results.outputDirectory;
+    outputDir = ip.Results.outputDirectory;
     if ~isdir(outputDir), mkdir(outputDir); end
 end
 
+% Download raw image
 rawDataFile = fullfile(outputDir, [num2str(imageID) '.ome.tiff']);
-
 exportImageAsOMETIFF(session, imageID, rawDataFile);
 
+% Create movie data using raw image
 MD = MovieData.load(rawDataFile);
+
+% Save the OMERO credentials
 MD.setOmeroId(imageID);
-MD.setOmeroSave(false);
+MD.setOmeroSession(session);
+MD.setOmeroSave(true);
 MD.save;

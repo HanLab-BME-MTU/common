@@ -1,5 +1,5 @@
 function MD = getOmeroMovies(session, imageIDs, varargin)
-% getOmeroMovies creates or loads MovieData object from OMERO images
+% GETOMEROMOVIES creates or loads MovieData object from OMERO images
 %
 % SYNOPSIS
 %
@@ -10,8 +10,12 @@ function MD = getOmeroMovies(session, imageIDs, varargin)
 %    imageIDs - an array of imageIDs. May be a Matlab array or a Java
 %    ArrayList.
 %
+%    cache - Optional. A boolean specifying whether the raw image should
+%    be downloaded in cache.
+%
 %    path - Optional. The default path where to extract/create the
 %    MovieData objects for analysis
+%
 %
 % OUTPUT
 %    MD - an array of MovieData object corresponding to the images.
@@ -21,7 +25,8 @@ function MD = getOmeroMovies(session, imageIDs, varargin)
 % Input check
 ip = inputParser;
 ip.addRequired('imageIDs', @isvector);
-ip.addOptional('path', fullfile(getenv('HOME'), 'omero'), @ischar);
+ip.addOptional('cache', false ,@isscalar);
+ip.addParamValue('path', fullfile(getenv('HOME'), 'omero'), @ischar);
 ip.parse(imageIDs, varargin{:});
 
 % Initialize movie array
@@ -37,8 +42,13 @@ for i = 1 : nMovies
     fas = getImageFileAnnotations(session, imageID, 'include', namespace);
     
     if isempty(fas)
-        path = fullfile(ip.Results.path, num2str(imageID));
-        MD(i) = omeroImport(session, imageID, 'outputDirectory', path);
+        if ip.Results.cache
+            MD(i) = omeroCacheImport(session, imageID,...
+                'outputDirectory', ip.Results.path);
+        else
+            path = fullfile(ip.Results.path, num2str(imageID));
+            MD(i) = omeroImport(session, imageID, 'outputDirectory', path);
+        end
     else
         fprintf(1, 'Downloading file annotation: %g\n', fas(1).getId().getValue());
         getFileAnnotationContent(session, fas(1), zipPath);
