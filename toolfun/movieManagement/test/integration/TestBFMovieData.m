@@ -26,7 +26,7 @@ classdef TestBFMovieData < TestMovieData & TestCase
             self.movie = MovieData.load(filename);
         end
         
-        function checkChannels(self)
+        function checkChannelPaths(self)
             for i = 1 : self.nChan
                 assertEqual(self.movie.getChannel(i).channelPath_,...
                     fullfile(self.path, self.fakename))

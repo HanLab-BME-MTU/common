@@ -36,7 +36,7 @@ classdef TestMovieDataTiffSeries < TestMovieData & TestCase
             self.movie.sanityCheck();
         end
         
-        function checkChannels(self)
+        function checkChannelPaths(self)
             for i = 1 : self.nChan
                 assertEqual(self.movie.getChannel(i).channelPath_,self.path);
             end
@@ -55,6 +55,26 @@ classdef TestMovieDataTiffSeries < TestMovieData & TestCase
             I = self.movie.getChannel(1).loadImage(1);
             assertEqual(class(I), 'uint16');
         end
+        
+        %% Dimensions test
+        function testSizeXY(self)
+            self.imSize = [256 256];
+            self.setUpMovie()
+            self.checkMovie();
+        end
+        
+        function testSizeC(self)
+            self.nChan = 4;
+            self.setUpMovie()
+            self.checkMovie();
+        end
+        
+        function testSizeT(self)
+            self.nFrames = 256;
+            self.setUpMovie()
+            self.checkMovie();
+        end
+        
         %% Invalid sizeT tests
         function testInvalidNumberFrames(self)
             self.setUpMovie();

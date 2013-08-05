@@ -24,12 +24,17 @@ classdef TestMovieData < TestMovieObject
         end
         
         %% SanityCheck test
-        function checkMovie(self)
+        function checkDimensions(self)
             assertTrue(isa(self.movie,'MovieData'));
             assertEqual(numel(self.movie.channels_), self.nChan);
-            self.checkChannels();
             assertEqual(self.movie.imSize_, self.imSize);
             assertEqual(self.movie.nFrames_, self.nFrames);
+        end
+        
+        function checkMovie(self)
+            assertTrue(isa(self.movie,'MovieData'));
+            self.checkDimensions()
+            self.checkChannelPaths();
         end
         
         function setUpROIs(self, nROIs)
@@ -155,6 +160,6 @@ classdef TestMovieData < TestMovieObject
     
     methods (Abstract)
         setUpMovie(self)
-        checkChannels(self)
+        checkChannelPaths(self)
     end
 end
