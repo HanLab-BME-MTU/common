@@ -394,55 +394,72 @@ classdef  MovieObject < hgsetget
     end
     
     methods(Static)
-        function obj = load(moviepath,varargin)
-            % Load a movie object from a path
+        function obj = load(varargin)
+            % Load/reaload a movie object
             
-            if MovieObject.isOmeroSession(moviepath),
-                obj = getOmeroMovies(moviepath, varargin{:});
-                return;
+            assert(nargin > 0);
+            assert(MovieObject.isOmeroSession(varargin{1}) || ...
+                exist(varargin{1}, 'file') == 2)
+            
+            if MovieObject.isOmeroSession(varargin{1}),
+                obj = MovieObject.loadOmero(varargin{:});
+            else
+                isMatFile = strcmpi(varargin{1}(end-3:end), '.mat');
+                if isMatFile,
+                    obj = MovieObject.loadMatFile(varargin{:});
+                else
+                    obj = MovieObject.loadImageFile(varargin{:});
+                end
             end
-            
-            % Check the path is a valid file
-            assert(~isempty(ls(moviepath)),'lccb:movieObject:load', 'File does not exist.');
+        end
+        
+        function obj = loadMatFile(filepath, varargin)
             
             % Retrieve the absolute path
-            [~,f]= fileattrib(moviepath);
-            moviepath=f.Name;
+            [~, f] = fileattrib(filepath);
+            filepath = f.Name;
             
-            if strcmpi(moviepath(end-3:end),'.mat')
-                % Import movie object from MAT file
-                try
-                    % List variables in the path
-                    vars = whos('-file',moviepath);
-                catch whosException
-                    ME = MException('lccb:movieObject:load', 'Fail to open file. Make sure it is a MAT file.');
-                    ME = ME.addCause(whosException);
-                    throw(ME);
-                end
-                
-                % Check if a single movie object is in the variables
-                isMovie = cellfun(@(x) any(strcmp(superclasses(x),'MovieObject')),{vars.class});
-                assert(any(isMovie),'lccb:movieObject:load', ...
-                    'No movie object is found in selected MAT file.');
-                assert(sum(isMovie)==1,'lccb:movieObject:load', ...
-                    'Multiple movie objects are found in selected MAT file.');
-                
-                % Load movie object
-                data = load(moviepath,'-mat',vars(isMovie).name);
-                obj= data.(vars(isMovie).name);
-                
-                % Perform sanityCheck using the input path
-                [moviePath,movieName,movieExt]=fileparts(moviepath);
-                if nargin>1 &&  MovieObject.isOmeroSession(varargin{1}),
-                    obj.setOmeroSession(varargin{1});
-                    obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
-                else
-                    obj.sanityCheck(moviePath,[movieName movieExt], varargin{:});
-                end
-            else
-                % Assume proprietary file - use Bioformats library
-                obj=bfImport(moviepath,varargin{:});
+            % Import movie object from MAT file
+            try
+                % List variables in the path
+                vars = whos('-file', filepath);
+            catch whosException
+                ME = MException('lccb:movieObject:load', 'Fail to open file. Make sure it is a MAT file.');
+                ME = ME.addCause(whosException);
+                throw(ME);
             end
+            
+            % Check if a single movie object is in the variables
+            isMovie = cellfun(@(x) any(strcmp(superclasses(x),'MovieObject')),{vars.class});
+            assert(any(isMovie),'lccb:movieObject:load', ...
+                'No movie object is found in selected MAT file.');
+            assert(sum(isMovie)==1,'lccb:movieObject:load', ...
+                'Multiple movie objects are found in selected MAT file.');
+            
+            % Load movie object
+            data = load(filepath, '-mat', vars(isMovie).name);
+            obj= data.(vars(isMovie).name);
+            
+            % Perform sanityCheck using the input path
+            [moviePath,movieName,movieExt]=fileparts(filepath);
+            if nargin>1 &&  MovieObject.isOmeroSession(varargin{1}),
+                obj.setOmeroSession(varargin{1});
+                obj.sanityCheck(moviePath,[movieName movieExt], varargin{2:end});
+            else
+                obj.sanityCheck(moviePath,[movieName movieExt], varargin{:});
+            end
+        end
+        
+        function obj = loadImageFile(imagepath, varargin)
+            % Retrieve the absolute path
+            [~, f] = fileattrib(imagepath);
+            imagepath = f.Name;
+            
+            obj = bfImport(imagepath, varargin{:});
+        end
+        
+        function obj = loadOmero(session, varargin)
+            obj = getOmeroMovies(session, varargin{:});
         end
         
         function validator = getPropertyValidator(property)
