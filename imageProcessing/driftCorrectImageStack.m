@@ -54,6 +54,10 @@ nCorr = numel(corrInd);
 
 [optimizer,metric] = imregconfig(p.Modality);
 
+%We need to keep track of filled in values in case they're NaNs
+trackFill = false(imSize);
+
+
 %% ----------- Correction --------- %%
 
 for j = 1:nCorr
@@ -68,16 +72,25 @@ for j = 1:nCorr
     [~,iMax] = max(imXcorr(:));    
     [maxCorr(1), maxCorr(2)] = ind2sub(size(imXcorr),iMax);        
     [Xi,Yi] = meshgrid((1:imSize(2))+imSize(2)-maxCorr(2),(1:imSize(1))+imSize(1)-maxCorr(1));
-    currCorr = interp2(currCorr,Xi,Yi,'nearest');%Lazy way to do shifting...
-    currCorr(isnan(currCorr)) = p.FillValue;
+    currCorr = interp2(currCorr,Xi,Yi,'nearest');%Lazy way to do shifting + fill NaNs
+    trackFill(:,:,corrInd(j)) = isnan(currCorr);%Log these so they don't mess up the correlations/registrations and can be put back alter
+    currCorr(isnan(currCorr)) = 0;
        
     %Optionally improve the registration
     if p.DoRefinement
-        imStackCorr(:,:,corrInd(j)) = imregister(currCorr,currRef,p.TransformType,optimizer,metric);
-    else        
-        imStackCorr(:,:,corrInd(j)) = currCorr;
+        %We can't call imregister directly because we want to specify fill
+        %values
+        imTform = imregtform(currCorr,currRef,p.TransformType,optimizer,metric);        
+        Rfixed = imref2d(size(currRef));
+        currCorr = imwarp(currCorr,imTform,'OutputView',Rfixed,'FillValues',NaN);
+        trackFill(:,:,corrInd(j)) = trackFill(:,:,corrInd(j)) | isnan(currCorr);        
+        currCorr(isnan(currCorr)) = 0;
     end
     
+    imStackCorr(:,:,corrInd(j)) = currCorr;
+    
 end
+
+imStackCorr(trackFill) = p.FillValue;
 
 
