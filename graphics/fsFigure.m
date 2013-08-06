@@ -1,11 +1,11 @@
-function figHan = fsFigure(sizeFraction)
+function figHan = fsFigure(sizeFraction,varargin)
 %FSFIGURE creates a figure which takes up the whole screen or a specified fraction of it
 % 
 % fsFigure
 %
 % figHan = fsFigure
-%
 % figHan = fsFigure(sizeFraction)
+% figHan = fsFigure(sizeFraction,varargin)
 % 
 % This will create a full-screen (or smaller) figure centered on the
 % default display and returns the figure handle.
@@ -25,6 +25,9 @@ function figHan = fsFigure(sizeFraction)
 %
 %                    Optional. Default is 1 - that is, to make the figure
 %                    the same size as the screen.
+%
+%    varargin -     Any additional arguments will be passed to the figure
+%                   command
 %                    
 % Output:
 % 
@@ -60,6 +63,6 @@ figSize = ceil([sSize(1) + sSize(3)*(1-sizeFraction(1))/2 ,...
                 sSize(4)*sizeFraction(2)]);
                 
 %Make the figure!
-figHan = figure('Position',figSize);
+figHan = figure('Position',figSize,varargin{:});
 
     
