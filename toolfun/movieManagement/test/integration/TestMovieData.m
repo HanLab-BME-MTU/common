@@ -98,7 +98,6 @@ classdef TestMovieData < TestMovieObject
             roiMovieFullPath = self.movie.getROI(1).getFullPath();
             
             % Test ROI has been deleted
-            oldmovie = self.movie;
             self.movie = MovieData.load(roiMovieFullPath);
             self.checkMovie();
         end
@@ -155,6 +154,30 @@ classdef TestMovieData < TestMovieObject
                 relocatePath(roiOutputDirectory, oldPath, self.path));
             assertEqual(self.movie.roiMaskPath_,...
                 relocatePath(roiMaskPath, oldPath, self.path));
+        end
+        
+        function testSharedProcess(self)
+            self.setUpMovie();
+            self.movie.addProcess(MockProcess(self.movie));
+            
+            self.setUpROIs(1);
+            self.movie.sanityCheck();
+            
+            % Test package
+            self.movie = MovieData.load(self.movie.getFullPath());
+            assertEqual(self.movie.getProcess(1), self.movie.getROI(1).getProcess(1));
+        end
+        
+        function testSharedPackage(self)
+            self.setUpMovie();
+            self.movie.addPackage(MockPackage(self.movie));
+            
+            self.setUpROIs(1);
+            self.movie.sanityCheck();
+            
+            % Test package
+            self.movie = MovieData.load(self.movie.getFullPath());
+            assertEqual(self.movie.getPackage(1), self.movie.getROI(1).getPackage(1));
         end
     end
     
