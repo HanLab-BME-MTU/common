@@ -17,7 +17,7 @@ classdef  MovieData < MovieObject
         timeInterval_           % Time interval (s)
         numAperture_            % Lens numerical aperture
         camBitdepth_            % Camera Bit-depth
-                
+        
         % ---- Un-used params ----
         eventTimes_             % Time of movie events
         magnification_
@@ -25,10 +25,10 @@ classdef  MovieData < MovieObject
         
         % For Bio-Formats objects
         bfSeries_
-
+        
         % For mockMovieData
         mockMD_
-        mMDparent_ % mMDparent is a two column field with the first column 
+        mMDparent_ % mMDparent is a two column field with the first column
         % filed with indexes and second column filled with corresponding
         % mock Movie Data path. Every time a mock_MD is created the parent
         % MovieData will have a new line of mMDparent_ appended and saved.
@@ -37,7 +37,7 @@ classdef  MovieData < MovieObject
     properties (Transient =true)
         reader
     end
-
+    
     methods
         %% Constructor
         function obj = MovieData(channels,outputDirectory,varargin)
@@ -64,7 +64,7 @@ classdef  MovieData < MovieObject
             end
         end
         
-
+        
         %% MovieData specific set/get methods
         function set.movieDataPath_(obj, path)
             % Format the path
@@ -112,7 +112,7 @@ classdef  MovieData < MovieObject
             obj.checkPropertyValue('binning_',value);
             obj.binning_=value;
         end
-
+        
         function fileNames = getImageFileNames(obj,iChan)
             % Retrieve the names of the images in a specific channel
             
@@ -153,20 +153,26 @@ classdef  MovieData < MovieObject
                 'Invalid channel index specified! Cannot return path!');
             
             chanPaths = obj.getReader().getChannelNames(iChan);
-        end  
+        end
         
         %% ROI methods
         function roiMovie = addROI(obj,roiMaskPath,outputDirectory,varargin)
             % Create a new object using the movie's channels
             roiMovie = MovieData(obj.channels_,outputDirectory,varargin{:});
-            copyfields = {'pixelSize_','timeInterval_','numAperture_',...
-                'camBitdepth_','processes_','packages_','nFrames_','imSize_'};
-            set(roiMovie,copyfields,get(obj,copyfields));
             
-            % Set toi properties
-            roiMovie.roiMaskPath_=roiMaskPath;
-            roiMovie.parent_=obj;
-            obj.rois_(end+1)=roiMovie;
+            % Copy metadata fields
+            metadatafields = {'pixelSize_', 'timeInterval_',...
+                'numAperture_', 'camBitdepth_', 'nFrames_','imSize_'};
+            set(roiMovie, metadatafields, get(obj,metadatafields));
+            
+            % Share processes and packages
+            roiMovie.processes_ = obj.processes_;
+            roiMovie.packages_ = obj.packages_;
+            
+            % Set ROI properties
+            roiMovie.roiMaskPath_ = roiMaskPath;
+            roiMovie.parent_ = obj;
+            obj.rois_(end+1) = roiMovie;
         end
         
         function roi = getROI(obj, i)
@@ -182,8 +188,8 @@ classdef  MovieData < MovieObject
             delete(obj.rois_(index)); % Delete objects
             % Save deleted object (to prevent future loading)
             for i=find(~cellfun(@isempty,paths))
-               MD=obj.rois_(i); %#ok<NASGU>
-               save(paths{i},'MD');
+                MD=obj.rois_(i); %#ok<NASGU>
+                save(paths{i},'MD');
             end
             obj.rois_(index)=[]; % Remove from the list
         end
@@ -192,9 +198,9 @@ classdef  MovieData < MovieObject
             % If no roiMaskPath_, the whole mask is the region of interest
             if isempty(obj.roiMaskPath_)
                 roiMask = true([obj.imSize_ obj.nFrames_]);
-                return; 
+                return;
             end
-           
+            
             % Support single tif files for now - should be extended to
             % polygons, series of masks and other ROI objects
             assert(exist(obj.roiMaskPath_,'file')==2)
@@ -215,17 +221,17 @@ classdef  MovieData < MovieObject
             % List all descendants of the movie
             nRois = numel(obj.rois_);
             roiDescendants=cell(nRois,1);
-%             for i=1:nRois, roiDescendants{i} = obj.rois_(i).getDescendants; end
+            %             for i=1:nRois, roiDescendants{i} = obj.rois_(i).getDescendants; end
             descendants = horzcat(obj.rois_,roiDescendants{:});
         end
-             
+        
         %% Sanitycheck/relocation
         function sanityCheck(obj,varargin)
             % Check the sanity of the MovieData objects
             %
             % First call the superclass sanityCheck. Then call the Channel
-            % objects sanityCheck, check image properties and set the 
-            % nFrames_ and imSize_ properties. 
+            % objects sanityCheck, check image properties and set the
+            % nFrames_ and imSize_ properties.
             % Save the movie to disk if run successfully
             
             % Call the superclass sanityCheck
@@ -262,7 +268,7 @@ classdef  MovieData < MovieObject
             else
                 obj.imSize_ = [height(1) width(1)];
             end
-
+            
             % Fix roi/parent initialization
             if isempty(obj.rois_), obj.rois_=MovieData.empty(1,0); end
             if isempty(obj.parent_), obj.parent_=MovieData.empty(1,0); end
@@ -285,7 +291,7 @@ classdef  MovieData < MovieObject
                 return
             end
             
-            disp('Saving movie');            
+            disp('Saving movie');
             obj.save();
         end
         
@@ -301,10 +307,10 @@ classdef  MovieData < MovieObject
             end
             
             if nargin<3 || ~full || obj.isOmero(),
-                return 
+                return
             end
             
-            % Check that channels paths start with oldRootDir           
+            % Check that channels paths start with oldRootDir
             channelPaths = arrayfun(@(x) x.channelPath_, obj.channels_,...
                 'Unif', false);
             status = cellfun(@(x) ~isempty(regexp(x,['^' regexptranslate('escape',oldRootDir) '*'],...
@@ -368,7 +374,7 @@ classdef  MovieData < MovieObject
             isMovieProc = false(nProc,1);
             procOutput = cell(nProc,1);
             
-                
+            
             % For each input process check the output validity
             for i=1:nProc
                 procIndex(i) =obj.getProcessIndex(procNames{i},1);
@@ -377,7 +383,7 @@ classdef  MovieData < MovieObject
                 isMovieProc(i) = strcmp('movieGraph',outputList{i}(1).type);
                 procOutput{i} = proc.checkChannelOutput;
                 assert(any(procOutput{i}(:)),[proc.getName ' has no valid output !' ...
-                    'Please apply ' proc.getName ' before running correlation!']);             
+                    'Please apply ' proc.getName ' before running correlation!']);
             end
             
             % Push all input into a structre
@@ -412,7 +418,7 @@ classdef  MovieData < MovieObject
                 assert(all(ismember(index,1:numel(input))));
                 input=input(index);
             end
-        end  
+        end
         
         %% Bio-Formats functions
         
@@ -460,13 +466,13 @@ classdef  MovieData < MovieObject
                 obj.reader.delete()
             end
         end
-
+        
         
         %% HCS functions
         function status = isHCS(obj)
             objcache = get(obj.channels_(1));
             if isfield(objcache, 'hcsPlatestack_')
-            status = ~isempty(obj.channels_(1).hcsPlatestack_);
+                status = ~isempty(obj.channels_(1).hcsPlatestack_);
             else
                 status = isfield(objcache.channels_(1), 'hcsPlatestack_');
             end
@@ -475,7 +481,7 @@ classdef  MovieData < MovieObject
         function status = isMock(obj)
             objcache = get(obj);
             if isfield(objcache, 'mockMD_')
-            status = ~isempty(obj.mockMD_);
+                status = ~isempty(obj.mockMD_);
             else
                 status = isfield(objcache, 'mockMD_');
             end
@@ -484,38 +490,38 @@ classdef  MovieData < MovieObject
         function status = hasMock(obj)
             objcache = get(obj);
             if isfield(objcache, 'mMDparent_')
-            status = ~isempty(obj.mMDparent_);
+                status = ~isempty(obj.mMDparent_);
             else
                 status = isfield(objcache, 'mMDparent_');
             end
         end
         
-            end
-    methods(Static)        
+    end
+    methods(Static)
         function status=checkValue(property,value)
-           % Return true/false if the value for a given property is valid
+            % Return true/false if the value for a given property is valid
             
-           % Parse input
-           ip = inputParser;
-           ip.addRequired('property',@(x) ischar(x) || iscell(x));
-           ip.parse(property);
-           if iscell(property)
-               ip.addRequired('value',@(x) iscell(x)&&isequal(size(x),size(property)));
-               ip.parse(property,value);
-               status=cellfun(@(x,y) MovieData.checkValue(x,y),property,value);
-               return
-           end
-           
-           % Get validator for single property
-           validator=MovieData.getPropertyValidator(property);
-           propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
-           assert(~isempty(validator),['No validator defined for property ' propName]);
-           
-           % Return result of validation
-           status = isempty(value) || validator(value);
+            % Parse input
+            ip = inputParser;
+            ip.addRequired('property',@(x) ischar(x) || iscell(x));
+            ip.parse(property);
+            if iscell(property)
+                ip.addRequired('value',@(x) iscell(x)&&isequal(size(x),size(property)));
+                ip.parse(property,value);
+                status=cellfun(@(x,y) MovieData.checkValue(x,y),property,value);
+                return
+            end
+            
+            % Get validator for single property
+            validator=MovieData.getPropertyValidator(property);
+            propName = regexprep(regexprep(property,'(_\>)',''),'([A-Z])',' ${lower($1)}');
+            assert(~isempty(validator),['No validator defined for property ' propName]);
+            
+            % Return result of validation
+            status = isempty(value) || validator(value);
         end
         
-        function validator = getPropertyValidator(property) 
+        function validator = getPropertyValidator(property)
             validator = getPropertyValidator@MovieObject(property);
             if ~isempty(validator), return; end
             switch property
