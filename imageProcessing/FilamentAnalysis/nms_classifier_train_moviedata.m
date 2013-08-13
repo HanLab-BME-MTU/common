@@ -12,7 +12,7 @@ function  F_classifer_train_output  = nms_classifier_train_moviedata(movieData,c
 
 
 save_tif_flag=1;
-
+F_classifer_train_output= cell(1,1);
 
 % Find the package of Filament Analysis
 nPackage = length(movieData.packages_);
@@ -79,8 +79,11 @@ for i = 1 : nProcesses
     end
 end
 
-if indexSteerabeleProcess==0 && Combine_Way~=2
-    msg('Please run steerable filtering first.')
+
+% if there is no st results, but the combine way is not int only, then st
+% is missing, error here.
+if indexSteerabeleProcess==0 && (~strcmp(Combine_Way,'int_only'))
+    display('Please run steerable filtering first.')
     return;
 end
 
@@ -236,43 +239,10 @@ for iChannel = channelIndex
         feature_MeanX(i_area) = mean(all_x_i);
         feature_MeanY(i_area) = mean(all_y_i);
         
-        
-        %     % this version without the curvature measure, to save time.
-        %
-        %     bw_i = zeros(size(bw_out));
-        %     bw_i(sub2ind(size(bw_i), round(all_y_i),round(all_x_i)))=1;
-        %     end_points_i = bwmorph(bw_i,'endpoints');
-        %     [y_i, x_i]=find(end_points_i);
-        %
-        %     if isempty(x_i)
-        %         % if there is no end point, then it is a enclosed circle
-        %         [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, all_x_i(1),all_y_i(1));
-        %     else
-        %         [y_i, x_i]=find(end_points_i);
-        %         [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
-        %     end
-        %
-        %     ordered_points{i_area} = [line_i_x, line_i_y];
-        %
-        %     line_smooth_H = fspecial('gaussian',5,1.5);
-        %
-        %     line_i_x = (imfilter(line_i_x, line_smooth_H, 'replicate', 'same'));
-        %     line_i_y = (imfilter(line_i_y, line_smooth_H, 'replicate', 'same'));
-        %
-        %     smoothed_ordered_points{i_area} = [line_i_x, line_i_y];
-        %
-        %
-        %     Vertices = [line_i_x' line_i_y'];
-        %     Lines=[(1:size(Vertices,1)-1)' (2:size(Vertices,1))'];
-        %     k=LineCurvature2D(Vertices,Lines);
-        %
-        %     feature_Curvature(i_area) = mean(k);
-        %
     end
     
     % figure; plot3(feature_Length,feature_MeanInt,feature_Curvature,'.');
-    
-    
+        
     % find the mode of the intensity of the curves/lines
     [hist_n,bin] = hist(feature_MeanNMS,200);
     ind_mode = find(hist_n==max(hist_n));
@@ -289,22 +259,21 @@ for iChannel = channelIndex
     T_xie_length_up = 2*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
     
     % Make a classification function as whether it is above the line
-    F_classifer_up = @(i,l) (((T_xie_int_up + (T_xie_int_up/T_xie_length_up)*(-l) )<i));
-    
+    F_classifer_up = @(nms,length,curvature,int) (((T_xie_int_up + (T_xie_int_up/T_xie_length_up)*(-length) )<nms));
     
     % the down one
     T_xie_int_down =  abs(hotsu - mode_nms)*1.5 + mode_nms;
     T_xie_length_down = 1.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
     
-    F_classifer_down = @(i,l) (((T_xie_int_down + (T_xie_int_down/T_xie_length_down)*(-l) )<i));
-    
+    F_classifer_down = @(nms,length,curvature,int)  (((T_xie_int_down + (T_xie_int_down/T_xie_length_down)*(-length) )<nms));
+     
     % the points in between the two classifier is the not sure ones that
     % requires annotation
-    not_sure_ind = find(F_classifer_up(feature_MeanNMS, feature_Length)==0 & F_classifer_down(feature_MeanNMS, feature_Length)>0);
-    good_ind = find(F_classifer_up(feature_MeanNMS, feature_Length)>0);
+    not_sure_ind = find(F_classifer_up(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 & F_classifer_down(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
+    good_ind = find(F_classifer_up(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
     
-    F_classifer_notuse =  @(i,l) (((T_xie_int_down/2 + (T_xie_int_down/T_xie_length_down)*(-l) )<i));
-    bad_ind = find(F_classifer_down(feature_MeanNMS, feature_Length)==0 & F_classifer_notuse(feature_MeanNMS, feature_Length)>0);
+    F_classifer_notuse =  @(nms,length,curvature,int)  (((T_xie_int_down/2 + (T_xie_int_down/T_xie_length_down)*(-length) )<nms));
+    bad_ind = find(F_classifer_down(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 & F_classifer_notuse(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
     
     
     h1 = figure(1); hold off;
@@ -372,7 +341,7 @@ for iChannel = channelIndex
     end
     
     % if everything is good, then lower the cut
-    if(mean(good_bad_label)>1.8)
+    if(mean(good_bad_label)>1.9)
         
         % the up one
         % Set the slanted classification line cutoff as twice of the Otsu with
@@ -383,23 +352,23 @@ for iChannel = channelIndex
         T_xie_length_up = 1.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
         
         % Make a classification function as whether it is above the line
-        F_classifer_up = @(i,l) (((T_xie_int_up + (T_xie_int_up/T_xie_length_up)*(-l) )<i));
+        F_classifer_up = @(nms,length,curvature,int)  (((T_xie_int_up + (T_xie_int_up/T_xie_length_up)*(-length) )<nms));
         
         
         % the down one
         T_xie_int_down =  abs(hotsu - mode_nms)*1 + mode_nms;
         T_xie_length_down = 1.2*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
         
-        F_classifer_down = @(i,l) (((T_xie_int_down + (T_xie_int_down/T_xie_length_down)*(-l) )<i));
+        F_classifer_down = @(nms,length,curvature,int)  (((T_xie_int_down + (T_xie_int_down/T_xie_length_down)*(-length) )<nms));
         
         % the points in between the two classifier is the not sure ones that
         % requires annotation
-        not_sure_ind = find(F_classifer_up(feature_MeanNMS, feature_Length)==0 & F_classifer_down(feature_MeanNMS, feature_Length)>0);
-        good_ind = find(F_classifer_up(feature_MeanNMS, feature_Length)>0);
+        not_sure_ind = find(F_classifer_up(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 & F_classifer_down(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
+        good_ind = find(F_classifer_up(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
         
-        F_classifer_notuse =  @(i,l) (((T_xie_int_down/2 + (T_xie_int_down/T_xie_length_down)*(-l) )<i));
-        bad_ind = find(F_classifer_down(feature_MeanNMS, feature_Length)==0 ...
-            & F_classifer_notuse(feature_MeanNMS, feature_Length)>0);
+        F_classifer_notuse =  @(nms,length,curvature,int)  (((T_xie_int_down/2 + (T_xie_int_down/T_xie_length_down)*(-length) )<nms));
+        bad_ind = find(F_classifer_down(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 ...
+            & F_classifer_notuse(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
         
         
         h1 = figure(1); hold off;
@@ -454,7 +423,7 @@ for iChannel = channelIndex
     
     
     % if everything is bad, then higher the cut
-    if(mean(good_bad_label)<1.2)
+    if(mean(good_bad_label)<1.1)
         
         % the up one
         % Set the slanted classification line cutoff as twice of the Otsu with
@@ -465,22 +434,22 @@ for iChannel = channelIndex
         T_xie_length_up = 3*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
         
         % Make a classification function as whether it is above the line
-        F_classifer_up = @(i,l) (((T_xie_int_up + (T_xie_int_up/T_xie_length_up)*(-l) )<i));
+        F_classifer_up = @(nms,length,curvature,int)  (((T_xie_int_up + (T_xie_int_up/T_xie_length_up)*(-length) )<nms));
         
         
         % the down one
         T_xie_int_down =  abs(hotsu - mode_nms)*2 + mode_nms;
         T_xie_length_down = 2*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
         
-        F_classifer_down = @(i,l) (((T_xie_int_down + (T_xie_int_down/T_xie_length_down)*(-l) )<i));
+        F_classifer_down = @(nms,length,curvature,int)  (((T_xie_int_down + (T_xie_int_down/T_xie_length_down)*(-length) )<nms));
         
         % the points in between the two classifier is the not sure ones that
         % requires annotation
-        not_sure_ind = find(F_classifer_up(feature_MeanNMS, feature_Length)==0 & F_classifer_down(feature_MeanNMS, feature_Length)>0);
-        good_ind = find(F_classifer_up(feature_MeanNMS, feature_Length)>0);
+        not_sure_ind = find(F_classifer_up(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 & F_classifer_down(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
+        good_ind = find(F_classifer_up(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
         
-        F_classifer_notuse =  @(i,l) (((T_xie_int_down/2 + (T_xie_int_down/T_xie_length_down)*(-l) )<i));
-        bad_ind = find(F_classifer_down(feature_MeanNMS, feature_Length)==0 & F_classifer_notuse(feature_MeanNMS, feature_Length)>0);
+        F_classifer_notuse =  @(nms,length,curvature,int)  (((T_xie_int_down/2 + (T_xie_int_down/T_xie_length_down)*(-length) )<nms));
+        bad_ind = find(F_classifer_down(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 & F_classifer_notuse(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
         
         
         h1 = figure(1); hold off;
@@ -533,15 +502,14 @@ for iChannel = channelIndex
     
     
     figure(1); axis auto;    
-    
-    sample_good_ind = datasample(good_ind,min(length(good_ind),200));
-    sample_bad_ind = datasample(bad_ind,min(length(bad_ind),200));
+     
+    sample_good_ind = randsample(good_ind,min(length(good_ind),200),true,W_neighbor(good_ind));
+    sample_bad_ind = randsample(bad_ind,min(length(bad_ind),200),true,W_neighbor(bad_ind));
     
     training_good_ind = [sample_good_ind; training_ind(find(good_bad_label(1:end)==1))];
     training_bad_ind = [sample_bad_ind; training_ind(find(good_bad_label(1:end)==2))];
     
-    
-     for i_area = [training_good_ind' training_bad_ind' ]
+    for i_area = [training_good_ind' training_bad_ind' ]
         [all_y_i, all_x_i] = find(labelMask == i_area);
          % get the curvature for training samples only
         
@@ -586,21 +554,25 @@ for iChannel = channelIndex
     train_cur_good = feature_Curvature(training_good_ind);
     train_cur_bad = feature_Curvature(training_bad_ind);
         
-    feature_good = [train_length_good train_int_good train_nms_good train_cur_good];
-    feature_bad = [train_length_bad train_int_bad train_nms_bad train_cur_bad];
+    feature_good = [train_nms_good train_length_good train_cur_good train_int_good  ];
+    feature_bad = [train_nms_bad train_length_bad train_cur_bad train_int_bad  ];
     
     label_good = ones(size(train_length_good));
     label_bad = -ones(size(train_length_bad));
     
+    Classifier_Type_ind=funParams.Classifier_Type_ind;
     if(funParams.Classifier_Type_ind==2)
         % if user intended for SVM classifier
 %         Linear Kernel
-        model_linear = svmtrain([label_good; label_bad], [feature_good; feature_bad], '-t 0');
-        [predict_label_L, accuracy_L, dec_values_L] = svmpredict([label_good; label_bad], [feature_good; feature_bad], model_linear);
-        save([FilamentSegmentationChannelOutputDir,'/F_SVM_channel.mat'],'model_linear');
-        
-        F_classifer_train_this_channel =  @(nms,length,curvature,int) (svmpredict(ones(length(nms),1), [nms,length,curvature,int], model_linear)>0);
-        
+        model_polynomial  = svmtrain([label_good; label_bad], [feature_good; feature_bad], '-t 1');
+        [predict_label_L, accuracy_L, dec_values_L] = svmpredict([label_good; label_bad], [feature_good; feature_bad], model_polynomial);
+         
+        F_classifer_train_this_channel =  @(nms,length,curvature,int) (svmpredict(ones(length(nms),1), [nms,length,curvature,int], model_polynomial)>0);
+         
+        F_classifer_train_output{iChannel} = [FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'];
+  
+        save([FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'],'F_classifer_train_this_channel','Classifier_Type_ind');
+     
     end
     
     % feature_training = [feature_Length(training_ind) feature_MeanInt(training_ind)];
@@ -619,17 +591,17 @@ for iChannel = channelIndex
     % save('F_classifer.mat','F_classifer');
     
     if(funParams.Classifier_Type_ind==1)
-        
+        % if the user want the linear classifier
         T_xie_int_mid = (T_xie_int_up + T_xie_int_down)/2;
         T_xie_length_mid = (T_xie_length_up +  T_xie_length_down)/2;
         
-        F_classifer_mid = @(i,l) (((T_xie_int_mid + (T_xie_int_mid/T_xie_length_mid)*(-l) )<i));
-        
+        F_classifer_mid = @(nms,length,curvature,int) (((T_xie_int_mid + (T_xie_int_mid/T_xie_length_mid)*(-length) )<nms));
+       
         train_mat = [];
         for T_xie_int_grid = T_xie_int_down : (T_xie_int_up - T_xie_int_down)/10 : T_xie_int_up
             for T_xie_length_grid = T_xie_length_down : (T_xie_length_up - T_xie_length_down)/10 : T_xie_length_up
                 
-                F_classifer_train = @(i,l) (((T_xie_int_grid + (T_xie_int_grid/T_xie_length_grid)*(-l) -i )));
+                F_classifer_train = @(nms,length,curvature,int) (((T_xie_int_grid + (T_xie_int_grid/T_xie_length_grid)*(-length) -nms )));
                 train_mat = [train_mat; T_xie_int_grid T_xie_length_grid ...
                     (-sum(F_classifer_train(feature_MeanNMS(training_good_ind),...
                     feature_Length((training_good_ind))))...
@@ -646,17 +618,17 @@ for iChannel = channelIndex
         clear imageNMS nms imageInt currentImg;
         clear F_classifer_down F_classifer_mid F_classifer_notuse F_classifer_train F_classifer_up;
         
-        F_classifer_train_this_channel = @(int,length,curvatre,int_int) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
+        F_classifer_train_this_channel = @(nms,length,curvature,int) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<nms));
         
         % due to some problem of the size of the function, with wired
         % difference of being here or outside the framework, now change to save
         % only the mat file name in the MD file.
-        
+    
     end
     
     F_classifer_train_output{iChannel} = [FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'];
     
-    save([FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'],'F_classifer_train_this_channel');
+    save([FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'],'F_classifer_train_this_channel','Classifier_Type_ind');
     
 end
 

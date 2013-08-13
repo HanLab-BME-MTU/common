@@ -11,21 +11,44 @@ function  [T_otsu, current_all_matching_bw, current_model ]  = geoBasedNmsSeg_wi
 % Liya Ding
 % 2013.02
 
-% to show or not to show the figures; not affecting the saving part
-if(funParams.nofiguredisruption ==1 )
-    set_visible='off';
+% First check is there is trained classifier
+
+if(isempty(classifier_trained))
+    showinfowindow('No trained classifier is found! Please Check!','Error');
+    
+    T_otsu=0;
+    current_all_matching_bw=[];
+    current_model=[];
+    
+    return;
 else
-    set_visible='on';
+    % when there is an input classifer, use the input one
+    F_classifer = classifier_trained;
 end
 
-% save figures or not, show messages or not
-SaveFigures = funParams.savestepfigures;
-ShowDetailMessages = funParams.savestepfigures;
+% to show or not to show the figures; not affecting the saving part
+ if(funParams.nofiguredisruption ==1 )
+     set_visible='off';
+ else
+     set_visible='on';
+ end
 
+ % save figures or not, show messages or not
+ SaveFigures = funParams.savestepfigures;
+ ShowDetailMessages = funParams.savestepfigures;
+
+
+ CoefAlpha = funParams.CoefAlpha;
+ Classifier_Type_ind = funParams.Classifier_Type_ind;
+ LengthThreshold = funParams.LengthThreshold;
+ IternationNumber = funParams.IternationNumber;
+ CurvatureThreshold = funParams.CurvatureThreshold;
+ 
+ 
 % define a mask to reduce the number of curvelet to classify
 if(~isempty(MaskCell) || mean(double(MaskCell))==1)
     
-    %     MaskCell =  imdilate(MaskCell,fspecial('disk', 3)>0);
+%     MaskCell =  imdilate(MaskCell,fspecial('disk', 3)>0);
 else
     T_Rosin_otsu = thresholdRosin(imfilter(imageInt,fspecial('gaussian',11,2)));
     MaskCell = imageInt>T_Rosin_otsu*6/3;
@@ -41,7 +64,6 @@ else
     MaskCell = imdilate(MaskCell,fspecial('disk', 71)>0);
 end
 
-% the threshold defined by Otsu method
 [hist_n,bin] = hist(imageNMS(find(imageNMS>0)),200);
 ind_mode = find(hist_n==max(hist_n));
 mode_nms = bin(ind_mode(1));
@@ -49,8 +71,10 @@ mode_nms = bin(ind_mode(1));
 T_otsu = thresholdOtsu(imageNMS(find(imageNMS>mode_nms)));
 T_otsu_start =  abs(T_otsu - mode_nms)*0.2 + mode_nms;
 
+
 imageNMS = imageNMS.*MaskCell;
 imageInt = imageInt.*MaskCell;
+
 
 % first, get almost all the curves/lines, by using a low threshold
 imageMask = imageNMS > T_otsu_start;
@@ -97,8 +121,9 @@ feature_Length = obAreas';
 smoothed_ordered_points = cell(1,1);
 feature_Curvature = nan(nLine,1);
 
+
 % for the features, only include those curves/lines longer than 4 pixels
-ind_long = find(feature_Length>5);
+ind_long = find(feature_Length>LengthThreshold);
 
 % get the mean intensity of the curves
 for i_area = ind_long'
@@ -109,40 +134,14 @@ for i_area = ind_long'
     feature_MeanInt(i_area) = mean(INT);
 end
 
-if(isempty(classifier_trained))
-    % if there is no input classifier, build one, with empirical setting
-    
-    % find the mode of the intensity of the curves/lines
-    [hist_n,bin] = hist(feature_MeanNMS,200);
-    ind_mode = find(hist_n==max(hist_n));
-    mode_nms = bin(ind_mode(1));
-    % And find the Otsu threshold for the intensity
-    hotsu = thresholdOtsu(feature_MeanNMS(find(feature_MeanNMS>mode_nms)));
-    
-    % Set the slanted classification line cutoff as twice of the Otsu with
-    % respect to the mode
-    T_xie_int =  abs(hotsu - mode_nms)*1.8+ mode_nms;
-    
-    % And the length as Otsu threshold
-    T_xie_length = 1.8*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
-    
-    % Make a classification function as whether it is above the line
-    T_xie_int_train = T_xie_int;
-    T_xie_length_train = T_xie_length;
-    
-    F_classifer = @(nms_int,length,curvature,int)...
-        (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<nms_int));
-else
-    % when there is an input classifer, use the input one
-    F_classifer = classifier_trained;
-end
-
 master_flassier = F_classifer;
 
 % Select those above the line as our good ones as starting point of graph
 % matching
+
 Good_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
 Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0);
+
 if(ShowDetailMessages==1)
     display(['Length and NMS only: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);
 end
@@ -187,14 +186,13 @@ feature_all.feature_Length = feature_Length;
 feature_all.feature_MeanInt = feature_MeanInt;
 feature_all.feature_Curvature = feature_Curvature;
 
-
-Good_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0 & feature_Curvature<0.051);
-Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 | feature_Curvature>=0.051);
+Good_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0 & feature_Curvature<CurvatureThreshold);
+Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 | feature_Curvature>=CurvatureThreshold);
 
 if(ShowDetailMessages==1)
     display(['Length,NMSand Curvature: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);
 end
-
+    
 % plot the output image with these good ones
 current_all_seg_bw = zeros(size(labelMask));
 current_model = [];
@@ -211,4 +209,57 @@ end
 
 current_all_matching_bw = current_all_seg_bw;
 
+% this part is not ready, currently, one iteration of GM is done
+% % if the trainin is done linearly, then we could do two iterations of GM,
+% % this is get the parameters.
+% if(Classifier_Type_ind==1)
+%     % restore parameters from saved trained functions
+%     for int_test = max(feature_MeanNMS):-0.1:0
+%         if F_classifer(int_test,0,0,0)==0;
+%             T_xie_int_train = int_test;
+%             break;
+%         end
+%     end
+%     
+%     for length_test = max(feature_Length):-0.1:0
+%         if F_classifer(0,length_test,0,0)==0;
+%             T_xie_length_train = length_test;
+%             break;
+%         end
+%     end
+% end
+% % 
+% graph_matching_flag=0;
+
+% Now if user intended for graph matching part, do it
+if(graph_matching_flag==1)
+    
+    h3 = figure(3); set(h3,'Visible',set_visible);
+    imagescc(imageInt);hold on;
+    [y,x]=find(current_all_seg_bw>0);
+    plot(x,y,'.','MarkerSize',3);
+    
+    if(~exist([FilamentSegmentationChannelOutputDir,'/GEO'],'dir'))
+        mkdir(FilamentSegmentationChannelOutputDir,'GEO');
+    end
+    
+    if(SaveFigures==1)        
+        saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round0_all_match_bw.tif']);
+    end
+    
+    confidency_interval = 0.7;
+%     close(h1);
+        iIteration=0;
+    [current_model,current_matching_bw,model_ind]...
+    = graph_matching_linking_once([], current_all_seg_bw, confidency_interval,imageInt, ...
+                                Good_ind,ind_long, [],feature_all,labelMask,master_flassier,iIteration,funParams);
+    if(SaveFigures==1)
+        imwrite(double(current_all_seg_bw*3/4),[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_begin.tif']);
+        imwrite(double(current_matching_bw/2),[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_end.tif']);
+        h1=figure(1);set(h1,'Visible',set_visible);saveas(h1,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_match_color.tif']);
+        h3=figure(3);set(h3,'Visible',set_visible);saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_all_match_bw.tif']);
+    end
+
+    current_all_matching_bw = current_matching_bw>0;
+end
 

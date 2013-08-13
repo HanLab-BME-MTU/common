@@ -25,6 +25,13 @@ function  [T_otsu, current_all_matching_bw, current_model ]  = geoBasedNmsSeg_wi
  ShowDetailMessages = funParams.savestepfigures;
 
 
+ CoefAlpha = funParams.CoefAlpha;
+ Classifier_Type_ind = funParams.Classifier_Type_ind;
+ LengthThreshold = funParams.LengthThreshold;
+ IternationNumber = funParams.IternationNumber;
+ CurvatureThreshold = funParams.CurvatureThreshold;
+ 
+ 
 % define a mask to reduce the number of curvelet to classify
 if(~isempty(MaskCell) || mean(double(MaskCell))==1)
     
@@ -117,8 +124,10 @@ feature_Length = obAreas';
 smoothed_ordered_points = cell(1,1);
 feature_Curvature = nan(nLine,1);
 
+
+
 % for the features, only include those curves/lines longer than 4 pixels
-ind_long = find(feature_Length>10);
+ind_long = find(feature_Length>LengthThreshold);
 
 % get the mean intensity of the curves
 for i_area = ind_long'
@@ -171,17 +180,17 @@ if(isempty(classifier_trained))
     
     % Set the slanted classification line cutoff as twice of the Otsu with
     % respect to the mode
-    T_xie_int =  abs(hotsu - mode_nms)*1.5+ mode_nms;
+    T_xie_int =  abs(hotsu - mode_nms)*CoefAlpha+ mode_nms;
     
     % And the length as Otsu threshold
-    T_xie_length =1.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
+    T_xie_length =CoefAlpha*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
    
     % Make a classification function as whether it is above the line
     T_xie_int_train = T_xie_int;
     T_xie_length_train = T_xie_length;
     
-    F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
-    
+    F_classifer = @(nms,length,int,curv) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<nms));
+        
 else
     % when there is an input classifer, use the input one
     F_classifer = classifier_trained;
@@ -192,8 +201,10 @@ master_flassier = F_classifer;
 
 % Select those above the line as our good ones as starting point of graph
 % matching
-Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
-Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
+
+Good_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
+Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0);
+
 if(ShowDetailMessages==1)
     display(['Length and NMS only: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);
 end
@@ -239,8 +250,8 @@ feature_all.feature_MeanInt = feature_MeanInt;
 feature_all.feature_Curvature = feature_Curvature;
 
 
-Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0 & feature_Curvature<0.2);
-Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0 | feature_Curvature>=0.2);
+Good_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0 & feature_Curvature<CurvatureThreshold);
+Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 | feature_Curvature>=CurvatureThreshold);
 
 if(ShowDetailMessages==1)
     display(['Length,NMSand Curvature: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);
@@ -271,14 +282,14 @@ current_all_matching_bw = current_all_seg_bw;
 
 % restore parameters from saved trained functions
 for int_test = max(feature_MeanNMS):-0.1:0
-    if F_classifer(int_test,0)==0;
+    if F_classifer(int_test,0,0,0)==0;
         T_xie_int_train = int_test;
         break;
     end
 end
 
 for length_test = max(feature_Length):-0.1:0
-    if F_classifer(0,length_test)==0;
+    if F_classifer(0,length_test,0,0)==0;
         T_xie_length_train = length_test;
         break;
     end
@@ -315,13 +326,17 @@ if(graph_matching_flag==1)
         h3=figure(3);set(h3,'Visible',set_visible);saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_all_match_bw.tif']);
     end
 
+    
+    if(IternationNumber>1)
     retrain_flag = 1;
      
     T_xie_int_train = T_xie_int_train*0.9;
     T_xie_length_train = T_xie_length_train*0.9;
-    F_classifer = @(int,length) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<int));
-    Good_ind = find(F_classifer(feature_MeanNMS, feature_Length)>0);
-    Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length)==0);
+    F_classifer = @(nms,length,int,curv) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<nms));
+  
+    
+    Good_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
+    Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0);
     
     h12 =  figure(12); set(h12,'Visible',set_visible);hold off;
     plot(feature_Length(Good_ind),feature_MeanNMS(Good_ind),'b.'); hold on;
@@ -374,12 +389,15 @@ if(graph_matching_flag==1)
         end
         
     end
-
+    end
 %     retrain_flag=0;
-%     
-%     for iIteration = 2 : 3
+
+% if(IternationNumber>2)
+%     for iIteration = 2 : IternationNumber
 %         graph_matching_iteration_in_segmentation;
 %     end
+% end
+
     current_all_matching_bw = current_matching_bw>0;
 end
 

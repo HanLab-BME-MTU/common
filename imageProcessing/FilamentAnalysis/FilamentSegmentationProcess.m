@@ -296,7 +296,7 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % The way to combine segmentation results from steerable
             % filtering responce and from intensity, default is : only use
             % steerable filtering result and geobased nms
-            funParams.Combine_Way = 'geo_based';
+            funParams.Combine_Way = 'geo_based_GM';
             
             % Flag to set if cell mask is used, if 1, use
             % segmentation(refined) results, if 2, use the user define ROI
@@ -323,6 +323,9 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
     
             % the curvature threshold
             funParams.CurvatureThreshold=0.1;
+            
+            % the default linear plane classifier with offset, Alpha
+            funParams.CoefAlpha = 2;
             
             % iteration number
             funParams.IternationNumber=2;            

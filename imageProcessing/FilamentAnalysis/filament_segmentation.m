@@ -331,12 +331,14 @@ for iChannel = selected_channels
                 Min_area = 6;
                 
             case 'geo_based_GM'
+                % Assume no training is done for the classifier, so use the
+                % linear plane classifier with the input parameters.
                 
-                if(~isempty(funParams.F_classifier{iChannel}))
-                    load(funParams.F_classifier{iChannel});
-                else
+%                 if(~isempty(funParams.F_classifier{iChannel}))
+%                     load(funParams.F_classifier{iChannel});
+%                 else
                   F_classifer_train_this_channel=[];  
-                end
+%                 end
                 
                 [level2, NMS_Segment,current_model ] = ...
                     geoBasedNmsSeg_withGM(nms,currentImg, F_classifer_train_this_channel,1,...

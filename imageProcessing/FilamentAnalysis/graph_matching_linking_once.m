@@ -514,8 +514,10 @@ while(sum(M)>0)
                 % to qualify as new one add to current model
                 new_meannms = mean([feature_all.feature_MeanNMS(tomatch_ind(i_area)) feature_all.feature_MeanNMS(tomatch_ind(j_area))]);
                 new_length = sum([feature_all.feature_Length(tomatch_ind(i_area)) feature_all.feature_Length(tomatch_ind(j_area))]);
+                new_meanint = mean([feature_all.feature_MeanInt(tomatch_ind(i_area)) feature_all.feature_MeanInt(tomatch_ind(j_area))]);
+                new_curv = sum([feature_all.feature_Curvature(tomatch_ind(i_area)) feature_all.feature_Curvature(tomatch_ind(j_area))]);
                 %                 if this qualifies, add it, if not, skip it.
-                
+               
                 line_xy = [flipud(part_i);part_c;part_j];
                 line_i_x = line_xy(:,1);
                 line_i_y = line_xy(:,2);
@@ -528,7 +530,7 @@ while(sum(M)>0)
                 k=LineCurvature2D(Vertices,Lines);
                 
                 % if these two qualify to be new feature
-                if(master_flassier(new_meannms,new_length)>0 && mean(k)<0.051)
+                if(master_flassier(new_meannms,new_length,new_curv,new_meanint)>0 && mean(k)<0.05)
                     
                     % add to the system
                     

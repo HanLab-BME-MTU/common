@@ -22,7 +22,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 02-Jul-2013 14:59:03
+% Last Modified by GUIDE v2.5 09-Aug-2013 18:11:12
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -113,75 +113,78 @@ end
 
 
 % visible or not, show the parameters for the geo based algorithm
-    % when visible, set the numbers
-    set(handles.popupmenu_classifier_type,'Value',funParams.Classifier_Type_ind);
-    set(handles.edit_lengththreshold,'String',funParams.LengthThreshold);
-    set(handles.edit_curvaturethreshold,'String',funParams.CurvatureThreshold);
-    set(handles.edit_IternationNumber,'String',funParams.IternationNumber);
+% when visible, set the numbers
+set(handles.popupmenu_classifier_type,'Value',funParams.Classifier_Type_ind);
+set(handles.edit_lengththreshold,'String',funParams.LengthThreshold);
+set(handles.edit_curvaturethreshold,'String',funParams.CurvatureThreshold);
+set(handles.edit_IternationNumber,'String',funParams.IternationNumber);
+set(handles.edit_linear_plane_offset_alpha,'String',funParams.CoefAlpha);
 
 
-set(handles.text_block,'Visible','off');
-set(handles.text50,'Visible','off');
-set(handles.text51,'Visible','off');
-set(handles.text52,'Visible','off');
-set(handles.text53,'Visible','off');
-set(handles.text49,'Visible','off');
-set(handles.text55,'Visible','off');
-set(handles.popupmenu_classifier_type,'Visible','off');
-set(handles.edit_lengththreshold,'Visible','off');
-set(handles.edit_curvaturethreshold,'Visible','off');
-set(handles.edit_IternationNumber,'Visible','off');
+% first set everything as invisible
+set(handles.uipanel_threshold_panel,'Visible','off');
+set(handles.uipanel_Geo_panel,'Visible','off');
+
+if (strcmp(funParams.Combine_Way,'geo_based_training') || strcmp(funParams.Combine_Way,'geo_based_GM'))
+    % with Geo based approaches, use the geo panel and make the
+    % thresholding panel invisible
+    set(handles.uipanel_threshold_panel,'Visible','off');
+    set(handles.uipanel_Geo_panel,'Visible','on');
+    
+    if (strcmp(funParams.Combine_Way,'geo_based_training'))
+        set(handles.edit_IternationNumber,'Enable','off');
+    else
+        set(handles.edit_IternationNumber,'Enable','on');
+    end
+else
+    % with thresholding based approaches, use the thresholding panel and make the
+    % Geo panel invisible
+    set(handles.uipanel_threshold_panel,'Visible','on');
+    set(handles.uipanel_Geo_panel,'Visible','off');
+    
+    %first enable both sets as default, in the following, details will
+    %be set.
+    set(handles.edit_StPaceSize,'Enable','on');
+    set(handles.edit_StPatchSize,'Enable','on');
+    set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
+    set(handles.edit_IntPaceSize,'Enable','on');
+    set(handles.edit_IntPatchSize,'Enable','on');
+    set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
+    
+end
 
 if (strcmp(funParams.Combine_Way,'st_only')||strcmp(funParams.Combine_Way,'st_nms_two')||strcmp(funParams.Combine_Way,'st_nms_only'))
     
+    % with st based threhold based approaches, use the threhold panel and make the
+    % Geo panel invisible
+    set(handles.uipanel_threshold_panel,'Visible','on');
+    set(handles.uipanel_Geo_panel,'Visible','off');
+    
+    % make the st based parameters enabled, but the intensity based
+    % parameters disabled.
     set(handles.edit_StPaceSize,'Enable','on');
     set(handles.edit_StPatchSize,'Enable','on');
     set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
     set(handles.edit_IntPaceSize,'Enable','off');
     set(handles.edit_IntPatchSize,'Enable','off');
     set(handles.edit_int_lowerbound_localthresholding,'Enable','off');
-    
-else
-    if (strcmp(funParams.Combine_Way,'int_only'))
-        
-        set(handles.edit_StPaceSize,'Enable','off');
-        set(handles.edit_StPatchSize,'Enable','off');
-        set(handles.edit_st_lowerbound_localthresholding,'Enable','off');
-        set(handles.edit_IntPaceSize,'Enable','on');
-        set(handles.edit_IntPatchSize,'Enable','on');
-        set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
-        
-    else
-        set(handles.edit_StPaceSize,'Enable','on');
-        set(handles.edit_StPatchSize,'Enable','on');
-        set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
-        set(handles.edit_IntPaceSize,'Enable','on');
-        set(handles.edit_IntPatchSize,'Enable','on');
-        set(handles.edit_int_lowerbound_localthresholding,'Enable','on');        
-    end
 end
 
-if (strcmp(funParams.Combine_Way,'geo_based_training') || strcmp(funParams.Combine_Way,'geo_based_GM'))    
+if (strcmp(funParams.Combine_Way,'int_only'))
+    % same here, with intensity threhold based approaches, use the threhold panel and make the
+    % Geo panel invisible
     
+    set(handles.uipanel_threshold_panel,'Visible','on');
+    set(handles.uipanel_Geo_panel,'Visible','off');
     
-    set(handles.text_block,'Visible','on');
-    set(handles.text50,'Visible','on');
-    set(handles.text51,'Visible','on');
-    set(handles.text52,'Visible','on');
-    set(handles.text53,'Visible','on');
-    set(handles.text49,'Visible','on');
-    set(handles.text55,'Visible','on');
-    set(handles.popupmenu_classifier_type,'Visible','on');
-    set(handles.edit_lengththreshold,'Visible','on');
-    set(handles.edit_curvaturethreshold,'Visible','on');
-    set(handles.edit_IternationNumber,'Visible','on');
-
+    % make the intensity based parameters enabled, but the st based
+    % parameters disabled.
     set(handles.edit_StPaceSize,'Enable','off');
     set(handles.edit_StPatchSize,'Enable','off');
     set(handles.edit_st_lowerbound_localthresholding,'Enable','off');
-    set(handles.edit_IntPaceSize,'Enable','off');
-    set(handles.edit_IntPatchSize,'Enable','off');
-    set(handles.edit_int_lowerbound_localthresholding,'Enable','off');
+    set(handles.edit_IntPaceSize,'Enable','on');
+    set(handles.edit_IntPatchSize,'Enable','on');
+    set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
 end
 
 
@@ -278,7 +281,7 @@ funParams.int_lowerbound_localthresholding=int_lowerbound_localthresholding;
 Cell_Mask_ind = get(handles.popupmenu_cell_mask, 'Value');
 funParams.Cell_Mask_ind = Cell_Mask_ind;
 
-if(strcmp(get(handles.text_block,'Visible'),'on'))
+if(strcmp(get(handles.uipanel_Geo_panel,'Visible'),'on'))
     Classifier_Type_ind = get(handles.popupmenu_classifier_type,'Value');
     funParams.Classifier_Type_ind=Classifier_Type_ind;
     
@@ -303,6 +306,15 @@ if(strcmp(get(handles.text_block,'Visible'),'on'))
         return;
     end
     funParams.CurvatureThreshold=CurvatureThreshold;
+    
+     CoefAlpha = str2double(get(handles.edit_linear_plane_offset_alpha, 'String'));
+    if isnan(CoefAlpha) || CoefAlpha < 0
+        errordlg('Please provide a valid input for Alpha in the linear plane classifier','Setting Error','modal');
+        return;
+    end
+    funParams.CoefAlpha = CoefAlpha;
+    
+    
     
     
     IternationNumber = str2double(get(handles.edit_IternationNumber, 'String'));
@@ -541,20 +553,16 @@ Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only'
 Combine_Way_ind = get(hObject, 'Value');
 Combine_Way=Combine_Way_tag{Combine_Way_ind};
 
-set(handles.text_block,'Visible','off');
-set(handles.text50,'Visible','off');
-set(handles.text51,'Visible','off');
-set(handles.text52,'Visible','off');
-set(handles.text53,'Visible','off');
-set(handles.text49,'Visible','off');
-set(handles.text55,'Visible','off');
-set(handles.popupmenu_classifier_type,'Visible','off');
-set(handles.edit_lengththreshold,'Visible','off');
-set(handles.edit_curvaturethreshold,'Visible','off');
-set(handles.edit_IternationNumber,'Visible','off');
 
+set(handles.uipanel_threshold_panel,'Visible','off');
+set(handles.uipanel_Geo_panel,'Visible','off');
 
+% see line 122 and on for comments, same thing
 if (strcmp(Combine_Way,'st_only')||strcmp(Combine_Way,'st_nms_two')||strcmp(Combine_Way,'st_nms_only'))
+     
+    set(handles.uipanel_threshold_panel,'Visible','on');    
+    set(handles.uipanel_Geo_panel,'Visible','off');
+    
     set(handles.edit_StPaceSize,'Enable','on');
     set(handles.edit_StPatchSize,'Enable','on');
     set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
@@ -564,6 +572,10 @@ if (strcmp(Combine_Way,'st_only')||strcmp(Combine_Way,'st_nms_two')||strcmp(Comb
     
 else
     if (strcmp(Combine_Way,'int_only'))
+         
+    set(handles.uipanel_threshold_panel,'Visible','on');    
+    set(handles.uipanel_Geo_panel,'Visible','off');
+    
         set(handles.edit_StPaceSize,'Enable','off');
         set(handles.edit_StPatchSize,'Enable','off');
         set(handles.edit_st_lowerbound_localthresholding,'Enable','off');
@@ -571,6 +583,10 @@ else
         set(handles.edit_IntPatchSize,'Enable','on');
         set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
     else
+         
+    set(handles.uipanel_threshold_panel,'Visible','on');    
+    set(handles.uipanel_Geo_panel,'Visible','off');
+    
         set(handles.edit_StPaceSize,'Enable','on');
         set(handles.edit_StPatchSize,'Enable','on');
         set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
@@ -581,26 +597,16 @@ else
 end
 
 if (strcmp(Combine_Way,'geo_based_training') || strcmp(Combine_Way,'geo_based_GM') )
-    set(handles.text_block,'Visible','on');
-    set(handles.text50,'Visible','on');
-    set(handles.text51,'Visible','on');
-    set(handles.text52,'Visible','on');
-    set(handles.text53,'Visible','on');
     
-    set(handles.text49,'Visible','on');
-    set(handles.text55,'Visible','on');
-    set(handles.popupmenu_classifier_type,'Visible','on');
-    set(handles.edit_lengththreshold,'Visible','on');
-    set(handles.edit_curvaturethreshold,'Visible','on');
-    set(handles.edit_IternationNumber,'Visible','on');
- 
+    set(handles.uipanel_threshold_panel,'Visible','off');
+    set(handles.uipanel_Geo_panel,'Visible','on');
     
-    set(handles.edit_StPaceSize,'Enable','off');
-    set(handles.edit_StPatchSize,'Enable','off');
-    set(handles.edit_st_lowerbound_localthresholding,'Enable','off');
-    set(handles.edit_IntPaceSize,'Enable','off');
-    set(handles.edit_IntPatchSize,'Enable','off');
-    set(handles.edit_int_lowerbound_localthresholding,'Enable','off');
+    if (strcmp(funParams.Combine_Way,'geo_based_training'))
+        set(handles.edit_IternationNumber,'Enable','off');
+    else
+        set(handles.edit_IternationNumber,'Enable','on');
+    end   
+    
 end
 
 % --- Executes during object creation, after setting all properties.
@@ -764,7 +770,13 @@ function pushbutton_traing_nms_Callback(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
 
 channelIndex = get(handles.listbox_selectedChannels, 'Userdata');
- 
+%  
+% if isempty(userData.MD)    
+%     userData_main.MD = MD;    
+% else    
+%     userData_main.MD = cat(2, userData_main.MD, MD);    
+% end
+
 funParams.F_classifier = nms_classifier_train_moviedata(userData.MD, channelIndex);
 
 try
@@ -785,21 +797,75 @@ function pushbutton_load_nms_classifier_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% userData = get(handles.figure1, 'UserData');
-% funParams = userData.crtProc.funParams_;
-% funParams.F_classifier = load_classifier_trained(userData.MD);
-% 
-% try
-%     userData.crtProc.sanityCheck;
-% catch ME
-% 
-%     errordlg([ME.message 'Please double check your data.'],...
-%                 'Setting Error','modal');
-%     return;
-% end
-% 
-% processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
-% 
+% This code direct user to copy the trained .mat file, and check if it is
+% currently in place.
+% Yes or not, it is assumed the user have done so or will do so, hence set
+% the file name for classifier as if it is in place.
+
+userData = get(handles.figure1, 'UserData');
+funParams = userData.crtProc.funParams_;
+
+channelIndex = get(handles.listbox_selectedChannels, 'Userdata');
+F_classifer_train_output = cell(1,max(channelIndex));
+
+nPackage = length(userData.MD.packages_);
+
+indexFilamentPackage = 0;
+for i = 1 : nPackage
+    if(strcmp(userData.MD.packages_{i}.getName,'FilamentAnalysis')==1)
+        indexFilamentPackage = i;
+        break;
+    end
+end
+
+nProcesses = length(userData.MD.processes_);
+
+indexFilamentSegmentationProcess = 0;
+for i = 1 : nProcesses
+    if(strcmp(userData.MD.processes_{i}.getName,'Filament Segmentation')==1)
+        indexFilamentSegmentationProcess = i;
+        break;
+    end
+end
+
+FilamentSegmentationProcessOutputDir  = [userData.MD.packages_{indexFilamentPackage}.outputDirectory_, filesep 'FilamentSegmentation'];
+if (~exist(FilamentSegmentationProcessOutputDir,'dir'))
+    mkdir(FilamentSegmentationProcessOutputDir);
+end
+
+for iChannel = channelIndex
+    
+%     Make output directory for the steerable filtered images
+    FilamentSegmentationChannelOutputDir =  [FilamentSegmentationProcessOutputDir, '/Channel',num2str(iChannel)];
+    if (~exist(FilamentSegmentationChannelOutputDir,'dir'))
+        mkdir(FilamentSegmentationChannelOutputDir);
+    end
+       
+    F_classifer_train_output{iChannel} = [FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'];
+    
+    if(~exist([FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'],'file'))
+       f = showinfowindow(['Please copy the trained classifier as F_classifer_channel.mat in ...\FilamentAnalysisPackage\FilamentSegmentation\Channel',...
+        num2str(iChannel),' for the trained movie, and paste it at corresponding position for current movie.','  Currently cannot find the copied F\_classifer\_channel.mat for current movie, if you have not done so, please copy and double check.'], 'Warning');
+    else
+       f = showinfowindow(['Please copy the trained classifier as F_classifer_channel.mat in ...\FilamentAnalysisPackage\FilamentSegmentation\Channel',...
+        num2str(iChannel),' for the trained movie, and paste it at corresponding position for current movie.','  Currently it is detected that the .mat file is copied.'], 'Message');
+        
+    end    
+end
+
+funParams.F_classifier = F_classifer_train_output;
+
+try
+    userData.crtProc.sanityCheck;
+catch ME
+
+    errordlg([ME.message 'Please double check your data.'],...
+                'Setting Error','modal');
+    return;
+end
+
+processGUI_ApplyFcn(hObject, eventdata, handles,funParams);
+
 
 
 % --- Executes during object creation, after setting all properties.
@@ -950,6 +1016,29 @@ function edit_lengththreshold_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function edit_lengththreshold_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit_lengththreshold (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_linear_plane_offset_alpha_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_linear_plane_offset_alpha (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_linear_plane_offset_alpha as text
+%        str2double(get(hObject,'String')) returns contents of edit_linear_plane_offset_alpha as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_linear_plane_offset_alpha_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_linear_plane_offset_alpha (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
