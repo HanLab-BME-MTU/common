@@ -601,7 +601,7 @@ if (strcmp(Combine_Way,'geo_based_training') || strcmp(Combine_Way,'geo_based_GM
     set(handles.uipanel_threshold_panel,'Visible','off');
     set(handles.uipanel_Geo_panel,'Visible','on');
     
-    if (strcmp(funParams.Combine_Way,'geo_based_training'))
+    if (strcmp(Combine_Way,'geo_based_training'))
         set(handles.edit_IternationNumber,'Enable','off');
     else
         set(handles.edit_IternationNumber,'Enable','on');

@@ -4,6 +4,7 @@ labelMask = bwlabel(in_img);
 
 %Get their area
 obAreas = regionprops(labelMask,'Area');
+out_img=in_img;
 
 %First, check that there are objects to remove
 if length(obAreas) > 1
