@@ -189,29 +189,30 @@ classdef  MovieObject < hgsetget
             
             % Input check
             ip=inputParser;
-            ip.addRequired('pid',@(x) isscalar(x) && ismember(x,1:numel(obj.processes_)) || isa(x,'Process'));
-            ip.addRequired('newprocess',@(x) isa(x,'Process'));
+            ip.addRequired('pid', @(x) isa(x,'Process') || ...
+                isnumeric(x) && ismember(x, 1:numel(obj.processes_)));
+            ip.addRequired('newprocess', @(x) isa(x,'Process'));
             ip.parse(pid, newprocess);
             
             % Retrieve process index if input is of process type
             if isa(pid, 'Process')
-                pid = find(cellfun(@(x)(isequal(x,pid)),obj.processes_));
+                pid = find(cellfun(@(x)(isequal(x,pid)), obj.processes_));
                 assert(isscalar(pid))
             end
             
-            [packageID procID] = obj.processes_{pid}.getPackage;
+            [packageID, procID] = obj.getProcess(pid).getPackage;
             
             % Check new process is compatible with parent packages
             if ~isempty(packageID)
                 for i=1:numel(packageID)
                     isValid = isa(newprocess,...
-                        obj.packages_{packageID(i)}.getProcessClassNames{procID(i)});
+                        obj.getPackage(packageID(i)).getProcessClassNames{procID(i)});
                     assert(isValid, 'Package class compatibility prevents process process replacement');
                 end
             end
             
             % Delete old process and replace it by the new one
-            oldprocess = obj.processes_{pid};
+            oldprocess = obj.getProcess(pid);
             if isa(oldprocess.owner_, 'MovieData')
                 % Remove process from list for owner and descendants
                 for movie = [oldprocess.owner_ oldprocess.owner_.getDescendants()]
@@ -226,7 +227,7 @@ classdef  MovieObject < hgsetget
             % Associate new process in parent packages
             if ~isempty(packageID),
                 for i=1:numel(packageID)
-                    obj.packages_{packageID(i)}.setProcess(procID(i),newprocess);
+                    obj.getPackage(packageID(i)).setProcess(procID(i),newprocess);
                 end
             end
         end

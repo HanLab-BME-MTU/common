@@ -65,5 +65,14 @@ classdef TestProcess < handle
             assertEqual(self.movie.getProcess(1), process2);
             assertFalse(self.process.isvalid);
         end
+        
+        function testReplaceProcess2(self)
+            process2 = MockProcess(self.movie);
+            self.movie.replaceProcess(self.process, process2);
+            
+            % Replace process
+            assertEqual(self.movie.getProcess(1), process2);
+            assertFalse(self.process.isvalid);
+        end
     end
 end
