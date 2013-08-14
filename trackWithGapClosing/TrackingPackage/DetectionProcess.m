@@ -82,6 +82,7 @@ classdef DetectionProcess < ImageAnalysisProcess
                 'CometDetectionProcess';
                 'AnisoGaussianDetectionProcess';
                 'NucleiDetectionProcess'
+                'PointSourceDetectionProcess';
                 };
         end
         

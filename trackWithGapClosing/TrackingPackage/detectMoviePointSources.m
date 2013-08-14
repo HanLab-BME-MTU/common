@@ -142,9 +142,11 @@ for i = 1:numel(p.ChannelIndex)
         end    
         
         % Call main detection function
-        pstruct = pointSourceDetection(currImage, p.filterSigma(i),...
-                'alpha', p.alpha, maskArgs{:});
-        
+%         pstruct = pointSourceDetection(currImage, p.filterSigma(i),...
+%                 'alpha', p.alpha, maskArgs{:});
+        pstruct = pointSourceDetection(currImage,p.filterSigma,p);
+
+
         % add xCoord, yCoord, amp fields for compatibilty  with tracker
         pstruct.xCoord = [pstruct.x' pstruct.x_pstd'];
         pstruct.yCoord = [pstruct.y' pstruct.y_pstd'];

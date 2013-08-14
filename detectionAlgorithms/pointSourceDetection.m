@@ -39,6 +39,7 @@ ip.addParamValue('RemoveRedundant', true, @islogical);
 ip.addParamValue('RedundancyRadius', 0.25, @isscalar);
 ip.addParamValue('RefineMaskLoG', true, @islogical);
 ip.addParamValue('RefineMaskValid', true, @islogical);
+ip.KeepUnmatched = true;
 ip.parse(img, sigma, varargin{:});
 mode = ip.Results.Mode;
 alpha = ip.Results.Alpha;

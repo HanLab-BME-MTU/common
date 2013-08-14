@@ -45,6 +45,9 @@ classdef PointSourceDetectionProcess < DetectionProcess
         function name = getName()
             name = 'Point source detection';
         end
+        function h = GUI()
+            h = @pointSourceDetectionProcessGUI;
+        end
         
         function funParams = getDefaultParams(owner,varargin)
             % Input check
@@ -61,6 +64,10 @@ classdef PointSourceDetectionProcess < DetectionProcess
             funParams.OutputDirectory = [outputDir  filesep 'point_sources'];
             funParams.alpha=.05;
             funParams.maskRadius=40;
+            funParams.Mode = 'xyAc';
+            funParams.FitMixtures = 0;
+            funParams.MaxMixtures = 5;
+            funParams.RedundancyRadius = .25;
             funParams.filterSigma = zeros(1, numel(owner.channels_));
             hasPSFSigma = arrayfun(@(x) ~isempty(x.psfSigma_), owner.channels_);
             funParams.filterSigma(hasPSFSigma) = [owner.channels_(hasPSFSigma).psfSigma_];            
@@ -68,7 +75,7 @@ classdef PointSourceDetectionProcess < DetectionProcess
         
         function positions = formatOutput(pstruct)
             positions = formatOutput@DetectionProcess(pstruct);
-            positions = positions(pstruct.isPSF, :);
+            %positions = positions(pstruct.isPSF, :);
         end
     end    
 end
