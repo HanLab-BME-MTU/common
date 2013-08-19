@@ -480,10 +480,12 @@ classdef  MovieData < MovieObject
         
         function status = isMock(obj)
             objcache = get(obj);
-            if isfield(objcache, 'mockMD_')
-                status = ~isempty(obj.mockMD_);
+            for i1 = 1:length(objcache)
+            if isfield(objcache(i1), 'mockMD_')
+                status = ~isempty(obj(i1).mockMD_);
             else
-                status = isfield(objcache, 'mockMD_');
+                status = isfield(objcache(i1), 'mockMD_');
+            end
             end
         end
         
