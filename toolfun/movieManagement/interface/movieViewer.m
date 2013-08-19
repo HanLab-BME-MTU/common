@@ -49,13 +49,7 @@ if strcmp(ip.Results.refresher, '1') == 1
     return
 end
 
-% Check existence of viewer interface
-if ~MO.isMock()
-    h=findobj(0,'Name','Viewer');
-    h2 = findobj('Name', 'hcsview');
-    if ~isempty(h), delete(h); end
-    if ~isempty(h2), delete(h2); end
-end
+
 
 % Generate the main figure
 mainFig=figure('Name','Viewer','Position',[0 0 200 200],...
@@ -84,6 +78,15 @@ if isa(ip.Results.MO,'MovieList')
 else
     userData.MO=ip.Results.MO;
     procId=ip.Results.procId;
+end
+% Check existence of viewer interface
+if isfield('MO', 'isMock') && ~MO.isMock()
+    h=findobj(0,'Name','Viewer');
+    h2 = findobj('Name', 'hcsview');
+    if ~isempty(h), delete(h); end
+    if ~isempty(h2), delete(h2); end
+else
+    hPosition = 10;
 end
 
 % Read all drawable output
@@ -240,7 +243,8 @@ if isa(userData.MO,'MovieData')
     hPosition=10;
  
     % Create controls for scrollling through the movie if regular moviedata
-    if ~MO.isHCS()
+    MO = userData.MO;
+    if isa(MO,'MovieData') && ~MO.isHCS()
     uicontrol(moviePanel, 'Style', 'pushbutton','String', 'Run movie',...
         'Position', [10 hPosition 100 20],'Callback',@(h,event) runMovie(h,guidata(h)));
     
@@ -273,7 +277,7 @@ if isa(userData.MO,'MovieData')
         'Callback',@(h,event) redrawScene(h,guidata(h)));
     
     hPosition = hPosition+30;
-    elseif MO.isMock()
+    elseif isa(MO,'MovieData') && MO.isMock()
 %         shtext = uicontrol(moviePanel, 'Style', 'text', 'Position', [10 60 panelsLength-100 20], ...
 %             'String', ['Preview for site ', MO.channels_(1,1).getGenericName(MO.channels_(1,1).hcsPlatestack_{1}, 'site_on')], ...
 %         'HorizontalAlignment','left');
@@ -429,29 +433,34 @@ uicontrol(moviePanel,'Style','text','Position',[10 hPosition panelsLength-100 20
 % Get overlay panel size
 moviePanelSize = getPanelSize(moviePanel);
 moviePanelHeight =moviePanelSize(2);
-if ~isempty(MO.channels_(1,1).hcsFlags_)
-    if max(size(MO.channels_(1,1).hcsFlags_.wellF)) ~= 0
-        hcsl = 22*size(MO.channels_(1,1).hcsFlags_.wellF,2)+150;
-        hcsh = 22*size(MO.channels_(1,1).hcsFlags_.wellF,1)+250;
-    else
-        hcsl = 0;
-        hcsh = 0;
+if isa(MO, 'MovieData')
+    if ~isempty(MO.channels_(1,1).hcsFlags_)
+        if max(size(MO.channels_(1,1).hcsFlags_.wellF)) ~= 0
+            hcsl = 22*size(MO.channels_(1,1).hcsFlags_.wellF,2)+150;
+            hcsh = 22*size(MO.channels_(1,1).hcsFlags_.wellF,1)+250;
+        else
+            hcsl = 0;
+            hcsh = 0;
+        end
+        panelsLength = max(panelsLength, hcsl);
     end
-panelsLength = max(panelsLength, hcsl);
 end
-%% Resize panels and figure
-sz=get(0,'ScreenSize');
-maxWidth = panelsLength+20;
-maxHeight = panelsHeight+moviePanelHeight;
-if MO.isMock()
-    maxHeight = 190;
-end
-if MO.isHCS() && ~MO.isMock()
-    set(hcsview,'Position',[sz(3)/50 sz(4)/2 maxWidth hcsh]);
-end
+
+    %% Resize panels and figure
+    sz=get(0,'ScreenSize');
+    maxWidth = panelsLength+20;
+    maxHeight = panelsHeight+moviePanelHeight;
+    if isa(MO, 'MovieData')
+        if MO.isMock()
+            maxHeight = 190;
+        end
+        if MO.isHCS() && ~MO.isMock()
+            set(hcsview,'Position',[sz(3)/50 sz(4)/2 maxWidth hcsh]);
+        end
+        
+    end
 set(mainFig,'Position',[sz(3)/50 sz(4)/3.8 maxWidth maxHeight]);
 set(moviePanel,'Position',[10 panelsHeight+10 panelsLength moviePanelHeight]);
-
 % Update handles structure and attach it to the main figure
 handles = guihandles(mainFig);
 guidata(handles.figure1, handles);
@@ -469,7 +478,7 @@ if isa(userData.MO, 'MovieData')
     set(optionsFig, 'Tag', 'optionsFig');
 end
 %% Add additional panel for independent graphs
-if ~isempty(graphProc) 
+if ~isempty(graphProc)
     graphFig = graphViewer(mainFig, graphProc, graphProcId, intersect(graphProcId,procId));
     set(graphFig, 'Tag', 'graphFig');
 end
@@ -480,14 +489,15 @@ for i=intersect(procId,validProcId)
         '-not','Style','text');
     set(h,'Value',1);
 end
-
-if userData.MO.isMock()
-    redrawScene(handles.figure1, handles);
+if isa(MO, 'MovieData')
+    if userData.MO.isMock()
+        redrawScene(handles.figure1, handles);
+    end
 end
 
 % Update the image and overlays
 if isa(userData.MO,'MovieData') && ~userData.MO.isHCS()
-  redrawScene(handles.figure1, handles);
+    redrawScene(handles.figure1, handles);
 end
 
 
@@ -506,7 +516,11 @@ function switchMovie(hObject,handles)
 userData=get(handles.figure1,'UserData');
 props=get(hObject,{'UserData','Value'});
 if isequal(props{1}(props{2}), userData.movieIndex),return;end
+if isempty(userData.procId)
+   movieViewer(userData.ML,'movieIndex',props{1}(props{2})); 
+else
 movieViewer(userData.ML,userData.procId,'movieIndex',props{1}(props{2}));
+end
 
 function size = getPanelSize(hPanel)
 if ~ishandle(hPanel), size=[0 0]; return; end
