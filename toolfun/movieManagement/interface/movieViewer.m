@@ -245,7 +245,7 @@ if isa(userData.MO,'MovieData')
     % Create controls for scrollling through the movie if regular moviedata
     MO = userData.MO;
     if isa(MO,'MovieData') && ~MO.isHCS()
-    uicontrol(moviePanel, 'Style', 'pushbutton','String', 'Run movie',...
+    uicontrol(moviePanel, 'Style', 'togglebutton','String', 'Run movie',...
         'Position', [10 hPosition 100 20],'Callback',@(h,event) runMovie(h,guidata(h)));
     
     % Create control button for exporting figures and movie (cf Francois' GUI)
