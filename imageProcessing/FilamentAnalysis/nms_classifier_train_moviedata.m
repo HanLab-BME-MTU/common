@@ -567,7 +567,7 @@ for iChannel = channelIndex
         model_polynomial  = svmtrain([label_good; label_bad], [feature_good; feature_bad], '-t 1');
         [predict_label_L, accuracy_L, dec_values_L] = svmpredict([label_good; label_bad], [feature_good; feature_bad], model_polynomial);
          
-        F_classifer_train_this_channel =  @(nms,length,curvature,int) (svmpredict(ones(length(nms),1), [nms,length,curvature,int], model_polynomial)>0);
+        F_classifer_train_this_channel =  @(nms,length,curvature,int) (svmpredict(ones(size(nms)), [nms length curvature int], model_polynomial)>0);
          
         F_classifer_train_output{iChannel} = [FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'];
   

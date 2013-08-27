@@ -13,5 +13,7 @@ if length(obAreas) > 1
     [dummy,iSort] = sort(obAreas,'descend');
     %Keep only the largest requested number
     out_img = labelMask == iSort(1);
+else
+    out_img = in_img;
 end
         
