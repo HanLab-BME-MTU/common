@@ -136,47 +136,15 @@ end
 
 master_flassier = F_classifer;
 
- for i_area = ind_long'
-        [all_y_i, all_x_i] = find(labelMask == i_area);
-         % get the curvature for training samples only
-        
-            bw_i = zeros(size(bw_out));
-            bw_i(sub2ind(size(bw_i), round(all_y_i),round(all_x_i)))=1;
-            end_points_i = bwmorph(bw_i,'endpoints');
-            [y_i, x_i]=find(end_points_i);
-        
-            if isempty(x_i)
-                % if there is no end point, then it is a enclosed circle
-                [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, all_x_i(1),all_y_i(1));
-            else
-                [y_i, x_i]=find(end_points_i);
-                [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
-            end
-        
-            ordered_points{i_area} = [line_i_x, line_i_y];
-        
-            line_smooth_H = fspecial('gaussian',5,1.5);
-        
-            line_i_x = (imfilter(line_i_x, line_smooth_H, 'replicate', 'same'));
-            line_i_y = (imfilter(line_i_y, line_smooth_H, 'replicate', 'same'));
-        
-            smoothed_ordered_points{i_area} = [line_i_x, line_i_y];        
-        
-            Vertices = [line_i_x' line_i_y'];
-            Lines=[(1:size(Vertices,1)-1)' (2:size(Vertices,1))'];
-            k=LineCurvature2D(Vertices,Lines);
-        
-            feature_Curvature(i_area) = mean(k);        
- end
-
+ 
     feature_MeanNMS(isnan(feature_MeanNMS))=-1000;
     feature_Length(isnan(feature_Length))=0;
-    feature_Curvature(isnan(feature_Curvature))=2;
+    %pretend we have a straight line for now
+    feature_Curvature(isnan(feature_Curvature))=0.0001;
     feature_MeanInt(isnan(feature_MeanInt))=-1000;
   
-% Select those above the line as our good ones as starting point of graph
-% matching
-
+% Select the good one, assuming straight line, so that we don't need to
+% calculate the curvature of each line
   
 Good_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
 Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0);
@@ -184,6 +152,9 @@ Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,fea
 if(ShowDetailMessages==1)
     display(['Length and NMS only: Number of good ones: ',num2str(length(Good_ind)),', number of bad ones: ',num2str(length(Bad_ind))]);
 end
+
+ feature_Curvature(:)=nan;
+   
 
 % get the mean intensity of the curves
 for i_area = Good_ind'

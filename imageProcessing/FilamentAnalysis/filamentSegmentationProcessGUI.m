@@ -607,6 +607,11 @@ if (strcmp(Combine_Way,'geo_based_training') || strcmp(Combine_Way,'geo_based_GM
         set(handles.edit_IternationNumber,'Enable','on');
     end   
     
+    
+    if (strcmp(Combine_Way,'geo_based_GM') )
+          set(handles.popupmenu_classifier_type,'Value',1);  
+    end
+    
 end
 
 % --- Executes during object creation, after setting all properties.
