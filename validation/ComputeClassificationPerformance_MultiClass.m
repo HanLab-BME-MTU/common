@@ -59,11 +59,18 @@ function [ stats ] = ComputeClassificationPerformance_MultiClass( inPredictedLab
 
     stats.PredictionAccuracy = sum( diag( stats.cMatrix ) ) * 100 / numel( PredictedLabels );   
 
-    stats.cMatrix_Display = zeros( size( stats.cMatrix ) + 1 );    
-    stats.cMatrix_Display( 2:end , 2:end ) = stats.cMatrix;
-    stats.cMatrix_Display( 2:end , 1 ) = LabelList;
-    stats.cMatrix_Display( 1 , 2:end ) = LabelList;
-    stats.cMatrix_Display( 1 , 1) = -1;
+    stats.cMatrix_Display = cell( size( stats.cMatrix ) + 1 );    
+    stats.cMatrix_Display( 2:end , 2:end ) = num2cell( stats.cMatrix );
+    
+    if iscell(inLabelList)
+        stats.cMatrix_Display( 2:end , 1 ) = inLabelList(:);
+        stats.cMatrix_Display( 1 , 2:end ) = inLabelList(:);
+    else
+        stats.cMatrix_Display( 2:end , 1 ) = num2cell(inLabelList);
+        stats.cMatrix_Display( 2:end , 1 ) = num2cell(inLabelList);
+    end
+        
+    stats.cMatrix_Display{1, 1} = 'Actual/Predicted';
     
     % compute per-label stats
     for i = 1:numLabels
