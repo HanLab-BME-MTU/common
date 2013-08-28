@@ -15,6 +15,8 @@ function [filePath, fileName] = optionalFileInput(fileIn,filterString,promptStri
 
 if nargin < 2
     filterString = {'*.*'};
+elseif ~iscell(filterString)
+    filterString = {filterString};
 end
 
 if nargin < 3 || isempty(promptString)
