@@ -198,7 +198,8 @@ for iChannel = channelIndex
     labelMask = bwlabel(nms_seg_no_brancing);
     
     % Get properties for each of curve
-    ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength','Centroid');
+%     ob_prop = regionprops(labelMask,'Area','MinorAxisLength','MajorAxisLength','Centroid');
+     ob_prop = regionprops(labelMask,'Area','Centroid');
     
     % Redefine variable for easy of notation
     obAreas = [ob_prop.Area];
@@ -206,13 +207,12 @@ for iChannel = channelIndex
     nLine = length(obAreas);
     
     % Some feature for later consideration
-    obLongaxis = [ob_prop.MajorAxisLength];
-    obShortaxis = [ob_prop.MinorAxisLength];
-    obEccentricity = [ob_prop.Eccentricity];
+%     obLongaxis = [ob_prop.MajorAxisLength];
+%     obShortaxis = [ob_prop.MinorAxisLength];
     obCentroid = zeros(2, length(obAreas));
     obCentroid(:) = [ob_prop.Centroid];
     % The ratio of short vs long axis
-    ratio  = obShortaxis./obLongaxis;
+%     ratio  = obShortaxis./obLongaxis;
     
     
     feature_MeanInt = nan(nLine,1);
@@ -222,12 +222,16 @@ for iChannel = channelIndex
     feature_Length = obAreas';
     feature_Curvature = nan(nLine,1);
     
+    feature_MeanX = (obCentroid(1,:))';
+   feature_MeanY = (obCentroid(2,:))';
+    
     % for the features, only include those curves/lines longer than 4 pixels
     ind_long = find(feature_Length>4);
     
     ordered_points = cell(1,1);
     smoothed_ordered_points = cell(1,1);
     
+    tic
     % get the mean intensity of the curves
     for i_area = ind_long'
         [all_y_i, all_x_i] = find(labelMask == i_area);
@@ -240,7 +244,8 @@ for iChannel = channelIndex
         feature_MeanY(i_area) = mean(all_y_i);
         
     end
-    
+    display('Time spend in look for mean int:');
+    toc
     % figure; plot3(feature_Length,feature_MeanInt,feature_Curvature,'.');
         
     % find the mode of the intensity of the curves/lines
@@ -282,16 +287,28 @@ for iChannel = channelIndex
     set(h1,'Position',scrsz);
     training_sample_number=50;
     
-    [idx, dist] = KDTreeBallQuery([feature_MeanX feature_MeanY], [feature_MeanX feature_MeanY], 150);
+    MaskCell = keep_largest_area(MaskCell);
+    S_mask = regionprops(MaskCell,'MajorAxisLength');
     
+    radius_for_kd = (S_mask.MajorAxisLength)/20;
+    
+    tic
+    [idx, dist] = KDTreeBallQuery([feature_MeanX feature_MeanY], [feature_MeanX feature_MeanY], radius_for_kd);
+    display('Find Neighbor');
+    toc
+    
+     tic
     for fi = 1 : length(feature_MeanX)
         neighbor_number(fi) = length(idx{fi});
     end
-    
+    display('Set number of Neighbor');
+    toc
     W_neighbor = 1./neighbor_number;
-    
+    tic
     training_ind = randsample(not_sure_ind,min(length(not_sure_ind),training_sample_number),true,W_neighbor(not_sure_ind));
-    
+     display('Random Sample');
+   
+    toc
     training_bad_ind = [];
     training_good_ind = [];
     
@@ -306,7 +323,8 @@ for iChannel = channelIndex
         plot(x,y,'y.');
      end
     
-    
+    i_ind = 1;
+        
     for i_mark = 1 : 2*length(training_ind)
         i_ind
         iLine = training_ind(i_ind);

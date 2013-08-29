@@ -546,6 +546,8 @@ for iChannel = selected_channels
                         filename_short_strs{iFrame+ sub_i-1},'.tif']);
                 end
             end
+            
+            RGB_seg_orient_heat_map = RGB_seg_orient_heat_map_nms;
         end
         
         current_seg_orientation = current_seg.*orienation_map_filtered;
@@ -562,7 +564,7 @@ for iChannel = selected_channels
         %% Save segmentation results
         save([DataOutputDir,'/steerable_vote_', ...
             filename_short_strs{iFrame},'.mat'],...
-            'currentImg','orienation_map_filtered','OrientationVoted','orienation_map','RGB_seg_orient_heat_map_nms', ...
+            'currentImg','orienation_map_filtered','OrientationVoted','orienation_map','RGB_seg_orient_heat_map','RGB_seg_orient_heat_map_nms', ...
             'MAX_st_res', 'current_seg','Intensity_Segment','SteerabelRes_Segment','NMS_Segment', ...
             'current_model', 'RGB_seg_orient_heat_map','current_seg_orientation','tip_orientation',...
             'tip_int','tip_NMS');
@@ -585,9 +587,9 @@ for iChannel = selected_channels
         
         % Save the multi-frame RGB color image
         options.color = true;
-        saveastiff(tif_stack_RGB_heat_image_data, [FilamentSegmentationProcessOutputDir,'/channel_',num2str(iChannel),'_seg_heat.tif'], options);
+%         saveastiff(tif_stack_RGB_heat_image_data, [FilamentSegmentationProcessOutputDir,'/channel_',num2str(iChannel),'_seg_heat.tif'], options);
         options.color = false;
-        saveastiff(tif_stack_binary_seg_image_data, [FilamentSegmentationProcessOutputDir,'/channel_',num2str(iChannel),'_seg_binary.tif'], options);
+%         saveastiff(tif_stack_binary_seg_image_data, [FilamentSegmentationProcessOutputDir,'/channel_',num2str(iChannel),'_seg_binary.tif'], options);
         
     end
     

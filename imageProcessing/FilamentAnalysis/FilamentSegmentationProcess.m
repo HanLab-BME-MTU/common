@@ -154,7 +154,7 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             ip.addRequired('iFrame',@obj.checkFrameNum);
             
             outputList = {'current_seg_orientation','tip_orientation',...
-                'tip_int','tip_NMS', 'current_model',''};
+                'tip_int','tip_NMS', 'current_model','RGB_seg_orient_heat_map',''};
             ip.addParamValue('output',{},@(x) all(ismember(x,outputList)));
             
             ip.parse(iChan,iFrame,varargin{:})
@@ -163,7 +163,7 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             Channel_FilesNames = obj.getInImageFileNames(iChan);
             filename_short_strs = uncommon_str_takeout(Channel_FilesNames{1});
             out_data_all = load([obj.outFilePaths_{1,iChan},'/DataOutput/steerable_vote_',filename_short_strs{iFrame},'.mat'], ...
-                'current_seg','current_seg_orientation','tip_orientation','tip_int','tip_NMS','current_model');
+                'current_seg','current_seg_orientation','tip_orientation','tip_int','tip_NMS','current_model','RGB_seg_orient_heat_map');
                         
             % if there is no output parameter
             if( isempty(ip.Results.output))
@@ -181,6 +181,8 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
                         out_data = out_data_all.tip_NMS;
                     case 'current_model'
                         out_data = out_data_all.current_model;
+                    case 'RGB_seg_orient_heat_map'
+                        out_data = out_data_all.RGB_seg_orient_heat_map;
                     otherwise
                         out_data = out_data_all.current_seg_orientation;
                 end
@@ -238,17 +240,17 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
         end
         
         function output = getDrawableOutput()            
-            output(1).name='Segmentation with Orientaion';
-            output(1).var='current_seg_orientation';
-            output(1).formatData=@mat2gray;
-            output(1).type='image';
-            output(1).defaultDisplayMethod=@ImageDisplay;
-            
-            output(2).name='Orientation at Tip Only';
-            output(2).var='tip_orientation';
+            output(2).name='Segmentation with Orientaion';
+            output(2).var='current_seg_orientation';
             output(2).formatData=@mat2gray;
             output(2).type='image';
             output(2).defaultDisplayMethod=@ImageDisplay;
+            
+            output(5).name='Orientation at Tip Only';
+            output(5).var='tip_orientation';
+            output(5).formatData=@mat2gray;
+            output(5).type='image';
+            output(5).defaultDisplayMethod=@ImageDisplay;
             
             output(3).name='Intensity at Tip Only';
             output(3).var='tip_int';
@@ -261,6 +263,12 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             output(4).formatData=@mat2gray;
             output(4).type='image';
             output(4).defaultDisplayMethod=@ImageDisplay;
+            
+            output(1).name='Heat Display';
+            output(1).var='RGB_seg_orient_heat_map';
+            output(1).formatData=[];
+            output(1).type='image';
+            output(1).defaultDisplayMethod=@ImageDisplay;
         end
         
         function funParams = getDefaultParams(owner,varargin)
