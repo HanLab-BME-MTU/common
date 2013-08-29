@@ -21,6 +21,11 @@ function [depList, toolboxes] = getFunDependencies(funList, varargin)
 %   excludefilters - a string or cell array of regular expressions to
 %   exclude from the dependency search. Default: empty cell array.
 %
+%   allMex - a logical. If true, then all versions of any  mex binaries
+%   will be returned (any files with *.mex* in the filename, so long as
+%   they are in the same folder as the binary for the current platform).
+%   Default is false (only mex binaries for current platform are returned).
+%
 % Output:
 % 
 %   depList - A cell array of strings containing the full path of the
@@ -38,6 +43,7 @@ if ischar(funList), funList={funList}; end
 ip = inputParser;
 ip.addRequired('funList', @iscell);
 ip.addOptional('excludefilters', {}, @(x) ischar(x) || iscell(x));
+ip.addOptional('allMex', false, @islogical);
 ip.parse(funList, varargin{:});
 if ischar(ip.Results.excludefilters)
     excludefilters = {'toolbox', ip.Results.excludefilters};
@@ -81,3 +87,17 @@ v = cellfun(@ver, tb_namespaces, 'UniformOutput', false);
 v = v(~cellfun(@isempty, v));
 tb_names = cellfun(@(x) x.Name, v, 'UniformOutput', false);
 toolboxes = tb_names(~cellfun(@isempty, tb_names));
+
+if ip.Results.allMex
+    %Find any mex binaries.
+    mexInd = cellfun(@(x)(strfind(x,'.mex')),depList,'Unif',0);
+    isMex = find(~cellfun(@isempty,mexInd))';
+    mexFuns = {};
+    for j = isMex
+        %And find any other mex files in same directory
+        newBins = dir([depList{j}(1:mexInd{j}+3) '*']);
+        mexFuns = [mexFuns arrayfun(@(x)(which(newBins(x).name)),1:numel(newBins),'Unif',0)];               
+    end
+    depList(isMex) = [];%Remove duplicates
+    depList = vertcat(depList,mexFuns(:));%Add all binaries
+end
