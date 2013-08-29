@@ -22,7 +22,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 09-Aug-2013 18:11:12
+% Last Modified by GUIDE v2.5 29-Aug-2013 13:09:22
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -110,8 +110,6 @@ for Combine_Way_ind = 1 : 7
     end
 end
 
-
-
 % visible or not, show the parameters for the geo based algorithm
 % when visible, set the numbers
 set(handles.popupmenu_classifier_type,'Value',funParams.Classifier_Type_ind);
@@ -119,7 +117,7 @@ set(handles.edit_lengththreshold,'String',funParams.LengthThreshold);
 set(handles.edit_curvaturethreshold,'String',funParams.CurvatureThreshold);
 set(handles.edit_IternationNumber,'String',funParams.IternationNumber);
 set(handles.edit_linear_plane_offset_alpha,'String',funParams.CoefAlpha);
-
+set(handles.edit_train_number,'String',funParams.training_sample_number);
 
 % first set everything as invisible
 set(handles.uipanel_threshold_panel,'Visible','off');
@@ -315,7 +313,14 @@ if(strcmp(get(handles.uipanel_Geo_panel,'Visible'),'on'))
     funParams.CoefAlpha = CoefAlpha;
     
     
+    training_sample_number = str2double(get(handles.edit_train_number, 'String'));
+    if isnan(training_sample_number) || training_sample_number < 0
+        errordlg('Please provide a valid input for training sample number','Setting Error','modal');
+        return;
+    end
+    funParams.training_sample_number = training_sample_number;
     
+       
     
     IternationNumber = str2double(get(handles.edit_IternationNumber, 'String'));
     if isnan(IternationNumber) || IternationNumber < 0
@@ -1044,6 +1049,29 @@ function edit_linear_plane_offset_alpha_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function edit_linear_plane_offset_alpha_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit_linear_plane_offset_alpha (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_train_number_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_train_number (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_train_number as text
+%        str2double(get(hObject,'String')) returns contents of edit_train_number as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_train_number_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_train_number (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

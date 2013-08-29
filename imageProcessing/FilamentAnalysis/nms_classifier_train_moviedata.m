@@ -285,7 +285,7 @@ for iChannel = channelIndex
     imagescc(currentImg); hold on;
     scrsz = get(0,'ScreenSize');
     set(h1,'Position',scrsz);
-    training_sample_number=50;
+    training_sample_number=funParams.training_sample_number;
     
     MaskCell = keep_largest_area(MaskCell);
     S_mask = regionprops(MaskCell,'MajorAxisLength');
@@ -297,18 +297,26 @@ for iChannel = channelIndex
     display('Find Neighbor');
     toc
     
-     tic
+    tic
     for fi = 1 : length(feature_MeanX)
         neighbor_number(fi) = length(idx{fi});
     end
     display('Set number of Neighbor');
     toc
+    
     W_neighbor = 1./neighbor_number;
-    tic
     training_ind = randsample(not_sure_ind,min(length(not_sure_ind),training_sample_number),true,W_neighbor(not_sure_ind));
-     display('Random Sample');
+    training_ind_unique = unique(training_ind);
+    
+    if(length(training_ind_unique)<training_sample_number)
+         not_sure_ind_again = setdiff(not_sure_ind,training_ind_unique);
+         training_ind_again = randsample(not_sure_ind_again,min(length(not_sure_ind_again),training_sample_number-length(training_ind_unique)),true,W_neighbor(not_sure_ind_again));
+         training_ind = [training_ind_unique;training_ind_again]';
+    end
+    
+    
+    display('Random Sample');
    
-    toc
     training_bad_ind = [];
     training_good_ind = [];
     
@@ -337,6 +345,11 @@ for iChannel = channelIndex
             max(1, round(mean(y))-50), min(size(imageNMS,1), round(mean(y))+50)];
         axis(AA);
         ch = getkey();
+        
+        if(strcmp(ch,'')==1)
+                ch=0;
+        end
+            
         if(ch==28)
             i_ind = max(1, i_ind - 1);
         else
@@ -350,6 +363,7 @@ for iChannel = channelIndex
                 i_ind = i_ind + 1;
             end
             saveas(h1,[FilamentSegmentationChannelOutputDir,'/train_rb_',num2str(i_mark),'.jpg']);
+            
             
             if(ch==27 || i_ind > length(training_ind))
                good_bad_label = good_bad_label(1:length(training_ind));
@@ -394,7 +408,15 @@ for iChannel = channelIndex
         scrsz = get(0,'ScreenSize');
         set(h1,'Position',scrsz);
         
+              
         training_ind = randsample(not_sure_ind,min(length(not_sure_ind),training_sample_number),true,W_neighbor(not_sure_ind));
+        training_ind_unique = unique(training_ind);
+        
+        if(length(training_ind_unique)<training_sample_number)
+            not_sure_ind_again = setdiff(not_sure_ind,training_ind_unique);
+            training_ind_again = randsample(not_sure_ind_again,min(length(not_sure_ind_again),training_sample_number-length(training_ind_unique)),true,W_neighbor(not_sure_ind_again));
+            training_ind = [training_ind_unique;training_ind_again]';
+        end
         
         training_bad_ind = [];
         training_good_ind = [];
@@ -476,7 +498,14 @@ for iChannel = channelIndex
         set(h1,'Position',scrsz);
         
         training_ind = randsample(not_sure_ind,min(length(not_sure_ind),training_sample_number),true,W_neighbor(not_sure_ind));
-   
+        training_ind_unique = unique(training_ind);
+        
+        if(length(training_ind_unique)<training_sample_number)
+            not_sure_ind_again = setdiff(not_sure_ind,training_ind_unique);
+            training_ind_again = randsample(not_sure_ind_again,min(length(not_sure_ind_again),training_sample_number-length(training_ind_unique)),true,W_neighbor(not_sure_ind_again));
+            training_ind = [training_ind_unique;training_ind_again]';
+        end
+       
         training_bad_ind = [];
         training_good_ind = [];
         
@@ -526,6 +555,14 @@ for iChannel = channelIndex
     
     training_good_ind = [sample_good_ind; training_ind(find(good_bad_label(1:end)==1))];
     training_bad_ind = [sample_bad_ind; training_ind(find(good_bad_label(1:end)==2))];
+   
+    if(~isempty(find(good_bad_label(1:end)==1)))
+    training_good_ind = [sample_good_ind; training_ind(find(good_bad_label(1:end)==1))];
+    end
+    
+    if(~isempty(find(good_bad_label(1:end)==2)))    
+    training_bad_ind = [sample_bad_ind; training_ind(find(good_bad_label(1:end)==2))];
+    end
     
     for i_area = [training_good_ind' training_bad_ind' ]
         [all_y_i, all_x_i] = find(labelMask == i_area);

@@ -326,6 +326,9 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % the type of classifier
             funParams.Classifier_Type_ind=1;
             
+            % the number of samples in training
+            funParams.training_sample_number=30;
+            
             % the length threshold
             funParams.LengthThreshold=4;
     
