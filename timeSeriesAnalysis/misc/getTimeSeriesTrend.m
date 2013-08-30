@@ -13,9 +13,9 @@ function [outTS,exclude] = getTimeSeriesTrend(TS,varargin)
 %                  1 - remove linear trend
 %                  2 - remove exponential trend
 %                  3 - remove double exponential trend
-%                  4 - remove nonlinear local trend (trendFilteringEMD)
+%                  4 - remove nonlinear local trend (trendFilteringEMD) - does not work for time series with NaN
 %                  5 - remove all determinitic component and spits out a stationary signal
-%                      the trend in this case is a smoothed version of the input signal
+%                      the trend in this case is a smoothed version of the input signal - does not work for time series with NaN
 %
 %Output:
 %       outTS(iVariable).trend     - estimated trend
@@ -66,7 +66,7 @@ for iVar = 1:nVar
                     bInit  = rand(1,2); %Initial guess for fit parameters.
                 case 2
                     fitFun = @(b,x)(b(1)*exp(b(2)*x));
-                    bInit  = rand(1,2); %Initial guess for fit parameters.
+                    bInit  = [nanmean(outTS.dTS) randn(1)]; %Initial guess for fit parameters.
                 case 3
                     fitFun = @(b,x)(b(1)*exp(b(2)*x))+(b(3)*exp(b(4)*x));
                     bInit  = rand(1,4); %Initial guess for fit parameters.
@@ -113,8 +113,8 @@ for iVar = 1:nVar
                     
                 else
                     
-                    outTS.dTS(iVar,~nanTime)   = deTrend(~nanTime(1:end-1));
-                    outTS.trend(iVar,~nanTime) = trendC(~nanTime(1:end-1));
+                    outTS.dTS(iVar,~nanTime(1:end-1))   = deTrend(~nanTime(1:end-1));
+                    outTS.trend(iVar,~nanTime(1:end-1)) = trendC(~nanTime(1:end-1));
                     
                 end
                 
