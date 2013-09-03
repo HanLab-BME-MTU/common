@@ -12,6 +12,7 @@ ip.addParamValue('EdgeColor', 'k', @(s) ischar(s) || isvector(s));
 ip.addParamValue('FaceColor', []);
 ip.addParamValue('Bounds', 'closed', @(x) any(strcmpi(x, {'open', 'closed'})));
 ip.addParamValue('LineWidth', 1);
+ip.addParamValue('Parent', gca, @ishandle);
 ip.parse(x, f, varargin{:});
 
 if numel(x)>2
@@ -29,6 +30,6 @@ end
 [xb,yb] = stairs(x-dx/2, f);
 hold on;
 if ~isempty(ip.Results.FaceColor)
-    patch(xb, yb, ip.Results.FaceColor, 'EdgeColor', 'none')
+    patch(xb, yb, ip.Results.FaceColor, 'EdgeColor', 'none', 'Parent', ip.Results.Parent)
 end
-h = plot(xb, yb, '-', 'Color', ip.Results.EdgeColor, 'LineWidth', ip.Results.LineWidth);
+h = plot(ip.Results.Parent, xb, yb, '-', 'Color', ip.Results.EdgeColor, 'LineWidth', ip.Results.LineWidth);
