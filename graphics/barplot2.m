@@ -11,12 +11,12 @@
 %
 % 1) Simple bar plot
 % figure; barplot2(rand(1,6), 0.1*rand(1,6), 'BarWidth', 0.8, 'XLabel', 'x label', 'YLabel', 'y label', ...
-%     'XTickLabel', arrayfun(@(k) ['S' num2str(k)], 1:6, 'UniformOutput', false),...
+%     'XTickLabel', arrayfun(@(k) ['S' num2str(k)], 1:6, 'unif', 0),...
 %     'Angle', 0, 'YLim', [0 1]);
 %
 % 2) Multiple groups
 % figure; barplot2(rand(6,3), 0.1*rand(6,3), 'BarWidth', 1, 'GroupDistance', 1, 'XLabel', 'x label', 'YLabel', 'y label', ...
-%     'XTickLabel', arrayfun(@(k) ['group ' num2str(k)], 1:6, 'UniformOutput', false),...
+%     'XTickLabel', arrayfun(@(k) ['group ' num2str(k)], 1:6, 'unif', 0),...
 %     'Angle', 45, 'YLim', [0 1.2]);
 %
 % 3) Multiple groups, asymmetric error bars
@@ -48,7 +48,7 @@ ip.addParamValue('XLabel', ' ', @ischar);
 ip.addParamValue('YLabel', ' ', @ischar);
 ip.addParamValue('YLim', [], @(x) numel(x)==2);
 ip.addParamValue('YTick', []);
-ip.addParamValue('XTickLabel', [], @(x) isempty(x) || (iscell(x) && (numel(x)==sum(nb) || numel(x)==ng)));
+ip.addParamValue('XTickLabel', [], @(x) isempty(x) || any(numel(x)==[nb ng]) || (iscell(x) && (numel(x)==sum(nb) || numel(x)==ng)));
 ip.addParamValue('BarWidth', 0.8, @isscalar);
 ip.addParamValue('GroupDistance', 0.8, @isscalar);
 ip.addParamValue('LineWidth', 1, @isscalar);
