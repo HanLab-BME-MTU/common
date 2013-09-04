@@ -70,7 +70,7 @@ ip.addParamValue('GroupDistance', 0.8, @isscalar);
 ip.addParamValue('LineWidth', 1, @isscalar);
 ip.addParamValue('Angle', 45, @(x) isscalar(x) && (0<=x && x<=90));
 ip.addParamValue('ErrorBarWidth', 0.2, @(x) 0<x && x<=1);
-ip.addParamValue('Handle', gca, @ishandle);
+ip.addParamValue('Parent', gca, @ishandle);
 ip.addParamValue('Interpreter', 'tex', @(x) any(strcmpi(x, {'tex', 'latex', 'none'})));
 ip.addParamValue('X', [], @(x) numel(x)==nb); % cell array of x-coordinates (groups only)
 ip.addParamValue('AdjustFigure', true, @islogical);
@@ -113,7 +113,7 @@ if isempty(errorbarColor)
     errorbarColor = zeros(size(faceColor));
 end
 
-ha = ip.Results.Handle;
+ha = ip.Results.Parent;
 bw = ip.Results.BarWidth;
 dg = ip.Results.GroupDistance; % distance between groups, in bar widths
 
@@ -186,19 +186,19 @@ for g = 1:ng
 
         % plot whiskers
         wopts = {'Color', errorbarColor(ci,:), 'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off'};
-        he = errorbar(xa{g}(b), p25(b), w1(b)-p25(b), 0, 'LineStyle', 'none', wopts{:});
+        he = errorbar(ha, xa{g}(b), p25(b), w1(b)-p25(b), 0, 'LineStyle', 'none', wopts{:});
         setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'bottom');
-        he = errorbar(xa{g}(b), p75(b), 0, w2(b)-p75(b), 'LineStyle', 'none', wopts{:});
+        he = errorbar(ha, xa{g}(b), p75(b), 0, w2(b)-p75(b), 'LineStyle', 'none', wopts{:});
         setErrorbarStyle(he, ip.Results.ErrorBarWidth, 'Position', 'top');
              
         hp = patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
-            'LineWidth', ip.Results.LineWidth);
+            'LineWidth', ip.Results.LineWidth, 'Parent', ha);
         if g==1 % for legend
             h(b) = hp;
         end
         
         % mean/median line
-        line([lb(b); rb(b)], prm{g}(1,b)*[1; 1], wopts{:});
+        line([lb(b); rb(b)], prm{g}(1,b)*[1; 1], wopts{:}, 'Parent', ha);
         
         % plot outliers
         if ~isempty(outliers{b,g})
@@ -207,7 +207,7 @@ for g = 1:ng
         
         % replot border
         hp = patch(xv(:,b), yv(:,b), faceColor(ci,:), 'EdgeColor', edgeColor(ci,:),...
-            'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off');
+            'LineWidth', ip.Results.LineWidth, 'HandleVisibility', 'off', 'Parent', ha);
         set(hp, 'FaceColor', 'none');
     end
     
