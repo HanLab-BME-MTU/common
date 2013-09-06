@@ -57,22 +57,36 @@ classdef TestMovieDataTiffSeries < TestMovieData & TestCase
         end
         
         %% Dimensions test
-        function testSizeXY(self)
-            self.imSize = [256 256];
-            self.setUpMovie()
-            self.checkMovie();
+        function testSizeX(self)
+            self.imSize = [256 100];
+            self.nChan = 1;
+            self.nFrames = 1;
+            self.setUpMovie();
+            self.checkDimensions();
+        end
+        
+        function testSizeY(self)
+            self.imSize = [100 256];
+            self.nChan = 1;
+            self.nFrames = 1;
+            self.setUpMovie();
+            self.checkDimensions();
         end
         
         function testSizeC(self)
+            self.imSize = [256 256];
             self.nChan = 4;
-            self.setUpMovie()
-            self.checkMovie();
+            self.nFrames = 1;
+            self.setUpMovie();
+            self.checkDimensions();
         end
         
         function testSizeT(self)
+            self.imSize = [256 256];
+            self.nChan = 4;
             self.nFrames = 256;
-            self.setUpMovie()
-            self.checkMovie();
+            self.setUpMovie();
+            self.checkDimensions();
         end
         
         %% Invalid sizeT tests

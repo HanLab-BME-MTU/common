@@ -25,7 +25,6 @@ classdef TestMovieData < TestMovieObject
         
         %% SanityCheck test
         function checkDimensions(self)
-            assertTrue(isa(self.movie,'MovieData'));
             assertEqual(numel(self.movie.channels_), self.nChan);
             assertEqual(self.movie.imSize_, self.imSize);
             assertEqual(self.movie.nFrames_, self.nFrames);
@@ -86,9 +85,8 @@ classdef TestMovieData < TestMovieObject
         
         function testLoad(self)
             self.setUpMovie();
-            
             self.movie = MovieData.load(self.movie.getFullPath());
-            self.checkMovie;
+            self.checkMovie();
         end
         
         %% ROI

@@ -36,10 +36,11 @@ classdef TestBFMovieData < TestMovieData & TestCase
         %% Typecasting tests
         function checkPixelType(self, classname)
             if strcmp(classname, 'single'),
-                self.fakename = 'test&pixelType=float.fake';
+                pixelsType = 'float';
             else
-                self.fakename = ['test&pixelType=' classname '.fake'];
+                pixelsType = classname;
             end
+            self.fakename = ['test&pixelType=' pixelsType '.fake'];
             self.setUpMovie();
             I = self.movie.getChannel(1).loadImage(1);
             assertTrue(isa(I, classname));
@@ -74,25 +75,54 @@ classdef TestBFMovieData < TestMovieData & TestCase
         end
         
         %% Dimensions tests
-        function testSizeXY(self)
-            self.fakename = 'test&sizeX=256&sizeY=256.fake';
-            self.imSize = [256 256];
+        function testSizeX(self)
+            self.fakename = 'test&sizeX=100.fake';
+            r = loci.formats.in.FakeReader();
+            self.imSize = [r.DEFAULT_SIZE_Y 100];
+            self.nChan = r.DEFAULT_SIZE_C;
+            self.nFrames = r.DEFAULT_SIZE_T;
             self.setUpMovie()
-            self.checkMovie();
+            self.checkDimensions();
+        end
+        
+        function testSizeY(self)
+            self.fakename = 'test&sizeY=100.fake';
+            r = loci.formats.in.FakeReader();
+            self.imSize = [100 r.DEFAULT_SIZE_X];
+            self.nChan = r.DEFAULT_SIZE_C;
+            self.nFrames = r.DEFAULT_SIZE_T;
+            self.setUpMovie()
+            self.checkDimensions();
+        end
+        
+        function testSizeZ(self)
+            self.fakename = 'test&sizeZ=256.fake';
+            r = loci.formats.in.FakeReader();
+            self.imSize = [r.DEFAULT_SIZE_Y r.DEFAULT_SIZE_X];
+            self.nChan = r.DEFAULT_SIZE_C;
+            self.nFrames = r.DEFAULT_SIZE_T;
+            self.setUpMovie()
+            self.checkDimensions();
         end
         
         function testSizeC(self)
             self.fakename = 'test&sizeC=4.fake';
+            r = loci.formats.in.FakeReader();
+            self.imSize = [r.DEFAULT_SIZE_Y r.DEFAULT_SIZE_X];
             self.nChan = 4;
+            self.nFrames = r.DEFAULT_SIZE_T;
             self.setUpMovie()
-            self.checkMovie();
+            self.checkDimensions();
         end
         
         function testSizeT(self)
             self.fakename = 'test&sizeT=256.fake';
+            r = loci.formats.in.FakeReader();
+            self.imSize = [r.DEFAULT_SIZE_Y r.DEFAULT_SIZE_X];
+            self.nChan = r.DEFAULT_SIZE_C;
             self.nFrames = 256;
             self.setUpMovie()
-            self.checkMovie();
+            self.checkDimensions();
         end
     end
 end
