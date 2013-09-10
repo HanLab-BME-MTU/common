@@ -1,4 +1,4 @@
-function [output_model,current_matching_bw,new_model_ind] = ...
+function [output_model,current_matching_bw,new_model_ind,transformer] = ...
     graph_matching_linking_once(current_model, bw_to_be_matched,  confidency_interval,currentImg,...
                                 Good_ind,ind_long, model_ind,feature_all,labelMask,master_flassier,iIteration,funParams)
 % Graph matching one iteration
@@ -684,7 +684,7 @@ h2=figure(2);set(h2,'Visible',set_visible);imagescc(current_matching_bw);
 
 output_model = current_model;
 
-h3=figure(3);set(h3,'Visible',set_visible);imagescc(currentImg);hold on;
+h3=figure(3);set(h3,'Visible',set_visible);imagescc(max(max(currentImg))-currentImg);hold on;
 [y,x]=find(current_matching_bw>0);
 
 plot(x,y,'.','MarkerSize',3);

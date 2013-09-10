@@ -553,15 +553,31 @@ for iChannel = channelIndex
     sample_good_ind = randsample(good_ind,min(length(good_ind),200),true,W_neighbor(good_ind));
     sample_bad_ind = randsample(bad_ind,min(length(bad_ind),200),true,W_neighbor(bad_ind));
     
-    training_good_ind = [sample_good_ind; training_ind(find(good_bad_label(1:end)==1))];
-    training_bad_ind = [sample_bad_ind; training_ind(find(good_bad_label(1:end)==2))];
-   
-    if(~isempty(find(good_bad_label(1:end)==1)))
-    training_good_ind = [sample_good_ind; training_ind(find(good_bad_label(1:end)==1))];
+       if size(sample_good_ind,1)==1
+        sample_good_ind = sample_good_ind';
     end
     
-    if(~isempty(find(good_bad_label(1:end)==2)))    
-    training_bad_ind = [sample_bad_ind; training_ind(find(good_bad_label(1:end)==2))];
+    if size(sample_bad_ind,1)==1
+        sample_bad_ind = sample_bad_ind';
+    end
+    
+    training_good_ind = sample_good_ind;
+    training_bad_ind = sample_bad_ind;
+    
+    if(~isempty(find(good_bad_label(1:end)==1)))
+        train_good_ind_from_training = training_ind(find(good_bad_label(1:end)==1));
+        if size(train_good_ind_from_training,1)==1
+            train_good_ind_from_training = train_good_ind_from_training';
+        end
+        training_good_ind = [sample_good_ind; train_good_ind_from_training];
+    end
+    
+    if(~isempty(find(good_bad_label(1:end)==2)))
+        train_bad_ind_from_training = training_ind(find(good_bad_label(1:end)==2));
+        if size(train_bad_ind_from_training,1)==1
+            train_bad_ind_from_training = train_bad_ind_from_training';
+        end        
+        training_bad_ind = [sample_bad_ind; train_bad_ind_from_training];
     end
     
     for i_area = [training_good_ind' training_bad_ind' ]
