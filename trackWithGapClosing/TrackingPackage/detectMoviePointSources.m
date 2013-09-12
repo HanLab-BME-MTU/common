@@ -57,6 +57,10 @@ if isempty(p.MaskProcessIndex)
     p.MaskProcessIndex =movieData.getProcessIndex('MaskProcess',1,1);
 end    
 
+if isempty(p.MaskChannelIndex)
+    p.MaskChannelIndex = p.ChannelIndex;
+end
+
 if ~isempty(p.MaskProcessIndex)
     maskProc = movieData.processes_{p.MaskProcessIndex};
     if ~all(maskProc.checkChannelOutput(p.MaskChannelIndex))
@@ -126,7 +130,7 @@ for i = 1:numel(p.ChannelIndex)
     disp(logMsg(iChan))
     disp(imDirs{1,iChan});
     if ~isempty(p.MaskProcessIndex)
-        disp(sptrinf('Using mask from: %s', maskDir));
+        disp(sprintf('Using mask from: %s', maskDir));
     end
     disp('Results will be saved under:')
     disp(outFilePaths{1,iChan});
@@ -135,8 +139,9 @@ for i = 1:numel(p.ChannelIndex)
 
         currImage = double(movieData.channels_(iChan).loadImage(j))/maxIntensity; 
         if ~isempty(p.MaskProcessIndex)
-            currMask = maskProc.loadChannelOutput(p.MaskChannelIndex, j);
+            currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(i),j);
             maskArgs = {'mask', currMask};
+            currImage = currImage.*currMask;
         else
             maskArgs = {};
         end    

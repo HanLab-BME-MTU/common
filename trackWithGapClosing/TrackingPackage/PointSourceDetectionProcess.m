@@ -59,7 +59,7 @@ classdef PointSourceDetectionProcess < DetectionProcess
             
             % Set default parameters
             funParams.ChannelIndex=1;
-            funParams.MaskChannelIndex = 1:numel(owner.channels_);
+            funParams.MaskChannelIndex = []; %1:numel(owner.channels_);
             funParams.MaskProcessIndex = [];            
             funParams.OutputDirectory = [outputDir  filesep 'point_sources'];
             funParams.alpha=.05;
