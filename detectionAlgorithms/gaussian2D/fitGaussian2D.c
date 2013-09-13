@@ -374,6 +374,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     for (i=0; i<N; ++i) {
         data.nValid -= (int)mxIsNaN(data.pixels[i]);
     }
+    if (data.nValid < 5) mexErrMsgTxt("Input image must contain at least 5 data points.");
+
     data.idx = (int*)malloc(sizeof(int)*data.nValid);
     int *nanIdx = (int*)malloc(sizeof(int)*(N-data.nValid));
     int k = 0, l = 0;
