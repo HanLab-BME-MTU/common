@@ -15,7 +15,6 @@ xv = ip.Results.xv(:)';
 yv = ip.Results.yv(:)';
 ha = ip.Results.Handle;
 
-set(gca, 'Color', 'r');
 XLim = xv([1 end]);
 YLim = yv([1 end]);
 dx = xv(2)-xv(1);
@@ -34,7 +33,8 @@ axis xy;
 dRange = [min(M(:)) max(M(:))];
 
 % re-plot axes on top to create box w/o ticks
-ha2 = copyobj(ha, get(ha, 'Parent'));
-set(ha2, 'XTick', [], 'YTick', [], 'Color', 'b', 'Box', 'on');
-axis([ha ha2], [XLim YLim]);
+% ha2 = copyobj(ha, get(ha, 'Parent'));
+% set(ha2, 'XTick', [], 'YTick', [], 'Color', 'b', 'Box', 'on');
+axis([ha ], [XLim YLim]);
 % set(gcf, 'CurrentAxes', ha);% doesn't work
+ha2 = [];
