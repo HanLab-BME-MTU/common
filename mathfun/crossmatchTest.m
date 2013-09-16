@@ -58,7 +58,7 @@ end
 D = createDistanceMatrix(v,v);
 [I, J] = meshgrid(1:N);
 E = [nonzeros(tril(I,-1)) nonzeros(tril(J,-1))];
-W = nonzeros(tril(D,-1));
+W = D(tril(ones(N),-1)~=0);
 
 % minimum distance non-bipartite matching using maximum weighted matching
 % -> reverse cost
