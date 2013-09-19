@@ -23,7 +23,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     // check dimensions
     if (!mxIsDouble(prhs[0]) || mxGetNumberOfDimensions(prhs[0]) != 3)
-        mexErrMsgTxt("Input must be a 3D array.");
+        mexErrMsgTxt("Input must be a 3D double array.");
     const mwSize* dims = mxGetDimensions(prhs[0]);
     int ny = (int)dims[0]; // reversed: (m,n) -> (y,x)
     int nx = (int)dims[1];
@@ -47,6 +47,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mexErrMsgTxt("Kernels must be 1D vectors with an odd number of entries.");
 
     // check whether input is at least the size of the kernel
+    if (2*nkx-1<nx || 2*nky-1<ny || 2*nkz-1<nz)
+        mexErrMsgTxt("Kernels must have at least (N+1)/2 elements for each dimension.");
+
     
     int N = nx*ny*nz;
     double* input = mxGetPr(prhs[0]);
