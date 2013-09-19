@@ -8,6 +8,7 @@
  * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\mex\include" -output conv3fast conv3fast.cpp
  */
 
+#include <cstring>
 #include <algorithm>
 #include "mex.h"
 #include "convolver3D.h"
@@ -25,13 +26,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     if (!mxIsDouble(prhs[0]) || mxGetNumberOfDimensions(prhs[0]) != 3)
         mexErrMsgTxt("Input must be a 3D double array.");
     const mwSize* dims = mxGetDimensions(prhs[0]);
-    int ny = (int)dims[0]; // reversed: (m,n) -> (y,x)
-    int nx = (int)dims[1];
-    int nz = (int)dims[2];
+    size_t ny = dims[0]; // reversed: (m,n) -> (y,x)
+    size_t nx = dims[1];
+    size_t nz = dims[2];
 
     // check kernel vectors
-    int nkx = max(mxGetM(prhs[1]),mxGetN(prhs[1]));
-    int nky, nkz;
+    size_t nkx = max(mxGetM(prhs[1]),mxGetN(prhs[1]));
+    size_t nky, nkz;
     if (nrhs==4) {
         nky = max(mxGetM(prhs[2]),mxGetN(prhs[2]));
         nkz = max(mxGetM(prhs[3]),mxGetN(prhs[3]));
@@ -47,7 +48,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mexErrMsgTxt("Kernels must be 1D vectors with an odd number of entries.");
 
     // check whether input is at least the size of the kernel
-    if (2*nkx-1<nx || 2*nky-1<ny || 2*nkz-1<nz)
+    if (2*nkx-1>nx || 2*nky-1>ny || 2*nkz-1>nz)
         mexErrMsgTxt("Kernels must have at least (N+1)/2 elements for each dimension.");
 
     
