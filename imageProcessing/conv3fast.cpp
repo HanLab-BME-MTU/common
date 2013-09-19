@@ -80,6 +80,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     
     // Free memory
+    delete[] buffer;
     delete[] voxels;
 }
     
