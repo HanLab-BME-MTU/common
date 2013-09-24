@@ -68,6 +68,7 @@ classdef PointSourceDetectionProcess < DetectionProcess
             funParams.FitMixtures = 0;
             funParams.MaxMixtures = 5;
             funParams.RedundancyRadius = .25;
+            funParams.UseIntersection = true;
             funParams.filterSigma = zeros(1, numel(owner.channels_));
             hasPSFSigma = arrayfun(@(x) ~isempty(x.psfSigma_), owner.channels_);
             funParams.filterSigma(hasPSFSigma) = [owner.channels_(hasPSFSigma).psfSigma_];            

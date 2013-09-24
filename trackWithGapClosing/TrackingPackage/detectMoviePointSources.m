@@ -23,6 +23,7 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('movieData', @(x) isa(x,'MovieData'));
 ip.addOptional('paramsIn',[], @isstruct);
+ip.addParamValue('UseIntersection',true,@islogical);
 ip.parse(movieData,varargin{:});
 paramsIn=ip.Results.paramsIn;
 
@@ -59,6 +60,8 @@ end
 
 if isempty(p.MaskChannelIndex)
     p.MaskChannelIndex = p.ChannelIndex;
+elseif numel(p.MaskChannelIndex) ~= numel(p.ChannelIndex)
+    error('If masks are applied you must specify one mask channel per detection channel!')
 end
 
 if ~isempty(p.MaskProcessIndex)
@@ -68,7 +71,7 @@ if ~isempty(p.MaskProcessIndex)
     end
     
     %Create mask directory if several masks need to be merged
-    if length(p.MaskChannelIndex) >1
+    if length(p.MaskChannelIndex) > 1 && p.UseIntersection
         %Get the indices of any previous mask intersection process
         iMaskIntProc = movieData.getProcessIndex('MaskIntersectionProcess',1,0);
         
@@ -79,26 +82,29 @@ if ~isempty(p.MaskProcessIndex)
         end
         maskIntProc = movieData.processes_{iMaskIntProc};
         
-        %Set up the parameters for mask transformation
+        %Set up the parameters for mask intersection
         maskIntParams.ChannelIndex = p.MaskChannelIndex;
         maskIntParams.SegProcessIndex = p.MaskProcessIndex;
         
         parseProcessParams(maskIntProc,maskIntParams);
         maskIntProc.run;
         
-        % Get mask directory and names
-        maskDir = maskIntProc.outFilePaths_{1};
-    else
-        maskDir = maskProc.outFilePaths_{p.MaskChannelIndex};
-    end    
+        %Then use this mask process
+        maskProc = maskIntProc;
+            
+    end 
+    
+    % Get mask directory and names
+    maskDir = maskProc.outFilePaths_(p.MaskChannelIndex);
+    
 end
 
 % Set up the input directories
 inFilePaths = cell(1,numel(movieData.channels_));
-for j = p.ChannelIndex
-    inFilePaths{1,j} = imDirs{j};
+for j = 1:numel(p.ChannelIndex)
+    inFilePaths{1,p.ChannelIndex(j)} = imDirs{p.ChannelIndex(j)};
     if ~isempty(p.MaskProcessIndex)
-        inFilePaths{2,j} = maskDir;
+        inFilePaths{2,p.ChannelIndex(j)} = maskDir{j};
     end
 end
 pointSourceDetProc.setInFilePaths(inFilePaths);
@@ -129,7 +135,7 @@ for i = 1:numel(p.ChannelIndex)
     disp(logMsg(iChan))
     disp(imDirs{1,iChan});
     if ~isempty(p.MaskProcessIndex)
-        disp(sprintf('Using mask from: %s', maskDir));
+        disp(sprintf('Using mask from: %s', maskDir{i}));
     end
     disp('Results will be saved under:')
     disp(outFilePaths{1,iChan});
@@ -138,7 +144,7 @@ for i = 1:numel(p.ChannelIndex)
 
         currImage = double(movieData.channels_(iChan).loadImage(j))/maxIntensity; 
         if ~isempty(p.MaskProcessIndex)
-            currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(1),j);
+            currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(i),j);
             p.Mask =  currMask;            
         else
             p.Mask = [];
@@ -156,7 +162,7 @@ for i = 1:numel(p.ChannelIndex)
         if j == 1
             movieInfo(1:nFrames) = pstruct;
         else
-            movieInfo(j) = pstruct;
+            movieInfo(j) = pstruct; %#ok<AGROW>
         end
         
         if mod(j,5)==1 && ishandle(wtBar)
