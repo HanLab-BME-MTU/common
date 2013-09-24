@@ -118,6 +118,9 @@ end
 mkClrDir(p.OutputDirectory)
 pointSourceDetProc.setOutFilePaths(outFilePaths);
 
+%Get ROI mask if any.
+roiMask = movieData.getROIMask;
+
 %% --------------- Point source detection ---------------%%% 
 
 disp('Starting detecting diffraction-limited objects');
@@ -144,10 +147,10 @@ for i = 1:numel(p.ChannelIndex)
 
         currImage = double(movieData.channels_(iChan).loadImage(j))/maxIntensity; 
         if ~isempty(p.MaskProcessIndex)
-            currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(i),j);
+            currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(i),j) & roiMask;
             p.Mask =  currMask;            
         else
-            p.Mask = [];
+            p.Mask = roiMask;
         end    
         
         % Call main detection function
