@@ -68,29 +68,30 @@ if ~isempty(p.MaskProcessIndex)
     end
     
     % Create mask directory if several masks need to be merged
-    if length(p.MaskChannelIndex) >1
-        %Get the indices of any previous mask intersection process
-        iMaskIntProc = movieData.getProcessIndex('MaskIntersectionProcess',1,0);
-        
-        %If the process doesn't exist, create it
-        if isempty(iMaskIntProc)
-            iMaskIntProc = numel(movieData.processes_)+1;
-            movieData.addProcess(MaskIntersectionProcess(movieData,p.OutputDirectory));
-        end
-        maskIntProc = movieData.processes_{iMaskIntProc};
-        
-        %Set up the parameters for mask transformation
-        maskIntParams.ChannelIndex = p.MaskChannelIndex;
-        maskIntParams.SegProcessIndex = p.MaskProcessIndex;
-        
-        parseProcessParams(maskIntProc,maskIntParams);
-        maskIntProc.run;
-        
-        % Get mask directory and names
-        maskDir = maskIntProc.outFilePaths_{1};
-    else
-        maskDir = maskProc.outFilePaths_{p.MaskChannelIndex};
-    end
+%     if length(p.MaskChannelIndex) >1
+%         %Get the indices of any previous mask intersection process
+%         iMaskIntProc = movieData.getProcessIndex('MaskIntersectionProcess',1,0);
+%         
+%         %If the process doesn't exist, create it
+%         if isempty(iMaskIntProc)
+%             iMaskIntProc = numel(movieData.processes_)+1;
+%             movieData.addProcess(MaskIntersectionProcess(movieData,p.OutputDirectory));
+%         end
+%         maskIntProc = movieData.processes_{iMaskIntProc};
+%         
+%         %Set up the parameters for mask transformation
+%         maskIntParams.ChannelIndex = p.MaskChannelIndex;
+%         maskIntParams.SegProcessIndex = p.MaskProcessIndex;
+%         
+%         parseProcessParams(maskIntProc,maskIntParams);
+%         maskIntProc.run;
+%         
+%         % Get mask directory and names
+%         maskDir = maskIntProc.outFilePaths_{1};
+%     else
+%         maskDir = maskProc.outFilePaths_{p.MaskChannelIndex};
+%     end
+    maskDir = maskProc.outFilePaths_{p.MaskChannelIndex};
 end
     
 
@@ -139,7 +140,7 @@ for i = 1:numel(p.ChannelIndex)
 
         currImage = double(movieData.channels_(iChan).loadImage(j))/maxIntensity; 
         if ~isempty(p.MaskProcessIndex)
-            currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(i),j);
+            currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(1),j);
             maskArgs = {'mask', currMask};
             currImage = currImage.*currMask;
         else

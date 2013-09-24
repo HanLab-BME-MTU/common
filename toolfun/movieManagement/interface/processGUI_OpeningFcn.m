@@ -44,7 +44,7 @@ userData.crtProcClassName = ip.Results.procClassName;
 initChannel = ip.Results.initChannel;
 
 % Set up copyright statement
-set(handles.text_copyright, 'String', getLCCBCopyright());
+%set(handles.text_copyright, 'String', getLCCBCopyright());
 
 % Get current package, movie data and process
 userData.handles_main = guidata(userData.mainFig);
@@ -73,6 +73,7 @@ end
 
 % Set process names in the text box and figure title
 procString = [' Step ' num2str(userData.procID) ': ' crtProcName];
+handles.text_processName = [];
 set(handles.text_processName,'String',procString);
 figString = [' Setting - ' crtProcName];
 set(handles.figure1,'Name',figString);
@@ -120,12 +121,14 @@ if strcmp(namestrcache, ' Setting - Translocation Scoring') ~=1
 % Set up help icon
 set(hObject,'colormap',userData.colormap);
 % Set up package help. Package icon is tagged as '0'
-set(handles.figure1,'CurrentAxes',handles.axes_help);
+if isfield('axes_help', 'handles')
+    set(handles.figure1,'CurrentAxes',handles.axes_help);
 Img = image(userData.questIconData);
 set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
     'visible','off','YDir','reverse');
 set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
     'UserData', struct('class',userData.crtProcClassName))
+end
 end
 % Update user data and GUI data
 set(hObject, 'UserData', userData);
