@@ -22,7 +22,7 @@ function varargout = pointSourceDetectionProcessGUI(varargin)
 
 % Edit the above text to modify the response to help anisoGaussianDetectionProcessGUI
 
-% Last Modified by GUIDE v2.5 13-Aug-2013 16:29:16
+% Last Modified by GUIDE v2.5 25-Sep-2013 12:03:26
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -63,6 +63,35 @@ end
 
 %Set the checkbox separately since it's not a string
 set(handles.edit_FitMixtures,'Value',funParams.FitMixtures);
+
+% Set up available mask channels
+set(handles.listbox_availableMaskChannels,'String',userData.MD.getChannelPaths(), ...
+    'UserData',1:numel(userData.MD.channels_));
+
+maskChannelIndex = funParams.MaskChannelIndex;
+
+if ~isempty(maskChannelIndex)
+    maskChannelString = userData.MD.getChannelPaths(maskChannelIndex);
+else
+    maskChannelString = {};
+end
+set(handles.listbox_selectedMaskChannels,'String',maskChannelString,...
+    'UserData',maskChannelIndex);
+
+
+%Setup mask process list box
+segProc =  cellfun(@(x) isa(x,'MaskProcess'),userData.MD.processes_);
+segProcID=find(segProc);
+segProcNames = cellfun(@(x) x.getName(),userData.MD.processes_(segProc),'Unif',false);
+segProcString = vertcat('Choose later',segProcNames(:));
+segProcData=horzcat({[]},num2cell(segProcID));
+segProcValue = find(cellfun(@(x) isequal(x,funParams.MaskProcessIndex),segProcData));
+if isempty(segProcValue), segProcValue = 1; end
+set(handles.popupmenu_SegProcessIndex,'String',segProcString,...
+    'UserData',segProcData,'Value',segProcValue);
+
+% Update channels listboxes depending on the selected process
+popupmenu_SegProcessIndex_Callback(hObject, eventdata, handles)
 
 
 % Update GUI user data
@@ -123,8 +152,28 @@ if isempty(get(handles.listbox_selectedChannels, 'String'))
 end
 
 % Retrieve GUI-defined parameters
+
+%Get selected mask channels
 channelIndex = get(handles.listbox_selectedChannels, 'Userdata');
+if isempty(channelIndex)
+    errordlg('Please select at least one input channel from ''Available Channels''.','Setting Error','modal')
+    return;
+end
 funParams.ChannelIndex = channelIndex;
+
+maskChannelProps = get(handles.listbox_selectedMaskChannels, {'Userdata','String'});
+
+if ~isempty(maskChannelProps{1}) && ( numel(maskChannelProps{1}) ~= numel(channelIndex))
+    errordlg('Please select either zero mask channels or the same number of mask channels as input channels.','Setting Error','modal')
+    return;
+end
+
+funParams.MaskChannelIndex = maskChannelProps{1};
+
+% Retrieve mask process index and class (for propagation)
+props=get(handles.popupmenu_SegProcessIndex,{'UserData','Value'});
+funParams.MaskProcessIndex = props{1}{props{2}};
+
 
 % Retrieve detection parameters
 userData = get(handles.figure1, 'UserData');
@@ -156,7 +205,7 @@ funParams.FitMixtures = get(handles.edit_FitMixtures,'Value') > 0;
 is64bit = ~isempty(regexp(computer ,'64$', 'once'));
 if ~is64bit
     warndlg(['Your Matlab version is not detected as 64-bit. Please note '....
-        'the anisotropic Gaussian detection uses compiled MEX files which '...
+        'the point source detection uses compiled MEX files which '...
         'are not provided for 32-bit.'],...
         'Setting Error','modal');
 end
@@ -236,6 +285,252 @@ function edit_RedundancyRadius_CreateFcn(hObject, eventdata, handles)
 % handles    empty - handles not created until after all CreateFcns called
 
 % Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in listbox_availableMaskChannels.
+function listbox_availableMaskChannels_Callback(hObject, eventdata, handles)
+% hObject    handle to listbox_availableMaskChannels (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns listbox_availableMaskChannels contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from listbox_availableMaskChannels
+
+
+% --- Executes during object creation, after setting all properties.
+function listbox_availableMaskChannels_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to listbox_availableMaskChannels (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: listbox controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in checkbox_mask_all.
+function checkbox_mask_all_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_mask_all (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_mask_all
+contents1 = get(handles.listbox_availableMaskChannels, 'String');
+
+chanIndex1 = get(handles.listbox_availableMaskChannels, 'Userdata');
+chanIndex2 = get(handles.listbox_selectedMaskChannels, 'Userdata');
+
+% Return if listbox1 is empty
+if isempty(contents1)
+    return;
+end
+
+switch get(hObject,'Value')
+    case 1
+        set(handles.listbox_selectedMaskChannels, 'String', contents1);
+        chanIndex2 = chanIndex1;
+    case 0
+        set(handles.listbox_selectedMaskChannels, 'String', {}, 'Value',1);
+        chanIndex2 = [ ];
+end
+set(handles.listbox_selectedMaskChannels, 'UserData', chanIndex2);
+
+
+% --- Executes on button press in pushbutton_mask_select.
+function pushbutton_mask_select_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_mask_select (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+contents1 = get(handles.listbox_availableMaskChannels, 'String');
+contents2 = get(handles.listbox_selectedMaskChannels, 'String');
+id = get(handles.listbox_availableMaskChannels, 'Value');
+
+% If channel has already been added, return;
+chanIndex1 = get(handles.listbox_availableMaskChannels, 'Userdata');
+chanIndex2 = get(handles.listbox_selectedMaskChannels, 'Userdata');
+
+for i = id
+
+        contents2{end+1} = contents1{i};
+        
+        chanIndex2 = cat(2, chanIndex2, chanIndex1(i));
+
+end
+
+set(handles.listbox_selectedMaskChannels, 'String', contents2, 'Userdata', chanIndex2);
+
+% --- Executes on button press in pushbutton_mask_delete.
+function pushbutton_mask_delete_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_mask_delete (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Call back function of 'delete' button
+contents = get(handles.listbox_selectedMaskChannels,'String');
+id = get(handles.listbox_selectedMaskChannels,'Value');
+
+% Return if list is empty
+if isempty(contents) || isempty(id)
+    return;
+end
+
+% Delete selected item
+contents(id) = [ ];
+
+% Delete userdata
+chanIndex2 = get(handles.listbox_selectedMaskChannels, 'Userdata');
+chanIndex2(id) = [ ];
+set(handles.listbox_selectedMaskChannels, 'Userdata', chanIndex2);
+
+% Point 'Value' to the second last item in the list once the 
+% last item has been deleted
+if (id >length(contents) && id>1)
+    set(handles.listbox_selectedMaskChannels,'Value',length(contents));
+end
+% Refresh listbox
+set(handles.listbox_selectedMaskChannels,'String',contents);
+
+
+% --- Executes on selection change in listbox_selectedMaskChannels.
+function listbox_selectedMaskChannels_Callback(hObject, eventdata, handles)
+% hObject    handle to listbox_selectedMaskChannels (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns listbox_selectedMaskChannels contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from listbox_selectedMaskChannels
+
+
+% --- Executes during object creation, after setting all properties.
+function listbox_selectedMaskChannels_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to listbox_selectedMaskChannels (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: listbox controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in pushbutton_up.
+function pushbutton_up_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_up (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% call back of 'Up' button
+
+id = get(handles.listbox_selectedMaskChannels,'Value');
+contents = get(handles.listbox_selectedMaskChannels,'String');
+
+
+% Return if list is empty
+if isempty(contents) || isempty(id) || id == 1
+    return;
+end
+
+temp = contents{id};
+contents{id} = contents{id-1};
+contents{id-1} = temp;
+
+chanIndex = get(handles.listbox_selectedMaskChannels, 'Userdata');
+temp = chanIndex(id);
+chanIndex(id) = chanIndex(id-1);
+chanIndex(id-1) = temp;
+
+set(handles.listbox_selectedMaskChannels, 'String', contents, 'Userdata', chanIndex);
+set(handles.listbox_selectedMaskChannels, 'value', id-1);
+
+
+% --- Executes on button press in pushbutton_down.
+function pushbutton_down_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_down (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+id = get(handles.listbox_selectedMaskChannels,'Value');
+contents = get(handles.listbox_selectedMaskChannels,'String');
+
+% Return if list is empty
+if isempty(contents) || isempty(id) || id == length(contents)
+    return;
+end
+
+temp = contents{id};
+contents{id} = contents{id+1};
+contents{id+1} = temp;
+
+chanIndex = get(handles.listbox_selectedMaskChannels, 'Userdata');
+temp = chanIndex(id);
+chanIndex(id) = chanIndex(id+1);
+chanIndex(id+1) = temp;
+
+set(handles.listbox_selectedMaskChannels, 'string', contents, 'Userdata',chanIndex);
+set(handles.listbox_selectedMaskChannels, 'value', id+1);
+
+
+% --- Executes on selection change in popupmenu_SegProcessIndex.
+function popupmenu_SegProcessIndex_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_SegProcessIndex (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_SegProcessIndex contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_SegProcessIndex
+% Retrieve selected process ID
+props= get(handles.popupmenu_SegProcessIndex,{'UserData','Value'});
+procID = props{1}{props{2}};
+
+% Read process and check available channels
+userData = get(handles.figure1, 'UserData');
+if isempty(procID)
+    allChannelIndex=1:numel(userData.MD.channels_);
+else
+    allChannelIndex = find(userData.MD.processes_{procID}.checkChannelOutput);
+end
+
+% Set up available channels listbox
+if ~isempty(allChannelIndex)
+    if isempty(procID)
+        channelString = userData.MD.getChannelPaths(allChannelIndex);
+    else
+        channelString = userData.MD.processes_{procID}.outFilePaths_(1,allChannelIndex);
+    end
+else
+    channelString = {};
+end
+set(handles.listbox_availableMaskChannels,'String',channelString,'UserData',allChannelIndex);
+
+% Set up selected channels listbox
+channelIndex = get(handles.listbox_selectedMaskChannels, 'UserData');
+channelIndex = intersect(channelIndex,allChannelIndex);
+if ~isempty(channelIndex)
+    if isempty(procID)
+        channelString = userData.MD.getChannelPaths(channelIndex);
+    else
+        channelString = userData.MD.processes_{procID}.outFilePaths_(1,channelIndex);
+    end
+else
+    channelString = {};
+end
+set(handles.listbox_selectedMaskChannels,'String',channelString,'UserData',channelIndex);
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_SegProcessIndex_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_SegProcessIndex (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');

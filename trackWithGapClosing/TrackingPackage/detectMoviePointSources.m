@@ -53,14 +53,12 @@ bitDepth = movieData.camBitdepth_;
 nFrames = movieData.nFrames_;
 maxIntensity =(2^bitDepth-1);
 
-%Find the  the segmentation process
-if isempty(p.MaskProcessIndex) 
+%Find the  the segmentation process.
+if isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex);
     p.MaskProcessIndex =movieData.getProcessIndex('MaskProcess',1,1);
 end    
 
-if isempty(p.MaskChannelIndex)
-    p.MaskChannelIndex = p.ChannelIndex;
-elseif numel(p.MaskChannelIndex) ~= numel(p.ChannelIndex)
+if ~isempty(p.MaskChannelIndex) && numel(p.MaskChannelIndex) ~= numel(p.ChannelIndex)
     error('If masks are applied you must specify one mask channel per detection channel!')
 end
 
@@ -103,7 +101,7 @@ end
 inFilePaths = cell(1,numel(movieData.channels_));
 for j = 1:numel(p.ChannelIndex)
     inFilePaths{1,p.ChannelIndex(j)} = imDirs{p.ChannelIndex(j)};
-    if ~isempty(p.MaskProcessIndex)
+    if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
         inFilePaths{2,p.ChannelIndex(j)} = maskDir{j};
     end
 end
@@ -137,7 +135,7 @@ for i = 1:numel(p.ChannelIndex)
     if ishandle(wtBar), waitbar(0,wtBar,sprintf(logMsg(iChan)));  end
     disp(logMsg(iChan))
     disp(imDirs{1,iChan});
-    if ~isempty(p.MaskProcessIndex)
+    if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
         disp(sprintf('Using mask from: %s', maskDir{i}));
     end
     disp('Results will be saved under:')
@@ -146,7 +144,7 @@ for i = 1:numel(p.ChannelIndex)
     for j= 1:nFrames
 
         currImage = double(movieData.channels_(iChan).loadImage(j))/maxIntensity; 
-        if ~isempty(p.MaskProcessIndex)
+        if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
             currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(i),j) & roiMask;
             p.Mask =  currMask;            
         else
