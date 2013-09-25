@@ -22,7 +22,7 @@ function varargout = pointSourceDetectionProcessGUI(varargin)
 
 % Edit the above text to modify the response to help anisoGaussianDetectionProcessGUI
 
-% Last Modified by GUIDE v2.5 25-Sep-2013 12:03:26
+% Last Modified by GUIDE v2.5 25-Sep-2013 17:44:32
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -61,8 +61,9 @@ for i =1 : numel(userData.numParams)
     set(handles.(['edit_' paramName]), 'String', funParams.(paramName));
 end
 
-%Set the checkbox separately since it's not a string
+%Set the checkboxes separately since they're not strings
 set(handles.edit_FitMixtures,'Value',funParams.FitMixtures);
+set(handles.edit_UseIntersection,'Value',funParams.UseIntersection);
 
 % Set up available mask channels
 set(handles.listbox_availableMaskChannels,'String',userData.MD.getChannelPaths(), ...
@@ -200,6 +201,7 @@ for i = 1:numel(userData.numParams)
 end
 
 funParams.FitMixtures = get(handles.edit_FitMixtures,'Value') > 0;
+funParams.UseIntersection = get(handles.edit_UseIntersection,'Value') > 0;
 
 
 % Add 64-bit warning
@@ -537,3 +539,12 @@ function popupmenu_SegProcessIndex_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in edit_UseIntersection.
+function edit_UseIntersection_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_UseIntersection (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of edit_UseIntersection
