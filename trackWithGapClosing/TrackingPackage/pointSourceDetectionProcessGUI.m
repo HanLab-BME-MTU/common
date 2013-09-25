@@ -360,7 +360,7 @@ for i = id
 
         contents2{end+1} = contents1{i};
         
-        chanIndex2 = cat(2, chanIndex2, chanIndex1(i));
+        chanIndex2 = cat(1, chanIndex2, chanIndex1(i));
 
 end
 
