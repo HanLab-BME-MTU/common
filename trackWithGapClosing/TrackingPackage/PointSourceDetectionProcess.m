@@ -65,13 +65,14 @@ classdef PointSourceDetectionProcess < DetectionProcess
             funParams.alpha=.05;
             funParams.maskRadius=40;
             funParams.Mode = 'xyAc';
-            funParams.FitMixtures = 0;
+            funParams.FitMixtures = false;
             funParams.MaxMixtures = 5;
             funParams.RedundancyRadius = .25;
             funParams.UseIntersection = true;
-            funParams.filterSigma = zeros(1, numel(owner.channels_));
-            hasPSFSigma = arrayfun(@(x) ~isempty(x.psfSigma_), owner.channels_);
-            funParams.filterSigma(hasPSFSigma) = [owner.channels_(hasPSFSigma).psfSigma_];            
+            funParams.filterSigma = 1.2;
+%             funParams.filterSigma = zeros(1, numel(owner.channels_));
+%             hasPSFSigma = arrayfun(@(x) ~isempty(x.psfSigma_), owner.channels_);
+%             funParams.filterSigma(hasPSFSigma) = [owner.channels_(hasPSFSigma).psfSigma_];            
         end
         
         function positions = formatOutput(pstruct)

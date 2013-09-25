@@ -160,7 +160,7 @@ maskIntProc.setInFilePaths(inFilePaths);
     
 % Set up the output directory
 outFilePaths = cell(1,numel(movieData.channels_));
-for j = 1:length(p.ChannelIndex)
+for j = p.ChannelIndex
     outFilePaths{1,j} =  p.OutputDirectory;
 end
 mkClrDir(p.OutputDirectory);

@@ -49,9 +49,7 @@ end
 
 % Reading various constants
 imDirs  = movieData.getChannelPaths;
-bitDepth = movieData.camBitdepth_;
 nFrames = movieData.nFrames_;
-maxIntensity =(2^bitDepth-1);
 
 %Find the  the segmentation process.
 if isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex);
@@ -62,7 +60,7 @@ if ~isempty(p.MaskChannelIndex) && numel(p.MaskChannelIndex) ~= numel(p.ChannelI
     error('If masks are applied you must specify one mask channel per detection channel!')
 end
 
-if ~isempty(p.MaskProcessIndex)
+if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
     maskProc = movieData.processes_{p.MaskProcessIndex};
     if ~all(maskProc.checkChannelOutput(p.MaskChannelIndex))
         error('All channels must be segmented!')
@@ -143,7 +141,7 @@ for i = 1:numel(p.ChannelIndex)
     
     for j= 1:nFrames
 
-        currImage = double(movieData.channels_(iChan).loadImage(j))/maxIntensity; 
+        currImage = double(movieData.channels_(iChan).loadImage(j)); 
         if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
             currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(i),j) & roiMask;
             p.Mask =  currMask;            

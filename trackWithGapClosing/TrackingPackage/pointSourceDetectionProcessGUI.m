@@ -153,7 +153,7 @@ end
 
 % Retrieve GUI-defined parameters
 
-%Get selected mask channels
+%Get selected image channels
 channelIndex = get(handles.listbox_selectedChannels, 'Userdata');
 if isempty(channelIndex)
     errordlg('Please select at least one input channel from ''Available Channels''.','Setting Error','modal')
@@ -161,6 +161,7 @@ if isempty(channelIndex)
 end
 funParams.ChannelIndex = channelIndex;
 
+%Get selected mask channels
 maskChannelProps = get(handles.listbox_selectedMaskChannels, {'Userdata','String'});
 
 if ~isempty(maskChannelProps{1}) && ( numel(maskChannelProps{1}) ~= numel(channelIndex))
@@ -360,7 +361,7 @@ for i = id
 
         contents2{end+1} = contents1{i};
         
-        chanIndex2 = cat(1, chanIndex2, chanIndex1(i));
+        chanIndex2 = cat(2, chanIndex2, chanIndex1(i));
 
 end
 
@@ -511,7 +512,7 @@ set(handles.listbox_availableMaskChannels,'String',channelString,'UserData',allC
 
 % Set up selected channels listbox
 channelIndex = get(handles.listbox_selectedMaskChannels, 'UserData');
-channelIndex = intersect(channelIndex,allChannelIndex);
+channelIndex(~ismember(channelIndex,allChannelIndex)) = [];%So that indices may repeat, and handles empty better than intersect
 if ~isempty(channelIndex)
     if isempty(procID)
         channelString = userData.MD.getChannelPaths(channelIndex);
@@ -520,6 +521,7 @@ if ~isempty(channelIndex)
     end
 else
     channelString = {};
+    channelIndex = [];%Because the intersect command returns a 0x1 instead of 0x0 which causes concatenation errors
 end
 set(handles.listbox_selectedMaskChannels,'String',channelString,'UserData',channelIndex);
 
