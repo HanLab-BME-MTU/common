@@ -143,10 +143,10 @@ for i = 1:numel(p.ChannelIndex)
 
         currImage = double(movieData.channels_(iChan).loadImage(j)); 
         if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
-            currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(i),j) & roiMask;
+            currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(i),j) & roiMask(:,:,j);
             p.Mask =  currMask;            
         else
-            p.Mask = roiMask;
+            p.Mask = roiMask(:,:,j);
         end    
         
         % Call main detection function
