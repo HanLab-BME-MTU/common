@@ -11,7 +11,10 @@
 %          mode : selector for optimization parameters, any of 'xyAsc'. Default: 'xyAc'
 %
 % Options ('specifier', value):
-%        'Mask' : mask of spot locations
+%          'Mask' : mask of spot locations
+%    'ConfRadius' : Confinement radius for valid fits. Default: ceil(2*sigma)
+%    'WindowSize' : Size of the support used for the fit, specified as half-width;
+%                   i.e., for a window of 15x15, enter 7. Default: ceil(4*sigma)
 %
 % Output: pStruct: structure with fields:
 %                  x : estimated x-positions
@@ -33,7 +36,7 @@
 % Usage for a single-channel image with mask and fixed sigma:
 % fitGaussians2D(img, x, y, A, sigma, c, 'xyAc', 'mask', mask);
 
-% Francois Aguet, March 28 2011 (last updated: June 03 2013)
+% Francois Aguet, March 28 2011 (last updated: Sep 30 2013)
 
 function pStruct = fitGaussians2D(img, x, y, A, sigma, c, varargin)
 
@@ -50,6 +53,8 @@ ip.addOptional('mode', 'xyAc', @ischar);
 ip.addParamValue('Alpha', 0.05, @isscalar);
 ip.addParamValue('AlphaT', 0.05, @isscalar);
 ip.addParamValue('Mask', [], @islogical);
+ip.addParamValue('ConfRadius', []);
+ip.addParamValue('WindowSize', []);
 ip.parse(img, x, y, A, sigma, c, varargin{:});
 
 np = length(x);
@@ -75,7 +80,7 @@ yi = round(y);
 
 kLevel = norminv(1-ip.Results.Alpha/2.0, 0, 1); % ~2 std above background
 
-iRange = [squeeze(min(min(img))) squeeze(max(max(img)))];
+iRange = [min(img(:)) max(img(:))];
 
 estIdx = regexpi('xyAsc', ['[' mode ']']);
 
@@ -108,15 +113,24 @@ pStruct.hval_Ar = false(1,np);
 
 
 sigma_max = max(sigma);
-w2 = ceil(2*sigma_max);
-w3 = ceil(3*sigma_max);
-w4 = ceil(4*sigma_max);
+w2 = ip.Results.ConfRadius;
+if isempty(w2)
+    w2 = ceil(2*sigma_max);
+end
+w4 = ip.Results.WindowSize;
+if isempty(w4)
+    w4 = ceil(4*sigma_max);
+end
 
 % mask template: ring with inner radius w3, outer radius w4
 [xm,ym] = meshgrid(-w4:w4);
 r = sqrt(xm.^2+ym.^2);
-annularMask = zeros(size(r));
-annularMask(r<=w4 & r>=w3) = 1;
+
+% for background estimation
+if isempty(c)
+    annularMask = zeros(size(r));
+    annularMask(r<=ceil(4*sigma_max) & r>=ceil(3*sigma_max)) = 1;
+end
 
 g = exp(-(-w4:w4).^2/(2*sigma_max^2));
 g = g'*g;
@@ -133,11 +147,12 @@ for p = 1:np
         maskWindow = labels(yi(p)-w4:yi(p)+w4, xi(p)-w4:xi(p)+w4);
         maskWindow(maskWindow==maskWindow(w4+1,w4+1)) = 0;
         
-        % estimate background
-        cmask = annularMask;
-        cmask(maskWindow~=0) = 0;
         window = img(yi(p)-w4:yi(p)+w4, xi(p)-w4:xi(p)+w4);
+
+        % estimate background        
         if isempty(c)
+            cmask = annularMask;
+            cmask(maskWindow~=0) = 0;
             c_init = mean(window(cmask==1));
         else
             c_init = c(p);

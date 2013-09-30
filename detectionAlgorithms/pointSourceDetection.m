@@ -12,6 +12,7 @@
 %       'FitMixtures' : true|{false}. Toggles mixture-model fitting.
 %   'RemoveRedundant' : {true}|false. Discard localizations that coincide within 'RedundancyRadius'.
 %  'RedundancyRadius' : Radius for filtering out redundant localizatios. Default: 0.25
+%         'Prefilter' : {true}|false. Prefilter to calculate mask of significant pixels.
 %     'RefineMaskLoG' : {true}|false. Apply threshold to LoG-filtered img to refine mask of significant pixels.
 %   'RefineMaskValid' : {true}|false. Return only mask regions where a significant signal was localized.
 %
@@ -21,7 +22,7 @@
 %               imgLM : image of local maxima
 %              imgLoG : Laplacian of Gaussian-filtered image
 
-% Francois Aguet, April 2011 (last modified: 05/28/2013)
+% Francois Aguet, April 2011 (last modified: 09/30/2013)
 
 function [pstruct, mask, imgLM, imgLoG] = pointSourceDetection(img, sigma, varargin)
 
@@ -37,6 +38,7 @@ ip.addParamValue('FitMixtures', false, @islogical);
 ip.addParamValue('MaxMixtures', 5, @isposint);
 ip.addParamValue('RemoveRedundant', true, @islogical);
 ip.addParamValue('RedundancyRadius', 0.25, @isscalar);
+ip.addParamValue('Prefilter', true, @islogical);
 ip.addParamValue('RefineMaskLoG', true, @islogical);
 ip.addParamValue('RefineMaskValid', true, @islogical);
 ip.KeepUnmatched = true;
@@ -75,29 +77,33 @@ g2sum = sum(g(:).^2);
 A_est = (fg - gsum*fu/n) / (g2sum - gsum^2/n);
 c_est = (fu - A_est*gsum)/n;
 
-J = [g(:) ones(n,1)]; % g_dA g_dc
-C = inv(J'*J);
-
-f_c = fu2 - 2*c_est.*fu + n*c_est.^2; % f-c
-RSS = A_est.^2*g2sum - 2*A_est.*(fg - c_est*gsum) + f_c;
-RSS(RSS<0) = 0; % negative numbers may result from machine epsilon/roundoff precision
-sigma_e2 = RSS/(n-3);
-
-sigma_A = sqrt(sigma_e2*C(1,1));
-
-% standard deviation of residuals
-sigma_res = sqrt((RSS - (A_est*gsum+n*c_est - fu)/n)/(n-1));
-
-kLevel = norminv(1-alpha/2.0, 0, 1);
-
-SE_sigma_c = sigma_res/sqrt(2*(n-1)) * kLevel;
-df2 = (n-1) * (sigma_A.^2 + SE_sigma_c.^2).^2 ./ (sigma_A.^4 + SE_sigma_c.^4);
-scomb = sqrt((sigma_A.^2 + SE_sigma_c.^2)/n);
-T = (A_est - sigma_res*kLevel) ./ scomb;
-pval = tcdf(-T, df2);
-
-% mask of admissible positions for local maxima
-mask = pval < 0.05;
+if ip.Results.Prefilter
+    J = [g(:) ones(n,1)]; % g_dA g_dc
+    C = inv(J'*J);
+    
+    f_c = fu2 - 2*c_est.*fu + n*c_est.^2; % f-c
+    RSS = A_est.^2*g2sum - 2*A_est.*(fg - c_est*gsum) + f_c;
+    RSS(RSS<0) = 0; % negative numbers may result from machine epsilon/roundoff precision
+    sigma_e2 = RSS/(n-3);
+    
+    sigma_A = sqrt(sigma_e2*C(1,1));
+    
+    % standard deviation of residuals
+    sigma_res = sqrt((RSS - (A_est*gsum+n*c_est - fu)/n)/(n-1));
+    
+    kLevel = norminv(1-alpha/2.0, 0, 1);
+    
+    SE_sigma_c = sigma_res/sqrt(2*(n-1)) * kLevel;
+    df2 = (n-1) * (sigma_A.^2 + SE_sigma_c.^2).^2 ./ (sigma_A.^4 + SE_sigma_c.^4);
+    scomb = sqrt((sigma_A.^2 + SE_sigma_c.^2)/n);
+    T = (A_est - sigma_res*kLevel) ./ scomb;
+    pval = tcdf(-T, df2);
+    
+    % mask of admissible positions for local maxima
+    mask = pval < 0.05;
+else
+    mask = true(size(img));
+end
 
 % all local max
 allMax = locmax2d(imgLoG, 2*ceil(sigma)+1);
