@@ -22,7 +22,7 @@ function varargout = pointSourceDetectionProcessGUI(varargin)
 
 % Edit the above text to modify the response to help anisoGaussianDetectionProcessGUI
 
-% Last Modified by GUIDE v2.5 25-Sep-2013 17:44:32
+% Last Modified by GUIDE v2.5 01-Oct-2013 19:23:29
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -53,17 +53,43 @@ processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',1);
 userData=get(handles.figure1,'UserData');
 funParams = userData.crtProc.funParams_;
 
-% Set-up parameters
-userData.numParams = {'filterSigma', 'alpha','Mode','MaxMixtures','RedundancyRadius'};
+set(handles.popupmenu_CurrentChannel,'UserData',funParams);
 
-for i =1 : numel(userData.numParams)
-    paramName = userData.numParams{i};        
-    set(handles.(['edit_' paramName]), 'String', funParams.(paramName));
+iChan = get(handles.popupmenu_CurrentChannel,'Value');
+if isempty(iChan)
+    iChan = 1;
+    set(handles.popupmenu_CurrentChannel,'Value',1);
 end
 
-%Set the checkboxes separately since they're not strings
-set(handles.edit_FitMixtures,'Value',funParams.FitMixtures);
-set(handles.edit_UseIntersection,'Value',funParams.UseIntersection);
+% %Specify parameters
+% userData.numParams = {'filterSigma', 'alpha','Mode','MaxMixtures','RedundancyRadius'};
+% %Set the intersection checkbox 
+% userData.checkParams ={'FitMixtures'};
+% 
+
+% for i =1 : numel(userData.numParams)
+%     paramName = userData.numParams{i};        
+%     if any(strcmp(paramName,funParams.PerChannelParams))
+%         parVal = funParams.(paramName)(iChan);
+%     else
+%         parVal = funParams.(paramName);
+%     end
+%     set(handles.(['edit_' paramName]), 'String',parVal);
+% end
+% 
+% 
+% 
+% set(handles.edit_UseIntersection,,'Value',funParams.UseIntersection)
+% 
+% for i =1 : numel(userData.checkParams)
+%     paramName = userData.checkParams{i};        
+%     if any(strcmp(paramName,funParams.PerChannelParams))
+%         parVal = funParams.(paramName)(iChan);
+%     else
+%         parVal = funParams.(paramName);
+%     end
+%     set(handles.(['edit_' paramName]), 'Value',parVal);
+% end
 
 % Set up available mask channels
 set(handles.listbox_availableMaskChannels,'String',userData.MD.getChannelPaths(), ...
@@ -93,6 +119,9 @@ set(handles.popupmenu_SegProcessIndex,'String',segProcString,...
 
 % Update channels listboxes depending on the selected process
 popupmenu_SegProcessIndex_Callback(hObject, eventdata, handles)
+
+%Update channel parameter selection dropdown
+popupmenu_CurrentChannel_Callback(hObject, eventdata, handles)
 
 
 % Update GUI user data
@@ -152,7 +181,14 @@ if isempty(get(handles.listbox_selectedChannels, 'String'))
     return;
 end
 
-% Retrieve GUI-defined parameters
+%Save the currently set per-channel parameters
+pushbutton_saveChannelParams_Callback(hObject, eventdata, handles)
+
+
+% Retrieve detection parameters
+funParams = get(handles.popupmenu_CurrentChannel,'UserData');
+
+% Retrieve GUI-defined non-channel specific parameters
 
 %Get selected image channels
 channelIndex = get(handles.listbox_selectedChannels, 'Userdata');
@@ -176,31 +212,6 @@ funParams.MaskChannelIndex = maskChannelProps{1};
 props=get(handles.popupmenu_SegProcessIndex,{'UserData','Value'});
 funParams.MaskProcessIndex = props{1}{props{2}};
 
-
-% Retrieve detection parameters
-userData = get(handles.figure1, 'UserData');
-for i = 1:numel(userData.numParams)
-    paramName = userData.numParams{i};
-    switch paramName
-
-    case 'Mode'            
-        value = get(handles.(['edit_' paramName]),'String');
-
-    otherwise
-        value = str2double(get(handles.(['edit_' paramName]),'String'));
-
-        if isnan(value) || value < 0
-            errordlg(['Please enter a valid value for '...
-                get(handles.(['text_' paramName]),'String') '.'],...
-                'Setting Error','modal')
-            return;
-        end
-            
-    end
-    funParams.(paramName)=value; 
-end
-
-funParams.FitMixtures = get(handles.edit_FitMixtures,'Value') > 0;
 funParams.UseIntersection = get(handles.edit_UseIntersection,'Value') > 0;
 
 
@@ -548,3 +559,133 @@ function edit_UseIntersection_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of edit_UseIntersection
+
+
+% --- Executes on selection change in popupmenu_CurrentChannel.
+function popupmenu_CurrentChannel_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_CurrentChannel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_CurrentChannel contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_CurrentChannel
+userData=get(handles.figure1,'UserData');
+funParams = get(handles.popupmenu_CurrentChannel,'UserData');
+
+selChan = 1:numel(userData.MD.channels_);%For now just let them set parameters for all channels.
+%selChan = get(handles.listbox_selectedChannels,'UserData');
+chanStr = arrayfun(@(x)(['Channel ' num2str(x)]),selChan,'Unif',0);
+set(handles.popupmenu_CurrentChannel,'String',chanStr);
+iChan = get(handles.popupmenu_CurrentChannel,'Value');
+%set(handles.popupmenu_CurrentChannel,'UserData',iChan);
+
+
+
+% Set-up parameters
+for i =1 : numel(funParams.PerChannelParams)
+    paramName = funParams.PerChannelParams{i};
+    parVal = funParams.(paramName)(iChan);
+    if ~islogical(funParams.(paramName))
+        set(handles.(['edit_' paramName]), 'String',parVal);
+    else
+        set(handles.(['edit_' paramName]), 'Value',parVal);
+    end
+end
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_CurrentChannel_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_CurrentChannel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in pushbutton_saveChannelParams.
+function pushbutton_saveChannelParams_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_saveChannelParams (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%Get settings for the current channel before switching to another
+iChan = get(handles.popupmenu_CurrentChannel,'Value');
+
+%userData=get(handles.figure1,'UserData');
+funParams = get(handles.popupmenu_CurrentChannel,'UserData');
+
+for i =1 : numel(funParams.PerChannelParams)
+    paramName = funParams.PerChannelParams{i};
+    if islogical(funParams.(paramName))
+        parVal = get(handles.(['edit_' paramName]), 'Value');
+        funParams.(paramName)(iChan) = parVal;
+    elseif iscell(funParams.(paramName))   
+        parVal = get(handles.(['edit_' paramName]), 'String');
+        funParams.(paramName)(iChan) = parVal;
+    else
+        parVal = get(handles.(['edit_' paramName]), 'String');
+        funParams.(paramName)(iChan) = str2double(parVal);
+    end
+        
+end
+
+set(handles.popupmenu_CurrentChannel,'UserData',funParams);
+
+
+% --- Executes on button press in edit_PreFilter.
+function edit_PreFilter_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_PreFilter (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of edit_PreFilter
+
+
+
+function edit_ConfRadius_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_ConfRadius (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_ConfRadius as text
+%        str2double(get(hObject,'String')) returns contents of edit_ConfRadius as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_ConfRadius_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_ConfRadius (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_WindowSize_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_WindowSize (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_WindowSize as text
+%        str2double(get(hObject,'String')) returns contents of edit_WindowSize as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_WindowSize_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_WindowSize (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

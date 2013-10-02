@@ -50,6 +50,7 @@ end
 % Reading various constants
 imDirs  = movieData.getChannelPaths;
 nFrames = movieData.nFrames_;
+imSize = movieData.imSize_;
 
 %Find the  the segmentation process.
 if isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex);
@@ -139,18 +140,28 @@ for i = 1:numel(p.ChannelIndex)
     disp('Results will be saved under:')
     disp(outFilePaths{1,iChan});
     
+    %Set up parameter structure for detection on this channel
+    detP = [];
+    for l = 1:numel(p.PerChannelParams)
+        if iscell(p.(p.PerChannelParams{l}))
+            detP.(p.PerChannelParams{l}) = p.(p.PerChannelParams{l}){i};
+        else
+            detP.(p.PerChannelParams{l}) = p.(p.PerChannelParams{l})(i);
+        end        
+    end
+    
     for j= 1:nFrames
 
         currImage = double(movieData.channels_(iChan).loadImage(j)); 
         if ~isempty(p.MaskProcessIndex) && ~isempty(p.MaskChannelIndex)
             currMask = maskProc.loadChannelOutput(p.MaskChannelIndex(i),j) & roiMask(:,:,j);
-            p.Mask =  currMask;            
+            detP.Mask =  currMask;            
         else
-            p.Mask = roiMask(:,:,j);
+            detP.Mask = roiMask(:,:,j);
         end    
         
-        % Call main detection function
-        pstruct = pointSourceDetection(currImage,p.filterSigma,p);
+        % Call main detection function       
+        pstruct = pointSourceDetection(currImage,p.filterSigma(i),detP);
 
 
         % add xCoord, yCoord, amp fields for compatibilty  with tracker

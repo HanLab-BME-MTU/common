@@ -41,6 +41,8 @@ ip.addParamValue('RedundancyRadius', 0.25, @isscalar);
 ip.addParamValue('Prefilter', true, @islogical);
 ip.addParamValue('RefineMaskLoG', true, @islogical);
 ip.addParamValue('RefineMaskValid', true, @islogical);
+ip.addParamValue('ConfRadius',[]);%Use fitGauss default if not input
+ip.addParamValue('WindowSize',[]);%Use fitGauss default if not input
 ip.KeepUnmatched = true;
 ip.parse(img, sigma, varargin{:});
 mode = ip.Results.Mode;
@@ -137,8 +139,8 @@ if sum(imgLM(:))~=0 % no local maxima found, likely a background image
     
     if ~isempty(lmIdx)
         % run localization on local maxima
-        if ~ip.Results.FitMixtures
-            pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), mode, 'mask', mask, 'alpha', alpha);
+        if ~ip.Results.FitMixtures            
+            pstruct = fitGaussians2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)), c_est(lmIdx), mode, 'mask', mask, 'alpha', alpha,'ConfRadius',ip.Results.ConfRadius,'WindowSize',ip.Results.WindowSize);
         else
             pstruct = fitGaussianMixtures2D(img, lmx, lmy, A_est(lmIdx), sigma*ones(1,length(lmIdx)),...
                 c_est(lmIdx), 'mask', mask, 'alpha', alpha, 'maxM', ip.Results.MaxMixtures);

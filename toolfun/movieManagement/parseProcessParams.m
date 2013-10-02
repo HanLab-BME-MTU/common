@@ -128,5 +128,9 @@ if nargout > 1
         
 end
 
+%Replicate per-channel parameters if necessary
+nChan = numel(procOb.owner_.channels_);    
+paramOut = prepPerChannelParams(paramOut,nChan);
+
 %Store the parameters in the process object
 procOb.setPara(paramOut);

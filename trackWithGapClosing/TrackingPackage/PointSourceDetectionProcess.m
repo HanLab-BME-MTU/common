@@ -64,15 +64,27 @@ classdef PointSourceDetectionProcess < DetectionProcess
             funParams.OutputDirectory = [outputDir  filesep 'point_sources'];
             funParams.alpha=.05;
             funParams.maskRadius=40;
-            funParams.Mode = 'xyAc';
+            funParams.Mode = {'xyAc'};
             funParams.FitMixtures = false;
             funParams.MaxMixtures = 5;
             funParams.RedundancyRadius = .25;
-            funParams.UseIntersection = true;
-            funParams.filterSigma = 1.2;
-%             funParams.filterSigma = zeros(1, numel(owner.channels_));
-%             hasPSFSigma = arrayfun(@(x) ~isempty(x.psfSigma_), owner.channels_);
-%             funParams.filterSigma(hasPSFSigma) = [owner.channels_(hasPSFSigma).psfSigma_];            
+            funParams.UseIntersection = true;            
+            funParams.PreFilter = true;
+            %list of parameters which can be specified at a per-channel
+            %level. If specified as scalar these will  be replicated
+            funParams.PerChannelParams = {'alpha','Mode','FitMixtures','MaxMixtures','RedundancyRadius','filterSigma','PreFilter','ConfRadius','WindowSize'};
+            
+            nChan = numel(owner.channels_);
+            funParams.filterSigma = 1.2*ones(1,nChan);%Minimum numerically stable sigma is ~1.2 pixels.
+            hasPSFSigma = arrayfun(@(x) ~isempty(x.psfSigma_), owner.channels_);
+            funParams.filterSigma(hasPSFSigma) = [owner.channels_(hasPSFSigma).psfSigma_];            
+            
+            funParams.ConfRadius = arrayfun(@(x)(2*x),funParams.filterSigma);
+            funParams.WindowSize = arrayfun(@(x)(ceil(4*x)),funParams.filterSigma);
+            
+            funParams = prepPerChannelParams(funParams,nChan);
+
+            
         end
         
         function positions = formatOutput(pstruct)
