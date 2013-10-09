@@ -226,7 +226,7 @@ if ~isempty(av) && ~isempty(topErrorbars)
 end
 
 % x labels
-if ip.Results.Angle~=0 && ~isempty(ip.Results.XTickLabel)
+if ip.Results.Angle~=0 && ~isempty(ip.Results.XTickLabel) && ~isempty(get(ha, 'XTickLabel'))
     rotateXTickLabels(ha, 'Angle', ip.Results.Angle, 'Interpreter', ip.Results.Interpreter,...
         'AdjustFigure', ip.Results.AdjustFigure);
 end
