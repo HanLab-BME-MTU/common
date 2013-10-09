@@ -9,6 +9,7 @@ ip.addOptional('yv', linspace(min(y), max(y), 100));
 ip.addParamValue('Handle', gca, @ishandle);
 ip.addParamValue('AdjustBorder', false, @islogical);
 ip.addParamValue('Div', 1, @isscalar);
+ip.addParamValue('NormX', false, @islogical);
 ip.addParamValue('DisplayFunction', @(x) x, @(x) isa(x, 'function_handle'));
 ip.parse(varargin{:});
 xv = ip.Results.xv(:)';
@@ -26,8 +27,15 @@ end
 xv = [xv(1)-dx xv xv(end)+dx];
 yv = [yv(1)-dy yv yv(end)+dy];
 M = hist3([y(:) x(:)], {yv, xv});
+if ip.Results.NormX
+    M = M./repmat(sum(M,1), [size(M,1) 1]);
+    %M = M./repmat(sum(M,2), [1 size(M,2)]);
+end
+
 % M = M(2:end-1,2:end-1);
 M = ip.Results.DisplayFunction(M/ip.Results.Div);
+% M(isinf(M)) = NaN;
+
 imagesc(xv, yv, M, 'Parent', ha);
 axis xy;
 dRange = [min(M(:)) max(M(:))];
