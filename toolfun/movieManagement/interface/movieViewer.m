@@ -1080,21 +1080,25 @@ function submittoggles(src, eventdata, MD)
     e_r = find(findemptyv == 0);
     if length(e_c) == 1
         emptywellc = e_c;
-    else
+    elseif ~isempty(e_c)
         for i1 = 2:length(e_c)
             if e_c(i1)-e_c(i1-1) ~=1
                 emptywellc = e_c(i1-1);
             end
         end
+    else
+        emptywellc = 0;
     end
     if length(e_r) == 1
         emptywellr = e_r;
-    else
+    elseif ~isempty(e_r)
         for i3 = 2:length(e_r)
             if e_r(i3)-e_r(i3-1) ~=1
                 emptywellr = e_r(i3-1);
             end
         end
+    else
+        emptywellr = 0;
     end
     tnit = [];
     for i= 1:length(selectedWell)
