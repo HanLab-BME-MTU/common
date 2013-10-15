@@ -853,8 +853,8 @@ function updatewellp(src, eventdata, platestack, indw, hpp, mainFig, MO)
         set(cwell, 'BackgroundColor', [1 1 1]);
         end
         i4 = 1;
-        for i1 = 1:size(siteflags,2)
-            for i2 = 1:size(siteflags,1)
+        for i1 = 1:size(siteflags,1)
+            for i2 = 1:size(siteflags,2)
                 if siteflags(i1, i2) == 0
                     hballsites = uicontrol('Parent', hpp, 'Style', 'pushbutton', 'Position', [i2*22 size(siteflags,1)*22-i1*22+10 22 22],...
                         'enable', 'off');
