@@ -51,6 +51,10 @@ classdef Channel < hgsetget
                     if obj.hcsPlatestack_ == 1
                         [wellf, sitef, waveln,hcsPlatestack] = readIXMHTDFile(channelPath);
                         file_lists = dir(fullfile(channelPath, '*.TIF'));
+                        file_lists_thumb = dir(fullfile(channelPath, '*Thumb.TIF'));
+                        if length(file_lists_thumb) == length(file_lists)/2
+                            file_lists = file_lists(1:2:length(file_lists));
+                        end
                         if length(file_lists) ~= size(hcsPlatestack{1},1)*size(hcsPlatestack{1},2)*length(hcsPlatestack{1}{1,1})*length(waveln) ||...
                                 strcmp(hcsPlatestack{1}{1,1}{1}(1:5),file_lists(2).name(1:5)) ~= 1
                             warndlg('File Miss Match!, rebuilding plate stack...');

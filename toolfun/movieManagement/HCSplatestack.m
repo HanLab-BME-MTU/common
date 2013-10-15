@@ -9,7 +9,7 @@ end
 % if lenf(10) ~= mean(lenf)
 %     renameSingledigitfiles(dirurl, file_lists, max(lenf));
 % end
-file_lists = dir(fullfile(dirurl, '*.TIF')); ct = 0;
+%file_lists = dir(fullfile(dirurl, '*.TIF')); ct = 0;
 %[starti, startsw] = getindexstart(file_lists(1).name);
 h = waitbar(0, 'Loading HCS Images');
 for i1 = 1:length(file_lists)

@@ -17,7 +17,8 @@ for i = 1:length(index_char) %it does not check the 'tif'
                     index_char{i}(1) = [];
                 elseif sum(strcmp(stnum, filename(index_char{i}(1)+2))) > 0 ...
                         && sum(strcmp(stnum, filename(index_char{i}(1)+3))) == 0 ...
-                        && isempty(starti)
+                        && isempty(starti)...
+                        && strcmp('_', filename(index_char{i}(1)-1))
                     starti = index_char{i}(1);
                 elseif sum(strcmp({'s', 'w', 'S', 'W'}, filename(index_char{i}(1)))) > 0 ...
                         && sum(strcmp(stnum, filename(index_char{i}(1)+1))) > 0
@@ -31,5 +32,4 @@ for i = 1:length(index_char) %it does not check the 'tif'
             end
         end
     end
-end
 end
