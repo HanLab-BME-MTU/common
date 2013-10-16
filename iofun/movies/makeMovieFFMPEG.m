@@ -2,15 +2,16 @@
 % FFMPEG with libx264 must be installed, and this function only works on a Unix system.
 %
 % Inputs: 
-%        stack : 3D stack of movie frames
+%           stack : 3D stack of movie frames
 %
 % Options:
 %
-%    framerate : the frame rate of the output movie. Default: 15
+%       framerate : The frame rate of the output movie. Default: 15
 %
 % Parameters:
-%   'Destpath' : destination directory for the movie. Default: current directory (pwd)
-%    'Quality' : Quality setting for ffmpeg. Default: 22
+%      'Destpath' : Destination directory for the movie. Default: current directory (pwd)
+%       'Quality' : Quality setting for ffmpeg. Default: 22
+%  'DynamicRange' : Dynamic range for display. Default: [min(stack) max(stack)]
 
 % Francois Aguet, 10/16/2013
 
@@ -23,6 +24,7 @@ ip.addOptional('framerate', 15, @isposint);
 ip.addParamValue('DestPath', []); % for movie
 ip.addParamValue('FileName', 'movie.mp4', @ischar);
 ip.addParamValue('Quality', 22, @isposint);
+ip.addParamValue('DynamicRange', []);
 ip.parse(stack, varargin{:});
 
 [ny,nx,nf] = size(stack);
@@ -32,7 +34,11 @@ if isunix && ~system('which ffmpeg >/dev/null 2>&1')
     fprintf('Generating movie ... ');
     frameDest = ['.frames_tmp_mmffmpeg' filesep];
     [~,~] = mkdir(frameDest);
-    dRange = double([min(stack(:)) max(stack(:))]);
+    dRange = ip.Results.DynamicRange;
+    if isempty(dRange)
+        dRange = double([min(stack(:)) max(stack(:))]);
+    end
+    
     for fi = 1:nf
         imwrite(uint8(scaleContrast(stack(:,:,fi), dRange)), [frameDest 'frame_' num2str(fi, fmt), '.png']);
     end
