@@ -39,6 +39,7 @@ if numel(radius)==1 && nc>1
 end
 
 % plot circles
+hold on;
 axis(ip.Results.Handle, 'equal');
 h = arrayfun(@(i) rectangle('Position', [center(i,1)-radius(i) center(i,2)-radius(i) 2*radius(i) 2*radius(i)],...
     'Curvature', [1,1], 'EdgeColor', ip.Results.EdgeColor, 'FaceColor', ip.Results.FaceColor,...
