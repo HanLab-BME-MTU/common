@@ -8,6 +8,7 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('x');
 ip.addRequired('f');
+ip.addOptional('Color', [], @ischar);
 ip.addParamValue('EdgeColor', 'k', @(s) ischar(s) || isvector(s));
 ip.addParamValue('FaceColor', []);
 ip.addParamValue('Bounds', 'closed', @(x) any(strcmpi(x, {'open', 'closed'})));
@@ -32,4 +33,10 @@ hold on;
 if ~isempty(ip.Results.FaceColor)
     patch(xb, yb, ip.Results.FaceColor, 'EdgeColor', 'none', 'Parent', ip.Results.Parent)
 end
-h = plot(ip.Results.Parent, xb, yb, '-', 'Color', ip.Results.EdgeColor, 'LineWidth', ip.Results.LineWidth);
+if ~isempty(ip.Results.Color)
+    color = ip.Results.Color;
+else
+    color = ip.Results.EdgeColor;
+end
+
+h = plot(ip.Results.Parent, xb, yb, '-', 'Color', color, 'LineWidth', ip.Results.LineWidth);
