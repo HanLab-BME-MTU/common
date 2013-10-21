@@ -87,6 +87,7 @@ userData.userDir = pwd;
 userData.newFig=-1;
 userData.msgboxGUI=-1;
 userData.iconHelpFig =-1;
+userData.omeroLoginFig = -1;
 
 % Load help icon from dialogicons.mat
 userData = loadLCCBIcons(userData);
@@ -286,6 +287,7 @@ userData = get(handles.figure1, 'UserData');
 if ishandle(userData.newFig), delete(userData.newFig); end
 if ishandle(userData.iconHelpFig), delete(userData.iconHelpFig); end
 if ishandle(userData.msgboxGUI), delete(userData.msgboxGUI); end
+if ishandle(userData.omeroLoginFig), delete(userData.omeroLoginFig); end
 
 % --- Executes on button press in pushbutton_open.
 function pushbutton_open_Callback(hObject, eventdata, handles)
@@ -516,27 +518,31 @@ if isempty(session),
 end
 
 % Prompt for list of ids
-prompt = 'Enter the IDs of the image to analyze on the server';
+prompt = 'Enter the ID of the image to analyze on the server';
 title = 'Image selection';
 answer = inputdlg(prompt, title);
 if isempty(answer), return; end
-userData = get(handles.figure1, 'UserData');
-ids = cellfun(@str2double, strsplit(answer{1}));
-ids(isnan(ids)) = [];
+
+% Check ID validity
+id = str2double(answer{1});
+if isnan(id) && round(id) ~= id || id <= 0,
+    errordlg('Invalid ID', 'Error', 'modal');
+    return
+end
 
 % Filter out ids which have already been selected
+userData = get(handles.figure1, 'UserData');
 existingids = arrayfun(@(x) x.getOmeroId(), userData.MD ,'Unif', false);
 existingids = [existingids{:}];
-ids = setdiff(ids, existingids);
 
-if isempty(ids),
-    errordlg('All images have been already selected', 'Error','modal');
+if ismember(id, existingids),
+    errordlg('The image has been already selected', 'Error','modal');
     return
 end
 
 % Load the movies from the server
 try
-    MD = MovieData.load(session, ids);
+    MD = MovieData.load(session, id);
 catch ME
     msg = sprintf('%s', ME.message);
     errordlg(msg, 'Movie error','modal');
@@ -562,11 +568,63 @@ end
 loadOmero();
 
 % Call the login interface
-omeroLoginGUI();
-
+userData = get(handles.figure1, 'UserData');
+userData.omeroLoginFig = omeroLoginGUI();
+set(handles.figure1, 'UserData', userData);
 
 % --------------------------------------------------------------------
 function menu_omero_load_dataset_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_omero_load_dataset (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
+global session
+
+if isempty(session),
+    errordlg('No existing session.', 'Error','modal');
+    return
+end
+
+% Prompt for list of ids
+prompt = 'Enter the ID of the dataset to analyze on the server';
+title = 'Dataset selection';
+answer = inputdlg(prompt, title);
+if isempty(answer), return; end
+
+% Check ID validity
+id = str2double(answer{1});
+if isnan(id) && round(id) ~= id || id <= 0,
+    errordlg('Invalid ID', 'Error', 'modal');
+    return
+end
+
+% Load the dataset
+try
+    dataset = getDatasets(session, id);
+    imageList = toMatlabList(dataset.linkedImageList);
+    imageIds = arrayfun(@(x) x.getId().getValue(), imageList);
+catch ME
+    errordlg(ME.message, 'Dataset error','modal');
+    return
+end
+
+% Filter out image ids which have already been selected
+userData = get(handles.figure1, 'UserData');
+existingids = arrayfun(@(x) x.getOmeroId(), userData.MD ,'Unif', false);
+existingids = [existingids{:}];
+ids = setdiff(imageIds, existingids);
+
+if isempty(ids),
+    errordlg('All images have been already selected', 'Error','modal');
+    return
+end
+
+% Load the movies from the server
+try
+    MD = MovieData.load(session, ids);
+catch ME
+    msg = sprintf('%s', ME.message);
+    errordlg(msg, 'Movie error','modal');
+    return
+end
+
+userData.MD = horzcat(userData.MD, MD);
+set(handles.figure1,'UserData',userData);
+refreshDisplay(hObject,eventdata,handles);
