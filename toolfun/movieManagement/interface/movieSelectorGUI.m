@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 07-Nov-2012 18:14:25
+% Last Modified by GUIDE v2.5 20-Oct-2013 21:21:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -504,3 +504,69 @@ userData.ML(iList) = [];
 set(handles.figure1, 'Userdata', userData)
 refreshDisplay(hObject,eventdata,handles);
 guidata(hObject, handles);
+
+% --------------------------------------------------------------------
+function menu_omero_load_image_Callback(hObject, eventdata, handles)
+
+global session
+
+if isempty(session),
+    errordlg('No existing session.', 'Error','modal');
+    return
+end
+
+% Prompt for list of ids
+prompt = 'Enter the IDs of the image to analyze on the server';
+title = 'Image selection';
+answer = inputdlg(prompt, title);
+if isempty(answer), return; end
+userData = get(handles.figure1, 'UserData');
+ids = cellfun(@str2double, strsplit(answer{1}));
+ids(isnan(ids)) = [];
+
+% Filter out ids which have already been selected
+existingids = arrayfun(@(x) x.getOmeroId(), userData.MD ,'Unif', false);
+existingids = [existingids{:}];
+ids = setdiff(ids, existingids);
+
+if isempty(ids),
+    errordlg('All images have been already selected', 'Error','modal');
+    return
+end
+
+% Load the movies from the server
+try
+    MD = MovieData.load(session, ids);
+catch ME
+    msg = sprintf('%s', ME.message);
+    errordlg(msg, 'Movie error','modal');
+    return
+end
+
+userData.MD = horzcat(userData.MD, MD);
+set(handles.figure1,'UserData',userData);
+refreshDisplay(hObject,eventdata,handles);
+
+% --------------------------------------------------------------------
+function menu_omero_login_Callback(hObject, eventdata, handles)
+
+% Ensure loadOmero is in the path
+if isempty(which('loadOmero')),
+    errordlg(sprintf(['No OMERO.matlab toolbox found in the path.\n'...
+        'Please download the OMERO.matlab toolbox matching your '...
+        'your OMERO server.']),'Error','modal');
+    return
+end
+
+% Make sure OMERO is in the MATLAB and Java class path
+loadOmero();
+
+% Call the login interface
+omeroLoginGUI();
+
+
+% --------------------------------------------------------------------
+function menu_omero_load_dataset_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_omero_load_dataset (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
