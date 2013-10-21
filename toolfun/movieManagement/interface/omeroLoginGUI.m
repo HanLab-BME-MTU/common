@@ -22,7 +22,7 @@ function varargout = omeroLoginGUI(varargin)
 
 % Edit the above text to modify the response to help omeroLoginGUI
 
-% Last Modified by GUIDE v2.5 21-Oct-2013 10:53:53
+% Last Modified by GUIDE v2.5 21-Oct-2013 11:44:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -191,14 +191,30 @@ function update_credentials(handles)
 global client
 global session
 
+% Retrieve server name
 adminService = session.getAdminService();
 servername = char(client.getProperty('omero.host'));
 set(handles.edit_server, 'String', servername)
 
+% Read username and group name
 userName = char(adminService.getEventContext().userName);
 groupName = char(adminService.getEventContext().groupName);
 set(handles.edit_username, 'String', userName);
 
+% Read group ID and retrieve experimenter
+userId = adminService.getEventContext().userId;
+groupId = adminService.getEventContext().groupId;
+user = adminService.getExperimenter(userId);
+
+% Populate drop-down menu for available groups
+groupIds = toMatlabList(adminService.getMemberOfGroupIds(user));
+groupIds(ismember(groupIds, [0 1 2])) = []; % Filter out system groups
+groupNames = arrayfun(@(x) char(adminService.getGroup(x).getName().getValue),...
+    groupIds, 'UniformOutput', false);
+set(handles.popupmenu_group, 'String', groupNames, 'UserData', groupIds,...
+    'Value', find(groupId == groupIds), 'Enable', 'on');
+
+% Update status
 status = sprintf('connected as %s under group %s', userName, groupName);
 set(handles.text_status, 'String', sprintf('Status: %s', status));
 
@@ -211,3 +227,14 @@ if ~isempty(client),
     client.closeSession();
 end
 set(handles.text_status, 'String', sprintf('Status: not connected'));
+set(handles.popupmenu_group, 'Enable', 'off');
+
+
+% --- Executes on selection change in popupmenu_group.
+function popupmenu_group_Callback(hObject, eventdata, handles)
+
+global session
+props = get(handles.popupmenu_group, {'UserData', 'Value'});
+groupId = props{1}(props{2}); 
+session.setSecurityContext(session.getAdminService().getGroup(groupId));
+update_credentials(handles)
