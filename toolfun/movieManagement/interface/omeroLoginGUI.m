@@ -22,7 +22,7 @@ function varargout = omeroLoginGUI(varargin)
 
 % Edit the above text to modify the response to help omeroLoginGUI
 
-% Last Modified by GUIDE v2.5 20-Oct-2013 22:06:57
+% Last Modified by GUIDE v2.5 21-Oct-2013 10:53:53
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -59,19 +59,18 @@ global session
 if ~isempty(session),
     try
         update_credentials(handles);
-        status = 'connected';
     catch ME
         if isa(ME.ExceptionObject, 'Ice.CommunicatorDestroyedException')
             status = 'lost connection';
         else
             status = ME.message;
         end
+        set(handles.text_status', 'String', sprintf('Status: %s', status));
     end
 else
     status = 'not connected';
-    
+    set(handles.text_status', 'String', sprintf('Status: %s', status));
 end
-set(handles.text_status', 'String', sprintf('Status: %s', status));
 set(handles.text_copyright, 'String', getLCCBCopyright())
 
 % Choose default command line output for omeroLoginGUI
@@ -173,8 +172,7 @@ global client
 global session
 try
     [client, session] = connectOmero(varargin{:});
-    status = 'connected';
-    update_credentials(handles)
+    update_credentials(handles);
 catch ME
     if isa(ME.ExceptionObject, 'Ice.ConnectionRefusedException')
         status = 'connection refused';
@@ -185,10 +183,8 @@ catch ME
     else
         status = ME.message;
     end
+    set(handles.text_status, 'String', sprintf('Status: %s', status));
 end
-
-set(handles.text_status, 'String', sprintf('Status: %s', status));
-
 
 function update_credentials(handles)
 
@@ -199,5 +195,19 @@ adminService = session.getAdminService();
 servername = char(client.getProperty('omero.host'));
 set(handles.edit_server, 'String', servername)
 
-userName = adminService.getEventContext().userName;
-set(handles.edit_username, 'String', char(userName))
+userName = char(adminService.getEventContext().userName);
+groupName = char(adminService.getEventContext().groupName);
+set(handles.edit_username, 'String', userName);
+
+status = sprintf('connected as %s under group %s', userName, groupName);
+set(handles.text_status, 'String', sprintf('Status: %s', status));
+
+
+% --- Executes on button press in pushbutton_logout.
+function pushbutton_logout_Callback(hObject, eventdata, handles)
+
+global client
+if ~isempty(client),
+    client.closeSession();
+end
+set(handles.text_status, 'String', sprintf('Status: not connected'));
