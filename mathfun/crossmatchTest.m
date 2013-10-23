@@ -1,4 +1,4 @@
-%[h, p] = crossmatchTest(X, Y, varargin) implements the cross-match test for comparing two multi-variate distributions
+%[h, p, s] = crossmatchTest(X, Y, varargin) implements the cross-match test for comparing two multi-variate distributions
 %
 % Inputs:
 %         X : n1 x d matrix of samples; d is the dimension.
@@ -13,6 +13,8 @@
 %         h : Selected hypothesis. h = 0 indicates that the null hypothesis cannot be
 %             rejected at significance level 'alpha'.
 %         p : p-value
+%         s : value of the test statistic (= number of matched pairs)
+%
 %
 % Implements the cross-match test described in
 % P.R. Rosenbaum, "An exact distribution-free test comparing two multivariate
@@ -20,6 +22,11 @@
 %
 % This implementation was partially adapted from an implementation for R,
 % available at http://cran.r-project.org/web/packages/crossmatch/index.html
+%
+% Examples:
+% 
+% [hval, pval] = crossmatchTest(rand(10,2), rand(15,2), 0.05, 'Display', true)
+% [hval, pval] = crossmatchTest(rand(10,2), 1+rand(15,2), 0.05, 'Display', true)
 
 % Francois Aguet, 08/10/2013
 
@@ -89,7 +96,6 @@ a0 = sum(t==0); % # pairs in X
 a1 = sum(t==1); % # pairs in X,Y
 a2 = sum(t==2); % # pairs in Y
 I = a0+a1+a2;
-% I = N/2;
 
 % vector of possible X,Y pair counts up to a1
 if mod(n1,2)
