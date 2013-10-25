@@ -308,8 +308,10 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             
             % Flag to set if cell mask is used, if 1, use
             % segmentation(refined) results, if 2, use the user define ROI
-            % as in MD_ROI.tif in movieData folder, if 3, no such limit
-            funParams.Cell_Mask_ind = 1;
+            % as in MD_ROI.tif in movieData folder, if 3, a combined
+            % version of two channel, if 4 a direction sum of the two
+            % channels, if 5 no limit
+            funParams.Cell_Mask_ind = 4;
             
             % Flag to do VIF_outgrowth or not. This is an option made for
             % Gelfand lab

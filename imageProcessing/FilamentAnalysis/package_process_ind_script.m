@@ -6,7 +6,7 @@ if(~exist('indexMTChannel','var'))
 end
 
 if(~exist('indexVIFChannel','var'))
-    indexVIFChannel = 1;
+    indexVIFChannel = 2;
 end
 
 % Find the package of Filament Analysis
@@ -22,10 +22,10 @@ for i = 1 : nPackage
     end
 end
 
-if(indexTrackingPackage==0)
-    disp('Need to run tracking package first.')
-%     return;
-end
+% if(indexTrackingPackage==0)
+%     disp('Need to run tracking package first.')
+% %     return;
+% end
 
 indexFilamentPackage = 0;
 for i = 1 : nPackage
@@ -51,10 +51,10 @@ for i = 1 : nProcesses
     end
 end
 
-if indexMTTrackingProcess==0
-    disp('Please run plusTipTracker package first.')
-%     return;
-end
+% if indexMTTrackingProcess==0
+%     disp('Please run plusTipTracker package first.')
+% %     return;
+% end
 
 
 indexMTPostTrackingProcess = 0;
@@ -65,10 +65,10 @@ for i = 1 : nProcesses
     end
 end
 
-if indexMTPostTrackingProcess==0
-    disp('Please run plusTipTracker postprocessing first.')
-%     return;
-end
+% if indexMTPostTrackingProcess==0
+%     disp('Please run plusTipTracker postprocessing first.')
+% %     return;
+% end
 
 %%
 indexSteerabeleProcess = 0;
@@ -150,16 +150,17 @@ end
 
 % Get frame number from the title of the image, this not neccesarily
 % the same as iFrame due to some shorting problem of the channel
-if(isempty(MD.channels_(indexVIFChannel).fileNames_))
+if(isempty(MD.channels_(indexVIFChannel).getImageFileNames))
     tic
     for iFrame = 1 : nFrame
         filename_one = (MD.channels_(indexVIFChannel).getImageFileNames(iFrame));
         channel_filename{1,iFrame} = filename_one{1};
+        
     end
     toc
     filename_short_strs = uncommon_str_takeout(channel_filename);    
 else
-    filename_short_strs = uncommon_str_takeout(MD.channels_(indexVIFChannel).fileNames_);
+    filename_short_strs = uncommon_str_takeout(MD.channels_(indexVIFChannel).getImageFileNames);
 end
 
 Frames_to_Seg = 1 : Sub_Sample_Num_filament : nFrame;

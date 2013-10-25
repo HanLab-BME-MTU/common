@@ -1,11 +1,12 @@
-% function score_maps = network_similarity_scoremap(VIF_orientation, VIF_current_model,VIF_current_seg, ...
-%     MT_orientation,MT_current_model,MT_current_seg,radius)
+function similarity_scoremap = network_similarity_scoremap(VIF_current_model,MT_current_model,img_size, radius,outdir,iFrame)
 % function for calculation the similarity of two networks
 % Liya Ding 06.2013.
-radius=20;
 
-score_maps = cell(1,7);
-img_size = size(VIF_current_seg);
+% don't save every figure generated, unless debugging
+save_everything_flag = 0;
+
+VIF_current_seg = filament_model_to_seg_bwim(VIF_current_model,img_size,[]);
+MT_current_seg = filament_model_to_seg_bwim(MT_current_model,img_size,[]);
 
 distance_map_1_2 = nan(img_size);
 distance_map_2_1 = nan(img_size);
@@ -44,15 +45,22 @@ for iQ = 1 : length(Y1)
     dist_this = dist_cell{iQ};
     
     [sort_dist,sort_IX] = sort(dist_this);
-    sort_idx = idx_this(sort_IX);
     
-    distance_map_1_2(sub2ind(img_size,Y1(iQ),X1(iQ)))=sort_dist(1);
-    angle_map_1_2_A(sub2ind(img_size,Y1(iQ),X1(iQ))) = ...
-        VIF_OO(iQ) - MT_OO(sort_idx(1));
-    if sort_dist(1)==sort_dist(2) && Y2(sort_idx(1))==Y2(sort_idx(2))...
-            && X2(sort_idx(1))==X2(sort_idx(2))
-        angle_map_1_2_B(sub2ind(img_size,Y1(iQ),X1(iQ))) = ...
-            VIF_OO(iQ) - MT_OO(sort_idx(2));
+    if(length(sort_dist)>0)
+        sort_idx = idx_this(sort_IX);
+        
+        distance_map_1_2(sub2ind(img_size,Y1(iQ),X1(iQ)))=sort_dist(1);
+        angle_map_1_2_A(sub2ind(img_size,Y1(iQ),X1(iQ))) = ...
+            VIF_OO(iQ) - MT_OO(sort_idx(1));
+        
+        % if found two point, same point, could be crossing, get the other one as well.
+        if(length(sort_dist)>=2 && length(sort_idx)>=2)
+            if sort_dist(1)==sort_dist(2) && Y2(sort_idx(1))==Y2(sort_idx(2))...
+                    && X2(sort_idx(1))==X2(sort_idx(2))
+                angle_map_1_2_B(sub2ind(img_size,Y1(iQ),X1(iQ))) = ...
+                    VIF_OO(iQ) - MT_OO(sort_idx(2));
+            end
+        end
     end
 end
 
@@ -101,18 +109,22 @@ for iQ = 1 : length(Y2)
     dist_this = dist_cell{iQ};
     
     [sort_dist,sort_IX] = sort(dist_this);
-    sort_idx = idx_this(sort_IX);
-    if(length(sort_dist)>0)
-        distance_map_2_1(sub2ind(img_size,Y2(iQ),X2(iQ)))=sort_dist(1);
-        angle_map_2_1_A(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
-            MT_OO(iQ) - VIF_OO(sort_idx(1));
-    end
     
-    if(length(sort_dist)>1)        
-        if sort_dist(1)==sort_dist(2) && Y1(sort_idx(1))==Y1(sort_idx(2))...
-                && X1(sort_idx(1))==X1(sort_idx(2))
-            angle_map_2_1_B(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
-                MT_OO(iQ) - VIF_OO(sort_idx(2));
+    if(length(sort_dist)>0)
+        
+        sort_idx = idx_this(sort_IX);
+        if(length(sort_dist)>0)
+            distance_map_2_1(sub2ind(img_size,Y2(iQ),X2(iQ)))=sort_dist(1);
+            angle_map_2_1_A(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
+                MT_OO(iQ) - VIF_OO(sort_idx(1));
+        end
+        
+        if(length(sort_dist)>=2 && length(sort_idx)>=2)
+            if sort_dist(1)==sort_dist(2) && Y1(sort_idx(1))==Y1(sort_idx(2))...
+                    && X1(sort_idx(1))==X1(sort_idx(2))
+                angle_map_2_1_B(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
+                    MT_OO(iQ) - VIF_OO(sort_idx(2));
+            end
         end
     end
 end
@@ -165,28 +177,42 @@ angle_map_2_1 = min(abs(angle_map_2_1_A),abs(angle_map_2_1_B));
 % 
 % 
 % 
-% imwrite(distance_map_1_2,[outdir,filesep,'Dis12_frame_',num2str(iFrame),'.tif']);
-% imwrite(distance_map_2_1,[outdir,filesep,'Dis21_frame_',num2str(iFrame),'.tif']);
-% imwrite(angle_map_2_1,[outdir,filesep,'Ang21_frame_',num2str(iFrame),'.tif']);
-% imwrite(angle_map_1_2,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.tif']);
+% imwrite(distance_map_1_2,[outdir,filesep,'Dis12_frame_',num2str(iFrame),'.tif']);  end;
+% imwrite(distance_map_2_1,[outdir,filesep,'Dis21_frame_',num2str(iFrame),'.tif']);  end;
+% imwrite(angle_map_2_1,[outdir,filesep,'Ang21_frame_',num2str(iFrame),'.tif']);  end;
+% imwrite(angle_map_1_2,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.tif']);  end;
 % 
 
 h6=figure(6);
 imagesc_nan_neg(distance_map_1_2,radius*1);axis equal;axis off;
-axis([150 250 140 200]);saveas(h6,[outdir,filesep,'Dis12_frame_',num2str(iFrame),'.tif']);
+if(save_everything_flag==1) saveas(h6,[outdir,filesep,'Dis12_frame_',num2str(iFrame),'.tif']);  end;
 
 h6=figure(6);
 imagesc_nan_neg(distance_map_2_1,radius*1);axis equal;axis off;
-axis([150 250 140 200]);saveas(h6,[outdir,filesep,'Dis21_frame_',num2str(iFrame),'.tif']);
+if(save_everything_flag==1) saveas(h6,[outdir,filesep,'Dis21_frame_',num2str(iFrame),'.tif']);  end;
 
 h6=figure(6);
 imagesc_nan_neg(angle_map_2_1,-pi/(3));axis equal;axis off;
-axis([150 250 140 200]);saveas(h6,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.tif']);
+if(save_everything_flag==1) saveas(h6,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.tif']);  end;
 
 h6=figure(6);
 imagesc_nan_neg(angle_map_1_2,-pi/(3));axis equal;axis off;
-axis([150 250 140 200]);
-saveas(h6,[outdir,filesep,'Ang21_frame_',num2str(iFrame),'.tif']);
+if(save_everything_flag==1) saveas(h6,[outdir,filesep,'Ang21_frame_',num2str(iFrame),'.tif']);  end;
+
+
+h6=figure(6);
+
+show_angle12 = angle_map_1_2;
+show_angle12(isnan(show_angle12)) = 30;
+show_angle21 = angle_map_2_1;
+show_angle21(isnan(show_angle21)) = 30;
+show_dis12 = distance_map_1_2;
+show_dis12(isnan(show_dis12)) = radius*1;
+show_dis21 = distance_map_2_1;
+show_dis21(isnan(show_dis21)) = radius*1;
+
+imagesc(show_angle12+show_angle21+show_dis12+show_dis21);axis equal;axis off;
+saveas(h6,[outdir,filesep,'AngDisSum_frame_',num2str(iFrame),'.tif']);
 
 whole_ROI = imdilate(VIF_current_seg,ones(radius,radius)) + imdilate(MT_current_seg,ones(radius,radius))>0;
 % 
@@ -265,133 +291,41 @@ score_maps_angle_1_2(isnan(score_maps_angle_1_2))=pi/2;
 
 h6=figure(6);
 imagesc_nan_neg(score_maps_distance_1_2,0);axis equal;axis off;
-saveas(h6,[outdir,filesep,'LVDis12_frame_',num2str(iFrame),'.tif']);
+if(save_everything_flag==1) saveas(h6,[outdir,filesep,'LVDis12_frame_',num2str(iFrame),'.tif']);  end;
 
 h6=figure(6);
 imagesc_nan_neg(score_maps_distance_2_1,0);axis equal;axis off;
-saveas(h6,[outdir,filesep,'LVDis21_frame_',num2str(iFrame),'.tif']);
+if(save_everything_flag==1) saveas(h6,[outdir,filesep,'LVDis21_frame_',num2str(iFrame),'.tif']);  end;
 
 h6=figure(6);
 imagesc_nan_neg(score_maps_angle_1_2,0);axis equal;axis off;
-saveas(h6,[outdir,filesep,'LVAng12_frame_',num2str(iFrame),'.tif']);
+if(save_everything_flag==1) saveas(h6,[outdir,filesep,'LVAng12_frame_',num2str(iFrame),'.tif']);  end;
 
 h6=figure(6);
 imagesc_nan_neg(score_maps_angle_2_1,0);axis equal;axis off;
-saveas(h6,[outdir,filesep,'LVAng21_frame_',num2str(iFrame),'.tif']);
+if(save_everything_flag==1) saveas(h6,[outdir,filesep,'LVAng21_frame_',num2str(iFrame),'.tif']);  end;
 
 
 
 h3=figure(3); imagesc_nan_neg(score_maps_distance_2_1+score_maps_distance_1_2,0);axis equal;axis off;
-saveas(h3,[outdir,filesep,'VIFMT_dis_frame_',num2str(iFrame),'.tif']);
+if(save_everything_flag==1) saveas(h3,[outdir,filesep,'VIFMT_dis_frame_',num2str(iFrame),'.tif']);  end;
 
-saveas(h3,[outdir,filesep,'VIFMT_dis_frame_',num2str(iFrame),'.fig']);
 
 h4=figure(4); imagesc_nan_neg(abs(score_maps_angle_2_1/2)+abs(score_maps_angle_1_2/2),0);axis equal;axis off;
-saveas(h4,[outdir,filesep,'VIFMT_ang_frame_',num2str(iFrame),'.tif']);
+if(save_everything_flag==1) saveas(h4,[outdir,filesep,'VIFMT_ang_frame_',num2str(iFrame),'.tif']);  end;
 
-saveas(h4,[outdir,filesep,'VIFMT_ang_frame_',num2str(iFrame),'.fig']);
 
-similarity_score = exp(-(score_maps_distance_2_1+score_maps_distance_1_2).^2/((radius*1.5)^2))...
+similarity_scoremap = exp(-(score_maps_distance_2_1+score_maps_distance_1_2).^2/((radius*1.5)^2))...
     .*exp(-(abs(score_maps_angle_2_1/2)+abs(score_maps_angle_1_2/2)).^2/((pi/4)^2));
+
 save([outdir,filesep,'VIFMT_sm_maps_frame_',num2str(iFrame),'.mat'], ...
     'score_maps_distance_2_1','score_maps_distance_1_2',...
     'score_maps_angle_2_1','score_maps_angle_1_2',...
-    'similarity_score');
+    'similarity_scoremap');
 
-similarity_score(similarity_score<0.2)=0.2;
-h5=figure(5); imagesc_nan_neg(similarity_score,0);axis equal;axis off;
+% similarity_scoremap(similarity_scoremap<0.2)=0.2;
+h5=figure(5); imagesc_nan_neg(similarity_scoremap,0);axis equal;axis off;
 saveas(h5,[outdir,filesep,'VIFMT_sm_score_frame_',num2str(iFrame),'.tif']);
 
-saveas(h5,[outdir,filesep,'VIFMT_sm_score_frame_',num2str(iFrame),'.fig']);
 
 
-%%
-% Crossing comparison
-
-[idx_cell, dist_cell] = KDTreeBallQuery([Y1 X1],[Y1 X1],0.1);
-
-crossing_flag_1 = zeros(1, length(X1));
-angle_crossing_1 = nan(1, length(X1));
-
-for iQ = 1 : length(Y1)
-    idx_this = idx_cell{iQ};
-    if(length(idx_this)>1)
-        
-        AA = O1(idx_this(1))-O1(idx_this(2));
-        if(AA>pi/2)
-            AA=AA-pi;
-        end
-        if(AA<-pi/2)
-            AA=AA+pi;
-        end
-        if(AA>pi/2)
-            AA=AA-pi;
-        end
-        if(AA<-pi/2)
-            AA=AA+pi;
-        end
-        
-        if(abs(AA)>0.2)
-            crossing_flag_1(iQ)=1;
-            angle_crossing_1(iQ)=O1(idx_this(1))-O1(idx_this(2));
-            ind_pair(iQ,1)=idx_this(1);
-            ind_pair(iQ,2)=idx_this(2);
-        end
-    end
-end
-angle_crossing_1(angle_crossing_1>pi/2) = angle_crossing_1(angle_crossing_1>pi/2)-pi;
-angle_crossing_1(angle_crossing_1<-pi/2) = angle_crossing_1(angle_crossing_1<-pi/2)+pi;
-angle_crossing_1(angle_crossing_1>pi/2) = angle_crossing_1(angle_crossing_1>pi/2)-pi;
-angle_crossing_1(angle_crossing_1<-pi/2) = angle_crossing_1(angle_crossing_1<-pi/2)+pi;
-
-
-
-[idx_cell, dist_cell] = KDTreeBallQuery([Y2 X2],[Y2 X2],0.2);
-
-crossing_flag_2 = zeros(1, length(X2));
-angle_crossing_2 = nan(1, length(X2));
-
-for iQ = 1 : length(Y2)
-    idx_this = idx_cell{iQ};
-    if(length(idx_this)>1)
-        
-        
-         AA = O2(idx_this(1))-O2(idx_this(2));
-        if(AA>pi/2)
-            AA=AA-pi;
-        end
-        if(AA<-pi/2)
-            AA=AA+pi;
-        end
-        if(AA>pi/2)
-            AA=AA-pi;
-        end
-        if(AA<-pi/2)
-            AA=AA+pi;
-        end
-        
-        if(abs(AA)>0.2)
-            crossing_flag_2(iQ)=1;
-            angle_crossing_2(iQ)=O2(idx_this(2))-O2(idx_this(2));     
-        end
-    end    
-end
-angle_crossing_2(angle_crossing_2>pi/2) = angle_crossing_2(angle_crossing_2>pi/2)-pi;
-angle_crossing_2(angle_crossing_2<-pi/2) = angle_crossing_2(angle_crossing_2<-pi/2)+pi;
-angle_crossing_2(angle_crossing_2>pi/2) = angle_crossing_2(angle_crossing_2>pi/2)-pi;
-angle_crossing_2(angle_crossing_2<-pi/2) = angle_crossing_2(angle_crossing_2<-pi/2)+pi;
-
-
-
-[idx, dist] = KDTreeClosestPoint([Y2(crossing_flag_2>0) X2(crossing_flag_2>0)],...
-    [Y1(crossing_flag_1>0) X1(crossing_flag_1>0) ]);
-
-dist_pool_for_crossing = [dist_pool_for_crossing;dist];
-ang_pool_for_crossing = [ang_pool_for_crossing;(angle_crossing_1(crossing_flag_1>0))'];
-
-
-[idx, dist] = KDTreeClosestPoint([Y1(crossing_flag_1>0) X1(crossing_flag_1>0)],...
-[Y2(crossing_flag_2>0) X2(crossing_flag_2>0)]);
-
-dist_pool_for_crossing = [dist_pool_for_crossing;dist];
-ang_pool_for_crossing = [ang_pool_for_crossing;(angle_crossing_2(crossing_flag_2>0))'];

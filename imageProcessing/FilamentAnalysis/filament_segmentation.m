@@ -249,22 +249,29 @@ for iChannel = selected_channels
             if Cell_Mask_ind == 2 % Using input static ROI tiff
                 MaskCell = user_input_mask>0;
             else
-                if Cell_Mask_ind == 4 % No limit
+                if Cell_Mask_ind == 5 % No limit
                     MaskCell = ones(size(currentImg,1),size(currentImg,2));
                 else
-                    % Combine from both channel
-                    % In this option, the channel need to be 1. MT or Membrame, 2. VIF or Actin
-                    MaskVIFCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(2,iFrame);
-                    MaskMTCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(1,iFrame);
-                    
-                    H_close_cell = fspecial('disk',5);
-                    H_close_cell = H_close_cell>0;
-                    
-                    MaskMTCell = imerode(MaskMTCell,H_close_cell);
-                    TightMask = MaskMTCell.*MaskMTCell;
-                    
-                    % Make the mask bigger in order to include all
-                    MaskCell = imdilate(TightMask, ones(15,15),'same');
+                    if Cell_Mask_ind == 4 % Combine from both channel directly
+                        MaskVIFCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(2,iFrame);
+                        MaskMTCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(1,iFrame);
+                        MaskCell = MaskVIFCell | MaskMTCell;
+                        
+                        else
+                        % Combine from both channel
+                        % In this option, the channel need to be 1. MT or Membrame, 2. VIF or Actin
+                        MaskVIFCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(2,iFrame);
+                        MaskMTCell = movieData.processes_{indexCellSegProcess}.loadChannelOutput(1,iFrame);
+                        
+                        H_close_cell = fspecial('disk',5);
+                        H_close_cell = H_close_cell>0;
+                        
+                        MaskMTCell = imerode(MaskMTCell,H_close_cell);
+                        TightMask = MaskVIFCell.*MaskMTCell;
+                        
+                        % Make the mask bigger in order to include all
+                        MaskCell = imdilate(TightMask, ones(15,15),'same');
+                    end
                 end
             end
         end

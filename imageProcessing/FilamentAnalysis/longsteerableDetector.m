@@ -16,7 +16,7 @@ if M==4
     
     oneDLOG = -imfilter(imfilter(oneDGaussian,[1;-1],'same','replicate'),[1;-1],'same','replicate');
     
-    twoDGaussian = fspecial('gaussian', basicMaskSize*2+1,8*sigma);
+    twoDGaussian = fspecial('gaussian', basicMaskSize*2+1,5*sigma);
     oneDGaussian = twoDGaussian(basicMaskSize,:);
     Gaussian_smooth= repmat(oneDGaussian, basicMaskSize*2+1,1);
     

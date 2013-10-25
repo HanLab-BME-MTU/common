@@ -85,7 +85,7 @@ for iChannel = selected_channels
       [hist_all_frame, hist_bin] = hist(double(img_pixel_pool),45);
    
     img_pixel_pool = double(img_pixel_pool(:));
-    
+    nonzero_img_pixel_pool= img_pixel_pool(img_pixel_pool>0);
     
     % if not found the loop use 3 times min
     low_005_percentile =  3*min(img_pixel_pool)+3*(max(img_pixel_pool)-min(img_pixel_pool))/100;
@@ -96,7 +96,7 @@ for iChannel = selected_channels
         end
     end
     
-    if(low_005_percentile==0 && strcmp(flatten_method,'log'))
+    if(low_005_percentile==0 && flatten_method_ind==1)
         for intensity_i = min(img_pixel_pool) : (max(img_pixel_pool)-min(img_pixel_pool))/100 : 3*min(img_pixel_pool)+3*(max(img_pixel_pool)-min(img_pixel_pool))/100;
             if length(find(img_pixel_pool<=intensity_i))/length(img_pixel_pool)>0.01
                 low_005_percentile = intensity_i;
