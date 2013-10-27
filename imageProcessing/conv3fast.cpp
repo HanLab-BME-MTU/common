@@ -48,9 +48,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mexErrMsgTxt("Kernels must be 1D vectors with an odd number of entries.");
 
     // check whether input is at least the size of the kernel
-    if (2*nkx-1>nx || 2*nky-1>ny || 2*nkz-1>nz)
-        mexErrMsgTxt("Kernels must have at least (N+1)/2 elements for each dimension.");
-
+    char cbuffer [100];
+    if (2*nkx-1>nx) {
+        sprintf (cbuffer, "x kernel can have %d elements at most for this volume (nx = %d).", (int)(nx+1)/2, (int)nx);
+        mexErrMsgTxt(cbuffer);
+    }
+    if (2*nky-1>ny) {
+        sprintf (cbuffer, "y kernel can have %d elements at most for this volume (ny = %d).", (int)(ny+1)/2, (int)ny);
+        mexErrMsgTxt(cbuffer);
+    }
+    if (2*nkz-1>nz) {
+        sprintf (cbuffer, "z kernel can have %d elements at most for this volume (nz = %d).", (int)(nz+1)/2, (int)nz);
+        mexErrMsgTxt(cbuffer);
+    }
     
     int N = nx*ny*nz;
     double* input = mxGetPr(prhs[0]);
