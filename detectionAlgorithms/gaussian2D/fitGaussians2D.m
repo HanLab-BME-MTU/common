@@ -122,12 +122,11 @@ if isempty(w4)
     w4 = ceil(4*sigma_max);
 end
 
-% mask template: ring with inner radius w3, outer radius w4
-[xm,ym] = meshgrid(-w4:w4);
-r = sqrt(xm.^2+ym.^2);
-
 % for background estimation
 if isempty(c)
+    % mask template: ring with inner radius w3, outer radius w4
+    [xm,ym] = meshgrid(-w4:w4);
+    r = sqrt(xm.^2+ym.^2);
     annularMask = zeros(size(r));
     annularMask(r<=ceil(4*sigma_max) & r>=ceil(3*sigma_max)) = 1;
 end
