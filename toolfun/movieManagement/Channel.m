@@ -49,7 +49,7 @@ classdef Channel < hgsetget
                 end
                 if isprop(obj,'hcsPlatestack_')
                     if obj.hcsPlatestack_ == 1
-                        [wellf, sitef, waveln,hcsPlatestack] = readIXMHTDFile(channelPath);
+                        [wellf, sitef, waveln,hcsPlatestack] = readIXMHTDFileM(channelPath);
                         file_lists = dir(fullfile(channelPath, '*.TIF'));
                         file_lists_thumb = dir(fullfile(channelPath, '*Thumb.TIF'));
                         if length(file_lists_thumb) == length(file_lists)/2

@@ -174,7 +174,8 @@ packageList = {'BiosensorsPackage';...
     'TrackingPackage'
     'ParkinTranslocationScoringPackage'
     'WindowingPackage'
-    'ColocalizationPackage'};
+    'ColocalizationPackage'
+    'ScoreGemPackage'};
 validPackage = cellfun(@(x) exist(x,'class')==8,packageList);
 packageList = packageList(validPackage);
 
