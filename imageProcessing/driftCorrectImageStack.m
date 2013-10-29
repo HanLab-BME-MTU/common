@@ -27,6 +27,7 @@ ip = inputParser;
 ip.addRequired('imStack')
 ip.addParamValue('ReferenceImage',-1,@(x)(isscalar(x) && isequal(x,round(x)) && x ~= 0 ));%Image to correct to. Negative numbers are relative e.g. -1 = previos image
 ip.addParamValue('DoRefinement',true,@islogical);%Whether to run imregister after the correlation-based translation to improve the registration
+ip.addParamValue('Verbose',false,@islogical);%Whether to display text status
 ip.addParamValue('TransformType','translation');%See imregister.m
 ip.addParamValue('Modality','monomodal')%See imregister.m
 ip.addParamValue('FillValue',0,@isscalar);%Value to fill in pixels which are empty due to correction
@@ -64,6 +65,8 @@ for j = 1:nCorr
        
     currRef = double(imStackCorr(:,:,refInd(j)));    
     currCorr = double(imStack(:,:,corrInd(j)));
+    
+    if p.Verbose;tic;end;
         
     %Get cross-orrelation between images to do an initial translation since imregister is slow (optimization
     %based)    
@@ -88,6 +91,8 @@ for j = 1:nCorr
     end
     
     imStackCorr(:,:,corrInd(j)) = currCorr;
+    
+    if p.Verbose;disp(['Finished registering image ' num2str(corrInd(j)) ' to image ' num2str(refInd(j)) ',took ' num2str(toc) ' seconds']);end
     
 end
 
