@@ -22,7 +22,7 @@ function varargout = omeroLoginGUI(varargin)
 
 % Edit the above text to modify the response to help omeroLoginGUI
 
-% Last Modified by GUIDE v2.5 21-Oct-2013 11:44:25
+% Last Modified by GUIDE v2.5 31-Oct-2013 20:21:56
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -52,26 +52,8 @@ function omeroLoginGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to omeroLoginGUI (see VARARGIN)
 
-
-global client
-global session
-
-if ~isempty(session),
-    try
-        update_credentials(handles);
-    catch ME
-        if isa(ME.ExceptionObject, 'Ice.CommunicatorDestroyedException')
-            status = 'lost connection';
-        else
-            status = ME.message;
-        end
-        set(handles.text_status', 'String', sprintf('Status: %s', status));
-    end
-else
-    status = 'not connected';
-    set(handles.text_status', 'String', sprintf('Status: %s', status));
-end
 set(handles.text_copyright, 'String', getLCCBCopyright())
+update_status(handles)
 
 % Choose default command line output for omeroLoginGUI
 handles.output = hObject;
@@ -156,12 +138,12 @@ properties.setProperty('omero.keep_alive', '60');
 
 connect(handles, properties);
 
-% --- Executes on button press in pushbutton_connect_configuration_file.
-function pushbutton_connect_configuration_file_Callback(hObject, eventdata, handles)
+% --- Executes on button press in pushbutton_login_file.
+function pushbutton_login_file_Callback(hObject, eventdata, handles)
 
 
-[file, path] = uigetfile('*.config', ['Select the configuration file to use to log in'...
-    'to the OMERO server']);
+[file, path] = uigetfile('*.config',...
+    'Select the configuration file to use to log in to the OMERO server');
 if isequal(path, 0), return; end
 
 connect(handles, [path file]);
@@ -172,7 +154,7 @@ global client
 global session
 try
     [client, session] = connectOmero(varargin{:});
-    update_credentials(handles);
+    update_status(handles);
 catch ME
     if isa(ME.ExceptionObject, 'Ice.ConnectionRefusedException')
         status = 'connection refused';
@@ -186,49 +168,71 @@ catch ME
     set(handles.text_status, 'String', sprintf('Status: %s', status));
 end
 
-function update_credentials(handles)
+function update_status(handles)
 
 global client
 global session
 
-% Retrieve server name
-adminService = session.getAdminService();
-servername = char(client.getProperty('omero.host'));
-set(handles.edit_server, 'String', servername)
-
-% Read username and group name
-userName = char(adminService.getEventContext().userName);
-groupName = char(adminService.getEventContext().groupName);
-set(handles.edit_username, 'String', userName);
-
-% Read group ID and retrieve experimenter
-userId = adminService.getEventContext().userId;
-groupId = adminService.getEventContext().groupId;
-user = adminService.getExperimenter(userId);
-
-% Populate drop-down menu for available groups
-groupIds = toMatlabList(adminService.getMemberOfGroupIds(user));
-groupIds(ismember(groupIds, [0 1 2])) = []; % Filter out system groups
-groupNames = arrayfun(@(x) char(adminService.getGroup(x).getName().getValue),...
-    groupIds, 'UniformOutput', false);
-set(handles.popupmenu_group, 'String', groupNames, 'UserData', groupIds,...
-    'Value', find(groupId == groupIds), 'Enable', 'on');
-
-% Update status
-status = sprintf('connected as %s under group %s', userName, groupName);
+if ~isempty(session)
+    try
+        % Retrieve server name
+        adminService = session.getAdminService();
+        servername = char(client.getProperty('omero.host'));
+        set(handles.edit_server, 'String', servername)
+        
+        % Read username and group name
+        userName = char(adminService.getEventContext().userName);
+        groupName = char(adminService.getEventContext().groupName);
+        set(handles.edit_username, 'String', userName);
+        
+        % Read group ID and retrieve experimenter
+        userId = adminService.getEventContext().userId;
+        groupId = adminService.getEventContext().groupId;
+        user = adminService.getExperimenter(userId);
+        
+        % Populate drop-down menu for available groups
+        groupIds = toMatlabList(adminService.getMemberOfGroupIds(user));
+        groupIds(ismember(groupIds, [0 1 2])) = []; % Filter out system groups
+        groupNames = arrayfun(@(x) char(adminService.getGroup(x).getName().getValue),...
+            groupIds, 'UniformOutput', false);
+        set(handles.popupmenu_group, 'String', groupNames, 'UserData', groupIds,...
+            'Value', find(groupId == groupIds));
+        
+        % Update status
+        status = sprintf('connected as %s under group %s', userName, groupName);
+        connected = 1;
+    catch ME
+        if isa(ME.ExceptionObject, 'Ice.CommunicatorDestroyedException')
+            status = 'lost connection';
+        else
+            status = ME.message;
+        end
+        connected = 0;
+    end
+else
+    status = 'not connected';
+    connected = 0;
+end
 set(handles.text_status, 'String', sprintf('Status: %s', status));
 
+if connected
+    set([handles.pushbutton_login, handles.pushbutton_login_file],...
+        'Enable', 'off');
+    set([handles.pushbutton_logout handles.popupmenu_group],...
+        'Enable', 'on');
+else
+    set([handles.pushbutton_login, handles.pushbutton_login_file],...
+        'Enable', 'on');
+    set([handles.pushbutton_logout handles.popupmenu_group],...
+        'Enable', 'off');
+end
 
 % --- Executes on button press in pushbutton_logout.
 function pushbutton_logout_Callback(hObject, eventdata, handles)
 
 global client
-if ~isempty(client),
-    client.closeSession();
-end
-set(handles.text_status, 'String', sprintf('Status: not connected'));
-set(handles.popupmenu_group, 'Enable', 'off');
-
+if ~isempty(client), client.closeSession(); end
+update_status(handles)
 
 % --- Executes on selection change in popupmenu_group.
 function popupmenu_group_Callback(hObject, eventdata, handles)
@@ -237,4 +241,4 @@ global session
 props = get(handles.popupmenu_group, {'UserData', 'Value'});
 groupId = props{1}(props{2}); 
 session.setSecurityContext(session.getAdminService().getGroup(groupId));
-update_credentials(handles)
+update_status(handles)
