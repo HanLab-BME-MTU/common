@@ -49,7 +49,7 @@ classdef TrackingPackage < Package
         end
         
         function objects = getConcretePackages()
-            objects(1).name = 'Single-particles';
+            objects(1).name = 'Single particles';
             objects(1).packageConstr = @UTrackPackage;
             objects(2).name = 'Microtubules plus-ends';
             objects(2).packageConstr = @PlusTipTrackerPackage;                        
