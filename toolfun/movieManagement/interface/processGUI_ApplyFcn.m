@@ -45,19 +45,14 @@ end
 
  % Override the parameters with the GUI set-up ones
 parseProcessParams(userData.crtProc,funParams);
- 
-% Refresh main screen
-packageGUI_RefreshFcn(userData.handles_main,'refresh')
 
 userData_main = get(userData.mainFig, 'UserData');
-if isfield(handles, 'checkbox_applytoall')
-    if get(handles.checkbox_applytoall, 'Value'),
-        moviesId = setdiff(1:numel(userData_main.(field)),userData_main.id);
-    else
-        moviesId=[];
-    end
+applytoall = isfield(handles, 'checkbox_applytoall') &&...
+    get(handles.checkbox_applytoall, 'Value');
+if applytoall
+    moviesId = setdiff(1:numel(userData_main.(field)),userData_main.id);
 else
-    moviesId = 1;
+    moviesId=[];
 end
 
 % Apply setting to all movies
@@ -89,11 +84,23 @@ end
 
 % Store the applytoall choice for this particular process
 if isfield(handles, 'checkbox_applytoall')
-userData_main.applytoall(userData.procID)=get(handles.checkbox_applytoall,'Value');
+    userData_main.applytoall(userData.procID) = ...
+        get(handles.checkbox_applytoall,'Value');
 end
-% Save user data
+
+% Aumoatically check process if settings have been set up
+userData_main.statusM(userData_main.id).Checked(userData.procID) = 1;
 set(userData.mainFig, 'UserData', userData_main)
+if applytoall,
+    userfcn_checkAllMovies(userData.procID, 1, guidata(userData.mainFig));
+end
+
+% Save user data
+
 set(handles.figure1, 'UserData', userData);
+
+% Refresh main screen
+packageGUI_RefreshFcn(userData.handles_main,'refresh')
 guidata(hObject,handles);
 delete(handles.figure1);
 end
