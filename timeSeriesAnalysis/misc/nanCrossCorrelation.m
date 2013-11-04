@@ -52,7 +52,6 @@ else
 end
 
 numSTD = 2;
-bounds = [numSTD;-numSTD]/sqrt(nObs);
 
 
 
@@ -60,6 +59,7 @@ pVal = [];
 switch corrT
     
     case 'Pearson'
+        bounds          = [numSTD;-numSTD]/sqrt(nObs);
         
         if robustOn
             %NaN and outliers have no influence. Well, not too much.
@@ -116,6 +116,7 @@ switch corrT
         
         
         xCorr = [fliplr(CCR) CCL(2:end)];
+        %xCorr = crosscorr(x,y,maxLag);
         pVal  = pvalPearson('b',xCorr,nObs);
     case 'Kendall'
         

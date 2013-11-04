@@ -71,7 +71,8 @@ for iVar = 1:nVar
             
             % Remove deterministic components using preWhitening
             [workTS{iVar},trend{iVar},imf{iVar}] = preWhitening(workTS{iVar}(interval{iVar}));
-            
+        else
+            workTS{iVar} = workTS{iVar}(interval{iVar});
         end
         
     else
@@ -90,4 +91,10 @@ empIdx           = find( cellfun(@isempty,workTS) );
 minIdx           = find( cell2mat( cellfun(@(x) lt(numel(x),minLength),workTS,'UniformOutput',0) ) );
 %All windows to be excluded
 finIdx           = union(empIdx,minIdx);
+
 excludeVar       = union(excludeVar,finIdx);
+
+workTS(excludeVar) = [];
+interval(excludeVar) = [];
+trend(excludeVar) = [];
+imf(excludeVar) = [];
