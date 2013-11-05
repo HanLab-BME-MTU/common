@@ -64,7 +64,7 @@ ip.addParamValue('XLabel', [], @ischar);
 ip.addParamValue('YLabel', ' ', @ischar);
 ip.addParamValue('YLim', [], @(x) numel(x)==2);
 ip.addParamValue('YTick', []);
-ip.addParamValue('XTickLabel', [], @(x) isempty(x) || (iscell(x) && (numel(x)==sum(nb) || numel(x)==ng)));
+ip.addParamValue('XTickLabel', []);%, @(x) isempty(x) || (iscell(x) && (numel(x)==sum(nb) || numel(x)==ng)));
 ip.addParamValue('BarWidth', 0.8, @isscalar);
 ip.addParamValue('GroupDistance', 0.8, @isscalar);
 ip.addParamValue('LineWidth', 1, @isscalar);
@@ -144,7 +144,8 @@ end
 
 hold on;
 h = zeros(1,nb); % handles for legend
-topval = zeros(1,nb*ng); % keep track of highest value
+topval = cellfun(@(i) max(i,[],1), prm, 'unif', 0); % keep track of highest value
+topval = [topval{:}];
 for g = 1:ng
     
     if size(prm{g},1)==6 % contains SEM
@@ -169,7 +170,6 @@ for g = 1:ng
     rb = xa{g} + bw/2;
     xv = [lb; rb; rb; lb; lb; rb];
     yv = [p75; p75; p25; p25; p75; p75];
-    topval((g-1)*ng+(1:ng)) = max(prm{g}(end,:));
     
     for b = 1:nb
         if size(faceColor,1)==nb
@@ -254,7 +254,7 @@ av = ip.Results.Annotations;
 if ~isempty(av)
     pos = get(gca, 'Position');
     dy = 0.25/diff(XLim)*diff(YLim)/pos(4)*pos(3);
-    maxposCount = zeros(nb,1);
+    maxposCount = zeros(nb*ng,1);
     for k = 1:size(av,1)
         y0 = max(topval(av(k,1):av(k,2)));
         maxpos = find(topval==y0, 1, 'first');
@@ -275,9 +275,9 @@ end
 function [inliers, outliers] = detectOutliers(obs)
 
 % Same methods as boxplot(). Outliers: values that are
-% larger than q3 + w(q3 ? q1) or smaller than q1 ? w(q3 ? q1),
+% larger than q3 + w(q3 - q1) or smaller than q1 - w(q3 - q1),
 % where q1 and q3 are the 25th and 75th percentiles, respectively.
-% The default w = 1.5 corresponds to approximately +/?2.7? and 99.3
+% The default w = 1.5 corresponds to approximately +/- 2.7 SD and 99.3
 % coverage if the data are normally distributed.
     
 q = prctile(obs, [25 75]);
