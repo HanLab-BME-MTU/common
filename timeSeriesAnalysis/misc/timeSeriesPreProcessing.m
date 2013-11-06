@@ -1,4 +1,4 @@
-function  [outTS,exclude] = timeSeriesPreProcessing(TS,varargin)
+function  [procTS,exclude] = timeSeriesPreProcessing(TS,varargin)
 %This function performes the following time series operations:
 %   - remove outliers
 %   - interpolate NaN gaps (be careful with the size of the gap)
@@ -17,19 +17,23 @@ function  [outTS,exclude] = timeSeriesPreProcessing(TS,varargin)
 %       outLevel  - used to detect outliers (see detectOutliers)
 %
 %Output:
-%       outTS   - resulting TS after operations
-%       exclude - list of variables that were excluded because some of the minimal length requirement
+%       procTS   - processed TS
+%       exclude - list of variables that didn't pass the minimal length
+%                 requirement after processing
 %
 %Marco Vilela, 2012
 
 ip = inputParser;
 ip.addRequired('TS',@(x) ismatrix(x));
+[nVar,nObs] = size(TS);
+
 ip.addParamValue('alpha',.05,@isscalar);
 ip.addParamValue('nSurr',100,@isscalar);
 ip.addParamValue('minLength',30,@isscalar);
 ip.addParamValue('trendType',-1,@isscalar);
 ip.addParamValue('gapSize',0,@isscalar);
 ip.addParamValue('outLevel',0,@isscalar);
+ip.addParamValue('interval',{1:nObs},@iscell);
 
 ip.parse(TS,varargin{:});
 alpha    = ip.Results.alpha;
@@ -37,28 +41,37 @@ nSurr    = ip.Results.nSurr;
 minLen   = ip.Results.minLength;
 trend    = ip.Results.trendType;
 gapSize  = ip.Results.gapSize;
+interval = ip.Results.interval;
 outLevel = ip.Results.outLevel;
 
-
-nVar     = size(TS,1);
-outTS    = TS;
-exclude1 = [];
-
-%% Removing trend
-if trend > -1
-    
-    [auxTS,exclude1] = getTimeSeriesTrend(outTS,'trendType',trend,'nSurr',nSurr,'alpha',alpha,'minLength',minLen);
-    outTS            = auxTS.dTS;   
-    
+if sum(diff(cell2mat(interval)) > 1)
+    error('Interval are not continuous')
 end
+procTS   = nan(size(TS));
 
-%% Removing outliers
-if outLevel > 0
+for iInt = 1:numel(interval)
     
-    for iVar = 1:nVar
-        outTS(iVar,detectOutliers(outTS(iVar,:),outLevel)) = NaN;
+    outTS   = TS(:,interval{iInt});
+    exclude = [];
+    
+    %% Removing trend
+    if trend > -1
+        
+        [auxTS,exclude1] = getTimeSeriesTrend(outTS,'trendType',trend,'nSurr',nSurr,'alpha',alpha,'minLength',minLen);
+        outTS            = auxTS.dTS;
+        exclude          = union(exclude,exclude1);
     end
     
+    %% Removing outliers
+    if outLevel > 0
+        
+        for iVar = 1:nVar
+            outTS(iVar,detectOutliers(outTS(iVar,:),outLevel)) = NaN;
+        end
+        
+    end
+   
+    procTS(:,interval{iInt}) = outTS;
 end
 
 %% Interpolating nan Gaps
@@ -68,11 +81,11 @@ end
 if gapSize > 0
     
     for iVar = 1:nVar
-        outTS(iVar,:) = gapInterpolation(outTS(iVar,:),gapSize);
+        procTS(iVar,:) = gapInterpolation(procTS(iVar,:),gapSize);
     end
     
 end
 
 %% Removing by minimum length again in case outliers were detected
-exclude2 = find( sum(isfinite(outTS),2) < minLen )';
-exclude  = union(exclude1,exclude2);
+exclude1 = find( sum(isfinite(procTS),2) < minLen )';
+exclude  = union(exclude1,exclude);
