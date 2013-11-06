@@ -10,11 +10,14 @@
 %             'alpha' : alpha value used in the statistical tests. Default: 0.05.
 %              'mask' : mask of pixels (i.e., cell mask) to include in the detection. Default: all.
 %       'FitMixtures' : true|{false}. Toggles mixture-model fitting.
+%       'MaxMixtures' : maximum number of mixtures to fit. Default: 5.
 %   'RemoveRedundant' : {true}|false. Discard localizations that coincide within 'RedundancyRadius'.
 %  'RedundancyRadius' : Radius for filtering out redundant localizatios. Default: 0.25
 %         'Prefilter' : {true}|false. Prefilter to calculate mask of significant pixels.
 %     'RefineMaskLoG' : {true}|false. Apply threshold to LoG-filtered img to refine mask of significant pixels.
 %   'RefineMaskValid' : {true}|false. Return only mask regions where a significant signal was localized.
+%        'ConfRadius' : Confidence radius for positions, beyond which the fit is rejected. Default: 2*sigma
+%        'WindowSize' : Window size for the fit. Default: 4*sigma, i.e., [-4*sigma ... 4*sigma]^2
 %
 % Outputs:  
 %             pstruct : output structure with Gaussian parameters, standard deviations, p-values
