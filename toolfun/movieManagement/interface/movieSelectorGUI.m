@@ -22,7 +22,7 @@ function varargout = movieSelectorGUI(varargin)
 
 % Edit the above text to modify the response to help movieSelectorGUI
 
-% Last Modified by GUIDE v2.5 20-Oct-2013 21:21:50
+% Last Modified by GUIDE v2.5 06-Nov-2013 11:45:37
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -629,3 +629,18 @@ end
 userData.MD = horzcat(userData.MD, MD);
 set(handles.figure1,'UserData',userData);
 refreshDisplay(hObject,eventdata,handles);
+
+
+% --- Executes on button press in View.
+function View_Callback(hObject, eventdata, handles)
+% hObject    handle to View (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Return if no movie 
+props=get(handles.listbox_movie, {'String','Value'});
+if isempty(props{1}), return; end
+
+userData = get(handles.figure1, 'UserData');
+% if movieDataGUI exist, delete it
+userData.newFig = movieViewer(userData.MD(props{2}));
+set(handles.figure1,'UserData',userData);

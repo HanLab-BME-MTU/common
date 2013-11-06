@@ -2,6 +2,7 @@ classdef HCSReader < Reader
     properties
         paths
         filenames
+        chNames
     end
     
     methods
@@ -17,6 +18,7 @@ classdef HCSReader < Reader
             obj.sizeZ = 1;
             obj.bitDepth = - ones(nChan, 1);
             obj.filenames = {channels_.hcsPlatestack_};
+            obj.chNames = arrayfun(@(x) x.hcsFlags_.wN, channels_(:));
         end
         
         
@@ -159,7 +161,9 @@ classdef HCSReader < Reader
         
 
         function chanNames = getChannelNames(obj, iChan)
-            chanNames = obj.paths(iChan);
+            for i = 1:length(iChan)
+                chanNames{i} = [obj.paths{i}, '-', obj.chNames{i}];
+            end
         end
         
        
