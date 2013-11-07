@@ -78,6 +78,7 @@ classdef PointSourceDetectionProcess < DetectionProcess
             funParams.filterSigma = 1.2*ones(1,nChan);%Minimum numerically stable sigma is ~1.2 pixels.
             hasPSFSigma = arrayfun(@(x) ~isempty(x.psfSigma_), owner.channels_);
             funParams.filterSigma(hasPSFSigma) = [owner.channels_(hasPSFSigma).psfSigma_];            
+            funParams.filterSigma(funParams.filterSigma<1.2) = 1.2;%Make sure default isn't set to too small.
             
             funParams.ConfRadius = arrayfun(@(x)(2*x),funParams.filterSigma);
             funParams.WindowSize = arrayfun(@(x)(ceil(4*x)),funParams.filterSigma);

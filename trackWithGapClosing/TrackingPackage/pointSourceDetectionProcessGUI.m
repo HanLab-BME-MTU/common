@@ -52,6 +52,13 @@ processGUI_OpeningFcn(hObject, eventdata, handles, varargin{:},'initChannel',1);
 % Set-up parameters
 userData=get(handles.figure1,'UserData');
 funParams = userData.crtProc.funParams_;
+%Remove the output directory as we don't want to replicate it to other
+%movies if the "apply to all movies" box is checked. Ideally we would
+%explicitly only replicate the parameters we set in this GUI but this is a
+%quick fix. - HLE
+if isfield(funParams,'OutputDirectory')
+    funParams = rmfield(funParams,'OutputDirectory');
+end
 
 set(handles.popupmenu_CurrentChannel,'UserData',funParams);
 
