@@ -52,6 +52,7 @@ end
 if numel(TS) ~= numel(fVector)
     error('Number of Variables and number of feature vector does not match')
 end
+
 %% Clustering methods
 
 methods{1} = @(x,y) kmeans(x,y{:});

@@ -44,9 +44,6 @@ gapSize  = ip.Results.gapSize;
 interval = ip.Results.interval;
 outLevel = ip.Results.outLevel;
 
-if sum(diff(cell2mat(interval)) > 1)
-    error('Interval are not continuous')
-end
 procTS   = nan(size(TS));
 
 for iInt = 1:numel(interval)
