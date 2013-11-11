@@ -78,18 +78,11 @@ classdef  OmeroReader < Reader
         %% Image loading function
         function I = loadImage(obj, iChan, iFrame)
 
-            % Initialize array
-            class = ['uint' num2str(obj.getBitDepth())];
-            I = zeros([obj.getSizeY(), obj.getSizeX(), numel(iFrame)], class);
-
             % Test session integrity
             store = obj.getSession().createRawPixelsStore();
             store.setPixelsId(obj.getPixels().getId().getValue(), false);
-            
-            for i=1:numel(iFrame),
-                plane = store.getPlane(0, iChan-1, iFrame(i)-1);
-                I(:,:,i)=toMatrix(plane, obj.getPixels())';
-            end
+            I = store.getPlane(0, iChan-1, iFrame(i)-1);
+            store.close()
         end
         
         %% Helper functions
