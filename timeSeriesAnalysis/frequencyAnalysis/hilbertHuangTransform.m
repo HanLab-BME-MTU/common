@@ -34,7 +34,7 @@ instAmp     = nan(nImf,nObs);
 instFreq    = nan(nImf,nObs-1);
 spectrum    = nan(specRes,nObs-1);
 
-for i=1:nImf-1
+for i=1:nImf
     
     [instAmp(i,:),instFreq(i,:)] = getInstantaneousFrequency(imf(i,:));
     
