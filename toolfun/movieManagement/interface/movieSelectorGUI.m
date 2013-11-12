@@ -551,5 +551,5 @@ end
 
 % Call the data selection interface
 userData = get(handles.figure1, 'UserData');
-userData.omeroDataFig = omeroDataSelectionGUI();
+userData.omeroDataFig = omeroDataSelectionGUI('mainFig',handles.figure1);
 set(handles.figure1, 'UserData', userData);
