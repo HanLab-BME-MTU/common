@@ -1,4 +1,4 @@
-function [fileNames formatNum sNums] = imDir(imDirectory,returnAll)
+function [fileNames, formatNum, sNums] = imDir(imDirectory,returnAll)
 %IMDIR is a wrapper for the dir command designed for finding only image files
 % 
 % fileNames = imDir(directory);
@@ -35,6 +35,8 @@ function [fileNames formatNum sNums] = imDir(imDirectory,returnAll)
 %       5 - .BMP 
 %       6 - .jpg
 %       7 - .JPG
+%       8 - .JP2
+%       9 - .JPX
 %
 %   This input is optional. Default is false.
 %
