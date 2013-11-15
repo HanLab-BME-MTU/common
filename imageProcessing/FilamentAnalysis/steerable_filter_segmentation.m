@@ -99,7 +99,7 @@ for i = 1 : nProcesses
 end
 
 if indexVIFSegProcess==0
-    msg('Please run segmentation and refinement first.')
+    msgbox('Please run segmentation and refinement first.')
     return;
 end
 
@@ -118,7 +118,7 @@ indexMTSegProcess = indexVIFSegProcess;
 %     end
 % end
 % if indexVIFChannel ==0
-%     msg('VIF channel needed to be defined.')
+%     msgbox('VIF channel needed to be defined.')
 % end
 
 % For now, it it not defined, so directly set as 2

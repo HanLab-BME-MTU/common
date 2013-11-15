@@ -306,7 +306,7 @@ if(strcmp(get(handles.uipanel_Geo_panel,'Visible'),'on'))
     funParams.CurvatureThreshold=CurvatureThreshold;
     
      CoefAlpha = str2double(get(handles.edit_linear_plane_offset_alpha, 'String'));
-    if isnan(CoefAlpha) || CoefAlpha < 0
+    if isnan(CoefAlpha) || CoefAlpha < -1
         errordlg('Please provide a valid input for Alpha in the linear plane classifier','Setting Error','modal');
         return;
     end

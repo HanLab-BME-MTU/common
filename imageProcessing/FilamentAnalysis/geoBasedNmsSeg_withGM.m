@@ -83,7 +83,7 @@ imageInt = imageInt.*MaskCell;
 
 
 % first, get almost all the curves/lines, by using a low threshold
-imageMask = imageNMS > T_otsu_start;
+imageMask = imageNMS > T_otsu_start/5;
 
 % further thin it, since the nms version of steerable filtering is not real skeleton
 bw_out = bwmorph(imageMask,'thin','inf');

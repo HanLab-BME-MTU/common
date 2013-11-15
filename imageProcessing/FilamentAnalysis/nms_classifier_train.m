@@ -30,7 +30,7 @@ if(isempty(imageNMS))
     end
     
     if(indexFilamentPackage==0)
-        msg('Need to be in Filament Package for now.')
+        msgbox('Need to be in Filament Package for now.')
         return;
     end
     
@@ -46,7 +46,7 @@ if(isempty(imageNMS))
     end
     
     if indexFilamentSegmentationProcess==0
-        msg('Please set parameters for steerable filtering.')
+        msgbox('Please set parameters for steerable filtering.')
         return;
     end
     
@@ -84,7 +84,7 @@ if(isempty(imageNMS))
     end
     
     if indexSteerabeleProcess==0 && Combine_Way~=2
-        msg('Please run steerable filtering first.')
+        msgbox('Please run steerable filtering first.')
         return;
     end
     
@@ -116,7 +116,7 @@ if(isempty(imageNMS))
     end
     
     if indexCellSegProcess == 0 && Cell_Mask_ind == 1
-        msg('Please run segmentation and refinement first.')
+        msgbox('Please run segmentation and refinement first.')
         return;
     end
     

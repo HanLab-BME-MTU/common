@@ -13,7 +13,7 @@ for i = 1 : nPackage
 end
 
 if(indexFilamentPackage==0)
-    msg('Need to be in Filament Package for now.')
+    msgbox('Need to be in Filament Package for now.')
     return;
 end
 
@@ -29,7 +29,7 @@ for i = 1 : nProcesses
 end
 
 if indexSteerabeleProcess==0
-    msg('Please set parameters for steerable filtering.')
+    msgbox('Please set parameters for steerable filtering.')
     return;
 end
 funParams=movieData.processes_{indexSteerabeleProcess}.funParams_;

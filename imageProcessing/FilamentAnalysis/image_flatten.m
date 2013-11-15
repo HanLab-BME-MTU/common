@@ -15,7 +15,7 @@ for i = 1 : nPackage
 end
 
 if(indexFilamentPackage==0)
-    msg('Need to be in Filament Package for now.')
+    msgbox('Need to be in Filament Package for now.')
     return;
 end
 
@@ -32,7 +32,7 @@ for i = 1 : nProcesses
 end
 
 if indexFlattenProcess==0
-    msg('Please set parameters for Image Flatten.')
+    msgbox('Please set parameters for Image Flatten.')
     return;
 end
 

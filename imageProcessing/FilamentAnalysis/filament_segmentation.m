@@ -29,7 +29,7 @@ for i = 1 : nPackage
 end
 
 if(indexFilamentPackage==0)
-    msg('Need to be in Filament Package for now.')
+    msgbox('Need to be in Filament Package for now.')
     return;
 end
 
@@ -45,7 +45,7 @@ for i = 1 : nProcesses
 end
 
 if indexFilamentSegmentationProcess==0
-    msg('Please set parameters for steerable filtering.')
+    msgbox('Please set parameters for steerable filtering.')
     return;
 end
 
@@ -93,7 +93,7 @@ for i = 1 : nProcesses
 end
 
 if indexSteerabeleProcess==0 && Combine_Way~=2
-    msg('Please run steerable filtering first.')
+    msgbox('Please run steerable filtering first.')
     return;
 end
 
@@ -125,7 +125,7 @@ for i = 1 : nProcesses
 end
 
 if indexCellSegProcess == 0 && Cell_Mask_ind == 1
-    msg('Please run segmentation and refinement first.')
+    msgbox('Please run segmentation and refinement first.')
     return;
 end
 
