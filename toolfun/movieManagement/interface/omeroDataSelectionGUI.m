@@ -22,7 +22,7 @@ function varargout = omeroDataSelectionGUI(varargin)
 
 % Edit the above text to modify the response to help omeroDataSelectionGUI
 
-% Last Modified by GUIDE v2.5 12-Nov-2013 11:52:21
+% Last Modified by GUIDE v2.5 18-Nov-2013 14:02:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -63,33 +63,34 @@ ip.parse(hObject,eventdata,handles,varargin{:})
 % Store inpu
 userData = get(handles.figure1, 'UserData');
 userData.mainFig=ip.Results.mainFig;
+set(hObject, 'UserData', userData);
 
 set(handles.text_copyright, 'String', getLCCBCopyright())
 global session
 
-% List projects
-projects = getProjects(session);
-projectNames = arrayfun(@(x) char(x.getName().getValue()), projects,...
-    'UniformOutput', false);
-projectNames = [{'none'}; projectNames];
-set(handles.popupmenu_project, 'Value', 1, 'String', projectNames,...
-    'UserData', projects);
+% List users
+groupId = session.getAdminService().getEventContext().groupId;
+userId = session.getAdminService().getEventContext().userId;
+group = session.getAdminService().getGroup(groupId);
+if group.getDetails().getPermissions().isGroupAnnotate(),
+    map = toMatlabList(group.copyGroupExperimenterMap());
+    ids = arrayfun(@(x) x.getChild().getId().getValue(), map);
+    names = arrayfun(@(x) [char(x.getChild().getFirstName().getValue())...
+        ' ' char(x.getChild().getLastName().getValue())...
+        ' (' char(x.getChild().getOmeName().getValue()) ')'], map,...
+        'UniformOutput', false);
+    set(handles.popupmenu_user, 'Enable', 'on', 'String', names,...
+        'UserData', ids, 'Value', find(ids == userId));
+else
+    experimenter = session.getAdminService().getExperimenter(userId);
+    name = [char(experimenter.getFirstName().getValue())...
+        ' ' char(experimenter.getLastName().getValue())...
+        ' (' char(experimenter.getOmeName().getValue()) ')'];
+    set(handles.popupmenu_user, 'Enable', 'off', 'String', name,...
+        'UserData', userId, 'Value', 1);
+end
 
-% List orphaned datasets
-parameters = omero.sys.ParametersI();
-parameters.orphan();
-parameters.leaves();
-datasets = getObjects(session, 'dataset', [], parameters);
-datasetNames = arrayfun(@(x) char(x.getName().getValue()), datasets,...
-    'UniformOutput', false);
-datasetNames = [{'none'}; datasetNames];
-set(handles.popupmenu_dataset, 'Value', 1, 'String', datasetNames,...
-    'UserData', datasets);
-refreshImageList(handles)
-
-% Save orphaned dataset
-userData.orphaned_datasets = datasets;
-set(hObject, 'UserData', userData);
+refreshDataList(hObject, [], handles);
 
 % Choose default command line output for omeroDataSelectionGUI
 handles.output = hObject;
@@ -111,6 +112,38 @@ function varargout = omeroDataSelectionGUI_OutputFcn(hObject, eventdata, handles
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
+
+% --- Executes on selection change in popupmenu_user.
+function refreshDataList(hObject, eventdata, handles)
+
+global session
+props = get(handles.popupmenu_user, {'Value', 'UserData'});
+userId = props{2}(props{1});
+
+% List projects
+projects = getProjects(session, 'owner', userId);
+projectNames = arrayfun(@(x) char(x.getName().getValue()), projects,...
+    'UniformOutput', false);
+projectNames = [{'none'}; projectNames];
+set(handles.popupmenu_project, 'Value', 1, 'String', projectNames,...
+    'UserData', projects);
+
+% List orphaned datasets
+parameters = omero.sys.ParametersI();
+parameters.orphan();
+parameters.leaves();
+datasets = getObjects(session, 'dataset', [], parameters, 'owner', userId);
+datasetNames = arrayfun(@(x) char(x.getName().getValue()), datasets,...
+    'UniformOutput', false);
+datasetNames = [{'none'}; datasetNames];
+set(handles.popupmenu_dataset, 'Value', 1, 'String', datasetNames,...
+    'UserData', datasets);
+refreshImageList(handles)
+
+% Save orphaned datasets
+userData = get(handles.figure1, 'UserData');
+userData.orphaned_datasets = datasets;
+set(handles.figure1, 'UserData', userData);
 
 function refreshImageList(handles)
 
@@ -193,3 +226,4 @@ delete(handles.figure1);
 function pushbutton_cancel_Callback(hObject, eventdata, handles)
 
 delete(handles.figure1);
+
