@@ -150,11 +150,6 @@ for i=1:length(movieRun)
     userfcn_drawIcon(handles,'clear',procRun{iMovie},'',true); % user data is retrieved, updated and submitted
     % Refresh user data !!!
     userData = get(handles.figure1, 'UserData');
-    
-    % Disable 'Run' button
-%     set(handles.pushbutton_run, 'Enable', 'off')
-%     set(handles.checkbox_forcerun, 'Enable', 'off')
-%     set(handles.checkbox_runall, 'Enable', 'off')
     set(handles.text_status, 'Visible', 'on')
     
     % Run algorithms!
@@ -177,6 +172,9 @@ for i=1:length(movieRun)
         movieException{iMovie}=movieException{iMovie}.addCause(ME);
         
         procRun{iMovie} = procRun{iMovie}(procRun{iMovie} < procID);
+        
+        % Refresh wall status
+        packageGUI_RefreshFcn(handles,'initialize');
     end
     
     % Refresh user data !!!
