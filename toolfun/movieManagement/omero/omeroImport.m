@@ -123,7 +123,7 @@ instrument = image.getInstrument();
 if ~isempty(instrument)
     instrument = metadataService.loadInstrument(instrument.getId.getValue);
     objectives = toMatlabList(instrument.copyObjective());
-    if ~isempty(objectives)
+    if ~isempty(objectives) && ~isempty(objectives(1).getLensNA())
         lensNA = objectives(1).getLensNA().getValue();
         movieArgs=horzcat(movieArgs,'numAperture_',double(lensNA));
     end
