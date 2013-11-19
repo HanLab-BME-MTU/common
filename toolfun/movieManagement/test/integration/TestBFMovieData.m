@@ -22,6 +22,12 @@ classdef TestBFMovieData < TestMovieData & TestCase
             if ismember(self.lociToolsPath,javaclasspath('-dynamic'))
                 javarmpath(self.lociToolsPath);
             end
+            
+            bfCheckJavaPath;
+            r = loci.formats.in.FakeReader();
+            self.imSize = [r.DEFAULT_SIZE_Y r.DEFAULT_SIZE_X];
+            self.nChan = r.DEFAULT_SIZE_C;
+            self.nFrames = r.DEFAULT_SIZE_T;
         end
         
         function tearDown(self)
@@ -31,12 +37,6 @@ classdef TestBFMovieData < TestMovieData & TestCase
             if ismember(self.lociToolsPath,javaclasspath('-dynamic'))
                 javarmpath(self.lociToolsPath);
             end
-            
-            bfCheckJavaPath;
-            r = loci.formats.in.FakeReader();
-            self.imSize = [r.DEFAULT_SIZE_Y r.DEFAULT_SIZE_X];
-            self.nChan = r.DEFAULT_SIZE_C;
-            self.nFrames = r.DEFAULT_SIZE_T;
         end
         
         function setUpMovie(self)
@@ -128,6 +128,20 @@ classdef TestBFMovieData < TestMovieData & TestCase
             self.nFrames = 256;
             self.setUpMovie()
             self.checkDimensions();
+        end
+        
+        %% ROI tests
+        function testAddROIMultiSeries(self)
+            nMovies = 3;
+            self.fakename = ['test&series=' num2str(nMovies) '.fake'];
+            self.setUpMovie();
+            assertEqual(numel(self.movie), nMovies);
+            for i = 1 : nMovies
+                self.movie(i).addROI('','');
+                roi = self.movie(i).getROI(1);
+                assertEqual(roi.getChannel(1), self.movie(i).getChannel(1));
+                assertEqual(roi.getSeries(), self.movie(i).getSeries());
+            end
         end
     end
 end
