@@ -161,8 +161,8 @@ classdef  MovieData < MovieObject
             roiMovie = MovieData(obj.channels_,outputDirectory,varargin{:});
             
             % Copy metadata fields
-            metadatafields = {'pixelSize_', 'timeInterval_',...
-                'numAperture_', 'camBitdepth_', 'nFrames_','imSize_'};
+            metadatafields = {'pixelSize_', 'timeInterval_', 'bfSeries_',...
+                'numAperture_', 'camBitdepth_', 'nFrames_', 'imSize_'};
             set(roiMovie, metadatafields, get(obj,metadatafields));
             
             % Share processes and packages
