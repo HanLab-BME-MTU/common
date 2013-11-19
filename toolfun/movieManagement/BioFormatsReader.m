@@ -11,8 +11,11 @@ classdef  BioFormatsReader < Reader
             bfCheckJavaPath(); % Check loci-tools.jar is in the Java path
             loci.common.DebugTools.enableLogging('OFF');
             obj.formatReader = bfGetReader(path, false);
-            if nargin>1,
+            if nargin>1 %&& ~isempty(iSeries)
                 obj.formatReader.setSeries(iSeries);
+%             else
+%                 iSeries = obj.getSeries();
+%                 obj.formatReader.setSeries(iSeries);
             end
         end
         

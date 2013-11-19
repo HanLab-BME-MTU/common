@@ -139,8 +139,8 @@ delete(handles.figure1);
 % --- Executes during object deletion, before destroying properties.
 function figure1_DeleteFcn(hObject, eventdata, handles)
 userData = get(handles.figure1, 'UserData');
-
+if ~isempty(userData) %%%% check and see why
 delete(userData.helpFig(ishandle(userData.helpFig))); 
-
+end
 set(handles.figure1, 'UserData', userData);
 guidata(hObject,handles);

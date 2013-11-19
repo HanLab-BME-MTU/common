@@ -61,7 +61,7 @@ classdef SubResolutionProcess < DetectionProcess
             
             % detectionParam
             if ~isempty(owner.channels_(1).psfSigma_)
-                funParams.detectionParam.psfSigma = owner.channels_.psfSigma_;
+                funParams.detectionParam.psfSigma = mean(horzcat(owner.channels_.psfSigma_));%%%% (1) for testing
             else
                 funParams.detectionParam.psfSigma=[];
             end
