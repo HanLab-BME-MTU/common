@@ -162,7 +162,8 @@ classdef  MovieData < MovieObject
             
             % Copy metadata fields
             metadatafields = {'pixelSize_', 'timeInterval_', 'bfSeries_',...
-                'numAperture_', 'camBitdepth_', 'nFrames_', 'imSize_'};
+                'numAperture_', 'camBitdepth_', 'nFrames_', 'imSize_',...
+                'omeroId_', 'omeroSave_', 'omeroSession_'};
             set(roiMovie, metadatafields, get(obj,metadatafields));
             
             % Share processes and packages
