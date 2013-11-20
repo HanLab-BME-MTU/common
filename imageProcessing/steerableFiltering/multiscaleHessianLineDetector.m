@@ -4,7 +4,7 @@
 
 %Revised Hunter Elliott, Nov 2013;
 
-function [response, theta, nms, scaleindex] = multiscaleHessianLineDetector(input, sigmaVect)
+function [response, theta, nms, scaleindex,eigVal,eigVec] = multiscaleHessianLineDetector(input, sigmaVect)
 
 [ny,nx] = size(input);
 ns = numel(sigmaVect);
@@ -61,13 +61,21 @@ end
 maxResponse = response{1};
 maxTheta = theta{1};
 scaleindex = ones(ny,nx);
+maxEig = eigVal{1};
+maxEigVec = eigVec{1};
 for si = 2:ns
     idx = response{si} > maxResponse;
     maxResponse(idx) = response{si}(idx);
-    maxTheta(idx) = theta{si}(idx);
+    maxTheta(idx) = theta{si}(idx);    
     scaleindex(idx) = si;
+    idx2 = repmat(idx,[1 1 2]);
+    maxEig(idx2) = eigVal{si}(idx2);
+    idx2 = repmat(idx,[1 1 2 2]);
+    maxEigVec(idx2) = eigVec{si}(idx2);
 end
 
 response = maxResponse;
 theta = maxTheta;
 nms = nonMaximumSuppression(response, theta);
+eigVal = maxEig;
+eigVec = maxEigVec;
