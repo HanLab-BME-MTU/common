@@ -2,6 +2,8 @@
 
 % Francois Aguet, Oct. 13, 2011
 
+%Revised Hunter Elliott, Nov 2013;
+
 function [response, theta, nms, scaleindex] = multiscaleHessianLineDetector(input, sigmaVect)
 
 [ny,nx] = size(input);
@@ -9,6 +11,9 @@ ns = numel(sigmaVect);
 
 response = cell(1,ns);
 theta = cell(1,ns);
+
+eigVal = cell(1,ns);
+eigVec = cell(1,ns);
 
 for si = 1:ns
     s = sigmaVect(si);
@@ -29,19 +34,28 @@ for si = 1:ns
     f_yy = conv2(gxx, g, inputXT, 'valid') - f_blur;
     
     % eigenvalues -> response
-    theta_s = zeros(ny,nx);
-    response_s = zeros(ny,nx);
-    for i = 1:nx*ny
-        H = [f_xx(i) f_xy(i);
-            f_xy(i) f_yy(i)];
-        [V,D] = eig(-H); % peak of 2nd derivative is negative
-        eigenValues = diag(D);
-        maxIdx = find(eigenValues==max(eigenValues), 1, 'first');
-        theta_s(i) = atan(V(2,maxIdx)/V(1,maxIdx));
-        response_s(i) = eigenValues(maxIdx);
-    end
-    theta{si} = theta_s;
-    response{si} = s^2 * response_s;
+    eigVal{si} = zeros(ny,nx,2);
+    eigVec{si} = zeros(ny,nx,2,2);
+    %Quadratic solution to eigenvalue problem for 2x2 symmetric matrix of H:
+    % lambda1/2 = (f_xx + f_yy +/- sqrt((f_xx - f_yy) .^2 + 4*f_xy .^2)) ./ 2;
+    %             ^----------^     ^------------------------------------^
+    %                Alpha                   beta
+    alpha = (f_xx + f_yy)/2;    
+    beta = sqrt((f_xx - f_yy) .^2 + 4*f_xy .^2)/2; 
+    eigVal{si}(:,:,1) = -alpha - beta;%Flip sign because we want eigenvalues of -H
+    eigVal{si}(:,:,2) = -alpha + beta;
+    
+    %Get non-unit eigenvectors - we only use the direction    
+    eigVec{si}(:,:,1,1) = eigVal{si}(:,:,1) + f_yy;
+    eigVec{si}(:,:,2,1) = -f_xy;
+            
+    eigVec{si}(:,:,1,2) = eigVal{si}(:,:,2) + f_yy;
+    eigVec{si}(:,:,2,2) = -f_xy;
+            
+    %Second eigenvalue/vector will always be largest.
+    response{si} = eigVal{si}(:,:,2) * s^2;
+    theta{si} = atan(eigVec{si}(:,:,2,2) ./ eigVec{si}(:,:,1,2));        
+    
 end
 
 maxResponse = response{1};
