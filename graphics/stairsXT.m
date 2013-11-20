@@ -8,7 +8,7 @@ ip = inputParser;
 ip.CaseSensitive = false;
 ip.addRequired('x');
 ip.addRequired('f');
-ip.addOptional('Color', [], @ischar);
+ip.addOptional('Color', []);
 ip.addParamValue('EdgeColor', 'k', @(s) ischar(s) || isvector(s));
 ip.addParamValue('FaceColor', []);
 ip.addParamValue('Bounds', 'closed', @(x) any(strcmpi(x, {'open', 'closed'})));
