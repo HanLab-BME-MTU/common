@@ -1,19 +1,47 @@
+%MULTISCALEHESSIANLINEDETECTOR line / curvilinear object detection by hessian filtering
+%
 %[response, theta, nms, scaleindex] = multiscaleHessianLineDetector(input, sigmaVect)
-
+%[response, theta, nms, scaleindex] = multiscaleHessianLineDetector(input, sigmaVect,'ScaleSelectionValue','Value')
+%
+%   Calculates local image hessian at several scales by filtering with
+%   gaussian second partial derivatives. Returns optimal values across
+%   scales, and performs non-maximum suppression on the selected multiscale
+%   response.
+%
+%       Input:
+%
+%           input - MxN image matrix
+%
+%           sigmaVect - 1xP vector of sigmas specifying scales to filter at
+%
+%           'ScaleSelectionValue' - specifies which value to use to
+%           determine which scale has 'optimal' response. Options are:
+%
+%               'Response' {default} - scale is selected based on the
+%               response magnitude (largest scale-normalized eigenvalue of hessian)
+%
+%               'Anisotropy' - scale is selected based on the maximum
+%               anisotropy (ratio of largest to smalles hessian
+%               eigenvalues, with negative values clipped to zero)
+%
+%       Output:
+%
+%           MxN matrices with the response, orientation, non-maximum
+%           suppressed response and the index of the selected scale.
+%
 % Francois Aguet, Oct. 13, 2011
+% Revised Hunter Elliott, Nov 2013;
 
-%Revised Hunter Elliott, Nov 2013;
+function [maxResponse, maxTheta, nms, scaleIndex,maxEigVal,maxEigVec] = multiscaleHessianLineDetector(input, sigmaVect,varargin)
 
-function [response, theta, nms, scaleindex,eigVal,eigVec] = multiscaleHessianLineDetector(input, sigmaVect)
+ip = inputParser;
+ip.addParamValue('ScaleSelectionValue','Response',@(x)(ismember(x,{'Response','Anisotropy'})));
+ip.parse(varargin{:});
+p = ip.Results;
 
 [ny,nx] = size(input);
 ns = numel(sigmaVect);
 
-response = cell(1,ns);
-theta = cell(1,ns);
-
-eigVal = cell(1,ns);
-eigVec = cell(1,ns);
 
 for si = 1:ns
     s = sigmaVect(si);
@@ -34,48 +62,54 @@ for si = 1:ns
     f_yy = conv2(gxx, g, inputXT, 'valid') - f_blur;
     
     % eigenvalues -> response
-    eigVal{si} = zeros(ny,nx,2);
-    eigVec{si} = zeros(ny,nx,2,2);
+    
     %Quadratic solution to eigenvalue problem for 2x2 symmetric matrix of H:
     % lambda1/2 = (f_xx + f_yy +/- sqrt((f_xx - f_yy) .^2 + 4*f_xy .^2)) ./ 2;
     %             ^----------^     ^------------------------------------^
     %                Alpha                   beta
     alpha = (f_xx + f_yy)/2;    
     beta = sqrt((f_xx - f_yy) .^2 + 4*f_xy .^2)/2; 
-    eigVal{si}(:,:,1) = -alpha - beta;%Flip sign because we want eigenvalues of -H
-    eigVal{si}(:,:,2) = -alpha + beta;
+    eigVal(:,:,1) = -alpha - beta;%Flip sign because we want eigenvalues of -H
+    eigVal(:,:,2) = -alpha + beta;
     
     %Get non-unit eigenvectors - we only use the direction    
-    eigVec{si}(:,:,1,1) = eigVal{si}(:,:,1) + f_yy;
-    eigVec{si}(:,:,2,1) = -f_xy;
+    eigVec(:,:,1,1) = eigVal(:,:,1) + f_yy;
+    eigVec(:,:,2,1) = -f_xy;
             
-    eigVec{si}(:,:,1,2) = eigVal{si}(:,:,2) + f_yy;
-    eigVec{si}(:,:,2,2) = -f_xy;
+    eigVec(:,:,1,2) = eigVal(:,:,2) + f_yy;
+    eigVec(:,:,2,2) = -f_xy;
             
     %Second eigenvalue/vector will always be largest.
-    response{si} = eigVal{si}(:,:,2) * s^2;
-    theta{si} = atan(eigVec{si}(:,:,2,2) ./ eigVec{si}(:,:,1,2));        
+    response = eigVal(:,:,2) * s^2;
+    theta = atan(eigVec(:,:,2,2) ./ eigVec(:,:,1,2));    
     
+    %Set value used for scale selection
+    switch p.ScaleSelectionValue        
+        case 'Response'            
+            ssVal = response;            
+        case 'Anisotropy'            
+            ssVal = eigVal;
+            ssVal(ssVal<0) = 0;%Suppress valleys and the negative curvature component of saddles 
+            ssVal = (ssVal(:,:,2) + 1) ./ (ssVal(:,:,1) + 1);%Add one before ratio to avoid Inf            
+    end            
+    
+    if si == 1
+        maxSsVal = ssVal;%Store scale selection value
+        maxResponse = response;
+        maxTheta = theta;
+        scaleIndex = ones(ny,nx);
+        maxEigVal = eigVal;
+        maxEigVec = eigVec;        
+    else
+        idx = ssVal > maxSsVal;%Select pixels with larger scale selection value, store outputs
+        maxResponse(idx) = response(idx);
+        maxTheta(idx) = theta(idx);    
+        scaleIndex(idx) = si;
+        idx2 = repmat(idx,[1 1 2]);
+        maxEigVal(idx2) = eigVal(idx2);
+        idx2 = repmat(idx,[1 1 2 2]);
+        maxEigVec(idx2) = eigVec(idx2);        
+    end
 end
 
-maxResponse = response{1};
-maxTheta = theta{1};
-scaleindex = ones(ny,nx);
-maxEig = eigVal{1};
-maxEigVec = eigVec{1};
-for si = 2:ns
-    idx = response{si} > maxResponse;
-    maxResponse(idx) = response{si}(idx);
-    maxTheta(idx) = theta{si}(idx);    
-    scaleindex(idx) = si;
-    idx2 = repmat(idx,[1 1 2]);
-    maxEig(idx2) = eigVal{si}(idx2);
-    idx2 = repmat(idx,[1 1 2 2]);
-    maxEigVec(idx2) = eigVec{si}(idx2);
-end
-
-response = maxResponse;
-theta = maxTheta;
-nms = nonMaximumSuppression(response, theta);
-eigVal = maxEig;
-eigVec = maxEigVec;
+nms = nonMaximumSuppression(maxResponse, maxTheta);
