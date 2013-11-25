@@ -24,6 +24,9 @@
 %               anisotropy (ratio of largest to smalles hessian
 %               eigenvalues, with negative values clipped to zero)
 %
+%           'NonMaximumSuppression' - true/false. If true {default},
+%           non-maximum suppression will be run.
+%
 %       Output:
 %
 %           MxN matrices with the response, orientation, non-maximum
@@ -36,6 +39,7 @@ function [maxResponse, maxTheta, nms, scaleIndex,maxEigVal,maxEigVec] = multisca
 
 ip = inputParser;
 ip.addParamValue('ScaleSelectionValue','Response',@(x)(ismember(x,{'Response','Anisotropy'})));
+ip.addParamValue('NonMaximumSuppression',true,@islogical);
 ip.parse(varargin{:});
 p = ip.Results;
 
@@ -97,7 +101,7 @@ for si = 1:ns
         maxSsVal = ssVal;%Store scale selection value
         maxResponse = response;
         maxTheta = theta;
-        scaleIndex = ones(ny,nx);
+        scaleIndex = ones(ny,nx,minIntClass(max(ns,2)));
         maxEigVal = eigVal;
         maxEigVec = eigVec;        
     else
@@ -112,4 +116,9 @@ for si = 1:ns
     end
 end
 
-nms = nonMaximumSuppression(maxResponse, maxTheta);
+if p.NonMaximumSuppression && nargout > 2
+    nms = nonMaximumSuppression(maxResponse, maxTheta);
+else
+    nms = [];
+end
+    
