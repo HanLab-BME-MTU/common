@@ -1,52 +1,48 @@
-% h = vectorialPSF(xp, yp, zp, z, ru, p)
-%
-% Computes the PSF of a microscope using the vectorial model described in:
-% Aguet et al., Opt. Express 17(8), 6829-6848 (2009)
+%[h, dxp, dyp, dzp] = vectorialPSF(xp, z, nx, p) computes a vectorial model of the microscope point spread function
+% The partial derivatives of the model relative to the source position xp are also calculated.
+% The model is described in [1]. For more information and implementation details, see [2].
 %
 %   INPUTS:
-%   xp    : x-position of the source in object space coordinates.
-%   yp    : y-position of the source.
-%   zp    : z-position of the source.
-%   z     : vector of focus/acquisition positions.
-%   ru    : radial size of the psf, in pixels. The resulting psf has dimensions [2*ru-1 2*ru-1 length(z)].
-%
-%   p     : parameter structure for the system properties, with the fields
-%            Ti0       : working distance of the objective
-%            Ni0       : immersion medium refractive index, design value
-%            Ni        : immersion medium refractive index, experimental value
-%            Tg0       : coverslip thickness, design value
-%            Tg        : coverslip thickness, experimental value
-%            Ng0       : coverslip refractive index, design value
-%            Ng        : coverslip refractive index, experimental value
-%            Ns        : sample refractive index
+%   xp    : Source position, 3-element vector [xp yp zp]
+%   z     : Vector of z-plane positions
+%   nx    : Window size for the psf calculation, in pixels (must be odd).
+%           The origin is located at ((nx+1)/2, (nx+1)/2).
+%   p     : Parameter structure of system properties, with fields (case sensitive)
+%            ti0       : working distance of the objective
+%            ni0       : immersion medium refractive index, design value
+%            ni        : immersion medium refractive index, experimental value
+%            tg0       : coverslip thickness, design value
+%            tg        : coverslip thickness, experimental value
+%            ng0       : coverslip refractive index, design value
+%            ng        : coverslip refractive index, experimental value
+%            ns        : sample refractive index
 %            lambda    : emission wavelength
 %            M         : magnification
 %            NA        : numerical aperture
-%            alpha     : angular aperture, alpha = atan(NA/Ni)
 %            pixelSize : physical size (width) of the CCD pixels
 %            f         : (optional, default: 3) oversampling factor to approximate CCD integration
-%            mode      : (optional, default: 1) if mode = 0, returns oversampled PSF
+%            mode      : (optional, default: 1) if 0, returns oversampled PSF
 %
-%   All spatial units in [m].
-% 
+%   All spatial units are in object space, in [m].
 %
 %   Example structure for 'p':
 %
-%           p.Ti0 = 1.9000e-04
-%           p.Ni0 = 1.5180
-%            p.Ni = 1.5180
-%           p.Tg0 = 1.7000e-04
-%            p.Tg = 1.7000e-04
-%           p.Ng0 = 1.5150
-%            p.Ng = 1.5150
-%            p.Ns = 1.46
+%           p.ti0 = 1.9000e-04
+%           p.ni0 = 1.5180
+%            p.ni = 1.5180
+%           p.tg0 = 1.7000e-04
+%            p.tg = 1.7000e-04
+%           p.ng0 = 1.5150
+%            p.ng = 1.5150
+%            p.ns = 1.46
 %        p.lambda = 5.5000e-07
 %             p.M = 100
 %            p.NA = 1.4500
-%         p.alpha = asin(p.NA/p.Ni);
 %     p.pixelSize = 6.4500e-06
 %
-% Note: the fields of the parameter structure need to be declared in the order shown above.
+% [1] F. Aguet et al., Opt. Express 17(8), pp. 6829-6848, 2009
+% [2] F. Aguet, Ph.D Thesis, Swiss Federal Institute of Technology, Lausanne (EPFL), 2009
 
-% Francois Aguet, last modified: 11/01/2010
-function vectorialPSF
+% Francois Aguet, 2009 (last modified: 07/31/2013)
+
+function [h, dxp, dyp, dzp] = vectorialPSF(xp, z, nx, p) %#ok<STOUT,INUSD>

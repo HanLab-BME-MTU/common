@@ -47,15 +47,16 @@ p.ns = 1.33;
 p.lambda = [];
 p.M = M;
 p.NA = NA;
-p.alpha = asin(p.NA/p.ni);
 p.pixelSize = pixelSize;
+p.sf = 1;
+p.mode = 1;
 
 ru = 8;
 nl = numel(lambda);
 sigma = zeros(1,nl);
 for i = 1:nl
     p.lambda = lambda{i};
-    psf = vectorialPSF(0,0,0,0,ru,p);
+    psf = vectorialPSF([0 0 0], 0, (2*ru)-1, p);
     [pG, ~, ~, res] = fitGaussian2D(psf, [0 0 max(psf(:)) 1 0], 'As');
     sigma(i) = pG(4);
     
