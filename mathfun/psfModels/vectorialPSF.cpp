@@ -23,14 +23,8 @@
  *
  * MEX compilation:
  * Mac/Linux: mex -I../../mex/include vectorialPSF.cpp
- * Windows: mex COMPFLAGS="$COMPFLAGS /MT" vectorialPSF.cpp
+ * Windows: mex COMPFLAGS="$COMPFLAGS /MT" -I"..\..\mex\include" vectorialPSF.cpp
  */
-
-
-//  * Mac/Linux: mex -I/usr/local/include -I../../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a steerableDetector3D.cpp
-//  * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\gsl-1.15" -I"..\..\mex\include" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output steerableDetector3D steerableDetector3D.cpp
-//  */
-
 
 #include <stdlib.h>
 #include <math.h>
