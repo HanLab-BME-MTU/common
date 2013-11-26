@@ -115,10 +115,10 @@ VectorialPSF::VectorialPSF(const double xp[], const double z[], const int nz, co
         integral_[k] = new double[rmax_];
     }
     // initialize since loops add to these arrays
-    bzero(pixels_, sizeof(double) * N_);
-    bzero(pixelsDxp_, sizeof(double) * N_);
-    bzero(pixelsDyp_, sizeof(double) * N_);
-    bzero(pixelsDzp_, sizeof(double) * N_);
+    memset(pixels_, 0, sizeof(double) * N_);
+    memset(pixelsDxp_, 0, sizeof(double) * N_);
+    memset(pixelsDyp_, 0, sizeof(double) * N_);
+    memset(pixelsDzp_, 0, sizeof(double) * N_);
     
     // pre-calculate radial coordinates
     R = new double[npx_];
@@ -652,7 +652,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     if (mxGetNumberOfElements(prhs[0])!=3) mexErrMsgTxt("Input 'xp' must be a 3-element vector.");
     double* xp = mxGetPr(prhs[0]);
     
-    int nz = mxGetNumberOfElements(prhs[1]);
+    int nz = (int)mxGetNumberOfElements(prhs[1]);
     double* z = mxGetPr(prhs[1]);
     
     int nx = (int)mxGetScalar(prhs[2]);
