@@ -19,8 +19,8 @@
 %            lambda    : emission wavelength
 %            M         : magnification
 %            NA        : numerical aperture
-%            pixelSize : physical size (width) of the CCD pixels
-%            f         : (optional, default: 3) oversampling factor to approximate CCD integration
+%            pixelSize : physical size (width) of the camera pixels
+%            f         : (optional, default: 3) oversampling factor to approximate pixel integration
 %            mode      : (optional, default: 1) if 0, returns oversampled PSF
 %
 %   All spatial units are in object space, in [m].
