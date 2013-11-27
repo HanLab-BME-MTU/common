@@ -1,4 +1,4 @@
-%[h, dxp, dyp, dzp] = vectorialPSF(xp, z, nx, p) computes a vectorial model of the microscope point spread function
+%[h, dxp, dyp, dzp] = vectorialPSF(xp, z, nx, p) computes a vectorial microscope point spread function model.
 % The partial derivatives of the model relative to the source position xp are also calculated.
 % The model is described in [1]. For more information and implementation details, see [2].
 %
