@@ -1,6 +1,7 @@
 %MULTISCALEHESSIANLINEDETECTOR line / curvilinear object detection by hessian filtering
 %
 %[response, theta, nms, scaleindex] = multiscaleHessianLineDetector(input, sigmaVect)
+%[response, theta, nms, scaleindex,eigenValues,eigenVectors] = multiscaleHessianLineDetector(...)
 %[response, theta, nms, scaleindex] = multiscaleHessianLineDetector(input, sigmaVect,'ScaleSelectionValue','Value')
 %
 %   Calculates local image hessian at several scales by filtering with
@@ -24,13 +25,20 @@
 %               anisotropy (ratio of largest to smalles hessian
 %               eigenvalues, with negative values clipped to zero)
 %
-%           'NonMaximumSuppression' - true/false. If true {default},
+%           'NonMaximumSuppression' - true/false. If true {default true},
 %           non-maximum suppression will be run.
+%
+%           'NormalizeEigenvalues' - true/false. If true {default false},
+%           the output eigenvalues will be normalized by the gaussian-filtered
+%           image intensity.
 %
 %       Output:
 %
 %           MxN matrices with the response, orientation, non-maximum
-%           suppressed response and the index of the selected scale.
+%           suppressed response, the index of the selected scale, and the
+%           eigenvalues and eigenvectors of hessian. The scale,
+%           eigenvalues and eigenvectors are scale-normalized (eigenvectors
+%           are not unit length)
 %
 % Francois Aguet, Oct. 13, 2011
 % Revised Hunter Elliott, Nov 2013;
@@ -40,6 +48,7 @@ function [maxResponse, maxTheta, nms, scaleIndex,maxEigVal,maxEigVec] = multisca
 ip = inputParser;
 ip.addParamValue('ScaleSelectionValue','Response',@(x)(ismember(x,{'Response','Anisotropy'})));
 ip.addParamValue('NonMaximumSuppression',true,@islogical);
+ip.addParamValue('NormalizeEigenvalues',false,@islogical);
 ip.parse(varargin{:});
 p = ip.Results;
 
@@ -74,7 +83,7 @@ for si = 1:ns
     alpha = (f_xx + f_yy)/2;    
     beta = sqrt((f_xx - f_yy) .^2 + 4*f_xy .^2)/2; 
     eigVal(:,:,1) = -alpha - beta;%Flip sign because we want eigenvalues of -H
-    eigVal(:,:,2) = -alpha + beta;
+    eigVal(:,:,2) = -alpha + beta;            
     
     %Get non-unit eigenvectors - we only use the direction    
     eigVec(:,:,1,1) = eigVal(:,:,1) + f_yy;
@@ -82,10 +91,14 @@ for si = 1:ns
             
     eigVec(:,:,1,2) = eigVal(:,:,2) + f_yy;
     eigVec(:,:,2,2) = -f_xy;
+    
+    %Scale-normalize eigenvalues and vectors
+    eigVal = eigVal .* s^2;    
+    eigVec = eigVec .* s^2;        
             
-    %Second eigenvalue/vector will always be largest.
-    response = eigVal(:,:,2) * s^2;
-    theta = atan(eigVec(:,:,2,2) ./ eigVec(:,:,1,2));    
+    %Second eigenvalue/vector will always be largest and is the response
+    response = eigVal(:,:,2);
+    theta = atan(eigVec(:,:,2,2) ./ eigVec(:,:,1,2));            
     
     %Set value used for scale selection
     switch p.ScaleSelectionValue        
@@ -93,23 +106,28 @@ for si = 1:ns
             ssVal = response;            
         case 'Anisotropy'            
             ssVal = eigVal;
-            ssVal(ssVal<0) = 0;%Suppress valleys and the negative curvature component of saddles 
-            ssVal = (ssVal(:,:,2) + 1) ./ (ssVal(:,:,1) + 1);%Add one before ratio to avoid Inf            
-    end            
+            ssVal(ssVal<0) = 0;%Suppress valleys and the negative curvature component of saddles             
+            ssVal = ssVal(:,:,2) - ssVal(:,:,1);
+    end
+        
+    if p.NormalizeEigenvalues
+        eigVal = eigVal ./ repmat(f_blur .* s^2,[1 1 2]);
+    end
     
     if si == 1
         maxSsVal = ssVal;%Store scale selection value
         maxResponse = response;
-        maxTheta = theta;
-        scaleIndex = ones(ny,nx,minIntClass(max(ns,2)));
+        maxTheta = theta;        
+        scaleIndex = ones(ny,nx,minIntClass(max(ns,2)));        
         maxEigVal = eigVal;
         maxEigVec = eigVec;        
     else
-        idx = ssVal > maxSsVal;%Select pixels with larger scale selection value, store outputs
+        idx = ssVal > maxSsVal;%Select pixels with larger scale selection value, store outputs        
+        maxSsVal(idx) = ssVal(idx);
         maxResponse(idx) = response(idx);
         maxTheta(idx) = theta(idx);    
         scaleIndex(idx) = si;
-        idx2 = repmat(idx,[1 1 2]);
+        idx2 = repmat(idx,[1 1 2]);        
         maxEigVal(idx2) = eigVal(idx2);
         idx2 = repmat(idx,[1 1 2 2]);
         maxEigVec(idx2) = eigVec(idx2);        
