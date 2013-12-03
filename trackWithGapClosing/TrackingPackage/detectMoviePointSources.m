@@ -165,13 +165,20 @@ for i = 1:numel(p.ChannelIndex)
 
 
         % add xCoord, yCoord, amp fields for compatibilty  with tracker
-        pstruct.xCoord = [pstruct.x' pstruct.x_pstd'];
-        pstruct.yCoord = [pstruct.y' pstruct.y_pstd'];
-        pstruct.amp = [pstruct.A' pstruct.A_pstd'];
+        if ~isempty(pstruct)
+            pstruct.xCoord = [pstruct.x' pstruct.x_pstd'];
+            pstruct.yCoord = [pstruct.y' pstruct.y_pstd'];
+            pstruct.amp = [pstruct.A' pstruct.A_pstd'];        
+        end
         
-        if j == 1
-            movieInfo(1:nFrames) = pstruct;
-        else
+        if j == 1            
+            %Initialize the strucutre
+            allFields = fieldnames(pstruct);
+            allFields = vertcat(allFields', arrayfun(@(x)([]),1:numel(allFields),'Unif',false));
+            movieInfo(1:nFrames)= struct(allFields{:});            
+        end
+        
+        if ~isempty(pstruct)
             movieInfo(j) = pstruct; %#ok<AGROW>
         end
         
