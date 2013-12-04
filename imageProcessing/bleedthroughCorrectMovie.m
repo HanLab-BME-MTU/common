@@ -152,7 +152,7 @@ if isempty(p.ProcessIndex)
 else
     imPaths = cell(1,nChan);
     for i=inChan'
-        imPaths{i} = inProc{i}.outFilePaths_{1,:};       
+        imPaths{i} = inProc{i}.outFilePaths_{1, i};
     end
     inNames = inProc{p.ChannelIndex}.getOutImageFileNames(p.ChannelIndex);
 end
