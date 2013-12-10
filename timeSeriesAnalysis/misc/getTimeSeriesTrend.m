@@ -63,10 +63,10 @@ for iVar = 1:nVar
             switch trendT
                 case 1
                     fitFun = @(b,x)(b(1)*x + b(2));
-                    bInit  = [nanmean(outTS.dTS) randn(1)]; %Initial guess for fit parameters.
+                    bInit  = [nanmean(outTS.dTS(iVar,:)) randn(1)]; %Initial guess for fit parameters.
                 case 2
                     fitFun = @(b,x)(b(1)*exp(b(2)*x));
-                    bInit  = [nanmean(outTS.dTS) randn(1)]; %Initial guess for fit parameters.
+                    bInit  = [nanmean(outTS.dTS(iVar,:)) randn(1)]; %Initial guess for fit parameters.
                 case 3
                     fitFun = @(b,x)(b(1)*exp(b(2)*x))+(b(3)*exp(b(4)*x));
                     bInit  = rand(1,4); %Initial guess for fit parameters.
