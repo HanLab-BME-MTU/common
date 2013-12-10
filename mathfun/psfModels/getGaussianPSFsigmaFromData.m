@@ -16,21 +16,31 @@ function sigma = getGaussianPSFsigmaFromData(imageList, varargin)
 
 ip = inputParser;
 ip.CaseSensitive = false;
-ip.addRequired('input');
+ip.addRequired('imageList');
+ip.addOptional('frameRange', []);
 ip.addParamValue('Display', true, @islogical);
 ip.parse(imageList, varargin{:});
 
 if ~iscell(imageList)
     imageList = {imageList};
 end
+frameRange = ip.Results.frameRange;
 
-nd = numel(imageList);
+if isempty(frameRange)
+    nd = numel(imageList);
+else
+    nd = numel(frameRange);
+end
 svect = cell(1,nd);
 parfor i = 1:nd
-    if ischar(imageList{i})
-        img = double(imread(imageList{i}));
+    if isempty(frameRange)
+        if ischar(imageList{i})
+            img = double(imread(imageList{i}));
+        else
+            img = imageList{i};
+        end
     else
-        img = imageList{i};
+        img = double(readtiff(imageList{1}, frameRange(i)));
     end
     % First pass with fixed sigma
     pstruct = pointSourceDetection(img, 1.5, 'Mode', 'xyac');
