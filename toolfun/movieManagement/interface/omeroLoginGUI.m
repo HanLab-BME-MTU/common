@@ -192,7 +192,12 @@ if ~isempty(session)
         
         % Populate drop-down menu for available groups
         groupIds = toMatlabList(adminService.getMemberOfGroupIds(user));
-        groupIds(ismember(groupIds, [0 1 2])) = []; % Filter out system groups
+        systemGroupId = adminService.getSecurityRoles().systemGroupId;
+        userGroupId = adminService.getSecurityRoles().userGroupId;
+        guestGroupId = adminService.getSecurityRoles().guestGroupId;
+        % Filter out system groups
+        groupIds(ismember(groupIds,...
+            [systemGroupId userGroupId guestGroupId])) = [];
         groupNames = arrayfun(@(x) char(adminService.getGroup(x).getName().getValue),...
             groupIds, 'UniformOutput', false);
         set(handles.popupmenu_group, 'String', groupNames, 'UserData', groupIds,...
