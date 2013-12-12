@@ -151,12 +151,31 @@ set(handles.figure1, 'UserData', userData);
 function refreshImageList(handles)
 global session
 % Read image list from selected dataset
-props = get(handles.popupmenu_dataset, {'Value', 'UserData'});
-if props{1} == 1,
-    set(handles.listbox_images, 'Value', 1, 'String', '');
-    images = [];
+p_props = get(handles.popupmenu_project, {'Value', 'UserData'});
+d_props = get(handles.popupmenu_dataset, {'Value', 'UserData'});
+if d_props{1} == 1
+    if p_props{1} == 1,
+        % Retrieve orphaned images
+        orphanQuery = ['select img from Image as img '...
+            'left outer join fetch img.details.owner '...
+            'left outer join fetch img.pixels as pix '...
+            'left outer join fetch pix.pixelsType as pt '...
+            'where not exists (select obl from '...'
+            'DatasetImageLink as obl where obl.child = img.id) '...
+            'and not exists (select ws from WellSample as '...
+            'ws where ws.image = img.id)'...
+            ' and img.details.owner.id = :userID'];
+        parameters = omero.sys.ParametersI();
+        u_props = get(handles.popupmenu_user, {'Value', 'UserData'});
+        parameters.addLong('userID', u_props{2}(u_props{1}));
+        images = session.getQueryService.findAllByQuery(orphanQuery, parameters);
+        images = toMatlabList(images);
+    else
+        images = [];
+    end
 else
-    images = getImages(session, 'dataset', props{2}(props{1}-1).getId.getValue);
+    datasetId = d_props{2}(d_props{1}-1).getId.getValue;
+    images = getImages(session, 'dataset', datasetId);
 end
 
 % Update image list
