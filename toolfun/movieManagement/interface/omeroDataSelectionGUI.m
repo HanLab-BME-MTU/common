@@ -121,7 +121,7 @@ props = get(handles.popupmenu_user, {'Value', 'UserData'});
 userId = props{2}(props{1});
 
 % List projects
-projects = getProjects(session, 'owner', userId);
+projects = getProjects(session, [], false, 'owner', userId);
 projectNames = arrayfun(@(x) char(x.getName().getValue()), projects,...
     'UniformOutput', false);
 projectNames = [{'none'}; projectNames];
@@ -129,31 +129,34 @@ set(handles.popupmenu_project, 'Value', 1, 'String', projectNames,...
     'UserData', projects);
 
 % List orphaned datasets
-parameters = omero.sys.ParametersI();
-parameters.orphan();
-parameters.leaves();
-datasets = getObjects(session, 'dataset', [], parameters, 'owner', userId);
-datasetNames = arrayfun(@(x) char(x.getName().getValue()), datasets,...
-    'UniformOutput', false);
+d = arrayfun(@(x) toMatlabList(x.linkedDatasetList), projects, 'Unif', 0);
+datasetIds = arrayfun(@(x) x.getId().getValue(), [d{:}]);
+datasets = getDatasets(session, [], false, 'owner', userId);
+arrayfun(@(x) x.getId().getValue(), [datasets]);
+[~, isorphaned] = setdiff(arrayfun(@(x) x.getId().getValue(), datasets),...
+    datasetIds);
+orphanedDatasets  = datasets(isorphaned);
+datasetNames = arrayfun(@(x) char(x.getName().getValue()),...
+    orphanedDatasets, 'UniformOutput', false);
 datasetNames = [{'none'}; datasetNames];
 set(handles.popupmenu_dataset, 'Value', 1, 'String', datasetNames,...
-    'UserData', datasets);
+    'UserData', orphanedDatasets);
 refreshImageList(handles)
 
 % Save orphaned datasets
 userData = get(handles.figure1, 'UserData');
-userData.orphaned_datasets = datasets;
+userData.orphaned_datasets = orphanedDatasets;
 set(handles.figure1, 'UserData', userData);
 
 function refreshImageList(handles)
-
+global session
 % Read image list from selected dataset
 props = get(handles.popupmenu_dataset, {'Value', 'UserData'});
 if props{1} == 1,
     set(handles.listbox_images, 'Value', 1, 'String', '');
     images = [];
 else
-    images = toMatlabList(props{2}(props{1} - 1).linkedImageList);
+    images = getImages(session, 'dataset', props{2}(props{1}-1).getId.getValue);
 end
 
 % Update image list
