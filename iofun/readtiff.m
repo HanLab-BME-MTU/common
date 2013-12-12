@@ -3,11 +3,13 @@
 
 % Francois Aguet, 05/21/2013
 
-function s = readtiff(filepath, range)
+function s = readtiff(filepath, range, info)
 
 w = warning('off', 'all'); % ignore unknown TIFF tags
 
-info = imfinfo(filepath);
+if nargin<3 || isempty(info)
+    info = imfinfo(filepath);
+end
 
 nx = info(1).Width;
 ny = info(1).Height;
