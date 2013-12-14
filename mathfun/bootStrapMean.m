@@ -24,9 +24,9 @@ if matlabpool('size')
     opt = statset('UseParallel','always');
 end
 
-[conf,meanSample] = bootci(nBoot,{@mean,variable},'alpha',alpha,...
+[conf,meanSample] = bootci(nBoot,{@nanmean,variable},'alpha',alpha,...
     'type','bca','Options',opt);
 
-meanS = mean(meanSample);
+meanS = nanmean(meanSample);
 
 end

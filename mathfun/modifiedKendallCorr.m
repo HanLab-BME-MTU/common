@@ -46,7 +46,7 @@ end
  
 if maxLag > 0 && (nObs - local) < maxLag
     disp('maximum lag is too large. Reducing it to the max allowed')
-    maxLag = max((nObs - local) - 1,0);
+   % maxLag = max((nObs - local) - 1,0);
 end
 
  
