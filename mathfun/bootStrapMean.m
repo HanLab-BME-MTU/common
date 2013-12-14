@@ -17,8 +17,6 @@ function [conf,meanS] = bootStrapMean(variable,alpha,nBoot)
 %
 % Marco Vilela, 2012
 
- variable(isnan(variable)) = [];
-
 opt = statset('UseParallel','never');
 if matlabpool('size')
     opt = statset('UseParallel','always');
