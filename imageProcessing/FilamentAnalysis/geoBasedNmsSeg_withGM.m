@@ -1,4 +1,4 @@
-function  [T_otsu, current_all_matching_bw, current_model ]  = geoBasedNmsSeg_withGM(imageNMS, imageInt, classifier_trained, graph_matching_flag,MaskCell,iFrame,FilamentSegmentationChannelOutputDir,funParams)
+function  [T_otsu, current_all_matching_bw, current_model ]  = geoBasedNmsSeg_withGM(imageNMS, imageInt, classifier_trained, graph_matching_flag,MaskCell,iFrame,FilamentSegmentationChannelOutputDir,funParams,iChannel)
 % geoBasedNmsSeg segments filaments from input image(nms) based on the geometrical features of the curves/lines in the image
 % Input:
 %    ImageIn:                           the input image, typically the non maximum supress version of the steerable filtering output
@@ -75,7 +75,7 @@ ind_mode = find(hist_n==max(hist_n));
 mode_nms = bin(ind_mode(1));
 % And find the Otsu threshold for the intensity
 T_otsu = thresholdOtsu(imageNMS(find(imageNMS>mode_nms)));
-T_otsu_start =  abs(T_otsu - mode_nms)*0.2 + mode_nms;
+T_otsu_start =  max(0, (-abs(T_otsu - mode_nms)*0.05+mode_nms));
 
 
 imageNMS = imageNMS.*MaskCell;
@@ -142,7 +142,7 @@ end
 imagesc(display_labelMask);
 hold on;
 for iiii = ind_long'
-    obCentroid(1,iiii)
+%     obCentroid(1,iiii)
     text(obCentroid(1,iiii),obCentroid(2,iiii),num2str(iiii),'color','r');
 end
 if(SaveFigures==1)
@@ -190,7 +190,7 @@ for i_area = ind_long'
     %
     %     feature_Curvature(i_area) = mean(k);
 end
-
+ 
 % figure; plot3(feature_Length,feature_MeanInt,feature_InvCurvature,'.');
 
 if(isempty(classifier_trained))
@@ -205,14 +205,32 @@ if(isempty(classifier_trained))
     
     % Set the slanted classification line cutoff as twice of the Otsu with
     % respect to the mode
-    T_xie_int =  abs(hotsu - mode_nms)*CoefAlpha+ mode_nms;
+    T_xie_int_this =  abs(hotsu - mode_nms)*CoefAlpha+ mode_nms;
     
+    whole_movie_otsu =  funParams.Whole_movie_stat_cell{iChannel}.otsu_mode_NMS;
+    whole_movie_mode =  funParams.Whole_movie_stat_cell{iChannel}.mode_NMS;
+    
+    whole_T_xie_int =  abs(whole_movie_otsu - whole_movie_mode)*CoefAlpha+ whole_movie_mode;
+    
+    weight_whole = (-0.5)*funParams.Whole_movie_ind + 1.5;
+    weight_this =  1 - weight_whole;
+    
+    T_xie_int = weight_whole*whole_T_xie_int + weight_this*T_xie_int_this;    
+      
+   
     % And the length as Otsu threshold
-    T_xie_length =CoefAlpha*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
+%     T_xie_length =CoefAlpha*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
+     T_xie_length = CoefAlpha*(thresholdRosin(feature_Length));
     
     % Make a classification function as whether it is above the line
     T_xie_int_train = T_xie_int;
-    T_xie_length_train = T_xie_length;
+    T_xie_length_train = weight_whole*(CoefAlpha*(funParams.Whole_movie_stat_cell{iChannel}.rosin_mode_Length)) + weight_this*T_xie_length;   
+    
+    
+%     thresholdOtsu(feature_Length)
+%     thresholdRosin(feature_Length)
+%     
+%     T_xie_length_train
     
     F_classifer = @(nms,length,int,curv) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<nms));
     

@@ -22,7 +22,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 29-Aug-2013 13:09:22
+% Last Modified by GUIDE v2.5 18-Dec-2013 13:14:46
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -94,6 +94,7 @@ set(handles.edit_IntPatchSize,'String',funParams.IntPatch_Size);
 set(handles.edit_int_lowerbound_localthresholding,'String',funParams.int_lowerbound_localthresholding);
 
 set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind);
+set(handles.popupmenu_whole_movie,'Value',funParams.Whole_movie_ind);
 
 set(handles.checkbox_outgrowth,'value',funParams.VIF_Outgrowth_Flag);
 
@@ -113,6 +114,7 @@ end
 % visible or not, show the parameters for the geo based algorithm
 % when visible, set the numbers
 set(handles.popupmenu_classifier_type,'Value',funParams.Classifier_Type_ind);
+
 set(handles.edit_lengththreshold,'String',funParams.LengthThreshold);
 set(handles.edit_curvaturethreshold,'String',funParams.CurvatureThreshold);
 set(handles.edit_IternationNumber,'String',funParams.IternationNumber);
@@ -278,6 +280,11 @@ funParams.int_lowerbound_localthresholding=int_lowerbound_localthresholding;
 
 Cell_Mask_ind = get(handles.popupmenu_cell_mask, 'Value');
 funParams.Cell_Mask_ind = Cell_Mask_ind;
+
+
+Whole_movie_ind = get(handles.popupmenu_whole_movie, 'Value');
+funParams.Whole_movie_ind = Whole_movie_ind;
+
 
 if(strcmp(get(handles.uipanel_Geo_panel,'Visible'),'on'))
     Classifier_Type_ind = get(handles.popupmenu_classifier_type,'Value');
@@ -1082,3 +1089,30 @@ function edit_train_number_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on selection change in popupmenu_whole_movie.
+function popupmenu_whole_movie_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_whole_movie (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_whole_movie contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_whole_movie
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_whole_movie_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_whole_movie (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+set(hObject,'String',{'Completely', 'Half-half','None'});
+
+Whole_movie_flag = {'Completely', 'Half-half','None'};
+set(hObject,'Value',2);

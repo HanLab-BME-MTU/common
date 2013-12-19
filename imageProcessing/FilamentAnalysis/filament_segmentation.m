@@ -65,6 +65,7 @@ Cell_Mask_ind = funParams.Cell_Mask_ind;
 VIF_Outgrowth_Flag = funParams.VIF_Outgrowth_Flag;
 Sub_Sample_Num  = funParams.Sub_Sample_Num;
 
+
 %% Output Directories
 
 FilamentSegmentationProcessOutputDir  = [movieData.packages_{indexFilamentPackage}.outputDirectory_, filesep 'FilamentSegmentation'];
@@ -80,7 +81,6 @@ for iChannel = selected_channels
     
     movieData.processes_{indexFilamentSegmentationProcess}.setOutImagePath(iChannel,FilamentSegmentationChannelOutputDir);
 end
-
 
 
 %%
@@ -129,7 +129,17 @@ if indexCellSegProcess == 0 && Cell_Mask_ind == 1
     return;
 end
 
+%%
+if(exist([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'file')>0)
+    load([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'Whole_movie_stat_cell');
+else
+    Whole_movie_stat_cell = whole_movie_stat_function(movieData);
+    save([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'Whole_movie_stat_cell');    
+end
 
+funParams.Whole_movie_stat_cell = Whole_movie_stat_cell;
+
+%%
 nFrame = movieData.nFrames_;
 
 % If the user set an cell ROI read in
@@ -291,21 +301,21 @@ for iChannel = selected_channels
                 level0 = thresholdOtsu(MAX_st_res);
                 thresh_Segment = MAX_st_res > level0;
                 
-                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0);
-                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
+                [level2, Intensity_Segment ] = thresholdLocalSeg(currentImg,'Otsu',IntPatch_Size,IntPace_Size,Intlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_INT);
                 current_seg = and(Intensity_Segment,SteerabelRes_Segment);
                      current_model=[];
             
             case 'st_only'
-                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
                 current_seg = SteerabelRes_Segment;
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;
                     current_model=[];
              
             case 'st_nms_two'
-                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound*0.7,0);
-                [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound*1.3,0);
+                [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound*0.7,0,Whole_movie_stat_cell{iChannel}.otsu_ST);
+                [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound*1.3,0,Whole_movie_stat_cell{iChannel}.otsu_NMS);
                 current_seg = imdilateWithScale(NMS_Segment,scaleMap,BaseSteerableFilterSigma.*(2.^((1:Levelsofsteerablefilters)-1)))...
                     .*SteerabelRes_Segment;
                        
@@ -314,10 +324,10 @@ for iChannel = selected_channels
                    current_model=[];
       
             case 'st_nms_only'
-                [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound,0);
+                [level2, NMS_Segment ] = thresholdLocalSeg(nms,'Rosin',StPatch_Size,StPace_Size,Stlowerbound,0,Whole_movie_stat_cell{iChannel}.otsu_NMS);
                 current_seg = NMS_Segment;
                 Intensity_Segment = current_seg;
-                SteerabelRes_Segment = current_seg;
+                 SteerabelRes_Segment = current_seg;
                 Min_area = 6;
                   current_model=[];
            
@@ -347,10 +357,13 @@ for iChannel = selected_channels
                   F_classifer_train_this_channel=[];  
 %                 end
                 
+                display(['Geo based GM Frame',num2str(iFrame),':']);
+                tic
                 [level2, NMS_Segment,current_model ] = ...
                     geoBasedNmsSeg_withGM(nms,currentImg, F_classifer_train_this_channel,1,...
-                    MaskCell,iFrame,FilamentSegmentationChannelOutputDir,funParams);
-
+                    MaskCell,iFrame,FilamentSegmentationChannelOutputDir,funParams,iChannel);
+                toc
+                
                 current_seg = NMS_Segment;
                 Intensity_Segment = current_seg;
                 SteerabelRes_Segment = current_seg;

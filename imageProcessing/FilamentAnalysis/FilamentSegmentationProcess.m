@@ -313,6 +313,12 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % channels, if 5 no limit
             funParams.Cell_Mask_ind = 4;
             
+            % whole movie constrain index, 1 for completely, 2 for
+            % half-half, 3 for none
+            funParams.Whole_movie_ind = 2;
+            
+            funParams.Whole_movie_stat_cell = cell(1,max(funParams.ChannelIndex));
+                         
             % Flag to do VIF_outgrowth or not. This is an option made for
             % Gelfand lab
             funParams.VIF_Outgrowth_Flag = 0;
