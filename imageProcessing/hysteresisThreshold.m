@@ -8,19 +8,16 @@
 
 % Francois Aguet, June 30, 2010
 
-function out = hysteresisThreshold(img, t1, t2)
+function out = hysteresisThreshold(img, t1, t2,nHood)
 
-im2 = img;
-im2(im2<t2) = 0;
-im2(im2~=0) = 1;
+if nargin < 4 || isempty(nHood)
+    nHood = 8;
+end
 
-labels = bwlabel(im2, 8);
+labels = bwlabel(img>=t2, nHood);
 
-im1 = img;
-im1(im1<t1) = 0;
-im1(im1~=0) = 1;
-
-labelsAboveT1 = labels.*im1;
+labelsAboveT1 = labels;
+labelsAboveT1(img<t1) = 0;
 
 validLabels = unique(labelsAboveT1(:));
 validLabels = validLabels(2:end);
