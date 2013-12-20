@@ -553,3 +553,12 @@ end
 userData = get(handles.figure1, 'UserData');
 userData.omeroDataFig = omeroDataSelectionGUI('mainFig',handles.figure1);
 set(handles.figure1, 'UserData', userData);
+
+function View_Callback(hObject, eventdata, handles)
+
+% Return if no movie 
+props=get(handles.listbox_movie, {'String','Value'});
+if isempty(props{1}), return; end
+
+userData = get(handles.figure1, 'UserData');
+movieViewer(userData.MD(props{2}));

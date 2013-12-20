@@ -342,7 +342,11 @@ if isa(userData.MO,'MovieData')
                     if pwgc == 1
                         ipr1 = i2; ipr2 = i3;
                     end
+                    if ~isempty(platestack{i2-ipr1+1, i3-ipr2+1}{1,1})
                     wellname = MO.channels_(1,1).getGenericName(platestack{i2-ipr1+1, i3-ipr2+1}{1,1});
+                    else
+                        wellname = '';
+                    end
                     hb = uicontrol('Parent', hp,'Style','pushbutton', 'Position', [i3*22+22,370-i2*22,22,22]...
                         ,'TooltipString',[wellname, ...
                         ',',num2str(length(platestack{i2-ipr1+1, i3-ipr2+1})), ...
