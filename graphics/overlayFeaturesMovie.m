@@ -255,11 +255,21 @@ for iFrame = 1 : numFramesMovie
             textDeltaCoord = min(diff(imageRange,[],2))/20;
             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
                 textDeltaCoord,num2str(iFrame+startend(1)-1),'Color','white');
+            %             text(imageRange(1,1)+textDeltaCoord,imageRange(2,1)+...
+            %                 textDeltaCoord,[num2str(((iFrame+startend(1)-1)-1)*0.025,'%7.3f') ' s'],'Color','white');
+            %             plot([80 207],[50 50],'y:','LineWidth',0.5)
+            %             plot([80 207],[177 177],'y:','LineWidth',0.5)
+            %             plot([80 80],[50 177],'y:','LineWidth',0.5)
+            %             plot([207 207],[50 177],'y:','LineWidth',0.5)
             axes('Position',[0.505 0 0.495 1]);
             imshow(imageStack,intensityMinMax);
             xlim(imageRange(2,:));
             ylim(imageRange(1,:));
             hold on;
+            %             plot([80 207],[50 50],'y:','LineWidth',0.5)
+            %             plot([80 207],[177 177],'y:','LineWidth',0.5)
+            %             plot([80 80],[50 177],'y:','LineWidth',0.5)
+            %             plot([207 207],[50 177],'y:','LineWidth',0.5)
         case 2
             axes('Position',[0 0.505 1 0.495]);
             imshow(imageStack,intensityMinMax);

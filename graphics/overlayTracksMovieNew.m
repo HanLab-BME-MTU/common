@@ -766,6 +766,10 @@ for iFrame = 1 : numFramesMovie
             %             xlim(imageRange(2,:));
             %             ylim(imageRange(1,:));
             hold on;
+            %             plot([80 207],[50 50],'y:','LineWidth',0.5)
+            %             plot([80 207],[177 177],'y:','LineWidth',0.5)
+            %             plot([80 80],[50 177],'y:','LineWidth',0.5)
+            %             plot([207 207],[50 177],'y:','LineWidth',0.5)
             textDeltaCoord = min(diff(imageRange,[],2))/20;
             %             text(imageRange(2,1)+textDeltaCoord,imageRange(1,1)+...
             %                 textDeltaCoord,num2str(iFrame+startend(1)-1),...
@@ -773,11 +777,17 @@ for iFrame = 1 : numFramesMovie
             text(textDeltaCoord,...
                 textDeltaCoord,num2str(iFrame+startend(1)-1),...
                 'Color','white','FontSize',18);
+            %             text(textDeltaCoord,...
+            %                 textDeltaCoord,[num2str(((iFrame+startend(1)-1)-1)*0.025,'%7.3f') ' s'],'Color','white');
             axes('Position',[0.505 0 0.495 1]);
             imshow(imageStack,intensityMinMax);
             %             xlim(imageRange(2,:));
             %             ylim(imageRange(1,:));
             hold on;
+            %             plot([80 207],[50 50],'y:','LineWidth',0.5)
+            %             plot([80 207],[177 177],'y:','LineWidth',0.5)
+            %             plot([80 80],[50 177],'y:','LineWidth',0.5)
+            %             plot([207 207],[50 177],'y:','LineWidth',0.5)
             
         case 2
             axes('Position',[0 0.505 1 0.495]);
@@ -937,8 +947,8 @@ for iFrame = 1 : numFramesMovie
         %cyan stars: good gaps
         points2plot = find(pointStatus(:,iFrame)==-1);
         if isempty(diffAnalysisRes)
-            plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'c*','MarkerSize',6);
-            %             plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'c*','MarkerSize',2);
+            %             plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'c*','MarkerSize',6);
+            plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'c*','MarkerSize',5);
             %             plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'c*','MarkerSize',10,'LineWidth',2);
         else
             plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'w*','MarkerSize',6);
@@ -946,8 +956,8 @@ for iFrame = 1 : numFramesMovie
         
         %red circles: detected feature in the middle of track with status 0
         points2plot = find(pointStatus(:,iFrame)==1);
-        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'ro','MarkerSize',6);
-        %         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'ro','MarkerSize',2);
+        %         plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'ro','MarkerSize',6);
+        plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wo','MarkerSize',2);
         
         %magenta circles: detected feature in the middle of track with status 1
         points2plot = find(pointStatus(:,iFrame)==2);
@@ -976,8 +986,8 @@ for iFrame = 1 : numFramesMovie
         %green diamonds: detected feature just before/after a split
         points2plot = find(pointStatus(:,iFrame)==6);
         if isempty(diffAnalysisRes)
-            plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'gd','MarkerSize',10);
-            %             plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'gd','MarkerSize',2);
+            %             plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'gd','MarkerSize',10);
+            plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'gd','MarkerSize',4);
             %             plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'gd','MarkerSize',15,'LineWidth',2);
         else
             plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wd','MarkerSize',10);
@@ -987,8 +997,8 @@ for iFrame = 1 : numFramesMovie
         %yellow diamonds: detected feature just before/after a merge
         points2plot = find(pointStatus(:,iFrame)==7);
         if isempty(diffAnalysisRes)
-            plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yd','MarkerSize',10);
-            %             plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yd','MarkerSize',2);
+            %             plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yd','MarkerSize',10);
+            plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yd','MarkerSize',4);
             %             plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'yd','MarkerSize',15,'LineWidth',2);
         else
             plot(xCoordMatAll(points2plot,iFrame),yCoordMatAll(points2plot,iFrame),'wd','MarkerSize',10);

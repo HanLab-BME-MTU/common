@@ -66,7 +66,7 @@ parameters.timeReachConfL = gapCloseParam.timeWindow; %similar to timeReachConfB
 parameters.maxAngleVV = 30; %maximum angle between the directions of motion of two tracks that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
 
 %optional; if not input, 1 will be used (i.e. no penalty)
-parameters.gapPenalty = 1; %penalty for increasing temporary disappearance time (disappearing for n frames gets a penalty of gapPenalty^n).
+parameters.gapPenalty = 1.5; %penalty for increasing temporary disappearance time (disappearing for n frames gets a penalty of gapPenalty^n).
 
 %optional; to calculate MS search radius
 %if not input, MS search radius will be the same as gap closing search radius
@@ -85,9 +85,9 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-% saveResults.dir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\121115_Cs2C4_Y773A\analysisAlphaVY773A\'; %directory where to save input and output
+saveResults.dir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\131202\analysisAlphaVY773A\'; %directory where to save input and output
 % saveResults.filename = 'tracksTest1DetectionAll1.mat'; %name of file where input and output are saved
-saveResults = 0; %don't save results
+% saveResults = 0; %don't save results
 
 %verbose state
 verbose = 1;
@@ -97,16 +97,17 @@ probDim = 2;
 
 %% tracking function call
 
-[tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1:300),...
-    costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+% [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1:300),...
+%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
 
 % for i = 1 : 12
-%     movieInfoTmp((i-1)*1200+1:i*1200) = movieInfo((i-1)*1200+1:i*1200);
-%     saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
-%     [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
-%         costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-%     clear movieInfoTmp
-% end
+for i = 1
+    movieInfoTmp((i-1)*1200+1:i*1200) = movieInfo((i-1)*1200+1:i*1200);
+    saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
+    [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
+        costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
+    clear movieInfoTmp
+end
 
 % i=6;
 % movieInfoTmp((i-1)*1200+1:6800) = movieInfo((i-1)*1200+1:6800);
