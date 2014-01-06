@@ -44,7 +44,7 @@ userData.crtProcClassName = ip.Results.procClassName;
 initChannel = ip.Results.initChannel;
 
 % Set up copyright statement
-%set(handles.text_copyright, 'String', getLCCBCopyright());
+set(handles.text_copyright, 'String', getLCCBCopyright());
 
 % Get current package, movie data and process
 userData.handles_main = guidata(userData.mainFig);
