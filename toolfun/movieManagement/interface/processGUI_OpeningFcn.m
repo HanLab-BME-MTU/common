@@ -73,7 +73,7 @@ end
 
 % Set process names in the text box and figure title
 procString = [' Step ' num2str(userData.procID) ': ' crtProcName];
-%set(handles.text_processName,'String',procString);% temp!!!
+set(handles.text_processName,'String',procString);
 figString = [' Setting - ' crtProcName];
 set(handles.figure1,'Name',figString);
 
