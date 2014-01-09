@@ -22,7 +22,7 @@ function varargout = SingleCellSegmentationManualFixGUI(varargin)
 
 % Edit the above text to modify the response to help SingleCellSegmentationManualFixGUI
 
-% Last Modified by GUIDE v2.5 08-Oct-2013 09:57:24
+% Last Modified by GUIDE v2.5 09-Jan-2014 16:20:30
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -59,6 +59,7 @@ handles.segThisCell = [];
 set(handles.chooseCell,'Enable','off')
 set(handles.popupmenu_target_channel,'Enable','off')
 set(handles.goForSegmentation,'Enable','off')
+set(handles.CheckForSegmentation,'Enable','off')
 handles.target_channelIdx = 1;
 handles.sup_channelIdx = 2;
 handles.currCell   = 1;
@@ -116,6 +117,7 @@ if ~isempty(fileName)
     
     set(handles.chooseCell,'Enable','on')
     set(handles.goForSegmentation,'Enable','on')
+    set(handles.CheckForSegmentation,'Enable','on')
     set(handles.chooseCell,'String',cellName)
     
     
@@ -300,7 +302,7 @@ function popupmenu_single_cell_this_movie_ID_CreateFcn(hObject, eventdata, handl
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
- set(hObject,'String',{'1','2','3'});
+ set(hObject,'String',{'1','2','3','4','5'});
  set(hObject,'Value',1);
  
 
@@ -329,3 +331,38 @@ function popupmenu_supplementary_channel_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in CheckForSegmentation.
+function CheckForSegmentation_Callback(hObject, eventdata, handles)
+% hObject    handle to CheckForSegmentation (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if handles.segThisCell > 1
+    currObj  = handles.ML{handles.currCell};
+    currChan = handles.target_channelIdx;
+    supChan = handles.sup_channelIdx;
+    currSingleCell = handles.single_cell_ID;
+    nFrame = currObj.nFrames_;
+
+    segIdx    = currObj.getPackageIndex('SegmentationPackage');
+    segPath   = currObj.packages_{segIdx}.outputDirectory_;
+    truthPath = [segPath filesep 'FixedChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
+    compPath  = [segPath filesep 'completedFramesChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
+    
+        
+    if ~exist(truthPath,'dir')        
+        msgbox('There is no result for this movie this cell.')
+    else
+        winopen(truthPath);        
+    end
+    
+    if exist(compPath,'dir')                        
+        load([compPath filesep 'completedFrames.mat'],'isCompleted','boxall');
+        ind = find(isCompleted>0);
+        msgbox(['Completed frames for this movie this cell are: ', num2str(((ind(:))'))],'Previous Manual Fixing');
+    end
+    
+ end
+
