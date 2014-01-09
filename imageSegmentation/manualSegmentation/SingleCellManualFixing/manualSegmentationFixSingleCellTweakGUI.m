@@ -1,5 +1,5 @@
 
-function [m,boxall,isDone]  = manualSegmentationFixTweakGUI(im,m,sup_masks,displayrange,isDone,boxall,ptsShow)
+function [m,boxall,isDone]  = manualSegmentationFixSingleCellTweakGUI(im,m,sup_masks,displayrange,isDone,boxall,ptsShow,truthPath)
 %MANUALSEGMENTATIONTWEAKGUI allows manual segmentation creation of masks or alteration of existing masksk
 % [masks,isCompleted] = manualSegmentationTweakGUI(images,masks)
 %
@@ -123,12 +123,12 @@ hMainFigure = fsFigure(.75);
                 
                 
     % selection mode controls
-    data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode = uibuttongroup('visible','on', 'Units' , 'normalized' ,'Position',[0.71 0.2 0.2 0.15]);
+    data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode = uibuttongroup('visible','on', 'Units' , 'normalized' ,'Position',[0.70 0.55 0.15 0.15]);
     data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_fgnd = uicontrol('Style','Radio','String','Add',...
                                  'Units' , 'normalized' ,'Position',[0.05 0.75 0.75 0.15],'parent',data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode,'HandleVisibility','off');
     data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_bgnd = uicontrol('Style','Radio','String','Subtract',...
                                  'Units' , 'normalized' ,'Position',[0.05 0.50 0.75 0.15],'parent',data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode,'HandleVisibility','off');            
-   data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_sup = uicontrol('Style','Radio','String','Add from supplementary channel',...
+   data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_sup = uicontrol('Style','Radio','String','From sup channel',...
                                  'Units' , 'normalized' ,'Position',[0.05 0.25 0.75 0.15],'parent',data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode,'HandleVisibility','off');            
      data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_none = uicontrol('Style','Radio','String','Restart',...
                                  'Units' , 'normalized' ,'Position',[0.05 0.00 0.75 0.15],'parent',data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode,'HandleVisibility','off');    
@@ -136,7 +136,7 @@ hMainFigure = fsFigure(.75);
     set( data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode , 'SelectedObject' , data_get_fgnd_bgnd_seeds_3d_points.ui_rbh_fgnd );            
     
     % selection type controls
-    data_get_fgnd_bgnd_seeds_3d_points.ui.sel_mode = uibuttongroup('visible','on', 'Units' , 'normalized' ,'Position',[0.71 0.4 0.2 0.11]);
+    data_get_fgnd_bgnd_seeds_3d_points.ui.sel_mode = uibuttongroup('visible','on', 'Units' , 'normalized' ,'Position',[0.87 0.55 0.1 0.15]);
     data_get_fgnd_bgnd_seeds_3d_points.ui_rbh2_fhan = uicontrol('Style','Radio','String','Freehand',...
                                  'Units' , 'normalized' ,'Position',[0.05 0.75 0.75 0.15],'parent',data_get_fgnd_bgnd_seeds_3d_points.ui.sel_mode,'HandleVisibility','off');
     data_get_fgnd_bgnd_seeds_3d_points.ui_rbh2_poly = uicontrol('Style','Radio','String','Polygon',...
@@ -149,21 +149,30 @@ hMainFigure = fsFigure(.75);
 %                                  'Units' , 'normalized' ,'Position',[0.91 0.78 0.07 0.1]);                
 %     
     
+
+    %Show Completed frame numbbers
+    data_get_fgnd_bgnd_seeds_3d_points.ui_completed_display = uicontrol('Style','text','String','',...
+                                 'Units' , 'normalized' ,'Position',[0.70 0.2 0.25 0.17],'parent',hMainFigure);                
+    %Open Folder button
+    data_get_fgnd_bgnd_seeds_3d_points.ui_openfolder = uicontrol('Style','pushbutton','String','Open Segmentation Folder',...
+                                 'Units' , 'normalized' ,'Position',[0.82 0.05 0.15 0.1],'parent',hMainFigure,'Callback',{@pushOpenFolder_Callback});                
+    
+
     %Go button
-    data_get_fgnd_bgnd_seeds_3d_points.ui_go = uicontrol('Style','pushbutton','String','Go',...
-                                 'Units' , 'normalized' ,'Position',[0.71 0.78 0.17 0.1],'parent',hMainFigure,'Callback',{@pushGo_Callback});                
+    data_get_fgnd_bgnd_seeds_3d_points.ui_go = uicontrol('Style','pushbutton','String','Start Fixing',...
+                                 'Units' , 'normalized' ,'Position',[0.70 0.42 0.17 0.1],'parent',hMainFigure,'Callback',{@pushGo_Callback});                
     
     %Slect button
-    data_get_fgnd_bgnd_seeds_3d_points.ui_go = uicontrol('Style','pushbutton','String','Select & Track',...
-                                 'Units' , 'normalized' ,'Position',[0.71 0.6 0.12 0.07],'parent',hMainFigure,'Callback',{@pushSelectTrack_Callback});                
+    data_get_fgnd_bgnd_seeds_3d_points.ui_SelectTrack = uicontrol('Style','pushbutton','String','Select & Track',...
+                                 'Units' , 'normalized' ,'Position',[0.70 0.80 0.12 0.07],'parent',hMainFigure,'Callback',{@pushSelectTrack_Callback});                
    
     %Restart button
-    data_get_fgnd_bgnd_seeds_3d_points.ui_go = uicontrol('Style','pushbutton','String','Restart Frame',...
-                                 'Units' , 'normalized' ,'Position',[0.85 0.6 0.12 0.07],'parent',hMainFigure,'Callback',{@pushRestartFrame_Callback});                
+    data_get_fgnd_bgnd_seeds_3d_points.ui_Restart = uicontrol('Style','pushbutton','String','Restart Frame',...
+                                 'Units' , 'normalized' ,'Position',[0.84 0.80 0.12 0.07],'parent',hMainFigure,'Callback',{@pushRestartFrame_Callback});                
    
     %Tracking checkbox
     data_get_fgnd_bgnd_seeds_3d_points.ui_trackingflag = uicontrol('Style','checkbox','String','Tracking',...
-                                 'Units' , 'normalized' ,'Position',[0.71 0.55 0.12 0.04],'parent',hMainFigure,'Callback',{@pushTrackingCheck_Callback});                
+                                 'Units' , 'normalized' ,'Position',[0.70 0.75 0.12 0.04],'parent',hMainFigure,'Callback',{@pushTrackingCheck_Callback});                
    
 
     %check box
@@ -213,6 +222,7 @@ data_get_fgnd_bgnd_seeds_3d_points.bgnd_seed_points = [];
 data_get_fgnd_bgnd_seeds_3d_points.checking_continuous_frame_flag = 0;
 data_get_fgnd_bgnd_seeds_3d_points.trackingflag=0;
 data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame =1;
+data_get_fgnd_bgnd_seeds_3d_points.truthPath = truthPath;
 
 % data_get_fgnd_bgnd_seeds_3d_points.currentSingleCellID = 1;
 
@@ -300,7 +310,14 @@ function imsliceshow(data_get_fgnd_bgnd_seeds_3d_points)
 
     set(data_get_fgnd_bgnd_seeds_3d_points.ui_cb,'Value',data_get_fgnd_bgnd_seeds_3d_points.isDone(data_get_fgnd_bgnd_seeds_3d_points.sliceno))
 
+    ind = find(data_get_fgnd_bgnd_seeds_3d_points.isDone>0);
+    
+    set(data_get_fgnd_bgnd_seeds_3d_points.ui_completed_display,'HorizontalAlignment','left');
+
+    set(data_get_fgnd_bgnd_seeds_3d_points.ui_completed_display,'String',['Completed frames for this movie this cell are: ', num2str(((ind(:))'))]);
+
         
+  
 
 %Old method - show by transparency
 %     imHan = imshow(data_get_fgnd_bgnd_seeds_3d_points.im(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno),data_get_fgnd_bgnd_seeds_3d_points.displayrange);
@@ -922,4 +939,12 @@ function [new_box, new_mask] = consequent_frame_segment_tracking...
     data_get_fgnd_bgnd_seeds_3d_points.sliceno = data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame;    
     
     imsliceshow(data_get_fgnd_bgnd_seeds_3d_points);    
+    
+    
+    
+    function pushOpenFolder_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)  
+    global data_get_fgnd_bgnd_seeds_3d_points
+   
+    winopen(data_get_fgnd_bgnd_seeds_3d_points.truthPath);
+    
     

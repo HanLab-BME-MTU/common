@@ -230,7 +230,7 @@ if handles.segThisCell > 1
             
     end
     
-    [outMasks,boxall,isCompleted] = manualSegmentationFixSingleCellTweakGUI(images,masks,sup_masks,[],aux.isCompleted,boxall,[]);
+    [outMasks,boxall,isCompleted] = manualSegmentationFixSingleCellTweakGUI(images,masks,sup_masks,[],aux.isCompleted,boxall,[],truthPath);
     
 
 %     iCell=currentSingleCellID;
