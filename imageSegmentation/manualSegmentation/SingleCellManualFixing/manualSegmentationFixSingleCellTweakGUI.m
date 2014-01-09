@@ -81,37 +81,46 @@ hMainFigure = fsFigure(.75);
    
     % slice navigation controls
     data_get_fgnd_bgnd_seeds_3d_points.ui.pbh_dec = uicontrol(hMainFigure,'Style','pushbutton','String','<<',...
-                    'Units' , 'normalized' , 'Position',[0.20 0.1 0.05 0.05],...
+                    'Units' , 'normalized' , 'Position',[0.15 0.1 0.05 0.05],...
                     'Callback',{@pushFirstSlice_Callback});                        
     
     data_get_fgnd_bgnd_seeds_3d_points.ui.pbh_dec = uicontrol(hMainFigure,'Style','pushbutton','String','<',...
-                    'Units' , 'normalized' , 'Position',[0.25 0.1 0.05 0.05],...
+                    'Units' , 'normalized' , 'Position',[0.20 0.1 0.05 0.05],...
                     'Callback',{@pushdec_Callback});
                 
     data_get_fgnd_bgnd_seeds_3d_points.ui.eth_sno = uicontrol(hMainFigure,'Style','edit',...
                     'String','0',...
-                    'Units' , 'normalized' , 'Position',[0.30 0.1 0.1 0.05]);
+                    'Units' , 'normalized' , 'Position',[0.25 0.1 0.1 0.05]);
                 
     data_get_fgnd_bgnd_seeds_3d_points.ui.pbh_inc = uicontrol(hMainFigure,'Style','pushbutton','String','>',...
-                    'Units' , 'normalized' , 'Position',[0.40 0.1 0.05 0.05],...
+                    'Units' , 'normalized' , 'Position',[0.35 0.1 0.05 0.05],...
                     'Callback',{@pushinc_Callback});        
                 
     data_get_fgnd_bgnd_seeds_3d_points.ui.pbh_inc = uicontrol(hMainFigure,'Style','pushbutton','String','>>',...
-                    'Units' , 'normalized' , 'Position',[0.45 0.1 0.05 0.05],...
+                    'Units' , 'normalized' , 'Position',[0.40 0.1 0.05 0.05],...
                     'Callback',{@pushLastSlice_Callback});                
                 
     % cursor point info controls
     data_get_fgnd_bgnd_seeds_3d_points.ui.eth_xloc = uicontrol(hMainFigure,'Style','edit',...
                     'String','X: INV',...
-                    'Units' , 'normalized' , 'Position',[0.20 0.05 0.1 0.05]);                
+                    'Units' , 'normalized' , 'Position',[0.15 0.05 0.1 0.05]);                
 
     data_get_fgnd_bgnd_seeds_3d_points.ui.eth_yloc = uicontrol(hMainFigure,'Style','edit',...
                     'String','Y: INV',...
-                    'Units' , 'normalized' , 'Position',[0.30 0.05 0.1 0.05]);     
+                    'Units' , 'normalized' , 'Position',[0.25 0.05 0.1 0.05]);     
                 
     data_get_fgnd_bgnd_seeds_3d_points.ui.eth_Imval = uicontrol(hMainFigure,'Style','edit',...
                     'String','I: INV',...
-                    'Units' , 'normalized' , 'Position',[0.40 0.05 0.1 0.05]);                                                
+                    'Units' , 'normalized' , 'Position',[0.35 0.05 0.1 0.05]);  
+                
+   data_get_fgnd_bgnd_seeds_3d_points.ui.push_jumpto_frame = uicontrol(hMainFigure,'Style','pushbutton','String','Jump to',...
+                    'Units' , 'normalized' , 'Position',[0.50 0.1 0.05 0.05],...
+                    'Callback',{@pushJumptoFrame_Callback});
+                
+   data_get_fgnd_bgnd_seeds_3d_points.ui.edit_jumpto_frame = uicontrol(hMainFigure,'Style','edit','String','1',...
+                    'Units' , 'normalized' , 'Position',[0.55 0.1 0.05 0.05]);                
+              
+                
                 
     % selection mode controls
     data_get_fgnd_bgnd_seeds_3d_points.ui.bgh_mode = uibuttongroup('visible','on', 'Units' , 'normalized' ,'Position',[0.71 0.2 0.2 0.15]);
@@ -159,11 +168,11 @@ hMainFigure = fsFigure(.75);
 
     %check box
     data_get_fgnd_bgnd_seeds_3d_points.ui_cb = uicontrol('Style','checkbox','String','Completed',...        
-                             'Units' , 'normalized' ,'Position',[0.75 0.1 0.05 0.05],'parent',hMainFigure,'Callback',{@chkBox_Callback});         
+                             'Units' , 'normalized' ,'Position',[0.65 0.1 0.08 0.05],'parent',hMainFigure,'Callback',{@chkBox_Callback});         
        
    %check continuous frames box
-    data_get_fgnd_bgnd_seeds_3d_points.ui_checkcontinuousframeflag = uicontrol('Style','checkbox','String','Wiil check continuous frames',...        
-                             'Units' , 'normalized' ,'Position',[0.55 0.1 0.12 0.05],'parent',hMainFigure,'Callback',{@check_continuous_Box_Callback});         
+    data_get_fgnd_bgnd_seeds_3d_points.ui_checkcontinuousframeflag = uicontrol('Style','checkbox','String','Will check continuous frames',...        
+                             'Units' , 'normalized' ,'Position',[0.65 0.05 0.15 0.05],'parent',hMainFigure,'Callback',{@check_continuous_Box_Callback});         
 
    
                          
@@ -202,7 +211,8 @@ data_get_fgnd_bgnd_seeds_3d_points.ptsHan = [];
 data_get_fgnd_bgnd_seeds_3d_points.fgnd_seed_points = [];
 data_get_fgnd_bgnd_seeds_3d_points.bgnd_seed_points = [];
 data_get_fgnd_bgnd_seeds_3d_points.checking_continuous_frame_flag = 0;
-
+data_get_fgnd_bgnd_seeds_3d_points.trackingflag=0;
+data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame =1;
 
 % data_get_fgnd_bgnd_seeds_3d_points.currentSingleCellID = 1;
 
@@ -883,3 +893,33 @@ function [new_box, new_mask] = consequent_frame_segment_tracking...
             min(size(new_mask,2),max(indx))];
         
     end
+    
+    
+    function pushJumptoFrame_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)  
+    global data_get_fgnd_bgnd_seeds_3d_points
+    
+    try
+        data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame = round(str2num( get(data_get_fgnd_bgnd_seeds_3d_points.ui.edit_jumpto_frame,'String')));  
+    catch
+        display('Please input a valid frame number');        
+    end
+    
+    if(isempty(data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame))
+        data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame=1;
+        display('Please input a valid frame number');        
+    end
+    
+     if data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame <=0 
+         data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame=1;
+     end
+     
+     if data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame > size( data_get_fgnd_bgnd_seeds_3d_points.im , 3 )
+         data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame = size( data_get_fgnd_bgnd_seeds_3d_points.im , 3 );
+     end
+    
+    set(data_get_fgnd_bgnd_seeds_3d_points.ui.edit_jumpto_frame,'String',num2str(data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame));
+    
+    data_get_fgnd_bgnd_seeds_3d_points.sliceno = data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame;    
+    
+    imsliceshow(data_get_fgnd_bgnd_seeds_3d_points);    
+    
