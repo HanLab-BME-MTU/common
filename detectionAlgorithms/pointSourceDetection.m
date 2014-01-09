@@ -94,7 +94,7 @@ if ip.Results.Prefilter
     sigma_A = sqrt(sigma_e2*C(1,1));
     
     % standard deviation of residuals
-    sigma_res = sqrt((RSS - (A_est*gsum+n*c_est - fu)/n)/(n-1));
+    sigma_res = sqrt(RSS/(n-1));
     
     kLevel = norminv(1-alpha/2.0, 0, 1);
     
