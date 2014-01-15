@@ -22,7 +22,7 @@ function varargout = SingleCellSegmentationManualFixGUI(varargin)
 
 % Edit the above text to modify the response to help SingleCellSegmentationManualFixGUI
 
-% Last Modified by GUIDE v2.5 09-Jan-2014 16:20:30
+% Last Modified by GUIDE v2.5 14-Jan-2014 15:19:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -60,6 +60,10 @@ set(handles.chooseCell,'Enable','off')
 set(handles.popupmenu_target_channel,'Enable','off')
 set(handles.goForSegmentation,'Enable','off')
 set(handles.CheckForSegmentation,'Enable','off')
+set(handles.popupmenu_supplementary_channel,'Enable','off')
+set(handles.popupmenu_single_cell_this_movie_ID,'Enable','off')
+
+
 handles.target_channelIdx = 1;
 handles.sup_channelIdx = 2;
 handles.currCell   = 1;
@@ -118,6 +122,7 @@ if ~isempty(fileName)
     set(handles.chooseCell,'Enable','on')
     set(handles.goForSegmentation,'Enable','on')
     set(handles.CheckForSegmentation,'Enable','on')
+   
     set(handles.chooseCell,'String',cellName)
     
     
@@ -143,18 +148,24 @@ contents = cellstr(get(hObject,'String'));
 handles.segThisCell = find(cell2mat(cellfun(@(x) strcmp(x,contents{get(hObject,'Value')}),handles.cellName,'Unif',0)));
 
 if handles.segThisCell > 1
-    set(handles.popupmenu_target_channel,'Enable','on')
+    set(handles.popupmenu_target_channel,'Enable','on');
     handles.currCell = handles.segThisCell - 1;
     
     currObj    = handles.ML{handles.currCell};
     nChannel   = numel(currObj.channels_);
     all_channelIdx = arrayfun(@num2str,1:nChannel,'Unif',0);
         
-    set(handles.popupmenu_target_channel,'String',all_channelIdx)
-    set(handles.popupmenu_target_channel,'Value',1)
-    set(handles.popupmenu_supplementary_channel,'String',all_channelIdx)
-    set(handles.popupmenu_supplementary_channel,'Value',2)
+    set(handles.popupmenu_supplementary_channel,'Enable','on');
+    set(handles.popupmenu_single_cell_this_movie_ID,'Enable','on');
+    set(handles.CheckForSegmentation,'Enable','on');
     
+    set(handles.popupmenu_target_channel,'String',all_channelIdx);
+    set(handles.popupmenu_target_channel,'Value',1);
+    set(handles.popupmenu_supplementary_channel,'String',all_channelIdx);
+    
+    handles.sup_channelIdx = min(2,nChannel);
+    set(handles.popupmenu_supplementary_channel,'Value',handles.sup_channelIdx);
+      
     guidata(hObject, handles);
 end
 
@@ -205,6 +216,7 @@ if handles.segThisCell > 1
     segIdx    = currObj.getPackageIndex('SegmentationPackage');
     segPath   = currObj.packages_{segIdx}.outputDirectory_;
     truthPath = [segPath filesep 'FixedChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
+    fixedPath = [segPath filesep 'OnlyFixedChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];    
     compPath  = [segPath filesep 'completedFramesChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
     
     
@@ -230,7 +242,7 @@ if handles.segThisCell > 1
             
     end
     
-    [outMasks,boxall,isCompleted] = manualSegmentationFixSingleCellTweakGUI(images,masks,sup_masks,[],aux.isCompleted,boxall,[],truthPath);
+    [outMasks,boxall,isCompleted] = manualSegmentationFixSingleCellTweakGUI(images,masks,sup_masks,[],aux.isCompleted,boxall,[],fixedPath);
     
 
 %     iCell=currentSingleCellID;
@@ -241,10 +253,24 @@ if handles.segThisCell > 1
         mkdir(truthPath)        
     end
     
+    if ~exist(fixedPath,'dir')        
+        mkdir(fixedPath)        
+    end
+    
     for iFrame = 1:nFrame
         imwrite(outMasks(:,:,iFrame),[truthPath filesep 'mask_' num2str(iFrame) '.tif'],'tif');
     end
-        
+    
+    for iFrame = 1:nFrame
+        if(isCompleted(iFrame)>0)
+            imwrite(outMasks(:,:,iFrame),[fixedPath filesep 'mask_' num2str(iFrame) '.tif'],'tif');
+        else
+            if(exist([fixedPath filesep 'mask_' num2str(iFrame) '.tif'],'file'))
+                delete([fixedPath filesep 'mask_' num2str(iFrame) '.tif']);                
+            end
+        end
+    end
+    
     if ~exist(compPath,'dir')        
         mkdir(compPath)        
     end
@@ -348,10 +374,12 @@ if handles.segThisCell > 1
 
     segIdx    = currObj.getPackageIndex('SegmentationPackage');
     segPath   = currObj.packages_{segIdx}.outputDirectory_;
+            
     truthPath = [segPath filesep 'FixedChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
+    fixedPath = [segPath filesep 'OnlyFixedChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];    
     compPath  = [segPath filesep 'completedFramesChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
     
-        
+    
     if ~exist(truthPath,'dir')        
         msgbox('There is no result for this movie this cell.')
     else
@@ -365,4 +393,3 @@ if handles.segThisCell > 1
     end
     
  end
-

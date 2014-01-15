@@ -1,5 +1,5 @@
 
-function [m,boxall,isDone]  = manualSegmentationFixSingleCellTweakGUI(im,m,sup_masks,displayrange,isDone,boxall,ptsShow,truthPath)
+function [m,boxall,isDone]  = manualSegmentationFixSingleCellTweakGUI(im,m,sup_masks,displayrange,isDone,boxall,ptsShow,fixedPath)
 %MANUALSEGMENTATIONTWEAKGUI allows manual segmentation creation of masks or alteration of existing masksk
 % [masks,isCompleted] = manualSegmentationTweakGUI(images,masks)
 %
@@ -155,7 +155,10 @@ hMainFigure = fsFigure(.75);
                                  'Units' , 'normalized' ,'Position',[0.70 0.2 0.25 0.17],'parent',hMainFigure);                
     %Open Folder button
     data_get_fgnd_bgnd_seeds_3d_points.ui_openfolder = uicontrol('Style','pushbutton','String','Open Segmentation Folder',...
-                                 'Units' , 'normalized' ,'Position',[0.82 0.05 0.15 0.1],'parent',hMainFigure,'Callback',{@pushOpenFolder_Callback});                
+                                 'Units' , 'normalized' ,'Position',[0.82 0.1 0.14 0.05],'parent',hMainFigure,'Callback',{@pushOpenFolder_Callback});                
+    %Open Folder button
+    data_get_fgnd_bgnd_seeds_3d_points.ui_savemarking = uicontrol('Style','pushbutton','String','Save Marking',...
+                                 'Units' , 'normalized' ,'Position',[0.82 0.05 0.14 0.05],'parent',hMainFigure,'Callback',{@pushSaveMarking_Callback});                
     
 
     %Go button
@@ -222,7 +225,7 @@ data_get_fgnd_bgnd_seeds_3d_points.bgnd_seed_points = [];
 data_get_fgnd_bgnd_seeds_3d_points.checking_continuous_frame_flag = 0;
 data_get_fgnd_bgnd_seeds_3d_points.trackingflag=0;
 data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame =1;
-data_get_fgnd_bgnd_seeds_3d_points.truthPath = truthPath;
+data_get_fgnd_bgnd_seeds_3d_points.fixedPath = fixedPath;
 
 % data_get_fgnd_bgnd_seeds_3d_points.currentSingleCellID = 1;
 
@@ -309,6 +312,8 @@ function imsliceshow(data_get_fgnd_bgnd_seeds_3d_points)
     set(data_get_fgnd_bgnd_seeds_3d_points.ui.eth_sno,'String',sprintf('%d / %d' , data_get_fgnd_bgnd_seeds_3d_points.sliceno , size( data_get_fgnd_bgnd_seeds_3d_points.im , 3 ) ));    
 
     set(data_get_fgnd_bgnd_seeds_3d_points.ui_cb,'Value',data_get_fgnd_bgnd_seeds_3d_points.isDone(data_get_fgnd_bgnd_seeds_3d_points.sliceno))
+
+    set(data_get_fgnd_bgnd_seeds_3d_points.ui_trackingflag,'Value',data_get_fgnd_bgnd_seeds_3d_points.trackingflag)
 
     ind = find(data_get_fgnd_bgnd_seeds_3d_points.isDone>0);
     
@@ -640,18 +645,19 @@ function pushSelectTrack_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)
      
     data_get_fgnd_bgnd_seeds_3d_points.trackingflag = 1;
     
- 
-    set(data_get_fgnd_bgnd_seeds_3d_points.ui_trackingflag,'Value',1);
-    
     current_mask =  data_get_fgnd_bgnd_seeds_3d_points.m(:,:,data_get_fgnd_bgnd_seeds_3d_points.sliceno);
     
     % redraw a tighter box
     [indy,indx] = find(current_mask>0);
     
-    current_box = ...
+    if(isempty(indy))
+        current_box=[ 1 1 size(current_mask,1) size(current_mask,2)];
+    else
+        current_box = ...
         [max(1,min(indy)) max(1,min(indx))...
         min(size(current_mask,1),max(indy))...
         min(size(current_mask,2),max(indx))];
+    end
     data_get_fgnd_bgnd_seeds_3d_points.boxall(data_get_fgnd_bgnd_seeds_3d_points.sliceno,:) =current_box;
     
     
@@ -760,12 +766,10 @@ function check_continuous_Box_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_poi
 function pushTrackingCheck_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)  
     global data_get_fgnd_bgnd_seeds_3d_points
     
-    set(data_get_fgnd_bgnd_seeds_3d_points.ui_trackingflag,'Value',data_get_fgnd_bgnd_seeds_3d_points.trackingflag);
-  
     data_get_fgnd_bgnd_seeds_3d_points.trackingflag =  ...
       ~data_get_fgnd_bgnd_seeds_3d_points.trackingflag;
  
-    data_get_fgnd_bgnd_seeds_3d_points.trackingflag =   get(data_get_fgnd_bgnd_seeds_3d_points.ui_trackingflag,'Value');
+    set(data_get_fgnd_bgnd_seeds_3d_points.ui_trackingflag,'Value',data_get_fgnd_bgnd_seeds_3d_points.trackingflag);
   
     
 function imRGB = genImageMaskOverlay_loc( im, mask, maskColor, maskAlpha,displayRange,box,boxColor)
@@ -945,6 +949,27 @@ function [new_box, new_mask] = consequent_frame_segment_tracking...
     function pushOpenFolder_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)  
     global data_get_fgnd_bgnd_seeds_3d_points
    
-    winopen(data_get_fgnd_bgnd_seeds_3d_points.truthPath);
+    if ~exist(data_get_fgnd_bgnd_seeds_3d_points.fixedPath,'dir')        
+        msgbox('There is no saved marking result for this movie this cell.')
+    else
+        winopen(data_get_fgnd_bgnd_seeds_3d_points.fixedPath);        
+    end
     
     
+    function pushSaveMarking_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)  
+    global data_get_fgnd_bgnd_seeds_3d_points
+   
+     if ~exist(data_get_fgnd_bgnd_seeds_3d_points.fixedPath,'dir')    
+         mkdir(data_get_fgnd_bgnd_seeds_3d_points.fixedPath);
+     end
+     
+       for iFrame = 1 : size( data_get_fgnd_bgnd_seeds_3d_points.im , 3)
+        if(data_get_fgnd_bgnd_seeds_3d_points.isDone(iFrame)>0)
+            imwrite(data_get_fgnd_bgnd_seeds_3d_points.m(:,:,iFrame),[data_get_fgnd_bgnd_seeds_3d_points.fixedPath filesep 'mask_' num2str(iFrame) '.tif'],'tif');
+        else
+            if(exist([data_get_fgnd_bgnd_seeds_3d_points.fixedPath filesep 'mask_' num2str(iFrame) '.tif'],'file'))
+                delete([data_get_fgnd_bgnd_seeds_3d_points.fixedPath filesep 'mask_' num2str(iFrame) '.tif']);                
+            end
+        end
+       end
+     msgbox('Current complete frames saved.')
