@@ -178,7 +178,9 @@ end
 
 % Bio-Formats
 disp('Creating Bio-Formats directory...')
-bfDir=[outDir filesep 'bioformats'];
-copyfile(fileparts(which('bfGetReader.m')), bfDir)
+bfSourceDir=fileparts(which('bfGetReader.m'));
+bfTargetDir=[outDir filesep 'bioformats'];
+copyfile(fullfile(bfSourceDir, '*.m'), bfTargetDir)
+copyfile(fullfile(bfSourceDir, 'loci_tools.jar'), bfTargetDir)
 
 disp(['Wrote package to ' outDir])
