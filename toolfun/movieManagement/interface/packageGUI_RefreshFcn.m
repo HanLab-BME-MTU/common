@@ -72,7 +72,8 @@ end
 checkedProc = logical(userData.statusM(userData.id).Checked);
 set(setupHandles(~checkedProc),'Value',0);
 set(setupHandles(checkedProc),'Value',1);
-arrayfun(@(i) userfcn_lampSwitch(i,1,handles),find(checkedProc));
+arrayfun(@(i) userfcn_lampSwitch(i,1,handles),...
+    find(checkedProc | setupProc | successProc));
 
 % Checkbox enable/disable set up
 k= successProc | checkedProc;
