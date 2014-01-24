@@ -16,8 +16,16 @@ for iFila = 1 : model_length
     
     line_i_x = (imfilter(line_i_x, line_smooth_H, 'replicate', 'same'));
     line_i_y = (imfilter(line_i_y, line_smooth_H, 'replicate', 'same'));
-
+    if(length(line_i_x)==1)
+        continue;
+    end
+    
+    if(length(line_i_x)==2)
+     angles = atan2(-line_i_x(1)+line_i_x(2),-line_i_y(1)+line_i_y(2));
+    else
     angles = atan2(-line_i_x(1:end-2)+line_i_x(3:end),-line_i_y(1:end-2)+line_i_y(3:end));
+    end
+    
     angles = [angles(1); angles; angles(end)];
     
     digital_x = round(line_i_x);

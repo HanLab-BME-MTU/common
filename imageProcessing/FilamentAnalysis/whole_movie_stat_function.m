@@ -191,7 +191,9 @@ for iChannel = selected_channels
     
     INT_pool = [];
     
-    for iFrame_index = 1 : length(Frames_to_Seg)
+    whole_modie_selectframe_pace = max(1,round(length(Frames_to_Seg)/30));
+    
+    for iFrame_index = 1 : whole_modie_selectframe_pace:length(Frames_to_Seg)
         iFrame = Frames_to_Seg(iFrame_index);
                         
         % Read in the intensity image.
@@ -224,7 +226,7 @@ for iChannel = selected_channels
     
     ST_pool = [];
     
-    for iFrame_index = 1 : length(Frames_to_Seg)
+    for iFrame_index = 1 : whole_modie_selectframe_pace: length(Frames_to_Seg)
         iFrame = Frames_to_Seg(iFrame_index);
                         
         load([SteerableChannelOutputDir, filesep, 'steerable_', filename_short_strs{iFrame},'.mat'],'MAX_st_res');
@@ -252,7 +254,7 @@ for iChannel = selected_channels
     
     Length_pool=[];
     
-    for iFrame_index = 1 : length(Frames_to_Seg)
+    for iFrame_index = 1 : whole_modie_selectframe_pace:length(Frames_to_Seg)
         iFrame = Frames_to_Seg(iFrame_index);
         
         load([SteerableChannelOutputDir, filesep, 'steerable_', filename_short_strs{iFrame},'.mat'],'nms');
