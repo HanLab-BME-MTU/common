@@ -6,12 +6,18 @@
 function s = readtiff(filepath, varargin)
 
 ip = inputParser;
+ip.CaseSensitive = false;
+ip.KeepUnmatched = true;
+ip.addRequired('filepath');
 ip.addOptional('range', []);
-ip.addOptional('info', imfinfo(filepath));
+ip.addOptional('info', [], @isstruct);
 ip.addParamValue('ShowWaitbar', false, @islogical);
-ip.parse(varargin{:});
+ip.parse(filepath, varargin{:});
 info = ip.Results.info;
 range = ip.Results.range;
+if isempty(info)
+    info = imfinfo(filepath);
+end
 if isempty(range)
     N = numel(info);
     range = 1:N;
