@@ -31,7 +31,7 @@ A0 = max(ni);
 mu0 = sum(ni/sum(ni).*xi);
 sigma0 = sqrt(sum(ni/sum(ni).*xi.^2) - mu0^2);
 
-p = lsqnonlin(@cost, [A0 mu0 sigma0], [0 0 0], [Inf Inf Inf], opts, xi, ni);
+p = lsqnonlin(@cost, [A0 mu0 sigma0], [0 -Inf 0], [Inf Inf Inf], opts, xi, ni);
 A = p(1);
 mu = p(2);
 sigma = p(3);

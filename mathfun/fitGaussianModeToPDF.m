@@ -31,11 +31,11 @@ xi = linspace(pct(1), pct(2), 1000);
 [pdf,xi] = ksdensity(samples,xi);
 
 
-A0 = 1;
+A0 = 0.5;
 %HE - This seems to give more reliable initialization.
 [mu0,sigma0] = robustMean(samples(:),1,2);
 
-p = lsqnonlin(@cost, [A0 mu0 sigma0], [0 0 0], [1 Inf Inf], opts, xi, pdf);
+p = lsqnonlin(@cost, [A0 mu0 sigma0], [0 -Inf 0], [1 Inf Inf], opts, xi, pdf);
 
 A = p(1);
 mu = p(2);
