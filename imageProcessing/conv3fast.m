@@ -12,5 +12,7 @@
 %     w = ceil(4*s);
 %     g = exp(-(0:w).^2/(2*s^2)); % symmetric kernel starts at '0'
 %     F = conv3fast(data, g);
+%
+%  Note: NaNs in input are allowed
 
 % Francois Aguet, 09/19/2013

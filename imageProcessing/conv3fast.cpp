@@ -64,13 +64,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     
     int N = nx*ny*nz;
     double* input = mxGetPr(prhs[0]);
-    // check for NaNs in input, as these will result in a crash
-    for (int i=0;i<N;++i) {
-        if (mxIsNaN(input[i])) {
-            mexErrMsgTxt("Input image contains NaNs.");
-            break;
-        }
-    }
     
     double* kx = mxGetPr(prhs[1]);
     double* voxels = new double[N];
