@@ -168,10 +168,25 @@ mkClrDir(mexDir);
 
 % Copy mex-files
 nMexFiles = numel(packageMexFuns);
-disp(['Copying all '  num2str(nMexFiles) ' files ...'])
+disp(['Copying all '  num2str(nMexFiles) ' MEX files ...'])
 for i = 1 : nMexFiles
     iLFS = max(regexp(packageMexFuns{i},filesep));
     copyfile(packageMexFuns{i},[mexDir filesep packageMexFuns{i}(iLFS+1:end)]);
+end
+
+%% Scripts
+scripts = getScripts(packageList);
+if ~isempty(scripts);
+    disp('Creating scripts directory...')
+    scriptsDir = [outDir filesep 'scripts'];
+    mkClrDir(scriptsDir);
+    
+    nScripts = numel(scripts);
+    disp(['Copying all ' num2str(nScripts) ' scripts ...'])
+    for i = 1 : nScripts
+        iLFS = max(regexp(scripts{i}, filesep));
+        copyfile(scripts{i}, [scriptsDir filesep scripts{i}(iLFS+1:end)]);
+    end
 end
 
 %% External libraries
@@ -184,3 +199,12 @@ copyfile(fullfile(bfSourceDir, '*.m'), bfTargetDir)
 copyfile(fullfile(bfSourceDir, 'loci_tools.jar'), bfTargetDir)
 
 disp(['Wrote package to ' outDir])
+
+
+function scripts = getScripts(packageList)
+
+scripts = {};
+if any(strcmp('TrackingPackage', packageList))
+    scripts{end+1} = which('scriptDetectGeneral.m');    
+    scripts{end+1} = which('scriptTrackGeneral.m');
+end
