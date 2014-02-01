@@ -25,9 +25,10 @@ ip.addParamValue('DestPath', []); % for movie
 ip.addParamValue('FileName', 'movie.mp4', @ischar);
 ip.addParamValue('Quality', 22, @isposint);
 ip.addParamValue('DynamicRange', []);
+ip.addParamValue('Scale', 1, @isscalar);
 ip.parse(stack, varargin{:});
 
-[ny,nx,nf] = size(stack);
+nf = size(stack, 3);
 fmt = ['%0' num2str(ceil(log10(nf))) 'd'];
 
 if isunix && ~system('which ffmpeg >/dev/null 2>&1')
@@ -40,12 +41,17 @@ if isunix && ~system('which ffmpeg >/dev/null 2>&1')
     end
     
     for fi = 1:nf
-        imwrite(uint8(scaleContrast(stack(:,:,fi), dRange)), [frameDest 'frame_' num2str(fi, fmt), '.png']);
+        frame = scaleContrast(stack(:,:,fi), dRange);
+        if ip.Results.Scale ~= 1
+           frame = imresize(frame, ip.Results.Scale, 'nearest'); 
+        end
+        imwrite(uint8(frame), [frameDest 'frame_' num2str(fi, fmt), '.png']);
     end
+    [ny,nx] = size(frame);
     
     fr = num2str(ip.Results.framerate);
     
-    cmd = ['ffmpeg -quiet -y -r ' fr ' -i ' frameDest 'frame_' fmt '.png' ' -vf "scale=' num2str(2*floor(nx/2)) ':' num2str(2*floor(ny/2))...
+    cmd = ['ffmpeg -y -r ' fr ' -i ' frameDest 'frame_' fmt '.png' ' -vf "scale=' num2str(2*floor(nx/2)) ':' num2str(2*floor(ny/2))...
         '" -c:v libx264 -crf ' num2str(ip.Results.Quality) ' -pix_fmt yuv420p ' ip.Results.DestPath ip.Results.FileName];
     system(cmd);
     rmdir(frameDest, 's');
