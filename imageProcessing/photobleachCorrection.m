@@ -10,6 +10,7 @@ function correctedImage = photobleachCorrection(images,masks)
 %       masks  - same size as images
 %
 %Output:
+%
 %       correctedImages
 %
 %Marco Vilela, 2014
