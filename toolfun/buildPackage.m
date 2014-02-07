@@ -174,18 +174,15 @@ for i = 1 : nMexFiles
     copyfile(packageMexFuns{i},[mexDir filesep packageMexFuns{i}(iLFS+1:end)]);
 end
 
-%% Scripts
-scripts = getScripts(packageList);
-if ~isempty(scripts);
-    disp('Creating scripts directory...')
-    scriptsDir = [outDir filesep 'scripts'];
-    mkClrDir(scriptsDir);
+%% Legacy code
+legacyFunctions = getLegacyCode(packageList);
+if ~isempty(legacyFunctions);
     
-    nScripts = numel(scripts);
-    disp(['Copying all ' num2str(nScripts) ' scripts ...'])
-    for i = 1 : nScripts
-        iLFS = max(regexp(scripts{i}, filesep));
-        copyfile(scripts{i}, [scriptsDir filesep scripts{i}(iLFS+1:end)]);
+    nLegacyFunctions = numel(legacyFunctions);
+    disp(['Copying all ' num2str(nLegacyFunctions) ' legacy functions ...'])
+    for i = 1 : nLegacyFunctions
+        iLFS = max(regexp(legacyFunctions{i}, filesep));
+        copyfile(legacyFunctions{i}, [outDir filesep legacyFunctions{i}(iLFS+1:end)]);
     end
 end
 
@@ -201,10 +198,13 @@ copyfile(fullfile(bfSourceDir, 'loci_tools.jar'), bfTargetDir)
 disp(['Wrote package to ' outDir])
 
 
-function scripts = getScripts(packageList)
+function legacyFunctions = getLegacyCode(packageList)
 
-scripts = {};
+legacyFunctions = {};
 if any(strcmp('TrackingPackage', packageList))
-    scripts{end+1} = which('scriptDetectGeneral.m');    
-    scripts{end+1} = which('scriptTrackGeneral.m');
+    legacyFunctions = {'scriptDetectGeneral.m', 'scriptTrackGeneral.m',...
+        'overlayFeaturesMovie.m', 'overlayTracksMovieNew.m',...
+        'plotTracks2D.m'};
 end
+
+legacyFunctions = cellfun(@which, legacyFunctions,'UniformOutput', false);
