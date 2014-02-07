@@ -129,7 +129,7 @@ bgValScaled=log(log(bgVal));
 if ip.Results.useDblLog && isreal(bgValScaled) && bgValScaled>-Inf
     ImGrad=log(log(ImGrad));
 else
-    display(['Frame ',num2str(frame),': Couldnt use log(log(.)) to suppress large next to small maxima!']);
+    display('Couldnt use log(log(.)) to suppress large next to small maxima!');
 end
 
 % filter with a gaussian:
