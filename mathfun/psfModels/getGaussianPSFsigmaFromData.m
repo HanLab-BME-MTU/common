@@ -53,28 +53,46 @@ end
 svect = [svect{:}];
 
 opts = statset('maxIter', 200);
-BIC = zeros(1,3);
-sigma = zeros(1,3);
+% BIC = zeros(1,3);
+% sigma = zeros(1,3);
 try
     w = warning('off', 'stats:gmdistribution:FailedToConverge');
+    obj = cell(1,3);
     for n = 1:3
-        obj = gmdistribution.fit(svect', n, 'Options', opts);
-        BIC(n) = obj.BIC;
-        sigma(n) = obj.mu(obj.PComponents==max(obj.PComponents));
+        obj{n} = gmdistribution.fit(svect', n, 'Options', opts);
+       
     end
+    [~,idx] = min(cellfun(@(i) i.BIC, obj));
+    obj = obj{idx};
+    [mu,idx] = sort(obj.mu);
+    svec = sqrt(squeeze(obj.Sigma(:,:,idx)));
+    amp = obj.PComponents(idx);
+    [~,idx] = max(amp);
+    sigma = mu(idx);
+
     warning(w);
-    sigma = sigma(BIC==min(BIC));
+
     if ip.Results.Display
-        ds = 0.2;
-        si = -1:ds:10;
+        si = linspace(prctile(svect,0.5), prctile(svect,99.5), 100);
         ni = hist(svect, si);
-        ni = ni/sum(ni*ds);
-        figure;
+        ds = si(2)-si(1);
+        ni = ni/sum(ni)/ds;
+        
+        setupFigure('DisplayMode', 'screen');
         h = bar(si,ni);
-        set(h, 'BarWidth', 1);
+        set(h, 'BarWidth', 1, 'FaceColor', 0.6*[1 1 1], 'EdgeColor', 'none');
         
         hold on;
         plot(si, pdf(obj,si'), 'r');
+        for i = setdiff(1:3, idx)
+            plot(si, amp(i)*normpdf(si, mu(i), svec(i)), 'k', 'HandleVisibility', 'off');
+        end
+        plot(si, amp(idx)*normpdf(si, mu(idx), svec(idx)), 'g');
+        xlabel('Sigma');
+        ylabel('Frequency');
+        hl = legend(' Measured distribution', ' Model mixture', 'Selected mode'); 
+        set(hl, 'Box', 'off');
+        drawnow;
     end
 catch
     fprintf('Could not determine distribution, potentially due to insufficient samples.');
