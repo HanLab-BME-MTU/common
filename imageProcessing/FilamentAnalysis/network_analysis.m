@@ -81,10 +81,12 @@ saveas(h1, [outdir,filesep,'network_pixels_ch_',num2str(iChannel),'_frame_',num2
 
 h2 =  figure(2); 
 
+
+length_per_filament_pool = length_per_filament_pool(length_per_filament_pool>60);
 [h,bin] = hist(length_per_filament_pool,0:20:1000);
 h = h/length(length_per_filament_pool);
 bar(bin,h);
-axis([-10 310 0 0.3]);
+axis([50 310 0 0.3]);
 
 
 title('Length Distribution');

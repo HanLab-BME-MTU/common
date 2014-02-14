@@ -55,17 +55,40 @@ for iFrame = 1 : nFrame
     
     
     two_channel_seg= zeros(size(VIF_img,1),size(VIF_img,2),3);
-    two_channel_seg(:,:,1)=VIF_current_seg;
-     two_channel_seg(:,:,2)=MT_current_seg;
     
-    h2=figure(2);imagesc(two_channel_seg);axis equal;axis off;
-   saveas(h2,[outdir,filesep,'VIFMT_seg_frame_',num2str(iFrame),'.tif']);
-   saveas(h2,[outdir,filesep,'VIFMT_seg_frame_',num2str(iFrame),'.fig']);
+    
+       
+     VIF_plus_MT_current_seg = VIF_current_seg + MT_current_seg >0;
+    
+     ch1_white_background_segment = double(MT_current_seg);
+     ch2_white_background_segment = double(VIF_current_seg);
+     ch3_white_background_segment = double(1-VIF_plus_MT_current_seg);
+     
+     ch1_white_background_segment(find(VIF_plus_MT_current_seg==0))=1;
+     ch2_white_background_segment(find(VIF_plus_MT_current_seg==0))=1;
+    
+     two_channel_seg(:,:,1)= double(ch1_white_background_segment);
+     two_channel_seg(:,:,2)= double(ch2_white_background_segment);
+     two_channel_seg(:,:,3) = double(ch3_white_background_segment);
+     
+    h2=figure(2);imagesc(two_channel_seg(:,1:end,:));axis equal;axis off;
+    figure(2);
+%     set(gca, 'Position', get(gca, 'OuterPosition') - ...
+%        get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
+
+   saveas(h2,[outdir,filesep,'white_VIFMT_seg_frame_',num2str(iFrame),'.tif']);
+   saveas(h2,[outdir,filesep,'white_VIFMT_seg_frame_',num2str(iFrame),'.fig']);
    
+   ch2_white_background_segment(find(VIF_current_seg==1))=0.85;
+   two_channel_seg(:,:,2)= double(ch2_white_background_segment);
+   h2=figure(2);imagesc(two_channel_seg(:,1:end,:));axis equal;axis off;
+   figure(2);
+   saveas(h2,[outdir,filesep,'darkgreenVIF_white_VIFMT_seg_frame_',num2str(iFrame),'.tif']);
+   saveas(h2,[outdir,filesep,'darkgreenVIF_white_VIFMT_seg_frame_',num2str(iFrame),'.fig']);
    
     img_size = size(MT_img);
    
-    network_similarity_scoremap(VIF_current_model,MT_current_model,img_size, radius,outdir,iFrame);
+%     network_similarity_scoremap(VIF_current_model,MT_current_model,img_size, radius,outdir,iFrame);
     
       close all;
 end
