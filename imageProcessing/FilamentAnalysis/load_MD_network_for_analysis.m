@@ -1,4 +1,4 @@
-% function load_MD_network_for_analysis(MD,ROI)
+function load_MD_network_for_analysis(MD,ROI)
 
 movie_Dir = MD.outputDirectory_;
 
