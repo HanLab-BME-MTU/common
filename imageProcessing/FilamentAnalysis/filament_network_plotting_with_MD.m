@@ -281,6 +281,7 @@ for iFrame = param.frames_index
         h5=figure(5);imagesc(RGB_channels_img/255);axis equal;axis off;
         saveas(h5,[outdir,filesep,'RGB_img_frame_',num2str(iFrame),'.tif']);
         saveas(h5,[outdir,filesep,'RGB_img_frame_',num2str(iFrame),'.fig']);
+        saveas(h5,[outdir,filesep,'RGB_img_frame_',num2str(iFrame),'.eps']);
         
         % change back ground color
         all_channel_current_seg = sum(RGB_channels_seg,3)>0;
@@ -327,6 +328,7 @@ for iFrame = param.frames_index
             figure(6);
             %     set(gca, 'Position', get(gca, 'OuterPosition') - ...
             %       get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
+            saveas(h6,[outdir,filesep,'RGB_seg_frame_',num2str(iFrame),'.eps']);
             saveas(h6,[outdir,filesep,'RGB_seg_frame_',num2str(iFrame),'.tif']);
             saveas(h6,[outdir,filesep,'RGB_seg_frame_',num2str(iFrame),'.fig']);
         end
@@ -392,6 +394,7 @@ for iFrame = param.frames_index
         
         saveas(h4,[outdir,filesep,'image_frame_',num2str(iFrame),'.tif']);
         saveas(h4,[outdir,filesep,'image_frame_',num2str(iFrame),'.fig']);
+        saveas(h4,[outdir,filesep,'image_frame_',num2str(iFrame),'.eps']);
         
         % if segmentation overlay is requested
         if(param.overlay==1)
@@ -412,6 +415,7 @@ for iFrame = param.frames_index
                     imagesc(VIF_heat_output);
                     axis equal;axis off;
                     saveas(h_iChInd,[outdir,filesep,'image_frame_',num2str(iFrame),'.tif']);
+                    saveas(h_iChInd,[outdir,filesep,'image_frame_',num2str(iFrame),'.eps']);
                     saveas(h_iChInd,[outdir,filesep,'image_frame_',num2str(iFrame),'.fig']);
                 end
                 
