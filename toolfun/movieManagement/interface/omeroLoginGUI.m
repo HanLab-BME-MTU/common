@@ -194,7 +194,11 @@ if ~isempty(session)
         groupIds = toMatlabList(adminService.getMemberOfGroupIds(user));
         systemGroupId = adminService.getSecurityRoles().systemGroupId;
         userGroupId = adminService.getSecurityRoles().userGroupId;
-        guestGroupId = adminService.getSecurityRoles().guestGroupId;
+        try
+            guestGroupId = adminService.getSecurityRoles().guestGroupId;
+        catch
+            guestGroupId = -1;
+        end
         % Filter out system groups
         groupIds(ismember(groupIds,...
             [systemGroupId userGroupId guestGroupId])) = [];
