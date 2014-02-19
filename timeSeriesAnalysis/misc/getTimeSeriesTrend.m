@@ -105,18 +105,16 @@ for iVar = 1:nVar
                 
             else
                 
+                    
+                newTime = find(~nanTime);    
                 if nanTimePost(1) == 1
                     
-                    newTime = setdiff(find(nanTime),find(nanTimePost)) - 1;
-                    outTS.dTS(iVar,~nanTime)   = deTrend(setdiff(1:nObs-sum(nanTimePost),newTime));
-                    outTS.trend(iVar,~nanTime) = trendC(setdiff(1:nObs-sum(nanTimePost),newTime));
-                    
-                else
-                    
-                    outTS.dTS(iVar,~nanTime(1:end-1))   = deTrend(~nanTime(1:end-1));
-                    outTS.trend(iVar,~nanTime(1:end-1)) = trendC(~nanTime(1:end-1));
+                    [~,bLength] = findBlock(find(nanTimePost),1);
+                    newTime     = find(~nanTime) - bLength(1);
                     
                 end
+                outTS.dTS(iVar,~nanTime)   = deTrend(newTime);
+                outTS.trend(iVar,~nanTime) = trendC(newTime);
                 
             end
             
