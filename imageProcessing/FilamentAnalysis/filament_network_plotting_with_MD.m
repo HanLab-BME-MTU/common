@@ -22,7 +22,7 @@ function filament_network_plotting_with_MD(MD, varargin)
 %   'pixel_based': flag for pixel based method, if 1, construct pixel RGB images
 %   'pixel_dilate_size': for pixel based method, dilate the pixel with this size
 %   'image_background_ch': the grey image channel as background
-
+%   'axis_limit': a 4 number vector to limit the showing window, like [ 1 200 1 400]
 
 %  Test try examples:
 %
@@ -43,7 +43,7 @@ function filament_network_plotting_with_MD(MD, varargin)
 %           to plot the channel 1 image in grey and overlay with filament network, with user defined colors
 %
 %
-ip =inputParser;
+ip = inputParser;
 ip.addRequired('MD',@(x)(isa(x,'MovieData')));
 ip.addOptional('preset_index', 1, @isnumeric)
 preset_pool = {'red_green_blackbackground', 'red_green_whitebackground'};
@@ -65,12 +65,14 @@ ip.addOptional('orientation_heatmap', [0 0], @isvector);
 ip.addOptional('marker_type', {'.','.'}, @iscell);
 ip.addOptional('pixel_based', 1, @isscalar);
 ip.addOptional('pixel_dilate_size', 1, @isscalar);
+ip.addOptional('axis_limit', [1 1 1 1], @vector);
 
 all_options = {'preset_index','preset_name','index_channels',...
     'network_color_cells','background_color','frames_index',...
     'line_widths','overlay','image_inversion','int_max',...
     'background_type','orientation_heatmap','marker_type',...
-    'pixel_based','pixel_dilate_size','image_background_ch'};
+    'pixel_based','pixel_dilate_size','image_background_ch',...
+    'axis_limit'};
 
 ip.parse(MD, varargin{:});
 
@@ -100,6 +102,7 @@ param.marker_type = {'.','.'};
 param.pixel_based = 0;
 param.pixel_dilate_size = 1;
 param.image_background_ch = 0;
+param.axis_limit = [1 MD.imSize_(2) 1  MD.imSize_(1)];
 
 user_assigned_flag = ones(1,20);
 
@@ -176,6 +179,10 @@ if (user_assigned_flag(16) == 1)
     param.image_background_ch = input_setting.image_background_ch;
 end
 
+if (user_assigned_flag(17) == 1)
+    param.axis_limit = input_setting.axis_limit;
+end
+
 % sanity checking
 nChannels =  length(param.index_channels);
 if(length(param.network_color_cells)~=nChannels)
@@ -200,6 +207,12 @@ end
 
 if(param.int_max<0)
     msgbox('Please enter valid maximum intensity.');
+    return;
+end
+
+if(param.axis_limit(1)<0 || param.axis_limit(2)> MD.imSize_(2) ...
+        || param.axis_limit(3)<0 || param.axis_limit(4)> MD.imSize_(1))
+    msgbox('Please enter valid axis limit.');
     return;
 end
 
@@ -279,6 +292,7 @@ for iFrame = param.frames_index
         
         
         h5=figure(5);imagesc(RGB_channels_img/255);axis equal;axis off;
+        axis(param.axis_limit);
         saveas(h5,[outdir,filesep,'RGB_img_frame_',num2str(iFrame),'.tif']);
         saveas(h5,[outdir,filesep,'RGB_img_frame_',num2str(iFrame),'.fig']);
         saveas(h5,[outdir,filesep,'RGB_img_frame_',num2str(iFrame),'.eps']);
@@ -326,15 +340,15 @@ for iFrame = param.frames_index
                 (~strcmp(param.background_type,'solid_color') && param.overlay) )
             h6 = figure(6);imagesc(RGB_channels_user_color(:,1:end,:));axis equal;axis off;
             figure(6);
-            %     set(gca, 'Position', get(gca, 'OuterPosition') - ...
-            %       get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
+            axis(param.axis_limit);
+            set(gca, 'Position', get(gca, 'OuterPosition') - ...
+                get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
             saveas(h6,[outdir,filesep,'RGB_seg_frame_',num2str(iFrame),'.eps']);
             saveas(h6,[outdir,filesep,'RGB_seg_frame_',num2str(iFrame),'.tif']);
             saveas(h6,[outdir,filesep,'RGB_seg_frame_',num2str(iFrame),'.fig']);
         end
+        
     else
-        
-        
         
         % figure 3 is for direct plot with the filament network model obtained
         background_RGB = zeros(MD.imSize_(1),MD.imSize_(2),3);
@@ -392,9 +406,16 @@ for iFrame = param.frames_index
         %     set(gca, 'Position', get(gca, 'OuterPosition') - ...
         %       get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
         
-        saveas(h4,[outdir,filesep,'image_frame_',num2str(iFrame),'.tif']);
-        saveas(h4,[outdir,filesep,'image_frame_',num2str(iFrame),'.fig']);
-        saveas(h4,[outdir,filesep,'image_frame_',num2str(iFrame),'.eps']);
+        axis(param.axis_limit);
+        set(gca, 'Position', get(gca, 'OuterPosition') - ...
+            get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
+        
+        % if background is solid color, don't save anything, else, save image.
+        if(~strcmp(param.background_type,'solid_color'))
+            saveas(h4,[outdir,filesep,'image_frame_',num2str(iFrame),'.tif']);
+            saveas(h4,[outdir,filesep,'image_frame_',num2str(iFrame),'.fig']);
+            saveas(h4,[outdir,filesep,'image_frame_',num2str(iFrame),'.eps']);
+        end
         
         % if segmentation overlay is requested
         if(param.overlay==1)
@@ -414,11 +435,14 @@ for iFrame = param.frames_index
                     h_iChInd = figure(iChInd);
                     imagesc(VIF_heat_output);
                     axis equal;axis off;
+                    set(gca, 'Position', get(gca, 'OuterPosition') - ...
+                        get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
                     saveas(h_iChInd,[outdir,filesep,'image_frame_',num2str(iFrame),'.tif']);
                     saveas(h_iChInd,[outdir,filesep,'image_frame_',num2str(iFrame),'.eps']);
                     saveas(h_iChInd,[outdir,filesep,'image_frame_',num2str(iFrame),'.fig']);
                 end
                 
+                h4 = figure(4);
                 if(strcmp(param.marker_type{iChInd},'-') || ...
                         strcmp(param.marker_type{iChInd},'--') || ...
                         strcmp(param.marker_type{iChInd},':') || ...
@@ -435,8 +459,17 @@ for iFrame = param.frames_index
                         param.marker_type{iChInd},...
                         'Color',param.network_color_cells{iChInd}',...
                         'MarkerSize',param.line_widths(iChInd));
-                end                
+                end
             end
+            
+            h4=figure(4);
+            axis(param.axis_limit);
+            set(gca, 'Position', get(gca, 'OuterPosition') - ...
+                get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
+            saveas(h4,[outdir,filesep,'filament_overlay_',num2str(iFrame),'.tif']);
+            saveas(h4,[outdir,filesep,'filament_overlay_',num2str(iFrame),'.fig']);
+            saveas(h4,[outdir,filesep,'filament_overlay_',num2str(iFrame),'.eps']);
+            
         end
     end
 end
