@@ -103,7 +103,12 @@ pixelSize = pixels.getPhysicalSizeX();
 if ~isempty(pixelSize)
     assert(isequal(pixelSize, pixels.getPhysicalSizeY),...
         'Pixel size different in x and y');
-    movieArgs = horzcat(movieArgs, 'pixelSize_', pixelSize.getValue * 1e3);
+    
+    if pixelSize.getValue() == 1,
+        warning('Pixel size equal to 1.');
+    else
+        movieArgs = horzcat(movieArgs, 'pixelSize_', pixelSize.getValue * 1e3);
+    end
 end
 
 % Read camera bit depth
