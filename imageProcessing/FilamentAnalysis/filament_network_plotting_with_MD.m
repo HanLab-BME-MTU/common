@@ -293,9 +293,12 @@ for iFrame = param.frames_index
         
         h5=figure(5);imagesc(RGB_channels_img/255);axis equal;axis off;
         axis(param.axis_limit);
+        set(gcf,'Units','normal');
+        set(gca,'Position',[0 0 1 1]);
+        iptsetpref('ImshowBorder','tight');
         saveas(h5,[outdir,filesep,'RGB_img_frame_',num2str(iFrame),'.tif']);
         saveas(h5,[outdir,filesep,'RGB_img_frame_',num2str(iFrame),'.fig']);
-        saveas(h5,[outdir,filesep,'RGB_img_frame_',num2str(iFrame),'.eps']);
+        print(h5,'-depsc',[outdir,filesep,'RGB_img_frame_',num2str(iFrame),'.eps']);
         
         % change back ground color
         all_channel_current_seg = sum(RGB_channels_seg,3)>0;
@@ -341,11 +344,14 @@ for iFrame = param.frames_index
             h6 = figure(6);imagesc(RGB_channels_user_color(:,1:end,:));axis equal;axis off;
             figure(6);
             axis(param.axis_limit);
-            set(gca, 'Position', get(gca, 'OuterPosition') - ...
-                get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
-            saveas(h6,[outdir,filesep,'RGB_seg_frame_',num2str(iFrame),'.eps']);
-            saveas(h6,[outdir,filesep,'RGB_seg_frame_',num2str(iFrame),'.tif']);
+            %             set(gca, 'Position', get(gca, 'OuterPosition') - ...
+            %                 get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
+            set(gcf,'Units','normal');
+            set(gca,'Position',[0 0 1 1]);
+            iptsetpref('ImshowBorder','tight');
             saveas(h6,[outdir,filesep,'RGB_seg_frame_',num2str(iFrame),'.fig']);
+            saveas(h6,[outdir,filesep,'RGB_seg_frame_',num2str(iFrame),'.tif']);
+            print(h6,'-depsc',[outdir,filesep,'RGB_seg_frame_',num2str(iFrame),'.eps']);
         end
         
     else
@@ -403,18 +409,18 @@ for iFrame = param.frames_index
         h4 = figure(4); hold off;
         imagesc(background_RGB(:,1:end,:)/255);axis equal;axis off;
         hold on;
-        %     set(gca, 'Position', get(gca, 'OuterPosition') - ...
-        %       get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
-        
-        axis(param.axis_limit);
-        set(gca, 'Position', get(gca, 'OuterPosition') - ...
-            get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
         
         % if background is solid color, don't save anything, else, save image.
         if(~strcmp(param.background_type,'solid_color'))
+            axis(param.axis_limit);
+            %             set(gca, 'Position', get(gca, 'OuterPosition') - ...
+            %                 get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
+            set(gcf,'Units','normal');
+            set(gca,'Position',[0 0 1 1]);
+            
             saveas(h4,[outdir,filesep,'image_frame_',num2str(iFrame),'.tif']);
             saveas(h4,[outdir,filesep,'image_frame_',num2str(iFrame),'.fig']);
-            saveas(h4,[outdir,filesep,'image_frame_',num2str(iFrame),'.eps']);
+            print(h4,'-depsc',[outdir,filesep,'image_frame_',num2str(iFrame),'.eps']);
         end
         
         % if segmentation overlay is requested
@@ -435,11 +441,16 @@ for iFrame = param.frames_index
                     h_iChInd = figure(iChInd);
                     imagesc(VIF_heat_output);
                     axis equal;axis off;
-                    set(gca, 'Position', get(gca, 'OuterPosition') - ...
-                        get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
+                    axis(param.axis_limit);
+                    
+                    %                     set(gca, 'Position', get(gca, 'OuterPosition') - ...
+                    %                         get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
+                    set(gcf,'Units','normal');
+                    set(gca,'Position',[0 0 1 1]);
+                    
                     saveas(h_iChInd,[outdir,filesep,'image_frame_',num2str(iFrame),'.tif']);
-                    saveas(h_iChInd,[outdir,filesep,'image_frame_',num2str(iFrame),'.eps']);
                     saveas(h_iChInd,[outdir,filesep,'image_frame_',num2str(iFrame),'.fig']);
+                    print(h_iChInd,'-depsc',[outdir,filesep,'image_frame_',num2str(iFrame),'.eps']);
                 end
                 
                 h4 = figure(4);
@@ -464,11 +475,33 @@ for iFrame = param.frames_index
             
             h4=figure(4);
             axis(param.axis_limit);
-            set(gca, 'Position', get(gca, 'OuterPosition') - ...
-                get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
+            %             set(gca, 'Position', get(gca, 'OuterPosition') - ...
+            %                 get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
+            %
+            
+            set(gcf,'Units','normal');
+            set(gca,'Position',[0 0 1 1]);
+            iptsetpref('ImshowBorder','tight');
+            
+            % set(gcf, 'PaperUnits','centimeter');
+            % set(gcf, 'PaperSize', [MD.imSize_(2)/20 MD.imSize_(1)/20]);
+            % set(gcf, 'PaperPositionMode', 'manual');
+            % set(gcf, 'PaperPosition',[0 0  MD.imSize_(2)/20 MD.imSize_(1)/20]);
+            % set(gcf, 'Position',[100 50  MD.imSize_(2) MD.imSize_(1)]);
+            %
+            % set(gca,'DataAspectRatioMode','auto');
+            % set(gca,'PlotBoxAspectRatioMode','auto');
+            % set(gca,'CameraViewAngleMode','auto');
+            %
+            % set(gca,'Units','pixels');
+            % set(gca, 'Position',[0 0  MD.imSize_(2) MD.imSize_(1)]);
+            
             saveas(h4,[outdir,filesep,'filament_overlay_',num2str(iFrame),'.tif']);
             saveas(h4,[outdir,filesep,'filament_overlay_',num2str(iFrame),'.fig']);
-            saveas(h4,[outdir,filesep,'filament_overlay_',num2str(iFrame),'.eps']);
+            print(h4,'-depsc',[outdir,filesep,'filament_overlay_',num2str(iFrame),'.eps']);
+            
+            
+            
             
         end
     end
