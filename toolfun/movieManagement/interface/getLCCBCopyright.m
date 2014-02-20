@@ -15,5 +15,5 @@ function copyright = getLCCBCopyright()
 % Sebastien Besson, Feb 2013
 
 % Set year and version information
-str_year = '2013';
+str_year = '2014';
 copyright = sprintf('Copyright %s LCCB', str_year);
