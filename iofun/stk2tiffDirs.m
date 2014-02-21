@@ -23,6 +23,8 @@ ip.addParamValue('Crop', 'off', @(x) strcmpi(x, 'on') | strcmpi(x, 'off'));
 ip.addParamValue('Channels', 1, @isscalar);
 ip.addParamValue('ChannelOrder', 'interleaved', @(x) any(strcmpi(x, {'interleaved', 'consecutive'})));
 ip.addParamValue('ChannelNames', cell(1));
+ip.addParamValue('WriteMode', 'overwrite', @(x) any(strcmpi(x, {'overwrite', 'append'})));
+ip.addParamValue('Compression', 'none', @(x) any(strcmpi(x, {'none', 'lzw'})));
 ip.parse(varargin{:});
 stkpath = ip.Results.path;
 crop = ip.Results.Crop;
@@ -85,8 +87,16 @@ for k = 1:N
     for c = 1:nc
         destdir = [stkpath stkname filesep cdir{c}];
         [~,~] = mkdir(destdir);
-        for f = 1:nf
-            imwrite(stack(:,:,idx(c,f)), [destdir stkname '_' num2str(f, fmt) '.tif'], 'tif');
+        if strcmpi(ip.Results.WriteMode, 'Overwrite')
+            for f = 1:nf
+                imwrite(stack(:,:,idx(c,f)), [destdir stkname '_' num2str(f, fmt) '.tif'],...
+                    'tif', 'Compression', ip.Results.Compression);
+            end
+        else
+            for f = 1:nf
+                imwrite(stack(:,:,idx(c,f)), [destdir stkname '.tif'],...
+                    'tif', 'WriteMode', 'append', 'Compression', ip.Results.Compression);
+            end
         end
     end
 end
