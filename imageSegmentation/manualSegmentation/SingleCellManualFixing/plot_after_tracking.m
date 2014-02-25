@@ -127,3 +127,8 @@ for iCompleteFrame = 1 : nCompleteFrame
     
 end
 BA_output.branch_vif_mean_intensity  = nanmean(vif_mean_matrix');
+
+BA_output.protrusion_vif_mean_intensity =  mean(red_vif_pool);
+
+BA_output.retraction_vif_mean_intensity =  mean(green_vif_pool);
+
