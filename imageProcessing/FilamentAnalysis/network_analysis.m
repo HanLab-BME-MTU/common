@@ -13,9 +13,6 @@ VIF_current_seg = filament_model_to_seg_bwim(VIF_current_model,img_size,[]);
 [VIF_digital_model,VIF_orientation_model,VIF_XX,VIF_YY,VIF_OO] ...
         = filament_model_to_digital_with_orientation(VIF_current_model);
 
-    ROI = ones(img_size);
-    ROI(:,1:300)=0;
-    
     if(mean2(double(ROI))==1)
         VIF_ROI_model= VIF_digital_model;
         VIF_ROI_orientation_model =VIF_orientation_model;
@@ -25,6 +22,7 @@ VIF_current_seg = filament_model_to_seg_bwim(VIF_current_model,img_size,[]);
         VIF_ROI_orientation_model =  cell(1,1);
         
         for iF = 1 : length(VIF_digital_model)
+            try
             x = VIF_digital_model{iF}(:,1);
             y = VIF_digital_model{iF}(:,2);
             ind_xy = sub2ind(img_size,y,x);
@@ -36,6 +34,7 @@ VIF_current_seg = filament_model_to_seg_bwim(VIF_current_model,img_size,[]);
                    VIF_ROI_orientation_model{count} = VIF_orientation_model{iF}(find(inROI_label==iR));                   
                    count = count +1 ;                   
                end
+            end
             end
         end
     end
@@ -53,6 +52,7 @@ straightness_per_filament_pool = [];
 
 
 for iF = 1 : length(VIF_ROI_model)
+    try
     x = VIF_ROI_model{iF}(:,1);
     y = VIF_ROI_model{iF}(:,2);
     
@@ -63,7 +63,7 @@ for iF = 1 : length(VIF_ROI_model)
     pixel_number_per_filament_pool(iF) = length(x);
     length_per_filament_pool(iF) = filament_detailed_length;
     straightness_per_filament_pool(iF) = filament_start_end_distance/filament_detailed_length;
-    
+    end
 end
 
 h1 =  figure(1); 
