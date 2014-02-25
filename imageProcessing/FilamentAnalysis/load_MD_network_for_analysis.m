@@ -51,7 +51,7 @@ for iChannel = 1 :  length(MD.channels_)
             = filament_model_to_digital_with_orientation(VIF_current_model);
         
         VIF_current_seg = (isnan(VIF_orientation)==0);
-        ROI=[];
+%         ROI=[];
         if(isempty(ROI))
             ROI = ones(size(VIF_current_seg));
         end
