@@ -135,6 +135,8 @@ for iCompleteFrame = 1 : nCompleteFrame
         RG_framem1(:,:,2) = (smoothed_mask_cell{1,iCompleteFrame-1});
     end
     
+    boundary_map = bwmorph(smoothed_current_mask,'remove');
+
    thin_current_mask = bwmorph(smoothed_current_mask,'thin',Inf);
     
     % Find the end points and branching points
@@ -179,7 +181,9 @@ for iCompleteFrame = 1 : nCompleteFrame
         
         Lia = ismember(IDX(:),this_branch_IDX);
        
-        if(sum(end_points_map(find(labelMask==iL)))==0)
+         if(sum(end_points_map(find(labelMask==iL)))==0 && ...
+                sum(boundary_map(find(Lia>0)))==0 && ...
+                length(this_branch_IDX)<40)
             branch_leaf_flag(iL)=0;
             labelMask_without_inner(find(labelMask==iL))=0;
             region_branch_wo_inner_label(Lia>0)=0;
@@ -187,8 +191,8 @@ for iCompleteFrame = 1 : nCompleteFrame
             branch_leaf_flag(iL)=1;   
             region_branch_label(Lia>0)=iL;   
             region_branch_wo_inner_label(Lia>0)=iL;              
-        end
-               
+         end
+        
         region_branch_label_R(Lia>0)=(0.3+color_array(iL,1))/(1.3);
         region_branch_label_G(Lia>0)=(0.3+color_array(iL,2))/(1.3);
         region_branch_label_B(Lia>0)=(0.3+color_array(iL,3))/(1.3);
