@@ -155,7 +155,8 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
             if flagDebug
                 fprintf( 1, '\n\tBuilding KD-Tree ...\n' );        
             end        
-            kdtree_points = KDTree( ptData );  
+            
+            kdtree_points = KDTreeSearcher( ptData );  
             
         end
         
@@ -183,7 +184,8 @@ function [clusterInfo, pointToClusterMap] = OptimizedMeanShift( ptData, bandwidt
 
                 % get nearest points
                 if flagUseKDTree
-                    [ptIdNearest] = kdtree_points.ball( ptOldMean, kernelSupport);
+                    [ptIdNearest] = rangesearch(kdtree_points, ptOldMean, kernelSupport);
+                    ptIdNearest = ptIdNearest{1};
                 else                    
                     ptIdNearest = exhaustive_ball_query( ptData, ptOldMean, kernelSupport);                       
                 end
@@ -274,7 +276,7 @@ function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData
             if flagDebug
                 fprintf( 1, '\n\tBuilding KD-Tree ...\n' );        
             end        
-            kdtree_points = KDTree( ptData );  
+            kdtree_points = KDTreeSearcher( ptData );  
             
         end        
         
@@ -296,7 +298,8 @@ function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData
 
                 % get nearest points
                 if flagUseKDTree
-                    [ptIdNearest] = kdtree_points.ball( ptOldMean, kernelSupport );
+                    [ptIdNearest] = rangesearch(kdtree_points, ptOldMean, kernelSupport);
+                    ptIdNearest = ptIdNearest{1};
                 else                    
                     ptIdNearest = exhaustive_ball_query( ptData, ptOldMean, kernelSupport );                       
                 end

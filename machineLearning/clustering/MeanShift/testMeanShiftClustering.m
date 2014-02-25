@@ -19,8 +19,7 @@ end
 % Run mean-shift
 bandwidth = 0.5;
 tic
-profile on;
-numRuns = 1000;
+numRuns = 100;
 
 h = waitbar(0, 'Running multiple runs of mean-shift ...');
 
@@ -35,11 +34,9 @@ for i = 1:numRuns
     
 end
 
-close(h);
+fprintf('\nIt took an average of %.2f seconds to cluster %d points\n', toc / numRuns, size(ptRawData,1));
 
-profile off;
-profile viewer;
-toc
+close(h);
 
 % plot result
 figure;
