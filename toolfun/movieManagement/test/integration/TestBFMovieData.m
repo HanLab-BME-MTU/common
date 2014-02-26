@@ -15,7 +15,7 @@ classdef TestBFMovieData < TestMovieData & TestCase
             self.setUp@TestMovieData();
             
             % Get path to loci_tools (assuming it is in Matlab path)
-            self.lociToolsPath = which('loci_tools.jar');
+            self.lociToolsPath = which('bioformats_package.jar');
             assert(~isempty(self.lociToolsPath));
             
             % Remove loci_tools from dynamic class path
