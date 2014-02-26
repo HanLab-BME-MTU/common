@@ -193,7 +193,7 @@ disp('Creating Bio-Formats directory...')
 bfSourceDir=fileparts(which('bfGetReader.m'));
 bfTargetDir=[outDir filesep 'bioformats'];
 copyfile(fullfile(bfSourceDir, '*.m'), bfTargetDir)
-copyfile(fullfile(bfSourceDir, 'loci_tools.jar'), bfTargetDir)
+copyfile(fullfile(bfSourceDir, 'bioformats_package.jar'), bfTargetDir)
 
 disp(['Wrote package to ' outDir])
 

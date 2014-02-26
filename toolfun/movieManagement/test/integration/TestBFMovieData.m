@@ -14,11 +14,11 @@ classdef TestBFMovieData < TestMovieData & TestCase
         function setUp(self)
             self.setUp@TestMovieData();
             
-            % Get path to loci_tools (assuming it is in Matlab path)
+            % Get path to Bio-Formats JAR (assuming it is in Matlab path)
             self.lociToolsPath = which('bioformats_package.jar');
             assert(~isempty(self.lociToolsPath));
             
-            % Remove loci_tools from dynamic class path
+            % Remove Bio-Formats JAR from dynamic class path
             if ismember(self.lociToolsPath,javaclasspath('-dynamic'))
                 javarmpath(self.lociToolsPath);
             end
@@ -33,7 +33,7 @@ classdef TestBFMovieData < TestMovieData & TestCase
         function tearDown(self)
             self.tearDown@TestMovieData();
             
-            % Remove loci_tools from dynamic class path
+            % Remove Bio-Formats JAR from dynamic class path
             if ismember(self.lociToolsPath,javaclasspath('-dynamic'))
                 javarmpath(self.lociToolsPath);
             end
