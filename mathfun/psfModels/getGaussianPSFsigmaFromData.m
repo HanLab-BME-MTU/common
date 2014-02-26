@@ -53,14 +53,11 @@ end
 svect = [svect{:}];
 
 opts = statset('maxIter', 200);
-% BIC = zeros(1,3);
-% sigma = zeros(1,3);
 try
     w = warning('off', 'stats:gmdistribution:FailedToConverge');
     obj = cell(1,3);
     for n = 1:3
         obj{n} = gmdistribution.fit(svect', n, 'Options', opts);
-       
     end
     [~,idx] = min(cellfun(@(i) i.BIC, obj));
     obj = obj{idx};
@@ -73,14 +70,15 @@ try
     warning(w);
 
     if ip.Results.Display
-        si = linspace(prctile(svect,0.5), prctile(svect,99.5), 100);
-        ni = hist(svect, si);
+        si = linspace(0, prctile(svect,99.5), 101);
+        ni = histc(svect, si);
         ds = si(2)-si(1);
         ni = ni/sum(ni)/ds;
         
         setupFigure('DisplayMode', 'screen');
-        h = bar(si,ni);
-        set(h, 'BarWidth', 1, 'FaceColor', 0.6*[1 1 1], 'EdgeColor', 'none');
+        h = bar(si,ni,'histc');
+        
+        set(h, 'FaceColor', 0.6*[1 1 1], 'EdgeColor', 'none');
         
         hold on;
         plot(si, pdf(obj,si'), 'r');
@@ -88,10 +86,12 @@ try
             plot(si, amp(i)*normpdf(si, mu(i), svec(i)), 'k', 'HandleVisibility', 'off');
         end
         plot(si, amp(idx)*normpdf(si, mu(idx), svec(idx)), 'g');
-        xlabel('Sigma');
+        plot(mu(idx)*[1 1], [0 amp(idx)/(sqrt(2*pi)*svec(idx))], 'g', 'LineWidth', 3);
+        xlabel('Standard deviation of 2D Gaussian model (pixels)');
         ylabel('Frequency');
-        hl = legend(' Measured distribution', ' Model mixture', 'Selected mode'); 
+        hl = legend(' Measured distribution', ' Mixture model', 'Primary mode', ['\sigma = ' num2str(mu(idx), '%.2f')]); 
         set(hl, 'Box', 'off');
+        formatTickLabels();
         drawnow;
     end
 catch
