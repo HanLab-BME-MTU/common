@@ -3,7 +3,8 @@
  * (c) Francois Aguet, 30/08/2012 (last modified 09/02/2012).
  *
  * Compilation:
- * Mac/Linux: mex -I/usr/local/include -I../../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a steerableDetector3D.cpp
+ * Mac/Linux (dynamic): mex -I/usr/local/include -I../../mex/include -lgsl -lgslcblas steerableDetector3D.cpp
+ * Mac/Linux (static): mex -I/usr/local/include -I../../mex/include /usr/local/lib/libgsl.a /usr/local/lib/libgslcblas.a steerableDetector3D.cpp
  * Windows: mex COMPFLAGS="$COMPFLAGS /TP /MT" -I"..\..\..\extern\mex\include\gsl-1.15" -I"..\..\mex\include" "..\..\..\extern\mex\lib\gsl.lib" "..\..\..\extern\mex\lib\cblas.lib" -output steerableDetector3D steerableDetector3D.cpp
  */
 
@@ -57,6 +58,9 @@ private:
     void computeCurveNMS();
     void computeSurfaceNMS();
     void run();
+    
+    void calculateTemplates0();
+    void run0();
 };
 
 Filter::Filter(const double voxels[], const int nx, const int ny, const int nz, const int M, const double sigma) {
@@ -95,20 +99,24 @@ void Filter::init() {
     
     N_ = nx_*ny_*nz_;
     response_ = new double[N_];
-    gxx_ = new double[N_];
-    gxy_ = new double[N_];
-    gxz_ = new double[N_];
-    gyy_ = new double[N_];
-    gyz_ = new double[N_];
-    gzz_ = new double[N_];
-    
     orientation_ = new double*[N_];
     for (int i=0;i<N_;++i) {
         orientation_[i] = new double[3];
     }
     
-    calculateTemplates();
-    run();
+    gxx_ = new double[N_];
+    gyy_ = new double[N_];
+    gzz_ = new double[N_];
+    if (M_<3) {
+        gxy_ = new double[N_];
+        gxz_ = new double[N_];
+        gyz_ = new double[N_];
+        calculateTemplates();
+        run();
+    } else {
+        calculateTemplates0();
+        run0();
+    }
     
     nms_ = new double[N_];
     memset(nms_, 0, N_*sizeof(double));
@@ -116,23 +124,81 @@ void Filter::init() {
         computeCurveNMS();
     } else if (M_==2) {
         computeSurfaceNMS();
-    }    
+    } else if (M_==3) {
+        computeSurfaceNMS();
+    }      
 }
 
 
 Filter::~Filter() {
     delete[] response_;
     delete[] gxx_;
-    delete[] gxy_;
-    delete[] gxz_;
-    delete[] gyy_;
-    delete[] gyz_;
     delete[] gzz_;
+    delete[] gyy_;
+    if (M_<3) {
+        delete[] gxy_;
+        delete[] gxz_;
+        delete[] gyz_;
+    }
     delete[] nms_;
     for (int i=0;i<N_;++i) {
         delete[] orientation_[i];
     }
     delete[] orientation_;
+}
+
+
+void Filter::calculateTemplates0() {
+    
+    double *buffer = new double[N_];
+    
+    int wWidth = (int)(3.0*sigma_);
+    int kLength = wWidth+1;
+    double sigma2 = sigma_*sigma_;
+    
+    int wWidthZ = (int)(3.0*sigmaZ_);
+    int kLengthZ = wWidthZ+1;
+    double sigmaZ2 = sigmaZ_*sigmaZ_;
+    
+    // Compute Gaussian kernels
+    double *kernelG = new double[kLength];
+    double *kernelGx = new double[kLength];
+    
+    double *kernelG_z = new double[kLengthZ];
+    double *kernelGx_z = new double[kLengthZ];
+    
+    double g;
+    for (int i=0;i<=wWidth;++i) {
+        g = exp(-(i*i)/(2.0*sigma2)); // normalization by sqrt(2*PI)*sigma_ omitted
+        kernelG[i] = g;               // to keep magnitude of response similar to input
+        kernelGx[i] = -i/sigma2 * g;
+    }
+    
+    for (int i=0;i<=wWidthZ;++i) {
+        g = exp(-(i*i)/(2.0*sigmaZ2));
+        kernelG_z[i] = g;
+        kernelGx_z[i] = -i/sigmaZ2 * g;
+    }
+    
+    // Convolutions
+    convolveOddX(voxels_, kernelGx, kLength, nx_, ny_, nz_, gxx_);
+    convolveEvenX(voxels_, kernelG, kLength, nx_, ny_, nz_, gyy_);
+    memcpy(gzz_, gyy_, N_*sizeof(double));
+    
+    convolveEvenY(gxx_, kernelG, kLength, nx_, ny_, nz_, buffer);
+    convolveEvenZ(buffer, kernelG_z, kLengthZ, nx_, ny_, nz_, gxx_);
+    
+    convolveOddY(gyy_, kernelGx, kLength, nx_, ny_, nz_, buffer);
+    convolveEvenZ(buffer, kernelG_z, kLengthZ, nx_, ny_, nz_, gyy_);
+    
+    convolveEvenY(gzz_, kernelG, kLength, nx_, ny_, nz_, buffer);
+    convolveOddZ(buffer, kernelGx_z, kLengthZ, nx_, ny_, nz_, gzz_);
+    
+    delete[] kernelG;
+    delete[] kernelGx;
+    delete[] kernelG_z;
+    delete[] kernelGx_z;
+    delete[] buffer;
 }
 
 
@@ -244,6 +310,26 @@ void Filter::run() {
     }
 }
 
+// Solution for 1st order filter (detects interfaces); analogous to 2D edge detector
+void Filter::run0() {
+    
+    double res;
+    
+    for (int i=0;i<N_;++i) {
+        res = sqrt(gxx_[i]*gxx_[i] + gyy_[i]*gyy_[i] + gzz_[i]*gzz_[i]);
+        response_[i] = res;
+        if (res!=0.0) {
+            orientation_[i][0] = gxx_[i]/res;
+            orientation_[i][1] = gyy_[i]/res;
+            orientation_[i][2] = gzz_[i]/res;
+        } else {
+            orientation_[i][0] = 1.0;
+            orientation_[i][1] = 0.0;
+            orientation_[i][2] = 0.0;
+        }
+    }
+}
+
 
 void Filter::normalize(double v[], const int k) {
     double n = 0.0;
@@ -299,13 +385,12 @@ double Filter::interpResponse(const double x, const double y, const double z) {
     x0 = mirror(xi, nx_);
     y0 = mirror(yi, ny_);
     z0 = mirror(zi, nz_);
-    
+  
     double z00 = (1.0-dy)*((1.0-dx)*response_[x0+y0*nx_+z0*nx_*ny_] + dx*response_[x1+y0*nx_+z0*nx_*ny_])
                      + dy*((1.0-dx)*response_[x0+y1*nx_+z0*nx_*ny_] + dx*response_[x1+y1*nx_+z0*nx_*ny_]);
     double z11 = (1.0-dy)*((1.0-dx)*response_[x0+y0*nx_+z1*nx_*ny_] + dx*response_[x1+y0*nx_+z1*nx_*ny_])
                      + dy*((1.0-dx)*response_[x0+y1*nx_+z1*nx_*ny_] + dx*response_[x1+y1*nx_+z1*nx_*ny_]);
     return (1.0-dz)*z00 + dz*z11;
-    return 0.0;
 }
 
 
@@ -416,7 +501,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     
     // check order
-    if (!mxIsDouble(prhs[1]) || mxGetNumberOfElements(prhs[1]) != 1 || *mxGetPr(prhs[1])<1 || *mxGetPr(prhs[1])>2)
+    if (!mxIsDouble(prhs[1]) || mxGetNumberOfElements(prhs[1]) != 1 || *mxGetPr(prhs[1])<1 || *mxGetPr(prhs[1])>3)
         mexErrMsgTxt("The filter type 'M' must be 1 (curve detector) or 2 (surface detector).");
     int M = (int) *mxGetPr(prhs[1]);
     
