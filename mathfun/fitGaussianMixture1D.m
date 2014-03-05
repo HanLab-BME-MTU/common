@@ -15,6 +15,10 @@
 %              mu : means of the Gaussians. 2nd row contains propagated error
 %           sigma : standard deviations of the Gaussians. 2nd row: propagated error
 %               A : amplitudes/relative contributions of the Gaussians. 2nd row: propagated error
+%
+% Note: when constraining the means, the minimum bound for the lowest mean is 
+%       set to the 5th percentile of the data. This value can be adjusted with
+%       the parameter 'MinPercentile'. Default 5.
 
 % Francois Aguet, 07/19/2011 (last updated: 07/12/2013)
 
@@ -29,6 +33,7 @@ ip.addParamValue('Init', [], @isvector);
 ip.addParamValue('Display', 'on', @(x) any(strcmpi(x, {'on','off'})));
 ip.addParamValue('Optimizer', 'lsqnonlin', @(x) any(strcmpi(x, {'fmincon','lsqnonlin'})));
 ip.addParamValue('ConstrainMeans', false, @islogical);
+ip.addParamValue('MinPercentile', 5);
 ip.parse(arg1, arg2, varargin{:});
 init = ip.Results.Init;
 
@@ -43,6 +48,8 @@ if ~isempty(ip.Results.arg3)
     mode = 'PDF';
     mu0 = sum(x.*f)/sum(f);
     sigma0 = sqrt(sum((x-mu0).^2.*f)/sum(f));
+    [cdf,idx] = unique(cumsum(f)*dx);
+    Amin = interp1(cdf, x(idx), ip.Results.MinPercentile/100);
 else
     data = ip.Results.arg1;
     n = ip.Results.arg2;
@@ -50,6 +57,7 @@ else
     mode = 'CDF';
     mu0 = mean(data);
     sigma0 = std(data);
+    Amin = prctile(data, ip.Results.MinPercentile);
 end
 
 opts = optimset('MaxFunEvals', 1e4, ...
@@ -65,7 +73,8 @@ if isempty(init)
     A_init = (n:-1:1)/n/(n+1)*2;
     if ip.Results.ConstrainMeans
         init = [mu_init(1) reshape([sigma_init; A_init], [1 2*n])];
-        lb = [-Inf zeros(1,2*n)];
+        % if means are constrained, constrain minimum mean to 5th percentile of data
+        lb = [Amin zeros(1,2*n)];
         ub = [Inf repmat([Inf 1], [1 n])];
     else
         lb = repmat([-Inf 0 0], [1 n]);
@@ -143,19 +152,31 @@ end
 
 
 if strcmpi(ip.Results.Display, 'on')
+    % always plot PDF
     figure;
     hold on;
-    plot(x, f, 'k', 'LineWidth', 1);
-    switch mode
-        case 'CDF'
-            plot(x, mixtureModelCDF(x, mu, sigma, A), 'r--', 'LineWidth', 2);
-            axis([min(x) max(x) 0 1]);
-        case 'PDF'
-            for i = 1:n
-                f = mixtureModelPDF(x, mu(i), sigma(i), A(i));
-                plot(x, f, 'b--', 'LineWidth', 1.5);
-            end            
-            plot(x, mixtureModelPDF(x, mu, sigma, A), 'r--', 'LineWidth', 1.5);
+    if strcmpi(mode, 'PDF')
+        plot(x, f, 'k', 'LineWidth', 1);
+    else
+        [di,xi] = ksdensity(data, 'npoints', 100);
+        plot(xi, di, 'k', 'LineWidth', 1);
+        title('Kernel density');
+    end
+    for i = 1:n
+        plot(xi, mixtureModelPDF(xi, mu(i), sigma(i), A(i)), 'b--', 'LineWidth', 1.5);
+    end
+    
+    plot(xi, mixtureModelPDF(xi, mu, sigma, A), 'r--', 'LineWidth', 1.5);
+    if strcmpi(mode, 'CDF')
+        figure;
+        hold on;
+        plot(x, f, 'k', 'LineWidth', 1);
+        for i = 1:n
+           f = mixtureModelCDF(x, mu(i), sigma(i), A(i));
+           plot(x, f, 'b--', 'LineWidth', 1);
+        end
+        plot(x, mixtureModelCDF(x, mu, sigma, A), 'r--', 'LineWidth', 1.5);
+        axis([min(x) max(x) 0 1]);
     end
 end
 
