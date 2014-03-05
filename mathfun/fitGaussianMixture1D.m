@@ -152,32 +152,35 @@ end
 
 
 if strcmpi(ip.Results.Display, 'on')
+    if strcmpi(mode, 'CDF')
+        figure;
+        hold on;
+        plot(x, f, 'k', 'LineWidth', 1);
+        for i = 1:n
+            f = mixtureModelCDF(x, mu(i), sigma(i), A(i));
+            plot(x, f, 'b--', 'LineWidth', 1);
+        end
+        plot(x, mixtureModelCDF(x, mu, sigma, A), 'r--', 'LineWidth', 1.5);
+        axis([min(x) max(x) 0 1]);
+    end
+    
     % always plot PDF
     figure;
     hold on;
     if strcmpi(mode, 'PDF')
         plot(x, f, 'k', 'LineWidth', 1);
     else
-        [di,xi] = ksdensity(data, 'npoints', 100);
-        plot(xi, di, 'k', 'LineWidth', 1);
+        [di,x] = ksdensity(data, 'npoints', 100);
+        plot(x, di, 'k', 'LineWidth', 1);
         title('Kernel density');
     end
     for i = 1:n
-        plot(xi, mixtureModelPDF(xi, mu(i), sigma(i), A(i)), 'b--', 'LineWidth', 1.5);
+        plot(x, mixtureModelPDF(x, mu(i), sigma(i), A(i)), 'b--', 'LineWidth', 1.5);
     end
+    plot(x, mixtureModelPDF(x, mu, sigma, A), 'r--', 'LineWidth', 1.5);
+
     
-    plot(xi, mixtureModelPDF(xi, mu, sigma, A), 'r--', 'LineWidth', 1.5);
-    if strcmpi(mode, 'CDF')
-        figure;
-        hold on;
-        plot(x, f, 'k', 'LineWidth', 1);
-        for i = 1:n
-           f = mixtureModelCDF(x, mu(i), sigma(i), A(i));
-           plot(x, f, 'b--', 'LineWidth', 1);
-        end
-        plot(x, mixtureModelCDF(x, mu, sigma, A), 'r--', 'LineWidth', 1.5);
-        axis([min(x) max(x) 0 1]);
-    end
+   
 end
 
 
