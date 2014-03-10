@@ -1,5 +1,5 @@
-tracksDir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\131127\analysisAlphaVY773A\tracks\';
-diffDir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\131127\analysisAlphaVY773A\diffusion\';
+tracksDir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\140221_Cs1C1_Y773A\analysisAlphaVY773A\tracks';
+diffDir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\140221_Cs1C1_Y773A\analysisAlphaVY773A\diffusion\';
 
 tracksFileName = {...
     'tracks1All_01.mat',...

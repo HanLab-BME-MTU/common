@@ -85,8 +85,8 @@ kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 %% additional input
 
 %saveResults
-saveResults.dir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\131202\analysisAlphaVY773A\'; %directory where to save input and output
-% saveResults.filename = 'tracksTest1DetectionAll1.mat'; %name of file where input and output are saved
+saveResults.dir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\140226_Cs3C2_Y773A\analysisAlphaVY773A\'; %directory where to save input and output
+saveResults.filename = 'tracksAll1.mat'; %name of file where input and output are saved
 % saveResults = 0; %don't save results
 
 %verbose state
@@ -100,30 +100,12 @@ probDim = 2;
 % [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfo(1:300),...
 %     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
 
-% for i = 1 : 12
-for i = 1
+for i = 1 : 12
     movieInfoTmp((i-1)*1200+1:i*1200) = movieInfo((i-1)*1200+1:i*1200);
     saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
     [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
         costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
     clear movieInfoTmp
 end
-
-% i=6;
-% movieInfoTmp((i-1)*1200+1:6800) = movieInfo((i-1)*1200+1:6800);
-% saveResults.filename = ['tracks1All_' sprintf('%02i',i) '.mat'];
-% [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(movieInfoTmp,...
-%     costMatrices,gapCloseParam,kalmanFunctions,probDim,saveResults,verbose);
-% clear movieInfoTmp
-
-
-% for startFrame = 1 : 400 : 48000
-%     endFrame = startFrame + 399;
-%     saveResults.filename = ['tracks2Detection1_Frames' sprintf('%05i',startFrame) 'to' sprintf('%05i',endFrame) '.mat'];
-%     disp(startFrame)
-%     [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(...
-%         movieInfo(startFrame:endFrame),costMatrices,gapCloseParam,...
-%         kalmanFunctions,probDim,saveResults,verbose);
-% end
 
 %% ~~~ the end ~~~

@@ -218,6 +218,7 @@ if numIntegWindow > numAlphaLocMax
         alphaLocMax(1)*ones(1,numIntegWindow-numAlphaLocMax)];
 end
 
+%get background information if supplied
 if ~isfield(detectionParam,'background') || isempty(detectionParam.background)
     absBG = 0;
 else
@@ -225,6 +226,14 @@ else
     bgImageDir = detectionParam.background.imageDir;
     bgImageBase = detectionParam.background.filenameBase;
     alphaLocMaxAbs = detectionParam.background.alphaLocMaxAbs;
+end
+
+%get mask information if any
+if ~isfield(detectionParam,'maskLoc') || isempty(detectionParam.maskLoc)
+    maskFlag = 0;
+else
+    maskFlag = 1;
+    maskImage = double(imread(detectionParam.maskLoc));
 end
 
 %determine where to save results
@@ -292,6 +301,12 @@ else
     imageSizeX=channel.owner_.imSize_(1);
     imageSizeY=channel.owner_.imSize_(2);
 end
+
+%make mask of one if no mask is supplied
+if ~maskFlag
+    maskImage = ones(imageSizeX,imageSizeY);
+end
+
 %check which images exist and which don't
 imageExists = true(numImagesRaw,1);
 if hasImageDir
@@ -315,6 +330,8 @@ for iImage = last5start : numImagesRaw
         imageLast5(:,:,i) = double(channel.loadImage(imageIndx(iImage)));
     end
 end
+%apply mask
+imageLast5 = imageLast5 .* repmat(maskImage,[1 1 size(imageLast5,3)]);
 
 imageLast5 = double(imageLast5) / (2^bitDepth-1);
 imageLast5(imageLast5==0) = NaN;
@@ -350,6 +367,8 @@ for iWindow = 1 : numIntegWindow
                 imageRaw(:,:,jImage) = double(channel.loadImage(imageIndx(jImage+iImage-1)));
             end
         end
+        %apply mask
+        imageRaw = imageRaw .* repmat(maskImage,1+2*integWindow(iWindow));
         
         %replace zeros with NaNs
         %zeros result from cropping that leads to curved boundaries
@@ -680,6 +699,8 @@ if numSigmaIter
                 imageRaw= channel.loadImage(imageIndx(iImage));
             end
             imageRaw = double(imageRaw) / (2^bitDepth-1);
+            %apply mask
+            imageRaw = imageRaw .* maskImage;
             
             %get feature positions and amplitudes and average background
             featPos = vertcat(localMaxima(iImage).cands.Lmax);
@@ -844,6 +865,8 @@ for iImage = goodImages(:)'
         imageRaw = channel.loadImage(imageIndx(iImage));
     end
     imageRaw = double(imageRaw) / (2^bitDepth-1);
+    %apply mask
+    imageRaw = imageRaw .* maskImage;
     
     try %try to detect features in this frame
         

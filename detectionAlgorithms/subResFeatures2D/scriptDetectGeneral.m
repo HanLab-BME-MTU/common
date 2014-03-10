@@ -1,34 +1,36 @@
 
 %% movie information
-movieParam.imageDir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\131202\imagesAlphaVY773A\'; %directory where images are
-movieParam.filenameBase = '131202_Cs3C1_CHO_Y773A_'; %image file name base
-movieParam.firstImageNum = 100; %number of first image in movie
-movieParam.lastImageNum = 150; %number of last image in movie
-movieParam.digits4Enum = 5; %number of digits used for frame enumeration (1-4).
+movieParam.imageDir = 'C:\kjData\Javitch\140115_data\40ms1-5mWPd80G500\imagesCh1\'; %directory where images are
+movieParam.filenameBase = '40ms1-5mWPd80G500ch1_'; %image file name base
+movieParam.firstImageNum = 1; %number of first image in movie
+movieParam.lastImageNum = 5; %number of last image in movie
+movieParam.digits4Enum = 4; %number of digits used for frame enumeration (1-4).
 
 %% detection parameters
 detectionParam.psfSigma = 1.2; %point spread function sigma (in pixels)
 detectionParam.testAlpha = struct('alphaR',0.05,'alphaA',0.05,'alphaD',0.05,'alphaF',0); %alpha-values for detection statistical tests
-detectionParam.visual = 0; %1 to see image with detected features, 0 otherwise
+detectionParam.visual = 1; %1 to see image with detected features, 0 otherwise
 detectionParam.doMMF = 1; %1 if mixture-model fitting, 0 otherwise
 detectionParam.bitDepth = 16; %Camera bit depth
-detectionParam.alphaLocMax = 0.1; %alpha-value for initial detection of local maxima
+detectionParam.alphaLocMax = 0.075; %alpha-value for initial detection of local maxima
 detectionParam.numSigmaIter = 0; %maximum number of iterations for PSF sigma estimation
 detectionParam.integWindow = 0; %number of frames before and after a frame for time integration
 
 detectionParam.calcMethod = 'g';
 
-%absolute background info and parameters...
-background.imageDir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\131202\bgAlphaVY773A\';
-background.filenameBase = 'crop_131202_Cs3C1_CHO_Y773A_';
-background.alphaLocMaxAbs = 0.01;
-detectionParam.background = background;
+% %absolute background info and parameters...
+% background.imageDir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\140109_Cs1C4_Y773A\bgAlphaVY773A\';
+% background.filenameBase = 'crop_140109_Cs1C4_mEos2AvBeta3Y773A_';
+% background.alphaLocMaxAbs = 0.01;
+% detectionParam.background = background;
+
+detectionParam.maskLoc = 'C:\kjData\Javitch\140115_data\40ms1-5mWPd80G500\maskTest.tif';
 
 %% additional input
 
 %saveResults
-saveResults.dir = 'C:\kjData\Galbraiths\data\alphaVY773AandCellEdge\131202\analysisAlphaVY773A\'; %directory where to save input and output
-saveResults.filename = 'detectionTest1.mat'; %name of file where input and output are saved
+saveResults.dir = 'C:\kjData\Javitch\140115_data\40ms1-5mWPd80G500\'; %directory where to save input and output
+saveResults.filename = 'detectionMaskTest.mat'; %name of file where input and output are saved
 % saveResults = 0;
 
 %verbose state
