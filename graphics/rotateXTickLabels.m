@@ -36,13 +36,13 @@ height = diff(YLim);
 
 
 % get height of default text bounding box
-h = text(0, 0, ' ', 'FontName', fontName, 'FontSize', fontSize);
+h = text(0, 0, ' ', 'FontName', fontName, 'FontSize', fontSize, 'Parent', ha);
 extent = get(h, 'extent');
 shift = extent(4)/height*width/axPos(3)*axPos(4) * sin(ip.Results.Angle*pi/180)/4;
 height0 = extent(4);
 delete(h);
 
-
+% shift
 tl = get(ha, 'TickLength');
 ht = arrayfun(@(k) text(xa(k)-shift, YLim(1)-2*tl(1)*height, xla{k},...
     'FontName', fontName, 'FontSize', fontSize,...

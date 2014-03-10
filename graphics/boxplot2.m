@@ -252,14 +252,14 @@ end
 % add annotation links (for significance etc.)
 av = ip.Results.Annotations;
 if ~isempty(av)
-    pos = get(gca, 'Position');
+    pos = get(ha, 'Position');
     dy = 0.25/diff(XLim)*diff(YLim)/pos(4)*pos(3);
     maxposCount = zeros(nb*ng,1);
     for k = 1:size(av,1)
         y0 = max(topval(av(k,1):av(k,2)));
         maxpos = find(topval==y0, 1, 'first');
         maxposCount(maxpos) = maxposCount(maxpos)+1;
-        plot(xa(av(k,[1 1 2 2])), y0+dy+1.75*dy*(maxposCount(maxpos)-1)+[0 dy dy 0], 'k',...
+        plot(ha, xa(av(k,[1 1 2 2])), y0+dy+1.75*dy*(maxposCount(maxpos)-1)+[0 dy dy 0], 'k',...
             'LineWidth', 0.75*ip.Results.LineWidth);
     end
 end
