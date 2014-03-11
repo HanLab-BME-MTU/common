@@ -100,6 +100,24 @@ classdef TestROI < TestCase
             end
         end
         
+        function testDeleteSharedProcessFromROIByIndex(self)
+            self.setUpSharedProcess();
+            self.movie.getROI(self.nRois).deleteProcess(1);
+            assertTrue(isempty(self.movie.processes_));
+            for i = 1: self.nRois
+                assertTrue(isempty(self.movie.getROI(i).processes_));
+            end
+        end
+        
+        function testDeleteSharedProcessFromROIByObject(self)
+            self.setUpSharedProcess();
+            self.movie.getROI(self.nRois).deleteProcess(self.process);
+            assertTrue(isempty(self.movie.processes_));
+            for i = 1: self.nRois
+                assertTrue(isempty(self.movie.getROI(i).processes_));
+            end
+        end
+        
         function testReplaceSharedProcess(self)
             self.setUpSharedProcess();
             newprocess = MockProcess(self.movie);
@@ -137,5 +155,24 @@ classdef TestROI < TestCase
                 assertTrue(isempty(self.movie.getROI(i).packages_));
             end
         end
+        
+        function testDeleteSharedPackageFromROIByIndex(self)
+            self.setUpSharedPackage();
+            self.movie.getROI(self.nRois).deletePackage(1);
+            assertTrue(isempty(self.movie.packages_));
+            for i = 1: self.nRois
+                assertTrue(isempty(self.movie.getROI(i).packages_));
+            end
+        end
+        
+        function testDeleteSharedPackageFromROIByObject(self)
+            self.setUpSharedPackage();
+            self.movie.getROI(self.nRois).deletePackage(self.package);
+            assertTrue(isempty(self.movie.packages_));
+            for i = 1: self.nRois
+                assertTrue(isempty(self.movie.getROI(i).packages_));
+            end
+        end
+        
     end
 end
