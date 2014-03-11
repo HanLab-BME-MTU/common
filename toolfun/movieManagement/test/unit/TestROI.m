@@ -82,9 +82,18 @@ classdef TestROI < TestCase
             assertEqual(self.movie.getROI(self.nRois).getProcess(1), self.process);
         end
         
-        function testDeleteSharedProcess(self)
+        function testDeleteSharedProcessByIndex(self)
             self.setUpSharedProcess();
             self.movie.deleteProcess(1);
+            assertTrue(isempty(self.movie.processes_));
+            for i = 1: self.nRois
+                assertTrue(isempty(self.movie.getROI(i).processes_));
+            end
+        end
+        
+        function testDeleteSharedProcessByObject(self)
+            self.setUpSharedProcess();
+            self.movie.deleteProcess(self.process);
             assertTrue(isempty(self.movie.processes_));
             for i = 1: self.nRois
                 assertTrue(isempty(self.movie.getROI(i).processes_));
@@ -111,9 +120,18 @@ classdef TestROI < TestCase
             assertEqual(self.movie.getROI(self.nRois).getPackage(1), self.package);
         end
         
-        function testDeleteSharedPackage(self)
+        function testDeleteSharedPackageByIndex(self)
             self.setUpSharedPackage();
             self.movie.deletePackage(1);
+            assertTrue(isempty(self.movie.packages_));
+            for i = 1: self.nRois
+                assertTrue(isempty(self.movie.getROI(i).packages_));
+            end
+        end
+        
+        function testDeleteSharedPackageByObject(self)
+            self.setUpSharedPackage();
+            self.movie.deletePackage(self.package);
             assertTrue(isempty(self.movie.packages_));
             for i = 1: self.nRois
                 assertTrue(isempty(self.movie.getROI(i).packages_));
