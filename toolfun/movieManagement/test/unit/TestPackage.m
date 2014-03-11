@@ -12,6 +12,12 @@ classdef TestPackage < handle
             self.movie.addPackage(self.package);
         end
         
+        function process = setUpProcess(self)
+            process = MockProcess(self.movie);
+            self.movie.addProcess(process);
+            self.package.setProcess(1, process);
+        end
+        
         function tearDown(self)
             delete(self.movie);
             delete(self.package);
@@ -35,9 +41,51 @@ classdef TestPackage < handle
             assertEqual(iProc, [1 2]);
         end
         
-        function testDeletePackage(self)
+        %% deletePackage tests
+        function testDeletePackageByIndex(self)
+            % Delete package by index
             self.movie.deletePackage(1);
             assertTrue(isempty(self.movie.packages_));
+        end
+        
+        function testDeletePackageByObject(self)
+            % Test package deletion by object
+            self.movie.deletePackage(self.package);
+            assertTrue(isempty(self.movie.packages_));
+        end
+        
+        function testDeleteSameClassPackageByIndex(self)
+            % Duplicate package class and test deletion by index
+            package2 = MockPackage(self.movie);
+            self.movie.addPackage(package2);
+            
+            self.movie.deletePackage(1);
+            assertEqual(self.movie.packages_, {package2});
+        end
+        
+        function testDeleteSameClassPackageByObject(self)
+            % Duplicate package class and test deletion by object
+            package2 = MockPackage(self.movie);
+            self.movie.addPackage(package2);
+            
+            self.movie.deletePackage(self.package);
+            assertEqual(self.movie.packages_, {package2});
+        end
+        
+        function testDeleteLoadedPackageByIndex(self)
+            % Link process to package and test deletion by index
+            
+            process = self.setUpProcess();
+            self.movie.deletePackage(1);
+            assertEqual(self.movie.processes_, {process});
+        end
+        
+        function testDeleteLoadedPackageByObject(self)
+            % Link process to package and test deletion by object
+            
+            process = self.setUpProcess();
+            self.movie.deletePackage(self.package);
+            assertEqual(self.movie.processes_, {process});
         end
         
         function testDeleteInvalidPackage(self)
@@ -50,7 +98,7 @@ classdef TestPackage < handle
             assertTrue(isempty(self.movie.packages_));
         end
         
-        %% Tests
+        %% createDefaultProcess tests
         function testCreateDefaultProcess(self)
             self.package.createDefaultProcess(1);
             assertEqual(self.movie.getPackage(1).getProcess(1),...

@@ -254,17 +254,16 @@ classdef  MovieObject < hgsetget
             
             % Check input
             if isa(package, 'Package')
-                pid = find(cellfun(@(x)isequal(x, package), obj.packages_));
-                assert(~isempty(pid),'The given package is not in current movie packages list.')
-                assert(length(pid)==1,'More than one package of this type exists in movie packages list.')
-            elseif isscalar(package) && ismember(package,1:numel(obj.packages_))
+                pid = find(cellfun(@(x) isequal(x, package), obj.packages_),1);
+                assert(~isempty(pid),'The given package is not in current movie packages list.');
+            elseif isscalar(package) && ismember(package, 1:numel(obj.packages_))
                 pid = package;
+                package = obj.getPackage(pid);
             else
                 error('Please provide a Package object or a valid package index of movie data processes list.')
             end
             
             % Check package validity
-            package = obj.packages_{pid};
             isValid = ~isempty(package) && package.isvalid;
             
             if isValid && isa(package.owner_, 'MovieData')

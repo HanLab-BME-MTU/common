@@ -46,25 +46,34 @@ classdef TestProcess < handle
             assertEqual(iProc, [1 2]);
         end
         
-        %% Delete function
+        %% deleteProcess tests
         function testDeleteProcessByIndex(self)
-            % Delete process and test deletion by index
+            % Test process deletion by index
             self.movie.deleteProcess(1);
             assertTrue(isempty(self.movie.processes_));
         end
         
-        function testDeleteProcessByProcess(self)
-            % Delete process and test deletion by process
+        function testDeleteProcessByObject(self)
+            % Test process deletion by object
             self.movie.deleteProcess(self.process);
             assertTrue(isempty(self.movie.processes_));
         end
         
-        function testDeleteSameClassProcessByObject(self)
-            % Duplicate process and test deletion by index
+        function testDeleteSameClassProcessByIndex(self)
+            % Duplicate process class and test deletion by index
             process2 = MockProcess(self.movie);
             self.movie.addProcess(process2);
             
             self.movie.deleteProcess(1);
+            assertEqual(self.movie.processes_, {process2});
+        end
+        
+        function testDeleteSameClassProcessByObject(self)
+            % Duplicate process class and test deletion by object
+            process2 = MockProcess(self.movie);
+            self.movie.addProcess(process2);
+            
+            self.movie.deleteProcess(self.process);
             assertEqual(self.movie.processes_, {process2});
         end
         
@@ -78,7 +87,7 @@ classdef TestProcess < handle
         end
         
         function testDeletePackageLinkedProcessByObject(self)
-            % Link process to package and test deletion by index
+            % Link process to package and test deletion by object
             
             self.setUpPackage();
             self.movie.deleteProcess(self.process);
@@ -124,6 +133,7 @@ classdef TestProcess < handle
             assertTrue(isempty(self.movie.processes_));
         end
         
+        %% ReplaceProcess
         function testReplaceProcess(self)
             process2 = MockProcess(self.movie);
             self.movie.replaceProcess(1, process2);
