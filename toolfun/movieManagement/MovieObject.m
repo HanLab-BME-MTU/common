@@ -139,13 +139,24 @@ classdef  MovieObject < hgsetget
             proc = obj.processes_{i};
         end
         
+        function unlinkProcess(obj, process)
+            % Unlink process from processes list
+            
+            id = [];
+            if isa(process, 'Process')
+                id = find(cellfun(@(x) isequal(x,process), obj.processes_), 1);
+            elseif isscalar(process) && ismember(process, 1:numel(obj.processes_))
+                id = process;
+            end
+            
+            if ~isempty(id), obj.processes_(id) = [ ]; end
+        end
         
         function deleteProcess(obj, process)
-            % Delete given process object in process list
+            % Delete process from processes list and parent packages
             %
-            % Input:
-            %        process - Process object or index of process to be
-            %                  deleted in movie data's process list
+            % INPUT:
+            %        process - Process object or index
             
             % Check input
             if isa(process, 'Process')
@@ -172,11 +183,10 @@ classdef  MovieObject < hgsetget
             if isValid && isa(process.owner_, 'MovieData')
                 % Remove process from list for owner and descendants
                 for movie = [process.owner_ process.owner_.getDescendants()]
-                    id = find(cellfun(@(x) isequal(x,process), movie.processes_),1);
-                    if ~isempty(id), movie.processes_(id) = [ ]; end
+                    movie.unlinkProcess(process);
                 end
             else
-                obj.processes_(pid) = [ ];
+                obj.unlinkProcess(process);
             end
             
             % Delete process object
@@ -248,6 +258,22 @@ classdef  MovieObject < hgsetget
             package = obj.packages_{i};
         end
         
+        function status = unlinkPackage(obj, package)
+            % Unlink process from packages list
+            
+            id = [];
+            status = false;
+            if isa(package, 'Package')
+                id = find(cellfun(@(x) isequal(x,package), obj.packages_), 1);
+            elseif isscalar(package) && ismember(package, 1:numel(obj.packages_))
+                id = package;
+            end
+            
+            if ~isempty(id),
+                obj.packages_(id) = [ ];
+                status = true;
+            end
+        end
         
         function deletePackage(obj, package)
             % Remove package object from the package list
@@ -269,11 +295,10 @@ classdef  MovieObject < hgsetget
             if isValid && isa(package.owner_, 'MovieData')
                 % Remove package from list for owner and descendants
                 for movie = [package.owner_ package.owner_.getDescendants()]
-                    id = find(cellfun(@(x) isequal(x,package), movie.packages_),1);
-                    if ~isempty(id), movie.packages_(id) = [ ]; end
+                    movie.unlinkPackage(package);
                 end
             else
-                obj.packages_(pid) = [ ];
+                obj.unlinkPackage(package);
             end
             
             % Delete package object

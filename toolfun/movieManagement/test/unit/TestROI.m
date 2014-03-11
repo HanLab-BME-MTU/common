@@ -118,6 +118,24 @@ classdef TestROI < TestCase
             end
         end
         
+        function testUnlinkSharedProcessFromROIByIndex(self)
+            self.setUpSharedProcess();
+            self.movie.getROI(self.nRois).unlinkProcess(1);
+            assertEqual(self.movie.processes_, {self.process});
+            for i = 1: self.nRois
+                assertTrue(isempty(self.movie.getROI(i).processes_));
+            end
+        end
+        
+        function testUnlinkSharedProcessFromROIByObject(self)
+            self.setUpSharedProcess();
+            self.movie.getROI(self.nRois).unlinkProcess(self.process);
+            assertEqual(self.movie.processes_, {self.process});
+            for i = 1: self.nRois
+                assertTrue(isempty(self.movie.getROI(i).processes_));
+            end
+        end
+        
         function testReplaceSharedProcess(self)
             self.setUpSharedProcess();
             newprocess = MockProcess(self.movie);
@@ -174,5 +192,22 @@ classdef TestROI < TestCase
             end
         end
         
+        function testUnlinkSharedPackageFromROIByIndex(self)
+            self.setUpSharedPackage();
+            self.movie.getROI(self.nRois).unlinkPackage(1);
+            assertEqual(self.movie.packages_, {self.package});
+            for i = 1: self.nRois
+                assertTrue(isempty(self.movie.getROI(i).packages_));
+            end
+        end
+        
+        function testUnlinkSharedPackageFromROIByObject(self)
+            self.setUpSharedPackage();
+            self.movie.getROI(self.nRois).unlinkPackage(self.package);
+            assertEqual(self.movie.packages_, {self.package});
+            for i = 1: self.nRois
+                assertTrue(isempty(self.movie.getROI(i).packages_));
+            end
+        end
     end
 end
