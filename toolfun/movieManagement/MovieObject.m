@@ -151,9 +151,9 @@ classdef  MovieObject < hgsetget
             if isa(process, 'Process')
                 pid = find(cellfun(@(x) isequal(x,process), obj.processes_),1);
                 assert(~isempty(pid),'The given process is not in current movie processes list.');
-            elseif isscalar(process) && ismember(process,1:numel(obj.processes_))
+            elseif isnumeric(process)
                 pid = process;
-                process = obj.processes_{pid};
+                process = obj.getProcess(pid);
             else
                 error('Please provide a Process object or a valid process index of movie data processes list.')
             end
@@ -256,7 +256,7 @@ classdef  MovieObject < hgsetget
             if isa(package, 'Package')
                 pid = find(cellfun(@(x) isequal(x, package), obj.packages_),1);
                 assert(~isempty(pid),'The given package is not in current movie packages list.');
-            elseif isscalar(package) && ismember(package, 1:numel(obj.packages_))
+            elseif isnumeric(package)
                 pid = package;
                 package = obj.getPackage(pid);
             else
