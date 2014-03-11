@@ -149,24 +149,23 @@ classdef  MovieObject < hgsetget
             
             % Check input
             if isa(process, 'Process')
-                pid = obj.getProcessIndex(process,1,Inf,false);
-                assert(~isempty(pid),'The given process is not in current movie processes list.')
-                assert(length(pid)==1,'More than one process of this type exists in movie processes list.')
+                pid = find(cellfun(@(x) isequal(x,process), obj.processes_),1);
+                assert(~isempty(pid),'The given process is not in current movie processes list.');
             elseif isscalar(process) && ismember(process,1:numel(obj.processes_))
                 pid = process;
+                process = obj.processes_{pid};
             else
                 error('Please provide a Process object or a valid process index of movie data processes list.')
             end
             
             % Check process validity
-            process = obj.processes_{pid};
             isValid = ~isempty(process) && process.isvalid;
             
             if isValid
                 % Unassociate process from parent packages
-                [packageID procID] = process.getPackage();
+                [packageID, procID] = process.getPackage();
                 for i=1:numel(packageID)
-                    obj.packages_{packageID(i)}.setProcess(procID(i),[]);
+                    obj.getPackage(packageID(i)).setProcess(procID(i), []);
                 end
             end
             

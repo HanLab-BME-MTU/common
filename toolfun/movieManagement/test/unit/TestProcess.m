@@ -16,6 +16,12 @@ classdef TestProcess < handle
             delete(self.process);
         end
         
+        function package = setUpPackage(self)
+            package = MockPackage(self.movie);
+            self.movie.addPackage(package);
+            package.setProcess(1, self.process);
+        end
+        
         % Basic tests
         function testIsProcess(self)
             assertTrue(Process.isProcess(class(self.movie.getProcess(1))));
@@ -41,13 +47,74 @@ classdef TestProcess < handle
         end
         
         %% Delete function
-        function testDeleteProcess(self)
-            % Delete process and test deletion
+        function testDeleteProcessByIndex(self)
+            % Delete process and test deletion by index
             self.movie.deleteProcess(1);
             assertTrue(isempty(self.movie.processes_));
         end
         
-        function testDeleteInvalidProcess(self)
+        function testDeleteProcessByProcess(self)
+            % Delete process and test deletion by process
+            self.movie.deleteProcess(self.process);
+            assertTrue(isempty(self.movie.processes_));
+        end
+        
+        function testDeleteSameClassProcessByObject(self)
+            % Duplicate process and test deletion by index
+            process2 = MockProcess(self.movie);
+            self.movie.addProcess(process2);
+            
+            self.movie.deleteProcess(1);
+            assertEqual(self.movie.processes_, {process2});
+        end
+        
+        function testDeletePackageLinkedProcessByIndex(self)
+            % Link process to package and test deletion by index
+            
+            self.setUpPackage();
+            self.movie.deleteProcess(1);
+            assertTrue(isempty(self.movie.processes_));
+            assertTrue(isempty(self.movie.getPackage(1).getProcess(1)));
+        end
+        
+        function testDeletePackageLinkedProcessByObject(self)
+            % Link process to package and test deletion by index
+            
+            self.setUpPackage();
+            self.movie.deleteProcess(self.process);
+            assertTrue(isempty(self.movie.processes_));
+            assertTrue(isempty(self.movie.getPackage(1).getProcess(1)));
+        end
+        
+        function testDeleteMultiPackageLinkedProcessByIndex(self)
+            % Link process to package and test deletion by index
+            
+            self.setUpPackage();
+            self.setUpPackage();
+            self.movie.deleteProcess(self.process);
+            assertTrue(isempty(self.movie.processes_));
+            assertTrue(isempty(self.movie.getPackage(1).getProcess(1)));
+            assertTrue(isempty(self.movie.getPackage(2).getProcess(1)));
+        end
+        
+        function testDeleteMultiPackageLinkedProcessByObject(self)
+            % Link process to package and test deletion by index
+            
+            self.setUpPackage();
+            self.setUpPackage();
+            self.movie.deleteProcess(self.process);
+            assertTrue(isempty(self.movie.processes_));
+            assertTrue(isempty(self.movie.getPackage(1).getProcess(1)));
+            assertTrue(isempty(self.movie.getPackage(2).getProcess(1)));
+        end
+        
+        function testDeleteUnlinkedProcess(self)
+            % Delete process and test deletion
+            f= @() self.movie.deleteProcess(MockProcess(self.movie));
+            assertExceptionThrown(f ,'');
+        end
+        
+        function testDeleteInvalidProcessByIndex(self)
             % Delete process object
             delete(self.process);
             assertFalse(self.movie.getProcess(1).isvalid);
