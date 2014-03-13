@@ -6,7 +6,7 @@ if(~exist('indexMTChannel','var'))
 end
 
 if(~exist('indexVIFChannel','var'))
-    indexVIFChannel = 2;
+    indexVIFChannel = min(2,length(MD.channels_));
 end
 
 % Find the package of Filament Analysis

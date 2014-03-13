@@ -1,9 +1,9 @@
-function similarity_scoremap = network_similarity_scoremap(VIF_current_model,MT_current_model,img_size, radius,outdir,iFrame)
+function similarity_scoremap = network_similarity_scoremap(VIF_current_model,MT_current_model,img_size, radius,outdir,iFrame,save_everything_flag)
 % function for calculation the similarity of two networks
 % Liya Ding 06.2013.
 
 % don't save every figure generated, unless debugging
-save_everything_flag = 1;
+% save_everything_flag = 1;
 
 VIF_current_seg = filament_model_to_seg_bwim(VIF_current_model,img_size,[]);
 MT_current_seg = filament_model_to_seg_bwim(MT_current_model,img_size,[]);
@@ -183,36 +183,44 @@ angle_map_2_1 = min(abs(angle_map_2_1_A),abs(angle_map_2_1_B));
 % imwrite(angle_map_1_2,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.tif']);  end;
 % 
 
-h6=figure(6);
+h3=figure(3);
 imagesc_nan_neg(distance_map_1_2,radius*1);axis equal;axis off;
+flip_colormap;
+title('Distance Measure 1->2');
 if(save_everything_flag==1) 
-    saveas(h6,[outdir,filesep,'Dis12_frame_',num2str(iFrame),'.tif']);  
-    saveas(h6,[outdir,filesep,'Dis12_frame_',num2str(iFrame),'.fig']);  
+    saveas(h3,[outdir,filesep,'Dis12_frame_',num2str(iFrame),'.tif']);  
+    saveas(h3,[outdir,filesep,'Dis12_frame_',num2str(iFrame),'.fig']);  
 end;
 
-h6=figure(6);
+h3=figure(3);
 imagesc_nan_neg(distance_map_2_1,radius*1);axis equal;axis off;
+flip_colormap;
+title('Distance Measure 2->1');
 if(save_everything_flag==1) 
-    saveas(h6,[outdir,filesep,'Dis21_frame_',num2str(iFrame),'.tif']);  
-    saveas(h6,[outdir,filesep,'Dis21_frame_',num2str(iFrame),'.fig']);  
+    saveas(h3,[outdir,filesep,'Dis21_frame_',num2str(iFrame),'.tif']);  
+    saveas(h3,[outdir,filesep,'Dis21_frame_',num2str(iFrame),'.fig']);  
 end;
 
-h6=figure(6);
+h3=figure(3);
 imagesc_nan_neg(angle_map_2_1,-pi/(3));axis equal;axis off;
+flip_colormap;
+title('Orientaion Measure 1->2');
 if(save_everything_flag==1)
-    saveas(h6,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.tif']); 
-    saveas(h6,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.fig']); 
+    saveas(h3,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.tif']); 
+    saveas(h3,[outdir,filesep,'Ang12_frame_',num2str(iFrame),'.fig']); 
 end;
 
-h6=figure(6);
+h3=figure(3);
 imagesc_nan_neg(angle_map_1_2,-pi/(3));axis equal;axis off;
+flip_colormap;
+title('Orientaion Measure 2->1');
 if(save_everything_flag==1) 
-    saveas(h6,[outdir,filesep,'Ang21_frame_',num2str(iFrame),'.tif']);
-    saveas(h6,[outdir,filesep,'Ang21_frame_',num2str(iFrame),'.fig']);
+    saveas(h3,[outdir,filesep,'Ang21_frame_',num2str(iFrame),'.tif']);
+    saveas(h3,[outdir,filesep,'Ang21_frame_',num2str(iFrame),'.fig']);
 end;
 
 
-h6=figure(6);
+h3=figure(3);
 
 show_angle12 = angle_map_1_2;
 show_angle12(isnan(show_angle12)) = 30;
@@ -224,8 +232,12 @@ show_dis21 = distance_map_2_1;
 show_dis21(isnan(show_dis21)) = radius*1;
 
 imagesc(show_angle12+show_angle21+show_dis12+show_dis21);axis equal;axis off;
-saveas(h6,[outdir,filesep,'AngDisSum_frame_',num2str(iFrame),'.tif']);
-saveas(h6,[outdir,filesep,'AngDisSum_frame_',num2str(iFrame),'.fig']);
+flip_colormap;
+title('Sum of all Measures');
+if(save_everything_flag==1)    
+    saveas(h3,[outdir,filesep,'AngDisSum_frame_',num2str(iFrame),'.tif']);
+    saveas(h3,[outdir,filesep,'AngDisSum_frame_',num2str(iFrame),'.fig']);
+end
 
 whole_ROI = imdilate(VIF_current_seg,ones(radius,radius)) + imdilate(MT_current_seg,ones(radius,radius))>0;
 % 
@@ -275,7 +287,7 @@ angle_map_2_1_pad(radius+1:end-radius,radius+1:end-radius) = angle_map_2_1;
 Weight_mask = fspecial('gaussian',2*radius+1,(radius*1.3)/(2)/2);
 Weight_mask = Weight_mask(sub2ind([2*radius+1,2*radius+1,],cy,cx));
 
-% for all these points
+% for all these points, get local support
 for j = 1 : length(Y)
 %     j
     x = X(j);
@@ -297,55 +309,69 @@ for j = 1 : length(Y)
     end    
 end
 
+% fill the empty locations
 score_maps_distance_2_1(isnan(score_maps_distance_2_1))=radius;
 score_maps_distance_1_2(isnan(score_maps_distance_1_2))=radius;
 score_maps_angle_2_1(isnan(score_maps_angle_2_1))=pi/2;
 score_maps_angle_1_2(isnan(score_maps_angle_1_2))=pi/2;
 
-h6=figure(6);
+% display the local supported distance and angle different matrix
+h3=figure(3);
 imagesc_nan_neg(score_maps_distance_1_2,0);axis equal;axis off;
+flip_colormap;
+title('Distance Measure 1->2 with Local Support');
 if(save_everything_flag==1) 
-    saveas(h6,[outdir,filesep,'LVDis12_frame_',num2str(iFrame),'.tif']); 
-    saveas(h6,[outdir,filesep,'LVDis12_frame_',num2str(iFrame),'.fig']); 
+    saveas(h3,[outdir,filesep,'LVDis12_frame_',num2str(iFrame),'.tif']); 
+    saveas(h3,[outdir,filesep,'LVDis12_frame_',num2str(iFrame),'.fig']); 
 end;
 
-h6=figure(6);
+h3=figure(3);
 imagesc_nan_neg(score_maps_distance_2_1,0);axis equal;axis off;
+title('Distance Measure 2->1 with Local Support');
+flip_colormap;
 if(save_everything_flag==1) 
-    saveas(h6,[outdir,filesep,'LVDis21_frame_',num2str(iFrame),'.tif']);
-    saveas(h6,[outdir,filesep,'LVDis21_frame_',num2str(iFrame),'.fig']);
+    saveas(h3,[outdir,filesep,'LVDis21_frame_',num2str(iFrame),'.tif']);
+    saveas(h3,[outdir,filesep,'LVDis21_frame_',num2str(iFrame),'.fig']);
 end;
 
-h6=figure(6);
+h3=figure(3);
 imagesc_nan_neg(score_maps_angle_1_2,0);axis equal;axis off;
+flip_colormap;
+title('Orientation Measure 1->2 with Local Support');
 if(save_everything_flag==1)
-    saveas(h6,[outdir,filesep,'LVAng12_frame_',num2str(iFrame),'.tif']); 
-    saveas(h6,[outdir,filesep,'LVAng12_frame_',num2str(iFrame),'.fig']); 
+    saveas(h3,[outdir,filesep,'LVAng12_frame_',num2str(iFrame),'.tif']); 
+    saveas(h3,[outdir,filesep,'LVAng12_frame_',num2str(iFrame),'.fig']); 
 end;
 
-h6=figure(6);
+h3=figure(3);
 imagesc_nan_neg(score_maps_angle_2_1,0);axis equal;axis off;
+flip_colormap;
+title('Orientation Measure 2->1 with Local Support');
 if(save_everything_flag==1)
-    saveas(h6,[outdir,filesep,'LVAng21_frame_',num2str(iFrame),'.tif']); 
-    saveas(h6,[outdir,filesep,'LVAng21_frame_',num2str(iFrame),'.fig']); 
+    saveas(h3,[outdir,filesep,'LVAng21_frame_',num2str(iFrame),'.tif']); 
+    saveas(h3,[outdir,filesep,'LVAng21_frame_',num2str(iFrame),'.fig']); 
 end;
 
 
 
-h3=figure(3); imagesc_nan_neg(score_maps_distance_2_1+score_maps_distance_1_2,0);axis equal;axis off;
+h4=figure(4); imagesc_nan_neg(score_maps_distance_2_1+score_maps_distance_1_2,0);axis equal;axis off;
+flip_colormap;
+title('Distance Measure 1->2 + 2->1 with Local Support');
 if(save_everything_flag==1) 
-    saveas(h3,[outdir,filesep,'VIFMT_dis_frame_',num2str(iFrame),'.tif']);
-    saveas(h3,[outdir,filesep,'VIFMT_dis_frame_',num2str(iFrame),'.fig']);
+    saveas(h4,[outdir,filesep,'VIFMT_dis_frame_',num2str(iFrame),'.tif']);
+    saveas(h4,[outdir,filesep,'VIFMT_dis_frame_',num2str(iFrame),'.fig']);
 end;
 
 
-h4=figure(4); imagesc_nan_neg(abs(score_maps_angle_2_1/2)+abs(score_maps_angle_1_2/2),0);axis equal;axis off;
+h5=figure(5); imagesc_nan_neg(abs(score_maps_angle_2_1/2)+abs(score_maps_angle_1_2/2),0);axis equal;axis off;
+flip_colormap;
+title('Orientation Measure 1->2 + 2->1 with Local Support');
 if(save_everything_flag==1) 
-    saveas(h4,[outdir,filesep,'VIFMT_ang_frame_',num2str(iFrame),'.tif']);
-    saveas(h4,[outdir,filesep,'VIFMT_ang_frame_',num2str(iFrame),'.fig']);
+    saveas(h5,[outdir,filesep,'VIFMT_ang_frame_',num2str(iFrame),'.tif']);
+    saveas(h5,[outdir,filesep,'VIFMT_ang_frame_',num2str(iFrame),'.fig']);
 end;
 
-
+% calculation of similarity score.
 similarity_scoremap = exp(-(score_maps_distance_2_1+score_maps_distance_1_2).^2/(((radius*1.5)/2*sqrt(2))^2))...
     .*exp(-(abs(score_maps_angle_2_1/2)+abs(score_maps_angle_1_2/2)).^2/(1.5*(pi/3)^2));
 
@@ -355,9 +381,10 @@ save([outdir,filesep,'VIFMT_sm_maps_frame_',num2str(iFrame),'.mat'], ...
     'similarity_scoremap');
 
 % similarity_scoremap(similarity_scoremap<0.2)=0.2;
-h5=figure(5); imagesc_nan_neg(similarity_scoremap,0);axis equal;axis off;
-saveas(h5,[outdir,filesep,'VIFMT_sm_score_frame_',num2str(iFrame),'.tif']);
-saveas(h5,[outdir,filesep,'VIFMT_sm_score_frame_',num2str(iFrame),'.fig']);
+h6=figure(6); imagesc_nan_neg(similarity_scoremap,0);axis equal;axis off;
+title(['Similarity Score for frame ',num2str(iFrame)]);
+saveas(h6,[outdir,filesep,'VIFMT_sm_score_frame_',num2str(iFrame),'.tif']);
+saveas(h6,[outdir,filesep,'VIFMT_sm_score_frame_',num2str(iFrame),'.fig']);
 
 
 

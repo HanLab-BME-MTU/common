@@ -1,22 +1,26 @@
-function network_analysis(VIF_current_model,VIF_orientation, VIF_current_seg,outdir,iChannel,iFrame,ROI)
+function output_feature = network_analysis(VIF_current_model,VIF_orientation, VIF_current_seg,outdir,iChannel,iFrame,ROI)
 % function for calculation the property of network
 % Liya Ding 01.2014.
 
 % don't save every figure generated, unless debugging
 save_everything_flag = 1;
 
-
 img_size = size(VIF_current_seg);
 
+
+% transfer filament network model to bw image
 VIF_current_seg = filament_model_to_seg_bwim(VIF_current_model,img_size,[]);
 
+% transfer model to digital 
 [VIF_digital_model,VIF_orientation_model,VIF_XX,VIF_YY,VIF_OO] ...
         = filament_model_to_digital_with_orientation(VIF_current_model);
 
+    % if the ROI is full area, just copy
     if(mean2(double(ROI))==1)
         VIF_ROI_model= VIF_digital_model;
         VIF_ROI_orientation_model =VIF_orientation_model;
     else
+        % if there is defined ROI, check filament by filament.
         count=1;
         VIF_ROI_model = cell(1,1);
         VIF_ROI_orientation_model =  cell(1,1);
@@ -42,15 +46,15 @@ VIF_current_seg = filament_model_to_seg_bwim(VIF_current_model,img_size,[]);
 %  [Vif_ROIed_model,Vif_ROIed_orientation_model,VIF_XX,VIF_YY,VIF_OO] ...
 %             = filament_model_to_digital_with_orientation(VIF_ROI_model);
 %        
-    
-orientation_pixel_pool = [];
 
+% define the initial pool array
+orientation_pixel_pool = [];
 pixel_number_per_filament_pool = [];
 length_per_filament_pool = [];
 straightness_per_filament_pool = [];
 
-
-
+% for each filament, calculate the length, orientation, and straightness
+% and put them into the pool.
 for iF = 1 : length(VIF_ROI_model)
     try
     x = VIF_ROI_model{iF}(:,1);
@@ -66,35 +70,34 @@ for iF = 1 : length(VIF_ROI_model)
     end
 end
 
-h1 =  figure(1); 
+% Plot these pools out
 
+% length distribution, by how many pixels
+h1 =  figure(1); 
 [h,bin] = hist(pixel_number_per_filament_pool,0:20:1000);
 h = h/length(pixel_number_per_filament_pool);
 bar(bin,h);
 axis([-10 310 0 0.3]);
-
 
 title('Pixels Distribution');
 saveas(h1, [outdir,filesep,'network_pixels_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.fig']);
 saveas(h1, [outdir,filesep,'network_pixels_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.jpg']);
 saveas(h1, [outdir,filesep,'network_pixels_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.tif']);
 
+% length distribution, by the distance along the filament
 h2 =  figure(2); 
-
-
 length_per_filament_pool = length_per_filament_pool(length_per_filament_pool>60);
 [h,bin] = hist(length_per_filament_pool,0:20:1000);
 h = h/length(length_per_filament_pool);
 bar(bin,h);
 axis([50 310 0 0.3]);
 
-
 title('Length Distribution');
 saveas(h2, [outdir,filesep,'network_length_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.fig']);
 saveas(h2, [outdir,filesep,'network_length_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.jpg']);
 saveas(h2, [outdir,filesep,'network_length_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.tif']);
 
-
+% the orientation distribution in rose diagram
 orientation_pixel_pool_display = orientation_pixel_pool;
 
 orientation_pixel_pool_display = orientation_pixel_pool_display + pi/2;
@@ -112,6 +115,8 @@ saveas(h3, [outdir,filesep,'network_orientationrose_ch_',num2str(iChannel),'_fra
 saveas(h3, [outdir,filesep,'network_orientationrose_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.jpg']);
 saveas(h3, [outdir,filesep,'network_orientationrose_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.tif']);
 
+
+% the orientation in histogram
 h6 =  figure(6); 
 
 [h,bin] = hist(orientation_pixel_pool_display,0:pi/18:pi);
@@ -125,7 +130,7 @@ saveas(h6, [outdir,filesep,'network_orientationhist_ch_',num2str(iChannel),'_fra
 saveas(h6, [outdir,filesep,'network_orientationhist_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.tif']);
 
 
-
+% the straightness distribution
 h4 =  figure(4); 
 [h,bin] = hist(straightness_per_filament_pool,0:0.02:1);
 h = h/length(straightness_per_filament_pool);
@@ -151,3 +156,10 @@ saveas(h5, [outdir,filesep,'network_box_straight_ch_',num2str(iChannel),'_frame_
 save([outdir,filesep,'network_orientationrose_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'network_analysis.mat'], ...
     'straightness_per_filament_pool','orientation_pixel_pool_display',...
     'length_per_filament_pool');
+
+output_feature=[];
+
+output_feature.straightness_per_filament_pool=straightness_per_filament_pool;
+output_feature.orientation_pixel_pool_display=orientation_pixel_pool_display;
+output_feature.length_per_filament_pool=length_per_filament_pool;
+

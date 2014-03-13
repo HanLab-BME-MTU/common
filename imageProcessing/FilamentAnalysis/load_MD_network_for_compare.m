@@ -1,4 +1,6 @@
-function load_MD_network_for_compare(MD,radius)
+function load_MD_network_for_compare(MD,radius,save_everything_flag)
+
+package_process_ind_script;
 
 movie_Dir = MD.outputDirectory_;
 
@@ -8,57 +10,65 @@ VIF_model = cell(1,nFrame);
 MT_model = cell(1,nFrame);
 % flatten_dir{1} = MD.processes_{3}.outFilePaths_{1};
 % flatten_dir{2} = MD.processes_{3}.outFilePaths_{2};
-outdir = [MD.processes_{5}.outFilePaths_{1},filesep,'similarity_results'];
+outdir = [MD.processes_{indexFilamentSegmentationProcess}.outFilePaths_{1},filesep,'similarity_results'];
+if(~exist(outdir,'dir'))
     mkdir(outdir);
+end
     
     dist_pool_for_crossing=[];
     ang_pool_for_crossing=[];
     
+    intensity_pool_VIF = [];
+    intensity_pool_MT = [];    
+    
+    
 for iFrame = 1 : nFrame
     iFrame
-    VIF_orientation = MD.processes_{5}.loadChannelOutput(1,iFrame+0,'output','current_seg_orientation');
-    VIF_current_model = MD.processes_{5}.loadChannelOutput(1,iFrame+0,'output','current_model');
+    
+        MT_orientation = MD.processes_{indexFilamentSegmentationProcess}.loadChannelOutput(1,iFrame,'output','current_seg_orientation');
+    MT_current_model = MD.processes_{indexFilamentSegmentationProcess}.loadChannelOutput(1,iFrame,'output','current_model');
+    
+    [MT_digital_model,MT_orientation_model,MT_XX,MT_YY,MT_OO] ...
+        = filament_model_to_digital_with_orientation(MT_current_model);
+
+    MT_current_seg = (isnan(MT_orientation)==0);
+    
+%     MT_img =  MD.processes_{indexFlattenProcess}.loadChannelOutput(1,iFrame);
+     MT_img =  MD.channels_(1).loadImage(iFrame);
+      
+
+    
+    VIF_orientation = MD.processes_{indexFilamentSegmentationProcess}.loadChannelOutput(2,iFrame+0,'output','current_seg_orientation');
+    VIF_current_model = MD.processes_{indexFilamentSegmentationProcess}.loadChannelOutput(2,iFrame+0,'output','current_model');
     
 %     VIF_current_model
     [Vif_digital_model,Vif_orientation_model,VIF_XX,VIF_YY,VIF_OO] ...
     = filament_model_to_digital_with_orientation(VIF_current_model);
 
-%     VIF_orientation = VIF_orientation(140:200,150:250);
-   
     VIF_current_seg = (isnan(VIF_orientation)==0);
    
-    VIF_img =  MD.processes_{3}.loadChannelOutput(1,iFrame);
+%   VIF_img =  MD.processes_{indexFlattenProcess}.loadChannelOutput(2,iFrame);
+    VIF_img =  MD.channels_(2).loadImage(iFrame);
+            
     
-    MT_orientation = MD.processes_{5}.loadChannelOutput(2,iFrame,'output','current_seg_orientation');
-%     MT_orientation = MT_orientation(140:200,150:250);
-    MT_current_model = MD.processes_{5}.loadChannelOutput(2,iFrame,'output','current_model');
-    
-    [MT_digital_model,MT_orientation_model,MT_XX,MT_YY,MT_OO] ...
-        = filament_model_to_digital_with_orientation(MT_current_model);
-
-    
-    MT_current_seg = (isnan(MT_orientation)==0);
-    
-    MT_img =  MD.processes_{3}.loadChannelOutput(2,iFrame);
-%     MT_img = MT_img(140:200,150:250);
-%    VIF_img = VIF_img(140:200,150:250);
-   
-    
-    
+    % show the two image segmentation together
     two_channel_img = zeros(size(VIF_img,1),size(VIF_img,2),3);
-    two_channel_img(:,:,1)=VIF_img;
-    two_channel_img(:,:,2)=MT_img;
-    h1=figure(1);imagesc(two_channel_img/255);axis equal;axis off;
-     saveas(h1,[outdir,filesep,'VIFMT_img_frame_',num2str(iFrame),'.tif']);
-  saveas(h1,[outdir,filesep,'VIFMT_img_frame_',num2str(iFrame),'.fig']);
+    two_channel_img(:,:,1) = MT_img;
+    two_channel_img(:,:,2) = VIF_img;
+    
+    h1=figure(1);imagesc(double(two_channel_img)./double(max(max(max(MT_img)), max(max(VIF_img)))));
+    axis equal;axis off;
+    saveas(h1,[outdir,filesep,'MTVIF_img_frame_',num2str(iFrame),'.tif']);
+    saveas(h1,[outdir,filesep,'MTVIF_img_frame_',num2str(iFrame),'.fig']);
    
-    
-    
+    %     
     two_channel_seg= zeros(size(VIF_img,1),size(VIF_img,2),3);
-    
-    
+        
        
      VIF_plus_MT_current_seg = VIF_current_seg + MT_current_seg >0;
+    
+     intensity_pool_VIF = [intensity_pool_VIF VIF_img(VIF_plus_MT_current_seg>0)];
+     intensity_pool_MT = [intensity_pool_MT MT_img(VIF_plus_MT_current_seg>0)];
     
      ch1_white_background_segment = double(MT_current_seg);
      ch2_white_background_segment = double(VIF_current_seg);
@@ -76,19 +86,25 @@ for iFrame = 1 : nFrame
 %     set(gca, 'Position', get(gca, 'OuterPosition') - ...
 %        get(gca, 'TightInset') * [-1 0 1 0; 0 -1 0 1; 0 0 1 0; 0 0 0 1]);
 
-   saveas(h2,[outdir,filesep,'white_VIFMT_seg_frame_',num2str(iFrame),'.tif']);
-   saveas(h2,[outdir,filesep,'white_VIFMT_seg_frame_',num2str(iFrame),'.fig']);
+   saveas(h2,[outdir,filesep,'white_MTVIF_seg_frame_',num2str(iFrame),'.tif']);
+   saveas(h2,[outdir,filesep,'white_MTVIF_seg_frame_',num2str(iFrame),'.fig']);
    
    ch2_white_background_segment(find(VIF_current_seg==1))=0.85;
+   
    two_channel_seg(:,:,2)= double(ch2_white_background_segment);
    h2=figure(2);imagesc(two_channel_seg(:,1:end,:));axis equal;axis off;
    figure(2);
-   saveas(h2,[outdir,filesep,'darkgreenVIF_white_VIFMT_seg_frame_',num2str(iFrame),'.tif']);
-   saveas(h2,[outdir,filesep,'darkgreenVIF_white_VIFMT_seg_frame_',num2str(iFrame),'.fig']);
+   saveas(h2,[outdir,filesep,'darkgreenVIF_white_MTVIF_seg_frame_',num2str(iFrame),'.tif']);
+   saveas(h2,[outdir,filesep,'darkgreenVIF_white_MTVIF_seg_frame_',num2str(iFrame),'.fig']);
    
     img_size = size(MT_img);
    
-%     network_similarity_scoremap(VIF_current_model,MT_current_model,img_size, radius,outdir,iFrame);
+    similarity_scoremap= network_similarity_scoremap(MT_current_model,VIF_current_model,img_size, radius,outdir,iFrame,save_everything_flag);
     
-      close all;
+     similarity_scoremap_cell{1, iFrame} = similarity_scoremap;
+     
+%       close all;
 end
+
+ winopen(outdir);  
+
