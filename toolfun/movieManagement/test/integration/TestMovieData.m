@@ -177,6 +177,30 @@ classdef TestMovieData < TestMovieObject
             self.movie = MovieData.load(self.movie.getFullPath());
             assertEqual(self.movie.getPackage(1), self.movie.getROI(1).getPackage(1));
         end
+        
+        %% cleanupROIPackages integration tests
+        function testCleanupROIPackages(self)
+            
+            self.setUpMovie();
+            packageConstr = {@SegmentationPackage, @WindowingPackage};
+            for i = 1 : numel(packageConstr)
+                self.movie.addPackage(packageConstr{i}(self.movie));
+                package = self.movie.getPackage(i);
+                for j = 1 : numel(package.getProcessClassNames)
+                    package.createDefaultProcess(j);
+                end
+            end
+            self.setUpROIs(2);
+            cleanupROIPackages(self.movie, 'WindowingPackage', 1);
+            
+            % Tests
+            assertTrue(isa(self.movie.getROI(1).getPackage(2), 'WindowingPackage'));
+            assertTrue(isa(self.movie.getROI(2).getPackage(2), 'WindowingPackage'));
+            assertFalse(isequal(self.movie.getPackage(2), self.movie.getROI(1).getPackage(2)));
+            assertFalse(isequal(self.movie.getPackage(2), self.movie.getROI(2).getPackage(2)));
+            assertEqual(self.movie.getPackage(2).getProcess(1), self.movie.getROI(1).getPackage(2).getProcess(1));
+            assertEqual(self.movie.getPackage(2).getProcess(1), self.movie.getROI(2).getPackage(2).getProcess(1));
+        end
     end
     
     methods (Abstract)
