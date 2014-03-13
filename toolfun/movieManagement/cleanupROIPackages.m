@@ -1,4 +1,25 @@
 function cleanupROIPackages(MD, packageName, varargin)
+%CLEANUPROIPACKAGES cleans packages in ROIs and optionally recreate new packages
+%
+%    cleanupROIPackages(MD, packageName) processes each ROIs from the
+%    input movie tree and cleans a top-level package of type packageName.
+%    It first finds a package of type packageName in the movie ancestor,
+%    geos into each ROI and unlinks the package and all its processes from
+%    the ROI if the package is shared.
+%
+%    cleanupROIPackages(MD, packageName, process2keep) additionally
+%    preserves the processes of the top-level package of index specified by
+%    process2keep from being unlinked. Additionally, it creates a new
+%    package of type packageName in each ROI and links the kept process(es)
+%    to each ROI package. Warning : this result in individual processes
+%    being shared by multiple packages of different owners.
+%
+%    Examples:
+%
+%        cleanupROIPackages(MD, 'WindowingPackage')
+%        cleanupROIPackages(MD, 'WindowingPackage', 1)
+%
+% Sebastien Besson, Mar 2014
 
 % Input check
 ip = inputParser();
