@@ -204,7 +204,7 @@ classdef TestMovieData < TestMovieObject
             end
         end
         
-        function testCleanupROIPackages(self)
+        function testCleanupROIPackagesKeep(self)
             
             self.setUpCleanupROIPackageScenario();
             cleanupROIPackages(self.movie, 'WindowingPackage', 1);
@@ -216,6 +216,19 @@ classdef TestMovieData < TestMovieObject
                 assertFalse(isequal(self.movie.getPackage(2), package));
                 assertEqual(package.owner_, self.movie.getROI(i));
                 assertEqual(package.getProcess(1), self.movie.getPackage(2).getProcess(1));
+            end
+        end
+        
+        function testCleanupROIPackagesFromChild(self)
+            
+            self.setUpCleanupROIPackageScenario();
+            cleanupROIPackages(self.movie.getROI(1), 'WindowingPackage');
+            
+            % Tests
+            assertEqual(numel(self.movie.packages_), 2);
+            for i = 1: numel(self.movie.rois_)
+                assertEqual(self.movie.getROI(i).packages_, {self.movie.getPackage(1)});
+                assertEqual(self.movie.getROI(i).processes_, self.movie.processes_(1:2));
             end
         end
     end
