@@ -29,7 +29,7 @@ ip.parse(packageName, varargin{:})
 
 % Retrieve package of input class from ancestor
 ancestor = MD.getAncestor();
-packageIndex = ancestor.getPackageIndex('WindowingPackage', 1, false);
+packageIndex = ancestor.getPackageIndex(packageName, 1, false);
 package = ancestor.getPackage(packageIndex);
 
 % Unlink package and processes from children movies

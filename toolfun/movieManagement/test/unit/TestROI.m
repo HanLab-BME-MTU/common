@@ -65,9 +65,14 @@ classdef TestROI < TestCase
             self.roi(self.nRois) = self.movie.addROI('','');
         end
         
-        function setUpSharedPackage(self)
+        function setUpSharedPackage(self, loaded)
             self.package = MockPackage(self.movie);
             self.movie.addPackage(self.package);
+            
+            if nargin > 1 && loaded
+                self.package.createDefaultProcess(1);
+                self.process = self.package.getProcess(1);
+            end
             
             self.nRois = self.nRois + 1;
             self.roi(self.nRois) = self.movie.addROI('','');
@@ -207,6 +212,43 @@ classdef TestROI < TestCase
             assertEqual(self.movie.packages_, {self.package});
             for i = 1: self.nRois
                 assertTrue(isempty(self.movie.getROI(i).packages_));
+            end
+        end
+        
+        
+        %% cleanupROIPackages integration tests
+        function testCleanupROIPackagesNoKeep(self)
+            
+            self.setUpSharedPackage(true);
+            cleanupROIPackages(self.movie, 'MockPackage');
+            for i = 1: numel(self.movie.rois_)
+                assertTrue(isempty(self.movie.getROI(i).packages_));
+                assertTrue(isempty(self.movie.getROI(i).processes_));
+            end
+        end
+        
+        function testCleanupROIPackagesKeep(self)
+            
+            self.setUpSharedPackage(true);
+            cleanupROIPackages(self.movie, 'MockPackage', 1);
+            
+            % Tests
+            for i = 1: numel(self.movie.rois_)
+                roiPackage = self.movie.getROI(i).getPackage(1);
+                assertTrue(isa(roiPackage, 'MockPackage'));
+                assertFalse(isequal(self.package, roiPackage));
+                assertEqual(roiPackage.owner_, self.movie.getROI(i));
+                assertEqual(roiPackage.getProcess(1), self.process);
+            end
+        end
+        
+        function testCleanupROIPackagesFromChild(self)
+            
+            self.setUpSharedPackage(true);
+            cleanupROIPackages(self.movie.getROI(1), 'MockPackage');
+            for i = 1: numel(self.movie.rois_)
+                assertTrue(isempty(self.movie.getROI(i).packages_));
+                assertTrue(isempty(self.movie.getROI(i).processes_));
             end
         end
     end

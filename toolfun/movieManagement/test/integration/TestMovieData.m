@@ -177,60 +177,6 @@ classdef TestMovieData < TestMovieObject
             self.movie = MovieData.load(self.movie.getFullPath());
             assertEqual(self.movie.getPackage(1), self.movie.getROI(1).getPackage(1));
         end
-        
-        %% cleanupROIPackages integration tests
-        function setUpCleanupROIPackageScenario(self)
-            self.setUpMovie();
-            packageConstr = {@SegmentationPackage, @WindowingPackage};
-            for i = 1 : numel(packageConstr)
-                self.movie.addPackage(packageConstr{i}(self.movie));
-                package = self.movie.getPackage(i);
-                for j = 1 : numel(package.getProcessClassNames)
-                    package.createDefaultProcess(j);
-                end
-            end
-            self.setUpROIs(2);
-        end
-        
-        function testCleanupROIPackagesNoKeep(self)
-            
-            self.setUpCleanupROIPackageScenario();
-            cleanupROIPackages(self.movie, 'WindowingPackage');
-            
-            % Tests
-            for i = 1: numel(self.movie.rois_)
-                assertEqual(self.movie.getROI(i).packages_, {self.movie.getPackage(1)});
-                assertEqual(self.movie.getROI(i).processes_, self.movie.processes_(1:2));
-            end
-        end
-        
-        function testCleanupROIPackagesKeep(self)
-            
-            self.setUpCleanupROIPackageScenario();
-            cleanupROIPackages(self.movie, 'WindowingPackage', 1);
-            
-            % Tests
-            for i = 1: numel(self.movie.rois_)
-                package = self.movie.getROI(i).getPackage(2);
-                assertTrue(isa(package, 'WindowingPackage'));
-                assertFalse(isequal(self.movie.getPackage(2), package));
-                assertEqual(package.owner_, self.movie.getROI(i));
-                assertEqual(package.getProcess(1), self.movie.getPackage(2).getProcess(1));
-            end
-        end
-        
-        function testCleanupROIPackagesFromChild(self)
-            
-            self.setUpCleanupROIPackageScenario();
-            cleanupROIPackages(self.movie.getROI(1), 'WindowingPackage');
-            
-            % Tests
-            assertEqual(numel(self.movie.packages_), 2);
-            for i = 1: numel(self.movie.rois_)
-                assertEqual(self.movie.getROI(i).packages_, {self.movie.getPackage(1)});
-                assertEqual(self.movie.getROI(i).processes_, self.movie.processes_(1:2));
-            end
-        end
     end
     
     methods (Abstract)
