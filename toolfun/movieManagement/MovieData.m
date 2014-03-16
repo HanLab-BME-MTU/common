@@ -5,8 +5,8 @@ classdef  MovieData < MovieObject
         channels_               % Channel object array
         nFrames_                % Number of frames
         imSize_                 % Image size 1x2 array[height width]
-        rois_ =  MovieData.empty(1,0);
-        parent_ =  MovieData.empty(1,0);
+        rois_ =  MovieData.empty(1,0);   % Region(s) of interest
+        parent_ =  MovieData.empty(1,0); % Parent movie(s)
     end
     
     properties
@@ -142,12 +142,13 @@ classdef  MovieData < MovieObject
         end
         
         function channel = getChannel(obj, i)
+            % Returns the channel corresponding to the specified index
             assert(isscalar(i) && ismember(i, 1:numel(obj.channels_)));
             channel = obj.channels_(i);
         end
         
         function chanPaths = getChannelPaths(obj,iChan)
-            %Returns the directories for the selected channels
+            % Returns the directories for the selected channels
             if nargin < 2 || isempty(iChan), iChan = 1:numel(obj.channels_); end
             assert(all(ismember(iChan,1:numel(obj.channels_))),...
                 'Invalid channel index specified! Cannot return path!');
@@ -177,11 +178,13 @@ classdef  MovieData < MovieObject
         end
         
         function roi = getROI(obj, i)
+            % Returns the region of interest corresponding to the specified index
             assert(isscalar(i) && ismember(i, 1:numel(obj.rois_)));
             roi = obj.rois_(i);
         end
         
         function deleteROI(obj, index, askUser)
+            % Deletes the region of interest corresponding to the specified index
             assert(all(ismember(index,1:numel(obj.rois_))));
             if nargin < 3, askUser = true; end
             paths = arrayfun(@(x) getFullPath(x, askUser), obj.rois_(index),'Unif',false);
@@ -196,6 +199,8 @@ classdef  MovieData < MovieObject
         end
         
         function roiMask=getROIMask(obj)
+            % Returns the binary mask for the current region of interest
+
             % If no roiMaskPath_, the whole mask is the region of interest
             if isempty(obj.roiMaskPath_)
                 roiMask = true([obj.imSize_ obj.nFrames_]);
@@ -214,7 +219,7 @@ classdef  MovieData < MovieObject
         end
         
         function parent=getAncestor(obj)
-            % Get oldest common ancestor of the movie
+            % Get the oldest common ancestor of the movie
             if isempty(obj.parent_), parent=obj; else parent=obj.parent_.getAncestor(); end
         end
         
@@ -296,9 +301,8 @@ classdef  MovieData < MovieObject
             obj.save();
         end
         
-        function relocate(obj,oldRootDir,newRootDir,full)
-            
-            % Relocate movie and rois analysis
+        function relocate(obj,oldRootDir,newRootDir,full)            
+            % Relocate the full object including ROIs and channels
             for movie = [obj.getAncestor() obj.getAncestor().getDescendants()]
                 relocate@MovieObject(movie, oldRootDir, newRootDir);
                 if ~isempty(movie.roiMaskPath_)
@@ -424,12 +428,14 @@ classdef  MovieData < MovieObject
         %% Bio-Formats functions
         
         function setSeries(obj, iSeries)
+            % Set the specified Bio-Formats series
             assert(obj.isBF(), 'Object must be using the Bio-Formats library');
             assert(isempty(obj.bfSeries_), 'The series number has already been set');
             obj.bfSeries_ = iSeries;
         end
         
         function iSeries = getSeries(obj)
+            % Return the Bio-Formats series of the movie
             if isempty(obj.bfSeries_),
                 iSeries = 0;
             else
@@ -438,6 +444,7 @@ classdef  MovieData < MovieObject
         end
         
         function r = getReader(obj)
+            % Return the Reader object for the current movie
             if ~isempty(obj.reader),
                 r = obj.reader;
                 return

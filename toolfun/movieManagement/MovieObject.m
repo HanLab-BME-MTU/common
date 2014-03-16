@@ -129,12 +129,13 @@ classdef  MovieObject < hgsetget
         end
         %% Functions to manipulate process object array
         function addProcess(obj, newprocess)
-            % Add new process in process list
+            % Add new process to the processes list
             assert(isa(newprocess,'Process'));
             obj.processes_ = horzcat(obj.processes_, {newprocess});
         end
         
         function proc = getProcess(obj, i)
+            % Return process corresponding to the specified index
             assert(isscalar(i) && ismember(i,1:numel(obj.processes_)));
             proc = obj.processes_{i};
         end
@@ -242,6 +243,7 @@ classdef  MovieObject < hgsetget
         end
         
         function iProc = getProcessIndex(obj, type, varargin)
+            % Return existing processes of a given class
             if isa(type, 'Process'), type = class(type); end
             iProc = getIndex(obj.processes_, type, varargin{:});
         end
@@ -254,12 +256,13 @@ classdef  MovieObject < hgsetget
         end
         
         function package = getPackage(obj, i)
+            % Return package corresponding to the specified index
             assert(isscalar(i) && ismember(i,1:numel(obj.packages_)));
             package = obj.packages_{i};
         end
         
         function status = unlinkPackage(obj, package)
-            % Unlink process from packages list
+            % Unlink package from packages list
             
             id = [];
             status = false;
@@ -306,6 +309,7 @@ classdef  MovieObject < hgsetget
         end
         
         function iPackage = getPackageIndex(obj, type, varargin)
+            % Return existing packages of a given class
             if isa(type, 'Package'), type = class(type); end
             iPackage = getIndex(obj.packages_, type, varargin{:});
         end
