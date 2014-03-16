@@ -1,26 +1,13 @@
-classdef TestPackage < handle
+classdef TestPackage < TestLibrary
     
     properties
-        movie
         package
     end
     
     methods
         %% Set up and tear down methods
         function setUp(self)
-            self.package = MockPackage(self.movie);
-            self.movie.addPackage(self.package);
-        end
-        
-        function process = setUpProcess(self)
-            process = MockProcess(self.movie);
-            self.movie.addProcess(process);
-            self.package.setProcess(1, process);
-        end
-        
-        function tearDown(self)
-            delete(self.movie);
-            delete(self.package);
+            self.package = self.setUpPackage();
         end
         
         %% Tests
@@ -28,17 +15,17 @@ classdef TestPackage < handle
             assertEqual(self.movie.getPackage(1), self.package);
         end
         
-        
-        function testGetSinglePackageIndex(self)
-            iPack = self.movie.getPackageIndex(self.package);
-            assertEqual(iPack, 1);
+        function testGetPackageIndexByObject(self)
+            assertEqual(self.movie.getPackageIndex(self.package), 1);
         end
         
-        function testGetMultiplePackageIndex(self)
-            package2 = MockPackage(self.movie);
-            self.movie.addPackage(package2);
-            iProc = self.movie.getPackageIndex(package2, Inf);
-            assertEqual(iProc, [1 2]);
+        function testGetPackageIndexByName(self)
+            assertEqual(self.movie.getPackageIndex(class(self.package)), 1);
+        end
+
+        function testGetPackageIndexMultiple(self)
+            package2 = self.setUpPackage();
+            assertEqual(self.movie.getPackageIndex(package2, Inf), [1 2]);
         end
         
         %% deletePackage tests
@@ -56,18 +43,14 @@ classdef TestPackage < handle
         
         function testDeleteSameClassPackageByIndex(self)
             % Duplicate package class and test deletion by index
-            package2 = MockPackage(self.movie);
-            self.movie.addPackage(package2);
-            
+            package2 = self.setUpPackage();        
             self.movie.deletePackage(1);
             assertEqual(self.movie.packages_, {package2});
         end
         
         function testDeleteSameClassPackageByObject(self)
             % Duplicate package class and test deletion by object
-            package2 = MockPackage(self.movie);
-            self.movie.addPackage(package2);
-            
+            package2 = self.setUpPackage();
             self.movie.deletePackage(self.package);
             assertEqual(self.movie.packages_, {package2});
         end
@@ -76,6 +59,7 @@ classdef TestPackage < handle
             % Link process to package and test deletion by index
             
             process = self.setUpProcess();
+            self.package.setProcess(1, process);
             self.movie.deletePackage(1);
             assertEqual(self.movie.processes_, {process});
         end
@@ -84,6 +68,7 @@ classdef TestPackage < handle
             % Link process to package and test deletion by object
             
             process = self.setUpProcess();
+            self.package.setProcess(1, process);
             self.movie.deletePackage(self.package);
             assertEqual(self.movie.processes_, {process});
         end
@@ -101,8 +86,7 @@ classdef TestPackage < handle
         %% createDefaultProcess tests
         function testCreateDefaultProcess(self)
             self.package.createDefaultProcess(1);
-            assertEqual(self.movie.getPackage(1).getProcess(1),...
-                self.movie.getProcess(1));
+            assertEqual(self.package.getProcess(1), self.movie.getProcess(1));
             assertTrue(isa(self.package.getProcess(1),...
                 self.package.getProcessClassNames{1}));
             

@@ -1,6 +1,5 @@
-classdef TestOmero < handle
+classdef TestOmero < TestLibrary
     properties
-        movie
         omeroId
         omeroSession
     end
@@ -15,8 +14,8 @@ classdef TestOmero < handle
         end
         
         function tearDown(self)
-            delete(self.movie);
             delete(self.omeroSession);
+            tearDown@TestLibrary(self)
         end
         
         % Basic tests

@@ -7,7 +7,7 @@ classdef TestMovieListProcess < TestCase & TestProcess
         
         %% Set up and tear down methods
         function setUp(self)
-            self.movie = MovieList();
+            self.setUpMovieList();
             setUp@TestProcess(self);
         end
         

@@ -7,7 +7,7 @@ classdef TestMovieDataPackage < TestCase & TestPackage
         
         %% Set up and tear down methods
         function setUp(self)
-            self.movie = MovieData();
+            self.setUpMovieData();
             setUp@TestPackage(self);
         end
         

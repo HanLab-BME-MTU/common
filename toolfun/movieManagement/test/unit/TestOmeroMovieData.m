@@ -7,7 +7,7 @@ classdef TestOmeroMovieData < TestCase & TestOmero
         
         %% Set up and tear down methods
         function setUp(self)
-            self.movie = MovieData();
+            self.setUpMovieData();
             setUp@TestOmero(self);
         end
         

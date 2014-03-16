@@ -1,7 +1,6 @@
-classdef TestMovieDataProperties < TestCase
+classdef TestMovieDataProperties < TestCase & TestLibrary
     
     properties
-        movie
         timeInterval =  1
         numAperture = 1.4
         magnification =  100
@@ -14,11 +13,11 @@ classdef TestMovieDataProperties < TestCase
         end
         
         function setUp(self)
-            self.movie = MovieData();
+            self.setUpMovieData();
         end
         
         function tearDown(self)
-            delete(self.movie);
+            tearDown@TestLibrary(self);
         end
         
         %% Individual property tests
