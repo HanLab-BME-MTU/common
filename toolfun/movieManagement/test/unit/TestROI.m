@@ -44,6 +44,12 @@ classdef TestROI < TestCase
         end
         
         %% ROI methods tests
+        function testAddROI(self)
+            self.roi = self.movie.addROI('','');
+            assertEqual(self.movie.rois_, self.roi);
+            assertEqual(self.roi.parent_, self.movie);
+        end
+        
         function testGetROI(self)
             self.setUpRois();
             for i = 1 : self.nRois
@@ -86,6 +92,15 @@ classdef TestROI < TestCase
             assertEqual(self.movie.getProcess(1), self.process);
             for i = 1: self.nRois
                 assertEqual(self.movie.getROI(i).processes_, {self.process});
+            end
+        end
+        
+        function testUnsharedProcess(self)
+            self.setUpRois();
+            self.setUpProcess();
+            assertEqual(self.movie.getProcess(1), self.process);
+            for i = 1: self.nRois
+                assertTrue(isempty(self.movie.getROI(i).processes_));
             end
         end
         
@@ -168,6 +183,15 @@ classdef TestROI < TestCase
             assertEqual(self.movie.getPackage(1), self.package);
             for i = 1: self.nRois
                 assertEqual(self.movie.getROI(i).packages_, {self.package});
+            end
+        end
+        
+        function testUnsharedPackage(self)
+            self.setUpRois();
+            self.setUpPackage();
+            assertEqual(self.movie.getPackage(1), self.package);
+            for i = 1: self.nRois
+                assertTrue(isempty(self.movie.getROI(i).packages_));
             end
         end
         
