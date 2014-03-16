@@ -1,5 +1,5 @@
 classdef TestROI < TestCase & TestLibrary
-        
+    
     methods
         function self = TestROI(name)
             self = self@TestCase(name);
@@ -12,7 +12,7 @@ classdef TestROI < TestCase & TestLibrary
         
         function tearDown(self)
             tearDown@TestLibrary(self);
-        end       
+        end
         
         %% ROI methods tests
         function testAddROI(self)
@@ -57,24 +57,47 @@ classdef TestROI < TestCase & TestLibrary
         end
         
         % Shared process/package tests
-        function testSharedChannels(self)
-            channels = [Channel() Channel()];
-            self.movie = MovieData(channels, '');
+        function testChannels(self)
+            self.setUpMovieData(3);
             rois = self.setUpRois();
             for i = 1 : self.nRois
                 assertEqual(rois(i).channels_, self.movie.channels_);
             end
         end
         
-        function testSharedMetadata(self)
+        function testPixelSize(self)
             self.movie.pixelSize_ = 100;
             rois = self.setUpRois();
             for i = 1 : self.nRois
-                assertEqual(rois(i).channels_, self.movie.channels_);
+                assertEqual(rois(i).pixelSize_, self.movie.pixelSize_);
             end
         end
         
-        function testSharedProcess(self)
+        function testTimeInterval(self)
+            self.movie.timeInterval_ = 1;
+            rois = self.setUpRois();
+            for i = 1 : self.nRois
+                assertEqual(rois(i).timeInterval_, self.movie.timeInterval_);
+            end
+        end
+        
+        function testCamBitdepth(self)
+            self.movie.camBitdepth_ = 16;
+            rois = self.setUpRois();
+            for i = 1 : self.nRois
+                assertEqual(rois(i).camBitdepth_, self.movie.camBitdepth_);
+            end
+        end
+        
+        function testNumAperture(self)
+            self.movie.numAperture_ = 1.4;
+            rois = self.setUpRois();
+            for i = 1 : self.nRois
+                assertEqual(rois(i).numAperture_, self.movie.numAperture_);
+            end
+        end
+        
+        function testProcess(self)
             process = self.setUpProcess();
             rois = self.setUpRois();
             assertEqual(self.movie.processes_, {process});

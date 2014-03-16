@@ -15,8 +15,13 @@ classdef TestLibrary < handle
             delete(self.movie);
         end
         
-        function setUpMovieData(self)
-            self.movie = MovieData();
+        function setUpMovieData(self, nchannels)
+            if nargin > 1 && nchannels > 0
+                channels(nchannels, 1) = Channel();
+                self.movie = MovieData(channels, '');
+            else
+                self.movie = MovieData();
+            end
         end
         
         

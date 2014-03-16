@@ -3,7 +3,7 @@ classdef TestMovieDataProperties < TestCase & TestLibrary
     properties
         timeInterval =  1
         numAperture = 1.4
-        magnification =  100
+        magnification = 100
         camBitdepth = 14
     end
     
