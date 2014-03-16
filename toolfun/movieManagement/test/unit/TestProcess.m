@@ -12,7 +12,7 @@ classdef TestProcess < TestLibrary
         
         % Basic tests
         function testIsProcess(self)
-            assertTrue(Process.isProcess(class(self.movie.getProcess(1))));
+            assertTrue(Process.isProcess(class(self.process)));
             assertFalse(Process.isProcess('InvalidProcessClass'));
         end
         

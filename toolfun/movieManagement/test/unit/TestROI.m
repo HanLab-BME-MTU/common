@@ -16,9 +16,9 @@ classdef TestROI < TestCase & TestLibrary
         
         %% ROI methods tests
         function testAddROI(self)
-            self.rois = self.movie.addROI('','');
-            assertEqual(self.movie.rois_, self.rois);
-            assertEqual(self.rois.parent_, self.movie);
+            roi = self.movie.addROI('','');
+            assertEqual(self.movie.rois_, roi);
+            assertEqual(roi.parent_, self.movie);
         end
         
         function testGetROI(self)
@@ -29,15 +29,15 @@ classdef TestROI < TestCase & TestLibrary
         end
         
         function testGetAncestor(self)
-            self.setUpRois();
+            rois = self.setUpRois();
             for i = 1 : self.nRois
-                assertEqual(self.rois(i).getAncestor(), self.movie);
+                assertEqual(rois(i).getAncestor(), self.movie);
             end
         end
         
         function testGetDescendants(self)
-            self.setUpRois();
-            assertEqual(self.movie.getDescendants(), self.rois);
+            rois = self.setUpRois();
+            assertEqual(self.movie.getDescendants(), rois);
         end
         
         function testDeleteROI(self)
@@ -48,11 +48,11 @@ classdef TestROI < TestCase & TestLibrary
         end
         
         function testDeleteROIs(self)
-            self.setUpRois();
+            rois = self.setUpRois();
             self.movie.deleteROI(1 : self.nRois - 1, false);
-            assertEqual(self.movie.rois_, self.rois(self.nRois));
+            assertEqual(self.movie.rois_, rois(self.nRois));
             for i = 1 : self.nRois -1
-                assertFalse(self.rois(i).isvalid);
+                assertFalse(rois(i).isvalid);
             end
         end
         
@@ -60,214 +60,214 @@ classdef TestROI < TestCase & TestLibrary
         function testSharedChannels(self)
             channels = [Channel() Channel()];
             self.movie = MovieData(channels, '');
-            self.setUpRois();
+            rois = self.setUpRois();
             for i = 1 : self.nRois
-                assertEqual(self.movie.getROI(i).channels_, self.movie.channels_);
+                assertEqual(rois(i).channels_, self.movie.channels_);
             end
         end
         
         function testSharedMetadata(self)
             self.movie.pixelSize_ = 100;
-            self.setUpRois();
+            rois = self.setUpRois();
             for i = 1 : self.nRois
-                assertEqual(self.movie.getROI(i).channels_, self.movie.channels_);
+                assertEqual(rois(i).channels_, self.movie.channels_);
             end
         end
         
         function testSharedProcess(self)
-            self.setUpProcess();
-            self.setUpRois();
-            assertEqual(self.movie.processes_, self.processes);
+            process = self.setUpProcess();
+            rois = self.setUpRois();
+            assertEqual(self.movie.processes_, {process});
             for i = 1: self.nRois
-                assertEqual(self.movie.getROI(i).processes_, self.processes);
+                assertEqual(rois(i).processes_, {process});
             end
         end
         
         function testUnsharedProcess(self)
-            self.setUpRois();
-            self.setUpProcess();
-            assertEqual(self.movie.processes_, self.processes);
+            rois = self.setUpRois();
+            process = self.setUpProcess();
+            assertEqual(self.movie.processes_, {process});
             for i = 1: self.nRois
-                assertTrue(isempty(self.movie.getROI(i).processes_));
+                assertTrue(isempty(rois(i).processes_));
             end
         end
         
         function testDeleteSharedProcessByIndex(self)
             self.setUpProcess();
-            self.setUpRois();
+            rois = self.setUpRois();
             self.movie.deleteProcess(1);
             assertTrue(isempty(self.movie.processes_));
             for i = 1: self.nRois
-                assertTrue(isempty(self.movie.getROI(i).processes_));
+                assertTrue(isempty(rois(i).processes_));
             end
         end
         
         function testDeleteSharedProcessByObject(self)
             process = self.setUpProcess();
-            self.setUpRois();
+            rois = self.setUpRois();
             self.movie.deleteProcess(process);
             assertTrue(isempty(self.movie.processes_));
             for i = 1: self.nRois
-                assertTrue(isempty(self.movie.getROI(i).processes_));
+                assertTrue(isempty(rois(i).processes_));
             end
         end
         
         function testDeleteSharedProcessFromROIByIndex(self)
-            process = self.setUpProcess();
-            self.setUpRois();
-            self.movie.getROI(self.nRois).deleteProcess(1);
+            self.setUpProcess();
+            rois = self.setUpRois();
+            rois(1).deleteProcess(1);
             assertTrue(isempty(self.movie.processes_));
             for i = 1: self.nRois
-                assertTrue(isempty(self.movie.getROI(i).processes_));
+                assertTrue(isempty(rois(i).processes_));
             end
         end
         
         function testDeleteSharedProcessFromROIByObject(self)
             process = self.setUpProcess();
-            self.setUpRois();
-            self.movie.getROI(self.nRois).deleteProcess(process);
+            rois = self.setUpRois();
+            rois(1).deleteProcess(process);
             assertTrue(isempty(self.movie.processes_));
             for i = 1: self.nRois
-                assertTrue(isempty(self.movie.getROI(i).processes_));
+                assertTrue(isempty(rois(i).processes_));
             end
         end
         
         function testUnlinkSharedProcessFromROIByIndex(self)
             process = self.setUpProcess();
-            self.setUpRois();
-            self.movie.getROI(1).unlinkProcess(1);
+            rois = self.setUpRois();
+            rois(1).unlinkProcess(1);
             assertEqual(self.movie.processes_, {process});
             for i = 2: self.nRois
-                assertEqual(self.movie.getROI(i).processes_, {process});
+                assertEqual(rois(i).processes_, {process});
             end
-            assertTrue(isempty(self.movie.getROI(1).processes_));
+            assertTrue(isempty(rois(1).processes_));
         end
         
         function testUnlinkSharedProcessFromROIByObject(self)
             process = self.setUpProcess();
-            self.setUpRois();
-            self.movie.getROI(1).unlinkProcess(process);
+            rois = self.setUpRois();
+            rois(1).unlinkProcess(process);
             assertEqual(self.movie.processes_, {process});
             for i = 2: self.nRois
-                assertEqual(self.movie.getROI(i).processes_, {process});
+                assertEqual(rois(i).processes_, {process});
             end
-            assertTrue(isempty(self.movie.getROI(1).processes_));
+            assertTrue(isempty(rois(1).processes_));
         end
         
         function testReplaceSharedProcess(self)
             self.setUpProcess();
-            self.setUpRois();
+            rois = self.setUpRois();
             newprocess = MockProcess(self.movie);
             self.movie.replaceProcess(1, newprocess);
             assertEqual(self.movie.getProcess(1), newprocess);
             for i = 1: self.nRois
-                assertEqual(self.movie.getROI(i).getProcess(1), newprocess);
+                assertEqual(rois(i).getProcess(1), newprocess);
             end
         end
         
         function testSharedPackage(self)
             package = self.setUpPackage();
-            self.setUpRois();
+            rois = self.setUpRois();
             assertEqual(self.movie.getPackage(1), package);
             for i = 1: self.nRois
-                assertEqual(self.movie.getROI(i).packages_, {package});
+                assertEqual(rois(i).packages_, {package});
             end
         end
         
         function testUnsharedPackage(self)
-            self.setUpRois();
+            rois = self.setUpRois();
             package = self.setUpPackage();
             assertEqual(self.movie.getPackage(1), package);
             for i = 1: self.nRois
-                assertTrue(isempty(self.movie.getROI(i).packages_));
+                assertTrue(isempty(rois(i).packages_));
             end
         end
         
         function testDeleteSharedPackageByIndex(self)
             self.setUpPackage();
-            self.setUpRois();
+            rois = self.setUpRois();
             self.movie.deletePackage(1);
             assertTrue(isempty(self.movie.packages_));
             for i = 1: self.nRois
-                assertTrue(isempty(self.movie.getROI(i).packages_));
+                assertTrue(isempty(rois(i).packages_));
             end
         end
         
         function testDeleteSharedPackageByObject(self)
             package = self.setUpPackage();
-            self.setUpRois();
+            rois = self.setUpRois();
             self.movie.deletePackage(package);
             assertTrue(isempty(self.movie.packages_));
             for i = 1: self.nRois
-                assertTrue(isempty(self.movie.getROI(i).packages_));
+                assertTrue(isempty(rois(i).packages_));
             end
         end
         
         function testDeleteSharedPackageFromROIByIndex(self)
             self.setUpPackage();
-            self.setUpRois();
-            self.movie.getROI(self.nRois).deletePackage(1);
+            rois = self.setUpRois();
+            rois(1).deletePackage(1);
             assertTrue(isempty(self.movie.packages_));
             for i = 1: self.nRois
-                assertTrue(isempty(self.movie.getROI(i).packages_));
+                assertTrue(isempty(rois(i).packages_));
             end
         end
         
         function testDeleteSharedPackageFromROIByObject(self)
             package = self.setUpPackage();
-            self.setUpRois();
-            self.movie.getROI(self.nRois).deletePackage(package);
+            rois = self.setUpRois();
+            rois(1).deletePackage(package);
             assertTrue(isempty(self.movie.packages_));
             for i = 1: self.nRois
-                assertTrue(isempty(self.movie.getROI(i).packages_));
+                assertTrue(isempty(rois(i).packages_));
             end
         end
         
         function testUnlinkSharedPackageFromROIByIndex(self)
             package = self.setUpPackage();
-            self.setUpRois();
-            self.movie.getROI(1).unlinkPackage(1);
+            rois = self.setUpRois();
+            rois(1).unlinkPackage(1);
             assertEqual(self.movie.packages_, {package});
             for i = 2: self.nRois
-                assertEqual(self.movie.getROI(i).packages_, {package});
+                assertEqual(rois(i).packages_, {package});
             end
-            assertTrue(isempty(self.movie.getROI(1).packages_));
+            assertTrue(isempty(rois(1).packages_));
         end
         
         function testUnlinkSharedPackageFromROIByObject(self)
             package = self.setUpPackage();
-            self.setUpRois();
-            self.movie.getROI(1).unlinkPackage(package);
+            rois = self.setUpRois();
+            rois(1).unlinkPackage(package);
             assertEqual(self.movie.packages_, {package});
             for i = 2: self.nRois
-                assertEqual(self.movie.getROI(i).packages_, {package});
+                assertEqual(rois(i).packages_, {package});
             end
-            assertTrue(isempty(self.movie.getROI(1).packages_));
+            assertTrue(isempty(rois(1).packages_));
         end
         
         %% cleanupROIPackages integration tests
         function testCleanupROIPackagesNoKeep(self)
             self.setUpPackage(true);
-            self.setUpRois();
+            rois = self.setUpRois();
             cleanupROIPackages(self.movie, 'MockPackage');
             for i = 1: numel(self.movie.rois_)
-                assertTrue(isempty(self.movie.getROI(i).packages_));
-                assertTrue(isempty(self.movie.getROI(i).processes_));
+                assertTrue(isempty(rois(i).packages_));
+                assertTrue(isempty(rois(i).processes_));
             end
         end
         
         function testCleanupROIPackagesKeep(self)
             
             [package, process] = self.setUpPackage(true);
-            self.setUpRois();
+            rois = self.setUpRois();
             cleanupROIPackages(self.movie, 'MockPackage', 1);
             
             % Tests
             for i = 1: numel(self.movie.rois_)
-                roiPackage = self.movie.getROI(i).getPackage(1);
+                roiPackage = rois(i).getPackage(1);
                 assertTrue(isa(roiPackage, 'MockPackage'));
                 assertFalse(isequal(package, roiPackage));
-                assertEqual(roiPackage.owner_, self.movie.getROI(i));
+                assertEqual(roiPackage.owner_, rois(i));
                 assertEqual(roiPackage.getProcess(1), process);
             end
         end
@@ -275,11 +275,11 @@ classdef TestROI < TestCase & TestLibrary
         function testCleanupROIPackagesFromChild(self)
             
             self.setUpPackage(true);
-            self.setUpRois();
-            cleanupROIPackages(self.movie.getROI(1), 'MockPackage');
+            rois = self.setUpRois();
+            cleanupROIPackages(rois(1), 'MockPackage');
             for i = 1: numel(self.movie.rois_)
-                assertTrue(isempty(self.movie.getROI(i).packages_));
-                assertTrue(isempty(self.movie.getROI(i).processes_));
+                assertTrue(isempty(rois(i).packages_));
+                assertTrue(isempty(rois(i).processes_));
             end
         end
         

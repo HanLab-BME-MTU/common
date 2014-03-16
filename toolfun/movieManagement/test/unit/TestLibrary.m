@@ -5,17 +5,14 @@ classdef TestLibrary < handle
     properties
         movie
         nRois
-        rois = MovieData.empty(0,1);
-        packages = {};
-        processes = {};
     end    
     
     methods
         
         function tearDown(self)
+            cellfun(@delete, self.movie.processes_);
+            cellfun(@delete, self.movie.packages_);
             delete(self.movie);
-            cellfun(@delete, self.processes);
-            cellfun(@delete, self.packages);
         end
         
         function setUpMovieData(self)
@@ -33,22 +30,20 @@ classdef TestLibrary < handle
             else
                 self.nRois  = 5;
             end
+            rois(1, self.nRois) = MovieData();
             for i = 1 : self.nRois
-                self.rois(end+1) = self.movie.addROI('','');
+                rois(i) = self.movie.addROI('','');
             end
-            rois = self.rois(end - self.nRois + 1 : end);
         end
         
         function process = setUpProcess(self)
             process = MockProcess(self.movie);
             self.movie.addProcess(process);
-            self.processes{end+1} = process;
         end
         
         function [package, process] = setUpPackage(self, loaded)
             package = MockPackage(self.movie);
             self.movie.addPackage(package);
-            self.packages{end+1} = package;
             
             if nargin > 1 && loaded
                 process = setUpProcess(self);
