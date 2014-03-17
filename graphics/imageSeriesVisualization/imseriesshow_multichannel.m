@@ -73,6 +73,7 @@ for i = 1:numChannels
    if ~isempty( setxor( curChannelVolSize, volSize ) )
       error('Images corresponding to all channels must of the same size and dimension'); 
    end
+   im{i} = double( im{i} );
    %default_displayranges(i,:) = double([ min(im{i}(:)) max(im{i}(:))]);
    default_displayranges(i,:) = ComputeImageDynamicRange( im{i}, 98.0 );
 end
@@ -585,7 +586,7 @@ end
 %%
 function [ intensityRange ] = ComputeImageDynamicRange( im, cover_percent )
 
-    [p,x] = hist( im, 255 );   
+    [p,x] = hist( double(im), 255 );   
     p = p / sum(p);
     
     min_xlow = [];

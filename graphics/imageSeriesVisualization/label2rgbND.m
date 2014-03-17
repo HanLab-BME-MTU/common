@@ -5,10 +5,9 @@ function [imLabelRGB, varargout] = label2rgbND( imLabel, labelColorMap )
         % assign colors randomly
         numLabels = double(max(imLabel(:)));
         imLabel( imLabel == 0 ) = numLabels + 1;
-        cmap = jet(numLabels);
-        stream = RandStream('swb2712','seed',0);
-        index = randperm(stream,numLabels);
-        cmap = [ cmap(index,:); 0 0 0 ];            
+        
+        cmap = random('Uniform', 0.00001, 1, [numLabels, 3]);
+        cmap = [ cmap ; 0 0 0 ];
         
     else
         assert( all(size(labelColorMap, 2) == 3) );
