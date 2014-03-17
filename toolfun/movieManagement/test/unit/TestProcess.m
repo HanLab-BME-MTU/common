@@ -141,5 +141,28 @@ classdef TestProcess < TestLibrary
             assertEqual(self.movie.getProcess(1), process2);
             assertFalse(self.process.isvalid);
         end
+        
+        %% Process methods
+        function testGetPackageUnshared(self)
+            assertTrue(isempty(self.process.getPackage()));
+        end
+        
+        function getPackageSingle(self)
+            package = self.setUpPackage();
+            package.setProcess(1, self.process);
+            assertEqual(self.process.getPackage(), 1);
+        end
+        
+        function testGetPackageMultiple(self)
+            for i = 1 :4
+                package = self.setUpPackage();
+                package.setProcess(1, self.process);
+            end
+            assertEqual(self.process.getPackage(), 1:4);
+        end
+        
+        function testGetIndex(self)
+            assertEqual(self.process.getIndex(), 1);
+        end
     end
 end
