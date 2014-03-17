@@ -318,7 +318,7 @@ classdef TestROI < TestCase & TestLibrary
             end
         end
         
-        function testCleanupROIPackagesMultipleCalss(self)
+        function testCleanupROIPackagesMultipleCalls(self)
             
             [package, process] = self.setUpPackage(true);
             rois = self.setUpRois();
