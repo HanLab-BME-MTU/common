@@ -65,7 +65,7 @@ set(handles.popupmenu_single_cell_this_movie_ID,'Enable','off')
 
 
 handles.target_channelIdx = 1;
-handles.sup_channelIdx = 2;
+handles.sup_channelIdx = 1;
 handles.currCell   = 1;
 % handles.currSingleCell   = 1;
 handles.single_cell_ID = 1 ;
