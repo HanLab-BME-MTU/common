@@ -19,13 +19,13 @@ classdef  MovieData < MovieObject
         camBitdepth_            % Camera Bit-depth
         
         % ---- Un-used params ----
+        
         eventTimes_             % Time of movie events
-        magnification_
-        binning_
+        magnification_          % Magnification
+        binning_                % Camera binning
         
-        % For Bio-Formats objects
-        bfSeries_
-        
+        bfSeries_               % Series of the image file
+         
         % For mockMovieData
         mockMD_
         mMDparent_ % mMDparent is a two column field with the first column
@@ -428,14 +428,14 @@ classdef  MovieData < MovieObject
         %% Bio-Formats functions
         
         function setSeries(obj, iSeries)
-            % Set the specified Bio-Formats series
+            % Set the series of the image file
             assert(obj.isBF(), 'Object must be using the Bio-Formats library');
             assert(isempty(obj.bfSeries_), 'The series number has already been set');
             obj.bfSeries_ = iSeries;
         end
         
         function iSeries = getSeries(obj)
-            % Return the Bio-Formats series of the movie
+            % Return the series of the image file
             if isempty(obj.bfSeries_),
                 iSeries = 0;
             else
@@ -444,7 +444,7 @@ classdef  MovieData < MovieObject
         end
         
         function r = getReader(obj)
-            % Return the Reader object for the current movie
+            % Retrieved the Reader for accessing the raw data
             if ~isempty(obj.reader),
                 r = obj.reader;
                 return
@@ -463,6 +463,7 @@ classdef  MovieData < MovieObject
         end
         
         function status = isBF(obj)
+            % Check if the MovieData is linked to an image file
             channelPaths = arrayfun(@(x) x.channelPath_, obj.channels_, 'Unif', false);
             channelPaths = unique(channelPaths);
             status = numel(channelPaths) == 1 && ...
@@ -478,6 +479,7 @@ classdef  MovieData < MovieObject
         
         %% HCS functions
         function status = isHCS(obj)
+            % Check if the MovieData is linked to an HCS file
             objcache = get(obj.channels_(1));
             if isfield(objcache, 'hcsPlatestack_')
                 status = ~isempty(obj.channels_(1).hcsPlatestack_);
@@ -549,9 +551,11 @@ classdef  MovieData < MovieObject
         end
         
         function propName = getPathProperty()
+            % Retrieve the property containing the folder path for saving the object
             propName = 'movieDataPath_';
         end
         function propName = getFilenameProperty()
+            % Retrieve the property containing the file name for saving the object
             propName = 'movieDataFileName_';
         end
     end

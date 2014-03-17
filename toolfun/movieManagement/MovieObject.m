@@ -6,21 +6,20 @@ classdef  MovieObject < hgsetget
     
     properties (SetAccess = protected)
         createTime_             % Object creation time
-        processes_ = {};        % Cell array of process objects
-        packages_ = {};         % Cell array of process packaged
+        processes_ = {};        % List of analysis processes
+        packages_ = {};         % List of analysis packages
     end
     
     properties
-        outputDirectory_  ='';      % Default output directory for all processes
-        notes_                  % User's notes
+        outputDirectory_ = '';  % Default output directory for analysis
+        notes_                  % User notes
         
-        % For OMERO objects
-        omeroId_
-        omeroSave_ = false
+        omeroId_                % Identifier of an OMERO object
+        omeroSave_ = false      % Status of the saving to OMERO
     end
     
     properties (Transient =true)
-        omeroSession_
+        omeroSession_           % Active session to an OMERO server
     end
     
     methods
@@ -67,28 +66,33 @@ classdef  MovieObject < hgsetget
         end
         
         function set.notes_(obj, value)
+            % Set the notes
             obj.checkPropertyValue('notes_',value);
             obj.notes_=value;
         end
         
         function value = getPath(obj)
+            % Retrieve the folder path to save the object
             value = obj.(obj.getPathProperty);
         end
         
         function setPath(obj, value)
+            % Set the folder path for saving the object
             obj.(obj.getPathProperty) = value;
         end
         
         function value = getFilename(obj)
+            % Retrieve the filename for saving the object         
             value = obj.(obj.getFilenameProperty);
         end
         
         function setFilename(obj, value)
+            % Set the filename for saving the object
             obj.(obj.getFilenameProperty) = value;
         end
         
         function fullPath = getFullPath(obj, askUser)
-            % Return full path of the movie object
+            % Retrieve the full path for saving the object
             
             if nargin < 2, askUser = true; end
             hasEmptyComponent = isempty(obj.getPath) || isempty(obj.getFilename);
@@ -195,7 +199,7 @@ classdef  MovieObject < hgsetget
         end
         
         function replaceProcess(obj, pid, newprocess)
-            % Replace process object by another in the analysis list
+            % Replace process object by another in the processes list
             
             % Input check
             ip=inputParser;
@@ -243,26 +247,26 @@ classdef  MovieObject < hgsetget
         end
         
         function iProc = getProcessIndex(obj, type, varargin)
-            % Return existing processes of a given class
+            % Retrieve the existing process(es) of a given type
             if isa(type, 'Process'), type = class(type); end
             iProc = getIndex(obj.processes_, type, varargin{:});
         end
         
         %% Functions to manipulate package object array
         function addPackage(obj, newpackage)
-            % Add package object to the package list
+            % Add a package object to the package list
             assert(isa(newpackage,'Package'));
             obj.packages_ = horzcat(obj.packages_ , {newpackage});
         end
         
         function package = getPackage(obj, i)
-            % Return package corresponding to the specified index
+            % Return the package corresponding to the specified index
             assert(isscalar(i) && ismember(i,1:numel(obj.packages_)));
             package = obj.packages_{i};
         end
         
         function status = unlinkPackage(obj, package)
-            % Unlink package from packages list
+            % Unlink a package from the packages list
             
             id = [];
             status = false;
@@ -279,7 +283,7 @@ classdef  MovieObject < hgsetget
         end
         
         function deletePackage(obj, package)
-            % Remove package object from the package list
+            % Remove thepackage object from the packages list
             
             % Check input
             if isa(package, 'Package')
@@ -309,10 +313,11 @@ classdef  MovieObject < hgsetget
         end
         
         function iPackage = getPackageIndex(obj, type, varargin)
-            % Return existing packages of a given class
+            % Retrieve the existing package(s) of a given type
             if isa(type, 'Package'), type = class(type); end
             iPackage = getIndex(obj.packages_, type, varargin{:});
         end
+
         %% Miscellaneous functions
         function askUser = sanityCheck(obj, path, filename,askUser)
             % Check sanity of movie object
@@ -366,7 +371,7 @@ classdef  MovieObject < hgsetget
         end
         
         function relocate(obj,oldRootDir,newRootDir)
-            % Relocate all analysis paths of the movie object
+            % Relocate the paths of all components of the movie object
             %
             % The relocate method automatically relocates the output directory,
             % as well as the paths in each process and package of the movie
@@ -391,31 +396,38 @@ classdef  MovieObject < hgsetget
         
         %% OMERO functions
         function status = isOmero(obj)
+            % Check if the movie object is linked to an OMERO object
             status = ~isempty(obj.omeroId_);
         end
         
         function setOmeroSession(obj,session)
+            % Set the OMERO session linked to the object
             obj.omeroSession_ = session;
         end
         
         function session = getOmeroSession(obj)
+            % Retrieve the OMERO session linked to the object
             session = obj.omeroSession_;
         end
         
         function setOmeroSave(obj, status)
+            % Set the saving status onto the OMERO server
             obj.omeroSave_ = status;
         end
         
         function id = getOmeroId(obj)
+            % Retrieve the identifier of the OMERO object
             id = obj.omeroId_;
         end
         
         function setOmeroId(obj, id)
+            % Set the identifier of the OMERO object
             obj.checkPropertyValue('omeroId_', id);
             obj.omeroId_ = id;
         end
         
         function status = canUpload(obj)
+            % Checks if the object can be uploaded to the OMERO server
             status = obj.omeroSave_ && ~isempty(obj.getOmeroSession());
         end
         
@@ -423,7 +435,7 @@ classdef  MovieObject < hgsetget
     
     methods(Static)
         function obj = load(varargin)
-            % Load/reaload a movie object
+            % Load or re-load a movie object
             
             assert(nargin > 0);
             assert(MovieObject.isOmeroSession(varargin{1}) || ...
@@ -442,7 +454,8 @@ classdef  MovieObject < hgsetget
         end
         
         function obj = loadMatFile(filepath, varargin)
-            
+            % Load a movie object saves as a MAT file on disk
+
             % Retrieve the absolute path
             [~, f] = fileattrib(filepath);
             filepath = f.Name;
@@ -479,7 +492,9 @@ classdef  MovieObject < hgsetget
         end
         
         function obj = loadImageFile(imagepath, varargin)
-            % Retrieve the absolute path
+            % Load a proprietary image file using Bio-Formats
+
+            % Retrive the absolute path of the iage
             [~, f] = fileattrib(imagepath);
             imagepath = f.Name;
             
@@ -487,10 +502,12 @@ classdef  MovieObject < hgsetget
         end
         
         function obj = loadOmero(session, varargin)
+            % Load a movie object stored onto an OMERO server
             obj = getOmeroMovies(session, varargin{:});
         end
         
         function validator = getPropertyValidator(property)
+            % Retrieve the validator for the specified property
             validator=[];
             if ismember(property,{'outputDirectory_','notes_'})
                 validator=@ischar;
@@ -500,6 +517,7 @@ classdef  MovieObject < hgsetget
         end
         
         function status = isOmeroSession(session)
+            % Check if the input is a valid OMERO session
             status = isa(session, 'omero.api.ServiceFactoryPrxHelper');
         end
         
