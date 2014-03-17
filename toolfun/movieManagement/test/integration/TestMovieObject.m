@@ -1,4 +1,4 @@
-classdef TestMovieObject < handle
+classdef TestMovieObject < TestLibrary
     
     properties
         path = fullfile(getenv('HOME'), 'MovieTest');

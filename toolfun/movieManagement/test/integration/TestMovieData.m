@@ -1,7 +1,6 @@
 classdef TestMovieData < TestMovieObject
     
     properties
-        movie
         imSize = [512 512];
         nFrames = 1;
         nChan = 1;
@@ -36,9 +35,10 @@ classdef TestMovieData < TestMovieObject
             self.checkChannelPaths();
         end
         
-        function setUpROIs(self, nROIs)
+        function rois = setUpROIs(self, nROIs)
             
             % Create ROI folder
+            rois(nROIs, 1) = MovieData();
             for i = 1 : nROIs
                 roiPath = fullfile(self.movie.getPath(),...
                     [self.roiFolder '_' num2str(i)]);
@@ -50,10 +50,10 @@ classdef TestMovieData < TestMovieObject
                 imwrite(roiMask, roiMaskFullPath);
                 
                 % Create and save ROI
-                self.movie.addROI(roiMaskFullPath, roiPath);
-                self.movie.getROI(i).setPath(roiPath);
-                self.movie.getROI(i).setFilename(self.roiName);
-                self.movie.getROI(i).sanityCheck;
+                rois(i) = self.movie.addROI(roiMaskFullPath, roiPath);
+                rois(i).setPath(roiPath);
+                rois(i).setFilename(self.roiName);
+                rois(i).sanityCheck;
             end
         end
         
@@ -92,8 +92,8 @@ classdef TestMovieData < TestMovieObject
         %% ROI
         function testSimpleROI(self)
             self.setUpMovie();
-            self.setUpROIs(1);
-            roiMovieFullPath = self.movie.getROI(1).getFullPath();
+            rois = self.setUpROIs(1);
+            roiMovieFullPath = rois(1).getFullPath();
             
             % Test ROI has been deleted
             self.movie = MovieData.load(roiMovieFullPath);
@@ -103,10 +103,10 @@ classdef TestMovieData < TestMovieObject
         function testDeleteROI(self)
             % Create ROI movie
             self.setUpMovie();
-            self.setUpROIs(2);
+            rois = self.setUpROIs(2);
             assertEqual(numel(self.movie.rois_), 2);
-            roiMovie1FullPath = self.movie.getROI(1).getFullPath();
-            roiMovie2FullPath = self.movie.getROI(2).getFullPath();
+            roiMovie1FullPath = rois(1).getFullPath();
+            roiMovie2FullPath = rois(2).getFullPath();
             
             % Delete create ROI
             self.movie.deleteROI(1);
@@ -156,26 +156,26 @@ classdef TestMovieData < TestMovieObject
         
         function testSharedProcess(self)
             self.setUpMovie();
-            self.movie.addProcess(MockProcess(self.movie));
-            
+            self.setUpProcess();
             self.setUpROIs(1);
             self.movie.sanityCheck();
             
             % Test package
             self.movie = MovieData.load(self.movie.getFullPath());
-            assertEqual(self.movie.getProcess(1), self.movie.getROI(1).getProcess(1));
+            assertEqual(self.movie.getProcess(1),...
+                self.movie.getROI(1).getProcess(1));
         end
         
         function testSharedPackage(self)
             self.setUpMovie();
-            self.movie.addPackage(MockPackage(self.movie));
-            
+            self.setUpPackage();
             self.setUpROIs(1);
             self.movie.sanityCheck();
             
             % Test package
             self.movie = MovieData.load(self.movie.getFullPath());
-            assertEqual(self.movie.getPackage(1), self.movie.getROI(1).getPackage(1));
+            assertEqual(self.movie.getPackage(1),...
+                self.movie.getROI(1).getPackage(1));
         end
     end
     
