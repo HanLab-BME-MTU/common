@@ -14,7 +14,7 @@ classdef Channel < hgsetget
         incidentAngle_              % Incident Angle - for TIRF (degrees)
         filterType_                 % Filter Type
         hcsPlatestack_              % HCS plate file names stack
-        hcsFlags_  % HCS plate well imaged indicator in cell one, 
+        hcsFlags_  % HCS plate well imaged indicator in cell one,
         %HCS plate site indicator in second cell HCS plate wavelength names
         %in the third cell
     end
@@ -39,7 +39,7 @@ classdef Channel < hgsetget
             %    'PropertyName',propertyValue - A string with an valid channel property followed by the
             %    value.
             
-            if nargin>0                
+            if nargin>0
                 % Construct the Channel object
                 nVarargin = numel(varargin);
                 if nVarargin > 1 && mod(nVarargin,2)==0
@@ -134,7 +134,7 @@ classdef Channel < hgsetget
         end
         
         function relocate(obj,oldRootDir,newRootDir)
-            % Relocate location of the  channel object
+            % Relocate location of the channel object
             obj.channelPath_=  relocatePath(obj.channelPath_,oldRootDir,newRootDir);
         end
         
@@ -198,6 +198,8 @@ classdef Channel < hgsetget
         end
         
         function iChan = getChannelIndex(obj)
+            % Retrieve index of the channel object
+            
             if ~isempty(obj.owner_)
                 iChan = find(obj.owner_.channels_ == obj, 1);
             else
@@ -212,8 +214,8 @@ classdef Channel < hgsetget
         end
         
         function Gname = getGenericName(obj, oFileName, flag) %oFileName is either from getImagesFiles or from hcsplatestack
-%             starti = obj.hcsFlags_.startI;
-%             startsw = obj.hcsFlags_.swI;   
+            %             starti = obj.hcsFlags_.startI;
+            %             startsw = obj.hcsFlags_.swI;
             [starti, startsw] = getindexstart(oFileName);
             if min(abs(str2double(oFileName(min(startsw)+2))-(0:9))) == 0
                 adi = 1;
@@ -221,15 +223,16 @@ classdef Channel < hgsetget
                 adi = 0;
             end
             if nargin > 2 && strcmp(flag, 'well_on') == 1
-            Gname = oFileName(starti:max(startsw)+adi);
+                Gname = oFileName(starti:max(startsw)+adi);
             elseif nargin > 2 && strcmp(flag, 'site_on') == 1
                 Gname = oFileName(starti:min(startsw)+1+adi);
             else
                 Gname = oFileName(starti:starti+2);
-            end           
+            end
         end
         
         function I = loadImage(obj, iFrame)
+            % Retrieve indidivual planes by timepoint
             
             % Initialize image
             I = obj.getReader().loadImage(obj.getChannelIndex(), iFrame);
@@ -237,26 +240,29 @@ classdef Channel < hgsetget
         
         %% Bio-formats/OMERO functions
         function status = isOmero(obj)
+            % Check if the Channel is linked to an OMERO object
             status = ~isempty(obj.owner_) && obj.owner_.isOmero();
         end
         
         function status = isBF(obj)
+            % Check if the Channel is linked to an image file
             status = ~isempty(obj.owner_) && obj.owner_.isBF();
         end
         
         function r = getReader(obj)
+            % Retrieve the Reader for accessing the raw data
             if ~isempty(obj.owner_),
                 r = obj.owner_.getReader();
             elseif ~isempty(obj.hcsPlatestack_),
-                    r = HCSReader(obj);                    
+                r = HCSReader(obj);
             else
                 r = TiffSeriesReader({obj.channelPath_});
             end
         end
         
-        
         %% Display functions
         function color = getColor(obj)
+            % Retrieve the color assosiacted with the channel
             if ~isempty(obj.emissionWavelength_),
                 color = wavelength2rgb(obj.emissionWavelength_*1e-9);
             else
@@ -265,7 +271,7 @@ classdef Channel < hgsetget
         end
         
         function h = draw(obj,iFrame,varargin)
-            
+            % Display the plane for the specified timepoint
             % Input check
             ip = inputParser;
             ip.addRequired('obj',@(x) isa(x,'Channel') || numel(x)<=3);
@@ -342,14 +348,15 @@ classdef Channel < hgsetget
                 otherwise
                     validator=[];
             end
-            
         end
         
         function modes=getImagingModes()
+            % Retrieve list of accepted imaging modes
             modes={'Widefield';'TIRF';'Confocal'};
         end
         
         function fluorophores=getFluorophores()
+            % Retrieve list of accepted fluorophores
             fluorPropStruct= getFluorPropStruct();
             fluorophores={fluorPropStruct.name};
         end

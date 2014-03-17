@@ -444,7 +444,7 @@ classdef  MovieData < MovieObject
         end
         
         function r = getReader(obj)
-            % Retrieved the Reader for accessing the raw data
+            % Retrieve the Reader for accessing the raw data
             if ~isempty(obj.reader),
                 r = obj.reader;
                 return
