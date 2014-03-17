@@ -124,7 +124,7 @@ classdef TestProcess < TestLibrary
         end
         
         %% ReplaceProcess
-        function testReplaceProcess(self)
+        function testReplaceProcessByIndex(self)
             process2 = MockProcess(self.movie);
             self.movie.replaceProcess(1, process2);
             
@@ -133,7 +133,7 @@ classdef TestProcess < TestLibrary
             assertFalse(self.process.isvalid);
         end
         
-        function testReplaceProcess2(self)
+        function testReplaceProcessByObject(self)
             process2 = MockProcess(self.movie);
             self.movie.replaceProcess(self.process, process2);
             
