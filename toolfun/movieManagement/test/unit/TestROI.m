@@ -308,9 +308,29 @@ classdef TestROI < TestCase & TestLibrary
         
         function testCleanupROIPackagesNoROI(self)
             
+            rois = self.setUpRois();
             package = self.setUpPackage(true);
             cleanupROIPackages(self.movie, 'MockPackage');
-            assertEqual(self.movie.packages_, {package})
+            assertEqual(self.movie.packages_, {package});
+            for i = 1: numel(self.movie.rois_)
+                assertTrue(isempty(rois(i).packages_));
+                assertTrue(isempty(rois(i).processes_));
+            end
+        end
+        
+        function testCleanupROIPackagesMultipleCalss(self)
+            
+            [package, process] = self.setUpPackage(true);
+            rois = self.setUpRois();
+            cleanupROIPackages(self.movie, 'MockPackage', 1);
+            cleanupROIPackages(self.movie, 'MockPackage', 1);
+            for i = 1: numel(self.movie.rois_)
+                roiPackage = rois(i).getPackage(1);
+                assertTrue(isa(roiPackage, 'MockPackage'));
+                assertFalse(isequal(package, roiPackage));
+                assertEqual(roiPackage.owner_, rois(i));
+                assertEqual(roiPackage.getProcess(1), process);
+            end
         end
     end
 end
