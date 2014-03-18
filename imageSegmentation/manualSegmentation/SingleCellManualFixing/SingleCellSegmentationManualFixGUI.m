@@ -65,7 +65,7 @@ set(handles.popupmenu_single_cell_this_movie_ID,'Enable','off')
 
 
 handles.target_channelIdx = 1;
-handles.sup_channelIdx = 1;
+handles.sup_channelIdx = 2;
 handles.currCell   = 1;
 % handles.currSingleCell   = 1;
 handles.single_cell_ID = 1 ;
@@ -214,7 +214,14 @@ if handles.segThisCell > 1
     end
   
     segIdx    = currObj.getPackageIndex('SegmentationPackage');
+    
+    if(isempty(segIdx))
+         segIdx = currObj.getPackageIndex('FilamentAnalysisPackage');    
+    end
+    
     segPath   = currObj.packages_{segIdx}.outputDirectory_;
+    
+    
     truthPath = [segPath filesep 'FixedChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
     fixedPath = [segPath filesep 'OnlyFixedChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];    
     compPath  = [segPath filesep 'completedFramesChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
@@ -373,8 +380,11 @@ if handles.segThisCell > 1
     nFrame = currObj.nFrames_;
 
     segIdx    = currObj.getPackageIndex('SegmentationPackage');
+    if(isempty(segIdx))
+        segIdx = currObj.getPackageIndex('FilamentAnalysisPackage');
+    end
     segPath   = currObj.packages_{segIdx}.outputDirectory_;
-            
+    
     truthPath = [segPath filesep 'FixedChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
     fixedPath = [segPath filesep 'OnlyFixedChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];    
     compPath  = [segPath filesep 'completedFramesChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
