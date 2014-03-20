@@ -119,3 +119,12 @@ fprintf(1,'  Parameters have been modified since last successful run: ');
 if process.procChanged_, fprintf(1, 'yes\n'); else fprintf(1, 'no\n'); end
 fprintf(1,'  Input has been updated by an upstream process: ');
 if ~process.updated_, fprintf(1, 'yes\n'); else fprintf(1, 'no\n'); end
+
+
+%% Graphical user interface
+
+% Launch the graphical interface
+uTrackPackageGUI(MD);
+
+% Launch the graphical interface
+packageGUI('TrackingPackage', MD);
