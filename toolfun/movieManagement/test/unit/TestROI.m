@@ -291,7 +291,7 @@ classdef TestROI < TestCase & TestLibrary
                 roiPackage = rois(i).getPackage(1);
                 assertTrue(isa(roiPackage, 'MockPackage'));
                 assertFalse(isequal(package, roiPackage));
-                assertEqual(roiPackage.owner_, rois(i));
+                assertEqual(roiPackage.getOwner(), rois(i));
                 assertEqual(roiPackage.getProcess(1), process);
             end
         end
@@ -329,7 +329,7 @@ classdef TestROI < TestCase & TestLibrary
                 roiPackage = rois(i).getPackage(1);
                 assertTrue(isa(roiPackage, 'MockPackage'));
                 assertFalse(isequal(package, roiPackage));
-                assertEqual(roiPackage.owner_, rois(i));
+                assertEqual(roiPackage.getOwner(), rois(i));
                 assertEqual(roiPackage.getProcess(1), process);
             end
         end

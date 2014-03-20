@@ -57,12 +57,12 @@ classdef Process < hgsetget
     methods
         
         function owner = getOwner(obj)
-            % Retrieve process owner
+            % Retrieve the process owner
             owner = obj.owner_;
         end
         
         function setPara(obj, para)
-            % Set process' parameters
+            % Set the process parameters
             if ~isequal(obj.funParams_,para)
                 obj.funParams_ = para;
                 obj.procChanged_= true;

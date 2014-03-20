@@ -28,6 +28,10 @@ classdef TestPackage < TestLibrary
             assertEqual(self.movie.getPackageIndex(package2, Inf), [1 2]);
         end
         
+        function testGetOwner(self)
+            assertEqual(self.package.getOwner(), self.movie);
+        end
+        
         %% deletePackage tests
         function testDeletePackageByIndex(self)
             % Delete package by index

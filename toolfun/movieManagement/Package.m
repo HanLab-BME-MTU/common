@@ -91,6 +91,11 @@ classdef Package < hgsetget
         
     end
     methods
+                
+        function owner = getOwner(obj)
+            % Retrieve the package owner
+            owner = obj.owner_;
+        end
         
         function set.outputDirectory_(obj,value)
             if isequal(obj.outputDirectory_,value), return; end
@@ -218,8 +223,8 @@ classdef Package < hgsetget
         function createDefaultProcess(obj, i)
             % Create ith process using default constructor
             assert(isempty(obj.processes_{i}),'Process already exists');
-            newprocess=obj.getDefaultProcessConstructors{i}(obj.owner_,obj.outputDirectory_);
-            obj.owner_.addProcess(newprocess);
+            newprocess=obj.getDefaultProcessConstructors{i}(obj.getOwner(),obj.outputDirectory_);
+            obj.getOwner().addProcess(newprocess);
             obj.setProcess(i,newprocess);
             % Run sanityCheck to set process dependencies
             obj.sanityCheck(); 
