@@ -101,6 +101,7 @@ classdef TestROI < TestCase & TestLibrary
             process = self.setUpProcess();
             rois = self.setUpRois();
             assertEqual(self.movie.processes_, {process});
+            assertEqual(process.getOwner(), self.movie);
             for i = 1: self.nRois
                 assertEqual(rois(i).processes_, {process});
             end

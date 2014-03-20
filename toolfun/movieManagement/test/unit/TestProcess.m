@@ -34,6 +34,10 @@ classdef TestProcess < TestLibrary
             assertEqual(self.movie.getProcessIndex(self.process, Inf), [1 2]);
         end
         
+        function testGetOwner(self)
+            assertEqual(self.process.getOwner(), self.movie);
+        end
+        
         %% deleteProcess tests
         function testDeleteProcessByIndex(self)
             % Test process deletion by index
