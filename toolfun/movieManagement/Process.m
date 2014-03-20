@@ -32,7 +32,7 @@ classdef Process < hgsetget
     properties (Transient=true)
         displayMethod_  % Cell array of display methods
     end
-    methods (Access = protected)
+   methods (Access = protected)
         function obj = Process(owner, name)
             % Constructor of class Process
             if nargin > 0
@@ -55,15 +55,21 @@ classdef Process < hgsetget
     end
     
     methods
+        
+        function owner = getOwner(obj)
+            % Retrieve process owner
+            owner = obj.owner_;
+        end
+        
         function setPara(obj, para)
-            % Reset process' parameters
+            % Set process' parameters
             if ~isequal(obj.funParams_,para)
                 obj.funParams_ = para;
-                obj.procChanged_=true;
+                obj.procChanged_= true;
                 
                 % Run sanityCheck on parent package to update dependencies
-                for packId=obj.getPackage
-                    obj.owner_.packages_{packId}.sanityCheck(false,'all');
+                for packId = obj.getPackage
+                    obj.getOwner().getPackage(packId).sanityCheck(false,'all');
                 end
             end
         end
@@ -81,18 +87,18 @@ classdef Process < hgsetget
         
         function status = checkChanNum(obj,iChan)
             assert(~isempty(iChan) && isnumeric(iChan),'Please provide a valid channel input');
-            status = ismember(iChan,1:numel(obj.owner_.channels_));
+            status = ismember(iChan,1:numel(obj.getOwner().channels_));
         end
         
         function status = checkFrameNum(obj,iFrame)
             assert(~isempty(iFrame) && isnumeric(iFrame),'Please provide a valid frame input');
-            status = ismember(iFrame,1:obj.owner_.nFrames_);
+            status = ismember(iFrame,1:obj.getOwner().nFrames_);
         end
         
         function sanityCheck(obj)
             % Compare current process fields to default ones (static method)
             crtParams=obj.funParams_;
-            defaultParams = obj.getDefaultParams(obj.owner_);
+            defaultParams = obj.getDefaultParams(obj.getOwner());
             crtFields = fieldnames(crtParams);
             defaultFields = fieldnames(defaultParams);
             
@@ -108,25 +114,25 @@ classdef Process < hgsetget
         
         function run(obj,varargin)
             % Reset sucess flags and existing display methods
-            obj.resetDisplayMethod;
+            obj.resetDisplayMethod();
             obj.success_=false;
             
-            % Run the process!        
+            % Run the process!
             obj.startTime_ = clock;
-            obj.funName_(obj.owner_,varargin{:});            
+            obj.funName_(obj.getOwner(), varargin{:});
             
             % Update flags and set finishTime
-            obj.success_=true;
-            obj.updated_=true;
-            obj.procChanged_=false;
+            obj.success_= true;
+            obj.updated_= true;
+            obj.procChanged_= false;
             obj.finishTime_ = clock;
             
             % Run sanityCheck on parent package to update dependencies
             for packId=obj.getPackage
-                obj.owner_.packages_{packId}.sanityCheck(false,'all');
+                obj.getOwner().getPackage(packId).sanityCheck(false,'all');
             end
             
-            obj.owner_.save;
+            obj.getOwner().save();
         end
         
         function resetDisplayMethod(obj)
@@ -162,12 +168,12 @@ classdef Process < hgsetget
             time=sec2struct(24*3600*(datenum(obj.finishTime_)-datenum(obj.startTime_)));
         end
         
-        function [packageID procID] = getPackage(obj)
+        function [packageID, procID] = getPackage(obj)
             % Retrieve package to which the process is associated
             isOwner=@(x)cellfun(@(y) isequal(y,obj),x.processes_);
-            validPackage = cellfun(@(x) any(isOwner(x)),obj.owner_.packages_);
+            validPackage = cellfun(@(x) any(isOwner(x)),obj.getOwner().packages_);
             packageID = find(validPackage);
-            procID= cellfun(@(x) find(isOwner(x)),obj.owner_.packages_(validPackage));
+            procID= cellfun(@(x) find(isOwner(x)), obj.getOwner().packages_(validPackage));
         end
         
         function relocate(obj,oldRootDir,newRootDir)
@@ -180,8 +186,8 @@ classdef Process < hgsetget
         end
         
         function hfigure = resultDisplay(obj)
-            hfigure = movieViewer(obj.owner_, ...
-                find(cellfun(@(x)isequal(x,obj),obj.owner_.processes_)));
+            hfigure = movieViewer(obj.getOwner(), ...
+                find(cellfun(@(x)isequal(x,obj),obj.getOwner().processes_)));
         end
         
         function h=draw(obj,iChan,varargin)
@@ -217,24 +223,27 @@ classdef Process < hgsetget
             end
             
             % Create graphic tag and delegate drawing to the display class
-            tag = ['process' num2str(obj.getIndex) '_channel' num2str(iChan) '_output' num2str(iOutput)];
+            tag = ['process' num2str(obj.getIndex()) '_channel' num2str(iChan) '_output' num2str(iOutput)];
             drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
                 2*numel(fieldnames(ip.Unmatched)),1);
             h=obj.displayMethod_{iOutput,iChan}.draw(data,tag,drawArgs{:});
         end
         
         function index = getIndex(obj)
-            index = find(cellfun(@(x) isequal(x,obj),obj.owner_.processes_));
+            % Retrieve index of process in the owner object
+            index = find(cellfun(@(x) isequal(x,obj),obj.getOwner().processes_));
             assert(numel(index)==1);
         end
     end
     
     methods (Static)
         function status = isProcess(name)
+            % Check if the input classname is of class Process
             status = exist(name, 'class') == 8 && isSubclass(name, 'Process');
         end
         
         function status = hasGUI(name)
+            % Check if process has a settings graphical interface
             m = meta.class.fromName(name);
             status = ismember('GUI',{m.MethodList.Name});
         end
