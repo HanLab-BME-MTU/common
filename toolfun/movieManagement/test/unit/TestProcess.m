@@ -127,6 +127,33 @@ classdef TestProcess < TestLibrary
             assertTrue(isempty(self.movie.processes_));
         end
         
+        function testGetPackageUnlinked(self)
+            % Test getPackage method for unlinked process
+            [packageID, processID] = self.process.getPackage();
+            assertTrue(isempty(packageID));
+            assertTrue(isempty(processID));
+        end
+        
+        function testGetPackageLinked(self)
+            % Link process to package and test getPackage method
+            package = self.setUpPackage();
+            package.setProcess(1, self.process);
+            [packageID, processID] = self.process.getPackage();
+            assertEqual(packageID, 1);
+            assertEqual(processID, 1);
+        end
+        
+        function testGetPackageMultilinked(self)
+            % Link process to multiple package and test getPackage method
+            package1 = self.setUpPackage();
+            self.setUpPackage();
+            package3 = self.setUpPackage();
+            package1.setProcess(1, self.process);
+            package3.setProcess(1, self.process);
+            [packageID, processID] = self.process.getPackage();
+            assertEqual(packageID, [1 3]);
+            assertEqual(processID, [1 1]);
+        end
         %% ReplaceProcess
         function testReplaceProcessByIndex(self)
             process2 = MockProcess(self.movie);
