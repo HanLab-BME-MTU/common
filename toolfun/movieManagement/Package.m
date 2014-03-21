@@ -275,9 +275,11 @@ classdef Package < hgsetget
         
     methods(Static)
         function tools = getTools()
-            tools=[];
+            % Retrieve the tools associated to the package
+            tools = [];
         end
         function class = getMovieClass()
+            % Retrieve the movie type on which the package can be applied
             class = 'MovieData';
         end
     end 
