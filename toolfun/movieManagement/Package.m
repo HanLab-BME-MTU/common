@@ -216,12 +216,23 @@ classdef Package < hgsetget
         end
         
         function process = getProcess(obj, i)
+            % Retrieve a process by index
             assert(isscalar(i) && ismember(i, 1:numel(obj.processes_)));
             process = obj.processes_{i};
         end
         
+        function status = hasProcess(obj, process)
+            % Check if the input process belongs to the package
+            status = any(cellfun(@(x) isequal(x, process), obj.processes_));
+        end
+        
+        function index = getProcessIndex(obj, process)
+            % Retrieve the index of an input process
+            index = find(cellfun(@(x) isequal(x, process), obj.processes_));
+        end
+        
         function createDefaultProcess(obj, i)
-            % Create ith process using default constructor
+            % Create a process using default constructor
             assert(isempty(obj.processes_{i}),'Process already exists');
             newprocess=obj.getDefaultProcessConstructors{i}(obj.getOwner(),obj.outputDirectory_);
             obj.getOwner().addProcess(newprocess);
