@@ -193,7 +193,39 @@ classdef TestProcess < TestLibrary
         end
         
         function testGetIndex(self)
+            process2 = self.setUpProcess();
             assertEqual(self.process.getIndex(), 1);
+            assertEqual(process2.getIndex(), 2);
+        end
+        
+        %% Display method tests
+        function testGetDisplayMethod1(self)
+            assertTrue(isempty(self.process.getDisplayMethod(1, 1)));
+            assertTrue(isempty(self.process.getDisplayMethod(1, 2)));
+        end
+        
+        function testGetDisplayMethod2(self)
+            displayMethod = LineDisplay();
+            self.process.displayMethod_{1, 2} = displayMethod;
+            assertTrue(isempty(self.process.getDisplayMethod(1, 1)));
+            assertEqual(self.process.getDisplayMethod(1, 2), displayMethod);
+            assertTrue(isempty(self.process.getDisplayMethod(2, 1)));
+        end
+        
+        function testSetDisplayMethod(self)
+            displayMethod = LineDisplay();
+            self.process.setDisplayMethod(1, 2, displayMethod);
+            assertEqual(self.process.displayMethod_{1, 2}, displayMethod);
+            assertTrue(isempty(self.process.displayMethod_{1, 1}));
+        end
+        
+        function testSetDisplayMethodExisting(self)
+            displayMethod = LineDisplay();
+            displayMethod2 = LineDisplay();
+            self.process.setDisplayMethod(1, 2, displayMethod);
+            self.process.setDisplayMethod(1, 2, displayMethod2);
+            assertEqual(self.process.displayMethod_{1, 2}, displayMethod2);
+            assertFalse(isvalid(displayMethod));
         end
     end
 end

@@ -32,7 +32,7 @@ classdef Process < hgsetget
     properties (Transient=true)
         displayMethod_  % Cell array of display methods
     end
-   methods (Access = protected)
+    methods (Access = protected)
         function obj = Process(owner, name)
             % Constructor of class Process
             if nargin > 0
@@ -128,7 +128,7 @@ classdef Process < hgsetget
             obj.finishTime_ = clock;
             
             % Run sanityCheck on parent package to update dependencies
-            for packId=obj.getPackage
+            for packId = obj.getPackage()
                 obj.getOwner().getPackage(packId).sanityCheck(false,'all');
             end
             
@@ -136,18 +136,27 @@ classdef Process < hgsetget
         end
         
         function resetDisplayMethod(obj)
-            if ~isempty(obj.displayMethod_)
-                cellfun(@delete,obj.displayMethod_(~cellfun(@isempty,obj.displayMethod_)));
-                obj.displayMethod_ = {};
-            end
+            if isempty(obj.displayMethod_), return; end
+            validMethods = ~cellfun(@isempty,obj.displayMethod_);
+            cellfun(@delete, obj.displayMethod_(validMethods));
+            obj.displayMethod_ = {};
         end
         
         
+        function method = getDisplayMethod(obj, iOutput, iChan)
+            
+            if any(size(obj.displayMethod_) < [iOutput iChan])
+                method = [];
+            else
+                method = obj.displayMethod_{iOutput,iChan};
+            end
+        end
+        
         function setDisplayMethod(obj,iOutput,iChan,displayMethod)
             
-            assert(isa(displayMethod(),'MovieDataDisplay'));
-            try
-                delete(obj.displayMethod_{iOutput,iChan});
+            assert(isa(displayMethod(), 'MovieDataDisplay'));
+            if ~isempty(obj.getDisplayMethod(iOutput, iChan))
+                delete(obj.getDisplayMethod(iOutput, iChan));
             end
             obj.displayMethod_{iOutput,iChan} = displayMethod;
         end
@@ -217,17 +226,16 @@ classdef Process < hgsetget
             end
             
             % Initialize display method
-            displayDims = size(obj.displayMethod_);
-            if any(displayDims(1:2)<[iOutput iChan]) || ...
-                    isempty(obj.displayMethod_{iOutput,iChan})
-                obj.displayMethod_{iOutput,iChan}=outputList(iOutput).defaultDisplayMethod(iChan);
+            if isempty(obj.getDisplayMethod(iOutput,iChan))
+                obj.setDisplayMethod(iOutput, iChan,...
+                    outputList(iOutput).defaultDisplayMethod(iChan));
             end
             
             % Create graphic tag and delegate drawing to the display class
             tag = ['process' num2str(obj.getIndex()) '_channel' num2str(iChan) '_output' num2str(iOutput)];
             drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
                 2*numel(fieldnames(ip.Unmatched)),1);
-            h=obj.displayMethod_{iOutput,iChan}.draw(data,tag,drawArgs{:});
+            h=obj.getDisplayMethod(iOutput, iChan).draw(data,tag,drawArgs{:});
         end
         
         function index = getIndex(obj)
