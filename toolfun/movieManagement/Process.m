@@ -104,20 +104,25 @@ classdef Process < hgsetget
         end
         
         function sanityCheck(obj)
-            % Compare current process fields to default ones (static method)
-            crtParams=obj.funParams_;
+            % Perform saniy check on the process
+            
+            % Retrieve current process parameters and default parameters
+            crtParams = obj.getParameters();
             defaultParams = obj.getDefaultParams(obj.getOwner());
             crtFields = fieldnames(crtParams);
             defaultFields = fieldnames(defaultParams);
             
-            %  Find undefined parameters
-            status = ~ismember(defaultFields,crtFields);
-            if any(status)
-                for i=find(status)'
-                    crtParams.(defaultFields{i})=defaultParams.(defaultFields{i});
-                end
-                obj.setPara(crtParams);
+            %  Find undefined default parameters
+            status = ismember(defaultFields, crtFields);
+            if all(status), return; end
+            
+            % Add default missing fields and set process parameters
+            missingFields = defaultFields(~status);
+            for i = 1: numel(missingFields)
+                missingField = missingFields{i};
+                crtParams.(missingField) = defaultParams.(missingField);
             end
+            obj.setParameters(crtParams);
         end
         
         function run(obj,varargin)

@@ -73,6 +73,21 @@ classdef TestProcess < TestLibrary
             assertTrue(self.process.procChanged_);
         end
         
+        function testSanityCheckDefaults(self)
+            parameters = MockProcess.getDefaultParams(self.movie);
+            self.process.sanityCheck();
+            assertEqual(self.process.funParams_, parameters);
+        end
+        
+        function testSanityCheckNonDefaults(self)
+            process2 = MockProcess(self.movie, struct('MockParam3', false));
+            assertEqual(process2.funParams_, struct('MockParam3', false));
+            process2.sanityCheck();
+            parameters = MockProcess.getDefaultParams(self.movie);
+            parameters.MockParam3 = false;
+            assertEqual(process2.funParams_, parameters);
+        end
+        
         %% deleteProcess tests
         function testDeleteProcessByIndex(self)
             % Test process deletion by index

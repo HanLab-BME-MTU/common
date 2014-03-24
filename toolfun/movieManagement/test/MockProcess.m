@@ -3,7 +3,11 @@ classdef MockProcess < Process
         function obj = MockProcess(owner, varargin)
             obj = obj@Process(owner, MockProcess.getName);
             obj.funName_ = @(x) x;
-            obj.funParams_ = MockProcess.getDefaultParams(owner);
+            if nargin > 1
+                obj.funParams_ = varargin{1};
+            else
+                obj.funParams_ = MockProcess.getDefaultParams(owner);
+            end
         end
         
     end
@@ -20,6 +24,7 @@ classdef MockProcess < Process
             
             % Set default parameters
             funParams.MockParam1 = true;
+            funParams.MockParam2 = true;
         end
     end
 end
