@@ -2,6 +2,8 @@ classdef MockProcess < Process
     methods (Access = public)
         function obj = MockProcess(owner, varargin)
             obj = obj@Process(owner, MockProcess.getName);
+            obj.funName_ = @(x) x;
+            obj.funParams_ = MockProcess.getDefaultParams(owner);
         end
         
     end
@@ -13,7 +15,7 @@ classdef MockProcess < Process
         function funParams = getDefaultParams(owner)
             % Input check
             ip=inputParser;
-            ip.addRequired('owner',@(x) isa(x,'MovieData'));
+            ip.addRequired('owner', @(x) isa(x, 'MovieObject'));
             ip.parse(owner)
             
             % Set default parameters

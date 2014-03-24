@@ -61,17 +61,25 @@ classdef Process < hgsetget
             owner = obj.owner_;
         end
         
-        function setPara(obj, para)
+        function parameters = getParameters(obj)
+            % Get the process parameters
+            parameters = obj.funParams_;
+        end
+        
+        function setParameters(obj, para)
             % Set the process parameters
-            if ~isequal(obj.funParams_,para)
-                obj.funParams_ = para;
-                obj.procChanged_= true;
-                
-                % Run sanityCheck on parent package to update dependencies
-                for packId = obj.getPackage
-                    obj.getOwner().getPackage(packId).sanityCheck(false,'all');
-                end
+            if isequal(obj.funParams_, para), return; end
+            obj.funParams_ = para;
+            obj.procChanged_= true;
+            
+            % Run sanityCheck on parent package to update dependencies
+            for packId = obj.getPackage()
+                obj.getOwner().getPackage(packId).sanityCheck(false,'all');
             end
+        end
+        
+        function setPara(obj, parameters)
+            setParameters(obj, parameters)
         end
         
         function setUpdated(obj, is)

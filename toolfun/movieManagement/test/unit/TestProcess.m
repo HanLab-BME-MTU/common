@@ -38,6 +38,26 @@ classdef TestProcess < TestLibrary
             assertEqual(self.process.getOwner(), self.movie);
         end
         
+        %% Parameters test
+        function testGetParameters(self)
+            assertEqual(self.process.getParameters(), self.process.funParams_);
+        end
+        
+        function testSetParametersSame(self)
+            defaultParameters = MockProcess.getDefaultParams(self.movie);
+            self.process.setParameters(defaultParameters);
+            assertEqual(self.process.funParams_, defaultParameters);
+            assertFalse(self.process.procChanged_);
+        end
+        
+        function testSetParametersNew(self)
+            newParameters = MockProcess.getDefaultParams(self.movie);
+            newParameters.MockParam1 = false;
+            self.process.setParameters(newParameters);
+            assertEqual(self.process.funParams_, newParameters);
+            assertTrue(self.process.procChanged_);
+        end
+        
         %% deleteProcess tests
         function testDeleteProcessByIndex(self)
             % Test process deletion by index
