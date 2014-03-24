@@ -58,6 +58,21 @@ classdef TestProcess < TestLibrary
             assertTrue(self.process.procChanged_);
         end
         
+        function testSetParaSame(self)
+            defaultParameters = MockProcess.getDefaultParams(self.movie);
+            self.process.setPara(defaultParameters);
+            assertEqual(self.process.funParams_, defaultParameters);
+            assertFalse(self.process.procChanged_);
+        end
+        
+        function testSetParaNew(self)
+            newParameters = MockProcess.getDefaultParams(self.movie);
+            newParameters.MockParam1 = false;
+            self.process.setPara(newParameters);
+            assertEqual(self.process.funParams_, newParameters);
+            assertTrue(self.process.procChanged_);
+        end
+        
         %% deleteProcess tests
         function testDeleteProcessByIndex(self)
             % Test process deletion by index
