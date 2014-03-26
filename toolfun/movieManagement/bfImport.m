@@ -131,13 +131,16 @@ movieArgs={};
 
 pixelSizeX = r.getMetadataStore().getPixelsPhysicalSizeX(iSeries);
 % Pixel size might be automatically set to 1.0 by @#$% Metamorph
-hasValidPixelSize = ~isempty(pixelSizeX) && pixelSizeX.getValue ~= 1;
+hasValidPixelSize = ~isempty(pixelSizeX) && pixelSizeX.getValue() ~= 1;
 if hasValidPixelSize
     % Convert from microns to nm and check x and y values are equal
-    pixelSizeX= pixelSizeX.getValue*10^3;
-    pixelSizeY= r.getMetadataStore().getPixelsPhysicalSizeY(iSeries).getValue*10^3;
-    assert(isequal(pixelSizeX,pixelSizeY),'Pixel size different in x and y');
-    movieArgs=horzcat(movieArgs,'pixelSize_',pixelSizeX);
+    pixelSizeY = r.getMetadataStore().getPixelsPhysicalSizeX(iSeries);
+    if ~isempty(pixelSizeY),
+        assert(isequal(pixelSizeX.getValue(), pixelSizeY.getValue()),...
+            'Pixel size different in x and y');
+    end
+    pixelSizeX = pixelSizeX.getValue() *10^3;
+    movieArgs =horzcat(movieArgs,'pixelSize_',pixelSizeX);
 end
 
 % Camera bit depth
