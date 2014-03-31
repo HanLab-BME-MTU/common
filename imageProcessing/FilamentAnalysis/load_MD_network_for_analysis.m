@@ -68,10 +68,13 @@ for iChannel = 1 :  length(MD.channels_)
             ROI = ones(size(VIF_current_seg));
         end
  
+        min_length = MD.processes_{indexFilamentSegmentationProcess}.funParams_.LengthThreshold;
+
+        
         %% % do analysis
         
         output_feature = network_analysis(VIF_current_model,VIF_orientation, ...
-                        VIF_current_seg,outdir,iChannel,iFrame,ROI);
+                        VIF_current_seg,outdir,iChannel,iFrame,ROI,min_length);
         
 %         close all;
         network_feature{iChannel,iFrame} =output_feature;

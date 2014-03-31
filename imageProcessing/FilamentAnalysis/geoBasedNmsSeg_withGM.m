@@ -129,7 +129,7 @@ feature_Curvature = nan(nLine,1);
 
 
 % for the features, only include those curves/lines longer than 4 pixels
-ind_long = find(feature_Length>LengthThreshold);
+ind_long = find(feature_Length>=LengthThreshold);
 
 
 h14 = figure(14); set(h14,'Visible',set_visible); hold off;
@@ -146,7 +146,15 @@ for iiii = ind_long'
     text(obCentroid(1,iiii),obCentroid(2,iiii),num2str(iiii),'color','r');
 end
 if(SaveFigures==1)
+    
+    if(  ~exist([FilamentSegmentationChannelOutputDir,'/GEO'],'dir'))
+        mkdir([FilamentSegmentationChannelOutputDir,'/GEO']);
+    end
+          
+    
     saveas(h14,[FilamentSegmentationChannelOutputDir,'/GEO/numbers_filament_f',num2str(iFrame),'.fig']);
+    saveas(h14,[FilamentSegmentationChannelOutputDir,'/GEO/numbers_filament_f',num2str(iFrame),'.tif']);
+    saveas(h14,[FilamentSegmentationChannelOutputDir,'/GEO/numbers_filament_f',num2str(iFrame),'.eps']);
 end
 
   
@@ -293,8 +301,8 @@ feature_all.feature_MeanInt = feature_MeanInt;
 feature_all.feature_Curvature = feature_Curvature;
 
 
-Good_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0 & feature_Curvature<CurvatureThreshold);
-Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 | feature_Curvature>=CurvatureThreshold);
+Good_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0 & feature_Curvature<CurvatureThreshold & feature_Length>=LengthThreshold);
+Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 | feature_Curvature>=CurvatureThreshold | feature_Length<LengthThreshold);
 
 Original_set_Good_ind = Good_ind;
 Original_set_Bad_ind = Bad_ind;
@@ -310,6 +318,10 @@ h12 = figure(12);set(h12,'Visible',set_visible);hold off;
         if(SaveFigures==1)
             saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/number_feature_all_', ...
                 num2str(iFrame),'.fig']);
+            saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/number_feature_all_', ...
+                num2str(iFrame),'.tif']);
+            saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/number_feature_all_', ...
+                num2str(iFrame),'.eps']);
         end
 
 if(ShowDetailMessages==1)
@@ -376,9 +388,11 @@ if(graph_matching_flag==1)
     
     if(SaveFigures==1)
         saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round0_all_match_bw.tif']);
+        saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round0_all_match_bw.fig']);
+        saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round0_all_match_bw.eps']);
     end
     
-    confidency_interval = 0.7;
+    confidency_interval = 0.9;
     %     close(h1);
     iIteration=0;
     [current_model,current_matching_bw,model_ind]...
@@ -398,8 +412,14 @@ if(graph_matching_flag==1)
     if(SaveFigures==1)
         imwrite(double(current_all_seg_bw*3/4),[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_begin.tif']);
         imwrite(double(current_matching_bw/2),[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_end.tif']);
-        h1=figure(1);set(h1,'Visible',set_visible);saveas(h1,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_match_color.tif']);
-        h3=figure(3);set(h3,'Visible',set_visible);saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_all_match_bw.tif']);
+        h1=figure(1);set(h1,'Visible',set_visible);
+        saveas(h1,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_match_color.tif']);
+        saveas(h1,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_match_color.fig']);
+        saveas(h1,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_match_color.eps']);
+        h3=figure(3);set(h3,'Visible',set_visible);
+        saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_all_match_bw.tif']);
+        saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_all_match_bw.fig']);
+        saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_all_match_bw.eps']);
         
         h12 = figure(12);set(h12,'Visible',set_visible);hold off;
         plot(feature_Length(Original_set_Bad_ind),feature_MeanNMS(Original_set_Bad_ind),'r.');hold on;
@@ -409,6 +429,7 @@ if(graph_matching_flag==1)
         title(['Classifier Plane with matched data after round ',num2str(iIteration)]);
         print(h12,'-depsc2',[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_afterround',num2str(iIteration),'_match_plane.eps']);
         print(h12,'-dtiff',[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_afterround',num2str(iIteration),'_match_plane.tiff']);
+        saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_afterround',num2str(iIteration),'_match_plane.fig']);
                 
         for iiii = ind_long'
             text(feature_Length(iiii),feature_MeanNMS(iiii),num2str(iiii));
@@ -421,6 +442,7 @@ if(graph_matching_flag==1)
         imshow(RGB_seg_orient_heat_map);
         title(['Heat display for Segmentation after round ',num2str(iIteration)]);
         imwrite(RGB_seg_orient_heat_map,[FilamentSegmentationChannelOutputDir,'/GEO/heat_frame_',num2str(iFrame),'_afterround',num2str(iIteration),'.tif']);
+        imwrite(RGB_seg_orient_heat_map,[FilamentSegmentationChannelOutputDir,'/GEO/heat_frame_',num2str(iFrame),'_afterround',num2str(iIteration),'.bmp']);
 
     end
     
@@ -431,10 +453,10 @@ if(graph_matching_flag==1)
         
         T_xie_int_train = T_xie_int_train*0.95;
         T_xie_length_train = T_xie_length_train*0.95;
-        F_classifer = @(nms,length,int,curv) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<nms));
+        F_classifer = @(nms,length,curv,int) (((T_xie_int_train + (T_xie_int_train/T_xie_length_train)*(-length) )<nms));
         
-        Good_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
-        Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0);
+        Good_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0 & feature_Curvature<CurvatureThreshold & feature_Length>=LengthThreshold);
+        Bad_ind = find(F_classifer(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 | feature_Curvature>=CurvatureThreshold | feature_Length<LengthThreshold);
         
         Good_ind_cell{2} = Good_ind;
         Bad_ind_cell{2} = Bad_ind;
@@ -447,6 +469,8 @@ if(graph_matching_flag==1)
             
             title('Classifier Plane with matched data round 1');
             saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_lowered_plane.tif']);
+            saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_lowered_plane.fig']);
+            saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round1_lowered_plane.eps']);
         end
         
         % plot the output image with these good ones
@@ -464,6 +488,8 @@ if(graph_matching_flag==1)
             
             title(['Classifier Plane with matched data before round ',num2str(iIteration)]);
             saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_beforeround',num2str(iIteration),'_match_plane.tif']);
+           saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_beforeround',num2str(iIteration),'_match_plane.eps']);
+           saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_beforeround',num2str(iIteration),'_match_plane.fig']);
         end
         
         if(exist('h1','var'))
@@ -476,8 +502,14 @@ if(graph_matching_flag==1)
         
         if(SaveFigures==1)
             imwrite(double(current_matching_bw/2),[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_end.tif']);
-            h1=figure(1);set(h1,'Visible',set_visible);saveas(h1,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_match_color.tif']);
-            h3=figure(3);set(h3,'Visible',set_visible);saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/output_frame_',num2str(iFrame),'_round',num2str(iIteration),'_all_match_bw.tif']);
+            h1=figure(1);set(h1,'Visible',set_visible);
+            saveas(h1,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_match_color.tif']);
+            saveas(h1,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_match_color.fig']);
+            saveas(h1,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_round',num2str(iIteration),'_match_color.eps']);
+            h3=figure(3);set(h3,'Visible',set_visible);
+            saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/output_frame_',num2str(iFrame),'_round',num2str(iIteration),'_all_match_bw.tif']);
+            saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/output_frame_',num2str(iFrame),'_round',num2str(iIteration),'_all_match_bw.fig']);
+            saveas(h3,[FilamentSegmentationChannelOutputDir,'/GEO/output_frame_',num2str(iFrame),'_round',num2str(iIteration),'_all_match_bw.eps']);
         end
         
         good_bw = nms_seg_no_brancing.*current_matching_bw;
@@ -502,6 +534,8 @@ if(graph_matching_flag==1)
             plot(feature_Length(Original_set_Good_ind),feature_MeanNMS(Original_set_Good_ind),'b.');
             title(['Classifier Plane with matched data after round ',num2str(iIteration)]);
             print(h12,'-depsc2',[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_afterround',num2str(iIteration),'_match_plane.eps']);
+            print(h12,'-dtiff',[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_afterround',num2str(iIteration),'_match_plane.tiff']);
+            saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/frame_',num2str(iFrame),'_afterround',num2str(iIteration),'_match_plane.eps']);
              
             for iiii = setdiff(ind_long,UnMatched_ind_cell{iIteration+1})
             text(feature_Length(iiii),feature_MeanNMS(iiii),num2str(iiii));
@@ -509,12 +543,15 @@ if(graph_matching_flag==1)
             
 %            saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/number_feature_',num2str(iFrame),'_round',num2str(iIteration),'.fig']);
            saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/number_feature_',num2str(iFrame),num2str(iIteration),'.fig']);
+         saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/number_feature_',num2str(iFrame),num2str(iIteration),'.tif']);
+         saveas(h12,[FilamentSegmentationChannelOutputDir,'/GEO/number_feature_',num2str(iFrame),num2str(iIteration),'.eps']);
         
             h13 = figure(13);set(h13,'Visible',set_visible);
             RGB_seg_orient_heat_map = heat_display_filament_from_model(imageInt, current_model);
             imshow(RGB_seg_orient_heat_map);
             title(['Heat display for Segmentation after round ',num2str(iIteration)]);
             imwrite(RGB_seg_orient_heat_map,[FilamentSegmentationChannelOutputDir,'/GEO/heat_frame_',num2str(iFrame),'_afterround',num2str(iIteration),'.tif']);
+            imwrite(RGB_seg_orient_heat_map,[FilamentSegmentationChannelOutputDir,'/GEO/heat_frame_',num2str(iFrame),'_afterround',num2str(iIteration),'.bmp']);
             
            
             

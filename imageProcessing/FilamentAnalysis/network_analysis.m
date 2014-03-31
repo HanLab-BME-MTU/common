@@ -1,4 +1,4 @@
-function output_feature = network_analysis(VIF_current_model,VIF_orientation, VIF_current_seg,outdir,iChannel,iFrame,ROI)
+function output_feature = network_analysis(VIF_current_model,VIF_orientation, VIF_current_seg,outdir,iChannel,iFrame,ROI, min_length)
 % function for calculation the property of network
 % Liya Ding 01.2014.
 
@@ -74,6 +74,10 @@ end
 
 % length distribution, by how many pixels
 h1 =  figure(1); 
+
+pixel_number_per_filament_pool = ...
+  pixel_number_per_filament_pool(pixel_number_per_filament_pool>=min_length);
+
 [h,bin] = hist(pixel_number_per_filament_pool,0:20:1000);
 h = h/length(pixel_number_per_filament_pool);
 bar(bin,h);
@@ -86,11 +90,13 @@ saveas(h1, [outdir,filesep,'network_pixels_ch_',num2str(iChannel),'_frame_',num2
 
 % length distribution, by the distance along the filament
 h2 =  figure(2); 
-length_per_filament_pool = length_per_filament_pool(length_per_filament_pool>60);
+length_per_filament_pool = ...
+  length_per_filament_pool(length_per_filament_pool>=min_length);
+
 [h,bin] = hist(length_per_filament_pool,0:20:1000);
 h = h/length(length_per_filament_pool);
 bar(bin,h);
-axis([50 310 0 0.3]);
+axis([-10 310 0 0.3]);
 
 title('Length Distribution');
 saveas(h2, [outdir,filesep,'network_length_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.fig']);
@@ -162,4 +168,5 @@ output_feature=[];
 output_feature.straightness_per_filament_pool=straightness_per_filament_pool;
 output_feature.orientation_pixel_pool_display=orientation_pixel_pool_display;
 output_feature.length_per_filament_pool=length_per_filament_pool;
+output_feature.pixel_number_per_filament_pool=pixel_number_per_filament_pool;
 
