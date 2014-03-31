@@ -119,9 +119,12 @@ for iChannel = selected_channels
         end
     end
     
-    img_min=low_005_percentile;
+   
+%    low_005_percentile=0;
+%    high_995_percentile= 2^16-1;
+   
+     img_min=low_005_percentile;
     img_max=high_995_percentile;
-    
    
     for iFrame_subsample = 1 : length(Frames_to_Seg)
         hist_this_frame = hist_all_frame(:,iFrame_subsample);
@@ -134,6 +137,7 @@ for iChannel = selected_channels
     center_value = sqrt(center_value);
     center_value = imfilter(center_value,[1 2 3 9 3 2 1]/21,'replicate','same');
     center_value = center_value/max(center_value);
+%     center_value(:)=1;
     
     % Make output directory for the flattened images
     ImageFlattenChannelOutputDir = movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel};

@@ -10,7 +10,7 @@ line_smooth_H = fspecial('gaussian',5,2);
 XX=[];YY=[];OO=[];
 
 for iFila = 1 : model_length
-    
+    try
     line_i_x = current_model{iFila}(:,1);
     line_i_y = current_model{iFila}(:,2);
     
@@ -57,5 +57,5 @@ for iFila = 1 : model_length
     XX = [XX;sort_x;];
     YY = [YY;sort_y;];
     OO = [OO;sort_ang;];
-    
+    end
 end

@@ -508,6 +508,24 @@ for iChannel = selected_channels
         end
         
         
+        if(~isempty(current_model))
+             [Vif_digital_model,Vif_orientation_model,VIF_XX,VIF_YY,VIF_OO] ...
+                 = filament_model_to_digital_with_orientation(current_model);
+             
+             OO_flip = pi-VIF_OO;
+             
+             OO_flip(OO_flip<-pi/2)=OO_flip(OO_flip<-pi/2)+pi;
+             OO_flip(OO_flip>pi/2)=OO_flip(OO_flip>pi/2)-pi;
+             OO_flip(OO_flip<-pi/2)=OO_flip(OO_flip<-pi/2)+pi;
+             OO_flip(OO_flip>pi/2)=OO_flip(OO_flip>pi/2)-pi;
+             OO_flip(OO_flip<-pi/2)=OO_flip(OO_flip<-pi/2)+pi;
+             OO_flip(OO_flip>pi/2)=OO_flip(OO_flip>pi/2)-pi;
+             OO_flip(OO_flip<-pi/2)=OO_flip(OO_flip<-pi/2)+pi;
+             OO_flip(OO_flip>pi/2)=OO_flip(OO_flip>pi/2)-pi;
+             
+            orienation_map_filtered(sub2ind(size(currentImg), VIF_YY,VIF_XX))=OO_flip;
+        end
+        
         currentImg = uint8(currentImg/1);
         Hue = (-orienation_map_filtered(:)+pi/2)/(pi)-0.2;
         Hue(find(Hue>=1)) = Hue(find(Hue>=1)) -1;
@@ -537,6 +555,26 @@ for iChannel = selected_channels
             if iFrame + sub_i-1 <= nFrame
                 imwrite(RGB_seg_orient_heat_map, ...
                     [HeatEnhOutputDir,'/segment_heat_',...
+                    filename_short_strs{iFrame+ sub_i-1},'.tif']);
+            end
+        end
+        
+        enhanced_im_r = 255-currentImg;
+        enhanced_im_g = 255-currentImg;
+        enhanced_im_b = 255-currentImg;
+        
+        enhanced_im_r(find(current_seg>0))=255*R_seg_orient_heat_map(find(current_seg>0));
+        enhanced_im_g(find(current_seg>0))=255*G_seg_orient_heat_map(find(current_seg>0));
+        enhanced_im_b(find(current_seg>0))=255*B_seg_orient_heat_map(find(current_seg>0));
+        
+        RGB_seg_orient_heat_map(:,:,1 ) = enhanced_im_r;
+        RGB_seg_orient_heat_map(:,:,2 ) = enhanced_im_g;
+        RGB_seg_orient_heat_map(:,:,3 ) = enhanced_im_b;
+        
+        for sub_i = 1 : Sub_Sample_Num
+            if iFrame + sub_i-1 <= nFrame
+                imwrite(RGB_seg_orient_heat_map, ...
+                    [HeatEnhOutputDir,'/white_segment_heat_',...
                     filename_short_strs{iFrame+ sub_i-1},'.tif']);
             end
         end

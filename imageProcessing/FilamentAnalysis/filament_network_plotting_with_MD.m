@@ -260,7 +260,7 @@ for iFrame = param.frames_index
             if indexFlattenProcess~=0
                 VIF_img =  MD.processes_{indexFlattenProcess}.loadChannelOutput(iChannel,iFrame);
             else
-                VIF_img =  MD.channels_{iChannel}.loadImage(iFrame);
+                VIF_img =  MD.channels_(iChannel).loadImage(iFrame);
             end
             
             if(param.image_inversion==1)
