@@ -29,18 +29,18 @@ classdef TrackingProcess < DataProcessingProcess
                 end
                 super_args{4} = funParams;
             end
-            obj = obj@DataProcessingProcess(super_args{:});            
+            obj = obj@DataProcessingProcess(super_args{:});
         end
         
         function varargout = loadChannelOutput(obj,iChan,varargin)
             
             % Input check
-            outputList = {'tracksFinal', 'gapInfo'};
+            outputList = {'tracksFinal', 'gapInfo', 'staticTracks'};
             ip =inputParser;
             ip.addRequired('obj');
-            ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
-            ip.addOptional('iFrame',[],@(x) ismember(x,1:obj.owner_.nFrames_));
-            ip.addParamValue('output',outputList{1},@(x) all(ismember(x,outputList)));
+            ip.addRequired('iChan', @(x) obj.checkChanNum(x));
+            ip.addOptional('iFrame', [] ,@(x) obj.checkFrameNum(x));
+            ip.addParamValue('output', outputList{1}, @(x) all(ismember(x,outputList)));
             ip.parse(obj,iChan,varargin{:})
             output = ip.Results.output;
             iFrame = ip.Results.iFrame;
@@ -50,7 +50,8 @@ classdef TrackingProcess < DataProcessingProcess
             s = load(obj.outFilePaths_{iChan}, 'tracksFinal');
             tracksFinal=s.tracksFinal;
             
-            for i=1:numel(output)
+            varargout = cell(numel(output), 1);
+            for i = 1:numel(output)
                 switch output{i}
                     case 'tracksFinal'
                         if ~isempty(iFrame),
@@ -66,6 +67,8 @@ classdef TrackingProcess < DataProcessingProcess
                         else
                             varargout{i} = tracksFinal;
                         end
+                    case 'staticTracks'
+                        varargout{i} = tracksFinal;
                     case 'gapInfo'
                         varargout{1} = findTrackGaps(tracksFinal);
                 end
@@ -85,6 +88,11 @@ classdef TrackingProcess < DataProcessingProcess
             output(2).type='graph';
             output(2).defaultDisplayMethod=@(x)HistogramDisplay('XLabel','Gap length',...
                 'YLabel','Counts');
+            output(3).name='Static tracks';
+            output(3).var='staticTracks';
+            output(3).formatData=@TrackingProcess.formatTracks;
+            output(3).type='overlay';
+            output(3).defaultDisplayMethod=@(x)TracksDisplay('Color',colors(x,:));
         end
         
         
