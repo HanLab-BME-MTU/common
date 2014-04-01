@@ -99,12 +99,17 @@ classdef MovieList < MovieObject
             movieException = cell(1,nMovies);
             for i = 1 : nMovies
                 try
-                    if i <= nLoadedMovies && ~isempty(obj.movies_{i})
+                    if i <= nLoadedMovies && ~isempty(obj.getMovie(i))
                         [moviePath,movieName,movieExt] = fileparts(obj.movieDataFile_{i});
-                        obj.movies_{i}.sanityCheck(moviePath,[movieName movieExt], askUser);
+                        obj.getMovie(i).sanityCheck(moviePath,[movieName movieExt], askUser);
                     else
                         fprintf(1,'Loading movie %g/%g\n',i,nMovies);
-                        obj.movies_{i}=MovieData.load(obj.movieDataFile_{i},askUser);
+                        if obj.isOmero() && obj.canUpload()
+                            obj.movies_{i} = MovieData.load(obj.movieDataFile_{i},...
+                                obj.getOmeroSession(), askUser);
+                        else
+                            obj.movies_{i} = MovieData.load(obj.movieDataFile_{i}, askUser);
+                        end
                     end
                 catch ME
                     movieException{i} = ME;
