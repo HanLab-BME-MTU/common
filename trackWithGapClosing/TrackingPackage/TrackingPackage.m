@@ -1,5 +1,5 @@
 classdef TrackingPackage < Package
-    % A concrete process for a geeneric Tracking Package
+    % An abstract class for a geeneric Tracking Package
     
     methods
         function obj = TrackingPackage(owner, varargin)
