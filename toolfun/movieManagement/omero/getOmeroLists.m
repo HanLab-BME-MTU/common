@@ -25,7 +25,9 @@ function ML = getOmeroLists(session, datasetIDs, varargin)
 ip = inputParser;
 ip.addRequired('datasetIDs', @isvector);
 ip.addOptional('cache', false ,@isscalar);
-ip.addParamValue('path', fullfile(getenv('HOME'), 'omero'), @ischar);
+homeDir = char(java.lang.System.getProperty('user.home'));
+omeroDir = fullfile(homeDir, 'omero');
+ip.addParamValue('path', omeroDir, @ischar);
 ip.parse(datasetIDs, varargin{:});
 
 % Retrieve OMERO datasets

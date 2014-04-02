@@ -26,7 +26,9 @@ function MD = getOmeroMovies(session, imageIDs, varargin)
 ip = inputParser;
 ip.addRequired('imageIDs', @isvector);
 ip.addOptional('cache', false ,@isscalar);
-ip.addParamValue('path', fullfile(getenv('HOME'), 'omero'), @ischar);
+homeDir = char(java.lang.System.getProperty('user.home'));
+omeroDir = fullfile(homeDir, 'omero');
+ip.addParamValue('path', omeroDir, @ischar);
 ip.parse(imageIDs, varargin{:});
 
 % Initialize movie array
