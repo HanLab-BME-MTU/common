@@ -261,7 +261,7 @@ for iChan = 1:nChanCorr
         end
         
         %Average the images together
-        shadeIm{iChan} = shadeIm{iChan} + double(currIm) ./ nImages;                
+        shadeIm{iChan} = shadeIm{iChan} + double(currIm) ./ nShadeIm;                
                
         
     end        
