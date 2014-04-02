@@ -34,7 +34,7 @@ classdef ExamplePackage < Package
             %    1 2 3
             m = [0 0 0;  %1 ExampleProcess
                  0 0 0;   %2 ThresholdProcess
-                 0 1 0;]; %3 FlowAnalysisProcess
+                 0 1 0;]; %3 MaskRefinementProcess
             if nargin<2, j=1:size(m,2); end
             if nargin<1, i=1:size(m,1); end
             m=m(i,j);
