@@ -5,7 +5,7 @@
 
 % Download test data for u-track
 url =  'http://downloads.openmicroscopy.org/images/u-track/integrins.zip';
-rootPath = fullfile(getenv('HOME'), 'Desktop', '2014Mar20');
+rootPath = fullfile(getenv('HOME'), 'Desktop', '2014Apr2');
 zipPath = fullfile(rootPath, 'integrins.zip');
 urlwrite(url, zipPath);
 
