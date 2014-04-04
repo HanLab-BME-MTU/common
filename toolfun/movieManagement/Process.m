@@ -73,7 +73,7 @@ classdef Process < hgsetget
             obj.procChanged_= true;
             
             % Run sanityCheck on parent package to update dependencies
-            for packId = obj.getPackage()
+            for packId = obj.getPackageIndex()
                 obj.getOwner().getPackage(packId).sanityCheck(false,'all');
             end
         end
@@ -141,7 +141,7 @@ classdef Process < hgsetget
             obj.finishTime_ = clock;
             
             % Run sanityCheck on parent package to update dependencies
-            for packId = obj.getPackage()
+            for packId = obj.getPackageIndex()
                 obj.getOwner().getPackage(packId).sanityCheck(false,'all');
             end
             
@@ -190,8 +190,8 @@ classdef Process < hgsetget
             time=sec2struct(24*3600*(datenum(obj.finishTime_)-datenum(obj.startTime_)));
         end
         
-        function [packageID, procID] = getPackage(obj)
-            % Retrieve package to which the process is associated
+        function [packageID, procID] = getPackageIndex(obj)
+            % Retrieve index of packages to which the process is associated
             validPackage = cellfun(@(x) x.hasProcess(obj),...
                 obj.getOwner().packages_);
             packageID = find(validPackage);

@@ -177,30 +177,30 @@ classdef TestProcess < TestLibrary
             assertTrue(isempty(self.movie.processes_));
         end
         
-        function testGetPackageUnlinked(self)
+        function testGetPackageIndexUnlinked(self)
             % Test getPackage method for unlinked process
-            [packageID, processID] = self.process.getPackage();
+            [packageID, processID] = self.process.getPackageIndex();
             assertTrue(isempty(packageID));
             assertTrue(isempty(processID));
         end
         
-        function testGetPackageLinked(self)
+        function testGetPackageIndexLinked(self)
             % Link process to package and test getPackage method
             package = self.setUpPackage();
             package.setProcess(1, self.process);
-            [packageID, processID] = self.process.getPackage();
+            [packageID, processID] = self.process.getPackageIndex();
             assertEqual(packageID, 1);
             assertEqual(processID, 1);
         end
         
-        function testGetPackageMultilinked(self)
+        function testGetPackageIndexMultilinked(self)
             % Link process to multiple package and test getPackage method
             package1 = self.setUpPackage();
             self.setUpPackage();
             package3 = self.setUpPackage();
             package1.setProcess(1, self.process);
             package3.setProcess(1, self.process);
-            [packageID, processID] = self.process.getPackage();
+            [packageID, processID] = self.process.getPackageIndex();
             assertEqual(packageID, [1 3]);
             assertEqual(processID, [1 1]);
         end
@@ -224,14 +224,14 @@ classdef TestProcess < TestLibrary
         end
         
         %% Process methods
-        function testGetPackageUnshared(self)
-            assertTrue(isempty(self.process.getPackage()));
+        function testGetPackageIndexUnshared(self)
+            assertTrue(isempty(self.process.getPackageIndex()));
         end
         
-        function getPackageSingle(self)
+        function getPackageIndexSingle(self)
             package = self.setUpPackage();
             package.setProcess(1, self.process);
-            assertEqual(self.process.getPackage(), 1);
+            assertEqual(self.process.getPackageIndex(), 1);
         end
         
         function testGetPackageMultiple(self)
@@ -239,7 +239,7 @@ classdef TestProcess < TestLibrary
                 package = self.setUpPackage();
                 package.setProcess(1, self.process);
             end
-            assertEqual(self.process.getPackage(), 1:4);
+            assertEqual(self.process.getPackageIndex(), 1:4);
         end
         
         function testGetIndex(self)

@@ -179,7 +179,7 @@ classdef  MovieObject < hgsetget
             
             if isValid
                 % Unassociate process from parent packages
-                [packageID, procID] = process.getPackage();
+                [packageID, procID] = process.getPackageIndex();
                 for i=1:numel(packageID)
                     obj.getPackage(packageID(i)).setProcess(procID(i), []);
                 end
@@ -214,7 +214,7 @@ classdef  MovieObject < hgsetget
                 assert(isscalar(pid))
             end
             
-            [packageID, procID] = obj.getProcess(pid).getPackage;
+            [packageID, procID] = obj.getProcess(pid).getPackageIndex();
             
             % Check new process is compatible with parent packages
             if ~isempty(packageID)
