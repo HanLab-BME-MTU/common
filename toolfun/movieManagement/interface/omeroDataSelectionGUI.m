@@ -22,7 +22,7 @@ function varargout = omeroDataSelectionGUI(varargin)
 
 % Edit the above text to modify the response to help omeroDataSelectionGUI
 
-% Last Modified by GUIDE v2.5 18-Nov-2013 14:02:50
+% Last Modified by GUIDE v2.5 07-Apr-2014 11:18:10
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -208,16 +208,15 @@ refreshImageList(handles)
 function popupmenu_dataset_Callback(hObject, eventdata, handles)
 refreshImageList(handles)
 
-% --- Executes on button press in pushbutton_load.
-function pushbutton_load_Callback(hObject, eventdata, handles)
+% --- Executes on button press in pushbutton_load_images.
+function pushbutton_load_images_Callback(hObject, eventdata, handles)
 
-global session
 props = get(handles.listbox_images, {'Value', 'UserData'});
 if isempty(props{1}), return; end
-
-%
-userData = get(handles.figure1, 'UserData');
 imageIDs = arrayfun(@(x) x.getId().getValue(), props{2}(props{1}));
+
+% If derivated from movie selection window, only load new movies
+userData = get(handles.figure1, 'UserData');
 if ishandle(userData.mainFig),
     userData=get(handles.figure1,'UserData');
     userData_main = get(userData.mainFig, 'UserData');
@@ -226,11 +225,14 @@ if ishandle(userData.mainFig),
     imageIDs = setdiff(imageIDs, existingIDs);
 end
 
+% Return if empty list
 if isempty(imageIDs),
-    errordlg('All selected images are already loaded', 'Error', 'modal');
+    errordlg('All selected images have already been loaded', 'Error', 'modal');
     return
 end
 
+% Load images from OMERO
+global session
 MD = getOmeroMovies(session, imageIDs);
 
 % Update movie selector interface
@@ -249,3 +251,60 @@ function pushbutton_cancel_Callback(hObject, eventdata, handles)
 
 delete(handles.figure1);
 
+
+% --- Executes on button press in pushbutton_load_dataset.
+function pushbutton_load_dataset_Callback(hObject, eventdata, handles)
+
+props = get(handles.popupmenu_dataset, {'Value', 'UserData'});
+if props{1} == 1, return; end
+datasetIDs = props{2}(props{1}-1).getId().getValue();
+
+% If derivated from movie selection window, only load new movies
+userData = get(handles.figure1, 'UserData');
+if ishandle(userData.mainFig),
+    userData=get(handles.figure1,'UserData');
+    userData_main = get(userData.mainFig, 'UserData');
+    omeroLists = arrayfun(@isOmero, userData_main.ML);
+    existingIDs = arrayfun(@(x) x.getOmeroId(), userData_main.ML(omeroLists));
+    datasetIDs = setdiff(datasetIDs, existingIDs);
+end
+
+% Return if empty list
+if isempty(datasetIDs),
+    errordlg('All selected datasets have already been loaded', 'Error', 'modal');
+    return
+end
+
+% Load images from OMERO
+global session
+ML = getOmeroLists(session, datasetIDs);
+
+% Update movie selector interface
+if ishandle(userData.mainFig),
+    % Append  MovieList object to movie selector panel
+    userData_main.ML = horzcat(userData_main.ML, ML);
+    
+    % Append new MovieData objects to movie selector panel
+    movieList = arrayfun(@getFullPath, userData_main.MD, 'Unif', false);
+    if ~isempty(movieList),
+        index = cellfun(@(x) ~ismember(x.getFullPath(), movieList),...
+            ML.getMovies());
+    else
+        index = true(numel(ML.getMovies), 1);
+    end
+    
+    if any(index)
+        newMovies = ML.getMovies();
+        newMovies = newMovies(index);
+        userData_main.MD = horzcat(userData_main.MD, newMovies{:});
+    else
+        warndlg('All images containedin dataset has already been loaded',...
+            'Warning','modal');
+    end
+    
+    set(userData.mainFig, 'UserData', userData_main)
+    movieSelectorGUI('refreshDisplay', userData.mainFig,...
+        eventdata, guidata(userData.mainFig))
+end
+
+delete(handles.figure1);
