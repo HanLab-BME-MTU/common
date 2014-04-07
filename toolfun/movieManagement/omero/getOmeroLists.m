@@ -47,7 +47,7 @@ for i = 1 : nLists
     
     % Make sure the movies are loaded locally
     images = toMatlabList(datasets(i).linkedImageList());
-    imageIds = arrayfun(@(x) x.getId().getValue(), images);
+    imageIds = sort(arrayfun(@(x) x.getId().getValue(), images));
     MD = getOmeroMovies(session, imageIds);
     
     % Retrieve file annotation attached to the dataset
