@@ -122,6 +122,7 @@ userId = props{2}(props{1});
 
 % List projects
 projects = getProjects(session, [], false, 'owner', userId);
+projects = sortById(projects);
 projectNames = arrayfun(@(x) char(x.getName().getValue()), projects,...
     'UniformOutput', false);
 projectNames = [{'none'}; projectNames];
@@ -132,10 +133,11 @@ set(handles.popupmenu_project, 'Value', 1, 'String', projectNames,...
 d = arrayfun(@(x) toMatlabList(x.linkedDatasetList), projects, 'Unif', 0);
 datasetIds = arrayfun(@(x) x.getId().getValue(), [d{:}]);
 datasets = getDatasets(session, [], false, 'owner', userId);
-arrayfun(@(x) x.getId().getValue(), [datasets]);
 [~, isorphaned] = setdiff(arrayfun(@(x) x.getId().getValue(), datasets),...
     datasetIds);
-orphanedDatasets  = datasets(isorphaned);
+orphanedDatasets  = sortById(datasets(isorphaned));
+
+%
 datasetNames = arrayfun(@(x) char(x.getName().getValue()),...
     orphanedDatasets, 'UniformOutput', false);
 datasetNames = [{'none'}; datasetNames];
@@ -179,6 +181,7 @@ else
 end
 
 % Update image list
+images = sortById(images);
 imageNames = arrayfun(@(x) char(x.getName().getValue()), images,...
     'UniformOutput', false);
 set(handles.listbox_images, 'Value', 1, 'String', imageNames,...
@@ -194,6 +197,7 @@ if props{1} == 1,
     datasets = userData.orphaned_datasets;
 else
     datasets = toMatlabList(props{2}(props{1} - 1).linkedDatasetList);
+    datasets = sortById(datasets);
 end
 
 % Update datasets drop down menu list
@@ -308,3 +312,9 @@ if ishandle(userData.mainFig),
 end
 
 delete(handles.figure1);
+
+function objects = sortById(objects)
+
+objectIds = arrayfun(@(x) x.getId().getValue(), objects);
+[~, sortindex] = sort(objectIds);
+objects =objects(sortindex);
