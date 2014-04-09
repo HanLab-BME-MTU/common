@@ -33,6 +33,7 @@ ip.addParamValue('Init', [], @isvector);
 ip.addParamValue('Display', 'on', @(x) any(strcmpi(x, {'on','off'})));
 ip.addParamValue('Optimizer', 'lsqnonlin', @(x) any(strcmpi(x, {'fmincon','lsqnonlin'})));
 ip.addParamValue('ConstrainMeans', false, @islogical);
+ip.addParamValue('ConstrainSD', false, @islogical);
 ip.addParamValue('MinPercentile', 5);
 ip.parse(arg1, arg2, varargin{:});
 init = ip.Results.Init;
@@ -72,10 +73,18 @@ if isempty(init)
     sigma_init = sigma0/sqrt(n)*ones(1,n);   
     A_init = (n:-1:1)/n/(n+1)*2;
     if ip.Results.ConstrainMeans
-        init = [mu_init(1) reshape([sigma_init; A_init], [1 2*n])];
-        % if means are constrained, constrain minimum mean to 5th percentile of data
-        lb = [Amin zeros(1,2*n)];
-        ub = [Inf repmat([Inf 1], [1 n])];
+        if ~ip.Results.ConstrainSD
+            % [mu1, A1, mu2, A2, ..., sigma]
+            init = [mu_init(1) reshape([sigma_init; A_init], [1 2*n])];
+            % constrain minimum mean to 5th percentile of data
+            lb = [Amin zeros(1,2*n)];
+            ub = [Inf repmat([Inf 1], [1 n])];
+        else
+            % mu, sigma, A1, ... An
+            init = [mu_init(1) sigma_init(1) A_init];
+            lb = [-Inf 0 zeros(1,n)];
+            ub = [Inf Inf ones(1,n)]; 
+        end
     else
         lb = repmat([-Inf 0 0], [1 n]);
         ub = repmat([Inf Inf 1], [1 n]);
@@ -87,28 +96,50 @@ switch mode
     case 'CDF'
         cost = @costCDF;
         costConstr = @costCDFconstr;
+        costConstr2 = @costCDFconstr2;
     case 'PDF'
         cost = @costPDF;
         costConstr = @costPDFconstr;
+        costConstr2 = @costPDFconstr2;
 end
 
 switch ip.Results.Optimizer
     case 'fmincon'
         if ip.Results.ConstrainMeans
-            Aeq = [0 repmat([0 1], [1 n])]; % equality constraint
-            beq = 1;
-            if n>1
-                Aneq = arrayfun(@(i) circshift([0 -1 0 1 repmat([0 0], [1 n-2])], [0 2*i]), 0:n-2, 'unif', 0);
-                Aneq = [zeros(n-1,1) vertcat(Aneq{:})];
-                bneq = zeros(n-1,1);
-            else
-                Aneq = [];
-                bneq = [];
+            if ~ip.Results.ConstrainSD
+                Aeq = [0 repmat([0 1], [1 n])]; % equality constraint: sum(A)==1
+                beq = 1;
+                if n>1
+                    % Components must have diminishing weights: A_{n+1} <= A_{n}
+                    Aneq = arrayfun(@(i) circshift([0 -1 0 1 zeros(1,2*(n-2))], [0 2*i]), 0:n-2, 'unif', 0);
+                    Aneq = [zeros(n-1,1) vertcat(Aneq{:})];
+                    bneq = zeros(n-1,1);
+                else
+                    Aneq = [];
+                    bneq = [];
+                end
+                [p,RSS] = fmincon(@(i) sum(costConstr(i, x, f).^2), init, Aneq, bneq, Aeq, beq,...
+                    lb, ub, [], optimset(opts, 'Algorithm', 'interior-point'));
+                mu = p(1)*(1:n);
+                sigma = p(2:2:end);
+                A = p(3:2:end);
+            else % mean and SD constrained
+                Aeq = [0 0 ones(1,n)];
+                beq = 1;
+                if n>1
+                    Aneq = arrayfun(@(i) circshift([-1 1 zeros(1,n-2)], [0 i]), 0:n-2, 'unif', 0);
+                    Aneq = [zeros(n-1,2) vertcat(Aneq{:})];
+                    bneq = zeros(n-1,1);
+                else
+                    Aneq = [];
+                    bneq = [];
+                end
+                [p,RSS] = fmincon(@(i) sum(costConstr2(i, x, f).^2), init, Aneq, bneq, Aeq, beq,...
+                    lb, ub, [], optimset(opts, 'Algorithm', 'interior-point'));
+                mu = p(1)*(1:n);
+                sigma = p(2)*sqrt(1:n);
+                A = p(3:end);
             end
-            [p,RSS] = fmincon(@(i) sum(costConstr(i, x, f).^2), init, Aneq, bneq, Aeq, beq, lb, ub, [], optimset(opts, 'Algorithm', 'interior-point'));
-            mu = p(1)*(1:n);
-            sigma = p(2:2:end);
-            A = p(3:2:end);
         else
             % Aeq * x = beq
             % equality constraint: sum(A)==1
@@ -123,11 +154,18 @@ switch ip.Results.Optimizer
         end
     case 'lsqnonlin'
         if ip.Results.ConstrainMeans
-            [p,RSS,~,~,~,~,J] = lsqnonlin(costConstr, init, lb, ub, opts, x, f);
-            mu = p(1)*(1:n);
-            sigma = p(2:2:end);
-            A = p(3:2:end);
-        else            
+            if ~ip.Results.ConstrainSD
+                [p,RSS,~,~,~,~,J] = lsqnonlin(costConstr, init, lb, ub, opts, x, f);
+                mu = p(1)*(1:n);
+                sigma = p(2:2:end);
+                A = p(3:2:end);
+            else
+                [p,RSS,~,~,~,~,J] = lsqnonlin(costConstr2, init, lb, ub, opts, x, f);
+                mu = p(1)*(1:n);
+                sigma = p(2)*sqrt(1:n);
+                A = p(3:end);
+            end
+        else
             [p,RSS,~,~,~,~,J] = lsqnonlin(cost, init, lb, ub, opts, x, f);
             mu = p(1:3:end);
             sigma = p(2:3:end);
@@ -178,9 +216,6 @@ if strcmpi(ip.Results.Display, 'on')
         plot(x, mixtureModelPDF(x, mu(i), sigma(i), A(i)), 'b--', 'LineWidth', 1.5);
     end
     plot(x, mixtureModelPDF(x, mu, sigma, A), 'r--', 'LineWidth', 1.5);
-
-    
-   
 end
 
 
@@ -195,6 +230,13 @@ n = (numel(p)-1)/2;
 mu = p(1)*(1:n);
 sigma = p(2:2:end);
 A = p(3:2:end);
+v = mixtureModelCDF(x, mu, sigma, A) - f;
+
+function v = costCDFconstr2(p, x, f)
+n = numel(p)-2;
+mu = p(1)*(1:n);
+sigma = p(2)*sqrt(1:n);
+A = p(3:end);
 v = mixtureModelCDF(x, mu, sigma, A) - f;
 
 function f = mixtureModelCDF(x, mu, sigma, A)
@@ -215,6 +257,14 @@ n = (numel(p)-1)/2;
 mu = p(1)*(1:n);
 sigma = p(2:2:end);
 A = p(3:2:end);
+A = sort(A, 'descend'); % redundant for fmincon case
+v = mixtureModelPDF(x, mu, sigma, A) - f;
+
+function v = costPDFconstr2(p, x, f)
+n = numel(p)-2;
+mu = p(1)*(1:n);
+sigma = p(2)*sqrt(1:n);
+A = p(3:end);
 A = sort(A, 'descend'); % redundant for fmincon case
 v = mixtureModelPDF(x, mu, sigma, A) - f;
 
