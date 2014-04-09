@@ -1,17 +1,17 @@
 function [prmVect, prmStd, C, res, J] = fitGaussian1D(x, data, prmVect, mode, mask)
-%[prmVect, G] = fitGaussian2D(data, p, mode)
+% prmVect = fitGaussian1D(x,data, p)
+% [prmVect,prmSTD,prmCov,res,jacob] = fitGaussian1D(x,data, p, mode,mask)
 %
 % Input: data: 2-D image array
-%        p      : [xp yp A sigma c] initial and fixed parameter values
+%        p      : [xp A sigma c] initial and fixed parameter values
 %        {mode} : specifies which parameters to estimate; any combination of 'xAsc'
 %        {mask} : elements set to 1 are not included in optimization
-%        {xa}   : x-axis
 %
 % Data is assumed to contain a single Gaussian
 %
 % Francois Aguet, March 30 2011
 
-if nargin<3
+if nargin<4
     mode = 'xAsc';
 end
 if nargin<5
