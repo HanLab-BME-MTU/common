@@ -28,25 +28,26 @@ for iCompleteFrame = 1 : nCompleteFrame
         RG_framem1 = zeros(size(smoothed_current_mask,1),size(smoothed_current_mask,2),3);
         RG_framem1(:,:,1) = smoothed_current_mask;
         
-        cell_vif_pool = [cell_vif_pool current_VIF_image(smoothed_current_mask>0)];
+        cell_vif_pool = [cell_vif_pool; current_VIF_image(smoothed_current_mask>0)];
         
         if iCompleteFrame>1
             RG_framem1(:,:,2) = smoothed_mask_cell{1,iCompleteFrame-1};
-            previous_VIF_image = MD.channels_(VIF_channel). loadImage(iFrame-1);
+            previous_VIF_image = MD.channels_(VIF_channel).loadImage(iFrame-1);
             
             red_new = RG_framem1(:,:,1)-RG_framem1(:,:,2);
             green_old = RG_framem1(:,:,2)-RG_framem1(:,:,1);
             
             % for protrustion
-            try
-                red_vif_t_pool = [red_vif_t_pool current_VIF_image(red_new>0)];
-            end
+%             try
+                red_vif_t_pool = [red_vif_t_pool; current_VIF_image(red_new>0)];
+%             end
             
             % for retraction
-            try
-                green_vif_tm1_pool=[green_vif_tm1_pool previous_VIF_image(green_old>0)];
-            end
-            
+%             try
+                green_vif_tm1_pool = [green_vif_tm1_pool; previous_VIF_image(green_old>0)];
+%             end
+        else
+             RG_framem1(:,:,2) = smoothed_current_mask;       
         end
          
         blue_mask = current_mask*0;
@@ -133,7 +134,7 @@ for iCompleteFrame = 1 : nCompleteFrame
     saveas(h5,[outputPath,'\tracked_skel_region_',num2str(iFrame),'.tif']);
     
 end
-BA_output.branch_vif_mean_intensity  = nanmean(vif_mean_matrix');
+BA_output.branch_vif_mean_intensity  = nanmean(vif_mean_matrix);
 
 BA_output.protrusion_vif_mean_intensity =  mean(red_vif_t_pool);
 

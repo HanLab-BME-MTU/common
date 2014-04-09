@@ -33,8 +33,14 @@ end
 
 ROOT_DIR = MD.outputDirectory_;
 
-load([ROOT_DIR,'\SegmentationPackage\completedFramesChannel',num2str(iChannel),'Cell',num2str(iCell),'\completedFrames.mat'],'isCompleted');
-truthPath = [ROOT_DIR,'\SegmentationPackage\FixedChannel',num2str(iChannel),'Cell',num2str(iCell)];
+if(exist([ROOT_DIR,'\FilamentAnalysisPackage\refined_masks\'],'dir'))
+    PackageName = 'FilamentAnalysisPackage';
+else
+    PackageName = 'SegmentationPackage';
+end
+
+load([ROOT_DIR,'\',PackageName,'\completedFramesChannel',num2str(iChannel),'Cell',num2str(iCell),'\completedFrames.mat'],'isCompleted');
+truthPath = [ROOT_DIR,'\',PackageName,'\FixedChannel',num2str(iChannel),'Cell',num2str(iCell)];
 outputPath = [ROOT_DIR,'\BranchAnalysisChannel',num2str(iChannel),'Cell',num2str(iCell)];
 
 if(~exist(outputPath,'dir'))
@@ -350,14 +356,14 @@ for iT = 1 : length(tracksFinal)
         new_region_branch_label_cell{iF} = new_region;
         
     end
-    BA_output.branch_duration_array(iF) = track_end - track_start+1;
+    BA_output.branch_duration_array(iT) = track_end - track_start+1;
 end
-BA_output.branch_duration_mean = mean(BA_output.branch_duration_array(iF));
+BA_output.branch_duration_mean = mean(BA_output.branch_duration_array);
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% plotting the results
-plot_after_tracking;
+% more analysis and plotting
+branch_analysis_after_tracking;
 
 %%
 % display and save results
@@ -417,6 +423,10 @@ str_line = ['The average VIM intensity in retraction region: ', ...
 fprintf(fid, [str_line,'\n  \r\n']);
 strings{10}=str_line;
 
+str_line = ['The average VIM intensity in the whole cell: ', ...
+    num2str(BA_output.whole_cell_vif_mean_intensity),'.'];
+fprintf(fid, [str_line,'\n  \r\n']);
+strings{11}=str_line;
 
 fclose(fid);
  
