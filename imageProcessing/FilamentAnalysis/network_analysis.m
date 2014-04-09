@@ -1,4 +1,4 @@
-function output_feature = network_analysis(VIF_current_model,VIF_orientation, VIF_current_seg,outdir,iChannel,iFrame,ROI, min_length)
+function output_feature = network_analysis(VIF_current_model,VIF_orientation, VIF_current_seg,outdir,iChannel,iFrame,ROI, min_length,im_name)
 % function for calculation the property of network
 % Liya Ding 01.2014.
 
@@ -83,7 +83,7 @@ h = h/length(pixel_number_per_filament_pool);
 bar(bin,h);
 axis([-10 310 0 0.3]);
 
-title('Pixels Distribution');
+title([im_name,' Pixels Number Distribution']);
 saveas(h1, [outdir,filesep,'network_pixels_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.fig']);
 saveas(h1, [outdir,filesep,'network_pixels_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.jpg']);
 saveas(h1, [outdir,filesep,'network_pixels_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.tif']);
@@ -98,7 +98,7 @@ h = h/length(length_per_filament_pool);
 bar(bin,h);
 axis([-10 310 0 0.3]);
 
-title('Length Distribution');
+title([im_name,' Length Distribution']);
 saveas(h2, [outdir,filesep,'network_length_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.fig']);
 saveas(h2, [outdir,filesep,'network_length_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.jpg']);
 saveas(h2, [outdir,filesep,'network_length_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.tif']);
@@ -116,7 +116,8 @@ orientation_pixel_pool_display(orientation_pixel_pool_display<0) = orientation_p
 
 h3 =  figure(3); 
 rose(orientation_pixel_pool_display);
-title('Orientation of Filaments');
+title([im_name,' Orientation of Filaments']);
+
 saveas(h3, [outdir,filesep,'network_orientationrose_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.fig']);
 saveas(h3, [outdir,filesep,'network_orientationrose_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.jpg']);
 saveas(h3, [outdir,filesep,'network_orientationrose_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.tif']);
@@ -130,7 +131,8 @@ h = h/length(orientation_pixel_pool_display);
 bar(bin,h);
 axis([0-pi/36 pi+pi/36 0 0.3]);
 
-title('Orientation of Filaments');
+title([im_name,' Orientation of Filaments']);
+
 saveas(h6, [outdir,filesep,'network_orientationhist_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.fig']);
 saveas(h6, [outdir,filesep,'network_orientationhist_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.jpg']);
 saveas(h6, [outdir,filesep,'network_orientationhist_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.tif']);
@@ -143,7 +145,8 @@ h = h/length(straightness_per_filament_pool);
 bar(bin,h);
 axis([0.69 0.97 0 0.2]);
 
-title('Straightness');
+title([im_name,' Straightness']);
+
 saveas(h4, [outdir,filesep,'network_straight_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.fig']);
 saveas(h4, [outdir,filesep,'network_straight_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.jpg']);
 saveas(h4, [outdir,filesep,'network_straight_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.tif']);
@@ -153,7 +156,8 @@ h = boxplot(straightness_per_filament_pool);
 set(h(7,:),'Visible','off');
 axis([0 2 0.6 1.01]);
 
-title('Straightness');
+title([im_name,' Straightness']);
+
 saveas(h5, [outdir,filesep,'network_box_straight_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.fig']);
 saveas(h5, [outdir,filesep,'network_box_straight_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.jpg']);
 saveas(h5, [outdir,filesep,'network_box_straight_ch_',num2str(iChannel),'_frame_',num2str(iFrame),'.tif']);

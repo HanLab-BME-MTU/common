@@ -72,9 +72,11 @@ for iChannel = 1 :  length(MD.channels_)
 
         
         %% % do analysis
+        im_name = MD.channels_(iChannel).getImageFileNames(iFrame);
+        
         
         output_feature = network_analysis(VIF_current_model,VIF_orientation, ...
-                        VIF_current_seg,outdir,iChannel,iFrame,ROI,min_length);
+                        VIF_current_seg,outdir,iChannel,iFrame,ROI,min_length,im_name);
         
 %         close all;
         network_feature{iChannel,iFrame} =output_feature;
