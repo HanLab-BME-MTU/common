@@ -1,4 +1,4 @@
-function similarity_scoremap = network_similarity_scoremap(VIF_current_model,MT_current_model,img_size, radius,outdir,iFrame,save_everything_flag)
+function [similarity_scoremap, similarity_scoremap_1to2, similarity_scoremap_2to1] = network_similarity_scoremap(VIF_current_model,MT_current_model,img_size, radius,outdir,iFrame,save_everything_flag)
 % function for calculation the similarity of two networks
 % Liya Ding 06.2013.
 
@@ -375,16 +375,37 @@ end;
 similarity_scoremap = exp(-(score_maps_distance_2_1+score_maps_distance_1_2).^2/(((radius*1.5)/2*sqrt(2))^2))...
     .*exp(-(abs(score_maps_angle_2_1/2)+abs(score_maps_angle_1_2/2)).^2/(1.5*(pi/3)^2));
 
+% calculation of similarity score only consider 1->2.
+similarity_scoremap_1to2 = exp(-(0+score_maps_distance_1_2*2).^2/(((radius*1.5)/2*sqrt(2))^2))...
+    .*exp(-(abs(0/2)+abs(score_maps_angle_1_2/2*2)).^2/(1.5*(pi/3)^2));
+
+% calculation of similarity score only consider 2->1.
+similarity_scoremap_2to1 = exp(-(score_maps_distance_2_1*2+0).^2/(((radius*1.5)/2*sqrt(2))^2))...
+    .*exp(-(abs(score_maps_angle_2_1/2*2)+abs(0/2)).^2/(1.5*(pi/3)^2));
+
+
 save([outdir,filesep,'VIFMT_sm_maps_frame_',num2str(iFrame),'.mat'], ...
     'score_maps_distance_2_1','score_maps_distance_1_2',...
     'score_maps_angle_2_1','score_maps_angle_1_2',...
-    'similarity_scoremap');
+    'similarity_scoremap','similarity_scoremap_1to2','similarity_scoremap_2to1');
 
 % similarity_scoremap(similarity_scoremap<0.2)=0.2;
 h6=figure(6); imagesc_nan_neg(similarity_scoremap,0);axis equal;axis off;
 title(['Similarity Score for frame ',num2str(iFrame)]);
 saveas(h6,[outdir,filesep,'VIFMT_sm_score_frame_',num2str(iFrame),'.tif']);
 saveas(h6,[outdir,filesep,'VIFMT_sm_score_frame_',num2str(iFrame),'.fig']);
+
+% similarity_scoremap(similarity_scoremap<0.2)=0.2;
+h6=figure(7); imagesc_nan_neg(similarity_scoremap_1to2,0);axis equal;axis off;
+title(['Similarity Score 1to2 for frame ',num2str(iFrame)]);
+saveas(h6,[outdir,filesep,'VIFMT_1to2_sm_score_frame_',num2str(iFrame),'.tif']);
+saveas(h6,[outdir,filesep,'VIFMT_1to2_sm_score_frame_',num2str(iFrame),'.fig']);
+
+% similarity_scoremap(similarity_scoremap<0.2)=0.2;
+h6=figure(8); imagesc_nan_neg(similarity_scoremap_2to1,0);axis equal;axis off;
+title(['Similarity Score 2to1 for frame ',num2str(iFrame)]);
+saveas(h6,[outdir,filesep,'VIFMT_2to1_sm_score_frame_',num2str(iFrame),'.tif']);
+saveas(h6,[outdir,filesep,'VIFMT_2to1_sm_score_frame_',num2str(iFrame),'.fig']);
 
 
 
