@@ -13,6 +13,7 @@ classdef LineDisplay < MovieDataDisplay
         YLabel='';
         sfont = {'FontName', 'Helvetica', 'FontSize', 18};
         lfont = {'FontName', 'Helvetica', 'FontSize', 22};
+        ButtonDownFcn=[];
     end
     methods
                 
@@ -22,16 +23,24 @@ classdef LineDisplay < MovieDataDisplay
         function h=initDraw(obj,data,tag,varargin)
             % Plot data and set graphical options
             h=plot(data(:,1),data(:,2),varargin{:});
-            set(h,'Tag',tag,'MarkerSize',obj.MarkerSize,...
-                'Color',obj.Color,'Marker',obj.Marker,...
-                'Linestyle',obj.LineStyle,'LineWidth',obj.LineWidth);
-            obj.setAxesProperties;
+            set(h,'Tag',tag);
+            obj.setLineProperties(h);
+            obj.setAxesProperties();
         end
         function updateDraw(obj,h,data)
             % Update handle xData and yData
             set(h,'XData',data(:,1),'YData',data(:,2));
-            obj.setAxesProperties;
+            obj.setLineProperties(h);
+            obj.setAxesProperties();
         end
+        
+        function setLineProperties(obj, h)
+            set(h, 'MarkerSize', obj.MarkerSize,...
+                'Color', obj.Color, 'Marker',obj.Marker,...
+                'Linestyle', obj.LineStyle, 'LineWidth', obj.LineWidth,...
+                'ButtonDownFcn', obj.ButtonDownFcn);
+        end
+        
         function setAxesProperties(obj)
             % Set labels and fonts
             if ~isempty(obj.XLabel),xlabel(obj.XLabel,obj.lfont{:}); end
@@ -60,6 +69,8 @@ classdef LineDisplay < MovieDataDisplay
             params(8).validator=@iscell;
             params(9).name='MarkerSize';
             params(9).validator=@isscalar;
+            params(10).name='ButtonDownFcn';
+            params(10).validator=@(x) isempty(x) || isa(x, 'function_handle');
         end
         function f=getDataValidator()
             f=@isnumeric;
