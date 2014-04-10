@@ -62,13 +62,17 @@ volSize(3) = size(im, 3);
 % get optional parameters
 defaultDisplayRange = ComputeImageDynamicRange( im, 99.0 );
 p.addParamValue( 'spacing', [1,1,1], @(x) ( isnumeric(x) && ~isscalar(x) && numel(x) == ndims(im) ) );
-p.addParamValue( 'displayRange', defaultDisplayRange, @(x) ( isnumeric(x) && numel(x) == 2 ) );
+p.addParamValue( 'displayRange', defaultDisplayRange, @(x) (isempty(x) || (isnumeric(x) && numel(x) == 2)) );
 p.addParamValue( 'displayColor', [1, 1, 1], @(x) ( isnumeric(x) && ~isscalar(x) && numel(x) == 3 ) );
 p.parse(im, varargin{:});
 
 spacing = p.Results.spacing;
 displayrange = p.Results.displayRange;
 displaycolor = p.Results.displayColor;
+
+if isempty(displayrange)
+    displayrange = [min(im(:)), max(im(:))];
+end
 
 %% Data
 data.im = im;
