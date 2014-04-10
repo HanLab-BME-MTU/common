@@ -1,4 +1,4 @@
-% function BA_output_cell = branch_analysis_group_plotting(ML_name_cell)
+function BA_output_cell = branch_analysis_group_plotting(ML_name_cell)
 % function to do branch analysis for a whole movielist
 % Liya Ding, March, 2014
 %
