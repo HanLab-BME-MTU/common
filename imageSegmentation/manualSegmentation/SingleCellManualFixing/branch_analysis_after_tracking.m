@@ -105,25 +105,27 @@ for iCompleteFrame = 1 : nCompleteFrame
     region_branch_label_RGB(:,:,2) = region_branch_label_G;
     region_branch_label_RGB(:,:,3) = region_branch_label_B;
     
-    h5 = figure(5);    
-    
-    subplot(121); imagesc(RG_framem1);axis image; axis off;
-    title('Difference','FontSize',15);
-    axis([min_x max_x min_y max_y]);
-    
-    subplot(122); imagesc((region_branch_label_RGB));
-    axis image;axis off;
-    hold on;
-    for iL = 1 : trackedBranches
+    if(figure_flag>0)
+        h5 = figure(5);
         
-        [indy,indx]= find(new_label_skel_cell{iCompleteFrame}==iL);
+        subplot(121); imagesc(RG_framem1);axis image; axis off;
+        title('Difference','FontSize',15);
+        axis([min_x max_x min_y max_y]);
         
-        % find skel pixel in region map
-        skel_region_values = labelMask(find(new_label_skel_cell{iCompleteFrame}==iL));
-        if(mean(double(skel_region_values>0))<0.8)
-         plot( indx,indy,'.','color',[ 0.2 0.2 0.2]);
-        else            
-        plot( indx,indy,'.','color',color_array(iL,1:3)');
+        subplot(122); imagesc((region_branch_label_RGB));
+        axis image;axis off;
+        hold on;
+        for iL = 1 : trackedBranches
+            
+            [indy,indx]= find(new_label_skel_cell{iCompleteFrame}==iL);
+            
+            % find skel pixel in region map
+            skel_region_values = labelMask(find(new_label_skel_cell{iCompleteFrame}==iL));
+            if(mean(double(skel_region_values>0))<0.8)
+                plot( indx,indy,'.','color',[ 0.2 0.2 0.2]);
+            else
+                plot( indx,indy,'.','color',color_array(iL,1:3)');
+            end
         end
     end
     
@@ -134,10 +136,11 @@ for iCompleteFrame = 1 : nCompleteFrame
         branch_size_matrix(iCompleteFrame,iL) = length(find(labelMask==iL));
     end
     
-    title('Branches','FontSize',15);
-    axis([min_x max_x min_y max_y]);
-    
-    saveas(h5,[outputPath,'\tracked_skel_region_',num2str(iFrame),'.tif']);
+    if(figure_flag>0)
+        title('Branches','FontSize',15);
+        axis([min_x max_x min_y max_y]);        
+        saveas(h5,[outputPath,'\tracked_skel_region_',num2str(iFrame),'.tif']);
+    end
     
 end
 BA_output.branch_vif_mean_intensity  = nanmean(vif_mean_matrix);

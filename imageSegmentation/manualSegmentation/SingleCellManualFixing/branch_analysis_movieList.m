@@ -1,4 +1,4 @@
-function BA_output_cell = branch_analysis_movieList(ML)
+function BA_output_cell = branch_analysis_movieList(ML,figure_flag)
 % function to do branch analysis for a whole movielist
 % Liya Ding, March, 2014
 %
@@ -31,7 +31,7 @@ for iM  = 1 :movieNumber
             if(exist(truthPath,'dir'))
                 % if it exist, try to do the branch analysis
 %                 try
-                    BA_output = branch_analysis_marked_cell(MD, iChannel, iCell);
+                    BA_output = branch_analysis_marked_cell(MD, iChannel, iCell,figure_flag);
                     % for the output, ignore the channel number since
                     % there is only one channel marked.
                     BA_output_cell{iM, iCell} = BA_output;

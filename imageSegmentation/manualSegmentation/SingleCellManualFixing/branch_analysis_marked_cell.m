@@ -1,4 +1,4 @@
-function BA_output = branch_analysis_marked_cell(MD, iChannel, iCell)
+function BA_output = branch_analysis_marked_cell(MD, iChannel, iCell, figure_flag)
 % function to do branch analysis for marked cells
 % Liya Ding, Feb, 2014
 %
@@ -116,12 +116,12 @@ end
 %     imwrite(smoothed_mask_cell{1,iCompleteFrame}, [outputPath,'\smoothed_marked_mask_',num2str(iCompleteFrame),'.tif']);
 % end
 
-color_array = [1 0 0; 0 1 0; 0 0 1; 1 0 1; 1 1 0; 0 1 1; rand(100,3)];
-region_branch_label_cell = cell(1,100);
-label_skel_cell = cell(1,100);
-branch_leaf_flag_cell= cell(1,100);
-% region_branch_wo_inner_label_cell= cell(1,100);
-% label_skel__wo_inner_cell{iCompleteFrame}= cell(1,100);
+color_array = [1 0 0; 0 1 0; 0 0 1; 1 0 1; 1 1 0; 0 1 1; rand(194,3)];
+region_branch_label_cell = cell(1,200);
+label_skel_cell = cell(1,200);
+branch_leaf_flag_cell= cell(1,200);
+% region_branch_wo_inner_label_cell= cell(1,200);
+% label_skel__wo_inner_cell{iCompleteFrame}= cell(1,200);
 
 for iCompleteFrame = 1 : nCompleteFrame
     current_mask = raw_mask_cell{1,iCompleteFrame};
