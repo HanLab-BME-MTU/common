@@ -272,7 +272,7 @@ for iCompleteFrame = 1 : nCompleteFrame
 end
 
 gapCloseParam.mergeSplit=0;
-gapCloseParam.minTrackLen=3;
+gapCloseParam.minTrackLen=1;
 gapCloseParam.timeWindow = 0;
 
 costMatrices(1).funcName = 'costMatLinearMotionLink';
