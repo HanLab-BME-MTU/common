@@ -429,12 +429,12 @@ fprintf(fid, [str_line,'\n  \r\n']);
 strings{11}=str_line;
 
 str_line = ['The average VIM Total Amount in the whole cell: ', ...
-    num2str(BA_output.whole_cell_vif_mean_intensity),'.'];
+    num2str(BA_output.whole_cell_vim_totalamount_mean),'.'];
 fprintf(fid, [str_line,'\n  \r\n']);
 strings{12}=str_line;
 
 str_line = ['The average cell size: ', ...
-    num2str(BA_output.whole_cell_vif_mean_intensity),' pixels.'];
+    num2str(BA_output.whole_cell_size_mean),' pixels.'];
 fprintf(fid, [str_line,'\n  \r\n']);
 strings{13}=str_line;
 

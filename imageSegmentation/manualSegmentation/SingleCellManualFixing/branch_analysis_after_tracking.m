@@ -32,8 +32,8 @@ for iCompleteFrame = 1 : nCompleteFrame
         RG_framem1(:,:,1) = smoothed_current_mask;
         
         cell_vif_pool = [cell_vif_pool; current_VIF_image(smoothed_current_mask>0)];
-        cell_size_pool = [cell_size_pool; sum(sum(smoothed_current_mask>0)));
-        cell_vimtotal_pool = [cell_vimtotal_pool; sum((current_VIF_image(smoothed_current_mask>0)));
+        cell_size_pool = [cell_size_pool; sum(sum(smoothed_current_mask>0))];
+        cell_vimtotal_pool = [cell_vimtotal_pool; sum(current_VIF_image(smoothed_current_mask>0))];
         
         if iCompleteFrame>1
             RG_framem1(:,:,2) = smoothed_mask_cell{1,iCompleteFrame-1};
@@ -131,6 +131,7 @@ for iCompleteFrame = 1 : nCompleteFrame
     for iL = 1 : trackedBranches        
         vif_pixel_values = current_VIF_image(find(labelMask==iL));
         vif_mean_matrix(iCompleteFrame,iL) = mean(vif_pixel_values);
+        branch_size_matrix(iCompleteFrame,iL) = length(find(labelMask==iL));
     end
     
     title('Branches','FontSize',15);
@@ -141,12 +142,14 @@ for iCompleteFrame = 1 : nCompleteFrame
 end
 BA_output.branch_vif_mean_intensity  = nanmean(vif_mean_matrix);
 
+BA_output.branch_mean_size  = nanmean(branch_size_matrix);
+
 BA_output.protrusion_vif_mean_intensity =  mean(red_vif_t_pool);
 
 BA_output.retraction_vif_mean_intensity =  mean(green_vif_tm1_pool);
 
 BA_output.whole_cell_vif_mean_intensity =  mean(cell_vif_pool);
 
-BA_output.whole_cell_vim_totalamount_mean  = mean(cell_size_pool);
+BA_output.whole_cell_vim_totalamount_mean  = mean(cell_vimtotal_pool);
 
-BA_output.whole_cell_size_mean  = mean(cell_vimtotal_pool);
+BA_output.whole_cell_size_mean  = mean(cell_size_pool);

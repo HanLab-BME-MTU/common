@@ -131,9 +131,9 @@ for iCompleteFrame = 1 : nCompleteFrame
 
 load([outputPath,'\branch_analysis_results.mat'],'BA_output');
 
-BA_output.whole_cell_vim_totalamount_mean = mean(cell_size_pool);
+BA_output.whole_cell_vim_totalamount_mean = mean(cell_vimtotal_pool);
 
-BA_output.whole_cell_size_mean = mean(cell_vimtotal_pool);
+BA_output.whole_cell_size_mean = mean(cell_size_pool);
 
 save([outputPath,'\branch_analysis_results.mat'],'BA_output');
 
