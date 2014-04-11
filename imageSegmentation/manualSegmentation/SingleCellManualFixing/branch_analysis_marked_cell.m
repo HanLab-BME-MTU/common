@@ -428,6 +428,16 @@ str_line = ['The average VIM intensity in the whole cell: ', ...
 fprintf(fid, [str_line,'\n  \r\n']);
 strings{11}=str_line;
 
+str_line = ['The average VIM Total Amount in the whole cell: ', ...
+    num2str(BA_output.whole_cell_vif_mean_intensity),'.'];
+fprintf(fid, [str_line,'\n  \r\n']);
+strings{12}=str_line;
+
+str_line = ['The average cell size: ', ...
+    num2str(BA_output.whole_cell_vif_mean_intensity),' pixels.'];
+fprintf(fid, [str_line,'\n  \r\n']);
+strings{13}=str_line;
+
 fclose(fid);
  
 lbh = uicontrol(display_message_window,'style','text','Units','normalized','position',...
