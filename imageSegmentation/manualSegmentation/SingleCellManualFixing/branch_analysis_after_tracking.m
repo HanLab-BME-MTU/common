@@ -12,6 +12,9 @@ red_vif_t_pool=[];
 green_vif_tm1_pool=[];
 cell_vif_pool = [];
 
+cell_size_pool = [];
+cell_vimtotal_pool = [];
+
 for iCompleteFrame = 1 : nCompleteFrame
     %     current_seg = current_seg_cell{1,iFrame};
     iFrame = iCompleteFrame+FirstFrame-1;
@@ -29,6 +32,8 @@ for iCompleteFrame = 1 : nCompleteFrame
         RG_framem1(:,:,1) = smoothed_current_mask;
         
         cell_vif_pool = [cell_vif_pool; current_VIF_image(smoothed_current_mask>0)];
+        cell_size_pool = [cell_size_pool; sum(sum(smoothed_current_mask>0)));
+        cell_vimtotal_pool = [cell_vimtotal_pool; sum((current_VIF_image(smoothed_current_mask>0)));
         
         if iCompleteFrame>1
             RG_framem1(:,:,2) = smoothed_mask_cell{1,iCompleteFrame-1};
@@ -141,3 +146,7 @@ BA_output.protrusion_vif_mean_intensity =  mean(red_vif_t_pool);
 BA_output.retraction_vif_mean_intensity =  mean(green_vif_tm1_pool);
 
 BA_output.whole_cell_vif_mean_intensity =  mean(cell_vif_pool);
+
+BA_output.whole_cell_vim_totalamount_mean  = mean(cell_size_pool);
+
+BA_output.whole_cell_size_mean  = mean(cell_vimtotal_pool);
