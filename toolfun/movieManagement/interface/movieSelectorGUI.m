@@ -543,7 +543,7 @@ end
 try
     ctx = session.getAdminService().getEventContext();
 catch ME
-    errordlg(ME.message,...
+    errordlg('OMERO connection lost or not initialized.',...
         'Connection error', 'modal');
     return
 end
