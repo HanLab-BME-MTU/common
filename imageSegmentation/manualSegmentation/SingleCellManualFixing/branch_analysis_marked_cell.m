@@ -22,7 +22,8 @@ function BA_output = branch_analysis_marked_cell(MD, iChannel, iCell, figure_fla
 %           protrusion_vif_mean_intensity: the average vim intensity in the protrusion(the red) region, among all frames.
 %           retraction_vif_mean_intensity: the average vim intensity in the retraction(the green) region, among all frames.
 
-
+display(['iChannel:', num2str(iChannel),', iCell:', num2str(iCell)]);
+           
 package_process_ind_script;
 
 if(iChannel==1)
@@ -33,20 +34,30 @@ end
 
 ROOT_DIR = MD.outputDirectory_;
 
-if(exist([ROOT_DIR,'\FilamentAnalysisPackage\refined_masks\'],'dir'))
+FilamentAnalysisPackage_complete_frames_file_name = [ROOT_DIR,'\','FilamentAnalysisPackage','\completedFramesChannel',num2str(iChannel),'Cell',num2str(iCell),'\completedFrames.mat'];
+SegmentationPackage_complete_frames_file_name = [ROOT_DIR,'\','SegmentationPackage','\completedFramesChannel',num2str(iChannel),'Cell',num2str(iCell),'\completedFrames.mat'];
+
+if(exist(FilamentAnalysisPackage_complete_frames_file_name,'file'))
     PackageName = 'FilamentAnalysisPackage';
-else
+end
+
+if(exist(SegmentationPackage_complete_frames_file_name,'file'))
     PackageName = 'SegmentationPackage';
 end
+
 
 load([ROOT_DIR,'\',PackageName,'\completedFramesChannel',num2str(iChannel),'Cell',num2str(iCell),'\completedFrames.mat'],'isCompleted');
 truthPath = [ROOT_DIR,'\',PackageName,'\FixedChannel',num2str(iChannel),'Cell',num2str(iCell)];
 outputPath = [ROOT_DIR,'\BranchAnalysisChannel',num2str(iChannel),'Cell',num2str(iCell)];
 
+if(sum(isCompleted)==0)
+    BA_output=[];
+    return;
+end
+
 if(~exist(outputPath,'dir'))
     mkdir(outputPath);
 end
-
 
 % only use the longest continuously marked sequence
 isCompleted = keep_largest_area(isCompleted);
@@ -70,6 +81,8 @@ max_y = 1;
 max_x = 1;
 
 for iFrame = CompletedFrame
+    display(['iChannel:', num2str(iChannel),', iCell:', num2str(iCell),', iFrame:',num2str(iFrame) ]);
+           
     iCompleteFrame = iFrame - FirstFrame +1;
     
     current_mask = imread([truthPath,'/mask_',num2str(iFrame),'.tif']);
@@ -116,14 +129,16 @@ end
 %     imwrite(smoothed_mask_cell{1,iCompleteFrame}, [outputPath,'\smoothed_marked_mask_',num2str(iCompleteFrame),'.tif']);
 % end
 
-color_array = [1 0 0; 0 1 0; 0 0 1; 1 0 1; 1 1 0; 0 1 1; rand(194,3)];
-region_branch_label_cell = cell(1,200);
-label_skel_cell = cell(1,200);
-branch_leaf_flag_cell= cell(1,200);
-% region_branch_wo_inner_label_cell= cell(1,200);
-% label_skel__wo_inner_cell{iCompleteFrame}= cell(1,200);
+color_array = [1 0 0; 0 1 0; 0 0 1; 1 0 1; 1 1 0; 0 1 1; rand(294,3)];
+region_branch_label_cell = cell(1,300);
+label_skel_cell = cell(1,300);
+branch_leaf_flag_cell= cell(1,300);
+% region_branch_wo_inner_label_cell= cell(1,300);
+% label_skel__wo_inner_cell{iCompleteFrame}= cell(1,300);
 
 for iCompleteFrame = 1 : nCompleteFrame
+    display(['iChannel:', num2str(iChannel),', iCell:', num2str(iCell),', iCompleteFrame:',num2str(iCompleteFrame) ]);
+    
     current_mask = raw_mask_cell{1,iCompleteFrame};
     
     current_seg = current_seg_cell{1,iCompleteFrame};

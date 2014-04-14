@@ -10,35 +10,15 @@ movieNumber =  length(ML.movieDataFile_);
 BA_output_cell= cell(1,1);
 
 for iM  = 1 :movieNumber
+    
+    clearvars -except 'movieNumber' 'BA_output_cell' 'iM' 'ML' 'figure_flag'
+    
     % load this movie
     load(ML.movieDataFile_{iM});
     % the number of channels
-    nChannel = length(MD.channels_);
     
-     ROOT_DIR = MD.outputDirectory_;        
-     
-     if(exist([ROOT_DIR,'\FilamentAnalysisPackage\refined_masks\'],'dir'))
-         PackageName = 'FilamentAnalysisPackage';
-     else
-         PackageName = 'SegmentationPackage';
-     end
+    BA_output_cell = branch_analysis_movieData(MD,figure_flag);  
     
-    for iChannel = 1 : nChannel        
-        for iCell = 1 : 10
-            % the folder name if there is marking
-            truthPath = [ROOT_DIR,'\',PackageName,'\FixedChannel',num2str(iChannel),'Cell',num2str(iCell)];
-            % check if this folder exist
-            if(exist(truthPath,'dir'))
-                % if it exist, try to do the branch analysis
-%                 try
-                    BA_output = branch_analysis_marked_cell(MD, iChannel, iCell,figure_flag);
-                    % for the output, ignore the channel number since
-                    % there is only one channel marked.
-                    BA_output_cell{iM, iCell} = BA_output;
-%                 end
-            end
-        end        
-    end
 end
 
  ML_ROOT_DIR = ML.outputDirectory_;
