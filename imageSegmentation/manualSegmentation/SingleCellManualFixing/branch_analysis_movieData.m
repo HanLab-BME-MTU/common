@@ -18,6 +18,7 @@ for iChannel = 1 : nChannel
         
         FilamentAnalysisPackage_complete_frames_file_name = [ROOT_DIR,'\','FilamentAnalysisPackage','\completedFramesChannel',num2str(iChannel),'Cell',num2str(iCell),'\completedFrames.mat'];
         SegmentationPackage_complete_frames_file_name = [ROOT_DIR,'\','SegmentationPackage','\completedFramesChannel',num2str(iChannel),'Cell',num2str(iCell),'\completedFrames.mat'];
+        PackageName=[];
         
         if(exist(FilamentAnalysisPackage_complete_frames_file_name,'file'))
             PackageName = 'FilamentAnalysisPackage';
@@ -25,6 +26,10 @@ for iChannel = 1 : nChannel
         
         if(exist(SegmentationPackage_complete_frames_file_name,'file'))
             PackageName = 'SegmentationPackage';
+        end
+        
+        if(isempty(PackageName))
+            continue;
         end
         
         % the folder name if there is marking

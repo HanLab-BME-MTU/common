@@ -1,4 +1,4 @@
-function BA_output = branch_analysis_marked_cell(MD, iChannel, iCell, figure_flag)
+function [BA_output, f_display] = branch_analysis_marked_cell(MD, iChannel, iCell, figure_flag)
 % function to do branch analysis for marked cells
 % Liya Ding, Feb, 2014
 %
@@ -55,12 +55,18 @@ if(sum(isCompleted)==0)
     return;
 end
 
-if(~exist(outputPath,'dir'))
-    mkdir(outputPath);
-end
 
 % only use the longest continuously marked sequence
 isCompleted = keep_largest_area(isCompleted);
+
+if(sum(isCompleted)<5)
+    BA_output=[];
+    return;
+end
+
+if(~exist(outputPath,'dir'))
+    mkdir(outputPath);
+end
 
 CompletedFrame = find(isCompleted>0);
 CompletedFrame = CompletedFrame(:);
@@ -129,12 +135,12 @@ end
 %     imwrite(smoothed_mask_cell{1,iCompleteFrame}, [outputPath,'\smoothed_marked_mask_',num2str(iCompleteFrame),'.tif']);
 % end
 
-color_array = [1 0 0; 0 1 0; 0 0 1; 1 0 1; 1 1 0; 0 1 1; rand(294,3)];
-region_branch_label_cell = cell(1,300);
-label_skel_cell = cell(1,300);
-branch_leaf_flag_cell= cell(1,300);
-% region_branch_wo_inner_label_cell= cell(1,300);
-% label_skel__wo_inner_cell{iCompleteFrame}= cell(1,300);
+color_array = [1 0 0; 0 1 0; 0 0 1; 1 0 1; 1 1 0; 0 1 1; rand(494,3)];
+region_branch_label_cell = cell(1,500);
+label_skel_cell = cell(1,500);
+branch_leaf_flag_cell= cell(1,500);
+% region_branch_wo_inner_label_cell= cell(1,500);
+% label_skel__wo_inner_cell{iCompleteFrame}= cell(1,500);
 
 for iCompleteFrame = 1 : nCompleteFrame
     display(['iChannel:', num2str(iChannel),', iCell:', num2str(iCell),', iCompleteFrame:',num2str(iCompleteFrame) ]);
@@ -204,7 +210,7 @@ for iCompleteFrame = 1 : nCompleteFrame
        
          if(sum(end_points_map(find(labelMask==iL)))==0 && ...
                 sum(boundary_map(find(Lia>0)))==0 && ...
-                length(this_branch_IDX)<3)
+                length(this_branch_IDX)<30)
             branch_leaf_flag(iL)=0;
             labelMask_without_inner(find(labelMask==iL))=0;
             region_branch_wo_inner_label(Lia>0)=0;
@@ -333,10 +339,13 @@ kalmanFunctions.initialize = 'kalmanInitLinearMotion';
 kalmanFunctions.calcGain = 'kalmanGainLinearMotion';
 kalmanFunctions.timeReverse = 'kalmanReverseLinearMotion';
 
+try
 [tracksFinal,kalmanInfoLink,errFlag] = trackCloseGapsKalmanSparse(...
     movieInfo,costMatrices,gapCloseParam,kalmanFunctions,[],...
     [],[]);
-
+catch    
+    return;
+end
 
 new_label_skel_cell =  label_skel_cell;
 new_region_branch_label_cell = region_branch_label_cell;
@@ -375,6 +384,10 @@ for iT = 1 : length(tracksFinal)
 end
 BA_output.branch_duration_mean = mean(BA_output.branch_duration_array);
 
+
+color_array = [1 0 0; 0 1 0; 0 0 1; 1 0 1; 1 1 0; 0 1 1; rand(max(494,max(length(tracksFinal))-6),3)];
+      
+
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % more analysis and plotting
@@ -383,7 +396,9 @@ branch_analysis_after_tracking;
 %%
 % display and save results
 
-f_display = figure('menu','none','toolbar','none');
+f_display = figure();
+
+set(f_display,'menu','none','toolbar','none');
 fid = fopen([outputPath,'\branch_analysis_report.txt'],'wt');
 display_message_window = uipanel(f_display,'Units','normalized', ...
     'position',[0.1 0.1 0.8 0.8], ...
@@ -460,7 +475,6 @@ lbh = uicontrol(display_message_window,'style','text','Units','normalized','posi
 set(lbh,'HorizontalAlignment','left');
 
 set(lbh,'string',strings);
-
 
 save([outputPath,'\branch_analysis_results.mat'],'BA_output');
 

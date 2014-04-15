@@ -1,4 +1,4 @@
-function BA_output_cell = branch_analysis_movieList(ML,figure_flag)
+function BA_output_ML_cell = branch_analysis_movieList(ML,figure_flag)
 % function to do branch analysis for a whole movielist
 % Liya Ding, March, 2014
 %
@@ -7,21 +7,25 @@ function BA_output_cell = branch_analysis_movieList(ML,figure_flag)
 
 % the number of movies
 movieNumber =  length(ML.movieDataFile_);
-BA_output_cell= cell(1,1);
+BA_output_ML_cell= cell(1,1);
 
 for iM  = 1 :movieNumber
     
     clearvars -except 'movieNumber' 'BA_output_cell' 'iM' 'ML' 'figure_flag'
     
+    close all;
+    
     % load this movie
     load(ML.movieDataFile_{iM});
     % the number of channels
-    
-    BA_output_cell = branch_analysis_movieData(MD,figure_flag);  
+    display('======================================================================');
+    display(['iM:', num2str(iM)]);
+                     
+    BA_output_ML_cell{1, iM} = branch_analysis_movieData(MD,figure_flag);  
     
 end
 
  ML_ROOT_DIR = ML.outputDirectory_;
- save([ML_ROOT_DIR,'\movieList_BA_output.mat'],'BA_output_cell');
+ save([ML_ROOT_DIR,'\movieList_BA_output.mat'],'BA_output_ML_cell');
 
  
