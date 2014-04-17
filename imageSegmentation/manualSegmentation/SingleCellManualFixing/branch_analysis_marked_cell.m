@@ -210,7 +210,7 @@ for iCompleteFrame = 1 : nCompleteFrame
        
          if(sum(end_points_map(find(labelMask==iL)))==0 && ...
                 sum(boundary_map(find(Lia>0)))==0 && ...
-                length(this_branch_IDX)<30)
+                length(this_branch_IDX)<100)
             branch_leaf_flag(iL)=0;
             labelMask_without_inner(find(labelMask==iL))=0;
             region_branch_wo_inner_label(Lia>0)=0;

@@ -51,7 +51,7 @@ for iML = 1 : nList
             for iChannel = 1 : nChannel
                 for iCell = 1 : 20
                     
-                    display(['iML: ',num2str(iML), ', iM:', num2str(iM), ', iChannel:', num2str(iChannel),', iCell:', num2str(iCell)]);
+%                     display(['iML: ',num2str(iML), ', iM:', num2str(iM), ', iChannel:', num2str(iChannel),', iCell:', num2str(iCell)]);
                     
                     
                     % the folder name if there is marking
@@ -103,6 +103,7 @@ Group_Pool_branch_number_mean_pat=[];
 Group_Pool_whole_cell_vim_totalamount_mean=[];
 Group_Pool_whole_cell_vif_mean_intensity_pat=[];
 Group_Pool_branch_size_mean=[];
+Group_Pool_thresholded_branch_number_mean=[];
 
 iAllCell = 0;
 
@@ -148,6 +149,11 @@ for iML = 1 : nList
                             Group_Pool_whole_cell_vif_mean_intensity_pat = [Group_Pool_whole_cell_vif_mean_intensity_pat repmat(BA_output.whole_cell_vif_mean_intensity, [1, length(BA_output.branch_vif_mean_intensity)])];
                             Group_Pool_whole_cell_vim_totalamount_mean = [Group_Pool_whole_cell_vim_totalamount_mean BA_output.whole_cell_vim_totalamount_mean];
                             
+                            
+                            Thresholded_branch_number_mean = sum(BA_output.branch_duration_array(find(BA_output.branch_mean_size>T_branchsize & BA_output.branch_duration_array>T_branchduration)))...
+                                        ./ BA_output.cell_marked_frame_number;
+                            Group_Pool_thresholded_branch_number_mean = [Group_Pool_thresholded_branch_number_mean Thresholded_branch_number_mean];
+                                                     
                             
                             Group_Pool_Travel_Length = [Group_Pool_Travel_Length BA_output.cell_travel_length];
                             Group_Pool_Travel_Distance = [Group_Pool_Travel_Distance BA_output.cell_travel_distance];
@@ -233,6 +239,23 @@ ylabel('Cell Vim mean Int');
 title(['Branch number vs Vim (Sample number: ', num2str(length(Group_Pool_whole_cell_vif_mean_intensity)),')']);
 saveas(h8,[Group_ROOT_DIR,'\Branchness_vs_Vim.fig']);
 saveas(h8,[Group_ROOT_DIR,'\Branchness_vs_Vim.jpg']);
+h8_axis = axis;
+
+h18 = figure(18);hold off;
+% plot(Group_Pool_branch_number_mean, Group_Pool_whole_cell_vif_mean_intensity,'.');
+for i = 1 : length(Group_Pool_whole_cell_vif_mean_intensity)
+text(Group_Pool_thresholded_branch_number_mean(i)-0.02, Group_Pool_whole_cell_vif_mean_intensity(i)+10, num2str(i), 'color',colorarray(i,:));
+hold on;
+plot(Group_Pool_thresholded_branch_number_mean(i), Group_Pool_whole_cell_vif_mean_intensity(i), '.', 'color',colorarray(i,:))
+end
+xlabel('Branch Mean Number');
+ylabel('Cell Vim mean Int');
+title(['Branch number vs Vim, for branches larger than ',num2str(T_branchsize),' pixels, duration longer than ',num2str(T_branchduration),' frames']);
+axis(h8_axis);
+saveas(h18,[Group_ROOT_DIR,'\Branchness_vs_Vim_Thresholded.fig']);
+saveas(h18,[Group_ROOT_DIR,'\Branchness_vs_Vim_Thresholded.jpg']);
+corr_b_v_v = corrcoef(Group_Pool_whole_cell_vif_mean_intensity',Group_Pool_thresholded_branch_number_mean');
+display(['Corr for Branchness vs Vim: ',num2str(corr_b_v_v(1,2))]);
 
 
 
