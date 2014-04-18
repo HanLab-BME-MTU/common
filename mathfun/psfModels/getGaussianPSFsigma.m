@@ -28,6 +28,7 @@ ip.addRequired('M', @isscalar);
 ip.addRequired('pixelSize', @isscalar);
 ip.addRequired('lambda', @(x) all(cellfun(@(i) ischar(i) || isscalar(i),x)));
 ip.addParamValue('Display', false, @islogical);
+ip.addParamValue('Mode', 'epi', @(x) any(strcmpi(x, {'epi', 'tirf', 'confocal'})));
 ip.parse(NA, M, pixelSize, lambda, varargin{:});
 
 idx = find(cellfun(@ischar, lambda));
@@ -57,6 +58,10 @@ sigma = zeros(1,nl);
 for i = 1:nl
     p.lambda = lambda{i};
     psf = vectorialPSF([0 0 0], 0, (2*ru)-1, p);
+    if strcmpi(ip.Results.Mode, 'confocal')
+        % approximation: in theory this should be psf_ex.*psf_em
+        psf = psf.^2;
+    end
     [pG, ~, ~, res] = fitGaussian2D(psf, [0 0 max(psf(:)) 1 0], 'As');
     sigma(i) = pG(4);
     
