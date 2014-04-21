@@ -326,7 +326,8 @@ function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData
             
             % get point density around the cluster center
             if flagUseKDTree
-                ptIdNearest = kdtree_points.ball( ptClusterCenter, kernelSupport );
+                [ptIdNearest] = rangesearch(kdtree_points, ptOldMean, kernelSupport);
+                ptIdNearest = ptIdNearest{1};
             else                    
                 ptIdNearest = exhaustive_ball_query( ptData, ptClusterCenter, kernelSupport );                       
             end            
