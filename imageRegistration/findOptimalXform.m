@@ -184,5 +184,5 @@ end
 %Transform the input image with the new transformation
 inImage = imtransform(inImage,dumXf,'XData',[1 size(baseImage,2)],'YData',[1 size(baseImage,1)],'FillValues',NaN);
 
-%Calculate the RMSD between the two images. Ignore NaNs.
-imErr = sqrt(nanmean(((baseImage(:) - inImage(:)) .^2 )));
+%Calculate the MSD between the two images. Ignore NaNs.
+imErr = nanmean(((baseImage(:) - inImage(:)) .^2 ));

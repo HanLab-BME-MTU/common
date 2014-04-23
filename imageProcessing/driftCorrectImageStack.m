@@ -1,7 +1,8 @@
-function imStackCorr = driftCorrectImageStack(imStack,varargin)
+function [imStackCorr,maxCorr,imTform] = driftCorrectImageStack(imStack,varargin)
 %DRIFTCORRECTIMAGESTACK performs drift correction / image stabilization / intra-stack registration on the input image stack
 %
-% [imStackCorr,tForms] = driftCorrectImageStack(imStack)
+% imStackCorr = driftCorrectImageStack(imStack)
+% [imStackCorr,xyTranslation,refineXform] = driftCorrectImageStack(imStack)
 %
 % This function attempts to correct for drift/misalignment in the input
 % image stack in a two-step approach. First the images are aligned by
@@ -58,6 +59,8 @@ nCorr = numel(corrInd);
 %We need to keep track of filled in values in case they're NaNs
 trackFill = false(imSize);
 
+maxCorr = nan(imSize(end),2);
+imTform = cell(imSize(end),1);
 
 %% ----------- Correction --------- %%
 
@@ -73,8 +76,8 @@ for j = 1:nCorr
     imXcorr = convnfft(currRef - mean(currRef(:)),rot90(currCorr,2)-mean(currCorr(:)));
     %Find max correlation and shift accordingly
     [~,iMax] = max(imXcorr(:));    
-    [maxCorr(1), maxCorr(2)] = ind2sub(size(imXcorr),iMax);        
-    [Xi,Yi] = meshgrid((1:imSize(2))+imSize(2)-maxCorr(2),(1:imSize(1))+imSize(1)-maxCorr(1));
+    [maxCorr(corrInd(j),1), maxCorr(corrInd(j),2)] = ind2sub(size(imXcorr),iMax);        
+    [Xi,Yi] = meshgrid((1:imSize(2))+imSize(2)-maxCorr(corrInd(j),2),(1:imSize(1))+imSize(1)-maxCorr(corrInd(j),1));
     currCorr = interp2(currCorr,Xi,Yi,'nearest');%Lazy way to do shifting + fill NaNs
     trackFill(:,:,corrInd(j)) = isnan(currCorr);%Log these so they don't mess up the correlations/registrations and can be put back alter
     currCorr(isnan(currCorr)) = 0;
@@ -83,9 +86,9 @@ for j = 1:nCorr
     if p.DoRefinement
         %We can't call imregister directly because we want to specify fill
         %values
-        imTform = imregtform(currCorr,currRef,p.TransformType,optimizer,metric);        
+        imTform{corrInd(j)} = imregtform(currCorr,currRef,p.TransformType,optimizer,metric);        
         Rfixed = imref2d(size(currRef));
-        currCorr = imwarp(currCorr,imTform,'OutputView',Rfixed,'FillValues',NaN);
+        currCorr = imwarp(currCorr,imTform{corrInd(j)},'OutputView',Rfixed,'FillValues',NaN);
         trackFill(:,:,corrInd(j)) = trackFill(:,:,corrInd(j)) | isnan(currCorr);        
         currCorr(isnan(currCorr)) = 0;
     end
