@@ -159,7 +159,8 @@ classdef TestROI < TestCase & TestLibrary
         function testUnlinkSharedProcessFromROIByIndex(self)
             process = self.setUpProcess();
             rois = self.setUpRois();
-            rois(1).unlinkProcess(1);
+            status = rois(1).unlinkProcess(1);
+            assertTrue(status);
             assertEqual(self.movie.processes_, {process});
             for i = 2: self.nRois
                 assertEqual(rois(i).processes_, {process});
@@ -170,12 +171,35 @@ classdef TestROI < TestCase & TestLibrary
         function testUnlinkSharedProcessFromROIByObject(self)
             process = self.setUpProcess();
             rois = self.setUpRois();
-            rois(1).unlinkProcess(process);
+            status = rois(1).unlinkProcess(process);
+            assertTrue(status);
             assertEqual(self.movie.processes_, {process});
             for i = 2: self.nRois
                 assertEqual(rois(i).processes_, {process});
             end
             assertTrue(isempty(rois(1).processes_));
+        end
+        
+        function testUnlinkUnsharedProcessFromROIByIndex(self)
+            rois = self.setUpRois();
+            process = self.setUpProcess();
+            status = rois(1).unlinkProcess(1);
+            assertFalse(status);
+            assertEqual(self.movie.processes_, {process});
+            for i = 2: self.nRois
+                assertTrue(isempty(rois(i).processes_));
+            end
+        end
+        
+        function testUnlinkUnSharedProcessFromROIByObject(self)
+            rois = self.setUpRois();
+            process = self.setUpProcess();
+            status = rois(1).unlinkProcess(process);
+            assertFalse(status);
+            assertEqual(self.movie.processes_, {process});
+            for i = 1 : self.nRois
+                assertTrue(isempty(rois(i).processes_));
+            end
         end
         
         function testReplaceSharedProcess(self)
@@ -250,7 +274,8 @@ classdef TestROI < TestCase & TestLibrary
         function testUnlinkSharedPackageFromROIByIndex(self)
             package = self.setUpPackage();
             rois = self.setUpRois();
-            rois(1).unlinkPackage(1);
+            status = rois(1).unlinkPackage(1);
+            assertTrue(status);
             assertEqual(self.movie.packages_, {package});
             for i = 2: self.nRois
                 assertEqual(rois(i).packages_, {package});
@@ -261,12 +286,35 @@ classdef TestROI < TestCase & TestLibrary
         function testUnlinkSharedPackageFromROIByObject(self)
             package = self.setUpPackage();
             rois = self.setUpRois();
-            rois(1).unlinkPackage(package);
+            status = rois(1).unlinkPackage(package);
+            assertTrue(status);
             assertEqual(self.movie.packages_, {package});
             for i = 2: self.nRois
                 assertEqual(rois(i).packages_, {package});
             end
             assertTrue(isempty(rois(1).packages_));
+        end
+        
+        function testUnlinkUnsharedPackageFromROIByIndex(self)
+            rois = self.setUpRois();
+            package = self.setUpPackage();
+            status = rois(1).unlinkPackage(1);
+            assertFalse(status);
+            assertEqual(self.movie.packages_, {package});
+            for i = 1 : self.nRois
+                assertTrue(isempty(rois(i).packages_));
+            end
+        end
+        
+        function testUnlinkUnsharedPackageFromROIByObject(self)
+            rois = self.setUpRois();
+            package = self.setUpPackage();
+            status = rois(1).unlinkPackage(package);
+            assertFalse(status);
+            assertEqual(self.movie.packages_, {package});
+            for i = 1 : self.nRois
+                assertTrue(isempty(rois(i).packages_));
+            end
         end
         
         %% cleanupROIPackages integration tests

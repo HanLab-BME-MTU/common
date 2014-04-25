@@ -144,17 +144,21 @@ classdef  MovieObject < hgsetget
             proc = obj.processes_{i};
         end
         
-        function unlinkProcess(obj, process)
+        function status = unlinkProcess(obj, process)
             % Unlink process from processes list
             
             id = [];
+            status = false;
             if isa(process, 'Process')
                 id = find(cellfun(@(x) isequal(x,process), obj.processes_), 1);
             elseif isscalar(process) && ismember(process, 1:numel(obj.processes_))
                 id = process;
             end
             
-            if ~isempty(id), obj.processes_(id) = [ ]; end
+            if ~isempty(id),
+                obj.processes_(id) = [ ];
+                status = true;
+            end
         end
         
         function deleteProcess(obj, process)
