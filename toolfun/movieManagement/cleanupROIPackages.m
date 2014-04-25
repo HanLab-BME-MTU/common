@@ -25,6 +25,7 @@ function cleanupROIPackages(MD, packageName, varargin)
 ip = inputParser();
 ip.addRequired('packageName', @ischar);
 ip.addOptional('process2keep', [], @isnumeric);
+ip.addOptional('verbose', true, @isscalar);
 ip.parse(packageName, varargin{:})
 
 % Retrieve package of input class from ancestor
@@ -34,7 +35,8 @@ package = ancestor.getPackage(packageIndex);
 
 % Unlink package and processes from children movies
 for movie  = ancestor.getDescendants()
-    cleanPackage(movie, package, ip.Results.process2keep)
+    cleanPackage(movie, package, ip.Results.process2keep,...
+        ip.Results.verbose);
 end
 
 % Return if no process is kept
@@ -42,10 +44,11 @@ if isempty(ip.Results.process2keep), return; end
 
 % Recreate packages and link kept process to each of them
 for movie  = ancestor.getDescendants()
-    recreatePackage(movie, package, ip.Results.process2keep)
+    recreatePackage(movie, package, ip.Results.process2keep,...
+        ip.Results.verbose);
 end
 
-function cleanPackage(movie, package, process2keep)
+function cleanPackage(movie, package, process2keep, verbose)
 
 % Compute list of processes to unlink
 processes2clean = ~cellfun(@isempty, package.processes_);
@@ -53,18 +56,40 @@ processes2clean(process2keep) = false;
 
 % Unlink processes and package
 for i = find(processes2clean)
-    movie.unlinkProcess(package.getProcess(i));
+    status = movie.unlinkProcess(package.getProcess(i));
+    if status && verbose,
+        fprintf(1, '  Unlinked %s process\n',...
+            package.getProcess(i).getName());
+    end
 end
-movie.unlinkPackage(package);
+status = movie.unlinkPackage(package);
+if status && verbose,
+    fprintf(1, '  Unlinked %s package\n', package.getName());
+end
 
-function recreatePackage(movie, package, process2keep)
+function recreatePackage(movie, package, process2keep, verbose)
 
 % Create a new package using the default constructor
-packageConstr = str2func(class(package));
-newPackage = packageConstr(movie);
-movie.addPackage(newPackage);
+packageName =  class(package);
+packageIndex = movie.getPackageIndex(packageName, 1, false);
+if ~isempty(packageIndex)
+    newPackage = movie.getPackage(packageIndex);
+    if verbose
+        fprintf(1, '  Retrieved %s package\n', newPackage.getName());
+    end
+else
+    packageConstr = str2func(class(package));
+    newPackage = packageConstr(movie);
+    movie.addPackage(newPackage);
+    if verbose
+        fprintf(1, '  Created %s package\n', newPackage.getName());
+    end
+end
 
 % Link parent processes
 for i = find(process2keep)
     newPackage.setProcess(i, package.getProcess(i));
+    if verbose
+        fprintf(1, '  Linked %s process\n', package.getProcess(i).getName());
+    end
 end

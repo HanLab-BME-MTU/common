@@ -321,7 +321,7 @@ classdef TestROI < TestCase & TestLibrary
         function testCleanupROIPackagesNoKeep(self)
             self.setUpPackage(true);
             rois = self.setUpRois();
-            cleanupROIPackages(self.movie, 'MockPackage');
+            cleanupROIPackages(self.movie, 'MockPackage', 'verbose', false);
             for i = 1: numel(self.movie.rois_)
                 assertTrue(isempty(rois(i).packages_));
                 assertTrue(isempty(rois(i).processes_));
@@ -332,7 +332,7 @@ classdef TestROI < TestCase & TestLibrary
             
             [package, process] = self.setUpPackage(true);
             rois = self.setUpRois();
-            cleanupROIPackages(self.movie, 'MockPackage', 1);
+            cleanupROIPackages(self.movie, 'MockPackage', 1, 'verbose', false);
             
             % Tests
             for i = 1: numel(self.movie.rois_)
@@ -348,7 +348,7 @@ classdef TestROI < TestCase & TestLibrary
             
             self.setUpPackage(true);
             rois = self.setUpRois();
-            cleanupROIPackages(rois(1), 'MockPackage');
+            cleanupROIPackages(rois(1), 'MockPackage', 'verbose', false);
             for i = 1: numel(self.movie.rois_)
                 assertTrue(isempty(rois(i).packages_));
                 assertTrue(isempty(rois(i).processes_));
@@ -359,7 +359,7 @@ classdef TestROI < TestCase & TestLibrary
             
             rois = self.setUpRois();
             package = self.setUpPackage(true);
-            cleanupROIPackages(self.movie, 'MockPackage');
+            cleanupROIPackages(self.movie, 'MockPackage', 'verbose', false);
             assertEqual(self.movie.packages_, {package});
             for i = 1: numel(self.movie.rois_)
                 assertTrue(isempty(rois(i).packages_));
@@ -371,9 +371,13 @@ classdef TestROI < TestCase & TestLibrary
             
             [package, process] = self.setUpPackage(true);
             rois = self.setUpRois();
-            cleanupROIPackages(self.movie, 'MockPackage', 1);
-            cleanupROIPackages(self.movie, 'MockPackage', 1);
+            cleanupROIPackages(self.movie, 'MockPackage', 1, 'verbose', false);
             for i = 1: numel(self.movie.rois_)
+                assertEqual(numel(rois(i).packages_), 1);
+            end
+            cleanupROIPackages(self.movie, 'MockPackage', 1, 'verbose', false);
+            for i = 1: numel(self.movie.rois_)
+                assertEqual(numel(rois(i).packages_), 1);
                 roiPackage = rois(i).getPackage(1);
                 assertTrue(isa(roiPackage, 'MockPackage'));
                 assertFalse(isequal(package, roiPackage));
