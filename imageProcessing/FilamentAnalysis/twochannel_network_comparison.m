@@ -21,7 +21,7 @@ end
 dist_pool_for_crossing=[];
 ang_pool_for_crossing=[];
     
-for iFrame = 1 : nFrame
+for iFrame = 13 : 29
     iFrame
     
     % VIF_current_model
@@ -59,7 +59,7 @@ for iFrame = 1 : nFrame
     h2=figure(2);imagesc(two_channel_seg);axis equal;axis off;
     saveas(h2,[outdir,filesep,'VIFMT_seg_frame_',num2str(iFrame),'.tif']);
     
-    radius=20;
+    radius=60;
     
     similarity_scoremap = network_similarity_scoremap(VIF_current_model,MT_current_model,img_size, radius,outdir,iFrame);
     
