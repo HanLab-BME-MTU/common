@@ -232,13 +232,17 @@ for iChannel = selected_channels
         end
         currentImg = double(currentImg);
         
+        %% % this part is commented out, since when there a lot of frames
+           % and dimension of the images is also high, the memory cost 
+           % of the tif stack is too high
         
-        if( save_tif_flag==1 && iFrame==Frames_to_Seg(1)  )
-            % Gelfand lab needs single file results for tif stack
-            tif_stack_binary_seg_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),length(Frames_to_Seg)));
-            tif_stack_RGB_heat_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),3,length(Frames_to_Seg)));
-        end
-        
+%         if( save_tif_flag==1 && iFrame==Frames_to_Seg(1)  )
+%             % Gelfand lab needs single file results for tif stack
+%             tif_stack_binary_seg_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),length(Frames_to_Seg)));
+%             tif_stack_RGB_heat_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),3,length(Frames_to_Seg)));
+%         end
+%       %%
+
         load([SteerableChannelOutputDir, filesep, 'steerable_', ...
             filename_short_strs{iFrame},'.mat']);
         
@@ -585,16 +589,20 @@ for iChannel = selected_channels
             end
         end
         
-        
-%         
-        if( save_tif_flag==1)
-%             current_seg = (imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']))>0;
-%             RGB_seg_orient_heat_map = imread([HeatEnhOutputDir,'/segment_heat_',filename_short_strs{iFrame},'.tif']);
+        %% % this part is commented out, since when there a lot of frames
+           % and dimension of the images is also high, the memory cost 
+           % of the tif stack is too high
+%           if( save_tif_flag==1)
+% %             current_seg = (imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']))>0;
+% %             RGB_seg_orient_heat_map = imread([HeatEnhOutputDir,'/segment_heat_',filename_short_strs{iFrame},'.tif']);
+% %             
+%             tif_stack_binary_seg_image_data(:,:,iFrame_index) = uint8(current_seg*255);
+%             tif_stack_RGB_heat_image_data(:,:,:,iFrame_index) = uint8(RGB_seg_orient_heat_map);
 %             
-            tif_stack_binary_seg_image_data(:,:,iFrame_index) = uint8(current_seg*255);
-            tif_stack_RGB_heat_image_data(:,:,:,iFrame_index) = uint8(RGB_seg_orient_heat_map);
-            
-        end
+%         end
+
+        %%
+        
     end
     %% For Gelfand Lab, save results as tif stack file
     if( save_tif_flag==1)

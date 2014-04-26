@@ -22,7 +22,7 @@ function varargout = filamentSegmentationProcessGUI(varargin)
 
 % Edit the above text to modify the response to help filamentSegmentationProcessGUI
 
-% Last Modified by GUIDE v2.5 18-Dec-2013 13:14:46
+% Last Modified by GUIDE v2.5 25-Apr-2014 17:23:59
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -79,33 +79,63 @@ if ~isempty(channelIndex)
 else
     channelString = {};
 end
-
-set(handles.listbox_selectedChannels,'String',channelString,...
-    'UserData',channelIndex);
-
 set(handles.edit_subsample_number,'String',funParams.Sub_Sample_Num);
-
-set(handles.edit_StPaceSize,'String',funParams.StPace_Size);
-set(handles.edit_StPatchSize,'String',funParams.StPatch_Size);
-set(handles.edit_st_lowerbound_localthresholding,'String',funParams.st_lowerbound_localthresholding);
-
-set(handles.edit_IntPaceSize,'String',funParams.IntPace_Size);
-set(handles.edit_IntPatchSize,'String',funParams.IntPatch_Size);
-set(handles.edit_int_lowerbound_localthresholding,'String',funParams.int_lowerbound_localthresholding);
-
-set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind);
-set(handles.popupmenu_whole_movie,'Value',funParams.Whole_movie_ind);
-
 set(handles.checkbox_outgrowth,'value',funParams.VIF_Outgrowth_Flag);
 
 set(handles.checkbox_nofiguredisruption,'value',funParams.nofiguredisruption);
 set(handles.checkbox_savefigures,'value',funParams.savestepfigures);
 set(handles.checkbox_showdetailmessage,'value',funParams.showdetailmessages);
 
+set(handles.listbox_selectedChannels,'String',channelString,...
+    'UserData',channelIndex);
+set(handles.listbox_selectedChannels,'Value',1);
+current_ch_ind = channelIndex(1);
+
+% in the case of single channel or same setting for all channel as in old
+% cases
+if(length(funParams.StPace_Size)==1)
+    ones_array = ones(1,numel(userData.MD.channels_));
+    funParams.StPace_Size = funParams.StPace_Size*ones_array;
+    funParams.StPatch_Size = funParams.StPatch_Size*ones_array;
+    funParams.st_lowerbound_localthresholding = funParams.st_lowerbound_localthresholding*ones_array;
+    funParams.IntPace_Size = funParams.IntPace_Size*ones_array;
+    funParams.IntPatch_Size = funParams.IntPatch_Size*ones_array;
+    funParams.int_lowerbound_localthresholding = funParams.int_lowerbound_localthresholding*ones_array;
+    funParams.Cell_Mask_ind = funParams.Cell_Mask_ind*ones_array;
+    funParams.Whole_movie_ind = funParams.Whole_movie_ind*ones_array;
+    
+    Combine_Way = funParams.Combine_Way;
+    
+    funParams.Combine_Way=cell(1,1);
+    
+   for iC = 1 : numel(userData.MD.channels_)
+        funParams.Combine_Way{iC}= Combine_Way;
+    end
+    
+    funParams.Classifier_Type_ind = funParams.Classifier_Type_ind*ones_array;
+    funParams.LengthThreshold = funParams.LengthThreshold*ones_array;
+    funParams.CurvatureThreshold = funParams.CurvatureThreshold*ones_array;
+    funParams.IternationNumber = funParams.IternationNumber*ones_array;
+    funParams.CoefAlpha = funParams.CoefAlpha*ones_array;
+    funParams.training_sample_number = funParams.training_sample_number*ones_array;
+end
+    
+% with the previous lines of expansion of single value to an array of all
+% possible channels, display the first selected channel
+set(handles.edit_StPaceSize,'String',funParams.StPace_Size(current_ch_ind));
+set(handles.edit_StPatchSize,'String',funParams.StPatch_Size(current_ch_ind));
+set(handles.edit_st_lowerbound_localthresholding,'String',funParams.st_lowerbound_localthresholding(current_ch_ind));
+
+set(handles.edit_IntPaceSize,'String',funParams.IntPace_Size(current_ch_ind));
+set(handles.edit_IntPatchSize,'String',funParams.IntPatch_Size(current_ch_ind));
+set(handles.edit_int_lowerbound_localthresholding,'String',funParams.int_lowerbound_localthresholding(current_ch_ind));
+
+set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind(current_ch_ind));
+set(handles.popupmenu_whole_movie,'Value',funParams.Whole_movie_ind(current_ch_ind));
 
 Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
 for Combine_Way_ind = 1 : 7
-    if(strcmp(funParams.Combine_Way, Combine_Way_tag{Combine_Way_ind}))
+    if(strcmp(funParams.Combine_Way{current_ch_ind}, Combine_Way_tag{Combine_Way_ind}))
         set(handles.popupmenu_segmentationbase,'Value',Combine_Way_ind);
         break;
     end
@@ -113,25 +143,24 @@ end
 
 % visible or not, show the parameters for the geo based algorithm
 % when visible, set the numbers
-set(handles.popupmenu_classifier_type,'Value',funParams.Classifier_Type_ind);
-
-set(handles.edit_lengththreshold,'String',funParams.LengthThreshold);
-set(handles.edit_curvaturethreshold,'String',funParams.CurvatureThreshold);
-set(handles.edit_IternationNumber,'String',funParams.IternationNumber);
-set(handles.edit_linear_plane_offset_alpha,'String',funParams.CoefAlpha);
-set(handles.edit_train_number,'String',funParams.training_sample_number);
+set(handles.popupmenu_classifier_type,'Value',funParams.Classifier_Type_ind(current_ch_ind));
+set(handles.edit_lengththreshold,'String',funParams.LengthThreshold(current_ch_ind));
+set(handles.edit_curvaturethreshold,'String',funParams.CurvatureThreshold(current_ch_ind));
+set(handles.edit_IternationNumber,'String',funParams.IternationNumber(current_ch_ind));
+set(handles.edit_linear_plane_offset_alpha,'String',funParams.CoefAlpha(current_ch_ind));
+set(handles.edit_train_number,'String',funParams.training_sample_number(current_ch_ind));
 
 % first set everything as invisible
 set(handles.uipanel_threshold_panel,'Visible','off');
 set(handles.uipanel_Geo_panel,'Visible','off');
 
-if (strcmp(funParams.Combine_Way,'geo_based_training') || strcmp(funParams.Combine_Way,'geo_based_GM'))
+if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training') || strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_GM'))
     % with Geo based approaches, use the geo panel and make the
     % thresholding panel invisible
     set(handles.uipanel_threshold_panel,'Visible','off');
     set(handles.uipanel_Geo_panel,'Visible','on');
     
-    if (strcmp(funParams.Combine_Way,'geo_based_training'))
+    if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training'))
         set(handles.edit_IternationNumber,'Enable','off');
     else
         set(handles.edit_IternationNumber,'Enable','on');
@@ -153,7 +182,7 @@ else
     
 end
 
-if (strcmp(funParams.Combine_Way,'st_only')||strcmp(funParams.Combine_Way,'st_nms_two')||strcmp(funParams.Combine_Way,'st_nms_only'))
+if (strcmp(funParams.Combine_Way{current_ch_ind},'st_only')||strcmp(funParams.Combine_Way{current_ch_ind},'st_nms_two')||strcmp(funParams.Combine_Way{current_ch_ind},'st_nms_only'))
     
     % with st based threhold based approaches, use the threhold panel and make the
     % Geo panel invisible
@@ -170,7 +199,7 @@ if (strcmp(funParams.Combine_Way,'st_only')||strcmp(funParams.Combine_Way,'st_nm
     set(handles.edit_int_lowerbound_localthresholding,'Enable','off');
 end
 
-if (strcmp(funParams.Combine_Way,'int_only'))
+if (strcmp(funParams.Combine_Way{current_ch_ind},'int_only'))
     % same here, with intensity threhold based approaches, use the threhold panel and make the
     % Geo panel invisible
     
@@ -187,11 +216,13 @@ if (strcmp(funParams.Combine_Way,'int_only'))
     set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
 end
 
-
 % Update user data and GUI data
 handles.output = hObject;
 set(hObject, 'UserData', userData);
 guidata(hObject, handles);
+
+processGUI_ApplyFcn_without_close_figure(hObject, eventdata, handles,funParams);
+
 
 % --- Outputs from this function are returned to the command line.
 function varargout = filamentSegmentationProcessGUI_OutputFcn(hObject, eventdata, handles) 
@@ -214,136 +245,137 @@ delete(handles.figure1);
 function pushbutton_done_Callback(hObject, eventdata, handles)
 % Call back function of 'Apply' button
 userData = get(handles.figure1, 'UserData');
+funParams = userData.crtProc.funParams_;
 
 % -------- Check user input --------
 if isempty(get(handles.listbox_selectedChannels, 'String'))
-   errordlg('Please select at least one input channel from ''Available Channels''.','Setting Error','modal') 
+    errordlg('Please select at least one input channel from ''Available Channels''.','Setting Error','modal')
     return;
 end
-channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
+channelIndex = get(handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
+currentChannelIndex = channelIndex;
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
-Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
-funParams.Combine_Way=Combine_Way_tag{Combine_Way_ind};
-
-StPace_Size = str2double(get(handles.edit_StPaceSize, 'String'));
-if isnan(StPace_Size) || StPace_Size < 0
-    errordlg(['Please provide a valid input for '''...
-        get(handles.text_PaceSize,'String') '''.'],'Setting Error','modal');
-    return;
-end
-funParams.StPace_Size=StPace_Size;
-
-StPatch_Size = str2double(get(handles.edit_StPatchSize, 'String'));
-if isnan(StPatch_Size) || StPatch_Size < 0
-    errordlg(['Please provide a valid input for '''...
-        get(handles.text_Patch_Size,'String') '''.'],'Setting Error','modal');
-    return;
-end
-funParams.StPatch_Size=StPatch_Size;
-
-
-st_lowerbound_localthresholding = str2double(get(handles.edit_st_lowerbound_localthresholding, 'String'));
-if isnan(st_lowerbound_localthresholding) || st_lowerbound_localthresholding < 0
-    errordlg(['Please provide a valid input for '''...
-        get(handles.text_lowerbound_localthresholding,'String') '''.'],'Setting Error','modal');
-    return;
-end
-funParams.st_lowerbound_localthresholding=st_lowerbound_localthresholding;
-
-
-IntPace_Size = str2double(get(handles.edit_IntPaceSize, 'String'));
-if isnan(IntPace_Size) || IntPace_Size < 0
-    errordlg(['Please provide a valid input for '''...
-        get(handles.text_PaceSize,'String') '''.'],'Setting Error','modal');
-    return;
-end
-funParams.IntPace_Size=IntPace_Size;
-
-IntPatch_Size = str2double(get(handles.edit_IntPatchSize, 'String'));
-if isnan(IntPatch_Size) || IntPatch_Size < 0
-    errordlg(['Please provide a valid input for '''...
-        get(handles.text_Patch_Size,'String') '''.'],'Setting Error','modal');
-    return;
-end
-funParams.IntPatch_Size=IntPatch_Size;
-
-
-int_lowerbound_localthresholding = str2double(get(handles.edit_int_lowerbound_localthresholding, 'String'));
-if isnan(int_lowerbound_localthresholding) || int_lowerbound_localthresholding < 0
-    errordlg(['Please provide a valid input for '''...
-        get(handles.text_lowerbound_localthresholding,'String') '''.'],'Setting Error','modal');
-    return;
-end
-funParams.int_lowerbound_localthresholding=int_lowerbound_localthresholding;
-
-Cell_Mask_ind = get(handles.popupmenu_cell_mask, 'Value');
-funParams.Cell_Mask_ind = Cell_Mask_ind;
-
-
-Whole_movie_ind = get(handles.popupmenu_whole_movie, 'Value');
-funParams.Whole_movie_ind = Whole_movie_ind;
-
-
-if(strcmp(get(handles.uipanel_Geo_panel,'Visible'),'on'))
-    Classifier_Type_ind = get(handles.popupmenu_classifier_type,'Value');
-    funParams.Classifier_Type_ind=Classifier_Type_ind;
+for this_channel_index = currentChannelIndex(:)
+    % if this channel has been specifically signed setting, 
+    % skip this channel 
+    if(length(funParams.channel_specific)>=this_channel_index)
+        if(funParams.channel_specific(this_channel_index)==1)
+            continue;
+        end
+    end
     
-    LengthThreshold = get(handles.edit_lengththreshold,'String');
-    funParams.LengthThreshold=LengthThreshold;
+    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
+    Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
+    funParams.Combine_Way(this_channel_index)=Combine_Way_tag{Combine_Way_ind};
     
-    
-    LengthThreshold = str2double(get(handles.edit_lengththreshold, 'String'));
-    if isnan(LengthThreshold) || LengthThreshold < 0
+    StPace_Size = str2double(get(handles.edit_StPaceSize, 'String'));
+    if isnan(StPace_Size) || StPace_Size < 0
         errordlg(['Please provide a valid input for '''...
-            get(handles.text53,'String') '''.'],'Setting Error','modal');
+            get(handles.text_PaceSize,'String') '''.'],'Setting Error','modal');
         return;
     end
-    funParams.LengthThreshold=LengthThreshold;
+    funParams.StPace_Size(this_channel_index)=StPace_Size;
     
-    
-    
-    CurvatureThreshold = str2double(get(handles.edit_curvaturethreshold, 'String'));
-    if isnan(CurvatureThreshold) || CurvatureThreshold < 0
+    StPatch_Size = str2double(get(handles.edit_StPatchSize, 'String'));
+    if isnan(StPatch_Size) || StPatch_Size < 0
         errordlg(['Please provide a valid input for '''...
-            get(handles.text52,'String') '''.'],'Setting Error','modal');
+            get(handles.text_Patch_Size,'String') '''.'],'Setting Error','modal');
         return;
     end
-    funParams.CurvatureThreshold=CurvatureThreshold;
-    
-     CoefAlpha = str2double(get(handles.edit_linear_plane_offset_alpha, 'String'));
-    if isnan(CoefAlpha) || CoefAlpha < -1
-        errordlg('Please provide a valid input for Alpha in the linear plane classifier','Setting Error','modal');
-        return;
-    end
-    funParams.CoefAlpha = CoefAlpha;
+    funParams.StPatch_Size(this_channel_index)=StPatch_Size;
     
     
-    training_sample_number = str2double(get(handles.edit_train_number, 'String'));
-    if isnan(training_sample_number) || training_sample_number < 0
-        errordlg('Please provide a valid input for training sample number','Setting Error','modal');
-        return;
-    end
-    funParams.training_sample_number = training_sample_number;
-    
-       
-    
-    IternationNumber = str2double(get(handles.edit_IternationNumber, 'String'));
-    if isnan(IternationNumber) || IternationNumber < 0
+    st_lowerbound_localthresholding = str2double(get(handles.edit_st_lowerbound_localthresholding, 'String'));
+    if isnan(st_lowerbound_localthresholding) || st_lowerbound_localthresholding < 0
         errordlg(['Please provide a valid input for '''...
-            get(handles.text51,'String') '''.'],'Setting Error','modal');
+            get(handles.text_lowerbound_localthresholding,'String') '''.'],'Setting Error','modal');
         return;
     end
-    funParams.IternationNumber=IternationNumber;
+    funParams.st_lowerbound_localthresholding(this_channel_index)=st_lowerbound_localthresholding;
     
+    
+    IntPace_Size = str2double(get(handles.edit_IntPaceSize, 'String'));
+    if isnan(IntPace_Size) || IntPace_Size < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_PaceSize,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.IntPace_Size(this_channel_index)=IntPace_Size;
+    
+    IntPatch_Size = str2double(get(handles.edit_IntPatchSize, 'String'));
+    if isnan(IntPatch_Size) || IntPatch_Size < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_Patch_Size,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.IntPatch_Size(this_channel_index)=IntPatch_Size;
+    
+    
+    int_lowerbound_localthresholding = str2double(get(handles.edit_int_lowerbound_localthresholding, 'String'));
+    if isnan(int_lowerbound_localthresholding) || int_lowerbound_localthresholding < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_lowerbound_localthresholding,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.int_lowerbound_localthresholding(this_channel_index)=int_lowerbound_localthresholding;
+    
+    Cell_Mask_ind = get(handles.popupmenu_cell_mask, 'Value');
+    funParams.Cell_Mask_ind(this_channel_index) = Cell_Mask_ind;
+    
+    
+    Whole_movie_ind = get(handles.popupmenu_whole_movie, 'Value');
+    funParams.Whole_movie_ind(this_channel_index) = Whole_movie_ind;
+    
+    
+    if(strcmp(get(handles.uipanel_Geo_panel,'Visible'),'on'))
+        Classifier_Type_ind = get(handles.popupmenu_classifier_type,'Value');
+        funParams.Classifier_Type_ind(this_channel_index)=Classifier_Type_ind;
+        
+               
+        LengthThreshold = str2double(get(handles.edit_lengththreshold, 'String'));
+        if isnan(LengthThreshold) || LengthThreshold < 0
+            errordlg(['Please provide a valid input for '''...
+                get(handles.text53,'String') '''.'],'Setting Error','modal');
+            return;
+        end
+        funParams.LengthThreshold(this_channel_index)=LengthThreshold;
+        
+        CurvatureThreshold = str2double(get(handles.edit_curvaturethreshold, 'String'));
+        if isnan(CurvatureThreshold) || CurvatureThreshold < 0
+            errordlg(['Please provide a valid input for '''...
+                get(handles.text52,'String') '''.'],'Setting Error','modal');
+            return;
+        end
+        funParams.CurvatureThreshold(this_channel_index)=CurvatureThreshold;
+        
+        CoefAlpha = str2double(get(handles.edit_linear_plane_offset_alpha, 'String'));
+        if isnan(CoefAlpha) || CoefAlpha < -1
+            errordlg('Please provide a valid input for Alpha in the linear plane classifier','Setting Error','modal');
+            return;
+        end
+        funParams.CoefAlpha(this_channel_index) = CoefAlpha;
+        
+        training_sample_number = str2double(get(handles.edit_train_number, 'String'));
+        if isnan(training_sample_number) || training_sample_number < 0
+            errordlg('Please provide a valid input for training sample number','Setting Error','modal');
+            return;
+        end
+        funParams.training_sample_number(this_channel_index) = training_sample_number;
+        
+        IternationNumber = str2double(get(handles.edit_IternationNumber, 'String'));
+        if isnan(IternationNumber) || IternationNumber < 0
+            errordlg(['Please provide a valid input for '''...
+                get(handles.text51,'String') '''.'],'Setting Error','modal');
+            return;
+        end
+        funParams.IternationNumber(this_channel_index)=IternationNumber;
+    end
 end
-
 
 
 VIF_Outgrowth_Flag = get(handles.checkbox_outgrowth,'value');
 funParams.VIF_Outgrowth_Flag = VIF_Outgrowth_Flag;
-
 
 nofiguredisruption = get(handles.checkbox_nofiguredisruption,'value');
 funParams.nofiguredisruption = nofiguredisruption;
@@ -1116,3 +1148,517 @@ set(hObject,'String',{'Completely', 'Half-half','None'});
 
 Whole_movie_flag = {'Completely', 'Half-half','None'};
 set(hObject,'Value',2);
+
+
+% --- Executes on button press in pushbutton_para_this_channel.
+function pushbutton_para_this_channel_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_para_this_channel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Call back function of 'Apply to this channel' button
+userData = get(handles.figure1, 'UserData');
+funParams = userData.crtProc.funParams_;
+
+% -------- Check user input --------
+if isempty(get(handles.listbox_selectedChannels, 'String'))
+    errordlg('Please select at least one input channel from ''Available Channels''.','Setting Error','modal')
+    return;
+end
+
+channelIndex = get(handles.listbox_selectedChannels, 'Userdata');
+
+funParams.ChannelIndex = channelIndex;
+
+blued_channel = get(handles.listbox_selectedChannels, 'Value');
+currentChannelIndex = channelIndex(blued_channel(1));
+
+for this_channel_index = currentChannelIndex(:)
+    % Mark 1 if this channel has been specifically signed setting
+    
+    funParams.channel_specific(this_channel_index)=1;
+   
+    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
+    Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
+    funParams.Combine_Way{this_channel_index}=Combine_Way_tag{Combine_Way_ind};
+    
+    StPace_Size = str2double(get(handles.edit_StPaceSize, 'String'));
+    if isnan(StPace_Size) || StPace_Size < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_PaceSize,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.StPace_Size(this_channel_index)=StPace_Size;
+    
+    StPatch_Size = str2double(get(handles.edit_StPatchSize, 'String'));
+    if isnan(StPatch_Size) || StPatch_Size < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_Patch_Size,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.StPatch_Size(this_channel_index)=StPatch_Size;
+    
+    
+    st_lowerbound_localthresholding = str2double(get(handles.edit_st_lowerbound_localthresholding, 'String'));
+    if isnan(st_lowerbound_localthresholding) || st_lowerbound_localthresholding < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_lowerbound_localthresholding,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.st_lowerbound_localthresholding(this_channel_index)=st_lowerbound_localthresholding;
+    
+    
+    IntPace_Size = str2double(get(handles.edit_IntPaceSize, 'String'));
+    if isnan(IntPace_Size) || IntPace_Size < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_PaceSize,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.IntPace_Size(this_channel_index)=IntPace_Size;
+    
+    IntPatch_Size = str2double(get(handles.edit_IntPatchSize, 'String'));
+    if isnan(IntPatch_Size) || IntPatch_Size < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_Patch_Size,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.IntPatch_Size(this_channel_index)=IntPatch_Size;
+    
+    
+    int_lowerbound_localthresholding = str2double(get(handles.edit_int_lowerbound_localthresholding, 'String'));
+    if isnan(int_lowerbound_localthresholding) || int_lowerbound_localthresholding < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_lowerbound_localthresholding,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.int_lowerbound_localthresholding(this_channel_index)=int_lowerbound_localthresholding;
+    
+    Cell_Mask_ind = get(handles.popupmenu_cell_mask, 'Value');
+    funParams.Cell_Mask_ind(this_channel_index) = Cell_Mask_ind;
+    
+    
+    Whole_movie_ind = get(handles.popupmenu_whole_movie, 'Value');
+    funParams.Whole_movie_ind(this_channel_index) = Whole_movie_ind;
+    
+    
+    if(strcmp(get(handles.uipanel_Geo_panel,'Visible'),'on'))
+        Classifier_Type_ind = get(handles.popupmenu_classifier_type,'Value');
+        funParams.Classifier_Type_ind(this_channel_index)=Classifier_Type_ind;
+        
+        LengthThreshold = str2double(get(handles.edit_lengththreshold, 'String'));
+        if isnan(LengthThreshold) || LengthThreshold < 0
+            errordlg(['Please provide a valid input for '''...
+                get(handles.text53,'String') '''.'],'Setting Error','modal');
+            return;
+        end
+        funParams.LengthThreshold(this_channel_index)=LengthThreshold;
+        
+        CurvatureThreshold = str2double(get(handles.edit_curvaturethreshold, 'String'));
+        if isnan(CurvatureThreshold) || CurvatureThreshold < 0
+            errordlg(['Please provide a valid input for '''...
+                get(handles.text52,'String') '''.'],'Setting Error','modal');
+            return;
+        end
+        funParams.CurvatureThreshold(this_channel_index)=CurvatureThreshold;
+        
+        CoefAlpha = str2double(get(handles.edit_linear_plane_offset_alpha, 'String'));
+        if isnan(CoefAlpha) || CoefAlpha < -1
+            errordlg('Please provide a valid input for Alpha in the linear plane classifier','Setting Error','modal');
+            return;
+        end
+        funParams.CoefAlpha(this_channel_index) = CoefAlpha;
+        
+        training_sample_number = str2double(get(handles.edit_train_number, 'String'));
+        if isnan(training_sample_number) || training_sample_number < 0
+            errordlg('Please provide a valid input for training sample number','Setting Error','modal');
+            return;
+        end
+        funParams.training_sample_number(this_channel_index) = training_sample_number;
+        
+        IternationNumber = str2double(get(handles.edit_IternationNumber, 'String'));
+        if isnan(IternationNumber) || IternationNumber < 0
+            errordlg(['Please provide a valid input for '''...
+                get(handles.text51,'String') '''.'],'Setting Error','modal');
+            return;
+        end
+        funParams.IternationNumber(this_channel_index)=IternationNumber;
+    end
+    msgbox(['Setting assigned to channel', num2str(this_channel_index)]);
+end
+
+
+VIF_Outgrowth_Flag = get(handles.checkbox_outgrowth,'value');
+funParams.VIF_Outgrowth_Flag = VIF_Outgrowth_Flag;
+
+nofiguredisruption = get(handles.checkbox_nofiguredisruption,'value');
+funParams.nofiguredisruption = nofiguredisruption;
+
+savestepfigures = get(handles.checkbox_savefigures,'value');
+funParams.savestepfigures = savestepfigures;
+
+showdetailmessages = get(handles.checkbox_showdetailmessage,'value');
+funParams.showdetailmessages = showdetailmessages;
+
+Sub_Sample_Num  = str2double(get(handles.edit_subsample_number, 'String'));
+if isnan(Sub_Sample_Num) || Sub_Sample_Num < 0
+    errordlg(['Please provide a valid input for '''...
+        get(handles.text_subsample,'String') '''.'],'Setting Error','modal');
+    return;
+end
+
+funParams.Sub_Sample_Num  = Sub_Sample_Num;
+    
+processGUI_ApplyFcn_without_close_figure(hObject, eventdata, handles,funParams);
+
+% --- Executes on button press in pushbutton_para_all_selected_channels.
+function pushbutton_para_all_selected_channels_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_para_all_selected_channels (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Call back function of 'Apply to all selected channel' button
+userData = get(handles.figure1, 'UserData');
+funParams = userData.crtProc.funParams_;
+
+% -------- Check user input --------
+if isempty(get(handles.listbox_selectedChannels, 'String'))
+    errordlg('Please select at least one input channel from ''Available Channels''.','Setting Error','modal')
+    return;
+end
+channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
+funParams.ChannelIndex = channelIndex;
+currentChannelIndex = channelIndex;
+  funParams.LengthThreshold=[];
+  
+for this_channel_index = currentChannelIndex(:)'
+    % even if this channel has been specifically signed setting, 
+    % re-assign acorrding to the current one.
+    funParams.channel_specific(this_channel_index)=0;
+    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
+    Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
+    funParams.Combine_Way{this_channel_index} = Combine_Way_tag{Combine_Way_ind};
+    
+    StPace_Size = str2double(get(handles.edit_StPaceSize, 'String'));
+    if isnan(StPace_Size) || StPace_Size < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_PaceSize,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.StPace_Size(this_channel_index)=StPace_Size;
+    
+    StPatch_Size = str2double(get(handles.edit_StPatchSize, 'String'));
+    if isnan(StPatch_Size) || StPatch_Size < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_Patch_Size,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.StPatch_Size(this_channel_index)=StPatch_Size;
+    
+    
+    st_lowerbound_localthresholding = str2double(get(handles.edit_st_lowerbound_localthresholding, 'String'));
+    if isnan(st_lowerbound_localthresholding) || st_lowerbound_localthresholding < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_lowerbound_localthresholding,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.st_lowerbound_localthresholding(this_channel_index)=st_lowerbound_localthresholding;
+    
+    
+    IntPace_Size = str2double(get(handles.edit_IntPaceSize, 'String'));
+    if isnan(IntPace_Size) || IntPace_Size < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_PaceSize,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.IntPace_Size(this_channel_index)=IntPace_Size;
+    
+    IntPatch_Size = str2double(get(handles.edit_IntPatchSize, 'String'));
+    if isnan(IntPatch_Size) || IntPatch_Size < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_Patch_Size,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.IntPatch_Size(this_channel_index)=IntPatch_Size;
+    
+    
+    int_lowerbound_localthresholding = str2double(get(handles.edit_int_lowerbound_localthresholding, 'String'));
+    if isnan(int_lowerbound_localthresholding) || int_lowerbound_localthresholding < 0
+        errordlg(['Please provide a valid input for '''...
+            get(handles.text_lowerbound_localthresholding,'String') '''.'],'Setting Error','modal');
+        return;
+    end
+    funParams.int_lowerbound_localthresholding(this_channel_index)=int_lowerbound_localthresholding;
+    
+    Cell_Mask_ind = get(handles.popupmenu_cell_mask, 'Value');
+    funParams.Cell_Mask_ind(this_channel_index) = Cell_Mask_ind;
+    
+    
+    Whole_movie_ind = get(handles.popupmenu_whole_movie, 'Value');
+    funParams.Whole_movie_ind(this_channel_index) = Whole_movie_ind;
+    
+   if(strcmp(get(handles.uipanel_Geo_panel,'Visible'),'on'))
+        Classifier_Type_ind = get(handles.popupmenu_classifier_type,'Value');
+        funParams.Classifier_Type_ind(this_channel_index)=Classifier_Type_ind;
+        
+        LengthThreshold = str2double(get(handles.edit_lengththreshold, 'String'));
+        if isnan(LengthThreshold) || LengthThreshold < 0
+            errordlg(['Please provide a valid input for '''...
+                get(handles.text53,'String') '''.'],'Setting Error','modal');
+            return;
+        end
+        funParams.LengthThreshold(this_channel_index)=LengthThreshold;
+        
+        CurvatureThreshold = str2double(get(handles.edit_curvaturethreshold, 'String'));
+        if isnan(CurvatureThreshold) || CurvatureThreshold < 0
+            errordlg(['Please provide a valid input for '''...
+                get(handles.text52,'String') '''.'],'Setting Error','modal');
+            return;
+        end
+        funParams.CurvatureThreshold(this_channel_index)=CurvatureThreshold;
+        
+        CoefAlpha = str2double(get(handles.edit_linear_plane_offset_alpha, 'String'));
+        if isnan(CoefAlpha) || CoefAlpha < -1
+            errordlg('Please provide a valid input for Alpha in the linear plane classifier','Setting Error','modal');
+            return;
+        end
+        funParams.CoefAlpha(this_channel_index) = CoefAlpha;
+        
+        training_sample_number = str2double(get(handles.edit_train_number, 'String'));
+        if isnan(training_sample_number) || training_sample_number < 0
+            errordlg('Please provide a valid input for training sample number','Setting Error','modal');
+            return;
+        end
+        funParams.training_sample_number(this_channel_index) = training_sample_number;
+        
+        IternationNumber = str2double(get(handles.edit_IternationNumber, 'String'));
+        if isnan(IternationNumber) || IternationNumber < 0
+            errordlg(['Please provide a valid input for '''...
+                get(handles.text51,'String') '''.'],'Setting Error','modal');
+            return;
+        end
+        funParams.IternationNumber(this_channel_index)=IternationNumber;
+    end
+end
+
+
+VIF_Outgrowth_Flag = get(handles.checkbox_outgrowth,'value');
+funParams.VIF_Outgrowth_Flag = VIF_Outgrowth_Flag;
+
+nofiguredisruption = get(handles.checkbox_nofiguredisruption,'value');
+funParams.nofiguredisruption = nofiguredisruption;
+
+savestepfigures = get(handles.checkbox_savefigures,'value');
+funParams.savestepfigures = savestepfigures;
+
+showdetailmessages = get(handles.checkbox_showdetailmessage,'value');
+funParams.showdetailmessages = showdetailmessages;
+
+Sub_Sample_Num  = str2double(get(handles.edit_subsample_number, 'String'));
+if isnan(Sub_Sample_Num) || Sub_Sample_Num < 0
+    errordlg(['Please provide a valid input for '''...
+        get(handles.text_subsample,'String') '''.'],'Setting Error','modal');
+    return;
+end
+
+funParams.Sub_Sample_Num  = Sub_Sample_Num;
+ 
+msgbox('Setting assigned to all selected channels');
+
+processGUI_ApplyFcn_without_close_figure(hObject, eventdata, handles,funParams);
+
+% 
+% % --- Executes on key press with focus on listbox_selectedChannels and none of its controls.
+% function listbox_selectedChannels_KeyPressFcn(hObject, eventdata, handles)
+% % hObject    handle to listbox_selectedChannels (see GCBO)
+% % eventdata  structure with the following fields (see UICONTROL)
+% %	Key: name of the key that was pressed, in lower case
+% %	Character: character interpretation of the key(s) that was pressed
+% %	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% % handles    structure with handles and user data (see GUIDATA)
+% 
+% 
+% 
+% 
+% % --- If Enable == 'on', executes on mouse press in 5 pixel border.
+% % --- Otherwise, executes on mouse press in 5 pixel border or over listbox_selectedChannels.
+% function listbox_selectedChannels_ButtonDownFcn(hObject, eventdata, handles)
+% % hObject    handle to listbox_selectedChannels (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% 
+% 
+% --- Executes on selection change in listbox_selectedChannels.
+function listbox_selectedChannels_Callback(hObject, eventdata, handles)
+% hObject    handle to listbox_selectedChannels (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns listbox_selectedChannels contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from listbox_selectedChannels
+
+% ---------------------- Channel Setup -------------------------
+userData = get(handles.figure1, 'UserData');
+funParams = userData.crtProc.funParams_;
+
+% Set up available input channels
+set(handles.listbox_availableChannels,'String',userData.MD.getChannelPaths(), ...
+    'UserData',1:numel(userData.MD.channels_));
+
+channelIndex = funParams.ChannelIndex;
+blued_channel = get(handles.listbox_selectedChannels, 'Value');
+currentChannelIndex = channelIndex(blued_channel(1));
+
+% Find any parent process
+userData.parentProc = userData.crtPackage.getParent(userData.procID);
+if isempty(userData.crtPackage.processes_{userData.procID}) && ~isempty(userData.parentProc)
+    % Check existence of all parent processes
+    emptyParentProc = any(cellfun(@isempty,userData.crtPackage.processes_(userData.parentProc)));
+    if ~emptyParentProc
+        % Intersect channel index with channel index of parent processes
+        parentChannelIndex = @(x) userData.crtPackage.processes_{x}.funParams_.ChannelIndex;
+        for i = userData.parentProc
+            channelIndex = intersect(channelIndex,parentChannelIndex(i));
+        end
+    end
+   
+end
+
+if ~isempty(channelIndex)
+    channelString = userData.MD.getChannelPaths(channelIndex);
+else
+    channelString = {};
+end
+set(handles.edit_subsample_number,'String',funParams.Sub_Sample_Num);
+set(handles.checkbox_outgrowth,'value',funParams.VIF_Outgrowth_Flag);
+
+set(handles.checkbox_nofiguredisruption,'value',funParams.nofiguredisruption);
+set(handles.checkbox_savefigures,'value',funParams.savestepfigures);
+set(handles.checkbox_showdetailmessage,'value',funParams.showdetailmessages);
+
+set(handles.listbox_selectedChannels,'String',channelString,...
+    'UserData',channelIndex);
+current_ch_ind = currentChannelIndex(1);
+
+% in the case of single channel or same setting for all channel as in old
+% cases
+if(length(funParams.StPace_Size)==1)
+    ones_array = ones(1,numel(userData.MD.channels_));
+    funParams.StPace_Size = funParams.StPace_Size*ones_array;
+    funParams.StPatch_Size = funParams.StPatch_Size*ones_array;
+    funParams.st_lowerbound_localthresholding = funParams.st_lowerbound_localthresholding*ones_array;
+    funParams.IntPace_Size = funParams.IntPace_Size*ones_array;
+    funParams.IntPatch_Size = funParams.IntPatch_Size*ones_array;
+    funParams.int_lowerbound_localthresholding = funParams.int_lowerbound_localthresholding*ones_array;
+    funParams.Cell_Mask_ind = funParams.Cell_Mask_ind*ones_array;
+    funParams.Whole_movie_ind = funParams.Whole_movie_ind*ones_array;
+    
+    Combine_Way = funParams.Combine_Way;
+    for iC = 1 : numel(userData.MD.channels_)
+        funParams.Combine_Way{iC}= Combine_Way;
+    end
+    
+    funParams.Classifier_Type_ind = funParams.Classifier_Type_ind*ones_array;
+    funParams.LengthThreshold = funParams.LengthThreshold*ones_array;
+    funParams.CurvatureThreshold = funParams.CurvatureThreshold*ones_array;
+    funParams.IternationNumber = funParams.IternationNumber*ones_array;
+    funParams.CoefAlpha = funParams.CoefAlpha*ones_array;
+    funParams.training_sample_number = funParams.training_sample_number*ones_array;
+end
+    
+% with the previous lines of expansion of single value to an array of all
+% possible channels, display the first selected channel
+set(handles.edit_StPaceSize,'String',funParams.StPace_Size(current_ch_ind));
+set(handles.edit_StPatchSize,'String',funParams.StPatch_Size(current_ch_ind));
+set(handles.edit_st_lowerbound_localthresholding,'String',funParams.st_lowerbound_localthresholding(current_ch_ind));
+
+set(handles.edit_IntPaceSize,'String',funParams.IntPace_Size(current_ch_ind));
+set(handles.edit_IntPatchSize,'String',funParams.IntPatch_Size(current_ch_ind));
+set(handles.edit_int_lowerbound_localthresholding,'String',funParams.int_lowerbound_localthresholding(current_ch_ind));
+
+set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind(current_ch_ind));
+set(handles.popupmenu_whole_movie,'Value',funParams.Whole_movie_ind(current_ch_ind));
+
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
+for Combine_Way_ind = 1 : 7
+    if(strcmp(funParams.Combine_Way{current_ch_ind}, Combine_Way_tag{Combine_Way_ind}))
+        set(handles.popupmenu_segmentationbase,'Value',Combine_Way_ind);
+        break;
+    end
+end
+
+% visible or not, show the parameters for the geo based algorithm
+% when visible, set the numbers
+set(handles.popupmenu_classifier_type,'Value',funParams.Classifier_Type_ind(current_ch_ind));
+set(handles.edit_lengththreshold,'String',funParams.LengthThreshold(current_ch_ind));
+set(handles.edit_curvaturethreshold,'String',funParams.CurvatureThreshold(current_ch_ind));
+set(handles.edit_IternationNumber,'String',funParams.IternationNumber(current_ch_ind));
+set(handles.edit_linear_plane_offset_alpha,'String',funParams.CoefAlpha(current_ch_ind));
+set(handles.edit_train_number,'String',funParams.training_sample_number(current_ch_ind));
+
+% first set everything as invisible
+set(handles.uipanel_threshold_panel,'Visible','off');
+set(handles.uipanel_Geo_panel,'Visible','off');
+
+if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training') || strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_GM'))
+    % with Geo based approaches, use the geo panel and make the
+    % thresholding panel invisible
+    set(handles.uipanel_threshold_panel,'Visible','off');
+    set(handles.uipanel_Geo_panel,'Visible','on');
+    
+    if (strcmp(funParams.Combine_Way{current_ch_ind},'geo_based_training'))
+        set(handles.edit_IternationNumber,'Enable','off');
+    else
+        set(handles.edit_IternationNumber,'Enable','on');
+    end
+else
+    % with thresholding based approaches, use the thresholding panel and make the
+    % Geo panel invisible
+    set(handles.uipanel_threshold_panel,'Visible','on');
+    set(handles.uipanel_Geo_panel,'Visible','off');
+    
+    %first enable both sets as default, in the following, details will
+    %be set.
+    set(handles.edit_StPaceSize,'Enable','on');
+    set(handles.edit_StPatchSize,'Enable','on');
+    set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
+    set(handles.edit_IntPaceSize,'Enable','on');
+    set(handles.edit_IntPatchSize,'Enable','on');
+    set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
+    
+end
+
+if (strcmp(funParams.Combine_Way{current_ch_ind},'st_only')||strcmp(funParams.Combine_Way{current_ch_ind},'st_nms_two')||strcmp(funParams.Combine_Way{current_ch_ind},'st_nms_only'))
+    
+    % with st based threhold based approaches, use the threhold panel and make the
+    % Geo panel invisible
+    set(handles.uipanel_threshold_panel,'Visible','on');
+    set(handles.uipanel_Geo_panel,'Visible','off');
+    
+    % make the st based parameters enabled, but the intensity based
+    % parameters disabled.
+    set(handles.edit_StPaceSize,'Enable','on');
+    set(handles.edit_StPatchSize,'Enable','on');
+    set(handles.edit_st_lowerbound_localthresholding,'Enable','on');
+    set(handles.edit_IntPaceSize,'Enable','off');
+    set(handles.edit_IntPatchSize,'Enable','off');
+    set(handles.edit_int_lowerbound_localthresholding,'Enable','off');
+end
+
+if (strcmp(funParams.Combine_Way{current_ch_ind},'int_only'))
+    % same here, with intensity threhold based approaches, use the threhold panel and make the
+    % Geo panel invisible
+    
+    set(handles.uipanel_threshold_panel,'Visible','on');
+    set(handles.uipanel_Geo_panel,'Visible','off');
+    
+    % make the intensity based parameters enabled, but the st based
+    % parameters disabled.
+    set(handles.edit_StPaceSize,'Enable','off');
+    set(handles.edit_StPatchSize,'Enable','off');
+    set(handles.edit_st_lowerbound_localthresholding,'Enable','off');
+    set(handles.edit_IntPaceSize,'Enable','on');
+    set(handles.edit_IntPatchSize,'Enable','on');
+    set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
+end
+
+processGUI_ApplyFcn_without_close_figure(hObject, eventdata, handles,funParams);

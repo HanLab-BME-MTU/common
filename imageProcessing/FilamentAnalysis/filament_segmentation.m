@@ -53,18 +53,26 @@ end
 funParams=movieData.processes_{indexFilamentSegmentationProcess}.funParams_;
 
 selected_channels = funParams.ChannelIndex;
-StPace_Size = funParams.StPace_Size;
-StPatch_Size = funParams.StPatch_Size;
-Stlowerbound =  funParams.st_lowerbound_localthresholding;
-IntPace_Size = funParams.IntPace_Size;
-IntPatch_Size = funParams.IntPatch_Size;
-Intlowerbound =  funParams.int_lowerbound_localthresholding;
 
-Combine_Way = funParams.Combine_Way;
-Cell_Mask_ind = funParams.Cell_Mask_ind;
-VIF_Outgrowth_Flag = funParams.VIF_Outgrowth_Flag;
-Sub_Sample_Num  = funParams.Sub_Sample_Num;
+StPace_Size_movie = funParams.StPace_Size;
+StPatch_Size_movie = funParams.StPatch_Size;
+Stlowerbound_movie =  funParams.st_lowerbound_localthresholding;
+IntPace_Size_movie = funParams.IntPace_Size;
+IntPatch_Size_movie = funParams.IntPatch_Size;
+Intlowerbound_movie =  funParams.int_lowerbound_localthresholding;
 
+Combine_Way_movie = funParams.Combine_Way;
+Cell_Mask_ind_movie = funParams.Cell_Mask_ind;
+VIF_Outgrowth_Flag_movie = funParams.VIF_Outgrowth_Flag;
+Sub_Sample_Num_movie  = funParams.Sub_Sample_Num;
+
+SaveFigures_movie = funParams.savestepfigures;
+ShowDetailMessages_movie = funParams.savestepfigures;
+
+CoefAlpha_movie = funParams.CoefAlpha;
+LengthThreshold_movie = funParams.LengthThreshold;
+IternationNumber_movie = funParams.IternationNumber;
+CurvatureThreshold_movie = funParams.CurvatureThreshold;
 
 %% Output Directories
 
@@ -169,6 +177,34 @@ end
 %%
 for iChannel = selected_channels
     
+    if(length(StPace_Size_movie)>=iChannel)
+        % in new setting, each channel can have its own setting, different
+        % from another channel
+        StPace_Size =  StPace_Size_movie(iChannel);
+        StPatch_Size = StPatch_Size_movie(iChannel);
+        Stlowerbound =  st_lowerbound_localthresholding_movie(iChannel);
+        IntPace_Size = IntPace_Size_movie(iChannel);
+        IntPatch_Size = IntPatch_Size_movie(iChannel);
+        Intlowerbound =  int_lowerbound_localthresholding_movie(iChannel);
+        Combine_Way = Combine_Way_movie(iChannel);
+        Cell_Mask_ind = Cell_Mask_ind_movie(iChannel);
+        VIF_Outgrowth_Flag = VIF_Outgrowth_Flag_movie(iChannel);
+        Sub_Sample_Num  = Sub_Sample_Num_movie(iChannel);
+    else
+        % in the original situation there is one common setting for all
+        % channels, if the MD loaded is in this case, use the same
+        StPace_Size =  StPace_Size_movie;
+        StPatch_Size = StPatch_Size_movie;
+        Stlowerbound =  st_lowerbound_localthresholding_movie;
+        IntPace_Size = IntPace_Size_movie;
+        IntPatch_Size = IntPatch_Size_movie;
+        Intlowerbound =  int_lowerbound_localthresholding_movie;        
+        Combine_Way = Combine_Way_movie;
+        Cell_Mask_ind = Cell_Mask_ind_movie;
+        VIF_Outgrowth_Flag = VIF_Outgrowth_Flag_movie;
+        Sub_Sample_Num  = Sub_Sample_Num_movie;
+    end
+    
     % Get frame number from the title of the image, this not neccesarily
     % the same as iFrame due to some shorting problem of the channel
    Channel_FilesNames = movieData.channels_(iChannel).getImageFileNames(1:movieData.nFrames_);
@@ -241,12 +277,14 @@ for iChannel = selected_channels
         end
         currentImg = double(currentImg);
         
-        
-        if( save_tif_flag==1 && iFrame==Frames_to_Seg(1)  )
-            % Gelfand lab needs single file results for tif stack
-            tif_stack_binary_seg_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),length(Frames_to_Seg)));
-            tif_stack_RGB_heat_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),3,length(Frames_to_Seg)));
-        end
+        %% %tif stack cost too much memory, comment these
+%         
+%         if( save_tif_flag==1 && iFrame==Frames_to_Seg(1)  )
+%             % Gelfand lab needs single file results for tif stack
+%             tif_stack_binary_seg_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),length(Frames_to_Seg)));
+%             tif_stack_RGB_heat_image_data = uint8(zeros(size(currentImg,1),size(currentImg,2),3,length(Frames_to_Seg)));
+%         end
+        %%
         
         load([SteerableChannelOutputDir, filesep, 'steerable_', ...
             filename_short_strs{iFrame},'.mat']);
@@ -633,15 +671,16 @@ for iChannel = selected_channels
         end
         
         
-%         
-        if( save_tif_flag==1)
-%             current_seg = (imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']))>0;
-%             RGB_seg_orient_heat_map = imread([HeatEnhOutputDir,'/segment_heat_',filename_short_strs{iFrame},'.tif']);
+         %% %tif stack cost too much memory, comment these
+%         if( save_tif_flag==1)
+% %             current_seg = (imread([FilamentSegmentationChannelOutputDir,'/segment_binary_',filename_short_strs{iFrame},'.tif']))>0;
+% %             RGB_seg_orient_heat_map = imread([HeatEnhOutputDir,'/segment_heat_',filename_short_strs{iFrame},'.tif']);
+% %             
+%             tif_stack_binary_seg_image_data(:,:,iFrame_index) = uint8(current_seg*255);
+%             tif_stack_RGB_heat_image_data(:,:,:,iFrame_index) = uint8(RGB_seg_orient_heat_map);
 %             
-            tif_stack_binary_seg_image_data(:,:,iFrame_index) = uint8(current_seg*255);
-            tif_stack_RGB_heat_image_data(:,:,:,iFrame_index) = uint8(RGB_seg_orient_heat_map);
-            
-        end
+%         end
+        %%
     end
     %% For Gelfand Lab, save results as tif stack file
     if( save_tif_flag==1)

@@ -357,6 +357,9 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % No displaying detailed messages: change to 1 if want to see all debugging messages
             funParams.showdetailmessages = 0;
             
+            % the flag for if a channel has been specifically signed
+            % setting, without being the same with all other selected of channels
+            funParams.channel_specific=0;
         end
     end
 end

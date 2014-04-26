@@ -71,7 +71,7 @@ for iChannel = selected_channels
     Channel_FilesNames = movieData.channels_(iChannel).getImageFileNames(1:movieData.nFrames_);
     
     filename_short_strs = uncommon_str_takeout(Channel_FilesNames);
- 
+    
     Frames_to_Seg = 1:Sub_Sample_Num:nFrame;
     Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1]),[1 1]);
     Frames_results_correspondence = Frames_results_correspondence(1:nFrame);
@@ -82,8 +82,8 @@ for iChannel = selected_channels
         currentImg = movieData.channels_(iChannel).loadImage(iFrame);
         img_pixel_pool = [img_pixel_pool currentImg(:)];
     end
-      [hist_all_frame, hist_bin] = hist(double(img_pixel_pool),45);
-   
+    [hist_all_frame, hist_bin] = hist(double(img_pixel_pool),45);
+    
     img_pixel_pool = double(img_pixel_pool(:));
     nonzero_img_pixel_pool= img_pixel_pool(img_pixel_pool>0);
     
@@ -110,7 +110,7 @@ for iChannel = selected_channels
     
     
     % if not found the loop use half max
-    high_995_percentile = max(img_pixel_pool)/2;    
+    high_995_percentile = max(img_pixel_pool)/2;
     for intensity_i = max(img_pixel_pool) : -(max(img_pixel_pool)-min(img_pixel_pool))/100 : max(img_pixel_pool)/2
         if length(find(img_pixel_pool<intensity_i))/length(img_pixel_pool)<0.9995
             high_995_percentile = intensity_i;
@@ -119,32 +119,42 @@ for iChannel = selected_channels
         end
     end
     
-   
-%    low_005_percentile=0;
-%    high_995_percentile= 2^16-1;
-   
-     img_min=low_005_percentile;
+    
+    %    low_005_percentile=0;
+    %    high_995_percentile= 2^16-1;
+    
+    img_min=low_005_percentile;
     img_max=high_995_percentile;
-   
+    
+    currentImg_cell = cell(1,1);
+    
     for iFrame_subsample = 1 : length(Frames_to_Seg)
         hist_this_frame = hist_all_frame(:,iFrame_subsample);
         ind = find(hist_this_frame==max(hist_this_frame));
         center_value(iFrame_subsample) = hist_bin(ind(1));
- %       center_value(iFrame_subsample) = 1;
+        if(ind(1)>1)
+            center_value_m1(iFrame_subsample) = hist_bin(ind(1)-1);
+        else
+            center_value_m1(iFrame_subsample)= center_value(iFrame_subsample);
+        end
+        %       center_value(iFrame_subsample) = 1;
     end
+    center_value_int = mean((center_value_m1+center_value)/2);
     
     center_value = center_value/max(center_value);
     center_value = sqrt(center_value);
     center_value = imfilter(center_value,[1 2 3 9 3 2 1]/21,'replicate','same');
     center_value = center_value/max(center_value);
-%     center_value(:)=1;
+    %     center_value(:)=1;
+    img_min=0;
+    img_max=high_995_percentile- center_value_int;
     
     % Make output directory for the flattened images
     ImageFlattenChannelOutputDir = movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel};
     if (~exist(ImageFlattenChannelOutputDir,'dir'))
         mkdir(ImageFlattenChannelOutputDir);
     end
-      
+    
     display('======================================');
     display(['Current movie: as in ',movieData.outputDirectory_]);
     display(['Start image flattening in Channel ',num2str(iChannel)]);
@@ -157,9 +167,11 @@ for iChannel = selected_channels
         currentImg = movieData.channels_(iChannel).loadImage(iFrame);
         currentImg = double(currentImg);
         
+        currentImg = currentImg - center_value_int;
+        
         % Get rid of extreme noises
-        currentImg(find(currentImg<low_005_percentile))=low_005_percentile;
-        currentImg(find(currentImg>high_995_percentile))=high_995_percentile;
+        currentImg(find(currentImg>high_995_percentile- center_value_int))=high_995_percentile- center_value_int;
+        currentImg(find(currentImg<=0.00000001))=0.00000001;
         
         % based on the given method index, do log or sqrt to flatten the image
         if flatten_method_ind == 1
@@ -190,6 +202,8 @@ for iChannel = selected_channels
         end
         currentImg(find(currentImg>1)) = 1;
         
+        currentImg_cell{iFrame}=currentImg;
+        
         for sub_i = 1 : Sub_Sample_Num
             if iFrame + sub_i-1 <= nFrame
                 
@@ -199,76 +213,81 @@ for iChannel = selected_channels
             end
         end
         
+        %% %tif stack cost too much memory, comment these
+        %         if(TimeFilterSigma > 0)
+        %             if iFrame_subsample==1
+        %                 Image_tensor = zeros(size(currentImg,1),size(currentImg,2),length(Frames_to_Seg));
+        %             end
+        %             Image_tensor(:,:,iFrame_subsample) = currentImg;
+        %         end
+    end
+    
+    
+    if(TimeFilterSigma > 0)
         
-        if(TimeFilterSigma > 0)
-            if iFrame_subsample==1
-                Image_tensor = zeros(size(currentImg,1),size(currentImg,2),length(Frames_to_Seg));
+        iFrame_range = max(1, iFrame-FilterHalfLength) : 1: min(iFrame+FilterHalfLength, nFrame);
+        
+        for 
+        currentImg_cell{iFrame}=currentImg;
+        
+        FilterHalfLength = 2*ceil(TimeFilterSigma);
+        
+        temperal_filter = zeros(1,1,2*FilterHalfLength+1);
+        
+        H = fspecial('gaussian',2*FilterHalfLength+1, TimeFilterSigma);
+        H_1D = H(FilterHalfLength+1,:);
+        
+        H_1D = H_1D/(sum(H_1D));
+        
+        temperal_filter(1,1,:) = H_1D(:);
+        
+        time_filtered = imfilter(Image_tensor,temperal_filter,'replicate','same');
+        
+        for iFrame_subsample = 1 : length(Frames_to_Seg)
+            iFrame = Frames_to_Seg(iFrame_subsample);
+            disp(['Frame: ',num2str(iFrame)]);
+            currentImg = squeeze(time_filtered(:,:,iFrame_subsample));
+            
+            for sub_i = 1 : Sub_Sample_Num
+                if iFrame + sub_i-1 <= nFrame
+                    disp(['Frame: ',num2str(iFrame + sub_i-1)]);
+                    
+                    imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
+                        filename_short_strs{iFrame + sub_i-1},'.tif']);
+                end
             end
-            Image_tensor(:,:,iFrame_subsample) = currentImg;
+        end
+    end
+    
+    if background_removal_flag==1
+        % Background substraction for uneven illumination
+        for iFrame_subsample = 1 : length(Frames_to_Seg)
+            iFrame = Frames_to_Seg(iFrame_subsample);
+            disp(['Frame: ',num2str(iFrame)]);
+            currentImg =  imread([ImageFlattenChannelOutputDir,'/flatten_', ...
+                filename_short_strs{iFrame + sub_i-1},'.tif']);
+            
+            I = double(currentImg);
+            % Get the x and y of the surface
+            [XI, YI] = meshgrid(1:size(I,2), 1:size(I,1));
+            % Fit a polynomial to the surface x-y both up to 2nd order
+            fit_sur = fit([YI(:),XI(:)],I(:), 'poly22', 'Robust', 'on');
+            % Reconstract the surface for uneven background---without the first part (the DC part)
+            Z_fit = fit_sur.p01.*XI+ fit_sur.p10.*YI +fit_sur.p11.*XI.*YI+ ...
+                fit_sur.p20.*YI.*YI+fit_sur.p02.*XI.*XI;
+            % Substract the background
+            currentImg = I-Z_fit;
+            currentImg = currentImg/255;% back to 0~1 for saving image tif
+            
+            % Save to disk
+            for sub_i = 1 : Sub_Sample_Num
+                if iFrame + sub_i-1 <= nFrame
+                    disp(['Frame: ',num2str(iFrame + sub_i-1)]);
+                    
+                    imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
+                        filename_short_strs{iFrame + sub_i-1},'.tif']);
+                end
+            end            
         end
     end
 end
-
-if(TimeFilterSigma > 0)
-    FilterHalfLength = 2*ceil(TimeFilterSigma);
-    
-    temperal_filter = zeros(1,1,2*FilterHalfLength+1);
-    
-    H = fspecial('gaussian',2*FilterHalfLength+1, TimeFilterSigma);
-    H_1D = H(FilterHalfLength+1,:);
-    
-    H_1D = H_1D/(sum(H_1D));
-    
-    temperal_filter(1,1,:) = H_1D(:);
-    
-    time_filtered = imfilter(Image_tensor,temperal_filter,'replicate','same');
-    
-    for iFrame_subsample = 1 : length(Frames_to_Seg)
-        iFrame = Frames_to_Seg(iFrame_subsample);
-        disp(['Frame: ',num2str(iFrame)]);
-        currentImg = squeeze(time_filtered(:,:,iFrame_subsample));
-        
-        for sub_i = 1 : Sub_Sample_Num
-            if iFrame + sub_i-1 <= nFrame
-                disp(['Frame: ',num2str(iFrame + sub_i-1)]);
-                
-                imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
-                    filename_short_strs{iFrame + sub_i-1},'.tif']);
-            end
-        end
-    end
-end
-
-if background_removal_flag==1
-    % Background substraction for uneven illumination
-    for iFrame_subsample = 1 : length(Frames_to_Seg)
-        iFrame = Frames_to_Seg(iFrame_subsample);
-        disp(['Frame: ',num2str(iFrame)]);
-        currentImg =  imread([ImageFlattenChannelOutputDir,'/flatten_', ...
-            filename_short_strs{iFrame + sub_i-1},'.tif']);
-        
-        I = double(currentImg);
-        % Get the x and y of the surface
-        [XI, YI] = meshgrid(1:size(I,2), 1:size(I,1));
-        % Fit a polynomial to the surface x-y both up to 2nd order
-        fit_sur = fit([YI(:),XI(:)],I(:), 'poly22', 'Robust', 'on');
-        % Reconstract the surface for uneven background---without the first part (the DC part)
-        Z_fit = fit_sur.p01.*XI+ fit_sur.p10.*YI +fit_sur.p11.*XI.*YI+ ...
-            fit_sur.p20.*YI.*YI+fit_sur.p02.*XI.*XI;
-        % Substract the background
-        currentImg = I-Z_fit;
-        currentImg = currentImg/255;% back to 0~1 for saving image tif
-        
-        % Save to disk
-        for sub_i = 1 : Sub_Sample_Num
-            if iFrame + sub_i-1 <= nFrame
-                disp(['Frame: ',num2str(iFrame + sub_i-1)]);
-                
-                imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
-                    filename_short_strs{iFrame + sub_i-1},'.tif']);
-            end
-        end
-        
-    end
-end
-    

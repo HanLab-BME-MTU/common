@@ -24,12 +24,25 @@ end
 SaveFigures = funParams.savestepfigures;
 ShowDetailMessages = funParams.savestepfigures;
 
-
 CoefAlpha = funParams.CoefAlpha;
-Classifier_Type_ind = funParams.Classifier_Type_ind;
 LengthThreshold = funParams.LengthThreshold;
 IternationNumber = funParams.IternationNumber;
 CurvatureThreshold = funParams.CurvatureThreshold;
+
+%% % these are for new GUI allowing different setting of different channels
+if(length(CoefAlpha)>=iChannel)
+    CoefAlpha = CoefAlpha(iChannel);
+end
+if(length(LengthThreshold)>=iChannel)
+    LengthThreshold = LengthThreshold(iChannel);
+end
+if(length(IternationNumber)>=iChannel)
+    IternationNumber = IternationNumber(iChannel);
+end
+if(length(CurvatureThreshold)>=iChannel)
+    CurvatureThreshold = CurvatureThreshold(iChannel);
+end
+%%
 
 Good_ind_cell=cell(1,4);
 model_ind_cell =cell(1,10);
