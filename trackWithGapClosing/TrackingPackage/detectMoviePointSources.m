@@ -169,6 +169,9 @@ for i = 1:numel(p.ChannelIndex)
             pstruct.xCoord = [pstruct.x' pstruct.x_pstd'];
             pstruct.yCoord = [pstruct.y' pstruct.y_pstd'];
             pstruct.amp = [pstruct.A' pstruct.A_pstd'];        
+            pstruct.sigmaX = [pstruct.s' pstruct.s_pstd'];
+            pstruct.sigmaY = [pstruct.s' pstruct.s_pstd'];
+            pstruct.bkg = [pstruct.c' pstruct.c_pstd'];
         end
         
         if j == 1            
