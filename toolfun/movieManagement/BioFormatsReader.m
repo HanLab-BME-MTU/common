@@ -7,15 +7,17 @@ classdef  BioFormatsReader < Reader
     
     methods
         %% Constructor
-        function obj = BioFormatsReader(path, iSeries)
-            bfCheckJavaPath(); % Check loci-tools.jar is in the Java path
-            loci.common.DebugTools.enableLogging('OFF');
-            obj.formatReader = bfGetReader(path, false);
-            if nargin>1 %&& ~isempty(iSeries)
-                obj.formatReader.setSeries(iSeries);
-%             else
-%                 iSeries = obj.getSeries();
-%                 obj.formatReader.setSeries(iSeries);
+        function obj = BioFormatsReader(varargin)
+            % Check loci-tools.jar is in the Java path
+            bfCheckJavaPath();
+            if isa(varargin{1}, 'loci.formats.IFormatReader'),
+               obj.formatReader = varargin{1};
+            else
+                loci.common.DebugTools.enableLogging('OFF');
+                obj.formatReader = bfGetReader(varargin{1}, false);
+            end
+            if nargin>1
+                obj.formatReader.setSeries(varargin{2});
             end
         end
         
