@@ -127,7 +127,7 @@ for i = 1:nSeries
     MD(i).setPath(outputDir);
     MD(i).setFilename(movieFileName);
     MD(i).setSeries(iSeries);
-    if ip.Results.reuseReader,
+    if ip.Results.reuseReader || nSeries == 1,
         MD(i).setReader(BioFormatsReader(r, iSeries));
     end
     % Close reader and check movie sanity
@@ -136,7 +136,7 @@ for i = 1:nSeries
 end
 
 % Close reader
-if ~ip.Results.reuseReader, r.close; end
+if ~ip.Results.reuseReader && nSeries > 1, r.close(); end
 
 function movieArgs = getMovieMetadata(r, iSeries)
 
