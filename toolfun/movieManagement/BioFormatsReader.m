@@ -9,7 +9,6 @@ classdef  BioFormatsReader < Reader
         %% Constructor
         function obj = BioFormatsReader(varargin)
             % Check loci-tools.jar is in the Java path
-            bfCheckJavaPath();
             if isa(varargin{1}, 'loci.formats.IFormatReader'),
                obj.formatReader = varargin{1};
             else

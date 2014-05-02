@@ -37,9 +37,6 @@ function MD = bfImport(dataPath,varargin)
 
 % Sebastien Besson, Dec 2011 (last modifier May 2014)
 
-status = bfCheckJavaPath();
-assert(status, 'Bioformats library missing');
-
 % Input check
 ip=inputParser;
 ip.addRequired('dataPath',@ischar);
