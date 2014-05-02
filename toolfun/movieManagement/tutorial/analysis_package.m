@@ -14,7 +14,7 @@ unzip(zipPath, rootPath);
 
 % Initialize MovieData from high SNR example
 omeTiffPath = fullfile(rootPath, 'case1_higherSNR.ome.tiff');
-MD = MovieData.load(omeTiffPath);
+MD = MovieData(omeTiffPath);
 
 %%
 

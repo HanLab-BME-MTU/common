@@ -4,7 +4,7 @@
 %% Initialization
 
 dvPath = '~/Desktop/2014Mar26/Actin-TM2.ome.tif';
-MD = MovieData.load(dvPath);
+MD = MovieData(dvPath);
 fprintf(1, 'Object saved under: %s\n', MD.getFullPath());
 fprintf(1, 'Output directory for analysis: %s\n', MD.outputDirectory_);
 
