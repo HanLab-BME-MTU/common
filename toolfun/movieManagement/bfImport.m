@@ -24,12 +24,18 @@ function MD = bfImport(dataPath,varargin)
 %       multi-series images, this string gives the basename of the output
 %       folder and will be exanded as basename_sxxx for each movie
 %
+%       reuseReader - A flag allowing to re-use the Bio-Formats reader for
+%       multi-image files. This should speed up initialization of the
+%       MovieData objects. However, all readers are then shared by
+%       reference and closing the reader of any MovieData will affect all
+%       MovieData objects created from the multi-image file. Default: false
+%
 % Output:
 %
 %   MD - A single MovieData object or an array of MovieData objects
 %   depending on the number of series in the original images.
 
-% Sebastien Besson, Dec 2011
+% Sebastien Besson, Dec 2011 (last modifier May 2014)
 
 status = bfCheckJavaPath();
 assert(status, 'Bioformats library missing');
@@ -39,6 +45,7 @@ ip=inputParser;
 ip.addRequired('dataPath',@ischar);
 ip.addOptional('importMetadata',true,@islogical);
 ip.addParamValue('outputDirectory',[],@ischar);
+ip.addParamValue('reuseReader', false, @islogical);
 ip.parse(dataPath,varargin{:});
 
 % Retrieve the absolute path of the image file
@@ -49,7 +56,7 @@ dataPath = f.Name;
 
 try
     % Retrieve movie reader and metadata
-    r=bfGetReader(dataPath);
+    r = bfGetReader(dataPath);
     r.setSeries(0);
 catch bfException
     ME = MException('lccb:import:error','Import error');
@@ -120,13 +127,16 @@ for i = 1:nSeries
     MD(i).setPath(outputDir);
     MD(i).setFilename(movieFileName);
     MD(i).setSeries(iSeries);
-    
+    if ip.Results.reuseReader,
+        MD(i).setReader(BioFormatsReader(r, iSeries));
+    end
     % Close reader and check movie sanity
     MD(i).sanityCheck;
     
 end
+
 % Close reader
-r.close;
+if ~ip.Results.reuseReader, r.close; end
 
 function movieArgs = getMovieMetadata(r, iSeries)
 
