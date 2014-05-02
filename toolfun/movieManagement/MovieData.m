@@ -40,7 +40,7 @@ classdef  MovieData < MovieObject
     
     methods
         %% Constructor
-        function obj = MovieData(channels,outputDirectory,varargin)
+        function obj = MovieData(path_or_channels, varargin)
             % Constructor of the MovieData object
             %
             % INPUT
@@ -49,21 +49,22 @@ classdef  MovieData < MovieObject
             %    OPTIONAL - a set of options under the property/key format
             
             if nargin>0
-                % Required input fields
-                obj.channels_ = channels;
-                obj.outputDirectory_ = outputDirectory;
-                
-                % Construct the Channel object
-                nVarargin = numel(varargin);
-                if mod(nVarargin,2)==0
-                    for i=1 : 2 : nVarargin-1
-                        obj.(varargin{i}) = varargin{i+1};
-                    end
+                if ischar(path_or_channels)
+                    obj = bfImport(path_or_channels, varargin{:});
+                else
+                    % Parse options
+                    ip = inputParser();
+                    ip.addOptional('outputDirectory', '', @ischar);
+                    ip.KeepUnmatched = true;
+                    ip.parse(varargin{:});
+                    
+                    obj.channels_ = path_or_channels;
+                    obj.outputDirectory_ = ip.Results.outputDirectory;
+                    set(obj, ip.Unmatched)
+                    obj.createTime_ = clock;
                 end
-                obj.createTime_ = clock;
             end
         end
-        
         
         %% MovieData specific set/get methods
         function set.movieDataPath_(obj, path)
