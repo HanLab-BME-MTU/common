@@ -41,7 +41,11 @@ ip.addOptional('importMetadata',true,@islogical);
 ip.addParamValue('outputDirectory',[],@ischar);
 ip.parse(dataPath,varargin{:});
 
-assert(exist(dataPath,'file')==2,'File does not exist'); % Check path
+% Retrieve the absolute path of the image file
+[status, f] = fileattrib(dataPath);
+assert(status, '%s is not a valid path', dataPath);
+assert(~f.directory, '%s is a directory', dataPath);
+dataPath = f.Name;
 
 try
     % Retrieve movie reader and metadata
