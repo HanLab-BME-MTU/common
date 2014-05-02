@@ -4,9 +4,9 @@ classdef TracksDisplay < MovieDataDisplay
         Linestyle='-';
         Linewidth=1;
         GapLinestyle='--';
-        Color='r';
-        MergeColor = 'y';
-        SplitColor = 'g';
+        Color = 'r';
+        MergeColor = 'g';
+        SplitColor = 'y';
         useDragtail=true;
         dragtailLength=10;
         showLabel=false;
@@ -162,6 +162,10 @@ classdef TracksDisplay < MovieDataDisplay
             params(5).validator=@isscalar;
             params(6).name='useDragtail';
             params(6).validator=@islogical;
+            params(7).name='MergeColor';
+            params(7).validator=@(x)ischar(x) ||isvector(x);
+            params(8).name='SplitColor';
+            params(8).validator=@(x)ischar(x) ||isvector(x);
         end
         
         function f=getDataValidator()
