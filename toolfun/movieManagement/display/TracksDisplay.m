@@ -4,7 +4,9 @@ classdef TracksDisplay < MovieDataDisplay
         Linestyle='-';
         Linewidth=1;
         GapLinestyle='--';
-        Color='r';  
+        Color='r';
+        MergeColor = 'y';
+        SplitColor = 'g';
         dragtailLength=10;
         showLabel=false;
     end
@@ -50,8 +52,9 @@ classdef TracksDisplay < MovieDataDisplay
             I = isnan(xData);
             I = [I; zeros(size(I))];
             I = reshape(I, size(I,1)/2, size(I,2)*2);
+            I = [zeros(size(I,1), 1) I];
             I = bwlabel(imclearborder(I));
-            I = I(:, 1:2:end);
+            I = I(:, 2:2:end);
             
             % Fill gaps x and y data
             for i = unique(nonzeros(I))'
@@ -60,7 +63,33 @@ classdef TracksDisplay < MovieDataDisplay
                xGapData(iFirst:iLast) = linspace(xData(iFirst), xData(iLast), iLast - iFirst +1);
                yGapData(iFirst:iLast) = linspace(yData(iFirst), yData(iLast), iLast - iFirst +1);
             end
-
+            
+            % Initialize matrix for split events
+            hasSplitEvents = arrayfun(@(x) ~isempty(find(x.events=='s',1)), tracks);
+            xSplitData = NaN(dLength, nTracks);
+            ySplitData = NaN(dLength, nTracks);
+            for i = find(hasSplitEvents)'
+                eventTimes = find(tracks(i).events == 's');
+                eventTimes = unique([eventTimes, eventTimes+1]);
+                dragtailWindow = trackLengths(i)-displayLength+1:trackLengths(i);
+                eventTimes = intersect(eventTimes, dragtailWindow);
+                xSplitData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).xCoord(eventTimes);
+                ySplitData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).yCoord(eventTimes);
+            end
+            
+            % Initialize matrix for split events
+            hasMergeEvents = arrayfun(@(x) ~isempty(find(x.events=='m',1)), tracks);
+            xMergeData = NaN(dLength, nTracks);
+            yMergeData = NaN(dLength, nTracks);
+            for i = find(hasMergeEvents)'
+                eventTimes = find(tracks(i).events == 'm');
+                eventTimes = unique([eventTimes, eventTimes - 1]);
+                dragtailWindow = trackLengths(i)-displayLength+1:trackLengths(i);
+                eventTimes = intersect(eventTimes, dragtailWindow);
+                xMergeData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).xCoord(eventTimes);
+                yMergeData(eventTimes - dragtailWindow(1) +1, i) = tracks(i).yCoord(eventTimes);
+            end
+            
             % Plot tracks
             if isfield(tracks,'label') % If track is classified
                 nColors = size(obj.Color,1);
@@ -77,6 +106,10 @@ classdef TracksDisplay < MovieDataDisplay
                     'Linewidth', obj.Linewidth, 'Color',obj.Color,varargin{:});
                 h(:,2) = plot(xGapData, yGapData, 'Linestyle', obj.GapLinestyle',...
                     'Linewidth', obj.Linewidth, 'Color',[1 1 1] - obj.Color, varargin{:});
+                h(:,3) = plot(xSplitData, ySplitData, 'Linestyle', obj.Linestyle,...
+                    'Linewidth', obj.Linewidth, 'Color','y', varargin{:});
+                h(:,4) = plot(xMergeData, yMergeData, 'Linestyle', obj.Linestyle,...
+                    'Linewidth', obj.Linewidth, 'Color','g', varargin{:});
             end
             
             % Display track numbers if option is selected
