@@ -20,7 +20,7 @@ classdef TracksDisplay < MovieDataDisplay
             end
         end
         function h=initDraw(obj, tracks, tag, varargin)
-                        
+            
             if isempty(tracks), h = -1; return; end
             % Get track length and filter valid tracks
             trackLengths = cellfun(@numel,{tracks.xCoord});
@@ -30,7 +30,7 @@ classdef TracksDisplay < MovieDataDisplay
             
             nTracks = numel(validTracks);
             h=-ones(nTracks,3);
-
+            
             % Constraing the dragtail length between 2 and the maximum
             % track length
             dLength = max(2,min(obj.dragtailLength,max(trackLengths)));
@@ -58,10 +58,10 @@ classdef TracksDisplay < MovieDataDisplay
             
             % Fill gaps x and y data
             for i = unique(nonzeros(I))'
-               iFirst = find(I == i, 1, 'first')-1;
-               iLast = find(I == i, 1, 'last')+1;
-               xGapData(iFirst:iLast) = linspace(xData(iFirst), xData(iLast), iLast - iFirst +1);
-               yGapData(iFirst:iLast) = linspace(yData(iFirst), yData(iLast), iLast - iFirst +1);
+                iFirst = find(I == i, 1, 'first')-1;
+                iLast = find(I == i, 1, 'last')+1;
+                xGapData(iFirst:iLast) = linspace(xData(iFirst), xData(iLast), iLast - iFirst +1);
+                yGapData(iFirst:iLast) = linspace(yData(iFirst), yData(iLast), iLast - iFirst +1);
             end
             
             % Initialize matrix for split events
@@ -131,17 +131,17 @@ classdef TracksDisplay < MovieDataDisplay
             
             % Set tag
             set(h(ishandle(h)), 'Tag', tag);
-           
+            
         end
-
+        
         function updateDraw(obj, h, data)
             tag=get(h(1),'Tag');
             delete(h);
             obj.initDraw(data,tag);
             return;
-
+            
         end
-    end    
+    end
     
     methods (Static)
         function params=getParamValidators()
@@ -156,9 +156,9 @@ classdef TracksDisplay < MovieDataDisplay
             params(5).name='showLabel';
             params(5).validator=@isscalar;
         end
-
-        function f=getDataValidator() 
+        
+        function f=getDataValidator()
             f=@isstruct;
         end
-    end    
+    end
 end
