@@ -25,7 +25,7 @@ classdef  MovieData < MovieObject
         binning_                % Camera binning
         
         bfSeries_               % Series of the image file
-         
+        
         % For mockMovieData
         mockMD_
         mMDparent_ % mMDparent is a two column field with the first column
@@ -200,7 +200,7 @@ classdef  MovieData < MovieObject
         
         function roiMask=getROIMask(obj)
             % Returns the binary mask for the current region of interest
-
+            
             % If no roiMaskPath_, the whole mask is the region of interest
             if isempty(obj.roiMaskPath_)
                 roiMask = true([obj.imSize_ obj.nFrames_]);
@@ -301,7 +301,7 @@ classdef  MovieData < MovieObject
             obj.save();
         end
         
-        function relocate(obj,oldRootDir,newRootDir,full)            
+        function relocate(obj,oldRootDir,newRootDir,full)
             % Relocate the full object including ROIs and channels
             for movie = [obj.getAncestor() obj.getAncestor().getDescendants()]
                 relocate@MovieObject(movie, oldRootDir, newRootDir);
@@ -445,11 +445,20 @@ classdef  MovieData < MovieObject
         
         function r = getReader(obj)
             % Retrieve the Reader for accessing the raw data
-            if ~isempty(obj.reader),
-                r = obj.reader;
-                return
-            end
             
+            if ~isempty(obj.reader),
+                % Return the cached reader
+                r = obj.reader;
+            else
+                % Initialize the reade
+                r = obj.initReader();
+                % Cache the reader for future usage
+                obj.setReader(r);
+            end
+        end
+        
+        function r = initReader(obj)
+            % Initialize the reader based on the type of movie
             if obj.isBF()
                 r = BioFormatsReader(obj.channels_(1).channelPath_, obj.bfSeries_);
             elseif obj.isOmero()
@@ -459,6 +468,10 @@ classdef  MovieData < MovieObject
             else
                 r = TiffSeriesReader({obj.channels_.channelPath_});
             end
+        end
+        
+        function setReader(obj, r)
+            % Set the reader
             obj.reader = r;
         end
         
@@ -491,11 +504,11 @@ classdef  MovieData < MovieObject
         function status = isMock(obj)
             objcache = get(obj);
             for i1 = 1:length(objcache)
-            if isfield(objcache(i1), 'mockMD_')
-                status = ~isempty(obj(i1).mockMD_);
-            else
-                status = isfield(objcache(i1), 'mockMD_');
-            end
+                if isfield(objcache(i1), 'mockMD_')
+                    status = ~isempty(obj(i1).mockMD_);
+                else
+                    status = isfield(objcache(i1), 'mockMD_');
+                end
             end
         end
         
