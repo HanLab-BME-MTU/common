@@ -83,7 +83,7 @@ end
 nChan = r.getSizeC();
 movieChannels(nSeries, nChan) = Channel();
 
-for i = 1:nSeries
+for i = 1 : nSeries
     fprintf(1,'Creating movie %g/%g\n',i,nSeries);
     iSeries = i-1;
     
@@ -127,16 +127,13 @@ for i = 1:nSeries
     MD(i).setPath(outputDir);
     MD(i).setFilename(movieFileName);
     MD(i).setSeries(iSeries);
-    if ip.Results.reuseReader || nSeries == 1,
+    if ip.Results.reuseReader || i == 1,
         MD(i).setReader(BioFormatsReader(r, iSeries));
     end
     % Close reader and check movie sanity
     MD(i).sanityCheck;
     
 end
-
-% Close reader
-if ~ip.Results.reuseReader && nSeries > 1, r.close(); end
 
 function movieArgs = getMovieMetadata(r, iSeries)
 
