@@ -120,13 +120,13 @@ if strcmp(namestrcache, ' Setting - Translocation Scoring') ~=1
 % Set up help icon
 set(hObject,'colormap',userData.colormap);
 % Set up package help. Package icon is tagged as '0'
-if isfield('axes_help', 'handles')
+if isfield(handles, 'axes_help')
     set(handles.figure1,'CurrentAxes',handles.axes_help);
-Img = image(userData.questIconData);
-set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
-    'visible','off','YDir','reverse');
-set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
-    'UserData', struct('class',userData.crtProcClassName))
+    Img = image(userData.questIconData);
+    set(gca, 'XLim',get(Img,'XData'),'YLim',get(Img,'YData'),...
+        'visible','off','YDir','reverse');
+    set(Img,'ButtonDownFcn',@icon_ButtonDownFcn,...
+        'UserData', struct('class',userData.crtProcClassName))
 end
 end
 % Update user data and GUI data
