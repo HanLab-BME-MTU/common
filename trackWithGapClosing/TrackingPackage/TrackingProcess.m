@@ -278,7 +278,7 @@ classdef TrackingProcess < DataProcessingProcess
                 return
             end
             
-            displayTracks(sum(nCompoundTracks),1) = struct('xCoord', [], 'yCoord', []);
+            displayTracks(sum(nCompoundTracks),1) = struct('xCoord', [], 'yCoord', [], 'events' ,[]);
             for i = find(nCompoundTracks)'
                 % Get the x and y coordinate of all compound tracks
                 for  j = 1 : nCompoundTracks(i)
@@ -301,6 +301,8 @@ classdef TrackingProcess < DataProcessingProcess
                     t = tracks(i).seqOfEvents(iEvent,1)-1;
                     displayTracks(iTrack1).xCoord(t) = displayTracks(iTrack2).xCoord(t);
                     displayTracks(iTrack1).yCoord(t) = displayTracks(iTrack2).yCoord(t);
+                    displayTracks(iTrack1).events(t) = 's';
+                    displayTracks(iTrack2).events(t) = 's';
                 end
                 
                 % Fill merge events NaNs in compound tracks
@@ -312,6 +314,9 @@ classdef TrackingProcess < DataProcessingProcess
                     t = tracks(i).seqOfEvents(iEvent,1);
                     displayTracks(iTrack1).xCoord(t) = displayTracks(iTrack2).xCoord(t);
                     displayTracks(iTrack1).yCoord(t) = displayTracks(iTrack2).yCoord(t);
+                    displayTracks(iTrack1).events(t) = 'm';
+                    displayTracks(iTrack2).events(t) = 'm';
+
                 end
             end
         end
