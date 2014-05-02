@@ -39,12 +39,22 @@ classdef TestBFMovieData < TestMovieData & TestCase
             end
         end
         
-        function setUpMovie(self)
+        function filename = createFakeFile(self)
             filename = fullfile(self.path, self.fakename);
             fid = fopen(filename, 'w');
             fclose(fid);
-            
-            self.movie = MovieData.load(filename);
+        end
+        
+        function filename = createFakeFileCompanion(self, content)
+            filename = fullfile(self.path, [self.fakename '.ini']);
+            fid = fopen(filename, 'w');
+            fwrite(fid, content);
+            fclose(fid);
+        end
+        
+        function setUpMovie(self)
+            filename = self.createFakeFile();
+            self.movie = MovieData(filename);
         end
         
         function checkChannelPaths(self)
@@ -53,6 +63,22 @@ classdef TestBFMovieData < TestMovieData & TestCase
                     fullfile(self.path, self.fakename))
             end
         end
+        
+        %% Constructor
+        
+        function testConstructor(self)
+            filename = self.createFakeFile();
+            self.movie = MovieData(filename);
+            self.checkChannelPaths();
+        end
+        
+        function testConstructorMetadata(self)
+            filename = self.createFakeFile();
+            self.createFakeFileCompanion('physicalSizeX=1');
+            self.movie = MovieData(filename);
+            self.checkChannelPaths();
+        end
+        
         
         %% Typecasting tests
         function checkPixelType(self, classname)
