@@ -1,4 +1,5 @@
-function [similarity_scoremap_cell,similarity_scoremap_1to2_cell,similarity_scoremap_2to1_cell] = load_2_MD_network_for_dynamics_compare(MD1_filename,iChannel1, start_frame1, MD2_filename, iChannel2, start_frame2, radius,save_everything_flag)
+function [similarity_scoremap_cell,similarity_scoremap_1to2_cell,similarity_scoremap_2to1_cell, distance_map_1_2_cell, distance_map_2_1_cell, angle_map_1_2_cell, angle_map_2_1_cell] ...
+    = load_2_MD_network_for_dynamics_compare(MD1_filename,iChannel1, start_frame1, MD2_filename, iChannel2, start_frame2, radius,save_everything_flag)
 % function to compare two networks
 % Input:   MD1_filename,MD2_filename:
 %                       two MD file names,these two movie should be one channel with same number of frames.
@@ -48,12 +49,15 @@ similarity_scoremap_cell = cell(1,nFrame);
 similarity_scoremap_1to2_cell = cell(1,nFrame);
 similarity_scoremap_2to1_cell = cell(1,nFrame);
       
+distance_map_1_2_cell = cell(1,nFrame);
+distance_map_2_1_cell = cell(1,nFrame);
+angle_map_1_2_cell = cell(1,nFrame);
+angle_map_2_1_cell = cell(1,nFrame);
+         
 outdir = [MD_1.processes_{indexFilamentSegmentationProcess_1}.outFilePaths_{iChannel1},filesep,'similarity_results'];
 if(~exist(outdir,'dir'))
     mkdir(outdir);
 end
-
-
 
 
 for iFrame = start_frame1 : nFrame
@@ -121,11 +125,15 @@ for iFrame = start_frame1 : nFrame
         
         img_size = size(MT_img);
         
-         [similarity_scoremap, similarity_scoremap_1to2, similarity_scoremap_2to1] = network_similarity_scoremap(MT_current_model,VIF_current_model,img_size, radius,outdir,iFrame,save_everything_flag);
+        [similarity_scoremap, similarity_scoremap_1to2, similarity_scoremap_2to1,distance_map_1_2, distance_map_2_1, angle_map_1_2, angle_map_2_1] = network_similarity_scoremap(MT_current_model,VIF_current_model,img_size, radius,outdir,iFrame,save_everything_flag);
         
         similarity_scoremap_cell{1, iFrame} = similarity_scoremap;
         similarity_scoremap_1to2_cell{1, iFrame} = similarity_scoremap_1to2;
         similarity_scoremap_2to1_cell{1, iFrame} = similarity_scoremap_2to1;
+        distance_map_1_2_cell{1, iFrame} = distance_map_1_2;
+        distance_map_2_1_cell{1, iFrame} = distance_map_2_1;
+        angle_map_1_2_cell{1, iFrame} = angle_map_1_2;
+        angle_map_2_1_cell{1, iFrame} = angle_map_2_1;
          
         %       close all;
     end
@@ -134,7 +142,9 @@ end
 
 save([outdir,filesep,'VIFMT_sm_maps_allframe.mat'], ...
     'similarity_scoremap_cell','similarity_scoremap_1to2_cell',...
-    'similarity_scoremap_2to1_cell');
+    'similarity_scoremap_2to1_cell', ...
+    'distance_map_1_2_cell','distance_map_2_1_cell', ...
+    'angle_map_1_2_cell','angle_map_2_1_cell');
 
 
 winopen(outdir);

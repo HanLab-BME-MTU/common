@@ -1,4 +1,4 @@
-function [similarity_scoremap, similarity_scoremap_1to2, similarity_scoremap_2to1] = network_similarity_scoremap(VIF_current_model,MT_current_model,img_size, radius,outdir,iFrame,save_everything_flag)
+function [similarity_scoremap, similarity_scoremap_1to2, similarity_scoremap_2to1,distance_map_1_2, distance_map_2_1, angle_map_1_2, angle_map_2_1] = network_similarity_scoremap(VIF_current_model,MT_current_model,img_size, radius,outdir,iFrame,save_everything_flag)
 % function for calculation the similarity of two networks
 % Liya Ding 06.2013.
 

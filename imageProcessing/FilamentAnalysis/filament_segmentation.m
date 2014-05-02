@@ -56,10 +56,10 @@ selected_channels = funParams.ChannelIndex;
 
 StPace_Size_movie = funParams.StPace_Size;
 StPatch_Size_movie = funParams.StPatch_Size;
-Stlowerbound_movie =  funParams.st_lowerbound_localthresholding;
+st_lowerbound_localthresholding_movie =  funParams.st_lowerbound_localthresholding;
 IntPace_Size_movie = funParams.IntPace_Size;
 IntPatch_Size_movie = funParams.IntPatch_Size;
-Intlowerbound_movie =  funParams.int_lowerbound_localthresholding;
+int_lowerbound_localthresholding_movie =  funParams.int_lowerbound_localthresholding;
 
 Combine_Way_movie = funParams.Combine_Way;
 Cell_Mask_ind_movie = funParams.Cell_Mask_ind;
@@ -137,13 +137,14 @@ if indexCellSegProcess == 0 && Cell_Mask_ind == 1
     return;
 end
 
-%%
-if(exist([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'file')>0)
-    load([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'Whole_movie_stat_cell');
-else
+%% May 1st 2014, due to change in flattening precedure, this whole movie stat need rerun,
+% could change back after the old data are all rerun.
+% if(exist([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'file')>0)
+%     load([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'Whole_movie_stat_cell');
+% else
     Whole_movie_stat_cell = whole_movie_stat_function(movieData);
     save([FilamentSegmentationProcessOutputDir, filesep, 'whole_movie_stat.mat'],'Whole_movie_stat_cell');    
-end
+% end
 
 funParams.Whole_movie_stat_cell = Whole_movie_stat_cell;
 
@@ -186,10 +187,8 @@ for iChannel = selected_channels
         IntPace_Size = IntPace_Size_movie(iChannel);
         IntPatch_Size = IntPatch_Size_movie(iChannel);
         Intlowerbound =  int_lowerbound_localthresholding_movie(iChannel);
-        Combine_Way = Combine_Way_movie(iChannel);
+        Combine_Way = Combine_Way_movie{iChannel};
         Cell_Mask_ind = Cell_Mask_ind_movie(iChannel);
-        VIF_Outgrowth_Flag = VIF_Outgrowth_Flag_movie(iChannel);
-        Sub_Sample_Num  = Sub_Sample_Num_movie(iChannel);
     else
         % in the original situation there is one common setting for all
         % channels, if the MD loaded is in this case, use the same
@@ -201,9 +200,11 @@ for iChannel = selected_channels
         Intlowerbound =  int_lowerbound_localthresholding_movie;        
         Combine_Way = Combine_Way_movie;
         Cell_Mask_ind = Cell_Mask_ind_movie;
-        VIF_Outgrowth_Flag = VIF_Outgrowth_Flag_movie;
-        Sub_Sample_Num  = Sub_Sample_Num_movie;
     end
+    
+    VIF_Outgrowth_Flag = VIF_Outgrowth_Flag_movie;
+    Sub_Sample_Num  = Sub_Sample_Num_movie;
+    
     
     % Get frame number from the title of the image, this not neccesarily
     % the same as iFrame due to some shorting problem of the channel
@@ -412,7 +413,19 @@ for iChannel = selected_channels
                 
                 current_seg = Intensity_Segment;
                 SteerabelRes_Segment = current_seg;
-                  current_model=[];
+                  current_model=[];   
+            
+            case 'Canny_Method'
+               
+                [NMS_Segment,THRESH_LH] = edge(MAX_st_res,'canny');
+                level2 = THRESH_LH(1);
+                
+                current_seg = NMS_Segment;
+                Intensity_Segment = current_seg;
+                SteerabelRes_Segment = current_seg;
+                Min_area = 6;
+                current_model=[];
+                  
            otherwise
                 warning('Use the default of union');
                 [level1, SteerabelRes_Segment ] = thresholdLocalSeg(MAX_st_res,'Otsu',StPatch_Size,StPace_Size,Stlowerbound,0);

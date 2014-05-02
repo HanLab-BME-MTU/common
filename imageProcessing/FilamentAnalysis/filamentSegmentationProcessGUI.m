@@ -133,8 +133,8 @@ set(handles.edit_int_lowerbound_localthresholding,'String',funParams.int_lowerbo
 set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind(current_ch_ind));
 set(handles.popupmenu_whole_movie,'Value',funParams.Whole_movie_ind(current_ch_ind));
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
-for Combine_Way_ind = 1 : 7
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
+for Combine_Way_ind = 1 : 8
     if(strcmp(funParams.Combine_Way{current_ch_ind}, Combine_Way_tag{Combine_Way_ind}))
         set(handles.popupmenu_segmentationbase,'Value',Combine_Way_ind);
         break;
@@ -216,6 +216,12 @@ if (strcmp(funParams.Combine_Way{current_ch_ind},'int_only'))
     set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
 end
 
+if (strcmp(funParams.Combine_Way{current_ch_ind},'Canny_Method'))
+% with canny, no parameter to set for now    
+    set(handles.uipanel_threshold_panel,'Visible','off');
+    set(handles.uipanel_Geo_panel,'Visible','off');
+end
+
 % Update user data and GUI data
 handles.output = hObject;
 set(hObject, 'UserData', userData);
@@ -256,7 +262,7 @@ channelIndex = get(handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
 currentChannelIndex = channelIndex;
 
-for this_channel_index = currentChannelIndex(:)
+for this_channel_index = currentChannelIndex(:)'
     % if this channel has been specifically signed setting, 
     % skip this channel 
     if(length(funParams.channel_specific)>=this_channel_index)
@@ -265,9 +271,9 @@ for this_channel_index = currentChannelIndex(:)
         end
     end
     
-    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
+    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
     Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
-    funParams.Combine_Way(this_channel_index)=Combine_Way_tag{Combine_Way_ind};
+    funParams.Combine_Way{this_channel_index}=Combine_Way_tag{Combine_Way_ind};
     
     StPace_Size = str2double(get(handles.edit_StPaceSize, 'String'));
     if isnan(StPace_Size) || StPace_Size < 0
@@ -592,7 +598,7 @@ function popupmenu_segmentationbase_Callback(hObject, eventdata, handles)
 % The following code is for set the parameter set editing boxes, that corresponds to combine way 
 % not choosen as disabled from editing
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
 
 Combine_Way_ind = get(hObject, 'Value');
 Combine_Way=Combine_Way_tag{Combine_Way_ind};
@@ -658,6 +664,12 @@ if (strcmp(Combine_Way,'geo_based_training') || strcmp(Combine_Way,'geo_based_GM
     
 end
 
+if (strcmp(Combine_Way,'Canny_Method'))
+% with canny, no parameter to set for now    
+    set(handles.uipanel_threshold_panel,'Visible','off');
+    set(handles.uipanel_Geo_panel,'Visible','off');
+end
+
 % --- Executes during object creation, after setting all properties.
 function popupmenu_segmentationbase_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupmenu_segmentationbase (see GCBO)
@@ -671,11 +683,11 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 set(hObject,'String',{'Steerable Filter Results','Intensity','Combine Both St and Int',...
-    'St NMS two','St nms only', 'Geo based with training','Geo based with GM'});
+    'St NMS two','St nms only', 'Geo based with training','Geo based with GM','Canny Method'});
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
 set(hObject,'Value',1);
-% for Combine_Way_ind = 1 : 7
+% for Combine_Way_ind = 1 : 8
 %     if(strcmp(funParams.Combine_Way, Combine_Way_tag{Combine_Way_ind}))
 %         set(hObject,'Value',Combine_Way_ind);
 %         break;
@@ -1178,7 +1190,7 @@ for this_channel_index = currentChannelIndex(:)
     
     funParams.channel_specific(this_channel_index)=1;
    
-    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
+    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
     Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
     funParams.Combine_Way{this_channel_index}=Combine_Way_tag{Combine_Way_ind};
     
@@ -1328,13 +1340,13 @@ end
 channelIndex = get (handles.listbox_selectedChannels, 'Userdata');
 funParams.ChannelIndex = channelIndex;
 currentChannelIndex = channelIndex;
-  funParams.LengthThreshold=[];
+funParams.LengthThreshold=[];
   
 for this_channel_index = currentChannelIndex(:)'
     % even if this channel has been specifically signed setting, 
     % re-assign acorrding to the current one.
     funParams.channel_specific(this_channel_index)=0;
-    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
+    Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
     Combine_Way_ind = get(handles.popupmenu_segmentationbase, 'Value');
     funParams.Combine_Way{this_channel_index} = Combine_Way_tag{Combine_Way_ind};
     
@@ -1508,26 +1520,6 @@ channelIndex = funParams.ChannelIndex;
 blued_channel = get(handles.listbox_selectedChannels, 'Value');
 currentChannelIndex = channelIndex(blued_channel(1));
 
-% Find any parent process
-userData.parentProc = userData.crtPackage.getParent(userData.procID);
-if isempty(userData.crtPackage.processes_{userData.procID}) && ~isempty(userData.parentProc)
-    % Check existence of all parent processes
-    emptyParentProc = any(cellfun(@isempty,userData.crtPackage.processes_(userData.parentProc)));
-    if ~emptyParentProc
-        % Intersect channel index with channel index of parent processes
-        parentChannelIndex = @(x) userData.crtPackage.processes_{x}.funParams_.ChannelIndex;
-        for i = userData.parentProc
-            channelIndex = intersect(channelIndex,parentChannelIndex(i));
-        end
-    end
-   
-end
-
-if ~isempty(channelIndex)
-    channelString = userData.MD.getChannelPaths(channelIndex);
-else
-    channelString = {};
-end
 set(handles.edit_subsample_number,'String',funParams.Sub_Sample_Num);
 set(handles.checkbox_outgrowth,'value',funParams.VIF_Outgrowth_Flag);
 
@@ -1535,36 +1527,37 @@ set(handles.checkbox_nofiguredisruption,'value',funParams.nofiguredisruption);
 set(handles.checkbox_savefigures,'value',funParams.savestepfigures);
 set(handles.checkbox_showdetailmessage,'value',funParams.showdetailmessages);
 
-set(handles.listbox_selectedChannels,'String',channelString,...
-    'UserData',channelIndex);
 current_ch_ind = currentChannelIndex(1);
 
-% in the case of single channel or same setting for all channel as in old
-% cases
-if(length(funParams.StPace_Size)==1)
-    ones_array = ones(1,numel(userData.MD.channels_));
-    funParams.StPace_Size = funParams.StPace_Size*ones_array;
-    funParams.StPatch_Size = funParams.StPatch_Size*ones_array;
-    funParams.st_lowerbound_localthresholding = funParams.st_lowerbound_localthresholding*ones_array;
-    funParams.IntPace_Size = funParams.IntPace_Size*ones_array;
-    funParams.IntPatch_Size = funParams.IntPatch_Size*ones_array;
-    funParams.int_lowerbound_localthresholding = funParams.int_lowerbound_localthresholding*ones_array;
-    funParams.Cell_Mask_ind = funParams.Cell_Mask_ind*ones_array;
-    funParams.Whole_movie_ind = funParams.Whole_movie_ind*ones_array;
-    
-    Combine_Way = funParams.Combine_Way;
-    for iC = 1 : numel(userData.MD.channels_)
-        funParams.Combine_Way{iC}= Combine_Way;
-    end
-    
-    funParams.Classifier_Type_ind = funParams.Classifier_Type_ind*ones_array;
-    funParams.LengthThreshold = funParams.LengthThreshold*ones_array;
-    funParams.CurvatureThreshold = funParams.CurvatureThreshold*ones_array;
-    funParams.IternationNumber = funParams.IternationNumber*ones_array;
-    funParams.CoefAlpha = funParams.CoefAlpha*ones_array;
-    funParams.training_sample_number = funParams.training_sample_number*ones_array;
-end
-    
+%% comment these since in the opening this has been run, so this code below
+% should never be active.
+
+% % in the case of single channel or same setting for all channel as in old
+% % cases
+% if(length(funParams.StPace_Size)==1)
+%     ones_array = ones(1,numel(userData.MD.channels_));
+%     funParams.StPace_Size = funParams.StPace_Size*ones_array;
+%     funParams.StPatch_Size = funParams.StPatch_Size*ones_array;
+%     funParams.st_lowerbound_localthresholding = funParams.st_lowerbound_localthresholding*ones_array;
+%     funParams.IntPace_Size = funParams.IntPace_Size*ones_array;
+%     funParams.IntPatch_Size = funParams.IntPatch_Size*ones_array;
+%     funParams.int_lowerbound_localthresholding = funParams.int_lowerbound_localthresholding*ones_array;
+%     funParams.Cell_Mask_ind = funParams.Cell_Mask_ind*ones_array;
+%     funParams.Whole_movie_ind = funParams.Whole_movie_ind*ones_array;
+%     
+%     Combine_Way = funParams.Combine_Way;
+%     for iC = 1 : numel(userData.MD.channels_)
+%         funParams.Combine_Way{iC}= Combine_Way;
+%     end
+%     
+%     funParams.Classifier_Type_ind = funParams.Classifier_Type_ind*ones_array;
+%     funParams.LengthThreshold = funParams.LengthThreshold*ones_array;
+%     funParams.CurvatureThreshold = funParams.CurvatureThreshold*ones_array;
+%     funParams.IternationNumber = funParams.IternationNumber*ones_array;
+%     funParams.CoefAlpha = funParams.CoefAlpha*ones_array;
+%     funParams.training_sample_number = funParams.training_sample_number*ones_array;
+% end
+%     
 % with the previous lines of expansion of single value to an array of all
 % possible channels, display the first selected channel
 set(handles.edit_StPaceSize,'String',funParams.StPace_Size(current_ch_ind));
@@ -1578,8 +1571,8 @@ set(handles.edit_int_lowerbound_localthresholding,'String',funParams.int_lowerbo
 set(handles.popupmenu_cell_mask, 'Value',funParams.Cell_Mask_ind(current_ch_ind));
 set(handles.popupmenu_whole_movie,'Value',funParams.Whole_movie_ind(current_ch_ind));
 
-Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM'};
-for Combine_Way_ind = 1 : 7
+Combine_Way_tag = {'st_only','int_only','int_st_both','st_nms_two','st_nms_only','geo_based_training','geo_based_GM','Canny_Method'};
+for Combine_Way_ind = 1 : 8
     if(strcmp(funParams.Combine_Way{current_ch_ind}, Combine_Way_tag{Combine_Way_ind}))
         set(handles.popupmenu_segmentationbase,'Value',Combine_Way_ind);
         break;
@@ -1661,4 +1654,13 @@ if (strcmp(funParams.Combine_Way{current_ch_ind},'int_only'))
     set(handles.edit_int_lowerbound_localthresholding,'Enable','on');
 end
 
-processGUI_ApplyFcn_without_close_figure(hObject, eventdata, handles,funParams);
+if (strcmp(funParams.Combine_Way{current_ch_ind},'Canny_Method'))
+   
+    set(handles.uipanel_threshold_panel,'Visible','off');
+    set(handles.uipanel_Geo_panel,'Visible','off');
+    
+end
+
+
+% % since this is for display not input, no need for update
+%  processGUI_ApplyFcn_without_close_figure(hObject, eventdata, handles,funParams);

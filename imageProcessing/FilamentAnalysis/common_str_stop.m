@@ -2,6 +2,7 @@ function stop_num = common_str_stop(input_strs)
 
 if length(input_strs)<=1
     stop_num =1;
+    return;
 end
 
 reached = 0;

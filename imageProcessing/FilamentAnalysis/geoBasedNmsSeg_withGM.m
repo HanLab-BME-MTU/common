@@ -233,7 +233,7 @@ if(isempty(classifier_trained))
     
     whole_T_xie_int =  abs(whole_movie_otsu - whole_movie_mode)*CoefAlpha+ whole_movie_mode;
     
-    weight_whole = (-0.5)*funParams.Whole_movie_ind + 1.5;
+    weight_whole = (-0.5)*funParams.Whole_movie_ind(iChannel) + 1.5;
     weight_this =  1 - weight_whole;
     
     T_xie_int = weight_whole*whole_T_xie_int + weight_this*T_xie_int_this;    
