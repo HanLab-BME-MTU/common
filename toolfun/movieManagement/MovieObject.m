@@ -82,7 +82,7 @@ classdef  MovieObject < hgsetget
         end
         
         function value = getFilename(obj)
-            % Retrieve the filename for saving the object         
+            % Retrieve the filename for saving the object
             value = obj.(obj.getFilenameProperty);
         end
         
@@ -321,7 +321,7 @@ classdef  MovieObject < hgsetget
             if isa(type, 'Package'), type = class(type); end
             iPackage = getIndex(obj.packages_, type, varargin{:});
         end
-
+        
         %% Miscellaneous functions
         function askUser = sanityCheck(obj, path, filename,askUser)
             % Check sanity of movie object
@@ -452,14 +452,14 @@ classdef  MovieObject < hgsetget
                 if isMatFile,
                     obj = MovieObject.loadMatFile(varargin{:});
                 else
-                    obj = MovieObject.loadImageFile(varargin{:});
+                    obj = MovieData(varargin{:});
                 end
             end
         end
         
         function obj = loadMatFile(filepath, varargin)
             % Load a movie object saves as a MAT file on disk
-
+            
             % Retrieve the absolute path
             [~, f] = fileattrib(filepath);
             filepath = f.Name;
@@ -495,15 +495,6 @@ classdef  MovieObject < hgsetget
             end
         end
         
-        function obj = loadImageFile(imagepath, varargin)
-            % Load a proprietary image file using Bio-Formats
-
-            % Retrive the absolute path of the iage
-            [~, f] = fileattrib(imagepath);
-            imagepath = f.Name;
-            
-            obj = bfImport(imagepath, varargin{:});
-        end
         
         function obj = loadOmero(session, varargin)
             % Load a movie object stored onto an OMERO server
