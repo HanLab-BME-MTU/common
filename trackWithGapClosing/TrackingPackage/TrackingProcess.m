@@ -81,7 +81,8 @@ classdef TrackingProcess < DataProcessingProcess
             output(1).var='tracksFinal';
             output(1).formatData=@TrackingProcess.formatTracks;
             output(1).type='overlay';
-            output(1).defaultDisplayMethod=@(x)TracksDisplay('Color',colors(x,:));
+            output(1).defaultDisplayMethod = @(x) TracksDisplay(...
+                'Color',colors(x,:));
             output(2).name='Gap length histogram';
             output(2).var='gapInfo';
             output(2).formatData=@(x) x(:,4);
@@ -92,7 +93,8 @@ classdef TrackingProcess < DataProcessingProcess
             output(3).var='staticTracks';
             output(3).formatData=@TrackingProcess.formatTracks;
             output(3).type='overlay';
-            output(3).defaultDisplayMethod=@(x)TracksDisplay('Color',colors(x,:));
+            output(3).defaultDisplayMethod = @(x) TracksDisplay(...
+                'Color',colors(x,:), 'useDragtail', false);
         end
         
         

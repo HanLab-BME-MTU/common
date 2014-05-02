@@ -7,6 +7,7 @@ classdef TracksDisplay < MovieDataDisplay
         Color='r';
         MergeColor = 'y';
         SplitColor = 'g';
+        useDragtail=true;
         dragtailLength=10;
         showLabel=false;
     end
@@ -33,7 +34,11 @@ classdef TracksDisplay < MovieDataDisplay
             
             % Constraing the dragtail length between 2 and the maximum
             % track length
-            dLength = max(2,min(obj.dragtailLength,max(trackLengths)));
+            if obj.useDragtail
+                dLength = max(2,min(obj.dragtailLength,max(trackLengths)));
+            else
+                dLength = max(trackLengths);
+            end
             
             % Concatenate data in a matrix of size dragtailLength x nTracks
             xData = NaN(dLength, nTracks);
@@ -155,6 +160,8 @@ classdef TracksDisplay < MovieDataDisplay
             params(4).validator=@isscalar;
             params(5).name='showLabel';
             params(5).validator=@isscalar;
+            params(6).name='useDragtail';
+            params(6).validator=@islogical;
         end
         
         function f=getDataValidator()
