@@ -399,7 +399,7 @@ if isequal(file,0) || isequal(path,0), return; end
 
 % Import data into movie using bioformats
 importMetadata = logical(get(handles.checkbox_importMetadata,'Value'));
-MD = bfImport([path file], importMetadata);
+MD = MovieData([path file], importMetadata);
 
 % Update movie selector interface
 userData=get(handles.figure1,'UserData');
