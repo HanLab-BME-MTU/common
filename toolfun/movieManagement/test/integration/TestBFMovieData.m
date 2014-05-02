@@ -79,6 +79,23 @@ classdef TestBFMovieData < TestMovieData & TestCase
             self.checkChannelPaths();
         end
         
+        function testConstructorMultiSeries(self)
+            self.fakename = 'test&series=2.fake';
+            filename = self.createFakeFile();
+            movies = MovieData(filename);
+            assertEqual(numel(movies), 2);
+            assertFalse(isequal(movies(1).getReader().formatReader,...
+                movies(2).getReader().formatReader));
+        end
+        
+        function testConstructorMultiSeriesReuseReader(self)
+            self.fakename = 'test&series=2.fake';
+            filename = self.createFakeFile();
+            movies = MovieData(filename, 'reuseReader', true);
+            assertEqual(numel(movies), 2);
+            assertEqual(movies(1).getReader().formatReader,...
+                movies(2).getReader().formatReader);
+        end
         
         %% Typecasting tests
         function checkPixelType(self, classname)
