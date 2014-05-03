@@ -339,9 +339,10 @@ classdef  MovieObject < hgsetget
                 newPath = regexprep(path,endingFilesepToken,'');
                 
                 % If different path
+                hasDisplay = feature('ShowFigureWindows');
                 if ~strcmp(oldPath, newPath)
                     confirmRelocate = 'Yes to all';
-                    if askUser
+                    if askUser && hasDisplay
                         if isa(obj,'MovieData')
                             type='movie';
                             components='channels';
