@@ -125,7 +125,7 @@ packageFiles=vertcat(packageFuns,packageFigs);
 %% Export package files
 % Create package output directory if non-existing
 disp('Creating release directory...')
-mkClrDir(outDir);
+if ~isdir(outDir), mkdir(outDir); end
 
 % Copy function files
 nFiles = numel(packageFiles);
@@ -138,7 +138,7 @@ end
 % Create icons output directory if non-existing
 disp('Creating icons directory...')
 iconsDir=[outDir filesep 'icons'];
-mkClrDir(iconsDir);
+if ~isdir(iconsDir), mkdir(iconsDir); end
 
 % Copy icons
 nIcons = numel(packageIcons);
@@ -151,7 +151,7 @@ end
 % Create icons output directory if non-existing
 disp('Creating documenation directory...')
 docDir=[outDir filesep 'doc'];
-mkClrDir(docDir);
+if ~isdir(docDir), mkdir(docDir); end
 
 % Copy icons
 nDocFiles = numel(packageDocs);
@@ -164,7 +164,7 @@ end
 % Create mex output directory if non-existing
 disp('Creating MEX-files directory...')
 mexDir=[outDir filesep 'mex'];
-mkClrDir(mexDir);
+if ~isdir(mexDir), mkdir(mexDir); end
 
 % Copy mex-files
 nMexFiles = numel(packageMexFuns);
