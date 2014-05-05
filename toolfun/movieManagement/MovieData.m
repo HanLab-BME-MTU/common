@@ -62,7 +62,9 @@ classdef  MovieData < MovieObject
                     
                     obj.channels_ = path_or_channels;
                     obj.outputDirectory_ = ip.Results.outputDirectory;
-                    set(obj, ip.Unmatched)
+                    if ~isempty(fieldnames(ip.Unmatched))
+                        set(obj, ip.Unmatched)
+                    end
                     obj.createTime_ = clock;
                 end
             end
