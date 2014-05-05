@@ -53,12 +53,21 @@ if (~exist(ImageFlattenProcessOutputDir,'dir'))
     mkdir(ImageFlattenProcessOutputDir);
 end
 
+delete([ImageFlattenProcessOutputDir,'*.*']);
+
+
 for iChannel = selected_channels
     ImageFlattenChannelOutputDir = [ImageFlattenProcessOutputDir,'/Channel',num2str(iChannel)];
     if (~exist(ImageFlattenChannelOutputDir,'dir'))
         mkdir(ImageFlattenChannelOutputDir);
     end
     
+    output_dir_content = dir(fullfile([ImageFlattenChannelOutputDir,filesep,'*.*']));
+    
+    %if there are files in this dir, clear them
+    if(length(output_dir_content)>2)
+         delete([ImageFlattenChannelOutputDir,filesep,'*.*']);
+    end
     movieData.processes_{indexFlattenProcess}.setOutImagePath(iChannel,ImageFlattenChannelOutputDir);
 end
 
@@ -133,7 +142,7 @@ for iChannel = selected_channels
     delete img_pixel_pool;
     
     %    low_005_percentile=0;
-    %    high_995_percentile= 2^16-1;
+    %    high_995_percentile= 2^8-1;
     
     img_min=low_005_percentile;
     img_max=high_995_percentile;
@@ -232,8 +241,8 @@ for iChannel = selected_channels
                      
                      currentImg(currentImg<0)=0;
                      currentImg(currentImg>1)=1;                     
-                     currentImg = currentImg*(2^16-1);
-                     currentImg = uint16(currentImg);
+                     currentImg = currentImg*(2^8-1);
+                     currentImg = uint8(currentImg);
                      
                      imwrite(currentImg,[ImageFlattenChannelOutputDir,'/flatten_', ...
                          filename_short_strs{iFrame + sub_i-1},'.tif']);
@@ -300,8 +309,8 @@ for iChannel = selected_channels
             currentImg(currentImg<0)=0;
             currentImg(currentImg>1)=1;
             
-            currentImg = currentImg*(2^16-1);           
-            currentImg = uint16(currentImg);
+            currentImg = currentImg*(2^8-1);           
+            currentImg = uint8(currentImg);
             
             for sub_i = 1 : Sub_Sample_Num
                 if iFrame + sub_i-1 <= nFrame
@@ -338,8 +347,8 @@ for iChannel = selected_channels
             currentImg(currentImg<0)=0;
             currentImg(currentImg>1)=1;
             
-            currentImg = currentImg*(2^16-1);          
-            currentImg = uint16(currentImg);
+            currentImg = currentImg*(2^8-1);          
+            currentImg = uint8(currentImg);
             
             % Save to disk
             for sub_i = 1 : Sub_Sample_Num

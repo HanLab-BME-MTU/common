@@ -73,6 +73,7 @@ CoefAlpha_movie = funParams.CoefAlpha;
 LengthThreshold_movie = funParams.LengthThreshold;
 IternationNumber_movie = funParams.IternationNumber;
 CurvatureThreshold_movie = funParams.CurvatureThreshold;
+Cell_Mask_ind = Cell_Mask_ind_movie;
 
 %% Output Directories
 
