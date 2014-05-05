@@ -78,12 +78,13 @@ classdef DetectionProcess < ImageAnalysisProcess
         end
         function procClasses = getConcreteClasses()
             procClasses = ...
-                {'SubResolutionProcess';
-                'CometDetectionProcess';
-                'AnisoGaussianDetectionProcess';
-                'NucleiDetectionProcess'
-                'PointSourceDetectionProcess';
+                {@SubResolutionProcess;
+                @CometDetectionProcess;
+                @AnisoGaussianDetectionProcess;
+                @NucleiDetectionProcess;
+                @PointSourceDetectionProcess;
                 };
+            procClasses = cellfun(@func2str, procClasses, 'Unif', 0);
         end
         
         function y =formatOutput(x)
