@@ -5,6 +5,8 @@ classdef TestMovieDataProperties < TestCase & TestLibrary
         numAperture = 1.4
         magnification = 100
         camBitdepth = 14
+        pixelSize = 67
+        pixelSizeZ = 100
     end
     
     methods
@@ -61,28 +63,54 @@ classdef TestMovieDataProperties < TestCase & TestLibrary
             assertExceptionThrown(f,'lccb:set:invalid');
         end
         
-        %% Multi
+        function testSetValidPixelsSize(self)
+            self.movie.pixelSize_ = self.pixelSize;
+            assertEqual(self.movie.pixelSize_, self.pixelSize);
+        end
+        
+        function testSetInvalidPixelsSize(self)
+            f= @() set(self.movie, 'pixelSize_', 0);
+            assertExceptionThrown(f,'lccb:set:invalid');
+        end
+        
+        function testSetValidPixelsSizeZ(self)
+            self.movie.pixelSizeZ_ = self.pixelSizeZ;
+            assertEqual(self.movie.pixelSizeZ_, self.pixelSizeZ);
+        end
+        
+        function testSetInvalidPixelsSizeZ(self)
+            f= @() set(self.movie, 'pixelSizeZ_', 0);
+            assertExceptionThrown(f,'lccb:set:invalid');
+        end
+        
+        %% Multi        
+        function values = getValues(self)
+            values = {self.timeInterval, self.numAperture, self.pixelSize,...
+                self.magnification, self.camBitdepth, self.pixelSize};
+        end
+        
         function testSetMultipleProperties(self)
-            properties = {'timeInterval_', 'numAperture_',...
-                'magnification_', 'camBitdepth_'};
-            values = {self.timeInterval, self.numAperture,...
-                self.magnification, self.camBitdepth};
-            set(self.movie, properties, values);
-            for i = 1 : numel(properties)
-                assertEqual(self.movie.(properties{i}), values{i});
+            set(self.movie, self.getProperties(), self.getValues());
+            for i = 1 : numel(self.getProperties())
+                assertEqual(self.movie.(self.getProperties{i}),...
+                    self.getValues{i});
             end
         end
         
         function testMultiSetProperties(self)
-            properties = {'timeInterval_', 'numAperture_',...
-                'magnification_', 'camBitdepth_'};
-            values = {self.timeInterval, self.numAperture,...
-                self.magnification,self.camBitdepth};
-            set(self.movie, properties, values);
-            set(self.movie, properties, values);
-            for i = 1 : numel(properties)
-                assertEqual(self.movie.(properties{i}), values{i});
+            set(self.movie, self.getProperties(), self.getValues());
+            set(self.movie, self.getProperties(), self.getValues());
+            for i = 1 : numel(self.getProperties())
+                assertEqual(self.movie.(self.getProperties{i}),...
+                    self.getValues{i});
             end
         end
+    end
+    methods (Static)
+        function properties = getProperties()
+            properties = {'timeInterval_', 'numAperture_', 'pixelSize_',...
+                'magnification_', 'camBitdepth_', 'pixelSizeZ_'};
+        end
+        
     end
 end

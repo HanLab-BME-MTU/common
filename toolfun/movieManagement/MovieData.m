@@ -87,9 +87,14 @@ classdef  MovieData < MovieObject
             obj.channels_=value;
         end
         
-        function set.pixelSize_ (obj, value)
+        function set.pixelSize_(obj, value)
             obj.checkPropertyValue('pixelSize_',value);
             obj.pixelSize_=value;
+        end
+        
+        function set.pixelSizeZ_(obj, value)
+            obj.checkPropertyValue('pixelSizeZ_',value);
+            obj.pixelSizeZ_=value;
         end
         
         function set.timeInterval_ (obj, value)
@@ -566,7 +571,8 @@ classdef  MovieData < MovieObject
                     validator=@(x) isa(x,'Channel');
                 case {'movieDataPath_','movieDataFileName_'}
                     validator=@ischar;
-                case {'pixelSize_', 'timeInterval_','numAperture_','magnification_','binning_'}
+                case {'pixelSize_', 'timeInterval_', 'numAperture_',...
+                        'magnification_', 'binning_', 'pixelSizeZ_'}
                     validator=@(x) all(isnumeric(x)) && all(x>0);
                 case {'camBitdepth_'}
                     validator=@(x) isscalar(x) && x>0 && ~mod(x, 2);
