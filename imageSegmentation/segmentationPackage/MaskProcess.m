@@ -83,21 +83,21 @@ classdef MaskProcess < Process
             
         end
         
-        function mask = loadChannelOutput(obj,iChan,iFrame,varargin)      
+        function mask = loadChannelOutput(obj, iChan, iFrame, varargin)
             % Input check
             ip =inputParser;
             ip.addRequired('obj');
-            ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
-            ip.addRequired('iFrame',@(x) ismember(x,1:obj.owner_.nFrames_));
+            ip.addRequired('iChan', @obj.checkChanNum);
+            ip.addRequired('iFrame', @obj.checkFrameNum);
             if obj.owner_.is3D()
-                ip.addOptional('iZ',@(x) ismember(x,1:obj.owner_.zSize_));
+                ip.addOptional('iZ', @obj.checkDepthNum);
             end
             ip.addParamValue('output',[],@ischar);            
             ip.parse(obj,iChan,iFrame,varargin{:})
-            if obj.owner_.is3D()
+            maskNames = obj.getOutMaskFileNames(iChan);
+            if obj.getOwner().is3D()
                 iZ = ip.Results.iZ;
                 % Data loading
-                maskNames = obj.getOutMaskFileNames(iChan);
                 mask =imread([obj.outFilePaths_{iChan} filesep maskNames{1}{iFrame}], iZ);
             else
                 mask =imread([obj.outFilePaths_{iChan} filesep maskNames{1}{iFrame}]);
