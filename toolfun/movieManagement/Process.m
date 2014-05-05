@@ -9,7 +9,6 @@ classdef Process < hgsetget
         createTime_     % Time process was created
         startTime_      % Time process was last started
         finishTime_     % Time process was last run
-        threeDP_            % Flag for 3D process
     end
     
     properties  (SetAccess = protected)
