@@ -12,6 +12,7 @@ classdef  MovieData < MovieObject
     
     properties
         roiMaskPath_            % The path where the roi mask is stored
+        roiOmeroId_             % The ID of the OMERO ROI
         movieDataPath_          % The path where the movie data is saved
         movieDataFileName_      % The name under which the movie data is saved
         pixelSize_              % Pixel size in the object domain (nm)
@@ -168,9 +169,16 @@ classdef  MovieData < MovieObject
         end
         
         %% ROI methods
-        function roiMovie = addROI(obj,roiMaskPath,outputDirectory,varargin)
+        function roiMovie = addROI(obj, roiMaskPathOrId, outputDirectory, varargin)
+            
+            % Input check
+            ip = inputParser;
+            ip.addRequired('roiMaskPathOrId', @(x) ischar(x) || isposint(x));
+            ip.addRequired('outputDirectory', @ischar);
+            ip.parse(roiMaskPathOrId, outputDirectory);
+            
             % Create a new object using the movie's channels
-            roiMovie = MovieData(obj.channels_,outputDirectory,varargin{:});
+            roiMovie = MovieData(obj.channels_, outputDirectory, varargin{:});
             
             % Copy metadata fields
             metadatafields = {'pixelSize_', 'timeInterval_', 'bfSeries_',...
@@ -183,7 +191,11 @@ classdef  MovieData < MovieObject
             roiMovie.packages_ = obj.packages_;
             
             % Set ROI properties
-            roiMovie.roiMaskPath_ = roiMaskPath;
+            if ischar(roiMaskPathOrId);
+                roiMovie.roiMaskPath_ = roiMaskPathOrId;
+            else
+                roiMovie.roiOmeroId_ = roiMaskPathOrId;
+            end
             roiMovie.parent_ = obj;
             obj.rois_(end+1) = roiMovie;
         end
@@ -213,30 +225,59 @@ classdef  MovieData < MovieObject
             % Returns the binary mask for the current region of interest
             
             % If no roiMaskPath_, the whole mask is the region of interest
-            if isempty(obj.roiMask) && isempty(obj.roiMaskPath_)
+            if isempty(obj.roiMask) && isempty(obj.roiMaskPath_) && isempty(obj.roiOmeroId_)
                 obj.roiMask = true([obj.imSize_ obj.nFrames_]);
             end
             
             % Return the cached mask if applicable
-            if ~isempty(obj.roiMask)
-                roiMask = obj.roiMask;
-                return
+            if isempty(obj.roiMask) && ~isempty(obj.roiMaskPath_)
+                obj.loadLocalROIMask();
             end
+            
+            if isempty(obj.roiMask) && ~isempty(obj.roiOmeroId_)
+                obj.loadOmeroROIMask();
+            end
+            roiMask = obj.roiMask;
+
+        end
+        
+        function loadLocalROIMask(obj)
+            % Load mask from local file
             
             % Support single tif files for now - should be extended to
             % polygons, series of masks and other ROI objects
             assert(exist(obj.roiMaskPath_,'file')==2)
             if strcmpi(obj.roiMaskPath_(end-2:end),'tif'),
-                roiMask = logical(imread(obj.roiMaskPath_));
-                assert(isequal(size(roiMask(:,:,1)), obj.imSize_));
-                assert(size(roiMask,3) == obj.nFrames_ || ...
-                    size(roiMask,3) ==  1)
-                if size(roiMask,3) == 1,
-                    obj.roiMask = repmat(roiMask,[1 1 obj.nFrames_]);
+                mask = logical(imread(obj.roiMaskPath_));
+                assert(isequal(size(mask(:,:,1)), obj.imSize_));
+                assert(size(mask,3) == obj.nFrames_ || size(mask,3) ==  1);
+                if size(mask,3) == 1,
+                    obj.roiMask = repmat(mask,[1 1 obj.nFrames_]);
                 else
-                    obj.roiMask = roiMask;
+                    obj.roiMask = mask;
                 end
             end
+        end
+        
+        function loadOmeroROIMask(obj)
+            % Load mask from OMERO ROI object
+            
+            assert(~isempty(obj.getOmeroSession()));
+            roiService = obj.getOmeroSession().getRoiService();
+            roi = toMatlabList(roiService.findByRoi(obj.roiOmeroId_,...
+                omero.api.RoiOptions()).rois);
+            assert(isscalar(roi))
+            mask = false([obj.imSize_ obj.nFrames_]);
+            for i = 1: roi.sizeOfShapes
+                shape = roi.getShape(i-1);
+                t = shape.getTheT.getValue + 1;
+                x = shape.getX().getValue();
+                y = shape.getY().getValue();
+                width = shape.getWidth().getValue();
+                height = shape.getHeight().getValue();
+                mask( y:y+height-1, x:x+width-1, t) = true;
+            end
+            obj.roiMask = mask;
         end
         
         function parent=getAncestor(obj)

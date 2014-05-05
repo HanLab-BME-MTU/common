@@ -15,10 +15,20 @@ classdef TestROI < TestCase & TestLibrary
         end
         
         %% ROI methods tests
-        function testAddROI(self)
-            roi = self.movie.addROI('','');
+        function testAddROILocal(self)
+            roi = self.movie.addROI('test','');
             assertEqual(self.movie.rois_, roi);
             assertEqual(roi.parent_, self.movie);
+            assertEqual(roi.roiMaskPath_, 'test');
+            assertTrue(isempty(roi.roiOmeroId_));
+        end
+        
+        function testAddROIOmero(self)
+            roi = self.movie.addROI(1,'');
+            assertEqual(self.movie.rois_, roi);
+            assertEqual(roi.parent_, self.movie);
+            assertEqual(roi.roiOmeroId_, 1);
+            assertTrue(isempty(roi.roiMaskPath_));
         end
         
         function testGetROI(self)
