@@ -38,6 +38,7 @@ classdef  MovieData < MovieObject
     
     properties (Transient =true)
         reader
+        roiMask
     end
     
     methods
@@ -208,13 +209,18 @@ classdef  MovieData < MovieObject
             obj.rois_(index)=[]; % Remove from the list
         end
         
-        function roiMask=getROIMask(obj)
+        function roiMask = getROIMask(obj)
             % Returns the binary mask for the current region of interest
             
             % If no roiMaskPath_, the whole mask is the region of interest
-            if isempty(obj.roiMaskPath_)
-                roiMask = true([obj.imSize_ obj.nFrames_]);
-                return;
+            if isempty(obj.roiMask) && isempty(obj.roiMaskPath_)
+                obj.roiMask = true([obj.imSize_ obj.nFrames_]);
+            end
+            
+            % Return the cached mask if applicable
+            if ~isempty(obj.roiMask)
+                roiMask = obj.roiMask;
+                return
             end
             
             % Support single tif files for now - should be extended to
@@ -223,8 +229,13 @@ classdef  MovieData < MovieObject
             if strcmpi(obj.roiMaskPath_(end-2:end),'tif'),
                 roiMask = logical(imread(obj.roiMaskPath_));
                 assert(isequal(size(roiMask(:,:,1)), obj.imSize_));
-                if size(roiMask,3)==1, roiMask=repmat(roiMask,[1 1 obj.nFrames_]); end
-                assert(size(roiMask,3) == obj.nFrames_);
+                assert(size(roiMask,3) == obj.nFrames_ || ...
+                    size(roiMask,3) ==  1)
+                if size(roiMask,3) == 1,
+                    obj.roiMask = repmat(roiMask,[1 1 obj.nFrames_]);
+                else
+                    obj.roiMask = roiMask;
+                end
             end
         end
         
