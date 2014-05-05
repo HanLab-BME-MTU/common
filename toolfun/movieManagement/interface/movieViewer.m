@@ -277,9 +277,10 @@ if isa(userData.MO,'MovieData')
         'Callback',@(h,event) redrawScene(h,guidata(h)));
     
     
-    hPosition = hPosition+30;
+   
     %%%% 3D slider starts %%%%
-    if MO.is3D()
+    if MO.is3D() 
+        hPosition = hPosition+30;
         uicontrol(moviePanel, 'Style', 'togglebutton','String', 'Show in 3D',...
             'Position', [10 hPosition 100 20],'Callback',@(h,event) render3DMovie(h,guidata(h)));
        
@@ -728,7 +729,7 @@ frameNumber = min(max(frameNumber,1),userData.MO.nFrames_);
 %3D depth aquisition
 if userData.MO.is3D() && strcmp(get(hObject,'Tag'),'edit_depth')
     ZNr = str2double(get(handles.edit_depth,'String'));
-elseif ~userData.MO.isHCS()
+elseif userData.MO.is3D()
     ZNr = round(get(handles.slider_depth,'Value'));
 end
     
