@@ -37,7 +37,8 @@ classdef SegmentationProcess < MaskProcess
         function procClasses = getConcreteClasses()
             procClasses = ...
                 {'ThresholdProcess';
-                'MSSSegmentationProcess'};
+                'MSSSegmentationProcess';
+                'ThresholdProcess3D'};
         end
         
     end

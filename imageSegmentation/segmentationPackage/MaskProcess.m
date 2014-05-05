@@ -143,7 +143,8 @@ classdef MaskProcess < Process
             % List concrete mask classes
             procClasses = ...
                 {'ThresholdProcess';
-                'MSSSegmentationProcess'};
+                'MSSSegmentationProcess';
+                'ThresholdProcess3D'};
         end
         
         function overlayIm = getMaskOverlayImage(mask,cMap)
