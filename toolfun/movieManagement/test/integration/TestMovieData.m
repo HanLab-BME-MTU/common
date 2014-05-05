@@ -37,8 +37,9 @@ classdef TestMovieData < TestMovieObject
             self.checkChannelPaths();
         end
         
-        function rois = setUpROIs(self, nROIs)
+        function rois = setUpROIs(self, nROIs, roiMask)
             
+            if nargin < 3, roiMask = true(self.movie.imSize_); end
             % Create ROI folder
             rois(nROIs, 1) = MovieData();
             for i = 1 : nROIs
@@ -47,7 +48,6 @@ classdef TestMovieData < TestMovieObject
                 mkdir(roiPath);
                 
                 % Create ROI mask
-                roiMask = true(self.movie.imSize_);
                 roiMaskFullPath = fullfile(roiPath, self.roiMaskName);
                 imwrite(roiMask, roiMaskFullPath);
                 
@@ -100,6 +100,36 @@ classdef TestMovieData < TestMovieObject
             % Test ROI has been deleted
             self.movie = MovieData.load(roiMovieFullPath);
             self.checkMovie();
+        end
+        
+        function testGetROIMaskDefault(self)
+            self.setUpMovie();
+
+            % Read the movie and check the roi mask is read and cached
+            roiMask = true([self.imSize self.nFrames]);
+            assertTrue(isempty(self.movie.roiMask));
+            assertEqual(self.movie.getROIMask(), roiMask);
+            assertEqual(self.movie.roiMask, roiMask);
+            
+            % Reload the movie and check the roimask is transient
+            self.movie = MovieData.load(self.movie.getFullPath());
+            assertTrue(isempty(self.movie.roiMask));
+        end
+        
+        function testGetROIMask(self)
+            self.setUpMovie();
+            roiMask = true([self.imSize self.nFrames]);
+            roiMask(1:end/2, 1:end/2, :) = false;
+            roi = self.setUpROIs(1, roiMask);
+
+            % Read the movie and check the roi mask is read and cached
+            assertTrue(isempty(roi.roiMask));
+            assertEqual(roi.getROIMask(), roiMask);
+            assertEqual(roi.roiMask, roiMask);
+            
+            % Reload the movie and check the roimask is transient
+            roi = MovieData.load(roi.getFullPath());
+            assertTrue(isempty(roi.roiMask));
         end
         
         function testDeleteROI(self)
