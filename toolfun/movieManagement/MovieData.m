@@ -5,6 +5,7 @@ classdef  MovieData < MovieObject
         channels_               % Channel object array
         nFrames_                % Number of frames
         imSize_                 % Image size 1x2 array[height width]
+        zSize_                   % Number of Z-sections
         rois_ =  MovieData.empty(1,0);   % Region(s) of interest
         parent_ =  MovieData.empty(1,0); % Parent movie(s)
     end
@@ -14,6 +15,7 @@ classdef  MovieData < MovieObject
         movieDataPath_          % The path where the movie data is saved
         movieDataFileName_      % The name under which the movie data is saved
         pixelSize_              % Pixel size in the object domain (nm)
+        pixelSizeZ_             % Pixel size in the Z-dimensions object domain (nm)
         timeInterval_           % Time interval (s)
         numAperture_            % Lens numerical aperture
         camBitdepth_            % Camera Bit-depth
@@ -252,11 +254,13 @@ classdef  MovieData < MovieObject
             % Call subcomponents sanityCheck
             disp('Checking channels');
             for i = 1: length(obj.channels_)
-                [width(i), height(i), nFrames(i)] = obj.channels_(i).sanityCheck(obj);
+                [width(i), height(i), nFrames(i), zSize(i)] = obj.channels_(i).sanityCheck(obj);
             end
             
             assert(max(nFrames) == min(nFrames), 'MovieData:sanityCheck:nFrames',...
                 'Different number of frames are detected in different channels. Please make sure all channels have same number of frames.')
+            assert(max(zSize) == min(zSize), 'MovieData:sanityCheck:zSize',...
+                'Different number of Z sections are detected in different channels. Please make sure all channels have same number of frames.')
             assert(max(width)==min(width) && max(height)==min(height), ...
                 'MovieData:sanityCheck:imSize',...
                 'Image sizes are inconsistent in different channels.\n\n')
@@ -274,6 +278,13 @@ classdef  MovieData < MovieObject
                     'Record shows image size has changed in this movie.')
             else
                 obj.imSize_ = [height(1) width(1)];
+            end
+            
+            if ~isempty(obj.zSize_)
+                assert(obj.zSize_ == zSize(1), 'MovieData:sanityCheck:nFrames',...
+                    'Record shows the number of frames has changed in this movie.')
+            else
+                obj.zSize_ = zSize(1);
             end
             
             % Fix roi/parent initialization

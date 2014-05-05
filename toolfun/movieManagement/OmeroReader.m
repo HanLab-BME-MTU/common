@@ -82,7 +82,7 @@ classdef  OmeroReader < Reader
             ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
             ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT()));
             ip.parse(c, t);
-            
+           
             % Test session integrity
             store = obj.getSession().createRawPixelsStore();
             store.setPixelsId(obj.getPixels().getId().getValue(), false);
@@ -101,6 +101,6 @@ classdef  OmeroReader < Reader
         
         function pixels = getPixels(obj)
             pixels = obj.getImage().getPrimaryPixels();
-        end       
+        end
     end
 end

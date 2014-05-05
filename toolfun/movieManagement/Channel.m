@@ -172,7 +172,7 @@ classdef Channel < hgsetget
         %Verifies that the channel specification is valid, and returns
         %properties of the channel
         
-        function [width height nFrames] = sanityCheck(obj,varargin)
+        function [width, height, nFrames, zSize] = sanityCheck(obj,varargin)
             % Check the sanity of the channels
             %
             % Check the validity of each channel and return pixel size and time
@@ -193,6 +193,7 @@ classdef Channel < hgsetget
             width = obj.getReader().getSizeX(obj.getChannelIndex());
             height = obj.getReader().getSizeY(obj.getChannelIndex());
             nFrames = obj.getReader().getSizeT(obj.getChannelIndex());
+            zSize = obj.getReader().getSizeZ(obj.getChannelIndex());
             
             if isempty(obj.psfSigma_) && ~isempty(obj.owner_), obj.calculatePSFSigma(); end
         end
