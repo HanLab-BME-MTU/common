@@ -232,12 +232,11 @@ classdef Channel < hgsetget
             end
         end
         
-        function I = loadImage(obj, iFrame, varargin)
-            % Retrieve indidivual planes by timepoint
+        function I = loadImage(obj, iFrame, iZ)
+            % Retrieve indidivual planes by timepoint and z-index
             
-            % Initialize image
-            I = obj.getReader().loadImage(obj.getChannelIndex(), iFrame,...
-                varargin{:});
+            if nargin < 3, iZ = 1; end
+            I = obj.getReader().loadImage(obj.getChannelIndex(), iFrame, iZ);
         end
         
         %% Bio-formats/OMERO functions
