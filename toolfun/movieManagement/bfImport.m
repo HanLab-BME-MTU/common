@@ -136,19 +136,29 @@ function movieArgs = getMovieMetadata(r, iSeries)
 
 % Create movie metadata cell array using read metadata
 movieArgs={};
+metadataStore = r.getMetadataStore();
 
-pixelSizeX = r.getMetadataStore().getPixelsPhysicalSizeX(iSeries);
+pixelSizeX = metadataStore.getPixelsPhysicalSizeX(iSeries);
 % Pixel size might be automatically set to 1.0 by @#$% Metamorph
-hasValidPixelSize = ~isempty(pixelSizeX) && pixelSizeX.getValue() ~= 1;
-if hasValidPixelSize
+hasValidPixelSizeX = ~isempty(pixelSizeX) && pixelSizeX.getValue() ~= 1;
+if hasValidPixelSizeX
     % Convert from microns to nm and check x and y values are equal
-    pixelSizeY = r.getMetadataStore().getPixelsPhysicalSizeX(iSeries);
+    pixelSizeY = metadataStore.getPixelsPhysicalSizeX(iSeries);
     if ~isempty(pixelSizeY),
         assert(isequal(pixelSizeX.getValue(), pixelSizeY.getValue()),...
             'Pixel size different in x and y');
     end
     pixelSizeX = pixelSizeX.getValue() *10^3;
-    movieArgs =horzcat(movieArgs,'pixelSize_',pixelSizeX);
+    movieArgs = horzcat(movieArgs,'pixelSize_',pixelSizeX);
+end
+
+pixelSizeZ = metadataStore.getPixelsPhysicalSizeZ(iSeries);
+% Pixel size might be automatically set to 1.0 by @#$% Metamorph
+hasValidPixelSizeZ = ~isempty(pixelSizeZ) && pixelSizeZ.getValue() ~= 1;
+if hasValidPixelSizeZ
+    % Convert from microns to nm and check x and y values are equal
+    pixelSizeZ = pixelSizeZ.getValue() * 10^3;
+    movieArgs = horzcat(movieArgs,'pixelSizeZ_',pixelSizeZ);
 end
 
 % Camera bit depth
@@ -159,20 +169,20 @@ if hasValidCamBitDepth
 end
 
 % Time interval
-timeInterval = r.getMetadataStore().getPixelsTimeIncrement(iSeries);
+timeInterval = metadataStore.getPixelsTimeIncrement(iSeries);
 if ~isempty(timeInterval)
     movieArgs=horzcat(movieArgs,'timeInterval_',double(timeInterval));
 end
 
 % Lens numerical aperture
 try % Use a try-catch statement because property is not always defined
-    lensNA=r.getMetadataStore().getObjectiveLensNA(0,0);
+    lensNA = metadataStore.getObjectiveLensNA(0,0);
     if ~isempty(lensNA)
         movieArgs=horzcat(movieArgs,'numAperture_',double(lensNA));
-    elseif ~isempty(r.getMetadataStore().getObjectiveID(0,0))
+    elseif ~isempty(metadataStore.getObjectiveID(0,0))
         % Hard-coded for deltavision files. Try to get the objective id and
         % read the objective na from a lookup table
-        tokens=regexp(char(r.getMetadataStore().getObjectiveID(0,0).toString),...
+        tokens=regexp(char(metadataStore.getObjectiveID(0,0).toString),...
             '^Objective\:= (\d+)$','once','tokens');
         if ~isempty(tokens)
             [na,mag]=getLensProperties(str2double(tokens),{'na','magn'});
