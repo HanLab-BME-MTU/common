@@ -96,12 +96,17 @@ classdef Process < hgsetget
         
         function status = checkChanNum(obj,iChan)
             assert(~isempty(iChan) && isnumeric(iChan),'Please provide a valid channel input');
-            status = ismember(iChan,1:numel(obj.getOwner().channels_));
+            status = ismember(iChan, 1:numel(obj.getOwner().channels_));
         end
         
         function status = checkFrameNum(obj,iFrame)
             assert(~isempty(iFrame) && isnumeric(iFrame),'Please provide a valid frame input');
-            status = ismember(iFrame,1:obj.getOwner().nFrames_);
+            status = ismember(iFrame, 1:obj.getOwner().nFrames_);
+        end
+        
+        function status = checkDepthNum(obj, iZ)
+            assert(~isempty(iZ) && isnumeric(iZ),'Please provide a valid z input');
+            status = ismember(iZ, 1:obj.getOwner().zSize_);
         end
         
         function sanityCheck(obj)
