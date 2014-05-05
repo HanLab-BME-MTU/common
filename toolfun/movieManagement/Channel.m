@@ -340,7 +340,7 @@ classdef Channel < hgsetget
         function validator = getPropertyValidator(property)
             switch property
                 case {'emissionWavelength_','excitationWavelength_'}
-                    validator=@(x) isscalar(x) && x>=300 && x<=800;
+                    validator=@(x) isscalar(x) && x>=300 && x<=1200;
                 case 'exposureTime_'
                     validator=@(x) isscalar(x) && x>0;
                 case {'excitationType_','notes_','channelPath_','filterType_'}
