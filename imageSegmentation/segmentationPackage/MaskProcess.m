@@ -89,13 +89,19 @@ classdef MaskProcess < Process
             ip.addRequired('obj');
             ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
             ip.addRequired('iFrame',@(x) ismember(x,1:obj.owner_.nFrames_));
+            if obj.owner_.is3D()
+                ip.addOptional('iZ',@(x) ismember(x,1:obj.owner_.zSize_));
+            end
             ip.addParamValue('output',[],@ischar);            
             ip.parse(obj,iChan,iFrame,varargin{:})
-
-            
-            % Data loading
-            maskNames = obj.getOutMaskFileNames(iChan);
-            mask =imread([obj.outFilePaths_{iChan} filesep maskNames{1}{iFrame}]);
+            if obj.owner_.is3D()
+                iZ = ip.Results.iZ;
+                % Data loading
+                maskNames = obj.getOutMaskFileNames(iChan);
+                mask =imread([obj.outFilePaths_{iChan} filesep maskNames{1}{iFrame}], iZ);
+            else
+                mask =imread([obj.outFilePaths_{iChan} filesep maskNames{1}{iFrame}]);
+            end
 %             mask=cell(size(iChan));
 %             for i=iChan
 %                 maskNames = obj.getOutMaskFileNames(i);

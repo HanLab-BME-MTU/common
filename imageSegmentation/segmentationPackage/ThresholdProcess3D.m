@@ -73,29 +73,30 @@ classdef ThresholdProcess3D < SegmentationProcess
             funParams.BatchMode = false;
             funParams.MethodIndx = 1;
         end
+
         
-        function mask = loadChannelOutput(obj,iChan,iFrame,varargin) 
-            %% temporarily placed here, might need to move to MaskProcess!!
-            % Input check
-            ip =inputParser;
-            ip.addRequired('obj');
-            ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
-            ip.addRequired('iFrame',@(x) ismember(x,1:obj.owner_.nFrames_));
-            ip.addOptional('iZ',@(x) ismember(x,1:obj.owner_.zSize_));
-            ip.addParamValue('output',[],@ischar);
-            ip.parse(obj,iChan,iFrame,varargin{:})
-            iZ = ip.Results.iZ;
-            
-            
-            % Data loading
-            maskNames = obj.getOutMaskFileNames(iChan);
-            mask =imread([obj.outFilePaths_{iChan} filesep maskNames{1}{iFrame}], iZ);
-            %             mask=cell(size(iChan));
-            %             for i=iChan
-            %                 maskNames = obj.getOutMaskFileNames(i);
-            %                 mask{i} = arrayfun(@(j) imread([obj.outFilePaths_{i} filesep...
-            %                     maskNames{1}{j}]),iFrame,'Unif',0);
-            %             end
-        end
+%         function mask = loadChannelOutput(obj, iChan,iFrame,varargin)
+%             %% temporarily placed here, might need to move to MaskProcess!!
+%             % Input check
+%             ip =inputParser;
+%             ip.addRequired('obj');
+%             ip.addRequired('iChan',@(x) ismember(x,1:numel(obj.owner_.channels_)));
+%             ip.addRequired('iFrame',@(x) ismember(x,1:obj.owner_.nFrames_));
+%             ip.addOptional('iZ',@(x) ismember(x,1:obj.owner_.zSize_));
+%             ip.addParamValue('output',[],@ischar);
+%             ip.parse(obj,iChan,iFrame,varargin{:})
+%             iZ = ip.Results.iZ;
+%             
+%             
+%             % Data loading
+%             maskNames = obj.getOutMaskFileNames(iChan);
+%             mask =imread([obj.outFilePaths_{iChan} filesep maskNames{1}{iFrame}], iZ);
+%             %             mask=cell(size(iChan));
+%             %             for i=iChan
+%             %                 maskNames = obj.getOutMaskFileNames(i);
+%             %                 mask{i} = arrayfun(@(j) imread([obj.outFilePaths_{i} filesep...
+%             %                     maskNames{1}{j}]),iFrame,'Unif',0);
+%             %             end
+%         end
     end
 end
