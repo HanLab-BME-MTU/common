@@ -276,6 +276,42 @@ if isa(userData.MO,'MovieData')
         'Tag','slider_frame','BackgroundColor','white',...
         'Callback',@(h,event) redrawScene(h,guidata(h)));
     
+    
+    hPosition = hPosition+30;
+    %%%% 3D slider starts %%%%
+    if MO.is3D()
+        uicontrol(moviePanel, 'Style', 'togglebutton','String', 'Show in 3D',...
+            'Position', [10 hPosition 100 20],'Callback',@(h,event) render3DMovie(h,guidata(h)));
+       
+        uicontrol(moviePanel, 'Style', 'checkbox','Tag','checkbox_saveplane',...
+            'Value',0,'String', 'Save plane','Position', [150 hPosition 100 20]);
+        uicontrol(moviePanel, 'Style', 'checkbox','Tag','checkbox_saveRender',...
+            'Value',0,'String', 'Save render','Position', [250 hPosition 100 20]);
+        uicontrol(moviePanel, 'Style', 'popupmenu','Tag','popupmenu_3DmovieFormat',...
+            'Value',1,'String', {'MOV';'AVI'},'Position', [350 hPosition 100 20]);
+        
+        
+        hPosition = hPosition+30;
+        uicontrol(moviePanel,'Style','text','Position',[10 hPosition 50 15],...
+            'String','Depth','Tag','text_depth','HorizontalAlignment','left');
+        uicontrol(moviePanel,'Style','edit','Position',[70 hPosition 30 20],...
+            'String','1','Tag','edit_depth','BackgroundColor','white',...
+            'HorizontalAlignment','left',...
+            'Callback',@(h,event) redrawScene(h,guidata(h)));
+        uicontrol(moviePanel,'Style','text','Position',[100 hPosition 40 15],...
+            'HorizontalAlignment','left',...
+            'String',['/' num2str(userData.MO.zSize_)],'Tag','text_frameMax');
+        
+        uicontrol(moviePanel,'Style','slider',...
+            'Position',[150 hPosition panelsLength-160 20],...
+            'Value',1,'Min',1,'Max',userData.MO.zSize_,...
+            'SliderStep',[1/double(userData.MO.zSize_)  5/double(userData.MO.zSize_)],...
+            'Tag','slider_depth','BackgroundColor','white',...
+            'Callback',@(h,event) redrawScene(h,guidata(h)));
+    end
+    
+    %%% 3D slider ends %%%%
+    
     hPosition = hPosition+30;
     elseif isa(MO,'MovieData') && MO.isMock()
 %         shtext = uicontrol(moviePanel, 'Style', 'text', 'Position', [10 60 panelsLength-100 20], ...
@@ -597,6 +633,71 @@ if saveMovie && strcmpi(movieFormat,'avi'), movie2avi(movieFrames,moviePath); en
 % Reset button
 set(hObject,'String', 'Run movie', 'Value', 0);
 
+function render3DMovie(hObject,handles)
+userData = get(handles.figure1, 'UserData');
+nPlane = userData.MO.zSize_;
+startFrame = get(handles.slider_depth,'Value');
+if startFrame == nPlane, startFrame =1; end;
+if get(hObject,'Value')
+   action = 'Stop'; 
+else action = 'Run'; 
+end
+set(hObject,'String',[action ' Rendering']);
+
+% Get frame/movies export status
+saveMovie = get(handles.checkbox_saveRender,'Value');
+saveFrames = get(handles.checkbox_saveplane,'Value');
+props = get(handles.popupmenu_3DmovieFormat,{'String','Value'});
+movieFormat = props{1}{props{2}};
+
+if saveMovie,
+    moviePath = fullfile(userData.MO.outputDirectory_,['Movie.' lower(movieFormat)]);
+end
+
+% Initialize movie output
+if saveMovie && strcmpi(movieFormat,'mov')
+    MakeQTMovie('start',moviePath);
+    MakeQTMovie('quality',.9)
+end
+
+if saveMovie && strcmpi(movieFormat,'avi')
+    movieFrames(1:nPlane) = struct('cdata', [],'colormap', []);
+end
+
+% Initialize frame output
+if saveFrames;
+    fmt = ['%0' num2str(ceil(log10(nPlane))) 'd'];
+    frameName = @(frame) ['depth' num2str(frame, fmt) '.tif'];
+    fpath = [userData.MO.outputDirectory_ filesep 'Depths'];
+    mkClrDir(fpath);
+    fprintf('Generating movie depth:     ');
+end
+
+for iFrame = startFrame : nPlane
+    if ~get(hObject,'Value'), return; end % Handle pushbutton press
+    set(handles.slider_depth, 'Value',iFrame);
+    redrawScene(hObject, handles);    
+    drawnow;
+    
+    % Get current frame for frame/movie export
+    hFig = getFigure(handles,'Movie');
+    if saveMovie && strcmpi(movieFormat,'mov'), MakeQTMovie('addfigure'); end
+    if saveMovie && strcmpi(movieFormat,'avi'), movieFrames(iFrame) = getframe(hFig); end
+    if saveFrames
+        print(hFig, '-dtiff', fullfile(fpath,frameName(iFrame)));
+        fprintf('\b\b\b\b%3d%%', round(100*iFrame/(nPlane)));
+    end
+end
+
+% Finish frame/movie creation
+if saveFrames; fprintf('\n'); end
+if saveMovie && strcmpi(movieFormat,'mov'), MakeQTMovie('finish'); end
+if saveMovie && strcmpi(movieFormat,'avi'), movie2avi(movieFrames,moviePath); end
+
+% Reset button
+set(hObject,'String', 'Show 3D', 'Value', 0);
+        
+
 function redrawScene(hObject, handles)
 userData = get(handles.figure1, 'UserData');
 % Retrieve the value of the selected image
@@ -624,10 +725,21 @@ end
 frameNumber=round(frameNumber);
 frameNumber = min(max(frameNumber,1),userData.MO.nFrames_);
 
+%3D depth aquisition
+if userData.MO.is3D() && strcmp(get(hObject,'Tag'),'edit_depth')
+    ZNr = str2double(get(handles.edit_depth,'String'));
+else
+    ZNr = round(get(handles.slider_depth,'Value'));
+end
+    
 % Set the slider and editboxes values
 if ~userData.MO.isHCS()
-set(handles.edit_frame,'String',frameNumber);
-set(handles.slider_frame,'Value',frameNumber);
+    set(handles.edit_frame,'String',frameNumber);
+    set(handles.slider_frame,'Value',frameNumber);
+    if userData.MO.is3D()
+        set(handles.edit_depth,'String',ZNr);
+        set(handles.slider_depth,'Value',ZNr);
+    end
 end
 if userData.MO.isMock() && size(userData.MO.mockMD_.index,1) > 1
 set(handles.slider_frame,'Value',frameNumber);
@@ -699,7 +811,10 @@ userData=get(handles.figure1,'UserData');
 if userData.MO.isMock() && size(userData.MO.mockMD_.index,1) == 1
     frameNr = 1;
 else
-frameNr= get(handles.slider_frame,'Value');
+    frameNr= get(handles.slider_frame,'Value');
+    if userData.MO.is3D()
+        ZNr = get(handles.slider_depth, 'Value'); %%%%%%
+    end
 end
 
 % Use corresponding method depending if input is channel or process output
@@ -709,6 +824,7 @@ channelBoxes =channelBoxes(index);
 if strcmp(imageTag,'radiobutton_channels')
     set(channelBoxes,'Enable','on');
     chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
+    varargin{1} = ZNr;%what kind of varargin cases are there????
     userData.MO.channels_(chanList).draw(frameNr,varargin{:});
     displayMethod = userData.MO.channels_(chanList(1)).displayMethod_;
 else
@@ -753,7 +869,7 @@ for i=1:numel(overlayTags),
     redrawOverlay(handles.(overlayTags{i}),handles)
 end
 
-function redrawOverlay(hObject,handles)
+function redrawOverlay(hObject,handles) %%%% need configuration for 3D.
     userData=get(handles.figure1,'UserData');
     if userData.MO.isMock()
         if size(userData.MO.mockMD_.index,1) == 1;
@@ -804,7 +920,7 @@ if get(hObject,'Value')
         options = {};
     end    
     
-    userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,...
+    userData.MO.processes_{procId}.draw(inputArgs{:},'output',output,... % draw method of process object modificiation for 3D!!!
         options{:});
 else
     h=findobj('Tag',graphicTag);
@@ -815,7 +931,7 @@ end
 if isempty(iChan),
     displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput};
 else
-    displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput,iChan};
+    displayMethod = userData.MO.processes_{procId}.displayMethod_{iOutput,iChan}; %% 3D depth specific process???
 end
 if ~isempty(optFig),
     userData.setOverlayOptions(displayMethod)
