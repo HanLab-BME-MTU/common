@@ -4,6 +4,7 @@ classdef TestMovieData < TestMovieObject
         imSize = [512 512];
         nFrames = 1;
         nChan = 1;
+        zSize = 1;
         
         % ROI properties
         roiFolder = 'ROI';
@@ -27,6 +28,7 @@ classdef TestMovieData < TestMovieObject
             assertEqual(numel(self.movie.channels_), self.nChan);
             assertEqual(self.movie.imSize_, self.imSize);
             assertEqual(self.movie.nFrames_, self.nFrames);
+            assertEqual(self.movie.zSize_, self.zSize);
         end
         
         function checkMovie(self)

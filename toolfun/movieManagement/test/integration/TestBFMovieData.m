@@ -155,6 +155,7 @@ classdef TestBFMovieData < TestMovieData & TestCase
         
         function testSizeZ(self)
             self.fakename = 'test&sizeZ=256.fake';
+            self.zSize = 256;
             self.setUpMovie()
             self.checkDimensions();
         end
