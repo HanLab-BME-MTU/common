@@ -271,11 +271,20 @@ classdef  MovieData < MovieObject
             for i = 1: roi.sizeOfShapes
                 shape = roi.getShape(i-1);
                 t = shape.getTheT.getValue + 1;
-                x = shape.getX().getValue();
-                y = shape.getY().getValue();
-                width = shape.getWidth().getValue();
-                height = shape.getHeight().getValue();
-                mask( y:y+height-1, x:x+width-1, t) = true;
+                if isa(shape, 'omero.model.RectI')
+                    x = shape.getX().getValue();
+                    y = shape.getY().getValue();
+                    width = shape.getWidth().getValue();
+                    height = shape.getHeight().getValue();
+                    mask(y:y+height-1, x:x+width-1, t) = true;
+                elseif isa(shape, 'omero.model.PolygonI')
+                    points = char(shape.getPoints().getValue());
+                    pointLists  = strsplit(points, 'points');
+                    pointList = strsplit(pointLists{2}(2:end-2), ',');
+                    xy = cellfun(@str2double, pointList);
+                    mask(:, :, t) = poly2mask(xy(1:2:end), xy(2:2:end),...
+                        obj.imSize_(1), obj.imSize_(2));
+                end
             end
             obj.roiMask = mask;
         end
@@ -398,7 +407,7 @@ classdef  MovieData < MovieObject
                 if ~strcmp(confirmRelocate,'Yes'), return; end
                 newChannelPath = uigetdir(newRootDir);
                 if isequal(newChannelPath,0), return; end
-                [oldRootDir newRootDir]=getRelocationDirs(channelPaths{1},newChannelPath);
+                [oldRootDir, newRootDir]=getRelocationDirs(channelPaths{1},newChannelPath);
             end
             
             % Relocate the movie channels
