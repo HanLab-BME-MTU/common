@@ -232,11 +232,12 @@ classdef Channel < hgsetget
             end
         end
         
-        function I = loadImage(obj, iFrame)
+        function I = loadImage(obj, iFrame, varargin)
             % Retrieve indidivual planes by timepoint
             
             % Initialize image
-            I = obj.getReader().loadImage(obj.getChannelIndex(), iFrame);
+            I = obj.getReader().loadImage(obj.getChannelIndex(), iFrame,...
+                varargin{:});
         end
         
         %% Bio-formats/OMERO functions
@@ -271,23 +272,25 @@ classdef Channel < hgsetget
             end
         end
         
-        function h = draw(obj,iFrame,varargin)
+        function h = draw(obj, iFrame, varargin)
             % Display the plane for the specified timepoint
             % Input check
             ip = inputParser;
-            ip.addRequired('obj',@(x) isa(x,'Channel') || numel(x)<=3);
-            ip.addRequired('iFrame',@isscalar);
-            ip.addParamValue('hAxes',gca,@ishandle);
+            ip.addRequired('obj', @(x) isa(x,'Channel') || numel(x)<=3);
+            ip.addRequired('iFrame', @isscalar);
+            ip.addOptional('iZ', 1, @isscalar);
+            ip.addParamValue('hAxes', gca, @ishandle);
             ip.KeepUnmatched = true;
-            ip.parse(obj,iFrame,varargin{:})
+            ip.parse(obj, iFrame, varargin{:})
+            iZ = ip.Results.iZ;
             
             % Initialize output
-            if numel(obj)>1, zdim=3; else zdim=1; end
-            data = zeros([obj(1).owner_.imSize_ zdim]);
+            if numel(obj) > 1, cdim=3; else cdim=1; end
+            data = zeros([obj(1).owner_.imSize_ cdim]);
             
             % Fill output
             for iChan=1:numel(obj)
-                data(:,:,iChan)=mat2gray(obj(iChan).loadImage(iFrame));
+                data(:,:,iChan)=mat2gray(obj(iChan).loadImage(iFrame, iZ));
             end
             drawArgs=reshape([fieldnames(ip.Unmatched) struct2cell(ip.Unmatched)]',...
                 2*numel(fieldnames(ip.Unmatched)),1);

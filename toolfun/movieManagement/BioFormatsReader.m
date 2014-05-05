@@ -79,15 +79,17 @@ classdef  BioFormatsReader < Reader
             index = loci.formats.FormatTools.getIndex(obj.formatReader, z, c, t);
         end
         
-        function I = loadImage(obj, c, t)
+        function I = loadImage(obj, c, t, varargin)
             
             ip = inputParser;
             ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
             ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT()));
-            ip.parse(c, t);
+            ip.addOptional('z', 1, @(x) isscalar(x) && ismember(x, 1 : obj.getSizeZ()));
+            ip.parse(c, t, varargin{:});
             
             % Using bioformat tools, get the reader and retrieve dimension order
-            I = bfGetPlane(obj.formatReader, obj.getIndex(0, c-1, t-1) + 1);
+            javaIndex =  obj.getIndex(ip.Results.z - 1, c - 1, t - 1);
+            I = bfGetPlane(obj.formatReader, javaIndex + 1);
         end
         
         function delete(obj)

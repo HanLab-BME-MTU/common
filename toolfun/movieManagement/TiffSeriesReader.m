@@ -110,7 +110,7 @@ classdef  TiffSeriesReader < Reader
             chanNames = obj.paths(iChan);
         end
         
-        function I = loadImage(obj, iChan, iFrame)
+        function I = loadImage(obj, iChan, iFrame, varargin)
             % Initialize array
             sizeX = obj.getSizeX(iChan);
             sizeY = obj.getSizeY(iChan);

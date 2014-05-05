@@ -56,7 +56,7 @@ classdef  OmeroReader < Reader
         
         function bitDepth = getBitDepth(obj, varargin)
             pixelType = obj.getPixels().getPixelsType();
-            pixelsService=obj.getSession().getPixelsService();
+            pixelsService = obj.getSession().getPixelsService();
             bitDepth = pixelsService.getBitDepth(pixelType);
         end
         
@@ -76,17 +76,18 @@ classdef  OmeroReader < Reader
         
         
         %% Image loading function
-        function I = loadImage(obj, c, t)
-
+        function I = loadImage(obj, c, t, varargin)
+            
             ip = inputParser;
             ip.addRequired('c', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeC()));
             ip.addRequired('t', @(x) isscalar(x) && ismember(x, 1 : obj.getSizeT()));
-            ip.parse(c, t);
-           
+            ip.addOptional('z', 1, @(x) isscalar(x) && ismember(x, 1 : obj.getSizeZ()));
+            ip.parse(c, t, varargin{:});
+            
             % Test session integrity
             store = obj.getSession().createRawPixelsStore();
             store.setPixelsId(obj.getPixels().getId().getValue(), false);
-            I = toMatrix(store.getPlane(0, c - 1, t - 1),...
+            I = toMatrix(store.getPlane(ip.Results.z - 1, c - 1, t - 1),...
                 obj.getPixels())';
             store.close();
         end
