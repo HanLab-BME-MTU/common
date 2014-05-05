@@ -187,5 +187,37 @@ classdef TestBFMovieData < TestMovieData & TestCase
                 assertEqual(roi.getSeries(), self.movie(i).getSeries());
             end
         end
+        
+        %% Process tests
+        function testCheckChanNum(self)
+            self.fakename = 'test&sizeC=3.fake';
+            self.setUpMovie();
+            process = self.setUpProcess();
+            assertTrue(process.checkChanNum(1));
+            assertTrue(process.checkChanNum(2));
+            assertTrue(process.checkChanNum(3));
+            assertFalse(process.checkChanNum(0));
+            assertFalse(process.checkChanNum(4));
+        end
+        function testCheckFrameNum(self)
+            self.fakename = 'test&sizeT=3.fake';
+            self.setUpMovie();
+            process = self.setUpProcess();
+            assertTrue(process.checkFrameNum(1));
+            assertTrue(process.checkFrameNum(2));
+            assertTrue(process.checkFrameNum(3));
+            assertFalse(process.checkFrameNum(0));
+            assertFalse(process.checkFrameNum(4));
+        end
+        function testCheckDepthNum(self)
+            self.fakename = 'test&sizeZ=3.fake';
+            self.setUpMovie();
+            process = self.setUpProcess();
+            assertTrue(process.checkDepthNum(1));
+            assertTrue(process.checkDepthNum(2));
+            assertTrue(process.checkDepthNum(3));
+            assertFalse(process.checkDepthNum(0));
+            assertFalse(process.checkDepthNum(4));
+        end
     end
 end
