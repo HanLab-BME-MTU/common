@@ -541,7 +541,11 @@ classdef  MovieData < MovieObject
         function status = is3D(obj)
             objcache = get(obj);
             if isfield(objcache, 'zSize_')
-                status = ~isempty(obj.zSize_);
+                if isempty(obj.zSize_)
+                    status = ~isempty(obj.zSize_);
+                else
+                status = obj.zSize_ > 1; % ~isempty(obj.zSize_);
+                end
             else
                 status = isfield(objcache, 'zSize_');
             end

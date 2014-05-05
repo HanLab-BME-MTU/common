@@ -728,7 +728,7 @@ frameNumber = min(max(frameNumber,1),userData.MO.nFrames_);
 %3D depth aquisition
 if userData.MO.is3D() && strcmp(get(hObject,'Tag'),'edit_depth')
     ZNr = str2double(get(handles.edit_depth,'String'));
-else
+elseif ~userData.MO.isHCS()
     ZNr = round(get(handles.slider_depth,'Value'));
 end
     
@@ -824,7 +824,9 @@ channelBoxes =channelBoxes(index);
 if strcmp(imageTag,'radiobutton_channels')
     set(channelBoxes,'Enable','on');
     chanList=find(arrayfun(@(x)get(x,'Value'),channelBoxes));
-    varargin{1} = ZNr;%what kind of varargin cases are there????
+    if userData.MO.is3D()
+        varargin{1} = ZNr;%what kind of varargin cases are there????
+    end
     userData.MO.channels_(chanList).draw(frameNr,varargin{:});
     displayMethod = userData.MO.channels_(chanList(1)).displayMethod_;
 else

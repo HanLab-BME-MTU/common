@@ -187,7 +187,7 @@ classdef HCSReader < Reader
              
             
         
-        function I = loadImage(obj, iChan, iN)
+        function I = loadImage(obj, iChan, iN, varargin) %temporary fix for iZ input.
             % Initialize array
             sizeX = obj.getSizeX(iChan);
             sizeY = obj.getSizeY(iChan);

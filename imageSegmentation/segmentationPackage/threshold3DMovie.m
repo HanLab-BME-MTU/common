@@ -93,7 +93,7 @@ end
 
 
 %Get the indices of any previous threshold processes from this function                                                                              
-iProc = movieData.getProcessIndex('Threshold3DProcess',1,0);
+iProc = movieData.getProcessIndex('ThresholdProcess3D',1,0);
 
 %If the process doesn't exist, create it
 if isempty(iProc)
