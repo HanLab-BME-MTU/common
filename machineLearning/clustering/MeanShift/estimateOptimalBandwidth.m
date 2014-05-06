@@ -24,7 +24,7 @@ function [H,ppSig,ppMu,ljsAll,Htry] = estimateOptimalBandwidth(X,HRange,varargin
 
 ip = inputParser;
 ip.addParamValue('nH',20,@isposint);%Number of bandwidths to try within specified range
-ip.addParamValue('w',2,@isposint);%Window size for calculating local jenson-shannon divergence. Higher values will decrease likelihood of spurious estimates, but may require a larger number of test bandwidths to obtain a reliable solution
+ip.addParamValue('w',3,@isposint);%Window size for calculating local jenson-shannon divergence. Higher values will decrease likelihood of spurious estimates, but may require a larger number of test bandwidths to obtain a reliable solution
 ip.addParamValue('NumParallel',6,@isposint);%Number of processors to use for parallel computing. Set to 1 to run serially.
 
 ip.parse(varargin{:});
@@ -120,7 +120,7 @@ end
 %were most stable.
 
 ljsAll = nan(n,nH);
-H = nan(n,1);
+H = nan(d,d,n);
 He = nan(n,1);
 minJS = nan(n,1);
 iMinJS = nan(n,1);
@@ -132,7 +132,8 @@ for j = 1:n
     end
     ljsAll(j,:) = localJensenShannon(squeeze(ppMu(j,:,:)),currSig,p.w);%Calculates difference between estimated distributions at neighboring bandwidths
     [minJS(j),iMinJS(j)] = min(ljsAll(j,:));
-    H(j) = sqrt(mean(ppSig(j,iMinJS(j),:)));%The optimal bandwidth is that which minizes this local difference, and is therefore most stable.
+    %H(:,:,j) = diag(squeeze(ppSig(j,iMinJS(j),:)));%The optimal bandwidth is that which minizes this local difference, and is therefore most stable.
+    H(:,:,j) = currSig(:,:,iMinJS(j));%The optimal bandwidth is that which minizes this local difference, and is therefore most stable.
     He(j) = Htry(iMinJS(j));%And the bandwidth at which this was estimated.
     
 end
