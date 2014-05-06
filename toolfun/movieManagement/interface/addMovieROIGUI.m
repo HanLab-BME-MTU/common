@@ -69,18 +69,6 @@ set(handles.text_copyright, 'String', getLCCBCopyright());
 set(handles.listbox_selectedChannels,'String',userData.MD.getChannelPaths(), ...
     'UserData',1:numel(userData.MD.channels_));
 
-% Load the remote OMERO ROI objects
-if userData.MD.isOmero(),
-    roiService = userData.MD.getOmeroSession().getRoiService();
-    roiOptions = omero.api.RoiOptions();
-    roiResult = roiService.findByImage(userData.MD.getOmeroId(), roiOptions);
-    rois = toMatlabList(roiResult.rois);
-    roiNames = arrayfun(@(x) ['Load ROI ' num2str(x.getId().getValue())],...
-        rois, 'UniformOutput', false);
-    allNames = {'Draw a region of interest', roiNames{:}};
-    set(handles.popupmenu_loadROI, 'UserData', rois,...
-        'String', allNames , 'Value', 1)
-end
 % Save the image directories and names (for cropping preview)
 userData.nFrames = userData.MD.nFrames_;
 userData.imPolyHandle.isvalid=0;
