@@ -398,7 +398,7 @@ assert(bfCheckJavaPath(), 'Could not load the Bio-Formats library');
 if isequal(file,0) || isequal(path,0), return; end
 
 % Import data into movie using bioformats
-loci.common.DebugTools.enableLogging('DEBUG');
+loci.common.DebugTools.enableLogging('INFO');
 importMetadata = logical(get(handles.checkbox_importMetadata,'Value'));
 reuseReader = logical(get(handles.checkbox_reuseReader,'Value'));
 MD = MovieData([path file], importMetadata, 'reuseReader', reuseReader);
