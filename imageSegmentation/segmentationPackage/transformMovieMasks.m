@@ -195,16 +195,18 @@ outMaskDirs = cell(1,nChanX);
 maskDirs = cell(1,nChanX);
 maskNames = cell(1,nChanX);
 
+% Reinitialize outFilePaths
+movieData.setOutFilePaths(cell(1, numel(movieData.channels_));
 for j = 1:nChanX;
     
     %Get the most recent seg process with masks for this channel
     iP = p.SegProcessIndex(find(hasMasks(j,:),1,'last'));
     
-    movieData.processes_{iProc}.setInMaskPath(p.ChannelIndex(j),...
-        movieData.processes_{iP}.outFilePaths_(p.ChannelIndex(j)));
+    movieData.getProcess(iProc).setInMaskPath(p.ChannelIndex(j),...
+        movieData.getProcess(iP).outFilePaths_(p.ChannelIndex(j)));
     
-    maskDirs(j) = movieData.processes_{iP}.outFilePaths_(p.ChannelIndex(j));
-    maskNames(j) = movieData.processes_{iP}.getOutMaskFileNames(p.ChannelIndex(j));
+    maskDirs(j) = movieData.getProcess(iP).outFilePaths_(p.ChannelIndex(j));
+    maskNames(j) = movieData.getProcess(iP).getOutMaskFileNames(p.ChannelIndex(j));
     
     %Create string for current directory
     currDir = [p.OutputDirectory filesep dName num2str(p.ChannelIndex(j))];    
@@ -213,7 +215,7 @@ for j = 1:nChanX;
     mkClrDir(currDir)               
     
     %Save this in the process object
-    movieData.processes_{iProc}.setOutMaskPath(p.ChannelIndex(j),currDir);
+    movieData.getProcess(iProc).setOutMaskPath(p.ChannelIndex(j),currDir);
     outMaskDirs{j} = currDir;
    
 end
