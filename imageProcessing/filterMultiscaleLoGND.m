@@ -122,7 +122,9 @@ function [ imMultiscaleLoGResponse, varargout ] = filterMultiscaleLoGND( imInput
     for i = 1:numel( sigmaValues )
 
         if flagDebugMode
-            fprintf( '\n\t%d/%d: Trying sigma value of %.2f ... ', i, numel( sigmaValues ), sigmaValues(i) );   
+            fprintf( '\n\t%d/%d: Trying sigma value of %.2f for blobs of diameter %.2f ... ', ...
+                     i, numel( sigmaValues ), sigmaValues(i), ...
+                     sigmaValues(i) * 2 * sqrt(ndims(imInput)) );   
             tic
         end
 

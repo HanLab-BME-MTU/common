@@ -22,38 +22,34 @@ function [ imBlobSeedPoints, varargout ] = detectBlobsUsingMultiscaleLoG( im, bl
     p = inputParser;    
     p.addRequired( 'im', @(x) (isnumeric(x) && ismember( ndims(x), [2,3] )) );
     p.addRequired( 'blobDiameterRange', @(x) (numel(x) == 2) );    
-    p.parse( im, blobDiameterRange );    
-    
     p.addParamValue( 'spacing', ones( 1, ndims(im) ), @(x) (isnumeric(x) && numel(x) == ndims(im)) );
+    p.addParamValue( 'flagBrightBlobs', true, @(x) (isscalar(x) && islogical(x)) );
     p.addParamValue( 'minBlobDistance', [], @(x) isscalar(x) );
     p.addParamValue( 'numLoGScales', 15, @(x) isscalar(x) );
-    p.addParamValue( 'flagBrightBlobs', true, @(x) (isscalar(x) && islogical(x)) );
+    p.addParamValue( 'logResponseCutoff', eps, @isscalar );
+    p.addParamValue( 'roiMask', [], @(x) ( (isnumeric(x) || islogical(x)) && ndims(x) == ndims(im) && all(size(x) == size(im)) ) )    
     p.addParamValue( 'debugMode', false, @(x) (isscalar(x) && islogical(x)) );
     p.parse( im, blobDiameterRange, varargin{:} ); 
-    
-    minBlobDistance = p.Results.minBlobDistance;
-    spacing = p.Results.spacing;    
-    numLoGScales = p.Results.numLoGScales;
-    flagBrightBlobs = p.Results.flagBrightBlobs;
-    flagDebugMode = p.Results.debugMode;
 
+    PARAMETERS = p.Results;
+    
     % Compute LoG at a series of sigmas
     sigmaLogRange = log2( (0.5 * sort(blobDiameterRange) / sqrt(ndims(im))) );
-    sigmaValues = 2.^linspace( sigmaLogRange(1), sigmaLogRange(2), numLoGScales);
+    sigmaValues = 2.^linspace( sigmaLogRange(1), sigmaLogRange(2), PARAMETERS.numLoGScales);
 
     [ imMultiscaleLoGResponse, pixelScaleMap ] = filterMultiscaleLoGND( im, sigmaValues, ...
-                                                                        'spacing', spacing, ...
-                                                                        'debugMode', flagDebugMode);
+                                                                        'spacing', PARAMETERS.spacing, ...
+                                                                        'debugMode', PARAMETERS.debugMode);
 
-    if flagBrightBlobs
+    if PARAMETERS.flagBrightBlobs
         imMultiscaleLoGResponse = -1 * imMultiscaleLoGResponse;
     end
     
     % locate local intensity maxima in gaussian blurred image
-    if isempty(minBlobDistance)
-        MaximaSuppressionSize = round(  min( blobDiameterRange ) ./ spacing );
+    if isempty(PARAMETERS.minBlobDistance)
+        MaximaSuppressionSize = round(  min( blobDiameterRange ) ./ PARAMETERS.spacing );
     else
-        MaximaSuppressionSize = round( minBlobDistance ./ spacing );    
+        MaximaSuppressionSize = round( PARAMETERS.minBlobDistance ./ PARAMETERS.spacing );    
     end
     
     evenind = (mod( MaximaSuppressionSize, 2 ) == 0);
@@ -66,7 +62,15 @@ function [ imBlobSeedPoints, varargout ] = detectBlobsUsingMultiscaleLoG( im, bl
             
             imLocalMax = locmax2d(imMultiscaleLoGResponse, MaximaSuppressionSize, 1);            
             
-            if flagDebugMode
+            % prune extrema with weak contrast
+            imLocalMax(imLocalMax < PARAMETERS.logResponseCutoff) = 0;
+
+            % prune extrema with weak contrast
+            if ~isempty(PARAMETERS.roiMask)
+                imLocalMax(~PARAMETERS.roiMask) = 0;
+            end
+            
+            if PARAMETERS.debugMode
                 
                 seedInd = find( imLocalMax > 0 );
                 [cy, cx] = ind2sub( size(imLocalMax), seedInd );                
@@ -103,7 +107,15 @@ function [ imBlobSeedPoints, varargout ] = detectBlobsUsingMultiscaleLoG( im, bl
             imLocalMax = locmax3d(imMultiscaleLoGResponse, MaximaSuppressionSize, ...
                                   'ClearBorder', false);           
             
-            if flagDebugMode
+            % prune extrema with weak contrast
+            imLocalMax(imLocalMax < PARAMETERS.logResponseCutoff) = 0;
+
+            % prune extrema with weak contrast
+            if ~isempty(PARAMETERS.roiMask)
+                imLocalMax(~PARAMETERS.roiMask) = 0;
+            end
+                              
+            if PARAMETERS.debugMode
                 
                 seedPixelInd = find( imLocalMax > 0 );
                 
@@ -111,13 +123,13 @@ function [ imBlobSeedPoints, varargout ] = detectBlobsUsingMultiscaleLoG( im, bl
                 [seedPos{:}] = ind2sub( size(imLocalMax), seedPixelInd );
                 seedPos = cat( 2, seedPos{[2,1]}, seedPos{3:end} );
                 
-                kd = KDTreeSearcher( seedPos * diag(spacing) );
+                kd = KDTreeSearcher( seedPos * diag(PARAMETERS.spacing) );
                 
                 pixelPos = cell(1, 3);
                 [pixelPos{:}] = ind2sub( size(imLocalMax), (1:numel(imLocalMax))' );
                 pixelPos = cat( 2, pixelPos{[2,1]}, pixelPos{3:end} );     
 
-                [closestSeedInd, distanceToSeed] = kd.knnsearch(pixelPos * diag(spacing));
+                [closestSeedInd, distanceToSeed] = kd.knnsearch(pixelPos * diag(PARAMETERS.spacing));
                 closestSeedPixelInd = seedPixelInd( closestSeedInd );
                 
                 imBlobMask = zeros( size(imLocalMax) );
