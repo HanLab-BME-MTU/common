@@ -123,9 +123,9 @@ for i = 1 : nSeries
     MD(i) = MovieData(movieChannels(i, :), outputDir, movieArgs{:});
     MD(i).setPath(outputDir);
     MD(i).setFilename(movieFileName);
-    MD(i).setSeries(iSeries);
+    MD(i).setSeries(i);
     if ip.Results.reuseReader || i == 1,
-        MD(i).setReader(BioFormatsReader(r, iSeries));
+        MD(i).setReader(BioFormatsReader(r, i));
     end
     % Close reader and check movie sanity
     MD(i).sanityCheck;
