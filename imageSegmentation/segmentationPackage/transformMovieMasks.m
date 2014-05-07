@@ -196,7 +196,7 @@ maskDirs = cell(1,nChanX);
 maskNames = cell(1,nChanX);
 
 % Reinitialize outFilePaths
-movieData.setOutFilePaths(cell(1, numel(movieData.channels_));
+movieData.getProcess(iProc).setOutFilePaths(cell(1, numel(movieData.channels_)));
 for j = 1:nChanX;
     
     %Get the most recent seg process with masks for this channel
