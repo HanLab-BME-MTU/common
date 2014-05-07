@@ -3,6 +3,7 @@ classdef  BioFormatsReader < Reader
     
     properties (Transient =true)
         formatReader
+        series = 0;
     end
     
     methods
@@ -10,23 +11,29 @@ classdef  BioFormatsReader < Reader
         function obj = BioFormatsReader(varargin)
             % Check loci-tools.jar is in the Java path
             if isa(varargin{1}, 'loci.formats.IFormatReader'),
-               obj.formatReader = varargin{1};
+                obj.formatReader = varargin{1};
+                obj.series = obj.formatReader.getSeries();
             else
                 loci.common.DebugTools.enableLogging('OFF');
                 obj.formatReader = bfGetReader(varargin{1}, false);
             end
-            if nargin>1
-                obj.formatReader.setSeries(varargin{2});
+            if nargin>1,
+                obj.series = varargin{2};
+                obj.formatReader.setSeries(obj.series);
             end
         end
         
         function metadataStore = getMetadataStore(obj)
+            metadataStore = obj.formatReader.getMetadataStore();
+        end
+        
+        function r = getReader(obj)
             r = obj.formatReader;
-            metadataStore = r.getMetadataStore();
+            r.setSeries(obj.getSeries());
         end
         
         function series = getSeries(obj)
-            series = obj.formatReader.getSeries();
+            series = obj.series;
         end
         
         function sizeX = getSizeX(obj, varargin)
@@ -50,23 +57,23 @@ classdef  BioFormatsReader < Reader
         end
         
         function bitDepth = getBitDepth(obj, varargin)
-            pixelType = obj.formatReader.getPixelType();
+            pixelType = obj.getReader().getPixelType();
             bpp = loci.formats.FormatTools.getBytesPerPixel(pixelType);
             bitDepth = 8 * bpp;
         end
         
         function fileNames = getImageFileNames(obj, iChan, varargin)
             % Generate image file names
-            [~, fileName] = fileparts(char(obj.formatReader.getCurrentFile));
+            [~, fileName] = fileparts(char(obj.getReader().getCurrentFile()));
             basename = sprintf('%s_s%g_c%d_t',fileName, obj.getSeries()+1, iChan);
             fileNames = arrayfun(@(t) [basename num2str(t, ['%0' num2str(floor(log10(obj.getSizeT))+1) '.f']) '.tif'],...
                 1:obj.getSizeT,'Unif',false);
         end
         
         function channelNames = getChannelNames(obj, iChan)
-            [~, fileName, fileExt] = fileparts(char(obj.formatReader.getCurrentFile));
+            [~, fileName, fileExt] = fileparts(char(obj.getReader().getCurrentFile()));
             
-            if obj.formatReader.getSeriesCount() > 1
+            if obj.getReader().getSeriesCount() > 1
                 base = [fileName fileExt ' Series ' num2str(obj.getSeries()+1) ' Channel '];
             else
                 base = [fileName fileExt ' Channel '];
@@ -76,7 +83,7 @@ classdef  BioFormatsReader < Reader
         end
         
         function index = getIndex(obj, z, c, t)
-            index = loci.formats.FormatTools.getIndex(obj.formatReader, z, c, t);
+            index = loci.formats.FormatTools.getIndex(obj.getReader(), z, c, t);
         end
         
         function I = loadImage(obj, c, t, varargin)
@@ -89,7 +96,7 @@ classdef  BioFormatsReader < Reader
             
             % Using bioformat tools, get the reader and retrieve dimension order
             javaIndex =  obj.getIndex(ip.Results.z - 1, c - 1, t - 1);
-            I = bfGetPlane(obj.formatReader, javaIndex + 1);
+            I = bfGetPlane(obj.getReader(), javaIndex + 1);
         end
         
         function delete(obj)

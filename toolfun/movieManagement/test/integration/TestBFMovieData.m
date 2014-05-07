@@ -219,5 +219,34 @@ classdef TestBFMovieData < TestMovieData & TestCase
             assertFalse(process.checkDepthNum(0));
             assertFalse(process.checkDepthNum(4));
         end
+        
+        %%
+        function testMultiSeriesReuseReaderGetSeries(self)
+            self.fakename = 'test&series=2.fake';
+            filename = self.createFakeFile();
+            movies = MovieData(filename, 'reuseReader', true);
+            assertEqual(movies(1).getReader().formatReader.getSeries(), 1);
+            assertEqual(movies(2).getReader().formatReader.getSeries(), 1);
+            movies(2).getChannel(1).loadImage(1, 1);
+            assertEqual(movies(1).getReader().formatReader.getSeries(), 1);
+            assertEqual(movies(2).getReader().formatReader.getSeries(), 1);
+            movies(1).getChannel(1).loadImage(1, 1);
+            assertEqual(movies(1).getReader().formatReader.getSeries(), 0);
+            assertEqual(movies(2).getReader().formatReader.getSeries(), 0);
+        end
+
+        function testMultiSeriesGetSeries(self)
+            self.fakename = 'test&series=2.fake';
+            filename = self.createFakeFile();
+            movies = MovieData(filename, 'reuseReader', false);
+            assertEqual(movies(1).getReader().formatReader.getSeries(), 0);
+            assertEqual(movies(2).getReader().formatReader.getSeries(), 1);
+            movies(2).getChannel(1).loadImage(1, 1);
+            assertEqual(movies(1).getReader().formatReader.getSeries(), 0);
+            assertEqual(movies(2).getReader().formatReader.getSeries(), 1);
+            movies(1).getChannel(1).loadImage(1, 1);
+            assertEqual(movies(1).getReader().formatReader.getSeries(), 0);
+            assertEqual(movies(2).getReader().formatReader.getSeries(), 1);
+       end
     end
 end
