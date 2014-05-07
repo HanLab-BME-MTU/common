@@ -10,6 +10,7 @@ classdef TracksDisplay < MovieDataDisplay
         useDragtail=true;
         dragtailLength=10;
         showLabel=false;
+        ButtonDownFcn=[];
     end
     methods
         function obj=TracksDisplay(varargin)
@@ -135,7 +136,7 @@ classdef TracksDisplay < MovieDataDisplay
             end
             
             % Set tag
-            set(h(ishandle(h)), 'Tag', tag);
+            set(h(ishandle(h)), 'Tag', tag, 'ButtonDownFcn', obj.ButtonDownFcn);
             
         end
         
@@ -166,6 +167,8 @@ classdef TracksDisplay < MovieDataDisplay
             params(7).validator=@(x)ischar(x) ||isvector(x);
             params(8).name='SplitColor';
             params(8).validator=@(x)ischar(x) ||isvector(x);
+            params(9).name='ButtonDownFcn';
+            params(9).validator=@(x) isempty(x) || isa(x, 'function_handle');
         end
         
         function f=getDataValidator()
