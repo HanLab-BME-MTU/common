@@ -57,6 +57,8 @@ s(25).name = 'turborfp';
 s(25).lambda_em = 574e-9;
 s(26).name = 'mruby2';
 s(26).lambda_em = 600e-9;
+s(27).name = 'tmr';
+s(27).lambda_em = 578e-9;
 
 [~,i] = sort([s.lambda_em]);
 s = s(i);
