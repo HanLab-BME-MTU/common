@@ -174,6 +174,30 @@ classdef TestBFMovieData < TestMovieData & TestCase
             self.checkDimensions();
         end
         
+        
+        function testGetDimensions(self)
+            sizeX = 10;
+            sizeY = 20;
+            sizeZ = 5;
+            sizeC = 3;
+            sizeT = 200;
+            self.fakename = sprintf(...
+                'test&sizeX=%g&sizeY=%g&sizeZ=%g&sizeC=%g&sizeT=%g.fake',...
+                sizeX, sizeY, sizeZ, sizeC, sizeT);
+            self.setUpMovie()
+            dim = [sizeX sizeY sizeZ sizeC sizeT];
+            assertEqual(self.movie.getDimensions(), dim);
+            assertEqual(self.movie.getDimensions('XYZCT'), dim);
+            assertEqual(self.movie.getDimensions('XYZTC'), dim([1 2 3 5 4]));
+            assertEqual(self.movie.getDimensions('XYTZC'), dim([1 2 5 3 4]));
+            assertEqual(self.movie.getDimensions('XYTCZ'), dim([1 2 5 4 3]));
+            assertEqual(self.movie.getDimensions('XYCZT'), dim([1 2 4 3 5]));
+            assertEqual(self.movie.getDimensions('XYCTZ'), dim([1 2 4 5 3]));
+            assertEqual(self.movie.getDimensions('XYZ'), dim([1 2 3]));
+            assertEqual(self.movie.getDimensions('XYT'), dim([1 2 5]));
+            assertEqual(self.movie.getDimensions('XYC'), dim([1 2 4]));
+        end
+        
         %% ROI tests
         function testAddROIMultiSeries(self)
             nMovies = 3;
@@ -234,7 +258,7 @@ classdef TestBFMovieData < TestMovieData & TestCase
             assertEqual(movies(1).getReader().formatReader.getSeries(), 0);
             assertEqual(movies(2).getReader().formatReader.getSeries(), 0);
         end
-
+        
         function testMultiSeriesGetSeries(self)
             self.fakename = 'test&series=2.fake';
             filename = self.createFakeFile();
@@ -247,6 +271,6 @@ classdef TestBFMovieData < TestMovieData & TestCase
             movies(1).getChannel(1).loadImage(1, 1);
             assertEqual(movies(1).getReader().formatReader.getSeries(), 0);
             assertEqual(movies(2).getReader().formatReader.getSeries(), 1);
-       end
+        end
     end
 end

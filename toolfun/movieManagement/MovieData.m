@@ -125,6 +125,18 @@ classdef  MovieData < MovieObject
             obj.binning_=value;
         end
         
+        function dimensions = getDimensions(obj, dimensionOrder)
+            % Retrieve the dimensions of the image
+            
+            dimensions = [obj.imSize_(end:-1:1) obj.zSize_...
+                numel(obj.channels_) obj.nFrames_];
+            if nargin > 1,
+                [status, index] = ismember(dimensionOrder, 'XYZCT');
+                assert(all(status), 'Dimension order must be a subset of XYZCT');
+                dimensions = dimensions(index);
+            end
+        end
+        
         function fileNames = getImageFileNames(obj,iChan)
             % Retrieve the names of the images in a specific channel
             

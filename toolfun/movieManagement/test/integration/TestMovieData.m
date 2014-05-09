@@ -104,7 +104,7 @@ classdef TestMovieData < TestMovieObject
         
         function testGetROIMaskDefault(self)
             self.setUpMovie();
-
+            
             % Read the movie and check the roi mask is read and cached
             roiMask = true([self.imSize self.nFrames]);
             assertTrue(isempty(self.movie.roiMask));
@@ -121,7 +121,7 @@ classdef TestMovieData < TestMovieObject
             roiMask = true([self.imSize self.nFrames]);
             roiMask(1:end/2, 1:end/2, :) = false;
             roi = self.setUpROIs(1, roiMask);
-
+            
             % Read the movie and check the roi mask is read and cached
             assertTrue(isempty(roi.roiMask));
             assertEqual(roi.getROIMask(), roiMask);
