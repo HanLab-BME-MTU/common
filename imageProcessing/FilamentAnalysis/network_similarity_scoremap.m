@@ -16,10 +16,15 @@ angle_map_1_2_A = nan(img_size);
 angle_map_2_1_A = nan(img_size);
 angle_map_1_2_B = nan(img_size);
 angle_map_2_1_B = nan(img_size);
+angle_map_II_1_2_A= nan(img_size);
+angle_map_II_1_2_B= nan(img_size);
+angle_map_II_2_1_A= nan(img_size);
+angle_map_II_2_1_B= nan(img_size);
 
-  [MT_digital_model,MT_orientation_model,MT_XX,MT_YY,MT_OO] ...
+
+  [MT_digital_model,MT_orientation_model,MT_XX,MT_YY,MT_OO, MT_II] ...
         = filament_model_to_digital_with_orientation(MT_current_model);
-  [VIF_digital_model,VIF_orientation_model,VIF_XX,VIF_YY,VIF_OO] ...
+  [VIF_digital_model,VIF_orientation_model,VIF_XX,VIF_YY,VIF_OO, VIF_II] ...
         = filament_model_to_digital_with_orientation(VIF_current_model);
 
 [Y1, X1] = find(VIF_current_seg>0);
@@ -53,12 +58,16 @@ for iQ = 1 : length(Y1)
         angle_map_1_2_A(sub2ind(img_size,Y1(iQ),X1(iQ))) = ...
             VIF_OO(iQ) - MT_OO(sort_idx(1));
         
+        angle_map_II_1_2_A(sub2ind(img_size,Y1(iQ),X1(iQ))) = ...
+            MT_II(sort_idx(1));
+        
         % if found two point, same point, could be crossing, get the other one as well.
         if(length(sort_dist)>=2 && length(sort_idx)>=2)
             if sort_dist(1)==sort_dist(2) && Y2(sort_idx(1))==Y2(sort_idx(2))...
                     && X2(sort_idx(1))==X2(sort_idx(2))
                 angle_map_1_2_B(sub2ind(img_size,Y1(iQ),X1(iQ))) = ...
                     VIF_OO(iQ) - MT_OO(sort_idx(2));
+                angle_map_II_1_2_B(sub2ind(img_size,Y1(iQ),X1(iQ))) = MT_II(sort_idx(2));
             end
         end
     end
@@ -76,7 +85,33 @@ angle_map_1_2_B(angle_map_1_2_B<-pi/2) = angle_map_1_2_B(angle_map_1_2_B<-pi/2) 
 angle_map_1_2_B(angle_map_1_2_B>pi/2) = angle_map_1_2_B(angle_map_1_2_B>pi/2) -pi;
 angle_map_1_2_B(angle_map_1_2_B<-pi/2) = angle_map_1_2_B(angle_map_1_2_B<-pi/2) +pi;
 
-angle_map_1_2 = min(abs(angle_map_1_2_A),abs(angle_map_1_2_B));
+
+angle_map_1_2 = nan(size(angle_map_1_2_A,1),size(angle_map_1_2_A,2));
+map_II_1_2 = nan(size(angle_map_1_2_A,1),size(angle_map_1_2_A,2));
+ 
+for i = 1 : size(angle_map_1_2_A, 1)
+    for j = 1 : size(angle_map_1_2_A, 2)
+        % if there is data
+        if(~isnan(angle_map_1_2_A(i,j)))
+            % if there is only one closest point
+            if(isnan(angle_map_1_2_B(i,j)))
+                map_II_1_2(i,j)=angle_map_II_1_2_A(i,j);
+                angle_map_1_2(i,j)= abs(angle_map_1_2_A(i,j));
+            else
+                % if it is closest to a crossing(2 points), pick the one
+                % with smaller abs value
+                if(abs(angle_map_1_2_A(i,j))>abs(angle_map_1_2_B(i,j)))
+                    map_II_1_2(i,j)=angle_map_II_1_2_B(i,j);
+                    angle_map_1_2(i,j)= abs(angle_map_1_2_B(i,j));                    
+                else
+                    map_II_1_2(i,j)=angle_map_II_1_2_A(i,j);
+                    angle_map_1_2(i,j)= abs(angle_map_1_2_A(i,j));                    
+                end % end picking
+            end % end if only one point
+        end % end if there is data
+    end % end j
+end % end i
+    
 
 % % if the dist is farther than radius, gate it, so this index is for 1
 % ind_gate = find(dist<=radius);
@@ -117,6 +152,9 @@ for iQ = 1 : length(Y2)
             distance_map_2_1(sub2ind(img_size,Y2(iQ),X2(iQ)))=sort_dist(1);
             angle_map_2_1_A(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
                 MT_OO(iQ) - VIF_OO(sort_idx(1));
+            angle_map_II_2_1_A(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
+                MT_II(sort_idx(1));
+            
         end
         
         if(length(sort_dist)>=2 && length(sort_idx)>=2)
@@ -124,6 +162,9 @@ for iQ = 1 : length(Y2)
                     && X1(sort_idx(1))==X1(sort_idx(2))
                 angle_map_2_1_B(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
                     MT_OO(iQ) - VIF_OO(sort_idx(2));
+                angle_map_II_2_1_B(sub2ind(img_size,Y2(iQ),X2(iQ))) = ...
+                    MT_II(sort_idx(2));
+                
             end
         end
     end
@@ -141,7 +182,36 @@ angle_map_2_1_B(angle_map_2_1_B<-pi/2) = angle_map_2_1_B(angle_map_2_1_B<-pi/2) 
 angle_map_2_1_B(angle_map_2_1_B>pi/2) = angle_map_2_1_B(angle_map_2_1_B>pi/2) -pi;
 angle_map_2_1_B(angle_map_2_1_B<-pi/2) = angle_map_2_1_B(angle_map_2_1_B<-pi/2) +pi;
 
-angle_map_2_1 = min(abs(angle_map_2_1_A),abs(angle_map_2_1_B));
+% angle_map_2_1 = min(abs(angle_map_2_1_A),abs(angle_map_2_1_B));
+
+
+map_II_2_1 = nan(size(angle_map_2_1_A,1),size(angle_map_2_1_A,2));
+angle_map_2_1 = nan(size(angle_map_2_1_A,1),size(angle_map_2_1_A,2));
+ 
+for i = 1 : size(angle_map_2_1_A, 1)
+    for j = 1 : size(angle_map_2_1_A, 2)
+        % if there is data
+        if(~isnan(angle_map_2_1_A(i,j)))
+            % if there is only one closest point
+            if(isnan(angle_map_2_1_B(i,j)))
+                map_II_2_1(i,j)=angle_map_II_2_1_A(i,j);
+                angle_map_2_1(i,j)= abs(angle_map_2_1_A(i,j));
+            else
+                % if it is closest to a crossing(2 points), pick the one
+                % with smaller abs value
+                if(abs(angle_map_2_1_A(i,j))>abs(angle_map_2_1_B(i,j)))
+                    map_II_2_1(i,j)=angle_map_II_2_1_B(i,j);
+                    angle_map_2_1(i,j)= abs(angle_map_2_1_B(i,j));                    
+                else
+                    map_II_2_1(i,j)=angle_map_II_2_1_A(i,j);
+                    angle_map_2_1(i,j)= abs(angle_map_2_1_A(i,j));                    
+                end % end picking
+            end % end if only one point
+        end % end if there is data
+    end % end j
+end % end i
+
+
 % 
 % 
 % % find in the pool of the points in the 1nd channel, the closest point of

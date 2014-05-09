@@ -162,9 +162,21 @@ classdef FilamentSegmentationProcess < ImageProcessingProcess
             % Data loading
             Channel_FilesNames = obj.getInImageFileNames(iChan);
             filename_short_strs = uncommon_str_takeout(Channel_FilesNames{1});
-            out_data_all = load([obj.outFilePaths_{1,iChan},'/DataOutput/steerable_vote_',filename_short_strs{iFrame},'.mat'], ...
-                'current_seg','current_seg_orientation','tip_orientation','tip_int','tip_NMS','current_model','RGB_seg_orient_heat_map');
-                        
+            
+            % this line in commandation for shortest version of filename
+            filename_shortshort_strs = all_uncommon_str_takeout(Channel_FilesNames{1});
+            
+            try
+                out_data_all = load([obj.outFilePaths_{1,iChan},'/DataOutput/steerable_vote_',filename_short_strs{iFrame},'.mat'], ...
+                    'current_seg','current_seg_orientation','tip_orientation','tip_int','tip_NMS','current_model','RGB_seg_orient_heat_map');
+                
+            catch
+                    out_data_all = load([obj.outFilePaths_{1,iChan},'/DataOutput/steerable_vote_',filename_shortshort_strs{iFrame},'.mat'], ...
+                        'current_seg','current_seg_orientation','tip_orientation','tip_int','tip_NMS','current_model','RGB_seg_orient_heat_map');
+                
+            end
+            
+            
             % if there is no output parameter
             if( isempty(ip.Results.output))
                 out_data = out_data_all.current_seg;

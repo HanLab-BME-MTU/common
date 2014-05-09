@@ -1,9 +1,9 @@
 function  F_classifer_train_output  = nms_classifier_train_moviedata(movieData,channelIndex)
 % nms_classifier_train trains an classifier for segments filaments from input image(nms) based on the geometrical features of the curves/lines in the image and user input
-% Input:            
+% Input:
 %    MD:                                the MD for the image project
 %    channelIndex:                      the channels to run through ( at this point the process might be not ready yet)
-% Output: 
+% Output:
 %    F_classifer:                       trained classifiers for selected channels, one for each
 %
 
@@ -118,14 +118,14 @@ end
 %     msgbox('Please run segmentation and refinement first.')
 %     return;
 % end
-% 
+%
 
 nFrame = movieData.nFrames_;
 
 
 F_classifer_train_output = cell(1,max(channelIndex));
 
-for iChannel = channelIndex    
+for iChannel = channelIndex
     
     Channel_FilesNames = movieData.channels_(iChannel).getImageFileNames(1:movieData.nFrames_);
     
@@ -154,8 +154,17 @@ for iChannel = channelIndex
     end
     currentImg = double(currentImg);
     
-    load([SteerableChannelOutputDir, filesep, 'steerable_', ...
-        filename_short_strs{iFrame},'.mat']);
+    % this line in commandation for shortest version of filename
+    filename_shortshort_strs = all_uncommon_str_takeout(Channel_FilesNames{1});
+    
+    try
+        load([SteerableChannelOutputDir, filesep, 'steerable_',...
+            filename_short_strs{iFrame},'.mat']);
+    catch
+        % in the case of only having the short-old version
+        load([SteerableChannelOutputDir, filesep, 'steerable_',...
+            filename_shortshort_strs{iFrame},'.mat']);
+    end
     
     imageNMS = nms;
     
@@ -198,8 +207,8 @@ for iChannel = channelIndex
     labelMask = bwlabel(nms_seg_no_brancing);
     
     % Get properties for each of curve
-%     ob_prop = regionprops(labelMask,'Area','MinorAxisLength','MajorAxisLength','Centroid');
-     ob_prop = regionprops(labelMask,'Area','Centroid');
+    %     ob_prop = regionprops(labelMask,'Area','MinorAxisLength','MajorAxisLength','Centroid');
+    ob_prop = regionprops(labelMask,'Area','Centroid');
     
     % Redefine variable for easy of notation
     obAreas = [ob_prop.Area];
@@ -207,12 +216,12 @@ for iChannel = channelIndex
     nLine = length(obAreas);
     
     % Some feature for later consideration
-%     obLongaxis = [ob_prop.MajorAxisLength];
-%     obShortaxis = [ob_prop.MinorAxisLength];
+    %     obLongaxis = [ob_prop.MajorAxisLength];
+    %     obShortaxis = [ob_prop.MinorAxisLength];
     obCentroid = zeros(2, length(obAreas));
     obCentroid(:) = [ob_prop.Centroid];
     % The ratio of short vs long axis
-%     ratio  = obShortaxis./obLongaxis;
+    %     ratio  = obShortaxis./obLongaxis;
     
     
     feature_MeanInt = nan(nLine,1);
@@ -223,7 +232,7 @@ for iChannel = channelIndex
     feature_Curvature = nan(nLine,1);
     
     feature_MeanX = (obCentroid(1,:))';
-   feature_MeanY = (obCentroid(2,:))';
+    feature_MeanY = (obCentroid(2,:))';
     
     % for the features, only include those curves/lines longer than 4 pixels
     ind_long = find(feature_Length>4);
@@ -247,7 +256,7 @@ for iChannel = channelIndex
     display('Time spend in look for mean int:');
     toc
     % figure; plot3(feature_Length,feature_MeanInt,feature_Curvature,'.');
-        
+    
     % find the mode of the intensity of the curves/lines
     [hist_n,bin] = hist(feature_MeanNMS,200);
     ind_mode = find(hist_n==max(hist_n));
@@ -271,7 +280,7 @@ for iChannel = channelIndex
     T_xie_length_down = 1.5*max(thresholdOtsu(feature_Length),thresholdRosin(feature_Length));
     
     F_classifer_down = @(nms,length,curvature,int)  (((T_xie_int_down + (T_xie_int_down/T_xie_length_down)*(-length) )<nms));
-     
+    
     % the points in between the two classifier is the not sure ones that
     % requires annotation
     not_sure_ind = find(F_classifer_up(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)==0 & F_classifer_down(feature_MeanNMS, feature_Length,feature_Curvature,feature_MeanInt)>0);
@@ -309,30 +318,30 @@ for iChannel = channelIndex
     training_ind_unique = unique(training_ind);
     
     if(length(training_ind_unique)<training_sample_number)
-         not_sure_ind_again = setdiff(not_sure_ind,training_ind_unique);
-         training_ind_again = randsample(not_sure_ind_again,min(length(not_sure_ind_again),training_sample_number-length(training_ind_unique)),true,W_neighbor(not_sure_ind_again));
-         training_ind = [training_ind_unique;training_ind_again]';
+        not_sure_ind_again = setdiff(not_sure_ind,training_ind_unique);
+        training_ind_again = randsample(not_sure_ind_again,min(length(not_sure_ind_again),training_sample_number-length(training_ind_unique)),true,W_neighbor(not_sure_ind_again));
+        training_ind = [training_ind_unique;training_ind_again]';
     end
     
     
     display('Random Sample');
-   
+    
     training_bad_ind = [];
     training_good_ind = [];
     
     good_bad_label = [];
     i_ind = 1;
     
-     for i_ind = 1 : length(training_ind)
+    for i_ind = 1 : length(training_ind)
         i_ind
         iLine = training_ind(i_ind);
         [y,x] = find(labelMask==iLine);
         h1=figure(1);hold on;
         plot(x,y,'y.');
-     end
+    end
     
     i_ind = 1;
-        
+    
     for i_mark = 1 : 2*length(training_ind)
         i_ind
         iLine = training_ind(i_ind);
@@ -347,9 +356,9 @@ for iChannel = channelIndex
         ch = getkey();
         
         if(strcmp(ch,'')==1)
-                ch=0;
+            ch=0;
         end
-            
+        
         if(ch==28)
             i_ind = max(1, i_ind - 1);
         else
@@ -366,9 +375,9 @@ for iChannel = channelIndex
             
             
             if(ch==27 || i_ind > length(training_ind))
-               good_bad_label = good_bad_label(1:length(training_ind));
+                good_bad_label = good_bad_label(1:length(training_ind));
                 break;
-            end            
+            end
         end
     end
     
@@ -408,7 +417,7 @@ for iChannel = channelIndex
         scrsz = get(0,'ScreenSize');
         set(h1,'Position',scrsz);
         
-              
+        
         training_ind = randsample(not_sure_ind,min(length(not_sure_ind),training_sample_number),true,W_neighbor(not_sure_ind));
         training_ind_unique = unique(training_ind);
         
@@ -451,7 +460,7 @@ for iChannel = channelIndex
                 saveas(h1,[FilamentSegmentationChannelOutputDir,'/train_rb_',num2str(i_mark),'.jpg']);
                 
                 if(ch==27 || i_ind > length(training_ind))
-                   good_bad_label = good_bad_label(1:length(training_ind));
+                    good_bad_label = good_bad_label(1:length(training_ind));
                     break;
                 end
                 
@@ -505,7 +514,7 @@ for iChannel = channelIndex
             training_ind_again = randsample(not_sure_ind_again,min(length(not_sure_ind_again),training_sample_number-length(training_ind_unique)),true,W_neighbor(not_sure_ind_again));
             training_ind = [training_ind_unique;training_ind_again]';
         end
-       
+        
         training_bad_ind = [];
         training_good_ind = [];
         
@@ -542,18 +551,18 @@ for iChannel = channelIndex
                     i_ind = i_ind-1;
                     good_bad_label = good_bad_label(1:length(training_ind));
                     break;
-                end                
+                end
             end
         end
     end
     
     
-    figure(1); axis auto;    
-     
+    figure(1); axis auto;
+    
     sample_good_ind = randsample(good_ind,min(length(good_ind),200),true,W_neighbor(good_ind));
     sample_bad_ind = randsample(bad_ind,min(length(bad_ind),200),true,W_neighbor(bad_ind));
     
-       if size(sample_good_ind,1)==1
+    if size(sample_good_ind,1)==1
         sample_good_ind = sample_good_ind';
     end
     
@@ -576,41 +585,41 @@ for iChannel = channelIndex
         train_bad_ind_from_training = training_ind(find(good_bad_label(1:end)==2));
         if size(train_bad_ind_from_training,1)==1
             train_bad_ind_from_training = train_bad_ind_from_training';
-        end        
+        end
         training_bad_ind = [sample_bad_ind; train_bad_ind_from_training];
     end
     
     for i_area = [training_good_ind' training_bad_ind' ]
         [all_y_i, all_x_i] = find(labelMask == i_area);
-         % get the curvature for training samples only
+        % get the curvature for training samples only
         
-            bw_i = zeros(size(bw_out));
-            bw_i(sub2ind(size(bw_i), round(all_y_i),round(all_x_i)))=1;
-            end_points_i = bwmorph(bw_i,'endpoints');
+        bw_i = zeros(size(bw_out));
+        bw_i(sub2ind(size(bw_i), round(all_y_i),round(all_x_i)))=1;
+        end_points_i = bwmorph(bw_i,'endpoints');
+        [y_i, x_i]=find(end_points_i);
+        
+        if isempty(x_i)
+            % if there is no end point, then it is a enclosed circle
+            [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, all_x_i(1),all_y_i(1));
+        else
             [y_i, x_i]=find(end_points_i);
+            [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
+        end
         
-            if isempty(x_i)
-                % if there is no end point, then it is a enclosed circle
-                [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, all_x_i(1),all_y_i(1));
-            else
-                [y_i, x_i]=find(end_points_i);
-                [line_i_x, line_i_y] = line_following_with_limit(labelMask == i_area, 1000, x_i(1),y_i(1));
-            end
+        ordered_points{i_area} = [line_i_x, line_i_y];
         
-            ordered_points{i_area} = [line_i_x, line_i_y];
+        line_smooth_H = fspecial('gaussian',5,1.5);
         
-            line_smooth_H = fspecial('gaussian',5,1.5);
+        line_i_x = (imfilter(line_i_x, line_smooth_H, 'replicate', 'same'));
+        line_i_y = (imfilter(line_i_y, line_smooth_H, 'replicate', 'same'));
         
-            line_i_x = (imfilter(line_i_x, line_smooth_H, 'replicate', 'same'));
-            line_i_y = (imfilter(line_i_y, line_smooth_H, 'replicate', 'same'));
+        smoothed_ordered_points{i_area} = [line_i_x, line_i_y];
         
-            smoothed_ordered_points{i_area} = [line_i_x, line_i_y];        
+        Vertices = [line_i_x' line_i_y'];
+        Lines=[(1:size(Vertices,1)-1)' (2:size(Vertices,1))'];
+        k=LineCurvature2D(Vertices,Lines);
         
-            Vertices = [line_i_x' line_i_y'];
-            Lines=[(1:size(Vertices,1)-1)' (2:size(Vertices,1))'];
-            k=LineCurvature2D(Vertices,Lines);
-        
-            feature_Curvature(i_area) = mean(k);        
+        feature_Curvature(i_area) = mean(k);
     end
     
     train_length_good = feature_Length(training_good_ind);
@@ -624,7 +633,7 @@ for iChannel = channelIndex
     
     train_cur_good = feature_Curvature(training_good_ind);
     train_cur_bad = feature_Curvature(training_bad_ind);
-        
+    
     feature_good = [train_nms_good train_length_good train_cur_good train_int_good  ];
     feature_bad = [train_nms_bad train_length_bad train_cur_bad train_int_bad  ];
     
@@ -634,16 +643,16 @@ for iChannel = channelIndex
     Classifier_Type_ind=funParams.Classifier_Type_ind;
     if(funParams.Classifier_Type_ind==2)
         % if user intended for SVM classifier
-%         Linear Kernel
+        %         Linear Kernel
         model_polynomial  = libsvmtrain([label_good; label_bad], [feature_good; feature_bad], '-t 1');
         [predict_label_L, accuracy_L, dec_values_L] = libsvmpredict([label_good; label_bad], [feature_good; feature_bad], model_polynomial);
-         
+        
         F_classifer_train_this_channel =  @(nms,length,curvature,int) (libsvmpredict(ones(size(nms)), [nms length curvature int], model_polynomial)>0);
-         
+        
         F_classifer_train_output{iChannel} = [FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'];
-  
+        
         save([FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'],'F_classifer_train_this_channel','Classifier_Type_ind');
-     
+        
     end
     
     % feature_training = [feature_Length(training_ind) feature_MeanInt(training_ind)];
@@ -667,7 +676,7 @@ for iChannel = channelIndex
         T_xie_length_mid = (T_xie_length_up +  T_xie_length_down)/2;
         
         F_classifer_mid = @(nms,length,curvature,int) (((T_xie_int_mid + (T_xie_int_mid/T_xie_length_mid)*(-length) )<nms));
-       
+        
         train_mat = [];
         for T_xie_int_grid = T_xie_int_down : (T_xie_int_up - T_xie_int_down)/10 : T_xie_int_up
             for T_xie_length_grid = T_xie_length_down : (T_xie_length_up - T_xie_length_down)/10 : T_xie_length_up
@@ -694,7 +703,7 @@ for iChannel = channelIndex
         % due to some problem of the size of the function, with wired
         % difference of being here or outside the framework, now change to save
         % only the mat file name in the MD file.
-    
+        
     end
     
     F_classifer_train_output{iChannel} = [FilamentSegmentationChannelOutputDir,'/F_classifer_channel.mat'];

@@ -144,7 +144,7 @@ for iChannel = selected_channels
     
     % Get frame number from the title of the image, this not neccesarily
     % the same as iFrame due to some shorting problem of the channel
-   Channel_FilesNames = movieData.channels_(iChannel).getImageFileNames(1:movieData.nFrames_);
+    Channel_FilesNames = movieData.channels_(iChannel).getImageFileNames(1:movieData.nFrames_);
     
     filename_short_strs = uncommon_str_takeout(Channel_FilesNames);
     
@@ -183,7 +183,7 @@ for iChannel = selected_channels
     % If steerable filter process is run
     if indexSteerabeleProcess>0
         SteerableChannelOutputDir = movieData.processes_{indexSteerabeleProcess}.outFilePaths_{iChannel};
-    end    
+    end
     
     Frames_to_Seg = 1:Sub_Sample_Num:nFrame;
     Frames_results_correspondence = im2col(repmat(Frames_to_Seg, [Sub_Sample_Num,1]),[1 1]);
@@ -195,7 +195,7 @@ for iChannel = selected_channels
     
     for iFrame_index = 1 : whole_modie_selectframe_pace:length(Frames_to_Seg)
         iFrame = Frames_to_Seg(iFrame_index);
-                        
+        
         % Read in the intensity image.
         if indexFlattenProcess > 0 && ImageFlattenFlag==2
             currentImg = imread([movieData.processes_{indexFlattenProcess}.outFilePaths_{iChannel}, filesep, 'flatten_',filename_short_strs{iFrame},'.tif']);
@@ -205,7 +205,7 @@ for iChannel = selected_channels
         
         currentImg = currentImg(1:3:end,1:3:end);
         
-        INT_pool = [INT_pool; currentImg(:)];        
+        INT_pool = [INT_pool; currentImg(:)];
     end
     
     INT_pool =  double(INT_pool);
@@ -214,22 +214,33 @@ for iChannel = selected_channels
     [hist_n,bin] = hist((INT_pool),50);
     ind_mode = find(hist_n==max(hist_n));
     mode_INT = bin(ind_mode(1));
-        
+    
     Whole_movie_stat.mean_INT = mean(INT_pool);
     Whole_movie_stat.std_INT = std(INT_pool);
     Whole_movie_stat.mode_INT = mode_INT;
     Whole_movie_stat.otsu_INT = thresholdOtsu(INT_pool);
     Whole_movie_stat.otsu_mode_INT = thresholdOtsu(INT_pool(find(INT_pool>mode_INT)));
- 
+    
     INT_pool = [];
     
     
     ST_pool = [];
+    % this line in commandation for shortest version of filename
+    filename_shortshort_strs = all_uncommon_str_takeout(Channel_FilesNames{1});
     
     for iFrame_index = 1 : whole_modie_selectframe_pace: length(Frames_to_Seg)
         iFrame = Frames_to_Seg(iFrame_index);
-                        
-        load([SteerableChannelOutputDir, filesep, 'steerable_', filename_short_strs{iFrame},'.mat'],'MAX_st_res');
+        
+        
+        try
+            load([SteerableChannelOutputDir, filesep, 'steerable_',...
+                filename_short_strs{iFrame},'.mat']);
+        catch
+            % in the case of only having the short-old version
+            load([SteerableChannelOutputDir, filesep, 'steerable_',...
+                filename_shortshort_strs{iFrame},'.mat']);
+        end
+        
         
         MAX_st_res = MAX_st_res(1:3:end,1:3:end);
         MAX_st_res = MAX_st_res(MAX_st_res>0);
@@ -241,13 +252,13 @@ for iChannel = selected_channels
     [hist_n,bin] = hist(ST_pool,50);
     ind_mode = find(hist_n==max(hist_n));
     mode_ST = bin(ind_mode(1));
-        
+    
     Whole_movie_stat.mean_ST = mean(ST_pool);
     Whole_movie_stat.std_ST = std(ST_pool);
     Whole_movie_stat.mode_ST = mode_ST;
     Whole_movie_stat.otsu_ST = thresholdOtsu(ST_pool);
     Whole_movie_stat.otsu_mode_ST = thresholdOtsu(ST_pool(find(ST_pool>mode_ST)));
- 
+    
     ST_pool = [];
     
     NMS_pool = [];
@@ -256,9 +267,15 @@ for iChannel = selected_channels
     
     for iFrame_index = 1 : whole_modie_selectframe_pace:length(Frames_to_Seg)
         iFrame = Frames_to_Seg(iFrame_index);
-        
-        load([SteerableChannelOutputDir, filesep, 'steerable_', filename_short_strs{iFrame},'.mat'],'nms');
-        
+                
+        try
+            load([SteerableChannelOutputDir, filesep, 'steerable_',...
+                filename_short_strs{iFrame},'.mat']);
+        catch
+            % in the case of only having the short-old version
+            load([SteerableChannelOutputDir, filesep, 'steerable_',...
+                filename_shortshort_strs{iFrame},'.mat']);
+        end
         
         imageNMS= nms;
         
@@ -293,28 +310,23 @@ for iChannel = selected_channels
         % Get properties for each of curve
         ob_prop = regionprops(labelMask,'Area','MajorAxisLength','Eccentricity','MinorAxisLength','Centroid');
         
-        
         obAreas = [ob_prop.Area];
-                
         
-       nms = nms(1:3:end,1:3:end);
+        nms = nms(1:3:end,1:3:end);
         
-       
-       nms = nms(~isnan(nms));
-       nms = nms(nms>0);
-       
-       NMS_pool = [NMS_pool; nms(:)];       
-       
-       
-       Length_pool = [Length_pool obAreas];
-
+        nms = nms(~isnan(nms));
+        nms = nms(nms>0);
+        
+        NMS_pool = [NMS_pool; nms(:)];
+        
+        Length_pool = [Length_pool obAreas];
+        
     end
-    
-    
+        
     [hist_n,bin] = hist(NMS_pool,50);
     ind_mode = find(hist_n==max(hist_n));
     mode_NMS = bin(ind_mode(1));
-        
+    
     Whole_movie_stat.mean_NMS = mean(NMS_pool);
     Whole_movie_stat.std_NMS = std(NMS_pool);
     Whole_movie_stat.mode_NMS = mode_NMS;
@@ -323,23 +335,22 @@ for iChannel = selected_channels
     
     
     Length_pool = Length_pool(Length_pool>1);
-     
-     
+    
+    
     [hist_n,bin] = hist(Length_pool,50);
     ind_mode = find(hist_n==max(hist_n));
     mode_Length = bin(ind_mode(1));
-  
+    
     Whole_movie_stat.mean_Length = mean(Length_pool);
     Whole_movie_stat.std_Length = std(Length_pool);
     Whole_movie_stat.mode_Length = mode_Length;
     Whole_movie_stat.rosin_Length = thresholdRosin(Length_pool);
     Whole_movie_stat.rosin_mode_Length = thresholdRosin(Length_pool(find(Length_pool>mode_Length)));
-
+    
     
     NMS_pool = [];
     
     Whole_movie_stat_cell{iChannel} = Whole_movie_stat;
- 
+    
 end
-        
-            
+

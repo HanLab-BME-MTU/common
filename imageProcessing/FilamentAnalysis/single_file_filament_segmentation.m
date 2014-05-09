@@ -243,9 +243,18 @@ for iChannel = selected_channels
 %         end
 %       %%
 
-        load([SteerableChannelOutputDir, filesep, 'steerable_', ...
+        % this line in commandation for shortest version of filename
+    filename_shortshort_strs = all_uncommon_str_takeout(Channel_FilesNames{1});
+    
+    try
+        load([SteerableChannelOutputDir, filesep, 'steerable_',...
             filename_short_strs{iFrame},'.mat']);
-        
+    catch
+        % in the case of only having the short-old version
+        load([SteerableChannelOutputDir, filesep, 'steerable_',...
+            filename_shortshort_strs{iFrame},'.mat']);
+    end
+    
         MaskCell = ones(size(currentImg));
         
         if Cell_Mask_ind == 1 % using cell segmentation from same channel

@@ -1,4 +1,4 @@
-function [digital_model,orientation_model,XX,YY,OO] ...
+function [digital_model,orientation_model,XX,YY,OO, II] ...
     = filament_model_to_digital_with_orientation(current_model)
 
 model_length = length(current_model);
@@ -7,7 +7,8 @@ digital_model = cell(1,model_length);
 orientation_model = cell(1,model_length);
 
 line_smooth_H = fspecial('gaussian',5,2);
-XX=[];YY=[];OO=[];
+% initialize the array output, II is for index
+XX=[];YY=[];OO=[];II=[];
 
 for iFila = 1 : model_length
     try
@@ -53,7 +54,7 @@ for iFila = 1 : model_length
     digital_model{iFila} = [sort_x sort_y];
     orientation_model{iFila} = sort_ang;
     
-    
+    II = [II;iFila*(sort_x*0+1)];
     XX = [XX;sort_x;];
     YY = [YY;sort_y;];
     OO = [OO;sort_ang;];
