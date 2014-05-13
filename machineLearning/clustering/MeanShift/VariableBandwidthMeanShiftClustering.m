@@ -33,10 +33,11 @@ function [clusterInfo, pointToClusterMap, pointTraj] = VariableBandwidthMeanShif
 %                             that are allowed searching for the mode of a point                        
 %                             Default: 500
 %         
-%         minClusterDistance: specifies the minimum mahalanobis distance between two
-%                             distinct clusters. If the distance between two modes is less than this value 
-%                             then the two corresponding clusters will be merged.
-%                             Default: sqrt(norm(mean(H,3))
+%         minClusterDistance: specifies the minimum "distance" between two
+%                             cluster centers before they are considered a
+%                             single cluster. This distance is actually a
+%                             percentile using an elliptical gaussian
+%                             approximation based on mahalanobis distance.
 %
 %              kernelSupport: specifies the maximum distance of points to
 %                             include when evaluating the mean-shift kernel.
@@ -90,7 +91,7 @@ function [clusterInfo, pointToClusterMap, pointTraj] = VariableBandwidthMeanShif
     p.addParamValue( 'method', 'standard', @(x) ( (ischar(x) && ismember(x, {'standard', 'optimized'})) ) );
     p.addParamValue( 'maxIterations', 500, @(x) (isscalar(x)) );
     p.addParamValue('kernelSupport',[],@(x)(numel(x) == size(ptData,1)));
-    p.addParamValue( 'minClusterDistance', [],  @(x) (numel(x) == 1));
+    p.addParamValue( 'minClusterDistance', .05,  @(x) (numel(x) == 1));
     p.addParamValue( 'flagUseKDTree', true, @(x) (isscalar(x) && islogical(x)) );
     p.addParamValue( 'flagDebug', false, @(x) (isscalar(x) && islogical(x)) );
     p.parse( ptData, bandwidth, varargin{:} );
@@ -137,16 +138,9 @@ function [clusterInfo, pointToClusterMap, pointTraj] = VariableBandwidthMeanShif
         bandDet(i)= det(bandwidth(:,:,i));
         bandInv(:,:,i) = inv(bandwidth(:,:,i));                
     end
-    
-    if isempty(minClusterDistance)
-        minClusterDistance = sqrt(norm(mean(bandwidth,3)));
-    end    
-    
-    if isempty(p.Results.kernelSupport)
-        %We use one STD by default. This tends to leave some isolated points
-        %unclustered but gives a big performance increase compared to
-        %larger supports
-        kernelSupport = sqrt(bandwidth);        
+
+    if isempty(p.Results.kernelSupport)        
+        kernelSupport = 2*sqrt(bandwidth);        
     else
         kernelSupport = p.Results.kernelSupport;
     end
@@ -287,12 +281,12 @@ end
 
 function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData, bandwidth, kernelfunc, maxIterations, minClusterDistance, flagUseKDTree, flagDebug, kernelSupport,bandDet,bandI)
 
-    threshConvergence = 1e-3 * bandwidth;    
+    threshConvergence = 1e-2 * minClusterDistance;
     [numDataPoints, numDataDims] = size( ptData );           
         
-    pointTraj = cell(numDataPoints,1);
-        
-    dmOp = arrayfun(@(x)(':'),1:numDataDims,'Unif',0);%Make the operator to support d+1 dimensional array indexing
+    pointTraj = cell(numDataPoints,1);            
+    
+    
     
     %% Run mean-shift for each data point and find its mode
     fprintf( 1, '\nMean-shift clustering on a dataset of %d points ...\n', numDataPoints );
@@ -339,8 +333,9 @@ function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData
                 
                 pointTraj{i}(numIterationsElapsed+1,:) = ptNewMean;
 
-                % check for convergence
-                if numIterationsElapsed >= maxIterations || norm(ptNewMean - ptOldMean) < threshConvergence(i)                
+                % check for convergence using mahalanobis distance  
+                dispVec = ptNewMean - ptOldMean;
+                if numIterationsElapsed >= maxIterations || chi2cdf(dispVec * bandwidth(:,:,i) * dispVec',numDataDims) < threshConvergence
                     meanIterationsElapsed = meanIterationsElapsed + numIterationsElapsed;
                     break;
                 else
@@ -349,7 +344,7 @@ function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData
 
             end               
 
-            ptClusterCenter = ptNewMean;
+            ptClusterCenter = ptNewMean;     
             pointTraj{i} = pointTraj{i}(1:numIterationsElapsed+1,:);
             
             % get point density around the cluster center
@@ -369,12 +364,11 @@ function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData
                 for j= 1:nC
                     Dm(j) = dX(j,:) * clusterInfo(j).clusterMeanHi * dX(j,:)';%Mahalanobis distance to each cluster center
                 end
-                
-                %dSqToClust = sum((repmat(ptClusterCenter,[numel(clusterInfo) 1]) - vertcat(clusterInfo(:).ptClusterCenter)) .^2,2);
-                %dSqToClust(dSqToClust>vertcat(clusterInfo.clusterMinDist) .^2) = Inf;            
+                                
                 [minD,cid] = min(Dm);
 
-                if minD < minClusterDistance
+                %Test distance based on elliptical estimate of percentile
+                if chi2cdf(minD^2,numel(ptClusterCenter)) < minClusterDistance
                     blnCloseClusterFound = true;
                     if curClusterCenterDensity > clusterInfo(cid).clusterCenterDensity
                         clusterInfo(cid).ptClusterCenter = ptClusterCenter;
@@ -385,13 +379,11 @@ function [clusterInfo, pointToClusterMap, pointTraj] = StandardMeanShift( ptData
                     pointToClusterMap(i) = cid;
 
                 end
-            end            
-               
+            end
+                        
             if ~blnCloseClusterFound
                 clusterInfo(end+1).ptClusterCenter = ptClusterCenter;
                 clusterInfo(end).clusterCenterDensity = curClusterCenterDensity;
-                %wts = exp( -0.5 * distNearest .^2 ./ bandwidth(ptIdNearest) .^2 );%Bandwidth - weight the minimum distances of near points
-                %clusterInfo(end).clusterMinDist = sum((minClusterDistance(ptIdNearest) .* wts)) ./ sum(wts);%Use weighted mean for minDist of cluster
                 [~,Hhi] = kernelfunc(ptClusterCenter,ptData(ptIdNearest,:), bandwidth(:,:,ptIdNearest),bandDet(ptIdNearest),bandI(:,:,ptIdNearest)); %Get harmonic mean of bandwidths for central points. TEMP - use all points??
                 clusterInfo(end).clusterMeanHi = Hhi;
                 pointToClusterMap(i) = numel( clusterInfo );
@@ -431,16 +423,7 @@ function [ptNewMean,Hhi] = update_mean_gaussian_kernel( ptOldMean, ptNearest, H,
         
     Hhi = sum(bsxfun(@times,Hi,permute(w,[3 2 1])),d+1);%Inverse weighted harmonic mean of bandwidth matrices
             
-    ptNewMean = ptOldMean - (Hhi \ sum(bsxfun(@times,HidX',w),1)')';%Mean-shifted position
-    
-%     numNeighPoints = size( ptNearest, 1 );
-%     sqdistances = sum( (ptNearest - repmat(ptOldMean, numNeighPoints, 1) ).^2, 2 );    
-%     weights = exp( -0.5 * sqdistances ./ bandwidth .^2 ) ./ bandwidth;    
-%     weights = weights ./ (sum(weights));
-%     Hh = 1 / sum(weights ./ bandwidth .^2);            
-%     ptNewMean = Hh *(weights ./ bandwidth .^2)' * ptNearest;
-    
-    
+    ptNewMean = ptOldMean - (Hhi \ sum(bsxfun(@times,HidX',w),1)')';%Mean-shifted position        
     
 end
 
