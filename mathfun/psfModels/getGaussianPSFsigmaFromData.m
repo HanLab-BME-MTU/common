@@ -63,8 +63,9 @@ try
     obj = obj{idx};
     [mu,idx] = sort(obj.mu);
     svec = sqrt(squeeze(obj.Sigma(:,:,idx)));
-    amp = obj.PComponents(idx);
-    [~,idx] = max(amp);
+    amp = obj.PComponents(idx)';
+    %[~,idx] = max(amp);
+    [~,idx] = max(amp./(sqrt(2*pi)*svec));
     sigma = mu(idx);
 
     warning(w);
