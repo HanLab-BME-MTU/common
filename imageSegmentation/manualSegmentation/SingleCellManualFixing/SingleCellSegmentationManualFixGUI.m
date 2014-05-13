@@ -249,13 +249,23 @@ if handles.segThisCell > 1
             
     end
     
-    [outMasks,boxall,isCompleted] = manualSegmentationFixSingleCellTweakGUI(images,masks,sup_masks,[],aux.isCompleted,boxall,[],fixedPath);
+    [outMasks,boxall,isCompleted] = manualSegmentationFixSingleCellTweakGUI(images,masks,sup_masks,[],aux.isCompleted,boxall,[],fixedPath,compPath);
     
 
 %     iCell=currentSingleCellID;
 %     truthPath = [segPath filesep 'FixedChannel' num2str(currChan) 'Cell' num2str(iCell)];
 %     compPath  = [segPath filesep 'completedFramesChannel' num2str(currChan) 'Cell' num2str(iCell)];
 
+
+    % do the complete checking first
+    if ~exist(compPath,'dir')        
+        mkdir(compPath)        
+    end
+    
+    save([compPath filesep 'completedFrames.mat'],'isCompleted','boxall');
+
+
+    % then save the results frame by frame
     if ~exist(truthPath,'dir')        
         mkdir(truthPath)        
     end
@@ -272,17 +282,15 @@ if handles.segThisCell > 1
         if(isCompleted(iFrame)>0)
             imwrite(outMasks(:,:,iFrame),[fixedPath filesep 'mask_' num2str(iFrame) '.tif'],'tif');
         else
+            % if not finished, delete the old marking
             if(exist([fixedPath filesep 'mask_' num2str(iFrame) '.tif'],'file'))
                 delete([fixedPath filesep 'mask_' num2str(iFrame) '.tif']);                
             end
-        end
-    end
-    
-    if ~exist(compPath,'dir')        
-        mkdir(compPath)        
-    end
-    
-    save([compPath filesep 'completedFrames.mat'],'isCompleted','boxall');
+        end      
+        
+        % save all of them in the "truth" folder
+        imwrite(outMasks(:,:,iFrame),[truthPath filesep 'mask_' num2str(iFrame) '.tif'],'tif');       
+    end     
     
  end
 
@@ -385,16 +393,45 @@ if handles.segThisCell > 1
     end
     segPath   = currObj.packages_{segIdx}.outputDirectory_;
     
+%     
+%     segPath(segPath=='\') = '/';
+%     ind_L = segPath(segPath=='/');
+    
+    
     truthPath = [segPath filesep 'FixedChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
     fixedPath = [segPath filesep 'OnlyFixedChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];    
     compPath  = [segPath filesep 'completedFramesChannel' num2str(currChan) 'Cell' num2str(currSingleCell)];
     
     
-    if ~exist(truthPath,'dir')        
-        msgbox('There is no result for this movie this cell.')
+    if ~exist(fixedPath,'dir')
+        if ~exist(truthPath,'dir')
+            msgbox('There is no result for this movie this cell.')
+        else
+            
+            if exist(compPath,'dir')
+                load([compPath filesep 'completedFrames.mat'],'isCompleted','boxall');
+                ind = find(isCompleted>0);
+                
+                mkdir(fixedPath);
+                
+%                 for iFrame = (ind(:))'                                   
+%                     try
+%                         copyfile([truthPath,filesep,'mask_',num2str(iFrame),'tif'],[fixedPath,filesep,'mask_',num2str(iFrame),'tif']);                    
+%                     end
+%                 end
+%                 
+%                 winopen(fixedPath); 
+                winopen(truthPath);
+            else                
+                winopen(truthPath);
+                msgbox('There is only old version of marking, which could include unfinished markings. Please save during marking to save all markings.')
+            end
+            
+        end
     else
-        winopen(truthPath);        
-    end
+        winopen(fixedPath);
+    end    
+    
     
     if exist(compPath,'dir')                        
         load([compPath filesep 'completedFrames.mat'],'isCompleted','boxall');

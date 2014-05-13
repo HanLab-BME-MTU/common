@@ -1,5 +1,5 @@
 
-function [m,boxall,isDone]  = manualSegmentationFixSingleCellTweakGUI(im,m,sup_masks,displayrange,isDone,boxall,ptsShow,fixedPath)
+function [m,boxall,isDone]  = manualSegmentationFixSingleCellTweakGUI(im,m,sup_masks,displayrange,isDone,boxall,ptsShow,fixedPath,compPath)
 %MANUALSEGMENTATIONTWEAKGUI allows manual segmentation creation of masks or alteration of existing masksk
 % [masks,isCompleted] = manualSegmentationTweakGUI(images,masks)
 %
@@ -226,6 +226,7 @@ data_get_fgnd_bgnd_seeds_3d_points.checking_continuous_frame_flag = 0;
 data_get_fgnd_bgnd_seeds_3d_points.trackingflag=0;
 data_get_fgnd_bgnd_seeds_3d_points.jumpto_frame =1;
 data_get_fgnd_bgnd_seeds_3d_points.fixedPath = fixedPath;
+data_get_fgnd_bgnd_seeds_3d_points.compPath = compPath;
 
 % data_get_fgnd_bgnd_seeds_3d_points.currentSingleCellID = 1;
 
@@ -775,7 +776,7 @@ function pushTrackingCheck_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points
 function imRGB = genImageMaskOverlay_loc( im, mask, maskColor, maskAlpha,displayRange,box,boxColor)
 
      maxVal = 255;  
-    im = double(im - displayRange(1));
+    im = double(im) - double(displayRange(1));
     im = im/(displayRange(2)-displayRange(1));
     im = sqrt(im);
 %     im = im*maxVal;
@@ -959,6 +960,17 @@ function [new_box, new_mask] = consequent_frame_segment_tracking...
     function pushSaveMarking_Callback(hSrc,eventdata_get_fgnd_bgnd_seeds_3d_points)  
     global data_get_fgnd_bgnd_seeds_3d_points
    
+    % do the complete checking first
+    if ~exist(data_get_fgnd_bgnd_seeds_3d_points.compPath,'dir')
+        mkdir(data_get_fgnd_bgnd_seeds_3d_points.compPath)
+    end
+    
+    isCompleted = data_get_fgnd_bgnd_seeds_3d_points.isDone;
+    boxall = data_get_fgnd_bgnd_seeds_3d_points.boxall;
+    
+    save([data_get_fgnd_bgnd_seeds_3d_points.compPath filesep 'completedFrames.mat'],'isCompleted','boxall');
+
+    
      if ~exist(data_get_fgnd_bgnd_seeds_3d_points.fixedPath,'dir')    
          mkdir(data_get_fgnd_bgnd_seeds_3d_points.fixedPath);
      end
