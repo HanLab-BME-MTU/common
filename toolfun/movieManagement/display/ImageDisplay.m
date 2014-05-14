@@ -15,31 +15,38 @@ classdef ImageDisplay < MovieDataDisplay
         function obj=ImageDisplay(varargin)
             obj@MovieDataDisplay(varargin{:});
         end
-            
+        
         function h=initDraw(obj,data,tag,varargin)
             % Plot the image and associate the tag
             h=imshow(data/obj.ScaleFactor,varargin{:});
             set(h,'Tag',tag,'CDataMapping','scaled');
             hAxes = get(h,'Parent');
             set(hAxes,'XLim',[0 size(data,2)],'YLim',[0 size(data,1)]);
-            usrData = get(h,'UserData');
-            usrData.DisplayClass = 'ImageDisplay';%Tag all objects displayed by this class, so they can be easily identified and cleared.
-            set(h,'UserData',usrData)            
+            
+            % Tag all objects displayed by this class, so they can be
+            % easily identified and cleared.
+            userData = get(h,'UserData');
+            userData.DisplayClass = 'ImageDisplay';
+            set(h,'UserData',userData)
+            
+            % Clean existing image and set image at the bottom of the stack
+            child = get(hAxes,'Children');
+            imChild = child(cellfun(@(x)(isfield(x,'DisplayClass') &&...
+                strcmp(x.DisplayClass,'ImageDisplay')),...
+                arrayfun(@(x)(get(x,'UserData')), child, 'Unif', false)));
+            delete(imChild(imChild ~= h));
+            uistack(h, 'bottom');
+            
             obj.applyImageOptions(h)
         end
+        
         function updateDraw(obj,h,data)
             set(h,'CData',data/obj.ScaleFactor)
             obj.applyImageOptions(h)
         end
         
         function applyImageOptions(obj,h)
-            % Clean existing image and set image at the bottom of the stack
             hAxes = get(h,'Parent');
-            child=get(hAxes,'Children');
-            imChild = child(cellfun(@(x)(isfield(x,'DisplayClass') && strcmp(x.DisplayClass,'ImageDisplay')),arrayfun(@(x)(get(x,'UserData')),child,'Unif',false)));%Clear all objects which were displayed by this class. Use arrayfun for get so it always returns cell.
-            delete(imChild(imChild~=h));
-            uistack(h,'bottom');
-            
             % Set the colormap
             if any(isnan(get(h, 'CData')))
                 c = colormap(obj.Colormap);
@@ -57,7 +64,7 @@ classdef ImageDisplay < MovieDataDisplay
                     axesPosition = [0.05 0.05 .9 .9];
                 end
                 if isempty(hCbar)
-                    set(hAxes,'Position',axesPosition);   
+                    set(hAxes,'Position',axesPosition);
                     hCbar = colorbar('peer',hAxes,obj.sfont{:});
                 end
                 set(hCbar,'Location',obj.ColorbarLocation);
@@ -70,10 +77,10 @@ classdef ImageDisplay < MovieDataDisplay
             % Set the color limits
             if ~isempty(obj.CLim),set(hAxes,'CLim',obj.CLim/obj.ScaleFactor); end
         end
-    end 
- 
+    end
+    
     methods (Static)
-         function params=getParamValidators()
+        function params=getParamValidators()
             params(1).name='Colormap';
             params(1).validator=@ischar;
             params(2).name='Colorbar';
@@ -99,5 +106,5 @@ classdef ImageDisplay < MovieDataDisplay
         function f=getDataValidator()
             f=@isnumeric;
         end
-    end    
+    end
 end
