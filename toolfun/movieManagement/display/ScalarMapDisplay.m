@@ -28,6 +28,13 @@ classdef ScalarMapDisplay < MovieDataDisplay
             imData= data(:,:,1);
             h = imagesc(obj.formatData(imData), varargin{:});
             
+            % Remove all other images in the axes and stack it at the
+            % bottom
+            child = get(hAxes,'Children');
+            imChild = child(strcmp(get(child,'Type'),'image'));
+            delete(imChild(imChild~=h));
+            uistack(h,'bottom');
+            
             % Add tag and attach data to graphic object
             set(h,'Tag',tag,'UserData',data);
             
@@ -89,12 +96,6 @@ classdef ScalarMapDisplay < MovieDataDisplay
             % Clean existing image and set image at the bottom of the stack
             hAxes = get(h,'Parent');
             
-            % Remove all other images in the axes and stack it at the
-            % bottom
-            child = get(hAxes,'Children');
-            imChild = child(strcmp(get(child,'Type'),'image'));
-            delete(imChild(imChild~=h));
-            uistack(h,'bottom');
             
             imData = get(h,'CData');
             
