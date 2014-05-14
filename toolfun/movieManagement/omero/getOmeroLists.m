@@ -36,7 +36,7 @@ if isempty(datasets), return; end
 
 % Initialize movie array
 nLists = numel(datasets);
-MD(nLists) = MovieList();
+ML(nLists) = MovieList();
 
 % Set temporary file to extract file annotations
 namespace = getLCCBOmeroNamespace;
