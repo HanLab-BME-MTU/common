@@ -8,6 +8,7 @@ classdef  OmeroReader < Reader
         session
         image
         pixels
+        rawPixelsStore
     end
     
     methods
@@ -85,11 +86,15 @@ classdef  OmeroReader < Reader
             ip.parse(c, t, varargin{:});
             
             % Test session integrity
-            store = obj.getSession().createRawPixelsStore();
-            store.setPixelsId(obj.getPixels().getId().getValue(), false);
+            store = obj.getRawPixelsStore();
             I = toMatrix(store.getPlane(ip.Results.z - 1, c - 1, t - 1),...
                 obj.getPixels())';
-            store.close();
+        end
+        
+        function delete(obj)
+            if ~isempty(obj.rawPixelsStore),
+                obj.rawPixelsStore.close()
+            end
         end
         
         %% Helper functions
@@ -102,6 +107,17 @@ classdef  OmeroReader < Reader
         
         function pixels = getPixels(obj)
             pixels = obj.getImage().getPrimaryPixels();
+        end
+        
+        function store = getRawPixelsStore(obj)
+            if isempty(obj.rawPixelsStore)
+                store = obj.getSession().createRawPixelsStore();
+                store.setPixelsId(obj.getPixels().getId().getValue(), false);
+                obj.rawPixelsStore = store;
+            else
+                store = obj.rawPixelsStore;
+            end
+            
         end
     end
 end
