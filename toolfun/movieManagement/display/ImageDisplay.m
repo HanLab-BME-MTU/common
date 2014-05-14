@@ -31,9 +31,7 @@ classdef ImageDisplay < MovieDataDisplay
             
             % Clean existing image and set image at the bottom of the stack
             child = get(hAxes,'Children');
-            imChild = child(cellfun(@(x)(isfield(x,'DisplayClass') &&...
-                strcmp(x.DisplayClass,'ImageDisplay')),...
-                arrayfun(@(x)(get(x,'UserData')), child, 'Unif', false)));
+            imChild = child(strcmp(get(child,'Type'),'image'));
             delete(imChild(imChild ~= h));
             uistack(h, 'bottom');
             
@@ -75,7 +73,11 @@ classdef ImageDisplay < MovieDataDisplay
             end
             
             % Set the color limits
-            if ~isempty(obj.CLim),set(hAxes,'CLim',obj.CLim/obj.ScaleFactor); end
+            if ~isempty(obj.CLim),
+                set(hAxes,'CLim',obj.CLim/obj.ScaleFactor);
+            else
+                set(hAxes,'CLim', [0 1]);
+            end
         end
     end
     
