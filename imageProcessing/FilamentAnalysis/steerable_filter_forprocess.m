@@ -1,4 +1,4 @@
-function steerable_filter_forprocess(movieData, varargin)
+function movieData = steerable_filter_forprocess(movieData, varargin)
 % Created 07 2012 by Liya Ding, Matlab R2011b
 
 % Find the package of Filament Analysis
